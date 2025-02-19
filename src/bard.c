@@ -2142,8 +2142,8 @@ void do_riff(P_char ch, char *arg, int cmd)
 		{
 			if (songwords[i].num == s)
 			{
-				act("$n &+Csuddenly breaks out a &+Wquick verse&+C from their &+Crepitiore &+Cof songs...&n", FALSE, ch, 0, 0, TO_ROOM);
-				act("&+CYou suddenly break out a &+Wquick verse&+C from your &+Crepitiore &+Cof songs...&n", FALSE, ch, 0, 0, TO_CHAR);
+				act("$n &+Csuddenly breaks out a &+Wquick verse&+C from their &+Crepertoire &+Cof songs...&n", FALSE, ch, 0, 0, TO_ROOM);
+				act("&+CYou suddenly break out a &+Wquick verse&+C from your &+Crepertoire &+Cof songs...&n", FALSE, ch, 0, 0, TO_CHAR);
 
 				act(songwords[i].tochar, FALSE, ch, 0, 0, TO_CHAR);
 				act(songwords[i].toroom, FALSE, ch, 0, 0, TO_ROOM);
