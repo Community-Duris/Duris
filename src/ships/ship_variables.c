@@ -100,13 +100,13 @@ const WeaponData weapon_data[MAXWEAPON] = {
 	// Name                         Cost  Frags Crew  Weight Ammo    Min     Max     Min     Max  Fragments Damage  Sail   Hull    Sail    Armor   Reload  Volley      Flags
 	//                                           exp         range   range  damage  damage   count     arc    hit  damage  damage  pierce     time    time
 	{
-     "Small Ballistae",   50000,    0,    0,  3, 60,  0,  8,  2,  4, 1,  10, 12, 100,  50, 10, 30,  7, WPNFLAG01,
+     "Small Ballista",   50000,    0,    0,  3, 60,  0,  8,  2,  4, 1,  10, 12, 100,  50, 10, 30,  7, WPNFLAG01,
 	 }, // small ball
 	{
-     "Medium Ballistae",  100000,    0,    0,  6, 50,  0, 10,  4,  6, 1,  10, 14, 100,  50, 10, 30,  8, WPNFLAG02,
+     "Medium Ballista",  100000,    0,    0,  6, 50,  0, 10,  4,  6, 1,  10, 14, 100,  50, 10, 30,  8, WPNFLAG02,
 	 }, // med ball
 	{
-     "Large Ballistae",  500000,    0,    0, 10, 30,  0, 12,  6,  9, 1,  10, 16, 100,  50, 10, 30, 10, WPNFLAG03,
+     "Large Ballista",  500000,    0,    0, 10, 30,  0, 12,  6,  9, 1,  10, 16, 100,  50, 10, 30, 10, WPNFLAG03,
 	 }, // lrg ball
 	{
      "Small Catapult",  500000,    0,    0, 10, 30,  4, 15,  2,  3, 4, 160, 20, 100, 100,  2, 30, 18, WPNFLAG04,
@@ -118,7 +118,7 @@ const WeaponData weapon_data[MAXWEAPON] = {
      "Large Catapult", 1200000,    0,    0, 17, 12,  6, 25,  2,  5, 6, 360, 20, 100, 100,  2, 30, 30, WPNFLAG06,
 	 }, // large cat
 	{
-     "Heavy Ballistae", 1000000,    0,    0, 15,  6,  0,  4, 15, 22, 1,  10,  0, 100,   0, 15, 30,  3, WPNFLAG07,
+     "Heavy Ballista", 1000000,    0,    0, 15,  6,  0,  4, 15, 22, 1,  10,  0, 100,   0, 15, 30,  3, WPNFLAG07,
 	 }, // hvy ball
 	{
      "Light Beamcannon", 4000000, 1600, 1600,  7, 40,  0, 20,  4, 16, 1,  10, 10, 100,  30, 15, 45,  0, WPNFLAG08,
