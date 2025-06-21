@@ -472,7 +472,7 @@ extern unsigned int game_locked_level;
 #define CMD_DRAGONPUNCH     442
 #define CMD_REVOKE          443
 #define CMD_GRANT           444
-#define CMD_OLC             445 // removed
+#define CMD_CHAOS           445
 #define CMD_MOTD            446
 #define CMD_ZRESET          447
 #define CMD_FULL            448
@@ -882,6 +882,7 @@ extern unsigned int game_locked_level;
 #define CMD_REDIS           852
 #define CMD_MIXPOISON       853
 #define CMD_DIVINECLAIM     854 // Account-bound divine reward
+
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.

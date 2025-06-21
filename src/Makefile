@@ -82,6 +82,7 @@ OBJS =  $(SHIP_OBJS) \
 				 breath_weapons.o \
 				 buildings.o \
          cardgames.o \
+         chaos.o \
 				 comm.o \
 				 copyover.o \
 				 common.o \
@@ -258,6 +259,7 @@ OBJS =  $(SHIP_OBJS) \
 				 gmcp.o \
 				 ttype.o \
 				 wiz_newchar.o
+
 
 # Name lists (no paths) for pfile-related objs
 SHARED_PFILE_OBJS_NAMES = pf-skills.o pf-files.o

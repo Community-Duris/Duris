@@ -731,6 +731,10 @@ void board_reset_board(char **, char **, int *);
 void board_save_board(const char *, char **, char **, int *);
 void initialize_boards(void);
 
+/* chaos.c */
+
+void do_chaos(P_char ch, char *arg, int cmd);
+
 /* chess.c */
 
 int  ChessPushSuccessful(P_char, P_obj, char *);

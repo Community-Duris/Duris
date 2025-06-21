@@ -674,7 +674,7 @@ const char *command[MAX_CMD] = {
 	"dragonpunch",
 	"revoke",
 	"grant",
-	"olc",
+	"chaos",
 	"motd", /*
              * 445
              */
@@ -2557,6 +2557,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_RECALL, STAT_DEAD + POS_PRONE, do_recall, 0, FALSE);
 	CMD_N(CMD_MOTD, STAT_SLEEPING + POS_PRONE, do_motd, 0, FALSE);
 	CMD_N(CMD_GMOTD, STAT_SLEEPING + POS_PRONE, do_gmotd, 0, FALSE);
+	CMD_Y(CMD_CHAOS, STAT_DEAD + POS_PRONE, do_chaos, 0, FALSE);
 	CMD_Y(CMD_MOUNT, STAT_NORMAL + POS_STANDING, do_mount, 0, TRUE);
 	CMD_N(CMD_NE, STAT_NORMAL + POS_PRONE, do_move, 0, TRUE);
 	CMD_Y(CMD_NEWS, STAT_DEAD + POS_PRONE, do_news, 0, FALSE);
