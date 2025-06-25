@@ -4888,6 +4888,7 @@ void spell_group_teleport(int level, P_char ch, char *arg, int type, P_char vict
 					stop_fighting(gl->ch);
 				if (IS_DESTROYING(gl->ch))
 					stop_destroying(gl->ch);
+				REMOVE_BIT(ch->specials.affected_by, AFF_HIDE);
 
 				// move the char
 				char_from_room(gl->ch);
@@ -4908,6 +4909,7 @@ void spell_group_teleport(int level, P_char ch, char *arg, int type, P_char vict
 			stop_fighting(ch);
 		if (IS_DESTROYING(ch))
 			stop_destroying(ch);
+		REMOVE_BIT(ch->specials.affected_by, AFF_HIDE);
 
 		// move the char
 		char_from_room(ch);
