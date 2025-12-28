@@ -34,6 +34,7 @@
 #include "objmisc.h"
 #include "damage.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "vnum.obj.h"
 #include "ships.h"
 #include "listen.h"
@@ -12894,5 +12895,79 @@ void do_extractlink(P_char ch, char *argument, int cmd)
       snprintf(buf, MAX_STRING_LENGTH, "Extracted %d ghost character%s.\r\n", count, count == 1 ? "" : "s");
       send_to_char(buf, ch);
     }
+  }
+}
+
+ACMD(do_pfilemigrate)
+{
+  char buf[MAX_STRING_LENGTH];
+  char arg[MAX_STRING_LENGTH];
+
+  one_argument(argument, arg);
+
+  if (!*arg)
+  {
+    send_to_char("Usage: pfilemigrate <name> - migrate single player\r\n", ch);
+    send_to_char("       pfilemigrate all    - migrate all players\r\n", ch);
+    send_to_char("       pfilemigrate verify <name> - verify migration\r\n", ch);
+    return;
+  }
+
+  if (!strcasecmp(arg, "all"))
+  {
+    send_to_char("Starting migration of all players...\r\n", ch);
+    wizlog(GET_LEVEL(ch), "%s started pfile migration for all players", GET_NAME(ch));
+
+    int count = sql_migrate_all_players();
+
+    snprintf(buf, MAX_STRING_LENGTH, "Migration complete. %d players migrated.\r\n", count);
+    send_to_char(buf, ch);
+    wizlog(GET_LEVEL(ch), "pfile migration complete: %d players migrated", count);
+    return;
+  }
+
+  if (!strcasecmp(arg, "verify"))
+  {
+    char target[MAX_STRING_LENGTH];
+    argument = one_argument(argument, arg);
+    one_argument(argument, target);
+
+    if (!*target)
+    {
+      send_to_char("Usage: pfilemigrate verify <name>\r\n", ch);
+      return;
+    }
+
+    if (sql_verify_player(target))
+    {
+      snprintf(buf, MAX_STRING_LENGTH, "%s: verification PASSED\r\n", target);
+      send_to_char(buf, ch);
+    }
+    else
+    {
+      snprintf(buf, MAX_STRING_LENGTH, "%s: verification FAILED (check logs)\r\n", target);
+      send_to_char(buf, ch);
+    }
+    return;
+  }
+
+  // single player migration
+  if (sql_player_exists(arg))
+  {
+    snprintf(buf, MAX_STRING_LENGTH, "%s already exists in database.\r\n", arg);
+    send_to_char(buf, ch);
+    return;
+  }
+
+  if (sql_migrate_player(arg))
+  {
+    snprintf(buf, MAX_STRING_LENGTH, "%s migrated successfully.\r\n", arg);
+    send_to_char(buf, ch);
+    wizlog(GET_LEVEL(ch), "%s migrated player %s to database", GET_NAME(ch), arg);
+  }
+  else
+  {
+    snprintf(buf, MAX_STRING_LENGTH, "%s migration FAILED (check logs).\r\n", arg);
+    send_to_char(buf, ch);
   }
 }

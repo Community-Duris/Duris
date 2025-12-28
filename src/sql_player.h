@@ -118,6 +118,10 @@ bool sql_migrate_player(const char *name);
 // verify player data matches between pfile and db
 bool sql_verify_player(const char *name);
 
+// migrate all players from pfiles to db
+// returns count of successfully migrated players
+int sql_migrate_all_players(void);
+
 // ============================================================================
 // utility
 // ============================================================================

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <dirent.h>
 
 #include "structs.h"
 #include "utils.h"
@@ -64,6 +65,7 @@ bool sql_delete_locker(int owner_pid, int owner_assoc_id) { return false; }
 
 bool sql_migrate_player(const char *name) { return false; }
 bool sql_verify_player(const char *name) { return false; }
+int sql_migrate_all_players(void) { return 0; }
 
 char *sql_escape_string(const char *str) { return NULL; }
 void sql_player_error(const char *context, const char *query) { }
@@ -1721,20 +1723,247 @@ bool sql_delete_locker(int owner_pid, int owner_assoc_id)
 }
 
 // ============================================================================
-// migration helpers - placeholder stubs
+// migration helpers
 // ============================================================================
+
+// allocate a temp char for migration (uses malloc, not pools)
+static P_char alloc_temp_char(void)
+{
+  P_char ch = (P_char)malloc(sizeof(struct char_data));
+  if (!ch)
+    return NULL;
+  memset(ch, 0, sizeof(struct char_data));
+
+  ch->only.pc = (struct pc_only_data *)malloc(sizeof(struct pc_only_data));
+  if (!ch->only.pc)
+  {
+    free(ch);
+    return NULL;
+  }
+  memset(ch->only.pc, 0, sizeof(struct pc_only_data));
+  return ch;
+}
+
+// free a temp char allocated by alloc_temp_char
+// also frees any items the char is carrying
+static void free_temp_char(P_char ch)
+{
+  if (!ch)
+    return;
+
+  // free items (carrying and equipment)
+  P_obj obj, next;
+  for (obj = ch->carrying; obj; obj = next)
+  {
+    next = obj->next_content;
+    free_obj(obj);
+  }
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    if (ch->equipment[i])
+      free_obj(ch->equipment[i]);
+  }
+
+  // free strings if allocated
+  if (ch->player.name)
+    free(ch->player.name);
+  if (ch->player.short_descr)
+    free(ch->player.short_descr);
+  if (ch->player.long_descr)
+    free(ch->player.long_descr);
+  if (ch->player.description)
+    free(ch->player.description);
+  if (ch->player.title)
+    free(ch->player.title);
+  if (ch->only.pc && ch->only.pc->poofIn)
+    free(ch->only.pc->poofIn);
+  if (ch->only.pc && ch->only.pc->poofOut)
+    free(ch->only.pc->poofOut);
+
+  if (ch->only.pc)
+    free(ch->only.pc);
+  free(ch);
+}
 
 bool sql_migrate_player(const char *name)
 {
-  // todo: implement
-  logit(LOG_DEBUG, "sql_migrate_player: not yet implemented for %s", name);
-  return false;
+  if (!name || !*name)
+    return false;
+
+  logit(LOG_DEBUG, "sql_migrate_player: migrating %s", name);
+
+  // check if already in db
+  if (sql_player_exists(name))
+  {
+    logit(LOG_DEBUG, "sql_migrate_player: %s already exists in db, skipping", name);
+    return true;
+  }
+
+  // allocate temp char
+  P_char ch = alloc_temp_char();
+  if (!ch)
+  {
+    logit(LOG_FILE, "sql_migrate_player: failed to allocate char for %s", name);
+    return false;
+  }
+
+  // load from pfile
+  int status = restoreCharOnly(ch, (char *)name);
+  if (status < 0)
+  {
+    logit(LOG_FILE, "sql_migrate_player: failed to load pfile for %s (status %d)", name, status);
+    free_temp_char(ch);
+    return false;
+  }
+
+  // load items
+  ch->carrying = NULL;
+  for (int i = 0; i < MAX_WEAR; i++)
+    ch->equipment[i] = NULL;
+  restoreItemsOnly(ch, 0);
+
+  // save to db
+  // use status as rent type, room 0 (will be fixed on login)
+  bool result = sql_save_player(ch, status, 0);
+  if (!result)
+  {
+    logit(LOG_FILE, "sql_migrate_player: failed to save %s to db", name);
+    free_temp_char(ch);
+    return false;
+  }
+
+  logit(LOG_DEBUG, "sql_migrate_player: successfully migrated %s", name);
+  free_temp_char(ch);
+  return true;
 }
 
 bool sql_verify_player(const char *name)
 {
-  // todo: implement
-  return false;
+  if (!name || !*name)
+    return false;
+
+  // load from pfile
+  P_char pfile_ch = alloc_temp_char();
+  if (!pfile_ch)
+    return false;
+
+  int status = restoreCharOnly(pfile_ch, (char *)name);
+  if (status < 0)
+  {
+    free_temp_char(pfile_ch);
+    return false;
+  }
+
+  // load from db
+  P_char db_ch = sql_load_player(name);
+  if (!db_ch)
+  {
+    logit(LOG_FILE, "sql_verify_player: %s not found in db", name);
+    free_temp_char(pfile_ch);
+    return false;
+  }
+
+  // compare key fields
+  bool match = true;
+
+  if (strcmp(GET_NAME(pfile_ch), GET_NAME(db_ch)) != 0)
+  {
+    logit(LOG_FILE, "sql_verify_player: %s name mismatch", name);
+    match = false;
+  }
+  if (GET_LEVEL(pfile_ch) != GET_LEVEL(db_ch))
+  {
+    logit(LOG_FILE, "sql_verify_player: %s level mismatch (%d vs %d)",
+          name, GET_LEVEL(pfile_ch), GET_LEVEL(db_ch));
+    match = false;
+  }
+  if (GET_RACE(pfile_ch) != GET_RACE(db_ch))
+  {
+    logit(LOG_FILE, "sql_verify_player: %s race mismatch", name);
+    match = false;
+  }
+  if (pfile_ch->player.m_class != db_ch->player.m_class)
+  {
+    logit(LOG_FILE, "sql_verify_player: %s class mismatch", name);
+    match = false;
+  }
+  if (GET_EXP(pfile_ch) != GET_EXP(db_ch))
+  {
+    logit(LOG_FILE, "sql_verify_player: %s exp mismatch (%ld vs %ld)",
+          name, GET_EXP(pfile_ch), GET_EXP(db_ch));
+    match = false;
+  }
+  if (GET_GOLD(pfile_ch) != GET_GOLD(db_ch))
+  {
+    logit(LOG_FILE, "sql_verify_player: %s gold mismatch", name);
+    match = false;
+  }
+
+  free_temp_char(pfile_ch);
+  free_temp_char(db_ch);
+
+  if (match)
+    logit(LOG_DEBUG, "sql_verify_player: %s verified OK", name);
+
+  return match;
+}
+
+// migrate all players from pfiles to db
+// returns count of successfully migrated players
+int sql_migrate_all_players(void)
+{
+  DIR *pf_dir;
+  struct dirent *pf_entry;
+  char dname[256];
+  char fname[256];
+  char letter;
+  char *dot_index;
+  int success_count = 0;
+  int fail_count = 0;
+  int skip_count = 0;
+
+  logit(LOG_DEBUG, "sql_migrate_all_players: starting migration");
+
+  for (letter = 'a'; letter <= 'z'; letter++)
+  {
+    snprintf(dname, 256, "%s/%c", SAVE_DIR, letter);
+    pf_dir = opendir(dname);
+    if (!pf_dir)
+      continue;
+
+    while ((pf_entry = readdir(pf_dir)) != NULL)
+    {
+      strcpy(fname, pf_entry->d_name);
+
+      // skip . and ..
+      if (fname[0] == '.')
+        continue;
+
+      // skip files with extensions (like .locker, .old, etc)
+      dot_index = strrchr(fname, '.');
+      if (dot_index)
+        continue;
+
+      // try to migrate
+      if (sql_player_exists(fname))
+      {
+        skip_count++;
+        continue;
+      }
+
+      if (sql_migrate_player(fname))
+        success_count++;
+      else
+        fail_count++;
+    }
+
+    closedir(pf_dir);
+  }
+
+  logit(LOG_DEBUG, "sql_migrate_all_players: done - %d migrated, %d failed, %d skipped",
+        success_count, fail_count, skip_count);
+
+  return success_count;
 }
 
 #endif // __NO_MYSQL__

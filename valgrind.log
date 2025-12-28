@@ -1,0 +1,94 @@
+==2983259== Memcheck, a memory error detector
+==2983259== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==2983259== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==2983259== Command: ./dms
+==2983259== 
+
+Boot db -- BEGIN.
+Resetting the game time:
+Reading files from lib directory. (motd, wizlist, etc)
+Opening mobile, object, help and info files.
+Loading zone table.
+Loading rooms.
+Recalculating zone numbers...
+  -- Heaven has invalid number: 1 (should be 0)
+  -- The Halfling Silver Mine has invalid number: 1 (should be 49)
+  -- Court of the Muse has invalid number: 1 (should be 67)
+  -- The BrimStone Forge has invalid number: 449 (should be 1310)
+  -- The Tower of Darkness has invalid number: 1 (should be 1340)
+  -- Mitashi - Capital City of the Jade Empire has invalid number: 1 (should be 1382)
+  -- The Savannah of Broken Trusts has invalid number: 1 (should be 1385)
+  -- The Ancient Halls of Ironstar has invalid number: 1000000 (should be 1389)
+  -- Plane of Fire, Brass has invalid number: 252 (should be 1390)
+  -- The Para-Elemental Plane of Smoke has invalid number: 1 (should be 1398)
+  -- The Black Pearl has invalid number: 705 (should be 1422)
+  -- The Royal Mausoleum of Castle IceCrag has invalid number: 1 (should be 1424)
+  -- Tradeskills has invalid number: 400 (should be 4000)
+  -- Siege has invalid number: 401 (should be 4010)
+  -- The Arcaneum of L'srillizzin has invalid number: 402 (should be 4020)
+Renumbering rooms.
+Generating index table for mobiles.
+Generating index table for objects.
+Renumbering zone table.
+Initializing Random Load Tables.
+Loading social messages.
+Initializing boards.
+Loading pose messages.
+Assigning function pointers (spec procs):
+-- Mobile special procedures.
+--    Booting the shops.
+-- Shop loading complete.
+--    Booting the shopkeepers.
+--    Booting the quests.
+		1655 quests allocated
+--    Assigning the questors.
+-- Object special procedures.
+-- Room special procedures.
+Assigning command pointers from interpreter.
+-- Commands.
+-- Spells.
+Initializing...
+-- Innates
+-- Links
+-- Weather
+-- Banned sites
+-- Events
+-- Ships
+-- Mail
+-- Player corpses
+-- Shopkeepers
+-- Associations
+-- Continents
+Assigning continents...
+ - Good Continent (34626 rooms)
+ - Evil Continent (32344 rooms)
+ - Ice Crag (15880 rooms)
+ - Khomani-Khan (11109 rooms)
+ - Undead Continent (10324 rooms)
+ - Jade Empire (508 rooms)
+ - Island of Dragons (317 rooms)
+ - Ceothia (211 rooms)
+ - Fort Boyard (596 rooms)
+ - Venan'Trut (1092 rooms)
+ - Shadow Island (1005 rooms)
+ - Scorched Island (131 rooms)
+ - Tezcatlipoca (85 rooms)
+ - Moonshae Island (72 rooms)
+-- Updating zone database.
+--  Done calculating maps coordinates.
+-- Calculating avg mob level for each zone.
+--  Done calculating mob level.
+--  Done loading tradeskills/mines.
+--  Done loading command attributes.
+--    Booting Ferries
+-- Done loading guilds
+-- Done loading guildhalls
+-- Initializing Auctions
+-- Booting nexus stones
+-- Booting outposts
+-- Loading alliances
+-- Touching leaderboard
+-- Touching hall of fame
+Boot completed in: 192511 milliseconds
+Entering game loop.
+
