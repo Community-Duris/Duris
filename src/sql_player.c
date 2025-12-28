@@ -19,6 +19,9 @@
 #include "account.h"
 #include "assocs.h"
 
+// external index tables
+extern P_index obj_index;
+
 #ifdef __NO_MYSQL__
 
 // ============================================================================
@@ -734,8 +737,149 @@ bool sql_save_player_affects(P_char ch)
 }
 
 // ============================================================================
-// items save - placeholder, this is the complex one
+// items save
 // ============================================================================
+
+// save item affects (the obj->affected[] array)
+static bool sql_save_item_affects(int item_id, P_obj obj)
+{
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+    {
+      char ins_query[256];
+      snprintf(ins_query, sizeof(ins_query),
+               "INSERT INTO player_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
+               item_id, obj->affected[i].location, obj->affected[i].modifier);
+      if (!sql_run_query(ins_query))
+        return false;
+    }
+  }
+  return true;
+}
+
+// save a single item and its contents recursively
+// returns the item_id of the inserted item, or 0 on failure
+static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int container_id)
+{
+  if (!obj || !DB)
+    return 0;
+
+  // skip norent items
+  if (IS_SET(obj->extra_flags, ITEM_NORENT))
+    return 0;
+
+  int vnum = obj_index[obj->R_num].virtual_number;
+
+  // escape strings - only save if strung (different from prototype)
+  // STRUNG_KEYS = name, STRUNG_DESC2 = short_description,
+  // STRUNG_DESC1 = description, STRUNG_DESC3 = action_description
+  char *esc_name = NULL;
+  char *esc_short = NULL;
+  char *esc_desc = NULL;
+  char *esc_action = NULL;
+
+  if (obj->str_mask & STRUNG_KEYS)
+    esc_name = sql_escape_string(obj->name ? obj->name : "");
+  if (obj->str_mask & STRUNG_DESC2)
+    esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+  if (obj->str_mask & STRUNG_DESC1)
+    esc_desc = sql_escape_string(obj->description ? obj->description : "");
+  if (obj->str_mask & STRUNG_DESC3)
+    esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+  // build container_id string
+  char container_str[32];
+  if (container_id > 0)
+    snprintf(container_str, sizeof(container_str), "%d", container_id);
+  else
+    strcpy(container_str, "NULL");
+
+  // build name string with quotes or NULL
+  char name_str[1024];
+  if (esc_name)
+    snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+  else
+    strcpy(name_str, "NULL");
+
+  char short_str[1024];
+  if (esc_short)
+    snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+  else
+    strcpy(short_str, "NULL");
+
+  char desc_str[2048];
+  if (esc_desc)
+    snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+  else
+    strcpy(desc_str, "NULL");
+
+  char action_str[2048];
+  if (esc_action)
+    snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+  else
+    strcpy(action_str, "NULL");
+
+  // build the query - only use columns that exist in schema
+  // extra fields like bitvectors, trap data, etc can be loaded from prototype
+  char query[8192];
+  snprintf(query, sizeof(query),
+    "INSERT INTO player_items ("
+    "pid, vnum, equip_slot, container_id, quantity, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr"
+    ") VALUES ("
+    "%d, %d, %d, %s, 1, "
+    "%d, %d, %ld, %u, "
+    "%d, %d, %d, %d, %d, %d, %d, %d, "
+    "%s, %s, %s, %s"
+    ")",
+    pid, vnum, equip_slot, container_str,
+    obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags,
+    obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+    obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+    name_str, short_str, desc_str, action_str
+  );
+
+  // free escaped strings
+  if (esc_name) free(esc_name);
+  if (esc_short) free(esc_short);
+  if (esc_desc) free(esc_desc);
+  if (esc_action) free(esc_action);
+
+  if (!sql_run_query(query))
+  {
+    sql_player_error("sql_save_single_item", query);
+    return 0;
+  }
+
+  // get the inserted item_id
+  int item_id = (int)mysql_insert_id(DB);
+
+  // save item affects
+  if (!sql_save_item_affects(item_id, obj))
+    return 0;
+
+  // recursively save container contents
+  if (obj->contains)
+  {
+    for (P_obj content = obj->contains; content; content = content->next_content)
+    {
+      if (!IS_SET(content->extra_flags, ITEM_NORENT))
+      {
+        if (sql_save_single_item_get_id(pid, content, 0, item_id) == 0)
+        {
+          // log but continue - don't fail the whole save for one bad item
+          logit(LOG_DEBUG, "sql_save_player_items: failed to save container content vnum %d",
+                obj_index[content->R_num].virtual_number);
+        }
+      }
+    }
+  }
+
+  return item_id;
+}
 
 bool sql_save_player_items(P_char ch)
 {
@@ -751,11 +895,35 @@ bool sql_save_player_items(P_char ch)
   snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
   sql_run_query(del_query);
 
-  // todo: implement full item save with container hierarchy
-  // this requires recursive traversal of equipment[] and carrying list
-  // for now, just return true as a placeholder
+  // save equipment (slots 1-42, 0 is special)
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    if (ch->equipment[i])
+    {
+      if (!IS_SET(ch->equipment[i]->extra_flags, ITEM_NORENT))
+      {
+        if (sql_save_single_item_get_id(pid, ch->equipment[i], i + 1, 0) == 0)
+        {
+          logit(LOG_DEBUG, "sql_save_player_items: failed to save equipment slot %d for %s",
+                i, GET_NAME(ch));
+        }
+      }
+    }
+  }
 
-  logit(LOG_DEBUG, "sql_save_player_items: not yet implemented for %s", GET_NAME(ch));
+  // save inventory (equip_slot = 0)
+  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+  {
+    if (!IS_SET(obj->extra_flags, ITEM_NORENT))
+    {
+      if (sql_save_single_item_get_id(pid, obj, 0, 0) == 0)
+      {
+        logit(LOG_DEBUG, "sql_save_player_items: failed to save inventory item for %s",
+              GET_NAME(ch));
+      }
+    }
+  }
+
   return true;
 }
 
@@ -796,44 +964,682 @@ bool sql_save_player_witnesses(P_char ch)
 }
 
 // ============================================================================
-// player load - placeholder stubs
+// player load functions
 // ============================================================================
 
-P_char sql_load_player(const char *name)
+// helper to safely get int from row, returns default if null
+static int sql_row_int(MYSQL_ROW row, int idx, int def)
 {
-  // todo: implement full player load
-  logit(LOG_DEBUG, "sql_load_player: not yet implemented for %s", name);
-  return NULL;
+  return (row && row[idx]) ? atoi(row[idx]) : def;
+}
+
+// helper to safely get long from row
+static long sql_row_long(MYSQL_ROW row, int idx, long def)
+{
+  return (row && row[idx]) ? atol(row[idx]) : def;
+}
+
+// helper to safely get ulong from row
+static unsigned long sql_row_ulong(MYSQL_ROW row, int idx, unsigned long def)
+{
+  return (row && row[idx]) ? strtoul(row[idx], NULL, 10) : def;
+}
+
+// helper to duplicate string from row (caller must free)
+static char *sql_row_str(MYSQL_ROW row, int idx)
+{
+  if (!row || !row[idx])
+    return NULL;
+  return strdup(row[idx]);
 }
 
 bool sql_load_player_status(P_char ch, int pid)
 {
-  // todo: implement
-  return false;
+  if (!ch || !DB || pid <= 0)
+    return false;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "SELECT name, short_descr, long_descr, description, title, "
+    "m_class, secondary_class, spec, race, racewar, level, sex, "
+    "weight, height, size, hometown, birthplace, orig_birthplace, last_room, "
+    "birth_time, played_time, last_save, perm_aging, "
+    "base_str, base_dex, base_agi, base_con, base_pow, "
+    "base_int, base_wis, base_cha, base_kar, base_luk, "
+    "mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
+    "copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
+    "exp, epics, epic_skill_points, skillpoints, spell_bind_used, "
+    "act, act2, vote, alignment, prestige, assoc_id, guild_status, "
+    "time_left_guild, nb_left_guild, time_unspecced, frags, oldfrags, numb_deaths, "
+    "condition_0, condition_1, condition_2, condition_3, condition_4, "
+    "poof_in, poof_out, poof_in_sound, poof_out_sound, "
+    "echo_toggle, prompt, wiz_invis, law_flags, wimpy, aggressive, highest_level, screen_length, "
+    "quest_active, quest_mob_vnum, quest_type, quest_accomplished, "
+    "quest_started, quest_zone_number, quest_giver, quest_level, "
+    "quest_receiver, quest_shares_left, quest_kill_how_many, "
+    "quest_kill_original, quest_map_room, quest_map_bought, last_ip "
+    "FROM player_data WHERE pid=%d", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    return false;
+  }
+
+  int col = 0;
+
+  // name and descriptions
+  GET_NAME(ch) = sql_row_str(row, col++);
+  ch->player.short_descr = sql_row_str(row, col++);
+  ch->player.long_descr = sql_row_str(row, col++);
+  ch->player.description = sql_row_str(row, col++);
+  GET_TITLE(ch) = sql_row_str(row, col++);
+
+  // class/race/level
+  ch->player.m_class = sql_row_int(row, col++, 0);
+  ch->player.secondary_class = sql_row_int(row, col++, 0);
+  ch->player.spec = sql_row_int(row, col++, 0);
+  GET_RACE(ch) = sql_row_int(row, col++, 0);
+  GET_RACEWAR(ch) = sql_row_int(row, col++, 0);
+  ch->player.level = sql_row_int(row, col++, 1);
+  GET_SEX(ch) = sql_row_int(row, col++, 0);
+
+  // physical
+  ch->player.weight = sql_row_int(row, col++, 0);
+  ch->player.height = sql_row_int(row, col++, 0);
+  GET_SIZE(ch) = sql_row_int(row, col++, 0);
+
+  // location
+  GET_HOME(ch) = sql_row_int(row, col++, 0);
+  GET_BIRTHPLACE(ch) = sql_row_int(row, col++, 0);
+  GET_ORIG_BIRTHPLACE(ch) = sql_row_int(row, col++, 0);
+  ch->in_room = real_room(sql_row_int(row, col++, 0));
+
+  // time
+  ch->player.time.birth = sql_row_long(row, col++, 0);
+  ch->player.time.played = sql_row_int(row, col++, 0);
+  ch->player.time.saved = sql_row_long(row, col++, 0);
+  ch->player.time.logon = time(0);
+  ch->player.time.perm_aging = sql_row_int(row, col++, 0);
+
+  // base stats
+  ch->base_stats.Str = sql_row_int(row, col++, 0);
+  ch->base_stats.Dex = sql_row_int(row, col++, 0);
+  ch->base_stats.Agi = sql_row_int(row, col++, 0);
+  ch->base_stats.Con = sql_row_int(row, col++, 0);
+  ch->base_stats.Pow = sql_row_int(row, col++, 0);
+  ch->base_stats.Int = sql_row_int(row, col++, 0);
+  ch->base_stats.Wis = sql_row_int(row, col++, 0);
+  ch->base_stats.Cha = sql_row_int(row, col++, 0);
+  ch->base_stats.Kar = sql_row_int(row, col++, 0);
+  ch->base_stats.Luk = sql_row_int(row, col++, 0);
+
+  // points
+  GET_MANA(ch) = sql_row_int(row, col++, 0);
+  ch->points.base_mana = sql_row_int(row, col++, 0);
+  int hit_diff = sql_row_int(row, col++, 0);
+  ch->points.base_hit = sql_row_int(row, col++, 0);
+  GET_VITALITY(ch) = sql_row_int(row, col++, 0);
+  ch->points.base_vitality = sql_row_int(row, col++, 0);
+  ch->only.pc->spells_memmed[MAX_CIRCLE] = sql_row_int(row, col++, 0);
+
+  // money
+  GET_COPPER(ch) = sql_row_int(row, col++, 0);
+  GET_SILVER(ch) = sql_row_int(row, col++, 0);
+  GET_GOLD(ch) = sql_row_int(row, col++, 0);
+  GET_PLATINUM(ch) = sql_row_int(row, col++, 0);
+  GET_BALANCE_COPPER(ch) = sql_row_int(row, col++, 0);
+  GET_BALANCE_SILVER(ch) = sql_row_int(row, col++, 0);
+  GET_BALANCE_GOLD(ch) = sql_row_int(row, col++, 0);
+  GET_BALANCE_PLATINUM(ch) = sql_row_int(row, col++, 0);
+
+  // experience
+  GET_EXP(ch) = sql_row_int(row, col++, 0);
+  ch->only.pc->epics = sql_row_long(row, col++, 0);
+  ch->only.pc->epic_skill_points = sql_row_long(row, col++, 0);
+  ch->only.pc->skillpoints = sql_row_int(row, col++, 0);
+  ch->only.pc->spell_bind_used = sql_row_long(row, col++, 0);
+
+  // flags
+  ch->specials.act = sql_row_ulong(row, col++, 0);
+  ch->specials.act2 = sql_row_ulong(row, col++, 0);
+  ch->only.pc->vote = sql_row_ulong(row, col++, 0);
+  ch->specials.alignment = sql_row_int(row, col++, 0);
+  ch->only.pc->prestige = sql_row_int(row, col++, 0);
+  col++; // skip assoc_id - handled by assoc system on login
+  ch->specials.guild_status = sql_row_int(row, col++, 0);
+  ch->only.pc->time_left_guild = sql_row_long(row, col++, 0);
+  ch->only.pc->nb_left_guild = sql_row_int(row, col++, 0);
+  ch->only.pc->time_unspecced = sql_row_long(row, col++, 0);
+  ch->only.pc->frags = sql_row_long(row, col++, 0);
+  ch->only.pc->oldfrags = sql_row_long(row, col++, 0);
+  ch->only.pc->numb_deaths = sql_row_ulong(row, col++, 0);
+
+  // conditions
+  ch->specials.conditions[0] = sql_row_int(row, col++, 0);
+  ch->specials.conditions[1] = sql_row_int(row, col++, 0);
+  ch->specials.conditions[2] = sql_row_int(row, col++, 0);
+  ch->specials.conditions[3] = sql_row_int(row, col++, 0);
+  ch->specials.conditions[4] = sql_row_int(row, col++, 0);
+
+  // immortal stuff
+  ch->only.pc->poofIn = sql_row_str(row, col++);
+  ch->only.pc->poofOut = sql_row_str(row, col++);
+  ch->only.pc->poofInSound = sql_row_str(row, col++);
+  ch->only.pc->poofOutSound = sql_row_str(row, col++);
+  ch->only.pc->echo_toggle = sql_row_int(row, col++, 0);
+  ch->only.pc->prompt = sql_row_int(row, col++, 0);
+  ch->only.pc->wiz_invis = sql_row_long(row, col++, 0);
+  ch->only.pc->law_flags = sql_row_ulong(row, col++, 0);
+  ch->only.pc->wimpy = sql_row_int(row, col++, 0);
+  ch->only.pc->aggressive = sql_row_int(row, col++, -1);
+  ch->only.pc->highest_level = sql_row_int(row, col++, 0);
+  ch->only.pc->screen_length = sql_row_int(row, col++, 24);
+
+  // quest data
+  ch->only.pc->quest_active = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_mob_vnum = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_type = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_accomplished = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_started = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_zone_number = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_giver = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_level = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_receiver = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_shares_left = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_kill_how_many = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_kill_original = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_map_room = sql_row_int(row, col++, 0);
+  ch->only.pc->quest_map_bought = sql_row_int(row, col++, 0);
+  ch->only.pc->last_ip = sql_row_ulong(row, col++, 0);
+
+  mysql_free_result(result);
+
+  // set pid
+  ch->only.pc->pid = pid;
+
+  // calculate hit from hit_diff
+  GET_HIT(ch) = GET_MAX_HIT(ch) - hit_diff;
+
+  // load array data: languages, intros, timers, undead slots, forged items, granted cmds
+
+  // languages
+  snprintf(query, sizeof(query),
+    "SELECT tongue_id, proficiency FROM player_languages WHERE pid=%d", pid);
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int tongue = sql_row_int(row, 0, 0);
+      if (tongue >= 0 && tongue < MAX_TONGUE)
+        GET_LANGUAGE(ch, tongue) = sql_row_int(row, 1, 0);
+    }
+    mysql_free_result(result);
+  }
+
+  // intros
+  snprintf(query, sizeof(query),
+    "SELECT intro_index, intro_pid, intro_time FROM player_intros WHERE pid=%d", pid);
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int idx = sql_row_int(row, 0, 0);
+      if (idx >= 0 && idx < MAX_INTRO)
+      {
+        ch->only.pc->introd_list[idx] = sql_row_long(row, 1, 0);
+        ch->only.pc->introd_times[idx] = sql_row_ulong(row, 2, 0);
+      }
+    }
+    mysql_free_result(result);
+  }
+
+  // timers
+  snprintf(query, sizeof(query),
+    "SELECT timer_id, timer_value FROM player_timers WHERE pid=%d", pid);
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int idx = sql_row_int(row, 0, 0);
+      if (idx >= 0 && idx < NUMB_PC_TIMERS)
+        ch->only.pc->pc_timer[idx] = sql_row_long(row, 1, 0);
+    }
+    mysql_free_result(result);
+  }
+
+  // undead slots
+  snprintf(query, sizeof(query),
+    "SELECT circle, slots FROM player_undead_slots WHERE pid=%d", pid);
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int circle = sql_row_int(row, 0, 0);
+      if (circle >= 0 && circle <= MAX_CIRCLE)
+        ch->specials.undead_spell_slots[circle] = sql_row_int(row, 1, 0);
+    }
+    mysql_free_result(result);
+  }
+
+  // forged items
+  snprintf(query, sizeof(query),
+    "SELECT forge_index, item_vnum FROM player_forged_items WHERE pid=%d", pid);
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int idx = sql_row_int(row, 0, 0);
+      if (idx >= 0 && idx < MAX_FORGE_ITEMS)
+        ch->only.pc->learned_forged_list[idx] = sql_row_long(row, 1, 0);
+    }
+    mysql_free_result(result);
+  }
+
+  // granted commands - count first, then allocate and load
+  snprintf(query, sizeof(query),
+    "SELECT COUNT(*) FROM player_granted_cmds WHERE pid=%d", pid);
+  result = db_query("%s", query);
+  if (result)
+  {
+    row = mysql_fetch_row(result);
+    int cmd_count = sql_row_int(row, 0, 0);
+    mysql_free_result(result);
+
+    if (cmd_count > 0)
+    {
+      ch->only.pc->gcmd_arr = (int *)malloc(cmd_count * sizeof(int));
+      if (ch->only.pc->gcmd_arr)
+      {
+        ch->only.pc->numb_gcmd = 0;
+        snprintf(query, sizeof(query),
+          "SELECT cmd_num FROM player_granted_cmds WHERE pid=%d ORDER BY id", pid);
+        result = db_query("%s", query);
+        if (result)
+        {
+          while ((row = mysql_fetch_row(result)) && ch->only.pc->numb_gcmd < cmd_count)
+          {
+            ch->only.pc->gcmd_arr[ch->only.pc->numb_gcmd++] = sql_row_int(row, 0, 0);
+          }
+          mysql_free_result(result);
+        }
+      }
+    }
+  }
+
+  return true;
 }
 
 bool sql_load_player_skills(P_char ch)
 {
-  // todo: implement
-  return false;
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "SELECT skill_id, learned, taught FROM player_skills WHERE pid=%d", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    int skill_id = sql_row_int(row, 0, 0);
+    if (skill_id >= 0 && skill_id < MAX_SKILLS)
+    {
+      ch->only.pc->skills[skill_id].learned = sql_row_int(row, 1, 0);
+      ch->only.pc->skills[skill_id].taught = sql_row_int(row, 2, 0);
+    }
+  }
+  mysql_free_result(result);
+
+  return true;
 }
 
 bool sql_load_player_affects(P_char ch)
 {
-  // todo: implement
-  return false;
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "SELECT type, duration, flags, modifier, location, level, "
+    "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
+    "FROM player_affects WHERE pid=%d", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    struct affected_type af;
+    memset(&af, 0, sizeof(af));
+
+    af.type = sql_row_int(row, 0, 0);
+    af.duration = sql_row_int(row, 1, 0);
+    af.flags = sql_row_int(row, 2, 0);
+    af.modifier = sql_row_int(row, 3, 0);
+    af.location = sql_row_int(row, 4, 0);
+    af.level = sql_row_int(row, 5, 0);
+    af.bitvector = sql_row_ulong(row, 6, 0);
+    af.bitvector2 = sql_row_ulong(row, 7, 0);
+    af.bitvector3 = sql_row_ulong(row, 8, 0);
+    af.bitvector4 = sql_row_ulong(row, 9, 0);
+    af.bitvector5 = sql_row_ulong(row, 10, 0);
+
+    affect_to_char(ch, &af);
+  }
+  mysql_free_result(result);
+
+  return true;
 }
 
 bool sql_load_player_items(P_char ch)
 {
-  // todo: implement
-  return false;
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  // first, load all items into a temp array indexed by db id
+  // then resolve container relationships
+
+  char query[1024];
+  snprintf(query, sizeof(query),
+    "SELECT id, vnum, equip_slot, container_id, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr "
+    "FROM player_items WHERE pid=%d ORDER BY id", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  // count rows
+  int num_rows = mysql_num_rows(result);
+  if (num_rows == 0)
+  {
+    mysql_free_result(result);
+    return true; // no items is valid
+  }
+
+  // allocate temp arrays
+  P_obj *items = (P_obj *)calloc(num_rows, sizeof(P_obj));
+  int *item_ids = (int *)calloc(num_rows, sizeof(int));
+  int *container_ids = (int *)calloc(num_rows, sizeof(int));
+  int *equip_slots = (int *)calloc(num_rows, sizeof(int));
+
+  int idx = 0;
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)) && idx < num_rows)
+  {
+    int col = 0;
+    int db_id = sql_row_int(row, col++, 0);
+    int vnum = sql_row_int(row, col++, 0);
+    int equip_slot = sql_row_int(row, col++, 0);
+    int container_id = sql_row_int(row, col++, 0);
+
+    // create object from prototype
+    P_obj obj = read_object(vnum, VIRTUAL);
+    if (!obj)
+    {
+      logit(LOG_DEBUG, "sql_load_player_items: failed to load vnum %d for %s", vnum, GET_NAME(ch));
+      idx++;
+      continue;
+    }
+
+    // override saved properties
+    obj->weight = sql_row_int(row, col++, obj->weight);
+    obj->cost = sql_row_int(row, col++, obj->cost);
+    obj->timer[0] = sql_row_long(row, col++, obj->timer[0]);
+    obj->extra_flags = sql_row_ulong(row, col++, obj->extra_flags);
+
+    obj->value[0] = sql_row_int(row, col++, obj->value[0]);
+    obj->value[1] = sql_row_int(row, col++, obj->value[1]);
+    obj->value[2] = sql_row_int(row, col++, obj->value[2]);
+    obj->value[3] = sql_row_int(row, col++, obj->value[3]);
+    obj->value[4] = sql_row_int(row, col++, obj->value[4]);
+    obj->value[5] = sql_row_int(row, col++, obj->value[5]);
+    obj->value[6] = sql_row_int(row, col++, obj->value[6]);
+    obj->value[7] = sql_row_int(row, col++, obj->value[7]);
+
+    // strung strings (if not NULL, replace prototype)
+    char *str_name = sql_row_str(row, col++);
+    char *str_short = sql_row_str(row, col++);
+    char *str_desc = sql_row_str(row, col++);
+    char *str_action = sql_row_str(row, col++);
+
+    if (str_name)
+    {
+      obj->name = str_name;
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (str_short)
+    {
+      obj->short_description = str_short;
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (str_desc)
+    {
+      obj->description = str_desc;
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (str_action)
+    {
+      obj->action_description = str_action;
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    items[idx] = obj;
+    item_ids[idx] = db_id;
+    container_ids[idx] = container_id;
+    equip_slots[idx] = equip_slot;
+    idx++;
+  }
+  mysql_free_result(result);
+
+  int loaded_count = idx;
+
+  // load item affects for each item
+  for (int i = 0; i < loaded_count; i++)
+  {
+    if (!items[i])
+      continue;
+
+    snprintf(query, sizeof(query),
+      "SELECT location, modifier FROM player_item_affects WHERE item_id=%d", item_ids[i]);
+    result = db_query("%s", query);
+    if (result)
+    {
+      int aff_idx = 0;
+      while ((row = mysql_fetch_row(result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        items[i]->affected[aff_idx].location = sql_row_int(row, 0, 0);
+        items[i]->affected[aff_idx].modifier = sql_row_int(row, 1, 0);
+        aff_idx++;
+      }
+      mysql_free_result(result);
+    }
+  }
+
+  // now place items: first pass - put items in containers
+  for (int i = 0; i < loaded_count; i++)
+  {
+    if (!items[i] || container_ids[i] == 0)
+      continue;
+
+    // find container
+    for (int j = 0; j < loaded_count; j++)
+    {
+      if (item_ids[j] == container_ids[i] && items[j])
+      {
+        obj_to_obj(items[i], items[j]);
+        break;
+      }
+    }
+  }
+
+  // second pass - put top-level items on character
+  for (int i = 0; i < loaded_count; i++)
+  {
+    if (!items[i] || container_ids[i] != 0)
+      continue;
+
+    if (equip_slots[i] > 0 && equip_slots[i] <= MAX_WEAR)
+    {
+      // equipment slot (1-indexed in db, 0-indexed in array)
+      int slot = equip_slots[i] - 1;
+      if (!ch->equipment[slot])
+        equip_char(ch, items[i], slot, 0);
+      else
+        obj_to_char(items[i], ch);
+    }
+    else
+    {
+      // inventory
+      obj_to_char(items[i], ch);
+    }
+  }
+
+  free(items);
+  free(item_ids);
+  free(container_ids);
+  free(equip_slots);
+
+  return true;
 }
 
 bool sql_load_player_witnesses(P_char ch)
 {
-  // todo: implement
-  return false;
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "SELECT crime, room_vnum, attacker_name, victim_name, witness_time "
+    "FROM player_witnesses WHERE pid=%d", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    wtns_rec *w = (wtns_rec *)malloc(sizeof(wtns_rec));
+    if (!w)
+      continue;
+
+    memset(w, 0, sizeof(wtns_rec));
+    w->crime = sql_row_int(row, 0, 0);
+    w->room = sql_row_int(row, 1, 0);
+    w->attacker = sql_row_str(row, 2);
+    w->victim = sql_row_str(row, 3);
+    w->time = sql_row_long(row, 4, 0);
+
+    // prepend to list
+    w->next = ch->specials.witnessed;
+    ch->specials.witnessed = w;
+  }
+  mysql_free_result(result);
+
+  return true;
+}
+
+P_char sql_load_player(const char *name)
+{
+  if (!name || !DB)
+    return NULL;
+
+  // get pid first
+  int pid = sql_get_player_pid(name);
+  if (pid <= 0)
+  {
+    logit(LOG_DEBUG, "sql_load_player: player %s not found in db", name);
+    return NULL;
+  }
+
+  // allocate character structure
+  P_char ch = (P_char)malloc(sizeof(struct char_data));
+  if (!ch)
+    return NULL;
+  memset(ch, 0, sizeof(struct char_data));
+
+  // allocate pc_only_data
+  ch->only.pc = (struct pc_only_data *)malloc(sizeof(struct pc_only_data));
+  if (!ch->only.pc)
+  {
+    free(ch);
+    return NULL;
+  }
+  memset(ch->only.pc, 0, sizeof(struct pc_only_data));
+
+  // IS_PC is defined as !IS_NPC, and IS_NPC checks ACT_ISNPC flag
+  // since we memset to 0, the flag is not set, so this is already a PC
+
+  // load all components
+  if (!sql_load_player_status(ch, pid))
+  {
+    logit(LOG_DEBUG, "sql_load_player: failed to load status for %s", name);
+    free(ch->only.pc);
+    free(ch);
+    return NULL;
+  }
+
+  if (!sql_load_player_skills(ch))
+  {
+    logit(LOG_DEBUG, "sql_load_player: failed to load skills for %s", name);
+    // continue anyway, skills aren't fatal
+  }
+
+  if (!sql_load_player_affects(ch))
+  {
+    logit(LOG_DEBUG, "sql_load_player: failed to load affects for %s", name);
+    // continue anyway
+  }
+
+  if (!sql_load_player_items(ch))
+  {
+    logit(LOG_DEBUG, "sql_load_player: failed to load items for %s", name);
+    // continue anyway
+  }
+
+  if (!sql_load_player_witnesses(ch))
+  {
+    logit(LOG_DEBUG, "sql_load_player: failed to load witnesses for %s", name);
+    // continue anyway
+  }
+
+  return ch;
 }
 
 // ============================================================================
