@@ -91,4 +91,55 @@ Assigning continents...
 -- Touching hall of fame
 Boot completed in: 192511 milliseconds
 Entering game loop.
-
+==2983259== Conditional jump or move depends on uninitialised value(s)
+==2983259==    at 0x5C2B98: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:146)
+==2983259==    by 0x5C3354: DamageStuff(char_data*, int) (condition.c:297)
+==2983259==    by 0x61CEFD: melee_damage(char_data*, char_data*, double, int, damage_messages*) (fight.c:5662)
+==2983259==    by 0x62AB26: hit(char_data*, char_data*, obj_data*) (fight.c:8157)
+==2983259==    by 0x63473C: pv_common(char_data*, char_data*, obj_data*) (fight.c:10642)
+==2983259==    by 0x6334B1: perform_violence() (fight.c:10369)
+==2983259==    by 0x5B8FB5: game_loop(int, int) (comm.c:959)
+==2983259==    by 0x5B72F5: run_the_game(int, int) (comm.c:452)
+==2983259==    by 0x5B6DF4: main (comm.c:303)
+==2983259==  Uninitialised value was created by a stack allocation
+==2983259==    at 0x5C2B63: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:140)
+==2983259== 
+==2983259== Conditional jump or move depends on uninitialised value(s)
+==2983259==    at 0x5C2B9E: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:146)
+==2983259==    by 0x5C3354: DamageStuff(char_data*, int) (condition.c:297)
+==2983259==    by 0x61CEFD: melee_damage(char_data*, char_data*, double, int, damage_messages*) (fight.c:5662)
+==2983259==    by 0x62AB26: hit(char_data*, char_data*, obj_data*) (fight.c:8157)
+==2983259==    by 0x63473C: pv_common(char_data*, char_data*, obj_data*) (fight.c:10642)
+==2983259==    by 0x6334B1: perform_violence() (fight.c:10369)
+==2983259==    by 0x5B8FB5: game_loop(int, int) (comm.c:959)
+==2983259==    by 0x5B72F5: run_the_game(int, int) (comm.c:452)
+==2983259==    by 0x5B6DF4: main (comm.c:303)
+==2983259==  Uninitialised value was created by a stack allocation
+==2983259==    at 0x5C2B63: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:140)
+==2983259== 
+==2983259== Conditional jump or move depends on uninitialised value(s)
+==2983259==    at 0x5C2BA4: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:146)
+==2983259==    by 0x5C3354: DamageStuff(char_data*, int) (condition.c:297)
+==2983259==    by 0x61CEFD: melee_damage(char_data*, char_data*, double, int, damage_messages*) (fight.c:5662)
+==2983259==    by 0x62AB26: hit(char_data*, char_data*, obj_data*) (fight.c:8157)
+==2983259==    by 0x63473C: pv_common(char_data*, char_data*, obj_data*) (fight.c:10642)
+==2983259==    by 0x6334B1: perform_violence() (fight.c:10369)
+==2983259==    by 0x5B8FB5: game_loop(int, int) (comm.c:959)
+==2983259==    by 0x5B72F5: run_the_game(int, int) (comm.c:452)
+==2983259==    by 0x5B6DF4: main (comm.c:303)
+==2983259==  Uninitialised value was created by a stack allocation
+==2983259==    at 0x5C2B63: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:140)
+==2983259== 
+==2983259== Conditional jump or move depends on uninitialised value(s)
+==2983259==    at 0x5C2C50: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:165)
+==2983259==    by 0x5C3354: DamageStuff(char_data*, int) (condition.c:297)
+==2983259==    by 0x61CEFD: melee_damage(char_data*, char_data*, double, int, damage_messages*) (fight.c:5662)
+==2983259==    by 0x62AB26: hit(char_data*, char_data*, obj_data*) (fight.c:8157)
+==2983259==    by 0x63473C: pv_common(char_data*, char_data*, obj_data*) (fight.c:10642)
+==2983259==    by 0x6334B1: perform_violence() (fight.c:10369)
+==2983259==    by 0x5B8FB5: game_loop(int, int) (comm.c:959)
+==2983259==    by 0x5B72F5: run_the_game(int, int) (comm.c:452)
+==2983259==    by 0x5B6DF4: main (comm.c:303)
+==2983259==  Uninitialised value was created by a stack allocation
+==2983259==    at 0x5C2B63: DamageOneItem(char_data*, int, obj_data*, bool) (condition.c:140)
+==2983259== 

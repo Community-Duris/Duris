@@ -20,6 +20,7 @@
 #include "structs.h"
 #include "spells.h"
 #include "utils.h"
+#include "sql_player.h"
 #include <math.h>
 
 // External Stuff

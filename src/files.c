@@ -24,6 +24,7 @@
 #include "random.zone.h"
 #include "necromancy.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "trophy.h"
 #include "vnum.obj.h"
 #include "assocs.h"
@@ -2005,6 +2006,16 @@ int writeCharacter(P_char ch, int type, int room)
   if( ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
       (world[ch->in_room].funct))
     (*world[ch->in_room].funct) (ch->in_room, ch, (-81), NULL);
+
+  // Also save to database (dual-write for migration period)
+  // Skip locker characters - they use separate storage
+  if (!strstr(GET_NAME(ch), ".locker"))
+  {
+    if (!sql_save_player(ch, type, room))
+    {
+      logit(LOG_FILE, "sql_save_player failed for %s (pfile save succeeded)", GET_NAME(ch));
+    }
+  }
 
   return 1;
 }
