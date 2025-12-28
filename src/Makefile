@@ -209,6 +209,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs.zion.o \
 				 spells.o \
 				 sql.o	\
+				 sql_player.o \
 				 ssl.o \
 				 statistics.o \
 				 storage_lockers.o \
