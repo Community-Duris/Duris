@@ -2091,37 +2091,27 @@ void verify_delete_account(P_desc d, char *arg)
 
 int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
 {
-  FILE    *f = NULL;
-  char     name[4096], filename[4096], buf[4096], *ptr = NULL;
-  int      serial = 0;
+  if (!acct || !acct->acct_name)
+    return -1;
 
+#ifndef __NO_MYSQL__
+  char name_backup[256];
+  strncpy(name_backup, acct->acct_name, sizeof(name_backup) - 1);
+  name_backup[sizeof(name_backup) - 1] = '\0';
 
-  snprintf(name, 4096, "%s", acct->acct_name);
-  ptr = name;
-
-  for (; *ptr; ptr++)
-    *ptr = LOWER(*ptr);
-
-  snprintf(buf, 4096, "Accounts/%c/%s", (*name), name);
-  logit(LOG_FILE, "Loading Account %s in %s.", name, buf);
-
-  f = fopen(buf, "r");
-
-  if (!f)
+  struct acct_entry *loaded = sql_load_account(name_backup);
+  if (!loaded)
   {
-    logit(LOG_FILE, "Couldn't open Account file: %s", buf);
+    logit(LOG_FILE, "sql_load_account failed for %s", name_backup);
     return -1;
   }
 
-  fscanf(f, "%d\n", &serial);
-
-  /* Free old pointers before overwriting to prevent memory leaks */
+  // free old data
   acct->acct_name = check_and_clear(acct->acct_name);
   acct->acct_email = check_and_clear(acct->acct_email);
   acct->acct_password = check_and_clear(acct->acct_password);
   acct->acct_confirmation = check_and_clear(acct->acct_confirmation);
 
-  /* Free old IP and character lists before reading new ones */
   if (acct->acct_unique_ips)
   {
     struct acct_ip *curr_ip, *next_ip;
@@ -2146,102 +2136,49 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     acct->acct_character_list = NULL;
   }
 
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;  // Remove newline
-  acct->acct_name = str_dup(buf);
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;
-  acct->acct_email = str_dup(buf);
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;
-  acct->acct_password = str_dup(buf);
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;
-  acct->acct_confirmation = str_dup(buf);
+  // copy loaded data (transfer ownership of pointers)
+  acct->acct_name = loaded->acct_name;
+  acct->acct_email = loaded->acct_email;
+  acct->acct_password = loaded->acct_password;
+  acct->acct_confirmation = loaded->acct_confirmation;
+  acct->num_ips = loaded->num_ips;
+  acct->num_chars = loaded->num_chars;
+  acct->acct_unique_ips = loaded->acct_unique_ips;
+  acct->acct_character_list = loaded->acct_character_list;
+  acct->acct_blocked = loaded->acct_blocked;
+  acct->acct_confirmed = loaded->acct_confirmed;
+  acct->acct_confirmation_sent = loaded->acct_confirmation_sent;
+  acct->acct_last = loaded->acct_last;
+  acct->acct_good = loaded->acct_good;
+  acct->acct_evil = loaded->acct_evil;
+  acct->acct_flags1 = loaded->acct_flags1;
+  acct->acct_flags2 = loaded->acct_flags2;
+  acct->acct_flags3 = loaded->acct_flags3;
+  acct->acct_flags4 = loaded->acct_flags4;
 
-  read_unique_ip(acct, f);
-  read_character_list(acct, f);
-
-  fscanf(f, "%hhd\n", &acct->acct_blocked);
-  fscanf(f, "%hhd\n", &acct->acct_confirmed);
-  fscanf(f, "%hhd\n", &acct->acct_confirmation_sent);
-
-  fscanf(f, "%li\n", &acct->acct_last);
-  fscanf(f, "%li\n", &acct->acct_good);
-  fscanf(f, "%li\n", &acct->acct_evil);
-  fscanf(f, "%li\n", &acct->acct_flags1);
-  fscanf(f, "%li\n", &acct->acct_flags2);
-  fscanf(f, "%li\n", &acct->acct_flags3);
-  fscanf(f, "%li\n", &acct->acct_flags4);
-
-  fclose(f);
+  // free the container (but not the contents we transferred)
+  free(loaded);
   return 1;
+#else
+  return -1;
+#endif
 }
 
 int write_account(P_acct acct)  // returns -1 if error, 1 if no errors
 {
-  FILE    *f = NULL;
-  char     buf[4096], name[4096], *ptr = NULL;
-  struct stat statbuf;
-  P_desc   d = NULL;
+  P_desc d = NULL;
 
   if (!acct)
     return -1;
 
-  snprintf(name, 4096, "%s", acct->acct_name);
-
-  ptr = name;
-
-  for (; *ptr; ptr++)
-    *ptr = LOWER(*ptr);
-
-  snprintf(buf, 4096, "Accounts/%c/%s", (*name), name);
-  logit(LOG_FILE, "Saving Account %s in %s.", name, buf);
-  snprintf(name, 4096, "%s.bak", buf);
-
-
-  if (stat(buf, &statbuf) == 0)
+#ifndef __NO_MYSQL__
+  if (!sql_save_account(acct))
   {
-    if (rename(buf, name) == -1)
-    {
-      logit(LOG_FILE, "Problem with player save files directory!\n");
-      wizlog(AVATAR, "&+R&-LPANIC!&N  Error backing up account for %s!",
-             acct->acct_name);
-      return -1;
-    }
-  }
-
-  f = fopen(buf, "w");
-  if (!f)
-  {
-    logit(LOG_FILE, "Fopen failed while creating account file: %s\n", buf);
+    logit(LOG_FILE, "sql_save_account failed for %s", acct->acct_name);
     return -1;
   }
+#endif
 
-  fprintf(f, "%d\n", ACCT_SERIAL);
-  fprintf(f, "%s\n", acct->acct_name);
-  fprintf(f, "%s\n", acct->acct_email);
-  fprintf(f, "%s\n", acct->acct_password);
-  fprintf(f, "%s\n", acct->acct_confirmation);
-
-  write_unique_ip(acct, f);
-  write_character_list(acct, f);
-
-  fprintf(f, "%d\n", acct->acct_blocked);
-  fprintf(f, "%d\n", acct->acct_confirmed);
-  fprintf(f, "%d\n", acct->acct_confirmation_sent);
-
-  fprintf(f, "%li\n", acct->acct_last);
-  fprintf(f, "%li\n", acct->acct_good);
-  fprintf(f, "%li\n", acct->acct_evil);
-  fprintf(f, "%li\n", acct->acct_flags1);
-  fprintf(f, "%li\n", acct->acct_flags2);
-  fprintf(f, "%li\n", acct->acct_flags3);
-  fprintf(f, "%li\n", acct->acct_flags4);
-
-
-  fprintf(f, "###\n");
-  fclose(f);
   for (d = descriptor_list; d; d = d->next)
   {
     if (d->account && acct->acct_name && d->account->acct_name &&
@@ -2255,6 +2192,9 @@ void write_unique_ip(P_acct acct, FILE * f)
 {
   int      count = 0;
   struct acct_ip *c = NULL;
+
+  if (acct->acct_name)
+    sql_save_account_ips(acct->acct_name, acct->acct_unique_ips);
 
   c = acct->acct_unique_ips;
   if (!c)

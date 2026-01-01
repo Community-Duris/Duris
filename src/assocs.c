@@ -16,6 +16,7 @@
 #include "nexus_stones.h"
 #include "prototypes.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "utility.h"
 #include "utils.h"
 
@@ -441,65 +442,17 @@ Guild::Guild( )
 
 void Guild::initialize()
 {
-  int i, miss_count;
-
-  for( i = 1, miss_count = 0; miss_count < 20; i++ )
-  {
-    if( load_guild(i) )
-    {
-      miss_count = 0;
-    }
-    else
-    {
-      miss_count++;
-    }
-  }
+#ifndef __NO_MYSQL__
+  sql_load_all_guilds();
+#endif
 }
 
 void Guild::save( )
 {
-  FILE *file;
-  char  filename[MAX_STR_NORMAL], write_buf[MAX_STRING_LENGTH], buf[MAX_STR_NORMAL];
-  P_member pMembers;
-
-  snprintf(filename, MAX_STR_NORMAL, "%sasc.%u", ASC_DIR, id_number );
-  file = fopen( filename, "w" );
-  if( !file )
-  {
-    debug( "Guild::save: Could not open file '%s' for writing! :(", filename );
-    return;
-  }
-
-  // Print the name first.
-  snprintf(write_buf, MAX_STRING_LENGTH, "%s\n", name );
-  // Then the guild racewar and frag info.
-  snprintf(buf, MAX_STR_NORMAL, "%u %lu %lu %s\n", racewar, frags.frags, frags.top_frags, frags.topfragger );
-
-  strcat( write_buf, buf );
-  // Then the default guild titles
-  for( int i = 0; i < ASC_NUM_RANKS; i++ )
-  {
-    // I'm not sure if it's faster to strcat to write_buf 2x, or to sprintf to buf then strcat buf to write_buf.
-    // This seems faster, since we're only writing to one place instead of two, so no paging.
-    strcat( write_buf, titles[i] );
-    strcat( write_buf, "\n" );
-  }
-  // Then the guild bits, prestige and construction.
-  snprintf(buf, MAX_STR_NORMAL, "%u %lu %lu\n", bits, prestige, construction );
-  strcat( write_buf, buf );
-  // Then guild funds.
-  snprintf(buf, MAX_STR_NORMAL, "%u %u %u %u\n", platinum, gold, silver, copper );
-  strcat( write_buf, buf );
-
-  for( pMembers = members; pMembers != NULL; pMembers = pMembers->next )
-  {
-    snprintf(buf, MAX_STR_NORMAL, "%s %u %u\n", pMembers->name, pMembers->bits, pMembers->debt );
-    strcat( write_buf, buf );
-  }
-
-
-  fwrite( write_buf, strlen(write_buf), 1, file );
-  fclose( file );
+#ifndef __NO_MYSQL__
+  if (!sql_save_guild(this))
+    debug("Guild::save: sql_save_guild failed for guild %u", id_number);
+#endif
 }
 
 bool Guild::load_guild( int guild_num )

@@ -19,15 +19,23 @@
 #include "db.h"
 #include "account.h"
 #include "assocs.h"
+#include "necromancy.h"
+#include "siege.h"
+#include "ships/ships.h"
 
-// external index tables
+// external tables
 extern P_index obj_index;
+extern struct index_data *mob_index;
+extern int top_of_world;
+extern struct room_data *world;
+extern struct mm_ds *dead_mob_pool;
+extern struct mm_ds *dead_pconly_pool;
+extern P_Guild guild_list;
+void ensure_pconly_pool(void);
 
 #ifdef __NO_MYSQL__
 
-// ============================================================================
 // stubs when mysql is disabled
-// ============================================================================
 
 bool sql_begin_transaction(void) { return false; }
 bool sql_commit(void) { return false; }
@@ -40,6 +48,12 @@ bool sql_save_player_skills(P_char ch) { return false; }
 bool sql_save_player_affects(P_char ch) { return false; }
 bool sql_save_player_items(P_char ch) { return false; }
 bool sql_save_player_witnesses(P_char ch) { return false; }
+bool sql_save_player_shapechanges(P_char ch) { return false; }
+bool sql_save_player_recipes(P_char ch) { return false; }
+bool sql_add_player_recipe(int pid, int recipe_vnum) { return false; }
+bool sql_delete_player_recipes(int pid) { return false; }
+bool sql_has_player_recipe(int pid, int recipe_vnum) { return false; }
+int *sql_get_player_recipes(int pid, int *count) { if (count) *count = 0; return NULL; }
 
 P_char sql_load_player(const char *name) { return NULL; }
 bool sql_player_exists(const char *name) { return false; }
@@ -49,6 +63,7 @@ bool sql_load_player_skills(P_char ch) { return false; }
 bool sql_load_player_affects(P_char ch) { return false; }
 bool sql_load_player_items(P_char ch) { return false; }
 bool sql_load_player_witnesses(P_char ch) { return false; }
+bool sql_load_player_shapechanges(P_char ch) { return false; }
 
 bool sql_delete_player(int pid) { return false; }
 bool sql_delete_player_by_name(const char *name) { return false; }
@@ -60,8 +75,11 @@ bool sql_link_player_to_account(const char *account_name, int pid) { return fals
 
 bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id) { return false; }
 P_char sql_load_locker(int owner_pid, int owner_assoc_id) { return NULL; }
+P_char sql_load_locker_by_name(const char *locker_name) { return NULL; }
 bool sql_locker_exists(int owner_pid, int owner_assoc_id) { return false; }
+bool sql_locker_exists_by_name(const char *locker_name) { return false; }
 bool sql_delete_locker(int owner_pid, int owner_assoc_id) { return false; }
+bool sql_delete_locker_by_name(const char *locker_name) { return false; }
 
 bool sql_migrate_player(const char *name) { return false; }
 bool sql_verify_player(const char *name) { return false; }
@@ -70,20 +88,51 @@ int sql_migrate_all_players(void) { return 0; }
 char *sql_escape_string(const char *str) { return NULL; }
 void sql_player_error(const char *context, const char *query) { }
 
+bool sql_save_corpse(P_obj corpse) { return false; }
+bool sql_delete_corpse(const char *player_name, int save_id) { return false; }
+bool sql_load_all_corpses(void) { return false; }
+
+bool sql_save_shopkeeper(P_char ch, int shop_nr) { return false; }
+bool sql_delete_shopkeeper(int shop_nr) { return false; }
+P_char sql_restore_shopkeeper(int shop_nr) { return NULL; }
+void sql_restore_shopkeepers(void) { }
+
+bool sql_save_saved_item(P_obj item, const char *item_key) { return false; }
+bool sql_delete_saved_item(const char *item_key) { return false; }
+void sql_restore_saved_items(void) { }
+
+bool sql_save_siege_item(P_obj obj, int room_vnum) { return false; }
+bool sql_save_siege_list(void) { return false; }
+bool sql_delete_siege_items(int room_vnum) { return false; }
+void sql_load_siege_list(void) { }
+
+bool sql_save_towns(void) { return false; }
+bool sql_load_towns(void) { return false; }
+bool sql_save_account_ips(const char *account_name, struct acct_ip *ips) { return false; }
+struct acct_ip *sql_load_account_ips(const char *account_name) { return NULL; }
+bool sql_delete_account_ips(const char *account_name) { return false; }
+bool sql_save_kingdom_land(void) { return false; }
+
+bool sql_save_ship(P_ship ship) { return false; }
+P_ship sql_load_ship(const char *owner_name) { return NULL; }
+bool sql_load_all_ships(void) { return false; }
+bool sql_delete_ship(const char *owner_name) { return false; }
+
+bool sql_save_guild(Guild *guild) { return false; }
+Guild *sql_load_guild(unsigned int guild_id) { return NULL; }
+bool sql_load_all_guilds(void) { return false; }
+bool sql_delete_guild(unsigned int guild_id) { return false; }
+
 #else
 
-// ============================================================================
 // globals
-// ============================================================================
 
 extern MYSQL *DB;
 
 // track transaction state
 static bool in_transaction = false;
 
-// ============================================================================
 // transaction helpers
-// ============================================================================
 
 bool sql_begin_transaction(void)
 {
@@ -164,9 +213,7 @@ bool sql_in_transaction(void)
   return in_transaction;
 }
 
-// ============================================================================
 // utility functions
-// ============================================================================
 
 // escape string for sql, caller must free
 char *sql_escape_string(const char *str)
@@ -224,9 +271,7 @@ static bool sql_run_query(const char *query)
   return true;
 }
 
-// ============================================================================
 // player existence check
-// ============================================================================
 
 bool sql_player_exists(const char *name)
 {
@@ -282,9 +327,7 @@ int sql_get_player_pid(const char *name)
   return pid;
 }
 
-// ============================================================================
 // player delete
-// ============================================================================
 
 bool sql_delete_player(int pid)
 {
@@ -306,9 +349,7 @@ bool sql_delete_player_by_name(const char *name)
   return sql_delete_player(pid);
 }
 
-// ============================================================================
 // master save function
-// ============================================================================
 
 bool sql_save_player(P_char ch, int type, int room)
 {
@@ -378,9 +419,7 @@ bool sql_save_player(P_char ch, int type, int room)
   return true;
 }
 
-// ============================================================================
 // status save (main player data)
-// ============================================================================
 
 bool sql_save_player_status(P_char ch, int type, int room)
 {
@@ -665,9 +704,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
   return true;
 }
 
-// ============================================================================
 // skills save
-// ============================================================================
 
 bool sql_save_player_skills(P_char ch)
 {
@@ -699,9 +736,7 @@ bool sql_save_player_skills(P_char ch)
   return true;
 }
 
-// ============================================================================
 // affects save
-// ============================================================================
 
 bool sql_save_player_affects(P_char ch)
 {
@@ -738,9 +773,7 @@ bool sql_save_player_affects(P_char ch)
   return true;
 }
 
-// ============================================================================
 // items save
-// ============================================================================
 
 // save item affects (the obj->affected[] array)
 static bool sql_save_item_affects(int item_id, P_obj obj)
@@ -929,9 +962,7 @@ bool sql_save_player_items(P_char ch)
   return true;
 }
 
-// ============================================================================
 // witnesses save
-// ============================================================================
 
 bool sql_save_player_witnesses(P_char ch)
 {
@@ -965,9 +996,195 @@ bool sql_save_player_witnesses(P_char ch)
   return true;
 }
 
-// ============================================================================
+// shapechange save/load
+
+bool sql_save_player_shapechanges(P_char ch)
+{
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  // delete existing shapechanges
+  char del_query[128];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM player_shapechanges WHERE pid=%d", pid);
+  sql_run_query(del_query);
+
+  // insert current shapechanges
+  if (!has_innate(ch, INNATE_SHAPECHANGE) || !ch->only.pc->knownShapes)
+    return true;
+
+  for (struct char_shapechange_data *shape = ch->only.pc->knownShapes; shape; shape = shape->next)
+  {
+    char ins_query[512];
+    snprintf(ins_query, sizeof(ins_query),
+             "INSERT INTO player_shapechanges (pid, mob_vnum, times_researched, last_researched, last_shapechanged) "
+             "VALUES (%d, %d, %d, %ld, %ld)",
+             pid, shape->mobVnum, shape->timesResearched,
+             (long)shape->lastResearched, (long)shape->lastShapechanged);
+    sql_run_query(ins_query);
+  }
+
+  return true;
+}
+
+bool sql_load_player_shapechanges(P_char ch)
+{
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  // only load if character has shapechange innate
+  if (!has_innate(ch, INNATE_SHAPECHANGE))
+    return true;
+
+  // clear existing shapes (defined in files.c)
+  extern void delete_knownShapes(P_char ch);
+  if (ch->only.pc->knownShapes)
+    delete_knownShapes(ch);
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT mob_vnum, times_researched, last_researched, last_shapechanged "
+           "FROM player_shapechanges WHERE pid=%d ORDER BY id", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  struct char_shapechange_data **ppShape = &(ch->only.pc->knownShapes);
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int vnum = atoi(row[0]);
+
+    // ensure vnum exists
+    if (!real_mobile(vnum))
+      continue;
+
+    struct char_shapechange_data *shape;
+    CREATE(shape, char_shapechange_data, 1, MEM_TAG_SHPCHNG);
+    shape->mobVnum = vnum;
+    shape->timesResearched = atoi(row[1]);
+    shape->lastResearched = atol(row[2]);
+    shape->lastShapechanged = atol(row[3]);
+    shape->next = NULL;
+
+    *ppShape = shape;
+    ppShape = &(shape->next);
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+// recipe save/load
+
+bool sql_save_player_recipes(P_char ch)
+{
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  // recipes are saved individually when learned, not in bulk
+  // this function is a no-op for now
+  return true;
+}
+
+bool sql_add_player_recipe(int pid, int recipe_vnum)
+{
+  if (!DB || pid <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "INSERT IGNORE INTO player_recipes (pid, recipe_vnum) VALUES (%d, %d)",
+           pid, recipe_vnum);
+  sql_run_query(query);
+  return true;
+}
+
+bool sql_delete_player_recipes(int pid)
+{
+  if (!DB || pid <= 0)
+    return false;
+
+  char query[128];
+  snprintf(query, sizeof(query), "DELETE FROM player_recipes WHERE pid=%d", pid);
+  sql_run_query(query);
+  return true;
+}
+
+bool sql_has_player_recipe(int pid, int recipe_vnum)
+{
+  if (!DB || pid <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT 1 FROM player_recipes WHERE pid=%d AND recipe_vnum=%d LIMIT 1",
+           pid, recipe_vnum);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  bool has = (mysql_fetch_row(result) != NULL);
+  mysql_free_result(result);
+  return has;
+}
+
+// returns array of recipe vnums, sets count. caller must free array
+int *sql_get_player_recipes(int pid, int *count)
+{
+  *count = 0;
+  if (!DB || pid <= 0)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT recipe_vnum FROM player_recipes WHERE pid=%d ORDER BY id", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  int num_rows = mysql_num_rows(result);
+  if (num_rows == 0)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  int *recipes = (int *)malloc(num_rows * sizeof(int));
+  if (!recipes)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  MYSQL_ROW row;
+  int i = 0;
+  while ((row = mysql_fetch_row(result)))
+  {
+    recipes[i++] = atoi(row[0]);
+  }
+
+  mysql_free_result(result);
+  *count = i;
+  return recipes;
+}
+
 // player load functions
-// ============================================================================
 
 // helper to safely get int from row, returns default if null
 static int sql_row_int(MYSQL_ROW row, int idx, int def)
@@ -1644,21 +1861,215 @@ P_char sql_load_player(const char *name)
   return ch;
 }
 
-// ============================================================================
-// account functions - placeholder stubs
-// ============================================================================
+static bool sql_save_account_characters(struct acct_entry *acc);
+static struct acct_chars *sql_load_account_characters(const char *account_name);
 
 bool sql_save_account(struct acct_entry *acc)
 {
-  // todo: implement
-  logit(LOG_DEBUG, "sql_save_account: not yet implemented");
-  return false;
+  if (!DB || !acc || !acc->acct_name)
+    return false;
+
+  char *esc_name = sql_escape_string(acc->acct_name);
+  char *esc_email = sql_escape_string(acc->acct_email ? acc->acct_email : "");
+  char *esc_pass = sql_escape_string(acc->acct_password ? acc->acct_password : "");
+  char *esc_conf = sql_escape_string(acc->acct_confirmation ? acc->acct_confirmation : "");
+
+  if (!esc_name || !esc_email || !esc_pass || !esc_conf)
+  {
+    if (esc_name) free(esc_name);
+    if (esc_email) free(esc_email);
+    if (esc_pass) free(esc_pass);
+    if (esc_conf) free(esc_conf);
+    return false;
+  }
+
+  char query[2048];
+  snprintf(query, sizeof(query),
+    "insert into accounts (account_name, email, password, confirmation_code, "
+    "confirmed, confirmation_sent, blocked, last_login, last_good_char, last_evil_char, "
+    "flags1, flags2, flags3, flags4) values ('%s', '%s', '%s', '%s', %d, %d, %d, %ld, %ld, %ld, %lu, %lu, %lu, %lu) "
+    "on duplicate key update email='%s', password='%s', confirmation_code='%s', "
+    "confirmed=%d, confirmation_sent=%d, blocked=%d, last_login=%ld, last_good_char=%ld, last_evil_char=%ld, "
+    "flags1=%lu, flags2=%lu, flags3=%lu, flags4=%lu",
+    esc_name, esc_email, esc_pass, esc_conf,
+    acc->acct_confirmed, acc->acct_confirmation_sent, acc->acct_blocked,
+    acc->acct_last, acc->acct_good, acc->acct_evil,
+    acc->acct_flags1, acc->acct_flags2, acc->acct_flags3, acc->acct_flags4,
+    esc_email, esc_pass, esc_conf,
+    acc->acct_confirmed, acc->acct_confirmation_sent, acc->acct_blocked,
+    acc->acct_last, acc->acct_good, acc->acct_evil,
+    acc->acct_flags1, acc->acct_flags2, acc->acct_flags3, acc->acct_flags4);
+
+  free(esc_name);
+  free(esc_email);
+  free(esc_pass);
+  free(esc_conf);
+
+  if (!sql_run_query(query))
+    return false;
+
+  // save ips
+  sql_save_account_ips(acc->acct_name, acc->acct_unique_ips);
+
+  // save characters
+  sql_save_account_characters(acc);
+
+  return true;
+}
+
+static bool sql_save_account_characters(struct acct_entry *acc)
+{
+  if (!DB || !acc || !acc->acct_name)
+    return false;
+
+  char *esc_name = sql_escape_string(acc->acct_name);
+  if (!esc_name)
+    return false;
+
+  for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next)
+  {
+    if (!ch->charname)
+      continue;
+
+    char *esc_char = sql_escape_string(ch->charname);
+    if (!esc_char)
+      continue;
+
+    int pid = sql_get_player_pid(ch->charname);
+
+    char query[512];
+    snprintf(query, sizeof(query),
+      "insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
+      "values ('%s', '%s', %d, %lu, %ld, %d, %d) "
+      "on duplicate key update login_count=%lu, last_login=%ld, blocked=%d, racewar=%d",
+      esc_name, esc_char, pid > 0 ? pid : 0, ch->count, ch->last, ch->blocked, ch->racewar,
+      ch->count, ch->last, ch->blocked, ch->racewar);
+
+    sql_run_query(query);
+    free(esc_char);
+  }
+
+  free(esc_name);
+  return true;
 }
 
 struct acct_entry *sql_load_account(const char *name)
 {
-  // todo: implement
-  return NULL;
+  if (!DB || !name)
+    return NULL;
+
+  char *esc_name = sql_escape_string(name);
+  if (!esc_name)
+    return NULL;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "select account_name, email, password, confirmation_code, confirmed, confirmation_sent, "
+    "blocked, last_login, last_good_char, last_evil_char, flags1, flags2, flags3, flags4 "
+    "from accounts where account_name='%s'", esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+  {
+    free(esc_name);
+    return NULL;
+  }
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    free(esc_name);
+    return NULL;
+  }
+
+  struct acct_entry *acc = (struct acct_entry *)malloc(sizeof(struct acct_entry));
+  if (!acc)
+  {
+    mysql_free_result(result);
+    free(esc_name);
+    return NULL;
+  }
+  memset(acc, 0, sizeof(struct acct_entry));
+
+  acc->acct_name = str_dup(row[0] ? row[0] : "");
+  acc->acct_email = str_dup(row[1] ? row[1] : "");
+  acc->acct_password = str_dup(row[2] ? row[2] : "");
+  acc->acct_confirmation = str_dup(row[3] ? row[3] : "");
+  acc->acct_confirmed = row[4] ? atoi(row[4]) : 0;
+  acc->acct_confirmation_sent = row[5] ? atoi(row[5]) : 0;
+  acc->acct_blocked = row[6] ? atoi(row[6]) : 0;
+  acc->acct_last = row[7] ? atol(row[7]) : 0;
+  acc->acct_good = row[8] ? atol(row[8]) : 0;
+  acc->acct_evil = row[9] ? atol(row[9]) : 0;
+  acc->acct_flags1 = row[10] ? strtoul(row[10], NULL, 10) : 0;
+  acc->acct_flags2 = row[11] ? strtoul(row[11], NULL, 10) : 0;
+  acc->acct_flags3 = row[12] ? strtoul(row[12], NULL, 10) : 0;
+  acc->acct_flags4 = row[13] ? strtoul(row[13], NULL, 10) : 0;
+
+  mysql_free_result(result);
+
+  // load ips
+  acc->acct_unique_ips = sql_load_account_ips(name);
+  acc->num_ips = 0;
+  for (struct acct_ip *ip = acc->acct_unique_ips; ip; ip = ip->next)
+    acc->num_ips++;
+
+  // load characters
+  acc->acct_character_list = sql_load_account_characters(name);
+  acc->num_chars = 0;
+  for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next)
+    acc->num_chars++;
+
+  free(esc_name);
+  return acc;
+}
+
+static struct acct_chars *sql_load_account_characters(const char *account_name)
+{
+  if (!DB || !account_name)
+    return NULL;
+
+  char *esc_name = sql_escape_string(account_name);
+  if (!esc_name)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "select char_name, login_count, last_login, blocked, racewar "
+    "from account_characters where account_name='%s' and deleted_at is null", esc_name);
+  free(esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  struct acct_chars *head = NULL;
+  struct acct_chars *tail = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    struct acct_chars *ch = (struct acct_chars *)malloc(sizeof(struct acct_chars));
+    if (!ch)
+      continue;
+
+    ch->charname = str_dup(row[0] ? row[0] : "");
+    ch->count = row[1] ? strtoul(row[1], NULL, 10) : 0;
+    ch->last = row[2] ? atol(row[2]) : 0;
+    ch->blocked = row[3] ? atoi(row[3]) : 0;
+    ch->racewar = row[4] ? atoi(row[4]) : 0;
+    ch->next = NULL;
+
+    if (!head)
+      head = ch;
+    else
+      tail->next = ch;
+    tail = ch;
+  }
+
+  mysql_free_result(result);
+  return head;
 }
 
 bool sql_account_exists(const char *name)
@@ -1693,38 +2104,469 @@ bool sql_link_player_to_account(const char *account_name, int pid)
   return false;
 }
 
-// ============================================================================
-// locker functions - placeholder stubs
-// ============================================================================
+// locker functions
+
+static bool sql_save_locker_item_affects(int item_id, P_obj obj)
+{
+  if (!obj || !DB || item_id <= 0)
+    return false;
+
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+    {
+      char query[256];
+      snprintf(query, sizeof(query),
+               "INSERT INTO locker_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
+               item_id, obj->affected[i].location, obj->affected[i].modifier);
+      if (!sql_run_query(query))
+        return false;
+    }
+  }
+  return true;
+}
+
+static int sql_save_locker_item(int locker_id, P_obj obj, int container_id)
+{
+  if (!obj || !DB || locker_id <= 0)
+    return 0;
+
+  int vnum = obj_index[obj->R_num].virtual_number;
+
+  char *esc_name = NULL;
+  char *esc_short = NULL;
+  char *esc_desc = NULL;
+  char *esc_action = NULL;
+
+  if (obj->str_mask & STRUNG_KEYS)
+    esc_name = sql_escape_string(obj->name ? obj->name : "");
+  if (obj->str_mask & STRUNG_DESC2)
+    esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+  if (obj->str_mask & STRUNG_DESC1)
+    esc_desc = sql_escape_string(obj->description ? obj->description : "");
+  if (obj->str_mask & STRUNG_DESC3)
+    esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+  char container_str[32];
+  if (container_id > 0)
+    snprintf(container_str, sizeof(container_str), "%d", container_id);
+  else
+    strcpy(container_str, "NULL");
+
+  char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
+  if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+  else strcpy(name_str, "NULL");
+  if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+  else strcpy(short_str, "NULL");
+  if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+  else strcpy(desc_str, "NULL");
+  if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+  else strcpy(action_str, "NULL");
+
+  char query[8192];
+  snprintf(query, sizeof(query),
+    "INSERT INTO locker_items ("
+    "locker_id, vnum, container_id, quantity, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr"
+    ") VALUES ("
+    "%d, %d, %s, 1, "
+    "%d, %d, %ld, %lu, "
+    "%d, %d, %d, %d, %d, %d, %d, %d, "
+    "%s, %s, %s, %s"
+    ")",
+    locker_id, vnum, container_str,
+    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
+    obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+    obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+    name_str, short_str, desc_str, action_str
+  );
+
+  if (esc_name) free(esc_name);
+  if (esc_short) free(esc_short);
+  if (esc_desc) free(esc_desc);
+  if (esc_action) free(esc_action);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  int item_id = (int)mysql_insert_id(DB);
+
+  if (!sql_save_locker_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->contains)
+  {
+    for (P_obj content = obj->contains; content; content = content->next_content)
+      sql_save_locker_item(locker_id, content, item_id);
+  }
+
+  return item_id;
+}
 
 bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 {
-  // todo: implement
-  logit(LOG_DEBUG, "sql_save_locker: not yet implemented");
-  return false;
+  if (!locker_ch || !DB)
+    return false;
+
+  const char *locker_name = GET_NAME(locker_ch);
+  if (!locker_name)
+    return false;
+
+  char *esc_name = sql_escape_string(locker_name);
+  if (!esc_name)
+    return false;
+
+  // delete existing locker
+  char del_query[256];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM lockers WHERE locker_name='%s'", esc_name);
+  sql_run_query(del_query);
+
+  // insert locker record
+  char owner_pid_str[32], owner_assoc_str[32];
+  if (owner_pid > 0)
+    snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
+  else
+    strcpy(owner_pid_str, "NULL");
+  if (owner_assoc_id > 0)
+    snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
+  else
+    strcpy(owner_assoc_str, "NULL");
+
+  char ins_query[512];
+  snprintf(ins_query, sizeof(ins_query),
+           "INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
+           "VALUES ('%s', %s, %s, %d, %d)",
+           esc_name, owner_pid_str, owner_assoc_str, GET_RACEWAR(locker_ch), GET_RACE(locker_ch));
+  free(esc_name);
+
+  if (!sql_run_query(ins_query))
+    return false;
+
+  int locker_id = (int)mysql_insert_id(DB);
+
+  // save all items the locker char is carrying
+  for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
+    sql_save_locker_item(locker_id, obj, 0);
+
+  return true;
+}
+
+static P_obj sql_load_locker_items(int locker_id, int container_id)
+{
+  if (!DB || locker_id <= 0)
+    return NULL;
+
+  char query[512];
+  if (container_id > 0)
+    snprintf(query, sizeof(query),
+             "SELECT id, vnum, weight, cost, timer, extra_flags, "
+             "value0, value1, value2, value3, value4, value5, value6, value7, "
+             "name, short_descr, description, action_descr "
+             "FROM locker_items WHERE locker_id=%d AND container_id=%d",
+             locker_id, container_id);
+  else
+    snprintf(query, sizeof(query),
+             "SELECT id, vnum, weight, cost, timer, extra_flags, "
+             "value0, value1, value2, value3, value4, value5, value6, value7, "
+             "name, short_descr, description, action_descr "
+             "FROM locker_items WHERE locker_id=%d AND container_id IS NULL",
+             locker_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  P_obj first_obj = NULL;
+  P_obj last_obj = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int item_id = atoi(row[0]);
+    int vnum = atoi(row[1]);
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    obj->weight = atoi(row[2]);
+    obj->cost = atoi(row[3]);
+    obj->timer[0] = atol(row[4]);
+    obj->extra_flags = strtoul(row[5], NULL, 10);
+
+    obj->value[0] = atoi(row[6]);
+    obj->value[1] = atoi(row[7]);
+    obj->value[2] = atoi(row[8]);
+    obj->value[3] = atoi(row[9]);
+    obj->value[4] = atoi(row[10]);
+    obj->value[5] = atoi(row[11]);
+    obj->value[6] = atoi(row[12]);
+    obj->value[7] = atoi(row[13]);
+
+    if (row[14] && strlen(row[14]) > 0)
+    {
+      obj->name = str_dup(row[14]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[15] && strlen(row[15]) > 0)
+    {
+      obj->short_description = str_dup(row[15]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->action_description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    char aff_query[128];
+    snprintf(aff_query, sizeof(aff_query),
+             "SELECT location, modifier FROM locker_item_affects WHERE item_id=%d", item_id);
+    MYSQL_RES *aff_result = db_query("%s", aff_query);
+    if (aff_result)
+    {
+      MYSQL_ROW aff_row;
+      int aff_idx = 0;
+      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        obj->affected[aff_idx].location = atoi(aff_row[0]);
+        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
+        aff_idx++;
+      }
+      mysql_free_result(aff_result);
+    }
+
+    obj->contains = sql_load_locker_items(locker_id, item_id);
+    for (P_obj c = obj->contains; c; c = c->next_content)
+      c->loc.inside = obj;
+
+    if (!first_obj)
+      first_obj = obj;
+    else
+      last_obj->next_content = obj;
+    last_obj = obj;
+    obj->next_content = NULL;
+  }
+
+  mysql_free_result(result);
+  return first_obj;
 }
 
 P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 {
-  // todo: implement
-  return NULL;
+  if (!DB)
+    return NULL;
+
+  char query[256];
+  if (owner_pid > 0)
+    snprintf(query, sizeof(query),
+             "SELECT id, locker_name, racewar, race FROM lockers WHERE owner_pid=%d", owner_pid);
+  else if (owner_assoc_id > 0)
+    snprintf(query, sizeof(query),
+             "SELECT id, locker_name, racewar, race FROM lockers WHERE owner_assoc_id=%d", owner_assoc_id);
+  else
+    return NULL;
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  int locker_id = atoi(row[0]);
+  const char *locker_name = row[1];
+  int racewar = atoi(row[2]);
+  int race = atoi(row[3]);
+
+  // allocate locker character
+  P_char ch = (P_char)mm_get(dead_mob_pool);
+  if (!ch)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+  clear_char(ch);
+  ensure_pconly_pool();
+  ch->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+  if (!ch->only.pc)
+  {
+    mm_release(dead_mob_pool, ch);
+    mysql_free_result(result);
+    return NULL;
+  }
+  memset(ch->only.pc, 0, sizeof(struct pc_only_data));
+  ch->only.pc->aggressive = -1;
+  ch->only.pc->zone_trophy = NULL;
+  ch->desc = NULL;
+
+  ch->player.name = str_dup(locker_name);
+  GET_RACEWAR(ch) = racewar;
+  GET_RACE(ch) = race;
+
+  mysql_free_result(result);
+
+  // load items
+  ch->carrying = sql_load_locker_items(locker_id, 0);
+  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+    obj->loc.carrying = ch;
+
+  return ch;
+}
+
+// load locker by name (used by storage_lockers.c)
+P_char sql_load_locker_by_name(const char *locker_name)
+{
+  if (!DB || !locker_name)
+    return NULL;
+
+  char *esc_name = sql_escape_string(locker_name);
+  if (!esc_name)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT id, racewar, race FROM lockers WHERE locker_name='%s'", esc_name);
+  free(esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  int locker_id = atoi(row[0]);
+  int racewar = atoi(row[1]);
+  int race = atoi(row[2]);
+  mysql_free_result(result);
+
+  // allocate locker character
+  P_char ch = (P_char)mm_get(dead_mob_pool);
+  if (!ch)
+    return NULL;
+  clear_char(ch);
+  ensure_pconly_pool();
+  ch->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+  if (!ch->only.pc)
+  {
+    mm_release(dead_mob_pool, ch);
+    return NULL;
+  }
+  memset(ch->only.pc, 0, sizeof(struct pc_only_data));
+  ch->only.pc->aggressive = -1;
+  ch->only.pc->zone_trophy = NULL;
+  ch->desc = NULL;
+
+  ch->player.name = str_dup(locker_name);
+  GET_RACEWAR(ch) = racewar;
+  GET_RACE(ch) = race;
+
+  // load items
+  ch->carrying = sql_load_locker_items(locker_id, 0);
+  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+    obj->loc.carrying = ch;
+
+  return ch;
 }
 
 bool sql_locker_exists(int owner_pid, int owner_assoc_id)
 {
-  // todo: implement
-  return false;
+  if (!DB)
+    return false;
+
+  char query[128];
+  if (owner_pid > 0)
+    snprintf(query, sizeof(query), "SELECT 1 FROM lockers WHERE owner_pid=%d LIMIT 1", owner_pid);
+  else if (owner_assoc_id > 0)
+    snprintf(query, sizeof(query), "SELECT 1 FROM lockers WHERE owner_assoc_id=%d LIMIT 1", owner_assoc_id);
+  else
+    return false;
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  bool exists = (row != NULL);
+  mysql_free_result(result);
+  return exists;
+}
+
+bool sql_locker_exists_by_name(const char *locker_name)
+{
+  if (!DB || !locker_name)
+    return false;
+
+  char *esc_name = sql_escape_string(locker_name);
+  if (!esc_name)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query), "SELECT 1 FROM lockers WHERE locker_name='%s' LIMIT 1", esc_name);
+  free(esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  bool exists = (row != NULL);
+  mysql_free_result(result);
+  return exists;
 }
 
 bool sql_delete_locker(int owner_pid, int owner_assoc_id)
 {
-  // todo: implement
-  return false;
+  if (!DB)
+    return false;
+
+  char query[128];
+  if (owner_pid > 0)
+    snprintf(query, sizeof(query), "DELETE FROM lockers WHERE owner_pid=%d", owner_pid);
+  else if (owner_assoc_id > 0)
+    snprintf(query, sizeof(query), "DELETE FROM lockers WHERE owner_assoc_id=%d", owner_assoc_id);
+  else
+    return false;
+
+  return sql_run_query(query);
 }
 
-// ============================================================================
+bool sql_delete_locker_by_name(const char *locker_name)
+{
+  if (!DB || !locker_name)
+    return false;
+
+  char *esc_name = sql_escape_string(locker_name);
+  if (!esc_name)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query), "DELETE FROM lockers WHERE locker_name='%s'", esc_name);
+  free(esc_name);
+
+  return sql_run_query(query);
+}
+
 // migration helpers
-// ============================================================================
 
 // allocate a temp char for migration (uses malloc, not pools)
 static P_char alloc_temp_char(void)
@@ -1764,21 +2606,21 @@ static void free_temp_char(P_char ch)
       free_obj(ch->equipment[i]);
   }
 
-  // free strings if allocated
+  // strings from pfile loader need the proper deallocator
   if (ch->player.name)
-    free(ch->player.name);
+    FREE(ch->player.name);
   if (ch->player.short_descr)
-    free(ch->player.short_descr);
+    FREE(ch->player.short_descr);
   if (ch->player.long_descr)
-    free(ch->player.long_descr);
+    FREE(ch->player.long_descr);
   if (ch->player.description)
-    free(ch->player.description);
+    FREE(ch->player.description);
   if (ch->player.title)
-    free(ch->player.title);
+    FREE(ch->player.title);
   if (ch->only.pc && ch->only.pc->poofIn)
-    free(ch->only.pc->poofIn);
+    FREE(ch->only.pc->poofIn);
   if (ch->only.pc && ch->only.pc->poofOut)
-    free(ch->only.pc->poofOut);
+    FREE(ch->only.pc->poofOut);
 
   if (ch->only.pc)
     free(ch->only.pc);
@@ -1964,6 +2806,2231 @@ int sql_migrate_all_players(void)
         success_count, fail_count, skip_count);
 
   return success_count;
+}
+
+// town save/load
+
+extern int top_of_zone_table;
+extern struct zone_data *zone_table;
+extern P_town towns;
+
+bool sql_save_towns(void)
+{
+  if (!DB)
+    return false;
+
+  sql_run_query("DELETE FROM towns");
+
+  for (P_town town = towns; town; town = town->next_town)
+  {
+    if (!town->zone || !town->zone->filename)
+      continue;
+
+    char *escaped_filename = sql_escape_string(town->zone->filename);
+    if (!escaped_filename)
+      continue;
+
+    char query[1024];
+    snprintf(query, sizeof(query),
+             "INSERT INTO towns (zone_filename, resources, defense, offense, "
+             "deploy_guard, guard_vnum, guard_max, guard_load_room, "
+             "deploy_cavalry, cavalry_vnum, cavalry_max, cavalry_load_room, "
+             "deploy_portals, portal_vnum, portal_load_room) "
+             "VALUES ('%s', %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
+             escaped_filename,
+             town->resources, town->defense, town->offense,
+             town->deploy_guard ? 1 : 0, town->guard_vnum, town->guard_max, town->guard_load_room,
+             town->deploy_cavalry ? 1 : 0, town->cavalry_vnum, town->cavalry_max, town->cavalry_load_room,
+             town->deploy_portals ? 1 : 0, town->portal_vnum, town->portal_load_room);
+
+    free(escaped_filename);
+    sql_run_query(query);
+  }
+
+  return true;
+}
+
+bool sql_load_towns(void)
+{
+  if (!DB)
+    return false;
+
+  while (towns)
+  {
+    P_town next = towns->next_town;
+    delete towns;
+    towns = next;
+  }
+  towns = NULL;
+
+  MYSQL_RES *result = db_query(
+    "SELECT zone_filename, resources, defense, offense, "
+    "deploy_guard, guard_vnum, guard_max, guard_load_room, "
+    "deploy_cavalry, cavalry_vnum, cavalry_max, cavalry_load_room, "
+    "deploy_portals, portal_vnum, portal_load_room FROM towns");
+
+  if (!result)
+    return false;
+
+  P_town *town_ptr = &towns;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    const char *zone_filename = row[0];
+    bool found = false;
+
+    for (int i = 1; i <= top_of_zone_table; i++)
+    {
+      if (!strcmp(zone_filename, zone_table[i].filename))
+      {
+        found = true;
+        P_town new_town = new struct town;
+        new_town->next_town = NULL;
+        new_town->zone = &(zone_table[i]);
+
+        new_town->resources = atoi(row[1]);
+        new_town->defense = atoi(row[2]);
+        new_town->offense = atoi(row[3]);
+
+        new_town->deploy_guard = atoi(row[4]) ? TRUE : FALSE;
+        new_town->guard_vnum = atoi(row[5]);
+        new_town->guard_max = atoi(row[6]);
+        new_town->guard_load_room = atoi(row[7]);
+
+        new_town->deploy_cavalry = atoi(row[8]) ? TRUE : FALSE;
+        new_town->cavalry_vnum = atoi(row[9]);
+        new_town->cavalry_max = atoi(row[10]);
+        new_town->cavalry_load_room = atoi(row[11]);
+
+        new_town->deploy_portals = atoi(row[12]) ? TRUE : FALSE;
+        new_town->portal_vnum = atoi(row[13]);
+        new_town->portal_load_room = atoi(row[14]);
+
+        *town_ptr = new_town;
+        town_ptr = &(new_town->next_town);
+        break;
+      }
+    }
+
+    if (!found)
+      logit(LOG_DEBUG, "sql_load_towns: zone '%s' not found", zone_filename);
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+// account ips
+
+bool sql_save_account_ips(const char *account_name, struct acct_ip *ips)
+{
+  if (!DB || !account_name)
+    return false;
+
+  char *escaped_name = sql_escape_string(account_name);
+  if (!escaped_name)
+    return false;
+
+  char del_query[256];
+  snprintf(del_query, sizeof(del_query),
+           "DELETE FROM account_ips WHERE account_name='%s'", escaped_name);
+  sql_run_query(del_query);
+
+  for (struct acct_ip *ip = ips; ip; ip = ip->next)
+  {
+    char *escaped_hostname = sql_escape_string(ip->hostname ? ip->hostname : "");
+    char *escaped_ip = sql_escape_string(ip->ip_address ? ip->ip_address : "");
+
+    if (escaped_hostname && escaped_ip)
+    {
+      char query[512];
+      snprintf(query, sizeof(query),
+               "INSERT INTO account_ips (account_name, hostname, ip_address, count) "
+               "VALUES ('%s', '%s', '%s', %lu)",
+               escaped_name, escaped_hostname, escaped_ip, ip->count);
+      sql_run_query(query);
+    }
+
+    if (escaped_hostname) free(escaped_hostname);
+    if (escaped_ip) free(escaped_ip);
+  }
+
+  free(escaped_name);
+  return true;
+}
+
+struct acct_ip *sql_load_account_ips(const char *account_name)
+{
+  if (!DB || !account_name)
+    return NULL;
+
+  char *escaped_name = sql_escape_string(account_name);
+  if (!escaped_name)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT hostname, ip_address, count FROM account_ips WHERE account_name='%s'",
+           escaped_name);
+  free(escaped_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  struct acct_ip *head = NULL;
+  struct acct_ip *tail = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    struct acct_ip *ip = (struct acct_ip *)malloc(sizeof(struct acct_ip));
+    if (!ip)
+      continue;
+
+    ip->hostname = str_dup(row[0] ? row[0] : "");
+    ip->ip_address = str_dup(row[1] ? row[1] : "");
+    ip->count = row[2] ? strtoul(row[2], NULL, 10) : 0;
+    ip->next = NULL;
+
+    if (!head)
+      head = ip;
+    else
+      tail->next = ip;
+    tail = ip;
+  }
+
+  mysql_free_result(result);
+  return head;
+}
+
+bool sql_delete_account_ips(const char *account_name)
+{
+  if (!DB || !account_name)
+    return false;
+
+  char *escaped_name = sql_escape_string(account_name);
+  if (!escaped_name)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "DELETE FROM account_ips WHERE account_name='%s'", escaped_name);
+  free(escaped_name);
+
+  return sql_run_query(query);
+}
+
+// kingdom land migration
+
+bool sql_save_kingdom_land(void)
+{
+  if (!DB)
+    return false;
+
+  sql_run_query("DELETE FROM kingdom_land");
+
+  FILE *f = fopen(SAVE_DIR "/../Kingdoms/kingdom.land", "r");
+  if (!f)
+    return true;
+
+  char line[256];
+  while (fgets(line, sizeof(line), f))
+  {
+    char type;
+    int kingdom_id, start_vnum, end_vnum;
+    int count = sscanf(line, "%c %d %d", &type, &start_vnum, &end_vnum);
+
+    if (count >= 2)
+    {
+      if (type == 'H')
+      {
+        kingdom_id = start_vnum;
+        start_vnum = end_vnum;
+        end_vnum = start_vnum;
+      }
+      else
+      {
+        kingdom_id = 0;
+      }
+
+      if (count == 2 && type != 'H')
+        end_vnum = start_vnum;
+
+      char query[256];
+      snprintf(query, sizeof(query),
+               "INSERT INTO kingdom_land (kingdom_id, start_vnum, end_vnum, type) "
+               "VALUES (%d, %d, %d, '%c')",
+               kingdom_id, start_vnum, end_vnum, type);
+      sql_run_query(query);
+    }
+  }
+
+  fclose(f);
+  return true;
+}
+
+static bool sql_save_corpse_item_affects(int item_id, P_obj obj)
+{
+  if (!obj || !DB || item_id <= 0)
+    return false;
+
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+    {
+      char query[256];
+      snprintf(query, sizeof(query),
+               "INSERT INTO corpse_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
+               item_id, obj->affected[i].location, obj->affected[i].modifier);
+      if (!sql_run_query(query))
+        return false;
+    }
+  }
+  return true;
+}
+
+static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
+{
+  if (!obj || !DB || corpse_id <= 0)
+    return 0;
+
+  int vnum = obj_index[obj->R_num].virtual_number;
+
+  char *esc_name = NULL;
+  char *esc_short = NULL;
+  char *esc_desc = NULL;
+  char *esc_action = NULL;
+
+  if (obj->str_mask & STRUNG_KEYS)
+    esc_name = sql_escape_string(obj->name ? obj->name : "");
+  if (obj->str_mask & STRUNG_DESC2)
+    esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+  if (obj->str_mask & STRUNG_DESC1)
+    esc_desc = sql_escape_string(obj->description ? obj->description : "");
+  if (obj->str_mask & STRUNG_DESC3)
+    esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+  char container_str[32];
+  if (container_id > 0)
+    snprintf(container_str, sizeof(container_str), "%d", container_id);
+  else
+    strcpy(container_str, "NULL");
+
+  char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
+  if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+  else strcpy(name_str, "NULL");
+  if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+  else strcpy(short_str, "NULL");
+  if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+  else strcpy(desc_str, "NULL");
+  if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+  else strcpy(action_str, "NULL");
+
+  char query[8192];
+  snprintf(query, sizeof(query),
+    "INSERT INTO corpse_items ("
+    "corpse_id, vnum, container_id, quantity, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr"
+    ") VALUES ("
+    "%d, %d, %s, 1, "
+    "%d, %d, %ld, %lu, "
+    "%d, %d, %d, %d, %d, %d, %d, %d, "
+    "%s, %s, %s, %s"
+    ")",
+    corpse_id, vnum, container_str,
+    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
+    obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+    obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+    name_str, short_str, desc_str, action_str
+  );
+
+  if (esc_name) free(esc_name);
+  if (esc_short) free(esc_short);
+  if (esc_desc) free(esc_desc);
+  if (esc_action) free(esc_action);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  int item_id = (int)mysql_insert_id(DB);
+
+  if (!sql_save_corpse_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->contains)
+  {
+    for (P_obj content = obj->contains; content; content = content->next_content)
+    {
+      sql_save_corpse_item(corpse_id, content, item_id);
+    }
+  }
+
+  return item_id;
+}
+
+bool sql_save_corpse(P_obj corpse)
+{
+  if (!corpse || !DB)
+    return false;
+
+  if (corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[1], PC_CORPSE))
+    return false;
+
+  const char *player_name = corpse->action_description;
+  if (!player_name || !*player_name)
+    return false;
+
+  int save_id = corpse->value[CORPSE_SAVEID];
+  if (save_id == 0)
+    save_id = time(NULL);
+
+  int room_vnum = 0;
+  if (OBJ_ROOM(corpse) && corpse->loc.room > NOWHERE && corpse->loc.room <= top_of_world)
+    room_vnum = world[corpse->loc.room].number;
+  else if (OBJ_CARRIED(corpse) && corpse->loc.carrying)
+    room_vnum = world[corpse->loc.carrying->in_room].number;
+
+  char *esc_name = sql_escape_string(player_name);
+  if (!esc_name)
+    return false;
+
+  char del_query[256];
+  snprintf(del_query, sizeof(del_query),
+           "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d",
+           esc_name, save_id);
+  sql_run_query(del_query);
+
+  char ins_query[512];
+  snprintf(ins_query, sizeof(ins_query),
+           "INSERT INTO corpses (player_name, save_id, room_vnum) VALUES ('%s', %d, %d)",
+           esc_name, save_id, room_vnum);
+  free(esc_name);
+
+  if (!sql_run_query(ins_query))
+    return false;
+
+  int corpse_id = (int)mysql_insert_id(DB);
+
+  for (P_obj obj = corpse->contains; obj; obj = obj->next_content)
+  {
+    sql_save_corpse_item(corpse_id, obj, 0);
+  }
+
+  return true;
+}
+
+bool sql_delete_corpse(const char *player_name, int save_id)
+{
+  if (!player_name || !DB)
+    return false;
+
+  char *esc_name = sql_escape_string(player_name);
+  if (!esc_name)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d",
+           esc_name, save_id);
+  free(esc_name);
+
+  return sql_run_query(query);
+}
+
+static P_obj sql_load_corpse_items(int corpse_id, int container_id)
+{
+  if (!DB || corpse_id <= 0)
+    return NULL;
+
+  char query[256];
+  if (container_id > 0)
+    snprintf(query, sizeof(query),
+             "SELECT id, vnum, weight, cost, timer, extra_flags, "
+             "value0, value1, value2, value3, value4, value5, value6, value7, "
+             "name, short_descr, description, action_descr "
+             "FROM corpse_items WHERE corpse_id=%d AND container_id=%d",
+             corpse_id, container_id);
+  else
+    snprintf(query, sizeof(query),
+             "SELECT id, vnum, weight, cost, timer, extra_flags, "
+             "value0, value1, value2, value3, value4, value5, value6, value7, "
+             "name, short_descr, description, action_descr "
+             "FROM corpse_items WHERE corpse_id=%d AND container_id IS NULL",
+             corpse_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  P_obj first_obj = NULL;
+  P_obj last_obj = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int item_id = atoi(row[0]);
+    int vnum = atoi(row[1]);
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    // apply saved properties
+    obj->weight = atoi(row[2]);
+    obj->cost = atoi(row[3]);
+    obj->timer[0] = atol(row[4]);
+    obj->extra_flags = strtoul(row[5], NULL, 10);
+
+    obj->value[0] = atoi(row[6]);
+    obj->value[1] = atoi(row[7]);
+    obj->value[2] = atoi(row[8]);
+    obj->value[3] = atoi(row[9]);
+    obj->value[4] = atoi(row[10]);
+    obj->value[5] = atoi(row[11]);
+    obj->value[6] = atoi(row[12]);
+    obj->value[7] = atoi(row[13]);
+
+    // strung strings
+    if (row[14] && strlen(row[14]) > 0)
+    {
+      obj->name = str_dup(row[14]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[15] && strlen(row[15]) > 0)
+    {
+      obj->short_description = str_dup(row[15]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->action_description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    // load item affects
+    char aff_query[128];
+    snprintf(aff_query, sizeof(aff_query),
+             "SELECT location, modifier FROM corpse_item_affects WHERE item_id=%d", item_id);
+    MYSQL_RES *aff_result = db_query("%s", aff_query);
+    if (aff_result)
+    {
+      MYSQL_ROW aff_row;
+      int aff_idx = 0;
+      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        obj->affected[aff_idx].location = atoi(aff_row[0]);
+        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
+        aff_idx++;
+      }
+      mysql_free_result(aff_result);
+    }
+
+    obj->contains = sql_load_corpse_items(corpse_id, item_id);
+
+    if (!first_obj)
+      first_obj = obj;
+    else
+      last_obj->next_content = obj;
+    last_obj = obj;
+    obj->next_content = NULL;
+  }
+
+  mysql_free_result(result);
+  return first_obj;
+}
+
+bool sql_load_all_corpses(void)
+{
+  if (!DB)
+    return false;
+
+  MYSQL_RES *result = db_query("SELECT id, player_name, save_id, room_vnum FROM corpses");
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  int loaded = 0;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int corpse_id = atoi(row[0]);
+    const char *player_name = row[1];
+    int save_id = atoi(row[2]);
+    int room_vnum = atoi(row[3]);
+
+    int room = real_room(room_vnum);
+    if (room == NOWHERE)
+      room = 0;
+
+    // vnum 1 = generic player corpse
+    int corpse_rnum = real_object(1);
+    if (corpse_rnum < 0)
+    {
+      logit(LOG_DEBUG, "sql_load_all_corpses: no corpse vnum 1");
+      continue;
+    }
+
+    P_obj corpse = read_object(corpse_rnum, REAL);
+    if (!corpse)
+      continue;
+
+    corpse->type = ITEM_CORPSE;
+    SET_BIT(corpse->value[1], PC_CORPSE);
+    corpse->value[CORPSE_SAVEID] = save_id;
+
+    if (corpse->action_description)
+      FREE(corpse->action_description);
+    corpse->action_description = str_dup(player_name);
+    corpse->contains = sql_load_corpse_items(corpse_id, 0);
+
+    for (P_obj obj = corpse->contains; obj; obj = obj->next_content)
+      obj->loc.inside = corpse;
+
+    obj_to_room(corpse, room);
+    loaded++;
+  }
+
+  mysql_free_result(result);
+  logit(LOG_DEBUG, "sql_load_all_corpses: loaded %d corpses", loaded);
+  return true;
+}
+
+extern struct shop_data *shop_index;
+
+static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
+{
+  if (!obj || !DB || item_id <= 0)
+    return false;
+
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+    {
+      char query[256];
+      snprintf(query, sizeof(query),
+               "INSERT INTO shopkeeper_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
+               item_id, obj->affected[i].location, obj->affected[i].modifier);
+      if (!sql_run_query(query))
+        return false;
+    }
+  }
+  return true;
+}
+
+static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot, int container_id)
+{
+  if (!obj || !DB || shopkeeper_id <= 0)
+    return 0;
+
+  int vnum = obj_index[obj->R_num].virtual_number;
+
+  char *esc_name = NULL;
+  char *esc_short = NULL;
+  char *esc_desc = NULL;
+  char *esc_action = NULL;
+
+  if (obj->str_mask & STRUNG_KEYS)
+    esc_name = sql_escape_string(obj->name ? obj->name : "");
+  if (obj->str_mask & STRUNG_DESC2)
+    esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+  if (obj->str_mask & STRUNG_DESC1)
+    esc_desc = sql_escape_string(obj->description ? obj->description : "");
+  if (obj->str_mask & STRUNG_DESC3)
+    esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+  char container_str[32];
+  if (container_id > 0)
+    snprintf(container_str, sizeof(container_str), "%d", container_id);
+  else
+    strcpy(container_str, "NULL");
+
+  char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
+  if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+  else strcpy(name_str, "NULL");
+  if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+  else strcpy(short_str, "NULL");
+  if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+  else strcpy(desc_str, "NULL");
+  if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+  else strcpy(action_str, "NULL");
+
+  char query[8192];
+  snprintf(query, sizeof(query),
+    "INSERT INTO shopkeeper_items ("
+    "shopkeeper_id, vnum, equip_slot, container_id, quantity, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr"
+    ") VALUES ("
+    "%d, %d, %d, %s, 1, "
+    "%d, %d, %ld, %lu, "
+    "%d, %d, %d, %d, %d, %d, %d, %d, "
+    "%s, %s, %s, %s"
+    ")",
+    shopkeeper_id, vnum, equip_slot, container_str,
+    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
+    obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+    obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+    name_str, short_str, desc_str, action_str
+  );
+
+  if (esc_name) free(esc_name);
+  if (esc_short) free(esc_short);
+  if (esc_desc) free(esc_desc);
+  if (esc_action) free(esc_action);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  int item_id = (int)mysql_insert_id(DB);
+
+  if (!sql_save_shopkeeper_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->contains)
+  {
+    for (P_obj content = obj->contains; content; content = content->next_content)
+      sql_save_shopkeeper_item(shopkeeper_id, content, 0, item_id);
+  }
+
+  return item_id;
+}
+
+static bool sql_save_shopkeeper_affects(int shopkeeper_id, P_char ch)
+{
+  if (!ch || !DB || shopkeeper_id <= 0)
+    return false;
+
+  for (struct affected_type *af = ch->affected; af; af = af->next)
+  {
+    if (IS_SET(af->flags, AFFTYPE_NOSAVE))
+      continue;
+
+    char query[512];
+    snprintf(query, sizeof(query),
+             "INSERT INTO shopkeeper_affects (shopkeeper_id, type, duration, modifier, location, "
+             "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5) "
+             "VALUES (%d, %d, %d, %d, %d, %lu, %lu, %lu, %lu, %lu)",
+             shopkeeper_id, af->type, af->duration, af->modifier, af->location,
+             af->bitvector, af->bitvector2, af->bitvector3, af->bitvector4, af->bitvector5);
+    sql_run_query(query);
+  }
+
+  return true;
+}
+
+bool sql_save_shopkeeper(P_char ch, int shop_nr)
+{
+  if (!ch || !DB || shop_nr < 0)
+    return false;
+
+  if (IS_PC(ch) || !IS_SHOPKEEPER(ch))
+    return false;
+
+  int mob_vnum = mob_index[GET_RNUM(ch)].virtual_number;
+  int room_vnum = world[ch->in_room].number;
+  long save_time = time(0);
+
+  char del_query[128];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM shopkeepers WHERE shop_id=%d", shop_nr);
+  sql_run_query(del_query);
+
+  char ins_query[256];
+  snprintf(ins_query, sizeof(ins_query),
+           "INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time) VALUES (%d, %d, %d, %ld)",
+           shop_nr, mob_vnum, room_vnum, save_time);
+
+  if (!sql_run_query(ins_query))
+    return false;
+
+  int shopkeeper_id = (int)mysql_insert_id(DB);
+
+  sql_save_shopkeeper_affects(shopkeeper_id, ch);
+
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    if (ch->equipment[i])
+      sql_save_shopkeeper_item(shopkeeper_id, ch->equipment[i], i + 1, 0);
+  }
+
+  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+  {
+    sql_save_shopkeeper_item(shopkeeper_id, obj, 0, 0);
+  }
+
+  return true;
+}
+
+bool sql_delete_shopkeeper(int shop_nr)
+{
+  if (!DB || shop_nr < 0)
+    return false;
+
+  char query[128];
+  snprintf(query, sizeof(query), "DELETE FROM shopkeepers WHERE shop_id=%d", shop_nr);
+  return sql_run_query(query);
+}
+
+static bool sql_save_saved_item_affects(int item_id, P_obj obj)
+{
+  if (!obj || !DB || item_id <= 0)
+    return false;
+
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+    {
+      char query[256];
+      snprintf(query, sizeof(query),
+               "INSERT INTO saved_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
+               item_id, obj->affected[i].location, obj->affected[i].modifier);
+      if (!sql_run_query(query))
+        return false;
+    }
+  }
+  return true;
+}
+
+static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_obj obj, int container_id)
+{
+  if (!obj || !DB)
+    return 0;
+
+  int vnum = obj_index[obj->R_num].virtual_number;
+
+  char *esc_name = NULL;
+  char *esc_short = NULL;
+  char *esc_desc = NULL;
+  char *esc_action = NULL;
+
+  if (obj->str_mask & STRUNG_KEYS)
+    esc_name = sql_escape_string(obj->name ? obj->name : "");
+  if (obj->str_mask & STRUNG_DESC2)
+    esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+  if (obj->str_mask & STRUNG_DESC1)
+    esc_desc = sql_escape_string(obj->description ? obj->description : "");
+  if (obj->str_mask & STRUNG_DESC3)
+    esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+  char container_str[32];
+  if (container_id > 0)
+    snprintf(container_str, sizeof(container_str), "%d", container_id);
+  else
+    strcpy(container_str, "NULL");
+
+  char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
+  if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+  else strcpy(name_str, "NULL");
+  if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+  else strcpy(short_str, "NULL");
+  if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+  else strcpy(desc_str, "NULL");
+  if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+  else strcpy(action_str, "NULL");
+
+  char *esc_key = sql_escape_string(item_key);
+
+  char query[8192];
+  snprintf(query, sizeof(query),
+    "INSERT INTO saved_items ("
+    "item_key, room_vnum, vnum, container_id, quantity, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr"
+    ") VALUES ("
+    "'%s', %d, %d, %s, 1, "
+    "%d, %d, %ld, %lu, "
+    "%d, %d, %d, %d, %d, %d, %d, %d, "
+    "%s, %s, %s, %s"
+    ")",
+    esc_key ? esc_key : "", room_vnum, vnum, container_str,
+    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
+    obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+    obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+    name_str, short_str, desc_str, action_str
+  );
+
+  if (esc_key) free(esc_key);
+  if (esc_name) free(esc_name);
+  if (esc_short) free(esc_short);
+  if (esc_desc) free(esc_desc);
+  if (esc_action) free(esc_action);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  int item_id = (int)mysql_insert_id(DB);
+
+  if (!sql_save_saved_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->contains)
+  {
+    for (P_obj content = obj->contains; content; content = content->next_content)
+      sql_save_saved_item_recursive(item_key, room_vnum, content, item_id);
+  }
+
+  return item_id;
+}
+
+bool sql_save_saved_item(P_obj item, const char *item_key)
+{
+  if (!item || !item_key || !DB)
+    return false;
+
+  if (!OBJ_ROOM(item) || item->loc.room <= NOWHERE || item->loc.room > top_of_world)
+    return false;
+
+  int room_vnum = world[item->loc.room].number;
+
+  char *esc_key = sql_escape_string(item_key);
+  if (!esc_key)
+    return false;
+
+  char del_query[256];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM saved_items WHERE item_key='%s'", esc_key);
+  free(esc_key);
+  sql_run_query(del_query);
+
+  return sql_save_saved_item_recursive(item_key, room_vnum, item, 0) > 0;
+}
+
+bool sql_delete_saved_item(const char *item_key)
+{
+  if (!item_key || !DB)
+    return false;
+
+  char *esc_key = sql_escape_string(item_key);
+  if (!esc_key)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query), "DELETE FROM saved_items WHERE item_key='%s'", esc_key);
+  free(esc_key);
+
+  return sql_run_query(query);
+}
+
+static bool sql_save_siege_item_affects(int item_id, P_obj obj)
+{
+  if (!obj || !DB || item_id <= 0)
+    return false;
+
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+    {
+      char query[256];
+      snprintf(query, sizeof(query),
+               "INSERT INTO siege_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
+               item_id, obj->affected[i].location, obj->affected[i].modifier);
+      if (!sql_run_query(query))
+        return false;
+    }
+  }
+  return true;
+}
+
+static int sql_save_siege_item_one(int room_vnum, P_obj obj, int container_id)
+{
+  if (!obj || !DB)
+    return 0;
+
+  int vnum = obj_index[obj->R_num].virtual_number;
+
+  char *esc_name = NULL;
+  char *esc_short = NULL;
+  char *esc_desc = NULL;
+  char *esc_action = NULL;
+
+  if (obj->str_mask & STRUNG_KEYS)
+    esc_name = sql_escape_string(obj->name ? obj->name : "");
+  if (obj->str_mask & STRUNG_DESC2)
+    esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+  if (obj->str_mask & STRUNG_DESC1)
+    esc_desc = sql_escape_string(obj->description ? obj->description : "");
+  if (obj->str_mask & STRUNG_DESC3)
+    esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+  char container_str[32];
+  if (container_id > 0)
+    snprintf(container_str, sizeof(container_str), "%d", container_id);
+  else
+    strcpy(container_str, "NULL");
+
+  char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
+  if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+  else strcpy(name_str, "NULL");
+  if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+  else strcpy(short_str, "NULL");
+  if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+  else strcpy(desc_str, "NULL");
+  if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+  else strcpy(action_str, "NULL");
+
+  char query[8192];
+  snprintf(query, sizeof(query),
+    "INSERT INTO siege_items ("
+    "room_vnum, vnum, container_id, quantity, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr"
+    ") VALUES ("
+    "%d, %d, %s, 1, "
+    "%d, %d, %ld, %lu, "
+    "%d, %d, %d, %d, %d, %d, %d, %d, "
+    "%s, %s, %s, %s"
+    ")",
+    room_vnum, vnum, container_str,
+    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
+    obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+    obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+    name_str, short_str, desc_str, action_str
+  );
+
+  if (esc_name) free(esc_name);
+  if (esc_short) free(esc_short);
+  if (esc_desc) free(esc_desc);
+  if (esc_action) free(esc_action);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  int item_id = (int)mysql_insert_id(DB);
+
+  if (!sql_save_siege_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->contains)
+  {
+    for (P_obj content = obj->contains; content; content = content->next_content)
+      sql_save_siege_item_one(room_vnum, content, item_id);
+  }
+
+  return item_id;
+}
+
+bool sql_save_siege_item(P_obj obj, int room_vnum)
+{
+  if (!obj || !DB)
+    return false;
+
+  return sql_save_siege_item_one(room_vnum, obj, 0) > 0;
+}
+
+bool sql_save_siege_list(void)
+{
+  if (!DB)
+    return false;
+
+  sql_run_query("DELETE FROM siege_items");
+  return true;
+}
+
+bool sql_delete_siege_items(int room_vnum)
+{
+  if (!DB)
+    return false;
+
+  char query[128];
+  snprintf(query, sizeof(query), "DELETE FROM siege_items WHERE room_vnum=%d", room_vnum);
+  return sql_run_query(query);
+}
+
+static P_obj sql_load_shopkeeper_items(int shopkeeper_id, int equip_slot, int container_id)
+{
+  if (!DB || shopkeeper_id <= 0)
+    return NULL;
+
+  char query[512];
+  if (container_id > 0)
+    snprintf(query, sizeof(query),
+             "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
+             "value0, value1, value2, value3, value4, value5, value6, value7, "
+             "name, short_descr, description, action_descr "
+             "FROM shopkeeper_items WHERE shopkeeper_id=%d AND container_id=%d",
+             shopkeeper_id, container_id);
+  else if (equip_slot > 0)
+    snprintf(query, sizeof(query),
+             "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
+             "value0, value1, value2, value3, value4, value5, value6, value7, "
+             "name, short_descr, description, action_descr "
+             "FROM shopkeeper_items WHERE shopkeeper_id=%d AND equip_slot=%d AND container_id IS NULL",
+             shopkeeper_id, equip_slot);
+  else
+    snprintf(query, sizeof(query),
+             "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
+             "value0, value1, value2, value3, value4, value5, value6, value7, "
+             "name, short_descr, description, action_descr "
+             "FROM shopkeeper_items WHERE shopkeeper_id=%d AND equip_slot=0 AND container_id IS NULL",
+             shopkeeper_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  P_obj first_obj = NULL;
+  P_obj last_obj = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int item_id = atoi(row[0]);
+    int vnum = atoi(row[1]);
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    obj->weight = atoi(row[3]);
+    obj->cost = atoi(row[4]);
+    obj->timer[0] = atol(row[5]);
+    obj->extra_flags = strtoul(row[6], NULL, 10);
+
+    obj->value[0] = atoi(row[7]);
+    obj->value[1] = atoi(row[8]);
+    obj->value[2] = atoi(row[9]);
+    obj->value[3] = atoi(row[10]);
+    obj->value[4] = atoi(row[11]);
+    obj->value[5] = atoi(row[12]);
+    obj->value[6] = atoi(row[13]);
+    obj->value[7] = atoi(row[14]);
+
+    if (row[15] && strlen(row[15]) > 0)
+    {
+      obj->name = str_dup(row[15]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->short_description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[18] && strlen(row[18]) > 0)
+    {
+      obj->action_description = str_dup(row[18]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    char aff_query[128];
+    snprintf(aff_query, sizeof(aff_query),
+             "SELECT location, modifier FROM shopkeeper_item_affects WHERE item_id=%d", item_id);
+    MYSQL_RES *aff_result = db_query("%s", aff_query);
+    if (aff_result)
+    {
+      MYSQL_ROW aff_row;
+      int aff_idx = 0;
+      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        obj->affected[aff_idx].location = atoi(aff_row[0]);
+        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
+        aff_idx++;
+      }
+      mysql_free_result(aff_result);
+    }
+
+    obj->contains = sql_load_shopkeeper_items(shopkeeper_id, 0, item_id);
+    for (P_obj c = obj->contains; c; c = c->next_content)
+      c->loc.inside = obj;
+
+    if (!first_obj)
+      first_obj = obj;
+    else
+      last_obj->next_content = obj;
+    last_obj = obj;
+    obj->next_content = NULL;
+  }
+
+  mysql_free_result(result);
+  return first_obj;
+}
+
+static bool sql_load_shopkeeper_affects(P_char ch, int shopkeeper_id)
+{
+  if (!ch || !DB || shopkeeper_id <= 0)
+    return false;
+
+  char query[128];
+  snprintf(query, sizeof(query),
+           "SELECT type, duration, modifier, location, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
+           "FROM shopkeeper_affects WHERE shopkeeper_id=%d", shopkeeper_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    struct affected_type af;
+    memset(&af, 0, sizeof(af));
+    af.type = atoi(row[0]);
+    af.duration = atoi(row[1]);
+    af.modifier = atoi(row[2]);
+    af.location = atoi(row[3]);
+    af.bitvector = strtoul(row[4], NULL, 10);
+    af.bitvector2 = strtoul(row[5], NULL, 10);
+    af.bitvector3 = strtoul(row[6], NULL, 10);
+    af.bitvector4 = strtoul(row[7], NULL, 10);
+    af.bitvector5 = strtoul(row[8], NULL, 10);
+    affect_to_char(ch, &af);
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+P_char sql_restore_shopkeeper(int shop_nr)
+{
+  if (!DB || shop_nr < 0)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT id, mob_vnum, room_vnum FROM shopkeepers WHERE shop_id=%d", shop_nr);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  int shopkeeper_id = atoi(row[0]);
+  int mob_vnum = atoi(row[1]);
+  int room_vnum = atoi(row[2]);
+  mysql_free_result(result);
+
+  P_char ch = read_mobile(mob_vnum, VIRTUAL);
+  if (!ch)
+  {
+    logit(LOG_DEBUG, "sql_restore_shopkeeper: mob vnum %d not found", mob_vnum);
+    return NULL;
+  }
+
+  GET_BIRTHPLACE(ch) = room_vnum;
+  sql_load_shopkeeper_affects(ch, shopkeeper_id);
+
+  // load equipment
+  for (int slot = 1; slot <= MAX_WEAR; slot++)
+  {
+    P_obj obj = sql_load_shopkeeper_items(shopkeeper_id, slot, 0);
+    if (obj)
+      wear(ch, obj, slot - 1, 0);
+  }
+
+  // load inventory
+  ch->carrying = sql_load_shopkeeper_items(shopkeeper_id, 0, 0);
+  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+    obj->loc.carrying = ch;
+
+  return ch;
+}
+
+void sql_restore_shopkeepers(void)
+{
+  if (!DB)
+    return;
+
+  MYSQL_RES *result = db_query("SELECT shop_id, mob_vnum, room_vnum FROM shopkeepers");
+  if (!result)
+    return;
+
+  MYSQL_ROW row;
+  int loaded = 0;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int shop_nr = atoi(row[0]);
+    int room_vnum = atoi(row[2]);
+
+    P_char mob = sql_restore_shopkeeper(shop_nr);
+    if (!mob)
+    {
+      logit(LOG_DEBUG, "sql_restore_shopkeepers: could not load shop %d", shop_nr);
+      continue;
+    }
+
+    int load_room = real_room(room_vnum);
+    if (load_room == NOWHERE)
+    {
+      logit(LOG_DEBUG, "sql_restore_shopkeepers: bad room %d for shop %d", room_vnum, shop_nr);
+      extract_char(mob);
+      continue;
+    }
+
+    // remove existing keeper at that location
+    for (P_char keeper2 = world[load_room].people; keeper2; )
+    {
+      P_char next = keeper2->next_in_room;
+      if (mob_index[GET_RNUM(keeper2)].virtual_number == mob_index[GET_RNUM(mob)].virtual_number)
+        extract_char(keeper2);
+      keeper2 = next;
+    }
+
+    char_to_room(mob, load_room, 0);
+    sql_delete_shopkeeper(shop_nr);
+    loaded++;
+  }
+
+  mysql_free_result(result);
+  logit(LOG_DEBUG, "sql_restore_shopkeepers: loaded %d shopkeepers", loaded);
+}
+
+static P_obj sql_load_saved_item_contents(const char *item_key, int container_id)
+{
+  if (!DB || !item_key)
+    return NULL;
+
+  char *esc_key = sql_escape_string(item_key);
+  if (!esc_key)
+    return NULL;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+           "SELECT id, vnum, weight, cost, timer, extra_flags, "
+           "value0, value1, value2, value3, value4, value5, value6, value7, "
+           "name, short_descr, description, action_descr "
+           "FROM saved_items WHERE item_key='%s' AND container_id=%d",
+           esc_key, container_id);
+  free(esc_key);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  P_obj first_obj = NULL;
+  P_obj last_obj = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int item_id = atoi(row[0]);
+    int vnum = atoi(row[1]);
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    obj->weight = atoi(row[2]);
+    obj->cost = atoi(row[3]);
+    obj->timer[0] = atol(row[4]);
+    obj->extra_flags = strtoul(row[5], NULL, 10);
+
+    obj->value[0] = atoi(row[6]);
+    obj->value[1] = atoi(row[7]);
+    obj->value[2] = atoi(row[8]);
+    obj->value[3] = atoi(row[9]);
+    obj->value[4] = atoi(row[10]);
+    obj->value[5] = atoi(row[11]);
+    obj->value[6] = atoi(row[12]);
+    obj->value[7] = atoi(row[13]);
+
+    if (row[14] && strlen(row[14]) > 0)
+    {
+      obj->name = str_dup(row[14]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[15] && strlen(row[15]) > 0)
+    {
+      obj->short_description = str_dup(row[15]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->action_description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    char aff_query[128];
+    snprintf(aff_query, sizeof(aff_query),
+             "SELECT location, modifier FROM saved_item_affects WHERE item_id=%d", item_id);
+    MYSQL_RES *aff_result = db_query("%s", aff_query);
+    if (aff_result)
+    {
+      MYSQL_ROW aff_row;
+      int aff_idx = 0;
+      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        obj->affected[aff_idx].location = atoi(aff_row[0]);
+        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
+        aff_idx++;
+      }
+      mysql_free_result(aff_result);
+    }
+
+    obj->contains = sql_load_saved_item_contents(item_key, item_id);
+    for (P_obj c = obj->contains; c; c = c->next_content)
+      c->loc.inside = obj;
+
+    if (!first_obj)
+      first_obj = obj;
+    else
+      last_obj->next_content = obj;
+    last_obj = obj;
+    obj->next_content = NULL;
+  }
+
+  mysql_free_result(result);
+  return first_obj;
+}
+
+void sql_restore_saved_items(void)
+{
+  if (!DB)
+    return;
+
+  // get distinct item keys with root items only
+  MYSQL_RES *result = db_query(
+    "SELECT DISTINCT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr "
+    "FROM saved_items WHERE container_id IS NULL");
+  if (!result)
+    return;
+
+  int loaded = 0;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    const char *item_key = row[0];
+    int room_vnum = atoi(row[1]);
+    int item_id = atoi(row[2]);
+    int vnum = atoi(row[3]);
+
+    int room = real_room(room_vnum);
+    if (room == NOWHERE)
+    {
+      logit(LOG_DEBUG, "sql_restore_saved_items: bad room %d for %s", room_vnum, item_key);
+      continue;
+    }
+
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    obj->weight = atoi(row[4]);
+    obj->cost = atoi(row[5]);
+    obj->timer[0] = atol(row[6]);
+    obj->extra_flags = strtoul(row[7], NULL, 10);
+
+    obj->value[0] = atoi(row[8]);
+    obj->value[1] = atoi(row[9]);
+    obj->value[2] = atoi(row[10]);
+    obj->value[3] = atoi(row[11]);
+    obj->value[4] = atoi(row[12]);
+    obj->value[5] = atoi(row[13]);
+    obj->value[6] = atoi(row[14]);
+    obj->value[7] = atoi(row[15]);
+
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->name = str_dup(row[16]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->short_description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[18] && strlen(row[18]) > 0)
+    {
+      obj->description = str_dup(row[18]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[19] && strlen(row[19]) > 0)
+    {
+      obj->action_description = str_dup(row[19]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    char aff_query[128];
+    snprintf(aff_query, sizeof(aff_query),
+             "SELECT location, modifier FROM saved_item_affects WHERE item_id=%d", item_id);
+    MYSQL_RES *aff_result = db_query("%s", aff_query);
+    if (aff_result)
+    {
+      MYSQL_ROW aff_row;
+      int aff_idx = 0;
+      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        obj->affected[aff_idx].location = atoi(aff_row[0]);
+        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
+        aff_idx++;
+      }
+      mysql_free_result(aff_result);
+    }
+
+    obj->contains = sql_load_saved_item_contents(item_key, item_id);
+    for (P_obj c = obj->contains; c; c = c->next_content)
+      c->loc.inside = obj;
+
+    obj_to_room(obj, room);
+    loaded++;
+  }
+
+  mysql_free_result(result);
+
+  // delete all saved items after loading (they get re-saved on next tick)
+  sql_run_query("DELETE FROM saved_items");
+
+  logit(LOG_DEBUG, "sql_restore_saved_items: loaded %d items", loaded);
+}
+
+static P_obj sql_load_siege_item_contents(int room_vnum, int container_id)
+{
+  if (!DB)
+    return NULL;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+           "SELECT id, vnum, weight, cost, timer, extra_flags, "
+           "value0, value1, value2, value3, value4, value5, value6, value7, "
+           "name, short_descr, description, action_descr "
+           "FROM siege_items WHERE room_vnum=%d AND container_id=%d",
+           room_vnum, container_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  P_obj first_obj = NULL;
+  P_obj last_obj = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int item_id = atoi(row[0]);
+    int vnum = atoi(row[1]);
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    obj->weight = atoi(row[2]);
+    obj->cost = atoi(row[3]);
+    obj->timer[0] = atol(row[4]);
+    obj->extra_flags = strtoul(row[5], NULL, 10);
+
+    obj->value[0] = atoi(row[6]);
+    obj->value[1] = atoi(row[7]);
+    obj->value[2] = atoi(row[8]);
+    obj->value[3] = atoi(row[9]);
+    obj->value[4] = atoi(row[10]);
+    obj->value[5] = atoi(row[11]);
+    obj->value[6] = atoi(row[12]);
+    obj->value[7] = atoi(row[13]);
+
+    if (row[14] && strlen(row[14]) > 0)
+    {
+      obj->name = str_dup(row[14]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[15] && strlen(row[15]) > 0)
+    {
+      obj->short_description = str_dup(row[15]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->action_description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    char aff_query[128];
+    snprintf(aff_query, sizeof(aff_query),
+             "SELECT location, modifier FROM siege_item_affects WHERE item_id=%d", item_id);
+    MYSQL_RES *aff_result = db_query("%s", aff_query);
+    if (aff_result)
+    {
+      MYSQL_ROW aff_row;
+      int aff_idx = 0;
+      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        obj->affected[aff_idx].location = atoi(aff_row[0]);
+        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
+        aff_idx++;
+      }
+      mysql_free_result(aff_result);
+    }
+
+    obj->contains = sql_load_siege_item_contents(room_vnum, item_id);
+    for (P_obj c = obj->contains; c; c = c->next_content)
+      c->loc.inside = obj;
+
+    if (!first_obj)
+      first_obj = obj;
+    else
+      last_obj->next_content = obj;
+    last_obj = obj;
+    obj->next_content = NULL;
+  }
+
+  mysql_free_result(result);
+  return first_obj;
+}
+
+extern P_siege siege_objects;
+
+void sql_load_siege_list(void)
+{
+  if (!DB)
+    return;
+
+  siege_objects = NULL;
+
+  MYSQL_RES *result = db_query(
+    "SELECT DISTINCT room_vnum, id, vnum, weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr "
+    "FROM siege_items WHERE container_id IS NULL");
+  if (!result)
+    return;
+
+  int loaded = 0;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int room_vnum = atoi(row[0]);
+    int item_id = atoi(row[1]);
+    int vnum = atoi(row[2]);
+
+    int room = real_room(room_vnum);
+    if (room == NOWHERE)
+    {
+      logit(LOG_DEBUG, "sql_load_siege_list: bad room %d", room_vnum);
+      continue;
+    }
+
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    obj->weight = atoi(row[3]);
+    obj->cost = atoi(row[4]);
+    obj->timer[0] = atol(row[5]);
+    obj->extra_flags = strtoul(row[6], NULL, 10);
+
+    obj->value[0] = atoi(row[7]);
+    obj->value[1] = atoi(row[8]);
+    obj->value[2] = atoi(row[9]);
+    obj->value[3] = atoi(row[10]);
+    obj->value[4] = atoi(row[11]);
+    obj->value[5] = atoi(row[12]);
+    obj->value[6] = atoi(row[13]);
+    obj->value[7] = atoi(row[14]);
+
+    if (row[15] && strlen(row[15]) > 0)
+    {
+      obj->name = str_dup(row[15]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->short_description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[18] && strlen(row[18]) > 0)
+    {
+      obj->action_description = str_dup(row[18]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    char aff_query[128];
+    snprintf(aff_query, sizeof(aff_query),
+             "SELECT location, modifier FROM siege_item_affects WHERE item_id=%d", item_id);
+    MYSQL_RES *aff_result = db_query("%s", aff_query);
+    if (aff_result)
+    {
+      MYSQL_ROW aff_row;
+      int aff_idx = 0;
+      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
+      {
+        obj->affected[aff_idx].location = atoi(aff_row[0]);
+        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
+        aff_idx++;
+      }
+      mysql_free_result(aff_result);
+    }
+
+    obj->contains = sql_load_siege_item_contents(room_vnum, item_id);
+    for (P_obj c = obj->contains; c; c = c->next_content)
+      c->loc.inside = obj;
+
+    obj_to_room(obj, room);
+
+    P_siege siege = new struct siege;
+    siege->obj = obj;
+    siege->next_siege = siege_objects;
+    siege_objects = siege;
+
+    loaded++;
+  }
+
+  mysql_free_result(result);
+  logit(LOG_DEBUG, "sql_load_siege_list: loaded %d siege objects", loaded);
+}
+
+static bool sql_save_ship_armor(int ship_id, P_ship ship)
+{
+  if (!DB || !ship || ship_id <= 0)
+    return false;
+
+  for (int i = 0; i < 4; i++)
+  {
+    char query[256];
+    snprintf(query, sizeof(query),
+      "insert into ship_armor (ship_id, side, armor, internal) "
+      "values (%d, %d, %d, %d) "
+      "on duplicate key update armor=%d, internal=%d",
+      ship_id, i, ship->armor[i], ship->internal[i],
+      ship->armor[i], ship->internal[i]);
+    if (!sql_run_query(query))
+      return false;
+  }
+  return true;
+}
+
+static bool sql_save_ship_crew(int ship_id, P_ship ship)
+{
+  if (!DB || !ship || ship_id <= 0)
+    return false;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "insert into ship_crew (ship_id, crew_index, sail_skill, guns_skill, rpar_skill, "
+    "sail_chief, guns_chief, rpar_chief) "
+    "values (%d, %d, %d, %d, %d, %d, %d, %d) "
+    "on duplicate key update crew_index=%d, sail_skill=%d, guns_skill=%d, rpar_skill=%d, "
+    "sail_chief=%d, guns_chief=%d, rpar_chief=%d",
+    ship_id, ship->crew.index,
+    (int)(ship->crew.sail_skill * 1000),
+    (int)(ship->crew.guns_skill * 1000),
+    (int)(ship->crew.rpar_skill * 1000),
+    ship->crew.sail_chief, ship->crew.guns_chief, ship->crew.rpar_chief,
+    ship->crew.index,
+    (int)(ship->crew.sail_skill * 1000),
+    (int)(ship->crew.guns_skill * 1000),
+    (int)(ship->crew.rpar_skill * 1000),
+    ship->crew.sail_chief, ship->crew.guns_chief, ship->crew.rpar_chief);
+
+  return sql_run_query(query);
+}
+
+static bool sql_save_ship_slots(int ship_id, P_ship ship)
+{
+  if (!DB || !ship || ship_id <= 0)
+    return false;
+
+  for (int i = 0; i < MAXSLOTS; i++)
+  {
+    char query[512];
+    snprintf(query, sizeof(query),
+      "insert into ship_slots (ship_id, slot_index, slot_type, item_index, position, "
+      "timer, val0, val1, val2, val3, val4) "
+      "values (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d) "
+      "on duplicate key update slot_type=%d, item_index=%d, position=%d, "
+      "timer=%d, val0=%d, val1=%d, val2=%d, val3=%d, val4=%d",
+      ship_id, i, ship->slot[i].type, ship->slot[i].index, ship->slot[i].position,
+      ship->slot[i].timer, ship->slot[i].val0, ship->slot[i].val1,
+      ship->slot[i].val2, ship->slot[i].val3, ship->slot[i].val4,
+      ship->slot[i].type, ship->slot[i].index, ship->slot[i].position,
+      ship->slot[i].timer, ship->slot[i].val0, ship->slot[i].val1,
+      ship->slot[i].val2, ship->slot[i].val3, ship->slot[i].val4);
+    if (!sql_run_query(query))
+      return false;
+  }
+  return true;
+}
+
+bool sql_save_ship(P_ship ship)
+{
+  if (!DB || !ship || !ship->ownername)
+    return false;
+
+  char *esc_owner = sql_escape_string(ship->ownername);
+  if (!esc_owner)
+    return false;
+
+  char *esc_name = sql_escape_string(ship->name ? ship->name : "");
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "insert into ships (owner_name, ship_name, ship_class, frags, anchor, last_time, mainsail) "
+    "values ('%s', '%s', %d, %d, %d, %d, %d) "
+    "on duplicate key update ship_name='%s', ship_class=%d, frags=%d, anchor=%d, "
+    "last_time=%d, mainsail=%d",
+    esc_owner, esc_name, ship->m_class, ship->frags, ship->anchor, ship->time, ship->mainsail,
+    esc_name, ship->m_class, ship->frags, ship->anchor, ship->time, ship->mainsail);
+
+  bool ok = sql_run_query(query);
+  if (!ok)
+  {
+    free(esc_owner);
+    if (esc_name) free(esc_name);
+    return false;
+  }
+
+  // get ship id
+  snprintf(query, sizeof(query), "select id from ships where owner_name='%s'", esc_owner);
+  MYSQL_RES *result = db_query("%s", query);
+  free(esc_owner);
+  if (esc_name) free(esc_name);
+
+  if (!result)
+    return false;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    return false;
+  }
+
+  int ship_id = atoi(row[0]);
+  mysql_free_result(result);
+
+  sql_save_ship_armor(ship_id, ship);
+  sql_save_ship_crew(ship_id, ship);
+  sql_save_ship_slots(ship_id, ship);
+
+  return true;
+}
+
+static bool sql_load_ship_armor(int ship_id, P_ship ship)
+{
+  if (!DB || !ship || ship_id <= 0)
+    return false;
+
+  char query[128];
+  snprintf(query, sizeof(query),
+    "select side, armor, internal from ship_armor where ship_id=%d", ship_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    int side = atoi(row[0]);
+    if (side >= 0 && side < 4)
+    {
+      ship->armor[side] = atoi(row[1]);
+      ship->internal[side] = atoi(row[2]);
+    }
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+static bool sql_load_ship_crew(int ship_id, P_ship ship)
+{
+  if (!DB || !ship || ship_id <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "select crew_index, sail_skill, guns_skill, rpar_skill, sail_chief, guns_chief, rpar_chief "
+    "from ship_crew where ship_id=%d", ship_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (row)
+  {
+    ship->crew.index = atoi(row[0]);
+    ship->crew.sail_skill = (float)atoi(row[1]) / 1000.0f;
+    ship->crew.guns_skill = (float)atoi(row[2]) / 1000.0f;
+    ship->crew.rpar_skill = (float)atoi(row[3]) / 1000.0f;
+    ship->crew.sail_chief = atoi(row[4]);
+    ship->crew.guns_chief = atoi(row[5]);
+    ship->crew.rpar_chief = atoi(row[6]);
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+static bool sql_load_ship_slots(int ship_id, P_ship ship)
+{
+  if (!DB || !ship || ship_id <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "select slot_index, slot_type, item_index, position, timer, val0, val1, val2, val3, val4 "
+    "from ship_slots where ship_id=%d", ship_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    int idx = atoi(row[0]);
+    if (idx >= 0 && idx < MAXSLOTS)
+    {
+      ship->slot[idx].type = atoi(row[1]);
+      ship->slot[idx].index = atoi(row[2]);
+      ship->slot[idx].position = atoi(row[3]);
+      ship->slot[idx].timer = atoi(row[4]);
+      ship->slot[idx].val0 = atoi(row[5]);
+      ship->slot[idx].val1 = atoi(row[6]);
+      ship->slot[idx].val2 = atoi(row[7]);
+      ship->slot[idx].val3 = atoi(row[8]);
+      ship->slot[idx].val4 = atoi(row[9]);
+    }
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+P_ship sql_load_ship(const char *owner_name)
+{
+  if (!DB || !owner_name)
+    return NULL;
+
+  char *esc_owner = sql_escape_string(owner_name);
+  if (!esc_owner)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "select id, ship_name, ship_class, frags, anchor, last_time, mainsail "
+    "from ships where owner_name='%s'", esc_owner);
+  free(esc_owner);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  int ship_id = atoi(row[0]);
+  int ship_class = atoi(row[2]);
+
+  P_ship ship = new_ship(ship_class);
+  if (!ship)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  ship->ownername = str_dup(owner_name);
+  ship->name = str_dup(row[1] ? row[1] : "");
+  ship->frags = atoi(row[3]);
+  ship->anchor = atoi(row[4]);
+  ship->time = atoi(row[5]);
+  ship->mainsail = atoi(row[6]);
+
+  mysql_free_result(result);
+
+  sql_load_ship_armor(ship_id, ship);
+  sql_load_ship_crew(ship_id, ship);
+  sql_load_ship_slots(ship_id, ship);
+
+  return ship;
+}
+
+bool sql_load_all_ships()
+{
+  if (!DB)
+    return false;
+
+  MYSQL_RES *result = db_query("select owner_name from ships");
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    if (!row[0])
+      continue;
+
+    P_ship ship = sql_load_ship(row[0]);
+    if (!ship)
+      continue;
+
+    name_ship(ship->name, ship);
+    if (!load_ship(ship, real_room0(ship->anchor)))
+    {
+      logit(LOG_FILE, "sql_load_all_ships: failed to load ship for %s", row[0]);
+      continue;
+    }
+
+    ship->mainsail = BOUNDED(0, ship->mainsail, SHIP_MAX_SAIL(ship));
+    update_crew(ship);
+    reset_crew_stamina(ship);
+    set_ship_armor(ship, false);
+    update_ship_status(ship);
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+bool sql_delete_ship(const char *owner_name)
+{
+  if (!DB || !owner_name)
+    return false;
+
+  char *esc_owner = sql_escape_string(owner_name);
+  if (!esc_owner)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query), "delete from ships where owner_name='%s'", esc_owner);
+  free(esc_owner);
+
+  return sql_run_query(query);
+}
+
+bool sql_save_guild(Guild *guild)
+{
+  if (!DB || !guild)
+    return false;
+
+  unsigned int gid = guild->get_id();
+  char *esc_name = sql_escape_string(guild->name);
+  char *esc_fragger = sql_escape_string(guild->frags.topfragger);
+
+  char query[1024];
+  snprintf(query, sizeof(query),
+    "insert into guilds (id, name, racewar, bits, prestige, construction, "
+    "platinum, gold, silver, copper, frags, top_frags, topfragger) "
+    "values (%u, '%s', %u, %u, %lu, %lu, %u, %u, %u, %u, %ld, %ld, '%s') "
+    "on duplicate key update name='%s', racewar=%u, bits=%u, prestige=%lu, "
+    "construction=%lu, platinum=%u, gold=%u, silver=%u, copper=%u, "
+    "frags=%ld, top_frags=%ld, topfragger='%s'",
+    gid, esc_name ? esc_name : "", guild->racewar, guild->bits,
+    guild->prestige, guild->construction,
+    guild->platinum, guild->gold, guild->silver, guild->copper,
+    guild->frags.frags, guild->frags.top_frags, esc_fragger ? esc_fragger : "",
+    esc_name ? esc_name : "", guild->racewar, guild->bits,
+    guild->prestige, guild->construction,
+    guild->platinum, guild->gold, guild->silver, guild->copper,
+    guild->frags.frags, guild->frags.top_frags, esc_fragger ? esc_fragger : "");
+
+  if (esc_name) free(esc_name);
+  if (esc_fragger) free(esc_fragger);
+
+  if (!sql_run_query(query))
+    return false;
+
+  // save ranks
+  snprintf(query, sizeof(query), "delete from guild_ranks where guild_id=%u", gid);
+  sql_run_query(query);
+  for (int i = 0; i < ASC_NUM_RANKS; i++)
+  {
+    char *esc_title = sql_escape_string(guild->titles[i]);
+    if (!esc_title) continue;
+    snprintf(query, sizeof(query),
+      "insert into guild_ranks (guild_id, rank_index, title) values (%u, %d, '%s')",
+      gid, i, esc_title);
+    sql_run_query(query);
+    free(esc_title);
+  }
+
+  // save members
+  snprintf(query, sizeof(query), "delete from guild_members where guild_id=%u", gid);
+  sql_run_query(query);
+  for (P_member mem = guild->members; mem; mem = mem->next)
+  {
+    char *esc_mname = sql_escape_string(mem->name);
+    if (!esc_mname) continue;
+    int pid = sql_get_player_pid(mem->name);
+    snprintf(query, sizeof(query),
+      "insert into guild_members (guild_id, player_name, player_pid, bits, debt) "
+      "values (%u, '%s', %d, %u, %u)",
+      gid, esc_mname, pid > 0 ? pid : 0, mem->bits, mem->debt);
+    sql_run_query(query);
+    free(esc_mname);
+  }
+
+  return true;
+}
+
+Guild *sql_load_guild(unsigned int guild_id)
+{
+  if (!DB || guild_id == 0)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "select id, name, racewar, bits, prestige, construction, "
+    "platinum, gold, silver, copper, frags, top_frags, topfragger "
+    "from guilds where id=%u", guild_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row)
+  {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  Guild *guild = new Guild();
+  guild->id_number = atoi(row[0]);
+  strncpy(guild->name, row[1] ? row[1] : "", ASC_MAX_STR - 1);
+  guild->racewar = row[2] ? atoi(row[2]) : 0;
+  guild->bits = row[3] ? atoi(row[3]) : 0;
+  guild->prestige = row[4] ? strtoul(row[4], NULL, 10) : 0;
+  guild->construction = row[5] ? strtoul(row[5], NULL, 10) : 0;
+  guild->platinum = row[6] ? atoi(row[6]) : 0;
+  guild->gold = row[7] ? atoi(row[7]) : 0;
+  guild->silver = row[8] ? atoi(row[8]) : 0;
+  guild->copper = row[9] ? atoi(row[9]) : 0;
+  guild->frags.frags = row[10] ? atol(row[10]) : 0;
+  guild->frags.top_frags = row[11] ? atol(row[11]) : 0;
+  strncpy(guild->frags.topfragger, row[12] ? row[12] : "", MAX_NAME_LENGTH);
+  mysql_free_result(result);
+
+  // load ranks
+  snprintf(query, sizeof(query),
+    "select rank_index, title from guild_ranks where guild_id=%u order by rank_index", guild_id);
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int idx = atoi(row[0]);
+      if (idx >= 0 && idx < ASC_NUM_RANKS)
+        strncpy(guild->titles[idx], row[1] ? row[1] : "", ASC_MAX_STR_RANK - 1);
+    }
+    mysql_free_result(result);
+  }
+
+  // load members
+  snprintf(query, sizeof(query),
+    "select player_name, bits, debt from guild_members where guild_id=%u", guild_id);
+  result = db_query("%s", query);
+  if (result)
+  {
+    P_member tail = NULL;
+    while ((row = mysql_fetch_row(result)))
+    {
+      P_member mem = new guild_member();
+      strncpy(mem->name, row[0] ? row[0] : "", MAX_NAME_LENGTH);
+      mem->bits = row[1] ? atoi(row[1]) : 0;
+      mem->debt = row[2] ? atoi(row[2]) : 0;
+      mem->online_status = GSTAT_OFFLINE;
+      mem->next = NULL;
+
+      if (!guild->members)
+        guild->members = mem;
+      else
+        tail->next = mem;
+      tail = mem;
+      guild->member_count++;
+    }
+    mysql_free_result(result);
+  }
+
+  return guild;
+}
+
+bool sql_load_all_guilds()
+{
+  if (!DB)
+    return false;
+
+  MYSQL_RES *result = db_query("select id from guilds");
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    unsigned int gid = atoi(row[0]);
+    Guild *guild = sql_load_guild(gid);
+    if (guild)
+    {
+      guild->next_guild = guild_list;
+      guild_list = guild;
+    }
+  }
+
+  mysql_free_result(result);
+  return true;
+}
+
+bool sql_delete_guild(unsigned int guild_id)
+{
+  if (!DB || guild_id == 0)
+    return false;
+
+  char query[128];
+  snprintf(query, sizeof(query), "delete from guilds where id=%u", guild_id);
+  return sql_run_query(query);
 }
 
 #endif // __NO_MYSQL__

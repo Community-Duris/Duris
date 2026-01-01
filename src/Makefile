@@ -250,6 +250,9 @@ SHARED_PFILE_OBJS=pf-skills.o \
 PFILE_OBJS=pfile-stubs.o \
 					 pfile.o
 
+MIGRATE_OBJS=migrate_pfiles.o \
+						 migrate_stubs.o
+
 #******************************************************************************
 #******************************************************************************
 #
@@ -279,10 +282,16 @@ dms_new : $(DMS_OBJS)
 pfile : $(PFILE_OBJS) $(SHARED_PFILE_OBJS) mm.o common.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -g -o pfile $(PFILE_OBJS) $(SHARED_PFILE_OBJS) common.o mm.o $(LIBS)
 
+migrate_pfiles : $(MIGRATE_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -g -o migrate_pfiles $(MIGRATE_OBJS) $(LIBS)
+
 $(DMS_OBJS): %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c $< -o $@
 
 $(PFILE_OBJS): %.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c $< -o $@
+
+$(MIGRATE_OBJS): %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c $< -o $@
 
 $(SHARED_PFILE_OBJS): pf-%.o: %.c
@@ -299,7 +308,7 @@ depend .depend:
 	$(CC) $(INCLUDES) $(CFLAGS) -MM $(SRCS) > .depend
 
 clean:
-	rm -f *.o *~ dms_new .depend
+	rm -f *.o *~ dms_new migrate_pfiles .depend
 	rm -f ships/*.a ships/*.o ships/*~ ships/.depend
 
 debug: $(PROGS)

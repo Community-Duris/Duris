@@ -1222,203 +1222,23 @@ int write_one_object(P_obj obj, char* dest_buff)
 
 void writeCorpse(P_obj corpse)
 {
-  FILE    *f;
-  P_obj    hold_content = NULL;
-  bool     bak, del_only = FALSE;       /*
-                                         * return after unlinking existing
-                                         */
-  char    *buf, *size_off;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  char     Gbuf3[MAX_STRING_LENGTH];
-  int      i_count = 0;
-  static char buff[SAV_MAXSIZE * 2];
-  struct stat statbuf;
-  int      room;
-
   if (!corpse || (corpse->type != ITEM_CORPSE) ||
       !IS_SET(corpse->value[1], PC_CORPSE)) {
-		logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");
-		return;
-  }
-	    
-  /*
-   * unless corpse is on the ground, it doesn't get saved, and to
-   * prevent duplication, any current file gets nuked. JAB
-   */
-
-  if (OBJ_CARRIED(corpse) && corpse->loc.carrying != NULL)
-    room = corpse->loc.carrying->in_room;
-  else if (!OBJ_ROOM(corpse))
-    del_only = TRUE;
-  else if ((corpse->loc.room <= NOWHERE) || (corpse->loc.room > top_of_world))
+    logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");
     return;
-  else {
-    room = corpse->loc.room;
-    int virtual_room = world[room].number;
-    if ( virtual_room >= RANDOM_VNUM_BEGIN && virtual_room < RANDOM_VNUM_END) {
-      int i;
-      for (i = 0; i < LOADED_RANDOM_ZONES; i++)
-        if (virtual_room >= random_zone_data[i].first_room &&
-            virtual_room <= random_zone_data[i].last_room)
-          room = real_room0(random_zone_data[i].map_room);
-    }
   }
 
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Corpses/", SAVE_DIR);
-
-  if (corpse->action_description)
-    strcpy(Gbuf2, corpse->action_description);
-
-  for (buf = Gbuf2; *buf; buf++)
-    *buf = LOWER(*buf);
-
-  /*
-   * to make certain we save ALL player corpses, even geeks that die
-   * alot, we have to give them a serial number of sorts.  Since
-   * value[6] was unused for player corpses, it makes a handy counter.
-   * This will be slow if they have lots and lots of corpses (we have to
-   * access disk for each one we check).  JAB
-   */
+  // corpse not on ground = delete
+  if (!OBJ_ROOM(corpse) && !(OBJ_CARRIED(corpse) && corpse->loc.carrying != NULL)) {
+    if (corpse->action_description && corpse->value[CORPSE_SAVEID])
+      sql_delete_corpse(corpse->action_description, corpse->value[CORPSE_SAVEID]);
+    return;
+  }
 
   if (corpse->value[CORPSE_SAVEID] == 0)
-  {
     corpse->value[CORPSE_SAVEID] = time(NULL);
-  }
-  snprintf(Gbuf3, MAX_STRING_LENGTH, "%s/%s%d", Gbuf1, Gbuf2, corpse->value[CORPSE_SAVEID]);
-  strcpy(Gbuf1, Gbuf3);
-  strcat(Gbuf1, ".bak");
 
-  if (stat(Gbuf3, &statbuf) == 0)
-  {
-    if (rename(Gbuf3, Gbuf1) == -1)
-    {
-      logit(LOG_FILE, "Problem with player Corpses directory!\n");
-      return;
-    }
-    bak = 1;
-  }
-  else
-  {
-    if (errno != ENOENT)
-    {
-      logit(LOG_FILE, "Problem with player Corpses directory!\n");
-      return;
-    }
-    bak = 0;
-  }
-
-  if (del_only)
-  {
-    if (bak)
-      if (unlink(Gbuf1) == -1)
-        logit(LOG_FILE, "Couldn't delete backup of Corpse file.\n");
-    return;
-  }
-  f = fopen(Gbuf3, "w");
-  if (!f)
-  {
-    logit(LOG_FILE, "Couldn't create Corpse save file!\n");
-    return;
-  }
-  buf = buff;
-  ADD_BYTE(buf, (char) (short_size));
-  ADD_BYTE(buf, (char) (int_size));
-  ADD_BYTE(buf, (char) (long_size));
-
-  if ((world[room].number >= (SHIPZONE * 100)) &&
-      (world[room].number <= ((SHIPZONE * 100) + (MAXSHIPS * 10))))
-  {
-    if( anchor_room(world[room].number) )
-    {
-      ADD_INT(buf, anchor_room(world[room].number));
-    }
-    else
-    {
-      ADD_INT(buf, CORPSE_STORAGE); //store corpses in godroom if something goes wrong with buildings
-    }
-  }
-//  else if( IS_BUILDING_ROOM(room) )
-//  {
-//    Building *building = get_building_from_room(room);
-//    
-//    if( building )
-//    {
-//      ADD_INT(buf, building->room_vnum);
-//    }
-//    else
-//    {
-//      ADD_INT(buf, CORPSE_STORAGE); //store corpses in godroom if something goes wrong with buildings
-//    }
-//    
-//  }
-  else if( IS_RANDOM_ROOM(room) )
-  {
-    if( random_entrance_vnum(room) )
-    {
-      ADD_INT(buf, random_entrance_vnum(room));
-    }
-    else
-    {
-      ADD_INT(buf, CORPSE_STORAGE); //store corpses in godroom if something goes wrong with buildings
-    }    
-    
-  }
-  else
-  {
-    ADD_INT(buf, world[room].number);   /*
-                                         * reload room
-                                         * (VIRTUAL)
-                                         */
-  }
-
-  size_off = buf;               /*
-                                 * needed to make sure it's not corrupt
-                                 */
-  ADD_INT(buf, (int) 0);
-
-  /*
-   * have to hold the 'next_content' of corpse, as this is stuff in the
-   * room and not to be saved.  Replaced after it's saved.  JAB
-   */
-
-  hold_content = corpse->next_content;
-  corpse->next_content = NULL;
-
-  i_count = countInven(corpse);
-
-  ADD_BYTE(buf, (char) SAV_ITEMVERS);
-  ADD_INT(buf, i_count);
-
-  ibuf = buf;
-  save_count = 0;
-
-  writeObjectlist(corpse, (byte) 0);
-
-  corpse->next_content = hold_content;
-
-  if (save_count != i_count)
-  {
-    logit(LOG_DEBUG, "save_count != count in writeCorpse!");
-    return;
-  }
-
-  ADD_INT(size_off, (int) (ibuf - buff));
-
-  if (fwrite(buff, 1, (unsigned) (ibuf - buff), f) != (ibuf - buff))
-  {
-    logit(LOG_FILE, "Couldn't write to Corpse save file!\n");
-    fclose(f);
-    return;
-  }
-  fclose(f);
-
-  if (bak)
-  {
-    if (unlink(Gbuf1) == -1)
-    {
-      logit(LOG_FILE, "Couldn't delete backup of player file.\n");
-    }
-  }
+  sql_save_corpse(corpse);
 }
 
 int writeItems(char *buf, P_char ch)
@@ -1512,36 +1332,9 @@ void delete_knownShapes(P_char ch)
 
 void writeShapechangeData(P_char ch)
 {
-  struct char_shapechange_data *curShape;
-
-  if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE) && (NULL != ch->only.pc->knownShapes))
+  if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
   {
-    FILE    *f;
-    char     buf[MAX_STRING_LENGTH];
-
-    snprintf(buf, MAX_STRING_LENGTH, "Players/Shapechange/%c/%s", tolower(GET_NAME(ch)[0]),
-            GET_NAME(ch));
-    f = fopen(buf, "w");
-    if (f == NULL)
-    {
-      snprintf(buf, MAX_STRING_LENGTH, "Unable to create/truncate '%s' in writeShapechangeData\n", buf);
-      logit(LOG_DEBUG, buf);
-      return;
-    }
-
-    curShape = ch->only.pc->knownShapes;
-
-    while (curShape != NULL)
-    {
-      fprintf(f, "vnum = %d, timesR = %d, lastR = %d, lastC = %d\n",
-              curShape->mobVnum,
-              curShape->timesResearched,
-              curShape->lastResearched,
-              curShape->lastShapechanged);
-      curShape = curShape->next;
-    }
-
-    fclose(f);
+    sql_save_player_shapechanges(ch);
   }
 }
 
@@ -1549,49 +1342,7 @@ void readShapechangeData(P_char ch)
 {
   if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
   {
-    if (ch->only.pc->knownShapes)
-    {
-      delete_knownShapes(ch);
-    }
-
-    FILE    *f;
-    char     s[MAX_STRING_LENGTH];
-    struct char_shapechange_data *curShape;
-
-    snprintf(s, MAX_STRING_LENGTH, "Players/Shapechange/%c/%s", tolower(GET_NAME(ch)[0]),
-            GET_NAME(ch));
-    f = fopen(s, "r");
-
-    if (f == NULL)
-      return;
-
-    // read them in order written...  this might make the read code a bit
-    // ulgier, but removes the need to reverse the linked list later.
-
-    struct char_shapechange_data **ppShape = &(ch->only.pc->knownShapes);
-
-    int      vNum, timesR, lastR, lastC;
-    while (4 == fscanf(f, "vnum = %d, timesR = %d, lastR = %d, lastC = %d\n",
-                       &vNum, &timesR, &lastR, &lastC))
-    {
-      // ensure that the vnum actually exists.  If not, skip it!
-      if (!real_mobile(vNum))
-        continue;
-
-      // create a shapechange_data structure
-      CREATE(curShape, char_shapechange_data, 1, MEM_TAG_SHPCHNG);
-      curShape->mobVnum = vNum;
-      curShape->timesResearched = timesR;
-      curShape->lastResearched = lastR;
-      curShape->lastShapechanged = lastC;
-      curShape->next = NULL;
-
-      // attach the structure to the end of ch's list
-      (*ppShape) = curShape;
-      // and move ppShape to the end of the list
-      ppShape = &(curShape->next);
-    }
-    fclose(f);
+    sql_load_player_shapechanges(ch);
   }
 }
 
@@ -1666,109 +1417,45 @@ int calculate_save_room(P_char ch, int type, int room)
 
 int writeCharacter(P_char ch, int type, int room)
 {
-  FILE    *f;
-  P_obj    obj, obj2;
-  char    *buf, *skill_off, *affect_off, *item_off, *size_off, *witness_off, *tmp;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  int      i, bak;
-  struct affected_type *af;
-  static char buff[SAV_MAXSIZE * 2];
+  P_obj obj, obj2;
+  int i;
+  int result = 1;
 
-  struct stat statbuf;
-
-  if( !ch || !GET_NAME(ch) )
+  if (!ch || !GET_NAME(ch))
     return 0;
 
-  if( IS_MORPH(ch) )
+  if (IS_MORPH(ch))
   {
     ch = MORPH_ORIG(ch);
-    if( !ch || !GET_NAME(ch) )
-    {
+    if (!ch || !GET_NAME(ch))
       return 0;
-    }
   }
 
   if (IS_NPC(ch))
-  {
-/*    if (ch->following && IS_PC(ch->following))
-   writePet(ch); */
     return 0;
-  }
 
-  /* hook needed for lockers - call a room proc when saving a character in the room */
-  if( ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct) )
-  {
-    room = (*world[ch->in_room].funct) (ch->in_room, ch, (-80), NULL);
-  }
+  // locker hook (pre-save)
+  if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
+    room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
 
   writeShapechangeData(ch);
   room = calculate_save_room(ch, type, room);
 
-  /*
-   * this check assumes that the macros have not been fixed up for ** a
-   * different architecture type.
-   */
-
-  // DISABLED FOR 64-BIT: sizeof(int)=4, sizeof(long)=8 on 64-bit systems
-  // if ((sizeof(char) != 1) || (int_size != long_size))
-  // {
-  //   logit(LOG_DEBUG,
-  //         "sizeof(char) must be 1 and int_size must == long_size for player saves!\n");
-  //   return 0;
-  // }
-  /*
-   * in case char reenters game immediately; handle rent/etc correctly
-   */
-
-  // Skip SQL operations for locker characters - they don't have database entries
+  // skip locker characters for sql operations
   if (!strstr(GET_NAME(ch), ".locker"))
   {
     sql_update_money(ch);
-    if( (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI) )
-    {
+    if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
       sql_update_playtime(ch);
-    }
     sql_update_epics(ch);
   }
 
   save_zone_trophy(ch);
-  
+
   if (ch->desc)
     ch->desc->rtype = type;
 
-  buf = buff;
-  ADD_BYTE(buf, (char) SAV_SAVEVERS);
-  ADD_BYTE(buf, (char) (short_size));
-  ADD_BYTE(buf, (char) (int_size));
-  ADD_BYTE(buf, (char) (long_size));
-
-  ADD_BYTE(buf, (char) type);
-
-  skill_off = buf;
-  ADD_INT(buf, (int) 0);
-  witness_off = buf;
-  ADD_INT(buf, (int) 0);
-  affect_off = buf;
-  ADD_INT(buf, (int) 0);
-  item_off = buf;
-  ADD_INT(buf, (int) 0);
-  size_off = buf;
-  ADD_INT(buf, (int) 0);
-  // Surname
-  ADD_INT( buf, (ch->specials.act3) );
-  /*
-   * starting room (VIRTUAL)
-   */
-  ADD_INT(buf, room);
-
-  ADD_LONG(buf, time(0));       /*
-                                 * save time
-                                 */
-
-  /*
-   * unequip everything and remove affects before saving
-   */
-
+  // unequip everything and remove affects before saving
   for (i = 0; i < MAX_WEAR; i++)
     if (ch->equipment[i])
       save_equip[i] = unequip_char(ch, i, TRUE);
@@ -1776,34 +1463,52 @@ int writeCharacter(P_char ch, int type, int room)
       save_equip[i] = NULL;
 
   all_affects(ch, FALSE);
-
-  buf += writeStatus(buf, ch,
-    ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI)) ? TRUE : FALSE);
-
-  ADD_INT(skill_off, (int) (buf - buff));
-
-  buf += writeSkills(buf, ch, MAX_SKILLS);
-
-  ADD_INT(witness_off, (int) (buf - buff));
-
-  buf += writeWitness(buf, ch->specials.witnessed);
-
-  ADD_INT(affect_off, (int) (buf - buff));
-
   updateShortAffects(ch);
-  buf += writeAffects(buf, ch->affected);
 
-  ADD_INT(item_off, (int) (buf - buff));
+  // save to database
+  if (strstr(GET_NAME(ch), ".locker"))
+  {
+    // save locker to database
+    int owner_pid = 0;
+    int owner_assoc_id = 0;
 
-  buf += writeItems(buf, ch);
+    if (strncmp(GET_NAME(ch), "guild.", 6) == 0)
+    {
+      // guild locker: guild.X.locker - extract guild id
+      owner_assoc_id = atoi(GET_NAME(ch) + 6);
+    }
+    else
+    {
+      // player locker: playername.locker - get player's pid
+      char pname[MAX_NAME_LENGTH + 1];
+      strncpy(pname, GET_NAME(ch), sizeof(pname) - 1);
+      pname[sizeof(pname) - 1] = '\0';
+      char *dot = strstr(pname, ".locker");
+      if (dot)
+        *dot = '\0';
+      owner_pid = sql_get_player_pid(pname);
+    }
 
-  ADD_INT(size_off, (int) (buf - buff));
+    if (!sql_save_locker(ch, owner_pid, owner_assoc_id))
+    {
+      logit(LOG_FILE, "sql_save_locker failed for %s", GET_NAME(ch));
+      wizlog(AVATAR, "&+RERROR&N sql_save_locker failed for %s", GET_NAME(ch));
+      result = 0;
+    }
+  }
+  else
+  {
+    if (!sql_save_player(ch, type, room))
+    {
+      logit(LOG_FILE, "sql_save_player failed for %s", GET_NAME(ch));
+      wizlog(AVATAR, "&+RERROR&N sql_save_player failed for %s", GET_NAME(ch));
+      result = 0;
+    }
+  }
 
-  /*
-   * if they are staying in game, re-equip them
-   */
-  if( (type != RENT_INN) && (type != RENT_LINKDEAD) && (type != RENT_CAMPED) && (type != RENT_DEATH)
-    && (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI) )
+  // re-equip or extract based on save type
+  if ((type != RENT_INN) && (type != RENT_LINKDEAD) && (type != RENT_CAMPED) && (type != RENT_DEATH)
+      && (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
   {
     for (i = 0; i < MAX_WEAR; i++)
       if (save_equip[i])
@@ -1811,29 +1516,6 @@ int writeCharacter(P_char ch, int type, int room)
   }
   else
   {
-/*
-    struct affected_type *af;
-    int race_temp;
-
-    if ((af = get_spell_from_char(ch, TAG_RACE_CHANGE)) != NULL)
-    {
-      race_temp = GET_RACE(ch);
-
-      GET_RACE(ch) = af->modifier;
-
-      ch->player.time.birth = time(NULL) - (racial_data[GET_RACE(ch)].base_age) * 2;
-      // Set birthdate + base_age + 5 years.
-      ch->player.time.birth = time(NULL);
-      // Add base_age to birthdate + base_age + 5 years.
-      ch->player.time.birth -= (racial_data[GET_RACE(ch)].base_age) * SECS_PER_MUD_YEAR;
-
-      af->modifier = race_temp;
-    }
-*/
-    /*
-     * if not, nuke the equip and inven (it has already been saved)
-     */
-
     for (i = 0; i < MAX_WEAR; i++)
       if (save_equip[i])
       {
@@ -1848,176 +1530,14 @@ int writeCharacter(P_char ch, int type, int room)
     }
   }
 
-  // Reapply affects (including equip)
+  // reapply affects
   all_affects(ch, TRUE);
 
-  logit(LOG_PLAYER, "writeCharacter: Saving %s, size = %d bytes (max %d)",
-    GET_NAME(ch), (int) (buf - buff), SAV_MAXSIZE);
+  // locker hook (post-save)
+  if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
+    (*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
 
-  if ((int) (buf - buff) > SAV_MAXSIZE)
-  {
-    logit(LOG_PLAYER, "Could not save %s, file too large (%d bytes)",
-      GET_NAME(ch), (int) (buf - buff));
-    return 0;
-  }
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/", SAVE_DIR, LOWER(*ch->player.name));
-  tmp = Gbuf1 + strlen(Gbuf1);
-  strcat(Gbuf1, GET_NAME(ch));
-  for (; *tmp; tmp++)
-    *tmp = LOWER(*tmp);
-  strcpy(Gbuf2, Gbuf1);
-  strcat(Gbuf2, ".bak");
-
-  if (stat(Gbuf1, &statbuf) == 0)
-  {
-    if (rename(Gbuf1, Gbuf2) == -1)
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-      logit(LOG_FILE, "Problem with player save files directory!\n");
-      logit(LOG_FILE, "   rename failed, errno = %d\n", tmp_errno);
-      wizlog(AVATAR, "&+R&-LPANIC!&N  Error backing up pfile for %s!",
-             GET_NAME(ch));
-      return 0;
-    }
-    bak = 1;
-  }
-  else
-  {
-    if (errno != ENOENT)
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-
-      /*
-       * NOTE: with the stat() function, only two errors are
-       * possible: EBADF   filedes is bad. ENOENT  File does not
-       * exist. Now, EBADF should only occur using fstat().
-       * Therefore, if I fall into here, I have some SERIOUS
-       * problems!
-       */
-
-      logit(LOG_FILE, "Problem with player save files directory!\n");
-      logit(LOG_FILE, "   stat failed, errno = %d\n", tmp_errno);
-      wizlog(AVATAR, "&+R&-LPANIC!&N  Error finding pfile for %s!",
-             GET_NAME(ch));
-      return 0;
-    }
-    /*
-     * in this case, no original pfile existed.  Probably a new
-     * char... so don't panic.
-     */
-    bak = 0;
-  }
-
-  f = fopen(Gbuf1, "w");
-
-  /*
-   * NOTE:  From this point on, if the save is not successful, then the
-   * pfile will be corrupted.  While its nice to return an error, THERE
-   * IS STILL A FUCKED UP PLAYER FILE!  Making the backup is a complete
-   * fucking waste if you don't DO anything with it!  It will just get
-   * overwritten the next time the character tries to save! Therefore,
-   * I'm adding code that will rename the backup to the original if the
-   * save wasn't successful.  At the same time, I'd like to officially
-   * request that whoever had the wonderful idea of making a backup, but
-   * not using it, be sac'ed repeatedly. (neb)
-   */
-
-  if (!f)
-  {
-    int      tmp_errno;
-
-    tmp_errno = errno;
-    logit(LOG_FILE, "Couldn't create player save file!\n");
-    logit(LOG_FILE, "   fopen failed, errno = %d\n", tmp_errno);
-    wizlog(AVATAR, "&+R&-LPANIC!&N  Error creating pfile for %s!",
-           GET_NAME(ch));
-    bak -= 2;
-  }
-  else
-  {
-    if (fwrite(buff, 1, (unsigned) (buf - buff), f) != (buf - buff))
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-      logit(LOG_FILE, "Couldn't write to player save file!\n");
-      logit(LOG_FILE, "   fwrite failed, errno = %d\n", tmp_errno);
-      wizlog(AVATAR, "&+R&-LPANIC!&N  Error writing pfile for %s!",
-             GET_NAME(ch));
-      fclose(f);
-      bak -= 2;
-    }
-    else
-      fclose(f);
-  }
-
-  switch (bak)
-  {
-  case 1:                      /*
-                                 * save worked, just get rid of the backup
-                                 */
-    if (unlink(Gbuf2) == -1)    /*
-                                 * not a critical error
-                                 */
-      logit(LOG_FILE, "Couldn't delete backup of player file.\n");
-
-  case 0:                      /*
-                                 * save worked, no backup was made to
-                                 * begin with
-                                 */
-    break;
-
-  case -1:                     /*
-                                 * save FAILED, but we have a backup
-                                 */
-    if (rename(Gbuf2, Gbuf1) == -1)
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-      logit(LOG_FILE, " Unable to restore backup!  Argh!");
-      logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
-      wizlog(AVATAR, "&+R&-LPANIC!&N  Error restoring backup pfile for %s!",
-             GET_NAME(ch));
-      logit(LOG_EXIT, "unable to restore backup pfile for %s", GET_NAME(ch));
-			raise(SIGSEGV);
-    }
-    else
-      wizlog(AVATAR, "        Backup restored.");
-    /*
-     * restored or not, the save still failed, so return 0
-     */
-    return 0;
-
-  case -2:                     /*
-                                 * save FAILED, and we have NO backup!
-                                 */
-    logit(LOG_FILE, " No restore file was made!");
-    wizlog(AVATAR, "        No backup file available");
-    return 0;
-  }
-
-  /* hook needed for lockers - call a room proc when saving a character in the room */
-  /* -81 means that the save is complete */
-  if( ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-      (world[ch->in_room].funct))
-    (*world[ch->in_room].funct) (ch->in_room, ch, (-81), NULL);
-
-  // Also save to database (dual-write for migration period)
-  // Skip locker characters - they use separate storage
-  if (!strstr(GET_NAME(ch), ".locker"))
-  {
-    if (!sql_save_player(ch, type, room))
-    {
-      logit(LOG_FILE, "sql_save_player failed for %s (pfile save succeeded)", GET_NAME(ch));
-    }
-  }
-
-  return 1;
+  return result;
 }
 
 #endif
@@ -4148,138 +3668,13 @@ int restoreItemsOnly(P_char ch, int flatrate)
   return 0;
 }
 
-/*
- * routine called at boottime, goes through Corpses dir and loads all
- * player corpses back into the game.
- */
-
 #ifndef _PFILE_
 
 void restoreCorpses(void)
 {
-  FILE     *f;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  char     Gbuf3[MAX_STRING_LENGTH], buff[SAV_MAXSIZE], *buf;
-  char     mybuf[MAX_STRING_LENGTH];
-  int      size, csize, tmp, start, map, end;
-  struct stat statbuf;
-  struct dirent *de;
-
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Corpses", SAVE_DIR);
-  if (stat(Gbuf1, &statbuf) == -1)
-  {
-    perror("Corpses dir");
-    return;
-  }
-
-  DIR *dir = opendir(Gbuf1);
-  if (!dir)
-    return perror("corpse_list");
-
-  while ((de = readdir(dir)))
-  {
-    if (de->d_name[0] == '.') // . .. .gitignore
-      continue;
-
-    snprintf(Gbuf3, MAX_STRING_LENGTH, "%s/%s", Gbuf1, de->d_name);
-    f = fopen(Gbuf3, "r");
-    if (!f)
-    {
-      logit(LOG_CORPSE, "Could not restore Corpse file %s", de->d_name);
-      continue;
-    }
-    buf = buff;
-    size = fread(buf, 1, SAV_MAXSIZE, f);
-    fclose(f);
-
-    if (size < 4)
-    {
-      fprintf(stderr, "Problem restoring corpse: %s\n", de->d_name);
-      logit(LOG_FILE, "Problem restoring corpse: %s.", de->d_name);
-      continue;
-    }
-
-    if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
-        (GET_BYTE(buf) != long_size))
-    {
-      logit(LOG_FILE, "Save file %s in different machine format.", de->d_name);
-      fprintf(stderr, "Problem restoring corpse: %s\n", de->d_name);
-      logit(LOG_FILE, "Problem restoring corpse: %s.", de->d_name);
-      continue;
-    }
-    if (size < (5 * int_size + 5 * sizeof(char) + long_size))
-    {
-      logit(LOG_FILE, "Corpse file %s is too small (%d).", de->d_name, size);
-      fprintf(stderr, "Problem restoring corpse: %s\n", de->d_name);
-      logit(LOG_FILE, "Problem restoring corpse: %s.", de->d_name);
-      continue;
-    }
-    /*
-     * WHACK!  The sound of a hack in progress.  Ok, without doing
-     * this, restoreObjects will put an empty corpse in the target
-     * room, which is then saved (empty).  Result, unless something
-     * saves the corpse again it will be empty after one crash/reboot,
-     * very annoying.  So we save a backup, and copy the backup into
-     * place, after the restoreObjects call. Two extra system calls
-     * (rename) but that's cheaper than most other solutions.  JAB
-     */
-
-    snprintf(Gbuf2, MAX_STRING_LENGTH, "%s.bak", Gbuf3);
-    if (rename(Gbuf3, Gbuf2) == -1)
-    {
-      logit(LOG_FILE, "Problem with player Corpses directory!\n");
-      return;
-    }
-    tmp = GET_INTE(buf);
-    //Check if tmp is a rooom within a random zone if soo move it to entrance
-    f = fopen("Players/Corpses/RandomZoneList", "r+");
-    if (f)
-    {
-
-      while (!(feof(f)))
-      {
-        if (fgets(mybuf, sizeof(mybuf) - 1, f))
-        {
-          if (sscanf(mybuf, "%d %d %d", &start, &end, &map) == 3)
-            if ((tmp >= start) && (tmp <= end))
-            {
-              tmp = map;
-            }
-
-        }
-      }
-
-      fclose(f);
-    }
-    //End check
-    if ((corpse_room = real_room(tmp)) == NOWHERE)
-    {
-      logit(LOG_FILE, "No room %d to load %s, loading into room 0",
-            tmp, Gbuf2);
-      corpse_room = 0;
-    }
-    csize = GET_INTE(buf);
-
-    if (size != csize)
-    {
-      logit(LOG_FILE, "Corpse file %s size %d not match size read %d.",
-            Gbuf2, size, csize);
-      fprintf(stderr, "Problem restoring corpse: %s\n", Gbuf2);
-      logit(LOG_FILE, "Problem restoring corpse: %s.", Gbuf2);
-      continue;
-    }
-    if (restoreObjects(buf, 0, 1))
-    {
-      /*
-       * Hack part Deux, put the loaded pcorpse back
-       */
-      unlink(Gbuf3);
-      rename(Gbuf2, Gbuf3);
-      continue;
-    }
-  }
-
-  closedir(dir);
+#ifndef __NO_MYSQL__
+  sql_load_all_corpses();
+#endif
 }
 
 /** Pet only functions below. Calls some from above. **/
@@ -4711,163 +4106,36 @@ P_char restorePet(char *id)
   return ch;
 }
 
-/* Support for reloading buried items */
-
 void writeSavedItem(P_obj item)
 {
-  FILE    *f;
-  P_obj    hold_content = NULL;
-  bool     del_only = FALSE;    /* return after unlinking existing */
-  char    *buf, *size_off;
-  char     obj_dir_name[MAX_STRING_LENGTH], obj_file_name[MAX_STRING_LENGTH];
-  char     obj_path[MAX_STRING_LENGTH];
-  int      i_count = 0;
-  int      restore_backup = FALSE;
-  static char buffer[SAV_MAXSIZE * 2];
-
   if (!item)
-  {
-    logit(LOG_DEBUG, "writeSavedItem called with null item");
-		return;  
-	}
-  if (item->cost < 100)         /* not worth saving */
     return;
 
-  if (!OBJ_ROOM(item))
-    del_only = TRUE;
-  else if ((item->loc.room <= NOWHERE) || (item->loc.room > top_of_world))
-  {
-    logit(LOG_DEBUG, "writeSaveditem called with item someplace impossible");
-  	return;
-	}
-  snprintf(obj_dir_name, MAX_STRING_LENGTH, "%s/SavedItems/", SAVE_DIR);
+  if (item->cost < 100)
+    return;
 
-  snprintf(obj_file_name, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long) item);
+  char item_key[MAX_STRING_LENGTH];
+  snprintf(item_key, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long) item);
 
-  for (buf = obj_file_name; *buf; buf++)
-    *buf = LOWER(*buf);
+  for (char *p = item_key; *p; p++)
+    *p = LOWER(*p);
 
-  snprintf(obj_path, MAX_STRING_LENGTH, "%s/%s", obj_dir_name, obj_file_name);
-
-  buf = buffer;
-
-  ADD_INT(buf, world[item->loc.room].number);   /* reload room (VIRTUAL) */
-
-  size_off = buf;               /* needed to make sure it's not corrupt */
-  ADD_INT(buf, (int) 0);
-
-  /*
-   * have to hold the 'next_content' of item, as this is stuff in the
-   * room and not to be saved.  Replaced after it's saved.  JAB
-   */
-
-  hold_content = item->next_content;
-
-  item->next_content = NULL;
-
-  i_count = countInven(item);
-
-  ADD_BYTE(buf, (char) SAV_ITEMVERS);
-  ADD_INT(buf, i_count);
-
-  ibuf = buf;
-  save_count = 0;
-
-  writeObjectlist(item, (byte) 0);
-
-  item->next_content = hold_content;
-
-  if (save_count != i_count) {
-		logit(LOG_DEBUG, "save count mismatch in writeSavedItem!");
-		return;
-	}
-
-  ADD_INT(size_off, (int) (ibuf - buffer));
-
-  f = fopen(obj_path, "w");
-  if (!f)
-  {
-    logit(LOG_SAVED_OBJ, "Couldn't create SavedItem save file!\n");
-    wizlog(57, "&+WCouldn't create SavedItem save file!\n");
+  if (!OBJ_ROOM(item)) {
+    sql_delete_saved_item(item_key);
     return;
   }
 
-  if (fwrite(buffer, 1, (unsigned) (ibuf - buffer), f) != (ibuf - buffer))
-  {
-    logit(LOG_SAVED_OBJ, "Couldn't write to SavedItem save file!\n");
-    wizlog(57, "&+WCouldn't write to SavedItem save file!\n");
-  }
-  fclose(f);
+  if ((item->loc.room <= NOWHERE) || (item->loc.room > top_of_world))
+    return;
+
+  sql_save_saved_item(item, item_key);
 }
 
 void restoreSavedItems(void)
 {
-  FILE    *obj_file;
-  DIR     *obj_dir;
-  struct dirent *obj_entry;
-  char     obj_dir_name[MAX_STRING_LENGTH], obj_path[MAX_STRING_LENGTH];
-  char     buffer[SAV_MAXSIZE], *buf;
-  int      size, csize, virtual_room;
-  P_obj    loaded[4096];
-  int      count = 0;
-
-  snprintf(obj_dir_name, MAX_STRING_LENGTH, "%s/SavedItems", SAVE_DIR);
-  obj_dir = opendir(obj_dir_name);
-  if (!obj_dir)
-  {
-    perror("SavedItems dir");
-    return;
-  }
-
-  while ((obj_entry = readdir(obj_dir)) && count < 4096)
-  {
-    if (strstr(obj_entry->d_name, "item.") != obj_entry->d_name)
-      continue;
-    snprintf(obj_path, MAX_STRING_LENGTH, "%s/%s", obj_dir_name, obj_entry->d_name);
-    obj_file = fopen(obj_path, "r");
-    if (!obj_file)
-    {
-      logit(LOG_SAVED_OBJ, "Could not restore SavedItem file %s", obj_path);
-      continue;
-    }
-    buf = buffer;
-    size = fread(buffer, 1, SAV_MAXSIZE, obj_file);
-    fclose(obj_file);
-
-    if (size < 4)
-    {
-      fprintf(stderr, "Problem restoring SavedItem: %s\n", obj_path);
-      logit(LOG_SAVED_OBJ, "Problem restoring SavedItem: %s.", obj_path);
-      continue;
-    }
-
-    virtual_room = GET_INTE(buf);
-    if ((corpse_room = real_room(virtual_room)) == NOWHERE)
-    {
-      logit(LOG_SAVED_OBJ, "No room %d to load %s, loading into room 0",
-            virtual_room, obj_path);
-      corpse_room = 0;
-    }
-    csize = GET_INTE(buf);
-
-    if (size != csize)
-    {
-      logit(LOG_SAVED_OBJ,
-            "SavedItem file %s size %d not match size read %d.", obj_path,
-            size, csize);
-      fprintf(stderr, "Problem restoring SavedItem: %s\n", obj_path);
-      logit(LOG_SAVED_OBJ, "Problem restoring SavedItem: %s.", obj_path);
-      continue;
-    }
-    unlink(obj_path);
-    loaded[count++] = restoreObjects(buf, 0, 0);
-  }
-
-  closedir(obj_dir);
-
-  while (count--)
-    if (loaded[count])
-      writeSavedItem(loaded[count]);
+#ifndef __NO_MYSQL__
+  sql_restore_saved_items();
+#endif
 }
 
 void PurgeSavedItemFile(P_obj item)
@@ -4894,333 +4162,42 @@ void PurgeSavedItemFile(P_obj item)
   return;
 }
 
-/*** Shopkeeper saving ***/
-
 int writeShopKeeper(P_char ch)
 {
-  FILE    *f;
-  char    *buf, *affect_off, *item_off, *size_off;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  int      i, bak, shop_nr;
-  static char buff[SAV_MAXSIZE * 2];
-  struct affected_type *af;
-  struct stat statbuf;
-
   if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
     return 0;
 
   if (IS_NPC(ch) && !IS_SHOPKEEPER(ch))
     return 0;
 
+  int shop_nr;
   for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(ch); shop_nr++) ;
 
-  // DISABLED FOR 64-BIT: sizeof(int)=4, sizeof(long)=8 on 64-bit systems
-  // if ((sizeof(char) != 1) || (int_size != long_size))
-  // {
-  //   logit(LOG_DEBUG,
-  //         "sizeof(char) must be 1 and int_size must == long_size for player saves!\n");
-  //   return 0;
-  // }
-  buf = buff;
-  ADD_BYTE(buf, (char) (short_size));
-  ADD_BYTE(buf, (char) (int_size));
-  ADD_BYTE(buf, (char) (long_size));
-
-  affect_off = buf;
-  ADD_INT(buf, (int) 0);
-  item_off = buf;
-  ADD_INT(buf, (int) 0);
-  size_off = buf;
-  ADD_INT(buf, (int) 0);
-  ADD_INT(buf, mob_index[GET_RNUM(ch)].virtual_number);
-
-  ADD_LONG(buf, time(0));       /* save time */
-  ADD_INT(buf, world[ch->in_room].number);
-
-  /* unequip everything and remove affects before saving */
-
-  for (i = 0; i < MAX_WEAR; i++)
-    if (ch->equipment[i])
-      save_equip[i] = unequip_char(ch, i);
-    else
-      save_equip[i] = NULL;
-
-  af = ch->affected;
-  all_affects(ch, FALSE);       /* reset to unaffected state */
-  buf += writePetStatus(buf, ch);
-  ADD_INT(affect_off, (int) (buf - buff));
-  updateShortAffects(ch);
-  buf += writeAffects(buf, ch->affected);
-  ADD_INT(item_off, (int) (buf - buff));
-  buf += writeItems(buf, ch);
-  ADD_INT(size_off, (int) (buf - buff));
-  for (i = 0; i < MAX_WEAR; i++)
-    if (save_equip[i])
-      equip_char(ch, save_equip[i], i, 1);
-
-
-  all_affects(ch, TRUE);        /* reapply affects (including equip) */
-
-  if ((int) (buf - buff) > SAV_MAXSIZE)
-  {
-    logit(LOG_PLAYER, "Could not save %s, file too large (%d bytes)",
-          GET_NAME(ch), (int) (buf - buff));
-    return 0;
-  }
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/ShopKeepers/%d", SAVE_DIR, shop_nr);
-
-  strcpy(Gbuf2, Gbuf1);
-  strcat(Gbuf2, ".bak");
-
-  if (stat(Gbuf1, &statbuf) == 0)
-  {
-    if (rename(Gbuf1, Gbuf2) == -1)
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-      logit(LOG_FILE, "Problem with shopkeeper save files directory!\n");
-      logit(LOG_FILE, "   rename failed, errno = %d\n", tmp_errno);
-      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error backing up shop for %s!",
-             GET_NAME(ch));
-      return 0;
-    }
-    bak = 1;
-  }
-  else
-  {
-    if (errno != ENOENT)
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-
-      /*
-       * NOTE: with the stat() function, only two errors are
-       * possible: EBADF   filedes is bad. ENOENT  File does not
-       * exist. Now, EBADF should only occur using fstat().
-       * Therefore, if I fall into here, I have some SERIOUS
-       * problems!
-       */
-
-      logit(LOG_FILE, "Problem with shop save files directory!\n");
-      logit(LOG_FILE, "   stat failed, errno = %d\n", tmp_errno);
-      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error finding shopfile for %s!",
-             GET_NAME(ch));
-      return 0;
-    }
-    /*
-     * in this case, no original pfile existed.  Probably a new
-     * char... so don't panic.
-     */
-    bak = 0;
-  }
-
-  f = fopen(Gbuf1, "w");
-
-  if (!f)
-  {
-    int      tmp_errno;
-
-    tmp_errno = errno;
-    logit(LOG_FILE, "Couldn't create shop save file!\n");
-    logit(LOG_FILE, "   fopen failed, errno = %d\n", tmp_errno);
-    wizlog(OVERLORD, "&+R&-LPANIC!&N  Error creating shopfile for %s!",
-           GET_NAME(ch));
-    bak -= 2;
-  }
-  else
-  {
-    if (fwrite(buff, 1, (unsigned) (buf - buff), f) != (buf - buff))
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-      logit(LOG_FILE, "Couldn't write to shop save file!\n");
-      logit(LOG_FILE, "   fwrite failed, errno = %d\n", tmp_errno);
-      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error writing shopfile for %s!",
-             GET_NAME(ch));
-      fclose(f);
-      bak -= 2;
-    }
-    else
-      fclose(f);
-  }
-
-  switch (bak)
-  {
-  case 1:                      /* save worked, just get rid of the backup */
-    if (unlink(Gbuf2) == -1)    /* not a critical error  */
-      logit(LOG_FILE, "Couldn't delete backup of shopkeeper file.\n");
-
-  case 0:                      /* save worked, no backup was made to begin with */
-    break;
-
-  case -1:                     /* save FAILED, but we have a backup */
-    if (rename(Gbuf2, Gbuf1) == -1)
-    {
-      int      tmp_errno;
-
-      tmp_errno = errno;
-      logit(LOG_FILE, " Unable to restore shop backup!  Argh!");
-      logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
-      logit(LOG_EXIT, "  unable to restore shop backup");
-			raise(SIGSEGV);
-    }
-    else
-      wizlog(OVERLORD, "        Backup restored.");
-    /*
-     * restored or not, the save still failed, so return 0
-     */
-    return 0;
-
-  case -2:                     /* save FAILED, and we have NO backup! */
-    logit(LOG_FILE, " No shop restore file was made!");
-    wizlog(OVERLORD, "        No backup file available");
-    return 0;
-  }
-
-  return 1;
+  return sql_save_shopkeeper(ch, shop_nr) ? 1 : 0;
 }
 
 int deleteShopKeeper(int id)
 {
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-
   if (id < 0)
-  {
-    logit(LOG_EXIT, "invalid shop id %d in deleteShopKeeper", id);
-    raise(SIGSEGV);
-  }
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/ShopKeepers/%d", SAVE_DIR, id);
-  strcpy(Gbuf2, Gbuf1);
-  strcat(Gbuf2, ".bak");
-  unlink(Gbuf1);
-  unlink(Gbuf2);
+    return FALSE;
 
-  return TRUE;
+  return sql_delete_shopkeeper(id) ? TRUE : FALSE;
 }
 
 P_char restoreShopKeeper(int id)
 {
-  FILE    *f;
-  P_char   ch;
-  char     buff[SAV_MAXSIZE];
-  char    *buf = buff;
-  int      start, size, csize, affect_off, item_off, tmp, virt;
-  char     Gbuf1[MAX_STRING_LENGTH];
-
-  if (!id)
-  {
-    return 0;
-  }
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/ShopKeepers/%d", SAVE_DIR, id);
-
-  f = fopen(Gbuf1, "r");
-  if (!f)
-  {
-    logit(LOG_DEBUG, "ShopKeeper %d savefile does not exist!", id);
-    return 0;
-  }
-  size = fread(buf, 1, SAV_MAXSIZE, f);
-  fclose(f);
-  if (size < 4)
-  {
-    logit(LOG_FILE, "Warning: Save file less than 4 bytes.");
-  }
-  if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
-      (GET_BYTE(buf) != long_size))
-  {
-    wizlog(OVERLORD, "Ouch. Bad file sizing for %d", id);
-    return 0;
-  }
-  if (size < 5 * int_size + 5 * sizeof(char) + long_size)
-  {
-    logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
-  }
-  affect_off = GET_INTE(buf);
-  item_off = GET_INTE(buf);
-  csize = GET_INTE(buf);
-  virt = GET_INTE(buf);
-  if (size != csize)
-  {
-    wizlog(OVERLORD, "Warning: file size %d doesn't match csize %d.",
-           size, csize);
-  }
-  ch = read_mobile(virt, VIRTUAL);
-  if (!ch)
-  {
-    return 0;
-  }
-  GET_LONG(buf);
-  GET_BIRTHPLACE(ch) = GET_INTE(buf);
-  start = (int) (buf - buff);
-  restorePetStatus(buf, ch);
-  restoreAffects(buff + affect_off, ch);
-
-  for (tmp = 0; tmp < MAX_WEAR; tmp++)
-    save_equip[tmp] = NULL;
-  restoreObjects(buff + item_off, ch, 1);
-  for (tmp = 0; tmp < MAX_WEAR; tmp++)
-    if (save_equip[tmp] != NULL)
-      wear(ch, save_equip[tmp], restore_wear[tmp], 0);
-
-  return ch;
+#ifndef __NO_MYSQL__
+  return sql_restore_shopkeeper(id);
+#else
+  return NULL;
+#endif
 }
 
 void restore_shopkeepers(void)
 {
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  char     Gbuf3[MAX_STRING_LENGTH];
-  int      load_room;
-  P_char   mob, keeper2;
-  struct stat statbuf;
-  struct dirent *de;
-
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/ShopKeepers", SAVE_DIR);
-  if (stat(Gbuf1, &statbuf) == -1)
-  {
-    perror("ShopKeepers dir");
-    return;
-  }
-  DIR *dir = opendir(Gbuf1);
-  if (!dir)
-    return perror("shop_list");
-
-  while ((de = readdir(dir)))
-  {
-    if (de->d_name[0] == '.') // . .. .gitignore
-      continue;
-
-    int num = atoi(de->d_name);
-    if ((mob = restoreShopKeeper(num)))
-    {
-      load_room = real_room(GET_BIRTHPLACE(mob));
-      if (load_room != NOWHERE)
-      {
-        for (keeper2 = world[load_room].people; keeper2;
-             keeper2 = keeper2->next_in_room)
-          if (mob_index[GET_RNUM(keeper2)].virtual_number ==
-              mob_index[GET_RNUM(mob)].virtual_number)
-          {
-            extract_char(keeper2);
-          }
-        char_to_room(mob, load_room, 0);
-      }
-      else
-      {
-        logit(LOG_DEBUG,
-              "Could not load ShopKeeper #%d due to bad load_room!", num);
-      }
-      deleteShopKeeper(num);
-    }
-    else
-    {
-      logit(LOG_DEBUG, "Could not load ShopKeeper #%s!", de->d_name);
-      break;
-    }
-  }
-  closedir(dir);
+#ifndef __NO_MYSQL__
+  sql_restore_shopkeepers();
+#endif
 }
 
 // old guildhalls (deprecated) - Torgal 1/2010

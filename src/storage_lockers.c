@@ -34,6 +34,7 @@
 #include "specs.winterhaven.h"
 #include "ctf.h"
 #include "vnum.room.h"
+#include "sql_player.h"
 
 extern P_index obj_index;
 extern P_index mob_index;
@@ -1978,9 +1979,9 @@ static void free_locker(int roomNum)
 static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess)
 {
   P_char vict = NULL;
-  int tmp;
+  bool locker_exists = false;
 
-  if( !ch )
+  if (!ch)
   {
     wizlog(56, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
     logit(LOG_WIZ, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
@@ -1991,86 +1992,85 @@ static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess
 
   bool bPlayerIsGod = (GET_LEVEL(ch) >= OVERLORD || god_check(ch->player.name));
 
-  vict = (P_char) mm_get(dead_mob_pool);
-  clear_char(vict);
-  ensure_pconly_pool();
-  vict->only.pc = (struct pc_only_data *) mm_get(dead_pconly_pool);
-  vict->only.pc->aggressive = -1;
-  vict->only.pc->zone_trophy = NULL;
-  vict->desc = NULL;
+  // check if locker exists in database
+  locker_exists = sql_locker_exists_by_name(locker_name);
 
-  if(!(vict))
+  if (locker_exists)
   {
-    return NULL;
-  }
-
-  tmp = restoreCharOnly(vict, locker_name);
-
-
-  if (tmp < (-1))
-  {
-    send_to_char("ERROR: Unable to load locker.  Please report ASAP.\r\n", ch);
-    free_char(vict);
-    return NULL;
-  }
-  // if not primary char for locker, it can't be created - also check access
-  if ((bValidateAccess) &&
-      ((-1 == tmp) || (!bPlayerIsGod && !locker_access_canAccess(vict, GET_NAME(ch)))))
-  {
-    // can't access it
-    send_to_char("You don't have access to that locker!\r\n", ch);
-    free_char(vict);
-    return NULL;
-  }
-  if (-1 != tmp)
-  {
+    // check if locker is currently in use
     if (lockerName_is_inuse(locker_name) > 0)
     {
-      send_to_char
-        ("Someone is currently using that locker.  Please try later.\r\n", ch);
+      send_to_char("Someone is currently using that locker.  Please try later.\r\n", ch);
       return NULL;
     }
+
+    // load locker from database
+    vict = sql_load_locker_by_name(locker_name);
+    if (!vict)
+    {
+      send_to_char("ERROR: Unable to load locker.  Please report ASAP.\r\n", ch);
+      return NULL;
+    }
+
+    // validate access
+    if (bValidateAccess && !bPlayerIsGod && !locker_access_canAccess(vict, GET_NAME(ch)))
+    {
+      send_to_char("You don't have access to that locker!\r\n", ch);
+      free_char(vict);
+      return NULL;
+    }
+
+    // check racewar side
     if (bValidateAccess)
     {
-      if (!bPlayerIsGod)
-        if (GET_RACEWAR(ch) != GET_RACEWAR(vict))
-        { // well, THIS is interesting.  VERY interesting, indeed.  The locker has a different racewar
-          // side then the character... hmmmmmmmmm.  One of two things going on here.  Either the player
-          // made a mistake in re-creating an existing char, or they are purposely cheating.
-          send_to_char("Well, THIS is interesting... You have access to a locker on the other racewar\n"
-                      "side.  A special log is being generated which will be followed up on to\n"
-                      "determine if this was a mistake, or an attempt at cheating.\n", ch);
-          wizlog(56, "&+RPOSSIBLE CHEATING:&n %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
-          logit(LOG_WIZ, "POSSIBLE CHEATING: %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
-          sql_log(ch, PLAYERLOG, "&+RPOSSIBLE CHEATING:&n trying to access opposite racewar side locker %s", locker_name);
-          free_char(vict);
-          return NULL;
-        }
+      if (!bPlayerIsGod && GET_RACEWAR(ch) != GET_RACEWAR(vict))
+      {
+        send_to_char("Well, THIS is interesting... You have access to a locker on the other racewar\n"
+                    "side.  A special log is being generated which will be followed up on to\n"
+                    "determine if this was a mistake, or an attempt at cheating.\n", ch);
+        wizlog(56, "&+RPOSSIBLE CHEATING:&n %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
+        logit(LOG_WIZ, "POSSIBLE CHEATING: %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
+        sql_log(ch, PLAYERLOG, "&+RPOSSIBLE CHEATING:&n trying to access opposite racewar side locker %s", locker_name);
+        free_char(vict);
+        return NULL;
+      }
     }
     else
     {
       // just in case their racewar side happened to change mysteriously..
       GET_RACEWAR(vict) = GET_RACEWAR(ch);
     }
-
-  }
-
-  if (-1 == tmp)
-  {                             /* need to create a new locker pfile */
-    create_locker_char(ch, vict, locker_name);
   }
   else
   {
-    tmp = restoreItemsOnly(vict, 100);
+    // locker doesn't exist - need to create new
+    if (bValidateAccess)
+    {
+      send_to_char("You don't have access to that locker!\r\n", ch);
+      return NULL;
+    }
+
+    // allocate new locker char
+    vict = (P_char)mm_get(dead_mob_pool);
+    if (!vict)
+      return NULL;
+    clear_char(vict);
+    ensure_pconly_pool();
+    vict->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+    vict->only.pc->aggressive = -1;
+    vict->only.pc->zone_trophy = NULL;
+    vict->desc = NULL;
+
+    create_locker_char(ch, vict, locker_name);
   }
 
-  /* insert in list */
+  // insert in list
   vict->next = character_list;
   character_list = vict;
 
   setCharPhysTypeInfo(vict);
 
-  /* saving info for teleport return command */
+  // saving info for teleport return command
   vict->specials.was_in_room = vict->in_room;
 
   char_to_room(vict, real_room0(LOCKERS_START), -2);

@@ -28,6 +28,7 @@
 #include "limits.h"
 #include "ctf.h"
 #include "gmcp.h"
+#include "sql_player.h"
 
 extern char buf[MAX_STRING_LENGTH];
 extern bool insert_money_pickup(int pid, int money);
@@ -476,17 +477,14 @@ int load_ship(P_ship ship, int to_room)
 //--------------------------------------------------------------------
 void delete_ship(P_ship ship, bool npc)
 {
-    char fname[256];
-
     clear_ship_layout(ship);
-
     clear_references_to_ship(ship);
 
     if (!npc)
     {
-        write_ships_index();
-        sprintf(fname, "Ships/%s", ship->ownername);
-        unlink(fname);
+#ifndef __NO_MYSQL__
+        sql_delete_ship(ship->ownername);
+#endif
     }
 
     obj_from_room(ship->panel);
@@ -499,12 +497,9 @@ void delete_ship(P_ship ship, bool npc)
         delete ship->npc_ai;
     if (ship == cyrics_revenge)
         cyrics_revenge = 0;
-    //if( ship == zone_ship )
-    //    zone_ship = 0;
-        
 
     logit(LOG_STATUS, "Ship \"%s\" (%s) deleted", strip_ansi(ship->name).c_str(), ship->ownername);
-    
+
     FREE(ship);
 }
 
@@ -2051,218 +2046,30 @@ int write_ships_index()
 
 int write_ship(P_ship ship)
 {
-    char     buf[MAX_STRING_LENGTH];
-    int      i;
-    FILE    *f = NULL;
+    if (IS_NPC_SHIP(ship))
+        return FALSE;
+    if (!SHIP_LOADED(ship))
+        return FALSE;
 
-    if (IS_NPC_SHIP(ship)) {
+#ifndef __NO_MYSQL__
+    if (!sql_save_ship(ship))
+    {
+        logit(LOG_FILE, "sql_save_ship failed for %s", ship->ownername);
         return FALSE;
     }
-    if (!SHIP_LOADED(ship)) {
-        return FALSE;
-    }
-    sprintf(buf, "Ships/%s", ship->ownername);
-    f = fopen(buf, "w");
-    if (!f)
-    {
-        logit(LOG_FILE, "&+RError writing ship File!&N\n");
-        return FALSE;
-    }
-
-
-    fprintf(f, "version:3\n");
-    fprintf(f, "%d\n", ship->m_class);
-    fprintf(f, "%s\n", ship->ownername);
-    fprintf(f, "%s\n", ship->name);
-    fprintf(f, "%d\n", ship->frags);
-    fprintf(f, "%d %d\n", ship->anchor, ship->time);
-    for (i = 0; i < 4; i++)
-    {
-        fprintf(f, "%d %d\n", ship->armor[i], ship->internal[i]);
-    }
-    fprintf(f, "%d\n", ship->mainsail);
-
-    fprintf(f, "%d\n", ship->crew.index);
-    fprintf(f, "%d %d %d 0 0 0\n", (int)(ship->crew.sail_skill * 1000), (int)(ship->crew.guns_skill * 1000), (int)(ship->crew.rpar_skill * 1000));
-    fprintf(f, "%d %d %d 0 0 0 0 0 0 0\n", ship->crew.sail_chief, ship->crew.guns_chief, ship->crew.rpar_chief);
-
-    for (i = 0; i < MAXSLOTS; i++)
-    {
-        fprintf(f, "%d %d\n",
-                ship->slot[i].type,
-                ship->slot[i].index);
-        fprintf(f, "%d %d\n",
-                ship->slot[i].position,
-                ship->slot[i].timer);
-        fprintf(f, "%d %d %d %d %d\n",
-                ship->slot[i].val0,
-                ship->slot[i].val1,
-                ship->slot[i].val2, 
-                ship->slot[i].val3, 
-                ship->slot[i].val4);
-    }
-    fclose(f);                          
-    
-    f = fopen("Ships/ship_index", "w");
-    if (!f)
-    {
-        logit(LOG_FILE, "Ship index file open error.");
-        return FALSE;
-    }
-    ShipVisitor svs;
-    for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
-    {
-        if (SHIP_LOADED(svs))
-            fprintf(f, "%s~\n", svs->ownername);
-    }
-    fprintf(f, "$~");
-    fclose(f);
     return TRUE;
+#else
+    return FALSE;
+#endif
 }
 
-//--------------------------------------------------------------------
-// Reading ships from disk
-//--------------------------------------------------------------------
 int read_ships()
 {
-    P_ship ship;
-    char    *ret = NULL;
-    int      k, ver;//, intime;
-    FILE    *f = NULL, *f2 = NULL;
-
-    f = fopen("Ships/ship_index", "r");
-    if (!f) 
-        {
-        logit(LOG_FILE, "&+RError reading ship index!&N\n");
-        return FALSE;
-    }
-    ret = fread_string(f);
-    while (*ret != '$') 
-    {
-        sprintf(buf, "Ships/%s", ret);
-        ret = fread_string(f);
-        f2 = fopen(buf, "r");
-        if (!f2) 
-        {
-            logit(LOG_FILE, "error reading ship file (couldn't open file %s)!\r\n", buf);
-            continue;
-        }
-        if ((k = fscanf(f2, "version:%d\n", &ver)) != 1)
-            ver = 0;
-
-        fscanf(f2, "%d\n", &k);
-        ship = new_ship(k);
-    
-        if( !ship )
-        {
-            fclose(f2);
-            continue;
-        }
-
-        
-        if (ver == 3)
-        {
-            fgets(buf, MAX_STRING_LENGTH, f2);
-            for (int i = 0; buf[i] != '\0'; i++) 
-                if (buf[i] == '\n') { buf[i] = '\0'; break; }
-
-            ship->ownername = str_dup(buf);
-
-            fgets(buf, MAX_STRING_LENGTH, f2);
-            for (int i = 0; buf[i] != '\0'; i++) 
-                if (buf[i] == '\n') { buf[i] = '\0'; break; }
-
-            ship->name = str_dup(buf);
-
-            fscanf(f2, "%d\n", &(ship->frags));
-            fscanf(f2, "%d %d\n", &(ship->anchor), &(ship->time));
-
-            for (int i = 0; i < 4; i++) 
-            {
-                fscanf(f2, "%d %d\n", &(ship->armor[i]), &(ship->internal[i]));
-            }
-            fscanf(f2, "%d\n", &(ship->mainsail));
-            ship->mainsail = BOUNDED(0, ship->mainsail, SHIP_MAX_SAIL(ship));
-                
-            if (ver == 3)
-            {
-                int dummy, ss, gs, rs;
-                fscanf(f2, "%d\n", &(ship->crew.index));
-                fscanf(f2, "%d %d %d %d %d %d\n", &(ss), &(gs), &(rs), &dummy, &dummy, &dummy);
-                ship->crew.sail_skill = (float)ss / 1000;
-                ship->crew.guns_skill = (float)gs / 1000;
-                ship->crew.rpar_skill = (float)rs / 1000;
-                fscanf(f2, "%d %d %d %d %d %d %d %d %d %d\n", &(ship->crew.sail_chief), &(ship->crew.guns_chief), &(ship->crew.rpar_chief), &dummy, &dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
-            }
-            update_crew(ship);
-            reset_crew_stamina(ship);
-
-            for (int i = 0; i < MAXSLOTS; i++)  
-                ship->slot[i].clear();
-
-            for (int i = 0; i < MAXSLOTS; i++)  
-            {
-                if (fscanf(f2, "%d %d\n",
-                    &(ship->slot[i].type),
-                    &(ship->slot[i].index)) != 2)
-                {
-                    break;
-                }
-                fscanf(f2, "%d %d\n",
-                    &(ship->slot[i].position),
-                    &(ship->slot[i].timer));
-                fscanf(f2, "%d %d %d %d %d\n",
-                    &(ship->slot[i].val0),
-                    &(ship->slot[i].val1),
-                    &(ship->slot[i].val2), 
-                    &(ship->slot[i].val3), 
-                    &(ship->slot[i].val4));
-
-                if (ship->slot[i].type == SLOT_WEAPON)
-                {
-                    if (ship->slot[i].timer < 0)
-                        ship->slot[i].timer = 0;
-                    ship->slot[i].val3 = -1;
-                    ship->slot[i].val4 = -1;
-                }
-                else if (ship->slot[i].type == SLOT_CARGO || ship->slot[i].type == SLOT_CONTRABAND)
-                {
-                    ship->slot[i].val2 = -1;
-                    ship->slot[i].val3 = -1;
-                    ship->slot[i].val4 = -1;
-                }
-            }
-        }
-        else
-        {
-            logit(LOG_FILE, "Error reading ship: unknown version\r\n");
-            fclose(f2);
-            return FALSE;
-        }
-        //intime = time(NULL);
-        name_ship(ship->name, ship);
-
-        if (!load_ship(ship, real_room0(ship->anchor)))
-        {
-            logit(LOG_FILE, "Error loading ship: %d.\r\n", shiperror);
-            fclose(f2);
-            return FALSE;
-        }
-        /*if ((intime - ship->time) > NEWSHIP_INACTIVITY && SHIP_CLASS(ship) == 0)
-        {
-            SET_BIT(ship->flags, TO_DELETE);
-        }*/
-    
-        fclose(f2);
-
-        set_ship_armor(ship, false);
-        update_crew(ship);
-        reset_crew_stamina(ship);
-        update_ship_status(ship);
-    }
-
-    fclose(f);
-    return TRUE;
+#ifndef __NO_MYSQL__
+    return sql_load_all_ships() ? TRUE : FALSE;
+#else
+    return FALSE;
+#endif
 }
 
 

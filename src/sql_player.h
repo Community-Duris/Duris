@@ -41,6 +41,12 @@ bool sql_save_player_skills(P_char ch);
 bool sql_save_player_affects(P_char ch);
 bool sql_save_player_items(P_char ch);
 bool sql_save_player_witnesses(P_char ch);
+bool sql_save_player_shapechanges(P_char ch);
+bool sql_save_player_recipes(P_char ch);
+bool sql_add_player_recipe(int pid, int recipe_vnum);
+bool sql_delete_player_recipes(int pid);
+bool sql_has_player_recipe(int pid, int recipe_vnum);
+int *sql_get_player_recipes(int pid, int *count);
 
 // ============================================================================
 // player load functions
@@ -63,6 +69,7 @@ bool sql_load_player_skills(P_char ch);
 bool sql_load_player_affects(P_char ch);
 bool sql_load_player_items(P_char ch);
 bool sql_load_player_witnesses(P_char ch);
+bool sql_load_player_shapechanges(P_char ch);
 
 // ============================================================================
 // player delete
@@ -101,11 +108,16 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id);
 // pass owner_pid for personal, owner_assoc_id for guild (other should be 0)
 P_char sql_load_locker(int owner_pid, int owner_assoc_id);
 
+// load locker by name (e.g. "playername.locker" or "guild.123.locker")
+P_char sql_load_locker_by_name(const char *locker_name);
+
 // check if locker exists
 bool sql_locker_exists(int owner_pid, int owner_assoc_id);
+bool sql_locker_exists_by_name(const char *locker_name);
 
 // delete locker
 bool sql_delete_locker(int owner_pid, int owner_assoc_id);
+bool sql_delete_locker_by_name(const char *locker_name);
 
 // ============================================================================
 // migration helpers
@@ -132,6 +144,55 @@ char *sql_escape_string(const char *str);
 
 // log sql error with context
 void sql_player_error(const char *context, const char *query);
+
+// towns
+bool sql_save_towns(void);
+bool sql_load_towns(void);
+
+// account ips
+struct acct_ip;
+bool sql_save_account_ips(const char *account_name, struct acct_ip *ips);
+struct acct_ip *sql_load_account_ips(const char *account_name);
+bool sql_delete_account_ips(const char *account_name);
+
+// kingdom land
+bool sql_save_kingdom_land(void);
+
+// corpses
+bool sql_save_corpse(P_obj corpse);
+bool sql_delete_corpse(const char *player_name, int save_id);
+bool sql_load_all_corpses(void);
+
+// shopkeepers
+bool sql_save_shopkeeper(P_char ch, int shop_nr);
+bool sql_delete_shopkeeper(int shop_nr);
+P_char sql_restore_shopkeeper(int shop_nr);
+void sql_restore_shopkeepers(void);
+
+// saved items
+bool sql_save_saved_item(P_obj item, const char *item_key);
+bool sql_delete_saved_item(const char *item_key);
+void sql_restore_saved_items(void);
+
+// siege items
+bool sql_save_siege_item(P_obj obj, int room_vnum);
+bool sql_save_siege_list(void);
+bool sql_delete_siege_items(int room_vnum);
+void sql_load_siege_list(void);
+
+// ships
+struct ShipData;
+bool sql_save_ship(struct ShipData *ship);
+struct ShipData *sql_load_ship(const char *owner_name);
+bool sql_load_all_ships(void);
+bool sql_delete_ship(const char *owner_name);
+
+// guilds
+class Guild;
+bool sql_save_guild(Guild *guild);
+Guild *sql_load_guild(unsigned int guild_id);
+bool sql_load_all_guilds(void);
+bool sql_delete_guild(unsigned int guild_id);
 
 #endif // __NO_MYSQL__
 

@@ -38,6 +38,7 @@
 #include "telnet.h"
 #include "mccp.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "ferry.h"
 #include "world_quest.h"
 #include "auction_houses.h"
@@ -180,12 +181,23 @@ int main(int argc, char **argv)
   int      port, sslport;
   int      pos = 1;
   const char *dir;
+  int      migrate_mode = 0;
 
   port = DFLT_PORT;
   dir = DFLT_DIR;
   sslport = SSL_PORT;
 
   init_genrand(time(NULL));
+
+  // check for --migrate-all before regular arg parsing
+  for (int i = 1; i < argc; i++)
+  {
+    if (!strcmp(argv[i], "--migrate-all"))
+    {
+      migrate_mode = 1;
+      break;
+    }
+  }
 
   while ((pos < argc) && (*(argv[pos]) == '-'))
   {
@@ -290,6 +302,15 @@ int main(int argc, char **argv)
   {
     fprintf(stderr, "MySQL initialization failed! Dying!");
     raise(SIGSEGV);
+  }
+
+  // run migration and exit if requested
+  if (migrate_mode)
+  {
+    printf("running pfile migration...\n");
+    int count = sql_migrate_all_players();
+    printf("migration complete: %d players migrated\n", count);
+    return 0;
   }
 
   initialize_properties();
