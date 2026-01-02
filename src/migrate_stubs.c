@@ -395,10 +395,10 @@ bool sql_save_ship(P_ship ship) {
 
     char query[512];
     snprintf(query, sizeof(query),
-        "insert into ships (owner_name, ship_name, ship_class, frags, anchor, last_time, mainsail) "
+        "insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail) "
         "values ('%s', '%s', %d, %d, %d, %d, %d) "
-        "on duplicate key update ship_name='%s', ship_class=%d, frags=%d, anchor=%d, "
-        "last_time=%d, mainsail=%d",
+        "on duplicate key update ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, "
+        "time_played=%d, mainsail=%d",
         esc_owner, esc_name ? esc_name : "", ship->m_class, ship->frags, ship->anchor, ship->time, ship->mainsail,
         esc_name ? esc_name : "", ship->m_class, ship->frags, ship->anchor, ship->time, ship->mainsail);
 
@@ -560,7 +560,7 @@ bool sql_save_guild(Guild *guild) {
         char *esc_mname = sql_escape_string(mem->name);
         if (!esc_mname) continue;
         snprintf(query, sizeof(query),
-            "insert into guild_members (guild_id, player_name, player_pid, bits, debt) "
+            "insert ignore into guild_members (guild_id, player_name, player_pid, bits, debt) "
             "values (%u, '%s', 0, %u, %u)",
             gid, esc_mname, mem->bits, mem->debt);
         sql_run_query(query);

@@ -88,13 +88,13 @@ CREATE TABLE `player_data` (
   `base_kar` TINYINT DEFAULT 0,
   `base_luk` TINYINT DEFAULT 0,
 
-  -- points
-  `mana` SMALLINT DEFAULT 0,
-  `base_mana` SMALLINT DEFAULT 0,
-  `hit_diff` SMALLINT DEFAULT 0,  -- max_hit - hit, stored as difference
-  `base_hit` SMALLINT DEFAULT 0,
-  `vitality` SMALLINT DEFAULT 0,
-  `base_vitality` SMALLINT DEFAULT 0,
+  -- points (int to handle overflow from legacy unsigned shorts)
+  `mana` INT DEFAULT 0,
+  `base_mana` INT DEFAULT 0,
+  `hit_diff` INT DEFAULT 0,  -- max_hit - hit, stored as difference
+  `base_hit` INT DEFAULT 0,
+  `vitality` INT DEFAULT 0,
+  `base_vitality` INT DEFAULT 0,
   `spells_memmed_extra` TINYINT DEFAULT 0,  -- spells_memmed[MAX_CIRCLE]
 
   -- money (can be billions)
@@ -291,11 +291,11 @@ CREATE TABLE `player_affects` (
   `modifier` INT DEFAULT 0,
   `location` TINYINT UNSIGNED DEFAULT 0,
   `level` SMALLINT UNSIGNED DEFAULT 0,
-  `bitvector1` BIGINT UNSIGNED DEFAULT 0,
-  `bitvector2` BIGINT UNSIGNED DEFAULT 0,
-  `bitvector3` BIGINT UNSIGNED DEFAULT 0,
-  `bitvector4` BIGINT UNSIGNED DEFAULT 0,
-  `bitvector5` BIGINT UNSIGNED DEFAULT 0,
+  `bitvector1` BIGINT DEFAULT 0,  -- signed to handle legacy data
+  `bitvector2` BIGINT DEFAULT 0,
+  `bitvector3` BIGINT DEFAULT 0,
+  `bitvector4` BIGINT DEFAULT 0,
+  `bitvector5` BIGINT DEFAULT 0,
   `custom_msg_char` TEXT DEFAULT NULL,
   `custom_msg_room` TEXT DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -385,13 +385,15 @@ CREATE TABLE `player_witnesses` (
 DROP TABLE IF EXISTS `lockers`;
 CREATE TABLE `lockers` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `locker_name` VARCHAR(128) NOT NULL,    -- e.g. "Playername.locker" or "guild.123.locker"
   `owner_pid` INT UNSIGNED DEFAULT NULL,  -- for personal lockers
   `owner_assoc_id` INT DEFAULT NULL,       -- for guild lockers
-  `locker_type` ENUM('personal', 'guild') NOT NULL,
-  `room_vnum` INT DEFAULT 0,
+  `racewar` TINYINT DEFAULT 0,
+  `race` TINYINT DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `locker_name` (`locker_name`),
   KEY `owner_pid` (`owner_pid`),
   KEY `owner_assoc_id` (`owner_assoc_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -503,9 +505,9 @@ DROP TABLE IF EXISTS `ship_slots`;
 CREATE TABLE `ship_slots` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `ship_id` INT UNSIGNED NOT NULL,
-  `slot_num` TINYINT UNSIGNED NOT NULL,  -- 0 to maxslots-1
+  `slot_index` TINYINT UNSIGNED NOT NULL,  -- 0 to maxslots-1
   `slot_type` TINYINT DEFAULT 0,  -- weapon, cargo, equipment, ammo, etc
-  `slot_index` INT DEFAULT 0,     -- weapon/cargo/equipment type index
+  `item_index` INT DEFAULT 0,     -- weapon/cargo/equipment type index
   `position` TINYINT DEFAULT 0,   -- fore/port/rear/star/hold
   `timer` INT DEFAULT 0,
   `val0` INT DEFAULT 0,
@@ -515,7 +517,7 @@ CREATE TABLE `ship_slots` (
   `val4` INT DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `ship_id` (`ship_id`),
-  UNIQUE KEY `ship_slot` (`ship_id`, `slot_num`),
+  UNIQUE KEY `ship_slot` (`ship_id`, `slot_index`),
   CONSTRAINT `fk_ship_slots` FOREIGN KEY (`ship_id`) REFERENCES `ships` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -566,6 +568,21 @@ CREATE TABLE `guild_members` (
   KEY `guild_id` (`guild_id`),
   UNIQUE KEY `guild_player` (`guild_id`, `player_name`),
   CONSTRAINT `fk_guild_members` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+-- player spellbooks (conjurable mobs)
+-- ============================================================================
+
+DROP TABLE IF EXISTS `player_spellbooks`;
+CREATE TABLE `player_spellbooks` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pid` INT UNSIGNED NOT NULL,
+  `mob_vnum` INT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `pid` (`pid`),
+  UNIQUE KEY `pid_mob` (`pid`, `mob_vnum`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;

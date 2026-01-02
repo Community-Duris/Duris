@@ -5033,4 +5033,86 @@ bool sql_delete_guild(unsigned int guild_id)
   return sql_run_query(query);
 }
 
+// ============================================================================
+// spellbook (conjurable mobs) functions
+// ============================================================================
+
+bool sql_add_spellbook_mob(int pid, int mob_vnum)
+{
+  if (!DB || pid <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "insert ignore into player_spellbooks (pid, mob_vnum) values (%d, %d)",
+    pid, mob_vnum);
+  return sql_run_query(query);
+}
+
+bool sql_has_spellbook_mob(int pid, int mob_vnum)
+{
+  if (!DB || pid <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "select 1 from player_spellbooks where pid=%d and mob_vnum=%d",
+    pid, mob_vnum);
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  bool has = (mysql_num_rows(result) > 0);
+  mysql_free_result(result);
+  return has;
+}
+
+// returns array of mob vnums, sets count. caller must free array.
+int *sql_get_spellbook_mobs(int pid, int *count)
+{
+  *count = 0;
+  if (!DB || pid <= 0)
+    return NULL;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "select mob_vnum from player_spellbooks where pid=%d order by mob_vnum",
+    pid);
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  int num = mysql_num_rows(result);
+  if (num == 0) {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  int *mobs = (int *)malloc(sizeof(int) * num);
+  if (!mobs) {
+    mysql_free_result(result);
+    return NULL;
+  }
+
+  MYSQL_ROW row;
+  int i = 0;
+  while ((row = mysql_fetch_row(result)) && i < num) {
+    mobs[i++] = atoi(row[0]);
+  }
+  mysql_free_result(result);
+
+  *count = i;
+  return mobs;
+}
+
+bool sql_delete_spellbook_mobs(int pid)
+{
+  if (!DB || pid <= 0)
+    return false;
+
+  char query[128];
+  snprintf(query, sizeof(query), "delete from player_spellbooks where pid=%d", pid);
+  return sql_run_query(query);
+}
+
 #endif // __NO_MYSQL__

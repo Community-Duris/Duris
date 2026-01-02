@@ -194,6 +194,12 @@ Guild *sql_load_guild(unsigned int guild_id);
 bool sql_load_all_guilds(void);
 bool sql_delete_guild(unsigned int guild_id);
 
+// spellbooks (conjurable mobs)
+bool sql_add_spellbook_mob(int pid, int mob_vnum);
+bool sql_has_spellbook_mob(int pid, int mob_vnum);
+int *sql_get_spellbook_mobs(int pid, int *count);
+bool sql_delete_spellbook_mobs(int pid);
+
 #endif // __NO_MYSQL__
 
 #endif // __SQL_PLAYER_H_INCLUDED__

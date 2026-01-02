@@ -28,6 +28,7 @@
 #include "arena.h"
 #include "arenadef.h"
 #include "justice.h"
+#include "sql_player.h"
 #include "weather.h"
 #include "sound.h"
 #include "objmisc.h"
@@ -1293,20 +1294,16 @@ void do_conjure(P_char ch, char *argument, int cmd)
   }
 
 
-  // Create filename w/path and load file.
-  strcpy(Gbuf1, GET_NAME(ch));
-  for( buff = Gbuf1; *buff; buff++ )
-  {
-    *buff = LOWER(*buff);
-  }
-  snprintf(filename, 256, "%s/%c/%s.spellbook", SAVE_DIR, Gbuf1[0], Gbuf1);
-  recipefile = fopen(filename, "r");
-  if( !recipefile )
+  // load spellbook from database
+  int pid = GET_PID(ch);
+  int mob_count = 0;
+  int *spellbook_mobs = sql_get_spellbook_mobs(pid, &mob_count);
+
+  if (!spellbook_mobs || mob_count == 0)
   {
     create_spellbook_file(ch);
-    recipefile = fopen(filename, "r");
-
-    if(!recipefile)
+    spellbook_mobs = sql_get_spellbook_mobs(pid, &mob_count);
+    if (!spellbook_mobs || mob_count == 0)
     {
       send_to_char("Fatal error opening spellbook, notify a god.\r\n", ch);
       return;
@@ -1320,17 +1317,17 @@ void do_conjure(P_char ch, char *argument, int cmd)
     send_to_char("----------------------------------------------------------------------------\n", ch);
     send_to_char("&+M Mob Number		          &+mMob Name		&n\n\r", ch);
 
-    while( (fscanf(recipefile, "%ld", &recnum)) != EOF )
+    for (int i = 0; i < mob_count; i++)
     {
-      if( (t_ch = read_mobile(recnum, VIRTUAL)) != NULL )
+      if( (t_ch = read_mobile(spellbook_mobs[i], VIRTUAL)) != NULL )
       {
-        snprintf(Gbuf1, MAX_STRING_LENGTH, "   &+W%-22ld&n%-41s&n\n", recnum, t_ch->player.short_descr);
+        snprintf(Gbuf1, MAX_STRING_LENGTH, "   &+W%-22d&n%-41s&n\n", spellbook_mobs[i], t_ch->player.short_descr);
         page_string(ch->desc, Gbuf1, 1);
         send_to_char("----------------------------------------------------------------------------\n", ch);
         extract_char(t_ch);
       }
     }
-    fclose(recipefile);
+    free(spellbook_mobs);
     return;
   }
 
@@ -1338,14 +1335,15 @@ void do_conjure(P_char ch, char *argument, int cmd)
   half_chop(rest, arg2, rest);
   choice2 = atoi(arg2);
 
-  while( (fscanf(recipefile, "%ld", &recnum)) != EOF )
+  for (int i = 0; i < mob_count; i++)
   {
-    if( recnum == choice2 )
+    if( spellbook_mobs[i] == choice2 )
     {
       selected = choice2;
+      break;
     }
   }
-  fclose(recipefile);
+  free(spellbook_mobs);
 
   if( is_abbrev(arg1, "stat") )
   {
@@ -1574,21 +1572,9 @@ void do_conjure(P_char ch, char *argument, int cmd)
 
 void create_spellbook_file(P_char ch)
 {
-  char buf[256], *buff, Gbuf1[MAX_STRING_LENGTH];
-  FILE *f;
-  int defrec;
-  defrec = 400003;
-
-  strcpy(buf, GET_NAME(ch));
-  buff = buf;
-  for (; *buff; buff++)
-    *buff = LOWER(*buff);
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s.spellbook", SAVE_DIR, buf[0], buf);
-  f = fopen(Gbuf1, "w");
-  fclose(f);
-  f = fopen(Gbuf1, "a");
-  fprintf(f, "%d ", defrec);
-  fclose(f);
+  // add default conjurable mob (400003) to player's spellbook
+  int pid = GET_PID(ch);
+  sql_add_spellbook_mob(pid, 400003);
 }
 
 int count_classes( P_char mob )
@@ -1770,58 +1756,23 @@ void learn_conjure_recipe(P_char ch, P_char victim)
   }
 
   int recipenumber = GET_VNUM(victim);
+  int pid = GET_PID(ch);
 
-
-
-
-
-  //Create buffers for name
-  strcpy(buf, GET_NAME(ch));
-  buff = buf;
-  for (; *buff; buff++)
-    *buff = LOWER(*buff);
-  //buf[0] snags first character of name
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s.spellbook", SAVE_DIR, buf[0], buf);
-
-  /*just a debug test
-    send_to_char(Gbuf1, ch);*/
-
-  //check if tradeskill file exists for player
-  recipelist = fopen(Gbuf1, "rt");
-
-  if (!recipelist)
+  // check if already known
+  if (sql_has_spellbook_mob(pid, recipenumber))
   {
-    create_spellbook_file(ch);
-    recipelist = fopen(Gbuf1, "r");
-
-    if(!recipelist)
-    {
-      send_to_char("Fatal error opening spellbook, notify a god.\r\n", ch);
-      return;
-    }
-
+    send_to_char("You already know how to summon that creature!&n\r\n", ch);
+    return;
   }
-  /* Check to see if recipe exists */
-  while((fscanf(recipelist, "%i", &recnum)) != EOF )
-  {  
-    if(recnum == recipenumber)
-    {
-      send_to_char("You already know how to summon that creature!&n\r\n", ch);
-      fclose(recipelist);
-      return;
-    }
 
-  }
-  fclose(recipelist);
-  recipelist = fopen(Gbuf1, "a");
-  fprintf(recipelist, "%d ", recipenumber);
+  // add to spellbook
+  sql_add_spellbook_mob(pid, recipenumber);
   act("$n &+gsuddenly &+Greaches &+gout and makes a &+Mmagical &+mgesture &+gabout &n$N&+g...\n"
       "&+gsh&+Gar&+Wds&+g of &+mcry&+Mstallized &+Wmagic&+g begin to form a square dome around &n$N&+g.\n"
       "&+gWith a &+Gfinal&+g &+mgesture&+g, &n$n &+gpoints at &n$N &+gwho is &+Gconsumed&+g by the &+mmagical &+Mdome&+g, and disappears from sight.\r\n", FALSE, ch, 0, victim, TO_ROOM);
   act("&+gYou &+gsuddenly &+Greach &+gout and make a &+Mmagical &+mgesture &+gabout &n$N&+g...\n"
       "&+gsh&+Gar&+Wds&+g of &+mcry&+Mstallized &+Wmagic&+g begin to form a square dome around &n$N&+g.\n"
-      "&+gWith a &+Gfinal&+g &+mgesture&+g, you &+gpoint at &n$N &+gwho is &+Gconsumed&+g by the &+mmagical &+Mdome&+g, and disappears from sight.\r\n", FALSE, ch, 0, victim, TO_CHAR);   
-  fclose(recipelist);
+      "&+gWith a &+Gfinal&+g &+mgesture&+g, you &+gpoint at &n$N &+gwho is &+Gconsumed&+g by the &+mmagical &+Mdome&+g, and disappears from sight.\r\n", FALSE, ch, 0, victim, TO_CHAR);
   send_to_char("&+gYou have learned a new minion to &+Gconjure&+g!\r\n", ch);
   return;
 }
