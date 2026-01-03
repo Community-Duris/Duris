@@ -226,25 +226,25 @@ char *where_obj(P_obj w_obj, int flag)
             ROOM_ZONE_NUMBER(w_obj->loc.room), world[w_obj->loc.room].number, world[w_obj->loc.room].name);
     return (GS_buf1);
   }
-  if(OBJ_CARRIED(w_obj))
+  if(OBJ_CARRIED(w_obj) && w_obj->loc.carrying)
   {
     snprintf(GS_buf1 + strlen(GS_buf1), MAX_STRING_LENGTH - strlen(GS_buf1),
             "in [&+R%4d&+W:&+C%6d&n] &+Ycarried by &n%s&n",
-            ((w_obj->loc.carrying->in_room != NOWHERE) ? ROOM_ZONE_NUMBER(w_obj->loc.carrying->in_room) : -1),            
+            ((w_obj->loc.carrying->in_room != NOWHERE) ? ROOM_ZONE_NUMBER(w_obj->loc.carrying->in_room) : -1),
             ((w_obj->loc.carrying->in_room != NOWHERE) ? world[w_obj->loc.carrying->in_room].number : -1),
             GET_NAME(w_obj->loc.carrying));
     return (GS_buf1);
   }
-  if(OBJ_WORN(w_obj))
+  if(OBJ_WORN(w_obj) && w_obj->loc.wearing)
   {
     snprintf(GS_buf1 + strlen(GS_buf1), MAX_STRING_LENGTH - strlen(GS_buf1),
             "in [&+R%4d&+W:&+C%6d&n] &+Yequipped by &n%s&n",
-            ((w_obj->loc.carrying->in_room != NOWHERE) ? ROOM_ZONE_NUMBER(w_obj->loc.carrying->in_room) : -1),            
-            ((w_obj->loc.carrying->in_room != NOWHERE) ? world[w_obj->loc.carrying->in_room].number : -1),
-            GET_NAME(w_obj->loc.wearing));    
+            ((w_obj->loc.wearing->in_room != NOWHERE) ? ROOM_ZONE_NUMBER(w_obj->loc.wearing->in_room) : -1),
+            ((w_obj->loc.wearing->in_room != NOWHERE) ? world[w_obj->loc.wearing->in_room].number : -1),
+            GET_NAME(w_obj->loc.wearing));
     return (GS_buf1);
   }
-  if(OBJ_INSIDE(w_obj))
+  if(OBJ_INSIDE(w_obj) && w_obj->loc.inside)
   {
     snprintf(GS_buf1 + strlen(GS_buf1), MAX_STRING_LENGTH - strlen(GS_buf1), "&+Yinside &n%s&+Y, ",
             w_obj->loc.inside->short_description);

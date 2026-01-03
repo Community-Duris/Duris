@@ -133,6 +133,7 @@ CREATE TABLE `player_data` (
   `frags` BIGINT DEFAULT 0,
   `oldfrags` BIGINT DEFAULT 0,
   `numb_deaths` BIGINT UNSIGNED DEFAULT 0,
+  `killed_by` VARCHAR(64) DEFAULT NULL,
 
   -- conditions (hunger, thirst, etc)
   `condition_0` TINYINT DEFAULT 0,
