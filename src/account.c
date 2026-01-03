@@ -2120,7 +2120,7 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
       curr_ip->hostname = check_and_clear(curr_ip->hostname);
       curr_ip->ip_address = check_and_clear(curr_ip->ip_address);
       next_ip = curr_ip->next;
-      FREE(curr_ip);
+      free(curr_ip);
     }
     acct->acct_unique_ips = NULL;
   }
@@ -2131,7 +2131,7 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     {
       curr_char->charname = check_and_clear(curr_char->charname);
       next_char = curr_char->next;
-      FREE(curr_char);
+      free(curr_char);
     }
     acct->acct_character_list = NULL;
   }
@@ -2419,7 +2419,7 @@ void clear_account(P_acct acct)
       curr_ip->hostname = check_and_clear(curr_ip->hostname);
       curr_ip->ip_address = check_and_clear(curr_ip->ip_address);
       next_ip = curr_ip->next;
-      FREE(curr_ip);
+      free(curr_ip);
     }
     acct->acct_unique_ips = NULL;
   }
@@ -2431,7 +2431,7 @@ void clear_account(P_acct acct)
     {
       curr_char->charname = check_and_clear(curr_char->charname);
       next_char = curr_char->next;
-      FREE(curr_char);
+      free(curr_char);
     }
     acct->acct_character_list = NULL;
   }
@@ -2535,6 +2535,13 @@ void remove_account_from_list(P_acct acct)
 
 bool account_exists(const char *dir, char *name)
 {
+#ifndef __NO_MYSQL__
+  // check database first
+  if (sql_account_exists(name))
+    return TRUE;
+#endif
+
+  // fallback to file check
   char     buf[256], *buff;
   struct stat statbuf;
   char     Gbuf1[MAX_STRING_LENGTH];

@@ -298,6 +298,8 @@ int main(int argc, char **argv)
 
   logit(LOG_STATUS, "Using %s as data directory.", dir);
 
+  load_env_file();
+
   if( initialize_mysql() < 0 )
   {
     fprintf(stderr, "MySQL initialization failed! Dying!");

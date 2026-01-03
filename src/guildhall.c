@@ -48,8 +48,12 @@ void Guildhall::initialize()
   for( int i = 0; i < guildhalls.size(); i++ )
   {
     load_guildhall_rooms(guildhalls[i]);
-    if( (guildhalls[i]->guild = get_guild_from_id( guildhalls[i]->assoc_id )) == NULL )
-      raise(SIGSEGV);
+    if( !guildhalls[i]->guild )
+    {
+      logit(LOG_GUILDHALLS, "Guildhall::initialize(): guildhall %d has no guild (assoc_id %d)",
+            guildhalls[i]->id, guildhalls[i]->assoc_id);
+      continue;
+    }
     guildhalls[i]->init();
   }
 }
@@ -338,9 +342,14 @@ bool Guildhall::init()
   // initialize rooms
   for( int i = 0; i < this->rooms.size(); i++ )
   {
-	this->rooms[i]->assoc_id = this->assoc_id;
-    if( (this->rooms[i]->guild = this->guild) == NULL )
-      raise(SIGSEGV);
+    this->rooms[i]->assoc_id = this->assoc_id;
+    this->rooms[i]->guild = this->guild;
+
+    if( !this->rooms[i]->guild )
+    {
+      logit(LOG_GUILDHALLS, "Guildhall::init(%d): room %d has no guild!", this->id, this->rooms[i]->id);
+      return FALSE;
+    }
 
     if( !this->rooms[i]->init() )
     {

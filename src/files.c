@@ -2523,6 +2523,29 @@ int restoreCharOnly(P_char ch, char *name)
     return -1;
   }
 
+#ifndef __NO_MYSQL__
+  // load from sql
+  int pid = sql_get_player_pid(name);
+  fprintf(stderr, "restoreCharOnly(%s): pid=%d\n", name, pid);
+  if (pid > 0)
+  {
+    if (sql_load_player_status(ch, pid))
+    {
+      sql_load_player_skills(ch);
+      sql_load_player_affects(ch);
+      sql_load_player_items(ch);
+      sql_load_player_witnesses(ch);
+      sql_load_player_shapechanges(ch);
+      fprintf(stderr, "restoreCharOnly(%s): success\n", name);
+      return 0; // success, type 0 for normal load
+    }
+    fprintf(stderr, "restoreCharOnly(%s): sql_load_player_status failed\n", name);
+    return -2; // player exists but failed to load
+  }
+  fprintf(stderr, "restoreCharOnly(%s): player not found in db\n", name);
+  return -1; // player not found
+#endif
+
   strcpy(buff, name);
   for( buf = buff; *buf; buf++ )
   {

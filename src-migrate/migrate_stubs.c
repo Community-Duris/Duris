@@ -6,11 +6,11 @@
 #include <stdarg.h>
 #include <string>
 #include <mysql.h>
-#include "structs.h"
-#include "sql.h"
-#include "account.h"
-#include "ships/ships.h"
-#include "assocs.h"
+#include "../src/structs.h"
+#include "../src/sql.h"
+#include "../src/account.h"
+#include "../src/ships/ships.h"
+#include "../src/assocs.h"
 
 using namespace std;
 
@@ -499,8 +499,38 @@ bool sql_save_account(struct acct_entry *acc) {
         if (esc_ip) free(esc_ip);
     }
 
-    // skip account_characters insert for migration - characters will be linked
-    // when player data is loaded via sql_save_player which has the actual pid
+    // save characters
+    for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next) {
+        if (!ch->charname)
+            continue;
+
+        char *esc_char = sql_escape_string(ch->charname);
+        if (!esc_char)
+            continue;
+
+        // look up pid from player_data
+        int pid = 0;
+        char pid_query[256];
+        snprintf(pid_query, sizeof(pid_query),
+            "SELECT pid FROM player_data WHERE LOWER(name) = LOWER('%s')", esc_char);
+        MYSQL_RES *pid_res = db_query("%s", pid_query);
+        if (pid_res) {
+            MYSQL_ROW pid_row = mysql_fetch_row(pid_res);
+            if (pid_row && pid_row[0])
+                pid = atoi(pid_row[0]);
+            mysql_free_result(pid_res);
+        }
+
+        char char_query[512];
+        snprintf(char_query, sizeof(char_query),
+            "insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
+            "values ('%s', '%s', %d, %lu, %ld, %d, %d) "
+            "on duplicate key update pid=%d, login_count=%lu, last_login=%ld, blocked=%d, racewar=%d",
+            esc_name, esc_char, pid, ch->count, ch->last, ch->blocked, ch->racewar,
+            pid, ch->count, ch->last, ch->blocked, ch->racewar);
+        sql_run_query(char_query);
+        free(esc_char);
+    }
 
     free(esc_name);
     free(esc_email);

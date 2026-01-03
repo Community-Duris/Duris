@@ -117,6 +117,7 @@ CREATE TABLE `player_data` (
   -- flags
   `act` BIGINT UNSIGNED DEFAULT 0,
   `act2` BIGINT UNSIGNED DEFAULT 0,
+  `act3` BIGINT UNSIGNED DEFAULT 0,
   `vote` BIGINT UNSIGNED DEFAULT 0,
   `alignment` INT DEFAULT 0,
 

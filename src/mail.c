@@ -190,7 +190,8 @@ int scan_mail_file(void)
   {
     logit(LOG_DEBUG, "Mail file non-existant... creating new file.");
     mail_file = fopen(MAIL_FILE, "w");
-    fclose(mail_file);
+    if (mail_file)
+      fclose(mail_file);
     return 1;
   }
   while (fread(&next_block, sizeof(header_block_type), 1, mail_file))

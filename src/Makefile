@@ -250,8 +250,16 @@ SHARED_PFILE_OBJS=pf-skills.o \
 PFILE_OBJS=pfile-stubs.o \
 					 pfile.o
 
-MIGRATE_OBJS=migrate_pfiles.o \
-						 migrate_stubs.o
+MIGRATE_OBJS=../src-migrate/migrate_main.o \
+						 ../src-migrate/migrate_common.o \
+						 ../src-migrate/migrate_objects.o \
+						 ../src-migrate/migrate_accounts.o \
+						 ../src-migrate/migrate_players.o \
+						 ../src-migrate/migrate_lockers.o \
+						 ../src-migrate/migrate_ships.o \
+						 ../src-migrate/migrate_guilds.o \
+						 ../src-migrate/migrate_misc.o \
+						 ../src-migrate/migrate_stubs.o
 
 #******************************************************************************
 #******************************************************************************
@@ -310,6 +318,7 @@ depend .depend:
 clean:
 	rm -f *.o *~ dms_new migrate_pfiles .depend
 	rm -f ships/*.a ships/*.o ships/*~ ships/.depend
+	rm -f ../src-migrate/*.o
 
 debug: $(PROGS)
 	cd ..; ./gdbdms

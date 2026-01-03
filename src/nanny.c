@@ -3249,6 +3249,8 @@ void enter_game(P_desc d)
   else
   {
     r_room = real_room(ch->specials.was_in_room);
+    fprintf(stderr, "nanny room calc: was_in_room=%d real_room=%d in_room=%d\n",
+            ch->specials.was_in_room, r_room, ch->in_room);
 
     if(r_room == NOWHERE)
       r_room = ch->in_room;
@@ -3372,6 +3374,14 @@ void enter_game(P_desc d)
       else
         send_to_char("\r\nYou rejoin the land of the living...\r\n", ch);
       restoreItemsOnly(ch, 0);
+    }
+    else if (d->rtype == 0)
+    {
+      // sql load - items were loaded in restoreCharOnly but reset_char cleared them
+      // reload from sql
+#ifndef __NO_MYSQL__
+      sql_load_player_items(ch);
+#endif
     }
     else
     {

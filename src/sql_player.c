@@ -463,7 +463,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "copper=%d, silver=%d, gold=%d, platinum=%d, "
       "bank_copper=%d, bank_silver=%d, bank_gold=%d, bank_platinum=%d, "
       "exp=%d, epics=%ld, epic_skill_points=%ld, skillpoints=%d, spell_bind_used=%ld, "
-      "act=%u, act2=%u, vote=%lu, alignment=%d, "
+      "act=%u, act2=%u, act3=%u, vote=%lu, alignment=%d,"
       "prestige=%d, assoc_id=%d, guild_status=%u, "
       "time_left_guild=%ld, nb_left_guild=%d, time_unspecced=%ld, "
       "frags=%ld, oldfrags=%ld, numb_deaths=%lu, "
@@ -489,7 +489,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch),
       GET_BALANCE_COPPER(ch), GET_BALANCE_SILVER(ch), GET_BALANCE_GOLD(ch), GET_BALANCE_PLATINUM(ch),
       GET_EXP(ch), ch->only.pc->epics, ch->only.pc->epic_skill_points, ch->only.pc->skillpoints, ch->only.pc->spell_bind_used,
-      ch->specials.act, ch->specials.act2, ch->only.pc->vote, ch->specials.alignment,
+      ch->specials.act, ch->specials.act2, ch->specials.act3, ch->only.pc->vote, ch->specials.alignment,
       ch->only.pc->prestige, GET_ASSOC_ID(ch), ch->specials.guild_status,
       ch->only.pc->time_left_guild, ch->only.pc->nb_left_guild, ch->only.pc->time_unspecced,
       ch->only.pc->frags, ch->only.pc->oldfrags, ch->only.pc->numb_deaths,
@@ -520,7 +520,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
       "copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
       "exp, epics, epic_skill_points, skillpoints, spell_bind_used, "
-      "act, act2, vote, alignment, "
+      "act, act2, act3, vote, alignment,"
       "prestige, assoc_id, guild_status, time_left_guild, nb_left_guild, time_unspecced, "
       "frags, oldfrags, numb_deaths, "
       "condition_0, condition_1, condition_2, condition_3, condition_4, "
@@ -539,7 +539,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "%d, %d, %d, %d, %d, %d, %d, "
       "%d, %d, %d, %d, %d, %d, %d, %d, "
       "%d, %ld, %ld, %d, %ld, "
-      "%u, %u, %lu, %d, "
+      "%u, %u, %u, %lu, %d, "
       "%d, %d, %u, %ld, %d, %ld, "
       "%ld, %ld, %lu, "
       "%d, %d, %d, %d, %d, "
@@ -563,7 +563,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch),
       GET_BALANCE_COPPER(ch), GET_BALANCE_SILVER(ch), GET_BALANCE_GOLD(ch), GET_BALANCE_PLATINUM(ch),
       GET_EXP(ch), ch->only.pc->epics, ch->only.pc->epic_skill_points, ch->only.pc->skillpoints, ch->only.pc->spell_bind_used,
-      ch->specials.act, ch->specials.act2, ch->only.pc->vote, ch->specials.alignment,
+      ch->specials.act, ch->specials.act2, ch->specials.act3, ch->only.pc->vote, ch->specials.alignment,
       ch->only.pc->prestige, GET_ASSOC_ID(ch), ch->specials.guild_status,
       ch->only.pc->time_left_guild, ch->only.pc->nb_left_guild, ch->only.pc->time_unspecced,
       ch->only.pc->frags, ch->only.pc->oldfrags, ch->only.pc->numb_deaths,
@@ -925,38 +925,70 @@ bool sql_save_player_items(P_char ch)
   if (pid <= 0)
     return false;
 
+  // start transaction for safety
+  if (!sql_run_query("START TRANSACTION"))
+    return false;
+
+  bool success = true;
+
   // delete existing items (cascade deletes item_affects too)
   char del_query[128];
   snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
-  sql_run_query(del_query);
+  if (!sql_run_query(del_query))
+    success = false;
 
   // save equipment (slots 1-42, 0 is special)
-  for (int i = 0; i < MAX_WEAR; i++)
+  if (success)
   {
-    if (ch->equipment[i])
+    for (int i = 0; i < MAX_WEAR; i++)
     {
-      if (!IS_SET(ch->equipment[i]->extra_flags, ITEM_NORENT))
+      if (ch->equipment[i])
       {
-        if (sql_save_single_item_get_id(pid, ch->equipment[i], i + 1, 0) == 0)
+        if (!IS_SET(ch->equipment[i]->extra_flags, ITEM_NORENT))
         {
-          logit(LOG_DEBUG, "sql_save_player_items: failed to save equipment slot %d for %s",
-                i, GET_NAME(ch));
+          if (sql_save_single_item_get_id(pid, ch->equipment[i], i + 1, 0) == 0)
+          {
+            logit(LOG_DEBUG, "sql_save_player_items: failed to save equipment slot %d for %s",
+                  i, GET_NAME(ch));
+            success = false;
+            break;
+          }
         }
       }
     }
   }
 
   // save inventory (equip_slot = 0)
-  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+  if (success)
   {
-    if (!IS_SET(obj->extra_flags, ITEM_NORENT))
+    for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
     {
-      if (sql_save_single_item_get_id(pid, obj, 0, 0) == 0)
+      if (!IS_SET(obj->extra_flags, ITEM_NORENT))
       {
-        logit(LOG_DEBUG, "sql_save_player_items: failed to save inventory item for %s",
-              GET_NAME(ch));
+        if (sql_save_single_item_get_id(pid, obj, 0, 0) == 0)
+        {
+          logit(LOG_DEBUG, "sql_save_player_items: failed to save inventory item for %s",
+                GET_NAME(ch));
+          success = false;
+          break;
+        }
       }
     }
+  }
+
+  // commit or rollback
+  if (success)
+  {
+    if (!sql_run_query("COMMIT"))
+    {
+      sql_run_query("ROLLBACK");
+      return false;
+    }
+  }
+  else
+  {
+    sql_run_query("ROLLBACK");
+    return false;
   }
 
   return true;
@@ -1204,12 +1236,12 @@ static unsigned long sql_row_ulong(MYSQL_ROW row, int idx, unsigned long def)
   return (row && row[idx]) ? strtoul(row[idx], NULL, 10) : def;
 }
 
-// helper to duplicate string from row (caller must free)
+// helper to duplicate string from row (uses tracked memory)
 static char *sql_row_str(MYSQL_ROW row, int idx)
 {
   if (!row || !row[idx])
     return NULL;
-  return strdup(row[idx]);
+  return str_dup(row[idx]);
 }
 
 bool sql_load_player_status(P_char ch, int pid)
@@ -1217,7 +1249,7 @@ bool sql_load_player_status(P_char ch, int pid)
   if (!ch || !DB || pid <= 0)
     return false;
 
-  char query[512];
+  char query[2048];
   snprintf(query, sizeof(query),
     "SELECT name, short_descr, long_descr, description, title, "
     "m_class, secondary_class, spec, race, racewar, level, sex, "
@@ -1228,7 +1260,7 @@ bool sql_load_player_status(P_char ch, int pid)
     "mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
     "copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
     "exp, epics, epic_skill_points, skillpoints, spell_bind_used, "
-    "act, act2, vote, alignment, prestige, assoc_id, guild_status, "
+    "act, act2, act3, vote, alignment,prestige, assoc_id, guild_status, "
     "time_left_guild, nb_left_guild, time_unspecced, frags, oldfrags, numb_deaths, "
     "condition_0, condition_1, condition_2, condition_3, condition_4, "
     "poof_in, poof_out, poof_in_sound, poof_out_sound, "
@@ -1277,7 +1309,9 @@ bool sql_load_player_status(P_char ch, int pid)
   GET_HOME(ch) = sql_row_int(row, col++, 0);
   GET_BIRTHPLACE(ch) = sql_row_int(row, col++, 0);
   GET_ORIG_BIRTHPLACE(ch) = sql_row_int(row, col++, 0);
-  ch->in_room = real_room(sql_row_int(row, col++, 0));
+  int last_room_vnum = sql_row_int(row, col++, 0);
+  ch->specials.was_in_room = last_room_vnum;  // vnum for nanny.c placement
+  ch->in_room = real_room(last_room_vnum);    // rnum as fallback
 
   // time
   ch->player.time.birth = sql_row_long(row, col++, 0);
@@ -1327,6 +1361,7 @@ bool sql_load_player_status(P_char ch, int pid)
   // flags
   ch->specials.act = sql_row_ulong(row, col++, 0);
   ch->specials.act2 = sql_row_ulong(row, col++, 0);
+  ch->specials.act3 = sql_row_ulong(row, col++, 0);
   ch->only.pc->vote = sql_row_ulong(row, col++, 0);
   ch->specials.alignment = sql_row_int(row, col++, 0);
   ch->only.pc->prestige = sql_row_int(row, col++, 0);
@@ -1381,6 +1416,9 @@ bool sql_load_player_status(P_char ch, int pid)
 
   // set pid
   ch->only.pc->pid = pid;
+
+  // set position to standing/alive (will be properly set when entering game)
+  SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
   // calculate hit from hit_diff
   GET_HIT(ch) = GET_MAX_HIT(ch) - hit_diff;
@@ -1578,7 +1616,9 @@ bool sql_load_player_affects(P_char ch)
 bool sql_load_player_items(P_char ch)
 {
   if (!ch || !IS_PC(ch) || !DB)
+  {
     return false;
+  }
 
   int pid = GET_PID(ch);
   if (pid <= 0)
@@ -1926,6 +1966,7 @@ static bool sql_save_account_characters(struct acct_entry *acc)
   if (!esc_name)
     return false;
 
+  int saved = 0;
   for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next)
   {
     if (!ch->charname)
@@ -1945,7 +1986,8 @@ static bool sql_save_account_characters(struct acct_entry *acc)
       esc_name, esc_char, pid > 0 ? pid : 0, ch->count, ch->last, ch->blocked, ch->racewar,
       ch->count, ch->last, ch->blocked, ch->racewar);
 
-    sql_run_query(query);
+    if (sql_run_query(query))
+      saved++;
     free(esc_char);
   }
 
@@ -2094,7 +2136,6 @@ bool sql_account_exists(const char *name)
   MYSQL_ROW row = mysql_fetch_row(result);
   bool exists = (row != NULL);
   mysql_free_result(result);
-
   return exists;
 }
 
@@ -3246,7 +3287,7 @@ static P_obj sql_load_corpse_items(int corpse_id, int container_id)
   if (!DB || corpse_id <= 0)
     return NULL;
 
-  char query[256];
+  char query[512];
   if (container_id > 0)
     snprintf(query, sizeof(query),
              "SELECT id, vnum, weight, cost, timer, extra_flags, "
@@ -3266,15 +3307,52 @@ static P_obj sql_load_corpse_items(int corpse_id, int container_id)
   if (!result)
     return NULL;
 
+  // collect all item data first to avoid nested queries
+  struct {
+    int item_id;
+    int vnum;
+    int weight;
+    int cost;
+    long timer;
+    unsigned long extra_flags;
+    int value[8];
+    char name[256];
+    char short_descr[256];
+    char description[512];
+    char action_descr[512];
+  } items[256];
+  int num_items = 0;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)) && num_items < 256)
+  {
+    items[num_items].item_id = atoi(row[0]);
+    items[num_items].vnum = atoi(row[1]);
+    items[num_items].weight = atoi(row[2]);
+    items[num_items].cost = atoi(row[3]);
+    items[num_items].timer = atol(row[4]);
+    items[num_items].extra_flags = strtoul(row[5], NULL, 10);
+    for (int v = 0; v < 8; v++)
+      items[num_items].value[v] = atoi(row[6 + v]);
+    strncpy(items[num_items].name, row[14] ? row[14] : "", 255);
+    items[num_items].name[255] = '\0';
+    strncpy(items[num_items].short_descr, row[15] ? row[15] : "", 255);
+    items[num_items].short_descr[255] = '\0';
+    strncpy(items[num_items].description, row[16] ? row[16] : "", 511);
+    items[num_items].description[511] = '\0';
+    strncpy(items[num_items].action_descr, row[17] ? row[17] : "", 511);
+    items[num_items].action_descr[511] = '\0';
+    num_items++;
+  }
+  mysql_free_result(result);
+
+  // now create objects
   P_obj first_obj = NULL;
   P_obj last_obj = NULL;
-  MYSQL_ROW row;
 
-  while ((row = mysql_fetch_row(result)))
+  for (int i = 0; i < num_items; i++)
   {
-    int item_id = atoi(row[0]);
-    int vnum = atoi(row[1]);
-    int rnum = real_object(vnum);
+    int rnum = real_object(items[i].vnum);
     if (rnum < 0)
       continue;
 
@@ -3283,46 +3361,39 @@ static P_obj sql_load_corpse_items(int corpse_id, int container_id)
       continue;
 
     // apply saved properties
-    obj->weight = atoi(row[2]);
-    obj->cost = atoi(row[3]);
-    obj->timer[0] = atol(row[4]);
-    obj->extra_flags = strtoul(row[5], NULL, 10);
-
-    obj->value[0] = atoi(row[6]);
-    obj->value[1] = atoi(row[7]);
-    obj->value[2] = atoi(row[8]);
-    obj->value[3] = atoi(row[9]);
-    obj->value[4] = atoi(row[10]);
-    obj->value[5] = atoi(row[11]);
-    obj->value[6] = atoi(row[12]);
-    obj->value[7] = atoi(row[13]);
+    obj->weight = items[i].weight;
+    obj->cost = items[i].cost;
+    obj->timer[0] = items[i].timer;
+    obj->extra_flags = items[i].extra_flags;
+    for (int v = 0; v < 8; v++)
+      obj->value[v] = items[i].value[v];
 
     // strung strings
-    if (row[14] && strlen(row[14]) > 0)
+    if (strlen(items[i].name) > 0)
     {
-      obj->name = str_dup(row[14]);
+      obj->name = str_dup(items[i].name);
       obj->str_mask |= STRUNG_KEYS;
     }
-    if (row[15] && strlen(row[15]) > 0)
+    if (strlen(items[i].short_descr) > 0)
     {
-      obj->short_description = str_dup(row[15]);
+      obj->short_description = str_dup(items[i].short_descr);
       obj->str_mask |= STRUNG_DESC2;
     }
-    if (row[16] && strlen(row[16]) > 0)
+    if (strlen(items[i].description) > 0)
     {
-      obj->description = str_dup(row[16]);
+      obj->description = str_dup(items[i].description);
       obj->str_mask |= STRUNG_DESC1;
     }
-    if (row[17] && strlen(row[17]) > 0)
+    if (strlen(items[i].action_descr) > 0)
     {
-      obj->action_description = str_dup(row[17]);
+      obj->action_description = str_dup(items[i].action_descr);
       obj->str_mask |= STRUNG_DESC3;
     }
 
     // load item affects
     char aff_query[128];
     snprintf(aff_query, sizeof(aff_query),
-             "SELECT location, modifier FROM corpse_item_affects WHERE item_id=%d", item_id);
+             "SELECT location, modifier FROM corpse_item_affects WHERE item_id=%d", items[i].item_id);
     MYSQL_RES *aff_result = db_query("%s", aff_query);
     if (aff_result)
     {
@@ -3337,7 +3408,14 @@ static P_obj sql_load_corpse_items(int corpse_id, int container_id)
       mysql_free_result(aff_result);
     }
 
-    obj->contains = sql_load_corpse_items(corpse_id, item_id);
+    // recursively load contained items
+    obj->contains = sql_load_corpse_items(corpse_id, items[i].item_id);
+    // set up container relationship for contained items
+    for (P_obj contained = obj->contains; contained; contained = contained->next_content)
+    {
+      contained->loc_p = LOC_INSIDE;
+      contained->loc.inside = obj;
+    }
 
     if (!first_obj)
       first_obj = obj;
@@ -3347,7 +3425,6 @@ static P_obj sql_load_corpse_items(int corpse_id, int container_id)
     obj->next_content = NULL;
   }
 
-  mysql_free_result(result);
   return first_obj;
 }
 
@@ -3360,17 +3437,32 @@ bool sql_load_all_corpses(void)
   if (!result)
     return false;
 
+  // collect all corpse data first to avoid nested queries
+  struct {
+    int corpse_id;
+    char player_name[128];
+    int save_id;
+    int room_vnum;
+  } corpse_data[1024];
+  int num_corpses = 0;
+
   MYSQL_ROW row;
-  int loaded = 0;
-
-  while ((row = mysql_fetch_row(result)))
+  while ((row = mysql_fetch_row(result)) && num_corpses < 1024)
   {
-    int corpse_id = atoi(row[0]);
-    const char *player_name = row[1];
-    int save_id = atoi(row[2]);
-    int room_vnum = atoi(row[3]);
+    corpse_data[num_corpses].corpse_id = atoi(row[0]);
+    strncpy(corpse_data[num_corpses].player_name, row[1] ? row[1] : "", 127);
+    corpse_data[num_corpses].player_name[127] = '\0';
+    corpse_data[num_corpses].save_id = atoi(row[2]);
+    corpse_data[num_corpses].room_vnum = atoi(row[3]);
+    num_corpses++;
+  }
+  mysql_free_result(result);
 
-    int room = real_room(room_vnum);
+  // now load each corpse
+  int loaded = 0;
+  for (int i = 0; i < num_corpses; i++)
+  {
+    int room = real_room(corpse_data[i].room_vnum);
     if (room == NOWHERE)
       room = 0;
 
@@ -3388,21 +3480,23 @@ bool sql_load_all_corpses(void)
 
     corpse->type = ITEM_CORPSE;
     SET_BIT(corpse->value[1], PC_CORPSE);
-    corpse->value[CORPSE_SAVEID] = save_id;
+    corpse->value[CORPSE_SAVEID] = corpse_data[i].save_id;
 
     if (corpse->action_description)
       FREE(corpse->action_description);
-    corpse->action_description = str_dup(player_name);
-    corpse->contains = sql_load_corpse_items(corpse_id, 0);
+    corpse->action_description = str_dup(corpse_data[i].player_name);
+    corpse->contains = sql_load_corpse_items(corpse_data[i].corpse_id, 0);
 
     for (P_obj obj = corpse->contains; obj; obj = obj->next_content)
+    {
+      obj->loc_p = LOC_INSIDE;
       obj->loc.inside = corpse;
+    }
 
     obj_to_room(corpse, room);
     loaded++;
   }
 
-  mysql_free_result(result);
   logit(LOG_DEBUG, "sql_load_all_corpses: loaded %d corpses", loaded);
   return true;
 }
@@ -4757,7 +4851,7 @@ P_ship sql_load_ship(const char *owner_name)
 
   char query[256];
   snprintf(query, sizeof(query),
-    "select id, ship_name, ship_class, frags, anchor, last_time, mainsail "
+    "select id, ship_name, ship_class, frags, anchor_room, time_played, mainsail "
     "from ships where owner_name='%s'", esc_owner);
   free(esc_owner);
 
@@ -4807,20 +4901,32 @@ bool sql_load_all_ships()
   if (!result)
     return false;
 
+  // collect owner names first to avoid nested queries
+  char owner_names[512][64];
+  int num_ships = 0;
+
   MYSQL_ROW row;
-  while ((row = mysql_fetch_row(result)))
+  while ((row = mysql_fetch_row(result)) && num_ships < 512)
   {
     if (!row[0])
       continue;
+    strncpy(owner_names[num_ships], row[0], 63);
+    owner_names[num_ships][63] = '\0';
+    num_ships++;
+  }
+  mysql_free_result(result);
 
-    P_ship ship = sql_load_ship(row[0]);
+  // now load each ship
+  for (int i = 0; i < num_ships; i++)
+  {
+    P_ship ship = sql_load_ship(owner_names[i]);
     if (!ship)
       continue;
 
     name_ship(ship->name, ship);
     if (!load_ship(ship, real_room0(ship->anchor)))
     {
-      logit(LOG_FILE, "sql_load_all_ships: failed to load ship for %s", row[0]);
+      logit(LOG_FILE, "sql_load_all_ships: failed to load ship for %s", owner_names[i]);
       continue;
     }
 
@@ -4831,7 +4937,6 @@ bool sql_load_all_ships()
     update_ship_status(ship);
   }
 
-  mysql_free_result(result);
   return true;
 }
 
@@ -5007,11 +5112,20 @@ bool sql_load_all_guilds()
   if (!result)
     return false;
 
+  // collect all guild IDs first (can't run queries while fetching unbuffered results)
+  unsigned int guild_ids[256];
+  int num_guilds = 0;
   MYSQL_ROW row;
-  while ((row = mysql_fetch_row(result)))
+  while ((row = mysql_fetch_row(result)) && num_guilds < 256)
   {
-    unsigned int gid = atoi(row[0]);
-    Guild *guild = sql_load_guild(gid);
+    guild_ids[num_guilds++] = atoi(row[0]);
+  }
+  mysql_free_result(result);
+
+  // now load each guild
+  for (int i = 0; i < num_guilds; i++)
+  {
+    Guild *guild = sql_load_guild(guild_ids[i]);
     if (guild)
     {
       guild->next_guild = guild_list;
@@ -5019,7 +5133,6 @@ bool sql_load_all_guilds()
     }
   }
 
-  mysql_free_result(result);
   return true;
 }
 
