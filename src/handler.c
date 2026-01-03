@@ -28,6 +28,7 @@
 #include "interp.h"
 #include "damage.h"
 #include "sql.h"
+#include "redis.h"
 #include "vnum.obj.h"
 #include "map.h"
 #include "handler.h"
@@ -1577,6 +1578,9 @@ void obj_to_char(P_obj object, P_char ch)
   {
     object->g_key = 1;
   }
+
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
 }
 
 /*
@@ -1613,6 +1617,10 @@ void obj_from_char(P_obj object)
   GET_CARRYING_W(object->loc.carrying) -= GET_OBJ_WEIGHT(object);
   IS_CARRYING_N(object->loc.carrying)--;
   object->z_cord = object->loc.carrying->specials.z_cord;
+
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
+
   object->loc_p = LOC_NOWHERE;
   object->loc.room = NOWHERE;
   object->next_content = NULL;
@@ -1687,6 +1695,9 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
           TO_CHAR);
       ((*skills[o_af->data].spell_pointer) ((int) GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, ch, 0));
     }
+
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
 }
 
 // Removes an object from a char's equipped slot [pos].
@@ -1729,6 +1740,9 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
     room_light(ch->in_room, REAL);
   }
   GET_CARRYING_W(ch) -= (GET_OBJ_WEIGHT(obj) / 2);
+
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
 
   return (obj);
 }

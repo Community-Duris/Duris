@@ -607,98 +607,106 @@ bool sql_save_player_status(P_char ch, int type, int room)
 
   // now save the array data: languages, intros, timers, undead slots, forged items, granted cmds
 
-  // languages
-  char del_query[256];
-  snprintf(del_query, sizeof(del_query), "DELETE FROM player_languages WHERE pid=%d", pid);
-  sql_run_query(del_query);
-
+  // languages - delete zeros, upsert non-zeros
   for (int i = 0; i < MAX_TONGUE; i++)
   {
     if (GET_LANGUAGE(ch, i) > 0)
     {
-      char ins_query[256];
-      snprintf(ins_query, sizeof(ins_query),
-               "INSERT INTO player_languages (pid, tongue_id, proficiency) VALUES (%d, %d, %d)",
+      snprintf(query, sizeof(query),
+               "REPLACE INTO player_languages (pid, tongue_id, proficiency) VALUES (%d, %d, %d)",
                pid, i, GET_LANGUAGE(ch, i));
-      sql_run_query(ins_query);
+      sql_run_query(query);
+    }
+    else
+    {
+      snprintf(query, sizeof(query),
+               "DELETE FROM player_languages WHERE pid=%d AND tongue_id=%d", pid, i);
+      sql_run_query(query);
     }
   }
 
   // intros
-  snprintf(del_query, sizeof(del_query), "DELETE FROM player_intros WHERE pid=%d", pid);
-  sql_run_query(del_query);
-
   for (int i = 0; i < MAX_INTRO; i++)
   {
     if (ch->only.pc->introd_list[i] != 0)
     {
-      char ins_query[256];
-      snprintf(ins_query, sizeof(ins_query),
-               "INSERT INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES (%d, %d, %ld, %lu)",
+      snprintf(query, sizeof(query),
+               "REPLACE INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES (%d, %d, %ld, %lu)",
                pid, i, ch->only.pc->introd_list[i], ch->only.pc->introd_times[i]);
-      sql_run_query(ins_query);
+      sql_run_query(query);
+    }
+    else
+    {
+      snprintf(query, sizeof(query),
+               "DELETE FROM player_intros WHERE pid=%d AND intro_index=%d", pid, i);
+      sql_run_query(query);
     }
   }
 
   // timers
-  snprintf(del_query, sizeof(del_query), "DELETE FROM player_timers WHERE pid=%d", pid);
-  sql_run_query(del_query);
-
   for (int i = 0; i < NUMB_PC_TIMERS; i++)
   {
     if (ch->only.pc->pc_timer[i] != 0)
     {
-      char ins_query[256];
-      snprintf(ins_query, sizeof(ins_query),
-               "INSERT INTO player_timers (pid, timer_id, timer_value) VALUES (%d, %d, %ld)",
+      snprintf(query, sizeof(query),
+               "REPLACE INTO player_timers (pid, timer_id, timer_value) VALUES (%d, %d, %ld)",
                pid, i, (long)ch->only.pc->pc_timer[i]);
-      sql_run_query(ins_query);
+      sql_run_query(query);
+    }
+    else
+    {
+      snprintf(query, sizeof(query),
+               "DELETE FROM player_timers WHERE pid=%d AND timer_id=%d", pid, i);
+      sql_run_query(query);
     }
   }
 
   // undead spell slots
-  snprintf(del_query, sizeof(del_query), "DELETE FROM player_undead_slots WHERE pid=%d", pid);
-  sql_run_query(del_query);
-
   for (int i = 0; i <= MAX_CIRCLE; i++)
   {
     if (ch->specials.undead_spell_slots[i] != 0)
     {
-      char ins_query[256];
-      snprintf(ins_query, sizeof(ins_query),
-               "INSERT INTO player_undead_slots (pid, circle, slots) VALUES (%d, %d, %d)",
+      snprintf(query, sizeof(query),
+               "REPLACE INTO player_undead_slots (pid, circle, slots) VALUES (%d, %d, %d)",
                pid, i, ch->specials.undead_spell_slots[i]);
-      sql_run_query(ins_query);
+      sql_run_query(query);
+    }
+    else
+    {
+      snprintf(query, sizeof(query),
+               "DELETE FROM player_undead_slots WHERE pid=%d AND circle=%d", pid, i);
+      sql_run_query(query);
     }
   }
 
   // forged items
-  snprintf(del_query, sizeof(del_query), "DELETE FROM player_forged_items WHERE pid=%d", pid);
-  sql_run_query(del_query);
-
   for (int i = 0; i < MAX_FORGE_ITEMS; i++)
   {
     if (ch->only.pc->learned_forged_list[i] != 0)
     {
-      char ins_query[256];
-      snprintf(ins_query, sizeof(ins_query),
-               "INSERT INTO player_forged_items (pid, forge_index, item_vnum) VALUES (%d, %d, %ld)",
+      snprintf(query, sizeof(query),
+               "REPLACE INTO player_forged_items (pid, forge_index, item_vnum) VALUES (%d, %d, %ld)",
                pid, i, ch->only.pc->learned_forged_list[i]);
-      sql_run_query(ins_query);
+      sql_run_query(query);
+    }
+    else
+    {
+      snprintf(query, sizeof(query),
+               "DELETE FROM player_forged_items WHERE pid=%d AND forge_index=%d", pid, i);
+      sql_run_query(query);
     }
   }
 
-  // granted commands
-  snprintf(del_query, sizeof(del_query), "DELETE FROM player_granted_cmds WHERE pid=%d", pid);
-  sql_run_query(del_query);
+  // granted commands - delete all then insert (no good unique key for upsert)
+  snprintf(query, sizeof(query), "DELETE FROM player_granted_cmds WHERE pid=%d", pid);
+  sql_run_query(query);
 
   for (int i = 0; i < ch->only.pc->numb_gcmd; i++)
   {
-    char ins_query[256];
-    snprintf(ins_query, sizeof(ins_query),
+    snprintf(query, sizeof(query),
              "INSERT INTO player_granted_cmds (pid, cmd_num) VALUES (%d, %d)",
              pid, ch->only.pc->gcmd_arr[i]);
-    sql_run_query(ins_query);
+    sql_run_query(query);
   }
 
   return true;
@@ -715,21 +723,21 @@ bool sql_save_player_skills(P_char ch)
   if (pid <= 0)
     return false;
 
-  // delete existing skills
-  char del_query[128];
-  snprintf(del_query, sizeof(del_query), "DELETE FROM player_skills WHERE pid=%d", pid);
-  sql_run_query(del_query);
-
-  // insert non-zero skills
+  char query[256];
   for (int i = 0; i < MAX_SKILLS; i++)
   {
     if (ch->only.pc->skills[i].learned > 0 || ch->only.pc->skills[i].taught > 0)
     {
-      char ins_query[256];
-      snprintf(ins_query, sizeof(ins_query),
-               "INSERT INTO player_skills (pid, skill_id, learned, taught) VALUES (%d, %d, %d, %d)",
+      snprintf(query, sizeof(query),
+               "REPLACE INTO player_skills (pid, skill_id, learned, taught) VALUES (%d, %d, %d, %d)",
                pid, i, ch->only.pc->skills[i].learned, ch->only.pc->skills[i].taught);
-      sql_run_query(ins_query);
+      sql_run_query(query);
+    }
+    else
+    {
+      snprintf(query, sizeof(query),
+               "DELETE FROM player_skills WHERE pid=%d AND skill_id=%d", pid, i);
+      sql_run_query(query);
     }
   }
 
@@ -925,17 +933,14 @@ bool sql_save_player_items(P_char ch)
   if (pid <= 0)
     return false;
 
-  // start transaction for safety
-  if (!sql_run_query("START TRANSACTION"))
-    return false;
-
-  bool success = true;
-
   // delete existing items (cascade deletes item_affects too)
+  // note: already inside transaction from sql_save_player
   char del_query[128];
   snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
   if (!sql_run_query(del_query))
-    success = false;
+    return false;
+
+  bool success = true;
 
   // save equipment (slots 1-42, 0 is special)
   if (success)
@@ -976,22 +981,7 @@ bool sql_save_player_items(P_char ch)
     }
   }
 
-  // commit or rollback
-  if (success)
-  {
-    if (!sql_run_query("COMMIT"))
-    {
-      sql_run_query("ROLLBACK");
-      return false;
-    }
-  }
-  else
-  {
-    sql_run_query("ROLLBACK");
-    return false;
-  }
-
-  return true;
+  return success;
 }
 
 // witnesses save

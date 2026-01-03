@@ -41,6 +41,7 @@ using namespace std;
 #include "mm.h"
 #include "epic.h"
 #include "gmcp.h"
+#include "redis.h"
 
 /*
  * extern variables
@@ -1832,6 +1833,9 @@ void ADD_MONEY(P_char ch, int amount)
   if (amount)
     GET_COPPER(ch) += amount;
 
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
+
   /* Update web client */
   gmcp_char_vitals(ch);
 }
@@ -1934,6 +1938,8 @@ int SUB_MONEY(P_char ch, int amount, int mode)
   else
   {
     GET_COPPER(ch) -= amount;
+    if (IS_PC(ch))
+      mark_player_dirty(GET_PID(ch));
     gmcp_char_vitals(ch);
     return 0;
   }
@@ -1986,7 +1992,11 @@ int SUB_MONEY(P_char ch, int amount, int mode)
   if (amount < 0)
     ADD_MONEY(ch, -(amount));
   else
+  {
+    if (IS_PC(ch))
+      mark_player_dirty(GET_PID(ch));
     gmcp_char_vitals(ch);
+  }
 
   return 0;
 }

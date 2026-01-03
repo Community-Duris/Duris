@@ -19,7 +19,7 @@ CFLAGS += -DTEST_MUD
 
 INCLUDES	= -I. -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis
 
 ifdef EFENCE
 	LDFLAGS += -L.
@@ -208,6 +208,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs.winterhaven.o \
 				 specs.zion.o \
 				 spells.o \
+				 redis.o \
 				 sql.o	\
 				 sql_player.o \
 				 ssl.o \

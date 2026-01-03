@@ -6,7 +6,7 @@ DEBUG = -ggdb3
 
 INCLUDES = -I. -I../src -I/usr/include/libxml2 -I/usr/include/mysql -I../src/ships
 LDFLAGS = -L/usr/lib/mysql
-LIBS = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson
+LIBS = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lpthread
 
 SRCS = migrate_main.c \
        migrate_common.c \

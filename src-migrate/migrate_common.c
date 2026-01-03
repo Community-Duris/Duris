@@ -175,6 +175,32 @@ static void format_value(char *buf, size_t sz, struct mig_obj *obj, int idx) {
         strcpy(buf, "NULL");
 }
 
+// thread-local flag for item saves (set by parallel workers)
+__thread int item_use_thread_db = 0;
+
+// wrapper for escape based on thread mode
+static char *item_escape(const char *str) {
+    return item_use_thread_db ? tsql_escape_string(str) : sql_escape_string(str);
+}
+
+static bool item_qry(const char *format, ...) {
+    char query[65536];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(query, sizeof(query), format, args);
+    va_end(args);
+    return item_use_thread_db ? tqry("%s", query) : qry("%s", query);
+}
+
+static MYSQL_RES *item_db_query(const char *format, ...) {
+    char query[65536];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(query, sizeof(query), format, args);
+    va_end(args);
+    return item_use_thread_db ? tdb_query("%s", query) : db_query("%s", query);
+}
+
 // generic item save - handles player_items, locker_items, corpse_items, saved_items
 int save_item_to_db(struct mig_obj *obj, const char *table,
                     const char *owner_col, int owner_id,
@@ -182,10 +208,10 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     if (!obj) return 0;
 
     // escape strings
-    char *esc_name = obj->name ? sql_escape_string(obj->name) : NULL;
-    char *esc_short = obj->short_descr ? sql_escape_string(obj->short_descr) : NULL;
-    char *esc_desc = obj->description ? sql_escape_string(obj->description) : NULL;
-    char *esc_action = obj->action_descr ? sql_escape_string(obj->action_descr) : NULL;
+    char *esc_name = obj->name ? item_escape(obj->name) : NULL;
+    char *esc_short = obj->short_descr ? item_escape(obj->short_descr) : NULL;
+    char *esc_desc = obj->description ? item_escape(obj->description) : NULL;
+    char *esc_action = obj->action_descr ? item_escape(obj->action_descr) : NULL;
 
     // format for sql
     char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
@@ -248,10 +274,10 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     if (esc_desc) free(esc_desc);
     if (esc_action) free(esc_action);
 
-    if (!qry("%s", query))
+    if (!item_qry("%s", query))
         return 0;
 
-    MYSQL_RES *result = db_query("SELECT LAST_INSERT_ID()");
+    MYSQL_RES *result = item_db_query("SELECT LAST_INSERT_ID()");
     if (!result) return 0;
     MYSQL_ROW row = mysql_fetch_row(result);
     int item_id = row ? atoi(row[0]) : 0;
@@ -344,4 +370,202 @@ int walk_player_dirs(const char *base_path, const char *filter_ext, const char *
         closedir(dir);
     }
     return processed;
+}
+
+// thread-local database connection
+__thread MYSQL *thread_db = NULL;
+int g_num_threads = 1;
+
+// mutex to serialize connection setup
+static pthread_mutex_t connect_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void init_thread_db(void) {
+    if (thread_db) return;
+
+    // serialize connections to avoid overwhelming mysql
+    pthread_mutex_lock(&connect_mutex);
+
+    mysql_thread_init();
+    thread_db = mysql_init(NULL);
+    if (!thread_db) {
+        fprintf(stderr, "thread %ld: mysql_init failed\n", (long)pthread_self());
+        pthread_mutex_unlock(&connect_mutex);
+        return;
+    }
+
+    const char *host = getenv("DB_HOST");
+    const char *user = getenv("DB_USER");
+    const char *passwd = getenv("DB_PASSWD");
+    const char *dbname = getenv("DB_NAME");
+    int port = atoi(getenv("DB_PORT") ? getenv("DB_PORT") : "3306");
+
+    // set connection timeout
+    unsigned int timeout = 30;
+    mysql_options(thread_db, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
+    mysql_options(thread_db, MYSQL_OPT_READ_TIMEOUT, &timeout);
+    mysql_options(thread_db, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
+
+    if (!mysql_real_connect(thread_db, host, user, passwd, dbname, port, NULL, 0)) {
+        fprintf(stderr, "thread %ld: mysql connect failed: %s\n",
+                (long)pthread_self(), mysql_error(thread_db));
+        mysql_close(thread_db);
+        thread_db = NULL;
+        pthread_mutex_unlock(&connect_mutex);
+        return;
+    }
+
+    mysql_set_character_set(thread_db, "utf8mb4");
+    pthread_mutex_unlock(&connect_mutex);
+}
+
+MYSQL *get_thread_db(void) {
+    if (!thread_db) init_thread_db();
+    return thread_db;
+}
+
+void close_thread_db(void) {
+    if (thread_db) {
+        mysql_close(thread_db);
+        thread_db = NULL;
+        mysql_thread_end();
+    }
+}
+
+// mutex for error output to avoid garbled messages
+static pthread_mutex_t error_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// reconnect thread-local db
+static void reconnect_thread_db(void) {
+    if (thread_db) {
+        mysql_close(thread_db);
+        thread_db = NULL;
+    }
+    init_thread_db();
+}
+
+// thread-safe query with result (with reconnect on failure)
+MYSQL_RES *tdb_query(const char *format, ...) {
+    MYSQL *db = get_thread_db();
+    if (!db) {
+        pthread_mutex_lock(&error_mutex);
+        fprintf(stderr, "tdb_query: no db connection\n");
+        pthread_mutex_unlock(&error_mutex);
+        return NULL;
+    }
+
+    char query[65536];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(query, sizeof(query), format, args);
+    va_end(args);
+
+    if (mysql_query(db, query)) {
+        unsigned int err = mysql_errno(db);
+        // CR_SERVER_GONE_ERROR=2006, CR_SERVER_LOST=2013
+        if (err == 2006 || err == 2013) {
+            // try to reconnect once
+            reconnect_thread_db();
+            db = get_thread_db();
+            if (db && mysql_query(db, query) == 0) {
+                return mysql_store_result(db);
+            }
+        }
+        pthread_mutex_lock(&error_mutex);
+        fprintf(stderr, "sql error: %s\nquery: %.200s...\n",
+                mysql_error(db), query);
+        pthread_mutex_unlock(&error_mutex);
+        return NULL;
+    }
+
+    return mysql_store_result(db);
+}
+
+// thread-safe query without result (with reconnect on failure)
+bool tqry(const char *format, ...) {
+    MYSQL *db = get_thread_db();
+    if (!db) {
+        pthread_mutex_lock(&error_mutex);
+        fprintf(stderr, "tqry: no db connection\n");
+        pthread_mutex_unlock(&error_mutex);
+        return false;
+    }
+
+    char query[65536];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(query, sizeof(query), format, args);
+    va_end(args);
+
+    if (mysql_query(db, query)) {
+        unsigned int err = mysql_errno(db);
+        // CR_SERVER_GONE_ERROR=2006, CR_SERVER_LOST=2013
+        if (err == 2006 || err == 2013) {
+            // try to reconnect once
+            reconnect_thread_db();
+            db = get_thread_db();
+            if (db && mysql_query(db, query) == 0) {
+                return true;
+            }
+        }
+        pthread_mutex_lock(&error_mutex);
+        fprintf(stderr, "sql error: %s\nquery: %.200s...\n",
+                mysql_error(db), query);
+        pthread_mutex_unlock(&error_mutex);
+        return false;
+    }
+
+    return true;
+}
+
+// thread-safe string escape
+char *tsql_escape_string(const char *str) {
+    if (!str) return NULL;
+
+    MYSQL *db = get_thread_db();
+    if (!db) return NULL;
+
+    size_t len = strlen(str);
+    char *escaped = (char *)malloc(len * 2 + 1);
+    if (!escaped) return NULL;
+
+    mysql_real_escape_string(db, escaped, str, len);
+    return escaped;
+}
+
+// work queue implementation
+void work_queue_init(struct work_queue *wq, char **files, int count, struct progress_bar *pb) {
+    wq->files = files;
+    wq->total = count;
+    wq->next_index = 0;
+    wq->completed = 0;
+    wq->success = 0;
+    wq->errors = 0;
+    wq->pb = pb;
+    pthread_mutex_init(&wq->mutex, NULL);
+}
+
+char *work_queue_get(struct work_queue *wq) {
+    char *file = NULL;
+    pthread_mutex_lock(&wq->mutex);
+    if (wq->next_index < wq->total) {
+        file = wq->files[wq->next_index++];
+    }
+    pthread_mutex_unlock(&wq->mutex);
+    return file;
+}
+
+void work_queue_done(struct work_queue *wq, int success) {
+    pthread_mutex_lock(&wq->mutex);
+    wq->completed++;
+    if (success)
+        wq->success++;
+    else
+        wq->errors++;
+    if (wq->pb)
+        progress_update(wq->pb, wq->completed);
+    pthread_mutex_unlock(&wq->mutex);
+}
+
+void work_queue_destroy(struct work_queue *wq) {
+    pthread_mutex_destroy(&wq->mutex);
 }

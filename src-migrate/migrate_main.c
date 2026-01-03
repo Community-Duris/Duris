@@ -16,6 +16,7 @@ static void print_usage(const char *prog) {
     printf("  --spellbooks migrate spellbooks only\n");
     printf("  --frag       populate frag_leaderboard only\n");
     printf("  --clean      clear relevant tables before migration\n");
+    printf("  -j N         use N parallel threads (default: 1)\n");
     printf("  --help       show this help\n");
 }
 
@@ -139,6 +140,13 @@ int main(int argc, char **argv) {
         else if (strcmp(argv[i], "--spellbooks") == 0) do_spellbooks = 1;
         else if (strcmp(argv[i], "--frag") == 0) do_frag = 1;
         else if (strcmp(argv[i], "--clean") == 0) do_clean = 1;
+        else if (strcmp(argv[i], "-j") == 0) {
+            if (i + 1 < argc) {
+                g_num_threads = atoi(argv[++i]);
+                if (g_num_threads < 1) g_num_threads = 1;
+                if (g_num_threads > 64) g_num_threads = 64;
+            }
+        }
         else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
             print_usage(argv[0]);
             return 0;
@@ -207,7 +215,15 @@ int main(int argc, char **argv) {
         printf("error: failed to connect to database\n");
         return 1;
     }
-    printf("database connected\n\n");
+    printf("database connected\n");
+    if (g_num_threads > 1)
+        printf("using %d parallel threads\n", g_num_threads);
+
+    // enable fast bulk import mode
+    qry("SET autocommit=0");
+    qry("SET unique_checks=0");
+    qry("SET foreign_key_checks=0");
+    printf("bulk import mode enabled\n\n");
 
     // run clean for selected migrations only
     if (do_clean) {
@@ -272,6 +288,13 @@ int main(int argc, char **argv) {
         spellbooks = migrate_spellbooks_from_files();
         printf("\n");
     }
+
+    // commit and restore normal mode
+    printf("committing transaction...\n");
+    qry("COMMIT");
+    qry("SET unique_checks=1");
+    qry("SET foreign_key_checks=1");
+    qry("SET autocommit=1");
 
     printf("\n=== migration complete ===\n");
     if (do_all) {

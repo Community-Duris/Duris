@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <pthread.h>
 #include <mysql.h>
 
 #include "../src/structs.h"
@@ -218,6 +219,35 @@ extern bool qry(const char *format, ...);
 // global vars
 extern P_Guild guild_list;
 extern char buf[MAX_STRING_LENGTH];
+extern int g_num_threads;
+
+// thread-local database connection
+extern __thread MYSQL *thread_db;
+MYSQL *get_thread_db(void);
+void init_thread_db(void);
+void close_thread_db(void);
+
+// thread-safe query functions (use thread-local connection)
+MYSQL_RES *tdb_query(const char *format, ...);
+bool tqry(const char *format, ...);
+char *tsql_escape_string(const char *str);
+
+// parallel work queue for file processing
+struct work_queue {
+    char **files;
+    int total;
+    int next_index;
+    int completed;
+    int success;
+    int errors;
+    pthread_mutex_t mutex;
+    struct progress_bar *pb;
+};
+
+void work_queue_init(struct work_queue *wq, char **files, int count, struct progress_bar *pb);
+char *work_queue_get(struct work_queue *wq);
+void work_queue_done(struct work_queue *wq, int success);
+void work_queue_destroy(struct work_queue *wq);
 
 // progress bar
 struct progress_bar {
@@ -244,6 +274,9 @@ void free_mig_player(struct mig_player *p);
 int save_item_to_db(struct mig_obj *obj, const char *table,
                     const char *owner_col, int owner_id,
                     int container_id, int equip_slot);
+
+// thread-local flag for parallel item saves
+extern __thread int item_use_thread_db;
 
 // migrate_common.c - directory walking utilities
 typedef int (*dir_file_callback)(const char *filepath, const char *filename, void *userdata);

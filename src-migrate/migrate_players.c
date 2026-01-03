@@ -3,6 +3,28 @@
 
 #include "migrate_common.h"
 
+// thread-safe version of sql_get_pid_by_name
+static int tsql_get_pid_by_name(const char *name) {
+    if (!name) return 0;
+
+    char *esc_name = tsql_escape_string(name);
+    if (!esc_name) return 0;
+
+    char query[256];
+    snprintf(query, sizeof(query),
+        "SELECT pid FROM player_data WHERE LOWER(name) = LOWER('%s') LIMIT 1", esc_name);
+    free(esc_name);
+
+    MYSQL_RES *result = tdb_query("%s", query);
+    if (!result) return 0;
+
+    MYSQL_ROW row = mysql_fetch_row(result);
+    int pid = row ? atoi(row[0]) : 0;
+    mysql_free_result(result);
+
+    return pid;
+}
+
 int sql_get_pid_by_name(const char *name) {
     if (!name) return 0;
 
@@ -223,6 +245,9 @@ static int parse_player_status(char **bufptr, struct mig_player *p, int stat_ver
     } else {
         p->frags = mig_getLong(bufptr);
         p->oldfrags = mig_getLong(bufptr);
+        // sanitize corrupted frags (negative or overflow junk)
+        if (p->frags < 0 || p->frags > 100000) p->frags = 0;
+        if (p->oldfrags < 0 || p->oldfrags > 100000) p->oldfrags = 0;
     }
 
     if (stat_vers < 35) {
@@ -425,24 +450,54 @@ static void fmt_sql_str(char *out, size_t sz, const char *esc) {
         strcpy(out, "NULL");
 }
 
+// thread-local flag for using thread-safe db functions
+static __thread int use_thread_db = 0;
+
+// wrapper functions that select global vs thread-local based on flag
+static char *my_escape(const char *str) {
+    return use_thread_db ? tsql_escape_string(str) : sql_escape_string(str);
+}
+
+static bool my_qry(const char *format, ...) {
+    char query[65536];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(query, sizeof(query), format, args);
+    va_end(args);
+    return use_thread_db ? tqry("%s", query) : qry("%s", query);
+}
+
+static MYSQL_RES *my_db_query(const char *format, ...) {
+    char query[65536];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(query, sizeof(query), format, args);
+    va_end(args);
+    return use_thread_db ? tdb_query("%s", query) : db_query("%s", query);
+}
+
+static int my_get_pid_by_name(const char *name) {
+    return use_thread_db ? tsql_get_pid_by_name(name) : sql_get_pid_by_name(name);
+}
+
 // save complete player to database - uses UPDATE for existing, INSERT for new
 static int save_player_to_db(struct mig_player *p) {
     if (!p || !p->name[0]) return 0;
 
-    char *esc_name = sql_escape_string(p->name);
+    char *esc_name = my_escape(p->name);
     if (!esc_name) return 0;
 
     // check if player already exists FIRST
-    int pid = sql_get_pid_by_name(p->name);
+    int pid = my_get_pid_by_name(p->name);
 
-    char *esc_short = p->short_descr ? sql_escape_string(p->short_descr) : NULL;
-    char *esc_long = p->long_descr ? sql_escape_string(p->long_descr) : NULL;
-    char *esc_desc = p->description ? sql_escape_string(p->description) : NULL;
-    char *esc_title = p->title ? sql_escape_string(p->title) : NULL;
-    char *esc_poof_in = p->poof_in ? sql_escape_string(p->poof_in) : NULL;
-    char *esc_poof_out = p->poof_out ? sql_escape_string(p->poof_out) : NULL;
-    char *esc_poof_in_snd = p->poof_in_sound ? sql_escape_string(p->poof_in_sound) : NULL;
-    char *esc_poof_out_snd = p->poof_out_sound ? sql_escape_string(p->poof_out_sound) : NULL;
+    char *esc_short = p->short_descr ? my_escape(p->short_descr) : NULL;
+    char *esc_long = p->long_descr ? my_escape(p->long_descr) : NULL;
+    char *esc_desc = p->description ? my_escape(p->description) : NULL;
+    char *esc_title = p->title ? my_escape(p->title) : NULL;
+    char *esc_poof_in = p->poof_in ? my_escape(p->poof_in) : NULL;
+    char *esc_poof_out = p->poof_out ? my_escape(p->poof_out) : NULL;
+    char *esc_poof_in_snd = p->poof_in_sound ? my_escape(p->poof_in_sound) : NULL;
+    char *esc_poof_out_snd = p->poof_out_sound ? my_escape(p->poof_out_sound) : NULL;
 
     char short_str[2048], long_str[2048], desc_str[4096], title_str[1024];
     char poof_in_str[1024], poof_out_str[1024], poof_in_snd_str[1024], poof_out_snd_str[1024];
@@ -498,8 +553,8 @@ static int save_player_to_db(struct mig_player *p) {
             pid);
 
         // for existing player, delete items (they'll be re-inserted fresh)
-        qry("DELETE FROM player_items WHERE pid = %d", pid);
-        qry("DELETE FROM player_affects WHERE pid = %d", pid);
+        my_qry("DELETE FROM player_items WHERE pid = %d", pid);
+        my_qry("DELETE FROM player_affects WHERE pid = %d", pid);
     } else {
         // new player - use INSERT
         snprintf(query, sizeof(query),
@@ -566,7 +621,7 @@ static int save_player_to_db(struct mig_player *p) {
     if (esc_poof_in_snd) free(esc_poof_in_snd);
     if (esc_poof_out_snd) free(esc_poof_out_snd);
 
-    if (!qry("%s", query))
+    if (!my_qry("%s", query))
         return 0;
 
     // for new players, get the pid
@@ -589,7 +644,7 @@ static int save_player_to_db(struct mig_player *p) {
     }
     if (len > 0) {
         values[len - 1] = '\0';
-        qry("INSERT INTO player_skills (pid,skill_id,learned,taught) VALUES %s "
+        my_qry("INSERT INTO player_skills (pid,skill_id,learned,taught) VALUES %s "
             "ON DUPLICATE KEY UPDATE learned=VALUES(learned),taught=VALUES(taught)", values);
     }
 
@@ -603,7 +658,7 @@ static int save_player_to_db(struct mig_player *p) {
     }
     if (len > 0) {
         values[len - 1] = '\0';
-        qry("INSERT INTO player_languages (pid,tongue_id,proficiency) VALUES %s "
+        my_qry("INSERT INTO player_languages (pid,tongue_id,proficiency) VALUES %s "
             "ON DUPLICATE KEY UPDATE proficiency=VALUES(proficiency)", values);
     }
 
@@ -617,7 +672,7 @@ static int save_player_to_db(struct mig_player *p) {
     }
     if (len > 0) {
         values[len - 1] = '\0';
-        qry("INSERT INTO player_timers (pid,timer_id,timer_value) VALUES %s "
+        my_qry("INSERT INTO player_timers (pid,timer_id,timer_value) VALUES %s "
             "ON DUPLICATE KEY UPDATE timer_value=VALUES(timer_value)", values);
     }
 
@@ -631,7 +686,7 @@ static int save_player_to_db(struct mig_player *p) {
     }
     if (len > 0) {
         values[len - 1] = '\0';
-        qry("INSERT INTO player_undead_slots (pid,circle,slots) VALUES %s "
+        my_qry("INSERT INTO player_undead_slots (pid,circle,slots) VALUES %s "
             "ON DUPLICATE KEY UPDATE slots=VALUES(slots)", values);
     }
 
@@ -645,7 +700,7 @@ static int save_player_to_db(struct mig_player *p) {
     }
     if (len > 0) {
         values[len - 1] = '\0';
-        qry("INSERT INTO player_forged_items (pid,forge_index,item_vnum) VALUES %s "
+        my_qry("INSERT INTO player_forged_items (pid,forge_index,item_vnum) VALUES %s "
             "ON DUPLICATE KEY UPDATE item_vnum=VALUES(item_vnum)", values);
     }
 
@@ -659,7 +714,7 @@ static int save_player_to_db(struct mig_player *p) {
     }
     if (len > 0) {
         values[len - 1] = '\0';
-        qry("INSERT INTO player_intros (pid,intro_index,intro_pid,intro_time) VALUES %s "
+        my_qry("INSERT INTO player_intros (pid,intro_index,intro_pid,intro_time) VALUES %s "
             "ON DUPLICATE KEY UPDATE intro_pid=VALUES(intro_pid)", values);
     }
 
@@ -672,7 +727,7 @@ static int save_player_to_db(struct mig_player *p) {
         }
         if (len > 0) {
             values[len - 1] = '\0';
-            qry("INSERT INTO player_granted_cmds (pid,cmd_num) VALUES %s "
+            my_qry("INSERT INTO player_granted_cmds (pid,cmd_num) VALUES %s "
                 "ON DUPLICATE KEY UPDATE cmd_num=cmd_num", values);
         }
     }
@@ -696,7 +751,7 @@ static int save_player_to_db(struct mig_player *p) {
     }
     if (len > 0) {
         values[len - 1] = '\0';
-        qry("INSERT INTO player_affects (pid,type,duration,flags,modifier,location,level,"
+        my_qry("INSERT INTO player_affects (pid,type,duration,flags,modifier,location,level,"
             "bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room) VALUES %s",
             values);
     }
@@ -844,15 +899,11 @@ static int count_player_files(void) {
     return total;
 }
 
-// migrate all player pfiles
-int migrate_players_from_files(void) {
-    int count = 0;
-    int errors = 0;
-    int processed = 0;
-
+// collect all player files into array
+static char **collect_player_files(int *count) {
     int total = count_player_files();
-    struct progress_bar pb;
-    progress_init(&pb, total, "players");
+    char **files = (char **)malloc(sizeof(char *) * total);
+    int idx = 0;
 
     for (char letter = 'a'; letter <= 'z'; letter++) {
         char dirname[256];
@@ -877,27 +928,117 @@ int migrate_players_from_files(void) {
             struct stat st;
             if (stat(filepath, &st) != 0 || !S_ISREG(st.st_mode)) continue;
 
-            struct mig_player *p = parse_player_pfile(filepath);
-            if (!p) {
-                errors++;
-            } else {
-                int pid = save_player_to_db(p);
-                if (pid > 0) {
-                    count++;
-                } else {
-                    errors++;
-                }
-                free_mig_player(p);
-            }
-
-            processed++;
-            progress_update(&pb, processed);
+            files[idx++] = strdup(filepath);
         }
-
         closedir(dir);
     }
+    *count = idx;
+    return files;
+}
+
+// parallel worker thread
+static void *player_worker(void *arg) {
+    struct work_queue *wq = (struct work_queue *)arg;
+
+    // enable thread-local db for this worker
+    use_thread_db = 1;
+    item_use_thread_db = 1;
+    init_thread_db();
+
+    // check if connection succeeded
+    if (!get_thread_db()) {
+        fprintf(stderr, "worker thread: failed to get db connection, exiting\n");
+        return NULL;
+    }
+
+    // set bulk import mode on this thread's connection
+    tqry("SET autocommit=0");
+    tqry("SET unique_checks=0");
+    tqry("SET foreign_key_checks=0");
+
+    char *filepath;
+    int processed = 0;
+    while ((filepath = work_queue_get(wq)) != NULL) {
+        struct mig_player *p = parse_player_pfile(filepath);
+        int success = 0;
+        if (p) {
+            int pid = save_player_to_db(p);
+            success = (pid > 0);
+            free_mig_player(p);
+        }
+        work_queue_done(wq, success);
+
+        // commit every 20 players per thread to avoid redo log overflow
+        if (++processed % 20 == 0) {
+            tqry("COMMIT");
+        }
+    }
+
+    tqry("COMMIT");  // final commit for this thread
+    close_thread_db();
+    return NULL;
+}
+
+// migrate all player pfiles
+int migrate_players_from_files(void) {
+    int file_count = 0;
+    char **files = collect_player_files(&file_count);
+
+    struct progress_bar pb;
+    progress_init(&pb, file_count, "players");
+
+    // use parallel workers if requested
+    if (g_num_threads > 1) {
+        struct work_queue wq;
+        work_queue_init(&wq, files, file_count, &pb);
+
+        pthread_t *threads = (pthread_t *)malloc(sizeof(pthread_t) * g_num_threads);
+        for (int i = 0; i < g_num_threads; i++) {
+            pthread_create(&threads[i], NULL, player_worker, &wq);
+        }
+
+        for (int i = 0; i < g_num_threads; i++) {
+            pthread_join(threads[i], NULL);
+        }
+        free(threads);
+
+        progress_finish(&pb);
+        printf("players: %d migrated, %d errors\n", wq.success, wq.errors);
+
+        // cleanup
+        work_queue_destroy(&wq);
+        for (int i = 0; i < file_count; i++) free(files[i]);
+        free(files);
+
+        return wq.success;
+    }
+
+    // single-threaded fallback
+    int count = 0, errors = 0;
+    for (int i = 0; i < file_count; i++) {
+        struct mig_player *p = parse_player_pfile(files[i]);
+        if (!p) {
+            errors++;
+        } else {
+            int pid = save_player_to_db(p);
+            if (pid > 0) count++;
+            else errors++;
+            free_mig_player(p);
+        }
+        progress_update(&pb, i + 1);
+
+        // commit every 50 players to flush redo log
+        if ((i + 1) % 50 == 0) {
+            qry("COMMIT");
+        }
+    }
+    qry("COMMIT"); // final commit
 
     progress_finish(&pb);
     printf("players: %d migrated, %d errors\n", count, errors);
+
+    for (int i = 0; i < file_count; i++) free(files[i]);
+    free(files);
+
     return count;
 }

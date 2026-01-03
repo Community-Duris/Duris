@@ -39,6 +39,7 @@
 #include "mccp.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "redis.h"
 #include "ferry.h"
 #include "world_quest.h"
 #include "auction_houses.h"
@@ -305,6 +306,8 @@ int main(int argc, char **argv)
     fprintf(stderr, "MySQL initialization failed! Dying!");
     raise(SIGSEGV);
   }
+
+  redis_init();
 
   // run migration and exit if requested
   if (migrate_mode)

@@ -253,6 +253,15 @@ int initialize_mysql() {
     return 1;
 }
 
+// reconnect global db on connection loss
+static void reconnect_db(void) {
+    if (DB) {
+        mysql_close(DB);
+        DB = NULL;
+    }
+    initialize_mysql();
+}
+
 MYSQL_RES *db_query(const char *format, ...) {
     static char query[65536];
     va_list args;
@@ -262,7 +271,15 @@ MYSQL_RES *db_query(const char *format, ...) {
     va_end(args);
 
     if (mysql_query(DB, query)) {
-        printf("sql error: %s\nquery: %s\n", mysql_error(DB), query);
+        unsigned int err = mysql_errno(DB);
+        // CR_SERVER_GONE_ERROR=2006, CR_SERVER_LOST=2013
+        if (err == 2006 || err == 2013) {
+            reconnect_db();
+            if (DB && mysql_query(DB, query) == 0) {
+                return mysql_store_result(DB);
+            }
+        }
+        printf("sql error: %s\nquery: %.200s...\n", mysql_error(DB), query);
         return NULL;
     }
 
@@ -278,7 +295,17 @@ bool qry(const char *format, ...) {
     va_end(args);
 
     if (mysql_query(DB, query)) {
-        printf("sql error: %s\nquery: %s\n", mysql_error(DB), query);
+        unsigned int err = mysql_errno(DB);
+        // CR_SERVER_GONE_ERROR=2006, CR_SERVER_LOST=2013
+        if (err == 2006 || err == 2013) {
+            reconnect_db();
+            if (DB && mysql_query(DB, query) == 0) {
+                MYSQL_RES *result = mysql_store_result(DB);
+                if (result) mysql_free_result(result);
+                return true;
+            }
+        }
+        printf("sql error: %s\nquery: %.200s...\n", mysql_error(DB), query);
         return false;
     }
 
@@ -319,6 +346,15 @@ char *sql_escape_string(const char *str) {
 static bool sql_run_query(const char *query) {
     if (!DB || !query) return false;
     if (mysql_real_query(DB, query, strlen(query)) != 0) {
+        unsigned int err = mysql_errno(DB);
+        if (err == 2006 || err == 2013) {
+            reconnect_db();
+            if (DB && mysql_real_query(DB, query, strlen(query)) == 0) {
+                MYSQL_RES *result = mysql_store_result(DB);
+                if (result) mysql_free_result(result);
+                return true;
+            }
+        }
         printf("sql error: %s\nquery: %.200s...\n", mysql_error(DB), query);
         return false;
     }

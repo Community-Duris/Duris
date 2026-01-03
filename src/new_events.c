@@ -30,6 +30,7 @@
 #include "vnum.obj.h"
 #include "interp.h"
 #include "outposts.h"
+#include "redis.h"
 
 #define MAX_FUNCTIONS 6000
 #define FUNCTION_NAMES_FILE "lib/misc/event_names"
@@ -810,6 +811,10 @@ void ne_init_events(void)
 
   // Increases and notifies people if they've ranked up in feudal surname.
   add_event( event_update_surnames, 45 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0 );
+
+  // redis dirty player saves
+  if (redis_enabled)
+    add_event(event_flush_dirty_players, 5 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 
   logit(LOG_STATUS, "Done scheduling events.\n");
 }

@@ -33,6 +33,7 @@
 #include "specializations.h"
 #include "epic.h"
 #include "timers.h"
+#include "redis.h"
 
 extern P_index mob_index;
 extern const struct race_names race_names_table[];
@@ -1091,8 +1092,10 @@ void sql_world_quest_finished(P_char ch, P_obj reward)
   int reward_vnum = reward ? ((reward->R_num >= 0) ? obj_index[reward->R_num].virtual_number : 0) : 0;
   char* reward_desc = reward ? mysql_str(reward->short_description, buf) : mysql_str("", buf);
 
-  db_query("INSERT INTO world_quest_accomplished (pid, timestamp, quest_giver, player_name, player_level, quest_target, reward_vnum, reward_desc) VALUES (%d, now(), %d, '%s', %d, %d, %d, '%s')", 
+  db_query("INSERT INTO world_quest_accomplished (pid, timestamp, quest_giver, player_name, player_level, quest_target, reward_vnum, reward_desc) VALUES (%d, now(), %d, '%s', %d, %d, %d, '%s')",
 						     GET_PID(ch), ch->only.pc->quest_giver, GET_NAME(ch), GET_LEVEL(ch), ch->only.pc->quest_mob_vnum, reward_vnum, reward_desc );
+
+  mark_player_dirty(GET_PID(ch));
 }
 
 int sql_world_quest_can_do_another(P_char ch)
