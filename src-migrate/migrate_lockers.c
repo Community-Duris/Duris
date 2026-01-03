@@ -3,70 +3,10 @@
 
 #include "migrate_common.h"
 
-// save locker item to database, returns item_id
+// wrapper for save_item_to_db for locker items
 int save_locker_item(int locker_id, struct mig_obj *obj, int container_id) {
     if (!obj || locker_id <= 0) return 0;
-
-    char *esc_name = obj->name ? sql_escape_string(obj->name) : NULL;
-    char *esc_short = obj->short_descr ? sql_escape_string(obj->short_descr) : NULL;
-    char *esc_desc = obj->description ? sql_escape_string(obj->description) : NULL;
-    char *esc_action = obj->action_descr ? sql_escape_string(obj->action_descr) : NULL;
-
-    char container_str[32];
-    if (container_id > 0)
-        snprintf(container_str, sizeof(container_str), "%d", container_id);
-    else
-        strcpy(container_str, "NULL");
-
-    char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
-    if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
-    else strcpy(name_str, "NULL");
-    if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
-    else strcpy(short_str, "NULL");
-    if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
-    else strcpy(desc_str, "NULL");
-    if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
-    else strcpy(action_str, "NULL");
-
-    char query[8192];
-    snprintf(query, sizeof(query),
-        "INSERT INTO locker_items ("
-        "locker_id, vnum, container_id, quantity, "
-        "weight, cost, timer, extra_flags, "
-        "value0, value1, value2, value3, value4, value5, value6, value7, "
-        "name, short_descr, description, action_descr"
-        ") VALUES ("
-        "%d, %d, %s, 1, "
-        "%d, %d, %ld, %lu, "
-        "%d, %d, %d, %d, %d, %d, %d, %d, "
-        "%s, %s, %s, %s"
-        ")",
-        locker_id, obj->vnum, container_str,
-        obj->weight, obj->cost, obj->timer, obj->extra_flags,
-        obj->value[0], obj->value[1], obj->value[2], obj->value[3],
-        obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-        name_str, short_str, desc_str, action_str);
-
-    if (esc_name) free(esc_name);
-    if (esc_short) free(esc_short);
-    if (esc_desc) free(esc_desc);
-    if (esc_action) free(esc_action);
-
-    if (!qry("%s", query))
-        return 0;
-
-    MYSQL_RES *result = db_query("SELECT LAST_INSERT_ID()");
-    if (!result) return 0;
-    MYSQL_ROW row = mysql_fetch_row(result);
-    int item_id = row ? atoi(row[0]) : 0;
-    mysql_free_result(result);
-
-    // save contained items recursively
-    for (struct mig_obj *c = obj->contains; c; c = c->next) {
-        save_locker_item(locker_id, c, item_id);
-    }
-
-    return item_id;
+    return save_item_to_db(obj, "locker_items", "locker_id", locker_id, container_id, -1);
 }
 
 // migrate a single locker file
@@ -176,12 +116,10 @@ static int migrate_locker_file(const char *filepath, const char *locker_name) {
         }
     }
 
-    // delete existing locker
+    // check if locker already exists
     char *esc_name = sql_escape_string(locker_name);
     if (!esc_name) return 0;
-    qry("DELETE FROM lockers WHERE locker_name = '%s'", esc_name);
 
-    // insert locker record
     char owner_pid_str[32], owner_assoc_str[32];
     if (owner_pid > 0)
         snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
@@ -192,19 +130,36 @@ static int migrate_locker_file(const char *filepath, const char *locker_name) {
     else
         strcpy(owner_assoc_str, "NULL");
 
-    if (!qry("INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
-             "VALUES ('%s', %s, %s, %d, %d)",
-             esc_name, owner_pid_str, owner_assoc_str, racewar, race)) {
-        free(esc_name);
-        return 0;
+    // check existing locker
+    MYSQL_RES *check = db_query("SELECT id FROM lockers WHERE locker_name = '%s'", esc_name);
+    int locker_id = 0;
+    if (check) {
+        MYSQL_ROW r = mysql_fetch_row(check);
+        if (r && r[0]) locker_id = atoi(r[0]);
+        mysql_free_result(check);
+    }
+
+    if (locker_id > 0) {
+        // locker exists - update and delete old items
+        qry("UPDATE lockers SET owner_pid=%s, owner_assoc_id=%s, racewar=%d, race=%d WHERE id=%d",
+            owner_pid_str, owner_assoc_str, racewar, race, locker_id);
+        qry("DELETE FROM locker_items WHERE locker_id = %d", locker_id);
+    } else {
+        // new locker - insert
+        if (!qry("INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
+                 "VALUES ('%s', %s, %s, %d, %d)",
+                 esc_name, owner_pid_str, owner_assoc_str, racewar, race)) {
+            free(esc_name);
+            return 0;
+        }
+
+        MYSQL_RES *result = db_query("SELECT LAST_INSERT_ID()");
+        if (!result) { free(esc_name); return 0; }
+        MYSQL_ROW row = mysql_fetch_row(result);
+        locker_id = row ? atoi(row[0]) : 0;
+        mysql_free_result(result);
     }
     free(esc_name);
-
-    MYSQL_RES *result = db_query("SELECT LAST_INSERT_ID()");
-    if (!result) return 0;
-    MYSQL_ROW row = mysql_fetch_row(result);
-    int locker_id = row ? atoi(row[0]) : 0;
-    mysql_free_result(result);
 
     if (locker_id <= 0) return 0;
 

@@ -1678,6 +1678,7 @@ bool sql_load_player_items(P_char ch)
     obj->timer[0] = sql_row_long(row, col++, obj->timer[0]);
     obj->extra_flags = sql_row_ulong(row, col++, obj->extra_flags);
 
+    // NULL in db means use prototype value (passed as default)
     obj->value[0] = sql_row_int(row, col++, obj->value[0]);
     obj->value[1] = sql_row_int(row, col++, obj->value[1]);
     obj->value[2] = sql_row_int(row, col++, obj->value[2]);
@@ -2340,14 +2341,14 @@ static P_obj sql_load_locker_items(int locker_id, int container_id)
     obj->timer[0] = atol(row[4]);
     obj->extra_flags = strtoul(row[5], NULL, 10);
 
-    obj->value[0] = atoi(row[6]);
-    obj->value[1] = atoi(row[7]);
-    obj->value[2] = atoi(row[8]);
-    obj->value[3] = atoi(row[9]);
-    obj->value[4] = atoi(row[10]);
-    obj->value[5] = atoi(row[11]);
-    obj->value[6] = atoi(row[12]);
-    obj->value[7] = atoi(row[13]);
+    obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
+    obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
+    obj->value[2] = row[8] ? atoi(row[8]) : obj->value[2];
+    obj->value[3] = row[9] ? atoi(row[9]) : obj->value[3];
+    obj->value[4] = row[10] ? atoi(row[10]) : obj->value[4];
+    obj->value[5] = row[11] ? atoi(row[11]) : obj->value[5];
+    obj->value[6] = row[12] ? atoi(row[12]) : obj->value[6];
+    obj->value[7] = row[13] ? atoi(row[13]) : obj->value[7];
 
     if (row[14] && strlen(row[14]) > 0)
     {
@@ -3333,7 +3334,7 @@ static P_obj sql_load_corpse_items(int corpse_id, int container_id)
     items[num_items].timer = atol(row[4]);
     items[num_items].extra_flags = strtoul(row[5], NULL, 10);
     for (int v = 0; v < 8; v++)
-      items[num_items].value[v] = atoi(row[6 + v]);
+      items[num_items].value[v] = row[6 + v] ? atoi(row[6 + v]) : 0;
     strncpy(items[num_items].name, row[14] ? row[14] : "", 255);
     items[num_items].name[255] = '\0';
     strncpy(items[num_items].short_descr, row[15] ? row[15] : "", 255);
@@ -4238,14 +4239,14 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
     obj->timer[0] = atol(row[4]);
     obj->extra_flags = strtoul(row[5], NULL, 10);
 
-    obj->value[0] = atoi(row[6]);
-    obj->value[1] = atoi(row[7]);
-    obj->value[2] = atoi(row[8]);
-    obj->value[3] = atoi(row[9]);
-    obj->value[4] = atoi(row[10]);
-    obj->value[5] = atoi(row[11]);
-    obj->value[6] = atoi(row[12]);
-    obj->value[7] = atoi(row[13]);
+    obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
+    obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
+    obj->value[2] = row[8] ? atoi(row[8]) : obj->value[2];
+    obj->value[3] = row[9] ? atoi(row[9]) : obj->value[3];
+    obj->value[4] = row[10] ? atoi(row[10]) : obj->value[4];
+    obj->value[5] = row[11] ? atoi(row[11]) : obj->value[5];
+    obj->value[6] = row[12] ? atoi(row[12]) : obj->value[6];
+    obj->value[7] = row[13] ? atoi(row[13]) : obj->value[7];
 
     if (row[14] && strlen(row[14]) > 0)
     {
@@ -4446,14 +4447,14 @@ static P_obj sql_load_siege_item_contents(int room_vnum, int container_id)
     obj->timer[0] = atol(row[4]);
     obj->extra_flags = strtoul(row[5], NULL, 10);
 
-    obj->value[0] = atoi(row[6]);
-    obj->value[1] = atoi(row[7]);
-    obj->value[2] = atoi(row[8]);
-    obj->value[3] = atoi(row[9]);
-    obj->value[4] = atoi(row[10]);
-    obj->value[5] = atoi(row[11]);
-    obj->value[6] = atoi(row[12]);
-    obj->value[7] = atoi(row[13]);
+    obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
+    obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
+    obj->value[2] = row[8] ? atoi(row[8]) : obj->value[2];
+    obj->value[3] = row[9] ? atoi(row[9]) : obj->value[3];
+    obj->value[4] = row[10] ? atoi(row[10]) : obj->value[4];
+    obj->value[5] = row[11] ? atoi(row[11]) : obj->value[5];
+    obj->value[6] = row[12] ? atoi(row[12]) : obj->value[6];
+    obj->value[7] = row[13] ? atoi(row[13]) : obj->value[7];
 
     if (row[14] && strlen(row[14]) > 0)
     {

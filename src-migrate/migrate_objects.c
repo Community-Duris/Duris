@@ -18,14 +18,14 @@ static void parse_unique_fields(char **buf, struct mig_obj *obj, unsigned long o
             if (desc) free(desc);
         }
     }
-    if (o_u_flag & O_U_VAL0) obj->value[0] = mig_getInt(buf);
-    if (o_u_flag & O_U_VAL1) obj->value[1] = mig_getInt(buf);
-    if (o_u_flag & O_U_VAL2) obj->value[2] = mig_getInt(buf);
-    if (o_u_flag & O_U_VAL3) obj->value[3] = mig_getInt(buf);
-    if (o_u_flag & O_U_VAL4) obj->value[4] = mig_getInt(buf);
-    if (o_u_flag & O_U_VAL5) obj->value[5] = mig_getInt(buf);
-    if (o_u_flag & O_U_VAL6) obj->value[6] = mig_getInt(buf);
-    if (o_u_flag & O_U_VAL7) obj->value[7] = mig_getInt(buf);
+    if (o_u_flag & O_U_VAL0) { obj->value[0] = mig_getInt(buf); obj->value_set |= (1 << 0); }
+    if (o_u_flag & O_U_VAL1) { obj->value[1] = mig_getInt(buf); obj->value_set |= (1 << 1); }
+    if (o_u_flag & O_U_VAL2) { obj->value[2] = mig_getInt(buf); obj->value_set |= (1 << 2); }
+    if (o_u_flag & O_U_VAL3) { obj->value[3] = mig_getInt(buf); obj->value_set |= (1 << 3); }
+    if (o_u_flag & O_U_VAL4) { obj->value[4] = mig_getInt(buf); obj->value_set |= (1 << 4); }
+    if (o_u_flag & O_U_VAL5) { obj->value[5] = mig_getInt(buf); obj->value_set |= (1 << 5); }
+    if (o_u_flag & O_U_VAL6) { obj->value[6] = mig_getInt(buf); obj->value_set |= (1 << 6); }
+    if (o_u_flag & O_U_VAL7) { obj->value[7] = mig_getInt(buf); obj->value_set |= (1 << 7); }
     if (o_u_flag & O_U_TIMER) {
         obj->timer = mig_getInt(buf);
         mig_getInt(buf); mig_getInt(buf); mig_getInt(buf); // timer[1-3]

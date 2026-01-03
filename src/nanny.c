@@ -3249,9 +3249,6 @@ void enter_game(P_desc d)
   else
   {
     r_room = real_room(ch->specials.was_in_room);
-    fprintf(stderr, "nanny room calc: was_in_room=%d real_room=%d in_room=%d\n",
-            ch->specials.was_in_room, r_room, ch->in_room);
-
     if(r_room == NOWHERE)
       r_room = ch->in_room;
   }

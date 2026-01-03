@@ -36,7 +36,7 @@ int fragWorthy(P_char ch, P_char victim)
     return FALSE;
 #endif
 
- 
+
   if (IS_NPC(victim))
     return FALSE;
 
@@ -46,7 +46,7 @@ int fragWorthy(P_char ch, P_char victim)
     else
       return FALSE;
 
-  
+
   if ((GET_LEVEL(ch) > 56) || (GET_LEVEL(victim) > 56))
     return FALSE;
 
@@ -65,23 +65,23 @@ int fragWorthy(P_char ch, P_char victim)
   if (GET_LEVEL(victim) < 20)
     return FALSE;
 
-  racew = (opposite_racewar(ch, victim) /* || (IS_ILLITHID(ch) && !IS_ILLITHID(victim)) || 
+  racew = (opposite_racewar(ch, victim) /* || (IS_ILLITHID(ch) && !IS_ILLITHID(victim)) ||
                                            (IS_DISGUISE(victim) && (EVIL_RACE(victim) != EVIL_RACE(ch))) */
            );
 
   if (!racew)
     return FALSE;
 
-  /* Kvark adding harder check for frags, connected to missfire. */ 
+  /* Kvark adding harder check for frags, connected to missfire. */
 /*
   misfire_check(ch, victim,
                   DISALLOW_SELF | DISALLOW_BACKRANK);
-  
+
   if(!affected_by_spell(ch, TAG_NOMISFIRE))
   {
       send_to_char("&+WThis kind of frag counts as nothing, go prove your self in a fair fight instead.&n\n", ch);
                 return FALSE;
-                
+
   }
 */
   /*
@@ -90,18 +90,18 @@ int fragWorthy(P_char ch, P_char victim)
    for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
    {
     if(tch)
-     if (tch != ch) 
+     if (tch != ch)
       if(opposite_racewar(victim, tch) && !IS_TRUSTED(tch))
        if(!affected_by_spell(tch, TAG_NOMISFIRE)){
-          send_to_char("This kind of frag counts as nothing, blame your firends.", tch);  
-          return FALSE;          
+          send_to_char("This kind of frag counts as nothing, blame your firends.", tch);
+          return FALSE;
        }
    }
-   
+
   }
   */
 
-  
+
   if (victim->only.pc->frags > 500)
     return TRUE;
 
@@ -120,409 +120,294 @@ int fragWorthy(P_char ch, P_char victim)
 }
 
 
-/*
- * deleteFragEntry
- */
-
-void deleteFragEntry(char names[MAX_FRAG_SIZE][MAX_STRING_LENGTH],
-                     int frags[MAX_FRAG_SIZE], int pos)
+// helper to build fraglist query with filter
+static MYSQL_RES *query_frag_leaders(const char *filter, int ascending, int limit)
 {
-  int      i;
+  char query[2048];
 
-  if (pos >= MAX_FRAG_SIZE)
-    return;
-
-  for (i = pos; i < MAX_FRAG_SIZE; i++)
-  {
-    strcpy(names[i], names[i + 1]);
-    frags[i] = frags[i + 1];
+  if (filter && filter[0]) {
+    snprintf(query, sizeof(query),
+      "SELECT char_name, total_frags FROM frag_leaderboard "
+      "WHERE deleted_at IS NULL AND %s "
+      "ORDER BY total_frags %s LIMIT %d",
+      filter, ascending ? "ASC" : "DESC", limit);
+  } else {
+    snprintf(query, sizeof(query),
+      "SELECT char_name, total_frags FROM frag_leaderboard "
+      "WHERE deleted_at IS NULL "
+      "ORDER BY total_frags %s LIMIT %d",
+      ascending ? "ASC" : "DESC", limit);
   }
 
-  strcpy(names[MAX_FRAG_SIZE - 1], "Nobody");
-  frags[MAX_FRAG_SIZE - 1] = 0;
+  return db_query(query);
 }
 
-
-/*
- * insertFragEntry
- */
-
-void insertFragEntry(char names[MAX_FRAG_SIZE][MAX_STRING_LENGTH],
-                     int frags[MAX_FRAG_SIZE], char *name, int newFrags,
-                     int pos)
+// check if player is at top or bottom of overall fraglist
+static void check_frag_position(P_char ch)
 {
-  int      i;
+  MYSQL_RES *res;
+  MYSQL_ROW row;
 
-  if (pos >= MAX_FRAG_SIZE)
+  if (!ch || IS_NPC(ch))
     return;
 
-  if (pos == (MAX_FRAG_SIZE - 1))
-  {
-    strcpy(names[pos], name);
-    frags[pos] = newFrags;
-    return;
+  // check if player is #1 overall
+  res = db_query("SELECT char_name FROM frag_leaderboard "
+                 "WHERE deleted_at IS NULL ORDER BY total_frags DESC LIMIT 1");
+  if (res) {
+    row = mysql_fetch_row(res);
+    if (row && row[0] && isname(row[0], GET_NAME(ch))) {
+      SET_BIT(ch->specials.act3, PLR3_FRAGLEAD);
+    } else {
+      REMOVE_BIT(ch->specials.act3, PLR3_FRAGLEAD);
+    }
+    mysql_free_result(res);
   }
 
-  for (i = MAX_FRAG_SIZE - 2; i >= pos; i--)
-  {
-    strcpy(names[i + 1], names[i]);
-    frags[i + 1] = frags[i];
+  // check if player is #1 lowest
+  res = db_query("SELECT char_name FROM frag_leaderboard "
+                 "WHERE deleted_at IS NULL ORDER BY total_frags ASC LIMIT 1");
+  if (res) {
+    row = mysql_fetch_row(res);
+    if (row && row[0] && isname(row[0], GET_NAME(ch))) {
+      SET_BIT(ch->specials.act3, PLR3_FRAGLOW);
+    } else {
+      REMOVE_BIT(ch->specials.act3, PLR3_FRAGLOW);
+    }
+    mysql_free_result(res);
   }
-
-  strcpy(names[pos], name);
-  frags[pos] = newFrags;
 }
 
-
-// Shows the frag list.
+// shows the frag list from database
 void do_fraglist(P_char ch, char *arg, int cmd)
 {
-  FILE    *fragList;
-  char     name[MAX_STRING_LENGTH], buf[65536], buf2[2048];
-  int      frags;
-  char     i;
+  char     buf[65536], buf2[2048], name[256];
+  int      frags, count;
   float    fragnum = 0;
-  char     filename[1024];
+  char     filter[256] = "";
   int      cap_level, cap_racewar, cap_others;
   long     cap_frags;
   time_t   cap_timer;
   int      days, hours, mins, secs;
+  MYSQL_RES *res;
+  MYSQL_ROW row;
 
   if( !IS_ALIVE(ch) )
     return;
 
-  if( arg )
+  if( arg && arg[0] )
   {
-    if (strstr("normal", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.normal");
-    }
-    else if (strstr("goodie", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.goodie");
-    }
-    else if (strstr("evil", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.evil");
-    }
-    else if (strstr("undead", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.undead");
-    }
-    // else if (strstr("death knight", arg))
-    // {
-      // snprintf(filename, 1024, "Fraglists/fraglist.death_knight");
-    // }
-    else if (strstr("lich", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.lich");
-    }
-    else if (strstr("vampire", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.vampire");
-    }
-    // else if (strstr("shadow beast", arg))
-    // {
-      // snprintf(filename, 1024, "Fraglists/fraglist.shadow_beast");
-    // }
-    // else if (strstr("wight", arg))
-    // {
-      // snprintf(filename, 1024, "Fraglists/fraglist.wight");
-    // }
-    // else if (strstr("phantom", arg))
-    // {
-      // snprintf(filename, 1024, "Fraglists/fraglist.phantom");
-    // }
-    // else if (strstr("shade", arg))
-    // {
-      // snprintf(filename, 1024, "Fraglists/fraglist.shade");
-    // }
-    else if (strstr("revenant", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.revenant");
-    }
-    else if (strstr("illithid", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.squid");
-    }
-    else if (strstr("human", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.human");
-    }
-    else if (strstr("barbarian", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.barbarian");
-    }
-    else if (strstr("drow elf", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.drow_elf");
-    }
-    else if (strstr("grey elf", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.grey_elf");
-    }
-    else if (strstr("mountain dwarf", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.mountain_dwarf");
-    }
-    else if (strstr("duergar dwarf", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.duergar_dwarf");
-    }
-    else if (strstr("halfling", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.halfling");
-    }
-    else if (strstr("gnome", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.gnome");
-    }
-    else if (strstr("storm giant", arg))
-    {
-      snprintf(filename, 1024, "Fraglists/fraglist.storm_giant");
-    }
-    else if (strstr("ogre", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.ogre");
-    }
-    else if (strstr("troll", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.troll");
-    }
-    else if (strstr("drider", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.drider");
-    }
-    else if (strstr("half elf", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.half-elf");
-    }
-    else if (strstr("half-elf", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.half-elf");
-    }
-    else if (strstr("orc", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.orc");
-    }
-    else if (strstr("thrikreen", arg) || strstr("thri-kreen", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.thri-kreen");
-    }
-    else if (strstr("centaur", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.centaur");
-    }
-    else if (strstr("githyanki", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.githyanki");
-    }
-    else if (strstr("minotaur", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.minotaur");
-    }
-    else if (strstr("goblin", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.goblin");
-    }
-    // else if (strstr("harpy", arg))
-    // {
-      // snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.harpy");
-    // }
-    // else if (strstr("gargoyle", arg))
-    // {
-      // snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.gargoyle");
-    // }
-    else if (strstr("orog", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.orog");
-    }
-    else if (strstr("githzerai", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.githzerai");
-    }
-    else if (strstr("agathinon", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.agathinon");
-    }
-    else if (strstr("eladrin", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.eladrin");
-    }
-    else if (strstr("pillithid", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.planetbound_illithid");
-    }
-    else if (strstr("wood elf", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.wood_elf");
-    }
-    else if (strstr("kobold", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.kobold");
-    }
-    else if (strstr("kuo toa", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.kuo_toa");
-    }
-    else if (strstr("firbolg", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.firbolg");
-    }
-    else if (strstr("tiefling", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.tiefling");
-    }
-    else if (strstr("warrior", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.warrior");
-    }
-    else if (strstr("ranger", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.ranger");
-    }
-    else if (strstr("paladin", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.paladin");
-    }
-    else if (strstr("psionicist", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.psionicist");
-    }
-    else if (strstr("anti-paladin", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.anti-paladin");
-    }
-    else if (strstr("cleric", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.cleric");
-    }
-    else if (strstr("monk", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.monk");
-    }
-    else if (strstr("unholy-piper", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.unholy-piper");
-    }
-    else if (strstr("shaman", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.shaman");
-    }
-    else if (strstr("sorcerer", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.sorcerer");
-    }
-    else if (strstr("necromancer", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.necromancer");
-    }
-    else if (strstr("conjurer", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.conjurer");
-    }
-    else if (strstr("summoner", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.summoner");
-    }
-    else if (strstr("rogue", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.rogue");
-    }
-    else if (strstr("assassin", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.assassin");
-    }
-    else if (strstr("mercenary", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.mercenary");
-    }
-    else if (strstr("bard", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.bard");
-    }
-    else if (strstr("thief", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.thief");
-    }
-    // else if (strstr("warlock", arg))
-    // {
-      // snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.warlock");
-    // }
-    else if (strstr("druid", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.druid");
-    }
-    else if (strstr("blighter", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.blighter");
-    }
-    else if (strstr("reaver", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.reaver");
-    }
-    else if (strstr("illusionist", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.illusionist");
-    }
-    // else if (strstr("alchemist", arg))
-    // {
-      // snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.alchemist");
-    // }
-    else if (strstr("berserker", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.berserker");
-    }
-    // else if (strstr("mindflayer", arg))
-    // {
-      // snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.mindflayer");
-    // }
-    else if (strstr("dreadlord", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.dreadlord");
-    }
-    else if (strstr("ethermancer", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.ethermancer");
-    }
-    else if (strstr("avenger", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.avenger");
-    }
-    else if (strstr("theurgist", arg))
-    {
-      snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.theurgist");
-    }
-    else if (strstr("ship", arg))
-    {
+    // racewar filters
+    if (strstr("normal", arg)) {
+      filter[0] = '\0';  // no filter
+    }
+    else if (strstr("goodie", arg)) {
+      snprintf(filter, sizeof(filter), "racewar = %d", RACEWAR_GOOD);
+    }
+    else if (strstr("evil", arg)) {
+      snprintf(filter, sizeof(filter), "racewar = %d", RACEWAR_EVIL);
+    }
+    else if (strstr("undead", arg)) {
+      snprintf(filter, sizeof(filter), "racewar = %d", RACEWAR_UNDEAD);
+    }
+    else if (strstr("illithid", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'illithid'");
+    }
+    // race filters
+    else if (strstr("lich", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'lich'");
+    }
+    else if (strstr("vampire", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'vampire'");
+    }
+    else if (strstr("revenant", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'revenant'");
+    }
+    else if (strstr("human", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'human'");
+    }
+    else if (strstr("barbarian", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'barbarian'");
+    }
+    else if (strstr("drow elf", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'drow_elf'");
+    }
+    else if (strstr("grey elf", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'grey_elf'");
+    }
+    else if (strstr("mountain dwarf", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'mountain_dwarf'");
+    }
+    else if (strstr("duergar dwarf", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'duergar_dwarf'");
+    }
+    else if (strstr("halfling", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'halfling'");
+    }
+    else if (strstr("gnome", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'gnome'");
+    }
+    else if (strstr("storm giant", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'storm_giant'");
+    }
+    else if (strstr("ogre", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'ogre'");
+    }
+    else if (strstr("troll", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'troll'");
+    }
+    else if (strstr("drider", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'drider'");
+    }
+    else if (strstr("half elf", arg) || strstr("half-elf", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'half-elf'");
+    }
+    else if (strstr("orc", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'orc'");
+    }
+    else if (strstr("thrikreen", arg) || strstr("thri-kreen", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'thri-kreen'");
+    }
+    else if (strstr("centaur", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'centaur'");
+    }
+    else if (strstr("githyanki", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'githyanki'");
+    }
+    else if (strstr("minotaur", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'minotaur'");
+    }
+    else if (strstr("goblin", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'goblin'");
+    }
+    else if (strstr("orog", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'orog'");
+    }
+    else if (strstr("githzerai", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'githzerai'");
+    }
+    else if (strstr("agathinon", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'agathinon'");
+    }
+    else if (strstr("eladrin", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'eladrin'");
+    }
+    else if (strstr("pillithid", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'planetbound_illithid'");
+    }
+    else if (strstr("wood elf", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'wood_elf'");
+    }
+    else if (strstr("kobold", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'kobold'");
+    }
+    else if (strstr("kuo toa", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'kuo_toa'");
+    }
+    else if (strstr("firbolg", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'firbolg'");
+    }
+    else if (strstr("tiefling", arg)) {
+      snprintf(filter, sizeof(filter), "race = 'tiefling'");
+    }
+    // class filters
+    else if (strstr("warrior", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'warrior'");
+    }
+    else if (strstr("ranger", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'ranger'");
+    }
+    else if (strstr("paladin", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'paladin'");
+    }
+    else if (strstr("psionicist", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'psionicist'");
+    }
+    else if (strstr("anti-paladin", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'anti-paladin'");
+    }
+    else if (strstr("cleric", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'cleric'");
+    }
+    else if (strstr("monk", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'monk'");
+    }
+    else if (strstr("unholy-piper", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'unholy-piper'");
+    }
+    else if (strstr("shaman", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'shaman'");
+    }
+    else if (strstr("sorcerer", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'sorcerer'");
+    }
+    else if (strstr("necromancer", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'necromancer'");
+    }
+    else if (strstr("conjurer", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'conjurer'");
+    }
+    else if (strstr("summoner", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'summoner'");
+    }
+    else if (strstr("rogue", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'rogue'");
+    }
+    else if (strstr("assassin", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'assassin'");
+    }
+    else if (strstr("mercenary", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'mercenary'");
+    }
+    else if (strstr("bard", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'bard'");
+    }
+    else if (strstr("thief", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'thief'");
+    }
+    else if (strstr("druid", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'druid'");
+    }
+    else if (strstr("blighter", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'blighter'");
+    }
+    else if (strstr("reaver", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'reaver'");
+    }
+    else if (strstr("illusionist", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'illusionist'");
+    }
+    else if (strstr("berserker", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'berserker'");
+    }
+    else if (strstr("dreadlord", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'dreadlord'");
+    }
+    else if (strstr("ethermancer", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'ethermancer'");
+    }
+    else if (strstr("avenger", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'avenger'");
+    }
+    else if (strstr("theurgist", arg)) {
+      snprintf(filter, sizeof(filter), "class = 'theurgist'");
+    }
+    else if (strstr("ship", arg)) {
       update_shipfrags();
       display_shipfrags(ch);
       return;
     }
-    else if (strstr("guild", arg))
-    {
+    else if (strstr("guild", arg)) {
       show_guild_frags(ch);
       return;
     }
-    else
-    {
+    else {
       send_to_char("Valid fraglists exist by race, class, undead/evil/good, and overall (no argument).\r\n", ch);
       return;
     }
   }
-  else
-    snprintf(filename, MAX_STRING_LENGTH, "Fraglists/fraglist.normal");
 
-
-  if( !(fragList = fopen(filename, "rt")) )
-  {
-    snprintf(name, MAX_STRING_LENGTH, "Couldn't open fraglist: %s\r\n", filename);
-    send_to_char( "&+RError: Couldn't open fraglist.&n\n", ch );
-    logit(LOG_DEBUG, name);
-    return;
-  }
-
-//  snprintf(buf, MAX_STRING_LENGTH, "\r\n&+WTop Fraggers\r\n\r\n");
+  // get level cap info (already uses sql)
   get_level_cap_info( &cap_frags, &cap_racewar, &cap_level, &cap_timer );
   cap_others = sql_level_cap( (cap_racewar == RACEWAR_GOOD) ? RACEWAR_EVIL : RACEWAR_GOOD );
   cap_timer -= time(NULL);
@@ -546,35 +431,65 @@ void do_fraglist(P_char ch, char *arg, int cmd)
     cap_level, racewar_color[cap_racewar].color, racewar_color[cap_racewar].name, cap_others, (int)(cap_frags / 100),
     (int)(cap_frags % 100), days, hours, mins, secs, LEVEL_TO_FRAGS(cap_level + 1) );
 
-  for (i = 0; i < MAX_FRAG_SIZE; i++)
-  {
-    fscanf(fragList, "%s %d\n", name, &frags);
-    name[0] = toupper(name[0]);
-    fragnum = frags;
-    fragnum /= 100.0;
+  // query top fraggers
+  res = query_frag_leaders(filter, 0, MAX_FRAG_SIZE);
+  if (!res) {
+    send_to_char("&+RError: Couldn't query fraglist from database.&n\n", ch);
+    return;
+  }
 
-    //snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R%6d.%02d\r\n",
-    //        name, frags/100, frags %100);
-    snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+  count = 0;
+  while ((row = mysql_fetch_row(res)) && count < MAX_FRAG_SIZE) {
+    if (row[0] && row[1]) {
+      strncpy(name, row[0], sizeof(name) - 1);
+      name[sizeof(name) - 1] = '\0';
+      name[0] = toupper(name[0]);
+      frags = atoi(row[1]);
+      fragnum = frags / 100.0;
+      snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+      strcat(buf, buf2);
+      count++;
+    }
+  }
+  mysql_free_result(res);
+
+  // pad with "nobody" if less than 10 results
+  while (count < MAX_FRAG_SIZE) {
+    snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
     strcat(buf, buf2);
+    count++;
   }
 
   strcat(buf, "\r\n\r\n&+LLowest Fraggers\r\n\r\n");
 
-  for (i = 0; i < MAX_FRAG_SIZE; i++)
-  {
-    fscanf(fragList, "%s %d\n", name, &frags);
-    name[0] = toupper(name[0]);
-    fragnum = frags;
-    fragnum /= 100.0;
-
-    //snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R%6d.%02d\r\n",
-    snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
-    //name, frags / 100, (-1 * (frags % 100)));
-    strcat(buf, buf2);
+  // query lowest fraggers
+  res = query_frag_leaders(filter, 1, MAX_FRAG_SIZE);
+  if (!res) {
+    send_to_char("&+RError: Couldn't query fraglist from database.&n\n", ch);
+    return;
   }
 
-  fclose(fragList);
+  count = 0;
+  while ((row = mysql_fetch_row(res)) && count < MAX_FRAG_SIZE) {
+    if (row[0] && row[1]) {
+      strncpy(name, row[0], sizeof(name) - 1);
+      name[sizeof(name) - 1] = '\0';
+      name[0] = toupper(name[0]);
+      frags = atoi(row[1]);
+      fragnum = frags / 100.0;
+      snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+      strcat(buf, buf2);
+      count++;
+    }
+  }
+  mysql_free_result(res);
+
+  // pad with "nobody" if less than 10 results
+  while (count < MAX_FRAG_SIZE) {
+    snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
+    strcat(buf, buf2);
+    count++;
+  }
 
   strcat(buf, "\r\n");
 
@@ -582,260 +497,15 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 }
 
 
-/*
- * checkFragList_internal
- */
-
-void checkFragList_internal(P_char ch, char type)
-{
-  FILE    *fraglist;
-  char     highPlayerName[MAX_FRAG_SIZE][MAX_STRING_LENGTH],
-    lowPlayerName[MAX_FRAG_SIZE][MAX_STRING_LENGTH], change = FALSE;
-  int      highFrags[MAX_FRAG_SIZE], lowFrags[MAX_FRAG_SIZE], pfrags, i;
-  char     fraglist_file[1024];
-  char     buffer[1024], *ptr;
-
-#if 0
-  return;
-#endif
-
-  if (!ch)
-    return;
-
-  if (type == FRAGLIST_NORMAL)
-    snprintf(fraglist_file, 1024, "Fraglists/fraglist.normal");
-  else if (type == FRAGLIST_RACEWAR)
-  {
-    if (IS_ILLITHID(ch))
-      snprintf(fraglist_file, 1024, "Fraglists/fraglist.squid");
-    else if (GOOD_RACE(ch))
-      snprintf(fraglist_file, 1024, "Fraglists/fraglist.goodie");
-    else if (IS_RACEWAR_UNDEAD(ch))
-      snprintf(fraglist_file, 1024, "Fraglists/fraglist.undead");
-    else if (EVIL_RACE(ch))
-      snprintf(fraglist_file, 1024, "Fraglists/fraglist.evil");
-
-
-  }
-  else if (type == FRAGLIST_RACE)
-  {
-    snprintf(fraglist_file, 1024, "Fraglists/fraglist.%s",
-            race_names_table[(int) GET_RACE(ch)].normal);
-  }
-  else if (type == FRAGLIST_CLASS)
-  {
-    snprintf(fraglist_file, 1024, "Fraglists/fraglist.%s",
-            class_names_table[(int) flag2idx(ch->player.m_class)].normal);
-  }
-  else
-  {
-    send_to_char("Coding error in fraglist, bug a coder.\r\n", ch);
-    return;
-
-  }
-
-  ptr = fraglist_file;
-  for (ptr = fraglist_file; *ptr != '\0'; ptr++)
-  {
-    *ptr = LOWER(*ptr);
-    if (*ptr == ' ')
-      *ptr = '_';
-  }
-
-  fraglist_file[0] = 'F';
-
-  fraglist = fopen(fraglist_file, "rt");
-  if (!fraglist)
-  {
-    fraglist = fopen(fraglist_file, "w");
-    if (!fraglist)
-    {
-      logit(LOG_DEBUG, "Couldn't create fraglist: %s: %m\n", fraglist_file);
-      return;
-    }
-
-    for (int i=0; i<20; i++)
-      fprintf(fraglist, "Nobody 0\n");
-    fclose(fraglist);
-
-    logit(LOG_DEBUG, "Fraglist didn't exist, so created empty one: %s\n", fraglist_file);
-    fraglist = fopen(fraglist_file, "rt");
-  }
-
-  if (!fraglist)
-  {
-    snprintf(buffer, 1024, "Couldn't open fraglist: %s\r\n", fraglist_file);
-    logit(LOG_DEBUG, buffer);
-    return;
-  }
-  char     tmp_buf[MAX_STRING_LENGTH];
-  pfrags = ch->only.pc->frags;
-
-  /* read ten highest */
-
-  for (i = 0; i < MAX_FRAG_SIZE; i++)
-  {
-    if (feof(fraglist))
-    {
-      
-			logit(LOG_DEBUG,"error: frag list terminated prematurely.");
-      fclose(fraglist);
-      return;
-    }
-
-    fscanf(fraglist, "%s %d\n", highPlayerName[i], &highFrags[i]);
-    if (type == FRAGLIST_NORMAL)
-    {
-    if(isname(highPlayerName[0], GET_NAME(ch)))
-       {
-        //spell_biofeedback(60, ch, 0, 0, ch, 0);
-        SET_BIT(ch->specials.act3, PLR3_FRAGLEAD);
-	}
-    if(!isname(highPlayerName[0], GET_NAME(ch)))
-      {
-        REMOVE_BIT(ch->specials.act3, PLR3_FRAGLEAD);
-      }
-
-     //debug("&+gKick&n (%s) chance (%d) at (%s).", GET_NAME(ch), highPlayerName[0], highPlayerName[i]);
-
-    //highPlayerName[1]->player.title = "&+WVICTORY!&n";
-    }
-    
-  }
-
-/* read ten lowest */
-
-  for (i = 0; i < MAX_FRAG_SIZE; i++)
-  {
-    if (feof(fraglist))
-    {
-      
-			logit(LOG_DEBUG, "error: frag list terminated prematurely.");
-      fclose(fraglist);
-      return;
-    }
-
-    fscanf(fraglist, "%s %d\n", lowPlayerName[i], &lowFrags[i]);
-
-     if (type == FRAGLIST_NORMAL)
-     {
-     if(isname(lowPlayerName[0], GET_NAME(ch)))
-       {
-        //spell_biofeedback(60, ch, 0, 0, ch, 0);
-        SET_BIT(ch->specials.act3, PLR3_FRAGLOW);
-	}
-    if(!isname(lowPlayerName[0], GET_NAME(ch)))
-      {
-        REMOVE_BIT(ch->specials.act3, PLR3_FRAGLOW);
-      }
-     //debug("&+gKick&n (%s) chance (%d) at (%s).", GET_NAME(ch), lowPlayerName[1], lowPlayerName[i]);
-     }
-  }
-
-  fclose(fraglist);
-
-  /* check if player already has an entry and is higher than somebody else
-     (including his previous entry) - if so, delete it.  if they end up at
-     the end of the list (higher than nobody after deleted), stick em there
-     here */
-
-  for (i = 0; i < MAX_FRAG_SIZE; i++)
-  {
-    // check for dupe entry - just delete it if it exists.  let's see what
-    // happens, shall we?
-
-    if (!str_cmp(ch->player.name, highPlayerName[i]))
-    {
-      deleteFragEntry(highPlayerName, highFrags, i);
-
-      break;
-    }
-  }
-
-  /* see if player has beaten anybody currently on the list */
-
-  for (i = 0; (i < MAX_FRAG_SIZE); i++)
-  {
-    if (pfrags > highFrags[i])
-    {
-      if (!IS_TRUSTED(ch))
-        insertFragEntry(highPlayerName, highFrags, ch->player.name, pfrags,
-                        i);
-
-      change = TRUE;
-      break;
-    }
-  }
-
-  /* do same shit we did above for lowest - checkjing for dupe names */
-
-  /* see if player has made it to the lowest ten!  yay */
-
-  /* check if player already has an entry and is lower than somebody else
-     (including his previous entry) - if so, delete it.  if they end up at
-     the end of the list (lower than nobody after deleted), stick em there
-     here */
-
-  for (i = 0; i < MAX_FRAG_SIZE; i++)
-  {
-    // check for dupe entry
-
-    if (!str_cmp(ch->player.name, lowPlayerName[i]))
-    {
-      deleteFragEntry(lowPlayerName, lowFrags, i);
-
-      break;
-    }
-  }
-
-  /* see if player is lower than anybody currently on the list */
-
-  for (i = 0; (i < MAX_FRAG_SIZE); i++)
-  {
-    if (pfrags < lowFrags[i])
-    {
-      if (!IS_TRUSTED(ch))
-        insertFragEntry(lowPlayerName, lowFrags, ch->player.name, pfrags, i);
-
-      change = TRUE;
-      break;
-    }
-  }
-
-
-  /* if changes, write em out */
-
-  if (change)
-  {
-    fraglist = fopen(fraglist_file, "wt");
-    if (!fraglist)
-    {
-			logit(LOG_DEBUG, "error: couldn't open fraglist for writing.");
-      return;
-    }
-
-    for (i = 0; i < MAX_FRAG_SIZE; i++)
-    {
-      fprintf(fraglist, "%s %d\n", highPlayerName[i], highFrags[i]);
-    }
-
-    for (i = 0; i < MAX_FRAG_SIZE; i++)
-    {
-      fprintf(fraglist, "%s %d\n", lowPlayerName[i], lowFrags[i]);
-    }
-
-    fclose(fraglist);
-  }
-}
-
+// update frag leaderboard in database and check position flags
 void checkFragList(P_char ch)
 {
-  if (!ch)
+  if (!ch || IS_NPC(ch))
     return;
 
-  checkFragList_internal(ch, FRAGLIST_NORMAL);
-  checkFragList_internal(ch, FRAGLIST_CLASS);
-  checkFragList_internal(ch, FRAGLIST_RACE);
-  checkFragList_internal(ch, FRAGLIST_RACEWAR);
-  return;
+  // update the database leaderboard
+  sql_update_frag_leaderboard(ch);
+
+  // check if player is at top/bottom of list for special flags
+  check_frag_position(ch);
 }

@@ -96,6 +96,7 @@ struct mig_obj {
     long timer;
     unsigned long extra_flags;
     int value[8];
+    unsigned char value_set;  // bitmask: bit N = value[N] was explicitly set in pfile
     char *name;
     char *short_descr;
     char *description;
@@ -230,13 +231,25 @@ void progress_init(struct progress_bar *pb, int total, const char *prefix);
 void progress_update(struct progress_bar *pb, int current);
 void progress_finish(struct progress_bar *pb);
 
-// migrate_common.c
+// migrate_common.c - logging and memory
 void logit(int type, const char *format, ...);
 void debug(const char *format, ...);
 char *fread_string(FILE *fl);
 void free_mig_obj(struct mig_obj *obj);
 void free_mig_affect(struct mig_affect *af);
 void free_mig_player(struct mig_player *p);
+
+// migrate_common.c - generic item save (replaces duplicate save_*_item functions)
+// equip_slot: pass >= 0 for player_items, -1 for others
+int save_item_to_db(struct mig_obj *obj, const char *table,
+                    const char *owner_col, int owner_id,
+                    int container_id, int equip_slot);
+
+// migrate_common.c - directory walking utilities
+typedef int (*dir_file_callback)(const char *filepath, const char *filename, void *userdata);
+int count_player_dir_files(const char *base_path, const char *filter_ext, const char *filter_exclude);
+int walk_player_dirs(const char *base_path, const char *filter_ext, const char *filter_exclude,
+                     dir_file_callback callback, void *userdata);
 
 // migrate_objects.c
 struct mig_obj *parse_binary_objects(char **buf);

@@ -43,70 +43,9 @@ int player_exists_in_db(const char *name) {
     return count > 0;
 }
 
-// save player item to database, returns item_id
+// wrapper for save_item_to_db for player items
 int save_player_item(int pid, struct mig_obj *obj, int equip_slot, int container_id) {
-    if (!obj) return 0;
-
-    char *esc_name = obj->name ? sql_escape_string(obj->name) : NULL;
-    char *esc_short = obj->short_descr ? sql_escape_string(obj->short_descr) : NULL;
-    char *esc_desc = obj->description ? sql_escape_string(obj->description) : NULL;
-    char *esc_action = obj->action_descr ? sql_escape_string(obj->action_descr) : NULL;
-
-    char container_str[32];
-    if (container_id > 0)
-        snprintf(container_str, sizeof(container_str), "%d", container_id);
-    else
-        strcpy(container_str, "NULL");
-
-    char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
-    if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
-    else strcpy(name_str, "NULL");
-    if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
-    else strcpy(short_str, "NULL");
-    if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
-    else strcpy(desc_str, "NULL");
-    if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
-    else strcpy(action_str, "NULL");
-
-    char query[8192];
-    snprintf(query, sizeof(query),
-        "INSERT INTO player_items ("
-        "pid, vnum, equip_slot, container_id, quantity, "
-        "weight, cost, timer, extra_flags, "
-        "value0, value1, value2, value3, value4, value5, value6, value7, "
-        "name, short_descr, description, action_descr"
-        ") VALUES ("
-        "%d, %d, %d, %s, 1, "
-        "%d, %d, %ld, %lu, "
-        "%d, %d, %d, %d, %d, %d, %d, %d, "
-        "%s, %s, %s, %s"
-        ")",
-        pid, obj->vnum, equip_slot, container_str,
-        obj->weight, obj->cost, obj->timer, obj->extra_flags,
-        obj->value[0], obj->value[1], obj->value[2], obj->value[3],
-        obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-        name_str, short_str, desc_str, action_str);
-
-    if (esc_name) free(esc_name);
-    if (esc_short) free(esc_short);
-    if (esc_desc) free(esc_desc);
-    if (esc_action) free(esc_action);
-
-    if (!qry("%s", query))
-        return 0;
-
-    MYSQL_RES *result = db_query("SELECT LAST_INSERT_ID()");
-    if (!result) return 0;
-    MYSQL_ROW row = mysql_fetch_row(result);
-    int item_id = row ? atoi(row[0]) : 0;
-    mysql_free_result(result);
-
-    // save contained items
-    for (struct mig_obj *c = obj->contains; c; c = c->next) {
-        save_player_item(pid, c, 0, item_id);
-    }
-
-    return item_id;
+    return save_item_to_db(obj, "player_items", "pid", pid, container_id, equip_slot);
 }
 
 // parse player status section
@@ -478,11 +417,24 @@ static int parse_player_affects(char **bufptr, struct mig_player *p) {
     return 1;
 }
 
-// save complete player to database
+// helper: format nullable string for sql
+static void fmt_sql_str(char *out, size_t sz, const char *esc) {
+    if (esc)
+        snprintf(out, sz, "'%s'", esc);
+    else
+        strcpy(out, "NULL");
+}
+
+// save complete player to database - uses UPDATE for existing, INSERT for new
 static int save_player_to_db(struct mig_player *p) {
     if (!p || !p->name[0]) return 0;
 
     char *esc_name = sql_escape_string(p->name);
+    if (!esc_name) return 0;
+
+    // check if player already exists FIRST
+    int pid = sql_get_pid_by_name(p->name);
+
     char *esc_short = p->short_descr ? sql_escape_string(p->short_descr) : NULL;
     char *esc_long = p->long_descr ? sql_escape_string(p->long_descr) : NULL;
     char *esc_desc = p->description ? sql_escape_string(p->description) : NULL;
@@ -492,93 +444,119 @@ static int save_player_to_db(struct mig_player *p) {
     char *esc_poof_in_snd = p->poof_in_sound ? sql_escape_string(p->poof_in_sound) : NULL;
     char *esc_poof_out_snd = p->poof_out_sound ? sql_escape_string(p->poof_out_sound) : NULL;
 
-    // build main insert query
+    char short_str[2048], long_str[2048], desc_str[4096], title_str[1024];
+    char poof_in_str[1024], poof_out_str[1024], poof_in_snd_str[1024], poof_out_snd_str[1024];
+    fmt_sql_str(short_str, sizeof(short_str), esc_short);
+    fmt_sql_str(long_str, sizeof(long_str), esc_long);
+    fmt_sql_str(desc_str, sizeof(desc_str), esc_desc);
+    fmt_sql_str(title_str, sizeof(title_str), esc_title);
+    fmt_sql_str(poof_in_str, sizeof(poof_in_str), esc_poof_in);
+    fmt_sql_str(poof_out_str, sizeof(poof_out_str), esc_poof_out);
+    fmt_sql_str(poof_in_snd_str, sizeof(poof_in_snd_str), esc_poof_in_snd);
+    fmt_sql_str(poof_out_snd_str, sizeof(poof_out_snd_str), esc_poof_out_snd);
+
     char query[16384];
-    snprintf(query, sizeof(query),
-        "INSERT INTO player_data ("
-        "name, short_descr, long_descr, description, title, "
-        "m_class, secondary_class, spec, race, racewar, level, sex, "
-        "weight, height, size, hometown, birthplace, orig_birthplace, last_room,"
-        "birth_time, played_time, last_save, perm_aging, "
-        "base_str, base_dex, base_agi, base_con, base_pow, base_int, base_wis, base_cha, base_kar, base_luk, "
-        "mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
-        "copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
-        "exp, epics, epic_skill_points, skillpoints, spell_bind_used, "
-        "act, act2, act3, vote, alignment, prestige, assoc_id, guild_status,"
-        "time_left_guild, nb_left_guild, time_unspecced, frags, oldfrags, numb_deaths, "
-        "condition_0, condition_1, condition_2, condition_3, condition_4, "
-        "poof_in, poof_out, poof_in_sound, poof_out_sound, "
-        "echo_toggle, prompt, wiz_invis, law_flags, wimpy, aggressive, highest_level, screen_length, "
-        "quest_active, quest_mob_vnum, quest_type, quest_accomplished, quest_started, "
-        "quest_zone_number, quest_giver, quest_level, quest_receiver, "
-        "quest_shares_left, quest_kill_how_many, quest_kill_original, quest_map_room, quest_map_bought"
-        ") VALUES ("
-        "'%s', %s%s%s, %s%s%s, %s%s%s, %s%s%s, "
-        "%u, %u, %d, %d, %d, %d, %d, "
-        "%d, %d, %d, %d, %d, %d, %d, "
-        "%ld, %ld, %ld, %d, "
-        "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, "
-        "%d, %d, %d, %d, %d, %d, %d, "
-        "%d, %d, %d, %d, %d, %d, %d, %d, "
-        "%d, %d, %d, %d, %d, "
-        "%u, %u, %u, %d, %d, %d, %d, %d, "
-        "%ld, %d, %ld, %ld, %ld, %ld, "
-        "%d, %d, %d, %d, %d, "
-        "%s%s%s, %s%s%s, %s%s%s, %s%s%s, "
-        "%d, %d, %ld, %lu, %d, %d, %d, %d, "
-        "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d"
-        ")",
-        esc_name,
-        esc_short ? "'" : "", esc_short ? esc_short : "NULL", esc_short ? "'" : "",
-        esc_long ? "'" : "", esc_long ? esc_long : "NULL", esc_long ? "'" : "",
-        esc_desc ? "'" : "", esc_desc ? esc_desc : "NULL", esc_desc ? "'" : "",
-        esc_title ? "'" : "", esc_title ? esc_title : "NULL", esc_title ? "'" : "",
-        p->m_class, p->secondary_class, p->spec, p->race, p->racewar, p->level, p->sex,
-        p->weight, p->height, p->size, p->hometown, p->birthplace, p->orig_birthplace, p->last_room,
-        p->birth_time, p->played_time, p->last_save, p->perm_aging,
-        p->str, p->dex, p->agi, p->con, p->pow, p->intel, p->wis, p->cha, p->kar, p->luk,
-        p->mana, p->base_mana, p->hp - p->base_hp, p->base_hp, p->vitality, p->base_vitality, p->spells_memmed,
-        p->copper, p->silver, p->gold, p->platinum,
-        p->bank_copper, p->bank_silver, p->bank_gold, p->bank_platinum,
-        p->exp, p->epics, p->epic_skill_points, p->skillpoints, p->spell_bind_used,
-        p->act, p->act2, p->act3, p->vote, p->alignment, p->prestige, p->assoc_id, p->guild_status,
-        p->time_left_guild, p->nb_left_guild, p->time_unspecced, p->frags, p->oldfrags, p->numb_deaths,
-        p->conditions[0], p->conditions[1], p->conditions[2], p->conditions[3], p->conditions[4],
-        esc_poof_in ? "'" : "", esc_poof_in ? esc_poof_in : "NULL", esc_poof_in ? "'" : "",
-        esc_poof_out ? "'" : "", esc_poof_out ? esc_poof_out : "NULL", esc_poof_out ? "'" : "",
-        esc_poof_in_snd ? "'" : "", esc_poof_in_snd ? esc_poof_in_snd : "NULL", esc_poof_in_snd ? "'" : "",
-        esc_poof_out_snd ? "'" : "", esc_poof_out_snd ? esc_poof_out_snd : "NULL", esc_poof_out_snd ? "'" : "",
-        p->echo_toggle, p->prompt, p->wiz_invis, p->law_flags, p->wimpy, (short)p->aggressive, p->highest_level, p->screen_length,
-        p->quest_active, p->quest_mob_vnum, p->quest_type, p->quest_accomplished, p->quest_started,
-        p->quest_zone_number, p->quest_giver, p->quest_level, p->quest_receiver,
-        p->quest_shares_left, p->quest_kill_how_many, p->quest_kill_original, p->quest_map_room, p->quest_map_bought);
 
-    // check if player already exists
-    char pid_query[256];
-    snprintf(pid_query, sizeof(pid_query), "SELECT pid FROM player_data WHERE name = '%s'", esc_name);
-    MYSQL_RES *check = db_query(pid_query);
-    int existing_pid = 0;
-    if (check) {
-        MYSQL_ROW r = mysql_fetch_row(check);
-        if (r && r[0]) existing_pid = atoi(r[0]);
-        mysql_free_result(check);
+    if (pid > 0) {
+        // player exists - use UPDATE instead of DELETE+INSERT
+        snprintf(query, sizeof(query),
+            "UPDATE player_data SET "
+            "short_descr=%s, long_descr=%s, description=%s, title=%s, "
+            "m_class=%u, secondary_class=%u, spec=%d, race=%d, racewar=%d, level=%d, sex=%d, "
+            "weight=%d, height=%d, size=%d, hometown=%d, birthplace=%d, orig_birthplace=%d, last_room=%d, "
+            "birth_time=%ld, played_time=%ld, last_save=%ld, perm_aging=%d, "
+            "base_str=%d, base_dex=%d, base_agi=%d, base_con=%d, base_pow=%d, base_int=%d, base_wis=%d, base_cha=%d, base_kar=%d, base_luk=%d, "
+            "mana=%d, base_mana=%d, hit_diff=%d, base_hit=%d, vitality=%d, base_vitality=%d, spells_memmed_extra=%d, "
+            "copper=%d, silver=%d, gold=%d, platinum=%d, bank_copper=%d, bank_silver=%d, bank_gold=%d, bank_platinum=%d, "
+            "exp=%d, epics=%d, epic_skill_points=%d, skillpoints=%d, spell_bind_used=%d, "
+            "act=%u, act2=%u, act3=%u, vote=%d, alignment=%d, prestige=%d, assoc_id=%d, guild_status=%d, "
+            "time_left_guild=%ld, nb_left_guild=%d, time_unspecced=%ld, frags=%ld, oldfrags=%ld, numb_deaths=%ld, "
+            "condition_0=%d, condition_1=%d, condition_2=%d, condition_3=%d, condition_4=%d, "
+            "poof_in=%s, poof_out=%s, poof_in_sound=%s, poof_out_sound=%s, "
+            "echo_toggle=%d, prompt=%d, wiz_invis=%ld, law_flags=%lu, wimpy=%d, aggressive=%d, highest_level=%d, screen_length=%d, "
+            "quest_active=%d, quest_mob_vnum=%d, quest_type=%d, quest_accomplished=%d, quest_started=%d, "
+            "quest_zone_number=%d, quest_giver=%d, quest_level=%d, quest_receiver=%d, "
+            "quest_shares_left=%d, quest_kill_how_many=%d, quest_kill_original=%d, quest_map_room=%d, quest_map_bought=%d "
+            "WHERE pid=%d",
+            short_str, long_str, desc_str, title_str,
+            p->m_class, p->secondary_class, p->spec, p->race, p->racewar, p->level, p->sex,
+            p->weight, p->height, p->size, p->hometown, p->birthplace, p->orig_birthplace, p->last_room,
+            p->birth_time, p->played_time, p->last_save, p->perm_aging,
+            p->str, p->dex, p->agi, p->con, p->pow, p->intel, p->wis, p->cha, p->kar, p->luk,
+            p->mana, p->base_mana, p->hp - p->base_hp, p->base_hp, p->vitality, p->base_vitality, p->spells_memmed,
+            p->copper, p->silver, p->gold, p->platinum,
+            p->bank_copper, p->bank_silver, p->bank_gold, p->bank_platinum,
+            p->exp, p->epics, p->epic_skill_points, p->skillpoints, p->spell_bind_used,
+            p->act, p->act2, p->act3, p->vote, p->alignment, p->prestige, p->assoc_id, p->guild_status,
+            p->time_left_guild, p->nb_left_guild, p->time_unspecced, p->frags, p->oldfrags, p->numb_deaths,
+            p->conditions[0], p->conditions[1], p->conditions[2], p->conditions[3], p->conditions[4],
+            poof_in_str, poof_out_str, poof_in_snd_str, poof_out_snd_str,
+            p->echo_toggle, p->prompt, p->wiz_invis, p->law_flags, p->wimpy, (short)p->aggressive, p->highest_level, p->screen_length,
+            p->quest_active, p->quest_mob_vnum, p->quest_type, p->quest_accomplished, p->quest_started,
+            p->quest_zone_number, p->quest_giver, p->quest_level, p->quest_receiver,
+            p->quest_shares_left, p->quest_kill_how_many, p->quest_kill_original, p->quest_map_room, p->quest_map_bought,
+            pid);
+
+        // for existing player, delete items (they'll be re-inserted fresh)
+        qry("DELETE FROM player_items WHERE pid = %d", pid);
+        qry("DELETE FROM player_affects WHERE pid = %d", pid);
+    } else {
+        // new player - use INSERT
+        snprintf(query, sizeof(query),
+            "INSERT INTO player_data ("
+            "name, short_descr, long_descr, description, title, "
+            "m_class, secondary_class, spec, race, racewar, level, sex, "
+            "weight, height, size, hometown, birthplace, orig_birthplace, last_room,"
+            "birth_time, played_time, last_save, perm_aging, "
+            "base_str, base_dex, base_agi, base_con, base_pow, base_int, base_wis, base_cha, base_kar, base_luk, "
+            "mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
+            "copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
+            "exp, epics, epic_skill_points, skillpoints, spell_bind_used, "
+            "act, act2, act3, vote, alignment, prestige, assoc_id, guild_status,"
+            "time_left_guild, nb_left_guild, time_unspecced, frags, oldfrags, numb_deaths, "
+            "condition_0, condition_1, condition_2, condition_3, condition_4, "
+            "poof_in, poof_out, poof_in_sound, poof_out_sound, "
+            "echo_toggle, prompt, wiz_invis, law_flags, wimpy, aggressive, highest_level, screen_length, "
+            "quest_active, quest_mob_vnum, quest_type, quest_accomplished, quest_started, "
+            "quest_zone_number, quest_giver, quest_level, quest_receiver, "
+            "quest_shares_left, quest_kill_how_many, quest_kill_original, quest_map_room, quest_map_bought"
+            ") VALUES ("
+            "'%s', %s, %s, %s, %s, "
+            "%u, %u, %d, %d, %d, %d, %d, "
+            "%d, %d, %d, %d, %d, %d, %d, "
+            "%ld, %ld, %ld, %d, "
+            "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, "
+            "%d, %d, %d, %d, %d, %d, %d, "
+            "%d, %d, %d, %d, %d, %d, %d, %d, "
+            "%d, %d, %d, %d, %d, "
+            "%u, %u, %u, %d, %d, %d, %d, %d, "
+            "%ld, %d, %ld, %ld, %ld, %ld, "
+            "%d, %d, %d, %d, %d, "
+            "%s, %s, %s, %s, "
+            "%d, %d, %ld, %lu, %d, %d, %d, %d, "
+            "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d"
+            ")",
+            esc_name, short_str, long_str, desc_str, title_str,
+            p->m_class, p->secondary_class, p->spec, p->race, p->racewar, p->level, p->sex,
+            p->weight, p->height, p->size, p->hometown, p->birthplace, p->orig_birthplace, p->last_room,
+            p->birth_time, p->played_time, p->last_save, p->perm_aging,
+            p->str, p->dex, p->agi, p->con, p->pow, p->intel, p->wis, p->cha, p->kar, p->luk,
+            p->mana, p->base_mana, p->hp - p->base_hp, p->base_hp, p->vitality, p->base_vitality, p->spells_memmed,
+            p->copper, p->silver, p->gold, p->platinum,
+            p->bank_copper, p->bank_silver, p->bank_gold, p->bank_platinum,
+            p->exp, p->epics, p->epic_skill_points, p->skillpoints, p->spell_bind_used,
+            p->act, p->act2, p->act3, p->vote, p->alignment, p->prestige, p->assoc_id, p->guild_status,
+            p->time_left_guild, p->nb_left_guild, p->time_unspecced, p->frags, p->oldfrags, p->numb_deaths,
+            p->conditions[0], p->conditions[1], p->conditions[2], p->conditions[3], p->conditions[4],
+            poof_in_str, poof_out_str, poof_in_snd_str, poof_out_snd_str,
+            p->echo_toggle, p->prompt, p->wiz_invis, p->law_flags, p->wimpy, (short)p->aggressive, p->highest_level, p->screen_length,
+            p->quest_active, p->quest_mob_vnum, p->quest_type, p->quest_accomplished, p->quest_started,
+            p->quest_zone_number, p->quest_giver, p->quest_level, p->quest_receiver,
+            p->quest_shares_left, p->quest_kill_how_many, p->quest_kill_original, p->quest_map_room, p->quest_map_bought);
     }
 
-    if (existing_pid > 0) {
-        // player exists - delete old data and re-insert fresh
-        qry("DELETE FROM player_skills WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_languages WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_timers WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_undead_slots WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_forged_items WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_intros WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_granted_cmds WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_affects WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_items WHERE pid = %d", existing_pid);
-        qry("DELETE FROM player_data WHERE pid = %d", existing_pid);
-    }
-
-    if (esc_name) free(esc_name);
+    // free escaped strings
+    free(esc_name);
     if (esc_short) free(esc_short);
     if (esc_long) free(esc_long);
     if (esc_desc) free(esc_desc);
@@ -591,89 +569,136 @@ static int save_player_to_db(struct mig_player *p) {
     if (!qry("%s", query))
         return 0;
 
-    // get pid
-    MYSQL_RES *result = db_query(pid_query);
-    if (!result) return 0;
-    MYSQL_ROW row = mysql_fetch_row(result);
-    int pid = row ? atoi(row[0]) : 0;
-    mysql_free_result(result);
+    // for new players, get the pid
+    if (pid <= 0) {
+        pid = sql_get_pid_by_name(p->name);
+        if (pid <= 0) return 0;
+    }
 
-    if (pid <= 0) return 0;
+    // === BATCHED ARRAY INSERTS ===
+    // instead of 263 individual queries, batch into ~8 multi-value inserts
 
-    // save skills (non-zero only)
+    // batch skills
+    char values[65536];
+    int len = 0;
     for (int i = 0; i < MIG_MAX_SKILLS; i++) {
         if (p->skills_learned[i] > 0 || p->skills_taught[i] > 0) {
-            qry("INSERT INTO player_skills (pid, skill_id, learned, taught) VALUES (%d, %d, %d, %d) "
-                "ON DUPLICATE KEY UPDATE learned=%d, taught=%d",
-                pid, i, p->skills_learned[i], p->skills_taught[i],
-                p->skills_learned[i], p->skills_taught[i]);
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%d,%d),",
+                pid, i, p->skills_learned[i], p->skills_taught[i]);
         }
     }
+    if (len > 0) {
+        values[len - 1] = '\0';
+        qry("INSERT INTO player_skills (pid,skill_id,learned,taught) VALUES %s "
+            "ON DUPLICATE KEY UPDATE learned=VALUES(learned),taught=VALUES(taught)", values);
+    }
 
-    // save languages
+    // batch languages
+    len = 0;
     for (int i = 0; i < MIG_MAX_TONGUE; i++) {
         if (p->languages[i] > 0) {
-            qry("INSERT INTO player_languages (pid, tongue_id, proficiency) VALUES (%d, %d, %d) "
-                "ON DUPLICATE KEY UPDATE proficiency=%d",
-                pid, i, p->languages[i], p->languages[i]);
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%d),",
+                pid, i, p->languages[i]);
         }
     }
+    if (len > 0) {
+        values[len - 1] = '\0';
+        qry("INSERT INTO player_languages (pid,tongue_id,proficiency) VALUES %s "
+            "ON DUPLICATE KEY UPDATE proficiency=VALUES(proficiency)", values);
+    }
 
-    // save timers
+    // batch timers
+    len = 0;
     for (int i = 0; i < MIG_NUMB_PC_TIMERS; i++) {
         if (p->timers[i] != 0) {
-            qry("INSERT INTO player_timers (pid, timer_id, timer_value) VALUES (%d, %d, %ld) "
-                "ON DUPLICATE KEY UPDATE timer_value=%ld",
-                pid, i, p->timers[i], p->timers[i]);
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%ld),",
+                pid, i, p->timers[i]);
         }
     }
+    if (len > 0) {
+        values[len - 1] = '\0';
+        qry("INSERT INTO player_timers (pid,timer_id,timer_value) VALUES %s "
+            "ON DUPLICATE KEY UPDATE timer_value=VALUES(timer_value)", values);
+    }
 
-    // save undead slots
+    // batch undead slots
+    len = 0;
     for (int i = 0; i <= MIG_MAX_CIRCLE; i++) {
         if (p->undead_slots[i] > 0) {
-            qry("INSERT INTO player_undead_slots (pid, circle, slots) VALUES (%d, %d, %d) "
-                "ON DUPLICATE KEY UPDATE slots=%d",
-                pid, i, p->undead_slots[i], p->undead_slots[i]);
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%d),",
+                pid, i, p->undead_slots[i]);
         }
     }
+    if (len > 0) {
+        values[len - 1] = '\0';
+        qry("INSERT INTO player_undead_slots (pid,circle,slots) VALUES %s "
+            "ON DUPLICATE KEY UPDATE slots=VALUES(slots)", values);
+    }
 
-    // save forged items
+    // batch forged items
+    len = 0;
     for (int i = 0; i < MIG_MAX_FORGE_ITEMS; i++) {
         if (p->forged_items[i] != 0) {
-            qry("INSERT INTO player_forged_items (pid, forge_index, item_vnum) VALUES (%d, %d, %d) "
-                "ON DUPLICATE KEY UPDATE item_vnum=%d",
-                pid, i, p->forged_items[i], p->forged_items[i]);
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%d),",
+                pid, i, p->forged_items[i]);
         }
     }
+    if (len > 0) {
+        values[len - 1] = '\0';
+        qry("INSERT INTO player_forged_items (pid,forge_index,item_vnum) VALUES %s "
+            "ON DUPLICATE KEY UPDATE item_vnum=VALUES(item_vnum)", values);
+    }
 
-    // save intros
+    // batch intros
+    len = 0;
     for (int i = 0; i < MIG_MAX_INTRO; i++) {
         if (p->intro_pids[i] != 0) {
-            qry("INSERT INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES (%d, %d, %d, 0) "
-                "ON DUPLICATE KEY UPDATE intro_pid=%d",
-                pid, i, p->intro_pids[i], p->intro_pids[i]);
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%d,0),",
+                pid, i, p->intro_pids[i]);
+        }
+    }
+    if (len > 0) {
+        values[len - 1] = '\0';
+        qry("INSERT INTO player_intros (pid,intro_index,intro_pid,intro_time) VALUES %s "
+            "ON DUPLICATE KEY UPDATE intro_pid=VALUES(intro_pid)", values);
+    }
+
+    // batch granted commands
+    if (p->num_granted_cmds > 0) {
+        len = 0;
+        for (int i = 0; i < p->num_granted_cmds; i++) {
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d),",
+                pid, p->granted_cmds[i]);
+        }
+        if (len > 0) {
+            values[len - 1] = '\0';
+            qry("INSERT INTO player_granted_cmds (pid,cmd_num) VALUES %s "
+                "ON DUPLICATE KEY UPDATE cmd_num=cmd_num", values);
         }
     }
 
-    // save granted commands
-    for (int i = 0; i < p->num_granted_cmds; i++) {
-        qry("INSERT INTO player_granted_cmds (pid, cmd_num) VALUES (%d, %d) "
-            "ON DUPLICATE KEY UPDATE cmd_num=cmd_num",
-            pid, p->granted_cmds[i]);
-    }
-
-    // save affects
+    // affects - these have string fields so batch them too
+    len = 0;
     for (struct mig_affect *af = p->affects; af; af = af->next) {
         char *esc_woc = af->wear_off_char ? sql_escape_string(af->wear_off_char) : NULL;
         char *esc_wor = af->wear_off_room ? sql_escape_string(af->wear_off_room) : NULL;
-        qry("INSERT INTO player_affects (pid, type, duration, flags, modifier, location, level, "
-            "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, custom_msg_char, custom_msg_room) "
-            "VALUES (%d, %d, %d, %d, %d, %d, %d, %ld, %ld, %ld, %ld, %ld, %s, %s)",
+        char woc_str[256], wor_str[256];
+        if (esc_woc) { snprintf(woc_str, sizeof(woc_str), "'%s'", esc_woc); free(esc_woc); }
+        else strcpy(woc_str, "NULL");
+        if (esc_wor) { snprintf(wor_str, sizeof(wor_str), "'%s'", esc_wor); free(esc_wor); }
+        else strcpy(wor_str, "NULL");
+
+        len += snprintf(values + len, sizeof(values) - len,
+            "(%d,%d,%d,%d,%d,%d,%d,%ld,%ld,%ld,%ld,%ld,%s,%s),",
             pid, af->type, af->duration, af->flags, af->modifier, af->location, af->level,
             af->bitvector1, af->bitvector2, af->bitvector3, af->bitvector4, af->bitvector5,
-            esc_woc ? esc_woc : "NULL", esc_wor ? esc_wor : "NULL");
-        if (esc_woc) free(esc_woc);
-        if (esc_wor) free(esc_wor);
+            woc_str, wor_str);
+    }
+    if (len > 0) {
+        values[len - 1] = '\0';
+        qry("INSERT INTO player_affects (pid,type,duration,flags,modifier,location,level,"
+            "bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room) VALUES %s",
+            values);
     }
 
     // save equipment

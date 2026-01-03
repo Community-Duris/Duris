@@ -3,71 +3,10 @@
 
 #include "migrate_common.h"
 
-// save a mig_obj to corpse_items table, returns item_id
+// wrapper for save_item_to_db for corpse items
 static int save_corpse_item(int corpse_id, struct mig_obj *obj, int container_id) {
     if (!obj) return 0;
-
-    char *esc_name = obj->name ? sql_escape_string(obj->name) : NULL;
-    char *esc_short = obj->short_descr ? sql_escape_string(obj->short_descr) : NULL;
-    char *esc_desc = obj->description ? sql_escape_string(obj->description) : NULL;
-    char *esc_action = obj->action_descr ? sql_escape_string(obj->action_descr) : NULL;
-
-    char container_str[32];
-    if (container_id > 0)
-        snprintf(container_str, sizeof(container_str), "%d", container_id);
-    else
-        strcpy(container_str, "NULL");
-
-    char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
-    if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
-    else strcpy(name_str, "NULL");
-    if (esc_short) snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
-    else strcpy(short_str, "NULL");
-    if (esc_desc) snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
-    else strcpy(desc_str, "NULL");
-    if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
-    else strcpy(action_str, "NULL");
-
-    char query[8192];
-    snprintf(query, sizeof(query),
-        "INSERT INTO corpse_items ("
-        "corpse_id, vnum, container_id, quantity, "
-        "weight, cost, timer, extra_flags, "
-        "value0, value1, value2, value3, value4, value5, value6, value7, "
-        "name, short_descr, description, action_descr"
-        ") VALUES ("
-        "%d, %d, %s, 1, "
-        "%d, %d, %ld, %lu, "
-        "%d, %d, %d, %d, %d, %d, %d, %d, "
-        "%s, %s, %s, %s"
-        ")",
-        corpse_id, obj->vnum, container_str,
-        obj->weight, obj->cost, obj->timer, obj->extra_flags,
-        obj->value[0], obj->value[1], obj->value[2], obj->value[3],
-        obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-        name_str, short_str, desc_str, action_str
-    );
-
-    if (esc_name) free(esc_name);
-    if (esc_short) free(esc_short);
-    if (esc_desc) free(esc_desc);
-    if (esc_action) free(esc_action);
-
-    if (!qry("%s", query))
-        return 0;
-
-    MYSQL_RES *result = db_query("SELECT LAST_INSERT_ID()");
-    if (!result) return 0;
-    MYSQL_ROW row = mysql_fetch_row(result);
-    int item_id = row ? atoi(row[0]) : 0;
-    mysql_free_result(result);
-
-    // save contained objects
-    for (struct mig_obj *c = obj->contains; c; c = c->next) {
-        save_corpse_item(corpse_id, c, item_id);
-    }
-
-    return item_id;
+    return save_item_to_db(obj, "corpse_items", "corpse_id", corpse_id, container_id, -1);
 }
 
 // count corpse files
@@ -223,7 +162,8 @@ int migrate_corpses_from_files(void) {
     return count;
 }
 
-// save a saved item
+// save a saved item - note: saved_items has different schema (item_key + room_vnum instead of numeric id)
+// keeping this one separate since it needs special handling for the string key
 static int save_saved_item(const char *item_key, int room_vnum, struct mig_obj *obj, int container_id) {
     if (!obj) return 0;
 
@@ -507,27 +447,14 @@ int migrate_spellbooks_from_files(void) {
             char *dot = strrchr(player_name, '.');
             if (dot) *dot = 0;
 
-            // look up pid from database
-            char query[256];
-            snprintf(query, sizeof(query),
-                "SELECT pid FROM player_data WHERE LOWER(name) = '%s'", player_name);
-            MYSQL_RES *result = db_query(query);
-            if (!result) {
+            // look up pid from database - use sql_get_pid_by_name which properly escapes
+            int pid = sql_get_pid_by_name(player_name);
+            if (pid <= 0) {
                 errors++;
                 processed++;
                 progress_update(&pb, processed);
                 continue;
             }
-            MYSQL_ROW row = mysql_fetch_row(result);
-            if (!row || !row[0]) {
-                mysql_free_result(result);
-                errors++;
-                processed++;
-                progress_update(&pb, processed);
-                continue;
-            }
-            int pid = atoi(row[0]);
-            mysql_free_result(result);
 
             // read spellbook file
             char filepath[512];
@@ -541,18 +468,14 @@ int migrate_spellbooks_from_files(void) {
             }
 
             // delete existing spellbook entries for this player
-            snprintf(query, sizeof(query),
-                "DELETE FROM player_spellbooks WHERE pid = %d", pid);
-            qry("%s", query);
+            qry("DELETE FROM player_spellbooks WHERE pid = %d", pid);
 
             // read mob vnums and insert
             int mob_vnum;
             int mob_count = 0;
             while (fscanf(f, "%d", &mob_vnum) == 1) {
-                snprintf(query, sizeof(query),
-                    "INSERT IGNORE INTO player_spellbooks (pid, mob_vnum) VALUES (%d, %d)",
+                qry("INSERT IGNORE INTO player_spellbooks (pid, mob_vnum) VALUES (%d, %d)",
                     pid, mob_vnum);
-                qry("%s", query);
                 mob_count++;
                 total_mobs++;
             }

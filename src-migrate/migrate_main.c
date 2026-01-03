@@ -14,6 +14,7 @@ static void print_usage(const char *prog) {
     printf("  --guilds     migrate guilds only\n");
     printf("  --recipes    migrate recipes only\n");
     printf("  --spellbooks migrate spellbooks only\n");
+    printf("  --frag       populate frag_leaderboard only\n");
     printf("  --clean      clear relevant tables before migration\n");
     printf("  --help       show this help\n");
 }
@@ -30,12 +31,13 @@ static void clean_players(void) {
     qry("DELETE FROM player_forged_items");
     qry("DELETE FROM player_intros");
     qry("DELETE FROM player_granted_cmds");
+    qry("DELETE FROM account_characters");
     qry("DELETE FROM player_data");
 }
 
 static void clean_accounts(void) {
     printf("  clearing account tables...\n");
-    qry("DELETE FROM account_characters");
+    // account_characters is cleared by clean_players (owns the pid reference)
     qry("DELETE FROM account_ips");
     qry("DELETE FROM accounts");
 }
@@ -68,6 +70,11 @@ static void clean_spellbooks(void) {
     qry("DELETE FROM player_spellbooks");
 }
 
+static void clean_frag_leaderboard(void) {
+    printf("  clearing frag_leaderboard...\n");
+    qry("DELETE FROM frag_leaderboard");
+}
+
 static void clean_corpses(void) {
     printf("  clearing corpse tables...\n");
     qry("DELETE FROM corpse_items");
@@ -79,11 +86,46 @@ static void clean_saved_items(void) {
     qry("DELETE FROM saved_items");
 }
 
+// populate frag leaderboard from player data
+static int populate_frag_leaderboard(void) {
+    printf("populating frag_leaderboard from player_data...\n");
+
+    qry("DELETE FROM frag_leaderboard");
+
+    // filter out corrupted frags (> 100000 = unsigned overflow junk)
+    // m_class is bitmask so use log2 to get class id
+    int ok = qry(
+        "INSERT INTO frag_leaderboard (pid, account_name, char_name, total_frags, racewar, race, class, level) "
+        "SELECT pd.pid, COALESCE(pd.account_name, ''), pd.name, pd.frags, pd.racewar, "
+        "       COALESCE(r.name, 'Unknown'), COALESCE(c.name, 'Unknown'), pd.level "
+        "FROM player_data pd "
+        "LEFT JOIN races r ON pd.race = r.id "
+        "LEFT JOIN classes c ON FLOOR(LOG2(pd.m_class)) + 1 = c.id "
+        "WHERE pd.frags > 0 AND pd.frags < 100000"
+    );
+
+    if (!ok) {
+        printf("  failed to populate frag_leaderboard\n");
+        return 0;
+    }
+
+    MYSQL_RES *result = db_query("SELECT COUNT(*) FROM frag_leaderboard");
+    int count = 0;
+    if (result) {
+        MYSQL_ROW row = mysql_fetch_row(result);
+        if (row) count = atoi(row[0]);
+        mysql_free_result(result);
+    }
+
+    printf("frag_leaderboard: %d entries populated\n", count);
+    return count;
+}
+
 int main(int argc, char **argv) {
     // parse args
     int do_all = (argc == 1);
     int do_accounts = 0, do_players = 0, do_lockers = 0, do_ships = 0;
-    int do_guilds = 0, do_recipes = 0, do_spellbooks = 0;
+    int do_guilds = 0, do_recipes = 0, do_spellbooks = 0, do_frag = 0;
     int do_clean = 0;
 
     for (int i = 1; i < argc; i++) {
@@ -95,6 +137,7 @@ int main(int argc, char **argv) {
         else if (strcmp(argv[i], "--guilds") == 0) do_guilds = 1;
         else if (strcmp(argv[i], "--recipes") == 0) do_recipes = 1;
         else if (strcmp(argv[i], "--spellbooks") == 0) do_spellbooks = 1;
+        else if (strcmp(argv[i], "--frag") == 0) do_frag = 1;
         else if (strcmp(argv[i], "--clean") == 0) do_clean = 1;
         else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
             print_usage(argv[0]);
@@ -170,7 +213,10 @@ int main(int argc, char **argv) {
     if (do_clean) {
         printf("cleaning selected tables...\n");
         if (do_all || do_accounts) clean_accounts();
-        if (do_all || do_players) clean_players();
+        if (do_all || do_players) {
+            clean_players();
+            clean_frag_leaderboard();
+        }
         if (do_all || do_lockers) clean_lockers();
         if (do_all || do_ships) clean_ships();
         if (do_all || do_guilds) clean_guilds();
@@ -189,6 +235,11 @@ int main(int argc, char **argv) {
     // players must be migrated first so account_characters pid lookups work
     if (do_all || do_players) {
         players = migrate_players_from_files();
+        populate_frag_leaderboard();
+        printf("\n");
+    }
+    if (do_frag && !do_all && !do_players) {
+        populate_frag_leaderboard();
         printf("\n");
     }
     if (do_all || do_accounts) {

@@ -3507,7 +3507,7 @@ void do_examine(P_char ch, char *argument, int cmd)
         if (OBJ_WORN(tmp_object) || OBJ_CARRIED(tmp_object))
         {
 
-          if (tmp_object->weight < 0)
+          if (tmp_object->weight < 0 || tmp_object->value[0] <= 0)
 	          percent = 0;
 	        else
 	          percent = (int) (100 * tmp_object->weight / tmp_object->value[0]);
