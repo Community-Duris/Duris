@@ -37,6 +37,7 @@
 #include "epic_bonus.h"
 #include "files.h"
 #include "utility.h"
+#include "redis.h"
 
 /*
  * external variables
@@ -1492,6 +1493,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
   if( GET_LEVEL(ch) < MINLVLIMMORTAL && (XP_final < 0 || GET_EXP(ch) < global_exp_limit) )
   {
     GET_EXP(ch) += (int)XP_final;
+    mark_player_dirty(GET_PID(ch));
   }
   display_gain(ch, (int)XP_final, type);
   if( GET_LEVEL(ch) >= MINLVLIMMORTAL )

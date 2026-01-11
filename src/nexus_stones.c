@@ -25,6 +25,7 @@ using namespace std;
 #include "epic.h"
 #include "ship_npc.h"
 #include "boon.h"
+#include "redis.h"
 
 extern P_index mob_index;
 extern P_index obj_index;
@@ -507,7 +508,9 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
   {
     add_event(event_nexus_stone_hum, (get_property("nexusStones.touchTimerSecs", 10) * WAIT_SEC), 0, 0, stone, 0, 0, 0);
   }
-  
+
+  mark_player_dirty(GET_PID(ch));
+
   return TRUE;
 }
 
