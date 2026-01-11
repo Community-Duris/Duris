@@ -22,6 +22,7 @@
 #include "necromancy.h"
 #include "siege.h"
 #include "ships/ships.h"
+#include "files.h"
 
 // external tables
 extern P_index obj_index;
@@ -943,15 +944,17 @@ bool sql_save_player_items(P_char ch)
   bool success = true;
 
   // save equipment (slots 1-42, 0 is special)
+  // check ch->equipment first (redis path), fall back to save_equip (save_char path)
   if (success)
   {
     for (int i = 0; i < MAX_WEAR; i++)
     {
-      if (ch->equipment[i])
+      P_obj equip_item = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
+      if (equip_item)
       {
-        if (!IS_SET(ch->equipment[i]->extra_flags, ITEM_NORENT))
+        if (!IS_SET(equip_item->extra_flags, ITEM_NORENT))
         {
-          if (sql_save_single_item_get_id(pid, ch->equipment[i], i + 1, 0) == 0)
+          if (sql_save_single_item_get_id(pid, equip_item, i + 1, 0) == 0)
           {
             logit(LOG_DEBUG, "sql_save_player_items: failed to save equipment slot %d for %s",
                   i, GET_NAME(ch));

@@ -132,5 +132,7 @@
 #define GET_LONG(buf) getLong(&buf)
 #define GET_STRING(buf) getString(&buf)
 
+/* save_equip array - used during save to hold unequipped items */
+extern P_obj save_equip[MAX_WEAR];
 
 #endif /* _SOJ_PFILES_H_ */

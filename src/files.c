@@ -80,7 +80,7 @@ int      skill_off, affect_off, item_off;
 #endif
 
 /* local globals */
-static P_obj save_equip[MAX_WEAR];
+P_obj save_equip[MAX_WEAR];
 
 
 int      anchor_room(int room);

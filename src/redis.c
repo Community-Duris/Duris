@@ -151,8 +151,7 @@ void flush_dirty_players(void)
     freeReplyObject(reply);
   }
 
-  if (saved_count > 0)
-    logit(LOG_DEBUG, "flush_dirty_players: saved %d player(s)", saved_count);
+  (void)saved_count; // suppress unused warning
 #endif
 }
 
