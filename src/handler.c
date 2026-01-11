@@ -1626,7 +1626,7 @@ void obj_from_char(P_obj object)
     mark_player_dirty(GET_PID(ch));
 
   object->loc_p = LOC_NOWHERE;
-  object->loc.room = NOWHERE;
+  object->loc.carrying = NULL;  // must clear full pointer, not just int-sized loc.room
   object->next_content = NULL;
 }
 
@@ -1733,7 +1733,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
   all_affects(ch, FALSE);
   ch->equipment[pos] = NULL;
   obj->loc_p = LOC_NOWHERE;
-  obj->loc.room = NOWHERE;
+  obj->loc.wearing = NULL;  // must clear full pointer, not just int-sized loc.room
   all_affects(ch, TRUE);
 
   balance_affects(ch);
@@ -2574,7 +2574,7 @@ void obj_from_obj(P_obj obj)
 */
 
     obj->loc_p = LOC_NOWHERE;
-    obj->loc.room = NOWHERE;
+    obj->loc.inside = NULL;  // must clear full pointer, not just int-sized loc.room
     obj->next_content = NULL;
 
     if (GET_ITEM_TYPE(obj_from) == ITEM_STORAGE)
