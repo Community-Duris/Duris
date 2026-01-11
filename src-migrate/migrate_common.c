@@ -167,10 +167,18 @@ static void format_sql_str(char *out, size_t sz, const char *escaped) {
         strcpy(out, "NULL");
 }
 
-// helper: format value - returns "NULL" if not set, otherwise the int
+/// helper: format value - returns "NULL" if not set, otherwise the int
 static void format_value(char *buf, size_t sz, struct mig_obj *obj, int idx) {
     if (obj->value_set & (1 << idx))
         snprintf(buf, sz, "%d", obj->value[idx]);
+    else
+        strcpy(buf, "NULL");
+}
+
+// helper: format extra_flags - returns "NULL" if not set, otherwise the value
+static void format_extra_flags(char *buf, size_t sz, struct mig_obj *obj) {
+    if (obj->extra_flags_set)
+        snprintf(buf, sz, "%lu", obj->extra_flags);
     else
         strcpy(buf, "NULL");
 }
@@ -237,6 +245,10 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     format_value(v6, sizeof(v6), obj, 6);
     format_value(v7, sizeof(v7), obj, 7);
 
+    // format extra_flags (NULL if not modified from prototype)
+    char extra_str[32];
+    format_extra_flags(extra_str, sizeof(extra_str), obj);
+
     // build query based on table type
     char query[8192];
     if (equip_slot >= 0) {
@@ -246,11 +258,11 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
             "weight, cost, timer, extra_flags, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
             "name, short_descr, description, action_descr) VALUES ("
-            "%d, %d, %d, %s, 1, %d, %d, %ld, %lu, "
+            "%d, %d, %d, %s, 1, %d, %d, %ld, %s, "
             "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             table, owner_col,
             owner_id, obj->vnum, equip_slot, container_str,
-            obj->weight, obj->cost, obj->timer, obj->extra_flags,
+            obj->weight, obj->cost, obj->timer, extra_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
             name_str, short_str, desc_str, action_str);
     } else {
@@ -260,11 +272,11 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
             "weight, cost, timer, extra_flags, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
             "name, short_descr, description, action_descr) VALUES ("
-            "%d, %d, %s, 1, %d, %d, %ld, %lu, "
+            "%d, %d, %s, 1, %d, %d, %ld, %s, "
             "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             table, owner_col,
             owner_id, obj->vnum, container_str,
-            obj->weight, obj->cost, obj->timer, obj->extra_flags,
+            obj->weight, obj->cost, obj->timer, extra_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
             name_str, short_str, desc_str, action_str);
     }

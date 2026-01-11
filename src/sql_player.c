@@ -2332,7 +2332,7 @@ static P_obj sql_load_locker_items(int locker_id, int container_id)
     obj->weight = atoi(row[2]);
     obj->cost = atoi(row[3]);
     obj->timer[0] = atol(row[4]);
-    obj->extra_flags = strtoul(row[5], NULL, 10);
+    if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
 
     obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
     obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
@@ -3276,222 +3276,317 @@ bool sql_delete_corpse(const char *player_name, int save_id)
   return sql_run_query(query);
 }
 
-static P_obj sql_load_corpse_items(int corpse_id, int container_id)
-{
-  if (!DB || corpse_id <= 0)
-    return NULL;
-
-  char query[512];
-  if (container_id > 0)
-    snprintf(query, sizeof(query),
-             "SELECT id, vnum, weight, cost, timer, extra_flags, "
-             "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr "
-             "FROM corpse_items WHERE corpse_id=%d AND container_id=%d",
-             corpse_id, container_id);
-  else
-    snprintf(query, sizeof(query),
-             "SELECT id, vnum, weight, cost, timer, extra_flags, "
-             "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr "
-             "FROM corpse_items WHERE corpse_id=%d AND container_id IS NULL",
-             corpse_id);
-
-  MYSQL_RES *result = db_query("%s", query);
-  if (!result)
-    return NULL;
-
-  // collect all item data first to avoid nested queries
-  struct {
-    int item_id;
-    int vnum;
-    int weight;
-    int cost;
-    long timer;
-    unsigned long extra_flags;
-    int value[8];
-    char name[256];
-    char short_descr[256];
-    char description[512];
-    char action_descr[512];
-  } items[256];
-  int num_items = 0;
-
-  MYSQL_ROW row;
-  while ((row = mysql_fetch_row(result)) && num_items < 256)
-  {
-    items[num_items].item_id = atoi(row[0]);
-    items[num_items].vnum = atoi(row[1]);
-    items[num_items].weight = atoi(row[2]);
-    items[num_items].cost = atoi(row[3]);
-    items[num_items].timer = atol(row[4]);
-    items[num_items].extra_flags = strtoul(row[5], NULL, 10);
-    for (int v = 0; v < 8; v++)
-      items[num_items].value[v] = row[6 + v] ? atoi(row[6 + v]) : 0;
-    strncpy(items[num_items].name, row[14] ? row[14] : "", 255);
-    items[num_items].name[255] = '\0';
-    strncpy(items[num_items].short_descr, row[15] ? row[15] : "", 255);
-    items[num_items].short_descr[255] = '\0';
-    strncpy(items[num_items].description, row[16] ? row[16] : "", 511);
-    items[num_items].description[511] = '\0';
-    strncpy(items[num_items].action_descr, row[17] ? row[17] : "", 511);
-    items[num_items].action_descr[511] = '\0';
-    num_items++;
-  }
-  mysql_free_result(result);
-
-  // now create objects
-  P_obj first_obj = NULL;
-  P_obj last_obj = NULL;
-
-  for (int i = 0; i < num_items; i++)
-  {
-    int rnum = real_object(items[i].vnum);
-    if (rnum < 0)
-      continue;
-
-    P_obj obj = read_object(rnum, REAL);
-    if (!obj)
-      continue;
-
-    // apply saved properties
-    obj->weight = items[i].weight;
-    obj->cost = items[i].cost;
-    obj->timer[0] = items[i].timer;
-    obj->extra_flags = items[i].extra_flags;
-    for (int v = 0; v < 8; v++)
-      obj->value[v] = items[i].value[v];
-
-    // strung strings
-    if (strlen(items[i].name) > 0)
-    {
-      obj->name = str_dup(items[i].name);
-      obj->str_mask |= STRUNG_KEYS;
-    }
-    if (strlen(items[i].short_descr) > 0)
-    {
-      obj->short_description = str_dup(items[i].short_descr);
-      obj->str_mask |= STRUNG_DESC2;
-    }
-    if (strlen(items[i].description) > 0)
-    {
-      obj->description = str_dup(items[i].description);
-      obj->str_mask |= STRUNG_DESC1;
-    }
-    if (strlen(items[i].action_descr) > 0)
-    {
-      obj->action_description = str_dup(items[i].action_descr);
-      obj->str_mask |= STRUNG_DESC3;
-    }
-
-    // load item affects
-    char aff_query[128];
-    snprintf(aff_query, sizeof(aff_query),
-             "SELECT location, modifier FROM corpse_item_affects WHERE item_id=%d", items[i].item_id);
-    MYSQL_RES *aff_result = db_query("%s", aff_query);
-    if (aff_result)
-    {
-      MYSQL_ROW aff_row;
-      int aff_idx = 0;
-      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
-      {
-        obj->affected[aff_idx].location = atoi(aff_row[0]);
-        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
-        aff_idx++;
-      }
-      mysql_free_result(aff_result);
-    }
-
-    // recursively load contained items
-    obj->contains = sql_load_corpse_items(corpse_id, items[i].item_id);
-    // set up container relationship for contained items
-    for (P_obj contained = obj->contains; contained; contained = contained->next_content)
-    {
-      contained->loc_p = LOC_INSIDE;
-      contained->loc.inside = obj;
-    }
-
-    if (!first_obj)
-      first_obj = obj;
-    else
-      last_obj->next_content = obj;
-    last_obj = obj;
-    obj->next_content = NULL;
-  }
-
-  return first_obj;
-}
+// single query corpse loading - all data in one query
+#define MAX_CORPSE_ITEMS 512
 
 bool sql_load_all_corpses(void)
 {
   if (!DB)
     return false;
 
-  MYSQL_RES *result = db_query("SELECT id, player_name, save_id, room_vnum FROM corpses");
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
+  // one query gets everything: corpses + items + affects
+  MYSQL_RES *result = db_query(
+    "SELECT c.id, c.player_name, c.save_id, c.room_vnum, "
+    "ci.id, COALESCE(ci.container_id, 0), ci.vnum, ci.weight, ci.cost, ci.timer, "
+    "ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
+    "ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
+    "ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0) "
+    "FROM corpses c "
+    "LEFT JOIN corpse_items ci ON ci.corpse_id = c.id "
+    "LEFT JOIN corpse_item_affects cia ON cia.item_id = ci.id "
+    "ORDER BY c.id, ci.id, cia.id"
+  );
   if (!result)
     return false;
 
-  // collect all corpse data first to avoid nested queries
-  struct {
-    int corpse_id;
-    char player_name[128];
-    int save_id;
-    int room_vnum;
-  } corpse_data[1024];
-  int num_corpses = 0;
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  long ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
+  logit(LOG_DEBUG, "sql_load_all_corpses: query took %ld ms", ms);
 
-  MYSQL_ROW row;
-  while ((row = mysql_fetch_row(result)) && num_corpses < 1024)
-  {
-    corpse_data[num_corpses].corpse_id = atoi(row[0]);
-    strncpy(corpse_data[num_corpses].player_name, row[1] ? row[1] : "", 127);
-    corpse_data[num_corpses].player_name[127] = '\0';
-    corpse_data[num_corpses].save_id = atoi(row[2]);
-    corpse_data[num_corpses].room_vnum = atoi(row[3]);
-    num_corpses++;
-  }
-  mysql_free_result(result);
+  // tracking for current corpse being built
+  int cur_corpse_id = -1;
+  P_obj cur_corpse = NULL;
+  int cur_room = 0;
 
-  // now load each corpse
+  // tracking for items in current corpse
+  P_obj obj_map[MAX_CORPSE_ITEMS];
+  int id_map[MAX_CORPSE_ITEMS];
+  int container_map[MAX_CORPSE_ITEMS];
+  int num_objs = 0;
+  int last_item_id = -1;
+
   int loaded = 0;
-  for (int i = 0; i < num_corpses; i++)
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
   {
-    int room = real_room(corpse_data[i].room_vnum);
-    if (room == NOWHERE)
-      room = 0;
+    int corpse_id = atoi(row[0]);
+    int item_id = row[4] ? atoi(row[4]) : 0;
 
-    // vnum 1 = generic player corpse
-    int corpse_rnum = real_object(1);
-    if (corpse_rnum < 0)
+    // new corpse - finalize previous one first
+    if (corpse_id != cur_corpse_id)
     {
-      logit(LOG_DEBUG, "sql_load_all_corpses: no corpse vnum 1");
+      // finalize previous corpse if exists
+      if (cur_corpse && num_objs > 0)
+      {
+        // link containers using hash
+        #define HASH_SIZE 1024
+        int hash_id[HASH_SIZE];
+        int hash_idx[HASH_SIZE];
+        for (int i = 0; i < HASH_SIZE; i++)
+          hash_id[i] = -1;
+
+        for (int i = 0; i < num_objs; i++)
+        {
+          int h = id_map[i] % HASH_SIZE;
+          while (hash_id[h] != -1)
+            h = (h + 1) % HASH_SIZE;
+          hash_id[h] = id_map[i];
+          hash_idx[h] = i;
+        }
+
+        for (int i = 0; i < num_objs; i++)
+        {
+          if (container_map[i] == 0)
+            continue;
+          int h = container_map[i] % HASH_SIZE;
+          while (hash_id[h] != -1 && hash_id[h] != container_map[i])
+            h = (h + 1) % HASH_SIZE;
+          if (hash_id[h] == container_map[i])
+          {
+            int j = hash_idx[h];
+            obj_map[i]->next_content = obj_map[j]->contains;
+            obj_map[j]->contains = obj_map[i];
+            obj_map[i]->loc_p = LOC_INSIDE;
+            obj_map[i]->loc.inside = obj_map[j];
+            container_map[i] = -1;
+          }
+        }
+        #undef HASH_SIZE
+
+        // build top-level list
+        P_obj first = NULL;
+        P_obj last_obj = NULL;
+        for (int i = 0; i < num_objs; i++)
+        {
+          if (container_map[i] == 0)
+          {
+            if (!first)
+              first = obj_map[i];
+            else
+              last_obj->next_content = obj_map[i];
+            last_obj = obj_map[i];
+            last_obj->next_content = NULL;
+          }
+        }
+        cur_corpse->contains = first;
+        for (P_obj o = cur_corpse->contains; o; o = o->next_content)
+        {
+          o->loc_p = LOC_INSIDE;
+          o->loc.inside = cur_corpse;
+        }
+        obj_to_room(cur_corpse, cur_room);
+        loaded++;
+      }
+      else if (cur_corpse)
+      {
+        // corpse with no items
+        obj_to_room(cur_corpse, cur_room);
+        loaded++;
+      }
+
+      // start new corpse
+      num_objs = 0;
+      last_item_id = -1;
+      cur_corpse_id = corpse_id;
+
+      const char *player_name = row[1] ? row[1] : "";
+      int save_id = atoi(row[2]);
+      int room_vnum = atoi(row[3]);
+
+      cur_room = real_room(room_vnum);
+      if (cur_room == NOWHERE)
+        cur_room = 0;
+
+      int corpse_rnum = real_object(1);
+      if (corpse_rnum < 0)
+      {
+        cur_corpse = NULL;
+        continue;
+      }
+
+      cur_corpse = read_object(corpse_rnum, REAL);
+      if (!cur_corpse)
+        continue;
+
+      cur_corpse->type = ITEM_CORPSE;
+      SET_BIT(cur_corpse->value[1], PC_CORPSE);
+      cur_corpse->value[CORPSE_SAVEID] = save_id;
+
+      if (cur_corpse->action_description)
+        FREE(cur_corpse->action_description);
+      cur_corpse->action_description = str_dup(player_name);
+    }
+
+    // no item in this row (corpse with no items)
+    if (!row[4] || !cur_corpse)
+      continue;
+
+    // same item, just another affect
+    if (item_id == last_item_id && num_objs > 0)
+    {
+      int aff_loc = atoi(row[23]);
+      if (aff_loc >= 0)
+      {
+        P_obj obj = obj_map[num_objs - 1];
+        for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+        {
+          if (obj->affected[i].location == 0 && obj->affected[i].modifier == 0)
+          {
+            obj->affected[i].location = aff_loc;
+            obj->affected[i].modifier = atoi(row[24]);
+            break;
+          }
+        }
+      }
       continue;
     }
 
-    P_obj corpse = read_object(corpse_rnum, REAL);
-    if (!corpse)
+    // new item
+    if (num_objs >= MAX_CORPSE_ITEMS)
       continue;
 
-    corpse->type = ITEM_CORPSE;
-    SET_BIT(corpse->value[1], PC_CORPSE);
-    corpse->value[CORPSE_SAVEID] = corpse_data[i].save_id;
-
-    if (corpse->action_description)
-      FREE(corpse->action_description);
-    corpse->action_description = str_dup(corpse_data[i].player_name);
-    corpse->contains = sql_load_corpse_items(corpse_data[i].corpse_id, 0);
-
-    for (P_obj obj = corpse->contains; obj; obj = obj->next_content)
+    int vnum = atoi(row[6]);
+    int rnum = real_object(vnum);
+    if (rnum < 0)
     {
-      obj->loc_p = LOC_INSIDE;
-      obj->loc.inside = corpse;
+      last_item_id = item_id;
+      continue;
     }
 
-    obj_to_room(corpse, room);
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+    {
+      last_item_id = item_id;
+      continue;
+    }
+
+    obj->weight = atoi(row[7]);
+    obj->cost = atoi(row[8]);
+    obj->timer[0] = atol(row[9]);
+    if (row[10]) obj->extra_flags = strtoul(row[10], NULL, 10);
+    for (int v = 0; v < 8; v++)
+      obj->value[v] = row[11 + v] ? atoi(row[11 + v]) : 0;
+
+    if (row[19] && row[19][0])
+    {
+      obj->name = str_dup(row[19]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[20] && row[20][0])
+    {
+      obj->short_description = str_dup(row[20]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[21] && row[21][0])
+    {
+      obj->description = str_dup(row[21]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[22] && row[22][0])
+    {
+      obj->action_description = str_dup(row[22]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+
+    int aff_loc = atoi(row[23]);
+    if (aff_loc >= 0)
+    {
+      obj->affected[0].location = aff_loc;
+      obj->affected[0].modifier = atoi(row[24]);
+    }
+
+    obj_map[num_objs] = obj;
+    id_map[num_objs] = item_id;
+    container_map[num_objs] = atoi(row[5]);
+    num_objs++;
+    last_item_id = item_id;
+  }
+
+  // finalize last corpse
+  if (cur_corpse && num_objs > 0)
+  {
+    #define HASH_SIZE 1024
+    int hash_id[HASH_SIZE];
+    int hash_idx[HASH_SIZE];
+    for (int i = 0; i < HASH_SIZE; i++)
+      hash_id[i] = -1;
+
+    for (int i = 0; i < num_objs; i++)
+    {
+      int h = id_map[i] % HASH_SIZE;
+      while (hash_id[h] != -1)
+        h = (h + 1) % HASH_SIZE;
+      hash_id[h] = id_map[i];
+      hash_idx[h] = i;
+    }
+
+    for (int i = 0; i < num_objs; i++)
+    {
+      if (container_map[i] == 0)
+        continue;
+      int h = container_map[i] % HASH_SIZE;
+      while (hash_id[h] != -1 && hash_id[h] != container_map[i])
+        h = (h + 1) % HASH_SIZE;
+      if (hash_id[h] == container_map[i])
+      {
+        int j = hash_idx[h];
+        obj_map[i]->next_content = obj_map[j]->contains;
+        obj_map[j]->contains = obj_map[i];
+        obj_map[i]->loc_p = LOC_INSIDE;
+        obj_map[i]->loc.inside = obj_map[j];
+        container_map[i] = -1;
+      }
+    }
+    #undef HASH_SIZE
+
+    P_obj first = NULL;
+    P_obj last_obj = NULL;
+    for (int i = 0; i < num_objs; i++)
+    {
+      if (container_map[i] == 0)
+      {
+        if (!first)
+          first = obj_map[i];
+        else
+          last_obj->next_content = obj_map[i];
+        last_obj = obj_map[i];
+        last_obj->next_content = NULL;
+      }
+    }
+    cur_corpse->contains = first;
+    for (P_obj o = cur_corpse->contains; o; o = o->next_content)
+    {
+      o->loc_p = LOC_INSIDE;
+      o->loc.inside = cur_corpse;
+    }
+    obj_to_room(cur_corpse, cur_room);
+    loaded++;
+  }
+  else if (cur_corpse)
+  {
+    obj_to_room(cur_corpse, cur_room);
     loaded++;
   }
 
-  logit(LOG_DEBUG, "sql_load_all_corpses: loaded %d corpses", loaded);
+  mysql_free_result(result);
+
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
+  logit(LOG_DEBUG, "sql_load_all_corpses: loaded %d corpses in %ld ms", loaded, ms);
   return true;
 }
 
@@ -3988,7 +4083,7 @@ static P_obj sql_load_shopkeeper_items(int shopkeeper_id, int equip_slot, int co
     obj->weight = atoi(row[3]);
     obj->cost = atoi(row[4]);
     obj->timer[0] = atol(row[5]);
-    obj->extra_flags = strtoul(row[6], NULL, 10);
+    if (row[6]) obj->extra_flags = strtoul(row[6], NULL, 10);
 
     obj->value[0] = atoi(row[7]);
     obj->value[1] = atoi(row[8]);
@@ -4230,7 +4325,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
     obj->weight = atoi(row[2]);
     obj->cost = atoi(row[3]);
     obj->timer[0] = atol(row[4]);
-    obj->extra_flags = strtoul(row[5], NULL, 10);
+    if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
 
     obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
     obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
@@ -4337,7 +4432,7 @@ void sql_restore_saved_items(void)
     obj->weight = atoi(row[4]);
     obj->cost = atoi(row[5]);
     obj->timer[0] = atol(row[6]);
-    obj->extra_flags = strtoul(row[7], NULL, 10);
+    if (row[7]) obj->extra_flags = strtoul(row[7], NULL, 10);
 
     obj->value[0] = atoi(row[8]);
     obj->value[1] = atoi(row[9]);
@@ -4438,7 +4533,7 @@ static P_obj sql_load_siege_item_contents(int room_vnum, int container_id)
     obj->weight = atoi(row[2]);
     obj->cost = atoi(row[3]);
     obj->timer[0] = atol(row[4]);
-    obj->extra_flags = strtoul(row[5], NULL, 10);
+    if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
 
     obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
     obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
@@ -4547,7 +4642,7 @@ void sql_load_siege_list(void)
     obj->weight = atoi(row[3]);
     obj->cost = atoi(row[4]);
     obj->timer[0] = atol(row[5]);
-    obj->extra_flags = strtoul(row[6], NULL, 10);
+    if (row[6]) obj->extra_flags = strtoul(row[6], NULL, 10);
 
     obj->value[0] = atoi(row[7]);
     obj->value[1] = atoi(row[8]);

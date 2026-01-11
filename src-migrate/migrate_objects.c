@@ -36,7 +36,7 @@ static void parse_unique_fields(char **buf, struct mig_obj *obj, unsigned long o
     }
     if (o_u_flag & O_U_TYPE) MIG_GET_BYTE(*buf);
     if (o_u_flag & O_U_WEAR) mig_getInt(buf);
-    if (o_u_flag & O_U_EXTRA) obj->extra_flags = mig_getInt(buf);
+    if (o_u_flag & O_U_EXTRA) { obj->extra_flags = mig_getInt(buf); obj->extra_flags_set = 1; }
     if (o_u_flag & O_U_ANTI) mig_getInt(buf);
     if (o_u_flag & O_U_ANTI2) mig_getInt(buf);
     if (o_u_flag & O_U_EXTRA2) mig_getInt(buf);
@@ -293,8 +293,8 @@ int parse_player_items(char **buf, struct mig_player *p) {
                 while (c->next) c = c->next;
                 c->next = obj;
             }
-        } else if (wear_slot >= 0 && wear_slot < MIG_MAX_WEAR) {
-            p->equipment[wear_slot] = obj;
+        } else if (wear_slot > 0 && wear_slot <= MIG_MAX_WEAR) {
+            p->equipment[wear_slot - 1] = obj;
         } else {
             if (!p->inventory)
                 p->inventory = obj;

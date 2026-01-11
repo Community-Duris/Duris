@@ -42,7 +42,7 @@
 #define MIG_NUMB_PC_TIMERS  10
 #define MIG_MAX_CIRCLE      12
 #define MIG_MAX_COND        5
-#define MIG_MAX_WEAR        22
+#define MIG_MAX_WEAR        43
 
 // object flags
 #define O_F_WORN      1
@@ -96,6 +96,7 @@ struct mig_obj {
     int cost;
     long timer;
     unsigned long extra_flags;
+    unsigned char extra_flags_set;  // 1 if extra_flags was explicitly set in pfile
     int value[8];
     unsigned char value_set;  // bitmask: bit N = value[N] was explicitly set in pfile
     char *name;
