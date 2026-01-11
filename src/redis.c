@@ -16,10 +16,60 @@
 #include <hiredis/hiredis.h>
 #endif
 
+extern const int top_of_world;
+extern struct room_data *world;
+
 static redisContext *redis_ctx = NULL;
 bool redis_enabled = false;
 
 #define REDIS_FLUSH_INTERVAL (5 * WAIT_SEC)
+
+// rnum to vnum
+static int get_room_vnum(P_char ch)
+{
+  if (!ch || ch->in_room < 0 || ch->in_room > top_of_world)
+    return NOWHERE;
+  return world[ch->in_room].number;
+}
+
+static bool redis_reconnect(void)
+{
+#ifdef __NO_MYSQL__
+  return false;
+#else
+  if (redis_ctx)
+  {
+    redisFree(redis_ctx);
+    redis_ctx = NULL;
+  }
+
+  const char *redis_host = getenv("REDIS_HOST");
+  if (!redis_host || !*redis_host)
+    redis_host = "127.0.0.1";
+
+  const char *redis_port_str = getenv("REDIS_PORT");
+  int redis_port = 6379;
+  if (redis_port_str && *redis_port_str)
+  {
+    redis_port = atoi(redis_port_str);
+    if (redis_port <= 0 || redis_port > 65535)
+      redis_port = 6379;
+  }
+
+  redis_ctx = redisConnect(redis_host, redis_port);
+  if (!redis_ctx || redis_ctx->err)
+  {
+    if (redis_ctx)
+    {
+      redisFree(redis_ctx);
+      redis_ctx = NULL;
+    }
+    return false;
+  }
+  logit(LOG_SYS, "redis reconnected to %s:%d", redis_host, redis_port);
+  return true;
+#endif
+}
 
 void event_flush_dirty_players(P_char ch, P_char victim, P_obj obj, void *data);
 
@@ -44,7 +94,11 @@ bool redis_init(void)
   const char *redis_port_str = getenv("REDIS_PORT");
   int redis_port = 6379;
   if (redis_port_str && *redis_port_str)
+  {
     redis_port = atoi(redis_port_str);
+    if (redis_port <= 0 || redis_port > 65535)
+      redis_port = 6379;
+  }
 
   redis_ctx = redisConnect(redis_host, redis_port);
   if (!redis_ctx)
@@ -98,7 +152,7 @@ bool redis_ping(void)
   }
 
   bool success = (reply->type == REDIS_REPLY_STATUS &&
-                  strcasecmp(reply->str, "PONG") == 0);
+                  reply->str && strcasecmp(reply->str, "PONG") == 0);
   freeReplyObject(reply);
   return success;
 #else
@@ -109,49 +163,85 @@ bool redis_ping(void)
 void mark_player_dirty(int pid)
 {
 #ifndef __NO_MYSQL__
-  if (!redis_enabled || !redis_ctx || pid <= 0)
+  if (!redis_enabled || pid <= 0)
     return;
 
+  if (!redis_ctx || redis_ctx->err)
+  {
+    if (!redis_reconnect())
+    {
+      redis_enabled = false;
+      P_char ch = find_player_by_pid(pid);
+      if (ch && IS_PC(ch))
+        sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+      return;
+    }
+  }
+
   redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SADD mud:dirty_players %d", pid);
-  if (reply)
-    freeReplyObject(reply);
+  if (!reply)
+  {
+    P_char ch = find_player_by_pid(pid);
+    if (ch && IS_PC(ch))
+      sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+    return;
+  }
+  freeReplyObject(reply);
 #endif
 }
 
 void flush_dirty_players(void)
 {
 #ifndef __NO_MYSQL__
-  if (!redis_enabled || !redis_ctx)
+  if (!redis_enabled)
     return;
 
-  redisReply *reply;
-  int saved_count = 0;
-
-  while ((reply = (redisReply *)redisCommand(redis_ctx, "SPOP mud:dirty_players")))
+  if (!redis_ctx || redis_ctx->err)
   {
-    if (reply->type == REDIS_REPLY_NIL)
+    if (!redis_reconnect())
     {
-      freeReplyObject(reply);
-      break;
+      redis_enabled = false;
+      return;
     }
-
-    if (reply->type == REDIS_REPLY_STRING)
-    {
-      int pid = atoi(reply->str);
-      P_char ch = find_player_by_pid(pid);
-      if (ch && IS_PC(ch))
-      {
-        if (sql_save_player(ch, RENT_CRASH, ch->in_room))
-          saved_count++;
-        else
-          logit(LOG_DEBUG, "flush_dirty_players: failed to save pid %d", pid);
-      }
-    }
-
-    freeReplyObject(reply);
   }
 
-  (void)saved_count; // suppress unused warning
+  // smembers first, del after saves - no data loss on disconnect
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS mud:dirty_players");
+  if (!reply)
+    return;
+
+  if (reply->type != REDIS_REPLY_ARRAY)
+  {
+    freeReplyObject(reply);
+    return;
+  }
+
+  int saved_count = 0;
+  size_t i;
+  for (i = 0; i < reply->elements; i++)
+  {
+    if (reply->element[i]->type != REDIS_REPLY_STRING)
+      continue;
+
+    int pid = atoi(reply->element[i]->str);
+    P_char ch = find_player_by_pid(pid);
+    if (ch && IS_PC(ch))
+    {
+      if (sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
+        saved_count++;
+      else
+        logit(LOG_DEBUG, "flush_dirty_players: failed to save pid %d", pid);
+    }
+  }
+
+  freeReplyObject(reply);
+
+  if (saved_count > 0)
+  {
+    redisReply *del_reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
+    if (del_reply)
+      freeReplyObject(del_reply);
+  }
 #endif
 }
 
