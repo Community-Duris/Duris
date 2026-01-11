@@ -413,6 +413,13 @@ void run_the_game(int port, int sslport)
 
   SetSpellCircles(); /* spells circlewise done with pure math */
 
+  // check for redis crash recovery before boot_db (so ne_init_events skips zone resets)
+  if (!copyover_boot && redis_enabled && redis_world_state_enabled && redis_has_world_state())
+  {
+    crash_recovery_boot = 1;
+    logit(LOG_STATUS, "Crash recovery data found in redis, will restore world state after boot");
+  }
+
   boot_db(mini_mode);
 
   // game_up_message(port);
@@ -630,6 +637,24 @@ void game_loop(int port, int sslport)
     copyover_restore_combat();
     // recalculate avg mob level now that mobs are restored
     calc_zone_mob_level();
+  }
+
+  // redis crash recovery - restore world state from redis snapshot
+  if (crash_recovery_boot)
+  {
+    logit(LOG_STATUS, "Performing redis crash recovery...");
+    if (redis_load_world_state())
+    {
+      copyover_restore_combat();  // reuse combat restoration logic
+      calc_zone_mob_level();
+      logit(LOG_STATUS, "Crash recovery complete");
+    }
+    else
+    {
+      logit(LOG_STATUS, "Crash recovery failed, will use normal boot state");
+    }
+    redis_clear_world_state();
+    crash_recovery_boot = 0;
   }
 
   PROFILES(RESET);

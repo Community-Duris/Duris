@@ -758,15 +758,18 @@ void ne_init_events(void)
       add_event(event_reset_zone, i, 0, 0, 0, 0, &j, sizeof(j));
     }
 
-    // skip zone reset during copyover - mobs preserved from before
+    // skip zone reset during copyover/crash_recovery - mobs preserved from before
     // but still initialize lifespan so zone timers work
-    if (copyover_boot) {
+    if (copyover_boot || crash_recovery_boot) {
       // just set lifespan without spawning mobs
-      if (zone_table[j].lifespan_min != zone_table[j].lifespan_max)
-        zone_table[j].lifespan = number(zone_table[j].lifespan_min, zone_table[j].lifespan_max);
-      else
-        zone_table[j].lifespan = zone_table[j].lifespan_min;
-      zone_table[j].age = 0;
+      // for crash recovery, zone ages will be restored from redis later
+      if (!crash_recovery_boot) {
+        if (zone_table[j].lifespan_min != zone_table[j].lifespan_max)
+          zone_table[j].lifespan = number(zone_table[j].lifespan_min, zone_table[j].lifespan_max);
+        else
+          zone_table[j].lifespan = zone_table[j].lifespan_min;
+        zone_table[j].age = 0;
+      }
     } else {
       reset_zone(j, 2);
     }
@@ -827,6 +830,10 @@ void ne_init_events(void)
   // redis dirty player saves
   if (redis_enabled)
     add_event(event_flush_dirty_players, 5 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+
+  // redis world state saves for crash recovery
+  if (redis_enabled && redis_world_state_enabled && !crash_recovery_boot)
+    add_event(event_save_world_state, 30 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 
   logit(LOG_STATUS, "Done scheduling events.\n");
 }
