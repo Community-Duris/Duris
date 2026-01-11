@@ -724,7 +724,10 @@
 #define SPELL_LESSER_GUARDIAN_WARD    673
 #define SPELL_GUARDIAN_WARD           674
 #define SPELL_GREATER_GUARDIAN_WARD   675
-#define LAST_SPELL                    SPELL_GREATER_GUARDIAN_WARD
+#define SPELL_DIVINE_FONT             676
+#define SPELL_VITAL_INTERCESSION      677
+#define SPELL_HOLY_INTERCESSION       678
+#define LAST_SPELL                    SPELL_HOLY_INTERCESSION
 
 
 #define FIRST_SKILL                  1000  /* should be a decent split point */
@@ -1035,7 +1038,8 @@
 #define SKILL_DRAGON_BREATH          1304
 #define SKILL_DRAGON_STRIKE          1305
 #define SKILL_TAUNT                  1306
-#define LAST_SKILL                   SKILL_TAUNT
+#define SKILL_EPIC_WARDING_FAITH     1307
+#define LAST_SKILL                   SKILL_EPIC_WARDING_FAITH
 
 //#ifdef SKILLPOINTS
 //#define WHITE_SKILL                  -1
@@ -1236,6 +1240,7 @@
 #define ACH_DO_YOU_MINE              2123
 #define TAG_HELP_COOLDOWN            2124
 #define TAG_SUPPRESS_PERM_BITS       2125
+#define TAG_INFO_COOLDOWN            2126
 
 #define SAVING_PARA   0
 #define SAVING_ROD    1

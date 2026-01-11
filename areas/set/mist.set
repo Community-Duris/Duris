@@ -1,4 +1,0 @@
-set MainZoneName mist
-set ObjAffect true
-set StartRoom 6300
-set LastCommand list mob

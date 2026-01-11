@@ -4013,7 +4013,10 @@ void do_dragon_breath(P_char ch, char *argument, int cmd)
     return;
   }
 
-  argument = one_argument(argument, name);
+  if(strcmp(argument, "") != 0 && strcmp(argument, " ") != 0)
+  {
+    argument = one_argument(argument, name);
+  }
 
   if( *name )
   {
@@ -4130,7 +4133,7 @@ void do_dragon_breath(P_char ch, char *argument, int cmd)
     {
        if(GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST))
       {
-        if(argument)
+        if(strcmp(argument, "") != 0 && strcmp(argument, " ") != 0)
         {
           argument = one_argument(argument, spellName);
           

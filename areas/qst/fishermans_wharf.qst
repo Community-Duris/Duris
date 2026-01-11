@@ -1,118 +1,124 @@
 #88902
 MA
-supplies sticks egg pelt help favor~
-&+LThe lonely &+gtrap&+Lper&+w says, 'Sure I could use a favor.  I get tired
-&+wof the same tasks day after day.  If you would help me with a few chores
-&+wI could make it worth your while.'&n
+supplies sticks egg pelt hi~
+&+LThe lonely &+gtrap&+Lper&+w, says "Sure, I could use a favor.  I get tired
+&+wof the same tasks day after day.  If you would help me with a few
+&+wchores I could make it worth your while."&n
 ~
 MA
-chores tasks chore task~
-&+LThe lonely &+gtrap&+Lper&+w says, 'You sure?  Well ok, I normally start out
-&+wgrabbing an eagle egg for breakfast, then some sticks to make a fire, and
-&+wlastly I gather a few beaver pelts to make myself comfortable.'&n
+chores tasks chore task help favor~
+&+LThe lonely &+gtrap&+Lper&+w, says "You sure?  Well ok, I normally start out
+&+wgrabbing an eagle egg for breakfast, then a few sticks to make a fire,
+&+wand lastly I gather a couple beaver pelts to make myself comfortable."&n
 ~
 QA
-&+LThe lonely &+gtrap&+Lper&+w says, 'Thanks good fellow, I've never had someone
-&+wgo out of their way to help me before.  That means a lot to me, so here is
-&+wwhat I'll do.
+&+LThe lonely &+gtrap&+Lper&+w, says "Thanks good fellow, I've never had someone
+&+wgo out of their way to help me before.  That means a lot to me, so
+&+where is what I'll do.
 &+w
 &+wTake this totem.
 &+w
-&+wNow if you dare venture in the depths below the north lake, you will find
-&+wa hidden cavern where abundant treasure lies.  This totem will unlock
-&+wyour path, but beware there is a three-headed serpent guarding the stash.'&n
+&+wNow if you dare venture in the depths below the north lake, you will
+&+wfind a hidden cavern where abundant treasure lies.  This totem will
+&+wunlock your path, but beware there is a three-headed hydra guarding
+&+wthe stash.  This creature has strength even I fear.  I advice you
+&+wbring friends to assist in your battle."&n
 ~
-R I 88916
-G I 88915
-G I 88912
-G I 88912
-G I 88912
-G I 88912
+R I 88914
 G I 88913
-G I 88913
-G I 88913
+G I 88910
+G I 88910
+G I 88910
+G I 88910
+G I 88911
+G I 88911
+G I 88911
 S
 #88904
 MA
-lost landmark help find~
-&+LA lost &+gfisher&+Lman&+w, says 'Pardon me, but I am new to this area.
-&+wDo you know of anywhere safe that a man can just relax?'&n
+lost confusion help find hi~
+&+LThe lost &+gfisher&+Lman&+w, says "Pardon me, but I am new to this area.
+&+wDo you know of anywhere safe that a man can just relax?"&n
 ~
 MA
-fish fishing dock pier relax~
-&+LA lost &+gfisher&+Lman&+w, says 'Sure I like to sit and watch the lake, but not
-&+wwhen the wind is so chaotic.  I'd rather chill and fish all day.'&n
+fish fishing dock pier lake relax~
+&+LThe lost &+gfisher&+Lman&+w, says "Sure, I like to sit and watch the lake, but not
+&+wwhen the wind is so chaotic.  I'd rather chill and fish all day.  Too bad
+&+wyou don't have a visual map of where the best fishing spots are located."&n
 ~
 QA
-&+LThe lost &+gfisher&+Lman says, 'Wow! This guide has some useful information.
-&+LHere's a gift to show my thanks.'&n
+&+LThe lost &+gfisher&+Lman&+w, says "Wow! This guide has some useful information.
+&+wHere's a gift to show my thanks."&n
 ~
-R I 88905
-R E 4000
+R I 88904
+R E 7500
 G I 88900
 S
 #88905
 MA
-bait worms need reel line fishing help~
-&+LThe adult &+gfisher&+Lman&+w says, 'Teaching the boys how to fish, sure uses up
-&+wa lot of supplies.  I'm running out of bait and fishing line quickly.  When
-&+ware they going to stop getting snagged and land a decent fish.
+limits supplies fish fishing bait line reel worms hi~
+&+LThe adult &+gfisher&+Lman&+w, says "Teaching the boys how to fish sure
+&+wuses up a lot of supplies.  I'm running out of bait and fishing
+&+wline quickly.  When are they going to stop getting snagged and
+&+wland a decent fish.
 &+w
-&+wHey, any chance you have some extra supplies?  I would be in-debt my friend.&n
+&+wHey, any chance you have some extra supplies?
+&+wI would be in-debt to you my friend."&n
 ~
 QA
-&+LThe adult &+gfisher&+Lman&+w says, 'I'm surprised.  You actually came through.
-&+wI guess this is the least I owe you.'&n
+&+LThe adult &+gfisher&+Lman&+w, says "I'm surprised...  You actually came
+&+wthrough.  I guess this is the least I owe you."&n
 ~
-R I 88908
+R I 88906
+R E 7500
 G I 88902
-G I 88905
+G I 88904
 S
 #88906
 MA
-glass bottle bottles trash help~
-&+LThe old &+gfisher&+Lman &+wsays, 'It is a shame what has happened to this lake.
-&+wIn my time one could see straight to the bottom with no effort.  Now the
-&+wlake has been polluted by discarded trash, like the glass bottles I see
-&+wleft behind by the young men.  Don't you know someone could slice their
-&+wfoot wide open, if they stepped on a broken bottle.
+attention glass bottle hi~
+&+LThe old &+gfisher&+Lman&+w, mutters to himself "I can't believe the
+&+wdisrespect of leaving trash discarded in such a beautiful lake.
+&+wDon't you know someone could slice their foot wide open, if they
+&+wstepped on a broken bottle.
 &+w
-&+wSomething needs to be done.  Will you help clean up the lake?&n
+&+wSomething needs to be done!  Will you help clean up the lake?"&n
 ~
 MA
-clean help boat bait~
-&+LThe old &+gfisher&+Lman &+wsays, 'Sure I have some extra worms and even a boat.
-&+wHeck I might even loan them out, if you do me a favor.  Perhaps you could
-&+whelp clean up some of these broken glass bottles I see littering the lake.&n
+help clean trash~
+&+LThe old &+gfisher&+Lman&+w, says "Nice, if you really want to help, bring
+&+wme back a handfull of glass bottles that have been sunk into the
+&+wwaters around here.  I would be proud to reward you for such a
+&+wnoteable task."&n
 ~
 QA
-&+LThe old &+gfisher&+Lman &+wsays, 'Why, thanks young man.  Glad to see someone
-&+wcares about this land we share together.  Why don't you borrow my boat and
-&+wtake a trip around the lake.  Here I'll even give you some bait.&n
+&+LThe old &+gfisher&+Lman&+w, says "Why, thanks young man.  Glad to see
+&+wsomeone cares about this land we all share.  Here is some bait,
+&+wmaybe I'll see you around again, so we can both enjoy fishing
+&+wtogether."&n
 ~
-R I 88901
 R I 88902
-G I 88914
-G I 88914
-G I 88914
-G I 88914
-G I 88914
+R E 7500
+G I 88912
+G I 88912
+G I 88912
+G I 88912
 S
 #88907
 MA
-jelly goo frog eggs spawn~
-&+LThe eager &+gfisher&+Lman&+w, says 'Yes! I can't get enough of of that goo.
-&+wI like the way it jiggles in my hands.  If I could only find a few more
-&+wfrog egg spawns, I would be so happy.'&n
+dip frog pocket hi jelly spawn~
+&+LThe eager &+gfisher&+Lman&+w, says "Oh boy! I can't get enough of that
+&+wgoo.  I like the way it jiggles in my hands.  If I could only
+&+wfind a bunch more frog egg spawns, I would be so happy!"&n
 ~
 QA
-&+LThe eager &+gfisher&+Lman&+w says, 'This is RAD! Muhahaha, guess I won't be
-&+wneeding this diving mask anymore.  Here you go!'&n
+&+LAn eager &+gfisher&+Lman&+w, says "This is RAD! Muhahaha, guess I won't
+&+wbe needing this snorkel pipe anymore.  Here you go!"&n
 ~
-R I 88907
-G I 88911
-G I 88911
-G I 88911
-G I 88911
-G I 88911
+R I 88905
+R E 7500
+G I 88909
+G I 88909
+G I 88909
+G I 88909
 S

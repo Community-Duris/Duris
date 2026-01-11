@@ -90,7 +90,7 @@ void construct_home(P_char ch)
         new_home->zone->hometown = 0;
         new_home->zone->avg_mob_level = 0;
 
-        memset(new_home->plots, 0, sizeof(home_plot_data) * MAX_PLOTS * MAX_PLOTS);
+        memset(new_home->plots, 0, sizeof(new_home->plots));
 
         // link home to character
 

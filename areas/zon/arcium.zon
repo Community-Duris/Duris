@@ -1,464 +1,282 @@
 #857
-&+WA&+wrc&+Lium, the Plagued Kingdom&n~
-86068 2 8 25 35 1
+&+WA&+wrc&+Lium, the Plagued K&+Wi&+wng&+Ldom&n~
+85818 2 8 25 35 2
 *
-* Zone edited with durisEdit v2.99de
+* Zone edited with durisEdit v3.02
 *
 *
-D 0 85728 3 2 100 0 0 0
-*     west exit from "A Treasure Room" to
-*     "A Musty Dungeon" - closed/locked
+D 0 85710 8 1 100 0 0 0
+*     northeast exit from "A Private Royal Quarters Lookout" to
+*     "The Towers Royal Quarters" - closed
 *
-D 0 86005 1 2 100 0 0 0
-*     east exit from "A Musty Dungeon" to
-*     "A Treasure Room" - closed/locked
+D 0 85801 7 1 100 0 0 0
+*     southwest exit from "The Towers Royal Quarters" to
+*     "A Private Royal Quarters Lookout" - closed
 *
-D 0 85779 0 2 100 0 0 0
-*     north exit from "In the Murky Swamp" to
-*     "Inside the Swamp Monsters Lair" - closed/locked
+D 0 85729 0 2 100 0 0 0
+*     north exit from "Within a Murky Swamp" to
+*     "Within a Swamp Monsters Lair" - closed/locked
 *
-D 0 85793 2 2 100 0 0 0
-*     south exit from "Inside the Swamp Monsters Lair" to
-*     "In the Murky Swamp" - closed/locked
+D 0 85733 2 1 100 0 0 0
+*     south exit from "Within a Swamp Monsters Lair" to
+*     "Within a Murky Swamp" - closed
 *
-D 0 85794 2 1 100 0 0 0
-*     south exit from "The General Store" to
-*     "A Tower of Undead Minions" - closed
+D 0 85744 9 1 100 0 0 0
+*     southeast exit from "A Gloomy Graveyard" to
+*     "The Burial Ground" - closed
 *
-D 0 85951 0 1 100 0 0 0
-*     north exit from "A Tower of Undead Minions" to
-*     "The General Store" - closed
+D 0 85746 6 1 100 0 0 0
+*     northwest exit from "The Burial Ground" to
+*     "A Gloomy Graveyard" - closed
 *
-D 0 85794 5 5 100 0 0 0
-*     down exit from "The General Store" to
-*     "An Underwater Cavern" - closed/secret
+D 0 85752 5 1 100 0 0 0
+*     down exit from "A Dirt Path's Sudden End" to
+*     "An Underwater Cavern" - closed
 *
-D 0 86067 4 1 100 0 0 0
+D 0 85818 4 1 100 0 0 0
 *     up exit from "An Underwater Cavern" to
-*     "The General Store" - closed
+*     "A Dirt Path's Sudden End" - closed
 *
-D 0 85800 1 1 100 0 0 0
-*     east exit from "A Riverside Road" to
-*     "An Open Pasture" - closed
+D 0 85757 5 1 100 0 0 0
+*     down exit from "The Tree Trunker Lodge" to
+*     "A Small Pit" - closed
 *
-D 0 85816 3 1 100 0 0 0
-*     west exit from "An Open Pasture" to
-*     "A Riverside Road" - closed
+D 0 85810 4 1 100 0 0 0
+*     up exit from "A Small Pit" to
+*     "The Tree Trunker Lodge" - closed
 *
-D 0 85813 2 2 100 0 0 0
-*     south exit from "A Gloomy Graveyard" to
-*     "The Burial Ground" - closed/locked
+D 0 85764 4 1 100 0 0 0
+*     up exit from "The Dragons Haven" to
+*     "A Musty Dungeon" - closed
 *
-D 0 85815 0 2 100 0 0 0
-*     north exit from "The Burial Ground" to
-*     "A Gloomy Graveyard" - closed/locked
+D 0 85803 5 5 100 0 0 0
+*     down exit from "A Musty Dungeon" to
+*     "The Dragons Haven" - closed/secret
 *
-D 0 85823 2 1 100 0 0 0
-*     south exit from "A Dirt Path" to
-*     "The Tunnel of Dread" - closed
+D 0 85783 4 1 100 0 0 0
+*     up exit from "The Tower of Undead Minions" to
+*     "The Towers Royal Quarters" - closed
 *
-D 0 85947 0 1 100 0 0 0
-*     north exit from "The Tunnel of Dread" to
-*     "A Dirt Path" - closed
+D 0 85799 5 1 100 0 0 0
+*     down exit from "The Towers Royal Quarters" to
+*     "The Tower of Undead Minions" - closed
 *
-D 0 85867 5 5 100 0 0 0
-*     down exit from "The Forbidden Forest" to
-*     "An Underwater Cavern" - closed/secret
+D 0 85799 6 2 100 0 0 0
+*     northwest exit from "The Towers Royal Quarters" to
+*     "A Room of Release" - closed/locked
 *
-D 0 86057 4 1 100 0 0 0
-*     up exit from "An Underwater Cavern" to
-*     "The Forbidden Forest" - closed
+D 0 85805 9 1 100 0 0 0
+*     southeast exit from "A Room of Release" to
+*     "The Towers Royal Quarters" - closed
 *
-D 0 85968 8 1 100 0 0 0
-*     northeast exit from "A Tower of Undead Minions" to
-*     "A Sealed Room" - closed
+D 0 85800 8 2 100 0 0 0
+*     northeast exit from "The Towers Royal Quarters" to
+*     "A Sealed Crypt" - closed/locked
 *
-D 0 86034 7 1 100 0 0 0
-*     southwest exit from "A Sealed Room" to
-*     "A Tower of Undead Minions" - closed
+D 0 85811 7 1 100 0 0 0
+*     southwest exit from "A Sealed Crypt" to
+*     "The Towers Royal Quarters" - closed
 *
-D 0 86001 1 2 100 0 0 0
-*     east exit from "A Lookout on Tower of Undead Minions" to
+D 0 85802 9 2 100 0 0 0
+*     southeast exit from "The Towers Royal Quarters" to
 *     "A Hidden Escape" - closed/locked
 *
-D 0 86020 3 2 100 0 0 0
-*     west exit from "A Hidden Escape" to
-*     "A Lookout on Tower of Undead Minions" - closed/locked
+D 0 85806 6 1 100 0 0 0
+*     northwest exit from "A Hidden Escape" to
+*     "The Towers Royal Quarters" - closed
 *
-D 0 86017 4 1 100 0 0 0
+D 0 85803 4 1 100 0 0 0
 *     up exit from "A Musty Dungeon" to
 *     "The Tab Tavern" - closed
 *
-D 0 86018 5 5 100 0 0 0
+D 0 85804 5 1 100 0 0 0
 *     down exit from "The Tab Tavern" to
-*     "A Musty Dungeon" - closed/secret
-*
-D 0 86035 5 5 100 0 0 0
-*     down exit from "A Raging River" to
-*     "An Underwater Cavern" - closed/secret
-*
-D 0 86051 4 1 100 0 0 0
-*     up exit from "An Underwater Cavern" to
-*     "A Raging River" - closed
+*     "A Musty Dungeon" - closed
 *
 *
-O 0 85700 1 85716 100 0 0 0        * a strange pool
-O 0 85725 1 85728 100 0 0 0        * a sinister cloak
-O 0 85735 4 85733 100 0 0 0        * a hallow stump
-O 0 85735 4 85743 100 0 0 0        * a hallow stump
-O 0 85735 4 85746 100 0 0 0        * a hallow stump
-O 0 85735 4 85755 100 0 0 0        * a hallow stump
-O 0 85701 1 85796 100 0 0 0        * a strange pool
-O 0 85736 4 85807 100 0 0 0        * a grim tombstone
-O 0 85736 4 85808 100 0 0 0        * a grim tombstone
-O 0 85736 4 85812 100 0 0 0        * a grim tombstone
-O 0 85736 4 85814 100 0 0 0        * a grim tombstone
-O 0 85717 5 85931 100 0 0 0        * a spotted dragons egg
-O 0 85717 5 85932 100 0 0 0        * a spotted dragons egg
-O 0 85717 5 85937 100 0 0 0        * a spotted dragons egg
-O 0 85717 5 85944 100 0 0 0        * a spotted dragons egg
-O 0 85717 5 85947 100 0 0 0        * a spotted dragons egg
-O 0 85705 1 86005 100 0 0 0        * a mystic chest
-P 1 85726 1 85705 100 0 0 0        *   a purple scroll
-O 0 85749 8 86051 100 0 0 0        * a small pearl
-O 0 85749 8 86053 100 0 0 0        * a small pearl
-O 0 85749 8 86055 100 0 0 0        * a small pearl
-O 0 85749 8 86057 100 0 0 0        * a small pearl
-O 0 85749 8 86059 100 0 0 0        * a small pearl
-O 0 85749 8 86061 100 0 0 0        * a small pearl
-O 0 85749 8 86064 100 0 0 0        * a small pearl
-O 0 85749 8 86066 100 0 0 0        * a small pearl
+O 0 85700 1 85710 100 0 0 0        * a wooden zipline cart
+O 0 85707 2 85720 100 0 0 0        * a hallow stump
+P 1 85713 5 85707 100 0 0 0        *   a magical mushroom
+P 1 85713 5 85707 100 0 0 0        *   a magical mushroom
+O 0 85707 2 85721 100 0 0 0        * a hallow stump
+P 1 85713 5 85707 100 0 0 0        *   a magical mushroom
+P 1 85713 5 85707 100 0 0 0        *   a magical mushroom
+O 0 85708 5 85742 100 0 0 0        * a grim tombstone
+O 0 85708 5 85743 100 0 0 0        * a grim tombstone
+O 0 85708 5 85744 100 0 0 0        * a grim tombstone
+O 0 85708 5 85745 100 0 0 0        * a grim tombstone
+O 0 85708 5 85746 100 0 0 0        * a grim tombstone
+O 0 85725 1 85805 100 0 0 0        * a fluffy bed
 *
-M 0 85720 6 85702 100 0 0 0        * a tiny lizard
-M 0 85720 6 85705 100 0 0 0        * a tiny lizard
-M 0 85719 4 85706 100 0 0 0        * a black crow
-M 0 85719 4 85707 100 0 0 0        * a black crow
-M 0 85720 6 85708 100 0 0 0        * a tiny lizard
-M 0 85720 6 85709 100 0 0 0        * a tiny lizard
-M 0 85720 6 85711 100 0 0 0        * a tiny lizard
-M 0 85719 4 85720 100 0 0 0        * a black crow
-M 0 85720 6 85721 100 0 0 0        * a tiny lizard
-M 0 85719 4 85725 100 0 0 0        * a black crow
-M 0 85725 1 85726 100 0 0 0        * Fragnox, the king of mind power
-E 1 85708 1 16 100 0 0 0           *   a pale dagger named 'Amnesia'
-G 1 85756 1 0 100 0 0 0            *    a bleeding heart of Fragnox
-M 0 85740 8 85727 100 0 0 0        * a haunting tree
-M 0 85740 8 85730 100 0 0 0        * a haunting tree
-M 0 85740 8 85732 100 0 0 0        * a haunting tree
-M 0 85740 8 85734 100 0 0 0        * a haunting tree
-M 0 85742 7 85736 100 0 0 0        * a boa constrictor
-M 0 85742 7 85738 100 0 0 0        * a boa constrictor
-M 0 85742 7 85740 100 0 0 0        * a boa constrictor
-M 0 85742 7 85742 100 0 0 0        * a boa constrictor
-M 0 85747 4 85743 100 0 0 0        * a venus flytrap
-M 0 85742 7 85746 100 0 0 0        * a boa constrictor
-M 0 85747 4 85749 100 0 0 0        * a venus flytrap
-M 0 85740 8 85750 100 0 0 0        * a haunting tree
-M 0 85740 8 85752 100 0 0 0        * a haunting tree
-M 0 85733 3 85753 100 0 0 0        * a poisonous tree frog
-M 0 85740 8 85754 100 0 0 0        * a haunting tree
-M 0 85740 8 85756 100 0 0 0        * a haunting tree
-M 0 85747 4 85757 100 0 0 0        * a venus flytrap
-M 0 85742 7 85757 100 0 0 0        * a boa constrictor
-M 0 85742 7 85759 100 0 0 0        * a boa constrictor
-M 0 85747 4 85760 100 0 0 0        * a venus flytrap
-M 0 85733 3 85761 100 0 0 0        * a poisonous tree frog
-M 0 85733 3 85764 100 0 0 0        * a poisonous tree frog
-M 0 85741 6 85766 100 0 0 0        * a large alligator
-M 0 85741 6 85767 100 0 0 0        * a large alligator
-M 0 85741 6 85769 100 0 0 0        * a large alligator
-M 0 85741 6 85772 100 0 0 0        * a large alligator
-M 0 85741 6 85774 100 0 0 0        * a large alligator
-M 0 85741 6 85775 100 0 0 0        * a large alligator
-M 0 85744 7 85777 100 0 0 0        * a swamp creature
-M 0 85744 7 85779 100 0 0 0        * a swamp creature
-M 0 85744 7 85783 100 0 0 0        * a swamp creature
-E 1 85729 1 18 100 0 0 0           *   a green key
-M 0 85744 7 85785 100 0 0 0        * a swamp creature
-M 0 85744 7 85787 100 0 0 0        * a swamp creature
-M 0 85744 7 85790 100 0 0 0        * a swamp creature
-M 0 85744 7 85791 100 0 0 0        * a swamp creature
-M 0 85745 1 85793 100 0 0 0        * a swamp monster
-E 1 85728 1 8 100 0 0 0            *   a pair of skunk weed boots
-M 0 85746 1 85793 100 0 0 0        * a swamp enchantress
-E 1 85711 1 2 100 0 0 0            *   a ring of shadows
-M 0 85704 1 85794 100 0 0 0        * a hunched over man
-G 1 85742 1 0 100 0 0 0            *    an unholy water barrel
-G 1 85741 1 0 100 0 0 0            *    a small mushroom
-G 1 85744 2 0 100 0 0 0            *    a soldiers ring
-G 1 85746 2 0 100 0 0 0            *    a soldiers quiver
-G 1 85747 1 0 100 0 0 0            *    a soldiers tail clip
-G 1 85745 2 0 100 0 0 0            *    a soldiers wrist guard
-G 1 85743 999 0 100 0 0 0          *    a steel soldiers mask
-G 1 85748 2 0 100 0 0 0            *    a soldiers belt
-G 1 412 999 0 100 0 0 0            *    (object type not in this .obj file)
-M 0 85706 7 85796 100 0 0 0        * a rabid raccoon
-M 0 85706 7 85797 100 0 0 0        * a rabid raccoon
-M 0 85706 7 85798 100 0 0 0        * a rabid raccoon
-M 0 85706 7 85799 100 0 0 0        * a rabid raccoon
-M 0 85706 7 85800 100 0 0 0        * a rabid raccoon
-M 0 85736 4 85802 100 0 0 0        * a hellhound
-M 0 85736 4 85804 100 0 0 0        * a hellhound
-M 0 85705 4 85805 100 0 0 0        * a werewolf
-M 0 85738 5 85806 100 0 0 0        * a cruel wight
-M 0 85735 5 85807 100 0 0 0        * a deranged ghoul
-M 0 85705 4 85807 100 0 0 0        * a werewolf
-M 0 85735 5 85808 100 0 0 0        * a deranged ghoul
-M 0 85705 4 85808 100 0 0 0        * a werewolf
-M 0 85738 5 85809 100 0 0 0        * a cruel wight
-M 0 85735 5 85810 100 0 0 0        * a deranged ghoul
-M 0 85705 4 85810 100 0 0 0        * a werewolf
-M 0 85739 1 85810 100 0 0 0        * a deadly wraith
-G 1 85730 1 0 100 0 0 0            *    a clear wand
-M 0 85738 5 85811 100 0 0 0        * a cruel wight
-M 0 85735 5 85812 100 0 0 0        * a deranged ghoul
-M 0 85738 5 85813 100 0 0 0        * a cruel wight
-M 0 85738 5 85813 100 0 0 0        * a cruel wight
-M 0 85735 5 85814 100 0 0 0        * a deranged ghoul
-M 0 85723 1 85815 100 0 0 0        * Granrn, the priest of all holiness
-E 1 85716 1 3 100 0 0 0            *   a silver stone amulet
-G 1 85754 1 0 100 0 0 0            *    a bleeding heart of Granrn
-M 0 85701 1 85816 45 0 0 0         * Joji, the odd hermit
-E 1 85714 1 20 100 0 0 0           *   a mask of festive feathers
-M 0 85708 5 85816 100 0 0 0        * an undead horse
-M 0 85708 5 85816 100 0 0 0        * an undead horse
-M 0 85708 5 85816 100 0 0 0        * an undead horse
-M 0 85708 5 85816 100 0 0 0        * an undead horse
-M 0 85708 5 85816 100 0 0 0        * an undead horse
-M 0 85730 6 85817 100 0 0 0        * a dim spectral ghost
-M 0 85730 6 85818 100 0 0 0        * a dim spectral ghost
-M 0 85729 4 85819 100 0 0 0        * an undead beggar
-M 0 85736 4 85821 100 0 0 0        * a hellhound
-M 0 85736 4 85824 100 0 0 0        * a hellhound
-M 0 85712 8 85826 100 0 0 0        * a wolfspider
-M 0 85737 8 85828 100 0 0 0        * an angry treant
-M 0 85712 8 85830 100 0 0 0        * a wolfspider
-M 0 85737 8 85832 100 0 0 0        * an angry treant
-M 0 85748 6 85834 100 0 0 0        * a wild boar
-M 0 85749 6 85836 100 0 0 0        * a deadly viper
-M 0 85748 6 85838 100 0 0 0        * a wild boar
-M 0 85737 8 85840 100 0 0 0        * an angry treant
-M 0 85712 8 85842 100 0 0 0        * a wolfspider
-M 0 85737 8 85844 100 0 0 0        * an angry treant
-M 0 85712 8 85846 100 0 0 0        * a wolfspider
-M 0 85749 6 85848 100 0 0 0        * a deadly viper
-M 0 85748 6 85850 100 0 0 0        * a wild boar
-M 0 85749 6 85852 100 0 0 0        * a deadly viper
-M 0 85712 8 85854 100 0 0 0        * a wolfspider
-M 0 85737 8 85856 100 0 0 0        * an angry treant
-M 0 85712 8 85858 100 0 0 0        * a wolfspider
-M 0 85737 8 85860 100 0 0 0        * an angry treant
-M 0 85748 6 85862 100 0 0 0        * a wild boar
-M 0 85749 6 85864 100 0 0 0        * a deadly viper
-M 0 85748 6 85866 100 0 0 0        * a wild boar
-M 0 85726 1 85867 100 0 0 0        * Kelien, the aid of nature
-E 1 85707 1 2 100 0 0 0            *   a ring pure nature
-G 1 85757 1 0 100 0 0 0            *    a bleeding heart of Kelien
-M 0 85737 8 85868 100 0 0 0        * an angry treant
-M 0 85712 8 85870 100 0 0 0        * a wolfspider
-M 0 85737 8 85872 100 0 0 0        * an angry treant
-M 0 85712 8 85874 100 0 0 0        * a wolfspider
-M 0 85749 6 85876 100 0 0 0        * a deadly viper
-M 0 85748 6 85878 100 0 0 0        * a wild boar
-M 0 85749 6 85880 100 0 0 0        * a deadly viper
-M 0 85716 5 85882 100 0 0 0        * a giant bat
-E 1 85727 1 10 100 0 0 0           *   some batskin sleeves
-M 0 85707 6 85884 100 0 0 0        * a blood hawk
-M 0 85716 5 85885 100 0 0 0        * a giant bat
-M 0 85707 6 85888 100 0 0 0        * a blood hawk
-M 0 85716 5 85889 100 0 0 0        * a giant bat
-M 0 85707 6 85891 100 0 0 0        * a blood hawk
-M 0 85707 6 85892 100 0 0 0        * a blood hawk
-M 0 85707 6 85894 100 0 0 0        * a blood hawk
-M 0 85716 5 85896 100 0 0 0        * a giant bat
-M 0 85716 5 85900 100 0 0 0        * a giant bat
-M 0 85707 6 85902 100 0 0 0        * a blood hawk
-M 0 85709 6 85928 100 0 0 0        * an infant dragon
-M 0 85717 5 85929 100 0 0 0        * a giant bat
-M 0 85709 6 85931 100 0 0 0        * an infant dragon
-M 0 85709 6 85933 100 0 0 0        * an infant dragon
-M 0 85717 5 85935 100 0 0 0        * a giant bat
-M 0 85717 5 85937 100 0 0 0        * a giant bat
-M 0 85709 6 85938 100 0 0 0        * an infant dragon
-M 0 85709 6 85941 100 0 0 0        * an infant dragon
-M 0 85710 1 85943 100 0 0 0        * a magnificent mother wyrm
-E 1 85715 1 19 100 0 0 0           *   a flaming visor
-M 0 85755 2 85943 100 0 0 0        * an hatchling dragon
-G 1 85718 1 0 100 0 0 0            *    an infant dragonscale tail
-M 0 85755 2 85943 100 0 0 0        * an hatchling dragon
-M 0 85717 5 85944 100 0 0 0        * a giant bat
-M 0 85717 5 85945 100 0 0 0        * a giant bat
-M 0 85709 6 85946 100 0 0 0        * an infant dragon
-M 0 85727 1 85948 100 0 0 0        * Slican, the master of murder
-E 1 85706 1 12 100 0 0 0           *   a rogues cloak named 'Murder'
-E 1 85738 999 16 100 0 0 0         *   a thin silver dagger
-G 1 85758 1 0 100 0 0 0            *    a bleeding heart of Slican
-M 0 85702 12 85949 100 0 0 0       * a diseased rat
-M 0 85722 4 85950 100 0 0 0        * an undead royal maid
-M 0 85729 4 85952 100 0 0 0        * an undead beggar
-G 1 85739 999 0 100 0 0 0          *    a bottle of dark ale
-M 0 85722 4 85952 100 0 0 0        * an undead royal maid
-M 0 85711 4 85953 100 0 0 0        * an irate slave
-M 0 85711 4 85955 100 0 0 0        * an irate slave
-M 0 85722 4 85958 100 0 0 0        * an undead royal maid
-M 0 85729 4 85959 100 0 0 0        * an undead beggar
-G 1 85739 999 0 100 0 0 0          *    a bottle of dark ale
-M 0 85722 4 85960 100 0 0 0        * an undead royal maid
-M 0 85711 4 85961 100 0 0 0        * an irate slave
-M 0 85711 4 85963 100 0 0 0        * an irate slave
-M 0 85729 4 85964 100 0 0 0        * an undead beggar
-G 1 85739 999 0 100 0 0 0          *    a bottle of dark ale
-M 0 85702 12 85964 100 0 0 0       * a diseased rat
-M 0 85721 8 85965 100 0 0 0        * an undead mercenary
-E 1 85734 2 12 100 0 0 0           *   a cloak of rotting flesh
-M 0 85718 8 85966 100 0 0 0        * an undead royal soldier
-M 0 85702 12 85966 100 0 0 0       * a diseased rat
-M 0 85721 8 85967 100 0 0 0        * an undead mercenary
-M 0 85718 8 85968 100 0 0 0        * an undead royal soldier
-E 1 85710 1 3 100 0 0 0            *   a royal pendant
-M 0 85718 8 85969 100 0 0 0        * an undead royal soldier
-M 0 85721 8 85970 100 0 0 0        * an undead mercenary
-M 0 85718 8 85971 100 0 0 0        * an undead royal soldier
-M 0 85721 8 85972 100 0 0 0        * an undead mercenary
-M 0 85721 8 85973 100 0 0 0        * an undead mercenary
-M 0 85718 8 85974 100 0 0 0        * an undead royal soldier
-M 0 85721 8 85975 100 0 0 0        * an undead mercenary
-M 0 85718 8 85976 100 0 0 0        * an undead royal soldier
-M 0 85718 8 85977 100 0 0 0        * an undead royal soldier
-M 0 85721 8 85978 100 0 0 0        * an undead mercenary
-E 1 85733 2 21 100 0 0 0           *   an earring of rotting flesh
-M 0 85718 8 85979 100 0 0 0        * an undead royal soldier
-M 0 85702 12 85979 100 0 0 0       * a diseased rat
-M 0 85721 8 85980 100 0 0 0        * an undead mercenary
-E 1 85732 2 10 100 0 0 0           *   sleeves of rotting flesh
-M 0 85754 4 85981 100 0 0 0        * an undead royal soldier
-E 1 85724 5 24 100 0 0 0           *   a royal badge of Arcium
-G 1 85723 1 0 100 0 0 0            *    a small skeleton key
-M 0 85754 4 85982 100 0 0 0        * an undead royal soldier
-E 1 85724 5 24 100 0 0 0           *   a royal badge of Arcium
-M 0 85754 4 85983 100 0 0 0        * an undead royal soldier
-E 1 85724 5 24 100 0 0 0           *   a royal badge of Arcium
-M 0 85754 4 85984 100 0 0 0        * an undead royal soldier
-E 1 85724 5 24 100 0 0 0           *   a royal badge of Arcium
-M 0 85702 12 85984 100 0 0 0       * a diseased rat
-M 0 85734 8 85985 100 0 0 0        * a stone gargoyle
-M 0 85734 8 85985 100 0 0 0        * a stone gargoyle
-M 0 85734 8 85985 100 0 0 0        * a stone gargoyle
-M 0 85734 8 85985 100 0 0 0        * a stone gargoyle
-M 0 85714 8 85986 100 0 0 0        * an undead archer
-M 0 85714 8 85987 100 0 0 0        * an undead archer
-M 0 85702 12 85987 100 0 0 0       * a diseased rat
-M 0 85753 8 85988 100 0 0 0        * a stone gargoyle
-M 0 85753 8 85988 100 0 0 0        * a stone gargoyle
-M 0 85753 8 85988 100 0 0 0        * a stone gargoyle
-M 0 85753 8 85988 100 0 0 0        * a stone gargoyle
-M 0 85714 8 85989 100 0 0 0        * an undead archer
-M 0 85714 8 85990 100 0 0 0        * an undead archer
-M 0 85734 8 85991 100 0 0 0        * a stone gargoyle
-M 0 85734 8 85991 100 0 0 0        * a stone gargoyle
-M 0 85734 8 85991 100 0 0 0        * a stone gargoyle
-M 0 85734 8 85991 100 0 0 0        * a stone gargoyle
-M 0 85714 8 85992 100 0 0 0        * an undead archer
-M 0 85702 12 85992 100 0 0 0       * a diseased rat
-M 0 85714 8 85993 100 0 0 0        * an undead archer
-M 0 85753 8 85994 100 0 0 0        * a stone gargoyle
-M 0 85753 8 85994 100 0 0 0        * a stone gargoyle
-M 0 85753 8 85994 100 0 0 0        * a stone gargoyle
-M 0 85753 8 85994 100 0 0 0        * a stone gargoyle
-M 0 85714 8 85995 100 0 0 0        * an undead archer
-M 0 85714 8 85996 100 0 0 0        * an undead archer
-M 0 85715 5 85997 100 0 0 0        * an undead archer
-E 1 85731 5 16 100 0 0 0           *   Arcium's royal longbow
-M 0 85715 5 85998 100 0 0 0        * an undead archer
-E 1 85731 5 16 100 0 0 0           *   Arcium's royal longbow
-M 0 85715 5 85999 100 0 0 0        * an undead archer
-E 1 85731 5 16 100 0 0 0           *   Arcium's royal longbow
-M 0 85702 12 85999 100 0 0 0       * a diseased rat
-M 0 85715 5 86000 100 0 0 0        * an undead archer
-E 1 85731 5 16 100 0 0 0           *   Arcium's royal longbow
-M 0 85715 5 86001 100 0 0 0        * an undead archer
-E 1 85731 5 16 100 0 0 0           *   Arcium's royal longbow
-M 0 85730 6 86002 100 0 0 0        * a dim spectral ghost
-M 0 85702 12 86005 100 0 0 0       * a diseased rat
-M 0 85713 1 86006 100 0 0 0        * a shackled slave
-E 1 85709 1 2 100 0 0 0            *   the relic circlet
-M 0 85730 6 86007 100 0 0 0        * a dim spectral ghost
-M 0 85702 12 86008 100 0 0 0       * a diseased rat
-M 0 85702 12 86011 100 0 0 0       * a diseased rat
-M 0 85730 6 86012 100 0 0 0        * a dim spectral ghost
-M 0 85702 12 86014 100 0 0 0       * a diseased rat
-M 0 85730 6 86017 100 0 0 0        * a dim spectral ghost
-M 0 85728 4 86018 100 0 0 0        * an undead drunk
-M 0 85728 4 86018 100 0 0 0        * an undead drunk
-M 0 85728 4 86018 100 0 0 0        * an undead drunk
-M 0 85728 4 86018 100 0 0 0        * an undead drunk
-G 1 85702 1 0 100 0 0 0            *    a huge ale barrel
-M 0 85751 1 86018 100 0 0 0        * Mredock, the bartender
-G 1 85739 999 0 100 0 0 0          *    a bottle of dark ale
-G 1 85740 999 0 100 0 0 0          *    a fifth of whiskey
-G 1 85738 999 0 100 0 0 0          *    a thin silver dagger
-G 1 85760 999 0 100 0 0 0          *    a thin silver longsword
-M 0 85724 1 86020 100 0 0 0        * Kurlon, the mercenary of endless battles
-E 1 85738 999 16 100 0 0 0         *   a thin silver dagger
-E 1 85752 1 39 100 0 0 0           *   a platinum loop
-E 1 85737 1 40 100 0 0 0           *   the horns of Kurlon
-G 1 85755 1 0 100 0 0 0            *    a bleeding heart of Kurlon
-M 0 85750 1 86021 100 0 0 0        * a lonely aquaelf
-E 1 85713 1 13 100 0 0 0           *   a belt of liquid links
-M 0 85706 7 86023 100 0 0 0        * a rabid raccoon
-M 0 85706 7 86026 100 0 0 0        * a rabid raccoon
-M 0 85732 6 86028 100 0 0 0        * a mischievous ettercap
-M 0 85732 6 86029 100 0 0 0        * a mischievous ettercap
-M 0 85732 6 86030 100 0 0 0        * a mischievous ettercap
-M 0 85732 6 86031 100 0 0 0        * a mischievous ettercap
-M 0 85732 6 86032 100 0 0 0        * a mischievous ettercap
-M 0 85732 6 86033 100 0 0 0        * a mischievous ettercap
-M 0 85752 1 86034 100 0 0 0        * the King of Arcium
-E 1 85744 2 2 100 0 0 0            *   a soldiers ring
-E 1 85722 1 3 100 0 0 0            *   a golden medal of honor
-E 1 85732 2 10 100 0 0 0           *   sleeves of rotting flesh
-E 1 85712 1 11 100 0 0 0           *   a shield of black bone
-E 1 85734 2 12 100 0 0 0           *   a cloak of rotting flesh
-E 1 85748 2 13 100 0 0 0           *   a soldiers belt
-E 1 85745 2 15 100 0 0 0           *   a soldiers wrist guard
-E 1 85721 1 16 100 0 0 0           *   a double bladed axe named 'Poison'
-E 1 85743 999 20 100 0 0 0         *   a steel soldiers mask
-E 1 85733 2 21 100 0 0 0           *   an earring of rotting flesh
-E 1 85746 2 23 100 0 0 0           *   a soldiers quiver
-E 1 85724 5 24 100 0 0 0           *   a royal badge of Arcium
-G 1 85753 1 0 100 0 0 0            *    a bleeding heart of the King
-M 0 85703 5 86036 100 0 0 0        * a bruised salmon
-G 1 85719 5 0 100 0 0 0            *    a freshly killed salmon
-M 0 85743 5 86037 100 0 0 0        * a hostile fish
-M 0 85703 5 86038 100 0 0 0        * a bruised salmon
-G 1 85719 5 0 100 0 0 0            *    a freshly killed salmon
-M 0 85743 5 86039 100 0 0 0        * a hostile fish
-M 0 85703 5 86040 100 0 0 0        * a bruised salmon
-G 1 85719 5 0 100 0 0 0            *    a freshly killed salmon
-M 0 85743 5 86041 100 0 0 0        * a hostile fish
-M 0 85703 5 86042 100 0 0 0        * a bruised salmon
-G 1 85719 5 0 100 0 0 0            *    a freshly killed salmon
-M 0 85743 5 86043 100 0 0 0        * a hostile fish
-M 0 85703 5 86044 100 0 0 0        * a bruised salmon
-G 1 85719 5 0 100 0 0 0            *    a freshly killed salmon
-M 0 85743 5 86045 100 0 0 0        * a hostile fish
-M 0 85756 8 86046 100 0 0 0        * a mean water rat
-M 0 85756 8 86046 100 0 0 0        * a mean water rat
-M 0 85756 8 86047 100 0 0 0        * a mean water rat
-M 0 85756 8 86047 100 0 0 0        * a mean water rat
-M 0 85756 8 86048 100 0 0 0        * a mean water rat
-M 0 85756 8 86048 100 0 0 0        * a mean water rat
-M 0 85756 8 86049 100 0 0 0        * a mean water rat
-M 0 85756 8 86049 100 0 0 0        * a mean water rat
-M 0 85731 10 86051 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86053 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86055 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86057 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86059 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86061 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86063 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86065 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86067 100 0 0 0       * an aggressive naiad
-M 0 85731 10 86068 100 0 0 0       * an aggressive naiad
+M 0 85743 3 85701 100 0 0 0        * a wild boar
+M 0 85701 3 85701 100 0 0 0        * a diseased rat
+M 0 85717 4 85703 100 0 0 0        * a black crow
+M 0 85718 3 85703 100 0 0 0        * a repulsive lizard
+M 0 85707 4 85705 100 0 0 0        * an undead horse
+M 0 85705 4 85705 100 0 0 0        * a rabid raccoon
+M 0 85743 3 85706 100 0 0 0        * a wild boar
+M 0 85701 3 85706 100 0 0 0        * a diseased rat
+M 0 85717 4 85707 100 0 0 0        * a black crow
+M 0 85718 3 85707 100 0 0 0        * a repulsive lizard
+M 0 85717 4 85709 100 0 0 0        * a black crow
+M 0 85718 3 85709 100 0 0 0        * a repulsive lizard
+M 0 85731 10 85710 100 0 0 0       * a stone gargoyle
+M 0 85731 10 85710 100 0 0 0       * a stone gargoyle
+M 0 85707 4 85712 100 0 0 0        * an undead horse
+M 0 85705 4 85712 100 0 0 0        * a rabid raccoon
+M 0 85743 3 85713 100 0 0 0        * a wild boar
+M 0 85701 3 85713 100 0 0 0        * a diseased rat
+M 0 85707 4 85715 100 0 0 0        * an undead horse
+M 0 85705 4 85715 100 0 0 0        * a rabid raccoon
+M 0 85723 1 85716 100 0 0 0        * Fragnox, the lord of mind power
+G 1 85718 1 0 100 0 0 0            *    a bleeding heart of Fragnox
+G 1 85714 1 0 100 0 0 0            *    a barding saddle of rattling bones
+F 1 85734 2 85716 100 0 0 0        * a deadly wraith (following)
+M 0 85744 2 85717 100 0 0 0        * a deadly viper
+M 0 85742 2 85718 100 0 0 0        * a venus flytrap
+M 0 85742 2 85719 100 0 0 0        * a venus flytrap
+M 0 85744 2 85720 100 0 0 0        * a deadly viper
+M 0 85711 2 85721 100 0 0 0        * a wolfspider
+M 0 85737 2 85722 100 0 0 0        * a boa constrictor
+M 0 85737 2 85723 100 0 0 0        * a boa constrictor
+M 0 85711 2 85724 100 0 0 0        * a wolfspider
+M 0 85750 2 85725 100 0 0 0        * a gaseous tree frog
+M 0 85750 2 85728 100 0 0 0        * a gaseous tree frog
+M 0 85739 2 85729 100 0 0 0        * a swamp creature
+G 1 85705 1 0 100 0 0 0            *    a skunk weed key
+M 0 85736 2 85730 100 0 0 0        * a large alligator
+M 0 85736 2 85731 100 0 0 0        * a large alligator
+M 0 85741 1 85733 100 0 0 0        * a swamp enchantress
+E 1 85724 1 18 100 0 0 0           *   a dreamcasters scepter of stars
+F 1 85739 2 85733 100 0 0 0        * a swamp creature (following)
+M 0 85740 1 85733 100 0 0 0        * a swamp monster
+M 0 85703 1 85734 100 0 0 0        * a hunchback man
+G 1 85729 1 0 100 0 0 0            *    a soldiers black-bone shield
+G 1 85722 2 0 100 0 0 0            *    a thin silver longsword
+G 1 85730 1 0 100 0 0 0            *    a slim silver handled whip
+M 0 85713 3 85735 100 0 0 0        * a black-boned skeleton
+M 0 85705 4 85736 100 0 0 0        * a rabid raccoon
+M 0 85734 2 85737 100 0 0 0        * a deadly wraith
+M 0 85732 3 85739 100 0 0 0        * an undead thug
+M 0 85713 3 85740 100 0 0 0        * a black-boned skeleton
+M 0 85706 4 85742 100 0 0 0        * a dim spectral ghost
+M 0 85706 4 85743 100 0 0 0        * a dim spectral ghost
+M 0 85717 4 85743 100 0 0 0        * a black crow
+M 0 85706 4 85744 100 0 0 0        * a dim spectral ghost
+M 0 85706 4 85745 100 0 0 0        * a dim spectral ghost
+M 0 85721 1 85746 100 0 0 0        * Granra, the priestess of all holiness
+E 1 85726 1 21 100 0 0 0           *   an earring of bone
+G 1 85716 1 0 100 0 0 0            *    a bleeding heart of Granra
+F 1 85730 1 85746 100 0 0 0        * a undead gravedigger (following)
+M 0 85707 4 85747 100 0 0 0        * an undead horse
+M 0 85732 3 85749 100 0 0 0        * an undead thug
+M 0 85713 3 85750 100 0 0 0        * a black-boned skeleton
+M 0 85725 1 85752 100 0 0 0        * Slican, the murderous cutpurse
+E 1 85701 1 7 100 0 0 0            *   some shin-guards of subterfuge
+E 1 85710 3 16 100 0 0 0           *   a thin silver dagger
+E 1 85710 3 17 100 0 0 0           *   a thin silver dagger
+G 1 85720 1 0 100 0 0 0            *    a bleeding heart of Slican
+F 1 85732 3 85752 100 0 0 0        * an undead thug (following)
+M 0 85704 2 85753 100 0 0 0        * a sinister werewolf
+M 0 85735 2 85754 100 0 0 0        * a haunting tree
+M 0 85702 2 85755 100 0 0 0        * a lentl stalker
+M 0 85745 2 85756 100 0 0 0        * an angry treant
+M 0 85722 1 85757 100 0 0 0        * Kelien, the aid of nature
+E 1 85702 1 37 100 0 0 0           *   the ring of pure nature
+G 1 85719 1 0 100 0 0 0            *    a bleeding heart of Kelien
+F 1 85729 3 85757 100 0 0 0        * a mischievous ettercap (following)
+M 0 85745 2 85758 100 0 0 0        * an angry treant
+M 0 85702 2 85759 100 0 0 0        * a lentl stalker
+M 0 85735 2 85760 100 0 0 0        * a haunting tree
+M 0 85704 2 85761 100 0 0 0        * a sinister werewolf
+M 0 85714 2 85762 100 0 0 0        * a giant bat
+M 0 85708 4 85763 100 0 0 0        * an infant dragon
+M 0 85714 2 85764 100 0 0 0        * a giant bat
+M 0 85708 4 85765 100 0 0 0        * an infant dragon
+M 0 85708 4 85767 100 0 0 0        * an infant dragon
+M 0 85748 3 85769 100 0 0 0        * a hatchling dragon
+M 0 85746 1 85770 100 0 0 0        * Lorik, the legendary dragon hunter
+E 1 85706 1 16 100 0 0 0           *   a slim silver longbow
+E 1 85732 1 23 100 0 0 0           *   the quiver of dragon hunters
+M 0 85748 3 85770 100 0 0 0        * a hatchling dragon
+M 0 85709 1 85771 100 0 0 0        * a magnificent mother wyrm
+E 1 85723 1 16 100 0 0 0           *   a silver handled whip, named 'Snapdragon'
+G 1 85731 1 0 100 0 0 0            *    a severed dragon tail
+F 1 85748 3 85771 100 0 0 0        * a hatchling dragon (following)
+M 0 85708 4 85772 100 0 0 0        * an infant dragon
+M 0 85727 2 85775 100 0 0 0        * an undead beggar
+M 0 85710 2 85776 100 0 0 0        * an irate slave
+M 0 85710 2 85777 100 0 0 0        * an irate slave
+M 0 85727 2 85778 100 0 0 0        * an undead beggar
+M 0 85733 2 85779 100 0 0 0        * an undead noble
+M 0 85720 2 85780 100 0 0 0        * an undead maid
+M 0 85720 2 85781 100 0 0 0        * an undead maid
+M 0 85733 2 85782 100 0 0 0        * an undead noble
+M 0 85716 3 85783 100 0 0 0        * an undead soldier
+M 0 85719 3 85784 100 0 0 0        * an undead mercenary
+M 0 85719 3 85785 100 0 0 0        * an undead mercenary
+M 0 85716 3 85786 100 0 0 0        * an undead soldier
+M 0 85731 10 85787 100 0 0 0       * a stone gargoyle
+M 0 85731 10 85787 100 0 0 0       * a stone gargoyle
+M 0 85712 8 85788 100 0 0 0        * an undead archer
+M 0 85712 8 85789 100 0 0 0        * an undead archer
+M 0 85731 10 85790 100 0 0 0       * a stone gargoyle
+M 0 85731 10 85790 100 0 0 0       * a stone gargoyle
+M 0 85712 8 85791 100 0 0 0        * an undead archer
+M 0 85712 8 85792 100 0 0 0        * an undead archer
+M 0 85731 10 85793 100 0 0 0       * a stone gargoyle
+M 0 85731 10 85793 100 0 0 0       * a stone gargoyle
+M 0 85712 8 85794 100 0 0 0        * an undead archer
+M 0 85712 8 85795 100 0 0 0        * an undead archer
+M 0 85731 10 85796 100 0 0 0       * a stone gargoyle
+M 0 85731 10 85796 100 0 0 0       * a stone gargoyle
+M 0 85712 8 85797 100 0 0 0        * an undead archer
+M 0 85712 8 85798 100 0 0 0        * an undead archer
+M 0 85728 4 85799 100 0 0 0        * an undead royal soldier
+E 1 85704 4 24 100 0 0 0           *   a royal badge of Arcium
+G 1 85703 4 0 100 0 0 0            *    a small skeleton key
+M 0 85728 4 85800 100 0 0 0        * an undead royal soldier
+E 1 85704 4 24 100 0 0 0           *   a royal badge of Arcium
+G 1 85703 4 0 100 0 0 0            *    a small skeleton key
+M 0 85728 4 85801 100 0 0 0        * an undead royal soldier
+E 1 85704 4 24 100 0 0 0           *   a royal badge of Arcium
+G 1 85703 4 0 100 0 0 0            *    a small skeleton key
+M 0 85728 4 85802 100 0 0 0        * an undead royal soldier
+E 1 85704 4 24 100 0 0 0           *   a royal badge of Arcium
+G 1 85703 4 0 100 0 0 0            *    a small skeleton key
+M 0 85700 1 85803 100 0 0 0        * Joji, the lonely hermit
+M 0 85751 1 85804 100 0 0 0        * Mredock, the bartender
+G 1 85711 999 0 100 0 0 0          *    a bottle of dark ale
+G 1 85713 5 0 100 0 0 0            *    a magical mushroom
+M 0 85726 4 85804 100 0 0 0        * an undead drunk
+E 1 85712 4 18 100 0 0 0           *   a flask of hard liquor
+M 0 85726 4 85804 100 0 0 0        * an undead drunk
+E 1 85712 4 18 100 0 0 0           *   a flask of hard liquor
+M 0 85726 4 85804 100 0 0 0        * an undead drunk
+E 1 85712 4 18 100 0 0 0           *   a flask of hard liquor
+M 0 85726 4 85804 100 0 0 0        * an undead drunk
+E 1 85712 4 18 100 0 0 0           *   a flask of hard liquor
+M 0 85724 1 85806 100 0 0 0        * Kurlon, the gladiator of endless battles
+E 1 85722 2 16 100 0 0 0           *   a thin silver longsword
+E 1 85710 3 17 100 0 0 0           *   a thin silver dagger
+E 1 85709 1 40 100 0 0 0           *   the horns of endless battles
+G 1 85717 1 0 100 0 0 0            *    a bleeding heart of Kurlon
+F 1 85719 3 85806 100 0 0 0        * an undead mercenary (following)
+M 0 85749 4 85807 100 0 0 0        * a mean water muskrat
+M 0 85729 3 85810 100 0 0 0        * a mischievous ettercap
+M 0 85729 3 85810 100 0 0 0        * a mischievous ettercap
+M 0 85747 1 85811 100 0 0 0        * Kovii, the King of Arcium
+E 1 85728 1 6 100 0 0 0            *   a relic crown of impunity
+E 1 85727 1 16 100 0 0 0           *   a long silver poleaxe
+G 1 85715 1 0 100 0 0 0            *    a bleeding heart of Kovii
+G 1 31319 1 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 85716 3 85811 100 0 0 0        * an undead soldier (following)
+M 0 85749 4 85812 100 0 0 0        * a mean water muskrat
+M 0 85738 4 85813 100 0 0 0        * a hostile fish
+M 0 85749 4 85814 100 0 0 0        * a mean water muskrat
+M 0 85738 4 85815 100 0 0 0        * a hostile fish
+M 0 85738 4 85816 100 0 0 0        * a hostile fish
+M 0 85749 4 85817 100 0 0 0        * a mean water muskrat
+M 0 85738 4 85818 100 0 0 0        * a hostile fish
 *
 S

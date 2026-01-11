@@ -2,16 +2,20 @@
 
 ulimit -c unlimited
 
-  if [ $1 ]; then
-    PORT=$1
-  else
-    PORT=7788
-  fi
+if [ "$1" ]; then
+  PORT="$1"
+else
+  PORT=7788
+fi
 
-  mv src/dms_new dms
+mv src/dms_new dms
 
-  echo "Generating list of function names.."
-  nm --demangle dms | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
+echo "Generating list of function names.."
+nm --demangle dms | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
 
-  echo "Starting duris test enviornment..."
-  gdb -ex "run ${PORT}" dms
+echo "Starting duris test enviornment..."
+gdb -q \
+  -ex "set pagination off" \
+  -ex "set debuginfod enabled on" \
+  -ex "run ${PORT}" \
+  ./dms

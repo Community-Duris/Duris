@@ -1,7 +1,0 @@
-alias eo edit obj
-set MainZoneName vecna
-set objaffect true
-set lastcommand edit m 130002
-set startroom 130065
-set textedit pico
-set IsMapZone true

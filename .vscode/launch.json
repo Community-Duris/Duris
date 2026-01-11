@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Duris",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/dms",
+            "args": [
+                "7788"
+            ],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Copy Duris",
+            "externalConsole": false,
+            "setupCommands": [
+                {
+                    "text": "set pagination off",
+                    "ignoreFailures": true
+                },
+                {
+                    "text": "set debuginfod enabled off",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

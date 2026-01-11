@@ -269,6 +269,7 @@ int leave_by_exit(P_char ch, int exitnumb)
 
   StartRegen(ch, EVENT_MOVE_REGEN);
   StartRegen(ch, EVENT_HIT_REGEN);
+  StartRegen(ch, EVENT_WARD_REGEN);
 
   if( IS_PC(ch) && IS_RIDING(ch))
   {
@@ -4160,6 +4161,7 @@ void do_rest(P_char ch, char *argument, int cmd)
   StartRegen(ch, EVENT_HIT_REGEN);
   StartRegen(ch, EVENT_MOVE_REGEN);
   StartRegen(ch, EVENT_MANA_REGEN);
+  StartRegen(ch, EVENT_WARD_REGEN);
 }
 
 /*

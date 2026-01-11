@@ -34,6 +34,8 @@ extern struct index_data *mob_index;
 extern struct index_data *obj_index;
 extern struct time_info_data time_info;
 extern const char *month_name[];
+extern const char *size_types[];
+int get_vis_mode(P_char ch, int room);
 
 /* sql function for quest remaining count */
 int sql_world_quest_can_do_another(struct char_data *ch);
@@ -388,16 +390,24 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch) {
     int dir;
     struct char_data *tch;
     struct obj_data *obj;
-    /* Standard GMCP uses short exit names */
+    /* standard gmcp uses short exit names */
+    /* order matches defines.h: n,e,s,w,u,d,nw,sw,ne,se */
     const char *dir_abbrevs[] = {
         "n", "e", "s", "w", "u", "d",
-        "ne", "nw", "se", "sw"
+        "nw", "sw", "ne", "se"
     };
     /* Terrain type to environment string mapping */
     const char *env_names[] = {
         "inside", "city", "field", "forest", "hills", "mountains",
-        "water", "water", "air", "underwater", "desert", "arctic",
-        "swamp", "ocean", "path", "road", "jungle", "cavern"
+        "water swim", "water noswim", "no ground", "underwater",
+        "underwater ground", "plane of fire", "ocean", "ud wild",
+        "ud city", "ud inside", "ud water swim", "ud water noswim",
+        "ud no ground", "plane of air", "plane of water",
+        "plane of earth", "plane of ethereal", "plane of astral",
+        "desert", "tundra", "swamp", "ud mountains", "ud slime",
+        "ud low ceilings", "ud liquid mithril", "ud mushroom forest",
+        "outer castle wall", "castle gate", "castle", "negative plane",
+        "plane of avernus", "patrolled road", "snowy forest", "lava",
     };
 
     if (!room) return strdup("{}");
@@ -439,8 +449,11 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch) {
     }
 
     /* Standard field: environment (string, not terrain number) */
-    if (room->sector_type >= 0 && room->sector_type < 18) {
-        cJSON_AddStringToObject(root, "environment", env_names[room->sector_type]);
+    size_t env_count = sizeof(env_names) / sizeof(env_names[0]);
+
+    if (room->sector_type >= 0 && (size_t)room->sector_type < env_count) {
+        cJSON_AddStringToObject(root, "environment",
+                                env_names[room->sector_type]);
     } else {
         cJSON_AddStringToObject(root, "environment", "unknown");
     }
@@ -520,29 +533,61 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch) {
     /* Build npcs array - visible NPCs in room */
     npcs = cJSON_CreateArray();
     if (ch) {
+        int vis_mode = get_vis_mode(ch, ch->in_room);
         for (tch = room->people; tch; tch = tch->next_in_room) {
             if (!IS_NPC(tch)) continue;  /* Skip PCs */
             if (!CAN_SEE(ch, tch)) continue;  /* Visibility check */
 
             cJSON *npc = cJSON_CreateObject();
-            /* Clean name for Mudlet compatibility - use short_descr for NPCs */
-            clean_name = json_escape_ansi_string(tch->player.short_descr ? tch->player.short_descr : GET_NAME(tch));
-            cJSON_AddStringToObject(npc, "name", clean_name);
-            free(clean_name);
-            /* Colored name for web client - use short_descr which has ANSI codes */
-            clean_name = json_escape_string(tch->player.short_descr ? tch->player.short_descr : GET_NAME(tch));
-            cJSON_AddStringToObject(npc, "colored_name", clean_name);
-            free(clean_name);
-            cJSON_AddNumberToObject(npc, "vnum", GET_VNUM(tch));
-            /* Extract first keyword from NPC's name list for targeting */
-            if (tch->player.name) {
-                char keyword_buf[64];
-                strncpy(keyword_buf, tch->player.name, sizeof(keyword_buf) - 1);
-                keyword_buf[sizeof(keyword_buf) - 1] = '\0';
-                char *space = strchr(keyword_buf, ' ');
-                if (space) *space = '\0';  /* Get first word only */
-                cJSON_AddStringToObject(npc, "keyword", keyword_buf);
+
+            /* check if player can only see red shapes (infravision mode) */
+            if (vis_mode == 3) {
+                cJSON_AddStringToObject(npc, "name", "a red shape");
+                cJSON_AddStringToObject(npc, "colored_name", "&+ra red shape&n");
+                cJSON_AddNumberToObject(npc, "vnum", 0);
+                cJSON_AddStringToObject(npc, "keyword", "");
+            } else {
+                /* normal visibility - use short_descr */
+                clean_name = json_escape_ansi_string(tch->player.short_descr ? tch->player.short_descr : GET_NAME(tch));
+                cJSON_AddStringToObject(npc, "name", clean_name);
+                free(clean_name);
+                clean_name = json_escape_string(tch->player.short_descr ? tch->player.short_descr : GET_NAME(tch));
+                cJSON_AddStringToObject(npc, "colored_name", clean_name);
+                free(clean_name);
+                cJSON_AddNumberToObject(npc, "vnum", GET_VNUM(tch));
+                /* Extract first keyword from NPC's name list for targeting */
+                if (tch->player.name) {
+                    char keyword_buf[64];
+                    strncpy(keyword_buf, tch->player.name, sizeof(keyword_buf) - 1);
+                    keyword_buf[sizeof(keyword_buf) - 1] = '\0';
+                    char *space = strchr(keyword_buf, ' ');
+                    if (space) *space = '\0';  /* Get first word only */
+                    cJSON_AddStringToObject(npc, "keyword", keyword_buf);
+                }
             }
+
+            /* add fighting status if applicable */
+            if (IS_FIGHTING(tch) && GET_OPPONENT(tch)) {
+                struct char_data *opponent = GET_OPPONENT(tch);
+                if (opponent == ch) {
+                    cJSON_AddStringToObject(npc, "fighting", "you");
+                } else if (opponent->in_room != tch->in_room) {
+                    cJSON_AddStringToObject(npc, "fighting", "someone who has already left");
+                } else if (CAN_SEE(ch, opponent)) {
+                    if (IS_NPC(opponent)) {
+                        /* fighting another npc - use short_descr */
+                        clean_name = json_escape_ansi_string(opponent->player.short_descr ? opponent->player.short_descr : GET_NAME(opponent));
+                        cJSON_AddStringToObject(npc, "fighting", clean_name);
+                        free(clean_name);
+                    } else {
+                        /* fighting a player - use name */
+                        cJSON_AddStringToObject(npc, "fighting", GET_NAME(opponent));
+                    }
+                } else {
+                    cJSON_AddStringToObject(npc, "fighting", "someone");
+                }
+            }
+
             cJSON_AddItemToArray(npcs, npc);
         }
     }
@@ -946,6 +991,32 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch) {
     cJSON_AddNumberToObject(root, "maxCrewStamina", (int)ship->crew.max_stamina);
     cJSON_AddNumberToObject(root, "repairStock", ship->repair);
 
+    /* crew type and chiefs */
+    cJSON_AddStringToObject(root, "crewType", ship_crew_data[ship->crew.index].name);
+
+    cJSON *chiefs = cJSON_CreateObject();
+    cJSON_AddStringToObject(chiefs, "sail",
+        ship->crew.sail_chief > 0 ? ship_chief_data[ship->crew.sail_chief].name : "");
+    cJSON_AddStringToObject(chiefs, "guns",
+        ship->crew.guns_chief > 0 ? ship_chief_data[ship->crew.guns_chief].name : "");
+    cJSON_AddStringToObject(chiefs, "repair",
+        ship->crew.rpar_chief > 0 ? ship_chief_data[ship->crew.rpar_chief].name : "");
+    cJSON_AddItemToObject(root, "chiefs", chiefs);
+
+    /* crew skills */
+    cJSON *skills = cJSON_CreateObject();
+    cJSON_AddNumberToObject(skills, "sail", (int)ship->crew.sail_skill);
+    cJSON_AddNumberToObject(skills, "guns", (int)ship->crew.guns_skill);
+    cJSON_AddNumberToObject(skills, "repair", (int)ship->crew.rpar_skill);
+    cJSON_AddItemToObject(root, "skills", skills);
+
+    /* skill modifiers (from crew type + chiefs) */
+    cJSON *skillMods = cJSON_CreateObject();
+    cJSON_AddNumberToObject(skillMods, "sail", ship->crew.sail_mod());
+    cJSON_AddNumberToObject(skillMods, "guns", ship->crew.guns_mod());
+    cJSON_AddNumberToObject(skillMods, "repair", ship->crew.rpar_mod());
+    cJSON_AddItemToObject(root, "skillMods", skillMods);
+
     /* people */
     cJSON_AddNumberToObject(root, "people", ship->people);
     cJSON_AddNumberToObject(root, "maxPeople", ship->get_capacity());
@@ -1001,6 +1072,22 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch) {
         }
     }
     cJSON_AddItemToObject(root, "weapons", weapons);
+
+    /* equipment array */
+    cJSON *equipment = cJSON_CreateArray();
+    for (i = 0; i < MAXSLOTS; i++) {
+        if (ship->slot[i].type == SLOT_EQUIPMENT) {
+            cJSON *e = cJSON_CreateObject();
+            int e_idx = ship->slot[i].index;
+
+            cJSON_AddNumberToObject(e, "slot", i);
+            cJSON_AddStringToObject(e, "name", equipment_data[e_idx].name ? equipment_data[e_idx].name : "Unknown");
+            cJSON_AddBoolToObject(e, "ready", ship->slot[i].timer == 0 ? 1 : 0);
+
+            cJSON_AddItemToArray(equipment, e);
+        }
+    }
+    cJSON_AddItemToObject(root, "equipment", equipment);
 
     /* cargo */
     cargo = cJSON_CreateObject();

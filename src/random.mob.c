@@ -51,7 +51,7 @@ extern const char *class_names[];
 extern const char *race_types[];
 extern const int top_of_world;
 
-//extern const int material_absorbtion[][];
+// extern const int material_absorbtion[][];
 extern const struct stat_data stat_factor[];
 extern float fake_sqrt_table[];
 extern int pulse;
@@ -69,314 +69,305 @@ extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern const int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
 
-int      find_a_zone();
-int      get_name(char return_name[256]);
-int      find_mob_map_room(P_char random_mob);
+int find_a_zone();
+int get_name(char return_name[256]);
+int find_mob_map_room(P_char random_mob);
 
 const char *prefix_name_theme[8][2] = {
-  {
-   "&+Wan un&+Ldead&n",
-   "&+La sk&+Wel&+Leton&+w&n"   //0
-   },
-  {
-   "&+Wa&+c tr&+Wans&+cpar&+Cent&n",    //1
-   "&+Wa &+Lfl&+mow&+Mi&+Lng&n"},
-  {
-   "&n&+ga put&+Lrid &n&+gzo&+Lmbif&n&+gied&n", //2
-   "&n&+ya mum&+Ymifi&+Wed&n"},
-  {
-   "&n&+wa tu&+Lnnel wor&n&+wking&n",   //3
-   "&n&+wa &+Wwat&n&+wch&+Lful&n"},
-  {
-   "&na &n&+Wrighte&n&+wous&n", //4 GOODIE RELIC
-   "&na &n&+Wcourage&n&+wous&n"},
-  {
-   "&na &n&+mmalev&n&+wole&+Lnt&n",     //5 eVILS
-   "&na &n&+Ldevi&n&+mant&n"},
-  {
-   "&na &nr&n&+ravaging&n",     //6 UNDEAD
-   "&na &n&+Rblo&n&+rodthi&n&+wrsty&n",
-   },
-  {
-   "&+La &+YRELIC &+Lguarding&n",       //7
-   "&+Ya &+YRELIC &+Yguarding&n",
-   }
-
-
+    {
+        "&+Wan un&+Ldead&n",
+        "&+La sk&+Wel&+Leton&+w&n" // 0
+    },
+    {"&+Wa&+c tr&+Wans&+cpar&+Cent&n", // 1
+     "&+Wa &+Lfl&+mow&+Mi&+Lng&n"},
+    {"&n&+ga put&+Lrid &n&+gzo&+Lmbif&n&+gied&n", // 2
+     "&n&+ya mum&+Ymifi&+Wed&n"},
+    {"&n&+wa tu&+Lnnel wor&n&+wking&n", // 3
+     "&n&+wa &+Wwat&n&+wch&+Lful&n"},
+    {"&na &n&+Wrighte&n&+wous&n", // 4 GOODIE RELIC
+     "&na &n&+Wcourage&n&+wous&n"},
+    {"&na &n&+mmalev&n&+wole&+Lnt&n", // 5 eVILS
+     "&na &n&+Ldevi&n&+mant&n"},
+    {
+        "&na &nr&n&+ravaging&n", // 6 UNDEAD
+        "&na &n&+Rblo&n&+rodthi&n&+wrsty&n",
+    },
+    {
+        "&+La &+YRELIC &+Lguarding&n", // 7
+        "&+Ya &+YRELIC &+Yguarding&n",
+    }
 
 };
 
 const char *prefix_name[37] = {
-  "&+wAn &+rangry&+w&n",
-  "&+LA &+btraveling&n",
-  "&N&+wA &+Ldaft &N&+wlooking&n",
-  "&+LA &+Lstrange looking&N",
-  "&+LA &N&+bmysterious &+Llooking&N",
-  "&+LA hulking&N",
-  "&+LA &N&+wforeboding&N",
-  "&+LA &N&+cmassive&N",
-  "&+LA &+Cmuscular&N",
-  "&+LA &N&+wsomber &+Llooking&N",
-  "&+LA battle &N&+rscarred&N",
-  "&N&+gA wandering&N",
-  "&+LA &N&+gs&+Gi&N&+gc&+Gk&N&+gl&+Gy&N",
-  "&+LA &N&+ypeculiar&N",
-  "&+LA &+Rm&N&+re&+Rn&N&+ra&+Rc&N&+ri&+Rn&N&+rg&N",
-  "&+LA &N&+bsin&+Lister&N",
-  "&N&+wA &+Wlonely&N",
-  "&+LA &N&+ydirty&N",
-  "&N&+wA &+Lshifty &N&+wlooking&N",
-  "&+LA &N&+bso&+Lm&N&+bb&+Ler looking&N",
-  "&+LA &N&+bweird &+Llooking&N",
-  "&+LAn &+Mugly&N",
-  "&+LA &N&+wforlorn&N",
-  "&+LA diabolical&N",
-  "&+LA &+Rdeformed&N",
-  "&+LA &N&+mhideous &+Llooking&N",
-  "&+LA &N&+yscrawny&N",
-  "&+LA &+Cskinny&N",
-  "&+LA &+Wone &+Leyed&N",
-  "&+LA ghastly&N",
-  "&+LA &+Rhungry&N",
-  "&+LA &N&+clistless&N",
-  "&+LA &+Rdisgusting &+Llooking&N",
-  "&+LAn &N&+mabnormal &+Llooking&N",
-  "&+LA &N&+rdisgruntled&N",
-  "&+LA &+Bmorbid&N",
-  "&+LA desolate&N"
-};
+    "&+wAn &+rangry&+w&n",
+    "&+LA &+btraveling&n",
+    "&N&+wA &+Ldaft &N&+wlooking&n",
+    "&+LA &+Lstrange looking&N",
+    "&+LA &N&+bmysterious &+Llooking&N",
+    "&+LA hulking&N",
+    "&+LA &N&+wforeboding&N",
+    "&+LA &N&+cmassive&N",
+    "&+LA &+Cmuscular&N",
+    "&+LA &N&+wsomber &+Llooking&N",
+    "&+LA battle &N&+rscarred&N",
+    "&N&+gA wandering&N",
+    "&+LA &N&+gs&+Gi&N&+gc&+Gk&N&+gl&+Gy&N",
+    "&+LA &N&+ypeculiar&N",
+    "&+LA &+Rm&N&+re&+Rn&N&+ra&+Rc&N&+ri&+Rn&N&+rg&N",
+    "&+LA &N&+bsin&+Lister&N",
+    "&N&+wA &+Wlonely&N",
+    "&+LA &N&+ydirty&N",
+    "&N&+wA &+Lshifty &N&+wlooking&N",
+    "&+LA &N&+bso&+Lm&N&+bb&+Ler looking&N",
+    "&+LA &N&+bweird &+Llooking&N",
+    "&+LAn &+Mugly&N",
+    "&+LA &N&+wforlorn&N",
+    "&+LA diabolical&N",
+    "&+LA &+Rdeformed&N",
+    "&+LA &N&+mhideous &+Llooking&N",
+    "&+LA &N&+yscrawny&N",
+    "&+LA &+Cskinny&N",
+    "&+LA &+Wone &+Leyed&N",
+    "&+LA ghastly&N",
+    "&+LA &+Rhungry&N",
+    "&+LA &N&+clistless&N",
+    "&+LA &+Rdisgusting &+Llooking&N",
+    "&+LAn &N&+mabnormal &+Llooking&N",
+    "&+LA &N&+rdisgruntled&N",
+    "&+LA &+Bmorbid&N",
+    "&+LA desolate&N"};
 
 #define MAX_ZONES_RANDOM_DATA 200
-struct zone_random_data {
+struct zone_random_data
+{
   int zone;
   int races[10];
   int proc_spells[3][2];
 } zones_random_data[MAX_ZONES_RANDOM_DATA] = {
-// Please keep this in numerical order by zone #.  It's much easier to search that way.
-// Zone 1 not found.. If this is supposed to be Heaven, Heaven is zone 0 and that's a no-go.
-//  {1, {RACE_ANGEL, RACE_DEVIL, 0}, {{6, SPELL_STONE_SKIN}}},
-  {14, {RACE_GOBLIN, RACE_HUMANOID, RACE_HALFORC, RACE_ORC, RACE_LYCANTH, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
-  {18, {RACE_TROLL, RACE_OGRE, RACE_MINOTAUR, 0}, {{5, SPELL_REGENERATION}}},
-  {20, {RACE_FAERIE, RACE_HUMAN, RACE_GREY, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
-  {21, {RACE_GOBLIN, RACE_LYCANTH, RACE_HALFORC, RACE_ORC, RACE_GIANT, RACE_TROLL, 0 }, {{3, SPELL_SPIRIT_ARMOR}}},
-  {23, {RACE_PARASITE, RACE_DUERGAR, RACE_GOBLIN, RACE_HERBIVORE, 0}, {{3, SPELL_COLD_WARD}, {4, SPELL_FIRE_WARD}, {5, SPELL_SPIRIT_SIGHT}}},
-  {24, {RACE_HUMAN, RACE_HUMANOID, 0}, {{4, SPELL_THRYMS_ICERAZOR}}},
-  {26, {RACE_HUMAN, RACE_GREY, RACE_HALFELF, RACE_CENTAUR, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
-  {27, {RACE_HUMAN, RACE_HUMANOID, 0}, {{3, SKILL_EPIC_STRENGTH}, {4, SPELL_TRUE_SEEING}}},
-  {35, {RACE_UNDEAD, RACE_GHOST, RACE_VAMPIRE, RACE_LICH, 0}, {{4, SPELL_PASS_WITHOUT_TRACE}, {6, SPELL_VAMPIRIC_TOUCH}}},
-  {37, {RACE_HUMAN, RACE_HUMANOID, RACE_HALFELF, RACE_GNOME, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
-  {38, {RACE_UNDEAD, RACE_GHOST, RACE_VAMPIRE, RACE_LICH, 0}, {{3, SPELL_PROTECT_FROM_COLD}, {3, SPELL_PROTECT_FROM_FIRE}, {3, SPELL_PROTECT_FROM_LIGHTNING}}},
-  {40, {RACE_ORC, RACE_HALFORC, RACE_GOBLIN, RACE_REPTILE, 0}, {{6, SPELL_CONJURE_ELEMENTAL}}},
-  {30, {RACE_INSECT, RACE_ARACHNID, RACE_ANIMAL, RACE_HERBIVORE, RACE_DEVIL, 0}, {{3, SPELL_INVISIBLE}, {5, SPELL_HASTE}}},
-  {53, {RACE_CENTAUR, RACE_GREY, 0}, {{2, SPELL_ARMOR}, {2, SPELL_BLESS}, {4, SPELL_INVIGORATE}}},
-  {60, {RACE_HUMAN, RACE_HALFLING, RACE_BARBARIAN, RACE_HALFELF, RACE_MOUNTAIN, RACE_GNOME, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}, {5, SPELL_ENDURANCE}}},
-  {67, {RACE_CENTAUR, RACE_GREY, RACE_FAERIE, RACE_ANIMAL, 0}, {{3, SPELL_BARKSKIN}, {5, SPELL_ENDURANCE}}},
-  {68, {RACE_DRAGON, RACE_DRAGONKIN, 0}, {{3, SPELL_GLOBE}, {6, SPELL_STONE_SKIN}, {9, SONG_DRAGONS}}},
-  {73, {RACE_MINOTAUR, RACE_DROW, RACE_THRIKREEN, RACE_GITHYANKI, RACE_GITHZERAI, RACE_BEHOLDER, 0}, {{6, SPELL_STONE_SKIN}}},
-// Zone 80 not found.
-//  {80, {RACE_GREY, RACE_CENTAUR, RACE_HALFELF, 0}, {{6, SPELL_STONE_SKIN}}},
-  {87, {RACE_GOBLIN, RACE_TROLL, RACE_DROW, RACE_ORC, RACE_LYCANTH, 0}, {{3, SPELL_SPIRIT_WARD}, {5, SPELL_HASTE}}},
-  {90, {RACE_DEVIL, 0}, {{3, SPELL_SOULSHIELD}}},
-  {91, {RACE_DEVIL, RACE_ANGEL, RACE_RAKSHASA, RACE_SGIANT, RACE_DEMON, RACE_SHADE, RACE_ILLITHID,0 }, {{2, SPELL_REGENERATION}, {4, SPELL_FLY}, {6, SPELL_TRUE_SEEING}}},
-  {93, {RACE_FAERIE, RACE_DROW, RACE_GREY, RACE_HARPY, RACE_RAKSHASA, RACE_GITHYANKI, RACE_GITHZERAI, 0}, {{2, SPELL_STRENGTH}, {2, SPELL_AGILITY}, {4, SPELL_MINOR_GLOBE}}},
-  {94, {RACE_ORC, RACE_HALFORC, RACE_GIANT, RACE_HUMAN, RACE_MINOTAUR, 0}, {{2, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}, {6, SPELL_PANTHERSPEED}}},
-  {103, {RACE_ORC, RACE_HALFORC, 0}, {{2, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}}},
-  {106, {RACE_ORC, RACE_HALFORC, RACE_GOBLIN, RACE_MINOTAUR, RACE_DUERGAR, 0}, {{2, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}}},
-  {112, {RACE_ILLITHID, RACE_GITHYANKI, 0}, {{2, SPELL_ENHANCED_AGI}, {3, SPELL_FLESH_ARMOR}, {4, SPELL_INTELLECT_FORTRESS}}},
-  {113, {RACE_TROLL, RACE_OGRE, RACE_GIANT, RACE_RAKSHASA, RACE_HUMANOID, RACE_LYCANTH, 0}, {{3, SPELL_REGENERATION}, {5, SPELL_ENDURANCE}, {7, SPELL_PASS_WITHOUT_TRACE}}},
-  {124, {RACE_DEMON, RACE_DEVIL, RACE_HUMANOID, RACE_SHADOW, 0}, {{3, SPELL_INVIS_MAJOR}, {6, SPELL_STONE_SKIN}}},
-  {130, {RACE_UNDEAD, RACE_GHOST, RACE_OGRE, RACE_DROW, RACE_VAMPIRE, RACE_LICH, 0}, {{6, SPELL_STONE_SKIN}}},
-  {133, {RACE_ORC, RACE_CONSTRUCT, RACE_HUMANOID, 0}, {{6, SPELL_BATTLE_ECSTASY}}},
-  {140, {RACE_FAERIE, RACE_F_ELEMENTAL, RACE_A_ELEMENTAL, RACE_W_ELEMENTAL, RACE_E_ELEMENTAL, 0}, {{2, SPELL_FAERIE_SIGHT}}},
-  {143, {RACE_UNDEAD, RACE_GHOST, RACE_VAMPIRE, RACE_GARGOYLE, RACE_PHANTOM, RACE_REVENANT, RACE_SHADE, 0}, {{6, SPELL_VAMPIRIC_TOUCH}}},
-  {151, {RACE_DRAGON, RACE_DRAGONKIN, RACE_UNDEAD, RACE_DRACOLICH, RACE_GHOST, RACE_WIGHT, RACE_REVENANT, 0}, {{6, SPELL_STONE_SKIN}}},
-  {152, {RACE_OGRE, RACE_TROLL, RACE_ORC, 0}, {{2, SPELL_SPIRIT_ARMOR}, {3, SPELL_SPIRIT_WARD}, {4, SPELL_ELEPHANTSTRENGTH}}},
-  {159, {RACE_DRAGONKIN, RACE_DRAGON, 0}, {{6, SPELL_STORNOGS_SPHERES}}},
-  {160, {RACE_HUMAN, RACE_HALFLING, 0}, {{4, SPELL_THORNSKIN}, {6, SPELL_ENDURANCE}}},
-  {162, {RACE_DEVIL, RACE_FAERIE, RACE_ORC, RACE_GIANT, RACE_ILLITHID, 0}, {{5, SPELL_INVIS_MAJOR}}},
-  // Woodseer
-  {165, {RACE_HALFLING, 0}, {{2, SPELL_BARKSKIN}, {3, SPELL_BLESS}, {6, SPELL_ENDURANCE}}},
-  // Khildarak
-  {170, {RACE_DUERGAR, 0}, {{2, SPELL_ARMOR}, {2, SPELL_BLESS}, {4, SPELL_STRENGTH}}},
-  {183, {RACE_UNDEAD, RACE_DEMON, 0}, {{4, SPELL_FIRESHIELD}}},
-  {191, {RACE_ANIMAL, RACE_REPTILE, RACE_SNAKE, RACE_INSECT, RACE_FLYING_ANIMAL, RACE_QUADRUPED, RACE_HERBIVORE, RACE_CARNIVORE, 0}, {{4, SPELL_RAVENFLIGHT}}},
-  {196, {RACE_DRAGON, RACE_BEHOLDER, RACE_DRAGONKIN, 0}, {{3, SPELL_GREATER_SPIRIT_SIGHT}, {6, SPELL_GREATER_SPIRIT_WARD}, {9, SONG_DRAGONS}}},
-  {197, {RACE_GITHYANKI, RACE_GITHZERAI, RACE_ILLITHID, RACE_DEMON, RACE_BEHOLDER, 0}, {{7, SPELL_BIOFEEDBACK}}},
-  {200, {RACE_ORC, RACE_HALFORC, RACE_DRAGONKIN, 0}, {{2, SPELL_ARMOR}, {5, SPELL_VITALITY}}},
-  {202, {RACE_HUMAN, 0}, {{3, SPELL_BARKSKIN}}},
-  {213, {RACE_DROW, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {5, SPELL_MINOR_GLOBE}}},
-  {215, {RACE_HUMAN, RACE_GREY, RACE_HALFELF, RACE_HUMANOID, 0}, {{3, SPELL_BARKSKIN}, {6, SPELL_ENDURANCE}, {9, SPELL_PASS_WITHOUT_TRACE}}},
-  {220, {RACE_BARBARIAN, RACE_ANIMAL, 0}, {{6, SPELL_PANTHERSPEED}, {6, SPELL_LIONRAGE}}},
-  {222, {RACE_HUMAN, RACE_HALFORC, RACE_ORC, RACE_GREY, RACE_HALFELF, RACE_HALFLING, 0}, {{4, SPELL_HASTE}}},
-  {224, {RACE_ORC, RACE_HALFORC, 0}, {{3, SPELL_WATERBREATH}}},
-  {226, {RACE_ORC, RACE_HALFORC, 0}, {{3, SPELL_WATERBREATH}}},
-  {229, {RACE_GIANT, RACE_GOLEM, RACE_CONSTRUCT, 0}, {{5, SPELL_STONE_SKIN}}},
-  {230, {RACE_DEVIL, RACE_DEMON, RACE_GOLEM, RACE_CONSTRUCT, 0}, {{3, SPELL_GLOBE}, {4, SPELL_FLY}, {5, SPELL_DETECT_INVISIBLE}}},
-  {232, {RACE_W_ELEMENTAL, 0}, {{2, SPELL_WATERBREATH}}},
-  {238, {RACE_E_ELEMENTAL, 0}, {{5, SPELL_STONE_SKIN}}},
-  {244, {RACE_A_ELEMENTAL, 0}, {{2, SPELL_FLY}}},
-  {250, {RACE_F_ELEMENTAL, 0}, {{2, SPELL_FIRE_WARD}}},
-  {254, {RACE_F_ELEMENTAL, 0}, {{2, SPELL_FIRE_WARD}}},
-  {257, {RACE_DRAGON, RACE_DRAGONKIN, 0}, {{3, SPELL_GREATER_SPIRIT_SIGHT}, {6, SPELL_GREATER_SPIRIT_WARD}, {9, SONG_DRAGONS}}},
-  {260, {RACE_TROLL, RACE_OGRE, RACE_REPTILE, 0}, {{6, SPELL_REGENERATION}}},
-  {261, {RACE_TROLL, RACE_REPTILE, 0}, {{4, SPELL_REGENERATION}}},
-  {262, {RACE_HUMAN, RACE_HALFELF, RACE_GREY, RACE_MOUNTAIN, RACE_GNOME, 0}, {{3, SPELL_DETECT_MAGIC}, {3, SPELL_FARSEE}, {5, SPELL_LEVITATE}}},
-  {264, {RACE_HUMANOID, 0}, {{6, SPELL_SHADOW_SHIELD}}},
-  {266, {RACE_DEMON, RACE_GITHYANKI, RACE_DRAGONKIN, RACE_BEHOLDER, 0}, {{3, SPELL_NEG_ENERGY_BARRIER}, {5, SPELL_NEG_ARMOR}}},
-  {270, {RACE_HARPY, RACE_GIANT, RACE_MOUNTAIN, RACE_TROLL, 0}, {{3, SPELL_ENDURANCE}}},
-  {285, {RACE_ANIMAL, RACE_REPTILE, RACE_SNAKE, RACE_INSECT, RACE_FLYING_ANIMAL, RACE_QUADRUPED, RACE_HERBIVORE, RACE_CARNIVORE, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}, {5, SPELL_ENDURANCE}}},
-  {289, {RACE_ORC, RACE_HALFORC, RACE_GIANT, RACE_GOLEM, RACE_DEMON, RACE_MOUNTAIN, RACE_DUERGAR, 0}, {{3, SPELL_ENHANCED_STR}, {6, SPELL_STONE_SKIN}}},
-  // Gnome Village - Harrow
-  {294, {RACE_GNOME, 0}, {{3, SPELL_ARMOR}, {3, SPELL_DETECT_MAGIC}}},
-  {306, {RACE_ANIMAL, RACE_HERBIVORE, RACE_HALFLING, RACE_GREY, 0}, {{3, SPELL_BARKSKIN}}},
-  {308, {RACE_SGIANT, RACE_GIANT, 0}, {{4, SPELL_ENDURANCE}}},
-  {311, {RACE_HARPY, RACE_GARGOYLE, 0}, {{4, SPELL_FLY}}},
-  {313, {RACE_FAERIE, RACE_ANGEL, RACE_DEVIL, RACE_A_ELEMENTAL, 0}, {{6, SPELL_INVIS_MAJOR}}},
-  {315, {RACE_W_ELEMENTAL, RACE_FAERIE, 0}, {{2, SPELL_WATERBREATH}, {5, SPELL_INVIS_MAJOR}, {8, SPELL_STORNOGS_SPHERES}}},
-  {318, {RACE_BARBARIAN, RACE_GIANT, RACE_CARNIVORE, 0}, {{3, SPELL_COLD_WARD}, {5, SPELL_COLDSHIELD}}},
-  {320, {RACE_DEVIL, 0}, {{3, SPELL_FLY}, {6, SPELL_TRUE_SEEING}, {8, SPELL_INFERNAL_FURY}}},
-  {324, {RACE_DEVIL, 0}, {{4, SPELL_DAZZLE}, {6, SPELL_BLUR}}},
-  {328, {RACE_ILLITHID, RACE_GITHYANKI, RACE_GIANT, RACE_DEMON, 0}, {{3, SPELL_FLESH_ARMOR}, {5, SPELL_INTELLECT_FORTRESS}}},
-  {333, {RACE_PSBEAST, RACE_SHADE, RACE_UNDEAD, RACE_LYCANTH, RACE_GHOST, 0}, {{3, SPELL_PROT_FROM_UNDEAD}}},
-  {335, {RACE_VAMPIRE, RACE_UNDEAD, RACE_GHOST, RACE_REVENANT, RACE_PDKNIGHT, RACE_LICH, 0}, {{3, SPELL_PROT_FROM_UNDEAD}}},
-  {342, {RACE_DUERGAR, RACE_GIANT, RACE_ARACHNID, 0}, {{3, SPELL_STRENGTH}, {6, SPELL_INVISIBLE}}},
-  {345, {RACE_VAMPIRE, RACE_UNDEAD, 0}, {{4, SPELL_DETECT_INVISIBLE}, {4, SPELL_INVIS_MAJOR}}},
-  {360, {RACE_DEMON, RACE_DROW, RACE_DUERGAR, RACE_GITHYANKI, RACE_PDKNIGHT, 0}, {{3, SPELL_ENDURANCE}, {6, SPELL_INVISIBLE}}},
-  {367, {RACE_VAMPIRE, RACE_UNDEAD, RACE_DROW, RACE_DUERGAR, RACE_DRACOLICH, 0}, {{5, SPELL_STONE_SKIN}}},
-  {368, {RACE_VAMPIRE, RACE_UNDEAD, RACE_DROW, RACE_DUERGAR, RACE_WIGHT, RACE_REVENANT, RACE_DRACOLICH, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {5, SPELL_SOULSHIELD}}},
-  {370, {RACE_CARNIVORE, RACE_GIANT, 0}, {{3, SPELL_ENDURANCE}}},
-  {371, {RACE_HUMAN, RACE_BARBARIAN, RACE_HALFELF, 0}, {{6, SPELL_STONE_SKIN}}},
-  {377, {RACE_MINOTAUR, RACE_THRIKREEN, 0}, {{3, SPELL_ENDURANCE}}},
-  {381, {RACE_HUMANOID, 0}, {{4, SPELL_GLOBE}}},
-  {383, {RACE_HUMANOID, 0}, {{3, SPELL_ENDURANCE}}},
-  {386, {RACE_DROW, RACE_DUERGAR, RACE_DEVIL, RACE_DEMON, 0}, {{3, SPELL_COLD_WARD}, {5, SPELL_GLOBE}}},
-  {387, {RACE_DEVIL, RACE_DEMON, RACE_DRAGON, 0}, {{5, SPELL_BIOFEEDBACK}}},
-  {391, {RACE_BARBARIAN, RACE_HUMAN, 0}, {{3, SPELL_PROTECT_FROM_COLD}, {4, SPELL_SPIRIT_ARMOR}, {5, SPELL_ENDURANCE}}},
-  {400, {RACE_HUMAN, RACE_HUMANOID, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
-  {402, {RACE_HUMAN, RACE_HUMANOID, RACE_GOBLIN, RACE_HALFELF, RACE_HALFORC, 0}, {{3, SPELL_BARKSKIN}}},
-  {412, {RACE_UNDEAD, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {4, SPELL_VITALITY}, {5, SPELL_SOULSHIELD}}},
-  {419, {RACE_BARBARIAN, RACE_ANIMAL, RACE_ARACHNID, 0}, {{3, SPELL_BARKSKIN}, {5, SPELL_ENDURANCE}, {7, SPELL_INVIS_MAJOR}}},
-  {441, {RACE_GITHZERAI, 0}, {{6, SPELL_CHAOS_SHIELD}}},
-  {448, {RACE_ANGEL, RACE_DEVIL, RACE_DEMON, RACE_SGIANT, 0}, {{2, SPELL_BLESS}, {4, SPELL_SOULSHIELD}, {6, SPELL_VITALITY}}},
-  {450, {RACE_GREY, RACE_CENTAUR, RACE_HALFELF, 0}, {{3, SPELL_BARKSKIN}, {6, SPELL_ENDURANCE}}},
-  //{480, {RACE_HUMAN, RACE_BARBARIAN, RACE_HALFORC, RACE_HUMANOID, RACE_HALFLING, 0}, {{6, SPELL_STONE_SKIN}}},
-  //{510, {RACE_DEMON, RACE_DEVIL, RACE_GITHYANKI, RACE_VAMPIRE, RACE_DRAGON, 0}, {{6, SPELL_STONE_SKIN}}},
-  {583, {RACE_HUMAN, RACE_VAMPIRE, RACE_UNDEAD, RACE_GHOST, RACE_REVENANT, RACE_LICH, RACE_PDKNIGHT, 0}, {{8, SPELL_VAMPIRE}}},
-  {662, {RACE_HUMAN, RACE_GNOME, RACE_HALFELF, 0}, {{5, SPELL_FLY}}},
-  {671, {RACE_HUMAN, RACE_MOUNTAIN, RACE_DUERGAR, 0}, {{6, SPELL_VITALITY}}},
-  {676, {RACE_THRIKREEN, 0}, {{4, SPELL_ENDURANCE}}},
-  // The Town of Moregeeth (goblin ht)
-  {700, {RACE_GOBLIN, 0}, {{3, SPELL_ARMOR}, {6, SPELL_ENDURANCE}}},
-  {710, {RACE_HUMAN, RACE_ORC, RACE_HALFORC, RACE_MINOTAUR, RACE_HUMANOID, 0}, {{6, SPELL_STONE_SKIN}}},
-  {756, {RACE_HUMAN, RACE_LICH, RACE_BARBARIAN, RACE_PHANTOM, RACE_DEMON, RACE_UNDEAD, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {7, SPELL_STONE_SKIN}}},
-  {758, {RACE_HUMAN, RACE_HARPY, RACE_MOUNTAIN, RACE_HALFELF, 0}, {{5, SPELL_FLY}}},
-  // Rift Valley Jungle
-  {800, {RACE_GREY, RACE_HALFLING, RACE_SNAKE, RACE_CARNIVORE, RACE_HERBIVORE, RACE_FLYING_ANIMAL, RACE_ARACHNID, 0}, {{3, SPELL_BLESS}, {3, SPELL_BARKSKIN}, {6, SPELL_ENDURANCE}}},
-  {824, {RACE_HUMAN, RACE_GREY, RACE_HALFELF, RACE_RAKSHASA, RACE_CENTAUR, RACE_MOUNTAIN, 0}, {{6, SPELL_VITALITY}}},
-  //{856, {RACE_UNDEAD, RACE_GHOST, RACE_ORC, RACE_REVENANT, RACE_SHADE, 0}, {{6, SPELL_STONE_SKIN}}},
-  {857, {RACE_SGIANT, RACE_GIANT, RACE_DRAGONKIN, RACE_HUMAN, 0}, {{3, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}, {5, SPELL_ENDURANCE}}},
-  {936, {RACE_HUMAN, RACE_HALFORC, RACE_HALFELF, 0}, {{3, SPELL_PROTECT_FROM_LIVING}, {5, SPELL_HASTE}}},
-  {955, {RACE_MOUNTAIN,0 }, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}, {5, SPELL_STRENGTH}}},
-  {960, {RACE_GIANT, RACE_SGIANT, RACE_TROLL, 0}, {{3, SPELL_FLY}, {6, SPELL_STONE_SKIN}}},
-  {964, {RACE_ILLITHID, RACE_DROW, 0}, {{6, SPELL_FLESH_ARMOR}, {6, SPELL_INTELLECT_FORTRESS}}},
-  // Shady Grove (orc ht)
-  {975, {RACE_ORC, RACE_HALFORC, 0}, {{3, SPELL_ARMOR}, {6, SPELL_ENDURANCE}}},
-  {987, {RACE_VAMPIRE, RACE_SHADE, RACE_PDKNIGHT, RACE_LICH, RACE_PHANTOM, RACE_WIGHT, 0}, {{4, SPELL_PROT_FROM_UNDEAD}}},
-  // Tharnadia (human ht)
-  {1325, {RACE_HUMAN, 0}, {{3, SPELL_ARMOR}, {5, SPELL_ENDURANCE}}},
-  {0, {0}, {{0, 0}} }
-};
+    // Please keep this in numerical order by zone #.  It's much easier to search that way.
+    // Zone 1 not found.. If this is supposed to be Heaven, Heaven is zone 0 and that's a no-go.
+    //  {1, {RACE_ANGEL, RACE_DEVIL, 0}, {{6, SPELL_STONE_SKIN}}},
+    {14, {RACE_GOBLIN, RACE_HUMANOID, RACE_HALFORC, RACE_ORC, RACE_LYCANTH, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
+    {18, {RACE_TROLL, RACE_OGRE, RACE_MINOTAUR, 0}, {{5, SPELL_REGENERATION}}},
+    {20, {RACE_FAERIE, RACE_HUMAN, RACE_GREY, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
+    {21, {RACE_GOBLIN, RACE_LYCANTH, RACE_HALFORC, RACE_ORC, RACE_GIANT, RACE_TROLL, 0}, {{3, SPELL_SPIRIT_ARMOR}}},
+    {23, {RACE_PARASITE, RACE_DUERGAR, RACE_GOBLIN, RACE_HERBIVORE, 0}, {{3, SPELL_COLD_WARD}, {4, SPELL_FIRE_WARD}, {5, SPELL_SPIRIT_SIGHT}}},
+    {24, {RACE_HUMAN, RACE_HUMANOID, 0}, {{4, SPELL_THRYMS_ICERAZOR}}},
+    {26, {RACE_HUMAN, RACE_GREY, RACE_HALFELF, RACE_CENTAUR, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
+    {27, {RACE_HUMAN, RACE_HUMANOID, 0}, {{3, SKILL_EPIC_STRENGTH}, {4, SPELL_TRUE_SEEING}}},
+    {35, {RACE_UNDEAD, RACE_GHOST, RACE_VAMPIRE, RACE_LICH, 0}, {{4, SPELL_PASS_WITHOUT_TRACE}, {6, SPELL_VAMPIRIC_TOUCH}}},
+    {37, {RACE_HUMAN, RACE_HUMANOID, RACE_HALFELF, RACE_GNOME, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
+    {38, {RACE_UNDEAD, RACE_GHOST, RACE_VAMPIRE, RACE_LICH, 0}, {{3, SPELL_PROTECT_FROM_COLD}, {3, SPELL_PROTECT_FROM_FIRE}, {3, SPELL_PROTECT_FROM_LIGHTNING}}},
+    {40, {RACE_ORC, RACE_HALFORC, RACE_GOBLIN, RACE_REPTILE, 0}, {{6, SPELL_CONJURE_ELEMENTAL}}},
+    {30, {RACE_INSECT, RACE_ARACHNID, RACE_ANIMAL, RACE_HERBIVORE, RACE_DEVIL, 0}, {{3, SPELL_INVISIBLE}, {5, SPELL_HASTE}}},
+    {53, {RACE_CENTAUR, RACE_GREY, 0}, {{2, SPELL_ARMOR}, {2, SPELL_BLESS}, {4, SPELL_INVIGORATE}}},
+    {60, {RACE_HUMAN, RACE_HALFLING, RACE_BARBARIAN, RACE_HALFELF, RACE_MOUNTAIN, RACE_GNOME, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}, {5, SPELL_ENDURANCE}}},
+    {67, {RACE_CENTAUR, RACE_GREY, RACE_FAERIE, RACE_ANIMAL, 0}, {{3, SPELL_BARKSKIN}, {5, SPELL_ENDURANCE}}},
+    {68, {RACE_DRAGON, RACE_DRAGONKIN, 0}, {{3, SPELL_GLOBE}, {6, SPELL_STONE_SKIN}, {9, SONG_DRAGONS}}},
+    {73, {RACE_MINOTAUR, RACE_DROW, RACE_THRIKREEN, RACE_GITHYANKI, RACE_GITHZERAI, RACE_BEHOLDER, 0}, {{6, SPELL_STONE_SKIN}}},
+    // Zone 80 not found.
+    //  {80, {RACE_GREY, RACE_CENTAUR, RACE_HALFELF, 0}, {{6, SPELL_STONE_SKIN}}},
+    {87, {RACE_GOBLIN, RACE_TROLL, RACE_DROW, RACE_ORC, RACE_LYCANTH, 0}, {{3, SPELL_SPIRIT_WARD}, {5, SPELL_HASTE}}},
+    {90, {RACE_DEVIL, 0}, {{3, SPELL_SOULSHIELD}}},
+    {91, {RACE_DEVIL, RACE_ANGEL, RACE_RAKSHASA, RACE_SGIANT, RACE_DEMON, RACE_SHADE, RACE_ILLITHID, 0}, {{2, SPELL_REGENERATION}, {4, SPELL_FLY}, {6, SPELL_TRUE_SEEING}}},
+    {93, {RACE_FAERIE, RACE_DROW, RACE_GREY, RACE_HARPY, RACE_RAKSHASA, RACE_GITHYANKI, RACE_GITHZERAI, 0}, {{2, SPELL_STRENGTH}, {2, SPELL_AGILITY}, {4, SPELL_MINOR_GLOBE}}},
+    {94, {RACE_ORC, RACE_HALFORC, RACE_GIANT, RACE_HUMAN, RACE_MINOTAUR, 0}, {{2, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}, {6, SPELL_PANTHERSPEED}}},
+    {103, {RACE_ORC, RACE_HALFORC, 0}, {{2, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}}},
+    {106, {RACE_ORC, RACE_HALFORC, RACE_GOBLIN, RACE_MINOTAUR, RACE_DUERGAR, 0}, {{2, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}}},
+    {112, {RACE_ILLITHID, RACE_GITHYANKI, 0}, {{2, SPELL_ENHANCED_AGI}, {3, SPELL_FLESH_ARMOR}, {4, SPELL_INTELLECT_FORTRESS}}},
+    {113, {RACE_TROLL, RACE_OGRE, RACE_GIANT, RACE_RAKSHASA, RACE_HUMANOID, RACE_LYCANTH, 0}, {{3, SPELL_REGENERATION}, {5, SPELL_ENDURANCE}, {7, SPELL_PASS_WITHOUT_TRACE}}},
+    {124, {RACE_DEMON, RACE_DEVIL, RACE_HUMANOID, RACE_SHADOW, 0}, {{3, SPELL_INVIS_MAJOR}, {6, SPELL_STONE_SKIN}}},
+    {130, {RACE_UNDEAD, RACE_GHOST, RACE_OGRE, RACE_DROW, RACE_VAMPIRE, RACE_LICH, 0}, {{6, SPELL_STONE_SKIN}}},
+    {133, {RACE_ORC, RACE_CONSTRUCT, RACE_HUMANOID, 0}, {{6, SPELL_BATTLE_ECSTASY}}},
+    {140, {RACE_FAERIE, RACE_F_ELEMENTAL, RACE_A_ELEMENTAL, RACE_W_ELEMENTAL, RACE_E_ELEMENTAL, 0}, {{2, SPELL_FAERIE_SIGHT}}},
+    {143, {RACE_UNDEAD, RACE_GHOST, RACE_VAMPIRE, RACE_GARGOYLE, RACE_PHANTOM, RACE_REVENANT, RACE_SHADE, 0}, {{6, SPELL_VAMPIRIC_TOUCH}}},
+    {151, {RACE_DRAGON, RACE_DRAGONKIN, RACE_UNDEAD, RACE_DRACOLICH, RACE_GHOST, RACE_WIGHT, RACE_REVENANT, 0}, {{6, SPELL_STONE_SKIN}}},
+    {152, {RACE_OGRE, RACE_TROLL, RACE_ORC, 0}, {{2, SPELL_SPIRIT_ARMOR}, {3, SPELL_SPIRIT_WARD}, {4, SPELL_ELEPHANTSTRENGTH}}},
+    {159, {RACE_DRAGONKIN, RACE_DRAGON, 0}, {{6, SPELL_STORNOGS_SPHERES}}},
+    {160, {RACE_HUMAN, RACE_HALFLING, 0}, {{4, SPELL_THORNSKIN}, {6, SPELL_ENDURANCE}}},
+    {162, {RACE_DEVIL, RACE_FAERIE, RACE_ORC, RACE_GIANT, RACE_ILLITHID, 0}, {{5, SPELL_INVIS_MAJOR}}},
+    // Woodseer
+    {165, {RACE_HALFLING, 0}, {{2, SPELL_BARKSKIN}, {3, SPELL_BLESS}, {6, SPELL_ENDURANCE}}},
+    // Khildarak
+    {170, {RACE_DUERGAR, 0}, {{2, SPELL_ARMOR}, {2, SPELL_BLESS}, {4, SPELL_STRENGTH}}},
+    {183, {RACE_UNDEAD, RACE_DEMON, 0}, {{4, SPELL_FIRESHIELD}}},
+    {191, {RACE_ANIMAL, RACE_REPTILE, RACE_SNAKE, RACE_INSECT, RACE_FLYING_ANIMAL, RACE_QUADRUPED, RACE_HERBIVORE, RACE_CARNIVORE, 0}, {{4, SPELL_RAVENFLIGHT}}},
+    {196, {RACE_DRAGON, RACE_BEHOLDER, RACE_DRAGONKIN, 0}, {{3, SPELL_GREATER_SPIRIT_SIGHT}, {6, SPELL_GREATER_SPIRIT_WARD}, {9, SONG_DRAGONS}}},
+    {197, {RACE_GITHYANKI, RACE_GITHZERAI, RACE_ILLITHID, RACE_DEMON, RACE_BEHOLDER, 0}, {{7, SPELL_BIOFEEDBACK}}},
+    {200, {RACE_ORC, RACE_HALFORC, RACE_DRAGONKIN, 0}, {{2, SPELL_ARMOR}, {5, SPELL_VITALITY}}},
+    {202, {RACE_HUMAN, 0}, {{3, SPELL_BARKSKIN}}},
+    {213, {RACE_DROW, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {5, SPELL_MINOR_GLOBE}}},
+    {215, {RACE_HUMAN, RACE_GREY, RACE_HALFELF, RACE_HUMANOID, 0}, {{3, SPELL_BARKSKIN}, {6, SPELL_ENDURANCE}, {9, SPELL_PASS_WITHOUT_TRACE}}},
+    {220, {RACE_BARBARIAN, RACE_ANIMAL, 0}, {{6, SPELL_PANTHERSPEED}, {6, SPELL_LIONRAGE}}},
+    {222, {RACE_HUMAN, RACE_HALFORC, RACE_ORC, RACE_GREY, RACE_HALFELF, RACE_HALFLING, 0}, {{4, SPELL_HASTE}}},
+    {224, {RACE_ORC, RACE_HALFORC, 0}, {{3, SPELL_WATERBREATH}}},
+    {226, {RACE_ORC, RACE_HALFORC, 0}, {{3, SPELL_WATERBREATH}}},
+    {229, {RACE_GIANT, RACE_GOLEM, RACE_CONSTRUCT, 0}, {{5, SPELL_STONE_SKIN}}},
+    {230, {RACE_DEVIL, RACE_DEMON, RACE_GOLEM, RACE_CONSTRUCT, 0}, {{3, SPELL_GLOBE}, {4, SPELL_FLY}, {5, SPELL_DETECT_INVISIBLE}}},
+    {232, {RACE_W_ELEMENTAL, 0}, {{2, SPELL_WATERBREATH}}},
+    {238, {RACE_E_ELEMENTAL, 0}, {{5, SPELL_STONE_SKIN}}},
+    {244, {RACE_A_ELEMENTAL, 0}, {{2, SPELL_FLY}}},
+    {250, {RACE_F_ELEMENTAL, 0}, {{2, SPELL_FIRE_WARD}}},
+    {254, {RACE_F_ELEMENTAL, 0}, {{2, SPELL_FIRE_WARD}}},
+    {257, {RACE_DRAGON, RACE_DRAGONKIN, 0}, {{3, SPELL_GREATER_SPIRIT_SIGHT}, {6, SPELL_GREATER_SPIRIT_WARD}, {9, SONG_DRAGONS}}},
+    {260, {RACE_TROLL, RACE_OGRE, RACE_REPTILE, 0}, {{6, SPELL_REGENERATION}}},
+    {261, {RACE_TROLL, RACE_REPTILE, 0}, {{4, SPELL_REGENERATION}}},
+    {262, {RACE_HUMAN, RACE_HALFELF, RACE_GREY, RACE_MOUNTAIN, RACE_GNOME, 0}, {{3, SPELL_DETECT_MAGIC}, {3, SPELL_FARSEE}, {5, SPELL_LEVITATE}}},
+    {264, {RACE_HUMANOID, 0}, {{6, SPELL_SHADOW_SHIELD}}},
+    {266, {RACE_DEMON, RACE_GITHYANKI, RACE_DRAGONKIN, RACE_BEHOLDER, 0}, {{3, SPELL_NEG_ENERGY_BARRIER}, {5, SPELL_NEG_ARMOR}}},
+    {270, {RACE_HARPY, RACE_GIANT, RACE_MOUNTAIN, RACE_TROLL, 0}, {{3, SPELL_ENDURANCE}}},
+    {285, {RACE_ANIMAL, RACE_REPTILE, RACE_SNAKE, RACE_INSECT, RACE_FLYING_ANIMAL, RACE_QUADRUPED, RACE_HERBIVORE, RACE_CARNIVORE, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}, {5, SPELL_ENDURANCE}}},
+    {289, {RACE_ORC, RACE_HALFORC, RACE_GIANT, RACE_GOLEM, RACE_DEMON, RACE_MOUNTAIN, RACE_DUERGAR, 0}, {{3, SPELL_ENHANCED_STR}, {6, SPELL_STONE_SKIN}}},
+    // Gnome Village - Harrow
+    {294, {RACE_GNOME, 0}, {{3, SPELL_ARMOR}, {3, SPELL_DETECT_MAGIC}}},
+    {306, {RACE_ANIMAL, RACE_HERBIVORE, RACE_HALFLING, RACE_GREY, 0}, {{3, SPELL_BARKSKIN}}},
+    {308, {RACE_SGIANT, RACE_GIANT, 0}, {{4, SPELL_ENDURANCE}}},
+    {311, {RACE_HARPY, RACE_GARGOYLE, 0}, {{4, SPELL_FLY}}},
+    {313, {RACE_FAERIE, RACE_ANGEL, RACE_DEVIL, RACE_A_ELEMENTAL, 0}, {{6, SPELL_INVIS_MAJOR}}},
+    {315, {RACE_W_ELEMENTAL, RACE_FAERIE, 0}, {{2, SPELL_WATERBREATH}, {5, SPELL_INVIS_MAJOR}, {8, SPELL_STORNOGS_SPHERES}}},
+    {318, {RACE_BARBARIAN, RACE_GIANT, RACE_CARNIVORE, 0}, {{3, SPELL_COLD_WARD}, {5, SPELL_COLDSHIELD}}},
+    {320, {RACE_DEVIL, 0}, {{3, SPELL_FLY}, {6, SPELL_TRUE_SEEING}, {8, SPELL_INFERNAL_FURY}}},
+    {324, {RACE_DEVIL, 0}, {{4, SPELL_DAZZLE}, {6, SPELL_BLUR}}},
+    {328, {RACE_ILLITHID, RACE_GITHYANKI, RACE_GIANT, RACE_DEMON, 0}, {{3, SPELL_FLESH_ARMOR}, {5, SPELL_INTELLECT_FORTRESS}}},
+    {333, {RACE_PSBEAST, RACE_SHADE, RACE_UNDEAD, RACE_LYCANTH, RACE_GHOST, 0}, {{3, SPELL_PROT_FROM_UNDEAD}}},
+    {335, {RACE_VAMPIRE, RACE_UNDEAD, RACE_GHOST, RACE_REVENANT, RACE_PDKNIGHT, RACE_LICH, 0}, {{3, SPELL_PROT_FROM_UNDEAD}}},
+    {342, {RACE_DUERGAR, RACE_GIANT, RACE_ARACHNID, 0}, {{3, SPELL_STRENGTH}, {6, SPELL_INVISIBLE}}},
+    {345, {RACE_VAMPIRE, RACE_UNDEAD, 0}, {{4, SPELL_DETECT_INVISIBLE}, {4, SPELL_INVIS_MAJOR}}},
+    {360, {RACE_DEMON, RACE_DROW, RACE_DUERGAR, RACE_GITHYANKI, RACE_PDKNIGHT, 0}, {{3, SPELL_ENDURANCE}, {6, SPELL_INVISIBLE}}},
+    {367, {RACE_VAMPIRE, RACE_UNDEAD, RACE_DROW, RACE_DUERGAR, RACE_DRACOLICH, 0}, {{5, SPELL_STONE_SKIN}}},
+    {368, {RACE_VAMPIRE, RACE_UNDEAD, RACE_DROW, RACE_DUERGAR, RACE_WIGHT, RACE_REVENANT, RACE_DRACOLICH, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {5, SPELL_SOULSHIELD}}},
+    {370, {RACE_CARNIVORE, RACE_GIANT, 0}, {{3, SPELL_ENDURANCE}}},
+    {371, {RACE_HUMAN, RACE_BARBARIAN, RACE_HALFELF, 0}, {{6, SPELL_STONE_SKIN}}},
+    {377, {RACE_MINOTAUR, RACE_THRIKREEN, 0}, {{3, SPELL_ENDURANCE}}},
+    {381, {RACE_HUMANOID, 0}, {{4, SPELL_GLOBE}}},
+    {383, {RACE_HUMANOID, 0}, {{3, SPELL_ENDURANCE}}},
+    {386, {RACE_DROW, RACE_DUERGAR, RACE_DEVIL, RACE_DEMON, 0}, {{3, SPELL_COLD_WARD}, {5, SPELL_GLOBE}}},
+    {387, {RACE_DEVIL, RACE_DEMON, RACE_DRAGON, 0}, {{5, SPELL_BIOFEEDBACK}}},
+    {391, {RACE_BARBARIAN, RACE_HUMAN, 0}, {{3, SPELL_PROTECT_FROM_COLD}, {4, SPELL_SPIRIT_ARMOR}, {5, SPELL_ENDURANCE}}},
+    {400, {RACE_HUMAN, RACE_HUMANOID, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}}},
+    {402, {RACE_HUMAN, RACE_HUMANOID, RACE_GOBLIN, RACE_HALFELF, RACE_HALFORC, 0}, {{3, SPELL_BARKSKIN}}},
+    {412, {RACE_UNDEAD, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {4, SPELL_VITALITY}, {5, SPELL_SOULSHIELD}}},
+    {419, {RACE_BARBARIAN, RACE_ANIMAL, RACE_ARACHNID, 0}, {{3, SPELL_BARKSKIN}, {5, SPELL_ENDURANCE}, {7, SPELL_INVIS_MAJOR}}},
+    {441, {RACE_GITHZERAI, 0}, {{6, SPELL_CHAOS_SHIELD}}},
+    {448, {RACE_ANGEL, RACE_DEVIL, RACE_DEMON, RACE_SGIANT, 0}, {{2, SPELL_BLESS}, {4, SPELL_SOULSHIELD}, {6, SPELL_VITALITY}}},
+    {450, {RACE_GREY, RACE_CENTAUR, RACE_HALFELF, 0}, {{3, SPELL_BARKSKIN}, {6, SPELL_ENDURANCE}}},
+    //{480, {RACE_HUMAN, RACE_BARBARIAN, RACE_HALFORC, RACE_HUMANOID, RACE_HALFLING, 0}, {{6, SPELL_STONE_SKIN}}},
+    //{510, {RACE_DEMON, RACE_DEVIL, RACE_GITHYANKI, RACE_VAMPIRE, RACE_DRAGON, 0}, {{6, SPELL_STONE_SKIN}}},
+    {583, {RACE_HUMAN, RACE_VAMPIRE, RACE_UNDEAD, RACE_GHOST, RACE_REVENANT, RACE_LICH, RACE_PDKNIGHT, 0}, {{8, SPELL_VAMPIRE}}},
+    {662, {RACE_HUMAN, RACE_GNOME, RACE_HALFELF, 0}, {{5, SPELL_FLY}}},
+    {671, {RACE_HUMAN, RACE_MOUNTAIN, RACE_DUERGAR, 0}, {{6, SPELL_VITALITY}}},
+    {676, {RACE_THRIKREEN, 0}, {{4, SPELL_ENDURANCE}}},
+    // The Town of Moregeeth (goblin ht)
+    {700, {RACE_GOBLIN, 0}, {{3, SPELL_ARMOR}, {6, SPELL_ENDURANCE}}},
+    {710, {RACE_HUMAN, RACE_ORC, RACE_HALFORC, RACE_MINOTAUR, RACE_HUMANOID, 0}, {{6, SPELL_STONE_SKIN}}},
+    {756, {RACE_HUMAN, RACE_LICH, RACE_BARBARIAN, RACE_PHANTOM, RACE_DEMON, RACE_UNDEAD, 0}, {{3, SPELL_PROT_FROM_UNDEAD}, {7, SPELL_STONE_SKIN}}},
+    {758, {RACE_HUMAN, RACE_HARPY, RACE_MOUNTAIN, RACE_HALFELF, 0}, {{5, SPELL_FLY}}},
+    // Rift Valley Jungle
+    {800, {RACE_GREY, RACE_HALFLING, RACE_SNAKE, RACE_CARNIVORE, RACE_HERBIVORE, RACE_FLYING_ANIMAL, RACE_ARACHNID, 0}, {{3, SPELL_BLESS}, {3, SPELL_BARKSKIN}, {6, SPELL_ENDURANCE}}},
+    {824, {RACE_HUMAN, RACE_GREY, RACE_HALFELF, RACE_RAKSHASA, RACE_CENTAUR, RACE_MOUNTAIN, 0}, {{6, SPELL_VITALITY}}},
+    //{856, {RACE_UNDEAD, RACE_GHOST, RACE_ORC, RACE_REVENANT, RACE_SHADE, 0}, {{6, SPELL_STONE_SKIN}}},
+    {857, {RACE_SGIANT, RACE_GIANT, RACE_DRAGONKIN, RACE_HUMAN, 0}, {{3, SPELL_SPIRIT_ARMOR}, {4, SPELL_SPIRIT_WARD}, {5, SPELL_ENDURANCE}}},
+    {936, {RACE_HUMAN, RACE_HALFORC, RACE_HALFELF, 0}, {{3, SPELL_PROTECT_FROM_LIVING}, {5, SPELL_HASTE}}},
+    {955, {RACE_MOUNTAIN, 0}, {{3, SPELL_ARMOR}, {3, SPELL_BLESS}, {5, SPELL_STRENGTH}}},
+    {960, {RACE_GIANT, RACE_SGIANT, RACE_TROLL, 0}, {{3, SPELL_FLY}, {6, SPELL_STONE_SKIN}}},
+    {964, {RACE_ILLITHID, RACE_DROW, 0}, {{6, SPELL_FLESH_ARMOR}, {6, SPELL_INTELLECT_FORTRESS}}},
+    // Shady Grove (orc ht)
+    {975, {RACE_ORC, RACE_HALFORC, 0}, {{3, SPELL_ARMOR}, {6, SPELL_ENDURANCE}}},
+    {987, {RACE_VAMPIRE, RACE_SHADE, RACE_PDKNIGHT, RACE_LICH, RACE_PHANTOM, RACE_WIGHT, 0}, {{4, SPELL_PROT_FROM_UNDEAD}}},
+    // Tharnadia (human ht)
+    {1325, {RACE_HUMAN, 0}, {{3, SPELL_ARMOR}, {5, SPELL_ENDURANCE}}},
+    {0, {0}, {{0, 0}}}};
 
 extern Skill skills[];
 
 void do_namedreport(P_char ch, char *argument, int cmd)
 {
-	send_to_char("&+YCurrent listing of spells granted by named sets by zone.&n\n", ch);
-	send_to_char("&+Y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n\n", ch);
-	send_to_char("  &+MNotes&n: &+W*&n if a zone isn't listed, sets still grant hitpoints\n", ch);
-    send_to_char("         &+W*&n caster level of the spell(s) is based on number of items\n", ch);
-	send_to_char("           going over set requirements will increase caster level\n", ch);
-	send_to_char("         &+W*&n &+Gthese&n spells have a cooldown of 1 minute\n", ch);
-	send_to_char("           &+ythese&n spells have a cooldown of 5 minutes\n", ch);
-	
-	send_to_char("\n&+Y ZONE NAME                                        &+W|&+B SPELLS GRANTED &+W(&+Ypieces required&n&+W)&n\n", ch);
-	send_to_char("&+W-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n", ch);
-	for (int i = 0; i < ARRAY_SIZE(zones_random_data); i++)
-	{
-		char buffer[MAX_STRING_LENGTH] = {0};
+  send_to_char("&+YCurrent listing of spells granted by named sets by zone.&n\n", ch);
+  send_to_char("&+Y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n\n", ch);
+  send_to_char("  &+MNotes&n: &+W*&n if a zone isn't listed, sets still grant hitpoints\n", ch);
+  send_to_char("         &+W*&n caster level of the spell(s) is based on number of items\n", ch);
+  send_to_char("           going over set requirements will increase caster level\n", ch);
+  send_to_char("         &+W*&n &+Gthese&n spells have a cooldown of 1 minute\n", ch);
+  send_to_char("           &+ythese&n spells have a cooldown of 5 minutes\n", ch);
 
-		int zone_id = real_zone(zones_random_data[i].zone);
+  send_to_char("\n&+Y ZONE NAME                                        &+W|&+B SPELLS GRANTED &+W(&+Ypieces required&n&+W)&n\n", ch);
+  send_to_char("&+W-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n", ch);
+  for (int i = 0; i < ARRAY_SIZE(zones_random_data); i++)
+  {
+    char buffer[MAX_STRING_LENGTH] = {0};
 
-		if (zone_id <= 0)
-		{
-			continue;
-		}
+    int zone_id = real_zone(zones_random_data[i].zone);
 
-		const char *zone_name = zone_table[zone_id].name;		
-		
-		snprintf(buffer, ARRAY_SIZE(buffer), " %s    &+W|&n ", pad_ansi( zone_name, 45, FALSE ).c_str());
+    if (zone_id <= 0)
+    {
+      continue;
+    }
 
-		if(zones_random_data[i].proc_spells[0][0] == 0)
-		{
-			strncat(buffer, "&+LNONE&n", ARRAY_SIZE(buffer));
-			continue;
-		}
+    const char *zone_name = zone_table[zone_id].name;
 
-		for (int x = 0; x < ARRAY_SIZE(zones_random_data[i].proc_spells); x++)
-		{			
-			char buf[1024];
-			if(zones_random_data[i].proc_spells[x][0] != 0 && zones_random_data[i].proc_spells[x][1] <= MAX_AFFECT_TYPES)
-			{
-				struct {
-					int spellNum;
-					const char* color;
-				} spellColors[] = {
-					{ SPELL_STONE_SKIN, "&+G" },
-					{ SPELL_INVIGORATE, "&+G" },
-					{ SPELL_CONJURE_ELEMENTAL, "&+y" }
-				};
-				const char *spellColor = "&+B";
-				for (int y = 0; y < ARRAY_SIZE(spellColors); y++)
-				{
-					if (zones_random_data[i].proc_spells[x][1] == spellColors[y].spellNum)
-					{
-						spellColor = spellColors[y].color;
-						break;
-					}
-				}
-				snprintf(buf, ARRAY_SIZE(buf), "%s%s%s &+W(&+Y%d&+W)&n", x != 0 ? "&+W,&n " : "", spellColor, skills[zones_random_data[i].proc_spells[x][1]].name, zones_random_data[i].proc_spells[x][0]);
-				strncat(buffer, buf, ARRAY_SIZE(buffer));
-			}
-		}
-		strncat(buffer, "\n", ARRAY_SIZE(buffer));
-		send_to_char(buffer, ch);
-	}
+    snprintf(buffer, ARRAY_SIZE(buffer), " %s    &+W|&n ", pad_ansi(zone_name, 45, FALSE).c_str());
+
+    if (zones_random_data[i].proc_spells[0][0] == 0)
+    {
+      strncat(buffer, "&+LNONE&n", MAX_STRING_LENGTH - strlen(buffer) - 1);
+      continue;
+    }
+
+    for (int x = 0; x < ARRAY_SIZE(zones_random_data[i].proc_spells); x++)
+    {
+      char buf[1024];
+      if (zones_random_data[i].proc_spells[x][0] != 0 && zones_random_data[i].proc_spells[x][1] <= MAX_AFFECT_TYPES)
+      {
+        struct
+        {
+          int spellNum;
+          const char *color;
+        } spellColors[] = {
+            {SPELL_STONE_SKIN, "&+G"},
+            {SPELL_INVIGORATE, "&+G"},
+            {SPELL_CONJURE_ELEMENTAL, "&+y"}};
+        const char *spellColor = "&+B";
+        for (int y = 0; y < ARRAY_SIZE(spellColors); y++)
+        {
+          if (zones_random_data[i].proc_spells[x][1] == spellColors[y].spellNum)
+          {
+            spellColor = spellColors[y].color;
+            break;
+          }
+        }
+        snprintf(buf, ARRAY_SIZE(buf), "%s%s%s &+W(&+Y%d&+W)&n", x != 0 ? "&+W,&n " : "", spellColor, skills[zones_random_data[i].proc_spells[x][1]].name, zones_random_data[i].proc_spells[x][0]);
+        strncat(buffer, buf, MAX_STRING_LENGTH - strlen(buffer) - 1);
+      }
+    }
+    strncat(buffer, "\n", MAX_STRING_LENGTH - strlen(buffer) - 1);
+    send_to_char(buffer, ch);
+  }
 }
 
 struct random_mob
 {
 
-  int      vnum;
-  char    *name;
-  char    *keywords;
-  char    *desc;
-  float    level;
-  int      aligment;
-  char    *race;
-  char    *m_class;
-  ulong    aggro_flags;
-
+  int vnum;
+  char *name;
+  char *keywords;
+  char *desc;
+  float level;
+  int aligment;
+  char *race;
+  char *m_class;
+  ulong aggro_flags;
 };
 
 // I assume this is an event of some kind?
 void spawn_random_mapmob()
 {
   P_char random_mob;
-  int    count = 0;
+  int count = 0;
 
   for (random_mob = character_list; random_mob; random_mob = random_mob->next)
   {
-    if( IS_NPC(random_mob) && GET_VNUM(random_mob) == 1255 )
+    if (IS_NPC(random_mob) && GET_VNUM(random_mob) == 1255)
     {
       count++;
     }
@@ -391,28 +382,28 @@ void spawn_random_mapmob()
 // Really should list what themes are here.. but I don't know them.
 P_char create_random_mob(int theme, int mob_level)
 {
-  P_char   random_mob;
-  int      zone_number = 0;
-  int      zone_idx = 0;
-  int      race = 0;
-  int      level = 0;
-  int      prefix = 0;
-  int      class_idx = 0;
-  int      to_room = 0;
-  int      map_room = 0;
-  int      tries = 0;
-  int      i;
-  char     race_name[256], class_name[256], temp_name[256];
-  char     t_buf[MAX_STRING_LENGTH];
+  P_char random_mob;
+  int zone_number = 0;
+  int zone_idx = 0;
+  int race = 0;
+  int level = 0;
+  int prefix = 0;
+  int class_idx = 0;
+  int to_room = 0;
+  int map_room = 0;
+  int tries = 0;
+  int i;
+  char race_name[256], class_name[256], temp_name[256];
+  char t_buf[MAX_STRING_LENGTH];
   struct zone_data *the_zone = 0;
-  P_obj    o;
+  P_obj o;
 
-  if( !mob_level )
+  if (!mob_level)
   {
     mob_level = number(10, 61);
   }
 
-  if( theme == -1 )
+  if (theme == -1)
   {
     random_mob = read_mobile(1255, VIRTUAL);
   }
@@ -421,30 +412,30 @@ P_char create_random_mob(int theme, int mob_level)
     random_mob = read_mobile(1256, VIRTUAL);
   }
 
-  if( !random_mob )
+  if (!random_mob)
   {
     return NULL;
   }
 
   int zones_random_data_size = 0;
-  for( int i = 0; zones_random_data[i].zone; i++ )
+  for (int i = 0; zones_random_data[i].zone; i++)
   {
     zones_random_data_size++;
   }
 
   // If, for some reason, there's no data in the zones_random_data array.
-  if( zones_random_data_size < 1 )
+  if (zones_random_data_size < 1)
   {
     extract_char(random_mob);
     return NULL;
   }
 
-  zone_idx = number(0, zones_random_data_size-1);
+  zone_idx = number(0, zones_random_data_size - 1);
   zone_number = zones_random_data[zone_idx].zone;
   the_zone = &zone_table[real_zone0(zone_number)];
   to_room = the_zone->real_bottom;
 
-  if( to_room <= 0 )
+  if (to_room <= 0)
   {
     debug("Could not find starting room for zone %d for random mob", zone_number);
     extract_char(random_mob);
@@ -454,19 +445,19 @@ P_char create_random_mob(int theme, int mob_level)
   char_to_room(random_mob, to_room, 0);
 
   int races = 0;
-  for( int i = 0; zones_random_data[zone_idx].races[i]; i++ )
+  for (int i = 0; zones_random_data[zone_idx].races[i]; i++)
   {
     races++;
   }
-  if( races < 1 )
+  if (races < 1)
   {
     extract_char(random_mob);
     return NULL;
   }
   // Theme 3 is dwarf.
-  if( theme == 3 )
+  if (theme == 3)
   {
-    if( number(0, 1) )
+    if (number(0, 1))
     {
       race = RACE_MOUNTAIN;
     }
@@ -477,15 +468,15 @@ P_char create_random_mob(int theme, int mob_level)
   }
   else
   {
-    race = zones_random_data[zone_idx].races[number(0, races-1)];
+    race = zones_random_data[zone_idx].races[number(0, races - 1)];
   }
   // Theme 4 is good race.
-  if( theme == 4 )
+  if (theme == 4)
   {
     while (TRUE)
     {
       // Pick one of the first 27 races, or up to LAST_RACE if there are less than 27 races.
-      race = number( 1, MIN(27, LAST_RACE) );
+      race = number(1, MIN(27, LAST_RACE));
 
       // Stop looking when we find a good race.
       if (IS_RACEWAR_GOOD(random_mob))
@@ -499,23 +490,23 @@ P_char create_random_mob(int theme, int mob_level)
   {
     while (TRUE)
     {
-      race = number( 1, MIN(27, LAST_RACE) );
+      race = number(1, MIN(27, LAST_RACE));
 
       // If racewar == EVIL, then racewar != UNDEAD.
-      if( IS_RACEWAR_EVIL(random_mob) )
+      if (IS_RACEWAR_EVIL(random_mob))
       {
         break;
       }
     }
   }
   // Theme 6 is undead race.
-  else if( theme == 6 )
+  else if (theme == 6)
   {
     while (TRUE)
     {
-      race = number( 1, MIN(27, LAST_RACE) );
+      race = number(1, MIN(27, LAST_RACE));
 
-      if( IS_RACEWAR_UNDEAD(random_mob) )
+      if (IS_RACEWAR_UNDEAD(random_mob))
       {
         break;
       }
@@ -534,17 +525,17 @@ P_char create_random_mob(int theme, int mob_level)
   }
   random_mob->player.race = race;
 
-  //find a class for it!
-  // adding this counter to prevent an infinite loop if every column in class_table[race] == 5 | chage by Torgal
-  // Doing this differently.. gonna start at random class, and walk around the class_table, and if we come back to it stop.
+  // find a class for it!
+  //  adding this counter to prevent an infinite loop if every column in class_table[race] == 5 | chage by Torgal
+  //  Doing this differently.. gonna start at random class, and walk around the class_table, and if we come back to it stop.
   i = class_idx = number(1, CLASS_COUNT);
-  while( class_table[race][class_idx] == 5 )
+  while (class_table[race][class_idx] == 5)
   {
     // Increment index or go to 1 at CLASS_COUNT (skip CLASS_NONE == 0).
     class_idx = (class_idx == CLASS_COUNT) ? 1 : (class_idx + 1);
 
     // If we've gone around all the classes..
-    if( i == class_idx )
+    if (i == class_idx)
     {
       extract_char(random_mob);
       return NULL;
@@ -554,13 +545,12 @@ P_char create_random_mob(int theme, int mob_level)
   random_mob->player.m_class = 1 << (class_idx - 1);
 
   random_mob->specials.alignment =
-    BOUNDED(-1000, 1000 * class_table[race][class_idx], 1000);
-
+      BOUNDED(-1000, 1000 * class_table[race][class_idx], 1000);
 
   // find a prefix
   prefix = number(1, 35);
-  //set long desc
-  for( i = 0; race_names_table[race].ansi[i]; i++ )
+  // set long desc
+  for (i = 0; race_names_table[race].ansi[i]; i++)
   {
     if (i && race_names_table[race].ansi[i - 1] != '+')
     {
@@ -586,11 +576,11 @@ P_char create_random_mob(int theme, int mob_level)
   }
   class_name[i] = 0;
 
-  if( theme == -1 )
+  if (theme == -1)
   {
-    if( number(0, 4) && IS_HUMANOID(random_mob) )
+    if (number(0, 4) && IS_HUMANOID(random_mob))
     {
-      if( get_name(temp_name) )
+      if (get_name(temp_name))
       {
         random_mob->player.sex = SEX_MALE;
       }
@@ -600,15 +590,15 @@ P_char create_random_mob(int theme, int mob_level)
       }
       random_mob->only.npc->str_mask |= STRUNG_DESC1;
       snprintf(t_buf, MAX_STRING_LENGTH, "&+W%s&+w the&n %s %s &+Wfrom %s&n.", temp_name,
-              race_name, class_name, the_zone->name);
+               race_name, class_name, the_zone->name);
       random_mob->player.long_descr = str_dup(t_buf);
 
-      //Short
+      // Short
       random_mob->only.npc->str_mask |= STRUNG_DESC2;
 
       snprintf(t_buf, MAX_STRING_LENGTH, "%s the %s %s", temp_name, race_name, class_name);
       random_mob->player.short_descr = str_dup(t_buf);
-      //name!
+      // name!
       random_mob->only.npc->str_mask |= STRUNG_KEYS;
 
       snprintf(t_buf, MAX_STRING_LENGTH, "%s %s %s", temp_name, strip_ansi(race_name).c_str(), strip_ansi(class_name).c_str());
@@ -618,15 +608,15 @@ P_char create_random_mob(int theme, int mob_level)
     {
       random_mob->only.npc->str_mask |= STRUNG_DESC1;
       snprintf(t_buf, MAX_STRING_LENGTH, "%s %s %s &+Wfrom %s&n.", prefix_name[prefix], race_name,
-              class_name, the_zone->name);
+               class_name, the_zone->name);
       random_mob->player.long_descr = str_dup(t_buf);
 
-//Short
+      // Short
       random_mob->only.npc->str_mask |= STRUNG_DESC2;
 
       snprintf(t_buf, MAX_STRING_LENGTH, "%s %s %s", prefix_name[prefix], race_name, class_name);
       random_mob->player.short_descr = str_dup(t_buf);
-//name!
+      // name!
       random_mob->only.npc->str_mask |= STRUNG_KEYS;
 
       snprintf(t_buf, MAX_STRING_LENGTH, "%s %s", strip_ansi(race_name).c_str(), strip_ansi(class_name).c_str());
@@ -638,53 +628,53 @@ P_char create_random_mob(int theme, int mob_level)
     prefix = number(0, 1);
     random_mob->only.npc->str_mask |= STRUNG_DESC1;
     snprintf(t_buf, MAX_STRING_LENGTH, "%s %s %s&n stands here.",
-            prefix_name_theme[theme][prefix], race_name, class_name);
+             prefix_name_theme[theme][prefix], race_name, class_name);
     random_mob->player.long_descr = str_dup(t_buf);
 
-//Short
+    // Short
     random_mob->only.npc->str_mask |= STRUNG_DESC2;
 
     snprintf(t_buf, MAX_STRING_LENGTH, "%s %s %s", prefix_name_theme[theme][prefix], race_name,
-            class_name);
+             class_name);
     random_mob->player.short_descr = str_dup(t_buf);
-//name!
+    // name!
     random_mob->only.npc->str_mask |= STRUNG_KEYS;
 
     snprintf(t_buf, MAX_STRING_LENGTH, "%s %s", strip_ansi(race_name).c_str(), strip_ansi(class_name).c_str());
     random_mob->player.name = str_dup(t_buf);
   }
 
-  //ok let's set some lvls and other attribs of the mob!
-  //level
-  // Simplified this
-  level = (mob_level>0) ? mob_level : number(30, 61);
+  // ok let's set some lvls and other attribs of the mob!
+  // level
+  //  Simplified this
+  level = (mob_level > 0) ? mob_level : number(30, 61);
 
   random_mob->player.level = MIN(level, 61);
-  //hit, dam
-  //2k - 30k
+  // hit, dam
+  // 2k - 30k
   random_mob->points.base_hitroll = random_mob->points.hitroll = level;
   random_mob->points.base_damroll = random_mob->points.damroll = level;
-// dice
-  random_mob->points.damnodice = (int) MAX(1, level / 5 + number(0, 3));
-  random_mob->points.damsizedice = (int) MAX(1, level / 5);
+  // dice
+  random_mob->points.damnodice = (int)MAX(1, level / 5 + number(0, 3));
+  random_mob->points.damsizedice = (int)MAX(1, level / 5);
 
   if (GET_CLASS(random_mob, CLASS_MONK))
   {
     MonkSetSpecialDie(random_mob);
   }
-//hps
+  // hps
   GET_MAX_HIT(random_mob) = GET_HIT(random_mob) = random_mob->points.base_hit =
-    (int) (((level * level * level) / 12 + number(0, 89)) / 4);
+      (int)(((level * level * level) / 12 + number(0, 89)) / 4);
 
-//let's set some cash on it!
-  GET_PLATINUM(random_mob) = number((int) (level / 2), level * 2);
+  // let's set some cash on it!
+  GET_PLATINUM(random_mob) = number((int)(level / 2), level * 2);
   GET_GOLD(random_mob) = number(0, level);
-//  GET_SILVER(random_mob) = number(0, level);
-//  GET_COPPER(random_mob) = number(0, 99);
+  //  GET_SILVER(random_mob) = number(0, level);
+  //  GET_COPPER(random_mob) = number(0, 99);
 
-  //set right size!
-  // Why you do GET_RACE here instead of just race is beyond me, but ok.
-  switch( GET_RACE(random_mob) )
+  // set right size!
+  //  Why you do GET_RACE here instead of just race is beyond me, but ok.
+  switch (GET_RACE(random_mob))
   {
   case RACE_NONE:
   case RACE_HUMAN:
@@ -797,31 +787,31 @@ P_char create_random_mob(int theme, int mob_level)
     break;
   }
 
-  if(GET_LEVEL(random_mob) == 61)
+  if (GET_LEVEL(random_mob) == 61)
   {
     SET_BIT(random_mob->specials.act, ACT_ELITE);
     SET_BIT(random_mob->specials.affected_by, AFF_BIOFEEDBACK);
   }
 
-  if(GET_LEVEL(random_mob) >= 56)
+  if (GET_LEVEL(random_mob) >= 56)
   {
     SET_BIT(random_mob->specials.affected_by4, AFF4_DETECT_ILLUSION);
   }
 
-  if(GET_LEVEL(random_mob) >= 50)
+  if (GET_LEVEL(random_mob) >= 50)
   {
     SET_BIT(random_mob->specials.affected_by, AFF_AWARE);
     SET_BIT(random_mob->specials.affected_by, AFF_SENSE_LIFE);
     SET_BIT(random_mob->specials.affected_by, AFF_HASTE);
   }
 
-  //give the mob 1-3 random items!
-  if( theme == -1 || 0 == number(0, 1) )
+  // give the mob 1-3 random items!
+  if (theme == -1 || 0 == number(0, 1))
   {
     o = create_random_eq_new(random_mob, random_mob, -1, -1);
     obj_to_char(o, random_mob);
 
-    while( !number(0, 2) )
+    while (!number(0, 2))
     {
       o = create_random_eq_new(random_mob, random_mob, -1, -1);
       obj_to_char(o, random_mob);
@@ -838,54 +828,55 @@ P_char create_random_mob(int theme, int mob_level)
     }
   }
 
-  if( theme != -1)
+  if (theme != -1)
   {
     SET_BIT(random_mob->only.npc->aggro_flags, AGGR_ALL);
   }
   else
   {
     debug("Created level(%d): %s in %s (%d)", GET_LEVEL(random_mob), random_mob->player.long_descr,
-      world[random_mob->in_room].name, world[random_mob->in_room].number);
+          world[random_mob->in_room].name, world[random_mob->in_room].number);
   }
 
   GET_HOME(random_mob) = GET_BIRTHPLACE(random_mob) =
-    GET_ORIG_BIRTHPLACE(random_mob) = world[random_mob->in_room].number;
+      GET_ORIG_BIRTHPLACE(random_mob) = world[random_mob->in_room].number;
 
   return random_mob;
-
 }
 
 int find_mob_map_room(P_char random_mob)
 {
-  int      tries = 0;
-  int      to_room = 0;
+  int tries = 0;
+  int to_room = 0;
 
   do
   {
     to_room = number(0, top_of_world);
     tries++;
-  } while( (IS_ROOM(to_room, ROOM_PRIVATE) ||
-         PRIVATE_ZONE(to_room) ||
-         IS_ROOM(to_room, ROOM_NO_TELEPORT) ||
-         world[to_room].sector_type == SECT_OCEAN ||
-          world[to_room].sector_type == SECT_MOUNTAIN ||
-          world[to_room].sector_type == SECT_WATER_SWIM ||
-          world[to_room].sector_type == SECT_WATER_NOSWIM ||
-         !IS_MAP_ROOM(to_room)) && tries < 2000);
+  } while ((IS_ROOM(to_room, ROOM_PRIVATE) ||
+            PRIVATE_ZONE(to_room) ||
+            IS_ROOM(to_room, ROOM_NO_TELEPORT) ||
+            world[to_room].sector_type == SECT_OCEAN ||
+            world[to_room].sector_type == SECT_MOUNTAIN ||
+            world[to_room].sector_type == SECT_WATER_SWIM ||
+            world[to_room].sector_type == SECT_WATER_NOSWIM ||
+            !IS_MAP_ROOM(to_room)) &&
+           tries < 2000);
 
-  if (tries < 2000) {
+  if (tries < 2000)
+  {
     char_from_room(random_mob);
     char_to_room(random_mob, to_room, 0);
     return to_room;
-  } else
+  }
+  else
     return 0;
 }
 
 int find_a_zone()
 {
-  int      zone = 0;
+  int zone = 0;
 
   zone = number(1, top_of_zone_table);
   return zone;
 }
-

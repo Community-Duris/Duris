@@ -1,200 +1,155 @@
 #313
 &+CD&+Wr&+cif&+Cting &+WR&+Cea&+cl&+Wm&n~
-31344 0 0 40 50 1
+31326 0 0 40 50 3
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
-D 0 31303 0 2 100 0 0 0
-*     north exit from "Channeled Visions" to
+D 0 31301 1 1 100 0 0 0
+*     east exit from "A Vast Escape" to
+*     "Shrouded In A Mist Of Wonder" - closed
+*
+D 0 31312 3 1 100 0 0 0
+*     west exit from "Shrouded In A Mist Of Wonder" to
+*     "A Vast Escape" - closed
+*
+D 0 31302 0 1 100 0 0 0
+*     north exit from "Merging Through Channeled Visions" to
+*     "A Glimpse of Heaven" - closed
+*
+D 0 31307 2 1 100 0 0 0
+*     south exit from "A Glimpse of Heaven" to
+*     "Merging Through Channeled Visions" - closed
+*
+D 0 31302 1 2 100 0 0 0
+*     east exit from "Merging Through Channeled Visions" to
 *     "A Humble Sanctuary" - closed/locked
 *
-D 0 31322 2 2 100 0 0 0
-*     south exit from "A Humble Sanctuary" to
-*     "Channeled Visions" - closed/locked
+D 0 31316 3 2 100 0 0 0
+*     west exit from "A Humble Sanctuary" to
+*     "Merging Through Channeled Visions" - closed/locked
 *
-D 0 31303 2 2 100 0 0 0
-*     south exit from "Channeled Visions" to
+D 0 31302 2 1 100 0 0 0
+*     south exit from "Merging Through Channeled Visions" to
+*     "A Glimpse of Hell" - closed
+*
+D 0 31308 0 1 100 0 0 0
+*     north exit from "A Glimpse of Hell" to
+*     "Merging Through Channeled Visions" - closed
+*
+D 0 31303 1 2 100 0 0 0
+*     east exit from "Merging Through Channeled Visions" to
 *     "A Shady Hideout" - closed/locked
 *
-D 0 31323 0 2 100 0 0 0
-*     north exit from "A Shady Hideout" to
-*     "Channeled Visions" - closed/locked
+D 0 31317 3 2 100 0 0 0
+*     west exit from "A Shady Hideout" to
+*     "Merging Through Channeled Visions" - closed/locked
 *
-D 0 31304 0 2 100 0 0 0
-*     north exit from "Channeled Visions" to
-*     "A Sense of Vigor" - closed/locked
-*
-D 0 31321 2 2 100 0 0 0
-*     south exit from "A Sense of Vigor" to
-*     "Channeled Visions" - closed/locked
-*
-D 0 31305 2 2 100 0 0 0
-*     south exit from "Channeled Visions" to
-*     "Secluded Desires" - closed/locked
-*
-D 0 31319 0 2 100 0 0 0
-*     north exit from "Secluded Desires" to
-*     "Channeled Visions" - closed/locked
-*
-D 0 31306 0 2 100 0 0 0
-*     north exit from "Channeled Visions" to
-*     "An Enchanted Forest" - closed/locked
-*
-D 0 31318 2 2 100 0 0 0
-*     south exit from "An Enchanted Forest" to
-*     "Channeled Visions" - closed/locked
-*
-D 0 31307 2 2 100 0 0 0
-*     south exit from "Channeled Visions" to
-*     "Mist of Wonders" - closed/locked
-*
-D 0 31317 0 2 100 0 0 0
-*     north exit from "Mist of Wonders" to
-*     "Channeled Visions" - closed/locked
-*
-D 0 31308 0 2 100 0 0 0
-*     north exit from "Channeled Visions" to
-*     "A Grand Entry" - closed/locked
-*
-D 0 31315 2 2 100 0 0 0
-*     south exit from "A Grand Entry" to
-*     "Channeled Visions" - closed/locked
-*
-D 0 31309 2 2 100 0 0 0
-*     south exit from "Channeled Visions" to
-*     "A Final Resting" - closed/locked
-*
-D 0 31314 0 2 100 0 0 0
-*     north exit from "A Final Resting" to
-*     "Channeled Visions" - closed/locked
-*
-D 0 31310 0 2 100 0 0 0
-*     north exit from "Channeled Visions" to
-*     "A Glimpse of Heaven" - closed/locked
-*
-D 0 31312 2 2 100 0 0 0
-*     south exit from "A Glimpse of Heaven" to
-*     "Channeled Visions" - closed/locked
-*
-D 0 31310 2 2 100 0 0 0
-*     south exit from "Channeled Visions" to
-*     "A Glimpse of Hell" - closed/locked
-*
-D 0 31313 0 2 100 0 0 0
-*     north exit from "A Glimpse of Hell" to
-*     "Channeled Visions" - closed/locked
+D 0 31304 1 2 100 0 0 0
+*     east exit from "Merging Through Channeled Visions" to
+*     "A Vigorous Scenary" - closed/locked
 *
 D 0 31315 3 2 100 0 0 0
-*     west exit from "A Grand Entry" to
-*     "The Castle Ballroom" - closed/locked
+*     west exit from "A Vigorous Scenary" to
+*     "Merging Through Channeled Visions" - closed/locked
 *
-D 0 31316 1 2 100 0 0 0
-*     east exit from "The Castle Ballroom" to
-*     "A Grand Entry" - closed/locked
+D 0 31305 1 2 100 0 0 0
+*     east exit from "Merging Through Channeled Visions" to
+*     "A Final Resting Place" - closed/locked
+*
+D 0 31309 3 2 100 0 0 0
+*     west exit from "A Final Resting Place" to
+*     "Merging Through Channeled Visions" - closed/locked
+*
+D 0 31310 0 1 100 0 0 0
+*     north exit from "A Grand Entry" to
+*     "The Castle Ballroom" - closed
+*
+D 0 31311 2 1 100 0 0 0
+*     south exit from "The Castle Ballroom" to
+*     "A Grand Entry" - closed
+*
+D 0 31313 2 1 100 0 0 0
+*     south exit from "Past Secluded Desires" to
+*     "A Lustful Lounge" - closed
+*
+D 0 31314 0 1 100 0 0 0
+*     north exit from "A Lustful Lounge" to
+*     "Past Secluded Desires" - closed
 *
 *
-O 0 31301 1 31301 100 0 0 0        * a dream
-O 0 31302 1 31311 100 0 0 0        * reality
-O 0 31332 1 31317 100 0 0 0        * a small crate
-P 1 31328 1 31332 100 0 0 0        *   an illusionists letter
-P 1 31330 1 31332 100 0 0 0        *   a long stem rose
-O 0 83283 1 31318 100 0 0 0        * (object type not in this .obj file)
-O 0 31303 1 31320 100 0 0 0        * a fluffy bed
-O 0 31304 1 31344 100 0 0 0        * a steep cliff
+O 0 31300 1 31300 100 0 0 0        * a flickering light of insanity
+O 0 31301 1 31300 100 0 0 0        * a solid light of reality
+O 0 31302 1 31301 100 0 0 0        * a whirlpool fountian
+O 0 31304 4 31302 100 0 0 0        * a static charged key
+O 0 31304 4 31303 100 0 0 0        * a static charged key
+O 0 31304 4 31304 100 0 0 0        * a static charged key
+O 0 31304 4 31305 100 0 0 0        * a static charged key
+O 0 31303 1 31320 100 0 0 0        * the edge of a steep cliff
 *
-M 0 31302 1 31302 50 0 0 0         * a tiny angel
-E 1 31306 1 6 100 0 0 0            *   a golden halo
-E 1 31341 1 12 100 0 0 0           *   some angelic wings
-M 0 31317 10 31303 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31303 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31303 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31306 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31306 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31306 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31306 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31310 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31310 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31317 10 31310 100 0 0 0       * a raging reflection
-G 1 31305 10 0 100 0 0 0           *    a static key
-M 0 31304 1 31311 100 0 0 0        * a tiny devil
-E 1 31309 1 6 100 0 0 0            *   some sinister horns
-G 1 31342 1 0 100 0 0 0            *    a three-prong pitchfork
-M 0 31303 1 31312 100 0 0 0        * a Mighty Prophet
-G 1 31307 1 0 100 0 0 0            *    the golden blade of Prophets
-F 1 31319 2 31312 100 0 0 0        * a holy guardian (following)
-F 1 31319 2 31312 100 0 0 0        * a holy guardian (following)
-M 0 31305 1 31313 100 0 0 0        * a Huge Demon
-G 1 31310 1 0 100 0 0 0            *    Purge, the demonic blade
-F 1 31318 2 31313 100 0 0 0        * an enslaved minion (following)
-F 1 31318 2 31313 100 0 0 0        * an enslaved minion (following)
-M 0 31309 1 31314 100 0 0 0        * a lazy-eyed necromancer
-E 1 31318 1 2 100 0 0 0            *   a snake eyed ring
-E 1 31354 1 24 100 0 0 0           *   a skull and bones badge
-G 1 31319 1 0 100 0 0 0            *    a wand of anti-energy
-M 0 31315 2 31315 100 0 0 0        * a burly bodyguard
-E 1 31321 2 24 100 0 0 0           *   a battle scar
-M 0 31315 2 31315 100 0 0 0        * a burly bodyguard
-E 1 31321 2 24 100 0 0 0           *   a battle scar
-G 1 31331 1 0 100 0 0 0            *    an invitation
-M 0 31313 1 31316 100 0 0 0        * a lonely princess
-E 1 31323 1 12 100 0 0 0           *   a wrap of abandonment
-M 0 31312 1 31317 100 0 0 0        * the illusionist of boundless fantasies
-E 1 31322 1 10 100 0 0 0           *   some sleeves of shifting shadows
-G 1 31334 1 0 100 0 0 0            *    a dark potion
-G 1 31339 999 0 100 0 0 0          *    a green elixir
-G 1 31338 999 0 100 0 0 0          *    an elemental brew
-G 1 31336 999 0 100 0 0 0          *    a potion of fire and ice
-G 1 31333 999 0 100 0 0 0          *    a ghostly liquid
-G 1 31335 999 0 100 0 0 0          *    a bright red potion
-G 1 31340 999 0 100 0 0 0          *    a stamina concoction
-M 0 31308 1 31318 100 0 0 0        * Buraon, the mystic shaman master
-E 1 31353 1 13 100 0 0 0           *   a dusty loincloth
-E 1 31326 1 18 100 0 0 0           *   a glowing sapphire totem
-E 1 31317 1 20 100 0 0 0           *   a bear face mask
-M 0 31314 2 31319 100 0 0 0        * a young harlot
-E 1 31327 1 6 100 0 0 0            *   a thin shawl
-M 0 31314 2 31319 100 0 0 0        * a young harlot
-E 1 31325 1 7 100 0 0 0            *   some torn cloth stockings
-M 0 31311 1 31320 100 0 0 0        * an evoking enchantress
-E 1 31324 1 13 100 0 0 0           *   a faeries belt of allure
-G 1 31337 1 0 100 0 0 0            *    a sapphire vial
-M 0 31307 1 31321 100 0 0 0        * Milrd, the master cleric
-E 1 31352 1 7 100 0 0 0            *   some wooden leg plates
-E 1 31351 1 8 100 0 0 0            *   some strapped leather sandals
-E 1 31316 1 15 100 0 0 0           *   a simple life band
-M 0 31310 1 31322 100 0 0 0        * a patient monk
-E 1 31345 1 3 100 0 0 0            *   a necklace with a wooden+cross
-E 1 31346 1 5 100 0 0 0            *   some holy white robes
-E 1 31320 1 9 100 0 0 0            *   a spiked leather grip
-M 0 31306 1 31323 100 0 0 0        * Devin, the master mercenary
-E 1 31315 1 6 100 0 0 0            *   a solid granite helm
-E 1 31347 1 16 100 0 0 0           *   a shard of granite
-E 1 31348 1 27 100 0 0 0           *   a smoky duffelbag
-P 1 31350 1 31348 100 0 0 0        *   some treasure
-G 1 31349 1 0 100 0 0 0            *    a tiny key
-M 0 31316 10 31324 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31326 100 0 0 0       * a sinister nightmare
-M 0 31301 1 31328 100 0 0 0        * an Inner Voice
-E 1 31314 1 3 100 0 0 0            *   the necklace of Will Force
-E 1 31312 1 19 100 0 0 0           *   the eyepatch of Inner Vision
-E 1 31313 1 21 100 0 0 0           *   the earring of Sound Advice
-M 0 31316 10 31330 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31332 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31333 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31336 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31338 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31339 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31340 100 0 0 0       * a sinister nightmare
-M 0 31316 10 31343 100 0 0 0       * a sinister nightmare
+M 0 31315 16 31301 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31301 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31302 100 0 0 0       * a raging ghostly reflection
+M 0 31315 16 31302 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31302 100 0 0 0       * a sinister archon nightmare
+M 0 31314 16 31302 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31303 100 0 0 0       * a raging ghostly reflection
+M 0 31315 16 31303 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31303 100 0 0 0       * a sinister archon nightmare
+M 0 31314 16 31303 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31304 100 0 0 0       * a raging ghostly reflection
+M 0 31315 16 31304 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31304 100 0 0 0       * a sinister archon nightmare
+M 0 31314 16 31304 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31305 100 0 0 0       * a raging ghostly reflection
+M 0 31315 16 31305 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31305 100 0 0 0       * a sinister archon nightmare
+M 0 31314 16 31305 100 0 0 0       * a sinister archon nightmare
+M 0 31302 1 31307 100 0 0 0        * a mighty agathinon prophet
+E 1 31310 1 16 100 0 0 0           *   the mallet of past prophets 'Liberator'
+M 0 31317 1 31307 100 0 0 0        * a holy eladrin guardian
+M 0 31301 1 31307 100 0 0 0        * a tiny angel healer
+M 0 31304 1 31308 100 0 0 0        * a demonic vampire
+E 1 31305 1 16 100 0 0 0           *   the demonic dagger 'Purge'
+M 0 31316 1 31308 100 0 0 0        * an enslaved phantom minion
+M 0 31303 1 31308 100 0 0 0        * a tiny devil warlock
+M 0 31307 1 31309 100 0 0 0        * Nomd, a lazy-eyed necromancer
+G 1 31311 4 0 100 0 0 0            *    an ethereal soul shard
+M 0 31313 2 31310 100 0 0 0        * a burly titan bodyguard
+M 0 31311 1 31311 100 0 0 0        * a lonely deva princess
+E 1 31307 1 8 100 0 0 0            *   some boots of abandonment
+E 1 31309 1 24 100 0 0 0           *   --,-'--{@
+M 0 31313 2 31311 100 0 0 0        * a burly titan bodyguard
+M 0 31310 1 31312 100 0 0 0        * Qin, the master illusionist
+G 1 31314 1 0 100 0 0 0            *    a pack of tarot cards
+M 0 31312 2 31313 100 0 0 0        * a young sucubbus harlot
+M 0 31309 1 31314 100 0 0 0        * an invoking faerie enchantress
+E 1 31308 1 7 100 0 0 0            *   some torn cloth stockings
+E 1 31312 1 24 100 0 0 0           *   a necromantic death shroud
+M 0 31312 2 31314 100 0 0 0        * a young sucubbus harlot
+M 0 31306 1 31315 100 0 0 0        * Milrd, a devout cleric
+G 1 31311 4 0 100 0 0 0            *    an ethereal soul shard
+M 0 31308 1 31316 100 0 0 0        * Whonh, a patient monk
+G 1 31311 4 0 100 0 0 0            *    an ethereal soul shard
+M 0 31305 1 31317 100 0 0 0        * Devin, the devious mercenary
+G 1 31311 4 0 100 0 0 0            *    an ethereal soul shard
+M 0 31300 1 31318 100 0 0 0        * a shadowy inner voice
+E 1 31306 1 19 100 0 0 0           *   the spectacles of inner vision
+G 1 31316 1 0 100 0 0 0            *    a strange crystal skull
+G 1 83283 1 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 31315 16 31318 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31318 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31321 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31321 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31322 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31322 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31323 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31323 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31324 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31324 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31325 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31325 100 0 0 0       * a sinister archon nightmare
+M 0 31315 16 31326 100 0 0 0       * a raging ghostly reflection
+M 0 31314 16 31326 100 0 0 0       * a sinister archon nightmare
 *
 S

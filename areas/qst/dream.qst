@@ -1,88 +1,57 @@
-#31302
-MA
-devil evil morals moral guidance horns demonic blade~
-&+WA tiny angel &+wsays, 'May god assist your conscience in fighting the evil
-&+wforces of the devil.  With proof of righteousness, you shall receive a holy
-&+wreward.'&n
+#31310
+M
+hi help deliver boundless fantasies fantasy~
+&+wQin, &+Wthe m&+Ca&+cst&+Ce&+Wr il&+Clu&+csi&+Con&+Wist&+w, says "Within this sanctum of the mind,
+&+wreside powerful beings known for achieving the highest honor within
+&+wtheir area of expertise.  An e&+Wt&+Lh&+ber&+Le&+Wa&+wl &+Wsoul &+bshard&+w, which they guard
+&+wwith their life.  In the right hands, it can bring immense power.
+&+wIf you collect all four of these shards, I can assemble them into a
+&+wuseful piece of armor for you.  In doing so, I will be designated as
+&+wthe supreme overlord of this realm."&n
 ~
-MA
-proof reward~
-&+WA tiny angel says, 'With two powerful items of proof, you shall receive my
-&+Wblessing.'&n
+M
+yes quest~
+&+wQin, &+Wthe m&+Ca&+cst&+Ce&+Wr il&+Clu&+csi&+Con&+Wist&+w, says "Really!?  You must have an affinity for
+pain.  That being the case, I need you to retreive five crystal skulls that
+empower the rulers of various distant realms.  These &+Lstrange &+Wcrys&+Mt&+mal sk&+Mu&+Wlls
+will further my quest for dominance.  However, if you think about keeping
+any of these items, I assure you they will reject your attempt of ownership.
+Go quickly, as time is a concern and seek these legendary creatures."
+
+&+mR&+Ma&+Lzh&+ml&+w, &+mthe thr&+Mee&+m-&+Mhe&+mad&+Med &+gh&+Gy&+gd&+Gr&+ga &+Gs&+ge&+Gr&+Lpen&+wt &+Lin &+gFisher&+Lmans Wharf
+&+WGor&+wlon, &+Lthe &+Mface&+mless be&+Mast &+Lin Mi&+wa&+We&+wr&+Lil &+CVi&+wl&+Wl&+wa&+Cge
+&+rVo&+Lin&+rak&+w, &+Lthe &+ref&+Rre&+reti &+Lty&+wran&+Lt in La&+rva &+RSp&+rrin&+Lgs
+&+wK&+Wo&+Lvii&+w, &+Lthe K&+Wi&+wng &+Lof &+WA&+wrc&+Lium &+Lin &+WA&+wrc&+Lium, the Plagued K&+Wi&+wng&+Ldom
+&+LA shadowy i&+wnn&+Ler &+Yvoice &+Lin &+CD&+Wr&+cif&+Cting &+WR&+Cea&+cl&+Wm&n
 ~
-QA
-&+WA tiny angel&+w says, 'You are a noble warrior.  I am proud to grant you this
-&+wfine suit of armor!  If you would prefer to equip a mage companion instead,
-&+wtrade in your own reward.'&n
-~
-R I 31308
-G I 31310
-G I 31309
 Q
-&+WA tiny angel&+w says, 'What a selfless person.'&n
-&+WA tiny angel smiles.&n
+&+wQin, &+Wthe m&+Ca&+cst&+Ce&+Wr il&+Clu&+csi&+Con&+Wist&+w, says "Muhahaa!  The power is mine.  I will
+&+wrule without question for the rest of time.  As a reward, I will follow
+&+wthrough with my promise."
+
+&+wQin goes into a deep focus as he starts to chant a spell.
+&+wThe e&+Wt&+Lh&+ber&+Le&+Wa&+wl &+Wsoul &+bshards &+wwhirl around and start to assemble
+&+winto a complete body suit.
+
+&+wQin, says "Here, take this suit and do with it what you will."
+
+&+wQin, says "One more thing, now that you have proven your worth to me.
+&+wWould you consider a more daunting quest?"&n
 ~
-R I 31343
-G I 31308
-S
-#31304
-MA
-angel good golden blade halo~
-&+rA tiny devil&+w says, 'From the hate pumping in your veins, may evil rule
-&+wsupreme.  With proof of your conquests, you shall receive a tasty reward.'&n
-~
-MA
-proof reward~
-&+rA tiny devil&+w says, 'With two powerful items of proof, you shall receive my
-&+wacceptance.'&n
-~
-QA
-&+rA tiny devil&+w says, 'You are a mighty warrior.  I am proud to grant you this
-&+wfine suit of armor!  If you would prefer to equip a mage companion instead,
-&+wthen you must trade in your own reward.'&n
-~
-R I 31311
-G I 31307
-G I 31306
-Q
-&+rA tiny devil&+L says, 'I'm sure that you will regret that.'&n
-&+rA tiny devil grins.&n
-~
-R I 31344
+R I 31313
 G I 31311
-S
-#31312
-M
-princess love crush letter rose~
-&+WThe master il&+Clu&+csi&+Con&+Wist&+w says, 'I have always had a crush on this princess, but
-&+wnever felt she could love a merchant like me.  In fact, I even wrote her a
-&+wlove letter that I was going to send with a rose.  Although, I couldn't bring
-&+wmyself to send it for fear of the truth.'&n
-~
+G I 31311
+G I 31311
+G I 31311
 Q
-&+WThe master il&+Clu&+csi&+Con&+Wist &+wsays, 'Wow, I can't believe it!  You must have told
-&+wthe princess of my crush.  I am glad you helped me find the truth.'&n
+&+wQin, &+Wthe m&+Ca&+cst&+Ce&+Wr il&+Clu&+csi&+Con&+Wist&+w, says "Well done!  You will never know the
+full impact of your choice to help me, but I will reward you for your
+blind service.  Here is one of my most prized possessions, enjoy!"&n
 ~
-R I 31334
-R I 31339
-R I 31338
-R I 31336
-R I 31333
-R I 31335
-R I 31340
-G I 31329
-S
-#31313
-M
-love rose knight~
-&+mA lonely &+Mprin&+Wcess&+w says, 'I hate these annual dances, because I'm always left
-&+wwithout a love of my own.  I'm waiting for a sign of true love.'&n
-~
-QA
-&+mA lonely &+Mprin&+Wcess&+w says, 'You have done the impossible, and found me love!
-&+wI can never thank you enough.'&n
-~
-R I 31329
-G I 31330
-G I 31328
+R I 31315
+G I 31316
+G I 31317
+G I 31318
+G I 31319
+G I 31320
 S

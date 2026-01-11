@@ -14,8 +14,23 @@
 #define WS_PORT             4050
 #define WS_MAX_FRAME_SIZE   65536
 #define WS_MAGIC_STRING     "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-#define WS_PING_INTERVAL    30    /* ping every 30 sec */
-#define WS_PING_TIMEOUT     60    /* close if no pong within 60 sec */
+#define WS_PING_INTERVAL    30
+#define WS_PING_TIMEOUT     60
+
+/* buffer sizes */
+#define WS_LISTEN_BACKLOG       40
+#define WS_INPUT_BUFFER_SIZE    4096
+#define WS_ACCEPT_KEY_SIZE      64
+#define WS_RESPONSE_BUFFER_SIZE 512
+#define WS_KEY_BUFFER_SIZE      128
+#define WS_CLOSE_PAYLOAD_SIZE   128
+#define WS_CONCAT_BUFFER_SIZE   256
+#define WS_MAX_HANDSHAKE_SIZE   8192
+
+/* frame length thresholds (rfc 6455) */
+#define WS_LEN_7BIT_MAX         125
+#define WS_LEN_16BIT_MAX        65535
+#define WS_PROTOCOL_VERSION     13
 
 /* opcodes (rfc 6455 section 5.2) */
 #define WS_OPCODE_CONTINUATION  0x00

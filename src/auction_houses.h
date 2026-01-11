@@ -23,6 +23,9 @@ string format_time(long);
 bool finalize_auction(int auction_id, P_char to_ch);
 bool insert_money_pickup(int pid, int money);
 
+// builds item info text for web display. returns length written.
+int build_obj_info_text(P_obj obj, char *buf, size_t bufsize);
+
 bool auction_offer(P_char ch, char *arg);
 bool auction_list(P_char ch, char *arg);
 bool auction_info(P_char ch, char *arg);
@@ -41,6 +44,8 @@ class EqSortFlag
     virtual bool match(P_obj obj) = 0;
     const char *gKey() { return keyword.c_str(); }
     const char *gDesc() { return desc.c_str(); }
+
+    virtual ~EqSortFlag() = default;
 
   protected:
     string keyword;

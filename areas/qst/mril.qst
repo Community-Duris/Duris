@@ -1,75 +1,59 @@
 #33700
-Q
-The dark figure nods and disappears after giving you a key
-carved of bone.
+MA
+hi forbidden forest unknown yeti frost giant abominable~
+&+LA &+Lst&+wrange &+Whood&+wed fig&+Lure&+w, projects into your mind "Good-day, my friend.  Where
+&+wyou are headed is towards the &+Gf&+go&+Lrb&+Gi&+gd&+Lde&+Gn f&+go&+Lre&+Gs&+gt&+w.  Beware, danger lurks there.
+&+wAn &+Wabo&+wmin&+Wable &+Bf&+cro&+Cst gi&+can&+Bt &+wroams the forest and beyond.  He is rare to see, but
+&+wthis bigfooted creature wreaks havoc on our hunters who stray too far.  This
+&+wmonster must meet it's end for the safety of our village natives.  I would
+&+wtrade for his &+Wfr&+wo&+Wzen &+Che&+ca&+Crt&+w, any day."&n
 ~
-R I 33700
-G C 20000
+QA
+&+LA &+Lst&+wrange &+Whood&+wed fig&+Lure&+w, projects into your mind "Alas, the monster has been
+&+wstopped for good.  No longer will our village be tormented by that scourge.
+&+wHere, take this as a reward for your bravery."&n
+~
+R I 33702
+G I 33710
+S
+#33701
+MA
+hi forbidden forest unknown yeti frost giant abominable~
+&+WUd&+wuku,a ren&+Wown &+Cmy&+cst&+Cic &+wma&+Wg&+wus&+w, calls to you "Good-day, my friend.
+&+wWelcome to my igloo.  It's a small space, but I enjoy how I can control
+&+wmy environment to match my liking.  The only problem is a random scare
+&+wfrom an &+Wabo&+wmin&+Wable &+Bf&+cro&+Cst gi&+can&+Bt &+wthat roams outside here.  He is rare to
+&+wsee, but this bigfooted creature wreaks havoc on our hunters who stray
+&+wthis far out.  If only this monster was gone, my life would be ideal.
+&+wI would trade for his &+Wfr&+wo&+Wzen &+Che&+ca&+Crt&+w, any day."&n
+~
+QA
+&+WUd&+wuku,a ren&+Wown &+Cmy&+cst&+Cic &+wma&+Wg&+wus&+w, answers excitedly "Alas, the monster has been
+&+wstopped for good.  No longer will our village be tormented by that scourge.
+&+wHere, take this as a reward for your bravery."&n
+~
+R I 33713
+G I 33710
 S
 #33711
-M
-looking lost item help~
-Tarik nods his head.
-
-Tarik says 'Yes, I've lost some spell components.'
+MA
+salmon food wul hi~
+&+wFa&+Wl&+wga&+C, the vi&+wl&+Wl&+wa&+Cge &+wel&+Wd&+wer, says "Yes I feed my pet wul the best I can,
+&+wbut he sure would enjoy something different once in awhile.  I used to
+&+wget him fresh salmon from the nearby river, but these days that seems
+&+wlike too much effort.  Would you help an old man out and gather a hand
+&+wfull of salmon for my furry friend?  I would be so glad to see him eat
+&+wa proper feast."&n
 ~
-M
-spell components~
-Tarik says 'I've lost a bone and a pouch of dust, if you could find
-them for me, I'd me most grateful and can possibly reward you.'
-~
-Q
-Tarik says 'Many thanks to you! Here is the item I promised.'
+QA
+&+wFa&+Wl&+wga&+C, the vi&+wl&+Wl&+wa&+Cge &+wel&+Wd&+wer, says "Thank you so much, I can't wait to see
+&+wmy wul devour these salmon.  Here take this spellbook.  Hopefully you
+&+wcan find a use for it, like I have these fish."&n
 ~
 R I 33711
-R E 50000
-G I 33710
-G I 33712
-S
-#33718
-M
-ring rings~
-Falga grins at you and nods 'Yeah, you like me rings eh? Well I can get ya
-a two just like em if you bring me all the light orbs ya kin find.'
-~
-M
-light orbs~
-Falga smiles 'Yup, those light orbs just appear outta nowhere sometime,
-and they are pretty useful fer different tings. If you gimme a bunch
-of them I'll give ya a prize. Hehe.'
-~
-Q
-~
-R I 33725
-R I 33718
-G I 33726
-G I 33726
-G I 33726
-G I 33726
-G I 33726
-G I 33726
-G I 33726
-G I 33726
-G I 33726
-G I 33726
-S
-#33724
-M
-hi hello pouch list sell~
-The shadowy figure nods in greeting and whispers in a raspy voice 'Hello
-and good day to you my friend. Would you be interested in buying this
-wondering golden pouch of dust? It has so many uses.... ' It then begins
-to ramble about the practicality of the pouch mentioned.
-~
-M
-how much for the pouch~
-The shadowy figure rasps '50 platinum pieces should do nicely.'
-~
-Q
-~
-R I 33712
-G C 15000
-D
-The shadow chuckles and hands over the pouch before disappearing.
-~
+G I 33709
+G I 33709
+G I 33709
+G I 33709
+G I 33709
 S

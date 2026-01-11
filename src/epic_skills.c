@@ -138,6 +138,8 @@ epic_reward epic_rewards[] = {
     0 },
   {EPIC_REWARD_SKILL, SKILL_NATURES_RUIN, 100, 75, 750000,
     CLASS_BLIGHTER },
+  {EPIC_REWARD_SKILL, SKILL_EPIC_WARDING_FAITH, 1000, 100, 20000,
+    CLASS_CLERIC },
   {0}
 };
 
@@ -190,6 +192,7 @@ epic_teacher_skill epic_teachers[] = {
   {21535, SKILL_EPIC_LUCK, 0, 100, 0, 0, 0}, //Babedo in Aravne
   {2733, SKILL_SHIP_DAMAGE_CONTROL, 0, 100, 0, 0, 0}, // Commodore in Headless
   {402029, SKILL_NATURES_RUIN, 0, 100, 0, 0, 0}, // Shezeera in Library zone
+  {55168, SKILL_EPIC_WARDING_FAITH, 0, 100, 0, 0, 0},
   {0}
 };
 
@@ -236,6 +239,7 @@ void create_epic_skills()
   SKILL_CREATE("expert parry", SKILL_EXPERT_PARRY, TAR_MENTAL | TAR_EPIC);
   SKILL_CREATE("expert riposte", SKILL_EXPERT_RIPOSTE, TAR_MENTAL | TAR_EPIC);
   SKILL_CREATE("natures ruin", SKILL_NATURES_RUIN, TAR_MENTAL | TAR_EPIC);
+  SKILL_CREATE("epic warding faith", SKILL_EPIC_WARDING_FAITH, TAR_EPIC);
 
   /* Stat adjustment epic skills */
   SKILL_CREATE("epic strength", SKILL_EPIC_STRENGTH, TAR_MENTAL | TAR_EPIC);

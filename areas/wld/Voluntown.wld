@@ -5,7 +5,7 @@
 &+ythe ground which says in bold letters, "&+rVoluntown&+y". The trail continues
 &+yto the east and a small shack can seen on a hill farther down.
 ~
-1 176160832 4 0
+1424 176160832 4 0
 D2
 ~
 ~
@@ -20,7 +20,7 @@ S
 &+yThe mountain trail continues, it seems to be getting steadily &+Ldarker &+yas you
 &+ycontinue down the trail.
 ~
-1 142639169 4 0
+1424 142639169 4 0
 D1
 ~
 ~
@@ -35,7 +35,7 @@ S
 &+yThe mountain trail continues west, a small run down &+Yshack&+y lies to the
 &+ynorth with a sign that says, "&+GCaretaker&+y".
 ~
-1 142639169 4 0
+1424 142639169 4 0
 D0
 The door to the shack.
 ~
@@ -57,7 +57,7 @@ There is a small &+Rf&+Yi&+rr&+Ye&n burning in the hearth and multiple &+ybooks&
 as well as a few &+Wscrolls&n. A small elderly man sits here in a chair looking
 quite sad and worried.
 ~
-1 214073480 0 0
+1424 214073480 0 0
 D2
 A door to a small shack.
 ~
@@ -70,7 +70,7 @@ S
 &+ydrops off here. The only direction you can go is back the way
 &+yyou came or down.
 ~
-1 176193600 4 0
+1424 176193600 4 0
 D1
 ~
 ~
@@ -87,7 +87,7 @@ S
 &+ywest the path leads on to &+rVoluntown&+y, which is famous for
 &+ybeing the burial site for &+CIcecrag&+y's family dynasties.
 ~
-1 142639105 4 0
+1424 142639105 4 0
 D2
 ~
 ~
@@ -108,7 +108,7 @@ S
 &+wgloomy&+b necropolis &+Lcr&+wyp&+Lts&+y can be seen in the distance over the wall
 &+yto the north.
 ~
-1 142639105 4 0
+1424 142639105 4 0
 D1
 ~
 ~
@@ -125,7 +125,7 @@ S
 &+wdistance sounds of &+Lmoaning&+w can be heard which is likely the unhappy residents
 &+wof the massive cemetary. The sky is cloudy and &+Ldark&+w.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -141,7 +141,7 @@ S
 &+wback in the other direction is getting more and more tempting by the moment as
 &+wthe sounds of the &+Lrestless&+w dead can be heard beyond the gates.
 ~
-1 142639105 4 0
+1424 142639105 4 0
 D0
 &+rA rusty iron gate blocks passage to the north.
 ~
@@ -159,7 +159,7 @@ S
 &+wfamily was thought to be the premiere group who brought hand to hand combat to
 &+CIcecrag&+w from the isle of &+GJa&+gd&+Ge &+wthousands of years ago.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 crypt door~
@@ -189,7 +189,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -213,7 +213,7 @@ S
 &+wwhich lasted several years. Eventually, &+Gdragons &+wjoined the cause of the &+bCrav&+w's
 &+wand the &+cBoru&+w's were vanquished.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 crypt door~
@@ -238,7 +238,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -259,7 +259,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -280,7 +280,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -305,7 +305,7 @@ S
 &+wstatues of holy paladins of Torm the True. The marble has lost much
 &+wof its original luster and is &+Lblackened &+wby &+Ctime &+wand neglect.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 crypt door~
@@ -330,7 +330,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -359,7 +359,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -380,7 +380,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -405,7 +405,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -428,7 +428,7 @@ S
 &+Lhundreds of years until the insidious betrayal that the &+mSarum&+L family
 &+Lmasterminded to bring the peace to an end.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 crypt door~
@@ -453,7 +453,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -474,7 +474,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -495,7 +495,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -528,7 +528,7 @@ S
 &+Lhorrible era of fear and darkness fell upon the continent and
 &+Lonly until the arrival of the Tavinshirs.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 crypt door~
@@ -553,7 +553,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -587,7 +587,7 @@ S
 &+Ythrough the vast armies of undead creatures bringing about the end
 &+Yof a long and terrifying reign of &+mnecromantic&+L rulers.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 crypt door~
@@ -612,7 +612,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -633,7 +633,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D1
 ~
 ~
@@ -654,7 +654,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D1
 ~
 ~
@@ -675,7 +675,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D1
 ~
 ~
@@ -704,7 +704,7 @@ S
 &+Lcould have guessed that enchanted padlock would have to keep something
 &+Lin.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 iron doors~
@@ -729,7 +729,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D1
 ~
 ~
@@ -754,7 +754,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D1
 ~
 ~
@@ -775,7 +775,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D2
 ~
 ~
@@ -796,7 +796,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -817,7 +817,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -838,7 +838,7 @@ S
 &+wthe cracks in the stonework and most of the paths have the look that they have
 &+wnot been walked upon by living feet in many years.
 ~
-1 142639105 1 0
+1424 142639105 1 0
 D0
 ~
 ~
@@ -857,7 +857,7 @@ S
 &+Ldeal with &+BAuril&+L. The walls are made of a dark grey stone and the
 &+Lfloor is packed earth. A heavy pair of &+yoak&+L doors leads outside.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -877,7 +877,7 @@ S
 &+Lfloor is packed earth. To the north there appears to be a massive
 &+Lroom with some shuffling shapes moving around.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -894,7 +894,7 @@ S
 &+Lthe ceiling, long since abandoned. Bones of various humanoids litter
 &+Lthe ground in piles intermittently on the floor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -919,7 +919,7 @@ S
 &+Lthe ceiling, long since abandoned. Bones of various humanoids litter
 &+Lthe ground in piles intermittently on the floor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -936,7 +936,7 @@ S
 &+Lthe ceiling, long since abandoned. Bones of various humanoids litter
 &+Lthe ground in piles intermittently on the floor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -953,7 +953,7 @@ S
 &+Lthe ceiling, long since abandoned. Bones of various humanoids litter
 &+Lthe ground in piles intermittently on the floor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -978,7 +978,7 @@ S
 &+Lthe ceiling, long since abandoned. Bones of various humanoids litter
 &+Lthe ground in piles intermittently on the floor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -995,7 +995,7 @@ S
 &+Lthe ceiling, long since abandoned. Bones of various humanoids litter
 &+Lthe ground in piles intermittently on the floor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -1016,7 +1016,7 @@ S
 &+Lthey were living. A horrific statue of &+BAuril &+bthe &+WI&+Cc&+Be &+CMa&+Bid&+Wen &+Lstands
 &+Lin a relief in the wall eminating a strange power.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1033,7 +1033,7 @@ S
 &+Lhas a &+whammer&+L that is giving off a soft &+Bblue light&+L even though the
 &+Lroom is completely dark.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -1045,7 +1045,7 @@ S
 &+ybe on the cliff overlook above you. It is going to require a bit
 &+yof a climb.
 ~
-1 142639105 4 0
+1424 142639105 4 0
 D0
 ~
 ~
@@ -1061,7 +1061,7 @@ S
 &+yThe rock outcroppings make fine hand and footholds for those who wish
 &+yto ascend or descend.
 ~
-1 142639105 8 0
+1424 142639105 8 0
 D4
 ~
 ~
@@ -1081,7 +1081,7 @@ S
 &+Wyet you also feel somewhat &+bsad&+W. There are sounds of some kind of
 &+Wactivity within the shrine.
 ~
-1 142639104 4 0
+1424 142639104 4 0
 D2
 ~
 ~
@@ -1098,7 +1098,7 @@ S
 &+Wand upon it sits a &+Cwoman &+Wwith &+rauburn &+Whair and dressed all in
 &+Wwhite. She appears to be working with a great &+Ygol&+yde&+Yn loom&+w.
 ~
-1 146964488 0 0
+1424 146964488 0 0
 D0
 ~
 ~
@@ -1115,7 +1115,7 @@ S
 &+Land in the center of the room is a massive monolith bearing the
 &+Lsymbol of &+mtime&+L. The monolith hums quietly.
 ~
-1 1073774605 0 0
+1424 1073774605 0 0
 D0
 &+WA large reliquary blocks passage to the north here.
 ~
@@ -1128,7 +1128,7 @@ S
 &+Lto be careful venturing down as the sounds of shuffling and &+wun&+Lde&+wad &+Lcan be heard
 &+Lbelow.
 ~
-1 142639109 0 0
+1424 142639109 0 0
 D2
 ~
 crypt door~
@@ -1147,7 +1147,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1170,7 +1170,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1189,7 +1189,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1208,7 +1208,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -1227,7 +1227,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -1246,7 +1246,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1265,7 +1265,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -1288,7 +1288,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -1307,7 +1307,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1325,7 +1325,7 @@ S
 &+Lsparse of any other furnishing or decor other than the large crest of the
 &+cBoru &+Lfamily which is carved into the far wall.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1348,7 +1348,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1367,7 +1367,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 0 0 0
+1424 0 0 0
 D0
 ~
 ~
@@ -1386,7 +1386,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1405,7 +1405,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1428,7 +1428,7 @@ S
 &+Lhave mostly &+yrotted &+Laway in the older sections. Deep within a faint moaning
 &+Lcan be heard as well as the shuffling and rattling of boney feet.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1446,7 +1446,7 @@ S
 &+LThere is a large stone pedestal with a heavy stone slab over the top of it
 &+Lwhich indicates it likely belongs to &+cBran Boru&+L, the first king of &+CIcecrag&+L.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D4
 ~
 ~
@@ -1458,7 +1458,7 @@ S
 &+Lto be careful venturing down as the sounds of shuffling and &+wun&+Lde&+wad &+Lcan be heard
 &+Lbelow.
 ~
-1 142639109 0 0
+1424 142639109 0 0
 D2
 ~
 crypt door~
@@ -1475,7 +1475,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639113 0 0
+1424 142639113 0 0
 D4
 ~
 ~
@@ -1488,7 +1488,7 @@ S
 #142472
 Unnamed~
 ~
-1 0 0 0
+1424 0 0 0
 D7
 ~
 ~
@@ -1501,7 +1501,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -1518,7 +1518,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1535,7 +1535,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -1552,7 +1552,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1569,7 +1569,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1586,7 +1586,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1603,7 +1603,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -1620,7 +1620,7 @@ S
 &+Lsounds of moaning and wailing echoing through the tunnels. There is also a loud
 &+Lrumbling accompanied by what sounds like large bones clacking together.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D5
 ~
 ~
@@ -1636,7 +1636,7 @@ S
 &+La central coffin that appears to belong to the founding father of the dynasty.
 &+LA pile of &+Wsk&+wu&+Ll&+wl&+Ws &+Lis sitting in the corner and a few of them look to be fresh.
 ~
-1 0 0 0
+1424 0 0 0
 D4
 ~
 ~
@@ -1650,7 +1650,7 @@ S
 &+Wwa&+Lil&+win&+Wg &+wcan be heard below and one is forced to wonder if banshees
 &+ware &+Llurking &+win the gloom.
 ~
-1 142639113 0 0
+1424 142639113 0 0
 D2
 ~
 crypt door~
@@ -1669,7 +1669,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -1688,7 +1688,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1707,7 +1707,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1726,7 +1726,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1745,7 +1745,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1764,7 +1764,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1783,7 +1783,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1802,7 +1802,7 @@ S
 &+welves long since dead. &+LHaunting &+Wmoans &+wcan be heard down the
 &+wcorridor.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1819,7 +1819,7 @@ S
 &+wcoming from beneath. The &+Ygolden &+wrailing of the staircase &+Wglints &+wfrom
 &+wthe &+Gsc&+gin&+Gti&+gll&+Gat&+gin&+Gg &+ggreen &+Wglow&+w.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -1838,7 +1838,7 @@ S
 &+Groom there appears to be a solid &+Ygold casket&+G. Statues of
 &+ybronze &+Gadorn the room of elves in various poses.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D4
 ~
 ~
@@ -1851,7 +1851,7 @@ S
 &+wthis horrible room. There is a staircase headed down into what appears
 &+wto be the heart of &+Ldarkness &+witself.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 door crypt~
@@ -1872,7 +1872,7 @@ S
 &+Lthe distance can be heard. There is a staircase here leading back
 &+Lupwards.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D4
 ~
 ~
@@ -1892,7 +1892,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -1912,7 +1912,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1932,7 +1932,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -1952,7 +1952,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -1972,7 +1972,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -1992,7 +1992,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D6
 ~
 ~
@@ -2012,7 +2012,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 ~
@@ -2032,7 +2032,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2052,7 +2052,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2072,7 +2072,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -2092,7 +2092,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2112,7 +2112,7 @@ S
 &+Lodd shape. The blackness is absolute and some shuffling sounds in
 &+Lthe distance can be heard.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2132,7 +2132,7 @@ S
 &+Lis a large staircase, also obsidian, leading down to what likely
 &+Lis the main burial chamber for the royal family.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D5
 ~
 ~
@@ -2150,7 +2150,7 @@ S
 &+Lobsidian coffin with a &+wsilver skull&+L centered on the top of the lid
 &+Lin the center of the room.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D4
 ~
 ~
@@ -2164,7 +2164,7 @@ S
 &+yover in the corner of the room. The crypt is eerily silent and death
 &+ycan be smelled in the &+Wfro&+Cst&+Wy &+yair.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 crypt door~
@@ -2185,7 +2185,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive. A staircase here leads up.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -2206,7 +2206,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2227,7 +2227,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2252,7 +2252,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2273,7 +2273,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2290,7 +2290,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2311,7 +2311,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2332,7 +2332,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2353,7 +2353,7 @@ S
 &+ythe walls as well with their faces painted in the likeness of the
 &+yindividual while they were alive.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2371,7 +2371,7 @@ S
 &+Bro&+bya&+Bl &+ysigil of the &+RTavinshir &+yis emblazoned on the wall above the
 &+ystaircase.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2388,7 +2388,7 @@ S
 &+yrituals line the walls here. A large stone sarcophagus lies in the
 &+ycenter of the room with the &+Bro&+bya&+Bl &+ycrest of the &+RTavinshir&+y.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D4
 ~
 ~
@@ -2403,7 +2403,7 @@ S
 &+Wmonarchs can be found on pedestals throughout the foyer. It appears
 &+Was though no one has been here in some time.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D2
 ~
 crypt door~
@@ -2423,7 +2423,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness. In one of the reliefs a staircase leads up.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -2447,7 +2447,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2467,7 +2467,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D1
 ~
 ~
@@ -2487,7 +2487,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2507,7 +2507,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2531,7 +2531,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2551,7 +2551,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2568,7 +2568,7 @@ S
 &+wBlack &+Lshadows &+wflit about below and it cannot be told if its just
 &+wthe eyes playing tricks or if there is something below.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D0
 ~
 ~
@@ -2586,7 +2586,7 @@ S
 &+wthe center of the room there is a large urn bearing the seal of the
 &+WPlatyr &+wfamily. Cobwebs and dust are noted on everything within sight.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D4
 ~
 ~
@@ -2602,7 +2602,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D3
 ~
 ~
@@ -2622,7 +2622,7 @@ S
 &+wpresence. &+LShadows &+wdance in peripheral vision and faint whispers can be
 &+wheard in the darkness.
 ~
-1 142639105 0 0
+1424 142639105 0 0
 D6
 ~
 ~

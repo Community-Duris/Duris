@@ -2396,8 +2396,8 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_STONE_SKIN);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
         }
       }
@@ -2415,8 +2415,8 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_GLOBE);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
         }
       }
@@ -2434,8 +2434,8 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_SHADOW_SHIELD);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
         }
       }
@@ -2453,8 +2453,8 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_BIOFEEDBACK);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
         }
       }
@@ -2472,8 +2472,8 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_FIRESHIELD);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
         }
       }
@@ -2491,8 +2491,8 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_COLDSHIELD);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
         }
       }
@@ -2681,8 +2681,8 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
 	  af = get_spell_from_char(target, SPELL_COLDSHIELD);
    	  if (af)
    	  {
-	    affect_remove(vict, af);
 	    wear_off_message(vict, af);
+	    affect_remove(vict, af);
 	  }
           spell_fireshield(number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
         }
@@ -2697,8 +2697,8 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_FIRESHIELD);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
           spell_coldshield(number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
         }
@@ -2713,8 +2713,8 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_VITALITY);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
           spell_vitality(number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
         }
@@ -2729,8 +2729,8 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_REDUCE);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
           spell_enlarge(number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
         }
@@ -2745,61 +2745,61 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
           af = get_spell_from_char(target, SPELL_ENLARGE);
           if (af)
           {
-            affect_remove(vict, af);
             wear_off_message(vict, af);
+            affect_remove(vict, af);
           }
           spell_reduce(number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
         }
       }
 
       rand = RandomSpells[1];
- 
+
       if (affected_by_spell(vict, rand))
       {
         af = get_spell_from_char(target, rand);
         if (af)
         {
-          affect_remove(vict, af);
           wear_off_message(vict, af);
-        }
-        RandomSpells[1](number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
-      }
-  
-      rand = RandomSpells[1];
- 
-      if (affected_by_spell(vict, rand))
-      {
-        af = get_spell_from_char(target, rand);
-        if (af)
-        {
           affect_remove(vict, af);
-          wear_off_message(vict, af);
         }
         RandomSpells[1](number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
       }
 
       rand = RandomSpells[1];
- 
+
       if (affected_by_spell(vict, rand))
       {
         af = get_spell_from_char(target, rand);
         if (af)
         {
-          affect_remove(vict, af);
           wear_off_message(vict, af);
+          affect_remove(vict, af);
         }
         RandomSpells[1](number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
       }
 
       rand = RandomSpells[1];
- 
+
       if (affected_by_spell(vict, rand))
       {
         af = get_spell_from_char(target, rand);
         if (af)
         {
-          affect_remove(vict, af);
           wear_off_message(vict, af);
+          affect_remove(vict, af);
+        }
+        RandomSpells[1](number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
+      }
+
+      rand = RandomSpells[1];
+
+      if (affected_by_spell(vict, rand))
+      {
+        af = get_spell_from_char(target, rand);
+        if (af)
+        {
+          wear_off_message(vict, af);
+          affect_remove(vict, af);
         }
         RandomSpells[1](number(25,56), vict, 0, SPELL_TYPE_SPELL, vict, 0);
       }
@@ -3121,8 +3121,8 @@ int poseidon_trident(P_obj obj, P_char ch, int cmd, char *arg)
       af = get_spell_from_char(ch, SPELL_BLUR);
       if (af)
       {
-        affect_remove(ch, af);
         wear_off_message(ch, af);
+        affect_remove(ch, af);
       }
     }
 
@@ -3131,8 +3131,8 @@ int poseidon_trident(P_obj obj, P_char ch, int cmd, char *arg)
       af = get_spell_from_char(ch, SPELL_VITALITY);
       if (af)
       {
-        affect_remove(ch, af);
         wear_off_message(ch, af);
+        affect_remove(ch, af);
       }
     }
     return TRUE;

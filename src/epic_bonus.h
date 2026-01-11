@@ -14,7 +14,7 @@
 struct EpicBonusData {
   int pid;
   int type;
-  const char *time;
+  char time[32];
 };
 
 struct epic_bonus_data

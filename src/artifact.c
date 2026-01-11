@@ -556,8 +556,8 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
   // Ensure to_time is never 0 or in the past (MySQL will reject FROM_UNIXTIME(0))
   if( to_time <= 0 )
   {
-    to_time = time(NULL) + 60;  // Default to 1 minute from now
-    logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: WARNING: to_time was %ld, resetting to current time + 60 seconds for vnum %d",
+    to_time = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;  // 10 days, not 60 secs
+    logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: WARNING: to_time was %ld, resetting to current time + 10 days for vnum %d",
       (long)(time(NULL) + min_minutes * 60), vnum);
   }
 
@@ -583,7 +583,7 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
     // Keep the bigger one, since we're feeding to at least min_minutes.
     to_time = (oldtime >= to_time) ? oldtime : to_time;
 
-    qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu) WHERE vnum = %d", to_time, vnum);
+    qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d", to_time, vnum);
   }
   else
   {
@@ -926,13 +926,12 @@ void artifact_update_sql( P_obj arti, char owned, time_t timer )
     // FROM_UNIXTIME(0) causes MySQL to reject the datetime.
     if( timer <= 0 )
     {
-      timer = time(NULL) + 60;  // Default to 1 minute from now
-      logit(LOG_ARTIFACT, "arti_update_sql (UPDATE): WARNING: timer was %ld, resetting to current time + 60 seconds for vnum %d",
+      timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;  // 10 days, not 60 secs
+      logit(LOG_ARTIFACT, "arti_update_sql (UPDATE): WARNING: timer was %ld, resetting to 10 days for vnum %d",
         (long)0, vnum);
     }
 
-    // lastUpdate should update automatically.
-    qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d WHERE vnum=%d",
+    qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
       new_owned ? 'Y' : 'N', locType, location, timer, type, vnum );
   }
   // Otherwise, create one.
@@ -945,12 +944,11 @@ void artifact_update_sql( P_obj arti, char owned, time_t timer )
     // FROM_UNIXTIME(0) causes MySQL to reject the datetime.
     if( timer <= 0 )
     {
-      timer = time(NULL) + 60;  // Default to 1 minute from now
-      logit(LOG_ARTIFACT, "arti_update_sql: WARNING: timer was %ld, resetting to current time + 60 seconds for vnum %d",
+      timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;  // 10 days, not 60 secs
+      logit(LOG_ARTIFACT, "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d",
         (long)0, vnum);
     }
 
-    // lastUpdate should update automatically.
     qry("INSERT INTO artifacts VALUES( %d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
       vnum, new_owned ? 'Y' : 'N', locType, location, timer, type );
   }
@@ -991,14 +989,14 @@ void artifact_update_sql( int vnum, bool owned, int locType, int location, time_
   // FROM_UNIXTIME(0) causes MySQL to reject the datetime.
   if( timer <= 0 )
   {
-    timer = time(NULL) + 60;  // Default to 1 minute from now
-    logit(LOG_ARTIFACT, "artifact_update_sql: WARNING: timer was %ld, resetting to current time + 60 seconds for vnum %d",
+    timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;  // 10 days, not 60 secs
+    logit(LOG_ARTIFACT, "artifact_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d",
       (long)0, vnum);
   }
 
   if( update_existing )
   {
-    qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d WHERE vnum=%d",
+    qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
       owned ? 'Y' : 'N', locType, location, timer, type, vnum );
   }
   else
@@ -1057,13 +1055,13 @@ bool remove_owned_artifact_sql( P_obj arti, int pid )
     // Non-positive pid -> remove arti from game.
     if( pid <= 0 )
     {
-      qry("UPDATE artifacts SET owned='N', locType=%d, location=%d WHERE vnum=%d", ARTIFACT_NOTINGAME, NOWHERE, vnum );
+      qry("UPDATE artifacts SET owned='N', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d", ARTIFACT_NOTINGAME, NOWHERE, vnum );
     }
     // Otherwise, we're moving to a corpse of char who's PID is pid.
     else
     {
       // On a PC corpse -> owned == Yes, and location == pid.
-      qry("UPDATE artifacts SET owned='Y', locType=%d, location=%d WHERE vnum=%d", ARTIFACT_ONCORPSE, pid, vnum );
+      qry("UPDATE artifacts SET owned='Y', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d", ARTIFACT_ONCORPSE, pid, vnum );
     }
   }
   // If the entry doesn't exist and we're moving arti to a corpse (Yes, this would be a buggy situation).
@@ -1100,7 +1098,7 @@ void remove_all_artifacts_sql( P_char ch )
   pid = GET_PID(ch);
 
   // Nullify arti timers on all ch's equipment.
-  qry("UPDATE artifacts SET owned='N', timer=0 WHERE location=%d and locType=%d", pid, ARTIFACT_ON_PC );
+  qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d", pid, ARTIFACT_ON_PC );
 }
 
 // This is a wrapper function for artifact_update_sql.
@@ -1188,7 +1186,7 @@ bool get_artifact_data_sql( int vnum, P_arti adata )
     adata->owned = owned;
     adata->locType = atoi(row[1]);
     adata->location = atoi(row[2]);
-    adata->timer = atol(row[3]);
+    adata->timer = row[3] ? atol(row[3]) : 0;
     adata->type = atoi(row[4]);
     adata->next = NULL;
   }
@@ -1237,8 +1235,8 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
   // FROM_UNIXTIME(0) causes MySQL to reject the datetime.
   if( poof_time <= 0 )
   {
-    poof_time = time(NULL) + 60;  // Default to 1 minute from now
-    logit(LOG_ARTIFACT, "artifact_feed_sql: WARNING: poof_time was %ld, resetting to current time + 60 seconds for vnum %d",
+    poof_time = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;  // 10 days, not 60 secs
+    logit(LOG_ARTIFACT, "artifact_feed_sql: WARNING: poof_time was %ld, resetting to 10 days for vnum %d",
       (long)0, vnum);
   }
 
@@ -2222,7 +2220,7 @@ void event_artifact_check_poof_sql( P_char ch, P_char vict, P_obj obj, void * ar
   mysql_free_result(res);
 
   // Clear the artis from the list.  Note: doing it after the loop intentionally.
-  qry( "UPDATE artifacts SET owned='N', locType='NotInGame', location=-1, timer=0 WHERE owned='Y' AND timer < now()" );
+  qry( "UPDATE artifacts SET owned='N', locType='NotInGame', location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()" );
 
   add_event( event_artifact_check_poof_sql, 12 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0 );
 }
@@ -2282,10 +2280,10 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 
   modifier = get_property("artifact.wars.modifier", 1.0);
 
-  // We only care about artis on a PC or corpse (Note: it's implied that owned='Y' on these).
-  // The other options: not in game, on npc, on ground can not have fighting artis.
-  debug( "event_artifact_wars_sql: Querying artifacts on PC/Corpse..." );
-  qry("SELECT vnum, locType+0, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType='OnPC' OR locType='OnCorpse'" );
+  // we only care about artis on a PC (online players only).
+  // corpse/npc/ground artifacts don't trigger the penalty.
+  debug( "event_artifact_wars_sql: querying artifacts on pc..." );
+  qry("SELECT vnum, locType+0, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType='OnPC'" );
   res = mysql_store_result(DB);
 
   if( !res || mysql_num_rows(res) < 1 )
@@ -2317,7 +2315,7 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
       node->owned = TRUE;
       node->locType = atoi(row[1]);
       node->location = pid;
-      node->timer = atol(row[3]);
+      node->timer = row[3] ? atol(row[3]) : 0;
       node->type = atoi(row[4]);
       node->next = NULL;
     }
@@ -2330,7 +2328,7 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
       }
       if( nextlist->pid == pid )
       {
-        add_artidata_to_list( nextlist->artis, vnum, TRUE, atoi(row[1]), pid, atol(row[3]), atoi(row[4]) );
+        add_artidata_to_list( nextlist->artis, vnum, TRUE, atoi(row[1]), pid, row[3] ? atol(row[3]) : 0, atoi(row[4]) );
       }
       else
       {
@@ -2344,7 +2342,7 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
         node->owned = TRUE;
         node->locType = atoi(row[1]);
         node->location = pid;
-        node->timer = atol(row[3]);
+        node->timer = row[3] ? atol(row[3]) : 0;
         node->type = atoi(row[4]);
         node->next = NULL;
       }
@@ -2370,56 +2368,59 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
     punish_level  = (count[ARTIFACT_MAJOR ] > 1) ? count[ARTIFACT_MAJOR ] - 1 : 0;
     punish_level += (count[ARTIFACT_UNIQUE] > 1) ? count[ARTIFACT_UNIQUE] - 1 : 0;
     punish_level += (count[ARTIFACT_IOUN  ] > 1) ? count[ARTIFACT_IOUN  ] - 1 : 0;
-    // If they're in violation (more than one arti of the same type.
+    // if they're in violation (more than one arti of the same type), drop all their artifacts.
     if( punish_level > 0 )
     {
-      // 1: 5min, 2: 15min, 3: 30min, 4: 64min, 5: 125min (2hrs+), 6: 216min (3.5hrs+), 7: 343min (5.5hrs+).
-      // More than a punish_level of 3 is ridiculous though.
-      switch( punish_level )
-      {
-        case 0:
-            punishment = 0;
-        case 1:
-            punishment = 300;
-          break;
-        case 2:
-            punishment = 900;
-          break;
-        case 3:
-            punishment = 1800;
-          break;
-        default:
-          // x^3 minutes function.
-          punishment = 60 * punish_level * punish_level * punish_level;
-          break;
-      }
-      // 2 of the same type (and no others):  300 * 2 =   600 sec = 10min
-      // 6 artis with two of each type     : 1800 * 6 = 10800 sec = 180min = 3 hrs loss every half hr.
-      punishment *= count[0];
-      punishment *= modifier;
+      owner = find_player_by_pid(nextlist->pid);
 
-      node = nextlist->artis;
-      while( node )
+      if( owner && owner->in_room != NOWHERE )
       {
-        arti = read_object( node->vnum, VIRTUAL );
-        if( !arti )
-        {
-          logit(LOG_ARTIFACT, "SYSERR: artifact_wars_sql: vnum %d not found in object prototypes", node->vnum);
-          node = node->next;
-          continue;
-        }
-        debug( "fight: '%s&n'%6d upset (%d/%d =%3d:%02d) with %s.",
-          pad_ansi(arti->short_description, 35, TRUE).c_str(), node->vnum,
-          punish_level, count[0], (int)punishment/60, (int)punishment%60, get_player_name_from_pid(node->location) );
-        if( node->locType == ARTIFACT_ON_PC
-          && (owner = get_player_from_name( get_player_name_from_pid(node->location) )) )
-        {
-          act("&+L$p &+Lseems very upset with you.&n", FALSE, owner, arti, 0, TO_CHAR);
-        }
-        extract_obj(arti, FALSE);
-        qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu) WHERE vnum = %d", node->timer - punishment, node->vnum );
+        P_obj obj, next_obj;
+        bool first = TRUE;
 
-        node = node->next;
+        for( int pos = 0; pos < MAX_WEAR; pos++ )
+        {
+          if( owner->equipment[pos] && IS_ARTIFACT(owner->equipment[pos]) )
+          {
+            obj = unequip_char(owner, pos, FALSE);
+            if( first )
+            {
+              act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
+              act("&+R$n screams as $p burns $m and falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+              first = FALSE;
+            }
+            else
+            {
+              act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
+              act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+            }
+            obj_to_room(obj, owner->in_room);
+          }
+        }
+
+        for( obj = owner->carrying; obj; obj = next_obj )
+        {
+          next_obj = obj->next_content;
+          if( IS_ARTIFACT(obj) )
+          {
+            if( first )
+            {
+              act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
+              act("&+R$n screams as $p burns $m and falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+              first = FALSE;
+            }
+            else
+            {
+              act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
+              act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+            }
+            obj_from_char(obj);
+            obj_to_room(obj, owner->in_room);
+          }
+        }
+
+        debug( "artifact_wars: %s had %d artifacts forcibly dropped (punish_level=%d)",
+               GET_NAME(owner), count[0], punish_level );
       }
     }
     nextlist = nextlist->next;
@@ -3261,7 +3262,7 @@ void event_artifact_check_bind_sql( P_char ch, P_char vict, P_obj obj, void * ar
     bindData = new bind_data;
     bindData->vnum      = atoi(row[0]);
     bindData->owner_pid = atoi(row[1]);
-    bindData->timer     = atol(row[2]);
+    bindData->timer     = row[2] ? atol(row[2]) : 0;
 
     bindData->next = list;
     list = bindData;
@@ -3383,7 +3384,7 @@ void arti_fixit_sql( P_char ch )
     if( location != pid )
     {
       sql_update_bind_data( vnum, &location, &timer);
-      qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu) WHERE vnum = %d", new_time, vnum);
+      qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d", new_time, vnum);
       send_to_char_f( ch, "%3d) '%s&n'%6d - timer reset and now owned by '%s' %d.\n\r",
         ++counter, pad_ansi( arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(), vnum, get_player_name_from_pid(location), location );
     }

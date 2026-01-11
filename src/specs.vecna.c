@@ -374,8 +374,8 @@ int vecna_stonemist(P_obj obj, P_char ch, int cmd, char *arg)
         af = get_spell_from_char(target, SPELL_STONE_SKIN);
         if( af )
         {
-          affect_remove(target, af);
           wear_off_message(target, af);
+          affect_remove(target, af);
         }
         else
         {
@@ -394,8 +394,8 @@ int vecna_stonemist(P_obj obj, P_char ch, int cmd, char *arg)
         af = get_spell_from_char(target, SPELL_VITALITY);
         if( af )
         {
-          affect_remove(target, af);
           wear_off_message(target, af);
+          affect_remove(target, af);
         }
       }
       else

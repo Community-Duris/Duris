@@ -1,360 +1,321 @@
 #33700
-strange hooded figure~
-&+La strange hooded figure&n~
-&+LA strange hooded figure stands here near the gate, head bowed.&n
+figure hooded strange~
+&+La strange h&+woo&+Wded fig&+wur&+Le&n~
+&+LA strange h&+woo&+Wded fig&+wur&+Le stands here head bowed.&n
 ~
-&+L   The strange figure has on a long black hooded cloak. A slight glow can
-&+Lbe seen emanating from beneath the hood. A pitch black arm lifts from
-&+Lthe folds of its cloak, scaly palm facing upwards. Within your mind
-&+Lyou see the picture of metal coins as this figures prompting. &n
+&+L   The strange figure has on a long black hooded cloak. A slight glow
+&+Lcan be seen emanating from beneath the hood.  Head bowed in despair,
+&+Lsomething must be worrying him.  He stares down at the fish swimming
+&+Lbelow the bridge for comfort that things will be ok.&n
 ~
-33556555 0 0 0 120 12288 0 0 -500 S
-UV 0 4 0 -1
-45 -1 -69 45d99+1980 6d6+12
-5.9.8.4 109350
-10 8 1
+395338 0 0 0 8 2 0 0 -250 S
+ve 0 2097156 0 3
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #33701
-undead warrior zombie~
-&+yan undead warrior&n~
-&+yA giant zombie stands here, looking for his next kill.&n
+uduku mystic magus~
+&+WUdu&+wku, &+Ca re&+cno&+Cwn my&+cst&+Cic &+wma&+Wg&+wus&n~
+&+WUdu&+wku, &+Ca re&+cno&+Cwn my&+cst&+Cic &+wma&+Wg&+wus &+Cenc&+cha&+Cnts his surro&+cun&+Cdings.&n
 ~
-&+y   The giant warrior zombie is scaning the area for his next kill.
-&+yHe is dressed in rusted platemail, which is probably the platemail
-&+ythe poor soul died in. His eyes glow a hellish red and search
-&+ytirelessly.
+&+C   The mystical man stands still and tall like a statue.  The seasons
+&+Ccome and go yet this ice magus seems timeless.  He is constructed by the
+&+Csame ice elements that empower him.  This elder is almost ghost like
+&+Cand translucent.  Much power comes from a creature with such wisdom.&n
 ~
-1073743880 1 0 0 33554432 0 0 0 -800 S
-U 0 1 0 -1
-36 8 7 29d65+377 3d6+4
-0.0.0.0 25839
+395594 0 0 0 8 2 0 0 400 S
+ie 0 33587200 0 3
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1
 #33702
-giant terzak spider~
-&+La giant terzak spider&n~
-&+LA giant terzak spider lurks here, hissing.&n
+terzak giant spider~
+&+La giant te&+wr&+Wz&+wa&+Lk&n~
+&+LA giant te&+wr&+Wz&+wa&+Lk skitters about hissing.&n
 ~
-&+L   The giant terzak spider is very big and hairy.  It has two large,
-&+Lcatlike eyes and fangs which drip a green venom. The spider is very
-&+Lpoisonous  and can kill you slowly and painfully if bitten or sprayed
-&+Lwith its acidic poison. The spider stands about three feet high and
-&+Lfive feet long.&n
+&+L   Giant in size, for a terzak, this creature resembles a spider that
+&+Lstands about knee high.  Multiple legs beat and batter, while long
+&+Lvenomous fangs drip acidic poison.  Catlike eyes stare you down, as if
+&+Lthis thing is ready to pounce.&n
 ~
-1207962760 1 0 0 302514224 0 0 0 -500 S
-AC 0 1 0 -1
-25 11 19 25d47+250 3d5+3
-0.0.0.0 22275
-8 8 0
+2120 0 0 0 0 0 0 0 -250 S
+as 0 16777216 1 3
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
 #33703
-gravedigger digger~
-&+La grave&+ydigger&n~
-&+LA grave&+ydigger &+Lstands here, eyes vacant.&n
+ratak wild rat~
+&+ya wild r&+Ya&+wt&+Ya&+yk&n~
+&+yA wild r&+Ya&+wt&+Ya&+yk scurries around incredibly fast.&n
 ~
-&+L   This grave&+ydigger&n must have at one time worked here in the graveyard
-&+Lbut has fallen to some evil force that has taken his soul and life.
-&+LHis eyes stare vacantly ahead and his skin is a pale greenish white
-&+Lin color.&n
+&+y   This small furry ratak has glowing yellow eyes and reddish brown fur.
+&+yIt moves at an astonishing speed, zipping around endlessly. It's very
+&+yprotective of its territory and should be approached with caution.  It
+&+yhas been known to kill animals much bigger than itself. &n
 ~
-100665416 1 0 0 0 0 0 0 -500 S
-U 0 1 0 -1
-39 6 -12 35d83+595 4d6+7
-0.0.0.0 45360
-8 8 1
+72 0 0 0 0 0 0 0 -250 S
+ac 0 16777216 1 2
+31 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
 #33704
-tiny spider~
-&+La tiny terzak&n~
-&+LA tiny spider is crawling on the ground here.&n
+gorlon faceless beast~
+&+WGor&+wlon, &+mthe &+Mface&+mless &+wbe&+Wa&+wst&n~
+&+WGor&+wlon, &+mthe &+Mface&+mless &+wbe&+Wa&+wst &+mis a &+Mmas&+msive &+Mfour&+L-&+marmed &+Mmon&+mster.&n
 ~
-&+L   This spider resembles its older counterpart but is basically smaller
-&+Land less dangerous. Its cat-eyes search for food to help it grow. &n
+&+m   This terrifying beast has four-arms and no discernible face.  The
+&+mmass of purple fur stands eight feet tall.  Hiding out the weather, he
+&+mis waiting for the best time to ravage the village.  Nothing matters
+&+mexcept revenge on those who have shunned his dark delusions.&n
 ~
-136 1 0 0 33554432 0 0 0 -750 S
-AS 0 0 0 -1
-10 18 67 10d18+35 2d3+1
-0.0.0.0 1296
-8 8 0
+396362 1 0 0 8 2 262144 0 -400 S
+ae 0 8388608 3 5
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #33705
-wild ratak~
-&+ra wild ratak&n~
-&+rA wild ratak scurries around here, moving impossibly fast.&n
+tarik black bird humanoid~
+&+WTar&+wik, &+La black bird &+whu&+Wmano&+wid&n~
+&+WTar&+wik, &+La black bird &+whu&+Wmano&+wid &+Lperches &+where &+Lpondering &+wwhere &+Lto fly &+wnext&+L.&n
 ~
-&+r   This small furry ratak has glowing yellow eyes and reddish brown fur.
-&+rIt moves at an astonishing speed, zipping around endlessly. It's very
-&+rprotective of its territory though and should be approached with
-&+rcaution. It has been known to kill animals much bigger than itself. &n
+&+L   Tarik is a hybrid of a humanoid and black bird.  He stands on two legs,
+&+Lbut has large feathered wings and a strong wide beak.  Perching upon the
+&+Lhighest trees, he knows the terrain in great detail.  Scouting for a meal
+&+Lor those in trouble.  He is a solitary creature that is willing to help
+&+Lwhen given a chance.&n
 ~
-200 0 0 0 16 0 0 0 -500 S
-A 0 0 0 -1
-15 15 51 15d23+60 2d5+2
-0.0.0.0 7290
-8 8 0
+268830794 0 0 0 8 2 0 134225920 400 S
+B 0 32800 0 2
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #33706
-ancient dead warrior~
-the ancient dead warrior~
-A ancient dead warrior lays here on a platform.
+protector brutish guard warrior~
+&+ba &+Bb&+crut&+Cish &+Wpro&+wtec&+Ltor&n~
+&+bA &+Bb&+crut&+Cish &+Wpro&+wtec&+Ltor&+b stands tall patrolling the area.&n
 ~
-The ancient dead warrior is dress in shining armor.  There is a great sword
-laying next to him that seems to be a royal sword.  The corpse of the warrior
-is decomposed into a skeleton.
-
-You pier into the swords refection and see your dead body laying on the
-floor.
+&+b   This brutish barbarian is strong as an ox and just as smelly.  His large
+&+bmuscular structure aids him against the fridge climate.  Fearless at heart,
+&+bhe stands up for the weak, out of a sense of duty.  With a watchfull eye and
+&+ba sense of distrust, he patrols the area for disruptions in the peace.&n
 ~
-1124075528 1 0 0 33554464 33792 0 0 -1000 S
-SK 0 16 0 -1
-49 2 -28 40d80+840 4d7+10
-3.3.3.3 51840
-4 8 1
+67373128 0 0 0 8 0 0 0 0 S
+pb 0 2 3 -1
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #33707
-small zombie child~
-&+ga small zombie&n~
-&+gAn undead child staggers around without any direction.&n
+hunter nomadic~
+&+La &+yn&+Lo&+wmad&+Li&+yc &+yh&+Lu&+wnt&+Le&+yr&n~
+&+LA &+yn&+Lo&+wmad&+Li&+yc &+yh&+Lu&+wnt&+Le&+yr&+L looks for a place to stay the night.&n
 ~
-&+G   Ragged and wearing rotting clothes, this small child has been cursed
-&+Gand must walk with the other undead minions of the lands.&n
+&+y   Being the man of the household, he stays busy hunting most of the day
+&+yto provide a hardy meal for his wife and kid.  Stocky in stature, this
+&+ygnarled man, holds his own in a fight.  Skill and exceptional luck keep
+&+yhim alive, even when seemingly outmatched by enemies.&n
 ~
-8 0 0 0 0 0 0 0 -400 S
-U 0 0 0 -1
-18 13 42 18d30+90 3d4+2
-0.0.0.0 8748
+1074006090 0 0 0 8 0 0 0 500 S
+aa 0 2 2 2
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1
 #33708
-skeleton black~
-&+La dark skeleton&n~
-&+LA black-boned skeleton stands here, eye sockets glowing red.&n
+black theezak horse~
+&+La black th&+we&+We&+wz&+Lak&n~
+&+LA strong black th&+we&+We&+wz&+Lak stand here.&n
 ~
-&+L   This skeleton was once a zombie in this accursed place but has long
-&+Lsince lost its rotting flesh. The black bones of whatever race is was
-&+Lare now stark and bare to the harsh world. Its eyes glow with a hellish
-&+Lglow. &n
+&+L   This animal is a working beast.  Ready to carry men and supplies
+&+Lon far away trips.  The strong theezak is black with a checkered
+&+Lcolored tail.  It's muscles bulge and ripple when it moves.  Mount
+&+Lthis creature to begin your journey.&n
 ~
-1140852746 1 0 0 33554432 0 0 0 -900 S
-U 0 1 0 -1
-30 8 3 30d65+390 3d6+4
-0.0.0.0 26730
+134219850 0 0 0 0 0 0 0 0 S
+ae 0 1 2 3
+31 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1
 #33709
-wandering ghost image~
-&+Wa spectral ghost&n~
-&+WA spectral image floats slowly along the path here.&n
+madam nomadic~
+&+La &+yn&+Lo&+wmad&+Li&+yc &+ym&+La&+wd&+La&+ym&n~
+&+LA &+yn&+Lo&+wmad&+Li&+yc &+ym&+La&+wd&+La&+ym&+L attends her families needs.&n
 ~
-&+W  This ghost is a dimly lit white shape like thing.  That is hovering around
-&+Wthe room.  It's hard to get a fix on what exactly this figure looks like.&n
+&+y   Matriarch of the family, she keeps the men in line, with a quick wit and
+&+ygentle persuasion.  More of a home body, she takes care of daily chores,
+&+ythen prepares the nightly feast.  All of her activities, keep her mind off
+&+ythe dangers that her family endure out in the forest hunting.&n
 ~
-133128 0 0 0 0 0 0 0 -850 S
-UG 0 16 0 -1
-28 13 29 19d35+133 3d4+2
-0.0.0.0 9234
-8 8 0
+264270 0 0 0 0 0 0 0 500 S
+aa 0 2 3 2
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
 #33710
-gorlon beast~
-&+mGorlon, the faceless beast&n~
-&+mA massive four-legged beast is here.&n
+wul guard~
+&+ya gu&+La&+wrd &+Lw&+yul&n~
+&+yA gu&+La&+wrd &+Lw&+yul sit here sizing up danger.&n
 ~
-&+mThe beast seems to have no face.  His head is one hairy ball with no
-&+mfeatures.  The beast is 8 feet tall and is engulfed in purple hair.  The
-&+mhair of the monster is very thick and dry.&n
+&+y   This sizeable beast is completely loyal to his master.  Waiting by
+&+ythe elders side, he is alert to any potential intruders.  The creature
+&+yhas six legs working in unison, no tail, and long shaggy hair that
+&+ydrags on the ground.  As a reward, it has been fed well.&n
 ~
-1107298378 1 0 0 33554442 0 0 0 -500 S
-A 0 1 0 -1
-42 -1 -59 42d107+1890 6d6+12
-0.0.0.0 102060
-8 8 1
+264266 0 0 0 268435456 0 0 0 100 S
+ac 0 1048576 1 3
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+6 8 1
 #33711
-tarik lost magician man~
-&+MTarik&n~
-&+rA red-robed man stands here, looking flustered.&n
+falga elder~
+&+WFal&+wga, &+Cthe vi&+wl&+Wl&+wa&+Cge &+wel&+Wd&+wer&n~
+&+WFal&+wga, &+Cthe vi&+wl&+Wl&+wa&+Cge &+wel&+Wd&+wer &+Crests here for the &+wm&+Wo&+wm&+Cent.&n
 ~
-&+r   This pointy eared man is clothed in a deep red robe and emits
-&+ra faint aura of power that can be sensed by all around him. His eyes
-&+rare purple in color and he looks as though he's lost something. &n
+&+w   The frail elder is the oldest person in the village.  He has been
+&+wgiving wisdom of survial to the locals for many generations.  A pale
+&+wsagging face, bushy eyebrows, and a long beard show his age, but
+&+whidden is his immense spiritual power.  Dressed in full length furs,
+&+wshiny rings and holding a staff, he looks very respectable.&n
 ~
-1107429386 0 0 0 167772188 1025 0 0 0 S
-PE 0 512 0 -1
-43 -1 -62 43d72+1849 6d6+12
-3.8.7.3 104490
-8 8 1
+395850 0 0 0 8 2 0 0 400 S
+sg 0 256 3 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+6 8 2
 #33712
-village warrior guard~
-&+Ba village warrior&n~
-&+BA village warrior stands here, patrolling the area.&n
+mordat proud priest~
+&+WMor&+wdat, &+ma pr&+Mou&+md &+wpr&+Wi&+west&n~
+&+WMor&+wdat, &+ma pr&+Mou&+md &+wpr&+Wi&+west &+mwh&+Mimp&+mers &+Mas &+mhe pr&+May&+ms so&+Mft&+mly.&n
 ~
-&+B   The village warrior doesn't have much armor.  He is a large man that has
-&+Brippling muscles. He stands alert and wary, having to watch for any
-&+Bdanger that may lurk near his home. His work is needed with all the wild
-&+Bbeasts and undead nearby.&n
+&+M   The towering minotaur, has an aggressive look, but a calm demeanor.
+&+MBeing raised by beasts, it took a long time for him to see the light, of
+&+mwhat the true potential that peace could have on his world.  Being proud of
+&+movercoming most of his demons, he strives to continually improve and lend
+&+ma hand to anyone who would like to travel on a spiritual journey with him.&n
 ~
-67110984 0 0 0 33554432 0 0 0 0 S
-PH 0 1 0 -1
-34 6 -8 34d83+578 4d6+7
-8.9.0.2 44064
+395850 0 0 0 8 2 0 0 400 S
+mt 0 32768 3 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1
 #33713
-peasant~
-&+ga peasant&n~
-&+gA peasant of the village is here, looking poor.&n
+native village~
+&+La &+yv&+Li&+wll&+La&+yge na&+wt&+Wi&+wv&+Le&n~
+&+LA &+yv&+Li&+wll&+La&+yge na&+wt&+Wi&+wv&+Le greets you with a nod.&n
 ~
-&+g   The strong farmer is working hard on the fields.  He is sweating all over
-&+ghis body.  The man has a dark tan from being in the sun all day.  He smells
-&+glike he hasn't washed himself in over a month.&n
+&+y   This village native has called Miaeril home for some time now.  He knows
+&+ythe the best fishing and hunting grounds.  For now, he is just wandering
+&+yabout making the most of his neighbors company.  He's not the smartest man,
+&+ybut he sure knows how to have a good time.  Making him a popular addition,
+&+yto this tight knit community.&n
 ~
-2056 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-20 13 35 20d30+100 3d4+2
-0.9.3.0 9720
+264264 0 0 0 0 0 0 0 0 S
+aa 0 2 1 -1
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1
 #33714
-theezak black mount~
-&+La black theezak&n~
-&+LA strong black theezak stands here.&n
+gordo trusted merchant~
+&+WGor&+wdo, &+ythe tr&+Yus&+yted &+wmer&+Wc&+whant&n~
+&+WGor&+wdo, &+ythe tr&+Yus&+yted &+wmer&+Wc&+whant &+yst&+Yan&+yds re&+Yad&+yy to &+Yhelp&+y.&n
 ~
-&+L   The strong black theezak is a working beast.  The theezak's muscles are
-&+Lvery big, and they shake when the beast walks. The animal resembles a
-&+Lhorse and is in very good condition.&n
+&+Y   G&+wo&+Wr&+wd&+Yo is the short, fat, merchant of &+LMi&+wa&+We&+wr&+Lil&+Y.  He may be ugly, but his
+&+Yheart of gold, makes him a trusted man.  Dressed in furs from the local
+&+Ywildlife, he tries to keep warm as possible.  He welcomes you to ask about
+&+Ysurival supplies available.&n
 ~
-134219786 0 0 0 0 0 0 0 -500 S
-AE 0 0 0 -1
-15 15 51 15d23+60 2d5+2
-0.0.0.0 7290
-8 8 0
+33957962 0 0 0 8 2 0 0 400 S
+sg 0 1 2 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #33715
-farmers wife~
-&+ma farmers wife&n~
-&+mA farmers wife is here.&n
+olyx hulking ox~
+&+Wa h&+wu&+Wlk&+win&+Wg &+wo&+Wl&+wy&+Lx&n~
+&+WA h&+wu&+Wlk&+win&+Wg &+wo&+Wl&+wy&+Lx &+Wslowly roams the tundra.&n
 ~
-&+m   The farmers wife cleans the house every day.  She is a big woman
-&+mthat does all the chores around the house.  She is short and fat
-&+munlike her husband.&n
+&+W   This massive olyx is a hulking beast that roams the vast thundra
+&+Woutside of Miaeril.  It is the primary source of food and leather in
+&+Wthe village.  Although, to consider it as prey, will test your strength.
+&+WLong hair, rich with fat, and bent tusks assist it's survial.&n
 ~
-2056 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-17 13 45 17d30+85 3d4+2
-8.6.2.0 8262
-8 8 2
+134219850 0 0 0 8 2 0 0 0 S
+ac 0 1048576 1 4
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #33716
-slave~
-&+La farming slave&n~
-&+LA farming slave stands here working hard.&n
+youth nomadic~
+&+La &+yn&+Lo&+wmad&+Li&+yc &+yy&+Lo&+wu&+Lt&+yh&n~
+&+LA &+yn&+Lo&+wmad&+Li&+yc &+yy&+Lo&+wu&+Lt&+yh&+L trails away from his father.&n
 ~
-&+L   The slave is dressed in ragged clothes.  He is a skinny thing
-&+Lthat does not look like he has eaten a good meal in a long time.
-&+LHe is a quiet person that keeps to himself and take orders well.&n
+&+y   The youngest in the family, this teenager kepts up with his father,
+&+ytrying to prove he will be a skilled hunter one day.  Doing the grunt work,
+&+yhis job is to bait, set traps, and carry the bounty home.  The short stack
+&+ykid always has a smile from ear to ear, keeping the whole family energized
+&+ywith joy.&n
 ~
-2056 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-19 13 39 19d30+95 3d4+2
-9.7.3.0 9234
+262218 0 0 0 0 0 0 0 500 S
+aa 0 2 1 2
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1
 #33717
-wul guard~
-&+ya guard wul&n~
-&+yA guard wul is here, keeping an eye on everything.&n
+shadow shadowy figure~
+&+La shad&+wow&+Wy fig&+wur&+Le&n~
+&+LA shad&+wow&+Wy fig&+wur&+Le sneaks around trying to avoid detection.&n
 ~
-&+y   The elders guard wul is very large and strong.  It has long dirty hair and
-&+ysharp teeth.  This wild wul is drooling on the floor.  He is dirty, but the
-&+yelder loves and takes good care of him. It resembles a dog with six legs and
-&+Yno tail. &n
+&+L   Mischievous by nature, the shadowy figure sneaks around trying to avoid
+&+Ldetection.  Shape shifting, from humanoid to monster, it's true figure
+&+Lis unknown.  Playing games with your mind, it appears then disappears with
+&+Lease.  Such creatures should not be trusted.&n
 ~
-1140852746 128 0 0 0 0 0 0 0 S
-A 0 0 0 -1
-27 15 51 15d23+60 2d5+2
-0.0.0.0 7290
+395336 0 0 0 134742024 0 0 0 -250 S
+ve 0 4096 2 3
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 0
 #33718
-falga elder~
-&+cFalga, the town elder&n~
-&+cFalga the town elder sits here in a rocking chair.&n
+salmon bruised~
+&+Ra br&+Lu&+gi&+Ls&+Red s&+La&+gl&+Lm&+Ron&n~
+&+RA br&+Lu&+gi&+Ls&+Red s&+La&+gl&+Lm&+Ron swims around fighting the water current.&n
 ~
-&+c   The town elder is the oldest person in town.  He is sitting in his favorite
-&+crocking chair.  All the skin on his body is sagging down far.  He is a pale
-&+cwrinkled up mess of a creature. He wears a pink colored ring on his
-&+cleft hand and a black one on his right, and they look very valuable.
-&+cPerhaps you should ask him about them? &n
+&+R   This is a mature s&+La&+gl&+Lm&+Ron heading home to spawn.  Its figure has been
+&+Rmutilated during the rough journey.  The fishs nose is in a hook shape and
+&+Rthe skin has been torn and battered.  Once a gourmet meal, this fish has
+&+Rbecome only edible to the most desperate of men.&n
 ~
-2058 0 0 0 16777224 0 0 0 0 S
-PH 0 0 0 -1
-40 2 -28 40d80+840 4d7+10
-3.3.3.3 51840
-6 8 1
+262346 0 0 0 2048 0 0 0 0 S
+f 0 0 0 2
+26 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
 #33719
-evil priest~
-&+can evil priest&n~
-&+cAn evil priest stands here, praying softly.&n
+hawk blood~
+&+La&+r bl&+Roo&+rd&+L ha&+ww&+Wk&n~
+&+LA&+r bl&+Roo&+rd&+L ha&+ww&+Wk &+Lflaunts its wingspan in a taunting gesture.&n
 ~
-&+c   The evil cleric is wearing all black clothes.  He is a small thing with red
-&+ceyes and no hair.  The cleric is a humanoid with 4 fingers an each hand.
-&+cHis ears are pointed and he has no teeth.&n
+&+L   The blood hawk wants just that, blood from a helpless human.  These birds
+&+Lare equipped with powerful talons and a sizable beak.  This bird is jet black
+&+Lwith red eyes that glow with hate.  It seems not to be afraid of you, as if it
+&+Lthinks you're an easy kill.&n
 ~
-1073743882 0 0 0 33554528 32768 0 0 -1000 S
-H 0 32 0 -1
-40 2 -28 40d88+880 4d7+10
-3.3.3.3 51840
+131144 0 0 0 134217728 0 0 0 -250 S
+b 0 16777216 2 2
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1
 #33720
-village commoner~
-&+wa village commoner&n~
-&+wA village commoner walks by here.&n
+abominable frost giant~
+&+Wa&+wn &+Wabo&+wmin&+Wable &+Bf&+cro&+Cst gi&+can&+Bt&n~
+&+WA&+wn &+Wabo&+wmin&+Wable &+Bf&+cro&+Cst gi&+can&+Bt &+Wpr&+wowl&+Ws &+wfor &+Wpr&+we&+Wy.&n
 ~
-&+w   The town commoner is a person that just wanders the streets all day.  He is
-&+wnot rich, but he doesn't worry about where his next meal is coming from.  The
-&+wcommoner is wearing the same clothes he was wearing all last month.&n
+&+c   Dominating in size, this frost giant rules the artic tundra.  Blue
+&+Cskin repels the cold, while a long white bread covered in clumps of
+&+Cice, shields his face.  A menacing stare in his eyes, let you know
+&+Canyone he faces is considered prey.  Once a holyman, he has lost trust
+&+cin others.  Leading him to live a harsh life alone in paranoia.&n
 ~
-8 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-24 15 58 13d23+52 2d5+2
-6.5.2.0 6318
-8 8 1
-#33721
-gordo town baker~
-&+YGordo, the town baker&n~
-&+YGordo, the town baker stands here ready to help you.&n
-~
-&+Y   Gordo is the short, fat, cook of Miaeril.  He is all dressed up in a nice
-&+Ycooks suit, including a tall cooks hat.  He is an ugly man, but he has got a
-&+Yheart of gold.&n
-~
-1107298314 0 0 0 0 32769 0 0 0 S
-PM 0 1 0 -1
-30 8 3 30d65+390 3d6+4
-0.5.7.1 26730
-8 8 1
-#33722
-huge olyx ox~
-&+Wa huge olyx&n~
-&+WA huge olyx stands here working in the fields.&n
-~
-&+W   This massive olyx is a hulking beast and works hard in the
-&+Wfarm of his master. &n
-~
-8 0 0 0 0 0 0 0 0 S
-A 0 0 0 5
-37 2 -18 37d80+777 4d7+10
-0.0.0.0 47952
-8 8 0
-#33723
-small child~
-&+Ga small child&n~
-&+GA small child stands here looking for their parents.&n
-~
-&+G   The boy is about nine years old and is strong for his age.  He has worked
-&+Gon a farm for his whole life so his muscles are tone.  The child is poor and
-&+Gis dressed in ragged clothes.&n
-~
-2056 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-10 18 67 10d18+35 2d3+1
-5.3.0.0 1296
-8 8 1
-#33724
-shadowy shadow figure~
-&+La shadowy figure&n~
-&+LA shadow in the shape of a humanoid can be discerned here.&n
-~
-&+L  This shadow is the shape of a man and two eyes can be seen dwelling where
-&+Leyes normally would in a humanoid. It steps before you and greets you
-&+Lwith a raspy 'good day.' He looks expectant of you. &n
-~
-1107429448 0 0 0 436314188 0 0 0 -1000 S
-GI 0 4 0 -1
-40 -3 -72 46d110+2484 6d6+25
-6.0.9.4 111780
+1090781768 0 0 0 0 0 2097152 0 500 S
+ig 0 67108872 0 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
 8 8 1

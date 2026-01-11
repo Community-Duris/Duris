@@ -494,6 +494,45 @@ int per_tick = 0;
   add_event(event_mana_regen, delay, ch, 0, 0, 0, &regen_value, sizeof(regen_value));
 }
 
+#define MOB_WARD_REGEN_DELAY 3
+//codemod
+void event_ward_regen(P_char ch, P_char victim, P_obj obj, void *data)
+{
+  float regen_value = *((float*)data);
+  int regen_value_int = (int)regen_value;
+  if (regen_value_int >= 1 || regen_value_int <= -1)
+  {
+      GET_WARD(ch) += regen_value_int;
+
+      if (GET_WARD(ch) > GET_MAX_WARD(ch))
+        GET_WARD(ch) = GET_MAX_WARD(ch);
+
+      regen_value = regen_value - (float)regen_value_int;
+      gmcp_char_vitals(ch);
+  }
+
+  int per_tick = ward_regen(ch, FALSE);
+
+  if ((per_tick == 0) ||
+      (GET_WARD(ch) == GET_MAX_WARD(ch) && per_tick > 0))
+  {
+    return;
+  }
+
+  int delay;
+  if (IS_PC(ch))
+  {
+      delay = 1;
+      regen_value += ((float)per_tick / (float)PULSES_IN_TICK);
+  }
+  else
+  {
+      delay = MOB_WARD_REGEN_DELAY;
+      regen_value += ((float)per_tick / ((float)(PULSES_IN_TICK / MOB_WARD_REGEN_DELAY)));
+  }
+  add_event(event_ward_regen, delay, ch, 0, 0, 0, &regen_value, sizeof(regen_value));
+}
+
 #define MOB_MOVE_REGEN_DELAY 10
 
 void event_move_regen(P_char ch, P_char victim, P_obj obj, void *data)
@@ -628,6 +667,13 @@ void StartRegen(P_char ch, int type)
     per_tick = mana_regen(ch, FALSE);
 
     delay = IS_PC(ch) ? 1 : MOB_MANA_REGEN_DELAY; 
+  }
+  else if (type == EVENT_WARD_REGEN)
+  {
+    func = event_ward_regen;
+    if (get_scheduled(ch, func)) return;
+    per_tick = ward_regen(ch, FALSE);
+    delay = IS_PC(ch) ? 1 : MOB_WARD_REGEN_DELAY; 
   }
   else
     return;

@@ -259,7 +259,9 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
     data.huntFlags = BFS_CAN_FLY | BFS_BREAK_WALLS;
     if (npc_has_spell_slot(tch, SPELL_DISPEL_MAGIC))
       data.huntFlags |= BFS_CAN_DISPEL;
-    
+    data.retry = 0;
+    data.retry_dir = 0;
+
     add_event(event_mob_hunt, PULSE_MOB_HUNT, tch, NULL, NULL, 0, &data, sizeof(hunt_data));
     //AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, tch, data);
     how_many--;
@@ -749,6 +751,9 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
         data.hunt_type = HUNT_ROOM;
         data.targ.room = ch->in_room;
       }
+      data.huntFlags = 0;
+      data.retry = 0;
+      data.retry_dir = 0;
       found_help = TRUE;
 //    debug( "shout_and_hunt: adding hunt event mob (%s) to room (%d).", J_NAME(target), ch->in_room);
       add_event(event_mob_hunt, PULSE_MOB_HUNT, target, NULL, NULL, 0, &data, sizeof(hunt_data));

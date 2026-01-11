@@ -1,274 +1,260 @@
-#31301
-voice inner~
-&+Lan I&+wnn&+Ler &+YVoice&n~
-&+LAn massive I&+wnn&+Ler &+YVoice&+L stands here speaking the unwanted truth.&n
+#31300
+voice inner shadowy shadow~
+&+La sh&+wado&+Lwy i&+wnn&+Ler &+Yvoice&n~
+&+LA ma&+wss&+Live i&+wnn&+Ler &+Yvoice &+Lstands in the sh&+wado&+Lws &+wspeak&+Ling the un&+wwant&+Led tr&+wu&+Lth.&n
 ~
-&+Y   This undefined being reaches into the inner psyche of its victims for its
-&+Yarsenal of information.  Demanding to be heard, it blasts a verbal assault.
-&+YCaught off-guard the target is forced to hear the unwanted truth of their
-&+Ydemise.  Although, sometimes aggressive, its overall objective is to reform
-&+Ythose that seeks its guidance.&n
+&+L   This undefined being reaches into the inner psyche of its victims for its
+&+Larsenal of information.  Demanding to be heard, it blasts a verbal assault.
+&+LCaught off-guard the target is forced to hear the unwanted truth of their
+&+Ldemise.  Although, seemingly aggressive, its overall objective is to reform
+&+Lthose that seeks its guidance.&n
 ~
-1174537226 1 0 0 134250552 0 0 0 -1000 S
-D 0 6 0 7
-55 0 0 1d1+1 1d1+1
+1392912456 1 0 0 403177512 264194 67108992 67179520 0 S
+sw 0 4194304 2 7
+58 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#31302
-angel~
-&+Wa tiny angel&n~
-&+WA tiny angel kneels here praying.&n
+#31301
+angel tiny healer~
+&+Wa tiny &+Wa&+Cng&+Wel healer&n~
+&+WA tiny &+Wa&+Cng&+Wel healer kneels here p&+Cray&+Wing.&n
 ~
 &+W   The sight of this heavenly being encourages a sense of compassion.  The
 &+Wfragile womans holy presence wards off evil.  Her face is hidden behind her
-&+Wblonde flowing hair.&n
+&+Wblond flowing hair.&n
 ~
-100811018 0 0 0 41016 34816 0 0 1000 S
-P2 0 8 0 1
-51 0 0 1d1+1 1d1+1
+403530 0 0 0 8 2 0 0 1000 S
+an 0 32 2 1
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
-5 5 2
-#31303
-prophet mighty~
-&+wa Mighty&+W Prophet&n~
-&+wA Mighty&+W Prophet&+w stands here, ready to destroy all things &+Levil&+w.&n
+8 8 2
+#31302
+prophet mighty agathinon~
+&+wa m&+Wight&+wy &+Waga&+Yt&+Whin&+Yo&+Wn pr&+Yo&+Wphe&+Yt&n~
+&+wA m&+Wight&+wy &+Waga&+Yt&+Whin&+Yo&+Wn pr&+Yo&+Wphe&+Yt &+wstands here, ready to &+Wdestroy &+wall things &+Levil.&n
 ~
 &+w   This giant man has confidence in his unearthly&+W power&+w, because of his holy
 &+walliance.  His mission is to uphold justice and truth.  Equipped with his
 &+wblessed weapon, nothing can stop him from succeeding.  Quietly he evaluates
 &+wyour dedication.&n
 ~
-1174405130 32 0 0 8336 0 0 0 1000 S
-OG 0 8 0 6
-56 0 0 1d1+1 1d1+1
+403786 128 0 0 56 2 0 0 1000 S
+ag 0 67108865 0 6
+55 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 2
-#31304
-devil~
-&+ra tiny devil&n~
-&+rA tiny devil sits here on a &+wrock&+r.&N
+8 8 1
+#31303
+devil warlock tiny~
+&+ra tiny &+Rd&+re&+Rv&+ri&+Rl &+wwar&+Llock&n~
+&+rA tiny &+Rd&+re&+Rv&+ri&+Rl &+wwar&+Llock &+rsits here on a &+Lr&+wo&+Lck&+r.&n
 ~
 &+r   From the wicked horns to the sinister pitchfork, this beast is pure evil.
 &+rSmall in stature, but strong in power, this tiny devil is a force to be
 &+rreckoned.  His touch alone drains the life-force of a mere man.&n
 ~
-100798506 0 0 0 65688 0 0 0 -1000 S
-UV 0 8192 0 1
-51 0 0 1d1+1 1d1+1
+403530 0 0 0 8 2 0 0 -1000 S
+y 0 131072 0 1
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
-6 6 0
-#31305
-demon huge~
-&+ra Huge Demon&N~
-&+rA Huge Demon stands here, ready to purge all things &+Wholy&+r.&N
+8 8 1
+#31304
+vampire demonic~
+&+ra &+Ld&+we&+Lm&+wo&+Ln&+wi&+Lc &+Rvam&+rpi&+Rre&N~
+&+rA &+Ld&+we&+Lm&+wo&+Ln&+wi&+Lc &+Rvam&+rpi&+Rre &+rstands here, ready to &+Lpurge &+rall things &+Wholy&+r.&n
 ~
 &+r   This giant beast has an arrogance of invincibility, because of his alliance
 &+rwith evil.  Its mission is to demolish all that is pure.  Equipped with its'
-&+rdemonic weapon, nothing can stop it from concurring.  Raising his eye and
+&+rdemonic weapon, nothing can stop it from conquering.  Raising his eye and
 &+rsnarling, the beast sizes up your affiliation.&n
 ~
-1174536202 8 0 0 65560 1 0 0 -1000 S
-X 0 16 0 6
-56 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#31306
-devin mercenary~
-&+YDevin&+w,&+Y the master mercenary&n~
-&+YDevin&+w,&+Y the devious mercenary lurks in the &+Lshadows&+Y.&n
-~
-&+Y   While small in stature, this mercenary's wild and brutish manner leaves a
-&+Ytrail of intimidation.  All his time is consumed by surviving and plotting
-&+Yrevenge.  This solitary man has become accustom to living off the land.&n
-~
-1174405134 1 0 0 268435512 0 0 0 -1000 S
-PF 0 16384 0 -1
-55 0 0 1d1+1 1d1+1
+404554 64 0 0 56 2 0 0 -1000 S
+um 0 16777217 0 6
+58 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
-#31307
+#31305
+devin mercenary~
+&+wDevin, &+ythe d&+Levio&+yus mer&+Lcen&+yary&n~
+&+wDevin, &+ythe d&+Levio&+yus mer&+Lcen&+yary l&+Lurk&+ys here in the &+Lshadows&+y.&n
+~
+&+y   Bulky in stature, this mercenary's wild and brutish manner leaves a
+&+ytrail of intimidation.  All his time is consumed by surviving and plotting
+&+yrevenge.  This solitary man has become accustom to living off the land.&n
+~
+50604106 64 0 0 8 2 0 0 -500 S
+br 0 20480 0 4
+58 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#31306
 milrd cleric~
-&+YMilrd&+w,&+y the master cleric&n~
-&+yA &+Ymaster cleric&+y actively works on resurrecting her fallen army.&n
+&+wMilrd, &+Ya de&+wv&+Wout &+Wc&+Yleri&+Wc&n~
+&+wMilrd, &+Ya de&+wv&+Wout c&+Yleri&+Wc &+wact&+Wive&+Yly works on re&+wsur&+Wrect&+Ying her f&+Wall&+Yen &+Warm&+Yy.&n
 ~
-&+y   A calm and collected gnome moans for his lost companions.  Head lowered, he
-&+ymumbles the word of god.  Continuing to pray, an aura of wisdom sweeps over
-&+yMilrd.  While this mans appearance seems weak, his link with god keeps him
-&+ystrong.&n
+&+Y   A calm and collected cleric moans for his lost companions.  Head lowered, he
+&+Ymumbles the word of god.  Continuing to pray, an aura of wisdom sweeps over
+&+YMilrd.  While this mans appearance seems weak, his link with god keeps him
+&+Ystrong.&n
 ~
-67108872 0 0 0 24 0 0 8192 500 S
-PG 0 32 0 -1
+50604106 384 0 0 8 2 0 0 1000 S
+gh 0 32 3 3
 53 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
-#31308
-buraon shaman~
-&+GBuraon&+w,&+m the mystic shaman master&n~
-&+mA mystic &+Gshaman master&+m is surrounded by several befriend animals.&n
-~
-&+m   The bulging beast lacks material objects but appears content among the
-&+mforest.  His dominating stature exudes confidence and reflexes leadership.
-&+mA potent odor and greasy skin repels noble types.&n
-~
-1174931466 0 0 0 285212696 4096 0 0 -1000 S
-PT 0 256 0 -1
-53 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 2
-#31309
-necromancer lazy~
-&+La lazy-&+Ye&+Ly&+Ye&+Ld necromancer&N~
-&+LA lazy-&+Ye&+Ly&+Ye&+Ld necromancer rests here.&N
+#31307
+nomd necromancer lazy lazy-eyed~
+&+wNomd, &+La lazy-&+me&+Ly&+me&+Ld nec&+mroman&+Lcer&n~
+&+wNomd, &+La lazy-&+me&+Ly&+me&+Ld nec&+mroman&+Lcer stands here &+mcon&+Lfer&+mring &+Lwith the &+md&+Lea&+md&+L.&n
 ~
 &+L   An errie looking man hides beneath a black cloak.  The frail being randomly
 &+Ltwitches without control.  His time is spent examining the leftover corpses
 &+Lnearby.  He ignores the living and seems to prefer the company of the dead.&n
 ~
-1175453706 1 0 0 8 0 0 0 -1000 S
-GI 0 1024 0 -1
-53 0 0 1d1+1 1d1+1
+50604106 64 0 0 8 2 0 0 -1000 S
+au 0 1024 1 2
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
-#31310
-monk patient~
-&+wa&+B patient&+w m&+Bon&+wk&N~
-&+wA &+Bpatient&+w m&+Bon&+wk meditates here.&n
+#31308
+whonh monk patient~
+&+wWhonh, a&+B patient&+w m&+Bon&+wk&n~
+&+wWhonh, the &+Bpatient &+wm&+Bon&+wk sits here &+Bmed&+wit&+Bat&+wing l&+Bif&+wes &+Bme&+wan&+Bin&+wg.&n
 ~
 &+w   Sitting legs crossed, a calm monk meditates in silence.  Dressed in a
-&+Wsimple robe&+w and &+yleather sandals&+w, he is obviously a modest man.  Such a
-&+wcomfortable state must be a result of his vast knowledge of the martial arts.
+&+wsimple robe and leather sandals, he is obviously a modest man.  Such a
+&+wcomfortable state must be a result of his vast knowledge of the martial arts.&n
 ~
-1174405130 384 0 0 32776 32768 128 0 500 S
-PH 0 64 0 -1
+50604106 384 0 0 8 2 0 0 500 S
+av 0 64 1 3
 53 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
-#31311
-enchantress evoking~
-&+Can evoking &+wenchant&+Wress&N~
-&+CA lovely &+wenchant&+Wress&+C lures you with her song.&n
+#31309
+enchantress invoking faerie~
+&+wan inv&+Wok&+wing &+Mfa&+mer&+Mie &+cenchant&+Cress&n~
+&+wAn inv&+Wok&+wing &+Mfa&+mer&+Mie &+cenchant&+Cress l&+cur&+Ces you with her &+csong&+w.&n
 ~
 &+C   As if a mold of the ideal women, the enchantress seems too good to be true.
-&+CHer flowing hair and deep eyes entrance the common man.  A see through
+&+CHer flowing hair and deep eyes in-trance the common man.  A see through
 &+Cturquoise dress adorns her heavenly body.  With a hand gesture, she beckons
 &+Cyou closer.&n
 ~
-1176502282 8 0 0 40 262144 0 0 -1000 S
-HF 0 32768 0 -1
-53 0 0 1d1+1 1d1+1
+269363274 0 0 0 8 262146 0 0 -1000 S
+HF 0 33280 0 1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
-#31312
-illusionist master~
-&+Wthe il&+Clu&+csi&+Con&+Wist of boundless f&+Can&+cta&+Csi&+Wes&n~
-&+WThe master il&+Clu&+csi&+Con&+Wist is ready to deliver boundless f&+Can&+cta&+Csi&+Wes.&N
+#31310
+qin illusionist master~
+&+wQin, &+Wthe m&+Ca&+cst&+Ce&+Wr il&+Clu&+csi&+Con&+Wist&n~
+&+wQin, &+Wthe m&+Ca&+cst&+Ce&+Wr il&+Clu&+csi&+Con&+Wist is ready to &+wde&+Wliver bound&+wless &+Wf&+Can&+cta&+Csi&+Wes.&N
 ~
-&+W   This crafty il&+Clu&+csi&+Con&+Wist has take on the form of a &+ydonkey&+W with
+&+W   This crafty il&+Clu&+csi&+Con&+Wist has taken on the form of a &+ydonkey&+W with
 &+Wthe face of your reflection.  It smiles and stares at you calmly.
-&+WThe Il&+Clu&+csi&+Con&+Wist asks&+w, "How can I help you?"&n
+&+WThe il&+Clu&+csi&+Con&+Wist asks&+w, "How can I help you?"&n
 ~
-1174405130 0 0 0 16 0 0 0 -1000 S
-HG 0 4194304 0 -1
-53 0 0 1d1+1 1d1+1
+2416355402 0 0 0 8 2 0 0 0 S
+px 0 4194304 1 -1
+58 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
-#31313
-princess lonely~
-&+ma lonely &+Mprin&+Wcess&n~
-&+mA lonely &+Mprin&+Wcess&+m awaits her true love.&n
+#31311
+princess lonely deva~
+&+ma l&+Mone&+mly &+wd&+Wev&+wa &+mpr&+Min&+wc&+Wes&+ws&n~
+&+mA l&+Mone&+mly &+wd&+Wev&+wa &+mpr&+Min&+wc&+Wes&+ws &+ma&+Mwait&+ms h&+Mer &+mtrue love.&n
 ~
 &+M   The slender young woman is dressed in a long ballroom gown.  Her silky hair
 &+Mhas been put up with pins and intertwined with fresh flowers.  Although,
 &+Munexpectedly her face shows a sense of disappointment.  What could she be
 &+Mmissing in her life?&n
 ~
-1174405514 0 0 0 268959752 0 0 0 500 S
-PE 0 512 0 -1
-53 0 0 1d1+1 1d1+1
+268839370 0 0 0 8 2 0 0 1000 S
+dv 0 512 2 1
+57 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
-#31314
-harlot young~
-&+Ma young harlot&n~
-&+MA young harlot stands here ready for action.&N
+#31312
+harlot young sucubbus~
+&+ma &+Myou&+mng &+Ls&+ru&+Rcubb&+ru&+Ls &+Mhar&+mlot&n~
+&+mA &+Myou&+mng &+Ls&+ru&+Rcubb&+ru&+Ls &+Mhar&+mlot stands here ready for action.&n
 ~
 &+M   Revealing clothes, assures this women is ready for action.  She wanders the
 &+Mroom drunk, teasing men by fondling herself.  While she smokes some tabacco,
 &+Myou notice how she has aged before her time.  This mess of a women must have
 &+Msome personal demons.&n
 ~
-1073741834 1 0 0 0 0 0 0 -1000 S
-PL 0 512 0 -1
-45 0 0 1d1+1 1d1+1
+67512394 64 0 0 8 2 0 0 -1000 S
+su 0 16777216 2 2
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
-#31315
-bodyguard guard burly~
-&+La burly body&+wguard&n~
-&+LA burly body&+wguard&+L blocks the entrance.&n
+#31313
+bodyguard guard burly titan~
+&+La burly &+Ct&+Wi&+Ct&+Wa&+Cn &+Lbody&+wguard&n~
+&+LA burly &+Ct&+Wi&+Ct&+Wa&+Cn &+Lbody&+wguard &+Lb&+wlock&+Ls the en&+wtrance&+L.&n
 ~
 &+L   The guard stands with his arms crossed.  A grimace look on his face, shows
 &+Lhe means business.  Across his arm lies a large scar perhaps from the
 &+Lbattlefield.  The man holds out his hand, asking for your invitation to the
 &+Lparty.&n
 ~
-1140850702 0 0 0 0 0 0 0 0 S
-PM 0 1 0 -1
-45 0 0 1d1+1 1d1+1
+67512394 384 0 0 8 2 0 0 1000 S
+tt 0 67108864 2 4
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
-#31316
-nightmare sinister~
-&+La &+rsin&+Lister night&+rmare&n~
-&+LA &+rsin&+Lister night&+rmare&+L slithers into your mind.&n
+#31314
+nightmare sinister archon~
+&+La &+rs&+Rin&+Lister &+Wa&+Rrch&+Wo&+Rn &+Lnight&+rm&+Rare&n~
+&+LA &+rs&+Rin&+Lister &+Wa&+Rrch&+Wo&+Rn &+Lnight&+rm&+Rare &+Lslithers into your mind.&n
 ~
 &+L   The three-headed monster feeds on fear and regret.  Twisting and turning,
 &+Lit lets out a frightning shriek as it tries to poison your mind.&n
 ~
-131080 1 0 0 134742024 0 0 0 -1000 S
-RS 0 1 0 6
-50 0 0 1d1+1 1d1+1
+403562 64 0 0 1048616 2 0 0 -400 S
+ar 0 1048576 2 4
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#31317
-reflection raging~
-&+ca &+wraging &+creflection~
-&+cA &+wraging&+c reflection channels your hate.&n
+#31315
+reflection raging ghost ghostly~
+&+ca &+Wrag&+wing &+Wg&+wh&+Wo&+ws&+Wt&+wly &+cref&+Clect&+cion&n~
+&+cA &+Wrag&+wing &+Wg&+wh&+Wo&+ws&+Wt&+wly &+cref&+Clect&+cion channels your hate.&n
 ~
 &+c   The mirrored image displays your hate and fear, resulting in pain and
 &+cregret.  Nightmares of this kind torture the unholy.  The shadowed monster
 &+cmust be dispelled to control the visions.&n
 ~
-100663306 32 0 0 135266312 0 0 0 -1000 S
-UG 0 1 0 6
-50 0 0 1d1+1 1d1+1
+404042 128 0 0 1048616 2 0 0 400 S
+UG 0 64 1 6
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#31318
-minion enslaved slave~
-&+ran enslaved &+Lminion&n~
-&+rAn enslaved &+Lminion&+r stands beside his master.&N
+#31316
+minion enslaved slave phantom~
+&+ran en&+Rslave&+rd &+Wpha&+Lntom &+wmini&+Lon&n~
+&+rAn en&+Rslave&+rd &+Wpha&+Lntom &+wmini&+Lon &+rstands beside his master.&n
 ~
 &+r   The powerful creature stands tall and never leaves his masters side.  Be
 &+ron guard from his natural aggression.  The minion is only aware of his
 &+rpurpose to protect his master at all costs.&n
 ~
-67109896 0 0 0 16 0 0 0 -1000 S
-U 0 1 0 -1
-45 0 0 1d1+1 1d1+1
+67512394 64 0 0 24 2 0 0 -1000 S
+up 0 1 1 4
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
-#31319
-guardian holy guard~
-&+wa &+Wholy&+w guardian&n~
-&+wA &+Wholy&+w guardians guards his prophet.&n
+8 8 2
+#31317
+guardian holy guard eladrin~
+&+wa &+Wholy &+ce&+Cl&+Wadr&+Ci&+cn &+Wguard&+wian&n~
+&+wA &+Wholy &+ce&+Cl&+Wadr&+Ci&+cn &+Wguard&+wian guards his prophet.&n
 ~
 &+W   The holy guardian is proud to protect his prophet.  Without hesitation he
 &+Wwill donate his life for the greater good.  This type of dedication means
 &+Wevil should beware.&n
 ~
-67109128 0 0 0 16 0 0 0 500 S
-PH 0 1 0 -1
-45 0 0 1d1+1 1d1+1
+67512394 128 0 0 24 2 0 0 1000 S
+el 0 1 2 4
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1

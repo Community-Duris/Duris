@@ -28,6 +28,7 @@
 #include "spells.h"
 #include "utils.h"
 #include "weather.h"
+#include "poll.h"
 #include "sound.h"
 #include "assocs.h"
 #include "justice.h"
@@ -1091,8 +1092,13 @@ const char *command[MAX_CMD] = {
   "account",
   "protocol",
   "extractlink",
-  "pfilemigrate",
-  "\n"                          /* MAX_CMD = 844, MAX_CMD_LIST = 1000 */
+  "zlist",
+  "rlist",
+  "hlist",
+  "olist",
+  "mlist",
+  "poll",
+  "\n"                          /* MAX_CMD = 850, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = {
@@ -1331,6 +1337,12 @@ void command_interpreter(P_char ch, char *argument)
   return;
   }
 */
+
+  /* check for active poll wizard - intercept all input */
+  if (IS_PC(ch) && poll_wizard_active(ch)) {
+    poll_wizard_handle_input(ch, argument);
+    return;
+  }
 
   /* Find first non blank */
   for( begin = 0; (*(argument + begin) == ' '); begin++ ) ;
@@ -2853,6 +2865,13 @@ void assign_command_pointers(void)
   CMD_Y(CMD_CTF, STAT_NORMAL + POS_STANDING, do_ctf, 0, FALSE);
   CMD_Y(CMD_TETHER, STAT_NORMAL + POS_STANDING, do_tether, 0, FALSE);
   CMD_Y(CMD_AUCTION, STAT_NORMAL + POS_STANDING, new_ah_call, 0, FALSE);
+
+  CMD_Y(CMD_ZLIST, STAT_DEAD + POS_PRONE, do_zlist, IMMORTAL, FALSE);
+  CMD_Y(CMD_RLIST, STAT_DEAD + POS_PRONE, do_rlist, IMMORTAL, FALSE);
+  CMD_Y(CMD_HLIST, STAT_DEAD + POS_PRONE, do_hlist, IMMORTAL, FALSE);
+  CMD_Y(CMD_OLIST, STAT_DEAD + POS_PRONE, do_olist, IMMORTAL, FALSE);
+  CMD_Y(CMD_MLIST, STAT_DEAD + POS_PRONE, do_mlist, IMMORTAL, FALSE);
+  CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 
   /*
    * 'commands' which exist only to trigger specials

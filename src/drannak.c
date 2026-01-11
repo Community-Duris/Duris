@@ -1614,6 +1614,10 @@ bool valid_conjure(P_char ch, P_char victim)
   if( IS_PC(victim) )
     return FALSE;
 
+  // these are hand tuned mobs from hard zones, no conjuring
+  if( IS_SET(victim->specials.act, ACT_IGNORE) )
+    return FALSE;
+
 /* Commented out new changes for now.
   if( GET_LEVEL(victim) > GET_LEVEL(ch) || IS_MULTICLASS_NPC(victim) )
     return FALSE;

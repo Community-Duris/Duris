@@ -608,6 +608,7 @@ int ec_portal(P_obj, P_char, int, char *);
 int ud_portal(P_obj, P_char, int, char *);
 int uc_nexus_portal(P_obj, P_char, int, char *);
 int druid_spring(P_obj, P_char, int, char *);
+int divine_font(P_obj, P_char, int, char *);
 int blighter_pond(P_obj, P_char, int, char *);
 int druid_sabre(P_obj, P_char, int, char *);
 int death_proc(P_obj, P_char, int, char *);

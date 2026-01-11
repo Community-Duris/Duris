@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <openssl/hmac.h>
 
 #include "ws_handlers.h"
 #include "websocket.h"
@@ -23,6 +24,8 @@
 #include "account.h"
 #include "mm.h"
 #include "files.h"
+#include "sql.h"
+#include "poll.h"
 
 extern struct descriptor_data *descriptor_list;
 extern struct mm_ds *dead_mob_pool;
@@ -46,6 +49,357 @@ extern const struct stat_data stat_factor[];
 extern const char *stat_to_string2(int val);
 extern const char *town_name_list[];
 extern const int avail_hometowns[][LAST_RACE + 1];
+
+/* forward declarations for helpers used by broadcast functions */
+static const char *ws_get_race_name(int race);
+static const char *ws_get_class_name(unsigned int m_class);
+
+/* durisweb secret for service authentication */
+#define DURISWEB_SECRET_DEFAULT "Dur1sM4pK3y2025xYz!"
+
+static const char *get_durisweb_secret(void) {
+    const char *secret = getenv("DURISWEB_SECRET");
+    if (!secret || !*secret) {
+        static int warned = 0;
+        if (!warned) {
+            logit(LOG_DEBUG, "WARNING: DURISWEB_SECRET not set, using default (honeypot)");
+            warned = 1;
+        }
+        return DURISWEB_SECRET_DEFAULT;
+    }
+    return secret;
+}
+
+static int verify_durisweb_sig(const char *sig) {
+    if (!sig || !*sig) return 0;
+
+    const char *secret = get_durisweb_secret();
+    if (!secret) return 0;
+
+    time_t now = time(NULL);
+    long minute = now / 60;
+
+    /* check +/- 1 minute for clock skew */
+    for (int offset = -1; offset <= 1; offset++) {
+        char ts[32];
+        snprintf(ts, sizeof(ts), "%ld", minute + offset);
+
+        unsigned char digest[EVP_MAX_MD_SIZE];
+        unsigned int digest_len = 0;
+
+        HMAC(EVP_sha256(), secret, strlen(secret),
+             (unsigned char *)ts, strlen(ts), digest, &digest_len);
+
+        /* sha256 = 32 bytes */
+        if (digest_len != 32) continue;
+
+        char expected[65];
+        for (unsigned int i = 0; i < digest_len && i < 32; i++) {
+            snprintf(expected + (i * 2), 3, "%02x", digest[i]);
+        }
+        expected[64] = '\0';
+
+        if (strcmp(sig, expected) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* send auth response helper */
+static void send_auth_response(struct descriptor_data *d, int success, const char *error)
+{
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "type", "durisweb_auth");
+    cJSON_AddBoolToObject(root, "success", success);
+    if (error) cJSON_AddStringToObject(root, "error", error);
+
+    char *json_str = cJSON_PrintUnformatted(root);
+    if (json_str) {
+        websocket_send_text(d, json_str);
+        free(json_str);
+    }
+    cJSON_Delete(root);
+}
+
+/* durisweb service authentication */
+void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data)
+{
+    cJSON *sig = cJSON_GetObjectItem(data, "sig");
+
+    if (!sig || !cJSON_IsString(sig)) {
+        send_auth_response(d, 0, "Missing signature");
+        return;
+    }
+
+    if (verify_durisweb_sig(sig->valuestring)) {
+        d->durisweb_verified = 1;
+        statuslog(56, "DurisWeb service authenticated");
+        send_auth_response(d, 1, NULL);
+        ws_broadcast_wholist();
+    } else {
+        send_auth_response(d, 0, "Invalid signature");
+    }
+}
+
+/* broadcast auction new to durisweb service */
+void ws_broadcast_auction_new(int auction_id, const char *seller_name, const char *obj_short,
+                               int cur_price, int buy_price, int end_time) {
+    struct descriptor_data *d;
+    cJSON *root, *data;
+    char *json;
+
+    root = cJSON_CreateObject();
+    if (!root) return;
+
+    cJSON_AddStringToObject(root, "type", "auction_new");
+
+    data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "id", auction_id);
+    cJSON_AddStringToObject(data, "seller", seller_name ? seller_name : "");
+    cJSON_AddStringToObject(data, "item", obj_short ? obj_short : "");
+    cJSON_AddNumberToObject(data, "price", cur_price);
+    cJSON_AddNumberToObject(data, "buyPrice", buy_price);
+    cJSON_AddNumberToObject(data, "endTime", end_time);
+    cJSON_AddItemToObject(root, "data", data);
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!json) return;
+
+    for (d = descriptor_list; d; d = d->next) {
+        if (d->websocket && d->durisweb_verified) {
+            websocket_send_text(d, json);
+        }
+    }
+
+    free(json);
+}
+
+/* broadcast auction bid to durisweb service */
+void ws_broadcast_auction_bid(int auction_id, const char *bidder_name, int bid_amount,
+                               int prev_bidder_pid, const char *prev_bidder_name) {
+    struct descriptor_data *d;
+    cJSON *root, *data;
+    char *json;
+
+    root = cJSON_CreateObject();
+    if (!root) return;
+
+    cJSON_AddStringToObject(root, "type", "auction_bid");
+
+    data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "id", auction_id);
+    cJSON_AddStringToObject(data, "bidder", bidder_name ? bidder_name : "");
+    cJSON_AddNumberToObject(data, "amount", bid_amount);
+    cJSON_AddNumberToObject(data, "prevBidderPid", prev_bidder_pid);
+    cJSON_AddStringToObject(data, "prevBidder", prev_bidder_name ? prev_bidder_name : "");
+    cJSON_AddItemToObject(root, "data", data);
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!json) return;
+
+    for (d = descriptor_list; d; d = d->next) {
+        if (d->websocket && d->durisweb_verified) {
+            websocket_send_text(d, json);
+        }
+    }
+
+    free(json);
+}
+
+/* broadcast auction close to durisweb service */
+void ws_broadcast_auction_close(int auction_id, const char *winner_name, int winner_pid,
+                                 int final_price, const char *close_reason,
+                                 int seller_pid, const char *seller_name) {
+    struct descriptor_data *d;
+    cJSON *root, *data;
+    char *json;
+
+    root = cJSON_CreateObject();
+    if (!root) return;
+
+    cJSON_AddStringToObject(root, "type", "auction_close");
+
+    data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "id", auction_id);
+    cJSON_AddStringToObject(data, "winner", winner_name ? winner_name : "");
+    cJSON_AddNumberToObject(data, "winnerPid", winner_pid);
+    cJSON_AddNumberToObject(data, "price", final_price);
+    cJSON_AddStringToObject(data, "reason", close_reason ? close_reason : "sold");
+    cJSON_AddNumberToObject(data, "sellerPid", seller_pid);
+    cJSON_AddStringToObject(data, "seller", seller_name ? seller_name : "");
+    cJSON_AddItemToObject(root, "data", data);
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!json) return;
+
+    for (d = descriptor_list; d; d = d->next) {
+        if (d->websocket && d->durisweb_verified) {
+            websocket_send_text(d, json);
+        }
+    }
+
+    free(json);
+}
+
+/* broadcast wholist to durisweb service */
+void ws_broadcast_wholist(void) {
+    struct descriptor_data *d, *target;
+    cJSON *root, *data, *players, *player;
+    char *json;
+
+    root = cJSON_CreateObject();
+    if (!root) return;
+
+    cJSON_AddStringToObject(root, "type", "wholist");
+
+    data = cJSON_CreateObject();
+    players = cJSON_CreateArray();
+
+    /* iterate all playing connections */
+    for (target = descriptor_list; target; target = target->next) {
+        if (target->connected != CON_PLAYING || !target->character)
+            continue;
+
+        player = cJSON_CreateObject();
+        cJSON_AddStringToObject(player, "character", GET_NAME(target->character));
+        cJSON_AddStringToObject(player, "account", target->account ? target->account->acct_name : "");
+        cJSON_AddStringToObject(player, "ip", target->host);
+        cJSON_AddNumberToObject(player, "level", GET_LEVEL(target->character));
+        cJSON_AddStringToObject(player, "race", ws_get_race_name(GET_RACE(target->character)));
+        cJSON_AddStringToObject(player, "class", ws_get_class_name(target->character->player.m_class));
+        cJSON_AddNumberToObject(player, "faction", GET_RACEWAR(target->character));
+        cJSON_AddStringToObject(player, "client", target->client_name);
+        cJSON_AddStringToObject(player, "clientVersion", target->client_version);
+        cJSON_AddNumberToObject(player, "uptime", time(0) - target->character->player.time.logon);
+        cJSON_AddItemToArray(players, player);
+    }
+
+    cJSON_AddItemToObject(data, "players", players);
+    cJSON_AddItemToObject(root, "data", data);
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!json) return;
+
+    for (d = descriptor_list; d; d = d->next) {
+        if (d->websocket && d->durisweb_verified) {
+            websocket_send_text(d, json);
+        }
+    }
+
+    free(json);
+}
+
+/* broadcast player login to durisweb service */
+void ws_broadcast_player_login(struct char_data *ch) {
+    struct descriptor_data *d;
+    cJSON *root, *data;
+    char *json;
+
+    if (!ch || !ch->desc) return;
+
+    root = cJSON_CreateObject();
+    if (!root) return;
+
+    cJSON_AddStringToObject(root, "type", "player_login");
+
+    data = cJSON_CreateObject();
+    cJSON_AddStringToObject(data, "character", GET_NAME(ch));
+    cJSON_AddStringToObject(data, "account", ch->desc->account ? ch->desc->account->acct_name : "");
+    cJSON_AddStringToObject(data, "ip", ch->desc->host);
+    cJSON_AddNumberToObject(data, "level", GET_LEVEL(ch));
+    cJSON_AddStringToObject(data, "race", ws_get_race_name(GET_RACE(ch)));
+    cJSON_AddStringToObject(data, "class", ws_get_class_name(ch->player.m_class));
+    cJSON_AddNumberToObject(data, "faction", GET_RACEWAR(ch));
+    cJSON_AddStringToObject(data, "client", ch->desc->client_name);
+    cJSON_AddStringToObject(data, "clientVersion", ch->desc->client_version);
+    cJSON_AddItemToObject(root, "data", data);
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!json) return;
+
+    for (d = descriptor_list; d; d = d->next) {
+        if (d->websocket && d->durisweb_verified) {
+            websocket_send_text(d, json);
+        }
+    }
+
+    free(json);
+}
+
+/* broadcast player logout to durisweb service */
+void ws_broadcast_player_logout(struct char_data *ch) {
+    struct descriptor_data *d;
+    cJSON *root, *data;
+    char *json;
+
+    if (!ch) return;
+
+    root = cJSON_CreateObject();
+    if (!root) return;
+
+    cJSON_AddStringToObject(root, "type", "player_logout");
+
+    data = cJSON_CreateObject();
+    cJSON_AddStringToObject(data, "character", GET_NAME(ch));
+    cJSON_AddNumberToObject(data, "faction", GET_RACEWAR(ch));
+    cJSON_AddItemToObject(root, "data", data);
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!json) return;
+
+    for (d = descriptor_list; d; d = d->next) {
+        if (d->websocket && d->durisweb_verified) {
+            websocket_send_text(d, json);
+        }
+    }
+
+    free(json);
+}
+
+/* broadcast mud shutdown to durisweb service */
+void ws_broadcast_mud_shutdown(const char *type) {
+    struct descriptor_data *d;
+    cJSON *root, *data;
+    char *json;
+
+    root = cJSON_CreateObject();
+    if (!root) return;
+
+    cJSON_AddStringToObject(root, "type", "mud_shutdown");
+
+    data = cJSON_CreateObject();
+    cJSON_AddStringToObject(data, "shutdownType", type ? type : "unknown");
+    cJSON_AddItemToObject(root, "data", data);
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!json) return;
+
+    for (d = descriptor_list; d; d = d->next) {
+        if (d->websocket && d->durisweb_verified) {
+            websocket_send_text(d, json);
+        }
+    }
+
+    free(json);
+}
+
+/* handle request_wholist command from durisweb */
+void ws_cmd_request_wholist(struct descriptor_data *d, cJSON *data) {
+    if (!d->durisweb_verified) {
+        ws_send_system(d, "error", "not authorized");
+        return;
+    }
+
+    ws_broadcast_wholist();
+}
 
 /* helper structure for character display */
 struct ws_char_info {
@@ -139,22 +493,22 @@ static int ws_load_char_info(const char *charname, struct ws_char_info *info)
     return 1;
 }
 
-/* get race name string */
+/* get race name string with ansi colors */
 static const char *ws_get_race_name(int race)
 {
     extern const struct race_names race_names_table[];
     if (race >= 0) {
-        return race_names_table[race].normal;
+        return race_names_table[race].ansi;
     }
     return "Unknown";
 }
 
-/* get class name string */
+/* get class name string with ansi colors */
 static const char *ws_get_class_name(unsigned int m_class)
 {
     int idx = flag2idx(m_class);
     if (idx >= 0) {
-        return class_names_table[idx].normal;
+        return class_names_table[idx].ansi;
     }
     return "Unknown";
 }
@@ -466,6 +820,11 @@ void ws_cmd_enter(struct descriptor_data *d, cJSON *data)
     const char *char_name;
     struct acct_chars *c;
     struct descriptor_data *k, *next_k;
+
+    /* prevent duplicate entry if already entering or playing */
+    if (d->connected == CON_ACCT_CONFIRM_CHAR || d->connected == CON_PLAYING) {
+        return;
+    }
 
     if (!data) {
         ws_send_text(d, "system", "Missing character data");
@@ -1755,6 +2114,255 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
     ws_send_account_message(d, "character_deleted", result_data, NULL);
 }
 
+/* helper to send admin_delete_character progress update */
+static void ws_send_admin_delete_progress(struct descriptor_data *d,
+    const char *request_id, const char *message, const char *status)
+{
+    cJSON *result = cJSON_CreateObject();
+    cJSON_AddStringToObject(result, "type", "admin_delete_progress");
+    if (request_id) cJSON_AddStringToObject(result, "requestId", request_id);
+    cJSON_AddStringToObject(result, "message", message);
+    cJSON_AddStringToObject(result, "status", status); /* "info", "success", "error" */
+
+    char *json_str = cJSON_PrintUnformatted(result);
+    if (json_str) {
+        websocket_send_text(d, json_str);
+        free(json_str);
+    }
+    cJSON_Delete(result);
+}
+
+/* helper to send admin_delete_character response with requestId */
+static void ws_send_admin_delete_response(struct descriptor_data *d,
+    int success, const char *account, const char *name,
+    const char *request_id, const char *error)
+{
+    cJSON *result = cJSON_CreateObject();
+    cJSON_AddStringToObject(result, "type", "admin_delete_character");
+    cJSON_AddBoolToObject(result, "success", success);
+    if (account) cJSON_AddStringToObject(result, "account", account);
+    if (name) cJSON_AddStringToObject(result, "name", name);
+    if (request_id) cJSON_AddStringToObject(result, "requestId", request_id);
+    if (error) cJSON_AddStringToObject(result, "error", error);
+
+    char *json_str = cJSON_PrintUnformatted(result);
+    if (json_str) {
+        websocket_send_text(d, json_str);
+        free(json_str);
+    }
+    cJSON_Delete(result);
+}
+
+/* admin delete a character (durisweb service only) */
+void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
+{
+    cJSON *account_json, *name_json, *deleted_by_json, *request_id_json, *pid_json;
+    const char *account_name, *char_name, *deleted_by, *request_id;
+    int char_pid;
+    struct acct_chars *c, *prev;
+    P_char ch;
+    P_acct target_acct;
+
+    /* only durisweb service can call this */
+    if (!d->durisweb_verified) {
+        ws_send_admin_delete_response(d, 0, NULL, NULL, NULL, "Not authorized");
+        return;
+    }
+
+    if (!data) {
+        ws_send_admin_delete_response(d, 0, NULL, NULL, NULL, "Missing data");
+        return;
+    }
+
+    /* extract requestId first for all responses */
+    request_id_json = cJSON_GetObjectItem(data, "requestId");
+    request_id = (request_id_json && cJSON_IsString(request_id_json)) ? request_id_json->valuestring : NULL;
+
+    account_json = cJSON_GetObjectItem(data, "account");
+    name_json = cJSON_GetObjectItem(data, "name");
+    pid_json = cJSON_GetObjectItem(data, "pid");
+    deleted_by_json = cJSON_GetObjectItem(data, "deletedBy");
+
+    if (!account_json || !cJSON_IsString(account_json)) {
+        ws_send_admin_delete_response(d, 0, NULL, NULL, request_id, "Missing account name");
+        return;
+    }
+
+    if (!name_json || !cJSON_IsString(name_json)) {
+        ws_send_admin_delete_response(d, 0, NULL, NULL, request_id, "Missing character name");
+        return;
+    }
+
+    if (!pid_json || !cJSON_IsNumber(pid_json)) {
+        ws_send_admin_delete_response(d, 0, NULL, NULL, request_id, "Missing character PID");
+        return;
+    }
+
+    account_name = account_json->valuestring;
+    char_name = name_json->valuestring;
+    char_pid = pid_json->valueint;
+    deleted_by = deleted_by_json && cJSON_IsString(deleted_by_json) ? deleted_by_json->valuestring : "admin";
+
+    /* send initial progress */
+    {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Starting deletion of %s from account %s", char_name, account_name);
+        ws_send_admin_delete_progress(d, request_id, msg, "info");
+    }
+
+    /* allocate and load target account */
+    ws_send_admin_delete_progress(d, request_id, "Loading account data...", "info");
+    target_acct = allocate_account();
+    if (!target_acct) {
+        ws_send_admin_delete_progress(d, request_id, "Failed to allocate account", "error");
+        ws_send_admin_delete_response(d, 0, account_name, char_name, request_id, "Failed to allocate account");
+        return;
+    }
+
+    target_acct->acct_name = str_dup(account_name);
+
+    if (read_account(target_acct) == -1) {
+        ws_send_admin_delete_progress(d, request_id, "Account not found", "error");
+        ws_send_admin_delete_response(d, 0, account_name, char_name, request_id, "Account not found");
+        free_account(target_acct);
+        return;
+    }
+
+    ws_send_admin_delete_progress(d, request_id, "Account loaded successfully", "success");
+
+    /* find character in account list */
+    ws_send_admin_delete_progress(d, request_id, "Searching for character in account...", "info");
+    c = target_acct->acct_character_list;
+    prev = NULL;
+    while (c) {
+        if (strcasecmp(c->charname, char_name) == 0) {
+            break;
+        }
+        prev = c;
+        c = c->next;
+    }
+
+    if (!c) {
+        ws_send_admin_delete_progress(d, request_id, "Character not found in account", "error");
+        ws_send_admin_delete_response(d, 0, account_name, char_name, request_id, "Character not found in account");
+        free_account(target_acct);
+        return;
+    }
+
+    ws_send_admin_delete_progress(d, request_id, "Character found in account", "success");
+
+    /* load character for deletion */
+    ws_send_admin_delete_progress(d, request_id, "Loading character save file...", "info");
+    ch = (struct char_data *)malloc(sizeof(struct char_data));
+    if (!ch) {
+        ws_send_admin_delete_progress(d, request_id, "Failed to allocate memory", "error");
+        ws_send_admin_delete_response(d, 0, account_name, char_name, request_id, "Failed to allocate character");
+        free_account(target_acct);
+        return;
+    }
+
+    memset(ch, 0, sizeof(struct char_data));
+    ch->only.pc = (struct pc_only_data *)malloc(sizeof(struct pc_only_data));
+    if (!ch->only.pc) {
+        free(ch);
+        ws_send_admin_delete_progress(d, request_id, "Failed to allocate memory", "error");
+        ws_send_admin_delete_response(d, 0, account_name, char_name, request_id, "Failed to allocate character data");
+        free_account(target_acct);
+        return;
+    }
+
+    memset(ch->only.pc, 0, sizeof(struct pc_only_data));
+
+    int restore_result = restoreCharOnly(ch, (char *)char_name);
+    if (restore_result < 0) {
+        /* pfile doesn't exist or is corrupted - still clean up account and database */
+        if (restore_result == -1) {
+            ws_send_admin_delete_progress(d, request_id, "Character save file not found (orphaned entry)", "info");
+        } else {
+            ws_send_admin_delete_progress(d, request_id, "Character save file corrupted", "info");
+        }
+        free(ch->only.pc);
+        free(ch);
+
+        ws_send_admin_delete_progress(d, request_id, "Cleaning up orphaned character data...", "info");
+
+        /* log the deletion - audit trail */
+        logit(LOG_PLAYER, "ADMIN: %s deleted character %s (pid=%d) from account %s via web admin (pfile missing/corrupted)",
+              deleted_by, char_name, char_pid, account_name);
+
+        /* soft delete from frag leaderboard tables using the provided PID */
+        ws_send_admin_delete_progress(d, request_id, "Removing from frag leaderboard...", "info");
+        sql_soft_delete_character(char_pid);
+        ws_send_admin_delete_progress(d, request_id, "Removed from frag leaderboard", "success");
+
+        /* remove from account character list */
+        ws_send_admin_delete_progress(d, request_id, "Removing from account character list...", "info");
+        if (prev) {
+            prev->next = c->next;
+        } else {
+            target_acct->acct_character_list = c->next;
+        }
+        FREE(c->charname);
+        FREE(c);
+
+        ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
+        write_account(target_acct);
+        free_account(target_acct);
+        ws_send_admin_delete_progress(d, request_id, "Account file updated", "success");
+
+        /* send success - web will soft-delete from database */
+        ws_send_admin_delete_progress(d, request_id, "Character deletion completed", "success");
+        ws_send_admin_delete_response(d, 1, account_name, char_name, request_id, NULL);
+        return;
+    }
+
+    ws_send_admin_delete_progress(d, request_id, "Character save file loaded", "success");
+
+    /* log the deletion - audit trail */
+    logit(LOG_PLAYER, "ADMIN: %s deleted character %s from account %s via web admin",
+          deleted_by, char_name, account_name);
+
+    /* delete character file and free temp character */
+    ws_send_admin_delete_progress(d, request_id, "Deleting character save file...", "info");
+    deleteCharacter(ch);
+    ws_send_admin_delete_progress(d, request_id, "Character save file deleted", "success");
+
+    /* free strings allocated by restoreCharOnly */
+    if (ch->player.name) str_free(ch->player.name);
+    if (ch->player.title) str_free(ch->player.title);
+    if (ch->player.short_descr) str_free(ch->player.short_descr);
+    if (ch->player.long_descr) str_free(ch->player.long_descr);
+    if (ch->player.description) str_free(ch->player.description);
+    if (ch->only.pc->poofIn) str_free(ch->only.pc->poofIn);
+    if (ch->only.pc->poofOut) str_free(ch->only.pc->poofOut);
+    if (ch->only.pc->poofInSound) str_free(ch->only.pc->poofInSound);
+    if (ch->only.pc->poofOutSound) str_free(ch->only.pc->poofOutSound);
+    if (ch->only.pc->gcmd_arr) FREE(ch->only.pc->gcmd_arr);
+
+    free(ch->only.pc);
+    free(ch);
+
+    /* remove from account character list */
+    ws_send_admin_delete_progress(d, request_id, "Removing from account character list...", "info");
+    if (prev) {
+        prev->next = c->next;
+    } else {
+        target_acct->acct_character_list = c->next;
+    }
+    FREE(c->charname);
+    FREE(c);
+    ws_send_admin_delete_progress(d, request_id, "Removed from account", "success");
+
+    ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
+    write_account(target_acct);
+    ws_send_admin_delete_progress(d, request_id, "Account file updated", "success");
+    free_account(target_acct);
+
+    /* send success response */
+    ws_send_admin_delete_progress(d, request_id, "Character deletion completed", "success");
+    ws_send_admin_delete_response(d, 1, account_name, char_name, request_id, NULL);
+}
+
 /* get rested bonus status for all characters */
 void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON *data)
 {
@@ -1853,7 +2461,214 @@ void ws_send_return_to_menu(struct descriptor_data *d, const char *reason)
     statuslog(56, "Account %s returned to menu: %s", d->account->acct_name, reason);
 }
 
-/* main command dispatcher */
+/* polls */
+void ws_cmd_poll_list(struct descriptor_data *d, cJSON *data)
+{
+    if (!d || !d->account) {
+        ws_send_system(d, "error", "Not authenticated");
+        return;
+    }
+
+    cJSON *active_only_json = data ? cJSON_GetObjectItem(data, "active_only") : NULL;
+    bool active_only = active_only_json ? cJSON_IsTrue(active_only_json) : true;
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "type", "poll_list");
+
+    cJSON *data_obj = cJSON_CreateObject();
+    cJSON *polls_arr = cJSON_CreateArray();
+
+    vector<poll_data> polls = poll_get_all(active_only);
+    for (size_t i = 0; i < polls.size(); i++) {
+        cJSON *poll_obj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(poll_obj, "id", polls[i].id);
+        cJSON_AddStringToObject(poll_obj, "question", polls[i].question.c_str());
+        cJSON_AddNumberToObject(poll_obj, "expires_at", (double)polls[i].expires_at);
+        cJSON_AddNumberToObject(poll_obj, "total_votes", polls[i].total_votes);
+        cJSON_AddBoolToObject(poll_obj, "multi_select", polls[i].multi_select);
+        cJSON_AddBoolToObject(poll_obj, "is_active", polls[i].is_active);
+        cJSON_AddItemToArray(polls_arr, poll_obj);
+    }
+
+    cJSON_AddItemToObject(data_obj, "polls", polls_arr);
+    cJSON_AddItemToObject(root, "data", data_obj);
+
+    char *json_str = cJSON_PrintUnformatted(root);
+    if (json_str) {
+        websocket_send_text(d, json_str);
+        free(json_str);
+    }
+    cJSON_Delete(root);
+}
+
+void ws_cmd_poll_view(struct descriptor_data *d, cJSON *data)
+{
+    if (!d || !d->account) {
+        ws_send_system(d, "error", "Not authenticated");
+        return;
+    }
+
+    cJSON *poll_id_json = data ? cJSON_GetObjectItem(data, "poll_id") : NULL;
+    if (!poll_id_json || !cJSON_IsNumber(poll_id_json)) {
+        ws_send_system(d, "error", "Missing poll_id");
+        return;
+    }
+
+    int poll_id = (int)cJSON_GetNumberValue(poll_id_json);
+    poll_data poll = poll_get_by_id(poll_id);
+
+    if (poll.id == 0) {
+        ws_send_system(d, "error", "Poll not found");
+        return;
+    }
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "type", "poll_view");
+
+    cJSON *data_obj = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data_obj, "id", poll.id);
+    cJSON_AddStringToObject(data_obj, "question", poll.question.c_str());
+    cJSON_AddStringToObject(data_obj, "created_by", poll.created_by.c_str());
+    cJSON_AddNumberToObject(data_obj, "expires_at", (double)poll.expires_at);
+    cJSON_AddBoolToObject(data_obj, "multi_select", poll.multi_select);
+    cJSON_AddNumberToObject(data_obj, "max_choices", poll.max_choices);
+    cJSON_AddBoolToObject(data_obj, "is_active", poll.is_active);
+    cJSON_AddNumberToObject(data_obj, "total_votes", poll.total_votes);
+
+    /* voted? */
+    bool has_voted = poll_has_voted(d->account->acct_name, poll_id);
+    cJSON_AddBoolToObject(data_obj, "has_voted", has_voted);
+
+    cJSON *options_arr = cJSON_CreateArray();
+    for (size_t i = 0; i < poll.options.size(); i++) {
+        cJSON *opt_obj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(opt_obj, "num", poll.options[i].option_num);
+        cJSON_AddStringToObject(opt_obj, "text", poll.options[i].text.c_str());
+        cJSON_AddNumberToObject(opt_obj, "votes", poll.options[i].vote_count);
+        cJSON_AddItemToArray(options_arr, opt_obj);
+    }
+    cJSON_AddItemToObject(data_obj, "options", options_arr);
+
+    cJSON_AddItemToObject(root, "data", data_obj);
+
+    char *json_str = cJSON_PrintUnformatted(root);
+    if (json_str) {
+        websocket_send_text(d, json_str);
+        free(json_str);
+    }
+    cJSON_Delete(root);
+}
+
+void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
+{
+    if (!d || !d->account) {
+        ws_send_system(d, "error", "Not authenticated");
+        return;
+    }
+
+    cJSON *poll_id_json = data ? cJSON_GetObjectItem(data, "poll_id") : NULL;
+    cJSON *choices_json = data ? cJSON_GetObjectItem(data, "choices") : NULL;
+
+    if (!poll_id_json || !cJSON_IsNumber(poll_id_json)) {
+        ws_send_system(d, "error", "Missing poll_id");
+        return;
+    }
+
+    if (!choices_json || !cJSON_IsArray(choices_json)) {
+        ws_send_system(d, "error", "Missing choices array");
+        return;
+    }
+
+    int poll_id = (int)cJSON_GetNumberValue(poll_id_json);
+    poll_data poll = poll_get_by_id(poll_id);
+
+    if (poll.id == 0) {
+        ws_send_system(d, "error", "Poll not found");
+        return;
+    }
+
+    if (!poll.is_active) {
+        ws_send_system(d, "error", "Poll is closed");
+        return;
+    }
+
+    if (poll_has_voted(d->account->acct_name, poll_id)) {
+        ws_send_system(d, "error", "Already voted");
+        return;
+    }
+
+    /* choices */
+    vector<int> choices;
+    int arr_size = cJSON_GetArraySize(choices_json);
+    for (int i = 0; i < arr_size; i++) {
+        cJSON *item = cJSON_GetArrayItem(choices_json, i);
+        if (cJSON_IsNumber(item)) {
+            choices.push_back((int)cJSON_GetNumberValue(item));
+        }
+    }
+
+    if (choices.empty()) {
+        ws_send_system(d, "error", "No valid choices");
+        return;
+    }
+
+    if (!poll.multi_select && choices.size() > 1) {
+        ws_send_system(d, "error", "Only one choice allowed");
+        return;
+    }
+
+    if ((int)choices.size() > poll.max_choices) {
+        ws_send_system(d, "error", "Too many choices");
+        return;
+    }
+
+    /* validate */
+    for (size_t i = 0; i < choices.size(); i++) {
+        bool found = false;
+        for (size_t j = 0; j < poll.options.size(); j++) {
+            if (poll.options[j].option_num == choices[i]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            ws_send_system(d, "error", "Invalid choice");
+            return;
+        }
+    }
+
+    /* record vote */
+#ifndef __NO_MYSQL__
+    int votes_cast = poll_record_votes(d->account->acct_name, "web", poll_id, poll, choices);
+
+    if (votes_cast > 0) {
+        /* success */
+        cJSON *root = cJSON_CreateObject();
+        cJSON_AddStringToObject(root, "type", "poll_vote");
+        cJSON *data_obj = cJSON_CreateObject();
+        cJSON_AddBoolToObject(data_obj, "success", true);
+        cJSON_AddStringToObject(data_obj, "message", "Vote recorded");
+        cJSON_AddItemToObject(root, "data", data_obj);
+
+        char *json_str = cJSON_PrintUnformatted(root);
+        if (json_str) {
+            websocket_send_text(d, json_str);
+            free(json_str);
+        }
+        cJSON_Delete(root);
+
+        /* broadcast */
+        poll = poll_get_by_id(poll_id);
+        poll_broadcast_vote(poll_id, poll.total_votes);
+    } else {
+        ws_send_system(d, "error", "Failed to record vote");
+    }
+#else
+    ws_send_system(d, "error", "Database not available");
+#endif
+}
+
+/* dispatch */
 void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 {
     if (!cmd) return;
@@ -1892,8 +2707,21 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
         ws_cmd_rested_bonus(d, data);
     } else if (strcmp(cmd, "logout") == 0) {
         ws_cmd_logout(d, data);
+    } else if (strcmp(cmd, "durisweb_auth") == 0) {
+        ws_cmd_durisweb_auth(d, data);
+    } else if (strcmp(cmd, "admin_delete_character") == 0) {
+        statuslog(56, "Dispatching admin_delete_character command");
+        ws_cmd_admin_delete_character(d, data);
+    } else if (strcmp(cmd, "poll_list") == 0) {
+        ws_cmd_poll_list(d, data);
+    } else if (strcmp(cmd, "poll_view") == 0) {
+        ws_cmd_poll_view(d, data);
+    } else if (strcmp(cmd, "poll_vote") == 0) {
+        ws_cmd_poll_vote(d, data);
+    } else if (strcmp(cmd, "request_wholist") == 0) {
+        ws_cmd_request_wholist(d, data);
     } else {
-        /* unknown command - treat as game command */
+        /* unknown = game cmd */
         if (d->connected == CON_PLAYING) {
             write_to_q(cmd, &d->input, 0);
         }

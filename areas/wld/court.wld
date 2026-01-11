@@ -4,7 +4,7 @@
 &+gdoes.. It &n&+wgl&+Wiste&n&+wns&+g with a dream-like aura, yet is as real as your existence.
 &+gThis is obviously the Court of the Sac&+Gred M&n&+guse, &n&+mLi&+Mse&n&+mu.&n
 ~
-1 33554436 3
+67 33554436 3
 D4
 ~
 ~
@@ -22,7 +22,7 @@ S
 &+gdoes.. It &n&+wgl&+Wiste&n&+wns&+g with a dream-like aura, yet is as real as your existence.
 &+gThis is obviously the Court of the Sac&+Gred M&n&+guse, &n&+mLi&+Mse&n&+mu.&n
 ~
-1 33554436 3
+67 33554436 3
 D4
 ~
 ~
@@ -40,7 +40,7 @@ S
 &+gdoes.. It &n&+wgl&+Wiste&n&+wns&+g with a dream-like aura, yet is as real as your existence.
 &+gThis is obviously the Court of the Sac&+Gred M&n&+guse, &n&+mLi&+Mse&n&+mu.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -60,7 +60,7 @@ S
 &+gdoes.. It &n&+wgl&+Wiste&n&+wns&+g with a dream-like aura, yet is as real as your existence.
 &+gThis is obviously the Court of the Sac&+Gred M&n&+guse, &n&+mLi&+Mse&n&+mu.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -76,7 +76,7 @@ S
 &+gdoes.. It &n&+wgl&+Wiste&n&+wns&+g with a dream-like aura, yet is as real as your existence.
 &+gThis is obviously the Court of the Sac&+Gred M&n&+guse, &n&+mLi&+Mse&n&+mu.&n
 ~
-1 33554436 3
+67 33554436 3
 D2
 ~
 ~
@@ -97,7 +97,7 @@ S
 &+gdoes.. It &n&+wgl&+Wiste&n&+wns&+g with a dream-like aura, yet is as real as your existence.
 &+gThis is obviously the Court of the Sac&+Gred M&n&+guse, &n&+mLi&+Mse&n&+mu.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -111,7 +111,7 @@ S
 &+gThe &+cDr&+Cea&n&+cm&+g-Court of the Sac&+Gred M&n&+guse, &n&+mLi&+Mse&n&+mu&n~
 &+g   The tree canopy opens up into a true marvel that blends fae magic with their aesthetics. The branches bend and bow in a natural manner to create a room, beginning with the floor of the court that is a braided and woven set of branches in a circular ballroom-sized platform. In the middle of this platform is a raised dias with a throne for the Muse.&N
 ~
-1 1212186688 3
+67 1212186688 3
 D5
 ~
 ~
@@ -123,7 +123,7 @@ S
 &+cthe sea is echoed in a puddle on the ground.. it reflects the shadows of the
 &+cwaterfall. It is incredibly quiet here.&n
 ~
-1 42111064 0
+67 42111064 0
 D3
 ~
 ~
@@ -135,7 +135,7 @@ S
 &+cthe sea is echoed in a puddle on the ground.. it reflects the shadows of the
 &+cwaterfall. It is incredibly quiet here.&n
 ~
-1 42111048 0
+67 42111048 0
 D1
 ~
 ~
@@ -153,7 +153,7 @@ S
 &+cpassage. A small niche in the shape of a locket is on the left side of the
 &+cwall.&n
 ~
-1 42111048 0
+67 42111048 0
 D0
 ~
 wall~
@@ -170,7 +170,7 @@ S
 &+cwaterfall. It is incredibly quiet here. Yet another niche, shaped like a
 &+cchild's locket, has been carved into the wall.&n
 ~
-1 42111048 0
+67 42111048 0
 D0
 ~
 wall~
@@ -186,7 +186,7 @@ S
 &+cthe sea is echoed in a puddle on the ground.. it reflects the shadows of the
 &+cwaterfall. It is incredibly quiet here.&n
 ~
-1 42111048 0
+67 42111048 0
 D2
 ~
 south boulder~
@@ -202,7 +202,7 @@ S
 &+cthe sea is echoed in a puddle on the ground.. it reflects the shadows of the
 &+cwaterfall. It is incredibly quiet here.&n
 ~
-1 41979968 5
+67 41979968 5
 D0
 ~
 ~
@@ -216,7 +216,7 @@ S
 &+LA &+wSi&+Wle&+wnt &+cStillness &+Lin the Cave Behind the &+BWat&n&+berf&+Ball~
 &+c   In spite of the nearby waterfall, an eerie and likely supernatural stillness settles over this area, allowing a quiet reflective meditation spot behind this waterfall. This small, dark cave is tucked behind the raging water. The &+wstillness&+c of the sea is echoed in a puddle on the ground... it reflects the shadows of the waterfall.&n
 ~
-1 42111056 5
+67 42111056 5
 D2
 ~
 ~
@@ -226,7 +226,7 @@ S
 &+yA Cliff near the &+BWat&n&+berf&+Ball&n~
 &+y   The passage continues along the mountain towards a clearing, and back to a waterfall away from the ledge. This narrow cliff is just west of the great &+Bwat&n&+berf&n&+Ball&n&+y made from the ancient ice within the glaciers nearby. There is no canopy from the trees here, just a perfect &+caz&+Bur&n&+ce&n&+y sky without a cloud in sight. The sound of the water is quite soothing and relaxing, and is the only sound that echoes along the top of this mountain.&n
 ~
-1 41979968 0
+67 41979968 0
 D0
 ~
 ~
@@ -240,7 +240,7 @@ S
 &+yThe Cliff of the &+cP&+Ceg&+Wa&+Csu&N&+cs&n~
 &+y   This narrow cliff is just west of the great &+Bwat&n&+berf&n&+Ball&n&+y made from the ancient ice within the glaciers nearby. There is no canopy from the trees here, just a perfect &+caz&+Bur&n&+ce&n&+y sky without a cloud in sight. The sound of the water is quite soothing and relaxing, and is the only sound that echoes along the top of this mountain.&n
 ~
-1 41979968 5
+67 41979968 5
 D1
 ~
 ~
@@ -258,7 +258,7 @@ S
 &+gsense of awe in this domain, and a g&+Glo&n&+gw eminates from all around you.
 &+gSongs of joy ring from the winds.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -295,7 +295,7 @@ S
 &+gsense of awe in this domain, and a g&+Glo&n&+gw eminates from all around you.
 &+gSongs of joy ring from the winds.&n
 ~
-1 33554432 3
+67 33554432 3
 D2
 ~
 ~
@@ -332,7 +332,7 @@ S
 &+gsense of awe in this domain, and a g&+Glo&n&+gw eminates from all around you.
 &+gSongs of joy ring from the winds.
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -369,7 +369,7 @@ S
 &+gof awe in this domain, and a g&+Glo&n&+gw eminates from all around you. Songs of
 &+gjoy ring from the winds. A rather prominent &+wsto&+Wne a&n&+wrch&+g covers the path here.&n
 ~
-1 33554432 3
+67 33554432 3
 D2
 ~
 ~
@@ -415,7 +415,7 @@ S
 &+gsense of awe in this domain, and a g&+Glo&n&+gw eminates from all around you.
 &+gSongs of joy ring from the winds.&n
 ~
-1 4325584 3
+67 4325584 3
 D0
 ~
 ~
@@ -452,7 +452,7 @@ S
 &+gsense of awe in this domain, and a g&+Glo&n&+gw eminates from all around you.
 &+gSongs of joy ring from the winds.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -488,7 +488,7 @@ S
 &+creflecting pond with &+wwat&+Wer&+Cl&+Wil&n&+wies&n&+c. To the south lies the twisted path out of
 &+cthis magical forest.&n
 ~
-1 1107296260 3
+67 1107296260 3
 D2
 ~
 ~
@@ -528,7 +528,7 @@ S
 &+wreflecting pond with &+wwat&+Wer&n&+cl&+Wil&n&+wies&n&+w. To the south lies the twisted path out of
 &+wthis magical forest.&n
 ~
-1 33554436 3
+67 33554436 3
 D1
 ~
 ~
@@ -568,7 +568,7 @@ S
 &+yreflecting pond with &+wwat&+Wer&n&+yl&+Wil&n&+wies&n&+y. To the south lies the twisted path out of
 &+ythis magical forest.&n
 ~
-1 33554436 3
+67 33554436 3
 D0
 ~
 ~
@@ -608,7 +608,7 @@ S
 &+greflecting pond with &+wwat&+Wer&+Rl&+Wil&n&+wies&n&+g. To the south lies the twisted path out of
 &+gthis magical forest.&n
 ~
-1 33554436 3
+67 33554436 3
 D1
 ~
 ~
@@ -648,7 +648,7 @@ S
 &+Greflecting pond with &n&+wwat&+Wer&+Gl&+Wil&n&+wies&n&+G. To the south lies the twisted path out of
 &+Gthis magical forest.&n
 ~
-1 33554436 3
+67 33554436 3
 D3
 ~
 ~
@@ -688,7 +688,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -705,7 +705,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -722,7 +722,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -739,7 +739,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -760,7 +760,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops. To the west lies a small &n&+yhut&n.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -781,7 +781,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -798,7 +798,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops. A small &n&+Ycircle&n&+g path goes east and north.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -819,7 +819,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -836,7 +836,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops. To the north is a HUGE &n&+rap&+Rpl&n&+re&+g-tree.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -857,7 +857,7 @@ S
 &+gforest, leaving tracks in the &+ymud&+g. A soft melody of rebirth resonates from the
 &+gwind amidst the treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -873,7 +873,7 @@ S
 &+gfrom the tree to the ground, but haven't rotten. The sound of a child's giggle
 &+gcan be heard above.&n
 ~
-1 1107296256 3
+67 1107296256 3
 D2
 ~
 ~
@@ -889,7 +889,7 @@ S
 &+gfrom the tree to the ground, but haven't rotten. The sound of a child's giggle
 &+gcan be heard above.&n
 ~
-1 1107296256 3
+67 1107296256 3
 D2
 ~
 ~
@@ -905,7 +905,7 @@ S
 &+gfrom the tree to the ground, but haven't rotten. The sound of a child's giggle
 &+gcan be heard above.&n
 ~
-1 1107435524 3
+67 1107435524 3
 D0
 ~
 ~
@@ -919,7 +919,7 @@ S
 &+gThe Top of the &+rA&+Rpp&n&+rle&n&+g-Tr&+Ge&n&+ge&n~
 &+g   This tree is surrounded by a light glistening aura. New off-white flowers bud upon the apple tree signaling the start of the growing season. The sound of a child's giggle can be heard around.&n
 ~
-1 1073741824 3
+67 1073741824 3
 D5
 ~
 ~
@@ -933,7 +933,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -951,7 +951,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -969,7 +969,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -993,7 +993,7 @@ S
 &+gmost of the forest of summer. A strange apple tree sticks out in the distance
 &+gto the north.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1011,7 +1011,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1033,7 +1033,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1055,7 +1055,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1071,7 +1071,7 @@ S
 &+gfrom the tree to the ground, but haven't rotten. The sound of a child's giggle
 &+gcan be heard above.&n
 ~
-1 1107435524 3
+67 1107435524 3
 D3
 ~
 ~
@@ -1087,7 +1087,7 @@ S
 &+gfrom the tree to the ground, but haven't rotten. The sound of a child's giggle
 &+gcan be heard around.&n
 ~
-1 1107296256 3
+67 1107296256 3
 D5
 ~
 ~
@@ -1101,7 +1101,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1119,7 +1119,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g. To the south lies a small &+yhut&N.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1141,7 +1141,7 @@ S
 &+gthat the temperature has gotten much hotter. You would guess that this is
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g.&n
 ~
-1 33554432 3
+67 33554432 3
 D3
 ~
 ~
@@ -1156,7 +1156,7 @@ S
 &+gthe enchanted forest of &+rsu&+Rmm&n&+rer&+g. To the west is a small &+Bbrook&n&+g running through
 &+gthe forest.&n
 ~
-1 33554436 3
+67 33554436 3
 D1
 ~
 ~
@@ -1170,7 +1170,7 @@ S
 &+BA Shallow &n&+cB&n&+Br&n&+wo&n&+Bo&n&+ck&n~
 &+c   This shallow brook bubbles gently and the water glides over the &n&+gm&+Go&n&+gs&+Gs&n&+gy&+w rocks&+c and the &+ysandy earth&+c below. Beautiful koi fish swim into the smooth current and lurk in the shade created by the canopy above. Eddies s&n&+bw&+Bi&n&+wr&+Bl&+c in intricate patterns in the edges of the brook, and are in harmony with the wind's song through the faerie trees.&n
 ~
-1 33554432 6
+67 33554432 6
 D1
 ~
 ~
@@ -1194,7 +1194,7 @@ S
 &+BA Shallow &n&+cB&n&+Br&n&+wo&n&+Bo&n&+ck&n~
 &+c   This shallow brook bubbles gently and the water glides over the &n&+gm&+Go&n&+gs&+Gs&n&+gy&+w rocks&+c and the &+ysandy earth&+c below. Beautiful koi fish swim into the smooth current and lurk in the shade created by the canopy above. Eddies s&n&+bw&+Bi&n&+wr&+Bl&+c in intricate patterns in the edges of the brook, and are in harmony with the wind's song through the faerie trees.&n
 ~
-1 33554432 6
+67 33554432 6
 D0
 ~
 ~
@@ -1218,7 +1218,7 @@ S
 &+BA Shallow &n&+cB&n&+Br&n&+wo&n&+Bo&n&+ck&n~
 &+c   This shallow brook bubbles gently and the water glides over the &n&+gm&+Go&n&+gs&+Gs&n&+gy&+w rocks&+c and the &+ysandy earth&+c below. Beautiful koi fish swim into the smooth current and lurk in the shade created by the canopy above. Eddies s&n&+bw&+Bi&n&+wr&+Bl&+c in intricate patterns in the edges of the brook, and are in harmony with the wind's song through the faerie trees.&n
 ~
-1 33554432 6
+67 33554432 6
 D0
 ~
 ~
@@ -1242,7 +1242,7 @@ S
 &+BA Shallow &n&+cB&n&+Br&n&+wo&n&+Bo&n&+ck&n~
 &+c   This shallow brook bubbles gently and the water glides over the &n&+gm&+Go&n&+gs&+Gs&n&+gy&+w rocks&+c and the &+ysandy earth&+c below. Beautiful koi fish swim into the smooth current and lurk in the shade created by the canopy above. Eddies s&n&+bw&+Bi&n&+wr&+Bl&+c in intricate patterns in the edges of the brook, and are in harmony with the wind's song through the faerie trees.&n
 ~
-1 33554432 6
+67 33554432 6
 D2
 ~
 ~
@@ -1266,7 +1266,7 @@ S
 &+BA Shallow &n&+cB&n&+Br&n&+wo&n&+Bo&n&+ck&n~
 &+c   This shallow brook bubbles gently and the water glides over the &n&+gm&+Go&n&+gs&+Gs&n&+gy&+w rocks&+c and the &+ysandy earth&+c below. Beautiful koi fish swim into the smooth current and lurk in the shade created by the canopy above. Eddies s&n&+bw&+Bi&n&+wr&+Bl&+c in intricate patterns in the edges of the brook, and are in harmony with the wind's song through the faerie trees.&n
 ~
-1 33554432 6
+67 33554432 6
 D0
 ~
 ~
@@ -1290,7 +1290,7 @@ S
 &+BA T&n&+cu&+Crb&+Wu&n&+Cle&n&+cn&+Bt Waterfall&n~
 &+c   The peaceful brook has made a turn and has encountered a cliff, which now rapidly deviates the water down below. The water cascades down swiftly yet gracefully, diverting off of a series of jagged rocks too severe to climb upon safely. The current is so very strong here and there is virtually nothing to grasp on the way down...&n
 ~
-1 33554468 9
+67 33554468 9
 D4
 ~
 ~
@@ -1308,7 +1308,7 @@ S
 &+BThe Bottom of a T&n&+cu&+Crb&+Wu&n&+Cle&n&+cn&+Bt Waterfall&n~
 &+c   The peaceful brook has made a turn and has encountered a cliff, which now rapidly deviates the water down below. The water cascades down swiftly yet gracefully, diverting off of a series of jagged rocks too severe to climb upon safely. The current is so very strong here and there is virtually nothing to grasp on the way down. The waterfall has a bit of an echo, as if perhaps there is a cave behind the waterfall, if only one were brave enough to jump into it.&n
 ~
-1 33554468 9
+67 33554468 9
 D2
 ~
 ~
@@ -1324,7 +1324,7 @@ S
 &+BA Turbulent Area of the &n&+bB&n&+Br&n&+wo&n&+Bo&n&+bk&n~
 &+c   This is a turbulent area of the waterfall's final pond, and overshelming currents churn up the water in the area. The force of the waterfall down into the pool below has made this pool quite deep.&n
 ~
-1 33554436 3
+67 33554436 3
 D0
 ~
 ~
@@ -1354,7 +1354,7 @@ S
 &+Bswim within it. Images around you are echoed upon the pond's surface, with not
 &+Bripple to distort them.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1383,7 +1383,7 @@ S
 &+g   The ground here is slightly &+ysandy&+g with a few marsh reeds. The trees still
 &+gcover the area, providing welcome shade. The area seems so tranquil.&n
 ~
-1 33685508 3
+67 33685508 3
 D2
 ~
 ~
@@ -1394,7 +1394,7 @@ S
 &+B   Underneath the pond, the &n&+wwat&+Werlil&n&+wies&+B cast odd circular shadows that
 &+Bdance upon the pond floor. The water is perfectly clear and peaceful.&n
 ~
-1 41980000 9
+67 41980000 9
 D4
 ~
 ~
@@ -1407,7 +1407,7 @@ S
 &+y&n&+ybroken twigs and crushed leaves&+g. A soft melody resonates from the wind amidst
 &+gthe treetops, somewhat different without the leaves.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1424,7 +1424,7 @@ S
 &+y&n&+ybroken twigs and crushed leaves&+g. A soft melody resonates from the wind amidst
 &+gthe treetops, somewhat different without the leaves.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1441,7 +1441,7 @@ S
 &+y&n&+ybroken twigs and crushed leaves&+g. A soft melody resonates from the wind amidst
 &+gthe treetops, somewhat different without the leaves.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1463,7 +1463,7 @@ S
 &+gthe treetops, somewhat different without the leaves. To the south, a large
 &+Lrotted-out stump&n&+g blocks the path.
 ~
-1 33554436 3
+67 33554436 3
 D2
 ~
 stump~
@@ -1479,7 +1479,7 @@ S
 &+Lis quite dark and footing unsure. The smell of decay is prevalent. A small
 &+Lrustle of leaves can be heard.. perhaps it was the wind?...&n
 ~
-1 1073774665 0
+67 1073774665 0
 D0
 ~
 stump~
@@ -1499,7 +1499,7 @@ S
 &+Lis quite dark and footing unsure. The smell of decay is prevalent. A small
 &+Lrustle of leaves can be heard.. perhaps it was the wind?...&n
 ~
-1 1073774665 0
+67 1073774665 0
 D4
 ~
 ~
@@ -1511,7 +1511,7 @@ S
 &+Lis quite dark and footing unsure. The smell of decay is prevalent. A small
 &+Lrustle of leaves can be heard.. perhaps it was the wind?...&n
 ~
-1 1073774665 0
+67 1073774665 0
 D5
 ~
 ~
@@ -1521,7 +1521,7 @@ S
 &+yA Clearing of Dying Trees&n~
 &+y   This small clearing has been formed by the decay of the trees nearby. The trunks have rotted out, the ground is soft with leaves undergoing the slow process of pu&+rtri&+Lfic&n&+rati&n&+yon. The roots of a rather large &+Ltree stump&+y seem to weave over the ground of the clearing, with a potential cavity inside in which further creatures of this forest have taken residence.&n
 ~
-1 33554432 3
+67 33554432 3
 D2
 ~
 ~
@@ -1538,7 +1538,7 @@ S
 &+y&n&+ybroken twigs and crushed leaves&+g. A soft melody resonates from the wind amidst
 &+gthe treetops, somewhat different without the leaves.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1558,7 +1558,7 @@ S
 &+yand the branches twisted. The canopy above shadows the rest of the forest
 &+yarea, keeping light from the deprived plants below.&n
 ~
-1 33824768 3
+67 33824768 3
 D0
 ~
 ~
@@ -1573,7 +1573,7 @@ S
 &+y   A mystical floor holds you on top of this tree. The sight is amazing... yet
 &+ythis particular area is plagued. There is nothing but silence all around.&n
 ~
-1 33820676 3
+67 33820676 3
 D2
 ~
 ~
@@ -1587,7 +1587,7 @@ S
 &+yThe Canopy of a &+LDying &n&+gTr&+Ge&n&+ge&n~
 &+y   The branches of this tree fanned out much like a staircase upon your approach, which has brought you to this landing near the top of the tree. The leaves of the tree flutter in various colors of reds and yellows, but most are brown or have fallen completely. A leaf flutters in the wind as you proceed.&N
 ~
-1 33820672 3
+67 33820672 3
 D0
 ~
 ~
@@ -1600,7 +1600,7 @@ S
 &+y&n&+ybroken twigs and crushed leaves&+g. A soft melody resonates from the wind amidst
 &+gthe treetops, somewhat different without the leaves.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1616,7 +1616,7 @@ S
 &+ysink slightly into the marsh as you cautiously step across it. The wind gently
 &+ybrushes the r&+Ye&n&+ye&+Yd&n&+ys against your hand as you pass through.&n
 ~
-1 1107296256 3
+67 1107296256 3
 D0
 ~
 ~
@@ -1632,7 +1632,7 @@ S
 &+Lsink slightly into the marsh as you cautiously step across it. The wind gently
 &+Lbrushes the r&+Ye&n&+ye&+Yd&n&+ys &+Lagainst your hand as you pass through.&n
 ~
-1 1107296256 3
+67 1107296256 3
 D2
 ~
 ~
@@ -1648,7 +1648,7 @@ S
 &+ysink slightly into the marsh as you cautiously step across it. The wind gently
 &+ybrushes the r&+Ye&n&+ye&+Yd&n&+ys against your hand as you pass through.&n
 ~
-1 1107296256 3
+67 1107296256 3
 D0
 ~
 ~
@@ -1665,7 +1665,7 @@ S
 &+wtracks in the &+Wsnow&n&+w. A soft melody resonates from the wind amidst the
 &+wbare treetops.
 ~
-1 33554432 3
+67 33554432 3
 D2
 ~
 ~
@@ -1682,7 +1682,7 @@ S
 &+wtracks in the &+Wsnow&n&+w. A soft melody resonates from the wind amidst the
 &+wbare treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1699,7 +1699,7 @@ S
 &+wtracks in the &+Wsnow&n&+w. A soft melody resonates from the wind amidst the
 &+wbare treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1720,7 +1720,7 @@ S
 &+wtracks in the &+Wsnow&n&+w. A soft melody resonates from the wind amidst the
 &+wbare treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1736,7 +1736,7 @@ S
 &+wclimbing - it's just the snow that makes the climb difficult. Your hands are
 &+wcold as you desperately try to hang on..&n
 ~
-1 41984064 3
+67 41984064 3
 D3
 ~
 ~
@@ -1750,7 +1750,7 @@ S
 &+cA &+wSnow-Covered &+WBirch &n&+cTree&n~
 &+c   It is quite unsettling that this canopy's 'floor' is a very thin sheet of ice, yet you are as stable as an Ogre would be possibly be up here. The beautiful crystals formed by the ice clutter the area, creating prisms and fractals of light that shimmer in the court.&n
 ~
-1 41984068 3
+67 41984068 3
 D4
 ~
 ~
@@ -1766,7 +1766,7 @@ S
 &+cThe Top of a &+wSnow-Covered &+WBirch &n&+cTree&n~
 &+c   It is quite unsettling that this canopy's 'floor' is a very thin sheet of ice, yet you are as stable as an Ogre would be possibly be up here. The beautiful crystals formed by the ice clutter the area, creating prisms and fractals of light that shimmer in the court.&n
 ~
-1 41975872 3
+67 41975872 3
 D5
 ~
 ~
@@ -1781,7 +1781,7 @@ S
 &+wtracks in the &+Wsnow&n&+w. A soft melody resonates from the wind amidst the
 &+wbare treetops. To the east is a small snow-covered hut.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1801,7 +1801,7 @@ S
 &+yholes. A small table, a bed, and a cabinet/shelf area provide its only
 &+yfurnishings. Some &+ci&+Cci&+Wc&+Cle&n&+cs &+yhang from the threshold.&n
 ~
-1 33558536 0
+67 33558536 0
 D3
 ~
 ~
@@ -1814,7 +1814,7 @@ S
 &+wtracks in the &+Wsnow&n&+w. A soft melody resonates from the wind amidst the
 &+wbare treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1831,7 +1831,7 @@ S
 &+wtracks in the &+Wsnow&n&+w. A soft melody resonates from the wind amidst the
 &+wbare treetops.&n
 ~
-1 33554432 3
+67 33554432 3
 D0
 ~
 ~
@@ -1847,7 +1847,7 @@ S
 &+wdwell below, covered in &+cfr&+Cos&n&+ct&+w. Small animals wander the forest, leaving
 &+wbare treetops. To the east a huge &+Wsnow drift &n&+wblocks the path.&n
 ~
-1 33554432 3
+67 33554432 3
 D1
 ~
 ~
@@ -1863,7 +1863,7 @@ S
 &+ysmall table, a bed, and a cabinet/shelf area provide its only furnishings.
 &+ySome freshly picked &+gf&+Glo&+Yw&+Ger&n&+gs&+y lie upon the table.&n
 ~
-1 33558536 0
+67 33558536 0
 D1
 ~
 ~
@@ -1873,7 +1873,7 @@ S
 &+yAn &+rA&+Rpp&+rle&+y Farmer's Cozy Thatch Hut&n~
 &+y   This small hut has been set up to collect, sort, rinse, store, and sell apples from within the summer fae court's apple groves. The air in here is humid, and a welcome breeze flows through the open windows.&n
 ~
-1 33558536 0
+67 33558536 0
 D0
 ~
 ~
@@ -1885,7 +1885,7 @@ S
 &+ywindows. A small table, a bed, and a cabinet/shelf area provide its only
 &+yfurnishings. Some &+ra&+yu&+rtu&+ym&+rn &+yleaves have fallen in from the open window.&n
 ~
-1 33558536 0
+67 33558536 0
 D3
 ~
 ~
@@ -1899,7 +1899,7 @@ S
 &+cand daisies, to a braided lock of hair. This chimerical circle is based about
 &+ca large tree of pure glamour.&n
 ~
-1 1107562500 0
+67 1107562500 0
 D4
 ~
 ~
@@ -1909,7 +1909,7 @@ S
 &+yUpon a Ledge Below a Cliff&N~
 &+y   This ledge juts out just slightly from the otherwise sheer rock face, and is covered ever so slightly in rock and debris. It has been touched by all of the seasons - the glaciers cut the face of this cliff many eras ago, it has been covered in dirt created by the decaying leaves of several seasons, and the final flowers of summer have bloomed long since the flowers of spring have went to seed. All of the seasons seem strongest here, at a place where a rift into the fabric of the seasonal cycle itself resides, crackling with faerie magic.&N
 ~
-1 1073872900 5
+67 1073872900 5
 D4
 ~
 ~
@@ -1919,7 +1919,7 @@ S
 &+cUpon an Branch made of &+CEthereal&+c Fae Magic&N~
 &+c   The tree tras&+Ccen&+cds reality at &+Ct&+chis point a&+Cnd th&+ce bran&+Cch o&+cf this vas&+Ct tr&+cee-house turns in&+Ct&+co an ether&+Cea&+cl translus&+Cce&+cnt blue mist, upo&+Cn w&+chich a &+wpo&+Wrt&+wal&+c seems to f&+Cluct&+cuate in an&+Cd o&+cut of reali&+Cty&+c. The shi&+Cmm&+cering qualt&+Cy of&+c this area is &+Chyp&+cnotic, a&+Cn&+cd crackles wit&+Ch ex&+ctremely p&+Cow&+cerful &+Cfae magic.&N
 ~
-1 146964544 0
+67 146964544 0
 D5
 ~
 branches down~

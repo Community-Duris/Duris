@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <signal.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 
@@ -18,12 +19,14 @@
 extern void exit(int);
 
 /*
-   external variables 
+   external variables
  */
 
 extern int tics;
 extern bool game_booted;
 extern int shutdownflag;
+// signal-initiated shutdown: 0=none, 1=shutdown, 2=reboot, 3=copyover
+extern volatile sig_atomic_t signal_shutdown_pending;
 
 //extern pid_t lookup_host_process;
 extern pid_t lookup_ident_process;
@@ -31,6 +34,7 @@ void     reap(int sig);
 
 void     shutdown_request(int);
 void     shutdown_notice(int);
+void     reboot_request(int);
 void     hupsig(int);
 void     logsig(int);
 void     reap(int);
@@ -41,8 +45,9 @@ void signal_setup(void)
   struct itimerval itime;
   struct timeval interval;
 
-  signal(SIGUSR2, shutdown_request);
-  signal(SIGUSR1, shutdown_notice);
+  signal(SIGUSR2, shutdown_request);  // shutdown (no restart)
+  signal(SIGUSR1, shutdown_notice);   // copyover
+  signal(SIGRTMIN, reboot_request);   // reboot
 
   /*
      just to be on the safe side: 
@@ -99,19 +104,28 @@ void checkpointing(int signum)
   signal(SIGVTALRM, checkpointing);
 }
 
+// sigusr1 - copyover request from launcher
 void shutdown_notice(int signum)
 {
-
-  logit(LOG_STATUS, "Received USR1 - shutdown notice");
-  shutdownflag = 2;
+  logit(LOG_STATUS, "Received USR1 - copyover request");
+  signal_shutdown_pending = 3; // copyover
   signal(SIGUSR1, shutdown_notice);
 }
 
+// sigusr2 - clean shutdown (no restart)
 void shutdown_request(int signum)
 {
-
   logit(LOG_STATUS, "Received USR2 - shutdown request");
-  shutdownflag = 1;
+  signal_shutdown_pending = 1; // shutdown
+  signal(SIGUSR2, shutdown_request);
+}
+
+// sigrtmin - reboot request from launcher
+void reboot_request(int signum)
+{
+  logit(LOG_STATUS, "Received SIGRTMIN - reboot request");
+  signal_shutdown_pending = 2; // reboot
+  signal(SIGRTMIN, reboot_request);
 }
 
 /*

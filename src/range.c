@@ -1261,6 +1261,7 @@ void do_throw(P_char ch, char *argument, int cmd)
 		  }
 
       snprintf(messages.attacker, MAX_STRING_LENGTH, "You hit $N with $p!");
+      act("You throw $p at $N!", FALSE, ch, weapon, vict, TO_CHAR);
       snprintf(messages.death_attacker, MAX_STRING_LENGTH,
              "Your skilfully thrown $p cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
       if (ch->in_room != vict->in_room)
@@ -1289,8 +1290,8 @@ void do_throw(P_char ch, char *argument, int cmd)
      dmg = dice(weapon->value[1], MAX(1, weapon->value[2]));
      dmg += TRUE_DAMROLL(ch);
 
-     if (!CAN_HURT(ch, weapon, vict)) ;
-     dmg = 1;
+     if (!CAN_HURT(ch, weapon, vict))
+       dmg = 1;
 
      victroom = vict->in_room;
      messages.obj = weapon;
@@ -1368,6 +1369,10 @@ void do_throw(P_char ch, char *argument, int cmd)
      obj_to_char(unequip_char(ch, PRIMARY_WEAPON), ch);
    else if (weapon == ch->equipment[SECONDARY_WEAPON])
      obj_to_char(unequip_char(ch, SECONDARY_WEAPON), ch);
+   else if (weapon == ch->equipment[THIRD_WEAPON])
+     obj_to_char(unequip_char(ch, THIRD_WEAPON), ch);
+   else if (weapon == ch->equipment[FOURTH_WEAPON])
+     obj_to_char(unequip_char(ch, FOURTH_WEAPON), ch);
 
    obj_from_char(weapon);
    obj_to_room(weapon, (target_room == -1) ? ch->in_room : target_room);
@@ -1839,25 +1844,16 @@ P_obj find_throw(P_char ch, char *name, int first)
  strcpy(tmpname, name);
  tmp = tmpname;
 
- i = ch->equipment[PRIMARY_WEAPON];
- if (i)
+ /* check all 4 weapon slots for throwable weapons */
+ int slots[] = {PRIMARY_WEAPON, SECONDARY_WEAPON, THIRD_WEAPON, FOURTH_WEAPON};
+ for (int s = 0; s < 4; s++)
  {
-   if (isname(tmp, i->name))
-     if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-       if ((i) &&
-           ((IS_OBJ_STAT(i, ITEM_CAN_THROW1)) ||
-            (IS_OBJ_STAT(i, ITEM_CAN_THROW2))))
-         return (i);
+   i = ch->equipment[slots[s]];
+   if (i && isname(tmp, i->name) &&
+       (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) &&
+       (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
+     return (i);
  }
-/* THIS CRASHES US LEFT EM ONLY CAST PRIME WEAPONS FOR NOW - Kvark
- i = ch->equipment[SECONDARY_WEAPON];
- if (i) {
-   if (isname (tmp, i->name))
-     if (CAN_SEE_OBJ (ch, i) || IS_NOSHOW (i))
-       if ((i) && ((IS_OBJ_STAT2(i, ITEM2_CAN_THROW1)) || (IS_OBJ_STAT2(i, ITEM2_CAN_THROW2))))
-         return (i);
- }
-*/
 
  if (first == FALSE)
  {
@@ -1878,7 +1874,7 @@ int number_throw(P_char ch, char *name)
  char     tmpname[MAX_STRING_LENGTH];
  char    *tmp;
  int      nb_att = 0;
- int      primary = 0, secondary = 0;
+ int      primary = 0, secondary = 0, third = 0, fourth = 0;
  int      pri_ret = 0, sec_ret = 0;
  int      hAtt = 0, dW = 0;
 
@@ -1916,7 +1912,23 @@ int number_throw(P_char ch, char *name)
          else
            secondary = 1;
 
- if (!primary && !secondary)
+ i = ch->equipment[THIRD_WEAPON];
+ if (i)
+   if (isname(tmp, i->name))
+     if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
+       if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) ||
+           IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+         third = 1;
+
+ i = ch->equipment[FOURTH_WEAPON];
+ if (i)
+   if (isname(tmp, i->name))
+     if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
+       if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) ||
+           IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+         fourth = 1;
+
+ if (!primary && !secondary && !third && !fourth)
  {
    return 1;
  }
@@ -2167,6 +2179,9 @@ void return_home(P_char ch, P_char victim, P_obj obj, void *data)
 
  h_data.hunt_type = HUNT_JUSTICE_SPECROOM;
  h_data.targ.room = real_room(GET_BIRTHPLACE(ch));
+ h_data.huntFlags = 0;
+ h_data.retry = 0;
+ h_data.retry_dir = 0;
  add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &h_data, sizeof(hunt_data));
  //AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, h_data);
  add_event(return_home, 30, ch, 0, 0, 0, 0, 0);

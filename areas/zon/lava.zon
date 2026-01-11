@@ -1,292 +1,192 @@
 #997
-&+rLava Springs&N~
-99772 2 0 15 16 1
+&+LLa&+rva &+RSp&+rrin&+Lgs&n~
+99764 1 0 20 30 2
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
-D 0 99701 4 1 100 0 0 0
-*     up exit from "A Grand Foyer" to
-*     "A Lookout Post" - closed
+D 0 99701 0 1 100 0 0 0
+*     north exit from "The Main Cavern Entrance" to
+*     "A Bedrock Intersection" - closed
 *
-D 0 99734 5 1 100 0 0 0
-*     down exit from "A Lookout Post" to
-*     "A Grand Foyer" - closed
+D 0 99718 2 1 100 0 0 0
+*     south exit from "A Bedrock Intersection" to
+*     "The Main Cavern Entrance" - closed
 *
-D 0 99715 5 1 100 0 0 0
-*     down exit from "Lava Springs Forgotten Inn" to
-*     "An Underground Cubbyhole" - closed
+D 0 99711 5 1 100 0 0 0
+*     down exit from "A Dark Trail" to
+*     "A Lava Spring Crater" - closed
 *
 D 0 99732 4 1 100 0 0 0
-*     up exit from "An Underground Cubbyhole" to
-*     "Lava Springs Forgotten Inn" - closed
+*     up exit from "A Lava Spring Crater" to
+*     "A Dark Trail" - closed
 *
-D 0 99720 5 1 100 0 0 0
-*     down exit from "A Small Dwelling" to
-*     "The Slave Pens Center Hall" - closed
+D 0 99713 5 1 100 0 0 0
+*     down exit from "A Dark Trail" to
+*     "A Lava Spring Crater" - closed
 *
-D 0 99757 4 1 100 0 0 0
-*     up exit from "The Slave Pens Center Hall" to
-*     "A Small Dwelling" - closed
+D 0 99734 4 1 100 0 0 0
+*     up exit from "A Lava Spring Crater" to
+*     "A Dark Trail" - closed
 *
-D 0 99723 0 1 100 0 0 0
-*     north exit from "A Small Dwelling" to
-*     "A Treasure Room" - closed
+D 0 99717 5 1 100 0 0 0
+*     down exit from "A Bedrock Passage" to
+*     "A Lava Spring Crater" - closed
 *
-D 0 99733 2 1 100 0 0 0
-*     south exit from "A Treasure Room" to
-*     "A Small Dwelling" - closed
+D 0 99731 4 1 100 0 0 0
+*     up exit from "A Lava Spring Crater" to
+*     "A Bedrock Passage" - closed
 *
-D 0 99726 5 1 100 0 0 0
-*     down exit from "A Small Dwelling" to
-*     "A Musty Dungeon" - closed
+D 0 99719 5 1 100 0 0 0
+*     down exit from "A Bend in the Passage" to
+*     "A Lava Spring Crater" - closed
 *
-D 0 99753 4 1 100 0 0 0
-*     up exit from "A Musty Dungeon" to
-*     "A Small Dwelling" - closed
+D 0 99738 4 1 100 0 0 0
+*     up exit from "A Lava Spring Crater" to
+*     "A Bend in the Passage" - closed
 *
-D 0 99730 5 1 100 0 0 0
-*     down exit from "A Small Dwelling" to
-*     "A Lava Spring Cavern" - closed
+D 0 99735 5 1 100 0 0 0
+*     down exit from "A Central Platform" to
+*     "A Lava-Flow Tube" - closed
 *
-D 0 99735 4 1 100 0 0 0
-*     up exit from "A Lava Spring Cavern" to
-*     "A Small Dwelling" - closed
+D 0 99740 4 1 100 0 0 0
+*     up exit from "A Lava-Flow Tube" to
+*     "A Central Platform" - closed
 *
-D 0 99734 1 2 100 0 0 0
-*     east exit from "A Lookout Post" to
-*     "A Hidden Lookout" - closed/locked
+D 0 99745 1 1 100 0 0 0
+*     east exit from "A Bedrock Passage" to
+*     "A Deep Cavern Cavity" - closed
 *
-D 0 99751 3 2 100 0 0 0
-*     west exit from "A Hidden Lookout" to
-*     "A Lookout Post" - closed/locked
+D 0 99746 3 1 100 0 0 0
+*     west exit from "A Deep Cavern Cavity" to
+*     "A Bedrock Passage" - closed
 *
-D 0 99757 2 1 100 0 0 0
-*     south exit from "The Slave Pens Center Hall" to
-*     "A Small Cave" - closed
+D 0 99748 3 1 100 0 0 0
+*     west exit from "A Bedrock Passage" to
+*     "A Deep Cavern Cavity" - closed
 *
-D 0 99772 0 1 100 0 0 0
-*     north exit from "A Small Cave" to
-*     "The Slave Pens Center Hall" - closed
+D 0 99749 1 1 100 0 0 0
+*     east exit from "A Deep Cavern Cavity" to
+*     "A Bedrock Passage" - closed
 *
-D 0 99758 0 2 100 0 0 0
-*     north exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
+D 0 99751 3 1 100 0 0 0
+*     west exit from "A Bedrock Passage" to
+*     "A Deep Cavern Cavity" - closed
 *
-D 0 99766 2 2 100 0 0 0
-*     south exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
+D 0 99752 1 1 100 0 0 0
+*     east exit from "A Deep Cavern Cavity" to
+*     "A Bedrock Passage" - closed
 *
-D 0 99758 2 2 100 0 0 0
-*     south exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
+D 0 99753 3 1 100 0 0 0
+*     west exit from "A Bedrock Passage" to
+*     "A Deep Cavern Cavity" - closed
 *
-D 0 99767 0 2 100 0 0 0
-*     north exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
+D 0 99754 1 1 100 0 0 0
+*     east exit from "A Deep Cavern Cavity" to
+*     "A Bedrock Passage" - closed
 *
-D 0 99761 0 2 100 0 0 0
-*     north exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
+D 0 99756 1 1 100 0 0 0
+*     east exit from "A Bedrock Passage" to
+*     "A Deep Cavern Cavity" - closed
 *
-D 0 99769 2 2 100 0 0 0
-*     south exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
+D 0 99757 3 1 100 0 0 0
+*     west exit from "A Deep Cavern Cavity" to
+*     "A Bedrock Passage" - closed
 *
-D 0 99761 1 2 100 0 0 0
-*     east exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
+D 0 99760 1 1 100 0 0 0
+*     east exit from "A Bedrock Passage" to
+*     "A Deep Cavern Cavity" - closed
 *
-D 0 99768 3 2 100 0 0 0
-*     west exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
-*
-D 0 99761 3 2 100 0 0 0
-*     west exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
-*
-D 0 99770 1 2 100 0 0 0
-*     east exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
-*
-D 0 99762 1 2 100 0 0 0
-*     east exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
-*
-D 0 99763 3 2 100 0 0 0
-*     west exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
-*
-D 0 99762 2 2 100 0 0 0
-*     south exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
-*
-D 0 99765 0 2 100 0 0 0
-*     north exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
-*
-D 0 99762 3 2 100 0 0 0
-*     west exit from "The Slave Pens Center Hall" to
-*     "A Small Slave Pen" - closed/locked
-*
-D 0 99764 1 2 100 0 0 0
-*     east exit from "A Small Slave Pen" to
-*     "The Slave Pens Center Hall" - closed/locked
+D 0 99761 3 1 100 0 0 0
+*     west exit from "A Deep Cavern Cavity" to
+*     "A Bedrock Passage" - closed
 *
 *
 O 0 3097 1 99725 100 0 0 0         * (object type not in this .obj file)
-O 0 99700 1 99741 100 0 0 0        * a small lava spring
-O 0 99704 1 99746 100 0 0 0        * a small lava spring
-O 0 99705 3 99746 100 0 0 0        * a chunk of cinder
-O 0 99705 3 99748 100 0 0 0        * a chunk of cinder
-O 0 99705 3 99749 100 0 0 0        * a chunk of cinder
-O 0 99708 1 99751 100 0 0 0        * an embedded lava spring
-O 0 99709 1 99752 100 0 0 0        * an embedded lava spring
-O 0 99711 1 99754 100 0 0 0        * a rotten corpse
-P 1 99714 1 99711 100 0 0 0        *   a steel knife
-O 0 99715 1 99756 100 0 0 0        * a rotten corpse
-O 0 99719 8 99763 100 0 0 0        * a dull jewel
-O 0 99719 8 99764 100 0 0 0        * a dull jewel
-O 0 99719 8 99765 100 0 0 0        * a dull jewel
-O 0 99719 8 99766 100 0 0 0        * a dull jewel
-O 0 99719 8 99767 100 0 0 0        * a dull jewel
-O 0 99719 8 99768 100 0 0 0        * a dull jewel
-O 0 99719 8 99769 100 0 0 0        * a dull jewel
-O 0 99719 8 99770 100 0 0 0        * a dull jewel
-O 0 99717 1 99771 100 0 0 0        * a small lava spring
-O 0 99718 1 99772 100 0 0 0        * a small lava spring
 *
-M 0 99705 4 99701 100 0 0 0        * an undead high noble
-M 0 99700 8 99702 100 0 0 0        * a wandering soldier
-M 0 99702 9 99702 100 0 0 0        * a dark skeleton
-M 0 99705 4 99703 100 0 0 0        * an undead high noble
-M 0 99700 8 99704 100 0 0 0        * a wandering soldier
-M 0 99702 9 99704 100 0 0 0        * a dark skeleton
-M 0 99717 4 99707 100 0 0 0        * a menacing rakshasa
-M 0 99717 4 99708 100 0 0 0        * a menacing rakshasa
-M 0 99717 4 99709 100 0 0 0        * a menacing rakshasa
-M 0 99717 4 99710 100 0 0 0        * a menacing rakshasa
-M 0 99702 9 99711 100 0 0 0        * a dark skeleton
-M 0 99700 8 99712 100 0 0 0        * a wandering soldier
-M 0 99712 4 99712 100 0 0 0        * a black crow
-M 0 99702 9 99713 100 0 0 0        * a dark skeleton
-M 0 99708 4 99713 100 0 0 0        * an undead child
-M 0 99708 4 99713 100 0 0 0        * an undead child
-M 0 99700 8 99714 100 0 0 0        * a wandering soldier
-M 0 99715 5 99714 100 0 0 0        * a drunk flind
-M 0 99704 1 99715 100 0 0 0        * Durka, the undead innkeeper
-G 1 99702 1 0 100 0 0 0            *    a clear potion
-G 1 99701 1 0 100 0 0 0            *    a badge of rotten flesh
-M 0 99713 3 99716 100 0 0 0        * a fire lizard
-M 0 99709 5 99716 100 0 0 0        * an undead commoner
-M 0 99709 5 99716 100 0 0 0        * an undead commoner
-M 0 99713 3 99717 100 0 0 0        * a fire lizard
-M 0 99709 5 99717 100 0 0 0        * an undead commoner
-M 0 99700 8 99718 100 0 0 0        * a wandering soldier
-M 0 99716 4 99718 100 0 0 0        * a sinister vampire
-M 0 99705 4 99719 100 0 0 0        * an undead high noble
-M 0 99715 5 99719 100 0 0 0        * a drunk flind
-M 0 99708 4 99720 100 0 0 0        * an undead child
-M 0 99708 4 99720 100 0 0 0        * an undead child
-M 0 99701 2 99721 100 0 0 0        * a wandering commander
-M 0 99716 4 99721 100 0 0 0        * a sinister vampire
-M 0 99700 8 99721 100 0 0 0        * a wandering soldier
-M 0 99700 8 99721 100 0 0 0        * a wandering soldier
-M 0 99732 7 99721 100 0 0 0        * a lava para-elemental
-M 0 99715 5 99722 100 0 0 0        * a drunk flind
-M 0 99709 5 99722 100 0 0 0        * an undead commoner
-M 0 99709 5 99722 100 0 0 0        * an undead commoner
-M 0 99716 4 99723 100 0 0 0        * a sinister vampire
-M 0 99712 4 99723 100 0 0 0        * a black crow
-M 0 99716 4 99723 100 0 0 0        * a sinister vampire
-M 0 99715 5 99724 100 0 0 0        * a drunk flind
-M 0 99711 1 99725 100 0 0 0        * Fonlak, the honest banker
-M 0 99707 4 99725 100 0 0 0        * a deadly bat
-M 0 99712 4 99726 100 0 0 0        * a black crow
-M 0 99707 4 99726 100 0 0 0        * a deadly bat
-M 0 99700 8 99726 100 0 0 0        * a wandering soldier
-M 0 99701 2 99727 100 0 0 0        * a wandering commander
-M 0 99705 4 99727 100 0 0 0        * an undead high noble
-M 0 99702 9 99727 100 0 0 0        * a dark skeleton
-M 0 99732 7 99727 100 0 0 0        * a lava para-elemental
-M 0 99710 1 99728 100 0 0 0        * an undead blacksmith
-M 0 99712 4 99728 100 0 0 0        * a black crow
-M 0 99713 3 99728 100 0 0 0        * a fire lizard
-M 0 99702 9 99729 100 0 0 0        * a dark skeleton
-M 0 99702 9 99729 100 0 0 0        * a dark skeleton
-M 0 99702 9 99729 100 0 0 0        * a dark skeleton
-M 0 99702 9 99730 100 0 0 0        * a dark skeleton
-M 0 99715 5 99730 100 0 0 0        * a drunk flind
-M 0 99703 3 99731 100 0 0 0        * an eerie ghost
-M 0 99703 3 99731 100 0 0 0        * an eerie ghost
-M 0 99703 3 99731 100 0 0 0        * an eerie ghost
-M 0 99707 4 99732 100 0 0 0        * a deadly bat
-M 0 99707 4 99732 100 0 0 0        * a deadly bat
-M 0 99719 5 99733 100 0 0 0        * a deadly bat
-M 0 99719 5 99733 100 0 0 0        * a deadly bat
-M 0 99718 4 99734 100 0 0 0        * a post guard
-M 0 99718 4 99734 100 0 0 0        * a post guard
-M 0 99718 4 99734 100 0 0 0        * a post guard
-M 0 99718 4 99734 100 0 0 0        * a post guard
-G 1 99710 1 0 100 0 0 0            *    a blue key
-M 0 99720 8 99737 100 0 0 0        * a bloodthirsty vampire
-M 0 99720 8 99738 100 0 0 0        * a bloodthirsty vampire
-M 0 99732 7 99739 100 0 0 0        * a lava para-elemental
-M 0 99720 8 99740 100 0 0 0        * a bloodthirsty vampire
-M 0 99720 8 99741 100 0 0 0        * a bloodthirsty vampire
-M 0 99720 8 99741 100 0 0 0        * a bloodthirsty vampire
-M 0 99732 7 99741 100 0 0 0        * a lava para-elemental
-M 0 99720 8 99744 100 0 0 0        * a bloodthirsty vampire
-M 0 99714 1 99745 100 0 0 0        * a Huge fire demon
-G 1 99707 1 0 100 0 0 0            *    a glowing red backpack
-M 0 99706 1 99745 100 0 0 0        * a werespider
-M 0 99732 7 99745 100 0 0 0        * a lava para-elemental
-M 0 99732 7 99746 100 0 0 0        * a lava para-elemental
-M 0 99732 7 99746 100 0 0 0        * a lava para-elemental
-M 0 99719 5 99751 100 0 0 0        * a deadly bat
-M 0 99720 8 99752 100 0 0 0        * a bloodthirsty vampire
-M 0 99720 8 99752 100 0 0 0        * a bloodthirsty vampire
-E 1 99720 1 10 100 0 0 0           *   a pair of bloody sleeves
-M 0 99719 5 99753 100 0 0 0        * a deadly bat
-M 0 99719 5 99755 100 0 0 0        * a deadly bat
-M 0 99721 8 99759 100 0 0 0        * a giant garm
-G 1 99716 2 0 100 0 0 0            *    a dirty key
-F 1 99721 8 99759 100 0 0 0        * a giant garm (following)
-F 1 99721 8 99759 100 0 0 0        * a giant garm (following)
-M 0 99721 8 99760 100 0 0 0        * a giant garm
-G 1 99716 2 0 100 0 0 0            *    a dirty key
-F 1 99721 8 99760 100 0 0 0        * a giant garm (following)
-F 1 99721 8 99760 100 0 0 0        * a giant garm (following)
-M 0 99729 3 99763 100 0 0 0        * a shaman slave
-M 0 99729 3 99763 100 0 0 0        * a shaman slave
-M 0 99729 3 99763 100 0 0 0        * a shaman slave
-M 0 99730 3 99764 100 0 0 0        * an anti-paladin slave
-M 0 99730 3 99764 100 0 0 0        * an anti-paladin slave
-M 0 99730 3 99764 100 0 0 0        * an anti-paladin slave
-M 0 99728 3 99765 100 0 0 0        * a sorcerer slave
-M 0 99728 3 99765 100 0 0 0        * a sorcerer slave
-M 0 99728 3 99765 100 0 0 0        * a sorcerer slave
-M 0 99726 3 99766 100 0 0 0        * a conjurer slave
-M 0 99726 3 99766 100 0 0 0        * a conjurer slave
-M 0 99726 3 99766 100 0 0 0        * a conjurer slave
-M 0 99727 3 99767 100 0 0 0        * a necromancer slave
-M 0 99727 3 99767 100 0 0 0        * a necromancer slave
-M 0 99727 3 99767 100 0 0 0        * a necromancer slave
-M 0 99725 3 99768 100 0 0 0        * an assassin slave
-M 0 99725 3 99768 100 0 0 0        * an assassin slave
-M 0 99725 3 99768 100 0 0 0        * an assassin slave
-M 0 99723 4 99769 100 0 0 0        * a cleric slave
-M 0 99723 4 99769 100 0 0 0        * a cleric slave
-M 0 99723 4 99769 100 0 0 0        * a cleric slave
-M 0 99724 3 99770 100 0 0 0        * a warrior slave
-M 0 99724 3 99770 100 0 0 0        * a warrior slave
-M 0 99724 3 99770 100 0 0 0        * a warrior slave
-M 0 99722 1 99771 100 0 0 0        * Voinak, the horrid typhon
-E 1 99712 1 3 100 0 0 0            *   a necklace of Deus power
-E 1 99713 1 15 100 0 0 0           *   a flaming bracer of hellfire
-M 0 99721 8 99771 100 0 0 0        * a giant garm
-M 0 99721 8 99771 100 0 0 0        * a giant garm
-M 0 99723 4 99771 100 0 0 0        * a cleric slave
-M 0 99731 1 99772 100 0 0 0        * a tiny illithid
+M 0 99700 6 99701 100 0 0 0        * a valiant archon soldier
+M 0 99700 6 99701 100 0 0 0        * a valiant archon soldier
+M 0 99718 4 99702 100 0 0 0        * a hulking behemoth invader
+M 0 99718 4 99704 100 0 0 0        * a hulking behemoth invader
+M 0 99718 4 99706 100 0 0 0        * a hulking behemoth invader
+M 0 99709 2 99707 100 0 0 0        * a drunk flind vagabond
+M 0 99716 2 99708 100 0 0 0        * a deranged ghoul scoundrel
+M 0 99704 2 99709 100 0 0 0        * a villianous duergar creep
+M 0 99717 2 99710 100 0 0 0        * a cruel wight savage
+M 0 99709 2 99711 100 0 0 0        * a drunk flind vagabond
+M 0 99717 2 99713 100 0 0 0        * a cruel wight savage
+M 0 99703 1 99715 100 0 0 0        * Durka, the vampiric innkeeper
+E 1 99704 1 18 100 0 0 0           *   a batch of hypnotic fireweed
+F 1 99702 5 99715 100 0 0 0        * a mechanized construct replica (following)
+M 0 99716 2 99717 100 0 0 0        * a deranged ghoul scoundrel
+M 0 99704 2 99719 100 0 0 0        * a villianous duergar creep
+M 0 99702 5 99720 100 0 0 0        * a mechanized construct replica
+M 0 99710 3 99721 100 0 0 0        * a menacing rakshasa occupant
+M 0 99712 3 99721 100 0 0 0        * a giant garm companion
+M 0 99702 5 99722 100 0 0 0        * a mechanized construct replica
+M 0 99705 1 99723 100 0 0 0        * Drembel, the death knight blacksmith
+F 1 99702 5 99723 100 0 0 0        * a mechanized construct replica (following)
+M 0 99710 3 99724 100 0 0 0        * a menacing rakshasa occupant
+M 0 99712 3 99724 100 0 0 0        * a giant garm companion
+M 0 99711 1 99725 100 0 0 0        * Fonlak, the sly wraith banker
+G 1 99706 1 0 100 0 0 0            *    a voucher for 'a flaming longsword'
+F 1 99702 5 99725 100 0 0 0        * a mechanized construct replica (following)
+M 0 99710 3 99726 100 0 0 0        * a menacing rakshasa occupant
+M 0 99712 3 99726 100 0 0 0        * a giant garm companion
+M 0 99719 7 99727 100 0 0 0        * a flickering shadow
+M 0 99701 2 99728 100 0 0 0        * a valiant archon commander
+M 0 99715 4 99729 100 0 0 0        * a fierce hellhound beast
+M 0 99714 5 99731 100 0 0 0        * a humanoid para-elemental figure
+G 1 99701 5 0 100 0 0 0            *    a chunk of lava rock
+M 0 99714 5 99732 100 0 0 0        * a humanoid para-elemental figure
+G 1 99701 5 0 100 0 0 0            *    a chunk of lava rock
+M 0 99715 4 99733 100 0 0 0        * a fierce hellhound beast
+M 0 99714 5 99734 100 0 0 0        * a humanoid para-elemental figure
+G 1 99701 5 0 100 0 0 0            *    a chunk of lava rock
+M 0 99714 5 99735 100 0 0 0        * a humanoid para-elemental figure
+G 1 99701 5 0 100 0 0 0            *    a chunk of lava rock
+M 0 99715 4 99737 100 0 0 0        * a fierce hellhound beast
+M 0 99714 5 99738 100 0 0 0        * a humanoid para-elemental figure
+G 1 99701 5 0 100 0 0 0            *    a chunk of lava rock
+M 0 99715 4 99739 100 0 0 0        * a fierce hellhound beast
+M 0 99707 7 99740 100 0 0 0        * a tiny dracolich reptilian
+M 0 99707 7 99741 100 0 0 0        * a tiny dracolich reptilian
+M 0 99718 4 99741 100 0 0 0        * a hulking behemoth invader
+E 1 99702 1 3 100 0 0 0            *   a fiery chain of hades
+M 0 99707 7 99742 100 0 0 0        * a tiny dracolich reptilian
+M 0 99707 7 99743 100 0 0 0        * a tiny dracolich reptilian
+M 0 99707 7 99744 100 0 0 0        * a tiny dracolich reptilian
+M 0 99708 6 99746 100 0 0 0        * a fiendish demonic host
+G 1 99705 6 0 100 0 0 0            *    an elixir of lifeforce
+M 0 99719 7 99746 100 0 0 0        * a flickering shadow
+M 0 99706 4 99747 100 0 0 0        * a thirsty vampire enslaver
+M 0 99708 6 99749 100 0 0 0        * a fiendish demonic host
+G 1 99705 6 0 100 0 0 0            *    an elixir of lifeforce
+M 0 99719 7 99749 100 0 0 0        * a flickering shadow
+M 0 99706 4 99750 100 0 0 0        * a thirsty vampire enslaver
+M 0 99708 6 99752 100 0 0 0        * a fiendish demonic host
+G 1 99705 6 0 100 0 0 0            *    an elixir of lifeforce
+M 0 99719 7 99752 100 0 0 0        * a flickering shadow
+M 0 99708 6 99754 100 0 0 0        * a fiendish demonic host
+G 1 99705 6 0 100 0 0 0            *    an elixir of lifeforce
+M 0 99719 7 99754 100 0 0 0        * a flickering shadow
+M 0 99706 4 99755 100 0 0 0        * a thirsty vampire enslaver
+M 0 99708 6 99757 100 0 0 0        * a fiendish demonic host
+G 1 99705 6 0 100 0 0 0            *    an elixir of lifeforce
+M 0 99719 7 99757 100 0 0 0        * a flickering shadow
+M 0 99706 4 99758 100 0 0 0        * a thirsty vampire enslaver
+M 0 99713 1 99759 100 0 0 0        * Voinak, the efreeti tyrant
+E 1 99703 1 13 100 0 0 0           *   a flaming buckle of hellfire
+G 1 31318 1 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 99707 7 99759 100 0 0 0        * a tiny dracolich reptilian
+M 0 99707 7 99759 100 0 0 0        * a tiny dracolich reptilian
+M 0 99708 6 99761 100 0 0 0        * a fiendish demonic host
+G 1 99705 6 0 100 0 0 0            *    an elixir of lifeforce
+M 0 99719 7 99761 100 0 0 0        * a flickering shadow
+M 0 99700 6 99762 100 0 0 0        * a valiant archon soldier
+M 0 99700 6 99762 100 0 0 0        * a valiant archon soldier
+M 0 99700 6 99763 100 0 0 0        * a valiant archon soldier
+M 0 99700 6 99763 100 0 0 0        * a valiant archon soldier
+M 0 99701 2 99764 100 0 0 0        * a valiant archon commander
 *
 S

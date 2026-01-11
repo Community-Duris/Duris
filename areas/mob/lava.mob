@@ -1,497 +1,298 @@
 #99700
-soldier wandering~
-&+La wandering soldier&N~
-&+LA wandering soldier stands here scanning the area.&N
+soldier archon valiant~
+&+La vali&+Wa&+wn&+Wt a&+Rrch&+Wo&+Rn &+Ls&+wold&+Lier&n~
+&+LA vali&+Wa&+wn&+Wt a&+Rrch&+Wo&+Rn &+Ls&+wold&+Lier stands here sca&+wnn&+Ling the area.&n
 ~
-   He stands six feet tall with broad shoulders and a thick neck.  The serious
-look in his eyes shows he's all business.   Many people give him much respect
-since he is a soldier.  For some reason he seems to be separated from the
-other soldiers.  There must have been complications in battle.
+&+W   A valiant archon soldier keeps a lookout for trouble.  Following
+&+Rdirections, he keeps in-line with the crew.  His broad shoulders and
+&+Rthick neck show strength.  This humanoid creature, walks upright but
+&+Rhas the head of a canine.  He howls amoung others of his kind.&n
 ~
-1140852744 0 0 0 0 0 0 0 -1000 S
-HO 0 1 0 -1
-20 0 0 1d1+1 1d1+1
+67110986 0 0 0 8 3 0 0 -500 S
+ar 0 1 1 -1
+41 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #99701
-commander wandering~
-&+La wandering &+Wcommander&N~
-&+LA wandering &+Wcommander&+L stands here searching for his soldiers.&N
+commander archon valiant~
+&+La vali&+Wa&+wn&+Wt a&+Rrch&+Wo&+Rn &+Lcom&+wman&+Lder&n~
+&+LA vali&+Wa&+wn&+Wt a&+Rrch&+Wo&+Rn &+Lcom&+wman&+Lder stands here se&+warch&+Ling for more soldiers.&n
 ~
-   He stands over six feet tall with a stern look in his eye.  The
-seriousness about him shows he's all business.   Many people give him much
-respect even now as a commander.  For some reason he seems to be separated
-from the rest of his army.  There must have been complications in battle.
+&+W   A valiant archon commander seeks more soldiers to join his crew.  He
+&+Ris a respectable figure, at six feet tall, this man stands with purpose
+&+Rand flashes a stern gaze.  This humanoid creature, walks upright but
+&+Rhas the head of a canine.  He howls amoung others of his kind.&n
 ~
-2056 0 0 0 33554432 0 0 0 -1000 S
-HO 0 1 0 -1
-26 0 0 1d1+1 1d1+1
+2122 0 0 0 8 3 0 0 -500 S
+ar 0 1 2 -1
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99702
-skeleton dark~
-&+La dark skeleton&N~
-&+LA black boned&N &+Wskeleton&N &+Lwith&N &+Rflaming eyes&+L stands here.&N
+replica construct mechanized~
+&+La mechani&+Wz&+we&+Wd &+Lc&+won&+Lstr&+wuc&+Lt rep&+wli&+Lca&n~
+&+LA mechani&+Wz&+we&+Wd &+Lc&+won&+Lstr&+wuc&+Lt rep&+wli&+Lca stands gu&+war&+Ld as a soulless killer.&n
 ~
-   This skeleton was once a zombie in this accursed place but has long since
-lost its rotting flesh. The black bones of whatever race is was are now stark
-and bare to the harsh world. Its eyes glow with a hellish glow.
+&+L   The metal construct replica is a soulless being that was forged by
+&+Lthe local blacksmith to guard those willing to pay a price.  It feels
+&+Lnothing and is willing to do the bidding of it's owner.  It stands by
+&+Lwaiting to destroy any opposing force.&n
 ~
-1073743880 64 0 0 33554432 0 0 0 -1000 S
-sk 0 0 0 -1
-28 0 0 1d1+1 1d1+1
+74 0 0 0 8 2 0 0 0 S
+cn 0 1 2 4
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #99703
-ghost eerie~
-&+can eerie ghost&N~
-&+CAn eerie image is hovering here.&N
+durka vampiric vampire keeper innkeeper~
+&+LD&+wur&+Lka&+w, &+Lthe &+Rvam&+rpi&+Rric &+Linn&+wkeep&+Ler&n~
+&+LD&+wur&+Lka&+w, &+Lthe &+Rvam&+rpi&+Rric &+Linn&+wkeep&+Ler stands by halfheartedly ready to se&+wrv&+Le you.&n
 ~
-   This ghost is a dimly lit white shape hovering around the room.  It is a
-lost soul searching for revenge.  You can see through the ghost as if he
-wasn't really here.
+&+L   The innkeeper was once excited about life and his job.  Now being an
+&+Lold man, he feels as if time has lingered on longer then he would like.
+&+LThis has worn him down into a stoic shadow of his former self.  It is
+&+Lrumored that he even has a side hustle these days, if you ask.&n
 ~
-2056 0 0 0 33554432 0 0 0 -1000 S
-UG 0 0 0 -1
-30 0 0 1d1+1 1d1+1
+2122 0 0 0 8 2 0 0 -500 S
+um 0 16777216 1 -1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99704
-durka undead keeper innkeeper~
-&+LDurka, the undead innkeeper&N~
-&+LDurka, the undead innkeeper stands here ready to serve.&N
+creep duergar villianous~
+&+La vil&+wlian&+Lous &+rduergar &+Lcr&+wee&+Lp&n~
+&+LA vil&+wlian&+Lous &+rduergar &+Lcr&+wee&+Lp is here lin&+wger&+Ling around.&n
 ~
-   The innkeeper seems to have once been a very friendly and happy old
-man.  Now though, the wrinkles that were once a sign of aging now give
-him a haunting look.  Deep creases cover what's left of his skin.
+&+L   This villianous looking commoner creeps around town.  No one knows
+&+Lwhat he is really up to, but it has to be no good.  He is a slacker
+&+Lwith no responibility or moral compass.  Dressed in dark ratty clothes,
+&+Lhe seems to be hiding something.&n
 ~
-1141245962 0 0 0 33554432 0 0 0 -1000 S
-U 0 0 0 -1
-35 0 0 1d1+1 1d1+1
+2122 0 0 0 0 2 0 0 -500 S
+pd 0 4096 1 -1
+36 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99705
-noble undead~
-&+Lan undead &+Chigh noble&N~
-&+LA proud undead &+Chigh noble&+L stands here.&N
+drembel blacksmith smith death knight~
+&+BDr&+wem&+Bbel&+w, &+Lthe death &+bknight &+Lbl&+wacksmi&+Lth&n~
+&+BDr&+wem&+Bbel&+w, &+Lthe death &+bknight &+Lbl&+wacksmi&+Lth stands here fo&+wrgi&+Lng something.&n
 ~
-   He was once a very wealthy and powerful person, and his gear now even
-shows the riches he once had.  Expensively designed clothes covers his
-grossly distorted body, but what can't be covered up are the patches of
-his face that have lost their flesh and now show bloody remnants of his
-cheek and chin.
-~
-2056 0 0 0 33554432 0 0 0 -1000 S
-U 0 1 0 -1
-35 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99706
-werespider spider~
-&+La were&+rspider&N~
-&+LA large were&+rspider&+L is here creating a web.&N
-~
-  The werespider is very big and hairy.  It has two large catlike eyes and
-fangs which drip a green venom. The spider is very poisonous and can kill you
-slowly and painfully if bitten. The spider stands about three feet high and
-five feet long.  It moves at an astonishing speed, zipping around endlessly.
-It has been known to kill animals much bigger than itself.
-~
-1140852746 1 0 0 33554432 0 0 0 -1000 S
-L 0 1 0 -1
-42 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99707
-bat~
-&+ra deadly&+Y bat&N~
-&+LA large &+rdeadly&n &+Ybat&+L is flying here.&N
-~
-   This bat has small but very sharp teeth.  This bat is no more then six
-inches in length, but it's very agile.  It flutters around the room screeching
-loudly.
-~
-131080 0 0 0 33554432 0 0 0 -1000 S
-b 0 0 0 -1
-23 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99708
-child undead~
-&+Lan undead &+gchild&N~
-&+LAn undead&N &+gchild&+L stands here searching for his parents.&N
-~
-   The boy is about nine years old and is strong for his age.  He has worked
-on a farm for his whole life so his muscles are tone.  In the zombies previous
-life it was a cute and happy kid.  The flesh of the zombie is almost
-completely gone.  It has slowly been falling off of the dead body.  The child
-is poor and is dressed in ragged clothes.
-~
-2056 0 0 0 33554432 0 0 0 -1000 S
-U 0 0 0 -1
-15 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99709
-commoner undead~
-&+Lan undead &Ncommoner~
-&+LAn undead&n commoner&+L is here wandering around.&n
-~
-   This commoner spends his days wandering the town.  In his previous life he
-was a slack off with no responsibility.  His skin has begun to hang down and
-peel off.
-~
-2056 0 0 0 33554432 0 0 0 -1000 S
-U 0 0 0 -1
-18 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99710
-blacksmith undead smith~
-&+Lan undead blacksmith&N~
-&+LAn undead blacksmith stands here forging something.&N
-~
-   This undead man is rumored to be the greatest blacksmith around.  His
-flesh has almost completely fallen off, a few pieces still hanging here
-and there on his shriveled body.  He looks at you expectantly.
+&+L   This undead man is rumored to be the greatest blacksmith around.
+&+LHis flesh has almost completely fallen off, a few pieces still hanging
+&+Lhere and there on his shriveled body.  He looks at you expectantly.
 
-The undead blacksmith says "Excuse me, is there something you need?"
+&+LThe death &+bknight &+Lbl&+wacksmi&+Lth &+wsays "What do you need?"&n
 ~
-2058 0 0 0 33554432 0 0 0 -1000 S
-U 0 1 0 -1
-35 0 0 1d1+1 1d1+1
+2122 0 0 0 8 2 0 0 -500 S
+uk 0 524288 2 -1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
+#99706
+enslaver vampire thirsty~
+&+La thir&+Ws&+wt&+Wy &+Rvam&+rpi&+Rre &+Len&+wslav&+Ler&N~
+&+LA thir&+Ws&+wt&+Wy &+Rvam&+rpi&+Rre &+Len&+wslav&+Ler stands here dr&+wool&+Ling for blood.&n
+~
+&+r   The vampire is a slender man with a pale hardened face and clawed
+&+rfingernails.  His entrancing eyes will put you in a haze if you stare
+&+rtoo long.  He is not to be trusted, for it seeks to drain your blood.
+&+rBecoming bored with this world, he resents being animated.&n
+~
+1073743944 0 0 0 8 0 0 0 -500 S
+um 0 16777216 2 3
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#99707
+reptilian dracolich tiny~
+&+La t&+Wi&+wn&+Wy &+Ldr&+wa&+Lc&+wo&+Ll&+wi&+Lch rep&+wtil&+Lian&n~
+&+LA t&+Wi&+wn&+Wy &+Ldr&+wa&+Lc&+wo&+Ll&+wi&+Lch rep&+wtil&+Lian waits here for a su&+wpri&+Lse attack.&n
+~
+&+r   This lizardman looks vicious, but he stands back, willing to wait
+&+rfor just the right time to attack.  It's hard red scale body is lit up
+&+rwith a flaming aura of protection.  The tiny being talks with a hiss
+&+rand welcomes you to die for his pleasure.&n
+~
+2122 1 0 0 1048584 1 0 0 -500 S
+ud 0 16777216 2 1
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#99708
+host demonic demon fiendish fiend~
+&+La fiend&+Wi&+ws&+Wh &+Ld&+we&+Lm&+wo&+Lnic &+Lh&+wos&+Lt&n~
+&+LA fiend&+Wi&+ws&+Wh &+Ld&+we&+Lm&+wo&+Lnic &+Lh&+wos&+Lt gathers here pro&+wvok&+Ling a fight.&n
+~
+&+L   A demonic force has taken over this host body.  It was summoned by
+&+Laccident, but seems to be here to stay.  Raging from within, it is a
+&+Lhulky being bursting forth with intense damage.  Black veins and vacant
+&+Leyes leave an eerie feeling that the host is long gone.&n
+~
+2122 1 0 0 8 0 0 0 -500 S
+ug 0 1048576 2 3
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#99709
+vagabond drunk flind~
+&+La dr&+Wu&+wn&+Wk &+mflind &+Lvag&+wabo&+Lnd&n~
+&+LThe dr&+Wu&+wn&+Wk &+mflind &+Lva&+wgabo&+Lnd staggers here dr&+winki&+Lng booze.&n
+~
+&+m   The drunk flind moves around town stumbling, falling over, and
+&+mbumping into walls as if he is highly intoxicated.  He was once a total
+&+mdisgrace to the town and hasn't gotten much better.  He notices you and
+&+mraises his beer to salute, until stumbling backwards.&n
+~
+78 0 0 0 0 2 0 0 -500 S
+l 0 4096 2 3
+31 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#99710
+occupant rakshasa menacing~
+&+La menac&+Wi&+wn&+Wg &+Rraks&+Yhasa &+Loc&+wcup&+Lant&n~
+&+LA menac&+Wi&+wn&+Wg &+Rraks&+Yhasa &+Loc&+wcup&+Lant stands here &+Lgri&+wnn&+Ling.&n
+~
+&+R   The rakshasa is an evil spirit encased in flesh.  The slim figured
+&+Rman stands about seven feet tall.  The humanoid has the arms of an ape
+&+Yand the tail of a tiger.  Striped fur covers his skin.&n
+~
+2122 0 0 0 0 2 0 0 -500 S
+RA 0 16777216 1 -1
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #99711
-fonlak banker~
-&+YFonlak&N,&+L the honest banker&N~
-&+YFonlak&n,&+Lthe honest banker stands here smiling&n.
+fonlak banker wraith sly~
+&+YFo&+wnl&+Yak&+w, &+Lthe sly wr&+wai&+Lth ba&+wnk&+Ler&n~
+&+YFo&+wnl&+Yak&+w, &+Lthe sly wr&+wai&+Lth ba&+wnk&+Ler stands by tentatively ready to as&+wsi&+Lst you.&n
 ~
-   Fonlak is wearing a small black suit and top hat, he fits the image of a
-banker perfectly.  There is something greedy about the look in his grey eyes.
-He wears a pair of half-spectacles upon the lower bridge of his nose, and
-peers over them at you.  He rubs his hands in a greedy manner waiting for you
-to give him your money.
+&+L   The man is wearing a small black suit and top hat, he fits the image of a
+&+Lbanker perfectly.  There is something greedy about the look in his glowing
+&+Leyes.  He wears a pair of half-spectacles upon the lower bridge of his nose,
+&+Land peers over them at you.  He rubs his hands in a greedy manner waiting
+&+Lfor you to give him your money.&n
 ~
-2058 0 0 0 33554432 0 0 0 -1000 S
-HO 0 1 0 -1
-35 0 0 1d1+1 1d1+1
+2122 0 0 0 8 2 0 0 -500 S
+wr 0 4096 2 -1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #99712
-crow black~
-&+La black crow&N~
-&+LAn evil looking black crow sits here.&n
+companion garm giant~
+&+La gi&+Wa&+wn&+Wt &+yg&+Lar&+ym &+Lcom&+wpan&+Lion&n~
+&+LA gi&+Wa&+wn&+Wt &+yg&+Lar&+ym &+Lcom&+wpan&+Lion stands ready to &+Ls&+wtri&+Lke.&n
 ~
-   The black crow has tar black feathers.  The bird is sitting nearby and
-staring at you with an evil intent.  The bird looks like it needs to be fed.
+&+y   The giant garm is a fierce and dangerous dog like creature.  It
+&+yhas four eyes, long fangs, and blood spattered all over its mouth.
+&+yA clear sign of danger, it's best to stay back.  The garm stands
+&+yalert, ready to assistant any battle.&n
 ~
-8 0 0 0 33554432 0 0 0 -1000 S
-A 0 0 0 -1
-10 0 0 1d1+1 1d1+1
+1140852810 0 0 0 0 2 0 0 -500 S
+ac 0 1048576 1 3
+31 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99713
-lizard fire~
-&+ra fire lizard&N~
-&+rA small repulsive fire lizard lies here ready to attack.&n
+voinak efreeti tyrant~
+&+rVo&+Rin&+rak&+w, &+Lthe &+ref&+Rre&+reti &+Lty&+wran&+Lt&n~
+&+rVo&+Rin&+rak&+w, &+Lthe &+ref&+Rre&+reti &+Lty&+wran&+Lt stands above all ru&+wlin&+Lg his domain.&n
 ~
-   The tiny lizard looks vicious.  It has somewhat hard scales all across its
-red body.
+&+r   This massive humanoid is the ruler of lava springs.  He rules with
+&+rno mercy and thrives on making a display of his punishments.  Standing
+&+rvery tall, this red skinned tyrant has horns and a flaming fireshield
+&+raround his body.  He will not fight fair, so beware.&n
 ~
-8 1 0 0 33554432 0 0 0 -1000 S
-R 0 0 0 -1
-12 0 0 1d1+1 1d1+1
+17180778 1 0 0 8 3 0 0 -500 S
+e 0 16777216 1 5
+53 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99714
-demon fire huge~
-&+ra Huge fire demon&N~
-&+rA Huge demon surrounded in flames stands here.&n
+figure para-elemental para elemental humanoid~
+&+La human&+Wo&+wi&+Wd &+rpara&+L-&+rele&+Rm&+Yen&+Rt&+ral &+Lfi&+wgur&+Le&n~
+&+LA human&+Wo&+wi&+Wd &+rpara&+L-&+rele&+Rm&+Yen&+Rt&+ral &+Lfi&+wgur&+Le stands here sco&+wrch&+Ling the ground.&n
 ~
-The tako demon is a powerful looking creature resembling that of a giant
-octopus.  Its eight powerful tentacles end in vicious spiked claws, nearly
-a foot long and razor sharp.  The terrible beast has been summoned by
-the dark priest of the kobolds seeking powerful boons from the demon
-as rewards for the hapless souls the priest offers in sacrifice.  The
-creature makes an awful screeching sound, perhaps laughter, and then
-attacks you with a powerful force.
-
-The cambion is the result of a male demon mating with a human female. Cambions
-are quite ugly and have black skin. They have long pointed ears and a mottled
-mane of yellow hair. Their sickly fangs protrude from their mouths as their
-cunning eyes pierce the darkness.
+&+r   Birthed from the para-elemental plane of lava, this creature is the
+&+Rbastard spawn from the fire and earth planes.  A short lived creature
+&+Ywhen outside its natural environment, this creature seeks to consume
+&+Rall in its path, before it becomes one with the earth that it was once
+&+rformed from.&n
 ~
-1073743882 0 0 0 33554440 0 0 0 -1000 S
-X 0 1 0 -1
-35 0 0 1d1+1 1d1+1
+2120 0 0 0 8 1 0 0 -500 S
+EF 0 16 3 3
+41 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #99715
-drunk flind~
-&+La drunk &+Mflind&N~
-&+LThe drunk &+Mflind&N &+Lstands here with a bottle in hand.&N
+beast hellhound hound fierce~
+&+La fie&+Wr&+wc&+We &+Rhell&+rhound &+Lbe&+was&+Lt&n~
+&+LA fie&+Wr&+wc&+We &+Rhell&+rhound &+Lbe&+was&+Lt roams here in&+wcit&+Ling terror.&n
 ~
-   The drunk flind moves around town stumbling, falling over, and bumping into
-walls as if the alcohol was still in his system.  He was once a disgrace to
-the town and hasn't gotten much better.  He notices you and lifts his hand as
-if holding a beer until stumbling backwards.
+&+R   The beastly hellhound is a fierce monster serving its master.  Its
+&+Rrust colored fur is surround by a flaming fireshield.  Powerful jaws
+&+Rand long fangs are a danger to avoid.  Glowing red eyes and a soot
+&+Rcovered tongue greet you with terror.&n
 ~
-1073741832 0 0 0 33554432 0 0 0 -1000 S
-HO 0 0 0 -1
-17 0 0 1d1+1 1d1+1
+2120 1 0 0 8 1 0 0 -500 S
+ac 0 1048576 2 3
+41 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99716
-vampire sinister~
-&+ra sinister vampire&N~
-&+rA sinister bloodthirsty vampire stands here.&n
+scoundrel ghoul deranged~
+&+La deran&+Wg&+we&+Wd &+Lg&+wh&+Wo&+wu&+Ll sco&+wund&+Lrel&n~
+&+LA deran&+Wg&+we&+Wd &+Lg&+wh&+Wo&+wu&+Ll sco&+wund&+Lrel stands here ea&+wti&+Lng some rotting flesh.&n
 ~
-   This bloodthirsty vampire is very large.  He only has one thing on his
-mind which is sucking others blood.  He also doesn't look too happy to be
-in this world.
+&+L  This ghastly ghoul moans and howls, all through the night.  Searching
+&+Lamoung the crowd for anyone to eat.  Hissing, follows chunks of skin
+&+Lfalling off this wreck of a creature.&n
 ~
-1140852744 0 0 0 33554432 0 0 0 -1000 S
-UV 0 1 0 -1
-32 0 0 1d1+1 1d1+1
+2122 0 0 0 0 2 0 0 -500 S
+zo 0 32768 2 3
+36 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99717
-rakshasa~
-&+La menacing &+Rrak&+Yshasa&N~
-&+LA menacing &+Rrak&+Yshasa&+L stands here grinning.&N
+savage wight cruel~
+&+La cr&+Wu&+we&+Wl &+Rw&+ri&+Rg&+rh&+Rt &+Lsa&+wva&+Lge&n~
+&+LA cr&+Wu&+we&+Wl &+Rw&+ri&+Rg&+rh&+Rt &+Lsa&+wva&+Lge stands here st&+wari&+Lng you down.&n
 ~
-   The rakshasa is an evil spirit encased in flesh.  The slim rakshasa stands
-about seven feet tall.  He is like a humanoid, but he has the arms of an ape
-and the tail of a tiger.
+&+L   This wight is a nightmarish reflections of its former self.  Once it
+&+Lwas a soldier in the military, but now it's a twisted skeleton covered
+&+Lwith minimal flesh and armed with sharp claws.  When he glances at you
+&+Lwith its burning eyes, it seems he has cruel intentions.&n
 ~
-2058 0 0 0 33554432 0 0 0 -1000 S
-RA 0 0 0 -1
-35 0 0 1d1+1 1d1+1
+2122 0 0 0 0 2 0 0 -500 S
+uw 0 16384 1 -1
+36 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #99718
-guard post~
-&+ba post guard&N~
-&+bA valiant post guard stands here looking over the town.&N
+invader behemoth hulking~
+&+La hulk&+Wi&+wn&+Wg &+Rbehemoth &+Linv&+wad&+Ler&n~
+&+LA hulk&+Wi&+wn&+Wg &+Rbehemoth &+Linv&+wad&+Ler &+Lstomps through here, seizing new t&+werr&+Lit&+wor&+Ly.&n
 ~
-  The valiant post guard is determined to keep this city safe.  He stands six
-feet tall with broad shoulders and a thick neck.  He is aware of your every
-move and is prepared to attack.
+&+L   This mass&+Wi&+wv&+We &+Rbehemoth &+Linv&+wad&+Ler walks on six legs, made up by four
+&+Llarge trunkish legs and two smaller ones in the front that also lash
+&+Lout spewing poison towards enemies through special glands that have
+&+Lsurvived since the reincarnation of this behemoth.&n
 ~
-2058 0 0 0 33554432 0 0 0 -1000 S
-HO 0 1 0 -1
-35 0 0 1d1+1 1d1+1
+1073741836 0 0 0 8 0 0 0 -500 S
+u 0 16385 0 -1
+53 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #99719
-bat~
-&+ra deadly&+Y bat&N~
-&+LA large &+rdeadly&n &+Ybat&+L is flying here.&N
+shadow flickering~
+&+La flicker&+Wi&+wn&+Wg &+ws&+Lh&+wa&+Ldo&+ww&n~
+&+LA flicker&+Wi&+wn&+Wg &+ws&+Lh&+wa&+Ldo&+ww &+Ltravels am&+wid&+Lst the area.
 ~
-   This bat has small but very sharp teeth.  This bat is no more then six
-inches in length, but it's very agile.  It flutters around the room screeching
-loudly.
+&+LA dark a flicker&+Wi&+wn&+Wg &+Lshade that appears to take on the &+wfor&+Wm &+Lof the shadows on the ground.&n
 ~
-67241994 1 0 0 33554432 0 0 0 -1000 S
-A 0 0 0 -1
-20 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99720
-vampire bloodthirsty~
-&+ra bloodthirsty vampire&N~
-&+rA bloodthirsty vampire stands here drooling.&n
-~
-   This bloodthirsty vampire is very large.  He only has one thing on his
-mind which is sucking others blood.  He also doesn't look too happy to be
-in this world.
-~
-2056 1 0 0 33554432 0 0 0 -1000 S
-UV 0 1 0 -1
-45 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99721
-giant garm~
-&+ya giant garm&n~
-&+yA giant garm stands here watching over the slaves&n.
-~
-&+y   The giant garm is a fierce and dangerous dog like creature.  The garm has
-&+yfour eyes and blood spattered all over it.  The garms four inch fangs are a
-&+yclear sign of danger while its claws are a &+rdead&+y give away to stay back.
-&+yThe garm stand here watching over the slaves to ensure the safety of the
-&+yvillagers.
-~
-10 1 0 0 33554432 0 0 0 -1000 S
-A 0 0 0 -1
-20 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99722
-voinak tyhpon~
-&+rVoinak&+Y,&n &+rthe horrid typhon&n~
-&+rVoinak&+Y,&+r the giant fire breathing typhon hovers here&n.
-~
-   Vionak is a massive fire breathing giant with one hundred serpentine headed
-typhon.  He's taller than mountains and has serpentine legs and thighs.  Also
-his he has vast feathered wings on his back.  He is know as the village god
-that protects Lava Springs from harm.
-~
-1074137098 1 0 0 167837864 0 0 0 -1000 S
-G 0 512 0 -1
-45 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99723
-cleric slave~
-&+Ya cleric slave&n~
-&+YA cleric slave is here praying to be rescued&n.
-~
-   The cleric slave is a stocky drow elf.  His face has a pale appearance.
-The eyes of the slave show no emotion about the present situation.  He is a
-slave to Vionak the typhon who has garms watching over the slaves incase they
-try to escape.  The slave is tossed into the slave pens whenever he's not
-outside working in the fields.
-~
-133128 1 0 0 33554432 0 0 0 0 S
-PL 0 32 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 2
-#99724
-warrior slave~
-&+Ba warrior slave~
-&+BA strong warrior slave stands here&n.
-~
-   The warrior slave is a huge ogre.  His face has a pale appearance.  The
-eyes of the slave show no emotion about the present situation.  He is a slave
-to Vionak the typhon who has garms watching over the slaves incase they try to
-escape.  The slave is tossed into the slave pens whenever he's not outside
-working in the fields.
-~
-133128 0 0 0 33554432 0 0 0 0 S
-PO 0 1 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 1
-#99725
-assassin slave~
-&+ran assassin slave&n~
-&+rWatch out there's an assassin slave standing here&n.
-~
-   The assassin slave is tall and stocky human.  His face has a pale
-appearance.  The eyes of the slave show no emotion about the present
-situation.  He is a slave to Vionak the typhon who has garms watching over
-the slaves incase they try to escape.  The slave is tossed into the slave
-pens whenever he's not outside working in the fields.
-~
-133128 1 0 0 33554432 0 0 0 0 S
-PH 0 4096 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 1
-#99726
-conjurer slave~
-&+Ca conjurer slave&n~
-&+CA calm conjurer slave stands here thinking&n.
-~
-The conjurer slave is tall and stocky drow elf.
-~
-133128 0 0 0 33554432 0 0 0 0 S
-PL 0 2048 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 2
-#99727
-necromancer slave~
-&+La necromancer slave&n~
-&+LA necromancer slave stands here looking for forgotten corpes&n.
-~
-The necromancer slave is short and frail drow elf.
-~
-133128 1 0 0 33554432 0 0 0 0 S
-PL 0 1024 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 1
-#99728
-sorcerer slave~
-&+ca sorcerer slave&n~
-&+cA sorcerer slave stands here with an evil eye&n.
-~
-   The sorcerer slave is short and frail drow elf.  His face has a pale
-appearance.  The eyes of the slave show no emotion about the present
-situation.  He is a slave to Vionak the typhon who has garms watching over
-the slaves incase they try to escape.  The slave is tossed into the slave pens
-whenever he's not outside working in the fields.
-~
-133128 0 0 0 33554432 0 0 0 0 S
-PL 0 512 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 1
-#99729
-shaman slave~
-&+ya shaman slave&n~
-&+yA shaman slave stands here trying to call his animal friends&n.
-~
-   The shaman slave is tall and stocky barbarian.  His face has a pale
-appearance.  The eyes of the slave show no emotion about the present
-situation.  He is a slave to Vionak the typhon who has garms watching over
-the slaves incase they try to escape.  The slave is tossed into the slave pens
-whenever he's not outside working in the fields.
-~
-133128 0 0 0 33554432 0 0 0 0 S
-PB 0 256 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 2
-#99730
-anti-paladin slave antipaladin anti paladin~
-&+Lan anti-&+bpaladin&+L slave&n~
-&+LAn anti-&+bpaladin&+L slave with an evil grin stands here&n.
-~
-   The anti-paladin slave is tall and stocky orc.  His face has a pale
-appearance.  The eyes of the slave show no emotion about the present
-situation.  He is a slave to Vionak the typhon who has garms watching over
-the slaves incase they try to escape.  The slave is tossed into the slave pens
-whenever he's not outside working in the fields.
-~
-133128 0 0 0 33554432 0 0 0 0 S
-HO 0 16 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 1
-#99731
-illithid tiny~
-&+ma tiny illithid&n~
-&+mA tiny illithid hovers here looking for its next &+rkill&n.
-~
-   Even though it's just a tiny illithid it walks around as if it is
-invincible.  He has a wicked grin on his face and a necklace of human skulls
-on his neck.
-
-A tiny illithid says 'Hey did you know I can mend stuff with my mind?!  I like
-to call it my job.  Mostly metals and jewels, though.'
-~
-395274 0 0 0 33554432 0 0 0 0 S
-MF 0 4 0 -1
-26 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#99732
-lava para-elemental elemental figure humanoid~
-&+ra lava para-elemental~
-&+rA humanoid figure, consisting of only lava, scorches holes in the ground here.
-~
-&+rBorne of the Para-Elemental Plane of Lava, this creature is the bastard
-&+rspawn of the Fire and Earth planes.  A short lived creature, outside
-&+rits plane, this creature seeks to consume all in its path, before it
-&+rbecomes one with the earth that it was once formed from.
-~
-8 1 0 0 33554600 0 0 0 0 S
-EF 0 1 0 -1
-34 0 0 1d1+1 1d1+1
+10 0 0 0 403177482 0 0 0 -500 S
+sw 0 4 3 -1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0

@@ -87,6 +87,9 @@ void init_cmdlog(void)
 
 void cmdlog(P_char ch, char *str)
 {
+  char tbuf[30];
+  time_t ct;
+
   if (!ch || !ch->player.name)
   {
     logit(LOG_EXIT, "bogus char in call to cmdlog");
@@ -101,7 +104,10 @@ void cmdlog(P_char ch, char *str)
     {
       rewind(cmdfile);
     }
-    fprintf(cmdfile, "[%d] %s in %d: %s\n", logcount, GET_NAME(ch),
+    ct = time(0);
+    strcpy(tbuf, asctime(localtime(&ct)));
+    tbuf[strlen(tbuf) - 1] = '\0';
+    fprintf(cmdfile, "%s :: [%d] %s in %d: %s\n", tbuf, logcount, GET_NAME(ch),
             world[ch->in_room].number, str);
     fflush(cmdfile);
   }

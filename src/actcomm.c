@@ -831,17 +831,6 @@ void do_page(P_char ch, char *argument, int cmd)
   logit(LOG_STATUS, "re-reading wizmotd.");
   wizmotd = get_mud_info("wizmotd");
 
-  send_to_char("Re-reading credits file...\r\n", ch);
-  logit(LOG_STATUS, "re-eading credits.");
-  buf = file_to_string(CREDITS_FILE);
-  if (buf)
-  {
-    FREE(credits);
-    credits = buf;
-  }
-  else
-    send_to_char("&+R&-LFAILED!\r\n", ch);
-
   send_to_char("&+WDone.&N\r\n", ch);
 }
 

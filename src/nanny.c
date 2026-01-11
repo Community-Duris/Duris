@@ -39,6 +39,7 @@
 #include "vnum.room.h"
 #include "achievements.h"
 #include "gmcp.h"
+#include "ws_handlers.h"
 
 /* external variables */
 
@@ -140,6 +141,8 @@ void ensure_pconly_pool(void)
 void swapstat( P_desc d, char *arg);
 void select_swapstat( P_desc d, char *arg);
 void swapstats(P_char ch, int stat1, int stat2);
+
+extern void do_summon_book(P_char ch, char *arg, int cmd);
 
 void update_ingame_racewar( int racewar )
 {
@@ -355,11 +358,11 @@ void load_obj_to_newbies(P_char ch)
 /*Minotaur Basics*/
   static int minotaur_good_eq[] = { 
 						  677, 283, 285, 1112, 286, 288, 290,
-						398, 398, 1176, 1167, 1182, 603, 105, 106, 107, -1 };
+						398, 398, 1176, 1167, 1182, 603, 108, 109, 111, -1 };
 
   static int minotaur_evil_eq[] = { 
 						  677, 283, 285, 1112, 286, 288, 290,
-						1170, 1173, 1182, 603, 105, 106, 107, -1 };
+						1170, 1173, 1182, 603, 108, 109, 111, -1 };
 
 
   memset(newbie_kits, 0, sizeof(newbie_kits));
@@ -404,7 +407,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_BARBARIAN, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_BARBARIAN, CLASS_SORCERER, PROTECT(
@@ -503,7 +506,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_GITHZERAI, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_GITHZERAI, CLASS_SORCERER, PROTECT(
@@ -604,7 +607,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_TIEFLING, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_TIEFLING, CLASS_SORCERER, PROTECT(
@@ -704,7 +707,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_HUMAN, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_HUMAN, CLASS_SORCERER, PROTECT(
@@ -804,7 +807,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_DROW, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_DROW, CLASS_SORCERER, PROTECT(
@@ -905,7 +908,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_DUERGAR, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_DUERGAR, CLASS_SORCERER, PROTECT(
@@ -1005,7 +1008,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_GNOME, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_GNOME, CLASS_SORCERER, PROTECT(
@@ -1181,7 +1184,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_HALFLING, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_HALFLING, CLASS_SORCERER, PROTECT(
@@ -1293,7 +1296,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_CENTAUR, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_CENTAUR, CLASS_SORCERER, PROTECT(
@@ -1461,7 +1464,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_GITHYANKI, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_GITHYANKI, CLASS_SORCERER, PROTECT(
@@ -1575,7 +1578,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_MINOTAUR, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_MINOTAUR, CLASS_SORCERER, PROTECT(
@@ -1677,7 +1680,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_GREY, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_GREY, CLASS_SORCERER, PROTECT(
@@ -1779,7 +1782,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_MOUNTAIN, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_MOUNTAIN, CLASS_SORCERER, PROTECT(
@@ -1888,7 +1891,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_OGRE, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_OGRE, CLASS_SORCERER, PROTECT(
@@ -1981,7 +1984,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_ORC, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_ORC, CLASS_SORCERER, PROTECT(
@@ -2285,7 +2288,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_TROLL, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_TROLL, CLASS_SORCERER, PROTECT(
@@ -2387,7 +2390,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_GOBLIN, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_GOBLIN, CLASS_SORCERER, PROTECT(
@@ -2535,7 +2538,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_KOBOLD, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_KOBOLD, CLASS_SORCERER, PROTECT(
@@ -2615,7 +2618,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_KUOTOA, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_KUOTOA, CLASS_WARRIOR, PROTECT(
@@ -2669,7 +2672,7 @@ void load_obj_to_newbies(P_char ch)
 
   CREATE_KIT(RACE_FIRBOLG, CLASS_SHAMAN, PROTECT(
                                         {
-                                        105, 106, 107, 1144, 1145, 1146, 1127,
+                                        108, 109, 111, 1144, 1145, 1146, 1127,
                                         -1}));
 
   CREATE_KIT(RACE_FIRBOLG, CLASS_SORCERER, PROTECT(
@@ -3456,6 +3459,8 @@ void enter_game(P_desc d)
       StartRegen(ch, EVENT_MANA_REGEN);
     if (GET_VITALITY(ch) != GET_MAX_VITALITY(ch))
       StartRegen(ch, EVENT_MOVE_REGEN);
+	if (GET_WARD(ch) != GET_MAX_WARD(ch))
+      StartRegen(ch, EVENT_WARD_REGEN);
 
     set_char_size(ch);
 
@@ -3962,6 +3967,11 @@ if(d->character->base_stats.Wis < 80)
   gmcp_quest_status(ch);
 
   do_look(ch, 0, -4);
+
+  if (has_innate(ch, INNATE_SUMMON_BOOK))
+  {
+    do_summon_book(ch, "", 0);
+  }
 }
 
 void select_terminal(P_desc d, char *arg)
@@ -4438,6 +4448,7 @@ void reconnect(P_desc d, P_char tmp_ch)
   loginlog(d->character->player.level, "%s [%s@%s] has reconnected.",
            GET_NAME(d->character), d->login, d->host);
   sql_log(d->character, CONNECTLOG, "Reconnected");
+  ws_broadcast_player_login(d->character);
   /* if they were morph'ed when they lost link, put them
    back... */
   if (IS_SET(tmp_ch->specials.act, PLR_MORPH))
@@ -4777,6 +4788,7 @@ void select_main_menu(P_desc d, char *arg)
     }
     enter_game(d);
     STATE(d) = CON_PLAYING;
+    ws_broadcast_player_login(d->character);
     d->prompt_mode = TRUE;
     break;
   case '2':                    /* read background story */
@@ -5346,13 +5358,13 @@ void select_class(P_desc d, char *arg)
     SEND_TO_Q(alignment_table, d);
     if (class_table[(int) GET_RACE(d->character)]
         [flag2idx(d->character->player.m_class)] != 4)
-      SEND_TO_Q("G)ood\r\n", d);
-    SEND_TO_Q("N)eutral\r\n", d);
+      SEND_TO_Q("&+YG)ood&n\r\n", d);
+    SEND_TO_Q("&+LN)eutral&n\r\n", d);
 /*    if (!invitemode && (class_table[(int) GET_RACE(d->character)][flag2idx(d->character->player.m_class)] != 3) &&
         (!RACE_NEUTRAL(d->character) || is_invited(GET_NAME(d->character))))*/
     if (class_table[(int) GET_RACE(d->character)]
         [flag2idx(d->character->player.m_class)] != 3)
-      SEND_TO_Q("E)vil\r\n", d);
+      SEND_TO_Q("&+rE)vil&n\r\n", d);
     SEND_TO_Q("Alignment only affects your character's alignment and not the chosen racewar side.\n", d);
     SEND_TO_Q("\r\nYour selection: ", d);
     return;
@@ -5604,27 +5616,38 @@ void display_stats(P_desc d)
   strcpy(Gbuf1, "\r\nYour basic stats:\r\n");
 
   snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-          "Strength:     %15s      Power:        %s\r\n",
+          "Strength:     &+%c%15s&n      Power:        &+%c%s&n\r\n",
+          stat_to_ansi2((int)   d->character->base_stats.Str), 
           stat_to_string2((int) d->character->base_stats.Str),
+          stat_to_ansi2((int)   d->character->base_stats.Pow), 
           stat_to_string2((int) d->character->base_stats.Pow));
 
   snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-          "Dexterity:    %15s      Intelligence: %s\r\n",
+          "Dexterity:    &+%c%15s&n      Intelligence: &+%c%s&n\r\n",
+          stat_to_ansi2((int)   d->character->base_stats.Dex), 
           stat_to_string2((int) d->character->base_stats.Dex),
+          stat_to_ansi2((int)   d->character->base_stats.Int), 
           stat_to_string2((int) d->character->base_stats.Int));
 
   snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-          "Agility:      %15s      Wisdom:       %s\r\n",
+          "Agility:      &+%c%15s&n      Wisdom:       &+%c%s&n\r\n",
+          stat_to_ansi2((int)   d->character->base_stats.Agi), 
           stat_to_string2((int) d->character->base_stats.Agi),
+          stat_to_ansi2((int)   d->character->base_stats.Wis), 
           stat_to_string2((int) d->character->base_stats.Wis));
 
   snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-          "Constitution: %15s      Charisma:     %s\r\n\r\n",
+          "Constitution: &+%c%15s&n      Charisma:     &+%c%s&n\r\n\r\n",
+          stat_to_ansi2((int)   d->character->base_stats.Con),
           stat_to_string2((int) d->character->base_stats.Con),
+          stat_to_ansi2((int)   d->character->base_stats.Cha),
           stat_to_string2((int) d->character->base_stats.Cha));
 
-  snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "Luck: %15s      Unused:     %s\r\n\r\n",
+  snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), 
+          "Luck: &+%c%15s&n      Karma:      &+%c%s&n\r\n\r\n",
+          stat_to_ansi2((int)   d->character->base_stats.Luk),
           stat_to_string2((int) d->character->base_stats.Luk),
+          stat_to_ansi2((int)   d->character->base_stats.Kar),
           stat_to_string2((int) d->character->base_stats.Kar));
 
   SEND_TO_Q(Gbuf1, d);
@@ -5637,7 +5660,7 @@ void display_characteristics(P_desc d)
   char     buffer[MAX_STRING_LENGTH];
 
   snprintf(Gbuf1, MAX_STRING_LENGTH,
-          "\r\n\r\n---------------------------------------\r\nNAME:   %s\r\n",
+          "\r\n\r\n---------------------------------------\r\nNAME:     %s\r\n",
           GET_NAME(d->character));
 
   if (d->character->player.sex == SEX_MALE)
@@ -5656,9 +5679,9 @@ void display_characteristics(P_desc d)
           get_class_string(d->character, buffer));
 
   if (GET_ALIGNMENT(d->character) == 1000)
-    strcat(Gbuf1, "ALIGN:    Good\r\n");
+    strcat(Gbuf1, "ALIGN:    &+YGood&n\r\n");
   else if (GET_ALIGNMENT(d->character) == -1000)
-    strcat(Gbuf1, "ALIGN:    Evil\r\n");
+    strcat(Gbuf1, "ALIGN:    &+rEvil&n\r\n");
   else
   {
     if (GET_ALIGNMENT(d->character) != 0)
@@ -5667,7 +5690,7 @@ void display_characteristics(P_desc d)
             GET_ALIGNMENT(d->character));
       GET_ALIGNMENT(d->character) = 0;
     }
-    strcat(Gbuf1, "ALIGNMENT:    Neutral\r\n");
+    strcat(Gbuf1, "ALIGNMENT:    &+LNeutral&n\r\n");
   }
 
   if (GET_HOME(d->character) > 0)
@@ -6861,6 +6884,7 @@ void nanny(P_desc d, char *arg)
       echo_on(d);
       STATE(d) = CON_PLAYING;
       enter_game(d);
+      ws_broadcast_player_login(d->character);
       d->prompt_mode = TRUE;
     }
 #else
@@ -6884,6 +6908,10 @@ void nanny(P_desc d, char *arg)
       ("Please enter term type (<CR> for ANSI, '1' for Generic, '9' for Quick): ",
        d);
     STATE(d) = CON_GET_TERM;
+    break;
+
+  case CON_TTYPE_NEGO:
+    /* waiting for ttype negotiation, ignore user input */
     break;
 
     /* Flush output messages, then kill the descriptor */

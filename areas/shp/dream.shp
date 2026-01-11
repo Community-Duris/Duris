@@ -1,15 +1,9 @@
-#31312~
+#31310~
 N
-31334
-31339
-31338
-31336
-31333
-31335
-31340
+31314
 0
-0.80
-1.10
+1.00
+1.00
 0
 I'm not selling that, %s!~
 You don't seem to have that item, %s.~
@@ -20,16 +14,16 @@ Thank you, %s, that will be %s.~
 %s, I will give you %s for that.~
 0
 0
+31310
+0
 31312
 0
-31317
-0
 28
 0
 28
-N
 N
 Y
+N
 I am now open!~
 My shop is now closed.~
 0

@@ -1,873 +1,470 @@
 #85700
-portal pool~
-&+ba&+L strange &+bpool&n~
-&+bA &+Lstrange&n &+bcircular pool of liquid lies hovering against the wall.&n~
+cart wooden zip line~
+&+La &+Ywoo&+yden &+Lzip&+wline &+Lc&+wart&n~
+&+LA &+Ywoo&+yden &+Lzip&+wline &+Lc&+wart &+Lis posted &+wagain&+Lst the w&+wall&+L.&n~
 ~
-25 40 10 0 15 0 67141632 0 64 0 0
-85796 7 -1 0 0 0 0 0
-0 0 100
+25 6 3 0 7 0 16384 0 0 0 0
+85700 7 -1 0 0 0 0 0
+200 8231 100
 E
-portal pool~
-&+LIt is made of a&+b dark liquid&+L.  As you peer through the portal you see a
-&+Lreflection of the cave your standing in.
+cart wooden zip line~
+&+LThe old &+Ysup&+yply &+Lc&+wart &+Lhas been fasioned &+wagain&+Lst the w&+wall &+Land l&+wowe&+Lrs d&+wown&+L past&n
+&+Lthe washed &+wout l&+Land&+yslide &+Lro&+wad&+L.&n
 ~
 #85701
-portal pool~
-&+ba&+L strange &+bpool&n~
-&+bA &+Lstrange&n &+bcircular pool of liquid lies hovering here.&n~
+shin shin-guards subterfuge~
+&+Lsome &+mshin&+L-&+Mguards &+Lof &+Lsub&+wter&+Wfuge&n~
+&+LA s&+Wk&+wi&+Wll&+Led &+Wr&+wog&+Lue has left some &+mshin&+L-&+Mguards &+Lhere.&n~
 ~
-25 40 10 0 15 0 67141632 0 64 0 0
-85700 7 -1 0 0 0 0 0
-0 0 100
+9 3 9 0 11 0 0 33 0 0 0
+20 0 0 4 0 0 0 0
+2 42331 100
 E
-portal pool~
-&+LIt is made of a &+bdark liquid&+L.  As you peer through the portal you see a
-&+wA&+L Dark &+wT&+Lr&+wa&+Li&+wl&+L.&n
+shin shin-guards subterfuge~
+&+LThese &+mshin&+L-&+Mguards &+Lonce belon&+wge&+Wd &+Lto &+wS&+Wl&+Lican, the &+rm&+Rur&+rd&+Rer&+ro&+Rus &+Lcut&+wp&+Wu&+Lrse&+L.&n
 ~
+A
+55 3
+A
+38 3
 #85702
-ale barrel huge~
-&+La huge ale barrel&n~
-&+LA huge KEG of &+Ybeer&+L lies here.&n~
-~
-15 16 3 0 7 0 0 16385 0 0 0
-250 13 0 0 0 0 0 0
-5 6343 100
-E
-keg beer~
-&+LThe container labeled 'Killians &+rIrish Red&+L'.&n
-~
-#85703
-wand life~
-&+Wa wand of continued life&n~
-&+WA wand of continued life lies here.&n~
-~
-4 8 3 0 7 0 1 8404993 66 0 0
-50 3 3 213 0 0 0 0
-1 102042 100
-E
-wand life~
-&+WAs you look at the wand you see a bright white light.&n
-~
-#85704
-wand fire flames~
-&+ra wand of f&+Rl&+Yam&+Re&+rs&n~
-&+rA wand made of f&+Yi&+Rr&+re lies here.&n~
-~
-3 40 3 0 7 0 0 8404993 0 0 0
-51 2 2 108 0 0 0 0
-1 56000 100 536870912 0 0 0
-E
-wand fire flames~
-&+rThis is a rod of contained f&+Yi&+Rr&+re.&n
-~
-#85705
-chest mystic~
-&+Ba &+Mmystic&n &+Bchest~
-&+BA small &+Mmystic&+B chest lies here.&n~
-~
-15 15 3 0 7 0 110592 1 0 0 0
-50 13 0 0 0 0 0 0
-12 4432 100
-E
-chest mystic~
-&+BThis is a strange&+M chest&+B with some engravings on the side.&n
-"You may have found my treasure, but you will never enjoy it.  I died with
-the only key."
-~
-#85706
-rogue rogues murder cloak~
-&+La &+Lr&+Wo&+wgu&+Les cloak named '&+rMurder&+L'&n~
-&+LA skilled r&+Wo&+wgu&+Le has left his &+rcloak&+L here.&n~
-~
-9 3 9 0 13 20 0 1025 0 0 0
-13 0 0 3 0 0 0 0
-2 12341 100
-E
-cloak murder rogues~
-&+LThis cloak once belonged to &+ySlican&+L, the great r&+wog&+Lue of &+WA&+wrc&+Lium.&n
-~
-A
-30 10
-A
-19 2
-#85707
 ring pure nature~
-&+ga &+yring&+g p&+Gur&+ge nat&+Gur&+ge&n~
-&+gA ring made of &+ywood &+glies here&n.~
+&+yt&+Yhe r&+ying &+gof p&+Gur&+ge nat&+Gur&+ge&n~
+&+gAn &+celven&+w-&+Lglyphed &+Yr&+ying &+gof p&+Gur&+ge nat&+Gur&+ge lies here.&n~
 ~
-9 6 9 0 15 30 0 3 0 0 0
-5 0 0 3 0 0 0 0
-1 33000 100 2048 0 0 0
-E
-ring pure nature~
-&+yThis is a small bark ring.&n
-~
-A
-14 25
-A
-20 -3
-#85708
-dagger amnesia~
-&+La pale dagger named &n'&+mAmnesia&n'~
-&+LA dull grey dagger named &n'&+mAmnesia&n' &+Llies here&n.~
-~
-5 1 9 0 14 80 102400 8193 66 0 0
-2 3 3 0 0 0 0 0
-1 25000 100
-E
-dagger pale amnesia~
-&+LThis dagger has a forgotten past.&n
-~
-A
-19 3
-A
-18 3
-#85709
-relic circlet erie~
-&+mthe &+Lr&+Ye&+Ll&+Yi&+Lc &+mcirclet&n~
-&+mAn &+Yerie&+m looking circlet lies here.&n~
-~
-11 8 10 0 8 100 241792 528387 64 0 0
-0 0 0 0 0 0 0 0
-3 28640 100
-E
-relic circlet erie~
-&+LThis earring has no past stories told about it. &n
-~
-A
-1 -20
-#85710
-pendant royal~
-&+ba royal&n &+Wpendant&n~
-&+bA &+Wpendant &+bwith a royal insignia lies here.&n~
-~
-9 16 2 0 7 0 8192 5 32768 0 0
-5 0 0 3 0 0 0 0
-1 4285 100
-E
-pendant royal~
-&+bThis is an old &+Wpendant &+bof the royal family when &+WA&+wrc&+Lium&+b was a great kingdom.&n
-~
-A
-18 1
-A
-13 7
-#85711
-ring shadows~
-&+La ring of shadows&n~
-&+LA ring of shadows lies here.&n~
-~
-9 1 9 0 7 0 0 3 64 0 0
-5 0 0 3 0 0 0 0
-2 5012 100
-E
-ring shadows~
-&+LThe ring is a magical band of shadows.&n
-~
-A
-19 1
-A
-18 1
-#85712
-shield black bone~
-&+wa shield of black&+L bone&n~
-&+wA large shield made of black &+Lbone&+w lies here.&n~
-~
-37 10 9 0 7 0 0 513 0 0 0
-2 5 4 107 4 0 0 0
-4 5100 100
-E
-shield black bone~
-&+LThe shield is made of solid black bone.  It seems to be very strong.&n
-~
-A
-2 4
-A
-18 2
-#85713
-belt liquid link links~
-&+ba belt of liquid &+Bl&+ci&+Bn&+Ck&+Bs&n~
-&+bA belt of made of some dark liquid &+Bl&+ci&+Bn&+Ck&+Bs&+b lies here.&n~
-~
-9 40 9 0 14 0 8192 2049 0 0 0
-5 0 0 5 0 0 0 0
-3 13442 100
-E
-belt liquid link links~
-&+bThe belt is made of a strange dark blue liquid that has been shaped into
-&+bseveral solid links.&n
-~
-A
-13 7
-A
-20 -1
-#85714
-mask feathers festive~
-&+Ga mask of festive &+Yf&+ge&+ma&+Bt&+Yh&+ge&+mr&+Bs&n~
-&+GA beautiful mask made of &+Yf&+ge&+ma&+Bt&+Yh&+ge&+mr&+Bs l&+Gies here.&n~
-~
-9 3 9 0 7 0 0 262145 0 0 0
-5 0 0 3 0 0 0 0
-1 7141 100
-E
-mask feathers festive~
-&+GThe mask is made of many different&+m col&+Yor&+Bful&+G feathers.  All of the feathers are
-&+Gfrom different color birds.&n
-~
-A
-24 -2
-A
-28 7
-#85715
-visor fire~
-&+ra fl&+Ra&+Ymi&+Rn&+rg &+Yvisor&n~
-&+rA &+Yvisor&+r made of f&+Yi&+Rr&+re lies here.&n~
-~
-9 1 9 0 7 0 262144 131073 0 0 0
-5 0 0 3 0 0 0 0
-1 18213 100
-E
-flaming visor fire~
-&+rThis visor e&+Rt&+Yer&+Rn&+ral f&+Yi&+Rr&+re is a very impressive sight.&n
-~
-A
-23 -3
-A
-13 10
-#85716
-silver stone amulet~
-&+Wa &+Lsilver stone &+Wamulet&n~
-&+WA &+Lsilver stone &+Wamulet lies here.&n~
-~
-9 22 9 0 7 0 0 5 2 0 0
-5 0 0 3 0 0 0 0
-4 10925 100
-E
-silver stone amulet~
-&+LThis a dull silver amulet.&n
-~
-A
-4 5
-A
-13 12
-#85717
-spotted dragon egg~
-&+Ya&n &+Ys&+Wp&+Yo&+Wt&+Yt&+We&+Yd&n &+rdragons &+We&+Ygg&n~
-&+YA &+Ys&+Wp&+Yo&+Wt&+Yt&+We&+Yd &+rdragons &+We&+Ygg lies here.&n~
-~
-12 2 4 0 7 0 45056 8388609 32768 0 0
-0 0 0 0 0 0 0 0
-1 11 100
-E
-spotted dragon egg~
-&+YThis is a large yellow &+rdragon&+W e&+Ygg with &+Wwhite&+Y spots on it.&n
-~
-#85718
-tail dragon dragonscale scale~
-&+Lan infant &+rdragon&+Lscale tail&n~
-&+LA small &+rdragons&+L tail lies here.&n~
-~
-9 35 3 0 7 0 4096 33554433 64 0 0
+9 4 2 0 15 0 0 33554435 0 0 0
 5 0 0 4 0 0 0 0
-2 3312 100
+1 33000 100 0 0 32 0
 E
-dragon scale~
-&+CThis is one big &+rdragon&+C scale with straps on it.&n
+ring pure nature~
+&+gThis &+ysm&+Yall r&+ying &+gis crafted from some ancient &+celven&+w-&+Lglyphed &+ybark&+g.&n
 ~
 A
-18 1
+13 18
 A
-13 7
-#85719
-meat salmon~
-&+Ra freshly killed salmon&n~
-&+RA freshly killed salmon lies here&+w, &+grotting.&n~
-~
-19 2 3 0 7 0 8192 1 32768 0 0
-24 0 0 0 0 0 0 0
-2 433 100
-E
-salmon~
-&+RThis is a rotting corpse of a salmon.&n
-~
-#85720
-lost book spellbook~
-&+bthe &+wl&+Wo&+ws&+Wt&+b book of &+mMagic&n~
-&+bA thick&+y tattered &+bbook has been forgotten here.&n~
-~
-33 28 9 0 7 0 73728 8404993 64 0 0
-0 0 250 0 0 0 0 0
-2 7883 100
-E
-lost book spellbook~
-&+bThis is a small book incased in &+yleather&+b, but it seems to have a neverending
-&+bsupply of pages.
-~
-A
-3 3
-A
-13 5
-#85721
-poison axe~
-&+ba double bladed axe named &n'&+rPoison&n'~
-&+bA fine looking axe with &+w'&+rPoison&+w'&+b inscribed on the handle lies here.&n~
-~
-5 19 9 0 13 60 16777488 8193 64 0 0
-1 3 5 0 3 0 0 0
-4 15017 100 0 16 0 0
-E
-poison axe~
-&+bThe large double bladed axe has &+Gpoison &+bdripping off it and some&+r blood stains
-&+bnear the tip.  Also on the handle is a label that reads &+w'&+rPoison&+w'&n
-~
-A
-18 3
-A
-19 4
-#85722
-golden medal honor~
-&+Ya golden medal of &+Whonor&n~
-&+YA golden medal of &+Whonor&+Y lies here.&n~
-~
-9 24 3 0 7 0 36864 5 32770 0 0
-5 0 0 3 0 0 0 0
-2 2344 100
-E
-golden medal honor~
-&+YThis is a golden medel of honor.  It was once the highest medel of honor in
-&+WA&+wrc&+Lium&+Y, but now is not worth much.&n
-~
-A
-27 6
-A
-5 6
-#85723
+28 8
+#85703
 key skeleton~
-&+La small &+Wskeleton key&n~
-&+LA small &+Wskeleton key&+L lies here&n.~
+&+La sm&+wall skeleton &+Lkey&n~
+&+LA sm&+wall skeleton key&+L lies here.&n~
 ~
-18 10 2 0 7 0 8388608 16385 32768 0 0
-0 0 0 0 0 0 0 0
+18 10 2 0 7 0 8388608 16385 0 0 0
+0 100 0 0 0 0 0 0
 1 223 100
 E
 key skeleton~
-&+LThis is a small &+Wskeleton key&+L made of&+W bone&+L.&n
+&+LThis is a sm&+wall skeleton &+Lkey made of&+W bone&+L.&n
 ~
-#85724
+#85704
 badge royal arcium~
-&+La&+b royal&+L badge of &+WA&+wrc&+Lium&n~
-&+LA &+broyal&+L badge lies here.&n~
+&+La &+cr&+Coyal &+Lbadge of &+WA&+wrc&+Lium&n~
+&+LA &+cr&+Coyal &+Lbadge of &+wsk&+Wu&+wll &+Land &+wb&+Wone&+ws &+Llies here.&n~
 ~
-11 16 10 0 7 0 262144 2097153 0 0 0
-0 0 0 3 0 0 0 0
-1 9834 100
+9 10 3 0 7 0 2097152 2097153 0 0 0
+5 0 0 4 0 0 0 0
+1 13759 100
 E
-badge royal~
-&+bThis is a small blue badge made of steel.&n
+badge royal arcium~
+&+LThis oval badge of &+WA&+wrc&+Lium &+cr&+Coyal&+cty &+Lbares a &+wsk&+Wu&+wll &+Lwith two &+wcr&+Woss&+wed&+WX&+wb&+Wone&+ws&+L.&n
 ~
 A
-19 1
+23 -2
 A
-1 3
-#85725
-sinister cloak~
-&+La &+rsin&+Li&+rster&+L cloak&n~
-&+LA &+rsin&+Li&+rster&+L looking cloak lies here&n.~
-~
-9 10 9 0 7 0 0 1025 0 0 0
-5 0 0 3 1 0 0 0
-2 4342 100
-E
-sinister cloak~
-&+LThis is a pitch black cloak with a &+rred hood&+L.&n
-~
-A
-14 20
-A
-13 10
-#85726
-purple scroll~
-&+Ma purple scroll&n~
-&+MA small purple scroll lies here.&n~
-~
-3 15 3 0 7 0 0 16385 0 0 0
-25 2 2 155 0 0 0 0
-1 25952 100
-E
-purple scroll~
-&+MThis is a small simple looking purple wand.&n
-~
-#85727
-bat skin batskin sleeves~
-&+Ysome &+Lbat&+Yskin sleeves&n~
-&+YA pair of &+Lbat&+Yskin sleeves lie here.&n~
-~
-9 2 3 0 7 0 0 257 0 0 0
-5 0 0 3 0 0 0 0
-2 4320 100
-E
-bat skin batskin sleeves~
-&+YThese are some sleeves made from &+Lbat&+Yskin.&n
-~
-A
-13 6
-A
-5 3
-#85728
-skunk weed boots~
-&+ga pair of skunk&+G weed&+g boots&n~
-&+gA pair of skunk&+G weed&+g boots lie here.&n~
-~
-9 43 3 0 7 0 12288 65 0 0 0
-10 0 0 4 0 0 0 0
-3 4300 100
-E
-skunk weed boots~
-&+gThese are some boots made from skunk &+Gweed&+g.&n
-~
-A
-19 2
-A
-26 4
-#85729
-key green weed~
-&+ga green key&n~
-&+gA key made of skunk &+Gweed &+glies here.&n~
+22 -2
+#85705
+key skunk weed~
+&+ga sk&+Gun&+gk w&+Gee&+gd k&+Ge&+gy&n~
+&+gA k&+Ge&+gy made of sk&+Gun&+gk w&+Gee&+gd lies here.&n~
 ~
 18 43 3 0 7 0 8396800 16385 0 0 0
-0 0 0 0 0 0 0 0
+0 100 0 0 0 0 0 0
 1 121 100
 E
-key green weed~
-&+gThis green key is made out of skunk &+Gweed&+g.&n
+key skunk weed~
+&+gThis gr&+Gee&+gn k&+Ge&+gy is made out of sk&+Gun&+gk w&+Gee&+gd.&n
 ~
-#85730
-clear wand~
-&+Ca clear wand&n~
-&+CA see through wand lies here.&n~
+#85706
+longbow bow silver~
+&+La s&+wl&+Wi&+Lm &+cs&+Cil&+cver l&+Con&+cg&+cb&+Co&+cw&n~
+&+LA st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cl&+Con&+cgb&+Co&+cw made of s&+Cil&+cver lies here&+L.&n~
 ~
-3 7 3 0 7 0 8224 8404993 0 0 0
-41 3 3 189 0 0 0 0
-1 20430 100
+6 22 3 0 7 0 0 8193 1 0 0
+80 80 0 1 0 0 0 0
+3 24502 100
 E
-clear wand~
-&+CThis is a small glass wand that is transparent.&n
-~
-#85731
-bow longbow royal arcium~
-&+WA&+wrc&+Lium's&+W royal &+Llongbow&n~
-&+LOne of &+WA&+wrc&+Lium's standard issue bows lies here.&n~
-~
-6 15 3 0 7 0 0 8193 0 0 0
-70 60 0 1 0 0 0 0
-2 8820 100
-E
-bow longbow royal arcium~
-&+LThis is a fine longbow with &+WA&+wrc&+Lium's brand on the side.&n
+longbow bow silver~
+&+LThis is a s&+wl&+Wi&+Lm st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cl&+Con&+cgb&+Co&+cw made of s&+Cil&+cver&+L.&n
 ~
 A
 18 3
 A
-13 7
-#85732
-sleeves flesh rotting~
-&+Lsleeves of&+g rot&+Lti&+gn&+Lg &+gf&+Lle&+gsh&n~
-&+LA pair of sleeves made of &+grot&+Lti&+gn&+Lg &+gf&+Lle&+gsh &+Llies here.&n~
-~
-9 2 9 0 7 0 0 257 0 0 0
-5 0 0 4 0 0 0 0
-1 4201 100
-E
-sleeves flesh~
-&+LThe sle&+geve&+Ls are made of &+grot&+Lting fl&+gesh&+L.  They s&+gmell &+Lvery&+g bad&+L and don't look
-&+Lto ap&+gpeal&+Ling either.&n
-~
-A
-19 1
-A
-13 5
-#85733
-earring rotting flesh~
-&+Lan earring of&+g rot&+Lti&+gn&+Lg &+gf&+Lle&+gsh&n~
-&+LAn earring of &+grot&+Lti&+gn&+Lg &+gf&+Lle&+gsh&+L lies here.&n~
-~
-11 2 9 0 7 0 0 524289 0 0 0
-0 0 0 0 0 0 0 0
-1 2912 100
-E
-earring rotting flesh~
-&+LThe ear&+gri&+Lng is made of &+grot&+Lting fl&+gesh&+L.  It s&+gmells &+Lvery&+g bad&+L and doesn't look
-&+Lto ap&+gpeal&+Ling either.&n
-~
-A
-19 1
-A
-20 -1
-#85734
-cloak rotting flesh~
-&+La cloak of&+g rot&+Lti&+gn&+Lg &+gf&+Lle&+gsh&n~
-&+LA body cloak of &+grot&+Lti&+gn&+Lg &+gf&+Lle&+Lsh&+L lies here.&n~
-~
-9 2 9 0 7 0 0 1025 0 0 0
-5 0 0 3 0 0 0 0
-2 10026 100
-E
-cloak rotting flesh~
-&+LThe cl&+goa&+Lk is made of &+grot&+Lting fl&+gesh&+L.  It s&+gmells &+Lvery &+gbad&+L and doesn't look
-&+Lto ap&+gpeal&+Ling either.&n
-~
-A
-13 10
-A
-26 5
-#85735
+19 3
+#85707
 hallow stump~
-&+ya hallow stump&n~
-&+yA hallow stump lies here.&n~
+&+ya &+gh&+yallo&+gw &+ystump&n~
+&+yA &+gh&+yallo&+gw &+ystump lies here.&n~
 ~
-15 15 3 0 7 0 8192 0 0 0 0
-500 0 0 0 0 0 0 0
-0 0 100
+15 5 4 0 7 0 16384 0 0 0 0
+10000 0 0 0 0 0 0 0
+300 321 100
 E
 hallow stump~
-&+yThe large hallow stump has &+Gfungus&+y and&+g grass&+y growing on it.&n
+&+yThe large &+gh&+yallo&+gw &+ystump has &+Gfungus&+y and&+g grass&+y growing on it.&n
 ~
-#85736
+#85708
 tombstone stone tomb~
-&+La grim tomb&+wstone&n~
-&+LA grim looking tomb&+wstone &+Llies here.&N~
+&+La gr&+wi&+Wm &+Ltomb&+wst&+Wone&n~
+&+LA gr&+wi&+Wm &+Llo&+wo&+Wk&+Ling tomb&+wst&+Wone &+Llies here.&N~
 ~
-12 11 3 0 7 0 0 0 0 0 0
+12 11 3 0 7 0 16384 0 0 0 0
 0 0 0 0 0 0 0 0
-0 0 100
+25 0 100
 E
 tombstone stone tomb~
-&+LThis is a tombstone of an &+WA&+wrc&+Lium elder.
-&+LThe plaque reads "You served your city to the fullest, R.I.P"
+&+LThis is a tomb&+wst&+Wone &+Lof an &+WA&+wrc&+Lium elder.
+&+LThe plaque reads &+w"You served your city to the fullest, &+WR&+L.&+WI&+L.&+WP&+w".&n
 ~
-#85737
-kurlon horns~
-&+Lthe horns of K&+wur&+Llon&n~
-&+LA set of horns once owned by the mercenary K&+wur&+Llon lie here.&n~
+#85709
+endless battles horns~
+&+Lthe &+yh&+Lor&+Yn&+Ls of &+wen&+Wd&+Lless &+wbat&+Wt&+Lles&n~
+&+LA set of &+yh&+Lor&+Yn&+Ls once &+wow&+Wn&+Led by the &+ygla&+Ydia&+ytor &+wKu&+Lrlon lie here.&n~
 ~
-9 15 3 0 7 0 0 134217729 0 0 0
-5 0 0 3 0 0 0 0
-3 7234 100
+9 37 3 0 14 0 3145728 134217729 0 0 0
+25 0 0 4 0 0 0 0
+4 35012 100
 E
-kurlon horns~
-&+LThis set of horns once belonged to the mercenary master named K&+wur&+Llon.&N
+endless battles horns~
+&+LThis set of granite &+yh&+Lor&+Yn&+Ls once belonged to the &+ygla&+Ydia&+ytor &+Lnamed &+wK&+Wu&+Lrlon.&n
 ~
+A
+40 6
 A
 19 3
-#85738
+#85710
 silver dagger~
-&+La thin silver d&+wa&+Wgg&+we&+Lr&n~
-&+LA simple looking d&+wa&+Wgg&+we&+Lr made of silver lies here.&n~
+&+La t&+wh&+Wi&+Ln &+cs&+Cil&+cver d&+Cagg&+cer&n~
+&+LA st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cd&+Cagg&+cer made of s&+Cil&+cver lies here&+L.&n~
 ~
-5 15 3 0 7 0 16785680 8193 1 0 0
-2 2 4 11 0 0 0 0
-2 6231 100
+5 22 3 0 7 0 0 8193 1 0 0
+2 3 4 0 0 0 0 0
+2 35302 100
 E
 silver dagger~
-&+LThis is a thin and simple d&+wa&+Wgg&+we&+Lr made of silver.&n
+&+LThis is a t&+wh&+Wi&+Ln st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cd&+Cagg&+cer made of s&+Cil&+cver&+L.&n
 ~
 A
-18 2
+18 3
 A
-19 2
-#85739
+19 3
+#85711
 bottle ale~
-&+ya bottle of &+Ldark ale&n~
-&+yA bottle of hard ale has been forgotten here.&n~
+&+La bo&+ytt&+Lle of d&+yark &+La&+yl&+Le&n~
+&+LA bo&+ytt&+Lle of d&+yark &+La&+yl&+Le &+yhas been dro&+Lpp&+yed here.&n~
 ~
-10 40 3 0 7 0 0 8404993 0 0 0
-40 39 0 0 10 0 0 0
-1 7828 100
+17 7 2 0 10 0 0 8404993 0 0 0
+20 20 28 0 0 0 0 0
+0 4982 100
 E
 bottle ale~
-&+yThis is a bottle of the local &+Ldark ale&+y.&n
+&+LThis is a &+ybo&+Ltt&+yle &+Lof the local &+Ld&+yark &+La&+yl&+Le.&n
 ~
-#85740
-fifth whiskey~
-&+ya fifth of whiskey&n~
-&+yA fifth of whiskey has been forgotten here.&n~
+#85712
+flask liquor~
+&+La fl&+yask &+Lof &+yhar&+Ld &+yliq&+Lu&+yor&n~
+&+LA fl&+yask &+Lof &+yhar&+Ld &+yliq&+Lu&+yor has been for&+Lgot&+yten here.&n~
 ~
-10 40 3 0 7 0 0 8404993 0 0 0
-40 179 0 0 20 0 0 0
-1 12871 100
+10 53 3 0 10 0 0 8404993 0 0 0
+36 163 -1 -1 10 0 0 0
+1 33029 100
 E
-fifth whiskey~
-&+yThis is a full fifth of dirty whiskey.&n
+flask liquor~
+&+LThis is a fl&+yask &+Lfull of strong &+yliq&+Lu&+yor &+Lfor &+yspec&+Li&+yal occas&+Li&+yons&+L.&n
 ~
-#85741
-mushroom food~
-&+Ya small m&+Wu&+Ys&+Wh&+Yr&+Woo&+Ym&n~
-&+YA small sp&+Wo&+Ytt&+We&+Yd m&+Wu&+Ys&+Wh&+Yr&+Woo&+Ym lies here.&n~
+#85713
+mushroom magical~
+&+ma m&+Ma&+mg&+Mi&+mc&+Ma&+ml &+Ym&+Wu&+Ys&+Wh&+Yr&+Woo&+Ym&n~
+&+mA sm&+Mall &+msp&+Mo&+mtt&+Me&+md &+Ym&+Wu&+Ys&+Wh&+Yr&+Woo&+Ym &+mlies here on the g&+Mround&+m.&n~
 ~
-19 48 2 0 7 0 0 16385 0 0 0
-30 0 0 0 0 0 0 0
-1 5 100
+19 46 2 0 7 0 16384 16385 0 0 0
+10 4 3 0 0 0 5 0
+0 531 100
 E
-mushroom food~
-The small yellow mushroom smell strange.
+mushroom magical~
+&+mThis sm&+Mall &+msp&+Mo&+mtt&+Me&+md &+Ym&+Wu&+Ys&+Wh&+Yr&+Woo&+Ym &+mpro&+Mces&+mses m&+Ma&+mg&+Mi&+mc&+Ma&+ml p&+Mowe&+mrs.&n
 ~
-#85742
-unholy water barrel~
-&+Lan unholy water barrel&n~
-&+LA dark water barrel lies here.&n~
+#85714
+saddle barding rattling bones~
+&+La &+Mb&+mar&+Md&+ming &+Lsa&+wdd&+Lle of &+Wra&+wtt&+Wl&+win&+Wg b&+won&+Wes&n~
+&+LA &+Mb&+mar&+Md&+ming &+Lsa&+wdd&+Lle con&+wst&+Lr&+wuc&+Lted with &+Wra&+wtt&+Wl&+win&+Wg b&+won&+Wes &+Llies here.&n~
 ~
-17 6 2 0 7 0 0 8388609 0 0 0
-25 25 28 0 0 0 0 0
-1 1000 100
+9 10 9 0 10 0 0 553648129 0 0 0
+20 0 0 4 0 0 0 0
+5 38239 100
 E
-skin dark~
-This is a dark colored water skin.
-~
-#85743
-steel soldiers mask~
-&+La steel soldiers m&+wa&+Wsk&n~
-&+LA soldiers standard issue m&+wa&+Wsk&+L lies here.&n~
-~
-9 16 3 0 7 0 0 262145 0 0 0
-5 0 0 3 0 0 0 0
-1 2641 100
-E
-steel soldiers mask~
-&+LThis is a standard issue steel m&+wa&+Wsk&+L for an &+WA&+wrc&+Lium soldier.&N
+saddle barding rattling bones~
+&+LA &+Mb&+mar&+Md&+ming &+Lsa&+wdd&+Lle con&+wst&+Lr&+wuc&+Lted with &+Wb&+won&+Wes&+L, &+Wra&+wtt&+Wl&+wes &+Las you move about.&n
 ~
 A
-19 1
-#85744
-soldiers ring~
-&+La soldiers r&+wi&+Wng&n~
-&+LA soldiers standard issue r&+wi&+Wng&+L lies here.&n~
-~
-9 16 3 0 7 0 0 3 0 0 0
-3 0 0 3 0 0 0 0
-1 1730 100
-E
-soldiers ring~
-&+LThis is a standard issue steel r&+wi&+Wng&+L for an &+WA&+wrc&+Lium soldier.&n
-~
+22 -4
 A
-19 1
-#85745
-soldiers wristguard wrist guard~
-&+La soldiers wr&+wi&+Wst &+Lgu&+wa&+Wrd&n~
-&+LA soldiers standard issue wr&+wi&+Wst&+L gu&+wa&+Wrd&+L lies here.&n~
+17 -25
+#85715
+heart kovii~
+&+La &+rbl&+Ree&+rd&+Rin&+rg &+mh&+Mear&+mt&+r &+Lof &+wK&+Wo&+Lvii&n~
+&+LA dark &+mh&+Mear&+mt&+r &+rbl&+Ree&+rd&+Rs &+Lon the floor.&n~
 ~
-9 16 3 0 7 0 0 4097 0 0 0
-5 0 0 3 0 0 0 0
-1 2050 100
-E
-soldiers wristguard wrist guard~
-&+LThis is a standard issue steel wr&+wi&+Wst&+L gu&+wa&+Wrd &+Lfor an &+WA&+wrc&+Lium soldier.&n
-~
-A
-19 1
-#85746
-soldiers quiver~
-&+La soldiers qu&+wiv&+Wer&n~
-&+LA soldiers standard issue qu&+wiv&+Wer&+L lies here.&n~
-~
-30 16 3 0 7 0 0 1048577 0 0 0
-35 0 0 0 0 0 0 0
-1 2503 100
-E
-soldiers quiver~
-&+LThis is a standard issue steel qu&+wiv&+Wer&+L for an &+WA&+wrc&+Lium soldier.&n
-~
-A
-18 1
-#85747
-soldiers tail clip~
-&+La soldiers t&+wa&+Wil&+L c&+wl&+Wip&n~
-&+LA soldiers standard issue t&+wa&+Wil&+L c&+wl&+Wip&+L lies here.&n~
-~
-9 16 3 0 7 0 0 33554433 0 0 0
-3 0 0 3 0 0 0 0
-1 1830 100
-E
-soldiers tail clip~
-&+LThis is a standard issue steel t&+wa&+Wil&+L c&+wl&+Wip&+L for an &+WA&+wrc&+Lium soldier.&n
-~
-A
-18 1
-#85748
-soldiers belt~
-&+La soldiers b&+we&+Wlt&n~
-&+LA soldiers standard issue b&+we&+Wlt&+L lies here.&n~
-~
-9 16 3 0 7 0 0 2049 0 0 0
-5 0 0 3 0 0 0 0
-1 3021 100
-E
-soldiers belt~
-&+LThis is a standard issue steel b&+we&+Wlt&+L for an &+WA&+wrc&+Lium soldier.&n
-~
-A
-18 1
-#85749
-pearl~
-&+Ca small pe&+Mar&+Cl&n~
-&+CA shiny pe&+Mar&+Cl lies on the floor.&n~
-~
-8 52 2 0 7 0 12288 1 32768 0 0
-0 0 0 0 0 0 0 0
-1 3039 100
-E
-pearl~
-&+CThe &+Mshiny&+C pearl is quite beautiful.&n
-~
-#85750
-necklace pearl~
-&+Ca fine pe&+Mar&+Cl necklace&n~
-&+CA beautiful pe&+Mar&+Cl necklace has been left here.&n~
-~
-9 52 3 0 7 0 0 5 0 0 0
-6 0 0 3 0 0 0 0
-3 21231 100
-E
-necklace pearl~
-&+CThe strand of pe&+Mar&+Cls is wrapped into a tight loop.&n
-~
-A
-12 20
-A
-24 -3
-#85751
-earring pearl~
-&+Ca pe&+Mar&+Cl earring&n~
-&+CA small strand of pe&+Mar&+Cls has been left here.&n~
-~
-9 52 3 0 7 0 8192 524289 32768 0 0
-4 0 0 3 0 0 0 0
-1 11523 100
-E
-earring pearl~
-&+CThe earring is a strand of four small pe&+Mar&+Cls.&N
-~
-A
-12 10
-A
-24 -2
-#85752
-loop plat platinum~
-&+Wa platinum l&+woo&+Wp&N~
-&+WA shiny ring lies here.&N~
-~
-9 25 3 0 7 0 0 67108865 0 0 0
-3 0 0 3 0 0 0 0
-2 25322 100
-E
-loop plat platinum~
-&+WThis nose ring is made from solid platinum.&N
-~
-A
-14 25
-A
-2 4
-#85753
-heart king~
-&+ra bleeding heart of &+Lthe K&+wi&+Wng&n~
-&+rA dark &+Lheart&+r bleeds on the floor.&n~
-~
-8 2 3 0 7 0 4096 8388609 32768 0 0
+8 2 2 0 7 0 20480 1 32768 0 0
 0 0 0 0 0 0 0 0
 1 212 100
 E
-heart~
-&+rThis was the heart of a cold blooded person.&n
+heart kovii~
+&+LThis was the &+mh&+Mear&+mt &+Lof a &+cc&+wold bloo&+cded &+Lperson.&n
 ~
-#85754
-heart granrn~
-&+ra bleeding heart of &+WGranrn&n~
-&+rA dark &+Lheart&+r bleeds on the floor.&n~
+#85716
+heart granra~
+&+La &+rbl&+Ree&+rd&+Rin&+rg &+mh&+Mear&+mt&+r &+Lof &+wG&+Wr&+Lanra&n~
+&+LA dark &+mh&+Mear&+mt&+r &+rbl&+Ree&+rd&+Rs &+Lon the floor.&n~
 ~
-8 2 3 0 7 0 4096 8388609 32768 0 0
+8 2 3 0 7 0 20480 1 32768 0 0
 0 0 0 0 0 0 0 0
 1 232 100
 E
-heart~
-&+rThis was the heart of a cold blooded person.&n
+heart granra~
+&+LThis was the &+mh&+Mear&+mt &+Lof a &+cc&+wold bloo&+cded &+Lperson.&n
 ~
-#85755
+#85717
 heart kurlon~
-&+ra bleeding heart of &+LK&+wur&+Llon&n~
-&+rA dark &+Lheart&+r bleeds on the floor.&n~
+&+La &+rbl&+Ree&+rd&+Rin&+rg &+mh&+Mear&+mt&+r &+Lof &+wK&+Wu&+Lrlon&n~
+&+LA dark &+mh&+Mear&+mt&+r &+rbl&+Ree&+rd&+Rs &+Lon the floor.&n~
 ~
-8 2 3 0 7 0 4096 8388609 32768 0 0
+8 2 3 0 7 0 20480 1 32768 0 0
 0 0 0 0 0 0 0 0
 1 121 100
 E
-heart~
-&+rThis was the heart of a cold blooded person.&n
+heart kurlon~
+&+LThis was the &+mh&+Mear&+mt &+Lof a &+cc&+wold bloo&+cded &+Lperson.&n
 ~
-#85756
+#85718
 heart fragnox~
-&+ra bleeding heart of &+mFragnox&n~
-&+rA dark &+Lheart&+r bleeds on the floor.&n~
+&+La &+rbl&+Ree&+rd&+Rin&+rg &+mh&+Mear&+mt&+r &+Lof &+wF&+Wr&+Lagnox&n~
+&+LA dark &+mh&+Mear&+mt&+r &+rbl&+Ree&+rd&+Rs &+Lon the floor.&n~
 ~
-8 2 3 0 7 0 4096 8388609 32768 0 0
+8 2 3 0 7 0 20480 1 32768 0 0
 0 0 0 0 0 0 0 0
 1 121 100
 E
-heart~
-&+rThis was the heart of a cold blooded person.&n
+heart fragnox~
+&+LThis was the &+mh&+Mear&+mt &+Lof a &+cc&+wold bloo&+cded &+Lperson.&n
 ~
-#85757
+#85719
 heart kelien~
-&+ra bleeding heart of &+gKelien&n~
-&+rA dark &+Lheart&+r bleeds on the floor.&n~
+&+La &+rbl&+Ree&+rd&+Rin&+rg &+mh&+Mear&+mt&+r &+Lof &+wK&+We&+Llien&n~
+&+LA dark &+mh&+Mear&+mt&+r &+rbl&+Ree&+rd&+Rs &+Lon the floor.&n~
 ~
-8 2 3 0 7 0 4096 8388609 32768 0 0
+8 2 3 0 7 0 20480 1 32768 0 0
 0 0 0 0 0 0 0 0
 1 122 100
 E
-heart~
-&+rThis was the heart of a cold blooded person.&n
+heart kelien~
+&+LThis was the &+mh&+Mear&+mt &+Lof a &+cc&+wold bloo&+cded &+Lperson.&n
 ~
-#85758
+#85720
 heart slican~
-&+ra bleeding heart of &+ySlican&n~
-&+rA dark &+Lheart&+r bleeds on the floor.&n~
+&+La &+rbl&+Ree&+rd&+Rin&+rg &+mh&+Mear&+mt&+r &+Lof &+wS&+Wl&+Lican&n~
+&+LA dark &+mh&+Mear&+mt&+r &+rbl&+Ree&+rd&+Rs &+Lon the floor.&n~
 ~
-8 2 3 0 7 0 4096 8388609 32768 0 0
+8 2 3 0 7 0 20480 1 32768 0 0
 0 0 0 0 0 0 0 0
 1 211 100
 E
-heart~
-&+rThis was the heart of a cold blooded person.&n
+heart slican~
+&+LThis was the &+mh&+Mear&+mt &+Lof a &+cc&+wold bloo&+cded &+Lperson.&n
 ~
-#85759
+#85721
 shield hope~
-&+wthe shield of &+WHope&n~
-&+wA blessed object of&+W hope&+w lies here.&N~
+&+Lthe s&+wh&+Wie&+wl&+Ld &+cp&+Cro&+wcl&+Wai&+wm&+Ce&+cd &+w'H&+Wop&+we'&n~
+&+LA &+cb&+Cless&+ced &+Ls&+wh&+Wie&+wl&+Ld &+cp&+Cro&+wcl&+Wai&+wm&+Ce&+cd &+w'H&+Wop&+we' &+Llies here.&n~
 ~
-37 7 3 0 7 0 1056776 4194817 2 0 0
-1 3 4 200 5 0 0 0
--5 15322 100 32768 0 0 0
+37 7 3 0 15 0 0 513 2 0 0
+1 5 4 200 5 0 0 0
+-5 142389 100 8192 0 0 0
 E
 shield hope~
-&+wThe glass from this shield very strong, as if unbreakable.&n
+&+LThe &+cg&+Clas&+cs &+Lfrom this s&+wh&+Wie&+wl&+Ld is very s&+wt&+Wro&+wn&+Lg, as if &+wun&+Wbreak&+wable&+L.  If you
+&+Lfeel &+wover&+Wwhel&+wmed&+L, &+wre&+Wmem&+wber &+Lyou are &+cb&+Cless&+ced &+Lif you say &+w'H&+Wop&+we'&+L.&n
 ~
 A
 34 3
 A
-14 35
-#85760
+14 30
+#85722
 silver sword longsword~
-&+La thin silver long&+wsw&+Word&n~
-&+LA simple looking long&+wsw&+Word&+L made of silver lies here.&n~
+&+La t&+wh&+Wi&+Ln &+cs&+Cil&+cver l&+Con&+cgsw&+Cor&+cd&n~
+&+LA st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cl&+Con&+cgsw&+Cor&+cd made of s&+Cil&+cver lies here&+L.&n~
 ~
-5 15 3 0 7 0 8192 8193 1 0 0
-5 3 3 0 0 0 0 0
-2 9532 100
+5 22 3 0 7 0 0 8193 1 0 0
+5 3 5 0 0 0 0 0
+4 20524 100
 E
 silver sword longsword~
-&+LThis is a thin and simple long&+wsw&+Word&+L made of silver.&n
+&+LThis is a t&+wh&+Wi&+Ln st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cl&+Con&+cgsw&+Cor&+cd made of s&+Cil&+cver&+L.&n
 ~
 A
-18 2
+18 3
 A
-19 2
+19 3
+#85723
+silver whip snapdragon~
+&+ca s&+Cil&+cver h&+Cand&+cled &+Lw&+Gh&+gi&+Lp, n&+Ga&+gm&+Led '&+cS&+Cnap&+gd&+Grag&+gon&+L'&n~
+&+cA large s&+Cil&+cver h&+Cand&+cled &+Lw&+Gh&+gi&+Lp we&+Ga&+gv&+Led from a t&+Go&+gx&+Lic p&+Gl&+ga&+Lnt &+Llies ro&+Gl&+gl&+Led-&+Cu&+cp &+Lneatly on the fl&+Go&+go&+Lr.&n~
+~
+5 22 4 0 13 0 3153920 8396801 65 0 0
+14 3 8 3 1 197 50 50
+4 72340 100
+E
+silver whip snapdragon~
+&+cThe large s&+Cil&+cver h&+Cand&+cled &+Lw&+Gh&+gi&+Lp has been we&+Ga&+gv&+Led from v&+Gi&+gn&+Les of a t&+Go&+gx&+Lic &+cs&+Cnap&+gd&+Grag&+gon &+Lp&+Gl&+ga&+Lnt and ext&+Ge&+gn&+Lds to a &+cs&+Cil&+cver s&+Cli&+cver t&+Ci&+cp.&n
+~
+A
+19 4
+A
+40 4
+#85724
+dreamcasters scepter stars~
+&+La d&+Mre&+mamcast&+Mer&+Ls s&+Mce&+mp&+Mte&+Lr of s&+Wt&+wa&+Wr&+Ls&n~
+&+mA long shaft &+Ls&+Mce&+mp&+Mte&+Lr &+mwith a &+ws&+Wp&+wa&+wr&+Wk&+wl&+Wi&+wn&+Wg &+Wdiamond &+mlies here.&n~
+~
+34 27 4 0 10 0 1048576 8404993 0 87052379 0
+60 0 0 0 0 0 0 0
+3 56230 100 0 128 0 1024
+E
+dreamcasters scepter stars~
+&+mThis long shaft &+Ls&+mce&+Mp&+mte&+Lr &+mhas a &+Wdiamond &+Lmounted on &+wt&+Wo&+wp &+Lthat &+ws&+Wp&+wa&+Wr&+wk&+Wl&+we&+Ws &+Llike the s&+Wt&+wa&+Wr&+Ls.&n
+~
+A
+4 5
+A
+3 5
+#85725
+fluffy bed~
+&+wa &+Wf&+wlu&+Wff&+wy &+Wb&+we&+Wd&n~
+&+wA large &+Wf&+wlu&+Wff&+wy &+Wb&+we&+Wd &+wlooks ext&+Wreme&+wly in&+Wvit&+wing.&n~
+~
+25 3 4 0 11 0 16384 0 0 0 0
+31300 7 -1 0 0 0 0 0
+12 24310 100
+E
+fluffy bed~
+&+wThis large c&+Wom&+wfy &+Wb&+we&+Wd be&+wck&+Won&+ws you to rest your he&+Wad &+wand let your &+Wm&+win&+Wd &+wbe &+Wf&+wr&+We&+we to w&+Wand&+wer.
+&+WEn&+wter this &+Wb&+we&+Wd&+w, to r&+Wev&+wi&+Wve &+wyour &+Ws&+wo&+Cu&+cl&+w.&n
+~
+#85726
+bone earring~
+&+Wan ea&+wrr&+Wing of b&+won&+We&n~
+&+WA simple b&+won&+We ea&+wrr&+Wing lies here.&n~
+~
+9 10 2 0 10 0 0 524289 0 0 0
+5 0 0 4 0 0 0 0
+1 34213 100 33554432 0 0 0
+E
+bone earring~
+&+WA small b&+won&+We works well for an ea&+wrr&+Wing.&n
+~
+A
+13 18
+A
+14 10
+#85727
+poleaxe silver~
+&+La l&+wo&+Wn&+Lg &+cs&+Cil&+cver po&+Cl&+cea&+Cx&+ce&n~
+&+LA st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cpo&+Cl&+cea&+Cx&+ce made of s&+Cil&+cver lies here&+L.&n~
+~
+5 22 4 0 7 0 4194304 8193 1 0 0
+16 3 5 0 0 0 0 0
+6 30512 100
+E
+poleaxe silver~
+&+LThis is a l&+wo&+Wn&+Lg st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cpo&+Cl&+cea&+Cx&+ce made of s&+Cil&+cver&+L.&n
+~
+A
+18 3
+A
+19 3
+#85728
+crown relic impunity~
+&+La &+wre&+Lli&+wc &+mcr&+Mown &+Lof &+mimp&+Munity&n~
+&+LAn &+mee&+Mrie &+wre&+Lli&+wc &+mcr&+Mown &+Lfrom &+WA&+wrc&+Lium lies here &+mwait&+Ming &+Lto &+mtrans&+Mfer &+mpow&+Mer&+L.&n~
+~
+9 19 3 0 15 0 0 17 0 0 0
+25 0 0 3 0 0 0 0
+3 92347 100
+E
+crown relic impunity arcium~
+&+LThis is an &+mee&+Mrie &+Llooking &+Madamantium &+mcr&+Mown &+Lfrom &+WA&+wrc&+Lium's &+mpa&+Mst &+Lthat &+mbe&+Mlongs &+Lto those &+mde&+Mserving &+mpow&+Mer&+L.&n
+~
+A
+37 3
+A
+35 3
+#85729
+shield black bone soldiers black-bone~
+&+La sol&+wd&+Wie&+Lrs black&+w-&+Wb&+won&+We &+Ls&+wh&+Wi&+Le&+wl&+Wd&n~
+&+LA sol&+wd&+Wie&+Lrs st&+wa&+Wn&+Ld&+wa&+Wr&+Ld i&+ws&+Ws&+Lue &+Ls&+wh&+Wi&+Le&+wl&+Wd &+Llies here.&n~
+~
+37 10 3 0 7 0 0 513 0 0 0
+1 8 3 90 4 0 0 0
+10 9142 100
+E
+shield black bone soldiers black-bone~
+&+LThis is a st&+wa&+Wn&+Ld&+wa&+Wr&+Ld i&+ws&+Ws&+Lue &+Ls&+wh&+Wi&+Le&+wl&+Wd &+Lfor an &+WA&+wrc&+Lium sol&+wd&+Wie&+Lr.&n
+~
+A
+26 5
+#85730
+whip silver~
+&+La s&+wl&+Wi&+Lm &+cs&+Cil&+cver h&+Cand&+cled w&+Chi&+cp&n~
+&+LA st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cw&+Chi&+cp made of s&+Cil&+cver lies here&+L.&n~
+~
+5 22 3 0 7 0 0 8193 1 0 0
+14 3 4 0 0 0 0 0
+3 24502 100
+E
+whip silver~
+&+LThis is a s&+wl&+Wi&+Lm st&+wa&+Wn&+Ldard i&+ws&+Ws&+Lue &+cw&+Chi&+cp made of s&+Cil&+cver&+L.&n
+~
+A
+18 3
+A
+19 3
+#85731
+tail dragon severed~
+&+Ca s&+cever&+Ced &+rdrag&+Ron ta&+ril&n~
+&+CA s&+cever&+Ced &+rdrag&+Ron ta&+ril &+Chas dro&+cpp&+Ced here.&n~
+~
+11 35 3 0 8 0 4096 33554433 0 0 0
+0 0 0 0 0 0 0 0
+1 24016 100
+E
+tail dragon severed~
+&+CA pi&+cec&+Ce of &+rdrag&+Ron ta&+ril &+Chas be s&+cever&+Ced off as a tr&+cop&+Chy.&n
+~
+A
+1 8
+A
+5 8
+#85732
+quiver dragon hunters~
+&+Cthe qu&+civ&+Cer of &+rdrag&+Ron &+Rhunt&+rers&n~
+&+CA &+rdrag&+Ron &+Rhunt&+rer &+Chas left their qu&+civ&+Cer here.&n~
+~
+30 35 3 0 11 0 0 9437185 0 0 0
+250 0 1 0 0 0 0 0
+-10 24081 100
+E
+quiver dragon hunters~
+&+CThis qu&+civ&+Cer has been we&+cll&+C-&+cus&+Ced by a leg&+cend&+Cary &+rdrag&+Ron hunt&+rer&+C.&n
+~
+A
+23 -2
+A
+22 -2

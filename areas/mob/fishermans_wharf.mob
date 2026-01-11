@@ -1,37 +1,36 @@
 #88900
-serpent three-headed head snake three~
-&+ma three&+M-&+mheaded &+GS&+ger&+Gp&+gen&+Gt&n~
-&+mA huge &+GS&+ger&+Gp&+gen&+Gt&+m with three&+M-&+mheads, stands tall as it &+Mhiss&+m and &+Mspits&+m.&n.&n
+razhl serpent hydra three-headed~
+&+mR&+Ma&+Lzh&+ml&+w, &+mthe thr&+Mee&+m-&+Mhe&+mad&+Med &+gh&+Gy&+gd&+Gr&+ga &+Gs&+ge&+Gr&+Lpen&+wt&n~
+&+mR&+Ma&+Lzh&+ml&+w, &+mthe thr&+Mee&+m-&+Mhe&+mad&+Med &+gh&+Gy&+gd&+Gr&+ga &+Gs&+ge&+Gr&+Lpen&+wt &+gstands tall as it h&+Gis&+gs and s&+Gpit&+gs.&n
 ~
 &+m   The monster towers over&+Ghead slithering si&+mde to side.  Three scary
 &+mheads rise from its thick&+G body hissing with&+m fangs exposed.  The purple
 &+msnake has a green scaled c&+Ghest.  Eyes glow r&+med with hate and fangs drip
 &+mwith fear.  In the serpent&+Gs home any invader&+m will be challenged.&N
 ~
-273418 1 0 0 302549048 262144 0 0 -1000 S
-RS 0 1114112 0 5
-43 0 0 1d1+1 1d1+1
+17181770 1 0 0 526360 262146 67108864 0 -400 S
+RS 0 64 2 5
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 2
 #88901
-ukdku elder magus 50~
-&+wUkdku, &+Wrenown elder&+C frost &+cmagus&n~
-&+wUkdku, &+Wrenown elder&+C frost &+cmagus.&n
+naiad aggressive~
+&+ban aggressive &+Bna&+ci&+Ca&+wd&n~
+&+bAn aggressive looking &+Bna&+ci&+Ca&+wd &+bswims here.&n
 ~
-&+C   The mystical man stands tall ready for change.  The seasons come
-&+Cand go yet this frost magus seems timeless.  He is constructed by the
-&+Csame ice elements that empower him.  This elder is almost ghost like
-&+Cand translucent.  Beware, much power comes from creature of his wisdom.&n
+&+b   With an echoed voice, the ghostly water nymph beckons you to come closer.
+&+bDespite concerns you find yourself complying.  Her beauty is intriging.
+&+bIs she even really there?&n
 ~
-8712 0 0 0 134217818 0 0 0 -124 S
-UG 0 33554432 0 -1
-36 0 0 1d1+1 1d1+1
+395336 1 0 0 134219776 0 0 1024 -250 S
+p2 0 32768 1 -1
+35 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 2
 #88902
 baltik lonely trapper~
-&+LBal&+wtik,&+L the lonely &+gtrap&+Lper&n~
-&+LBal&+wtik,&+L the lonely &+gtrap&+Lper searches for bounty.&n
+&+wBal&+Ltik, the lonely &+gtrap&+Lper&n~
+&+wBal&+Ltik, the lonely &+gtrap&+Lper searches for natures bounty.&n
 ~
 &+L   The tall man seems to be at one with his environment, hearing tuned,
 &+Lvision screens, senses heightened.  Clothes purely functional, they
@@ -39,86 +38,84 @@ baltik lonely trapper~
 &+Lfor &+wdaily supplies&+L.  Stopping only momentarily to catch his breath from
 &+Lthis harsh existence.&N
 ~
-1073752078 0 0 0 268435456 0 0 0 -100 S
-PH 0 256 0 -1
-36 0 0 1d1+1 1d1+1
+1073743946 0 0 0 8 0 0 0 250 S
+we 0 16384 2 -1
+41 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 1
 #88903
 widoc retired fisherman~
-&+LWid&+woc,&+L the retired &+gfisher&+Lman~
-&+LA retired &+gfisher&+Lman stands here, ready to help.&n
+&+wWi&+Ldoc,&+L the retired &+gfisher&+Lman&n~
+&+wWi&+Ldoc, a retired &+gfisher&+Lman stands here eager to chat.&n
 ~
 &+L   The wise old man has dusty salt n' pepper hair, worn face, and
 &+Lbeat hands.  He walks slow but talks fast.  Up bright and early,
 &+Lhe is ready for the day's activities.  Not waiting for death, he
 &+Ltries to make the most of each moment given to him.&n
 ~
-10250 0 0 0 12 1024 0 67108864 50 S
-PH 0 16384 0 -1
+2122 0 0 0 8 0 0 0 250 S
+p2 0 16384 1 -1
 36 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #88904
 dimbled lost fisherman~
 &+wDim&+Lbled&+w, &+La lost &+gfisher&+Lman&n~
-&+LA lost &+gfisher&+Lman looks upset.&n
+&+wDim&+Lbled&+w, &+La lost &+gfisher&+Lman looks upset.&n
 ~
 &+L   The fishermans face is overcome with a frustrating look
 &+Lof confusion.  Teeth grit with a snare and spit, he lets
 &+Lsome words of profanity loose.  Studying the landscape,
 &+Lthe man has become lost in this area.&n
 ~
-10376 0 0 0 33554440 0 0 0 -750 S
-PH 0 65536 0 -1
+2122 0 0 0 8 0 0 0 0 S
+p2 0 128 1 -1
 36 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #88905
 adult fisher fisherman man~
 &+Lan adult &+gfisher&+Lman&n~
-&+LAn adult &+gfisher&+Lman stands here, pole extended.&n
+&+LAn adult &+gfisher&+Lman stands here pole extended.&n
 ~
 &+L   Focused on having a good time, the mature man tries to forget
 &+Leveryday business for now.  Hoping to enjoy the beauty of the lake
-&+Lwith his youngest son.  Here he can become childlike too.&n
+&+Lwith his youngest son.  Here he can become childlike too.  The only
+&+Llimits to this escape are the fishing supplies on hand.&n
 ~
-2056 128 0 0 8 0 0 1048576 -200 S
-PH 0 8192 0 -1
-31 0 0 1d1+1 1d1+1
+67110986 0 0 0 8 0 0 0 250 S
+p2 0 0 0 -1
+26 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #88906
 old fisher fisherman man~
 &+Lan old &+gfisher&+Lman&n~
-&+LAn old &+gfisher&+Lman sits here, watching the view.&n
+&+LAn old &+gfisher&+Lman sits here watching the view.&n
 ~
 &+L   Crazy mess of hair, shaggy eyebrows, and wrinkles display this
 &+Lmans wise age.  Sitting before the lake, he peers aboard pondering
 &+Llife's mysteries.  Suddenly his attention is disturbed.  A glimmer
-&+Lwithin the lake is a tell tale sign, that some unconcerned fellow has
-&+Lleft behind a dangerous shard of glass.
-
-&+LThe old &+gfisher&+Lman&+w, mutters to himself ‘Boy I can't believe the disrespect
-&+wof leaving trash discarded in such a beautiful lake.'&n
+&+Lwithin the lake is a tell tale sign, that some unconcerned fellow
+&+Lhas left behind a dangerous shard of glass.&n
 ~
-67108874 0 0 0 8 0 128 0 -100 S
-PH 0 4096 0 -1
-28 0 0 1d1+1 1d1+1
+74 0 0 0 8 0 0 0 250 S
+p2 0 0 0 -1
+26 0 0 1d1+1 1d1+1
 0.0.0.0 0
 6 6 1
 #88907
 eager fisher fisherman man~
 &+Lan eager &+gfisher&+Lman&n~
-&+LAn eager &+gfisher&+Lman stands here, baiting his hook.&n
+&+LAn eager &+gfisher&+Lman stands here baiting his hook.&n
 ~
 &+L   The barefoot boy stands even with his fishing rod trying
 &+Lto bait his hook.  Frustrated by the day's luck, he likes to
 &+Ltake a dip to refresh his spirit.  Oddly a frog can be heard
 &+Lwithin the boy short pocket.&n
 ~
-2058 128 0 0 40 0 0 8 -250 S
-PH 0 32768 0 -1
+74 0 0 0 8 0 0 0 250 S
+p2 0 0 0 -1
 26 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -132,23 +129,23 @@ beaver bold~
 &+ywork is never done.  Focused on the tasks at hand, it moves
 &+yalong ignoring the world around.&n
 ~
-264200 0 0 0 2048 0 0 0 50 S
-A 0 0 0 -1
-23 0 0 1d1+1 1d1+1
+262216 0 0 0 2048 0 0 0 0 S
+A 0 0 0 3
+26 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 2
 #88909
-snake~
+snake water~
 &+La water &+gs&+Ln&+ga&+Lk&+ge&n~
 &+LA long water &+gs&+Ln&+ga&+Lk&+ge rushes through the water.&n
 ~
-&+L   Jetting through the water this snake knows how to hunt.
+&+L   Jetting through the water, this snake knows how to hunt.
 &+LThin and black it is unseen until upon you.  At home skimming
 &+Lthe surface or diving below, the snake surrounds its victim.&n
 ~
-262152 1 0 0 2048 0 0 0 -200 S
-RS 0 0 0 -1
-23 0 0 1d1+1 1d1+1
+262216 1 0 0 2048 0 0 0 -250 S
+RS 0 0 0 2
+26 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #88910
@@ -157,13 +154,13 @@ eagle baldeagle~
 &+wA majestic &+Wbald&+weagle guards her nest.&n
 ~
 &+W   Noble in stature, this mighty bird demands respect.  Serious
-&+Leyes peer from its white head and massive talons extend from its
-&+Lblack body.  Home in the forest, this creature still ventures out
-&+Lover the lake daily to feed her young.&n
+&+Weyes peer from its white head and massive talons extend from its
+&+Wblack body.  Home in the forest, this creature still ventures out
+&+Wover the lake daily to feed her young.&n
 ~
-2058 1 0 0 134217728 0 0 0 100 S
-B 0 0 0 -1
-22 0 0 1d1+1 1d1+1
+395338 1 0 0 134217728 0 0 0 100 S
+B 0 0 0 2
+26 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #88911
@@ -172,42 +169,29 @@ eagle baldeagle~
 &+wA majestic &+Wbald&+weagle soars overhead.&n
 ~
 &+W   Noble in stature, this mighty bird demands respect.  Serious
-&+Leyes peer from its white head and massive talons extend from its
-&+Lblack body.  Home in the forest, this creature still ventures out
-&+Lover the lake daily.&n
+&+Weyes peer from its white head and massive talons extend from its
+&+Wblack body.  Home in the forest, this creature still ventures out
+&+Wover the lake daily.&n
 ~
-2056 0 0 0 134217728 0 0 0 100 S
-B 0 0 0 -1
-22 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#88912
-lentl stalker~
-&+wa len&+Lt&+wl &+Lstalker&n~
-&+LThe &+wbushy len&+Lt&+wl&+L rarly walks about.&n
-~
-&+L   A leafy stalk extends outward, combining to form a matchstick man.
-&+LThe healthly green plant, walks upright, almost even floats with the &+Lwind.&n
-~
-1074012298 4 0 0 0 0 2162688 0 -665 S
-HF 0 1 0 -1
+395336 0 0 0 134217728 0 0 0 100 S
+B 0 0 0 2
 21 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#88913
+#88912
 leech blood hungry~
 &+La &+rbl&+Roo&+rd&+L hungry leech&N~
 &+LThis hungry leech looks forward to &+rf&+Ree&+rd&+Rin&+rg&+L.&N
 ~
-&+L   The black tentacle like worm slithers, slims, gulps, and climbs,
+&+L   The black tentacle like worm slithers, slimes, gulps, and climbs,
 &+Lfrom creature to creature, &+rfeeding&+L its sensation for &+rBl&+ROO&+rD&+L.&n
 ~
-262154 5 0 0 2048 262144 0 0 -100 S
-F 0 0 0 -1
-21 0 0 1d1+1 1d1+1
+262218 4 0 0 2048 262144 0 0 -100 S
+F 0 0 0 1
+16 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#88914
+#88913
 catfish fish~
 &+ya large cat&+Yfish&N~
 &+yA large cat&+Yfish&+y combs the lake bottom.&N
@@ -215,26 +199,26 @@ catfish fish~
 &+L   The dark catfish is wide and stout, wiskers extend from the mouth.
 &+LBusy doing the dirty work, this fish helps clean the lake bottom.&n
 ~
-264200 0 0 0 2048 0 0 0 25 S
-F 0 0 0 -1
+262216 0 0 0 2048 0 0 0 0 S
+F 0 0 0 2
+16 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#88914
+widemouth bass~
+&+La widemouth &+gbass&N~
+&+LA widemouth &+gbass&+L swims through the lily pads.&N
+~
+&+L   The fish has a plump body and wide mouth.  The mix of dark and
+&+Lgreen scales are clean and healthy.  The fish seeks shade under lily
+&+Lpads or a sunken log.&n
+~
+262216 0 0 0 2048 0 0 0 0 S
+F 0 0 0 2
 16 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #88915
-bass~
-&+La widemouth &+gbass&N~
-&+LA widemouth &+gbass&+L swims through the lilly pads.&N
-~
-&+L   The fish has a plump body and wide mouth.  The mix of dark and
-&+Lgreen scales are clean and healthy.  The fish seeks shade from lily
-&+Lpads or a sunken log.&n
-~
-262152 0 0 0 2048 0 0 0 -50 S
-F 0 0 0 -1
-16 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#88916
 bullfrog frog~
 &+ga large bull&+Gfrog&n~
 &+gA large bull&+Gfrog&+g hides beneath the lilies.&n
@@ -242,25 +226,25 @@ bullfrog frog~
 &+g   Lurking in the shallows, awaiting fresh &+Ltadpoles&+g the mature frog
 &+gsits still as a rock.&n
 ~
-262282 0 0 0 2048 0 0 0 25 S
-R 0 0 0 -1
-11 0 0 1d1+1 1d1+1
+262218 0 0 0 2048 0 0 0 0 S
+R 0 0 0 2
+16 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#88917
+#88916
 dragonfly fly~
 &+Ca swift &+mdragon&+Cfly&n~
-&+CA swift &+mdragon&+Cfly zips around then pauses.&n
+&+CA swift &+mdragon&+Cfly zips around then pauses mid-air.&n
 ~
 &+m   Daring yet de&+Mlicate&+m hardy survivors, these &+Mbug&+ms have an arro&+mgance
 &+mand s&+Mex&+m drive like n&+Mone other.&n
 ~
-393224 0 0 0 134217728 0 0 1024 69 S
-I 0 8421376 0 -1
-11 0 0 1d1+1 1d1+1
+393288 0 0 0 0 0 0 1024 0 S
+I 0 0 0 1
+16 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#88918
+#88917
 cricket jumpy~
 &+ga jumpy &+Gcricket&n~
 &+gA &+Gcricket&+g sits calmly until discovered.&N
@@ -268,12 +252,12 @@ cricket jumpy~
 &+g   The scaled insect has bug eyes and dual antennas.  Small but
 &+gvery quick, the creature hops through the field grass.&n
 ~
-136 0 0 0 268959744 0 536870912 0 50 S
-I 0 0 0 -1
+72 0 0 0 268435456 0 0 0 0 S
+I 0 0 0 1
 6 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#88919
+#88918
 mole vicious~
 &+ya vicious m&+Yo&+yle&n~
 &+yA vicious m&+Yo&+yle pokes it head out of the ground.&n
@@ -281,46 +265,62 @@ mole vicious~
 &+y   This small fur ball appears to have no eyes, just a
 &+ysnout and enlarged claws that shred through dirt.&n
 ~
-72 1 0 0 1572864 0 0 0 -35 S
-A 0 0 0 -1
-6 0 0 1d1+1 1d1+1
+72 0 0 0 0 0 0 0 0 S
+A 0 0 0 1
+16 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#88920
+#88919
 snail shell~
 &+ya &+Ys&+wna&+yil shell&n~
-&+yA slow &+Ysna&+wil&+Y sh&+well &+ycreeps over here.&n
+&+yA slow &+Ysna&+wil&+Y sh&+well &+ycreeps over the ground.&n
 ~
 &+y   The slimy snail hides in his spi&+Yra&+yl &+Ysh&+yell.&n
 ~
 74 0 0 0 0 1024 0 0 0 S
-I 0 0 0 -1
+I 0 0 0 1
 3 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#88921
-chicken wild~
-&+Ya wild &+ychicken&n~
+#88920
+dusty chicken~
+&+ya dusty&+Y chicken&n~
 &+yThe dusty &+Ychicken &+ydashes back and forth.&n
 ~
 &+y   Living in the wild, this chicken is spooked easily.  Looking like
 &+yeasy prey, it can manage to scatter quite quickly.&n
 ~
-8 0 0 0 0 0 0 0 10 S
-A 0 0 0 -1
-6 0 0 1d1+1 1d1+1
+72 0 0 0 0 0 0 0 0 S
+A 0 0 0 2
+11 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
-#88922
+8 8 2
+#88921
 chick young~
 &+ya young &+Ychick&n~
-&+YThe young chick pecks the surface.&n
+&+YThe young chick pecks the ground surface.&n
 ~
 &+Y   The fluffy yellow chick is so adorable.  Constantly chirping and
 &+Ypecking the ground.&n
 ~
-8 0 0 0 0 0 0 0 15 S
-A 0 0 0 -1
-3 0 0 1d1+1 1d1+1
+72 0 0 0 0 0 0 0 0 S
+A 0 0 0 2
+6 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 0
+8 8 2
+#88922
+aquaelf elf aqua lonely~
+&+ba lonely &+Baqua&+celf&n~
+&+bA lonely &+Baqua&+celf&+b stands here practicing his &+Bma&+cg&+Cic&+b.&n
+~
+&+c   The lonely aquaelf, has been waiting for his precious lady to come back
+&+cto him.  Meanwhile, he practices magic to pass the time and improve his powers.
+&+cDripping long blue hair covers his sad face.  Gilled neck and pointy ears suit
+&+chis environment well.  Which is good, because he never leaves this place, still
+&+choping for a reunion with his long lost love.&n
+~
+395338 0 0 0 134219816 0 0 0 250 S
+p2 0 32 3 -1
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1

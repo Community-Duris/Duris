@@ -1,278 +1,97 @@
 #99700
-spring lava~
-&+ra small lava spring&N~
-&+rA small lava spring lies here.&N~
+sword longsword flaming cinder~
+&+La &+rfl&+Ra&+Ymi&+Rn&+rg &+Llo&+wngswo&+Lrd &+rem&+Rbl&+Yaz&+Ron&+red &+w'&+rC&+Ri&+Ynd&+Re&+rr&+w'&n~
+&+LA &+rfl&+Ra&+Ymi&+Rn&+rg &+Llo&+wngswo&+Lrd &+rf&+Ro&+Yrg&+Re&+rd &+Lfrom &+rla&+Rv&+Ya r&+Ro&+rck &+Llies here.&n~
 ~
-25 15 3 0 7 0 110592 0 0 0 0
-99746 7 -1 0 0 0 0 0
-0 0 100
+5 11 3 0 11 0 8192 8396801 64 0 0
+5 3 6 3 1 235 50 50
+5 34612 100 536870912 0 0 0
 E
-lava spring~
-&+rThis is a small lava spring filled with molten lava.&n
+sword longsword flaming cinder~
+&+LThis &+rfl&+Ra&+Ymi&+Rn&+rg &+Llo&+wngswo&+Lrd was &+rf&+Ro&+Yrg&+Re&+rd &+Lfrom &+ws&+Le&+wv&+Le&+wr&+La&+wl &+rla&+Rv&+Ya r&+Ro&+rcks&+L, then &+rem&+Rbl&+Yaz&+Ron&+red &+Lwith the name &+w'&+rC&+Ri&+Ynd&+Re&+rr&+w'&+L.&n
 ~
-#99701
-badge flesh rotten~
-&+ga badge of rotten flesh&N~
-&+gA small badge made of rotten flesh lies here.&N~
-~
-11 15 3 0 7 0 12288 2097153 0 0 0
-0 0 0 0 0 0 0 0
-0 302 100
-E
-badge flesh rotten~
-&+gThis is a small badge made of rotten flesh.&n
-~
-A
-13 5
-#99702
-potion clear heal~
-&+Ca clear potion&n~
-&+CA clear potion lies here.&N~
-~
-10 15 3 0 7 0 4096 16385 0 0 0
-31 1 -1 -1 0 0 0 0
-0 2359 100
-E
-potion clear heal~
-&+CThis is a small clear potion of healing power.&n
-~
-#99703
-illithid illithids jeweled belt~
-&+man&+M illithids&n &+mjeweled belt&n~
-&+mA thin jeweled belt lies here&n.~
-~
-9 15 3 0 7 0 8192 2049 0 0 0
-8 0 0 3 0 0 0 0
-0 10000 100 73728 0 0 0
-E
-helm domination~
-&+mThis is a remarkable
-~
-A
-13 20
-A
-1 7
-#99704
-spring lava~
-&+ra small lava spring&N~
-&+rA small lava spring lies here.&N~
-~
-25 15 3 0 7 0 110592 0 0 0 0
-99741 7 -1 0 0 0 0 0
-0 0 100
-E
-spring lava~
-&+rThis is a lava spring filled with molten lava&n.
-~
-#99705
-chunk cinder~
-&+ra chunk of cinder&N~
-&+rA chunk of cinder lies here.&n~
-~
-8 15 3 0 7 0 8499200 16385 32768 0 0
-0 0 0 0 0 0 0 0
-0 1 100
-E
-chunk cinder~
-&+rThis is a small chunk of red hot cinder&n.
-~
-#99706
-sword longsword cinder~
-&+ra longsword named &n'&+RCinder&N'~
-&+rA longsword named &n'&+RCinder&N'&+r lies here.&N~
-~
-5 15 3 0 7 0 1024 8193 32768 87572507 0
-5 3 4 3 1 195 50 50
-11 9235 100 0 16 0 0
-E
-sword longsword cinder~
-&+rThis is a fine crafted sword made of cinders.  It has the word cinder
-&+rinscribed along the blade&n.
-~
-A
-19 3
 A
 18 3
-#99707
-red bp backpack~
-&+ra glowing red backpack&N~
-&+rA &+Rglowing red &+rbackpack rests here.&N~
-~
-15 15 3 0 7 0 69633 4210689 0 0 0
-150 1 0 0 0 0 0 0
-0 10000 100
-E
-red bp backpack~
-&+rThis is a bright red backpack that seems to be glowing&n.
-~
-A
-13 8
-#99708
-spring lava~
-&+ran embedded lava spring&N~
-&+rA small lava spring lies here embedded in the wall.&N~
-~
-25 15 3 0 7 0 110592 0 0 0 0
-99752 7 -1 0 0 0 0 0
-0 0 100
-E
-lava spring~
-&+rThis is a small lava spring filled with molten lava&n.
-~
-#99709
-spring lava~
-&+ran embedded lava spring&N~
-&+rA small lava spring lies here embedded in the wall.&N~
-~
-25 15 3 0 7 0 110592 0 0 0 0
-99751 7 -1 0 0 0 0 0
-0 0 100
-E
-lava spring~
-&+rThis is a small lava spring filled with molten lava&n.
-~
-#99710
-blue key~
-&+ba blue key&n~
-&+bA small blue key lies here&n.~
-~
-18 15 3 0 7 0 8388608 16385 0 0 0
-0 0 0 0 0 0 0 0
-0 0 100
-E
-blue key~
-&+bThis is a basic blue glass key&n.
-~
-#99711
-rotten corpse~
-&+ya rotten corpse&n~
-&+yA rotten corpse of a tortured soul lies here&n.~
-~
-15 15 3 0 7 0 36864 0 0 0 0
-100 0 0 0 0 0 0 0
-0 0 100
-E
-rotten corpse~
-&+yThis is a smelly rotten corpse that has been discarded&n.
-~
-#99712
-necklace deus power~
-&+Ya necklace of&n &+CDeus &+Ypower&n~
-&+YA small&n &+Ctranslucent&n &+Ynecklace lies here&n.~
-~
-9 15 3 0 7 0 8192 5 0 0 0
-5 0 0 3 0 0 0 0
-0 10000 100
-E
-necklace deus power~
-&+YThis is a small&n &+Ctranslucent&n &+Ynecklace with holy powers&n.
-~
-A
-13 9
-A
-24 -2
-#99713
-flaming bracer hell fire hellfire~
-&+Ra &+Yflaming &+Rbracer of &+rhell&+Yfire&n~
-&+rA strange bracer lies here flaming&n.~
-~
-9 15 3 0 7 0 77824 4097 0 0 0
-5 0 0 5 0 0 0 0
-0 10000 100
-E
-flaming bracer hell fire hellfire~
-You see nothing special...
-~
 A
 19 3
-A
-13 3
-#99714
-steel knife~
-&+La steel knife&n~
-&+LA solid steel knife lies here with &+rblood&+L dried on it&n.~
+#99701
+rock lava chunk~
+&+La ch&+wun&+Lk of &+rla&+Rv&+Ya r&+Ro&+rck&n~
+&+LA ch&+wun&+Lk of &+rla&+Rv&+Ya r&+Ro&+rck &+Llies here.&n~
 ~
-5 15 3 0 7 0 32768 8193 0 0 0
-2 2 3 11 0 0 0 0
-0 1 100
-E
-steel knife~
-&+LThis is a simple solid steel knife.  There is a bit of dried &+rblood&+L
-&+Lleft on the tip of the knife.&n
-~
-#99715
-rotten corpse~
-&+ya rotten corpse&n~
-&+yA rotten corpse of a tortured soul lies here&n.~
-~
-15 15 3 0 7 0 32768 0 0 0 0
-100 0 0 0 0 0 0 0
-0 0 100
-E
-rotten corpse~
-&+yThis is a smelly rotten corpse that has been abandon&n.
-~
-#99716
-dirty key~
-&+ya dirty key&n~
-&+yA small dirty key lies here discarded&n.~
-~
-18 15 3 0 7 0 8388608 16385 0 0 0
+8 11 3 0 7 0 0 1 32768 0 0
 0 0 0 0 0 0 0 0
-0 1 100
+1 2340 100
 E
-dirty key~
-&+yThis is a small dirty key made of iron.
+rock lava chunk~
+&+LThis ch&+wun&+Lk of &+rla&+Rv&+Ya r&+Ro&+rck &+Lis &+rsc&+Ro&+Yrch&+Ri&+rng h&+Ro&+rt&+L.&n
 ~
-#99717
-spring lava~
-&+ra small lava spring&N~
-&+rA small lava spring lies here.&N~
+#99702
+chain fiery hades~
+&+La &+rf&+Ri&+Yer&+Ry &+Lc&+whai&+Ln of &+rh&+Ra&+Yd&+Re&+rs&n~
+&+LA &+rf&+Ri&+Yer&+Ry &+Lc&+whai&+Ln from the &+rd&+Re&+Yp&+Rt&+rhs &+Lof &+rh&+Ra&+Yd&+Re&+rs &+Llies here.&n~
 ~
-25 15 3 0 7 0 110592 0 0 0 0
-99715 7 -1 0 0 0 0 0
-0 0 100
+9 11 3 0 11 0 0 5 0 0 0
+10 0 0 4 0 0 0 0
+2 19032 100 33554432 0 0 0
 E
-spring lava~
-&+rThis is a lava spring filled with molten lava&n.
+chain fiery hades~
+&+LThis &+rf&+Ri&+Yer&+Ry &+wnec&+Lk&+wla&+Lce of c&+whai&+Ln l&+wink&+Ls was &+rf&+Ro&+Yrg&+Re&+rd &+Lin the &+rd&+Re&+Yp&+Rt&+rhs &+Lof &+rh&+Ra&+Yd&+Re&+rs&+L.&n
 ~
-#99718
-spring lava~
-&+ra small lava spring&N~
-&+rA small lava spring lies here.&N~
+A
+13 18
+A
+14 10
+#99703
+buckle flaming hellfire~
+&+La &+rfl&+Ra&+Ymi&+Rn&+rg &+Lb&+wuc&+Lkle of &+rhe&+Rl&+Ylf&+Ri&+rre&n~
+&+LA &+rfl&+Ra&+Ymi&+Rn&+rg &+Lb&+wuc&+Lkle &+ren&+Rv&+Yelo&+Rp&+red &+Lin &+rhe&+Rl&+Ylf&+Ri&+rre &+Llies here.&n~
 ~
-25 15 3 0 7 0 110592 0 0 0 0
-99771 7 -1 0 0 0 0 0
-0 0 100
+9 11 3 0 11 0 0 2049 0 0 0
+15 0 0 4 0 0 0 0
+2 15032 100 536870912 0 0 0
 E
-spring lava~
-&+rThis is a lava spring filled with molten lava&n.
+buckle flaming hellfire~
+&+LThis &+rfl&+Ra&+Ymi&+Rn&+rg &+Lb&+wuc&+Lkle of &+rla&+Rv&+Ya r&+Ro&+rcks &+Lis &+ren&+Rv&+Yelo&+Rp&+red &+Lin &+rhe&+Rl&+Ylf&+Ri&+rre&+L.&n
 ~
-#99719
-jewel~
-&+Ma dull jewel&n~
-&+MA small dull looking jewel lies here&n.~
+A
+13 18
+A
+17 -30
+#99704
+fireweed batch hypnotic~
+&+La &+rb&+Ra&+yt&+Ych &+Lof &+rh&+Ry&+yp&+Yno&+yt&+Ri&+rc f&+Ri&+yr&+Yew&+ye&+Re&+rd&n~
+&+LA &+rb&+Ra&+yt&+Ych &+Lof &+rh&+Ry&+yp&+Yno&+yt&+Ri&+rc f&+Ri&+yr&+Yew&+ye&+Re&+rd &+Llies here.&n~
 ~
-8 15 3 0 7 0 110592 16385 32768 0 0
+11 43 2 0 10 0 0 8404993 0 0 0
 0 0 0 0 0 0 0 0
-0 1 100
+0 10382 100 536870912 0 0 0
 E
-jewel~
-&+MThis is a dull looking purple jewel&n.
+fireweed batch hypnotic~
+&+LThis &+rb&+Ra&+yt&+Ych &+Lof &+rf&+Ri&+yr&+Yew&+ye&+Re&+rd &+Lgr&+yo&+Yw&+yn &+Lon &+rsc&+Ro&+Yrc&+Rh&+red &+Ll&+ya&+Yn&+yd&+Ls has &+rh&+Ry&+yp&+Yno&+yt&+Ri&+rc &+Lef&+yf&+Ye&+yc&+Lts.&n
 ~
-#99720
-sleeves arm bloodly~
-&+ra pair of bloody sleeves&n~
-&+rA pair of bloody sleeves lie here&n.~
+#99705
+elixir lifeforce life~
+&+Lan eli&+wx&+Lir of &+wlife&+Lforce&n~
+&+LAn eli&+wx&+Lir with a sw&+wirl&+Ling &+wvor&+Ltex lies here.&n~
 ~
-9 15 3 0 7 0 110592 257 0 0 0
-10 0 0 3 0 0 0 0
-0 1 100
+10 7 3 0 7 0 4096 1 0 0 0
+41 75 0 0 0 0 0 0
+0 7328 100
 E
-sleeves arm bloody~
-You see nothing special...
+elixir lifeforce life~
+&+LThis eli&+wx&+Lir has a sw&+wirl&+Ling &+wvor&+Ltex inside.&n
 ~
-A
-19 2
-A
-20 -2
+#99706
+order voucher flaming longsword sword~
+&+La v&+wouch&+Ler for &+w'&+La &+rfl&+Ra&+Ymi&+Rn&+rg &+Llo&+wngswo&+Lrd&+w'&n~
+&+LAn &+wor&+Lder v&+wouch&+Ler for a spec&+wial&+Lized &+wweap&+Lon lies here.&n~
+~
+8 28 3 0 7 0 0 1 32768 0 0
+0 0 0 0 0 0 0 0
+0 500000 100
+E
+order voucher flaming longsword sword~
+&+LThis &+Wpaper &+wor&+Lder v&+wouch&+Ler is for a spec&+wial&+Lized piece of &+wweap&+Lon from the death &+bknight &+Lbl&+wacksmi&+Lth&+w, &+BDr&+wem&+Bbel&+L.
+&+LIt is labeled &+w'&+La &+rfl&+Ra&+Ymi&+Rn&+rg &+Llo&+wngswo&+Lrd&+w'&n
+~

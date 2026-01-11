@@ -1,0 +1,32 @@
+{
+    "VsCodeTaskButtons.showCounter": false,
+    "VsCodeTaskButtons.tasks": [
+        {
+            "label": "$(discard) Clean Duris",
+            "task": "Clean Duris",
+            "tooltip": "Clean Duris"
+        },
+        {
+            "label": "$(build) Build Duris",
+            "task": "Build Duris",
+            "tooltip": "Build Duris"
+        },
+        {
+            "label": "$(copy) Copy Duris",
+            "task": "Copy Duris",
+            "tooltip": "Copy Duris"
+        },
+        {
+            "label": "$(run) Run Duris",
+            "task": "Run Duris",
+            "tooltip": "Run Duris"
+        },
+        {
+            "label": "$(stop) Kill Duris",
+            "task": "Kill Duris",
+            "tooltip": "Kill Duris"
+        },
+    ],
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "C_Cpp.errorSquiggles": "disabled"
+}

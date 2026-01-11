@@ -419,7 +419,8 @@ const struct innate_data innates_data[LAST_INNATE + 1] =
   {"living stone", NULL, SKILL_NONE},
   {"invisibility", NULL, SKILL_NONE },
   {"infernal fury", NULL, SKILL_NONE },
-  {"ophidian eyes", NULL, SKILL_NONE }
+  {"ophidian eyes", NULL, SKILL_NONE },
+  {"warding faith", NULL, SKILL_NONE }
 };
 
 string list_innates(int race, int cls, int spec)
@@ -995,9 +996,12 @@ void assign_innates()
   ADD_CLASS_INNATE(INNATE_AURA_PROTECTION, CLASS_CLERIC, 1, SPEC_HOLYMAN);
   ADD_CLASS_INNATE(INNATE_AURA_SPELL_PROTECTION, CLASS_CLERIC, 1, SPEC_HOLYMAN);
   ADD_CLASS_INNATE(INNATE_AURA_PRECISION, CLASS_PALADIN, 10, 0);
+//  ADD_CLASS_INNATE(INNATE_AURA_PRECISION, CLASS_CLERIC, 30, SPEC_ZEALOT);
   ADD_CLASS_INNATE(INNATE_AURA_ENDURANCE, CLASS_PALADIN, 15, 0);
+ // ADD_CLASS_INNATE(INNATE_AURA_ENDURANCE, CLASS_CLERIC, 30, SPEC_ZEALOT);
   ADD_CLASS_INNATE(INNATE_AURA_HEALING, CLASS_PALADIN, 30, 0);
   ADD_CLASS_INNATE(INNATE_AURA_BATTLELUST, CLASS_PALADIN, 45, 0);
+//  ADD_CLASS_INNATE(INNATE_AURA_BATTLELUST, CLASS_CLERIC, 46, SPEC_ZEALOT);
 
   ADD_CLASS_INNATE(INNATE_VISION_OF_THE_DEAD, CLASS_NECROMANCER, 31, SPEC_NECROLYTE);
   ADD_CLASS_INNATE(INNATE_VISION_OF_THE_DEAD, CLASS_THEURGIST, 31, SPEC_TEMPLAR);
@@ -1031,6 +1035,7 @@ void assign_innates()
 
   ADD_CLASS_INNATE(INNATE_GOD_CALL, CLASS_CLERIC, 1, 0);
   //ADD_CLASS_INNATE(INNATE_BLOOD_SCENT, CLASS_CLERIC, 1, SPEC_HEALER);
+  ADD_CLASS_INNATE(INNATE_WARDING_FAITH, CLASS_CLERIC, 30, SPEC_HEALER);
 
   ADD_CLASS_INNATE(INNATE_FLY, CLASS_ETHERMANCER, 1, 0);
   ADD_CLASS_INNATE(INNATE_FLY, CLASS_CONJURER, 30, SPEC_AIR);
@@ -1383,8 +1388,8 @@ void event_paladin_vit(P_char ch, P_char victim, P_obj obj, void *data) {
       if (af->modifier > 2)
         af->modifier -= 2;
       else {
-        affect_remove(ch, af);
         wear_off_message(ch, af);
+        affect_remove(ch, af);
         return;
       }
     else
@@ -1443,8 +1448,8 @@ void event_decrepify(P_char ch, P_char victim, P_obj obj, void *data)
 
     if (af)
     {
-      affect_remove(victim, af);
       wear_off_message(victim, af);
+      affect_remove(victim, af);
       return;
     }
   }

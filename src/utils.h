@@ -415,6 +415,9 @@ int race_size(int race);
 #define GET_MANA(ch)    ((ch)->points.mana)
 #define GET_MAX_MANA(ch) ((ch)->points.max_mana)
 
+#define GET_WARD(ch)    ((ch)->points.ward)
+#define GET_MAX_WARD(ch) ((ch)->points.max_ward)
+
 #define GET_MONEY(ch) ((ch)->points.cash[0] + \
            10 * (ch)->points.cash[1] + \
                        100 * (ch)->points.cash[2] + \
@@ -1330,7 +1333,8 @@ char *CRYPT2( char *passwd, char *name );
         affected_by_spell(victim, TAG_ARMLOCK) || \
         affected_by_spell(victim, TAG_LEGLOCK) || \
         affected_by_spell(victim, SPELL_BMANTLE) || \
-        affected_by_spell(victim, SPELL_ENERGY_DRAIN))
+        affected_by_spell(victim, SPELL_ENERGY_DRAIN) || \
+		affected_by_spell(victim, SPELL_FLAMESTRIKE)) \
 
 // Simply change these defines to focus reaver preferred weapons.
 // These defines are used for all the applicable reaver spells.

@@ -1,8 +1,8 @@
 #889
 &+gFisher&+Lmans Wharf&n~
-88973 2 0 10 20 2
+88969 1 0 15 20 1
 *
-* Zone edited with durisEdit v3.01
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 88904 3 1 100 0 0 0
@@ -13,192 +13,136 @@ D 0 88909 1 1 100 0 0 0
 *     east exit from "A Shady Shack" to
 *     "Along a Dirty Pier" - closed
 *
-D 0 88911 0 9 100 0 0 0
-*     north exit from "A Pristine Forest" to
-*     "Smokey Backwoods" - closed/blocked
+D 0 88923 2 1 100 0 0 0
+*     south exit from "A Pine Wood Shelter" to
+*     "Smokey Backwoods" - closed
 *
-D 0 88973 2 9 100 0 0 0
-*     south exit from "Smokey Backwoods" to
-*     "A Pristine Forest" - closed/blocked
-*
-D 0 88919 1 1 100 0 0 0
-*     east exit from "A Pristine Forest" to
+D 0 88969 0 1 100 0 0 0
+*     north exit from "Smokey Backwoods" to
 *     "A Pine Wood Shelter" - closed
 *
-D 0 88923 3 1 100 0 0 0
-*     west exit from "A Pine Wood Shelter" to
-*     "A Pristine Forest" - closed
+D 0 88965 2 2 100 0 0 0
+*     south exit from "A Water Filled Cavern" to
+*     "A Serpents Private Lair" - closed/locked
 *
-D 0 88970 2 2 100 0 0 0
-*     south exit from "A Cramped Tunnel" to
-*     "A Cramped Tunnel" - closed/locked
-*
-D 0 88971 0 2 100 0 0 0
-*     north exit from "A Cramped Tunnel" to
-*     "A Cramped Tunnel" - closed/locked
+D 0 88968 0 1 100 0 0 0
+*     north exit from "A Serpents Private Lair" to
+*     "A Water Filled Cavern" - closed
 *
 *
-O 0 88912 4 88902 100 0 0 0        * a bundle of sticks
 O 0 88900 1 88903 100 0 0 0        * a fishing guide
-O 0 88923 1 88911 100 0 0 0        * a curious sapling
-O 0 88909 2 88920 100 0 0 0        * a sign of cauTion
-O 0 88912 4 88920 100 0 0 0        * a bundle of sticks
-O 0 88914 5 88924 100 0 0 0        * a glass bottle
-O 0 88914 5 88925 100 0 0 0        * a glass bottle
-O 0 88910 7 88926 100 0 0 0        * some lily pads
-O 0 88911 7 88926 100 0 0 0        * some frog spawn jelly
-O 0 88914 5 88927 100 0 0 0        * a glass bottle
-O 0 88910 7 88927 100 0 0 0        * some lily pads
-O 0 88911 7 88927 100 0 0 0        * some frog spawn jelly
-O 0 88910 7 88928 100 0 0 0        * some lily pads
-O 0 88911 7 88928 100 0 0 0        * some frog spawn jelly
-O 0 88914 5 88929 100 0 0 0        * a glass bottle
-O 0 88910 7 88932 100 0 0 0        * some lily pads
-O 0 88911 7 88932 100 0 0 0        * some frog spawn jelly
-O 0 88914 5 88934 100 0 0 0        * a glass bottle
-O 0 88912 4 88938 100 0 0 0        * a bundle of sticks
-O 0 88909 2 88947 100 0 0 0        * a sign of cauTion
-O 0 88910 7 88956 100 0 0 0        * some lily pads
-O 0 88911 7 88956 100 0 0 0        * some frog spawn jelly
-O 0 88910 7 88958 100 0 0 0        * some lily pads
-O 0 88911 7 88958 100 0 0 0        * some frog spawn jelly
-O 0 88910 7 88960 100 0 0 0        * some lily pads
-O 0 88911 7 88960 100 0 0 0        * some frog spawn jelly
-O 0 88912 4 88973 100 0 0 0        * a bundle of sticks
-O 0 88924 1 88973 100 0 0 0        * a curious sapling
+O 0 88910 4 88910 100 0 0 0        * a bundle of sticks
+O 0 88910 4 88915 100 0 0 0        * a bundle of sticks
+O 0 88912 6 88924 100 0 0 0        * a glass bottle
+O 0 88908 5 88924 100 0 0 0        * a string of lily pads
+O 0 88912 6 88925 100 0 0 0        * a glass bottle
+O 0 88912 6 88926 100 0 0 0        * a glass bottle
+O 0 88912 6 88927 100 0 0 0        * a glass bottle
+O 0 88908 5 88927 100 0 0 0        * a string of lily pads
+O 0 88901 1 88927 100 0 0 0        * a small paddle boat
+O 0 88912 6 88929 100 0 0 0        * a glass bottle
+O 0 88912 6 88934 100 0 0 0        * a glass bottle
+O 0 88915 1 88937 100 0 0 0        * a sign of cauTion
+O 0 88907 1 88946 100 0 0 0        * a sign of cauTion
+O 0 88910 4 88951 100 0 0 0        * a bundle of sticks
+O 0 88910 4 88953 100 0 0 0        * a bundle of sticks
+O 0 88908 5 88955 100 0 0 0        * a string of lily pads
+O 0 88908 5 88957 100 0 0 0        * a string of lily pads
+O 0 88908 5 88959 100 0 0 0        * a string of lily pads
 *
-M 0 88919 4 88900 100 0 0 0        * a vicious mole
-M 0 88919 4 88900 100 0 0 0        * a vicious mole
-M 0 88920 8 88901 100 0 0 0        * a snail shell
-M 0 88912 5 88902 100 0 0 0        * a lentl stalker
-M 0 88922 6 88902 100 0 0 0        * a young chick
-M 0 88920 8 88903 100 0 0 0        * a snail shell
-M 0 88905 4 88904 100 0 0 0        * an adult fisherman
-F 1 88907 6 88904 100 0 0 0        * an eager fisherman (following)
-M 0 88906 4 88906 100 0 0 0        * an old fisherman
-M 0 88906 4 88906 100 0 0 0        * an old fisherman
-M 0 88905 4 88906 100 0 0 0        * an adult fisherman
-F 1 88907 6 88906 100 0 0 0        * an eager fisherman (following)
-F 1 88907 6 88906 100 0 0 0        * an eager fisherman (following)
-M 0 88905 4 88907 100 0 0 0        * an adult fisherman
-F 1 88907 6 88907 100 0 0 0        * an eager fisherman (following)
-M 0 88906 4 88908 100 0 0 0        * an old fisherman
-M 0 88906 4 88908 100 0 0 0        * an old fisherman
-M 0 88905 4 88908 100 0 0 0        * an adult fisherman
-F 1 88907 6 88908 100 0 0 0        * an eager fisherman (following)
-F 1 88907 6 88908 100 0 0 0        * an eager fisherman (following)
+M 0 88906 2 88906 100 0 0 0        * an old fisherman
+M 0 88905 2 88906 100 0 0 0        * an adult fisherman
+E 1 88903 2 18 100 0 0 0           *   a fine fishing pole
+M 0 88907 4 88906 100 0 0 0        * an eager fisherman
+M 0 88907 4 88906 100 0 0 0        * an eager fisherman
+M 0 88916 5 88906 100 0 0 0        * a swift dragonfly
+M 0 88906 2 88908 100 0 0 0        * an old fisherman
+M 0 88905 2 88908 100 0 0 0        * an adult fisherman
+E 1 88903 2 27 100 0 0 0           *   a fine fishing pole
+M 0 88907 4 88908 100 0 0 0        * an eager fisherman
+M 0 88907 4 88908 100 0 0 0        * an eager fisherman
+M 0 88916 5 88908 100 0 0 0        * a swift dragonfly
 M 0 88903 1 88909 100 0 0 0        * Widoc, the retired fisherman
-G 1 88906 999 0 100 0 0 0          *    a crude snorkel pipe
-G 1 88903 999 0 100 0 0 0          *    a fine fishing pole
-G 1 88901 999 0 100 0 0 0          *    small paddle boat
-M 0 88921 6 88909 100 0 0 0        * a wild chicken
-M 0 88919 4 88911 100 0 0 0        * a vicious mole
-M 0 88919 4 88911 100 0 0 0        * a vicious mole
-M 0 88918 8 88912 100 0 0 0        * a jumpy cricket
-M 0 88920 8 88913 100 0 0 0        * a snail shell
-M 0 88918 8 88915 100 0 0 0        * a jumpy cricket
-M 0 88921 6 88916 100 0 0 0        * a wild chicken
-M 0 88901 1 88917 60 0 0 0         * Ukdku, renown elder frost magus
-E 1 88922 1 14 100 0 0 0           *   some enchanted wristguards
-E 1 88921 1 18 100 0 0 0           *   a crystalline harp
-M 0 88922 6 88918 100 0 0 0        * a young chick
-M 0 88918 8 88919 100 0 0 0        * a jumpy cricket
-M 0 88912 5 88920 100 0 0 0        * a lentl stalker
-M 0 88920 8 88921 100 0 0 0        * a snail shell
-M 0 88911 5 88922 100 0 0 0        * a majestic baldeagle
-M 0 88911 5 88922 100 0 0 0        * a majestic baldeagle
-M 0 88911 5 88922 100 0 0 0        * a majestic baldeagle
-M 0 88911 5 88922 100 0 0 0        * a majestic baldeagle
-M 0 88911 5 88922 100 0 0 0        * a majestic baldeagle
+M 0 88920 4 88909 100 0 0 0        * a dusty chicken
+M 0 88918 5 88912 100 0 0 0        * a vicious mole
+M 0 88911 5 88913 100 0 0 0        * a majestic baldeagle
+M 0 88918 5 88914 100 0 0 0        * a vicious mole
+M 0 88911 5 88915 100 0 0 0        * a majestic baldeagle
+M 0 88918 5 88916 100 0 0 0        * a vicious mole
+M 0 88911 5 88917 100 0 0 0        * a majestic baldeagle
+M 0 88918 5 88918 100 0 0 0        * a vicious mole
+M 0 88911 5 88919 100 0 0 0        * a majestic baldeagle
+M 0 88918 5 88920 100 0 0 0        * a vicious mole
+M 0 88911 5 88921 100 0 0 0        * a majestic baldeagle
+M 0 88904 1 88922 100 0 0 0        * Dimbled, a lost fisherman
 M 0 88902 1 88923 100 0 0 0        * Baltik, the lonely trapper
-E 1 88904 1 23 100 0 0 0           *   a rugged trapper sling
-M 0 88921 6 88923 100 0 0 0        * a wild chicken
-M 0 88921 6 88923 100 0 0 0        * a wild chicken
-M 0 88921 6 88923 100 0 0 0        * a wild chicken
-M 0 88922 6 88923 100 0 0 0        * a young chick
-M 0 88922 6 88923 100 0 0 0        * a young chick
-M 0 88914 6 88924 100 0 0 0        * a large catfish
-M 0 88912 5 88924 100 0 0 0        * a lentl stalker
-M 0 88917 5 88924 100 0 0 0        * a swift dragonfly
-M 0 88914 6 88925 100 0 0 0        * a large catfish
-M 0 88916 7 88926 100 0 0 0        * a large bullfrog
-M 0 88915 6 88926 100 0 0 0        * a widemouth bass
-M 0 88916 7 88927 100 0 0 0        * a large bullfrog
-M 0 88915 6 88927 100 0 0 0        * a widemouth bass
-M 0 88916 7 88928 100 0 0 0        * a large bullfrog
-M 0 88915 6 88928 100 0 0 0        * a widemouth bass
-M 0 88914 6 88929 100 0 0 0        * a large catfish
-M 0 88917 5 88929 100 0 0 0        * a swift dragonfly
-M 0 88915 6 88930 100 0 0 0        * a widemouth bass
-M 0 88914 6 88931 100 0 0 0        * a large catfish
-M 0 88917 5 88931 100 0 0 0        * a swift dragonfly
-M 0 88916 7 88932 100 0 0 0        * a large bullfrog
-M 0 88915 6 88932 100 0 0 0        * a widemouth bass
-M 0 88914 6 88933 100 0 0 0        * a large catfish
-M 0 88917 5 88933 100 0 0 0        * a swift dragonfly
-M 0 88915 6 88934 100 0 0 0        * a widemouth bass
-M 0 88914 6 88935 100 0 0 0        * a large catfish
-M 0 88917 5 88935 100 0 0 0        * a swift dragonfly
-M 0 88904 1 88937 100 0 0 0        * Dimbled, a lost fisherman
-M 0 88912 5 88938 100 0 0 0        * a lentl stalker
-M 0 88909 8 88939 100 0 0 0        * a water snake
-M 0 88909 8 88940 100 0 0 0        * a water snake
-M 0 88909 8 88941 100 0 0 0        * a water snake
+E 1 88918 1 23 100 0 0 0           *   a rugged trapper sling
+M 0 88915 5 88924 100 0 0 0        * a large bullfrog
+G 1 88909 5 0 100 0 0 0            *    some frog spawn jelly
+M 0 88915 5 88927 100 0 0 0        * a large bullfrog
+G 1 88909 5 0 100 0 0 0            *    some frog spawn jelly
+M 0 88914 4 88928 100 0 0 0        * a widemouth bass
+M 0 88913 4 88929 100 0 0 0        * a large catfish
+M 0 88914 4 88930 100 0 0 0        * a widemouth bass
+M 0 88913 4 88931 100 0 0 0        * a large catfish
+M 0 88914 4 88932 100 0 0 0        * a widemouth bass
+M 0 88913 4 88933 100 0 0 0        * a large catfish
+M 0 88914 4 88934 100 0 0 0        * a widemouth bass
+M 0 88913 4 88935 100 0 0 0        * a large catfish
+M 0 88908 3 88939 100 0 0 0        * a bold beaver
+G 1 88911 3 0 100 0 0 0            *    a soft beaver pelt
+M 0 88909 9 88940 100 0 0 0        * a water snake
+M 0 88909 9 88941 100 0 0 0        * a water snake
 M 0 88908 3 88942 100 0 0 0        * a bold beaver
-G 1 88913 3 0 100 0 0 0            *    a soft beaver pelt
-M 0 88909 8 88943 100 0 0 0        * a water snake
+G 1 88911 3 0 100 0 0 0            *    a soft beaver pelt
+M 0 88909 9 88943 100 0 0 0        * a water snake
 M 0 88908 3 88944 100 0 0 0        * a bold beaver
-G 1 88913 3 0 100 0 0 0            *    a soft beaver pelt
-M 0 88908 3 88945 100 0 0 0        * a bold beaver
-G 1 88913 3 0 100 0 0 0            *    a soft beaver pelt
-M 0 88918 8 88946 100 0 0 0        * a jumpy cricket
-M 0 88920 8 88947 100 0 0 0        * a snail shell
-M 0 88918 8 88948 100 0 0 0        * a jumpy cricket
-M 0 88920 8 88949 100 0 0 0        * a snail shell
-M 0 88918 8 88950 100 0 0 0        * a jumpy cricket
-M 0 88920 8 88951 100 0 0 0        * a snail shell
-M 0 88918 8 88952 100 0 0 0        * a jumpy cricket
-M 0 88920 8 88953 100 0 0 0        * a snail shell
-M 0 88918 8 88954 100 0 0 0        * a jumpy cricket
-M 0 88913 23 88955 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88955 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88955 100 0 0 0       * a blood hungry leech
-M 0 88916 7 88956 100 0 0 0        * a large bullfrog
-M 0 88913 23 88956 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88956 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88956 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88957 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88957 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88957 100 0 0 0       * a blood hungry leech
-M 0 88916 7 88958 100 0 0 0        * a large bullfrog
-M 0 88913 23 88958 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88958 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88958 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88959 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88959 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88959 100 0 0 0       * a blood hungry leech
-M 0 88916 7 88960 100 0 0 0        * a large bullfrog
-M 0 88913 23 88960 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88960 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88960 100 0 0 0       * a blood hungry leech
-M 0 88910 1 88961 100 0 0 0        * a majestic baldeagle
-G 1 88915 1 0 100 0 0 0            *    a full-size eagle egg
-M 0 88909 8 88962 100 0 0 0        * a water snake
-M 0 88909 8 88964 100 0 0 0        * a water snake
-M 0 88909 8 88965 100 0 0 0        * a water snake
-M 0 88913 23 88965 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88966 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88967 100 0 0 0       * a blood hungry leech
-M 0 88913 23 88968 100 0 0 0       * a blood hungry leech
-M 0 88909 8 88968 100 0 0 0        * a water snake
-M 0 88913 23 88969 100 0 0 0       * a blood hungry leech
-M 0 88900 1 88972 100 0 0 0        * a three-headed Serpent
-E 1 88919 1 7 100 0 0 0            *   some serpentine shin-guards
-E 1 88918 1 9 100 0 0 0            *   some snakeskin gloves
-E 1 88920 1 20 100 0 0 0           *   a fanged jaw piece
-M 0 88912 5 88973 100 0 0 0        * a lentl stalker
-M 0 88921 6 88973 100 0 0 0        * a wild chicken
-M 0 88922 6 88973 100 0 0 0        * a young chick
-M 0 88922 6 88973 100 0 0 0        * a young chick
+G 1 88911 3 0 100 0 0 0            *    a soft beaver pelt
+M 0 88917 5 88945 100 0 0 0        * a jumpy cricket
+M 0 88919 4 88946 100 0 0 0        * a snail shell
+M 0 88917 5 88947 100 0 0 0        * a jumpy cricket
+M 0 88919 4 88948 100 0 0 0        * a snail shell
+M 0 88917 5 88949 100 0 0 0        * a jumpy cricket
+M 0 88919 4 88950 100 0 0 0        * a snail shell
+M 0 88917 5 88951 100 0 0 0        * a jumpy cricket
+M 0 88919 4 88952 100 0 0 0        * a snail shell
+M 0 88917 5 88953 100 0 0 0        * a jumpy cricket
+M 0 88912 6 88954 100 0 0 0        * a blood hungry leech
+M 0 88916 5 88954 100 0 0 0        * a swift dragonfly
+M 0 88915 5 88955 100 0 0 0        * a large bullfrog
+G 1 88909 5 0 100 0 0 0            *    some frog spawn jelly
+M 0 88912 6 88955 100 0 0 0        * a blood hungry leech
+M 0 88912 6 88956 100 0 0 0        * a blood hungry leech
+M 0 88916 5 88956 100 0 0 0        * a swift dragonfly
+M 0 88915 5 88957 100 0 0 0        * a large bullfrog
+G 1 88909 5 0 100 0 0 0            *    some frog spawn jelly
+M 0 88912 6 88957 100 0 0 0        * a blood hungry leech
+M 0 88912 6 88958 100 0 0 0        * a blood hungry leech
+M 0 88916 5 88958 100 0 0 0        * a swift dragonfly
+M 0 88915 5 88959 100 0 0 0        * a large bullfrog
+G 1 88909 5 0 100 0 0 0            *    some frog spawn jelly
+M 0 88912 6 88959 100 0 0 0        * a blood hungry leech
+M 0 88910 1 88960 100 0 0 0        * a majestic baldeagle
+G 1 88913 1 0 100 0 0 0            *    a full-size eagle egg
+M 0 88909 9 88961 100 0 0 0        * a water snake
+M 0 88909 9 88962 100 0 0 0        * a water snake
+M 0 88909 9 88963 100 0 0 0        * a water snake
+M 0 88922 1 88964 100 0 0 0        * a lonely aquaelf
+E 1 88917 1 13 100 0 0 0           *   a belt of liquid links
+M 0 88901 3 88965 100 0 0 0        * an aggressive naiad
+E 1 88916 1 21 100 0 0 0           *   a pearl earring
+M 0 88901 3 88966 100 0 0 0        * an aggressive naiad
+M 0 88901 3 88967 100 0 0 0        * an aggressive naiad
+M 0 88900 1 88968 100 0 0 0        * Razhl, the three-headed hydra serpent
+E 1 88919 1 9 100 0 0 0            *   some snake-rattle gloves
+G 1 31320 1 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 88909 9 88968 100 0 0 0        * a water snake
+M 0 88909 9 88968 100 0 0 0        * a water snake
+M 0 88909 9 88968 100 0 0 0        * a water snake
+M 0 88920 4 88969 100 0 0 0        * a dusty chicken
+M 0 88920 4 88969 100 0 0 0        * a dusty chicken
+M 0 88920 4 88969 100 0 0 0        * a dusty chicken
+M 0 88921 2 88969 100 0 0 0        * a young chick
+M 0 88921 2 88969 100 0 0 0        * a young chick
 *
 S

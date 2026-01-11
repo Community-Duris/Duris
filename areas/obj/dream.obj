@@ -1,755 +1,309 @@
-#31301
-dream light~
-&+ca &+Cd&+Wr&+cea&+Cm&n~
-&+cA &+Cf&+Wl&+Cic&+Wk&+Cer&+Wi&+Cng &+Wlight&+c draws you near.&n~
+#31300
+light flickering insanity flicker~
+&+La &+Wfl&+wic&+Wke&+wri&+Wng l&+wi&+Wg&+wh&+Wt &+Lof &+Winsan&+wit&+Ly&n~
+&+LA &+Wfl&+wic&+Wke&+wri&+Wng l&+wi&+Wg&+wh&+Wt &+Lforces you &+wn&+Wear insan&+wit&+Ly.&n~
 ~
-25 1 3 0 7 0 67108864 0 0 1 0
+25 1 3 0 7 0 67125248 0 0 0 0
 31302 15 -1 0 0 0 0 0
 0 0 100
 E
-dream light~
-&+cYou start to enter &+ca &+Cd&+Wr&+cea&+Cm state of mind.&n
+light flickering insanity~
+&+LThe &+Wfl&+wic&+Wke&+wri&+Wng l&+wi&+Wg&+wh&+Wt &+Lblinds you as it pe&+Wnet&+wrat&+Les deep inside your mind.&n
+~
+#31301
+light solid reality~
+&+Ya &+Wsolid light &+Yof &+Wreal&+wit&+Yy&n~
+&+YA &+Wsolid light &+Ypulls you back &+win&+Wto real&+wit&+Yy&+w.&n~
+~
+25 15 3 0 7 0 67125248 0 0 0 0
+85805 15 -1 0 0 0 0 0
+0 0 100
+E
+light solid reality~
+&+YThe &+Wsolid light &+Yshifts you to a co&+wn&+Wsci&+wo&+Yus state of mind.&n
 ~
 #31302
-reality life light~
-&+Wreal&+wit&+Yy~
-&+WA shinning white light of real&+wit&+Yy&+W hovers here.&N~
+pool whirlpool fountain~
+&+La whirl&+wpool fount&+Lian&n~
+&+LA whirl&+wpool fount&+Lian of si&+wlver met&+Lallic liquid lies here.&n~
 ~
-25 15 3 0 7 0 0 0 0 1 0
-31301 15 -1 0 0 0 0 0
-0 0 100
+17 37 4 0 11 0 16384 0 0 0 0
+100 100 27 0 0 0 0 0
+300 43289 100
 E
-reality life light~
-&+WPeering into the light you begin to drift back into conscious state of mind.&n
+pool whirlpool fountain~
+&+LA g&+wranit&+Le &+wfoun&+Ltian filled with a si&+wlver met&+Lallic
+&+L      liq&+wuid &+Lswirls inward to a whirl&+wpool
+&+L             t&+what &+Lle&+wads &+Lto un&+wknown
+&+w                    real&+Lms.&n
 ~
 #31303
-bed fluffy~
-&+Wa &+wfluffy&+W bed&n~
-&+WA large&+w fluffy&+W bed looks extremely inviting.&N~
+cliff edge steep~
+&+ythe &+wedge &+Lof a steep cliff&n~
+&+yHere lies the &+wedge &+Lof a steep cliff.&n~
 ~
-25 3 3 0 7 0 0 0 0 1 0
-31334 44 -1 0 0 0 0 0
+25 15 3 0 7 0 24576 0 0 0 0
+85805 264 -1 0 0 0 0 0
 0 0 100
 E
-bed fluffy~
-&+wStaring at the bed, you have second thoughts about the enchantresses advances.&n
+cliff edge steep~
+&+yThis steep rock face cliff seems to be the &+wend of the line&+L.  The only thing left is to jump!&n
 ~
 #31304
-cliff~
-&+ya steep &+Ycliff&n~
-&+yHere lies the edge of a steep &+YCLIFF&+y.&n~
+key static piece charged electricity~
+&+wa &+Wst&+wat&+Wic &+Wcha&+wr&+Wged &+Yk&+we&+Yy&n~
+&+wA &+Wpi&+we&+Wce &+wof &+Wcha&+wr&+Wged &+Yelec&+wtri&+Ycity &+wlies here.&n~
 ~
-25 15 3 0 7 0 0 0 0 1 0
-31311 264 -1 0 0 0 0 0
-0 0 100
-E
-cliff~
-&+yWith no escape, do you have faith to leap off the cliff?&n
-~
-#31305
-key static~
-&+wa &+Lst&+wa&+Wt&+wi&+Lc &+wkey&n~
-&+wA piece of &+Wcharged&+w electricity lies here.&n~
-~
-18 1 3 0 7 0 67133568 1 0 1 0
+18 1 3 0 7 0 67137664 1 0 0 0
 0 100 0 0 0 0 0 0
 1 23 100
 E
-key static~
+key static piece charged electricity~
 &+wThe odd key seems to be made of &+Lst&+wa&+Wt&+wi&+Lc&+w el&+Wec&+Ltric&+Wit&+wy.&n
 ~
-#31306
-halo golden~
-&+Ya golden halo&n~
-&+YA shiny halo has been dropped here.&n~
+#31305
+dagger purge demonic~
+&+rt&+Rhe &+Ld&+we&+Lm&+wo&+Ln&+wi&+Wc &+Ld&+wa&+Wgg&+Ler &+w'&+rP&+Rurge&+w'&n~
+&+rA &+Ld&+we&+Lm&+wo&+Ln&+wi&+Wc &+Ld&+wa&+Wgg&+Ler &+rlies here for&+Rgot&+rten in a p&+Roo&+rl of bl&+Roo&+rd.&n~
 ~
-9 24 3 0 7 0 8448 17 32768 1073741825 0
--8 0 0 0 0 0 0 0
-1 5512 100
+5 18 3 0 14 0 8320 8193 64 0 0
+2 4 4 3 0 618 50 50
+4 52329 100
 E
-halo golden~
-&+YThis golden hoop appears to be a tiny halo.&n
+dagger purge demonic~
+&+rT&+Rhis &+rcursed &+Ld&+wa&+Wgg&+Ler &+rof &+Ld&+we&+Lm&+wo&+Ln&+wi&+Wc &+rforces l&+Rabled &+w'&+rP&+Rurge&+w' &+rwas masterly c&+Rrafted &+rfrom &+mmithril&+r.&n
 ~
-A
-4 7
-A
-5 5
-#31307
-golden blade prophets~
-&+Ythe golden blade &+wo&+Wf &+WPro&+wph&+Lets&n~
-&+LA mighty &+Yblade&+L of &+wpast &+Wpro&+wph&+Lets lies here.&N~
-~
-5 24 3 0 7 0 7529736 8396801 32768 67108865 0
-13 7 4 3 0 0 0 0
-5 64422 100 8192 4 0 0
-E
-golden blade prophets~
-&+YThis might blade has been blessed by &+WP&+wa&+Lst &+WPro&+wphe&+Lts&+Y.&n
-~
-A
-18 5
-A
-19 5
-#31308
-golden platemail past prophets~
-&+Ythe golden platemail of &+WP&+wa&+Lst &+WPro&+wphe&+Lts&n~
-&+YA suit of fine armor has been left here.&n~
-~
-9 24 3 0 7 0 36889600 9 32768 67108865 0
--35 0 0 0 0 0 0 0
-10 19893 100 4 0 0 0
-E
-golden platemail past prophets~
-&+YThis golden platemail has been blessed by the souls of past prophets.&n
-~
-A
-19 3
-A
-13 10
-#31309
-sinister horns~
-&+rsome&+L sinister &+rhorns&N~
-&+rA pair of &+Lsinister looking&+r horns lie here.&n~
-~
-9 10 3 0 7 0 25088 142606353 32768 1 0
--5 0 0 0 0 0 0 0
-3 2323 100
-E
-sinister horns~
-&+rThe pair of demonic horns contain &+Lpure evil&+r.&n
-~
-A
-1 15
-A
-30 -10
-#31310
-purge demonic blade~
-&+LPurge&+w, &+rthe demonic blade&n~
-&+rThe grand demonic blade labeled &+w'&+LPurge&+w'&+rlies here.&n~
-~
-5 19 3 0 7 0 7528968 8396801 32768 1 0
-13 6 6 6 0 0 0 0
-5 25651 100 65536 8 0 0
-E
-purge demonic blade~
-&+rThe demonic blade is made out of adamantium and labled &+w'&+LPurge&+w'&+r.&n
-~
-A
-18 6
 A
 19 4
-#31311
-purge blood platemail plate~
-&+LPurge&+w,&+r the bl&+Roo&+rd th&+Rir&+rs&+Rty&+r platemail&n~
-&+rA fine platemail named &+w'&+LPurge&+w'&+r lies here in a p&+Roo&+rl of bl&+Roo&+rd.&n~
-~
-9 19 3 0 7 0 25600 9 32768 67108865 0
-35 0 0 0 0 0 0 0
-10 31442 100 32 0 0 0
 A
-19 3
-A
-13 10
-#31312
-eyepatch inner vision~
-&+Lthe eyepatch of I&+wnn&+Ler &+YVision&n~
-&+LAn eyepatch of greater &+win&+Wsight&+L lies here.&n~
+13 20
+#31306
+spectacles inner vision~
+&+Lthe &+Wspec&+wtac&+Lles of i&+wnn&+Ler &+Yvision&n~
+&+LSome unassuming &+Wspec&+wtac&+Lles &+Lof &+win&+Wsight &+Llie here.&n~
 ~
-9 27 3 0 7 0 67137536 131073 0 0 0
-5 0 0 0 0 0 0 0
-2 12622 100 268435456 0 0 0
+9 27 3 0 15 0 3153920 131073 0 0 0
+12 0 0 3 0 0 0 0
+1 43210 100 0 12 0 83886080
 E
-eyepatch inner vision~
-&+LThe eyepatch helps consoled your I&+wnn&+Ler &+YVision&+L.&N
+spectacles inner vision~
+&+LThese &+Wdiamond spec&+wtac&+Lles &+Whelp &+wpromote &+Lyour &+Wper&+wson&+Lal &+win&+Wsight&+L.&n
 ~
 A
-18 3
+13 12
 A
-22 -3
-#31313
-earring sound advice~
-&+Cthe earring of &+WSound &+wAdvice&n~
-&+CAn earring of &+wadvising mentors&+C lies here.&n~
+14 12
+#31307
+boots abandonment~
+&+msome b&+Moo&+mts of &+Waban&+wdon&+Lment&n~
+&+mSome &+Mrap&+midly &+Wfad&+win&+Lg &+mb&+Moo&+mts lie here.&n~
 ~
-9 8 3 0 7 0 28672 524289 0 0 0
-5 0 0 0 0 0 0 0
-1 8932 100 0 0 64 0
+9 3 3 0 10 0 0 65 0 0 0
+20 0 0 2 0 0 0 0
+1 17728 100
 E
-earring sound advice~
-&+CThe earring taps into some &+WSound&+w Advice&+C.&n
+boots abandonment~
+&+mThe b&+Moo&+mts slowly &+Wf&+wad&+Le &+minto so&+Mmethin&+mg that can be &+Mfelt &+mbut not &+Mseen&+m.&n
 ~
 A
-34 2
-#31314
-necklace will force~
-&+Wthe necklace of &+wWill &+YForce&n~
-&+WA necklace of self will lies here.&n~
-~
-9 19 3 0 7 0 28672 5 0 0 0
-10 0 0 0 0 0 0 0
-2 14332 100
-E
-necklace will force~
-&+WThe necklace envokes a strong&+w Will &+YForce&+w.&n
-~
-A
-31 2
-A
-19 2
-#31315
-granite helm~
-&+La solid granite helm&n~
-&+LA helm made of solid granite lies here.&n~
-~
-9 37 3 0 7 0 24576 17 0 0 0
-15 0 0 0 0 0 0 0
-4 14225 100
-E
-granite helm~
-&+LThis ganite helm has a jagged shape.&n
-~
-A
-32 2
-A
-2 7
-#31316
-life band~
-&+Wa simple &+Ylife&+W band&n~
-&+WA simple looking &+Ywristband&+W lies here.&n~
-~
-9 49 3 0 7 0 24576 4097 0 1 0
-7 0 0 0 0 0 0 0
-1 8321 100
-E
-life band~
-&+WThe wristband is made of rubber.&n
-~
-A
-13 10
+37 3
 A
 20 -3
-#31317
-bear face mask~
-&+ya bear&+Y face&+y mask&n~
-&+yA &+Ymask&+y of a bear lies here.&n~
-~
-9 2 3 0 7 0 28672 262145 0 0 0
-5 0 0 0 0 0 0 0
-1 3991 100
-E
-bear face mask~
-&+yThe face of a bear has been skinned to make this mask.&n
-~
-A
-13 10
-A
-20 -2
-#31318
-snake eyed ring~
-&+La snake &+Ye&+Ly&+Ye&+Ld ring&n~
-&+LA ring with two snake &+Ye&+Ly&+Ye&+Ls lies here.&n~
-~
-9 2 3 0 7 0 24576 3 0 0 0
-5 0 0 0 0 0 0 0
-1 4352 100 32768 0 0 0
-E
-snake eyed ring~
-&+LThe &+Ye&+Ly&+Ye&+Ls of a snake have been mounted on a black finger band.&n
-~
-A
-24 -3
-A
-26 6
-#31319
-wand anti energy~
-&+La wand of &+wanti-&+Yenergy&n~
-&+LA &+Yglowing&+L obsidian wand lies here.&N~
-~
-3 36 3 0 7 0 28672 8404993 0 0 0
-51 3 3 25 0 0 0 0
-1 5335 100
-E
-wand anti energy~
-&+LThe wand consists of &+wanti-&+Yenergy&+L.&n
-~
-#31320
-spiked leather grip~
-&+ya &+Lspiked&+y leather grip&n~
-&+yA &+Lspiked&+y leather strap lies here.&n~
-~
-9 13 3 0 7 0 24576 129 0 0 0
-10 0 0 0 0 0 0 0
-1 18821 100
-E
-spiked leather grip~
-&+LFour large spikes&+y are mounted to a leather buckle strap.&n
-~
-A
-18 2
-A
-13 10
-#31321
-battle scar~
-&+La battle &+yscar&n~
-&+yA chunk of flesh lies here.&N~
-~
-9 2 3 0 7 0 24576 2097153 0 0 0
-5 0 0 0 0 0 0 0
-0 3321 100
-E
-battle scar~
-&+y./\_/~~\/\_/'&n
-~
-A
-26 5
-#31322
-sleeves shadows shifting~
-&+Lsome &+wsleeves&+L of s&+wh&+Wi&+wf&+Lt&+wi&+Wn&+wg&+L shadows&N~
-&+wSome sleeves of &+Ldeep shadows&+w lie here.&N~
-~
-9 1 3 0 7 0 24576 257 0 0 0
-5 0 0 0 0 0 0 0
-2 5533 100
-E
-sleeves shadows shifting~
-&+LThe sleeves seems to&+L of s&+wh&+Wi&+wf&+Lt in and &+wout&+L of the shadows&n
-~
-A
-13 10
-A
-14 25
-#31323
-wrap abandonment~
-&+ma wrap of &+Waban&+wdon&+Lment&n~
-&+mA rapidly &+Wfad&+wing w&+Lrap&+m lies here.&n~
-~
-9 3 3 0 7 0 24576 1025 0 0 0
-15 0 0 0 0 0 0 0
-3 17728 100
-E
-wrap abandonment~
-&+mThe cloak slowly &+Wfades into something &+wthat can be felt &+Lbut not seen.&n
-~
-A
-13 15
-A
-14 15
-#31324
-belt allure faeries~
-&+Ga faeries belt of&+M allure&n~
-&+GA belt of faerie craftsmanship lies here.&n~
-~
-9 26 3 0 7 0 24576 2049 0 0 0
-10 0 0 0 0 0 0 0
-2 5532 100
-E
-belt allure faeries~
-&+MThis mystic belt was crafted by faeries.&n
-~
-A
-19 2
-A
-20 -2
-#31325
+#31308
 torn cloth stockings~
-&+Lsome torn cloth &+rst&+woc&+rkin&+wgs&N~
-&+LSome torn &+rred st&+woc&+rkin&+wgs&+L lie here.&N~
+&+Lso&+Wme &+Lt&+wor&+Ln c&+wlot&+Lh &+rst&+woc&+rkin&+wgs&n~
+&+LSo&+wme &+Lt&+wor&+Ln l&+we&+Lg &+rst&+woc&+rkin&+wgs &+Lhav&+we &+Lb&+wee&+Ln l&+we&+Lft h&+we&+Lr&+we&+L.&n~
 ~
-9 3 3 0 7 0 24576 33 0 0 0
-5 0 0 0 0 0 0 0
+9 3 3 0 7 0 0 33 0 0 0
+8 0 0 3 0 0 0 0
 1 5352 100
 E
 torn cloth stockings~
-&+LThe cloth &+rl&+we&+rg st&+woc&+rkings&+L have many holes.&n
+&+LT&+whe&+Lse l&+won&+Lg &+rr&+we&+rd st&+woc&+rkin&+wgs &+Lh&+wave &+Lbeen t&+wor&+Ln in the h&+weat &+Lof p&+wass&+Lion.&n
 ~
 A
-13 10
+40 3
 A
-30 5
-#31326
-glowing sapphire totem~
-&+ba &+Cglowing&+b sapphire totem&n~
-&+CA chunk of glowing &+bsapphire&+C lies here.&N~
+38 3
+#31309
+rose long-stem --,-'--{@~
+&+g--&+G,&+g-&+G'&+g--&+G{&+r@&n~
+&+gA &+Gl&+gon&+Gg&+g-s&+Gt&+gem &+rr&+Ro&+rse &+glies here.&N~
 ~
-34 33 3 0 7 0 24576 16385 0 0 0
-34 0 0 0 0 0 0 0
-2 5483 100
-E
-glowing sapphire totem~
-&+bThe sapphire totem &+Cglows&+b from within.&n
-~
-A
-13 20
-#31327
-thin shawl~
-&+Ca thin shawl&n~
-&+CA thin cyan color fabric lies here.&N~
-~
-9 3 3 0 7 0 24576 17 0 0 0
-8 0 0 0 0 0 0 0
-1 533 100
-E
-thin shawl~
-&+CThe shawl is made from a thin cloth.&n
-~
-A
-13 15
-A
-3 5
-#31328
-wad paper letter illusionists~
-&+Wan il&+Clu&+csi&+Con&+Wists letter&n~
-&+wA wad of paper lies here.&N~
-~
-8 28 3 0 7 0 24576 8404993 32768 0 0
-0 0 0 0 0 0 0 0
-1 1 100
-E
-letter illusionists~
-&+wDear &+MPrin&+Wcess&+w,
-
-&+w   You may remember me as your jester and loyal confidant, but
-&+wI have I always wished that you saw me as more.  Although, I felt
-&+wit was out of my place to pursue a serious relationship with someone
-&+wof your stature.  Therefore, I would like to send you this crystal rose
-&+was a symbol of my undying love.
-
-&+w-&+WQin&+w,&+W the il&+Clu&+csi&+Con&+Wist&n
-~
-#31329
-kiss princess~
-&+mthe kiss of a &+Mprin&+Wcess&n~
-&+mA symbol of the &+Mprin&+Wcesses&+m love lies here.&n~
-~
-8 2 3 0 7 0 24576 1 32768 1 0
-0 0 0 0 0 0 0 0
-1 42323 100
-#31330
-rose~
-&+ga long stem &+rrose&n~
-&+gA long stem &+rrose&+g lies here.&N~
-~
-8 30 3 0 7 0 28672 8404993 32768 1 0
-0 0 0 0 0 0 0 0
+3 30 2 0 7 0 8192 10502145 0 0 0
+41 1 1 117 0 0 0 0
 1 2334 100
 E
-rose~
-&+r@&+G}&+g--'-,--&n
+rose long-stem~
+&+gA &+Gl&+gon&+Gg&+g-s&+Gt&+gem &+rr&+Ro&+rse&+g.  &+g--&+G,&+g-&+G'&+g--&+G{&+r@&n
 ~
-#31331
-invitation invite~
-&+Gan invitation&n~
-&+GAn invitation to a grand ball lies here.&N~
+#31310
+mallet past prophets liberator~
+&+cthe &+Cm&+call&+Wet &+cof &+Cp&+cas&+Wt &+Cpro&+cph&+Wets &+w'&+CLib&+cera&+Wtor&+w'&n~
+&+cA &+Cm&+call&+Wet &+cof &+Cp&+cas&+Wt &+Cpro&+cph&+Wets &+clies here a&+Cwait&+cing to be cla&+Cim&+ced.&n~
 ~
-18 8 3 0 7 0 28672 1 0 1 0
+5 44 4 0 14 0 7348224 8193 66 0 0
+4 5 8 3 1 123 50 50
+6 64234 100
+E
+mallet past prophets liberator~
+&+cThis &+wb&+Wl&+Ce&+cs&+Cs&+We&+wd &+Cm&+call&+Wet &+cof &+Cp&+cas&+Wt &+Cpro&+cph&+Wets &+clabled &+w'&+CLib&+cera&+Wtor&+w' &+cwas masterly crafted from &+cglassteel&+c.&n
+~
+A
+19 5
+A
+17 -70
+#31311
+soul shard ethereal~
+&+wan e&+Wt&+Lh&+ber&+Le&+Wa&+wl &+Wsoul &+bshard&n~
+&+wAn e&+Wt&+Lh&+ber&+Le&+Wa&+wl &+Wsoul &+bshard &+wlies here from &+Lsome&+Wone &+wrecently &+Lde&+Wpart&+Led&+w.&n~
+~
+8 8 3 0 11 0 67117056 8388609 32768 0 0
 0 0 0 0 0 0 0 0
-1 1544 100
-#31332
-crate~
-&+ya small crate&n~
-&+yA small crate lies in the back of the room.&n~
-~
-15 6 3 0 7 0 24576 0 0 1 0
-1000 5 0 1000 0 0 0 0
-15 1 100
+1 43237 100
 E
-crate~
-&+yThe old wooden crate has some empty bottles stacked on it and a layer of
-&+ydust covering it.&n
+soul shard ethereal~
+&+wThis &+Lfrag&+Wment&+Led &+bshard &+wis a piece of a &+Wsoul &+wfrom &+Lsome&+Wone &+wrecently &+Lde&+Wpart&+Led&+w.&n
 ~
-#31333
-ghostly liquid vial~
-&+wa gh&+Wos&+wtly &+Wliquid&n~
-&+WAn &+wodd&+W vial of liquid lies here.&n~
+#31312
+shroud necromantic death~
+&+La &+mne&+Lcro&+mmant&+Lic &+md&+Leat&+mh shro&+Lud&n~
+&+mA mag&+Lic&+mal &+Lblack mass &+mlies p&+Lil&+med up on the fl&+Loo&+mr.&n~
 ~
-10 40 3 0 7 0 90112 8404993 0 1 0
-51 261 0 0 0 0 0 0
-1 60332 100
+9 49 3 0 10 0 0 2097153 0 0 0
+5 0 0 3 0 0 0 0
+1 23405 100 0 0 0 262144
 E
-ghostly liquid~
-&+wA sw&+Wir&+wl&+Win&+wg m&+Wis&+wt is encased in the vial.&n
+shroud necromantic death~
+&+mThis mag&+Lic&+mal shro&+Lud &+mof ne&+Lcro&+mman&+Lcy &+menvel&+Lop&+ms the &+Lsur&+mround&+Lings &+mwith &+Ldarkness&+m.&n
 ~
-#31334
-dark potion~
-&+La dark potion&n~
-&+LA potion filled with a dark liquid lies here.&n~
-~
-10 40 3 0 7 0 90112 8404993 0 1 0
-51 36 161 0 0 0 0 0
-1 53221 100
-E
-dark potion~
-&+LThe liquid in the potion is pitch black.&n
-~
-#31335
-red potion~
-&+ra bright red potion&n~
-&+rA bright red potion lies here.&n~
-~
-10 40 3 0 7 0 90112 8404993 0 1 0
-51 134 41 0 0 0 0 0
-1 34551 100
-E
-red potion~
-&+rThe red liquid bubbles inside the potion.&n
-~
-#31336
-potion fire ice~
-&+Ca potion of &+rf&+Ri&+Yre&+C and &+Wi&+Cc&+ce&N~
-&+CAn &+Wo&+Cr&+cb&+ri&+Rt&+Yal &+Cpotion lies here.&n~
-~
-10 40 3 0 7 0 90112 8404993 0 1 0
-51 277 254 0 0 0 0 0
-1 73221 100
-E
-potion fire ice~
-&+wThe top of the &+Cchunk of ice&+w is &+rfl&+Ram&+Ying&+w.&n
-~
-#31337
-sapphire vial~
-&+ba sapphire vial&n~
-&+bA small vial of liquid lies here.&N~
-~
-10 40 3 0 7 0 94208 8404993 0 1 0
-51 2 0 0 25 0 0 0
-1 51511 100
-E
-sapphire vial~
-&+bThe small vial is filled with a sapphire liquid.&n
-~
-#31338
-elemental brew~
-&+can elemental brew&n~
-&+cA brew combination of elements lies here.&N~
-~
-10 40 3 0 7 0 90112 8404993 0 1 0
-51 104 105 98 0 0 0 0
-1 83220 100
-E
-elemental brew~
-&+cThe potion is a concoction of several elements.&n
-~
-#31339
-green elixir~
-&+Ga green elixir&n~
-&+GA green vial of elixir lies here.&N~
-~
-10 40 3 0 7 0 90112 8404993 0 1 0
-51 39 215 177 0 0 0 0
-1 92251 100
-E
-green elixir~
-&+GThe elixirs ooze is bright green.&n
-~
-#31340
-stamina concoction potion~
-&+Ya stamina concoction&n~
-&+YA yellow type of concoction lies here.&n~
-~
-10 40 3 0 7 0 90112 8404993 0 1 0
-51 66 355 0 0 0 0 0
-1 72621 100
-#31341
-angelic wings~
-&+csome &+Wan&+wgel&+Cic wings&N~
-&+cSome &+Wfeathered &+Cwings &+clie here.&n~
-~
-9 50 3 0 7 0 25664 1025 0 0 0
-10 0 0 0 0 0 0 0
--10 19034 100 8192 4 0 0
-E
-angelic wings~
-&+CThis pair of wings once belonged to an &+Wan&+wgel&+C.
-~
-A
-4 5
-A
-24 -2
-#31342
-pitchfork fork~
-&+ra three-prong pitchfork&n~
-&+rA devilish pitchfork lies here.&n~
-~
-4 37 3 0 7 0 25088 8413185 0 1 0
-50 2 2 62 0 0 0 0
-1 3452 100
-E
-pitchfork fork~
-&+rThis sturdy pitch-fork has three prongs attached.&n
-~
-A
-1 5
-A
-27 5
-#31343
-platinum platemail past prophets~
-&+wthe &+Wplatinum platemail&+w of &+WP&+wa&+Lst &+WPro&+wphe&+Lts&n~
-&+WA suit of fine armor has been left here.&n~
-~
-9 25 3 0 7 0 36889856 9 0 70271067 0
-35 0 0 0 0 0 0 0
-7 42230 100 0 6 0 0
-E
-platinum platemail past prophets~
-&+WThis platemails curse has been lifted by the past prophets blessing.&n
-~
-A
-20 -2
-A
-13 20
-#31344
-purge blood platemail plate~
-&+RPurge&+w,&+r the bl&+Roo&+rd th&+Rir&+rs&+Rty&+r platemail&n~
-&+rA fine platemail named &+w'&+RPurge&+w'&+r lies here in a p&+Roo&+rl of bl&+Roo&+rd.&n~
-~
-9 19 3 0 7 0 24576 9 0 0 0
-35 0 0 0 0 0 0 0
-7 97222 100 0 8 0 262144
-A
-20 -2
-A
-13 20
-#31345
-necklace wooden cross +~
-&+ya necklace with a wooden+cross&n~
-&+yA simple wooden necklace lies here.&n~
-~
-9 6 3 0 7 0 286720 5 0 1 0
-5 0 0 0 0 0 0 0
-1 5423 100
-E
-necklace wooden cross +~
-&+yThis wooden necklace is made of beads and a simple cross.&n
-~
-A
-1 5
-A
-4 8
-#31346
-holy white robe robes~
-&+Wsome holy white robes&n~
-&+WA white robe lies here, surrounded by a holy aura.&n~
-~
-9 3 3 0 7 0 24576 9 0 0 0
-20 0 0 0 0 0 0 0
-3 0 100
-E
-holy white robe robes~
-&+WThese simple robes once belonged to a holy man.&n
-~
-A
-2 5
-A
-19 2
-#31347
-shard granite~
-&+La shard of granite&n~
-&+LA sharp piece of granite lies here.&N~
-~
-5 37 3 0 7 0 24576 8193 0 1 0
-2 3 3 11 0 0 0 0
-2 923 100
-E
-shard granite~
-&+LThis slice of granite has a razor sharp tip.&n
-~
-A
-26 5
-A
-30 10
-#31348
-smoky duffelbag bag bp~
-&+La &+wsmoky &+Lduffelbag&n~
-&+LA large duffelbag lies here covered in soot.&N~
-~
-15 3 4 0 7 0 24576 12599297 0 1 0
-500 29 31349 700 0 0 0 0
--150 9452 100
-E
-smoky duffelbag bag bp~
-&+wThe ta&+Ltt&+wer&+Led&+w bag is covered in &+Lsoot&+w.&n
-~
-#31349
-tiny key~
-&+wa tiny key&n~
-&+wA very small key lies here.&N~
-~
-18 37 3 0 7 0 28672 8388609 0 1 0
-0 0 0 0 0 0 0 0
-1 321 100
-E
-tiny key~
-&+wThe basic key is made of granite.&n
-~
-#31350
-treasure loot coins~
-&+Ysome treasure&n~
-&+YSome forgotten treasure lies here.&N~
-~
-20 24 3 0 7 0 0 1 0 1 0
-13 100 84 66 0 0 0 0
-1 0 100
-#31351
-strapped leather sandals~
-&+ysome strapped leather sandals&n~
-&+ySome leather sandals lie here.&n~
-~
-9 14 3 0 7 0 24576 65 0 0 0
-5 0 0 0 0 0 0 0
--10 338 100
-E
-strapped leather sandals~
-&+yThe sandals seem to be made of cured leather.&n
-~
-A
-14 30
-A
-5 5
-#31352
-wooden leggings leg plates~
-&+ysome wooden leg plates&n~
-&+ySome simple wooden leggings lie here.&N~
-~
-9 6 3 0 7 0 24576 33 0 0 0
-7 0 0 0 0 0 0 0
-3 4121 100
-E
-wooden leggings leg plates~
-&+yThe wooden leg plates are attached by a leather straps.&n
-~
-A
-14 20
 A
 13 5
-#31353
-dusty loincloth~
-&+ya dusty loincloth&n~
-&+yA dusty looking loincloth lies here.&n~
+A
+14 10
+#31313
+suit ethereal soul shards~
+&+ba &+Wsuit &+we&+Wm&+Lb&+body&+Li&+Wn&+wg e&+Wt&+Lh&+ber&+Le&+Wa&+wl &+Wsoul &+bshards&n~
+&+bA &+Wfull&+L-&+bbody &+Wsuit &+we&+Wm&+Lb&+body&+Li&+Wn&+wg e&+Wt&+Lh&+ber&+Le&+Wa&+wl &+Wsoul &+bshards lies here.&n~
 ~
-9 12 3 0 7 0 24576 2049 0 0 0
-7 0 0 0 0 0 0 0
-2 7720 100
+9 1 4 0 15 0 0 9 0 0 0
+50 0 0 5 0 0 0 0
+-10 146790 100 0 0 0 8192
 E
-dusty loincloth~
-&+yThe foul loincloth is made of leather.&n
+suit ethereal soul shards~
+&+wThis &+Wsuit &+wwas &+Wma&+Cgi&+cca&+Cll&+Wy b&+Co&+cn&+Cd&+Wed &+wtogether from many e&+Wt&+Lh&+ber&+Le&+Wa&+wl &+Wsoul &+bshards &+wby a &+Wm&+Ca&+cst&+Ce&+Wr il&+Clu&+csi&+Con&+Wist &+wfrom a land of &+Wbound&+wless &+Wf&+Can&+cta&+Csi&+Wes&+w.  It &+Wcombines &+wthe &+bpower &+wfrom each &+Wsoul &+wto &+bshield &+wthe wearer with &+Wimmense &+bprotection&+w.  Although the power comes &+Wwith &+wa &+bprice&+w, for the suit must be worn on your &+Wwhole&+L-&+bbody &+wand &+Wwhole&+L-&+bhead&+w.&n
 ~
 A
-13 10
+13 25
 A
-18 2
-#31354
-skull bones badge~
-&+La &+wskull&+L and &+wbones&+L badge~
-&+LA badge showing a &+wskull&+L and&+w bones&+L lies here.&n~
+17 -25
+#31314
+pack tarot cards~
+&+ma p&+Mack o&+mf &+bt&+Ba&+cr&+Co&+gt &+Gc&+Ya&+yr&+Rd&+rs&n~
+&+mA p&+Mack o&+mf &+bt&+Ba&+cr&+Co&+gt &+Gc&+Ya&+yr&+Rd&+rs &+mlie here.&n~
 ~
-9 10 3 0 7 0 24576 2097153 0 0 0
-5 0 0 0 0 0 0 0
-1 4213 100
+2 28 2 0 7 0 8192 8404993 0 0 0
+51 3 352 625 0 0 0 0
+0 16789 100
 E
-skull bones badge~
-&+LThe badge shows a &+wskull&+L with two crossed&+w bones&+L.&n
+pack tarot cards~
+&+mThis p&+Mack o&+mf &+bt&+Ba&+cr&+Co&+gt &+Gc&+Ya&+yr&+Rd&+rs &+mis used for &+Mfor&+mtune&+L-&+Mtell&+ming. Rec&+Mit&+me them to &+Msee &+mwhat the fut&+Mur&+me may h&+Mold&+m.&n
 ~
-A
-12 15
-A
-22 -2
+#31315
+badge force light darkness~
+&+La &+Wsw&+wirl&+Ling &+mfor&+Mce &+Lof &+Wlight &+wand &+Ldarkness&n~
+&+LA &+Wsw&+wirl&+Ling &+mfor&+Mce &+Lof &+Wlight &+wand &+Ldarkness levitates here.&n~
+~
+11 23 3 0 15 0 70262784 2097153 64 0 0
+0 0 0 0 0 0 0 0
+-8 23491 100 0 0 128 0
+E
+badge force light darkness~
+&+LThis levitating &+Wi&+wou&+Ln seems to be a &+Wsw&+wirl&+Ling &+mfor&+Mce &+Lthat shifts from &+Wlight
+&+wto &+Ldarkness &+Wover &+wand &+Lover, in a constant battle to &+Wcontrol &+wyour &+Lvision.&n
+~
+#31316
+skull crystal strange~
+&+La strange &+Wcrys&+Mt&+mal sk&+Mu&+Wll&n~
+&+LA strange &+Wcrys&+Mt&+mal sk&+Mu&+Wll &+Llies here em&+witti&+Lng a faint h&+wummi&+Lng noise.&n~
+~
+8 8 3 0 15 0 41971848 1 32832 0 0
+0 0 0 0 0 0 0 0
+12 43210 100
+E
+skull crystal strange~
+&+LThe strange full-size &+Wcrys&+Mt&+mal sk&+Mu&+Wll &+Lis inc&+wredi&+Lbly ac&+wcur&+Late to that of a
+&+Lhuman.  &+wOdd&+Lly it seems to be em&+witti&+Lng a faint h&+wummi&+Lng noise from within.
+&+LIt th&+wor&+Lbs with a p&+wowe&+Lr mis&+wunder&+Lstood by most.  Be&+wwar&+Le to not be ove&+wrc&+Lome
+&+Lby the skulls my&+wst&+Lery, for it is told the h&+wold&+Ler w&+wil&+Ll perish if they are
+&+Lnot the ori&+wgin&+Lal owner, to which it be&+wlong&+Ls.  Find it's owner qu&+wick &+Lor
+&+Lfor&+wget &+Lthat this ever ex&+wis&+Lted.  You suddenly hear a whisper that says &+w"Qin"&+L.&n
+~
+#31317
+skull crystal strange~
+&+La strange &+Wcrys&+Bt&+bal sk&+Bu&+Wll&n~
+&+LA strange &+Wcrys&+Bt&+bal sk&+Bu&+Wll &+Llies here em&+witti&+Lng a faint h&+wummi&+Lng noise.&n~
+~
+8 8 3 0 15 0 41971848 1 32832 0 0
+0 0 0 0 0 0 0 0
+12 43210 100
+E
+skull crystal strange~
+&+LThe strange full-size &+Wcrys&+Bt&+bal sk&+Bu&+Wll &+Lis inc&+wredi&+Lbly ac&+wcur&+Late to that of a
+&+Lhuman.  &+wOdd&+Lly it seems to be em&+witti&+Lng a faint h&+wummi&+Lng noise from within.
+&+LIt th&+wor&+Lbs with a p&+wowe&+Lr mis&+wunder&+Lstood by most.  Be&+wwar&+Le to not be ove&+wrc&+Lome
+&+Lby the skulls my&+wst&+Lery, for it is told the h&+wold&+Ler w&+wil&+Ll perish if they are
+&+Lnot the ori&+wgin&+Lal owner, to which it be&+wlong&+Ls.  Find it's owner qu&+wick &+Lor
+&+Lfor&+wget &+Lthat this ever ex&+wis&+Lted.  You suddenly hear a whisper that says &+w"Qin"&+L.&n
+~
+#31318
+skull crystal strange~
+&+La strange &+Wcrys&+Rt&+ral sk&+Ru&+Wll&n~
+&+LA strange &+Wcrys&+Rt&+ral sk&+Ru&+Wll &+Llies here em&+witti&+Lng a faint h&+wummi&+Lng noise.&n~
+~
+8 8 3 0 15 0 41971848 1 32832 0 0
+0 0 0 0 0 0 0 0
+12 43210 100
+E
+skull crystal strange~
+&+LThe strange full-size &+Wcrys&+Rt&+ral sk&+Ru&+Wll &+Lis inc&+wredi&+Lbly ac&+wcur&+Late to that of a
+&+Lhuman.  &+wOdd&+Lly it seems to be em&+witti&+Lng a faint h&+wummi&+Lng noise from within.
+&+LIt th&+wor&+Lbs with a p&+wowe&+Lr mis&+wunder&+Lstood by most.  Be&+wwar&+Le to not be ove&+wrc&+Lome
+&+Lby the skulls my&+wst&+Lery, for it is told the h&+wold&+Ler w&+wil&+Ll perish if they are
+&+Lnot the ori&+wgin&+Lal owner, to which it be&+wlong&+Ls.  Find it's owner qu&+wick &+Lor
+&+Lfor&+wget &+Lthat this ever ex&+wis&+Lted.  You suddenly hear a whisper that says &+w"Qin"&+L.&n
+~
+#31319
+skull crystal strange~
+&+La strange &+Wcrys&+Gt&+gal sk&+Gu&+Wll&n~
+&+LA strange &+Wcrys&+Gt&+gal sk&+Gu&+Wll &+Llies here em&+witti&+Lng a faint h&+wummi&+Lng noise.&n~
+~
+8 8 3 0 15 0 41971848 1 32832 0 0
+0 0 0 0 0 0 0 0
+12 43210 100
+E
+skull crystal strange~
+&+LThe strange full-size &+Wcrys&+Gt&+gal sk&+Gu&+Wll &+Lis inc&+wredi&+Lbly ac&+wcur&+Late to that of a
+&+Lhuman.  &+wOdd&+Lly it seems to be em&+witti&+Lng a faint h&+wummi&+Lng noise from within.
+&+LIt th&+wor&+Lbs with a p&+wowe&+Lr mis&+wunder&+Lstood by most.  Be&+wwar&+Le to not be ove&+wrc&+Lome
+&+Lby the skulls my&+wst&+Lery, for it is told the h&+wold&+Ler w&+wil&+Ll perish if they are
+&+Lnot the ori&+wgin&+Lal owner, to which it be&+wlong&+Ls.  Find it's owner qu&+wick &+Lor
+&+Lfor&+wget &+Lthat this ever ex&+wis&+Lted.  You suddenly hear a whisper that says &+w"Qin"&+L.&n
+~
+#31320
+skull crystal strange~
+&+La strange &+Wcrys&+Yt&+yal sk&+Yu&+Wll&n~
+&+LA strange &+Wcrys&+Yt&+yal sk&+Yu&+Wll &+Llies here em&+witti&+Lng a faint h&+wummi&+Lng noise.&n~
+~
+8 8 3 0 15 0 41971848 1 32832 0 0
+0 0 0 0 0 0 0 0
+12 43210 100
+E
+skull crystal strange~
+&+LThe strange full-size &+Wcrys&+Yt&+yal sk&+Yu&+Wll &+Lis inc&+wredi&+Lbly ac&+wcur&+Late to that of a
+&+Lhuman.  &+wOdd&+Lly it seems to be em&+witti&+Lng a faint h&+wummi&+Lng noise from within.
+&+LIt th&+wor&+Lbs with a p&+wowe&+Lr mis&+wunder&+Lstood by most.  Be&+wwar&+Le to not be ove&+wrc&+Lome
+&+Lby the skulls my&+wst&+Lery, for it is told the h&+wold&+Ler w&+wil&+Ll perish if they are
+&+Lnot the ori&+wgin&+Lal owner, to which it be&+wlong&+Ls.  Find it's owner qu&+wick &+Lor
+&+Lfor&+wget &+Lthat this ever ex&+wis&+Lted.  You suddenly hear a whisper that says &+w"Qin"&+L.&n
+~

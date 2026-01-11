@@ -20,14 +20,10 @@
 
 extern const char *god_list[];
 const char *god_list[] = {
-  "Clavados",
-  "Railand",
-  "Kvark",
-  "Tharkun",
+  "Arih",
   "Fotenak",
   "Xanadin",
   "Tyrus",
-  "Zyrkan",
   "\0"
 };
 

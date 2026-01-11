@@ -503,6 +503,57 @@ int move_regen( P_char ch, bool display_only )
 //  return (int) (gain * gain / 5);
 }
 
+/* * calculate ch's ward regeneration rate, return regen/minute */
+
+int ward_regen(P_char ch, bool display_only)
+{
+  int      gain;
+  struct affected_type *af;
+
+  if( affected_by_spell(ch, TAG_BUILDING) )
+  {
+    return 0;
+  }
+
+  if( ch->points.ward_reg >= 0 && GET_WARD(ch) == GET_MAX_WARD(ch) && !display_only )
+  {
+    return 0;
+  }
+
+  if( GET_WARD(ch) > GET_MAX_WARD(ch) )
+  {
+    gain = (int) (GET_MAX_WARD(ch) - GET_WARD(ch)) / 10;
+    return MIN(-1, gain);
+  }
+
+  gain = ch->points.ward_reg;  
+
+  /* * Position calculations    */
+  switch( GET_STAT(ch) )
+  {
+  case STAT_DEAD:
+    gain = 0;                   /* * overrides normal gains */
+    break;
+  }
+
+  if( CHAR_IN_HEAL_ROOM(ch) )
+  {
+    gain += GET_LEVEL(ch) * 2;
+  }
+
+  if( CHAR_IN_NO_HEAL_ROOM(ch) && gain > 0 )
+  {
+    gain = 0;
+  }
+
+  if( IS_FIGHTING(ch) || IS_DESTROYING(ch) )
+  {
+    gain = 0;
+  }
+
+  return (gain);
+}
+
 void gain_practices(P_char ch)
 {
 #if 0
@@ -746,6 +797,9 @@ void advance_level(P_char ch)
   update_pos(ch);
 
   check_boon_completion(ch, NULL, 0, BOPT_LEVEL);
+
+  // Send GMCP update for level change
+  gmcp_char_status(ch);
 }
 
 /*
@@ -791,6 +845,9 @@ void lose_level(P_char ch)
       ch->specials.conditions[i] = 0;
 
   balance_affects(ch);
+
+  // Send GMCP update for level change
+  gmcp_char_status(ch);
 }
 
 void clear_title(P_char ch)

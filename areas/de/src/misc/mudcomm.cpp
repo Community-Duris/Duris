@@ -408,6 +408,11 @@ const mudCommand g_mudCommands[] =
   { "boggle", false },
   { "hiss", false },
   { "bite", false },  
+  { "zlist", true},
+  { "rlist", true},
+  { "hlist", true},
+  { "olist", true},
+  { "mlist", true},
     0 };
 
 //

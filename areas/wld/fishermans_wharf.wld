@@ -1,12 +1,12 @@
 #88900
 &+gUpon a &+yBeaten &+gPath&n~
-&+y   A narrow trail through a healthy forest has been beaten down
-&+yby frequent traffic.  The trail staggers through the landscape
-&+yto a desired destination while puddles and brush snags make the
-&+ytrip quite dodgy.  Westward, through the thicket a grassy knoll
-&+ycan be seen.  Onward the elevation fluctuates.&n
+&+y   A narrow trail through a healthy forest has been beaten down by
+&+yfrequent traffic.  The trail staggers through the landscape to a
+&+ydesired destination while puddles and brush snags make the trip quite
+&+ydodgy.  Westward, through the thicket a grassy knoll can be seen.
+&+yOnward the elevation fluctuates.&n
 ~
-889 1107296256 4
+889 4 4
 D0
 &+ySome &+gIntersecting &+yPaths&n
 ~
@@ -20,13 +20,13 @@ D2
 S
 #88901
 &+ySome &+gIntersecting &+yPaths&n~
-&+y   A narrow trail through a healthy forest has been beaten down
-&+yby frequent traffic.  The trail staggers through the landscape
-&+yto a desired destination while puddles and brush snags make the
-&+ytrip quite dodgy.  Westward, through the thicket a grassy knoll
-&+ycan be seen.  Onward the elevation fluctuates.&n
+&+y   A narrow trail through a healthy forest has been beaten down by
+&+yfrequent traffic.  The trail staggers through the landscape to a
+&+ydesired destination while puddles and brush snags make the trip quite
+&+ydodgy.  Westward, through the thicket a grassy knoll can be seen.
+&+yOnward the elevation fluctuates.&n
 ~
-889 1107296260 4
+889 0 4
 D2
 &+gThrough a &+yBeaten &+gPath&n
 ~
@@ -36,7 +36,7 @@ D6
 &+gAn opening from the w&+yoo&+gdl&+yan&+gds.&n
 ~
 ~
-0 0 88953
+0 0 88952
 D8
 &+gThrough a &+yBeaten &+gPath&n
 ~
@@ -45,13 +45,13 @@ D8
 S
 #88902
 &+gThrough a &+yBeaten &+gPath&n~
-&+y   A narrow trail through a healthy forest has been beaten down
-&+yby frequent traffic.  The trail staggers through the landscape
-&+yto a desired destination while puddles and brush snags make the
-&+ytrip quite dodgy.  Westward, through the thicket a grassy knoll
-&+ycan be seen.  Onward the elevation fluctuates.&n
+&+y   A narrow trail through a healthy forest has been beaten down by
+&+yfrequent traffic.  The trail staggers through the landscape to a
+&+ydesired destination while puddles and brush snags make the trip quite
+&+ydodgy.  Westward, through the thicket a grassy knoll can be seen.
+&+yOnward the elevation fluctuates.&n
 ~
-889 1107296256 4
+889 0 4
 D0
 &+LApproaching a &+gFisher&+Lmans Wharf&N
 ~
@@ -85,11 +85,10 @@ D2
 S
 #88904
 &+yAlong a &+LDirty &+yPier&n~
-&+y   Walking lakeside the wood planks creek and knock.  Blood
-&+ystains and rotting remains litter the walkway.  Here fisherman
-&+yof all ages come to take in a raw dose of nature.  Glancing
-&+yover the lake, jumping fish leave water echoes and breath
-&+ytaking eagles soar the skies.&n
+&+y   Walking lakeside the wood planks creek and knock.  Blood stains and
+&+yrotting remains litter the walkway.  Here fisherman of all ages come to
+&+ytake in a raw dose of nature.  Glancing over the lake, jumping fish
+&+yleave water ripples and breath taking eagles soar the skies.&n
 ~
 889 0 1
 D0
@@ -115,11 +114,10 @@ door~
 S
 #88905
 &+yAlong a &+LDirty &+yPier&n~
-&+y   Walking lakeside the wood planks creek and knock.  Blood
-&+ystains and rotting remains litter the walkway.  Here fisherman
-&+yof all ages come to take in a raw dose of nature.  Glancing
-&+yover the lake, jumping fish leave water echoes and breath
-&+ytaking eagles soar the skies.&n
+&+y   Walking lakeside the wood planks creek and knock.  Blood stains and
+&+yrotting remains litter the walkway.  Here fisherman of all ages come to
+&+ytake in a raw dose of nature.  Glancing over the lake, jumping fish
+&+yleave water ripples and breath taking eagles soar the skies.&n
 ~
 889 0 1
 D0
@@ -140,11 +138,10 @@ D2
 S
 #88906
 &+yA &+LDock&+y on the &+yPier&n~
-&+y   Walking lakeside the wood planks creek and knock.  Blood
-&+ystains and rotting remains litter the walkway.  Here fisherman
-&+yof all ages come to take in a raw dose of nature.  Glancing
-&+yover the lake, jumping fish leave water echoes and breath
-&+ytaking eagles soar the skies.&n
+&+y   Walking lakeside the wood planks creek and knock.  Blood stains and
+&+yrotting remains litter the walkway.  Here fisherman of all ages come to
+&+ytake in a raw dose of nature.  Glancing over the lake, jumping fish
+&+yleave water ripples and breath taking eagles soar the skies.&n
 ~
 889 0 1
 D0
@@ -170,11 +167,10 @@ D3
 S
 #88907
 &+yAlong a &+LDirty &+yPier&n~
-&+y   Walking lakeside the wood planks creek and knock.  Blood
-&+ystains and rotting remains litter the walkway.  Here fisherman
-&+yof all ages come to take in a raw dose of nature.  Glancing
-&+yover the lake, jumping fish leave water echoes and breath
-&+ytaking eagles soar the skies.&n
+&+y   Walking lakeside the wood planks creek and knock.  Blood stains and
+&+yrotting remains litter the walkway.  Here fisherman of all ages come to
+&+ytake in a raw dose of nature.  Glancing over the lake, jumping fish
+&+yleave water ripples and breath taking eagles soar the skies.&n
 ~
 889 0 1
 D0
@@ -200,11 +196,10 @@ D3
 S
 #88908
 &+yA &+LDock&+y on the &+yPier&n~
-&+y   Walking lakeside the wood planks creek and knock.  Blood
-&+ystains and rotting remains litter the walkway.  Here fisherman
-&+yof all ages come to take in a raw dose of nature.  Glancing
-&+yover the lake, jumping fish leave water echoes and breath
-&+ytaking eagles soar the skies.&n
+&+y   Walking lakeside the wood planks creek and knock.  Blood stains and
+&+yrotting remains litter the walkway.  Here fisherman of all ages come to
+&+ytake in a raw dose of nature.  Glancing over the lake, jumping fish
+&+yleave water ripples and breath taking eagles soar the skies.&n
 ~
 889 0 1
 D0
@@ -230,13 +225,12 @@ D3
 S
 #88909
 &+LA &+wShady &+LShack&n~
-&+w   This shack once served as a trading post, but now homes
-&+wa retired fisherman, longing for company.  The layout of a
-&+wsmall shove, sturdy table, and cracked window is that of a
-&+wmodest man.  Guests still stop in for a drink and advice
-&+wfrom the wise man.&n
+&+w   This shack once served as a trading post, but now homes a retired
+&+wfisherman, longing for company.  The layout of a small stove, sturdy
+&+wtable, and cracked window is that of a modest man.  Guests still stop
+&+win for a drink and advice from the wise man.&n
 ~
-889 1107296256 0
+889 0 0
 D1
 &+yEast steps back out to the &+Ldirty &+ypier.&n
 ~
@@ -245,11 +239,10 @@ door~
 S
 #88910
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 4 3
 D1
@@ -265,19 +258,17 @@ D3
 S
 #88911
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.  To the
-&+Gnorth is a smell of &+wash&+G.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
 &+gSome back&+ywoods&+g near the lake.&n
 ~
-saplings~
-9 0 88973
+brush bush sapling~
+0 0 88969
 D1
 &+gA &+GPristine&+g Forest&n
 ~
@@ -291,11 +282,10 @@ D3
 S
 #88912
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D1
@@ -311,11 +301,10 @@ D3
 S
 #88913
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -341,11 +330,10 @@ D3
 S
 #88914
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -371,11 +359,10 @@ D3
 S
 #88915
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -396,11 +383,10 @@ D2
 S
 #88916
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -426,11 +412,10 @@ D3
 S
 #88917
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -456,11 +441,10 @@ D3
 S
 #88918
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -481,11 +465,10 @@ D3
 S
 #88919
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -493,16 +476,11 @@ D0
 ~
 ~
 0 0 88918
-D1
-&+gA man-made &+ystructure&+g lies across the forest.&n
-~
-limbs~
-5 0 88923
 D2
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88946
+0 0 88945
 D3
 &+gA &+GPristine&+g Forest&n
 ~
@@ -511,11 +489,10 @@ D3
 S
 #88920
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -529,10 +506,10 @@ D1
 ~
 0 0 88919
 D2
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
-0 0 88957
+0 0 88956
 D3
 &+gA &+GPristine&+g Forest&n
 ~
@@ -541,11 +518,10 @@ D3
 S
 #88921
 &+gA &+GPristine &+gForest&n~
-&+G   A crisp view of the forest brings to light all the
-&+Gthriving life.  Grand maple and sturdy pine trees spring
-&+Gup from bundles of ferns.  Animal trails crisscross from
-&+Gpoint to point, leaving behind a variety of tracks and
-&+Gmanure.  Berries and vegetation grow day by day.&n
+&+G   A crisp view of the forest brings to light all the thriving life.
+&+GGrand maple and sturdy pine trees spring up from bundles of ferns.
+&+GAnimal trails crisscross from point to point, leaving behind a variety
+&+Gof tracks and manure.  Berries and vegetation grow day by day.&n
 ~
 889 0 3
 D0
@@ -559,17 +535,17 @@ D1
 ~
 0 0 88920
 D2
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
-0 0 88958
+0 0 88957
 S
 #88922
 &+yBefore a Giant &+gPine Tree&n~
 &+g   Before a giant pine, time seems to decline.  Soaking up the
 &+gessence of earth, from this ancient trees birth.  It has grown past
 &+gclimates of change, disasters of age, and expanded through the forests
-&+gcage.  If only this wise one could say, what has brought it today.&n
+&+gcage.  If only this wise one could say, what has brought it to today.&n
 ~
 889 0 3
 D1
@@ -581,28 +557,27 @@ D4
 &+yAtop a Giant &+gPine Tree&n
 ~
 ~
-0 0 88961
+0 0 88960
 S
 #88923
 &+gA P&+yine Wood She&+glter&n~
-&+g   Tucked away in the forest lies this simple shack.  Constructed
-&+gfrom pine wood logs, it's topped with a layered dirt and leave roof.
-&+gOutside is a rock firepit and stack of split wood.  Such rugged
-&+gaccommodations must be that of a mighty man.&n
+&+g   Tucked away in the forest lies this simple shack.  Constructed from
+&+gpine wood logs, it's topped with a layered dirt and leaves.  Outside is
+&+ga rock firepit and stack of split wood.  Such rugged accommodations
+&+gmust be that of a mighty man.&n
 ~
-889 1107296260 3
-D3
-&+gA &+GPristine&+g Forest&n
+889 0 0
+D2
+&+LSmo&+wkey Back&+ywoods&n
 ~
-limbs~
-5 0 88919
+door~
+1 0 88969
 S
 #88924
 &+cIn the &+CShallows&n~
-&+C   Just off the walkway the water starts to rises.  The
-&+Cbrisk temperature wakes the body.  Small fish drift between
-&+Cthe rocks and vegetation.  The sun glistens off the lake
-&+Cand a slight westerly breeze can be felt.&n
+&+C   Just off the walkway the water starts to rises.  The brisk temperature
+&+Cwakes the body.  Small fish drift between the rocks and vegetation.  The
+&+Csun glistens off the lake and a slight westerly breeze can be felt.&n
 ~
 889 0 6
 D0
@@ -623,10 +598,9 @@ D3
 S
 #88925
 &+cIn the &+CShallows&n~
-&+C   Just off the walkway the water starts to rises.  The
-&+Cbrisk temperature wakes the body.  Small fish drift between
-&+Cthe rocks and vegetation.  The sun glistens off the lake
-&+Cand a slight westerly breeze can be felt.&n
+&+C   Just off the walkway the water starts to rises.  The brisk temperature
+&+Cwakes the body.  Small fish drift between the rocks and vegetation.  The
+&+Csun glistens off the lake and a slight westerly breeze can be felt.&n
 ~
 889 0 6
 D0
@@ -652,10 +626,9 @@ D3
 S
 #88926
 &+cIn the &+CShallows&n~
-&+C   Just off the walkway the water starts to rises.  The
-&+Cbrisk temperature wakes the body.  Small fish drift between
-&+Cthe rocks and vegetation.  The sun glistens off the lake
-&+Cand a slight westerly breeze can be felt.&n
+&+C   Just off the walkway the water starts to rises.  The brisk temperature
+&+Cwakes the body.  Small fish drift between the rocks and vegetation.  The
+&+Csun glistens off the lake and a slight westerly breeze can be felt.&n
 ~
 889 0 6
 D0
@@ -681,10 +654,9 @@ D3
 S
 #88927
 &+cIn the &+CShallows&n~
-&+C   Just off the walkway the water starts to rises.  The
-&+Cbrisk temperature wakes the body.  Small fish drift between
-&+Cthe rocks and vegetation.  The sun glistens off the lake
-&+Cand a slight westerly breeze can be felt.&n
+&+C   Just off the walkway the water starts to rises.  The brisk temperature
+&+Cwakes the body.  Small fish drift between the rocks and vegetation.  The
+&+Csun glistens off the lake and a slight westerly breeze can be felt.&n
 ~
 889 0 6
 D0
@@ -700,12 +672,12 @@ D1
 S
 #88928
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D0
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -719,12 +691,12 @@ D3
 S
 #88929
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D0
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -743,12 +715,12 @@ D3
 S
 #88930
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D0
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -767,12 +739,12 @@ D3
 S
 #88931
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D0
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -791,12 +763,12 @@ D3
 S
 #88932
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D2
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -810,12 +782,12 @@ D3
 S
 #88933
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D1
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -834,12 +806,12 @@ D3
 S
 #88934
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D1
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -858,12 +830,12 @@ D3
 S
 #88935
 &+cOn a &+CCalm &+cLake&n~
-&+c   The lake is calm and gentle, perfect for boating.  From birds
-&+cto frogs, the sounds of nature surround the lake.  Out here the
-&+ceveryday stresses just drift away.  Fellow fisherman come and go
-&+csearching for the perfect spot.&n
+&+c   The lake is calm and gentle, perfect for boating.  From birds to
+&+cfrogs, the sounds of nature surround the lake.  Out here the everyday
+&+cstresses just drift away.  Fellow fisherman come and go searching for
+&+cthe perfect spot.&n
 ~
-889 0 7
+889 0 6
 D1
 &+cOn a &+CCalm &+cLake&n
 ~
@@ -877,17 +849,16 @@ D2
 S
 #88936
 &+wA &+LRocky&+w Shore&n~
-&+w   This north shore detour edges next to the forest.  The winds
-&+whave picked up and begin to thrash waves against the boulders.
-&+wJust off land a beaver dam can be seen.  Things were much more
-&+wpeaceful in the forest.&n
+&+w   This north shore detour edges next to the forest.  The winds have
+&+wpicked up and begin to thrash waves against the boulders.  Just off land
+&+wa beaver dam can be seen.  Things were much more peaceful in the forest.&n
 ~
 889 4 4
 D0
 &+cSome &+wWindy &+cWaters&n
 ~
 ~
-0 0 88943
+0 0 88942
 D2
 &+gA &+GPristine &+gForest&n
 ~
@@ -901,10 +872,9 @@ D3
 S
 #88937
 &+wA &+LRocky&+w Shore&n~
-&+w   This north shore detour edges next to the forest.  The winds
-&+whave picked up and begin to thrash waves against the boulders.
-&+wJust off land a beaver dam can be seen.  Things were much more
-&+wpeaceful in the forest.&n
+&+w   This north shore detour edges next to the forest.  The winds have
+&+wpicked up and begin to thrash waves against the boulders.  Just off land
+&+wa beaver dam can be seen.  Things were much more peaceful in the forest.&n
 ~
 889 4 4
 D0
@@ -930,10 +900,9 @@ D3
 S
 #88938
 &+wA &+LRocky&+w Shore&n~
-&+w   This north shore detour edges next to the forest.  The winds
-&+whave picked up and begin to thrash waves against the boulders.
-&+wJust off land a beaver dam can be seen.  Things were much more
-&+wpeaceful in the forest.&n
+&+w   This north shore detour edges next to the forest.  The winds have
+&+wpicked up and begin to thrash waves against the boulders.  Just off land
+&+wa beaver dam can be seen.  Things were much more peaceful in the forest.&n
 ~
 889 4 4
 D0
@@ -954,10 +923,10 @@ D2
 S
 #88939
 &+cSome &+wWindy &+cWaters&N~
-&+c   Westerly winds force white cap waves across the lake.  The
-&+cweather conceals what might be lurking under the water.  Only
-&+cthe most experienced sailor would test these waters.  A single
-&+cretreat is the rocky shoreline near the thick forest.&n
+&+c   Westerly winds force white cap waves across the lake.  The weather
+&+cconceals what might be lurking under the water.  Only the most
+&+cexperienced sailor would test these waters.  A single retreat is the
+&+crocky shoreline near the thick forest.&n
 ~
 889 0 7
 D1
@@ -979,21 +948,21 @@ D5
 &+bDiving below the &+Lsurface&+b.&n
 ~
 ~
-0 0 88964
+0 0 88963
 S
 #88940
 &+cSome &+wWindy &+cWaters&N~
-&+c   Westerly winds force white cap waves across the lake.  The
-&+cweather conceals what might be lurking under the water.  Only
-&+cthe most experienced sailor would test these waters.  A single
-&+cretreat is the rocky shoreline near the thick forest.&n
+&+c   Westerly winds force white cap waves across the lake.  The weather
+&+cconceals what might be lurking under the water.  Only the most
+&+cexperienced sailor would test these waters.  A single retreat is the
+&+crocky shoreline near the thick forest.&n
 ~
 889 0 7
 D0
 &+yA beavers den &+crising from the water.&n
 ~
 ~
-0 0 88945
+0 0 88944
 D1
 &+cSome &+wWindy &+cWaters&n
 ~
@@ -1002,22 +971,17 @@ D1
 S
 #88941
 &+cSome &+wWindy &+cWaters&N~
-&+c   Westerly winds force white cap waves across the lake.  The
-&+cweather conceals what might be lurking under the water.  Only
-&+cthe most experienced sailor would test these waters.  A single
-&+cretreat is the rocky shoreline near the thick forest.&n
+&+c   Westerly winds force white cap waves across the lake.  The weather
+&+cconceals what might be lurking under the water.  Only the most
+&+cexperienced sailor would test these waters.  A single retreat is the
+&+crocky shoreline near the thick forest.&n
 ~
 889 0 7
-D0
-&+cSome &+wWindy &+cWaters&n
-~
-~
-0 0 88942
 D1
 &+cSome &+wWindy &+cWaters&n
 ~
 ~
-0 0 88943
+0 0 88942
 D2
 &+wA retreat to &+Lsolid land&+w.&n
 ~
@@ -1032,35 +996,21 @@ D5
 &+bDiving below the &+Lsurface&+b.&n
 ~
 ~
-0 0 88963
+0 0 88962
 S
 #88942
 &+cSome &+wWindy &+cWaters&N~
-&+c   Westerly winds force white cap waves across the lake.  The
-&+cweather conceals what might be lurking under the water.  Only
-&+cthe most experienced sailor would test these waters.  A single
-&+cretreat is the rocky shoreline near the thick forest.&n
-~
-889 0 7
-D2
-&+cSome &+wWindy &+cWaters&n
-~
-~
-0 0 88941
-S
-#88943
-&+cSome &+wWindy &+cWaters&N~
-&+c   Westerly winds force white cap waves across the lake.  The
-&+cweather conceals what might be lurking under the water.  Only
-&+cthe most experienced sailor would test these waters.  A single
-&+cretreat is the rocky shoreline near the thick forest.&n
+&+c   Westerly winds force white cap waves across the lake.  The weather
+&+cconceals what might be lurking under the water.  Only the most
+&+cexperienced sailor would test these waters.  A single retreat is the
+&+crocky shoreline near the thick forest.&n
 ~
 889 0 7
 D1
 &+cSome &+wWindy &+cWaters&n
 ~
 ~
-0 0 88944
+0 0 88943
 D2
 &+wA retreat to &+Lsolid land&+w.&n
 ~
@@ -1075,28 +1025,28 @@ D5
 &+bDiving below the &+Lsurface&+b.&n
 ~
 ~
-0 0 88962
+0 0 88961
 S
-#88944
+#88943
 &+cSome &+wWindy &+cWaters&N~
-&+c   Westerly winds force white cap waves across the lake.  The
-&+cweather conceals what might be lurking under the water.  Only
-&+cthe most experienced sailor would test these waters.  A single
-&+cretreat is the rocky shoreline near the thick forest.&n
+&+c   Westerly winds force white cap waves across the lake.  The weather
+&+cconceals what might be lurking under the water.  Only the most
+&+cexperienced sailor would test these waters.  A single retreat is the
+&+crocky shoreline near the thick forest.&n
 ~
 889 0 7
 D3
 &+cSome &+wWindy &+cWaters&n
 ~
 ~
-0 0 88943
+0 0 88942
 S
-#88945
+#88944
 &+yA Beavers &+YDen&n~
-&+y   A mound of entangled twigs and branches rises above the water
-&+ylevel, giving sturdy footing.  Topped with wild vegetation, this
-&+ystructure might go unnoticed by an untrained eye.  Infused with
-&+ythe environment, not even the slapping waves shift the platform.&n
+&+y   A mound of entangled twigs and branches rises above the water level,
+&+ygiving sturdy footing.  Topped with wild vegetation, this structure
+&+ymight go unnoticed by an untrained eye.  Infused with the environment,
+&+ynot even the slapping waves shift the platform.&n
 ~
 889 0 2
 D2
@@ -1105,12 +1055,12 @@ D2
 ~
 0 0 88940
 S
-#88946
+#88945
 &+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
 ~
 889 0 2
 D0
@@ -1122,77 +1072,101 @@ D1
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88951
-D2
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88947
-D3
-&+cA Small &+CPond&n
-~
-~
-0 0 88957
-S
-#88947
-&+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
-~
-889 0 2
-D0
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88946
-D1
-&+gA &+GGrassy &+gKnoll&n
-~
-~
 0 0 88950
 D2
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88948
+0 0 88946
 D3
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
 0 0 88956
 S
-#88948
+#88946
 &+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
 ~
 889 0 2
 D0
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88947
+0 0 88945
 D1
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
 0 0 88949
+D2
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88947
 D3
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
 0 0 88955
 S
+#88947
+&+gA &+GGrassy &+gKnoll&n~
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
+~
+889 0 2
+D0
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88946
+D1
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88948
+D3
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
+~
+~
+0 0 88954
+S
+#88948
+&+gA &+GGrassy &+gKnoll&n~
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
+~
+889 0 2
+D0
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88949
+D1
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88953
+D3
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88947
+S
 #88949
 &+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
 ~
 889 0 2
 D0
@@ -1200,54 +1174,6 @@ D0
 ~
 ~
 0 0 88950
-D1
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88954
-D3
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88948
-S
-#88950
-&+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
-~
-889 0 2
-D0
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88951
-D1
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88953
-D2
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88949
-D3
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88947
-S
-#88951
-&+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
-~
-889 0 2
 D1
 &+gA &+GGrassy &+gKnoll&n
 ~
@@ -1257,21 +1183,69 @@ D2
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88950
+0 0 88948
 D3
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
 0 0 88946
 S
-#88952
+#88950
 &+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
 ~
 889 0 2
+D1
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88951
+D2
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88949
+D3
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88945
+S
+#88951
+&+gA &+GGrassy &+gKnoll&n~
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
+~
+889 0 2
+D2
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88952
+D3
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88950
+S
+#88952
+&+gA &+GGrassy &+gKnoll&n~
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
+~
+889 0 2
+D0
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88951
 D2
 &+gA &+GGrassy &+gKnoll&n
 ~
@@ -1281,66 +1255,66 @@ D3
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88951
-S
-#88953
-&+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
-~
-889 0 2
-D0
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88952
-D2
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88954
-D3
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88950
+0 0 88949
 D9
 &+gThrough a &+yBeaten &+gPath&n
 ~
 ~
 0 0 88901
 S
-#88954
+#88953
 &+gA &+GGrassy &+gKnoll&n~
-&+G   The wide open space gives room to breathe in peace
-&+Gand out all stress.  Knee high grass is combed by a gentle
-&+Gbreeze.  The hill slopes from the forest down to a small
-&+Gpond.  Crickets can be heard throughout in the field.&n
+&+G   The wide open space gives room to breathe in peace and out all
+&+Gstress.  Knee high grass is combed by a gentle breeze.  The hill slopes
+&+Gfrom the forest down to a small pond.  Crickets can be heard throughout
+&+Gin the field.&n
 ~
 889 0 2
 D0
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88953
+0 0 88952
 D3
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88949
+0 0 88948
 S
-#88955
-&+cA Small&+C Pond&n~
-&+C   The shallow pond has a muddy bottom and surface packed
-&+Cwith lily pads.  Frogs jump from pad to pad, while bugs swarm
-&+Caround.  This seasonal pond is feed by rainwater from the nearby
-&+Chillside.  Bubbly green foam gathers around the rim of the pond.&n
+#88954
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n~
+&+C   The shallow pond has a muddy bottom and surface packed with lily
+&+Cpads.  Frogs jump from pad to pad, while bugs swarm around.  This
+&+Cseasonal pond is feed by rainwater from the nearby hillside.  Bubbly
+&+Cgreen foam gathers around the rim of the pond.&n
 ~
 889 0 6
 D0
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
+~
+~
+0 0 88955
+D1
+&+gA &+GGrassy &+gKnoll&n
+~
+~
+0 0 88947
+D3
 &+cA Small &+CPond&n
+~
+~
+0 0 88959
+S
+#88955
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n~
+&+C   The shallow pond has a muddy bottom and surface packed with lily
+&+Cpads.  Frogs jump from pad to pad, while bugs swarm around.  This
+&+Cseasonal pond is feed by rainwater from the nearby hillside.  Bubbly
+&+Cgreen foam gathers around the rim of the pond.&n
+~
+889 0 6
+D0
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
 0 0 88956
@@ -1348,48 +1322,24 @@ D1
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88948
+0 0 88946
+D2
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
+~
+~
+0 0 88954
 D3
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
-0 0 88960
+0 0 88958
 S
 #88956
-&+cA Small&+C Pond&n~
-&+C   The shallow pond has a muddy bottom and surface packed
-&+Cwith lily pads.  Frogs jump from pad to pad, while bugs swarm
-&+Caround.  This seasonal pond is feed by rainwater from the nearby
-&+Chillside.  Bubbly green foam gathers around the rim of the pond.&n
-~
-889 0 6
-D0
-&+cA Small &+CPond&n
-~
-~
-0 0 88957
-D1
-&+gA &+GGrassy &+gKnoll&n
-~
-~
-0 0 88947
-D2
-&+cA Small &+CPond&n
-~
-~
-0 0 88955
-D3
-&+cA Small &+CPond&n
-~
-~
-0 0 88959
-S
-#88957
-&+cA Small&+C Pond&n~
-&+C   The shallow pond has a muddy bottom and surface packed
-&+Cwith lily pads.  Frogs jump from pad to pad, while bugs swarm
-&+Caround.  This seasonal pond is feed by rainwater from the nearby
-&+Chillside.  Bubbly green foam gathers around the rim of the pond.&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n~
+&+C   The shallow pond has a muddy bottom and surface packed with lily
+&+Cpads.  Frogs jump from pad to pad, while bugs swarm around.  This
+&+Cseasonal pond is feed by rainwater from the nearby hillside.  Bubbly
+&+Cgreen foam gathers around the rim of the pond.&n
 ~
 889 0 6
 D0
@@ -1401,24 +1351,24 @@ D1
 &+gA &+GGrassy &+gKnoll&n
 ~
 ~
-0 0 88946
+0 0 88945
 D2
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
-0 0 88956
+0 0 88955
 D3
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
-0 0 88958
+0 0 88957
 S
-#88958
-&+cA Small&+C Pond&n~
-&+C   The shallow pond has a muddy bottom and surface packed
-&+Cwith lily pads.  Frogs jump from pad to pad, while bugs swarm
-&+Caround.  This seasonal pond is feed by rainwater from the nearby
-&+Chillside.  Bubbly green foam gathers around the rim of the pond.&n
+#88957
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n~
+&+C   The shallow pond has a muddy bottom and surface packed with lily
+&+Cpads.  Frogs jump from pad to pad, while bugs swarm around.  This
+&+Cseasonal pond is feed by rainwater from the nearby hillside.  Bubbly
+&+Cgreen foam gathers around the rim of the pond.&n
 ~
 889 0 6
 D0
@@ -1427,60 +1377,60 @@ D0
 ~
 0 0 88921
 D1
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
+~
+~
+0 0 88956
+D2
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
+~
+~
+0 0 88958
+S
+#88958
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n~
+&+C   The shallow pond has a muddy bottom and surface packed with lily
+&+Cpads.  Frogs jump from pad to pad, while bugs swarm around.  This
+&+Cseasonal pond is feed by rainwater from the nearby hillside.  Bubbly
+&+Cgreen foam gathers around the rim of the pond.&n
+~
+889 0 6
+D0
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
 0 0 88957
+D1
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
+~
+~
+0 0 88955
 D2
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
 0 0 88959
 S
 #88959
-&+cA Small&+C Pond&n~
-&+C   The shallow pond has a muddy bottom and surface packed
-&+Cwith lily pads.  Frogs jump from pad to pad, while bugs swarm
-&+Caround.  This seasonal pond is feed by rainwater from the nearby
-&+Chillside.  Bubbly green foam gathers around the rim of the pond.&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n~
+&+C   The shallow pond has a muddy bottom and surface packed with lily
+&+Cpads.  Frogs jump from pad to pad, while bugs swarm around.  This
+&+Cseasonal pond is feed by rainwater from the nearby hillside.  Bubbly
+&+Cgreen foam gathers around the rim of the pond.&n
 ~
 889 0 6
 D0
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
 0 0 88958
 D1
-&+cA Small &+CPond&n
+&+CA &+GMar&+gsh &+GFi&+gll&+Ged&+C Pond&n
 ~
 ~
-0 0 88956
-D2
-&+cA Small &+CPond&n
-~
-~
-0 0 88960
+0 0 88954
 S
 #88960
-&+cA Small&+C Pond&n~
-&+C   The shallow pond has a muddy bottom and surface packed
-&+Cwith lily pads.  Frogs jump from pad to pad, while bugs swarm
-&+Caround.  This seasonal pond is feed by rainwater from the nearby
-&+Chillside.  Bubbly green foam gathers around the rim of the pond.&n
-~
-889 0 6
-D0
-&+cA Small &+CPond&n
-~
-~
-0 0 88959
-D1
-&+cA Small &+CPond&n
-~
-~
-0 0 88955
-S
-#88961
 &+yAtop a Giant &+gPine Tree&n~
 &+g   Atop this giant tree, all of the wharf can be seen.  From the
 &+gforest to the lake and pond to the beaten path.  The birds eye
@@ -1495,239 +1445,176 @@ D5
 ~
 0 0 88922
 F
-60
+50
 S
-#88962
-&+bDeep Below the &+LSurface&n~
+#88961
+&+bBelow the Waters &+LSurface&n~
 &+b   Under the waters surface, light is limited and pressure is building.
 &+bEnemies become hard to defend under these conditions.  Suddenly ones will
-&+bforce is tested as the path sinks further down.  To the south is a rock face
-&+band north open water.&n
+&+bforce is tested as the path sinks further down.&n
 ~
-889 32 9
+889 33554464 9
+D3
+&+bDeep Below the &+LSurface&n
+~
+~
+0 0 88962
+D4
+&+wSurfacing up&+c to some windy waters.&n
+~
+~
+0 0 88942
+S
+#88962
+&+bBelow the Waters &+LSurface&n~
+&+b   Under the waters surface, light is limited and pressure is building.
+&+bEnemies become hard to defend under these conditions.  Suddenly ones will
+&+bforce is tested as the path sinks further down.&n
+~
+889 33554464 9
+D1
+&+bDeep Below the &+LSurface&n
+~
+~
+0 0 88961
 D3
 &+bDeep Below the &+LSurface&n
 ~
 ~
 0 0 88963
-D4
-&+wSurfacing up&+c to some windy waters.&n
-~
-~
-0 0 88943
-S
-#88963
-&+bDeep Below the &+LSurface&n~
-&+b   Under the waters surface, light is limited and pressure is building.
-&+bEnemies become hard to defend under these conditions.  Suddenly ones will
-&+bforce is tested as the path sinks further down.  To the south is a rock face
-&+band north open water.&n
-~
-889 32 9
-D1
-&+bDeep Below the &+LSurface&n
-~
-~
-0 0 88962
-D3
-&+bDeep Below the &+LSurface&n
-~
-~
-0 0 88964
 D4
 &+wSurfacing up&+c to some windy waters.&n
 ~
 ~
 0 0 88941
 D5
-&+bDeep Below the &+LSurface&n
+&+LDeep &+bBelow the Waters &+LSurface&n
 ~
 ~
-0 0 88965
+0 0 88964
 S
-#88964
-&+bDeep Below the &+LSurface&n~
+#88963
+&+bBelow the Waters &+LSurface&n~
 &+b   Under the waters surface, light is limited and pressure is building.
-&+bEnemies become hard to defend under these conditions.  Suddenly ones will
-&+bforce is tested as the path sinks further down.  To the south is a rock face
-&+band north open water.&n
+&+bEnemies become hard to defend under these conditions.  Suddenly, ones will
+&+bforce is tested as the path sinks further down.&n
 ~
-889 32 9
+889 33554464 9
 D1
 &+bDeep Below the &+LSurface&n
 ~
 ~
-0 0 88963
+0 0 88962
 D4
 &+wSurfacing up&+c to some windy waters.&n
 ~
 ~
 0 0 88939
 S
-#88965
-&+bDeep Below the &+LSurface&n~
+#88964
+&+LDeep &+bBelow the Waters &+LSurface&n~
 &+b   This far under the waters surface, sun light is just a glimmer and
 &+bpressure is at an all time high.  Enemies have the advantage under such
 &+bconditions.  Suddenly ones bravery is tested as the path continues into
-&+ba cramp water cavern.  Proceed into the &+Ldarkness&+b or rise for air.&n
+&+ba cramped water cavern.  Proceed into the &+Ldarkness&+b or rise for &+Wair&+b.&n
 ~
-889 32 10
-D2
-&+LContinues deep into a water &+bfilled &+Lcavern.&n
-~
-~
-0 0 88966
+889 33554468 9
 D4
-&+bDeep Below the &+LSurface&n
+&+bBelow the Waters &+LSurface&n
 ~
 ~
-0 0 88963
-S
-#88966
-&+LA Water &+bFilled &+LCavern&n~
-&+L   Through the cavern, water levels reach to the ceiling and
-&+Lmud piles up on the bottom.  The surrounding rock walls have
-&+Lswallowed all incoming light.  Continue onward to recover
-&+Lnatural senses.&n
-~
-889 33 10
-D0
-&+bA glimmer of &+wlight&+b can be seen north.&n
+0 0 88962
+D5
+&+LA Water &+bFilled &+LCavern&n
 ~
 ~
 0 0 88965
-D2
-&+LA Water &+bFilled &+LCavern&n
-~
-~
-0 0 88967
 S
-#88967
+#88965
 &+LA Water &+bFilled &+LCavern&n~
-&+L   Through the cavern, water levels reach to the ceiling and
-&+Lmud piles up on the bottom.  The surrounding rock walls have
-&+Lswallowed all incoming light.  Continue onward to recover
-&+Lnatural senses.&n
+&+L   Through the cavern, water levels reach to the ceiling and mud piles
+&+Lup on the bottom.  The surrounding rock walls have swallowed all
+&+Lincoming light.  Retreat now to recover natural senses.&n
 ~
 889 33 10
-D0
+D1
 &+LA Water &+bFilled &+LCavern&n
 ~
 ~
 0 0 88966
-D1
-&+LA Water &+bFilled &+LCavern&n
-~
-~
-0 0 88968
-S
-#88968
-&+LA Water &+bFilled &+LCavern&n~
-&+L   Through the cavern, water levels reach to the ceiling and
-&+Lmud piles up on the bottom.  The surrounding rock walls have
-&+Lswallowed all incoming light.  Continue onward to recover
-&+Lnatural senses.&n
-~
-889 33 10
 D2
-&+wA Cramped Tu&+Lnn&+wel&n
+&+mA &+GS&+ge&+Gr&+Lpen&+wt&+Ls&+m Private L&+Mair&n
 ~
-~
-0 0 88969
+grate~
+3 88914 88968
 D3
 &+LA Water &+bFilled &+LCavern&n
 ~
 ~
 0 0 88967
+D4
+&+LDeep &+bBelow the Waters &+LSurface&n
+~
+~
+0 0 88964
 S
-#88969
-&+LA Water &+bFilled&+L Cavern&n~
-&+L   Through the cavern, water levels reach to the ceiling and
-&+Lmud piles up on the bottom.  The surrounding rock walls have
-&+Lswallowed all incoming light.  Continue onward to recover
-&+Lnatural senses.  Upward lies a dense atmosphere.&n
+#88966
+&+LA Water &+bFilled &+LCavern&n~
+&+L   Through the cavern, water levels reach to the ceiling and mud piles
+&+Lup on the bottom.  The surrounding rock walls have swallowed all
+&+Lincoming light.  Retreat now to recover natural senses.&n
 ~
 889 33 10
-D0
+D3
 &+LA Water &+bFilled &+LCavern&n
 ~
 ~
-0 0 88968
-D4
-&+wA Cramped Tu&+Lnn&+wel&n
-~
-~
-0 0 88970
+0 0 88965
 S
-#88970
-&+wA Cramped Tu&+Lnn&+wel&n~
-&+w   After surfacing, the putrid air is even comforting.  Solid
-&+wground has returned, shards of rock hang from the ceiling and
-&+wboulders cross the path.  Confronted with a water grate, a
-&+wmystical light glows from within the tunnel.&n
+#88967
+&+LA Water &+bFilled&+L Cavern&n~
+&+L   Through the cavern, water levels reach to the ceiling and mud piles
+&+Lup on the bottom.  The surrounding rock walls have swallowed all
+&+Lincoming light.  Retreat now to recover natural senses.&n
 ~
-889 33562884 4
-D2
-&+wA water grate blocks penetration of the cavern.&n
-~
-grate water~
-3 88916 88971
-D5
-&+LA Water &+bFilled&+L Cavern&n
-~
-~
-0 0 88969
-S
-#88971
-&+wA Cramped Tu&+Lnn&+wel&n~
-&+w   The putrid air thicken down the tunnel.  Once past the grate,
-&+wan opening can be seen inside the cavern.  Dangerous fang-like
-&+wshards of rock hang from the ceiling.  Moving past the boulders
-&+wa mystical light glows from within the tunnel.&n
-~
-889 33554688 4
-D0
-&+wA water grate blocks the tu&+Lnn&+wels exit.&n
-~
-grate water~
-3 88916 88970
+889 33 10
 D1
-&+mA Private L&+Mair
+&+LA Water &+bFilled &+LCavern&n
 ~
 ~
-0 0 88972
+0 0 88965
 S
-#88972
-&+mA &+GS&+ge&+Gr&+Lpen&+wt&+Ls&+m Private L&+Mair&n~
-&+M   Erosion has provided a serpent with this private opening.
-&+MCramped yet adequate the lair has been tucked away from observers
-&+Mfor far too long.  A mystical light hovers at the cavern core,
-&+Mexposing lost treasures and forgotten relics.&n
+#88968
+&+mA &+gS&+Ge&+gr&+Lpen&+wt&+Gs &+mPriv&+Mate &+mL&+Mair&n~
+&+m   Erosion has provided a serpent with this private opening.  Cramped
+&+myet adequate the lair has been tucked away from observers for far too
+&+mlong.  A mystical light hovers at the cavern core, exposing lost
+&+mtreasures and forgotten relics.&n
 ~
-889 1077968896 4
-D3
-&+wA Cramped Tu&+Lnn&+wel&n
+889 33587236 10
+D0
+&+LA Water &+bFilled &+LCavern&n
 ~
-~
-0 0 88971
-D4
-&+gA secret hatch leads up to the forest floor.&n
-~
-hatch secret~
-4 0 88923
+grate~
+1 0 88965
 S
-#88973
+#88969
 &+LSmo&+wkey Back&+ywoods&n~
-&+y   Blocked from sight, this backwoods hideout is a calm retreat
-&+yfrom the busy docks.  Tucked between the rocky shores and lake
-&+yshallows is this firm landing.  Although shaded by day, there is
-&+yan opening for star gazing in the night sky.  The central firepit
-&+yplaced here is still smoldering.&n
+&+y   Blocked from sight, this backwoods hideout is a calm retreat from
+&+ythe busy docks.  Tucked between the rocky shores and lake shallows is
+&+ythis firm landing.  Although shaded by day, there is an opening for
+&+ystar gazing the night sky.  The central firepit placed here is still
+&+ysmoldering.  Being here seems to help your personal &+wregeneration&+y.&n
 ~
-889 1107427328 3
+889 131072 3
+D0
+&+gA glimpse of a man-made &+ystructure&+g can be seen ahead.&n
+~
+door~
+1 0 88923
 D2
 &+gA &+GPristine &+gForest&n
 ~
-saplings~
-9 0 88911
+brush bush sapling~
+0 0 88911
 S

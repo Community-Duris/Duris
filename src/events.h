@@ -86,6 +86,7 @@
 #define EVENT_ARTIFACT      52 /* handles artifact feeding */
 #define EVENT_SACKING      53 /* handles artifact feeding */
 #define EVENT_INTERACTION 64
+#define EVENT_WARD_REGEN  65
 
 
 #define LAST_EVENT         66

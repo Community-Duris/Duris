@@ -497,6 +497,17 @@ CREATE TABLE `mud_info` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 
+INSERT INTO `mud_info` (`name`, `content`) VALUES
+  ('motd', ''),
+  ('wizmotd', ''),
+  ('news', ''),
+  ('rules', ''),
+  ('credits', ''),
+  ('info', ''),
+  ('wizlist', ''),
+  ('faq', '')
+ON DUPLICATE KEY UPDATE `name` = `name`;
+
 --
 -- Table structure for table `multiplay_whitelist`
 --
@@ -974,6 +985,67 @@ CREATE TABLE `locker_access` (
   `owner` varchar(255) NOT NULL,
   `visitor` varchar(255) NOT NULL,
   PRIMARY KEY  (`owner`,`visitor`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `polls`
+-- Poll system for player voting
+--
+
+DROP TABLE IF EXISTS `polls`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `polls` (
+  `id` int(11) NOT NULL auto_increment,
+  `question` varchar(512) NOT NULL,
+  `created_by` varchar(32) NOT NULL,
+  `created_at` int(11) NOT NULL default '0',
+  `expires_at` int(11) NOT NULL default '0',
+  `is_active` tinyint(1) NOT NULL default '1',
+  `multi_select` tinyint(1) NOT NULL default '0',
+  `max_choices` int(11) NOT NULL default '1',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `poll_options`
+-- Options for each poll
+--
+
+DROP TABLE IF EXISTS `poll_options`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `poll_options` (
+  `id` int(11) NOT NULL auto_increment,
+  `poll_id` int(11) NOT NULL,
+  `option_num` int(11) NOT NULL,
+  `option_text` varchar(256) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `poll_id` (`poll_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `poll_votes`
+-- Votes tracked per account (not per character)
+--
+
+DROP TABLE IF EXISTS `poll_votes`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `poll_votes` (
+  `id` int(11) NOT NULL auto_increment,
+  `poll_id` int(11) NOT NULL,
+  `account_name` varchar(64) NOT NULL,
+  `option_id` int(11) NOT NULL,
+  `voted_at` int(11) NOT NULL default '0',
+  `char_name` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_vote` (`poll_id`, `account_name`, `option_id`),
+  KEY `poll_id` (`poll_id`),
+  KEY `account_name` (`account_name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 

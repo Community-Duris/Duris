@@ -182,6 +182,8 @@ struct GuildhallRoom {
   {
     GuildhallRoom();
   }
+
+  virtual ~GuildhallRoom() = default;
 };
 
 struct EntranceRoom : public GuildhallRoom

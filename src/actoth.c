@@ -4324,6 +4324,9 @@ void show_toggles(P_char ch)
           "&+r   PetDamage   :&+g %-3s    &+y|"
           "&+r     Guildname   :&+g %-3s    &+y|"
           "&+r     GMCP        :&+g %-3s    &+y|&n\r\n"
+		  "&+r   Heal        :&+g %-3s    &+y|"
+          "&+r                 :&+g        &+y|"
+          "&+r                 :&+g        &+y|&n\r\n"
           "&+y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
           "-=-=-=-=-=-=-=-=-=-=-=-=-=-&N\r\n",
           ONOFF(!PLR_FLAGGED(ch, PLR_NOTELL)),
@@ -4367,7 +4370,8 @@ void show_toggles(P_char ch)
           ONOFF(PLR3_FLAGGED(ch, PLR3_NOLEVEL)),
           ONOFF(PLR3_FLAGGED(ch, PLR3_PET_DAMAGE)),
           ONOFF(PLR3_FLAGGED(ch, PLR3_GUILDNAME)),
-          ONOFF(!PLR3_FLAGGED(ch, PLR3_NOGMCP)) );
+          ONOFF(!PLR3_FLAGGED(ch, PLR3_NOGMCP)),
+		  ONOFF(PLR2_FLAGGED(ch, PLR2_HEAL)) );
   send_to_char(Gbuf1, send_ch);
 
   if (GET_LEVEL(ch) >= AVATAR)
@@ -4384,7 +4388,6 @@ void show_toggles(P_char ch)
             "&+rExp:&+g %-3s "
             "&+rDebug:&+g %-3s "
             "&+rFog:&+g %-3s "
-            "&+rHeal:&+g %-3s "
             "&+rEpic:&+g %-3s\n\r",
             ONOFF(!PLR_FLAGGED(ch, PLR_WIZMUFFED)),
             ONOFF(PLR_FLAGGED(ch, PLR_WIZLOG)),
@@ -4397,7 +4400,6 @@ void show_toggles(P_char ch)
             ONOFF(PLR2_FLAGGED(ch, PLR2_EXP)),
             ONOFF(PLR_FLAGGED(ch, PLR_DEBUG)),
             ONOFF(PLR_FLAGGED(ch, PLR_MORTAL)),
-            ONOFF(PLR2_FLAGGED(ch, PLR2_HEAL)),
             ONOFF(PLR3_FLAGGED(ch, PLR3_EPICWATCH)));
     send_to_char(Gbuf1, send_ch);
     send_to_char("&+y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-&N\r\n", send_ch);
@@ -4672,7 +4674,6 @@ void do_toggle(P_char ch, char *arg, int cmd)
            !strn_cmp(toggles_list[i], "ban", 3) ||
            !strn_cmp(toggles_list[i], "fog", 3) ||
            !strn_cmp(toggles_list[i], "logmsg", 6) ||
-           !strn_cmp(toggles_list[i], "heal", 4) ||
 // Damage is now a mortal command.
 //           !strn_cmp(toggles_list[i], "damage", 6) ||
            !strn_cmp(toggles_list[i], "epic", 4) ||
@@ -5036,15 +5037,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
     result = PLR2_TOG_CHK(ch, PLR2_DAMAGE);
     break;
   case 48:
-    if( IS_TRUSTED(ch) )
-    {
-      result = PLR2_TOG_CHK(ch, PLR2_HEAL);
-    }
-    else
-    {
-      send_to_char("Humf?!\r\n", send_ch);
-      return;
-    }
+    result = PLR2_TOG_CHK(ch, PLR2_HEAL);    
     break;
   case 49:
     if ((GET_LEVEL(ch) > 50) && !IS_SET(PLR2_FLAGS(ch), PLR2_LGROUP))

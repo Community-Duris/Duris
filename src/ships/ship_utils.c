@@ -751,7 +751,7 @@ int getcontacts(P_ship ship, bool limit_range)
             if( obj != ship->shipobj )
             {
               temp = shipObjHash.find(obj);
-              if( !limit_range || (ship_range( ship, temp, j, 100 - i ) <= rng) )
+              if( temp && (!limit_range || (ship_range( ship, temp, j, 100 - i ) <= rng)) )
               {
                 setcontact(counter, temp, ship, j, 100 - i);
                 counter++;

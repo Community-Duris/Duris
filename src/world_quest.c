@@ -312,7 +312,8 @@ void quest_kill(P_char ch, P_char quest_mob)
   if( number(1, ch->only.pc->quest_kill_original + 1) <= 2 )
   {
     P_obj reward = quest_item_reward(ch);
-    obj_to_char(reward, quest_mob);
+    if(reward)
+      obj_to_char(reward, quest_mob);
   }
 
 

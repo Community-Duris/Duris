@@ -11,6 +11,7 @@ __py_cache__/
 cscope.out
 *.a
 *.o
+*.d
 *.backup
 *~
 lib/information/leaderboard
@@ -32,3 +33,4 @@ duris.key
 
 # environment files (may contain secrets)
 .env
+logs/shutdown_info.txt

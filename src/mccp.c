@@ -8,10 +8,12 @@
 #include "telnet.h"
 #include "mccp.h"
 #include "gmcp.h"
+#include "ttype.h"
 #include "unicode.h"
 #include "utils.h"
 #include "websocket.h"
 #include "json_utils.h"
+#include "copyover.h"
 
 /* external variables used by this module */
 extern P_desc descriptor_list;
@@ -25,6 +27,8 @@ const unsigned char compress_on_str[] = { IAC, WILL, TELOPT_COMPRESS, '\0' };
 const unsigned char compress2_on_str[] = { IAC, WILL, TELOPT_COMPRESS2, '\0' };
 const unsigned char enable_compress[] = { IAC, SB, TELOPT_COMPRESS, WILL, SE, '\0' };
 const unsigned char enable_compress2[] = { IAC, SB, TELOPT_COMPRESS2, IAC, SE, '\0' };
+const unsigned char sga_will_str[] = { IAC, WILL, TELOPT_SGA, '\0' };
+const unsigned char ga_str[] = { IAC, GA, '\0' };
 
 void    *zlib_alloc(void *opaque, unsigned int items, unsigned int size);
 void     zlib_free(void *opaque, void *address);
@@ -50,6 +54,17 @@ void advertise_mccp(P_desc desc)
   write_to_descriptor(desc, (const char *)compress_on_str);
 }
 
+void sga_negotiate(P_desc desc)
+{
+  write_to_descriptor_binary(desc, sga_will_str, 3);
+}
+
+void send_ga(P_desc desc)
+{
+  if (desc && !desc->sga_disabled && !desc->websocket)
+    write_to_descriptor_binary(desc, ga_str, 2);
+}
+
 /* parse telnet options and return amount of characters 
  * to "cut" from input stream
  * If you ever need to make it "the right way", look into
@@ -61,6 +76,7 @@ int parse_telnet_options(P_desc player, char *buf)
 
   if (*p != IAC)
     return 0;
+
   switch (*(p + 1))
   {
   case DO:
@@ -76,6 +92,9 @@ int parse_telnet_options(P_desc player, char *buf)
     case TELOPT_GMCP:
       gmcp_handle_negotiation(player, DO);
       return 3;
+    case TELOPT_SGA:
+      player->sga_disabled = 1;
+      return 3;
     }
     break;
   case DONT:
@@ -84,25 +103,40 @@ int parse_telnet_options(P_desc player, char *buf)
     case TELOPT_GMCP:
       gmcp_handle_negotiation(player, DONT);
       return 3;
+    case TELOPT_SGA:
+      player->sga_disabled = 0;
+      return 3;
     }
     /* fall through */
   case WILL:
+    if (*(p + 2) == TELOPT_TTYPE)
+      ttype_handle_negotiation(player, WILL);
+    return (*(p + 2) != '\0') ? 3 : 2;
   case WONT:
-    if (*(p + 2) != '\0')
-      return 3;
-    else
-      return 2;
-    break;
-  case SB:  /* Subnegotiation - skip until IAC SE */
+    if (*(p + 2) == TELOPT_TTYPE)
+      ttype_handle_negotiation(player, WONT);
+    return (*(p + 2) != '\0') ? 3 : 2;
+  case SB:  /* subnegotiation */
     {
-      int len = 2;  /* Start after IAC SB */
-      while (p[len] && !(p[len] == IAC && p[len+1] == SE))
+      int len = 2;
+      /* no null check - buf = 4800 */
+      while (len < 4096 && !(p[len] == IAC && p[len+1] == SE))
         len++;
       if (p[len] == IAC && p[len+1] == SE)
-        len += 2;  /* Include IAC SE */
+        len += 2;
+      else if (len >= 4096)
+        return 2;  /* malformed */
 
+      if (p[2] == TELOPT_TTYPE && len > 4) {
+        if (p[3] == TELQUAL_IS) {
+          ttype_handle_subnegotiation(player, p + 3, len - 5);
+        } else {
+          player->ttype_state = TTYPE_COMPLETE;
+          return len;
+        }
+      }
       /* If GMCP subnegotiation, pass data to handler */
-      if (p[2] == TELOPT_GMCP && len > 5) {
+      else if (p[2] == TELOPT_GMCP && len > 5) {
         gmcp_handle_input(player, (const char *)(p + 3), len - 5);
       }
       return len;
@@ -210,7 +244,7 @@ int write_to_descriptor(P_desc player, const char *txt)
 {
   int      len, total, status, i, j;
   char     static_conv_buf[MAX_STRING_LENGTH];
-  char    *conv_buf = static_conv_buf;;
+  char    *conv_buf = static_conv_buf;
 
   /* WebSocket connections need JSON-wrapped text frames */
   if (player->websocket) {
@@ -249,8 +283,31 @@ int write_to_descriptor(P_desc player, const char *txt)
   txt = conv_buf;
   total = j;
 
+  /*
+   * charset logic:
+   * - ssl connections: always utf8
+   * - mtts with utf8 flag: utf8
+   * - mtts without utf8 flag: cp437
+   * - zmud/cmud (no mtts support): cp437
+   * - everyone else: utf8 (modern default)
+   */
   char down[j + 1];
-  if (!player->sslses) // tying charset to port choice, because zmud
+  int need_cp437 = 0;
+
+  if (!player->sslses)
+  {
+    if (player->mtts_flags && !(player->mtts_flags & MTTS_UTF8))
+      need_cp437 = 1;
+    else if (player->ttype_client[0] &&
+             (strncasecmp(player->ttype_client, "ZMUD", 4) == 0 ||
+              strncasecmp(player->ttype_client, "CMUD", 4) == 0 ||
+              strncasecmp(player->ttype_client, "VT", 2) == 0 ||
+              strncasecmp(player->ttype_client, "ANSI", 4) == 0 ||
+              strncasecmp(player->ttype_client, "DUMB", 4) == 0))
+      need_cp437 = 1;
+  }
+
+  if (need_cp437)
   {
     char *dend = down;
     downgrade_string(dend, txt, u_cp437);

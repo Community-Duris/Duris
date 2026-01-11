@@ -1,25 +1,27 @@
-#85704~
+#85703~
 N
-85743
-85746
-85748
-85747
-85745
-85744
-85741
-85742
-412
+85729
+85730
+85722
 0
 0.80
-1.10
+1.00
 1
-2
-3
-4
+5
+6
+7
 9
 11
 15
-17
+23
+30
+31
+32
+33
+34
+36
+37
+39
 0
 &+wI must have ran out of all %s&+w, try back next week...&n~
 &+wI don't see %s&+w, are you trying to cheat me!!&n~
@@ -30,15 +32,15 @@ N
 &+wHey %s&+w, I'll give you %s right now or less tomorrow.&n~
 0
 0
-85704
+85703
 0
-85794
+85734
 0
 28
 0
 28
 N
-N
+Y
 N
 I am now open!~
 My shop is now closed.~
@@ -50,19 +52,20 @@ I do not sell to your people!~
 X
 #85751~
 N
-85739
-85740
-85738
-85760
+85713
+85711
 0
 0.80
-1.10
-5
-6
-19
-10
+1.00
+2
+3
+4
 8
+10
+12
+13
 17
+19
 0
 I don't sell that, %s!~
 I don't buy illusionary, %s.~
@@ -75,7 +78,7 @@ Thanks, %s, that will be %s.~
 0
 85751
 0
-86018
+85804
 0
 28
 0

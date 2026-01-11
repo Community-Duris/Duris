@@ -28,8 +28,8 @@ void event_dread_wrath(P_char ch, P_char victim, P_obj obj, void *data)
 
     if (af)
     {
-      affect_remove(victim, af);
       wear_off_message(victim, af);
+      affect_remove(victim, af);
       return;
     }
   }

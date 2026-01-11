@@ -31,6 +31,7 @@
 #include "interp.h"
 #include "outposts.h"
 #include "redis.h"
+#include "copyover.h"
 
 #define MAX_FUNCTIONS 6000
 #define FUNCTION_NAMES_FILE "lib/misc/event_names"
@@ -751,13 +752,24 @@ void ne_init_events(void)
     logit(LOG_STATUS, "Zone %3d:(%5d-%5d) %s",
       j, j ? (zone_table[j - 1].top + 1) : 0, zone_table[j].top, zone_table[j].name);
 
+    // schedule zone reset events (always needed)
     if (zone_table[j].reset_mode)
     {
-	add_event(event_reset_zone, i, 0, 0, 0, 0, &j, sizeof(j));
+      add_event(event_reset_zone, i, 0, 0, 0, 0, &j, sizeof(j));
     }
 
-    // The value 2 means that this is a boot-time initial zone reset.
-    reset_zone(j, 2);
+    // skip zone reset during copyover - mobs preserved from before
+    // but still initialize lifespan so zone timers work
+    if (copyover_boot) {
+      // just set lifespan without spawning mobs
+      if (zone_table[j].lifespan_min != zone_table[j].lifespan_max)
+        zone_table[j].lifespan = number(zone_table[j].lifespan_min, zone_table[j].lifespan_max);
+      else
+        zone_table[j].lifespan = zone_table[j].lifespan_min;
+      zone_table[j].age = 0;
+    } else {
+      reset_zone(j, 2);
+    }
   }
 
   /* special cases now */

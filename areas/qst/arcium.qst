@@ -1,126 +1,27 @@
-#85701
-M
-book spellbook salmon~
-&+yJoji, the &+Yodd &+yhermit says "Yes, I have a great magicians spellbook,
-&+ybut you can't just have it.  I might trade it for a supply of salmon."&n
-~
-M
-pearl necklace earring~
-&+yJoji, the &+Yodd &+yhermit says "Yes, I'm quite crafty and if you gather
-&+ysome pearls I could make you either an earring or necklace for the price
-&+yof a meal."&n
-~
+#85700
 MA
-king granrn kelien slican kurlon fragnox lord lords~
-&+yJoji, the &+Yodd &+yhermit&+w, says "What do you know of them?  Do you know how
+hi king kovii granra kelien slican kurlon fragnox lord lords~
+&+wJ&+Wo&+Lji, the &+yl&+Yone&+yly her&+Ymit&+w, says "What do you know of them?  Do you know how
 &+wthey shunned my skills!  Questioned my dedication to this kingdom!
 
-&+wThey deserve to die, and you also if you have befriended them.  Matter
+&+wThey deserve to die, and you also, if you have befriended them.  Matter
 &+wof fact, I would give my life to know that the six lords of this kingdom
-&+wwere dead.&n
+&+wwere dead."&n
 ~
-Q
-&+yJoji, the &+Yodd &+yhermit says "Thanks for the fresh salmon and here's what I owe you."
-~
-R I 85720
-G I 85719
-G I 85719
-G I 85719
-G I 85719
-G I 85719
-Q
-&+yJoji, the &+Yodd &+yhermit says "Thanks for the food and here's what I owe you."
-~
-R I 85751
-G I 85749
-G I 85749
-G I 85749
-G I 85749
-G T 19
-Q
-&+yJoji, the &+Yodd &+yhermit says "Thanks for the food and here's what I owe you."
-~
-R I 85750
-G I 85751
-G I 85751
-G T 19
 QA
-&+yJoji, the &+Yodd &+yhermit&+w, says "Revenge is mine!"&n
+&+wJ&+Wo&+Lji, the &+yl&+Yone&+yly her&+Ymit&+w, says "Revenge is mine!"&n
 ~
-R I 85759
-G I 85753
-G I 85754
-G I 85755
-G I 85756
-G I 85757
-G I 85758
+R I 85721
+G I 85715
+G I 85716
+G I 85717
+G I 85718
+G I 85719
+G I 85720
 D
-&+yJoji, the &+Yodd &+yhermit&+w, says "Now that I know the lords of Arcium
+&+wJ&+Wo&+Lji, the &+yl&+Yone&+yly her&+Ymit&+L, says &+w"Now that I know the lords of Arcium
 &+wwill no longer plague this kingdom, I may rest in peace.
 
-&+wGoodbye cruel world for I need not suffer any longer...&n
+&+wGoodbye cruel world for I need not suffer any longer..."&n
 ~
-S
-#85710
-M
-egg eggs baby~
-The mother dragons, says "Some of my precious eggs have disappeared.  They must
-have been stolen!  I would give anything to see my babies again."
-~
-Q
-The mother dragon says "Thanks god, you found my eggs!  Here you go I've
-been saving this for a rainy day."
-~
-R I 85704
-G I 85717
-G I 85717
-G I 85717
-G I 85717
-G I 85717
-S
-#85713
-M
-help~
-The shackled slave, says "Yes, I really need some help getting out of here.
-Also I could really use some food and water."
-~
-M
-food drink~
-The shackled slave, says "Noble Sir, I haven't ate real food in years.  Do you
-have any extra food or drink to spare?"
-~
-M
-key~
-The shackled slave, says "It's hard to think being this famished, although I
-believe one of the Arcium nobles has the key to release me."
-~
-Q
-The shackled slave says "Thank you very much.  I'm finialy free!  Thank god!
-Sorry I can't repay you, but I hope you have learned something from your
-journey."
-~
-R E 60000
-G I 85723
-G T 19
-G T 17
-D
-A shackled slave says "Ok, I guess I'll find my own way out from here."
-~
-S
-#85723
-M
-wand medal pendent~
-&+WGranrn&n says "Once I was honored by the king of &+WA&+wrc&+Lium&n with a golden medal
-&+Wand royal pendent for my contributation towards peace within the kingdom.
-&+WAlthough they were both been stolen from me long ago.  I have no
-&+Widea who could have them now, but I really do miss them.  They were a
-&+Wsymbol of hope for me.  If you see them I would love to have them back,
-&+Wand I am willing to reward you with my wand in return."&n
-~
-Q
-&+WGranrn&n says "There is a god, thanks you very much.  Here you go."&n
-~
-R I 85703
-G I 85722
-G I 85710
 S

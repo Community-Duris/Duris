@@ -2083,22 +2083,18 @@ void mount_summoning_thing(P_char ch, P_char victim, P_obj obj, void *data)
     if(IS_DRAGOON(ch))
     {
       act("$N answers your call for aid with a mighty &-L&+RROAR&n!", TRUE, ch, 0, mount, TO_CHAR);
-      act("$N swoops in with a mighty &-L&+RROAR&n, and stands ready to heed $n.", TRUE, ch,
-          0, mount, TO_ROOM);
+      act("$N swoops in with a mighty &-L&+RROAR&n, and stands ready to heed $n.", TRUE, ch, 0, mount, TO_ROOM);
     }
     else
     {
       act("$N answers your summons!", TRUE, ch, 0, mount, TO_CHAR);
-      act("$N walks in, seemingly from nowhere, and nuzzles $n's face.", TRUE, ch,
-          0, mount, TO_ROOM);
+      act("$N walks in, seemingly from nowhere, and nuzzles $n's face.", TRUE, ch, 0, mount, TO_ROOM);
     }
+
     setup_pet(mount, ch, -1, PET_NOCASH);
     add_follower(mount, ch);
 
-    if(IS_DRAGOON(ch))
-    {
-      link_char(ch, mount, LNK_DRAGOON_MOUNT);
-    }
+    if(IS_DRAGOON(ch)) link_char(ch, mount, LNK_DRAGOON_MOUNT);
 
     if(GET_LEVEL(ch) > 50 ||
       GET_SPEC(ch, CLASS_PALADIN, SPEC_CAVALIER) ||
@@ -2182,7 +2178,7 @@ void mount_summoning_thing(P_char ch, P_char victim, P_obj obj, void *data)
     // Level 56 mount factor average = 42 based on 0.750 mod. Nov08 -Lucrot
 
     if(GET_LEVEL(ch) < 6) // TODO: hack for level 1 dragoon mounts dying
-      factor = (int) (GET_LEVEL(ch) * get_property("mount.summoned.FactorMod", 0.750) + number(0, 5));
+      factor = (int) (GET_LEVEL(ch) * get_property("mount.summoned.FactorMod", 0.750) + number(1, 5));
     else
       factor = (int) (GET_LEVEL(ch) * get_property("mount.summoned.FactorMod", 0.750) + number(-5, 5));
 

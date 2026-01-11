@@ -1048,6 +1048,25 @@ void apply_affs(P_char ch, int mode)
     GET_C_LUK(ch) = GET_C_LUK(ch) + 10;
   }
 
+  if( has_innate(ch, INNATE_WARDING_FAITH) )
+  {
+	int multi = (int)get_property("innate.wardingFaith.multiplier", 3.0);
+	multi += (GET_CHAR_SKILL(ch, SKILL_EPIC_WARDING_FAITH) / 33);
+	if(IS_NPC(ch))
+	{
+		multi *= 2;
+	}	
+	double rechargeTimeInSeconds = get_property("innate.wardingFaith.rechargeTime", 120.0);
+	
+	ch->points.base_ward = GET_LEVEL(ch) * multi;
+	TmpAffs.ward_reg += (int)(((double)ch->points.base_ward / rechargeTimeInSeconds) * PULSES_IN_TICK);
+  }
+  else
+  {
+	ch->points.base_ward = 0;
+  }
+
+
   // sure best if we store max_hp in pfile :(
   // now lets use diff approach - store in pfile not HP, but difference max-curr HP
   // can you believe? it works! (Lom)
@@ -1067,11 +1086,16 @@ void apply_affs(P_char ch, int mode)
   GET_MAX_MANA(ch) = ch->points.base_mana + ((mode) ? TmpAffs.Mana : 0);
   GET_MANA(ch) = GET_MAX_MANA(ch) - t1;
 
+  t1 = GET_MAX_WARD(ch) - GET_WARD(ch);
+  GET_MAX_WARD(ch) = ch->points.base_ward + ((mode) ? TmpAffs.Ward : 0);
+  GET_WARD(ch) = GET_MAX_WARD(ch) - t1;
+
   ch->player.time.age_mod = (mode) ? TmpAffs.Age : 0;
 
   ch->points.hit_reg = TmpAffs.hit_reg;
   ch->points.move_reg = TmpAffs.move_reg;
   ch->points.mana_reg = TmpAffs.mana_reg;
+  ch->points.ward_reg = TmpAffs.ward_reg;
 
 /* Original:
   // Using value defined in SPELL_PULSE macro.
@@ -1903,6 +1927,8 @@ char affect_total(P_char ch, int kill_ch)
       StartRegen(ch, EVENT_MOVE_REGEN);
     if (GET_MANA(ch) != GET_MAX_MANA(ch) || ch->points.mana_reg < 0)
       StartRegen(ch, EVENT_MANA_REGEN);
+	if (GET_WARD(ch) != GET_MAX_WARD(ch) || ch->points.ward_reg < 0)
+	  StartRegen(ch, EVENT_WARD_REGEN);
   }
 
   return FALSE;
@@ -4289,6 +4315,9 @@ void affect_update(void)
       if (GET_CLASS(i, CLASS_PSIONICIST) || GET_CLASS(i, CLASS_MINDFLAYER))
         if (GET_MANA(i) < GET_MAX_MANA(i))
           StartRegen(i, EVENT_MANA_REGEN);
+
+	  if (GET_WARD(i) < GET_MAX_WARD(i))
+        StartRegen(i, EVENT_WARD_REGEN);
     }
 
     if (IS_DISGUISE(i))

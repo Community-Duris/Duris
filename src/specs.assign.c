@@ -1696,6 +1696,7 @@ void assign_objects(void)
 
   obj_index[real_object0(435)].func.obj = proc_soldon_hat;
   obj_index[real_object0(499)].func.obj = proc_lohrr;
+  obj_index[real_object0(469)].func.obj = divine_font;
 
 /* Hall of the Ancients */
   obj_index[real_object0(77706)].func.obj = trap_razor_hooks;
@@ -1990,7 +1991,7 @@ void assign_objects(void)
   /*
      Plane of Fire One
    */
-  obj_index[real_object0(25018)].func.obj = doombringer;
+  obj_index[real_object0(87612)].func.obj = doombringer;
   //obj_index[real_object0(25030)].func.obj = flamberge;
   obj_index[real_object0(430)].func.obj = flamberge;
   obj_index[real_object0(25080)].func.obj = ring_elemental_control;

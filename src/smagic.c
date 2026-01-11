@@ -799,6 +799,9 @@ void spell_restoration(int level, P_char ch, char *arg, int type,
   if(affected_by_spell(victim, SPELL_RAY_OF_ENFEEBLEMENT))
     affect_from_char(victim, SPELL_RAY_OF_ENFEEBLEMENT);
 
+  if(affected_by_spell(victim, SPELL_FLAMESTRIKE))
+    affect_from_char(victim, SPELL_FLAMESTRIKE);
+
   send_to_char("&+WYou feel &+csignificantly &+Wbetter.\r\n", victim);
          
 }

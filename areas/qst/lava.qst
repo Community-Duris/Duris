@@ -1,41 +1,31 @@
-#99714
-M
-cinder sword longsword~
-A Huge fire demon says 'Yes, I love to eat red hot cinders.  If you could find
-me some I would reward you.'
+#99705
+MA
+hi lava rock weapon forge need want armor~
+&+BDr&+wem&+Bbel&+w, &+Lthe death &+bknight &+Lbl&+wacksmi&+Lth&+w, says "I've been so busy fabricating
+&+wthese replicas to pay the bills, but I've been longing to forge something
+&+wmore special.  I have a few items that I specialize in creating.  If I was
+&+wsupplied with some raw materials, I could make these items for a price."&n
+&+w
+&+BDr&+wem&+Bbel&+w, says "First I would like to know which item you are interested in,
+&+wso buy an order voucher from &+YFo&+wnl&+Yak&+w, who takes care of my finances.  Then
+&+wcollect a hand full of lava rocks and I will make sure to create an item
+&+wworth your while."&n
 ~
-Q
-A Huge fire demon says 'Thanks for the cinders, and here's your sword I
-promised.'
+QA
+&+BDr&+wem&+Bbel&+w, &+Lthe death &+bknight &+Lbl&+wacksmi&+Lth&+w,says "Yeahhh, that's the stuff!
+&+wHere let's see what I can do..."
+&+w
+&+BDr&+wem&+Bbel &+wfires up his forge and gets to work.  Pounding his hammer in
+&+wa rhythmic fashion, a sword starts to emerge.  After a short while, the
+&+wsweaty man hands you a magnificent sword.
+&+w
+&+BDr&+wem&+Bbel&+w, says "Here enjoy the fruits of my labor."&n
 ~
-R I 99706
-G I 99705
-G I 99705
-G I 99705
-S
-#99731
-M
-jewel~
-A tiny illithid says "Yeah there are some jewels in these tunnels I could use
-to make you a nice belt.  Although my craft comes with a price of course."
-~
-M
-price weapon~
-A tiny illithid says "For my crafting of your jewel belt I would like a fine
-weapon from across the village.  The nice weapon is a sword made of cinders."
-~
-Q
-A tiny illithid says "Well here's your fine earring and thanks for the
-weapon."
-~
-R I 99703
-G I 99719
-G I 99719
-G I 99719
-G I 99719
-G I 99719
-G I 99719
-G I 99719
-G I 99719
+R I 99700
+G I 99701
+G I 99701
+G I 99701
+G I 99701
+G I 99701
 G I 99706
 S

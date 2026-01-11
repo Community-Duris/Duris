@@ -9093,6 +9093,8 @@ bool TryToGetHome(P_char ch)
     data.huntFlags |= BFS_CAN_DISPEL;
   if(IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY))
     data.huntFlags |= BFS_CAN_FLY;
+  data.retry = 0;
+  data.retry_dir = 0;
   if(!get_scheduled(ch, event_mob_hunt))
   {
     add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
@@ -9280,7 +9282,20 @@ void zone_spellmessage(int room, bool hide_deaf, const char *msg, const char *ms
     if( hide_deaf and !CAN_HEAR(chars_in_zone->c) )
       continue;
 
-    if( IS_MAP_ROOM(room) )
+	if( CONTINENT(room) )
+	{
+	  if( IS_CONTINENT(c_room, CONTINENT(room)) )
+	  {
+		if( msg_dir != NULL )
+        {
+          snprintf(buf, MAX_STRING_LENGTH, msg_dir, get_map_direction(c_room, room));
+          send_to_char(buf, chars_in_zone->c);
+        }
+        else
+          send_to_char(msg, chars_in_zone->c);
+	  }
+	}
+    else if( IS_MAP_ROOM(room) )
     {
       if( IS_MAP_ROOM(c_room) && (world[room].map_section != 0) && (world[room].map_section == world[c_room].map_section) )
       {
@@ -9685,6 +9700,8 @@ bool InitNewMobHunt(P_char ch)
         data.huntFlags = hunt_flags;
         data.hunt_type = HUNT_HUNTER;
         data.targ.victim = tmpch;
+        data.retry = 0;
+        data.retry_dir = 0;
         add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
         
         //AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
@@ -10471,6 +10488,8 @@ void MobRetaliateRange(P_char ch, P_char vict)
       data.targ.victim = vict;
       data.huntFlags = (IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY : 0;
       data.huntFlags |= BFS_AVOID_NOMOB;
+      data.retry = 0;
+      data.retry_dir = 0;
       add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
       //AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
       add_event(return_home, 30, ch, 0, 0, 0, 0, 0);

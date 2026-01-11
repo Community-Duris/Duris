@@ -872,7 +872,12 @@ extern unsigned int game_locked_level;
 #define CMD_ACCOUNT        841
 #define CMD_PROTOCOL       842
 #define CMD_EXTRACTLINK    843
-#define CMD_PFILEMIGRATE   844
+#define CMD_ZLIST        844
+#define CMD_RLIST        845
+#define CMD_HLIST        846
+#define CMD_OLIST        847
+#define CMD_MLIST        848
+#define CMD_POLL         849
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.

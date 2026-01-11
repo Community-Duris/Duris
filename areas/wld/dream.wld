@@ -1,949 +1,486 @@
-#31301
-&+LA Vast Escape&n~
-&+c   This &+Lpitch-black reality&+c makes you dream of better times.  A place where
-&+cthere is no right or wrong, just full character exposure.  Although
-&+cconsequently, where past nightmares and regrets haunt the guilty.  Things
-&+cbecome unreal as you stare at the irresistible &+Wlight&+c.&n
-~
-313 1074003973 0
-D4
-~
-~
-0 0 12442
-S
-#31302
-&+LD&+Wis&+Ltant &+wReal&+Wit&+Ly&n~
+#31300
+&+wA &+WDi&+wst&+Yant &+WReal&+wit&+Yy&n~
 &+W   Followed by a blinding light, forward is a slide show of unrelated
 &+Wemotions.  Extremes of joy and &+wsorrow&+W are bound to strike in the ever-changing
 &+Wstory line that awaits.  Questions will be asked of ones character and the
-&+Wresponse could be hazardous.  There is a temporary sense of peace here.&N
+&+Wresponse could be hazardous.  There is a temporary sense of peace here.
+&+WProceed for lasting effects or return to real&+wit&+Yy &+Wif you can.&n
 ~
-313 1250066500 2
+313 1241513984 25
+D4
+&+LA V&+wa&+Wst Es&+wc&+Lape&n
+~
+~
+0 0 31301
+S
+#31301
+&+LA V&+wa&+Wst Es&+wc&+Lape&n~
+&+L   This foreign reality makes you dream of better times.  A place where
+&+Lthere is no right or wrong, just full character exposure.  Although
+&+Lconsequently, where past nightmares and regrets haunt the guilty.  Things
+&+Lbecome surreal as you consider a journey into the peculiar whirl&+wpool&+L.&n
+~
+313 167772164 23
 D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+&+LShroud&+wed In &+LA &+cM&+Ci&+Wst &+wOf &+cW&+Con&+Wder&n
+~
+vision door~
+1 0 31312
+D4
+&+LA &+wplane &+Lof space unknown.&n
 ~
 ~
-0 0 31303
+0 0 12442
+D5
+&+WDi&+wst&+Yant &+WReal&+wit&+Yy&n
+~
+~
+0 0 31300
+S
+#31302
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n~
+&+G   This flowing river of inner conscience reflects thoughts and desires rarely
+&+Gexposed.  Riding the rhythmic current you encounter complex associations of
+&+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
+&+GThe question of reality becomes blurred, while concern with harmful illusions
+&+Gpersist.  Mysterious looking doors hover to the north and south.&n
+~
+313 176193600 7
+D0
+&+wA Gl&+Wimp&+wse of &+WHe&+Cav&+cen&n
+~
+vision door~
+1 0 31307
+D1
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+~
+vision~
+3 31304 31316
+D2
+&+LA &+wGl&+Limp&+wse &+Lof &+rHe&+Rll&n
+~
+vision door~
+1 0 31308
 S
 #31303
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n~
 &+G   This flowing river of inner conscience reflects thoughts and desires rarely
 &+Gexposed.  Riding the rhythmic current you encounter complex associations of
 &+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
 &+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  Mysterious looking doors hover to the north and south.&n
+&+Gpersist.  The single exit is foward, no going back now.&n
 ~
-313 1250197696 2
-D0
-&+WA &+wHumble&+W Sanctuary&n
-~
-vision~
-2 31305 31322
+313 176193600 6
 D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31304
-D2
-&+yA &+LShady&+y Hideout&n
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
 vision~
-2 31305 31323
-D3
-&+LD&+Wis&+Ltant &+wReal&+Wit&+Ly&n
-~
-~
-0 0 31302
+3 31304 31317
 S
 #31304
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n~
 &+G   This flowing river of inner conscience reflects thoughts and desires rarely
 &+Gexposed.  Riding the rhythmic current you encounter complex associations of
 &+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
 &+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  A mysterious looking door hover to the north.&n
+&+Gpersist.  The single exit is foward, no going back now.&n
 ~
-313 1250197696 2
-D0
-&+YA Sense of V&+Wigo&+Yr&n
+313 176193600 6
+D1
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
 vision~
-2 31305 31321
-D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31305
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31303
+3 31304 31315
 S
 #31305
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n~
 &+G   This flowing river of inner conscience reflects thoughts and desires rarely
 &+Gexposed.  Riding the rhythmic current you encounter complex associations of
 &+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
 &+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  A mysterious looking door hover to the south.&n
+&+Gpersist.  The single exit is foward, no going back now.&n
 ~
-313 1250197696 2
+313 176193600 6
 D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31306
-D2
-&+MSecluded Desires&N
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
 vision~
-3 31305 31319
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31304
+3 31304 31309
 S
 #31306
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
-&+G   This flowing river of inner conscience reflects thoughts and desires rarely
-&+Gexposed.  Riding the rhythmic current you encounter complex associations of
-&+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
-&+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  A mysterious looking door hover to the north.&n
-~
-313 1250197696 2
-D0
-&+gAn &+MEn&+mchant&+Med&+g Forest&n
-~
-vision~
-2 31305 31318
-D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31307
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31305
-S
-#31307
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
-&+G   This flowing river of inner conscience reflects thoughts and desires rarely
-&+Gexposed.  Riding the rhythmic current you encounter complex associations of
-&+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
-&+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  A mysterious looking door hover to the south.&n
-~
-313 1250197696 2
-D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31308
-D2
-&+cM&+Ci&+Wst&+w of &+cW&+Con&+Wders&n
-~
-vision~
-2 31305 31317
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31306
-S
-#31308
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
-&+G   This flowing river of inner conscience reflects thoughts and desires rarely
-&+Gexposed.  Riding the rhythmic current you encounter complex associations of
-&+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
-&+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  A mysterious looking door hover to the north.&n
-~
-313 1250197696 2
-D0
-&+wA &+WGrand&+w Entry&n
-~
-vision~
-2 31305 31315
-D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31309
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31307
-S
-#31309
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
-&+G   This flowing river of inner conscience reflects thoughts and desires rarely
-&+Gexposed.  Riding the rhythmic current you encounter complex associations of
-&+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
-&+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  A mysterious looking door hover to the south.&n
-~
-313 1250197696 2
-D1
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31310
-D2
-&+LA Final &+rResting&n
-~
-vision~
-2 31305 31314
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31308
-S
-#31310
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws~
-&+G   This flowing river of inner conscience reflects thoughts and desires rarely
-&+Gexposed.  Riding the rhythmic current you encounter complex associations of
-&+Gunknown origin.  Flashing scenes of horror and rejoice exhilarates the heart.
-&+GThe question of reality becomes blurred, while concern with harmful illusions
-&+Gpersist.  Mysterious looking doors hover to the north and south.&n
-~
-313 1250197696 2
-D0
-&+WA &+wGlimpse&+W of Heaven&N
-~
-vision~
-3 31305 31312
-D1
-&+wSud&+Lden &+mDisruption&n
-~
-~
-0 0 31311
-D2
-&+rA &+LGlimpse&+r of Hell&n
-~
-vision~
-3 31305 31313
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-~
-0 0 31309
-S
-#31311
-&+wSud&+Lden &+mDisruption&n~
+&+mA &+wSud&+Lden &+mDis&+Mrupt&+ming &+LEnd&n~
 &+m   Stunned but alive, reality looms overhead.  While everything seen has been
 &+mpurged from memory, haunting premonitions linger behind.  This moral conquest
 &+mhas pasted in a blink of an eye, and while the decisions were made, the
 &+manswers were lost.&n
 ~
-313 1250197572 2
-D3
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+313 1249935424 24
+D4
+&+LRe&+waching &+cD&+Cee&+cper &+CIn&+cside&n
 ~
 ~
-0 0 31310
+0 0 31319
 S
-#31312
-&+WA &+wGlimpse&+W of Heaven&n~
+#31307
+&+wA Gl&+Wimp&+wse of &+WHe&+Cav&+cen&n~
 &+Y   Sunshine &+Wbeams down from the sky, illuminating all of the natural wonders.
 &+WA gentle breezes drifts by a pack of angels.  Every object and element of this
 &+Wcreation seems to pulse with life.  The variety of creatures here, seem to
 &+Whave no worries or cares, as if completely confident of themselves and their
 &+Wsafety.&n
 ~
-313 1250197568 19
-D2
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+313 176193600 19
+D0
+&+wA &+WGr&+wand &+WEn&+wtry&n
 ~
-vision~
-3 31305 31310
+~
+0 0 31310
+D2
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+~
+vision door~
+1 0 31302
 S
-#31313
-&+rA &+LGlimpse&+r of Hell&n~
+#31308
+&+LA &+wGl&+Limp&+wse &+Lof &+rHe&+Rll&n~
 &+r   The platform of volcanic rock is surrounded by &+Rmagma rivers&+r and scattered
 &+Lsmoke vents&+r.  The sounds of bubbling lava, horrific screams, and bellowing
 &+rcries for help and forgiveness scratch at your fears.  Carved into a wall is
 &+ra massive throne only fit for a king.  The wall itself seems to move and shift
 &+rinto the shape of tortured faces.&n
 ~
-313 1250197568 11
+313 176193600 11
 D0
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
-vision~
-3 31305 31310
+vision door~
+1 0 31302
+D2
+&+LP&+was&+Lt &+MSe&+mcluded &+MDe&+msires&n
+~
+~
+0 0 31313
 S
-#31314
-&+LA Final &+rResting&n~
-&+L   Atop a mound of bones, victims moans echo in the distance.  The dense fog
+#31309
+&+LA Fin&+wal &+RRe&+rsting &+rP&+Rlace&n~
+&+L   Atop a mound of bones, victim moans echo in the distance.  The dense fog
 &+Lmay limit sight, but between the full moon and some posted torches, it is
 &+Lpossible to navigate the valley.  As if lost, a ghost like figure wanders by
-&+Lwith its head missing.  Lying in a&+r pool of blood&+L, it appears the soul was
+&+Lwith its head missing.  Lying in a pool of blood, it appears the soul was
 &+Lextracted from this disfigured corpse.&n
 ~
-313 1250197568 14
-D0
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+313 1249935424 4
+D1
+&+mA &+wSud&+Lden &+mDis&+Mrupt&+ming &+LEnd&n
+~
+~
+0 0 31306
+D3
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
 vision~
-2 31305 31309
+3 31304 31305
 S
-#31315
-&+wA &+WGrand&+w Entry&n~
+#31310
+&+wA &+WGr&+wand &+WEn&+wtry&n~
 &+W   The courtyard before the castle has been decorated for a special event.
 &+WBundles of flowers, accompanied by a row of lanterns leads up to a set of
 &+Wmassive steel doors.  Elegant music can be heard emanating from within the
 &+Wcastle.  Above the castle, fireworks burst into flames of joy for all to see.
-&+WAn out of place door hovers to the south.&n
+&+WAn out of place door hovers to the north.&n
 ~
-313 1250197568 1
+313 176193600 1
+D0
+&+wThe &+WCast&+wle &+CBall&+croom&n
+~
+door~
+1 0 31311
 D2
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+&+wA Gl&+Wimp&+wse of &+WHe&+Cav&+cen&n
 ~
-vision~
-2 31305 31308
-D3
-&+wThe &+WC&+was&+Wtl&+we&+C Ball&+croom&N
 ~
-entry~
-3 31331 31316
+0 0 31307
 S
-#31316
-&+wThe &+WC&+was&+Wtl&+we &+CBall&+croom&n~
+#31311
+&+wThe &+WCast&+wle &+CBall&+croom&n~
 &+c   A grand staircase leads down to a marble floor.  The walls are covered with
 &+cexotic weapons and art, while the ceiling showcases a diamond chandelier.  To
 &+cthe side, lies a row of tables dedicated to the finest food and wines.  The
 &+cballrooms attention to detail truly enhances this prestigious event.&n
 ~
-313 1250197568 0
-D1
-&+wA &+WGrand&+w Entry&N
+313 1249935424 0
+D2
+&+wA &+WGr&+wand &+WEn&+wtry&n
 ~
-entry~
-3 31331 31315
+door~
+1 0 31310
 S
-#31317
-&+cM&+Ci&+Wst&+w of &+cW&+Con&+Wders&n~
+#31312
+&+LShroud&+wed In &+LA &+cM&+Ci&+Wst &+wOf &+cW&+Con&+Wder&n~
 &+W   Peering&+w through a mist of &+Wfog&+w, playful images&+W flicker&+w nearby.  Random
 &+wsounds like children &+Wplaying &+wand water flowing can be heard but &+Wnot seen&+w.
 &+wThe only clear object is a &+Wmerchants&+w counter floating on a cloud.  Despite
 &+wthe &+Wmisleading environment&+w, it seems more &+Wamusing &+wthen frightening.  An out
-&+wof place door &+Whovers &+wto the north.&n
+&+wof place door &+Whovers &+wto the west.&n
 ~
-313 1250197568 19
-D0
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+313 167903232 23
+D3
+&+LA V&+wa&+Wst Es&+wc&+Lape&n
 ~
-vision~
-2 31305 31307
+vision door~
+1 0 31301
 S
-#31318
-&+gAn &+MEn&+mchant&+Med&+g Forest&n~
-&+G   The rich forest flows with life, although the creatures character seems
-&+Gcompromised by a dazed enchantment.  Everything between the weather,
-&+Gvegetation, elements, and animals interact under strict control.  The
-&+Gmysterious force that looms over the land must have a means of expulsion.
-&+GAn out of place door hovers to the south.&n
-~
-313 1250197568 3
-D2
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-vision~
-2 31305 31306
-S
-#31319
-&+MSecluded Desires&N~
+#31313
+&+LP&+was&+Lt &+MSe&+mcluded &+MDe&+msires&n~
 &+m   Forget a conscious, let your mind run wild.  The mood is set with a bar and
-&+mbrothel atmosphere.  The smoke filled the air, blurs fantasy from reality.
+&+mbrothel atmosphere.  The smoke filled the air, blurs &+Mfantasy &+mfrom &+Mreality&+m.
 &+mHalf dressed women wander around tempting you.  Free alcohol and tabacco can
 &+mbe found behind the bar.  At last you are the center of attention and desired
-&+mby all.  An out of place door hovers to the north.&n
+&+mby all.  An out of place &+Mcurtain &+mhovers to the south.&n
 ~
-313 1250197568 0
+313 176193600 1
 D0
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
-~
-vision~
-2 31305 31305
-D1
-&+cLust&+Cful&+L Lounge&N
+&+LA &+wGl&+Limp&+wse &+Lof &+rHe&+Rll&n
 ~
 ~
-0 0 31320
+0 0 31308
+D2
+&+LA &+mLust&+Mful &+wLou&+Lnge&n
+~
+curtain bead~
+1 0 31314
 S
-#31320
-&+cLust&+Cful &+LLounge&N~
-&+c   The private room is circular, with a &+Cround bed&+c in the middle.  Stacks of
-&+Clit candles&+c have been laid out around the outlining walls.  The &+Cwalls&+c itself
-&+creflect bluish colors as if in a&+C liquid&+c state.  The ceiling takes on an unreal
-&+clook of &+Cswirling stars&+c.  Everything seems unstable and ready to break into
-&+csomething new.  To flee enter the &+Cbead curtain&+c covering the western exit.&n
+#31314
+&+LA &+mLust&+Mful &+wLou&+Lnge&n~
+&+m   The private room is circular, with a &+Mround bed&+m in the middle.  Stacks of
+&+Mlit candles&+m have been laid out around the outlining walls.  The &+Mwalls&+m itself
+&+mreflect bluish colors as if in a &+Mliquid&+m state.  The ceiling takes on an unreal
+&+mlook of &+Mswirling stars&+m.  Everything seems unstable and ready to break into
+&+msomething new.  To flee enter the &+Mbead curtain&+m covering the northern exit.&n
 ~
-313 1250197568 0
-D3
-&+MSecluded Desires&n
+313 1249935424 0
+D0
+&+LP&+was&+Lt &+MSe&+mcluded &+MDe&+msires&n
 ~
-~
-0 0 31319
+curtain bead~
+1 0 31313
 S
-#31321
-&+YA Sense of V&+Wigo&+Yr&n~
+#31315
+&+WA &+YVigor&+Wous &+YScen&+Wary&n~
 &+y   Tremendous hate has fueled this battle field blood bath.  A rush of power
 &+yhas left fallen soldiers lying looted and forgotten by their victors.  An
 &+yeerie sense of wandering souls travels the land.  An out of place door hovers
 &+yto the south.&n
 ~
-313 1250197568 2
-D2
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+313 1249935424 2
+D1
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+~
+~
+0 0 31305
+D3
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
 vision~
-2 31305 31304
+3 31304 31304
 S
-#31322
-&+WA &+wHumble&+W Sanctuary&n~
-&+w   A simple place, the size of a dogs pace, invokes a lift in the spirits.  A
-&+Cbreeze trickles&+w through the entry, while the&+Y sun illuminates&+w a glass stained
-&+wwindow.  The solid stone construction has aged well through the years.  A few
-&+wscattered &+Wcandles&+w and potted&+G plants&+w lie across a wooden table.  An out of
-&+wplace door hovers to the south.&n
+#31316
+&+wA &+CHum&+wble Sanc&+Ctuary&n~
+&+C   A simple place, the size of a dogs pace, invokes a lift in the spirits.  A
+&+Cbreeze trickles through the entry, while the sun illuminates a glass stained
+&+Cwindow.  The solid stone construction has aged well through the years.  A few
+&+Cscattered candles and potted plants lie across a wooden table.  An out of
+&+Cplace door hovers to the east.&n
 ~
-313 1250197568 3
-D2
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+313 1249935424 3
+D1
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+~
+~
+0 0 31303
+D3
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
 vision~
-2 31305 31303
+3 31304 31302
 S
-#31323
-&+yA &+LShady&+y Hideout&n~
+#31317
+&+LA S&+yhad&+Ly Hide&+yout&n~
 &+L   A split in the mountains granite face reveals a shady hideout.  Smoke can
 &+Lbe smelt, but no fire seen.  Forgotten rations lie scattered about the area.
 &+LThe rooms silence heightens the fear of unknown.  An out of place door hovers
 &+Lto the north.&n
 ~
-313 1250197568 5
-D0
-&+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+313 1249935424 5
+D1
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
+~
+~
+0 0 31304
+D3
+&+wMerg&+Ling Th&+wrough &+GCh&+wa&+Wnn&+we&+Gled V&+wi&+Ws&+wi&+Gon&+Ws&n
 ~
 vision~
-2 31305 31303
+3 31304 31303
+S
+#31318
+&+LUp&+won &+LA &+cPri&+Cmary &+cIn&+Csight&n~
+&+W   Gaining self awareness from past experience helps develop the picture.
+&+WFocus on following a conscious which knows right from wrong.  Make moral
+&+Ldecisions and avoid repeating mistakes to progress.  Consult the opinions
+&+Lof wiser beings and trust your heart to complete the vision.&n
+~
+313 176193600 7
+D0
+&+wT&+Lhe &+wSub&+Lcon&+wsc&+Lio&+wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31326
+D1
+&+WT&+whe &+WSub&+wcon&+Wsc&+wio&+Wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31323
+D2
+&+wT&+Lhe &+wSub&+Lcon&+wsc&+Lio&+wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31325
+D3
+&+WT&+whe &+WSub&+wcon&+Wsc&+wio&+Wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31324
+D4
+&+WT&+whe &+WSub&+wcon&+Wsc&+wio&+Wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31322
+D5
+&+wT&+Lhe &+wSub&+Lcon&+wsc&+Lio&+wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31321
+S
+#31319
+&+LRe&+waching &+LA&+wn &+cI&+Cnn&+cer &+CPsy&+cche&n~
+&+w   Diving into the deeps of the brain, reveals the core of reason.  Where some
+&+wactions are just and others senseless.  Time speeds up, as decisions are made
+&+wwithout second guessing.  The ever-changing environment establishes a future
+&+wof progressive clearity.&n
+~
+313 1249935428 7
+D4
+&+wT&+Lhe &+wSub&+Lcon&+wsc&+Lio&+wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31321
+S
+#31320
+&+LT&+wrap&+Lped &+wIn &+LA &+cDa&+Cz&+ced Con&+Cfusion&n~
+&+w   Fleeing from haunting visions and a demanding voice, the path drops off.
+&+wAll that can be seen is a bottomless cliff, while a ringing noise prompts for
+&+wa decision.  Forward leads into the great unknown, while back remains painful
+&+wexperiences.&n
+~
+313 1249935428 7
+D5
+&+WT&+whe &+WSub&+wcon&+Wsc&+wio&+Wus &+cS&+Can&+Wc&+Ctu&+cm&n
+~
+~
+0 0 31322
+S
+#31321
+&+wT&+Lhe &+wSub&+Lcon&+wsc&+Lio&+wus &+cS&+Can&+Wc&+Ctu&+cm&n~
+&+L   A silenced voice, which only one hears.  The source of all consideration
+&+Land planning.  Filled with pure emotions, where among the joy can be haunting
+&+Lregret, spoken by the all knowing inner truth.  Hence the key to overcome
+&+Ldisturbing actions is self awareness.&n
+~
+313 176193600 7
+D4
+&+LUp&+won &+LA &+cPri&+Cmary &+cIn&+Csight&n
+~
+~
+0 0 31318
+D5
+&+LRe&+waching &+LA&+wn &+cI&+Cnn&+cer &+CPsy&+cche&n
+~
+~
+0 0 31319
+S
+#31322
+&+WT&+whe &+WSub&+wcon&+Wsc&+wio&+Wus &+cS&+Can&+Wc&+Ctu&+cm&n~
+&+W   A silenced voice, which only one hears.  The source of all consideration
+&+Wand planning.  Filled with pure emotions, where among the joy can be haunting
+&+Wregret, spoken by the all knowing inner truth.  Hence the key to overcome
+&+Wdisturbing actions is self awareness.&n
+~
+313 176193600 7
+D4
+&+LT&+wrap&+Lped &+wIn &+LA &+cDa&+Cz&+ced Con&+Cfusion&n
+~
+~
+0 0 31320
+D5
+&+LUp&+won &+LA &+cPri&+Cmary &+cIn&+Csight&n
+~
+~
+0 0 31318
+S
+#31323
+&+WT&+whe &+WSub&+wcon&+Wsc&+wio&+Wus &+cS&+Can&+Wc&+Ctu&+cm&n~
+&+W   A silenced voice, which only one hears.  The source of all consideration
+&+Wand planning.  Filled with pure emotions, where among the joy can be haunting
+&+Wregret, spoken by the all knowing inner truth.  Hence the key to overcome
+&+Wdisturbing actions is self awareness.&n
+~
+313 176193600 7
+D3
+&+LUp&+won &+LA &+cPri&+Cmary &+cIn&+Csight&n
+~
+~
+0 0 31318
 S
 #31324
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
+&+WT&+whe &+WSub&+wcon&+Wsc&+wio&+Wus &+cS&+Can&+Wc&+Ctu&+cm&n~
+&+W   A silenced voice, which only one hears.  The source of all consideration
+&+Wand planning.  Filled with pure emotions, where among the joy can be haunting
+&+Wregret, spoken by the all knowing inner truth.  Hence the key to overcome
+&+Wdisturbing actions is self awareness.&n
 ~
-313 1250197568 23
+313 176193600 7
 D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
+&+LUp&+won &+LA &+cPri&+Cmary &+cIn&+Csight&n
 ~
 ~
-0 0 31325
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31327
+0 0 31318
 S
 #31325
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
+&+wT&+Lhe &+wSub&+Lcon&+wsc&+Lio&+wus &+cS&+Can&+Wc&+Ctu&+cm&n~
+&+L   A silenced voice, which only one hears.  The source of all consideration
+&+Land planning.  Filled with pure emotions, where among the joy can be haunting
+&+Lregret, spoken by the all knowing inner truth.  Hence the key to overcome
+&+Ldisturbing actions is self awareness.&n
 ~
-313 1250197568 23
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31326
-D2
-&+cPrimary &+wIn&+Wsight&n
+313 176193600 7
+D0
+&+LUp&+won &+LA &+cPri&+Cmary &+cIn&+Csight&n
 ~
 ~
-0 0 31328
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31324
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31338
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31342
+0 0 31318
 S
 #31326
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
+&+wT&+Lhe &+wSub&+Lcon&+wsc&+Lio&+wus &+cS&+Can&+Wc&+Ctu&+cm&n~
+&+L   A silenced voice, which only one hears.  The source of all consideration
+&+Land planning.  Filled with pure emotions, where among the joy can be haunting
+&+Lregret, spoken by the all knowing inner truth.  Hence the key to overcome
+&+Ldisturbing actions is self awareness.&n
 ~
-313 1250197568 23
+313 176193600 7
 D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
+&+LUp&+won &+LA &+cPri&+Cmary &+cIn&+Csight&n
 ~
 ~
-0 0 31329
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31325
-S
-#31327
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.  Clear your conscious to the east.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31324
-D1
-&+cPrimary &+wIn&+Wsight&n
-~
-~
-0 0 31328
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31330
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31335
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31340
-S
-#31328
-&+cPrimary &+wIn&+Wsight&n~
-&+c   Gaining self awareness from past experience helps &+wdevelop the picture&+c.
-&+wFocus &+con following a &+wconscious&+c which knows right from wrong.  Make moral
-&+cdecisions and avoid repeating mistakes to &+wprogress&+c.  Consult the opinions of
-&+cwiser beings and trust your heart to &+wcomplete the vision&+c.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31325
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31329
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31331
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31327
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31333
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31339
-S
-#31329
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.  Clear your conscious to the west.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31326
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31332
-D3
-&+cPrimary &+wIn&+Wsight&n
-~
-~
-0 0 31328
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31336
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31341
-S
-#31330
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31327
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31331
-S
-#31331
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D0
-&+cPrimary &+wIn&+Wsight&n
-~
-~
-0 0 31328
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31332
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31330
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31337
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31343
-S
-#31332
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31329
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31331
-S
-#31333
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.  Rise up to inner psyche or down to
-&+cconfront&+w your demons.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31338
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31336
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31337
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31335
-D4
-&+LI&+wnn&+Ler &+YPsyche&n
-~
-~
-0 0 31334
-D5
-&+cPrimary &+wIn&+Wsight&n
-~
-~
-0 0 31328
-S
-#31334
-&+LI&+wnn&+Ler &+YPsyche&n~
-&+w   Diving into the deeps of the &+Ybrain&+w, reveals the core of &+Yreason&+w.  Where some
-&+Yactions&+w are just and others senseless.  Time speeds up, as &+Ydecisions &+ware made
-&+wwithout second guessing.  The ever-changing environment establishes a &+Yfuture
-&+wof &+Yuncertainty&+w.&n
-~
-313 1249935428 23
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31333
-S
-#31335
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31333
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31327
-S
-#31336
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31333
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31329
-S
-#31337
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31333
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31331
-S
-#31338
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31333
-D5
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31325
-S
-#31339
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.  Rise up to &+cconfront&+w your demons, or
-downward to face &+cdoubt&+w and confusion.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31342
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31341
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31343
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31340
-D4
-&+cPrimary &+wIn&+Wsight&n
-~
-~
-0 0 31328
-D5
-&+CDa&+Wz&+Ced Con&+Wfusion&n
-~
-~
-0 0 31344
-S
-#31340
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D1
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31339
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31327
-S
-#31341
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D3
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31339
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31329
-S
-#31342
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D2
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31339
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31325
-S
-#31343
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus~
-&+w   A &+csilenced voice&+w, which only one hears.  The &+csource&+w of all consideration
-&+wand planning.  Filled with &+cpure emotions&+w, where among the joy can be haunting
-&+cregret&+w, spoken by the all knowing inner truth.  Hence the &+ckey to overcome
-&+wdisturbing actions is &+cself awareness&+w.&n
-~
-313 1250197568 23
-D0
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31339
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus
-~
-~
-0 0 31331
-S
-#31344
-&+CDa&+Wz&+Ced Con&+Wfusion&n~
-&+L   Fleeing from haunting visions and a demanding voice the path drops off.
-&+LAll that can be seen is a bottomless cliff, while a ringing noise prompts for
-&+La decision.  Forward leads into the great unknown, while back remains painful
-&+Lexperiences.&n
-~
-313 1250197568 23
-D4
-&+wT&+che &+wSub&+ccon&+wsc&+cio&+wus&n
-~
-~
-0 0 31339
+0 0 31318
 S

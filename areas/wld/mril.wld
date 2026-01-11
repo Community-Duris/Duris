@@ -1,4858 +1,1586 @@
 #33700
-&+yBurial Ground Entrance&n~
-&+L   The entrance to the graveyard has a large gate that spans across the path.
-&+LIt is engulfed in spider webs and rust from the passing years.  The gate has
-&+La small wooden sign with the words "Keep Out" posted on it.  The entrance is
-&+La dirt path that leads into an old graveyard.  This path has not been traveled
-&+Lfor centuries.  There is a lot of bushes laying on the path which makes it
-&+Lsomewhat hard to see the trail ahead.  Also there is a strange looking skull
-&+Lhanging on the side of the gate.&n
+&+CT&+wh&+We &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl&n~
+&+w    The lone trail into town is well traveled by wagons and cattle.
+&+wWagon wheels have carved out destinct ruts through the ice and mud.
+&+wA chilling breeze rushes down from the western mountain range.  Ahead,
+&+wthe sounds of a bustling village and raging river, let you know you're
+&+wgetting closer to your destination.&n
 ~
-337 41943040 2
-D1
-A Small Forest
-~
-~
-0 0 33794
-D3
-Inside Graveyard Entrance
-~
-gate~
-3 33700 33723
-S
-#33701
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D1
-A Dirt Path
-~
-~
-0 0 33702
-D3
-A Bend in the Path
-~
-~
-0 0 33773
-S
-#33702
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D1
-A Dirt Path
-~
-~
-0 0 33703
-D3
-A Dirt Path
+337 0 2
+D0
+&+CA&+wl&+Wo&+wn&+Cg a &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl&n
 ~
 ~
 0 0 33701
+D2
+&+CA &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl &+wleaving &+Wtown&+C.&n
+~
+~
+0 0 33764
+S
+#33701
+&+CT&+wh&+We &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl&n~
+&+w    The lone trail into town is well traveled by wagons and cattle.
+&+wWagon wheels have carved out destinct ruts through the ice and mud.
+&+wA chilling breeze rushes down from the western mountain range.  Ahead,
+&+wthe sounds of a bustling village and raging river, let you know you're
+&+wgetting closer to your destination.&n
+~
+337 0 2
+D0
+&+CNe&+wa&+Wr&+wi&+Cng &+LMi&+wa&+We&+wr&+Lil &+CVi&+wl&+Wl&+wa&+Cge&n
+~
+~
+0 0 33702
+D2
+&+CA &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl &+wleaving &+Wtown&+C.&n
+~
+~
+0 0 33700
+S
+#33702
+&+COp&+we&+Wn&+wi&+Cng to &+LMi&+wa&+We&+wr&+Lil &+CVi&+wl&+Wl&+wa&+Cge&n~
+&+w   Coming into town, the landscape opens up to a view of a tranquil but
+&+wharsh environment.  Simple shacks line up across from a raging river.
+&+wA main street of stone divides the village.  A bridge accross the river
+&+wheads east from here.  This seems like brutish hunting outpost.&n
+~
+337 0 1
+D0
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
+~
+~
+0 0 33703
+D1
+&+CAn &+wI&+Wc&+wy &+LS&+wt&+Wo&+wn&+Le &+CBri&+wd&+Wg&+we&+Cway&n
+~
+~
+0 0 33718
+D2
+&+CA &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl &+wleaving &+Wtown&+C.&n
+~
+~
+0 0 33701
+D3
+&+yAXSm&+YallX&+ySt&+YableX&n
+~
+barn door~
+1 0 33709
 S
 #33703
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n~
+&+w    Along a main throughway, the village seems to be divided with simple
+&+wshack dwellings on the left and an impressive raging river to the right.
+&+wThis path was constructed with cobble stones to hold up to frequent
+&+wtraffic.  Locals seem to live in a tight knit community, where survial
+&+wdepends on one another.  Proceed to discover what &+LMi&+wa&+We&+wr&+Lil&+w offers.&n
 ~
-337 41943040 2
+337 0 1
 D0
-A Dirt Path
-~
-~
-0 0 33714
-D1
-A Dirt Path
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33704
-D3
-A Dirt Path
+D1
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wsweeps &+Wby&+C.&n
+~
+~
+0 0 33717
+D2
+&+CEx&+wi&+Wt&+wi&+Cng &+LMi&+wa&+We&+wr&+Lil &+CVi&+wl&+Wl&+wa&+Cge&n
 ~
 ~
 0 0 33702
 S
 #33704
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n~
+&+w    Along a main throughway, the village seems to be divided with simple
+&+wshack dwellings on the left and an impressive raging river to the right.
+&+wThis path was constructed with cobble stones to hold up to frequent
+&+wtraffic.  Locals seem to live in a tight knit community, where survial
+&+wdepends on one another.  Proceed to discover what &+LMi&+wa&+We&+wr&+Lil&+w offers.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
+337 0 1
+D0
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33705
-D3
-A Dirt Path
+D1
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wswepts &+Wby&+C.&n
+~
+~
+0 0 33716
+D2
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33703
+D3
+&+CThrough a &+wna&+Lrr&+wow &+Cba&+wck&+Wst&+wre&+Cet.&n
+~
+~
+0 0 33755
 S
 #33705
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n~
+&+w    Along a main throughway, the village seems to be divided with simple
+&+wshack dwellings on the left and an impressive raging river to the right.
+&+wThis path was constructed with cobble stones to hold up to frequent
+&+wtraffic.  Locals seem to live in a tight knit community, where survial
+&+wdepends on one another.  Proceed to discover what &+LMi&+wa&+We&+wr&+Lil&+w offers.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
+337 0 1
+D0
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33706
+D1
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wswepts &+Wby&+C.&n
+~
+~
+0 0 33715
 D2
-A Dirt Path
-~
-~
-0 0 33709
-D3
-A Dirt Path
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33704
+D3
+&+YThe Vi&+wl&+Wl&+wa&+Yge &+LTr&+wa&+Wd&+wi&+Lng &+YP&+wo&+Ws&+Yt&n
+~
+~
+0 0 33710
 S
 #33706
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n~
+&+w    Along a main throughway, the village seems to be divided with simple
+&+wshack dwellings on the left and an impressive raging river to the right.
+&+wThis path was constructed with cobble stones to hold up to frequent
+&+wtraffic.  Locals seem to live in a tight knit community, where survial
+&+wdepends on one another.  Proceed to discover what &+LMi&+wa&+We&+wr&+Lil&+w offers.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
+337 0 1
+D0
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33707
-D3
-A Dirt Path
+D1
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wswepts &+Wby&+C.&n
+~
+~
+0 0 33714
+D2
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33705
+D3
+&+CThrough a &+wna&+Lrr&+wow &+Cba&+wck&+Wst&+wre&+Cet.&n
+~
+~
+0 0 33757
 S
 #33707
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n~
+&+w    Along a main throughway, the village seems to be divided with simple
+&+wshack dwellings on the left and an impressive raging river to the right.
+&+wThis path was constructed with cobble stones to hold up to frequent
+&+wtraffic.  Locals seem to live in a tight knit community, where survial
+&+wdepends on one another.  Proceed to discover what &+LMi&+wa&+We&+wr&+Lil&+w offers.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
+337 0 1
+D0
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33708
+D1
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wswepts &+Wby&+C.&n
+~
+~
+0 0 33713
 D2
-A Dirt Path
-~
-~
-0 0 33711
-D3
-A Dirt Path
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33706
+D3
+&+LA &+yR&+wu&+Lgg&+we&+yd Na&+wt&+Wi&+wv&+Les H&+wu&+Lt&n
+~
+door~
+1 0 33711
 S
 #33708
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n~
+&+w    Along a main throughway, the village seems to be divided with simple
+&+wshack dwellings on the left and an impressive raging river to the right.
+&+wThis path was constructed with cobble stones to hold up to frequent
+&+wtraffic.  Locals seem to live in a tight knit community, where survial
+&+wdepends on one another.  Proceed to discover what &+LMi&+wa&+We&+wr&+Lil&+w offers.&n
 ~
-337 41943040 2
-D3
-A Dirt Path
+337 0 1
+D1
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wswepts &+Wby&+C.&n
+~
+~
+0 0 33712
+D2
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33707
 S
 #33709
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+yAXSm&+YallX&+ySt&+YableX&n~
+&+y   This stall gathers unused horses that can be borrowed for moving
+&+ylarge loads.  Hay covers the floor and grain buckets hang on the wall.
+&+yCleaning has been neglected, leaving a strong smell of manure in the
+&+yair.  A sliding barn door is attached to the east exit.&n
 ~
-337 41943040 2
-D0
-A Dirt Path
+337 0 0
+D1
+&+COp&+we&+Wn&+wi&+Cng to &+LMi&+wa&+We&+wr&+Lil &+CVi&+wl&+Wl&+wa&+Cge&n
+~
+barn door~
+1 0 33702
+S
+#33710
+&+YVi&+wl&+Wl&+wa&+Yge&+L-Tr&+wa&+Wd&+wi&+Lng-&+YP&+wo&+Ws&+Yt&n~
+&+Y   The candle lit building has a wooden counter in the back of the room.
+&+YAll around are basic survial supplies; buckets of local nuts, jugs of
+&+Ymilk, and meat hanging to dry.  This is a neutral place of business
+&+Ywhere magic is restricted for everyones safety.  Stick around to recover
+&+Yfrom the harsh weather outside.&n
+~
+337 131204 0
+D1
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33705
+S
+#33711
+&+LA &+yR&+Lu&+wgg&+Le&+yd Na&+wt&+Wi&+wv&+Le H&+wu&+Lt&n~
+&+y   The hut is constructed of mammoth size bones covered in cured leather
+&+yhides.  Snow and ice are no match for this simple, yet effective enclosure.
+&+yJust make sure to close the door behind you, to keep out the chilling
+&+ybreeze.  This is the oldest residence of the village.  It's known for
+&+ytown meetings to discuss survial in this harsh environment.&n
+~
+337 4 0
+D1
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
+~
+door~
+1 0 33707
+S
+#33712
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr&n~
+&+c   Fridged temperatures and a swift current make this wide river dangerous.
+&+cJagged rocks produce some wild rapids that sound ferocious.  Ice chunks
+&+cfloat down the river, that refuses to completely freeze over.  Safety is
+&+ctowards the west bank.  East is a thick unknown forest.  Decisions should
+&+cbe made quickly, before one is taken away to an uncertain fate.&n
+~
+337 4 6
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33727
 D2
-A Dirt Path
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
 ~
 ~
 0 0 33713
+D3
+&+CA&+wl&+Wo&+wn&+Cg a &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
+~
+~
+0 0 33708
+C
+50 2
 S
-#33710
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+#33713
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr&n~
+&+c   Fridged temperatures and a swift current make this wide river dangerous.
+&+cJagged rocks produce some wild rapids that sound ferocious.  Ice chunks
+&+cfloat down the river, that refuses to completely freeze over.  Safety is
+&+ctowards the west bank.  East is a thick unknown forest.  Decisions should
+&+cbe made quickly, before one is taken away to an uncertain fate.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
-~
-~
-0 0 33711
-S
-#33711
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
+337 4 6
 D0
-A Dirt Path
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
+~
+~
+0 0 33712
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33726
+D2
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
+~
+~
+0 0 33714
+D3
+&+CA&+wl&+Wo&+wn&+Cg a &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
 0 0 33707
-D2
-A Dirt Path
-~
-~
-0 0 33715
-D3
-A Dirt Path
-~
-~
-0 0 33710
-S
-#33712
-&+gA Grove in the Forest&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943041 3
-D1
-A Forest Grove
-~
-~
-0 0 33747
-D3
-A Forest Grove
-~
-~
-0 0 33744
-S
-#33713
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33709
-D2
-Graveyard Center
-~
-~
-0 0 33720
+C
+50 2
 S
 #33714
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr&n~
+&+c   Fridged temperatures and a swift current make this wide river dangerous.
+&+cJagged rocks produce some wild rapids that sound ferocious.  Ice chunks
+&+cfloat down the river, that refuses to completely freeze over.  Safety is
+&+ctowards the west bank.  East is a thick unknown forest.  Decisions should
+&+cbe made quickly, before one is taken away to an uncertain fate.&n
 ~
-337 41943040 2
+337 4 6
 D0
-A Dirt Path
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
 ~
 ~
-0 0 33735
-D2
-A Dirt Path
-~
-~
-0 0 33703
-S
-#33715
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33711
+0 0 33713
 D1
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33716
-S
-#33716
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
+0 0 33725
 D2
-Inside Graveyard Entrance
-~
-~
-0 0 33723
-D3
-A Dirt Path
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
 ~
 ~
 0 0 33715
+D3
+&+CA&+wl&+Wo&+wn&+Cg a &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
+~
+~
+0 0 33706
+C
+50 2
 S
-#33717
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+#33715
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr&n~
+&+c   Fridged temperatures and a swift current make this wide river dangerous.
+&+cJagged rocks produce some wild rapids that sound ferocious.  Ice chunks
+&+cfloat down the river, that refuses to completely freeze over.  Safety is
+&+ctowards the west bank.  East is a thick unknown forest.  Decisions should
+&+cbe made quickly, before one is taken away to an uncertain fate.&n
 ~
-337 41943040 2
+337 4 6
+D0
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
+~
+~
+0 0 33714
 D1
-A Dirt Path
-~
-~
-0 0 33718
-D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33724
+D2
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
+~
+~
+0 0 33716
+D3
+&+CA&+wl&+Wo&+wn&+Cg a &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
+~
+~
+0 0 33705
+C
+50 2
+S
+#33716
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr&n~
+&+c   Fridged temperatures and a swift current make this wide river dangerous.
+&+cJagged rocks produce some wild rapids that sound ferocious.  Ice chunks
+&+cfloat down the river, that refuses to completely freeze over.  Safety is
+&+ctowards the west bank.  East is a thick unknown forest.  Decisions should
+&+cbe made quickly, before one is taken away to an uncertain fate.&n
+~
+337 4 6
+D0
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
+~
+~
+0 0 33715
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33723
+D2
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
+~
+~
+0 0 33717
+D3
+&+CA&+wl&+Wo&+wn&+Cg a &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
+~
+~
+0 0 33704
+C
+50 2
+S
+#33717
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr&n~
+&+c   Fridged temperatures and a swift current make this wide river dangerous.
+&+cJagged rocks produce some wild rapids that sound ferocious.  Ice chunks
+&+cfloat down the river, that refuses to completely freeze over.  Safety is
+&+ctowards the west bank.  East is a thick unknown forest.  Decisions should
+&+cbe made quickly, before one is taken away to an uncertain fate.&n
+~
+337 4 6
+D0
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wmarches &+Wonward&+C.&n
+~
+~
+0 0 33716
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33722
+D2
+&+LUn&+wde&+Wr &+Can &+wI&+Wc&+wy &+LS&+wt&+Wo&+wn&+Le &+CBri&+wd&+Wg&+we&+Cway.&n
+~
+~
+0 0 522257
+D3
+&+CA&+wl&+Wo&+wn&+Cg a &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
+~
+~
+0 0 33703
+C
+50 2
 S
 #33718
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CAn &+wI&+Wc&+wy &+LS&+wt&+Wo&+wn&+Le &+CBri&+wd&+Wg&+we&+Cway&n~
+&+w   This thin arched bridge spans over a raging river, connecting the village
+&+wof the west to an erie looking forest in the east.  The stone bridge is icy
+&+wand covered in snow.  The river below is dangerous, so this structure helps
+&+wprovide safe passage for those that dare enter the forbidden forest.&n
 ~
-337 41943040 2
+337 4 1
 D1
-A Dirt Path
+&+GT&+gh&+Le &+GF&+go&+Lrb&+Gi&+gd&+Lde&+Gn F&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33719
 D3
-A Dirt Path
+&+CEn&+wt&+Wr&+wa&+Cnce to &+LMi&+wa&+We&+wr&+Lil &+CVi&+wl&+Wl&+wa&+Cge&n
 ~
 ~
-0 0 33717
+0 0 33702
 S
 #33719
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33722
 D1
-Graveyard Center
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33720
 D3
-A Dirt Path
+&+CAn &+wI&+Wc&+wy &+LS&+wt&+Wo&+wn&+Le &+CBri&+wd&+Wg&+we&+Cway&n
 ~
 ~
 0 0 33718
 S
 #33720
-&+LCenter of the Graveyard&n~
-&+L   This is the center of the graveyard.  To the east is the entrance, west
-&+Lare two separated grave sites, north is the DEAD END, and south is a forest
-&+Lgrove.  This intersection was well traveled years ago and still today there
-&+Lis not much grass on the path. Surprisingly there are no tombs around the
-&+Lintersection.  This must have been a gathering place for people who had a
-&+Lfamily member die.  Also the certain gloominess that engulfs the graveyard
-&+Lseems to be missing in this room.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
 D0
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33713
+0 0 33738
 D1
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33721
-D2
-A Dirt Path
-~
-~
-0 0 33727
 D3
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33719
 S
 #33721
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33722
+0 0 33739
 D3
-Graveyard Center
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33720
+D9
+&+gLeading towards &+Gt&+gh&+Le &+GF&+go&+Lre&+Gs&+gt&+Ls &+GE&+gd&+Lge&+g.&n
+~
+~
+0 0 33740
 S
 #33722
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
-D1
-Inside Graveyard Entrance
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33723
-D3
-A Dirt Path
-~
-~
-0 0 33721
-S
-#33723
-&+LInside of the Graveyard&n~
-&+L   This is the inside of the entrance to the graveyard.  This is the begining
-&+Lto a dirt path through the graveyard.  There are tombs of dead people all
-&+Laround the graveyard. Some of the graves are empty from passing thieves.
-&+LMystical creatures lurk around this area.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33716
 D1
-Graveyard Entrance
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
-gate~
-3 33700 33700
+~
+0 0 33738
 D2
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33730
+0 0 33719
 D3
-A Dirt Path
-~
-~
-0 0 33722
-E
-tomb~
-You look at the tomb and it has your name on it.  You scream in fear of your
-life.
-~
-S
-#33724
-&+LA Burial Ground&n~
-   There are many tombs with ornaments on them.  Most of the tombs have
-some type of feathers or flowers on it.  None of the graves have been looted
-by thieves unlike the rest of the graveyard.  The thieves must know that they
-would be cursed if they do so.  Or they will be killed for even being in the
-area.
-
-The people that come here for some reason feel a sense of not being wanted
-in this area!
-~
-337 41943040 2
-D0
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wsweeps &+Wby&+C.&n
 ~
 ~
 0 0 33717
-D1
-~
-~
-0 0 33725
-D2
-~
-~
-0 0 33731
 S
-#33725
-&+LA Burial Ground&n~
-   There are many tombs with ornaments on them.  Most of the tombs have
-some type of feathers or flowers on it.  None of the graves have been looted
-by thieves unlike the rest of the graveyard.  The thieves must know that they
-would be cursed if they do so.  Or they will be killed for even being in the
-area.
-
-The people that come here for some reason feel a sense of not being wanted
-in this area!
+#33723
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
-D1
-~
-~
-0 0 33726
-D2
-~
-~
-0 0 33732
-D3
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33724
-S
-#33726
-&+LA Burial Ground&n~
-   There are many tombs with ornaments on them.  Most of the tombs have
-some type of feathers or flowers on it.  None of the graves have been looted
-by thieves unlike the rest of the graveyard.  The thieves must know that they
-would be cursed if they do so.  Or they will be killed for even being in the
-area.
-
-The people that come here for some reason feel a sense of not being wanted
-in this area!
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
-337 41943040 2
+~
+0 0 33736
 D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33733
+0 0 33722
 D3
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wsweeps &+Wby&+C.&n
+~
+~
+0 0 33716
+S
+#33724
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
+~
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33725
-S
-#33727
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33720
-D2
-A Dirt Path
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33734
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33723
+D3
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wsweeps &+Wby&+C.&n
+~
+~
+0 0 33715
+S
+#33725
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
+~
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33726
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33732
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33724
+D3
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wsweeps &+Wby&+C.&n
+~
+~
+0 0 33714
+S
+#33726
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
+~
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33727
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33730
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33725
+D3
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wsweeps &+Wby&+C.&n
+~
+~
+0 0 33713
+S
+#33727
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
+~
+337 1073741824 38
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33728
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33726
+D3
+&+CA R&+wa&+Wg&+wi&+Cng R&+wi&+Wv&+we&+Cr &+wsweeps &+Wby&+C.&n
+~
+~
+0 0 33712
 S
 #33728
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 33554432 2
+337 1073741824 38
 D1
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33729
-S
-#33729
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D1
-A Dirt Path
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33730
 D3
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33727
+S
+#33729
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
+~
+337 1073741824 38
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33731
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33728
+D8
+&+yLeading &+yBefo&+Yre a Grand Tree S&+ytump.&n
+~
+~
+0 0 33741
 S
 #33730
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
 D0
-Inside Graveyard Enttrance
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33723
-D2
-A Dirt Path
-~
-~
-0 0 33737
-D3
-A Dirt Path
-~
-~
-0 0 33729
-S
-#33731
-&+LA Burial Ground&n~
-   There are many tombs with ornaments on them.  Most of the tombs have
-some type of feathers or flowers on it.  None of the graves have been looted
-by thieves unlike the rest of the graveyard.  The thieves must know that they
-would be cursed if they do so.  Or they will be killed for even being in the
-area.
-
-The people that come here for some reason feel a sense of not being wanted
-in this area!
-~
-337 41943040 2
-D0
-~
-~
-0 0 33724
+0 0 33728
 D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33731
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33732
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33726
 S
-#33732
-&+LA Burial Ground&n~
-   There are many tombs with ornaments on them.  Most of the tombs have
-some type of feathers or flowers on it.  None of the graves have been looted
-by thieves unlike the rest of the graveyard.  The thieves must know that they
-would be cursed if they do so.  Or they will be killed for even being in the
-area.
-
-The people that come here for some reason feel a sense of not being wanted
-in this area!
+#33731
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
 D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33725
+0 0 33729
 D1
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33750
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33733
 D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33730
+S
+#33732
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
+~
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33730
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33733
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33734
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33725
+S
+#33733
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
+~
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33731
-S
-#33733
-&+LA Burial Ground&n~
-   There are many tombs with ornaments on them.  Most of the tombs have
-some type of feathers or flowers on it.  None of the graves have been looted
-by thieves unlike the rest of the graveyard.  The thieves must know that they
-would be cursed if they do so.  Or they will be killed for even being in the
-area.
-
-The people that come here for some reason feel a sense of not being wanted
-in this area!
-~
-337 41943040 2
-D0
+D1
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
-0 0 33726
+0 0 33749
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33735
 D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33732
 S
 #33734
-&+yA&+r Bloody Patch &+yon a Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
 D0
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33727
+0 0 33732
+D1
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33735
 D2
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33741
+0 0 33736
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33724
 S
 #33735
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
 D0
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33768
+0 0 33733
+D1
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33748
 D2
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33714
+0 0 33737
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33734
 S
 #33736
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33734
 D1
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33737
 D2
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33743
+0 0 33738
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33723
 S
 #33737
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
 D0
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
-0 0 33730
+0 0 33735
+D1
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33747
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33739
 D3
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33736
 S
 #33738
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33736
 D1
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33739
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33720
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33722
 S
 #33739
-&+yA Vague Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n~
+&+G   Massive snow topped trees span the area.  An unsettling silence is
+&+grandomly disrupted by sounds of wild beasts.  A bitter cold shortens
+&+Gyour breathe.  Tracks in the snow can be found running through the land.
+&+gBeware, this area is known to be forbidden for reasons unknown.&n
 ~
-337 41943040 2
+337 1073741824 38
+D0
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33737
 D1
-A Dirt Path
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
-0 0 33740
+0 0 33746
+D2
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33721
 D3
-A Dirt Path
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
 ~
 ~
 0 0 33738
 S
 #33740
-&+yA Vague Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+GT&+gh&+Le &+GF&+go&+Lre&+Gs&+gt&+Ls &+GE&+gd&+Lge&n~
+&+L   Ending at the forests edge, the only way onward is up an enormous tree.
+&+LThe gray bark tree with dark green leaves is capped off with snow.  This
+&+Lmighty tree leads up to the highest point in the land.  The rugged bark
+&+Land ampule branches, provide a decent chance of climbing.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
+337 4 38
+D4
+&+gRising &+Lup an &+LEn&+wo&+Wr&+wmo&+Lus &+GT&+gr&+Lee&+g.&n
 ~
 ~
-0 0 33741
-D3
-A Dirt Path
+0 0 33744
+D6
+&+gLeaving back into the thick &+LMi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt.&n
 ~
 ~
-0 0 33739
+0 0 33721
 S
 #33741
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+yBefo&+Yre a Grand Tree S&+ytump&n~
+&+Y   What was once, easily one of the biggest trees in the forest, now has
+&+ybeen reduced to a stump.  The tree was cut smooth across, leaving a wide
+&+yplatform, big enough to stand on.  Leaving the thick of the forest, the
+&+ysnow piles are higher and the icy winds kick harder.  Oddly, there are
+&+yno animal tracks in this area, as if they know to stay clear.  Walking
+&+yon the stump, it sort of sounds hallow.&n
 ~
-337 41943040 2
-D0
-A Dirt Path
+337 4 38
+D5
+&+yFall&+Ling into Hallowed Out S&+ytump.&n
 ~
-~
-0 0 33734
-D1
-A Dirt Path
-~
-~
-0 0 33742
-D2
-A Forest Grove
+stump~
+5 0 33742
+D7
+&+gLeaving back into the thick &+LMi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt.&n
 ~
 ~
-0 0 33745
-D3
-A Dirt Path
-~
-~
-0 0 33740
+0 0 33729
 S
 #33742
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+yInsi&+Lde of Hallowed Out S&+ytump&n~
+&+y   The c&+Leiling is a hatch built into the top of the stump.  In&+yside here,
+&+ythere is&+L just enough space to wiggle through.  Cut off roots l&+yine the
+&+ydirt wal&+Lls.  Something big seems to have burrowed down even de&+yeper.
+&+yFooting &+Lis sparce and unstable.&n
 ~
-337 41943040 2
-D1
-A Dirt Path
+337 8193 13
+D4
+&+yRisi&+Lng Out of Hallowed Out S&+ytump.&n
+~
+stump~
+1 0 33741
+D5
+&+ySinking deeper into the &+wun&+Lknown&+y.&n
 ~
 ~
 0 0 33743
-D3
-A Dirt Path
-~
-~
-0 0 33741
+F
+40
 S
 #33743
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+LAn &+YUnder&+yground &+LHide&+wout&n~
+&+L   Tucked deep below the surface, this confined space has become a dark
+&+Lhideout.  Dirt falls from the unstable walls, which are lined with broken
+&+Lroots poking out.  A solid ground is covered with matting material.
+&+LWhatever sleeps here, must be trying to wait out the harsh winter weather.&n
 ~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33736
-D3
-A Dirt Path
+337 1 13
+D4
+&+yThrough a &+Lna&+wr&+Wr&+wo&+Lw &+yretreat.&n
 ~
 ~
 0 0 33742
 S
 #33744
-&+gA Grove in the Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
+&+GU&+gp &+Lan En&+wo&+Wr&+wmo&+Lus &+GT&+gr&+Lee&n~
+&+L   Amoung the branches, you are halfway up an enormous tree.  There is
+&+La fog that sits at this height, making sight limited.  Keep tight
+&+Lagainst the tree trunk, to continue onward.  Snow and ice make this
+&+Lclimb a bit of a risk.&n
 ~
-337 41943041 3
-D1
-A Forest Grove
-~
-~
-0 0 33712
-D3
-A Forest Grove
-~
-~
-0 0 33753
-S
-#33745
-&+gA Grove in the Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D0
-A Dirt Path
-~
-~
-0 0 33741
-D2
-A Forest Grove
-~
-~
-0 0 33746
-S
-#33746
-&+gA Clearing in the Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D0
-A Forest Grove
+337 8192 38
+D4
+&+gProceeding &+Ga&+gt&+Lop &+Ga&+gn &+LEnormous &+GT&+gr&+Lee&+g.&n
 ~
 ~
 0 0 33745
-D2
-A Forest Grove
+D5
+&+gBack down to &+Gt&+gh&+Le &+GF&+go&+Lre&+Gs&+gt&+Ls &+GE&+gd&+Lge&+g.&n
+~
+~
+0 0 33740
+F
+40
+S
+#33745
+&+GA&+gt&+Lop an En&+wo&+Wr&+wmo&+Lus &+GT&+gr&+Lee&n~
+&+L   Rising above the forest canopy, the fog dissipates, and a grand scene
+&+Lcomes into view.  Sights ranging from the artic planes, across a dark
+&+Lforest, past a raging river, and finally to a rough village.  All the
+&+Lnatural beauty, helps distract from the danger and discomfort of being
+&+Lperched atop a snow covered tree, exposed to the full elements.&n
+~
+337 0 38
+D5
+&+gDesending &+Lan &+LEn&+wo&+Wr&+wmo&+Lus &+GT&+gr&+Lee&+g.&n
+~
+~
+0 0 33744
+S
+#33746
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
+~
+337 4 25
+D0
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
 0 0 33747
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33739
 S
 #33747
-&+gA Path in the Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
 ~
-337 41943041 3
+337 4 25
 D0
-A Forest Grove
-~
-~
-0 0 33746
-D2
-A Forest Grove
-~
-~
-0 0 33748
-D3
-A Forest Grove
-~
-~
-0 0 33712
-S
-#33748
-&+gA Path in the Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D0
-A Forest Grove
-~
-~
-0 0 33747
-D2
-A Forest Grove
-~
-~
-0 0 33749
-S
-#33749
-&+gA Forest Grove&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D0
-A Forest Grove
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
 0 0 33748
 D1
-A Forest Grove
-~
-~
-0 0 33750
-S
-#33750
-&+gA Forest Grove&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D1
-A Forest Grove
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
 0 0 33751
+D2
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33746
 D3
-A Forest Grove
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33737
+S
+#33748
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
+~
+337 4 25
+D0
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
 0 0 33749
+D1
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33752
+D2
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33747
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33735
+S
+#33749
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
+~
+337 4 25
+D0
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33750
+D1
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33753
+D2
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33748
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33733
+S
+#33750
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
+~
+337 4 25
+D2
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33749
+D3
+&+GT&+gh&+Le Mi&+wa&+We&+wr&+Lil &+GF&+go&+Lre&+Gs&+gt&n
+~
+~
+0 0 33731
 S
 #33751
-&+gA Forest Grove&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
 ~
-337 41943041 3
-D1
-The Dead End
+337 0 25
+D0
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
 0 0 33752
 D3
-A Forest Grove
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
-0 0 33750
+0 0 33747
 S
 #33752
-&+LA&+r Dead &+LEnd Road&n~
-   There is a Dead End to this path.  It ends with a great tree that covers
-the whole path.  The tree is several feet wide and several hundred feet tall.
-There are many animals wandering around the huge tree.  This massive tree is
-over 1,000 years old.
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
 ~
-337 41943040 2
-D1
-Inside a Huge Tree
-~
-tree~
-5 0 33798
-D3
-A Forest Grove
-~
-~
-0 0 33751
-S
-#33753
-&+gA Path in a Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D1
-A Forest Grove
-~
-~
-0 0 33744
-D3
-A Forest Grove
-~
-~
-0 0 33754
-S
-#33754
-&+gA Forest Grove&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
+337 0 25
 D0
-A Forest Grove
-~
-~
-0 0 33760
-D1
-A Forest Grove
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
 0 0 33753
+D1
+&+CTucked away inside &+wa &+CM&+wa&+Wg&+wi&+Cc&+wa&+Wl &+CI&+wg&+Wl&+wo&+Co.&n
+~
+igloo door~
+1 0 33754
 D2
-A Forest Grove
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
-0 0 33759
+0 0 33751
 D3
-A Forest Grove
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
 ~
 ~
-0 0 33755
+0 0 33748
+S
+#33753
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n~
+&+C   Away from the dark forest, opens up to a vast artic plain.  These
+&+wflat lands, are a mass of icy snow tundra.  Bone chilling winds whip
+&+Wup the snow drifts.  Only the most rugged beasts will survive here.
+&+wEach step forward, takes you into the unknown, with safety being
+&+Ccompromised.&n
+~
+337 0 25
+D2
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33752
+D3
+&+wA&+Wn &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&n
+~
+~
+0 0 33749
+S
+#33754
+&+wA &+CM&+wa&+Wg&+wi&+Cc&+wa&+Wl &+CI&+wg&+Wl&+wo&+Co&n~
+&+C   Beyond civialization, appears a magically created igloo of ice.
+&+wIce has been resurrected into a beautiful transparent encampment.
+&+WEverything inside the igloo has been crafted of ice.  The walls
+&+wand furniture have sculptures of animals, people, and plants.  A
+&+Creminder of the world outside of this frozen tundra.  Here is a
+&+wgood place to avoid the harsh elements outside.&n
+~
+337 4 0
+D3
+&+wExposed to the vast &+CA&+wr&+Wt&+wi&+Cc &+wP&+Wlain&+w.&n
+~
+igloo door~
+1 0 33752
 S
 #33755
-&+gA Forest Grove&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n~
+&+w   Off the main path, this narrow backstreet weaves between the village
+&+Wshops and stables.  It is used by the private residence of &+LMi&+wa&+We&+wr&+Lil&+W.  Deep
+&+Wsnow makes this path hard to maneuver.  Being outside for long, will lead
+&+wto frostbite, due to the life draining temperatures and piercing winds.&n
 ~
-337 41943041 3
+337 0 25
 D1
-A Forest Grove
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
-0 0 33754
+0 0 33704
 D3
-A Forest Grove
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
 ~
 ~
 0 0 33756
 S
 #33756
-&+gA Dark Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n~
+&+w   Off the main path, this narrow backstreet weaves between the village
+&+Wshops and stables.  It is used by the private residence of &+LMi&+wa&+We&+wr&+Lil&+W.  Deep
+&+Wsnow makes this path hard to maneuver.  Being outside for long, will lead
+&+wto frostbite, due to the life draining temperatures and piercing winds.&n
 ~
-337 41943041 3
+337 0 25
+D0
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n
+~
+~
+0 0 33761
 D1
-A Forest Grove
+&+CThrough a &+wna&+Lrr&+wow &+Cba&+wck&+Wst&+wre&+Cet.&n
 ~
 ~
 0 0 33755
+D2
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n
+~
+~
+0 0 33763
 D3
-A Forest Grove
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n
 ~
 ~
-0 0 33757
+0 0 33762
 S
 #33757
-&+gA Dark Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n~
+&+w   Off the main path, this narrow backstreet weaves between the village
+&+Wshops and stables.  It is used by the private residence of &+LMi&+wa&+We&+wr&+Lil&+W.  Deep
+&+Wsnow makes this path hard to maneuver.  Being outside for long, will lead
+&+wto frostbite, due to the life draining temperatures and piercing winds.&n
 ~
-337 41943041 3
+337 0 25
 D1
-A Forest Grove
+&+CA &+wCo&+Lbb&+wle&+Lst&+wone &+CRo&+wa&+Wd&+ww&+Cay&n
 ~
 ~
-0 0 33756
+0 0 33706
 D3
-A Forest Grove
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
 ~
 ~
 0 0 33758
 S
 #33758
-&+gA Dark Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n~
+&+w   Off the main path, this narrow backstreet weaves between the village
+&+Wshops and stables.  It is used by the private residence of &+LMi&+wa&+We&+wr&+Lil&+W.  Deep
+&+Wsnow makes this path hard to maneuver.  Being outside for long, will lead
+&+wto frostbite, due to the life draining temperatures and piercing winds.&n
 ~
-337 41943041 3
+337 0 25
+D0
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n
+~
+~
+0 0 33759
 D1
-A Forest Grove
+&+CThrough a &+wna&+Lrr&+wow &+Cba&+wck&+Wst&+wre&+Cet.&n
 ~
 ~
 0 0 33757
-S
-#33759
-&+gA Dark Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D0
-A Forest Grove
-~
-~
-0 0 33754
-S
-#33760
-&+gA Dark Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D0
-A Forest Grove
+D2
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n
 ~
 ~
 0 0 33761
-D2
-A Forest Grove
-~
-~
-0 0 33754
-S
-#33761
-&+gA Dark Forest&n~
-&+g   There is a small path through the forest.  It is heavily covered in brush
-&+gto the point where it is hard to even see the path.  There are many little
-&+ganimals running around.  There are tons of spider webs in the bushes.  It
-&+gis hard to maneuver througth the thick bushes to the point where this is
-&+ghardly even a path.&n
-~
-337 41943041 3
-D0
-A Dirt Path
-~
-~
-0 0 33767
-D2
-A Forest Grove
+D3
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n
 ~
 ~
 0 0 33760
 S
-#33762
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+#33759
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n~
+&+y   This temporary encampment, houses the seasonal residence of &+LMi&+wa&+We&+wr&+Lil&+y.
+&+yMany come and go, as the weather permits for hunting the fantasic beasts
+&+ythat roam these wild lands.  Inside here, you feel somewhat secure from
+&+yanimal attacks and harsh climate.  Cured leather furs piled on bound
+&+ytrees stand strong enough to last their stay.&n
 ~
-337 41943040 2
-D0
-A Back Road
-~
-~
-0 0 33770
-D1
-A Dirt Path
-~
-~
-0 0 33763
+337 0 0
 D2
-A Dirt Path
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
 ~
 ~
-0 0 33764
+0 0 33758
+S
+#33760
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n~
+&+y   This temporary encampment, houses the seasonal residence of &+LMi&+wa&+We&+wr&+Lil&+y.
+&+yMany come and go, as the weather permits for hunting the fantasic beasts
+&+ythat roam these wild lands.  Inside here, you feel somewhat secure from
+&+yanimal attacks and harsh climate.  Cured leather furs piled on bound
+&+ytrees stand strong enough to last their stay.&n
+~
+337 4 0
+D1
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
+~
+~
+0 0 33758
+S
+#33761
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n~
+&+y   This temporary encampment, houses the seasonal residence of &+LMi&+wa&+We&+wr&+Lil&+y.
+&+yMany come and go, as the weather permits for hunting the fantasic beasts
+&+ythat roam these wild lands.  Inside here, you feel somewhat secure from
+&+yanimal attacks and harsh climate.  Cured leather furs piled on bound
+&+ytrees stand strong enough to last their stay.&n
+~
+337 4 0
+D0
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
+~
+~
+0 0 33758
+D2
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
+~
+~
+0 0 33756
+S
+#33762
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n~
+&+y   This temporary encampment, houses the seasonal residence of &+LMi&+wa&+We&+wr&+Lil&+y.
+&+yMany come and go, as the weather permits for hunting the fantasic beasts
+&+ythat roam these wild lands.  Inside here, you feel somewhat secure from
+&+yanimal attacks and harsh climate.  Cured leather furs piled on bound
+&+ytrees stand strong enough to last their stay.&n
+~
+337 4 0
+D1
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
+~
+~
+0 0 33756
 S
 #33763
-&+yA Worn Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+LA &+yN&+Lo&+wmad&+Li&+yc En&+Lca&+wmp&+Lme&+ynt&n~
+&+y   This temporary encampment, houses the seasonal residence of &+LMi&+wa&+We&+wr&+Lil&+y.
+&+yMany come and go, as the weather permits for hunting the fantasic beasts
+&+ythat roam these wild lands.  Inside here, you feel somewhat secure from
+&+yanimal attacks and harsh climate.  Cured leather furs piled on bound
+&+ytrees stand strong enough to last their stay.&n
 ~
-337 41943040 2
-D2
-A Dirt Path
-~
-~
-0 0 33765
-D3
-A Dirt Path
+337 0 0
+D0
+&+CA &+wPr&+Liv&+wate &+CBa&+wck&+Wst&+wre&+Cet&n
 ~
 ~
-0 0 33762
+0 0 33756
 S
 #33764
-&+yA Worn Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
+&+CT&+wh&+We &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl&n~
+&+w    The lone trail into town is well traveled by wagons and cattle.
+&+wWagon wheels have carved out destinct ruts through the ice and mud.
+&+wA chilling breeze rushes down from the western mountain range.  Ahead,
+&+wthe sounds of a bustling village and raging river, let you know you're
+&+wgetting closer to your destination.&n
 ~
-337 41943040 2
+337 4 2
 D0
-A Dirt Path
-~
-~
-0 0 33762
-D1
-A Dirt Path
-~
-~
-0 0 33765
-D2
-A Dirt Path
-~
-~
-0 0 33766
-D3
-~
-~
-0 0 33778
-S
-#33765
-&+yA Worn Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33763
-D2
-A Dirt Path
-~
-~
-0 0 33767
-D3
-A Dirt Path
-~
-~
-0 0 33764
-S
-#33766
-&+yA Worn Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33764
-D1
-A Dirt Path
-~
-~
-0 0 33767
-S
-#33767
-&+yA Worn Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33765
-D2
-A Forest Grove
-~
-~
-0 0 33761
-D3
-A Dirt Path
-~
-~
-0 0 33766
-S
-#33768
-&+yA Worn Trail&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D0
-A Dirt Path
-~
-~
-0 0 33769
-D2
-A Dirt Path
-~
-~
-0 0 33735
-S
-#33769
-&+yA Dirt Path&n~
-&+y   The dirt path is about three feet wide.  There are tombs on both sides of
-&+ythe trail.  The tombstones are corroded from the weather and are covered in
-&+ythick spider webs.  Some of the graves have been dug up by theifs looking for
-&+yvaluables.  There is heavy brush around the tombs.  In some places of the
-&+ygraveyard the tombs are so close together, that the people in the graves
-&+ymust have been stacked on each other.&n
-~
-337 41943040 2
-D2
-A Dirt Path
-~
-~
-0 0 33768
-S
-#33770
-&+wA Back Road&n~
-&+y   This is the back road of the graveyard.  There are no tombs next to this
-&+yroad.  The trail is narrow and has heavy forests on each side.  This road
-&+yhas not been used as much as the rest of them.  Noted by the grass still
-&+ygrowing over the trail.  There are many animals in the nearby forest.  The
-&+ydeer around here like to eat the &+mwild berry's&+y from the berry bushes along the
-&+yroad.&n
-~
-337 41943040 2
-D0
-~
-~
-0 0 33771
-D2
-~
-~
-0 0 33762
-S
-#33771
-&+wA Back Road&n~
-&+y   This is the back road of the graveyard.  There are no tombs next to this
-&+yroad.  The trail is narrow and has heavy forests on each side.  This road
-&+yhas not been used as much as the rest of them.  Noted by the grass still
-&+ygrowing over the trail.  There are many animals in the nearby forest.  The
-&+ydeer around here like to eat the &+mwild berry's&+y from the berry bushes along the
-&+yroad.&n
-~
-337 41943040 2
-D0
-A Back Road
-~
-~
-0 0 33772
-D2
-A Back Road
-~
-~
-0 0 33770
-D3
-~
-~
-0 0 33774
-S
-#33772
-&+wA Back Road&n~
-&+y   This is the back road of the graveyard.  There are no tombs next to this
-&+yroad.  The trail is narrow and has heavy forests on each side.  This road
-&+yhas not been used as much as the rest of them.  Noted by the grass still
-&+ygrowing over the trail.  There are many animals in the nearby forest.  The
-&+ydeer around here like to eat the &+mwild berry's&+y from the berry bushes along the
-&+yroad.&n
-~
-337 41943040 2
-D0
-A Back Road
-~
-~
-0 0 33773
-D2
-A Back Road
-~
-~
-0 0 33771
-S
-#33773
-&+wA Bend in the Back Road&n~
-&+y   This is the back road of the graveyard.  There are no tombs next to this
-&+yroad.  The trail is narrow and has heavy forests on each side.  This road
-&+yhas not been used as much as the rest of them.  Noted by the grass still
-&+ygrowing over the trail.  There are many animals in the nearby forest.  The
-&+ydeer around here like to eat the &+mwild berry's&+y from the berry bushes along the
-&+yroad.&n
-~
-337 41943040 2
-D1
-A Dirt Path
-~
-~
-0 0 33701
-D2
-A Back Road
-~
-~
-0 0 33772
-S
-#33774
-&+wA Back Road&n~
-&+y   This is the back road of the graveyard.  There are no tombs next to this
-&+yroad.  The trail is narrow and has heavy forests on each side.  This road
-&+yhas not been used as much as the rest of them.  Noted by the grass still
-&+ygrowing over the trail.  There are many animals in the nearby forest.  The
-&+ydeer around here like to eat the &+mwild berry's&+y from the berry bushes along the
-&+yroad.&n
-~
-337 41943040 2
-D1
-A Back Road
-~
-~
-0 0 33771
-D2
-A Sacred Hall
-~
-~
-0 0 33776
-D3
-A Back Road
-~
-~
-0 0 33775
-S
-#33775
-&+wA Back Road&n~
-&+y   This is the back road of the graveyard.  There are no tombs next to this
-&+yroad.  The trail is narrow and has heavy forests on each side.  This road
-&+yhas not been used as much as the rest of them.  Noted by the grass still
-&+ygrowing over the trail.  There are many animals in the nearby forest.  The
-&+ydeer around here like to eat the &+mwild berry's&+y from the berry bushes along the
-&+yroad.&n
-~
-337 41943040 2
-D1
-A Back Road
-~
-~
-0 0 33774
-S
-#33776
-&+WIn a Sacred Hall&n~
-&+W   The sacred hall is very nicely constructed.  The walls are made of light
-&+ybrown stone&+W that has been smoothed down.  It is decorated with big rugs on
-&+Wthe walls.  Each of the rugs has a big symbols on it that has its own
-&+Wsignificants.  The hall is well lit with torchs on each side of the hallway.
-&+WThe whole sight is just breath taking.&n
-~
-337 46137600 0
-D0
-A Back Road
-~
-~
-0 0 33774
-D2
-A Sacred Hall
-~
-~
-0 0 33777
-S
-#33777
-&+WIn a Sacred Hall&n~
-&+W   The sacred hall is very nicely constructed.  The walls are made of light
-&+ybrown stone&+W that has been smoothed down.  It is decorated with big rugs on
-&+Wthe walls.  Each of the rugs has a big symbols on it that has its own
-&+Wsignificants.  The hall is well lit with torchs on each side of the hallway.
-&+WThe whole sight is just breath taking.&n
-~
-337 46137600 0
-D0
-A Sacred Hall
-~
-~
-0 0 33776
-D2
-A Sacred Hall
-~
-~
-0 0 33778
-D3
-A Sacred Hall
-~
-~
-0 0 33779
-S
-#33778
-&+WIn a Sacred Hall&n~
-&+W   The sacred hall is very nicely constructed.  The walls are made of light
-&+ybrown stone&+W that has been smoothed down.  It is decorated with big rugs on
-&+Wthe walls.  Each of the rugs has a big symbols on it that has its own
-&+Wsignificants.  The hall is well lit with torchs on each side of the hallway.
-&+WThe whole sight is just breath taking.&n
-~
-337 46137600 0
-D0
-A Sacred Hall
-~
-~
-0 0 33777
-D1
-A Sacred Hall
-~
-~
-0 0 33764
-D3
-A Sacred Hall
-~
-~
-0 0 33780
-S
-#33779
-&+WIn a Sacred Hall&n~
-&+W   The sacred hall is very nicely constructed.  The walls are made of light
-&+ybrown stone&+W that has been smoothed down.  It is decorated with big rugs on
-&+Wthe walls.  Each of the rugs has a big symbols on it that has its own
-&+Wsignificants.  The hall is well lit with torchs on each side of the hallway.
-&+WThe whole sight is just breath taking.&n
-~
-337 46137600 0
-D1
-A Sacred Hall
-~
-~
-0 0 33777
-D2
-A Sacred Hall
-~
-~
-0 0 33780
-S
-#33780
-&+WIn a Sacred Hall&n~
-&+W   The sacred hall is very nicely constructed.  The walls are made of light
-&+ybrown stone&+W that has been smoothed down.  It is decorated with big rugs on
-&+Wthe walls.  Each of the rugs has a big symbols on it that has its own
-&+Wsignificants.  The hall is well lit with torchs on each side of the hallway.
-&+WThe whole sight is just breath taking.&n
-~
-337 46137600 0
-D0
-A Sacred Hall
-~
-~
-0 0 33779
-D1
-A Sacred Hall
-~
-~
-0 0 33778
-D3
-A Sacred Hall
-~
-~
-0 0 33781
-S
-#33781
-&+WIn a Sacred Hall&n~
-&+W   The sacred hall is very nicely constructed.  The walls are made of light
-&+ybrown stone&+W that has been smoothed down.  It is decorated with big rugs on
-&+Wthe walls.  Each of the rugs has a big symbols on it that has its own
-&+Wsignificants.  The hall is well lit with torchs on each side of the hallway.
-&+WThe whole sight is just breath taking.&n
-~
-337 46137600 0
-D1
-A Sacred Hall
-~
-~
-0 0 33780
-D3
-A Sacred Hall
-~
-~
-0 0 33782
-S
-#33782
-&+WIn a Sacred Hall&n~
-&+W   The sacred hall is very nicely constructed.  The walls are made of light
-&+ybrown stone&+W that has been smoothed down.  It is decorated with big rugs on
-&+Wthe walls.  Each of the rugs has a big symbols on it that has its own
-&+Wsignificants.  The hall is well lit with torchs on each side of the hallway.
-&+WThe whole sight is just breath taking.  There is a stone block in the
-&+Lcorner with a lach on it.&n
-~
-337 46137600 0
-D1
-A Sacred Hall
-~
-~
-0 0 33781
-D5
-A Secret Camber
-~
-trapdoor~
-7 33700 33783
-S
-#33783
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. A small
-&+Lstaircase leads back up to the sacred hall.&n
-~
-337 8388609 0
-D0
-A Secret Camber
-~
-~
-0 0 33784
-D4
-A Sacred Hall
-~
-trapdoor~
-3 33700 33782
-S
-#33784
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D2
-A Secret Camber
-~
-~
-0 0 33783
-D3
-A Secret Camber
-~
-~
-0 0 33785
-S
-#33785
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D0
-A Secret Camber
-~
-~
-0 0 33786
-D1
-A Secret Camber
-~
-~
-0 0 33784
-D3
-A Secret Camber
-~
-~
-0 0 33788
-S
-#33786
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D0
-A Secret Camber
-~
-~
-0 0 33790
-D2
-A Secret Camber
-~
-~
-0 0 33785
-D3
-A Secret Camber
-~
-~
-0 0 33787
-S
-#33787
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D0
-A Secret Camber
-~
-~
-0 0 33792
-D1
-A Secret Camber
-~
-~
-0 0 33786
-D2
-A Secret Camber
-~
-~
-0 0 33788
-S
-#33788
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D0
-A Secret Camber
-~
-~
-0 0 33787
-D1
-A Secret Camber
-~
-~
-0 0 33785
-D2
-A Secret Camber
-~
-~
-0 0 33789
-S
-#33789
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 44040192 0
-D0
-A Secret Camber
-~
-~
-0 0 33788
-S
-#33790
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D1
-A Secret Camber
-~
-~
-0 0 33793
-D2
-A Secret Camber
-~
-~
-0 0 33786
-D3
-A Secret Camber
-~
-~
-0 0 33792
-S
-#33791
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8421377 0
-D2
-A Secret Camber
-~
-~
-0 0 33792
-S
-#33792
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D0
-A Secret Camber
-~
-~
-0 0 33791
-D1
-A Secret Camber
-~
-~
-0 0 33790
-D2
-A Secret Camber
-~
-~
-0 0 33787
-S
-#33793
-&+LA Secret Underground Chamber&n~
-&+L   The secret underground chamber has not been seen sense it was built.  The
-&+Lchamber has been forgotten for many centuries.  Until now it has just been
-&+Lthought of as a myth.  The ceiling of the chamber is not very tall, only about
-&+Lfive feet high.  The stench of rotten corpses withers thoughout the chamber.
-&+LRats and spiders have been the only visitors to the chamber lately. &n
-~
-337 8388609 0
-D3
-A Secret Camber
-~
-~
-0 0 33790
-S
-#33794
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33795
-D3
-The Entrance to the Graveyard
+&+CA&+wl&+Wo&+wn&+Cg a &+LWo&+wrn Wag&+Lon &+CT&+wr&+Wa&+wi&+Cl&n
 ~
 ~
 0 0 33700
-S
-#33795
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
 D1
-A Small Forest
-~
-~
-0 0 33796
-D3
-A Small Forest
-~
-~
-0 0 33794
-S
-#33796
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33797
-D3
-A Small Forest
-~
-~
-0 0 33795
-S
-#33797
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D0
-A Small Forest
-~
-~
-0 0 33802
-D1
-A Small Forest
-~
-~
-0 0 33812
-D3
-A Small Forest
-~
-~
-0 0 33796
-S
-#33798
-&+yInside a Huge Tree&n~
-   There are strange engraved symbols on the walls.  Its seem to be some sort
-of ancient language.  The inside of the tree as been burned out and chiseled
-to a smooth finish.  There is one large root that limits your movement in
-here.  The entrance into the tree is a transparent wall.  From the outside
-the tree looks normal, but from the inside there doesn't seem to be anything
-there.
-~
-337 41943048 0
-D3
-A Dead End
-~
-tree~
-5 0 33752
-D5
-~
-~
-0 0 33799
-S
-#33799
-&+RAn Underground Shelter&n~
-   This underground shelter is a small confined area.  The shelter is made
-in-between the giant roots of the tree.  The floor is all dirt, the walls
-and ceiling are almost solid roots.  The ceiling is very unstable since dirt
-is falling from above.
-~
-337 41943048 0
-D4
-~
-~
-0 0 33798
-S
-#33800
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-bushes~
-5 0 33803
-D2
-A Small Forest
-~
-~
-0 0 33801
-S
-#33801
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D0
-A Small Forest
-~
-~
-0 0 33800
-D2
-A Small Forest
-~
-~
-0 0 33802
-S
-#33802
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D0
-A Small Forest
-~
-~
-0 0 33801
-D2
-A Small Forest
-~
-~
-0 0 33797
-S
-#33803
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33804
-D3
-A Small Forest
-~
-bushes~
-5 0 33800
-S
-#33804
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33805
-D3
-A Small Forest
-~
-~
-0 0 33803
-S
-#33805
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33806
-D3
-A Small Forest
-~
-~
-0 0 33804
-S
-#33806
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 41943040 3
-D3
-A Small Forest
-~
-~
-0 0 33805
-S
-#33807
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554436 3
-D0
-A Small Forest
-~
-~
-0 0 33812
-D1
-A Small Forest
-~
-~
-0 0 33808
-D2
-~
-~
-0 0 522656
-D3
-~
-~
-0 0 522255
-S
-#33808
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33809
-D3
-A Small Forest
-~
-~
-0 0 33807
-S
-#33809
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33810
-D3
-A Small Forest
-~
-~
-0 0 33808
-S
-#33810
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D1
-A Small Forest
-~
-~
-0 0 33811
-D3
-A Small Forest
-~
-~
-0 0 33809
-S
-#33811
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.
-&+GTo the east is a worn path leading back into town.&n
-~
-337 33554432 3
-D1
-Fern Road
-~
-~
-0 0 33858
-D3
-A Small Forest
-~
-~
-0 0 33810
-S
-#33812
-&+gA Small Forest&n~
-&+G   This is a small quiet sparse forest.  There are little animals running
-&+Garound.  It has an almost dead silence thoughout the forest.  All, but the
-&+Goccasional creek of a tree or chirp of a bird.  The surroundings are just
-&+Gso wonderfully relaxing.  There is a clear path though the quaint forest.&n
-~
-337 33554432 3
-D2
-A Small Forest
-~
-~
-0 0 33807
-D3
-A Small Forest
-~
-~
-0 0 33797
-S
-#33813
-&+CA Bend in the High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D1
-The High Road
-~
-~
-0 0 33814
-D2
-~
-~
-0 0 33823
-S
-#33814
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D1
-The High Road
-~
-~
-0 0 33815
-D3
-The High Road
-~
-~
-0 0 33813
-S
-#33815
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D1
-The High Road
-~
-~
-0 0 33816
-D3
-The High Road
-~
-~
-0 0 33814
-S
-#33816
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D1
-The High Road
-~
-~
-0 0 33817
-D3
-The High Road
-~
-~
-0 0 33815
-S
-#33817
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D1
-Main Street
-~
-~
-0 0 33818
-D3
-The High Road
-~
-~
-0 0 33816
-S
-#33818
-&+LMain Street&n~
-&+L   This is the main road of the town, it's made of stone.  Most of the towns
-&+Lpeople use this route for everyday use since it slices vertically through the
-&+Lmiddle of town.  The stone road helps reduce the dust in the air.  The road is
-&+Lkept up well by the towns people.  It is swept frequently and the weeds on it
-&+Lare pulled. &n
-~
-337 33554432 1
-D1
-The High Road
-~
-~
-0 0 33819
-D2
-Main Street
-~
-~
-0 0 33827
-D3
-The High Road
-~
-~
-0 0 33817
-S
-#33819
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D1
-The High Road
-~
-~
-0 0 33820
-D3
-Main Street
-~
-~
-0 0 33818
-S
-#33820
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D0
-A Small Clearing
-~
-bushes~
-5 0 33888
-D1
-The High Road
-~
-~
-0 0 33821
-D3
-The High Road
-~
-~
-0 0 33819
-S
-#33821
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D1
-The High Road
-~
-~
-0 0 33822
-D3
-The High Road
-~
-~
-0 0 33820
-S
-#33822
-&+CThe High Road&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 2
-D2
-Riverside River
-~
-~
-0 0 33831
-D3
-The High Road
-~
-~
-0 0 33821
-S
-#33823
-&+GThe Forest's Edge&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 3
-D0
-A Bend in the High Road
-~
-~
-0 0 33813
-D2
-The Forests Edge
-~
-~
-0 0 33832
-S
-#33824
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D1
-The Field
-~
-~
-0 0 33825
-D2
-The Field
-~
-~
-0 0 33833
-S
-#33825
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D1
-The Field
-~
-~
-0 0 33826
-D2
-The Field
-~
-~
-0 0 33834
-D3
-The Field
-~
-~
-0 0 33824
-S
-#33826
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D2
-The Field
-~
-~
-0 0 33835
-D3
-The Field
-~
-~
-0 0 33825
-S
-#33827
-&+LMain Street&n~
-&+L   This is the main road of the town, it's made of stone.  Most of the towns
-&+Lpeople use this route for everyday use since it slices vertically through the
-&+Lmiddle of town.  The stone road helps reduce the dust in the air.  The road is
-&+Lkept up well by the towns people.  It is swept frequently and the weeds on it
-&+Lare pulled. &n
-~
-337 33554432 1
-D0
-Main Street
-~
-~
-0 0 33818
-D2
-Main Street
-~
-~
-0 0 33837
-S
-#33828
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D1
-The Field
-~
-~
-0 0 33829
-D2
-The Field
-~
-~
-0 0 33838
-S
-#33829
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D1
-The Field
-~
-~
-0 0 33830
-D2
-The Field
-~
-~
-0 0 33839
-D3
-The Field
-~
-~
-0 0 33828
-S
-#33830
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D2
-The Field
-~
-~
-0 0 33840
-D3
-The Field
-~
-~
-0 0 33829
-S
-#33831
-&+BRiverside Road&n~
-&+B   This is a road next to a small river.  It is a twelve foot wide dirt road.
-&+BThe river next to the road has a swift current and big jagged rocks that
-&+Bcreate its big rapids.  There are groups of fisherman on the side of the road
-&+Bfishing for samon.  On the opposite side of the river is the city of Miaeril.
-&+BThe sound of the nearby river is very relaxing.&n
-~
-337 34603008 2
-D0
-~
-~
-0 0 33822
-D2
-Riverside Road
-~
-~
-0 0 33841
-S
-#33832
-&+GThe Forest's Edge&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 3
-D0
-The Forests Edge
-~
-~
-0 0 33823
-D2
-The Forests Edge
-~
-~
-0 0 33842
-S
-#33833
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33824
-D1
-The Field
-~
-~
-0 0 33834
-S
-#33834
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33825
-D1
-The Field
-~
-~
-0 0 33835
-D3
-The Field
-~
-~
-0 0 33833
-S
-#33835
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33826
-D1
-The Field
-~
-~
-0 0 33836
-D3
-The Field
-~
-~
-0 0 33834
-S
-#33836
-&+yA Large Field&n~
-   The field is flourishing with various plants.  All the farmers in town
-have been working in the fields all day.  The scorching sun is making
-the farmers sweat obsessively.  The dirt in the fields is surprisingly
-fertile.  There are many working animals in the fields to help out the
-farmers.
-~
-337 33554432 2
-D1
-Main Street
-~
-~
-0 0 33837
-D3
-The Field
-~
-~
-0 0 33835
-S
-#33837
-&+LMain Street&n~
-&+L   This is the main road of the town, it's made of stone.  Most of the towns
-&+Lpeople use this route for everyday use since it slices vertically through the
-&+Lmiddle of town.  The stone road helps reduce the dust in the air.  The road is
-&+Lkept up well by the towns people.  It is swept frequently and the weeds on it
-&+Lare pulled. To the east and west are the local crop fields.&n
-~
-337 33554432 1
-D0
-Main Street
-~
-~
-0 0 33827
-D1
-The Field
-~
-~
-0 0 33838
-D2
-Main Street
-~
-~
-0 0 33846
-D3
-The Field
-~
-~
-0 0 33836
-S
-#33838
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33828
-D1
-The Field
-~
-~
-0 0 33839
-D2
-The Field
-~
-~
-0 0 33847
-D3
-Main Street
-~
-~
-0 0 33837
-S
-#33839
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33829
-D1
-The Field
-~
-~
-0 0 33840
-D2
-The Field
-~
-~
-0 0 33848
-D3
-The Field
-~
-~
-0 0 33838
-S
-#33840
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33830
-D2
-The Field
-~
-~
-0 0 33849
-D3
-The Field
-~
-~
-0 0 33839
-S
-#33841
-&+BRiverside Road&n~
-&+B   This is a road next to a small river.  It is a twelve foot wide dirt road.
-&+BThe river next to the road has a swift current and big jagged rocks that
-&+Bcreate its big rapids.  There are groups of fisherman on the side of the road
-&+Bfishing for samon.  On the opposite side of the river is the city of Miaeril.
-&+BThe sound of the nearby river is very relaxing.&n
-~
-337 33554432 2
-D0
-Riverside Road
-~
-~
-0 0 33831
-D2
-Riverside Road
-~
-~
-0 0 33850
-S
-#33842
-&+GThe Forest's Edge&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 3
-D0
-The Forests Edge
-~
-~
-0 0 33832
-D2
-The Forests Edge
-~
-~
-0 0 33851
-S
-#33843
-&+mThe Elder's Home&n~
-&+m   The whole house looks deserted.  The window shades are closed which makes
-&+mit very dark all around.  The house is filled with fine furniture.  The
-&+mfurniture looks like it's been untouched for years.  The neatly organized
-&+mfurniture has collected a lot of dust.  The house is completely silent except
-&+mfor a nearbye clock.&n
-~
-337 33554432 0
-D1
-The Elders Home
-~
-~
-0 0 33844
-D2
-The Elders Home
-~
-~
-0 0 33853
-S
-#33844
-&+mThe Elder's Home&n~
-&+m   The whole house looks deserted.  The window shades are closed which makes
-&+mit very dark all around.  The house is filled with fine furniture.  The
-&+mfurniture looks like it's been untouched for years.  The neatly organized
-&+mfurniture has collected a lot of dust.  The house is completely silent except
-&+mfor a nearbye clock.&n
-~
-337 33554432 0
-D2
-The Elders Home
-~
-~
-0 0 33854
-D3
-The Elders Home
-~
-~
-0 0 33843
-S
-#33845
-&+yA Small Stable&n~
-&+y   This is a large stable, it has many stalls for the horses.  There is a
-&+yvery strong and somewhat frightening smell of horse manure in here.  All of
-&+ythe ground has been covered in hay.  The stables has a big barn like door.
-&+yThe eastern exit leads back to Main Street.
-~
-337 33554432 0
-D1
-Main Street
-~
-~
-0 0 33846
-S
-#33846
-&+LMain Street&n~
-&+L   This is the main road of the town, it's made of stone.  Most of the towns
-&+Lpeople use this route for everyday use since it slices vertically through the
-&+Lmiddle of town.  The stone road helps reduce the dust in the air.  The road is
-&+Lkept up well by the towns people.  It is swept frequently and the weeds on it
-&+Lare pulled. &n
-~
-337 33554432 1
-D0
-Main Street
-~
-~
-0 0 33837
-D2
-Main Street
-~
-~
-0 0 33856
-D3
-The Stable
-~
-~
-0 0 33845
-S
-#33847
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33838
-D1
-The Field
-~
-~
-0 0 33848
-S
-#33848
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33839
-D1
-The Field
-~
-~
-0 0 33849
-D3
-The Field
-~
-~
-0 0 33847
-S
-#33849
-&+yA Field&n~
-&+y   The field is flourishing with a healthy havest.  Each of the farmers in
-&+ytown have been working in the fields all day.  The scorching sun is making the
-&+yfarmers sweat obsessively.  The dirt in the fields is surprisingly fertile.
-&+yThere are many animals working in the fields to help out the farmers. &n
-~
-337 33554432 2
-D0
-The Field
-~
-~
-0 0 33840
-D3
-The Field
-~
-~
-0 0 33848
-S
-#33850
-&+BRiverside Road&n~
-&+B   This is a road next to a small river.  It is a twelve foot wide dirt road.
-&+BThe river next to the road has a swift current and big jagged rocks that
-&+Bcreate its big rapids.  There are groups of fisherman on the side of the road
-&+Bfishing for samon.  On the opposite side of the river is the city of Miaeril.
-&+BThe sound of the nearby river is very relaxing.&n
-~
-337 33554432 2
-D0
-Riverside Road
-~
-~
-0 0 33841
-D2
-Riverside Road
-~
-~
-0 0 33857
-S
-#33851
-&+GThe Forest's Edge&n~
-&+G   This is a side road of the town.  On one side of the trail is a heavy
-&+Gforest, and the other has the local residences quarters.  This road has not
-&+Gbeen used as much as the rest of them.  Notable by the grass still growing
-&+Gover the trail.  There are many animals in the nearby forest.&n
-~
-337 33554432 3
-D0
-The Forests Edge
-~
-~
-0 0 33842
-D2
-Fern Road
-~
-~
-0 0 33858
-S
-#33852
-&+mThe Elder's Home&n~
-&+m   The whole house looks deserted.  The window shades are closed which makes
-&+mit very dark all around.  The house is filled with fine furniture.  The
-&+mfurniture looks like it's been untouched for years.  The neatly organized
-&+mfurniture has collected a lot of dust.  The house is completely silent except
-&+mfor a nearbye clock.&n
-~
-337 41943040 0
-D1
-The Elders Home
-~
-~
-0 0 33853
-S
-#33853
-&+mThe Elder's Home&n~
-&+m   The whole house looks deserted.  The window shades are closed which makes
-&+mit very dark all around.  The house is filled with fine furniture.  The
-&+mfurniture looks like it's been untouched for years.  The neatly organized
-&+mfurniture has collected a lot of dust.  The house is completely silent except
-&+mfor a nearbye clock.&n
-~
-337 33554432 0
-D0
-The Elders Home
-~
-~
-0 0 33843
-D1
-The Elders Home
-~
-~
-0 0 33854
-D3
-The Elders Home
-~
-~
-0 0 33852
-S
-#33854
-&+mThe Elder's Home&n~
-&+m   The whole house looks deserted.  The window shades are closed which makes
-&+mit very dark all around.  The house is filled with fine furniture.  The
-&+mfurniture looks like it's been untouched for years.  The neatly organized
-&+mfurniture has collected a lot of dust.  The house is completely silent except
-&+mfor a nearbye clock.&n
-~
-337 33554432 0
-D0
-The Elders Home
-~
-~
-0 0 33844
-D2
-Fern Road
-~
-door~
-1 0 33861
-D3
-The Elder's Home
-~
-~
-0 0 33853
-S
-#33855
-&+YThe Village Store&n~
-&+Y   There are many wonderful smells flowing around the bakery.  There is a
-&+Ywooden counter that has many delicious pastries on it.  All the moist breads
-&+Yand cakes are for sale here.  Behide the counter is a large kitchen where
-&+Ythe food is baked daily.  On the side of the room there is a small table for
-&+Ycustomers to eat.  There are also some extra weapons and armory that lay
-&+Yaround the place. &n
-~
-337 33554432 0
-D1
-Main Street
-~
-~
-0 0 33856
-S
-#33856
-&+LMain Street&n~
-&+L   This is the main road of the town, it's made of stone.  Most of the towns
-&+Lpeople use this route for everyday use since it slices vertically through the
-&+Lmiddle of town.  The stone road helps reduce the dust in the air.  The road is
-&+Lkept up well by the towns people.  It is swept frequently and the weeds on it
-&+Lare pulled. &n
-~
-337 33554432 1
-D0
-Main Street
-~
-~
-0 0 33846
-D2
-The Intersection of Meeting
-~
-~
-0 0 33863
-D3
-The Miaeril Bakery
-~
-~
-0 0 33855
-S
-#33857
-&+BRiverside Road&n~
-&+B   This is a road next to a small river.  It is a twelve foot wide dirt road.
-&+BThe river next to the road has a swift current and big jagged rocks that
-&+Bcreate its big rapids.  There are groups of fisherman on the side of the road
-&+Bfishing for samon.  On the opposite side of the river is the city of Miaeril.
-&+BThe sound of the nearby river is very relaxing.&n
-~
-337 33554432 2
-D0
-Riverside Road
-~
-~
-0 0 33850
-D2
-Fern Road
-~
-~
-0 0 33867
-S
-#33858
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D0
-~
-~
-0 0 33851
-D1
-Fern Road
-~
-~
-0 0 33859
-D2
-Along the City Wall
-~
-~
-0 0 33868
-D3
-A Small Forest
-~
-~
-0 0 33811
-S
-#33859
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D1
-Fern Road
-~
-~
-0 0 33860
-D3
-Fern Road
-~
-~
-0 0 33858
-S
-#33860
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D1
-Fern Road
-~
-~
-0 0 33861
-D2
-A Glassy Plane
-~
-~
-0 0 33870
-D3
-Fern Road
-~
-~
-0 0 33859
-S
-#33861
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D0
-Mansion of the Elder
-~
-door~
-1 0 33854
-D1
-Fern Road
-~
-~
-0 0 33862
-D3
-Fern Road
-~
-~
-0 0 33860
-S
-#33862
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D1
-Fern Road
-~
-~
-0 0 33863
-D3
-Fern Road
-~
-~
-0 0 33861
-S
-#33863
-&+LIntersection of Meeting&n~
-&+L   This is the intersection between the main road of the town and a worn path,
-&+Lit's made of stone.  Most of the towns people use this route for everyday use
-&+Lsince it slices vertically through the middle of town.  The stone road helps
-&+Lreduce the dust in the air.  The road is kept up well by the towns people.  It
-&+Lis swept frequently and the weeds on it are pulled. &n
-~
-337 33554432 1
-D0
-Main Street
-~
-~
-0 0 33856
-D1
-Fern Road
-~
-~
-0 0 33864
-D2
-Main Street
-~
-~
-0 0 33873
-D3
-Fern Road
-~
-~
-0 0 33862
-S
-#33864
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D1
-Fern Road
-~
-~
-0 0 33865
-D3
-Fern Road
-~
-~
-0 0 33863
-S
-#33865
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D1
-Fern Road
-~
-~
-0 0 33866
-D3
-Fern Road
-~
-~
-0 0 33864
-S
-#33866
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D1
-Fern Road
-~
-~
-0 0 33867
-D3
-Fern Road
-~
-~
-0 0 33865
-S
-#33867
-&+wWorn Road&n~
-&+y   The dirt road is a thin side street through town that has been well
-&+ytraveled.  It has green shrubberys that outline the edges of the path.  The
-&+ydistinct smell of cow scat floats in the breeze.  A group of flies ravages the
-&+ypile of dung.  The jagged rocks on the path make it hard to maneuver.&n
-~
-337 33554432 1
-D0
-Riverside Road
-~
-~
-0 0 33857
-D2
-Along the City Wall
-~
-~
-0 0 33874
-D3
-Fern Road
-~
-~
-0 0 33866
-S
-#33868
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D0
-Fern Road
-~
-~
-0 0 33858
-D2
-Along the City Wall
-~
-~
-0 0 33875
-S
-#33869
-&+GA Grassy Plain&n~
-   The whole field is flourishing with tall glass.  This field is over
-hundred feet wide, and filled with foot tall grass that sways in the wind.
-This is a relaxing field, with large trees that give shadows to the wondering
-animals.  The sky is baby blue with some random passing clouds.  There is a
-small pond that can be seen not far to the east.
-~
-337 33554432 2
-D1
-A Grassy Plane
-~
-~
-0 0 33870
-S
-#33870
-&+GA Grassy Plain&n~
-   The whole field is flourishing with tall glass.  This field is over
-hundred feet wide, and filled with foot tall grass that sways in the wind.
-This is a relaxing field, with large trees that give shadows to the wondering
-animals.  The sky is baby blue with some random passing clouds.  There is a
-small pond that can be seen not far to the east.
-~
-337 33554432 2
-D0
-Fern Road
-~
-~
-0 0 33860
-D1
-A Grassy Plane
-~
-~
-0 0 33871
-D3
-A Grassy Plane
-~
-~
-0 0 33869
-S
-#33871
-&+GA Grassy Plain&n~
-   The whole field is flourishing with tall glass.  This field is over
-hundred feet wide, and filled with foot tall grass that sways in the wind.
-This is a relaxing field, with large trees that give shadows to the wondering
-animals.  The sky is baby blue with some random passing clouds.  There is a
-small pond that can be seen not far to the east.
-~
-337 33554432 2
-D1
-A Small Pond
-~
-~
-0 0 33872
-D2
-Along the City Wall
-~
-~
-0 0 33878
-D3
-A Grassy Plane
-~
-~
-0 0 33870
-S
-#33872
-&+cA Small Pond&n~
-   The whole field is flourishing with tall glass.  This field is over
-hundred feet wide, and filled with foot tall grass that sways in the wind.
-This is a relaxing field, with large trees that give shadows to the wondering
-animals.  The sky is baby blue with some random passing clouds.  There is a
-small pond here that is a good fishing hole.
-~
-337 33554432 2
-D3
-A Grassy Plane
-~
-~
-0 0 33871
-S
-#33873
-&+LMain Street&n~
-&+L   This is the main road of the town, it's made of stone.  Most of the towns
-&+Lpeople use this route for everyday use since it slices vertically through the
-&+Lmiddle of town.  The stone road helps reduce the dust in the air.  The road is
-&+Lkept up well by the towns people.  It is swept frequently and the weeds on it
-&+Lare pulled. &n
-~
-337 33554432 1
-D0
-Intersection of Meeting
-~
-~
-0 0 33863
-D2
-Main Street
-~
-~
-0 0 33880
-S
-#33874
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D0
-Fern Road
-~
-~
-0 0 33867
-D2
-Along the City Wall
-~
-~
-0 0 33884
-S
-#33875
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D0
-Along the City Wall
-~
-~
-0 0 33868
-D1
-Along the City Wall
-~
-~
-0 0 33876
-S
-#33876
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D1
-Along the City Wall
-~
-~
-0 0 33877
-D3
-Along the City Wall
-~
-~
-0 0 33875
-S
-#33877
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D1
-Along the City Wall
-~
-~
-0 0 33878
-D3
-Along the City Wall
-~
-~
-0 0 33876
-S
-#33878
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D0
-A Grassy Plane
-~
-~
-0 0 33871
-D1
-Along the City Wall
-~
-~
-0 0 33879
-D3
-Along the City Wall
-~
-~
-0 0 33877
-S
-#33879
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D1
-Inside the City Entrance
-~
-~
-0 0 33880
-D3
-Along the City Wall
-~
-~
-0 0 33878
-S
-#33880
-&+LEntrance to the Miaeril Village&n~
-&+L   Just inside the village is the main road of the town, it's made of stone.
-&+LMost of the towns people use this route for everyday use since it slices
-&+Lvertically through the middle of town.  The stone road helps reduce the dust
-&+Lin the air.  The road is kept up well by the towns people.  It is swept
-&+Lfrequently and the weeds on it are pulled.  On either side of here is the
-&+Lmassive stone wall guarding the town.  To exit the city take a bare trail
-&+Lsouth. &n
-~
-337 33554432 1
-D0
-Main Street
-~
-~
-0 0 33873
-D1
-Along the City Wall
-~
-~
-0 0 33881
-D2
-A Bare Trail
-~
-~
-0 0 33885
-D3
-Along the City Wall
-~
-~
-0 0 33879
-S
-#33881
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D1
-Along the City Wall
-~
-~
-0 0 33882
-D3
-Inside the City Entrance
-~
-~
-0 0 33880
-S
-#33882
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D1
-Along the City Wall
-~
-~
-0 0 33883
-D3
-Along the City Wall
-~
-~
-0 0 33881
-S
-#33883
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D1
-Along the City Wall
-~
-~
-0 0 33884
-D3
-Along the City Wall
-~
-~
-0 0 33882
-S
-#33884
-&+WA&+wl&+Wo&+wn&+Wg&+w t&+Wh&+we&+W Village&+W W&+wa&+Wl&+wl&n~
-&+W   The &+wwall&+W is&+w twenty-&+Wfive&+w feet&+W tall&+w with&+W very&+w smooth&+W stone&+w blocks. &+W It &+whas
-&+Ggreen slippery moss &+wthat &+Wcovers &+weach&+W block&+w making &+Wit&+w impossible&+W to &+wclimb.
-&+WThis&+w structure&+W protector &+wthe&+W village &+wfrom&+W unwanted&+w visitors. &+W Next&+w to&+W the&+w wall
-&+wis &+Wa&+w nice &+Wgrassy&+w path. &+W This&+w is&+W a &+wquiet&+W and&+w rarely&+W used&+w pathway.
-~
-337 33554432 1
-D0
-Along the City Wall
-~
-~
-0 0 33874
-D3
-Along the City Wall
-~
-~
-0 0 33883
-S
-#33885
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-Inside the City Entrance
-~
-~
-0 0 33880
-D2
-A Bare Trail
-~
-~
-0 0 33886
-S
-#33886
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-A Bare Trail
-~
-~
-0 0 33885
-D2
-A Bare Trail
-~
-~
-0 0 33887
-S
-#33887
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-A Bare Trail
-~
-~
-0 0 33886
-D1
-~
-~
-0 0 33924
-S
-#33888
-&+GA Small Clearing&n~
-   This small clearing has no large plants or trees growing in it. The
-ground is covered by a thin layer of dirt. All is quiet in this clearing.
-~
-337 33554432 2
-D2
-The High Road
-~
-bushes~
-5 0 33820
-D5
-A Hidden Camber
-~
-~
-0 0 33889
-S
-#33889
-&+LA Hidden Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33890
-D4
-A Small Clearing
-~
-~
-0 0 33888
-S
-#33890
-&+LA Hidden Dungeon&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33891
-D2
-A Hidden Dungeon
-~
-~
-0 0 33895
-D3
-A Hidden Dungeon
-~
-~
-0 0 33889
-S
-#33891
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33892
-D3
-A Hidden Dungeon
-~
-~
-0 0 33890
-S
-#33892
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33893
-D3
-A Hidden Dungeon
-~
-~
-0 0 33891
-S
-#33893
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D2
-A Hidden Dungeon
-~
-wall~
-5 0 33898
-D3
-A Hidden Dungeon
-~
-~
-0 0 33892
-S
-#33894
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33901
-D3
-A Hidden Dungeon
-~
-door secret~
-5 0 33918
-S
-#33895
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33890
-D1
-A Hidden Dungeon
-~
-~
-0 0 33896
-D2
-A Hidden Dungeon
-~
-~
-0 0 33900
-S
-#33896
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33897
-D3
-A Hidden Dungeon
-~
-~
-0 0 33895
-S
-#33897
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D3
-A Hidden Dungeon
-~
-~
-0 0 33896
-S
-#33898
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-wall~
-5 0 33893
-D2
-A Hidden Dungeon
-~
-~
-0 0 33903
-S
-#33899
-&+LBend in an Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33900
-D2
-A Hidden Dungeon
-~
-~
-0 0 33904
-S
-#33900
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33895
-D2
-A Hidden Dungeon
-~
-~
-0 0 33905
-D3
-A Hidden Dungeon
-~
-~
-0 0 33899
-S
-#33901
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33908
-D3
-A Hidden Dungeon
-~
-~
-0 0 33894
-S
-#33902
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D2
-A Hidden Dungeon
-~
-~
-0 0 33907
-S
-#33903
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33898
-S
-#33904
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33899
-D2
-A Hidden Dungeon
-~
-~
-0 0 33909
-S
-#33905
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33900
-D2
-A Hidden Dungeon
-~
-~
-0 0 33910
-S
-#33906
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 41943041 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33907
-S
-#33907
-&+LAn Intersection of Passages&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33902
-D2
-A Hidden Dungeon
-~
-~
-0 0 33912
-D3
-A Hidden Dungeon
-~
-~
-0 0 33906
-S
-#33908
-&+LAn Underground Passageway&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D2
-A Hidden Dungeon
-~
-~
-0 0 33914
-D3
-A Hidden Dungeon
-~
-~
-0 0 33901
-S
-#33909
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33904
-D1
-A Hidden Dungeon
-~
-~
-0 0 33910
-S
-#33910
-&+LAn Intersection of Passages&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33905
-D1
-A Hidden Dungeon
-~
-~
-0 0 33911
-D2
-A Hidden Dungeon
-~
-~
-0 0 33915
-D3
-A Hidden Dungeon
-~
-~
-0 0 33909
-S
-#33911
-&+LAn Underground Passageway&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D1
-A Hidden Dungeon
-~
-~
-0 0 33912
-D3
-A Hidden Dungeon
-~
-~
-0 0 33910
-S
-#33912
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33907
-D1
-A Hidden Dungeon
-~
-~
-0 0 33913
-D2
-A Hidden Dungeon
-~
-~
-0 0 33917
-D3
-A Hidden Dungeon
-~
-~
-0 0 33911
-S
-#33913
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D2
-A Hidden Dungeon
-~
-~
-0 0 33918
-D3
-A Hidden Dungeon
-~
-~
-0 0 33912
-S
-#33914
-&+LAn Underground Passage&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33908
-D2
-A Hidden Dungeon
-~
-~
-0 0 33916
-S
-#33915
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33910
-S
-#33916
-&+LAn Underground Chamber&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 41943041 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33914
-S
-#33917
-&+LAn Underground Passageway&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33912
-D1
-A Hidden Dungeon
-~
-~
-0 0 33918
-S
-#33918
-&+LAn Underground Intersection&n~
-   The dungeon is lit by a couple of torches mounted on the walls.  The whole
-dungeon is infested with rats and spiders.  The walls are cold and slightly
-damp.  The walls are made of old cracked stone blocks.  The air in the
-dungeon smells and is very musty.
-~
-337 33554433 0
-D0
-A Hidden Dungeon
-~
-~
-0 0 33913
-D1
-A Hidden Dungeon
-~
-door secret~
-5 0 33894
-D3
-A Hidden Dungeon
-~
-~
-0 0 33917
-S
-#33919
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-~
-~
-0 0 33926
-D2
-~
-~
-0 0 33920
-S
-#33920
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-~
-~
-0 0 33919
-D2
-~
-~
-0 0 33921
-S
-#33921
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-~
-~
-0 0 33920
-D2
-~
-~
-0 0 33922
-S
-#33922
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-~
-~
-0 0 33921
-D2
-~
-~
-0 0 33923
-S
-#33923
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D0
-~
-~
-0 0 33922
-D1
-~
-~
-0 0 33927
-S
-#33924
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33925
-D3
-~
-~
-0 0 33887
-S
-#33925
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33926
-D3
-~
-~
-0 0 33924
-S
-#33926
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D2
-~
-~
-0 0 33919
-D3
-~
-~
-0 0 33925
-S
-#33927
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33928
-D3
-~
-~
-0 0 33923
-S
-#33928
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33929
-D3
-~
-~
-0 0 33927
-S
-#33929
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33930
-D3
-~
-~
-0 0 33928
-S
-#33930
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33931
-D3
-~
-~
-0 0 33929
-S
-#33931
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33932
-D3
-~
-~
-0 0 33930
-S
-#33932
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
-~
-~
-0 0 33933
-D3
-~
-~
-0 0 33931
-S
-#33933
-A Bare Trail~
-   This is the trail that leads away from Miaeril.  The trail is narrow and
-has heavy forests on each side.  This trail as not been used as much as the
-rest of them.  Because it still has grass growing over the trail.  There are
-many animals in the nearby forest.  The trail is easy to follow because it's
-nicely cleared and the forest has a definite lining.
-~
-337 33554432 2
-D1
+&+CO&+wu&+Wtw&+wa&+Crd returns to a &+wvast &+Wicy &+wtundra&+C.&n
 ~
 ~
 0 0 522257
-D3
-~
-~
-0 0 33932
 S

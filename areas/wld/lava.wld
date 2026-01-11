@@ -1,1590 +1,1491 @@
 #99700
-&+LA Small Tunnel&n~
-&+L   The small tunnel is the entrance to a lave spring cavern.  The walls of
-&+Lthe tunnel are rocky.  There are sounds of bats and other creatures in the
-&+Ldistance.  Horde smells are bellowing from deep within the cave.  Also the
-&+Ltemperature is getting progressively hotter the further you enter the cave.
-&+LTo the south the darkness lifts a bit.&N
+&+LA Tig&+wh&+Wt T&+wu&+Lnnel&n~
+&+L   A tight tunnel squeezes into a very hot, dry, and dark place.  The
+&+Lwalls are solid rock that seems to have been burrowed out by some force
+&+Lunknown.  Echoes ring from deep within.  A gas like substance can be
+&+Lsmelt.  A warm breeze passes, escaping outside.&n
 ~
-997 33554436 13
+997 8197 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99706
 D2
+&+LDark&+wne&+Wss&+L lifts a bit as the land opens up.&n
 ~
 ~
 0 0 565027
 S
 #99701
-&+LA Grand Foyer&N~
-&+L   The beautiful gates here are the entrance to the lava springs village.
-&+LThe passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  Above the grand foyer is a guard lookout
-&+Lpost.&N
+&+LThe M&+Wa&+wi&+Wn &+LC&+mav&+Mern Entr&+man&+Lce&n~
+&+L   The oval entrance widens to a large iron gate.  Solid rock walls are
+&+mjagged and harsh to the touch.  Across each way are waiting foyers.  To
+&+Mthe corners are lookout guard posts.  Ahead, is a grim town with hostile
+&+Mconditions.  The area is guarded when possible, to keep trouble out.
+&+MHorde smells are bellowing from deep within the cavern.  Incredible
+&+mamounts of heat from the distant lava springs warm the entire cavern.
+&+LThere are many eerie sounds of unknown creatures in the distance.&n
 ~
-997 33554432 14
+997 5 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LInter&+wsection&n
+~
+gate~
+1 0 99718
+D1
+&+LA C&+mav&+Mern F&+moy&+Ler&n
 ~
 ~
-0 0 99718
+0 0 99762
 D2
-&+LA Bedrock Passage&N
+&+LOut through a Bed&+Wr&+woc&+Wk &+LPass&+wage.&n
 ~
 ~
 0 0 99702
-D4
-&+LA Lookout Post&N
+D3
+&+LA C&+mav&+Mern F&+moy&+Ler&n
 ~
-trapdoor~
-1 0 99734
+~
+0 0 99763
 S
 #99702
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  There is a pile of dung in the road here.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33554432 14
+997 1 27
 D0
-&+LA Bedrock Passage&N
+&+LThe M&+Wa&+wi&+Wn &+LC&+mav&+Mern Entr&+man&+Lce&n
 ~
 ~
 0 0 99701
 D2
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99703
 S
 #99703
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  To the west is &+La &+RRak&+Yshasa&+L's Dwelling.
-&+LThere is a big rock lying in the path.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33554432 14
+997 1 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99702
-D2
-&+LA Bedrock Passage&N
-~
-~
-0 0 99704
-D3
-&+LA &+RRak&+Yshasa&+L's Dwelling&N
+D1
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n
 ~
 ~
 0 0 99710
+D2
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99704
 S
 #99704
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  To the east is &+La &+RRak&+Yshasa&+L's Dwelling&N
-&+LThere is a dead dog lying here.
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33554432 14
+997 1 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99703
-D1
-&+LA &+RRak&+Yshasa&+L's Dwelling&N
-~
-~
-0 0 99709
 D2
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99705
+D3
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n
+~
+~
+0 0 99709
 S
 #99705
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  To the east is &+La &+RRak&+Yshasa&+L's Dwelling&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33554432 14
+997 1 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99704
 D1
-&+LA &+RRak&+Yshasa&+L's Dwelling&N
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n
 ~
 ~
 0 0 99708
 D2
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99706
 S
 #99706
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  To the west is &+La &+RRak&+Yshasa&+L's Dwelling.&N
-&+LSome leaves have gathered up here across the path.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33554436 14
+997 1 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99705
 D2
-&+LA Bedrock Passage&N
+&+LA ray of l&+wi&+Wg&+wh&+Lt appears through a tig&+wh&+Wt t&+wu&+Lnnel.&n
 ~
 ~
 0 0 99700
 D3
-&+LA &+RRak&+Yshasa&+L's Dwelling&N
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n
 ~
 ~
 0 0 99707
 S
 #99707
-&+LA &+RRak&+Yshasa&+L's Dwelling&N~
-&+L   This is a small rakshasa's dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Lcandle in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To east
-&+Lthe is a bedrock passage.&N
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This is a small resident dwelling.  The room has been carved out
+&+mof the side of the cavern wall.  The room is dimly lit from a single
+&+Msource of candle light in the middle of the room.  There is a rotting
+&+mcorpse of a rat lying on a table.  The floor is filthy and the ceiling
+&+Lis engulfed in spider webs.  There is no door on the dwellings exit.&n
 ~
-997 33554432 15
+997 33554436 15
 D1
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99706
 S
 #99708
-&+LA &+RRak&+Yshasa&+L's Dwelling&N~
-&+L   This is a small rakshasa's dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Lcandle in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere are piles of scat all around in this dwelling.  To west the is a
-&+Lbedrock passage.&N
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This is a small resident dwelling.  The room has been carved out
+&+mof the side of the cavern wall.  The room is dimly lit from a single
+&+Msource of candle light in the middle of the room.  There is a rotting
+&+mcorpse of a rat lying on a table.  The floor is filthy and the ceiling
+&+Lis engulfed in spider webs.  There is no door on the dwellings exit.&n
 ~
-997 33554432 15
+997 33554436 15
 D3
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99705
 S
 #99709
-&+LA &+RRak&+Yshasa&+L's Dwelling&N~
-&+L   This is a small rakshasa's dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Lcandle in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LA dirty old rocking chair lies in the back of the room.  To west the is a
-&+Lbedrock passage.&N
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This is a small resident dwelling.  The room has been carved out
+&+mof the side of the cavern wall.  The room is dimly lit from a single
+&+Msource of candle light in the middle of the room.  There is a rotting
+&+mcorpse of a rat lying on a table.  The floor is filthy and the ceiling
+&+Lis engulfed in spider webs.  There is no door on the dwellings exit.&n
 ~
-997 33554432 15
-D3
-&+LA Bedrock Passage&N
+997 33554436 15
+D1
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99704
 S
 #99710
-&+LA &+RRak&+Yshasa&+L's Dwelling&N~
-&+L   This is a small rakshasa's dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Lcandle in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a little stove in the corner and some wood lying next to it.  To
-&+Least the is a bedrock passage.&N
+&+LA C&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This is a small resident dwelling.  The room has been carved out
+&+mof the side of the cavern wall.  The room is dimly lit from a single
+&+Msource of candle light in the middle of the room.  There is a rotting
+&+mcorpse of a rat lying on a table.  The floor is filthy and the ceiling
+&+Lis engulfed in spider webs.  There is no door on the dwellings exit.&n
 ~
-997 33554432 15
-D1
-&+LA Bedrock Passage&N
+997 33554436 15
+D3
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99703
 S
 #99711
-&+LA Dark Trail&N~
-&+L   The dark trail is made of solid rock that is slightly bumpy.  This is a
-&+Lback trail through the cavern.  Various dwellings and shops lead off this
-&+Lpath.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  Because of the extreme darkness it is
-&+Lhard to see anything around.&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n~
+&+L   The dark trail is made of solid rock that is slightly bumpy.  This
+&+Lis a back trail through the cavern.  Various dwellings and shops lead
+&+Loff this path.  Several types of monsters roam around here.  Horde
+&+Lsmells are bellowing from deep within the cavern.  Incredible amounts
+&+Lof heat from the distant lava springs warm the entire cavern.  There
+&+Lare many eerie sounds of unknown creatures in the distance.  Because
+&+Lof the extreme darkness it is hard to see anything around.&n
 ~
-997 33554432 14
-D0
-&+LAn Abandoned Quarters&N
-~
-~
-0 0 99724
+997 5 27
 D1
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99712
 D2
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99714
-D3
-&+LA Small Dwelling&N
+D5
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+lava pit~
+1 0 99732
+D6
+&+LAn &+wA&+Wband&+wone&+Wd &+LQuart&+wers&n
 ~
 ~
-0 0 99723
+0 0 99722
 S
 #99712
-&+LA Dark Trail&N~
-&+L   The dark trail is made of solid rock that is slightly bumpy.  This is a
-&+Lback trail through the cavern.  Various dwellings and shops lead off this
-&+Lpath.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  Because of the extreme darkness it is
-&+Lhard to see anything around.&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n~
+&+L   The dark trail is made of solid rock that is slightly bumpy.  This
+&+Lis a back trail through the cavern.  Various dwellings and shops lead
+&+Loff this path.  Several types of monsters roam around here.  Horde
+&+Lsmells are bellowing from deep within the cavern.  Incredible amounts
+&+Lof heat from the distant lava springs warm the entire cavern.  There
+&+Lare many eerie sounds of unknown creatures in the distance.  Because
+&+Lof the extreme darkness it is hard to see anything around.&n
 ~
-997 33554432 14
+997 1 27
 D0
-&+bThe Local Bank&N
+&+LA &+YDeposit&+Wa&+wr&+Wy &+LStrong&+whold&n
 ~
 ~
 0 0 99725
 D1
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99713
 D2
-&+rA Forgotten Inn&N
+&+LLa&+rva &+RSp&+rrin&+Lgs &+LForgot&+Wt&+we&+Wn &+LI&+wnn&n
 ~
 ~
 0 0 99715
 D3
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99711
 S
 #99713
-&+LA Dark Trail&N~
-&+L   The dark trail is made of solid rock that is slightly bumpy.  This is a
-&+Lback trail through the cavern.  Various dwellings and shops lead off this
-&+Lpath.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.  Because of the extreme darkness it is
-&+Lhard to see anything around.&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n~
+&+L   The dark trail is made of solid rock that is slightly bumpy.  This
+&+Lis a back trail through the cavern.  Various dwellings and shops lead
+&+Loff this path.  Several types of monsters roam around here.  Horde
+&+Lsmells are bellowing from deep within the cavern.  Incredible amounts
+&+Lof heat from the distant lava springs warm the entire cavern.  There
+&+Lare many eerie sounds of unknown creatures in the distance.  Because
+&+Lof the extreme darkness it is hard to see anything around.&n
 ~
-997 33554432 14
-D0
-&+LA Small Dwelling&N
-~
-~
-0 0 99726
-D1
-&+LA Small Dwelling&N
-~
-~
-0 0 99727
+997 5 27
 D2
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99716
 D3
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99712
+D5
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+lava pit~
+1 0 99734
+D8
+&+LA Sm&+Wa&+wl&+Wl &+LDwel&+wling&n
+~
+~
+0 0 99724
 S
 #99714
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The passage is made of solid rock that is slightly bumpy.  This is
+&+Lthe main passage through the cavern.  Various dwellings and shops lead
+&+Loff this passage.  Several types of monsters roam around here.  Horde
+&+Lsmells are bellowing from deep within the cavern.  Incredible amounts
+&+Lof heat from the distant lava springs warm the entire cavern.  There
+&+Lare many eerie sounds of unknown creatures in the distance.&n
 ~
-997 33554432 14
+997 1 27
 D0
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99711
 D2
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99717
 D3
-&+LA Bedrock Passage&N
+&+LA Sm&+Wa&+wl&+Wl &+LDwel&+wling&n
 ~
 ~
-0 0 99722
+0 0 99721
 S
 #99715
-&+rLava Springs Forgotten Inn&N~
+&+LLa&+rva &+RSp&+rrin&+Lgs Forgot&+Wt&+we&+Wn &+LI&+wnn&n~
 &+L   A large counter towards the back of the room is used for renting out
-&+Lrooms.  The inn appears to have once been busy and fast paced, bringing in
-&+Ltravellers and worn out adventurers that need a good nights sleep before
-&+Lcontinuing on their way.  A large sign on the counter states, "&+rVacancy&+L".
-&+LPassed the counter is a hallway that leads towards the rooms.&N
+&+Lrooms.  The inn appears to have once been busy and fast paced, bringing
+&+Lin travellers and worn out adventurers that need a good nights sleep
+&+Lbefore continuing on their way.  A large sign on the counter states,
+&+w"&+rVacancy&+w"&+L.  Passed the counter is a hallway that leads towards
+&+Lthe rooms.&n
 ~
-997 33554436 14
+997 34078724 15
 D0
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99712
 D2
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LInter&+wsection&n
 ~
 ~
 0 0 99718
 D4
-&+LA Bedrock Passage&N
+&+LA &+cVac&+Wa&+wn&+Wt &+LRo&+wom&n
 ~
 ~
-0 0 99731
-D5
-&+LA Bedrock Passage&N
-~
-trapdoor~
-5 0 99732
+0 0 99727
 S
 #99716
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The passage is made of solid rock that is slightly bumpy.  This is
+&+Lthe main passage through the cavern.  Various dwellings and shops lead
+&+Loff this passage.  Several types of monsters roam around here.  Horde
+&+Lsmells are bellowing from deep within the cavern.  Incredible amounts
+&+Lof heat from the distant lava springs warm the entire cavern.  There
+&+Lare many eerie sounds of unknown creatures in the distance.&n
 ~
-997 33554432 14
+997 1 27
 D0
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99713
 D1
-&+LA Blacksmith's Hut&N
+&+LA Black&+Ws&+wmit&+Wh &+LSh&+wop&n
 ~
 ~
-0 0 99728
+0 0 99723
 D2
-&+LA Bedrock Passage&N
+&+LA B&+We&+wn&+Wd &+Lin the Pass&+wage&n
 ~
 ~
 0 0 99719
 S
 #99717
-&+LA Bedrock Passage&N~
-&+L   The passage is made of solid rock that is slightly bumpy.  This is the main
-&+Lpassage through the cavern.  Various dwellings and shops lead off this
-&+Lpassage.  Several types of monsters roam around here.  Horde smells are
-&+Lbellowing from deep within the cavern.  Incredible amounts of heat from the
-&+Ldistant lava springs warm the entire cavern.  There are many eerie sounds of
-&+Lunknown creatures in the distance.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The passage is made of solid rock that is slightly bumpy.  This is
+&+Lthe main passage through the cavern.  Various dwellings and shops lead
+&+Loff this passage.  Several types of monsters roam around here.  Horde
+&+Lsmells are bellowing from deep within the cavern.  Incredible amounts
+&+Lof heat from the distant lava springs warm the entire cavern.  There
+&+Lare many eerie sounds of unknown creatures in the distance.&n
 ~
-997 33554432 14
+997 5 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99714
 D1
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LInter&+wsection&n
 ~
 ~
 0 0 99718
-D2
-&+LA Bedrock Passage&N
+D5
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+lava pit~
+1 0 99731
+D7
+&+LA B&+Wa&+wr&+We &+LBar&+wrack&n
 ~
 ~
 0 0 99720
-D3
-&+LA Bare Barrack&N
-~
-~
-0 0 99721
 S
 #99718
-&+LA Bedrock Intersection&N~
-&+L   This is an intersection in the cavern.  The passage is made of solid rock
-&+Lthat is slightly bumpy.  This is the main passage through the cavern.  Various
-&+Ldwellings and shops lead off this passage.  Several types of monsters roam
-&+Laround here.  Horde smells are bellowing from deep within the cavern.
-&+LIncredible amounts of heat from the distant lava springs warm the entire
-&+Lcavern.  There are many eerie sounds of unknown creatures in the distance.
-&+LTo the north is a forgotten inn.&N
+&+LA Bed&+Wr&+woc&+Wk &+LInter&+wsection&n~
+&+L   This is a cavern intersection.  The passage is made of solid rock
+&+Lthat is slightly bumpy.  This is the main passage through the cavern.
+&+LVarious dwellings and shops lead off this passage.  Several types of
+&+Lmonsters roam around here.  Horde smells are bellowing from deep
+&+Lwithin the cavern.  Incredible amounts of heat from the distant lava
+&+Lsprings warm the entire cavern.  There are many eerie sounds of
+&+Lunknown creatures in the distance.  To the north is a forgotten inn.&N
 ~
-997 33554432 14
+997 1 27
 D0
-&+LA Bedrock Passage&N
+&+LLa&+rva &+RSp&+rrin&+Lgs &+LForgot&+Wt&+we&+Wn &+LI&+wnn&n
 ~
 ~
 0 0 99715
 D1
-&+LA Bedrock Passage&N
+&+LA B&+We&+wn&+Wd &+Lin the Pass&+wage&n
 ~
 ~
 0 0 99719
 D2
-&+LA Bedrock Passage&N
+&+LThe M&+Wa&+wi&+Wn &+LC&+mav&+Mern Entr&+man&+Lce&n
 ~
-~
-0 0 99701
+gate~
+1 0 99701
 D3
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99717
 S
 #99719
-&+LA Bend in the Passage&N~
+&+LA B&+We&+wn&+Wd &+Lin the Pass&+wage&n~
 &+L   This a bend in the path.  The passage is made of solid rock that is
 &+Lslightly bumpy.  This is the main passage through the cavern.  Various
-&+Ldwellings and shops lead off this passage.  Several types of monsters roam
-&+Laround here.  Horde smells are bellowing from deep within the cavern.
-&+LIncredible amounts of heat from the distant lava springs warm the entire
-&+Lcavern.  There are many eerie sounds of unknown creatures in the distance.&N
+&+Ldwellings and shops lead off this passage.  Several types of monsters
+&+Lroam around here.  Horde smells are bellowing from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire cavern.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&N
 ~
-997 33554432 14
+997 5 27
 D0
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99716
-D1
-&+LA Bedrock Passage&N
-~
-~
-0 0 99729
-D2
-&+LA Bedrock Passage&N
-~
-~
-0 0 99730
 D3
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LInter&+wsection&n
 ~
 ~
 0 0 99718
+D5
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+lava pit~
+1 0 99738
+D9
+&+LA Sm&+Wa&+wl&+Wl &+LDwel&+wling&n
+~
+~
+0 0 99726
 S
 #99720
-&+LA Small Dwelling&N~
-&+L   This is a small and smiple dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Llantern in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To the north
-&+Lthe is a bedrock passage.&N
+&+LA B&+Wa&+wr&+We &+LBar&+wrack&n~
+&+L   This was once a grand training arena for the towns soldiers, but
+&+Lthis site hasn't been in usable condition for years.  There are broken
+&+Lweapons and torn armor lying on the ground.  The arena has been carved
+&+Lout of the side of the cave so the walls are solid rock.  The room is
+&+Ldimly lit from some lanterns arranged on the wall.  There are no
+&+Lwindows here and there is only a couple piece of worn furniture here
+&+Lto sit on.  The floor is filthy and the ceiling is engulfed in spider
+&+Lwebs.  There is no door on the dwellings exit.  To the northeast is a
+&+Lbedrock passage.&N
 ~
-997 33554432 15
-D0
-&+LA Bedrock Passage&N
+997 1 15
+D8
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99717
-D5
-&+LThe Slave Pens Center Hall&N
-~
-trapdoor~
-1 0 99757
 S
 #99721
-&+LA Bare Barrack&N~
-&+L   This was once a grand training arena for the towns soldiers, but this site
-&+Lhasn't been in usealbe condition for years.  There are broken weapons and torn
-&+Larmor lying on the ground.  The arena has been carved out of the side of the
-&+Lcave so the walls are solid rock.  The room is dimly lit from some lanterns
-&+Larranged on the wall.  There are no windows here and there is only a couple
-&+Lpiece of worn furniture here to sit on.  The floor is filthy and the ceiling
-&+Lis engulfed in spider webs.  There is no door on the dwellings exit.  To the
-&+Least the is a bedrock passage.&N
+&+LA Sm&+Wa&+wl&+Wl &+LDwel&+wling&n~
+&+L   This is a small and simple dwelling.  The room has been carved out
+&+Lof the side of the cave so the walls are solid rock.  The room is dimly
+&+Llit from a lantern in the middle of the room.  There are no windows
+&+Lhere and there is only a couple piece of worn furniture here to sit on.
+&+LThe floor is filthy and the ceiling is engulfed in spider webs.  There
+&+Lis no door on the dwellings exit.  There is a rotting corpse of a cat
+&+Llying on a table in the room.  To the east is a bedrock passage.&n
 ~
-997 33554432 15
+997 33554436 15
 D1
-&+LA Bedrock Passage&N
-~
-~
-0 0 99717
-S
-#99722
-&+LA Small Dwelling&N~
-&+L   This is a small and smiple dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Llantern in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To the east
-&+Lthe is a bedrock passage.&N
-~
-997 33554432 15
-D1
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99714
 S
-#99723
-&+LA Small Dwelling&N~
-&+L   This is a small and smiple dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Llantern in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To the east
-&+Lthe is a dark trail.&N
+#99722
+&+LAn &+wA&+Wband&+wone&+Wd &+LQuart&+wers&n~
+&+L   These quarters have been abandoned for a long duration.  The room
+&+Lhas been carved out of the side of the cave so the walls are solid
+&+Lrock.  The quarters have no lighting and seem dark and grim.  There are
+&+Lno windows here and there is only a couple piece of worn furniture here
+&+Lto sit on.  The floor is filthy and the ceiling is engulfed in spider
+&+Lwebs.  There is no door on the dwellings exit.  There is a rotting
+&+Lcorpse of a cat lying on a table in the room.  To the southeast is a
+&+Ldark trail.&n
 ~
-997 33554432 15
-D0
-&+bA Treasure Room&N
-~
-stone hole~
-5 0 99733
-D1
-&+LA Dark Trail&N
+997 1 15
+D9
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99711
+S
+#99723
+&+LA Black&+Ws&+wmit&+Wh &+LSh&+wop&n~
+&+L   This soot encrusted hut obviously belongs to a smithy.  There are
+&+Lmany metals that lie thrown about the hut, and covering the walls are
+&+Lmetals twisted into strange weapons and armor.  A huge iron anvil
+&+Loccupies the center of the room beside a roaring hearth which leaks
+&+Lblack smoke.  To the west is a bedrock passage.&n
+~
+997 33554436 15
+D3
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99716
 S
 #99724
-&+LAn Abandoned Quarters&N~
-&+L   These quarters have been abandoned for a long duration.  The room has been
-&+Lcarved out of the side of the cave so the walls are solid rock.  The quarters
-&+Lhave no lighting and seem dark and grim.  There are no windows here and there
-&+Lis only a couple piece of worn furniture here to sit on.  The floor is filthy
-&+Land the ceiling is engulfed in spider webs.  There is no door on the dwellings
-&+Lexit.  There is a rotting corpse of a cat lying on a table in the room.  To
-&+Lthe south the is a dark trail.&N
+&+LA Sm&+Wa&+wl&+Wl &+LDwel&+wling&n~
+&+L   This is a small and simple dwelling.  The room has been carved out
+&+Lof the side of the cave so the walls are solid rock.  The room is dimly
+&+Llit from a lantern in the middle of the room.  There are no windows
+&+Lhere and there is only a couple piece of worn furniture here to sit on.
+&+LThe floor is filthy and the ceiling is engulfed in spider webs.  There
+&+Lis no door on the dwellings exit.  There is a rotting corpse of a cat
+&+Llying on a table in the room.  To the southwest is a dark trail.&n
 ~
-997 33554432 15
-D2
-&+LA Dark Trail&N
+997 33554436 15
+D7
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
-0 0 99711
+0 0 99713
 S
 #99725
-&+bThe Local Bank&N~
-&+b   This is the local bank of the lava springs area.  Where at one time all the
-&+bpeople of this kingdom came to do their financial transactions.  The vaults in
-&+bthis bank are very large and neatly made of thick steel.  The local families
-&+buse this bank because it is known to be one of the safest places in the land
-&+bto store their money. &n
+&+LA &+YDeposit&+Wa&+wr&+Wy &+LStrong&+whold&n~
+&+Y   This is the local bank of the lava springs area.  Where at one time
+&+Yall the people of this kingdom came to do their financial transactions.
+&+YThe vaults in this bank are very large and made of thick steel.  The
+&+Ylocal families use this bank because it is known to be one of the
+&+Ysafest places in the land to store their money.&n
 ~
-997 33554432 15
+997 33554436 15
 D2
-&+LA Dark Trail&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
 ~
 0 0 99712
 S
 #99726
-&+LA Small Dwelling&N~
-&+L   This is a small and smiple dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Llantern in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To the south
-&+Lthe is a dark trail.&N
+&+LA Sm&+Wa&+wl&+Wl &+LDwel&+wling&n~
+&+L   This is a small and simple dwelling.  The room has been carved out
+&+Lof the side of the cave so the walls are solid rock.  The room is dimly
+&+Llit from a lantern in the middle of the room.  There are no windows
+&+Lhere and there is only a couple piece of worn furniture here to sit on.
+&+LThe floor is filthy and the ceiling is engulfed in spider webs.  There
+&+Lis no door on the dwellings exit.  There is a rotting corpse of a cat
+&+Llying on a table in the room.  To the northwest is a bedrock passage.&n
 ~
-997 33554432 15
-D2
-&+LA Dark Trail&N
+997 33554436 15
+D6
+&+LA B&+We&+wn&+Wd &+Lin the Pass&+wage&n
 ~
 ~
-0 0 99713
-D5
-&+yA Musty Dungeon&n
-~
-trapdoor~
-1 0 99753
+0 0 99719
 S
 #99727
-&+LA Small Dwelling&N~
-&+L   This is a small and smiple dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Llantern in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To the east
-&+Lthe is a dark trail.&N
+&+LA &+cVac&+Wa&+wn&+Wt &+LRo&+wom&n~
+&+c   This is a vacant room above the inn.  This room is neatly fixed up
+&+cfor the next customer.  There are two beds on each side of the room.
+&+cThe wooden floor has been swept.  On the west side of the room is a
+&+csmall window.  Some wilted flowers have been setup next to each bed.
+&+cThe room is well lit with a couple of lanterns.  There is a sense of
+&+crefreshment being here.&n
 ~
-997 33554432 15
-D3
-&+LA Dark Trail&N
-~
-~
-0 0 99713
-S
-#99728
-&+LA Blacksmith's Hut&N~
-&+L   This soot encrusted hut obviously belongs to a smithy.  There are many
-&+Lmetals that lie thrown about the hut, and covering the walls are metals
-&+Ltwisted into strange weapons and staves.  A huge iron anvil occupies
-&+Lthe center of the room beside a roaring hearth which leaks of black
-&+Lsmoke.  To the west is a bedrock passage.&N
-~
-997 33554432 15
-D3
-&+LA Bedrock Passage&N
-~
-~
-0 0 99716
-S
-#99729
-&+LA Small Dwelling&N~
-&+L   This is a small and smiple dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Llantern in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To the east
-&+Lthe is a bedrock passage.&N
-~
-997 33554432 15
-D3
-&+LA Bedrock Passage&N
-~
-~
-0 0 99719
-S
-#99730
-&+LA Small Dwelling&N~
-&+L   This is a small and smiple dwelling.  The room has been carved out of the
-&+Lside of the cave so the walls are solid rock.  The room is dimly lit from a
-&+Llantern in the middle of the room.  There are no windows here and there is only
-&+La couple piece of worn furniture here to sit on.  The floor is filthy and the
-&+Lceiling is engulfed in spider webs.  There is no door on the dwellings exit.
-&+LThere is a rotting corpse of a cat lying on a table in the room.  To the north
-&+Lthe is a bedrock passage.  There is a small trapdoor in the back of the room.&N
-~
-997 33554432 15
-D0
-&+LA Bedrock Passage&N
-~
-~
-0 0 99719
+997 131073 15
 D5
-&+rA Lava Spring Cavern&N
-~
-trapdoor~
-5 0 99735
-S
-#99731
-&+mA Vacant Room&N~
-   This is a vacant room above the inn.  This room is neatly fixed up for the
-next customer.  There are two beds on each side of the room.  The wooden floor
-has been swept.  On the west side of the room is a small window.  Some flowers
-have been setup next to each bed.  The room is well lit with a couple of
-lanterns.
-~
-997 33554432 15
-D5
-&+LA Bedrock Passage&N
+&+LLa&+rva &+RSp&+rrin&+Lgs &+LForgot&+Wt&+we&+Wn &+LI&+wnn&n
 ~
 ~
 0 0 99715
 S
-#99732
-&+LAn Underground Cubbyhole&N~
-&+y   The secret underground cubbyhole has not been seen sense it was built.
-&+yThe cubbyhole has been forgotten for many centuries.  The ceiling of the
-&+ycamber is only about five feet high.  The stench of rotten corpses withers
-&+ythroughout the chamber.  This structure is supported by many wooden beams.
-&+yRats and spiders have been the only visitors to the chamber until now. &N
+#99728
+&+LA Look&+Wo&+wu&+Wt &+LPo&+wst&n~
+&+L   This is a small lookout post for the town guards.  The post is
+&+yof wooden construction that has been built off the corner a busy
+&+yintersection.  This was made for several safety reasons.  The ceiling
+&+yconsists of the cavern itself.   The post has numerous lanterns hung
+&+yon the walls.  From this point you can look out over most of the town.
+&+yThe post has been neatly kept up.  The trapdoor leads back down to the
+&+Lcavern foyer.&n
 ~
-997 33685504 15
+997 1 27
+D5
+&+LA C&+mav&+Mern F&+moy&+Ler&n
+~
+~
+0 0 99762
+S
+#99729
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.&n
+~
+997 33554432 11
+D1
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99730
+D3
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99753
+S
+#99730
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.&n
+~
+997 33554432 11
+D0
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99732
+D1
+&+RA C&+rent&+Lral Pla&+rtfo&+Rrm&n
+~
+~
+0 0 99735
+D2
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99731
+D3
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99729
+S
+#99731
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.  Above is a bedrock passage.&n
+~
+997 33554432 11
+D0
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99730
+D1
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99737
 D4
-&+LA Bedrock Passage&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
-trapdoor~
-5 0 99715
+lava pit~
+1 0 99717
+S
+#99732
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.  Above is a dark trail.&n
+~
+997 33554432 11
+D1
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99733
+D2
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99730
+D4
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
+~
+lava pit~
+1 0 99711
 S
 #99733
-&+bA Treasure Room&N~
-&+b   This is obviously a secret treasure room of someone local.  It has been
-&+bsealed off to insure the safety of its contents.  The walls consist of five
-&+bfeet thick solid stone and is only large enough for someone to crouch in.
-&+bIt's cold and somewhat damp in here.  After a few minutes it becomes hard to
-&+bbreathe the stale air.  The only way in and out is a very small hole.
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.&n
 ~
-997 33554432 15
+997 33554432 11
+D1
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99734
 D2
-&+LA Small Dwelling&N
+&+RA C&+rent&+Lral Pla&+rtfo&+Rrm&n
 ~
-stone hole~
-5 0 99723
+~
+0 0 99735
+D3
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99732
 S
 #99734
-&+LA Lookout Post&N~
-&+L   This is a small lookout post for the town guards.  The post is a wooden
-&+Lconstruction that has been built over the main path.  This was made for
-&+Lseveral safety reasons.  The ceiling consists of the cavern itself.   The post
-&+Lhas numerous lanterns hung on the walls.  From this point you can look out
-&+Lover most of the town.  The post has been neatly kept up.  The trapdoor leads
-&+Lback down to the bedrock passage.&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.  Above is a dark trail.&n
 ~
-997 33554432 15
-D1
-&+LA Hidden Lookout&n
-~
-door~
-7 99710 99751
-D5
-&+LA Grand Foyer&N
-~
-trapdoor~
-1 0 99701
-S
-#99735
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.  Above here is a small dwelling.&n
-~
-997 33816576 15
-D1
-&+rA Lava Spring Cavern&N
+997 33554432 11
+D2
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
 0 0 99736
+D3
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99733
 D4
-&+LA Small Dwelling&N
+&+LA D&+Wa&+wr&+Wk &+LTr&+wail&n
 ~
-trapdoor~
-5 0 99730
+lava pit~
+1 0 99713
 S
-#99736
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
+#99735
+&+RA C&+rent&+Lral Pla&+rtfo&+Rrm&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.  This is a small platform of solid ground above the entrance
+&+rto a lava-flow tube.&n
 ~
-997 33816576 15
+997 33554432 27
 D0
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
-0 0 99738
+0 0 99733
 D1
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
-0 0 99741
+0 0 99736
 D2
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
 0 0 99737
 D3
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99730
+D5
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n
+~
+tube door~
+1 0 99740
+S
+#99736
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.&n
+~
+997 33554432 11
+D0
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99734
+D1
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99739
+D2
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99738
+D3
+&+RA C&+rent&+Lral Pla&+rtfo&+Rrm&n
 ~
 ~
 0 0 99735
 S
 #99737
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.&n
 ~
-997 33816576 15
+997 33554432 11
 D0
-&+rA Lava Spring Cavern&N
+&+RA C&+rent&+Lral Pla&+rtfo&+Rrm&n
 ~
 ~
-0 0 99736
+0 0 99735
 D1
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99743
-S
-#99738
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
-~
-997 33816576 15
-D1
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99739
-D2
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99736
-S
-#99739
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
-~
-997 33816576 15
-D1
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99740
-D2
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99741
-D3
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
 0 0 99738
-S
-#99740
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
-~
-997 33816576 15
-D2
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99742
 D3
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
-0 0 99739
+0 0 99731
 S
-#99741
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
+#99738
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.  Above is a bedrock passage.&n
 ~
-997 33816576 15
+997 33554432 11
 D0
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
-0 0 99739
-D1
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99742
-D2
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99743
+0 0 99736
 D3
-&+rA Lava Spring Cavern&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99737
+D4
+&+LA B&+We&+wn&+Wd &+Lin the Pass&+wage&n
+~
+lava pit~
+1 0 99719
+S
+#99739
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n~
+&+r   The lava spring cavern is extremely hot.  The stale air has the
+&+rsmell of rotting corpses.  Most likely the corpses of the fire demon's
+&+rvictims.  The only available light in this cavern is coming from the
+&+rlava itself.  The lava springs are little mounds of earth that are
+&+rfilled with molten lava.  Under the cavern floor are various lava tubes
+&+rwhich transport the lava to the springs.  It seems as if there is a
+&+rsense of dagger in the air.  A loud roar can be heard deep within the
+&+rcavern.&n
+~
+997 33554432 11
+D1
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99745
+D3
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
 0 0 99736
 S
-#99742
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
+#99740
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n~
+&+r   This is a tube inside the lava spring.  There are various lava tubes
+&+rthat interweave through the underlying cavern.  It is almost unbearably
+&+rhot down here.  These are harsh conditions for any living inhabitants.
+&+rThe space is a bit cramped and has a constant flow of lava.  Up leads
+&+rback to the crater surface.&n
 ~
-997 33816576 15
-D0
-&+rA Lava Spring Cavern&N
+997 33554436 11
+D4
+&+RA C&+rent&+Lral Pla&+rtfo&+Rrm&n
+~
+tube door~
+1 0 99735
+D5
+&+WC&+wri&+Lss&+Wc&+wro&+Lss&+Wi&+wn&+Wg &+LL&+rava&+L-&+RFlo&+rw Tu&+Lbes&n
+~
+~
+0 0 99741
+S
+#99741
+&+LCri&+rss&+Rcro&+rss&+Ling L&+rava&+L-&+RFlo&+rw Tu&+Lbes&n~
+&+r   This is an intersection in the lava tubes.  There are various lava
+&+rtubes that interweave through the underlying cavern.  It is almost
+&+runbearably hot down here.  These are harsh conditions for any living
+&+rinhabitants.  The space is a bit cramped and has a constant flow of
+&+rlava.&n
+~
+997 33554432 11
+D1
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n
+~
+~
+0 0 99742
+D3
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n
+~
+~
+0 0 99743
+D4
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n
 ~
 ~
 0 0 99740
-D1
-&+rThe Throne Room&n
-~
-~
-0 0 99745
-D2
-&+rA Lava Spring Cavern&N
+D5
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n
 ~
 ~
 0 0 99744
+S
+#99742
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n~
+&+r   This is a dead end in the lava tube.  There are various lava tubes
+&+rthat interweave through the underlying cavern.  It is almost unbearably
+&+rhot down here.  These are harsh conditions for any living inhabitants.
+&+rThe space is a bit cramped and has a constant flow of lava.  To the
+&+rwest is a lava tube intersection.&n
+~
+997 33554432 11
 D3
-&+rA Lava Spring Cavern&N
+&+WC&+wri&+Lss&+Wc&+wro&+Lss&+Wi&+wn&+Wg &+LL&+rava&+L-&+RFlo&+rw Tu&+Lbes&n
 ~
 ~
 0 0 99741
 S
 #99743
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n~
+&+r   This is a dead end in the lava tube.  There are various lava tubes
+&+rthat interweave through the underlying cavern.  It is almost unbearably
+&+rhot down here.  These are harsh conditions for any living inhabitants.
+&+rThe space is a bit cramped and has a constant flow of lava.  To the
+&+reast is a lava tube intersection.&n
 ~
-997 33816576 15
-D0
-&+rA Lava Spring Cavern&N
+997 33554432 11
+D1
+&+WC&+wri&+Lss&+Wc&+wro&+Lss&+Wi&+wn&+Wg &+LL&+rava&+L-&+RFlo&+rw Tu&+Lbes&n
 ~
 ~
 0 0 99741
-D1
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99744
-D3
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99737
 S
 #99744
-&+rA Lava Spring Cavern&N~
-&+r   The lava spring cavern is extremely hot.  The stale air has the smell of
-&+rrotting corpses.  Most likely the corpses of the fire demon's victims.  The
-&+ronly available light in this cavern is coming from the lava springs.  The lava
-&+rsprings are little mounds of earth that are filled with molten lava.  Under
-&+rthe cavern floor are various lava tubes which transport the lava to the
-&+rsprings.  It seems as if there is a sense of dagger in the air.  A loud roar
-&+rcan be heard deep within the cavern.&n
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n~
+&+r   This is a tube inside the lava spring.  There are various lava tubes
+&+rthat interweave through the underlying cavern.  It is almost unbearably
+&+rhot down here.  These are harsh conditions for any living inhabitants.
+&+rThe space is a bit cramped and has a constant flow of lava.&n
 ~
-997 33816576 15
-D0
-&+rA Lava Spring Cavern&N
+997 33554432 11
+D4
+&+WC&+wri&+Lss&+Wc&+wro&+Lss&+Wi&+wn&+Wg &+LL&+rava&+L-&+RFlo&+rw Tu&+Lbes&n
 ~
 ~
-0 0 99742
-D3
-&+rA Lava Spring Cavern&N
+0 0 99741
+D5
+&+LA H&+rell&+Rish Thron&+re Ro&+Lom&n
 ~
 ~
-0 0 99743
+0 0 99759
 S
 #99745
-&+rThe Throne Room&N~
-&+r   This is where the fire demon resides.  He has a large decorated throne to
-&+rthe back of the cavern.  The lava spring cavern is extremely hot.  The stale
-&+rair has the smell of rotting corpses.  Most likely the corpses of the fire
-&+rdemon's victims.  The only available light in this cavern is coming from the
-&+rlava springs.  The lava springs are little mounds of earth that are filled
-&+rwith molten lava.  Under the cavern floor are various lava tubes which
-&+rtransport the lava to the springs.  It seems as if there is a sense of dagger
-&+rin the air.  A loud roar can be heard deep within the cavern.&n
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33816576 15
-D3
-&+rA Lava Spring Cavern&N
-~
-~
-0 0 99742
-S
-#99746
-&+rA Lava Tube&N~
-&+r   This is a tube inside the lava spring.  There are various lava tubes that
-&+rinterweave through the underlying cavern.  It is almost unbearably hot in
-&+rthis tube.  It is very cramped in this small tube.  The lava is constantly
-&+rflowing through this tube.  There doesn't seem to be any inhabitants that are
-&+rliving in these conditions.  When in the lava tube all is silent.  There is
-&+ra small lava spring that lies here.  It seems to lead back up into the lava
-&+rspring cavern. &N
-~
-997 33816848 11
-D5
-&+rA Lava Tube&N
+997 5 27
+D0
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99747
-S
-#99747
-&+rA Lava Tube Intersection&N~
-&+r   This is an intersection in the lava tubes.  There are various lava tubes
-&+rthat interweave through the underlying cavern.  It is almost unbearably hot in
-&+rthis tube.  It is very cramped in this small tube.  The lava is constantly
-&+rflowing through this tube.  There doesn't seem to be any inhabitants that are
-&+rliving in these conditions.  When in the lava tube all is silent.  &N
-~
-997 33816848 11
 D1
-&+rA Lava Tube&N
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n
 ~
-~
-0 0 99748
+door plank~
+1 0 99746
 D2
-&+rA Lava Tube&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99750
 D3
-&+rA Lava Tube&N
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
 ~
 ~
-0 0 99749
-D4
-&+rA Lava Tube&N
+0 0 99739
+S
+#99746
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This dwelling is deep within the cavern.  The room has been carved
+&+mout of the side of the cavern wall.  The room is dimly lit from a
+&+Msingle source of candle light in the middle of the room.  There is a
+&+Mrotting corpse of a rat lying on a table.  The floor is filthy and the
+&+mceiling is engulfed in spider webs.  There is a wooden plank door
+&+Lblocking the only exit.&n
+~
+997 1 15
+D3
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+door plank~
+1 0 99745
+S
+#99747
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
+~
+997 1 27
+D0
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
-0 0 99746
+0 0 99748
+D2
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99745
 S
 #99748
-&+rA Dead End&N~
-&+r   This is a dead end in the lava tube.  There are various lava tubes that
-&+rinterweave through the underlying cavern.  It is almost unbearably hot in
-&+rthis tube.  It is very cramped in this small tube.  The lava is constantly
-&+rflowing through this tube.  There doesn't seem to be any inhabitants that are
-&+rliving in these conditions.  When in the lava tube all is silent.  To the
-&+rwest is a lava tube intersection.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33816848 11
-D3
-&+rA Lava Tube&N
+997 1 27
+D2
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99747
+D3
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n
+~
+door plank~
+1 0 99749
 S
 #99749
-&+rA Lava Tube&N~
-&+r   This is a tube inside the lava spring.  There are various lava tubes that
-&+rinterweave through the underlying cavern.  It is almost unbearably hot in
-&+rthis tube.  It is very cramped in this small tube.  The lava is constantly
-&+rflowing through this tube.  There doesn't seem to be any inhabitants that are
-&+rliving in these conditions.  When in the lava tube all is silent.
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This dwelling is deep within the cavern.  The room has been carved
+&+mout of the side of the cavern wall.  The room is dimly lit from a
+&+Msingle source of candle light in the middle of the room.  There is a
+&+Mrotting corpse of a rat lying on a table.  The floor is filthy and the
+&+mceiling is engulfed in spider webs.  There is a wooden plank door
+&+Lblocking the only exit.&n
 ~
-997 33816848 11
+997 5 15
 D1
-&+rA Lava Tube&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
-~
-0 0 99747
+door plank~
+1 0 99748
 S
 #99750
-&+rA Lava Tube&N~
-&+r   This is a tube inside the lava spring.  There are various lava tubes that
-&+rinterweave through the underlying cavern.  It is almost unbearably hot in
-&+rthis tube.  It is very cramped in this small tube.  The lava is constantly
-&+rflowing through this tube.  There doesn't seem to be any inhabitants that are
-&+rliving in these conditions.  When in the lava tube all is silent. &n
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 33816848 11
+997 1 27
 D0
-&+rA Lava Tube&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
-0 0 99747
+0 0 99745
+D2
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99751
 S
 #99751
-&+LA Hidden Lookout&n~
-&+L   This is a hidden room next to small lookout post.  The lookout is a wooden
-&+Lconstruction that has been built off the main post.  The floor of this section
-&+Lis cracked, and seems to be unstable.  Also unlike the main post this lookout
-&+Lis filthy.  The ceiling consists of the cavern itself.   The post has numerous
-&+Llanterns hung on the walls.  From this point you can look out over most of the
-&+Ltown.  The rooms heat also seems to be intensified compared to the surrounding
-&+Lrooms.&n
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 0 14
+997 1 27
+D0
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99750
 D3
-&+LA Lookout Post&n
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n
 ~
-door~
-7 99710 99734
+door plank~
+1 0 99752
 S
 #99752
-&+rA Lava Tube&N~
-&+r   This is a tube inside the lava spring.  There are various lava tubes that
-&+rinterweave through the underlying cavern.  It is almost unbearably hot in
-&+rthis tube.  It is very cramped in this small tube.  The lava is constantly
-&+rflowing through this tube.  There doesn't seem to be any inhabitants that are
-&+rliving in these conditions.  When in the lava tube all is silent.&n
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This dwelling is deep within the cavern.  The room has been carved
+&+mout of the side of the cavern wall.  The room is dimly lit from a
+&+Msingle source of candle light in the middle of the room.  There is a
+&+Mrotting corpse of a rat lying on a table.  The floor is filthy and the
+&+mceiling is engulfed in spider webs.  There is a wooden plank door
+&+Lblocking the only exit.&n
 ~
-997 33816848 11
+997 5 15
+D1
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+door plank~
+1 0 99751
 S
 #99753
-&+yA Musty Dungeon&n~
-&+y   The dungeon is almost completely lacking light.  The whole dungeon is
-&+yinfested with rats and spiders, not one spot escapes webs or rat dung.  The
-&+ywalls made of old cracked stone blocks are cold and slightly damp.  The air
-&+yin the dungeon is very thick and musty.  This place was made for the torture
-&+yof the towns invaders.  Upward light emits from a small dwelling.&n
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 256 15
-D1
-&+yA Musty Dungeon&n
-~
-~
-0 0 99754
-D2
-&+yA Musty Dungeon&n
-~
-~
-0 0 99756
-D4
-&+LA Small Dwelling&n
-~
-trapdoor~
-1 0 99726
-S
-#99754
-&+yA Musty Dungeon&n~
-&+y   The dungeon is almost completely lacking light.  The whole dungeon is
-&+yinfested with rats and spiders, not one spot escapes webs or rat dung.  The
-&+ywalls made of old cracked stone blocks are cold and slightly damp.  The air
-&+yin the dungeon is very thick and musty.  This place was made for the torture
-&+yof the towns invaders.  In the corner of the seems to be a rotten corpse of
-&+ysome poor tortured soul.&n
-~
-997 256 15
-D2
-&+yA Musty Dungeon&n
+997 5 27
+D0
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99755
+D1
+&+LA L&+rava &+RSp&+rrin&+Rg C&+rrat&+Ler&n
+~
+~
+0 0 99729
+D2
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+~
+0 0 99758
 D3
-&+yA Musty Dungeon&n
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n
 ~
+door plank~
+1 0 99754
+S
+#99754
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This dwelling is deep within the cavern.  The room has been carved
+&+mout of the side of the cavern wall.  The room is dimly lit from a
+&+Msingle source of candle light in the middle of the room.  There is a
+&+Mrotting corpse of a rat lying on a table.  The floor is filthy and the
+&+mceiling is engulfed in spider webs.  There is a wooden plank door
+&+Lblocking the only exit.&n
 ~
-0 0 99753
+997 1 15
+D1
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
+~
+door plank~
+1 0 99753
 S
 #99755
-&+yA Musty Dungeon&n~
-&+y   The dungeon is almost completely lacking light.  The whole dungeon is
-&+yinfested with rats and spiders, not one spot escapes webs or rat dung.  The
-&+ywalls made of old cracked stone blocks are cold and slightly damp.  The air
-&+yin the dungeon is very thick and musty.  This place was made for the torture
-&+yof the towns invaders.&n
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 256 15
+997 1 27
 D0
-&+yA Musty Dungeon&n
-~
-~
-0 0 99754
-D3
-&+yA Musty Dungeon&n
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99756
-S
-#99756
-&+yA Musty Dungeon&n~
-&+y   The dungeon is almost completely lacking light.  The whole dungeon is
-&+yinfested with rats and spiders, not one spot escapes webs or rat dung.  The
-&+ywalls made of old cracked stone blocks are cold and slightly damp.  The air
-&+yin the dungeon is very thick and musty.  This place was made for the torture
-&+yof the towns invaders.  A horrid smell comes from the rotten corpses in the
-&+ydungeon.&n
-~
-997 256 15
-D0
-&+yA Musty Dungeon&n
+D2
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99753
+S
+#99756
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
+~
+997 1 27
 D1
-&+yA Musty Dungeon&n
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n
+~
+door plank~
+1 0 99757
+D2
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99755
 S
 #99757
-&+LThe Slave Pens Center Hall&N~
-&+L   This is the central hall through the slave pens.  There are several pens
-&+Lleading off this hall holding slaves.  These pens contain all of Voinak's
-&+Lpersonal slaves.  The slaves are guarded intensely by Voinak's garms.  The
-&+Lholding cells have been carved out of the solid stone walls of the cavern.
-&+LThe air in the halls are musty from lack of circulation.  Also the slaves can
-&+Lbe heard crying for help from within their cells.&N
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This dwelling is deep within the cavern.  The room has been carved
+&+mout of the side of the cavern wall.  The room is dimly lit from a
+&+Msingle source of candle light in the middle of the room.  There is a
+&+Mrotting corpse of a rat lying on a table.  The floor is filthy and the
+&+mceiling is engulfed in spider webs.  There is a wooden plank door
+&+Lblocking the only exit.&n
 ~
-997 256 15
-D1
-&+LThe Slave Pens Center Hall&N
-~
-~
-0 0 99759
-D2
-&+LThe Slave Pens Center Hall&N
-~
-secret~
-5 0 99772
+997 5 15
 D3
-&+LThe Slave Pens Center Hall&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
-~
-0 0 99758
-D4
-&+LA Small Dwelling&N
-~
-trapdoor~
-1 0 99720
+door plank~
+1 0 99756
 S
 #99758
-&+LThe Slave Pens Center Hall&N~
-&+L   This is the central hall through the slave pens.  There are several pens
-&+Lleading off this hall holding slaves.  These pens contain all of Voinak's
-&+Lpersonal slaves.  The slaves are guarded intensely by Voinak's garms.  The
-&+Lholding cells have been carved out of the solid stone walls of the cavern.
-&+LThe air in the halls are musty from lack of circulation.  Also the slaves can
-&+Lbe heard crying for help from within their cells.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 256 15
+997 1 27
 D0
-&+LA Small Slave Pen&N
-~
-gate~
-2 99716 99766
-D1
-&+LThe Slave Pens Center Hall&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
-0 0 99757
+0 0 99753
 D2
-&+LA Small Slave Pen&N
-~
-gate~
-2 99716 99767
-D3
-&+LThe Slave Pens Center Hall&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99760
 S
 #99759
-&+LThe Slave Pens Center Hall&N~
-&+L   This is the central hall through the slave pens.  There are several pens
-&+Lleading off this hall holding slaves.  These pens contain all of Voinak's
-&+Lpersonal slaves.  The slaves are guarded intensely by Voinak's garms.  The
-&+Lholding cells have been carved out of the solid stone walls of the cavern.
-&+LThe air in the halls are musty from lack of circulation.  Also the slaves can
-&+Lbe heard crying for help from within their cells.&N
+&+LA H&+rell&+Rish Thron&+re Ro&+Lom&n~
+&+r   Voinak's throne room is inside a large lava spring.  There doesn't
+&+rseem to be any way out of this spring.  The spring is extremely hot
+&+rinfact the heat is almost unbearable.  The lava is keeping a constant
+&+rflow around the spring.  The stale air has the smell of rotting
+&+rcorpses.  Most likely the corpses of Voinak's prey.  Towards the back
+&+rof the room is a large throne which belongs to Voinak.  The throne is
+&+rnicely decorated and seems to be floating.&n
 ~
-997 256 15
-D0
-&+LThe Slave Pens Center Hall&N
-~
-~
-0 0 99761
-D3
-&+LThe Slave Pens Center Hall&N
+997 1115717636 11
+D4
+&+LA L&+rava&+L-&+RFlo&+rw Tu&+Lbe&n
 ~
 ~
-0 0 99757
+0 0 99744
 S
 #99760
-&+LThe Slave Pens Center Hall&N~
-&+L   This is the central hall through the slave pens.  There are several pens
-&+Lleading off this hall holding slaves.  These pens contain all of Voinak's
-&+Lpersonal slaves.  The slaves are guarded intensely by Voinak's garms.  The
-&+Lholding cells have been carved out of the solid stone walls of the cavern.
-&+LThe air in the halls are musty from lack of circulation.  Also the slaves can
-&+Lbe heard crying for help from within their cells.&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n~
+&+L   The oval hollowed out passage is made of solid rock which is jagged
+&+Land harsh to the touch.  This is the main passage through the cavern.
+&+LVarious dwellings lead off this tunnel.  Several types of monsters file
+&+Lout from within.  Horrid smells are billowing out from deep within the
+&+Lcavern.  Incredible amounts of heat from the distant lava springs warm
+&+Lthe entire space.  There are many eerie sounds of unknown creatures in
+&+Lthe distance.&n
 ~
-997 256 15
-D1
-&+LThe Slave Pens Center Hall&N
+997 1 27
+D0
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
 ~
 0 0 99758
-D2
-&+LThe Slave Pens Center Hall&N
+D1
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n
 ~
-~
-0 0 99762
+door plank~
+1 0 99761
 S
 #99761
-&+LThe Slave Pens Center Hall&N~
-&+L   This is the central hall through the slave pens.  There are several pens
-&+Lleading off this hall holding slaves.  These pens contain all of Voinak's
-&+Lpersonal slaves.  The slaves are guarded intensely by Voinak's garms.  The
-&+Lholding cells have been carved out of the solid stone walls of the cavern.
-&+LThe air in the halls are musty from lack of circulation.  Also the slaves can
-&+Lbe heard crying for help from within their cells.&N
+&+LA D&+We&+we&+Wp &+LC&+mav&+Mern Ca&+mvi&+Lty&n~
+&+L   This dwelling is deep within the cavern.  The room has been carved
+&+mout of the side of the cavern wall.  The room is dimly lit from a
+&+Msingle source of candle light in the middle of the room.  There is a
+&+Mrotting corpse of a rat lying on a table.  The floor is filthy and the
+&+mceiling is engulfed in spider webs.  There is a wooden plank door
+&+Lblocking the only exit.&n
 ~
-997 256 15
-D0
-&+LA Small Slave Pen&N
-~
-gate~
-2 99716 99769
-D1
-&+LA Small Slave Pen&N
-~
-gate~
-2 99716 99768
-D2
-&+LThe Slave Pens Center Hall&N
-~
-~
-0 0 99759
+997 5 15
 D3
-&+LA Small Slave Pen&N
+&+LA Bed&+Wr&+woc&+Wk &+LPass&+wage&n
 ~
-gate~
-2 99716 99770
+door plank~
+1 0 99760
 S
 #99762
-&+LThe Slave Pens Center Hall&N~
-&+L   This is the central hall through the slave pens.  There are several pens
-&+Lleading off this hall holding slaves.  These pens contain all of Voinak's
-&+Lpersonal slaves.  The slaves are guarded intensely by Voinak's garms.  The
-&+Lholding cells have been carved out of the solid stone walls of the cavern.
-&+LThe air in the halls are musty from lack of circulation.  Also the slaves can
-&+Lbe heard crying for help from within their cells.&N
+&+LA C&+mav&+Mern F&+moy&+Ler&n~
+&+L   The oval passage leads into a protected cavity corner.  Solid rock
+&+mwalls are jagged and harsh to the touch.  Several types of monsters
+&+Mlike to gather here; outside of a grim town with hostile conditions.
+&+MHorde smells are bellowing from deep within the cavern.  Incredible
+&+mamounts of heat from the distant lava springs warm the entire cavern.
+&+LThere are many eerie sounds of unknown creatures in the distance.&n
 ~
-997 256 15
-D0
-&+LThe Slave Pens Center Hall&N
-~
-~
-0 0 99760
-D1
-&+LA Small Slave Pen&N
-~
-gate~
-2 99716 99763
-D2
-&+LA Small Slave Pen&N
-~
-gate~
-2 99716 99765
+997 1 27
 D3
-&+LA Small Slave Pen&N
+&+LThe M&+Wa&+wi&+Wn &+LC&+mav&+Mern Entr&+man&+Lce&n
 ~
-gate~
-2 99716 99764
+~
+0 0 99701
+D4
+&+LA Look&+Wo&+wu&+Wt &+LPo&+wst&n
+~
+~
+0 0 99728
 S
 #99763
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
+&+LA C&+mav&+Mern F&+moy&+Ler&n~
+&+L   The oval passage leads into a protected cavity corner.  Solid rock
+&+mwalls are jagged and harsh to the touch.  Several types of monsters
+&+Mlike to gather here; outside of a grim town with hostile conditions.
+&+MHorde smells are bellowing from deep within the cavern.  Incredible
+&+mamounts of heat from the distant lava springs warm the entire cavern.
+&+LThere are many eerie sounds of unknown creatures in the distance.&n:
 ~
-997 256 15
-D3
-&+LThe Slave Pens Center Hall&N
+997 1 27
+D1
+&+LThe M&+Wa&+wi&+Wn &+LC&+mav&+Mern Entr&+man&+Lce&n
 ~
-gate~
-2 99716 99762
+~
+0 0 99701
+D4
+&+LA Look&+Wo&+wu&+Wt &+LPo&+wst&n
+~
+~
+0 0 99764
 S
 #99764
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
+&+LA Look&+Wo&+wu&+Wt &+LPo&+wst&n~
+&+L   This is a small lookout post for the town guards.  The post is
+&+yof wooden construction that has been built off the corner a busy
+&+yintersection.  This was made for several safety reasons.  The ceiling
+&+yconsists of the cavern itself.   The post has numerous lanterns hung
+&+yon the walls.  From this point you can look out over most of the town.
+&+yThe post has been neatly kept up.  The trapdoor leads back down to the
+&+Lcavern foyer.&n
 ~
-997 256 15
-D1
-&+LThe Slave Pens Center Hall&N
+997 1 27
+D5
+&+LA C&+mav&+Mern F&+moy&+Ler&n
 ~
-gate~
-2 99716 99762
-S
-#99765
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
 ~
-997 256 15
-D0
-&+LThe Slave Pens Center Hall&N
-~
-gate~
-2 99716 99762
-S
-#99766
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
-~
-997 256 15
-D2
-&+LThe Slave Pens Center Hall&N
-~
-gate~
-2 99716 99758
-S
-#99767
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
-~
-997 256 15
-D0
-&+LThe Slave Pens Center Hall&N
-~
-gate~
-2 99716 99758
-S
-#99768
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
-~
-997 256 15
-D3
-&+LThe Slave Pens Center Hall&N
-~
-gate~
-2 99716 99761
-S
-#99769
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
-~
-997 256 15
-D2
-&+LThe Slave Pens Center Hall&N
-~
-gate~
-2 99716 99761
-S
-#99770
-&+LA Small Slave Pen&N~
-&+L   This is a cramped slave pen.  The pen contains some of Voinak's personal
-&+Lslaves.  The slaves are guarded intensely by Voinak's garms.  The holding cell
-&+Lhas been carved out of the solid stone walls of the cavern.  The air in the
-&+Lcell is extremely musty from lack of circulation.  The pens are also infested
-&+Lwith piles of the slaves waste.  In addition there are claw marks on the door
-&+Lwhere the desperate slaves tried to escape.&N
-~
-997 256 15
-D1
-&+LThe Slave Pens Center Hall&N
-~
-gate~
-2 99716 99761
-S
-#99771
-&+rVoinak's Throne Room&n~
-&+r   Voinak's throne room is inside a large lava spring.  There doesn't seem to
-&+rbe any way out of this spring.  The spring is extremely hot in fact the heat
-&+ris almost unbearable.  The lava is keeping a constant flow around the spring.
-&+rThe stale air has the smell of rotting corpses.  Most likely the corpses of
-&+rVoinak's prey.  Towards the back of the room is a large throne which belongs
-&+rto Voinak.  The throne is nicely decorated and seems to be floating.&n
-~
-997 8683584 11
-S
-#99772
-&+LA Small Cave&N~
-&+L   Inside the cave it is extremely dark.  In the distance are sounds of crying
-&+Lslave and other creatures.  The walls of the cave are made of solid rock.  The
-&+Lwalls are also damp for some reason.  Because of the extreme darkness it is
-&+Lhard to see anything around in the cave.  To the north is the center hall in
-&+Lthe slave pens.&n
-~
-997 256 15
-D0
-&+LThe Slave Pens Center Hall&N
-~
-secret~
-5 0 99757
+0 0 99763
 S

@@ -7,7 +7,7 @@ The Entrance to the &+cSilver&N &+LMine&N~
 &Nwhat it look like to visitors at all.  One may head back to the west
 &Nor east through the entrance.&N
 ~
-1 4 5 0
+49 4 5 0
 D1
 ~
 ~
@@ -24,7 +24,7 @@ S
 &NDeep &N&+ycart &Ntracks have been carved into the floor to keep the minerals flowing
 &Never out.  One may travel west out of the &+Lmine&N or east further in.&N
 ~
-1 0 27 0
+49 0 27 0
 D1
 ~
 ~
@@ -42,7 +42,7 @@ S
 &+Lcan be seen at various heights.  The ceiling is still quite low and
 &+Lhard to navigate if too tall.  One may travel west or north.&N
 ~
-1 0 29 0
+49 0 29 0
 D0
 ~
 ~
@@ -60,7 +60,7 @@ S
 &N&+ylarge crate&N&+L sits to the side with various mining equipment.  &N&+yTorches&N&+L provide
 &N&+Willumination&N&+L to the room.  One may travel north or south from this point.&N
 ~
-1 0 15 0
+49 0 15 0
 D0
 ~
 ~
@@ -79,7 +79,7 @@ S
 &N&+Lhaving a &N&+Wlight&N&+L source is absolutely necessary for those without the ability
 &N&+Lto see in the dark.  One may travel north or south from this point.&N
 ~
-1 1 15 0
+49 1 15 0
 D0
 ~
 ~
@@ -99,7 +99,7 @@ S
 &N&+Lappear to be completely hidden.  One may travel south towards the
 &N&+Lentrance or north through the wooden door.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 &N   A large &N&+ywooden door&N seperates the entrance of the mine from&N
 &Nwhat lies inside. &N
@@ -121,7 +121,7 @@ S
 &N&+Lpast. One may travel south back through the &N&+ywooden door&N&+L or to the north
 &N&+Land east further into the barracks.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -147,7 +147,7 @@ S
 &N&+Lthe ceiling to let the smoke out.  One may travel east or south in
 &N&+Lthe barracks.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -167,7 +167,7 @@ S
 &N&+Lgouge marks can be seen on the &N&+ydoors&N&+L surface.  One may travel
 &N&+Lwest, south or east from this point in the barracks.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 vault door~
@@ -196,7 +196,7 @@ S
 &N&+Lbeam above.  One may travel north, west or east from this
 &N&+Lpoint.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -219,7 +219,7 @@ S
 &N&+LThe kitchen smells of roast &N&+ydonkey&N&+L and&N&+G parsnips&N&+L.  One may travel west,
 &N&+Least or south from this point.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 pantry door~
@@ -242,7 +242,7 @@ S
 &N&+Lthrough this room.  One may travel further in the barracks by heading
 &N&+Lnorth or west.  To the east is the mine shaft.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -266,7 +266,7 @@ S
 &N&+Lcurrently being hauled down and slosh &N&+bwater &N&+Labout.  One may travel
 &N&+Lwest back into the barracks or down into the&N&+c silver &N&+Lmine.&N
 ~
-1 0 0 0
+49 0 0 0
 D3
 ~
 ~
@@ -286,7 +286,7 @@ S
 &N&+cpullys&N&+L seem to be in continuous motion.  One may
 &N&+Ltravel up or down from this point.&N
 ~
-1 0 0 0
+49 0 0 0
 D4
 ~
 ~
@@ -307,7 +307,7 @@ S
 &N&+Lsouth.  A large &N&+Mschematic&N&+L of the immediate area has been fastened
 &N&+Lto the wall.  One may travel up back towards the barracks. &N
 ~
-1 0 15 0
+49 0 15 0
 D0
 ~
 ~
@@ -345,7 +345,7 @@ S
 &N&+Ltravel north back to the hub or south further down the main
 &N&+Lline.&N
 ~
-1 4 0 0
+49 4 0 0
 D0
 ~
 ~
@@ -365,7 +365,7 @@ S
 &N&+Lmine &N&+ycarts&N&+L are visible next to a &N&+mfurnace&N&+L.  One may travel north
 &N&+Lor south on the main line.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -384,7 +384,7 @@ S
 &N&+Lthe air and on the floor.  One may travel north or south on the
 &N&+Lmain tunnel or east into the &N&+Rservice tunnel&N&+L.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -408,7 +408,7 @@ Inside a &N&+RService Tunnel&N~
 &N&+Lstale and no breeze can be felt.  One may leave west through the
 &N&+Ldoor or east further down the service tunnel.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -427,7 +427,7 @@ The End of the &N&+RService Tunnel&N~
 &N&+Lnorth is labeled '&N&+WNumber Two&N&+L'.  One may travel north through the door
 &N&+Lor west back through the &N&+Rservice tunnel&N&+L.&N
 ~
-1 1 0 0
+49 1 0 0
 D0
 ~
 door~
@@ -447,7 +447,7 @@ ground.  Lush &N&+Ctowels&N are piled near the washing&N&+y bucket&N, a
 luxury for any working man.  The room smells of sweat and
 &N&+Gspruce&N.  One may leave the bathroom by heading south.&N
 ~
-1 0 0 0
+49 0 0 0
 D2
 ~
 door~
@@ -462,7 +462,7 @@ S
 &N&+LThe walls are quite rough and the floor is surprisingly clean. One
 &N&+Lmay travel north or south in the tunnel.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -481,7 +481,7 @@ S
 &N&+LA &N&+Rservice tunnel&N&+L entrance can be seen to the south. One may travel
 &N&+Lnorth or east in the main tunnel.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -505,7 +505,7 @@ S
 &N&+Ltravel north through the door or south further into the
 &N&+Rservice tunnel&N&+L.&N  This room is quite dark.&N
 ~
-1 1 0 0
+49 1 0 0
 D0
 ~
 door~
@@ -526,7 +526,7 @@ S
 &N&+Lfrom the surrounding rock.  One may travel to the north from this
 &N&+Lpoint.&N
 ~
-1 1 0 0
+49 1 0 0
 D0
 ~
 ~
@@ -543,7 +543,7 @@ S
 &N&+Lthe ceiling to allow the fresh air in.  One may travel west
 &N&+Lor east from this point.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -563,7 +563,7 @@ S
 &N&+Lthe &N&+Wpantry&N&+L by heading west.  A faint outline can be seen
 &N&+Lon the floor. &N
 ~
-1 0 0 0
+49 0 0 0
 D3
 ~
 pantry door~
@@ -584,7 +584,7 @@ S
 &N&+LOne may travel south into the &N&+ywoodshop&N&+L or east and west on
 &N&+Lthe central line.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -608,7 +608,7 @@ are visible around the room.  Piles of &N&+ysawdust&N have been swept into
 the corner.  One may travel north out of the &N&+ywoodshop&N or further in
 by going south or west.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -631,7 +631,7 @@ S
 &N&+La &N&+cdumpster&N&+L.  Clearly there is some sort of vagabond lurking nearby.  One may
 &N&+Ltravel west or east from this point.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -650,7 +650,7 @@ the &N&+Csaw &N&+ymill&N for processing.  The floor is rough, but level
 and free of any &N&+Ldebris&N.  One may travel east back to the&N&+y wood&N
 &N&+yshop. &N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -670,7 +670,7 @@ floor here and the finer particulate hangs in the air like a
 &N&+ywooden&N mist.  One may travel north towards the entrance or west
 towards the drill press.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -689,7 +689,7 @@ filled with various &N&+ysandpaper&N and &N&+Lchisels&N while large&N&+L pots &N
 &N&+Wglue&N have been piled up near the wall.  One may travel east
 from this point in the &N&+ywoodshop&N.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -705,7 +705,7 @@ S
 &N&+Lin place to add strength to the tunnel.  One may travel west
 &N&+Lor east from this point.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -726,7 +726,7 @@ S
 &N&+Lrich &N&+Ymineral wealth&N&+L of this mine.  One may travel west from
 &N&+Lthis point.&N
 ~
-1 0 0 0
+49 0 0 0
 D3
 ~
 ~
@@ -743,7 +743,7 @@ S
 &N&+Lair is fetid and rather unpleasant. One may travel north or
 &N&+Lsouth from this point.&N
 ~
-1 4 0 0
+49 4 0 0
 D0
 ~
 ~
@@ -762,7 +762,7 @@ S
 &N&+Lbeen hung every fifty or so feet, barely &N&+Willuminating&N&+L the tunnel.
 &N&+LOne may travel north or south from this point.&N
 ~
-1 0 0 0
+49 0 0 0
 D0
 ~
 ~
@@ -782,7 +782,7 @@ S
 &N&+Lclean and pleasant to smell. One may travel south or east from
 &N&+Lthis point.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -800,7 +800,7 @@ S
 &N&+Lwall but the needed &N&+ybeams &N&+Lare nowhere to be seen.  One may travel
 &N&+Lwest or east from this point.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -818,7 +818,7 @@ S
 &N&+Lawaiting transport to the surface.  One may travel west from this
 &N&+Lactive mining site.&N
 ~
-1 0 0 0
+49 0 0 0
 D3
 ~
 ~
@@ -834,7 +834,7 @@ S
 &N&+wcots&N&+L along the wall for workers to catch up on some sleep between
 &N&+Lshifts.  One may travel west into the tunnel or east into the hub.&N
 ~
-1 4 0 0
+49 4 0 0
 D1
   This door is made of wood.&N
 ~
@@ -854,7 +854,7 @@ S
 &N&+Lrubber hoses go up into narrow chutes cut into the stone.  One may
 &N&+Ltravel east from this room.&N
 ~
-1 0 0 0
+49 0 0 0
 D1
 ~
 ~
@@ -870,7 +870,7 @@ large &N&+ywooden desk&N in the corner of the room covered in various
 implements of writing and &N&+Wpapers&N.  One may travel west out of this
 room.&N
 ~
-1 0 0 0
+49 0 0 0
 D3
 ~
 door~
@@ -884,7 +884,7 @@ S
 &+Lgives this a sweltering feeling.  One may travel up or down
 &+Lfrom this point.&N
 ~
-1 134250496 18 0
+49 134250496 18 0
 D4
   The trapdoor is visible in the ceiling.&N
 ~
@@ -903,7 +903,7 @@ S
 &+Lgives this a sweltering feeling.  A tiny dot of &N&+Rred light&N&+L
 &N&+Lis visible far below.  One may travel up or down from this point.&N
 ~
-1 134250496 18 0
+49 134250496 18 0
 D4
 ~
 ~
@@ -922,7 +922,7 @@ S
 &+Lto the size of a shield.  You seem to be approaching the bottom.
 &+LOne may travel up or down from this point.&N
 ~
-1 134250496 18 0
+49 134250496 18 0
 D4
 ~
 ~
@@ -941,7 +941,7 @@ S
 &N&+LFar below you can see the floor is on &N&+Rfire&N&+L.  One may travel up or down
 &+Lfrom this point.&N
 ~
-1 134250496 18 0
+49 134250496 18 0
 D4
 ~
 ~
@@ -961,7 +961,7 @@ S
 &N&+Lopening of the mine shaft.  One may travel up back out of the pits or
 &N&+Lin any direction into the pits.&N
 ~
-1 32768 15 0
+49 32768 15 0
 D0
 ~
 ~
@@ -990,7 +990,7 @@ S
 &N&+Land it is hard to see in any direction.  One may travel west, east
 &N&+Lor south from this point.&N
 ~
-1 32768 11 0
+49 32768 11 0
 D1
 ~
 ~
@@ -1014,7 +1014,7 @@ S
 &N&+Land there is a great deal of &N&+wdust&N&+L covering the ground.  More than makes
 &N&+Lsense.  One may travel east or south from this point.&N
 ~
-1 32768 11 0
+49 32768 11 0
 D0
 ~
 ~
@@ -1039,7 +1039,7 @@ S
 &N&+Lthey were chewed on.  One may travel north or east from this point in the
 &N&+rPits &N&+Lof &N&+LMisery&N&+L.&N
 ~
-1 32768 11 0
+49 32768 11 0
 D0
 ~
 ~
@@ -1059,7 +1059,7 @@ S
 &N&+Lstate and have not been touched by&N&+c pick&N&+L or &N&+chammer&N&+L.  One may travel
 &N&+Lwest or south from this point.&N
 ~
-1 32768 11 0
+49 32768 11 0
 D2
 ~
 ~
@@ -1079,7 +1079,7 @@ S
 &N&+Lstalactites nearly touching the ground in places.  One may
 &N&+Ltravel north or west from this point.&N
 ~
-1 32768 11 0
+49 32768 11 0
 D0
 ~
 ~
@@ -1098,7 +1098,7 @@ S
 &N&+Lcoat the floor making footing dicey at best.  The air is stuffy and
 &N&+Lhas a musky odor. One may travel north or south from this point.&N
 ~
-1 32769 14 0
+49 32769 14 0
 D0
 ~
 ~
@@ -1118,7 +1118,7 @@ S
 &N&+Lis evident so it is quite hard to see.  One may travel west or south
 &N&+Lfrom this point.&N
 ~
-1 32769 14 0
+49 32769 14 0
 D2
 ~
 ~
@@ -1138,7 +1138,7 @@ S
 &N&+Ldigging can be heard coming from further ahead.  One may travel north
 &N&+Lor east from this point.&N
 ~
-1 32768 14 0
+49 32768 14 0
 D0
 ~
 ~
@@ -1158,7 +1158,7 @@ S
 &N&+Lrubble and some &N&+Wbones&N&+L, while the walls have dirty &N&+whandprints &N&+Land a few
 &N&+Lscorch marks from &N&+ytorches&N&+L.  One may travel west or south from this point.&N
 ~
-1 32768 14 0
+49 32768 14 0
 D2
 ~
 ~
@@ -1177,7 +1177,7 @@ S
 &N&+Lare visible, used to haul away the excess rock.  The air is stale and
 &N&+Lsmells like &N&+wsmoke&N&+L.  One may travel east or up from this point.&N
 ~
-1 32768 14 0
+49 32768 14 0
 D1
 ~
 ~
@@ -1196,7 +1196,7 @@ S
 &N&+Ltunnel.  Small scraps of &N&+yleather&N&+L and &N&+ywood&N&+L are visible amongst the
 &N&+Lrocky rubble.  One may travel north or down from this point.&N
 ~
-1 32768 14 0
+49 32768 14 0
 D0
 ~
 ~
@@ -1217,7 +1217,7 @@ S
 &N&+Lindicated one section is different from another.  One may travel south
 &N&+Lor west from this point.&N
 ~
-1 32768 14 0
+49 32768 14 0
 D0
 ~
 ~
@@ -1239,7 +1239,7 @@ S
 &N&+Lroom is quite dark and no &N&+Wlight source&N&+L is visible.  One may travel up or
 &N&+Least from this point.&N
 ~
-1 32768 14 0
+49 32768 14 0
 D1
 ~
 ~
@@ -1258,7 +1258,7 @@ S
 &N&+LThere is a &N&+wcorpse&N&+L in the corner, slowly decomposing.  One may travel up
 &N&+Lor down from this point.&N
 ~
-1 32768 14 0
+49 32768 14 0
 D4
   A secret trapdoor has been cut into the stone.&N
 ~
@@ -1281,7 +1281,7 @@ secure.  No windows are visible and the only exit is to the south,
 the &N&+Wvault &Ndoor itself.  It hangs on heavy &N&+Lhinges&N and is made of
 a &N&+Cmetallic alloy&N.  Nothing could break into this &N&+Wvault&N.
 ~
-1 134250560 0 0
+49 134250560 0 0
 D2
 ~
 vault door~
@@ -1303,7 +1303,7 @@ S
 &N&+Lseems strange.  One may travel up the &N&+ywooden ladder&N&+L to leave the storage
 &N&+Lroom.&N
 ~
-1 0 0 0
+49 0 0 0
 D2
 ~
 ~
@@ -1318,7 +1318,7 @@ S
    This is a random load grid.  No player should ever be in this
 room.  If you somehow end up here, please petition a god immediately.&N
 ~
-1 201359552 1 0
+49 201359552 1 0
 D0
 ~
 ~
@@ -1341,7 +1341,7 @@ S
    This is a random load grid.  No player should ever be in this
 room.  If you somehow end up here, please petition a god immediately.&N
 ~
-1 201359552 1 0
+49 201359552 1 0
 D1
 ~
 ~
@@ -1356,7 +1356,7 @@ S
    This is a random load grid.  No player should ever be in this
 room.  If you somehow end up here, please petition a god immediately.&Nz
 ~
-1 201359552 1 0
+49 201359552 1 0
 D0
 ~
 ~
@@ -1379,7 +1379,7 @@ S
    This is a random load grid.  No player should ever be in this
 room.  If you somehow end up here, please petition a god immediately.&N
 ~
-1 201359552 1 0
+49 201359552 1 0
 D0
 ~
 ~
@@ -1399,7 +1399,7 @@ S
 populate the zone.  If you find yourself in this room, please
 petition and let a god know right away.  You should not be here.&N
 ~
-1 201359552 0 0
+49 201359552 0 0
 D3
 ~
 ~
