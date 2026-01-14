@@ -13,7 +13,7 @@
 #include <string.h>
 #include <time.h>
 #include <list>
-using namespace std;
+;
 
 #include "comm.h"
 #include "db.h"
@@ -52,7 +52,7 @@ extern char *coin_names[];
 extern char *command[];
 extern const char *dirs[];
 extern const char *race_types[];
-extern const char rev_dir[];
+// extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
 extern int innate_abilities[];
 extern int planes_room_num[];
@@ -13100,14 +13100,14 @@ void apply_zone_spell(P_char ch, int count, const char *zone_name, int zone_inde
   {
     // mark all affects matching the skill as from a set and nosave
     struct affected_type *paf = NULL;
-	for( paf = ch->affected; paf; paf = paf->next )
-	{
-		if( paf->type == spell )
-		{
-			SET_BIT(paf->flags, AFFTYPE_SET_AFFECT | AFFTYPE_NOSAVE);
-			paf->context = reinterpret_cast<void *>(zone_index);
-		}
-	}
+    for (paf = ch->affected; paf; paf = paf->next)
+    {
+      if (paf->type == spell)
+      {
+        SET_BIT(paf->flags, AFFTYPE_SET_AFFECT | AFFTYPE_NOSAVE);
+        paf->context = reinterpret_cast<void *>(zone_index);
+      }
+    }
   }
 }
 

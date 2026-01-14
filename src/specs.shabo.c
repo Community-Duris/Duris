@@ -1,10 +1,10 @@
 /*
-   ***************************************************************************
-   *  File: specs.shabo.c                                     Part of Duris *
-   *  Usage: special procedures zone Shaboath                               *
-   *  Copyright  1990, 1991 - see 'license.doc' for complete information.    *
-   *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
-   ***************************************************************************
+ ***************************************************************************
+ *  File: specs.shabo.c                                     Part of Duris *
+ *  Usage: special procedures zone Shaboath                               *
+ *  Copyright  1990, 1991 - see 'license.doc' for complete information.    *
+ *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
+ ***************************************************************************
  */
 
 #include <ctype.h>
@@ -40,7 +40,7 @@ extern char *coin_names[];
 extern char *command[];
 extern const char *dirs[];
 extern const char *race_types[];
-extern const char rev_dir[];
+// extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
 extern int innate_abilities[];
 extern int planes_room_num[];
@@ -51,17 +51,17 @@ extern struct time_info_data time_info;
 extern struct zone_data *zone;
 extern struct zone_data *zone_table;
 
-#define ZONE_GREAT_SHABOATH  129
+#define ZONE_GREAT_SHABOATH 129
 #define GREAT_SHABOATH_START 32800
-#define GREAT_SHABOATH_END   32929
+#define GREAT_SHABOATH_END 32929
 #define GRAND_SAVANT 32881
 #define NECROMANCER_BOSS_ROOM 32912
 
 int pesky_imp_chest(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  P_char   peskyimp;
-  int      count = 0;
-  char     name[512];
+  P_char peskyimp;
+  int count = 0;
+  char name[512];
 
   if (!ch || !obj || !arg)
     return FALSE;
@@ -92,8 +92,8 @@ int pesky_imp_chest(P_obj obj, P_char ch, int cmd, char *arg)
 
 int monitor_trident(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  int      dam = cmd / 1000;
-  P_char   kala;
+  int dam = cmd / 1000;
+  P_char kala;
 
   /*
      check for periodic event calls
@@ -108,17 +108,15 @@ int monitor_trident(P_obj obj, P_char ch, int cmd, char *arg)
 
   if (!OBJ_WORN(obj) || (obj->loc.wearing != ch))
     return (FALSE);
-  kala = (P_char) arg;
+  kala = (P_char)arg;
   if (!kala)
     return (FALSE);
   if (number(0, 30))
     return (FALSE);
-  act
-    ("&+G$p &+Gwielded by $n &+Wflashes &+Gand a coating of slime engulfs you!&N",
-     TRUE, ch, obj, kala, TO_VICT);
-  act
-    ("&+G$p &+Gwielded by $n &+Wflashes &+Gand a coating of slime engulfs $N!&N",
-     TRUE, ch, obj, kala, TO_ROOM);
+  act("&+G$p &+Gwielded by $n &+Wflashes &+Gand a coating of slime engulfs you!&N",
+      TRUE, ch, obj, kala, TO_VICT);
+  act("&+G$p &+Gwielded by $n &+Wflashes &+Gand a coating of slime engulfs $N!&N",
+      TRUE, ch, obj, kala, TO_ROOM);
   act("&+GYour $p &+Wflashes &+Gand a coating of slime engulfs $N!&N", TRUE,
       ch, obj, kala, TO_CHAR);
   spell_acidimmolate(35, ch, NULL, 0, kala, 0);
@@ -127,26 +125,25 @@ int monitor_trident(P_obj obj, P_char ch, int cmd, char *arg)
 
 int flayed_mind_mask(P_obj obj, P_char ch, int cmd, char *argument)
 {
-  char    *arg;
-  int      curr_time;
+  char *arg;
+  int curr_time;
 
-
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return FALSE;
   }
 
-  if( !IS_ALIVE(ch) || !OBJ_WORN(obj) )
+  if (!IS_ALIVE(ch) || !OBJ_WORN(obj))
     return FALSE;
 
-  if( argument && (cmd == CMD_SAY) )
+  if (argument && (cmd == CMD_SAY))
   {
     arg = argument;
 
     while (*arg == ' ')
       arg++;
 
-    if( !strcmp(arg, "vision") )
+    if (!strcmp(arg, "vision"))
     {
       if (!say(ch, arg))
       {
@@ -168,37 +165,35 @@ int flayed_mind_mask(P_obj obj, P_char ch, int cmd, char *argument)
   return FALSE;
 }
 
-
 int stalker_cloak(P_obj obj, P_char ch, int cmd, char *argument)
 {
   char *arg;
-  int   curr_time;
+  int curr_time;
 
-
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return FALSE;
   }
 
-  if( !IS_ALIVE(ch) || !OBJ_WORN(obj) )
+  if (!IS_ALIVE(ch) || !OBJ_WORN(obj))
   {
     return FALSE;
   }
 
-  if( argument && (cmd == CMD_SAY) )
+  if (argument && (cmd == CMD_SAY))
   {
     arg = argument;
     while (*arg == ' ')
       arg++;
-    if( !strcmp(arg, "reduce") )
+    if (!strcmp(arg, "reduce"))
     {
-      if( !say(ch, arg) )
+      if (!say(ch, arg))
       {
         return TRUE;
       }
       curr_time = time(NULL);
       // 3 min timer.
-      if( obj->timer[0] + 180 <= curr_time )
+      if (obj->timer[0] + 180 <= curr_time)
       {
         act("You whisper 'reduce' to your $q...", FALSE, ch, obj, obj, TO_CHAR);
         act("$n whispers 'reduce' to $q...&N", TRUE, ch, obj, NULL, TO_ROOM);
@@ -207,15 +202,15 @@ int stalker_cloak(P_obj obj, P_char ch, int cmd, char *argument)
       }
       return TRUE;
     }
-    else if( !strcmp(arg, "enlarge") )
+    else if (!strcmp(arg, "enlarge"))
     {
-      if( !say(ch, arg) )
+      if (!say(ch, arg))
       {
         return TRUE;
       }
       curr_time = time(NULL);
       // 3 min timer.
-      if( obj->timer[0] + 180 <= curr_time )
+      if (obj->timer[0] + 180 <= curr_time)
       {
         act("You whisper 'enlarge' to your $q...", FALSE, ch, obj, obj, TO_CHAR);
         act("$n whispers 'enlarge' to $q...&N", TRUE, ch, obj, NULL, TO_ROOM);
@@ -232,7 +227,7 @@ int stalker_cloak(P_obj obj, P_char ch, int cmd, char *argument)
       }
       curr_time = time(NULL);
       // 1 min timer.
-      if( obj->timer[0] + 60 <= curr_time )
+      if (obj->timer[0] + 60 <= curr_time)
       {
         act("Your $q hums briefly.", FALSE, ch, obj, obj, TO_CHAR);
         act("$n's $q hums briefly.", TRUE, ch, obj, NULL, TO_ROOM);
@@ -248,37 +243,37 @@ int stalker_cloak(P_obj obj, P_char ch, int cmd, char *argument)
 int finslayer_air(P_obj obj, P_char ch, int cmd, char *argument)
 {
   char *arg;
-  int   curr_time;
+  int curr_time;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return FALSE;
   }
 
-  if(!IS_ALIVE(ch) || !OBJ_WORN(obj))
+  if (!IS_ALIVE(ch) || !OBJ_WORN(obj))
   {
     return FALSE;
   }
 
-  if( argument && (cmd == CMD_SAY) )
+  if (argument && (cmd == CMD_SAY))
   {
     arg = argument;
 
-    while( *arg == ' ' )
+    while (*arg == ' ')
     {
       arg++;
     }
 
-    if( !strcmp(arg, "air") )
+    if (!strcmp(arg, "air"))
     {
-      if( !say(ch, arg) )
+      if (!say(ch, arg))
       {
         return TRUE;
       }
 
       curr_time = time(NULL);
       // 1 min timer.
-      if( obj->timer[0] + 60 <= curr_time )
+      if (obj->timer[0] + 60 <= curr_time)
       {
         act("Your $q begins to spew forth breathable air...", FALSE, ch, obj, obj, TO_CHAR);
         act("$n's $q begins to spew forth breathable air...&N", TRUE, ch, obj, NULL, TO_ROOM);
@@ -293,32 +288,32 @@ int finslayer_air(P_obj obj, P_char ch, int cmd, char *argument)
 
 int aboleth_pendant(P_obj obj, P_char ch, int cmd, char *argument)
 {
-  int      curr_time;
+  int curr_time;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return TRUE;
   }
 
-  if( cmd != CMD_PERIODIC || !obj )
+  if (cmd != CMD_PERIODIC || !obj)
   {
     return FALSE;
   }
 
-  if( !OBJ_WORN_POS(obj, WEAR_NECK_1) && !OBJ_WORN_POS(obj, WEAR_NECK_2) )
+  if (!OBJ_WORN_POS(obj, WEAR_NECK_1) && !OBJ_WORN_POS(obj, WEAR_NECK_2))
   {
     return FALSE;
   }
 
   ch = obj->loc.wearing;
-  if( !IS_ALIVE(ch) )
+  if (!IS_ALIVE(ch))
   {
     return FALSE;
   }
 
   curr_time = time(NULL);
   // 900 for 15 mins
-  if( obj->timer[0] + 900 <= curr_time )
+  if (obj->timer[0] + 900 <= curr_time)
   {
     act("Your $q hums briefly.", FALSE, ch, obj, NULL, TO_CHAR);
     act("$n's $q hums briefly.", FALSE, ch, obj, NULL, TO_ROOM);
@@ -330,18 +325,18 @@ int aboleth_pendant(P_obj obj, P_char ch, int cmd, char *argument)
 
 int tower_summoning(P_obj obj, P_char ch, int cmd, char *arg)
 {
-//  register P_char i;
-  P_char   istalker;
-  P_char   vict;
-  P_char   smob, next_mob;
-  int      scount = 0;
-  int      count = 0;
-  int      sunum = 0;
+  //  register P_char i;
+  P_char istalker;
+  P_char vict;
+  P_char smob, next_mob;
+  int scount = 0;
+  int count = 0;
+  int sunum = 0;
 
-//  P_obj i;
+  //  P_obj i;
 
   /*
-     check for periodic event calls 
+     check for periodic event calls
    */
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
@@ -353,10 +348,10 @@ int tower_summoning(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_NPC(ch) && !IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
+  if IS_TRUSTED (ch)
+    return FALSE;
   /*
-     change all instances of 32898/32904 if v-nums of rooms are changed! 
+     change all instances of 32898/32904 if v-nums of rooms are changed!
    */
   if (ch->in_room != real_room(32898))
     return FALSE;
@@ -371,28 +366,28 @@ int tower_summoning(P_obj obj, P_char ch, int cmd, char *arg)
       wizlog(MINLVLIMMORTAL, "error in proc tower_summoning ");
       return FALSE;
     }
-    else
-      if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_BLOCKED))
+    else if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_BLOCKED))
       return FALSE;
-    else
-      if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED)
-          && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+    else if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
       return FALSE;
     else
     {
 
       /* summon proc */
       spell_dispel_magic(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
-      
-      for (smob = world[real_room0(32904)].people; smob; smob = next_mob) {
+
+      for (smob = world[real_room0(32904)].people; smob; smob = next_mob)
+      {
         next_mob = smob->next_in_room;
-        
-        if (IS_NPC(smob) && GET_VNUM(smob) == 32871) {
+
+        if (IS_NPC(smob) && GET_VNUM(smob) == 32871)
+        {
           scount++;
         }
       }
 
-      if (scount >= 10) {
+      if (scount >= 10)
+      {
         return FALSE;
       }
 
@@ -412,17 +407,16 @@ int tower_summoning(P_obj obj, P_char ch, int cmd, char *arg)
         char_to_room(istalker, real_room(32904), 0);
         act("&+cAn invisible stalker&N comes out of hiding!", TRUE, ch, 0, 0,
             TO_CHAR);
-//     act("&+cAn invisible stalker&N comes out of hiding!", TRUE, ch, 0, 0, TO_ROOM);
-//               MobStartFight(istalker, ch);
-//               return FALSE;
+        //     act("&+cAn invisible stalker&N comes out of hiding!", TRUE, ch, 0, 0, TO_ROOM);
+        //               MobStartFight(istalker, ch);
+        //               return FALSE;
       }
-//            return TRUE;
+      //            return TRUE;
     }
     return FALSE;
   }
   return FALSE;
 }
-
 
 int shabo_trap_north(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -436,17 +430,15 @@ int shabo_trap_north(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
+  if IS_TRUSTED (ch)
+    return FALSE;
 
   if (cmd == CMD_NORTH)
   {
     if (world[ch->in_room].dir_option[DIR_NORTH])
       if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_BLOCKED))
         return FALSE;
-      else
-        if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED)
-            && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+      else if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
         return FALSE;
       else
       {
@@ -457,7 +449,6 @@ int shabo_trap_north(P_obj obj, P_char ch, int cmd, char *arg)
   }
   return FALSE;
 }
-
 
 int shabo_trap_south(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -471,8 +462,8 @@ int shabo_trap_south(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_NPC(ch) && !IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
+  if IS_TRUSTED (ch)
+    return FALSE;
 
   if (cmd == CMD_SOUTH)
   {
@@ -480,9 +471,7 @@ int shabo_trap_south(P_obj obj, P_char ch, int cmd, char *arg)
 
       if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_BLOCKED))
         return FALSE;
-      else
-        if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_CLOSED)
-            && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+      else if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
         return FALSE;
       else
       {
@@ -515,17 +504,15 @@ int shabo_trap_south_two(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_NPC(ch) && !IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
+  if IS_TRUSTED (ch)
+    return FALSE;
 
   if (cmd == CMD_SOUTH)
   {
     if (world[ch->in_room].dir_option[DIR_SOUTH])
       if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_BLOCKED))
         return FALSE;
-      else
-        if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_CLOSED)
-            && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+      else if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
         return FALSE;
       else
       {
@@ -549,17 +536,15 @@ int shabo_trap_down(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_NPC(ch) && !IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
+  if IS_TRUSTED (ch)
+    return FALSE;
 
   if (cmd == CMD_DOWN)
   {
     if (world[ch->in_room].dir_option[DIR_DOWN])
       if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info, EX_BLOCKED))
         return FALSE;
-      else
-        if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info, EX_CLOSED)
-            && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+      else if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
         return FALSE;
       else
       {
@@ -583,17 +568,15 @@ int shabo_trap_up(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_NPC(ch) && !IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
+  if IS_TRUSTED (ch)
+    return FALSE;
 
   if (cmd == CMD_UP)
   {
     if (world[ch->in_room].dir_option[DIR_UP])
       if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_BLOCKED))
         return FALSE;
-      else
-        if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_CLOSED)
-            && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+      else if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
         return FALSE;
       else
       {
@@ -615,8 +598,8 @@ int shabo_trap_up(P_obj obj, P_char ch, int cmd, char *arg)
 
 int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  P_char   trapmob;
-  int      dam, kala, kala2, kala3;
+  P_char trapmob;
+  int dam, kala, kala2, kala3;
 
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
@@ -628,34 +611,29 @@ int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_NPC(ch) && !IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
-
+  if IS_TRUSTED (ch)
+    return FALSE;
 
   if (cmd == CMD_UP)
   {
     if (world[ch->in_room].dir_option[DIR_UP])
       if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_BLOCKED))
         return FALSE;
-      else
-        if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_CLOSED)
-            && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+      else if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
         return FALSE;
       else
       {
-        trapmob = read_mobile(14, VIRTUAL);     // load a temporary mob
+        trapmob = read_mobile(14, VIRTUAL); // load a temporary mob
         if (!trapmob)
         {
           logit(LOG_EXIT, "assert: shabo trapmob");
           wizlog(MINLVLIMMORTAL, "error in proc shaob_trap_up_two");
           return FALSE;
         }
-        char_to_room(trapmob, ch->in_room, -2); // do spell shit....... 
+        char_to_room(trapmob, ch->in_room, -2); // do spell shit.......
         act("&+LYou hear a soft click.", TRUE, ch, 0, 0, TO_CHAR);
         spell_color_spray(60, trapmob, NULL, SPELL_TYPE_SPELL, ch, 0);
-        extract_char(trapmob);  // then get rid of the mob
-
-
+        extract_char(trapmob); // then get rid of the mob
       }
     return FALSE;
   }
@@ -664,7 +642,7 @@ int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
 
 int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  P_char   trapmob;
+  P_char trapmob;
 
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
@@ -676,9 +654,8 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
   if (IS_NPC(ch) && !IS_PC_PET(ch))
     return FALSE;
 
-  if IS_TRUSTED
-    (ch) return FALSE;
-
+  if IS_TRUSTED (ch)
+    return FALSE;
 
   if (cmd == CMD_NORTH)
   {
@@ -686,14 +663,12 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
 
       if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_BLOCKED))
         return FALSE;
-      else
-        if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED)
-            && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
+      else if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
         return FALSE;
       else
       {
         act("&+LYou hear a soft click.", TRUE, ch, 0, 0, TO_CHAR);
-        trapmob = read_mobile(14, VIRTUAL);     // load a temporary mob
+        trapmob = read_mobile(14, VIRTUAL); // load a temporary mob
         if (!trapmob)
         {
           logit(LOG_EXIT, "assert: shabo trapmob");
@@ -703,7 +678,7 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
         char_to_room(trapmob, ch->in_room, -2); // do spell shit.......
         act("&+LYou hear a soft click.", TRUE, ch, 0, 0, TO_CHAR);
         spell_wither(60, trapmob, NULL, 0, ch, 0);
-        extract_char(trapmob);  // then get rid of the mob
+        extract_char(trapmob); // then get rid of the mob
       }
     return FALSE;
   }
@@ -712,48 +687,46 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
 
 /* MOX */
 
-
 int mox_totem(P_obj obj, P_char ch, int cmd, char *argument)
 {
-  char    *arg;
-  int      rand;
-  int      curr_time;
-  P_char   temp_ch;
-  P_char   kala;
-  char     e_pos;
+  char *arg;
+  int rand;
+  int curr_time;
+  P_char temp_ch;
+  P_char kala;
+  char e_pos;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return TRUE;
   }
-  if( cmd != CMD_PERIODIC || !(OBJ_WORN(obj) || OBJ_CARRIED(obj)) )
+  if (cmd != CMD_PERIODIC || !(OBJ_WORN(obj) || OBJ_CARRIED(obj)))
   {
     return FALSE;
   }
 
   temp_ch = ch;
-  if( OBJ_WORN(obj) )
+  if (OBJ_WORN(obj))
     ch = obj->loc.wearing;
   else
     ch = obj->loc.carrying;
 
-  if( !IS_ALIVE(ch) )
+  if (!IS_ALIVE(ch))
   {
     return FALSE;
   }
 
-  e_pos = ((obj->loc.wearing->equipment[HOLD] == obj) ? WIELD :
-           (obj->loc.wearing->equipment[SECONDARY_WEAPON] == obj) ?
-           SECONDARY_WEAPON : 0);
+  e_pos = ((obj->loc.wearing->equipment[HOLD] == obj) ? WIELD : (obj->loc.wearing->equipment[SECONDARY_WEAPON] == obj) ? SECONDARY_WEAPON
+                                                                                                                       : 0);
 
-  if( !e_pos )
+  if (!e_pos)
   {
     return FALSE;
   }
 
   curr_time = time(NULL);
 
-  if( !IS_ROOM(ch->in_room, ROOM_NO_MAGIC) )
+  if (!IS_ROOM(ch->in_room, ROOM_NO_MAGIC))
   {
     if (obj->timer[0] + 30 <= curr_time)
     {
@@ -771,49 +744,46 @@ int mox_totem(P_obj obj, P_char ch, int cmd, char *argument)
   if (IS_FIGHTING(ch) && !number(0, 2))
   {
     kala = GET_OPPONENT(ch);
-    rand = number(0,3);
+    rand = number(0, 3);
     switch (rand)
     {
-      case 0:
-        act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
-        act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
-        act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
-        spell_snailspeed(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
-        break;
-      case 1:
-        act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
-        act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
-        act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
-        spell_molevision(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
-        break;
-      case 2:
-        act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
-        act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
-        act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
-        spell_malison(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
-        break;
+    case 0:
+      act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
+      act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
+      act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
+      spell_snailspeed(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
+      break;
+    case 1:
+      act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
+      act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
+      act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
+      spell_molevision(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
+      break;
+    case 2:
+      act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
+      act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
+      act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
+      spell_malison(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
+      break;
     case 3:
-        act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
+      act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
       act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
       act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
       spell_soul_disturbance(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
       break;
-/* Call of the wild isn't in game right now..
-    case 4:
-      act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
-      act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
-      act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
-      spell_call_of_the_wild(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
-      break;
-*/
+      /* Call of the wild isn't in game right now..
+          case 4:
+            act("&+LYou point your $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_CHAR);
+            act("&+L$n points $p &+Lat &+W$N&+L.&N", TRUE, ch, obj, kala, TO_NOTVICT);
+            act("&+L$n points $p &+Lat &+Wyou&+L!&N", TRUE, ch, obj, kala, TO_VICT);
+            spell_call_of_the_wild(60, ch, NULL, SPELL_TYPE_SPELL, kala, 0);
+            break;
+      */
     }
     return FALSE;
   }
   return FALSE;
 }
-
-
-
 
 void event_shabo_racechange(P_char ch, P_char victim, P_obj obj, void *data)
 {
@@ -821,16 +791,16 @@ void event_shabo_racechange(P_char ch, P_char victim, P_obj obj, void *data)
 
   if ((af = get_spell_from_char(ch, TAG_RACE_CHANGE)) == NULL)
   {
-    send_to_char
-      ("&+WPossible serious screwup in the racechange proc! Tell a coder as once!&n\r\n",
-       ch);
+    send_to_char("&+WPossible serious screwup in the racechange proc! Tell a coder as once!&n\r\n",
+                 ch);
     wizlog(57,
            "Char %s found with racechange event but without racechange affect!",
            GET_NAME(ch));
     return;
   }
   else if (((world[ch->in_room].number > GREAT_SHABOATH_START) &&
-            (world[ch->in_room].number < GREAT_SHABOATH_END)) || number(0, 2))
+            (world[ch->in_room].number < GREAT_SHABOATH_END)) ||
+           number(0, 2))
   {
     add_event(event_shabo_racechange, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
     return;
@@ -839,30 +809,26 @@ void event_shabo_racechange(P_char ch, P_char victim, P_obj obj, void *data)
   {
     ch->player.race = af->modifier;
     affect_remove(ch, af);
-    send_to_char
-      ("&+LYou feel greatly relieved as the magic twisting your body finally fades away...&n\r\n",
-       ch);
-    //Remove all equipment so no one can cheese thri-kreen arms - Drannak 12/12/12
+    send_to_char("&+LYou feel greatly relieved as the magic twisting your body finally fades away...&n\r\n",
+                 ch);
+    // Remove all equipment so no one can cheese thri-kreen arms - Drannak 12/12/12
     int k = 0;
     P_obj temp_obj;
     for (k = 0; k < MAX_WEAR; k++)
     {
       temp_obj = ch->equipment[k];
-      if(temp_obj)
+      if (temp_obj)
       {
         if (obj_index[temp_obj->R_num].func.obj != NULL)
-          (*obj_index[temp_obj->R_num].func.obj) (temp_obj, ch, CMD_REMOVE, (char *) "all");
+          (*obj_index[temp_obj->R_num].func.obj)(temp_obj, ch, CMD_REMOVE, (char *)"all");
         obj_to_char(unequip_char(ch, k), ch);
       }
     }
-    send_to_char
-      ("...Brr, you suddenly feel very naked.\r\n",
-       ch);
+    send_to_char("...Brr, you suddenly feel very naked.\r\n",
+                 ch);
     return;
   }
 }
-
-
 
 #define NUMBER_RACES_FOR_GOOD 11
 #define NUMBER_RACES_FOR_EVIL 9
@@ -870,34 +836,29 @@ void event_shabo_racechange(P_char ch, P_char victim, P_obj obj, void *data)
 
 int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument)
 {
-  P_char   tch, next;
+  P_char tch, next;
   struct affected_type *af;
-  bool     did_something = FALSE;
-  int      k, i = 0;
+  bool did_something = FALSE;
+  int k, i = 0;
 
+  int goodie_races[NUMBER_RACES_FOR_GOOD] = {RACE_HUMAN, RACE_GREY,
+                                             RACE_MOUNTAIN, RACE_BARBARIAN,
+                                             RACE_GNOME, RACE_HALFLING,
+                                             RACE_HALFELF, RACE_CENTAUR,
+                                             RACE_SGIANT, RACE_MINOTAUR,
+                                             RACE_THRIKREEN};
 
-  int      goodie_races[NUMBER_RACES_FOR_GOOD] = { RACE_HUMAN, RACE_GREY,
-    RACE_MOUNTAIN, RACE_BARBARIAN,
-    RACE_GNOME, RACE_HALFLING,
-    RACE_HALFELF, RACE_CENTAUR,
-    RACE_SGIANT, RACE_MINOTAUR,
-    RACE_THRIKREEN
-  };
+  int evil_races[NUMBER_RACES_FOR_EVIL] = {RACE_DROW, RACE_DUERGAR,
+                                           RACE_GITHYANKI, RACE_OGRE,
+                                           RACE_GOBLIN, RACE_ORC,
+                                           RACE_TROLL, RACE_MINOTAUR,
+                                           RACE_THRIKREEN};
 
-  int      evil_races[NUMBER_RACES_FOR_EVIL] = { RACE_DROW, RACE_DUERGAR,
-    RACE_GITHYANKI, RACE_OGRE,
-    RACE_GOBLIN, RACE_ORC,
-    RACE_TROLL, RACE_MINOTAUR,
-    RACE_THRIKREEN
-  };
-
-  int      undead_races[NUMBER_RACES_FOR_UNDEAD] =
-    { RACE_LICH, RACE_PVAMPIRE,
-    RACE_PDKNIGHT, RACE_SHADE,
-    RACE_REVENANT, RACE_PSBEAST,
-    RACE_WIGHT, RACE_PHANTOM
-  };
-
+  int undead_races[NUMBER_RACES_FOR_UNDEAD] =
+      {RACE_LICH, RACE_PVAMPIRE,
+       RACE_PDKNIGHT, RACE_SHADE,
+       RACE_REVENANT, RACE_PSBEAST,
+       RACE_WIGHT, RACE_PHANTOM};
 
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
@@ -937,30 +898,30 @@ int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument)
 
         for (k = number(0, NUMBER_RACES_FOR_GOOD - 1);
              GET_RACE(tch) == goodie_races[k];
-             k = number(0, NUMBER_RACES_FOR_GOOD - 1)) ;
+             k = number(0, NUMBER_RACES_FOR_GOOD - 1))
+          ;
 
         tch->player.race = goodie_races[k];
-
       }
       else if (IS_RACEWAR_EVIL(tch))
       {
 
         for (k = number(0, NUMBER_RACES_FOR_EVIL - 1);
              GET_RACE(tch) == evil_races[k];
-             k = number(0, NUMBER_RACES_FOR_EVIL - 1)) ;
+             k = number(0, NUMBER_RACES_FOR_EVIL - 1))
+          ;
 
         tch->player.race = evil_races[k];
-
       }
       else if (IS_RACEWAR_UNDEAD(tch))
       {
 
         for (k = number(0, NUMBER_RACES_FOR_UNDEAD - 1);
              GET_RACE(tch) == undead_races[k];
-             k = number(0, NUMBER_RACES_FOR_UNDEAD - 1)) ;
+             k = number(0, NUMBER_RACES_FOR_UNDEAD - 1))
+          ;
 
         tch->player.race = undead_races[k];
-
       }
 
       did_something = TRUE;
@@ -970,12 +931,11 @@ int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument)
   return did_something;
 }
 
-
 int shaboath_necromancy_tower(int room, P_char ch, int cmd, char *argument)
 {
-  P_obj    obj, next_obj;
-  P_char   necro_teacher;
-  int      was_in_room, raised = 0;
+  P_obj obj, next_obj;
+  P_char necro_teacher;
+  int was_in_room, raised = 0;
 
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
@@ -989,22 +949,20 @@ int shaboath_necromancy_tower(int room, P_char ch, int cmd, char *argument)
 
     if ((GET_ITEM_TYPE(obj) == ITEM_CORPSE))
     {
-/*          ((necro_teacher = get_char_num(NECROMANCER_BOSS)) != 0) &&
-          can_raise_undead(necro_teacher, 56)) {
-        wizlog(57,"necro teacher");
-        was_in_room = necro_teacher->in_room;
-        char_from_room(necro_teacher);
-        char_to_room(necro_teacher, room, -1);
-        spell_animate_dead(GET_LEVEL(necro_teacher), necro_teacher, 0, obj);
-        char_from_room(necro_teacher);
-        char_to_room(necro_teacher, was_in_room, -1);*/
+      /*          ((necro_teacher = get_char_num(NECROMANCER_BOSS)) != 0) &&
+                can_raise_undead(necro_teacher, 56)) {
+              wizlog(57,"necro teacher");
+              was_in_room = necro_teacher->in_room;
+              char_from_room(necro_teacher);
+              char_to_room(necro_teacher, room, -1);
+              spell_animate_dead(GET_LEVEL(necro_teacher), necro_teacher, 0, obj);
+              char_from_room(necro_teacher);
+              char_to_room(necro_teacher, was_in_room, -1);*/
       obj_from_room(obj);
-      send_to_room
-        ("&+LA black tentacle creeps in from above, picks the corpse, and departs dragging it behind...&n\r\n",
-         real_room(room));
+      send_to_room("&+LA black tentacle creeps in from above, picks the corpse, and departs dragging it behind...&n\r\n",
+                   real_room(room));
       obj_to_room(obj, real_room(NECROMANCER_BOSS_ROOM));
       raised++;
-
     }
   }
   if (raised)
@@ -1015,7 +973,7 @@ int shaboath_necromancy_tower(int room, P_char ch, int cmd, char *argument)
 
 int shaboath_enchantment_tower(int room, P_char ch, int cmd, char *argument)
 {
-  P_char   tch, next;
+  P_char tch, next;
 
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
@@ -1083,5 +1041,4 @@ int shaboath_enchantment_tower(int room, P_char ch, int cmd, char *argument)
   }
 
   return FALSE;
-
 }

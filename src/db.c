@@ -58,119 +58,119 @@ extern uint event_counter[];
 extern struct mm_ds *dead_pconly_pool;
 extern struct mm_ds *dead_trophy_pool;
 extern int portal_id;
-extern float exp_mods[EXPMOD_MAX+1];
+extern float exp_mods[EXPMOD_MAX + 1];
 extern void obj_affect_remove(P_obj, struct obj_affect *);
-void     delete_knownShapes(P_char ch);
-void     proclib_obj_event(P_char, P_char, P_obj obj, void*);
+void delete_knownShapes(P_char ch);
+void proclib_obj_event(P_char, P_char, P_obj obj, void *);
 int proclibObj_add(P_obj obj, char *procName, char *args);
-extern void event_mob_mundane(P_char, P_char, P_obj, void*);
-extern void event_mob_proc(P_char, P_char, P_obj, void*);
-extern void event_random_exit(P_char, P_char, P_obj, void*);
+extern void event_mob_mundane(P_char, P_char, P_obj, void *);
+extern void event_mob_proc(P_char, P_char, P_obj, void *);
+extern void event_random_exit(P_char, P_char, P_obj, void *);
 extern int teacher(P_char ch, P_char pl, int cmd, char *arg);
-extern void event_mob_skin_spell(P_char, P_char, P_obj, void*);
+extern void event_mob_skin_spell(P_char, P_char, P_obj, void *);
 extern struct social_messg *soc_mess_list;
 void recalc_zone_numbers();
 void ne_init_events();
-extern void event_reset_zone(P_char, P_char, P_obj, void*);
+extern void event_reset_zone(P_char, P_char, P_obj, void *);
 
 /**************************************************************************
-*  declarations of most of the 'global' variables                         *
-************************************************************************ */
+ *  declarations of most of the 'global' variables                         *
+ ************************************************************************ */
 
 struct reset_q_type reset_q;
 
-P_room   world;                                   /* dyn alloc'ed array of rooms     */
-P_town   towns;                                   /* List of towns for defenses      */
-int      top_of_world = 0;                        /* ref to the top element of world - LAST VALID ROOM INDEX
-                                                   * world[top_of_world] is valid world[top_of_world+1] is out
-                                                   * of bounds.
-                                                   */
-P_obj    object_list = NULL;                      /* the global linked list of obj's */
-P_char   character_list = NULL;                   /* global l-list of chars          */
+P_room world;                 /* dyn alloc'ed array of rooms     */
+P_town towns;                 /* List of towns for defenses      */
+int top_of_world = 0;         /* ref to the top element of world - LAST VALID ROOM INDEX
+                               * world[top_of_world] is valid world[top_of_world+1] is out
+                               * of bounds.
+                               */
+P_obj object_list = NULL;     /* the global linked list of obj's */
+P_char character_list = NULL; /* global l-list of chars          */
 struct ban_t *ban_list = NULL;
 struct wizban_t *wizconnect = NULL;
 struct zone_data *zone_table;                     /* table of reset data             */
 struct sector_data *sector_table;                 /* mostly weather info             */
-int      top_of_zone_table = 0;                   /* The highest valid zone rnum     */
+int top_of_zone_table = 0;                        /* The highest valid zone rnum     */
 struct message_list fight_messages[MAX_MESSAGES]; /* fighting messages  */
 
-char    *guild_frags = NULL;
-//char    *news = NULL;           /* * the news                        */
-string  news;
-char    *projects = NULL;       /* * Project information             */
-//char    *motd = NULL;           /* * ansi motd                       */
-string  motd;
-//char    *wizmotd = NULL;        /* * ansi wizmotd * */
-string  wizmotd;
-char    *help = NULL;           /* * the main help page              */
-char    *rules = NULL;
-char    *wizlista = NULL;       /* * wizlist for ansi listeners * */
-char    *greetinga = NULL;      /* * greeting for our ansi viewers * */
-char    *greetinga1 = NULL;
-char    *greetinga2 = NULL;
-char    *greetinga3 = NULL;
-char    *greetinga4 = NULL;
-char    *greetings = NULL;      /* * greeting for ascii viewers * */
-char    *worldmap = NULL;
-char    *worldmapa = NULL;
-char    *disclaimer = NULL;     /* * disclaimer message * */
-char    *bugfile = NULL;
-char    *generaltable = NULL;   /* * race/class comparison charts * */
-char    *racewars = NULL;       /* * good/evil race explanation * */
-char    *classtable = NULL;     /* * class selection tables * */
-char    *racetable = NULL;      /* * race selection tables * */
-//char    *attribmod = NULL;      /* * attribute modification for wipe 2011 * */
-char    *namechart = NULL;
-char    *reroll = NULL;
-char    *bonus = NULL;
-char    *keepchar = NULL;
-char    *hometown_table = NULL;
-char    *alignment_table = NULL;
-const char    *shutdown_message = NULL;
-char    *artilist_mortal_main = NULL;
-char    *artilist_mortal_ioun = NULL;
-char    *artilist_mortal_unique = NULL;
+char *guild_frags = NULL;
+// char    *news = NULL;           /* * the news                        */
+string news;
+char *projects = NULL; /* * Project information             */
+// char    *motd = NULL;           /* * ansi motd                       */
+string motd;
+// char    *wizmotd = NULL;        /* * ansi wizmotd * */
+string wizmotd;
+char *help = NULL; /* * the main help page              */
+char *rules = NULL;
+char *wizlista = NULL;  /* * wizlist for ansi listeners * */
+char *greetinga = NULL; /* * greeting for our ansi viewers * */
+char *greetinga1 = NULL;
+char *greetinga2 = NULL;
+char *greetinga3 = NULL;
+char *greetinga4 = NULL;
+char *greetings = NULL; /* * greeting for ascii viewers * */
+char *worldmap = NULL;
+char *worldmapa = NULL;
+char *disclaimer = NULL; /* * disclaimer message * */
+char *bugfile = NULL;
+char *generaltable = NULL; /* * race/class comparison charts * */
+char *racewars = NULL;     /* * good/evil race explanation * */
+char *classtable = NULL;   /* * class selection tables * */
+char *racetable = NULL;    /* * race selection tables * */
+// char    *attribmod = NULL;      /* * attribute modification for wipe 2011 * */
+char *namechart = NULL;
+char *reroll = NULL;
+char *bonus = NULL;
+char *keepchar = NULL;
+char *hometown_table = NULL;
+char *alignment_table = NULL;
+const char *shutdown_message = NULL;
+char *artilist_mortal_main = NULL;
+char *artilist_mortal_ioun = NULL;
+char *artilist_mortal_unique = NULL;
 
-FILE    *mob_f,                 /* * file containing mob prototypes  */
-        *obj_f;                 /* * obj prototypes                  */
+FILE *mob_f, /* * file containing mob prototypes  */
+    *obj_f;  /* * obj prototypes                  */
 //      *help_fl;               /* * file for help texts (HELP <kwd>) */  This commented out by weebler
 
-P_index  mob_index;             /* * index table for mobile file     */
-P_index  obj_index;             /* * index table for object file     */
+P_index mob_index; /* * index table for mobile file     */
+P_index obj_index; /* * index table for object file     */
 
-P_table  obj_tables;            /* for random obj tables */
-P_table  mob_tables;            /* for random mob tables */
+P_table obj_tables; /* for random obj tables */
+P_table mob_tables; /* for random mob tables */
 
-P_ereg   email_reg_table;
-int      num_mob_tables, num_obj_tables = 0;
+P_ereg email_reg_table;
+int num_mob_tables, num_obj_tables = 0;
 
 // struct help_index_element *help_index = 0;			// commented by weebler
 struct info_index_element *info_index = 0;
 
-int      top_of_mobt = 0;       /* * top of mobile index table * */
-int      top_of_objt = 0;       /* * top of object index table * */
-int      top_of_helpt;          /* * top of help index table         */
-int      top_of_infot;          /* * top of info index table         */
+int top_of_mobt = 0; /* * top of mobile index table * */
+int top_of_objt = 0; /* * top of object index table * */
+int top_of_helpt;    /* * top of help index table         */
+int top_of_infot;    /* * top of info index table         */
 
-int      no_mail = 0;           /* Is mail system working this boot? */
+int no_mail = 0; /* Is mail system working this boot? */
 
-struct time_info_data time_info;        /* * the information about the time * */
+struct time_info_data time_info; /* * the information about the time * */
 
 struct mm_ds *dead_mob_pool = NULL;
 struct mm_ds *dead_obj_pool = NULL;
 
-P_index  generate_indices(FILE *, int *);
+P_index generate_indices(FILE *, int *);
 
 void assign_continents();
 
-void     init_rand_tables(void);
-void     init_email_reg_db(void);
-void     dump_email_reg_db(void);
-void     check_registered_email(struct descriptor_data *);
-int      email_in_use(char *, char *);
+void init_rand_tables(void);
+void init_email_reg_db(void);
+void dump_email_reg_db(void);
+void check_registered_email(struct descriptor_data *);
+int email_in_use(char *, char *);
 
-void     release_obj_mem(P_obj obj);
-void     release_acct_mem(P_obj obj);
+void release_obj_mem(P_obj obj);
+void release_acct_mem(P_obj obj);
 
 void apply_zone_modifier(P_char ch);
 
@@ -208,8 +208,6 @@ const char *MENU = "\
 &+L=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\r\n\
 \r\n\
 &+WChoose an option:&n";
-
-
 
 const char *BACKGR_STORY = "\r\nThe History of Time:\r\n\r\n \
 &+R=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&N\r\n \
@@ -304,12 +302,11 @@ const char *GREETINGS = "\r\n\r\n\
                      Lots and Lots of people!!!!!!!!!!\r\n\
                                           \r\n\r\n";
 
-
-int fread_string_to_buffer(FILE * fl, char *buf)
+int fread_string_to_buffer(FILE *fl, char *buf)
 {
-  char     tmp[MAX_STRING_LENGTH];
-  register char *point = NULL; 
-  int      length = 0, t_length = 0, done = FALSE;
+  char tmp[MAX_STRING_LENGTH];
+  register char *point = NULL;
+  int length = 0, t_length = 0, done = FALSE;
 
   buf[0] = '\0';
 
@@ -325,7 +322,8 @@ int fread_string_to_buffer(FILE * fl, char *buf)
 
     /* find the last non-whitespace char in tmp */
     for (point = tmp + t_length - 1; point > tmp && isspace(*point);
-         point--) ;
+         point--)
+      ;
 
     if (*point == '~')
     {
@@ -351,10 +349,10 @@ int fread_string_to_buffer(FILE * fl, char *buf)
       strcat(buf + length, tmp);
       length += t_length;
     }
-  }
-  while (!done);
+  } while (!done);
 
-  for (point = buf + length - 1; point > buf && *point != '&'; point--) ;
+  for (point = buf + length - 1; point > buf && *point != '&'; point--)
+    ;
   if (*point == '&' && toupper(*(point + 1)) != 'N')
   {
     strcat(buf, "&n");
@@ -365,8 +363,8 @@ int fread_string_to_buffer(FILE * fl, char *buf)
 }
 
 /*************************************************************************
-*  routines for booting the system                                       *
-*********************************************************************** */
+ *  routines for booting the system                                       *
+ *********************************************************************** */
 /*
 void loadGodProcs()
 {
@@ -412,20 +410,20 @@ void boot_db(int mini_mode)
   fprintf(stderr,
           "Reading files from lib directory. (motd, wizlist, etc)\r\n");
   logit(LOG_STATUS, "Reading newsfile.");
-//  news = file_to_string(NEWS_FILE);
+  //  news = file_to_string(NEWS_FILE);
   news = get_mud_info("news");
-  
+
   logit(LOG_STATUS, "Reading projectsfile.");
   projects = file_to_string(PROJECTS_FILE);
 
   logit(LOG_STATUS, "Reading Ansi motd.");
-//  motd = file_to_string(MOTD_FILE);
+  //  motd = file_to_string(MOTD_FILE);
   motd = get_mud_info("motd");
-  
+
   logit(LOG_STATUS, "Reading Ansi wizmotd.");
-//  wizmotd = file_to_string(WIZMOTD_FILE);
+  //  wizmotd = file_to_string(WIZMOTD_FILE);
   wizmotd = get_mud_info("wizmotd");
-  
+
   logit(LOG_STATUS, "Reading help.");
   help = file_to_string(HELP_PAGE_FILE);
   logit(LOG_STATUS, "Reading rules.");
@@ -456,8 +454,8 @@ void boot_db(int mini_mode)
   generaltable = file_to_string(GENERALTABLE_FILE);
   logit(LOG_STATUS, "Reading Race table.");
   racetable = file_to_string(RACETABLE_FILE);
-//  logit(LOG_STATUS, "Reading Attribute Mod Message(wipe 2011)");
-//  attribmod = file_to_string(ATTRIBMOD_FILE);
+  //  logit(LOG_STATUS, "Reading Attribute Mod Message(wipe 2011)");
+  //  attribmod = file_to_string(ATTRIBMOD_FILE);
   logit(LOG_STATUS, "Reading Class table.");
   classtable = file_to_string(CLASSTABLE_FILE);
   logit(LOG_STATUS, "Reading Racewars explanation.");
@@ -478,7 +476,7 @@ void boot_db(int mini_mode)
   shutdown_message = file_to_string(SHUTDOWN_FILE);
   logit(LOG_STATUS, "Getting PC id numb info.");
   setNewPCidNumbfromFile();
-  portal_id = 0;                // if someone knows a better place to put this, feel free to move it
+  portal_id = 0; // if someone knows a better place to put this, feel free to move it
   logit(LOG_STATUS, "Reading in short desc tables.");
   boot_desc_data();
   fprintf(stderr, "Opening mobile, object, help and info files.\r\n");
@@ -557,7 +555,7 @@ void boot_db(int mini_mode)
   init_rand_tables();
 
   if (0)
-  {                             /* EMAIL registration  */
+  { /* EMAIL registration  */
     fprintf(stderr, "Initializing EMAIL registration table.\n\r");
     init_email_reg_db();
   }
@@ -613,7 +611,7 @@ void boot_db(int mini_mode)
     fprintf(stderr, "-- Room special procedures.\r\n");
     assign_rooms();
   }
-  
+
   fprintf(stderr, "Assigning command pointers from interpreter.\r\n");
 
   fprintf(stderr, "-- Commands.\n");
@@ -624,7 +622,6 @@ void boot_db(int mini_mode)
   logit(LOG_STATUS, "   Spells.");
   assign_spell_pointers();
 
-
   fprintf(stderr, "Initializing...\n");
 
   fprintf(stderr, "-- Innates\n");
@@ -633,9 +630,9 @@ void boot_db(int mini_mode)
   fprintf(stderr, "-- Links\n");
   initialize_links();
 
-/*
- * logit(LOG_STATUS, "Init Grants"); assign_grant_commands();
- */
+  /*
+   * logit(LOG_STATUS, "Init Grants"); assign_grant_commands();
+   */
   fprintf(stderr, "-- Weather\n");
   logit(LOG_STATUS, "Setting up weather.");
   weather_setup();
@@ -647,11 +644,10 @@ void boot_db(int mini_mode)
   logit(LOG_STATUS, "Reading wizconnect sites.");
   read_wizconnect_file();
 
-
   fprintf(stderr, "-- Events\n");
   logit(LOG_STATUS, "Initializing event driver.");
   ne_init_events();
-  //init_events();
+  // init_events();
 
   /*
    * can't do the dynamic proc lib loading until AFTER the event driver
@@ -713,18 +709,19 @@ void boot_db(int mini_mode)
     load_justice_area();
   }
 
-// old guildhalls (deprecated)
-//  logit(LOG_STATUS, "Loading house.");
-//  restore_houses();
+  // old guildhalls (deprecated)
+  //  logit(LOG_STATUS, "Loading house.");
+  //  restore_houses();
 
   // old guildhalls (deprecated)
-//  logit(LOG_STATUS, " ... loading house construction Q");
-//  loadConstructionQ();
+  //  logit(LOG_STATUS, " ... loading house construction Q");
+  //  loadConstructionQ();
 
   logit(LOG_STATUS, "Setting up player-side artifact list.");
   setupMortArtiList_sql();
   // skip loading artifacts from db during copyover - they're restored from copyover.dat
-  if (!is_copyover_boot()) {
+  if (!is_copyover_boot())
+  {
     addOnGroundArtis_sql();
     addOnMobArtis_sql();
   }
@@ -732,69 +729,69 @@ void boot_db(int mini_mode)
   fprintf(stderr, "-- Continents\n");
   assign_continents();
 
-//  logit(LOG_STATUS, "Setting up god object procedures.");
-//  loadGodProcs();
+  //  logit(LOG_STATUS, "Setting up god object procedures.");
+  //  loadGodProcs();
 
   logit(LOG_STATUS, "Boot db -- DONE.");
 }
 
 void update_stat_data()
 {
-  char     buf[128];
-  int      i;
+  char buf[128];
+  int i;
 
   for (i = 1; i <= LAST_RACE; i++)
   {
     snprintf(buf, 128, "stats.str.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Str = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Str = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.dex.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Dex = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Dex = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.agi.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Agi = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Agi = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.con.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Con = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Con = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.pow.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Pow = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Pow = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.int.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Int = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Int = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.wis.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Wis = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Wis = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.cha.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Cha = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Cha = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.kar.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Kar = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Kar = (sh_int)get_property(buf, 100.);
     snprintf(buf, 128, "stats.luc.%s", race_names_table[i].no_spaces);
-    stat_factor[i].Luk = (sh_int) get_property(buf, 100.);
+    stat_factor[i].Luk = (sh_int)get_property(buf, 100.);
   }
 }
 
 /* reset the time in the game from file */
 void reset_time(void)
 {
-  long     beginning_of_time = 650336715;
+  long beginning_of_time = 650336715;
 
   time_info = mud_time_passed(time(0), beginning_of_time);
 
   logit(LOG_STATUS, "   Current Gametime:  %d/%d/%d  %d%s",
         time_info.month, time_info.day, time_info.year,
         (time_info.hour % 12) ? time_info.hour % 12 : 12,
-        (time_info.hour == 12) ? " noon." :
-        (time_info.hour == 0) ? " midnight." :
-        (time_info.hour > 11) ? "pm." : "am.");
+        (time_info.hour == 12) ? " noon." : (time_info.hour == 0) ? " midnight."
+                                        : (time_info.hour > 11)   ? "pm."
+                                                                  : "am.");
 }
 
 void weather_setup(void)
 {
-  int      zon, s, i;
-  int      tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9, tmp10, tmp11,
-    tmp12;
-  FILE    *fl;
+  int zon, s, i;
+  int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9, tmp10, tmp11,
+      tmp12;
+  FILE *fl;
 
   /* default conditions for season values */
-  const byte winds[6] = { 2, 12, 30, 40, 50, 80 };
-  const byte precip[9] = { 0, 1, 5, 10, 15, 25, 35, 45, 60 };
-  const byte humid[9] = { 4, 10, 20, 30, 40, 50, 60, 75, 100 };
-  const byte temps[11] = { -15, -8, 0, 10, 17, 27, 33, 40, 50, 75, 100 };
+  const ::byte winds[6] = {2, 12, 30, 40, 50, 80};
+  const ::byte precip[9] = {0, 1, 5, 10, 15, 25, 35, 45, 60};
+  const ::byte humid[9] = {4, 10, 20, 30, 40, 50, 60, 75, 100};
+  const ::byte temps[11] = {-15, -8, 0, 10, 17, 27, 33, 40, 50, 75, 100};
 
   if (!(fl = fopen("areas/world.weather", "r")))
   {
@@ -836,19 +833,19 @@ void weather_setup(void)
 
     /* These use the default conditions above */
     sector_table[zon].conditions.windspeed =
-      ARR_GET(winds, sector_table[zon].climate.season_wind[s]);
+        ARR_GET(winds, sector_table[zon].climate.season_wind[s]);
 
     sector_table[zon].conditions.wind_dir =
-      sector_table[zon].climate.season_wind_dir[s];
+        sector_table[zon].climate.season_wind_dir[s];
 
     sector_table[zon].conditions.precip_rate =
-      ARR_GET(precip, sector_table[zon].climate.season_precip[s]);
+        ARR_GET(precip, sector_table[zon].climate.season_precip[s]);
 
     sector_table[zon].conditions.temp =
-      ARR_GET(temps, sector_table[zon].climate.season_temp[s]);
+        ARR_GET(temps, sector_table[zon].climate.season_temp[s]);
 
     sector_table[zon].conditions.humidity =
-      ARR_GET(humid, sector_table[zon].climate.season_precip[s]);
+        ARR_GET(humid, sector_table[zon].climate.season_precip[s]);
 
     /* Set ambient light */
     calc_light_zone(zon);
@@ -859,7 +856,7 @@ void weather_setup(void)
 /* EMAIL Registration setup */
 int email_in_use(char *login, char *host)
 {
-  int      temp, flag;
+  int temp, flag;
   struct registration_node *x;
 
   flag = 0;
@@ -880,8 +877,8 @@ void check_registered_email(struct descriptor_data *d)
 {
 
   struct registration_node *x;
-  int      temp;
-  char    *tname;
+  int temp;
+  char *tname;
 
   tname = str_dup(GET_NAME(d->character));
   tname[0] = tolower(tname[0]); /* lowercase first letter */
@@ -908,10 +905,9 @@ void check_registered_email(struct descriptor_data *d)
 
 void dump_email_reg_db()
 {
-  int      temp;
+  int temp;
   struct registration_node *x;
-  FILE    *rfile;
-
+  FILE *rfile;
 
   if (!(rfile = fopen(EMAIL_FILE, "w")))
   {
@@ -933,14 +929,14 @@ void dump_email_reg_db()
 
 void init_email_reg_db()
 {
-  int      temp;
+  int temp;
   struct registration_node *x;
-  FILE    *rfile;
-  char     buf[MAX_STRING_LENGTH];
+  FILE *rfile;
+  char buf[MAX_STRING_LENGTH];
 
   CREATE(email_reg_table, registration_node, 26, MEM_TAG_REGNODE); /* 26 alphabets */
-//  email_reg_table = (struct registration_node *) calloc(26, sizeof(struct registration_node));  /* 26 alphabets */
-  
+                                                                   //  email_reg_table = (struct registration_node *) calloc(26, sizeof(struct registration_node));  /* 26 alphabets */
+
   for (temp = 0; temp < 26; temp++)
   {
     email_reg_table[temp].next = 0;
@@ -951,14 +947,14 @@ void init_email_reg_db()
     return;
   }
   for (;;)
-  {                             /* read in file */
+  { /* read in file */
     fgets(buf, 100, rfile);
     if (buf[0] == '$')
-      break;                    /* eof */
+      break; /* eof */
     CREATE(x, registration_node, 1, MEM_TAG_REGNODE);
-    //x = (struct registration_node *) malloc(sizeof(struct registration_node));
+    // x = (struct registration_node *) malloc(sizeof(struct registration_node));
     sscanf(buf, "%s %s %s\n", x->name, x->login, x->host);
-    temp = (int) buf[0] - (int) 'a';    /* couldn't remember function */
+    temp = (int)buf[0] - (int)'a'; /* couldn't remember function */
     x->next = email_reg_table[temp].next;
     email_reg_table[temp].next = x;
   }
@@ -969,12 +965,12 @@ void init_email_reg_db()
 void init_rand_tables()
 {
 
-  uint     mtables, otables, mentries, oentries;        /* counts for tables */
-  int      v, w;
-  FILE    *tfile;               /* table file */
-  char     buf[MAX_STRING_LENGTH];
+  uint mtables, otables, mentries, oentries; /* counts for tables */
+  int v, w;
+  FILE *tfile; /* table file */
+  char buf[MAX_STRING_LENGTH];
   unsigned int tmp;
-  int      pos;
+  int pos;
 
   mob_tables = 0;
   obj_tables = 0;
@@ -993,21 +989,21 @@ void init_rand_tables()
   {
     fgets(buf, 81, tfile);
     if (buf[0] == '$')
-      break;                    /*eof */
+      break; /*eof */
     if (buf[0] == 'M')
       mtables++;
     if (buf[0] == 'O')
       otables++;
   }
   rewind(tfile);
-   CREATE(mob_tables, table_data, (unsigned) mtables, MEM_TAG_TBLDATA);
-   CREATE(obj_tables, table_data, (unsigned) otables, MEM_TAG_TBLDATA);
-//  mob_tables =
-//    (struct table_data *) calloc(mtables, sizeof(struct table_data));
-//  obj_tables =
-//    (struct table_data *) calloc(otables, sizeof(struct table_data));
+  CREATE(mob_tables, table_data, (unsigned)mtables, MEM_TAG_TBLDATA);
+  CREATE(obj_tables, table_data, (unsigned)otables, MEM_TAG_TBLDATA);
+  //  mob_tables =
+  //    (struct table_data *) calloc(mtables, sizeof(struct table_data));
+  //  obj_tables =
+  //    (struct table_data *) calloc(otables, sizeof(struct table_data));
   num_mob_tables = mtables;
-  num_obj_tables = otables;     /* globals for db.c */
+  num_obj_tables = otables; /* globals for db.c */
 
   /* now, go through and create each table */
   mtables = otables = 0;
@@ -1015,21 +1011,21 @@ void init_rand_tables()
   {
     fgets(buf, 81, tfile);
     if (buf[0] == '$')
-      break;                    /* EOF */
+      break; /* EOF */
     switch (buf[0])
     {
-    case 'M':                  /* new mob table */
+    case 'M': /* new mob table */
       sscanf(buf, "M %d %d\n", &v, &w);
       mob_tables[mtables].virtual_number = v;
       mob_tables[mtables].empty_weight = w;
-      pos = ftell(tfile);       /* remember loc */
+      pos = ftell(tfile); /* remember loc */
       /* count # of entries */
       tmp = 0;
       for (;;)
       {
         fgets(buf, 81, tfile);
         if (buf[0] == 'S')
-          break;                /*end of table */
+          break; /*end of table */
         tmp++;
       }
       fseek(tfile, pos, 0);
@@ -1046,12 +1042,12 @@ void init_rand_tables()
         sscanf(buf, "%d %d", &v, &w);
         mob_tables[mtables].table[tmp].virtual_number = v;
         mob_tables[mtables].table[tmp].weight = w;
-        mob_tables[mtables].weight += w;        /* total weight */
+        mob_tables[mtables].weight += w; /* total weight */
         tmp++;
       }
       mtables++;
       break;
-    case 'O':                  /* new obj table */
+    case 'O': /* new obj table */
       sscanf(buf, "O %d %d", &v, &w);
       obj_tables[otables].virtual_number = v;
       obj_tables[otables].empty_weight = w;
@@ -1091,11 +1087,11 @@ void init_rand_tables()
 };
 
 /* generate index table for object or monster file */
-P_index generate_indices(FILE * fl, int *top)
+P_index generate_indices(FILE *fl, int *top)
 {
-  int      i = 0, num;
-  P_index  t_idx;
-  char     buf[512];
+  int i = 0, num;
+  P_index t_idx;
+  char buf[512];
 
   rewind(fl);
 
@@ -1114,7 +1110,7 @@ P_index generate_indices(FILE * fl, int *top)
   logit(LOG_STATUS, "\t\t%d entries allocated", num);
 
   /* allocate array of index_data */
-  CREATE(t_idx, index_data, (unsigned) num, MEM_TAG_IDXDATA);
+  CREATE(t_idx, index_data, (unsigned)num, MEM_TAG_IDXDATA);
 
   rewind(fl);
 
@@ -1138,7 +1134,7 @@ P_index generate_indices(FILE * fl, int *top)
                 t_idx[i - 1].virtual_number, t_idx[i].virtual_number);
         i++;
       }
-      else if (*buf == '$')     /* EOF  */
+      else if (*buf == '$') /* EOF  */
         break;
     }
     else
@@ -1154,340 +1150,337 @@ P_index generate_indices(FILE * fl, int *top)
 /* load the rooms */
 void boot_world(int mini_mode)
 {
-	FILE *fl;
-	int num_rooms, room_nr = 0, zone = 0, virtual_nr, flag;
-	int tmp = 0, tmp1 = 0, tmp2 = 0, tmp3 = 0, i, name_length, desc_length;
-	char chk[MAX_STRING_LENGTH], tmp_buf[MAX_STRING_LENGTH];
-	char buf[MAX_INPUT_LENGTH];
-	char name_buf[MAX_STRING_LENGTH] = {0}, desc_buf[MAX_STRING_LENGTH] = {0};
-	struct extra_descr_data *new_descr;
-	bool found_name, found_desc;
+  FILE *fl;
+  int num_rooms, room_nr = 0, zone = 0, virtual_nr, flag;
+  int tmp = 0, tmp1 = 0, tmp2 = 0, tmp3 = 0, i, name_length, desc_length;
+  char chk[MAX_STRING_LENGTH], tmp_buf[MAX_STRING_LENGTH];
+  char buf[MAX_INPUT_LENGTH];
+  char name_buf[MAX_STRING_LENGTH] = {0}, desc_buf[MAX_STRING_LENGTH] = {0};
+  struct extra_descr_data *new_descr;
+  bool found_name, found_desc;
 
-	world = 0;
-	character_list = 0;
-	object_list = 0;
+  world = 0;
+  character_list = 0;
+  object_list = 0;
 
-	if (mini_mode != 1)
-	{
-		if (!(fl = fopen(WORLD_FILE, "r")))
-		{
-			perror("fopen");
-			logit(LOG_FILE, "boot_world: could not open world file.");
-			logit(LOG_SYS, "boot_world: could not open world file.");
-			raise(SIGSEGV);
-		}
-	}
-	else if (mini_mode == 1)
-	{
-		if (!(fl = fopen("areas/mini.wld", "r")))
-		{
-			perror("fopen");
-			raise(SIGSEGV);
-		}
-	}
+  if (mini_mode != 1)
+  {
+    if (!(fl = fopen(WORLD_FILE, "r")))
+    {
+      perror("fopen");
+      logit(LOG_FILE, "boot_world: could not open world file.");
+      logit(LOG_SYS, "boot_world: could not open world file.");
+      raise(SIGSEGV);
+    }
+  }
+  else if (mini_mode == 1)
+  {
+    if (!(fl = fopen("areas/mini.wld", "r")))
+    {
+      perror("fopen");
+      raise(SIGSEGV);
+    }
+  }
 
-	fseek(fl, 0, SEEK_END);
-	size_t fsize = ftell(fl);
+  fseek(fl, 0, SEEK_END);
+  size_t fsize = ftell(fl);
 
-	char *memBuf = (char *)malloc(fsize);
-	char *seekPtr = memBuf;
+  char *memBuf = (char *)malloc(fsize);
+  char *seekPtr = memBuf;
 
-	fseek(fl, 0, SEEK_SET);
-	size_t bytesRead = fread(memBuf, sizeof(char), fsize, fl);
-	fclose(fl);
+  fseek(fl, 0, SEEK_SET);
+  size_t bytesRead = fread(memBuf, sizeof(char), fsize, fl);
+  fclose(fl);
 
-	fl = fmemopen(memBuf, fsize, "r");
+  fl = fmemopen(memBuf, fsize, "r");
 
-	/* Count the number of rooms, to make allocation more efficient!! */
-	num_rooms = 0;
-	for (;;)
-	{
-		fgets(tmp_buf, MAX_STRING_LENGTH, fl);
-		if (tmp_buf[0] == '$')
-			break;
-		if (tmp_buf[0] == '#')
-			num_rooms++;
-	}
+  /* Count the number of rooms, to make allocation more efficient!! */
+  num_rooms = 0;
+  for (;;)
+  {
+    fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+    if (tmp_buf[0] == '$')
+      break;
+    if (tmp_buf[0] == '#')
+      num_rooms++;
+  }
 
-	logit(LOG_STATUS, "\t\t%d rooms allocated", num_rooms);
-	rewind(fl);
+  logit(LOG_STATUS, "\t\t%d rooms allocated", num_rooms);
+  rewind(fl);
 
-	/* Allocate array of room structures */
-	CREATE(world, room_data, (unsigned)num_rooms, MEM_TAG_ROOMDAT);
+  /* Allocate array of room structures */
+  CREATE(world, room_data, (unsigned)num_rooms, MEM_TAG_ROOMDAT);
 
-	logit(LOG_STATUS, "\t\tMemory allocation complete");
+  logit(LOG_STATUS, "\t\tMemory allocation complete");
 
-	/*
-	 * allocate array of pointers to pointers for list of unique room
-	 * descs, this list will speed searching.  It is freed after all rooms
-	 * are read into memory.  The point?  Duplicate room descs are only
-	 * allocated once. All rooms with identical descs will all use the
-	 * same desc (mainly oceans, but there are other duplications as
-	 * well). JAB
-	 */
+  /*
+   * allocate array of pointers to pointers for list of unique room
+   * descs, this list will speed searching.  It is freed after all rooms
+   * are read into memory.  The point?  Duplicate room descs are only
+   * allocated once. All rooms with identical descs will all use the
+   * same desc (mainly oceans, but there are other duplications as
+   * well). JAB
+   */
 
-	do
-	{
-		fscanf(fl, " #%d\n", &virtual_nr);
-		if (mini_mode == 2)
-			fprintf(stderr, "#%d  ", virtual_nr);
+  do
+  {
+    fscanf(fl, " #%d\n", &virtual_nr);
+    if (mini_mode == 2)
+      fprintf(stderr, "#%d  ", virtual_nr);
 
-		name_length = fread_string_to_buffer(fl, name_buf);
-		if ((flag = (*name_buf != '$')))
-		{ /* a new record to be read */
-			world[room_nr].number = virtual_nr;
-			desc_length = fread_string_to_buffer(fl, desc_buf);
-			found_name = FALSE;
-			found_desc = (desc_length == 0);
-			// code looking up duplicate room names and descriptions to save memory
-			for (i = room_nr - 1; i > (zone ? zone_table[zone - 1].real_top + 1 : 0) && (!found_name || !found_desc) && room_nr - i < 102; i--)
-			{
-				if (!found_name && !strcmp(name_buf, world[i].name))
-				{
-					world[room_nr].name = world[i].name;
-					found_name = TRUE;
-				}
-				if (!found_desc && world[i].description &&
-					!strcmp(desc_buf, world[i].description))
-				{
-					world[room_nr].description = world[i].description;
-					found_desc = TRUE;
-				}
-			}
-			// end of memory preserving code
+    name_length = fread_string_to_buffer(fl, name_buf);
+    if ((flag = (*name_buf != '$')))
+    { /* a new record to be read */
+      world[room_nr].number = virtual_nr;
+      desc_length = fread_string_to_buffer(fl, desc_buf);
+      found_name = FALSE;
+      found_desc = (desc_length == 0);
+      // code looking up duplicate room names and descriptions to save memory
+      for (i = room_nr - 1; i > (zone ? zone_table[zone - 1].real_top + 1 : 0) && (!found_name || !found_desc) && room_nr - i < 102; i--)
+      {
+        if (!found_name && !strcmp(name_buf, world[i].name))
+        {
+          world[room_nr].name = world[i].name;
+          found_name = TRUE;
+        }
+        if (!found_desc && world[i].description &&
+            !strcmp(desc_buf, world[i].description))
+        {
+          world[room_nr].description = world[i].description;
+          found_desc = TRUE;
+        }
+      }
+      // end of memory preserving code
 
-			if (!found_name)
-			{
-				CREATE(world[room_nr].name, char, (unsigned)name_length + 1, MEM_TAG_STRING);
-				//        world[room_nr].name = (char *) calloc(name_length + 1, sizeof(char));
-				strcpy(world[room_nr].name, name_buf);
-			}
-			if (!found_desc)
-			{
-				CREATE(world[room_nr].description, char, (unsigned)desc_length + 1, MEM_TAG_STRING);
-				//        world[room_nr].description =
-				//          (char *) calloc(desc_length + 1, sizeof(char));
-				strcpy(world[room_nr].description, desc_buf);
-			}
+      if (!found_name)
+      {
+        CREATE(world[room_nr].name, char, (unsigned)name_length + 1, MEM_TAG_STRING);
+        //        world[room_nr].name = (char *) calloc(name_length + 1, sizeof(char));
+        strcpy(world[room_nr].name, name_buf);
+      }
+      if (!found_desc)
+      {
+        CREATE(world[room_nr].description, char, (unsigned)desc_length + 1, MEM_TAG_STRING);
+        //        world[room_nr].description =
+        //          (char *) calloc(desc_length + 1, sizeof(char));
+        strcpy(world[room_nr].description, desc_buf);
+      }
 
-			/* A few presets, may get changed further down */
+      /* A few presets, may get changed further down */
 
-			/*      world[room_nr].resources = 0;
-				  world[room_nr].kingdom_num = 0;
-				  world[room_nr].kingdom_type = 0;*/
-			world[room_nr].continent = 0;
-			world[room_nr].funct = 0;
-			world[room_nr].contents = 0;
-			world[room_nr].people = 0;
-			world[room_nr].light = 0;
-			world[room_nr].justice_area = 0;
-			for (tmp = 0; tmp <= (NUM_EXITS - 1); tmp++)
-				world[room_nr].dir_option[tmp] = 0;
-			world[room_nr].ex_description = 0;
-			world[room_nr].chance_fall = 0;
-			world[room_nr].current_speed = 0;
-			world[room_nr].current_direction = -1;
-			if (top_of_zone_table >= 0)
-			{
-				if (world[room_nr].number <= (zone ? zone_table[zone - 1].top : -1))
-				{
-					logit(LOG_DEBUG, "Room nr %d (%d) is below zone %d.\n",
-						  room_nr, world[room_nr].number, zone);
-					raise(SIGSEGV);
-				}
-				while (world[room_nr].number > zone_table[zone].top)
-					if (++zone > top_of_zone_table)
-					{
-						logit(LOG_DEBUG, "Room %d is outside of any zone.\n", virtual_nr);
-						raise(SIGSEGV);
-					}
-				world[room_nr].zone = zone;
-				if (zone_table[zone].real_bottom == -1)
-					zone_table[zone].real_bottom = room_nr;
-				zone_table[zone].real_top = room_nr;
-			}
+      /*      world[room_nr].resources = 0;
+          world[room_nr].kingdom_num = 0;
+          world[room_nr].kingdom_type = 0;*/
+      world[room_nr].continent = 0;
+      world[room_nr].funct = 0;
+      world[room_nr].contents = 0;
+      world[room_nr].people = 0;
+      world[room_nr].light = 0;
+      world[room_nr].justice_area = 0;
+      for (tmp = 0; tmp <= (NUM_EXITS - 1); tmp++)
+        world[room_nr].dir_option[tmp] = 0;
+      world[room_nr].ex_description = 0;
+      world[room_nr].chance_fall = 0;
+      world[room_nr].current_speed = 0;
+      world[room_nr].current_direction = -1;
+      if (top_of_zone_table >= 0)
+      {
+        if (world[room_nr].number <= (zone ? zone_table[zone - 1].top : -1))
+        {
+          logit(LOG_DEBUG, "Room nr %d (%d) is below zone %d.\n",
+                room_nr, world[room_nr].number, zone);
+          raise(SIGSEGV);
+        }
+        while (world[room_nr].number > zone_table[zone].top)
+          if (++zone > top_of_zone_table)
+          {
+            logit(LOG_DEBUG, "Room %d is outside of any zone.\n", virtual_nr);
+            raise(SIGSEGV);
+          }
+        world[room_nr].zone = zone;
+        if (zone_table[zone].real_bottom == -1)
+          zone_table[zone].real_bottom = room_nr;
+        zone_table[zone].real_top = room_nr;
+      }
 
-			/* tmp is the zone. Never used, and don't ask why :P */
+      /* tmp is the zone. Never used, and don't ask why :P */
 
-			fgets(buf, sizeof(buf) - 1, fl);
-			if (sscanf(buf, " %d %d %d %d\n", &tmp, &tmp1, &tmp2, &tmp3) == 4)
-			{
-				world[room_nr].room_flags = tmp1;
-				world[room_nr].sector_type = tmp2;
-				//        world[room_nr].resources = tmp3;
-			}
-			else if (sscanf(buf, " %d %d %d\n", &tmp, &tmp1, &tmp2) == 3)
-			{
-				world[room_nr].room_flags = tmp1;
-				world[room_nr].sector_type = tmp2;
-			}
-			/* fix a few things */
+      fgets(buf, sizeof(buf) - 1, fl);
+      if (sscanf(buf, " %d %d %d %d\n", &tmp, &tmp1, &tmp2, &tmp3) == 4)
+      {
+        world[room_nr].room_flags = tmp1;
+        world[room_nr].sector_type = tmp2;
+        //        world[room_nr].resources = tmp3;
+      }
+      else if (sscanf(buf, " %d %d %d\n", &tmp, &tmp1, &tmp2) == 3)
+      {
+        world[room_nr].room_flags = tmp1;
+        world[room_nr].sector_type = tmp2;
+      }
+      /* fix a few things */
 
-			if (IS_ROOM(room_nr, ROOM_NO_MAGIC))
-				if (!IS_ROOM(room_nr, ROOM_NO_SUMMON))
-					SET_BIT(world[room_nr].room_flags, ROOM_NO_SUMMON);
-			if (IS_ROOM(room_nr, ROOM_JAIL))
-				if (!IS_ROOM(room_nr, ROOM_SAFE))
-					SET_BIT(world[room_nr].room_flags, ROOM_SAFE);
-			if ((zone_table[zone].flags & ZONE_MAP) && (SECT_CITY == world[room_nr].sector_type))
-				world[room_nr].sector_type = SECT_ROAD;
+      if (IS_ROOM(room_nr, ROOM_NO_MAGIC))
+        if (!IS_ROOM(room_nr, ROOM_NO_SUMMON))
+          SET_BIT(world[room_nr].room_flags, ROOM_NO_SUMMON);
+      if (IS_ROOM(room_nr, ROOM_JAIL))
+        if (!IS_ROOM(room_nr, ROOM_SAFE))
+          SET_BIT(world[room_nr].room_flags, ROOM_SAFE);
+      if ((zone_table[zone].flags & ZONE_MAP) && (SECT_CITY == world[room_nr].sector_type))
+        world[room_nr].sector_type = SECT_ROAD;
 
-			// Make roads no gate..
-			if (world[room_nr].sector_type == SECT_ROAD)
-			{
-				SET_BIT(world[room_nr].room_flags, ROOM_NO_GATE);
-				SET_BIT(world[room_nr].room_flags, ROOM_NO_TELEPORT);
-			}
-			// ADD NO PORT
+      // Make roads no gate..
+      if (world[room_nr].sector_type == SECT_ROAD)
+      {
+        SET_BIT(world[room_nr].room_flags, ROOM_NO_GATE);
+        SET_BIT(world[room_nr].room_flags, ROOM_NO_TELEPORT);
+      }
+      // ADD NO PORT
 
-			for (;;)
-			{
-				fscanf(fl, " %s \n", chk);
+      for (;;)
+      {
+        fscanf(fl, " %s \n", chk);
 
-				if (*chk == 'D') /* direction field  */
-					setup_dir(fl, room_nr, atoi(chk + 1));
-				else if (*chk == 'E')
-				{ /* extra description field */
-					CREATE(new_descr, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
-					new_descr->keyword = fread_string(fl);
-					new_descr->description = fread_string(fl);
-					new_descr->next = world[room_nr].ex_description;
-					world[room_nr].ex_description = new_descr;
-				}
-				else if (*chk == 'F')
-				{
-					fscanf(fl, "%d ", &tmp);
-					world[room_nr].chance_fall = tmp;
-				}
-				else if (*chk == 'C')
-				{
-					fscanf(fl, "%d %d ", &tmp, &tmp2);
-					world[room_nr].current_speed = tmp;
-					world[room_nr].current_direction = tmp2;
-				}
-				else if (*chk == 'S')
-					break;
-			}
-			if (world[room_nr].sector_type == SECT_INSIDE)
-			{
-				SET_BIT(world[room_nr].room_flags, ROOM_INDOORS);
-				SET_BIT(world[room_nr].room_flags, ROOM_NO_PRECIP);
-			}
-			if ((world[room_nr].sector_type == SECT_NO_GROUND) &&
-				(!world[room_nr].dir_option[5] ||
-				 (world[room_nr].dir_option[5]->to_room == room_nr)))
-			{
-				world[room_nr].sector_type = SECT_INSIDE;
-			}
-			if ((world[room_nr].chance_fall > 0) &&
-				(!world[room_nr].dir_option[5] ||
-				 (world[room_nr].dir_option[5]->to_room == room_nr)))
-			{
-				world[room_nr].chance_fall = 0;
-			}
-			if (world[room_nr].room_flags & ROOM_INN)
-				world[room_nr].funct = inn;
+        if (*chk == 'D') /* direction field  */
+          setup_dir(fl, room_nr, atoi(chk + 1));
+        else if (*chk == 'E')
+        { /* extra description field */
+          CREATE(new_descr, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
+          new_descr->keyword = fread_string(fl);
+          new_descr->description = fread_string(fl);
+          new_descr->next = world[room_nr].ex_description;
+          world[room_nr].ex_description = new_descr;
+        }
+        else if (*chk == 'F')
+        {
+          fscanf(fl, "%d ", &tmp);
+          world[room_nr].chance_fall = tmp;
+        }
+        else if (*chk == 'C')
+        {
+          fscanf(fl, "%d %d ", &tmp, &tmp2);
+          world[room_nr].current_speed = tmp;
+          world[room_nr].current_direction = tmp2;
+        }
+        else if (*chk == 'S')
+          break;
+      }
+      if (world[room_nr].sector_type == SECT_INSIDE)
+      {
+        SET_BIT(world[room_nr].room_flags, ROOM_INDOORS);
+        SET_BIT(world[room_nr].room_flags, ROOM_NO_PRECIP);
+      }
+      if ((world[room_nr].sector_type == SECT_NO_GROUND) &&
+          (!world[room_nr].dir_option[5] ||
+           (world[room_nr].dir_option[5]->to_room == room_nr)))
+      {
+        world[room_nr].sector_type = SECT_INSIDE;
+      }
+      if ((world[room_nr].chance_fall > 0) &&
+          (!world[room_nr].dir_option[5] ||
+           (world[room_nr].dir_option[5]->to_room == room_nr)))
+      {
+        world[room_nr].chance_fall = 0;
+      }
+      if (world[room_nr].room_flags & ROOM_INN)
+        world[room_nr].funct = inn;
 
-			room_light(room_nr, REAL);
-			room_nr++;
-		}
-	} while (flag);
+      room_light(room_nr, REAL);
+      room_nr++;
+    }
+  } while (flag);
 
-	fclose(fl);
-	free(memBuf);
-	top_of_world = --room_nr;
+  fclose(fl);
+  free(memBuf);
+  top_of_world = --room_nr;
 
-	recalc_zone_numbers();
+  recalc_zone_numbers();
 }
 
 void free_world()
 {
-  //XXXXX 
-  for( int room = 0; room <= top_of_world; room++ )
+  // XXXXX
+  for (int room = 0; room <= top_of_world; room++)
   {
-    if( world[room].ex_description )
+    if (world[room].ex_description)
     {
-      if( world[room].ex_description->keyword )
+      if (world[room].ex_description->keyword)
         FREE(world[room].ex_description->keyword);
-      if( world[room].ex_description->description )
+      if (world[room].ex_description->description)
         FREE(world[room].ex_description->description);
-      
+
       FREE(world[room].ex_description);
     }
 
-    for( int dir = 0; dir < NUM_EXITS; dir++ )
+    for (int dir = 0; dir < NUM_EXITS; dir++)
     {
-      if( world[room].dir_option[dir] )
+      if (world[room].dir_option[dir])
       {
-        if( world[room].dir_option[dir]->general_description )
+        if (world[room].dir_option[dir]->general_description)
           FREE(world[room].dir_option[dir]->general_description);
-        if( world[room].dir_option[dir]->keyword )
+        if (world[room].dir_option[dir]->keyword)
           FREE(world[room].dir_option[dir]->keyword);
-        
-        FREE(world[room].dir_option[dir]);        
+
+        FREE(world[room].dir_option[dir]);
       }
     }
   }
-  
+
   FREE(world);
-  
-  for( int mob = 0; mob <= top_of_mobt; mob++ )
+
+  for (int mob = 0; mob <= top_of_mobt; mob++)
   {
-    if( mob_index[mob].keys )
+    if (mob_index[mob].keys)
       FREE(mob_index[mob].keys);
 
-    if( mob_index[mob].desc1 )
+    if (mob_index[mob].desc1)
       FREE(mob_index[mob].desc1);
 
-    if( mob_index[mob].desc2 )
+    if (mob_index[mob].desc2)
       FREE(mob_index[mob].desc2);
 
-    if( mob_index[mob].desc3 )
+    if (mob_index[mob].desc3)
       FREE(mob_index[mob].desc3);
-
   }
   FREE(mob_index);
 
-  for( int obj = 0; obj <= top_of_objt; obj++ )
+  for (int obj = 0; obj <= top_of_objt; obj++)
   {
-    if( obj_index[obj].keys )
+    if (obj_index[obj].keys)
       FREE(obj_index[obj].keys);
-    
-    if( obj_index[obj].desc1 )
-      FREE(obj_index[obj].desc1);
-    
-    if( obj_index[obj].desc2 )
-      FREE(obj_index[obj].desc2);
-    
-    if( obj_index[obj].desc3 )
-      FREE(obj_index[obj].desc3);
 
+    if (obj_index[obj].desc1)
+      FREE(obj_index[obj].desc1);
+
+    if (obj_index[obj].desc2)
+      FREE(obj_index[obj].desc2);
+
+    if (obj_index[obj].desc3)
+      FREE(obj_index[obj].desc3);
   }
   FREE(obj_index);
-  
+
   FREE(soc_mess_list);
-  
-  for( int zone = 0; zone <= top_of_zone_table; zone++)
+
+  for (int zone = 0; zone <= top_of_zone_table; zone++)
   {
-    if( zone_table[zone].name )
+    if (zone_table[zone].name)
       FREE(zone_table[zone].name);
-    
-    if( zone_table[zone].filename )
+
+    if (zone_table[zone].filename)
       FREE(zone_table[zone].filename);
-    
+
     FREE(zone_table[zone].cmd);
   }
   FREE(zone_table);
-  
-  FREE(sector_table);  
+
+  FREE(sector_table);
 }
 
-
 /* read direction data */
-void setup_dir(FILE * fl, int room, int dir)
+void setup_dir(FILE *fl, int room, int dir)
 {
-  int      state, key, to_room;
-  char    *general_description, *keyword;
+  int state, key, to_room;
+  char *general_description, *keyword;
 
   general_description = fread_string(fl);
   keyword = fread_string(fl);
@@ -1499,7 +1492,7 @@ void setup_dir(FILE * fl, int room, int dir)
   world[room].dir_option[dir]->general_description = general_description;
   world[room].dir_option[dir]->keyword = keyword;
 
-  state &= 3;                   // only grab first two bits, state gets set by zone reset (closed, blocked, secret)
+  state &= 3; // only grab first two bits, state gets set by zone reset (closed, blocked, secret)
   if (state)
   {
     world[room].dir_option[dir]->exit_info = EX_ISDOOR;
@@ -1540,7 +1533,7 @@ void renum_world(void)
 
 void renum_zone_table(void)
 {
-  int      zone, comm;
+  int zone, comm;
 
   for (zone = 0; zone <= top_of_zone_table; zone++)
     for (comm = 0; zone_table[zone].cmd[comm].command != 'S'; comm++)
@@ -1549,51 +1542,51 @@ void renum_zone_table(void)
       {
       case 'A':
         zone_table[zone].cmd[comm].arg3 =
-          real_mobile(zone_table[zone].cmd[comm].arg1);
+            real_mobile(zone_table[zone].cmd[comm].arg1);
         break;
       case 'B':
         zone_table[zone].cmd[comm].arg3 =
-          real_object(zone_table[zone].cmd[comm].arg3);
+            real_object(zone_table[zone].cmd[comm].arg3);
         break;
       case 'C':
       case 'Y':
         zone_table[zone].cmd[comm].arg3 =
-          real_room(zone_table[zone].cmd[comm].arg3);
+            real_room(zone_table[zone].cmd[comm].arg3);
         break;
       case 'M':
       case 'R':
       case 'F':
         zone_table[zone].cmd[comm].arg1 =
-          real_mobile(zone_table[zone].cmd[comm].arg1);
+            real_mobile(zone_table[zone].cmd[comm].arg1);
         zone_table[zone].cmd[comm].arg3 =
-          real_room(zone_table[zone].cmd[comm].arg3);
+            real_room(zone_table[zone].cmd[comm].arg3);
         break;
       case 'O':
         zone_table[zone].cmd[comm].arg1 =
-          real_object(zone_table[zone].cmd[comm].arg1);
+            real_object(zone_table[zone].cmd[comm].arg1);
         if (zone_table[zone].cmd[comm].arg3 != NOWHERE)
           zone_table[zone].cmd[comm].arg3 =
-            real_room(zone_table[zone].cmd[comm].arg3);
+              real_room(zone_table[zone].cmd[comm].arg3);
         break;
       case 'G':
         zone_table[zone].cmd[comm].arg1 =
-          real_object(zone_table[zone].cmd[comm].arg1);
+            real_object(zone_table[zone].cmd[comm].arg1);
         break;
       case 'E':
         zone_table[zone].cmd[comm].arg1 =
-          real_object(zone_table[zone].cmd[comm].arg1);
+            real_object(zone_table[zone].cmd[comm].arg1);
         break;
       case 'P':
         zone_table[zone].cmd[comm].arg1 =
-          real_object(zone_table[zone].cmd[comm].arg1);
+            real_object(zone_table[zone].cmd[comm].arg1);
         zone_table[zone].cmd[comm].arg3 =
-          real_object(zone_table[zone].cmd[comm].arg3);
+            real_object(zone_table[zone].cmd[comm].arg3);
         break;
       case 'D':
         zone_table[zone].cmd[comm].arg1 =
-          real_room(zone_table[zone].cmd[comm].arg1);
+            real_room(zone_table[zone].cmd[comm].arg1);
         break;
-      }                         /* if the real_xxxx() function returned -1, disable this command */
+      } /* if the real_xxxx() function returned -1, disable this command */
       if (zone_table[zone].cmd[comm].arg1 == -1)
         zone_table[zone].cmd[comm].command = '!';
       /* Also check arg3 for room-based commands */
@@ -1601,16 +1594,16 @@ void renum_zone_table(void)
       {
         switch (zone_table[zone].cmd[comm].command)
         {
-          case 'M':
-          case 'R':
-          case 'F':
-          case 'C':
-          case 'Y':
-          case 'O':
-            logit(LOG_DEBUG, "renum_zone: zone %d cmd %d (%c) has invalid room rnum -1",
-              zone, comm, zone_table[zone].cmd[comm].command);
-            zone_table[zone].cmd[comm].command = '!';
-            break;
+        case 'M':
+        case 'R':
+        case 'F':
+        case 'C':
+        case 'Y':
+        case 'O':
+          logit(LOG_DEBUG, "renum_zone: zone %d cmd %d (%c) has invalid room rnum -1",
+                zone, comm, zone_table[zone].cmd[comm].command);
+          zone_table[zone].cmd[comm].command = '!';
+          break;
         }
       }
     }
@@ -1619,49 +1612,49 @@ void renum_zone_table(void)
 void recalc_zone_numbers()
 {
   fprintf(stderr, "Recalculating zone numbers...\n");
-  for( int z = 1; z <= top_of_zone_table; z++ )
+  for (int z = 1; z <= top_of_zone_table; z++)
   {
     int zone_real_bottom = zone_table[z].real_bottom;
-    if( zone_real_bottom < 0 ) continue;
+    if (zone_real_bottom < 0)
+      continue;
     int bottom_vnum = world[zone_real_bottom].number;
-    
-    if( zone_table[z].number != (int) ( bottom_vnum / 100 ) )
+
+    if (zone_table[z].number != (int)(bottom_vnum / 100))
     {
-      fprintf(stderr, "  -- %s has invalid number: %d (should be %d)\n", strip_ansi(zone_table[z].name).c_str(), zone_table[z].number, (int) (bottom_vnum/100));
-      zone_table[z].number = (int) ( bottom_vnum / 100 );
+      fprintf(stderr, "  -- %s has invalid number: %d (should be %d)\n", strip_ansi(zone_table[z].name).c_str(), zone_table[z].number, (int)(bottom_vnum / 100));
+      zone_table[z].number = (int)(bottom_vnum / 100);
     }
-    
   }
 }
 
 void update_zone_difficulties()
 {
-  for( int z = 0; z <= top_of_zone_table; z++ )
+  for (int z = 0; z <= top_of_zone_table; z++)
   {
     struct zone_info zinfo;
-    
-    if( get_zone_info(zone_table[z].number, &zinfo) && zinfo.difficulty )
+
+    if (get_zone_info(zone_table[z].number, &zinfo) && zinfo.difficulty)
     {
       zone_table[z].difficulty = zinfo.difficulty;
     }
-  }  
+  }
 }
 
-#define IS_ZONE_COMMAND(ch) (ch == 'M' || ch == 'O' || ch == 'E' ||\
-                             ch == 'P' || ch == 'D' || ch == 'G' ||\
-                             ch == 'R' || ch == 'F' || ch == 'A' ||\
+#define IS_ZONE_COMMAND(ch) (ch == 'M' || ch == 'O' || ch == 'E' || \
+                             ch == 'P' || ch == 'D' || ch == 'G' || \
+                             ch == 'R' || ch == 'F' || ch == 'A' || \
                              ch == 'B' || ch == 'C' || ch == 'Y' || ch == 'S')
 
 /* load the zone table and command tables */
 void boot_zones(int mini_mode)
 {
-  FILE    *fl;
-  int      num_zones, num_commands, zon = 0, cmd_no = 0, tmp, i, t_idx;
-  int      tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
-  int      nu1, nu2;            /* not used variables */
-  int     *command_array;
-  char    *check, buf[MAX_STRING_LENGTH], tmp_buf[MAX_STRING_LENGTH], c;
-  char     temp_buf[MAX_STRING_LENGTH];
+  FILE *fl;
+  int num_zones, num_commands, zon = 0, cmd_no = 0, tmp, i, t_idx;
+  int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
+  int nu1, nu2; /* not used variables */
+  int *command_array;
+  char *check, buf[MAX_STRING_LENGTH], tmp_buf[MAX_STRING_LENGTH], c;
+  char temp_buf[MAX_STRING_LENGTH];
 
   if (!mini_mode)
   {
@@ -1696,8 +1689,8 @@ void boot_zones(int mini_mode)
 
   /* Count the number of commands in each zone */
   logit(LOG_STATUS, "Counting commands for each zone...");
-  CREATE(command_array, int, (unsigned) num_zones, MEM_TAG_ARRAY);
-//  command_array = (int *) calloc(num_zones, sizeof(int));
+  CREATE(command_array, int, (unsigned)num_zones, MEM_TAG_ARRAY);
+  //  command_array = (int *) calloc(num_zones, sizeof(int));
 
   t_idx = 0;
   num_commands = 0;
@@ -1729,26 +1722,25 @@ void boot_zones(int mini_mode)
 
   CREATE(zone_table, zone_data, num_zones, MEM_TAG_ZONEDAT);
   CREATE(sector_table, sector_data, 100, MEM_TAG_SECTDAT);
-//  zone_table =
-//    (struct zone_data *) calloc(num_zones, sizeof(struct zone_data));
-//  sector_table =
-//    (struct sector_data *) calloc(100, sizeof(struct sector_data));
+  //  zone_table =
+  //    (struct zone_data *) calloc(num_zones, sizeof(struct zone_data));
+  //  sector_table =
+  //    (struct sector_data *) calloc(100, sizeof(struct sector_data));
 
   for (;;)
   {
     fscanf(fl, " #%d\n", &tmp);
-    check = fread_string(fl);   /* zone name as specified by builder */
+    check = fread_string(fl); /* zone name as specified by builder */
     if (*check == '$')
-      break;                    /* * end of file */
+      break; /* * end of file */
 
     zone_table[zon].number = tmp; /* virtual zone number */
     zone_table[zon].name = check;
     zone_table[zon].avg_mob_level = -2;
 
+    zone_table[zon].hometown = 0; /* * default hometown is none */
 
-    zone_table[zon].hometown = 0;       /* * default hometown is none */
-
-    check = fread_string(fl);   /* zone filename */
+    check = fread_string(fl); /* zone filename */
 
     zone_table[zon].filename = check;
 
@@ -1768,8 +1760,8 @@ void boot_zones(int mini_mode)
     /* gotta preset this here */
 
     zone_table[zon].fullreset_lifespan =
-      number(zone_table[zon].fullreset_lifespan_min,
-             zone_table[zon].fullreset_lifespan_max);
+        number(zone_table[zon].fullreset_lifespan_min,
+               zone_table[zon].fullreset_lifespan_max);
 
     if (zone_table[zon].flags & ZONE_TOWN)
       for (i = 0; town_name_list[i][0] != '\n'; i++)
@@ -1795,12 +1787,12 @@ void boot_zones(int mini_mode)
     /* allocate the command table */
     if (command_array[zon] != 0)
     {
-      CREATE(zone_table[zon].cmd, reset_com, (unsigned) command_array[zon], MEM_TAG_RESET);
-/*
-      zone_table[zon].cmd =
-        (struct reset_com *) calloc(command_array[zon],
-                                    sizeof(struct reset_com));
- */
+      CREATE(zone_table[zon].cmd, reset_com, (unsigned)command_array[zon], MEM_TAG_RESET);
+      /*
+            zone_table[zon].cmd =
+              (struct reset_com *) calloc(command_array[zon],
+                                          sizeof(struct reset_com));
+       */
     }
     else
     {
@@ -1813,19 +1805,19 @@ void boot_zones(int mini_mode)
 
     for (;;)
     {
-      fscanf(fl, " ");          /* skip blanks */
+      fscanf(fl, " "); /* skip blanks */
       fscanf(fl, "%c", &c);
 
       if (c == '*')
       {
-        fgets(buf, MAX_STRING_LENGTH, fl);      /* skip command */
+        fgets(buf, MAX_STRING_LENGTH, fl); /* skip command */
         /* OLC KLUDGE! */
         if (!strn_cmp(buf, "owner:", 6) && !zone_table[zon].owner)
         {
-          char    *o, *p;
+          char *o, *p;
 
           o = buf + 6;
-          while (*o == ' ')     /* skip whitespace  */
+          while (*o == ' ') /* skip whitespace  */
             o++;
           p = str_dup(o);
           o = p;
@@ -1841,7 +1833,7 @@ void boot_zones(int mini_mode)
 
       if (!IS_ZONE_COMMAND(c))
       {
-        fgets(buf, MAX_STRING_LENGTH, fl);      /* skip command */
+        fgets(buf, MAX_STRING_LENGTH, fl); /* skip command */
         continue;
       }
 
@@ -1859,7 +1851,7 @@ void boot_zones(int mini_mode)
 
       zone_table[zon].cmd[cmd_no].if_flag = tmp;
 
-      fgets(buf, sizeof(buf) - 1, fl);  /* read comment */
+      fgets(buf, sizeof(buf) - 1, fl); /* read comment */
 
       cmd_no++;
       if (mini_mode == 2)
@@ -1871,7 +1863,7 @@ void boot_zones(int mini_mode)
       fprintf(stderr, "\r\nzon == %d\r\n", zon);
   }
   top_of_zone_table = --zon;
-//  str_free(check);  // i don't think so..  the last time check is used, it reads a string that is put directly into the zone data
+  //  str_free(check);  // i don't think so..  the last time check is used, it reads a string that is put directly into the zone data
   FREE(command_array);
   fclose(fl);
 
@@ -1881,15 +1873,15 @@ void boot_zones(int mini_mode)
 #undef IS_ZONE_COMMAND
 
 /*************************************************************************
-*  procedures for resetting, both play-time and boot-time         *
-*********************************************************************** */
+ *  procedures for resetting, both play-time and boot-time         *
+ *********************************************************************** */
 
 /* get a mobile NUM from random table */
 int get_mob_table(int tnum)
 {
-  int      temp;
-  int      temp2;
-  int      w, w2;
+  int temp;
+  int temp2;
+  int w, w2;
 
   for (temp = 0; temp < num_mob_tables; temp++)
   {
@@ -1897,25 +1889,25 @@ int get_mob_table(int tnum)
       break;
   }
   if (mob_tables[temp].virtual_number != tnum)
-    return 0;                   /* no table */
-  w = number(0, mob_tables[temp].weight);       /* generate # between 0  and total wt */
+    return 0;                             /* no table */
+  w = number(0, mob_tables[temp].weight); /* generate # between 0  and total wt */
   if (w < mob_tables[temp].empty_weight)
-    return 0;                   /* empty chance */
+    return 0; /* empty chance */
   w2 = mob_tables[temp].empty_weight;
   for (temp2 = 0; temp2 < mob_tables[temp].entries; temp2++)
   {
     w2 += mob_tables[temp].table[temp2].weight;
-    if (w < w2)                 /* got it */
+    if (w < w2) /* got it */
       return mob_tables[temp].table[temp2].virtual_number;
   }
-  return 0;                     /* shouldn't get here */
+  return 0; /* shouldn't get here */
 }
 
 /* get a object NUM from random table */
 int get_obj_table(int tnum)
 {
-  int      temp, temp2;
-  int      w, w2;
+  int temp, temp2;
+  int w, w2;
 
   for (temp = 0; temp < num_obj_tables; temp++)
   {
@@ -1923,7 +1915,7 @@ int get_obj_table(int tnum)
       break;
   }
   if (obj_tables[temp].virtual_number != tnum)
-    return 0;                   /* no table */
+    return 0; /* no table */
   w = number(0, obj_tables[temp].weight);
   if (w < obj_tables[temp].empty_weight)
     return 0;
@@ -1940,12 +1932,12 @@ int get_obj_table(int tnum)
 /* read a mobile from MOB_FILE */
 P_char read_mobile(int nr, int type)
 {
-  P_char   mob = NULL;
-  char     Gbuf1[MAX_STRING_LENGTH], buf[MAX_INPUT_LENGTH], letter = 0;
-  int      foo, bar, i, j, min_stat;
-  long     tmp, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9;
+  P_char mob = NULL;
+  char Gbuf1[MAX_STRING_LENGTH], buf[MAX_INPUT_LENGTH], letter = 0;
+  int foo, bar, i, j, min_stat;
+  long tmp, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9;
   unsigned utmp1, utmp2, utmp3, utmp4, utmp5, utmp6, utmp7, utmp8, utmp9;
-  int      stmp, stmp3, stmp4, level;
+  int stmp, stmp3, stmp4, level;
   static int idnum = 0;
 
   i = nr;
@@ -1964,12 +1956,12 @@ P_char read_mobile(int nr, int type)
   }
   fseek(mob_f, mob_index[nr].pos, 0);
 
-  mob = (P_char) mm_get(dead_mob_pool);
+  mob = (P_char)mm_get(dead_mob_pool);
 
   clear_char(mob);
   CREATE(mob->only.npc, npc_only_data, 1, MEM_TAG_NPCONLY);
 
-  if( !mob->only.npc )
+  if (!mob->only.npc)
   {
     wizlog(56, "mob has no only.npc struct!");
     logit(LOG_DEBUG, "mob %s has no only.npc struct!", GET_NAME(mob));
@@ -1988,12 +1980,12 @@ P_char read_mobile(int nr, int type)
   mob->only.npc->idnum = idnum;
   mob->only.npc->default_pos = POS_STANDING + STAT_NORMAL;
 
-  for( int i = 0; i < NUMB_CHAR_VALS; i++ )
+  for (int i = 0; i < NUMB_CHAR_VALS; i++)
   {
     mob->only.npc->value[i] = 0;
   }
 
-/***** String data *** */
+  /***** String data *** */
 
   /*
    * added pointers to the index struct, so that all mobs of the same
@@ -2009,8 +2001,8 @@ P_char read_mobile(int nr, int type)
       wizlog(56, "Error with mob:  No name");
       return NULL;
     }
-    for (j = 0; *(mob->player.name + j); j++)   /* make sure all keywords
-                                                   are lowercased  */
+    for (j = 0; *(mob->player.name + j); j++) /* make sure all keywords
+                                                 are lowercased  */
       *(mob->player.name + j) = LOWER(*(mob->player.name + j));
     mob_index[nr].keys = mob->player.name;
   }
@@ -2061,7 +2053,7 @@ P_char read_mobile(int nr, int type)
    */
 
   fgets(buf, sizeof(buf) - 1, mob_f);
-  if( sscanf(buf, " %u %u %u %u %u %u %u %u %u %c \n", &utmp1, &utmp7, &utmp8, &utmp9, &utmp2, &utmp3, &utmp4, &utmp5, &utmp6, &letter) == 10 )
+  if (sscanf(buf, " %u %u %u %u %u %u %u %u %u %c \n", &utmp1, &utmp7, &utmp8, &utmp9, &utmp2, &utmp3, &utmp4, &utmp5, &utmp6, &letter) == 10)
   {
     mob->specials.act = utmp1;
     mob->specials.affected_by = utmp2;
@@ -2074,7 +2066,7 @@ P_char read_mobile(int nr, int type)
     mob->only.npc->aggro2_flags = utmp8;
     mob->only.npc->aggro3_flags = utmp9;
   }
-  else if( sscanf(buf, " %lu %lu %lu %lu %lu %lu %lu %lu %c \n", &tmp1, &tmp7, &tmp8, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &letter) == 9 )
+  else if (sscanf(buf, " %lu %lu %lu %lu %lu %lu %lu %lu %c \n", &tmp1, &tmp7, &tmp8, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &letter) == 9)
   {
     mob->specials.act = tmp1;
     mob->only.npc->aggro_flags = tmp7;
@@ -2087,7 +2079,7 @@ P_char read_mobile(int nr, int type)
     mob->specials.affected_by5 = 0;
     mob->specials.alignment = tmp6;
   }
-  else if( sscanf(buf, " %lu %lu %lu %lu %c \n", &tmp1, &tmp2, &tmp3, &tmp4, &letter) == 5 )
+  else if (sscanf(buf, " %lu %lu %lu %lu %c \n", &tmp1, &tmp2, &tmp3, &tmp4, &letter) == 5)
   {
     mob->specials.act = tmp1;
     mob->specials.affected_by = tmp2;
@@ -2096,7 +2088,7 @@ P_char read_mobile(int nr, int type)
   }
   else
   {
-    if( sscanf(buf, " %lu %lu %lu %c \n", &tmp1, &tmp2, &tmp3, &letter) < 3 )
+    if (sscanf(buf, " %lu %lu %lu %c \n", &tmp1, &tmp2, &tmp3, &letter) < 3)
     {
       logit(LOG_DEBUG, "Mob %d has messed up format.", mob_index[nr].virtual_number);
       extract_char(mob);
@@ -2109,33 +2101,33 @@ P_char read_mobile(int nr, int type)
   }
 
   /* hack hack  */
-  if( IS_SET(mob->specials.act, ACT_CANFLY) )
+  if (IS_SET(mob->specials.act, ACT_CANFLY))
     SET_BIT(mob->specials.affected_by, AFF_FLY);
-  if( IS_AFFECTED2(mob, AFF2_CASTING) )
+  if (IS_AFFECTED2(mob, AFF2_CASTING))
     REMOVE_BIT(mob->specials.affected_by2, AFF2_CASTING);
-  if( IS_AFFECTED(mob, AFF_FEAR) )
+  if (IS_AFFECTED(mob, AFF_FEAR))
     REMOVE_BIT(mob->specials.affected_by, AFF_FEAR);
-  if( IS_AFFECTED(mob, AFF_CAMPING) )
+  if (IS_AFFECTED(mob, AFF_CAMPING))
     REMOVE_BIT(mob->specials.affected_by, AFF_CAMPING);
-  if( IS_AFFECTED2(mob, AFF2_MAJOR_PARALYSIS) )
+  if (IS_AFFECTED2(mob, AFF2_MAJOR_PARALYSIS))
     REMOVE_BIT(mob->specials.affected_by2, AFF2_MAJOR_PARALYSIS);
-  if( IS_AFFECTED2(mob, AFF2_SCRIBING) )
+  if (IS_AFFECTED2(mob, AFF2_SCRIBING))
     REMOVE_BIT(mob->specials.affected_by2, AFF2_SCRIBING);
 
   SET_BIT(mob->specials.act, ACT_ISNPC);
 
   // This should always be true as of 10/22/2015.
-  if( letter == 'S' )
+  if (letter == 'S')
   {
     fgets(buf, sizeof(buf) - 1, mob_f);
-    if( sscanf(buf, " %s %i %u %i %i \n", Gbuf1, &stmp, &utmp2, &stmp3, &stmp4) == 5 )
+    if (sscanf(buf, " %s %i %u %i %i \n", Gbuf1, &stmp, &utmp2, &stmp3, &stmp4) == 5)
     {
       mob->player.race = RACE_NONE;
 
       // Start with the first race and end with the last.
-      for( i = 1; i <= LAST_RACE; i++ )
+      for (i = 1; i <= LAST_RACE; i++)
       {
-        if( !str_cmp(race_names_table[i].code, Gbuf1) )
+        if (!str_cmp(race_names_table[i].code, Gbuf1))
         {
           mob->player.race = i;
           break;
@@ -2152,9 +2144,9 @@ P_char read_mobile(int nr, int type)
 
       mob->player.race = RACE_NONE;
 
-      for( i = 1; i <= LAST_RACE; i++ )
+      for (i = 1; i <= LAST_RACE; i++)
       {
-        if( !str_cmp(race_names_table[i].code, Gbuf1) )
+        if (!str_cmp(race_names_table[i].code, Gbuf1))
         {
           mob->player.race = i;
           break;
@@ -2167,10 +2159,10 @@ P_char read_mobile(int nr, int type)
     }
 
     fscanf(mob_f, " %ld ", &tmp);
-    if( tmp > MAXLVL || tmp < 1 )
+    if (tmp > MAXLVL || tmp < 1)
     {
-      logit(LOG_DEBUG, "Bad level %d for mob '%s' %d.", tmp, J_NAME(mob), GET_VNUM(mob) );
-      debug( "Bad level %d for mob '%s' %d.", tmp, J_NAME(mob), GET_VNUM(mob) );
+      logit(LOG_DEBUG, "Bad level %d for mob '%s' %d.", tmp, J_NAME(mob), GET_VNUM(mob));
+      debug("Bad level %d for mob '%s' %d.", tmp, J_NAME(mob), GET_VNUM(mob));
       mob->player.level = level = (tmp > MAXLVL) ? MAXLVL : 1;
     }
     else
@@ -2179,33 +2171,32 @@ P_char read_mobile(int nr, int type)
     }
 #if defined(CTF_MUD) && (CTF_MUD == 1)
     if (!IS_SET(mob->specials.act, ACT_ELITE))
-      mob->player.level = MAX(1, (int)(mob->player.level/2));
+      mob->player.level = MAX(1, (int)(mob->player.level / 2));
 
     if (IS_SET(mob->specials.act, ACT_ELITE))
       mob->player.level -= number(10, 20);
 
-    if( IS_SET(mob->specials.act, ACT_TEACHER) || IS_SET(mob->specials.act, ACT_SPEC_TEACHER)
-      && mob->player.level < 56 )
+    if (IS_SET(mob->specials.act, ACT_TEACHER) || IS_SET(mob->specials.act, ACT_SPEC_TEACHER) && mob->player.level < 56)
       mob->player.level = 56;
 
     level = mob->player.level;
 #endif
 
-  /*
-   * The following initialises the # of spells useable for NPCs in a given
-   * spell circle based on the spl_table[level][spell_circle] in memorize.c.
-   * Element 0 of this tracking array serves as an accumulator used in
-   * replenishing used slots. - SKB 31 Mar 1995
-   */
+    /*
+     * The following initialises the # of spells useable for NPCs in a given
+     * spell circle based on the spl_table[level][spell_circle] in memorize.c.
+     * Element 0 of this tracking array serves as an accumulator used in
+     * replenishing used slots. - SKB 31 Mar 1995
+     */
     mob->specials.undead_spell_slots[0] = 0;
-    for( j = 1; j <= MAX_CIRCLE; j++ )
+    for (j = 1; j <= MAX_CIRCLE; j++)
     {
       mob->specials.undead_spell_slots[j] = spl_table[level][j - 1];
     }
 
     fscanf(mob_f, " %ld ", &tmp);
     /* was warping things.  Tempy fix til everything changes.  JAB */
-    if(IS_WARRIOR(mob) || IS_GREATER_RACE(mob) || IS_ELITE(mob) || IS_GIANT(mob))
+    if (IS_WARRIOR(mob) || IS_GREATER_RACE(mob) || IS_ELITE(mob) || IS_GIANT(mob))
     {
       mob->points.base_hitroll = BOUNDED(2, (level >> 1), 25);
     }
@@ -2247,21 +2238,21 @@ P_char read_mobile(int nr, int type)
     mob->points.damsizedice = tmp2;
 
     fgets(buf, sizeof(buf) - 1, mob_f);
-    if( sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5 )
+    if (sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5)
     {
       GET_PLATINUM(mob) = tmp4; /* * (number(50, 200) / 100); */
       GET_GOLD(mob) = tmp3;     /* * (number(50, 200) / 100); */
       GET_SILVER(mob) = tmp2;   /* * (number(50, 200) / 100); */
       GET_COPPER(mob) = tmp1;   /* * (number(50, 200) / 100); */
-      if( tmp > 10000000 )
+      if (tmp > 10000000)
       {
         logit(LOG_MOB, "Mob '%s' %d has extreme exp %s.", mob->player.name, mob_index[nr].virtual_number,
-          comma_string(tmp) );
+              comma_string(tmp));
       }
       GET_EXP(mob) = tmp * exp_mods[EXPMOD_GLOBAL];
-      if( GET_PLATINUM(mob) > 20 )
+      if (GET_PLATINUM(mob) > 20)
       {
-        tmp =( (GET_PLATINUM(mob) * 1000) + (GET_GOLD(mob) * 100) + (GET_SILVER(mob) * 10) + GET_COPPER(mob) );
+        tmp = ((GET_PLATINUM(mob) * 1000) + (GET_GOLD(mob) * 100) + (GET_SILVER(mob) * 10) + GET_COPPER(mob));
         ADD_MONEY(mob, tmp);
       }
     }
@@ -2317,7 +2308,7 @@ P_char read_mobile(int nr, int type)
 
     mob->points.base_hit = number(tmp, tmp2);
     mob->points.hit = mob->points.max_hit = mob->points.base_hit;
-    if( mob->points.hit < 0 )
+    if (mob->points.hit < 0)
     {
       logit(LOG_DEBUG, "MOB #%d has negative (%d) hp.", mob_index[nr].virtual_number, mob->points.hit);
     }
@@ -2352,44 +2343,44 @@ P_char read_mobile(int nr, int type)
    * ok, this has to be changed, until all mob files are changed.  We
    * have to interpret old 'position' number into new one. JAB
    */
-  switch( tmp )
+  switch (tmp)
   {
-  case 0:                      /* * was POSITION_DEAD */
+  case 0: /* * was POSITION_DEAD */
     logit(LOG_DEBUG, "Mob %d tried to load dead",
           mob_index[nr].virtual_number);
     SET_POS(mob, POS_PRONE + STAT_DYING);
     break;
-  case 1:                      /* * was POSITION_MORTALLYW */
+  case 1: /* * was POSITION_MORTALLYW */
     SET_POS(mob, POS_PRONE + STAT_DYING);
     break;
-  case 2:                      /* * was POSITION_INCAP */
+  case 2: /* * was POSITION_INCAP */
     SET_POS(mob, POS_PRONE + STAT_INCAP);
     break;
-  case 3:                      /* * was POSITION_STUNNED */
+  case 3: /* * was POSITION_STUNNED */
     SET_POS(mob, POS_SITTING + STAT_RESTING);
     break;
-  case 4:                      /* * was POSITION_SLEEPING */
+  case 4: /* * was POSITION_SLEEPING */
     SET_POS(mob, POS_PRONE + STAT_SLEEPING);
     break;
-  case 5:                      /* * was POSITION_RESTING */
+  case 5: /* * was POSITION_RESTING */
     SET_POS(mob, POS_SITTING + STAT_RESTING);
     break;
-  case 6:                      /* * was POSITION_SITTING */
+  case 6: /* * was POSITION_SITTING */
     SET_POS(mob, POS_SITTING + STAT_NORMAL);
     break;
-  case 7:                      /* * was POSITION_FIGHTING */
+  case 7: /* * was POSITION_FIGHTING */
     logit(LOG_DEBUG, "Mob %d loaded fighting.", mob_index[nr].virtual_number);
-  case 8:                      /* * was POSITION_STANDING */
+  case 8: /* * was POSITION_STANDING */
     SET_POS(mob, POS_STANDING + STAT_NORMAL);
     break;
-  case 9:                      /* * was POSITION_SWIMMING? */
+  case 9: /* * was POSITION_SWIMMING? */
     SET_POS(mob, POS_PRONE + STAT_NORMAL);
     break;
-  case 10:                     /* * was POSITION_FLYING */
+  case 10: /* * was POSITION_FLYING */
     SET_POS(mob, POS_STANDING + STAT_NORMAL);
     SET_BIT(mob->specials.affected_by, AFF_FLY);
     break;
-  case 11:                     /* * was POSITION_LEVITATING */
+  case 11: /* * was POSITION_LEVITATING */
     SET_POS(mob, POS_STANDING + STAT_NORMAL);
     SET_BIT(mob->specials.affected_by, AFF_LEVITATE);
     break;
@@ -2404,42 +2395,42 @@ P_char read_mobile(int nr, int type)
    */
   switch (tmp)
   {
-  case 0:                      /* * was POSITION_DEAD */
+  case 0: /* * was POSITION_DEAD */
     logit(LOG_DEBUG, "Mob %d tried to load dead",
           mob_index[nr].virtual_number);
     SET_POS(mob, POS_PRONE + STAT_DYING);
     break;
-  case 1:                      /* * was POSITION_MORTALLYW */
+  case 1: /* * was POSITION_MORTALLYW */
     SET_POS(mob, POS_PRONE + STAT_DYING);
     break;
-  case 2:                      /* * was POSITION_INCAP */
+  case 2: /* * was POSITION_INCAP */
     SET_POS(mob, POS_PRONE + STAT_INCAP);
     break;
-  case 3:                      /* * was POSITION_STUNNED */
+  case 3: /* * was POSITION_STUNNED */
     SET_POS(mob, POS_SITTING + STAT_RESTING);
     break;
-  case 4:                      /* * was POSITION_SLEEPING */
+  case 4: /* * was POSITION_SLEEPING */
     SET_POS(mob, POS_PRONE + STAT_SLEEPING);
     break;
-  case 5:                      /* * was POSITION_RESTING */
+  case 5: /* * was POSITION_RESTING */
     SET_POS(mob, POS_SITTING + STAT_RESTING);
     break;
-  case 6:                      /* * was POSITION_SITTING */
+  case 6: /* * was POSITION_SITTING */
     SET_POS(mob, POS_SITTING + STAT_NORMAL);
     break;
-  case 7:                      /* * was POSITION_FIGHTING */
+  case 7: /* * was POSITION_FIGHTING */
     logit(LOG_DEBUG, "Mob %d loaded fighting.", mob_index[nr].virtual_number);
-  case 8:                      /* * was POSITION_STANDING */
+  case 8: /* * was POSITION_STANDING */
     SET_POS(mob, POS_STANDING + STAT_NORMAL);
     break;
-  case 9:                      /* * was POSITION_SWIMMING? */
+  case 9: /* * was POSITION_SWIMMING? */
     SET_POS(mob, POS_PRONE + STAT_NORMAL);
     break;
-  case 10:                     /* * was POSITION_FLYING */
+  case 10: /* * was POSITION_FLYING */
     SET_POS(mob, POS_STANDING + STAT_NORMAL);
     SET_BIT(mob->specials.affected_by, AFF_FLY);
     break;
-  case 11:                     /* * was POSITION_LEVITATING */
+  case 11: /* * was POSITION_LEVITATING */
     SET_POS(mob, POS_STANDING + STAT_NORMAL);
     SET_BIT(mob->specials.affected_by, AFF_LEVITATE);
     break;
@@ -2452,7 +2443,7 @@ P_char read_mobile(int nr, int type)
   fscanf(mob_f, " %ld \n", &tmp);
   mob->player.sex = tmp;
 
-  if( letter == 'S' )
+  if (letter == 'S')
   {
     mob->player.time.birth = time(0);
     mob->player.time.played = 0;
@@ -2464,11 +2455,11 @@ P_char read_mobile(int nr, int type)
     for (i = 0; i < 5; i++)
       mob->specials.apply_saving_throw[i] = 0;
 
-    if( (GET_LEVEL(mob) > 50) || IS_GREATER_RACE(mob) || IS_ELITE(mob) )
+    if ((GET_LEVEL(mob) > 50) || IS_GREATER_RACE(mob) || IS_ELITE(mob))
     {
       roll_basic_attributes(mob, ROLL_MOB_ELITE);
     }
-    else if( GET_LEVEL(mob) > 5 )
+    else if (GET_LEVEL(mob) > 5)
     {
       roll_basic_attributes(mob, ROLL_MOB_GOOD);
     }
@@ -2477,8 +2468,7 @@ P_char read_mobile(int nr, int type)
       roll_basic_attributes(mob, ROLL_MOB_NORMAL);
     }
 
-    if( strstr(mob->player.name, "guard") || strstr(mob->player.name, "elite") || strstr(mob->player.name, "militia")
-      || strstr(mob->player.name, "fighter") || strstr(mob->player.name, "warrior") )
+    if (strstr(mob->player.name, "guard") || strstr(mob->player.name, "elite") || strstr(mob->player.name, "militia") || strstr(mob->player.name, "fighter") || strstr(mob->player.name, "warrior"))
     {
       while (mob->base_stats.Str < min_stats_for_class[1][0])
         mob->base_stats.Str += number(10, 20);
@@ -2489,8 +2479,7 @@ P_char read_mobile(int nr, int type)
       while (mob->base_stats.Con < min_stats_for_class[1][3])
         mob->base_stats.Con += number(10, 20);
     }
-    if( strstr(mob->player.name, "thief") || strstr(mob->player.name, "rogue") || strstr(mob->player.name, "bandit")
-      || strstr(mob->player.name, "assassin") )
+    if (strstr(mob->player.name, "thief") || strstr(mob->player.name, "rogue") || strstr(mob->player.name, "bandit") || strstr(mob->player.name, "assassin"))
     {
       while (mob->base_stats.Dex < min_stats_for_class[13][1])
         mob->base_stats.Dex += number(10, 20);
@@ -2500,32 +2489,32 @@ P_char read_mobile(int nr, int type)
         mob->base_stats.Int += number(10, 20);
       while (mob->base_stats.Cha < min_stats_for_class[13][7])
         mob->base_stats.Cha += number(10, 20);
-      if( GET_CLASS(mob, CLASS_ROGUE) && (!mob_index[GET_RNUM(mob)].func.mob) )
+      if (GET_CLASS(mob, CLASS_ROGUE) && (!mob_index[GET_RNUM(mob)].func.mob))
         mob_index[GET_RNUM(mob)].func.mob = thief;
     }
 
     // Start at first class, run through CLASS_COUNT and make sure they meet minimum requirements.
-    for( int cls = 0; cls < CLASS_COUNT; cls++ )
+    for (int cls = 0; cls < CLASS_COUNT; cls++)
     {
       // If they have the class, make sure the stats fit.
-      if( GET_CLASS(mob, 1 << cls) )
+      if (GET_CLASS(mob, 1 << cls))
       {
         // Str = 0, Dex = 1, Agi = 2, Con = 3, Pow = 4, Int = 5, Wis = 6, Cha = 7
-        while( mob->base_stats.Str < min_stats_for_class[cls+1][0] )
+        while (mob->base_stats.Str < min_stats_for_class[cls + 1][0])
           mob->base_stats.Str += number(10, 20);
-        while( mob->base_stats.Dex < min_stats_for_class[cls+1][1] )
+        while (mob->base_stats.Dex < min_stats_for_class[cls + 1][1])
           mob->base_stats.Dex += number(10, 20);
-        while( mob->base_stats.Agi < min_stats_for_class[cls+1][2] )
+        while (mob->base_stats.Agi < min_stats_for_class[cls + 1][2])
           mob->base_stats.Agi += number(10, 20);
-        while( mob->base_stats.Con < min_stats_for_class[cls+1][3] )
+        while (mob->base_stats.Con < min_stats_for_class[cls + 1][3])
           mob->base_stats.Con += number(10, 20);
-        while( mob->base_stats.Pow < min_stats_for_class[cls+1][4] )
+        while (mob->base_stats.Pow < min_stats_for_class[cls + 1][4])
           mob->base_stats.Pow += number(10, 20);
-        while( mob->base_stats.Int < min_stats_for_class[cls+1][5] )
+        while (mob->base_stats.Int < min_stats_for_class[cls + 1][5])
           mob->base_stats.Int += number(10, 20);
-        while( mob->base_stats.Wis < min_stats_for_class[cls+1][6] )
+        while (mob->base_stats.Wis < min_stats_for_class[cls + 1][6])
           mob->base_stats.Wis += number(10, 20);
-        while( mob->base_stats.Cha < min_stats_for_class[cls+1][7] )
+        while (mob->base_stats.Cha < min_stats_for_class[cls + 1][7])
           mob->base_stats.Cha += number(10, 20);
       }
     }
@@ -2541,12 +2530,12 @@ P_char read_mobile(int nr, int type)
 
     /* * variable mana */
     i = 80 + dice(MAX(1, GET_LEVEL(mob)), IS_ANIMAL(mob) ? 1 : 4) +
-      GET_LEVEL(mob) * 2;
+        GET_LEVEL(mob) * 2;
 
     /* a few special cases to up things a bit */
-    if(IS_ELITE(mob) ||
-      IS_GREATER_RACE(mob))
-    { 
+    if (IS_ELITE(mob) ||
+        IS_GREATER_RACE(mob))
+    {
       i += GET_LEVEL(mob) * 5;
     }
 
@@ -2561,14 +2550,13 @@ P_char read_mobile(int nr, int type)
     mob->points.mana = mob->points.base_mana = mob->points.max_mana = i;
 
     mob->points.max_vitality =
-      mob->base_stats.Agi + (mob->base_stats.Str + mob->base_stats.Con) / ((IS_ANIMAL(mob)) ? 1 : 2);
-    if( mob->points.max_vitality < 50 )
+        mob->base_stats.Agi + (mob->base_stats.Str + mob->base_stats.Con) / ((IS_ANIMAL(mob)) ? 1 : 2);
+    if (mob->points.max_vitality < 50)
       mob->points.max_vitality = 50;
     mob->points.vitality = mob->points.base_vitality = mob->points.max_vitality;
-
   }
   else
-  {                             /* The old monsters are down below here */
+  { /* The old monsters are down below here */
     fscanf(mob_f, " %s ", Gbuf1);
     mob->player.race = 0;
 
@@ -2580,15 +2568,15 @@ P_char read_mobile(int nr, int type)
     logit(LOG_MOB, "Old style mob: %d Race: %s(%d)", mob_index[nr].virtual_number, Gbuf1, mob->player.race);
 
     fscanf(mob_f, " %ld ", &tmp);
-//    GET_LEVEL(mob) = tmp;
+    //    GET_LEVEL(mob) = tmp;
     mob->player.level = tmp;
 
 #if defined(CTF_MUD) && (CTF_MUD == 1)
-    if( !IS_SET(mob->specials.act, ACT_ELITE) )
-      mob->player.level = (int)(mob->player.level/2);
-    if( IS_SET(mob->specials.act, ACT_ELITE) )
+    if (!IS_SET(mob->specials.act, ACT_ELITE))
+      mob->player.level = (int)(mob->player.level / 2);
+    if (IS_SET(mob->specials.act, ACT_ELITE))
       mob->player.level -= number(5, 15);
-    if( IS_SET(mob->specials.act, ACT_TEACHER) || IS_SET(mob->specials.act, ACT_SPEC_TEACHER) )
+    if (IS_SET(mob->specials.act, ACT_TEACHER) || IS_SET(mob->specials.act, ACT_SPEC_TEACHER))
       mob->player.level = 56;
 #endif
 
@@ -2597,9 +2585,9 @@ P_char read_mobile(int nr, int type)
     mob->player.time.played = 0;
     mob->player.time.logon = time(0);
 
-    fscanf(mob_f, " %ld ", &tmp);       /* weight */
+    fscanf(mob_f, " %ld ", &tmp); /* weight */
 
-    fscanf(mob_f, " %ld \n", &tmp);     /* height */
+    fscanf(mob_f, " %ld \n", &tmp); /* height */
 
     for (i = 0; i < 3; i++)
     {
@@ -2618,11 +2606,11 @@ P_char read_mobile(int nr, int type)
 
     /* Set the damage as some standard 1d6 */
     fscanf(mob_f, " %ldd%ld+%ld %ld\n", &tmp, &tmp2, &tmp3, &tmp4);
-    mob->points.base_damroll = mob->points.damroll = tmp3 + level/2;
+    mob->points.base_damroll = mob->points.damroll = tmp3 + level / 2;
     mob->points.damnodice = tmp;
     mob->points.damsizedice = tmp2;
     /* was warping things.  Tempy fix til everything changes.  JAB */
-    if(IS_WARRIOR(mob) || IS_GREATER_RACE(mob) || IS_GIANT(mob) || IS_ELITE(mob))
+    if (IS_WARRIOR(mob) || IS_GREATER_RACE(mob) || IS_GIANT(mob) || IS_ELITE(mob))
     {
       mob->points.base_hitroll = BOUNDED(2, (GET_LEVEL(mob) >> 1), 25);
     }
@@ -2662,7 +2650,7 @@ P_char read_mobile(int nr, int type)
 
   foo = GET_DAMROLL(mob);
   foo += mob->points.damnodice * ((1 + mob->points.damsizedice) >> 1);
-  if(IS_GREATER_RACE(mob) || IS_ELITE(mob))
+  if (IS_GREATER_RACE(mob) || IS_ELITE(mob))
   {
     bar = MIN(foo, 400);
   }
@@ -2675,8 +2663,8 @@ P_char read_mobile(int nr, int type)
   {
     foo = bar;
     logit(LOG_MOB, "FYI - no changes made to MOB: %d has _RIDICULOUS_ damage. %dd%d + %d (%d to %d) check mob code, stats and racial stats.",
-      mob_index[nr].virtual_number, mob->points.damnodice, mob->points.damsizedice, GET_DAMROLL(mob),
-      GET_DAMROLL(mob) + mob->points.damnodice, GET_DAMROLL(mob) + (mob->points.damnodice * mob->points.damsizedice));
+          mob_index[nr].virtual_number, mob->points.damnodice, mob->points.damsizedice, GET_DAMROLL(mob),
+          GET_DAMROLL(mob) + mob->points.damnodice, GET_DAMROLL(mob) + (mob->points.damnodice * mob->points.damsizedice));
   }
 
   mob->curr_stats = mob->base_stats;
@@ -2689,9 +2677,9 @@ P_char read_mobile(int nr, int type)
   if (IS_SET(mob->specials.act, ACT_SPEC) && (mob_index[nr].func.mob == 0))
   {
     REMOVE_BIT(mob->specials.act, ACT_SPEC);
-    if (mob_index[nr].number == 1)      /*
-                                         * only first, not every
-                                         */
+    if (mob_index[nr].number == 1) /*
+                                    * only first, not every
+                                    */
       logit(LOG_MOB, "ACT_SPEC, but no function: %d %s", mob_index[nr].virtual_number, GET_NAME(mob));
   }
   /* if they have a func but no spec bit, add one -- DTS 2/12/95 */
@@ -2711,7 +2699,7 @@ P_char read_mobile(int nr, int type)
 
   setCharPhysTypeInfo(mob);
 
-  if( mob->nevents )
+  if (mob->nevents)
   {
     raise(SIGSEGV);
   }
@@ -2720,18 +2708,18 @@ P_char read_mobile(int nr, int type)
   // All mobs do mundane things.
   add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
   // ACT_SPEC mobs with specials proc check CMD_SET_PERIODIC.
-  if( IS_SET( mob->specials.act, ACT_SPEC ) )
+  if (IS_SET(mob->specials.act, ACT_SPEC))
   {
-    if( (mob_index[mob->only.npc->R_num].func.mob)(mob, NULL, CMD_SET_PERIODIC, NULL) )
+    if ((mob_index[mob->only.npc->R_num].func.mob)(mob, NULL, CMD_SET_PERIODIC, NULL))
       add_event(event_mob_proc, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
   }
   if (IS_ACT(mob, ACT_PATROL))
-    add_event(event_patrol_move, WAIT_SEC, mob, 0,0,0,0,0);
+    add_event(event_patrol_move, WAIT_SEC, mob, 0, 0, 0, 0, 0);
 
   convertMob(mob);
 
   if (IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
-    add_event(event_mob_skin_spell, number(1,5), mob, 0, 0, 0, 0, 0);
+    add_event(event_mob_skin_spell, number(1, 5), mob, 0, 0, 0, 0, 0);
 
   return (mob);
 }
@@ -2739,9 +2727,9 @@ P_char read_mobile(int nr, int type)
 void event_object_proc(P_char ch, P_char victim, P_obj obj, void *data)
 {
   if (obj_index[obj->R_num].func.obj)
-    (*obj_index[obj->R_num].func.obj) (obj, 0, CMD_PERIODIC, 0);
+    (*obj_index[obj->R_num].func.obj)(obj, 0, CMD_PERIODIC, 0);
 
-  if( obj_index[obj->R_num].number == 55434 )
+  if (obj_index[obj->R_num].number == 55434)
   {
     add_event(event_object_proc, WAIT_SEC, 0, 0, obj, 0, 0, 0);
   }
@@ -2754,10 +2742,10 @@ void event_object_proc(P_char ch, P_char victim, P_obj obj, void *data)
 /* read an object from OBJ_FILE */
 P_obj read_object(int nr, int type)
 {
-  P_obj    obj;
-  int      tmp, i, j, k;
+  P_obj obj;
+  int tmp, i, j, k;
   unsigned long int utmp;
-  char     chk[MAX_STRING_LENGTH];
+  char chk[MAX_STRING_LENGTH];
   struct extra_descr_data *new_descr;
 
   i = nr;
@@ -2778,12 +2766,12 @@ P_obj read_object(int nr, int type)
   fseek(obj_f, obj_index[nr].pos, 0);
 
 #if 0
-#   ifdef MEM_DEBUG
+#ifdef MEM_DEBUG
   mem_use[MEM_OBJ] += sizeof(struct obj_data);
-#   endif
+#endif
   CREATE(obj, struct obj_data, 1);
 #endif
-  obj = (P_obj) mm_get(dead_obj_pool);
+  obj = (P_obj)mm_get(dead_obj_pool);
 
   memset(obj, 0, sizeof(struct obj_data));
 
@@ -2811,7 +2799,7 @@ P_obj read_object(int nr, int type)
   if (!obj_index[nr].keys)
   {
     obj->name = fread_string(obj_f);
-    for (j = 0; *(obj->name + j); j++)  /* make sure all keywords are lowercased */
+    for (j = 0; *(obj->name + j); j++) /* make sure all keywords are lowercased */
       *(obj->name + j) = LOWER(*(obj->name + j));
     obj_index[nr].keys = obj->name;
   }
@@ -2862,13 +2850,13 @@ P_obj read_object(int nr, int type)
   fscanf(obj_f, " %d ", &tmp);
   obj->material = tmp;
   fscanf(obj_f, " %d ", &tmp);
-//  obj->size = tmp;
+  //  obj->size = tmp;
   fscanf(obj_f, " %d ", &tmp);
-//  obj->space = tmp;
+  //  obj->space = tmp;
   fscanf(obj_f, " %d ", &tmp);
   obj->craftsmanship = tmp;
   fscanf(obj_f, " %d ", &tmp);
-//  obj->damres_bonus = tmp;
+  //  obj->damres_bonus = tmp;
   fscanf(obj_f, " %lu ", &utmp);
   obj->extra_flags = utmp;
   fscanf(obj_f, " %lu ", &utmp);
@@ -2904,10 +2892,10 @@ P_obj read_object(int nr, int type)
   obj->cost = tmp;
   fscanf(obj_f, " %d \n", &tmp);
   obj->condition = tmp;
-//  fscanf(obj_f, " %d \n", &tmp);
-//  obj->max_condition = tmp;  wipe2011
-//  if(obj->max_condition < 100)
-//    obj->max_condition = 100;
+  //  fscanf(obj_f, " %d \n", &tmp);
+  //  obj->max_condition = tmp;  wipe2011
+  //  if(obj->max_condition < 100)
+  //    obj->max_condition = 100;
 
   if (fscanf(obj_f, " %lu \n", &utmp) == 1)
   {
@@ -2924,12 +2912,12 @@ P_obj read_object(int nr, int type)
     }
   }
 
-//  if(obj->craftsmanship > ((OBJCRAFT_HIGHEST - 1) / 2))
-//  {
-//    obj->max_condition = (int) BOUNDED(100, (50 * 1.4285 * (obj->craftsmanship - 6)), 500);
-    // 1.4285 = 10 / 7(max condition is 1000, there are 7 values after average craftsmanship)
-//  } 
-//  obj->condition = obj->max_condition;  wipe2011
+  //  if(obj->craftsmanship > ((OBJCRAFT_HIGHEST - 1) / 2))
+  //  {
+  //    obj->max_condition = (int) BOUNDED(100, (50 * 1.4285 * (obj->craftsmanship - 6)), 500);
+  // 1.4285 = 10 / 7(max condition is 1000, there are 7 values after average craftsmanship)
+  //  }
+  //  obj->condition = obj->max_condition;  wipe2011
 
   // nuke the proclib flag - it'll be put back if needed
   REMOVE_BIT(obj->extra_flags, ITEM_PROCLIB);
@@ -3014,22 +3002,17 @@ P_obj read_object(int nr, int type)
 #endif
   /* set up a few items that are belt attachable */
   if (((GET_ITEM_TYPE(obj) ==
-        ITEM_DRINKCON) /*&& !isname("barrel", obj->name) */  &&
+        ITEM_DRINKCON) /*&& !isname("barrel", obj->name) */
+       &&
        (isname("canteen", obj->name) || isname("skin", obj->name) ||
-        isname("horn", obj->name))) || ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER)
-                                        && (isname("bag", obj->name) ||
-                                            isname("sack", obj->name) ||
-                                            isname("tube", obj->name) ||
-                                            isname("case", obj->name) ||
-                                            isname("scabbard", obj->name) ||
-                                            isname("pouch", obj->name)) &&
-                                        (obj->value[0] < 25)) ||
+        isname("horn", obj->name))) ||
+      ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER) && (isname("bag", obj->name) || isname("sack", obj->name) || isname("tube", obj->name) || isname("case", obj->name) || isname("scabbard", obj->name) || isname("pouch", obj->name)) &&
+       (obj->value[0] < 25)) ||
       (GET_ITEM_TYPE(obj) == ITEM_QUIVER))
     SET_BIT(obj->wear_flags, ITEM_ATTACH_BELT);
 
   /* and some that are back */
-  if ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER && isname("backpack", obj->name))
-      || GET_ITEM_TYPE(obj) == ITEM_QUIVER)
+  if ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER && isname("backpack", obj->name)) || GET_ITEM_TYPE(obj) == ITEM_QUIVER)
     SET_BIT(obj->wear_flags, ITEM_WEAR_BACK);
 
   /* set throw flag to obj */
@@ -3049,7 +3032,7 @@ P_obj read_object(int nr, int type)
       SET_BIT(obj->extra_flags, ITEM_CAN_THROW2);
       SET_BIT(obj->extra_flags, ITEM_RETURNING);
     }
-    if( obj->value[0] == WEAPON_2HANDSWORD )
+    if (obj->value[0] == WEAPON_2HANDSWORD)
     {
       SET_BIT(obj->extra_flags, ITEM_TWOHANDS);
     }
@@ -3059,8 +3042,8 @@ P_obj read_object(int nr, int type)
 
   if (obj_index[nr].func.obj)
   {
-    if( (*obj_index[nr].func.obj) (obj, 0, CMD_SET_PERIODIC, 0) )
-      add_event(event_object_proc, PULSE_MOBILE + number(-4,4), 0, 0, obj, 0, 0, 0);
+    if ((*obj_index[nr].func.obj)(obj, 0, CMD_SET_PERIODIC, 0))
+      add_event(event_object_proc, PULSE_MOBILE + number(-4, 4), 0, 0, obj, 0, 0, 0);
   }
 
   if (isname("random_exit", obj->name))
@@ -3077,14 +3060,13 @@ P_obj read_object(int nr, int type)
   */
 
   /* init justice flag */
-//  obj->justice_status = 0;
-//  obj->justice_name = NULL;
+  //  obj->justice_status = 0;
+  //  obj->justice_name = NULL;
 
   convertObj(obj);
 
   return (obj);
 }
-
 
 /*  Function to reset no_reset zones...
  *  This function will be called at a time during boot
@@ -3099,7 +3081,7 @@ P_obj read_object(int nr, int type)
  */
 void no_reset_zone_reset(int zone_number)
 {
-  if(!qry("SELECT reset_perc FROM zones WHERE id = '%d'", zone_number))
+  if (!qry("SELECT reset_perc FROM zones WHERE id = '%d'", zone_number))
   {
     logit(LOG_DEBUG, "no_reset_zone_reset: could not find zone information for zone id %d", zone_number);
     return;
@@ -3107,7 +3089,7 @@ void no_reset_zone_reset(int zone_number)
 
   MYSQL_RES *res = mysql_store_result(DB);
 
-  if(mysql_num_rows(res) < 1)
+  if (mysql_num_rows(res) < 1)
   {
     logit(LOG_DEBUG, "No data retrieved from DB for no_reset_zone_reset...");
     mysql_free_result(res);
@@ -3116,12 +3098,12 @@ void no_reset_zone_reset(int zone_number)
 
   MYSQL_ROW row = mysql_fetch_row(res);
 
-  if(epic_zone_done_now(zone_table[zone_number].number) && atoi(row[0]) > number(0, 99))
+  if (epic_zone_done_now(zone_table[zone_number].number) && atoi(row[0]) > number(0, 99))
   {
-    //zone_purge(zone_number);
+    // zone_purge(zone_number);
     reset_zone(zone_number, 0);
     db_query("UPDATE zones SET reset_perc = '%d' WHERE id = '%d'", 0, zone_number);
-    //epic_zone_erase_touch(zone_table[zone_number].number);
+    // epic_zone_erase_touch(zone_table[zone_number].number);
   }
   else
   {
@@ -3138,13 +3120,13 @@ void no_reset_zone_reset(int zone_number)
 void reset_zone(int zone, int force_item_repop)
 {
   const int respawn = get_property("artifact.respawn", 0);
-  int      cmd_no, last_cmd = 1, last_mob_load = 0;
-  int      temp, room, ival;
-  P_char   mob = NULL, last_mob = NULL, tmp_mob = NULL, last_mob_followable = NULL;
-  P_obj    obj, obj_to;
-  P_event  e1 = NULL;
+  int cmd_no, last_cmd = 1, last_mob_load = 0;
+  int temp, room, ival;
+  P_char mob = NULL, last_mob = NULL, tmp_mob = NULL, last_mob_followable = NULL;
+  P_obj obj, obj_to;
+  P_event e1 = NULL;
   arti_data artidata;
-  char     buf[MAX_STRING_LENGTH];
+  char buf[MAX_STRING_LENGTH];
 
   logit(LOG_STATUS, "reset_zone: reseting zone '%s', force_item_repop: %d", zone_table[zone].filename, force_item_repop);
   for (cmd_no = 0;; cmd_no++)
@@ -3213,14 +3195,14 @@ void reset_zone(int zone, int force_item_repop)
 
         if ((ZCMD.arg3 >= 0) && (obj_index[temp].number < ZCMD.arg2))
         {
-          if( !(obj = read_object(temp, REAL)) )
+          if (!(obj = read_object(temp, REAL)))
           {
-             break;
+            break;
           }
-          if( get_artifact_data_sql(obj_index[temp].virtual_number, &artidata) )
+          if (get_artifact_data_sql(obj_index[temp].virtual_number, &artidata))
           {
             // If the artifact is owned, then it's timer is ticking somwhere, so we don't need to load another.
-            if( artidata.owned )
+            if (artidata.owned)
             {
               extract_obj(obj);
               break;
@@ -3228,14 +3210,14 @@ void reset_zone(int zone, int force_item_repop)
           }
           // Remove the artifact unless artifact.respawn == 0
           //   or artifact.respawn == 1 and we are not booting.
-          if( IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)) )
+          if (IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)))
           {
             extract_obj(obj);
             break;
           }
 
           ival = itemvalue(obj);
-          if( !ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) )
+          if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4))
           {
             extract_obj(obj);
             last_cmd = 1;
@@ -3243,7 +3225,7 @@ void reset_zone(int zone, int force_item_repop)
           }
 
           obj_to = get_obj_num(ZCMD.arg3);
-          if( !obj_to )
+          if (!obj_to)
           {
             extract_obj(obj);
             break;
@@ -3251,7 +3233,7 @@ void reset_zone(int zone, int force_item_repop)
           obj_to_obj(obj, obj_to);
           // Artifact poof timer to BLOOD_DAYS * secs in a day.
           obj->timer[3] = time(NULL);
- 	        last_cmd = 1;
+          last_cmd = 1;
           break;
         }
 
@@ -3271,21 +3253,21 @@ void reset_zone(int zone, int force_item_repop)
         obj_index[temp].limit = ZCMD.arg2; // set the limit from zone file
 
         if (obj_index[temp].number > ZCMD.arg2)
-          break;                /* enough in game */
+          break; /* enough in game */
         if (ZCMD.arg3 == -1)
         {
           /* bad command, disable */
           ZCMD.command = '!';
           break;
         }
-        if( !(obj = read_object(temp, REAL)) )
+        if (!(obj = read_object(temp, REAL)))
         {
-           break;
+          break;
         }
-        if( get_artifact_data_sql(obj_index[temp].virtual_number, &artidata) )
+        if (get_artifact_data_sql(obj_index[temp].virtual_number, &artidata))
         {
           // If the artifact is owned, then it's timer is ticking somwhere, so we don't need to load another.
-          if( artidata.owned )
+          if (artidata.owned)
           {
             extract_obj(obj);
             break;
@@ -3293,17 +3275,17 @@ void reset_zone(int zone, int force_item_repop)
         }
         // Remove the artifact unless artifact.respawn == 0
         //   or artifact.respawn == 1 and we are not booting.
-        if( IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)) )
+        if (IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)))
         {
           extract_obj(obj);
           break;
         }
 
         ival = itemvalue(obj);
-        if( !ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) )
+        if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4))
         {
           extract_obj(obj);
- 	        last_cmd = 1;
+          last_cmd = 1;
           break;
         }
 
@@ -3329,14 +3311,14 @@ void reset_zone(int zone, int force_item_repop)
 
         if (obj_index[ZCMD.arg1].number < ZCMD.arg2)
         {
-          if( !(obj = read_object(temp, REAL)) )
+          if (!(obj = read_object(temp, REAL)))
           {
-             break;
+            break;
           }
-          if( get_artifact_data_sql(obj_index[temp].virtual_number, &artidata) )
+          if (get_artifact_data_sql(obj_index[temp].virtual_number, &artidata))
           {
             // If the artifact is owned, then it's timer is ticking somwhere, so we don't need to load another.
-            if( artidata.owned )
+            if (artidata.owned)
             {
               extract_obj(obj);
               break;
@@ -3344,20 +3326,20 @@ void reset_zone(int zone, int force_item_repop)
           }
           // Remove the artifact unless artifact.respawn == 0
           //   or artifact.respawn == 1 and we are not booting.
-          if( IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)) )
+          if (IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)))
           {
             extract_obj(obj);
             break;
           }
           ival = itemvalue(obj);
           // Load all shopkeeper eq.
-          if( !ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) && (!mob || !IS_SHOPKEEPER(mob)) )
+          if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) && (!mob || !IS_SHOPKEEPER(mob)))
           {
             extract_obj(obj);
             last_cmd = 1;
             break;
           }
-          if( mob )              /* last mob */
+          if (mob) /* last mob */
           {
             obj_to_char(obj, mob);
             last_cmd = 1;
@@ -3366,16 +3348,16 @@ void reset_zone(int zone, int force_item_repop)
           else
           {
             logit(LOG_DEBUG, "reset_zone: object '%s' %d could not be placed on bad mob - zone %s.",
-              OBJ_SHORT(obj), OBJ_VNUM(obj), zone_table[zone].filename);
+                  OBJ_SHORT(obj), OBJ_VNUM(obj), zone_table[zone].filename);
             extract_obj(obj);
           }
         }
         break;
 
-      case 'M':                /* read a mobile */
+      case 'M':                                 /* read a mobile */
         mob_index[ZCMD.arg1].limit = ZCMD.arg2; // set the limit from zone file
 
-        if( (mob_index[ZCMD.arg1].number < ZCMD.arg2 && ZCMD.arg4 == 100) || force_item_repop )
+        if ((mob_index[ZCMD.arg1].number < ZCMD.arg2 && ZCMD.arg4 == 100) || force_item_repop)
         {
           if (ZCMD.arg4 > number(0, 99))
           {
@@ -3383,7 +3365,7 @@ void reset_zone(int zone, int force_item_repop)
             {
               ZCMD.command = '!';
               logit(LOG_DEBUG, "reset_zone(): (zone %d) mob %d [%d] not loadable", zone,
-                ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
+                    ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
             }
           }
           else
@@ -3391,9 +3373,9 @@ void reset_zone(int zone, int force_item_repop)
             mob = 0;
             last_mob = 0;
             logit(LOG_MOB, "M cmd not executed %d %d %d %d", ZCMD.arg1,
-              ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+                  ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
           }
-          if( !mob )
+          if (!mob)
           {
             last_cmd = last_mob_load = 0;
             last_mob_followable = 0;
@@ -3419,39 +3401,38 @@ void reset_zone(int zone, int force_item_repop)
           last_cmd = last_mob_load = 0;
         break;
 
-      case 'O':                /* load an object to room */
+      case 'O':                                 /* load an object to room */
         obj_index[ZCMD.arg1].limit = ZCMD.arg2; // set the limit from zone file
 
-        if( (ZCMD.arg1 >= 0) && (ZCMD.arg3 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2
-          && ZCMD.arg4 == 100) || force_item_repop) )
+        if ((ZCMD.arg1 >= 0) && (ZCMD.arg3 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2 && ZCMD.arg4 == 100) || force_item_repop))
         {
-          if( !(obj = get_obj_in_list_num(ZCMD.arg1, world[ZCMD.arg3].contents)) || IS_SET(obj->wear_flags, ITEM_TAKE) )
+          if (!(obj = get_obj_in_list_num(ZCMD.arg1, world[ZCMD.arg3].contents)) || IS_SET(obj->wear_flags, ITEM_TAKE))
           {
             obj = NULL;
-            if( !(obj = read_object(ZCMD.arg1, REAL)) )
+            if (!(obj = read_object(ZCMD.arg1, REAL)))
             {
               ZCMD.command = '!';
               logit(LOG_DEBUG, "reset_zone(): (zone %d) obj %d [%d] not loadable",
-                zone, ZCMD.arg1, obj_index[ZCMD.arg1].virtual_number);
+                    zone, ZCMD.arg1, obj_index[ZCMD.arg1].virtual_number);
             }
-            if( obj )
+            if (obj)
             {
-              if( IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata) )
+              if (IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata))
               {
                 // If the artifact is owned, then it's timer is ticking somwhere, so we don't need to load another.
-                if( artidata.owned )
+                if (artidata.owned)
                 {
                   extract_obj(obj);
                   break;
                 }
               }
-              if( IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)) )
+              if (IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)))
               {
                 extract_obj(obj);
                 break;
               }
               ival = itemvalue(obj);
-              if( !ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) )
+              if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4))
               {
                 extract_obj(obj);
                 last_cmd = 1;
@@ -3468,30 +3449,30 @@ void reset_zone(int zone, int force_item_repop)
         else if (obj_index[ZCMD.arg1].number < ZCMD.arg2)
         {
           logit(LOG_OBJ, "O cmd: obj: %d to_room: %d, chance: %d, limit %d(%d)",
-            obj_index[ZCMD.arg1].virtual_number, (ZCMD.arg3 >= 0) ? world[ZCMD.arg3].number : -2,
-            ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
-          ZCMD.command = '!';   /* disable */
+                obj_index[ZCMD.arg1].virtual_number, (ZCMD.arg3 >= 0) ? world[ZCMD.arg3].number : -2,
+                ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
+          ZCMD.command = '!'; /* disable */
         }
         last_cmd = 0;
         break;
 
-      case 'P':                /* object to object */
+      case 'P': /* object to object */
         last_cmd = 0;
         obj_index[ZCMD.arg1].limit = ZCMD.arg2; // set the limit from zone file
 
-        if( (ZCMD.arg1 >= 0) && (ZCMD.arg3 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2) || force_item_repop) )
+        if ((ZCMD.arg1 >= 0) && (ZCMD.arg3 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2) || force_item_repop))
         {
-          if( !(obj = read_object(ZCMD.arg1, REAL)) )
+          if (!(obj = read_object(ZCMD.arg1, REAL)))
           {
             ZCMD.command = '!';
             logit(LOG_DEBUG, "reset_zone(): (zone %d) obj %d [%d] not loadable", zone, ZCMD.arg1, obj_index[ZCMD.arg1].virtual_number);
           }
-          if( obj )
+          if (obj)
           {
-            if( IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata) )
+            if (IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata))
             {
               // If the artifact is owned, then it's timer is ticking somwhere, so we don't need to load another.
-              if( artidata.owned )
+              if (artidata.owned)
               {
                 extract_obj(obj);
                 break;
@@ -3501,83 +3482,83 @@ void reset_zone(int zone, int force_item_repop)
             obj_to = get_obj_num(ZCMD.arg3);
             if (obj_to)
             {
-              if( IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)) )
+              if (IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)))
               {
                 extract_obj(obj);
                 break;
               }
               ival = itemvalue(obj);
-              if( !ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) )
+              if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4))
               {
                 extract_obj(obj);
                 last_cmd = 1;
                 break;
               }
-          		obj_to_obj(obj, obj_to);
+              obj_to_obj(obj, obj_to);
               last_cmd = 1;
               break;
             }
           }
         }
-        else if( obj_index[ZCMD.arg1].number < ZCMD.arg2 )
+        else if (obj_index[ZCMD.arg1].number < ZCMD.arg2)
         {
           logit(LOG_OBJ, "P cmd: obj: %d to_obj: %d, chance: %d, limit %d(%d)",
-            obj_index[ZCMD.arg1].virtual_number, (ZCMD.arg3 >= 0) ? obj_index[ZCMD.arg3].virtual_number : -2,
-            ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
-          ZCMD.command = '!';   /* disable */
+                obj_index[ZCMD.arg1].virtual_number, (ZCMD.arg3 >= 0) ? obj_index[ZCMD.arg3].virtual_number : -2,
+                ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
+          ZCMD.command = '!'; /* disable */
         }
         break;
 
-      case 'G':                /* obj_to_char */
+      case 'G': /* obj_to_char */
         last_cmd = 0;
         obj_index[ZCMD.arg1].limit = ZCMD.arg2; // set the limit from zone file
 
-        if( (ZCMD.arg1 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2) || force_item_repop) )
+        if ((ZCMD.arg1 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2) || force_item_repop))
         {
-          if( !(obj = read_object(ZCMD.arg1, REAL)) )
+          if (!(obj = read_object(ZCMD.arg1, REAL)))
           {
             ZCMD.command = '!';
             logit(LOG_DEBUG, "reset_zone(): (zone %d) obj %d [%d] not loadable", zone,
-              ZCMD.arg1, obj_index[ZCMD.arg1].virtual_number);
+                  ZCMD.arg1, obj_index[ZCMD.arg1].virtual_number);
           }
-          if( obj )
+          if (obj)
           {
-            if( IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata) )
+            if (IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata))
             {
               // If the artifact is owned, then it's timer is ticking somwhere, so we don't need to load another.
-              if( artidata.owned )
+              if (artidata.owned)
               {
                 extract_obj(obj);
                 break;
               }
             }
-            if( IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)) )
+            if (IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)))
             {
               extract_obj(obj);
               break;
             }
             ival = itemvalue(obj);
             // Load all shopkeeper eq.
-            if( !ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) && (!mob || !IS_SHOPKEEPER(mob)) )
+            if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) && (!mob || !IS_SHOPKEEPER(mob)))
             {
               extract_obj(obj);
               last_cmd = 1;
               break;
             }
-            if( mob )
+            if (mob)
             {
-              //Drannak trying out item stat randomization 3/28/14
-              // Added check for shopkeeper so their wares don't look goofy.
-              if( !IS_ARTIFACT(obj) && !IS_SHOPKEEPER(mob) )
+              // Drannak trying out item stat randomization 3/28/14
+              //  Added check for shopkeeper so their wares don't look goofy.
+              if (!IS_ARTIFACT(obj) && !IS_SHOPKEEPER(mob))
                 randomizeitem(mob, obj);
               obj_to_char(obj, mob);
               last_cmd = 1;
-          		break;
+              break;
             }
             else
             {
               logit(LOG_MOB, "G cmd: obj: %d  chance: %d, limit %d(%d) (no char)", obj_index[ZCMD.arg1].virtual_number, ZCMD.arg4,
-                ZCMD.arg2, obj_index[ZCMD.arg1].number);
+                    ZCMD.arg2, obj_index[ZCMD.arg1].number);
               extract_obj(obj);
               break;
             }
@@ -3590,56 +3571,56 @@ void reset_zone(int zone, int force_item_repop)
         }
         else if (obj_index[ZCMD.arg1].number < ZCMD.arg2)
         {
-          logit(LOG_OBJ, "G cmd: obj: %d to_char: %d, chance: %d, limit %d(%d)", 
-            obj_index[ZCMD.arg1].virtual_number, (ZCMD.arg3 >= 0) ? mob_index[ZCMD.arg3].virtual_number : -2,
-            ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
-          ZCMD.command = '!';   /* disable */
+          logit(LOG_OBJ, "G cmd: obj: %d to_char: %d, chance: %d, limit %d(%d)",
+                obj_index[ZCMD.arg1].virtual_number, (ZCMD.arg3 >= 0) ? mob_index[ZCMD.arg3].virtual_number : -2,
+                ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
+          ZCMD.command = '!'; /* disable */
         }
         break;
 
-      case 'E':                /* object to equipment list */
+      case 'E': /* object to equipment list */
         last_cmd = 0;
         obj_index[ZCMD.arg1].limit = ZCMD.arg2; // set the limit from zone file
 
-        if( (ZCMD.arg1 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2) || force_item_repop) )
+        if ((ZCMD.arg1 >= 0) && ((obj_index[ZCMD.arg1].number < ZCMD.arg2) || force_item_repop))
         {
-          if( !(obj = read_object(ZCMD.arg1, REAL)) )
+          if (!(obj = read_object(ZCMD.arg1, REAL)))
           {
             ZCMD.command = '!';
             logit(LOG_DEBUG, "reset_zone(): (zone %d) obj %d [%d] not loadable", zone, ZCMD.arg1, obj_index[ZCMD.arg1].virtual_number);
           }
-          if( obj )
+          if (obj)
           {
-            if( IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata) )
+            if (IS_ARTIFACT(obj) && get_artifact_data_sql(obj_index[ZCMD.arg1].virtual_number, &artidata))
             {
               // If the artifact is owned, then it's timer is ticking somwhere, so we don't need to load another.
-              if( artidata.owned )
+              if (artidata.owned)
               {
                 extract_obj(obj);
                 break;
               }
             }
-            if( IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)) )
+            if (IS_ARTIFACT(obj) && (respawn == 0 || (respawn == 1 && force_item_repop != 2)))
             {
               extract_obj(obj);
               break;
             }
             ival = itemvalue(obj);
-            if( !ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) )
+            if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4))
             {
               extract_obj(obj);
               last_cmd = 1;
               break;
             }
-            if( mob && (ZCMD.arg3 > 0) && (ZCMD.arg3 <= CUR_MAX_WEAR) )
+            if (mob && (ZCMD.arg3 > 0) && (ZCMD.arg3 <= CUR_MAX_WEAR))
             {
               // Drannak trying out item stat randomization 3/28/14
               // Added check for shopkeeper so their wares don't look goofy.
               //   Removed shopkeeper check: this is eq'd items not for-sale items.
-              if( !IS_ARTIFACT(obj) )
+              if (!IS_ARTIFACT(obj))
                 randomizeitem(mob, obj);
               if (mob->equipment[ZCMD.arg3])
-                obj_to_char( unequip_char(mob, ZCMD.arg3), mob );
+                obj_to_char(unequip_char(mob, ZCMD.arg3), mob);
               equip_char(mob, obj, ZCMD.arg3, 1);
               last_cmd = 1;
               break;
@@ -3647,8 +3628,7 @@ void reset_zone(int zone, int force_item_repop)
             else
             {
               logit(LOG_OBJ, "E cmd: obj: %d pos: %d(%s) chance: %d, limit %d(%d)",
-                obj_index[ZCMD.arg1].virtual_number, ZCMD.arg3, ((ZCMD.arg3 > 0) && (ZCMD.arg3 <= CUR_MAX_WEAR)) ?
-                equipment_types[ZCMD.arg3] : "ERR", ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
+                    obj_index[ZCMD.arg1].virtual_number, ZCMD.arg3, ((ZCMD.arg3 > 0) && (ZCMD.arg3 <= CUR_MAX_WEAR)) ? equipment_types[ZCMD.arg3] : "ERR", ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
               break;
             }
           }
@@ -3656,13 +3636,12 @@ void reset_zone(int zone, int force_item_repop)
         else if (obj_index[ZCMD.arg1].number < ZCMD.arg2)
         {
           logit(LOG_OBJ, "E cmd: obj: %d pos: %d(%s) chance: %d, limit %d(%d)",
-            obj_index[ZCMD.arg1].virtual_number, ZCMD.arg3, ((ZCMD.arg3 > 0) && (ZCMD.arg3 <= CUR_MAX_WEAR)) ?
-            equipment_types[ZCMD.arg3] : "ERR", ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
-          ZCMD.command = '!';   /* disable */
+                obj_index[ZCMD.arg1].virtual_number, ZCMD.arg3, ((ZCMD.arg3 > 0) && (ZCMD.arg3 <= CUR_MAX_WEAR)) ? equipment_types[ZCMD.arg3] : "ERR", ZCMD.arg4, ZCMD.arg2, obj_index[ZCMD.arg1].number);
+          ZCMD.command = '!'; /* disable */
         }
         break;
 
-      case 'F':                /* follow last mob M loaded */
+      case 'F':                                 /* follow last mob M loaded */
         mob_index[ZCMD.arg1].limit = ZCMD.arg2; // set the limit from zone file
 
         if (mob_index[ZCMD.arg1].number < ZCMD.arg2)
@@ -3673,7 +3652,7 @@ void reset_zone(int zone, int force_item_repop)
             {
               ZCMD.command = '!';
               logit(LOG_DEBUG, "reset_zone(): (zone %d) mob %d [%d] not loadable", zone,
-                ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
+                    ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
             }
           }
           else
@@ -3681,9 +3660,9 @@ void reset_zone(int zone, int force_item_repop)
             last_mob_load = 0;
             mob = last_mob = 0;
             logit(LOG_MOB, "F cmd not executed %d %d %d %d", ZCMD.arg1,
-              ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+                  ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
           }
-          if( !last_mob )
+          if (!last_mob)
           {
             last_cmd = last_mob_load = 0;
             last_mob_followable = 0;
@@ -3696,7 +3675,7 @@ void reset_zone(int zone, int force_item_repop)
           add_follower(mob, last_mob_followable);
           strcpy(buf, "group all");
           command_interpreter(last_mob, buf);
-          if( !IS_SET(mob->specials.act, ACT_SENTINEL) )
+          if (!IS_SET(mob->specials.act, ACT_SENTINEL))
           {
             SET_BIT(mob->specials.act, ACT_SENTINEL);
           }
@@ -3708,7 +3687,7 @@ void reset_zone(int zone, int force_item_repop)
         }
         break;
 
-      case 'R':                /* last mob loaded with M/F command will mount this */
+      case 'R':                                 /* last mob loaded with M/F command will mount this */
         mob_index[ZCMD.arg1].limit = ZCMD.arg2; // set the limit from zone file
         if (mob_index[ZCMD.arg1].number < ZCMD.arg2)
         {
@@ -3718,7 +3697,7 @@ void reset_zone(int zone, int force_item_repop)
             {
               ZCMD.command = '!';
               logit(LOG_DEBUG, "reset_zone(): (zone %d) mob %d [%d] not loadable",
-                zone, ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
+                    zone, ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
             }
           }
           else
@@ -3726,9 +3705,9 @@ void reset_zone(int zone, int force_item_repop)
             mob = 0;
             last_mob_load = 0;
             logit(LOG_MOB, "R cmd not executed %d %d %d %d", ZCMD.arg1,
-              ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+                  ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
           }
-          if( !last_mob )
+          if (!last_mob)
           {
             last_cmd = last_mob_load = 0;
             break;
@@ -3759,7 +3738,7 @@ void reset_zone(int zone, int force_item_repop)
           last_cmd = last_mob_load = 0;
         break;
 
-      case 'D':                /* set state of door */
+      case 'D': /* set state of door */
         last_cmd = 0;
         if ((ZCMD.arg1 < 0) || !world[ZCMD.arg1].dir_option[ZCMD.arg2])
         {
@@ -3767,7 +3746,7 @@ void reset_zone(int zone, int force_item_repop)
                 "D cmd: room: %d dir: %d state: %d' has error.",
                 (ZCMD.arg1 > 0) ? world[ZCMD.arg1].number : ZCMD.arg1,
                 ZCMD.arg2, ZCMD.arg3);
-          ZCMD.command = '!';   /* disable */
+          ZCMD.command = '!'; /* disable */
           break;
         }
         switch (ZCMD.arg3 & 0x03)
@@ -3821,7 +3800,7 @@ void reset_zone(int zone, int force_item_repop)
 
   if (zone_table[zone].lifespan_min != zone_table[zone].lifespan_max)
     zone_table[zone].lifespan =
-      number(zone_table[zone].lifespan_min, zone_table[zone].lifespan_max);
+        number(zone_table[zone].lifespan_min, zone_table[zone].lifespan_max);
   else
     zone_table[zone].lifespan = zone_table[zone].lifespan_min;
 
@@ -3829,7 +3808,7 @@ void reset_zone(int zone, int force_item_repop)
 
 #ifdef SIEGE_ENABLED
   // Check and deploy troops if applicable.
-  check_deploy( &zone_table[zone] );
+  check_deploy(&zone_table[zone]);
 #endif
 }
 
@@ -3838,7 +3817,7 @@ void reset_zone(int zone, int force_item_repop)
 /* for use in reset_zone; return TRUE if zone 'nr' is free of PC's  */
 int is_empty(int zone_nr)
 {
-  P_desc   i;
+  P_desc i;
 
   for (i = descriptor_list; i; i = i->next)
     if (!i->connected && (i->character->in_room != NOWHERE))
@@ -3849,27 +3828,27 @@ int is_empty(int zone_nr)
 }
 
 /************************************************************************
-*  procs of a (more or less) general utility nature              *
-********************************************************************** */
+ *  procs of a (more or less) general utility nature              *
+ ********************************************************************** */
 /* read and allocate space for a '~'-terminated string from a given file.
    Added &n to end of strings with ansi, to prevent 'bleeding'  JAB
 */
-char *fread_string(FILE * fl)
+char *fread_string(FILE *fl)
 {
-  char     buf[MAX_STRING_LENGTH], tmp[MAX_STRING_LENGTH], *rslt;
+  char buf[MAX_STRING_LENGTH], tmp[MAX_STRING_LENGTH], *rslt;
   register char *point;
-  int      done = 0, length = 0, templength = 0;
+  int done = 0, length = 0, templength = 0;
 
   buf[0] = '\0';
 
-  if( !fl )
+  if (!fl)
   {
     fprintf(stderr, "fread_str: null file pointer!\n");
     return NULL;
   }
   do
   {
-    if( !fgets(tmp, MAX_STRING_LENGTH - 5, fl) )
+    if (!fgets(tmp, MAX_STRING_LENGTH - 5, fl))
     {
       perror("fread_string");
       logit(LOG_DEBUG, "%s", tmp);
@@ -3883,7 +3862,9 @@ char *fread_string(FILE * fl)
 
     /* find the last non-whitespace char in tmp */
     for (point = tmp + templength - 1; (point > tmp) &&
-         isspace(*point); point--) ;
+                                       isspace(*point);
+         point--)
+      ;
 
     /* if its a tilde, we're done :) */
     if (*point == '~')
@@ -3908,10 +3889,9 @@ char *fread_string(FILE * fl)
     else
     {
       strcat(buf + length, tmp);
-      length += strlen(tmp) /*templength */ ;
+      length += strlen(tmp) /*templength */;
     }
-  }
-  while (!done);
+  } while (!done);
 
   /* allocate space for the new string and copy it */
   if (strlen(buf) > 0)
@@ -3924,7 +3904,7 @@ char *fread_string(FILE * fl)
         strcat(buf, "&n");
         length += 2;
       }
-    CREATE(rslt, char, (unsigned) (length + 1), MEM_TAG_STRING);
+    CREATE(rslt, char, (unsigned)(length + 1), MEM_TAG_STRING);
 
     strcpy(rslt, buf);
   }
@@ -3934,8 +3914,6 @@ char *fread_string(FILE * fl)
   return rslt;
 }
 
-
-
 /*
  * advance file pointer past next '~' terminated string, this saves us an
  * alloc and free when we already HAVE that string in common storage.
@@ -3943,9 +3921,9 @@ char *fread_string(FILE * fl)
  * obj/mob.  JAB
  */
 
-void skip_fread(FILE * fl)
+void skip_fread(FILE *fl)
 {
-  char     tmp[MAX_STRING_LENGTH];
+  char tmp[MAX_STRING_LENGTH];
   register char *point;
 
   if (!fl)
@@ -3962,7 +3940,8 @@ void skip_fread(FILE * fl)
       raise(SIGSEGV);
     }
     for (point = tmp + strlen(tmp) - 1; (point >= tmp) && isspace(*point);
-         point--) ;
+         point--)
+      ;
     if (point >= tmp && *point == '~')
       return;
   }
@@ -3972,7 +3951,7 @@ void skip_fread(FILE * fl)
 void free_char(P_char ch)
 {
   struct affected_type *af, *tmp;
-//  struct trophy_data *tr1, *tr2;
+  //  struct trophy_data *tr1, *tr2;
 
   if (!ch)
   {
@@ -4000,19 +3979,19 @@ void free_char(P_char ch)
   if (IS_PC(ch) && ch->only.pc)
     delete_knownShapes(ch);
 
-//  if (IS_PC(ch))                /* clear trophy */
-//    for (tr1 = ch->only.pc->trophy; tr1; tr1 = tr2)
-//    {
-//      tr2 = tr1->next;
-//      mm_release(dead_trophy_pool, tr1);
-//    }
+  //  if (IS_PC(ch))                /* clear trophy */
+  //    for (tr1 = ch->only.pc->trophy; tr1; tr1 = tr2)
+  //    {
+  //      tr2 = tr1->next;
+  //      mm_release(dead_trophy_pool, tr1);
+  //    }
   /* remove all events associated with this ch  */
-  //ClearCharEvents(ch);
+  // ClearCharEvents(ch);
 
 #ifdef NEW_COMBAT
   if (ch->points.location_hit)
   {
-    FREE((char *) ch->points.location_hit);
+    FREE((char *)ch->points.location_hit);
     ch->points.location_hit = NULL;
   }
   else
@@ -4048,7 +4027,6 @@ void free_char(P_char ch)
 
     /* unlike for mobs, all player strings are unique, so they get
        freed always (if they exist of course) */
-
 
     if (ch->only.pc->poofIn)
     {
@@ -4087,7 +4065,7 @@ void free_char(P_char ch)
       char_from_room(ch);
     }
 
-    if( ch->only.pc->log )
+    if (ch->only.pc->log)
     {
       delete ch->only.pc->log;
       ch->only.pc->log = NULL;
@@ -4097,8 +4075,8 @@ void free_char(P_char ch)
     ch->only.pc = NULL;
   }
   SET_POS(ch, GET_POS(ch) + STAT_DEAD);
-  add_event(release_mob_mem, 10*WAIT_SEC, ch, 0, 0, 0, 0, 0);
-  //release_mob_mem(ch);
+  add_event(release_mob_mem, 10 * WAIT_SEC, ch, 0, 0, 0, 0, 0);
+  // release_mob_mem(ch);
   return;
 }
 
@@ -4135,10 +4113,10 @@ void free_obj(P_obj obj)
     str_free(obj->action_description);
 
   // If the special function is barb (the mystical warhammer arti).
-  if( obj_index[obj->R_num].func.obj == barb )
+  if (obj_index[obj->R_num].func.obj == barb)
   {
     // Call the proc with the reset command for static variables.
-    barb( obj, NULL, CMD_BARB_REMOVE, NULL );
+    barb(obj, NULL, CMD_BARB_REMOVE, NULL);
   }
 
   obj->str_mask = 0;
@@ -4174,34 +4152,34 @@ void free_obj(P_obj obj)
  * Removed global array, this function now mallocs what it needs SAM 7-94
  */
 
-char    *file_to_string(const char *name)
+char *file_to_string(const char *name)
 {
-  FILE    *fl;
-  char     tmp[256], *ptr;
-  char     Gbuf1[MAX_STRING_LENGTH * 20];
+  FILE *fl;
+  char tmp[256], *ptr;
+  char Gbuf1[MAX_STRING_LENGTH * 20];
 
   bzero(tmp, 256);
   bzero(Gbuf1, MAX_STRING_LENGTH * 20);
 
   if (!(fl = fopen(name, "r")))
   {
-    if(!(fl = fopen(name, "w")))
+    if (!(fl = fopen(name, "w")))
     {
       snprintf(tmp, 256, "file-to-string (%s)", name);
       perror(tmp);
       return (NULL);
     }
-    
+
     fclose(fl);
-    
+
     if (!(fl = fopen(name, "r")))
     {
       snprintf(tmp, 256, "file-to-string (%s)", name);
       perror(tmp);
-      return (NULL);      
+      return (NULL);
     }
   }
-  
+
   do
   {
     fgets(tmp, 255, fl);
@@ -4217,8 +4195,7 @@ char    *file_to_string(const char *name)
       *(Gbuf1 + strlen(Gbuf1) + 1) = '\0';
       *(Gbuf1 + strlen(Gbuf1)) = '\r';
     }
-  }
-  while (!feof(fl));
+  } while (!feof(fl));
 
   fclose(fl);
   CREATE(ptr, char, strlen(Gbuf1) + 1, MEM_TAG_STRING);
@@ -4232,9 +4209,9 @@ char    *file_to_string(const char *name)
 
 void reset_char(P_char ch)
 {
-  int      i;
+  int i;
 
-  for (i = 0; i < MAX_WEAR; i++)        /* Initialisering  */
+  for (i = 0; i < MAX_WEAR; i++) /* Initialisering  */
     ch->equipment[i] = 0;
 
   ch->followers = 0;
@@ -4271,7 +4248,7 @@ void reset_char(P_char ch)
 /* clear ALL the working variables of a char & NOT free any space alloc'ed */
 void clear_char(P_char ch)
 {
-  int      i;
+  int i;
 
   bzero(ch, sizeof(struct char_data));
 
@@ -4279,7 +4256,7 @@ void clear_char(P_char ch)
   ch->specials.was_in_room = NOWHERE;
   SET_POS(ch, POS_STANDING + STAT_NORMAL);
 #if 1
-  ch->points.base_armor = 0;  /* Basic Armor */
+  ch->points.base_armor = 0; /* Basic Armor */
 #endif
 
   /*
@@ -4289,7 +4266,7 @@ void clear_char(P_char ch)
 
   ch->affected = NULL;
 
-	ch->lobj = NULL;
+  ch->lobj = NULL;
 }
 
 /*
@@ -4305,20 +4282,20 @@ void clear_char(P_char ch)
 int real_zone0(const int virt)
 {
   register int bot, top, mid;
-  
+
   bot = 0;
   top = top_of_zone_table;
-  
+
   if (virt == -1)
     return 0;
-  
+
   /*
    * perform binary search on world-table
    */
   for (;;)
   {
     mid = (bot + top) >> 1;
-    
+
     if ((zone_table + mid)->number == virt)
       return (mid);
     if (bot >= top)
@@ -4326,7 +4303,7 @@ int real_zone0(const int virt)
 #if DB_NOTIFY
       logit(LOG_DEBUG, "real_zone0: Zone %d not in database", virt);
 #endif
-      debug( "real_zone0: Zone %d not in database", virt);
+      debug("real_zone0: Zone %d not in database", virt);
       return (0);
     }
     if ((zone_table + mid)->number > virt)
@@ -4342,19 +4319,19 @@ int real_zone0(const int virt)
 int real_zone(const int virt)
 {
   register int bot, top, mid;
-  
+
   bot = 0;
   top = top_of_zone_table;
   if (virt == -1)
     return -1;
-  
+
   /*
    * perform binary search on world-table
    */
   for (;;)
   {
     mid = (bot + top) >> 1;
-    
+
     if ((zone_table + mid)->number == virt)
       return (mid);
     if (bot >= top)
@@ -4379,7 +4356,7 @@ int real_room0(const int virt)
   bot = 0;
   top = top_of_world;
 
-  if( virt < 0 )
+  if (virt < 0)
     return 0;
 
   /*
@@ -4415,7 +4392,7 @@ int real_room(const int virt)
 
   bot = 0;
   top = top_of_world;
-  if( virt < 0 )
+  if (virt < 0)
     return NOWHERE;
 
   /*
@@ -4578,16 +4555,16 @@ int real_object(const int virt)
 }
 void worldcheck(P_char ch)
 {
-  int      i;
-  char     tmp_buf[MAX_STRING_LENGTH];
+  int i;
+  char tmp_buf[MAX_STRING_LENGTH];
 
   for (i = 1; i < top_of_world; i++)
   {
     if (world[i].number <= world[i - 1].number)
     {
       snprintf(tmp_buf, MAX_STRING_LENGTH,
-              "Real: %d Virtual: %d is out of order with Real: %d Virtual: %d\r\n",
-              i, world[i].number, i - 1, world[i - 1].number);
+               "Real: %d Virtual: %d is out of order with Real: %d Virtual: %d\r\n",
+               i, world[i].number, i - 1, world[i - 1].number);
       send_to_char(tmp_buf, ch);
     }
   }
@@ -4595,11 +4572,11 @@ void worldcheck(P_char ch)
 
 int InsertIntoFile(const char *filename, const char *text)
 {
-  FILE    *fin = 0;
+  FILE *fin = 0;
   unsigned char *buffer = 0;
-  long     sizeOfFile = 0;
+  long sizeOfFile = 0;
   unsigned int sizeToRead = 0;
-  FILE    *fout = 0;
+  FILE *fout = 0;
 
   // open the existing bug file for read
   fin = fopen(filename, "rb");
@@ -4621,7 +4598,7 @@ int InsertIntoFile(const char *filename, const char *text)
     // determine if the file is larger than the max size
     sizeToRead = 0;
     if (sizeOfFile <= MAX_STRING_LENGTH)
-      sizeToRead = (int) sizeOfFile;
+      sizeToRead = (int)sizeOfFile;
     else
       sizeToRead = MAX_STRING_LENGTH;
 
@@ -4646,7 +4623,7 @@ int InsertIntoFile(const char *filename, const char *text)
   // write out the existing file's contents
   if (buffer != NULL)
   {
-    fwrite(buffer, sizeToRead, 1, fout);    
+    fwrite(buffer, sizeToRead, 1, fout);
     FREE(buffer);
   }
 

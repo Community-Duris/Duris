@@ -36,6 +36,6 @@ extern int mccp_alloc;
 extern int mccp_free;
 
 void sga_negotiate(P_desc desc);
-void send_ga(P_desc desc);
+int send_ga(P_desc desc);
 
 #endif /* _MCCP_H_ */

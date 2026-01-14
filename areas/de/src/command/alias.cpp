@@ -42,7 +42,7 @@
 
 #include "alias.h"
 
-
+#include "../misc/misc.h"
 
 extern bool g_madeChanges;
 extern variable *g_varHead;

@@ -753,7 +753,8 @@ char *json_build_char_affects(struct char_data *ch) {
     if (ch) {
         for (aff = ch->affected; aff; aff = aff->next) {
             /* Match score command logic for showing active spells */
-            if (aff->type <= 0 || !skills[aff->type].name || aff->type > LAST_SKILL) {
+            int is_herb = (aff->type >= HERB_OCULARIUS && aff->type <= HERB_GOOTWIET);
+            if (aff->type <= 0 || !skills[aff->type].name || (aff->type > LAST_SKILL && !is_herb)) {
                 continue;
             }
             /* Skip affects marked as hidden */

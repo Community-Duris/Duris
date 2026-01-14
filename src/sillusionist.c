@@ -2435,6 +2435,11 @@ void spell_shadow_spawn(int level, P_char ch, char *arg, int type, P_char victim
     affmod -= 1;
   }
 
+  if (IS_PC(ch) && IS_PC(victim))
+  {
+    dam = dam * get_property("spell.area.damage.to.pc", 0.5);
+  }
+
   // Undead just don't care too much about this.
   if(IS_UNDEAD(victim))
   {

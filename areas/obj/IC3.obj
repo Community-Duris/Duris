@@ -27,7 +27,7 @@ platinum pile coins gold~
 &+WA MASSIVE pile of platinum coins sits here heaped up in the &+ycorner.&n~
 ~
 20 25 3 0 11 0 4096 1 0 0 0
-0 0 30000 15000 0 0 0 0
+0 0 15000 7500 0 0 0 0
 0 0 100
 #420003
 quiver mithril glowing red~
@@ -40,7 +40,7 @@ quiver mithril glowing red~
 A
 58 -1
 A
-32 6
+32 3
 #420004
 rusty iron cutlass~
 &+ya rusty &+ciron cutlass&n~
@@ -50,9 +50,9 @@ rusty iron cutlass~
 5 6 6 0 0 0 0 0
 0 0 100
 A
-18 30
+18 0
 A
-19 30
+19 0
 #420005
 rusty iron dirk~
 &+ya rusty &+ciron dirk&n~
@@ -62,9 +62,9 @@ rusty iron dirk~
 2 5 5 0 0 0 0 0
 0 0 100
 A
-18 30
+18 0
 A
-19 30
+19 0
 #420006
 large rusty wrench~
 &+ya large rusty &+Ywrench&n~
@@ -74,19 +74,19 @@ large rusty wrench~
 7 10 10 0 0 0 0 0
 0 0 100
 A
-18 20
+18 0
 A
-19 20
+19 0
 #420007
 scalpel coldsteel steel~
 &+ca &+Bcold&+Csteel scalpel&n~
 &+cA &+Bcold&+Csteel scalpel&n lies here.~
 ~
 5 16 2 0 14 0 16785681 8413185 127 266076668 0
-2 4 6 0 0 0 0 0
+2 4 5 0 0 0 0 0
 0 0 100
 A
-18 6
+18 3
 A
 19 5
 #420008
@@ -95,22 +95,22 @@ silver holy beads icecrag~
 &+cSome silver &+Wholy beads &+cof &+CIcecrag&n lies here.~
 ~
 9 22 2 0 14 0 36712577 8409093 67 494763735 0
--75 0 0 0 0 0 0 0
+75 0 0 0 0 0 0 0
 1 822326 100 16 32768 128 0
 A
-34 5
+34 3
 A
-55 30
+55 20
 #420009
 robes drowned surgeon~
 &+Wthe &+Cfl&+co&+Cwi&+cn&+Cg &+Wrobes of the &+CDr&+cow&+Cne&+cd &+WSurgeon&n~
 &+WSome white robes lie here in a &+Cpuddle&+W.&n~
 ~
 9 44 3 0 14 0 70393984 553665545 66 494927455 0
--90 0 0 0 0 0 0 0
+90 0 0 0 0 0 0 0
 1 0 100
 A
-35 10
+35 5
 A
 57 -1
 #420010
@@ -119,12 +119,12 @@ cap white cross surgeons~
 &+WA white surgeons cap &+Yadorned &+Wwith a &+Ygol&+yde&+Yn cro&+ys&+Ys&n lies here.~
 ~
 9 3 2 0 11 0 70262913 16401 0 494927583 0
--50 0 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
 0 0 100
 A
-13 60
+13 35
 A
-14 75
+14 45
 #420011
 fuse rod~
 &+ra rusty iron fuse rod&n~
@@ -134,9 +134,9 @@ fuse rod~
 10 10 15 0 0 0 0 0
 0 0 100
 A
-18 50
+18 0
 A
-19 50
+19 0
 #420012
 warhammer maul cyclops~
 &+Lthe legendary &+Rwar&+rhammer &+C'&+LCyclop's &+rMaul&+C'&n~
@@ -155,24 +155,24 @@ helm smashing~
 &+YThe helm of &+RSm&+ras&+Rhi&+rng&n lies here, forgotten.~
 ~
 9 24 3 0 13 0 70266881 17 64 407879556 0
--25 0 0 0 0 0 0 0
+25 0 0 0 0 0 0 0
 3 10000000 100
 A
-31 6
+31 3
 A
-19 8
+19 5
 #420014
 bracer elvish runes adamantium~
 &+Man adamantium bracer &+cinscribed &+Mwith &+celvish &+mrunes&n~
 &+MAn adamantium bracer &+cinscribed &+Mwith &+celvish &+mrunes&n lies here.~
 ~
 9 19 10 0 14 0 103813121 4097 67 449712004 0
--25 0 0 0 0 0 0 0
+25 0 0 0 0 0 0 0
 0 0 100 536944640 12480 0 33554432
 A
-24 -8
+24 -5
 A
-19 6
+19 4
 #420015
 iron brass chest~
 &+can iron &+yand &+Ybrass &+ychest&n~
@@ -197,12 +197,12 @@ boots ravensclaw guild~
 &+LThe boots of the &+mRavens&+RC&+rl&+Ra&+rw &+LThieve's Guild&n have been foolishly left here..~
 ~
 9 14 3 0 15 0 34742400 16449 64 452857854 1073824008
--100 0 0 3 0 0 0 0
+100 0 0 3 0 0 0 0
 -100 0 100 134742016 0 536870912 0
 A
-32 5
+32 4
 A
-36 6
+36 3
 #420018
 key never winter~
 &+ca heavy &+Csteel key &+cbearing the seal of &+LNever &+WWinter&n~
@@ -230,17 +230,17 @@ bangle mindstone psionicists~
 A
 57 -1
 A
-12 100
+12 65
 #420021
 robe black mindflayers~
 &+La flowing black robe with a &+MMindflayers &+mCrest&n~
 &+LA flowing black robe with a &+MMindflayers &+mCrest&n lies in a crumpled heap here.~
 ~
 9 1 3 0 14 0 67248129 17417 64 536870907 0
--150 0 0 4 0 0 0 0
+150 0 0 4 0 0 0 0
 0 5000000 100 134217728 2048 536870912 0
 A
-35 6
+35 4
 A
 56 5
 #420022
@@ -268,9 +268,9 @@ phase dagger dark~
 2 5 5 0 0 645 46 40
 0 0 100
 A
-32 5
+32 3
 A
-19 6
+19 5
 #420025
 sanguine jewel~
 &+Cthe &+RSa&+rng&+Ru&+ri&+Rne &+rJ&+Re&+rw&+Re&+rl&n~
@@ -293,22 +293,22 @@ staff oaken emeralds~
 &+yAn ornate oaken staff encrusted with &+Gem&+ger&+Gal&+gds&n, lies here.~
 ~
 4 6 3 0 14 0 87171345 24577 126 221901147 0
-60 999 999 364 0 0 0 0
+60 99 99 364 0 0 0 0
 2 0 100 134217760 12416 32 0
 A
-35 8
+35 4
 A
-14 80
+14 50
 #420028
 platemail priest master~
 &+Wthe &+cPriest&+W Master Platemail&n~
 &+WThe Priest Master Platemail&n lies abandoned here.~
 ~
 9 44 3 0 15 0 103948289 553664521 67 494796383 0
--200 0 0 0 0 0 0 0
+200 0 0 0 0 0 0 0
 5 0 100 0 32768 128 0
 A
-34 8
+34 4
 A
 57 -1
 #420029
@@ -317,10 +317,10 @@ the boots of the &+GHigh Ranger&n~
 The boots of the &+GHigh Ranger&n lies here discarded by some fool.~
 ~
 9 47 3 0 14 0 103948288 16449 64 526335748 0
--50 0 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
 2 0 100 134742016 0 536870912 0
 A
-14 80
+14 60
 A
 54 15
 #420030
@@ -345,12 +345,12 @@ frostbrand brand sword do'urden~
 &+CA legendary &+WF&+Cr&+Bo&+Ws&+Ct&+BB&+Cr&+Wa&+Cn&+Wd&+C of &+mDo'Urden&n lies here &+Cglistening&n.&n.~
 ~
 5 44 3 0 15 0 100671761 24577 124 534757348 0
-9 7 4 0 0 646 46 40
+9 4 5 0 0 646 46 40
 0 0 100
 A
-18 7
+18 6
 A
-19 6
+19 4
 #420033
 obsidian totem tiamat~
 &+Lan obsidian totem of 'T&+wi&+La&+wm&+La&+wt&+L'&n~
@@ -360,7 +360,7 @@ obsidian totem tiamat~
 63 0 0 0 0 0 0 0
 0 0 100 16 0 128 0
 A
-13 100
+13 50
 A
 57 -1
 #420034
@@ -372,67 +372,67 @@ hood cowl ravensclaw guild~
 100 0 0 0 0 0 0 0
 1 0 100 40 12 0 67108864
 A
-32 6
+32 3
 A
-13 60
+13 35
 #420035
 boots deep magic~
 &+Lthe boots of &+mDeep Magic&n~
 &+LThe boots of &+mDeep Magic&n were dropped some absolute fool here.&n~
 ~
 9 35 3 0 15 0 70393857 65 64 264237567 0
--50 0 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
 0 0 100 134217728 2048 0 0
 A
-33 6
+33 5
 A
-14 60
+14 50
 #420036
 golden helm torm justice~
 &+wa &+YGolden &+wHelm of &+WTorm's Wisdom&n~
 &+wA &+YGolden &+wHelm of &+WTorm's Justice &+wis here on the ground.~
 ~
 9 24 3 0 14 0 70393857 17 67 469762039 0
--75 0 0 0 0 0 0 0
+75 0 0 0 0 0 0 0
 0 0 100 0 32768 128 0
 A
-34 10
+34 5
 A
-13 80
+13 50
 #420037
 helm dark knight~
 &+La helm of the Dark Knight&n~
 &+LA helm of the Dark Knight&n lies here, ominously seeming to stare at you.&n~
 ~
 9 44 3 0 14 0 70393857 17 66 520093679 0
--75 0 0 0 0 0 0 0
+75 0 0 0 0 0 0 0
 1 0 100 0 34816 0 536870912
 A
-31 8
+31 4
 A
-13 80
+13 50
 #420038
 golden strange ring kevald~
 &+Ya strange golden ring bearing the symbol of &+LKevald&n~
 &+YA strange golden ring bearing the symbol of &+LKevald&n lies here.~
 ~
 9 24 2 0 15 0 100671488 3 66 0 0
--50 0 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
 0 100000000 100
 A
-13 100
+13 50
 A
-35 10
+35 5
 #420039
 rainbow robes~
 &+Bsome robes of the &+RR&+Ya&+Wi&+Bn&+Gb&+Mo&+mw&n~
 &+BSome robes of the &+RR&+Ya&+Wi&+Bn&+Gb&+Mo&+mw&n lay in a heap here.&n~
 ~
 9 15 3 0 7 0 70393857 1033 66 88076411 0
--150 0 0 0 0 0 0 0
+100 0 0 0 0 0 0 0
 0 0 100 536944640 12480 64 67108864
 A
-35 5
+35 4
 A
 57 -2
 #420040
@@ -441,36 +441,36 @@ earring bloodshed~
 &+rAn earring of &+Rbloodshed&n lies here.~
 ~
 9 31 1 0 14 0 67112961 524289 66 449712036 0
--20 0 0 0 0 0 0 0
+20 0 0 0 0 0 0 0
 0 0 100
 A
-19 9
+19 5
 A
-31 8
+31 4
 #420041
 earring swift precision~
 &+gan &+Gearring &+gof &+Csw&+cif&+Ct &+Gprecision&n~
 &+gAn &+Gearring &+gof &+Csw&+cif&+Ct &+Gprecision&n lies here.~
 ~
 9 32 1 0 14 0 67117057 0 66 0 0
--20 0 0 0 0 0 0 0
+20 0 0 0 0 0 0 0
 0 0 100
 A
-32 8
+32 3
 A
-18 9
+18 6
 #420042
 flaming great axe nivard~
 &+ca &+Rfl&+ram&+Yin&+Rg &+CGreat Axe&+c of &+WNivard&n~
 &+cA &+Rfl&+ram&+Yin&+Rg &+CGreat Axe&n lies &+Rb&+Yu&+rr&+Rn&+Yi&+Rng &non the ground here.~
 ~
 5 23 3 0 15 0 83894545 24577 125 449822694 0
-13 8 6 0 0 555 46 40
+13 6 8 0 0 555 46 40
 4 0 100
 A
-18 8
+18 6
 A
-19 8
+19 6
 #420043
 corroded treasure key~
 &+ca &+Gco&+gr&+Gr&+god&+Ge&+gd &+Ytreasure &+ychest &+ckey&n~
@@ -495,12 +495,12 @@ robes monk mastery~
 &+LSome black monk robes of &+rM&+Ra&+rst&+Re&+rr&+Ry&n lies here.~
 ~
 9 15 3 0 7 0 103948288 1033 0 536870847 0
--150 0 0 0 0 0 0 0
+150 0 0 0 0 0 0 0
 0 0 100 0 2060 0 0
 A
-32 7
+32 4
 A
-19 10
+19 5
 #420046
 key~
 &+ca key to the captain's quarters&n~

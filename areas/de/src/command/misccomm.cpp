@@ -133,7 +133,7 @@ bool editExecCommand(const usint command, const char *args)
     case EDITCMD_QUEST    : editQuestStrn(args); break;
     case EDITCMD_SHOP     : editShopStrn(args); break;
     case EDITCMD_EXIT     : preEditExit(args); break;
-    case EDITCMD_SECTOR   : editSector(); break;
+    //case EDITCMD_SECTOR   : editSector(); break;
     case EDITCMD_ZONE     : editZone(&g_zoneRec); break;
     case EDITCMD_DEFROOM  : editDefaultRoom(); break;
     case EDITCMD_DEFOBJ   : editDefaultObject(); break;

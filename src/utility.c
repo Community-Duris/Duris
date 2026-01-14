@@ -4909,7 +4909,7 @@ bool should_area_hit(P_char ch, P_char victim)
   if( (GET_OPPONENT(ch) == victim) || (GET_OPPONENT(victim) == ch) )
     return TRUE;
 
-  if( IS_AFFECTED(victim, AFF_WRAITHFORM) )
+  if( IS_AFFECTED(victim, AFF_WRAITHFORM) && number(0, 3) )
     return FALSE;
 
   if( IS_NPC(GET_PLYR(ch)) && IS_NPC(GET_PLYR(victim))

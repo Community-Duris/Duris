@@ -32,6 +32,9 @@
 #define WS_LEN_16BIT_MAX        65535
 #define WS_PROTOCOL_VERSION     13
 
+/* compression (rfc 7692 permessage-deflate) */
+#define WS_COMPRESS_THRESHOLD   64
+
 /* opcodes (rfc 6455 section 5.2) */
 #define WS_OPCODE_CONTINUATION  0x00
 #define WS_OPCODE_TEXT          0x01

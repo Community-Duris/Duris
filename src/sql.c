@@ -935,7 +935,7 @@ void sql_save_pkill(P_char ch, P_char victim)
       if (IS_PC(gl->ch) && gl->ch != victim)
       {
         in_room = (victim->in_room == gl->ch->in_room) ? 1 : 0;
-        store_pkill_info(pkill_event, gl->ch, "VICTIM", 0, in_room);
+        store_pkill_info(pkill_event, gl->ch, "VICTIM-GROUP", 0, in_room);
       }
     }
   }

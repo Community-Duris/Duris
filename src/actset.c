@@ -1473,8 +1473,17 @@ static int ac_strcasecmp(const char *str1, const char *str2)
     bcopy((char *)&val, (char *)where + offset, sizeof(val));                            \
   }
 
+/* Macro to facilitate making of general copy functions */
+// special case for ::byte with collisions in std::byte
+#define MAKE_COPY_FUNCTION_BYTE(Type)                                                \
+  static void ac_byteCopy(void *where, int offset, char *value, int bit, int on_off) \
+  {                                                                                  \
+    Type val = (Type)bit;                                                            \
+    bcopy((char *)&val, (char *)where + offset, sizeof(val));                        \
+  }
+
 /* General copy functions */
-MAKE_COPY_FUNCTION(byte)
+MAKE_COPY_FUNCTION_BYTE(::byte)
 MAKE_COPY_FUNCTION(int)
 MAKE_COPY_FUNCTION(long)
 MAKE_COPY_FUNCTION(short)
@@ -1538,7 +1547,7 @@ static void ac_tongueCopy(void *where, int offset, char *value, int bit, int on_
   P_char ch = (P_char)where;
 
   if (IS_PC(ch))
-    GET_LANGUAGE(ch, bit + 1) = (byte)on_off;
+    GET_LANGUAGE(ch, bit + 1) = (::byte)on_off;
 }
 
 /*
@@ -1564,14 +1573,14 @@ static void ac_skillCopy(void *where, int offset, char *value, int bit, int on_o
 {
   P_char ch = (P_char)where;
   int skl;
-  byte val = on_off;
+  ::byte val = on_off;
 
   value = skip_spaces(value);
   skl = search_block(value, spells, FALSE);
 
   if (IS_PC(ch))
   {
-    bcopy(&val, ((char *)&ch->only.pc->skills[skl]) + offset, sizeof(byte));
+    bcopy(&val, ((char *)&ch->only.pc->skills[skl]) + offset, sizeof(::byte));
   }
 }
 
@@ -1604,7 +1613,7 @@ static void ac_stringCopy(void *where, int offset, char *value, int bit, int on_
  */
 static void ac_objaffCopy(void *where, int offset, char *value, int bit, int on_off)
 {
-  byte location = (byte)bit;
+  ::byte location = (::byte)bit;
 
   bcopy((char *)&location, (char *)where + offset, sizeof(location));
 }

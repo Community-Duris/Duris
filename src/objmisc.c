@@ -17,8 +17,8 @@
 #include "db.h"
 #include <string.h>
 
-extern P_room   world;                 /* dyn alloc'ed array of rooms     */
-extern int rev_dir[];
+extern P_room world; /* dyn alloc'ed array of rooms     */
+// extern int rev_dir[];
 extern struct zone_data *zone_table;
 /*
  * getWeaponDamType
@@ -100,10 +100,10 @@ void event_random_exit(P_char ch, P_char victim, P_obj obj, void *data)
   char exit_name[32];
   int exit_dir, s_room, d_room;
 
-  if( !obj )
+  if (!obj)
     return;
 
-  if (obj->value[0] > number(0,99) && OBJ_ROOM(obj) &&
+  if (obj->value[0] > number(0, 99) && OBJ_ROOM(obj) &&
       sscanf(obj->name, "%s exit_%s ", buf, exit_name) &&
       (exit_dir = dir_from_keyword(exit_name)) != -1 &&
       (d_room = real_room(obj->value[1])) != -1)
@@ -123,7 +123,7 @@ void event_random_exit(P_char ch, P_char victim, P_obj obj, void *data)
       // will help prevent people shifting into the zone when they shouldn't.
       if (!(zone_table[world[(world[s_room].dir_option[exit_dir])->to_room].zone].flags & ZONE_CLOSED))
       { // close it...
-	      SET_BIT(zone_table[world[(world[s_room].dir_option[exit_dir])->to_room].zone].flags, ZONE_CLOSED);
+        SET_BIT(zone_table[world[(world[s_room].dir_option[exit_dir])->to_room].zone].flags, ZONE_CLOSED);
       }
     }
     if (!world[d_room].dir_option[rev_dir[exit_dir]])
@@ -146,15 +146,15 @@ void event_random_exit(P_char ch, P_char victim, P_obj obj, void *data)
  *                         away and ignored
  */
 
-float getMaterialDeflection(const int mat /*P_obj obj */ , const P_obj weap)
+float getMaterialDeflection(const int mat /*P_obj obj */, const P_obj weap)
 {
-  float    def = 0.0;
+  float def = 0.0;
   int /*mat, */ weaptype, damtype;
 
-/*  if (!obj) return 0.0;
+  /*  if (!obj) return 0.0;
 
-   mat = obj->material;
- */
+     mat = obj->material;
+   */
 
   if ((mat < MAT_LOWEST) || (mat > MAT_HIGHEST))
     return 0.0;
@@ -1150,7 +1150,6 @@ float getMaterialDeflection(const int mat /*P_obj obj */ , const P_obj weap)
   return def;
 }
 
-
 /*
  * getArmorDeflection : takes material, craftsmanship, damage resistance
  *                      bonus, and thickness into account
@@ -1158,8 +1157,8 @@ float getMaterialDeflection(const int mat /*P_obj obj */ , const P_obj weap)
 
 float getArmorDeflection(const P_obj armor, const P_obj weap)
 {
-  float    mod_def, mod = 0.0;
-  int      craft;
+  float mod_def, mod = 0.0;
+  int craft;
 
   if (!armor || ((GET_ITEM_TYPE(armor) != ITEM_ARMOR) &&
                  (GET_ITEM_TYPE(armor) != ITEM_SHIELD)))
@@ -1220,12 +1219,13 @@ float getArmorDeflection(const P_obj armor, const P_obj weap)
   /* next, craftsmanship (should be 0-15) */
 
   mod +=
-    (BOUNDED(OBJCRAFT_LOWEST, armor->craftsmanship, OBJCRAFT_HIGHEST) -
-     OBJCRAFT_AVERAGE) * 0.01;
+      (BOUNDED(OBJCRAFT_LOWEST, armor->craftsmanship, OBJCRAFT_HIGHEST) -
+       OBJCRAFT_AVERAGE) *
+      0.01;
 
   /* finally let's apply a little damage resistance bonus (0.0-0.05) */
 
-//  mod += ((float) BOUNDED(0, armor->damres_bonus, 100) / 2000.0);
+  //  mod += ((float) BOUNDED(0, armor->damres_bonus, 100) / 2000.0);
 
   mod += mod_def;
   if (mod < 0.0)
@@ -1236,7 +1236,6 @@ float getArmorDeflection(const P_obj armor, const P_obj weap)
   return (ARMOR_DEFLECTION_MULT * mod);
 }
 
-
 /*
  * getMaterialAbsorbtion : let's make this easy and just use the deflection
  *                         numbers times two..  if necessary it can be
@@ -1245,9 +1244,8 @@ float getArmorDeflection(const P_obj armor, const P_obj weap)
 
 float getMaterialAbsorbtion(const int mat, /*P_obj obj, */ const P_obj weap)
 {
-  return (BOUNDED(0, (int) (getMaterialDeflection(mat, weap) * 2), 1));
+  return (BOUNDED(0, (int)(getMaterialDeflection(mat, weap) * 2), 1));
 }
-
 
 /*
  * getArmorAbsorbtion : takes material, craftsmanship, damage resistance
@@ -1256,8 +1254,8 @@ float getMaterialAbsorbtion(const int mat, /*P_obj obj, */ const P_obj weap)
 
 float getArmorAbsorbtion(const P_obj armor, const P_obj weap)
 {
-  float    mod_def, mod = 0.0;
-  int      craft;
+  float mod_def, mod = 0.0;
+  int craft;
 
   if (!armor || ((GET_ITEM_TYPE(armor) != ITEM_ARMOR) &&
                  (GET_ITEM_TYPE(armor) != ITEM_SHIELD)))
@@ -1322,21 +1320,21 @@ float getArmorAbsorbtion(const P_obj armor, const P_obj weap)
   /* next, craftsmanship (should be 0-15) */
 
   mod +=
-    (BOUNDED(OBJCRAFT_LOWEST, armor->craftsmanship, OBJCRAFT_HIGHEST) -
-     OBJCRAFT_AVERAGE) * 0.02;
+      (BOUNDED(OBJCRAFT_LOWEST, armor->craftsmanship, OBJCRAFT_HIGHEST) -
+       OBJCRAFT_AVERAGE) *
+      0.02;
 
   /* finally let's apply a little damage resistance bonus (0.0-0.10) */
 
-//  mod += ((float) BOUNDED(0, armor->damres_bonus, 100) / 1000.0);
+  //  mod += ((float) BOUNDED(0, armor->damres_bonus, 100) / 1000.0);
 
   if (mod < 0.0)
     mod = 0.0;
 
   return (ARMOR_ABSORBTION_MULT *
-          BOUNDED(0, (int) (mod_def * (1.0 + mod)),
-                  (int) MAX_ARMOR_ABSORBTION));
+          BOUNDED(0, (int)(mod_def * (1.0 + mod)),
+                  (int)MAX_ARMOR_ABSORBTION));
 }
-
 
 /*
  * getMaterialMaxSP
@@ -1571,52 +1569,51 @@ int obj_zone_id(P_obj o)
 
   int zone_id = -1;
 
-  if( !tobj )
+  if (!tobj)
   {
     return -1;
   }
-  else if( OBJ_ROOM(tobj) )
+  else if (OBJ_ROOM(tobj))
   {
     zone_id = world[tobj->loc.room].zone;
   }
-  else if( OBJ_CARRIED(tobj) && tobj->loc.carrying->in_room != NOWHERE )
+  else if (OBJ_CARRIED(tobj) && tobj->loc.carrying->in_room != NOWHERE)
   {
     zone_id = world[tobj->loc.carrying->in_room].zone;
   }
-  else if( OBJ_WORN(tobj) && tobj->loc.wearing->in_room != NOWHERE )
+  else if (OBJ_WORN(tobj) && tobj->loc.wearing->in_room != NOWHERE)
   {
     zone_id = world[tobj->loc.wearing->in_room].zone;
   }
-  
+
   return zone_id;
 }
 
 int obj_room_id(P_obj o)
 {
   P_obj tobj = o;
-  
+
   while (tobj && OBJ_INSIDE(tobj))
     tobj = tobj->loc.inside;
-  
+
   int room_id = -1;
-  
-  if( !tobj )
+
+  if (!tobj)
   {
     return -1;
   }
-  else if( OBJ_ROOM(tobj) )
+  else if (OBJ_ROOM(tobj))
   {
     room_id = tobj->loc.room;
   }
-  else if( OBJ_CARRIED(tobj) && tobj->loc.carrying->in_room != NOWHERE )
+  else if (OBJ_CARRIED(tobj) && tobj->loc.carrying->in_room != NOWHERE)
   {
     room_id = tobj->loc.carrying->in_room;
   }
-  else if( OBJ_WORN(tobj) && tobj->loc.wearing->in_room != NOWHERE )
+  else if (OBJ_WORN(tobj) && tobj->loc.wearing->in_room != NOWHERE)
   {
     room_id = tobj->loc.wearing->in_room;
   }
-  
+
   return room_id;
 }
-

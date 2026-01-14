@@ -1,7 +1,7 @@
 /**************************************************************************
-*  File: specs.highway.c                                    Part of Duris  *
-*  Copyright  1996 - Duris Systems Ltd.                                   *
-***************************************************************************/
+ *  File: specs.highway.c                                    Part of Duris  *
+ *  Copyright  1996 - Duris Systems Ltd.                                   *
+ ***************************************************************************/
 
 #include <ctype.h>
 #include <signal.h>
@@ -35,7 +35,7 @@ extern P_room world;
 extern char *coin_names[];
 extern char *command[];
 extern const char *dirs[];
-extern const char rev_dir[];
+// extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
 extern int planes_room_num[];
 extern int racial_base[];
@@ -50,10 +50,10 @@ extern struct zone_data *zone_table;
 /***** Objects *****/
 int hewards_mystical_organ(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  P_char   target_mob = NULL;
-  P_obj    target_obj = NULL;
-  char     arg2[MAX_STRING_LENGTH], arg3[MAX_STRING_LENGTH];
-  int      location;
+  P_char target_mob = NULL;
+  P_obj target_obj = NULL;
+  char arg2[MAX_STRING_LENGTH], arg3[MAX_STRING_LENGTH];
+  int location;
   static int working = FALSE;
 
   if (cmd == CMD_SET_PERIODIC)
@@ -71,18 +71,14 @@ int hewards_mystical_organ(P_obj obj, P_char ch, int cmd, char *arg)
   if (arg && (cmd == CMD_PLAY))
     if (isname(arg, "organ"))
     {
-      send_to_char
-        ("As you begin playing a tune on the organ, a feeling of an almost...\r\n",
-         ch);
-      send_to_char
-        ("astral nature overcomes you. Your eyes begin to tingle, and you\r\n",
-         ch);
-      send_to_char
-        ("realize you have the powers to send your sights anywhere in this world.\r\n",
-         ch);
-      act
-        ("A wondrous, almost magical music begins to pour forth from $p, as $n's hands seemingly float across it.",
-         FALSE, ch, obj, obj, TO_ROOM);
+      send_to_char("As you begin playing a tune on the organ, a feeling of an almost...\r\n",
+                   ch);
+      send_to_char("astral nature overcomes you. Your eyes begin to tingle, and you\r\n",
+                   ch);
+      send_to_char("realize you have the powers to send your sights anywhere in this world.\r\n",
+                   ch);
+      act("A wondrous, almost magical music begins to pour forth from $p, as $n's hands seemingly float across it.",
+          FALSE, ch, obj, obj, TO_ROOM);
       working = TRUE;
       return TRUE;
     }
@@ -126,7 +122,6 @@ int hewards_mystical_organ(P_obj obj, P_char ch, int cmd, char *arg)
 int amethyst_orb(P_obj obj, P_char ch, int cmd, char *arg)
 {
 
-
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
 
@@ -148,7 +143,7 @@ int amethyst_orb(P_obj obj, P_char ch, int cmd, char *arg)
 
   if (cmd == CMD_STARE)
   {
-    int      curr_time = time(NULL);
+    int curr_time = time(NULL);
 
     if (!obj->value[0])
     {
@@ -163,7 +158,7 @@ int amethyst_orb(P_obj obj, P_char ch, int cmd, char *arg)
     else
     {
       act("You peer into $p and see...", 0, ch, obj, 0, TO_CHAR);
-//              new_look(ch, NULL, CMD_LOOKAFAR, obj->value[0]);
+      //              new_look(ch, NULL, CMD_LOOKAFAR, obj->value[0]);
       send_to_char(world[obj->value[0]].name, ch);
       send_to_char("\r\n", ch);
       if (world[obj->value[0]].description)
@@ -174,7 +169,6 @@ int amethyst_orb(P_obj obj, P_char ch, int cmd, char *arg)
 
     return FALSE;
   }
-
 
   if (cmd == CMD_GLANCE)
   {
@@ -197,47 +191,45 @@ int amethyst_orb(P_obj obj, P_char ch, int cmd, char *arg)
 
   if (cmd == CMD_RUB)
   {
-    int      to_room = 0;
-    int      safeguard = 0;
+    int to_room = 0;
+    int safeguard = 0;
 
     if (IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) && IS_SET(obj->wear_flags, ITEM_TAKE))
       return TRUE;
-    
+
     if (IS_HOMETOWN(ch->in_room))
       return TRUE;
-    
+
     do
     {
       to_room = number(1, top_of_world);
       safeguard++;
-    }
-    while ((safeguard < 10000) &&
-           ((world[to_room].sector_type == SECT_OCEAN) ||
-            (world[to_room].zone == 83) ||
-            (world[to_room].zone == 257) ||
-            (world[to_room].zone == 1) ||
-            (world[to_room].zone == 2) ||
-            (world[to_room].zone == 4) ||
-            (world[to_room].zone == 34) ||
-            (world[to_room].zone == 50) ||
-            (world[to_room].zone == 100) ||
-            (world[to_room].zone == 120) ||
-            (world[to_room].zone == 172) ||
-            (world[to_room].zone == 173) ||
-            (world[to_room].zone == 174) ||
-            (world[to_room].zone == 183) ||
-            (world[to_room].zone == 184) ||
-            (world[to_room].zone == 192) ||
-            (world[to_room].zone == 194) ||
-            (world[to_room].zone == 198) ||
-            IS_ROOM(to_room, ROOM_NO_MAGIC) ||
-            IS_ROOM(to_room, ROOM_NO_TELEPORT) ||
-            IS_HOMETOWN(to_room)));
+    } while ((safeguard < 10000) &&
+             ((world[to_room].sector_type == SECT_OCEAN) ||
+              (world[to_room].zone == 83) ||
+              (world[to_room].zone == 257) ||
+              (world[to_room].zone == 1) ||
+              (world[to_room].zone == 2) ||
+              (world[to_room].zone == 4) ||
+              (world[to_room].zone == 34) ||
+              (world[to_room].zone == 50) ||
+              (world[to_room].zone == 100) ||
+              (world[to_room].zone == 120) ||
+              (world[to_room].zone == 172) ||
+              (world[to_room].zone == 173) ||
+              (world[to_room].zone == 174) ||
+              (world[to_room].zone == 183) ||
+              (world[to_room].zone == 184) ||
+              (world[to_room].zone == 192) ||
+              (world[to_room].zone == 194) ||
+              (world[to_room].zone == 198) ||
+              IS_ROOM(to_room, ROOM_NO_MAGIC) ||
+              IS_ROOM(to_room, ROOM_NO_TELEPORT) ||
+              IS_HOMETOWN(to_room)));
 
     if (safeguard >= 10000)
     {
-      send_to_char
-        ("Something buggy with amethyst orb proc - tell a coder.\r\n", ch);
+      send_to_char("Something buggy with amethyst orb proc - tell a coder.\r\n", ch);
       return TRUE;
     }
 
@@ -250,21 +242,19 @@ int amethyst_orb(P_obj obj, P_char ch, int cmd, char *arg)
 
   if (cmd == CMD_TOUCH)
   {
-    int      dam;
+    int dam;
 
     dam = MIN(number(60, 160), GET_HIT(ch));
 
     if (obj->value[0])
     {
-      act
-        ("$n fiddles briefly with  $p suddenly disappears in a mushroom cloud.",
-         FALSE, ch, obj, 0, TO_ROOM);
+      act("$n fiddles briefly with  $p suddenly disappears in a mushroom cloud.",
+          FALSE, ch, obj, 0, TO_ROOM);
       char_from_room(ch);
-      send_to_char
-        ("As you touch the orb, you feel your body disassemble. After a short blackout, you find yourself elsewhere.\r\n",
-         ch);
+      send_to_char("As you touch the orb, you feel your body disassemble. After a short blackout, you find yourself elsewhere.\r\n",
+                   ch);
       char_to_room(ch, obj->value[0], -1);
-      //raw_damage(ch, ch, dam, NULL);
+      // raw_damage(ch, ch, dam, NULL);
       act("$n appears in a bright flash of light.", FALSE, ch, 0, 0, TO_ROOM);
       GET_HIT(ch) -= dam;
       update_pos(ch);
@@ -274,39 +264,35 @@ int amethyst_orb(P_obj obj, P_char ch, int cmd, char *arg)
     {
       act("$n touches $p and it burns $s skin!", TRUE, ch, obj, 0, TO_ROOM);
       act("You touch $p and burn your skin!", FALSE, ch, obj, 0, TO_CHAR);
-      //raw_damage(ch, ch, dam*2, NULL);
+      // raw_damage(ch, ch, dam*2, NULL);
       GET_HIT(ch) -= dam;
       update_pos(ch);
       return TRUE;
     }
-
   }
 
-
   return FALSE;
-
 }
 
 int wand_of_wonder(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  P_char   vict;
-  P_char   mosquito;
-  P_char   buffalo;
-  P_char   rat;
-  P_char   demon;
-  P_obj    gems;
-  int      level, i;
-  static int gem_types[] = {    /* both low value, and 0 value gems */
-    66034, 66035, 66036, 66037, 66038,  /* from Ashrumite */
-    66039, 66040, 66041, 66042, 66043
-  };
+  P_char vict;
+  P_char mosquito;
+  P_char buffalo;
+  P_char rat;
+  P_char demon;
+  P_obj gems;
+  int level, i;
+  static int gem_types[] = {                                   /* both low value, and 0 value gems */
+                            66034, 66035, 66036, 66037, 66038, /* from Ashrumite */
+                            66039, 66040, 66041, 66042, 66043};
 
   level = number(20, 40);
 
-  if (!ch || !obj)              /* If the player ain't here, why are we? */
+  if (!ch || !obj) /* If the player ain't here, why are we? */
     return FALSE;
 
-  if (!OBJ_WORN(obj))           /* Most things don't work in a sack... */
+  if (!OBJ_WORN(obj)) /* Most things don't work in a sack... */
     return FALSE;
 
   if ((obj->loc.wearing->equipment[HOLD] == obj) && (obj->value[2] > 0))
@@ -373,7 +359,7 @@ int wand_of_wonder(P_obj obj, P_char ch, int cmd, char *arg)
           }
         }
 
-        if (!damage(ch, vict, i, TYPE_UNDEFINED))       /* one hp per gem */
+        if (!damage(ch, vict, i, TYPE_UNDEFINED)) /* one hp per gem */
         {
           act("Gems shoot forth from $n's wand, striking you in the head!",
               TRUE, ch, 0, 0, TO_ROOM);
@@ -393,9 +379,8 @@ int wand_of_wonder(P_obj obj, P_char ch, int cmd, char *arg)
       case 15:
       case 16:
         AgeChar(ch, number(1, 50));
-        send_to_char
-          ("Time seems to have caught up with you, aging you considerably.\r\n",
-           ch);
+        send_to_char("Time seems to have caught up with you, aging you considerably.\r\n",
+                     ch);
         break;
       default:
         send_to_char("Nothing seems to happen.", ch);
@@ -408,8 +393,8 @@ int wand_of_wonder(P_obj obj, P_char ch, int cmd, char *arg)
 
 int breale_townsfolk(P_char ch, P_char pl, int cmd, char *arg)
 {
-  P_char   TmpCh, next;
-  char     TmpBuf[MAX_STRING_LENGTH];
+  P_char TmpCh, next;
+  char TmpBuf[MAX_STRING_LENGTH];
 
   /* Check for periodic event calls */
   if (cmd == CMD_SET_PERIODIC)
@@ -432,9 +417,9 @@ int breale_townsfolk(P_char ch, P_char pl, int cmd, char *arg)
         !IS_SET(TmpCh->specials.act, PLR_AGGIMMUNE) && CAN_SEE(ch, TmpCh))
     {
       snprintf(TmpBuf, MAX_STRING_LENGTH,
-              "We hate your kind here, %s! Leave town, %s, or die by my hand!\r\n",
-              GET_NAME(TmpCh),
-              GET_SEX(TmpCh) == SEX_MALE ? "warlock" : "witch");
+               "We hate your kind here, %s! Leave town, %s, or die by my hand!\r\n",
+               GET_NAME(TmpCh),
+               GET_SEX(TmpCh) == SEX_MALE ? "warlock" : "witch");
       mobsay(ch, TmpBuf);
       MobStartFight(ch, TmpCh);
       return TRUE;
@@ -446,63 +431,63 @@ int breale_townsfolk(P_char ch, P_char pl, int cmd, char *arg)
 // This proc isn't in game atm, and is found in specs.myranth.c as well?
 int blackness_sword(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  int      ankh_loc, t_val;
-  char     Buf1[MAX_STRING_LENGTH], Buf2[MAX_STRING_LENGTH];
-  bool     got_it;
-  P_obj    ankh = NULL, sword;
+  int ankh_loc, t_val;
+  char Buf1[MAX_STRING_LENGTH], Buf2[MAX_STRING_LENGTH];
+  bool got_it;
+  P_obj ankh = NULL, sword;
 
   /* check for periodic event calls */
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
     return FALSE;
 
-  if( (cmd != CMD_GET) && (cmd != CMD_TAKE) )
+  if ((cmd != CMD_GET) && (cmd != CMD_TAKE))
     return FALSE;
 
-  if( !obj || !ch || !arg || !OBJ_ROOM(obj) )
+  if (!obj || !ch || !arg || !OBJ_ROOM(obj))
     return FALSE;
 
   ankh_loc = WEAR_NONE;
-  if( ch->equipment[WEAR_NECK_1] )
-    if( OBJ_VNUM(ch->equipment[WEAR_NECK_1]) == VOBJ_HIGHWAY_ANKH_BLACKSWORD )
+  if (ch->equipment[WEAR_NECK_1])
+    if (OBJ_VNUM(ch->equipment[WEAR_NECK_1]) == VOBJ_HIGHWAY_ANKH_BLACKSWORD)
     {
       ankh_loc = WEAR_NECK_1;
       ankh = ch->equipment[WEAR_NECK_1];
     }
-  if( ankh_loc == WEAR_NONE && ch->equipment[WEAR_NECK_2] )
-    if( OBJ_VNUM(ch->equipment[WEAR_NECK_2]) == VOBJ_HIGHWAY_ANKH_BLACKSWORD )
+  if (ankh_loc == WEAR_NONE && ch->equipment[WEAR_NECK_2])
+    if (OBJ_VNUM(ch->equipment[WEAR_NECK_2]) == VOBJ_HIGHWAY_ANKH_BLACKSWORD)
     {
       ankh_loc = WEAR_NECK_2;
       ankh = ch->equipment[WEAR_NECK_2];
     }
-  if( ankh_loc == WEAR_NONE )
+  if (ankh_loc == WEAR_NONE)
     return FALSE;
 
   argument_interpreter(arg, Buf1, Buf2);
 
-  if( *Buf2 )
+  if (*Buf2)
     return FALSE;
 
   // If we're trying to 'get|take all' or 'get|take all.<sword keyword>'
   got_it = FALSE;
-  if( !str_cmp(Buf1, "all") )
+  if (!str_cmp(Buf1, "all"))
     got_it = TRUE;
-  else if( (sscanf(Buf1, "all.%s", Buf2) == 1) && isname(Buf2, obj->name) )
+  else if ((sscanf(Buf1, "all.%s", Buf2) == 1) && isname(Buf2, obj->name))
     got_it = TRUE;
   else
   {
-    if( isname(Buf1, obj->name) || ((sscanf(Buf1, "%d.%s", &t_val, Buf2) == 2) && isname(Buf2, obj->name)))
+    if (isname(Buf1, obj->name) || ((sscanf(Buf1, "%d.%s", &t_val, Buf2) == 2) && isname(Buf2, obj->name)))
     {
-      if( t_val < 1)
+      if (t_val < 1)
       {
         return FALSE;
       }
-      for( sword = world[obj->loc.room].contents; sword; sword = sword->next_content )
+      for (sword = world[obj->loc.room].contents; sword; sword = sword->next_content)
       {
-        if( isname(Buf2, sword->name) )
+        if (isname(Buf2, sword->name))
           t_val--;
-        if( t_val <= 0 )
+        if (t_val <= 0)
         {
-          if( sword == obj )
+          if (sword == obj)
           {
             got_it = TRUE;
           }
@@ -512,11 +497,11 @@ int blackness_sword(P_obj obj, P_char ch, int cmd, char *arg)
     }
   }
 
-  if( !got_it )
+  if (!got_it)
     return FALSE;
 
   // If it's already flagged takeable.
-  if( IS_SET(obj->wear_flags, ITEM_TAKE) )
+  if (IS_SET(obj->wear_flags, ITEM_TAKE))
     return FALSE;
 
   // Otherwise make it takeable and not cursed.
@@ -524,7 +509,7 @@ int blackness_sword(P_obj obj, P_char ch, int cmd, char *arg)
   SET_BIT(obj->wear_flags, ITEM_TAKE);
 
   // Ankh only works once, for whatever command. . . .
-  unequip_char(ch, ankh_loc );
+  unequip_char(ch, ankh_loc);
   extract_obj(ankh, TRUE); // Should poof if arti.
   send_to_char("The ankh around your neck disappears with a hollow pop.\n\n", ch);
   // Actually get the sword.
@@ -538,31 +523,31 @@ int blackness_sword(P_obj obj, P_char ch, int cmd, char *arg)
 
 int kearonor_hide(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  int      mob_num = 0;
+  int mob_num = 0;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return FALSE;
   }
 
-  if( !IS_ALIVE(ch) || !obj )
+  if (!IS_ALIVE(ch) || !obj)
     return FALSE;
 
-  if( cmd && cmd == CMD_SHAPECHANGE )
+  if (cmd && cmd == CMD_SHAPECHANGE)
   {
     act("Ye cannot remove the $q! It must be CURSED!", FALSE, ch, obj, 0, TO_CHAR);
     return TRUE;
   }
-  if( !IS_MORPH(ch) && OBJ_WORN(obj) && IS_PC(ch) )
+  if (!IS_MORPH(ch) && OBJ_WORN(obj) && IS_PC(ch))
   {
-    if( (mob_num = real_mobile0(41302)) == 0 )
+    if ((mob_num = real_mobile0(41302)) == 0)
     {
       logit(LOG_DEBUG, "Beast vnum non-existant for kearonor_hide proc.\r\n");
       return FALSE;
     }
     send_to_char("You feel pain wrack your body, as a strange metamorphasis engulfs you.\r\n", ch);
 
-    if( morph(ch, mob_num, REAL) )
+    if (morph(ch, mob_num, REAL))
     {
       act("$N screams in pain as $S body begins to re-form into $n.", FALSE, ch->only.pc->switched, 0, ch, TO_ROOM);
     }
@@ -573,7 +558,7 @@ int kearonor_hide(P_obj obj, P_char ch, int cmd, char *arg)
 
 int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
 {
-  P_obj    web = NULL, room_junk, room_junk_temp;
+  P_obj web = NULL, room_junk, room_junk_temp;
 
   /* check for periodic event calls */
   if (cmd == CMD_SET_PERIODIC)
@@ -620,16 +605,16 @@ int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
 
 int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  int      i, room, factor;
-  P_obj    room_junk = NULL, room_junk_temp = NULL, smoke;
-  P_char   tch = NULL, next = NULL;
+  int i, room, factor;
+  P_obj room_junk = NULL, room_junk_temp = NULL, smoke;
+  P_char tch = NULL, next = NULL;
 
   if (cmd == CMD_SET_PERIODIC)
   {
     return TRUE;
   }
 
-  if( !obj || cmd != CMD_PERIODIC )
+  if (!obj || cmd != CMD_PERIODIC)
   {
     return FALSE;
   }
@@ -641,15 +626,15 @@ int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
     for (tch = world[obj->loc.room].people; tch; tch = next)
     {
       next = tch->next_in_room;
-      if( NewSaves(tch, SAVING_SPELL, IS_AFFECTED2(tch, AFF2_FIRESHIELD) ? -2 : 0) )
+      if (NewSaves(tch, SAVING_SPELL, IS_AFFECTED2(tch, AFF2_FIRESHIELD) ? -2 : 0))
         factor >>= 1;
-      if( IS_AFFECTED2(tch, AFF2_FIRESHIELD) )
+      if (IS_AFFECTED2(tch, AFF2_FIRESHIELD))
         factor <<= 1;
-      if( IS_AFFECTED3(tch, AFF3_COLDSHIELD) )
+      if (IS_AFFECTED3(tch, AFF3_COLDSHIELD))
         factor >>= 1;
-      if( IS_AFFECTED(tch, AFF_PROT_FIRE) )
+      if (IS_AFFECTED(tch, AFF_PROT_FIRE))
         factor >>= 1;
-      if( !IS_TRUSTED(tch) )
+      if (!IS_TRUSTED(tch))
       {
         GET_HIT(tch) -= MAX(1, MIN(GET_HIT(tch) - 5, factor));
       }
@@ -658,26 +643,26 @@ int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
     return TRUE;
   }
   /* spread like wildfire */
-  for( i = 0; i < NUM_EXITS; i++ )
+  for (i = 0; i < NUM_EXITS; i++)
   {
-    if( VIRTUAL_CAN_GO(obj->loc.room, i) )
+    if (VIRTUAL_CAN_GO(obj->loc.room, i))
     {
       room = VIRTUAL_EXIT(obj->loc.room, i)->to_room;
-      for( room_junk = world[room].contents; room_junk; room_junk = room_junk_temp )
+      for (room_junk = world[room].contents; room_junk; room_junk = room_junk_temp)
       {
         room_junk_temp = room_junk->next_content;
 
-        if( (obj_index[room_junk->R_num].virtual_number == 41900) ||
-          (obj_index[room_junk->R_num].virtual_number == 41901) )
+        if ((obj_index[room_junk->R_num].virtual_number == 41900) ||
+            (obj_index[room_junk->R_num].virtual_number == 41901))
         {
           smoke = read_object(41908, VIRTUAL);
-          if( !smoke )
+          if (!smoke)
           {
             logit(LOG_EXIT, "assert: mir_fire() failed to load object 41908");
             raise(SIGSEGV);
           }
           add_event(event_smoke_to_fire, number(1, 5), NULL, NULL, NULL, 0, &room, sizeof(room));
-          //AddEvent(EVENT_SPECIAL, number(1, 5), TRUE, smoke_to_fire, room);
+          // AddEvent(EVENT_SPECIAL, number(1, 5), TRUE, smoke_to_fire, room);
           obj_to_room(smoke, room);
           break;
         }
@@ -689,8 +674,8 @@ int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
 
 void web_to_smoke(P_char ch, P_char victim, P_obj obj, void *data)
 {
-  int      room;
-  P_obj    room_junk = NULL, room_junk_temp = NULL, smoke, web;
+  int room;
+  P_obj room_junk = NULL, room_junk_temp = NULL, smoke, web;
 
   if (!current_event || (current_event->type != EVENT_SPECIAL))
   {
@@ -698,7 +683,7 @@ void web_to_smoke(P_char ch, P_char victim, P_obj obj, void *data)
     raise(SIGSEGV);
   }
   /* fathom our location */
-  room = atoi((char *) current_event->target.t_arg);
+  room = atoi((char *)current_event->target.t_arg);
   if (room <= 0)
   {
     logit(LOG_EXIT, "web_to_smoke() in invalid room.");
@@ -719,9 +704,8 @@ void web_to_smoke(P_char ch, P_char victim, P_obj obj, void *data)
         logit(LOG_EXIT, "assert: web_to_smoke() failed to load object 41908");
         raise(SIGSEGV);
       }
-      send_to_room
-        ("The spider webs begin to smolder, and just might burst into flames at any moment.\r\n",
-         room);
+      send_to_room("The spider webs begin to smolder, and just might burst into flames at any moment.\r\n",
+                   room);
       obj_from_room(web);
       obj_to_room(smoke, room);
       return;
@@ -732,11 +716,11 @@ void web_to_smoke(P_char ch, P_char victim, P_obj obj, void *data)
 
 void event_smoke_to_fire(P_char ch, P_char victim, P_obj obj, void *data)
 {
-  int      room;
-  P_obj    room_junk = NULL, room_junk_temp = NULL, smoke, fire;
+  int room;
+  P_obj room_junk = NULL, room_junk_temp = NULL, smoke, fire;
 
   /* fathom our location */
-  room = *((int*)data);
+  room = *((int *)data);
   if (room <= 0)
   {
     logit(LOG_EXIT, "smoke_to_fire() in invalid room.");
@@ -768,7 +752,7 @@ void event_smoke_to_fire(P_char ch, P_char victim, P_obj obj, void *data)
 
 int red_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
-  int      helpers[] = { 42173, 42174, 0 };
+  int helpers[] = {42173, 42174, 0};
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
   if (!tch && !number(0, 4))
@@ -778,7 +762,7 @@ int red_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 
 int blue_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
-  int      helpers[] = { 42172, 42173, 0 };
+  int helpers[] = {42172, 42173, 0};
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
   if (!tch && !number(0, 4))
@@ -788,7 +772,7 @@ int blue_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 
 int white_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
-  int      helpers[] = { 42172, 42174, 0 };
+  int helpers[] = {42172, 42174, 0};
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
   if (!tch && !number(0, 4))
@@ -820,5 +804,4 @@ int amphisbean(P_char ch, P_char tch, int cmd, char *arg)
   }
 
   return FALSE;
-
 }

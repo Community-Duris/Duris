@@ -29,6 +29,7 @@
 #include "trophy.h"
 #include "assocs.h"
 #include "gmcp.h"
+#include "ws_handlers.h"
 #include "alliances.h"
 #include "defines.h"
 #include "nexus_stones.h"
@@ -1754,6 +1755,7 @@ void point_update(void)
         {
           update_ingame_racewar( -GET_RACEWAR(i) );
         }
+        ws_broadcast_player_logout(GET_NAME(i), GET_RACEWAR(i));
         extract_char(i);
         continue;
       }

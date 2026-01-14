@@ -1099,6 +1099,10 @@ void spell_single_death_field(int level, P_char ch, char *args, int type,
   {
    dam = dam * 2;
   }
+  if (IS_PC(ch) && IS_PC(victim))
+  {
+    dam = dam * get_property("spell.area.damage.to.pc", 0.5);
+  }
   
 
   spell_damage(ch, victim, dam, SPLDAM_PSI, 0, &messages);

@@ -21,6 +21,7 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
+#include <zlib.h>
 
 #include "websocket.h"
 #include "ws_handlers.h"
@@ -277,6 +278,12 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
                 snprintf(d->client_name, sizeof(d->client_name), "Edge");
             }
         }
+        else if (strncasecmp(line, "Sec-WebSocket-Extensions:", 25) == 0) {
+            const char *value = skip_header_value(line, 25);
+            if (strcasestr(value, "permessage-deflate") != NULL) {
+                d->ws_deflate_requested = 1;
+            }
+        }
         /* x-forwarded-for - only trust from local/private proxies */
         else if (strncasecmp(line, "X-Forwarded-For:", 16) == 0) {
             if (strcmp(d->host, "127.0.0.1") == 0 || strcmp(d->host, "::1") == 0 ||
@@ -330,13 +337,25 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key) {
     websocket_generate_accept_key(key, accept_key);
     if (accept_key[0] == '\0') return -1;
 
-    len = snprintf(response, sizeof(response),
-        "HTTP/1.1 101 Switching Protocols\r\n"
-        "Upgrade: websocket\r\n"
-        "Connection: Upgrade\r\n"
-        "Sec-WebSocket-Accept: %s\r\n"
-        "\r\n",
-        accept_key);
+    if (d->ws_deflate_requested) {
+        len = snprintf(response, sizeof(response),
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            "Sec-WebSocket-Accept: %s\r\n"
+            "Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover; client_no_context_takeover\r\n"
+            "\r\n",
+            accept_key);
+        d->ws_compress = 1;
+    } else {
+        len = snprintf(response, sizeof(response),
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            "Sec-WebSocket-Accept: %s\r\n"
+            "\r\n",
+            accept_key);
+    }
 
     if (websocket_send_all(d->descriptor, response, len) < 0) {
         return -1;
@@ -345,6 +364,33 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key) {
     d->ws_state = WS_STATE_OPEN;
     d->ws_handshake_done = 1;
     d->connected = 60;  /* ready for account login */
+
+    /* init zlib streams for compression */
+    if (d->ws_compress) {
+        z_stream *def = (z_stream *)calloc(1, sizeof(z_stream));
+        z_stream *inf = (z_stream *)calloc(1, sizeof(z_stream));
+        int def_ok = 0, inf_ok = 0;
+
+        if (def && inf) {
+            /* -15 = raw deflate per rfc 7692 */
+            if (deflateInit2(def, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY) == Z_OK) {
+                def_ok = 1;
+                if (inflateInit2(inf, -15) == Z_OK) {
+                    inf_ok = 1;
+                    d->ws_deflate_stream = def;
+                    d->ws_inflate_stream = inf;
+                }
+            }
+        }
+
+        if (!def_ok || !inf_ok) {
+            if (def_ok) deflateEnd(def);
+            if (inf_ok) inflateEnd(inf);
+            if (def) free(def);
+            if (inf) free(inf);
+            d->ws_compress = 0;
+        }
+    }
 
     /*
      * duplicate connection check: kick any other unauthenticated websocket
@@ -386,43 +432,95 @@ static int websocket_send_frame(struct descriptor_data *d, int opcode,
     size_t frame_len;
     size_t offset = 0;
     int result;
+    const unsigned char *payload = (const unsigned char *)data;
+    size_t payload_len = len;
+    unsigned char *compressed = NULL;
+    int rsv1 = 0;
 
     if (!d || d->descriptor < 0) return -1;
 
-    if (len <= WS_LEN_7BIT_MAX) {
-        frame_len = 2 + len;
-    } else if (len <= WS_LEN_16BIT_MAX) {
-        frame_len = 4 + len;
+    if (d->write_failed) return -1;
+
+    /* only compress text/binary, not control frames like ping/pong */
+    if (d->ws_compress && d->ws_deflate_stream &&
+        (opcode == WS_OPCODE_TEXT || opcode == WS_OPCODE_BINARY) &&
+        len >= WS_COMPRESS_THRESHOLD) {
+
+        z_stream *strm = (z_stream *)d->ws_deflate_stream;
+        size_t max_out = len + 64;
+        compressed = (unsigned char *)malloc(max_out);
+
+        if (compressed) {
+            strm->next_in = (Bytef *)data;
+            strm->avail_in = len;
+            strm->next_out = compressed;
+            strm->avail_out = max_out;
+
+            if (deflate(strm, Z_SYNC_FLUSH) == Z_OK) {
+                payload_len = max_out - strm->avail_out;
+
+                /* rfc 7692: strip trailing 00 00 ff ff */
+                if (payload_len >= 4 &&
+                    compressed[payload_len-4] == 0x00 &&
+                    compressed[payload_len-3] == 0x00 &&
+                    compressed[payload_len-2] == 0xff &&
+                    compressed[payload_len-1] == 0xff) {
+                    payload_len -= 4;
+                }
+
+                if (payload_len < len) {
+                    payload = compressed;
+                    rsv1 = 0x40;
+                    d->ws_bytes_in += len;
+                    d->ws_bytes_out += payload_len;
+                } else {
+                    payload_len = len;
+                    payload = (const unsigned char *)data;
+                }
+            }
+            deflateReset(strm);
+        }
+    }
+
+    if (payload_len <= WS_LEN_7BIT_MAX) {
+        frame_len = 2 + payload_len;
+    } else if (payload_len <= WS_LEN_16BIT_MAX) {
+        frame_len = 4 + payload_len;
     } else {
-        frame_len = 10 + len;
+        frame_len = 10 + payload_len;
     }
 
     frame = (unsigned char *)malloc(frame_len);
-    if (!frame) return -1;
+    if (!frame) {
+        if (compressed) free(compressed);
+        return -1;
+    }
 
-    frame[offset++] = 0x80 | (opcode & 0x0F);
+    frame[offset++] = 0x80 | rsv1 | (opcode & 0x0F);
 
-    if (len <= WS_LEN_7BIT_MAX) {
-        frame[offset++] = (unsigned char)len;
-    } else if (len <= WS_LEN_16BIT_MAX) {
+    if (payload_len <= WS_LEN_7BIT_MAX) {
+        frame[offset++] = (unsigned char)payload_len;
+    } else if (payload_len <= WS_LEN_16BIT_MAX) {
         frame[offset++] = 126;
-        frame[offset++] = (len >> 8) & 0xFF;
-        frame[offset++] = len & 0xFF;
+        frame[offset++] = (payload_len >> 8) & 0xFF;
+        frame[offset++] = payload_len & 0xFF;
     } else {
         frame[offset++] = 127;
         frame[offset++] = 0;
         frame[offset++] = 0;
         frame[offset++] = 0;
         frame[offset++] = 0;
-        frame[offset++] = (len >> 24) & 0xFF;
-        frame[offset++] = (len >> 16) & 0xFF;
-        frame[offset++] = (len >> 8) & 0xFF;
-        frame[offset++] = len & 0xFF;
+        frame[offset++] = (payload_len >> 24) & 0xFF;
+        frame[offset++] = (payload_len >> 16) & 0xFF;
+        frame[offset++] = (payload_len >> 8) & 0xFF;
+        frame[offset++] = payload_len & 0xFF;
     }
 
-    if (len > 0 && data) {
-        memcpy(frame + offset, data, len);
+    if (payload_len > 0 && payload) {
+        memcpy(frame + offset, payload, payload_len);
     }
+
+    if (compressed) free(compressed);
 
     if (d->descriptor < 0 || !is_desc_valid(d)) {
         free(frame);
@@ -430,6 +528,13 @@ static int websocket_send_frame(struct descriptor_data *d, int opcode,
     }
 
     result = websocket_send_all(d->descriptor, frame, frame_len);
+
+    if (result == 0 && d->character && d->character->only.pc)
+        d->character->only.pc->send_data += frame_len;
+
+    if (result != 0)
+        d->write_failed = 1;
+
     free(frame);
 
     return result;
@@ -507,7 +612,7 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
     size_t offset = 0;
     size_t frame_len;
     size_t data_len;
-    int fin, op, mask_bit;
+    int fin, rsv1, op, mask_bit;
     unsigned char mask_key[4];
     size_t i;
 
@@ -521,6 +626,7 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 
     /* parse first byte */
     fin = (buf[0] >> 7) & 0x01;
+    rsv1 = (buf[0] >> 6) & 0x01;  /* compression flag */
     op = buf[0] & 0x0F;
     offset++;
 
@@ -579,8 +685,47 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
             }
         }
 
-        (*payload)[data_len] = '\0';
-        *payload_len = data_len;
+        /* decompress if rsv1 set */
+        if (rsv1 && d->ws_compress && d->ws_inflate_stream) {
+            z_stream *strm = (z_stream *)d->ws_inflate_stream;
+            size_t out_size = data_len * 10 + 256;
+            unsigned char *inflated = (unsigned char *)malloc(out_size);
+            unsigned char *input = (unsigned char *)malloc(data_len + 4);
+
+            if (inflated && input) {
+                /* rfc 7692: append 00 00 ff ff before inflate */
+                memcpy(input, *payload, data_len);
+                input[data_len] = 0x00;
+                input[data_len + 1] = 0x00;
+                input[data_len + 2] = 0xff;
+                input[data_len + 3] = 0xff;
+
+                strm->next_in = input;
+                strm->avail_in = data_len + 4;
+                strm->next_out = inflated;
+                strm->avail_out = out_size;
+
+                if (inflate(strm, Z_SYNC_FLUSH) == Z_OK || strm->avail_in == 0) {
+                    size_t inflated_len = out_size - strm->avail_out;
+                    char *new_payload = (char *)malloc(inflated_len + 1);
+                    if (new_payload) {
+                        memcpy(new_payload, inflated, inflated_len);
+                        new_payload[inflated_len] = '\0';
+                        free(*payload);
+                        *payload = new_payload;
+                        data_len = inflated_len;
+                    }
+                }
+                inflateReset(strm);
+            }
+            if (inflated) free(inflated);
+            if (input) free(input);
+        }
+
+        if (*payload) {
+            (*payload)[data_len] = '\0';
+            *payload_len = data_len;
+        }
     }
 
     *opcode = op;
@@ -639,6 +784,19 @@ void websocket_free(struct descriptor_data *d) {
         d->ws_message_len = 0;
         d->ws_message_opcode = 0;
     }
+
+    /* cleanup compression streams */
+    if (d->ws_deflate_stream) {
+        deflateEnd((z_stream *)d->ws_deflate_stream);
+        free(d->ws_deflate_stream);
+        d->ws_deflate_stream = NULL;
+    }
+    if (d->ws_inflate_stream) {
+        inflateEnd((z_stream *)d->ws_inflate_stream);
+        free(d->ws_inflate_stream);
+        d->ws_inflate_stream = NULL;
+    }
+    d->ws_compress = 0;
 
     d->websocket = 0;
     d->ws_state = WS_STATE_CLOSED;
@@ -727,6 +885,9 @@ int websocket_process_input(struct descriptor_data *d) {
     if (bytes_read == 0) {
         return -1;
     }
+
+    if (d->character && d->character->only.pc)
+        d->character->only.pc->recived_data += bytes_read;
 
     /* buffer http handshake until complete */
     if (!d->ws_handshake_done) {

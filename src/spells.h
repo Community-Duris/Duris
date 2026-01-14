@@ -727,7 +727,8 @@
 #define SPELL_DIVINE_FONT             676
 #define SPELL_VITAL_INTERCESSION      677
 #define SPELL_HOLY_INTERCESSION       678
-#define LAST_SPELL                    SPELL_HOLY_INTERCESSION
+#define SPELL_FROST_BEAM	      679
+#define LAST_SPELL                    SPELL_FROST_BEAM
 
 
 #define FIRST_SKILL                  1000  /* should be a decent split point */
@@ -1106,12 +1107,16 @@
 #define LAST_POISON                  (POISON_HEART_TOXIN)
 
 // These need to be static since they're set in .obj files in zones.
+
 #define HERB_SMOKED         1900
 #define HERB_OCULARIUS      1901
 #define HERB_BLUE_HAZE      1902
 #define HERB_MEDICUS        1903
 #define HERB_BLACK_KUSH     1904
 #define HERB_GOOTWIET       1905
+
+#define HERB_FIRST          HERB_OCULARIUS
+#define HERB_LAST           HERB_GOOTWIET
 
 /* everything below does not make part of players skill data */
 #define FIRST_TAG                    2001

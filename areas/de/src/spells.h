@@ -1,1 +1,1 @@
-../../../src/spells.h
+#include "../../../src/spells.h"

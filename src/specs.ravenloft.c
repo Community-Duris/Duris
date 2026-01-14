@@ -1,11 +1,11 @@
-      /* Made Jexni, for ravenloft */
+/* Made Jexni, for ravenloft */
 #include <ctype.h>
 #include <stdio.h>
 #include <strings.h>
 #include <string.h>
 #include <time.h>
 #include <list>
-using namespace std;
+;
 
 #include "comm.h"
 #include "db.h"
@@ -35,7 +35,7 @@ extern P_obj justice_items_list;
 extern char *coin_names[];
 extern const char *command[];
 extern const char *dirs[];
-extern const char rev_dir[];
+// extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
 extern int planes_room_num[];
 extern int racial_base[];
@@ -49,15 +49,15 @@ extern const char *crime_list[];
 extern const char *crime_rep[];
 extern const char *specdata[][MAX_SPEC];
 extern struct class_names class_names_table[];
-int      range_scan_track(P_char ch, int distance, int type_scan);
-extern P_obj    object_list;
+int range_scan_track(P_char ch, int distance, int type_scan);
+extern P_obj object_list;
 
-void     set_short_description(P_obj t_obj, const char *newShort);
-void     set_long_description(P_obj t_obj, const char *newDescription);
+void set_short_description(P_obj t_obj, const char *newShort);
+void set_long_description(P_obj t_obj, const char *newDescription);
 
 int ravenloft_vistani_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
-  int  helpers[] = { 58382, 0 };
+  int helpers[] = {58382, 0};
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
   if (!tch && !number(0, 4))
@@ -68,59 +68,61 @@ int ravenloft_vistani_shout(P_char ch, P_char tch, int cmd, char *arg)
 
 int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 {
-   P_obj weapon = NULL;
-   P_obj swordcase = NULL;
-   P_room room = NULL;
-   char buf[MAX_STRING_LENGTH];
-   int roomIndex;
+  P_obj weapon = NULL;
+  P_obj swordcase = NULL;
+  P_room room = NULL;
+  char buf[MAX_STRING_LENGTH];
+  int roomIndex;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return FALSE;
   }
 
-  if( !bell || !IS_ALIVE(ch) || !arg )
+  if (!bell || !IS_ALIVE(ch) || !arg)
   {
     return FALSE;
   }
 
-  if( !(weapon = ch->equipment[WIELD]) || OBJ_VNUM(weapon) != VOBJ_RAVENLOFT_MALLET || !OBJ_WORN_POS(weapon, WIELD) )
+  if (!(weapon = ch->equipment[WIELD]) || OBJ_VNUM(weapon) != VOBJ_RAVENLOFT_MALLET || !OBJ_WORN_POS(weapon, WIELD))
   {
     return FALSE;
   }
 
   P_obj obj = ch->equipment[WIELD];
 
-  if( cmd == CMD_HIT )
+  if (cmd == CMD_HIT)
   {
-    if( isname(arg, "bell") )
+    if (isname(arg, "bell"))
     {
       roomIndex = real_room0(VROOM_RAVENLOFT_SWORDCASE);
-      for( swordcase = world[roomIndex].contents; swordcase; swordcase = swordcase->next_content )
+      for (swordcase = world[roomIndex].contents; swordcase; swordcase = swordcase->next_content)
       {
-        if( OBJ_VNUM(swordcase) == VOBJ_RAVENLOFT_LOCKED_CASE )
+        if (OBJ_VNUM(swordcase) == VOBJ_RAVENLOFT_LOCKED_CASE)
         {
           break;
         }
       }
-      if( !swordcase )
+      if (!swordcase)
       {
         return FALSE;
       }
       act("&+wYou raise $p &+wand bring it down upon the surface of the &+Cbell&+w.\n\n"
-        "&+wThe &+rmallet &+Rshatters &+wupon impact as it moves the heavy &+ycopper &+Cbell&+w.\n"
-        "&+wThe &+Cbell &+wsways and the clapper strikes the lip with a beautiful &+Wlucid note&+w.\n"
-        "&+wSomewhere in the distance, an answering note rings out in the castle, as if\n"
-        "&+wthe note awakened a long lost secret hidden deep below.\n\n"
-        "&+wIn the distance, a &+Ygreat beam of light &+wsurges downwards and &+Willuminates\n"
-        "&+wthe &+WHall of &+YHeroes&+w.\n", FALSE, ch, obj, 0, TO_CHAR);
+          "&+wThe &+rmallet &+Rshatters &+wupon impact as it moves the heavy &+ycopper &+Cbell&+w.\n"
+          "&+wThe &+Cbell &+wsways and the clapper strikes the lip with a beautiful &+Wlucid note&+w.\n"
+          "&+wSomewhere in the distance, an answering note rings out in the castle, as if\n"
+          "&+wthe note awakened a long lost secret hidden deep below.\n\n"
+          "&+wIn the distance, a &+Ygreat beam of light &+wsurges downwards and &+Willuminates\n"
+          "&+wthe &+WHall of &+YHeroes&+w.\n",
+          FALSE, ch, obj, 0, TO_CHAR);
       act("$n &+wraises $p &+wand brings it down upon the surface of the &+Cbell&+w.\n"
-        "&+wThe &+rmallet &+Rshatters &+wupon impact as it moves the heavy &+ycopper &+Cbell&+w.\n"
-        "&+wThe &+Cbell &+wsways and the clapper strikes the lip with a beautiful &+Wlucid note&+w.\n"
-        "&+wSomewhere in the distance, an answering note rings out in the castle, as if\n"
-        "&+wthe note awakened a long lost secret hidden deep below.\n\n"
-        "&+wIn the distance, a &+Ygreat beam of light &+wsurges downwards and &+Willuminates\n"
-        "&+wthe &+WHall of &+YHeroes&+w.\n", FALSE, ch, obj, 0, TO_ROOM);
+          "&+wThe &+rmallet &+Rshatters &+wupon impact as it moves the heavy &+ycopper &+Cbell&+w.\n"
+          "&+wThe &+Cbell &+wsways and the clapper strikes the lip with a beautiful &+Wlucid note&+w.\n"
+          "&+wSomewhere in the distance, an answering note rings out in the castle, as if\n"
+          "&+wthe note awakened a long lost secret hidden deep below.\n\n"
+          "&+wIn the distance, a &+Ygreat beam of light &+wsurges downwards and &+Willuminates\n"
+          "&+wthe &+WHall of &+YHeroes&+w.\n",
+          FALSE, ch, obj, 0, TO_ROOM);
       extract_obj(obj, TRUE); // Not an arti, but 'in game.'
       REMOVE_BIT(swordcase->value[1], CONT_LOCKED);
       snprintf(buf, MAX_STRING_LENGTH, "&+WA brilliant &+Ybeam &+Wof light shines upon an &+Lancient &+wsword case &+Where.&n");
@@ -134,7 +136,7 @@ int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 }
 /*
 int strahd_charm(P_char strahd, P_char charmie, int cmd, char *arg)
-{  
+{
   struct affected_type af;
   P_char   vict, tmp_ch, next_vict_ch, next_tmp_ch, victim;
   int      InRoom, HasCharmies, highstr, currstr;
@@ -220,7 +222,7 @@ int strahd_charm(P_char strahd, P_char charmie, int cmd, char *arg)
           }
         }
       }
-      
+
       for (tmp_ch = world[strahd->in_room].people; tmp_ch; tmp_ch = next_tmp_ch)
       {
          currstr = GET_C_STR(tmp_ch);
@@ -228,17 +230,17 @@ int strahd_charm(P_char strahd, P_char charmie, int cmd, char *arg)
 
          if (IS_TRUSTED(tmp_ch) || IS_NPC(tmp_ch))
            continue;
-        
+
          if(currstr > highstr)
          {
            victim = tmp_ch;
            highstr = currstr;
          }
       }
-       
+
         if(!victim)
           return FALSE;
-            
+
       if (!(NewSaves(victim, SAVING_FEAR, 10)))
       {
         act("&+rStrahd looks upon the muscular, mortal body of %s&+r, and remarks calmly, &+L'Were\r\n",FALSE, victim, 0, 0, TO_VICTROOM);
@@ -305,19 +307,19 @@ int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
   struct affected_type af;
   int curr_time;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return TRUE;
   }
 
-  if( !IS_ALIVE(ch) )
+  if (!IS_ALIVE(ch))
   {
     return FALSE;
   }
 
-  if( (cmd == CMD_REMOVE) && arg )
+  if ((cmd == CMD_REMOVE) && arg)
   {
-    if( isname(arg, obj->name) || isname(arg, "all") )
+    if (isname(arg, obj->name) || isname(arg, "all"))
     {
       if (affected_by_spell(ch, SPELL_BLUR))
       {
@@ -331,17 +333,17 @@ int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
     return FALSE;
   }
 
-  if( !OBJ_WORN_BY(obj, ch) )
+  if (!OBJ_WORN_BY(obj, ch))
   {
     return FALSE;
   }
 
   curr_time = time(NULL);
 
-  if( !IS_ROOM(ch->in_room, ROOM_NO_MAGIC) )
+  if (!IS_ROOM(ch->in_room, ROOM_NO_MAGIC))
   {
     // Every 10 sec?!
-    if( obj->timer[0] + 10 <= curr_time )
+    if (obj->timer[0] + 10 <= curr_time)
     {
       obj->timer[0] = curr_time;
 
@@ -350,10 +352,10 @@ int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
         act("&n$n's $q &+Rflares &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_ROOM);
         act("&nYour $q &+Rflares &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_CHAR);
 
-	      bzero(&af, sizeof(af));
+        bzero(&af, sizeof(af));
 
         af.type = SPELL_CURSE;
-        af.duration =  100;
+        af.duration = 100;
         af.modifier = -1;
         af.location = APPLY_HITROLL;
         affect_to_char(ch, &af);
@@ -363,14 +365,14 @@ int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 
         act("&+r$n briefly reveals a red aura!", FALSE, ch, 0, 0, TO_ROOM);
         act("&+rYou feel very uncomfortable.", FALSE, ch, 0, 0, TO_CHAR);
-	      return FALSE;
+        return FALSE;
       }
-      if( !IS_AFFECTED3(ch, AFF3_BLUR) )
+      if (!IS_AFFECTED3(ch, AFF3_BLUR))
       {
         act("&n$n's $q &+Ysparkles &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_ROOM);
         act("&nYour $q &+Ysparkles &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_CHAR);
-	      spell_blur(70, ch, 0, SPELL_TYPE_SPELL, ch, 0);
-	      return FALSE;
+        spell_blur(70, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+        return FALSE;
       }
     }
   }

@@ -26,7 +26,7 @@ extern P_event event_list;
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_room world;
-extern char *dirs[];
+// extern char *dirs[];
 extern const struct stat_data stat_factor[];
 extern double lfactor[];
 extern float fake_sqrt_table[];
@@ -42,13 +42,15 @@ extern struct potion potion_data[];
 
 struct PatrolData
 {
-  enum {
+  enum
+  {
     PATROL_SENTINEL = 0,
     PATROL_LEFT,
     PATROL_RIGHT,
   } dirPref;
-  
-  enum {
+
+  enum
+  {
     PATROL_NOTHING = 0,
     PATROL_HUNT,
     PATROL_FIGHTING,
@@ -59,21 +61,17 @@ struct PatrolData
   // rangers will rarely ever walk in step with each
   // other
   int normalSpeed;
-  
-  
+
   // hunt targets are in order of priority.  It's possible that
   // both of these get set, in which case the mob will hunt to
   // huntCh, and when done (if nothing else to do), will hunt to
   // huntRoom.
-  P_char huntCh;     // if set, the highest priority hunt
-  int    huntRoom;   // lower priority..
+  P_char huntCh; // if set, the highest priority hunt
+  int huntRoom;  // lower priority..
 };
-
 
 #define VALID_PATROL_ROOM(x) (((x) != NOWHERE) && \
                               (world[x].sector_type == SECT_ROAD))
-
-
 
 // for a new patrol/RR, this sets up everything needed...
 void mobPatrol_SetupNew(P_char ch)
@@ -85,22 +83,22 @@ void mobPatrol_SetupNew(P_char ch)
   SET_BIT(ch->specials.affected_by, AFF_FLY);
 
   // 33% chance that we get detect illusion
-  if (!number(0,2))
+  if (!number(0, 2))
     SET_BIT(ch->specials.affected_by4, AFF4_DETECT_ILLUSION);
   else
     REMOVE_BIT(ch->specials.affected_by4, AFF4_DETECT_ILLUSION);
 
   if (GET_MAX_HIT(ch) < 1000)
-    GET_MAX_HIT(ch) = GET_HIT(ch) = ch->points.base_hit = 1000;    
-  
+    GET_MAX_HIT(ch) = GET_HIT(ch) = ch->points.base_hit = 1000;
+
   // these guys are NOT worth exp or money
   CLEAR_MONEY(ch);
   GET_EXP(ch) = 0;
 
-  // proper patrols aren't followers.  
+  // proper patrols aren't followers.
   if (ch->following)
-      stop_follower(ch);
-  
+    stop_follower(ch);
+
   PatrolData newData;
   // this is the inital call.  setup some stuff...
   memset(&newData, 0, sizeof(PatrolData));
@@ -114,20 +112,19 @@ void mobPatrol_SetupNew(P_char ch)
   }
   else
   {
-    if (!number(0,1))
+    if (!number(0, 1))
       newData.dirPref = PatrolData::PATROL_LEFT;
     else
       newData.dirPref = PatrolData::PATROL_RIGHT;
   }
   // determine their normal walking speed between 1 and 3 secs
-  newData.normalSpeed = number(WAIT_SEC, WAIT_SEC*3);
+  newData.normalSpeed = number(WAIT_SEC, WAIT_SEC * 3);
   // the first event is always longer than any other.  This gives
   // the standard mobAct time to put some spells up
-  add_event(event_patrol_move, PULSE_MOBILE * number(1,4) + number(0,10) , ch, NULL, NULL, 0, 
+  add_event(event_patrol_move, PULSE_MOBILE * number(1, 4) + number(0, 10), ch, NULL, NULL, 0,
             &newData, sizeof(PatrolData));
   return;
 }
-
 
 // standard "movement" event for PATROL mobs.  *data is a hunt_data
 // structure or null.  If null, just do standard movement.  If !null,
@@ -136,14 +133,14 @@ void mobPatrol_SetupNew(P_char ch)
 void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 {
   char buf[MAX_STRING_LENGTH];
-  
+
   PatrolData *huntData = (PatrolData *)data;
-    
+
   // standard mob can act checks..
-  if(!IS_NPC(ch) || 
-     IS_IMMOBILE(ch))
+  if (!IS_NPC(ch) ||
+      IS_IMMOBILE(ch))
   { // reset the event and return
-    add_event(event_patrol_move, PULSE_VIOLENCE , ch, vict, obj, 0, huntData,
+    add_event(event_patrol_move, PULSE_VIOLENCE, ch, vict, obj, 0, huntData,
               huntData ? sizeof(struct hunt_data) : 0);
     return;
   }
@@ -171,29 +168,29 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
   {
     huntData->curActivity = PatrolData::PATROL_NOTHING;
   }
-  if (huntData->curActivity == PatrolData::PATROL_NOTHING)  // standard movement, spell casting, etc.
+  if (huntData->curActivity == PatrolData::PATROL_NOTHING) // standard movement, spell casting, etc.
   {
     if (huntData->dirPref != PatrolData::PATROL_SENTINEL)
     {
       int dir = -1;
-      
+
       // scan for someone we're aggro to...
       // Disabled Kvark
-        //dir = range_scan(ch, NULL, number(0, 3), SCAN_EVILRACE);
-      
+      // dir = range_scan(ch, NULL, number(0, 3), SCAN_EVILRACE);
+
       if (-1 != dir)
       {
         // do_shout(ch, "Rangers!  Evils threaten our road!", CMD_SHOUT);
       }
       else if (!VALID_PATROL_ROOM(ch->in_room))
-      {  // if not in a valid patrolling room - find one!
+      { // if not in a valid patrolling room - find one!
         int dummy = 0;
         dir = find_first_step(ch->in_room, 0, BFS_CAN_FLY | BFS_BREAK_WALLS | BFS_ROADRANGER | BFS_AVOID_NOMOB,
-          0, 0, &dummy);
-        if( dir < 0 )
+                              0, 0, &dummy);
+        if (dir < 0)
         {
           mobsay(ch, "Well, I'm seriously screwed with no way to get back to the road.");
-      	  die(ch, ch);
+          die(ch, ch);
           return;
         }
       }
@@ -210,18 +207,17 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
           if (dir >= NUM_EXITS)
             dir = 0;
           else if (dir < 0)
-            dir = NUM_EXITS -1;
-            
+            dir = NUM_EXITS - 1;
+
           if (world[ch->in_room].dir_option[dir] &&
               VALID_PATROL_ROOM(TOROOM(ch->in_room, dir)))
-    			    break; 
-        }    
-        while (dir != fromdir);
+            break;
+        } while (dir != fromdir);
       }
-      
+
       if (IS_CLOSED(ch->in_room, dir))
       {
-        snprintf(buf, MAX_STRING_LENGTH, "%s", dirs[(int) dir]);
+        snprintf(buf, MAX_STRING_LENGTH, "%s", dirs[(int)dir]);
         do_open(ch, buf, 0);
       }
       else if (IS_WALLED(ch->in_room, dir))
@@ -235,7 +231,6 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
       }
     }
   }
-  add_event(event_patrol_move, huntData->normalSpeed, ch, vict, obj, 0, 
+  add_event(event_patrol_move, huntData->normalSpeed, ch, vict, obj, 0,
             huntData, sizeof(struct hunt_data));
 }
-

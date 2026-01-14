@@ -78,9 +78,9 @@ extern const flagDef affected5_bits[];
 extern int top_of_zone_table;
 
 void yank_make_item(P_char, P_obj);
-void lore_item( P_char ch, P_obj obj );
-void     set_keywords(P_obj t_obj, const char *newKeys);
-void     set_short_description(P_obj t_obj, const char *newShort);
+void lore_item(P_char ch, P_obj obj);
+void set_keywords(P_obj t_obj, const char *newKeys);
+void set_short_description(P_obj t_obj, const char *newShort);
 
 int voting_enabled = 0;
 
@@ -92,12 +92,12 @@ void do_offensive(P_char ch, char *arg, int cmd)
 
   char Gbuf2[MAX_STRING_LENGTH];
 
-  if( !IS_ALIVE(ch) || IS_NPC(ch) )
+  if (!IS_ALIVE(ch) || IS_NPC(ch))
   {
     return;
   }
 
-  if(IS_IMMOBILE(ch) ||
+  if (IS_IMMOBILE(ch) ||
       GET_STAT(ch) <= STAT_INCAP)
   {
     send_to_char("You have other things to worry about at the moment.\r\n", ch);
@@ -106,21 +106,21 @@ void do_offensive(P_char ch, char *arg, int cmd)
 
   one_argument(arg, Gbuf2);
 
-  if(!str_cmp(Gbuf2, "off"))
+  if (!str_cmp(Gbuf2, "off"))
   {
     send_to_char("&+MYou will now stop all your attacks! You will fail all attacks!&n\r\n", ch);
 
-    if(!IS_SET(ch->specials.affected_by5, AFF5_NOT_OFFENSIVE))
+    if (!IS_SET(ch->specials.affected_by5, AFF5_NOT_OFFENSIVE))
     {
       SET_BIT(ch->specials.affected_by5, AFF5_NOT_OFFENSIVE);
       CharWait(ch, PULSE_VIOLENCE);
     }
   }
-  else if(*Gbuf2 == '\0')
+  else if (*Gbuf2 == '\0')
   {
     send_to_char("&+RYour combat prowess is normal. Kill the enemy!&n\r\n", ch);
 
-    if(IS_SET(ch->specials.affected_by5, AFF5_NOT_OFFENSIVE))
+    if (IS_SET(ch->specials.affected_by5, AFF5_NOT_OFFENSIVE))
     {
       REMOVE_BIT(ch->specials.affected_by5, AFF5_NOT_OFFENSIVE);
       CharWait(ch, PULSE_VIOLENCE);
@@ -130,7 +130,6 @@ void do_offensive(P_char ch, char *arg, int cmd)
   return;
 }
 
-
 /*
  * ** Set PC's "aggressivity" so that PC will attack aggressive monsters
  * ** instanteously when s/he enters a room.
@@ -138,31 +137,31 @@ void do_offensive(P_char ch, char *arg, int cmd)
 
 void do_aggr(P_char ch, char *arg, int cmd)
 {
-  char     Gbuf2[MAX_STRING_LENGTH];
+  char Gbuf2[MAX_STRING_LENGTH];
 
   if (IS_NPC(ch))
     return;
 
   one_argument(arg, Gbuf2);
 
-  if(*Gbuf2 == '\0')
+  if (*Gbuf2 == '\0')
   {
-    if(ch->only.pc->aggressive == -1)
+    if (ch->only.pc->aggressive == -1)
     {
       send_to_char("You are not aggressive to monsters.\r\n", ch);
       return;
     }
     snprintf(Gbuf2, MAX_STRING_LENGTH,
-        "You will be aggressive unless hp < %d.\r\n",
-        ch->only.pc->aggressive);
+             "You will be aggressive unless hp < %d.\r\n",
+             ch->only.pc->aggressive);
 
     send_to_char(Gbuf2, ch);
     return;
   }
 
-#if 0                           /*
-                                 * disabled at forger request
-                                 */
+#if 0 /*                            \
+       * disabled at forger request \
+       */
   /*
    * paladins are good, therefore can't be aggro --TAM
    */
@@ -174,9 +173,9 @@ void do_aggr(P_char ch, char *arg, int cmd)
   }
 #endif
   if (*Gbuf2 == '\0')
-  {                             /*
-                                 * Check Aggressivity
-                                 */
+  { /*
+     * Check Aggressivity
+     */
 
     if (ch->only.pc->aggressive == -1)
     {
@@ -213,18 +212,18 @@ void do_aggr(P_char ch, char *arg, int cmd)
     //    }
   }
   else
-  {                             /*
-                                 * Turn on aggressivity
-                                 */
+  { /*
+     * Turn on aggressivity
+     */
 
-    int      hp = atoi(Gbuf2);
+    int hp = atoi(Gbuf2);
 
     if (hp < 0)
     {
       send_to_char("Aggressive while dying?  Not likely!\r\n", ch);
       return;
     }
-    ch->only.pc->aggressive = (short) hp;
+    ch->only.pc->aggressive = (short)hp;
     send_to_char("OK.\r\n", ch);
     return;
   }
@@ -238,16 +237,17 @@ void do_aggr(P_char ch, char *arg, int cmd)
 void do_gsay(P_char ch, char *arg, int cmd)
 {
   struct group_list *gl;
-  int     *rm_checked;
-  int      i, j, k, numb, skip;
-  char     Gbuf1[MAX_STRING_LENGTH];
+  int *rm_checked;
+  int i, j, k, numb, skip;
+  char Gbuf1[MAX_STRING_LENGTH];
 
   if (IS_MORPH(ch))
   {
     send_to_char("You are unable to speak in this form\r\n", ch);
     return;
   }
-  for (i = 0; arg[i] == ' '; i++) ;
+  for (i = 0; arg[i] == ' '; i++)
+    ;
 
   if (arg[i] == '\0')
   {
@@ -259,7 +259,7 @@ void do_gsay(P_char ch, char *arg, int cmd)
     send_to_char("But you are a member of no group?!\r\n", ch);
     return;
   }
-  if( IS_ROOM(ch->in_room, ROOM_UNDERWATER) && !IS_TRUSTED(ch))
+  if (IS_ROOM(ch->in_room, ROOM_UNDERWATER) && !IS_TRUSTED(ch))
   {
     send_to_char("You cannot group say while underwater...\r\n", ch);
     return;
@@ -277,7 +277,7 @@ void do_gsay(P_char ch, char *arg, int cmd)
   for (gl = ch->group; gl; gl = gl->next)
   {
     snprintf(Gbuf1, MAX_STRING_LENGTH, "&+G$n&+G group-says %s'%s'", language_known(ch, gl->ch),
-        language_CRYPT(ch, gl->ch, arg + i));
+             language_CRYPT(ch, gl->ch, arg + i));
     if (!is_silent(gl->ch, FALSE))
     {
       act(Gbuf1, FALSE, ch, 0, gl->ch, TO_VICT | ACT_SILENCEABLE | ACT_PRIVATE);
@@ -304,7 +304,6 @@ void do_gsay(P_char ch, char *arg, int cmd)
 
   // New gsay listen routine
   listen_broadcast(ch, (arg + i), LISTEN_GSAY);
-
 }
 
 /*
@@ -315,24 +314,24 @@ void do_gsay(P_char ch, char *arg, int cmd)
  */
 void do_consent(P_char ch, char *argument, int cmd)
 {
-  P_char   target;
-  char     Gbuf3[MAX_STRING_LENGTH];
+  P_char target;
+  char Gbuf3[MAX_STRING_LENGTH];
   struct char_link_data *cld;
-  P_desc   d;
+  P_desc d;
 
   one_argument(argument, Gbuf3);
 
   if (!*Gbuf3)
   {
     send_to_char("You no longer feel generous and revoke your consent.\r\n",
-        ch);
+                 ch);
     clear_links(ch, LNK_CONSENT);
     return;
   }
   if (!strcmp(Gbuf3, "who"))
   {
     send_to_char("The following players have given you their consent:\r\n",
-        ch);
+                 ch);
     for (cld = ch->linked; cld; cld = cld->next_linked)
     {
       send_to_char(cld->linking->player.name, ch);
@@ -415,18 +414,18 @@ void do_consent(P_char ch, char *argument, int cmd)
 act("You attempt to give consent...", FALSE, ch, 0, ch->specials.consent, TO_CHAR);
 }
 */
-/*  snprintf(Gbuf3, MAX_STRING_LENGTH, "You now give consent to %s.\r\n", GET_NAME(target));
-    send_to_char(Gbuf3, ch); */
-act("You attempt to give consent...", FALSE, ch, 0, target, TO_CHAR);
-link_char(ch, target, LNK_CONSENT);
-act("$n has just given you $s consent.", FALSE, ch, 0, target, TO_VICT);
+  /*  snprintf(Gbuf3, MAX_STRING_LENGTH, "You now give consent to %s.\r\n", GET_NAME(target));
+      send_to_char(Gbuf3, ch); */
+  act("You attempt to give consent...", FALSE, ch, 0, target, TO_CHAR);
+  link_char(ch, target, LNK_CONSENT);
+  act("$n has just given you $s consent.", FALSE, ch, 0, target, TO_VICT);
 }
 
 void do_stampede(P_char ch, char *arg, int cmd)
 {
-  int      missed;
-  int      count;
-  P_char   vict, next_vict = 0;
+  int missed;
+  int count;
+  P_char vict, next_vict = 0;
 
   /*  struct group_list *gl; */
 
@@ -491,12 +490,13 @@ void do_stampede(P_char ch, char *arg, int cmd)
 
     missed = 0;
 
-    if(!number(0, 9))
-    { }
+    if (!number(0, 9))
+    {
+    }
     else if (number(1, 100) >
-        (GET_LEVEL(ch) - GET_LEVEL(vict) - STAT_INDEX(GET_C_AGI(vict)) +
-         dice(10, IS_AFFECTED(vict, AFF_AWARE) ? 5 : 10)) ||
-        !on_front_line(vict))
+                 (GET_LEVEL(ch) - GET_LEVEL(vict) - STAT_INDEX(GET_C_AGI(vict)) +
+                  dice(10, IS_AFFECTED(vict, AFF_AWARE) ? 5 : 10)) ||
+             !on_front_line(vict))
     {
       missed = 1;
       act("$n jumps nimbly out of the way!", 0, vict, 0, 0, TO_ROOM);
@@ -526,13 +526,13 @@ void do_stampede(P_char ch, char *arg, int cmd)
 // SPEC SKILL FOR WARRIOR - Kvark
 void do_war_cry(P_char ch, char *arg, int cmd)
 {
-  int      hpoints = (GET_CHAR_SKILL(ch, SKILL_WAR_CRY) / 2);
+  int hpoints = (GET_CHAR_SKILL(ch, SKILL_WAR_CRY) / 2);
   struct group_list *gl;
-  int      dampoints = (GET_CHAR_SKILL(ch, SKILL_WAR_CRY) / 20);
-  int      skl;
+  int dampoints = (GET_CHAR_SKILL(ch, SKILL_WAR_CRY) / 20);
+  int skl;
   struct affected_type af;
 
-  if( !IS_ALIVE(ch) )
+  if (!IS_ALIVE(ch))
   {
     return;
   }
@@ -546,53 +546,53 @@ void do_war_cry(P_char ch, char *arg, int cmd)
   send_to_char("You unleash a &+rpowerful &+RSCREAM!!&n\r\n", ch);
   act("$n lets loose with a &+rpowerful &+RSCREAM!!&n", TRUE, ch, 0, 0, TO_ROOM);
 
-  if( ch->group )
+  if (ch->group)
   {
-    for( gl = ch->group; gl; gl = gl->next )
+    for (gl = ch->group; gl; gl = gl->next)
     {
-      if( gl->ch->in_room == ch->in_room )
+      if (gl->ch->in_room == ch->in_room)
       {
-        if( !affected_by_spell(gl->ch, SKILL_WAR_CRY) )
+        if (!affected_by_spell(gl->ch, SKILL_WAR_CRY))
         {
           bzero(&af, sizeof(af));
           af.type = SKILL_WAR_CRY;
           af.duration = (dampoints);
-          //HPS
+          // HPS
           af.modifier = hpoints;
           af.location = APPLY_HIT;
           affect_to_char(gl->ch, &af);
-          //HIT
+          // HIT
           af.modifier = dampoints;
           af.location = APPLY_HITROLL;
           affect_to_char(gl->ch, &af);
-          //DAM
+          // DAM
           af.modifier = dampoints;
           af.location = APPLY_DAMROLL;
           affect_to_char(gl->ch, &af);
           update_pos(gl->ch);
           send_to_char("You feel like you could &+rfight&n forever.\r\n", gl->ch);
           act("&+L$n becomes alert and ready to &+rfight&n.", TRUE, gl->ch, 0, 0, TO_ROOM);
-          notch_skill( ch, SKILL_WAR_CRY, 10 );
+          notch_skill(ch, SKILL_WAR_CRY, 10);
         }
       }
     }
   }
   else
   {
-    if( !affected_by_spell(ch, SKILL_WAR_CRY) )
+    if (!affected_by_spell(ch, SKILL_WAR_CRY))
     {
       bzero(&af, sizeof(af));
       af.type = SKILL_WAR_CRY;
       af.duration = (dampoints / 2);
-      //HPS
+      // HPS
       af.modifier = hpoints;
       af.location = APPLY_HIT;
       affect_to_char(ch, &af);
-      //HIT
+      // HIT
       af.modifier = dampoints;
       af.location = APPLY_HITROLL;
       affect_to_char(ch, &af);
-      //DAM
+      // DAM
       af.modifier = dampoints;
       af.location = APPLY_DAMROLL;
       affect_to_char(ch, &af);
@@ -606,31 +606,30 @@ void do_war_cry(P_char ch, char *arg, int cmd)
   CharWait(ch, PULSE_VIOLENCE * 2);
 }
 
-
 int do_roar_of_heroes(P_char ch)
 {
 
   struct group_list *gl;
   struct affected_type af;
 
-  if( !IS_ALIVE(ch) )
+  if (!IS_ALIVE(ch))
   {
     return 0;
   }
 
-  if(IS_NPC(ch) ||
+  if (IS_NPC(ch) ||
       GET_LEVEL(ch) < 56)
   {
-    //send_to_char("Mmmm, in your wildest dreams...\r\n", ch);
+    // send_to_char("Mmmm, in your wildest dreams...\r\n", ch);
     return 0;
   }
 
-  if(affected_by_spell(ch, SKILL_ROAR_OF_HEROES))
+  if (affected_by_spell(ch, SKILL_ROAR_OF_HEROES))
   {
     return 0;
   }
 
-  send_to_char("&+LYour mighty &+rbattle cry &+Lrallies your comrades and instills &+wfear\n&+Linto the hearts of your enemies.&n\r\n", ch); 
+  send_to_char("&+LYour mighty &+rbattle cry &+Lrallies your comrades and instills &+wfear\n&+Linto the hearts of your enemies.&n\r\n", ch);
   act("&+L$n's mighty &+rbattle cry &+Lrallies $s comrades and instills fear\n&+Linto the hearts of $s enemies.&n", TRUE, ch, 0, 0, TO_ROOM);
 
   if (ch && ch->group)
@@ -650,7 +649,7 @@ int do_roar_of_heroes(P_char ch)
 
         update_pos(gl->ch);
         send_to_char("&+rAdrenaline burns your veins as the battle cry rings in your ears.&n\r\n",
-            gl->ch);
+                     gl->ch);
 
         // Commenting out the spam portion. Apr09 -Lucrot
         // switch (number(1,6))
@@ -715,7 +714,7 @@ int do_roar_of_heroes(P_char ch)
 
           update_pos(gl->ch);
           send_to_char("&+rAdrenaline burns your veins as the battle cry rings in your ears.&n\r\n",
-              gl->ch);
+                       gl->ch);
 
           // switch(number(1,6))
           // {
@@ -777,7 +776,7 @@ int do_roar_of_heroes(P_char ch)
       affect_to_char(ch, &af);
       update_pos(ch);
       send_to_char("&+rAdrenaline burns your veins as the battle cry rings in your ears.&n\r\n",
-          ch);
+                   ch);
 
       // switch (number(1,6))
       // {
@@ -832,9 +831,9 @@ int do_roar_of_heroes(P_char ch)
 
 void do_flurry_of_blows(P_char ch, char *arg)
 {
-  P_char   tch = NULL, next_tch = NULL;
-  char     buf[MAX_STRING_LENGTH];
-  int	   num_attacks, max_num_attacks, hit_all, num_targets = 0, count = 0, num_hits_per_target = 0;
+  P_char tch = NULL, next_tch = NULL;
+  char buf[MAX_STRING_LENGTH];
+  int num_attacks, max_num_attacks, hit_all, num_targets = 0, count = 0, num_hits_per_target = 0;
 
   if (!GET_CHAR_SKILL(ch, SKILL_FLURRY_OF_BLOWS))
   {
@@ -844,7 +843,8 @@ void do_flurry_of_blows(P_char ch, char *arg)
   if (is_in_safe(ch))
   {
     send_to_char("You feel ashamed to try to disrupt the tranquility"
-        " of this place.\r\n", ch);
+                 " of this place.\r\n",
+                 ch);
     return;
   }
   if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
@@ -884,13 +884,13 @@ void do_flurry_of_blows(P_char ch, char *arg)
   }
 
   num_targets = MAX(1, num_targets);
-  num_hits_per_target = int (max_num_attacks / num_targets);
+  num_hits_per_target = int(max_num_attacks / num_targets);
   num_hits_per_target = BOUNDED(1, num_hits_per_target, num_attacks);
 
   act("&+gFlowing into the stance of the &+Gviper &+gyou unleash a flurry of blows!&n", FALSE, ch, 0, 0, TO_CHAR);
   act("Placing $s weight low $n shifts into a more aggressive stance.", FALSE, ch, 0, 0, TO_ROOM);
 
-  for (tch = world[ch->in_room].people;tch; tch = next_tch)
+  for (tch = world[ch->in_room].people; tch; tch = next_tch)
   {
     next_tch = tch->next_in_room;
 
@@ -903,35 +903,32 @@ void do_flurry_of_blows(P_char ch, char *arg)
     if (!CAN_SEE(ch, tch))
     {
       if (!notch_skill(ch, SKILL_BLINDFIGHTING,
-            get_property("skill.notch.blindFighting", 1)) && 
-          (number(1,101) > (IS_PC(ch) ? (1 + GET_CHAR_SKILL(ch, SKILL_BLINDFIGHTING)) : (MIN(100,GET_LEVEL(ch))))))
+                       get_property("skill.notch.blindFighting", 1)) &&
+          (number(1, 101) > (IS_PC(ch) ? (1 + GET_CHAR_SKILL(ch, SKILL_BLINDFIGHTING)) : (MIN(100, GET_LEVEL(ch))))))
         continue;
     }
-    if (!notch_skill(ch, SKILL_FLURRY_OF_BLOWS, get_property("skill.notch.offensive", 7))
-      && (number(1,101) > (IS_PC(ch) ? (1 + GET_CHAR_SKILL(ch, SKILL_FLURRY_OF_BLOWS)) : (MIN(100, GET_LEVEL(ch))))))
+    if (!notch_skill(ch, SKILL_FLURRY_OF_BLOWS, get_property("skill.notch.offensive", 7)) && (number(1, 101) > (IS_PC(ch) ? (1 + GET_CHAR_SKILL(ch, SKILL_FLURRY_OF_BLOWS)) : (MIN(100, GET_LEVEL(ch))))))
     {
       continue;
     }
 
     /* Ok we got this far.. lets try and hit them! */
 
-    for (int i=1;i <= num_hits_per_target && count <= max_num_attacks ; i++, count++)
+    for (int i = 1; i <= num_hits_per_target && count <= max_num_attacks; i++, count++)
     {
       if (!should_not_kill(ch, tch) && (GET_STAT(tch) != STAT_DEAD))
 #ifndef NEW_COMBAT
         hit(ch, tch, NULL);
 
 #else
-      hit(ch, tch, NULL, TYPE_UNDEFINED, number(0, 10),       /* fix up for real later.. */
-          TRUE, FALSE);
-#endif  
+        hit(ch, tch, NULL, TYPE_UNDEFINED, number(0, 10), /* fix up for real later.. */
+            TRUE, FALSE);
+#endif
     }
-
   }
   CharWait(ch, PULSE_VIOLENCE * 3);
   set_short_affected_by(ch, SKILL_FLURRY_OF_BLOWS, 10 * WAIT_SEC);
 }
-
 
 /*
  * ** Warrior skill "hitall"
@@ -939,18 +936,18 @@ void do_flurry_of_blows(P_char ch, char *arg)
 
 void do_hitall(P_char ch, char *arg, int cmd)
 {
-  byte  percent;
+  ::byte percent;
   int count, hit_all;
-  P_char   mob, next_mob;
-  char  Gbuf2[MAX_STRING_LENGTH];
+  P_char mob, next_mob;
+  char Gbuf2[MAX_STRING_LENGTH];
 
-  if(!ch)
+  if (!ch)
   {
     logit(LOG_EXIT, "do_hitall call in actnew.c with no ch");
     raise(SIGSEGV);
   }
 
-  if(!SanityCheck(ch, "do_hitall"))
+  if (!SanityCheck(ch, "do_hitall"))
   {
     return;
   }
@@ -969,10 +966,11 @@ void do_hitall(P_char ch, char *arg, int cmd)
   if (is_in_safe(ch))
   {
     send_to_char("You feel ashamed to try to disrupt the tranquility"
-        " of this place.\r\n", ch);
+                 " of this place.\r\n",
+                 ch);
     return;
   }
-  if (IS_ROOM( ch->in_room, ROOM_SINGLE_FILE))
+  if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
   {
     send_to_char("Sorry, it's too cramped here for nasty maneuvers!\r\n", ch);
     return;
@@ -1029,10 +1027,10 @@ void do_hitall(P_char ch, char *arg, int cmd)
       {
         hit(ch, mob, ch->equipment[PRIMARY_WEAPON]);
       }
-    }                           // new zerker stuff
+    } // new zerker stuff
 #else
-    hit(ch, mob, ch->equipment[WIELD], TYPE_UNDEFINED, number(0, 10),       /* fix up for real later.. */
-        TRUE, FALSE);
+        hit(ch, mob, ch->equipment[WIELD], TYPE_UNDEFINED, number(0, 10), /* fix up for real later.. */
+            TRUE, FALSE);
     if (GET_CLASS(ch, CLASS_BERSERKER))
     {
       if (affected_by_spell(ch, SKILL_BERSERK))
@@ -1041,13 +1039,13 @@ void do_hitall(P_char ch, char *arg, int cmd)
             TRUE, FALSE);
       }
 
-    }                           // same as above
+    } // same as above
 #endif
 
     // riposte, damage shield, etc can kill the character
     // and it appears we've had a crash due to this, so adding this
     // check here
-    if(!IS_ALIVE(ch))
+    if (!IS_ALIVE(ch))
       break;
 
     count++;
@@ -1086,9 +1084,9 @@ void do_hitall(P_char ch, char *arg, int cmd)
  */
 void do_trap(P_char ch, char *arg, int cmd)
 {
-  P_room   room;
-  byte     percent;
-  P_char   monster.next_ch;
+  P_room room;
+  byte percent;
+  P_char monster.next_ch;
 
   /* Check to see if "ch" is allowed to lay a trap */
 
@@ -1109,7 +1107,7 @@ void do_trap(P_char ch, char *arg, int cmd)
     send_to_char("You can't lay a trap in here!\r\n", ch);
     return;
   }
-  if( IS_FIGHTING(ch) || IS_DESTROYING(ch) )
+  if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
   {
     send_to_char("You cannot possibly lay a trap while fighting!\r\n", ch);
     return;
@@ -1118,7 +1116,7 @@ void do_trap(P_char ch, char *arg, int cmd)
   /* rogue can indeed lay the trap based on how learned s/he */
   /* at setting trap */
 
-  percent = number(1, 101);     /* 101 is a total failure */
+  percent = number(1, 101); /* 101 is a total failure */
 
   if (GET_CHAR_SKILL(ch, SKILL_TRAP) < percent)
   {
@@ -1134,7 +1132,7 @@ void do_trap(P_char ch, char *arg, int cmd)
 
     /*    LOOP_THRU_PEOPLE(monster, ch)  */
 
-    int      dice;
+    int dice;
 
     for (monster = world[ch->in_room].people; monster; monster = ch_next)
     {
@@ -1156,7 +1154,7 @@ void do_trap(P_char ch, char *arg, int cmd)
 
       /* Decide if monster should attack */
 
-      if( IS_FIGHTING(monster) || IS_DESTROYING(monster) )
+      if (IS_FIGHTING(monster) || IS_DESTROYING(monster))
         continue;
 
       if (!CAN_SEE(monster, ch))
@@ -1192,30 +1190,30 @@ void do_trap(P_char ch, char *arg, int cmd)
 
 void do_commands(P_char ch, char *arg, int cmd)
 {
-  int      no, i, mode, t_pos;
-  char     Gbuf1[MAX_STRING_LENGTH];
+  int no, i, mode, t_pos;
+  char Gbuf1[MAX_STRING_LENGTH];
 
   if (IS_NPC(ch))
     return;
 
   if (!*arg)
-    mode = 0;                   /*
-                                 * commands legal to level and current
-                                 * position
-                                 */
+    mode = 0; /*
+               * commands legal to level and current
+               * position
+               */
   else if (is_abbrev(arg, "all"))
-    mode = 1;                   /*
-                                 * same as old list, everything
-                                 */
+    mode = 1; /*
+               * same as old list, everything
+               */
   else if (is_abbrev(arg, "socials"))
-    mode = 2;                   /*
-                                 * only commands that have 'do_action' as
-                                 * their function
-                                 */
+    mode = 2; /*
+               * only commands that have 'do_action' as
+               * their function
+               */
   else if (is_abbrev(arg, "nosocials"))
-    mode = 3;                   /*
-                                 * old list, not including socials
-                                 */
+    mode = 3; /*
+               * old list, not including socials
+               */
   else
   {
     send_to_char("Syntax:  commands [all | socials | nosocials]\r\n", ch);
@@ -1232,27 +1230,27 @@ void do_commands(P_char ch, char *arg, int cmd)
 
   for (no = 1, i = 0; *command[i] != '\n'; i++)
   {
-    if ((int) GET_LEVEL(ch) >= cmd_info[i + 1].minimum_level)
+    if ((int)GET_LEVEL(ch) >= cmd_info[i + 1].minimum_level)
     {
       switch (mode)
       {
-        case 0:
-          if ((cmd_info[i + 1].command_pointer == do_action) ||
-              ((cmd_info[i + 1].minimum_position & 3) > (t_pos & 3)) ||
-              ((cmd_info[i + 1].minimum_position & STAT_MASK) >
-               (t_pos & STAT_MASK)))
-            continue;
-          break;
-        case 1:
-          break;
-        case 2:
-          if ((cmd_info[i + 1].command_pointer != do_action))
-            continue;
-          break;
-        case 3:
-          if ((cmd_info[i + 1].command_pointer == do_action))
-            continue;
-          break;
+      case 0:
+        if ((cmd_info[i + 1].command_pointer == do_action) ||
+            ((cmd_info[i + 1].minimum_position & 3) > (t_pos & 3)) ||
+            ((cmd_info[i + 1].minimum_position & STAT_MASK) >
+             (t_pos & STAT_MASK)))
+          continue;
+        break;
+      case 1:
+        break;
+      case 2:
+        if ((cmd_info[i + 1].command_pointer != do_action))
+          continue;
+        break;
+      case 3:
+        if ((cmd_info[i + 1].command_pointer == do_action))
+          continue;
+        break;
       }
 
       snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "%-16s", command[i]);
@@ -1262,8 +1260,8 @@ void do_commands(P_char ch, char *arg, int cmd)
     }
   }
   snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-      "\r\n\r\nCommands listed:  %d of %d total.   (Use 'commands all' to see a full list)\r\n",
-      no - 1, i);
+           "\r\n\r\nCommands listed:  %d of %d total.   (Use 'commands all' to see a full list)\r\n",
+           no - 1, i);
   page_string(ch->desc, Gbuf1, 1);
 }
 
@@ -1273,16 +1271,16 @@ void do_commands(P_char ch, char *arg, int cmd)
  */
 void do_subterfuge(P_char ch, char *arg, int cmd)
 {
-  P_char   npc;                 /* Which NPC */
-  char     name[MAX_INPUT_LENGTH];
-  byte     percent;
+  P_char npc; /* Which NPC */
+  char name[MAX_INPUT_LENGTH];
+  ::byte percent;
 
   if (ch->only.pc->skills[SKILL_SUBTERFUGE].learned == 0)
   {
     send_to_char("You don't know how.\r\n", ch);
     return;
   }
-  if( IS_FIGHTING(ch) || IS_DESTROYING(ch) )
+  if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
   {
     send_to_char("No way!! You simply are not able to concentrate.\r\n", ch);
     return;
@@ -1303,8 +1301,7 @@ void do_subterfuge(P_char ch, char *arg, int cmd)
   if (IS_PC(npc) || (npc->only.npc->memory == NULL) ||
       !IS_SET(npc->specials.act, ACT_MEMORY))
   {
-    send_to_char
-      ("Your target simply does not have the intellect to remember.\r\n", ch);
+    send_to_char("Your target simply does not have the intellect to remember.\r\n", ch);
     return;
   }
   percent = number(1, 101) * 6 / 5;
@@ -1331,28 +1328,28 @@ void do_subterfuge(P_char ch, char *arg, int cmd)
   if (CAN_SEE(npc, ch))
   {
     remember(npc, ch);
-    if( !IS_FIGHTING(npc) && !IS_DESTROYING(npc) )
+    if (!IS_FIGHTING(npc) && !IS_DESTROYING(npc))
       MobStartFight(npc, ch);
   }
 }
 
 void do_disarm(P_char ch, char *arg, int cmd)
 {
-  int      pos, percent, rnd_num, bits;
-  char     obj_name[128], vict_name[128];
-  P_obj    obj, trap;
-  P_char   victim;
+  int pos, percent, rnd_num, bits;
+  char obj_name[128], vict_name[128];
+  P_obj obj, trap;
+  P_char victim;
 
-  if( (GET_CHAR_SKILL(ch, SKILL_DISARM) == 0) && !IS_TRUSTED(ch) )
+  if ((GET_CHAR_SKILL(ch, SKILL_DISARM) == 0) && !IS_TRUSTED(ch))
   {
     send_to_char("Heh, you might end up losing a finger.\n", ch);
     return;
   }
 
   arg = one_argument(arg, vict_name);
-  if( *vict_name == '\0' )
+  if (*vict_name == '\0')
   {
-    if( IS_FIGHTING(ch) )
+    if (IS_FIGHTING(ch))
     {
       send_to_char("Disarm who?\r\n", ch);
     }
@@ -1363,12 +1360,11 @@ void do_disarm(P_char ch, char *arg, int cmd)
     return;
   }
   /* begin paste in of trap disarming */
-  if( (bits = generic_find(vict_name, FIND_OBJ_INV | FIND_OBJ_ROOM, ch, &victim, &trap))
-    && (GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF) || GET_CLASS(ch, CLASS_THIEF)) )
+  if ((bits = generic_find(vict_name, FIND_OBJ_INV | FIND_OBJ_ROOM, ch, &victim, &trap)) && (GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF) || GET_CLASS(ch, CLASS_THIEF)))
   {
-    if( trap->trap_charge )
+    if (trap->trap_charge)
     {
-      if( GET_CHAR_SKILL(ch, SKILL_DISARM) > number(1, 91) )
+      if (GET_CHAR_SKILL(ch, SKILL_DISARM) > number(1, 91))
       {
         send_to_char("Success! The vile trap is now disarmed.\r\n", ch);
         trap->trap_charge = 0;
@@ -1387,36 +1383,36 @@ void do_disarm(P_char ch, char *arg, int cmd)
   /* we now return you to your regularly scheduled code */
 
   one_argument(arg, obj_name);
-  if( *obj_name == '\0' )
+  if (*obj_name == '\0')
   {
     send_to_char("Disarm what?\r\n", ch);
     return;
   }
 
-  if( !ch->equipment[WIELD] )
+  if (!ch->equipment[WIELD])
   {
     send_to_char("You must be wielding some kind of weapon.\r\n", ch);
     return;
   }
 
-  if( !(victim = get_char_room_vis(ch, vict_name)) )
+  if (!(victim = get_char_room_vis(ch, vict_name)))
   {
     send_to_char("That creature isn't present.\r\n", ch);
     return;
   }
 
-  if( victim == ch )
+  if (victim == ch)
   {
     send_to_char("Be serious... use remove to disarm yourself.\r\n", ch);
     return;
   }
 
   percent = 0;
-  if( !IS_FIGHTING(ch) || GET_OPPONENT(ch) != victim )
+  if (!IS_FIGHTING(ch) || GET_OPPONENT(ch) != victim)
   {
-    if( GET_SPEC(ch, CLASS_WARRIOR, SPEC_SWASHBUCKLER) )
+    if (GET_SPEC(ch, CLASS_WARRIOR, SPEC_SWASHBUCKLER))
     {
-      if( !IS_FIGHTING(ch) )
+      if (!IS_FIGHTING(ch))
       {
         act("You attempt to enter battle with a disarm.", FALSE, ch, 0, victim, TO_CHAR);
         percent = -15;
@@ -1433,44 +1429,45 @@ void do_disarm(P_char ch, char *arg, int cmd)
       return;
     }
   }
-  for( obj = NULL, pos = 0; pos < MAX_WEAR; pos++ )
+  for (obj = NULL, pos = 0; pos < MAX_WEAR; pos++)
   {
-    if( (obj = victim->equipment[pos]) && isname(obj_name, obj->name) && CAN_SEE_OBJ(ch, obj) )
+    if ((obj = victim->equipment[pos]) && isname(obj_name, obj->name) && CAN_SEE_OBJ(ch, obj))
     {
       break;
     }
   }
 
-  if( obj == NULL )
+  if (obj == NULL)
   {
     act("You can't seem to find it on $N.", FALSE, ch, 0, victim, TO_CHAR);
     return;
   }
 
-  if( obj->type != ITEM_WEAPON && obj->type != ITEM_FIREWEAPON )
+  if (obj->type != ITEM_WEAPON && obj->type != ITEM_FIREWEAPON)
   {
     act("You can only disarm weapons.", FALSE, ch, 0, 0, TO_CHAR);
     return;
   }
 
   percent += (GET_CHAR_SKILL(ch, SKILL_DISARM) + STAT_INDEX(GET_C_DEX(ch)) -
-      STAT_INDEX(GET_C_DEX(victim)) + GET_LEVEL(ch) - GET_LEVEL(victim)) / 2;
+              STAT_INDEX(GET_C_DEX(victim)) + GET_LEVEL(ch) - GET_LEVEL(victim)) /
+             2;
 
   rnd_num = number(1, 100);
 
-  if( percent > rnd_num )
+  if (percent > rnd_num)
   {
     act("$n successfully knocks $N's weapon from $S grips!", FALSE, ch, 0, victim, TO_NOTVICT);
     act("$n forces your weapon out of your hands with a fancy disarming maneuver.",
-       FALSE, ch, 0, victim, TO_VICT);
+        FALSE, ch, 0, victim, TO_VICT);
     act("You make a great effort, and send $N's weapon out of control..",
         FALSE, ch, 0, victim, TO_CHAR);
     notch_skill(ch, SKILL_DISARM, 10);
     obj_to_char(unequip_char(victim, pos), victim);
-    strip_holy_sword( victim );
+    strip_holy_sword(victim);
     set_short_affected_by(victim, SKILL_DISARM, 3 * PULSE_VIOLENCE);
     // Engage ch only if successful disarm..
-    if( !IS_FIGHTING(ch) )
+    if (!IS_FIGHTING(ch))
     {
       set_fighting(ch, victim);
     }
@@ -1480,11 +1477,11 @@ void do_disarm(P_char ch, char *arg, int cmd)
     act("$n fails $s disarming maneuver so badly, $e fumbles $s own weapon.",
         FALSE, ch, 0, victim, TO_NOTVICT);
     act("In a vain attempt, $n tries to disarm you, but instead, fumbles $s weapon.",
-       FALSE, ch, 0, victim, TO_VICT);
+        FALSE, ch, 0, victim, TO_VICT);
     act("You fail miserably in your attempt to disarm $N.", FALSE, ch, 0,
         victim, TO_CHAR);
     obj_to_char(unequip_char(ch, WIELD), ch);
-    strip_holy_sword( ch );
+    strip_holy_sword(ch);
     set_short_affected_by(ch, SKILL_DISARM, 3 * PULSE_VIOLENCE);
   }
   else if (rnd_num >= 60)
@@ -1492,11 +1489,11 @@ void do_disarm(P_char ch, char *arg, int cmd)
     act("$n failingly attempts a complex disarming technique on $N.", FALSE,
         ch, 0, victim, TO_NOTVICT);
     act("$e begins to fumble $s own weapon, loosing complete control over it.",
-       FALSE, ch, 0, 0, TO_NOTVICT);
+        FALSE, ch, 0, 0, TO_NOTVICT);
     act("$n starts to fumble $s weapon in a vain attempt to disarm you.",
         FALSE, ch, 0, victim, TO_VICT);
     act("You make a grave error in judgement, and lose control of your weapon.",
-       FALSE, ch, 0, 0, TO_CHAR);
+        FALSE, ch, 0, 0, TO_CHAR);
     notch_skill(ch, SKILL_DISARM, 7);
   }
   else
@@ -1509,7 +1506,7 @@ void do_disarm(P_char ch, char *arg, int cmd)
         TO_CHAR);
   }
   // Engage victim regardless of outcome.
-  if( !IS_FIGHTING(victim) )
+  if (!IS_FIGHTING(victim))
   {
     set_fighting(victim, ch);
   }
@@ -1518,14 +1515,17 @@ void do_disarm(P_char ch, char *arg, int cmd)
 
 void event_meditation(P_char ch, P_char victim, P_obj obj, void *data)
 {
-  if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION)/2 > number(0,100)) {
-    if (IS_AFFECTED(ch, AFF_BLIND)) {
+  if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) / 2 > number(0, 100))
+  {
+    if (IS_AFFECTED(ch, AFF_BLIND))
+    {
       spell_cure_blind(50, ch, 0, 0, ch, 0);
       notch_skill(ch, SKILL_ADVANCED_MEDITATION, 2);
       return;
     }
-    if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) > 50 && !number(0,2) &&
-        IS_AFFECTED2(ch, AFF2_POISONED)) {
+    if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) > 50 && !number(0, 2) &&
+        IS_AFFECTED2(ch, AFF2_POISONED))
+    {
       poison_common_remove(ch);
       notch_skill(ch, SKILL_ADVANCED_MEDITATION, 2);
       send_to_char("You were able to fight the poison in your body!\n", ch);
@@ -1534,14 +1534,14 @@ void event_meditation(P_char ch, P_char victim, P_obj obj, void *data)
     if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) > 90 &&
         (affected_by_spell(ch, SPELL_DISEASE) || affected_by_spell(ch, SPELL_PLAGUE)))
     {
-      spell_cure_disease (GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, ch, NULL); 
+      spell_cure_disease(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, ch, NULL);
       notch_skill(ch, SKILL_ADVANCED_MEDITATION, 2);
       return;
-    }  
+    }
   }
 
   add_event(event_meditation, get_property("timer.sec.advancedMeditation", 3) * WAIT_SEC,
-      ch, 0, 0, 0, 0, 0);
+            ch, 0, 0, 0, 0, 0);
 }
 
 void stop_meditation(P_char ch)
@@ -1570,7 +1570,7 @@ void do_meditate(P_char ch, char *arg, int cmd)
     return;
   }
 
-  notch_skill(ch, SKILL_MEDITATE, (int) get_property("skill.notch.meditate", 1));
+  notch_skill(ch, SKILL_MEDITATE, (int)get_property("skill.notch.meditate", 1));
 
   if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION))
   {
@@ -1579,7 +1579,7 @@ void do_meditate(P_char ch, char *arg, int cmd)
     af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
     af.bitvector = AFF_MEDITATE;
     af.location = APPLY_HIT_REG;
-    af.modifier = 25 + GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION)/2;
+    af.modifier = 25 + GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) / 2;
     af.duration = -1;
     affect_to_char(ch, &af);
     if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) > 50)
@@ -1588,7 +1588,7 @@ void do_meditate(P_char ch, char *arg, int cmd)
       af.modifier = (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) - 50) / 10;
       affect_to_char(ch, &af);
       send_to_char("You feel completely aligned with your spirit as you sink in meditation...\n", ch);
-      CharWait(ch, PULSE_VIOLENCE/2);
+      CharWait(ch, PULSE_VIOLENCE / 2);
       StartRegen(ch, EVENT_MOVE_REGEN);
     }
     else
@@ -1614,9 +1614,9 @@ void do_meditate(P_char ch, char *arg, int cmd)
 
 P_char morph(P_char ch, int rnum, int mode)
 {
-  P_char   mob;
+  P_char mob;
   snoop_by_data *snoop_by_ptr;
-  int      is_avatar = FALSE, virt;
+  int is_avatar = FALSE, virt;
 
   if (!ch)
   {
@@ -1650,8 +1650,8 @@ P_char morph(P_char ch, int rnum, int mode)
    * "fix" their npcact flags so we don't get any "unwanted"
    * behaivors... These are the only allowable NPC acts
    */
-  mob->specials.act &= ACT_ISNPC | ACT_NICE_THIEF |     /*NPC_OUTLAW | */
-    ACT_CANSWIM | ACT_CANFLY | ACT_BREAK_CHARM | ACT_MOUNT;
+  mob->specials.act &= ACT_ISNPC | ACT_NICE_THIEF | /*NPC_OUTLAW | */
+                       ACT_CANSWIM | ACT_CANFLY | ACT_BREAK_CHARM | ACT_MOUNT;
 
   /*
    * and force this one...
@@ -1709,11 +1709,11 @@ P_char morph(P_char ch, int rnum, int mode)
   {
     /* set their hitpoints PROPORTIONALLY to what they had.. */
     GET_HIT(mob) = ((GET_HIT(ch) + 1) * 100 / GET_MAX_HIT(ch)) *
-      GET_MAX_HIT(mob) / 100;
+                   GET_MAX_HIT(mob) / 100;
 
     /* set their moves the same way */
     GET_VITALITY(mob) = ((GET_VITALITY(ch) * 100) / GET_MAX_VITALITY(ch)) *
-      GET_MAX_VITALITY(mob) / 100;
+                        GET_MAX_VITALITY(mob) / 100;
   }
   mob->only.npc->default_pos = POS_STANDING + STAT_NORMAL;
   ClearCharEvents(mob);
@@ -1773,8 +1773,8 @@ P_char morph(P_char ch, int rnum, int mode)
 
 P_char un_morph(P_char mob)
 {
-  P_char   ch;
-  int      in_rm, is_avatar = FALSE, virt;
+  P_char ch;
+  int in_rm, is_avatar = FALSE, virt;
   snoop_by_data *snoop_by_ptr, *next;
 
   if (!mob || IS_PC(mob) || !IS_MORPH(mob))
@@ -1790,7 +1790,7 @@ P_char un_morph(P_char mob)
 #if 1
   ch = mob->only.npc->orig_char;
 #else
-  ch = (P_char) mob->only.npc->memory;
+  ch = (P_char)mob->only.npc->memory;
 #endif
   /* the "owning" player. We use this instead of desc->original just in
    * case they are linkless */
@@ -1823,9 +1823,8 @@ P_char un_morph(P_char mob)
     {
       //      snoop_by_ptr->snoop_by->desc->snoop.snooping = mob->desc->original;
       if (is_avatar)
-        send_to_char
-          ("&+RYour diety has returned from whence it came, you can no longer sight link with it.&n\r\n",
-           snoop_by_ptr->snoop_by);
+        send_to_char("&+RYour diety has returned from whence it came, you can no longer sight link with it.&n\r\n",
+                     snoop_by_ptr->snoop_by);
       snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
       snoop_by_ptr = snoop_by_ptr->next;
     }
@@ -1838,8 +1837,6 @@ P_char un_morph(P_char mob)
     }
     mob->desc->snoop.snoop_by_list = 0;
 
-
-
     if (mob->in_room == 1 &&
         world[mob->specials.was_in_room].number != NOWHERE)
     {
@@ -1847,11 +1844,10 @@ P_char un_morph(P_char mob)
       send_to_char("Pulling your shapechanged form out of Void.\r\n", mob);
     }
     else if (mob->in_room == 1 &&
-        world[mob->specials.was_in_room].number == NOWHERE)
+             world[mob->specials.was_in_room].number == NOWHERE)
     {
       in_rm = real_room(ch->player.hometown);
-      send_to_char
-        ("I don't know where to put you, besides in your hometown.\r\n", mob);
+      send_to_char("I don't know where to put you, besides in your hometown.\r\n", mob);
       send_to_char("Please tell a god about this.\r\n", mob);
     }
     else
@@ -1895,13 +1891,15 @@ P_char un_morph(P_char mob)
   if (!is_avatar)
   {
     GET_HIT(ch) = ((GET_HIT(mob) + 1) * 100 / GET_MAX_HIT(mob)) *
-      GET_MAX_HIT(ch) / 100 + 1;
+                      GET_MAX_HIT(ch) / 100 +
+                  1;
 
     /*
      * set their moves the same way
      */
     GET_VITALITY(ch) = ((GET_VITALITY(mob) * 100) / GET_MAX_VITALITY(mob)) *
-      GET_MAX_VITALITY(ch) / 100 + 1;
+                           GET_MAX_VITALITY(ch) / 100 +
+                       1;
   }
   /*
    * get rid of the morph
@@ -1924,7 +1922,7 @@ P_char un_morph(P_char mob)
 struct char_shapechange_data *shapechange_getShape(P_char ch, int shapeNum)
 {
 
-  int      i;
+  int i;
 
   struct char_shapechange_data *shape;
 
@@ -1938,12 +1936,11 @@ struct char_shapechange_data *shapechange_getShape(P_char ch, int shapeNum)
   if (shape == NULL)
   {
     logit(LOG_DEBUG, "%s shapechange event with invalid shapeNum %d",
-        GET_NAME(ch), shapeNum);
+          GET_NAME(ch), shapeNum);
     return NULL;
   }
 
   return shape;
-
 }
 
 bool shapechange_canShapechange(P_char ch)
@@ -1958,8 +1955,8 @@ bool shapechange_canShapechange(P_char ch)
     send_to_char("You can't change your form when you have a rider!\r\n", ch);
     return FALSE;
   }
-  if (IS_ROOM( ch->in_room, ROOM_NO_MOB) ||
-      IS_ROOM( ch->in_room, ROOM_SAFE))
+  if (IS_ROOM(ch->in_room, ROOM_NO_MOB) ||
+      IS_ROOM(ch->in_room, ROOM_SAFE))
   {
     send_to_char("Something in the air prevents yer magics!\r\n", ch);
     return FALSE;
@@ -1984,8 +1981,7 @@ bool shapechange_canShapechange(P_char ch)
   }
   if (GET_OPPONENT(ch))
   {
-    send_to_char
-      ("You can't muster the mental energy to do that right now.\r\n", ch);
+    send_to_char("You can't muster the mental energy to do that right now.\r\n", ch);
     return FALSE;
   }
 
@@ -1993,7 +1989,7 @@ bool shapechange_canShapechange(P_char ch)
   {
     send_to_char("You must shift back into your own shape first!\r\n", ch);
     return FALSE;
-  } 
+  }
 
   return TRUE;
 }
@@ -2198,36 +2194,36 @@ int shapechange_levelNeeded(int race)
 {
   switch (race)
   {
-    case RACE_PRIMATE:
-      return 10;
-    case RACE_ANIMAL:
-    case RACE_HERBIVORE:
-    case RACE_CARNIVORE:
-      return 15;
-    case RACE_ARACHNID:
-    case RACE_REPTILE:
-    case RACE_SNAKE:
-      return 20;
-    case RACE_AQUATIC_ANIMAL:
-      return 25;
-    case RACE_QUADRUPED:
-      return 30;
-    case RACE_PLANT:
-    case RACE_FLYING_ANIMAL:
-      return 40;
-    case RACE_PWORM:
-    case RACE_INSECT:
-    case RACE_SLIME:
-    case RACE_PARASITE:
-      return 51;
-      /*  case RACE_F_ELEMENTAL:
-          case RACE_A_ELEMENTAL:
-          case RACE_W_ELEMENTAL:
-          case RACE_E_ELEMENTAL:
-          return 51;
-          case RACE_DRAGON:*/
-    default:
-      return 57;
+  case RACE_PRIMATE:
+    return 10;
+  case RACE_ANIMAL:
+  case RACE_HERBIVORE:
+  case RACE_CARNIVORE:
+    return 15;
+  case RACE_ARACHNID:
+  case RACE_REPTILE:
+  case RACE_SNAKE:
+    return 20;
+  case RACE_AQUATIC_ANIMAL:
+    return 25;
+  case RACE_QUADRUPED:
+    return 30;
+  case RACE_PLANT:
+  case RACE_FLYING_ANIMAL:
+    return 40;
+  case RACE_PWORM:
+  case RACE_INSECT:
+  case RACE_SLIME:
+  case RACE_PARASITE:
+    return 51;
+    /*  case RACE_F_ELEMENTAL:
+        case RACE_A_ELEMENTAL:
+        case RACE_W_ELEMENTAL:
+        case RACE_E_ELEMENTAL:
+        return 51;
+        case RACE_DRAGON:*/
+  default:
+    return 57;
   }
 }
 
@@ -2236,7 +2232,8 @@ void event_learn_shape(P_char ch, P_char victim, P_obj obj, void *data)
   struct affected_type af, *afp;
   int vnum;
 
-  if (ch->in_room != victim->in_room) {
+  if (ch->in_room != victim->in_room)
+  {
     send_to_char("Uh oh, where did your subject go?\n", ch);
     return;
   }
@@ -2244,7 +2241,8 @@ void event_learn_shape(P_char ch, P_char victim, P_obj obj, void *data)
   vnum = mob_index[GET_RNUM(victim)].virtual_number;
 
   for (afp = ch->affected; afp; afp = afp->next)
-    if (afp->type == TAG_KNOWN_SHAPE && afp->modifier == vnum) {
+    if (afp->type == TAG_KNOWN_SHAPE && afp->modifier == vnum)
+    {
       send_to_char("You refresh the knowledge of this creature.\n", ch);
       afp->duration = get_property("innate.shapechange.memory.time", 500);
       return;
@@ -2267,17 +2265,20 @@ void shapechange_learn(P_char ch, char *mobname)
 {
   P_char mob;
 
-  if (!(mob = get_char_room_vis(ch, mobname))) {
+  if (!(mob = get_char_room_vis(ch, mobname)))
+  {
     send_to_char("You can't see anything here by this name.\n", ch);
     return;
   }
 
-  if (GET_ALT_SIZE(ch) != GET_ALT_SIZE(mob)) {
+  if (GET_ALT_SIZE(ch) != GET_ALT_SIZE(mob))
+  {
     send_to_char("This creature does not have appropriate size.\n", ch);
     return;
   }
 
-  if (!is_natural_creature(mob)) {
+  if (!is_natural_creature(mob))
+  {
     send_to_char("You can only take on shape of a natural creature.\n", ch);
     return;
   }
@@ -2292,17 +2293,20 @@ void shapechange_learn(P_char ch, char *mobname)
   if (!GET_CLASS(ch, CLASS_DRUID))
     chLevel -= 5;
 
-  if (GET_SPEC(ch, CLASS_DRUID, SPEC_WOODLAND)) 
+  if (GET_SPEC(ch, CLASS_DRUID, SPEC_WOODLAND))
     chLevel++;
 
-  if ((chLevel < shapechange_levelNeeded(GET_RACE(mob))) && !IS_TRUSTED(ch)) {
+  if ((chLevel < shapechange_levelNeeded(GET_RACE(mob))) && !IS_TRUSTED(ch))
+  {
     send_to_char("You are not experienced enough to change your shape into this creature, yet.\n", ch);
     return;
   }
 
-  if (mob->only.npc->str_mask & (STRUNG_KEYS | STRUNG_DESC2 | STRUNG_DESC1)) {
+  if (mob->only.npc->str_mask & (STRUNG_KEYS | STRUNG_DESC2 | STRUNG_DESC1))
+  {
     send_to_char("Something about this creature makes it impossible "
-        "for you to study it closer.\n", ch);
+                 "for you to study it closer.\n",
+                 ch);
     return;
   }
 
@@ -2315,9 +2319,9 @@ void shapechange_learn(P_char ch, char *mobname)
 
 void do_shapechange(P_char ch, char *arg, int cmd)
 {
-  char     mobname[MAX_INPUT_LENGTH], *rest, buf[256];
+  char mobname[MAX_INPUT_LENGTH], *rest, buf[256];
   struct affected_type *af;
-  P_char   mob;
+  P_char mob;
   int count;
 
   if (!ch->desc)
@@ -2331,7 +2335,8 @@ void do_shapechange(P_char ch, char *arg, int cmd)
 
   rest = one_argument(arg, mobname);
 
-  if (!strcmp(mobname, "learn")) {
+  if (!strcmp(mobname, "learn"))
+  {
     shapechange_learn(ch, rest);
     return;
   }
@@ -2349,20 +2354,20 @@ void do_shapechange(P_char ch, char *arg, int cmd)
     return;
   }
 
-
-  if (!mobname[0] || !*arg) {
+  if (!mobname[0] || !*arg)
+  {
     char *how_learned[5] = {
-      "about to forget", "vaguely", "average", "good", "mastered"};
+        "about to forget", "vaguely", "average", "good", "mastered"};
     send_to_char("You have studied the following creatures:\n", ch);
     for (af = ch->affected, count = 1; af; af = af->next)
       if (af->type == TAG_KNOWN_SHAPE)
       {
-        if( real_mobile(af->modifier) < 0 )
+        if (real_mobile(af->modifier) < 0)
           snprintf(buf, 256, "[%d] %s &n(&+W%s&n)\n", count++, "Unknown",
-              how_learned[BOUNDED(0, (5 * af->duration - 1)/get_property("innate.shapechange.memory.time", 500), 4)]);
+                   how_learned[BOUNDED(0, (5 * af->duration - 1) / get_property("innate.shapechange.memory.time", 500), 4)]);
         else
           snprintf(buf, 256, "[%d] %s &n(&+W%s&n)\n", count++, mob_index[real_mobile(af->modifier)].desc2,
-              how_learned[BOUNDED(0, (5 * af->duration - 1)/get_property("innate.shapechange.memory.time", 500), 4)]);
+                   how_learned[BOUNDED(0, (5 * af->duration - 1) / get_property("innate.shapechange.memory.time", 500), 4)]);
         send_to_char(buf, ch);
       }
     return;
@@ -2371,17 +2376,20 @@ void do_shapechange(P_char ch, char *arg, int cmd)
   if (!shapechange_canShapechange(ch))
     return;
 
-  if ((count = atoi(mobname)) <= 0) {
+  if ((count = atoi(mobname)) <= 0)
+  {
     send_to_char("Please specify a number of the creature.\n", ch);
     return;
   }
 
-  for (af = ch->affected; af; af = af->next) {
+  for (af = ch->affected; af; af = af->next)
+  {
     if (af->type == TAG_KNOWN_SHAPE && --count == 0)
       break;
   }
 
-  if (!af) {
+  if (!af)
+  {
     send_to_char("You don't know that many shapes.\n", ch);
     return;
   }
@@ -2397,23 +2405,23 @@ void do_shapechange(P_char ch, char *arg, int cmd)
       goto cleanup;
       }*/
 
-stop_riding(ch);
-stop_riding(get_linking_char(ch, LNK_RIDING));
+  stop_riding(ch);
+  stop_riding(get_linking_char(ch, LNK_RIDING));
 
-CharWait(ch, PULSE_VIOLENCE * 2);
-if (IS_DISGUISE(ch))
-  remove_disguise(ch, FALSE);
+  CharWait(ch, PULSE_VIOLENCE * 2);
+  if (IS_DISGUISE(ch))
+    remove_disguise(ch, FALSE);
   IS_DISGUISE_PC(ch) = FALSE;
   IS_DISGUISE_NPC(ch) = TRUE;
   IS_DISGUISE_ILLUSION(ch) = FALSE;
   IS_DISGUISE_SHAPE(ch) = TRUE;
-  if( GET_CLASS( ch, CLASS_BLIGHTER ) )
+  if (GET_CLASS(ch, CLASS_BLIGHTER))
   {
-    snprintf(mobname, MAX_STRING_LENGTH, "skeleton %s", GET_NAME(mob) );
+    snprintf(mobname, MAX_STRING_LENGTH, "skeleton %s", GET_NAME(mob));
     ch->disguise.title = str_dup(mobname);
-    snprintf(mobname, MAX_STRING_LENGTH, "a skeleton of %s&n", mob->player.short_descr );
+    snprintf(mobname, MAX_STRING_LENGTH, "a skeleton of %s&n", mob->player.short_descr);
     ch->disguise.name = str_dup(mobname);
-    snprintf(mobname, MAX_STRING_LENGTH, "A skeleton of %s&n stands here.", mob->player.short_descr );
+    snprintf(mobname, MAX_STRING_LENGTH, "A skeleton of %s&n stands here.", mob->player.short_descr);
     ch->disguise.longname = str_dup(mobname);
     ch->disguise.race = RACE_SKELETON;
   }
@@ -2427,10 +2435,10 @@ if (IS_DISGUISE(ch))
   ch->disguise.m_class = mob->player.m_class;
   ch->disguise.racewar = GET_RACEWAR(mob);
   ch->disguise.hit = GET_LEVEL(ch) * 2;
-  snprintf(mobname, MAX_STRING_LENGTH, "&+WYou shift into the form of %s!\r\n", ch->disguise.name );
+  snprintf(mobname, MAX_STRING_LENGTH, "&+WYou shift into the form of %s!\r\n", ch->disguise.name);
   send_to_char(mobname, ch);
   snprintf(mobname, MAX_STRING_LENGTH, "&+WThe image of %s &Nshifts&+W into the form of %s!\r\n",
-    GET_NAME(ch), ch->disguise.name );
+           GET_NAME(ch), ch->disguise.name);
   act(mobname, FALSE, ch, 0, NULL, TO_ROOM);
   SET_BIT(ch->specials.act, PLR_NOWHO);
 
@@ -2438,14 +2446,13 @@ if (IS_DISGUISE(ch))
 
 cleanup:
   extract_char(mob);
-
 }
 
 void do_dirttoss(P_char ch, char *arg, int cmd)
 {
-  P_char   vict = NULL;
-  int      skl_lvl = 0, sect;
-  int      i = 0;
+  P_char vict = NULL;
+  int skl_lvl = 0, sect;
+  int i = 0;
 
   if (!ch)
     return;
@@ -2458,7 +2465,7 @@ void do_dirttoss(P_char ch, char *arg, int cmd)
        ((sect >= SECT_AIR_PLANE) && (sect <= SECT_ASTRAL))))
   {
     send_to_char("This isn't the place to be grabbing at the ground.\r\n",
-        ch);
+                 ch);
     return;
   }
   if (ch->group && !on_front_line(ch))
@@ -2486,7 +2493,7 @@ void do_dirttoss(P_char ch, char *arg, int cmd)
     }
   }
 
-  skl_lvl = (int) (GET_CHAR_SKILL(ch, SKILL_DIRTTOSS));
+  skl_lvl = (int)(GET_CHAR_SKILL(ch, SKILL_DIRTTOSS));
 
   if (skl_lvl <= 0)
     return;
@@ -2517,23 +2524,19 @@ void do_dirttoss(P_char ch, char *arg, int cmd)
 
   if (affected_by_spell(ch, SKILL_BASH))
   {
-    send_to_char
-      ("You're kinda busy defending yourself. Try again when you have a free second.\r\n",
-       ch);
+    send_to_char("You're kinda busy defending yourself. Try again when you have a free second.\r\n",
+                 ch);
     return;
   }
 
   i = skl_lvl - (GET_C_AGI(vict) / 6);
 
-  act
-    ("You reach for the ground, quickly tossing a clump of dirt at $N's face!",
-     FALSE, ch, 0, vict, TO_CHAR);
-  act
-    ("$n reaches for the ground, quickly tossing a clump of dirt at your face!",
-     TRUE, ch, 0, vict, TO_VICT);
-  act
-    ("$n reaches for the ground, quickly tossing a clump of dirt at $N's face!",
-     TRUE, ch, 0, vict, TO_NOTVICT);
+  act("You reach for the ground, quickly tossing a clump of dirt at $N's face!",
+      FALSE, ch, 0, vict, TO_CHAR);
+  act("$n reaches for the ground, quickly tossing a clump of dirt at your face!",
+      TRUE, ch, 0, vict, TO_VICT);
+  act("$n reaches for the ground, quickly tossing a clump of dirt at $N's face!",
+      TRUE, ch, 0, vict, TO_NOTVICT);
 
   if (number(1, 100) < i)
     blind(ch, vict, 6 * PULSE_VIOLENCE);
@@ -2550,32 +2553,31 @@ void do_dirttoss(P_char ch, char *arg, int cmd)
   return;
 }
 
-char *get_str_zone( P_obj obj )
+char *get_str_zone(P_obj obj)
 {
   static char buffer[200];
   int zone = 0;
 
-  while( zone < top_of_zone_table
-      && world[zone_table[zone].real_bottom].number <= obj_index[obj->R_num].virtual_number )
+  while (zone < top_of_zone_table && world[zone_table[zone].real_bottom].number <= obj_index[obj->R_num].virtual_number)
     zone++;
 
-  return zone_table[zone-1].name;
+  return zone_table[zone - 1].name;
 }
 
 void do_lore(P_char ch, char *arg, int cmd)
 {
-  int      i, percent = 0, skl_lvl;
-  bool     found;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[256];
-  char     name[MAX_STRING_LENGTH];
-  P_obj    obj = NULL;
-  P_char   target = NULL;
-  bool     is_in_room = FALSE;
+  int i, percent = 0, skl_lvl;
+  bool found;
+  char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[256];
+  char name[MAX_STRING_LENGTH];
+  P_obj obj = NULL;
+  P_char target = NULL;
+  bool is_in_room = FALSE;
   //---------------------------------------------
   // 1-only inv obj, 2-players, 3-something nice
-  int 	   lore_power = 1;
+  int lore_power = 1;
 
-  if ( GET_SPEC(ch, CLASS_BARD, SPEC_MINSTREL) )
+  if (GET_SPEC(ch, CLASS_BARD, SPEC_MINSTREL))
     lore_power = 3;
   else if (GET_CLASS(ch, CLASS_BARD))
     lore_power = 2;
@@ -2584,7 +2586,7 @@ void do_lore(P_char ch, char *arg, int cmd)
   if (!ch)
     return;
 
-  if( IS_FIGHTING(ch) || IS_DESTROYING(ch) )
+  if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
   {
     send_to_char("You can't concentrate on that right now.\r\n", ch);
     return;
@@ -2600,7 +2602,7 @@ void do_lore(P_char ch, char *arg, int cmd)
   if (!(obj = get_obj_in_list_vis(ch, name, ch->carrying)))
   {
     // ok no object in inv, now check for players
-    if ( lore_power < 2 )
+    if (lore_power < 2)
     {
       send_to_char("You can't recall any legends or stories ever told about that!\r\n", ch);
       return;
@@ -2608,11 +2610,11 @@ void do_lore(P_char ch, char *arg, int cmd)
 
     //---------------------------------------
     // lore char in room
-    P_char   tmp_char;
-    P_obj    tmp_object;
-    if ( generic_find(name, FIND_CHAR_ROOM, ch, &tmp_char, &tmp_object) && tmp_char )
+    P_char tmp_char;
+    P_obj tmp_object;
+    if (generic_find(name, FIND_CHAR_ROOM, ch, &tmp_char, &tmp_object) && tmp_char)
     {
-      snprintf(name, MAX_STRING_LENGTH,"%s",GET_NAME(tmp_char));
+      snprintf(name, MAX_STRING_LENGTH, "%s", GET_NAME(tmp_char));
       act("With but a quick glance, you are suddenly aware of the exploits of $N's life, past and present.",
           TRUE, ch, 0, tmp_char, TO_CHAR);
       act("$n nonchalantly glances at $N, his features taking a stern look of concentration.",
@@ -2623,11 +2625,11 @@ void do_lore(P_char ch, char *arg, int cmd)
     }
     //---------------------------------------
 
-    target = (struct char_data *) mm_get(dead_mob_pool);
+    target = (struct char_data *)mm_get(dead_mob_pool);
     ensure_pconly_pool();
-    target->only.pc = (struct pc_only_data *) mm_get(dead_pconly_pool);
+    target->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
 
-    if ( (restoreCharOnly(target, name) < 0) || !target )
+    if ((restoreCharOnly(target, name) < 0) || !target)
     {
       if (target)
       {
@@ -2639,23 +2641,22 @@ void do_lore(P_char ch, char *arg, int cmd)
     }
   }
 
-
   skl_lvl = GET_CHAR_SKILL(ch, SKILL_LORE);
   if (IS_TRUSTED(ch) || cmd == 999)
     skl_lvl = 200;
 
   percent = number(1, 101);
 
-  if( obj )
+  if (obj)
   {
-    snprintf(Gbuf1, MAX_STRING_LENGTH, "This item is from the zone: %s.\n", get_str_zone(obj) );
-    send_to_char( Gbuf1, ch );
+    snprintf(Gbuf1, MAX_STRING_LENGTH, "This item is from the zone: %s.\n", get_str_zone(obj));
+    send_to_char(Gbuf1, ch);
   }
 
   if (percent > skl_lvl)
   {
     notch_skill(ch, SKILL_LORE, 3);
-    if( obj )
+    if (obj)
       send_to_char("That's all you can recall about this item.\r\n", ch);
     else
       send_to_char("You can't recall any legends or stories ever told about that!\r\n", ch);
@@ -2668,20 +2669,19 @@ void do_lore(P_char ch, char *arg, int cmd)
     if (GET_LEVEL(target) >= AVATAR)
     {
       snprintf(Gbuf1, MAX_STRING_LENGTH, "You know that %s %s is a God of Duris\r\n",
-          GET_NAME(target),
-          GET_TITLE(target) == NULL ? "" : GET_TITLE(target));
+               GET_NAME(target),
+               GET_TITLE(target) == NULL ? "" : GET_TITLE(target));
       send_to_char(Gbuf1, ch);
     }
-    else if ( (GET_LEVEL(target) >= 50 && lore_power > 1) || // regular bards know only famous persons
-        (GET_LEVEL(target) >= 40 && lore_power > 2)    // masters knows more
-        )
+    else if ((GET_LEVEL(target) >= 50 && lore_power > 1) || // regular bards know only famous persons
+             (GET_LEVEL(target) >= 40 && lore_power > 2)    // masters knows more
+    )
     {
       snprintf(Gbuf1, MAX_STRING_LENGTH, "Using your abilities to cast your knowledge far into the realm,\nyou glean that it is %s (%s) %s %s\n",
-          GET_NAME(target),
-          race_names_table[(int) GET_RACE(target)].ansi,
-          get_class_string(target, Gbuf3),
-          GET_TITLE(target) == NULL ? "" : GET_TITLE(target)
-          );
+               GET_NAME(target),
+               race_names_table[(int)GET_RACE(target)].ansi,
+               get_class_string(target, Gbuf3),
+               GET_TITLE(target) == NULL ? "" : GET_TITLE(target));
       send_to_char(Gbuf1, ch);
     }
     else
@@ -2695,18 +2695,18 @@ void do_lore(P_char ch, char *arg, int cmd)
   }
   if (obj)
   {
-    lore_item( ch, obj );
+    lore_item(ch, obj);
     CharWait(ch, 3);
   }
 }
 
-void lore_item( P_char ch, P_obj obj )
+void lore_item(P_char ch, P_obj obj)
 {
   char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[256];
   int percent, i;
   bool found;
 
-  if( !ch || !obj )
+  if (!ch || !obj)
     return;
 
   if (IS_SET(obj->extra_flags, ITEM_NOIDENTIFY))
@@ -2723,38 +2723,38 @@ void lore_item( P_char ch, P_obj obj )
   strcat(Gbuf1, "\r\n");
   send_to_char(Gbuf1, ch);
 
-  if( obj->bitvector  ||
+  if (obj->bitvector ||
       obj->bitvector2 ||
       obj->bitvector3 ||
       obj->bitvector4 ||
-      obj->bitvector5 )
+      obj->bitvector5)
   {
     *Gbuf2 = '\0';
 
     send_to_char("Item will give you following abilities:  ", ch);
 
-    if(obj->bitvector)
+    if (obj->bitvector)
       sprintbitde(obj->bitvector, affected1_bits, Gbuf2);
 
-    if(obj->bitvector2)
+    if (obj->bitvector2)
     {
       sprintbitde(obj->bitvector2, affected2_bits, Gbuf1);
       strcat(Gbuf2, Gbuf1);
     }
 
-    if(obj->bitvector3)
+    if (obj->bitvector3)
     {
       sprintbitde(obj->bitvector3, affected3_bits, Gbuf1);
       strcat(Gbuf2, Gbuf1);
     }
 
-    if(obj->bitvector4)
+    if (obj->bitvector4)
     {
       sprintbitde(obj->bitvector4, affected4_bits, Gbuf1);
       strcat(Gbuf2, Gbuf1);
     }
 
-    if(obj->bitvector5)
+    if (obj->bitvector5)
     {
       sprintbitde(obj->bitvector5, affected5_bits, Gbuf1);
       strcat(Gbuf2, Gbuf1);
@@ -2772,68 +2772,67 @@ void lore_item( P_char ch, P_obj obj )
   switch (GET_ITEM_TYPE(obj))
   {
 
-    case ITEM_SCROLL:
-    case ITEM_POTION:
-      send_to_char("Contains spells of: ", ch);
+  case ITEM_SCROLL:
+  case ITEM_POTION:
+    send_to_char("Contains spells of: ", ch);
 
-      if (obj->value[1] >= 1)
-      {
-        sprinttype(obj->value[1], spells, Gbuf1);
-        strcat(Gbuf1, "\r\n");
-        send_to_char(Gbuf1, ch);
-      }
+    if (obj->value[1] >= 1)
+    {
+      sprinttype(obj->value[1], spells, Gbuf1);
+      strcat(Gbuf1, "\r\n");
+      send_to_char(Gbuf1, ch);
+    }
 
-      if (obj->value[2] >= 1)
-      {
-        sprinttype(obj->value[2], spells, Gbuf1);
-        strcat(Gbuf1, "\r\n");
-        send_to_char(Gbuf1, ch);
-      }
+    if (obj->value[2] >= 1)
+    {
+      sprinttype(obj->value[2], spells, Gbuf1);
+      strcat(Gbuf1, "\r\n");
+      send_to_char(Gbuf1, ch);
+    }
 
-      if (obj->value[3] >= 1)
-      {
-        sprinttype(obj->value[3], spells, Gbuf1);
-        strcat(Gbuf1, "\r\n");
-        send_to_char(Gbuf1, ch);
-      }
-      break;
+    if (obj->value[3] >= 1)
+    {
+      sprinttype(obj->value[3], spells, Gbuf1);
+      strcat(Gbuf1, "\r\n");
+      send_to_char(Gbuf1, ch);
+    }
+    break;
 
-    case ITEM_WAND:
-    case ITEM_STAFF:
-      if (obj->value[1] <= 0)
-        percent = 0;
-      else
-        percent =
+  case ITEM_WAND:
+  case ITEM_STAFF:
+    if (obj->value[1] <= 0)
+      percent = 0;
+    else
+      percent =
           100 - (100 / obj->value[1]) * (obj->value[1] - obj->value[2]);
 
-      snprintf(Gbuf1, MAX_STRING_LENGTH,
-          "%d%% of its charges remain, and it contains the spell of: ",
-          percent);
-      send_to_char(Gbuf1, ch);
+    snprintf(Gbuf1, MAX_STRING_LENGTH,
+             "%d%% of its charges remain, and it contains the spell of: ",
+             percent);
+    send_to_char(Gbuf1, ch);
 
-      if (obj->value[3] >= 1)
-      {
-        sprinttype(obj->value[3], spells, Gbuf1);
-        strcat(Gbuf1, "\r\n");
-        send_to_char(Gbuf1, ch);
-      }
-      break;
-
-    case ITEM_WEAPON:
-      snprintf(Gbuf1, MAX_STRING_LENGTH, "Damage Dice is '%dD%d'\r\n", obj->value[1],
-          obj->value[2]);
+    if (obj->value[3] >= 1)
+    {
+      sprinttype(obj->value[3], spells, Gbuf1);
+      strcat(Gbuf1, "\r\n");
       send_to_char(Gbuf1, ch);
-      break;
-    case ITEM_INSTRUMENT:
-      snprintf(Gbuf1, MAX_STRING_LENGTH, "This instrument has level %d.\r\n", obj->value[1]);
-      send_to_char(Gbuf1, ch);
-      break;
+    }
+    break;
 
-    case ITEM_ARMOR:
-      snprintf(Gbuf1, MAX_STRING_LENGTH, "AC-apply is %d\r\n", obj->value[0]);
-      send_to_char(Gbuf1, ch);
-      break;
+  case ITEM_WEAPON:
+    snprintf(Gbuf1, MAX_STRING_LENGTH, "Damage Dice is '%dD%d'\r\n", obj->value[1],
+             obj->value[2]);
+    send_to_char(Gbuf1, ch);
+    break;
+  case ITEM_INSTRUMENT:
+    snprintf(Gbuf1, MAX_STRING_LENGTH, "This instrument has level %d.\r\n", obj->value[1]);
+    send_to_char(Gbuf1, ch);
+    break;
 
+  case ITEM_ARMOR:
+    snprintf(Gbuf1, MAX_STRING_LENGTH, "AC-apply is %d\r\n", obj->value[0]);
+    send_to_char(Gbuf1, ch);
+    break;
   }
 
   found = FALSE;
@@ -2877,52 +2876,52 @@ void lore_item( P_char ch, P_obj obj )
       send_to_char(Gbuf1, ch);
     }
   }
-  if( found )
-    send_to_char( ".\n\r", ch );
+  if (found)
+    send_to_char(".\n\r", ch);
 
-  if( GET_ITEM_TYPE(obj) == ITEM_TOTEM )
+  if (GET_ITEM_TYPE(obj) == ITEM_TOTEM)
   {
-    send_to_char( "This totem grants:", ch );
+    send_to_char("This totem grants:", ch);
     int val0 = obj->value[0];
     bool bFound = FALSE;
 
-    if( IS_SET(val0, TOTEM_LESS_ANIM) )
+    if (IS_SET(val0, TOTEM_LESS_ANIM))
     {
-      send_to_char_f(ch, "%s&+yLesser Animal&n", bFound ? ", " : " " );
+      send_to_char_f(ch, "%s&+yLesser Animal&n", bFound ? ", " : " ");
       bFound = TRUE;
     }
-    if( IS_SET(val0, TOTEM_GR_ANIM) )
+    if (IS_SET(val0, TOTEM_GR_ANIM))
     {
-      send_to_char_f(ch, "%s&+yGreater Animal&n", bFound ? ", " : " " );
+      send_to_char_f(ch, "%s&+yGreater Animal&n", bFound ? ", " : " ");
       bFound = TRUE;
     }
-    if( IS_SET(val0, TOTEM_LESS_ELEM) )
+    if (IS_SET(val0, TOTEM_LESS_ELEM))
     {
-      send_to_char_f(ch, "%s&+rLesser Elemental&n", bFound ? ", " : " " );
+      send_to_char_f(ch, "%s&+rLesser Elemental&n", bFound ? ", " : " ");
       bFound = TRUE;
     }
-    if( IS_SET(val0, TOTEM_GR_ELEM) )
+    if (IS_SET(val0, TOTEM_GR_ELEM))
     {
-      send_to_char_f(ch, "%s&+rGreater Elemental&n", bFound ? ", " : " " );
+      send_to_char_f(ch, "%s&+rGreater Elemental&n", bFound ? ", " : " ");
       bFound = TRUE;
     }
-    if( IS_SET(val0, TOTEM_LESS_SPIR) )
+    if (IS_SET(val0, TOTEM_LESS_SPIR))
     {
-      send_to_char_f(ch, "%s&+WLesser Spiritual&n", bFound ? ", " : " " );
+      send_to_char_f(ch, "%s&+WLesser Spiritual&n", bFound ? ", " : " ");
       bFound = TRUE;
     }
-    if( IS_SET(val0, TOTEM_GR_SPIR) )
+    if (IS_SET(val0, TOTEM_GR_SPIR))
     {
-      send_to_char_f(ch, "%s&+WGreater Spiritual&n", bFound ? ", " : " " );
+      send_to_char_f(ch, "%s&+WGreater Spiritual&n", bFound ? ", " : " ");
       bFound = TRUE;
     }
-    if( bFound )
+    if (bFound)
     {
-      send_to_char( ".\n", ch );
+      send_to_char(".\n", ch);
     }
     else
     {
-      send_to_char( " No spheres?!\n", ch );
+      send_to_char(" No spheres?!\n", ch);
     }
   }
 
@@ -2931,18 +2930,18 @@ void lore_item( P_char ch, P_obj obj )
 }
 
 const char *MAKE_FORMAT =
-"\r\n"
-"Current items one can make:\r\n"
-"&+L---------------------------&n\r\n"
-"lock <object requiring new lock>\r\n"
-"key <lock needing a key> (only works for newly created locks)\r\n"
-"&+L---------------------------&n\r\n"
-"(&+LMany require special materials, skills, classes, and/or levels to perform&n)\r\n"
-"\r\n";
+    "\r\n"
+    "Current items one can make:\r\n"
+    "&+L---------------------------&n\r\n"
+    "lock <object requiring new lock>\r\n"
+    "key <lock needing a key> (only works for newly created locks)\r\n"
+    "&+L---------------------------&n\r\n"
+    "(&+LMany require special materials, skills, classes, and/or levels to perform&n)\r\n"
+    "\r\n";
 
 void do_make(P_char ch, char *arg, int cmd)
 {
-  char     arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+  char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 
   if (!arg[0] || !*arg)
     send_to_char(MAKE_FORMAT, ch);
@@ -2959,7 +2958,7 @@ void do_make(P_char ch, char *arg, int cmd)
 
 void yank_make_item(P_char ch, P_obj obj)
 {
-  P_obj    o;
+  P_obj o;
 
   if (ch->equipment[HOLD] && (ch->equipment[HOLD] == obj))
   {
@@ -2983,28 +2982,27 @@ void yank_make_item(P_char ch, P_obj obj)
 
 void make_lock(P_char ch, char *arg)
 {
-  int      door, other_room, retval;
+  int door, other_room, retval;
   struct room_direction_data *back;
-  P_obj    obj, templ;
-  P_char   victim;
-  char     Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+  P_obj obj, templ;
+  P_char victim;
+  char Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
   /*  return; */
 
   argument_interpreter(arg, Gbuf2, Gbuf3);
-
 
   if (!(templ = has_key(ch, VOBJ_TEMPLATE_LOCK)))
   {
     send_to_char("You don't seem to have a lock template to work with.\r\n", ch);
     return;
   }
-  if( !*Gbuf2 )
+  if (!*Gbuf2)
   {
     send_to_char(MAKE_FORMAT, ch);
     return;
   }
-  if( IS_TRUSTED(ch) )
+  if (IS_TRUSTED(ch))
   {
     retval = generic_find(arg, FIND_OBJ_INV | FIND_OBJ_ROOM, ch, &victim, &obj);
   }
@@ -3013,7 +3011,7 @@ void make_lock(P_char ch, char *arg)
     retval = generic_find(arg, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &obj);
   }
   /* this is an object */
-  if( retval != 0 )
+  if (retval != 0)
     if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE))
       send_to_char("That's not a lockable container.\r\n", ch);
     else if (!IS_SET(obj->value[1], CONT_CLOSED))
@@ -3041,7 +3039,7 @@ void make_lock(P_char ch, char *arg)
     else
     {
       SET_BIT(EXIT(ch, door)->exit_info, EX_LOCKED);
-      EXIT(ch, door)->key = 1;  /* so its now a lockable, but keyless object */
+      EXIT(ch, door)->key = 1; /* so its now a lockable, but keyless object */
       yank_make_item(ch, templ);
       if (EXIT(ch, door)->keyword)
         act("$n locks the $F with a homemade lock.", 0, ch, 0, EXIT(ch, door)->keyword, TO_ROOM);
@@ -3054,17 +3052,17 @@ void make_lock(P_char ch, char *arg)
           if (back->to_room == ch->in_room)
           {
             SET_BIT(back->exit_info, EX_LOCKED);
-            back->key = 1;      /* so its now a lockable, but keyless object */
+            back->key = 1; /* so its now a lockable, but keyless object */
           }
     }
 }
 
 void make_key(P_char ch, char *arg)
 {
-  int      door, retval;
-  P_obj    obj, templ, template2;
-  P_char   victim;
-  char     Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+  int door, retval;
+  P_obj obj, templ, template2;
+  P_char victim;
+  char Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
   argument_interpreter(arg, Gbuf2, Gbuf3);
 
@@ -3084,7 +3082,7 @@ void make_key(P_char ch, char *arg)
     send_to_char(MAKE_FORMAT, ch);
     return;
   }
-  if( IS_TRUSTED(ch) )
+  if (IS_TRUSTED(ch))
   {
     retval = generic_find(arg, FIND_OBJ_INV | FIND_OBJ_ROOM, ch, &victim, &obj);
   }
@@ -3094,7 +3092,7 @@ void make_key(P_char ch, char *arg)
   }
 
   /* this is an object */
-  if( retval != 0 )
+  if (retval != 0)
   {
     if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE))
       send_to_char("You fail to find a proper lock on that.\r\n", ch);
@@ -3105,7 +3103,7 @@ void make_key(P_char ch, char *arg)
       templ->short_description = str_dup("&+ca small custom-made key&n");
       templ->description = str_dup("A small, custom-made key lies here, forgotten.");
       send_to_char("You fashion a key for this lock!\r\n", ch);
-      if( (template2->value[1] > -1) && (number(1, 101) < template2->value[1]) )
+      if ((template2->value[1] > -1) && (number(1, 101) < template2->value[1]))
       {
         act("Damn!  You broke your $p too!", FALSE, ch, template2, 0, TO_CHAR);
         act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch, template2, 0, TO_ROOM);
@@ -3116,7 +3114,7 @@ void make_key(P_char ch, char *arg)
     }
   }
   else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-    /* a door, perhaps */
+  /* a door, perhaps */
 #if 0
     if (!IS_SET(EXIT(ch, door)->exit_info, EX_ISDOOR))
       send_to_char("That's absurd.\r\n", ch);
@@ -3130,40 +3128,39 @@ void make_key(P_char ch, char *arg)
       send_to_char("You fashion a key for this lock!\r\n", ch);
     }
 #else
-  /* not sure of best method for doors, so disable */
-  send_to_char("You're just not quite sure of how to handle this one.\r\n",
-      ch);
+    /* not sure of best method for doors, so disable */
+    send_to_char("You're just not quite sure of how to handle this one.\r\n",
+                 ch);
 #endif
 }
 
 void do_throat_crush(P_char ch, char *arg, int cmd)
 {
-  P_char   vict = NULL;
+  P_char vict = NULL;
   struct affected_type af;
-  int      skl_lvl = 0;
-  int      i = 0;
+  int skl_lvl = 0;
+  int i = 0;
 
   struct damage_messages messages = {
-    "You lunge at $N, crushing $S throat.",
-    "$n lunges at you, crushing your windpipe.",
-    "$n lunges at $N, crushing $S windpipe!",
-    "You lunge at $N, crushing $S throat totally!",
-    "$n lunges at you, crushing your windpipe totally.",
-    "$n lunges at $N, crushing $S windpipe totally!"
-  };
+      "You lunge at $N, crushing $S throat.",
+      "$n lunges at you, crushing your windpipe.",
+      "$n lunges at $N, crushing $S windpipe!",
+      "You lunge at $N, crushing $S throat totally!",
+      "$n lunges at you, crushing your windpipe totally.",
+      "$n lunges at $N, crushing $S windpipe totally!"};
 
-  if( !IS_ALIVE(ch) )
+  if (!IS_ALIVE(ch))
   {
     return;
   }
 
-  if( IS_DESTROYING(ch) )
+  if (IS_DESTROYING(ch))
   {
-    send_to_char( "You can't throat crush an object.\n", ch );
+    send_to_char("You can't throat crush an object.\n", ch);
     return;
   }
 
-  if(!IS_FIGHTING(ch))
+  if (!IS_FIGHTING(ch))
   {
     vict = ParseTarget(ch, arg);
     if (!vict)
@@ -3182,23 +3179,23 @@ void do_throat_crush(P_char ch, char *arg, int cmd)
     }
   }
 
-  if(IS_PC(ch))
+  if (IS_PC(ch))
   {
     skl_lvl = GET_CHAR_SKILL(ch, SKILL_THROAT_CRUSH);
   }
-  else if(IS_NPC(ch) &&
-      GET_CLASS(ch, CLASS_MERCENARY))
+  else if (IS_NPC(ch) &&
+           GET_CLASS(ch, CLASS_MERCENARY))
   {
     skl_lvl = GET_LEVEL(ch) * 2;
   }
 
-  if(!skl_lvl)
+  if (!skl_lvl)
   {
     send_to_char("You cannot throat crush.\r\n", ch);
     return;
   }
 
-  if(!CanDoFightMove(ch, vict))
+  if (!CanDoFightMove(ch, vict))
   {
     return;
   }
@@ -3210,13 +3207,13 @@ void do_throat_crush(P_char ch, char *arg, int cmd)
      */
   CharWait(ch, PULSE_VIOLENCE * 1);
 
-  if(affected_by_spell_flagged(ch, SKILL_THROAT_CRUSHER, 0))
+  if (affected_by_spell_flagged(ch, SKILL_THROAT_CRUSHER, 0))
   {
     send_to_char("Get in position first.\r\n", ch);
     return;
   }
 
-  if(affected_by_spell_flagged(vict, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1))
+  if (affected_by_spell_flagged(vict, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1))
   {
     send_to_char("This person's throat is already sore.\r\n", ch);
     CharWait(ch, PULSE_VIOLENCE * 1);
@@ -3224,7 +3221,7 @@ void do_throat_crush(P_char ch, char *arg, int cmd)
     return;
   }
 
-  if(!IS_HUMANOID(vict) ||
+  if (!IS_HUMANOID(vict) ||
       IS_GREATER_RACE(vict) ||
       IS_ELITE(vict))
   {
@@ -3234,20 +3231,20 @@ void do_throat_crush(P_char ch, char *arg, int cmd)
     return;
   }
 
-  if(!on_front_line(vict))
+  if (!on_front_line(vict))
   {
     send_to_char("You can't reach their throat.\r\n", ch);
     return;
   }
 
-  if(GET_ALT_SIZE(vict) > GET_ALT_SIZE(ch) + 1)
+  if (GET_ALT_SIZE(vict) > GET_ALT_SIZE(ch) + 1)
   {
     act("You cannot reach $N's throat!", FALSE, ch, 0, vict, TO_CHAR);
     act("$n close in on $N!", FALSE, ch, 0, vict, TO_NOTVICT);
     return;
   }
 
-  if(GET_ALT_SIZE(vict) < GET_ALT_SIZE(ch) - 1)
+  if (GET_ALT_SIZE(vict) < GET_ALT_SIZE(ch) - 1)
   {
     send_to_char("They are too small for you.\r\n", ch);
     act("$n close in on $N!", FALSE, ch, 0, vict, TO_NOTVICT);
@@ -3258,26 +3255,25 @@ void do_throat_crush(P_char ch, char *arg, int cmd)
 
   if (GET_C_DEX(ch) > GET_C_DEX(vict))
   {
-    i = (int) (i * 1.1);
+    i = (int)(i * 1.1);
   }
   else
   {
-    i = (int) (i * 0.9);
+    i = (int)(i * 0.9);
   }
 
   if (GET_C_LUK(ch) > GET_C_LUK(vict))
   {
-    i = (int) (i * 1.1);
+    i = (int)(i * 1.1);
   }
   else
   {
-    i = (int) (i * 0.9);
+    i = (int)(i * 0.9);
   }
 
   skl_lvl = MIN(i, 90);
 
-  if(notch_skill(ch, SKILL_THROAT_CRUSH, get_property("skill.notch.offensive", 4) ||
-        number(1, 100) > i))
+  if (notch_skill(ch, SKILL_THROAT_CRUSH, get_property("skill.notch.offensive", 4) || number(1, 100) > i))
   {
     send_to_char("You miss their throat!\r\n", ch);
     act("$n, lunges at $N, but misses!", FALSE, ch, 0, vict, TO_NOTVICT);
@@ -3304,16 +3300,16 @@ void do_throat_crush(P_char ch, char *arg, int cmd)
 void do_hamstring(P_char ch, char *arg, int cmd)
 {
   struct affected_type *af, afs;
-  P_char   vict = NULL;
-  int      skl_lvl = 0, sect;
-  int      i = 0;
+  P_char vict = NULL;
+  int skl_lvl = 0, sect;
+  int i = 0;
 
   if (!ch)
     return;
 
-  if( IS_DESTROYING(ch) )
+  if (IS_DESTROYING(ch))
   {
-    send_to_char( "You can't hamstring an object.\n", ch );
+    send_to_char("You can't hamstring an object.\n", ch);
     return;
   }
 
@@ -3327,9 +3323,8 @@ void do_hamstring(P_char ch, char *arg, int cmd)
        (sect == SECT_FIREPLANE) ||
        ((sect >= SECT_AIR_PLANE) && (sect <= SECT_ASTRAL))))
   {
-    send_to_char
-      ("It's just a little too hard to hamstring someone when you don't have any footing..\r\n",
-       ch);
+    send_to_char("It's just a little too hard to hamstring someone when you don't have any footing..\r\n",
+                 ch);
     return;
   }
 
@@ -3359,7 +3354,7 @@ void do_hamstring(P_char ch, char *arg, int cmd)
   else
     skl_lvl = MAX(100, GET_LEVEL(ch) * 3);
 
-  if (IS_NPC(ch))               // && !GET_CLASS(ch, CLASS_ASSASSIN) && !GET_CLASS(ch, CLASS_THIEF))
+  if (IS_NPC(ch)) // && !GET_CLASS(ch, CLASS_ASSASSIN) && !GET_CLASS(ch, CLASS_THIEF))
     return;
 
   if (!IS_NPC(ch) && (skl_lvl <= 0))
@@ -3415,8 +3410,7 @@ void do_hamstring(P_char ch, char *arg, int cmd)
       (!IS_SWORD(ch->equipment[WIELD]) &&
        !IS_BACKSTABBER(ch->equipment[WIELD])))
   {
-    send_to_char
-      ("You need to wield the right kind of weapon to even try..\r\n", ch);
+    send_to_char("You need to wield the right kind of weapon to even try..\r\n", ch);
     return;
   }
 
@@ -3431,7 +3425,7 @@ void do_hamstring(P_char ch, char *arg, int cmd)
     return;
   }
 
-  if (IS_DEMON(vict) || IS_DRAGON(vict) || 
+  if (IS_DEMON(vict) || IS_DRAGON(vict) ||
       (GET_RACE(vict) == RACE_PLANT))
   {
     act("Such a maneuver appears to be useless against $N!", FALSE, ch, 0,
@@ -3484,9 +3478,8 @@ void do_hamstring(P_char ch, char *arg, int cmd)
   {
     act("&+r$n&+r stumbles as blood gushes from $s knee!", TRUE, vict, 0, 0,
         TO_ROOM);
-    send_to_char
-      ("&+rYou feel an intense pain in your leg and stumble slightly!\r\n",
-       vict);
+    send_to_char("&+rYou feel an intense pain in your leg and stumble slightly!\r\n",
+                 vict);
 
     /*
        bzero(af, sizeof(affected_type));
@@ -3528,17 +3521,15 @@ void do_hamstring(P_char ch, char *arg, int cmd)
   return;
 }
 
-
 void do_arena(P_char ch, char *arg, int cmd)
 {
-  int      rm, i, j, f = 0;
-  char     strn[MAX_STRING_LENGTH], out[MAX_STRING_LENGTH];
-  char     arg1[256], arg2[256];
-  P_char   c;
-
+  int rm, i, j, f = 0;
+  char strn[MAX_STRING_LENGTH], out[MAX_STRING_LENGTH];
+  char arg1[256], arg2[256];
+  P_char c;
 
   if (!ch)
-    return;                     /* ? */
+    return; /* ? */
 
   rm = world[ch->in_room].number;
   if (!CHAR_IN_ARENA(ch) && !IS_TRUSTED(ch))
@@ -3552,14 +3543,13 @@ void do_arena(P_char ch, char *arg, int cmd)
     show_stats_to_char(ch);
     if (IS_SET(arena.flags, FLAG_SEENAME))
     {
-
     }
     else
     {
       snprintf(strn, MAX_STRING_LENGTH,
-          "&+YGOODIES: &+W%-10d &N&+rEVILS: &+W%-10d &+LUNDEAD: &+W%d&N\r\n",
-          arena.team[GOODIE].score, arena.team[EVIL].score,
-          arena.team[UNDEAD].score);
+               "&+YGOODIES: &+W%-10d &N&+rEVILS: &+W%-10d &+LUNDEAD: &+W%d&N\r\n",
+               arena.team[GOODIE].score, arena.team[EVIL].score,
+               arena.team[UNDEAD].score);
       send_to_char(strn, ch);
       if (IS_SET(arena.flags, FLAG_ENABLED))
       {
@@ -3598,8 +3588,7 @@ void do_arena(P_char ch, char *arg, int cmd)
       return;
     }
     SET_BIT(arena.flags, FLAG_SHUTTING_DOWN);
-    send_to_char
-      ("Arena has been set to shutdown, all players being evicted.\r\n", ch);
+    send_to_char("Arena has been set to shutdown, all players being evicted.\r\n", ch);
     return;
   }
   half_chop(arg, arg1, arg2);
@@ -3626,26 +3615,24 @@ void do_arena(P_char ch, char *arg, int cmd)
   }
 }
 
-
 void do_vote(P_char ch, char *arg, int cmd)
 {
-  char     vote_opts[4096];
-  int      votes, i;
-  char     vote_str[4096];
-  char     voted[4096];
-  int      vote_serial = 9;
-  int      max_vote = 0;
-  FILE    *f = NULL;
+  char vote_opts[4096];
+  int votes, i;
+  char vote_str[4096];
+  char voted[4096];
+  int vote_serial = 9;
+  int max_vote = 0;
+  FILE *f = NULL;
   const char *ip;
   char ipbuf[255];
-  time_t   lastConnect, lastDisconnect;
-  char    *vote_options[] = {
-    "nothing",
-    "Follow through on the Miniwipe",
-    "Completely abandon the group-cap idea.",
-    "Wait until Sept 12th to test 5-man group caps.",
-    ""
-  };
+  time_t lastConnect, lastDisconnect;
+  char *vote_options[] = {
+      "nothing",
+      "Follow through on the Miniwipe",
+      "Completely abandon the group-cap idea.",
+      "Wait until Sept 12th to test 5-man group caps.",
+      ""};
 
   snprintf(vote_opts, 4096, "\r\n");
 
@@ -3672,20 +3659,20 @@ void do_vote(P_char ch, char *arg, int cmd)
   }
   if (!is_number(arg))
   {
-    if( GET_LEVEL(ch) >= FORGER && !str_cmp(skip_spaces(arg), "close") )
+    if (GET_LEVEL(ch) >= FORGER && !str_cmp(skip_spaces(arg), "close"))
     {
       voting_enabled = 0;
-      snprintf(vote_str, 4096, "&=Ly%s has closed the voting polls!\n\r", J_NAME(ch) );
-      send_to_all( vote_str );
+      snprintf(vote_str, 4096, "&=Ly%s has closed the voting polls!\n\r", J_NAME(ch));
+      send_to_all(vote_str);
       return;
     }
     send_to_char("\r\nHow do you feel about the miniwipe/group caps?\r\n", ch);
     send_to_char("------", ch);
     send_to_char(vote_opts, ch);
     send_to_char("------\r\n", ch);
-    if( GET_LEVEL(ch) >= FORGER )
+    if (GET_LEVEL(ch) >= FORGER)
     {
-      send_to_char( "&+yOr you can 'vote close' to close the polls.&n\n\r", ch );
+      send_to_char("&+yOr you can 'vote close' to close the polls.&n\n\r", ch);
     }
     return;
   }
@@ -3706,30 +3693,29 @@ void do_vote(P_char ch, char *arg, int cmd)
 
   snprintf(voted, 4096, "You voted for: %s.\r\n", vote_options[votes]);
   f = fopen("lib/etc/vote.miniwipe", "a");
-  if( !f )
+  if (!f)
   {
     send_to_char("There was a problem recording your vote, notify a Forger.\r\n", ch);
     return;
   }
-  ip = sql_select_IP_info( ch, ipbuf, sizeof(char)*255, &lastConnect, &lastDisconnect );
+  ip = sql_select_IP_info(ch, ipbuf, sizeof(char) * 255, &lastConnect, &lastDisconnect);
   fprintf(f, "%s\t%s\t%s\n", ip, J_NAME(ch), vote_options[votes]);
   ch->only.pc->vote = vote_serial;
 
-  if( f )
+  if (f)
   {
     fclose(f);
   }
 
   send_to_char(voted, ch);
-
 }
 
 void do_craft(P_char ch, char *argument, int cmd)
 {
-  char     buf1[MAX_STRING_LENGTH];
-  char     first[MAX_INPUT_LENGTH];
-  char     second[MAX_INPUT_LENGTH];
-  char     rest[MAX_INPUT_LENGTH];
+  char buf1[MAX_STRING_LENGTH];
+  char first[MAX_INPUT_LENGTH];
+  char second[MAX_INPUT_LENGTH];
+  char rest[MAX_INPUT_LENGTH];
   int i = 0;
   int choice = 0;
   P_obj hammer, foundry;
@@ -3737,14 +3723,14 @@ void do_craft(P_char ch, char *argument, int cmd)
   /***DISPLAYRECIPES STUFF***/
   char buf[256], *buff, buf2[256];
   char Gbuf1[MAX_STRING_LENGTH], selectedrecipe[MAX_STRING_LENGTH];
-  char tempdesc [MAX_INPUT_LENGTH];
+  char tempdesc[MAX_INPUT_LENGTH];
   char short_desc[MAX_STRING_LENGTH];
   char keywords[MAX_INPUT_LENGTH];
   char buffer[256];
   FILE *f;
   FILE *recipelist;
   int line, recfind;
-  unsigned long	linenum = 0;
+  unsigned long linenum = 0;
   long recnum, choice2;
   long selected = 0;
   P_obj tobj;
@@ -3764,31 +3750,31 @@ void do_craft(P_char ch, char *argument, int cmd)
      obj = 0;
      */
 
-  if( !GET_CHAR_SKILL(ch, SKILL_CRAFT) )
+  if (!GET_CHAR_SKILL(ch, SKILL_CRAFT))
   {
     act("You do not know how to &+rcraft&n items.",
         FALSE, ch, 0, 0, TO_CHAR);
     return;
   }
 
-  //Create buffers for name
+  // Create buffers for name
   strcpy(buf, GET_NAME(ch));
   // Name should all be lowercase except first initial, but ok.
-  for( buff = buf; *buff; buff++ )
+  for (buff = buf; *buff; buff++)
   {
     *buff = LOWER(*buff);
   }
-  //buf[0] snags first letter of name
+  // buf[0] snags first letter of name
   snprintf(Gbuf1, MAX_STRING_LENGTH, "Players/Tradeskills/%c/%s.crafting", buf[0], buf);
   recipelist = fopen(Gbuf1, "r");
-  if( !recipelist )
+  if (!recipelist)
   {
     send_to_char("You dont know any recipes yet.\r\n", ch);
     return;
   }
 
   // If no arguments, display syntax and list of known recipes.
-  if( !argument || !*argument )
+  if (!argument || !*argument)
   {
     send_to_char("&+wcraft Syntax:\n&n", ch);
     send_to_char("&+w(craft info <number> - list required materials to craft the item.)\n&n", ch);
@@ -3798,7 +3784,7 @@ void do_craft(P_char ch, char *argument, int cmd)
     send_to_char("----------------------------------------------------------------------------\n", ch);
     send_to_char("&+BRecipe Number		              &+MItem&n\n\r", ch);
     // Walk through each item in recipe book, and display it's number and short description.
-    while( (fscanf(recipelist, "%ld", &recnum)) != EOF )
+    while ((fscanf(recipelist, "%ld", &recnum)) != EOF)
     {
       // Load the object so we can get its short description.
       tobj = read_object(recnum, VIRTUAL);
@@ -3817,12 +3803,12 @@ void do_craft(P_char ch, char *argument, int cmd)
   choice2 = atoi(second);
 
   // Walk through the list of recipes and look for choice2 (if there was a 2nd argument that was a valid number).
-  if( choice2 )
+  if (choice2)
   {
-    while( (fscanf(recipelist, "%ld", &recnum)) != EOF )
+    while ((fscanf(recipelist, "%ld", &recnum)) != EOF)
     {
       // If we find the recipe, mark it and stop looking.
-      if( recnum == choice2 )
+      if (recnum == choice2)
       {
         selected = choice2;
         break;
@@ -3841,15 +3827,15 @@ void do_craft(P_char ch, char *argument, int cmd)
   fclose(recipelist);
 
   // If they picked a recipe that wasn't in their book...
-  if( choice2 != 0 && selected == 0 )
+  if (choice2 != 0 && selected == 0)
   {
     send_to_char("You dont appear to have that &+Wrecipe&n in your list.&n\n", ch);
     return;
   }
 
-  if( is_abbrev(first, "stat") )
+  if (is_abbrev(first, "stat"))
   {
-    if( choice2 == 0 )
+    if (choice2 == 0)
     {
       send_to_char("What &+Wrecipe&n would you like &+ystatistics&n about?\n", ch);
       return;
@@ -3860,19 +3846,19 @@ void do_craft(P_char ch, char *argument, int cmd)
     extract_obj(tobj);
     return;
   }
-  else if( is_abbrev(first, "info") )
+  else if (is_abbrev(first, "info"))
   {
-    if(choice2 == 0)
+    if (choice2 == 0)
     {
       send_to_char("What &+Wrecipe&n would you like &+yinformation&n about?\n", ch);
       return;
     }
 
     tobj = read_object(selected, VIRTUAL);
-    if( !tobj )
+    if (!tobj)
     {
-      debug( "Couldn't load object vnum %d.", selected );
-      send_to_char( "Couldn't create the object. :(\n\r", ch );
+      debug("Couldn't load object vnum %d.", selected);
+      send_to_char("Couldn't create the object. :(\n\r", ch);
       return;
     }
 
@@ -3880,10 +3866,10 @@ void do_craft(P_char ch, char *argument, int cmd)
     int iVal = itemvalue(tobj);
     int lowQualityMaterialVnum = get_matstart(tobj);
 
-    if( lowQualityMaterialVnum <= 0 )
+    if (lowQualityMaterialVnum <= 0)
     {
-      send_to_char( "Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch );
-      debug( "Couldn't get start material for object: '%s' %d.", tobj->short_description, selected );
+      send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+      debug("Couldn't get start material for object: '%s' %d.", tobj->short_description, selected);
       extract_obj(tobj);
       return;
     }
@@ -3898,17 +3884,17 @@ void do_craft(P_char ch, char *argument, int cmd)
     matLowest = read_object(lowQualityMaterialVnum, VIRTUAL);
     matHighest = read_object(lowQualityMaterialVnum + 4, VIRTUAL);
 
-    if( matLowest == NULL || matHighest == NULL )
+    if (matLowest == NULL || matHighest == NULL)
     {
-      send_to_char( "Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch );
-      debug( "Couldn't load a material: matLowest(%s) or matHighest(%s) for object '%s' %d.",
-        (matLowest == NULL) ? "NULL" : matLowest->short_description,
-        (matHighest == NULL) ? "NULL" : matHighest->short_description, tobj->short_description, selected );
+      send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+      debug("Couldn't load a material: matLowest(%s) or matHighest(%s) for object '%s' %d.",
+            (matLowest == NULL) ? "NULL" : matLowest->short_description,
+            (matHighest == NULL) ? "NULL" : matHighest->short_description, tobj->short_description, selected);
       extract_obj(tobj);
       return;
     }
 
-    if( numLowest == 0 )
+    if (numLowest == 0)
     {
       send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
       snprintf(buf1, MAX_STRING_LENGTH, "To craft this item, you will need %d of %s.\r\n&n", numHighest, matHighest->short_description);
@@ -3918,19 +3904,19 @@ void do_craft(P_char ch, char *argument, int cmd)
     {
       send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
       snprintf(buf1, MAX_STRING_LENGTH, "To craft this item, you will need %d of %s and %d of %s.\r\n&n",
-        numHighest, matHighest->short_description, numLowest, matLowest->short_description);
+               numHighest, matHighest->short_description, numLowest, matLowest->short_description);
       page_string(ch->desc, buf1, 1);
     }
 
-/* It will never happen that we don't need at least one of matHighest since min itemvalue is 1,
- *   then we add 4 (total 5) and divide by 5 (result minimum 1).
- * But, in case we change that, I'm leaving the code here. 2/10/2015
-      send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
-      snprintf(buf1, MAX_STRING_LENGTH, "To craft this item, you will need %d of %s.\r\n&n", numLowest, matLowest->short_description);
-      page_string(ch->desc, buf1, 1);
-*/
+    /* It will never happen that we don't need at least one of matHighest since min itemvalue is 1,
+     *   then we add 4 (total 5) and divide by 5 (result minimum 1).
+     * But, in case we change that, I'm leaving the code here. 2/10/2015
+          send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
+          snprintf(buf1, MAX_STRING_LENGTH, "To craft this item, you will need %d of %s.\r\n&n", numLowest, matLowest->short_description);
+          page_string(ch->desc, buf1, 1);
+    */
 
-    if( has_affect(tobj) )
+    if (has_affect(tobj))
     {
       send_to_char("...as well as &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n", ch);
     }
@@ -3944,26 +3930,26 @@ void do_craft(P_char ch, char *argument, int cmd)
   }
   else if (is_abbrev(first, "make"))
   {
-    if( choice2 == 0 )
+    if (choice2 == 0)
     {
       send_to_char("What &+Witem&n are you attempting to craft?\n", ch);
       return;
     }
 
     tobj = read_object(selected, VIRTUAL);
-    if( !tobj )
+    if (!tobj)
     {
-      debug( "Couldn't load object vnum %d.", selected );
-      send_to_char( "Couldn't create the object. :(\n\r", ch );
+      debug("Couldn't load object vnum %d.", selected);
+      send_to_char("Couldn't create the object. :(\n\r", ch);
       return;
     }
 
     // Minimum value is iVal 1 -> 1 Max quality material, 0 Min quality materials to create.
     int iVal = itemvalue(tobj);
-    if( iVal > GET_LEVEL(ch) * 3 || IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM) )
+    if (iVal > GET_LEVEL(ch) * 3 || IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
     {
       act("You look at the recipe for $p&n, but can't seem to discern how to make it.  &+mHow strange.&N",
-        FALSE, ch, tobj, 0, TO_CHAR);
+          FALSE, ch, tobj, 0, TO_CHAR);
       extract_obj(tobj);
       return;
     }
@@ -3971,16 +3957,16 @@ void do_craft(P_char ch, char *argument, int cmd)
     int lowQualityMaterialVnum = get_matstart(tobj);
     int highQualityMaterialVnum = lowQualityMaterialVnum + 4;
 
-    if( lowQualityMaterialVnum <= 0 )
+    if (lowQualityMaterialVnum <= 0)
     {
-      send_to_char( "Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch );
-      debug( "Couldn't get start material for object: '%s' %d.", tobj->short_description, selected );
+      send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+      debug("Couldn't get start material for object: '%s' %d.", tobj->short_description, selected);
       extract_obj(tobj);
       return;
     }
 
     // The number of highest quality materials is 1 per 5 itemvalue (with starting point 1@1).
-    int numHighest = (iVal+4)/5;
+    int numHighest = (iVal + 4) / 5;
     // The following gets the remainder.
     int numLowest = iVal - numHighest * 5;
 
@@ -3989,12 +3975,12 @@ void do_craft(P_char ch, char *argument, int cmd)
     matLowest = read_object(lowQualityMaterialVnum, VIRTUAL);
     matHighest = read_object(highQualityMaterialVnum, VIRTUAL);
 
-    if( matLowest == NULL || matHighest == NULL )
+    if (matLowest == NULL || matHighest == NULL)
     {
-      send_to_char( "Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch );
-      debug( "Couldn't load a material: matLowest(%s) or matHighest(%s) for object '%s' %d.",
-        (matLowest == NULL) ? "NULL" : matLowest->short_description,
-        (matHighest == NULL) ? "NULL" : matHighest->short_description, tobj->short_description, selected );
+      send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+      debug("Couldn't load a material: matLowest(%s) or matHighest(%s) for object '%s' %d.",
+            (matLowest == NULL) ? "NULL" : matLowest->short_description,
+            (matHighest == NULL) ? "NULL" : matHighest->short_description, tobj->short_description, selected);
       extract_obj(tobj);
       return;
     }
@@ -4002,27 +3988,27 @@ void do_craft(P_char ch, char *argument, int cmd)
     // If we're going to require multiple essences, we need to change this to int numAffects ...
     bool hasAffect = has_affect(tobj);
 
-    int invLowMats = 0; // Number of lowest quality materials in inventory.
+    int invLowMats = 0;  // Number of lowest quality materials in inventory.
     int invHighMats = 0; // Number of highest quality materials in inventory.
     int invEssences = 0; // Number of magical essences in inventory.
-    int invTools = 0; // Number of crafting tools in inventory
-    int invVnum = 0; // Vnum of the current inventory object.
-    for( P_obj inventory = ch->carrying; inventory; inventory = inventory->next_content )
+    int invTools = 0;    // Number of crafting tools in inventory
+    int invVnum = 0;     // Vnum of the current inventory object.
+    for (P_obj inventory = ch->carrying; inventory; inventory = inventory->next_content)
     {
       invVnum = OBJ_VNUM(inventory);
 
-      if( invVnum == lowQualityMaterialVnum )
+      if (invVnum == lowQualityMaterialVnum)
         invLowMats++;
-      else if( invVnum == highQualityMaterialVnum )
+      else if (invVnum == highQualityMaterialVnum)
         invHighMats++;
-      else if( invVnum == VOBJ_CRAFTING_ESSENCE )
+      else if (invVnum == VOBJ_CRAFTING_ESSENCE)
         invEssences++;
-      else if( invVnum == VOBJ_CRAFTING_TOOLS )
+      else if (invVnum == VOBJ_CRAFTING_TOOLS)
         invTools++;
     }
 
     // Check mats in inventory vs mats needed.
-    if( invLowMats < numLowest || invHighMats < numHighest )
+    if (invLowMats < numLowest || invHighMats < numHighest)
     {
       send_to_char("You do not have the required &+ysalvaged &+Ymaterials &nin your inventory.\r\n", ch);
       extract_obj(tobj);
@@ -4031,7 +4017,7 @@ void do_craft(P_char ch, char *argument, int cmd)
       return;
     }
     // If for some reason we want more than 1 box of tools, change the 1 below.
-    if( invTools < 1)
+    if (invTools < 1)
     {
       send_to_char("You must have &+ma &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&n to create your item.\r\n", ch);
       extract_obj(tobj);
@@ -4040,7 +4026,7 @@ void do_craft(P_char ch, char *argument, int cmd)
       return;
     }
     // If we're going to require multiple essences, need to edit this if statement.
-    if( invEssences < 1 && hasAffect )
+    if (invEssences < 1 && hasAffect)
     {
       send_to_char("You must have &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n", ch);
       extract_obj(tobj);
@@ -4055,32 +4041,32 @@ void do_craft(P_char ch, char *argument, int cmd)
     // If for some reason we want more than 1 box of tools, change gotTools from boolean to int...
     //   For right now, gotTools -> TRUE when we extract a set of tools from inventory.
     bool gotTools = FALSE;
-    for( P_obj inventory = ch->carrying; inventory; inventory = nextObj )
+    for (P_obj inventory = ch->carrying; inventory; inventory = nextObj)
     {
       nextObj = inventory->next_content;
       invVnum = OBJ_VNUM(inventory);
 
-      if( (numLowest > 0) && (invVnum == lowQualityMaterialVnum) )
+      if ((numLowest > 0) && (invVnum == lowQualityMaterialVnum))
       {
         obj_from_char(inventory);
         extract_obj(inventory);
         numLowest--;
       }
-      else if( (numHighest > 0) && (invVnum == highQualityMaterialVnum) )
+      else if ((numHighest > 0) && (invVnum == highQualityMaterialVnum))
       {
         obj_from_char(inventory);
         extract_obj(inventory);
         numHighest--;
       }
       // If we're requiring multiple essences, need to change this if clause.
-      else if( hasAffect && (invVnum == VOBJ_CRAFTING_ESSENCE) )
+      else if (hasAffect && (invVnum == VOBJ_CRAFTING_ESSENCE))
       {
         obj_from_char(inventory);
         extract_obj(inventory);
         hasAffect = FALSE;
       }
       // If we're requiring multiple tools, need to change this if clause.
-      else if( !gotTools && (invVnum == VOBJ_CRAFTING_TOOLS) )
+      else if (!gotTools && (invVnum == VOBJ_CRAFTING_TOOLS))
       {
         obj_from_char(inventory);
         extract_obj(inventory);
@@ -4102,19 +4088,19 @@ void do_craft(P_char ch, char *argument, int cmd)
     set_short_description(tobj, short_desc);
 
     // Rewards here: tobj is the crafted item, so no need to load another.
-    wizlog(56, "%s crafted '%s' (%d) ival %d.", GET_NAME(ch), tobj->short_description, selected, itemvalue(tobj) );
+    wizlog(56, "%s crafted '%s' (%d) ival %d.", GET_NAME(ch), tobj->short_description, selected, itemvalue(tobj));
 
     obj_to_char(tobj, ch);
     act("&+W$n &+Ldelicately opens their &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and starts their work...\r\n"
-      "&+W$n &+Lremoves the &+Wim&+wpur&+Lities &+Lfrom their &+ymaterials &+Land gently assembles a masterpiece...\r\n"
-      "&+L...hands shaking, &+W$n &+Lraises their head and &+Ysmiles&+L, admiring their new $p.&N",
-      TRUE, ch, tobj, 0, TO_ROOM);
+        "&+W$n &+Lremoves the &+Wim&+wpur&+Lities &+Lfrom their &+ymaterials &+Land gently assembles a masterpiece...\r\n"
+        "&+L...hands shaking, &+W$n &+Lraises their head and &+Ysmiles&+L, admiring their new $p.&N",
+        TRUE, ch, tobj, 0, TO_ROOM);
     act("You &+Ldelicately open your &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and get to work...\r\n"
-      "you &+Lremove the &+Wim&+wpur&+Lities &+Lfrom your &+ymaterials &+Land gently assemble a masterpiece...\r\n"
-      "&+L...hands shaking, &+Wyou &+Lraise your head and &+Ysmile&+L, admiring your new $p.&N",
-      FALSE, ch, tobj, 0, TO_CHAR);
+        "you &+Lremove the &+Wim&+wpur&+Lities &+Lfrom your &+ymaterials &+Land gently assemble a masterpiece...\r\n"
+        "&+L...hands shaking, &+Wyou &+Lraise your head and &+Ysmile&+L, admiring your new $p.&N",
+        FALSE, ch, tobj, 0, TO_CHAR);
 
-    gain_exp(ch, NULL, iVal*1000, EXP_BOON);
+    gain_exp(ch, NULL, iVal * 1000, EXP_BOON);
     extract_obj(matLowest);
     extract_obj(matHighest);
     // Save the character! 1 -> in game.
@@ -4229,40 +4215,37 @@ for (i = 0; i <= MAXMATERIAL; i++)
 
 
 */
-/*        wizlog(56, "%s crafted.", GET_NAME(ch));
+  /*        wizlog(56, "%s crafted.", GET_NAME(ch));
 
-          if (howmany > 0)
-          extract_obj(craft_obj1);
-          if (howmany > 1)
-          extract_obj(craft_obj2);
-          if (howmany > 2)
-          extract_obj(craft_obj3);
-          obj = create_random_eq_new(ch, ch, slot, material_type);
-          if (!obj)
-          {
-          act("&+yCrafting NOT COMPLETED CONTACT A GOD!&n", FALSE, ch, 0, 0,
-          TO_CHAR);
-          return;
-          }
-          obj_to_char(obj, ch);
-//notch_skill(ch, SKILL_CRAFT, 30);
-act("&+W$n crafted a $q&N.", TRUE, ch, obj, 0, TO_NOTVICT);
-act("&+WYou crafted a $q&N", TRUE, ch, obj, 0, TO_CHAR);
+            if (howmany > 0)
+            extract_obj(craft_obj1);
+            if (howmany > 1)
+            extract_obj(craft_obj2);
+            if (howmany > 2)
+            extract_obj(craft_obj3);
+            obj = create_random_eq_new(ch, ch, slot, material_type);
+            if (!obj)
+            {
+            act("&+yCrafting NOT COMPLETED CONTACT A GOD!&n", FALSE, ch, 0, 0,
+            TO_CHAR);
+            return;
+            }
+            obj_to_char(obj, ch);
+  //notch_skill(ch, SKILL_CRAFT, 30);
+  act("&+W$n crafted a $q&N.", TRUE, ch, obj, 0, TO_NOTVICT);
+  act("&+WYou crafted a $q&N", TRUE, ch, obj, 0, TO_CHAR);
 
-return;
-*/
+  return;
+  */
 }
-
 
 void do_smith(P_char ch, char *argument, int cmd)
 {
-
 }
-
 
 int chance_throw_potion(P_char ch, P_char victim)
 {
-  int      chance = 0;
+  int chance = 0;
 
   if (IS_PC(ch))
   {
@@ -4273,31 +4256,29 @@ int chance_throw_potion(P_char ch, P_char victim)
     chance = GET_LEVEL(ch) * 2;
   }
 
-  if(number(1, 140) > GET_C_AGI(ch))
+  if (number(1, 140) > GET_C_AGI(ch))
     chance = 1;
 
-  return (int) chance;
-
+  return (int)chance;
 }
 
 bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 {
-  int      i, bits, j, in_room;
-  bool     equipped = FALSE;
-  P_char   tch = NULL;
-  P_char   temp = NULL;
-  int      the_room;
-  int      chance = 0;
-  float      lag;
+  int i, bits, j, in_room;
+  bool equipped = FALSE;
+  P_char tch = NULL;
+  P_char temp = NULL;
+  int the_room;
+  int chance = 0;
+  float lag;
 
-
-  if( !(chance = chance_throw_potion(ch, victim)) )
+  if (!(chance = chance_throw_potion(ch, victim)))
   {
     act("Well, trying might not hurt.", FALSE, ch, 0, 0, TO_CHAR);
     return FALSE;
   }
 
-  if(!isname(GET_NAME(ch), potion->short_description) && !IS_TRUSTED(ch))
+  if (!isname(GET_NAME(ch), potion->short_description) && !IS_TRUSTED(ch))
   {
     send_to_char("&nThrowing potions of unknown origin might be hazardous to your health... better not!&n\r\n", ch);
     return FALSE;
@@ -4317,15 +4298,15 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
     lag *= 0.8;
   }
 
-  CharWait(ch, (int) (get_property("alchemist.throwp.lag.rounds", 0.75) * PULSE_VIOLENCE) );
-  set_short_affected_by(ch, SKILL_THROW_POTIONS, (int) (lag * PULSE_VIOLENCE));
+  CharWait(ch, (int)(get_property("alchemist.throwp.lag.rounds", 0.75) * PULSE_VIOLENCE));
+  set_short_affected_by(ch, SKILL_THROW_POTIONS, (int)(lag * PULSE_VIOLENCE));
 
   notch_skill(ch, SKILL_THROW_POTIONS, 7);
 
   if (victim)
   {
 
-    if(chance == 1)
+    if (chance == 1)
     {
       send_to_char("As you slip......\r\n", ch);
       if (equipped)
@@ -4333,7 +4314,7 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
       obj_from_char(potion);
       send_to_char("&+YYou aim your throw a little too high, sending your potion flying across the room!\r\n&n", ch);
       act("$n slips as $e throws a $p, sending it bouncing along the ground!",
-         TRUE, ch, potion, 0, TO_ROOM);
+          TRUE, ch, potion, 0, TO_ROOM);
       extract_obj(potion);
       return FALSE;
     }
@@ -4366,7 +4347,7 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
         obj_to_room(potion, ch->in_room);
         send_to_char("&+YYou aim your throw a little too high, sending your potion flying across the room!\r\n&n", ch);
         act("$n slips as $e throws a $p, sending it bouncing along the ground!",
-           TRUE, ch, potion, 0, TO_ROOM);
+            TRUE, ch, potion, 0, TO_ROOM);
         return FALSE;
       }
     }
@@ -4375,11 +4356,11 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
   if (victim)
   {
     act("&+W$N&n &+Wpales&N &+Las $p &+Lthrown by&n&+m $n&n&+L hits $M&n &+Lin the face.&n",
-       FALSE, ch, potion, victim, TO_NOTVICT);
+        FALSE, ch, potion, victim, TO_NOTVICT);
     act("&+W$N's&n&+L face turns&+W pale &+Las $p &+Lhits $M dead on!&n ",
         FALSE, ch, potion, victim, TO_CHAR);
     act("&+LYour face &+Wpales&N&+L as $p &+Lthrown by&n&+m $n &n&+Lhits you dead on.&N",
-       FALSE, ch, potion, victim, TO_VICT);
+        FALSE, ch, potion, victim, TO_VICT);
   }
   else if (obj)
   {
@@ -4397,13 +4378,13 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
     unequip_char(ch, HOLD);
   }
 
-  if (IS_ROOM( ch->in_room, ROOM_NO_MAGIC) && !IS_TRUSTED(ch))
+  if (IS_ROOM(ch->in_room, ROOM_NO_MAGIC) && !IS_TRUSTED(ch))
   {
     send_to_char("Nothing seems to happen.\r\n", ch);
   }
   else if (victim && (victim != ch) && !IS_TRUSTED(ch) &&
-      (IS_ROOM( ch->in_room, ROOM_SINGLE_FILE)) &&
-      !AdjacentInRoom(ch, victim))
+           (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE)) &&
+           !AdjacentInRoom(ch, victim))
   {
     send_to_char("You can't get a clear line of sight!\r\n", ch);
   }
@@ -4418,7 +4399,7 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
         {
           if (IS_AGG_SPELL(j) && victim && (ch != victim))
           {
-            if( IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS) )
+            if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
               appear(ch);
           }
           in_room = ch->in_room;
@@ -4431,27 +4412,25 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 
           if (IS_SET(skills[j].targets, TAR_CHAR_ROOM) && victim &&
               !(IS_SET(skills[j].targets, TAR_CHAR_ROOM) && (ch == victim)))
-            ((*skills[j].spell_pointer) ((int) potion->value[0], ch, 0,
-              SPELL_TYPE_SPELL, victim, obj));
+            ((*skills[j].spell_pointer)((int)potion->value[0], ch, 0,
+                                        SPELL_TYPE_SPELL, victim, obj));
           else if (IS_SET(skills[j].targets, TAR_SELF_ONLY) && victim &&
-              (victim == ch))
-            ((*skills[j].spell_pointer) ((int) potion->value[0], ch, 0,
-              SPELL_TYPE_SPELL, victim, obj));
-          else
-            if ((IS_SET(skills[j].targets, TAR_OBJ_ROOM) ||
-                  IS_SET(skills[j].targets, TAR_OBJ_INV)) && obj)
-              ((*skills[j].spell_pointer) ((int) potion->value[0], ch, 0,
-                SPELL_TYPE_SPELL, victim, obj));
-            else if (IS_SET(skills[j].targets, TAR_IGNORE))
-              ((*skills[j].spell_pointer) ((int) potion->value[0], ch, 0,
-                SPELL_TYPE_SPELL, victim, obj));
-
-
+                   (victim == ch))
+            ((*skills[j].spell_pointer)((int)potion->value[0], ch, 0,
+                                        SPELL_TYPE_SPELL, victim, obj));
+          else if ((IS_SET(skills[j].targets, TAR_OBJ_ROOM) ||
+                    IS_SET(skills[j].targets, TAR_OBJ_INV)) &&
+                   obj)
+            ((*skills[j].spell_pointer)((int)potion->value[0], ch, 0,
+                                        SPELL_TYPE_SPELL, victim, obj));
+          else if (IS_SET(skills[j].targets, TAR_IGNORE))
+            ((*skills[j].spell_pointer)((int)potion->value[0], ch, 0,
+                                        SPELL_TYPE_SPELL, victim, obj));
 
           /* best thing to do if victim dies is just extract the obj and quit out, since many
              spells kill the mud w/o a victim
              besides, what if the char IS the victim?  heh. */
-          if( (victim && !char_in_list(victim)) || ((victim != ch) && !char_in_list(ch)) )
+          if ((victim && !char_in_list(victim)) || ((victim != ch) && !char_in_list(ch)))
           {
             extract_obj(potion);
             return FALSE;
@@ -4488,7 +4467,6 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
       notch_skill(ch, SKILL_REMIX, 1);
       extract_obj(potion);
     }
-
   }
   else
     extract_obj(potion);
@@ -4496,20 +4474,19 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
   return FALSE;
 }
 
-
 void do_throw_potion(P_char ch, char *argument, int cmd)
 {
-  P_obj    scroll, obj;
-  int      i, j, in_room;
-  bool     equipped;
-  P_char   victim = NULL;
-  char     Gbuf1[MAX_STRING_LENGTH];
-  int      bits = 0;
+  P_obj scroll, obj;
+  int i, j, in_room;
+  bool equipped;
+  P_char victim = NULL;
+  char Gbuf1[MAX_STRING_LENGTH];
+  int bits = 0;
 
   equipped = FALSE;
   obj = 0;
 
-  if( !IS_TRUSTED(ch) && affected_by_spell(ch, SKILL_THROW_POTIONS) )
+  if (!IS_TRUSTED(ch) && affected_by_spell(ch, SKILL_THROW_POTIONS))
   {
     act("Your arm is still too tired to throw another potion!", FALSE, ch, 0, 0, TO_CHAR);
     return;
@@ -4540,7 +4517,7 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
 
     if (bits == 0)
     {
-      if( IS_TRUSTED(ch) )
+      if (IS_TRUSTED(ch))
       {
         bits = generic_find(argument, FIND_OBJ_ROOM, ch, &victim, &obj);
       }
@@ -4550,7 +4527,7 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
       }
     }
 
-    if( bits == 0 )
+    if (bits == 0)
       bits = generic_find(argument, FIND_OBJ_INV, ch, &victim, &obj);
 
     if (bits && obj && GET_ITEM_TYPE(obj) == ITEM_CORPSE)
@@ -4578,9 +4555,8 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
 
   if (IS_CARRYING_N(ch) > CAN_CARRY_N(ch))
   {
-    act
-      ("&+LBut you carry &+Wtoo many&+L items in your inventory to handle potion throwing!&n",
-       FALSE, ch, 0, 0, TO_CHAR);
+    act("&+LBut you carry &+Wtoo many&+L items in your inventory to handle potion throwing!&n",
+        FALSE, ch, 0, 0, TO_CHAR);
     return;
   }
 
@@ -4590,24 +4566,22 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
     return;
   }
 
-
   throw_potion(ch, scroll, victim, obj);
 }
-
 
 void do_home(P_char ch, char *argument, int cmd)
 {
 
-  char     buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-  char     sign;
-  int      cost, plat, in_room;
+  char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+  char sign;
+  int cost, plat, in_room;
 
   cost = (int)(1000 * (int)get_property("price.home.plat", 50.000));
 
-  if(IS_NPC(ch))
+  if (IS_NPC(ch))
     return;
 
-  if(IS_ROOM( ch->in_room, ROOM_SAFE))
+  if (IS_ROOM(ch->in_room, ROOM_SAFE))
   {
     send_to_char("Try somewhere else...\r\n", ch);
     return;
@@ -4625,26 +4599,27 @@ void do_home(P_char ch, char *argument, int cmd)
     return;
   }
 
-  plat = cost/1000;
+  plat = cost / 1000;
 
   if (GET_MONEY(ch) < cost)
   {
     snprintf(buf2, MAX_STRING_LENGTH, "&+RIt costs &+W%d platinum&+R to change your home, you need more money!&n\r\n", plat);
     act(buf2, TRUE, ch, 0, 0, TO_CHAR);
     return;
-  } 
-  else {
+  }
+  else
+  {
     wizlog(MINLVLIMMORTAL, "do_home(): Non-good/evil race attempting to home.  If a new racewar is back in the game, fix this.");
     send_to_char("Get out of here!", ch);
   }
 
   // Only way I can figure to tell if a town is evil or good for now.
-  if (IS_RACEWAR_GOOD(ch) && IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number)-1].flags, JUSTICE_EVILHOME))
+  if (IS_RACEWAR_GOOD(ch) && IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number) - 1].flags, JUSTICE_EVILHOME))
   {
     send_to_char("You can't really see yourself living in such an awful place as this.\n", ch);
     return;
   }
-  else if (IS_RACEWAR_EVIL(ch) && IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number)-1].flags, JUSTICE_GOODHOME))
+  else if (IS_RACEWAR_EVIL(ch) && IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number) - 1].flags, JUSTICE_GOODHOME))
   {
     send_to_char("You can't really see yourself living in such an awful place as this.\n", ch);
     return;
@@ -4653,22 +4628,20 @@ void do_home(P_char ch, char *argument, int cmd)
   SUB_MONEY(ch, cost, 0);
 
   snprintf(buf, MAX_STRING_LENGTH, "char %s home %d", J_NAME(ch),
-      world[ch->in_room].number);
+           world[ch->in_room].number);
   do_setbit(ch, buf, CMD_SETHOME);
 
   snprintf(buf, MAX_STRING_LENGTH, "char %s orighome %d", J_NAME(ch),
-      world[ch->in_room].number);
+           world[ch->in_room].number);
   do_setbit(ch, buf, CMD_SETHOME);
 
   snprintf(buf, MAX_STRING_LENGTH, "char %s origbp %d", J_NAME(ch),
-      world[ch->in_room].number);
+           world[ch->in_room].number);
   do_setbit(ch, buf, CMD_SETHOME);
 
-  send_to_char
-    ("\r\n&+WThank you for the payment and welcome to your new birth home whenever you die you will return here.&n\r\n",
-     ch);
+  send_to_char("\r\n&+WThank you for the payment and welcome to your new birth home whenever you die you will return here.&n\r\n",
+               ch);
   return;
-
 }
 
 void do_thrust(P_char ch, char *argument, int cmd)

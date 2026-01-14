@@ -1104,7 +1104,6 @@ void account_confirm_char(P_desc d, char *arg)
     STATE(d) = CON_PLAYING;
     d->character = ch;
     enter_game(d);
-    ws_broadcast_player_login(d->character);
     d->prompt_mode = TRUE;
 
 	switch(GET_RACEWAR(ch))
@@ -1664,8 +1663,6 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
             d->login, d->host);
       loginlog(d->character->player.level, "%s [%s@%s] has reconnected.",
                GET_NAME(d->character), d->login, d->host);
-      // sql_log(ch, CONNECT_LOG, "Reconnected");  // Deprecated function
-      ws_broadcast_player_login(d->character);
 
 #if 0
       /* panic, lets check for spellcast events and nuke them, hopefully allowing a release from

@@ -969,7 +969,7 @@ void do_trophy(P_char, char *, int);
 void group_gain(P_char, P_char);
 float group_exp_modifier(P_char ch);
 #ifndef NEW_COMBAT
-bool hit(P_char, P_char, P_obj, int* = NULL);
+bool hit(P_char, P_char, P_obj, int * = NULL);
 int chance_to_hit(P_char, P_char, int, P_obj);
 bool weapon_proc(P_obj, P_char, P_char);
 int calculate_ac(P_char);
@@ -1111,10 +1111,10 @@ void writePeriodOfFame(P_char ch, char thekiller[1024]);
 void displayPERIODCore(P_char ch, char *arg, int cmd);
 /* graph.c */
 
-byte find_first_step(int src, int target, long hunt_flags, int is_ship, int wagon_type, int *ttl_steps);
+::byte find_first_step(int src, int target, long hunt_flags, int is_ship, int wagon_type, int *ttl_steps);
 ubyte *find_the_path(int from, int to, int *max_steps, long hunt_flags);
 int how_close(int src, int target, int max_steps);
-byte line_of_sight_dir(int, int);
+::byte line_of_sight_dir(int, int);
 
 /* group.c */
 
@@ -2823,6 +2823,7 @@ void cast_bloodstone(int, P_char, char *, int, P_char, P_obj);
 
 /* ethermancer spells */
 void spell_vapor_armor(int, P_char, char *, int, P_char, P_obj);
+void spell_frost_beam(int, P_char, char *, int, P_char, P_obj);
 void spell_faerie_sight(int, P_char, char *, int, P_char, P_obj);
 void spell_cold_snap(int, P_char, char *, int, P_char, P_obj);
 void spell_path_of_frost(int, P_char, char *, int, P_char, P_obj);

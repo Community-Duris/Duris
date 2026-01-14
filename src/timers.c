@@ -3,14 +3,16 @@
 #include "epic.h"
 #include "timers.h"
 #include "assocs.h"
-#include "ships.h"
+#include "ships/ships.h"
 
 #ifdef __NO_MYSQL__
 void set_timer(const char *name)
-{}
+{
+}
 
 void set_timer(const char *name, int date)
-{}
+{
+}
 
 int get_timer(const char *name)
 {
@@ -29,33 +31,33 @@ void set_timer(const char *name, int date)
 
 int get_timer(const char *name)
 {
-  if( !qry("SELECT date FROM timers WHERE name = '%s'", name) )
+  if (!qry("SELECT date FROM timers WHERE name = '%s'", name))
   {
     return 0;
   }
-  
+
   MYSQL_RES *res = mysql_store_result(DB);
-  
-  if( mysql_num_rows(res) < 1 )
+
+  if (mysql_num_rows(res) < 1)
   {
     mysql_free_result(res);
     return 0;
   }
-  
+
   MYSQL_ROW row = mysql_fetch_row(res);
-  
+
   int date = atoi(row[0]);
   mysql_free_result(res);
-  
-  return date;  
+
+  return date;
 }
 #endif
 
 bool has_elapsed(const char *name, int seconds)
 {
   int timer = get_timer(name);
-  
-  if( time(NULL) > ( timer + seconds ) )
+
+  if (time(NULL) > (timer + seconds))
   {
     return TRUE;
   }
@@ -67,7 +69,7 @@ bool has_elapsed(const char *name, int seconds)
 
 void timers_activity()
 {
-//  prestige_update();
+  //  prestige_update();
   zone_trophy_update();
   update_epic_zone_mods();
   cargo_activity();

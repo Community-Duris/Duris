@@ -1,10 +1,10 @@
 /*
-   ***************************************************************************
-   *  File: specs.object.c                                     Part of Duris *
-   *  Usage: special procedures for objects                                    *
-   *  Copyright  1990, 1991 - see 'license.doc' for complete information.      *
-   *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
-   ***************************************************************************
+ ***************************************************************************
+ *  File: specs.object.c                                     Part of Duris *
+ *  Usage: special procedures for objects                                    *
+ *  Copyright  1990, 1991 - see 'license.doc' for complete information.      *
+ *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
+ ***************************************************************************
  */
 
 #include <ctype.h>
@@ -42,7 +42,7 @@ extern char *coin_names[];
 extern char *command[];
 extern const char *dirs[];
 extern const char *race_types[];
-extern const char rev_dir[];
+// extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
 extern int innate_abilities[];
 extern int planes_room_num[];
@@ -55,7 +55,7 @@ extern struct zone_data *zone_table;
 
 P_nevent get_scheduled(P_obj obj, event_func func);
 
-#define PROCLIB_PARAM_DELIM  '&'
+#define PROCLIB_PARAM_DELIM '&'
 
 // some kind of 'find next token' function
 #define ISQUOTE(a) ((((a) == '\'') || ((a) == '"')) ? a : 0)
@@ -66,7 +66,7 @@ char *proclib_getNext_string(char *source, char *nextString)
 {
   if (!nextString)
   {
-    raise (SIGSEGV);
+    raise(SIGSEGV);
   }
   nextString[0] = '\0';
   if (!source)
@@ -85,7 +85,8 @@ char *proclib_getNext_string(char *source, char *nextString)
   // find the matching quote or EOL
   int nIdx = 0;
 
-  while (*(++p1)) {
+  while (*(++p1))
+  {
     if (quote == *p1)
     {
       p1++;
@@ -100,7 +101,8 @@ char *proclib_getNext_string(char *source, char *nextString)
 // actual proc for 'hummer'
 int proclibobj_hummer(P_obj obj, P_char ch, int cmd, char *argument)
 {
-  if (cmd == CMD_SET_PERIODIC) return TRUE;
+  if (cmd == CMD_SET_PERIODIC)
+    return TRUE;
   if (cmd)
     return FALSE;
 
@@ -143,14 +145,16 @@ char *proclibobj_parse_actroom(char *argument)
 // actual proc for actroom
 int proclibobj_actroom(P_obj obj, P_char ch, int cmd, char *params)
 {
-  if (cmd == CMD_SET_PERIODIC) return TRUE;
+  if (cmd == CMD_SET_PERIODIC)
+    return TRUE;
 
-  if (cmd || !OBJ_ROOM(obj)) return FALSE;
+  if (cmd || !OBJ_ROOM(obj))
+    return FALSE;
 
   char *pAct;
   long chance = strtol(params, &pAct, 10);
 
-  if (chance && number(0, chance-1))
+  if (chance && number(0, chance - 1))
     return FALSE;
 
   pAct = strchr(pAct, 0xFF);
@@ -188,7 +192,7 @@ char *proclibobj_parse_actworn(char *argument)
         if (!strstr(arg1, "%p") && !strstr(arg1, "%q"))
           return NULL;
         if (!strstr(arg1, "%n"))
-            return NULL;
+          return NULL;
 
         while (strchr(arg1, '%'))
           *(strchr(arg1, '%')) = '$';
@@ -206,7 +210,6 @@ char *proclibobj_parse_actworn(char *argument)
           CREATE(pRet, char, strlen(params) + 1, MEM_TAG_EXDESCD);
           strcpy(pRet, params);
           return pRet;
-
         }
       }
     }
@@ -217,16 +220,17 @@ char *proclibobj_parse_actworn(char *argument)
 // actual proc for actworn
 int proclibobj_actworn(P_obj obj, P_char ch, int cmd, char *params)
 {
-  if (cmd == CMD_SET_PERIODIC) return TRUE;
+  if (cmd == CMD_SET_PERIODIC)
+    return TRUE;
   if (cmd || !OBJ_WORN(obj))
     return FALSE;
   ch = obj->loc.wearing;
 
   char *pAct;
   long chance = strtol(params, &pAct, 10);
-  char buf[500];  // need a buffer to hold the first (to room) string
+  char buf[500]; // need a buffer to hold the first (to room) string
 
-  if (chance && number(0, chance-1))
+  if (chance && number(0, chance - 1))
     return FALSE;
 
   pAct = strchr(pAct, 0xFF);
@@ -238,9 +242,9 @@ int proclibobj_actworn(P_obj obj, P_char ch, int cmd, char *params)
     if (chance && delim && ((delim - pAct) < 500))
     {
 
-      *delim = '\0'; // temp make the delim be EOS
+      *delim = '\0';     // temp make the delim be EOS
       strcpy(buf, pAct); // copy it
-      *delim = 0xFF; // put delim bac
+      *delim = 0xFF;     // put delim bac
       // note: the above method is faster then using strncpy and then manually adding a null
 
       pAct = delim + 1;
@@ -250,7 +254,7 @@ int proclibobj_actworn(P_obj obj, P_char ch, int cmd, char *params)
       // we are all set!
       if (pAct && (*pAct))
       {
-        act(buf, TRUE, ch ,obj, NULL, TO_ROOM);
+        act(buf, TRUE, ch, obj, NULL, TO_ROOM);
         act(pAct, TRUE, ch, obj, 0, TO_CHAR);
         return TRUE;
       }
@@ -260,7 +264,6 @@ int proclibobj_actworn(P_obj obj, P_char ch, int cmd, char *params)
   debug(buf);
   wizlog(58, buf);
   return FALSE;
-
 }
 
 // default parameter parser
@@ -269,38 +272,36 @@ char *proclibobj_parse_default(char *)
   char *pRet;
   CREATE(pRet, char, 2, MEM_TAG_EXDESCD);
   *pRet = ' ';
-  *(pRet+1) = '\0';
+  *(pRet + 1) = '\0';
   return pRet;
 }
 
 struct ObjProcLib
 {
-  int (*func) (P_obj, P_char, int, char *);
+  int (*func)(P_obj, P_char, int, char *);
   char *(*parse_params)(char *arguments);
   const char procName[20];
   const char procDesc[100];
   const char procHelp[300];
-}
-  object_proc_libs[] =
-  {
-    { proclibobj_actroom, proclibobj_parse_actroom, "actroom", "Object 'acts' to the room when on the ground.",
-      "        Params: chance act_room\n"
-      "          chance: Act will have 1 in 'chance' odds of occurring apprx every 5 seconds.\n"
-      "          act_room: Actor string sent to room which must contain %p or %q." },
-    { proclibobj_actworn, proclibobj_parse_actworn, "actworn", "Object 'acts' while being worn/equiped by a character.",
-      "        Params: chance act_room act_wearer\n"
-      "          chance: Act will have 1 in 'chance' odds of occurring apprx every 5 seconds.\n"
-      "          act_room: Actor string sent to room which must contain %p or %q, AND %n.\n"
-      "          act_wearer: Actor string sent to room which must contain %p or %q.\n" },
-    { proclibobj_hummer,  proclibobj_parse_default, "hummer", "Items 'hums' - similar to some artifact weapons.",
-      "        No parameters." },
-  };
-
+} object_proc_libs[] =
+    {
+        {proclibobj_actroom, proclibobj_parse_actroom, "actroom", "Object 'acts' to the room when on the ground.",
+         "        Params: chance act_room\n"
+         "          chance: Act will have 1 in 'chance' odds of occurring apprx every 5 seconds.\n"
+         "          act_room: Actor string sent to room which must contain %p or %q."},
+        {proclibobj_actworn, proclibobj_parse_actworn, "actworn", "Object 'acts' while being worn/equiped by a character.",
+         "        Params: chance act_room act_wearer\n"
+         "          chance: Act will have 1 in 'chance' odds of occurring apprx every 5 seconds.\n"
+         "          act_room: Actor string sent to room which must contain %p or %q, AND %n.\n"
+         "          act_wearer: Actor string sent to room which must contain %p or %q.\n"},
+        {proclibobj_hummer, proclibobj_parse_default, "hummer", "Items 'hums' - similar to some artifact weapons.",
+         "        No parameters."},
+};
 
 int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
 
 // event func - just redirects to generic proclib_obj_proc (which is in obj proc format)
-void proclib_obj_event(P_char, P_char, P_obj obj, void*)
+void proclib_obj_event(P_char, P_char, P_obj obj, void *)
 {
   proclib_obj_proc(obj, NULL, 0, NULL);
 }
@@ -310,7 +311,7 @@ void proclib_obj_event(P_char, P_char, P_obj obj, void*)
 int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument)
 {
   if (cmd == CMD_SET_PERIODIC)
-   return TRUE;
+    return TRUE;
 
   if (!obj)
     return FALSE;
@@ -340,8 +341,8 @@ int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument)
                 bResetPeriodic = TRUE;
             }
             else if (object_proc_libs[i].func(obj, ch, cmd, argument))
-                return TRUE;  // no need to break the for loop - this wasn't a periodic
-                              // call, so don't need to reset it.
+              return TRUE; // no need to break the for loop - this wasn't a periodic
+                           // call, so don't need to reset it.
           }
         }
       }
@@ -358,7 +359,6 @@ void proclibUsage(P_char ch)
 {
   if (ch)
     send_to_char("Usage: proclib <mob|obj|room> <target> <add|del> <procname> [proc params]\n", ch);
-
 }
 
 // generic function for adding a proclib to an object.  This is NOT an interactive
@@ -369,7 +369,7 @@ void proclibUsage(P_char ch)
 int proclibObj_add(P_obj obj, char *procName, char *args)
 {
   int libIdx = -1;
-  for (libIdx =  (sizeof(object_proc_libs) / sizeof(ObjProcLib))-1; libIdx >= 0; libIdx--)
+  for (libIdx = (sizeof(object_proc_libs) / sizeof(ObjProcLib)) - 1; libIdx >= 0; libIdx--)
   {
     if (!strn_cmp(procName, object_proc_libs[libIdx].procName, strlen(object_proc_libs[libIdx].procName)) &&
         object_proc_libs[libIdx].func)
@@ -380,7 +380,7 @@ int proclibObj_add(P_obj obj, char *procName, char *args)
 
   char *params = object_proc_libs[libIdx].parse_params(args);
   if (!params)
-    return (libIdx+1);
+    return (libIdx + 1);
 
   // find a suffix to use...
   int suffix = 0;
@@ -400,7 +400,7 @@ int proclibObj_add(P_obj obj, char *procName, char *args)
     ed = ed->next;
   }
   char keyword[50];
-  snprintf(keyword, 50, "_proclib_%s%d", object_proc_libs[libIdx].procName, suffix+1);
+  snprintf(keyword, 50, "_proclib_%s%d", object_proc_libs[libIdx].procName, suffix + 1);
 
   CREATE(ed, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
   ed->next = obj->ex_description;
@@ -411,8 +411,7 @@ int proclibObj_add(P_obj obj, char *procName, char *args)
   obj->str_mask |= STRUNG_EDESC;
   SET_BIT(obj->extra_flags, ITEM_PROCLIB);
 
-  if( (NULL == get_scheduled(obj, proclib_obj_event))
-    && object_proc_libs[libIdx].func(obj, NULL, CMD_SET_PERIODIC, NULL) )
+  if ((NULL == get_scheduled(obj, proclib_obj_event)) && object_proc_libs[libIdx].func(obj, NULL, CMD_SET_PERIODIC, NULL))
   {
     add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
   }
@@ -425,13 +424,12 @@ void do_proclibObj(P_char ch, char *argument)
 {
   // parameters should be: target_obj add|del procname [proc_params]
 
-  bool bAdd = false;  // false means that its a delete
+  bool bAdd = false; // false means that its a delete
 
   char argBuf[MAX_STRING_LENGTH];
 
   wizlog(GET_LEVEL(ch), "%s: proclibObj %s", GET_NAME(ch), argument);
   logit(LOG_WIZ, "%s: proclibObj %s", GET_NAME(ch), argument);
-
 
   // parse object
   argument = one_argument(argument, argBuf);
@@ -442,7 +440,8 @@ void do_proclibObj(P_char ch, char *argument)
   {
     if (!(obj = get_obj_in_list_vis(ch, argBuf, world[ch->in_room].contents)))
     {
-      if (ch) send_to_char("Unable to find the specified object\n", ch);
+      if (ch)
+        send_to_char("Unable to find the specified object\n", ch);
       return;
     }
   }
@@ -469,7 +468,7 @@ void do_proclibObj(P_char ch, char *argument)
   { // error with proc name
     proclibUsage(ch);
     send_to_char("Available proclibs for objects: \n", ch);
-    for (int libIdx =  (sizeof(object_proc_libs) / sizeof(ObjProcLib))-1; libIdx >= 0; libIdx--)
+    for (int libIdx = (sizeof(object_proc_libs) / sizeof(ObjProcLib)) - 1; libIdx >= 0; libIdx--)
     {
       send_to_char(object_proc_libs[libIdx].procName, ch);
       send_to_char(" - ", ch);
@@ -482,7 +481,7 @@ void do_proclibObj(P_char ch, char *argument)
   if (addRet)
   {
     send_to_char("Error in proc parameters.\n", ch);
-    send_to_char(object_proc_libs[addRet-1].procHelp, ch);
+    send_to_char(object_proc_libs[addRet - 1].procHelp, ch);
     send_to_char("\n", ch);
     return;
   }
@@ -526,4 +525,3 @@ void do_proclib(P_char ch, char *argument, int cmd)
     proclibUsage(ch);
   }
 }
-

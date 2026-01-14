@@ -1366,7 +1366,7 @@ void checkForMultipleShopsInOneRoom(void);
 
 // skills.c
 
-extern void initialize_skills();
+//extern void initialize_skills();
 
 // stat.cpp
 

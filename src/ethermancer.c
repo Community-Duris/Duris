@@ -119,6 +119,64 @@ void spell_vapor_armor(int level, P_char ch, char *arg, int type, P_char victim,
   }
 }
 
+void spell_frost_beam(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+
+  struct affected_type af;
+  if (!ch)
+  {
+    logit(LOG_EXIT, "spell_frost_beam called in magic.c with no ch");
+    raise(SIGSEGV);
+  }
+
+  if (!victim)
+  {
+    return;
+  }
+
+  if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+  {
+    return;
+  }
+
+  act("Your &+BF&+br&+Bo&+bs&+Bt&n beam strikes $N leaving them shaken!", TRUE, ch, 0, victim, TO_CHAR);
+  act("A &+GBeam&n of &+BF&+Br&+Bo&+bs&+BT&n streams from $n's hands, hitting you sqaure in the torso", FALSE, ch, 0, victim, TO_VICT);
+  act("A &+GBeam&n of &+BF&+Br&+Bo&+bs&+BT&n streams from $n's hands, striking $N square in the torso!", FALSE, ch, 0, victim, TO_NOTVICT);
+
+  if (ch && victim)
+    engage(ch, victim);
+
+  int dam = GET_LEVEL(ch) * 14 + number(10,20);
+
+  if(GET_SPEC(ch, CLASS_ETHERMANCER, SPEC_FROSTMAGUS))
+    spell_damage(ch, victim, dam, SPLDAM_COLD, SPLDAM_NOSHRUG, NULL);
+  else {
+    if (number(0,99) < 50) // 50% chance to be !shrug.
+      spell_damage(ch, victim, dam, SPLDAM_COLD, SPLDAM_NOSHRUG, NULL);
+    else
+      spell_damage(ch, victim, dam, SPLDAM_COLD, 0, NULL);
+  }
+
+  if (!NewSaves(victim, SAVING_PARA, 0))
+  {
+    bzero(&af, sizeof(af));
+    af.type = SPELL_MINOR_PARALYSIS;
+    af.flags = AFFTYPE_SHORT;
+    af.duration = (int)(level * WAIT_SEC * 0.75);
+    af.bitvector2 = AFF2_MINOR_PARALYSIS;
+    affect_to_char(victim, &af);
+
+    act("$n &+Wturns pale as &+bice&N spreads across $s body, causing all motion to halt.", FALSE, victim, 0, 0, TO_ROOM);
+    send_to_char("&+LYour body becomes like stone as is is encased by &+bice&n.\n", victim);
+
+    if (IS_FIGHTING(victim))
+      stop_fighting(victim);
+    if (IS_DESTROYING(victim))
+      stop_destroying(victim);
+    StopMercifulAttackers(victim);
+  }
+}
+
 void spell_faerie_sight(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
 {
   struct affected_type af;
@@ -1158,7 +1216,7 @@ void event_tupor_wake(P_char ch, P_char victim, P_obj obj, void *data)
 void spell_induce_tupor(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
 {
 
-  if( !IS_ALIVE(ch) || !IS_ALIVE(victim) )
+  if( !IS_ALIVE(ch) || !IS_ALIVE(victim) || IS_TRUSTED(victim) )
   {
     return;
   }
@@ -1380,6 +1438,11 @@ int door, target_room;
   /* Victim might get lucky */
   if((GET_C_LUK(victim) / 10) < number(1, 100))
     takedown_chance /= 2;
+
+  if (IS_PC(ch) && IS_PC(victim))
+  {
+    dam = dam * get_property("spell.area.damage.to.pc", 0.5);
+  }
 
   dam = dam * get_property("spell.area.damage.factor.squallTempest", 1.000);
   
@@ -1642,6 +1705,10 @@ void spell_single_supernova(int level, P_char ch, char *arg, int type, P_char vi
   };
 
   dam = 120 + level * 6 + number(1, 40);
+  if (IS_PC(ch) && IS_PC(victim))
+  {
+    dam = dam * get_property("spell.area.damage.to.pc", 0.5);
+  }
   dam = dam * get_property("spell.area.damage.factor.superNova", 1.000);
   if (spell_damage(ch, victim, dam, SPLDAM_GENERIC, 0, &messages))
     return;
@@ -2010,7 +2077,7 @@ void spell_single_polar_vortex(int level, P_char ch, char *arg, int type,
     bzero(&af, sizeof(af));
     af.type = SPELL_MAJOR_PARALYSIS;
     af.flags = AFFTYPE_SHORT;
-    af.duration = WAIT_SEC * 3;
+    af.duration = WAIT_SEC * number(1, 3);
     af.bitvector2 = AFF2_MAJOR_PARALYSIS;
 
     affect_to_char(victim, &af);
@@ -2930,7 +2997,7 @@ void event_arctic_blast(P_char victim, P_char ch, P_obj obj, void *data)
 
 void spell_arctic_blast(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
 {
-  int duration = 3;
+  int duration = 3 + (MAX(level - 40, 0) / 5);
   P_nevent e1 = NULL;
   bool found = FALSE;
 
@@ -2952,7 +3019,7 @@ void spell_arctic_blast(int level, P_char ch, char *arg, int type, P_char victim
   // If there's an event already going on, suck it's data and kill it!
   if( found )
   {
-    duration = *((int *) e1->data) + 2;
+    duration = *((int *) e1->data) + duration - 1;
     disarm_char_nevents(victim, event_arctic_blast);
 
     act("&+CThe &+Wfr&+Ce&+cez&+Win&+Cg &+Wwinds &+Caround $N &+Wintensify!", TRUE, ch, 0, victim, TO_CHAR);
@@ -2967,7 +3034,7 @@ void spell_arctic_blast(int level, P_char ch, char *arg, int type, P_char victim
   }
 
   // This has to be backwards for the event search to work right.. *sigh*
-  add_event(event_arctic_blast, PULSE_SPELLCAST*2, victim, ch, NULL, 0, &duration, sizeof(int));
+  add_event(event_arctic_blast, PULSE_SPELLCAST, victim, ch, NULL, 0, &duration, sizeof(int));
 
 }
 

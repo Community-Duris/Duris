@@ -1,10 +1,10 @@
 /*43341 446 445 starting room 43341 85606
-   ***************************************************************************
-   *  File: specs.room.c                                       Part of Duris *
-   *  Usage: special procedures for rooms                                      *
-   *  Copyright  1990, 1991 - see 'license.doc' for complete information.      *
-   *  Copyright  1994, 1995 - John Bashaw and Duris Systems Ltd.             *
-   ***************************************************************************
+ ***************************************************************************
+ *  File: specs.room.c                                       Part of Duris *
+ *  Usage: special procedures for rooms                                      *
+ *  Copyright  1990, 1991 - see 'license.doc' for complete information.      *
+ *  Copyright  1994, 1995 - John Bashaw and Duris Systems Ltd.             *
+ ***************************************************************************
  */
 
 #include <ctype.h>
@@ -29,6 +29,7 @@
 #include "specs.winterhaven.h"
 #include "guildhall.h"
 #include "assocs.h"
+#include "ws_handlers.h"
 
 /*
    external variables
@@ -42,7 +43,7 @@ extern P_index obj_index;
 extern P_room world;
 extern char *coin_names[];
 extern const char *dirs[];
-extern const char rev_dir[];
+// extern const char rev_dir[];
 extern int spl_table[TOTALLVLS][MAX_CIRCLE];
 extern int planes_room_num[];
 extern int innate_abilities[];
@@ -59,43 +60,42 @@ void mobPatrol_SetupNew(P_char ch);
 
 int berserker_proc_room(int room, P_char ch, int cmd, char *arg)
 {
-  if( (cmd == CMD_SET_PERIODIC) || !IS_ALIVE(ch) || IS_NPC(ch)
-    || IS_MORPH(ch) || !((cmd == CMD_BATTLERAGER)) )
+  if ((cmd == CMD_SET_PERIODIC) || !IS_ALIVE(ch) || IS_NPC(ch) || IS_MORPH(ch) || !((cmd == CMD_BATTLERAGER)))
   {
     return FALSE;
   }
 
-  if( IS_FIGHTING(ch) || IS_IMMOBILE(ch) || !IS_AWAKE(ch) )
+  if (IS_FIGHTING(ch) || IS_IMMOBILE(ch) || !IS_AWAKE(ch))
   {
     send_to_char("&+yYou are unable to use this command at this time...\r\n", ch);
     return TRUE;
   }
 
-  if( GET_RACE(ch) != RACE_MOUNTAIN && GET_RACE(ch) != RACE_DUERGAR )
+  if (GET_RACE(ch) != RACE_MOUNTAIN && GET_RACE(ch) != RACE_DUERGAR)
   {
     send_to_char("&+rYour race receives no benefit from this altar...\r\n", ch);
     return TRUE;
   }
 
-  if(GET_CLASS(ch, CLASS_BERSERKER))
+  if (GET_CLASS(ch, CLASS_BERSERKER))
   {
     send_to_char("&+RYour blood boils and your eyes &+Yflame &+Ras you recant the legends of old.\r\n", ch);
     return TRUE;
   }
 
-  if( !arg || !(*arg) || !isname(arg, "confirm") )
+  if (!arg || !(*arg) || !isname(arg, "confirm"))
   {
     send_to_char("You must type 'battlerager confirm' for the transformation.\r\nIt's a permanent transformation.\r\n&+RYOU WILL LOSE ALL YOUR EPIC SKILLS!&n\r\n&+RYOU WILL LOSE ALL YOUR EPIC SKILLS!\r\n", ch);
     return TRUE;
   }
 
-  if(GET_LEVEL(ch) < (get_property("berserker.quest.level.req.min", 41)))
+  if (GET_LEVEL(ch) < (get_property("berserker.quest.level.req.min", 41)))
   {
     send_to_char("You need more &+ylevels&n to undergo the &+Rbattlerager&n transformation.\r\n", ch);
     return TRUE;
   }
 
-  if(ch->only.pc->epics < 3)
+  if (ch->only.pc->epics < 3)
   {
     send_to_char("You need more &+yepic&n experience to undergo the &+Rbattlerager&n transformation.\r\n", ch);
     return TRUE;
@@ -108,13 +108,13 @@ int berserker_proc_room(int room, P_char ch, int cmd, char *arg)
   ch->player.time.played = played;
 
   act("$n's eyes turn &+Lblack&n then &+rblood red&n as some &+Wunseen force&n dominates $s existence.",
-    FALSE, ch, 0, 0, TO_ROOM);
+      FALSE, ch, 0, 0, TO_ROOM);
 
   act("\r\nYou fall into a deep trance, and the legends of the &+Rbattleragers&n flood your thoughts.\r\n"
-    "The ancient ways from so long ago &+Wcascade&n into everything that you are...&n\r\n"
-    "\r\n&+cA mystical force flows into and through your body.&n\r\n\r\n"
-    "&+CCold anger envelops your soul!&n\r\n",
-    FALSE, ch, 0, 0, TO_CHAR);
+      "The ancient ways from so long ago &+Wcascade&n into everything that you are...&n\r\n"
+      "\r\n&+cA mystical force flows into and through your body.&n\r\n\r\n"
+      "&+CCold anger envelops your soul!&n\r\n",
+      FALSE, ch, 0, 0, TO_CHAR);
 
   ch->player.m_class = CLASS_BERSERKER;
   ch->player.spec = 0;
@@ -131,35 +131,34 @@ void save_epic_skills(P_char ch, int *skls)
 {
   for (int i = 0; i < MAX_SKILLS; i++)
   {
-     if (IS_EPIC_SKILL(i))
-         skls[i] = ch->only.pc->skills[i].learned;
-     else
-         skls[i] = 0;
+    if (IS_EPIC_SKILL(i))
+      skls[i] = ch->only.pc->skills[i].learned;
+    else
+      skls[i] = 0;
   }
 }
-void restore_epic_skills(P_char ch, int* skls)
+void restore_epic_skills(P_char ch, int *skls)
 {
   for (int i = 0; i < MAX_SKILLS; i++)
   {
-     if (skls[i] > 0)
-         ch->only.pc->skills[i].taught = ch->only.pc->skills[i].learned = skls[i];
+    if (skls[i] > 0)
+      ch->only.pc->skills[i].taught = ch->only.pc->skills[i].learned = skls[i];
   }
 }
 
 int multiclass_proc(int room, P_char ch, int cmd, char *arg)
 {
-  int      i;
+  int i;
   int skls[MAX_SKILLS];
   int min_level = get_property("multiclass.level.req.min", 50);
 
-  if( (cmd == CMD_SET_PERIODIC) || (ch == NULL) || IS_NPC(ch) || IS_MORPH(ch)
-    || cmd != CMD_MULTICLASS )
+  if ((cmd == CMD_SET_PERIODIC) || (ch == NULL) || IS_NPC(ch) || IS_MORPH(ch) || cmd != CMD_MULTICLASS)
   {
     return FALSE;
   }
 
-// SET_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
-  if( GET_RACE(ch) != RACE_ORC && GET_RACE(ch) != RACE_HUMAN )
+  // SET_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
+  if (GET_RACE(ch) != RACE_ORC && GET_RACE(ch) != RACE_HUMAN)
   {
     send_to_char("Your race is not versatile enough to learn that much.\n", ch);
     return FALSE;
@@ -169,53 +168,53 @@ int multiclass_proc(int room, P_char ch, int cmd, char *arg)
   {
     return FALSE;
   }
-  else if( GET_LEVEL(ch) < min_level )
+  else if (GET_LEVEL(ch) < min_level)
   {
-    do_multiclass(ch, "", -1);  // show list of available secondary classes
+    do_multiclass(ch, "", -1); // show list of available secondary classes
   }
   else
   {
-    while( *arg == ' ' )
+    while (*arg == ' ')
       arg++;
 
-    if( ch->only.pc->epics < get_property("multiclass.epic.req.min", 250) )
+    if (ch->only.pc->epics < get_property("multiclass.epic.req.min", 250))
     {
       send_to_char("You need more &+yepic&n experience.\r\n", ch);
       return FALSE;
     }
     if (!*arg)
     {
-      do_multiclass(ch, "", -1);        // show list of available secondary classes
+      do_multiclass(ch, "", -1); // show list of available secondary classes
     }
     else
     {
-      for( i = 1; i <= CLASS_COUNT; i++ )
+      for (i = 1; i <= CLASS_COUNT; i++)
       {
-        if( is_abbrev(arg, class_names_table[i].normal) )
+        if (is_abbrev(arg, class_names_table[i].normal))
           break;
       }
 
-      if( i > CLASS_COUNT )
+      if (i > CLASS_COUNT)
       {
         send_to_char("That's no class, bubba.\r\n", ch);
       }
-      else if( can_char_multi_to_class(ch, i ) )
+      else if (can_char_multi_to_class(ch, i))
       {
-          ch->points.max_mana = 0;
-          ch->points.base_vitality = 0;
-          uint played = ch->player.time.played;
-// These aren't needed anymore since do_start is now smarter and doesn't reset epic skills/tradeskills.
-//          save_epic_skills(ch, skls);
-          do_start(ch, cmd);
-//          restore_epic_skills(ch, skls);
-          ch->player.time.played = played;
-          send_to_char("&+WWith a suddenness that stops your breath, you feel oddly different..  less powerful, and yet with the potential to be something much greater than you ever were before.\r\n", ch);
-          ch->player.secondary_class = 1 << (i - 1);
-          ch->player.spec = 0;
-          do_restore(ch, GET_NAME(ch), 0);
-          forget_spells(ch, -1);
-          refund_epic_skills(ch);
-          qry("DELETE FROM zone_trophy WHERE pid = %d", GET_PID(ch));
+        ch->points.max_mana = 0;
+        ch->points.base_vitality = 0;
+        uint played = ch->player.time.played;
+        // These aren't needed anymore since do_start is now smarter and doesn't reset epic skills/tradeskills.
+        //          save_epic_skills(ch, skls);
+        do_start(ch, cmd);
+        //          restore_epic_skills(ch, skls);
+        ch->player.time.played = played;
+        send_to_char("&+WWith a suddenness that stops your breath, you feel oddly different..  less powerful, and yet with the potential to be something much greater than you ever were before.\r\n", ch);
+        ch->player.secondary_class = 1 << (i - 1);
+        ch->player.spec = 0;
+        do_restore(ch, GET_NAME(ch), 0);
+        forget_spells(ch, -1);
+        refund_epic_skills(ch);
+        qry("DELETE FROM zone_trophy WHERE pid = %d", GET_PID(ch));
       }
       else
       {
@@ -230,103 +229,102 @@ int multiclass_proc(int room, P_char ch, int cmd, char *arg)
 int inn(int room, P_char ch, int cmd, char *arg)
 {
   struct zone_data *zone;
-  P_char   tch, next_ch;
+  P_char tch, next_ch;
   char timestr[MAX_STRING_LENGTH];
   time_t ct;
 
   /* check for periodic event calls */
-  if(cmd == CMD_SET_PERIODIC)
+  if (cmd == CMD_SET_PERIODIC)
   {
     return FALSE;
   }
 
-  if( !ch || IS_NPC(ch) || cmd != CMD_RENT )
+  if (!ch || IS_NPC(ch) || cmd != CMD_RENT)
   {
     return FALSE;
   }
 
-  if( room > 0 && room < top_of_world )
+  if (room > 0 && room < top_of_world)
   {
-    if( IS_SET(ch->specials.affected_by, AFF_KNOCKED_OUT) )
+    if (IS_SET(ch->specials.affected_by, AFF_KNOCKED_OUT))
     {
       send_to_char("Being knocked out, renting is not really an option for you.\r\n", ch);
       return FALSE;
     }
-    if( IS_STUNNED(ch) )
+    if (IS_STUNNED(ch))
     {
       send_to_char("You're too stunned to think of renting!\r\n", ch);
       return FALSE;
     }
-    if( IS_MORPH(ch) )
+    if (IS_MORPH(ch))
     {
-      send_to_char( "&+YNot in this form!\n\r", ch );
+      send_to_char("&+YNot in this form!\n\r", ch);
       return TRUE;
     }
 
-    if( IS_AFFECTED2(ch, AFF2_FLURRY) )
+    if (IS_AFFECTED2(ch, AFF2_FLURRY))
     {
       send_to_char("You are too deep in battle madness!\r\n", ch);
       return FALSE;
     }
     // Allowing Illithids to rent in their own gh.
-    if( IS_NOTWELCOME(ch) ) // || GET_RACE(ch) == RACE_ILLITHID )
+    if (IS_NOTWELCOME(ch)) // || GET_RACE(ch) == RACE_ILLITHID )
     {
       send_to_char("You are NOT welcome here!\r\n", ch);
       return TRUE;
     }
 
     Guildhall *gh = Guildhall::find_by_vnum(world[ch->in_room].number);
-    if( gh && (!IS_MEMBER(GET_A_BITS(ch)) || GET_ASSOC(ch) != gh->guild) )
+    if (gh && (!IS_MEMBER(GET_A_BITS(ch)) || GET_ASSOC(ch) != gh->guild))
     {
       send_to_char("You're just a guest here, so you should probably stay awake!\r\n", ch);
       return TRUE;
     }
 
-// old guildhalls (deprecated)
-//      for(tch = world[ch->in_room].people; tch; tch = next_ch)
-//      {
-//        next_ch = tch->next_in_room;
-//        if(tch &&
-//          IS_ASSOC_GOLEM(tch)) // Let's not allow inns in the guard room -Lucrot Oct08
-//        {
-//          send_to_char
-//            ("What innkeeper? The golem standing right here has shut this place down!\r\n",
-//             ch);
-//          return true;
-//        }
-//      }
-    if( IS_FIGHTING(ch) )
+    // old guildhalls (deprecated)
+    //      for(tch = world[ch->in_room].people; tch; tch = next_ch)
+    //      {
+    //        next_ch = tch->next_in_room;
+    //        if(tch &&
+    //          IS_ASSOC_GOLEM(tch)) // Let's not allow inns in the guard room -Lucrot Oct08
+    //        {
+    //          send_to_char
+    //            ("What innkeeper? The golem standing right here has shut this place down!\r\n",
+    //             ch);
+    //          return true;
+    //        }
+    //      }
+    if (IS_FIGHTING(ch))
     {
       send_to_char("The innkeeper is too busy hiding behind the counter to help.\r\n", ch);
       return TRUE;
     }
-    if( IS_IMMOBILE(ch) )
+    if (IS_IMMOBILE(ch))
     {
       send_to_char("&+WNo can do!&n Try back when you can move.\r\n", ch);
       return TRUE;
     }
 
-    if( GET_STAT(ch) == STAT_SLEEPING )
+    if (GET_STAT(ch) == STAT_SLEEPING)
     {
       send_to_char("Why go to an inn? You are plenty comfortable right here.\r\n", ch);
       return TRUE;
     }
 
-    if( IS_BLIND(ch) )
+    if (IS_BLIND(ch))
     {
       send_to_char("You bump into stuff... Where the heck is everyone?\r\n", ch);
       return TRUE;
     }
 
-    if(affected_by_spell(ch, TAG_PVPDELAY))
+    if (affected_by_spell(ch, TAG_PVPDELAY))
     {
       send_to_char("There is too much adrenaline pumping through your body right now.\r\n", ch);
       return FALSE;
     }
 
     zone = &zone_table[world[ch->in_room].zone];
-    if( zone->status > ZONE_NORMAL && (GET_LEVEL(ch) > 25)
-      && (zone_table[world[ch->in_room].zone].number != WINTERHAVEN) )
+    if (zone->status > ZONE_NORMAL && (GET_LEVEL(ch) > 25) && (zone_table[world[ch->in_room].zone].number != WINTERHAVEN))
     {
       send_to_char("The receptionist turns and says, '&+RThe town is under attack!&n'\n", ch);
       send_to_char("  '&+WTry to get a portal out of here, or run to another exit!&n'\n", ch);
@@ -337,23 +335,23 @@ int inn(int room, P_char ch, int cmd, char *arg)
       return FALSE;
     }
 
-    if( IS_AFFECTED4(ch, AFF4_TUPOR) )
+    if (IS_AFFECTED4(ch, AFF4_TUPOR))
     {
-      send_to_char( "&+cYour mind ceases its trance.&n\n\r", ch );
+      send_to_char("&+cYour mind ceases its trance.&n\n\r", ch);
       REMOVE_BIT(ch->specials.affected_by4, AFF4_TUPOR);
     }
 
     send_to_char("The innkeeper stores your stuff in the safe and shows you to your room.\r\n", ch);
     act("The innkeeper stores $n&n's stuff in the safe and shows $m to $s room.", TRUE, ch, 0, 0, TO_ROOM);
 
-    if( ch->following )
+    if (ch->following)
     {
       do_dismiss(ch, NULL, CMD_RENT);
     }
 
     GET_HOME(ch) = world[ch->in_room].number;
 
-    if( !writeCharacter(ch, RENT_CRASH, ch->in_room) )
+    if (!writeCharacter(ch, RENT_CRASH, ch->in_room))
     {
       send_to_char("Failed to save this character, most likely too much eq.\r\n", ch);
       wizlog(56, "%s was unable to rent [specs.room.c()].", GET_NAME(ch));
@@ -364,7 +362,7 @@ int inn(int room, P_char ch, int cmd, char *arg)
       writeCharacter(ch, RENT_INN, ch->in_room);
     }
 
-    if( !ch )
+    if (!ch)
     {
       /* HTF is the mud supposed to send a message or get the name of a char that doesn't exist?!?
       send_to_char("You are unable to rent for some strange reason. Contact the imms.\r\n", ch);
@@ -374,18 +372,19 @@ int inn(int room, P_char ch, int cmd, char *arg)
     }
     ct = time(NULL);
     // Convert to EST. - this sux.. gotta be a be'er way.
-    ct -= 4*60*60;
-    snprintf(timestr, MAX_STRING_LENGTH, "%s", asctime(localtime( &ct )) );
-    snprintf(timestr + strlen(timestr) - 1, MAX_STRING_LENGTH, " EST" );
+    ct -= 4 * 60 * 60;
+    snprintf(timestr, MAX_STRING_LENGTH, "%s", asctime(localtime(&ct)));
+    snprintf(timestr + strlen(timestr) - 1, MAX_STRING_LENGTH, " EST");
 
-    loginlog( ch->player.level, "%s [%s] has rented out in [%d] @ %s.",
-      GET_NAME(ch), (ch->desc) ? ch->desc->host : "LINKDEAD", world[ch->in_room].number, timestr );
+    loginlog(ch->player.level, "%s [%s] has rented out in [%d] @ %s.",
+             GET_NAME(ch), (ch->desc) ? ch->desc->host : "LINKDEAD", world[ch->in_room].number, timestr);
     sql_log(ch, CONNECTLOG, "Rented Out");
     // If it's not an immortal.
-    if( IS_PC(ch) && (GET_LEVEL( ch ) < MINLVLIMMORTAL) )
+    if (IS_PC(ch) && (GET_LEVEL(ch) < MINLVLIMMORTAL))
     {
-      update_ingame_racewar( -GET_RACEWAR(ch) );
+      update_ingame_racewar(-GET_RACEWAR(ch));
     }
+    ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
     extract_char(ch);
     ch = NULL;
 
@@ -412,8 +411,7 @@ int undead_inn(int room, P_char ch, int cmd, char *arg)
 
   if (IS_SET(ch->specials.affected_by, AFF_KNOCKED_OUT))
   {
-    send_to_char
-      ("Being knocked out, renting is not really an option for you.\r\n", ch);
+    send_to_char("Being knocked out, renting is not really an option for you.\r\n", ch);
     return FALSE;
   }
   if (IS_STUNNED(ch))
@@ -423,26 +421,22 @@ int undead_inn(int room, P_char ch, int cmd, char *arg)
   }
   if (!IS_RACEWAR_UNDEAD(ch))
   {
-    send_to_char
-      ("The innkeeper grins slyly and moans, 'We have no beds here!'\r\n",
-       ch);
+    send_to_char("The innkeeper grins slyly and moans, 'We have no beds here!'\r\n",
+                 ch);
     return TRUE;
   }
   if (cmd == CMD_RENT)
   {
     if (IS_FIGHTING(ch))
     {
-      send_to_char
-        ("The innkeeper is too busy hiding behind the counter to help.\r\n",
-         ch);
+      send_to_char("The innkeeper is too busy hiding behind the counter to help.\r\n",
+                   ch);
       return TRUE;
     }
-    send_to_char
-      ("The innkeeper shows you to a rotted coffin, you climb in and shut the lid.\r\n",
-       ch);
-    act
-      ("The innkeeper shows $n&n to a rotted coffin. $n climbs in and shuts the lid.",
-       TRUE, ch, 0, 0, TO_ROOM);
+    send_to_char("The innkeeper shows you to a rotted coffin, you climb in and shut the lid.\r\n",
+                 ch);
+    act("The innkeeper shows $n&n to a rotted coffin. $n climbs in and shuts the lid.",
+        TRUE, ch, 0, 0, TO_ROOM);
 
     if (IS_AFFECTED4(ch, AFF4_TUPOR))
       REMOVE_BIT(ch->specials.affected_by4, AFF4_TUPOR);
@@ -455,10 +449,11 @@ int undead_inn(int room, P_char ch, int cmd, char *arg)
              world[ch->in_room].number);
     sql_log(ch, CONNECTLOG, "Rented Out");
     // If it's not an immortal.
-    if( IS_PC(ch) && (GET_LEVEL( ch ) < MINLVLIMMORTAL) )
+    if (IS_PC(ch) && (GET_LEVEL(ch) < MINLVLIMMORTAL))
     {
-      update_ingame_racewar( -GET_RACEWAR(ch) );
+      update_ingame_racewar(-GET_RACEWAR(ch));
     }
+    ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
     extract_char(ch);
     ch = NULL;
   }
@@ -505,10 +500,9 @@ int TiamatThrone(int room, P_char ch, int cmd, char *arg)
   return (TRUE);
 }
 
-
 int GlyphOfWarding(int room, P_char ch, int cmd, char *arg)
 {
-  int      Damage = 50;
+  int Damage = 50;
 
   /*
      check for periodic event calls
@@ -526,12 +520,10 @@ int GlyphOfWarding(int room, P_char ch, int cmd, char *arg)
       (GET_RACE(ch) == RACE_TROLL) || (GET_RACE(ch) == RACE_OGRE) ||
       !IS_TRUSTED(ch))
   {
-    act
-      ("$n is blasted by a bright blue bolt of magical energy emanating from the dwarven glyph of warding as $e attempts to leave west!",
-       FALSE, ch, 0, 0, TO_ROOM);
-    act
-      ("A powerful bolt of bright blue energy blasts you backwards several feet from a dwarven glyph of warding just above the western doorway!",
-       FALSE, ch, 0, 0, TO_CHAR);
+    act("$n is blasted by a bright blue bolt of magical energy emanating from the dwarven glyph of warding as $e attempts to leave west!",
+        FALSE, ch, 0, 0, TO_ROOM);
+    act("A powerful bolt of bright blue energy blasts you backwards several feet from a dwarven glyph of warding just above the western doorway!",
+        FALSE, ch, 0, 0, TO_CHAR);
     if (IS_AFFECTED(ch, AFF_MINOR_GLOBE) || IS_AFFECTED2(ch, AFF2_GLOBE))
       Damage = 25;
     if (GET_HIT(ch) > Damage)
@@ -542,9 +534,8 @@ int GlyphOfWarding(int room, P_char ch, int cmd, char *arg)
   }
   else
   {
-    send_to_char
-      ("You feel the slight tingle of magic from the glyph as you leave west.\r\n",
-       ch);
+    send_to_char("You feel the slight tingle of magic from the glyph as you leave west.\r\n",
+                 ch);
     return FALSE;
   }
 
@@ -553,7 +544,7 @@ int GlyphOfWarding(int room, P_char ch, int cmd, char *arg)
 
 int akh_elamshin(int room, P_char ch, int cmd, char *arg)
 {
-  char     buf[MAX_INPUT_LENGTH], god[MAX_INPUT_LENGTH];
+  char buf[MAX_INPUT_LENGTH], god[MAX_INPUT_LENGTH];
 
   /*
      check for periodic event calls
@@ -570,19 +561,17 @@ int akh_elamshin(int room, P_char ch, int cmd, char *arg)
   if (GET_OPPONENT(ch))
     return (FALSE);
 
-  send_to_char
-    ("&+mYou and the statue both begin to glow with an aura of violet energy!\r\n"
-     "&+mYour aura &=LCflashes&N&+m, and you slowly fade out of exsistance..\r\n",
-     ch);
+  send_to_char("&+mYou and the statue both begin to glow with an aura of violet energy!\r\n"
+               "&+mYour aura &=LCflashes&N&+m, and you slowly fade out of exsistance..\r\n",
+               ch);
   if (GET_RACE(ch) != RACE_DROW)
   {
-    send_to_char
-      ("&+rThe aura around you suddenly turns &+Rbright red!\r\n&+rYou shiver as you "
-       "can feel presence of her majesty, the spider queen &+mLloth..\r\n&+rYour "
-       "worship of her has allowed her into your heart, to touch your soul.\r\n&+rAn "
-       "embarrassing feeling of passionate pleasure washes over you for a moment.\r\n"
-       "&+rYou collapse and start losing consciousness, overcome with joyous evil.\r\n",
-       ch);
+    send_to_char("&+rThe aura around you suddenly turns &+Rbright red!\r\n&+rYou shiver as you "
+                 "can feel presence of her majesty, the spider queen &+mLloth..\r\n&+rYour "
+                 "worship of her has allowed her into your heart, to touch your soul.\r\n&+rAn "
+                 "embarrassing feeling of passionate pleasure washes over you for a moment.\r\n"
+                 "&+rYou collapse and start losing consciousness, overcome with joyous evil.\r\n",
+                 ch);
     GET_HIT(ch) = 0;
     if ((GET_RACE(ch) != RACE_DROW) && (GET_RACE(ch) != RACE_DUERGAR) &&
         (GET_RACE(ch) != RACE_OGRE) && (GET_RACE(ch) != RACE_TROLL))
@@ -591,27 +580,24 @@ int akh_elamshin(int room, P_char ch, int cmd, char *arg)
       if (GET_ALIGNMENT(ch) < -1000)
         GET_ALIGNMENT(ch) = -1000;
     }
-    send_to_char
-      ("\r\n.\r\n.\r\nYou slowly materialize outside the great gates of Verzanan, and pass out...\r\n",
-       ch);
-    KnockOut(ch, 80);           /*
-                                   20 seconds
-                                 */
+    send_to_char("\r\n.\r\n.\r\nYou slowly materialize outside the great gates of Verzanan, and pass out...\r\n",
+                 ch);
+    KnockOut(ch, 80); /*
+                         20 seconds
+                       */
   }
   else
   {
-    send_to_char
-      ("\r\n.\r\n.\r\nYou slowly materialize outside the great gates of Verzanan, and pass out...\r\n",
-       ch);
+    send_to_char("\r\n.\r\n.\r\nYou slowly materialize outside the great gates of Verzanan, and pass out...\r\n",
+                 ch);
   }
   char_from_room(ch);
   char_to_room(ch, real_room(3600), 0);
-  send_to_room
-    ("&+LThere is a low hum as the statue begins to vibrate in a deep harmony\r\n",
-     real_room(8531));
+  send_to_room("&+LThere is a low hum as the statue begins to vibrate in a deep harmony\r\n",
+               real_room(8531));
   snprintf(buf, MAX_INPUT_LENGTH,
-          "&+mBoth %s and the statue are surrounded by a &+Mviolet&N&+m aura of energy!\r\n",
-          GET_NAME(ch));
+           "&+mBoth %s and the statue are surrounded by a &+Mviolet&N&+m aura of energy!\r\n",
+           GET_NAME(ch));
   send_to_room(buf, real_room(8531));
 
   if (GET_SEX(ch) == 1)
@@ -621,13 +607,13 @@ int akh_elamshin(int room, P_char ch, int cmd, char *arg)
   if (GET_RACE(ch) != RACE_DROW)
   {
     snprintf(buf, MAX_INPUT_LENGTH,
-            "&+rThe aura around %s suddenly turns red and %s passes out!\r\n",
-            GET_NAME(ch), god);
+             "&+rThe aura around %s suddenly turns red and %s passes out!\r\n",
+             GET_NAME(ch), god);
     send_to_room(buf, real_room(8531));
   }
   snprintf(buf, MAX_INPUT_LENGTH,
-          "&+MThe aura &=LCflashes&N&+M, and %s slowly fades out of exsistance..\r\n",
-          god);
+           "&+MThe aura &=LCflashes&N&+M, and %s slowly fades out of exsistance..\r\n",
+           god);
   send_to_room(buf, real_room(8531));
   act("&+m$n materializes from a shower of &+Mviolet&N&+m sparks.", FALSE, ch,
       0, 0, TO_NOTVICT);
@@ -641,10 +627,10 @@ int akh_elamshin(int room, P_char ch, int cmd, char *arg)
 
 int dump(int room, P_char ch, int cmd, char *arg)
 {
-  P_obj    obj, next_obj;
-  P_char   tmp_char;
-  int      value = 0;
-  char     Gbuf1[MAX_STRING_LENGTH];
+  P_obj obj, next_obj;
+  P_char tmp_char;
+  int value = 0;
+  char Gbuf1[MAX_STRING_LENGTH];
 
   /*
      check for periodic event calls
@@ -655,16 +641,16 @@ int dump(int room, P_char ch, int cmd, char *arg)
   if (!ch)
     return (FALSE);
 
-  for( obj = world[ch->in_room].contents; obj; obj = next_obj )
+  for (obj = world[ch->in_room].contents; obj; obj = next_obj)
   {
     next_obj = obj->next_content;
 
-    if( IS_ARTIFACT(obj) )
+    if (IS_ARTIFACT(obj))
     {
       continue;
     }
     snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s vanishes in a puff of smoke.\r\n", FirstWord(obj->name));
-    for( tmp_char = world[ch->in_room].people; tmp_char; tmp_char = tmp_char->next_in_room )
+    for (tmp_char = world[ch->in_room].people; tmp_char; tmp_char = tmp_char->next_in_room)
       if (CAN_SEE_OBJ(tmp_char, obj))
         send_to_char(Gbuf1, tmp_char);
     extract_obj(obj, TRUE); // Not an arti, but 'in game.'
@@ -677,17 +663,17 @@ int dump(int room, P_char ch, int cmd, char *arg)
 
   value = 0;
 
-  for( obj = world[ch->in_room].contents; obj; obj = next_obj )
+  for (obj = world[ch->in_room].contents; obj; obj = next_obj)
   {
     next_obj = obj->next_content;
 
-    if( IS_ARTIFACT(obj) )
+    if (IS_ARTIFACT(obj))
     {
       continue;
     }
 
     snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s vanishes in a puff of smoke.\r\n", FirstWord(obj->name));
-    for( tmp_char = world[ch->in_room].people; tmp_char; tmp_char = tmp_char->next_in_room )
+    for (tmp_char = world[ch->in_room].people; tmp_char; tmp_char = tmp_char->next_in_room)
       if (CAN_SEE_OBJ(tmp_char, obj))
         send_to_char(Gbuf1, tmp_char);
     if (obj->type == ITEM_MONEY)
@@ -710,33 +696,31 @@ int dump(int room, P_char ch, int cmd, char *arg)
 
 int count_patrol(int vnum)
 {
-    P_char   patrol;
-    int i = 0;
-    int count = 0;
+  P_char patrol;
+  int i = 0;
+  int count = 0;
 
-    for (patrol = character_list; patrol; patrol = patrol->next)
+  for (patrol = character_list; patrol; patrol = patrol->next)
 
-    {
+  {
 
-      if (IS_NPC(patrol) &&
-          vnum == GET_VNUM(patrol))
+    if (IS_NPC(patrol) &&
+        vnum == GET_VNUM(patrol))
 
-        count++;
-    }
+      count++;
+  }
 
-
-return count;
-
+  return count;
 }
 
-//Buy a patrol! mobPatrol_SetupNew(CH);
+// Buy a patrol! mobPatrol_SetupNew(CH);
 int patrol_shops(int room, P_char ch, int cmd, char *arg)
 {
-  char     buf[MAX_INPUT_LENGTH];
-  char     name[MAX_STRING_LENGTH], master[MAX_STRING_LENGTH];
-  int      pet_room, val, temp, count = 0;
-  P_char   pet = NULL, mount = NULL;
-  P_obj    ticket;
+  char buf[MAX_INPUT_LENGTH];
+  char name[MAX_STRING_LENGTH], master[MAX_STRING_LENGTH];
+  int pet_room, val, temp, count = 0;
+  P_char pet = NULL, mount = NULL;
+  P_obj ticket;
 
   /* check for periodic event calls */
   if (cmd == CMD_SET_PERIODIC)
@@ -748,20 +732,20 @@ int patrol_shops(int room, P_char ch, int cmd, char *arg)
   pet_room = ch->in_room + 1;
 
   if (cmd == CMD_LIST)
-  {                             /* List */
+  { /* List */
     send_to_char("Available patrols are:\r\n", ch);
     for (pet = world[pet_room].people; pet; pet = pet->next_in_room)
     {
       count++;
       temp = GET_EXP(pet) / 2;
       snprintf(buf, MAX_INPUT_LENGTH, "[%d] %-25s for %s, currently %d patroling.\r\n", count, (pet->player.short_descr),
-              coin_stringv(temp), count_patrol(GET_VNUM(pet)));
+               coin_stringv(temp), count_patrol(GET_VNUM(pet)));
       send_to_char(buf, ch);
     }
     return (TRUE);
   }
   else if (cmd == CMD_BUY)
-  {                             /* Buy */
+  { /* Buy */
 
     arg = one_argument(arg, buf);
 
@@ -777,12 +761,12 @@ int patrol_shops(int room, P_char ch, int cmd, char *arg)
       return (TRUE);
     }
 
-   
-    if(count_patrol(GET_VNUM(pet)) > 8){
+    if (count_patrol(GET_VNUM(pet)) > 8)
+    {
       send_to_char("Enough patrolmen are currently protecting the roads..\r\n", ch);
       return (TRUE);
     }
-    
+
     temp = GET_EXP(pet) / 2;
 
     if (GET_MONEY(ch) < temp)
@@ -797,7 +781,7 @@ int patrol_shops(int room, P_char ch, int cmd, char *arg)
     }
     SUB_MONEY(ch, temp, 0);
 
-    char_to_room(pet, pet_room+1, 0);
+    char_to_room(pet, pet_room + 1, 0);
     do_flee(pet, 0, 0);
     send_to_char("You hire a guardian of the area.\r\n", ch);
     act("$n bought $N as patrol.", FALSE, ch, 0, pet, TO_ROOM);
@@ -805,7 +789,7 @@ int patrol_shops(int room, P_char ch, int cmd, char *arg)
     wizlog(56, "%s bought %s as patrol!", GET_NAME(ch), pet->player.short_descr);
     return (TRUE);
   }
-  
+
   return (FALSE);
 }
 
@@ -817,25 +801,25 @@ int mount_rent_cost(P_char mount)
 
 int pet_shops(int room, P_char ch, int cmd, char *arg)
 {
-  char     buf[MAX_INPUT_LENGTH];
-  char     name[MAX_STRING_LENGTH], master[MAX_STRING_LENGTH];
-  int      pet_room, val, temp, count;
-  P_char   pet = NULL, mount = NULL;
-  P_obj    ticket;
+  char buf[MAX_INPUT_LENGTH];
+  char name[MAX_STRING_LENGTH], master[MAX_STRING_LENGTH];
+  int pet_room, val, temp, count;
+  P_char pet = NULL, mount = NULL;
+  P_obj ticket;
 
   /* check for periodic event calls */
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
     return FALSE;
 
-  if( !IS_ALIVE(ch) )
-    return  FALSE;
+  if (!IS_ALIVE(ch))
+    return FALSE;
 
   pet_room = ch->in_room + 1;
 
-  if( cmd == CMD_LIST )
+  if (cmd == CMD_LIST)
   {
     send_to_char("Available hirelings are:\r\n", ch);
-    for( pet = world[pet_room].people, count = 0; pet; pet = pet->next_in_room )
+    for (pet = world[pet_room].people, count = 0; pet; pet = pet->next_in_room)
     {
       temp = 8 * GET_EXP(pet);
       snprintf(buf, MAX_INPUT_LENGTH, "[%d] %s for %s.\r\n", ++count, pad_ansi(pet->player.short_descr, 25, TRUE).c_str(), coin_stringv(temp));
@@ -843,18 +827,18 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
     }
     return TRUE;
   }
-  else if( cmd == CMD_BUY )
+  else if (cmd == CMD_BUY)
   {
 
     arg = one_argument(arg, buf);
 
-    if( !(pet = get_char_room(buf, pet_room)) )
+    if (!(pet = get_char_room(buf, pet_room)))
     {
-      if( (count = atoi(buf)) > 0 )
+      if ((count = atoi(buf)) > 0)
       {
-        for( pet = world[pet_room].people; pet; pet = pet->next_in_room )
+        for (pet = world[pet_room].people; pet; pet = pet->next_in_room)
         {
-          if( --count == 0 )
+          if (--count == 0)
           {
             break;
           }
@@ -862,16 +846,15 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
       }
     }
 
-    if( !pet )
+    if (!pet)
     {
       send_to_char("There is no such pet!\r\n", ch);
       return TRUE;
     }
-    if( (GET_LEVEL(pet) + 5) > GET_LEVEL(ch))
+    if ((GET_LEVEL(pet) + 5) > GET_LEVEL(ch))
     {
       send_to_char("You not experienced enough for a pet like that!\r\n", ch);
       return (TRUE);
-
     }
     if (count_pets(ch) >= 2)
     {
@@ -891,10 +874,10 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
     }
     SUB_MONEY(ch, temp, 0);
 
-    if( !isname("_hireling_", GET_NAME(pet)) )
+    if (!isname("_hireling_", GET_NAME(pet)))
     {
       // Allowing pets to be warriors.
-      if( pet->player.m_class != CLASS_WARRIOR )
+      if (pet->player.m_class != CLASS_WARRIOR)
         pet->player.m_class = CLASS_NONE;
     }
 
@@ -943,9 +926,8 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
 
     if (writePet(mount))
     {
-      act
-        ("A stable-hand grins, 'I will take very good care of yer pet until ye return.'",
-         FALSE, ch, 0, 0, TO_CHAR);
+      act("A stable-hand grins, 'I will take very good care of yer pet until ye return.'",
+          FALSE, ch, 0, 0, TO_CHAR);
       act("$N follows a stable-hand into the back of the house.", FALSE, ch,
           0, mount, TO_ROOM);
 
@@ -958,7 +940,7 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
         return TRUE;
       }
       ticket->str_mask =
-        (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
+          (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
       ticket->name = str_dup("ticket claim paper note");
       ticket->short_description = str_dup("a claim ticket");
       ticket->description = str_dup("A small piece of paper lies discarded.");
@@ -999,14 +981,14 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
     }
     val = mount_rent_cost(mount);
     snprintf(buf, MAX_STRING_LENGTH, "A stable-hand says, 'That pet will cost ye %s to rent.'",
-            coin_stringv(val));
+             coin_stringv(val));
     act(buf, FALSE, ch, 0, 0, TO_CHAR);
     return TRUE;
   }
   else if (cmd == CMD_GIVE)
-  {                             /*  unrent pet */
+  { /*  unrent pet */
     half_chop(arg, name, master);
-    if (!*name /* || !*master */ )      /* future addition of mob in room */
+    if (!*name /* || !*master */) /* future addition of mob in room */
       return FALSE;
     if (!(ticket = get_obj_in_list_vis(ch, name, ch->carrying)))
     {
@@ -1029,7 +1011,7 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
       return FALSE;
     }
     snprintf(buf, MAX_STRING_LENGTH, "%s%d", GET_NAME(ch), ticket->value[1]);
-//    petrestore(ch, buf);
+    //    petrestore(ch, buf);
     SUB_MONEY(ch, val, 0);
     obj_from_char(ticket);
     extract_obj(ticket, TRUE); // Not an arti, but 'in game.'
@@ -1051,17 +1033,17 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
 
 int pray_for_items(int room, P_char ch, int cmd, char *arg)
 {
-  int      key_room, gold;
-  bool     found;
-  P_obj    obj;
+  int key_room, gold;
+  bool found;
+  P_obj obj;
   struct extra_descr_data *ext;
-  char     Gbuf4[MAX_STRING_LENGTH];
+  char Gbuf4[MAX_STRING_LENGTH];
 
   /* check for periodic event calls */
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
 
-  if (cmd != CMD_PRAY)          /* You must pray to get the stuff */
+  if (cmd != CMD_PRAY) /* You must pray to get the stuff */
     return FALSE;
 
   key_room = 1 + ch->in_room;
@@ -1113,11 +1095,10 @@ int kings_hall(int room, P_char ch, int cmd, char *arg)
   do_action(ch, arg, CMD_PRAY);
 
   send_to_char("You feel as if some mighty force has been offended.\r\n", ch);
-  send_to_char
-    ("You are torn out of reality!\r\nYou roll and tumble through endless voids"
-     " for what seems like eternity...\r\n\r\n"
-     "After a time, a new reality comes into focus... you are elsewhere.\r\n",
-     ch);
+  send_to_char("You are torn out of reality!\r\nYou roll and tumble through endless voids"
+               " for what seems like eternity...\r\n\r\n"
+               "After a time, a new reality comes into focus... you are elsewhere.\r\n",
+               ch);
 
   act("$n is struck by an intense beam of light and vanishes.",
       TRUE, ch, 0, 0, TO_ROOM);
@@ -1132,9 +1113,9 @@ int kings_hall(int room, P_char ch, int cmd, char *arg)
 // Not currently in game. - 7/4/2015
 int feed_lock(int room, P_char ch, int cmd, char *arg)
 {
-  P_obj    obj;
-  int      door;
-  char     type[MAX_INPUT_LENGTH], dir[MAX_INPUT_LENGTH];
+  P_obj obj;
+  int door;
+  char type[MAX_INPUT_LENGTH], dir[MAX_INPUT_LENGTH];
 
   /*
      check for periodic event calls
@@ -1156,9 +1137,9 @@ int feed_lock(int room, P_char ch, int cmd, char *arg)
     {
       do_unlock(ch, arg, 0);
       act("The Lock says 'yummie... I like to eat keys.'\r\nthe Lock looks at the key.\r\nthe Lock grins evily.\r\n\r\n",
-         TRUE, ch, obj, 0, TO_ROOM);
+          TRUE, ch, obj, 0, TO_ROOM);
       act("The Lock says 'yummie... I like to eat keys.'\r\nthe Lock looks at the key.\r\nthe Lock grins evily.\r\n\r\n",
-         TRUE, ch, obj, 0, TO_CHAR);
+          TRUE, ch, obj, 0, TO_CHAR);
       act("Hey!. The Lock has eaten $p.\r\n", TRUE, ch, obj, 0, TO_ROOM);
       act("Hey!. The Lock has eaten your key!.\r\n", TRUE, ch, obj, 0, TO_CHAR);
       act("The Lock says 'mo food ..mo food.. I'm still hungry'\r\n", TRUE, ch, obj, 0, TO_ROOM);
@@ -1183,7 +1164,7 @@ int feed_lock(int room, P_char ch, int cmd, char *arg)
 
 int automaton_trapdoor(int room, P_char ch, int cmd, char *arg)
 {
-  P_obj    i;
+  P_obj i;
 
   /*
      check for periodic event calls
@@ -1209,11 +1190,9 @@ int automaton_trapdoor(int room, P_char ch, int cmd, char *arg)
             world[real_room(12158)].number);
       raise(SIGSEGV);
     }
-    else
-      if (IS_SET
-          (world[real_room(12158)].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) ||
-          IS_SET(world[real_room(12158)].dir_option[DIR_DOWN]->exit_info,
-                 EX_BLOCKED))
+    else if (IS_SET(world[real_room(12158)].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) ||
+             IS_SET(world[real_room(12158)].dir_option[DIR_DOWN]->exit_info,
+                    EX_BLOCKED))
     {
       return FALSE;
     }
@@ -1256,9 +1235,8 @@ int automaton_trapdoor(int room, P_char ch, int cmd, char *arg)
               FALSE, ch, 0, 0, TO_CHAR);
           act("You hear a faint metallic clunk from the ceiling.", TRUE, ch,
               0, 0, TO_ROOM);
-          send_to_room
-            ("You hear a faint metallic clunk from underground.\r\n",
-             real_room(12158));
+          send_to_room("You hear a faint metallic clunk from underground.\r\n",
+                       real_room(12158));
           break;
         }
       }
@@ -1321,9 +1299,8 @@ int keyless_unlock(int room, P_char ch, int cmd, char *arg)
   }
   else
   {
-    send_to_char
-      ("You twist the bolt and realize the door was already unlocked!\r\n",
-       ch);
+    send_to_char("You twist the bolt and realize the door was already unlocked!\r\n",
+                 ch);
     act("$n fumbles with the door, then looks sheepish.", TRUE, ch, 0, 0,
         TO_ROOM);
   }
@@ -1335,8 +1312,7 @@ int squid_arena(int room, P_char ch, int cmd, char *arg)
 {
   if (cmd == CMD_WILL)
   {
-    send_to_char
-      ("The &+MElder Brain&N stops you from enforcing your will.\n\r", ch);
+    send_to_char("The &+MElder Brain&N stops you from enforcing your will.\n\r", ch);
     return TRUE;
   }
   return FALSE;
@@ -1344,9 +1320,9 @@ int squid_arena(int room, P_char ch, int cmd, char *arg)
 
 int duergar_guild(int room, P_char ch, int cmd, char *arg)
 {
-  P_char   killer;
+  P_char killer;
   hunt_data data;
-  int      i;
+  int i;
 
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
@@ -1387,7 +1363,7 @@ int duergar_guild(int room, P_char ch, int cmd, char *arg)
 
   for (i = 1; i <= MAX_CIRCLE; i++)
     killer->specials.undead_spell_slots[i] =
-      spl_table[GET_LEVEL(killer)][i - 1];
+        spl_table[GET_LEVEL(killer)][i - 1];
 
   if (GET_CLASS(killer, CLASS_CLERIC))
   {
@@ -1398,7 +1374,7 @@ int duergar_guild(int room, P_char ch, int cmd, char *arg)
     data.retry = 0;
     data.retry_dir = 0;
     add_event(event_mob_hunt, PULSE_MOB_HUNT, killer, NULL, NULL, 0, &data, sizeof(hunt_data));
-    //AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, killer, data);
+    // AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, killer, data);
   }
   act("$N jumps from the shadows, surprising you!", FALSE, ch, 0, killer,
       TO_CHAR);
@@ -1412,24 +1388,24 @@ int duergar_guild(int room, P_char ch, int cmd, char *arg)
 
 int mortal_heaven(int room, P_char ch, int cmd, char *arg)
 {
-  P_char   tch, next;
+  P_char tch, next;
 
   /*
      check for periodic event calls
    */
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return TRUE;
   }
 
-  if( cmd == CMD_SUICIDE )
+  if (cmd == CMD_SUICIDE)
   {
-    send_to_char("You feel too comfortable here.\n\r", ch );
+    send_to_char("You feel too comfortable here.\n\r", ch);
     return TRUE;
   }
 
-  if( cmd )
+  if (cmd)
   {
     return FALSE;
   }
@@ -1447,29 +1423,22 @@ int mortal_heaven(int room, P_char ch, int cmd, char *arg)
       act("$n is torn from the afterlife.", FALSE, tch, 0, 0, TO_ROOM);
       writeCharacter(tch, RENT_DEATH, NOWHERE);
       // If it's not an immortal.
-      if( IS_PC(tch) && (GET_LEVEL( tch ) < MINLVLIMMORTAL) )
+      if (IS_PC(tch) && (GET_LEVEL(tch) < MINLVLIMMORTAL))
       {
-        update_ingame_racewar( -GET_RACEWAR(tch) );
+        update_ingame_racewar(-GET_RACEWAR(tch));
       }
       extract_char(tch);
-      if( !tch->desc )
-      {
-        free_char(tch);
-      }
     }
   }
 
   return TRUE;
 }
 
-
-
-
 int player_council_room(int room, P_char ch, int cmd, char *argument)
 {
-  int      i;
-  P_char   vict;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+  int i;
+  P_char vict;
+  char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
@@ -1477,7 +1446,8 @@ int player_council_room(int room, P_char ch, int cmd, char *argument)
   if (!cmd || cmd != CMD_SAY)
     return FALSE;
 
-  for (i = 0; *(argument + i) == ' '; i++) ;
+  for (i = 0; *(argument + i) == ' '; i++)
+    ;
 
   if (!*(argument + i))
     send_to_char("Yes, but WHAT do you want to say?\r\n", ch);
@@ -1492,7 +1462,6 @@ int player_council_room(int room, P_char ch, int cmd, char *argument)
       }
     }
 
-
     snprintf(Gbuf1, MAX_STRING_LENGTH, "You project '%s'\r\n", argument + i);
 
     send_to_char(Gbuf1, ch);
@@ -1501,48 +1470,47 @@ int player_council_room(int room, P_char ch, int cmd, char *argument)
   }
 
   return FALSE;
-
 }
 
-void proc_knob( P_char ch )
+void proc_knob(P_char ch)
 {
-  switch( number(1, 20) )
+  switch (number(1, 20))
   {
-    case  1:
-    case  2:
-    case  3:
-    case  4:
-    case  5:
-    case  6:
-    case  7:
-      send_to_char( "That one doesn't work either.\n", ch );
-      break;
-    case  8:
-    case  9:
-      send_to_char( "This one shocks you as you touch it!\n", ch );
-      break;
-    case 10:
-    case 11:
-      send_to_char( "This knob is really cold.\n", ch );
-      break;
-    case 12:
-    case 13:
-    case 14:
-      send_to_char( "Something about this knob feels right.\n", ch );
-      break;
-    case 15:
-    case 16:
-    case 17:
-    case 18:
-      send_to_char( "Something about this knob just doesn't feel right.\n", ch );
-      break;
-    case 19:
-    default:
-      send_to_char( "Your hand slips off the knob!\n", ch );
-      break;
-    case 20:
-      send_to_char( "This one seems to move a bit.\n", ch );
-      break;
+  case 1:
+  case 2:
+  case 3:
+  case 4:
+  case 5:
+  case 6:
+  case 7:
+    send_to_char("That one doesn't work either.\n", ch);
+    break;
+  case 8:
+  case 9:
+    send_to_char("This one shocks you as you touch it!\n", ch);
+    break;
+  case 10:
+  case 11:
+    send_to_char("This knob is really cold.\n", ch);
+    break;
+  case 12:
+  case 13:
+  case 14:
+    send_to_char("Something about this knob feels right.\n", ch);
+    break;
+  case 15:
+  case 16:
+  case 17:
+  case 18:
+    send_to_char("Something about this knob just doesn't feel right.\n", ch);
+    break;
+  case 19:
+  default:
+    send_to_char("Your hand slips off the knob!\n", ch);
+    break;
+  case 20:
+    send_to_char("This one seems to move a bit.\n", ch);
+    break;
   }
 }
 
@@ -1552,31 +1520,30 @@ int cage_room1(int room, P_char ch, int cmd, char *argument)
   static int tries = 0;
   int knob;
 
-  if( cmd == CMD_WIGGLE || cmd == CMD_TUG || cmd == CMD_TOUCH || cmd == CMD_TURN_IN )
+  if (cmd == CMD_WIGGLE || cmd == CMD_TUG || cmd == CMD_TOUCH || cmd == CMD_TURN_IN)
   {
-    if( (( sscanf(argument, "%d.knob", &knob) == 1 ) && ( knob > 0 ) && ( knob < 18 ))
-      || !strcmp(argument, "knob") )
+    if (((sscanf(argument, "%d.knob", &knob) == 1) && (knob > 0) && (knob < 18)) || !strcmp(argument, "knob"))
     {
-      if( number( 1, 1000 ) == 666 )
+      if (number(1, 1000) == 666)
       {
         send_to_char("You finally find the right knob.  As you turn it, you blink and find yourself elsewhere.\n", ch);
         char_from_room(ch);
-        if( !char_to_room( ch, real_room(42), -2 ) )
+        if (!char_to_room(ch, real_room(42), -2))
         {
-          send_to_char("Wait.. this is the same room!", ch );
-          char_to_room( ch, real_room(1134), -2 );
+          send_to_char("Wait.. this is the same room!", ch);
+          char_to_room(ch, real_room(1134), -2);
         }
       }
       else
       {
-        if( ++tries > number(5, 10) )
+        if (++tries > number(5, 10))
         {
-          send_to_char( "The knobs seem to move around.\n", ch );
+          send_to_char("The knobs seem to move around.\n", ch);
           tries = 1;
         }
-        if( tries == 1 )
+        if (tries == 1)
         {
-          send_to_char( "Nope, that knob doesn't seem to work.\n", ch );
+          send_to_char("Nope, that knob doesn't seem to work.\n", ch);
         }
         else
         {
@@ -1586,9 +1553,9 @@ int cage_room1(int room, P_char ch, int cmd, char *argument)
       }
     }
   }
-  if( cmd == CMD_SUICIDE )
+  if (cmd == CMD_SUICIDE)
   {
-    send_to_char( "You slit your wrists, bleed some, then realize your wounds have healed.\n", ch );
+    send_to_char("You slit your wrists, bleed some, then realize your wounds have healed.\n", ch);
     make_bloodstain(ch);
     return TRUE;
   }
@@ -1600,76 +1567,75 @@ int cage_room2(int room, P_char ch, int cmd, char *argument)
 {
   int knob;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return TRUE;
   }
   // Randomly eat 1/8th of commands.
-  if( ch && cmd != CMD_PERIODIC && (number(1, 8) == 6) )
+  if (ch && cmd != CMD_PERIODIC && (number(1, 8) == 6))
   {
     return TRUE;
   }
-  if( cmd == CMD_SUICIDE )
+  if (cmd == CMD_SUICIDE)
   {
-    send_to_char( "You cut vigorously at yourself.\n", ch );
+    send_to_char("You cut vigorously at yourself.\n", ch);
     make_bloodstain(ch);
     return TRUE;
   }
-  if( cmd == CMD_WIGGLE || cmd == CMD_TUG || cmd == CMD_TOUCH || cmd == CMD_TURN_IN )
+  if (cmd == CMD_WIGGLE || cmd == CMD_TUG || cmd == CMD_TOUCH || cmd == CMD_TURN_IN)
   {
-    if( (( sscanf(argument, "%d.knob", &knob) == 1 ) && ( knob > 0 ) && ( knob < 18 ))
-      || !strcmp(argument, "knob") )
+    if (((sscanf(argument, "%d.knob", &knob) == 1) && (knob > 0) && (knob < 18)) || !strcmp(argument, "knob"))
     {
       proc_knob(ch);
       return TRUE;
     }
   }
-  if( cmd != CMD_PERIODIC )
+  if (cmd != CMD_PERIODIC)
   {
     return FALSE;
   }
   room = real_room(room);
-  if( room < 0 || world[room].people == NULL )
+  if (room < 0 || world[room].people == NULL)
   {
     return FALSE;
   }
-  switch( number(1, 40) )
+  switch (number(1, 40))
   {
-    case  1:
-    case  2:
-    case  3:
-    case  4:
-      send_to_room( "&+LYou hear the sounds of &+yfootsteps&+L moving quickly towards you.&n\n", room );
-      break;
-    case  5:
-    case  6:
-    case  7:
-      send_to_room( "&+LYou hear &+Cpiercing &+Lcries from behind you!&n\n", room );
-    case  8:
-    case  9:
-    case 10:
-    case 11:
-    case 12:
-      send_to_room( "&+LYou hear horrible &+rwailing&+L.&n\n", room );
-      break;
-    case 13:
-    case 14:
-      send_to_room( "&+LThe &+wsilence&+L here is unbearable.&n\n", room );
-      break;
-    case 15:
-    case 16:
-      send_to_room( "&+LWhen will the &+rscreams&+L stop?!&n\n", room );
-      break;
-    case 17:
-    case 18:
-    case 19:
-      send_to_room( "&+LYou hear quiet &+bsobs&+L, then realize it's you who's crying.&n\n", room );
-      break;
-    case 20:
-      send_to_room( "&+LYou break into a &+ccold&+L sweat.&n\n", room );
-      break;
-    default:
-      break;
+  case 1:
+  case 2:
+  case 3:
+  case 4:
+    send_to_room("&+LYou hear the sounds of &+yfootsteps&+L moving quickly towards you.&n\n", room);
+    break;
+  case 5:
+  case 6:
+  case 7:
+    send_to_room("&+LYou hear &+Cpiercing &+Lcries from behind you!&n\n", room);
+  case 8:
+  case 9:
+  case 10:
+  case 11:
+  case 12:
+    send_to_room("&+LYou hear horrible &+rwailing&+L.&n\n", room);
+    break;
+  case 13:
+  case 14:
+    send_to_room("&+LThe &+wsilence&+L here is unbearable.&n\n", room);
+    break;
+  case 15:
+  case 16:
+    send_to_room("&+LWhen will the &+rscreams&+L stop?!&n\n", room);
+    break;
+  case 17:
+  case 18:
+  case 19:
+    send_to_room("&+LYou hear quiet &+bsobs&+L, then realize it's you who's crying.&n\n", room);
+    break;
+  case 20:
+    send_to_room("&+LYou break into a &+ccold&+L sweat.&n\n", room);
+    break;
+  default:
+    break;
   }
   return TRUE;
 }
@@ -1678,7 +1644,7 @@ int avernus_overland(int room, P_char ch, int cmd, char *argument)
 {
   int knob;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
   {
     return TRUE;
   }

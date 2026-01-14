@@ -50,11 +50,9 @@ void ws_broadcast_auction_close(int auction_id, const char *winner_name, int win
                                  int seller_pid, const char *seller_name);
 
 /* player events to durisweb service */
-void ws_broadcast_wholist(void);
-void ws_broadcast_player_login(struct char_data *ch);
-void ws_broadcast_player_logout(struct char_data *ch);
 void ws_broadcast_mud_shutdown(const char *type);
-void ws_cmd_request_wholist(struct descriptor_data *d, cJSON *data);
+void ws_broadcast_player_login(struct descriptor_data *player_d);
+void ws_broadcast_player_logout(const char *character, int faction);
 
 /* polls */
 void ws_cmd_poll_list(struct descriptor_data *d, cJSON *data);

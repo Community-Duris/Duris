@@ -856,7 +856,12 @@ void char_from_room(P_char ch)
 
     if (!i)
     {
-      logit(LOG_DEBUG, "called char_from_room, char not in room list");
+      logit(LOG_DEBUG, "char_from_room: %s (%d) not in room %d (%s) people list, pos=%d fighting=%s",
+            GET_NAME(ch), IS_NPC(ch) ? GET_RNUM(ch) : -1,
+            ch->in_room,
+            ch->in_room >= 0 ? world[ch->in_room].name : "INVALID",
+            GET_POS(ch),
+            ch->specials.fighting ? GET_NAME(ch->specials.fighting) : "none");
       return;
     }
     i->next_in_room = ch->next_in_room;
@@ -2203,7 +2208,7 @@ void obj_to_room(P_obj object, int room)
           act("$p gets swept away in the current!", TRUE, i, object, 0, TO_CHAR);
       //extract_obj(object, TRUE); // Sunken arti?
       // Sunk items goto vault under poseidon
-      obj_from_room(object);
+      // note: object is not in a room yet (still LOC_NOWHERE), just redirect to vault
       obj_to_room(object, real_room(31724));
       if( IS_ARTIFACT(object) )
       {
@@ -2309,8 +2314,13 @@ void obj_from_room(P_obj object)
 
   if (!OBJ_ROOM(object))
   { // FYI, OBJ_VNUM raises SIGSEGV when there is no object. Dec08 -Lucrot
-    logit(LOG_DEBUG, "obj (%d) not in room in obj_from_room.",
-      OBJ_VNUM(object));
+    logit(LOG_DEBUG, "obj_from_room: %p %s (%d) loc_p=%d carried=%s inside=%s",
+      (void*)object,
+      object->short_description ? object->short_description : "?",
+      OBJ_VNUM(object),
+      object->loc_p,
+      OBJ_CARRIED(object) ? GET_NAME(object->loc.carrying) : "none",
+      OBJ_INSIDE(object) ? (object->loc.inside->short_description ? object->loc.inside->short_description : "container") : "none");
     return;
   }
   /* remove object from room */
@@ -2324,7 +2334,10 @@ void obj_from_room(P_obj object)
 
     if (!i)
     {
-      logit(LOG_EXIT, "obj_from_room: futzed up room object list");
+      logit(LOG_DEBUG, "obj_from_room: %s (%d) not in room %d contents list",
+        object->short_description ? object->short_description : "?",
+        OBJ_VNUM(object),
+        object->loc.room);
       return;
     }
     i->next_content = object->next_content;
@@ -3270,13 +3283,13 @@ void extract_char(P_char ch)
         } else {
             display_account_menu(ch->desc, NULL);
         }
+        ch->desc->character = NULL;
       } else {
-        // no account loaded, just close the connection
+        ch->desc->character = NULL;
         close_socket(ch->desc);
       }
 #endif
-      ws_broadcast_player_logout(ch);
-	  ch->desc->character = NULL;
+      ch->desc = NULL;
     }
     free_char(ch);
     ch = NULL;

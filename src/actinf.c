@@ -42,7 +42,7 @@ using namespace std;
 #include "specializations.h"
 #include "grapple.h"
 #include "nexus_stones.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "ctf.h"
 #include "epic_bonus.h"
 #include "vnum.obj.h"
@@ -4705,15 +4705,20 @@ void do_score(P_char ch, char *argument, int cmd)
     send_to_char(buf, ch);
 
     /* compression */
-    // send_to_char("Compression ratio: ", ch);
-    if (ch->desc && ch->desc->z_str)
-    {
+    if (ch->desc && ch->desc->z_str) {
       snprintf(buf, MAX_STRING_LENGTH, "Compression ratio: %d%%\n", compress_get_ratio(ch->desc));
       send_to_char(buf, ch);
       memset(buf, 0, MAX_STRING_LENGTH);
+    } else if (ch->desc && ch->desc->websocket && ch->desc->ws_compress) {
+      int ratio = 0;
+      if (ch->desc->ws_bytes_in > 0)
+        ratio = 100 - (ch->desc->ws_bytes_out * 100 / ch->desc->ws_bytes_in);
+      snprintf(buf, MAX_STRING_LENGTH, "Compression ratio: %d%% (websocket)\n", ratio);
+      send_to_char(buf, ch);
+      buf[0] = 0;
+    } else {
+      send_to_char("Compression: none\n", ch);
     }
-    else
-      send_to_char("Compression ratio: none\n", ch);
 
     //    /* prestige */
     //    snprintf(buf, MAX_STRING_LENGTH, "Prestige: %s\n", epic_prestige(ch));
@@ -5672,7 +5677,12 @@ void do_score(P_char ch, char *argument, int cmd)
 
     for (aff = ch->affected; aff; aff = aff->next)
     {
-      if ((aff->type > 0) && skills[aff->type].name && (aff->type <= LAST_SKILL || aff->type == TAG_CTF || aff->type == TAG_RESTED || aff->type == TAG_WELLRESTED))
+      if ((aff->type > 0) && skills[aff->type].name && 
+	      (aff->type <= LAST_SKILL || 
+		   aff->type == TAG_CTF || 
+		   aff->type == TAG_RESTED || 
+		   aff->type == TAG_WELLRESTED ||
+		   (aff->type >= HERB_FIRST && aff->type <= HERB_LAST)))
       {
         switch (aff->type)
         {

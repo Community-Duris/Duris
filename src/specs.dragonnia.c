@@ -1,11 +1,11 @@
 
 /*
-   ***************************************************************************
-   *  File: specs.dragonnia.c                                  Part of Duris *
-   *  Usage: mobile special procedures for Dragonnia                           *
-   *  Copyright  1992 - Edoardo Keyvan Perez Izadi - all rights reserved       *
-   *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
-   *************************************************************************** 
+ ***************************************************************************
+ *  File: specs.dragonnia.c                                  Part of Duris *
+ *  Usage: mobile special procedures for Dragonnia                           *
+ *  Copyright  1992 - Edoardo Keyvan Perez Izadi - all rights reserved       *
+ *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
+ ***************************************************************************
  */
 
 /***************************************************************************
@@ -44,7 +44,7 @@
 #include "vnum.room.h"
 
 /*
-   external variables 
+   external variables
  */
 
 extern P_char character_list;
@@ -61,15 +61,15 @@ extern struct time_info_data time_info;
 extern struct zone_data *zone_table;
 
 /*
-   DISARM 
+   DISARM
  */
 
 void do_mobdisarm(P_char ch, char *argument, int cmd)
 {
-  P_char   victim;
-  P_obj    obj;
-  char     name[MAX_INPUT_LENGTH];
-  byte     percent;
+  P_char victim;
+  P_obj obj;
+  char name[MAX_INPUT_LENGTH];
+  ::byte percent;
 
   if (!SanityCheck(ch, "do_mobdisarm"))
     return;
@@ -79,8 +79,7 @@ void do_mobdisarm(P_char ch, char *argument, int cmd)
   if (!GET_CLASS(ch, CLASS_WARRIOR) && !GET_CLASS(ch, CLASS_ROGUE) &&
       (GET_LEVEL(ch) < 22) && (!IS_WARRIOR(ch)) && (!IS_THIEF(ch)))
   {
-    send_to_char
-      ("You better leave all the martial arts to professionals.\r\n", ch);
+    send_to_char("You better leave all the martial arts to professionals.\r\n", ch);
     return;
   }
   if (!(victim = get_char_room_vis(ch, name)))
@@ -112,59 +111,53 @@ void do_mobdisarm(P_char ch, char *argument, int cmd)
   obj = victim->equipment[WIELD];
   if (!obj)
   {
-    send_to_char
-      ("Hey!.. the victim doesn't have any weapon wielded to disarm.\r\n",
-       ch);
+    send_to_char("Hey!.. the victim doesn't have any weapon wielded to disarm.\r\n",
+                 ch);
     return;
   }
-  percent = number(1, 101);     /*
-                                   101% is a complete failure 
-                                 */
+  percent = number(1, 101); /*
+                               101% is a complete failure
+                             */
   /*
-     bonus penalties 
+     bonus penalties
    */
   percent -= dex_app[STAT_INDEX(GET_C_DEX(ch))].reaction * 5;
   percent -= io_agi_defense(victim) / 2;
 
   /*
      If this will be installed as skill the message need to be moved on the
-     file messages, and be removed some comments 
+     file messages, and be removed some comments
    */
 
   /*
      if (IS_PC(ch) && (percent > ch->only.pc->skills[SKILL_DISARM].learned)) {
      damage(ch, victim, 0, SKILL_DISARM); SET_POS(ch, POS_SITTING +
-     GET_STAT(ch)); } else 
+     GET_STAT(ch)); } else
    */
   if ((IS_NPC(ch)) && (percent > (3 * GET_LEVEL(ch))))
   {
     /*
-       damage(ch, victim, 0, SKILL_DISARM); 
+       damage(ch, victim, 0, SKILL_DISARM);
      */
     act("You fruitlessly try to disarm $N. $N sends you sprawling.", 0, ch, 0,
         victim, TO_CHAR);
-    act
-      ("You easily dodge an attempt by $n to disarm you, who loses $s balance and falls.",
-       0, ch, 0, victim, TO_VICT);
-    act
-      ("An attempt by $n to disarm $N is in vain as $N twists in a funny fashion.",
-       1, ch, 0, victim, TO_ROOM);
+    act("You easily dodge an attempt by $n to disarm you, who loses $s balance and falls.",
+        0, ch, 0, victim, TO_VICT);
+    act("An attempt by $n to disarm $N is in vain as $N twists in a funny fashion.",
+        1, ch, 0, victim, TO_ROOM);
     SET_POS(ch, POS_SITTING + GET_STAT(ch));
   }
   else
   {
     /*
-       damage(ch, victim, 1, SKILL_DISARM); 
+       damage(ch, victim, 1, SKILL_DISARM);
      */
-    act
-      ("You deftly knock $p from $N's hand, making $N fall sprawling on the ground.",
-       0, ch, obj, victim, TO_CHAR);
-    act
-      ("$n knocks $p from your grasp!!..and you lose your balance and fall on the ground.",
-       0, ch, obj, victim, TO_VICT);
-    act
-      ("$n twists $N's arm, making $N fall sprawling on the ground and dropping $S weapon.",
-       1, ch, obj, victim, TO_ROOM);
+    act("You deftly knock $p from $N's hand, making $N fall sprawling on the ground.",
+        0, ch, obj, victim, TO_CHAR);
+    act("$n knocks $p from your grasp!!..and you lose your balance and fall on the ground.",
+        0, ch, obj, victim, TO_VICT);
+    act("$n twists $N's arm, making $N fall sprawling on the ground and dropping $S weapon.",
+        1, ch, obj, victim, TO_ROOM);
     SET_POS(victim, POS_SITTING + GET_STAT(victim));
     unequip_char(victim, WIELD);
     obj_to_room(obj, ch->in_room);
@@ -218,11 +211,11 @@ void call_solve_sanctuary(P_char ch, P_char vict)
 
 void call_b_fire(P_char ch, P_char vict, int showhead)
 {
-  char     buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
+  char buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
 
-  if (GET_HIT(vict) < 19)       /*
-                                   why? 
-                                 */
+  if (GET_HIT(vict) < 19) /*
+                             why?
+                           */
     return;
   if (showhead)
     strcpy(buf1, "The red head of ");
@@ -240,7 +233,7 @@ void call_b_fire(P_char ch, P_char vict, int showhead)
 
 void call_b_frost(P_char ch, P_char vict, int showhead)
 {
-  char     buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
+  char buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
 
   if (GET_HIT(vict) < 19)
     return;
@@ -259,7 +252,7 @@ void call_b_frost(P_char ch, P_char vict, int showhead)
 
 void call_b_acid(P_char ch, P_char vict, int showhead)
 {
-  char     buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
+  char buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
 
   if (GET_HIT(vict) < 19)
     return;
@@ -278,7 +271,7 @@ void call_b_acid(P_char ch, P_char vict, int showhead)
 
 void call_b_gas(P_char ch, P_char vict, int showhead)
 {
-  char     buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
+  char buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
 
   if (GET_HIT(vict) < 19)
     return;
@@ -295,7 +288,7 @@ void call_b_gas(P_char ch, P_char vict, int showhead)
 
 void call_b_lig(P_char ch, P_char vict, int showhead)
 {
-  char     buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
+  char buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
 
   if (GET_HIT(vict) < 19)
     return;
@@ -314,13 +307,13 @@ void call_b_lig(P_char ch, P_char vict, int showhead)
 
 int demodragon(P_char ch, P_char pl, int cmd, char *arg)
 {
-  P_char   vict;
-  P_char   temp;
-  bool     chance = 0;
-  int      dam = cmd / 1000;
+  P_char vict;
+  P_char temp;
+  bool chance = 0;
+  int dam = cmd / 1000;
 
   /*
-     check for periodic event calls 
+     check for periodic event calls
    */
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
@@ -344,8 +337,7 @@ int demodragon(P_char ch, P_char pl, int cmd, char *arg)
       {
         act("The DemoDragon humiliates $n, and blocks $s way.",
             FALSE, ch, 0, pl, TO_NOTVICT);
-        send_to_char
-          ("The DemoDragon humiliates you, and blocks your way.\r\n", pl);
+        send_to_char("The DemoDragon humiliates you, and blocks your way.\r\n", pl);
         return TRUE;
       }
       return FALSE;
@@ -404,63 +396,62 @@ int demodragon(P_char ch, P_char pl, int cmd, char *arg)
 int room_of_sanctum(int room, P_char ch, int cmd, char *arg)
 {
   P_char archbishop, bishop;
-  P_obj  key;
+  P_obj key;
 
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
     return FALSE;
 
-  if( (cmd != CMD_UNLOCK) || !ch || !IS_AWAKE(ch) )
+  if ((cmd != CMD_UNLOCK) || !ch || !IS_AWAKE(ch))
     return FALSE;
 
   // What if these mobs have been lured from their rooms?
-  for( archbishop = world[real_room0(VROOM_DRAGONNIA_ARCHBISHOP)].people; archbishop; archbishop = archbishop->next_in_room )
+  for (archbishop = world[real_room0(VROOM_DRAGONNIA_ARCHBISHOP)].people; archbishop; archbishop = archbishop->next_in_room)
   {
-    if( IS_NPC(archbishop) && GET_VNUM(archbishop) == VMOB_DRAGONNIA_ARCHBISHOP )
+    if (IS_NPC(archbishop) && GET_VNUM(archbishop) == VMOB_DRAGONNIA_ARCHBISHOP)
     {
       break;
     }
   }
   // We'll hunt the world, just to make me happy.
-  if( !archbishop )
+  if (!archbishop)
   {
-    for( archbishop = character_list; archbishop; archbishop = archbishop->next )
+    for (archbishop = character_list; archbishop; archbishop = archbishop->next)
     {
-      if( IS_NPC(archbishop) && GET_VNUM(archbishop) == VMOB_DRAGONNIA_ARCHBISHOP )
+      if (IS_NPC(archbishop) && GET_VNUM(archbishop) == VMOB_DRAGONNIA_ARCHBISHOP)
       {
         break;
       }
     }
   }
-  for( bishop = world[real_room0(VROOM_DRAGONNIA_BISHOP)].people; bishop; bishop = bishop->next_in_room )
+  for (bishop = world[real_room0(VROOM_DRAGONNIA_BISHOP)].people; bishop; bishop = bishop->next_in_room)
   {
-    if( IS_NPC(bishop) && GET_VNUM(bishop) == VMOB_DRAGONNIA_BISHOP )
+    if (IS_NPC(bishop) && GET_VNUM(bishop) == VMOB_DRAGONNIA_BISHOP)
     {
       break;
     }
   }
   // We'll hunt the world, just to make me happy. - I mean, how ofter are you going to attempt to unlock
   //   in this room?
-  if( !bishop )
+  if (!bishop)
   {
-    for( bishop = character_list; bishop; bishop = bishop->next )
+    for (bishop = character_list; bishop; bishop = bishop->next)
     {
-      if( IS_NPC(bishop) && GET_VNUM(bishop) == VMOB_DRAGONNIA_BISHOP )
+      if (IS_NPC(bishop) && GET_VNUM(bishop) == VMOB_DRAGONNIA_BISHOP)
       {
         break;
       }
     }
   }
 
-  if( archbishop && archbishop->equipment[HOLD]
-    && OBJ_VNUM(archbishop->equipment[HOLD]) == VOBJ_DRAGONNIA_ARCHBISHOP_KEY)
+  if (archbishop && archbishop->equipment[HOLD] && OBJ_VNUM(archbishop->equipment[HOLD]) == VOBJ_DRAGONNIA_ARCHBISHOP_KEY)
   {
-    if( ch->equipment[HOLD] && OBJ_VNUM(ch->equipment[HOLD]) == VOBJ_DRAGONNIA_ARCHBISHOP_KEY)
+    if (ch->equipment[HOLD] && OBJ_VNUM(ch->equipment[HOLD]) == VOBJ_DRAGONNIA_ARCHBISHOP_KEY)
     {
-      obj_to_char( unequip_char(ch, HOLD), ch );
+      obj_to_char(unequip_char(ch, HOLD), ch);
     }
-    for( key = ch->carrying; key && OBJ_VNUM(key) != VOBJ_DRAGONNIA_ARCHBISHOP_KEY; key = key->next_content)
+    for (key = ch->carrying; key && OBJ_VNUM(key) != VOBJ_DRAGONNIA_ARCHBISHOP_KEY; key = key->next_content)
       ;
-    if( key )
+    if (key)
     {
       act("The $o melts as you put it in the lock and burns you.", 0, ch, key, 0, TO_CHAR);
       act("Maybe you should find the 'real' key??", 0, ch, key, 0, TO_CHAR);
@@ -468,7 +459,7 @@ int room_of_sanctum(int room, P_char ch, int cmd, char *arg)
       obj_from_char(key);
       extract_obj(key, TRUE); // Key is not an arti, but ok.
       key = NULL;
-      if( GET_HIT(ch) <= 90 )
+      if (GET_HIT(ch) <= 90)
         GET_HIT(ch) = 1;
       else
         GET_HIT(ch) -= 90;
@@ -478,8 +469,7 @@ int room_of_sanctum(int room, P_char ch, int cmd, char *arg)
     }
     return TRUE;
   }
-  if( bishop && bishop->equipment[HOLD]
-    && OBJ_VNUM(bishop->equipment[HOLD]) == VOBJ_DRAGONNIA_BISHOP_KEY)
+  if (bishop && bishop->equipment[HOLD] && OBJ_VNUM(bishop->equipment[HOLD]) == VOBJ_DRAGONNIA_BISHOP_KEY)
   {
     act("A strange force doesn't let you unlock the sanctum.", 0, ch, 0, 0, TO_CHAR);
     act("A strange force doesn't let $n unlocks the sanctum.", 1, ch, 0, 0, TO_ROOM);
@@ -490,10 +480,10 @@ int room_of_sanctum(int room, P_char ch, int cmd, char *arg)
 
 int dragon_guard(P_char ch, P_char pl, int cmd, char *arg)
 {
-  P_char   vict, next;
+  P_char vict, next;
 
   /*
-     check for periodic event calls 
+     check for periodic event calls
    */
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
@@ -507,7 +497,7 @@ int dragon_guard(P_char ch, P_char pl, int cmd, char *arg)
       (world[ch->in_room].zone == world[real_room(6858)].zone))
   {
     /*
-       for catch fast people whose use alias or macros 
+       for catch fast people whose use alias or macros
      */
     if (cmd)
     {
@@ -527,8 +517,7 @@ int dragon_guard(P_char ch, P_char pl, int cmd, char *arg)
       next = vict->next_in_room;
 
       if (CAN_SEE(ch, vict) &&
-          (IS_PC(vict) || ( !IS_DRAGON(vict) && IS_PC_PET(vict) ) )
-          )
+          (IS_PC(vict) || (!IS_DRAGON(vict) && IS_PC_PET(vict))))
       {
         act("$n screams 'INVADERS! INVADERS! BANZAI!!!CHARGE!!!ARGGHH!'",
             FALSE, ch, 0, 0, TO_ROOM);
@@ -549,15 +538,15 @@ int dragon_guard(P_char ch, P_char pl, int cmd, char *arg)
 
 int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char *arg)
 {
-  P_char   vict;
-  P_char   temp;
-  bool     chance = 0;
-  bool     head;
-  int      dam = cmd / 1000;
-  char     Gbuf2[MAX_STRING_LENGTH];
+  P_char vict;
+  P_char temp;
+  bool chance = 0;
+  bool head;
+  int dam = cmd / 1000;
+  char Gbuf2[MAX_STRING_LENGTH];
 
   /*
-     check for periodic event calls 
+     check for periodic event calls
    */
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
@@ -575,10 +564,10 @@ int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char *arg)
         return FALSE;
 
       /*
-         generic block exit type deal 
+         generic block exit type deal
        */
       /*
-         must be a harem-sort of thing, neutral sex chars can pass 
+         must be a harem-sort of thing, neutral sex chars can pass
        */
       if (GET_SEX(pl))
       {
@@ -586,45 +575,45 @@ int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char *arg)
         switch (cmd)
         {
         case CMD_NORTH:
-          if ((ch->in_room == real_room(6824)) ||       /*
-                                                           blue dragon 
-                                                         */
-              (ch->in_room == real_room(6833)) ||       /*
-                                                           mystic dragon 
-                                                         */
-              (ch->in_room == real_room(6848))) /*
-                                                   sacristan dragon 
-                                                 */
+          if ((ch->in_room == real_room(6824)) || /*
+                                                     blue dragon
+                                                   */
+              (ch->in_room == real_room(6833)) || /*
+                                                     mystic dragon
+                                                   */
+              (ch->in_room == real_room(6848)))   /*
+                                                     sacristan dragon
+                                                   */
             chance = TRUE;
           break;
         case CMD_EAST:
-          if ((ch->in_room == real_room(6828)) ||       /*
-                                                           green dragon 
-                                                         */
-              (ch->in_room == real_room(6864))) /*
-                                                   red dragon 
-                                                 */
+          if ((ch->in_room == real_room(6828)) || /*
+                                                     green dragon
+                                                   */
+              (ch->in_room == real_room(6864)))   /*
+                                                     red dragon
+                                                   */
             chance = TRUE;
           break;
         case CMD_SOUTH:
-          if ((ch->in_room == real_room(6848)) ||       /*
-                                                           sacristan dragon 
-                                                         */
-              (ch->in_room == real_room(6810)) ||       /*
-                                                           white dragons 
-                                                         */
-              (ch->in_room == real_room(6806)) ||       /*
-                                                           black dragon 
-                                                         */
-              (ch->in_room == real_room(6821))) /*
-                                                   golden dragon 
-                                                 */
+          if ((ch->in_room == real_room(6848)) || /*
+                                                     sacristan dragon
+                                                   */
+              (ch->in_room == real_room(6810)) || /*
+                                                     white dragons
+                                                   */
+              (ch->in_room == real_room(6806)) || /*
+                                                     black dragon
+                                                   */
+              (ch->in_room == real_room(6821)))   /*
+                                                     golden dragon
+                                                   */
             chance = TRUE;
           break;
         case CMD_UP:
-          if (ch->in_room == real_room(6852))   /*
-                                                   monk dragon 
-                                                 */
+          if (ch->in_room == real_room(6852)) /*
+                                                 monk dragon
+                                               */
             chance = TRUE;
           break;
         }
@@ -641,7 +630,7 @@ int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char *arg)
     }
   }
   /*
-     it is on a hit 
+     it is on a hit
    */
   if ((GET_RNUM(ch) == real_mobile(6815)) || (GET_RNUM(ch) == real_mobile(6816)))
     head = TRUE;
@@ -754,10 +743,8 @@ int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char *arg)
       if (!number(0, 3) && ((GET_RNUM(ch) == real_mobile(6810)) ||
                             (GET_RNUM(ch) == real_mobile(6811))))
       {
-        if (!damage(ch, vict, number((GET_LEVEL(ch) >> 1),
-                                     (GET_LEVEL(ch) * 6)), TYPE_UNDEFINED))
-          damage(ch, vict, number((GET_LEVEL(ch) >> 1),
-                                  (GET_LEVEL(ch) * 7)), TYPE_UNDEFINED);
+        if (!damage(ch, vict, number((GET_LEVEL(ch) >> 1), (GET_LEVEL(ch) * 6)), TYPE_UNDEFINED))
+          damage(ch, vict, number((GET_LEVEL(ch) >> 1), (GET_LEVEL(ch) * 7)), TYPE_UNDEFINED);
         chance = 1;
         if (ch->in_room != vict->in_room)
           continue;
@@ -826,46 +813,44 @@ int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char *arg)
 
 void call_protector(P_char ch, P_char tmp_ch, int nprotector, int type)
 {
-  P_char   protector;
-  char     buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
+  P_char protector;
+  char buf[MAX_INPUT_LENGTH], buf1[MAX_INPUT_LENGTH];
   static const char *helpertype[] = {
-    "mamma",
-    "papa",
-    "brother",
-    "sister",
-    "friend",
-    "\n"
-  };
+      "mamma",
+      "papa",
+      "brother",
+      "sister",
+      "friend",
+      "\n"};
   static const char *caretype[] = {
-    "baby",
-    "baby",
-    "brother",
-    "brother",
-    "friend",
-    "\n"
-  };
+      "baby",
+      "baby",
+      "brother",
+      "brother",
+      "friend",
+      "\n"};
 
   // Create the protector from the number especified.
-  if( !(protector = read_mobile(nprotector, REAL)) )
+  if (!(protector = read_mobile(nprotector, REAL)))
     return;
 
   // Verify gender
-  if( (GET_SEX(protector) == SEX_MALE) && ((type == H_MAMMA) || (type == H_SISTER)) )
+  if ((GET_SEX(protector) == SEX_MALE) && ((type == H_MAMMA) || (type == H_SISTER)))
   {
-    if( type == H_MAMMA )
+    if (type == H_MAMMA)
       type = H_PAPA;
     else
       type = H_BROTHER;
   }
-  snprintf(buf, MAX_INPUT_LENGTH, "$n tells you 'My %s is coming'.", helpertype[(int) type]);
-  snprintf(buf1, MAX_INPUT_LENGTH, "$n told $N 'My %s is coming'.", helpertype[(int) type]);
+  snprintf(buf, MAX_INPUT_LENGTH, "$n tells you 'My %s is coming'.", helpertype[(int)type]);
+  snprintf(buf1, MAX_INPUT_LENGTH, "$n told $N 'My %s is coming'.", helpertype[(int)type]);
 
   act("$n is crying.", 0, ch, 0, 0, TO_ROOM);
   act(buf, 1, ch, 0, tmp_ch, TO_VICT);
   act(buf1, 1, ch, 0, tmp_ch, TO_NOTVICT);
 
-//  if (IS_SET(protector->specials.act, ACT_AGGRESSIVE))
-//    REMOVE_BIT(protector->specials.act, ACT_AGGRESSIVE);
+  //  if (IS_SET(protector->specials.act, ACT_AGGRESSIVE))
+  //    REMOVE_BIT(protector->specials.act, ACT_AGGRESSIVE);
   if (IS_AGGRESSIVE(protector))
   {
     protector->only.npc->aggro_flags = protector->only.npc->aggro2_flags = protector->only.npc->aggro3_flags = 0;
@@ -882,22 +867,22 @@ void call_protector(P_char ch, P_char tmp_ch, int nprotector, int type)
   act(" $n blocks $N's attack! ", FALSE, ch->following, 0, tmp_ch,
       TO_NOTVICT);
   act(" You block $N's attack! ", FALSE, ch->following, 0, tmp_ch, TO_CHAR);
-  if( !IS_FIGHTING(tmp_ch) )
+  if (!IS_FIGHTING(tmp_ch))
     set_fighting(tmp_ch, ch->following);
-  if( (GET_SEX(ch) == SEX_FEMALE) &&
-      !((type == H_MAMMA) || (type == H_PAPA) || (type == H_FRIEND)) )
+  if ((GET_SEX(ch) == SEX_FEMALE) &&
+      !((type == H_MAMMA) || (type == H_PAPA) || (type == H_FRIEND)))
     strcpy(buf, "sister");
   else
-    strcpy(buf, caretype[(int) type]);
+    strcpy(buf, caretype[(int)type]);
   snprintf(buf1, MAX_INPUT_LENGTH, "$n says 'Why? why? why are you fighting with my %s'.", buf);
   act(buf1, 1, protector, 0, 0, TO_ROOM);
-  if( protector->in_room != tmp_ch->in_room )
+  if (protector->in_room != tmp_ch->in_room)
     return;
 
   // Removing these to stop a crash bug.
-//  if( !damage(protector, tmp_ch, number((GET_LEVEL(protector) >> 1), (GET_LEVEL(protector) * 2)), TYPE_UNDEFINED) )
+  //  if( !damage(protector, tmp_ch, number((GET_LEVEL(protector) >> 1), (GET_LEVEL(protector) * 2)), TYPE_UNDEFINED) )
   {
-//    if( !damage(protector, tmp_ch, number((GET_LEVEL(protector) >> 1), (GET_LEVEL(protector) * 2)), TYPE_UNDEFINED) )
+    //    if( !damage(protector, tmp_ch, number((GET_LEVEL(protector) >> 1), (GET_LEVEL(protector) * 2)), TYPE_UNDEFINED) )
     {
       damage(protector, tmp_ch, number((GET_LEVEL(protector) >> 1), (GET_LEVEL(protector) * 2)), TYPE_UNDEFINED);
     }
@@ -906,7 +891,7 @@ void call_protector(P_char ch, P_char tmp_ch, int nprotector, int type)
 
 void call_protection(P_char ch, P_char tmp_ch)
 {
-  char     Gbuf2[MAX_STRING_LENGTH];
+  char Gbuf2[MAX_STRING_LENGTH];
 
   act("$n is crying.", 0, ch, 0, 0, TO_ROOM);
 
@@ -922,23 +907,24 @@ void call_protection(P_char ch, P_char tmp_ch)
           1, ch->following, 0, ch, TO_NOTVICT);
       if (!damage(ch->following, tmp_ch,
                   number((GET_LEVEL(ch->following) >> 1),
-                         (GET_LEVEL(ch->following) * 2)), TYPE_UNDEFINED))
+                         (GET_LEVEL(ch->following) * 2)),
+                  TYPE_UNDEFINED))
         if (!damage(ch->following, tmp_ch,
                     number((GET_LEVEL(ch->following) >> 1),
-                           (GET_LEVEL(ch->following) * 2)), TYPE_UNDEFINED))
+                           (GET_LEVEL(ch->following) * 2)),
+                    TYPE_UNDEFINED))
           damage(ch->following, tmp_ch,
                  number((GET_LEVEL(ch->following) >> 1),
-                        (GET_LEVEL(ch->following) * 2)), TYPE_UNDEFINED);
+                        (GET_LEVEL(ch->following) * 2)),
+                 TYPE_UNDEFINED);
     }
     else if (ch->following == tmp_ch)
     {
       stop_fighting(ch);
-      act
-        ("$n asks $mself 'Why? why? why was I fighting with $N?  Who is my friend!'.",
-         1, ch->following, 0, ch, TO_ROOM);
-      act
-        ("You ask yourself, why, why was I about to attack my little friend?'.",
-         1, ch->following, 0, ch, TO_CHAR);
+      act("$n asks $mself 'Why? why? why was I fighting with $N?  Who is my friend!'.",
+          1, ch->following, 0, ch, TO_ROOM);
+      act("You ask yourself, why, why was I about to attack my little friend?'.",
+          1, ch->following, 0, ch, TO_CHAR);
     }
     else if (IS_PC(ch->following))
     {
@@ -973,23 +959,24 @@ void call_protection(P_char ch, P_char tmp_ch)
           1, ch->following, 0, ch, TO_NOTVICT);
       if (!damage(ch->following, tmp_ch,
                   number((GET_LEVEL(ch->following) >> 1),
-                         (GET_LEVEL(ch->following) * 2)), TYPE_UNDEFINED))
+                         (GET_LEVEL(ch->following) * 2)),
+                  TYPE_UNDEFINED))
         if (!damage(ch->following, tmp_ch,
                     number((GET_LEVEL(ch->following) >> 1),
-                           (GET_LEVEL(ch->following) * 2)), TYPE_UNDEFINED))
+                           (GET_LEVEL(ch->following) * 2)),
+                    TYPE_UNDEFINED))
           damage(ch->following, tmp_ch,
                  number((GET_LEVEL(ch->following) >> 1),
-                        (GET_LEVEL(ch->following) * 2)), TYPE_UNDEFINED);
+                        (GET_LEVEL(ch->following) * 2)),
+                 TYPE_UNDEFINED);
     }
     else if (ch->following == tmp_ch)
     {
       stop_fighting(ch);
-      act
-        ("$n asks $mself 'Why? why? why was I fighting with $N?  Who is my friend!'.",
-         1, ch->following, 0, ch, TO_ROOM);
-      act
-        ("You ask yourself, why, why was I about to attack my little friend?'.",
-         1, ch->following, 0, ch, TO_CHAR);
+      act("$n asks $mself 'Why? why? why was I fighting with $N?  Who is my friend!'.",
+          1, ch->following, 0, ch, TO_ROOM);
+      act("You ask yourself, why, why was I about to attack my little friend?'.",
+          1, ch->following, 0, ch, TO_CHAR);
     }
     else if (IS_PC(ch->following))
     {
@@ -1008,45 +995,45 @@ void call_protection(P_char ch, P_char tmp_ch)
 int baby_dragon(P_char ch, P_char pl, int cmd, char *arg)
 {
   static int num_tears = 0;
-  static int rotation = number(0,9);
-  P_char   tmp_ch;
-  P_char   attacker;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+  static int rotation = number(0, 9);
+  P_char tmp_ch;
+  P_char attacker;
+  char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
   // Check for periodic event calls
-  if( cmd == CMD_SET_PERIODIC )
+  if (cmd == CMD_SET_PERIODIC)
     return TRUE;
 
-  if( GET_OPPONENT(ch) )
+  if (GET_OPPONENT(ch))
   {
     act("$n is crying.", 0, ch, 0, 0, TO_ROOM);
-    for( tmp_ch = world[ch->in_room].people; tmp_ch; tmp_ch = tmp_ch->next_in_room )
+    for (tmp_ch = world[ch->in_room].people; tmp_ch; tmp_ch = tmp_ch->next_in_room)
     {
-      if( IS_ALIVE(tmp_ch) && (GET_OPPONENT(tmp_ch) == ch) )
+      if (IS_ALIVE(tmp_ch) && (GET_OPPONENT(tmp_ch) == ch))
       {
         /* Commented this out.. to make it harder to cheese the dragonslayer achievement.
         if( OUTSIDE(ch) && !ch->group )
          */
         {
           act("$n cries louder.", 0, ch, 0, 0, TO_ROOM);
-          if( ++num_tears >= 10 )
+          if (++num_tears >= 10)
           {
             act("You hear an ungodly amount of flapping wings!.", 0, ch, 0, 0, TO_ROOM);
-            while( num_tears-- > 0 )
+            while (num_tears-- > 0)
             {
-              switch( number(0, 2) )
+              switch (number(0, 2))
               {
-                case 0:
-                  call_protector(ch, tmp_ch, real_mobile(6830), H_FRIEND);
-                  break;
-                case 1:
-                  call_protector(ch, tmp_ch, real_mobile(6817), H_FRIEND);
-                  break;
-                case 2:
-                  call_protector(ch, tmp_ch, real_mobile(6803), H_FRIEND);
-                  break;
+              case 0:
+                call_protector(ch, tmp_ch, real_mobile(6830), H_FRIEND);
+                break;
+              case 1:
+                call_protector(ch, tmp_ch, real_mobile(6817), H_FRIEND);
+                break;
+              case 2:
+                call_protector(ch, tmp_ch, real_mobile(6803), H_FRIEND);
+                break;
               }
-              if( !IS_ALIVE(tmp_ch) )
+              if (!IS_ALIVE(tmp_ch))
               {
                 return TRUE;
               }
@@ -1055,7 +1042,7 @@ int baby_dragon(P_char ch, P_char pl, int cmd, char *arg)
           act("You see a great dragon flying toward you!.", 0, ch, 0, 0, TO_ROOM);
           // This way we cycle through each as opposed to picking a random one.
           rotation = (rotation + 1) % 10;
-          switch( rotation )
+          switch (rotation)
           {
           case 1:
             call_protector(ch, tmp_ch, real_mobile(6830), H_FRIEND);
@@ -1084,11 +1071,11 @@ int baby_dragon(P_char ch, P_char pl, int cmd, char *arg)
           }
           return TRUE;
         }
-        if( ch->group )
+        if (ch->group)
         {
-          for( attacker = world[ch->in_room].people; attacker; attacker = attacker->next_in_room )
+          for (attacker = world[ch->in_room].people; attacker; attacker = attacker->next_in_room)
           {
-            if( attacker && (GET_OPPONENT(attacker) == ch) )
+            if (attacker && (GET_OPPONENT(attacker) == ch))
             {
               call_protection(ch, attacker);
             }
@@ -1106,45 +1093,45 @@ int baby_dragon(P_char ch, P_char pl, int cmd, char *arg)
       }
     }
   }
-  if( cmd && pl )
+  if (cmd && pl)
   {
-    if( pl == ch )
+    if (pl == ch)
       return FALSE;
     switch (cmd)
     {
-      case CMD_PAT:
-        do_action(pl, arg, CMD_PAT);
-        if( isname(arg, ch->player.name) )
-        {
-          if( ch->following )
-            stop_follower(ch);
-          add_follower(ch, pl);
-          group_add_member(pl, ch);
-          act("$n tells you 'Can i be your friend? =)'.", 1, ch, 0, pl, TO_VICT);
-        }
-        return TRUE;
-        break;
-      case CMD_KILL:
-      case CMD_HIT:
-      case CMD_BACKSTAB:
-      case CMD_BASH:
-      case CMD_KICK:
-      case CMD_MURDER:
-        one_argument(arg, Gbuf1);
-        if ((ch == get_char_room(Gbuf1, pl->in_room)) && (pl == ch->following))
-        {
-          strcpy(Gbuf2, pl->player.name);
-          do_action(pl, Gbuf2, CMD_SLAP);
-          act("$n ask $mself 'Why? why? why was I trying to harm $N?  Who is my friend!'.",
+    case CMD_PAT:
+      do_action(pl, arg, CMD_PAT);
+      if (isname(arg, ch->player.name))
+      {
+        if (ch->following)
+          stop_follower(ch);
+        add_follower(ch, pl);
+        group_add_member(pl, ch);
+        act("$n tells you 'Can i be your friend? =)'.", 1, ch, 0, pl, TO_VICT);
+      }
+      return TRUE;
+      break;
+    case CMD_KILL:
+    case CMD_HIT:
+    case CMD_BACKSTAB:
+    case CMD_BASH:
+    case CMD_KICK:
+    case CMD_MURDER:
+      one_argument(arg, Gbuf1);
+      if ((ch == get_char_room(Gbuf1, pl->in_room)) && (pl == ch->following))
+      {
+        strcpy(Gbuf2, pl->player.name);
+        do_action(pl, Gbuf2, CMD_SLAP);
+        act("$n ask $mself 'Why? why? why was I trying to harm $N?  Who is my friend!'.",
             1, ch->following, 0, ch, TO_ROOM);
-          act("You ask yourself 'Why? why? why was I trying to harm $N?  Who is my friend!'.",
+        act("You ask yourself 'Why? why? why was I trying to harm $N?  Who is my friend!'.",
             1, ch->following, 0, ch, TO_CHAR);
-          return TRUE;
-        }
-        break;
-      default:
-        return FALSE;
-        break;
+        return TRUE;
+      }
+      break;
+    default:
+      return FALSE;
+      break;
     }
   }
   return FALSE;
@@ -1153,8 +1140,8 @@ int baby_dragon(P_char ch, P_char pl, int cmd, char *arg)
 #define TIMER 9
 void make_remains(P_char ch)
 {
-  P_obj    remains;
-  char     buf[MAX_INPUT_LENGTH];
+  P_obj remains;
+  char buf[MAX_INPUT_LENGTH];
 
   remains = read_object(3, VIRTUAL);
 
@@ -1163,7 +1150,7 @@ void make_remains(P_char ch)
   remains->name = str_dup("gold remains");
 
   snprintf(buf, MAX_INPUT_LENGTH, "The remains of %s are scattered here.",
-          ch->player.short_descr);
+           ch->player.short_descr);
   remains->description = str_dup(buf);
 
   snprintf(buf, MAX_INPUT_LENGTH, "The scattered remains of %s", ch->player.short_descr);
@@ -1175,10 +1162,10 @@ void make_remains(P_char ch)
 
 int statue(P_char ch, P_char pl, int cmd, char *arg)
 {
-  P_char   temp;
+  P_char temp;
 
   /*
-     check for periodic event calls 
+     check for periodic event calls
    */
   if (cmd == CMD_SET_PERIODIC)
     return FALSE;
@@ -1209,29 +1196,28 @@ int statue(P_char ch, P_char pl, int cmd, char *arg)
       temp->only.npc->spec[0] = ch->only.npc->spec[0];
       set_fighting(temp, GET_OPPONENT(ch));
     }
-    act
-      ("The stones of the statue split apart and reform into two new statues.",
-       TRUE, ch, 0, 0, TO_ROOM);
+    act("The stones of the statue split apart and reform into two new statues.",
+        TRUE, ch, 0, 0, TO_ROOM);
   }
   if (pl)
   {
     switch (cmd)
     {
     case CMD_UNLOCK:
-      act
-        ("The great statue begins to move with a magical aura and blocks your action.\r\n ",
-         TRUE, ch, 0, 0, TO_ROOM);
+      act("The great statue begins to move with a magical aura and blocks your action.\r\n ",
+          TRUE, ch, 0, 0, TO_ROOM);
       act("$n says 'Don't ever try that again!", TRUE, ch, 0, 0, TO_ROOM);
       return (TRUE);
       break;
     case CMD_KICK:
       if ((GET_HIT(ch) < 90) &&
           (GET_CLASS(pl, CLASS_ROGUE) ||
-           GET_CLASS(pl, CLASS_WARRIOR)) && (!number(0, 9) || !number(0, 9)))
+           GET_CLASS(pl, CLASS_WARRIOR)) &&
+          (!number(0, 9) || !number(0, 9)))
       {
         /*
            act("$N couldn't absorb the energy of $n!!", TRUE, pl, 0, ch,
-           TO_ROOM); 
+           TO_ROOM);
          */
         act("  $N is destroyed by the powerful kick of $n.", TRUE, pl, 0, ch,
             TO_ROOM);

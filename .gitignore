@@ -34,3 +34,11 @@ duris.key
 # environment files (may contain secrets)
 .env
 logs/shutdown_info.txt
+.c*
+
+# log files
+logs/log/*
+
+durismud-launcher
+Players.old.20251217175317
+backup

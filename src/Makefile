@@ -9,7 +9,7 @@ DEBUG	= -ggdb3
 
 LDFLAGS += -L/usr/lib/mysql
 
-CFLAGS = -g -Wno-write-strings -std=c++14 -D_FORTIFY_SOURCE=0 -Wno-format-truncation
+CFLAGS = -g -std=c++20 -D_FORTIFY_SOURCE=0 -Wno-write-strings -Wno-format-truncation -Wno-register 
 #CFLAGS += -D__NO_MYSQL__
 CFLAGS += -DTEST_MUD
 

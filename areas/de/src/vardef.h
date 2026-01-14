@@ -93,7 +93,7 @@
 #define DEF_SHOWCOLOR_VAL  false
 
 #define VAR_MENUPROMPT_NAME "MenuPrompt"   // stores menu prompt
-#define DEF_MENUPROMPT_VAL  "&+CYour choice, sir? &n"
+#define DEF_MENUPROMPT_VAL  "&+CYour choice, m'lady? &n"
 
 #define VAR_MAINPROMPT_NAME "MainPrompt"   // if == default, normal prompt is
 #define DEF_MAINPROMPT_VAL  "default"      // shown

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <gnutls/gnutls.h>
 #include "structs.h"
 #include "prototypes.h"
@@ -59,10 +60,11 @@ void sga_negotiate(P_desc desc)
   write_to_descriptor_binary(desc, sga_will_str, 3);
 }
 
-void send_ga(P_desc desc)
+int send_ga(P_desc desc)
 {
   if (desc && !desc->sga_disabled && !desc->websocket)
-    write_to_descriptor_binary(desc, ga_str, 2);
+    return write_to_descriptor_binary(desc, ga_str, 2);
+  return 0;
 }
 
 /* parse telnet options and return amount of characters 
@@ -224,7 +226,8 @@ int compress_end(P_desc player, int flush)
         break;
       }
       len = (long) player->z_str->next_out - (long) player->out_compress_buf;
-      raw_write_to_descriptor(player, player->out_compress_buf, len);
+      if (raw_write_to_descriptor(player, player->out_compress_buf, len) < 0)
+        break;
     }
     while (status != Z_STREAM_END);
   }
@@ -245,6 +248,9 @@ int write_to_descriptor(P_desc player, const char *txt)
   int      len, total, status, i, j;
   char     static_conv_buf[MAX_STRING_LENGTH];
   char    *conv_buf = static_conv_buf;
+
+  if (player->write_failed)
+    return -1;
 
   /* WebSocket connections need JSON-wrapped text frames */
   if (player->websocket) {
@@ -317,7 +323,12 @@ int write_to_descriptor(P_desc player, const char *txt)
 
   if (!player->out_compress)
   {
-    raw_write_to_descriptor(player, txt, total);
+    if (raw_write_to_descriptor(player, txt, total) < 0)
+    {
+      if (conv_buf != static_conv_buf)
+        FREE(conv_buf);
+      return (-1);
+    }
   }
   else
   {
@@ -344,7 +355,12 @@ int write_to_descriptor(P_desc player, const char *txt)
 
           len = (long) player->z_str->next_out -
             (long) player->out_compress_buf;
-          raw_write_to_descriptor(player, player->out_compress_buf, len);
+          if (raw_write_to_descriptor(player, player->out_compress_buf, len) < 0)
+          {
+            if (conv_buf != static_conv_buf)
+              FREE(conv_buf);
+            return (-1);
+          }
 
         }
         while (player->z_str->avail_out == 0);
@@ -373,11 +389,18 @@ int raw_write_to_descriptor(P_desc d, const char *txt, const int total)
   if (d->sslses)
   {
     int ret = gnutls_record_send(d->sslses, txt, total);
-    while (ret==GNUTLS_E_AGAIN || ret==GNUTLS_E_INTERRUPTED)
+    // retry on interrupt, but not on buffer full
+    while (ret == GNUTLS_E_INTERRUPTED)
       ret = gnutls_record_send(d->sslses, NULL, 0);
-    if (ret)
+    if (ret == GNUTLS_E_AGAIN)
     {
-      logit(LOG_COMM, "Write to SSL socket error: %s", gnutls_strerror(ret));
+      // ssl buffer full, skip this write and try next tick
+      return 0;
+    }
+    if (ret < 0)
+    {
+      logit(LOG_COMM, "Write to SSL socket error: %s (ret=%d)", gnutls_strerror(ret), ret);
+      d->write_failed = 1;
       return -1;
     }
   }
@@ -386,8 +409,19 @@ int raw_write_to_descriptor(P_desc d, const char *txt, const int total)
     thisround = write(d->descriptor, txt + sofar, (unsigned) (total - sofar));
     if (thisround < 0)
     {
-      logit(LOG_COMM, "Write to socket error");
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      {
+        // socket buffer full, skip this write and try next tick
+        return (0);
+      }
+      logit(LOG_COMM, "Write to socket error: %s (errno=%d)", strerror(errno), errno);
+      d->write_failed = 1;
       return (-1);
+    }
+    if (thisround == 0)
+    {
+      // wrote nothing - treat like eagain, try again next tick
+      return (0);
     }
     sofar += thisround;
   }
@@ -405,9 +439,13 @@ int write_to_descriptor_binary(P_desc player, const unsigned char *data, size_t 
 
   if (!player || !data || len == 0) return 0;
 
+  if (player->write_failed)
+    return -1;
+
   if (!player->out_compress)
   {
-    raw_write_to_descriptor(player, (const char *)data, len);
+    if (raw_write_to_descriptor(player, (const char *)data, len) < 0)
+      return -1;
   }
   else
   {
@@ -431,7 +469,8 @@ int write_to_descriptor_binary(P_desc player, const unsigned char *data, size_t 
 
           out_len = (long)player->z_str->next_out -
                     (long)player->out_compress_buf;
-          raw_write_to_descriptor(player, player->out_compress_buf, out_len);
+          if (raw_write_to_descriptor(player, player->out_compress_buf, out_len) < 0)
+            return -1;
         }
         while (player->z_str->avail_out == 0);
       }

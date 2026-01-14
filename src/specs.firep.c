@@ -1,11 +1,11 @@
-      /* Made for Charcoal Palace */
+/* Made for Charcoal Palace */
 #include <ctype.h>
 #include <stdio.h>
 #include <strings.h>
 #include <string.h>
 #include <time.h>
 #include <list>
-using namespace std;
+;
 
 #include "comm.h"
 #include "db.h"
@@ -33,7 +33,7 @@ extern P_obj justice_items_list;
 extern char *coin_names[];
 extern const char *command[];
 extern const char *dirs[];
-extern const char rev_dir[];
+// extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
 extern int planes_room_num[];
 extern int racial_base[];
@@ -47,16 +47,16 @@ extern const char *crime_list[];
 extern const char *crime_rep[];
 extern const char *specdata[][MAX_SPEC];
 extern struct class_names class_names_table[];
-int      range_scan_track(P_char ch, int distance, int type_scan);
-extern P_obj    object_list;
+int range_scan_track(P_char ch, int distance, int type_scan);
+extern P_obj object_list;
 
-#define KOSSUTH_HELPER_LIMIT    6
+#define KOSSUTH_HELPER_LIMIT 6
 
 int kossuth(P_char ch, P_char pl, int cmd, char *arg)
 {
   register P_char i;
-  P_char   minion;
-  int      count = 0;
+  P_char minion;
+  int count = 0;
 
   if (cmd == CMD_SET_PERIODIC)
   {
@@ -70,13 +70,13 @@ int kossuth(P_char ch, P_char pl, int cmd, char *arg)
   {
     return FALSE;
   }
-  if( IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) )
+  if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
   {
     REMOVE_BIT(world[ch->in_room].room_flags, ROOM_SINGLE_FILE);
     act("&+RKossuth bellows &+Wmightily&+R, and great &+Lmasses &+Rof molten rock assemble\r\n"
         "&+Rthemselves into a &+Lwider &+Rlandmass about his &+Wawesome &+Rfigure!&n",
-         FALSE, ch, 0, 0, TO_ROOM);
-  }    
+        FALSE, ch, 0, 0, TO_ROOM);
+  }
   if (IS_FIGHTING(ch))
   {
     /*
@@ -100,10 +100,9 @@ int kossuth(P_char ch, P_char pl, int cmd, char *arg)
           logit(LOG_EXIT, "assert: error in kossuth() proc");
           raise(SIGSEGV);
         }
-        act
-          ("&+r$n&+r makes a quaint gesture with his hand. &n\r\n"
-           "&+rSuddenly, reality begins to rend and tear, as &+WKossuth &+rspawns a fire minion from &+Lnothingness!&n\r\n",
-           FALSE, ch, 0, minion, TO_ROOM);
+        act("&+r$n&+r makes a quaint gesture with his hand. &n\r\n"
+            "&+rSuddenly, reality begins to rend and tear, as &+WKossuth &+rspawns a fire minion from &+Lnothingness!&n\r\n",
+            FALSE, ch, 0, minion, TO_ROOM);
         char_to_room(minion, ch->in_room, 0);
         return TRUE;
       }
@@ -115,10 +114,10 @@ int kossuth(P_char ch, P_char pl, int cmd, char *arg)
 
 int fruaack_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
-  int  helpers[] = { 88300, 88301, 88304, 88326, 0 };
+  int helpers[] = {88300, 88301, 88304, 88326, 0};
   if (cmd == CMD_SET_PERIODIC)
     return TRUE;
-  
+
   if (!tch && !number(0, 4))
     return shout_and_hunt(ch, 50, "&+RFinally a challenge!  &+rFire minions!  &+RTO ARMS!", NULL, helpers, 0, 0);
 
@@ -127,14 +126,14 @@ int fruaack_shout(P_char ch, P_char tch, int cmd, char *arg)
 
 int charcoal_guard(P_char ch, P_char victim, int cmd, char *arg)
 {
-  if(cmd == CMD_SET_PERIODIC)
+  if (cmd == CMD_SET_PERIODIC)
     return FALSE;
-  
-  if(!IS_FIGHTING(ch) &&
-     range_scan_track(ch, 5, 5) &&
-     MIN_POS(ch, POS_STANDING + STAT_NORMAL))
-        InitNewMobHunt(ch);
-  
+
+  if (!IS_FIGHTING(ch) &&
+      range_scan_track(ch, 5, 5) &&
+      MIN_POS(ch, POS_STANDING + STAT_NORMAL))
+    InitNewMobHunt(ch);
+
   return FALSE;
 }
 

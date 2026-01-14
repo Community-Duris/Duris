@@ -159,40 +159,40 @@ typedef int (*shop_proc_type)(P_char, P_char, int, char *);
 
 struct shop_data
 {
-  int close1, close2;         /* When does the shop close?               */
-  int flag;                   /* Flag for open/close messages            */
-  int in_room;                /* * Where is the shop?                      */
-  int keeper;                 /* * The mobil who owns the shop (virtual)   */
-  int open1, open2;           /* * When does the shop open?                */
-  int producing[MAX_PROD];    /* * Which item to produce (virtual)   */
-  struct shop_buy_data *type; /* * Which items to trade              */
-  int shop_hometown;          /* * What hometown (if any) shop is in       */
-  int social_action_types;    /* * Flag->For random social generator */
-  int temptime;               /* * Time storage flag.                      */
-  int with_who;               /* * Who does the shop trade with?           */
-  float buy_percent;          /* * Factor to multiply cost with.           */
-  float sell_percent;         /* * Factor to multiply cost with.           */
-  char *close_message;        /* * Path from work to home in evening       */
-  char *do_not_buy;           /* * If keeper dosn't buy such things.       */
-  char *message_buy;          /* * Message when player buys item           */
-  char *message_sell;         /* * Message when player sells item          */
-  char *missing_cash1;        /* * Message if keeper hasn't got cash       */
-  char *missing_cash2;        /* * Message if player hasn't got cash       */
-  char *no_such_item1;        /* * Message if keeper hasn't got an item    */
-  char *no_such_item2;        /* * Message if player hasn't got an item    */
-  char *open_message;         /* * Path from home to work in morning       */
-  char *racist_message;       /* * Message given to opposite races.        */
-  byte magic_allowed;         /* * Flag->Can magic be cast in the shop     */
-  byte number_items_produced; /* * Number of items they make to sell */
-  byte number_types_traded;   /* * Number of item types shop will buy  */
-  byte racist;                /* * Does this mob trade with other races?   */
-  byte shop_is_roaming;       /* * Flag->Does shopkeeper roam the world?   */
-  byte shop_killable;         /* * Does shopkeeper allow attacks?          */
-  byte shop_new_options;      /* * Flag->Does shop use New or Old format?  */
-  byte shopkeeper_race;       /* * Race of the shopkeeper.                 */
-  byte temper1;               /* * How does keeper react if no money       */
-  byte temper2;               /* * How does keeper react when attacked     */
-  shop_proc_type func;        /* * Secondary spec_proc for shopkeeper      */
+  int close1, close2;           /* When does the shop close?               */
+  int flag;                     /* Flag for open/close messages            */
+  int in_room;                  /* * Where is the shop?                      */
+  int keeper;                   /* * The mobil who owns the shop (virtual)   */
+  int open1, open2;             /* * When does the shop open?                */
+  int producing[MAX_PROD];      /* * Which item to produce (virtual)   */
+  struct shop_buy_data *type;   /* * Which items to trade              */
+  int shop_hometown;            /* * What hometown (if any) shop is in       */
+  int social_action_types;      /* * Flag->For random social generator */
+  int temptime;                 /* * Time storage flag.                      */
+  int with_who;                 /* * Who does the shop trade with?           */
+  float buy_percent;            /* * Factor to multiply cost with.           */
+  float sell_percent;           /* * Factor to multiply cost with.           */
+  char *close_message;          /* * Path from work to home in evening       */
+  char *do_not_buy;             /* * If keeper dosn't buy such things.       */
+  char *message_buy;            /* * Message when player buys item           */
+  char *message_sell;           /* * Message when player sells item          */
+  char *missing_cash1;          /* * Message if keeper hasn't got cash       */
+  char *missing_cash2;          /* * Message if player hasn't got cash       */
+  char *no_such_item1;          /* * Message if keeper hasn't got an item    */
+  char *no_such_item2;          /* * Message if player hasn't got an item    */
+  char *open_message;           /* * Path from home to work in morning       */
+  char *racist_message;         /* * Message given to opposite races.        */
+  ::byte magic_allowed;         /* * Flag->Can magic be cast in the shop     */
+  ::byte number_items_produced; /* * Number of items they make to sell */
+  ::byte number_types_traded;   /* * Number of item types shop will buy  */
+  ::byte racist;                /* * Does this mob trade with other races?   */
+  ::byte shop_is_roaming;       /* * Flag->Does shopkeeper roam the world?   */
+  ::byte shop_killable;         /* * Does shopkeeper allow attacks?          */
+  ::byte shop_new_options;      /* * Flag->Does shop use New or Old format?  */
+  ::byte shopkeeper_race;       /* * Race of the shopkeeper.                 */
+  ::byte temper1;               /* * How does keeper react if no money       */
+  ::byte temper2;               /* * How does keeper react when attacked     */
+  shop_proc_type func;          /* * Secondary spec_proc for shopkeeper      */
 };
 
 /* struct for the new editor code */
@@ -493,8 +493,8 @@ struct extra_descr_data
 
 struct obj_affected_type
 {
-  byte location;  /* Which ability to change (APPLY_XXX) */
-  sbyte modifier; /* How much it changes by              */
+  ::byte location; /* Which ability to change (APPLY_XXX) */
+  sbyte modifier;  /* How much it changes by              */
 };
 
 struct obj_affect
@@ -521,8 +521,8 @@ struct obj_data
 {
   long g_key;               /* Key generated upon creation     */
   int R_num;                /* Where in data-base               */
-  byte type;                /* Type of item                     */
-  byte str_mask;            /* for 'strung' char * fields       */
+  ::byte type;              /* Type of item                     */
+  ::byte str_mask;          /* for 'strung' char * fields       */
   char *name;               /* Title of object :get etc.        */
   char *description;        /* When in room                     */
   char *short_description;  /* when worn/carry/in cont.         */
@@ -539,7 +539,7 @@ struct obj_data
   unsigned int anti2_flags;
   unsigned int extra2_flags; /* Range weapon-related flags       */
   int weight;                /* Weight, what else                */
-  byte material;             /* size of object (for race)        */
+  ::byte material;           /* size of object (for race)        */
   int cost;                  /* Value when sold (cp.)            */
   sh_int trap_eff;           /* trap effect type                 */
   sh_int trap_dam;           /* trap damage type                 */
@@ -559,7 +559,7 @@ struct obj_data
       affected[MAX_OBJ_AFFECT]; /* Which abilities in PC to change  */
   struct obj_affect *affects;
 
-  byte loc_p; /* bitfield for loc union           */
+  ::byte loc_p; /* bitfield for loc union           */
   union
   {
     P_char carrying; /* character carrying object        */
@@ -889,9 +889,9 @@ typedef int (*room_proc_type)(int, P_char, int, char *);
 /* ========================= Structure for room ========================== */
 struct room_data
 {
-  int number;       /* Room number                        */
-  ush_int zone;     /* Room zone (for resetting)          */
-  byte sector_type; /* sector type (move/hide)            */
+  int number;         /* Room number                        */
+  ush_int zone;       /* Room zone (for resetting)          */
+  ::byte sector_type; /* sector type (move/hide)            */
   int continent;
   char *name;                                        /* Rooms name 'You are ...'           */
   char *description;                                 /* Shown when entered                 */
@@ -901,12 +901,11 @@ struct room_data
                                                      //  ulong resources;                                  /* what resources the room contains   */
                                                      //  ubyte kingdom_num;                                /* matches guild or town number       */
                                                      //  ubyte kingdom_type;                               /* town, pc, npc                      */
-  byte light;                                        /* Number of lightsources in room     */
-  byte justice_area;
-  byte chance_fall;
-  byte current_speed;
-  byte current_direction;
-
+  ::byte light;                                      /* Number of lightsources in room     */
+  ::byte justice_area;
+  ::byte chance_fall;
+  ::byte current_speed;
+  ::byte current_direction;
   /* special procedure */
   room_proc_type funct;
 
@@ -1120,7 +1119,7 @@ struct char_player_data
   struct time_data time;        /* Age                                  */
   ush_int weight;               /* weight                               */
   ush_int height;               /* height                               */
-  byte size;                    /* size T,S,M,L,H,G                     */
+  ::byte size;                  /* size T,S,M,L,H,G                     */
 };
 
 struct player_disguise_data
@@ -1192,8 +1191,8 @@ struct char_point_data
   int cash[4];  /* Money carried  */
   int curr_exp; /* The current experience of the player       */
 
-  byte damnodice;      /* The number of damage dice               */
-  byte damsizedice;    /* The size of the damage dice             */
+  ::byte damnodice;    /* The number of damage dice               */
+  ::byte damsizedice;  /* The size of the damage dice             */
   int base_hitroll;    /* base hit roll, 0 for PCs    */
   int base_damroll;    /* base damage roll, 0 for PCs */
   int hitroll;         /* Any bonus or penalty to the hit roll    */
@@ -1208,8 +1207,8 @@ struct char_point_data
 
 struct char_skill_data
 {
-  byte learned; /* % chance for success 0 = not learned   */
-  byte taught;  /* learned may not pass this    */
+  ::byte learned; /* % chance for success 0 = not learned   */
+  ::byte taught;  /* learned may not pass this    */
 };
 
 /* Skill usage limit --TAM 04/16/94 */
@@ -1217,7 +1216,7 @@ struct char_skill_data
 struct affected_type
 {
   sh_int type; /* The type of spell that caused this      */
-  byte wear_off_message_index;
+  ::byte wear_off_message_index;
   int duration;   /* For how long its effects will last      */
   uint flags;     /* flags describing affect behavior, see AFFTYPE_* defines */
   int modifier;   /* This is added to apropriate ability     */
@@ -1290,7 +1289,7 @@ struct pc_only_data
   P_char switched;
   P_char ignored;
 
-  byte wiz_invis;      /* Used by wizard command "vis" */
+  ::byte wiz_invis;    /* Used by wizard command "vis" */
   ubyte screen_length; /* adjust paging to fit terminal */
   ubyte echo_toggle;
   ush_int prompt;
@@ -1309,7 +1308,7 @@ struct pc_only_data
   long spell_bind_used;   // used for skill_spellbind
   sh_int prestige;        /* commoner or lord?                       */
   time_t time_left_guild; /* time you left guild                     */
-  byte nb_left_guild;     /* number of time you left a guild         */
+  ::byte nb_left_guild;   /* number of time you left a guild         */
   time_t time_unspecced;
   ulong vote; /* Voting Status -Strav */
   char *last_tell;
@@ -1325,7 +1324,7 @@ struct pc_only_data
   short aggressive;                          /* If not -1, PC will attack aggs */
   short wimpy;                               /* If wimpy set, max hp before autoflee */
   struct char_skill_data skills[MAX_SKILLS]; /* Skills                */
-  byte spells_memmed[MAX_CIRCLE + 1];
+  ::byte spells_memmed[MAX_CIRCLE + 1];
   ubyte talks[MAX_TONGUE]; /* PC's Tongue's 0 for NPC         */
   ubyte highest_level;     /* highest level PC has ever gotten */
   long int introd_list[MAX_INTRO];
@@ -1374,9 +1373,9 @@ struct npc_only_data
   ulong aggro_flags;  /* Err..  aggro flags */
   ulong aggro2_flags; /* aggro2 flags, more aggro goodness */
   ulong aggro3_flags;
-  ubyte default_pos;   /* Default position                       */
-  byte last_direction; /* The last direction the monster went    */
-  ubyte str_mask;      /* flag field for 'strung' char* fields   */
+  ubyte default_pos;     /* Default position                       */
+  ::byte last_direction; /* The last direction the monster went    */
+  ubyte str_mask;        /* flag field for 'strung' char* fields   */
 
   sh_int spec[4]; /* for use by various special procs       */
   int value[NUMB_CHAR_VALS];
@@ -1401,9 +1400,9 @@ struct char_special_data
   unsigned long affected_by4;
   unsigned long affected_by5;
 
-  byte x_cord; /* Sub-coordinate of large room            */
-  byte y_cord;
-  byte z_cord; /* hieght for flyers                       */
+  ::byte x_cord; /* Sub-coordinate of large room            */
+  ::byte y_cord;
+  ::byte z_cord; /* hieght for flyers                       */
 
   ubyte position;    /* posture and status                      */
   unsigned int act;  /* flags for NPC behavior                  */
@@ -1417,15 +1416,15 @@ struct char_special_data
   P_Guild guild;             /* which guild?                            */
   unsigned int guild_status; /* rank, how you enter, etc.               */
 
-  int carry_weight;           /* Carried weight                          */
-  ush_int carry_items;        /* Number of items carried                 */
-  int was_in_room;            /* previous room char was in               */
-  byte apply_saving_throw[5]; /* Saving throw (Bonuses)                  */
-  byte conditions[5];         /* Drunk full etc.                         */
-  sh_int alignment;           /* +-1000 for alignments                   */
-  int tracking;               /* room you are tracking to*/
-  P_char fighting;            /* Opponent                                */
-  P_char was_fighting;        /* time to see who I was fighting, mainly for assassin track */
+  int carry_weight;             /* Carried weight                          */
+  ush_int carry_items;          /* Number of items carried                 */
+  int was_in_room;              /* previous room char was in               */
+  ::byte apply_saving_throw[5]; /* Saving throw (Bonuses)                  */
+  ::byte conditions[5];         /* Drunk full etc.                         */
+  sh_int alignment;             /* +-1000 for alignments                   */
+  int tracking;                 /* room you are tracking to*/
+  P_char fighting;              /* Opponent                                */
+  P_char was_fighting;          /* time to see who I was fighting, mainly for assassin track */
   /* fighting list's next-char pointer thing is good, but too memhoggy
      if we want more combat values.. so.. */
   P_char next_fighting;   /* For fighting list             */
@@ -1498,8 +1497,8 @@ void remove_all_linked_objects(P_char c);
 
 struct char_data
 {
-  int in_room; /* Location                  */
-  byte light;  /* amount of light emitted by char */
+  int in_room;  /* Location                  */
+  ::byte light; /* amount of light emitted by char */
 
   /* new, removed the pc/npc specific items to their own structs -JAB */
   union
@@ -1663,7 +1662,7 @@ struct txt_q
 #define CON_ACCT_CONFIRM_CHAR 85
 #define CON_ACCT_RMOTD 86 // Read MOTD after account login
 // lower layer but meh...
-#define CON_SSLNEGO 87 // connected but not yet ready for sends
+#define CON_SSLNEGO 87    // connected but not yet ready for sends
 #define CON_TTYPE_NEGO 88 // waiting for ttype response
 
 #define TOTAL_CON 88
@@ -1695,8 +1694,8 @@ struct descriptor_data
   char login[9]; /* userid from host           */
   char registered_host[50];
   char registered_login[9];
-  byte rtype;                        /* character restore status   */
-  byte connected;                    /* mode of 'connectedness'    */
+  ::byte rtype;                      /* character restore status   */
+  ::byte connected;                  /* mode of 'connectedness'    */
   int wait;                          /* wait for how many loops    */
   char *showstr_head;                /* for paging through texts   */
   char **showstr_vector;             /*       -                    */
@@ -1718,7 +1717,7 @@ struct descriptor_data
   P_desc next;                       /* link to next descriptor    */
   char tmp_val;                      /* temporary field used in char creation only */
   char confirm_state;                /* SAM 7-94, used to allow confirming commands */
-  byte term_type;                    /* terminal type, normal or ansi */
+  ::byte term_type;                  /* terminal type, normal or ansi */
   char last_command[MAX_INPUT_LENGTH];
   P_acct account;
   char *selected_char_name; /* temporary storage for character selection confirmation */
@@ -1739,26 +1738,27 @@ struct descriptor_data
   int websocket;
   int ws_state;
   int ws_handshake_done;
-  char *ws_handshake_buffer;  /* buffer for fragmented http upgrade */
+  char *ws_handshake_buffer; /* buffer for fragmented http upgrade */
   size_t ws_handshake_len;
   char *ws_fragment_buffer;
   size_t ws_fragment_len;
   int gmcp_enabled;
   int sga_disabled;
+  int write_failed;
   int gmcp_quest_map_sent;
   char client_name[64];
   char client_version[32];
   int durisweb_verified;
 
   /* ttype/mtts support */
-  int ttype_state;              /* 0=none, 1=sent_do, 2=cycling, 3=complete */
-  int ttype_round;              /* mtts round (1-4) */
-  char ttype_client[64];        /* client name from ttype round 1 */
-  char ttype_terminal[32];      /* terminal type from round 2 */
-  char ttype_last[128];         /* last response for duplicate detection */
-  int mtts_flags;               /* bitvector from round 3 */
-  int charset_detected;         /* 1 if ttype says client supports utf8 */
-  time_t ttype_timeout;         /* when to give up waiting for ttype */
+  int ttype_state;         /* 0=none, 1=sent_do, 2=cycling, 3=complete */
+  int ttype_round;         /* mtts round (1-4) */
+  char ttype_client[64];   /* client name from ttype round 1 */
+  char ttype_terminal[32]; /* terminal type from round 2 */
+  char ttype_last[128];    /* last response for duplicate detection */
+  int mtts_flags;          /* bitvector from round 3 */
+  int charset_detected;    /* 1 if ttype says client supports utf8 */
+  time_t ttype_timeout;    /* when to give up waiting for ttype */
 
   /* ping/pong for dead connection detection */
   time_t ws_last_ping;
@@ -1768,6 +1768,14 @@ struct descriptor_data
   char *ws_message_buffer;
   size_t ws_message_len;
   int ws_message_opcode;
+
+  /* websocket compression */
+  int ws_deflate_requested;
+  int ws_compress;
+  void *ws_deflate_stream;
+  void *ws_inflate_stream;
+  size_t ws_bytes_in;
+  size_t ws_bytes_out;
 
   /* chargen state for webclient */
   struct stat_data chargen_stats;
@@ -1816,48 +1824,48 @@ struct message_list
 
 struct str_app_type
 {
-  byte tohit;     /* To Hit (THAC0) Bonus/Penalty        */
-  byte todam;     /* Damage Bonus/Penalty                */
+  ::byte tohit;   /* To Hit (THAC0) Bonus/Penalty        */
+  ::byte todam;   /* Damage Bonus/Penalty                */
   sh_int carry_w; /* Maximum weight that can be carrried */
   sh_int wield_w; /* Maximum weight that can be wielded  */
 };
 
 struct dex_app_type
 {
-  byte reaction;
-  byte miss_att;
-  byte p_pocket;
-  byte p_locks;
-  byte traps;
+  ::byte reaction;
+  ::byte miss_att;
+  ::byte p_pocket;
+  ::byte p_locks;
+  ::byte traps;
 };
 
 struct agi_app_type
 {
-  byte defensive;
-  byte sneak;
-  byte hide;
+  ::byte defensive;
+  ::byte sneak;
+  ::byte hide;
 };
 
 struct con_app_type
 {
-  byte hitp;
-  byte shock;
+  ::byte hitp;
+  ::byte shock;
 };
 
 struct int_app_type
 {
-  byte learn; /* how many % a player learns a spell/skill */
+  ::byte learn; /* how many % a player learns a spell/skill */
 };
 
 struct wis_app_type
 {
-  byte bonus; /* how many bonus skills a player can */
+  ::byte bonus; /* how many bonus skills a player can */
   /* practice pr. level                 */
 };
 
 struct cha_app_type
 {
-  byte modifier;
+  ::byte modifier;
 };
 
 /* For spec_procs */
@@ -1905,9 +1913,9 @@ struct ClassSkillInfo
       maxlearn[i] = 0;
     }
   }
-  byte rlevel[MAX_SPEC + 1];   /* level required, for spells, spell circle #*/
-  byte maxlearn[MAX_SPEC + 1]; /* max % that can be gained */
-  byte costmult;
+  ::byte rlevel[MAX_SPEC + 1];   /* level required, for spells, spell circle #*/
+  ::byte maxlearn[MAX_SPEC + 1]; /* max % that can be gained */
+  ::byte costmult;
 };
 
 struct s_skill
@@ -1938,11 +1946,11 @@ typedef struct s_skill Skill;
 struct command_info
 {
   void (*command_pointer)(P_char, char *, int);
-  byte minimum_position;
+  ::byte minimum_position;
   bool in_battle;
-  byte minimum_level;
-  byte req_confirm;
-  byte grantable;
+  ::byte minimum_level;
+  ::byte req_confirm;
+  ::byte grantable;
   bool check_aggro; // Check the room for mobs to aggro any ch that executes this command.
 };
 

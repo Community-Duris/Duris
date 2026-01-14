@@ -3766,6 +3766,7 @@ void enter_game(P_desc d)
   loginlog(GET_LEVEL(ch), "%s [%s] enters game @ %s.%s [%d]",
            GET_NAME(ch), d->host, timestr, Gbuf1, world[ch->in_room].number);
   sql_log(ch, CONNECTLOG, "Entered Game");
+  ws_broadcast_player_login(d);
 
   if(GET_LEVEL(ch) >= MINLVLIMMORTAL)
     loginlog(GET_LEVEL(ch), "&+GIMMORTAL&n: (%s) [%s] has logged on.%s",
@@ -4448,7 +4449,6 @@ void reconnect(P_desc d, P_char tmp_ch)
   loginlog(d->character->player.level, "%s [%s@%s] has reconnected.",
            GET_NAME(d->character), d->login, d->host);
   sql_log(d->character, CONNECTLOG, "Reconnected");
-  ws_broadcast_player_login(d->character);
   /* if they were morph'ed when they lost link, put them
    back... */
   if (IS_SET(tmp_ch->specials.act, PLR_MORPH))
@@ -4788,7 +4788,6 @@ void select_main_menu(P_desc d, char *arg)
     }
     enter_game(d);
     STATE(d) = CON_PLAYING;
-    ws_broadcast_player_login(d->character);
     d->prompt_mode = TRUE;
     break;
   case '2':                    /* read background story */
@@ -6884,7 +6883,6 @@ void nanny(P_desc d, char *arg)
       echo_on(d);
       STATE(d) = CON_PLAYING;
       enter_game(d);
-      ws_broadcast_player_login(d->character);
       d->prompt_mode = TRUE;
     }
 #else

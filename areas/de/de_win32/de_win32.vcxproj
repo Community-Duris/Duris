@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{D476FB1D-EB3C-456F-8041-C7CA8301028C}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>NotSet</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>17.0.35219.272</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\Debug\</OutDir>
+    <IntDir>.\Debug\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\Release\</OutDir>
+    <IntDir>.\Release\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Midl>
+      <TypeLibraryName>.\Debug/de_win32.tlb</TypeLibraryName>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_DE_;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader />
+      <PrecompiledHeaderOutputFile>.\Debug/de_win32.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\Debug/</AssemblerListingLocation>
+      <ObjectFileName>.\Debug/</ObjectFileName>
+      <ProgramDataBaseFileName>.\Debug/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>.\Debug/de_win32.exe</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>.\Debug/de_win32.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+      <TypeLibraryName>.\Debug/de_win32.tlb</TypeLibraryName>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_DE_;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader />
+      <PrecompiledHeaderOutputFile>.\Debug/de_win32.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\Debug/</AssemblerListingLocation>
+      <ObjectFileName>.\Debug/</ObjectFileName>
+      <ProgramDataBaseFileName>.\Debug/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>.\Debug/de.exe</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>.\Debug/de_win32.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <TypeLibraryName>.\Release/de_win32.tlb</TypeLibraryName>
+    </Midl>
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_DE_;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <PrecompiledHeader />
+      <PrecompiledHeaderOutputFile>.\Release/de_win32.pch</PrecompiledHeaderOutputFile>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <AssemblerListingLocation>.\Release/</AssemblerListingLocation>
+      <ObjectFileName>.\Release/</ObjectFileName>
+      <ProgramDataBaseFileName>.\Release/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat />
+      <CallingConvention>FastCall</CallingConvention>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <OutputFile>.\Release/de_win32.exe</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <ProgramDatabaseFile>.\Release/de_win32.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+      <TypeLibraryName>.\Release/de_win32.tlb</TypeLibraryName>
+    </Midl>
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_DE_;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <PrecompiledHeader />
+      <PrecompiledHeaderOutputFile>.\Release64/de_win64.pch</PrecompiledHeaderOutputFile>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <AssemblerListingLocation>.\Release64/</AssemblerListingLocation>
+      <ObjectFileName>.\Release64/</ObjectFileName>
+      <ProgramDataBaseFileName>.\Release64/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat />
+      <CallingConvention>FastCall</CallingConvention>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <OutputFile>.\Release64/de.exe</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <ProgramDatabaseFile>.\Release64/de_win64.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="../src/cmddef.cpp" />
+    <ClCompile Include="../src/Command\ALIAS.cpp" />
+    <ClCompile Include="../src/Command\CHECK.cpp" />
+    <ClCompile Include="../src/Command\CLONE.cpp" />
+    <ClCompile Include="../src/Command\Command.cpp" />
+    <ClCompile Include="../src/Command\COPYDESC.cpp" />
+    <ClCompile Include="../src/Command\CREATE.cpp" />
+    <ClCompile Include="../src/Command\CRTEDIT.cpp" />
+    <ClCompile Include="../src/Command\DELETE.cpp" />
+    <ClCompile Include="../src/Command\EDITENT.cpp" />
+    <ClCompile Include="../src/Command\LIST.cpp" />
+    <ClCompile Include="../src/Command\LOAD.cpp" />
+    <ClCompile Include="../src/Command\LOOK.cpp" />
+    <ClCompile Include="../src/Command\MAINCOMM.cpp" />
+    <ClCompile Include="../src/Command\MISCCOMM.cpp" />
+    <ClCompile Include="../src/Command\MOUNTFOL.cpp" />
+    <ClCompile Include="../src/Command\PURGE.cpp" />
+    <ClCompile Include="../src/Command\SETCOMM.cpp" />
+    <ClCompile Include="../src/Command\SETRAND.cpp" />
+    <ClCompile Include="../src/Command\STAT.cpp" />
+    <ClCompile Include="../src/Command\Var.cpp" />
+    <ClCompile Include="../src/common.c" />
+    <ClCompile Include="../src/de.cpp" />
+    <ClCompile Include="../src/dispflag.cpp" />
+    <ClCompile Include="../src/Display.cpp" />
+    <ClCompile Include="../src/dispmisc.cpp" />
+    <ClCompile Include="../src/Edesc\CRTDESC.cpp" />
+    <ClCompile Include="../src/Edesc\EDESC.cpp" />
+    <ClCompile Include="../src/Edesc\EDITDESC.cpp" />
+    <ClCompile Include="../src/edesc\readexd.cpp" />
+    <ClCompile Include="../src/edesc\writeexd.cpp" />
+    <ClCompile Include="../src/editflag.cpp" />
+    <ClCompile Include="../src/editval.cpp" />
+    <ClCompile Include="../src/FLAGDEF.cpp" />
+    <ClCompile Include="../src/Init.cpp" />
+    <ClCompile Include="../src/INTERP.cpp" />
+    <ClCompile Include="../src/Inv\drop.cpp" />
+    <ClCompile Include="../src/Inv\EQUIP.cpp" />
+    <ClCompile Include="../src/Inv\INV.cpp" />
+    <ClCompile Include="../src/Inv\PUT.cpp" />
+    <ClCompile Include="../src/Inv\take.cpp" />
+    <ClCompile Include="../src/Inv\UNEQUIP.cpp" />
+    <ClCompile Include="../src/listdef.cpp" />
+    <ClCompile Include="../src/map.cpp" />
+    <ClCompile Include="../src/menudef.cpp" />
+    <ClCompile Include="../src/Misc\CONFIG.cpp" />
+    <ClCompile Include="../src/Misc\DEFAULT.cpp" />
+    <ClCompile Include="../src/Misc\EDITABLE.cpp" />
+    <ClCompile Include="../src/Misc\EDITCHCK.cpp" />
+    <ClCompile Include="../src/Misc\EDITDISP.cpp" />
+    <ClCompile Include="../src/Misc\EDITICHK.cpp" />
+    <ClCompile Include="../src/Misc\EDITMCHK.cpp" />
+    <ClCompile Include="../src/Misc\EDITOCHK.cpp" />
+    <ClCompile Include="../src/Misc\EDITRCHK.cpp" />
+    <ClCompile Include="../src/Misc\Flags.cpp" />
+    <ClCompile Include="../src/Misc\Getstrn.cpp" />
+    <ClCompile Include="../src/Misc\HISTORY.cpp" />
+    <ClCompile Include="../src/Misc\KEYWORDS.cpp" />
+    <ClCompile Include="../src/Misc\LOADED.cpp" />
+    <ClCompile Include="../src/Misc\MASTER.cpp" />
+    <ClCompile Include="../src/Misc\MENU.cpp" />
+    <ClCompile Include="../src/Misc\Misc.cpp" />
+    <ClCompile Include="../src/Misc\mudcomm.cpp" />
+    <ClCompile Include="../src/Misc\Strings.cpp" />
+    <ClCompile Include="../src/Misc\STRNNODE.cpp" />
+    <ClCompile Include="../src/Mob\CRTMOB.cpp" />
+    <ClCompile Include="../src/Mob\CRTMOBHU.cpp" />
+    <ClCompile Include="../src/Mob\Crtmobtu.cpp" />
+    <ClCompile Include="../src/Mob\DELMOBHU.cpp" />
+    <ClCompile Include="../src/Mob\DELMOBT.cpp" />
+    <ClCompile Include="../src/Mob\DELMOBTU.cpp" />
+    <ClCompile Include="../src/Mob\DISPMOB.cpp" />
+    <ClCompile Include="../src/Mob\EDITMMS2.cpp" />
+    <ClCompile Include="../src/Mob\EDITMMS3.cpp" />
+    <ClCompile Include="../src/Mob\EDITMMSC.cpp" />
+    <ClCompile Include="../src/Mob\EDITMOB.cpp" />
+    <ClCompile Include="../src/Mob\EDITMOBU.cpp" />
+    <ClCompile Include="../src/Mob\MOB.cpp" />
+    <ClCompile Include="../src/Mob\Mobhere.cpp" />
+    <ClCompile Include="../src/Mob\MOBTYPES.cpp" />
+    <ClCompile Include="../src/Mob\MOBU.cpp" />
+    <ClCompile Include="../src/Mob\READMOB.cpp" />
+    <ClCompile Include="../src/Mob\WRITEMOB.cpp" />
+    <ClCompile Include="../src/Obj\CRTOBJ.cpp" />
+    <ClCompile Include="../src/Obj\CRTOBJHU.cpp" />
+    <ClCompile Include="../src/Obj\Crtobjtu.cpp" />
+    <ClCompile Include="../src/Obj\DELOBJH.cpp" />
+    <ClCompile Include="../src/Obj\DELOBJHU.cpp" />
+    <ClCompile Include="../src/Obj\DELOBJT.cpp" />
+    <ClCompile Include="../src/Obj\DELOBJTU.cpp" />
+    <ClCompile Include="../src/Obj\DISPOBJ.cpp" />
+    <ClCompile Include="../src/Obj\EDITOBJ.cpp" />
+    <ClCompile Include="../src/Obj\EDITOBJU.cpp" />
+    <ClCompile Include="../src/Obj\EDITOEXD.cpp" />
+    <ClCompile Include="../src/Obj\EDITOMS2.cpp" />
+    <ClCompile Include="../src/Obj\EDITOMSC.cpp" />
+    <ClCompile Include="../src/Obj\editotrp.cpp" />
+    <ClCompile Include="../src/Obj\OBJECT.cpp" />
+    <ClCompile Include="../src/Obj\OBJECTU.cpp" />
+    <ClCompile Include="../src/Obj\OBJHERE.cpp" />
+    <ClCompile Include="../src/Obj\OBJTYPES.cpp" />
+    <ClCompile Include="../src/Obj\READOBJ.cpp" />
+    <ClCompile Include="../src/Obj\WRITEOBJ.cpp" />
+    <ClCompile Include="../src/Quest\delqstu.cpp" />
+    <ClCompile Include="../src/Quest\editqst.cpp" />
+    <ClCompile Include="../src/Quest\EDITQSTI.cpp" />
+    <ClCompile Include="../src/Quest\EDITQSTM.cpp" />
+    <ClCompile Include="../src/Quest\EDITQSTQ.cpp" />
+    <ClCompile Include="../src/Quest\EDITQSTU.cpp" />
+    <ClCompile Include="../src/Quest\QSTTYPES.cpp" />
+    <ClCompile Include="../src/Quest\QUEST.cpp" />
+    <ClCompile Include="../src/Quest\READQST.cpp" />
+    <ClCompile Include="../src/Quest\WRITEQST.cpp" />
+    <ClCompile Include="../src/readfile.cpp" />
+    <ClCompile Include="../src/Room\CRTEXIT.cpp" />
+    <ClCompile Include="../src/Room\CRTREXIT.cpp" />
+    <ClCompile Include="../src/Room\CRTROOM.cpp" />
+    <ClCompile Include="../src/Room\CRTROOMU.cpp" />
+    <ClCompile Include="../src/Room\DELEXITU.cpp" />
+    <ClCompile Include="../src/Room\DELROOMU.cpp" />
+    <ClCompile Include="../src/Room\Disproom.cpp" />
+    <ClCompile Include="../src/Room\EDITEXIT.cpp" />
+    <ClCompile Include="../src/Room\EDITREXD.cpp" />
+    <ClCompile Include="../src/Room\EDITREXT.cpp" />
+    <ClCompile Include="../src/Room\EDITRMSC.cpp" />
+    <ClCompile Include="../src/Room\EDITROOM.cpp" />
+    <ClCompile Include="../src/Room\EXIT.cpp" />
+    <ClCompile Include="../src/Room\READWLD.cpp" />
+    <ClCompile Include="../src/Room\ROOM.cpp" />
+    <ClCompile Include="../src/Room\ROOMTYPE.cpp" />
+    <ClCompile Include="../src/Room\ROOMU.cpp" />
+    <ClCompile Include="../src/Room\WRITEWLD.cpp" />
+    <ClCompile Include="../src/Set\READSET.cpp" />
+    <ClCompile Include="../src/Set\WRITESET.cpp" />
+    <ClCompile Include="../src/Shop\DELSHPU.cpp" />
+    <ClCompile Include="../src/Shop\editshp.cpp" />
+    <ClCompile Include="../src/Shop\EDITSHPB.cpp" />
+    <ClCompile Include="../src/Shop\EDITSHPC.cpp" />
+    <ClCompile Include="../src/Shop\EDITSHPM.cpp" />
+    <ClCompile Include="../src/Shop\EDITSHPR.cpp" />
+    <ClCompile Include="../src/Shop\EDITSHPS.cpp" />
+    <ClCompile Include="../src/Shop\EDITSHPT.cpp" />
+    <ClCompile Include="../src/Shop\EDITSHPU.cpp" />
+    <ClCompile Include="../src/Shop\READSHP.cpp" />
+    <ClCompile Include="../src/Shop\SHOP.cpp" />
+    <ClCompile Include="../src/Shop\WRITESHP.cpp" />
+    <ClCompile Include="..\src\skills.cpp" />
+    <ClCompile Include="../src/template.cpp" />
+    <ClCompile Include="../src/VARDEF.cpp" />
+    <ClCompile Include="../src/win32.cpp" />
+    <ClCompile Include="../src/Zone\DISPZONE.cpp" />
+    <ClCompile Include="../src/Zone\EDITZMSC.cpp" />
+    <ClCompile Include="../src/Zone\EDITZONE.cpp" />
+    <ClCompile Include="../src/Zone\READZON.cpp" />
+    <ClCompile Include="../src/Zone\WRITEZON.cpp" />
+    <ClCompile Include="../src/Zone\ZONE.cpp" />
+    <ClCompile Include="../src/zone\zonetype.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="../src/Boolean.h" />
+    <ClInclude Include="../src/Command\Alias.h" />
+    <ClInclude Include="../src/Command\Check.h" />
+    <ClInclude Include="../src/Command\Command.h" />
+    <ClInclude Include="../src/Command\Maincomm.h" />
+    <ClInclude Include="../src/Command\Misccomm.h" />
+    <ClInclude Include="../src/Command\Setcomm.h" />
+    <ClInclude Include="../src/Command\Var.h" />
+    <ClInclude Include="../src/De.h" />
+    <ClInclude Include="../src/defines.h" />
+    <ClInclude Include="../src/Dispflag.h" />
+    <ClInclude Include="../src/display.h" />
+    <ClInclude Include="../src/Edesc\Edesc.h" />
+    <ClInclude Include="../src/Fh.h" />
+    <ClInclude Include="../src/Flagdef.h" />
+    <ClInclude Include="../src/graphcon.h" />
+    <ClInclude Include="../src/inv\inv.h" />
+    <ClInclude Include="../src/Keys.h" />
+    <ClInclude Include="../src/Misc\Bitdef.h" />
+    <ClInclude Include="../src/Misc\Editable.h" />
+    <ClInclude Include="../src/Misc\Flags.h" />
+    <ClInclude Include="../src/Misc\Loaded.h" />
+    <ClInclude Include="../src/Misc\Master.h" />
+    <ClInclude Include="../src/Misc\Menu.h" />
+    <ClInclude Include="../src/Misc\Misc.h" />
+    <ClInclude Include="../src/Misc\mudcomm.h" />
+    <ClInclude Include="../src/Misc\Strnnode.h" />
+    <ClInclude Include="../src/Mob\Mob.h" />
+    <ClInclude Include="../src/Mob\Mobhere.h" />
+    <ClInclude Include="../src/objmisc.h" />
+    <ClInclude Include="../src/Obj\Armor.h" />
+    <ClInclude Include="../src/Obj\Editoexd.h" />
+    <ClInclude Include="../src/Obj\Instrmnt.h" />
+    <ClInclude Include="../src/Obj\Liquids.h" />
+    <ClInclude Include="../src/Obj\Material.h" />
+    <ClInclude Include="../src/Obj\Missiles.h" />
+    <ClInclude Include="../src/Obj\objcraft.h" />
+    <ClInclude Include="../src/Obj\Object.h" />
+    <ClInclude Include="../src/Obj\Objhere.h" />
+    <ClInclude Include="../src/Obj\Objsize.h" />
+    <ClInclude Include="../src/Obj\Shields.h" />
+    <ClInclude Include="../src/Obj\skills.h" />
+    <ClInclude Include="../src/obj\totem.h" />
+    <ClInclude Include="../src/Obj\Traps.h" />
+    <ClInclude Include="../src/Obj\weapons.h" />
+    <ClInclude Include="../src/Quest\Editqst.h" />
+    <ClInclude Include="../src/Quest\Editqstq.h" />
+    <ClInclude Include="../src/Quest\Quest.h" />
+    <ClInclude Include="../src/Quest\Readqst.h" />
+    <ClInclude Include="../src/readfile.h" />
+    <ClInclude Include="../src/Room\Editexit.h" />
+    <ClInclude Include="../src/Room\Editrexd.h" />
+    <ClInclude Include="../src/Room\Exit.h" />
+    <ClInclude Include="../src/Room\Room.h" />
+    <ClInclude Include="../src/Room\Roomu.h" />
+    <ClInclude Include="../src/Set\Readset.h" />
+    <ClInclude Include="../src/Shop\Editshp.h" />
+    <ClInclude Include="../src/Shop\Shop.h" />
+    <ClInclude Include="../src/skillrec.h" />
+    <ClInclude Include="../src/spells.h" />
+    <ClInclude Include="../src/System.h" />
+    <ClInclude Include="../src/Types.h" />
+    <ClInclude Include="../src/unixkey.h" />
+    <ClInclude Include="../src/utils.h" />
+    <ClInclude Include="../src/Vardef.h" />
+    <ClInclude Include="../src/Zone\Dispzone.h" />
+    <ClInclude Include="../src/Zone\Readzon.h" />
+    <ClInclude Include="../src/Zone\Writezon.h" />
+    <ClInclude Include="../src/Zone\Zone.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="../src/Log.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

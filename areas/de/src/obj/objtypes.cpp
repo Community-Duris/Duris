@@ -60,7 +60,7 @@ extern flagDef g_armorMiscFlagDef[], g_contFlagDef[], g_totemSphereFlagDef[],
                g_objHerbSpellList[];
 
 extern "C" const char *apply_types[];
-extern "C" Skill skills[MAX_AFFECT_TYPES+1];
+extern Skill skills[MAX_AFFECT_TYPES+1];
 extern "C" struct material_data materials[];
 
 extern char *g_apply_types_low[APPLY_LAST + 1];

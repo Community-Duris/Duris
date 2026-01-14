@@ -339,10 +339,13 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
     }
 
     // count objects on ground, but skip ship stuff - already loaded
+    // also skip objects in ship rooms (dynamic vnums 60000-64999)
     for (obj = object_list; obj; obj = obj->next) {
         if (OBJ_ROOM(obj)) {
             int vnum = OBJ_VNUM(obj);
             if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
+                continue;
+            if (IS_SHIP_ROOM(obj->loc.room))
                 continue;
             (*num_objs)++;
         }
@@ -463,10 +466,13 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
     }
 
     // write objects on ground, skip ship stuff - already loaded
+    // also skip objects in ship rooms (dynamic vnums 60000-64999)
     for (obj = object_list; obj; obj = obj->next) {
         if (OBJ_ROOM(obj)) {
             int vnum = OBJ_VNUM(obj);
             if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
+                continue;
+            if (IS_SHIP_ROOM(obj->loc.room))
                 continue;
             write_obj_entry(fp, obj);
         }
@@ -645,6 +651,17 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
                 d->character = ch;
                 ch->desc = d;
                 d->connected = CON_PLAYING;
+
+#ifdef USE_ACCOUNT
+                // restore account for preserved telnet connections
+                d->account = allocate_account();
+                if (d->account) {
+                    d->account->acct_name = str_dup(desc_entry.player_name);
+                    if (read_account(d->account) == -1) {
+                        d->account = free_account(d->account);
+                    }
+                }
+#endif
 
                 // make them alive
                 SET_POS(ch, POS_STANDING + STAT_NORMAL);
@@ -837,6 +854,15 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
         rnum = real_room(obj_entry.room);
         if (rnum < 0 || rnum > top_of_world) {
             // skip contents too
+            for (int c = 0; c < obj_entry.num_contents; c++) {
+                struct copyover_obj_content dummy;
+                fread(&dummy, sizeof(dummy), 1, fp);
+            }
+            continue;
+        }
+
+        // skip objects in ship rooms - ships are recreated fresh by initialize_ships()
+        if (IS_SHIP_ROOM(rnum)) {
             for (int c = 0; c < obj_entry.num_contents; c++) {
                 struct copyover_obj_content dummy;
                 fread(&dummy, sizeof(dummy), 1, fp);

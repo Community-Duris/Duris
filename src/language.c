@@ -3,8 +3,8 @@
  *  File: language.c                                         Part of Duris *
  *  Usage: handle 'foreign' languages
  *  Copyright 1994 - 2008 - Duris Systems Ltd.
- * 
- * *************************************************************************** 
+ *
+ * ***************************************************************************
  */
 
 #include <stdio.h>
@@ -18,21 +18,20 @@
 #include "utils.h"
 #include "justice.h"
 
-
 /*
- * external variables 
+ * external variables
  */
 
 extern const char *language_names[];
 extern const struct stat_data stat_factor[];
 extern int language_base[][TONGUE_GOD];
 
-char    *makedrunk(char *, P_char);
-void     keep_char(int);
-void     trans_char(int);
+char *makedrunk(char *, P_char);
+void keep_char(int);
+void trans_char(int);
 
 /*
- * Muhahaa, main code 
+ * Muhahaa, main code
  */
 
 int npc_get_pseudo_spoken_language(P_char ch)
@@ -53,7 +52,7 @@ int npc_get_pseudo_spoken_language(P_char ch)
 
 int npc_get_pseudo_language_skill(P_char ch, int lang)
 {
-  int      s;
+  int s;
 
   if (IS_PC(ch))
     return 0;
@@ -73,8 +72,8 @@ int npc_get_pseudo_language_skill(P_char ch, int lang)
 
 void language_show(P_char ch)
 {
-  int      a, lang;
-  char     buf[512];
+  int a, lang;
+  char buf[512];
 
   if (IS_NPC(ch))
     return;
@@ -85,10 +84,10 @@ void language_show(P_char ch)
     {
       if (lang < 40)
         snprintf(buf, 512, "You have a basic understanding of %s.",
-                language_names[a - 1]);
+                 language_names[a - 1]);
       else if (lang < 60)
         snprintf(buf, 512, "You comprehend %s%s.",
-                language_names[a - 1], lang < 55 ? " somewhat" : "");
+                 language_names[a - 1], lang < 55 ? " somewhat" : "");
       else if (lang < 90)
         snprintf(buf, 512, "You are quite fluent in %s.", language_names[a - 1]);
       else
@@ -97,17 +96,17 @@ void language_show(P_char ch)
     }
   if (GET_LANGUAGE(ch, 0) >= 1 && GET_LANGUAGE(ch, 0) <= TONGUE_GOD)
     snprintf(buf, 512, "Currently speaking: %s",
-            language_names[GET_LANGUAGE(ch, 0) - 1]);
+             language_names[GET_LANGUAGE(ch, 0) - 1]);
   else
     snprintf(buf, 512,
-            "Currently speaking impossible language. Please contact someone about this.");
+             "Currently speaking impossible language. Please contact someone about this.");
   act(buf, TRUE, ch, 0, 0, TO_CHAR);
 }
 
 void do_speak(P_char ch, char *argument, int cmd)
 {
-  char     buf[512];
-  int      a;
+  char buf[512];
+  int a;
 
   if (IS_NPC(ch))
     return;
@@ -137,16 +136,15 @@ void do_speak(P_char ch, char *argument, int cmd)
 
 void init_defaultlanguages(P_char ch)
 {
-  int      a, b;
-  byte     c;
+  int a, b;
+  ::byte c;
 
   if (IS_NPC(ch))
     return;
   if ((GET_RACE(ch) < 1 || GET_RACE(ch) > LAST_RACE) && !IS_TRUSTED(ch))
   {
-    send_to_char
-      ("Your race seems to be .. weird. Please contact a coder about it.\r\n",
-       ch);
+    send_to_char("Your race seems to be .. weird. Please contact a coder about it.\r\n",
+                 ch);
     return;
   }
   if (!GET_LANGUAGE(ch, 0) ||
@@ -162,13 +160,13 @@ void init_defaultlanguages(P_char ch)
     else
     {
       b = language_base[GET_RACE(ch) - 1][a];
-      c = 0;                    /* GET_LANGUAGE (ch, a); */
+      c = 0; /* GET_LANGUAGE (ch, a); */
       if (b > 100)
         b = b % 100 + (STAT_INDEX(GET_C_INT(ch)) * b / 100);
       if (b > 100)
         b = 100;
       if (c < b)
-        c = (int) b;
+        c = (int)b;
       if (c > 100)
         c = 100;
       GET_LANGUAGE(ch, a) = c;
@@ -184,15 +182,14 @@ void init_defaultlanguages(P_char ch)
   else
     GET_LANGUAGE(ch, TONGUE_COMMON) = MAX(GET_LANGUAGE(ch, TONGUE_COMMON),
                                           number(30, 50) + GET_LEVEL(ch));
-
 }
 
-char    *language_known(P_char ch, P_char vict)
+char *language_known(P_char ch, P_char vict)
 {
   static char kala[256];
 
 #ifdef LANGUAGE_CRYPT
-  int      a;
+  int a;
 
   kala[0] = '\0';
   if (IS_TRUSTED(ch) ||
@@ -223,12 +220,13 @@ void language_gain(P_char ch, P_char vict, int tongue)
   if (!number(0, 19) && (number(50, 150) < (GET_C_INT(vict) - 15)) &&
       GET_LANGUAGE(vict, tongue) && (GET_LANGUAGE(vict, tongue) < 98) &&
       (GET_LANGUAGE(ch, tongue) > 75))
-    GET_LANGUAGE(vict, tongue)++;
+    GET_LANGUAGE(vict, tongue)
+    ++;
 
   if (((tongue == TONGUE_ORC) && EVIL_RACE(vict)) ||
       ((tongue == TONGUE_COMMON) && !EVIL_RACE(vict)))
     GET_LANGUAGE(vict, tongue) =
-      MAX(GET_LEVEL(vict) + 20, GET_LANGUAGE(vict, tongue));
+        MAX(GET_LEVEL(vict) + 20, GET_LANGUAGE(vict, tongue));
 
 #endif
 }
@@ -241,71 +239,71 @@ struct translation_table
 
 /* fill this table with language transforms. */
 struct translation_table language_table[] = {
-  {"mine", "myne"},
-  {"Mine", "Myne"},
-  {"that", "thaet"},
-  {"That", "Thaet"},
-  {"this", "thys"},
-  {"This", "Thys"},
-  {"the", "thea"},
-  {"The", "Thea"},
-  {"you", "you"},
-  {"You", "You"},
-  {"me", "me"},
-  {"Me", "Me"},
-  {"a", "e"},
-  {"A", "E"},
-  {"b", "c"},
-  {"B", "C"},
-  {"c", "d"},
-  {"C", "D"},
-  {"d", "f"},
-  {"D", "F"},
-  {"e", "i"},
-  {"E", "I"},
-  {"f", "g"},
-  {"F", "G"},
-  {"g", "h"},
-  {"G", "H"},
-  {"h", "j"},
-  {"H", "J"},
-  {"i", "o"},
-  {"I", "O"},
-  {"j", "k"},
-  {"J", "K"},
-  {"k", "l"},
-  {"K", "L"},
-  {"l", "m"},
-  {"L", "M"},
-  {"m", "n"},
-  {"M", "N"},
-  {"n", "p"},
-  {"N", "P"},
-  {"o", "u"},
-  {"O", "U"},
-  {"p", "q"},
-  {"P", "Q"},
-  {"q", "r"},
-  {"Q", "R"},
-  {"r", "s"},
-  {"R", "S"},
-  {"s", "t"},
-  {"S", "T"},
-  {"t", "v"},
-  {"T", "V"},
-  {"u", "y"},
-  {"U", "Y"},
-  {"v", "w"},
-  {"V", "W"},
-  {"w", "x"},
-  {"W", "X"},
-  {"x", "z"},
-  {"X", "Z"},
-  {"y", "a"},
-  {"Y", "A"},
-  {"z", "b"},
-  {"Z", "B"},
-  {"", ""}                      /*table must end with empty string */
+    {"mine", "myne"},
+    {"Mine", "Myne"},
+    {"that", "thaet"},
+    {"That", "Thaet"},
+    {"this", "thys"},
+    {"This", "Thys"},
+    {"the", "thea"},
+    {"The", "Thea"},
+    {"you", "you"},
+    {"You", "You"},
+    {"me", "me"},
+    {"Me", "Me"},
+    {"a", "e"},
+    {"A", "E"},
+    {"b", "c"},
+    {"B", "C"},
+    {"c", "d"},
+    {"C", "D"},
+    {"d", "f"},
+    {"D", "F"},
+    {"e", "i"},
+    {"E", "I"},
+    {"f", "g"},
+    {"F", "G"},
+    {"g", "h"},
+    {"G", "H"},
+    {"h", "j"},
+    {"H", "J"},
+    {"i", "o"},
+    {"I", "O"},
+    {"j", "k"},
+    {"J", "K"},
+    {"k", "l"},
+    {"K", "L"},
+    {"l", "m"},
+    {"L", "M"},
+    {"m", "n"},
+    {"M", "N"},
+    {"n", "p"},
+    {"N", "P"},
+    {"o", "u"},
+    {"O", "U"},
+    {"p", "q"},
+    {"P", "Q"},
+    {"q", "r"},
+    {"Q", "R"},
+    {"r", "s"},
+    {"R", "S"},
+    {"s", "t"},
+    {"S", "T"},
+    {"t", "v"},
+    {"T", "V"},
+    {"u", "y"},
+    {"U", "Y"},
+    {"v", "w"},
+    {"V", "W"},
+    {"w", "x"},
+    {"W", "X"},
+    {"x", "z"},
+    {"X", "Z"},
+    {"y", "a"},
+    {"Y", "A"},
+    {"z", "b"},
+    {"Z", "B"},
+    {"", ""} /*table must end with empty string */
 };
 
 static char *ntstr;
@@ -313,7 +311,7 @@ static char *str;
 
 void trans_char(int num)
 {
-  int      i;
+  int i;
 
   for (i = 0; (i < num) && (*str != '\0'); i++)
   {
@@ -331,7 +329,7 @@ void trans_char(int num)
       wijzer++;
     }
 
-/* if letter that occurs that isn't in table */
+    /* if letter that occurs that isn't in table */
     if ((wijzer->OrigString)[0] == '\0')
     {
       ntstr[0] = str[0];
@@ -344,7 +342,7 @@ void trans_char(int num)
 
 void keep_char(int num)
 {
-  int      i;
+  int i;
 
   for (i = 0; (i < num) && (*str != '\0'); i++)
   {
@@ -356,12 +354,12 @@ void keep_char(int num)
 
 /* transformation routine */
 /* ch is the one who speaks.. victim the one who reads .. */
-char    *language_CRYPT(P_char ch, P_char victim, char *message)
+char *language_CRYPT(P_char ch, P_char victim, char *message)
 {
-  char     translation[MAX_INPUT_LENGTH];
+  char translation[MAX_INPUT_LENGTH];
   static char string[MAX_INPUT_LENGTH];
-  int      len, learned, i, ch_skill, vict_skill;
-  ulong    ttl;
+  int len, learned, i, ch_skill, vict_skill;
+  ulong ttl;
 
   strncpy(string, message, MAX_INPUT_LENGTH);
   makedrunk(string, ch);
@@ -381,8 +379,8 @@ char    *language_CRYPT(P_char ch, P_char victim, char *message)
   }
 
   /* temp for stability check */
-//  if (IS_NPC(ch) || (GET_RACEWAR(ch) == GET_RACEWAR(victim)) || IS_TRUSTED(ch))
-//    return string;
+  //  if (IS_NPC(ch) || (GET_RACEWAR(ch) == GET_RACEWAR(victim)) || IS_TRUSTED(ch))
+  //    return string;
   if (IS_TRUSTED(ch) || IS_TRUSTED(victim) || IS_NPC(ch) || IS_NPC(victim) ||
       affected_by_spell(victim, SPELL_COMPREHEND_LANGUAGES))
     return string;
@@ -404,7 +402,6 @@ char    *language_CRYPT(P_char ch, P_char victim, char *message)
   if (IS_HARPY(ch) && IS_HARPY(victim))
     return string;
 
-
   if (IS_PC(ch))
     ch_skill = GET_LANGUAGE(ch, GET_LANGUAGE(ch, 0));
   else
@@ -414,13 +411,13 @@ char    *language_CRYPT(P_char ch, P_char victim, char *message)
   /* listening is easier than speaking */
   if (IS_PC(victim))
     vict_skill = GET_LANGUAGE(victim, GET_LANGUAGE(ch, 0)) + 10;
-  else                          /* npc's listen at 100% */
+  else /* npc's listen at 100% */
     vict_skill = 100;
 
-/* works across racewars again */
-/*  if ((IS_RACEWAR_EVIL(ch) && IS_RACEWAR_EVIL(victim)) ||
-     (IS_RACEWAR_GOOD(ch) && IS_RACEWAR_GOOD(victim))  ||
-     (IS_RACEWAR_UNDEAD(ch) && IS_RACEWAR_UNDEAD(victim))) */
+  /* works across racewars again */
+  /*  if ((IS_RACEWAR_EVIL(ch) && IS_RACEWAR_EVIL(victim)) ||
+       (IS_RACEWAR_GOOD(ch) && IS_RACEWAR_GOOD(victim))  ||
+       (IS_RACEWAR_UNDEAD(ch) && IS_RACEWAR_UNDEAD(victim))) */
 
   if (affected_by_spell(victim, SPELL_COMPREHEND_LANGUAGES))
   {
@@ -441,15 +438,15 @@ char    *language_CRYPT(P_char ch, P_char victim, char *message)
     ttl = 0;
     for (i = 0; i < len; i++)
       ttl += string[i];
-    if (((ubyte) ttl) != GET_LANGUAGE(victim, TONGUE_LASTHEARD))
+    if (((ubyte)ttl) != GET_LANGUAGE(victim, TONGUE_LASTHEARD))
     {
-      GET_LANGUAGE(victim, TONGUE_LASTHEARD) = ((ubyte) ttl);
+      GET_LANGUAGE(victim, TONGUE_LASTHEARD) = ((ubyte)ttl);
       language_gain(ch, victim, GET_LANGUAGE(ch, 0));
     }
   }
 
   if (learned >= 90)
-    return string;              /* no need for translation .. */
+    return string; /* no need for translation .. */
   if (learned == 0)
   {
     trans_char(len);
@@ -460,9 +457,9 @@ char    *language_CRYPT(P_char ch, P_char victim, char *message)
   while (*str != '\0')
   {
 
-/* don't change all letters .. */
-/* why not change all the letter? */
-//    if (learned < 30) {
+    /* don't change all letters .. */
+    /* why not change all the letter? */
+    //    if (learned < 30) {
     if (learned < 0)
     {
       keep_char(1);
@@ -483,70 +480,42 @@ char    *language_CRYPT(P_char ch, P_char victim, char *message)
 
 struct drunk_struct
 {
-  int      min_drunk_level;
-  int      number_of_rep;
+  int min_drunk_level;
+  int number_of_rep;
   const char *replacement[11];
 };
 
-
-char    *makedrunk(char *string, P_char ch)
+char *makedrunk(char *string, P_char ch)
 {
-  char     buf[MAX_STRING_LENGTH], temp;
-  int      pos = 0, randomnum;
+  char buf[MAX_STRING_LENGTH], temp;
+  int pos = 0, randomnum;
   struct drunk_struct drunk[] = {
-    {3, 10,
-     {"a", "a", "a", "A", "aa", "ah", "Ah", "ao", "aw", "oa", "ahhhh"}},
-    {8, 5,
-     {"b", "b", "b", "B", "B", "vb"}},
-    {3, 5,
-     {"c", "c", "C", "cj", "sj", "zj"}},
-    {5, 2,
-     {"d", "d", "D"}},
-    {3, 3,
-     {"e", "e", "eh", "E"}},
-    {4, 5,
-     {"f", "f", "ff", "fff", "fFf", "F"}},
-    {8, 2,
-     {"g", "g", "G"}},
-    {9, 6,
-     {"h", "h", "hh", "hhh", "Hhh", "HhH", "H"}},
-    {7, 6,
-     {"i", "i", "Iii", "ii", "iI", "Ii", "I"}},
-    {9, 5,
-     {"j", "j", "jj", "Jj", "jJ", "J"}},
-    {7, 2,
-     {"k", "k", "K"}},
-    {3, 2,
-     {"l", "l", "L"}},
-    {5, 8,
-     {"m", "m", "mm", "mmm", "mmmm", "mmmmm", "MmM", "mM", "M"}},
-    {6, 6,
-     {"n", "n", "nn", "Nn", "nnn", "nNn", "N"}},
-    {3, 6,
-     {"o", "o", "ooo", "ao", "aOoo", "Ooo", "ooOo"}},
-    {3, 2,
-     {"p", "p", "P"}},
-    {5, 5,
-     {"q", "q", "Q", "ku", "ququ", "kukeleku"}},
-    {4, 2,
-     {"r", "r", "R"}},
-    {2, 5,
-     {"s", "ss", "zzZzssZ", "ZSssS", "sSzzsss", "sSss"}},
-    {5, 2,
-     {"t", "t", "T"}},
-    {3, 6,
-     {"u", "u", "uh", "Uh", "Uhuhhuh", "uhU", "uhhu"}},
-    {4, 2,
-     {"v", "v", "V"}},
-    {4, 2,
-     {"w", "w", "W"}},
-    {5, 6,
-     {"x", "x", "X", "ks", "iks", "kz", "xz"}},
-    {3, 2,
-     {"y", "y", "Y"}},
-    {2, 9,
-     {"z", "z", "ZzzZz", "Zzz", "Zsszzsz", "szz", "sZZz", "ZSz", "zZ", "Z"}}
-  };
+      {3, 10, {"a", "a", "a", "A", "aa", "ah", "Ah", "ao", "aw", "oa", "ahhhh"}},
+      {8, 5, {"b", "b", "b", "B", "B", "vb"}},
+      {3, 5, {"c", "c", "C", "cj", "sj", "zj"}},
+      {5, 2, {"d", "d", "D"}},
+      {3, 3, {"e", "e", "eh", "E"}},
+      {4, 5, {"f", "f", "ff", "fff", "fFf", "F"}},
+      {8, 2, {"g", "g", "G"}},
+      {9, 6, {"h", "h", "hh", "hhh", "Hhh", "HhH", "H"}},
+      {7, 6, {"i", "i", "Iii", "ii", "iI", "Ii", "I"}},
+      {9, 5, {"j", "j", "jj", "Jj", "jJ", "J"}},
+      {7, 2, {"k", "k", "K"}},
+      {3, 2, {"l", "l", "L"}},
+      {5, 8, {"m", "m", "mm", "mmm", "mmmm", "mmmmm", "MmM", "mM", "M"}},
+      {6, 6, {"n", "n", "nn", "Nn", "nnn", "nNn", "N"}},
+      {3, 6, {"o", "o", "ooo", "ao", "aOoo", "Ooo", "ooOo"}},
+      {3, 2, {"p", "p", "P"}},
+      {5, 5, {"q", "q", "Q", "ku", "ququ", "kukeleku"}},
+      {4, 2, {"r", "r", "R"}},
+      {2, 5, {"s", "ss", "zzZzssZ", "ZSssS", "sSzzsss", "sSss"}},
+      {5, 2, {"t", "t", "T"}},
+      {3, 6, {"u", "u", "uh", "Uh", "Uhuhhuh", "uhU", "uhhu"}},
+      {4, 2, {"v", "v", "V"}},
+      {4, 2, {"w", "w", "W"}},
+      {5, 6, {"x", "x", "X", "ks", "iks", "kz", "xz"}},
+      {3, 2, {"y", "y", "Y"}},
+      {2, 9, {"z", "z", "ZzzZz", "Zzz", "Zsszzsz", "szz", "sZZz", "ZSz", "zZ", "Z"}}};
 
   if (GET_COND(ch, DRUNK) > 0)
   {
@@ -574,10 +543,9 @@ char    *makedrunk(char *string, P_char ch)
         else
           buf[pos++] = *string;
       }
-    }
-    while (*string++);
+    } while (*string++);
 
-    buf[pos] = '\0';            /* Mark end of the string... */
+    buf[pos] = '\0'; /* Mark end of the string... */
     strcpy(string, buf);
     return (string);
   }

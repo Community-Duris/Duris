@@ -1,9 +1,9 @@
 /*
-   ***************************************************************************
-   *  File: mount.c                                            Part of Duris *
-   *  Usage: handle critters for riding.                                       *
-   *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
-   ***************************************************************************
+ ***************************************************************************
+ *  File: mount.c                                            Part of Duris *
+ *  Usage: handle critters for riding.                                       *
+ *  Copyright 1994 - 2008 - Duris Systems Ltd.                             *
+ ***************************************************************************
  */
 
 #include <stdio.h>
@@ -37,29 +37,33 @@ extern const char *dirs[];
 
 bool has_dragoon_mount(P_char ch)
 {
-  if(!ch) return FALSE;
+  if (!ch)
+    return FALSE;
 
-  if(IS_DRAGON_FORM(ch)) return TRUE;
+  if (IS_DRAGON_FORM(ch))
+    return TRUE;
 
   P_char mount = get_linked_char(ch, LNK_DRAGOON_MOUNT);
 
-  if(mount == NULL) return FALSE;
+  if (mount == NULL)
+    return FALSE;
 
   return TRUE;
 }
 
 bool is_dragoon_mounted(P_char ch)
 {
-  if(IS_DRAGON_FORM(ch)) return TRUE;
+  if (IS_DRAGON_FORM(ch))
+    return TRUE;
 
-  if(IS_DRAGOON(ch))
+  if (IS_DRAGOON(ch))
   {
-    P_char   mount = get_linked_char(ch, LNK_RIDING);
-    P_char   dragon = get_linked_char(ch, LNK_DRAGOON_MOUNT);
+    P_char mount = get_linked_char(ch, LNK_RIDING);
+    P_char dragon = get_linked_char(ch, LNK_DRAGOON_MOUNT);
 
-    if(mount != NULL)
+    if (mount != NULL)
     {
-        return mount == dragon;
+      return mount == dragon;
     }
   }
   return FALSE;
@@ -67,11 +71,14 @@ bool is_dragoon_mounted(P_char ch)
 
 P_char get_dragoon_mount(P_char ch)
 {
-  if(!ch) return NULL;
-    
-  if(!GET_CLASS(ch, CLASS_DRAGOON)) return NULL;
+  if (!ch)
+    return NULL;
 
-  if(IS_DRAGON_FORM(ch)) return ch;
+  if (!GET_CLASS(ch, CLASS_DRAGOON))
+    return NULL;
+
+  if (IS_DRAGON_FORM(ch))
+    return ch;
 
   P_char mount = get_linked_char(ch, LNK_DRAGOON_MOUNT);
 
@@ -80,8 +87,10 @@ P_char get_dragoon_mount(P_char ch)
 
 bool is_dragoon_mount(P_char ch, P_char mount)
 {
-  if(IS_DRAGON_FORM(ch)) return TRUE;
-  if(IS_DRAGON_FORM(mount)) return TRUE;
+  if (IS_DRAGON_FORM(ch))
+    return TRUE;
+  if (IS_DRAGON_FORM(mount))
+    return TRUE;
 
   P_char candidate = get_linked_char(ch, LNK_DRAGOON_MOUNT);
   return candidate == mount;
@@ -91,11 +100,12 @@ P_char get_dragoon_rider(P_char mount)
 {
   P_char rider = get_linked_char(mount, LNK_RIDING);
 
-  if(rider == NULL) return NULL;
+  if (rider == NULL)
+    return NULL;
 
-  if(IS_DRAGOON(rider))
+  if (IS_DRAGOON(rider))
   {
-    if(get_dragoon_mount(rider) == mount)
+    if (get_dragoon_mount(rider) == mount)
     {
       return rider;
     }
@@ -106,9 +116,9 @@ P_char get_dragoon_rider(P_char mount)
 
 void do_mount(P_char ch, char *argument, int cmd)
 {
-  char     name[MAX_STRING_LENGTH];
-  P_char   mount, rider;
-  int      movescost;
+  char name[MAX_STRING_LENGTH];
+  P_char mount, rider;
+  int movescost;
 
   one_argument(argument, name);
 
@@ -146,20 +156,20 @@ void do_mount(P_char ch, char *argument, int cmd)
     send_to_char("You are already riding on something.\r\n", ch);
     return;
   }
-  if( IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) )
+  if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
   {
     send_to_char("This room is too narrow to ride.\r\n", ch);
     return;
   }
-  
-// world[ch->in_room].sector_type >= SECT_WATER_SWIM && Feb09 -Lucrot
+
+  // world[ch->in_room].sector_type >= SECT_WATER_SWIM && Feb09 -Lucrot
   if (world[ch->in_room].sector_type == SECT_OCEAN)
   {
     send_to_char("Are you crazy? You might slip and drown!\r\n", ch);
     return;
   }
 
-  if( IS_THRIKREEN(ch) || IS_DRIDER(ch) )
+  if (IS_THRIKREEN(ch) || IS_DRIDER(ch))
   {
     send_to_char("You cannot ride.\r\n", ch);
     return;
@@ -184,8 +194,7 @@ void do_mount(P_char ch, char *argument, int cmd)
   {
     if (IS_CENTAUR(ch))
     {
-      send_to_char
-        ("Most centaurs do that in the privacy of their own home..\r\n", ch);
+      send_to_char("Most centaurs do that in the privacy of their own home..\r\n", ch);
       return;
     }
 
@@ -196,13 +205,12 @@ void do_mount(P_char ch, char *argument, int cmd)
     }
     /* Saddle Check */
     if (!mount->equipment[WEAR_HORSE_BODY])
-    {                           /* nothing worn there */
+    { /* nothing worn there */
       send_to_char("Ride without a saddle?  I think not...\r\n", ch);
       return;
     }
   }
-  else if(IS_CENTAUR(ch) || has_innate(ch, INNATE_HORSE_BODY)
-    || has_innate(ch, INNATE_SPIDER_BODY) )
+  else if (IS_CENTAUR(ch) || has_innate(ch, INNATE_HORSE_BODY) || has_innate(ch, INNATE_SPIDER_BODY))
   {
     send_to_char("It's a tad hard for you to mount much of anything.\r\n",
                  ch);
@@ -211,46 +219,46 @@ void do_mount(P_char ch, char *argument, int cmd)
 
   else if (!IS_SET(mount->specials.act, ACT_MOUNT))
   {
-    if((GET_RACE(mount) == RACE_ANIMAL) ||
-	(GET_RACE(mount) == RACE_AQUATIC_ANIMAL) || 
-	(GET_RACE(mount) == RACE_QUADRUPED) ||
-	(GET_RACE(mount) == RACE_PRIMATE)  ||
-	(GET_RACE(mount) == RACE_HERBIVORE)  ||
-       (GET_RACE(mount) == RACE_CARNIVORE))
-	{
-	 int mounttry = (GET_CHAR_SKILL(ch, SKILL_MOUNT) + GET_LEVEL(ch));
-        int mountdef = (GET_LEVEL(mount) * 2);
-	 if (mountdef > mounttry)
-	  {
-          act("You attempt to mount $N, but find you are not yet skilled enough to ride that creature.", FALSE, ch, 0, mount, TO_CHAR);
-	   return;
-	  }
-	}
-    	else
-    	{
-    	  act("It's too difficult to ride on $N.", FALSE, ch, 0, mount, TO_CHAR);
-    	  return;
-   	}
-     }
+    if ((GET_RACE(mount) == RACE_ANIMAL) ||
+        (GET_RACE(mount) == RACE_AQUATIC_ANIMAL) ||
+        (GET_RACE(mount) == RACE_QUADRUPED) ||
+        (GET_RACE(mount) == RACE_PRIMATE) ||
+        (GET_RACE(mount) == RACE_HERBIVORE) ||
+        (GET_RACE(mount) == RACE_CARNIVORE))
+    {
+      int mounttry = (GET_CHAR_SKILL(ch, SKILL_MOUNT) + GET_LEVEL(ch));
+      int mountdef = (GET_LEVEL(mount) * 2);
+      if (mountdef > mounttry)
+      {
+        act("You attempt to mount $N, but find you are not yet skilled enough to ride that creature.", FALSE, ch, 0, mount, TO_CHAR);
+        return;
+      }
+    }
+    else
+    {
+      act("It's too difficult to ride on $N.", FALSE, ch, 0, mount, TO_CHAR);
+      return;
+    }
+  }
   if (GET_MASTER(mount) &&
-     GET_MASTER(mount) != ch &&
-     !is_linked_to(ch, GET_MASTER(mount), LNK_CONSENT))
+      GET_MASTER(mount) != ch &&
+      !is_linked_to(ch, GET_MASTER(mount), LNK_CONSENT))
   {
     act("$N does not recognize you and refuses to let you ride $M.", FALSE,
         ch, 0, mount, TO_CHAR);
     return;
   }
-  
+
   rider = get_linking_char(mount, LNK_RIDING);
-  
+
   if (rider && rider != ch)
   {
     act("Someone else is riding on $N.", FALSE, ch, 0, mount, TO_CHAR);
     return;
   }
-  
+
   movescost = MAX(1, ((100 - (GET_CHAR_SKILL(ch, SKILL_MOUNT))) / 10));
-  
+
   if (GET_VITALITY(ch) - movescost < 0)
   {
     send_to_char("You're too tired to ride at this point.\r\n", ch);
@@ -261,7 +269,7 @@ void do_mount(P_char ch, char *argument, int cmd)
       GET_CHAR_SKILL(ch, SKILL_MOUNTED_COMBAT) / 1.5 < number(0, 100))
   {
     act("Fending off the attackers you try to mount $N, but alas you fail.",
-      FALSE, ch, 0, mount, TO_CHAR);
+        FALSE, ch, 0, mount, TO_CHAR);
     CharWait(ch, PULSE_VIOLENCE);
     return;
   }
@@ -273,11 +281,11 @@ void do_mount(P_char ch, char *argument, int cmd)
   }
 
 #if defined(CTF_MUD) && (CTF_MUD == 1)
-    if (ctf_carrying_flag(ch) == CTF_PRIMARY)
-    {
-      send_to_char("You can't carry that with you.\r\n", ch);
-      drop_ctf_flag(ch);
-    }
+  if (ctf_carrying_flag(ch) == CTF_PRIMARY)
+  {
+    send_to_char("You can't carry that with you.\r\n", ch);
+    drop_ctf_flag(ch);
+  }
 #endif
 
   GET_VITALITY(ch) -= movescost;
@@ -293,7 +301,7 @@ void do_mount(P_char ch, char *argument, int cmd)
   act("$n climbs on and rides you.", FALSE, ch, 0, mount, TO_VICT);
   notch_skill(ch, SKILL_MOUNT, 20);
 
-  if(is_dragoon_mounted(ch))
+  if (is_dragoon_mounted(ch))
   {
     // restart commune
     do_assimilate(ch, "nl", CMD_COMMUNE);
@@ -308,7 +316,7 @@ void do_mount(P_char ch, char *argument, int cmd)
 
 static int valid_ride(int room, P_char ch)
 {
-  P_char   i;
+  P_char i;
 
   if (room == NOWHERE)
     return FALSE;
@@ -322,16 +330,14 @@ static int valid_ride(int room, P_char ch)
 
 void do_dismount(P_char ch, char *argument, int cmd)
 {
-  P_char   mount = get_linked_char(ch, LNK_RIDING);
+  P_char mount = get_linked_char(ch, LNK_RIDING);
   int sect = world[ch->in_room].sector_type;
 
   if (mount)
   {
     if (valid_ride(ch->in_room, mount))
     {
-      if( (sect == SECT_WATER_SWIM || sect == SECT_WATER_NOSWIM || sect == SECT_NO_GROUND || sect == SECT_OCEAN
-        || sect == SECT_UNDRWLD_WATER || sect == SECT_UNDRWLD_NOSWIM || sect == SECT_UNDRWLD_NOGROUND)
-        && !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_FLY) && !IS_AFFECTED(ch, AFF_LEVITATE) )
+      if ((sect == SECT_WATER_SWIM || sect == SECT_WATER_NOSWIM || sect == SECT_NO_GROUND || sect == SECT_OCEAN || sect == SECT_UNDRWLD_WATER || sect == SECT_UNDRWLD_NOSWIM || sect == SECT_UNDRWLD_NOGROUND) && !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_FLY) && !IS_AFFECTED(ch, AFF_LEVITATE))
       {
         act("Here? That's not too wise.", FALSE, ch, 0, 0, TO_CHAR);
       }
@@ -357,7 +363,7 @@ void do_dismount(P_char ch, char *argument, int cmd)
 
 void stop_riding(P_char ch)
 {
-  P_char   mount;
+  P_char mount;
 
   if (!ch)
     return;
@@ -375,7 +381,7 @@ void stop_riding(P_char ch)
 /* check to make sure mount and rider both exist and are in same room */
 bool check_valid_ride(P_char ch)
 {
-  P_char   mount = get_linked_char(ch, LNK_RIDING);
+  P_char mount = get_linked_char(ch, LNK_RIDING);
 
   if (!ch)
     return FALSE;
@@ -407,15 +413,14 @@ bool check_valid_ride(P_char ch)
 /* value[0] Number of occupants                         */
 /* value[1] Type: 1) land/cart 2) water/ferry 3) air/?  */
 
-
 void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 {
-  char     horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
-  P_obj    obj;
-  P_char   pl;
+  char horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
+  P_obj obj;
+  P_char pl;
 
-  send_to_char( "Under construction.\n\r", ch );
-	return;
+  send_to_char("Under construction.\n\r", ch);
+  return;
 
   argument_interpreter(arg, cart, horse);
 
@@ -439,16 +444,19 @@ void do_hitch_vehicle(P_char ch, char *arg, int cmd)
     {
       send_to_char("Hitch who?\r\n", ch);
       return;
-    } else {
-			if((IS_NPC(pl) && GET_MASTER(pl) != ch) || (!IS_NPC(pl) && !is_linked_to(pl,ch,LNK_CONSENT))) {
-	      send_to_char("They aren't interested in you hitching anything to them.\n", ch);
-  	    return;
-			}
-		}
+    }
+    else
+    {
+      if ((IS_NPC(pl) && GET_MASTER(pl) != ch) || (!IS_NPC(pl) && !is_linked_to(pl, ch, LNK_CONSENT)))
+      {
+        send_to_char("They aren't interested in you hitching anything to them.\n", ch);
+        return;
+      }
+    }
   }
   else
   {
-    pl=ch;
+    pl = ch;
   }
 
   if (pl->lobj && pl->lobj->Visible_Type())
@@ -470,16 +478,19 @@ void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 
   /* Check for weight here */
 
-	if(pl == ch) {
-	  act("$n takes up the burden of $N.", TRUE, ch, obj, pl, TO_ROOM);
-	  act("You hitch to $N.", FALSE, ch, obj, pl, TO_CHAR);
-	} else {
-	  act("$n attaches $p to $N.", TRUE, ch, obj, pl, TO_ROOM);
-	  act("You hitch $p to $N.", FALSE, ch, obj, pl, TO_CHAR);
-	  act("$n attaches $p to you.", FALSE, ch, obj, pl, TO_VICT);
-	}
-	
-  add_linked_object(pl,obj,get_object_link_type(obj));
+  if (pl == ch)
+  {
+    act("$n takes up the burden of $N.", TRUE, ch, obj, pl, TO_ROOM);
+    act("You hitch to $N.", FALSE, ch, obj, pl, TO_CHAR);
+  }
+  else
+  {
+    act("$n attaches $p to $N.", TRUE, ch, obj, pl, TO_ROOM);
+    act("You hitch $p to $N.", FALSE, ch, obj, pl, TO_CHAR);
+    act("$n attaches $p to you.", FALSE, ch, obj, pl, TO_VICT);
+  }
+
+  add_linked_object(pl, obj, get_object_link_type(obj));
   obj->hitched_to = pl;
   return;
 }
@@ -487,9 +498,9 @@ void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 void do_unhitch_vehicle(P_char ch, char *arg, int cmd)
 {
 
-  char     horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
-  P_obj    obj;
-  P_char   pl;
+  char horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
+  P_obj obj;
+  P_char pl;
 
   if (!SanityCheck(ch, "unhitch_vehicle"))
     return;
@@ -509,25 +520,28 @@ void do_unhitch_vehicle(P_char ch, char *arg, int cmd)
     send_to_char("What do you want to unhitch?\r\n", ch);
     return;
   }
-	
+
   if (*horse)
   {
     if (!(pl = get_char_room_vis(ch, horse)))
     {
       send_to_char("I see noone like that here!\r\n", ch);
       return;
-    } else {
-			if((IS_NPC(pl) && GET_MASTER(pl) != ch) || (!IS_NPC(pl) && !is_linked_to(pl,ch,LNK_CONSENT))) {
-	      send_to_char("They aren't interested in you touching them.\n", ch);
-  	    return;
-			}
-		}
+    }
+    else
+    {
+      if ((IS_NPC(pl) && GET_MASTER(pl) != ch) || (!IS_NPC(pl) && !is_linked_to(pl, ch, LNK_CONSENT)))
+      {
+        send_to_char("They aren't interested in you touching them.\n", ch);
+        return;
+      }
+    }
   }
   else
   {
     pl = ch;
   }
-  if (!has_linked_object(pl,obj))
+  if (!has_linked_object(pl, obj))
   {
     send_to_char("They aren't hitched to that.\r\n", ch);
     return;
@@ -547,25 +561,27 @@ void do_unhitch_vehicle(P_char ch, char *arg, int cmd)
 */
 
   /* clear weight here */
-	if(pl == ch) {
-	  act("$n steps away from $N.", TRUE, ch, obj, pl, TO_ROOM);
-	  act("You unhitch from $N.", FALSE, ch, obj, pl, TO_CHAR);
-	} else {
-	  act("$n detaches $p from $N.", TRUE, ch, obj, pl, TO_ROOM);
-	  act("You unhitch $p from $N.", FALSE, ch, obj, pl, TO_CHAR);
-	  act("$n detaches $p from you.", FALSE, ch, obj, pl, TO_VICT);
-	}
+  if (pl == ch)
+  {
+    act("$n steps away from $N.", TRUE, ch, obj, pl, TO_ROOM);
+    act("You unhitch from $N.", FALSE, ch, obj, pl, TO_CHAR);
+  }
+  else
+  {
+    act("$n detaches $p from $N.", TRUE, ch, obj, pl, TO_ROOM);
+    act("You unhitch $p from $N.", FALSE, ch, obj, pl, TO_CHAR);
+    act("$n detaches $p from you.", FALSE, ch, obj, pl, TO_VICT);
+  }
 
   remove_linked_object(obj);
   return;
 }
 
-
-  /* count chars in vehicle */
+/* count chars in vehicle */
 int num_char_in_vehicle(P_obj obj)
 {
-  int      num = 0, room;
-  P_char   i;
+  int num = 0, room;
+  P_char i;
 
   room = obj->R_num;
 
@@ -578,25 +594,25 @@ int num_char_in_vehicle(P_obj obj)
   return num;
 }
 
-
-static struct vehicle_data navi_info[] = {      /* mob start dest1 dest2(opt) dest3(opt) 0 time freq */
-  {47000, 157026, 152728, 150777, 154478, 0, 6, 6},
-  /* tharnadia->ashrumite->ugta->woodseer->tharnadia */
-  {47001, 150777, 154478, 157026, 152728, 0, 6, 6},
-  /* ugta->woodseer->tharnadia->ashrumite->ugta */
-  {0, 0, 0, 0, 0, 0, 0, 0}
-  /* obligatory null bullshit */
+static struct vehicle_data navi_info[] = {
+    /* mob start dest1 dest2(opt) dest3(opt) 0 time freq */
+    {47000, 157026, 152728, 150777, 154478, 0, 6, 6},
+    /* tharnadia->ashrumite->ugta->woodseer->tharnadia */
+    {47001, 150777, 154478, 157026, 152728, 0, 6, 6},
+    /* ugta->woodseer->tharnadia->ashrumite->ugta */
+    {0, 0, 0, 0, 0, 0, 0, 0}
+    /* obligatory null bullshit */
 };
 
-  /* All wagons/rooms they contain will be in one zone. Loop through
-     valid ones at boot up, and assign the procs
-   */
+/* All wagons/rooms they contain will be in one zone. Loop through
+   valid ones at boot up, and assign the procs
+ */
 
 void init_wagons(void)
 {
-  int      Vnum, i;
-  P_char   horse;
-  P_obj    Wagon;
+  int Vnum, i;
+  P_char horse;
+  P_obj Wagon;
 
   return; /* off till needed again */
 
@@ -627,7 +643,7 @@ void init_wagons(void)
       {
         obj_to_room(Wagon, horse->in_room);
         /* connect the two... */
-				add_linked_object(horse,Wagon,get_object_link_type(Wagon));
+        add_linked_object(horse, Wagon, get_object_link_type(Wagon));
       }
     }
   }
@@ -635,7 +651,7 @@ void init_wagons(void)
 
 void check_for_wagon(P_char ch)
 {
-  int      i;
+  int i;
 
   for (i = 0; navi_info[i].mob != 0; i++)
     if (navi_info[i].mob == mob_index[GET_RNUM(ch)].virtual_number)
@@ -645,9 +661,9 @@ void check_for_wagon(P_char ch)
 
 int wagon_pull(P_char ch, int mob)
 {
-  char     Gbuf3[MAX_STRING_LENGTH] = "\0";
-  byte     next_step = -1;
-  int      dum;
+  char Gbuf3[MAX_STRING_LENGTH] = "\0";
+  ::byte next_step = -1;
+  int dum;
 
   if ((time_info.hour - navi_info[mob].move_time) % navi_info[mob].freq == 0)
   {
@@ -714,7 +730,6 @@ int wagon_pull(P_char ch, int mob)
       fprintf(stderr, "Bug: this line should never be executed.\n");
     }
 
-
   command_interpreter(ch, Gbuf3);
   return TRUE;
 }
@@ -722,9 +737,9 @@ int wagon_pull(P_char ch, int mob)
 /* proc assigned to the wagon object itself */
 int wagon(P_obj obj, P_char ch, int cmd, char *arg)
 {
-  char     name[MAX_INPUT_LENGTH];
-  P_obj    obj_entered;
-  int      interior;
+  char name[MAX_INPUT_LENGTH];
+  P_obj obj_entered;
+  int interior;
 
   /* check for periodic event calls */
   if (cmd == CMD_SET_PERIODIC)
@@ -738,7 +753,6 @@ int wagon(P_obj obj, P_char ch, int cmd, char *arg)
     act("The wagon is for lowbies my friend", FALSE, ch, obj, 0, TO_CHAR);
     return FALSE;
   }
-
 
   one_argument(arg, name);
   obj_entered = get_obj_in_list_vis(ch, name, world[ch->in_room].contents);
@@ -769,8 +783,8 @@ int wagon(P_obj obj, P_char ch, int cmd, char *arg)
 /* proc attached to the room within the wagon */
 int wagon_exit_room(int room, P_char ch, int cmd, char *arg)
 {
-  P_obj    obj;
-  int      rroom;
+  P_obj obj;
+  int rroom;
 
   if ((cmd != CMD_LOOK) && (cmd != CMD_DISEMBARK) && (cmd != CMD_EXITS))
     return (FALSE);
@@ -794,12 +808,12 @@ int wagon_exit_room(int room, P_char ch, int cmd, char *arg)
       return (FALSE);
 
     // This should be fine with just the CMD_LOOKAFAR, but I didn't test it to be sure.
-//    rroom = ch->in_room;
-//    char_from_room(ch);
-//    char_to_room(ch, obj->loc.room, -2);
+    //    rroom = ch->in_room;
+    //    char_from_room(ch);
+    //    char_to_room(ch, obj->loc.room, -2);
     new_look(ch, NULL, CMD_LOOKAFAR, obj->loc.room);
-//    char_from_room(ch);
-//    char_to_room(ch, rroom, -2);
+    //    char_from_room(ch);
+    //    char_to_room(ch, rroom, -2);
 
     return (TRUE);
   }
@@ -822,7 +836,7 @@ int wagon_exit_room(int room, P_char ch, int cmd, char *arg)
 
 bool is_natural_mount(P_char ch, P_char mount)
 {
-    if (IS_GOBLIN(ch) && isname("warg", GET_NAME(mount)))
-        return true;
-    return false; // TODO
+  if (IS_GOBLIN(ch) && isname("warg", GET_NAME(mount)))
+    return true;
+  return false; // TODO
 }

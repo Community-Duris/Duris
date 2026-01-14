@@ -164,6 +164,7 @@ void gmcp_send(struct descriptor_data *d, const char *package, const char *json)
 
     /* Check descriptor is still valid (not a dangling pointer to closed socket) */
     if (!is_desc_valid(d)) return;
+    if (d->write_failed) return;
 
     if (d->websocket) {
         /* WebSocket: Send JSON message */

@@ -1658,6 +1658,10 @@ int new_connection(int s)
   i = 1;
   setsockopt(t, SOL_TCP, TCP_NODELAY, &i, sizeof(i));
 
+  // increase send buffer
+  i = 65536;
+  setsockopt(t, SOL_SOCKET, SO_SNDBUF, &i, sizeof(i));
+
   return (t);
 }
 
@@ -1692,7 +1696,7 @@ void close_socket(struct descriptor_data *d)
 {
   struct descriptor_data *tmp;
   snoop_by_data *snoop_by_ptr, *next;
-  int is_morphed = IS_MORPH(d->character);
+  int is_morphed = d->character ? IS_MORPH(d->character) : 0;
   char Gbuf1[MAX_STRING_LENGTH];
   time_t ct;
 
@@ -1796,7 +1800,6 @@ void close_socket(struct descriptor_data *d)
       sql_disconnectIP(d->character);
       act("$n has lost $s link.", TRUE, GET_PLYR(d->character), 0, 0,
           TO_ROOM);
-      ws_broadcast_player_logout(d->character);
       if ((NumAttackers(d->character) > 0) && !IS_TRUSTED(d->character))
       {
         logit(LOG_COMM, "Combat DropLink: %s [%s].",
@@ -2746,7 +2749,8 @@ int process_output(P_desc t)
     return (-1);
 
   if (had_prompt && !t->connected)
-    send_ga(t);
+    if (send_ga(t) < 0)
+      return (-1);
 
   return (1);
 }

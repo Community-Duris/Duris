@@ -36,15 +36,15 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "vnum.obj.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "listen.h"
 #include "map.h"
 #include "epic.h"
 #include "trophy.h"
-#include "ships.h"
 #include "utility.h"
 #include "achievements.h"
 #include "files.h"
+#include "ws_handlers.h"
 
 /*
  * external variables
@@ -59,8 +59,8 @@ extern P_index obj_index;
 extern P_obj object_list;
 extern P_town towns;
 extern P_room world;
-extern byte create_locked;
-extern byte locked;
+extern ::byte create_locked;
+extern ::byte locked;
 extern int top_of_helpt;
 extern FILE *help_fl;
 extern const char *weapons[];
@@ -315,9 +315,9 @@ char *comma_string(long num)
 
 void sa_byteCopy(P_char ch, unsigned long offset, int value)
 {
-  byte new_value = (byte)value;
+  ::byte new_value = (::byte)value;
 
-  bcopy((char *)&new_value, (char *)ch + offset, sizeof(byte));
+  bcopy((char *)&new_value, (char *)ch + offset, sizeof(::byte));
 }
 
 /*
@@ -429,12 +429,12 @@ void do_reboot_restore(P_char ch, P_char victim)
   if (affected_by_spell(victim, SPELL_DISEASE) ||
       affected_by_spell(victim, SPELL_PLAGUE) ||
       affected_by_spell(victim, SPELL_BMANTLE) ||
-	  affected_by_spell(victim, SPELL_FLAMESTRIKE))
+      affected_by_spell(victim, SPELL_FLAMESTRIKE))
   {
     affect_from_char(victim, SPELL_DISEASE);
     affect_from_char(victim, SPELL_PLAGUE);
     affect_from_char(victim, SPELL_BMANTLE);
-	affect_from_char(victim, SPELL_FLAMESTRIKE);
+    affect_from_char(victim, SPELL_FLAMESTRIKE);
   }
 
   if (affected_by_spell(victim, TAG_ARMLOCK))
@@ -536,6 +536,19 @@ void do_read_player(P_char ch, char *arg, int cmd)
     return;
   }
   tmp = restoreItemsOnly(vict, 100);
+
+  if (!strstr(GET_NAME(vict), ".locker") )
+  {
+	for(P_char it = character_list; it; it = it->next)
+	{
+		if(IS_PC(it) && !strstr(GET_NAME(it), ".locker") && GET_PID(it) == GET_PID(vict))
+		{
+			char buf[1024];
+			snprintf(buf, ARRAY_SIZE(buf), "&=lWPID collision - characters %s and %s share PID %d&n\n", GET_NAME(it), GET_NAME(vict), GET_PID(it));
+			send_to_char(buf, ch);
+		}
+	}
+  }
 
   /* insert in list */
   vict->next = character_list;
@@ -4850,6 +4863,7 @@ void do_purge(P_char ch, char *argument, int cmd)
         }
 
         /* player will lose all objects! */
+        ws_broadcast_player_logout(GET_NAME(vict), GET_RACEWAR(vict));
         extract_char(vict);
         writeCharacter(vict, 2, NOWHERE);
         if (vict->desc)
@@ -9341,6 +9355,7 @@ void do_terminate(P_char ch, char *argument, int cmd)
   {
     update_ingame_racewar(-GET_RACEWAR(ch));
   }
+  ws_broadcast_player_logout(GET_NAME(victim), GET_RACEWAR(victim));
   deleteCharacter(victim);
   extract_char(victim); // extract_char also calls free_char
   victim = NULL;
@@ -12581,10 +12596,17 @@ int SpammingNchat(P_char ch)
 #ifdef USE_ACCOUNT
 void show_account_info(P_char ch, P_char target)
 {
-  send_to_char("\n", ch);
-  display_account_information_to_char(ch, target->desc->account);
-  display_character_list_to_char(ch, target->desc->account);
-  send_to_char("\n", ch);
+	if(target->desc)
+	{
+		send_to_char("\n", ch);
+		display_account_information_to_char(ch, target->desc->account);
+		display_character_list_to_char(ch, target->desc->account);
+		send_to_char("\n", ch);
+	}
+	else
+	{
+		send_to_char("\nCharacter has no descriptor attached (link dead).\n", ch);
+	}
 }
 
 void remove_account_char(P_char ch, P_char target)
@@ -12729,6 +12751,7 @@ void do_extractlink(P_char ch, char *argument, int cmd)
         vict->desc = NULL;
 
       writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+      ws_broadcast_player_logout(GET_NAME(vict), GET_RACEWAR(vict));
       extract_char(vict);
       count++;
     }
@@ -12775,6 +12798,7 @@ void do_extractlink(P_char ch, char *argument, int cmd)
         vict->desc = NULL;
 
       writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+      ws_broadcast_player_logout(GET_NAME(vict), GET_RACEWAR(vict));
       extract_char(vict);
       count++;
     }

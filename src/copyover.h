@@ -6,14 +6,15 @@
 #ifndef _COPYOVER_H_
 #define _COPYOVER_H_
 
-#include "structs.h"  // for P_char, P_desc, etc
+#include "structs.h" // for P_char, P_desc, etc
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"
 #define COPYOVER_VERSION 8  // bumped for zone age support
 
 // copyover file header
-struct copyover_header {
+struct copyover_header
+{
     char magic[4];
     int version;
     time_t timestamp;
@@ -34,12 +35,13 @@ struct zone_age_entry {
     int fullreset_lifespan;
 };
 
-struct copyover_desc {
+struct copyover_desc
+{
     int fd;
     char player_name[50];
     char host[50];
     char host2[128];
-    byte term_type;
+    ::byte term_type;
     int gmcp_enabled;
     int out_compress;
     int room;
@@ -47,19 +49,20 @@ struct copyover_desc {
     int charset_detected;
     char ttype_client[64];
     char ttype_terminal[32];
-    int fighting_type;          // 0=none, 1=mob, 2=player
+    int fighting_type; // 0=none, 1=mob, 2=player
     int fighting_id;
     char fighting_name[50];
     int num_pets;
-    int pet_vnums[10];          // up to 10 pets
-    int pet_hit[10];            // current hp
-    int pet_max_hit[10];        // max hp
+    int pet_vnums[10];   // up to 10 pets
+    int pet_hit[10];     // current hp
+    int pet_max_hit[10]; // max hp
 };
 
 // mob state for copyover
-struct copyover_mob {
+struct copyover_mob
+{
     int vnum;
-    int idnum;                  // unique instance id
+    int idnum; // unique instance id
     int room;
     int hit;
     int max_hit;
@@ -68,19 +71,20 @@ struct copyover_mob {
     int vitality;
     int max_vitality;
     int position;
-    int fighting_type;          // 0=none, 1=player, 2=mob
-    int fighting_id;            // player pid or mob idnum
-    char fighting_name[50];     // player name if fighting player
-    int num_affects;            // affects saved separately after mob
-    int equipment_vnums[43];    // worn items (max_wear slots)
-    int num_carrying;           // carried items saved after affects
-    int gold;                   // mob's gold
+    int fighting_type;       // 0=none, 1=player, 2=mob
+    int fighting_id;         // player pid or mob idnum
+    char fighting_name[50];  // player name if fighting player
+    int num_affects;         // affects saved separately after mob
+    int equipment_vnums[43]; // worn items (max_wear slots)
+    int num_carrying;        // carried items saved after affects
+    int gold;                // mob's gold
 };
 
 // affect data for copyover - matches affected_type fields
-struct copyover_affect {
+struct copyover_affect
+{
     sh_int type;
-    byte wear_off_message_index;
+    ::byte wear_off_message_index;
     int duration;
     uint flags;
     int modifier;
@@ -95,15 +99,17 @@ struct copyover_affect {
 };
 
 // room state (doors)
-struct copyover_room {
+struct copyover_room
+{
     int vnum;
-    int dir;                    // which direction (0-5)
-    int state;                  // door flags (open/closed/locked)
+    int dir;   // which direction (0-5)
+    int state; // door flags (open/closed/locked)
 };
 
 // combat state
-struct copyover_combat {
-    int attacker_type;          // 0=player, 1=mob
+struct copyover_combat
+{
+    int attacker_type; // 0=player, 1=mob
     int attacker_id;
     char attacker_name[50];
     int target_type;
@@ -112,20 +118,22 @@ struct copyover_combat {
 };
 
 // object on ground
-struct copyover_obj {
+struct copyover_obj
+{
     int vnum;
     int room;
-    int type;                   // item_corpse, etc
-    int value[8];               // matches numb_obj_vals
-    time_t timer[6];            // matches obj_data timer array
-    char name[80];              // corpses have custom names
+    int type;        // item_corpse, etc
+    int value[8];    // matches numb_obj_vals
+    time_t timer[6]; // matches obj_data timer array
+    char name[80];   // corpses have custom names
     char short_desc[80];
-    char description[160];      // long desc shown in room
-    int num_contents;           // items inside container/corpse
+    char description[160]; // long desc shown in room
+    int num_contents;      // items inside container/corpse
 };
 
 // item inside container/corpse or carried by mob
-struct copyover_obj_content {
+struct copyover_obj_content
+{
     int vnum;
 };
 
