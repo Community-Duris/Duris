@@ -803,7 +803,10 @@ void add_ip_entry(P_acct acct, P_desc d)
 
   snprintf(host, 512, "%s", d->host);
 
-  CREATE(a, acct_ip, 1, MEM_TAG_OTHER);
+  a = (struct acct_ip *)malloc(sizeof(struct acct_ip));
+  if (!a)
+    return;
+  memset(a, 0, sizeof(struct acct_ip));
 
   a->hostname = str_dup(host);
   a->count = 1;
@@ -1904,7 +1907,10 @@ void add_char_to_account(P_desc d)
   P_char   player = d->character;
   struct acct_chars *c = NULL;
 
-  CREATE(c, acct_chars, 1, MEM_TAG_OTHER);
+  c = (struct acct_chars *)malloc(sizeof(struct acct_chars));
+  if (!c)
+    return;
+  memset(c, 0, sizeof(struct acct_chars));
 
   c->charname = str_dup(player->player.name);
   c->count = 1;
@@ -2238,7 +2244,10 @@ void read_unique_ip(P_acct acct, FILE * f)
 
   for (i = 0; i < count; i++)
   {
-    CREATE(c, acct_ip, 1, MEM_TAG_OTHER);
+    c = (struct acct_ip *)malloc(sizeof(struct acct_ip));
+    if (!c)
+      return;
+    memset(c, 0, sizeof(struct acct_ip));
 
     fscanf(f, "%s\n", buf);
     c->hostname = str_dup(buf);
@@ -2295,7 +2304,10 @@ void read_character_list(P_acct acct, FILE * f)
 
   for (i = 0; i < count; i++)
   {
-    CREATE(c, acct_chars, 1, MEM_TAG_OTHER);
+    c = (struct acct_chars *)malloc(sizeof(struct acct_chars));
+    if (!c)
+      return;
+    memset(c, 0, sizeof(struct acct_chars));
 
     fscanf(f, "%s\n", buf);
     c->charname = str_dup(buf);
