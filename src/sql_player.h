@@ -71,6 +71,10 @@ bool sql_load_player_items(P_char ch);
 bool sql_load_player_witnesses(P_char ch);
 bool sql_load_player_shapechanges(P_char ch);
 
+// pet save/load for crash recovery
+bool sql_save_player_pets(P_char ch);
+bool sql_load_player_pets(P_char ch);
+
 // ============================================================================
 // player delete
 // ============================================================================

@@ -26,10 +26,7 @@ extern P_char character_list;
 extern P_obj object_list;
 extern P_index obj_index;
 
-// ship object vnums to skip
-#define VOBJ_PANEL 30098
-#define VOBJ_ALL_SHIPS 30099
-#define VOBJ_CARGO_CRATE 30097
+// ship object vnums defined in ships/ships.h
 
 static redisContext *redis_ctx = NULL;
 bool redis_enabled = false;
@@ -219,7 +216,7 @@ void mark_player_dirty(int pid)
       redis_enabled = false;
       P_char ch = find_player_by_pid(pid);
       if (ch && IS_PC(ch))
-        sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+        sql_save_player(ch, RENT_CRASH, 0);
       return;
     }
   }
@@ -229,7 +226,7 @@ void mark_player_dirty(int pid)
   {
     P_char ch = find_player_by_pid(pid);
     if (ch && IS_PC(ch))
-      sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+      sql_save_player(ch, RENT_CRASH, 0);
     return;
   }
   freeReplyObject(reply);

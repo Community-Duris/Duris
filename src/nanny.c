@@ -29,6 +29,7 @@
 #include "account.h"
 #include "files.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "paladins.h"
 #include "ships.h"
 #include "specializations.h"

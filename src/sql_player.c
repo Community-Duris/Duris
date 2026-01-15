@@ -2628,17 +2628,23 @@ static void free_temp_char(P_char ch)
   if (!ch)
     return;
 
-  // free items (carrying and equipment)
+  // properly extract equipment (must unequip first to clear loc.wearing)
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    if (ch->equipment[i])
+    {
+      P_obj obj = unequip_char(ch, i);
+      extract_obj(obj, FALSE);
+    }
+  }
+
+  // properly extract carried items
   P_obj obj, next;
   for (obj = ch->carrying; obj; obj = next)
   {
     next = obj->next_content;
-    free_obj(obj);
-  }
-  for (int i = 0; i < MAX_WEAR; i++)
-  {
-    if (ch->equipment[i])
-      free_obj(ch->equipment[i]);
+    obj_from_char(obj);
+    extract_obj(obj, FALSE);
   }
 
   // strings from pfile loader need the proper deallocator

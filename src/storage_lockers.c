@@ -1793,6 +1793,18 @@ static bool locker_access_CanAdd(P_char locker, char *ch_name)
   if( (restoreCharOnly( vict, ch_name )) >= 0 )
   {
     bCanAdd = GET_RACEWAR(locker) == GET_RACEWAR(vict);
+    // clean up items loaded by restoreCharOnly (sql_load_player_items equips items)
+    for (int i = 0; i < MAX_WEAR; i++) {
+      if (vict->equipment[i]) {
+        P_obj obj = unequip_char(vict, i);
+        extract_obj(obj, FALSE);
+      }
+    }
+    while (vict->carrying) {
+      P_obj obj = vict->carrying;
+      obj_from_char(obj);
+      extract_obj(obj, FALSE);
+    }
     free_char(vict);
   }
 

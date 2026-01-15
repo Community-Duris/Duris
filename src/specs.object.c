@@ -433,6 +433,16 @@ int artifact_stone(P_obj obj, P_char ch, int cmd, char *argument)
     return FALSE;
   }
 
+  // validate ch is a valid character (protect against use-after-free)
+  if (!char_in_list(ch))
+  {
+    // stale pointer - clear the object's location
+    logit(LOG_DEBUG, "artifact_stone: stale loc.wearing pointer for obj %d, clearing", OBJ_VNUM(obj));
+    obj->loc_p = LOC_NOWHERE;
+    obj->loc.wearing = NULL;
+    return FALSE;
+  }
+
   curr_time = time(NULL);
 
   if (!has_skin_spell(ch) && obj->timer[0] + (int)get_property("timer.stoneskin.generic", 60) <= curr_time)
@@ -468,6 +478,10 @@ int artifact_shadow_shield(P_obj obj, P_char ch, int cmd, char *argument)
       return FALSE;
     }
   }
+
+  // debug: trace ch value before use
+  logit(LOG_DEBUG, "[specs.object.c:474] artifact_shadow_shield: vnum=%d ch=%p loc_p=%d",
+        OBJ_VNUM(obj), (void *)ch, obj->loc_p);
 
   for (i = 0; i < MAX_WEAR; i++)
   {

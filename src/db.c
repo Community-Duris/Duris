@@ -2726,6 +2726,13 @@ P_char read_mobile(int nr, int type)
 
 void event_object_proc(P_char ch, P_char victim, P_obj obj, void *data)
 {
+  // debug: trace object proc calls to find stale pointer source
+  if (obj && obj_index[obj->R_num].func.obj)
+  {
+    logit(LOG_DEBUG, "[db.c:2730] event_object_proc: vnum=%d loc_p=%d loc.wearing=%p",
+          OBJ_VNUM(obj), obj->loc_p, (void *)obj->loc.wearing);
+  }
+
   if (obj_index[obj->R_num].func.obj)
     (*obj_index[obj->R_num].func.obj)(obj, 0, CMD_PERIODIC, 0);
 
@@ -2787,6 +2794,10 @@ P_obj read_object(int nr, int type)
   obj->next = object_list;
   obj->prev = NULL;
   object_list = obj;
+
+  // debug: trace object creation
+  logit(LOG_DEBUG, "[db.c:2789] read_object: vnum=%d obj=%p loc_p=%d loc.wearing=%p",
+        obj_index[nr].virtual_number, (void *)obj, obj->loc_p, (void *)obj->loc.wearing);
 
   /* *** string data *** */
 
@@ -3963,6 +3974,21 @@ void free_char(P_char ch)
     logit(LOG_EXIT, "free_char: called with a non-extracted char");
     // tmp = (struct affected_type *) (0 / 0);
     tmp = NULL;
+  }
+
+  // debug: check if free_char called on char with items (bug - should use extract_char)
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    if (ch->equipment[i])
+    {
+      logit(LOG_DEBUG, "[db.c:free_char] BUG: char '%s' has equipment[%d] vnum=%d still attached!",
+            GET_NAME(ch), i, OBJ_VNUM(ch->equipment[i]));
+    }
+  }
+  if (ch->carrying)
+  {
+    logit(LOG_DEBUG, "[db.c:free_char] BUG: char '%s' still has carrying items!",
+          GET_NAME(ch));
   }
 
   if (ch->player.title)

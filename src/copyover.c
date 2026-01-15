@@ -1297,6 +1297,12 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
     // restore equipment
     for (int w = 0; w < MAX_WEAR; w++) {
         if (mob_entry.equipment_vnums[w] > 0) {
+            // debug: log redis equipment restore for artifact 58424
+            if (mob_entry.equipment_vnums[w] == 58424)
+            {
+                logit(LOG_DEBUG, "[copyover.c] REDIS restoring artifact 58424 on mob '%s' vnum=%d room=%d slot=%d",
+                      GET_NAME(mob), mob_entry.vnum, mob_entry.room, w);
+            }
             P_obj obj = read_object(mob_entry.equipment_vnums[w], VIRTUAL);
             if (obj)
                 equip_char(mob, obj, w, 0);

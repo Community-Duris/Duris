@@ -1206,6 +1206,19 @@ int load_char_display_data(char *charname, struct char_display_info *info)
     info->rested_status = str_dup(rested_buf);
   }
 
+  // clean up items loaded by restoreCharOnly (sql_load_player_items equips items)
+  for (int i = 0; i < MAX_WEAR; i++) {
+    if (temp_ch->equipment[i]) {
+      P_obj obj = unequip_char(temp_ch, i);
+      extract_obj(obj, FALSE);
+    }
+  }
+  while (temp_ch->carrying) {
+    P_obj obj = temp_ch->carrying;
+    obj_from_char(obj);
+    extract_obj(obj, FALSE);
+  }
+
   // Clean up temporary character
   if (temp_ch->only.pc)
     free(temp_ch->only.pc);

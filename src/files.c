@@ -2526,7 +2526,7 @@ int restoreCharOnly(P_char ch, char *name)
   }
 
 #ifndef __NO_MYSQL__
-  // load from sql
+  // try loading from sql first
   int pid = sql_get_player_pid(name);
   if (pid > 0)
   {
@@ -2541,7 +2541,7 @@ int restoreCharOnly(P_char ch, char *name)
     }
     return -2;
   }
-  return -1;
+  // player not in sql, fall through to pfile loading
 #endif
 
   strcpy(buff, name);
