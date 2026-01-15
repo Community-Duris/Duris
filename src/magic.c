@@ -19103,8 +19103,8 @@ void spell_accel_healing(int level, P_char ch, char *arg, int type, P_char victi
   af.type = SPELL_ACCEL_HEALING;
   af.duration = skl_lvl + 1;
   af.location = APPLY_HIT_REG;
-  // 1.5x as effective as regen, but only works out of combat
-  af.modifier = ((int)(get_property("hit.regen.Spell", 9.000) + 1) * 3 / 2) * level;
+  // 2x as effective as regen, but only works out of combat
+  af.modifier = ((int)(get_property("hit.regen.Spell", 9.000) + 1) * 2) * level;
   affect_to_char(victim, &af);
 
   send_to_char("You begin to heal faster.\r\n", victim);
