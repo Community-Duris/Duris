@@ -3201,7 +3201,7 @@ void do_smelt(P_char, char *, int);
 int compress_get_ratio(P_desc player);
 int write_to_descriptor(P_desc, const char *);
 int write_to_descriptor_binary(P_desc, const unsigned char *, size_t);
-int parse_telnet_options(P_desc, char *);
+int parse_telnet_options(P_desc, char *, int);
 void advertise_mccp(P_desc desc);
 int compress_start(P_desc, int);
 int compress_end(P_desc, int);
