@@ -13059,6 +13059,8 @@ void apply_zone_spell(P_char ch, int count, const char *zone_name, int zone_inde
           // frequently, negating the !fear ability of the song for
           // many group members
           paf->duration = GET_LEVEL(ch) / 3;
+		  SET_BIT(paf->flags, AFFTYPE_SET_AFFECT | AFFTYPE_NOSAVE);
+          paf->context = reinterpret_cast<void *>(zone_index);
         }
       }
     }

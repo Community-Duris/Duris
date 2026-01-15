@@ -19040,6 +19040,35 @@ void spell_stornogs_spheres(int level, P_char ch, char *arg, int type,
   affect_to_char(victim, &af);
 }
 
+void spell_warring_zeal(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	struct affected_type af;
+	struct affected_type *paf = NULL;
+	
+	if (!SanityCheck(ch, "spell_warring_zeal"))
+		return;
+	
+	if((paf = get_spell_from_char(ch, SPELL_WARRING_ZEAL)) != NULL)
+	{
+		// refresh
+		paf->duration = 2;
+		paf->location = APPLY_HITROLL;
+		paf->modifier = level / 5;
+		send_to_char("&+WThe &+Rbeat &+Wof the &+rdrums &+Wis renewed!&n\n", ch);
+	}
+	else
+	{
+		send_to_char("&+WThe sound of &+rwa&+Rrd&+rru&+Rms &+Wfill your head!&n\n", ch);
+		act("$n &+Wsuddendly becomes &+rba&+Rtt&+rle &+Rcr&+raz&+Red!", TRUE, victim, 0, 0, TO_ROOM);
+		bzero(&af, sizeof(af));
+		af.type = SPELL_WARRING_ZEAL;
+		af.duration = 2;
+		af.location = APPLY_HITROLL;
+		af.modifier = level / 5;
+		affect_to_char(ch, &af);
+	}
+}
+
 void spell_dazzle(int level, P_char ch, char *arg, int type, P_char victim,
                   P_obj obj)
 {

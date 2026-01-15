@@ -1442,6 +1442,7 @@ int count_undead(P_char ch);
 int count_pets(P_char ch);
 void pleasantry(P_char ch);
 void do_pleasantry(P_char, char *, int);
+void spell_warring_zeal(int, P_char, char *, int, P_char, P_obj);
 void spell_chaotic_ripple(int, P_char, char *, int, P_char, P_obj);
 void spell_blink(int, P_char, char *, int, P_char, P_obj);
 void spell_moonstone(int, P_char, char *, int, P_char, P_obj);
