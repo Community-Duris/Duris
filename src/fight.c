@@ -5652,7 +5652,7 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
       "You are consumed by $n's &+Wholy &+rfl&+Ram&+res&n!",
       "$N is consumed by $n's &+Wholy &+rfl&+Ram&+res&n!", DAMMSG_TERSE};
 	int local_dam = dice((int)get_property("spell.warringzeal.dize.num", 8), (int)get_property("spell.warringzeal.dize.num", 5)); // default is 2-10 damage after reductions
-	result = spell_damage(ch, victim, local_dam, SPLDAM_HOLY, SPLDAM_NODEFLECT, &wz_messages);
+	result = spell_damage(ch, victim, local_dam, SPLDAM_HOLY, SPLDAM_NODEFLECT, &wz_messages, damAccumulator);
 	if(result != DAM_NONEDEAD)
 	{
 		return result;
