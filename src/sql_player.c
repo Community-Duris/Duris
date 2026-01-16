@@ -20,6 +20,7 @@
 #include "account.h"
 #include "assocs.h"
 #include "necromancy.h"
+#include "spells.h"
 #include "siege.h"
 #include "ships/ships.h"
 #include "files.h"
@@ -65,6 +66,8 @@ bool sql_load_player_affects(P_char ch) { return false; }
 bool sql_load_player_items(P_char ch) { return false; }
 bool sql_load_player_witnesses(P_char ch) { return false; }
 bool sql_load_player_shapechanges(P_char ch) { return false; }
+bool sql_save_player_pets(P_char ch) { return false; }
+bool sql_load_player_pets(P_char ch) { return false; }
 
 bool sql_delete_player(int pid) { return false; }
 bool sql_delete_player_by_name(const char *name) { return false; }
@@ -402,6 +405,13 @@ bool sql_save_player(P_char ch, int type, int room)
     return false;
   }
 
+  if (!sql_save_player_pets(ch))
+  {
+    logit(LOG_DEBUG, "sql_save_player: failed to save pets for %s", GET_NAME(ch));
+    sql_rollback();
+    return false;
+  }
+
   if (!sql_save_player_witnesses(ch))
   {
     logit(LOG_DEBUG, "sql_save_player: failed to save witnesses for %s", GET_NAME(ch));
@@ -429,6 +439,22 @@ bool sql_save_player_status(P_char ch, int type, int room)
 
   int pid = GET_PID(ch);
   bool is_update = (pid > 0 && sql_player_exists(GET_NAME(ch)));
+
+  // for crash saves, preserve the existing last_room (camp/rent location)
+  // don't overwrite with crash location so player returns to safe spot
+  if (is_update && (type == RENT_CRASH || type == RENT_CRASH2))
+  {
+    char room_query[256];
+    snprintf(room_query, sizeof(room_query), "SELECT last_room FROM player_data WHERE pid=%d", pid);
+    MYSQL_RES *room_result = db_query(room_query);
+    if (room_result)
+    {
+      MYSQL_ROW row = mysql_fetch_row(room_result);
+      if (row && row[0])
+        room = atoi(row[0]);
+      mysql_free_result(room_result);
+    }
+  }
 
   // build the query
   // this is a big query, we'll use a large buffer
@@ -985,6 +1011,408 @@ bool sql_save_player_items(P_char ch)
   }
 
   return success;
+}
+
+// pet item affects save
+static bool sql_save_pet_item_affects(int item_id, P_obj obj)
+{
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+    {
+      char ins_query[256];
+      snprintf(ins_query, sizeof(ins_query),
+               "INSERT INTO player_pet_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
+               item_id, obj->affected[i].location, obj->affected[i].modifier);
+      if (!sql_run_query(ins_query))
+        return false;
+    }
+  }
+  return true;
+}
+
+// save a single pet item and its contents recursively
+static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int container_id)
+{
+  if (!obj || !DB)
+    return 0;
+
+  if (IS_SET(obj->extra_flags, ITEM_NORENT))
+    return 0;
+
+  int vnum = obj_index[obj->R_num].virtual_number;
+
+  char *esc_name = NULL;
+  char *esc_short = NULL;
+  char *esc_desc = NULL;
+  char *esc_action = NULL;
+
+  if (obj->str_mask & STRUNG_KEYS)
+    esc_name = sql_escape_string(obj->name ? obj->name : "");
+  if (obj->str_mask & STRUNG_DESC2)
+    esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+  if (obj->str_mask & STRUNG_DESC1)
+    esc_desc = sql_escape_string(obj->description ? obj->description : "");
+  if (obj->str_mask & STRUNG_DESC3)
+    esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+  char container_str[32];
+  if (container_id > 0)
+    snprintf(container_str, sizeof(container_str), "%d", container_id);
+  else
+    strcpy(container_str, "NULL");
+
+  char name_str[1024];
+  if (esc_name)
+    snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+  else
+    strcpy(name_str, "NULL");
+
+  char short_str[1024];
+  if (esc_short)
+    snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+  else
+    strcpy(short_str, "NULL");
+
+  char desc_str[2048];
+  if (esc_desc)
+    snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+  else
+    strcpy(desc_str, "NULL");
+
+  char action_str[2048];
+  if (esc_action)
+    snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+  else
+    strcpy(action_str, "NULL");
+
+  char query[8192];
+  snprintf(query, sizeof(query),
+    "INSERT INTO player_pet_items ("
+    "pet_id, vnum, equip_slot, container_id, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr"
+    ") VALUES ("
+    "%d, %d, %d, %s, "
+    "%d, %d, %ld, %lu, "
+    "%d, %d, %d, %d, %d, %d, %d, %d, "
+    "%s, %s, %s, %s"
+    ")",
+    pet_id, vnum, equip_slot, container_str,
+    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
+    obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+    obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+    name_str, short_str, desc_str, action_str
+  );
+
+  if (esc_name) free(esc_name);
+  if (esc_short) free(esc_short);
+  if (esc_desc) free(esc_desc);
+  if (esc_action) free(esc_action);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  int item_id = (int)mysql_insert_id(DB);
+
+  if (!sql_save_pet_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->contains)
+  {
+    for (P_obj content = obj->contains; content; content = content->next_content)
+    {
+      if (!IS_SET(content->extra_flags, ITEM_NORENT))
+        sql_save_single_pet_item(pet_id, content, 0, item_id);
+    }
+  }
+
+  return item_id;
+}
+
+// pet save - save all player's pets with equipment
+bool sql_save_player_pets(P_char ch)
+{
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  // delete existing pets for this player (cascade deletes items/affects)
+  char del_query[128];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
+  if (!sql_run_query(del_query))
+    return false;
+
+  // iterate through followers and save npc pets
+  int pet_order = 0;
+  for (struct follow_type *f = ch->followers; f; f = f->next)
+  {
+    P_char pet = f->follower;
+    if (!pet || !IS_NPC(pet))
+      continue;
+
+    // only save pets in same room
+    if (pet->in_room != ch->in_room)
+      continue;
+
+    int mob_vnum = mob_index[GET_RNUM(pet)].virtual_number;
+    int room_vnum = (pet->in_room >= 0) ? world[pet->in_room].number : 0;
+
+    // get charm duration from affect if exists
+    int charm_duration = -1;
+    for (struct affected_type *af = pet->affected; af; af = af->next)
+    {
+      if (af->type == SPELL_CHARM_PERSON)
+      {
+        charm_duration = af->duration;
+        break;
+      }
+    }
+
+    char ins_query[512];
+    snprintf(ins_query, sizeof(ins_query),
+      "INSERT INTO player_pets (owner_pid, mob_vnum, pet_order, hit, max_hit, mana, max_mana, "
+      "vitality, max_vitality, charm_duration, room_vnum, saved_at) "
+      "VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %ld)",
+      pid, mob_vnum, pet_order,
+      GET_HIT(pet), GET_MAX_HIT(pet),
+      GET_MANA(pet), GET_MAX_MANA(pet),
+      GET_VITALITY(pet), GET_MAX_VITALITY(pet),
+      charm_duration, room_vnum, (long)time(0)
+    );
+
+    if (!sql_run_query(ins_query))
+    {
+      logit(LOG_DEBUG, "sql_save_player_pets: failed to save pet %s for %s", GET_NAME(pet), GET_NAME(ch));
+      continue;
+    }
+
+    int pet_id = (int)mysql_insert_id(DB);
+
+    // save pet equipment
+    for (int i = 0; i < MAX_WEAR; i++)
+    {
+      if (pet->equipment[i] && !IS_SET(pet->equipment[i]->extra_flags, ITEM_NORENT))
+        sql_save_single_pet_item(pet_id, pet->equipment[i], i + 1, 0);
+    }
+
+    // save pet inventory
+    for (P_obj obj = pet->carrying; obj; obj = obj->next_content)
+    {
+      if (!IS_SET(obj->extra_flags, ITEM_NORENT))
+        sql_save_single_pet_item(pet_id, obj, 0, 0);
+    }
+
+    pet_order++;
+    logit(LOG_DEBUG, "sql_save_player_pets: saved pet %s (vnum %d) for %s with %d hp",
+          GET_NAME(pet), mob_vnum, GET_NAME(ch), GET_HIT(pet));
+  }
+
+  return true;
+}
+
+// pet load - restore all player's pets with equipment
+bool sql_load_player_pets(P_char ch)
+{
+  if (!ch || !IS_PC(ch) || !DB)
+    return false;
+
+  int pid = GET_PID(ch);
+  if (pid <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "SELECT id, mob_vnum, hit, max_hit, mana, max_mana, vitality, max_vitality, charm_duration "
+    "FROM player_pets WHERE owner_pid=%d ORDER BY pet_order", pid);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    int pet_db_id = atoi(row[0]);
+    int mob_vnum = atoi(row[1]);
+    int hit = atoi(row[2]);
+    int max_hit = atoi(row[3]);
+    int mana = atoi(row[4]);
+    int max_mana = atoi(row[5]);
+    int vitality = atoi(row[6]);
+    int max_vitality = atoi(row[7]);
+    int charm_duration = atoi(row[8]);
+
+    int pet_rnum = real_mobile(mob_vnum);
+    if (pet_rnum < 0)
+    {
+      logit(LOG_DEBUG, "sql_load_player_pets: bad vnum %d for %s", mob_vnum, GET_NAME(ch));
+      continue;
+    }
+
+    P_char pet = read_mobile(pet_rnum, REAL);
+    if (!pet)
+    {
+      logit(LOG_DEBUG, "sql_load_player_pets: failed to create mob %d for %s", mob_vnum, GET_NAME(ch));
+      continue;
+    }
+
+    // place pet in player's room
+    char_to_room(pet, ch->in_room, FALSE);
+
+    // setup as pet with charm
+    setup_pet(pet, ch, charm_duration, PET_NOAGGRO);
+    add_follower(pet, ch);
+
+    // restore stats
+    GET_HIT(pet) = hit;
+    GET_MAX_HIT(pet) = max_hit;
+    GET_MANA(pet) = mana;
+    GET_MAX_MANA(pet) = max_mana;
+    GET_VITALITY(pet) = vitality;
+    GET_MAX_VITALITY(pet) = max_vitality;
+
+    // load pet equipment and inventory
+    char item_query[512];
+    snprintf(item_query, sizeof(item_query),
+      "SELECT id, vnum, equip_slot, container_id, weight, cost, timer, extra_flags, "
+      "value0, value1, value2, value3, value4, value5, value6, value7, "
+      "name, short_descr, description, action_descr "
+      "FROM player_pet_items WHERE pet_id=%d ORDER BY id", pet_db_id);
+
+    MYSQL_RES *item_result = db_query("%s", item_query);
+    if (item_result)
+    {
+      // two-pass: first create all items, then place them
+      // need to handle containers properly
+      struct {
+        int db_id;
+        int container_id;
+        int equip_slot;
+        P_obj obj;
+      } items[256];
+      int item_count = 0;
+
+      MYSQL_ROW item_row;
+      while ((item_row = mysql_fetch_row(item_result)) && item_count < 256)
+      {
+        int item_db_id = atoi(item_row[0]);
+        int obj_vnum = atoi(item_row[1]);
+        int equip_slot = atoi(item_row[2]);
+        int container_id = item_row[3] ? atoi(item_row[3]) : 0;
+
+        int obj_rnum = real_object(obj_vnum);
+        if (obj_rnum < 0)
+          continue;
+
+        P_obj obj = read_object(obj_rnum, REAL);
+        if (!obj)
+          continue;
+
+        // restore item properties
+        obj->weight = atoi(item_row[4]);
+        obj->cost = atoi(item_row[5]);
+        obj->timer[0] = atol(item_row[6]);
+        obj->extra_flags = strtoul(item_row[7], NULL, 10);
+        obj->value[0] = atoi(item_row[8]);
+        obj->value[1] = atoi(item_row[9]);
+        obj->value[2] = atoi(item_row[10]);
+        obj->value[3] = atoi(item_row[11]);
+        obj->value[4] = atoi(item_row[12]);
+        obj->value[5] = atoi(item_row[13]);
+        obj->value[6] = atoi(item_row[14]);
+        obj->value[7] = atoi(item_row[15]);
+
+        // restore strung strings if present
+        if (item_row[16] && strlen(item_row[16]) > 0)
+        {
+          obj->name = str_dup(item_row[16]);
+          obj->str_mask |= STRUNG_KEYS;
+        }
+        if (item_row[17] && strlen(item_row[17]) > 0)
+        {
+          obj->short_description = str_dup(item_row[17]);
+          obj->str_mask |= STRUNG_DESC2;
+        }
+        if (item_row[18] && strlen(item_row[18]) > 0)
+        {
+          obj->description = str_dup(item_row[18]);
+          obj->str_mask |= STRUNG_DESC1;
+        }
+        if (item_row[19] && strlen(item_row[19]) > 0)
+        {
+          obj->action_description = str_dup(item_row[19]);
+          obj->str_mask |= STRUNG_DESC3;
+        }
+
+        // load item affects
+        char affect_query[256];
+        snprintf(affect_query, sizeof(affect_query),
+          "SELECT location, modifier FROM player_pet_item_affects WHERE item_id=%d", item_db_id);
+        MYSQL_RES *affect_result = db_query("%s", affect_query);
+        if (affect_result)
+        {
+          int aff_idx = 0;
+          MYSQL_ROW affect_row;
+          while ((affect_row = mysql_fetch_row(affect_result)) && aff_idx < MAX_OBJ_AFFECT)
+          {
+            obj->affected[aff_idx].location = atoi(affect_row[0]);
+            obj->affected[aff_idx].modifier = atoi(affect_row[1]);
+            aff_idx++;
+          }
+          mysql_free_result(affect_result);
+        }
+
+        items[item_count].db_id = item_db_id;
+        items[item_count].container_id = container_id;
+        items[item_count].equip_slot = equip_slot;
+        items[item_count].obj = obj;
+        item_count++;
+      }
+      mysql_free_result(item_result);
+
+      // place items - containers first, then equip/inventory
+      for (int i = 0; i < item_count; i++)
+      {
+        if (items[i].container_id > 0)
+        {
+          // find container and put item in it
+          for (int j = 0; j < item_count; j++)
+          {
+            if (items[j].db_id == items[i].container_id && items[j].obj)
+            {
+              obj_to_obj(items[i].obj, items[j].obj);
+              break;
+            }
+          }
+        }
+        else if (items[i].equip_slot > 0 && items[i].equip_slot <= MAX_WEAR)
+        {
+          equip_char(pet, items[i].obj, items[i].equip_slot - 1, 9);
+        }
+        else
+        {
+          obj_to_char(items[i].obj, pet);
+        }
+      }
+    }
+
+    logit(LOG_DEBUG, "sql_load_player_pets: restored pet %s (vnum %d) for %s with %d/%d hp",
+          GET_NAME(pet), mob_vnum, GET_NAME(ch), GET_HIT(pet), GET_MAX_HIT(pet));
+  }
+
+  mysql_free_result(result);
+
+  // delete the saved pets after successful load
+  char del_query[128];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
+  sql_run_query(del_query);
+
+  return true;
 }
 
 // witnesses save

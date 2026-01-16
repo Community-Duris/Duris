@@ -3389,6 +3389,11 @@ void enter_game(P_desc d)
       send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
     }
 
+    // restore pets from sql (for crash recovery and sql-based loads)
+#ifndef __NO_MYSQL__
+    sql_load_player_pets(ch);
+#endif
+
     if (cost == -2)
     {
       send_to_char
