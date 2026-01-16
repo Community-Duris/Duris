@@ -28,6 +28,7 @@
 #include "siege.h"
 #include "tradeskill.h"
 #include "vnum.obj.h"
+#include "gmcp.h"
 
 /*
  * external variables
@@ -3799,6 +3800,7 @@ void do_stand(P_char ch, char *argument, int cmd)
     return;
 
   SET_POS(ch, POS_STANDING + STAT_NORMAL);
+  gmcp_char_vitals(ch);
   stop_memorizing(ch);
 }
 
@@ -3887,6 +3889,7 @@ void do_sit(P_char ch, char *argument, int cmd)
     break;
   }
   SET_POS(ch, GET_STAT(ch) + POS_SITTING);
+  gmcp_char_vitals(ch);
 }
 
 void do_kneel(P_char ch, char *argument, int cmd)
@@ -3980,6 +3983,7 @@ void do_kneel(P_char ch, char *argument, int cmd)
     break;
   }
   SET_POS(ch, GET_STAT(ch) + POS_KNEELING);
+  gmcp_char_vitals(ch);
 }
 
 void do_recline(P_char ch, char *argument, int cmd)
@@ -4073,6 +4077,7 @@ void do_recline(P_char ch, char *argument, int cmd)
     break;
   }
   SET_POS(ch, GET_STAT(ch) + POS_PRONE);
+  gmcp_char_vitals(ch);
   stop_memorizing(ch);
 }
 
@@ -4156,6 +4161,7 @@ void do_rest(P_char ch, char *argument, int cmd)
     break;
   }
   SET_POS(ch, MIN(POS_SITTING, GET_POS(ch)) + STAT_RESTING);
+  gmcp_char_vitals(ch);
   if( (GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING))
     stop_memorizing(ch);
   StartRegen(ch, EVENT_HIT_REGEN);
@@ -4307,6 +4313,7 @@ void do_sleep(P_char ch, char *argument, int cmd)
   }
 
   SET_POS(ch, GET_POS(ch) + STAT_SLEEPING);
+  gmcp_char_vitals(ch);
   stop_memorizing(ch);
 }
 
@@ -4383,6 +4390,7 @@ void do_wake(P_char ch, char *argument, int cmd)
             }
             act("You wake $M up.", FALSE, ch, 0, tmp_char, TO_CHAR);
             SET_POS(tmp_char, GET_POS(tmp_char) + STAT_RESTING);
+            gmcp_char_vitals(tmp_char);
             act("You are awakened by $n.", FALSE, ch, 0, tmp_char, TO_VICT);
           }
           else
@@ -4421,6 +4429,7 @@ void do_wake(P_char ch, char *argument, int cmd)
         }
 
         SET_POS(ch, GET_POS(ch) + STAT_RESTING);
+        gmcp_char_vitals(ch);
       }
     }
   }
