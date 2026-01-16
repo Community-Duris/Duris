@@ -3275,7 +3275,7 @@ void spell_single_lightning_ring(int level, P_char ch, char *arg, int type,
       "and you die as a &=LBflashing light&n explodes in your face!",
       "and turns $N into a charred &=LBsparkling&n corpse!", 0};
 
-  dam = 6 * MIN(51, level) + GET_CLASS(ch, CLASS_ETHERMANCER) ? dice(level, 6) : number(1, level);
+  dam = 6 * MIN(51, level) + GET_CLASS(ch, CLASS_ETHERMANCER) ? dice(level, 8) : number(1, level);
   if (IS_PC(ch) && IS_PC(victim))
   {
     dam = dam * get_property("spell.area.damage.to.pc", 0.5);
@@ -3302,6 +3302,7 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
 {
   int dam, temp_coor, dead = 0;
   int svchance, affchance;
+  bool casterIsTempestMagus = false;
   struct damage_messages messages = {
       "&+WThe cyclone whirls and rips about, sending $N &+Wreeling!",
       "$n's &+Wcyclone hammers at your body!",
@@ -3316,8 +3317,13 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
     return;
   }
 
+  casterIsTempestMagus = GET_SPEC(ch, CLASS_ETHERMANCER, SPEC_TEMPESTMAGUS);
   // dam = dice(level * 2, 9);
   dam = dice((int)(MIN(level, 40) * 2), 10);
+  if(casterIsTempestMagus)
+  {
+	dam = (int)(dam * (1.5 + MAX(level - 30, 20) / 40.0));
+  }
 
   /*  play_sound(SOUND_WIND3, NULL, ch->in_room, TO_ROOM); */
 
@@ -3325,7 +3331,7 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
 
   if (IS_AFFECTED(victim, AFF_FLY) &&
       !NewSaves(victim, SAVING_PARA, svchance) &&
-      !IS_ELITE(victim))
+      (!IS_ELITE(victim) || casterIsTempestMagus))
   {
     affchance = number(1, 100);
 
@@ -3362,7 +3368,7 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
   }
 
   if (!StatSave(victim, APPLY_AGI, (GET_LEVEL(victim) - GET_LEVEL(ch)) / 5) &&
-      !IS_ELITE(victim))
+      (!IS_ELITE(victim) || casterIsTempestMagus))
   {
     spell_damage(ch, victim, dam, SPLDAM_GENERIC, 0, &messages);
   }

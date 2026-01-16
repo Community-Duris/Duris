@@ -2019,7 +2019,6 @@ void initialize_skills()
   SPELL_ADD(CLASS_DRUID, 7);
   // SPEC_SPELL_ADD(CLASS_DRUID, 7, SPEC_STORM);
   SPEC_SPELL_ADD(CLASS_CONJURER, 7, SPEC_AIR);
-  SPEC_SPELL_ADD(CLASS_ETHERMANCER, 7, SPEC_FROSTMAGUS);
   SPEC_SPELL_ADD(CLASS_ETHERMANCER, 7, SPEC_TEMPESTMAGUS);
 
   SPELL_CREATE("toxic fog", SPELL_TOXIC_FOG, PULSE_SPELLCAST * 2,
@@ -2147,7 +2146,6 @@ void initialize_skills()
                    TAR_SELF_ONLY,
                    spell_blur, "&+BYour motions slow to normal.");
   SPELL_ADD(CLASS_RANGER, 11);
-  SPELL_ADD(CLASS_ETHERMANCER, 11);
 
   SPELL_CREATE_MSG("pass without trace", SPELL_PASS_WITHOUT_TRACE, PULSE_SPELLCAST * 2,
                    TAR_SELF_ONLY,
@@ -3015,7 +3013,6 @@ void initialize_skills()
                TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO | TAR_ELEMENTAL,
                spell_arieks_shattering_iceball);
   SPELL_ADD(CLASS_SHAMAN, 9);
-  SPEC_SPELL_ADD(CLASS_ETHERMANCER, 10, SPEC_FROSTMAGUS);
 
   SPELL_CREATE("scathing wind", SPELL_SCATHING_WIND, PULSE_SPELLCAST * 3,
                TAR_AREA | TAR_OFFAREA | TAR_AGGRO | TAR_ELEMENTAL,
