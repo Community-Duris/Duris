@@ -1513,6 +1513,8 @@ int writeCharacter(P_char ch, int type, int room)
     for (i = 0; i < MAX_WEAR; i++)
       if (save_equip[i])
         equip_char(ch, save_equip[i], i, 9);
+    for (i = 0; i < MAX_WEAR; i++)
+      save_equip[i] = NULL;
   }
   else
   {
