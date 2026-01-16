@@ -3422,8 +3422,8 @@ void gfstone_event(P_char ch, P_char vict, P_obj obj, void *data)
             next = vict->next_in_room;
             if ((vict != ch) && !(ch->group && (ch->group == vict->group)) && number(0, 1))
             {
-              GET_HIT(vict) -= 50;
-              update_pos(vict);
+				int dam = 180 + number(-20, 20); // ~40-50 damage
+				spell_damage(ch, vict, dam, SPLDAM_FIRE, SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0, NULL);
             }
           }
         }

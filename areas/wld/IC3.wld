@@ -1,10 +1,11 @@
 #420000
 &+LA &+Cpocket &+Lof &+Cair &+Linside the wrecked &+yhull of the ship&+L.&n~
 &+yThe inside of the ship has a small &+Cair pocket &+ywhich has likely not been breathed in
-&+ysome time yet still has &+Woxygen&+y. A deep sense of &+Ldread &+yand &+Lforboding &+yseems
-&+yto permeate the inside of this once massive ship. The smell of &+csea&+Cwa&+cter &+yand
-&+Ldecay &+yalso drift into your nostrils. It is best to proceed with extreme caution due to
-&+ythe tales that are told about the &+Lcurse &+yplaced upon this ship by &+WPoseidon.&n
+&+ysome time yet still has &+Woxygen&+y. A frayed rope ladder leads back out along the ship.
+&+yA deep sense of &+Ldread &+yand &+Lforboding &+yseems to permeate the inside of this once massive
+&+yship. The smell of &+csea&+Cwa&+cter &+yand &+Ldecay &+yalso drift into your nostrils. It is best to
+&+yproceed with extreme caution due to the tales that are told about the &+Lcurse &+yplaced upon
+&+ythis ship by &+WPoseidon.&n
 ~
 4200 1073872909 0 0
 D0
@@ -25,10 +26,6 @@ S
 &+rmoving &+yaround behind the door.&n
 ~
 4200 1216380969 0 0
-D0
-~
-~
-0 0 420000
 D1
 ~
 ~
@@ -354,7 +351,7 @@ D1
 &+yA pile of rubble and debris is here, obstructing the damaged part of the wreck to the east.&n
 ~
 rubble~
-7 420001 420019
+6 420001 420019
 S
 #420019
 &+BThe ocean &+Yfloor &+Boutside of a &+Lship&+ywreck.&n~
@@ -370,7 +367,7 @@ D1
 D3
 ~
 rubble~
-3 420001 420018
+2 420001 420018
 S
 #420020
 &+BThe ocean &+Yfloor &+Boutside of a &+Lship&+ywreck.&n~
@@ -408,6 +405,7 @@ S
 &+yA large portion of the rear of the ship lies here on the ocean floor and has become the home of many
 &+bsea &+Ccreatures&+y. Some of which are quite large and whose shadows can be seen swimming at the edge of
 &+yyour vision. There appears to be a large &+ciron &+yand &+Ybrass &+Lchest &+yresting in the corner under some debris.&n
+&+yThe ends of a frayed rope ladder lead along the wreckage.&n
 ~
 4200 1216381033 0 0
 D3
