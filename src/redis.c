@@ -4,6 +4,9 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "structs.h"
 #include "utils.h"
@@ -40,6 +43,7 @@ int crash_recovery_boot = 0;
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
+static volatile pid_t world_state_save_pid = 0;
 
 // rnum to vnum
 static int get_room_vnum(P_char ch)
@@ -248,6 +252,9 @@ void flush_dirty_players(void)
     }
   }
 
+  struct timeval start, now;
+  gettimeofday(&start, NULL);
+
   // smembers first, del after saves - no data loss on disconnect
   redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS mud:dirty_players");
   if (!reply)
@@ -284,6 +291,10 @@ void flush_dirty_players(void)
     redisReply *del_reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
     if (del_reply)
       freeReplyObject(del_reply);
+
+    gettimeofday(&now, NULL);
+    long ms = (now.tv_sec - start.tv_sec) * 1000 + (now.tv_usec - start.tv_usec) / 1000;
+    logit(LOG_DEBUG, "flush_dirty_players: saved %d players in %ld ms", saved_count, ms);
   }
 #endif
 }
@@ -317,63 +328,63 @@ void event_flush_dirty_players(P_char ch, P_char victim, P_obj obj, void *data)
     add_event(event_flush_dirty_players, REDIS_FLUSH_INTERVAL, NULL, NULL, NULL, 0, NULL, 0);
 }
 
-// world state persistence functions
-
-bool redis_save_world_state(void)
+// sync version, called by forked child - needs own redis connection
+static bool redis_save_world_state_sync(void)
 {
 #ifdef __NO_MYSQL__
   return false;
 #else
-  if (!redis_enabled || !redis_world_state_enabled)
-    return false;
+  const char *redis_host = getenv("REDIS_HOST");
+  if (!redis_host || !*redis_host)
+    redis_host = "127.0.0.1";
 
-  if (!redis_ctx || redis_ctx->err)
+  const char *redis_port_str = getenv("REDIS_PORT");
+  int redis_port = 6379;
+  if (redis_port_str && *redis_port_str)
   {
-    if (!redis_reconnect())
-    {
-      redis_enabled = false;
-      return false;
-    }
+    redis_port = atoi(redis_port_str);
+    if (redis_port <= 0 || redis_port > 65535)
+      redis_port = 6379;
   }
 
-  // mark as invalid during save
-  redisReply *valid_reply = (redisReply *)redisCommand(redis_ctx, "SET mud:world_state:valid 0");
+  redisContext *ctx = redisConnect(redis_host, redis_port);
+  if (!ctx || ctx->err)
+  {
+    if (ctx)
+      redisFree(ctx);
+    return false;
+  }
+
+  redisReply *valid_reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 0");
   if (valid_reply)
     freeReplyObject(valid_reply);
 
-  // count items
   int num_mobs, num_objs, num_rooms;
   copyover_count_items(&num_mobs, &num_objs, &num_rooms);
   int num_zones = top_of_zone_table + 1;
 
-  // estimate buffer size needed
   size_t estimated_size = sizeof(struct copyover_header) +
                           (size_t)num_mobs * (sizeof(struct copyover_mob) + 64 * sizeof(struct copyover_affect) + 256 * sizeof(struct copyover_obj_content)) +
                           (size_t)num_objs * (sizeof(struct copyover_obj) + 64 * sizeof(struct copyover_obj_content)) +
                           (size_t)num_rooms * sizeof(struct copyover_room) +
                           (size_t)num_zones * sizeof(struct zone_age_entry);
 
-  // allocate buffer with 25% headroom for inventory/affects
-  size_t buffer_size = estimated_size + (estimated_size / 4);
+  size_t buffer_size = estimated_size + (estimated_size / 4); // 25% headroom
   char *buffer = (char *)malloc(buffer_size);
   if (!buffer)
   {
-    logit(LOG_SYS, "redis: failed to allocate world state buffer (%zu bytes)", buffer_size);
+    redisFree(ctx);
     return false;
   }
 
-  logit(LOG_SYS, "redis: saving world state (%d mobs, %d objs, %d doors, %d zones, %zu bytes)",
-        num_mobs, num_objs, num_rooms, num_zones, buffer_size);
-
   size_t offset = 0;
 
-  // write header
   struct copyover_header header;
   memset(&header, 0, sizeof(header));
   memcpy(header.magic, COPYOVER_MAGIC, 4);
   header.version = COPYOVER_VERSION;
   header.timestamp = time(NULL);
-  header.num_descriptors = 0;  // not saving descriptors for crash recovery
+  header.num_descriptors = 0;
   header.num_mobs = num_mobs;
   header.num_objects = num_objs;
   header.num_rooms = num_rooms;
@@ -383,7 +394,6 @@ bool redis_save_world_state(void)
   memcpy(buffer + offset, &header, sizeof(header));
   offset += sizeof(header);
 
-  // write mobs
   int mobs_written = 0;
   for (P_char ch = character_list; ch; ch = ch->next)
   {
@@ -392,8 +402,8 @@ bool redis_save_world_state(void)
       int written = copyover_write_mob_to_buffer(ch, buffer + offset, buffer_size - offset);
       if (written < 0)
       {
-        logit(LOG_SYS, "redis: buffer overflow writing mob");
         free(buffer);
+        redisFree(ctx);
         return false;
       }
       offset += written;
@@ -401,7 +411,6 @@ bool redis_save_world_state(void)
     }
   }
 
-  // write objects
   int objs_written = 0;
   for (P_obj obj = object_list; obj; obj = obj->next)
   {
@@ -414,8 +423,8 @@ bool redis_save_world_state(void)
       int written = copyover_write_obj_to_buffer(obj, buffer + offset, buffer_size - offset);
       if (written < 0)
       {
-        logit(LOG_SYS, "redis: buffer overflow writing obj");
         free(buffer);
+        redisFree(ctx);
         return false;
       }
       offset += written;
@@ -423,7 +432,6 @@ bool redis_save_world_state(void)
     }
   }
 
-  // write doors
   int doors_written = 0;
   for (int room = 0; room <= top_of_world; room++)
   {
@@ -435,8 +443,8 @@ bool redis_save_world_state(void)
         int written = copyover_write_door_to_buffer(room, dir, buffer + offset, buffer_size - offset);
         if (written < 0)
         {
-          logit(LOG_SYS, "redis: buffer overflow writing door");
           free(buffer);
+          redisFree(ctx);
           return false;
         }
         offset += written;
@@ -445,54 +453,94 @@ bool redis_save_world_state(void)
     }
   }
 
-  // write zone ages
   int zones_written = 0;
   for (int z = 0; z <= top_of_zone_table; z++)
   {
     int written = copyover_write_zone_age_to_buffer(z, buffer + offset, buffer_size - offset);
     if (written < 0)
     {
-      logit(LOG_SYS, "redis: buffer overflow writing zone age");
       free(buffer);
+      redisFree(ctx);
       return false;
     }
     offset += written;
     zones_written++;
   }
 
-  // update header with actual counts (may differ from estimates)
   header.num_mobs = mobs_written;
   header.num_objects = objs_written;
   header.num_rooms = doors_written;
   header.num_zones = zones_written;
   memcpy(buffer, &header, sizeof(header));
 
-  // save to redis as binary
-  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SET mud:world_state %b", buffer, offset);
+  redisReply *reply = (redisReply *)redisCommand(ctx, "SET mud:world_state %b", buffer, offset);
   free(buffer);
 
   if (!reply)
   {
-    logit(LOG_SYS, "redis: failed to save world state");
+    redisFree(ctx);
     return false;
   }
   freeReplyObject(reply);
 
-  // save timestamp
   char timestamp_str[32];
   snprintf(timestamp_str, sizeof(timestamp_str), "%ld", (long)time(NULL));
-  reply = (redisReply *)redisCommand(redis_ctx, "SET mud:world_state:timestamp %s", timestamp_str);
+  reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:timestamp %s", timestamp_str);
   if (reply)
     freeReplyObject(reply);
 
-  // mark as valid
-  reply = (redisReply *)redisCommand(redis_ctx, "SET mud:world_state:valid 1");
+  reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 1");
   if (reply)
     freeReplyObject(reply);
 
-  logit(LOG_DEBUG, "redis: saved world state (%zu bytes, %d mobs, %d objs, %d doors, %d zones)",
-        offset, mobs_written, objs_written, doors_written, zones_written);
+  redisFree(ctx);
+  return true;
+#endif
+}
 
+// forks child to avoid blocking main loop
+bool redis_save_world_state(void)
+{
+#ifdef __NO_MYSQL__
+  return false;
+#else
+  if (!redis_enabled || !redis_world_state_enabled)
+    return false;
+
+  if (world_state_save_pid > 0)
+  {
+    int status;
+    pid_t result = waitpid(world_state_save_pid, &status, WNOHANG);
+    if (result == 0)
+    {
+      // still running
+      logit(LOG_DEBUG, "redis: world state save still in progress, skipping");
+      return true;
+    }
+    world_state_save_pid = 0;
+  }
+
+  int num_mobs, num_objs, num_rooms;
+  copyover_count_items(&num_mobs, &num_objs, &num_rooms);
+  int num_zones = top_of_zone_table + 1;
+
+  logit(LOG_SYS, "redis: saving world state (async, %d mobs, %d objs, %d doors, %d zones)",
+        num_mobs, num_objs, num_rooms, num_zones);
+
+  pid_t pid = fork();
+  if (pid < 0)
+  {
+    logit(LOG_SYS, "redis: fork failed for world state save");
+    return false;
+  }
+
+  if (pid == 0)
+  {
+    bool success = redis_save_world_state_sync();
+    _exit(success ? 0 : 1);
+  }
+
+  world_state_save_pid = pid;
   return true;
 #endif
 }

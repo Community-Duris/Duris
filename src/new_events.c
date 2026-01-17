@@ -10,6 +10,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <sys/time.h>
 #ifndef _LINUX_SOURCE
 #include <sys/types.h>
 #endif
@@ -104,17 +105,6 @@ void clear_nevent( P_nevent e )
   if( !e )
   {
     debug( "clear_nevent: bad event e: %ld", e );
-  }
-
-  // sanity check: verify e->ch is still in character_list (not freed)
-  if( e->ch )
-  {
-    P_char c;
-    for (c = character_list; c; c = c->next)
-      if (c == e->ch)
-        break;
-    if (!c)
-      e->ch = NULL;  // character was freed, clear stale pointer
   }
 
   if( e->cld && e->ch )

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
 #include <crypt.h>
@@ -1219,6 +1220,19 @@ int load_char_display_data(char *charname, struct char_display_info *info)
     extract_obj(obj, FALSE);
   }
 
+  // clean up affects loaded by restoreCharOnly - release to pool directly
+  // (don't use affect_remove as it calls balance_affects which schedules events)
+  extern struct mm_ds *dead_affect_pool;
+  while (temp_ch->affected) {
+    struct affected_type *af = temp_ch->affected;
+    temp_ch->affected = af->next;
+    if (dead_affect_pool)
+      mm_release(dead_affect_pool, af);
+  }
+
+  // clear any scheduled events on this temp character before freeing
+  clear_char_nevents(temp_ch, -1, NULL);
+
   // Clean up temporary character
   if (temp_ch->only.pc)
     free(temp_ch->only.pc);
@@ -1436,6 +1450,9 @@ void display_character_list_to_char(P_char ch, P_acct account)
 
 void display_character_list(P_desc d, P_acct account)
 {
+  struct timeval dcl_start, dcl_end;
+  gettimeofday(&dcl_start, NULL);
+
   struct acct_chars *c = account ? account->acct_character_list : d->account->acct_character_list;
   struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
   char     buf[256];
@@ -1500,53 +1517,51 @@ void display_character_list(P_desc d, P_acct account)
   // Display sorted characters
   for (i = 0; i < count; i++)
   {
-    struct char_display_info info;
+    struct acct_chars *ch = sorted_chars[i];
     char name_capitalized[32];
     char race_str[32];
     char class_str[64];
     char level_str[16];
-    char line_buf[512];  // Larger buffer for color codes
+    char line_buf[512];
 
-    // Load character display data
-    if (!load_char_display_data(sorted_chars[i]->charname, &info))
-    {
-      snprintf(line_buf, 512, "&+y|&n &+C%d&n &+y|&n &+W%-12s&n &+y|&n &+R%-5s&n &+y|&n &+R%-12s&n &+y|&n &+R%-12s&n &+y|&n &+R?&n\r\n",
-               i + 1, sorted_chars[i]->charname, "?", "?", "?");
-      SEND_TO_Q(line_buf, d);
-      continue;
-    }
-
-    // Capitalize character name
-    strncpy(name_capitalized, info.charname, 31);
+    // capitalize character name
+    strncpy(name_capitalized, ch->charname, 31);
     name_capitalized[31] = '\0';
     if (name_capitalized[0])
       name_capitalized[0] = toupper(name_capitalized[0]);
 
-    // Get race name
-    get_race_name_from_info(&info, race_str, 32);
-
-    // Get class name(s) - with bounds checking
-    extern const struct class_names class_names_table[];
-    int primary_idx = flag2idx(info.m_class);
-    int secondary_idx = info.secondary_class ? flag2idx(info.secondary_class) : 0;
-
-    if (info.secondary_class && secondary_idx > 0)
+    // get race name
+    extern const struct race_names race_names_table[];
+    if (ch->race >= 0 && ch->race < LAST_RACE)
     {
-      // Multiclass
-      snprintf(level_str, 16, "%d/%d", info.level, info.secondary_level);
+      strncpy(race_str, race_names_table[ch->race].normal, 31);
+      race_str[31] = '\0';
+    }
+    else
+    {
+      strncpy(race_str, "Unknown", 31);
+    }
+
+    // get class name(s)
+    extern const struct class_names class_names_table[];
+    int primary_idx = flag2idx(ch->m_class);
+    int secondary_idx = ch->secondary_class ? flag2idx(ch->secondary_class) : 0;
+
+    if (ch->secondary_class && secondary_idx > 0)
+    {
+      snprintf(level_str, 16, "%d", ch->level);
       snprintf(class_str, 64, "%s/%s",
                class_names_table[primary_idx].normal,
                class_names_table[secondary_idx].normal);
     }
     else
     {
-      // Single class
-      snprintf(level_str, 16, "%d", info.level);
+      snprintf(level_str, 16, "%d", ch->level);
       strncpy(class_str, class_names_table[primary_idx].normal, 63);
       class_str[63] = '\0';
     }
 
-    // Truncate strings if too long for table
+    // truncate strings if too long for table
     if (strlen(name_capitalized) > 12)
       name_capitalized[12] = '\0';
     if (strlen(race_str) > 12)
@@ -1554,26 +1569,26 @@ void display_character_list(P_desc d, P_acct account)
     if (strlen(class_str) > 12)
       class_str[12] = '\0';
 
-    // Get room name with its original ANSI color intact
+    // get room name (last_room is vnum, need to convert to rnum)
     const char *room_name_src;
     char room_display[128];
-    if (info.hometown >= 0 && info.hometown < top_of_world && world[info.hometown].name)
+    int room_rnum = real_room(ch->last_room);
+    if (room_rnum >= 0 && room_rnum < top_of_world && world[room_rnum].name)
     {
-      room_name_src = world[info.hometown].name;
+      room_name_src = world[room_rnum].name;
     }
     else
     {
       room_name_src = "Unknown";
     }
 
-    // Truncate room name to fit column (16 visible chars) while preserving ANSI codes
+    // truncate room name to fit column (16 visible chars) while preserving ansi codes
     int src_idx = 0, dst_idx = 0, visible_count = 0;
     int max_visible = 16;
     while (room_name_src[src_idx] && dst_idx < 126)
     {
       if (room_name_src[src_idx] == '&' && room_name_src[src_idx + 1])
       {
-        // Copy ANSI code without counting it
         room_display[dst_idx++] = room_name_src[src_idx++];
         room_display[dst_idx++] = room_name_src[src_idx++];
         if (room_name_src[src_idx - 1] == '+' || room_name_src[src_idx - 1] == '-')
@@ -1584,7 +1599,6 @@ void display_character_list(P_desc d, P_acct account)
       }
       else
       {
-        // Regular character - count it
         if (visible_count >= max_visible)
           break;
         room_display[dst_idx++] = room_name_src[src_idx++];
@@ -1593,14 +1607,9 @@ void display_character_list(P_desc d, P_acct account)
     }
     room_display[dst_idx] = '\0';
 
-    // Display character row
     snprintf(line_buf, 512, "&+y|&n %d &+y|&n %-12s &+y|&n %-5s &+y|&n %-12s &+y|&n %-12s &+y|&n %s &+y|&n\r\n",
              i + 1, name_capitalized, level_str, race_str, class_str, room_display);
     SEND_TO_Q(line_buf, d);
-
-    // Free rested status string using str_free (not free)
-    if (info.rested_status)
-      str_free(info.rested_status);
   }
 
   // Display table footer
@@ -1608,8 +1617,12 @@ void display_character_list(P_desc d, P_acct account)
   if(d->character == NULL)
   {
     SEND_TO_Q("\r\n&+W0&n) &+LBack to Account Menu&n\r\n\r\n", d);
-    SEND_TO_Q("Which character would you like to play? ", d);  
+    SEND_TO_Q("Which character would you like to play? ", d);
   }
+
+  gettimeofday(&dcl_end, NULL);
+  long dcl_ms = (dcl_end.tv_sec - dcl_start.tv_sec) * 1000 + (dcl_end.tv_usec - dcl_start.tv_usec) / 1000;
+  logit(LOG_DEBUG, "display_character_list took %ld ms (%d chars)", dcl_ms, count);
 }
 
 
@@ -2117,6 +2130,9 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     return -1;
 
 #ifndef __NO_MYSQL__
+  struct timeval ra_start, ra_end;
+  gettimeofday(&ra_start, NULL);
+
   char name_backup[256];
   strncpy(name_backup, acct->acct_name, sizeof(name_backup) - 1);
   name_backup[sizeof(name_backup) - 1] = '\0';
@@ -2127,6 +2143,10 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     logit(LOG_FILE, "sql_load_account failed for %s", name_backup);
     return -1;
   }
+
+  gettimeofday(&ra_end, NULL);
+  long ra_ms = (ra_end.tv_sec - ra_start.tv_sec) * 1000 + (ra_end.tv_usec - ra_start.tv_usec) / 1000;
+  logit(LOG_DEBUG, "read_account took %ld ms for %s", ra_ms, name_backup);
 
   // free old data
   acct->acct_name = check_and_clear(acct->acct_name);

@@ -28,6 +28,12 @@ struct acct_chars { // Account Character Entry
 	long int			last;
 	char				blocked;
 	char				racewar;
+	int					level;
+	int					race;
+	unsigned int		m_class;
+	unsigned int		secondary_class;
+	int					last_room;
+	long				last_save;
 	struct acct_chars	*next;
 };
 

@@ -1678,18 +1678,6 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
   obj->loc.wearing = ch;
   obj->loc_p = LOC_WORN;
 
-  // debug: trace loc.wearing assignment (extra detail for artifact 58424)
-  if (OBJ_VNUM(obj) == 58424)
-  {
-    logit(LOG_DEBUG, "[handler.c:1678] ARTIFACT equip_char: vnum=58424 obj=%p loc.wearing=%p ch='%s' ch_vnum=%d in_room=%d",
-          (void *)obj, (void *)obj->loc.wearing, GET_NAME(ch), IS_NPC(ch) ? GET_VNUM(ch) : -1, ch->in_room);
-  }
-  else
-  {
-    logit(LOG_DEBUG, "[handler.c:1678] equip_char: vnum=%d loc.wearing=%p set to '%s'",
-          OBJ_VNUM(obj), (void *)obj->loc.wearing, GET_NAME(ch));
-  }
-
   if( IS_ARTIFACT(obj) )
   {
     artifact_update_location_sql( obj );
@@ -1749,18 +1737,6 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
     clear_links( ch, obj, LNKFLG_BREAK_REMOVE );
   all_affects(ch, FALSE);
   ch->equipment[pos] = NULL;
-
-  // debug: trace loc.wearing clear (extra detail for artifact 58424)
-  if (OBJ_VNUM(obj) == 58424)
-  {
-    logit(LOG_DEBUG, "[handler.c:1745] ARTIFACT unequip_char: vnum=58424 obj=%p loc.wearing=%p ch='%s', clearing",
-          (void *)obj, (void *)obj->loc.wearing, GET_NAME(ch));
-  }
-  else
-  {
-    logit(LOG_DEBUG, "[handler.c:1745] unequip_char: vnum=%d loc.wearing=%p was '%s', clearing",
-          OBJ_VNUM(obj), (void *)obj->loc.wearing, GET_NAME(ch));
-  }
 
   obj->loc_p = LOC_NOWHERE;
   obj->loc.wearing = NULL;  // must clear full pointer, not just int-sized loc.room
@@ -2655,10 +2631,6 @@ void extract_obj(P_obj obj, int gone_for_good)
     raise(SIGSEGV);
   }
 
-  // debug: trace object extraction
-  logit(LOG_DEBUG, "[handler.c:2631] extract_obj: vnum=%d obj=%p loc_p=%d loc.wearing=%p",
-        OBJ_VNUM(obj), (void *)obj, obj->loc_p, (void *)obj->loc.wearing);
-
   if (OBJ_ROOM(obj))
     obj_from_room(obj);
   else if (OBJ_CARRIED(obj))
@@ -3205,6 +3177,7 @@ void extract_char(P_char ch)
     affect_remove(ch, af);
   }
 
+  disarm_char_nevents(ch, NULL);  // clear new events system
   ClearCharEvents(ch);
 
   /* clear equipment_list */

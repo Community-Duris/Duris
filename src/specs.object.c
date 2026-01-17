@@ -479,9 +479,6 @@ int artifact_shadow_shield(P_obj obj, P_char ch, int cmd, char *argument)
     }
   }
 
-  // debug: trace ch value before use
-  logit(LOG_DEBUG, "[specs.object.c:474] artifact_shadow_shield: vnum=%d ch=%p loc_p=%d",
-        OBJ_VNUM(obj), (void *)ch, obj->loc_p);
 
   for (i = 0; i < MAX_WEAR; i++)
   {

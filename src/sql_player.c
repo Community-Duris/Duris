@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 #include <dirent.h>
 
 #include "structs.h"
@@ -369,6 +370,9 @@ bool sql_save_player(P_char ch, int type, int room)
     return false;
   }
 
+  struct timeval start, now;
+  gettimeofday(&start, NULL);
+
   // start transaction for atomic save
   if (!sql_begin_transaction())
   {
@@ -426,6 +430,11 @@ bool sql_save_player(P_char ch, int type, int room)
     sql_rollback();
     return false;
   }
+
+  gettimeofday(&now, NULL);
+  long ms = (now.tv_sec - start.tv_sec) * 1000 + (now.tv_usec - start.tv_usec) / 1000;
+  if (ms > 100)
+    logit(LOG_DEBUG, "sql_save_player: %s took %ld ms", GET_NAME(ch), ms);
 
   return true;
 }
@@ -632,114 +641,129 @@ bool sql_save_player_status(P_char ch, int type, int room)
     pid = ch->only.pc->pid;
   }
 
-  // now save the array data: languages, intros, timers, undead slots, forged items, granted cmds
+  // batched array saves for performance (was 1200+ individual queries, now ~12)
 
-  // languages - delete zeros, upsert non-zeros
+  // allocate buffer for batch inserts
+  char *batch = (char *)malloc(65536);
+  if (!batch)
+    return false;
+
+  int pos;
+  bool has_data;
+
+  // languages - batch delete then batch insert
+  snprintf(query, sizeof(query), "DELETE FROM player_languages WHERE pid=%d", pid);
+  sql_run_query(query);
+
+  pos = snprintf(batch, 65536, "INSERT INTO player_languages (pid, tongue_id, proficiency) VALUES ");
+  has_data = false;
   for (int i = 0; i < MAX_TONGUE; i++)
   {
     if (GET_LANGUAGE(ch, i) > 0)
     {
-      snprintf(query, sizeof(query),
-               "REPLACE INTO player_languages (pid, tongue_id, proficiency) VALUES (%d, %d, %d)",
-               pid, i, GET_LANGUAGE(ch, i));
-      sql_run_query(query);
-    }
-    else
-    {
-      snprintf(query, sizeof(query),
-               "DELETE FROM player_languages WHERE pid=%d AND tongue_id=%d", pid, i);
-      sql_run_query(query);
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%d)",
+        has_data ? "," : "", pid, i, GET_LANGUAGE(ch, i));
+      has_data = true;
     }
   }
+  if (has_data)
+    sql_run_query(batch);
 
-  // intros
+  // intros - batch delete then batch insert
+  snprintf(query, sizeof(query), "DELETE FROM player_intros WHERE pid=%d", pid);
+  sql_run_query(query);
+
+  pos = snprintf(batch, 65536, "INSERT INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES ");
+  has_data = false;
   for (int i = 0; i < MAX_INTRO; i++)
   {
     if (ch->only.pc->introd_list[i] != 0)
     {
-      snprintf(query, sizeof(query),
-               "REPLACE INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES (%d, %d, %ld, %lu)",
-               pid, i, ch->only.pc->introd_list[i], ch->only.pc->introd_times[i]);
-      sql_run_query(query);
-    }
-    else
-    {
-      snprintf(query, sizeof(query),
-               "DELETE FROM player_intros WHERE pid=%d AND intro_index=%d", pid, i);
-      sql_run_query(query);
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld,%lu)",
+        has_data ? "," : "", pid, i, ch->only.pc->introd_list[i], ch->only.pc->introd_times[i]);
+      has_data = true;
     }
   }
+  if (has_data)
+    sql_run_query(batch);
 
-  // timers
+  // timers - batch delete then batch insert
+  snprintf(query, sizeof(query), "DELETE FROM player_timers WHERE pid=%d", pid);
+  sql_run_query(query);
+
+  pos = snprintf(batch, 65536, "INSERT INTO player_timers (pid, timer_id, timer_value) VALUES ");
+  has_data = false;
   for (int i = 0; i < NUMB_PC_TIMERS; i++)
   {
     if (ch->only.pc->pc_timer[i] != 0)
     {
-      snprintf(query, sizeof(query),
-               "REPLACE INTO player_timers (pid, timer_id, timer_value) VALUES (%d, %d, %ld)",
-               pid, i, (long)ch->only.pc->pc_timer[i]);
-      sql_run_query(query);
-    }
-    else
-    {
-      snprintf(query, sizeof(query),
-               "DELETE FROM player_timers WHERE pid=%d AND timer_id=%d", pid, i);
-      sql_run_query(query);
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld)",
+        has_data ? "," : "", pid, i, (long)ch->only.pc->pc_timer[i]);
+      has_data = true;
     }
   }
+  if (has_data)
+    sql_run_query(batch);
 
-  // undead spell slots
+  // undead spell slots - batch delete then batch insert
+  snprintf(query, sizeof(query), "DELETE FROM player_undead_slots WHERE pid=%d", pid);
+  sql_run_query(query);
+
+  pos = snprintf(batch, 65536, "INSERT INTO player_undead_slots (pid, circle, slots) VALUES ");
+  has_data = false;
   for (int i = 0; i <= MAX_CIRCLE; i++)
   {
     if (ch->specials.undead_spell_slots[i] != 0)
     {
-      snprintf(query, sizeof(query),
-               "REPLACE INTO player_undead_slots (pid, circle, slots) VALUES (%d, %d, %d)",
-               pid, i, ch->specials.undead_spell_slots[i]);
-      sql_run_query(query);
-    }
-    else
-    {
-      snprintf(query, sizeof(query),
-               "DELETE FROM player_undead_slots WHERE pid=%d AND circle=%d", pid, i);
-      sql_run_query(query);
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%d)",
+        has_data ? "," : "", pid, i, ch->specials.undead_spell_slots[i]);
+      has_data = true;
     }
   }
+  if (has_data)
+    sql_run_query(batch);
 
-  // forged items
+  // forged items - batch delete then batch insert
+  snprintf(query, sizeof(query), "DELETE FROM player_forged_items WHERE pid=%d", pid);
+  sql_run_query(query);
+
+  pos = snprintf(batch, 65536, "INSERT INTO player_forged_items (pid, forge_index, item_vnum) VALUES ");
+  has_data = false;
   for (int i = 0; i < MAX_FORGE_ITEMS; i++)
   {
     if (ch->only.pc->learned_forged_list[i] != 0)
     {
-      snprintf(query, sizeof(query),
-               "REPLACE INTO player_forged_items (pid, forge_index, item_vnum) VALUES (%d, %d, %ld)",
-               pid, i, ch->only.pc->learned_forged_list[i]);
-      sql_run_query(query);
-    }
-    else
-    {
-      snprintf(query, sizeof(query),
-               "DELETE FROM player_forged_items WHERE pid=%d AND forge_index=%d", pid, i);
-      sql_run_query(query);
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld)",
+        has_data ? "," : "", pid, i, ch->only.pc->learned_forged_list[i]);
+      has_data = true;
     }
   }
+  if (has_data)
+    sql_run_query(batch);
 
-  // granted commands - delete all then insert (no good unique key for upsert)
+  // granted commands - batch delete then batch insert
   snprintf(query, sizeof(query), "DELETE FROM player_granted_cmds WHERE pid=%d", pid);
   sql_run_query(query);
 
-  for (int i = 0; i < ch->only.pc->numb_gcmd; i++)
+  if (ch->only.pc->numb_gcmd > 0)
   {
-    snprintf(query, sizeof(query),
-             "INSERT INTO player_granted_cmds (pid, cmd_num) VALUES (%d, %d)",
-             pid, ch->only.pc->gcmd_arr[i]);
-    sql_run_query(query);
+    pos = snprintf(batch, 65536, "INSERT INTO player_granted_cmds (pid, cmd_num) VALUES ");
+    has_data = false;
+    for (int i = 0; i < ch->only.pc->numb_gcmd; i++)
+    {
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d)",
+        has_data ? "," : "", pid, ch->only.pc->gcmd_arr[i]);
+      has_data = true;
+    }
+    if (has_data)
+      sql_run_query(batch);
   }
 
+  free(batch);
   return true;
 }
 
-// skills save
+// skills save - batched for performance (2 queries instead of 2000)
 
 bool sql_save_player_skills(P_char ch)
 {
@@ -750,28 +774,42 @@ bool sql_save_player_skills(P_char ch)
   if (pid <= 0)
     return false;
 
-  char query[256];
+  // delete all skills for this player in one query
+  char del_query[128];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM player_skills WHERE pid=%d", pid);
+  sql_run_query(del_query);
+
+  // build multi-row insert for skills that have values
+  // max ~100 skills learned * ~40 bytes per value = ~4kb, use 64kb to be safe
+  char *query = (char *)malloc(65536);
+  if (!query)
+    return false;
+
+  int pos = snprintf(query, 65536,
+    "INSERT INTO player_skills (pid, skill_id, learned, taught) VALUES ");
+
+  bool has_skills = false;
   for (int i = 0; i < MAX_SKILLS; i++)
   {
     if (ch->only.pc->skills[i].learned > 0 || ch->only.pc->skills[i].taught > 0)
     {
-      snprintf(query, sizeof(query),
-               "REPLACE INTO player_skills (pid, skill_id, learned, taught) VALUES (%d, %d, %d, %d)",
-               pid, i, ch->only.pc->skills[i].learned, ch->only.pc->skills[i].taught);
-      sql_run_query(query);
-    }
-    else
-    {
-      snprintf(query, sizeof(query),
-               "DELETE FROM player_skills WHERE pid=%d AND skill_id=%d", pid, i);
-      sql_run_query(query);
+      pos += snprintf(query + pos, 65536 - pos, "%s(%d,%d,%d,%d)",
+        has_skills ? "," : "",
+        pid, i,
+        ch->only.pc->skills[i].learned,
+        ch->only.pc->skills[i].taught);
+      has_skills = true;
     }
   }
 
+  if (has_skills)
+    sql_run_query(query);
+
+  free(query);
   return true;
 }
 
-// affects save
+// affects save - batched for performance
 
 bool sql_save_player_affects(P_char ch)
 {
@@ -787,24 +825,34 @@ bool sql_save_player_affects(P_char ch)
   snprintf(del_query, sizeof(del_query), "DELETE FROM player_affects WHERE pid=%d", pid);
   sql_run_query(del_query);
 
-  // insert current affects
+  // batch insert current affects
+  // each affect ~150 bytes, max ~50 affects = ~8kb, use 32kb to be safe
+  char *batch = (char *)malloc(32768);
+  if (!batch)
+    return false;
+
+  int pos = snprintf(batch, 32768,
+    "INSERT INTO player_affects (pid, type, duration, flags, modifier, location, level, "
+    "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5) VALUES ");
+
+  bool has_affects = false;
   for (struct affected_type *af = ch->affected; af; af = af->next)
   {
-    // skip nosave affects
     if (IS_SET(af->flags, AFFTYPE_NOSAVE))
       continue;
 
-    // todo: handle custom messages if needed
-    char ins_query[1024];
-    snprintf(ins_query, sizeof(ins_query),
-             "INSERT INTO player_affects (pid, type, duration, flags, modifier, location, level, "
-             "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5) "
-             "VALUES (%d, %d, %d, %d, %d, %d, %d, %lu, %lu, %lu, %lu, %lu)",
-             pid, af->type, af->duration, af->flags, af->modifier, af->location, af->level,
-             af->bitvector, af->bitvector2, af->bitvector3, af->bitvector4, af->bitvector5);
-    sql_run_query(ins_query);
+    pos += snprintf(batch + pos, 32768 - pos,
+      "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu)",
+      has_affects ? "," : "",
+      pid, af->type, af->duration, af->flags, af->modifier, af->location, af->level,
+      af->bitvector, af->bitvector2, af->bitvector3, af->bitvector4, af->bitvector5);
+    has_affects = true;
   }
 
+  if (has_affects)
+    sql_run_query(batch);
+
+  free(batch);
   return true;
 }
 
@@ -2146,44 +2194,82 @@ bool sql_load_player_items(P_char ch)
 
   int loaded_count = idx;
 
-  // load item affects for each item
+  // load all item affects in one query (was N+1 queries, now 1)
+  snprintf(query, sizeof(query),
+    "SELECT ia.item_id, ia.location, ia.modifier "
+    "FROM player_item_affects ia "
+    "JOIN player_items pi ON ia.item_id = pi.id "
+    "WHERE pi.pid=%d ORDER BY ia.item_id, ia.id", pid);
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int affect_item_id = sql_row_int(row, 0, 0);
+      int location = sql_row_int(row, 1, 0);
+      int modifier = sql_row_int(row, 2, 0);
+
+      // find the item in our array and add the affect
+      for (int i = 0; i < loaded_count; i++)
+      {
+        if (item_ids[i] == affect_item_id && items[i])
+        {
+          // find next empty affect slot
+          for (int a = 0; a < MAX_OBJ_AFFECT; a++)
+          {
+            if (items[i]->affected[a].location == 0 && items[i]->affected[a].modifier == 0)
+            {
+              items[i]->affected[a].location = location;
+              items[i]->affected[a].modifier = modifier;
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+    mysql_free_result(result);
+  }
+
+  // build lookup table for O(1) container resolution (was O(n²), now O(n))
+  // find max item_id for lookup table size
+  int max_item_id = 0;
   for (int i = 0; i < loaded_count; i++)
   {
-    if (!items[i])
-      continue;
+    if (item_ids[i] > max_item_id)
+      max_item_id = item_ids[i];
+  }
 
-    snprintf(query, sizeof(query),
-      "SELECT location, modifier FROM player_item_affects WHERE item_id=%d", item_ids[i]);
-    result = db_query("%s", query);
-    if (result)
+  // create lookup: item_id -> array index
+  int *id_to_idx = NULL;
+  if (max_item_id > 0 && max_item_id < 100000) // sanity check
+  {
+    id_to_idx = (int *)calloc(max_item_id + 1, sizeof(int));
+    if (id_to_idx)
     {
-      int aff_idx = 0;
-      while ((row = mysql_fetch_row(result)) && aff_idx < MAX_OBJ_AFFECT)
-      {
-        items[i]->affected[aff_idx].location = sql_row_int(row, 0, 0);
-        items[i]->affected[aff_idx].modifier = sql_row_int(row, 1, 0);
-        aff_idx++;
-      }
-      mysql_free_result(result);
+      for (int i = 0; i <= max_item_id; i++)
+        id_to_idx[i] = -1;
+      for (int i = 0; i < loaded_count; i++)
+        id_to_idx[item_ids[i]] = i;
     }
   }
 
-  // now place items: first pass - put items in containers
+  // place items in containers using lookup table
   for (int i = 0; i < loaded_count; i++)
   {
     if (!items[i] || container_ids[i] == 0)
       continue;
 
-    // find container
-    for (int j = 0; j < loaded_count; j++)
-    {
-      if (item_ids[j] == container_ids[i] && items[j])
-      {
-        obj_to_obj(items[i], items[j]);
-        break;
-      }
-    }
+    int container_idx = -1;
+    if (id_to_idx && container_ids[i] <= max_item_id)
+      container_idx = id_to_idx[container_ids[i]];
+
+    if (container_idx >= 0 && items[container_idx])
+      obj_to_obj(items[i], items[container_idx]);
   }
+
+  if (id_to_idx)
+    free(id_to_idx);
 
   // second pass - put top-level items on character
   for (int i = 0; i < loaded_count; i++)
@@ -2498,13 +2584,22 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
   if (!esc_name)
     return NULL;
 
-  char query[256];
+  char query[512];
   snprintf(query, sizeof(query),
-    "select char_name, login_count, last_login, blocked, racewar "
-    "from account_characters where account_name='%s' and deleted_at is null", esc_name);
+    "select ac.char_name, ac.login_count, ac.last_login, ac.blocked, ac.racewar, "
+    "pd.level, pd.race, pd.m_class, pd.secondary_class, pd.last_room, pd.last_save "
+    "from account_characters ac "
+    "left join player_data pd on ac.pid = pd.pid "
+    "where ac.account_name='%s' and ac.deleted_at is null", esc_name);
   free(esc_name);
 
+  struct timeval q_start, q_end;
+  gettimeofday(&q_start, NULL);
   MYSQL_RES *result = db_query("%s", query);
+  gettimeofday(&q_end, NULL);
+  long q_ms = (q_end.tv_sec - q_start.tv_sec) * 1000 + (q_end.tv_usec - q_start.tv_usec) / 1000;
+  logit(LOG_DEBUG, "sql_load_account_characters query took %ld ms for %s", q_ms, account_name);
+
   if (!result)
     return NULL;
 
@@ -2523,6 +2618,12 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
     ch->last = row[2] ? atol(row[2]) : 0;
     ch->blocked = row[3] ? atoi(row[3]) : 0;
     ch->racewar = row[4] ? atoi(row[4]) : 0;
+    ch->level = row[5] ? atoi(row[5]) : 0;
+    ch->race = row[6] ? atoi(row[6]) : 0;
+    ch->m_class = row[7] ? (unsigned int)strtoul(row[7], NULL, 10) : 0;
+    ch->secondary_class = row[8] ? (unsigned int)strtoul(row[8], NULL, 10) : 0;
+    ch->last_room = row[9] ? atoi(row[9]) : 0;
+    ch->last_save = row[10] ? atol(row[10]) : 0;
     ch->next = NULL;
 
     if (!head)
