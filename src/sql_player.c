@@ -2231,45 +2231,22 @@ bool sql_load_player_items(P_char ch)
     mysql_free_result(result);
   }
 
-  // build lookup table for O(1) container resolution (was O(n²), now O(n))
-  // find max item_id for lookup table size
-  int max_item_id = 0;
-  for (int i = 0; i < loaded_count; i++)
-  {
-    if (item_ids[i] > max_item_id)
-      max_item_id = item_ids[i];
-  }
-
-  // create lookup: item_id -> array index
-  int *id_to_idx = NULL;
-  if (max_item_id > 0 && max_item_id < 100000) // sanity check
-  {
-    id_to_idx = (int *)calloc(max_item_id + 1, sizeof(int));
-    if (id_to_idx)
-    {
-      for (int i = 0; i <= max_item_id; i++)
-        id_to_idx[i] = -1;
-      for (int i = 0; i < loaded_count; i++)
-        id_to_idx[item_ids[i]] = i;
-    }
-  }
-
-  // place items in containers using lookup table
+  // place items in containers using linear search
   for (int i = 0; i < loaded_count; i++)
   {
     if (!items[i] || container_ids[i] == 0)
       continue;
 
-    int container_idx = -1;
-    if (id_to_idx && container_ids[i] <= max_item_id)
-      container_idx = id_to_idx[container_ids[i]];
-
-    if (container_idx >= 0 && items[container_idx])
-      obj_to_obj(items[i], items[container_idx]);
+    // find container by searching loaded items
+    for (int j = 0; j < loaded_count; j++)
+    {
+      if (item_ids[j] == container_ids[i] && items[j])
+      {
+        obj_to_obj(items[i], items[j]);
+        break;
+      }
+    }
   }
-
-  if (id_to_idx)
-    free(id_to_idx);
 
   // second pass - put top-level items on character
   for (int i = 0; i < loaded_count; i++)
@@ -4753,12 +4730,12 @@ P_char sql_restore_shopkeeper(int shop_nr)
   GET_BIRTHPLACE(ch) = room_vnum;
   sql_load_shopkeeper_affects(ch, shopkeeper_id);
 
-  // load equipment
+  // load equipment - use equip_char directly since wear() expects item in inventory
   for (int slot = 1; slot <= MAX_WEAR; slot++)
   {
     P_obj obj = sql_load_shopkeeper_items(shopkeeper_id, slot, 0);
     if (obj)
-      wear(ch, obj, slot - 1, 0);
+      equip_char(ch, obj, slot - 1, 0);
   }
 
   // load inventory

@@ -620,6 +620,10 @@ void ne_events(void)
         (evf)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
         PROFILE_END(event_func);
         PROFILE_REGISTER_CALL(evf, event_func_profile_end - event_func_profile_beg)
+        // log slow events (> 100ms)
+        long ev_time_ms = (event_func_profile_end - event_func_profile_beg) / 1000;
+        if (ev_time_ms > 100)
+          logit(LOG_DEBUG, "slow event: func=%p took %ld ms", (void*)evf, ev_time_ms);
       #else
         (current_nevent->func)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
       #endif
