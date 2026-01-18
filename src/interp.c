@@ -1098,7 +1098,8 @@ const char *command[MAX_CMD] = {
   "olist",
   "mlist",
   "poll",
-  "\n"                          /* MAX_CMD = 850, MAX_CMD_LIST = 1000 */
+  "newchar",
+  "\n"                          /* MAX_CMD = 851, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = {
@@ -2871,6 +2872,7 @@ void assign_command_pointers(void)
   CMD_Y(CMD_OLIST, STAT_DEAD + POS_PRONE, do_olist, IMMORTAL, FALSE);
   CMD_Y(CMD_MLIST, STAT_DEAD + POS_PRONE, do_mlist, IMMORTAL, FALSE);
   CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
+  CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 
   /*
    * 'commands' which exist only to trigger specials

@@ -2597,9 +2597,8 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
 
   while ((row = mysql_fetch_row(result)))
   {
-    struct acct_chars *ch = (struct acct_chars *)malloc(sizeof(struct acct_chars));
-    if (!ch)
-      continue;
+    struct acct_chars *ch;
+    CREATE(ch, struct acct_chars, 1, "sql:acct_chars");
 
     ch->charname = str_dup(row[0] ? row[0] : "");
     ch->count = row[1] ? strtoul(row[1], NULL, 10) : 0;

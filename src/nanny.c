@@ -4219,7 +4219,7 @@ void select_name(P_desc d, char *arg, int flag)
   }*/
 
 
-  if (!pfile_exists(SAVE_DIR, tmp_name) &&
+  if (!sql_player_exists(tmp_name) &&
       pfile_exists(BADNAME_DIR, tmp_name))
   {
     SEND_TO_Q("That name has been declined before, and would be now too!\r\nName:", d);
@@ -4252,7 +4252,7 @@ void select_name(P_desc d, char *arg, int flag)
       return;
     }
   }
-  else if (pfile_exists(SAVE_DIR, tmp_name))
+  else if (sql_player_exists(tmp_name))
   {
     SEND_TO_Q("Name is in use already. Please enter new name.\r\nName:", d);
     return;

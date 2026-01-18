@@ -250,7 +250,8 @@ OBJS =  $(SHIP_OBJS) \
 				 ws_handlers.o \
 				 json_utils.o \
 				 gmcp.o \
-				 ttype.o
+				 ttype.o \
+				 wiz_newchar.o
 
 # Name lists (no paths) for pfile-related objs
 SHARED_PFILE_OBJS_NAMES = pf-skills.o pf-files.o

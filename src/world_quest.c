@@ -282,7 +282,7 @@ void quest_ask(P_char ch, P_char quest_mob)
 void quest_kill(P_char ch, P_char quest_mob)
 {
 
-  if( !IS_ALIVE(ch) || !(quest_mob) )
+  if( !IS_ALIVE(ch) || !(quest_mob) || IS_NPC(ch) )
   {
     return;
   }
