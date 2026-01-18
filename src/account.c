@@ -55,7 +55,7 @@ char* bcrypt_hash_password(const char *password)
     return NULL;
 
   char *hash = crypt(password, salt);
-  return hash ? strdup(hash) : NULL;
+  return hash ? str_dup(hash) : NULL;
 }
 
 int bcrypt_verify_password(const char *password, const char *hash)
@@ -804,10 +804,9 @@ void add_ip_entry(P_acct acct, P_desc d)
 
   snprintf(host, 512, "%s", d->host);
 
-  a = (struct acct_ip *)malloc(sizeof(struct acct_ip));
+  CREATE(a, struct acct_ip, 1, MEM_TAG_OTHER);
   if (!a)
     return;
-  memset(a, 0, sizeof(struct acct_ip));
 
   a->hostname = str_dup(host);
   a->count = 1;
@@ -1962,10 +1961,9 @@ void add_char_to_account(P_desc d)
   P_char   player = d->character;
   struct acct_chars *c = NULL;
 
-  c = (struct acct_chars *)malloc(sizeof(struct acct_chars));
+  CREATE(c, struct acct_chars, 1, MEM_TAG_OTHER);
   if (!c)
     return;
-  memset(c, 0, sizeof(struct acct_chars));
 
   c->charname = str_dup(player->player.name);
   c->count = 1;
@@ -2111,29 +2109,37 @@ void account_delete_char(P_desc d, char *arg)
 void remove_char_from_list(P_acct acct, char *ch)
 {
   struct acct_chars *c = NULL;
-  struct acct_chars *d = NULL;
+  struct acct_chars *prev = NULL;
+
+  if (!acct || !ch || !acct->acct_character_list)
+    return;
 
   c = acct->acct_character_list;
+
   if (!strcasecmp(ch, c->charname))
   {
     acct->acct_character_list = c->next;
     FREE(c->charname);
     FREE(c);
+    acct->num_chars--;
     write_account(acct);
     return;
   }
 
+  prev = c;
+  c = c->next;
   while (c)
   {
     if (!strcasecmp(ch, c->charname))
     {
-      d->next = c->next;
+      prev->next = c->next;
       FREE(c->charname);
       FREE(c);
+      acct->num_chars--;
       write_account(acct);
       return;
     }
-    d = c;
+    prev = c;
     c = c->next;
   }
 }
@@ -2188,7 +2194,7 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
       curr_ip->hostname = check_and_clear(curr_ip->hostname);
       curr_ip->ip_address = check_and_clear(curr_ip->ip_address);
       next_ip = curr_ip->next;
-      free(curr_ip);
+      FREE(curr_ip);
     }
     acct->acct_unique_ips = NULL;
   }
@@ -2199,7 +2205,7 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     {
       curr_char->charname = check_and_clear(curr_char->charname);
       next_char = curr_char->next;
-      free(curr_char);
+      FREE(curr_char);
     }
     acct->acct_character_list = NULL;
   }
@@ -2300,10 +2306,9 @@ void read_unique_ip(P_acct acct, FILE * f)
 
   for (i = 0; i < count; i++)
   {
-    c = (struct acct_ip *)malloc(sizeof(struct acct_ip));
+    CREATE(c, struct acct_ip, 1, MEM_TAG_OTHER);
     if (!c)
       return;
-    memset(c, 0, sizeof(struct acct_ip));
 
     fscanf(f, "%s\n", buf);
     c->hostname = str_dup(buf);
@@ -2360,10 +2365,9 @@ void read_character_list(P_acct acct, FILE * f)
 
   for (i = 0; i < count; i++)
   {
-    c = (struct acct_chars *)malloc(sizeof(struct acct_chars));
+    CREATE(c, struct acct_chars, 1, MEM_TAG_OTHER);
     if (!c)
       return;
-    memset(c, 0, sizeof(struct acct_chars));
 
     fscanf(f, "%s\n", buf);
     c->charname = str_dup(buf);
@@ -2493,7 +2497,7 @@ void clear_account(P_acct acct)
       curr_ip->hostname = check_and_clear(curr_ip->hostname);
       curr_ip->ip_address = check_and_clear(curr_ip->ip_address);
       next_ip = curr_ip->next;
-      free(curr_ip);
+      FREE(curr_ip);
     }
     acct->acct_unique_ips = NULL;
   }
@@ -2505,7 +2509,7 @@ void clear_account(P_acct acct)
     {
       curr_char->charname = check_and_clear(curr_char->charname);
       next_char = curr_char->next;
-      free(curr_char);
+      FREE(curr_char);
     }
     acct->acct_character_list = NULL;
   }
@@ -2548,17 +2552,13 @@ P_acct allocate_account(void)
 {
   P_acct   acct = NULL;
 
-
   CREATE(acct, acct_entry, 1, MEM_TAG_OTHER);
 
   if (!acct)
     raise(SIGSEGV);
 
-  if (acct)
-  {
-    clear_account(acct);
-    add_account_to_list(acct);
-  }
+  memset(acct, 0, sizeof(acct_entry));
+  add_account_to_list(acct);
 
   return acct;
 }

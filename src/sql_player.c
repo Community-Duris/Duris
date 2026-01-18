@@ -2794,7 +2794,7 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
   while ((row = mysql_fetch_row(result)))
   {
     struct acct_chars *ch;
-    CREATE(ch, struct acct_chars, 1, "sql:acct_chars");
+    CREATE(ch, struct acct_chars, 1, MEM_TAG_OTHER);
 
     ch->charname = str_dup(row[0] ? row[0] : "");
     ch->count = row[1] ? strtoul(row[1], NULL, 10) : 0;
@@ -3738,14 +3738,14 @@ struct acct_ip *sql_load_account_ips(const char *account_name)
 
   while ((row = mysql_fetch_row(result)))
   {
-    struct acct_ip *ip = (struct acct_ip *)malloc(sizeof(struct acct_ip));
+    struct acct_ip *ip = NULL;
+    CREATE(ip, struct acct_ip, 1, MEM_TAG_OTHER);
     if (!ip)
       continue;
 
     ip->hostname = str_dup(row[0] ? row[0] : "");
     ip->ip_address = str_dup(row[1] ? row[1] : "");
     ip->count = row[2] ? strtoul(row[2], NULL, 10) : 0;
-    ip->next = NULL;
 
     if (!head)
       head = ip;

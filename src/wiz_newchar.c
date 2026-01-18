@@ -375,7 +375,7 @@ void do_newchar(P_char ch, char *argument, int cmd)
   // update in-memory account state for immediate visibility
   {
     struct acct_chars *c;
-    CREATE(c, struct acct_chars, 1, "newchar:acct_chars");
+    CREATE(c, struct acct_chars, 1, MEM_TAG_OTHER);
     memset(c, 0, sizeof(struct acct_chars));
     c->charname = str_dup(newch->player.name);
     c->count = 1;

@@ -40,5 +40,6 @@ logs/shutdown_info.txt
 logs/log/*
 
 durismud-launcher
-Players.old.20251217175317
+Accounts.old.*
+Players.old.*
 backup

@@ -2086,6 +2086,19 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
 
     /* delete character file and free temp character */
     deleteCharacter(ch);
+
+    /* free strings allocated by restoreCharOnly */
+    if (ch->player.name) str_free(ch->player.name);
+    if (ch->player.title) str_free(ch->player.title);
+    if (ch->player.short_descr) str_free(ch->player.short_descr);
+    if (ch->player.long_descr) str_free(ch->player.long_descr);
+    if (ch->player.description) str_free(ch->player.description);
+    if (ch->only.pc->poofIn) str_free(ch->only.pc->poofIn);
+    if (ch->only.pc->poofOut) str_free(ch->only.pc->poofOut);
+    if (ch->only.pc->poofInSound) str_free(ch->only.pc->poofInSound);
+    if (ch->only.pc->poofOutSound) str_free(ch->only.pc->poofOutSound);
+    if (ch->only.pc->gcmd_arr) FREE(ch->only.pc->gcmd_arr);
+
     free(ch->only.pc);
     free(ch);
 
@@ -2097,6 +2110,7 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
     }
     FREE(c->charname);
     FREE(c);
+    d->account->num_chars--;
 
     write_account(d->account);
 
@@ -2297,6 +2311,7 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
         }
         FREE(c->charname);
         FREE(c);
+        target_acct->num_chars--;
 
         ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
         write_account(target_acct);
@@ -2344,6 +2359,7 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
     }
     FREE(c->charname);
     FREE(c);
+    target_acct->num_chars--;
     ws_send_admin_delete_progress(d, request_id, "Removed from account", "success");
 
     ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
