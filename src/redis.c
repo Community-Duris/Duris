@@ -39,11 +39,13 @@ int crash_recovery_boot = 0;
 #define REDIS_FLUSH_INTERVAL (5 * WAIT_SEC)
 #define REDIS_WORLD_STATE_INTERVAL_DEFAULT 30
 #define REDIS_WORLD_STATE_MAX_AGE_DEFAULT 300
-// buffer size now dynamically allocated based on estimated world size
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static volatile pid_t world_state_save_pid = 0;
+static volatile pid_t dirty_flush_pid = 0;
+
+#define DIRTY_FLUSH_THRESHOLD 0
 
 // rnum to vnum
 static int get_room_vnum(P_char ch)
@@ -243,6 +245,16 @@ void flush_dirty_players(void)
   if (!redis_enabled)
     return;
 
+  // skip if previous async save still running
+  if (dirty_flush_pid > 0)
+  {
+    int status;
+    pid_t result = waitpid(dirty_flush_pid, &status, WNOHANG);
+    if (result == 0)
+      return;
+    dirty_flush_pid = 0;
+  }
+
   if (!redis_ctx || redis_ctx->err)
   {
     if (!redis_reconnect())
@@ -252,50 +264,107 @@ void flush_dirty_players(void)
     }
   }
 
-  struct timeval start, now;
-  gettimeofday(&start, NULL);
-
-  // smembers first, del after saves - no data loss on disconnect
   redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS mud:dirty_players");
   if (!reply)
     return;
 
-  if (reply->type != REDIS_REPLY_ARRAY)
+  if (reply->type != REDIS_REPLY_ARRAY || reply->elements == 0)
   {
     freeReplyObject(reply);
     return;
   }
 
-  int saved_count = 0;
-  size_t i;
-  for (i = 0; i < reply->elements; i++)
+  // copy pids to array
+  int count = (int)reply->elements;
+  int *pids = (int *)malloc(count * sizeof(int));
+  if (!pids)
   {
-    if (reply->element[i]->type != REDIS_REPLY_STRING)
-      continue;
+    freeReplyObject(reply);
+    return;
+  }
 
-    int pid = atoi(reply->element[i]->str);
-    P_char ch = find_player_by_pid(pid);
-    if (ch && IS_PC(ch))
+  int valid = 0;
+  for (size_t i = 0; i < reply->elements; i++)
+  {
+    if (reply->element[i]->type == REDIS_REPLY_STRING)
     {
-      if (sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
-        saved_count++;
-      else
-        logit(LOG_DEBUG, "flush_dirty_players: failed to save pid %d", pid);
+      int pid = atoi(reply->element[i]->str);
+      // only keep pids of players actually online
+      P_char ch = find_player_by_pid(pid);
+      if (ch && IS_PC(ch))
+        pids[valid++] = pid;
     }
   }
-
   freeReplyObject(reply);
 
-  if (saved_count > 0)
+  if (valid == 0)
   {
-    redisReply *del_reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
-    if (del_reply)
-      freeReplyObject(del_reply);
-
-    gettimeofday(&now, NULL);
-    long ms = (now.tv_sec - start.tv_sec) * 1000 + (now.tv_usec - start.tv_usec) / 1000;
-    logit(LOG_DEBUG, "flush_dirty_players: saved %d players in %ld ms", saved_count, ms);
+    free(pids);
+    return;
   }
+
+  // clear dirty set now so stale entries don't accumulate
+  redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
+  if (del)
+    freeReplyObject(del);
+
+  // small batch - save sync
+  if (valid <= DIRTY_FLUSH_THRESHOLD)
+  {
+    for (int i = 0; i < valid; i++)
+    {
+      P_char ch = find_player_by_pid(pids[i]);
+      if (ch && IS_PC(ch))
+        sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+    }
+    free(pids);
+    return;
+  }
+
+  // fork for async save
+  logit(LOG_SYS, "flush_dirty: saving %d online players async", valid);
+  pid_t pid = fork();
+  if (pid < 0)
+  {
+    // fork failed, fallback to sync
+    logit(LOG_SYS, "flush_dirty: fork failed, saving sync");
+    for (int i = 0; i < valid; i++)
+    {
+      P_char ch = find_player_by_pid(pids[i]);
+      if (ch && IS_PC(ch))
+        sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+    }
+    free(pids);
+    return;
+  }
+
+  if (pid == 0)
+  {
+    // child - create own mysql connection
+    MYSQL *child_conn = sql_create_child_connection();
+    if (!child_conn)
+    {
+      free(pids);
+      _exit(1);
+    }
+
+    sql_reset_for_child(child_conn);
+
+    for (int i = 0; i < valid; i++)
+    {
+      P_char ch = find_player_by_pid(pids[i]);
+      if (ch && IS_PC(ch))
+        sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+    }
+
+    mysql_close(child_conn);
+    free(pids);
+    _exit(0);
+  }
+
+  // parent
+  dirty_flush_pid = pid;
+  free(pids);
 #endif
 }
 

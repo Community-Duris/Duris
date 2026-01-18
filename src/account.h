@@ -69,8 +69,7 @@ struct acct_list_entry { // List of loaded accounts
 	struct acct_entry		*account;
 	struct acct_list_entry	*next;
 };
-	
 
-
+void cleanup_temp_char(struct char_data *ch);
 
 #endif // DURIS_ACCOUNT_H

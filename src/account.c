@@ -1138,6 +1138,67 @@ struct char_display_info {
   long last_login;
 };
 
+// cleanup temp char loaded via restoreCharOnly before freeing
+// handles items, affects, events, strings, and witnesses
+// NOTE: does NOT free the char struct itself or pc_only_data - caller must do that
+void cleanup_temp_char(P_char ch)
+{
+  extern struct mm_ds *dead_affect_pool;
+
+  if (!ch) return;
+
+  // unequip and extract all equipment
+  for (int i = 0; i < MAX_WEAR; i++) {
+    if (ch->equipment[i]) {
+      P_obj obj = unequip_char(ch, i);
+      extract_obj(obj, FALSE);
+    }
+  }
+
+  // remove and extract all carried items
+  while (ch->carrying) {
+    P_obj obj = ch->carrying;
+    obj_from_char(obj);
+    extract_obj(obj, FALSE);
+  }
+
+  // release affects directly to pool (don't use affect_remove - it schedules events)
+  while (ch->affected) {
+    struct affected_type *af = ch->affected;
+    ch->affected = af->next;
+    if (dead_affect_pool)
+      mm_release(dead_affect_pool, af);
+  }
+
+  // clear any scheduled events
+  clear_char_nevents(ch, -1, NULL);
+
+  // free strings allocated by sql_row_str/getString
+  if (ch->player.name) str_free(ch->player.name);
+  if (ch->player.title) str_free(ch->player.title);
+  if (ch->player.short_descr) str_free(ch->player.short_descr);
+  if (ch->player.long_descr) str_free(ch->player.long_descr);
+  if (ch->player.description) str_free(ch->player.description);
+
+  // free pc-only strings and data
+  if (IS_PC(ch) && ch->only.pc) {
+    if (ch->only.pc->poofIn) str_free(ch->only.pc->poofIn);
+    if (ch->only.pc->poofOut) str_free(ch->only.pc->poofOut);
+    if (ch->only.pc->poofInSound) str_free(ch->only.pc->poofInSound);
+    if (ch->only.pc->poofOutSound) str_free(ch->only.pc->poofOutSound);
+    if (ch->only.pc->gcmd_arr) FREE(ch->only.pc->gcmd_arr);
+  }
+
+  // free witnesses linked list
+  while (ch->specials.witnessed) {
+    wtns_rec *w = ch->specials.witnessed;
+    ch->specials.witnessed = w->next;
+    if (w->attacker) str_free(w->attacker);
+    if (w->victim) str_free(w->victim);
+    free(w);
+  }
+}
+
 // Helper function to load character display data
 // Returns 1 on success, 0 on failure
 int load_char_display_data(char *charname, struct char_display_info *info)
@@ -1207,33 +1268,9 @@ int load_char_display_data(char *charname, struct char_display_info *info)
     info->rested_status = str_dup(rested_buf);
   }
 
-  // clean up items loaded by restoreCharOnly (sql_load_player_items equips items)
-  for (int i = 0; i < MAX_WEAR; i++) {
-    if (temp_ch->equipment[i]) {
-      P_obj obj = unequip_char(temp_ch, i);
-      extract_obj(obj, FALSE);
-    }
-  }
-  while (temp_ch->carrying) {
-    P_obj obj = temp_ch->carrying;
-    obj_from_char(obj);
-    extract_obj(obj, FALSE);
-  }
+  cleanup_temp_char(temp_ch);
 
-  // clean up affects loaded by restoreCharOnly - release to pool directly
-  // (don't use affect_remove as it calls balance_affects which schedules events)
-  extern struct mm_ds *dead_affect_pool;
-  while (temp_ch->affected) {
-    struct affected_type *af = temp_ch->affected;
-    temp_ch->affected = af->next;
-    if (dead_affect_pool)
-      mm_release(dead_affect_pool, af);
-  }
-
-  // clear any scheduled events on this temp character before freeing
-  clear_char_nevents(temp_ch, -1, NULL);
-
-  // Clean up temporary character
+  // free the temp char struct
   if (temp_ch->only.pc)
     free(temp_ch->only.pc);
   free(temp_ch);
@@ -1450,8 +1487,6 @@ void display_character_list_to_char(P_char ch, P_acct account)
 
 void display_character_list(P_desc d, P_acct account)
 {
-  struct timeval dcl_start, dcl_end;
-  gettimeofday(&dcl_start, NULL);
 
   struct acct_chars *c = account ? account->acct_character_list : d->account->acct_character_list;
   struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
@@ -1620,9 +1655,6 @@ void display_character_list(P_desc d, P_acct account)
     SEND_TO_Q("Which character would you like to play? ", d);
   }
 
-  gettimeofday(&dcl_end, NULL);
-  long dcl_ms = (dcl_end.tv_sec - dcl_start.tv_sec) * 1000 + (dcl_end.tv_usec - dcl_start.tv_usec) / 1000;
-  logit(LOG_DEBUG, "display_character_list took %ld ms (%d chars)", dcl_ms, count);
 }
 
 
@@ -2130,8 +2162,6 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     return -1;
 
 #ifndef __NO_MYSQL__
-  struct timeval ra_start, ra_end;
-  gettimeofday(&ra_start, NULL);
 
   char name_backup[256];
   strncpy(name_backup, acct->acct_name, sizeof(name_backup) - 1);
@@ -2143,10 +2173,6 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     logit(LOG_FILE, "sql_load_account failed for %s", name_backup);
     return -1;
   }
-
-  gettimeofday(&ra_end, NULL);
-  long ra_ms = (ra_end.tv_sec - ra_start.tv_sec) * 1000 + (ra_end.tv_usec - ra_start.tv_usec) / 1000;
-  logit(LOG_DEBUG, "read_account took %ld ms for %s", ra_ms, name_backup);
 
   // free old data
   acct->acct_name = check_and_clear(acct->acct_name);

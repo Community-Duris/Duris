@@ -276,6 +276,29 @@ static bool sql_run_query(const char *query)
   return true;
 }
 
+// for forked child process - needs its own db connection
+MYSQL *sql_create_child_connection(void)
+{
+  MYSQL *conn = mysql_init(NULL);
+  if (!conn)
+    return NULL;
+
+  conn = mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, DB_NAME,
+                            DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
+  if (!conn)
+    return NULL;
+
+  mysql_set_character_set(conn, "utf8mb4");
+  return conn;
+}
+
+// child swaps in its own connection after fork
+void sql_reset_for_child(MYSQL *child_conn)
+{
+  DB = child_conn;
+  in_transaction = false;
+}
+
 // player existence check
 
 bool sql_player_exists(const char *name)
@@ -370,8 +393,6 @@ bool sql_save_player(P_char ch, int type, int room)
     return false;
   }
 
-  struct timeval start, now;
-  gettimeofday(&start, NULL);
 
   // start transaction for atomic save
   if (!sql_begin_transaction())
@@ -430,11 +451,6 @@ bool sql_save_player(P_char ch, int type, int room)
     sql_rollback();
     return false;
   }
-
-  gettimeofday(&now, NULL);
-  long ms = (now.tv_sec - start.tv_sec) * 1000 + (now.tv_usec - start.tv_usec) / 1000;
-  if (ms > 100)
-    logit(LOG_DEBUG, "sql_save_player: %s took %ld ms", GET_NAME(ch), ms);
 
   return true;
 }
@@ -2570,12 +2586,7 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
     "where ac.account_name='%s' and ac.deleted_at is null", esc_name);
   free(esc_name);
 
-  struct timeval q_start, q_end;
-  gettimeofday(&q_start, NULL);
   MYSQL_RES *result = db_query("%s", query);
-  gettimeofday(&q_end, NULL);
-  long q_ms = (q_end.tv_sec - q_start.tv_sec) * 1000 + (q_end.tv_usec - q_start.tv_usec) / 1000;
-  logit(LOG_DEBUG, "sql_load_account_characters query took %ld ms for %s", q_ms, account_name);
 
   if (!result)
     return NULL;
@@ -3796,8 +3807,6 @@ bool sql_load_all_corpses(void)
   if (!DB)
     return false;
 
-  struct timespec start, end;
-  clock_gettime(CLOCK_MONOTONIC, &start);
 
   // one query gets everything: corpses + items + affects
   MYSQL_RES *result = db_query(
@@ -3813,10 +3822,6 @@ bool sql_load_all_corpses(void)
   );
   if (!result)
     return false;
-
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  long ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
-  logit(LOG_DEBUG, "sql_load_all_corpses: query took %ld ms", ms);
 
   // tracking for current corpse being built
   int cur_corpse_id = -1;
@@ -4095,10 +4100,6 @@ bool sql_load_all_corpses(void)
   }
 
   mysql_free_result(result);
-
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
-  logit(LOG_DEBUG, "sql_load_all_corpses: loaded %d corpses in %ld ms", loaded, ms);
   return true;
 }
 

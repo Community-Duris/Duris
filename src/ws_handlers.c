@@ -478,6 +478,7 @@ static int ws_load_char_info(const char *charname, struct ws_char_info *info)
     /* use get_class_string - handles spec and multiclass */
     get_class_string(temp_ch, info->class_str);
 
+    cleanup_temp_char(temp_ch);
     if (temp_ch->only.pc) free(temp_ch->only.pc);
     free(temp_ch);
 
@@ -1873,6 +1874,7 @@ void ws_cmd_account_info(struct descriptor_data *d, cJSON *data)
 
                     cJSON_AddItemToArray(characters, char_obj);
                 }
+                cleanup_temp_char(temp_ch);
                 free(temp_ch->only.pc);
             }
             free(temp_ch);
@@ -2399,18 +2401,7 @@ void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON *data)
                     cJSON_AddNumberToObject(char_obj, "maxHours", max_hours);
                     cJSON_AddItemToArray(characters, char_obj);
                 }
-                // clean up items loaded by restoreCharOnly (sql_load_player_items equips items)
-                for (int i = 0; i < MAX_WEAR; i++) {
-                    if (temp_ch->equipment[i]) {
-                        P_obj obj = unequip_char(temp_ch, i);
-                        extract_obj(obj, FALSE);
-                    }
-                }
-                while (temp_ch->carrying) {
-                    P_obj obj = temp_ch->carrying;
-                    obj_from_char(obj);
-                    extract_obj(obj, FALSE);
-                }
+                cleanup_temp_char(temp_ch);
                 free(temp_ch->only.pc);
             }
             free(temp_ch);

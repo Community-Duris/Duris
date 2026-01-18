@@ -612,12 +612,13 @@ void game_loop(int port, int sslport)
   sigemptyset(&mask);
   sigaddset(&mask, SIGUSR1);
   sigaddset(&mask, SIGUSR2);
+  sigaddset(&mask, SIGINT);
   sigaddset(&mask, SIGPIPE);
   sigaddset(&mask, SIGHUP);
   sigaddset(&mask, SIGALRM);
+  sigaddset(&mask, SIGTERM);
   sigaddset(&mask, SIGURG);
   sigaddset(&mask, SIGSEGV);
-  // SIGINT and SIGTERM not blocked - allows ctrl-c and kill to work
 
 #ifdef USE_ASYNCHRONOUS_IO
   io_init();
@@ -816,6 +817,7 @@ void game_loop(int port, int sslport)
 
     if (select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time) < 0)
     {
+      sigprocmask(SIG_SETMASK, &oldset, 0);
       perror("Select poll");
       // bad file descriptor - find and nuke it so we dont loop forever
       if (errno == EBADF)
@@ -852,9 +854,6 @@ void game_loop(int port, int sslport)
 #endif
 
     /* Respond to whatever might be happening */
-
-    struct timeval pulse_start, pulse_end;
-    gettimeofday(&pulse_start, NULL);
 
     /* New connection? */
     if (FD_ISSET(s, &input_set))
@@ -1052,14 +1051,7 @@ void game_loop(int port, int sslport)
         else
         {
           point->wait = 0;
-          struct timeval n_start, n_end;
-          int pre_state = point->connected;
-          gettimeofday(&n_start, NULL);
           nanny(point, comm);
-          gettimeofday(&n_end, NULL);
-          long n_ms = (n_end.tv_sec - n_start.tv_sec) * 1000 + (n_end.tv_usec - n_start.tv_usec) / 1000;
-          if (n_ms > 5)
-            logit(LOG_DEBUG, "nanny CON_%d->%d took %ld ms", pre_state, point->connected, n_ms);
         }
       }
     }
@@ -1075,17 +1067,11 @@ void game_loop(int port, int sslport)
       if (!FD_ISSET(point->descriptor, &output_set))
         continue;
 
-      struct timeval po_start, po_end;
-      gettimeofday(&po_start, NULL);
       if (process_output(point) < 0)
       {
         close_socket(point);
         continue;
       }
-      gettimeofday(&po_end, NULL);
-      long po_ms = (po_end.tv_sec - po_start.tv_sec) * 1000 + (po_end.tv_usec - po_start.tv_usec) / 1000;
-      if (po_ms > 10)
-        logit(LOG_DEBUG, "process_output took %ld ms for CON_%d", po_ms, point->connected);
     }
 
     PROFILE_END(prompts);
@@ -1099,13 +1085,7 @@ void game_loop(int port, int sslport)
       Events();
     }
     */
-    struct timeval ev_start, ev_end;
-    gettimeofday(&ev_start, NULL);
     ne_events();
-    gettimeofday(&ev_end, NULL);
-    long ev_ms = (ev_end.tv_sec - ev_start.tv_sec) * 1000 + (ev_end.tv_usec - ev_start.tv_usec) / 1000;
-    if (ev_ms > 50)
-      logit(LOG_DEBUG, "ne_events took %ld ms", ev_ms);
 
     /* Flush dirty room GMCP updates every 2 pulses (~500ms) */
     if (!(pulse % 2))
@@ -1243,11 +1223,6 @@ void game_loop(int port, int sslport)
     }
     /* check out the time */
 #if 1
-    gettimeofday(&pulse_end, NULL);
-    long pulse_ms = (pulse_end.tv_sec - pulse_start.tv_sec) * 1000 + (pulse_end.tv_usec - pulse_start.tv_usec) / 1000;
-    if (pulse_ms > 100)
-      logit(LOG_DEBUG, "pulse processing took %ld ms", pulse_ms);
-
     gettimeofday(&now, (struct timezone *)0);
     timespent = timediff(&now, &last_time);    /* time used this pulse */
     timeout = timediff(&opt_time, &timespent); /* time to sleep this pulse */
@@ -1265,6 +1240,7 @@ void game_loop(int port, int sslport)
 
       if (select(0, (fd_set *)0, (fd_set *)0, (fd_set *)0, &timeout) < 0)
       {
+        sigprocmask(SIG_SETMASK, &oldset, 0);
         if (errno == EINTR)
           continue;  // interrupted by signal, just retry
         perror("Select sleep");

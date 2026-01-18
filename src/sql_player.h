@@ -8,6 +8,7 @@
 #include "structs.h"
 
 #ifndef __NO_MYSQL__
+#include <mysql.h>
 
 // ============================================================================
 // transaction helpers
@@ -24,6 +25,12 @@ bool sql_rollback(void);
 
 // check if we're currently in a transaction
 bool sql_in_transaction(void);
+
+// for forked child - create separate db connection
+MYSQL *sql_create_child_connection(void);
+
+// child swaps globals after fork
+void sql_reset_for_child(MYSQL *child_conn);
 
 // ============================================================================
 // player save functions
