@@ -276,6 +276,58 @@ static bool sql_run_query(const char *query)
   return true;
 }
 
+// converts spellbook binary bits to json array string "[101,203,456]"
+static char *spellbook_to_json(const char *bits)
+{
+  if (!bits) return NULL;
+
+  char *buf = (char *)malloc(MAX_SKILLS * 6);
+  if (!buf) return NULL;
+
+  char *p = buf;
+  *p++ = '[';
+
+  int first = 1;
+  for (int i = 0; i < MAX_SKILLS; i++)
+  {
+    if (bits[i / 8] & (1 << (i % 8)))
+    {
+      if (!first) *p++ = ',';
+      p += sprintf(p, "%d", i);
+      first = 0;
+    }
+  }
+  *p++ = ']';
+  *p = '\0';
+
+  return buf;
+}
+
+// parses "[101,203,456]" and sets bits in output buffer
+static void json_to_spellbook(const char *json, char *output)
+{
+  if (!json || !output) return;
+
+  size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
+  memset(output, 0, buflen);
+
+  const char *p = json;
+  while (*p && *p != '[') p++;
+  if (*p == '[') p++;
+
+  while (*p)
+  {
+    while (*p && (*p == ' ' || *p == ',')) p++;
+    if (*p == ']' || !*p) break;
+
+    int spell_id = atoi(p);
+    if (spell_id >= 0 && spell_id < MAX_SKILLS)
+      output[spell_id / 8] |= (1 << (spell_id % 8));
+
+    while (*p && *p != ',' && *p != ']') p++;
+  }
+}
+
 // for forked child process - needs its own db connection
 MYSQL *sql_create_child_connection(void)
 {
@@ -892,6 +944,58 @@ static bool sql_save_item_affects(int item_id, P_obj obj)
   return true;
 }
 
+static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
+{
+  if (!obj || !obj->ex_description || !DB)
+    return true;
+
+  struct extra_descr_data *ed;
+  for (ed = obj->ex_description; ed; ed = ed->next)
+  {
+    if (!ed->keyword) continue;
+
+    size_t kw_len = strlen(ed->keyword);
+    char *db_keyword = NULL;
+    char *db_desc = NULL;
+
+    // spellbook: magic marker \03\01\03
+    if (kw_len == 3 && ed->keyword[0] == 3 && ed->keyword[1] == 1 && ed->keyword[2] == 3)
+    {
+      db_keyword = (char *)malloc(10);
+      if (db_keyword) strcpy(db_keyword, "SPELLBOOK");
+      db_desc = spellbook_to_json(ed->description);
+    }
+    else
+    {
+      db_keyword = sql_escape_string(ed->keyword);
+      db_desc = ed->description ? sql_escape_string(ed->description) : NULL;
+    }
+
+    if (!db_keyword) continue;
+
+    char query[8192];
+    if (db_desc)
+    {
+      snprintf(query, sizeof(query),
+        "INSERT INTO %s (item_id, keyword, description) VALUES (%d, '%s', '%s')",
+        table, item_id, db_keyword, db_desc);
+    }
+    else
+    {
+      snprintf(query, sizeof(query),
+        "INSERT INTO %s (item_id, keyword, description) VALUES (%d, '%s', NULL)",
+        table, item_id, db_keyword);
+    }
+
+    free(db_keyword);
+    if (db_desc) free(db_desc);
+
+    if (!sql_run_query(query))
+      return false;
+  }
+  return true;
+}
+
 // save a single item and its contents recursively
 // returns the item_id of the inserted item, or 0 on failure
 static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int container_id)
@@ -993,6 +1097,10 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 
   // save item affects
   if (!sql_save_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->ex_description &&
+      !sql_save_item_extra_descr(item_id, obj, "player_item_extra_descr"))
     return 0;
 
   // recursively save container contents
@@ -1181,6 +1289,10 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
   int item_id = (int)mysql_insert_id(DB);
 
   if (!sql_save_pet_item_affects(item_id, obj))
+    return 0;
+
+  if (obj->ex_description &&
+      !sql_save_item_extra_descr(item_id, obj, "player_pet_item_extra_descr"))
     return 0;
 
   if (obj->contains)
@@ -1429,6 +1541,40 @@ bool sql_load_player_pets(P_char ch)
             aff_idx++;
           }
           mysql_free_result(affect_result);
+        }
+
+        // load extra descriptions
+        snprintf(affect_query, sizeof(affect_query),
+          "SELECT keyword, description FROM player_pet_item_extra_descr WHERE item_id=%d", item_db_id);
+        MYSQL_RES *ed_result = db_query("%s", affect_query);
+        if (ed_result)
+        {
+          MYSQL_ROW ed_row;
+          while ((ed_row = mysql_fetch_row(ed_result)))
+          {
+            struct extra_descr_data *ed;
+            CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
+
+            if (ed_row[0] && strcmp(ed_row[0], "SPELLBOOK") == 0)
+            {
+              CREATE(ed->keyword, char, 4, MEM_TAG_STRING);
+              ed->keyword[0] = 3; ed->keyword[1] = 1; ed->keyword[2] = 3; ed->keyword[3] = '\0';
+
+              size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
+              CREATE(ed->description, char, buflen, MEM_TAG_STRING);
+              json_to_spellbook(ed_row[1], ed->description);
+            }
+            else
+            {
+              ed->keyword = ed_row[0] ? str_dup(ed_row[0]) : str_dup("");
+              ed->description = ed_row[1] ? str_dup(ed_row[1]) : NULL;
+            }
+
+            ed->next = obj->ex_description;
+            obj->ex_description = ed;
+            obj->str_mask |= STRUNG_EDESC;
+          }
+          mysql_free_result(ed_result);
         }
 
         items[item_count].db_id = item_db_id;
@@ -2243,6 +2389,56 @@ bool sql_load_player_items(P_char ch)
           break;
         }
       }
+    }
+    mysql_free_result(result);
+  }
+
+  // load extra descriptions (spellbooks etc)
+  snprintf(query, sizeof(query),
+    "SELECT ed.item_id, ed.keyword, ed.description "
+    "FROM player_item_extra_descr ed "
+    "JOIN player_items pi ON ed.item_id = pi.id "
+    "WHERE pi.pid=%d ORDER BY ed.item_id", pid);
+
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int db_id = atoi(row[0]);
+
+      P_obj obj = NULL;
+      for (int i = 0; i < loaded_count; i++)
+      {
+        if (item_ids[i] == db_id && items[i])
+        {
+          obj = items[i];
+          break;
+        }
+      }
+      if (!obj) continue;
+
+      struct extra_descr_data *ed;
+      CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
+
+      if (row[1] && strcmp(row[1], "SPELLBOOK") == 0)
+      {
+        CREATE(ed->keyword, char, 4, MEM_TAG_STRING);
+        ed->keyword[0] = 3; ed->keyword[1] = 1; ed->keyword[2] = 3; ed->keyword[3] = '\0';
+
+        size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
+        CREATE(ed->description, char, buflen, MEM_TAG_STRING);
+        json_to_spellbook(row[2], ed->description);
+      }
+      else
+      {
+        ed->keyword = row[1] ? str_dup(row[1]) : str_dup("");
+        ed->description = row[2] ? str_dup(row[2]) : NULL;
+      }
+
+      ed->next = obj->ex_description;
+      obj->ex_description = ed;
+      obj->str_mask |= STRUNG_EDESC;
     }
     mysql_free_result(result);
   }
@@ -3927,7 +4123,7 @@ bool sql_load_all_corpses(void)
       if (cur_room == NOWHERE)
         cur_room = 0;
 
-      int corpse_rnum = real_object(1);
+      int corpse_rnum = real_object(2);  // vnum 2 is the corpse prototype
       if (corpse_rnum < 0)
       {
         cur_corpse = NULL;
