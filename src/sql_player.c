@@ -1066,18 +1066,18 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
     "pid, vnum, equip_slot, container_id, quantity, "
     "weight, cost, timer, extra_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
-    "name, short_descr, description, action_descr"
+    "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
     "%d, %d, %d, %s, 1, "
     "%d, %d, %ld, %u, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
-    "%s, %s, %s, %s"
+    "%s, %s, %s, %s, %lu, %d"
     ")",
     pid, vnum, equip_slot, container_str,
     obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-    name_str, short_str, desc_str, action_str
+    name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
   );
 
   // free escaped strings
@@ -2263,7 +2263,7 @@ bool sql_load_player_items(P_char ch)
     "SELECT id, vnum, equip_slot, container_id, "
     "weight, cost, timer, extra_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
-    "name, short_descr, description, action_descr "
+    "name, short_descr, description, action_descr, obj_uid, item_condition "
     "FROM player_items WHERE pid=%d ORDER BY id", pid);
 
   MYSQL_RES *result = db_query("%s", query);
@@ -2345,6 +2345,12 @@ bool sql_load_player_items(P_char ch)
       obj->action_description = str_action;
       obj->str_mask |= STRUNG_DESC3;
     }
+
+    // restore obj_uid and condition
+    unsigned long saved_uid = sql_row_ulong(row, col++, 0);
+    if (saved_uid > 0)
+      obj->obj_uid = saved_uid;
+    obj->condition = sql_row_int(row, col++, obj->condition);
 
     items[idx] = obj;
     item_ids[idx] = db_id;
@@ -2916,18 +2922,18 @@ static int sql_save_locker_item(int locker_id, P_obj obj, int container_id)
     "locker_id, vnum, container_id, quantity, "
     "weight, cost, timer, extra_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
-    "name, short_descr, description, action_descr"
+    "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
     "%d, %d, %s, 1, "
     "%d, %d, %ld, %lu, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
-    "%s, %s, %s, %s"
+    "%s, %s, %s, %s, %lu, %d"
     ")",
     locker_id, vnum, container_str,
     obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-    name_str, short_str, desc_str, action_str
+    name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
   );
 
   if (esc_name) free(esc_name);
@@ -3010,14 +3016,14 @@ static P_obj sql_load_locker_items(int locker_id, int container_id)
     snprintf(query, sizeof(query),
              "SELECT id, vnum, weight, cost, timer, extra_flags, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr "
+             "name, short_descr, description, action_descr, obj_uid, item_condition "
              "FROM locker_items WHERE locker_id=%d AND container_id=%d",
              locker_id, container_id);
   else
     snprintf(query, sizeof(query),
              "SELECT id, vnum, weight, cost, timer, extra_flags, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr "
+             "name, short_descr, description, action_descr, obj_uid, item_condition "
              "FROM locker_items WHERE locker_id=%d AND container_id IS NULL",
              locker_id);
 
@@ -3075,6 +3081,16 @@ static P_obj sql_load_locker_items(int locker_id, int container_id)
       obj->action_description = str_dup(row[17]);
       obj->str_mask |= STRUNG_DESC3;
     }
+
+    // restore obj_uid and condition
+    if (row[18] && strlen(row[18]) > 0)
+    {
+      unsigned long saved_uid = strtoul(row[18], NULL, 10);
+      if (saved_uid > 0)
+        obj->obj_uid = saved_uid;
+    }
+    if (row[19] && strlen(row[19]) > 0)
+      obj->condition = atoi(row[19]);
 
     char aff_query[128];
     snprintf(aff_query, sizeof(aff_query),
@@ -3887,18 +3903,18 @@ static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
     "corpse_id, vnum, container_id, quantity, "
     "weight, cost, timer, extra_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
-    "name, short_descr, description, action_descr"
+    "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
     "%d, %d, %s, 1, "
     "%d, %d, %ld, %lu, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
-    "%s, %s, %s, %s"
+    "%s, %s, %s, %s, %lu, %d"
     ")",
     corpse_id, vnum, container_str,
     obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-    name_str, short_str, desc_str, action_str
+    name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
   );
 
   if (esc_name) free(esc_name);

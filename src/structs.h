@@ -519,6 +519,7 @@ struct arti_data
 /* ======================== Structure for object ========================= */
 struct obj_data
 {
+  unsigned long obj_uid;    /* unique item identifier          */
   long g_key;               /* Key generated upon creation     */
   int R_num;                /* Where in data-base               */
   ::byte type;              /* Type of item                     */

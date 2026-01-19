@@ -1123,6 +1123,8 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
         if (offset + sizeof(inv_entry) > max_len)
             return -1;
 
+        memset(&inv_entry, 0, sizeof(inv_entry));
+        inv_entry.obj_uid = obj->obj_uid;
         inv_entry.vnum = OBJ_VNUM(obj);
         memcpy(buf + offset, &inv_entry, sizeof(inv_entry));
         offset += sizeof(inv_entry);
@@ -1142,6 +1144,7 @@ int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
         return -1;
 
     memset(&entry, 0, sizeof(entry));
+    entry.obj_uid = obj->obj_uid;
     entry.vnum = OBJ_VNUM(obj);
     entry.room = world[obj->loc.room].number;
     entry.type = obj->type;
@@ -1173,6 +1176,8 @@ int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
         if (offset + sizeof(cont_entry) > max_len)
             return -1;
 
+        memset(&cont_entry, 0, sizeof(cont_entry));
+        cont_entry.obj_uid = content->obj_uid;
         cont_entry.vnum = OBJ_VNUM(content);
         memcpy(buf + offset, &cont_entry, sizeof(cont_entry));
         offset += sizeof(cont_entry);
@@ -1369,6 +1374,10 @@ P_obj copyover_restore_obj_from_buffer(const char *buf, size_t len, size_t *byte
         return NULL;
     }
 
+    // restore saved obj_uid if valid
+    if (obj_entry.obj_uid > 0)
+        obj->obj_uid = obj_entry.obj_uid;
+
     obj->type = obj_entry.type;
     memcpy(obj->value, obj_entry.value, sizeof(obj->value));
     memcpy(obj->timer, obj_entry.timer, sizeof(obj->timer));
@@ -1391,8 +1400,11 @@ P_obj copyover_restore_obj_from_buffer(const char *buf, size_t len, size_t *byte
         offset += sizeof(cont_entry);
 
         P_obj content = read_object(cont_entry.vnum, VIRTUAL);
-        if (content)
+        if (content) {
+            if (cont_entry.obj_uid > 0)
+                content->obj_uid = cont_entry.obj_uid;
             obj_to_obj(content, obj);
+        }
     }
 
     *bytes_read = offset;

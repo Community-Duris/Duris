@@ -1185,5 +1185,124 @@ CREATE TABLE IF NOT EXISTS player_pet_item_extra_descr (
 
 
 -- ============================================================================
+-- schema_migration_v12_obj_uid.sql - unique item ids for duplication prevention
+-- ============================================================================
+
+-- use stored procedure for safe column additions (idempotent)
+DELIMITER //
+
+CREATE PROCEDURE add_obj_uid_columns()
+BEGIN
+    -- player_items: change unique_id to obj_uid (bigint) and add item_condition
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+               AND table_name = 'player_items'
+               AND column_name = 'unique_id') THEN
+        ALTER TABLE player_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                       AND table_name = 'player_items'
+                       AND column_name = 'obj_uid') THEN
+        ALTER TABLE player_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'item_condition') THEN
+        ALTER TABLE player_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND index_name = 'idx_obj_uid') THEN
+        ALTER TABLE player_items ADD INDEX idx_obj_uid (obj_uid);
+    END IF;
+
+    -- corpse_items: same changes
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+               AND table_name = 'corpse_items'
+               AND column_name = 'unique_id') THEN
+        ALTER TABLE corpse_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                       AND table_name = 'corpse_items'
+                       AND column_name = 'obj_uid') THEN
+        ALTER TABLE corpse_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'corpse_items'
+                   AND column_name = 'item_condition') THEN
+        ALTER TABLE corpse_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'corpse_items'
+                   AND index_name = 'idx_obj_uid') THEN
+        ALTER TABLE corpse_items ADD INDEX idx_obj_uid (obj_uid);
+    END IF;
+
+    -- locker_items: same changes
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+               AND table_name = 'locker_items'
+               AND column_name = 'unique_id') THEN
+        ALTER TABLE locker_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                       AND table_name = 'locker_items'
+                       AND column_name = 'obj_uid') THEN
+        ALTER TABLE locker_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'locker_items'
+                   AND column_name = 'item_condition') THEN
+        ALTER TABLE locker_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'locker_items'
+                   AND index_name = 'idx_obj_uid') THEN
+        ALTER TABLE locker_items ADD INDEX idx_obj_uid (obj_uid);
+    END IF;
+
+    -- player_pet_items: add new columns (no unique_id existed)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'obj_uid') THEN
+        ALTER TABLE player_pet_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'item_condition') THEN
+        ALTER TABLE player_pet_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND index_name = 'idx_obj_uid') THEN
+        ALTER TABLE player_pet_items ADD INDEX idx_obj_uid (obj_uid);
+    END IF;
+END //
+
+DELIMITER ;
+
+CALL add_obj_uid_columns();
+DROP PROCEDURE IF EXISTS add_obj_uid_columns;
+
+
+-- ============================================================================
 -- done
 -- ============================================================================

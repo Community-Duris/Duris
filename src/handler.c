@@ -1491,6 +1491,19 @@ bool char_to_room(P_char ch, int room, int dir)
   return TRUE;
 }
 
+// marks player or pet owner dirty when inventory/equipment changes
+static void mark_char_or_owner_dirty(P_char ch)
+{
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
+  else if (IS_PC_PET(ch))
+  {
+    P_char owner = GET_MASTER(ch);
+    if (owner && IS_PC(owner))
+      mark_player_dirty(GET_PID(owner));
+  }
+}
+
 // Give an object to a char
 void obj_to_char(P_obj object, P_char ch)
 {
@@ -1588,8 +1601,7 @@ void obj_to_char(P_obj object, P_char ch)
     object->g_key = 1;
   }
 
-  if (IS_PC(ch))
-    mark_player_dirty(GET_PID(ch));
+  mark_char_or_owner_dirty(ch);
 }
 
 /*
@@ -1627,8 +1639,7 @@ void obj_from_char(P_obj object)
   IS_CARRYING_N(object->loc.carrying)--;
   object->z_cord = object->loc.carrying->specials.z_cord;
 
-  if (IS_PC(ch))
-    mark_player_dirty(GET_PID(ch));
+  mark_char_or_owner_dirty(ch);
 
   object->loc_p = LOC_NOWHERE;
   object->loc.carrying = NULL;  // must clear full pointer, not just int-sized loc.room
@@ -1705,8 +1716,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
       ((*skills[o_af->data].spell_pointer) ((int) GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, ch, 0));
     }
 
-  if (IS_PC(ch))
-    mark_player_dirty(GET_PID(ch));
+  mark_char_or_owner_dirty(ch);
 }
 
 // Removes an object from a char's equipped slot [pos].
@@ -1751,8 +1761,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
   }
   GET_CARRYING_W(ch) -= (GET_OBJ_WEIGHT(obj) / 2);
 
-  if (IS_PC(ch))
-    mark_player_dirty(GET_PID(ch));
+  mark_char_or_owner_dirty(ch);
 
   return (obj);
 }
@@ -3036,6 +3045,15 @@ void extract_char(P_char ch)
     if (IS_AFFECTED2(ch, AFF2_CASTING))
       StopCasting(ch);
   }
+
+  // mark owner dirty when extracting a pc pet (must be before die_follower clears the link)
+  if (IS_PC_PET(ch))
+  {
+    P_char owner = GET_MASTER(ch);
+    if (owner && IS_PC(owner))
+      mark_player_dirty(GET_PID(owner));
+  }
+
   if( ch->followers || ch->following )
   {
     die_follower(ch);

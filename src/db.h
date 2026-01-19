@@ -136,6 +136,7 @@ struct reboot_data
 #define OK(ch) send_to_char("Okay.\r\n", (ch))
 
 /* global variables */
+extern unsigned long next_obj_uid;
 extern char *worldmap;
 extern char *worldmapa;
 extern string news;

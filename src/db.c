@@ -149,6 +149,7 @@ struct info_index_element *info_index = 0;
 
 int top_of_mobt = 0; /* * top of mobile index table * */
 int top_of_objt = 0; /* * top of object index table * */
+unsigned long next_obj_uid = 1; /* global counter for unique object ids */
 int top_of_helpt;    /* * top of help index table         */
 int top_of_infot;    /* * top of info index table         */
 
@@ -2775,6 +2776,7 @@ P_obj read_object(int nr, int type)
 
   memset(obj, 0, sizeof(struct obj_data));
 
+  obj->obj_uid = next_obj_uid++;
   obj->R_num = -1;
   obj->loc_p = LOC_NOWHERE;
   obj->loc.room = NOWHERE;

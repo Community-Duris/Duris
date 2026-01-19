@@ -10,7 +10,7 @@
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 8  // bumped for zone age support
+#define COPYOVER_VERSION 9  // bumped for obj_uid support
 
 // copyover file header
 struct copyover_header
@@ -120,6 +120,7 @@ struct copyover_combat
 // object on ground
 struct copyover_obj
 {
+    unsigned long obj_uid;
     int vnum;
     int room;
     int type;        // item_corpse, etc
@@ -134,6 +135,7 @@ struct copyover_obj
 // item inside container/corpse or carried by mob
 struct copyover_obj_content
 {
+    unsigned long obj_uid;
     int vnum;
 };
 

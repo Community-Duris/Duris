@@ -16,6 +16,7 @@
 #include "files.h"
 #include "config.h"
 #include "copyover.h"
+#include "db.h"
 
 #ifndef __NO_MYSQL__
 #include <hiredis/hiredis.h>
@@ -171,6 +172,9 @@ bool redis_init(void)
 
   // note: flush event scheduled in ne_init_events() after event system is ready
 
+  // load obj_uid counter from redis
+  redis_load_obj_uid_counter();
+
   return true;
 #endif
 }
@@ -180,6 +184,8 @@ void redis_cleanup(void)
 #ifndef __NO_MYSQL__
   if (redis_ctx)
   {
+    // save obj_uid counter before disconnect
+    redis_save_obj_uid_counter();
     redisFree(redis_ctx);
     redis_ctx = NULL;
   }
@@ -206,6 +212,79 @@ bool redis_ping(void)
   return success;
 #else
   return false;
+#endif
+}
+
+void redis_save_obj_uid_counter(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx)
+    return;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SET mud:next_obj_uid %lu", next_obj_uid);
+  if (reply)
+    freeReplyObject(reply);
+#endif
+}
+
+void redis_load_obj_uid_counter(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx)
+    return;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:next_obj_uid");
+  if (reply && reply->type == REDIS_REPLY_STRING && reply->str)
+  {
+    unsigned long loaded = strtoul(reply->str, NULL, 10);
+    if (loaded > next_obj_uid)
+    {
+      next_obj_uid = loaded;
+      logit(LOG_SYS, "redis: loaded obj_uid counter = %lu", next_obj_uid);
+    }
+  }
+  if (reply)
+    freeReplyObject(reply);
+#endif
+}
+
+void redis_log_floor_pickup(unsigned long obj_uid)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx || obj_uid == 0)
+    return;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SADD mud:floor_pickups %lu", obj_uid);
+  if (reply)
+    freeReplyObject(reply);
+#endif
+}
+
+bool redis_check_floor_pickup(unsigned long obj_uid)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx || obj_uid == 0)
+    return false;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SISMEMBER mud:floor_pickups %lu", obj_uid);
+  bool found = (reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
+  if (reply)
+    freeReplyObject(reply);
+  return found;
+#else
+  return false;
+#endif
+}
+
+void redis_clear_floor_pickups(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx)
+    return;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:floor_pickups");
+  if (reply)
+    freeReplyObject(reply);
 #endif
 }
 
@@ -783,8 +862,27 @@ bool redis_load_world_state(void)
 
   // restore objects
   int objs_restored = 0;
+  int objs_skipped = 0;
   for (int i = 0; i < header.num_objects; i++)
   {
+    // peek at obj_uid to check if it was picked up before crash
+    struct copyover_obj peek_entry;
+    if (len - offset >= sizeof(peek_entry))
+    {
+      memcpy(&peek_entry, buffer + offset, sizeof(peek_entry));
+      if (peek_entry.obj_uid > 0 && redis_check_floor_pickup(peek_entry.obj_uid))
+      {
+        // skip this object - it was picked up before crash
+        logit(LOG_SYS, "redis: skipping picked up floor item uid %lu vnum %d",
+              peek_entry.obj_uid, peek_entry.vnum);
+        // consume the bytes for this object entry and its contents
+        offset += sizeof(peek_entry);
+        offset += peek_entry.num_contents * sizeof(struct copyover_obj_content);
+        objs_skipped++;
+        continue;
+      }
+    }
+
     size_t bytes_read = 0;
     P_obj obj = copyover_restore_obj_from_buffer(buffer + offset, len - offset, &bytes_read);
     if (bytes_read == 0) {
@@ -795,6 +893,11 @@ bool redis_load_world_state(void)
     if (obj)
       objs_restored++;
   }
+
+  // clear pickup log after restore
+  if (objs_skipped > 0)
+    logit(LOG_SYS, "redis: skipped %d items that were picked up before crash", objs_skipped);
+  redis_clear_floor_pickups();
 
   // restore doors
   int doors_restored = 0;
