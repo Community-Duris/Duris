@@ -518,13 +518,10 @@ void spell_anti_magic_ray(int level, P_char ch, char *arg, int type,
   else
     noshrug = 0;
 
-  // if vict doesn't die, hit with dispel magic 50% of the time
-
-  if (spell_damage(ch, victim, dam, SPLDAM_GENERIC, noshrug, &messages) == DAM_NONEDEAD && (number(0, 1)))
-
+  if (spell_damage(ch, victim, dam, SPLDAM_GENERIC, noshrug, &messages) == DAM_NONEDEAD)
   {
     save = victim->specials.apply_saving_throw[SAVING_SPELL];
-    victim->specials.apply_saving_throw[SAVING_SPELL] += 20 + (56 - GET_LEVEL(ch));
+    victim->specials.apply_saving_throw[SAVING_SPELL] += 10 + (GET_LEVEL(ch) - 56); // 10-15 (roughly 50-75% increased chance to fail)
     spell_dispel_magic(level, ch, 0, SPELL_TYPE_SPELL, victim, obj);
     victim->specials.apply_saving_throw[SAVING_SPELL] = save;
   }

@@ -721,7 +721,7 @@ void initialize_skills()
                TAR_AREA | TAR_AGGRO, cast_spike_growth);
   SPEC_SPELL_ADD(CLASS_DRUID, 11, SPEC_STORM);
 
-  SPELL_CREATE("hurricane", SPELL_HURRICANE, PULSE_SPELLCAST * 5,
+  SPELL_CREATE("hurricane", SPELL_HURRICANE, PULSE_SPELLCAST * 4,
                TAR_AREA | TAR_AGGRO, cast_hurricane);
   SPEC_SPELL_ADD(CLASS_DRUID, 10, SPEC_STORM);
   SPEC_SPELL_ADD(CLASS_ETHERMANCER, 11, SPEC_TEMPESTMAGUS);
@@ -3368,7 +3368,7 @@ void initialize_skills()
                    spell_vapor_armor, "&+CYou feel the protection of the winds dissapate.");
   SPELL_ADD(CLASS_ETHERMANCER, 1);
 
-  SPELL_CREATE("frost beam", SPELL_FROST_BEAM, PULSE_SPELLCAST *2,
+  SPELL_CREATE("frost beam", SPELL_FROST_BEAM, PULSE_SPELLCAST * 3 / 2,
                    TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO,
                    spell_frost_beam);
   SPELL_ADD(CLASS_ETHERMANCER, 10);  
@@ -3437,7 +3437,7 @@ void initialize_skills()
   SPEC_SPELL_ADD(CLASS_ETHERMANCER, 7, SPEC_TEMPESTMAGUS);
 
   SPELL_CREATE("ice spikes", SPELL_ICE_SPIKES,
-               PULSE_SPELLCAST * 2, TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO,
+               PULSE_SPELLCAST * 3 / 2, TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO,
                spell_ice_spikes);
   SPEC_SPELL_ADD(CLASS_ETHERMANCER, 7, SPEC_FROSTMAGUS);
 
