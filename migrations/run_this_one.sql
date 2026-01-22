@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (account_name),
     INDEX idx_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS account_characters (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS account_characters (
     FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
     INDEX idx_account_name (account_name),
     INDEX idx_char_name (char_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_data (
     pid INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS player_data (
     PRIMARY KEY (pid),
     INDEX idx_name (name),
     INDEX idx_account_name (account_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 
 -- ============================================================================
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS account_ips (
     INDEX idx_account_name (account_name),
     INDEX idx_ip_address (ip_address),
     UNIQUE KEY uk_account_ip (account_name, ip_address)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS towns (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS towns (
     portal_load_room INT DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_zone_filename (zone_filename)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS kingdom_land (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS kingdom_land (
     end_vnum INT DEFAULT 0,
     type CHAR(1) DEFAULT 'r',
     INDEX idx_kingdom_id (kingdom_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_recipes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS player_recipes (
     learned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_recipe (pid, recipe_vnum)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_shapechanges (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS player_shapechanges (
     last_shapechanged BIGINT DEFAULT 0,
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_mob (pid, mob_vnum)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS corpses (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -234,7 +234,7 @@ CREATE TABLE IF NOT EXISTS corpses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_player_name (player_name),
     UNIQUE KEY uk_player_saveid (player_name, save_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS shopkeepers (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -244,7 +244,7 @@ CREATE TABLE IF NOT EXISTS shopkeepers (
     save_time BIGINT DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_shop_id (shop_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS shopkeeper_affects (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS shopkeeper_affects (
     bitvector5 BIGINT UNSIGNED DEFAULT 0,
     FOREIGN KEY (shopkeeper_id) REFERENCES shopkeepers(id) ON DELETE CASCADE,
     INDEX idx_shopkeeper_id (shopkeeper_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 
 -- ============================================================================
@@ -278,7 +278,7 @@ CREATE TABLE IF NOT EXISTS races (
     abbrev VARCHAR(4),
     racewar TINYINT DEFAULT 0 COMMENT '0=neutral, 1=good, 2=evil',
     playable TINYINT DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS classes (
     id INT UNSIGNED PRIMARY KEY,
@@ -286,7 +286,7 @@ CREATE TABLE IF NOT EXISTS classes (
     ansi_name VARCHAR(128),
     short_name VARCHAR(8),
     menu_char CHAR(1)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE OR REPLACE VIEW players_view AS
 SELECT
@@ -323,7 +323,7 @@ CREATE TABLE IF NOT EXISTS player_skills (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_skill (pid, skill_id),
     CONSTRAINT fk_player_skills FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_languages (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -334,7 +334,7 @@ CREATE TABLE IF NOT EXISTS player_languages (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_tongue (pid, tongue_id),
     CONSTRAINT fk_player_languages FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_intros (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -346,7 +346,7 @@ CREATE TABLE IF NOT EXISTS player_intros (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_intro (pid, intro_index),
     CONSTRAINT fk_player_intros FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_timers (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -357,7 +357,7 @@ CREATE TABLE IF NOT EXISTS player_timers (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_timer (pid, timer_id),
     CONSTRAINT fk_player_timers FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_undead_slots (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -368,7 +368,7 @@ CREATE TABLE IF NOT EXISTS player_undead_slots (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_circle (pid, circle),
     CONSTRAINT fk_player_undead_slots FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_forged_items (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -379,7 +379,7 @@ CREATE TABLE IF NOT EXISTS player_forged_items (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_forge (pid, forge_index),
     CONSTRAINT fk_player_forged_items FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_granted_cmds (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -389,7 +389,7 @@ CREATE TABLE IF NOT EXISTS player_granted_cmds (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_cmd (pid, cmd_num),
     CONSTRAINT fk_player_granted_cmds FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 
 -- ============================================================================
@@ -415,7 +415,7 @@ CREATE TABLE IF NOT EXISTS player_affects (
     PRIMARY KEY (id),
     INDEX idx_pid (pid),
     CONSTRAINT fk_player_affects FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_items (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -446,7 +446,7 @@ CREATE TABLE IF NOT EXISTS player_items (
     INDEX idx_container_id (container_id),
     CONSTRAINT fk_player_items FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE,
     CONSTRAINT fk_player_items_container FOREIGN KEY (container_id) REFERENCES player_items(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_item_affects (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -456,7 +456,7 @@ CREATE TABLE IF NOT EXISTS player_item_affects (
     PRIMARY KEY (id),
     INDEX idx_item_id (item_id),
     CONSTRAINT fk_player_item_affects FOREIGN KEY (item_id) REFERENCES player_items(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_witnesses (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -469,7 +469,7 @@ CREATE TABLE IF NOT EXISTS player_witnesses (
     PRIMARY KEY (id),
     INDEX idx_pid (pid),
     CONSTRAINT fk_player_witnesses FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS player_spellbooks (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -480,7 +480,7 @@ CREATE TABLE IF NOT EXISTS player_spellbooks (
     INDEX idx_pid (pid),
     UNIQUE KEY uk_pid_mob (pid, mob_vnum),
     CONSTRAINT fk_player_spellbooks FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 
 -- ============================================================================
@@ -517,7 +517,7 @@ CREATE TABLE IF NOT EXISTS corpse_items (
     FOREIGN KEY (container_id) REFERENCES corpse_items(id) ON DELETE CASCADE,
     INDEX idx_corpse_id (corpse_id),
     INDEX idx_vnum (vnum)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS corpse_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -526,7 +526,7 @@ CREATE TABLE IF NOT EXISTS corpse_item_affects (
     modifier INT DEFAULT 0,
     FOREIGN KEY (item_id) REFERENCES corpse_items(id) ON DELETE CASCADE,
     INDEX idx_item_id (item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS shopkeeper_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -556,7 +556,7 @@ CREATE TABLE IF NOT EXISTS shopkeeper_items (
     FOREIGN KEY (container_id) REFERENCES shopkeeper_items(id) ON DELETE CASCADE,
     INDEX idx_shopkeeper_id (shopkeeper_id),
     INDEX idx_vnum (vnum)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS shopkeeper_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -565,7 +565,7 @@ CREATE TABLE IF NOT EXISTS shopkeeper_item_affects (
     modifier INT DEFAULT 0,
     FOREIGN KEY (item_id) REFERENCES shopkeeper_items(id) ON DELETE CASCADE,
     INDEX idx_item_id (item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS saved_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -596,7 +596,7 @@ CREATE TABLE IF NOT EXISTS saved_items (
     FOREIGN KEY (container_id) REFERENCES saved_items(id) ON DELETE CASCADE,
     INDEX idx_room_vnum (room_vnum),
     INDEX idx_vnum (vnum)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS saved_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -605,7 +605,7 @@ CREATE TABLE IF NOT EXISTS saved_item_affects (
     modifier INT DEFAULT 0,
     FOREIGN KEY (item_id) REFERENCES saved_items(id) ON DELETE CASCADE,
     INDEX idx_item_id (item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS siege_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -634,7 +634,7 @@ CREATE TABLE IF NOT EXISTS siege_items (
     FOREIGN KEY (container_id) REFERENCES siege_items(id) ON DELETE CASCADE,
     INDEX idx_room_vnum (room_vnum),
     INDEX idx_vnum (vnum)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS siege_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -643,7 +643,7 @@ CREATE TABLE IF NOT EXISTS siege_item_affects (
     modifier INT DEFAULT 0,
     FOREIGN KEY (item_id) REFERENCES siege_items(id) ON DELETE CASCADE,
     INDEX idx_item_id (item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 
 -- ============================================================================
@@ -661,7 +661,7 @@ CREATE TABLE IF NOT EXISTS lockers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_owner_pid (owner_pid),
     INDEX idx_owner_assoc_id (owner_assoc_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS locker_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -690,7 +690,7 @@ CREATE TABLE IF NOT EXISTS locker_items (
     FOREIGN KEY (container_id) REFERENCES locker_items(id) ON DELETE CASCADE,
     INDEX idx_locker_id (locker_id),
     INDEX idx_vnum (vnum)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS locker_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -699,7 +699,7 @@ CREATE TABLE IF NOT EXISTS locker_item_affects (
     modifier INT DEFAULT 0,
     FOREIGN KEY (item_id) REFERENCES locker_items(id) ON DELETE CASCADE,
     INDEX idx_item_id (item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 
 -- ============================================================================
@@ -789,7 +789,7 @@ CREATE TABLE IF NOT EXISTS ships (
     capacity_bonus INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+);
 
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'ships' AND index_name = 'idx_ships_owner_pid');
@@ -815,7 +815,7 @@ CREATE TABLE IF NOT EXISTS ship_slots (
     val4 INT NOT NULL DEFAULT 0,
     CONSTRAINT fk_ship_slots_ship FOREIGN KEY (ship_id) REFERENCES ships(id) ON DELETE CASCADE,
     UNIQUE KEY uk_ship_slots_index (ship_id, slot_index)
-) ENGINE=InnoDB;
+);
 
 
 -- ============================================================================
@@ -839,7 +839,7 @@ CREATE TABLE IF NOT EXISTS guilds (
     top_fragger VARCHAR(50) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE IF NOT EXISTS guild_ranks (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -848,7 +848,7 @@ CREATE TABLE IF NOT EXISTS guild_ranks (
     title VARCHAR(100) NOT NULL DEFAULT '',
     CONSTRAINT fk_guild_ranks_guild FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE,
     UNIQUE KEY uk_guild_ranks_index (guild_id, rank_index)
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE IF NOT EXISTS guild_members (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -860,7 +860,7 @@ CREATE TABLE IF NOT EXISTS guild_members (
     online_status TINYINT NOT NULL DEFAULT 0,
     CONSTRAINT fk_guild_members_guild FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE,
     UNIQUE KEY uk_guild_members_name (guild_id, player_name)
-) ENGINE=InnoDB;
+);
 
 -- add online_status column if missing (for existing databases)
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
@@ -1051,7 +1051,7 @@ CREATE TABLE IF NOT EXISTS `player_pets` (
   KEY `idx_owner_pid` (`owner_pid`),
   CONSTRAINT `fk_player_pets_owner` FOREIGN KEY (`owner_pid`)
     REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS `player_pet_items` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1082,7 +1082,7 @@ CREATE TABLE IF NOT EXISTS `player_pet_items` (
     REFERENCES `player_pets` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_pet_items_container` FOREIGN KEY (`container_id`)
     REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS `player_pet_item_affects` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1093,7 +1093,7 @@ CREATE TABLE IF NOT EXISTS `player_pet_item_affects` (
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_pet_item_affects` FOREIGN KEY (`item_id`)
     REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 
 -- ============================================================================
@@ -1170,7 +1170,7 @@ CREATE TABLE IF NOT EXISTS player_item_extra_descr (
   INDEX idx_item_id (item_id),
   CONSTRAINT fk_player_item_ed FOREIGN KEY (item_id)
     REFERENCES player_items(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS player_pet_item_extra_descr (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1181,7 +1181,7 @@ CREATE TABLE IF NOT EXISTS player_pet_item_extra_descr (
   INDEX idx_item_id (item_id),
   CONSTRAINT fk_pet_item_ed FOREIGN KEY (item_id)
     REFERENCES player_pet_items(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- ============================================================================
@@ -1301,6 +1301,74 @@ DELIMITER ;
 
 CALL add_obj_uid_columns();
 DROP PROCEDURE IF EXISTS add_obj_uid_columns;
+
+
+-- ============================================================================
+-- schema_migration_v13_account_lockers.sql - account-based player lockers
+-- ============================================================================
+-- safe migration: copies items, never deletes original character lockers
+
+-- step 0: fix collation mismatch on existing tables
+ALTER TABLE lockers CONVERT TO CHARACTER SET utf8mb4;
+ALTER TABLE account_characters CONVERT TO CHARACTER SET utf8mb4;
+
+-- step 1: sync player_data.account_name from account_characters
+UPDATE player_data pd
+JOIN account_characters ac ON pd.pid = ac.pid
+SET pd.account_name = ac.account_name
+WHERE pd.account_name IS NULL OR pd.account_name = '';
+
+-- step 2: create account lockers for all accounts that have character lockers
+INSERT IGNORE INTO lockers (locker_name, racewar, race)
+SELECT DISTINCT CONCAT('account.', LOWER(ac.account_name), '.locker'), 0, 0
+FROM account_characters ac
+JOIN lockers l ON LOWER(SUBSTRING_INDEX(l.locker_name, '.locker', 1)) = LOWER(ac.char_name)
+WHERE ac.account_name IS NOT NULL AND ac.account_name != ''
+  AND l.locker_name LIKE '%.locker'
+  AND l.locker_name NOT LIKE 'guild.%'
+  AND l.locker_name NOT LIKE 'account.%';
+
+-- step 3: copy items from character lockers to account lockers (at root level, no chest)
+-- game creates its own chest dynamically, so we just store items at root level
+INSERT INTO locker_items (locker_id, vnum, container_id, quantity, weight, cost, timer,
+    extra_flags, value0, value1, value2, value3, value4, value5, value6, value7,
+    name, short_descr, description, action_descr, obj_uid, item_condition)
+SELECT
+    acct_locker.id,
+    src.vnum,
+    NULL,
+    src.quantity, src.weight, src.cost, src.timer,
+    src.extra_flags, src.value0, src.value1, src.value2, src.value3,
+    src.value4, src.value5, src.value6, src.value7,
+    src.name, src.short_descr, src.description, src.action_descr, src.obj_uid, src.item_condition
+FROM locker_items src
+JOIN lockers char_locker ON src.locker_id = char_locker.id
+JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.locker')
+WHERE char_locker.locker_name LIKE '%.locker'
+  AND char_locker.locker_name NOT LIKE 'guild.%'
+  AND char_locker.locker_name NOT LIKE 'account.%'
+  AND src.vnum != 173
+  AND (src.obj_uid IS NULL OR src.obj_uid NOT IN (
+      SELECT obj_uid FROM locker_items WHERE locker_id = acct_locker.id AND obj_uid IS NOT NULL
+  ));
+
+-- step 4: copy item affects
+INSERT INTO locker_item_affects (item_id, location, modifier)
+SELECT new_item.id, lia.location, lia.modifier
+FROM locker_item_affects lia
+JOIN locker_items old_item ON lia.item_id = old_item.id
+JOIN lockers char_locker ON old_item.locker_id = char_locker.id
+JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.locker')
+JOIN locker_items new_item ON old_item.obj_uid = new_item.obj_uid AND new_item.locker_id = acct_locker.id
+WHERE char_locker.locker_name LIKE '%.locker'
+  AND char_locker.locker_name NOT LIKE 'guild.%'
+  AND char_locker.locker_name NOT LIKE 'account.%'
+  AND old_item.obj_uid IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM locker_item_affects WHERE item_id = new_item.id AND location = lia.location
+  );
 
 
 -- ============================================================================

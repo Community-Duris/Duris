@@ -1095,7 +1095,18 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
   }
   else if ('\0' == enterWho[0])
   {
-    strcpy(enterWho, GET_NAME(ch));
+    const char *acct = get_account_name_safe(ch);
+    if (!acct || !strcmp(acct, "Unknown"))
+    {
+      send_to_char("You need an account to use the locker system.\r\n", ch);
+      return TRUE;
+    }
+    char acct_lower[MAX_INPUT_LENGTH];
+    int i;
+    for (i = 0; acct[i] && i < MAX_INPUT_LENGTH - 1; i++)
+      acct_lower[i] = tolower(acct[i]);
+    acct_lower[i] = '\0';
+    snprintf(enterWho, MAX_INPUT_LENGTH, "account.%s", acct_lower);
   }
   else
   {
@@ -1199,8 +1210,22 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
     *(strrchr(lockerName, '.')) = '\0';
   }
 
+  bool is_owner = false;
+  if (strstr(lockerName, "account.") == lockerName)
+  {
+    const char *player_acct = get_account_name_safe(ch);
+    char *locker_acct = lockerName + 8;
+    if (player_acct && !str_cmp(locker_acct, player_acct))
+      is_owner = true;
+  }
+  else
+  {
+    if (!str_cmp(lockerName, GET_NAME(ch)))
+      is_owner = true;
+  }
+
   // warn them that they can't idle in the locker...
-  if( str_cmp(lockerName, GET_NAME(ch)) )
+  if (!is_owner)
   {
     logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), lockerName);
     send_to_char("&+RWARNING:&n This isn't your own locker.  Therefore, you'll be ejected if\r\n"
@@ -1327,20 +1352,34 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
   StorageLocker *pLocker = GetChestList(locker_room);
   
   strcpy(lockerName, GET_NAME(chLocker));
-  
+
   if (strrchr(lockerName, '.'))
     *(strrchr(lockerName, '.')) = '\0';
-  
+
+  bool is_guild_owner = false;
+  if (strstr(lockerName, "account.") == lockerName)
+  {
+    const char *player_acct = get_account_name_safe(ch);
+    char *locker_acct = lockerName + 8;
+    if (player_acct && !str_cmp(locker_acct, player_acct))
+      is_guild_owner = true;
+  }
+  else
+  {
+    if (!str_cmp(lockerName, GET_NAME(ch)))
+      is_guild_owner = true;
+  }
+
   // warn them that they can't idle in the locker...
-  if (str_cmp(lockerName, GET_NAME(ch)))
+  if (!is_guild_owner)
   {
     logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), lockerName);
     send_to_char
     ("&+RWARNING:&n This isn't your own locker.  Therefore, you'll be ejected if\r\n"
      "you are idle for more then 2 minutes.\r\n", ch);
   }
-  
-  return TRUE;  
+
+  return TRUE;
 }
 
 int storage_locker(int room, P_char ch, int cmd, char *arg)
@@ -1530,7 +1569,22 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
         strcpy(arg1, GET_NAME(pLocker->GetLockerChar()));
         if (strrchr(arg1, '.'))
           *(strrchr(arg1, '.')) = '\0';
-        if (str_cmp(arg1, GET_NAME(ch)) && (ch->specials.timer > 3))
+
+        bool idle_is_owner = false;
+        if (strstr(arg1, "account.") == arg1)
+        {
+          const char *player_acct = get_account_name_safe(ch);
+          char *locker_acct = arg1 + 8;
+          if (player_acct && !str_cmp(locker_acct, player_acct))
+            idle_is_owner = true;
+        }
+        else
+        {
+          if (!str_cmp(arg1, GET_NAME(ch)))
+            idle_is_owner = true;
+        }
+
+        if (!idle_is_owner && (ch->specials.timer > 3))
         {
           send_to_char
             ("You can only sit idle in your own locker...  GET OUT!\r\n", ch);
@@ -1649,9 +1703,28 @@ static int locker_grantcmd(P_char ch, char *arg)
   bool bPlayerIsGod = ((GET_LEVEL(ch) >= OVERLORD) || god_check(ch->player.name));
 
   strcpy(arg1, GET_NAME(pLocker->GetLockerChar()));
-  if (strrchr(arg1, '.'))
-    *(strrchr(arg1, '.')) = '\0';
-  if (str_cmp(arg1, GET_NAME(ch)) && !bPlayerIsGod)
+  const char *player_acct = get_account_name_safe(ch);
+  bool is_owner = false;
+
+  if (strstr(arg1, "account.") == arg1)
+  {
+    char *acct_start = arg1 + 8;
+    char *dot = strchr(acct_start, '.');
+    if (dot) *dot = '\0';
+    is_owner = (player_acct && !str_cmp(acct_start, player_acct));
+  }
+  else if (strstr(arg1, "guild.") == arg1)
+  {
+    is_owner = false;
+  }
+  else
+  {
+    if (strrchr(arg1, '.'))
+      *(strrchr(arg1, '.')) = '\0';
+    is_owner = !str_cmp(arg1, GET_NAME(ch));
+  }
+
+  if (!is_owner && !bPlayerIsGod)
   {
     send_to_char("Only the actual owner of a locker can manipulate access lists.\r\n", ch);
     return TRUE;

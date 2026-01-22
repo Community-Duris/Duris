@@ -2971,10 +2971,18 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
   if (!esc_name)
     return false;
 
+  // use transaction to batch all inserts
+  sql_begin_transaction();
+
   // delete existing locker
   char del_query[256];
   snprintf(del_query, sizeof(del_query), "DELETE FROM lockers WHERE locker_name='%s'", esc_name);
-  sql_run_query(del_query);
+  if (!sql_run_query(del_query))
+  {
+    free(esc_name);
+    sql_rollback();
+    return false;
+  }
 
   // insert locker record
   char owner_pid_str[32], owner_assoc_str[32];
@@ -2995,7 +3003,10 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
   free(esc_name);
 
   if (!sql_run_query(ins_query))
+  {
+    sql_rollback();
     return false;
+  }
 
   int locker_id = (int)mysql_insert_id(DB);
 
@@ -3003,6 +3014,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
   for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
     sql_save_locker_item(locker_id, obj, 0);
 
+  sql_commit();
   return true;
 }
 
@@ -3111,7 +3123,10 @@ static P_obj sql_load_locker_items(int locker_id, int container_id)
 
     obj->contains = sql_load_locker_items(locker_id, item_id);
     for (P_obj c = obj->contains; c; c = c->next_content)
+    {
+      c->loc_p = LOC_INSIDE;
       c->loc.inside = obj;
+    }
 
     if (!first_obj)
       first_obj = obj;
@@ -3186,7 +3201,10 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id)
   // load items
   ch->carrying = sql_load_locker_items(locker_id, 0);
   for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+  {
+    obj->loc_p = LOC_CARRIED;
     obj->loc.carrying = ch;
+  }
 
   return ch;
 }
@@ -3246,7 +3264,10 @@ P_char sql_load_locker_by_name(const char *locker_name)
   // load items
   ch->carrying = sql_load_locker_items(locker_id, 0);
   for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+  {
+    obj->loc_p = LOC_CARRIED;
     obj->loc.carrying = ch;
+  }
 
   return ch;
 }

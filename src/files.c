@@ -1477,6 +1477,11 @@ int writeCharacter(P_char ch, int type, int room)
       // guild locker: guild.X.locker - extract guild id
       owner_assoc_id = atoi(GET_NAME(ch) + 6);
     }
+    else if (strncmp(GET_NAME(ch), "account.", 8) == 0)
+    {
+      // account locker - stored by name, no pid
+      owner_pid = 0;
+    }
     else
     {
       // player locker: playername.locker - get player's pid

@@ -4572,9 +4572,8 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
 void do_home(P_char ch, char *argument, int cmd)
 {
 
-  char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-  char sign;
-  int cost, plat, in_room;
+  char buf2[MAX_STRING_LENGTH];
+  int cost, plat;
 
   cost = (int)(1000 * (int)get_property("price.home.plat", 50.000));
 
@@ -4607,10 +4606,12 @@ void do_home(P_char ch, char *argument, int cmd)
     act(buf2, TRUE, ch, 0, 0, TO_CHAR);
     return;
   }
-  else
+
+  if (!IS_RACEWAR_GOOD(ch) && !IS_RACEWAR_EVIL(ch))
   {
     wizlog(MINLVLIMMORTAL, "do_home(): Non-good/evil race attempting to home.  If a new racewar is back in the game, fix this.");
-    send_to_char("Get out of here!", ch);
+    send_to_char("Get out of here!\r\n", ch);
+    return;
   }
 
   // Only way I can figure to tell if a town is evil or good for now.
@@ -4627,17 +4628,11 @@ void do_home(P_char ch, char *argument, int cmd)
 
   SUB_MONEY(ch, cost, 0);
 
-  snprintf(buf, MAX_STRING_LENGTH, "char %s home %d", J_NAME(ch),
-           world[ch->in_room].number);
-  do_setbit(ch, buf, CMD_SETHOME);
+  ch->player.hometown = world[ch->in_room].number;
+  ch->player.birthplace = world[ch->in_room].number;
+  ch->player.orig_birthplace = world[ch->in_room].number;
 
-  snprintf(buf, MAX_STRING_LENGTH, "char %s orighome %d", J_NAME(ch),
-           world[ch->in_room].number);
-  do_setbit(ch, buf, CMD_SETHOME);
-
-  snprintf(buf, MAX_STRING_LENGTH, "char %s origbp %d", J_NAME(ch),
-           world[ch->in_room].number);
-  do_setbit(ch, buf, CMD_SETHOME);
+  do_save_silent(ch, 1);
 
   send_to_char("\r\n&+WThank you for the payment and welcome to your new birth home whenever you die you will return here.&n\r\n",
                ch);
