@@ -41,6 +41,7 @@
 #include "achievements.h"
 #include "gmcp.h"
 #include "ws_handlers.h"
+#include "redis.h"
 
 /* external variables */
 
@@ -3979,6 +3980,8 @@ if(d->character->base_stats.Wis < 80)
   gmcp_char_status(ch);
   gmcp_char_vitals(ch);
   gmcp_quest_status(ch);
+
+  redis_player_online(ch);
 
   do_look(ch, 0, -4);
 

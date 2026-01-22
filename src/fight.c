@@ -48,6 +48,7 @@
 #include "ctf.h"
 #include "tether.h"
 #include "achievements.h"
+#include "redis.h"
 #include "siege.h"
 #include "vnum.obj.h"
 #include "gmcp.h"
@@ -953,6 +954,7 @@ void AddFrags(P_char ch, P_char victim)
         tch->only.pc->oldfrags = tch->only.pc->frags;
         tch->only.pc->frags += (long)real_gain;
         sql_modify_frags(tch, (int)real_gain);
+        redis_invalidate_fraglist();
 
         memset(&af, 0, sizeof(af));
         af.type = TAG_PLR_RECENT_FRAG;
@@ -1011,6 +1013,7 @@ void AddFrags(P_char ch, P_char victim)
     loss = gain;
 
   sql_modify_frags(victim, -loss);
+  redis_invalidate_fraglist();
   victim->only.pc->frags -= loss;
   snprintf(buffer, MAX_STRING_LENGTH, "You just lost %.02f frags!\r\n", ((float)loss) / 100);
   send_to_char(buffer, victim);

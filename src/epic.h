@@ -82,6 +82,7 @@ float get_epic_zone_alignment_mod(int zone_number, ubyte racewar);
 void update_epic_zone_mods();
 void update_epic_zone_frequency(int zone_number);
 vector<epic_zone_data> get_epic_zones();
+char *generate_epic_zones_output(void);
 float get_epic_zone_frequency_mod(int zone_number);
 void epic_zone_erase_touch(int);
 bool epic_zone_done_now(int zone_number);

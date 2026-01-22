@@ -33,6 +33,7 @@
 #include "sound.h"
 #include "objmisc.h"
 #include "map.h"
+#include "redis.h"
 
 /*
  * external variables
@@ -283,6 +284,26 @@ extern Skill skills[];
 
 void do_namedreport(P_char ch, char *argument, int cmd)
 {
+  // try redis cache first
+  char *cached = redis_get_named_report();
+  if (cached)
+  {
+    page_string(ch->desc, cached, 1);
+    free(cached);
+    return;
+  }
+
+  // cache miss - regenerate cache and use it
+  redis_cache_named_report();
+  cached = redis_get_named_report();
+  if (cached)
+  {
+    page_string(ch->desc, cached, 1);
+    free(cached);
+    return;
+  }
+
+  // fallback to original generation (redis disabled)
   send_to_char("&+YCurrent listing of spells granted by named sets by zone.&n\n", ch);
   send_to_char("&+Y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n\n", ch);
   send_to_char("  &+MNotes&n: &+W*&n if a zone isn't listed, sets still grant hitpoints\n", ch);

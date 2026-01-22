@@ -425,6 +425,14 @@ void run_the_game(int port, int sslport)
   // game_up_message(port);
   init_astral_clock(); // fix the map sight distances
 
+  // cache named report, fraglist, and epic zones in redis
+  redis_cache_named_report();
+  redis_cache_fraglist();
+  redis_cache_epic_zones();
+
+  // clear stale online list from previous boot/crash
+  redis_clear_online_players();
+
   if (no_random == 0)
     create_randoms();
   else
@@ -1802,6 +1810,7 @@ void close_socket(struct descriptor_data *d)
     if (d->connected == CON_PLAYING)
     {
       sql_disconnectIP(d->character);
+      redis_player_offline(d->character);
       act("$n has lost $s link.", TRUE, GET_PLYR(d->character), 0, 0,
           TO_ROOM);
       if ((NumAttackers(d->character) > 0) && !IS_TRUSTED(d->character))

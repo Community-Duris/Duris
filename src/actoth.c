@@ -44,6 +44,7 @@
 #include "vnum.room.h"
 #include "files.h"
 #include "sql_player.h"
+#include "redis.h"
 
 /*
  * external variables
@@ -334,6 +335,7 @@ void do_camp(P_char ch, char *arg, int cmd)
     writeCharacter(ch, RENT_INN, ch->in_room);
 
     ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
+    redis_player_offline(ch);
     extract_char(ch);
     ch = NULL;
     return;
@@ -1696,6 +1698,7 @@ void do_quit(P_char ch, char *argument, int cmd)
   }
 
   ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
+  redis_player_offline(ch);
   extract_char(ch);
   ch = NULL;
 }

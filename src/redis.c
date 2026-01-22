@@ -7,8 +7,10 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 #include "structs.h"
+#include "sql.h"
 #include "utils.h"
 #include "prototypes.h"
 #include "sql_player.h"
@@ -17,6 +19,9 @@
 #include "config.h"
 #include "copyover.h"
 #include "db.h"
+#include "spells.h"
+#include "utility.h"
+#include "epic.h"
 
 #ifndef __NO_MYSQL__
 #include <hiredis/hiredis.h>
@@ -944,4 +949,392 @@ void event_save_world_state(P_char ch, P_char victim, P_obj obj, void *data)
     redis_save_world_state();
     add_event(event_save_world_state, world_state_interval * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
   }
+}
+
+bool redis_cache_set(const char *key, const char *value)
+{
+#ifdef __NO_MYSQL__
+  return false;
+#else
+  if (!redis_enabled || !redis_ctx || !key || !value)
+    return false;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SET %s %b", key, value, strlen(value));
+  if (!reply)
+    return false;
+
+  bool ok = (reply->type == REDIS_REPLY_STATUS);
+  freeReplyObject(reply);
+  return ok;
+#endif
+}
+
+bool redis_cache_set_ex(const char *key, int seconds, const char *value)
+{
+#ifdef __NO_MYSQL__
+  return false;
+#else
+  if (!redis_enabled || !redis_ctx || !key || !value || seconds <= 0)
+    return false;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SETEX %s %d %b", key, seconds, value, strlen(value));
+  if (!reply)
+    return false;
+
+  bool ok = (reply->type == REDIS_REPLY_STATUS);
+  freeReplyObject(reply);
+  return ok;
+#endif
+}
+
+char *redis_cache_get(const char *key)
+{
+#ifdef __NO_MYSQL__
+  return NULL;
+#else
+  if (!redis_enabled || !redis_ctx || !key)
+    return NULL;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET %s", key);
+  if (!reply)
+    return NULL;
+
+  char *result = NULL;
+  if (reply->type == REDIS_REPLY_STRING && reply->str)
+    result = strdup(reply->str);
+
+  freeReplyObject(reply);
+  return result;
+#endif
+}
+
+void redis_cache_del(const char *key)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx || !key)
+    return;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL %s", key);
+  if (reply)
+    freeReplyObject(reply);
+#endif
+}
+
+// forward declare from random.mob.c
+struct zone_random_data
+{
+  int zone;
+  int races[10];
+  int proc_spells[3][2];
+};
+extern struct zone_random_data zones_random_data[];
+extern Skill skills[];
+
+static char *generate_named_report(void)
+{
+  char *output = (char *)malloc(MAX_STRING_LENGTH * 4);
+  if (!output)
+    return NULL;
+
+  output[0] = '\0';
+  char buffer[MAX_STRING_LENGTH];
+
+  strcat(output, "&+YCurrent listing of spells granted by named sets by zone.&n\n");
+  strcat(output, "&+Y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n\n");
+  strcat(output, "  &+MNotes&n: &+W*&n if a zone isn't listed, sets still grant hitpoints\n");
+  strcat(output, "         &+W*&n caster level of the spell(s) is based on number of items\n");
+  strcat(output, "           going over set requirements will increase caster level\n");
+  strcat(output, "         &+W*&n &+Gthese&n spells have a cooldown of 1 minute\n");
+  strcat(output, "           &+ythese&n spells have a cooldown of 5 minutes\n\n");
+  strcat(output, "&+Y ZONE NAME                                        &+W|&+B SPELLS GRANTED &+W(&+Ypieces required&n&+W)&n\n");
+  strcat(output, "&+W-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n");
+
+  for (int i = 0; zones_random_data[i].zone; i++)
+  {
+    int zone_id = real_zone(zones_random_data[i].zone);
+    if (zone_id <= 0)
+      continue;
+
+    const char *zone_name = zone_table[zone_id].name;
+    snprintf(buffer, sizeof(buffer), " %s    &+W|&n ", pad_ansi(zone_name, 45, FALSE).c_str());
+
+    if (zones_random_data[i].proc_spells[0][0] == 0)
+    {
+      strcat(buffer, "&+LNONE&n");
+      strcat(buffer, "\n");
+      strcat(output, buffer);
+      continue;
+    }
+
+    for (int x = 0; x < 3; x++)
+    {
+      if (zones_random_data[i].proc_spells[x][0] != 0 && zones_random_data[i].proc_spells[x][1] <= MAX_AFFECT_TYPES)
+      {
+        char buf[256];
+        const char *spellColor = "&+B";
+
+        if (zones_random_data[i].proc_spells[x][1] == SPELL_STONE_SKIN ||
+            zones_random_data[i].proc_spells[x][1] == SPELL_INVIGORATE)
+          spellColor = "&+G";
+        else if (zones_random_data[i].proc_spells[x][1] == SPELL_CONJURE_ELEMENTAL)
+          spellColor = "&+y";
+
+        snprintf(buf, sizeof(buf), "%s%s%s &+W(&+Y%d&+W)&n",
+                 x != 0 ? "&+W,&n " : "",
+                 spellColor,
+                 skills[zones_random_data[i].proc_spells[x][1]].name,
+                 zones_random_data[i].proc_spells[x][0]);
+        strcat(buffer, buf);
+      }
+    }
+    strcat(buffer, "\n");
+    strcat(output, buffer);
+  }
+
+  return output;
+}
+
+void redis_cache_named_report(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled)
+    return;
+
+  char *report = generate_named_report();
+  if (report)
+  {
+    redis_cache_set("mud:cache:named", report);
+    free(report);
+    logit(LOG_SYS, "redis: cached named report");
+  }
+#endif
+}
+
+char *redis_get_named_report(void)
+{
+  return redis_cache_get("mud:cache:named");
+}
+
+// fraglist cache
+extern void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_update);
+extern int sql_level_cap(int racewar_side);
+extern const racewar_struct racewar_color[];
+
+#define MAX_FRAG_SIZE 10
+#define LEVEL_TO_FRAGS(level) ((level) * 0.8)
+
+static char *generate_fraglist_output(void)
+{
+#ifdef __NO_MYSQL__
+  return NULL;
+#else
+  char *output = (char *)malloc(65536);
+  if (!output)
+    return NULL;
+
+  output[0] = '\0';
+  char buf[2048], name[256];
+  int frags, count;
+  float fragnum;
+  int cap_level, cap_racewar, cap_others;
+  long cap_frags;
+  time_t cap_timer;
+  int days, hours, mins, secs;
+  MYSQL_RES *res;
+  MYSQL_ROW row;
+
+  get_level_cap_info(&cap_frags, &cap_racewar, &cap_level, &cap_timer);
+  cap_others = sql_level_cap((cap_racewar == RACEWAR_GOOD) ? RACEWAR_EVIL : RACEWAR_GOOD);
+  cap_timer -= time(NULL);
+
+  if (cap_timer <= 0)
+  {
+    secs = mins = hours = days = 0;
+  }
+  else
+  {
+    secs = cap_timer % 60;
+    cap_timer /= 60;
+    mins = cap_timer % 60;
+    cap_timer /= 60;
+    hours = cap_timer % 24;
+    cap_timer /= 24;
+    days = cap_timer;
+  }
+
+  snprintf(output, 65536,
+    "&+YFrag Level Cap:&+w %d - &+%c%s&n, &+w%d&N - Others, &+YTop Frag Amount: &+w%d.%02d\n"
+    "&+YTimer:&+w %02d:%02d:%02d:%02d &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
+    cap_level, racewar_color[cap_racewar].color, racewar_color[cap_racewar].name,
+    cap_others, (int)(cap_frags / 100), (int)(cap_frags % 100),
+    days, hours, mins, secs, LEVEL_TO_FRAGS(cap_level + 1));
+
+  // query top fraggers (no filter)
+  res = db_query("SELECT char_name, total_frags FROM frag_leaderboard "
+                 "WHERE deleted_at IS NULL ORDER BY total_frags DESC LIMIT %d", MAX_FRAG_SIZE);
+  if (res)
+  {
+    count = 0;
+    while ((row = mysql_fetch_row(res)) && count < MAX_FRAG_SIZE)
+    {
+      if (row[0] && row[1])
+      {
+        strncpy(name, row[0], sizeof(name) - 1);
+        name[sizeof(name) - 1] = '\0';
+        name[0] = toupper(name[0]);
+        frags = atoi(row[1]);
+        fragnum = frags / 100.0;
+        snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+        strcat(output, buf);
+        count++;
+      }
+    }
+    mysql_free_result(res);
+
+    while (count < MAX_FRAG_SIZE)
+    {
+      snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
+      strcat(output, buf);
+      count++;
+    }
+  }
+
+  strcat(output, "\r\n\r\n&+LLowest Fraggers\r\n\r\n");
+
+  // query lowest fraggers
+  res = db_query("SELECT char_name, total_frags FROM frag_leaderboard "
+                 "WHERE deleted_at IS NULL ORDER BY total_frags ASC LIMIT %d", MAX_FRAG_SIZE);
+  if (res)
+  {
+    count = 0;
+    while ((row = mysql_fetch_row(res)) && count < MAX_FRAG_SIZE)
+    {
+      if (row[0] && row[1])
+      {
+        strncpy(name, row[0], sizeof(name) - 1);
+        name[sizeof(name) - 1] = '\0';
+        name[0] = toupper(name[0]);
+        frags = atoi(row[1]);
+        fragnum = frags / 100.0;
+        snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+        strcat(output, buf);
+        count++;
+      }
+    }
+    mysql_free_result(res);
+
+    while (count < MAX_FRAG_SIZE)
+    {
+      snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
+      strcat(output, buf);
+      count++;
+    }
+  }
+
+  strcat(output, "\r\n");
+  return output;
+#endif
+}
+
+void redis_cache_fraglist(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled)
+    return;
+
+  char *output = generate_fraglist_output();
+  if (output)
+  {
+    redis_cache_set("mud:cache:fraglist", output);
+    free(output);
+    logit(LOG_SYS, "redis: cached fraglist");
+  }
+#endif
+}
+
+char *redis_get_fraglist(void)
+{
+  return redis_cache_get("mud:cache:fraglist");
+}
+
+void redis_invalidate_fraglist(void)
+{
+  redis_cache_del("mud:cache:fraglist");
+}
+
+// epic zones cache - 15 min ttl for alignment display
+#define EPIC_ZONES_CACHE_TTL 900
+
+void redis_cache_epic_zones(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled)
+    return;
+
+  char *output = generate_epic_zones_output();
+  if (output)
+  {
+    redis_cache_set_ex("mud:cache:epic_zones", EPIC_ZONES_CACHE_TTL, output);
+    free(output);
+    logit(LOG_SYS, "redis: cached epic zones");
+  }
+#endif
+}
+
+char *redis_get_epic_zones(void)
+{
+  return redis_cache_get("mud:cache:epic_zones");
+}
+
+void redis_invalidate_epic_zones(void)
+{
+  redis_cache_del("mud:cache:epic_zones");
+}
+
+// online players list for web
+void redis_player_online(P_char ch)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx || !ch || IS_NPC(ch))
+    return;
+
+  char json[512];
+  snprintf(json, sizeof(json),
+    "{\"name\":\"%s\",\"level\":%d,\"class\":%lu,\"race\":%d,\"racewar\":%d}",
+    GET_NAME(ch),
+    GET_LEVEL(ch),
+    (unsigned long)ch->player.m_class,
+    GET_RACE(ch),
+    GET_RACEWAR(ch));
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx,
+    "HSET mud:online %d %b", GET_PID(ch), json, strlen(json));
+  if (reply)
+    freeReplyObject(reply);
+#endif
+}
+
+void redis_player_offline(P_char ch)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx || !ch || IS_NPC(ch))
+    return;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx,
+    "HDEL mud:online %d", GET_PID(ch));
+  if (reply)
+    freeReplyObject(reply);
+#endif
+}
+
+void redis_clear_online_players(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx)
+    return;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:online");
+  if (reply)
+    freeReplyObject(reply);
+#endif
 }

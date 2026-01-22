@@ -9,6 +9,7 @@
 #include "spells.h"
 #include "ships.h"
 #include "sql.h"
+#include "redis.h"
 #define MAX_FRAG_SIZE    10     /* max size of high/low lists */
 
 extern const struct class_names class_names_table[];
@@ -194,6 +195,27 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 
   if( !IS_ALIVE(ch) )
     return;
+
+  // for default view (no filter), use cache
+  if (!arg || !arg[0])
+  {
+    char *cached = redis_get_fraglist();
+    if (cached)
+    {
+      page_string(ch->desc, cached, 1);
+      free(cached);
+      return;
+    }
+    // cache miss - regenerate and cache
+    redis_cache_fraglist();
+    cached = redis_get_fraglist();
+    if (cached)
+    {
+      page_string(ch->desc, cached, 1);
+      free(cached);
+      return;
+    }
+  }
 
   if( arg && arg[0] )
   {
