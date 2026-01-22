@@ -1,15 +1,7 @@
 -- durismud pfile-to-db combined migration
--- run this on a fresh database or existing durismud website database
--- self-contained: creates all required tables
---
--- ============================================================================
--- safe for production: all operations use IF NOT EXISTS / conditional checks
--- to avoid data loss on existing databases. can run multiple times safely.
--- ============================================================================
+-- safe for production, idempotent, run multiple times safely
 
--- ============================================================================
--- base tables - accounts and players
--- ============================================================================
+-- accounts and players
 
 CREATE TABLE IF NOT EXISTS accounts (
     account_name VARCHAR(50) NOT NULL,
@@ -158,9 +150,7 @@ CREATE TABLE IF NOT EXISTS player_data (
 );
 
 
--- ============================================================================
--- account related tables
--- ============================================================================
+-- account related
 
 CREATE TABLE IF NOT EXISTS account_ips (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -199,7 +189,7 @@ CREATE TABLE IF NOT EXISTS towns (
 
 CREATE TABLE IF NOT EXISTS kingdom_land (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    kingdom_id INT NOT NULL,  -- no fk: values from filesystem kingdom.land file, 0 = unowned territory
+    kingdom_id INT NOT NULL,  -- no fk, comes from filesystem
     start_vnum INT DEFAULT 0,
     end_vnum INT DEFAULT 0,
     type CHAR(1) DEFAULT 'r',
@@ -263,12 +253,7 @@ CREATE TABLE IF NOT EXISTS shopkeeper_affects (
 );
 
 
--- ============================================================================
--- schema_lookup_tables.sql - race/class lookup tables
--- ============================================================================
-
--- lookup tables: use CREATE IF NOT EXISTS to preserve any existing data
--- these are populated by the game server, not this migration
+-- race/class lookups (populated by game server)
 
 CREATE TABLE IF NOT EXISTS races (
     id INT UNSIGNED PRIMARY KEY,
@@ -276,7 +261,7 @@ CREATE TABLE IF NOT EXISTS races (
     short_name VARCHAR(32),
     ansi_name VARCHAR(128),
     abbrev VARCHAR(4),
-    racewar TINYINT DEFAULT 0 COMMENT '0=neutral, 1=good, 2=evil',
+    racewar TINYINT DEFAULT 0,
     playable TINYINT DEFAULT 0
 );
 
@@ -309,9 +294,7 @@ LEFT JOIN races r ON pd.race = r.id
 LEFT JOIN classes c ON pd.m_class = c.id;
 
 
--- ============================================================================
--- player array tables - skills, languages, etc
--- ============================================================================
+-- player arrays
 
 CREATE TABLE IF NOT EXISTS player_skills (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -392,9 +375,7 @@ CREATE TABLE IF NOT EXISTS player_granted_cmds (
 );
 
 
--- ============================================================================
 -- player affects and items
--- ============================================================================
 
 CREATE TABLE IF NOT EXISTS player_affects (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -483,12 +464,7 @@ CREATE TABLE IF NOT EXISTS player_spellbooks (
 );
 
 
--- ============================================================================
--- schema_migration_v2.sql - normalized item storage (no blobs)
--- ============================================================================
-
--- item tables: use CREATE IF NOT EXISTS to preserve existing player data
--- never drop these tables as they contain saved equipment/items
+-- item storage
 
 CREATE TABLE IF NOT EXISTS corpse_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -646,9 +622,7 @@ CREATE TABLE IF NOT EXISTS siege_item_affects (
 );
 
 
--- ============================================================================
--- schema_migration_v3_lockers.sql - locker tables
--- ============================================================================
+-- lockers
 
 CREATE TABLE IF NOT EXISTS lockers (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -702,11 +676,7 @@ CREATE TABLE IF NOT EXISTS locker_item_affects (
 );
 
 
--- ============================================================================
--- schema_migration_v4_accounts.sql - account_characters columns
--- ============================================================================
-
--- add columns to account_characters if they don't exist (for existing databases)
+-- account_characters extra columns
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'login_count');
 SET @sql = IF(@col_exists = 0,
@@ -753,9 +723,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
--- ============================================================================
--- schema_migration_v5_ships.sql - ship tables
--- ============================================================================
+-- ships
 
 CREATE TABLE IF NOT EXISTS ships (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -818,9 +786,7 @@ CREATE TABLE IF NOT EXISTS ship_slots (
 );
 
 
--- ============================================================================
--- schema_migration_v6_guilds.sql - guild tables
--- ============================================================================
+-- guilds
 
 CREATE TABLE IF NOT EXISTS guilds (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -862,7 +828,7 @@ CREATE TABLE IF NOT EXISTS guild_members (
     UNIQUE KEY uk_guild_members_name (guild_id, player_name)
 );
 
--- add online_status column if missing (for existing databases)
+-- online_status col if missing
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'guild_members' AND column_name = 'online_status');
 SET @sql = IF(@col_exists = 0,
@@ -882,9 +848,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
--- ============================================================================
--- schema_migration_v7_player_fixes.sql - player_data columns
--- ============================================================================
+-- player_data fixes
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'player_data' AND column_name = 'act3');
@@ -905,17 +869,13 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
--- ============================================================================
--- schema_migration_v8_unique.sql - unique constraints for char names
--- ============================================================================
-
--- clean up duplicates first (keep lowest pid)
+-- unique constraints for char names
+-- clean up dupes first
 DELETE ac1 FROM account_characters ac1
 INNER JOIN account_characters ac2
 WHERE ac1.char_name = ac2.char_name
   AND ac1.pid > ac2.pid;
 
--- add unique constraint on account_characters.char_name (if not exists)
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE()
     AND table_name = 'account_characters'
@@ -927,7 +887,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- add unique constraint on player_data.name (if not exists)
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE()
     AND table_name = 'player_data'
@@ -940,9 +899,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
--- ============================================================================
--- schema_migration_v8_hardcore.sql - hardcore hall of fame
--- ============================================================================
+-- hardcore hall of fame
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'player_data' AND column_name = 'killed_by');
@@ -954,11 +911,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
--- ============================================================================
--- schema_migration_v9_dirty_saves.sql - unique keys for upsert pattern
--- ============================================================================
-
--- player_languages: uk_pid_tongue
+-- unique keys for upsert
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'player_languages' AND index_name = 'uk_pid_tongue');
 SET @sql = IF(@idx_exists = 0,
@@ -968,7 +921,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- player_intros: uk_pid_intro
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'player_intros' AND index_name = 'uk_pid_intro');
 SET @sql = IF(@idx_exists = 0,
@@ -978,7 +930,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- player_timers: uk_pid_timer
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'player_timers' AND index_name = 'uk_pid_timer');
 SET @sql = IF(@idx_exists = 0,
@@ -988,7 +939,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- player_undead_slots: uk_pid_circle
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'player_undead_slots' AND index_name = 'uk_pid_circle');
 SET @sql = IF(@idx_exists = 0,
@@ -998,7 +948,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- player_forged_items: uk_pid_forge
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'player_forged_items' AND index_name = 'uk_pid_forge');
 SET @sql = IF(@idx_exists = 0,
@@ -1008,7 +957,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- player_granted_cmds: uk_pid_cmd
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'player_granted_cmds' AND index_name = 'uk_pid_cmd');
 SET @sql = IF(@idx_exists = 0,
@@ -1018,7 +966,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- player_skills: uk_pid_skill
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'player_skills' AND index_name = 'uk_pid_skill');
 SET @sql = IF(@idx_exists = 0,
@@ -1029,9 +976,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
--- ============================================================================
--- schema_migration_v10_pets.sql - pet persistence
--- ============================================================================
+-- pets
 
 CREATE TABLE IF NOT EXISTS `player_pets` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1096,11 +1041,7 @@ CREATE TABLE IF NOT EXISTS `player_pet_item_affects` (
 );
 
 
--- ============================================================================
--- epic-zone-payout.sql - zone payout data (optional)
--- ============================================================================
-
--- only run zone updates if zones table exists (may not exist on fresh install)
+-- zone payouts (optional, only if zones table exists)
 DROP PROCEDURE IF EXISTS update_zone_payouts;
 
 DELIMITER //
@@ -1111,10 +1052,9 @@ BEGIN
         WHERE table_schema = DATABASE() AND table_name = 'zones';
 
     IF tbl_exists > 0 THEN
-        -- set group size to 100 to disable group size penalty until tuned
+        -- disable group size penalty for now
         UPDATE zones SET suggested_group_size = 100 WHERE epic_type != '0';
 
-        -- zone payout values
         UPDATE zones SET epic_payout = 0 WHERE number = 1389;
         UPDATE zones SET epic_payout = 80 WHERE number IN (400, 93, 740, 14, 90, 383);
         UPDATE zones SET epic_payout = 90 WHERE number IN (264, 140, 823, 370, 38, 879, 113, 143);
@@ -1157,9 +1097,7 @@ CALL update_zone_payouts();
 DROP PROCEDURE IF EXISTS update_zone_payouts;
 
 
--- ============================================================================
--- schema_migration_v11_extra_descr.sql - item extra descriptions (spellbooks)
--- ============================================================================
+-- item extra descriptions (spellbooks etc)
 
 CREATE TABLE IF NOT EXISTS player_item_extra_descr (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1184,16 +1122,12 @@ CREATE TABLE IF NOT EXISTS player_pet_item_extra_descr (
 );
 
 
--- ============================================================================
--- schema_migration_v12_obj_uid.sql - unique item ids for duplication prevention
--- ============================================================================
-
--- use stored procedure for safe column additions (idempotent)
+-- obj_uid for item duplication prevention
 DELIMITER //
 
 CREATE PROCEDURE add_obj_uid_columns()
 BEGIN
-    -- player_items: change unique_id to obj_uid (bigint) and add item_condition
+    -- player_items
     IF EXISTS (SELECT 1 FROM information_schema.columns
                WHERE table_schema = DATABASE()
                AND table_name = 'player_items'
@@ -1220,7 +1154,7 @@ BEGIN
         ALTER TABLE player_items ADD INDEX idx_obj_uid (obj_uid);
     END IF;
 
-    -- corpse_items: same changes
+    -- corpse_items
     IF EXISTS (SELECT 1 FROM information_schema.columns
                WHERE table_schema = DATABASE()
                AND table_name = 'corpse_items'
@@ -1247,7 +1181,7 @@ BEGIN
         ALTER TABLE corpse_items ADD INDEX idx_obj_uid (obj_uid);
     END IF;
 
-    -- locker_items: same changes
+    -- locker_items
     IF EXISTS (SELECT 1 FROM information_schema.columns
                WHERE table_schema = DATABASE()
                AND table_name = 'locker_items'
@@ -1274,7 +1208,7 @@ BEGIN
         ALTER TABLE locker_items ADD INDEX idx_obj_uid (obj_uid);
     END IF;
 
-    -- player_pet_items: add new columns (no unique_id existed)
+    -- player_pet_items
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_schema = DATABASE()
                    AND table_name = 'player_pet_items'
@@ -1303,22 +1237,126 @@ CALL add_obj_uid_columns();
 DROP PROCEDURE IF EXISTS add_obj_uid_columns;
 
 
--- ============================================================================
--- schema_migration_v13_account_lockers.sql - account-based player lockers
--- ============================================================================
--- safe migration: copies items, never deletes original character lockers
+-- account lockers
 
--- step 0: fix collation mismatch on existing tables
-ALTER TABLE lockers CONVERT TO CHARACTER SET utf8mb4;
-ALTER TABLE account_characters CONVERT TO CHARACTER SET utf8mb4;
+CREATE TABLE IF NOT EXISTS account_lockers (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    account_name VARCHAR(50) NOT NULL UNIQUE,
+    racewar TINYINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
+    INDEX idx_account_name (account_name)
+);
 
--- step 1: sync player_data.account_name from account_characters
+CREATE TABLE IF NOT EXISTS locker_chests (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    locker_id INT UNSIGNED NOT NULL,
+    keyword VARCHAR(64) NOT NULL,
+    keyword_hash VARCHAR(64) DEFAULT NULL,
+    is_public TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_locker_keyword (locker_id, keyword),
+    INDEX idx_locker_id (locker_id)
+);
+
+CREATE TABLE IF NOT EXISTS account_locker_items (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    chest_id INT UNSIGNED NOT NULL,
+    vnum INT NOT NULL,
+    container_id INT UNSIGNED DEFAULT NULL,
+    quantity SMALLINT UNSIGNED DEFAULT 1,
+    weight INT DEFAULT 0,
+    cost INT DEFAULT 0,
+    timer INT DEFAULT -1,
+    extra_flags BIGINT UNSIGNED DEFAULT 0,
+    value0 INT DEFAULT 0,
+    value1 INT DEFAULT 0,
+    value2 INT DEFAULT 0,
+    value3 INT DEFAULT 0,
+    value4 INT DEFAULT 0,
+    value5 INT DEFAULT 0,
+    value6 INT DEFAULT 0,
+    value7 INT DEFAULT 0,
+    name VARCHAR(512) DEFAULT NULL,
+    short_descr VARCHAR(512) DEFAULT NULL,
+    description TEXT DEFAULT NULL,
+    action_descr TEXT DEFAULT NULL,
+    obj_uid BIGINT UNSIGNED DEFAULT NULL,
+    item_condition SMALLINT DEFAULT 100,
+    FOREIGN KEY (chest_id) REFERENCES locker_chests(id) ON DELETE CASCADE,
+    FOREIGN KEY (container_id) REFERENCES account_locker_items(id) ON DELETE CASCADE,
+    INDEX idx_chest_id (chest_id),
+    INDEX idx_vnum (vnum),
+    INDEX idx_obj_uid (obj_uid)
+);
+
+CREATE TABLE IF NOT EXISTS account_locker_item_affects (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    item_id INT UNSIGNED NOT NULL,
+    location TINYINT UNSIGNED DEFAULT 0,
+    modifier INT DEFAULT 0,
+    FOREIGN KEY (item_id) REFERENCES account_locker_items(id) ON DELETE CASCADE,
+    INDEX idx_item_id (item_id)
+);
+
+CREATE TABLE IF NOT EXISTS account_locker_access (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    locker_id INT UNSIGNED NOT NULL,
+    visitor_account VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_locker_visitor (locker_id, visitor_account),
+    INDEX idx_visitor (visitor_account)
+);
+
+CREATE TABLE IF NOT EXISTS locker_activity_log (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    locker_id INT UNSIGNED NOT NULL,
+    account_name VARCHAR(50) NOT NULL,
+    char_name VARCHAR(64) NOT NULL,
+    action_type ENUM('enter', 'leave', 'chest_open', 'chest_fail', 'kicked', 'chest_create', 'chest_delete', 'item_put', 'item_get') NOT NULL,
+    chest_keyword VARCHAR(64) DEFAULT NULL,
+    details VARCHAR(255) DEFAULT NULL,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
+    INDEX idx_locker_id (locker_id),
+    INDEX idx_logged_at (logged_at)
+);
+
+CREATE TABLE IF NOT EXISTS locker_kickouts (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    locker_id INT UNSIGNED NOT NULL,
+    account_name VARCHAR(50) NOT NULL,
+    fail_count TINYINT UNSIGNED DEFAULT 0,
+    kicked_until TIMESTAMP NULL DEFAULT NULL,
+    last_fail TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_locker_account (locker_id, account_name)
+);
+
+CREATE TABLE IF NOT EXISTS locker_session_state (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    locker_id INT UNSIGNED NOT NULL,
+    account_name VARCHAR(50) NOT NULL,
+    chest_id INT UNSIGNED NOT NULL,
+    opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
+    FOREIGN KEY (chest_id) REFERENCES locker_chests(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_session (locker_id, account_name, chest_id)
+);
+
+
+-- migrate char lockers to account lockers (non-destructive)
+
+-- sync account_name
 UPDATE player_data pd
 JOIN account_characters ac ON pd.pid = ac.pid
 SET pd.account_name = ac.account_name
 WHERE pd.account_name IS NULL OR pd.account_name = '';
 
--- step 2: create account lockers per racewar for all accounts that have character lockers
+-- create account lockers
 INSERT IGNORE INTO lockers (locker_name, racewar, race)
 SELECT DISTINCT CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker'), ac.racewar, 0
 FROM account_characters ac
@@ -1328,8 +1366,7 @@ WHERE ac.account_name IS NOT NULL AND ac.account_name != ''
   AND l.locker_name NOT LIKE 'guild.%'
   AND l.locker_name NOT LIKE 'account.%';
 
--- step 3: copy items from character lockers to account lockers (at root level, no chest)
--- items go to the locker matching the character's racewar
+-- copy items
 INSERT INTO locker_items (locker_id, vnum, container_id, quantity, weight, cost, timer,
     extra_flags, value0, value1, value2, value3, value4, value5, value6, value7,
     name, short_descr, description, action_descr, obj_uid, item_condition)
@@ -1353,7 +1390,7 @@ WHERE char_locker.locker_name LIKE '%.locker'
       SELECT obj_uid FROM locker_items WHERE locker_id = acct_locker.id AND obj_uid IS NOT NULL
   ));
 
--- step 4: copy item affects
+-- copy affects
 INSERT INTO locker_item_affects (item_id, location, modifier)
 SELECT new_item.id, lia.location, lia.modifier
 FROM locker_item_affects lia
@@ -1371,6 +1408,36 @@ WHERE char_locker.locker_name LIKE '%.locker'
   );
 
 
--- ============================================================================
+-- account banks
+
+CREATE TABLE IF NOT EXISTS account_banks (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    account_name VARCHAR(50) NOT NULL,
+    racewar TINYINT NOT NULL DEFAULT 0,
+    bank_copper BIGINT UNSIGNED DEFAULT 0,
+    bank_silver BIGINT UNSIGNED DEFAULT 0,
+    bank_gold BIGINT UNSIGNED DEFAULT 0,
+    bank_platinum BIGINT UNSIGNED DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
+    UNIQUE KEY uk_account_racewar (account_name, racewar),
+    INDEX idx_account_name (account_name)
+);
+
+-- migrate player banks to account banks
+INSERT IGNORE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
+SELECT
+    ac.account_name,
+    ac.racewar,
+    SUM(pd.bank_copper),
+    SUM(pd.bank_silver),
+    SUM(pd.bank_gold),
+    SUM(pd.bank_platinum)
+FROM account_characters ac
+JOIN player_data pd ON ac.pid = pd.pid
+WHERE pd.bank_copper > 0 OR pd.bank_silver > 0 OR pd.bank_gold > 0 OR pd.bank_platinum > 0
+GROUP BY ac.account_name, ac.racewar;
+
+
 -- done
--- ============================================================================

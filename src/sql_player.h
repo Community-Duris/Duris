@@ -130,6 +130,13 @@ bool sql_locker_exists_by_name(const char *locker_name);
 bool sql_delete_locker(int owner_pid, int owner_assoc_id);
 bool sql_delete_locker_by_name(const char *locker_name);
 
+// account bank
+bool sql_load_account_bank(const char *account_name, int racewar, P_char ch);
+bool sql_save_account_bank(const char *account_name, int racewar, P_char ch);
+long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type, int amount);
+long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type, int amount);
+bool sql_ensure_account_bank(const char *account_name, int racewar);
+
 // ============================================================================
 // migration helpers
 // ============================================================================

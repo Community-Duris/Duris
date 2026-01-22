@@ -2021,6 +2021,21 @@ static int create_new_locker(P_char ch, P_char locker)
       }
       snprintf(roomNameBuf, 500, "The Storage Locker for %s&n", Gbuf1);
     }
+    else if (!strn_cmp("account.", GET_NAME(locker), 8))
+    {                           /* account locker - format: account.name.racewar.locker */
+      char acct_name[MAX_INPUT_LENGTH];
+      char *src = GET_NAME(locker) + 8;
+      char *dot = strchr(src, '.');
+      if (dot)
+      {
+        int len = dot - src;
+        strncpy(acct_name, src, len);
+        acct_name[len] = '\0';
+      }
+      else
+        strcpy(acct_name, src);
+      snprintf(roomNameBuf, 500, "The Storage Locker for %s", acct_name);
+    }
     else
     {                           /* normal player locker */
       snprintf(roomNameBuf, 500, "The Storage Locker for %s", GET_NAME(locker));

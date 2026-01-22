@@ -3327,6 +3327,13 @@ void enter_game(P_desc d)
   {
     ch->desc = d;
 
+    // load account bank
+    const char *acct = get_account_name_safe(ch);
+    if (acct && strcmp(acct, "Unknown") != 0)
+    {
+      sql_load_account_bank(acct, GET_RACEWAR(ch), ch);
+    }
+
     reset_char(ch);
 
     cost = 0;

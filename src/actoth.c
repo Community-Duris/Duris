@@ -43,6 +43,7 @@
 #include "vnum.obj.h"
 #include "vnum.room.h"
 #include "files.h"
+#include "sql_player.h"
 
 /*
  * external variables
@@ -1939,6 +1940,15 @@ void do_deposit(P_char ch, char *argument, int cmd)
     return;
   }
 
+  const char *acct = get_account_name_safe(ch);
+  int racewar = GET_RACEWAR(ch);
+
+  if (!acct || !strcmp(acct, "Unknown"))
+  {
+    send_to_char("Your account could not be determined.\r\n", ch);
+    return;
+  }
+
   if (strstr("all", argument))
   {
     ok = (GET_COPPER(ch));
@@ -1947,6 +1957,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_COPPER(ch) -= money;
       GET_BALANCE_COPPER(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 0, money);
     }
     ok = (GET_SILVER(ch));
     money = ok;
@@ -1954,6 +1965,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_SILVER(ch) -= money;
       GET_BALANCE_SILVER(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 1, money);
     }
     ok = (GET_GOLD(ch));
     money = ok;
@@ -1961,6 +1973,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_GOLD(ch) -= money;
       GET_BALANCE_GOLD(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 2, money);
     }
     ok = (GET_PLATINUM(ch));
     money = ok;
@@ -1968,6 +1981,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_PLATINUM(ch) -= money;
       GET_BALANCE_PLATINUM(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 3, money);
     }
     do_balance(ch, 0, -4);
     /* Send GMCP update for deposit all */
@@ -1999,6 +2013,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_COPPER(ch) -= money;
         GET_BALANCE_COPPER(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 0, money);
       }
       break;
     case 1:
@@ -2007,6 +2022,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_SILVER(ch) -= money;
         GET_BALANCE_SILVER(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 1, money);
       }
       break;
     case 2:
@@ -2015,6 +2031,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_GOLD(ch) -= money;
         GET_BALANCE_GOLD(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 2, money);
       }
       break;
     case 3:
@@ -2023,6 +2040,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_PLATINUM(ch) -= money;
         GET_BALANCE_PLATINUM(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 3, money);
       }
       break;
     }
@@ -2055,6 +2073,16 @@ void do_withdraw(P_char ch, char *argument, int cmd)
     send_to_char("I don't see a bank around here.\r\n", ch);
     return;
   }
+
+  const char *acct = get_account_name_safe(ch);
+  int racewar = GET_RACEWAR(ch);
+
+  if (!acct || !strcmp(acct, "Unknown"))
+  {
+    send_to_char("Your account could not be determined.\r\n", ch);
+    return;
+  }
+
   half_chop(argument, arg, Gbuf1);
   ctype = coin_type(Gbuf1);
 
@@ -2074,37 +2102,49 @@ void do_withdraw(P_char ch, char *argument, int cmd)
     switch (ctype)
     {
     case 0:
-      ok = (money <= GET_BALANCE_COPPER(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 0, money);
+      if (result >= 0)
       {
-        GET_BALANCE_COPPER(ch) -= money;
+        GET_BALANCE_COPPER(ch) = (int)result;
         GET_COPPER(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     case 1:
-      ok = (money <= GET_BALANCE_SILVER(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 1, money);
+      if (result >= 0)
       {
-        GET_BALANCE_SILVER(ch) -= money;
+        GET_BALANCE_SILVER(ch) = (int)result;
         GET_SILVER(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     case 2:
-      ok = (money <= GET_BALANCE_GOLD(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 2, money);
+      if (result >= 0)
       {
-        GET_BALANCE_GOLD(ch) -= money;
+        GET_BALANCE_GOLD(ch) = (int)result;
         GET_GOLD(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     case 3:
-      ok = (money <= GET_BALANCE_PLATINUM(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 3, money);
+      if (result >= 0)
       {
-        GET_BALANCE_PLATINUM(ch) -= money;
+        GET_BALANCE_PLATINUM(ch) = (int)result;
         GET_PLATINUM(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     }
     if (!ok)
     {

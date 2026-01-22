@@ -128,6 +128,12 @@ Guild *sql_load_guild(unsigned int guild_id) { return NULL; }
 bool sql_load_all_guilds(void) { return false; }
 bool sql_delete_guild(unsigned int guild_id) { return false; }
 
+bool sql_load_account_bank(const char *account_name, int racewar, P_char ch) { return false; }
+bool sql_save_account_bank(const char *account_name, int racewar, P_char ch) { return false; }
+long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type, int amount) { return -1; }
+long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type, int amount) { return -1; }
+bool sql_ensure_account_bank(const char *account_name, int racewar) { return false; }
+
 #else
 
 // globals
@@ -565,7 +571,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "mana=%d, base_mana=%d, hit_diff=%d, base_hit=%d, "
       "vitality=%d, base_vitality=%d, spells_memmed_extra=%d, "
       "copper=%d, silver=%d, gold=%d, platinum=%d, "
-      "bank_copper=%d, bank_silver=%d, bank_gold=%d, bank_platinum=%d, "
+      "bank_copper=0, bank_silver=0, bank_gold=0, bank_platinum=0,"
       "exp=%d, epics=%ld, epic_skill_points=%ld, skillpoints=%d, spell_bind_used=%ld, "
       "act=%u, act2=%u, act3=%u, vote=%lu, alignment=%d,"
       "prestige=%d, assoc_id=%d, guild_status=%u, "
@@ -591,7 +597,6 @@ bool sql_save_player_status(P_char ch, int type, int room)
       GET_MANA(ch), ch->points.base_mana, MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch)), ch->points.base_hit,
       GET_VITALITY(ch), ch->points.base_vitality, ch->only.pc->spells_memmed[MAX_CIRCLE],
       GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch),
-      GET_BALANCE_COPPER(ch), GET_BALANCE_SILVER(ch), GET_BALANCE_GOLD(ch), GET_BALANCE_PLATINUM(ch),
       GET_EXP(ch), ch->only.pc->epics, ch->only.pc->epic_skill_points, ch->only.pc->skillpoints, ch->only.pc->spell_bind_used,
       ch->specials.act, ch->specials.act2, ch->specials.act3, ch->only.pc->vote, ch->specials.alignment,
       ch->only.pc->prestige, GET_ASSOC_ID(ch), ch->specials.guild_status,
@@ -641,7 +646,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "%ld, %d, %ld, %d, "
       "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, "
       "%d, %d, %d, %d, %d, %d, %d, "
-      "%d, %d, %d, %d, %d, %d, %d, %d, "
+      "%d, %d, %d, %d, 0, 0, 0, 0, "
       "%d, %ld, %ld, %d, %ld, "
       "%u, %u, %u, %lu, %d, "
       "%d, %d, %u, %ld, %d, %ld, "
@@ -665,7 +670,6 @@ bool sql_save_player_status(P_char ch, int type, int room)
       GET_MANA(ch), ch->points.base_mana, MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch)), ch->points.base_hit,
       GET_VITALITY(ch), ch->points.base_vitality, ch->only.pc->spells_memmed[MAX_CIRCLE],
       GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch),
-      GET_BALANCE_COPPER(ch), GET_BALANCE_SILVER(ch), GET_BALANCE_GOLD(ch), GET_BALANCE_PLATINUM(ch),
       GET_EXP(ch), ch->only.pc->epics, ch->only.pc->epic_skill_points, ch->only.pc->skillpoints, ch->only.pc->spell_bind_used,
       ch->specials.act, ch->specials.act2, ch->specials.act3, ch->only.pc->vote, ch->specials.alignment,
       ch->only.pc->prestige, GET_ASSOC_ID(ch), ch->specials.guild_status,
@@ -1977,10 +1981,13 @@ bool sql_load_player_status(P_char ch, int pid)
   GET_SILVER(ch) = sql_row_int(row, col++, 0);
   GET_GOLD(ch) = sql_row_int(row, col++, 0);
   GET_PLATINUM(ch) = sql_row_int(row, col++, 0);
-  GET_BALANCE_COPPER(ch) = sql_row_int(row, col++, 0);
-  GET_BALANCE_SILVER(ch) = sql_row_int(row, col++, 0);
-  GET_BALANCE_GOLD(ch) = sql_row_int(row, col++, 0);
-  GET_BALANCE_PLATINUM(ch) = sql_row_int(row, col++, 0);
+  // skip old player bank columns (still in db for backup)
+  // bank is loaded from account_banks after descriptor is set
+  col += 4;
+  GET_BALANCE_COPPER(ch) = 0;
+  GET_BALANCE_SILVER(ch) = 0;
+  GET_BALANCE_GOLD(ch) = 0;
+  GET_BALANCE_PLATINUM(ch) = 0;
 
   // experience
   GET_EXP(ch) = sql_row_int(row, col++, 0);
@@ -6060,6 +6067,200 @@ bool sql_delete_spellbook_mobs(int pid)
   char query[128];
   snprintf(query, sizeof(query), "delete from player_spellbooks where pid=%d", pid);
   return sql_run_query(query);
+}
+
+// account bank
+
+bool sql_ensure_account_bank(const char *account_name, int racewar)
+{
+  if (!DB || !account_name || !*account_name)
+    return false;
+
+  char *esc_name = sql_escape_string(account_name);
+  if (!esc_name)
+    return false;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "insert ignore into account_banks (account_name, racewar) values ('%s', %d)",
+    esc_name, racewar);
+
+  free(esc_name);
+
+  return sql_run_query(query);
+}
+
+bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
+{
+  if (!DB || !account_name || !*account_name || !ch)
+    return false;
+
+  char *esc_name = sql_escape_string(account_name);
+  if (!esc_name)
+    return false;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "select bank_copper, bank_silver, bank_gold, bank_platinum "
+    "from account_banks where account_name='%s' and racewar=%d",
+    esc_name, racewar);
+
+  free(esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (row)
+  {
+    GET_BALANCE_COPPER(ch) = atoi(row[0] ? row[0] : "0");
+    GET_BALANCE_SILVER(ch) = atoi(row[1] ? row[1] : "0");
+    GET_BALANCE_GOLD(ch) = atoi(row[2] ? row[2] : "0");
+    GET_BALANCE_PLATINUM(ch) = atoi(row[3] ? row[3] : "0");
+    mysql_free_result(result);
+    return true;
+  }
+
+  mysql_free_result(result);
+
+  GET_BALANCE_COPPER(ch) = 0;
+  GET_BALANCE_SILVER(ch) = 0;
+  GET_BALANCE_GOLD(ch) = 0;
+  GET_BALANCE_PLATINUM(ch) = 0;
+  return false;
+}
+
+bool sql_save_account_bank(const char *account_name, int racewar, P_char ch)
+{
+  if (!DB || !account_name || !*account_name || !ch)
+    return false;
+
+  sql_ensure_account_bank(account_name, racewar);
+
+  char *esc_name = sql_escape_string(account_name);
+  if (!esc_name)
+    return false;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "update account_banks set bank_copper=%d, bank_silver=%d, bank_gold=%d, bank_platinum=%d "
+    "where account_name='%s' and racewar=%d",
+    GET_BALANCE_COPPER(ch), GET_BALANCE_SILVER(ch),
+    GET_BALANCE_GOLD(ch), GET_BALANCE_PLATINUM(ch),
+    esc_name, racewar);
+
+  free(esc_name);
+
+  return sql_run_query(query);
+}
+
+long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type, int amount)
+{
+  if (!DB || !account_name || !*account_name || amount <= 0)
+    return -1;
+
+  sql_ensure_account_bank(account_name, racewar);
+
+  const char *coin_col;
+  switch (coin_type)
+  {
+    case 0: coin_col = "bank_copper"; break;
+    case 1: coin_col = "bank_silver"; break;
+    case 2: coin_col = "bank_gold"; break;
+    case 3: coin_col = "bank_platinum"; break;
+    default: return -1;
+  }
+
+  char *esc_name = sql_escape_string(account_name);
+  if (!esc_name)
+    return -1;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "update account_banks set %s = %s + %d where account_name='%s' and racewar=%d",
+    coin_col, coin_col, amount, esc_name, racewar);
+
+  if (!sql_run_query(query))
+  {
+    free(esc_name);
+    return -1;
+  }
+
+  snprintf(query, sizeof(query),
+    "select %s from account_banks where account_name='%s' and racewar=%d",
+    coin_col, esc_name, racewar);
+
+  free(esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return -1;
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  long long new_balance = row ? atoll(row[0] ? row[0] : "0") : -1;
+  mysql_free_result(result);
+
+  return new_balance;
+}
+
+long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type, int amount)
+{
+  if (!DB || !account_name || !*account_name || amount <= 0)
+    return -1;
+
+  const char *coin_col;
+  switch (coin_type)
+  {
+    case 0: coin_col = "bank_copper"; break;
+    case 1: coin_col = "bank_silver"; break;
+    case 2: coin_col = "bank_gold"; break;
+    case 3: coin_col = "bank_platinum"; break;
+    default: return -1;
+  }
+
+  char *esc_name = sql_escape_string(account_name);
+  if (!esc_name)
+    return -1;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "select %s from account_banks where account_name='%s' and racewar=%d",
+    coin_col, esc_name, racewar);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+  {
+    free(esc_name);
+    return -1;
+  }
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  long long current = row ? atoll(row[0] ? row[0] : "0") : 0;
+  mysql_free_result(result);
+
+  if (current < amount)
+  {
+    free(esc_name);
+    return -2;
+  }
+
+  snprintf(query, sizeof(query),
+    "update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d",
+    coin_col, coin_col, amount, esc_name, racewar, coin_col, amount);
+
+  if (!sql_run_query(query))
+  {
+    free(esc_name);
+    return -1;
+  }
+
+  free(esc_name);
+
+  if (mysql_affected_rows(DB) == 0)
+    return -2;
+
+  return current - amount;
 }
 
 #endif // __NO_MYSQL__
