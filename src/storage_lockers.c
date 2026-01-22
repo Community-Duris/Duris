@@ -13,6 +13,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "comm.h"
 #include "db.h"
@@ -2106,6 +2108,9 @@ static P_char create_locker_char(P_char chOwner, P_char ch, char *locker_name)
 
 static int save_locker_char(P_char ch, int bTerminal)
 {
+  // reap any finished locker save children
+  while (waitpid(-1, NULL, WNOHANG) > 0)
+    ;
 
   StorageLocker *pLocker = GetChestList(ch->in_room);
 
@@ -2117,16 +2122,38 @@ static int save_locker_char(P_char ch, int bTerminal)
     if (chLocker)
     {
       pLocker->LockerToPFile();
-      if (!writeCharacter(chLocker, bTerminal ? 3 : 0, NOWHERE))
+
+      if (bTerminal)
       {
-        logit(LOG_OBJ, "%s's locker not saving properly!", GET_NAME(ch));
-        debug("%s's locker not saving properly!", GET_NAME(ch));
-        send_to_char
-          ("&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
-           ch);
+        // async save - fork so parent doesnt block
+        pid_t pid = fork();
+        if (pid == 0)
+        {
+          // child
+          MYSQL *child_conn = sql_create_child_connection();
+          if (child_conn)
+          {
+            sql_reset_for_child(child_conn);
+            writeCharacter(chLocker, 3, NOWHERE);
+            mysql_close(child_conn);
+          }
+          _exit(0);
+        }
+        // parent continues, dont wait for child
+      }
+      else
+      {
+        // sync save for non-terminal (periodic saves while in locker)
+        if (!writeCharacter(chLocker, 0, NOWHERE))
+        {
+          logit(LOG_OBJ, "%s's locker not saving properly!", GET_NAME(ch));
+          debug("%s's locker not saving properly!", GET_NAME(ch));
+          send_to_char(
+            "&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
+            ch);
+        }
       }
 
-      /* prevent storage locker chars from idle-renting */
       chLocker->specials.timer = 0;
       if (bTerminal)
       {
@@ -2140,7 +2167,6 @@ static int save_locker_char(P_char ch, int bTerminal)
     }
     else
     {
-      /* player not in world?  This can happen if the locker character idled out... */
       return 0;
     }
   }
