@@ -130,6 +130,18 @@ bool sql_locker_exists_by_name(const char *locker_name);
 bool sql_delete_locker(int owner_pid, int owner_assoc_id);
 bool sql_delete_locker_by_name(const char *locker_name);
 
+// private chest functions
+int sql_get_locker_id_by_name(const char *locker_name);
+int sql_get_or_create_public_chest(int locker_id);
+int sql_create_private_chest(int locker_id, const char *chest_name, const char *password);
+bool sql_delete_private_chest(int chest_id);
+int sql_get_chest_id(int locker_id, const char *chest_name);
+bool sql_verify_chest_password(int chest_id, const char *password);
+int sql_count_private_chests(int locker_id);
+bool sql_log_chest_activity(int locker_id, int chest_id, const char *char_name, const char *action, const char *item_short);
+bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
+P_obj sql_load_private_chest_items(int locker_id, int chest_id);
+
 // account bank
 bool sql_load_account_bank(const char *account_name, int racewar, P_char ch);
 bool sql_save_account_bank(const char *account_name, int racewar, P_char ch);

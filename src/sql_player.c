@@ -2886,7 +2886,7 @@ static bool sql_save_locker_item_affects(int item_id, P_obj obj)
   return true;
 }
 
-static int sql_save_locker_item(int locker_id, P_obj obj, int container_id)
+static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int container_id)
 {
   if (!obj || !DB || locker_id <= 0)
     return 0;
@@ -2913,6 +2913,12 @@ static int sql_save_locker_item(int locker_id, P_obj obj, int container_id)
   else
     strcpy(container_str, "NULL");
 
+  char chest_id_str[32];
+  if (chest_id > 0)
+    snprintf(chest_id_str, sizeof(chest_id_str), "%d", chest_id);
+  else
+    strcpy(chest_id_str, "NULL");
+
   char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
   if (esc_name) snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
   else strcpy(name_str, "NULL");
@@ -2926,17 +2932,17 @@ static int sql_save_locker_item(int locker_id, P_obj obj, int container_id)
   char query[8192];
   snprintf(query, sizeof(query),
     "INSERT INTO locker_items ("
-    "locker_id, vnum, container_id, quantity, "
+    "locker_id, chest_id, vnum, container_id, quantity, "
     "weight, cost, timer, extra_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
     "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
-    "%d, %d, %s, 1, "
+    "%d, %s, %d, %s, 1, "
     "%d, %d, %ld, %lu, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
     "%s, %s, %s, %s, %lu, %d"
     ")",
-    locker_id, vnum, container_str,
+    locker_id, chest_id_str, vnum, container_str,
     obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
@@ -2959,7 +2965,7 @@ static int sql_save_locker_item(int locker_id, P_obj obj, int container_id)
   if (obj->contains)
   {
     for (P_obj content = obj->contains; content; content = content->next_content)
-      sql_save_locker_item(locker_id, content, item_id);
+      sql_save_locker_item(locker_id, chest_id, content, item_id);
   }
 
   return item_id;
@@ -2981,70 +2987,96 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
   // use transaction to batch all inserts
   sql_begin_transaction();
 
-  // delete existing locker
-  char del_query[256];
-  snprintf(del_query, sizeof(del_query), "DELETE FROM lockers WHERE locker_name='%s'", esc_name);
-  if (!sql_run_query(del_query))
+  // check if locker already exists
+  int locker_id = sql_get_locker_id_by_name(locker_name);
+
+  if (locker_id > 0)
   {
-    free(esc_name);
-    sql_rollback();
-    return false;
+    // locker exists - delete only PUBLIC chest items, keep private chest items
+    int public_id = sql_get_or_create_public_chest(locker_id);
+    char del_query[512];
+    snprintf(del_query, sizeof(del_query),
+      "DELETE FROM locker_items WHERE locker_id=%d AND (chest_id IS NULL OR chest_id=%d)",
+      locker_id, public_id);
+    if (!sql_run_query(del_query))
+    {
+      free(esc_name);
+      sql_rollback();
+      return false;
+    }
+  }
+  else
+  {
+    // new locker - insert locker record
+    char owner_pid_str[32], owner_assoc_str[32];
+    if (owner_pid > 0)
+      snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
+    else
+      strcpy(owner_pid_str, "NULL");
+    if (owner_assoc_id > 0)
+      snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
+    else
+      strcpy(owner_assoc_str, "NULL");
+
+    char ins_query[512];
+    snprintf(ins_query, sizeof(ins_query),
+             "INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
+             "VALUES ('%s', %s, %s, %d, %d)",
+             esc_name, owner_pid_str, owner_assoc_str, GET_RACEWAR(locker_ch), GET_RACE(locker_ch));
+
+    if (!sql_run_query(ins_query))
+    {
+      free(esc_name);
+      sql_rollback();
+      return false;
+    }
+
+    locker_id = (int)mysql_insert_id(DB);
   }
 
-  // insert locker record
-  char owner_pid_str[32], owner_assoc_str[32];
-  if (owner_pid > 0)
-    snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
-  else
-    strcpy(owner_pid_str, "NULL");
-  if (owner_assoc_id > 0)
-    snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
-  else
-    strcpy(owner_assoc_str, "NULL");
-
-  char ins_query[512];
-  snprintf(ins_query, sizeof(ins_query),
-           "INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
-           "VALUES ('%s', %s, %s, %d, %d)",
-           esc_name, owner_pid_str, owner_assoc_str, GET_RACEWAR(locker_ch), GET_RACE(locker_ch));
   free(esc_name);
 
-  if (!sql_run_query(ins_query))
-  {
-    sql_rollback();
-    return false;
-  }
+  // get or create public chest for this locker
+  int public_chest_id = sql_get_or_create_public_chest(locker_id);
 
-  int locker_id = (int)mysql_insert_id(DB);
-
-  // save all items the locker char is carrying
+  // save all items the locker char is carrying to public chest
   for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
-    sql_save_locker_item(locker_id, obj, 0);
+    sql_save_locker_item(locker_id, public_chest_id, obj, 0);
 
   sql_commit();
   return true;
 }
 
-static P_obj sql_load_locker_items(int locker_id, int container_id)
+static P_obj sql_load_locker_items(int locker_id, int container_id);
+
+static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int chest_id)
 {
   if (!DB || locker_id <= 0)
     return NULL;
 
-  char query[512];
+  char query[1024];
+  char chest_filter[256] = "";
+  if (chest_id > 0)
+    snprintf(chest_filter, sizeof(chest_filter), " AND chest_id=%d", chest_id);
+  else
+    snprintf(chest_filter, sizeof(chest_filter),
+      " AND (chest_id IS NULL OR chest_id NOT IN "
+      "(SELECT id FROM private_chests WHERE locker_id=%d AND is_public=0))", locker_id);
+
   if (container_id > 0)
     snprintf(query, sizeof(query),
              "SELECT id, vnum, weight, cost, timer, extra_flags, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
              "name, short_descr, description, action_descr, obj_uid, item_condition "
-             "FROM locker_items WHERE locker_id=%d AND container_id=%d",
-             locker_id, container_id);
+             "FROM locker_items WHERE locker_id=%d AND container_id=%d%s",
+             locker_id, container_id, chest_filter);
   else
     snprintf(query, sizeof(query),
              "SELECT id, vnum, weight, cost, timer, extra_flags, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
              "name, short_descr, description, action_descr, obj_uid, item_condition "
-             "FROM locker_items WHERE locker_id=%d AND container_id IS NULL",
-             locker_id);
+             "FROM locker_items WHERE locker_id=%d AND container_id IS NULL%s",
+             locker_id, chest_filter);
 
   MYSQL_RES *result = db_query("%s", query);
   if (!result)
@@ -3145,6 +3177,11 @@ static P_obj sql_load_locker_items(int locker_id, int container_id)
 
   mysql_free_result(result);
   return first_obj;
+}
+
+static P_obj sql_load_locker_items(int locker_id, int container_id)
+{
+  return sql_load_locker_items_filtered(locker_id, container_id, 0);
 }
 
 P_char sql_load_locker(int owner_pid, int owner_assoc_id)
@@ -3355,6 +3392,325 @@ bool sql_delete_locker_by_name(const char *locker_name)
   free(esc_name);
 
   return sql_run_query(query);
+}
+
+// ============================================================================
+// private chest functions
+// ============================================================================
+
+int sql_get_locker_id_by_name(const char *locker_name)
+{
+  if (!DB || !locker_name)
+    return 0;
+
+  char *esc_name = sql_escape_string(locker_name);
+  if (!esc_name)
+    return 0;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "SELECT id FROM lockers WHERE locker_name='%s'", esc_name);
+  free(esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return 0;
+
+  int locker_id = 0;
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (row)
+    locker_id = atoi(row[0]);
+  mysql_free_result(result);
+  return locker_id;
+}
+
+int sql_get_or_create_public_chest(int locker_id)
+{
+  if (!DB || locker_id <= 0)
+    return 0;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "SELECT id FROM private_chests WHERE locker_id=%d AND is_public=1", locker_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (result)
+  {
+    MYSQL_ROW row = mysql_fetch_row(result);
+    if (row)
+    {
+      int id = atoi(row[0]);
+      mysql_free_result(result);
+      return id;
+    }
+    mysql_free_result(result);
+  }
+
+  snprintf(query, sizeof(query),
+    "INSERT INTO private_chests (locker_id, chest_name, is_public) VALUES (%d, 'public', 1)",
+    locker_id);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  return (int)mysql_insert_id(DB);
+}
+
+int sql_create_private_chest(int locker_id, const char *chest_name, const char *password)
+{
+  if (!DB || locker_id <= 0 || !chest_name)
+    return 0;
+
+  if (sql_count_private_chests(locker_id) >= 5)
+    return -1;
+
+  char *esc_name = sql_escape_string(chest_name);
+  if (!esc_name)
+    return 0;
+
+  char query[512];
+  if (password && password[0])
+  {
+    char *esc_pass = sql_escape_string(password);
+    snprintf(query, sizeof(query),
+      "INSERT INTO private_chests (locker_id, chest_name, password_hash, is_public) "
+      "VALUES (%d, '%s', SHA2('%s', 256), 0)",
+      locker_id, esc_name, esc_pass);
+    free(esc_pass);
+  }
+  else
+  {
+    snprintf(query, sizeof(query),
+      "INSERT INTO private_chests (locker_id, chest_name, is_public) VALUES (%d, '%s', 0)",
+      locker_id, esc_name);
+  }
+  free(esc_name);
+
+  if (!sql_run_query(query))
+    return 0;
+
+  return (int)mysql_insert_id(DB);
+}
+
+bool sql_delete_private_chest(int chest_id)
+{
+  if (!DB || chest_id <= 0)
+    return false;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "DELETE FROM private_chests WHERE id=%d AND is_public=0", chest_id);
+
+  return sql_run_query(query);
+}
+
+int sql_get_chest_id(int locker_id, const char *chest_name)
+{
+  if (!DB || locker_id <= 0 || !chest_name)
+    return 0;
+
+  char *esc_name = sql_escape_string(chest_name);
+  if (!esc_name)
+    return 0;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "SELECT id FROM private_chests WHERE locker_id=%d AND chest_name='%s'",
+    locker_id, esc_name);
+  free(esc_name);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return 0;
+
+  int id = 0;
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (row)
+    id = atoi(row[0]);
+  mysql_free_result(result);
+  return id;
+}
+
+bool sql_verify_chest_password(int chest_id, const char *password)
+{
+  if (!DB || chest_id <= 0)
+    return false;
+
+  char query[512];
+
+  if (!password || !password[0])
+  {
+    snprintf(query, sizeof(query),
+      "SELECT id FROM private_chests WHERE id=%d AND password_hash IS NULL", chest_id);
+  }
+  else
+  {
+    char *esc_pass = sql_escape_string(password);
+    snprintf(query, sizeof(query),
+      "SELECT id FROM private_chests WHERE id=%d AND password_hash=SHA2('%s', 256)",
+      chest_id, esc_pass);
+    free(esc_pass);
+  }
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return false;
+
+  bool found = (mysql_fetch_row(result) != NULL);
+  mysql_free_result(result);
+  return found;
+}
+
+int sql_count_private_chests(int locker_id)
+{
+  if (!DB || locker_id <= 0)
+    return 0;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "SELECT COUNT(*) FROM private_chests WHERE locker_id=%d AND is_public=0", locker_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return 0;
+
+  int count = 0;
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (row)
+    count = atoi(row[0]);
+  mysql_free_result(result);
+  return count;
+}
+
+bool sql_log_chest_activity(int locker_id, int chest_id, const char *char_name,
+                            const char *action, const char *item_short)
+{
+  if (!DB || locker_id <= 0 || !char_name || !action)
+    return false;
+
+  char *esc_char = sql_escape_string(char_name);
+  char *esc_item = item_short ? sql_escape_string(item_short) : NULL;
+
+  char chest_str[32];
+  if (chest_id > 0)
+    snprintf(chest_str, sizeof(chest_str), "%d", chest_id);
+  else
+    strcpy(chest_str, "NULL");
+
+  char query[1024];
+  snprintf(query, sizeof(query),
+    "INSERT INTO private_chest_log (locker_id, chest_id, char_name, action_type, item_short) "
+    "VALUES (%d, %s, '%s', '%s', %s%s%s)",
+    locker_id, chest_str, esc_char, action,
+    esc_item ? "'" : "", esc_item ? esc_item : "NULL", esc_item ? "'" : "");
+
+  free(esc_char);
+  if (esc_item) free(esc_item);
+
+  return sql_run_query(query);
+}
+
+bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
+{
+  if (!DB || locker_id <= 0 || chest_id <= 0 || !chest_obj)
+    return false;
+
+  // delete existing items for this chest
+  char del_query[256];
+  snprintf(del_query, sizeof(del_query),
+    "DELETE FROM locker_items WHERE locker_id=%d AND chest_id=%d",
+    locker_id, chest_id);
+  if (!sql_run_query(del_query))
+    return false;
+
+  // save all items in the chest
+  for (P_obj obj = chest_obj->contains; obj; obj = obj->next_content)
+    sql_save_locker_item(locker_id, chest_id, obj, 0);
+
+  return true;
+}
+
+P_obj sql_load_private_chest_items(int locker_id, int chest_id)
+{
+  if (!DB || locker_id <= 0 || chest_id <= 0)
+    return NULL;
+
+  char query[1024];
+  snprintf(query, sizeof(query),
+    "SELECT id, vnum, weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "name, short_descr, description, action_descr, obj_uid, item_condition "
+    "FROM locker_items WHERE locker_id=%d AND container_id IS NULL AND chest_id=%d",
+    locker_id, chest_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return NULL;
+
+  P_obj first_obj = NULL;
+  P_obj last_obj = NULL;
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(result)))
+  {
+    int vnum = atoi(row[1]);
+    int rnum = real_object(vnum);
+    if (rnum < 0)
+      continue;
+
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
+      continue;
+
+    obj->weight = atoi(row[2]);
+    obj->cost = atoi(row[3]);
+    obj->timer[0] = atol(row[4]);
+    if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
+
+    obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
+    obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
+    obj->value[2] = row[8] ? atoi(row[8]) : obj->value[2];
+    obj->value[3] = row[9] ? atoi(row[9]) : obj->value[3];
+    obj->value[4] = row[10] ? atoi(row[10]) : obj->value[4];
+    obj->value[5] = row[11] ? atoi(row[11]) : obj->value[5];
+    obj->value[6] = row[12] ? atoi(row[12]) : obj->value[6];
+    obj->value[7] = row[13] ? atoi(row[13]) : obj->value[7];
+
+    if (row[14] && strlen(row[14]) > 0)
+    {
+      obj->name = str_dup(row[14]);
+      obj->str_mask |= STRUNG_KEYS;
+    }
+    if (row[15] && strlen(row[15]) > 0)
+    {
+      obj->short_description = str_dup(row[15]);
+      obj->str_mask |= STRUNG_DESC2;
+    }
+    if (row[16] && strlen(row[16]) > 0)
+    {
+      obj->description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[17] && strlen(row[17]) > 0)
+    {
+      obj->action_description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC3;
+    }
+    if (row[18])
+      obj->obj_uid = strtoul(row[18], NULL, 10);
+    if (row[19])
+      obj->condition = atoi(row[19]);
+
+    if (!first_obj)
+      first_obj = obj;
+    else
+      last_obj->next_content = obj;
+    last_obj = obj;
+    obj->next_content = NULL;
+  }
+  mysql_free_result(result);
+
+  return first_obj;
 }
 
 // migration helpers

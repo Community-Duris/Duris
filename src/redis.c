@@ -1121,7 +1121,6 @@ extern int sql_level_cap(int racewar_side);
 extern const racewar_struct racewar_color[];
 
 #define MAX_FRAG_SIZE 10
-#define LEVEL_TO_FRAGS(level) ((level) * 0.8)
 
 static char *generate_fraglist_output(void)
 {

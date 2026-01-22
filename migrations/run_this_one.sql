@@ -1440,4 +1440,50 @@ WHERE pd.bank_copper > 0 OR pd.bank_silver > 0 OR pd.bank_gold > 0 OR pd.bank_pl
 GROUP BY ac.account_name, ac.racewar;
 
 
+-- private chests (links to lockers table)
+
+CREATE TABLE IF NOT EXISTS private_chests (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    locker_id INT UNSIGNED NOT NULL,
+    chest_name VARCHAR(32) NOT NULL,
+    password_hash VARCHAR(64) DEFAULT NULL,
+    is_public TINYINT(1) DEFAULT 0,
+    sort_config TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_locker_chest (locker_id, chest_name),
+    INDEX idx_locker_id (locker_id)
+);
+
+-- add chest_id to locker_items
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'chest_id');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE locker_items ADD COLUMN chest_id INT UNSIGNED DEFAULT NULL AFTER locker_id',
+    'SELECT "chest_id already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- activity log for locker owner
+CREATE TABLE IF NOT EXISTS private_chest_log (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    locker_id INT UNSIGNED NOT NULL,
+    chest_id INT UNSIGNED DEFAULT NULL,
+    char_name VARCHAR(64) NOT NULL,
+    action_type ENUM('open', 'close', 'put', 'get', 'fail') NOT NULL,
+    item_short VARCHAR(256) DEFAULT NULL,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
+    INDEX idx_locker_id (locker_id),
+    INDEX idx_logged_at (logged_at)
+);
+
+-- create default public chest for existing lockers
+INSERT IGNORE INTO private_chests (locker_id, chest_name, is_public)
+SELECT id, 'public', 1
+FROM lockers
+WHERE locker_name LIKE 'account.%';
+
+
 -- done
