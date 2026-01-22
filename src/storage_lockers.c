@@ -1106,7 +1106,7 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
     for (i = 0; acct[i] && i < MAX_INPUT_LENGTH - 1; i++)
       acct_lower[i] = tolower(acct[i]);
     acct_lower[i] = '\0';
-    snprintf(enterWho, MAX_INPUT_LENGTH, "account.%s", acct_lower);
+    snprintf(enterWho, MAX_INPUT_LENGTH, "account.%s.%d", acct_lower, GET_RACEWAR(ch));
   }
   else
   {
@@ -1214,9 +1214,17 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
   if (strstr(lockerName, "account.") == lockerName)
   {
     const char *player_acct = get_account_name_safe(ch);
-    char *locker_acct = lockerName + 8;
-    if (player_acct && !str_cmp(locker_acct, player_acct))
-      is_owner = true;
+    char locker_acct[MAX_INPUT_LENGTH];
+    char *src = lockerName + 8;
+    char *dot = strchr(src, '.');
+    if (dot)
+    {
+      int len = dot - src;
+      strncpy(locker_acct, src, len);
+      locker_acct[len] = '\0';
+      int locker_racewar = atoi(dot + 1);
+      is_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+    }
   }
   else
   {
@@ -1360,9 +1368,17 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
   if (strstr(lockerName, "account.") == lockerName)
   {
     const char *player_acct = get_account_name_safe(ch);
-    char *locker_acct = lockerName + 8;
-    if (player_acct && !str_cmp(locker_acct, player_acct))
-      is_guild_owner = true;
+    char locker_acct[MAX_INPUT_LENGTH];
+    char *src = lockerName + 8;
+    char *dot = strchr(src, '.');
+    if (dot)
+    {
+      int len = dot - src;
+      strncpy(locker_acct, src, len);
+      locker_acct[len] = '\0';
+      int locker_racewar = atoi(dot + 1);
+      is_guild_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+    }
   }
   else
   {
@@ -1574,9 +1590,17 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
         if (strstr(arg1, "account.") == arg1)
         {
           const char *player_acct = get_account_name_safe(ch);
-          char *locker_acct = arg1 + 8;
-          if (player_acct && !str_cmp(locker_acct, player_acct))
-            idle_is_owner = true;
+          char locker_acct[MAX_INPUT_LENGTH];
+          char *src = arg1 + 8;
+          char *dot = strchr(src, '.');
+          if (dot)
+          {
+            int len = dot - src;
+            strncpy(locker_acct, src, len);
+            locker_acct[len] = '\0';
+            int locker_racewar = atoi(dot + 1);
+            idle_is_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+          }
         }
         else
         {
@@ -1708,10 +1732,17 @@ static int locker_grantcmd(P_char ch, char *arg)
 
   if (strstr(arg1, "account.") == arg1)
   {
-    char *acct_start = arg1 + 8;
-    char *dot = strchr(acct_start, '.');
-    if (dot) *dot = '\0';
-    is_owner = (player_acct && !str_cmp(acct_start, player_acct));
+    char locker_acct[MAX_INPUT_LENGTH];
+    char *src = arg1 + 8;
+    char *dot = strchr(src, '.');
+    if (dot)
+    {
+      int len = dot - src;
+      strncpy(locker_acct, src, len);
+      locker_acct[len] = '\0';
+      int locker_racewar = atoi(dot + 1);
+      is_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+    }
   }
   else if (strstr(arg1, "guild.") == arg1)
   {
@@ -1957,9 +1988,16 @@ static int create_new_locker(P_char ch, P_char locker)
           wizlog(AVATAR, "All locker rooms in use or locker rooms not loaded!");
           return 0;
   }
-  
+
   if (roomNum < (LOCKERS_START + LOCKERS_MAX))
   {
+    // clear any leftover items from previous locker session
+    for (tmp_object = world[realNum].contents; tmp_object; tmp_object = next_obj)
+    {
+      next_obj = tmp_object->next_content;
+      extract_obj(tmp_object);
+    }
+
     char roomNameBuf[500];
 
     /* check for a guild locker... */

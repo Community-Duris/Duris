@@ -1318,9 +1318,9 @@ JOIN account_characters ac ON pd.pid = ac.pid
 SET pd.account_name = ac.account_name
 WHERE pd.account_name IS NULL OR pd.account_name = '';
 
--- step 2: create account lockers for all accounts that have character lockers
+-- step 2: create account lockers per racewar for all accounts that have character lockers
 INSERT IGNORE INTO lockers (locker_name, racewar, race)
-SELECT DISTINCT CONCAT('account.', LOWER(ac.account_name), '.locker'), 0, 0
+SELECT DISTINCT CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker'), ac.racewar, 0
 FROM account_characters ac
 JOIN lockers l ON LOWER(SUBSTRING_INDEX(l.locker_name, '.locker', 1)) = LOWER(ac.char_name)
 WHERE ac.account_name IS NOT NULL AND ac.account_name != ''
@@ -1329,7 +1329,7 @@ WHERE ac.account_name IS NOT NULL AND ac.account_name != ''
   AND l.locker_name NOT LIKE 'account.%';
 
 -- step 3: copy items from character lockers to account lockers (at root level, no chest)
--- game creates its own chest dynamically, so we just store items at root level
+-- items go to the locker matching the character's racewar
 INSERT INTO locker_items (locker_id, vnum, container_id, quantity, weight, cost, timer,
     extra_flags, value0, value1, value2, value3, value4, value5, value6, value7,
     name, short_descr, description, action_descr, obj_uid, item_condition)
@@ -1344,7 +1344,7 @@ SELECT
 FROM locker_items src
 JOIN lockers char_locker ON src.locker_id = char_locker.id
 JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.locker')
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
 WHERE char_locker.locker_name LIKE '%.locker'
   AND char_locker.locker_name NOT LIKE 'guild.%'
   AND char_locker.locker_name NOT LIKE 'account.%'
@@ -1360,7 +1360,7 @@ FROM locker_item_affects lia
 JOIN locker_items old_item ON lia.item_id = old_item.id
 JOIN lockers char_locker ON old_item.locker_id = char_locker.id
 JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.locker')
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
 JOIN locker_items new_item ON old_item.obj_uid = new_item.obj_uid AND new_item.locker_id = acct_locker.id
 WHERE char_locker.locker_name LIKE '%.locker'
   AND char_locker.locker_name NOT LIKE 'guild.%'
