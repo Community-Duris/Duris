@@ -4049,6 +4049,12 @@ void free_char(P_char ch)
       str_free(ch->player.short_descr);
     }
 
+    // must remove from room first or char_from_room logs with freed name
+    if (ch->in_room != NOWHERE)
+    {
+      char_from_room(ch);
+    }
+
     if (ch->player.name)
     {
       str_free(ch->player.name);
@@ -4056,13 +4062,6 @@ void free_char(P_char ch)
     else
     {
       logit(LOG_DEBUG, "free_char called with no name. room: (%d)", ch->in_room);
-    }
-
-    // remove character from room before freeing only.pc to prevent act() from
-    // iterating over characters with freed only.pc data (use-after-free fix)
-    if (ch->in_room != NOWHERE)
-    {
-      char_from_room(ch);
     }
 
     if (ch->only.pc->log)
