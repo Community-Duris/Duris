@@ -272,126 +272,6 @@ void ws_broadcast_mud_shutdown(const char *type) {
     free(json);
 }
 
-/* broadcast player login to durisweb service */
-void ws_broadcast_player_login(struct descriptor_data *player_d) {
-    struct descriptor_data *d;
-    cJSON *root, *data;
-    char *json;
-
-    if (!player_d || !player_d->character) return;
-
-    root = cJSON_CreateObject();
-    if (!root) return;
-
-    cJSON_AddStringToObject(root, "type", "player_login");
-
-    data = cJSON_CreateObject();
-    cJSON_AddStringToObject(data, "character", GET_NAME(player_d->character));
-    cJSON_AddStringToObject(data, "account", player_d->account ? player_d->account->acct_name : "");
-    cJSON_AddStringToObject(data, "ip", player_d->host);
-    cJSON_AddNumberToObject(data, "level", GET_LEVEL(player_d->character));
-    cJSON_AddStringToObject(data, "race", ws_get_race_name(GET_RACE(player_d->character)));
-    cJSON_AddStringToObject(data, "class", ws_get_class_name(player_d->character->player.m_class));
-    cJSON_AddNumberToObject(data, "faction", GET_RACEWAR(player_d->character));
-    cJSON_AddStringToObject(data, "client", player_d->client_name ? player_d->client_name : "");
-    cJSON_AddStringToObject(data, "clientVersion", player_d->client_version ? player_d->client_version : "");
-    cJSON_AddItemToObject(root, "data", data);
-
-    json = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
-    if (!json) return;
-
-    for (d = descriptor_list; d; d = d->next) {
-        if (d->websocket && d->durisweb_verified) {
-            websocket_send_text(d, json);
-        }
-    }
-    free(json);
-}
-
-/* broadcast player logout to durisweb service */
-void ws_broadcast_player_logout(const char *character, int faction) {
-    struct descriptor_data *d;
-    cJSON *root, *data;
-    char *json;
-
-    if (!character) return;
-
-    root = cJSON_CreateObject();
-    if (!root) return;
-
-    cJSON_AddStringToObject(root, "type", "player_logout");
-
-    data = cJSON_CreateObject();
-    cJSON_AddStringToObject(data, "character", character);
-    cJSON_AddNumberToObject(data, "faction", faction);
-    cJSON_AddItemToObject(root, "data", data);
-
-    json = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
-    if (!json) return;
-
-    for (d = descriptor_list; d; d = d->next) {
-        if (d->websocket && d->durisweb_verified) {
-            websocket_send_text(d, json);
-        }
-    }
-    free(json);
-}
-
-/* send wholist to a specific client (for backend requests) */
-static void ws_send_wholist_to_client(struct descriptor_data *d) {
-    struct descriptor_data *target;
-    cJSON *root, *data, *players, *player;
-    char *json;
-
-    root = cJSON_CreateObject();
-    if (!root) return;
-
-    cJSON_AddStringToObject(root, "type", "wholist");
-
-    data = cJSON_CreateObject();
-    players = cJSON_CreateArray();
-
-    for (target = descriptor_list; target; target = target->next) {
-        if (target->connected != CON_PLAYING || !target->character)
-            continue;
-
-        player = cJSON_CreateObject();
-        cJSON_AddStringToObject(player, "character", GET_NAME(target->character));
-        cJSON_AddStringToObject(player, "account", target->account ? target->account->acct_name : "");
-        cJSON_AddStringToObject(player, "ip", target->host);
-        cJSON_AddNumberToObject(player, "level", GET_LEVEL(target->character));
-        cJSON_AddStringToObject(player, "race", ws_get_race_name(GET_RACE(target->character)));
-        cJSON_AddStringToObject(player, "class", ws_get_class_name(target->character->player.m_class));
-        cJSON_AddNumberToObject(player, "faction", GET_RACEWAR(target->character));
-        cJSON_AddStringToObject(player, "client", target->client_name);
-        cJSON_AddStringToObject(player, "clientVersion", target->client_version);
-        cJSON_AddNumberToObject(player, "uptime", time(0) - target->character->player.time.logon);
-        cJSON_AddItemToArray(players, player);
-    }
-
-    cJSON_AddItemToObject(data, "players", players);
-    cJSON_AddItemToObject(root, "data", data);
-
-    json = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
-    if (!json) return;
-
-    websocket_send_text(d, json);
-    free(json);
-}
-
-/* handle request_wholist from backend only */
-static void ws_cmd_request_wholist(struct descriptor_data *d, cJSON *data) {
-    (void)data;
-    if (!d->durisweb_verified) {
-        ws_send_system(d, "error", "not authorized");
-        return;
-    }
-    ws_send_wholist_to_client(d);
-}
-
 /* helper structure for character display */
 struct ws_char_info {
     char name[32];
@@ -478,6 +358,7 @@ static int ws_load_char_info(const char *charname, struct ws_char_info *info)
     /* use get_class_string - handles spec and multiclass */
     get_class_string(temp_ch, info->class_str);
 
+    cleanup_temp_char(temp_ch);
     if (temp_ch->only.pc) free(temp_ch->only.pc);
     free(temp_ch);
 
@@ -1873,6 +1754,7 @@ void ws_cmd_account_info(struct descriptor_data *d, cJSON *data)
 
                     cJSON_AddItemToArray(characters, char_obj);
                 }
+                cleanup_temp_char(temp_ch);
                 free(temp_ch->only.pc);
             }
             free(temp_ch);
@@ -2084,6 +1966,19 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
 
     /* delete character file and free temp character */
     deleteCharacter(ch);
+
+    /* free strings allocated by restoreCharOnly */
+    if (ch->player.name) str_free(ch->player.name);
+    if (ch->player.title) str_free(ch->player.title);
+    if (ch->player.short_descr) str_free(ch->player.short_descr);
+    if (ch->player.long_descr) str_free(ch->player.long_descr);
+    if (ch->player.description) str_free(ch->player.description);
+    if (ch->only.pc->poofIn) str_free(ch->only.pc->poofIn);
+    if (ch->only.pc->poofOut) str_free(ch->only.pc->poofOut);
+    if (ch->only.pc->poofInSound) str_free(ch->only.pc->poofInSound);
+    if (ch->only.pc->poofOutSound) str_free(ch->only.pc->poofOutSound);
+    if (ch->only.pc->gcmd_arr) FREE(ch->only.pc->gcmd_arr);
+
     free(ch->only.pc);
     free(ch);
 
@@ -2095,6 +1990,7 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
     }
     FREE(c->charname);
     FREE(c);
+    d->account->num_chars--;
 
     write_account(d->account);
 
@@ -2295,6 +2191,7 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
         }
         FREE(c->charname);
         FREE(c);
+        target_acct->num_chars--;
 
         ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
         write_account(target_acct);
@@ -2342,6 +2239,7 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
     }
     FREE(c->charname);
     FREE(c);
+    target_acct->num_chars--;
     ws_send_admin_delete_progress(d, request_id, "Removed from account", "success");
 
     ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
@@ -2399,6 +2297,7 @@ void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON *data)
                     cJSON_AddNumberToObject(char_obj, "maxHours", max_hours);
                     cJSON_AddItemToArray(characters, char_obj);
                 }
+                cleanup_temp_char(temp_ch);
                 free(temp_ch->only.pc);
             }
             free(temp_ch);
@@ -2709,8 +2608,6 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
         ws_cmd_poll_view(d, data);
     } else if (strcmp(cmd, "poll_vote") == 0) {
         ws_cmd_poll_vote(d, data);
-    } else if (strcmp(cmd, "request_wholist") == 0) {
-        ws_cmd_request_wholist(d, data);
     } else {
         /* unknown = game cmd */
         if (d->connected == CON_PLAYING) {

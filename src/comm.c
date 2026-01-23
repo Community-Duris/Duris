@@ -39,6 +39,8 @@
 #include "telnet.h"
 #include "mccp.h"
 #include "sql.h"
+#include "sql_player.h"
+#include "redis.h"
 #include "ferry.h"
 #include "world_quest.h"
 #include "auction_houses.h"
@@ -199,12 +201,23 @@ int main(int argc, char **argv)
   int port, sslport;
   int pos = 1;
   const char *dir;
+  int      migrate_mode = 0;
 
   port = DFLT_PORT;
   dir = DFLT_DIR;
   sslport = SSL_PORT;
 
   init_genrand(time(NULL));
+
+  // check for --migrate-all before regular arg parsing
+  for (int i = 1; i < argc; i++)
+  {
+    if (!strcmp(argv[i], "--migrate-all"))
+    {
+      migrate_mode = 1;
+      break;
+    }
+  }
 
   while ((pos < argc) && (*(argv[pos]) == '-'))
   {
@@ -310,10 +323,23 @@ int main(int argc, char **argv)
 
   logit(LOG_STATUS, "Using %s as data directory.", dir);
 
+  load_env_file();
+
   if (initialize_mysql() < 0)
   {
     fprintf(stderr, "MySQL initialization failed! Dying!");
     raise(SIGSEGV);
+  }
+
+  redis_init();
+
+  // run migration and exit if requested
+  if (migrate_mode)
+  {
+    printf("running pfile migration...\n");
+    int count = sql_migrate_all_players();
+    printf("migration complete: %d players migrated\n", count);
+    return 0;
   }
 
   initialize_properties();
@@ -387,10 +413,25 @@ void run_the_game(int port, int sslport)
 
   SetSpellCircles(); /* spells circlewise done with pure math */
 
+  // check for redis crash recovery before boot_db (so ne_init_events skips zone resets)
+  if (!copyover_boot && redis_enabled && redis_world_state_enabled && redis_has_world_state())
+  {
+    crash_recovery_boot = 1;
+    logit(LOG_STATUS, "Crash recovery data found in redis, will restore world state after boot");
+  }
+
   boot_db(mini_mode);
 
   // game_up_message(port);
   init_astral_clock(); // fix the map sight distances
+
+  // cache named report, fraglist, and epic zones in redis
+  redis_cache_named_report();
+  redis_cache_fraglist();
+  redis_cache_epic_zones();
+
+  // clear stale online list from previous boot/crash
+  redis_clear_online_players();
 
   if (no_random == 0)
     create_randoms();
@@ -606,6 +647,24 @@ void game_loop(int port, int sslport)
     calc_zone_mob_level();
   }
 
+  // redis crash recovery - restore world state from redis snapshot
+  if (crash_recovery_boot)
+  {
+    logit(LOG_STATUS, "Performing redis crash recovery...");
+    if (redis_load_world_state())
+    {
+      copyover_restore_combat();  // reuse combat restoration logic
+      calc_zone_mob_level();
+      logit(LOG_STATUS, "Crash recovery complete");
+    }
+    else
+    {
+      logit(LOG_STATUS, "Crash recovery failed, will use normal boot state");
+    }
+    redis_clear_world_state();
+    crash_recovery_boot = 0;
+  }
+
   PROFILES(RESET);
 #ifdef DO_PROFILE
   init_func_call_info();
@@ -766,6 +825,7 @@ void game_loop(int port, int sslport)
 
     if (select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time) < 0)
     {
+      sigprocmask(SIG_SETMASK, &oldset, 0);
       perror("Select poll");
       // bad file descriptor - find and nuke it so we dont loop forever
       if (errno == EBADF)
@@ -1188,6 +1248,9 @@ void game_loop(int port, int sslport)
 
       if (select(0, (fd_set *)0, (fd_set *)0, (fd_set *)0, &timeout) < 0)
       {
+        sigprocmask(SIG_SETMASK, &oldset, 0);
+        if (errno == EINTR)
+          continue;  // interrupted by signal, just retry
         perror("Select sleep");
         continue;
       }
@@ -1747,6 +1810,7 @@ void close_socket(struct descriptor_data *d)
     if (d->connected == CON_PLAYING)
     {
       sql_disconnectIP(d->character);
+      redis_player_offline(d->character);
       act("$n has lost $s link.", TRUE, GET_PLYR(d->character), 0, 0,
           TO_ROOM);
       if ((NumAttackers(d->character) > 0) && !IS_TRUSTED(d->character))

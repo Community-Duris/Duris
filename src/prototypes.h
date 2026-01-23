@@ -654,6 +654,7 @@ void do_unspec(P_char, char *, int);
 void test_load_all_chars(P_char);
 void do_read_player(P_char, char *, int);
 void do_nchat(P_char, char *, int);
+void do_jestros(P_char ch, char *argument, int cmd);
 void do_tranquilize(P_char ch, char *argument, int cmd);
 void do_storage(P_char ch, char *arg, int cmd);
 void do_newb_spellup_all(P_char ch, char *arg, int cmd);
@@ -664,6 +665,7 @@ void concat_which_flagsde(const char *flagType, const flagDef flagNames[], char 
 #ifdef USE_ACCOUNT
 void do_account(P_char ch, char *arg, int cmd);
 #endif
+void do_newchar(P_char ch, char *arg, int cmd);
 void do_protocol(P_char ch, char *arg, int cmd);
 
 /* artifact.c */

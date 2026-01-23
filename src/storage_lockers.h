@@ -47,6 +47,13 @@ public:
   static void event_resortLocker(P_char chLocker, P_char ch, P_obj obj, void *data);
   int m_itemCount;
 
+  int GetCurrentChestId(void) { return m_currentChestId; };
+  void SetCurrentChestId(int id) { m_currentChestId = id; };
+  int GetLockerId(void) { return m_lockerId; };
+  void SetLockerId(int id) { m_lockerId = id; };
+  void AddPrivateChest(LockerChest *chest) { AddLockerChest(chest); };
+  int GetRealRoom(void) { return m_realRoom; };
+
 protected:
   LockerChest *AddLockerChest(LockerChest *p);
   LockerChest *m_pChestList;
@@ -55,6 +62,8 @@ protected:
   P_char m_chUser;
   //  int m_itemCount;
   bool m_bIValue;
+  int m_currentChestId;
+  int m_lockerId;
 };
 
 class LockerChest
@@ -78,6 +87,9 @@ public:
   {
     return true;
   };
+
+  virtual bool IsPrivateChest(void) { return false; };
+  virtual int GetChestId(void) { return 0; };
 
   virtual void FillExtraDescBuf(char *GBuf1);
 
@@ -239,6 +251,23 @@ protected:
   ~ComboChest(void);
 
   LockerChest *m_LockerChests;
+};
+
+class PrivateChest : public LockerChest
+{
+  friend class StorageLocker;
+
+public:
+  PrivateChest(int chest_id, const char *name, bool has_password);
+
+  virtual bool ItemFits(P_obj obj) override { return false; };
+  virtual bool IsPrivateChest(void) override { return true; };
+  virtual int GetChestId(void) override { return m_chestId; };
+
+protected:
+  int m_chestId;
+  bool m_hasPassword;
+  char m_chestName[128];
 };
 
 #endif // __STORAGE_LOCKERS_H__

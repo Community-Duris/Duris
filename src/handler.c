@@ -28,6 +28,7 @@
 #include "interp.h"
 #include "damage.h"
 #include "sql.h"
+#include "redis.h"
 #include "vnum.obj.h"
 #include "map.h"
 #include "handler.h"
@@ -1490,6 +1491,19 @@ bool char_to_room(P_char ch, int room, int dir)
   return TRUE;
 }
 
+// marks player or pet owner dirty when inventory/equipment changes
+static void mark_char_or_owner_dirty(P_char ch)
+{
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
+  else if (IS_PC_PET(ch))
+  {
+    P_char owner = GET_MASTER(ch);
+    if (owner && IS_PC(owner))
+      mark_player_dirty(GET_PID(owner));
+  }
+}
+
 // Give an object to a char
 void obj_to_char(P_obj object, P_char ch)
 {
@@ -1586,6 +1600,8 @@ void obj_to_char(P_obj object, P_char ch)
   {
     object->g_key = 1;
   }
+
+  mark_char_or_owner_dirty(ch);
 }
 
 /*
@@ -1622,8 +1638,11 @@ void obj_from_char(P_obj object)
   GET_CARRYING_W(object->loc.carrying) -= GET_OBJ_WEIGHT(object);
   IS_CARRYING_N(object->loc.carrying)--;
   object->z_cord = object->loc.carrying->specials.z_cord;
+
+  mark_char_or_owner_dirty(ch);
+
   object->loc_p = LOC_NOWHERE;
-  object->loc.room = NOWHERE;
+  object->loc.carrying = NULL;  // must clear full pointer, not just int-sized loc.room
   object->next_content = NULL;
 }
 
@@ -1696,6 +1715,8 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
           TO_CHAR);
       ((*skills[o_af->data].spell_pointer) ((int) GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, ch, 0));
     }
+
+  mark_char_or_owner_dirty(ch);
 }
 
 // Removes an object from a char's equipped slot [pos].
@@ -1726,8 +1747,9 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
     clear_links( ch, obj, LNKFLG_BREAK_REMOVE );
   all_affects(ch, FALSE);
   ch->equipment[pos] = NULL;
+
   obj->loc_p = LOC_NOWHERE;
-  obj->loc.room = NOWHERE;
+  obj->loc.wearing = NULL;  // must clear full pointer, not just int-sized loc.room
   all_affects(ch, TRUE);
 
   balance_affects(ch);
@@ -1738,6 +1760,8 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
     room_light(ch->in_room, REAL);
   }
   GET_CARRYING_W(ch) -= (GET_OBJ_WEIGHT(obj) / 2);
+
+  mark_char_or_owner_dirty(ch);
 
   return (obj);
 }
@@ -2573,7 +2597,7 @@ void obj_from_obj(P_obj obj)
 */
 
     obj->loc_p = LOC_NOWHERE;
-    obj->loc.room = NOWHERE;
+    obj->loc.inside = NULL;  // must clear full pointer, not just int-sized loc.room
     obj->next_content = NULL;
 
     if (GET_ITEM_TYPE(obj_from) == ITEM_STORAGE)
@@ -2615,6 +2639,7 @@ void extract_obj(P_obj obj, int gone_for_good)
     logit(LOG_EXIT, "extract_obj: NULL obj!");
     raise(SIGSEGV);
   }
+
   if (OBJ_ROOM(obj))
     obj_from_room(obj);
   else if (OBJ_CARRIED(obj))
@@ -3020,6 +3045,15 @@ void extract_char(P_char ch)
     if (IS_AFFECTED2(ch, AFF2_CASTING))
       StopCasting(ch);
   }
+
+  // mark owner dirty when extracting a pc pet (must be before die_follower clears the link)
+  if (IS_PC_PET(ch))
+  {
+    P_char owner = GET_MASTER(ch);
+    if (owner && IS_PC(owner))
+      mark_player_dirty(GET_PID(owner));
+  }
+
   if( ch->followers || ch->following )
   {
     die_follower(ch);
@@ -3161,12 +3195,19 @@ void extract_char(P_char ch)
     affect_remove(ch, af);
   }
 
+  disarm_char_nevents(ch, NULL);  // clear new events system
   ClearCharEvents(ch);
 
   /* clear equipment_list */
   for (l = 0; l < MAX_WEAR; l++)
     if (ch->equipment[l])
     {
+      // debug: log extract_char equipment cleanup for artifact 58424
+      if (OBJ_VNUM(ch->equipment[l]) == 58424)
+      {
+        logit(LOG_DEBUG, "[handler.c:extract_char] cleaning up artifact 58424 from '%s' slot=%d in_room=%d",
+              GET_NAME(ch), l, ch->in_room);
+      }
       obj = unequip_char(ch, l);
       /* Added pet check */
       if( ch->in_room == NOWHERE || IS_SET(obj->extra_flags, ITEM_TRANSIENT) || IS_SHOPKEEPER(ch) || (IS_NPC(ch) && IS_RANDOM_MOB(ch)) )

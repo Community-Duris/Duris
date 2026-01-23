@@ -3506,7 +3506,7 @@ void do_examine(P_char ch, char *argument, int cmd)
         if (OBJ_WORN(tmp_object) || OBJ_CARRIED(tmp_object))
         {
 
-          if (tmp_object->weight < 0)
+          if (tmp_object->weight < 0 || tmp_object->value[0] <= 0)
             percent = 0;
           else
             percent = (int)(100 * tmp_object->weight / tmp_object->value[0]);
@@ -4660,6 +4660,20 @@ void do_score(P_char ch, char *argument, int cmd)
              GET_BALANCE_GOLD(ch),
              GET_BALANCE_SILVER(ch), GET_BALANCE_COPPER(ch));
     send_to_char(buf, ch);
+
+    {
+      const char *acct = get_account_name_safe(ch);
+      if (acct && *acct)
+      {
+        double total = sql_get_total_donated(acct);
+        if (total > 0)
+        {
+          snprintf(buf, MAX_STRING_LENGTH,
+                   "&+YTotal Donations:&n &+W$%.2f&n\n", total);
+          send_to_char(buf, ch);
+        }
+      }
+    }
 
     if (IS_DRAGOON(ch))
     {

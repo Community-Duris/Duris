@@ -28,6 +28,12 @@ struct acct_chars { // Account Character Entry
 	long int			last;
 	char				blocked;
 	char				racewar;
+	int					level;
+	int					race;
+	unsigned int		m_class;
+	unsigned int		secondary_class;
+	int					last_room;
+	long				last_save;
 	struct acct_chars	*next;
 };
 
@@ -63,8 +69,7 @@ struct acct_list_entry { // List of loaded accounts
 	struct acct_entry		*account;
 	struct acct_list_entry	*next;
 };
-	
 
-
+void cleanup_temp_char(struct char_data *ch);
 
 #endif // DURIS_ACCOUNT_H

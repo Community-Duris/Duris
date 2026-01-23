@@ -123,10 +123,20 @@ void load_guildhalls(vector<Guildhall*>& guildhalls)
   MYSQL_ROW row;
   while ((row = mysql_fetch_row(res)))
   {
+    int id = atoi(row[0]);
+    int assoc_id = atoi(row[1]);
+    P_Guild guild = get_guild_from_id(assoc_id);
+
+    if (!guild)
+    {
+      logit(LOG_GUILDHALLS, "load_guildhalls(): skipping guildhall %d - guild %d not found", id, assoc_id);
+      continue;
+    }
+
     Guildhall *gh = new Guildhall();
-    gh->id = atoi(row[0]);
-	gh->assoc_id = atoi(row[1]);
-    gh->guild = get_guild_from_id(gh->assoc_id);
+    gh->id = id;
+    gh->assoc_id = assoc_id;
+    gh->guild = guild;
     gh->type = atoi(row[2]);
     gh->outside_vnum = atoi(row[3]);
     gh->racewar = atoi(row[4]);

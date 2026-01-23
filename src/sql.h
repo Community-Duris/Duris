@@ -43,11 +43,17 @@ static inline const char *get_db_name(void) {
     return (val && *val) ? val : DB_NAME_DEFAULT;
 }
 
+static inline int get_db_port(void) {
+    const char *val = getenv("DB_PORT");
+    return (val && *val) ? atoi(val) : 0;
+}
+
 /* legacy macros for backward compatibility - use functions for new code */
 #define DB_HOST get_db_host()
 #define DB_USER get_db_user()
 #define DB_PASSWD get_db_passwd()
 #define DB_NAME get_db_name()
+#define DB_PORT get_db_port()
 
 #ifndef __NO_MYSQL__
 #include <mysql.h>
@@ -55,8 +61,11 @@ extern MYSQL *DB;
 MYSQL_RES *db_query(const char *format, ...);
 #endif
 
+int load_env_file(void);
 int initialize_mysql();
+void sql_populate_lookup_tables();
 int sql_save_player_core( P_char ch );
+bool sql_load_player_items( P_char ch );
 int sql_level_cap( int racewar_side );
 //void sql_save_progress( int pid, int delta, const char *type );
 void sql_modify_frags( P_char ch, int gain );
@@ -103,6 +112,7 @@ void show_frag_trophy(P_char ch, P_char who);
 // Frag leaderboard hybrid system - for web statistics
 void sql_update_frag_leaderboard(P_char ch);
 void sql_update_account_character(P_char ch);
+double sql_get_total_donated(const char *account_name);
 void sql_soft_delete_character(long pid);
 
 string get_mud_info(const char *name);
@@ -125,6 +135,7 @@ void zone_trophy_update();
 #define LEVEL_TO_FRAGS( level ) ( (level <= 25) ? 0 : (( float )( level - 25 ) * .6) )
 
 void sql_log(P_char ch, char * kind, char * format, ...);
+void sql_log_player_login(P_char ch, const char *status);
 
 struct zone_info
 {

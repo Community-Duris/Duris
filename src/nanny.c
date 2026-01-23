@@ -29,6 +29,7 @@
 #include "account.h"
 #include "files.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "paladins.h"
 #include "ships.h"
 #include "specializations.h"
@@ -40,6 +41,7 @@
 #include "achievements.h"
 #include "gmcp.h"
 #include "ws_handlers.h"
+#include "redis.h"
 
 /* external variables */
 
@@ -3252,7 +3254,6 @@ void enter_game(P_desc d)
   else
   {
     r_room = real_room(ch->specials.was_in_room);
-
     if(r_room == NOWHERE)
       r_room = ch->in_room;
   }
@@ -3327,6 +3328,13 @@ void enter_game(P_desc d)
   {
     ch->desc = d;
 
+    // load account bank
+    const char *acct = get_account_name_safe(ch);
+    if (acct && strcmp(acct, "Unknown") != 0)
+    {
+      sql_load_account_bank(acct, GET_RACEWAR(ch), ch);
+    }
+
     reset_char(ch);
 
     cost = 0;
@@ -3376,10 +3384,23 @@ void enter_game(P_desc d)
         send_to_char("\r\nYou rejoin the land of the living...\r\n", ch);
       restoreItemsOnly(ch, 0);
     }
+    else if (d->rtype == 0)
+    {
+      // sql load - items were loaded in restoreCharOnly but reset_char cleared them
+      // reload from sql
+#ifndef __NO_MYSQL__
+      sql_load_player_items(ch);
+#endif
+    }
     else
     {
       send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
     }
+
+    // restore pets from sql (for crash recovery and sql-based loads)
+#ifndef __NO_MYSQL__
+    sql_load_player_pets(ch);
+#endif
 
     if (cost == -2)
     {
@@ -3759,7 +3780,6 @@ void enter_game(P_desc d)
   loginlog(GET_LEVEL(ch), "%s [%s] enters game @ %s.%s [%d]",
            GET_NAME(ch), d->host, timestr, Gbuf1, world[ch->in_room].number);
   sql_log(ch, CONNECTLOG, "Entered Game");
-  ws_broadcast_player_login(d);
 
   if(GET_LEVEL(ch) >= MINLVLIMMORTAL)
     loginlog(GET_LEVEL(ch), "&+GIMMORTAL&n: (%s) [%s] has logged on.%s",
@@ -3959,6 +3979,9 @@ if(d->character->base_stats.Wis < 80)
   gmcp_char_status(ch);
   gmcp_char_vitals(ch);
   gmcp_quest_status(ch);
+
+  redis_player_online(ch);
+  sql_log_player_login(ch, "login");
 
   do_look(ch, 0, -4);
 
@@ -4206,7 +4229,7 @@ void select_name(P_desc d, char *arg, int flag)
   }*/
 
 
-  if (!pfile_exists(SAVE_DIR, tmp_name) &&
+  if (!sql_player_exists(tmp_name) &&
       pfile_exists(BADNAME_DIR, tmp_name))
   {
     SEND_TO_Q("That name has been declined before, and would be now too!\r\nName:", d);
@@ -4239,7 +4262,7 @@ void select_name(P_desc d, char *arg, int flag)
       return;
     }
   }
-  else if (pfile_exists(SAVE_DIR, tmp_name))
+  else if (sql_player_exists(tmp_name))
   {
     SEND_TO_Q("Name is in use already. Please enter new name.\r\nName:", d);
     return;

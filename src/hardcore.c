@@ -32,6 +32,7 @@
 #include "sound.h"
 #include "ships.h"
 #include "hardcore.h"
+#include "sql.h"
 
 /*
  * external variables
@@ -220,55 +221,52 @@ void insertHallEntry(char names[MAX_HALLOFFAME_SIZE][MAX_STRING_LENGTH],
 
 void displayHardCore(P_char ch, char *arg, int cmd)
 {
-
-  FILE    *halloffameList;
-  char     name[MAX_STRING_LENGTH], buf[65536], buf2[2048], tempbuf[2048];
-  char     killer[MAX_STRING_LENGTH];
-  int      halloffames;
-  char     i;
+  char     name[MAX_STRING_LENGTH], buf[65536], buf2[2048];
   float    pts = 0;
+  MYSQL_RES *res;
+  MYSQL_ROW row;
 
-  if( IS_TRUSTED( ch ) )
-  {
-    if( !(halloffameList = fopen(halloffamelist_file, "r")) )
-    {
-      logit(LOG_DEBUG, "displayHardCore(): could not open file '%s'.", halloffamelist_file );
-      if( ch )
-        send_to_char("Couldn't open God's Hall of Fame! Tell a god.\r\n", ch);
-      return;
-    }
-  }
-  else
-  {
-    if( !(halloffameList = fopen(mort_halloffame_file, "r")) )
-    {
-      logit(LOG_DEBUG, "displayHardCore(): could not open file '%s'.", halloffamelist_file );
-      if( ch )
-        send_to_char("Couldn't open Hall of Fame! Tell a god.\r\n", ch);
-      return;
-    }
+  if (!ch)
+    return;
+
+  // query hardcore hall of fame from database
+  // score = (level * 1000) + (exp / 10000) + (frags * 100)
+  // PLR2_HARDCORE_CHAR = bit 14 = 8192
+  res = db_query(
+    "SELECT pd.name, "
+    "  (pd.level * 1000) + (pd.exp / 10000) + "
+    "  (CASE WHEN pd.frags < 100000 THEN pd.frags ELSE 0 END * 100) as score, "
+    "  COALESCE(pd.killed_by, 'Notdead') as killed_by "
+    "FROM player_data pd "
+    "WHERE (pd.act2 & 8192) > 0 OR pd.killed_by IS NOT NULL "
+    "ORDER BY score DESC "
+    "LIMIT %d",
+    MAX_HALLOFFAME_SIZE
+  );
+
+  if (!res) {
+    send_to_char("&+RError: Couldn't query hall of fame from database.&n\r\n", ch);
+    return;
   }
 
   strcpy(buf, "\t\r\n&+r-= &+LHall Of&+L Fame&+r =-&n\r\n\r\n");
-  snprintf(tempbuf, 2048, "   &+w%-15s           &+w%s           &+w%-15s\r\n",
+  snprintf(buf2, 2048, "   &+w%-15s           &+w%s           &+w%-15s\r\n",
           "Name", "Points", "Deaths/Killed by");
-  strcat(buf, tempbuf);
-  for (i = 0; i < MAX_HALLOFFAME_SIZE; i++)
-  {
-    // Less than full hall of fame list?
-    if( fscanf(halloffameList, "%s %d %s\n", name, &halloffames, killer) == EOF )
-      break;
-    name[0] = toupper(name[0]);
-    pts = halloffames;
-    pts /= 100.0;
+  strcat(buf, buf2);
 
-    snprintf(buf2, 2048, "   &+L%-15s          &+r% 6.2f\t      &+W%-15s\r\n",
-            name, pts, killer);
-    strcat(buf, buf2);
+  while ((row = mysql_fetch_row(res))) {
+    if (row[0] && row[1]) {
+      strncpy(name, row[0], sizeof(name) - 1);
+      name[sizeof(name) - 1] = '\0';
+      name[0] = toupper(name[0]);
+      pts = atof(row[1]) / 100.0;
+
+      snprintf(buf2, 2048, "   &+L%-15s          &+r% 6.2f\t      &+W%-15s\r\n",
+              name, pts, row[2] ? row[2] : "unknown");
+      strcat(buf, buf2);
+    }
   }
-
-
-  fclose(halloffameList);
+  mysql_free_result(res);
 
   strcat(buf, "\r\n");
 
@@ -307,306 +305,77 @@ long getLeaderBoardPts(P_char ch)
   return leaderpts;
 }
 
-void deleteLeaderEntry(char names[MAX_LEADERBOARD_SIZE][MAX_STRING_LENGTH],
-                     int halloffames[MAX_LEADERBOARD_SIZE], int pos )
-{
-  int      i;
-
-  if( pos >= MAX_LEADERBOARD_SIZE )
-  {
-    logit(LOG_DEBUG, "deleteLeaderEntry(): pos too big: '%d'.", pos );
-    return;
-  }
-
-  for( i = pos; i < MAX_LEADERBOARD_SIZE-1; i++ )
-  {
-    strcpy(names[i], names[i + 1]);
-    halloffames[i] = halloffames[i + 1];
-  }
-}
-
-void insertLeaderEntry(char names[MAX_LEADERBOARD_SIZE][MAX_STRING_LENGTH],
-                     int halloffames[MAX_LEADERBOARD_SIZE], char *name,
-                     int newHardcore, int pos )
-{
-  int      i;
-
-  if( pos >= MAX_LEADERBOARD_SIZE )
-  {
-    logit(LOG_DEBUG, "insertLeaderEntry(): pos too big: '%d'.", pos );
-    return;
-  }
-
-  if( pos == MAX_LEADERBOARD_SIZE - 1 )
-  {
-    strcpy(names[pos], name);
-    halloffames[pos] = newHardcore;
-    return;
-  }
-
-  for( i = MAX_LEADERBOARD_SIZE - 2; i >= pos; i-- )
-  {
-    strcpy(names[i + 1], names[i]);
-    halloffames[i + 1] = halloffames[i];
-  }
-
-  strcpy(names[pos], name);
-  halloffames[pos] = newHardcore;
-}
-
-// Copies leaderboard file to leaderboardprod.
-// Returns TRUE iff leaderboard is copied over.
+// leaderboard is now computed from database, no file sync needed
 bool newLeaderBoard(P_char ch, char *arg, int cmd)
 {
-  FILE    *leaderboardlist, *f, *newleaderlist;
-  // these arrays are unused and huge, commenting out to save mem
-  // char     highPlayerName[MAX_LEADERBOARD_SIZE][MAX_STRING_LENGTH],
-  //          lowPlayerName[MAX_LEADERBOARD_SIZE][MAX_STRING_LENGTH];
-  char     name[MAX_STRING_LENGTH];
-  bool     change = FALSE;
-  // int      highHardcore[MAX_LEADERBOARD_SIZE],
-  //          lowHardcore[MAX_LEADERBOARD_SIZE], i;
-  int      halloffames, x;
-  long     phalloffames;
-  float    pts = 0;
-  char     buf[MAX_STRING_LENGTH], buffer[1024], *ptr;
-
- 
-  newleaderlist = fopen(mort_leader_file, "w");
-  if( !newleaderlist )
-  {
-    if( ch )
-      send_to_char("error: couldn't open newleaderlist for writing.\r\n", ch);
-    logit(LOG_DEBUG, "newLeaderBoard(): Could not open file '%s'.", mort_leader_file );
-    return FALSE;
-  }
-	
-  leaderboardlist = fopen(leaderboard_file, "r");
-  if( !leaderboardlist )
-  {
-    if( ch )
-      send_to_char("error: couldn't open leaderboard for reading.\r\n", ch);
-    logit(LOG_DEBUG, "newLeaderBoard(): Could not open file '%s'.", leaderboard_file );
-    fclose(newleaderlist);
-    return FALSE;
-  }
-
-  while( fscanf(leaderboardlist, "%s %d\n", name, &halloffames) != EOF )
-  {
-    pts = halloffames;
-    if(!strcmp(name, "none"))
-      break;
-    snprintf(buf, MAX_STRING_LENGTH, "%s %d\r\n", name, (int)pts);
-    fprintf(newleaderlist, "%s", buf);
-  }
-
-  fclose(leaderboardlist);
-  fclose(newleaderlist);
-
   return TRUE;
 }
   
 
 void displayLeader(P_char ch, char *arg, int cmd)
 {
-
-  FILE    *halloffameList, *f;
-  char     name[MAX_STRING_LENGTH], buf[65536], buf2[2048], 
-           tempbuf[2048], tempbuf2[2048];
-  int      halloffames, x;
-  char     i;
+  char     name[MAX_STRING_LENGTH], buf[65536], buf2[2048];
   float    pts = 0;
+  MYSQL_RES *res;
+  MYSQL_ROW row;
 
-  one_argument( arg, name );
-  // If !ch then !IS_TRUSTED(ch)
-  if( name[0] != '\0' && is_abbrev( name, "reset" ) && IS_TRUSTED( ch ) )
-  {
-    send_to_char( "Updating leader board for mortals...\n", ch );
-    if( newLeaderBoard( ch, arg, cmd ) )
-      send_to_char( "Leader board updated!\n", ch );
-    else
-      send_to_char( "Leader board update failed!\n", ch );
+  if (!ch)
+    return;
+
+  // query leaderboard from database
+  // score = (level * 1000) + (exp / 10000) + (shipfrags * 100) + (frags * 100) - (deaths * 25)
+  // filter out corrupted frags (> 100000 = overflow junk from migration)
+  res = db_query(
+    "SELECT pd.name, "
+    "  (pd.level * 1000) + (pd.exp / 10000) + "
+    "  (COALESCE(s.frags, 0) * 100) + "
+    "  (CASE WHEN pd.frags < 100000 THEN pd.frags ELSE 0 END * 100) - "
+    "  (pd.numb_deaths * 25) as score "
+    "FROM player_data pd "
+    "LEFT JOIN ships s ON LOWER(pd.name) = LOWER(s.owner_name) "
+    "WHERE pd.frags < 100000 "
+    "ORDER BY score DESC "
+    "LIMIT %d",
+    MAX_LEADERBOARD_SIZE
+  );
+
+  if (!res) {
+    send_to_char("&+RError: Couldn't query leaderboard from database.&n\r\n", ch);
     return;
   }
-
-  update_shipfrags();
-
-  if( IS_TRUSTED( ch ) )
-  {
-    if (!(halloffameList = fopen(leaderboard_file, "r")))
-    {
-      if( ch )
-        send_to_char("Couldn't open God's leaderboard! Tell a god.\r\n", ch);
-      logit(LOG_DEBUG, "displayLeader(): Could not open file '%s'.", leaderboard_file );
-      return;
-    }
-  }
-  else
-  {
-    if (!(halloffameList = fopen(mort_leader_file, "r")))
-    {
-      if( ch )
-        send_to_char("Couldn't open leaderboard! Tell a god.\r\n", ch);
-      logit(LOG_DEBUG, "displayLeader(): Could not open file '%s'.", mort_leader_file );
-      return;
-    }
-  }
-
-  int actualrecords = 0;
- 
-  while(fscanf(halloffameList, "%s %d\n", name, &halloffames) != EOF)
-  {
-   actualrecords++;
-  }
-  fclose(halloffameList);
-
-  if( IS_TRUSTED( ch ) )
-    halloffameList = fopen(leaderboard_file, "r");
-  else
-    halloffameList = fopen(mort_leader_file, "r");
-
-  if (!halloffameList)
-  {
-    if( IS_TRUSTED( ch ) )
-      logit(LOG_DEBUG, "displayLeader(): 2nd Could not open file '%s'.", leaderboard_file );
-    else
-      logit(LOG_DEBUG, "displayLeader(): 2nd Could not open file '%s'.", mort_leader_file );
-    return;
-  }
-
 
   strcpy(buf, "\r\n&+y=-=-=-=-=-=-=-=-=-=--= &+rDuris Mud &+WLeader Board&+y =-=-=-=-=-=-=-=-=-=-=-&n\r\n\r\n");
-  snprintf(tempbuf, 2048, "   &+W%-15s           &+Y%s\r\n",
-          "Name", "Score");
-  snprintf(tempbuf2, 2048, "   &+L%-15s           &+L%s\r\n",
-          "----", "-----");
-  strcat(buf, tempbuf);
-  strcat(buf, tempbuf2);
-  for (i = 0; i < actualrecords; i++)
-  {
-    fscanf(halloffameList, "%s %d\n", name, &halloffames);
-    name[0] = toupper(name[0]);
-    pts = halloffames;
-    pts /= 100.0;
+  snprintf(buf2, 2048, "   &+W%-15s           &+Y%s\r\n", "Name", "Score");
+  strcat(buf, buf2);
+  snprintf(buf2, 2048, "   &+L%-15s           &+L%s\r\n", "----", "-----");
+  strcat(buf, buf2);
 
-    snprintf(buf2, 2048, "   &+w%-15s          &+Y%6.2f\t\r\n",
-            name, pts);
-    strcat(buf, buf2);
+  while ((row = mysql_fetch_row(res))) {
+    if (row[0] && row[1]) {
+      strncpy(name, row[0], sizeof(name) - 1);
+      name[sizeof(name) - 1] = '\0';
+      name[0] = toupper(name[0]);
+      pts = atof(row[1]) / 100.0;
+
+      snprintf(buf2, 2048, "   &+w%-15s          &+Y%6.2f\t\r\n", name, pts);
+      strcat(buf, buf2);
+    }
   }
-
-
-  fclose(halloffameList);
+  mysql_free_result(res);
 
   strcat(buf, "\r\n");
-
   page_string(ch->desc, buf, 1);
 }
 
+// leaderboard is now computed from database on-the-fly, no need to write
 void writeLeaderBoard( P_char ch )
 {
-  FILE    *halloffamelist;
-  // static cuz these are huge and will blow the stack
-  static char highPlayerName[MAX_LEADERBOARD_SIZE][MAX_STRING_LENGTH];
-  //         lowPlayerName[MAX_LEADERBOARD_SIZE][MAX_STRING_LENGTH]; // unused
-  bool     change = FALSE;
-  int      highHardcore[MAX_LEADERBOARD_SIZE],
-  //       lowHardcore[MAX_LEADERBOARD_SIZE], // unused
-           i;
-  long     phalloffames;
-  char     buffer[1024], *ptr;
-  int      highx, actualrecords=0;
-  char     namex[MAX_STRING_LENGTH];
-
-  if( !ch )
-    return;
-
-  halloffamelist = fopen(leaderboard_file, "r");
-
-  if( !halloffamelist )
-  {
-    logit(LOG_DEBUG, "writeLeaderBoard(): Could not open file '%s'.", leaderboard_file );
-    return;
-  }  
-
-  phalloffames = getLeaderBoardPts(ch);
- 
-  // Count the number of records.  
-  while((fscanf(halloffamelist, "%s %d\n", namex, &highx)) != EOF && actualrecords < MAX_LEADERBOARD_SIZE)
-    actualrecords++;
-
-  fclose(halloffamelist);
-
-  halloffamelist = fopen(leaderboard_file, "r");
-  if( !halloffamelist )
-  {
-    logit(LOG_DEBUG, "writeLeaderBoard(): 2nd Could not open file '%s'.", leaderboard_file );
-    return;
-  }
-
-  // Load the records.
-  for( i = 0; i < actualrecords; i++ )
-    fscanf(halloffamelist, "%s %d\n", highPlayerName[i], &highHardcore[i] );
-
-  fclose(halloffamelist);
-
-  /* Check to see if they're already on the leaderboard.
-     If so, then remove the entry so the new info can be placed there. */
-  for (i = 0; i < actualrecords; i++)
-  {
-    // Check for player already on list.  See above comment.
-    if (!str_cmp(ch->player.name, highPlayerName[i]))
-    {
-      deleteLeaderEntry(highPlayerName, highHardcore, i);
-      actualrecords--;
-      break;
-    }
-  }
-
-  /* see if player has beaten anybody currently on the list */
-  for( i = 0; i < actualrecords; i++ )
-  {
-    if( phalloffames > highHardcore[i] )
-    {
-      insertLeaderEntry(highPlayerName, highHardcore, ch->player.name,
-                        phalloffames, i);
-      // If nobody was knocked off, increment the number on the list.
-      if( actualrecords < MAX_LEADERBOARD_SIZE )
-        actualrecords++;
-      change = TRUE;
-      break;
-    }
-  }
-
-  // If new entry:
-  if( !change && actualrecords < MAX_LEADERBOARD_SIZE )
-  {
-    insertLeaderEntry(highPlayerName, highHardcore, ch->player.name,
-                      phalloffames, actualrecords++);
-    change = TRUE;
-  }
-
-  if( change )
-  {
-    halloffamelist = fopen(leaderboard_file, "w");
-    if( !halloffamelist )
-    {
-      logit(LOG_DEBUG, "writeLeaderBoard(): Could not open file '%s' for writing.", leaderboard_file );
-      return;
-    }
-
-    for (i = 0; i < actualrecords; i++)
-      fprintf(halloffamelist, "%s %d\n", highPlayerName[i], highHardcore[i]);
-    fclose(halloffamelist);
-  }
+  // no-op - leaderboard is computed from player_data table
 }
 
 void checkLeaderBoard( P_char ch )
 {
-
-  if( !ch || !IS_ALIVE(ch) )
-    return;
-
-  writeLeaderBoard( ch );
+  // no-op - leaderboard is computed from player_data table
 }
 
 // Copies leaderboard file to leaderboardprod.

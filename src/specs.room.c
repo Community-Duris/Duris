@@ -384,7 +384,6 @@ int inn(int room, P_char ch, int cmd, char *arg)
     {
       update_ingame_racewar(-GET_RACEWAR(ch));
     }
-    ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
     extract_char(ch);
     ch = NULL;
 
@@ -453,7 +452,6 @@ int undead_inn(int room, P_char ch, int cmd, char *arg)
     {
       update_ingame_racewar(-GET_RACEWAR(ch));
     }
-    ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
     extract_char(ch);
     ch = NULL;
   }

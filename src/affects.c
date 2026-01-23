@@ -1948,6 +1948,17 @@ void event_short_affect(P_char ch, P_char victim, P_obj obj, void *data)
     return;
   }
 
+  // sanity check: verify event_data->ch is still in character_list (not freed)
+  P_char c;
+  for (c = character_list; c; c = c->next)
+    if (c == event_data->ch)
+      break;
+  if (!c)
+  {
+    // character was freed, skip this event
+    return;
+  }
+
   for (af = event_data->ch->affected; af; af = af->next)
     if (af == event_data->af)
       break;

@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "structs.h"
 #include "utils.h"
@@ -33,10 +34,13 @@
 #include "specializations.h"
 #include "epic.h"
 #include "timers.h"
+#include "redis.h"
+#include "sql_player.h"
 
 extern P_index mob_index;
 extern const struct race_names race_names_table[];
 extern const struct class_names class_names_table[];
+extern const struct playable_race_info playable_races[];
 extern const char *specdata[][MAX_SPEC];
 extern P_room world;
 extern int RUNNING_PORT;
@@ -232,10 +236,125 @@ string escape_str(const char *str)
   return string(buff);
 }
 
+/* populate races and classes lookup tables on boot */
+void sql_populate_lookup_tables()
+{
+  char buf[MAX_STRING_LENGTH];
+  char esc_name[256], esc_ansi[256], esc_short[64], esc_abbrev[16];
+  int i;
+
+  logit(LOG_STATUS, "Populating lookup tables...");
+
+  // clear existing data
+  qry("DELETE FROM races");
+  qry("DELETE FROM classes");
+
+  // populate races table
+  for (i = 0; i <= LAST_RACE; i++) {
+    if (!race_names_table[i].normal || !race_names_table[i].normal[0])
+      continue;
+
+    mysql_real_escape_string(DB, esc_name, race_names_table[i].normal, strlen(race_names_table[i].normal));
+    mysql_real_escape_string(DB, esc_ansi, race_names_table[i].ansi ? race_names_table[i].ansi : "",
+                             race_names_table[i].ansi ? strlen(race_names_table[i].ansi) : 0);
+    mysql_real_escape_string(DB, esc_short, race_names_table[i].no_spaces ? race_names_table[i].no_spaces : "",
+                             race_names_table[i].no_spaces ? strlen(race_names_table[i].no_spaces) : 0);
+    mysql_real_escape_string(DB, esc_abbrev, race_names_table[i].code ? race_names_table[i].code : "",
+                             race_names_table[i].code ? strlen(race_names_table[i].code) : 0);
+
+    // check if this is a playable race and get racewar side
+    int racewar = 0;
+    int playable = 0;
+    for (int j = 0; playable_races[j].race_id >= 0; j++) {
+      if (playable_races[j].race_id == i) {
+        playable = 1;
+        if (strcmp(playable_races[j].faction, "good") == 0)
+          racewar = RACEWAR_GOOD;
+        else if (strcmp(playable_races[j].faction, "evil") == 0)
+          racewar = RACEWAR_EVIL;
+        else if (strcmp(playable_races[j].faction, "undead") == 0)
+          racewar = RACEWAR_UNDEAD;
+        else if (strcmp(playable_races[j].faction, "neutral") == 0)
+          racewar = RACEWAR_NEUTRAL;
+        break;
+      }
+    }
+
+    snprintf(buf, sizeof(buf),
+      "INSERT INTO races (id, name, short_name, ansi_name, abbrev, racewar, playable) "
+      "VALUES (%d, '%s', '%s', '%s', '%s', %d, %d)",
+      i, esc_name, esc_short, esc_ansi, esc_abbrev, racewar, playable);
+    qry("%s", buf);
+  }
+
+  // populate classes table
+  for (i = 0; i <= CLASS_COUNT; i++) {
+    if (!class_names_table[i].normal || !class_names_table[i].normal[0])
+      continue;
+
+    mysql_real_escape_string(DB, esc_name, class_names_table[i].normal, strlen(class_names_table[i].normal));
+    mysql_real_escape_string(DB, esc_ansi, class_names_table[i].ansi ? class_names_table[i].ansi : "",
+                             class_names_table[i].ansi ? strlen(class_names_table[i].ansi) : 0);
+    mysql_real_escape_string(DB, esc_short, class_names_table[i].code ? class_names_table[i].code : "",
+                             class_names_table[i].code ? strlen(class_names_table[i].code) : 0);
+
+    char letter[2] = { class_names_table[i].letter, '\0' };
+
+    snprintf(buf, sizeof(buf),
+      "INSERT INTO classes (id, name, ansi_name, short_name, menu_char) "
+      "VALUES (%d, '%s', '%s', '%s', '%s')",
+      i, esc_name, esc_ansi, esc_short, letter);
+    qry("%s", buf);
+  }
+
+  logit(LOG_STATUS, "Lookup tables populated.");
+}
+
+/* load .env file if present, setting environment variables */
+int load_env_file(void)
+{
+  FILE *f = fopen(".env", "r");
+  if (!f) {
+    logit(LOG_STATUS, "No .env file found, using default database credentials.");
+    return 0;
+  }
+
+  char line[256];
+  int count = 0;
+  while (fgets(line, sizeof(line), f)) {
+    // skip comments and empty lines
+    if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
+      continue;
+
+    // remove newline
+    char *nl = strchr(line, '\n');
+    if (nl) *nl = '\0';
+    nl = strchr(line, '\r');
+    if (nl) *nl = '\0';
+
+    // skip empty lines after trimming
+    if (line[0] == '\0')
+      continue;
+
+    // parse KEY=VALUE
+    char *eq = strchr(line, '=');
+    if (eq) {
+      *eq = '\0';
+      setenv(line, eq + 1, 1);
+      count++;
+    }
+  }
+  fclose(f);
+
+  logit(LOG_STATUS, "Loaded %d environment variables from .env file.", count);
+  return count;
+}
+
 /* Open a connection to the database. The connection will remain open
  * throughout the mud session. */
 int initialize_mysql()
 {
+  /* use database from .env / environment variable */
   /* hack to ensure we're not using the live database when not running on default port */
   char db_name[50];
   snprintf(db_name, 50, "%s", DB_NAME);
@@ -245,7 +364,7 @@ int initialize_mysql()
     snprintf(db_name, 50, "duris_dev");
   }
 
-  logit(LOG_STATUS, "Initializing MySQL persistent connection to %s.", db_name);
+  logit(LOG_STATUS, "Initializing MySQL persistent connection to %s (host=%s port=%d).", db_name, DB_HOST, DB_PORT);
   DB = mysql_init(NULL);
   if (DB == NULL)
   {
@@ -254,7 +373,7 @@ int initialize_mysql()
   }
 
   DB = mysql_real_connect(DB, DB_HOST, DB_USER, DB_PASSWD, db_name,
-                          0, NULL, CLIENT_MULTI_STATEMENTS);
+                          DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
   if (DB == NULL)
   {
     logit(LOG_STATUS, "Error connecting to database.");
@@ -264,6 +383,7 @@ int initialize_mysql()
   logit(LOG_STATUS, "Connection established.");
 
   sql_resetConnectTimes();
+  sql_populate_lookup_tables();
 
   return 1;
 }
@@ -297,7 +417,7 @@ MYSQL_RES *db_query(const char *format, ...)
     return NULL;
   }
 
-  return mysql_use_result(DB);
+  return mysql_store_result(DB);
 }
 
 /* Same as above, but won't log failed queries, ie when key restrictions suffice */
@@ -324,7 +444,7 @@ MYSQL_RES *db_query_nolog(const char *format, ...)
     return NULL;
   }
 
-  return mysql_use_result(DB);
+  return mysql_store_result(DB);
 }
 
 /* Store core player data to the database. We assume that only association
@@ -591,6 +711,29 @@ void sql_update_account_character(P_char ch)
       "char_name = VALUES(char_name), "
       "deleted_at = NULL",
       account_name_sql, GET_PID(ch), char_name_sql);
+}
+
+double sql_get_total_donated(const char *account_name)
+{
+#ifdef __NO_MYSQL__
+  return 0.0;
+#else
+  if (!account_name || !*account_name)
+    return 0.0;
+
+  MYSQL_RES *res = db_query("SELECT total_donated FROM accounts WHERE account_name='%s'",
+                            escape_str(account_name).c_str());
+  if (!res)
+    return 0.0;
+
+  double total = 0.0;
+  MYSQL_ROW row = mysql_fetch_row(res);
+  if (row && row[0])
+    total = atof(row[0]);
+
+  mysql_free_result(res);
+  return total;
+#endif
 }
 
 /* Update frag_leaderboard table with current character data */
@@ -959,6 +1102,8 @@ void sql_world_quest_finished(P_char ch, P_obj reward)
 
   db_query("INSERT INTO world_quest_accomplished (pid, timestamp, quest_giver, player_name, player_level, quest_target, reward_vnum, reward_desc) VALUES (%d, now(), %d, '%s', %d, %d, %d, '%s')",
            GET_PID(ch), ch->only.pc->quest_giver, GET_NAME(ch), GET_LEVEL(ch), ch->only.pc->quest_mob_vnum, reward_vnum, reward_desc);
+
+  mark_player_dirty(GET_PID(ch));
 }
 
 int sql_world_quest_can_do_another(P_char ch)
@@ -2147,5 +2292,50 @@ bool sql_pwipe(int code_verify)
   logit(LOG_DEBUG, "sql_pwipe: COMPLETED!");
   send_to_all("WIPE COMPLETED!");
   sleep(1);
+}
+
+void sql_log_player_login(P_char ch, const char *status)
+{
+  if (!ch || IS_NPC(ch) || !ch->desc)
+    return;
+
+  // copy data before fork since child can't access parent memory safely
+  char name[32], ip[64], account[64], client[64], client_ver[32];
+  int pid_num;
+
+  strncpy(name, GET_NAME(ch), sizeof(name) - 1);
+  name[sizeof(name) - 1] = '\0';
+  strncpy(ip, ch->desc->host, sizeof(ip) - 1);
+  ip[sizeof(ip) - 1] = '\0';
+  const char *acct = get_account_name_safe(ch);
+  strncpy(account, acct ? acct : "", sizeof(account) - 1);
+  account[sizeof(account) - 1] = '\0';
+  strncpy(client, ch->desc->client_name[0] ? ch->desc->client_name : "", sizeof(client) - 1);
+  client[sizeof(client) - 1] = '\0';
+  strncpy(client_ver, ch->desc->client_version[0] ? ch->desc->client_version : "", sizeof(client_ver) - 1);
+  client_ver[sizeof(client_ver) - 1] = '\0';
+  pid_num = GET_PID(ch);
+
+  pid_t pid = fork();
+  if (pid < 0)
+    return; // fork failed, skip logging
+
+  if (pid == 0)
+  {
+    // child process
+    MYSQL *child_conn = sql_create_child_connection();
+    if (!child_conn)
+      _exit(1);
+
+    sql_reset_for_child(child_conn);
+
+    db_query("INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
+             "VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
+             status, ip, pid_num, name, account, client, client_ver);
+
+    mysql_close(child_conn);
+    _exit(0);
+  }
+  // parent continues immediately
 }
 #endif

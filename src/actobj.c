@@ -29,6 +29,7 @@
 #include "tradeskill.h"
 #include "vnum.obj.h"
 #include "gmcp.h"
+#include "redis.h"
 
 /*
  * external variables
@@ -334,6 +335,13 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
     {
       send_to_char("&+LYou cannot take that.&n\n\r", ch);
       return;
+    }
+
+    // log floor pickup for duplication prevention
+    if (IS_PC(ch) && o_obj->obj_uid > 0)
+    {
+      redis_log_floor_pickup(o_obj->obj_uid);
+      mark_player_dirty(GET_PID(ch));
     }
 
     obj_from_room(o_obj);

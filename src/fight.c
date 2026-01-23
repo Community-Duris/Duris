@@ -48,6 +48,7 @@
 #include "ctf.h"
 #include "tether.h"
 #include "achievements.h"
+#include "redis.h"
 #include "siege.h"
 #include "vnum.obj.h"
 #include "gmcp.h"
@@ -953,6 +954,7 @@ void AddFrags(P_char ch, P_char victim)
         tch->only.pc->oldfrags = tch->only.pc->frags;
         tch->only.pc->frags += (long)real_gain;
         sql_modify_frags(tch, (int)real_gain);
+        redis_invalidate_fraglist();
 
         memset(&af, 0, sizeof(af));
         af.type = TAG_PLR_RECENT_FRAG;
@@ -1011,6 +1013,7 @@ void AddFrags(P_char ch, P_char victim)
     loss = gain;
 
   sql_modify_frags(victim, -loss);
+  redis_invalidate_fraglist();
   victim->only.pc->frags -= loss;
   snprintf(buffer, MAX_STRING_LENGTH, "You just lost %.02f frags!\r\n", ((float)loss) / 100);
   send_to_char(buffer, victim);
@@ -2720,6 +2723,9 @@ void die(P_char ch, P_char killer)
       {
         update_pos(ch);
         checkHallOfFame(ch, GET_NAME(killer));
+        // save killer to database for hall of fame
+        db_query("UPDATE player_data SET killed_by = '%s' WHERE pid = %d",
+                 GET_NAME(killer), GET_PID(ch));
         act("&+LThe &+rhand &+Lof &+WGod &+Lgrabs &+R$n &+Lby the &+cthroat&+L.&N",
             FALSE, ch, 0, 0, TO_ROOM);
         act("&+LThe &+rhand &+Lof &+WGod &+Ltears &+R$n&+L's &+wsoul &+Lfrom this &+cplane &+Lof existence.&N",
@@ -2763,7 +2769,6 @@ void die(P_char ch, P_char killer)
           ch->desc = NULL;
 
           // extract_char cleans up followers, equipment, etc. and frees the char
-          ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
           extract_char(ch);
 
           // Return to account menu
@@ -2781,7 +2786,6 @@ void die(P_char ch, P_char killer)
         {
           close_socket(ch->desc);
         }
-        ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
         deleteCharacter(ch);
         extract_char(ch); // extract_char also calls free_char
         ch = NULL;
@@ -2874,7 +2878,6 @@ void die(P_char ch, P_char killer)
       {
         update_ingame_racewar(-GET_RACEWAR(ch));
       }
-      ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
       extract_char(ch); // extract_char also calls free_char
       ch = NULL;
     }

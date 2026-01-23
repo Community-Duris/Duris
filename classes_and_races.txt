@@ -1,0 +1,221 @@
+================================================================================
+                    NewDuris - Playable Races and Classes Guide
+================================================================================
+
+This document explains how to add, edit, or modify the playable races and
+classes available during character creation. Both telnet and WebSocket clients
+use the same data structures.
+
+================================================================================
+                              PLAYABLE RACES
+================================================================================
+
+Location: src/constant.c (search for "playable_races")
+
+The playable_races[] array defines which races players can choose during
+character creation. Each entry has three fields:
+
+    { RACE_ID, 'menu_key', "faction" }
+
+Example:
+    { RACE_HUMAN,      'h', "good" },
+    { RACE_DROW,       'd', "evil" },
+    { RACE_THRIKREEN,  'k', "neutral" },
+
+Fields:
+  - RACE_ID    : The race constant from defines.h (e.g., RACE_HUMAN, RACE_DROW)
+  - menu_key   : The lowercase letter/number for telnet menu selection
+                 Uppercase = show help, e.g., 'h' selects Human, 'H' shows help
+                 For numbers: '1' selects, '!' shows help (shift key)
+  - faction    : "good"    = Always good faction (good hometowns)
+                 "evil"    = Always evil faction (evil hometowns)
+                 "neutral" = Player chooses good or evil during creation
+
+--------------------------------------------------------------------------------
+                         HOW TO ADD A NEW PLAYABLE RACE
+--------------------------------------------------------------------------------
+
+1. Open src/constant.c
+
+2. Find the playable_races[] array (around line 1800)
+
+3. Add a new entry before the sentinel { -1, 0, NULL }:
+
+   Example - Adding Wood Elf as a good race with 'w' key:
+
+     { RACE_WOODELF,    'w', "good" },
+
+4. Make sure the menu_key is unique (not used by another race)
+
+5. Recompile the MUD:
+   cd src && make
+
+6. The race will now appear in both:
+   - Telnet character creation menu
+   - WebSocket chargen_options response
+
+--------------------------------------------------------------------------------
+                        HOW TO REMOVE A PLAYABLE RACE
+--------------------------------------------------------------------------------
+
+1. Open src/constant.c
+
+2. Find the race entry in playable_races[]
+
+3. Delete or comment out the line:
+
+   // { RACE_KOBOLD,     '1', "evil" },   /* Disabled */
+
+4. Recompile: cd src && make
+
+--------------------------------------------------------------------------------
+                      HOW TO CHANGE A RACE'S FACTION
+--------------------------------------------------------------------------------
+
+1. Open src/constant.c
+
+2. Find the race entry and change the faction string:
+
+   Before: { RACE_MINOTAUR,   's', "neutral" },
+   After:  { RACE_MINOTAUR,   's', "evil" },
+
+3. Recompile: cd src && make
+
+================================================================================
+                              CLASS AVAILABILITY
+================================================================================
+
+Location: src/constant.c (search for "class_table")
+
+The class_table[][] matrix determines which classes each race can play and
+what alignment restrictions apply.
+
+Format: class_table[RACE][CLASS] = alignment_value
+
+Alignment values:
+   5  = Class FORBIDDEN for this race
+  -1  = Evil alignment required
+   0  = Neutral alignment required
+   1  = Good alignment required
+   2  = Any alignment allowed
+   3  = Good or Neutral alignment
+   4  = Neutral or Evil alignment
+
+--------------------------------------------------------------------------------
+                    HOW TO ALLOW/FORBID A CLASS FOR A RACE
+--------------------------------------------------------------------------------
+
+1. Open src/constant.c
+
+2. Find class_table[][] (around line 1700)
+
+3. Each row is a race (indexed by RACE_* constant)
+   Each column is a class (indexed 1-30, see class order below)
+
+4. Change the value:
+   - Set to 5 to FORBID the class
+   - Set to 2 to ALLOW with any alignment
+   - Set to 1 to ALLOW but require good alignment
+   - Set to -1 to ALLOW but require evil alignment
+
+Example - Allow Trolls to be Paladins (require good alignment):
+   Find the Troll row, find column 4 (Paladin), change 5 to 1
+
+5. Recompile: cd src && make
+
+--------------------------------------------------------------------------------
+                            CLASS INDEX REFERENCE
+--------------------------------------------------------------------------------
+
+Column  Class           Column  Class
+------  -----           ------  -----
+  1     Warrior           16    Bard
+  2     Ranger            17    Thief
+  3     Psionicist        18    Warlock
+  4     Paladin           19    MindFlayer
+  5     Anti-Paladin      20    Alchemist
+  6     Cleric            21    Berserker
+  7     Monk              22    Reaver
+  8     Druid             23    Illusionist
+  9     Shaman            24    Blighter
+ 10     Sorcerer          25    Dreadlord
+ 11     Necromancer       26    Ethermancer
+ 12     Conjurer          27    Avenger
+ 13     Rogue             28    Theurgist
+ 14     Assassin          29    Summoner
+ 15     Mercenary         30    Dragoon
+
+Class names are defined in src/common.c (class_names_table[])
+
+================================================================================
+                              RACE DEFINITIONS
+================================================================================
+
+Race constants are defined in: src/defines.h (search for RACE_HUMAN)
+
+Current playable races (as of this writing):
+
+Good Faction:
+  RACE_HUMAN, RACE_BARBARIAN, RACE_GREY (Grey Elf), RACE_MOUNTAIN (Dwarf),
+  RACE_HALFLING, RACE_GNOME, RACE_CENTAUR, RACE_GITHZERAI, RACE_FIRBOLG
+
+Evil Faction:
+  RACE_DROW, RACE_DUERGAR, RACE_OGRE, RACE_TROLL, RACE_ORC, RACE_GITHYANKI,
+  RACE_GOBLIN, RACE_KOBOLD, RACE_DRIDER
+
+Neutral (Player Chooses):
+  RACE_THRIKREEN, RACE_MINOTAUR, RACE_TIEFLING
+
+================================================================================
+                            RACIAL STAT MODIFIERS
+================================================================================
+
+Location: src/constant.c (search for "stat_factor")
+
+The stat_factor[] array defines racial bonuses/penalties to base stats.
+Each race has modifiers for: Str, Dex, Agi, Con, Pow, Int, Wis, Cha
+
+These are added to the rolled base stats during character creation.
+
+================================================================================
+                               QUICK REFERENCE
+================================================================================
+
+To add a new playable race:
+  1. Edit src/constant.c -> playable_races[]
+  2. Add entry: { RACE_XXX, 'key', "faction" }
+  3. Ensure class_table[RACE_XXX][] has appropriate class permissions
+  4. Recompile
+
+To change class availability:
+  1. Edit src/constant.c -> class_table[][]
+  2. Find race row, class column
+  3. Set value (5=forbidden, 2=any, 1=good, -1=evil, 0=neutral)
+  4. Recompile
+
+Files involved:
+  src/defines.h    - RACE_* and CLASS_* constants
+  src/constant.c   - playable_races[], class_table[], stat_factor[]
+  src/common.c     - race_names_table[], class_names_table[]
+  src/nanny.c      - Telnet character creation (uses playable_races[])
+  src/ws_handlers.c - WebSocket character creation (uses playable_races[])
+
+================================================================================
+                              TROUBLESHOOTING
+================================================================================
+
+Q: I added a race but it doesn't appear in character creation
+A: Make sure you added it BEFORE the sentinel { -1, 0, NULL } and recompiled
+
+Q: Players can't select a class that should be available
+A: Check class_table[race][class] - value of 5 means forbidden
+
+Q: WebSocket client shows different races than telnet
+A: Both use playable_races[] - if different, check for compilation issues
+
+Q: Race name shows wrong in WebSocket client
+A: Check race_names_table[] in common.c matches the RACE_* constant
+
+================================================================================
+Last updated: December 2024 - Arih
+================================================================================

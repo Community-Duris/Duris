@@ -51,9 +51,6 @@ void ws_broadcast_auction_close(int auction_id, const char *winner_name, int win
 
 /* player events to durisweb service */
 void ws_broadcast_mud_shutdown(const char *type);
-void ws_broadcast_player_login(struct descriptor_data *player_d);
-void ws_broadcast_player_logout(const char *character, int faction);
-
 /* polls */
 void ws_cmd_poll_list(struct descriptor_data *d, cJSON *data);
 void ws_cmd_poll_view(struct descriptor_data *d, cJSON *data);

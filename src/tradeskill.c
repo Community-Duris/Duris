@@ -17,6 +17,7 @@
 #include "comm.h"
 #include "db.h"
 #include "events.h"
+#include "sql_player.h"
 #include "guildhall.h"
 #include "interp.h"
 #include "mm.h"
@@ -372,20 +373,19 @@ P_obj check_foundry(P_char ch)
 
 void do_forge(P_char ch, char *argument, int cmd)
 {
-  int skillLevel, objVnum, recipeNumber, commandType, iVal, invVnum;
-  int numHighQuality, numLowQuality, lowQualityMaterialVnum, highQualityMaterialVnum;
-  int invLowMats, invHighMats, invEssences;
-  char buf[256];
-  char recipe[256];
-  char Gbuf1[MAX_STRING_LENGTH];
-  char first[MAX_INPUT_LENGTH];
-  char second[MAX_INPUT_LENGTH];
-  char keywords[MAX_STRING_LENGTH];
-  char short_desc[MAX_STRING_LENGTH];
-  char *rest;
-  bool hasAffect, hasFlux;
-  FILE *recipeBookFile;
-  P_obj obj, lowQualityMaterial, highQualityMaterial, inventory, invNextObj;
+  int      skillLevel, objVnum, recipeNumber, commandType, iVal, invVnum;
+  int      numHighQuality, numLowQuality, lowQualityMaterialVnum, highQualityMaterialVnum;
+  int      invLowMats, invHighMats, invEssences;
+  char     buf[256];
+  char     recipe[256];
+  char     Gbuf1[MAX_STRING_LENGTH];
+  char     first[MAX_INPUT_LENGTH];
+  char     second[MAX_INPUT_LENGTH];
+  char     keywords[MAX_STRING_LENGTH];
+  char     short_desc[MAX_STRING_LENGTH];
+  char    *rest;
+  bool     hasAffect, hasFlux;
+  P_obj    obj, lowQualityMaterial, highQualityMaterial, inventory, invNextObj;
 
   if (!(skillLevel = GET_CHAR_SKILL(ch, SKILL_FORGE)))
   {
@@ -393,16 +393,14 @@ void do_forge(P_char ch, char *argument, int cmd)
     return;
   }
 
-  // Directory to ch's recipe book.
-  strcpy(buf, GET_NAME(ch));
-  // Only need to lower the first initial (the rest are always lowercase).
-  *buf = LOWER(*buf);
-  // buf[0] snags first character of name
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "Players/Tradeskills/%c/%s.crafting", buf[0], buf);
-  // If we can't open the recipe book file.
-  if (!(recipeBookFile = fopen(Gbuf1, "r")))
+
+  // load recipes from database
+  int recipe_count = 0;
+  int *recipes = sql_get_player_recipes(GET_PID(ch), &recipe_count);
+  if (!recipes || recipe_count == 0)
   {
     send_to_char("You dont know any recipes yet.\r\n", ch);
+    if (recipes) free(recipes);
     return;
   }
   rest = one_argument(argument, first);
@@ -442,18 +440,19 @@ void do_forge(P_char ch, char *argument, int cmd)
     send_to_char("----------------------------------------------------------------------------\n", ch);
     send_to_char("&+BRecipe Number		              &+MItem&n\n\r", ch);
 
-    while ((fscanf(recipeBookFile, "%i", &objVnum)) != EOF)
+    for (int i = 0; i < recipe_count; i++)
     {
-      if (!(obj = read_object(objVnum, VIRTUAL)))
+      if( !(obj = read_object( recipes[i], VIRTUAL )) )
       {
-        logit(LOG_DEBUG, "'%s' has bad recipe vnum %d.", ch ? J_NAME(ch) : "NULL", objVnum);
+        logit( LOG_DEBUG, "'%s' has bad recipe vnum %d.", ch ? J_NAME(ch) : "NULL", recipes[i] );
+        continue;
       }
-      snprintf(recipe, 256, "   &+W%-22d&n%s&n\n", objVnum, obj->short_description);
+      snprintf(recipe, 256, "   &+W%-22d&n%s&n\n", recipes[i], obj->short_description);
       page_string(ch->desc, recipe, 1);
       send_to_char("----------------------------------------------------------------------------\n", ch);
       extract_obj(obj);
     }
-    fclose(recipeBookFile);
+    free(recipes);
     return;
   }
 
@@ -472,22 +471,24 @@ void do_forge(P_char ch, char *argument, int cmd)
     {
       send_to_char("What &+Witem &nare you attempting to forge?\n", ch);
     }
-    fclose(recipeBookFile);
+    free(recipes);
     return;
   }
 
-  // Find objVnum in the recipe book.
-  while ((fscanf(recipeBookFile, "%i", &recipeNumber)) != EOF)
+  // Find objVnum in the recipe list
+  bool found = false;
+  for (int i = 0; i < recipe_count; i++)
   {
-    if (recipeNumber == objVnum)
+    if (recipes[i] == objVnum)
     {
+      found = true;
       break;
     }
   }
-  fclose(recipeBookFile);
+  free(recipes);
 
   // If we couldn't find the vnum in the recipe book (commandType is irrelevant).
-  if (recipeNumber != objVnum)
+  if (!found)
   {
     send_to_char("You dont appear to have that &+Wrecipe&n in your list.&n\n", ch);
     return;
@@ -2491,51 +2492,23 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
     }
   }
 
-  // Create buffers for name
-  strcpy(buf, GET_NAME(ch));
-  buff = buf;
-  for (; *buff; buff++)
-    *buff = LOWER(*buff);
-  // buf[0] snags first character of name
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "Players/Tradeskills/%c/%s.crafting", buf[0], buf);
-
-  /*just a debug test
-  send_to_char(Gbuf1, ch);*/
-
-  // check if tradeskill file exists for player
-  recipelist = fopen(Gbuf1, "rt");
-
-  if (!recipelist)
+  // check if player already knows this recipe
+  if (sql_has_player_recipe(GET_PID(ch), recipenumber))
   {
-    send_to_char("As you examine the recipe, small &+mm&+Mag&+Wi&+Mca&+ml &+Wmists&+w begin to form...\r\n", ch);
-    send_to_char("...without warning, a &+Ltome &+yof &+Ycraf&+ytsman&+Lship&n appears in your hands.\r\n", ch);
-    create_recipes_name(GET_NAME(ch));
-    recipelist = fopen(Gbuf1, "rt");
+    send_to_char("You already know how to create that item!&n\r\n", ch);
+    extract_obj(tobj);
+    return TRUE;
   }
 
-  /* Check to see if recipe exists */
-  while ((fscanf(recipelist, "%i", &recnum)) != EOF)
-  {
-    if (recnum == recipenumber)
-    {
-      send_to_char("You already know how to create that item!&n\r\n", ch);
-      extract_obj(tobj);
-      return TRUE;
-    }
-  }
-
-  fclose(recipelist);
-  recipefile = fopen(Gbuf1, "a");
-  fprintf(recipefile, "%d\n", recipenumber);
+  // add recipe to database
+  sql_add_player_recipe(GET_PID(ch), recipenumber);
   act("$n opens their &+Ltome &+yof &+Ycraf&+ytsman&+Lship&n and begins scribing the &+yrecipe&n...\n"
       "As they finish the last entry of the &+yrecipe&n, a &+Mbri&+mgh&+Wt &nflash of &+Clight&n appears,\n"
       "quickly consuming $p, which vanishes from sight.\r\n",
       FALSE, ch, obj, 0, TO_ROOM);
   act("You open your &+Ltome &+yof &+Ycraf&+ytsman&+Lship&n and begin scribing the recipe...\n"
-      "As you finish the last entry of the &+yrecipe&n, a &+Mbri&+mgh&+Wt &nflash of &+Clight&n appears,\n"
-      "quickly consuming $p, which vanishes from sight.\r\n",
-      FALSE, ch, obj, 0, TO_CHAR);
-  fclose(recipefile);
+    "As you finish the last entry of the &+yrecipe&n, a &+Mbri&+mgh&+Wt &nflash of &+Clight&n appears,\n"
+    "quickly consuming $p, which vanishes from sight.\r\n", FALSE, ch, obj, 0, TO_CHAR);
 
   extract_obj(obj, TRUE); // Not an arti, but 'in game.'
 
@@ -2862,16 +2835,8 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
       // subtract 200 epics
       pl->only.pc->epics -= 200;
 
-      // wipe their learned recipes
-      create_recipes_name(GET_NAME(pl));
-
-      strcpy(buf, GET_NAME(pl));
-      buff = buf;
-      for (; *buff; buff++)
-        *buff = LOWER(*buff);
-      snprintf(Gbuf1, MAX_STRING_LENGTH, "Players/Tradeskills/%c/%s.crafting", buf[0], buf);
-      recipelist = fopen(Gbuf1, "w");
-      fclose(recipelist);
+       // wipe their learned recipes from database
+       sql_delete_player_recipes(GET_PID(pl));
 
       snprintf(buffer, MAX_STRING_LENGTH, "Your teacher takes you aside, and performs a cleansing geasture about your body&n. Your mind feels &+Wrenewed&n!\n");
       act(buffer, FALSE, ch, 0, pl, TO_VICT);

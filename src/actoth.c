@@ -43,6 +43,8 @@
 #include "vnum.obj.h"
 #include "vnum.room.h"
 #include "files.h"
+#include "sql_player.h"
+#include "redis.h"
 
 /*
  * external variables
@@ -332,7 +334,8 @@ void do_camp(P_char ch, char *arg, int cmd)
 
     writeCharacter(ch, RENT_INN, ch->in_room);
 
-    ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
+    sql_log_player_login(ch, "logout");
+    redis_player_offline(ch);
     extract_char(ch);
     ch = NULL;
     return;
@@ -1694,7 +1697,8 @@ void do_quit(P_char ch, char *argument, int cmd)
     update_ingame_racewar(-GET_RACEWAR(ch));
   }
 
-  ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
+  sql_log_player_login(ch, "logout");
+  redis_player_offline(ch);
   extract_char(ch);
   ch = NULL;
 }
@@ -1939,6 +1943,15 @@ void do_deposit(P_char ch, char *argument, int cmd)
     return;
   }
 
+  const char *acct = get_account_name_safe(ch);
+  int racewar = GET_RACEWAR(ch);
+
+  if (!acct || !strcmp(acct, "Unknown"))
+  {
+    send_to_char("Your account could not be determined.\r\n", ch);
+    return;
+  }
+
   if (strstr("all", argument))
   {
     ok = (GET_COPPER(ch));
@@ -1947,6 +1960,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_COPPER(ch) -= money;
       GET_BALANCE_COPPER(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 0, money);
     }
     ok = (GET_SILVER(ch));
     money = ok;
@@ -1954,6 +1968,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_SILVER(ch) -= money;
       GET_BALANCE_SILVER(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 1, money);
     }
     ok = (GET_GOLD(ch));
     money = ok;
@@ -1961,6 +1976,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_GOLD(ch) -= money;
       GET_BALANCE_GOLD(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 2, money);
     }
     ok = (GET_PLATINUM(ch));
     money = ok;
@@ -1968,6 +1984,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
     {
       GET_PLATINUM(ch) -= money;
       GET_BALANCE_PLATINUM(ch) += money;
+      sql_account_bank_deposit(acct, racewar, 3, money);
     }
     do_balance(ch, 0, -4);
     /* Send GMCP update for deposit all */
@@ -1999,6 +2016,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_COPPER(ch) -= money;
         GET_BALANCE_COPPER(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 0, money);
       }
       break;
     case 1:
@@ -2007,6 +2025,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_SILVER(ch) -= money;
         GET_BALANCE_SILVER(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 1, money);
       }
       break;
     case 2:
@@ -2015,6 +2034,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_GOLD(ch) -= money;
         GET_BALANCE_GOLD(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 2, money);
       }
       break;
     case 3:
@@ -2023,6 +2043,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
       {
         GET_PLATINUM(ch) -= money;
         GET_BALANCE_PLATINUM(ch) += money;
+        sql_account_bank_deposit(acct, racewar, 3, money);
       }
       break;
     }
@@ -2055,6 +2076,16 @@ void do_withdraw(P_char ch, char *argument, int cmd)
     send_to_char("I don't see a bank around here.\r\n", ch);
     return;
   }
+
+  const char *acct = get_account_name_safe(ch);
+  int racewar = GET_RACEWAR(ch);
+
+  if (!acct || !strcmp(acct, "Unknown"))
+  {
+    send_to_char("Your account could not be determined.\r\n", ch);
+    return;
+  }
+
   half_chop(argument, arg, Gbuf1);
   ctype = coin_type(Gbuf1);
 
@@ -2074,37 +2105,49 @@ void do_withdraw(P_char ch, char *argument, int cmd)
     switch (ctype)
     {
     case 0:
-      ok = (money <= GET_BALANCE_COPPER(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 0, money);
+      if (result >= 0)
       {
-        GET_BALANCE_COPPER(ch) -= money;
+        GET_BALANCE_COPPER(ch) = (int)result;
         GET_COPPER(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     case 1:
-      ok = (money <= GET_BALANCE_SILVER(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 1, money);
+      if (result >= 0)
       {
-        GET_BALANCE_SILVER(ch) -= money;
+        GET_BALANCE_SILVER(ch) = (int)result;
         GET_SILVER(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     case 2:
-      ok = (money <= GET_BALANCE_GOLD(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 2, money);
+      if (result >= 0)
       {
-        GET_BALANCE_GOLD(ch) -= money;
+        GET_BALANCE_GOLD(ch) = (int)result;
         GET_GOLD(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     case 3:
-      ok = (money <= GET_BALANCE_PLATINUM(ch));
-      if (ok)
+    {
+      long long result = sql_account_bank_withdraw(acct, racewar, 3, money);
+      if (result >= 0)
       {
-        GET_BALANCE_PLATINUM(ch) -= money;
+        GET_BALANCE_PLATINUM(ch) = (int)result;
         GET_PLATINUM(ch) += money;
+        ok = 1;
       }
-      break;
+    }
+    break;
     }
     if (!ok)
     {
@@ -4298,7 +4341,7 @@ void show_toggles(P_char ch)
            "&+r     Guildname   :&+g %-3s    &+y|"
            "&+r     GMCP        :&+g %-3s    &+y|&n\r\n"
            "&+r   Heal        :&+g %-3s    &+y|"
-           "&+r                 :&+g        &+y|"
+           "&+r     Jchat       :&+g %-3s    &+y|"
            "&+r                 :&+g        &+y|&n\r\n"
            "&+y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
            "-=-=-=-=-=-=-=-=-=-=-=-=-=-&N\r\n",
@@ -4344,7 +4387,8 @@ void show_toggles(P_char ch)
            ONOFF(PLR3_FLAGGED(ch, PLR3_PET_DAMAGE)),
            ONOFF(PLR3_FLAGGED(ch, PLR3_GUILDNAME)),
            ONOFF(!PLR3_FLAGGED(ch, PLR3_NOGMCP)),
-           ONOFF(PLR2_FLAGGED(ch, PLR2_HEAL)));
+           ONOFF(PLR2_FLAGGED(ch, PLR2_HEAL)),
+           ONOFF(!PLR3_FLAGGED(ch, PLR3_JESTROS)));
   send_to_char(Gbuf1, send_ch);
 
   if (GET_LEVEL(ch) >= AVATAR)
@@ -4446,6 +4490,7 @@ static const char *toggles_list[] = {
     "petdamage",
     "guildname",
     "gmcp", // 65
+    "jchat", // 66
     "\n"};
 
 static const char *tog_messages[][2] = {
@@ -4575,7 +4620,9 @@ static const char *tog_messages[][2] = {
     {"You turn off the display of your guild name.\r\n",
      "You turn on the display of your guild name.\r\n"},
     {"&+WGMCP&N data streaming enabled.\r\n",
-     "&+WGMCP&N data streaming disabled.\r\n"}};
+     "&+WGMCP&N data streaming disabled.\r\n"},
+    {"Jchat channel: -=&+ROFF&n=-\r\n",
+     "Jchat channel: -=&+GON&n=-\r\n"}};
 
 void do_more(P_char ch, char *arg, int cmd)
 {
@@ -5080,6 +5127,18 @@ void do_toggle(P_char ch, char *arg, int cmd)
     break;
   case 65: /* gmcp */
     result = PLR3_TOG_CHK(ch, PLR3_NOGMCP);
+    break;
+  case 66: // jchat
+    if (PLR3_FLAGGED(ch, PLR3_JESTROS))
+    {
+      REMOVE_BIT(ch->specials.act3, PLR3_JESTROS);
+      result = 1;  // removing flag = turning ON
+    }
+    else
+    {
+      SET_BIT(ch->specials.act3, PLR3_JESTROS);
+      result = 0;  // setting flag = turning OFF
+    }
     break;
   default:
     break;

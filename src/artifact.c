@@ -1992,10 +1992,18 @@ void event_artifact_check_poof_sql( P_char ch, P_char vict, P_obj obj, void * ar
         // Try to load the pfile if it's on a PC that isn't online.
         if( !is_pid_online(location, TRUE) )
         {
+          // debug: trace artifact poof flow
+          logit(LOG_DEBUG, "[artifact.c:poof_sql] processing vnum=%d on PC pid=%d ('%s')",
+                vnum, location, get_player_name_from_pid(location));
+
           owner = load_dummy_char(get_player_name_from_pid( location ));
+
+          logit(LOG_DEBUG, "[artifact.c:poof_sql] load_dummy_char returned owner=%p", (void *)owner);
+
           if( owner )
           {
             arti = get_object_from_char( owner, vnum );
+            logit(LOG_DEBUG, "[artifact.c:poof_sql] get_object_from_char returned arti=%p", (void *)arti);
           }
           else
           {
@@ -2005,22 +2013,30 @@ void event_artifact_check_poof_sql( P_char ch, P_char vict, P_obj obj, void * ar
           }
           if( arti )
           {
+            logit(LOG_DEBUG, "[artifact.c:poof_sql] calling poof_artifact for vnum=%d", vnum);
             poof_artifact( arti );
+            logit(LOG_DEBUG, "[artifact.c:poof_sql] poof_artifact returned, calling writeCharacter");
             writeCharacter(owner, RENT_POOFARTI, owner->in_room);
+            logit(LOG_DEBUG, "[artifact.c:poof_sql] writeCharacter returned");
           }
           else
           {
             if( owner )
             {
               // Nuke the eq off dummy char so it doesn't fall to the ground and get duped.
+              logit(LOG_DEBUG, "[artifact.c:poof_sql] artifact not found, calling nuke_eq");
               nuke_eq( owner );
+              logit(LOG_DEBUG, "[artifact.c:poof_sql] nuke_eq returned");
             }
             logit( LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not find artifact vnum %d on pfile of '%s' %d.",
               vnum, get_player_name_from_pid( location ), location );
           }
           if( owner )
           {
+            logit(LOG_DEBUG, "[artifact.c:poof_sql] calling extract_char for owner=%p '%s'",
+                  (void *)owner, GET_NAME(owner));
             extract_char( owner );
+            logit(LOG_DEBUG, "[artifact.c:poof_sql] extract_char returned");
           }
         }
         // PC online.

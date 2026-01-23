@@ -149,6 +149,7 @@ struct info_index_element *info_index = 0;
 
 int top_of_mobt = 0; /* * top of mobile index table * */
 int top_of_objt = 0; /* * top of object index table * */
+unsigned long next_obj_uid = 1; /* global counter for unique object ids */
 int top_of_helpt;    /* * top of help index table         */
 int top_of_infot;    /* * top of info index table         */
 
@@ -2775,6 +2776,7 @@ P_obj read_object(int nr, int type)
 
   memset(obj, 0, sizeof(struct obj_data));
 
+  obj->obj_uid = next_obj_uid++;
   obj->R_num = -1;
   obj->loc_p = LOC_NOWHERE;
   obj->loc.room = NOWHERE;
@@ -3963,6 +3965,21 @@ void free_char(P_char ch)
     logit(LOG_EXIT, "free_char: called with a non-extracted char");
     // tmp = (struct affected_type *) (0 / 0);
     tmp = NULL;
+  }
+
+  // debug: check if free_char called on char with items (bug - should use extract_char)
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    if (ch->equipment[i])
+    {
+      logit(LOG_DEBUG, "[db.c:free_char] BUG: char '%s' has equipment[%d] vnum=%d still attached!",
+            GET_NAME(ch), i, OBJ_VNUM(ch->equipment[i]));
+    }
+  }
+  if (ch->carrying)
+  {
+    logit(LOG_DEBUG, "[db.c:free_char] BUG: char '%s' still has carrying items!",
+          GET_NAME(ch));
   }
 
   if (ch->player.title)

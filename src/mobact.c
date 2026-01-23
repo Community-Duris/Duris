@@ -44,6 +44,7 @@
  */
 
 extern Skill skills[];
+extern P_char character_list;
 extern P_desc descriptor_list;
 extern P_event event_list;
 extern P_index mob_index;
@@ -9476,7 +9477,7 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 {
   char buf[MAX_STRING_LENGTH];
   ::byte next_step;
-  int dummy, dummy2;
+  int dummy = 0, dummy2 = 0;
   hunt_data *data;
   P_char vict;
   int cur_room, targ_room;
@@ -9499,8 +9500,17 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
   if (data->hunt_type <= HUNT_LAST_VICTIM_TARGET)
   {
     vict = data->targ.victim;
-    if (!vict || !IS_ALIVE(vict))
+    if (!vict)
       return;
+
+    // validate victim pointer against character_list to catch stale pointers
+    P_char valid_check;
+    for (valid_check = character_list; valid_check; valid_check = valid_check->next)
+      if (valid_check == vict)
+        break;
+    if (!valid_check || !IS_ALIVE(vict))
+      return;
+
     targ_room = vict->in_room;
   }
   else

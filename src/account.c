@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
 #include <crypt.h>
@@ -20,6 +21,7 @@
 #include "structs.h"
 #include "spells.h"
 #include "utils.h"
+#include "sql_player.h"
 #include "ws_handlers.h"
 #include <math.h>
 
@@ -53,7 +55,7 @@ char* bcrypt_hash_password(const char *password)
     return NULL;
 
   char *hash = crypt(password, salt);
-  return hash ? strdup(hash) : NULL;
+  return hash ? str_dup(hash) : NULL;
 }
 
 int bcrypt_verify_password(const char *password, const char *hash)
@@ -802,7 +804,9 @@ void add_ip_entry(P_acct acct, P_desc d)
 
   snprintf(host, 512, "%s", d->host);
 
-  CREATE(a, acct_ip, 1, MEM_TAG_OTHER);
+  CREATE(a, struct acct_ip, 1, MEM_TAG_OTHER);
+  if (!a)
+    return;
 
   a->hostname = str_dup(host);
   a->count = 1;
@@ -1133,6 +1137,67 @@ struct char_display_info {
   long last_login;
 };
 
+// cleanup temp char loaded via restoreCharOnly before freeing
+// handles items, affects, events, strings, and witnesses
+// NOTE: does NOT free the char struct itself or pc_only_data - caller must do that
+void cleanup_temp_char(P_char ch)
+{
+  extern struct mm_ds *dead_affect_pool;
+
+  if (!ch) return;
+
+  // unequip and extract all equipment
+  for (int i = 0; i < MAX_WEAR; i++) {
+    if (ch->equipment[i]) {
+      P_obj obj = unequip_char(ch, i);
+      extract_obj(obj, FALSE);
+    }
+  }
+
+  // remove and extract all carried items
+  while (ch->carrying) {
+    P_obj obj = ch->carrying;
+    obj_from_char(obj);
+    extract_obj(obj, FALSE);
+  }
+
+  // release affects directly to pool (don't use affect_remove - it schedules events)
+  while (ch->affected) {
+    struct affected_type *af = ch->affected;
+    ch->affected = af->next;
+    if (dead_affect_pool)
+      mm_release(dead_affect_pool, af);
+  }
+
+  // clear any scheduled events
+  clear_char_nevents(ch, -1, NULL);
+
+  // free strings allocated by sql_row_str/getString
+  if (ch->player.name) str_free(ch->player.name);
+  if (ch->player.title) str_free(ch->player.title);
+  if (ch->player.short_descr) str_free(ch->player.short_descr);
+  if (ch->player.long_descr) str_free(ch->player.long_descr);
+  if (ch->player.description) str_free(ch->player.description);
+
+  // free pc-only strings and data
+  if (IS_PC(ch) && ch->only.pc) {
+    if (ch->only.pc->poofIn) str_free(ch->only.pc->poofIn);
+    if (ch->only.pc->poofOut) str_free(ch->only.pc->poofOut);
+    if (ch->only.pc->poofInSound) str_free(ch->only.pc->poofInSound);
+    if (ch->only.pc->poofOutSound) str_free(ch->only.pc->poofOutSound);
+    if (ch->only.pc->gcmd_arr) FREE(ch->only.pc->gcmd_arr);
+  }
+
+  // free witnesses linked list
+  while (ch->specials.witnessed) {
+    wtns_rec *w = ch->specials.witnessed;
+    ch->specials.witnessed = w->next;
+    if (w->attacker) str_free(w->attacker);
+    if (w->victim) str_free(w->victim);
+    free(w);
+  }
+}
+
 // Helper function to load character display data
 // Returns 1 on success, 0 on failure
 int load_char_display_data(char *charname, struct char_display_info *info)
@@ -1202,7 +1267,9 @@ int load_char_display_data(char *charname, struct char_display_info *info)
     info->rested_status = str_dup(rested_buf);
   }
 
-  // Clean up temporary character
+  cleanup_temp_char(temp_ch);
+
+  // free the temp char struct
   if (temp_ch->only.pc)
     free(temp_ch->only.pc);
   free(temp_ch);
@@ -1419,6 +1486,7 @@ void display_character_list_to_char(P_char ch, P_acct account)
 
 void display_character_list(P_desc d, P_acct account)
 {
+
   struct acct_chars *c = account ? account->acct_character_list : d->account->acct_character_list;
   struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
   char     buf[256];
@@ -1483,53 +1551,51 @@ void display_character_list(P_desc d, P_acct account)
   // Display sorted characters
   for (i = 0; i < count; i++)
   {
-    struct char_display_info info;
+    struct acct_chars *ch = sorted_chars[i];
     char name_capitalized[32];
     char race_str[32];
     char class_str[64];
     char level_str[16];
-    char line_buf[512];  // Larger buffer for color codes
+    char line_buf[512];
 
-    // Load character display data
-    if (!load_char_display_data(sorted_chars[i]->charname, &info))
-    {
-      snprintf(line_buf, 512, "&+y|&n &+C%d&n &+y|&n &+W%-12s&n &+y|&n &+R%-5s&n &+y|&n &+R%-12s&n &+y|&n &+R%-12s&n &+y|&n &+R?&n\r\n",
-               i + 1, sorted_chars[i]->charname, "?", "?", "?");
-      SEND_TO_Q(line_buf, d);
-      continue;
-    }
-
-    // Capitalize character name
-    strncpy(name_capitalized, info.charname, 31);
+    // capitalize character name
+    strncpy(name_capitalized, ch->charname, 31);
     name_capitalized[31] = '\0';
     if (name_capitalized[0])
       name_capitalized[0] = toupper(name_capitalized[0]);
 
-    // Get race name
-    get_race_name_from_info(&info, race_str, 32);
-
-    // Get class name(s) - with bounds checking
-    extern const struct class_names class_names_table[];
-    int primary_idx = flag2idx(info.m_class);
-    int secondary_idx = info.secondary_class ? flag2idx(info.secondary_class) : 0;
-
-    if (info.secondary_class && secondary_idx > 0)
+    // get race name
+    extern const struct race_names race_names_table[];
+    if (ch->race >= 0 && ch->race < LAST_RACE)
     {
-      // Multiclass
-      snprintf(level_str, 16, "%d/%d", info.level, info.secondary_level);
+      strncpy(race_str, race_names_table[ch->race].normal, 31);
+      race_str[31] = '\0';
+    }
+    else
+    {
+      strncpy(race_str, "Unknown", 31);
+    }
+
+    // get class name(s)
+    extern const struct class_names class_names_table[];
+    int primary_idx = flag2idx(ch->m_class);
+    int secondary_idx = ch->secondary_class ? flag2idx(ch->secondary_class) : 0;
+
+    if (ch->secondary_class && secondary_idx > 0)
+    {
+      snprintf(level_str, 16, "%d", ch->level);
       snprintf(class_str, 64, "%s/%s",
                class_names_table[primary_idx].normal,
                class_names_table[secondary_idx].normal);
     }
     else
     {
-      // Single class
-      snprintf(level_str, 16, "%d", info.level);
+      snprintf(level_str, 16, "%d", ch->level);
       strncpy(class_str, class_names_table[primary_idx].normal, 63);
       class_str[63] = '\0';
     }
 
-    // Truncate strings if too long for table
+    // truncate strings if too long for table
     if (strlen(name_capitalized) > 12)
       name_capitalized[12] = '\0';
     if (strlen(race_str) > 12)
@@ -1537,26 +1603,26 @@ void display_character_list(P_desc d, P_acct account)
     if (strlen(class_str) > 12)
       class_str[12] = '\0';
 
-    // Get room name with its original ANSI color intact
+    // get room name (last_room is vnum, need to convert to rnum)
     const char *room_name_src;
     char room_display[128];
-    if (info.hometown >= 0 && info.hometown < top_of_world && world[info.hometown].name)
+    int room_rnum = real_room(ch->last_room);
+    if (room_rnum >= 0 && room_rnum < top_of_world && world[room_rnum].name)
     {
-      room_name_src = world[info.hometown].name;
+      room_name_src = world[room_rnum].name;
     }
     else
     {
       room_name_src = "Unknown";
     }
 
-    // Truncate room name to fit column (16 visible chars) while preserving ANSI codes
+    // truncate room name to fit column (16 visible chars) while preserving ansi codes
     int src_idx = 0, dst_idx = 0, visible_count = 0;
     int max_visible = 16;
     while (room_name_src[src_idx] && dst_idx < 126)
     {
       if (room_name_src[src_idx] == '&' && room_name_src[src_idx + 1])
       {
-        // Copy ANSI code without counting it
         room_display[dst_idx++] = room_name_src[src_idx++];
         room_display[dst_idx++] = room_name_src[src_idx++];
         if (room_name_src[src_idx - 1] == '+' || room_name_src[src_idx - 1] == '-')
@@ -1567,7 +1633,6 @@ void display_character_list(P_desc d, P_acct account)
       }
       else
       {
-        // Regular character - count it
         if (visible_count >= max_visible)
           break;
         room_display[dst_idx++] = room_name_src[src_idx++];
@@ -1576,14 +1641,9 @@ void display_character_list(P_desc d, P_acct account)
     }
     room_display[dst_idx] = '\0';
 
-    // Display character row
     snprintf(line_buf, 512, "&+y|&n %d &+y|&n %-12s &+y|&n %-5s &+y|&n %-12s &+y|&n %-12s &+y|&n %s &+y|&n\r\n",
              i + 1, name_capitalized, level_str, race_str, class_str, room_display);
     SEND_TO_Q(line_buf, d);
-
-    // Free rested status string using str_free (not free)
-    if (info.rested_status)
-      str_free(info.rested_status);
   }
 
   // Display table footer
@@ -1591,8 +1651,9 @@ void display_character_list(P_desc d, P_acct account)
   if(d->character == NULL)
   {
     SEND_TO_Q("\r\n&+W0&n) &+LBack to Account Menu&n\r\n\r\n", d);
-    SEND_TO_Q("Which character would you like to play? ", d);  
+    SEND_TO_Q("Which character would you like to play? ", d);
   }
+
 }
 
 
@@ -1900,7 +1961,9 @@ void add_char_to_account(P_desc d)
   P_char   player = d->character;
   struct acct_chars *c = NULL;
 
-  CREATE(c, acct_chars, 1, MEM_TAG_OTHER);
+  CREATE(c, struct acct_chars, 1, MEM_TAG_OTHER);
+  if (!c)
+    return;
 
   c->charname = str_dup(player->player.name);
   c->count = 1;
@@ -2046,29 +2109,37 @@ void account_delete_char(P_desc d, char *arg)
 void remove_char_from_list(P_acct acct, char *ch)
 {
   struct acct_chars *c = NULL;
-  struct acct_chars *d = NULL;
+  struct acct_chars *prev = NULL;
+
+  if (!acct || !ch || !acct->acct_character_list)
+    return;
 
   c = acct->acct_character_list;
+
   if (!strcasecmp(ch, c->charname))
   {
     acct->acct_character_list = c->next;
     FREE(c->charname);
     FREE(c);
+    acct->num_chars--;
     write_account(acct);
     return;
   }
 
+  prev = c;
+  c = c->next;
   while (c)
   {
     if (!strcasecmp(ch, c->charname))
     {
-      d->next = c->next;
+      prev->next = c->next;
       FREE(c->charname);
       FREE(c);
+      acct->num_chars--;
       write_account(acct);
       return;
     }
-    d = c;
+    prev = c;
     c = c->next;
   }
 }
@@ -2093,37 +2164,28 @@ void verify_delete_account(P_desc d, char *arg)
 
 int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
 {
-  FILE    *f = NULL;
-  char     name[4096], filename[4096], buf[4096], *ptr = NULL;
-  int      serial = 0;
+  if (!acct || !acct->acct_name)
+    return -1;
 
+#ifndef __NO_MYSQL__
 
-  snprintf(name, 4096, "%s", acct->acct_name);
-  ptr = name;
+  char name_backup[256];
+  strncpy(name_backup, acct->acct_name, sizeof(name_backup) - 1);
+  name_backup[sizeof(name_backup) - 1] = '\0';
 
-  for (; *ptr; ptr++)
-    *ptr = LOWER(*ptr);
-
-  snprintf(buf, 4096, "Accounts/%c/%s", (*name), name);
-  logit(LOG_FILE, "Loading Account %s in %s.", name, buf);
-
-  f = fopen(buf, "r");
-
-  if (!f)
+  struct acct_entry *loaded = sql_load_account(name_backup);
+  if (!loaded)
   {
-    logit(LOG_FILE, "Couldn't open Account file: %s", buf);
+    logit(LOG_FILE, "sql_load_account failed for %s", name_backup);
     return -1;
   }
 
-  fscanf(f, "%d\n", &serial);
-
-  /* Free old pointers before overwriting to prevent memory leaks */
+  // free old data
   acct->acct_name = check_and_clear(acct->acct_name);
   acct->acct_email = check_and_clear(acct->acct_email);
   acct->acct_password = check_and_clear(acct->acct_password);
   acct->acct_confirmation = check_and_clear(acct->acct_confirmation);
 
-  /* Free old IP and character lists before reading new ones */
   if (acct->acct_unique_ips)
   {
     struct acct_ip *curr_ip, *next_ip;
@@ -2148,102 +2210,49 @@ int read_account(P_acct acct)   // returns -1 if error, 1 if no errors
     acct->acct_character_list = NULL;
   }
 
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;  // Remove newline
-  acct->acct_name = str_dup(buf);
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;
-  acct->acct_email = str_dup(buf);
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;
-  acct->acct_password = str_dup(buf);
-  fgets(buf, 4096, f);
-  buf[strcspn(buf, "\r\n")] = 0;
-  acct->acct_confirmation = str_dup(buf);
+  // copy loaded data (transfer ownership of pointers)
+  acct->acct_name = loaded->acct_name;
+  acct->acct_email = loaded->acct_email;
+  acct->acct_password = loaded->acct_password;
+  acct->acct_confirmation = loaded->acct_confirmation;
+  acct->num_ips = loaded->num_ips;
+  acct->num_chars = loaded->num_chars;
+  acct->acct_unique_ips = loaded->acct_unique_ips;
+  acct->acct_character_list = loaded->acct_character_list;
+  acct->acct_blocked = loaded->acct_blocked;
+  acct->acct_confirmed = loaded->acct_confirmed;
+  acct->acct_confirmation_sent = loaded->acct_confirmation_sent;
+  acct->acct_last = loaded->acct_last;
+  acct->acct_good = loaded->acct_good;
+  acct->acct_evil = loaded->acct_evil;
+  acct->acct_flags1 = loaded->acct_flags1;
+  acct->acct_flags2 = loaded->acct_flags2;
+  acct->acct_flags3 = loaded->acct_flags3;
+  acct->acct_flags4 = loaded->acct_flags4;
 
-  read_unique_ip(acct, f);
-  read_character_list(acct, f);
-
-  fscanf(f, "%hhd\n", &acct->acct_blocked);
-  fscanf(f, "%hhd\n", &acct->acct_confirmed);
-  fscanf(f, "%hhd\n", &acct->acct_confirmation_sent);
-
-  fscanf(f, "%li\n", &acct->acct_last);
-  fscanf(f, "%li\n", &acct->acct_good);
-  fscanf(f, "%li\n", &acct->acct_evil);
-  fscanf(f, "%li\n", &acct->acct_flags1);
-  fscanf(f, "%li\n", &acct->acct_flags2);
-  fscanf(f, "%li\n", &acct->acct_flags3);
-  fscanf(f, "%li\n", &acct->acct_flags4);
-
-  fclose(f);
+  // free the container (but not the contents we transferred)
+  free(loaded);
   return 1;
+#else
+  return -1;
+#endif
 }
 
 int write_account(P_acct acct)  // returns -1 if error, 1 if no errors
 {
-  FILE    *f = NULL;
-  char     buf[4096], name[4096], *ptr = NULL;
-  struct stat statbuf;
-  P_desc   d = NULL;
+  P_desc d = NULL;
 
   if (!acct)
     return -1;
 
-  snprintf(name, 4096, "%s", acct->acct_name);
-
-  ptr = name;
-
-  for (; *ptr; ptr++)
-    *ptr = LOWER(*ptr);
-
-  snprintf(buf, 4096, "Accounts/%c/%s", (*name), name);
-  logit(LOG_FILE, "Saving Account %s in %s.", name, buf);
-  snprintf(name, 4096, "%s.bak", buf);
-
-
-  if (stat(buf, &statbuf) == 0)
+#ifndef __NO_MYSQL__
+  if (!sql_save_account(acct))
   {
-    if (rename(buf, name) == -1)
-    {
-      logit(LOG_FILE, "Problem with player save files directory!\n");
-      wizlog(AVATAR, "&+R&-LPANIC!&N  Error backing up account for %s!",
-             acct->acct_name);
-      return -1;
-    }
-  }
-
-  f = fopen(buf, "w");
-  if (!f)
-  {
-    logit(LOG_FILE, "Fopen failed while creating account file: %s\n", buf);
+    logit(LOG_FILE, "sql_save_account failed for %s", acct->acct_name);
     return -1;
   }
+#endif
 
-  fprintf(f, "%d\n", ACCT_SERIAL);
-  fprintf(f, "%s\n", acct->acct_name);
-  fprintf(f, "%s\n", acct->acct_email);
-  fprintf(f, "%s\n", acct->acct_password);
-  fprintf(f, "%s\n", acct->acct_confirmation);
-
-  write_unique_ip(acct, f);
-  write_character_list(acct, f);
-
-  fprintf(f, "%d\n", acct->acct_blocked);
-  fprintf(f, "%d\n", acct->acct_confirmed);
-  fprintf(f, "%d\n", acct->acct_confirmation_sent);
-
-  fprintf(f, "%li\n", acct->acct_last);
-  fprintf(f, "%li\n", acct->acct_good);
-  fprintf(f, "%li\n", acct->acct_evil);
-  fprintf(f, "%li\n", acct->acct_flags1);
-  fprintf(f, "%li\n", acct->acct_flags2);
-  fprintf(f, "%li\n", acct->acct_flags3);
-  fprintf(f, "%li\n", acct->acct_flags4);
-
-
-  fprintf(f, "###\n");
-  fclose(f);
   for (d = descriptor_list; d; d = d->next)
   {
     if (d->account && acct->acct_name && d->account->acct_name &&
@@ -2257,6 +2266,9 @@ void write_unique_ip(P_acct acct, FILE * f)
 {
   int      count = 0;
   struct acct_ip *c = NULL;
+
+  if (acct->acct_name)
+    sql_save_account_ips(acct->acct_name, acct->acct_unique_ips);
 
   c = acct->acct_unique_ips;
   if (!c)
@@ -2294,7 +2306,9 @@ void read_unique_ip(P_acct acct, FILE * f)
 
   for (i = 0; i < count; i++)
   {
-    CREATE(c, acct_ip, 1, MEM_TAG_OTHER);
+    CREATE(c, struct acct_ip, 1, MEM_TAG_OTHER);
+    if (!c)
+      return;
 
     fscanf(f, "%s\n", buf);
     c->hostname = str_dup(buf);
@@ -2351,7 +2365,9 @@ void read_character_list(P_acct acct, FILE * f)
 
   for (i = 0; i < count; i++)
   {
-    CREATE(c, acct_chars, 1, MEM_TAG_OTHER);
+    CREATE(c, struct acct_chars, 1, MEM_TAG_OTHER);
+    if (!c)
+      return;
 
     fscanf(f, "%s\n", buf);
     c->charname = str_dup(buf);
@@ -2536,17 +2552,13 @@ P_acct allocate_account(void)
 {
   P_acct   acct = NULL;
 
-
   CREATE(acct, acct_entry, 1, MEM_TAG_OTHER);
 
   if (!acct)
     raise(SIGSEGV);
 
-  if (acct)
-  {
-    clear_account(acct);
-    add_account_to_list(acct);
-  }
+  memset(acct, 0, sizeof(acct_entry));
+  add_account_to_list(acct);
 
   return acct;
 }
@@ -2597,6 +2609,13 @@ void remove_account_from_list(P_acct acct)
 
 bool account_exists(const char *dir, char *name)
 {
+#ifndef __NO_MYSQL__
+  // check database first
+  if (sql_account_exists(name))
+    return TRUE;
+#endif
+
+  // fallback to file check
   char     buf[256], *buff;
   struct stat statbuf;
   char     Gbuf1[MAX_STRING_LENGTH];

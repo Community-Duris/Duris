@@ -30,6 +30,7 @@ using namespace std;
 #include "epic_bonus.h"
 #include "epic_skills.h"
 #include "achievements.h"
+#include "redis.h"
 
 extern long boot_time;
 extern P_room world;
@@ -1029,6 +1030,7 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 
       // set completed flag
       epic_zone_completions.push_back(epic_zone_completion(zone_number, time(NULL), delta));
+      redis_invalidate_epic_zones();
       db_query("UPDATE zones SET last_touch = '%d' WHERE number = '%d'", time(NULL), zone_number);
       db_query("INSERT INTO zone_touches (boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value, alignment_delta) VALUES (%d, %d, %d, %d, %d, %d, %d);", boot_time, time(NULL), zone_number, GET_PID(ch), group_size, epic_value, delta);
 
@@ -1712,10 +1714,6 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 
 void do_epic_zones(P_char ch, char *arg, int cmd)
 {
-  char buff[MAX_STRING_LENGTH];
-	char done_char;
-  int  zone_align;
-
   if( !ch || IS_NPC(ch) )
     return;
 
@@ -1724,11 +1722,39 @@ void do_epic_zones(P_char ch, char *arg, int cmd)
   return;
 #endif
 
-  vector<epic_zone_data> epic_zones = get_epic_zones();
+  // try cache first
+  char *cached = redis_get_epic_zones();
+  if (cached)
+  {
+    page_string(ch->desc, cached, 1);
+    free(cached);
+    return;
+  }
 
-  send_to_char("&+WEpic Zones &+G-----------------------------------------\n\n", ch);
+  // cache miss - generate, cache with ttl, then display
+  char *output = generate_epic_zones_output();
+  if (output)
+  {
+    redis_cache_set_ex("mud:cache:epic_zones", 900, output);
+    page_string(ch->desc, output, 1);
+    free(output);
+  }
+}
 
-  // this array depends on the alignment max/min being +/-5
+char *generate_epic_zones_output(void)
+{
+#ifdef __NO_MYSQL__
+  return NULL;
+#else
+  char *output = (char *)malloc(MAX_STRING_LENGTH * 2);
+  if (!output)
+    return NULL;
+
+  output[0] = '\0';
+  char buff[MAX_STRING_LENGTH];
+  char done_char;
+  int zone_align;
+
   const char *alignment_strs[] = {
     "&n(&+Lpure evil&n)     ",
     "&n(&+Lextremely evil&n)",
@@ -1743,22 +1769,30 @@ void do_epic_zones(P_char ch, char *arg, int cmd)
     "&n(&+Wpure good&n)     "
   };
 
-  for(int i = 0; i < epic_zones.size(); i++)
+  strcat(output, "&+WEpic Zones &+G-----------------------------------------\n\n");
+
+  vector<epic_zone_data> epic_zones = get_epic_zones();
+
+  for(size_t i = 0; i < epic_zones.size(); i++)
   {
-		if( epic_zone_done(epic_zones[i].number) )
+    if(epic_zone_done(epic_zones[i].number))
       done_char = '*';
-		else
+    else
       done_char = ' ';
 
     zone_align = BOUNDED(0, EPIC_ZONE_ALIGNMENT_MAX + epic_zones[i].displayed_alignment(), 10);
 
-    snprintf(buff, MAX_STRING_LENGTH, "  %c%s %s\r\n", done_char, pad_ansi(epic_zones[i].name.c_str(), 45).c_str(),
-      alignment_strs[zone_align] );
+    snprintf(buff, MAX_STRING_LENGTH, "  %c%s %s\r\n", done_char,
+      pad_ansi(epic_zones[i].name.c_str(), 45).c_str(),
+      alignment_strs[zone_align]);
 
-    send_to_char(buff, ch);
+    strcat(output, buff);
   }
 
-	send_to_char("\n* = already completed this boot.\n", ch);  
+  strcat(output, "\n* = already completed this boot.\n");
+
+  return output;
+#endif
 }
 
 void do_epic_share(P_char ch, char *arg, int cmd)

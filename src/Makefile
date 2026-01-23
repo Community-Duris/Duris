@@ -19,7 +19,7 @@ CFLAGS += -DTEST_MUD
 
 INCLUDES	= -I. -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis
 
 ifdef EFENCE
 	LDFLAGS += -L.
@@ -214,7 +214,9 @@ OBJS =  $(SHIP_OBJS) \
 				 specs.winterhaven.o \
 				 specs.zion.o \
 				 spells.o \
+				 redis.o \
 				 sql.o	\
+				 sql_player.o \
 				 ssl.o \
 				 statistics.o \
 				 storage_lockers.o \
@@ -248,11 +250,23 @@ OBJS =  $(SHIP_OBJS) \
 				 ws_handlers.o \
 				 json_utils.o \
 				 gmcp.o \
-				 ttype.o
+				 ttype.o \
+				 wiz_newchar.o
 
 # Name lists (no paths) for pfile-related objs
 SHARED_PFILE_OBJS_NAMES = pf-skills.o pf-files.o
 PFILE_OBJS_NAMES        = pfile-stubs.o pfile.o
+
+MIGRATE_OBJS=../src-migrate/migrate_main.o \
+						 ../src-migrate/migrate_common.o \
+						 ../src-migrate/migrate_objects.o \
+						 ../src-migrate/migrate_accounts.o \
+						 ../src-migrate/migrate_players.o \
+						 ../src-migrate/migrate_lockers.o \
+						 ../src-migrate/migrate_ships.o \
+						 ../src-migrate/migrate_guilds.o \
+						 ../src-migrate/migrate_misc.o \
+						 ../src-migrate/migrate_stubs.o
 
 #******************************************************************************
 #******************************************************************************
@@ -285,6 +299,9 @@ pfile : $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/mm.o $(OBJDIR)/common.o
 		$(PFILE_OBJS) $(SHARED_PFILE_OBJS) \
 		$(OBJDIR)/common.o $(OBJDIR)/mm.o $(LIBS)
 
+migrate_pfiles : $(MIGRATE_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -g -o migrate_pfiles $(MIGRATE_OBJS) $(LIBS)
+
 # Build any C object into OBJDIR, creating folders as needed.
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -294,6 +311,9 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
+
+$(MIGRATE_OBJS): %.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c $< -o $@
 
 # Shared pfile objects (pf-*.o) also go into OBJDIR
 $(OBJDIR)/pf-%.o: %.c
@@ -307,7 +327,9 @@ $(SH_LIBS:.o=.so): %.so: %.c
 	ld -shared -o $@ /usr/lib/crtbeginS.o $(OBJDIR)/$*.o /usr/lib/crtendS.o
 
 clean:
-	rm -f *~ dms_new pfile
+	rm -f *.o *~ dms_new pfile migrate_pfiles .depend
+	rm -f ships/*.a ships/*.o ships/*~ ships/.depend
+	rm -f ../src-migrate/*.o
 	rm -rf $(OBJDIR)
 
 debug: $(PROGS)

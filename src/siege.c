@@ -11,6 +11,7 @@
 #include "structs.h"
 #include "utils.h"
 #include "siege.h"
+#include "sql_player.h"
 #include <string.h>
 
 P_siege  siege_objects;         /* List of siege objects to save   */
@@ -1429,79 +1430,7 @@ void multihit_siege( P_char ch )
 
 void init_towns()
 {
-  FILE *town_file;
-  char  line[ MAX_STRING_LENGTH ];
-  char *cp;
-  P_town *town;
-  bool found;
-  int i;
-
-  towns = NULL;
-  town_file = fopen( SAVE_DIR "/towns", "r" );
-
-  if(!town_file)
-  {
-    logit( LOG_DEBUG, "Could not open " SAVE_DIR "/towns" );
-    return;
-  }
-
-  town = &towns;
-  // While there's another town to read...
-  while( fgets( line, sizeof line, town_file ) != NULL )
-  {
-    found = FALSE;
-    // clear the carriage return at the end of the line.
-    for (cp = line; !isspace(*cp); cp++) ;
-    *cp = '\0';
-
-    // Find the town in zone table list.
-    for( i = 1; i <= top_of_zone_table; i++ )
-    {
-      // If found, load the info.
-      if( !strcmp(line, zone_table[i].filename) )
-      {
-        found = TRUE;
-        *town = new struct town;
-        (*town)->next_town = NULL;
-
-        (*town)->zone = &(zone_table[i]);
-
-        // Offense/defense/resources
-        fgets( line, sizeof line, town_file );
-        sscanf(line, "%i %i %i\n", &((*town)->offense), &((*town)->defense), &((*town)->resources));
-        // Guards
-        fgets( line, sizeof line, town_file );
-        (*town)->deploy_guard = !strcmp( line, "TRUE\n" ) ? TRUE : FALSE;
-        fgets( line, sizeof line, town_file );
-        sscanf(line, "%i %i %i\n", &((*town)->guard_vnum), &((*town)->guard_max), &((*town)->guard_load_room));
-        // Cavalry
-        fgets( line, sizeof line, town_file );
-        (*town)->deploy_cavalry = !strcmp( line, "TRUE\n" ) ? TRUE : FALSE;
-        fgets( line, sizeof line, town_file );
-        sscanf(line, "%i %i %i\n", &((*town)->cavalry_vnum), &((*town)->cavalry_max), &((*town)->cavalry_load_room));
-        // Portals
-        fgets( line, sizeof line, town_file );
-        (*town)->deploy_portals = !strcmp( line, "TRUE\n" ) ? TRUE : FALSE;
-        fgets( line, sizeof line, town_file );
-        sscanf(line, "%i %i\n", &((*town)->portal_vnum), &((*town)->portal_load_room));
-
-//        logit(LOG_DEBUG, "Town loaded: '%s'", zone_table[i].filename);
-
-        town = &((*town)->next_town);
-        break;
-      }
-    }
-    if( !found )
-    {
-       logit(LOG_DEBUG, "Town not found: '%s'", line );
-       for( i = 1; i <= top_of_zone_table; i++ )
-         logit(LOG_DEBUG, zone_table[i].filename );
-       return;
-    }
-
-  }
-
-  fclose(town_file);
+  sql_load_towns();
 
   /* initialize warmaster specs */
   mob_index[real_mobile0(401000)].func.mob = warmaster;
@@ -1518,33 +1447,7 @@ void init_towns()
 
 void save_towns()
 {
-  FILE *town_file;
-  char  line[ MAX_STRING_LENGTH ];
-  P_town town;
-
-  town_file = fopen( SAVE_DIR "/towns", "w" );
-
-  if(!town_file)
-  {
-    logit(LOG_DEBUG, "Could not open " SAVE_DIR "/towns" );
-    return;
-  }
-
-  // For each town..
-  for( town = towns; town != NULL; town = town->next_town )
-  {
-    // Save the info.
-    fprintf(town_file, "%s\n", town->zone->filename);
-    fprintf(town_file, "%d %d %d\n", town->offense, town->defense, town->resources);
-    fprintf(town_file, "%s\n", town->deploy_guard ? "TRUE" : "FALSE");
-    fprintf(town_file, "%d %d %d\n", town->guard_vnum, town->guard_max, town->guard_load_room);
-    fprintf(town_file, "%s\n", town->deploy_cavalry ? "TRUE" : "FALSE");
-    fprintf(town_file, "%d %d %d\n", town->cavalry_vnum, town->cavalry_max, town->cavalry_load_room);
-    fprintf(town_file, "%s\n", town->deploy_portals ? "TRUE" : "FALSE");
-    fprintf(town_file, "%d %d\n", town->portal_vnum, town->portal_load_room);
-
-  }
-  fclose(town_file);
+  sql_save_towns();
 }
 
 void list_town( P_char ch, P_town town )
@@ -1772,37 +1675,13 @@ void remove_siege( P_obj siege )
   logit(LOG_DEBUG, "remove_siege: siege not in list!" );
 }
 
-// Saves the siege objects.
-void save_siege_list( )
+void save_siege_list()
 {
-  FILE   *siege_file;
-  char    line[ MAX_STRING_LENGTH ];
-  char    buff[ SAV_MAXSIZE ];
-  char   *buf;
-  P_siege siege;
-  int     length;
-
-  siege_file = fopen( SAVE_DIR "/siege", "w" );
-
-  if(!siege_file)
-  {
-    logit(LOG_DEBUG, "Could not open " SAVE_DIR "/siege" );
-    return;
-  }
-
-  // For each siege object..
-  for( siege = siege_objects; siege != NULL; siege = siege->next_siege )
-  {
-    // Write the room number.
-    fprintf(siege_file, "#%d\n", siege->obj->loc.room);
-    // Write the object to file
-    buf = buff;
-    length = write_one_object( siege->obj, buf );
-    fwrite( buff, length, 1, siege_file );
-    fprintf( siege_file, "\n" );
-  }
-
-  fclose( siege_file );
+#ifndef __NO_MYSQL__
+  sql_save_siege_list();
+  for (P_siege siege = siege_objects; siege != NULL; siege = siege->next_siege)
+    sql_save_siege_item(siege->obj, siege->obj->loc.room);
+#endif
 }
 
 // Lists all siege objects with room
@@ -1825,53 +1704,13 @@ void list_siege( P_char ch )
   }
 }
 
-// Loads the siege objects.
 void init_siege()
 {
+#ifndef __NO_MYSQL__
+  sql_load_siege_list();
+#endif
 
-  FILE   *siege_file;
-  char    line[ MAX_STRING_LENGTH ];
-  char   *cp;
-  P_siege siege;
-  P_obj   obj;
-  int     room;
-
-  siege_objects = NULL;
-  siege_file = fopen( SAVE_DIR "/siege", "r" );
-
-  if(!siege_file)
-  {
-    logit( LOG_DEBUG, "Could not open " SAVE_DIR "/siege" );
-    return;
-  }
-
-  while( fgets( line, sizeof line, siege_file ) != NULL )
-  {
-    if( line[0] != '#' )
-    {
-      logit( LOG_DEBUG, line );
-      logit( LOG_DEBUG, "Siege file corrupted.." );
-      fclose( siege_file );
-      return;
-    }
-    cp = line+1;
-    room = atoi( cp );
-    if( !room )
-    {
-      logit( LOG_DEBUG, cp );
-      logit( LOG_DEBUG, "Siege file room corrupted.." );
-      fclose( siege_file );
-    }
-    fgets( line, sizeof line, siege_file );
-    obj = read_one_object(line);
-    obj_to_room( obj, room );
-    siege = new struct siege;
-    siege->obj = obj;
-    siege->next_siege = siege_objects;
-    siege_objects = siege;
-  }
-
-  // assign specs
+  // assign siege specs
   obj_index[real_object0(461)].func.obj = ballista;
   obj_index[real_object0(462)].func.obj = battering_ram;
   obj_index[real_object0(463)].func.obj = catapult;

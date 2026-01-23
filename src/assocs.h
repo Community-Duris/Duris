@@ -179,6 +179,11 @@ typedef struct Guild * P_Guild;
 
 class Guild
 {
+  friend bool sql_save_guild(Guild *guild);
+  friend Guild *sql_load_guild(unsigned int guild_id);
+  friend bool sql_load_all_guilds();
+  friend int migrate_guilds_from_files(void);
+
   public:
     unsigned int get_id( ) { if( this == NULL ) return 0; else return id_number; }
     unsigned int get_racewar() { return racewar; }

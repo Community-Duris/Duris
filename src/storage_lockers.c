@@ -13,6 +13,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "comm.h"
 #include "db.h"
@@ -34,6 +36,7 @@
 #include "specs.winterhaven.h"
 #include "ctf.h"
 #include "vnum.room.h"
+#include "sql_player.h"
 
 extern P_index obj_index;
 extern P_index mob_index;
@@ -86,7 +89,9 @@ StorageLocker::StorageLocker(int rroom, P_char chLocker, P_char chUser)
                 m_chUser(chUser),
                 m_pChestList(NULL),
                 m_itemCount(0),
-                m_bIValue(false)
+                m_bIValue(false),
+                m_currentChestId(0),
+                m_lockerId(0)
 {
   if (!world[rroom].ex_description)
   {
@@ -127,14 +132,33 @@ StorageLocker::~StorageLocker(void)
 
 void StorageLocker::NukeLockerChests(void)
 {
-  LockerChest *p;
+  LockerChest *p, *next;
+  LockerChest *privateChests = NULL;
+  LockerChest *lastPrivate = NULL;
 
+  // separate private chests from the list - don't delete them
   while (m_pChestList)
   {
     p = m_pChestList;
     m_pChestList = p->m_pNextInChain;
-    delete p;
+    p->m_pNextInChain = NULL;
+
+    if (p->IsPrivateChest())
+    {
+      if (!privateChests)
+        privateChests = p;
+      else
+        lastPrivate->m_pNextInChain = p;
+      lastPrivate = p;
+    }
+    else
+    {
+      delete p;
+    }
   }
+
+  // restore private chests to the list
+  m_pChestList = privateChests;
 }
 
 bool StorageLocker::PutInProperChest(P_obj obj)
@@ -879,6 +903,34 @@ bool ComboChest::ItemFits(P_obj obj)
   return true;
 }
 
+PrivateChest::PrivateChest(int chest_id, const char *name, bool has_password)
+  : LockerChest(name, "in your private chest"), m_chestId(chest_id), m_hasPassword(has_password)
+{
+  strncpy(m_chestName, name, sizeof(m_chestName) - 1);
+  m_chestName[sizeof(m_chestName) - 1] = '\0';
+
+  m_pChestObject = read_object(m_chestVnum, VIRTUAL);
+  if (m_pChestObject)
+  {
+    m_pChestObject->wear_flags = 0;
+    m_pChestObject->cost = 0;
+    m_pChestObject->weight = 0;
+    m_pChestObject->condition = 100;
+    m_pChestObject->value[0] = chest_id;
+    m_pChestObject->value[1] = m_pChestObject->value[2] = m_pChestObject->value[3] = 0;
+    m_pChestObject->type = ITEM_CONTAINER;
+    m_pChestObject->str_mask |= (STRUNG_KEYS | STRUNG_DESC1);
+
+    char buf[MAX_STRING_LENGTH];
+    snprintf(buf, sizeof(buf), "chest %s private", name);
+    m_pChestObject->name = str_dup(buf);
+
+    snprintf(buf, sizeof(buf), "&+cA private chest labeled '&+W%s&+c'%s.&n",
+      name, has_password ? " &+Y(locked)&n" : "");
+    m_pChestObject->description = str_dup(buf);
+  }
+}
+
 bool EqApplyChest::ItemFits(P_obj obj)
 {
   for (int i = 0; i < MAX_OBJ_AFFECT; i++)
@@ -947,6 +999,10 @@ static int lockerName_is_inuse(char *lockerName);
 
 static int locker_grantcmd(P_char ch, char *arg);
 static int locker_equipcmd(P_char ch, char *arg);
+static int locker_chestcmd(P_char ch, char *arg);
+static int locker_opencmd(P_char ch, char *arg);
+static int locker_closecmd(P_char ch, char *arg);
+static int locker_logcmd(P_char ch, char *arg);
 
 
 /* cmds for access lists... */
@@ -1092,7 +1148,18 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
   }
   else if ('\0' == enterWho[0])
   {
-    strcpy(enterWho, GET_NAME(ch));
+    const char *acct = get_account_name_safe(ch);
+    if (!acct || !strcmp(acct, "Unknown"))
+    {
+      send_to_char("You need an account to use the locker system.\r\n", ch);
+      return TRUE;
+    }
+    char acct_lower[MAX_INPUT_LENGTH];
+    int i;
+    for (i = 0; acct[i] && i < MAX_INPUT_LENGTH - 1; i++)
+      acct_lower[i] = tolower(acct[i]);
+    acct_lower[i] = '\0';
+    snprintf(enterWho, MAX_INPUT_LENGTH, "account.%s.%d", acct_lower, GET_RACEWAR(ch));
   }
   else
   {
@@ -1145,10 +1212,10 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 
   int temp = 1 + ( 3 * pLocker->m_itemCount);
 
-  if(pLocker->m_itemCount >= 401)
+  if(pLocker->m_itemCount >= 1001)
   {
-    send_to_char("\r\n&+RYou have a ton of &+WSTUFF&+R, as in more than 400 items - so there's a surcharge!\r\n", ch);
-    temp += (pLocker->m_itemCount - 400) * 2000;
+    send_to_char("\r\n&+RYou have a ton of &+WSTUFF&+R, as in more than 1000 items - so there's a surcharge!\r\n", ch);
+    temp += (pLocker->m_itemCount - 1000) * 2000;
   }
 
   if(is_guild_locker)
@@ -1196,8 +1263,30 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
     *(strrchr(lockerName, '.')) = '\0';
   }
 
+  bool is_owner = false;
+  if (strstr(lockerName, "account.") == lockerName)
+  {
+    const char *player_acct = get_account_name_safe(ch);
+    char locker_acct[MAX_INPUT_LENGTH];
+    char *src = lockerName + 8;
+    char *dot = strchr(src, '.');
+    if (dot)
+    {
+      int len = dot - src;
+      strncpy(locker_acct, src, len);
+      locker_acct[len] = '\0';
+      int locker_racewar = atoi(dot + 1);
+      is_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+    }
+  }
+  else
+  {
+    if (!str_cmp(lockerName, GET_NAME(ch)))
+      is_owner = true;
+  }
+
   // warn them that they can't idle in the locker...
-  if( str_cmp(lockerName, GET_NAME(ch)) )
+  if (!is_owner)
   {
     logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), lockerName);
     send_to_char("&+RWARNING:&n This isn't your own locker.  Therefore, you'll be ejected if\r\n"
@@ -1324,20 +1413,42 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
   StorageLocker *pLocker = GetChestList(locker_room);
   
   strcpy(lockerName, GET_NAME(chLocker));
-  
+
   if (strrchr(lockerName, '.'))
     *(strrchr(lockerName, '.')) = '\0';
-  
+
+  bool is_guild_owner = false;
+  if (strstr(lockerName, "account.") == lockerName)
+  {
+    const char *player_acct = get_account_name_safe(ch);
+    char locker_acct[MAX_INPUT_LENGTH];
+    char *src = lockerName + 8;
+    char *dot = strchr(src, '.');
+    if (dot)
+    {
+      int len = dot - src;
+      strncpy(locker_acct, src, len);
+      locker_acct[len] = '\0';
+      int locker_racewar = atoi(dot + 1);
+      is_guild_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+    }
+  }
+  else
+  {
+    if (!str_cmp(lockerName, GET_NAME(ch)))
+      is_guild_owner = true;
+  }
+
   // warn them that they can't idle in the locker...
-  if (str_cmp(lockerName, GET_NAME(ch)))
+  if (!is_guild_owner)
   {
     logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), lockerName);
     send_to_char
     ("&+RWARNING:&n This isn't your own locker.  Therefore, you'll be ejected if\r\n"
      "you are idle for more then 2 minutes.\r\n", ch);
   }
-  
-  return TRUE;  
+
+  return TRUE;
 }
 
 int storage_locker(int room, P_char ch, int cmd, char *arg)
@@ -1527,7 +1638,30 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
         strcpy(arg1, GET_NAME(pLocker->GetLockerChar()));
         if (strrchr(arg1, '.'))
           *(strrchr(arg1, '.')) = '\0';
-        if (str_cmp(arg1, GET_NAME(ch)) && (ch->specials.timer > 3))
+
+        bool idle_is_owner = false;
+        if (strstr(arg1, "account.") == arg1)
+        {
+          const char *player_acct = get_account_name_safe(ch);
+          char locker_acct[MAX_INPUT_LENGTH];
+          char *src = arg1 + 8;
+          char *dot = strchr(src, '.');
+          if (dot)
+          {
+            int len = dot - src;
+            strncpy(locker_acct, src, len);
+            locker_acct[len] = '\0';
+            int locker_racewar = atoi(dot + 1);
+            idle_is_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+          }
+        }
+        else
+        {
+          if (!str_cmp(arg1, GET_NAME(ch)))
+            idle_is_owner = true;
+        }
+
+        if (!idle_is_owner && (ch->specials.timer > 3))
         {
           send_to_char
             ("You can only sit idle in your own locker...  GET OUT!\r\n", ch);
@@ -1545,6 +1679,14 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
   if (cmd == CMD_EQUIPMENT)
   {
     return locker_equipcmd(ch, arg);
+  }
+  if (cmd == CMD_OPEN)
+  {
+    return locker_opencmd(ch, arg);
+  }
+  if (cmd == CMD_CLOSE)
+  {
+    return locker_closecmd(ch, arg);
   }
   return FALSE;
 }
@@ -1619,6 +1761,15 @@ static int locker_equipcmd(P_char ch, char *arg)
     return TRUE;
   }
   arg = one_argument(arg, arg1);
+
+  if (!str_cmp(arg1, "chest"))
+  {
+    return locker_chestcmd(ch, arg);
+  }
+  if (!str_cmp(arg1, "log"))
+  {
+    return locker_logcmd(ch, arg);
+  }
   if (str_cmp(arg1, "sort"))
   {
     return FALSE;
@@ -1646,9 +1797,35 @@ static int locker_grantcmd(P_char ch, char *arg)
   bool bPlayerIsGod = ((GET_LEVEL(ch) >= OVERLORD) || god_check(ch->player.name));
 
   strcpy(arg1, GET_NAME(pLocker->GetLockerChar()));
-  if (strrchr(arg1, '.'))
-    *(strrchr(arg1, '.')) = '\0';
-  if (str_cmp(arg1, GET_NAME(ch)) && !bPlayerIsGod)
+  const char *player_acct = get_account_name_safe(ch);
+  bool is_owner = false;
+
+  if (strstr(arg1, "account.") == arg1)
+  {
+    char locker_acct[MAX_INPUT_LENGTH];
+    char *src = arg1 + 8;
+    char *dot = strchr(src, '.');
+    if (dot)
+    {
+      int len = dot - src;
+      strncpy(locker_acct, src, len);
+      locker_acct[len] = '\0';
+      int locker_racewar = atoi(dot + 1);
+      is_owner = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+    }
+  }
+  else if (strstr(arg1, "guild.") == arg1)
+  {
+    is_owner = false;
+  }
+  else
+  {
+    if (strrchr(arg1, '.'))
+      *(strrchr(arg1, '.')) = '\0';
+    is_owner = !str_cmp(arg1, GET_NAME(ch));
+  }
+
+  if (!is_owner && !bPlayerIsGod)
   {
     send_to_char("Only the actual owner of a locker can manipulate access lists.\r\n", ch);
     return TRUE;
@@ -1792,6 +1969,18 @@ static bool locker_access_CanAdd(P_char locker, char *ch_name)
   if( (restoreCharOnly( vict, ch_name )) >= 0 )
   {
     bCanAdd = GET_RACEWAR(locker) == GET_RACEWAR(vict);
+    // clean up items loaded by restoreCharOnly (sql_load_player_items equips items)
+    for (int i = 0; i < MAX_WEAR; i++) {
+      if (vict->equipment[i]) {
+        P_obj obj = unequip_char(vict, i);
+        extract_obj(obj, FALSE);
+      }
+    }
+    while (vict->carrying) {
+      P_obj obj = vict->carrying;
+      obj_from_char(obj);
+      extract_obj(obj, FALSE);
+    }
     free_char(vict);
   }
 
@@ -1848,6 +2037,52 @@ static void locker_access_addAccess(P_char locker, char *ch_name)
   qry( "INSERT INTO locker_access (owner, visitor) VALUES ('%s', '%s')", GET_NAME(locker), ch_name );
 }
 
+static void create_private_chest_objects(StorageLocker *pLocker)
+{
+  int locker_id = pLocker->GetLockerId();
+  int realRoom = pLocker->GetRealRoom();
+
+  if (locker_id <= 0)
+    return;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+    "SELECT id, chest_name, is_public, password_hash IS NOT NULL as has_pass "
+    "FROM private_chests WHERE locker_id=%d AND is_public=0", locker_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return;
+
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    int chest_id = atoi(row[0]);
+    const char *chest_name = row[1];
+    bool has_pass = atoi(row[3]) ? true : false;
+
+    PrivateChest *pChest = new PrivateChest(chest_id, chest_name, has_pass);
+    pLocker->AddPrivateChest(pChest);
+
+    P_obj chest_obj = pChest->GetChestObj();
+    if (chest_obj)
+    {
+      obj_to_room(chest_obj, realRoom);
+
+      // load items into the private chest
+      P_obj items = sql_load_private_chest_items(locker_id, chest_id);
+      for (P_obj obj = items; obj; )
+      {
+        P_obj next = obj->next_content;
+        obj->next_content = NULL;
+        obj_to_obj(obj, chest_obj);
+        obj = next;
+      }
+    }
+  }
+  mysql_free_result(result);
+}
+
 static int create_new_locker(P_char ch, P_char locker)
 {
   P_obj tmp_object = NULL, next_obj = NULL;
@@ -1869,9 +2104,16 @@ static int create_new_locker(P_char ch, P_char locker)
           wizlog(AVATAR, "All locker rooms in use or locker rooms not loaded!");
           return 0;
   }
-  
+
   if (roomNum < (LOCKERS_START + LOCKERS_MAX))
   {
+    // clear any leftover items from previous locker session
+    for (tmp_object = world[realNum].contents; tmp_object; tmp_object = next_obj)
+    {
+      next_obj = tmp_object->next_content;
+      extract_obj(tmp_object);
+    }
+
     char roomNameBuf[500];
 
     /* check for a guild locker... */
@@ -1895,6 +2137,21 @@ static int create_new_locker(P_char ch, P_char locker)
       }
       snprintf(roomNameBuf, 500, "The Storage Locker for %s&n", Gbuf1);
     }
+    else if (!strn_cmp("account.", GET_NAME(locker), 8))
+    {                           /* account locker - format: account.name.racewar.locker */
+      char acct_name[MAX_INPUT_LENGTH];
+      char *src = GET_NAME(locker) + 8;
+      char *dot = strchr(src, '.');
+      if (dot)
+      {
+        int len = dot - src;
+        strncpy(acct_name, src, len);
+        acct_name[len] = '\0';
+      }
+      else
+        strcpy(acct_name, src);
+      snprintf(roomNameBuf, 500, "The Storage Locker for %s", acct_name);
+    }
     else
     {                           /* normal player locker */
       snprintf(roomNameBuf, 500, "The Storage Locker for %s", GET_NAME(locker));
@@ -1911,6 +2168,22 @@ static int create_new_locker(P_char ch, P_char locker)
     world[realNum].name = str_dup(roomNameBuf);
     world[realNum].funct = storage_locker;
     world[realNum].room_flags = LOCKERS_ROOMFLAGS;
+
+    if (world[realNum].description)
+      str_free(world[realNum].description);
+    world[realNum].description = str_dup(
+      "   You are in a private storage locker. Items dropped here will be saved.\r\n"
+      "\r\n"
+      "&+WCommands:&n\r\n"
+      "  eq sort <type>              - sort items\r\n"
+      "  eq chest list               - list your chests\r\n"
+      "  eq chest create <name> [pw] - create private chest (500p)\r\n"
+      "  eq chest delete <name>      - delete empty chest\r\n"
+      "  eq chest password <name> <pw|none>\r\n"
+      "  eq log                      - view activity log\r\n"
+      "  open <chest> [password]     - open a chest\r\n"
+      "  close                       - close current chest\r\n"
+    );
 
     strcpy(roomNameBuf, LOCKERS_DOORSIGN);
     strcat(roomNameBuf, GET_NAME(ch));
@@ -1933,7 +2206,15 @@ static int create_new_locker(P_char ch, P_char locker)
     /* setup an extra description for the room which tells me the real locker pfile name */
     StorageLocker *pLocker = new StorageLocker(realNum, locker, ch);
 
+    int locker_id = sql_get_locker_id_by_name(GET_NAME(locker));
+    if (locker_id > 0)
+    {
+      pLocker->SetLockerId(locker_id);
+      sql_get_or_create_public_chest(locker_id);
+    }
+
     pLocker->MakeChests(ch, "none");
+    create_private_chest_objects(pLocker);
 
     for (dir = 1; dir < NUM_EXITS; dir++)
     {
@@ -1978,9 +2259,9 @@ static void free_locker(int roomNum)
 static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess)
 {
   P_char vict = NULL;
-  int tmp;
+  bool locker_exists = false;
 
-  if( !ch )
+  if (!ch)
   {
     wizlog(56, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
     logit(LOG_WIZ, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
@@ -1991,86 +2272,85 @@ static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess
 
   bool bPlayerIsGod = (GET_LEVEL(ch) >= OVERLORD || god_check(ch->player.name));
 
-  vict = (P_char) mm_get(dead_mob_pool);
-  clear_char(vict);
-  ensure_pconly_pool();
-  vict->only.pc = (struct pc_only_data *) mm_get(dead_pconly_pool);
-  vict->only.pc->aggressive = -1;
-  vict->only.pc->zone_trophy = NULL;
-  vict->desc = NULL;
+  // check if locker exists in database
+  locker_exists = sql_locker_exists_by_name(locker_name);
 
-  if(!(vict))
+  if (locker_exists)
   {
-    return NULL;
-  }
-
-  tmp = restoreCharOnly(vict, locker_name);
-
-
-  if (tmp < (-1))
-  {
-    send_to_char("ERROR: Unable to load locker.  Please report ASAP.\r\n", ch);
-    free_char(vict);
-    return NULL;
-  }
-  // if not primary char for locker, it can't be created - also check access
-  if ((bValidateAccess) &&
-      ((-1 == tmp) || (!bPlayerIsGod && !locker_access_canAccess(vict, GET_NAME(ch)))))
-  {
-    // can't access it
-    send_to_char("You don't have access to that locker!\r\n", ch);
-    free_char(vict);
-    return NULL;
-  }
-  if (-1 != tmp)
-  {
+    // check if locker is currently in use
     if (lockerName_is_inuse(locker_name) > 0)
     {
-      send_to_char
-        ("Someone is currently using that locker.  Please try later.\r\n", ch);
+      send_to_char("Someone is currently using that locker.  Please try later.\r\n", ch);
       return NULL;
     }
+
+    // load locker from database
+    vict = sql_load_locker_by_name(locker_name);
+    if (!vict)
+    {
+      send_to_char("ERROR: Unable to load locker.  Please report ASAP.\r\n", ch);
+      return NULL;
+    }
+
+    // validate access
+    if (bValidateAccess && !bPlayerIsGod && !locker_access_canAccess(vict, GET_NAME(ch)))
+    {
+      send_to_char("You don't have access to that locker!\r\n", ch);
+      free_char(vict);
+      return NULL;
+    }
+
+    // check racewar side
     if (bValidateAccess)
     {
-      if (!bPlayerIsGod)
-        if (GET_RACEWAR(ch) != GET_RACEWAR(vict))
-        { // well, THIS is interesting.  VERY interesting, indeed.  The locker has a different racewar
-          // side then the character... hmmmmmmmmm.  One of two things going on here.  Either the player
-          // made a mistake in re-creating an existing char, or they are purposely cheating.
-          send_to_char("Well, THIS is interesting... You have access to a locker on the other racewar\n"
-                      "side.  A special log is being generated which will be followed up on to\n"
-                      "determine if this was a mistake, or an attempt at cheating.\n", ch);
-          wizlog(56, "&+RPOSSIBLE CHEATING:&n %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
-          logit(LOG_WIZ, "POSSIBLE CHEATING: %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
-          sql_log(ch, PLAYERLOG, "&+RPOSSIBLE CHEATING:&n trying to access opposite racewar side locker %s", locker_name);
-          free_char(vict);
-          return NULL;
-        }
+      if (!bPlayerIsGod && GET_RACEWAR(ch) != GET_RACEWAR(vict))
+      {
+        send_to_char("Well, THIS is interesting... You have access to a locker on the other racewar\n"
+                    "side.  A special log is being generated which will be followed up on to\n"
+                    "determine if this was a mistake, or an attempt at cheating.\n", ch);
+        wizlog(56, "&+RPOSSIBLE CHEATING:&n %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
+        logit(LOG_WIZ, "POSSIBLE CHEATING: %s is trying to access opposite racewar side locker %s", GET_NAME(ch), locker_name);
+        sql_log(ch, PLAYERLOG, "&+RPOSSIBLE CHEATING:&n trying to access opposite racewar side locker %s", locker_name);
+        free_char(vict);
+        return NULL;
+      }
     }
     else
     {
       // just in case their racewar side happened to change mysteriously..
       GET_RACEWAR(vict) = GET_RACEWAR(ch);
     }
-
-  }
-
-  if (-1 == tmp)
-  {                             /* need to create a new locker pfile */
-    create_locker_char(ch, vict, locker_name);
   }
   else
   {
-    tmp = restoreItemsOnly(vict, 100);
+    // locker doesn't exist - need to create new
+    if (bValidateAccess)
+    {
+      send_to_char("You don't have access to that locker!\r\n", ch);
+      return NULL;
+    }
+
+    // allocate new locker char
+    vict = (P_char)mm_get(dead_mob_pool);
+    if (!vict)
+      return NULL;
+    clear_char(vict);
+    ensure_pconly_pool();
+    vict->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+    vict->only.pc->aggressive = -1;
+    vict->only.pc->zone_trophy = NULL;
+    vict->desc = NULL;
+
+    create_locker_char(ch, vict, locker_name);
   }
 
-  /* insert in list */
+  // insert in list
   vict->next = character_list;
   character_list = vict;
 
   setCharPhysTypeInfo(vict);
 
-  /* saving info for teleport return command */
+  // saving info for teleport return command
   vict->specials.was_in_room = vict->in_room;
 
   char_to_room(vict, real_room0(LOCKERS_START), -2);
@@ -2094,6 +2374,9 @@ static P_char create_locker_char(P_char chOwner, P_char ch, char *locker_name)
 
 static int save_locker_char(P_char ch, int bTerminal)
 {
+  // reap any finished locker save children
+  while (waitpid(-1, NULL, WNOHANG) > 0)
+    ;
 
   StorageLocker *pLocker = GetChestList(ch->in_room);
 
@@ -2105,16 +2388,38 @@ static int save_locker_char(P_char ch, int bTerminal)
     if (chLocker)
     {
       pLocker->LockerToPFile();
-      if (!writeCharacter(chLocker, bTerminal ? 3 : 0, NOWHERE))
+
+      if (bTerminal)
       {
-        logit(LOG_OBJ, "%s's locker not saving properly!", GET_NAME(ch));
-        debug("%s's locker not saving properly!", GET_NAME(ch));
-        send_to_char
-          ("&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
-           ch);
+        // async save - fork so parent doesnt block
+        pid_t pid = fork();
+        if (pid == 0)
+        {
+          // child
+          MYSQL *child_conn = sql_create_child_connection();
+          if (child_conn)
+          {
+            sql_reset_for_child(child_conn);
+            writeCharacter(chLocker, 3, NOWHERE);
+            mysql_close(child_conn);
+          }
+          _exit(0);
+        }
+        // parent continues, dont wait for child
+      }
+      else
+      {
+        // sync save for non-terminal (periodic saves while in locker)
+        if (!writeCharacter(chLocker, 0, NOWHERE))
+        {
+          logit(LOG_OBJ, "%s's locker not saving properly!", GET_NAME(ch));
+          debug("%s's locker not saving properly!", GET_NAME(ch));
+          send_to_char(
+            "&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
+            ch);
+        }
       }
 
-      /* prevent storage locker chars from idle-renting */
       chLocker->specials.timer = 0;
       if (bTerminal)
       {
@@ -2128,7 +2433,6 @@ static int save_locker_char(P_char ch, int bTerminal)
     }
     else
     {
-      /* player not in world?  This can happen if the locker character idled out... */
       return 0;
     }
   }
@@ -2146,6 +2450,20 @@ void StorageLocker::LockerToPFile(void)
 
   const int lockerChestRNUM = real_object(LockerChest::m_chestVnum);
 
+  // first, save private chest items directly to db with their chest_id
+  for (LockerChest *p = m_pChestList; p; p = p->m_pNextInChain)
+  {
+    if (p->IsPrivateChest())
+    {
+      P_obj chest_obj = p->GetChestObj();
+      if (chest_obj && chest_obj->contains)
+      {
+        sql_save_private_chest_items(m_lockerId, p->GetChestId(), chest_obj);
+      }
+    }
+  }
+
+  // now handle non-private chests - move items to locker char
   for (tmp_object = world[m_realRoom].contents; tmp_object;
        tmp_object = next_obj)
   {
@@ -2154,7 +2472,20 @@ void StorageLocker::LockerToPFile(void)
       continue;
     if (tmp_object->R_num == lockerChestRNUM)
     {
-      /* dump the contents of the chest to the room */
+      // check if this is a private chest - if so, skip it
+      bool is_private = false;
+      for (LockerChest *p = m_pChestList; p; p = p->m_pNextInChain)
+      {
+        if (p->IsPrivateChest() && p->GetChestObj() == tmp_object)
+        {
+          is_private = true;
+          break;
+        }
+      }
+      if (is_private)
+        continue;
+
+      // not a private chest, dump contents to locker char
       for (P_obj innerObj = tmp_object->contains;
            tmp_object->contains; innerObj = tmp_object->contains)
       {
@@ -2382,4 +2713,294 @@ static void locker_access_transferAccess(P_char chLocker, P_char ch)
     }
   } while( pIndex[0] != '\0' );
 
+}
+
+// ============================================================================
+// private chest commands
+// ============================================================================
+
+static int locker_chestcmd(P_char ch, char *arg)
+{
+  StorageLocker *pLocker = GetChestList(ch->in_room);
+  if (!pLocker)
+  {
+    send_to_char("Error: no locker found.\r\n", ch);
+    return TRUE;
+  }
+
+  P_char chUser = pLocker->GetLockerUser();
+  if (ch != chUser)
+  {
+    send_to_char("Only the locker owner can manage chests.\r\n", ch);
+    return TRUE;
+  }
+
+  int locker_id = pLocker->GetLockerId();
+  if (locker_id <= 0)
+  {
+    send_to_char("Locker not properly initialized.\r\n", ch);
+    return TRUE;
+  }
+
+  char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
+  arg = one_argument(arg, arg1);
+  arg = one_argument(arg, arg2);
+  strcpy(arg3, arg);
+
+  if (is_abbrev(arg1, "list") || !arg1[0])
+  {
+    char query[256];
+    snprintf(query, sizeof(query),
+      "SELECT chest_name, is_public, password_hash IS NOT NULL as has_pass "
+      "FROM private_chests WHERE locker_id=%d ORDER BY is_public DESC, chest_name",
+      locker_id);
+
+    MYSQL_RES *result = db_query("%s", query);
+    if (!result)
+    {
+      send_to_char("Error listing chests.\r\n", ch);
+      return TRUE;
+    }
+
+    send_to_char("&+WYour chests:&n\r\n", ch);
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(result)))
+    {
+      send_to_char_f(ch, "  %s%s%s\r\n",
+        row[0],
+        atoi(row[1]) ? " &+G(public)&n" : "",
+        atoi(row[2]) ? " &+Y(password)&n" : "");
+    }
+    mysql_free_result(result);
+
+    int count = sql_count_private_chests(locker_id);
+    send_to_char_f(ch, "\r\nPrivate chests: %d/5\r\n", count);
+    return TRUE;
+  }
+
+  if (is_abbrev(arg1, "create"))
+  {
+    if (!arg2[0])
+    {
+      send_to_char("Usage: eq chest create <name> [password]\r\n", ch);
+      return TRUE;
+    }
+
+    int chest_cost = 500000;
+    if (GET_MONEY(ch) < chest_cost && GET_BALANCE(ch) < chest_cost)
+    {
+      send_to_char("You need 500 platinum to create a private chest.\r\n", ch);
+      return TRUE;
+    }
+
+    int result = sql_create_private_chest(locker_id, arg2, arg3[0] ? arg3 : NULL);
+    if (result == -1)
+    {
+      send_to_char("You already have the maximum of 5 private chests.\r\n", ch);
+      return TRUE;
+    }
+    if (result == 0)
+    {
+      send_to_char("Failed to create chest. Name may already be in use.\r\n", ch);
+      return TRUE;
+    }
+
+    if (GET_MONEY(ch) < chest_cost)
+      SUB_BALANCE(ch, chest_cost, 0);
+    else
+      SUB_MONEY(ch, chest_cost, 0);
+    send_to_char_f(ch, "Private chest '%s' created for 500 platinum.%s\r\n",
+      arg2, arg3[0] ? " Password set." : "");
+    return TRUE;
+  }
+
+  if (is_abbrev(arg1, "delete"))
+  {
+    if (!arg2[0])
+    {
+      send_to_char("Usage: eq chest delete <name>\r\n", ch);
+      return TRUE;
+    }
+
+    int chest_id = sql_get_chest_id(locker_id, arg2);
+    if (chest_id <= 0)
+    {
+      send_to_char("Chest not found.\r\n", ch);
+      return TRUE;
+    }
+
+    char query[256];
+    snprintf(query, sizeof(query),
+      "SELECT COUNT(*) FROM locker_items WHERE chest_id=%d", chest_id);
+    MYSQL_RES *result = db_query("%s", query);
+    if (result)
+    {
+      MYSQL_ROW row = mysql_fetch_row(result);
+      if (row && atoi(row[0]) > 0)
+      {
+        send_to_char("Cannot delete chest that contains items. Empty it first.\r\n", ch);
+        mysql_free_result(result);
+        return TRUE;
+      }
+      mysql_free_result(result);
+    }
+
+    if (!sql_delete_private_chest(chest_id))
+    {
+      send_to_char("Cannot delete the public chest.\r\n", ch);
+      return TRUE;
+    }
+
+    send_to_char_f(ch, "Chest '%s' deleted.\r\n", arg2);
+    return TRUE;
+  }
+
+  if (is_abbrev(arg1, "password"))
+  {
+    if (!arg2[0])
+    {
+      send_to_char("Usage: eq chest password <chest> <newpassword>\r\n", ch);
+      send_to_char("       eq chest password <chest> none  (to remove password)\r\n", ch);
+      return TRUE;
+    }
+
+    int chest_id = sql_get_chest_id(locker_id, arg2);
+    if (chest_id <= 0)
+    {
+      send_to_char("Chest not found.\r\n", ch);
+      return TRUE;
+    }
+
+    char query[512];
+    if (!arg3[0] || !strcasecmp(arg3, "none"))
+    {
+      qry("UPDATE private_chests SET password_hash=NULL WHERE id=%d", chest_id);
+      send_to_char_f(ch, "Password removed from chest '%s'.\r\n", arg2);
+    }
+    else
+    {
+      char *esc_pass = sql_escape_string(arg3);
+      qry("UPDATE private_chests SET password_hash=SHA2('%s', 256) WHERE id=%d",
+        esc_pass, chest_id);
+      free(esc_pass);
+      send_to_char_f(ch, "Password set for chest '%s'.\r\n", arg2);
+    }
+    return TRUE;
+  }
+
+  send_to_char("Usage: eq chest list\r\n", ch);
+  send_to_char("       eq chest create <name> [password]\r\n", ch);
+  send_to_char("       eq chest delete <name>\r\n", ch);
+  send_to_char("       eq chest password <name> <newpassword|none>\r\n", ch);
+  return TRUE;
+}
+
+static int locker_opencmd(P_char ch, char *arg)
+{
+  StorageLocker *pLocker = GetChestList(ch->in_room);
+  if (!pLocker)
+    return FALSE;
+
+  int locker_id = pLocker->GetLockerId();
+  if (locker_id <= 0)
+    return FALSE;
+
+  char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+  arg = one_argument(arg, arg1);
+  strcpy(arg2, arg);
+
+  if (!arg1[0])
+    return FALSE;
+
+  int chest_id = sql_get_chest_id(locker_id, arg1);
+  if (chest_id <= 0)
+    return FALSE;
+
+  P_char chUser = pLocker->GetLockerUser();
+
+  if (ch != chUser)
+  {
+    if (!sql_verify_chest_password(chest_id, arg2))
+    {
+      send_to_char("Wrong password.\r\n", ch);
+      sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), "fail", NULL);
+      return TRUE;
+    }
+  }
+
+  pLocker->SetCurrentChestId(chest_id);
+  send_to_char_f(ch, "You open the '%s' chest.\r\n", arg1);
+  sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), "open", NULL);
+  return TRUE;
+}
+
+static int locker_closecmd(P_char ch, char *arg)
+{
+  StorageLocker *pLocker = GetChestList(ch->in_room);
+  if (!pLocker)
+    return FALSE;
+
+  if (pLocker->GetCurrentChestId() == 0)
+    return FALSE;
+
+  int locker_id = pLocker->GetLockerId();
+  int chest_id = pLocker->GetCurrentChestId();
+
+  sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), "close", NULL);
+  pLocker->SetCurrentChestId(0);
+  send_to_char("You close the chest.\r\n", ch);
+  return TRUE;
+}
+
+static int locker_logcmd(P_char ch, char *arg)
+{
+  StorageLocker *pLocker = GetChestList(ch->in_room);
+  if (!pLocker)
+  {
+    send_to_char("Error: no locker found.\r\n", ch);
+    return TRUE;
+  }
+
+  P_char chUser = pLocker->GetLockerUser();
+  if (ch != chUser)
+  {
+    send_to_char("Only the locker owner can view the log.\r\n", ch);
+    return TRUE;
+  }
+
+  int locker_id = pLocker->GetLockerId();
+  if (locker_id <= 0)
+  {
+    send_to_char("Locker not properly initialized.\r\n", ch);
+    return TRUE;
+  }
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "SELECT l.logged_at, l.char_name, l.action_type, c.chest_name, l.item_short "
+    "FROM private_chest_log l "
+    "LEFT JOIN private_chests c ON l.chest_id = c.id "
+    "WHERE l.locker_id=%d "
+    "ORDER BY l.logged_at DESC LIMIT 50",
+    locker_id);
+
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+  {
+    send_to_char("Error reading log.\r\n", ch);
+    return TRUE;
+  }
+
+  send_to_char("&+WRecent locker activity:&n\r\n", ch);
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(result)))
+  {
+    send_to_char_f(ch, "%s - %s %s %s%s%s\r\n",
+      row[0], row[1], row[2],
+      row[3] ? row[3] : "",
+      row[4] ? ": " : "",
+      row[4] ? row[4] : "");
+  }
+  mysql_free_result(result);
+  return TRUE;
 }

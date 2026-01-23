@@ -30,6 +30,8 @@
 #include "ships/ships.h"
 
 extern const int top_of_world;
+extern int top_of_zone_table;
+extern struct zone_data *zone_table;
 extern P_room world;
 extern P_desc descriptor_list;
 extern P_char character_list;
@@ -139,7 +141,9 @@ static int write_mob_entry(FILE *fp, P_char mob)
 
     if (mob->specials.fighting) {
         P_char target = mob->specials.fighting;
-        if (IS_NPC(target)) {
+        if (!target) {
+            // stale pointer, skip
+        } else if (IS_NPC(target)) {
             entry.fighting_type = 2;
             entry.fighting_id = GET_IDNUM(target);
         } else {
@@ -987,4 +991,467 @@ void copyover_restore_combat(void)
         ch->specials.copyover_fighting_id = 0;
         ch->specials.copyover_fighting_name[0] = '\0';
     }
+}
+
+// buffer-based helpers for redis world state saves
+
+void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
+{
+    P_char ch;
+    P_obj obj;
+    int room, dir;
+
+    *num_mobs = 0;
+    *num_objs = 0;
+    *num_rooms = 0;
+
+    for (ch = character_list; ch; ch = ch->next) {
+        if (IS_NPC(ch) && ch->in_room >= 0 && !IS_PC_PET(ch)) {
+            (*num_mobs)++;
+        }
+    }
+
+    for (obj = object_list; obj; obj = obj->next) {
+        if (OBJ_ROOM(obj)) {
+            int vnum = OBJ_VNUM(obj);
+            if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
+                continue;
+            (*num_objs)++;
+        }
+    }
+
+    for (room = 0; room <= top_of_world; room++) {
+        for (dir = 0; dir < NUM_EXITS; dir++) {
+            if (world[room].dir_option[dir] &&
+                IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR)) {
+                (*num_rooms)++;
+            }
+        }
+    }
+}
+
+int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
+{
+    struct copyover_mob entry;
+    struct copyover_affect aff_entry;
+    copyover_carried_item inv_entry;
+    struct affected_type *af;
+    P_obj obj;
+    size_t offset = 0;
+
+    if (max_len < sizeof(entry))
+        return -1;
+
+    int mob_rnum = GET_RNUM(mob);
+    if (mob_rnum < 0)
+        return -1;
+
+    memset(&entry, 0, sizeof(entry));
+    entry.vnum = mob_index[mob_rnum].virtual_number;
+    entry.idnum = GET_IDNUM(mob);
+    entry.room = world[mob->in_room].number;
+    entry.hit = GET_HIT(mob);
+    entry.max_hit = GET_MAX_HIT(mob);
+    entry.mana = GET_MANA(mob);
+    entry.max_mana = GET_MAX_MANA(mob);
+    entry.vitality = GET_VITALITY(mob);
+    entry.max_vitality = GET_MAX_VITALITY(mob);
+    entry.position = GET_POS(mob);
+
+    if (mob->specials.fighting) {
+        P_char target = mob->specials.fighting;
+        if (!target) {
+            // stale pointer, skip
+        } else if (IS_NPC(target)) {
+            entry.fighting_type = 2;
+            entry.fighting_id = GET_IDNUM(target);
+        } else {
+            entry.fighting_type = 1;
+            if (GET_NAME(target)) {
+                strncpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name) - 1);
+                entry.fighting_name[sizeof(entry.fighting_name) - 1] = '\0';
+            }
+        }
+    }
+
+    entry.num_affects = 0;
+    for (af = mob->affected; af; af = af->next)
+        entry.num_affects++;
+
+    for (int w = 0; w < MAX_WEAR; w++) {
+        if (mob->equipment[w])
+            entry.equipment_vnums[w] = OBJ_VNUM(mob->equipment[w]);
+        else
+            entry.equipment_vnums[w] = -1;
+    }
+
+    entry.num_carrying = 0;
+    for (obj = mob->carrying; obj; obj = obj->next_content)
+        entry.num_carrying++;
+
+    entry.gold = GET_GOLD(mob);
+
+    memcpy(buf + offset, &entry, sizeof(entry));
+    offset += sizeof(entry);
+
+    // write affects
+    for (af = mob->affected; af; af = af->next) {
+        if (offset + sizeof(aff_entry) > max_len)
+            return -1;
+
+        memset(&aff_entry, 0, sizeof(aff_entry));
+        aff_entry.type = af->type;
+        aff_entry.wear_off_message_index = af->wear_off_message_index;
+        aff_entry.duration = af->duration;
+        aff_entry.flags = af->flags;
+        aff_entry.modifier = af->modifier;
+        aff_entry.location = af->location;
+        aff_entry.loc2 = af->loc2;
+        aff_entry.level = af->level;
+        aff_entry.bitvector = af->bitvector;
+        aff_entry.bitvector2 = af->bitvector2;
+        aff_entry.bitvector3 = af->bitvector3;
+        aff_entry.bitvector4 = af->bitvector4;
+        aff_entry.bitvector5 = af->bitvector5;
+
+        memcpy(buf + offset, &aff_entry, sizeof(aff_entry));
+        offset += sizeof(aff_entry);
+    }
+
+    // write inventory
+    for (obj = mob->carrying; obj; obj = obj->next_content) {
+        if (offset + sizeof(inv_entry) > max_len)
+            return -1;
+
+        memset(&inv_entry, 0, sizeof(inv_entry));
+        inv_entry.obj_uid = obj->obj_uid;
+        inv_entry.vnum = OBJ_VNUM(obj);
+        memcpy(buf + offset, &inv_entry, sizeof(inv_entry));
+        offset += sizeof(inv_entry);
+    }
+
+    return (int)offset;
+}
+
+int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
+{
+    struct copyover_obj entry;
+    struct copyover_obj_content cont_entry;
+    P_obj content;
+    size_t offset = 0;
+
+    if (max_len < sizeof(entry))
+        return -1;
+
+    memset(&entry, 0, sizeof(entry));
+    entry.obj_uid = obj->obj_uid;
+    entry.vnum = OBJ_VNUM(obj);
+    entry.room = world[obj->loc.room].number;
+    entry.type = obj->type;
+    memcpy(entry.value, obj->value, sizeof(entry.value));
+    memcpy(entry.timer, obj->timer, sizeof(entry.timer));
+
+    if (obj->name) {
+        strncpy(entry.name, obj->name, sizeof(entry.name) - 1);
+        entry.name[sizeof(entry.name) - 1] = '\0';
+    }
+    if (obj->short_description) {
+        strncpy(entry.short_desc, obj->short_description, sizeof(entry.short_desc) - 1);
+        entry.short_desc[sizeof(entry.short_desc) - 1] = '\0';
+    }
+    if (obj->description) {
+        strncpy(entry.description, obj->description, sizeof(entry.description) - 1);
+        entry.description[sizeof(entry.description) - 1] = '\0';
+    }
+
+    entry.num_contents = 0;
+    for (content = obj->contains; content; content = content->next_content)
+        entry.num_contents++;
+
+    memcpy(buf + offset, &entry, sizeof(entry));
+    offset += sizeof(entry);
+
+    // write contents
+    for (content = obj->contains; content; content = content->next_content) {
+        if (offset + sizeof(cont_entry) > max_len)
+            return -1;
+
+        memset(&cont_entry, 0, sizeof(cont_entry));
+        cont_entry.obj_uid = content->obj_uid;
+        cont_entry.vnum = OBJ_VNUM(content);
+        memcpy(buf + offset, &cont_entry, sizeof(cont_entry));
+        offset += sizeof(cont_entry);
+    }
+
+    return (int)offset;
+}
+
+int copyover_write_door_to_buffer(int room_rnum, int dir, char *buf, size_t max_len)
+{
+    struct copyover_room entry;
+
+    if (max_len < sizeof(entry))
+        return -1;
+
+    memset(&entry, 0, sizeof(entry));
+    entry.vnum = world[room_rnum].number;
+    entry.dir = dir;
+    entry.state = world[room_rnum].dir_option[dir]->exit_info;
+
+    memcpy(buf, &entry, sizeof(entry));
+    return sizeof(entry);
+}
+
+int copyover_write_zone_age_to_buffer(int zone_rnum, char *buf, size_t max_len)
+{
+    struct zone_age_entry entry;
+
+    if (max_len < sizeof(entry))
+        return -1;
+
+    memset(&entry, 0, sizeof(entry));
+    entry.zone_rnum = zone_rnum;
+    entry.age = zone_table[zone_rnum].age;
+    entry.lifespan = zone_table[zone_rnum].lifespan;
+    entry.fullreset_age = zone_table[zone_rnum].fullreset_age;
+    entry.fullreset_lifespan = zone_table[zone_rnum].fullreset_lifespan;
+
+    memcpy(buf, &entry, sizeof(entry));
+    return sizeof(entry);
+}
+
+P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *bytes_read)
+{
+    struct copyover_mob mob_entry;
+    struct copyover_affect aff_entry;
+    copyover_carried_item inv_entry;
+    size_t offset = 0;
+    int rnum;
+    P_char mob;
+
+    if (len < sizeof(mob_entry)) {
+        *bytes_read = 0;
+        return NULL;
+    }
+
+    memcpy(&mob_entry, buf + offset, sizeof(mob_entry));
+    offset += sizeof(mob_entry);
+
+    int mob_rnum = real_mobile(mob_entry.vnum);
+    if (mob_rnum < 0) {
+        // skip affects and inventory
+        offset += mob_entry.num_affects * sizeof(aff_entry);
+        offset += mob_entry.num_carrying * sizeof(inv_entry);
+        *bytes_read = offset;
+        return NULL;
+    }
+
+    rnum = real_room(mob_entry.room);
+    if (rnum < 0 || rnum > top_of_world) {
+        offset += mob_entry.num_affects * sizeof(aff_entry);
+        offset += mob_entry.num_carrying * sizeof(inv_entry);
+        *bytes_read = offset;
+        return NULL;
+    }
+
+    mob = read_mobile(mob_rnum, REAL);
+    if (!mob) {
+        offset += mob_entry.num_affects * sizeof(aff_entry);
+        offset += mob_entry.num_carrying * sizeof(inv_entry);
+        *bytes_read = offset;
+        return NULL;
+    }
+
+    GET_IDNUM(mob) = mob_entry.idnum;
+    char_to_room(mob, rnum, FALSE);
+    GET_HIT(mob) = mob_entry.hit;
+    GET_MAX_HIT(mob) = mob_entry.max_hit;
+    GET_MANA(mob) = mob_entry.mana;
+    GET_MAX_MANA(mob) = mob_entry.max_mana;
+    GET_VITALITY(mob) = mob_entry.vitality;
+    GET_MAX_VITALITY(mob) = mob_entry.max_vitality;
+    SET_POS(mob, POS_STANDING + STAT_NORMAL);
+    GET_GOLD(mob) = mob_entry.gold;
+
+    // restore affects
+    for (int a = 0; a < mob_entry.num_affects; a++) {
+        if (offset + sizeof(aff_entry) > len)
+            break;
+
+        memcpy(&aff_entry, buf + offset, sizeof(aff_entry));
+        offset += sizeof(aff_entry);
+
+        struct affected_type af;
+        memset(&af, 0, sizeof(af));
+        af.type = aff_entry.type;
+        af.wear_off_message_index = aff_entry.wear_off_message_index;
+        af.duration = aff_entry.duration;
+        af.flags = aff_entry.flags;
+        af.modifier = aff_entry.modifier;
+        af.location = aff_entry.location;
+        af.loc2 = aff_entry.loc2;
+        af.level = aff_entry.level;
+        af.bitvector = aff_entry.bitvector;
+        af.bitvector2 = aff_entry.bitvector2;
+        af.bitvector3 = aff_entry.bitvector3;
+        af.bitvector4 = aff_entry.bitvector4;
+        af.bitvector5 = aff_entry.bitvector5;
+        affect_to_char(mob, &af);
+    }
+
+    // restore equipment
+    for (int w = 0; w < MAX_WEAR; w++) {
+        if (mob_entry.equipment_vnums[w] > 0) {
+            // debug: log redis equipment restore for artifact 58424
+            if (mob_entry.equipment_vnums[w] == 58424)
+            {
+                logit(LOG_DEBUG, "[copyover.c] REDIS restoring artifact 58424 on mob '%s' vnum=%d room=%d slot=%d",
+                      GET_NAME(mob), mob_entry.vnum, mob_entry.room, w);
+            }
+            P_obj obj = read_object(mob_entry.equipment_vnums[w], VIRTUAL);
+            if (obj)
+                equip_char(mob, obj, w, 0);
+        }
+    }
+
+    // restore inventory
+    for (int c = 0; c < mob_entry.num_carrying; c++) {
+        if (offset + sizeof(inv_entry) > len)
+            break;
+
+        memcpy(&inv_entry, buf + offset, sizeof(inv_entry));
+        offset += sizeof(inv_entry);
+
+        if (inv_entry.vnum > 0) {
+            P_obj obj = read_object(inv_entry.vnum, VIRTUAL);
+            if (obj)
+                obj_to_char(obj, mob);
+        }
+    }
+
+    // stash fighting info for later restoration
+    if (mob_entry.fighting_type) {
+        mob->specials.copyover_fighting_type = mob_entry.fighting_type;
+        mob->specials.copyover_fighting_id = mob_entry.fighting_id;
+        if (mob_entry.fighting_name[0]) {
+            strncpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name,
+                    sizeof(mob->specials.copyover_fighting_name) - 1);
+            mob->specials.copyover_fighting_name[sizeof(mob->specials.copyover_fighting_name) - 1] = '\0';
+        }
+    }
+
+    *bytes_read = offset;
+    return mob;
+}
+
+P_obj copyover_restore_obj_from_buffer(const char *buf, size_t len, size_t *bytes_read)
+{
+    struct copyover_obj obj_entry;
+    struct copyover_obj_content cont_entry;
+    size_t offset = 0;
+    int rnum;
+    P_obj obj;
+
+    if (len < sizeof(obj_entry)) {
+        *bytes_read = 0;
+        return NULL;
+    }
+
+    memcpy(&obj_entry, buf + offset, sizeof(obj_entry));
+    offset += sizeof(obj_entry);
+
+    rnum = real_room(obj_entry.room);
+    if (rnum < 0 || rnum > top_of_world) {
+        offset += obj_entry.num_contents * sizeof(cont_entry);
+        *bytes_read = offset;
+        return NULL;
+    }
+
+    obj = read_object(obj_entry.vnum, VIRTUAL);
+    if (!obj) {
+        offset += obj_entry.num_contents * sizeof(cont_entry);
+        *bytes_read = offset;
+        return NULL;
+    }
+
+    // restore saved obj_uid if valid
+    if (obj_entry.obj_uid > 0)
+        obj->obj_uid = obj_entry.obj_uid;
+
+    obj->type = obj_entry.type;
+    memcpy(obj->value, obj_entry.value, sizeof(obj->value));
+    memcpy(obj->timer, obj_entry.timer, sizeof(obj->timer));
+
+    if (obj_entry.name[0])
+        obj->name = str_dup(obj_entry.name);
+    if (obj_entry.short_desc[0])
+        obj->short_description = str_dup(obj_entry.short_desc);
+    if (obj_entry.description[0])
+        obj->description = str_dup(obj_entry.description);
+
+    obj_to_room(obj, rnum);
+
+    // restore contents
+    for (int c = 0; c < obj_entry.num_contents; c++) {
+        if (offset + sizeof(cont_entry) > len)
+            break;
+
+        memcpy(&cont_entry, buf + offset, sizeof(cont_entry));
+        offset += sizeof(cont_entry);
+
+        P_obj content = read_object(cont_entry.vnum, VIRTUAL);
+        if (content) {
+            if (cont_entry.obj_uid > 0)
+                content->obj_uid = cont_entry.obj_uid;
+            obj_to_obj(content, obj);
+        }
+    }
+
+    *bytes_read = offset;
+    return obj;
+}
+
+int copyover_restore_door_from_buffer(const char *buf, size_t len, size_t *bytes_read)
+{
+    struct copyover_room room_entry;
+    int rnum;
+
+    if (len < sizeof(room_entry)) {
+        *bytes_read = 0;
+        return -1;
+    }
+
+    memcpy(&room_entry, buf, sizeof(room_entry));
+    *bytes_read = sizeof(room_entry);
+
+    rnum = real_room(room_entry.vnum);
+    if (rnum >= 0 && rnum <= top_of_world &&
+        room_entry.dir >= 0 && room_entry.dir < NUM_EXITS &&
+        world[rnum].dir_option[room_entry.dir]) {
+        world[rnum].dir_option[room_entry.dir]->exit_info = room_entry.state;
+        return 0;
+    }
+    return -1;
+}
+
+int copyover_restore_zone_age_from_buffer(const char *buf, size_t len, size_t *bytes_read)
+{
+    struct zone_age_entry entry;
+
+    if (len < sizeof(entry)) {
+        *bytes_read = 0;
+        return -1;
+    }
+
+    memcpy(&entry, buf, sizeof(entry));
+    *bytes_read = sizeof(entry);
+
+    if (entry.zone_rnum >= 0 && entry.zone_rnum <= top_of_zone_table) {
+        zone_table[entry.zone_rnum].age = entry.age;
+        zone_table[entry.zone_rnum].lifespan = entry.lifespan;
+        zone_table[entry.zone_rnum].fullreset_age = entry.fullreset_age;
+        zone_table[entry.zone_rnum].fullreset_lifespan = entry.fullreset_lifespan;
+        return 0;
+    }
+    return -1;
 }

@@ -977,7 +977,7 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
   struct follow_type *k;
   int      i, sum, num_undead = 0;
   int      life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
-  bool     corpselog;
+  bool     corpselog = FALSE;
   static struct
   {
     const int mob_number;
@@ -1255,7 +1255,7 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
   struct follow_type *k;
   int      i, sum, num_undead = 0;
   int      life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
-  bool     corpselog;
+  bool     corpselog = FALSE;
   static struct
   {
     const int mob_number;
@@ -1539,7 +1539,7 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj,
                   int which_type)
 {
   P_char   mob;
-  bool     corpselog;
+  bool     corpselog = FALSE;
   P_obj    obj_in_corpse = NULL, next_obj = NULL;
   P_obj    globe;
   struct follow_type *k;
@@ -1738,7 +1738,7 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj,
 void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
   P_char   mob;
-  bool     corpselog;
+  bool     corpselog = FALSE;
   P_obj    obj_in_corpse = NULL, next_obj = NULL;
   P_obj    globe;
   struct follow_type *k;
@@ -1976,7 +1976,7 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
   P_char   mob;
-  bool     corpselog;
+  bool     corpselog = FALSE;
   P_obj    obj_in_corpse = NULL, next_obj = NULL;
   P_obj    globe;
   struct follow_type *k;
