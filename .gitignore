@@ -42,4 +42,5 @@ logs/log/*
 durismud-launcher
 Accounts.old.*
 Players.old.*
-backup
+backup/
+docs/
