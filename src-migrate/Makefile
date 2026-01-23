@@ -17,6 +17,7 @@ SRCS = migrate_main.c \
        migrate_ships.c \
        migrate_guilds.c \
        migrate_misc.c \
+       migrate_shopkeepers.c \
        migrate_stubs.c
 
 OBJS = $(SRCS:.c=.o)

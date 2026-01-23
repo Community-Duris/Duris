@@ -315,4 +315,7 @@ int migrate_saved_items_from_files(void);
 int migrate_recipes_from_files(void);
 int migrate_spellbooks_from_files(void);
 
+// migrate_shopkeepers.c
+int migrate_shopkeepers_from_files(void);
+
 #endif // MIGRATE_COMMON_H

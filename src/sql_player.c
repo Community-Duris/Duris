@@ -5193,14 +5193,14 @@ static P_obj sql_load_shopkeeper_items(int shopkeeper_id, int equip_slot, int co
     obj->timer[0] = atol(row[5]);
     if (row[6]) obj->extra_flags = strtoul(row[6], NULL, 10);
 
-    obj->value[0] = atoi(row[7]);
-    obj->value[1] = atoi(row[8]);
-    obj->value[2] = atoi(row[9]);
-    obj->value[3] = atoi(row[10]);
-    obj->value[4] = atoi(row[11]);
-    obj->value[5] = atoi(row[12]);
-    obj->value[6] = atoi(row[13]);
-    obj->value[7] = atoi(row[14]);
+    obj->value[0] = row[7] ? atoi(row[7]) : 0;
+    obj->value[1] = row[8] ? atoi(row[8]) : 0;
+    obj->value[2] = row[9] ? atoi(row[9]) : 0;
+    obj->value[3] = row[10] ? atoi(row[10]) : 0;
+    obj->value[4] = row[11] ? atoi(row[11]) : 0;
+    obj->value[5] = row[12] ? atoi(row[12]) : 0;
+    obj->value[6] = row[13] ? atoi(row[13]) : 0;
+    obj->value[7] = row[14] ? atoi(row[14]) : 0;
 
     if (row[15] && strlen(row[15]) > 0)
     {
@@ -5542,14 +5542,14 @@ void sql_restore_saved_items(void)
     obj->timer[0] = atol(row[6]);
     if (row[7]) obj->extra_flags = strtoul(row[7], NULL, 10);
 
-    obj->value[0] = atoi(row[8]);
-    obj->value[1] = atoi(row[9]);
-    obj->value[2] = atoi(row[10]);
-    obj->value[3] = atoi(row[11]);
-    obj->value[4] = atoi(row[12]);
-    obj->value[5] = atoi(row[13]);
-    obj->value[6] = atoi(row[14]);
-    obj->value[7] = atoi(row[15]);
+    obj->value[0] = row[8] ? atoi(row[8]) : 0;
+    obj->value[1] = row[9] ? atoi(row[9]) : 0;
+    obj->value[2] = row[10] ? atoi(row[10]) : 0;
+    obj->value[3] = row[11] ? atoi(row[11]) : 0;
+    obj->value[4] = row[12] ? atoi(row[12]) : 0;
+    obj->value[5] = row[13] ? atoi(row[13]) : 0;
+    obj->value[6] = row[14] ? atoi(row[14]) : 0;
+    obj->value[7] = row[15] ? atoi(row[15]) : 0;
 
     if (row[16] && strlen(row[16]) > 0)
     {
@@ -5752,14 +5752,14 @@ void sql_load_siege_list(void)
     obj->timer[0] = atol(row[5]);
     if (row[6]) obj->extra_flags = strtoul(row[6], NULL, 10);
 
-    obj->value[0] = atoi(row[7]);
-    obj->value[1] = atoi(row[8]);
-    obj->value[2] = atoi(row[9]);
-    obj->value[3] = atoi(row[10]);
-    obj->value[4] = atoi(row[11]);
-    obj->value[5] = atoi(row[12]);
-    obj->value[6] = atoi(row[13]);
-    obj->value[7] = atoi(row[14]);
+    obj->value[0] = row[7] ? atoi(row[7]) : 0;
+    obj->value[1] = row[8] ? atoi(row[8]) : 0;
+    obj->value[2] = row[9] ? atoi(row[9]) : 0;
+    obj->value[3] = row[10] ? atoi(row[10]) : 0;
+    obj->value[4] = row[11] ? atoi(row[11]) : 0;
+    obj->value[5] = row[12] ? atoi(row[12]) : 0;
+    obj->value[6] = row[13] ? atoi(row[13]) : 0;
+    obj->value[7] = row[14] ? atoi(row[14]) : 0;
 
     if (row[15] && strlen(row[15]) > 0)
     {

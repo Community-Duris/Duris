@@ -8427,6 +8427,9 @@ void set_fighting(P_char ch, P_char vict)
   ch->specials.next_fighting = combat_list;
   combat_list = ch;
 
+  if (ch->in_room >= 0)
+    gmcp_mark_room_dirty(ch->in_room);
+
   if (!IS_DRAGOON(ch))
     stop_memorizing(ch);
   if (!IS_DRAGOON(victim))
@@ -9462,6 +9465,9 @@ void stop_fighting(P_char ch)
 
   if (GET_CHAR_SKILL(ch, SKILL_LANCE_CHARGE) != 0)
     set_short_affected_by(ch, SKILL_LANCE_CHARGE, PULSE_VIOLENCE / 2); // to prevent flee/charge
+
+  if (ch->in_room >= 0)
+    gmcp_mark_room_dirty(ch->in_room);
 
   /* Notify web client that combat has ended */
   gmcp_combat_end(ch);

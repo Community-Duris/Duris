@@ -14,6 +14,7 @@ static void print_usage(const char *prog) {
     printf("  --guilds     migrate guilds only\n");
     printf("  --recipes    migrate recipes only\n");
     printf("  --spellbooks migrate spellbooks only\n");
+    printf("  --shopkeepers migrate shopkeepers only\n");
     printf("  --frag       populate frag_leaderboard only\n");
     printf("  --clean      clear relevant tables before migration\n");
     printf("  -j N         use N parallel threads (default: 1)\n");
@@ -71,6 +72,13 @@ static void clean_spellbooks(void) {
     qry("DELETE FROM player_spellbooks");
 }
 
+static void clean_shopkeepers(void) {
+    printf("  clearing shopkeeper tables...\n");
+    qry("DELETE FROM shopkeeper_items");
+    qry("DELETE FROM shopkeeper_affects");
+    qry("DELETE FROM shopkeepers");
+}
+
 static void clean_frag_leaderboard(void) {
     printf("  clearing frag_leaderboard...\n");
     qry("DELETE FROM frag_leaderboard");
@@ -126,7 +134,7 @@ int main(int argc, char **argv) {
     // parse args
     int do_all = (argc == 1);
     int do_accounts = 0, do_players = 0, do_lockers = 0, do_ships = 0;
-    int do_guilds = 0, do_recipes = 0, do_spellbooks = 0, do_frag = 0;
+    int do_guilds = 0, do_recipes = 0, do_spellbooks = 0, do_shopkeepers = 0, do_frag = 0;
     int do_clean = 0;
 
     for (int i = 1; i < argc; i++) {
@@ -138,6 +146,7 @@ int main(int argc, char **argv) {
         else if (strcmp(argv[i], "--guilds") == 0) do_guilds = 1;
         else if (strcmp(argv[i], "--recipes") == 0) do_recipes = 1;
         else if (strcmp(argv[i], "--spellbooks") == 0) do_spellbooks = 1;
+        else if (strcmp(argv[i], "--shopkeepers") == 0) do_shopkeepers = 1;
         else if (strcmp(argv[i], "--frag") == 0) do_frag = 1;
         else if (strcmp(argv[i], "--clean") == 0) do_clean = 1;
         else if (strcmp(argv[i], "-j") == 0) {
@@ -238,6 +247,7 @@ int main(int argc, char **argv) {
         if (do_all || do_guilds) clean_guilds();
         if (do_all || do_recipes) clean_recipes();
         if (do_all || do_spellbooks) clean_spellbooks();
+        if (do_all || do_shopkeepers) clean_shopkeepers();
         if (do_all) {
             clean_corpses();
             clean_saved_items();
@@ -246,7 +256,7 @@ int main(int argc, char **argv) {
     }
 
     int accounts = 0, recipes = 0, ships = 0, guilds = 0;
-    int corpses = 0, saved_items = 0, players = 0, lockers = 0, spellbooks = 0;
+    int corpses = 0, saved_items = 0, players = 0, lockers = 0, spellbooks = 0, shopkeepers = 0;
 
     // players must be migrated first so account_characters pid lookups work
     if (do_all || do_players) {
@@ -288,6 +298,10 @@ int main(int argc, char **argv) {
         spellbooks = migrate_spellbooks_from_files();
         printf("\n");
     }
+    if (do_all || do_shopkeepers) {
+        shopkeepers = migrate_shopkeepers_from_files();
+        printf("\n");
+    }
 
     // commit and restore normal mode
     printf("committing transaction...\n");
@@ -307,6 +321,7 @@ int main(int argc, char **argv) {
         printf("saved items: %d\n", saved_items);
         printf("lockers: %d\n", lockers);
         printf("spellbooks: %d\n", spellbooks);
+        printf("shopkeepers: %d\n", shopkeepers);
     }
 
     return 0;

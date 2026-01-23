@@ -814,8 +814,8 @@ static struct mig_player *parse_player_pfile(const char *filepath) {
     // validate offsets
     if (skill_off >= size || witness_off >= size || affect_off >= size ||
         item_off >= size || size_off > size) {
-        printf("  invalid offsets: skill=%d witness=%d affect=%d item=%d size=%d (filesize=%d)\n",
-               skill_off, witness_off, affect_off, item_off, size_off, size);
+        printf("  %s: invalid offsets: skill=%d witness=%d affect=%d item=%d size=%d (filesize=%d)\n",
+               filepath, skill_off, witness_off, affect_off, item_off, size_off, size);
         return NULL;
     }
 
