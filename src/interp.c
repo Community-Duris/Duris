@@ -1099,7 +1099,8 @@ const char *command[MAX_CMD] = {
   "mlist",
   "poll",
   "newchar",
-  "\n"                          /* MAX_CMD = 851, MAX_CMD_LIST = 1000 */
+  "jchat",
+  "\n"                          /* MAX_CMD = 852, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = {
@@ -2506,6 +2507,7 @@ void assign_command_pointers(void)
   CMD_Y(CMD_MREPORT, STAT_DEAD + POS_PRONE, do_mreport, AVATAR, FALSE);
 #endif
   CMD_Y(CMD_NCHAT, STAT_SLEEPING + POS_PRONE, do_nchat, 1, FALSE);
+  CMD_Y(CMD_JESTROS, STAT_SLEEPING + POS_PRONE, do_jestros, 1, FALSE);
   CMD_Y(CMD_PAGE, STAT_NORMAL + POS_STANDING, do_page, IMMORTAL, FALSE);
   CMD_Y(CMD_SKILLS, STAT_SLEEPING + POS_PRONE, do_skills, 1, FALSE);
   CMD_Y(CMD_SPELLS, STAT_SLEEPING + POS_PRONE, do_spells, 1, FALSE);

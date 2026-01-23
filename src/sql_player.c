@@ -5900,14 +5900,16 @@ bool sql_save_ship(P_ship ship)
 
   char *esc_name = sql_escape_string(ship->name ? ship->name : "");
 
-  char query[512];
+  char query[768];
   snprintf(query, sizeof(query),
-    "insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail) "
-    "values ('%s', '%s', %d, %d, %d, %d, %d) "
+    "insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) "
+    "values ('%s', '%s', %d, %d, %d, %d, %d, %d, %d, %lu) "
     "on duplicate key update ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, "
-    "time_played=%d, mainsail=%d",
+    "time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu",
     esc_owner, esc_name, ship->m_class, ship->frags, ship->anchor, ship->time, ship->mainsail,
-    esc_name, ship->m_class, ship->frags, ship->anchor, ship->time, ship->mainsail);
+    ship->race, ship->money, ship->flags,
+    esc_name, ship->m_class, ship->frags, ship->anchor, ship->time, ship->mainsail,
+    ship->race, ship->money, ship->flags);
 
   bool ok = sql_run_query(query);
   if (!ok)
@@ -6046,9 +6048,9 @@ P_ship sql_load_ship(const char *owner_name)
   if (!esc_owner)
     return NULL;
 
-  char query[256];
+  char query[320];
   snprintf(query, sizeof(query),
-    "select id, ship_name, ship_class, frags, anchor_room, time_played, mainsail "
+    "select id, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags "
     "from ships where owner_name='%s'", esc_owner);
   free(esc_owner);
 
@@ -6079,6 +6081,9 @@ P_ship sql_load_ship(const char *owner_name)
   ship->anchor = atoi(row[4]);
   ship->time = atoi(row[5]);
   ship->mainsail = atoi(row[6]);
+  ship->race = atoi(row[7]);
+  ship->money = atoi(row[8]);
+  ship->flags = row[9] ? strtoul(row[9], NULL, 10) : 0;
 
   mysql_free_result(result);
 
