@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "structs.h"
 #include "utils.h"
@@ -34,6 +35,7 @@
 #include "epic.h"
 #include "timers.h"
 #include "redis.h"
+#include "sql_player.h"
 
 extern P_index mob_index;
 extern const struct race_names race_names_table[];
@@ -2274,14 +2276,43 @@ void sql_log_player_login(P_char ch, const char *status)
   if (!ch || IS_NPC(ch) || !ch->desc)
     return;
 
-  const char *account = get_account_name_safe(ch);
-  const char *ip = ch->desc->host;
-  const char *client = ch->desc->client_name[0] ? ch->desc->client_name : "";
-  const char *client_ver = ch->desc->client_version[0] ? ch->desc->client_version : "";
+  // copy data before fork since child can't access parent memory safely
+  char name[32], ip[64], account[64], client[64], client_ver[32];
+  int pid_num;
 
-  db_query("INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
-           "VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
-           status, ip, GET_PID(ch), GET_NAME(ch),
-           account ? account : "", client, client_ver);
+  strncpy(name, GET_NAME(ch), sizeof(name) - 1);
+  name[sizeof(name) - 1] = '\0';
+  strncpy(ip, ch->desc->host, sizeof(ip) - 1);
+  ip[sizeof(ip) - 1] = '\0';
+  const char *acct = get_account_name_safe(ch);
+  strncpy(account, acct ? acct : "", sizeof(account) - 1);
+  account[sizeof(account) - 1] = '\0';
+  strncpy(client, ch->desc->client_name[0] ? ch->desc->client_name : "", sizeof(client) - 1);
+  client[sizeof(client) - 1] = '\0';
+  strncpy(client_ver, ch->desc->client_version[0] ? ch->desc->client_version : "", sizeof(client_ver) - 1);
+  client_ver[sizeof(client_ver) - 1] = '\0';
+  pid_num = GET_PID(ch);
+
+  pid_t pid = fork();
+  if (pid < 0)
+    return; // fork failed, skip logging
+
+  if (pid == 0)
+  {
+    // child process
+    MYSQL *child_conn = sql_create_child_connection();
+    if (!child_conn)
+      _exit(1);
+
+    sql_reset_for_child(child_conn);
+
+    db_query("INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
+             "VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
+             status, ip, pid_num, name, account, client, client_ver);
+
+    mysql_close(child_conn);
+    _exit(0);
+  }
+  // parent continues immediately
 }
 #endif
