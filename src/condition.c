@@ -148,7 +148,7 @@ int DamageOneItem(P_char ch, int dam_type, P_obj obj, bool destroy)
     return 0;
   }
 
-  num = number(3, 9);
+  num = number(1, 2);
 
   if(materials[obj->material].dam_res[dam_type])
   {
@@ -158,14 +158,10 @@ int DamageOneItem(P_char ch, int dam_type, P_obj obj, bool destroy)
   // physical being the most common is less harsh
   if(dam_type == SPLDAM_GENERIC)
   {
-    num >>= 1;
+    num >>= 1;	
   }
 
-  // Lets reduce the amount of damage a lance takes.
-  if( objtype == ITEM_WEAPON && obj->value[0] == 16 )
-  {
-    num = number(1, 3);
-  }
+  num = BOUNDED(1, num, 10);
 
   obj->condition -= num;
 
