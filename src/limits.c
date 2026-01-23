@@ -1755,7 +1755,6 @@ void point_update(void)
         {
           update_ingame_racewar( -GET_RACEWAR(i) );
         }
-        ws_broadcast_player_logout(GET_NAME(i), GET_RACEWAR(i));
         extract_char(i);
         continue;
       }

@@ -334,7 +334,7 @@ void do_camp(P_char ch, char *arg, int cmd)
 
     writeCharacter(ch, RENT_INN, ch->in_room);
 
-    ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
+    sql_log_player_login(ch, "logout");
     redis_player_offline(ch);
     extract_char(ch);
     ch = NULL;
@@ -1697,7 +1697,7 @@ void do_quit(P_char ch, char *argument, int cmd)
     update_ingame_racewar(-GET_RACEWAR(ch));
   }
 
-  ws_broadcast_player_logout(GET_NAME(ch), GET_RACEWAR(ch));
+  sql_log_player_login(ch, "logout");
   redis_player_offline(ch);
   extract_char(ch);
   ch = NULL;

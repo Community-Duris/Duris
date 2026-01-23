@@ -3780,7 +3780,6 @@ void enter_game(P_desc d)
   loginlog(GET_LEVEL(ch), "%s [%s] enters game @ %s.%s [%d]",
            GET_NAME(ch), d->host, timestr, Gbuf1, world[ch->in_room].number);
   sql_log(ch, CONNECTLOG, "Entered Game");
-  ws_broadcast_player_login(d);
 
   if(GET_LEVEL(ch) >= MINLVLIMMORTAL)
     loginlog(GET_LEVEL(ch), "&+GIMMORTAL&n: (%s) [%s] has logged on.%s",
@@ -3982,6 +3981,7 @@ if(d->character->base_stats.Wis < 80)
   gmcp_quest_status(ch);
 
   redis_player_online(ch);
+  sql_log_player_login(ch, "login");
 
   do_look(ch, 0, -4);
 

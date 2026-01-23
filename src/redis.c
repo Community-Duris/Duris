@@ -34,6 +34,7 @@ extern struct room_data *world;
 extern P_char character_list;
 extern P_obj object_list;
 extern P_index obj_index;
+extern const struct race_names race_names_table[];
 
 // ship object vnums defined in ships/ships.h
 
@@ -1297,14 +1298,28 @@ void redis_player_online(P_char ch)
   if (!redis_enabled || !redis_ctx || !ch || IS_NPC(ch))
     return;
 
-  char json[512];
+  const char *account = get_account_name_safe(ch);
+  const char *race_str = race_names_table[GET_RACE(ch)].ansi;
+  const char *class_str = get_class_name(ch, NULL);
+  const char *ip = (ch->desc && ch->desc->host[0]) ? ch->desc->host : "";
+  const char *client = (ch->desc && ch->desc->client_name[0]) ? ch->desc->client_name : "";
+  const char *client_ver = (ch->desc && ch->desc->client_version[0]) ? ch->desc->client_version : "";
+  time_t login_time = ch->player.time.logon;
+
+  char json[1024];
   snprintf(json, sizeof(json),
-    "{\"name\":\"%s\",\"level\":%d,\"class\":%lu,\"race\":%d,\"racewar\":%d}",
+    "{\"name\":\"%s\",\"account\":\"%s\",\"level\":%d,\"race\":\"%s\",\"class\":\"%s\","
+    "\"racewar\":%d,\"ip\":\"%s\",\"client\":\"%s\",\"client_version\":\"%s\",\"login_time\":%ld}",
     GET_NAME(ch),
+    account ? account : "",
     GET_LEVEL(ch),
-    (unsigned long)ch->player.m_class,
-    GET_RACE(ch),
-    GET_RACEWAR(ch));
+    race_str ? race_str : "",
+    class_str ? class_str : "",
+    GET_RACEWAR(ch),
+    ip,
+    client,
+    client_ver,
+    (long)login_time);
 
   redisReply *reply = (redisReply *)redisCommand(redis_ctx,
     "HSET mud:online %d %b", GET_PID(ch), json, strlen(json));

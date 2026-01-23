@@ -134,6 +134,7 @@ void zone_trophy_update();
 #define LEVEL_TO_FRAGS( level ) ( (level <= 25) ? 0 : (( float )( level - 25 ) * .6) )
 
 void sql_log(P_char ch, char * kind, char * format, ...);
+void sql_log_player_login(P_char ch, const char *status);
 
 struct zone_info
 {

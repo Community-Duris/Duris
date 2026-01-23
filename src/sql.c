@@ -2268,4 +2268,20 @@ bool sql_pwipe(int code_verify)
   send_to_all("WIPE COMPLETED!");
   sleep(1);
 }
+
+void sql_log_player_login(P_char ch, const char *status)
+{
+  if (!ch || IS_NPC(ch) || !ch->desc)
+    return;
+
+  const char *account = get_account_name_safe(ch);
+  const char *ip = ch->desc->host;
+  const char *client = ch->desc->client_name[0] ? ch->desc->client_name : "";
+  const char *client_ver = ch->desc->client_version[0] ? ch->desc->client_version : "";
+
+  db_query("INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
+           "VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
+           status, ip, GET_PID(ch), GET_NAME(ch),
+           account ? account : "", client, client_ver);
+}
 #endif
