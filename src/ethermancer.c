@@ -1129,9 +1129,8 @@ void spell_arcane_whirlwind(int level, P_char ch, char *arg, int type,
     {
       next = aff->next;
 
-      if (number(0, 100) < 40)
+      if (number(0, 100) < level)
       {
-
         if (IS_SPELL(aff->type) && skills[aff->type].spell_pointer &&
             !(skills[aff->type].targets & TAR_SELF_ONLY) &&
             !(skills[aff->type].targets & TAR_AGGRO) &&
@@ -3040,8 +3039,8 @@ void spell_arctic_blast(int level, P_char ch, char *arg, int type, P_char victim
 
 void spell_ice_spikes(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
 {
-  int dam;
-  int num_missiles = 3;
+  int base_dam, missile_dam;
+  int num_missiles = number(3, 4) + (level > 50 ? 1 : 0);
   struct damage_messages messages = {
     "&+CYou hurl a spike of &+Rr&+raz&+Ror &+Csharp &+Wice &+Cat $N&+C.",
     "&+CGiant Spikes of &+Wice&+C hit you square in the chest, impaling you!",
@@ -3052,23 +3051,25 @@ void spell_ice_spikes(int level, P_char ch, char *arg, int type, P_char victim, 
     0
   };
 
-  if( GET_LEVEL(ch) >= 53 )
-  {
-    num_missiles++;
-  }
-
-  // dam should total about: 9 * level +/- 25 .. but 3 spikes -> 3 * level +/- 8..
-  dam = 2 * level + number(30, 64);
+  base_dam = missile_dam = (3 * level) + number(0, level);
 
   int mod = get_default_save_mod(victim, ch, SAVING_SPELL, SPELL_ICE_SPIKES);
   if( NewSaves(victim, SAVING_SPELL, mod) )
   {
-    dam = (dam * 2) / 3;
+    missile_dam = (base_dam * 2) / 3;
   }
-
-  while( num_missiles-- && spell_damage(ch, victim, dam, SPLDAM_COLD, 0, &messages) == DAM_NONEDEAD )
+  
+  while( num_missiles-- && spell_damage(ch, victim, missile_dam, SPLDAM_COLD, 0, &messages) == DAM_NONEDEAD )
   {
-    ;
+	// save chance per missile
+	if( NewSaves(victim, SAVING_SPELL, mod) )
+	{
+      missile_dam = (base_dam * 2) / 3;
+	}
+	else
+	{
+	  missile_dam = base_dam;
+	}
   }
 }
 

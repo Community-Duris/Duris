@@ -46,6 +46,7 @@ D 0 420037 0 2 100 0 0 0
 *     "Before the Hold of the Ship" - closed/locked
 *
 *
+O 0 420048 1 420000 100 0 0 0      * rope ladder teleport
 O 0 420014 2 420004 100 0 0 0      * an adamantium bracer inscribed with elvish runes
 O 0 420002 7 420004 100 0 0 0      * a MASSIVE pile of platinum and gold coins.
 O 0 420015 1 420022 100 0 0 0      * an iron and brass chest
@@ -54,9 +55,11 @@ P 1 420020 1 420015 100 0 0 0      *   a psionicist's mindstone bangle
 P 1 420021 1 420015 100 0 0 0      *   a flowing black robe with a Mindflayers Crest
 P 1 420002 7 420015 100 0 0 0      *   a MASSIVE pile of platinum and gold coins.
 P 1 420000 1 420015 100 0 0 0      *   a khopis shortsword named 'WindRage'
+O 0 420047 1 420022 100 0 0 0      * rope ladder teleport
 O 0 420022 1 420033 100 0 0 0      * a broken desk
 P 1 420030 1 420022 100 0 0 0      *   a complex multitooth key
 P 1 420031 1 420022 100 0 0 0      *   the logbook of the Dreadnaught Cyclops
+O 0 420049 1 420033 100 0 0 0      * a shimmering portal
 O 0 420002 7 420050 100 0 0 0      * a MASSIVE pile of platinum and gold coins.
 O 0 420026 7 420050 100 0 0 0      * a Treasure Chest
 P 1 420027 1 420026 100 0 0 0      *   an ornate oaken staff encrusted with emeralds

@@ -518,13 +518,10 @@ void spell_anti_magic_ray(int level, P_char ch, char *arg, int type,
   else
     noshrug = 0;
 
-  // if vict doesn't die, hit with dispel magic 50% of the time
-
-  if (spell_damage(ch, victim, dam, SPLDAM_GENERIC, noshrug, &messages) == DAM_NONEDEAD && (number(0, 1)))
-
+  if (spell_damage(ch, victim, dam, SPLDAM_GENERIC, noshrug, &messages) == DAM_NONEDEAD)
   {
     save = victim->specials.apply_saving_throw[SAVING_SPELL];
-    victim->specials.apply_saving_throw[SAVING_SPELL] += 20 + (56 - GET_LEVEL(ch));
+    victim->specials.apply_saving_throw[SAVING_SPELL] += 10 + (GET_LEVEL(ch) - 56); // 10-15 (roughly 50-75% increased chance to fail)
     spell_dispel_magic(level, ch, 0, SPELL_TYPE_SPELL, victim, obj);
     victim->specials.apply_saving_throw[SAVING_SPELL] = save;
   }
@@ -1107,7 +1104,7 @@ void spell_energy_drain(int level, P_char ch, char *arg, int type, P_char victim
   // At level 56: 168 to 840 -> 336 + (56 to 280) = 392 to 616
   // Avg stays 504 == 126 real damage
   // But new range is 224 == 56 real as opposed to 672 == 168 real (+/- 28 vs 84).
-  dam = 6 * level + dice(level, 5);
+  dam = (6 * level) + dice(level, 5);
 
   if (IS_AFFECTED4(victim, AFF4_DEFLECT))
   {
@@ -3015,7 +3012,7 @@ void spell_bigbys_clenched_fist(int level, P_char ch, char *arg, int type, P_cha
   if (level > 50)
     level = 50;
 
-  int dam = 10 * level + number(1, 25);
+  int dam = (10 * level) + number(1, 25);
   int mod = get_default_save_mod(victim, ch, SAVING_SPELL, SPELL_BIGBYS_CLENCHED_FIST);
   if (!NewSaves(victim, SAVING_SPELL, mod))
     dam = dam * 2;
@@ -3055,7 +3052,7 @@ void spell_bigbys_crushing_hand(int level, P_char ch, char *arg, int type, P_cha
       "$N's head &+Yexplodes&n from the pressure of a huge fist sent by $n, and bits of $M &+Gooze&n between its fingers.",
       0};
 
-  int dam = 12 * level + number(1, 50);
+  int dam = (12 * level) + number(1, 50);
   int mod = get_default_save_mod(victim, ch, SAVING_SPELL, SPELL_BIGBYS_CRUSHING_HAND);
   if (!NewSaves(victim, SAVING_SPELL, mod))
     dam = (int)(dam * (number(175, 175 + MAX(0, level - 45) * 2) / 100.0));
@@ -3275,7 +3272,7 @@ void spell_single_lightning_ring(int level, P_char ch, char *arg, int type,
       "and you die as a &=LBflashing light&n explodes in your face!",
       "and turns $N into a charred &=LBsparkling&n corpse!", 0};
 
-  dam = 6 * MIN(51, level) + GET_CLASS(ch, CLASS_ETHERMANCER) ? dice(level, 6) : number(1, level);
+  dam = (6 * MIN(51, level)) + (GET_CLASS(ch, CLASS_ETHERMANCER) ? dice(level, 4) : number(1, level));
   if (IS_PC(ch) && IS_PC(victim))
   {
     dam = dam * get_property("spell.area.damage.to.pc", 0.5);
@@ -3302,6 +3299,7 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
 {
   int dam, temp_coor, dead = 0;
   int svchance, affchance;
+  bool casterIsTempestMagus = false;
   struct damage_messages messages = {
       "&+WThe cyclone whirls and rips about, sending $N &+Wreeling!",
       "$n's &+Wcyclone hammers at your body!",
@@ -3316,8 +3314,13 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
     return;
   }
 
+  casterIsTempestMagus = GET_SPEC(ch, CLASS_ETHERMANCER, SPEC_TEMPESTMAGUS);
   // dam = dice(level * 2, 9);
   dam = dice((int)(MIN(level, 40) * 2), 10);
+  if(casterIsTempestMagus)
+  {
+	dam = (int)(dam * (1.5 + MAX(level - 30, 20) / 40.0));
+  }
 
   /*  play_sound(SOUND_WIND3, NULL, ch->in_room, TO_ROOM); */
 
@@ -3325,7 +3328,7 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
 
   if (IS_AFFECTED(victim, AFF_FLY) &&
       !NewSaves(victim, SAVING_PARA, svchance) &&
-      !IS_ELITE(victim))
+      (!IS_ELITE(victim) || casterIsTempestMagus))
   {
     affchance = number(1, 100);
 
@@ -3362,7 +3365,7 @@ void spell_cyclone(int level, P_char ch, char *arg, int type, P_char victim,
   }
 
   if (!StatSave(victim, APPLY_AGI, (GET_LEVEL(victim) - GET_LEVEL(ch)) / 5) &&
-      !IS_ELITE(victim))
+      (!IS_ELITE(victim) || casterIsTempestMagus))
   {
     spell_damage(ch, victim, dam, SPLDAM_GENERIC, 0, &messages);
   }
@@ -3692,7 +3695,7 @@ void spell_earthquake(int level, P_char ch, char *arg, int type, P_char victim, 
         {
           act("&+LYou stagger and almost break your leg!&n", FALSE, ch, 0, tch, TO_VICT);
           act("$n&n &+Lstaggers and almost falls!&n", TRUE, tch, 0, 0, TO_ROOM);
-          dam = (int)(dice(1, 4) + dam_flag * level / 2);
+          dam = (int)(dice(1, 4) + (dam_flag * (level / 2)));
           // lvl < 0 -> don't damage them as this is from earthen rain -> fall only.
           if ((level >= 0) && spell_damage(ch, tch, dam, SPLDAM_EARTH,
                                            SPLDAM_NOSHRUG | SPLDAM_BREATH | SPLDAM_NODEFLECT, 0) != DAM_NONEDEAD)
@@ -4029,7 +4032,7 @@ void spell_destroy_undead(int level, P_char ch, char *arg, int type,
     return;
   }
 
-  dam = 15 * MIN(level, 56) + number(-40, 40);
+  dam = (15 * MIN(level, 56)) + number(-40, 40);
   // dam = 13 * level + number(0, level);
   if (saves_spell(victim, SAVING_SPELL))
     dam >>= 1;
@@ -4564,7 +4567,7 @@ void spell_armor(int level, P_char ch, char *arg, int type, P_char victim, P_obj
     bzero(&af, sizeof(af));
     af.type = SPELL_ARMOR;
     af.duration = 20;
-    af.modifier = (int)(-1 * mod * level - number(0, 10));
+    af.modifier = (int)(-1 * (mod * level) - number(0, 10));
     af.location = APPLY_AC;
     af.bitvector = AFF_ARMOR;
     affect_to_char(victim, &af);
@@ -6093,7 +6096,7 @@ void spell_ray_of_enfeeblement(int level, P_char ch, char *arg, int type, P_char
       af.location = APPLY_STR;
       affect_to_char(victim, &af);
 
-      af.modifier = MIN(-1, (int)(-1 * level / 10 - number(0, 5)));
+      af.modifier = MIN(-1, (int)(-1 * (level / 10) - number(0, 5)));
       // Don't go below 0 or it'll jump up to 255 'cause damroll is an unsigned byte.
       if (af.modifier < 0 - victim->points.damroll)
         af.modifier = 0 - victim->points.damroll;
@@ -13372,7 +13375,7 @@ void spell_shatter(int level, P_char ch, char *arg, int type, P_char victim, P_o
       0};
 
   // Corresponds to approx bigbys + 10 damage saved (This is 9th circle vs bigbys 8th for Bards).
-  dam = 10 * level + dice(level, 3);
+  dam = (10 * level) + dice(level, 3);
   // 92 - 100 pow has no bonus, < 92 pow means easier to save, > 100 pow means harder to save.
   savemod = STAT_INDEX(GET_C_POW(ch)) - 15;
 
@@ -14452,7 +14455,7 @@ void spell_solar_flare(int level, P_char ch, char *arg, int type, P_char victim,
       "A burst of &+Rpure &+rf&+Ri&+rr&+Re&n leaps from&n $n &+Rturning&n $N &+Rinto a pile of ashes.",
       0};
 
-  dam = 6 * level + number(1, 25);
+  dam = (6 * level) + number(1, 25);
 
   if (spell_damage(ch, victim, dam, SPLDAM_FIRE, 0, &messages))
     return;
@@ -17933,7 +17936,7 @@ void event_dread_wave(P_char ch, P_char vict, P_obj obj, void *data)
     return;
   }
 
-  dam = MAX(1, (int)((af->modifier + 2) * level + number(-60, 0)));
+  dam = MAX(1, (int)(((af->modifier + 2) * level) + number(-60, 0)));
 
   dam = (int)(dam * GET_LEVEL(ch) / 56);
 
@@ -18051,7 +18054,7 @@ void event_magma_burst(P_char ch, P_char vict, P_obj obj, void *data)
     return;
   }
 
-  dam = 3 * level + number(0, 30);
+  dam = (3 * level) + number(0, 30);
 
   if (spell_damage(ch, vict, dam, SPLDAM_FIRE, SPLDAM_NODEFLECT, &messages) == DAM_NONEDEAD)
   {
@@ -19040,6 +19043,35 @@ void spell_stornogs_spheres(int level, P_char ch, char *arg, int type,
   affect_to_char(victim, &af);
 }
 
+void spell_warring_zeal(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	struct affected_type af;
+	struct affected_type *paf = NULL;
+	
+	if (!SanityCheck(ch, "spell_warring_zeal"))
+		return;
+	
+	if((paf = get_spell_from_char(ch, SPELL_WARRING_ZEAL)) != NULL)
+	{
+		// refresh
+		paf->duration = 2;
+		paf->location = APPLY_HITROLL;
+		paf->modifier = level / 5;
+		send_to_char("&+WThe &+Rbeat &+Wof the &+rdrums &+Wis renewed!&n\n", ch);
+	}
+	else
+	{
+		send_to_char("&+WThe sound of &+rwa&+Rrd&+rru&+Rms &+Wfill your head!&n\n", ch);
+		act("$n &+Wsuddendly becomes &+rba&+Rtt&+rle &+Rcr&+raz&+Red!", TRUE, victim, 0, 0, TO_ROOM);
+		bzero(&af, sizeof(af));
+		af.type = SPELL_WARRING_ZEAL;
+		af.duration = 2;
+		af.location = APPLY_HITROLL;
+		af.modifier = level / 5;
+		affect_to_char(ch, &af);
+	}
+}
+
 void spell_dazzle(int level, P_char ch, char *arg, int type, P_char victim,
                   P_obj obj)
 {
@@ -19103,8 +19135,8 @@ void spell_accel_healing(int level, P_char ch, char *arg, int type, P_char victi
   af.type = SPELL_ACCEL_HEALING;
   af.duration = skl_lvl + 1;
   af.location = APPLY_HIT_REG;
-  // 1.5x as effective as regen, but only works out of combat
-  af.modifier = ((int)(get_property("hit.regen.Spell", 9.000) + 1) * 3 / 2) * level;
+  // 2x as effective as regen, but only works out of combat
+  af.modifier = ((int)(get_property("hit.regen.Spell", 9.000) + 1) * 2) * level;
   affect_to_char(victim, &af);
 
   send_to_char("You begin to heal faster.\r\n", victim);
@@ -21579,7 +21611,7 @@ void spell_mielikki_vitality(int level, P_char ch, char *arg, int type, P_char v
 {
   struct affected_type af;
   bool message = false;
-  int healpoints = 3 * level + level / 2;
+  int healpoints = (3 * level) + (level / 2);
 
   if (affected_by_spell(ch, SPELL_ESHABALAS_VITALITY) || affected_by_spell(ch, SPELL_FALUZURES_VITALITY))
   {
