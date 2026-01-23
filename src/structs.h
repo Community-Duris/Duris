@@ -997,6 +997,7 @@ struct room_data
 #define PLR3_FRAGLOW BIT_2   /* Lowest Fragger */
 #define PLR3_GUILDNAME BIT_3 // Whether or not they see guild name when using gcc.
 #define PLR3_SURNAMES BIT_4  // Toggle for whether or not to display surnames to the player.
+#define PLR3_JESTROS BIT_13  // jestros ai channel toggle
 
 #define SET_SURNAME(ch, number) (SET_BIT(ch->specials.act3, number))
 #define SURNAME_MASK (BIT_12 | BIT_11 | BIT_10 | BIT_9 | BIT_8 | BIT_7 | BIT_6 | BIT_5)
