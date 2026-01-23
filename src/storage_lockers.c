@@ -2923,14 +2923,14 @@ static int locker_opencmd(P_char ch, char *arg)
     if (!sql_verify_chest_password(chest_id, arg2))
     {
       send_to_char("Wrong password.\r\n", ch);
-      sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), "fail", NULL);
+      sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), CHEST_ACTION_FAIL, NULL);
       return TRUE;
     }
   }
 
   pLocker->SetCurrentChestId(chest_id);
   send_to_char_f(ch, "You open the '%s' chest.\r\n", arg1);
-  sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), "open", NULL);
+  sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), CHEST_ACTION_OPEN, NULL);
   return TRUE;
 }
 
@@ -2946,7 +2946,7 @@ static int locker_closecmd(P_char ch, char *arg)
   int locker_id = pLocker->GetLockerId();
   int chest_id = pLocker->GetCurrentChestId();
 
-  sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), "close", NULL);
+  sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), CHEST_ACTION_CLOSE, NULL);
   pLocker->SetCurrentChestId(0);
   send_to_char("You close the chest.\r\n", ch);
   return TRUE;

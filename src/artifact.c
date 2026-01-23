@@ -33,7 +33,7 @@
 #define ARTIFACT_UNIQUE 2
 #define ARTIFACT_IOUN   3
 
-// Artifact locations.  Note: These values MUST be in the same order as the DB enum type locType.
+// Artifact locations.  These values match the DB locType INT column.
 #define ARTIFACT_NOTINGAME 1
 #define ARTIFACT_ON_NPC    2
 #define ARTIFACT_ON_PC     3
@@ -96,7 +96,7 @@ void nuke_eq( P_char ch );
           vnum      = vnum of the artifact
           owned     = 'Y' -> artifat is owned, 'N' artifact has yet to be acquired since last poof.
                       If the artifact is owned, then it's timer is set and ticking (sorta).
-          locType   = enum('NotInGame', 'OnNPC', 'OnPC', 'OnGround', 'OnCorpse')  (OnCorpse -> PC Corpse)
+          locType   = 1=NotInGame, 2=OnNPC, 3=OnPC, 4=OnGround, 5=OnCorpse (OnCorpse -> PC Corpse)
                     = ARTIFACT_ {NOTINGAME | ON_NPC | ON_PC | ONGROUND | ONCORPSE}
           location  = PID of PC / vnum of NPC / vnum of room.
           timer     = when the arti is due to poof.
@@ -250,8 +250,7 @@ void list_artifacts_sql( P_char ch, int type, bool Godlist, bool allArtis )
       type == ARTIFACT_IOUN ? "Ioun" : "Unknown Type" );
     send_to_char( buf, ch );
 
-    // locType is an enum type, so to get the values not the names, we want locType+0.
-    qry("SELECT vnum, locType+0, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE type=%d", type );
+    qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE type=%d", type );
   }
   else
   {
@@ -259,7 +258,7 @@ void list_artifacts_sql( P_char ch, int type, bool Godlist, bool allArtis )
       type == ARTIFACT_UNIQUE ? "Unique" : type == ARTIFACT_IOUN ? "Ioun" : "Unknown Type" );
     send_to_char( buf, ch );
 
-    qry("SELECT vnum, locType+0, location, owned FROM artifacts_mortal WHERE type=%d", type );
+    qry("SELECT vnum, locType, location, owned FROM artifacts_mortal WHERE type=%d", type );
   }
 
   res = mysql_store_result(DB);
@@ -475,7 +474,7 @@ void setupMortArtiList_sql()
   // Arih : Explicitly specify columns to avoid "Column count doesn't match value count" error.
   // artifacts_mortal doesn't have 'lastUpdate' column but artifacts does, so SELECT * fails.
   // Repopulate it: Only select columns that exist in both tables (excluding lastUpdate)
-  qry( "INSERT INTO artifacts_mortal (vnum, owned, locType, location, timer, type) SELECT vnum, owned, locType, location, timer, type FROM artifacts WHERE locType='OnPC' OR locType='OnCorpse'" );
+  qry( "INSERT INTO artifacts_mortal (vnum, owned, locType, location, timer, type) SELECT vnum, owned, locType, location, timer, type FROM artifacts WHERE locType=%d OR locType=%d", ARTIFACT_ON_PC, ARTIFACT_ONCORPSE );
 }
 
 // Loads the artis that were on the ground and owned back into the boot.
@@ -488,7 +487,7 @@ void addOnGroundArtis_sql()
 
   logit( LOG_ARTIFACT, "addOnGroundArtis_sql: Beginning." );
 
-  qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType='OnGround'" );
+  qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d", ARTIFACT_ONGROUND );
 
   if( (res = mysql_store_result(DB)) != NULL )
   {
@@ -610,8 +609,8 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
       {
         world[location].number;
       }
-      qry("INSERT INTO artifacts VALUES(%d, 'Y', 'OnGround', %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
-        location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
+      qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
+        ARTIFACT_ONGROUND, location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
     }
     else if( OBJ_WORN(cont) || OBJ_CARRIED(cont) )
     {
@@ -627,15 +626,15 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
         if( IS_NPC(owner) )
         {
           location = GET_VNUM(owner);
-          qry("INSERT INTO artifacts VALUES(%d, 'N', 'OnNPC', %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
-            location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
+          qry("INSERT INTO artifacts VALUES(%d, 'N', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
+            ARTIFACT_ON_NPC, location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
         }
         // Adding a PC owner to arti -> owned = 'Y', location = PID.
         else
         {
           location = GET_PID(owner);
-          qry("INSERT INTO artifacts VALUES(%d, 'Y', 'OnPC', %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
-            location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
+          qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
+            ARTIFACT_ON_PC, location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
         }
       }
     }
@@ -1159,7 +1158,7 @@ bool get_artifact_data_sql( int vnum, P_arti adata )
   MYSQL_RES *res;
   MYSQL_ROW row = NULL;
 
-  if( !qry("SELECT owned, locType+0, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE vnum = %d", vnum) )
+  if( !qry("SELECT owned, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE vnum = %d", vnum) )
   {
     logit(LOG_ARTIFACT, "get_artifact_data_sql: failed to read from database.");
     return FALSE;
@@ -1894,7 +1893,7 @@ void event_artifact_check_poof_sql( P_char ch, P_char vict, P_obj obj, void * ar
   }
 
   // Pull all the artis we're gonna poof (one's that are owned, time's up and in game).
-  qry("SELECT vnum, locType + 0, location FROM artifacts WHERE owned='Y' AND timer < now() AND locType<>'NotInGame'" );
+  qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now() AND locType<>%d", ARTIFACT_NOTINGAME );
   res = mysql_store_result(DB);
 
   // If there were any artis to pull
@@ -2236,7 +2235,7 @@ void event_artifact_check_poof_sql( P_char ch, P_char vict, P_obj obj, void * ar
   mysql_free_result(res);
 
   // Clear the artis from the list.  Note: doing it after the loop intentionally.
-  qry( "UPDATE artifacts SET owned='N', locType='NotInGame', location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()" );
+  qry( "UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()", ARTIFACT_NOTINGAME );
 
   add_event( event_artifact_check_poof_sql, 12 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0 );
 }
@@ -2299,7 +2298,7 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
   // we only care about artis on a PC (online players only).
   // corpse/npc/ground artifacts don't trigger the penalty.
   debug( "event_artifact_wars_sql: querying artifacts on pc..." );
-  qry("SELECT vnum, locType+0, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType='OnPC'" );
+  qry("SELECT vnum, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType=%d", ARTIFACT_ON_PC );
   res = mysql_store_result(DB);
 
   if( !res || mysql_num_rows(res) < 1 )
@@ -3369,7 +3368,7 @@ void arti_fixit_sql( P_char ch )
   MYSQL_RES *res;
   MYSQL_ROW  row = NULL;
 
-  if( !qry("SELECT vnum, location FROM artifacts WHERE locType='OnPC'") )
+  if( !qry("SELECT vnum, location FROM artifacts WHERE locType=%d", ARTIFACT_ON_PC) )
   {
     send_to_char( "Failed SELECT command.\n\r", ch );
     return;
@@ -3509,7 +3508,7 @@ void addOnMobArtis_sql()
 
   logit( LOG_ARTIFACT, "addOnMobArtis_sql: Beginning." );
 
-  qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType='OnNPC'" );
+  qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d", ARTIFACT_ON_NPC );
 
   if( (res = mysql_store_result(DB)) != NULL )
   {
@@ -3574,8 +3573,7 @@ void arti_player_sql( P_char ch, char *arg )
   snprintf(buf, MAX_STRING_LENGTH, "&+YOwner                  Time      Last Update           Artifact\r\n\r\n" );
   send_to_char( buf, ch );
 
-  // locType is an enum type, so to get the values not the names, we want locType+0.
-  if( !qry("SELECT vnum, locType+0, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE location=%d", pid) )
+  if( !qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE location=%d", pid) )
   {
     send_to_char( "&+RError with query attempt.  Aborting...\n", ch );
     return;

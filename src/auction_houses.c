@@ -30,6 +30,11 @@ int auction_house_room_proc(int room_num, P_char ch, int cmd, char *arguments)
 #else
 #include <mysql.h>
 
+// auction status values (match DB column)
+#define AUCTION_STATUS_OPEN     1
+#define AUCTION_STATUS_CLOSED   2
+#define AUCTION_STATUS_REMOVED  3
+
 extern P_room world;
 extern P_index obj_index;
 extern P_desc descriptor_list;
@@ -97,7 +102,7 @@ void backfill_auction_info_text_tick() {
   }
 
   // grab a small batch of auctions missing obj_info_text
-  if( !qry("SELECT id, obj_blob_str FROM auctions WHERE obj_info_text IS NULL AND status = 'OPEN' LIMIT %d", BACKFILL_BATCH_SIZE) )
+  if( !qry("SELECT id, obj_blob_str FROM auctions WHERE obj_info_text IS NULL AND status = %d LIMIT %d", AUCTION_STATUS_OPEN, BACKFILL_BATCH_SIZE) )
     return;
 
   MYSQL_RES *res = mysql_store_result(DB);
@@ -358,7 +363,7 @@ void auction_houses_activity()
   // process backfill in small batches, non-blocking
   backfill_auction_info_text_tick();
 
-  if( !qry("SELECT id FROM auctions WHERE end_time < unix_timestamp() AND status = 'OPEN'") )
+  if( !qry("SELECT id FROM auctions WHERE end_time < NOW() AND status = %d", AUCTION_STATUS_OPEN) )
     return;
 	
   MYSQL_RES *res = mysql_store_result(DB);
@@ -690,7 +695,7 @@ bool auction_offer(P_char ch, char *args)
 
   // try insert with obj_info_text column first
   // if column doesn't exist, fall back to old insert - some devs dont have full schema
-  if( qry( "INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity, obj_info_text) VALUES ('%d', '%s', unix_timestamp(), unix_timestamp() + %d, '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%s')", GET_PID(ch), ch->player.name, auction_length, desc_buff, obj_vnum, buff, starting_price, buy_price, obj_id_keywords.c_str(), auction_quantity, obj_info_escaped ))
+  if( qry( "INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity, obj_info_text) VALUES ('%d', '%s', NOW(), NOW() + INTERVAL %d SECOND, '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%s')", GET_PID(ch), ch->player.name, auction_length, desc_buff, obj_vnum, buff, starting_price, buy_price, obj_id_keywords.c_str(), auction_quantity, obj_info_escaped ))
   {
     saved_to_db = TRUE;
   }
@@ -698,7 +703,7 @@ bool auction_offer(P_char ch, char *args)
   {
     // column probably doesn't exist, try without it
     logit(LOG_DEBUG, "auction: obj_info_text column missing? trying old insert");
-    if( qry( "INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity) VALUES ('%d', '%s', unix_timestamp(), unix_timestamp() + %d, '%s', '%d', '%s', '%d', '%d', '%s', '%d')", GET_PID(ch), ch->player.name, auction_length, desc_buff, obj_vnum, buff, starting_price, buy_price, obj_id_keywords.c_str(), auction_quantity ))
+    if( qry( "INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity) VALUES ('%d', '%s', NOW(), NOW() + INTERVAL %d SECOND, '%s', '%d', '%s', '%d', '%d', '%s', '%d')", GET_PID(ch), ch->player.name, auction_length, desc_buff, obj_vnum, buff, starting_price, buy_price, obj_id_keywords.c_str(), auction_quantity ))
       saved_to_db = TRUE;
   }
 
@@ -825,7 +830,7 @@ bool auction_list(P_char ch, char *args)
     return TRUE;
   }
 
-  if( !qry("SELECT id, seller_name, end_time - unix_timestamp() as secs_remaining, cur_price, buy_price, obj_short, obj_vnum, winning_bidder_pid, winning_bidder_name, seller_pid, quantity from auctions where status = 'OPEN' %s order by secs_remaining asc", where_str) )
+  if( !qry("SELECT id, seller_name, UNIX_TIMESTAMP(end_time) - UNIX_TIMESTAMP() as secs_remaining, cur_price, buy_price, obj_short, obj_vnum, winning_bidder_pid, winning_bidder_name, seller_pid, quantity from auctions where status = %d %s order by secs_remaining asc", AUCTION_STATUS_OPEN, where_str) )
     return FALSE;
 
   MYSQL_RES *res = mysql_store_result(DB);
@@ -910,7 +915,7 @@ bool auction_info(P_char ch, char *args)
 
   int auction_id = atoi(arg);
 
-  if( !qry("SELECT seller_name, end_time - unix_timestamp() as secs_remaining, cur_price, buy_price, obj_short, obj_vnum, winning_bidder_pid, winning_bidder_name, obj_blob_str, quantity FROM auctions WHERE id = '%d' and status = 'OPEN'", auction_id) )
+  if( !qry("SELECT seller_name, UNIX_TIMESTAMP(end_time) - UNIX_TIMESTAMP() as secs_remaining, cur_price, buy_price, obj_short, obj_vnum, winning_bidder_pid, winning_bidder_name, obj_blob_str, quantity FROM auctions WHERE id = '%d' and status = %d", auction_id, AUCTION_STATUS_OPEN) )
     return FALSE;
 
   MYSQL_RES *res = mysql_store_result(DB);
@@ -1016,12 +1021,12 @@ bool auction_remove(P_char ch, char *args)
   if( !strcmp(arg, "all") && GET_LEVEL(ch) == OVERLORD )
   {
     removeAll = TRUE;
-    if( !qry("SELECT id FROM auctions WHERE status = 'OPEN'", auction_id) )
+    if( !qry("SELECT id FROM auctions WHERE status = %d", AUCTION_STATUS_OPEN) )
       return FALSE;
   }
   else
   {
-    if( !qry("SELECT id FROM auctions WHERE id = '%d' and status = 'OPEN'", auction_id) )
+    if( !qry("SELECT id FROM auctions WHERE id = '%d' and status = %d", auction_id, AUCTION_STATUS_OPEN) )
       return FALSE;
   }
 
@@ -1048,7 +1053,7 @@ bool auction_remove(P_char ch, char *args)
 
   while( i > 0 )
   {
-    if( qry("UPDATE auctions SET status = 'REMOVED' WHERE id = '%d'", auc_ids[--i]) )
+    if( qry("UPDATE auctions SET status = %d WHERE id = '%d'", AUCTION_STATUS_REMOVED, auc_ids[--i]) )
     {
       snprintf(buff, MAX_STRING_LENGTH, "&+WAuction %d removed.\r\n", auc_ids[i]);
       send_to_char(buff, ch);
@@ -1069,14 +1074,14 @@ bool auction_bid(P_char ch, char *args)
 
   // Try query with account join first, fall back to simpler query if it fails
   bool has_account_info = false;
-  if( qry("SELECT a.cur_price, a.buy_price, a.obj_short, a.winning_bidder_pid, a.winning_bidder_name, a.quantity, a.seller_pid, ac.account_name as seller_account FROM auctions a LEFT JOIN account_characters ac ON a.seller_pid = ac.pid WHERE a.id = '%d' and a.status = 'OPEN'", auction_id) )
+  if( qry("SELECT a.cur_price, a.buy_price, a.obj_short, a.winning_bidder_pid, a.winning_bidder_name, a.quantity, a.seller_pid, ac.account_name as seller_account FROM auctions a LEFT JOIN account_characters ac ON a.seller_pid = ac.pid WHERE a.id = '%d' and a.status = %d", auction_id, AUCTION_STATUS_OPEN) )
   {
     has_account_info = true;
   }
   else
   {
     // Fallback query without account join
-    if( !qry("SELECT cur_price, buy_price, obj_short, winning_bidder_pid, winning_bidder_name, quantity, seller_pid FROM auctions WHERE id = '%d' and status = 'OPEN'", auction_id) )
+    if( !qry("SELECT cur_price, buy_price, obj_short, winning_bidder_pid, winning_bidder_name, quantity, seller_pid FROM auctions WHERE id = '%d' and status = %d", auction_id, AUCTION_STATUS_OPEN) )
       return FALSE;
   }
 
@@ -1193,7 +1198,7 @@ bool auction_bid(P_char ch, char *args)
     }
     else
     {
-      if( !qry("UPDATE auctions SET cur_price = '%d', winning_bidder_pid = '%d', winning_bidder_name = '%s', end_time = end_time + '%d'  WHERE id = '%d'", bid_value, GET_PID(ch), ch->player.name, BID_TIME_EXTENSION, auction_id) )
+      if( !qry("UPDATE auctions SET cur_price = '%d', winning_bidder_pid = '%d', winning_bidder_name = '%s', end_time = DATE_ADD(end_time, INTERVAL %d SECOND) WHERE id = '%d'", bid_value, GET_PID(ch), ch->player.name, BID_TIME_EXTENSION, auction_id) )
         return FALSE;
     }
 
@@ -1393,7 +1398,7 @@ bool auction_help(P_char ch, char *arg)
 bool finalize_auction(int auction_id, P_char to_ch)
 {
 
-  if( !qry("UPDATE auctions SET status = 'CLOSED' WHERE id = '%d'", auction_id) ) 
+  if( !qry("UPDATE auctions SET status = %d WHERE id = '%d'", AUCTION_STATUS_CLOSED, auction_id) ) 
     return FALSE;
 	
   if( !qry("SELECT seller_pid, winning_bidder_pid, cur_price, obj_short, obj_vnum, winning_bidder_name, quantity, seller_name FROM auctions WHERE id = '%d' LIMIT 1", auction_id) )

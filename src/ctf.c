@@ -551,8 +551,8 @@ void capture_flag(P_char ch, P_obj flag, int id)
 int add_ctf_entry(P_char ch, int flagtype, int type)
 {
   if (qry("INSERT INTO ctf_data (time, pid, type, flagtype, racewar) VALUES " \
-	"(%d, %d, %d, %d, %d)",
-	time(0), GET_PID(ch), type, flagtype, GET_RACEWAR(ch)))
+	"(NOW(), %d, %d, %d, %d)",
+	GET_PID(ch), type, flagtype, GET_RACEWAR(ch)))
     return TRUE;
   
  return FALSE;

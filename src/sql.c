@@ -505,11 +505,13 @@ int sql_save_player_core(P_char ch)
   return 1;
 }
 
-/* Save a variable delta. Type can be one of FRAGS, EXP */
-void sql_save_progress(int pid, int delta, const char *type)
+/* Save a variable delta. var_type: 1=FRAGS, 2=EXP */
+#define PROGRESS_FRAGS 1
+#define PROGRESS_EXP   2
+void sql_save_progress(int pid, int delta, int var_type)
 {
-  db_query("INSERT INTO progress VALUES( 0, %d, '%s', NOW(), %d )",
-           pid, type, delta);
+  db_query("INSERT INTO progress VALUES( 0, %d, %d, NOW(), %d )",
+           pid, var_type, delta);
 }
 
 // Retrieves the current highest number of frags and which racewar side has it.
@@ -661,7 +663,7 @@ void sql_modify_frags(P_char ch, int gain)
   }
   if (IS_MORPH(ch))
     ch = MORPH_ORIG(ch);
-  sql_save_progress(GET_PID(ch), gain, "FRAGS");
+  sql_save_progress(GET_PID(ch), gain, PROGRESS_FRAGS);
   if (gain > 0)
     sql_check_level_cap(ch->only.pc->frags, GET_RACEWAR(ch));
 
@@ -2036,7 +2038,7 @@ bool sql_pwipe(int code_verify)
     }
     logit(LOG_DEBUG, "sql_pwipe: Clearing nexus stone data... .. .");
     send_to_all("Clearing nexus stone data... .. .");
-    if (qry("UPDATE nexus_stones SET align='0', last_touched_at='0'"))
+    if (qry("UPDATE nexus_stones SET align='0', last_touched_at=NULL"))
     {
       logit(LOG_DEBUG, "  success!");
       send_to_all("  success!\n");

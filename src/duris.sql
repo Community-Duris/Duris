@@ -126,6 +126,7 @@ SET character_set_client = @saved_cs_client;
 
 --
 -- Table structure for table `auctions`
+-- status values: 1=OPEN, 2=CLOSED, 3=REMOVED (matches AUCTION_STATUS_* defines)
 --
 
 DROP TABLE IF EXISTS `auctions`;
@@ -135,9 +136,9 @@ CREATE TABLE `auctions` (
   `id` int(11) NOT NULL auto_increment,
   `seller_pid` int(10) unsigned NOT NULL default '0',
   `seller_name` varchar(32) NOT NULL default '',
-  `start_time` int(11) NOT NULL default '0',
-  `end_time` int(11) NOT NULL default '0',
-  `status` enum('OPEN','CLOSED','REMOVED') NOT NULL default 'OPEN',
+  `start_time` TIMESTAMP NULL DEFAULT NULL,
+  `end_time` TIMESTAMP NULL DEFAULT NULL,
+  `status` int(11) NOT NULL default '1',
   `winning_bidder_pid` int(11) NOT NULL default '0',
   `winning_bidder_name` varchar(32) NOT NULL default '',
   `cur_price` int(10) unsigned NOT NULL default '0',
@@ -261,7 +262,7 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `ctf_data` (
   `id` int(11) NOT NULL auto_increment,
-  `time` int(11) NOT NULL default '0',
+  `time` TIMESTAMP NULL DEFAULT NULL,
   `pid` int(11) NOT NULL default '0',
   `type` int(11) NOT NULL default '0',
   `flagtype` int(11) NOT NULL default '0',
@@ -540,7 +541,7 @@ CREATE TABLE `nexus_stones` (
   `align` int(11) NOT NULL default '0',
   `stat_affect` int(11) NOT NULL default '-1',
   `affect_amount` int(11) NOT NULL default '0',
-  `last_touched_at` int(11) NOT NULL default '0',
+  `last_touched_at` TIMESTAMP NULL DEFAULT NULL,
   `bonus` int(11) NOT NULL default '0',
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
@@ -710,6 +711,7 @@ SET character_set_client = @saved_cs_client;
 
 --
 -- Table structure for table `progress`
+-- var_type values: 1=FRAGS, 2=EXP (matches PROGRESS_* defines in sql.c)
 --
 
 DROP TABLE IF EXISTS `progress`;
@@ -718,12 +720,12 @@ SET character_set_client = utf8;
 CREATE TABLE `progress` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `pid` bigint(20) NOT NULL default '0',
-  `var_type` enum('FRAGS','EXP') NOT NULL default 'FRAGS',
-  `stamp` datetime NOT NULL default '0000-00-00 00:00:00',
+  `var_type` int(11) NOT NULL default '1',
+  `stamp` datetime NOT NULL,
   `delta` int(11) NOT NULL default '0',
   PRIMARY KEY  (`id`),
   KEY `pid_index` (`pid`),
-  KEY `index_enum` (`var_type`)
+  KEY `index_var_type` (`var_type`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 
@@ -901,7 +903,7 @@ CREATE TABLE `zones` (
   `difficulty` int(10) NOT NULL default '0',
   `randoms_zone` tinyint(1) NOT NULL default '1',
   `alignment` int(11) NOT NULL default '0',
-  `last_touch` int(10) default '0',
+  `last_touch` TIMESTAMP NULL DEFAULT NULL,
   `reset_perc` int(10) default '0',
   `stonecount` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
@@ -918,9 +920,9 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `zone_touches` (
   `id` int(10) NOT NULL auto_increment,
-  `boot_time` int(11) default NULL,
+  `boot_time` TIMESTAMP NULL DEFAULT NULL,
   `zone_number` int(11) default NULL,
-  `touched_at` int(11) default NULL,
+  `touched_at` TIMESTAMP NULL DEFAULT NULL,
   `toucher_pid` int(10) default NULL,
   `group_size` int(10) default NULL,
   `epic_value` int(11) default NULL,
@@ -935,7 +937,7 @@ SET character_set_client = @saved_cs_client;
 -- Arih : artifacts table - main artifact tracking
 -- IMPORTANT: Column order matters! The MUD code uses INSERT VALUES without column names
 -- INSERT INTO artifacts VALUES( vnum, owned, locType, location, timer, type, SYSDATE())
--- IMPORTANT: ENUM order matters! Must match artifact.c:99
+-- locType values: 1=NotInGame, 2=OnNPC, 3=OnPC, 4=OnGround, 5=OnCorpse (matches artifact.c defines)
 --
 
 DROP TABLE IF EXISTS `artifacts`;
@@ -944,7 +946,7 @@ SET character_set_client = utf8;
 CREATE TABLE `artifacts` (
   `vnum` int(11) NOT NULL,
   `owned` char(1) NOT NULL,
-  `locType` enum('NotInGame','OnNPC','OnPC','OnGround','OnCorpse') NOT NULL default 'NotInGame',
+  `locType` int(11) NOT NULL default '1',
   `location` int(11) NOT NULL,
   `timer` datetime default NULL,
   `type` int(11) NOT NULL,
@@ -985,67 +987,6 @@ CREATE TABLE `locker_access` (
   `owner` varchar(255) NOT NULL,
   `visitor` varchar(255) NOT NULL,
   PRIMARY KEY  (`owner`,`visitor`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-SET character_set_client = @saved_cs_client;
-
---
--- Table structure for table `polls`
--- Poll system for player voting
---
-
-DROP TABLE IF EXISTS `polls`;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-CREATE TABLE `polls` (
-  `id` int(11) NOT NULL auto_increment,
-  `question` varchar(512) NOT NULL,
-  `created_by` varchar(32) NOT NULL,
-  `created_at` int(11) NOT NULL default '0',
-  `expires_at` int(11) NOT NULL default '0',
-  `is_active` tinyint(1) NOT NULL default '1',
-  `multi_select` tinyint(1) NOT NULL default '0',
-  `max_choices` int(11) NOT NULL default '1',
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-SET character_set_client = @saved_cs_client;
-
---
--- Table structure for table `poll_options`
--- Options for each poll
---
-
-DROP TABLE IF EXISTS `poll_options`;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-CREATE TABLE `poll_options` (
-  `id` int(11) NOT NULL auto_increment,
-  `poll_id` int(11) NOT NULL,
-  `option_num` int(11) NOT NULL,
-  `option_text` varchar(256) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `poll_id` (`poll_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-SET character_set_client = @saved_cs_client;
-
---
--- Table structure for table `poll_votes`
--- Votes tracked per account (not per character)
---
-
-DROP TABLE IF EXISTS `poll_votes`;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-CREATE TABLE `poll_votes` (
-  `id` int(11) NOT NULL auto_increment,
-  `poll_id` int(11) NOT NULL,
-  `account_name` varchar(64) NOT NULL,
-  `option_id` int(11) NOT NULL,
-  `voted_at` int(11) NOT NULL default '0',
-  `char_name` varchar(32) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_vote` (`poll_id`, `account_name`, `option_id`),
-  KEY `poll_id` (`poll_id`),
-  KEY `account_name` (`account_name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 

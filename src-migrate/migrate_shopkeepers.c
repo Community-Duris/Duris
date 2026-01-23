@@ -179,7 +179,7 @@ int migrate_shopkeepers_from_files(void) {
 
         char query[512];
         snprintf(query, sizeof(query),
-            "INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time) VALUES (%d, %d, %d, %ld)",
+            "INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time) VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)))",
             shop_nr, mob_vnum, room_vnum, save_time);
 
         if (!qry("%s", query)) {

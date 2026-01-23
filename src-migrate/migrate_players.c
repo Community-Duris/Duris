@@ -519,13 +519,13 @@ static int save_player_to_db(struct mig_player *p) {
             "short_descr=%s, long_descr=%s, description=%s, title=%s, "
             "m_class=%u, secondary_class=%u, spec=%d, race=%d, racewar=%d, level=%d, sex=%d, "
             "weight=%d, height=%d, size=%d, hometown=%d, birthplace=%d, orig_birthplace=%d, last_room=%d, "
-            "birth_time=%ld, played_time=%ld, last_save=%ld, perm_aging=%d, "
+            "birth_time=FROM_UNIXTIME(NULLIF(%ld,0)), played_time=%ld, last_save=FROM_UNIXTIME(NULLIF(%ld,0)), perm_aging=%d,"
             "base_str=%d, base_dex=%d, base_agi=%d, base_con=%d, base_pow=%d, base_int=%d, base_wis=%d, base_cha=%d, base_kar=%d, base_luk=%d, "
             "mana=%d, base_mana=%d, hit_diff=%d, base_hit=%d, vitality=%d, base_vitality=%d, spells_memmed_extra=%d, "
             "copper=%d, silver=%d, gold=%d, platinum=%d, bank_copper=%d, bank_silver=%d, bank_gold=%d, bank_platinum=%d, "
             "exp=%d, epics=%d, epic_skill_points=%d, skillpoints=%d, spell_bind_used=%d, "
             "act=%u, act2=%u, act3=%u, vote=%d, alignment=%d, prestige=%d, assoc_id=%d, guild_status=%d, "
-            "time_left_guild=%ld, nb_left_guild=%d, time_unspecced=%ld, frags=%ld, oldfrags=%ld, numb_deaths=%ld, "
+            "time_left_guild=FROM_UNIXTIME(NULLIF(%ld,0)), nb_left_guild=%d, time_unspecced=FROM_UNIXTIME(NULLIF(%ld,0)), frags=%ld, oldfrags=%ld, numb_deaths=%ld,"
             "condition_0=%d, condition_1=%d, condition_2=%d, condition_3=%d, condition_4=%d, "
             "poof_in=%s, poof_out=%s, poof_in_sound=%s, poof_out_sound=%s, "
             "echo_toggle=%d, prompt=%d, wiz_invis=%ld, law_flags=%lu, wimpy=%d, aggressive=%d, highest_level=%d, screen_length=%d, "
@@ -579,13 +579,13 @@ static int save_player_to_db(struct mig_player *p) {
             "'%s', %s, %s, %s, %s, "
             "%u, %u, %d, %d, %d, %d, %d, "
             "%d, %d, %d, %d, %d, %d, %d, "
-            "%ld, %ld, %ld, %d, "
+            "FROM_UNIXTIME(NULLIF(%ld,0)), %ld, FROM_UNIXTIME(NULLIF(%ld,0)), %d,"
             "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, "
             "%d, %d, %d, %d, %d, %d, %d, "
             "%d, %d, %d, %d, %d, %d, %d, %d, "
             "%d, %d, %d, %d, %d, "
             "%u, %u, %u, %d, %d, %d, %d, %d, "
-            "%ld, %d, %ld, %ld, %ld, %ld, "
+            "FROM_UNIXTIME(NULLIF(%ld,0)), %d, FROM_UNIXTIME(NULLIF(%ld,0)), %ld, %ld, %ld,"
             "%d, %d, %d, %d, %d, "
             "%s, %s, %s, %s, "
             "%d, %d, %ld, %lu, %d, %d, %d, %d, "
@@ -666,7 +666,7 @@ static int save_player_to_db(struct mig_player *p) {
     len = 0;
     for (int i = 0; i < MIG_NUMB_PC_TIMERS; i++) {
         if (p->timers[i] != 0) {
-            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%ld),",
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,FROM_UNIXTIME(NULLIF(%ld,0))),",
                 pid, i, p->timers[i]);
         }
     }
@@ -708,7 +708,7 @@ static int save_player_to_db(struct mig_player *p) {
     len = 0;
     for (int i = 0; i < MIG_MAX_INTRO; i++) {
         if (p->intro_pids[i] != 0) {
-            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%d,0),",
+            len += snprintf(values + len, sizeof(values) - len, "(%d,%d,%d,NULL),",
                 pid, i, p->intro_pids[i]);
         }
     }

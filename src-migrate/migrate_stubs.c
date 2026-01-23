@@ -491,9 +491,9 @@ bool sql_save_account(struct acct_entry *acc) {
     snprintf(query, sizeof(query),
         "insert into accounts (account_name, email, password, confirmation_code, "
         "confirmed, confirmation_sent, blocked, last_login, last_good_char, last_evil_char, "
-        "flags1, flags2, flags3, flags4) values ('%s', '%s', '%s', '%s', %d, %d, %d, %ld, %ld, %ld, %lu, %lu, %lu, %lu) "
+        "flags1, flags2, flags3, flags4) values ('%s', '%s', '%s', '%s', %d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)), %lu, %lu, %lu, %lu)"
         "on duplicate key update email='%s', password='%s', confirmation_code='%s', "
-        "confirmed=%d, confirmation_sent=%d, blocked=%d, last_login=%ld, last_good_char=%ld, last_evil_char=%ld, "
+        "confirmed=%d, confirmation_sent=%d, blocked=%d, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), last_good_char=FROM_UNIXTIME(NULLIF(%ld,0)), last_evil_char=FROM_UNIXTIME(NULLIF(%ld,0)),"
         "flags1=%lu, flags2=%lu, flags3=%lu, flags4=%lu",
         esc_name, esc_email, esc_pass, esc_conf,
         acc->acct_confirmed, acc->acct_confirmation_sent, acc->acct_blocked,
@@ -560,8 +560,8 @@ bool sql_save_account(struct acct_entry *acc) {
         char char_query[512];
         snprintf(char_query, sizeof(char_query),
             "insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
-            "values ('%s', '%s', %d, %lu, %ld, %d, %d) "
-            "on duplicate key update pid=%d, login_count=%lu, last_login=%ld, blocked=%d, racewar=%d",
+            "values ('%s', '%s', %d, %lu, FROM_UNIXTIME(NULLIF(%ld,0)), %d, %d)"
+            "on duplicate key update pid=%d, login_count=%lu, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), blocked=%d, racewar=%d",
             esc_name, esc_char, pid, ch->count, ch->last, ch->blocked, ch->racewar,
             pid, ch->count, ch->last, ch->blocked, ch->racewar);
         sql_run_query(char_query);

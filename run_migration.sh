@@ -3,12 +3,12 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-source "$SCRIPT_DIR/../.env"
+source "$SCRIPT_DIR/.env"
 
 MYSQL_CMD="mysql -h$DB_HOST -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=54
+TOTAL=90
 FAILED=0
 
 run_sql() {
@@ -38,13 +38,12 @@ ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4;"
 STEP=$((STEP + 1))
 printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "convert existing tables to database default"
 DB_CHARSET=$($MYSQL_CMD -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
+DB_COLLATION=$($MYSQL_CMD -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
 TABLES=$($MYSQL_CMD -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null) || true
-if [ -n "$TABLES" ] && [ -n "$DB_CHARSET" ]; then
-    $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=0;" 2>/dev/null || true
+if [ -n "$TABLES" ] && [ -n "$DB_CHARSET" ] && [ -n "$DB_COLLATION" ]; then
     for t in $TABLES; do
-        $MYSQL_CMD -e "ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $DB_CHARSET;" 2>/dev/null || true
+        $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $DB_CHARSET COLLATE $DB_COLLATION; SET FOREIGN_KEY_CHECKS=1;" 2>/dev/null || true
     done
-    $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=1;" 2>/dev/null || true
 fi
 echo "ok"
 
@@ -1480,7 +1479,7 @@ CREATE TABLE IF NOT EXISTS locker_activity_log (
     locker_id INT UNSIGNED NOT NULL,
     account_name VARCHAR(50) NOT NULL,
     char_name VARCHAR(64) NOT NULL,
-    action_type ENUM('enter', 'leave', 'chest_open', 'chest_fail', 'kicked', 'chest_create', 'chest_delete', 'item_put', 'item_get') NOT NULL,
+    action_type INT NOT NULL DEFAULT 1,
     chest_keyword VARCHAR(64) DEFAULT NULL,
     details VARCHAR(255) DEFAULT NULL,
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1630,7 +1629,7 @@ CREATE TABLE IF NOT EXISTS private_chest_log (
     locker_id INT UNSIGNED NOT NULL,
     chest_id INT UNSIGNED DEFAULT NULL,
     char_name VARCHAR(64) NOT NULL,
-    action_type ENUM('open', 'close', 'put', 'get', 'fail') NOT NULL,
+    action_type INT NOT NULL DEFAULT 1,
     item_short VARCHAR(256) DEFAULT NULL,
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
@@ -1683,6 +1682,643 @@ CREATE TABLE IF NOT EXISTS poll_votes (
     INDEX idx_poll_id (poll_id),
     INDEX idx_account_name (account_name)
 );"
+
+# ============================================================================
+# legacy tables from duris.sql - create if not exists, non-destructive
+# ============================================================================
+
+run_sql "create alliances table" "
+CREATE TABLE IF NOT EXISTS alliances (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at DATETIME DEFAULT NULL,
+    forging_assoc_id INT NOT NULL,
+    joining_assoc_id INT NOT NULL,
+    tribute_owed INT NOT NULL DEFAULT 0
+);"
+
+run_sql "create artifact_bind table" "
+CREATE TABLE IF NOT EXISTS artifact_bind (
+    vnum INT NOT NULL PRIMARY KEY,
+    owner_pid INT DEFAULT NULL,
+    timer INT DEFAULT NULL
+);"
+
+run_sql "create associations table" "
+CREATE TABLE IF NOT EXISTS associations (
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    prestige INT NOT NULL DEFAULT 0,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    wood INT NOT NULL DEFAULT 0,
+    stone INT NOT NULL DEFAULT 0,
+    construction_points INT NOT NULL DEFAULT 0,
+    over_max INT NOT NULL DEFAULT 0
+);"
+
+run_sql "create auction tables" "
+CREATE TABLE IF NOT EXISTS auction_bid_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date INT NOT NULL DEFAULT 0,
+    auction_id INT NOT NULL DEFAULT 0,
+    bidder_pid INT NOT NULL DEFAULT 0,
+    bidder_name VARCHAR(32) NOT NULL DEFAULT '',
+    bid_amount INT NOT NULL DEFAULT 0,
+    INDEX idx_auction_id (auction_id)
+);
+CREATE TABLE IF NOT EXISTS auction_item_pickups (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    pid INT UNSIGNED NOT NULL DEFAULT 0,
+    obj_blob_str BLOB NOT NULL,
+    retrieved TINYINT(1) NOT NULL DEFAULT 0,
+    quantity INT NOT NULL DEFAULT 1,
+    INDEX idx_pid (pid)
+);
+CREATE TABLE IF NOT EXISTS auction_money_pickups (
+    pid INT UNSIGNED NOT NULL PRIMARY KEY,
+    money INT UNSIGNED NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS auctions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    seller_pid INT UNSIGNED NOT NULL DEFAULT 0,
+    seller_name VARCHAR(32) NOT NULL DEFAULT '',
+    start_time TIMESTAMP NULL DEFAULT NULL,
+    end_time TIMESTAMP NULL DEFAULT NULL,
+    status INT NOT NULL DEFAULT 1,
+    winning_bidder_pid INT NOT NULL DEFAULT 0,
+    winning_bidder_name VARCHAR(32) NOT NULL DEFAULT '',
+    cur_price INT UNSIGNED NOT NULL DEFAULT 0,
+    buy_price INT NOT NULL DEFAULT 0,
+    obj_short VARCHAR(255) NOT NULL DEFAULT '',
+    obj_vnum INT NOT NULL DEFAULT 0,
+    obj_blob_str BLOB NOT NULL,
+    id_keywords VARCHAR(1024) NOT NULL DEFAULT '',
+    quantity INT NOT NULL DEFAULT 1,
+    obj_info_text TEXT DEFAULT NULL,
+    INDEX idx_seller_pid (seller_pid),
+    INDEX idx_end_time (end_time),
+    INDEX idx_status (status)
+);"
+
+run_sql "create boons tables" "
+CREATE TABLE IF NOT EXISTS boons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    time INT NOT NULL DEFAULT 0,
+    duration INT NOT NULL DEFAULT 0,
+    racewar INT NOT NULL DEFAULT 0,
+    type INT NOT NULL DEFAULT 0,
+    opt INT NOT NULL DEFAULT 0,
+    criteria DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    criteria2 DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    bonus DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    bonus2 DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    random INT NOT NULL DEFAULT 0,
+    author VARCHAR(20) DEFAULT NULL,
+    active INT NOT NULL DEFAULT 0,
+    pid INT NOT NULL DEFAULT 0,
+    rpt INT NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS boons_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    boonid INT NOT NULL DEFAULT 0,
+    pid INT NOT NULL DEFAULT 0,
+    counter DECIMAL(10,2) NOT NULL DEFAULT 0.00
+);
+CREATE TABLE IF NOT EXISTS boons_shop (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pid INT NOT NULL DEFAULT 0,
+    points INT NOT NULL DEFAULT 0,
+    stats INT NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_pid (pid)
+);"
+
+run_sql "create categories table" "
+CREATE TABLE IF NOT EXISTS categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) DEFAULT NULL,
+    \`desc\` VARCHAR(255) DEFAULT NULL
+);"
+
+run_sql "create changes table" "
+CREATE TABLE IF NOT EXISTS changes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    history_id INT DEFAULT NULL,
+    history_text TEXT,
+    history_title VARCHAR(255) DEFAULT NULL,
+    history_category_id INT DEFAULT NULL,
+    new_text TEXT,
+    new_title VARCHAR(255) DEFAULT NULL,
+    new_category_id INT DEFAULT NULL,
+    timestamp DATETIME DEFAULT NULL,
+    action VARCHAR(255) DEFAULT NULL,
+    ip_number VARCHAR(255) DEFAULT NULL
+);"
+
+run_sql "create ctf_data table" "
+CREATE TABLE IF NOT EXISTS ctf_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    time TIMESTAMP NULL DEFAULT NULL,
+    pid INT NOT NULL DEFAULT 0,
+    type INT NOT NULL DEFAULT 0,
+    flagtype INT NOT NULL DEFAULT 0,
+    racewar INT NOT NULL DEFAULT 0
+);"
+
+run_sql "create epic tables" "
+CREATE TABLE IF NOT EXISTS epic_bonus (
+    pid INT NOT NULL,
+    type INT NOT NULL DEFAULT 0,
+    time DATETIME DEFAULT NULL,
+    UNIQUE KEY uk_pid (pid)
+);
+CREATE TABLE IF NOT EXISTS epic_gain (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    pid BIGINT NOT NULL DEFAULT 0,
+    time DATETIME NOT NULL,
+    type INT NOT NULL DEFAULT 0,
+    type_id INT NOT NULL DEFAULT 0,
+    epics INT NOT NULL DEFAULT 0,
+    INDEX idx_pid (pid)
+);
+CREATE TABLE IF NOT EXISTS eq_drop (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    vnum INT UNSIGNED NOT NULL DEFAULT 0,
+    pid_looter BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    room_id INT UNSIGNED NOT NULL DEFAULT 0,
+    INDEX idx_vnum (vnum)
+);"
+
+run_sql "create guildhall tables" "
+CREATE TABLE IF NOT EXISTS guild_transactions (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    soc_id INT UNSIGNED NOT NULL DEFAULT 0,
+    date INT NOT NULL DEFAULT 0,
+    transaction_info VARCHAR(255) NOT NULL DEFAULT '',
+    INDEX idx_soc_id (soc_id)
+);
+CREATE TABLE IF NOT EXISTS guildhall_rooms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    guildhall_id INT NOT NULL DEFAULT 0,
+    vnum INT NOT NULL DEFAULT 0,
+    type INT NOT NULL DEFAULT 0,
+    value0 INT UNSIGNED NOT NULL DEFAULT 0,
+    value1 INT UNSIGNED NOT NULL DEFAULT 0,
+    value2 INT UNSIGNED NOT NULL DEFAULT 0,
+    value3 INT UNSIGNED NOT NULL DEFAULT 0,
+    value4 INT UNSIGNED NOT NULL DEFAULT 0,
+    value5 INT UNSIGNED NOT NULL DEFAULT 0,
+    value6 INT UNSIGNED NOT NULL DEFAULT 0,
+    value7 INT UNSIGNED NOT NULL DEFAULT 0,
+    exit0 INT NOT NULL DEFAULT 0,
+    exit1 INT NOT NULL DEFAULT 0,
+    exit2 INT NOT NULL DEFAULT 0,
+    exit3 INT NOT NULL DEFAULT 0,
+    exit4 INT NOT NULL DEFAULT 0,
+    exit5 INT NOT NULL DEFAULT 0,
+    exit6 INT NOT NULL DEFAULT 0,
+    exit7 INT NOT NULL DEFAULT 0,
+    exit8 INT NOT NULL DEFAULT 0,
+    exit9 INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    INDEX idx_vnum (vnum),
+    INDEX idx_guildhall_id (guildhall_id)
+);
+CREATE TABLE IF NOT EXISTS guildhalls (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    assoc_id INT NOT NULL DEFAULT 0,
+    type INT NOT NULL DEFAULT 0,
+    outside_vnum INT NOT NULL DEFAULT 0,
+    racewar INT NOT NULL DEFAULT 0,
+    INDEX idx_assoc_id (assoc_id)
+);"
+
+run_sql "create ip_info table" "
+CREATE TABLE IF NOT EXISTS ip_info (
+    pid BIGINT NOT NULL DEFAULT 0,
+    last_ip VARCHAR(50) NOT NULL DEFAULT 'none',
+    last_connect DATETIME NULL DEFAULT NULL,
+    last_disconnect DATETIME NULL DEFAULT NULL,
+    racewar_side INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (pid)
+);"
+
+run_sql "create items table" "
+CREATE TABLE IF NOT EXISTS items (
+    vnum INT UNSIGNED NOT NULL DEFAULT 0,
+    short_desc VARCHAR(100) NOT NULL DEFAULT '',
+    obj_stat TEXT NOT NULL,
+    num_sold INT NOT NULL DEFAULT 0,
+    avg_sell_price INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (vnum)
+);"
+
+run_sql "create level_cap table" "
+CREATE TABLE IF NOT EXISTS level_cap (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    most_frags FLOAT NOT NULL DEFAULT 0,
+    racewar_leader INT NOT NULL DEFAULT 0,
+    level INT NOT NULL DEFAULT 25,
+    next_update DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO level_cap (id, most_frags, racewar_leader, level, next_update)
+SELECT 1, 0, 2, 56, NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM level_cap WHERE id = 1);"
+
+run_sql "create log_entries table" "
+CREATE TABLE IF NOT EXISTS log_entries (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    date DATETIME NOT NULL,
+    kind VARCHAR(255) NOT NULL DEFAULT '',
+    player_name VARCHAR(255) NOT NULL DEFAULT '',
+    pid INT NOT NULL DEFAULT 0,
+    ip_address VARCHAR(15) NOT NULL DEFAULT '',
+    room_vnum INT NOT NULL DEFAULT 0,
+    zone_number INT NOT NULL DEFAULT 0,
+    message VARCHAR(255) NOT NULL DEFAULT '',
+    INDEX idx_date (date),
+    INDEX idx_kind (kind),
+    INDEX idx_player_name (player_name),
+    INDEX idx_pid (pid),
+    INDEX idx_ip_address (ip_address),
+    INDEX idx_room_vnum (room_vnum),
+    INDEX idx_zone_number (zone_number)
+);"
+
+run_sql "create mud_info table" "
+CREATE TABLE IF NOT EXISTS mud_info (
+    name VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    PRIMARY KEY (name)
+);
+INSERT INTO mud_info (name, content) VALUES
+    ('motd', ''),
+    ('wizmotd', ''),
+    ('news', ''),
+    ('rules', ''),
+    ('credits', ''),
+    ('info', ''),
+    ('wizlist', ''),
+    ('faq', '')
+ON DUPLICATE KEY UPDATE name = name;"
+
+run_sql "create multiplay_whitelist table" "
+CREATE TABLE IF NOT EXISTS multiplay_whitelist (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pattern VARCHAR(255) NOT NULL,
+    admin VARCHAR(255) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    created_on DATE DEFAULT NULL,
+    player VARCHAR(255) NOT NULL
+);"
+
+run_sql "create nexus_stones table" "
+CREATE TABLE IF NOT EXISTS nexus_stones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    room_vnum INT NOT NULL DEFAULT 0,
+    align INT NOT NULL DEFAULT 0,
+    stat_affect INT NOT NULL DEFAULT -1,
+    affect_amount INT NOT NULL DEFAULT 0,
+    last_touched_at TIMESTAMP NULL DEFAULT NULL,
+    bonus INT NOT NULL DEFAULT 0
+);"
+
+run_sql "create offline_messages table" "
+CREATE TABLE IF NOT EXISTS offline_messages (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    date DATETIME NOT NULL,
+    pid INT NOT NULL DEFAULT 0,
+    message TEXT NOT NULL
+);"
+
+run_sql "create outposts table" "
+CREATE TABLE IF NOT EXISTS outposts (
+    id INT NOT NULL,
+    owner_id INT NOT NULL DEFAULT 0,
+    level INT NOT NULL DEFAULT 1,
+    walls INT NOT NULL DEFAULT 0,
+    archers INT NOT NULL DEFAULT 0,
+    resources INT NOT NULL DEFAULT 0,
+    applied_resources INT NOT NULL DEFAULT 100000,
+    hitpoints INT NOT NULL DEFAULT 0,
+    territory INT NOT NULL DEFAULT 0,
+    portal_room INT NOT NULL DEFAULT 0,
+    golems INT NOT NULL DEFAULT 0,
+    meurtriere INT NOT NULL DEFAULT 0,
+    scouts INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (id)
+);"
+
+run_sql "create pages table" "
+CREATE TABLE IF NOT EXISTS pages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) DEFAULT NULL,
+    text TEXT,
+    last_update DATETIME DEFAULT NULL,
+    last_update_by VARCHAR(255) DEFAULT NULL,
+    category_id INT DEFAULT NULL,
+    ip_number VARCHAR(255) DEFAULT NULL
+);"
+
+run_sql "create ping table" "
+CREATE TABLE IF NOT EXISTS ping (
+    ID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    TIMESTAMP DATETIME NOT NULL,
+    URL VARCHAR(100) NOT NULL DEFAULT '',
+    IP VARCHAR(100) NOT NULL DEFAULT '',
+    SEQ BIGINT NOT NULL DEFAULT 0,
+    TIME INT NOT NULL DEFAULT 0
+);"
+
+run_sql "create pkill tables" "
+CREATE TABLE IF NOT EXISTS pkill_event (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    stamp DATETIME NOT NULL,
+    room_vnum INT NOT NULL DEFAULT 0,
+    room_name TEXT NOT NULL,
+    tweeted TINYINT(1) NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS pkill_info (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    event_id INT UNSIGNED NOT NULL DEFAULT 0,
+    pid BIGINT NOT NULL DEFAULT 0,
+    level INT NOT NULL DEFAULT 0,
+    pk_type TEXT NOT NULL,
+    equip TEXT NOT NULL,
+    log TEXT,
+    inroom INT NOT NULL DEFAULT 0,
+    leader INT DEFAULT NULL,
+    player_description VARCHAR(255),
+    INDEX idx_event_id (event_id),
+    INDEX idx_pid (pid)
+);"
+
+run_sql "create players_core table" "
+CREATE TABLE IF NOT EXISTS players_core (
+    pid BIGINT NOT NULL DEFAULT 0,
+    name VARCHAR(255) NOT NULL,
+    race VARCHAR(255) NOT NULL,
+    classname VARCHAR(255) NOT NULL,
+    spec VARCHAR(255) NOT NULL,
+    guild VARCHAR(255) NOT NULL,
+    webinfo_toggle INT NOT NULL DEFAULT 0,
+    racewar INT NOT NULL DEFAULT 0,
+    level INT NOT NULL DEFAULT 0,
+    money INT NOT NULL DEFAULT 0,
+    balance INT NOT NULL DEFAULT 0,
+    playtime INT NOT NULL DEFAULT 0,
+    epics INT NOT NULL DEFAULT 0,
+    active TINYINT(1) NOT NULL DEFAULT 0,
+    PRIMARY KEY (pid),
+    INDEX idx_level (level),
+    INDEX idx_racewar (racewar)
+);"
+
+run_sql "create prepstatment table" "
+CREATE TABLE IF NOT EXISTS prepstatment_duris_sql (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    \`desc\` TEXT NOT NULL,
+    \`sql\` TEXT NOT NULL
+);"
+
+run_sql "create progress table" "
+CREATE TABLE IF NOT EXISTS progress (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    pid BIGINT NOT NULL DEFAULT 0,
+    var_type INT NOT NULL DEFAULT 1,
+    stamp DATETIME NOT NULL,
+    delta INT NOT NULL DEFAULT 0,
+    INDEX idx_pid (pid),
+    INDEX idx_var_type (var_type)
+);"
+
+run_sql "create racewar_stat_mods table" "
+CREATE TABLE IF NOT EXISTS racewar_stat_mods (
+    racewar INT NOT NULL DEFAULT 0,
+    Str INT NOT NULL DEFAULT 0,
+    Dex INT NOT NULL DEFAULT 0,
+    Agi INT NOT NULL DEFAULT 0,
+    Con INT NOT NULL DEFAULT 0,
+    Pow INT NOT NULL DEFAULT 0,
+    Intl INT NOT NULL DEFAULT 0,
+    Wis INT NOT NULL DEFAULT 0,
+    Cha INT NOT NULL DEFAULT 0,
+    Kar INT NOT NULL DEFAULT 0,
+    Luc INT NOT NULL DEFAULT 0
+);"
+
+run_sql "create ship cargo tables" "
+CREATE TABLE IF NOT EXISTS ship_cargo_market_mods (
+    type VARCHAR(255) NOT NULL DEFAULT '',
+    port_id INT NOT NULL DEFAULT -1,
+    cargo_type INT NOT NULL DEFAULT -1,
+    modifier FLOAT NOT NULL DEFAULT 0,
+    INDEX idx_type_port_cargo (type, port_id, cargo_type)
+);
+CREATE TABLE IF NOT EXISTS ship_cargo_prices (
+    type VARCHAR(255) NOT NULL DEFAULT '',
+    port_id INT NOT NULL DEFAULT -1,
+    cargo_type INT NOT NULL DEFAULT -1,
+    price INT NOT NULL DEFAULT 0,
+    INDEX idx_type_port_cargo (type, port_id, cargo_type)
+);"
+
+run_sql "create shop_trophy table" "
+CREATE TABLE IF NOT EXISTS shop_trophy (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    item INT NOT NULL DEFAULT 0,
+    value INT NOT NULL DEFAULT 0,
+    seller INT NOT NULL DEFAULT 0,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);"
+
+run_sql "create statistics table" "
+CREATE TABLE IF NOT EXISTS statistics (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date INT NOT NULL DEFAULT 0,
+    goods_count INT NOT NULL DEFAULT 0,
+    evils_count INT NOT NULL DEFAULT 0,
+    illithids_count INT NOT NULL DEFAULT 0,
+    undeads_count INT NOT NULL DEFAULT 0,
+    gods_count INT NOT NULL DEFAULT 0,
+    in_guildhall_count INT NOT NULL DEFAULT 0,
+    sum_goods_levels INT NOT NULL DEFAULT 0,
+    sum_evils_levels INT NOT NULL DEFAULT 0,
+    sum_illithids_levels INT NOT NULL DEFAULT 0,
+    sum_undeads_levels INT NOT NULL DEFAULT 0,
+    unique_ips_count INT NOT NULL DEFAULT 0
+);"
+
+run_sql "create timers table" "
+CREATE TABLE IF NOT EXISTS timers (
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    date INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (name)
+);"
+
+run_sql "create world_quest_accomplished table" "
+CREATE TABLE IF NOT EXISTS world_quest_accomplished (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    pid VARCHAR(45) NOT NULL DEFAULT '',
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    quest_giver INT UNSIGNED NOT NULL DEFAULT 0,
+    player_name VARCHAR(45) NOT NULL DEFAULT '',
+    player_level INT UNSIGNED NOT NULL DEFAULT 0,
+    quest_target INT NOT NULL DEFAULT 0,
+    reward_vnum INT NOT NULL DEFAULT 0,
+    reward_desc VARCHAR(255) NOT NULL DEFAULT ''
+);"
+
+run_sql "create zone tables" "
+CREATE TABLE IF NOT EXISTS zones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    number INT DEFAULT NULL,
+    name VARCHAR(100) NOT NULL DEFAULT '',
+    epic_type INT NOT NULL DEFAULT 0,
+    frequency_mod FLOAT NOT NULL DEFAULT 1,
+    zone_freq_mod FLOAT NOT NULL DEFAULT 1,
+    epic_level INT NOT NULL DEFAULT 0,
+    task_zone TINYINT(1) NOT NULL DEFAULT 0,
+    quest_zone TINYINT(1) NOT NULL DEFAULT 0,
+    trophy_zone TINYINT(1) NOT NULL DEFAULT 1,
+    suggested_group_size INT NOT NULL DEFAULT 1,
+    epic_payout INT NOT NULL DEFAULT 0,
+    difficulty INT NOT NULL DEFAULT 0,
+    randoms_zone TINYINT(1) NOT NULL DEFAULT 1,
+    alignment INT NOT NULL DEFAULT 0,
+    last_touch TIMESTAMP NULL DEFAULT NULL,
+    reset_perc INT DEFAULT 0,
+    stonecount INT NOT NULL DEFAULT 1,
+    INDEX idx_number (number)
+);
+CREATE TABLE IF NOT EXISTS zone_touches (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    boot_time TIMESTAMP NULL DEFAULT NULL,
+    zone_number INT DEFAULT NULL,
+    touched_at TIMESTAMP NULL DEFAULT NULL,
+    toucher_pid INT DEFAULT NULL,
+    group_size INT DEFAULT NULL,
+    epic_value INT DEFAULT NULL,
+    alignment_delta INT DEFAULT NULL,
+    INDEX idx_zone_number (zone_number)
+);
+CREATE TABLE IF NOT EXISTS zone_trophy (
+    pid BIGINT NOT NULL DEFAULT 0,
+    zone_number INT NOT NULL DEFAULT 0,
+    exp INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (pid, zone_number),
+    INDEX idx_pid (pid),
+    INDEX idx_zone_number (zone_number),
+    INDEX idx_exp (exp)
+);"
+
+run_sql "create artifacts tables" "
+CREATE TABLE IF NOT EXISTS artifacts (
+    vnum INT NOT NULL,
+    owned CHAR(1) NOT NULL,
+    locType INT NOT NULL DEFAULT 1,
+    location INT NOT NULL,
+    timer DATETIME DEFAULT NULL,
+    type INT NOT NULL,
+    lastUpdate DATETIME DEFAULT NULL,
+    PRIMARY KEY (vnum)
+);
+CREATE TABLE IF NOT EXISTS artifacts_mortal (
+    vnum INT NOT NULL,
+    owned CHAR(1) NOT NULL,
+    locType INT NOT NULL,
+    location INT NOT NULL,
+    timer DATETIME DEFAULT NULL,
+    type INT NOT NULL,
+    PRIMARY KEY (vnum)
+);
+CREATE TABLE IF NOT EXISTS locker_access (
+    owner VARCHAR(255) NOT NULL,
+    visitor VARCHAR(255) NOT NULL,
+    PRIMARY KEY (owner, visitor)
+);"
+
+# ============================================================================
+# alter existing tables to fix column types for existing databases
+# ============================================================================
+
+run_sql "convert auctions timestamps" "
+DELIMITER //
+CREATE PROCEDURE convert_auctions_timestamps()
+BEGIN
+    DECLARE col_type VARCHAR(64);
+    SELECT DATA_TYPE INTO col_type FROM information_schema.columns
+        WHERE table_schema = DATABASE() AND table_name = 'auctions' AND column_name = 'start_time';
+    IF col_type = 'int' THEN
+        ALTER TABLE auctions ADD COLUMN start_time_new TIMESTAMP NULL DEFAULT NULL;
+        ALTER TABLE auctions ADD COLUMN end_time_new TIMESTAMP NULL DEFAULT NULL;
+        UPDATE auctions SET start_time_new = FROM_UNIXTIME(start_time) WHERE start_time > 0;
+        UPDATE auctions SET end_time_new = FROM_UNIXTIME(end_time) WHERE end_time > 0;
+        ALTER TABLE auctions DROP COLUMN start_time;
+        ALTER TABLE auctions DROP COLUMN end_time;
+        ALTER TABLE auctions CHANGE COLUMN start_time_new start_time TIMESTAMP NULL DEFAULT NULL;
+        ALTER TABLE auctions CHANGE COLUMN end_time_new end_time TIMESTAMP NULL DEFAULT NULL;
+    END IF;
+END //
+DELIMITER ;
+CALL convert_auctions_timestamps();
+DROP PROCEDURE IF EXISTS convert_auctions_timestamps;"
+
+run_sql "convert ctf_data timestamps" "
+SET @col_type = (SELECT DATA_TYPE FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'ctf_data' AND column_name = 'time');
+SET @sql = IF(@col_type = 'int',
+    'ALTER TABLE ctf_data MODIFY COLUMN time TIMESTAMP NULL DEFAULT NULL',
+    'SELECT 1 INTO @dummy');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
+
+run_sql "convert nexus_stones timestamps" "
+SET @col_type = (SELECT DATA_TYPE FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'nexus_stones' AND column_name = 'last_touched_at');
+SET @sql = IF(@col_type = 'int',
+    'ALTER TABLE nexus_stones MODIFY COLUMN last_touched_at TIMESTAMP NULL DEFAULT NULL',
+    'SELECT 1 INTO @dummy');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
+
+run_sql "convert zones timestamps" "
+DELIMITER //
+CREATE PROCEDURE convert_zones_timestamps()
+BEGIN
+    DECLARE col_type VARCHAR(64);
+    SELECT DATA_TYPE INTO col_type FROM information_schema.columns
+        WHERE table_schema = DATABASE() AND table_name = 'zones' AND column_name = 'last_touch';
+    IF col_type = 'int' THEN
+        ALTER TABLE zones ADD COLUMN last_touch_new TIMESTAMP NULL DEFAULT NULL;
+        UPDATE zones SET last_touch_new = FROM_UNIXTIME(last_touch) WHERE last_touch > 0;
+        ALTER TABLE zones DROP COLUMN last_touch;
+        ALTER TABLE zones CHANGE COLUMN last_touch_new last_touch TIMESTAMP NULL DEFAULT NULL;
+    END IF;
+END //
+DELIMITER ;
+CALL convert_zones_timestamps();
+DROP PROCEDURE IF EXISTS convert_zones_timestamps;"
+
+run_sql "convert zone_touches timestamps" "
+DELIMITER //
+CREATE PROCEDURE convert_zone_touches_timestamps()
+BEGIN
+    DECLARE col_type VARCHAR(64);
+    SELECT DATA_TYPE INTO col_type FROM information_schema.columns
+        WHERE table_schema = DATABASE() AND table_name = 'zone_touches' AND column_name = 'boot_time';
+    IF col_type = 'int' THEN
+        ALTER TABLE zone_touches ADD COLUMN boot_time_new TIMESTAMP NULL DEFAULT NULL;
+        ALTER TABLE zone_touches ADD COLUMN touched_at_new TIMESTAMP NULL DEFAULT NULL;
+        UPDATE zone_touches SET boot_time_new = FROM_UNIXTIME(boot_time) WHERE boot_time > 0;
+        UPDATE zone_touches SET touched_at_new = FROM_UNIXTIME(touched_at) WHERE touched_at > 0;
+        ALTER TABLE zone_touches DROP COLUMN boot_time;
+        ALTER TABLE zone_touches DROP COLUMN touched_at;
+        ALTER TABLE zone_touches CHANGE COLUMN boot_time_new boot_time TIMESTAMP NULL DEFAULT NULL;
+        ALTER TABLE zone_touches CHANGE COLUMN touched_at_new touched_at TIMESTAMP NULL DEFAULT NULL;
+    END IF;
+END //
+DELIMITER ;
+CALL convert_zone_touches_timestamps();
+DROP PROCEDURE IF EXISTS convert_zone_touches_timestamps;"
 
 echo ""
 echo "done. $FAILED failures."

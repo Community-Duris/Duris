@@ -191,7 +191,7 @@ bool nexus_stone_info(int stone_id, NexusStoneInfo *info)
     return FALSE;
   
   // load nexus stones from DB
-  if( !qry("SELECT name, room_vnum, align, stat_affect, affect_amount, last_touched_at FROM nexus_stones where id = %d", stone_id) )
+  if( !qry("SELECT name, room_vnum, align, stat_affect, affect_amount, UNIX_TIMESTAMP(last_touched_at) FROM nexus_stones where id = %d", stone_id) )
     return FALSE;
   
   MYSQL_RES *res = mysql_store_result(DB);
@@ -320,7 +320,7 @@ void update_nexus_stat_mods()
 
 int update_nexus_stone_align(int stone_id, int align)
 {
-  if( !qry("UPDATE nexus_stones SET align = '%d', last_touched_at = unix_timestamp() WHERE id = '%d'", align, stone_id) )
+  if( !qry("UPDATE nexus_stones SET align = '%d', last_touched_at = NOW() WHERE id = '%d'", align, stone_id) )
     return FALSE;
   
   return TRUE;
@@ -1531,7 +1531,7 @@ bool nexus_stone_expired(int stone_id)
 {
   int threshold_secs = ( (int) get_property("nexusStones.expireDays", 30) ) * ( 24 * 60 * 60 );
   
-  if( !qry("SELECT id FROM nexus_stones WHERE id = '%d' AND last_touched_at > 0 AND last_touched_at < ( unix_timestamp() - %d ) AND align <> 0", stone_id, threshold_secs) )
+  if( !qry("SELECT id FROM nexus_stones WHERE id = '%d' AND last_touched_at IS NOT NULL AND last_touched_at < DATE_SUB(NOW(), INTERVAL %d SECOND) AND align <> 0", stone_id, threshold_secs) )
     return false;
   
   MYSQL_RES *res = mysql_store_result(DB);
@@ -1578,7 +1578,7 @@ void expire_nexus_stone(int stone_id)
  
   world_echo(ns_messages[_STONE_EXPIRED]);
   
-  if( !qry("UPDATE nexus_stones SET align = 0, last_touched_at = 0 WHERE id = '%d'", stone_id) )
+  if( !qry("UPDATE nexus_stones SET align = 0, last_touched_at = NULL WHERE id = '%d'", stone_id) )
     return;
   
   // load nexus stones from DB

@@ -565,7 +565,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "m_class=%u, secondary_class=%u, spec=%d, race=%d, racewar=%d, "
       "level=%d, sex=%d, weight=%d, height=%d, size=%d, "
       "hometown=%d, birthplace=%d, orig_birthplace=%d, last_room=%d, "
-      "birth_time=%ld, played_time=%d, last_save=%ld, perm_aging=%d, "
+      "birth_time=FROM_UNIXTIME(%ld), played_time=%d, last_save=FROM_UNIXTIME(%ld), perm_aging=%d,"
       "base_str=%d, base_dex=%d, base_agi=%d, base_con=%d, base_pow=%d, "
       "base_int=%d, base_wis=%d, base_cha=%d, base_kar=%d, base_luk=%d, "
       "mana=%d, base_mana=%d, hit_diff=%d, base_hit=%d, "
@@ -575,7 +575,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "exp=%d, epics=%ld, epic_skill_points=%ld, skillpoints=%d, spell_bind_used=%ld, "
       "act=%u, act2=%u, act3=%u, vote=%lu, alignment=%d,"
       "prestige=%d, assoc_id=%d, guild_status=%u, "
-      "time_left_guild=%ld, nb_left_guild=%d, time_unspecced=%ld, "
+      "time_left_guild=FROM_UNIXTIME(%ld), nb_left_guild=%d, time_unspecced=FROM_UNIXTIME(%ld),"
       "frags=%ld, oldfrags=%ld, numb_deaths=%lu, "
       "condition_0=%d, condition_1=%d, condition_2=%d, condition_3=%d, condition_4=%d, "
       "poof_in='%s', poof_out='%s', poof_in_sound='%s', poof_out_sound='%s', "
@@ -643,13 +643,13 @@ bool sql_save_player_status(P_char ch, int type, int room)
       "'%s', '%s', '%s', '%s', '%s', "
       "%u, %u, %d, %d, %d, %d, %d, "
       "%d, %d, %d, %d, %d, %d, %d, "
-      "%ld, %d, %ld, %d, "
+      "FROM_UNIXTIME(%ld), %d, FROM_UNIXTIME(%ld), %d, "
       "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, "
       "%d, %d, %d, %d, %d, %d, %d, "
       "%d, %d, %d, %d, 0, 0, 0, 0, "
       "%d, %ld, %ld, %d, %ld, "
       "%u, %u, %u, %lu, %d, "
-      "%d, %d, %u, %ld, %d, %ld, "
+      "%d, %d, %u, FROM_UNIXTIME(%ld), %d, FROM_UNIXTIME(%ld), "
       "%ld, %ld, %lu, "
       "%d, %d, %d, %d, %d, "
       "'%s', '%s', '%s', '%s', "
@@ -751,7 +751,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
   {
     if (ch->only.pc->introd_list[i] != 0)
     {
-      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld,%lu)",
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld,FROM_UNIXTIME(%lu))",
         has_data ? "," : "", pid, i, ch->only.pc->introd_list[i], ch->only.pc->introd_times[i]);
       has_data = true;
     }
@@ -769,7 +769,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
   {
     if (ch->only.pc->pc_timer[i] != 0)
     {
-      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld)",
+      pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,FROM_UNIXTIME(%ld))",
         has_data ? "," : "", pid, i, (long)ch->only.pc->pc_timer[i]);
       has_data = true;
     }
@@ -1357,7 +1357,7 @@ bool sql_save_player_pets(P_char ch)
     snprintf(ins_query, sizeof(ins_query),
       "INSERT INTO player_pets (owner_pid, mob_vnum, pet_order, hit, max_hit, mana, max_mana, "
       "vitality, max_vitality, charm_duration, room_vnum, saved_at) "
-      "VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %ld)",
+      "VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, FROM_UNIXTIME(%ld))",
       pid, mob_vnum, pet_order,
       GET_HIT(pet), GET_MAX_HIT(pet),
       GET_MANA(pet), GET_MAX_MANA(pet),
@@ -1653,7 +1653,7 @@ bool sql_save_player_witnesses(P_char ch)
     char ins_query[512];
     snprintf(ins_query, sizeof(ins_query),
              "INSERT INTO player_witnesses (pid, crime, room_vnum, attacker_name, victim_name, witness_time) "
-             "VALUES (%d, %d, %d, '%s', '%s', %ld)",
+             "VALUES (%d, %d, %d, '%s', '%s', FROM_UNIXTIME(%ld))",
              pid, w->crime, w->room, esc_attacker ? esc_attacker : "", esc_victim ? esc_victim : "", (long)w->time);
     free(esc_attacker);
     free(esc_victim);
@@ -1688,7 +1688,7 @@ bool sql_save_player_shapechanges(P_char ch)
     char ins_query[512];
     snprintf(ins_query, sizeof(ins_query),
              "INSERT INTO player_shapechanges (pid, mob_vnum, times_researched, last_researched, last_shapechanged) "
-             "VALUES (%d, %d, %d, %ld, %ld)",
+             "VALUES (%d, %d, %d, FROM_UNIXTIME(%ld), FROM_UNIXTIME(%ld))",
              pid, shape->mobVnum, shape->timesResearched,
              (long)shape->lastResearched, (long)shape->lastShapechanged);
     sql_run_query(ins_query);
@@ -1717,7 +1717,7 @@ bool sql_load_player_shapechanges(P_char ch)
 
   char query[256];
   snprintf(query, sizeof(query),
-           "SELECT mob_vnum, times_researched, last_researched, last_shapechanged "
+           "SELECT mob_vnum, times_researched, UNIX_TIMESTAMP(last_researched), UNIX_TIMESTAMP(last_shapechanged) "
            "FROM player_shapechanges WHERE pid=%d ORDER BY id", pid);
 
   MYSQL_RES *result = db_query("%s", query);
@@ -1889,14 +1889,14 @@ bool sql_load_player_status(P_char ch, int pid)
     "SELECT name, short_descr, long_descr, description, title, "
     "m_class, secondary_class, spec, race, racewar, level, sex, "
     "weight, height, size, hometown, birthplace, orig_birthplace, last_room, "
-    "birth_time, played_time, last_save, perm_aging, "
+    "UNIX_TIMESTAMP(birth_time), played_time, UNIX_TIMESTAMP(last_save), perm_aging, "
     "base_str, base_dex, base_agi, base_con, base_pow, "
     "base_int, base_wis, base_cha, base_kar, base_luk, "
     "mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
     "copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
     "exp, epics, epic_skill_points, skillpoints, spell_bind_used, "
     "act, act2, act3, vote, alignment,prestige, assoc_id, guild_status, "
-    "time_left_guild, nb_left_guild, time_unspecced, frags, oldfrags, numb_deaths, "
+    "UNIX_TIMESTAMP(time_left_guild), nb_left_guild, UNIX_TIMESTAMP(time_unspecced), frags, oldfrags, numb_deaths,"
     "condition_0, condition_1, condition_2, condition_3, condition_4, "
     "poof_in, poof_out, poof_in_sound, poof_out_sound, "
     "echo_toggle, prompt, wiz_invis, law_flags, wimpy, aggressive, highest_level, screen_length, "
@@ -2080,7 +2080,7 @@ bool sql_load_player_status(P_char ch, int pid)
 
   // intros
   snprintf(query, sizeof(query),
-    "SELECT intro_index, intro_pid, intro_time FROM player_intros WHERE pid=%d", pid);
+    "SELECT intro_index, intro_pid, UNIX_TIMESTAMP(intro_time) FROM player_intros WHERE pid=%d", pid);
   result = db_query("%s", query);
   if (result)
   {
@@ -2098,7 +2098,7 @@ bool sql_load_player_status(P_char ch, int pid)
 
   // timers
   snprintf(query, sizeof(query),
-    "SELECT timer_id, timer_value FROM player_timers WHERE pid=%d", pid);
+    "SELECT timer_id, UNIX_TIMESTAMP(timer_value) FROM player_timers WHERE pid=%d", pid);
   result = db_query("%s", query);
   if (result)
   {
@@ -2514,7 +2514,7 @@ bool sql_load_player_witnesses(P_char ch)
 
   char query[256];
   snprintf(query, sizeof(query),
-    "SELECT crime, room_vnum, attacker_name, victim_name, witness_time "
+    "SELECT crime, room_vnum, attacker_name, victim_name, UNIX_TIMESTAMP(witness_time) "
     "FROM player_witnesses WHERE pid=%d", pid);
 
   MYSQL_RES *result = db_query("%s", query);
@@ -2637,9 +2637,9 @@ bool sql_save_account(struct acct_entry *acc)
   snprintf(query, sizeof(query),
     "insert into accounts (account_name, email, password, confirmation_code, "
     "confirmed, confirmation_sent, blocked, last_login, last_good_char, last_evil_char, "
-    "flags1, flags2, flags3, flags4) values ('%s', '%s', '%s', '%s', %d, %d, %d, %ld, %ld, %ld, %lu, %lu, %lu, %lu) "
+    "flags1, flags2, flags3, flags4) values ('%s', '%s', '%s', '%s', %d, %d, %d, FROM_UNIXTIME(%ld), FROM_UNIXTIME(%ld), FROM_UNIXTIME(%ld), %lu, %lu, %lu, %lu) "
     "on duplicate key update email='%s', password='%s', confirmation_code='%s', "
-    "confirmed=%d, confirmation_sent=%d, blocked=%d, last_login=%ld, last_good_char=%ld, last_evil_char=%ld, "
+    "confirmed=%d, confirmation_sent=%d, blocked=%d, last_login=FROM_UNIXTIME(%ld), last_good_char=FROM_UNIXTIME(%ld), last_evil_char=FROM_UNIXTIME(%ld), "
     "flags1=%lu, flags2=%lu, flags3=%lu, flags4=%lu",
     esc_name, esc_email, esc_pass, esc_conf,
     acc->acct_confirmed, acc->acct_confirmation_sent, acc->acct_blocked,
@@ -2691,8 +2691,8 @@ static bool sql_save_account_characters(struct acct_entry *acc)
     char query[512];
     snprintf(query, sizeof(query),
       "insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
-      "values ('%s', '%s', %d, %lu, %ld, %d, %d) "
-      "on duplicate key update login_count=%lu, last_login=%ld, blocked=%d, racewar=%d",
+      "values ('%s', '%s', %d, %lu, FROM_UNIXTIME(%ld), %d, %d) "
+      "on duplicate key update login_count=%lu, last_login=FROM_UNIXTIME(%ld), blocked=%d, racewar=%d",
       esc_name, esc_char, pid > 0 ? pid : 0, ch->count, ch->last, ch->blocked, ch->racewar,
       ch->count, ch->last, ch->blocked, ch->racewar);
 
@@ -3583,9 +3583,9 @@ int sql_count_private_chests(int locker_id)
 }
 
 bool sql_log_chest_activity(int locker_id, int chest_id, const char *char_name,
-                            const char *action, const char *item_short)
+                            int action_type, const char *item_short)
 {
-  if (!DB || locker_id <= 0 || !char_name || !action)
+  if (!DB || locker_id <= 0 || !char_name || action_type < 1)
     return false;
 
   char *esc_char = sql_escape_string(char_name);
@@ -3600,8 +3600,8 @@ bool sql_log_chest_activity(int locker_id, int chest_id, const char *char_name,
   char query[1024];
   snprintf(query, sizeof(query),
     "INSERT INTO private_chest_log (locker_id, chest_id, char_name, action_type, item_short) "
-    "VALUES (%d, %s, '%s', '%s', %s%s%s)",
-    locker_id, chest_str, esc_char, action,
+    "VALUES (%d, %s, '%s', %d, %s%s%s)",
+    locker_id, chest_str, esc_char, action_type,
     esc_item ? "'" : "", esc_item ? esc_item : "NULL", esc_item ? "'" : "");
 
   free(esc_char);
@@ -4840,7 +4840,7 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 
   char ins_query[256];
   snprintf(ins_query, sizeof(ins_query),
-           "INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time) VALUES (%d, %d, %d, %ld)",
+           "INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time) VALUES (%d, %d, %d, FROM_UNIXTIME(%ld))",
            shop_nr, mob_vnum, room_vnum, save_time);
 
   if (!sql_run_query(ins_query))

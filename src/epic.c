@@ -1031,8 +1031,8 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
       // set completed flag
       epic_zone_completions.push_back(epic_zone_completion(zone_number, time(NULL), delta));
       redis_invalidate_epic_zones();
-      db_query("UPDATE zones SET last_touch = '%d' WHERE number = '%d'", time(NULL), zone_number);
-      db_query("INSERT INTO zone_touches (boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value, alignment_delta) VALUES (%d, %d, %d, %d, %d, %d, %d);", boot_time, time(NULL), zone_number, GET_PID(ch), group_size, epic_value, delta);
+      db_query("UPDATE zones SET last_touch = NOW() WHERE number = '%d'", zone_number);
+      db_query("INSERT INTO zone_touches (boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value, alignment_delta) VALUES (FROM_UNIXTIME(%d), NOW(), %d, %d, %d, %d, %d);", boot_time, zone_number, GET_PID(ch), group_size, epic_value, delta);
 
       //  Allow !reset zones to possibly reset somewhere down the line...  - Jexni 11/7/11
       if(!zone_table[zone_number].reset_mode)
@@ -1061,7 +1061,7 @@ void epic_zone_balance()
 
   for (i = 0; i < epic_zones.size(); i++)
   {
-    if(!qry("SELECT alignment, last_touch FROM zones WHERE number = %d", epic_zones[i].number))
+    if(!qry("SELECT alignment, UNIX_TIMESTAMP(last_touch) FROM zones WHERE number = %d", epic_zones[i].number))
       return;
 
     MYSQL_RES *res = mysql_store_result(DB);
@@ -1083,7 +1083,7 @@ void epic_zone_balance()
     mysql_free_result(res);
     
     if(lt == 0)
-      db_query("UPDATE zones SET last_touch='%d' WHERE number='%d'", time(NULL), epic_zones[i].number);
+      db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
 
     if((alignment == 0))
       continue;
@@ -1098,7 +1098,7 @@ void epic_zone_balance()
         delta = 1;
 
       //debug("calling update_epic_zone_alignment");
-      db_query("UPDATE zones SET last_touch='%d' WHERE number='%d'", time(NULL), epic_zones[i].number);
+      db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
       update_epic_zone_alignment(epic_zones[i].number, delta);
       continue;
     }
