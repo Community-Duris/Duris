@@ -1497,4 +1497,38 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
+-- polls
+
+CREATE TABLE IF NOT EXISTS polls (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    question VARCHAR(512) NOT NULL,
+    created_by VARCHAR(32) NOT NULL,
+    created_at INT NOT NULL DEFAULT 0,
+    expires_at INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    multi_select TINYINT(1) NOT NULL DEFAULT 0,
+    max_choices INT NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS poll_options (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    poll_id INT UNSIGNED NOT NULL,
+    option_num INT NOT NULL,
+    option_text VARCHAR(256) NOT NULL,
+    INDEX idx_poll_id (poll_id)
+);
+
+CREATE TABLE IF NOT EXISTS poll_votes (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    poll_id INT UNSIGNED NOT NULL,
+    account_name VARCHAR(64) NOT NULL,
+    option_id INT UNSIGNED NOT NULL,
+    voted_at INT NOT NULL DEFAULT 0,
+    char_name VARCHAR(32) NOT NULL,
+    UNIQUE KEY uk_poll_account_option (poll_id, account_name, option_id),
+    INDEX idx_poll_id (poll_id),
+    INDEX idx_account_name (account_name)
+);
+
+
 -- done
