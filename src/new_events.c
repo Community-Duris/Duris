@@ -832,6 +832,10 @@ void ne_init_events(void)
   if (redis_enabled)
     add_event(event_flush_dirty_players, 5 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 
+  // redis donation message polling
+  if (redis_enabled)
+    add_event(event_check_donation_messages, 1 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+
   // redis world state saves for crash recovery
   if (redis_enabled && redis_world_state_enabled && !crash_recovery_boot)
     add_event(event_save_world_state, 30 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);

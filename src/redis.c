@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "structs.h"
 #include "sql.h"
@@ -25,6 +26,7 @@
 
 #ifndef __NO_MYSQL__
 #include <hiredis/hiredis.h>
+#include <cjson/cJSON.h>
 #endif
 
 extern const int top_of_world;
@@ -35,6 +37,7 @@ extern P_char character_list;
 extern P_obj object_list;
 extern P_index obj_index;
 extern const struct race_names race_names_table[];
+extern P_desc descriptor_list;
 
 // ship object vnums defined in ships/ships.h
 
@@ -51,6 +54,8 @@ static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static volatile pid_t world_state_save_pid = 0;
 static volatile pid_t dirty_flush_pid = 0;
+static redisContext *donation_sub_ctx = NULL;
+static volatile bool donation_sub_connected = false;
 
 #define DIRTY_FLUSH_THRESHOLD 0
 
@@ -181,6 +186,8 @@ bool redis_init(void)
   // load obj_uid counter from redis
   redis_load_obj_uid_counter();
 
+  redis_donation_subscribe_init();
+
   return true;
 #endif
 }
@@ -192,6 +199,14 @@ void redis_cleanup(void)
   {
     // save obj_uid counter before disconnect
     redis_save_obj_uid_counter();
+
+    if (donation_sub_ctx)
+    {
+      redisFree(donation_sub_ctx);
+      donation_sub_ctx = NULL;
+      donation_sub_connected = false;
+    }
+
     redisFree(redis_ctx);
     redis_ctx = NULL;
   }
@@ -1021,6 +1036,194 @@ void redis_cache_del(const char *key)
 #endif
 }
 
+bool redis_publish(const char *channel, const char *message)
+{
+#ifdef __NO_MYSQL__
+  return false;
+#else
+  if (!redis_enabled || !redis_ctx || !channel || !message)
+    return false;
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx, "PUBLISH %s %b", channel, message, strlen(message));
+  if (!reply)
+    return false;
+
+  bool ok = (reply->type == REDIS_REPLY_INTEGER);
+  freeReplyObject(reply);
+  return ok;
+#endif
+}
+
+void redis_donation_subscribe_init(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled)
+    return;
+
+  const char *redis_host = getenv("REDIS_HOST");
+  if (!redis_host || !*redis_host)
+    redis_host = "127.0.0.1";
+
+  const char *redis_port_str = getenv("REDIS_PORT");
+  int redis_port = 6379;
+  if (redis_port_str && *redis_port_str)
+  {
+    redis_port = atoi(redis_port_str);
+    if (redis_port <= 0 || redis_port > 65535)
+      redis_port = 6379;
+  }
+
+  donation_sub_ctx = redisConnect(redis_host, redis_port);
+  if (!donation_sub_ctx || donation_sub_ctx->err)
+  {
+    if (donation_sub_ctx)
+    {
+      redisFree(donation_sub_ctx);
+      donation_sub_ctx = NULL;
+    }
+    logit(LOG_SYS, "redis: donation subscriber failed to connect");
+    return;
+  }
+
+  struct timeval tv = {0, 100000};
+  redisSetTimeout(donation_sub_ctx, tv);
+
+  redisReply *reply = (redisReply *)redisCommand(donation_sub_ctx, "SUBSCRIBE mud:nchat");
+  if (reply)
+    freeReplyObject(reply);
+
+  donation_sub_connected = true;
+  logit(LOG_SYS, "redis: donation subscriber connected to mud:nchat");
+#endif
+}
+
+static void broadcast_donation_nchat(const char *char_name, double amount,
+                                     const char *currency, const char *message,
+                                     bool is_public)
+{
+  char buf[MAX_STRING_LENGTH];
+  P_desc i;
+  P_char to;
+
+  if (is_public && char_name && *char_name)
+  {
+    if (message && *message)
+      snprintf(buf, sizeof(buf), "&+Y%s&n&+m donated &+W$%.2f %s&n&+m: &+w'%s'&n\n",
+               char_name, amount, currency, message);
+    else
+      snprintf(buf, sizeof(buf), "&+Y%s&n&+m donated &+W$%.2f %s&n&+m!&n\n",
+               char_name, amount, currency);
+  }
+  else
+  {
+    if (message && *message)
+      snprintf(buf, sizeof(buf), "&+Yan anonymous donor&n&+m gave &+W$%.2f %s&n&+m: &+w'%s'&n\n",
+               amount, currency, message);
+    else
+      snprintf(buf, sizeof(buf), "&+Yan anonymous donor&n&+m gave &+W$%.2f %s&n&+m!&n\n",
+               amount, currency);
+  }
+
+  for (i = descriptor_list; i; i = i->next)
+  {
+    if (i->connected || !(to = i->character))
+      continue;
+    if (IS_NPC(to) || !PLR2_FLAGGED(to, PLR2_NCHAT))
+      continue;
+    send_to_char(buf, to);
+  }
+
+  logit(LOG_SYS, "donation: %s donated $%.2f %s",
+        (is_public && char_name) ? char_name : "anonymous", amount, currency);
+}
+
+void redis_check_donation_messages(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !donation_sub_connected || !donation_sub_ctx)
+    return;
+
+  redisReply *reply = NULL;
+
+  if (redisGetReply(donation_sub_ctx, (void **)&reply) != REDIS_OK)
+  {
+    if (donation_sub_ctx->err)
+    {
+      // timeout errors are normal when no message available - just ignore
+      if (strstr(donation_sub_ctx->errstr, "Resource temporarily unavailable") ||
+          strstr(donation_sub_ctx->errstr, "timed out"))
+      {
+        donation_sub_ctx->err = 0;
+        donation_sub_ctx->errstr[0] = '\0';
+        return;
+      }
+      logit(LOG_SYS, "redis: donation subscriber error: %s", donation_sub_ctx->errstr);
+      donation_sub_connected = false;
+      redisFree(donation_sub_ctx);
+      donation_sub_ctx = NULL;
+    }
+    return;
+  }
+
+  if (!reply)
+    return;
+
+  if (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3)
+  {
+    if (reply->element[0]->type == REDIS_REPLY_STRING &&
+        strcmp(reply->element[0]->str, "message") == 0 &&
+        reply->element[2]->type == REDIS_REPLY_STRING)
+    {
+      const char *payload = reply->element[2]->str;
+
+      cJSON *json = cJSON_Parse(payload);
+      if (json)
+      {
+        cJSON *type_obj = cJSON_GetObjectItem(json, "type");
+        if (type_obj && cJSON_IsString(type_obj) &&
+            strcmp(type_obj->valuestring, "donation") == 0)
+        {
+          cJSON *char_name_obj = cJSON_GetObjectItem(json, "character_name");
+          cJSON *amount_obj = cJSON_GetObjectItem(json, "amount");
+          cJSON *currency_obj = cJSON_GetObjectItem(json, "currency");
+          cJSON *message_obj = cJSON_GetObjectItem(json, "message");
+          cJSON *is_public_obj = cJSON_GetObjectItem(json, "is_public");
+
+          const char *char_name = (char_name_obj && cJSON_IsString(char_name_obj))
+                                      ? char_name_obj->valuestring
+                                      : NULL;
+          double amount = (amount_obj && cJSON_IsNumber(amount_obj))
+                              ? amount_obj->valuedouble
+                              : 0.0;
+          const char *currency = (currency_obj && cJSON_IsString(currency_obj))
+                                     ? currency_obj->valuestring
+                                     : "USD";
+          const char *message = (message_obj && cJSON_IsString(message_obj))
+                                    ? message_obj->valuestring
+                                    : NULL;
+          bool is_public = (is_public_obj && cJSON_IsBool(is_public_obj))
+                               ? cJSON_IsTrue(is_public_obj)
+                               : false;
+
+          broadcast_donation_nchat(char_name, amount, currency, message, is_public);
+        }
+        cJSON_Delete(json);
+      }
+    }
+  }
+
+  freeReplyObject(reply);
+#endif
+}
+
+void event_check_donation_messages(P_char ch, P_char victim, P_obj obj, void *data)
+{
+  redis_check_donation_messages();
+
+  if (redis_enabled)
+    add_event(event_check_donation_messages, 1 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+}
+
 // forward declare from random.mob.c
 struct zone_random_data
 {
@@ -1291,6 +1494,22 @@ void redis_invalidate_epic_zones(void)
   redis_cache_del("mud:cache:epic_zones");
 }
 
+static void redis_publish_player_event(int pid, const char *event)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx || pid <= 0 || !event)
+    return;
+
+  char json[128];
+  snprintf(json, sizeof(json), "{\"event\":\"%s\",\"pid\":%d}", event, pid);
+
+  redisReply *reply = (redisReply *)redisCommand(redis_ctx,
+    "PUBLISH mud:player %b", json, strlen(json));
+  if (reply)
+    freeReplyObject(reply);
+#endif
+}
+
 // online players list for web
 void redis_player_online(P_char ch)
 {
@@ -1325,6 +1544,8 @@ void redis_player_online(P_char ch)
     "HSET mud:online %d %b", GET_PID(ch), json, strlen(json));
   if (reply)
     freeReplyObject(reply);
+
+  redis_publish_player_event(GET_PID(ch), "login");
 #endif
 }
 
@@ -1338,6 +1559,8 @@ void redis_player_offline(P_char ch)
     "HDEL mud:online %d", GET_PID(ch));
   if (reply)
     freeReplyObject(reply);
+
+  redis_publish_player_event(GET_PID(ch), "logout");
 #endif
 }
 

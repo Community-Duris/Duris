@@ -1486,4 +1486,15 @@ FROM lockers
 WHERE locker_name LIKE 'account.%';
 
 
+-- kofi donations
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'accounts' AND column_name = 'total_donated');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE accounts ADD COLUMN total_donated DECIMAL(10,2) DEFAULT 0.00',
+    'SELECT "total_donated already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+
 -- done

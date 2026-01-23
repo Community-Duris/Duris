@@ -713,6 +713,29 @@ void sql_update_account_character(P_char ch)
       account_name_sql, GET_PID(ch), char_name_sql);
 }
 
+double sql_get_total_donated(const char *account_name)
+{
+#ifdef __NO_MYSQL__
+  return 0.0;
+#else
+  if (!account_name || !*account_name)
+    return 0.0;
+
+  MYSQL_RES *res = db_query("SELECT total_donated FROM accounts WHERE account_name='%s'",
+                            escape_str(account_name).c_str());
+  if (!res)
+    return 0.0;
+
+  double total = 0.0;
+  MYSQL_ROW row = mysql_fetch_row(res);
+  if (row && row[0])
+    total = atof(row[0]);
+
+  mysql_free_result(res);
+  return total;
+#endif
+}
+
 /* Update frag_leaderboard table with current character data */
 void sql_update_frag_leaderboard(P_char ch)
 {
