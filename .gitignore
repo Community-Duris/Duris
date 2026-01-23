@@ -44,3 +44,7 @@ Accounts.old.*
 Players.old.*
 backup/
 docs/
+.bash_history
+etc/group
+etc/passwd
+etc/resolv.conf
