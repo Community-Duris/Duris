@@ -3535,6 +3535,30 @@ void arti_fixit_sql( P_char ch )
   }
 }
 
+// syncs all in-game artifact locations to the database
+void arti_sync_sql( P_char ch )
+{
+  P_obj      obj;
+  P_char     owner;
+  int        counter = 0;
+
+  send_to_char( "Syncing all in-game artifacts to database...\n\r", ch );
+
+  // iterate through all objects in game
+  for (obj = object_list; obj; obj = obj->next)
+  {
+    if (!IS_ARTIFACT(obj))
+      continue;
+
+    // update this artifact's location in DB
+    artifact_update_location_sql(obj);
+    counter++;
+  }
+
+  arti_cache_invalidate();
+  send_to_char_f( ch, "Synced %d artifacts to database.\n\r", counter );
+}
+
 // Resets the 'soul' of the artifact of vnum == arg.
 // It resets the timer to 0 also, so it will merge asap.
 void arti_reset_sql( P_char ch, char *arg )
@@ -3558,6 +3582,12 @@ void arti_reset_sql( P_char ch, char *arg )
   if( !strcmp( "fixit", arg ) )
   {
     arti_fixit_sql( ch );
+    return;
+  }
+
+  if( !strcmp( "sync", arg ) )
+  {
+    arti_sync_sql( ch );
     return;
   }
 
