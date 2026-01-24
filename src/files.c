@@ -48,6 +48,9 @@ static int save_count;
 static int short_size = sizeof(short);
 static int stat_vers, obj_vers, aff_vers, skill_vers, witness_vers;
 extern struct shop_data *shop_index;
+
+// flag to skip corpse saves during boot (loading from db)
+int skip_corpse_save = 0;
 extern struct hold_data TmpAffs;
 extern struct mm_ds *dead_mob_pool;
 //extern struct mm_ds *dead_construction_pool;
@@ -1222,6 +1225,10 @@ int write_one_object(P_obj obj, char* dest_buff)
 
 void writeCorpse(P_obj corpse)
 {
+  extern int skip_corpse_save;
+  if (skip_corpse_save)
+    return;
+
   if (!corpse || (corpse->type != ITEM_CORPSE) ||
       !IS_SET(corpse->value[1], PC_CORPSE)) {
     logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");

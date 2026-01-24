@@ -4435,11 +4435,14 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 // single query corpse loading - all data in one query
 #define MAX_CORPSE_ITEMS 512
 
+extern int skip_corpse_save;
+
 bool sql_load_all_corpses(void)
 {
   if (!DB)
     return false;
 
+  skip_corpse_save = 1;  // don't write corpses back during load
 
   // one query gets everything: corpses + items + affects
   MYSQL_RES *result = db_query(
@@ -4458,7 +4461,6 @@ bool sql_load_all_corpses(void)
     return false;
 
   int total_rows = mysql_num_rows(result);
-  fprintf(stderr, " (%d rows) ", total_rows);
 
   // tracking for current corpse being built
   int cur_corpse_id = -1;
@@ -4473,11 +4475,11 @@ bool sql_load_all_corpses(void)
   int last_item_id = -1;
 
   int loaded = 0;
-  int row_count = 0;
   MYSQL_ROW row;
 
   while ((row = mysql_fetch_row(result)))
   {
+
     int corpse_id = atoi(row[0]);
     int item_id = row[4] ? atoi(row[4]) : 0;
 
@@ -4615,7 +4617,6 @@ bool sql_load_all_corpses(void)
       continue;
 
     int vnum = atoi(row[6]);
-    int item_type = row[7] ? atoi(row[7]) : 0;
     int rnum = real_object(vnum);
     if (rnum < 0)
     {
@@ -4623,46 +4624,11 @@ bool sql_load_all_corpses(void)
       continue;
     }
 
-    P_obj obj;
-    if (item_type > 0)
+    P_obj obj = read_object(rnum, REAL);
+    if (!obj)
     {
-      // fast path: create object directly without file i/o
-      obj = (P_obj)mm_get(dead_obj_pool);
-      if (!obj)
-      {
-        last_item_id = item_id;
-        continue;
-      }
-      memset(obj, 0, sizeof(struct obj_data));
-      obj->obj_uid = next_obj_uid++;
-      obj->R_num = rnum;
-      obj->loc_p = LOC_NOWHERE;
-      obj->loc.room = NOWHERE;
-      obj_index[rnum].number++;
-
-      // link to object list
-      if (object_list)
-        object_list->prev = obj;
-      obj->next = object_list;
-      obj->prev = NULL;
-      object_list = obj;
-
-      // use cached strings from prototype
-      obj->name = obj_index[rnum].keys;
-      obj->short_description = obj_index[rnum].desc2;
-      obj->description = obj_index[rnum].desc1;
-      obj->action_description = obj_index[rnum].desc3;
-      obj->type = item_type;
-    }
-    else
-    {
-      // slow path: need read_object for item_type
-      obj = read_object(rnum, REAL);
-      if (!obj)
-      {
-        last_item_id = item_id;
-        continue;
-      }
+      last_item_id = item_id;
+      continue;
     }
 
     obj->weight = atoi(row[8]);
@@ -4774,6 +4740,7 @@ bool sql_load_all_corpses(void)
   }
 
   mysql_free_result(result);
+  skip_corpse_save = 0;  // re-enable corpse saves
   return true;
 }
 

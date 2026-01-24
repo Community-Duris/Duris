@@ -386,6 +386,7 @@ void arti_poof_sql( P_char ch, char *arg );
 void arti_remove_sql( int vnum, bool mortalToo );
 void arti_reset_sql( P_char ch, char *arg );
 void arti_swap_sql( P_char ch, char *arg );
+void arti_syncdb_sql( P_char ch );
 void arti_timer_sql( P_char ch, char *arg );
 P_char load_dummy_char( char *name );
 void nuke_eq( P_char ch );
@@ -3559,6 +3560,45 @@ void arti_sync_sql( P_char ch )
   send_to_char_f( ch, "Synced %d artifacts to database.\n\r", counter );
 }
 
+// syncs artifact ownership from player_items table to artifacts_mortal
+void arti_syncdb_sql( P_char ch )
+{
+  extern MYSQL *DB;
+  if (!DB)
+  {
+    send_to_char("Database not connected.\n\r", ch);
+    return;
+  }
+
+  send_to_char("Syncing artifact ownership from player saves...\n\r", ch);
+
+  // clear all artifact ownership first
+  const char *clear_sql =
+    "UPDATE artifacts_mortal SET location = 0, owned = 'N', locType = 1";
+  if (mysql_real_query(DB, clear_sql, strlen(clear_sql)) != 0)
+  {
+    send_to_char_f(ch, "Error clearing artifacts: %s\n\r", mysql_error(DB));
+    return;
+  }
+  int cleared = mysql_affected_rows(DB);
+
+  // update from player_items
+  const char *sync_sql =
+    "UPDATE artifacts_mortal am "
+    "JOIN player_items pi ON pi.vnum = am.vnum "
+    "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
+    "SET am.location = pi.pid, am.owned = 'Y', am.locType = 3";
+  if (mysql_real_query(DB, sync_sql, strlen(sync_sql)) != 0)
+  {
+    send_to_char_f(ch, "Error syncing artifacts: %s\n\r", mysql_error(DB));
+    return;
+  }
+  int updated = mysql_affected_rows(DB);
+
+  arti_cache_invalidate();
+  send_to_char_f(ch, "Cleared %d, updated %d artifact ownerships from player saves.\n\r", cleared, updated);
+}
+
 // Resets the 'soul' of the artifact of vnum == arg.
 // It resets the timer to 0 also, so it will merge asap.
 void arti_reset_sql( P_char ch, char *arg )
@@ -3588,6 +3628,12 @@ void arti_reset_sql( P_char ch, char *arg )
   if( !strcmp( "sync", arg ) )
   {
     arti_sync_sql( ch );
+    return;
+  }
+
+  if( !strcmp( "syncdb", arg ) )
+  {
+    arti_syncdb_sql( ch );
     return;
   }
 
