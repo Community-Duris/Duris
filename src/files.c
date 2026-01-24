@@ -1601,11 +1601,11 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 
   // Delete file containing conjurable mobs.
   snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*ch->player.name), name);
-  snprintf(Gbuf2, sizeof Gbuf2, "%s.bak");
+  snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
   rename(Gbuf1, Gbuf2);
   // Delete file containing crafting/forging recipe list.
   snprintf(Gbuf1, sizeof Gbuf1, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR, LOWER(*ch->player.name), name);
-  snprintf(Gbuf2, sizeof Gbuf2, "%s.bak");
+  snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
   rename(Gbuf1, Gbuf2);
 
   // Delete ship.
