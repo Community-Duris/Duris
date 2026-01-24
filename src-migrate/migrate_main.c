@@ -143,7 +143,49 @@ static void remap_artifact_locations(void) {
         mysql_free_result(res);
     }
     printf("  artifacts_mortal: %d remapped\n", updated);
+}
 
+// remap ip_info pids after player migration
+static void remap_ip_info(void) {
+    printf("remapping ip_info to new pids...\n");
+
+    int updated = 0;
+    MYSQL_RES *res = db_query(
+        "SELECT ii.pid, old.name, new.pid as new_pid "
+        "FROM ip_info ii "
+        "JOIN _old_pid_map old ON ii.pid = old.pid "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1"
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE ip_info SET pid = %s WHERE pid = %s", row[2], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    printf("  ip_info: %d remapped\n", updated);
+}
+
+// update player_data.last_ip from ip_info
+static void update_player_last_ip(void) {
+    printf("updating player_data.last_ip from ip_info...\n");
+
+    qry("UPDATE player_data pd "
+        "JOIN ip_info ii ON pd.pid = ii.pid "
+        "SET pd.last_ip = INET_ATON(ii.last_ip) "
+        "WHERE pd.last_ip = 0 AND ii.last_ip IS NOT NULL AND ii.last_ip != ''");
+
+    MYSQL_RES *res = db_query("SELECT ROW_COUNT()");
+    if (res) {
+        MYSQL_ROW row = mysql_fetch_row(res);
+        printf("  player_data.last_ip: %s updated\n", row ? row[0] : "0");
+        mysql_free_result(res);
+    }
+}
+
+// cleanup old pid mapping temp table
+static void cleanup_old_pid_mapping(void) {
     qry("DROP TABLE IF EXISTS _old_pid_map");
 }
 
@@ -319,6 +361,9 @@ int main(int argc, char **argv) {
     if (do_all || do_players) {
         players = migrate_players_from_files();
         remap_artifact_locations();
+        remap_ip_info();
+        update_player_last_ip();
+        cleanup_old_pid_mapping();
         populate_frag_leaderboard();
         printf("\n");
     }
