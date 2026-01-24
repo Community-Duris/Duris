@@ -521,6 +521,15 @@ bool sql_save_player_status(P_char ch, int type, int room)
     return false;
 
   int pid = GET_PID(ch);
+
+  // if pid is 0 but player exists by name, look up the pid
+  if (pid == 0 && sql_player_exists(GET_NAME(ch)))
+  {
+    pid = sql_get_player_pid(GET_NAME(ch));
+    if (pid > 0)
+      ch->only.pc->pid = pid;
+  }
+
   bool is_update = (pid > 0 && sql_player_exists(GET_NAME(ch)));
 
   // for crash saves, preserve the existing last_room (camp/rent location)
