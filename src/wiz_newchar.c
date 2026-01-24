@@ -393,7 +393,7 @@ void do_newchar(P_char ch, char *argument, int cmd)
 
   // notify the wizard
   snprintf(buf, MAX_STRING_LENGTH,
-           "created %s - %s %s level %d (pid %ld)\r\n",
+           "created %s - %s %s level %d (pid %d)\r\n",
            newch->player.name,
            race_names_table[race_id].normal,
            class_names_table[class_id].normal,
