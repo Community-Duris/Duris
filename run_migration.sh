@@ -537,17 +537,23 @@ CREATE TABLE IF NOT EXISTS player_affects (
     modifier INT DEFAULT 0,
     location TINYINT UNSIGNED DEFAULT 0,
     level SMALLINT UNSIGNED DEFAULT 0,
-    bitvector1 BIGINT DEFAULT 0,
-    bitvector2 BIGINT DEFAULT 0,
-    bitvector3 BIGINT DEFAULT 0,
-    bitvector4 BIGINT DEFAULT 0,
-    bitvector5 BIGINT DEFAULT 0,
+    bitvector1 BIGINT UNSIGNED DEFAULT 0,
+    bitvector2 BIGINT UNSIGNED DEFAULT 0,
+    bitvector3 BIGINT UNSIGNED DEFAULT 0,
+    bitvector4 BIGINT UNSIGNED DEFAULT 0,
+    bitvector5 BIGINT UNSIGNED DEFAULT 0,
     custom_msg_char TEXT DEFAULT NULL,
     custom_msg_room TEXT DEFAULT NULL,
     PRIMARY KEY (id),
     INDEX idx_pid (pid),
     CONSTRAINT fk_player_affects FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
 );
+ALTER TABLE player_affects
+    MODIFY bitvector1 BIGINT UNSIGNED DEFAULT 0,
+    MODIFY bitvector2 BIGINT UNSIGNED DEFAULT 0,
+    MODIFY bitvector3 BIGINT UNSIGNED DEFAULT 0,
+    MODIFY bitvector4 BIGINT UNSIGNED DEFAULT 0,
+    MODIFY bitvector5 BIGINT UNSIGNED DEFAULT 0;
 CREATE TABLE IF NOT EXISTS player_items (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     pid INT UNSIGNED NOT NULL,
