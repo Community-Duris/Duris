@@ -1212,10 +1212,10 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 
   int temp = 1 + ( 3 * pLocker->m_itemCount);
 
-  if(pLocker->m_itemCount >= 1001)
+  if(pLocker->m_itemCount >= 5001)
   {
-    send_to_char("\r\n&+RYou have a ton of &+WSTUFF&+R, as in more than 1000 items - so there's a surcharge!\r\n", ch);
-    temp += (pLocker->m_itemCount - 1000) * 2000;
+    send_to_char("\r\n&+RYou have a ton of &+WSTUFF&+R, as in more than 5000 items - so there's a surcharge!\r\n", ch);
+    temp += (pLocker->m_itemCount - 5000) * 2000;
   }
 
   if(is_guild_locker)
