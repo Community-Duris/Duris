@@ -619,7 +619,7 @@ bool sql_save_guild(Guild *guild) {
         free(esc_title);
     }
 
-    // save members (without pid lookup - not needed for migration)
+    // save members with pid lookup from player_data
     snprintf(query, sizeof(query), "delete from guild_members where guild_id=%u", gid);
     sql_run_query(query);
     for (P_member mem = guild->members; mem; mem = mem->next) {
@@ -627,8 +627,8 @@ bool sql_save_guild(Guild *guild) {
         if (!esc_mname) continue;
         snprintf(query, sizeof(query),
             "insert ignore into guild_members (guild_id, player_name, player_pid, bits, debt) "
-            "values (%u, '%s', 0, %u, %u)",
-            gid, esc_mname, mem->bits, mem->debt);
+            "values (%u, '%s', COALESCE((SELECT pid FROM player_data WHERE LOWER(name) = LOWER('%s')), 0), %u, %u)",
+            gid, esc_mname, esc_mname, mem->bits, mem->debt);
         sql_run_query(query);
         free(esc_mname);
     }

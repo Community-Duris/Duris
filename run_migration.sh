@@ -8,7 +8,7 @@ source "$SCRIPT_DIR/.env"
 MYSQL_CMD="mysql -h$DB_HOST -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=91
+TOTAL=93
 FAILED=0
 
 run_sql() {
@@ -861,6 +861,21 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;"
 
+run_sql "sync account_characters pid" "
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND index_name = 'pid');
+SET @sql = IF(@idx_exists > 0,
+    'ALTER TABLE account_characters DROP INDEX pid',
+    'SELECT 1 INTO @dummy');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+UPDATE account_characters ac
+JOIN player_data pd ON LOWER(ac.char_name) = LOWER(pd.name)
+SET ac.pid = pd.pid
+WHERE ac.pid != pd.pid OR ac.pid IS NULL;"
+
 run_sql "create ships tables" "
 CREATE TABLE IF NOT EXISTS ships (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1031,6 +1046,12 @@ SET @sql = IF(@idx_exists = 0,
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;"
+
+run_sql "sync guild_members player_pid" "
+UPDATE guild_members gm
+JOIN player_data pd ON LOWER(gm.player_name) = LOWER(pd.name)
+SET gm.player_pid = pd.pid
+WHERE gm.player_pid = 0 OR gm.player_pid IS NULL;"
 
 run_sql "add player_data columns" "
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
