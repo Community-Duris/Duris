@@ -548,6 +548,11 @@ CREATE TABLE IF NOT EXISTS player_affects (
     INDEX idx_pid (pid),
     CONSTRAINT fk_player_affects FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
 );
+UPDATE player_affects SET bitvector1 = 0 WHERE bitvector1 < 0;
+UPDATE player_affects SET bitvector2 = 0 WHERE bitvector2 < 0;
+UPDATE player_affects SET bitvector3 = 0 WHERE bitvector3 < 0;
+UPDATE player_affects SET bitvector4 = 0 WHERE bitvector4 < 0;
+UPDATE player_affects SET bitvector5 = 0 WHERE bitvector5 < 0;
 ALTER TABLE player_affects
     MODIFY bitvector1 BIGINT UNSIGNED DEFAULT 0,
     MODIFY bitvector2 BIGINT UNSIGNED DEFAULT 0,
