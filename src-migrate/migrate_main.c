@@ -162,11 +162,59 @@ static void remap_artifact_locations(void) {
         mysql_free_result(res);
     }
     printf("  artifact_bind: %d remapped\n", updated);
+
+    // fallback: sync artifacts.location from artifact_bind for on-pc artifacts
+    // this handles cases where the old pid mapping failed
+    updated = 0;
+    res = db_query(
+        "SELECT a.vnum, ab.owner_pid "
+        "FROM artifacts a "
+        "JOIN artifact_bind ab ON a.vnum = ab.vnum "
+        "WHERE a.locType = 3 AND ab.owner_pid > 0 AND a.location != ab.owner_pid"
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE artifacts SET location = %s WHERE vnum = %s", row[1], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    if (updated > 0)
+        printf("  artifacts synced from artifact_bind: %d\n", updated);
+
+    // same for artifacts_mortal
+    updated = 0;
+    res = db_query(
+        "SELECT a.vnum, ab.owner_pid "
+        "FROM artifacts_mortal a "
+        "JOIN artifact_bind ab ON a.vnum = ab.vnum "
+        "WHERE a.locType = 3 AND ab.owner_pid > 0 AND a.location != ab.owner_pid"
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE artifacts_mortal SET location = %s WHERE vnum = %s", row[1], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    if (updated > 0)
+        printf("  artifacts_mortal synced from artifact_bind: %d\n", updated);
 }
 
 // remap ip_info pids after player migration
 static void remap_ip_info(void) {
     printf("remapping ip_info to new pids...\n");
+
+    // delete ip_info entries that would block remapping (their pid = someone else's new_pid)
+    qry("DELETE ii_blocker FROM ip_info ii_blocker "
+        "JOIN ( "
+        "  SELECT new.pid as new_pid "
+        "  FROM ip_info ii "
+        "  JOIN _old_pid_map old ON ii.pid = old.pid "
+        "  JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        ") remap ON ii_blocker.pid = remap.new_pid");
 
     int updated = 0;
     MYSQL_RES *res = db_query(

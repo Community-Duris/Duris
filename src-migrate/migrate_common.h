@@ -97,6 +97,8 @@ struct mig_obj {
     long timer;
     unsigned long extra_flags;
     unsigned char extra_flags_set;  // 1 if extra_flags was explicitly set in pfile
+    int wear_flags;
+    unsigned char wear_flags_set;  // 1 if wear_flags was explicitly set in pfile
     int value[8];
     unsigned char value_set;  // bitmask: bit N = value[N] was explicitly set in pfile
     char *name;

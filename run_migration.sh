@@ -8,7 +8,7 @@ source "$SCRIPT_DIR/.env"
 MYSQL_CMD="mysql -h$DB_HOST -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=93
+TOTAL=94
 FAILED=0
 
 run_sql() {
@@ -570,6 +570,7 @@ CREATE TABLE IF NOT EXISTS player_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -632,6 +633,7 @@ CREATE TABLE IF NOT EXISTS corpse_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -659,6 +661,14 @@ CREATE TABLE IF NOT EXISTS corpse_item_affects (
     INDEX idx_item_id (item_id)
 );"
 
+run_sql "add item_type to corpse_items" "
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'item_type');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE corpse_items ADD COLUMN item_type TINYINT DEFAULT 0 AFTER vnum',
+    'SELECT 1 INTO @dummy');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
+
 run_sql "create shopkeeper_items tables" "
 CREATE TABLE IF NOT EXISTS shopkeeper_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -671,6 +681,7 @@ CREATE TABLE IF NOT EXISTS shopkeeper_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -710,6 +721,7 @@ CREATE TABLE IF NOT EXISTS saved_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -749,6 +761,7 @@ CREATE TABLE IF NOT EXISTS siege_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -799,6 +812,7 @@ CREATE TABLE IF NOT EXISTS locker_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -1226,6 +1240,7 @@ CREATE TABLE IF NOT EXISTS player_pet_items (
   cost INT DEFAULT 0,
   timer INT DEFAULT -1,
   extra_flags BIGINT UNSIGNED DEFAULT 0,
+  wear_flags INT DEFAULT NULL,
   value0 INT DEFAULT 0,
   value1 INT DEFAULT 0,
   value2 INT DEFAULT 0,
@@ -1363,6 +1378,13 @@ BEGIN
         ALTER TABLE player_items ADD INDEX idx_obj_uid (obj_uid);
     END IF;
 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE player_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
     IF EXISTS (SELECT 1 FROM information_schema.columns
                WHERE table_schema = DATABASE()
                AND table_name = 'corpse_items'
@@ -1387,6 +1409,13 @@ BEGIN
                    AND table_name = 'corpse_items'
                    AND index_name = 'idx_obj_uid') THEN
         ALTER TABLE corpse_items ADD INDEX idx_obj_uid (obj_uid);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'corpse_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE corpse_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
     END IF;
 
     IF EXISTS (SELECT 1 FROM information_schema.columns
@@ -1417,6 +1446,13 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_schema = DATABASE()
+                   AND table_name = 'locker_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE locker_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
                    AND table_name = 'player_pet_items'
                    AND column_name = 'obj_uid') THEN
         ALTER TABLE player_pet_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
@@ -1434,6 +1470,45 @@ BEGIN
                    AND table_name = 'player_pet_items'
                    AND index_name = 'idx_obj_uid') THEN
         ALTER TABLE player_pet_items ADD INDEX idx_obj_uid (obj_uid);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE player_pet_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'shopkeeper_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE shopkeeper_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'saved_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE saved_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'siege_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE siege_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.tables
+               WHERE table_schema = DATABASE()
+               AND table_name = 'account_locker_items') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                       AND table_name = 'account_locker_items'
+                       AND column_name = 'wear_flags') THEN
+            ALTER TABLE account_locker_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+        END IF;
     END IF;
 END //
 
@@ -1477,6 +1552,7 @@ CREATE TABLE IF NOT EXISTS account_locker_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,

@@ -33,6 +33,9 @@ extern int top_of_world;
 extern struct room_data *world;
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
+extern struct mm_ds *dead_obj_pool;
+extern P_obj object_list;
+extern unsigned long next_obj_uid;
 extern P_Guild guild_list;
 void ensure_pconly_pool(void);
 
@@ -1081,23 +1084,29 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
   else
     strcpy(action_str, "NULL");
 
+  char wear_str[32];
+  if (obj->wear_flags)
+    snprintf(wear_str, sizeof(wear_str), "%d", obj->wear_flags);
+  else
+    strcpy(wear_str, "NULL");
+
   // build the query - only use columns that exist in schema
   // extra fields like bitvectors, trap data, etc can be loaded from prototype
   char query[8192];
   snprintf(query, sizeof(query),
     "INSERT INTO player_items ("
     "pid, vnum, equip_slot, container_id, quantity, "
-    "weight, cost, timer, extra_flags, "
+    "weight, cost, timer, extra_flags, wear_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
     "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
     "%d, %d, %d, %s, 1, "
-    "%d, %d, %ld, %u, "
+    "%d, %d, %ld, %u, %s, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
     "%s, %s, %s, %s, %lu, %d"
     ")",
     pid, vnum, equip_slot, container_str,
-    obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags,
+    obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags, wear_str,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
     name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
@@ -2289,7 +2298,7 @@ bool sql_load_player_items(P_char ch)
   char query[1024];
   snprintf(query, sizeof(query),
     "SELECT id, vnum, equip_slot, container_id, "
-    "weight, cost, timer, extra_flags, "
+    "weight, cost, timer, extra_flags, wear_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
     "name, short_descr, description, action_descr, obj_uid, item_condition "
     "FROM player_items WHERE pid=%d ORDER BY id", pid);
@@ -2336,6 +2345,7 @@ bool sql_load_player_items(P_char ch)
     obj->cost = sql_row_int(row, col++, obj->cost);
     obj->timer[0] = sql_row_long(row, col++, obj->timer[0]);
     obj->extra_flags = sql_row_ulong(row, col++, obj->extra_flags);
+    obj->wear_flags = sql_row_int(row, col++, obj->wear_flags);
 
     // NULL in db means use prototype value (passed as default)
     obj->value[0] = sql_row_int(row, col++, obj->value[0]);
@@ -2950,21 +2960,27 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
   if (esc_action) snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
   else strcpy(action_str, "NULL");
 
+  char wear_str[32];
+  if (obj->wear_flags)
+    snprintf(wear_str, sizeof(wear_str), "%d", obj->wear_flags);
+  else
+    strcpy(wear_str, "NULL");
+
   char query[8192];
   snprintf(query, sizeof(query),
     "INSERT INTO locker_items ("
     "locker_id, chest_id, vnum, container_id, quantity, "
-    "weight, cost, timer, extra_flags, "
+    "weight, cost, timer, extra_flags, wear_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
     "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
     "%d, %s, %d, %s, 1, "
-    "%d, %d, %ld, %lu, "
+    "%d, %d, %ld, %lu, %s, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
     "%s, %s, %s, %s, %lu, %d"
     ")",
     locker_id, chest_id_str, vnum, container_str,
-    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
+    obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags, wear_str,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
     name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
@@ -3086,14 +3102,14 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 
   if (container_id > 0)
     snprintf(query, sizeof(query),
-             "SELECT id, vnum, weight, cost, timer, extra_flags, "
+             "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
              "name, short_descr, description, action_descr, obj_uid, item_condition "
              "FROM locker_items WHERE locker_id=%d AND container_id=%d%s",
              locker_id, container_id, chest_filter);
   else
     snprintf(query, sizeof(query),
-             "SELECT id, vnum, weight, cost, timer, extra_flags, "
+             "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
              "name, short_descr, description, action_descr, obj_uid, item_condition "
              "FROM locker_items WHERE locker_id=%d AND container_id IS NULL%s",
@@ -3123,46 +3139,47 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
     obj->cost = atoi(row[3]);
     obj->timer[0] = atol(row[4]);
     if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
+    if (row[6]) obj->wear_flags = atoi(row[6]);
 
-    obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
-    obj->value[1] = row[7] ? atoi(row[7]) : obj->value[1];
-    obj->value[2] = row[8] ? atoi(row[8]) : obj->value[2];
-    obj->value[3] = row[9] ? atoi(row[9]) : obj->value[3];
-    obj->value[4] = row[10] ? atoi(row[10]) : obj->value[4];
-    obj->value[5] = row[11] ? atoi(row[11]) : obj->value[5];
-    obj->value[6] = row[12] ? atoi(row[12]) : obj->value[6];
-    obj->value[7] = row[13] ? atoi(row[13]) : obj->value[7];
+    obj->value[0] = row[7] ? atoi(row[7]) : obj->value[0];
+    obj->value[1] = row[8] ? atoi(row[8]) : obj->value[1];
+    obj->value[2] = row[9] ? atoi(row[9]) : obj->value[2];
+    obj->value[3] = row[10] ? atoi(row[10]) : obj->value[3];
+    obj->value[4] = row[11] ? atoi(row[11]) : obj->value[4];
+    obj->value[5] = row[12] ? atoi(row[12]) : obj->value[5];
+    obj->value[6] = row[13] ? atoi(row[13]) : obj->value[6];
+    obj->value[7] = row[14] ? atoi(row[14]) : obj->value[7];
 
-    if (row[14] && strlen(row[14]) > 0)
-    {
-      obj->name = str_dup(row[14]);
-      obj->str_mask |= STRUNG_KEYS;
-    }
     if (row[15] && strlen(row[15]) > 0)
     {
-      obj->short_description = str_dup(row[15]);
-      obj->str_mask |= STRUNG_DESC2;
+      obj->name = str_dup(row[15]);
+      obj->str_mask |= STRUNG_KEYS;
     }
     if (row[16] && strlen(row[16]) > 0)
     {
-      obj->description = str_dup(row[16]);
-      obj->str_mask |= STRUNG_DESC1;
+      obj->short_description = str_dup(row[16]);
+      obj->str_mask |= STRUNG_DESC2;
     }
     if (row[17] && strlen(row[17]) > 0)
     {
-      obj->action_description = str_dup(row[17]);
+      obj->description = str_dup(row[17]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[18] && strlen(row[18]) > 0)
+    {
+      obj->action_description = str_dup(row[18]);
       obj->str_mask |= STRUNG_DESC3;
     }
 
     // restore obj_uid and condition
-    if (row[18] && strlen(row[18]) > 0)
+    if (row[19] && strlen(row[19]) > 0)
     {
-      unsigned long saved_uid = strtoul(row[18], NULL, 10);
+      unsigned long saved_uid = strtoul(row[19], NULL, 10);
       if (saved_uid > 0)
         obj->obj_uid = saved_uid;
     }
-    if (row[19] && strlen(row[19]) > 0)
-      obj->condition = atoi(row[19]);
+    if (row[20] && strlen(row[20]) > 0)
+      obj->condition = atoi(row[20]);
 
     char aff_query[128];
     snprintf(aff_query, sizeof(aff_query),
@@ -4305,17 +4322,17 @@ static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
   char query[8192];
   snprintf(query, sizeof(query),
     "INSERT INTO corpse_items ("
-    "corpse_id, vnum, container_id, quantity, "
+    "corpse_id, vnum, item_type, container_id, quantity, "
     "weight, cost, timer, extra_flags, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
     "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
-    "%d, %d, %s, 1, "
+    "%d, %d, %d, %s, 1, "
     "%d, %d, %ld, %lu, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
     "%s, %s, %s, %s, %lu, %d"
     ")",
-    corpse_id, vnum, container_str,
+    corpse_id, vnum, obj->type, container_str,
     obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
@@ -4427,7 +4444,8 @@ bool sql_load_all_corpses(void)
   // one query gets everything: corpses + items + affects
   MYSQL_RES *result = db_query(
     "SELECT c.id, c.player_name, c.save_id, c.room_vnum, "
-    "ci.id, COALESCE(ci.container_id, 0), ci.vnum, ci.weight, ci.cost, ci.timer, "
+    "ci.id, COALESCE(ci.container_id, 0), ci.vnum, COALESCE(ci.item_type, 0), "
+    "ci.weight, ci.cost, ci.timer, "
     "ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
     "ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
     "ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0) "
@@ -4438,6 +4456,9 @@ bool sql_load_all_corpses(void)
   );
   if (!result)
     return false;
+
+  int total_rows = mysql_num_rows(result);
+  fprintf(stderr, " (%d rows) ", total_rows);
 
   // tracking for current corpse being built
   int cur_corpse_id = -1;
@@ -4452,6 +4473,7 @@ bool sql_load_all_corpses(void)
   int last_item_id = -1;
 
   int loaded = 0;
+  int row_count = 0;
   MYSQL_ROW row;
 
   while ((row = mysql_fetch_row(result)))
@@ -4571,7 +4593,7 @@ bool sql_load_all_corpses(void)
     // same item, just another affect
     if (item_id == last_item_id && num_objs > 0)
     {
-      int aff_loc = atoi(row[23]);
+      int aff_loc = atoi(row[24]);
       if (aff_loc >= 0)
       {
         P_obj obj = obj_map[num_objs - 1];
@@ -4580,7 +4602,7 @@ bool sql_load_all_corpses(void)
           if (obj->affected[i].location == 0 && obj->affected[i].modifier == 0)
           {
             obj->affected[i].location = aff_loc;
-            obj->affected[i].modifier = atoi(row[24]);
+            obj->affected[i].modifier = atoi(row[25]);
             break;
           }
         }
@@ -4593,6 +4615,7 @@ bool sql_load_all_corpses(void)
       continue;
 
     int vnum = atoi(row[6]);
+    int item_type = row[7] ? atoi(row[7]) : 0;
     int rnum = real_object(vnum);
     if (rnum < 0)
     {
@@ -4600,46 +4623,81 @@ bool sql_load_all_corpses(void)
       continue;
     }
 
-    P_obj obj = read_object(rnum, REAL);
-    if (!obj)
+    P_obj obj;
+    if (item_type > 0)
     {
-      last_item_id = item_id;
-      continue;
+      // fast path: create object directly without file i/o
+      obj = (P_obj)mm_get(dead_obj_pool);
+      if (!obj)
+      {
+        last_item_id = item_id;
+        continue;
+      }
+      memset(obj, 0, sizeof(struct obj_data));
+      obj->obj_uid = next_obj_uid++;
+      obj->R_num = rnum;
+      obj->loc_p = LOC_NOWHERE;
+      obj->loc.room = NOWHERE;
+      obj_index[rnum].number++;
+
+      // link to object list
+      if (object_list)
+        object_list->prev = obj;
+      obj->next = object_list;
+      obj->prev = NULL;
+      object_list = obj;
+
+      // use cached strings from prototype
+      obj->name = obj_index[rnum].keys;
+      obj->short_description = obj_index[rnum].desc2;
+      obj->description = obj_index[rnum].desc1;
+      obj->action_description = obj_index[rnum].desc3;
+      obj->type = item_type;
+    }
+    else
+    {
+      // slow path: need read_object for item_type
+      obj = read_object(rnum, REAL);
+      if (!obj)
+      {
+        last_item_id = item_id;
+        continue;
+      }
     }
 
-    obj->weight = atoi(row[7]);
-    obj->cost = atoi(row[8]);
-    obj->timer[0] = atol(row[9]);
-    if (row[10]) obj->extra_flags = strtoul(row[10], NULL, 10);
+    obj->weight = atoi(row[8]);
+    obj->cost = atoi(row[9]);
+    obj->timer[0] = atol(row[10]);
+    if (row[11]) obj->extra_flags = strtoul(row[11], NULL, 10);
     for (int v = 0; v < 8; v++)
-      obj->value[v] = row[11 + v] ? atoi(row[11 + v]) : 0;
+      obj->value[v] = row[12 + v] ? atoi(row[12 + v]) : 0;
 
-    if (row[19] && row[19][0])
-    {
-      obj->name = str_dup(row[19]);
-      obj->str_mask |= STRUNG_KEYS;
-    }
     if (row[20] && row[20][0])
     {
-      obj->short_description = str_dup(row[20]);
-      obj->str_mask |= STRUNG_DESC2;
+      obj->name = str_dup(row[20]);
+      obj->str_mask |= STRUNG_KEYS;
     }
     if (row[21] && row[21][0])
     {
-      obj->description = str_dup(row[21]);
-      obj->str_mask |= STRUNG_DESC1;
+      obj->short_description = str_dup(row[21]);
+      obj->str_mask |= STRUNG_DESC2;
     }
     if (row[22] && row[22][0])
     {
-      obj->action_description = str_dup(row[22]);
+      obj->description = str_dup(row[22]);
+      obj->str_mask |= STRUNG_DESC1;
+    }
+    if (row[23] && row[23][0])
+    {
+      obj->action_description = str_dup(row[23]);
       obj->str_mask |= STRUNG_DESC3;
     }
 
-    int aff_loc = atoi(row[23]);
+    int aff_loc = atoi(row[24]);
     if (aff_loc >= 0)
     {
       obj->affected[0].location = aff_loc;
-      obj->affected[0].modifier = atoi(row[24]);
+      obj->affected[0].modifier = atoi(row[25]);
     }
 
     obj_map[num_objs] = obj;
