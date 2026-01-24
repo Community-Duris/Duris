@@ -667,34 +667,6 @@ CREATE TABLE `pkill_info` (
 SET character_set_client = @saved_cs_client;
 
 --
--- Table structure for table `players_core`
---
-
-DROP TABLE IF EXISTS `players_core`;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-CREATE TABLE `players_core` (
-  `pid` bigint(20) NOT NULL default '0',
-  `name` varchar(255) NOT NULL,
-  `race` varchar(255) NOT NULL,
-  `classname` varchar(255) NOT NULL,
-  `spec` varchar(255) NOT NULL,
-  `guild` varchar(255) NOT NULL,
-  `webinfo_toggle` int(1) NOT NULL default '0',
-  `racewar` int(11) NOT NULL default '0',
-  `level` int(11) NOT NULL default '0',
-  `money` int(11) NOT NULL default '0',
-  `balance` int(11) NOT NULL default '0',
-  `playtime` int(11) NOT NULL default '0',
-  `epics` int(11) NOT NULL default '0',
-  `active` tinyint(1) NOT NULL default '0',
-  PRIMARY KEY  (`pid`),
-  KEY `level` (`level`),
-  KEY `racewar` (`racewar`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-SET character_set_client = @saved_cs_client;
-
---
 -- Table structure for table `prepstatment_duris_sql`
 --
 

@@ -8,7 +8,7 @@ source "$SCRIPT_DIR/.env"
 MYSQL_CMD="mysql -h$DB_HOST -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=92
+TOTAL=91
 FAILED=0
 
 run_sql() {
@@ -301,6 +301,7 @@ CREATE TABLE IF NOT EXISTS player_data (
     quest_map_room INT DEFAULT 0,
     quest_map_bought INT DEFAULT 0,
     last_ip BIGINT UNSIGNED DEFAULT 0,
+    active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (pid),
@@ -1048,7 +1049,18 @@ SET @sql = IF(@col_exists = 0,
     'SELECT 1 INTO @dummy');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
-DEALLOCATE PREPARE stmt;"
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'player_data' AND column_name = 'active');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE player_data ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1 AFTER last_ip',
+    'SELECT 1 INTO @dummy');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+UPDATE player_data SET active = 1 WHERE active = 0 OR active IS NULL;"
 
 run_sql "add unique char name constraints" "
 DELETE ac1 FROM account_characters ac1
@@ -2051,27 +2063,6 @@ CREATE TABLE IF NOT EXISTS pkill_info (
     player_description VARCHAR(255),
     INDEX idx_event_id (event_id),
     INDEX idx_pid (pid)
-);"
-
-run_sql "create players_core table" "
-CREATE TABLE IF NOT EXISTS players_core (
-    pid BIGINT NOT NULL DEFAULT 0,
-    name VARCHAR(255) NOT NULL,
-    race VARCHAR(255) NOT NULL,
-    classname VARCHAR(255) NOT NULL,
-    spec VARCHAR(255) NOT NULL,
-    guild VARCHAR(255) NOT NULL,
-    webinfo_toggle INT NOT NULL DEFAULT 0,
-    racewar INT NOT NULL DEFAULT 0,
-    level INT NOT NULL DEFAULT 0,
-    money INT NOT NULL DEFAULT 0,
-    balance INT NOT NULL DEFAULT 0,
-    playtime INT NOT NULL DEFAULT 0,
-    epics INT NOT NULL DEFAULT 0,
-    active TINYINT(1) NOT NULL DEFAULT 0,
-    PRIMARY KEY (pid),
-    INDEX idx_level (level),
-    INDEX idx_racewar (racewar)
 );"
 
 run_sql "create prepstatment table" "

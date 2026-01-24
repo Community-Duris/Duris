@@ -478,25 +478,12 @@ int sql_save_player_core(P_char ch)
     spec_name = GET_SPEC_NAME(ch->player.m_class, ch->player.spec - 1);
   }
 
-  /* Some values might have changed, so we have to UPDATE. The INSERT will only
-   * work the first time, since pid is a primary key. */
-  db_query_nolog("INSERT INTO players_core (pid, name, race, classname, spec, guild, webinfo_toggle, racewar, level, money, balance, playtime, epics) VALUES( %d, '', '', '', '', '', 0, 0 ,0 ,0,0,0,0)",
-                 GET_PID(ch));
-
-  snprintf(query, MAX_STRING_LENGTH, "UPDATE players_core SET active = 0 WHERE name = '%s' and pid != %d", p->name, GET_PID(ch));
+  // deactivate any other players with same name (handles renamed characters)
+  snprintf(query, MAX_STRING_LENGTH, "UPDATE player_data SET active = 0 WHERE name = '%s' and pid != %d", p->name, GET_PID(ch));
   db_query(query);
 
-  snprintf(query, MAX_STRING_LENGTH,
-           "UPDATE players_core SET name='%s', race = '%s', classname = '%s', "
-           "spec = '%s', guild = '%s', webinfo_toggle = %d, "
-           "level = %d, racewar=%d, active=1 WHERE pid = %d",
-           p->name,
-           race_names_table[p->race].ansi, get_class_name(ch, ch),
-           spec_name, assoc_name_sql,
-           (IS_SET(ch->specials.act2, PLR2_WEBINFO) ? 1 : 0),
-           GET_LEVEL(ch), GET_RACEWAR(ch), GET_PID(ch));
-
-  db_query(query);
+  // mark this player as active
+  db_query("UPDATE player_data SET active = 1 WHERE pid = %d", GET_PID(ch));
 
   // Update frag leaderboard tables for web statistics
   sql_update_account_character(ch);
@@ -974,9 +961,7 @@ void sql_webinfo_toggle(P_char ch)
 {
   if (!ch || !IS_PC(ch))
     return;
-
-  db_query("UPDATE players_core SET webinfo_toggle=%d WHERE pid=%d",
-           (IS_SET(ch->specials.act2, PLR2_WEBINFO) ? 1 : 0), GET_PID(ch));
+  // webinfo is stored in act2 flag, saved with player_data
 }
 
 /* Update level info */
@@ -984,9 +969,7 @@ void sql_update_level(P_char ch)
 {
   if (!ch || !IS_PC(ch))
     return;
-
-  db_query("UPDATE players_core SET level=%d WHERE pid=%d",
-           GET_LEVEL(ch), GET_PID(ch));
+  // level already saved in player_data
 }
 
 /* Update money info */
@@ -994,9 +977,7 @@ void sql_update_money(P_char ch)
 {
   if (!ch || !IS_PC(ch))
     return;
-
-  db_query("UPDATE players_core SET money='%d', balance='%d' WHERE pid='%d'",
-           GET_MONEY(ch), GET_BALANCE(ch), GET_PID(ch));
+  // money stored as copper/silver/gold/platinum in player_data
 }
 
 /* Update playtime info */
@@ -1004,9 +985,7 @@ void sql_update_playtime(P_char ch)
 {
   if (!ch || !IS_PC(ch))
     return;
-
-  db_query("UPDATE players_core SET playtime='%d' WHERE pid = '%d'",
-           ch->player.time.played, GET_PID(ch));
+  // playtime is played_time in player_data
 }
 
 /* Update player's epics: We want to record their total epics gained not epics unused */
@@ -1014,11 +993,7 @@ void sql_update_epics(P_char ch)
 {
   if (!ch || !IS_PC(ch))
     return;
-
-  struct affected_type *paf = get_spell_from_char(ch, TAG_EPICS_GAINED);
-
-  db_query("UPDATE players_core SET epics='%d' WHERE pid='%d'",
-           paf ? paf->modifier : 0, GET_PID(ch));
+  // epics already in player_data
 }
 
 void manual_log(P_char ch)
@@ -1786,7 +1761,7 @@ void show_frag_trophy(P_char ch, P_char who)
   if (!IS_PC(who))
     return;
 
-  if (!qry("select players_core.name, count(*) as cnt from epic_gain, players_core where epic_gain.type_id = players_core.pid and epic_gain.pid = %d and type = 1 group by type_id order by name asc", who->only.pc->pid))
+  if (!qry("select player_data.name, count(*) as cnt from epic_gain, player_data where epic_gain.type_id = player_data.pid and epic_gain.pid = %d and type = 1 group by type_id order by name asc", who->only.pc->pid))
   {
     logit(LOG_DEBUG, "show_frag_trophy(): query failed.");
     return;
@@ -2257,9 +2232,9 @@ bool sql_pwipe(int code_verify)
       send_to_all("        failure!\n");
       return FALSE;
     }
-    logit(LOG_DEBUG, "sql_pwipe: Deactivating players_core data... .. .");
-    send_to_all("Deactivating players_core data... .. .");
-    if (qry("UPDATE players_core SET active = 0"))
+    logit(LOG_DEBUG, "sql_pwipe: Deactivating player_data... .. .");
+    send_to_all("Deactivating player_data... .. .");
+    if (qry("UPDATE player_data SET active = 0"))
     {
       logit(LOG_DEBUG, "  success!");
       send_to_all("  success!\n");

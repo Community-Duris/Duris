@@ -1378,7 +1378,7 @@ vector<string> get_epic_players(int racewar)
   debug("get_epic_players(): __NO_MYSQL__, returning 0");
   return names;
 #else
-  if(!qry("SELECT name from players_core WHERE active=1 AND epics > 0 AND racewar = '%d' AND level < 57 ORDER BY epics DESC LIMIT %d", racewar, (int) get_property("epic.list.limit", 10)))
+  if(!qry("SELECT name from player_data WHERE active=1 AND epics > 0 AND racewar = '%d' AND level < 57 ORDER BY epics DESC LIMIT %d", racewar, (int) get_property("epic.list.limit", 10)))
     return names;
 
   MYSQL_RES *res = mysql_store_result(DB);

@@ -69,6 +69,313 @@ struct bind_data
 // Internal globals
 bool updateArtis = TRUE;
 
+// cached artifact row from db
+struct arti_cache_row
+{
+  int    vnum;
+  int    locType;
+  int    location;
+  bool   owned;
+  time_t timer;       // raw timestamp, not countdown
+  char   lastUpdate[24];
+  char   shortDesc[128];
+  int    ownerRacewar; // for summary counts
+};
+
+// per-type cache
+struct arti_cache
+{
+  struct arti_cache_row *rows;
+  int count;
+  int articount[5];  // indexed by racewar side (0-4)
+  time_t built_at;
+  bool dirty;
+};
+
+// 6 caches: [type 0-2][godlist 0-1]
+static struct arti_cache arti_caches[3][2];
+
+// forward declarations for cache build
+P_char load_dummy_char(char *name);
+void nuke_eq(P_char ch);
+
+// mark all caches dirty
+static void arti_cache_invalidate(void)
+{
+  int t, g;
+  for (t = 0; t < 3; t++)
+  {
+    for (g = 0; g < 2; g++)
+    {
+      arti_caches[t][g].dirty = TRUE;
+    }
+  }
+}
+
+// init caches - called at boot
+void arti_cache_init(void)
+{
+  int t, g;
+  for (t = 0; t < 3; t++)
+  {
+    for (g = 0; g < 2; g++)
+    {
+      arti_caches[t][g].rows = NULL;
+      arti_caches[t][g].count = 0;
+      arti_caches[t][g].dirty = TRUE;
+    }
+  }
+}
+
+// rebuild cache for specific type/godlist combo
+static void arti_cache_build(int type, bool Godlist)
+{
+  struct arti_cache *cache;
+  MYSQL_RES *res;
+  MYSQL_ROW row;
+  int idx, count, i;
+  P_obj obj;
+  P_char owner;
+  char *locName;
+
+  // type is 1-3, array is 0-2
+  idx = type - 1;
+  cache = &arti_caches[idx][Godlist ? 1 : 0];
+
+  // free old data
+  if (cache->rows)
+  {
+    free(cache->rows);
+    cache->rows = NULL;
+  }
+  cache->count = 0;
+  memset(cache->articount, 0, sizeof(cache->articount));
+
+  if (Godlist)
+    qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE type=%d", type);
+  else
+    qry("SELECT vnum, locType, location, owned FROM artifacts_mortal WHERE type=%d", type);
+
+  res = mysql_store_result(DB);
+  if (!res)
+  {
+    cache->dirty = FALSE;
+    cache->built_at = time(NULL);
+    return;
+  }
+
+  count = mysql_num_rows(res);
+  if (count < 1)
+  {
+    mysql_free_result(res);
+    cache->dirty = FALSE;
+    cache->built_at = time(NULL);
+    return;
+  }
+
+  cache->rows = (struct arti_cache_row *)calloc(count, sizeof(struct arti_cache_row));
+  if (!cache->rows)
+  {
+    mysql_free_result(res);
+    cache->dirty = FALSE;
+    cache->built_at = time(NULL);
+    return;
+  }
+  i = 0;
+
+  while ((row = mysql_fetch_row(res)))
+  {
+    struct arti_cache_row *r = &cache->rows[i];
+
+    r->vnum = atoi(row[0]);
+    r->locType = atoi(row[1]);
+    r->location = atoi(row[2]);
+    r->owned = (row[3][0] == 'Y');
+
+    if (Godlist)
+    {
+      r->timer = atol(row[4]);
+      strncpy(r->lastUpdate, row[5] ? row[5] : "", 23);
+      r->lastUpdate[23] = '\0';
+    }
+
+    // load obj for short desc
+    obj = read_object(r->vnum, VIRTUAL);
+    if (!obj || !IS_ARTIFACT(obj))
+    {
+      if (obj) extract_obj(obj, FALSE);
+      continue;
+    }
+    strncpy(r->shortDesc, obj->short_description, 127);
+    r->shortDesc[127] = '\0';
+
+    // get racewar for summary
+    r->ownerRacewar = RACEWAR_NONE;
+    if (r->locType == ARTIFACT_ON_PC || r->locType == ARTIFACT_ONCORPSE)
+    {
+      locName = get_player_name_from_pid(r->location);
+      owner = load_dummy_char(locName);
+      if (owner)
+      {
+        r->ownerRacewar = GET_RACEWAR(owner);
+        nuke_eq(owner);
+        owner->in_room = NOWHERE;
+        extract_char(owner);
+      }
+    }
+
+    extract_obj(obj, FALSE);
+    i++;
+  }
+
+  mysql_free_result(res);
+  cache->count = i;
+  cache->dirty = FALSE;
+  cache->built_at = time(NULL);
+}
+
+// display cached artifact list, recalculating time column
+static void arti_cache_display(P_char ch, int type, bool Godlist, bool allArtis)
+{
+  struct arti_cache *cache;
+  struct arti_cache_row *r;
+  char buf[MAX_STRING_LENGTH];
+  char timer[32], locNameBuf[MAX_STRING_LENGTH];
+  char *locName;
+  int i, idx, totalTime, days, hours, minutes;
+  int articount[5] = {0};
+  bool negTime, shownData = FALSE;
+
+  idx = type - 1;
+  cache = &arti_caches[idx][Godlist ? 1 : 0];
+
+  // header
+  if (Godlist)
+  {
+    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner                  Time      Last Update           %s\r\n\r\n",
+      type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
+  }
+  else
+  {
+    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n",
+      type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
+  }
+  send_to_char(buf, ch);
+
+  if (!cache->rows || cache->count < 1)
+  {
+    send_to_char("No artifacts found.\r\n", ch);
+    return;
+  }
+
+  for (i = 0; i < cache->count; i++)
+  {
+    r = &cache->rows[i];
+
+    if (!allArtis && !r->owned)
+      continue;
+
+    // mortal view only shows pc/corpse
+    if (!Godlist && !(r->locType == ARTIFACT_ON_PC || r->locType == ARTIFACT_ONCORPSE))
+      continue;
+
+    // get location name
+    switch (r->locType)
+    {
+      case ARTIFACT_NOTINGAME:
+        locName = "&+RNotInGame&n";
+        break;
+      case ARTIFACT_ON_NPC:
+        {
+          P_char mob = read_mobile(r->location, VIRTUAL);
+          if (mob)
+          {
+            snprintf(locNameBuf, MAX_STRING_LENGTH, "%s", J_NAME(mob));
+            locName = locNameBuf;
+            extract_char(mob);
+          }
+          else
+            locName = "&+RBadMobVnum&n";
+        }
+        break;
+      case ARTIFACT_ON_PC:
+        locName = get_player_name_from_pid(r->location);
+        break;
+      case ARTIFACT_ONGROUND:
+        locName = world[real_room0(r->location)].name;
+        snprintf(locNameBuf, MAX_STRING_LENGTH, "%s (Room #%d)\n%-20s", locName, r->location, " ");
+        locName = locNameBuf;
+        break;
+      case ARTIFACT_ONCORPSE:
+        if (Godlist)
+          snprintf(locNameBuf, MAX_STRING_LENGTH, "%s's corpse", get_player_name_from_pid(r->location));
+        else
+          snprintf(locNameBuf, MAX_STRING_LENGTH, "%s", get_player_name_from_pid(r->location));
+        locName = locNameBuf;
+        break;
+      default:
+        continue;
+    }
+
+    // count for summary
+    articount[RACEWAR_NONE]++;
+    if (r->ownerRacewar != RACEWAR_NONE)
+      articount[r->ownerRacewar]++;
+
+    if (!Godlist)
+    {
+      snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", locName, r->shortDesc);
+      send_to_char(buf, ch);
+      shownData = TRUE;
+      continue;
+    }
+
+    // calc countdown from cached timer
+    negTime = FALSE;
+    totalTime = r->timer - time(NULL);
+    if (totalTime < 0)
+    {
+      negTime = TRUE;
+      totalTime *= -1;
+    }
+    totalTime /= 60;
+    minutes = totalTime % 60;
+    totalTime /= 60;
+    hours = totalTime % 24;
+    days = totalTime / 24;
+    if (r->timer == 0)
+      days = hours = minutes = 0;
+    snprintf(timer, 32, "%c%2d:%02d:%02d", negTime ? '-' : ' ', days, hours, minutes);
+
+    if (!locName)
+      locName = "&+RUnknown&n";
+
+    char locPadded[MAX_STRING_LENGTH];
+    snprintf(locPadded, MAX_STRING_LENGTH, "%s", pad_ansi(locName, MAX_NAME_LENGTH + 9, TRUE).c_str());
+    snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n",
+      locPadded, timer, r->lastUpdate, r->shortDesc, r->vnum);
+    send_to_char(buf, ch);
+    shownData = TRUE;
+  }
+
+  if (!shownData)
+  {
+    send_to_char("No artifacts found.\r\n", ch);
+    return;
+  }
+
+  // summary
+  snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n");
+  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
+  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
+  if (articount[RACEWAR_UNDEAD])
+    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
+  if (articount[RACEWAR_NEUTRAL])
+    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
+  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
+  send_to_char(buf, ch);
+}
+
 // Function delcarations
 void list_artifacts_sql( P_char ch, int type, bool Godlist, bool allArtis );
 void arti_clear_sql( P_char ch, char *arg );
@@ -224,227 +531,24 @@ void do_artifact_sql( P_char ch, char *arg, int cmd )
 //     This will make the last update time look the same as when you type 'time' in game.
 void list_artifacts_sql( P_char ch, int type, bool Godlist, bool allArtis )
 {
-  char       buf[MAX_STRING_LENGTH];
-  char      *locName, locNameBuf[MAX_STRING_LENGTH], locNameBuf2[MAX_STRING_LENGTH];
-  char       timer[MAX_STRING_LENGTH];
-  int        vnum, ownerID, locType, totalTime, days, hours, minutes, articount[MAX_RACEWAR+1];
-  bool       negTime, owned, shownData;
-  P_obj      obj;
-  P_char     owner;
-  MYSQL_RES *res;
-  MYSQL_ROW  row;
+  int idx;
 
-  memset(articount, 0, sizeof(articount));
-
-  if( type != ARTIFACT_MAJOR && type != ARTIFACT_UNIQUE && type != ARTIFACT_IOUN )
+  if (type != ARTIFACT_MAJOR && type != ARTIFACT_UNIQUE && type != ARTIFACT_IOUN)
   {
-    send_to_char( "Invalid artifact type.\n\r", ch );
-    debug( "list_artifacts_sql: Invalid artifact type: %d.", type );
+    send_to_char("Invalid artifact type.\n\r", ch);
+    debug("list_artifacts_sql: Invalid artifact type: %d.", type);
     return;
   }
 
-  if( Godlist )
-  {
-    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner                  Time      Last Update           %s\r\n\r\n",
-      type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" :
-      type == ARTIFACT_IOUN ? "Ioun" : "Unknown Type" );
-    send_to_char( buf, ch );
+  idx = type - 1;
 
-    qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE type=%d", type );
-  }
-  else
+  // rebuild if dirty
+  if (arti_caches[idx][Godlist ? 1 : 0].dirty || arti_caches[idx][Godlist ? 1 : 0].rows == NULL)
   {
-    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n", type == ARTIFACT_MAJOR ? "Artifact" :
-      type == ARTIFACT_UNIQUE ? "Unique" : type == ARTIFACT_IOUN ? "Ioun" : "Unknown Type" );
-    send_to_char( buf, ch );
-
-    qry("SELECT vnum, locType, location, owned FROM artifacts_mortal WHERE type=%d", type );
+    arti_cache_build(type, Godlist);
   }
 
-  res = mysql_store_result(DB);
-  buf[0] = '\0';
-
-  shownData = FALSE;
-  if( res )
-  {
-    if( mysql_num_rows(res) < 1 )
-    {
-      mysql_free_result(res);
-      send_to_char( "No artifacts found.\n\r", ch );
-      return;
-    }
-
-    while ((row = mysql_fetch_row(res)))
-    {
-      vnum    = atoi(row[0]);
-      locType = atoi(row[1]);
-      ownerID = atoi(row[2]);
-
-      owned = FALSE;
-      // Row[3] is owned
-      if( !strcmp(row[3], "Y") )
-      {
-        owned = TRUE;
-      }
-
-      obj = read_object( vnum, VIRTUAL );
-      if( !obj || !IS_ARTIFACT(obj) )
-      {
-        debug("list_artifacts_sql: Non artifact on arti list: '%s' %d.", (obj == NULL) ? "NULL" : obj->short_description, vnum );
-        // Pull obj if it loaded.
-        if( obj )
-        {
-          // FALSE because we have a MySQL result open.
-          extract_obj( obj, FALSE );
-        }
-        continue;
-      }
-
-      if( !allArtis && !owned )
-      {
-        extract_obj( obj, FALSE );
-        continue;
-      }
-
-      owner = NULL;
-
-      // Just making sure...
-      if( !Godlist && !(locType == ARTIFACT_ON_PC || locType == ARTIFACT_ONCORPSE) )
-      {
-        debug( "list_artifacts_sql: Bad location (%d) on artifacts_mortal arti %d.",
-          locType, vnum );
-        extract_obj( obj, FALSE );
-        continue;
-      }
-      switch( locType )
-      {
-        case ARTIFACT_NOTINGAME:
-          locName = "&+RNotInGame&n";
-          break;
-        case ARTIFACT_ON_NPC:
-          owner = read_mobile( ownerID, VIRTUAL );
-          if( owner )
-          {
-            snprintf(locNameBuf, MAX_STRING_LENGTH, "%s", J_NAME(owner) );
-            locName = locNameBuf;
-            extract_char( owner );
-            owner = NULL;
-          }
-          else
-          {
-            locName = "&+RBadMobVnum&n";
-          }
-          break;
-        case ARTIFACT_ON_PC:
-          locName = get_player_name_from_pid(ownerID);
-          owner = load_dummy_char( locName );
-          break;
-        case ARTIFACT_ONGROUND:
-          locName = world[real_room0(ownerID)].name;
-          // Put room title on a seperate line with vnum
-          snprintf(locNameBuf, MAX_STRING_LENGTH, "%s (Room #%d)\n%-20s", locName, ownerID, " " );
-          locName = locNameBuf;
-          break;
-        case ARTIFACT_ONCORPSE:
-          if( Godlist )
-          {
-            snprintf(locNameBuf, MAX_STRING_LENGTH, "%s's corpse", get_player_name_from_pid(ownerID) );
-            locName = locNameBuf;
-          }
-          else
-          {
-            locName = get_player_name_from_pid(ownerID);
-          }
-          owner = load_dummy_char( get_player_name_from_pid(ownerID) );
-          break;
-        default:
-          debug( "list_artifacts_sql: Bad locType: %d.", locType );
-          extract_obj( obj, FALSE );
-          continue;
-          break;
-      }
-
-      // Increment total artis.
-      articount[RACEWAR_NONE]++;
-      // Increment the appropriate racewarside.
-      if( owner )
-      {
-        if( GET_RACEWAR(owner) != RACEWAR_NONE )
-        {
-          articount[GET_RACEWAR(owner)]++;
-        }
-        nuke_eq(owner);
-        owner->in_room = NOWHERE;
-        extract_char(owner);
-        owner = NULL;
-      }
-      // Mortals only see name and artifact.
-      if( !Godlist )
-      {
-        snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", locName, obj->short_description);
-        send_to_char( buf, ch );
-        shownData = TRUE;
-        extract_obj( obj, FALSE );
-        continue;
-      }
-
-      negTime = FALSE;
-      // totalTime (left to poof in sec) is the timer (time at which it poofs) - now.
-      if( (totalTime = atol(row[4]) - time(NULL)) < 0 )
-      {
-        negTime = TRUE;
-        totalTime *= -1;
-      }
-      // Convert to minutes.
-      totalTime /= 60;
-      minutes = totalTime % 60;
-      // Convert to hours.
-      totalTime /= 60;
-      hours = totalTime % 24;
-      // Extract days.
-      days = totalTime / 24;
-      if( atol(row[4]) == 0 )
-      {
-        days = hours = minutes = 0;
-      }
-      snprintf(timer, MAX_STRING_LENGTH, "%c%2d:%02d:%02d", negTime ? '-' : ' ', days, hours, minutes );
-
-      // Trim locName: NAX_NAME_LENGTH + strlen("'s corpse") == 12 + 9 == 21.
-	  if (!locName)
-	  {
-		locName = "&+RUnknown&n";
-	  }
-	  snprintf(locNameBuf2, MAX_STRING_LENGTH, "%s", pad_ansi(locName, MAX_NAME_LENGTH + 9, TRUE).c_str());
-	  locName = locNameBuf2;
-      snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n", locName, timer, row[5], obj->short_description, vnum );
-      send_to_char( buf, ch );
-      shownData = TRUE;
-      extract_obj( obj, FALSE );
-    }
-    mysql_free_result(res);
-  }
-  else
-  {
-    debug( "list_artifacts_sql: Could not access %s artifact table for listing.", Godlist ? "Immortal" : "mortal" );
-    send_to_char( "Error with database. :(\n\r", ch );
-  }
-  if( !shownData )
-  {
-    send_to_char( "No artifacts found.\n\r", ch );
-  }
-  else
-  {
-    snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n" );
-    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
-    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
-    if( articount[RACEWAR_UNDEAD] )
-      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
-    if( articount[RACEWAR_NEUTRAL] )
-      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
-    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WTotal:        %d\r\n",
-      articount[RACEWAR_NONE]);
-    send_to_char( buf, ch );
-  }
+  arti_cache_display(ch, type, Godlist, allArtis);
 }
 
 // Remove artifact entry from the artifacts table.
@@ -459,6 +563,7 @@ void arti_remove_sql( int vnum, bool mortalToo )
 
   // Remove from artifacts table:
   qry( "DELETE FROM artifacts WHERE vnum = '%d'", vnum );
+  arti_cache_invalidate();
   // Possibly remove from artifacts_mortal table:
   if( mortalToo )
   {
@@ -475,6 +580,8 @@ void setupMortArtiList_sql()
   // artifacts_mortal doesn't have 'lastUpdate' column but artifacts does, so SELECT * fails.
   // Repopulate it: Only select columns that exist in both tables (excluding lastUpdate)
   qry( "INSERT INTO artifacts_mortal (vnum, owned, locType, location, timer, type) SELECT vnum, owned, locType, location, timer, type FROM artifacts WHERE locType=%d OR locType=%d", ARTIFACT_ON_PC, ARTIFACT_ONCORPSE );
+
+  arti_cache_init();
 }
 
 // Loads the artis that were on the ground and owned back into the boot.
@@ -583,6 +690,7 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
     to_time = (oldtime >= to_time) ? oldtime : to_time;
 
     qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d", to_time, vnum);
+    arti_cache_invalidate();
   }
   else
   {
@@ -611,6 +719,7 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
       }
       qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
         ARTIFACT_ONGROUND, location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
+      arti_cache_invalidate();
     }
     else if( OBJ_WORN(cont) || OBJ_CARRIED(cont) )
     {
@@ -628,6 +737,7 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
           location = GET_VNUM(owner);
           qry("INSERT INTO artifacts VALUES(%d, 'N', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
             ARTIFACT_ON_NPC, location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
+          arti_cache_invalidate();
         }
         // Adding a PC owner to arti -> owned = 'Y', location = PID.
         else
@@ -635,6 +745,7 @@ void artifact_feed_to_min_sql( P_obj arti, int min_minutes )
           location = GET_PID(owner);
           qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )", vnum,
             ARTIFACT_ON_PC, location, to_time, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
+          arti_cache_invalidate();
         }
       }
     }
@@ -932,6 +1043,7 @@ void artifact_update_sql( P_obj arti, char owned, time_t timer )
 
     qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
       new_owned ? 'Y' : 'N', locType, location, timer, type, vnum );
+    arti_cache_invalidate();
   }
   // Otherwise, create one.
   else
@@ -950,6 +1062,7 @@ void artifact_update_sql( P_obj arti, char owned, time_t timer )
 
     qry("INSERT INTO artifacts VALUES( %d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
       vnum, new_owned ? 'Y' : 'N', locType, location, timer, type );
+    arti_cache_invalidate();
   }
 }
 
@@ -997,11 +1110,13 @@ void artifact_update_sql( int vnum, bool owned, int locType, int location, time_
   {
     qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
       owned ? 'Y' : 'N', locType, location, timer, type, vnum );
+    arti_cache_invalidate();
   }
   else
   {
     qry("INSERT INTO artifacts VALUES(%d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
       vnum, owned ? 'Y' : 'N', locType, location, timer, type );
+    arti_cache_invalidate();
   }
 }
 
@@ -1055,12 +1170,14 @@ bool remove_owned_artifact_sql( P_obj arti, int pid )
     if( pid <= 0 )
     {
       qry("UPDATE artifacts SET owned='N', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d", ARTIFACT_NOTINGAME, NOWHERE, vnum );
+      arti_cache_invalidate();
     }
     // Otherwise, we're moving to a corpse of char who's PID is pid.
     else
     {
       // On a PC corpse -> owned == Yes, and location == pid.
       qry("UPDATE artifacts SET owned='Y', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d", ARTIFACT_ONCORPSE, pid, vnum );
+      arti_cache_invalidate();
     }
   }
   // If the entry doesn't exist and we're moving arti to a corpse (Yes, this would be a buggy situation).
@@ -1069,6 +1186,7 @@ bool remove_owned_artifact_sql( P_obj arti, int pid )
       // On a PC corpse -> owned == 'Y', locType == 'OnCorpse', and location == pid.
       qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, 0, %d, SYSDATE())", vnum, ARTIFACT_ONCORPSE, pid,
         IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR );
+      arti_cache_invalidate();
   }
 
   // Safe to assume that a poofed arti has an entry in artifact_bind.  We don't really care either way though,
@@ -1098,6 +1216,7 @@ void remove_all_artifacts_sql( P_char ch )
 
   // Nullify arti timers on all ch's equipment.
   qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d", pid, ARTIFACT_ON_PC );
+  arti_cache_invalidate();
 }
 
 // This is a wrapper function for artifact_update_sql.
@@ -1246,6 +1365,7 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
     qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
       vnum, ARTIFACT_ON_PC, GET_PID(owner), poof_time, IS_IOUN(arti) ? ARTIFACT_IOUN
       : (IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR) );
+    arti_cache_invalidate();
     return;
   }
 
@@ -2236,6 +2356,7 @@ void event_artifact_check_poof_sql( P_char ch, P_char vict, P_obj obj, void * ar
 
   // Clear the artis from the list.  Note: doing it after the loop intentionally.
   qry( "UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()", ARTIFACT_NOTINGAME );
+  arti_cache_invalidate();
 
   add_event( event_artifact_check_poof_sql, 12 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0 );
 }
@@ -2721,6 +2842,7 @@ void arti_clear_sql( P_char ch, char *arg )
   // Remove from artifacts table:
   if( qry( "DELETE FROM artifacts WHERE vnum = '%d'", vnum ) )
   {
+    arti_cache_invalidate();
     act("&+WThe artifact data for $p&+W has been cleared from the Immortal list.  You fool!", FALSE, ch, arti, 0, TO_CHAR);
     if( qry( "DELETE FROM artifacts_mortal WHERE vnum = '%d'", vnum ) )
     {
@@ -3400,6 +3522,7 @@ void arti_fixit_sql( P_char ch )
     {
       sql_update_bind_data( vnum, &location, &timer);
       qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d", new_time, vnum);
+      arti_cache_invalidate();
       send_to_char_f( ch, "%3d) '%s&n'%6d - timer reset and now owned by '%s' %d.\n\r",
         ++counter, pad_ansi( arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(), vnum, get_player_name_from_pid(location), location );
     }

@@ -96,9 +96,10 @@ static void clean_saved_items(void) {
 }
 
 // save old pid->name mapping before player migration
+// use players_core because prod artifacts reference players_core.pid
 static void save_old_pid_mapping(void) {
     qry("DROP TABLE IF EXISTS _old_pid_map");
-    qry("CREATE TEMPORARY TABLE _old_pid_map AS SELECT pid, name FROM player_data");
+    qry("CREATE TEMPORARY TABLE _old_pid_map AS SELECT pid, name FROM players_core WHERE active = 1");
 }
 
 // remap artifact locations after player migration
@@ -111,8 +112,8 @@ static void remap_artifact_locations(void) {
         "SELECT a.vnum, old.name, new.pid "
         "FROM artifacts a "
         "JOIN _old_pid_map old ON a.location = old.pid "
-        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) "
-        "WHERE a.locType = 'OnPC' AND a.owned = 'Y'"
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        "WHERE (a.locType = 3 OR a.locType = 5) AND a.owned = 'Y'"  // 3=OnPC, 5=OnCorpse
     );
     if (res) {
         MYSQL_ROW row;
@@ -130,8 +131,8 @@ static void remap_artifact_locations(void) {
         "SELECT a.vnum, old.name, new.pid "
         "FROM artifacts_mortal a "
         "JOIN _old_pid_map old ON a.location = old.pid "
-        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) "
-        "WHERE a.locType = 'OnPC' AND a.owned = 'Y'"
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        "WHERE (a.locType = 3 OR a.locType = 5) AND a.owned = 'Y'"  // 3=OnPC, 5=OnCorpse
     );
     if (res) {
         MYSQL_ROW row;
