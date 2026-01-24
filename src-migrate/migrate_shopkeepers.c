@@ -213,7 +213,7 @@ int migrate_shopkeepers_from_files(void) {
         for (struct mig_affect *af = affects; af; af = af->next) {
             qry("INSERT INTO shopkeeper_affects (shopkeeper_id, type, duration, modifier, location, "
                 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5) VALUES "
-                "(%d, %d, %d, %d, %d, %ld, %ld, %ld, %ld, %ld)",
+                "(%d, %d, %d, %d, %d, %lu, %lu, %lu, %lu, %lu)",
                 shopkeeper_id, af->type, af->duration, af->modifier, af->location,
                 af->bitvector1, af->bitvector2, af->bitvector3, af->bitvector4, af->bitvector5);
         }

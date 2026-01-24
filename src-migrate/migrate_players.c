@@ -744,7 +744,7 @@ static int save_player_to_db(struct mig_player *p) {
         else strcpy(wor_str, "NULL");
 
         len += snprintf(values + len, sizeof(values) - len,
-            "(%d,%d,%d,%d,%d,%d,%d,%ld,%ld,%ld,%ld,%ld,%s,%s),",
+            "(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s),",
             pid, af->type, af->duration, af->flags, af->modifier, af->location, af->level,
             af->bitvector1, af->bitvector2, af->bitvector3, af->bitvector4, af->bitvector5,
             woc_str, wor_str);
