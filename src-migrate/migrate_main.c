@@ -143,6 +143,25 @@ static void remap_artifact_locations(void) {
         mysql_free_result(res);
     }
     printf("  artifacts_mortal: %d remapped\n", updated);
+
+    // update artifact_bind table
+    updated = 0;
+    res = db_query(
+        "SELECT ab.vnum, old.name, new.pid "
+        "FROM artifact_bind ab "
+        "JOIN _old_pid_map old ON ab.owner_pid = old.pid "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        "WHERE ab.owner_pid > 0"
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE artifact_bind SET owner_pid = %s WHERE vnum = %s", row[2], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    printf("  artifact_bind: %d remapped\n", updated);
 }
 
 // remap ip_info pids after player migration
