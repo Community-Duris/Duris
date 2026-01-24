@@ -95,6 +95,57 @@ static void clean_saved_items(void) {
     qry("DELETE FROM saved_items");
 }
 
+// save old pid->name mapping before player migration
+static void save_old_pid_mapping(void) {
+    qry("DROP TABLE IF EXISTS _old_pid_map");
+    qry("CREATE TEMPORARY TABLE _old_pid_map AS SELECT pid, name FROM player_data");
+}
+
+// remap artifact locations after player migration
+static void remap_artifact_locations(void) {
+    printf("remapping artifact locations to new pids...\n");
+
+    // update artifacts table
+    int updated = 0;
+    MYSQL_RES *res = db_query(
+        "SELECT a.vnum, old.name, new.pid "
+        "FROM artifacts a "
+        "JOIN _old_pid_map old ON a.location = old.pid "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) "
+        "WHERE a.locType = 'OnPC' AND a.owned = 'Y'"
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE artifacts SET location = %s WHERE vnum = %s", row[2], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    printf("  artifacts: %d remapped\n", updated);
+
+    // update artifacts_mortal table
+    updated = 0;
+    res = db_query(
+        "SELECT a.vnum, old.name, new.pid "
+        "FROM artifacts_mortal a "
+        "JOIN _old_pid_map old ON a.location = old.pid "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) "
+        "WHERE a.locType = 'OnPC' AND a.owned = 'Y'"
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE artifacts_mortal SET location = %s WHERE vnum = %s", row[2], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    printf("  artifacts_mortal: %d remapped\n", updated);
+
+    qry("DROP TABLE IF EXISTS _old_pid_map");
+}
+
 // populate frag leaderboard from player data
 static int populate_frag_leaderboard(void) {
     printf("populating frag_leaderboard from player_data...\n");
@@ -234,6 +285,11 @@ int main(int argc, char **argv) {
     qry("SET foreign_key_checks=0");
     printf("bulk import mode enabled\n\n");
 
+    // save old pid mapping before cleaning (for artifact remapping)
+    if (do_all || do_players) {
+        save_old_pid_mapping();
+    }
+
     // run clean for selected migrations only
     if (do_clean) {
         printf("cleaning selected tables...\n");
@@ -261,6 +317,7 @@ int main(int argc, char **argv) {
     // players must be migrated first so account_characters pid lookups work
     if (do_all || do_players) {
         players = migrate_players_from_files();
+        remap_artifact_locations();
         populate_frag_leaderboard();
         printf("\n");
     }

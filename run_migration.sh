@@ -8,7 +8,7 @@ source "$SCRIPT_DIR/.env"
 MYSQL_CMD="mysql -h$DB_HOST -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=90
+TOTAL=92
 FAILED=0
 
 run_sql() {
@@ -33,7 +33,7 @@ run_sql() {
 }
 
 run_sql "set database to server default" "
-ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4;"
+ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;"
 
 STEP=$((STEP + 1))
 printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "convert existing tables to database default"
@@ -2242,6 +2242,36 @@ CREATE TABLE IF NOT EXISTS locker_access (
 # alter existing tables to fix column types for existing databases
 # ============================================================================
 
+run_sql "convert artifacts locType enum to int" "
+DELIMITER //
+CREATE PROCEDURE convert_artifacts_loctype()
+BEGIN
+    DECLARE col_type VARCHAR(64);
+    SELECT DATA_TYPE INTO col_type FROM information_schema.columns
+        WHERE table_schema = DATABASE() AND table_name = 'artifacts' AND column_name = 'locType';
+    IF col_type = 'enum' THEN
+        ALTER TABLE artifacts ADD COLUMN locType_new INT NOT NULL DEFAULT 1;
+        UPDATE artifacts SET locType_new = CASE locType
+            WHEN 'NotInGame' THEN 1 WHEN 'OnNPC' THEN 2 WHEN 'OnPC' THEN 3
+            WHEN 'OnGround' THEN 4 WHEN 'OnCorpse' THEN 5 ELSE 1 END;
+        ALTER TABLE artifacts DROP COLUMN locType;
+        ALTER TABLE artifacts CHANGE COLUMN locType_new locType INT NOT NULL DEFAULT 1;
+    END IF;
+    SELECT DATA_TYPE INTO col_type FROM information_schema.columns
+        WHERE table_schema = DATABASE() AND table_name = 'artifacts_mortal' AND column_name = 'locType';
+    IF col_type = 'enum' THEN
+        ALTER TABLE artifacts_mortal ADD COLUMN locType_new INT NOT NULL DEFAULT 1;
+        UPDATE artifacts_mortal SET locType_new = CASE locType
+            WHEN 'NotInGame' THEN 1 WHEN 'OnNPC' THEN 2 WHEN 'OnPC' THEN 3
+            WHEN 'OnGround' THEN 4 WHEN 'OnCorpse' THEN 5 ELSE 1 END;
+        ALTER TABLE artifacts_mortal DROP COLUMN locType;
+        ALTER TABLE artifacts_mortal CHANGE COLUMN locType_new locType INT NOT NULL DEFAULT 1;
+    END IF;
+END //
+DELIMITER ;
+CALL convert_artifacts_loctype();
+DROP PROCEDURE IF EXISTS convert_artifacts_loctype;"
+
 run_sql "convert auctions timestamps" "
 DELIMITER //
 CREATE PROCEDURE convert_auctions_timestamps()
@@ -2319,6 +2349,19 @@ END //
 DELIMITER ;
 CALL convert_zone_touches_timestamps();
 DROP PROCEDURE IF EXISTS convert_zone_touches_timestamps;"
+
+# final cleanup - ensure ALL tables have consistent collation
+STEP=$((STEP + 1))
+printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "ensure consistent collation on all tables"
+DB_CHARSET=$($MYSQL_CMD -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
+DB_COLLATION=$($MYSQL_CMD -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
+TABLES=$($MYSQL_CMD -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null) || true
+if [ -n "$TABLES" ] && [ -n "$DB_CHARSET" ] && [ -n "$DB_COLLATION" ]; then
+    for t in $TABLES; do
+        $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $DB_CHARSET COLLATE $DB_COLLATION; SET FOREIGN_KEY_CHECKS=1;" 2>/dev/null || true
+    done
+fi
+echo "ok"
 
 echo ""
 echo "done. $FAILED failures."

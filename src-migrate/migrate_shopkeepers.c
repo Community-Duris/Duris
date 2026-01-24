@@ -160,6 +160,17 @@ int migrate_shopkeepers_from_files(void) {
         long save_time = mig_getLong(&bufptr);
         int room_vnum = mig_getInt(&bufptr);
 
+        // detect and fix corrupted mob_vnum (some files have extra byte causing 8-bit shift)
+        // if mob_vnum is way off from room_vnum but shifting right by 8 brings them close, apply fix
+        int diff = mob_vnum > room_vnum ? mob_vnum - room_vnum : room_vnum - mob_vnum;
+        if (diff > 50000) {
+            int corrected = mob_vnum >> 8;
+            int corr_diff = corrected > room_vnum ? corrected - room_vnum : room_vnum - corrected;
+            if (corr_diff < 1000) {
+                mob_vnum = corrected;
+            }
+        }
+
         if (size != csize) {
             printf("  %s: size mismatch %d vs %d\n", de->d_name, size, csize);
             errors++;
