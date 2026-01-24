@@ -2013,7 +2013,9 @@ bool sql_load_player_status(P_char ch, int pid)
   ch->only.pc->vote = sql_row_ulong(row, col++, 0);
   ch->specials.alignment = sql_row_int(row, col++, 0);
   ch->only.pc->prestige = sql_row_int(row, col++, 0);
-  col++; // skip assoc_id - handled by assoc system on login
+  int assoc_id = sql_row_int(row, col++, 0);
+  if (assoc_id > 0)
+    ch->specials.guild = get_guild_from_id(assoc_id);
   ch->specials.guild_status = sql_row_int(row, col++, 0);
   ch->only.pc->time_left_guild = sql_row_long(row, col++, 0);
   ch->only.pc->nb_left_guild = sql_row_int(row, col++, 0);
