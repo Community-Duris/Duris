@@ -697,6 +697,7 @@ void sql_update_account_character(P_char ch)
       "VALUES('%s', %ld, '%s', NOW(), NULL) "
       "ON DUPLICATE KEY UPDATE "
       "account_name = VALUES(account_name), "
+      "pid = VALUES(pid), "
       "char_name = VALUES(char_name), "
       "deleted_at = NULL",
       account_name_sql, GET_PID(ch), char_name_sql);
