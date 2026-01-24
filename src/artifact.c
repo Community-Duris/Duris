@@ -27,6 +27,11 @@
 #include "utils.h"
 #include "utility.h"
 #include "vnum.obj.h"
+#include "redis.h"
+
+#ifndef __NO_MYSQL__
+#include <cjson/cJSON.h>
+#endif
 
 // Artifact types.
 #define ARTIFACT_MAJOR   1
@@ -69,87 +74,44 @@ struct bind_data
 // Internal globals
 bool updateArtis = TRUE;
 
-// cached artifact row from db
-struct arti_cache_row
-{
-  int    vnum;
-  int    locType;
-  int    location;
-  bool   owned;
-  time_t timer;       // raw timestamp, not countdown
-  char   lastUpdate[24];
-  char   shortDesc[128];
-  int    ownerRacewar; // for summary counts
-};
 
-// per-type cache
-struct arti_cache
-{
-  struct arti_cache_row *rows;
-  int count;
-  int articount[5];  // indexed by racewar side (0-4)
-  time_t built_at;
-  bool dirty;
-};
-
-// 6 caches: [type 0-2][godlist 0-1]
-static struct arti_cache arti_caches[3][2];
-
-// forward declarations for cache build
+// forward declarations for redis cache
 P_char load_dummy_char(char *name);
 void nuke_eq(P_char ch);
+void arti_redis_cache(int type, bool Godlist);
 
-// mark all caches dirty
+// invalidate redis cache
 static void arti_cache_invalidate(void)
 {
-  int t, g;
-  for (t = 0; t < 3; t++)
-  {
-    for (g = 0; g < 2; g++)
-    {
-      arti_caches[t][g].dirty = TRUE;
-    }
-  }
+  redis_invalidate_artifact_cache();
 }
 
-// init caches - called at boot
+// populate redis cache at boot
 void arti_cache_init(void)
 {
-  int t, g;
-  for (t = 0; t < 3; t++)
+  extern bool redis_enabled;
+  if (!redis_enabled)
+    return;
+
+  int t;
+  for (t = 1; t <= 3; t++)
   {
-    for (g = 0; g < 2; g++)
-    {
-      arti_caches[t][g].rows = NULL;
-      arti_caches[t][g].count = 0;
-      arti_caches[t][g].dirty = TRUE;
-    }
+    arti_redis_cache(t, FALSE);
+    arti_redis_cache(t, TRUE);
   }
 }
 
-// rebuild cache for specific type/godlist combo
-static void arti_cache_build(int type, bool Godlist)
+#ifndef __NO_MYSQL__
+// json for redis/website
+static char *arti_generate_json(int type, bool Godlist)
 {
-  struct arti_cache *cache;
   MYSQL_RES *res;
   MYSQL_ROW row;
-  int idx, count, i;
   P_obj obj;
   P_char owner;
   char *locName;
-
-  // type is 1-3, array is 0-2
-  idx = type - 1;
-  cache = &arti_caches[idx][Godlist ? 1 : 0];
-
-  // free old data
-  if (cache->rows)
-  {
-    free(cache->rows);
-    cache->rows = NULL;
-  }
-  cache->count = 0;
-  memset(cache->articount, 0, sizeof(cache->articount));
+  int racewar;
+  cJSON *root, *arr, *item;
 
   if (Godlist)
     qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE type=%d", type);
@@ -158,225 +120,104 @@ static void arti_cache_build(int type, bool Godlist)
 
   res = mysql_store_result(DB);
   if (!res)
-  {
-    cache->dirty = FALSE;
-    cache->built_at = time(NULL);
-    return;
-  }
+    return NULL;
 
-  count = mysql_num_rows(res);
-  if (count < 1)
-  {
-    mysql_free_result(res);
-    cache->dirty = FALSE;
-    cache->built_at = time(NULL);
-    return;
-  }
+  root = cJSON_CreateObject();
+  arr = cJSON_CreateArray();
+  cJSON_AddItemToObject(root, "artifacts", arr);
+  cJSON_AddNumberToObject(root, "type", type);
+  cJSON_AddBoolToObject(root, "godlist", Godlist);
 
-  cache->rows = (struct arti_cache_row *)calloc(count, sizeof(struct arti_cache_row));
-  if (!cache->rows)
-  {
-    mysql_free_result(res);
-    cache->dirty = FALSE;
-    cache->built_at = time(NULL);
-    return;
-  }
-  i = 0;
+  int articount[5] = {0};
 
   while ((row = mysql_fetch_row(res)))
   {
-    struct arti_cache_row *r = &cache->rows[i];
+    int vnum = atoi(row[0]);
+    int locType = atoi(row[1]);
+    int location = atoi(row[2]);
+    bool owned = (row[3][0] == 'Y');
 
-    r->vnum = atoi(row[0]);
-    r->locType = atoi(row[1]);
-    r->location = atoi(row[2]);
-    r->owned = (row[3][0] == 'Y');
-
-    if (Godlist)
-    {
-      r->timer = atol(row[4]);
-      strncpy(r->lastUpdate, row[5] ? row[5] : "", 23);
-      r->lastUpdate[23] = '\0';
-    }
-
-    // load obj for short desc
-    obj = read_object(r->vnum, VIRTUAL);
+    obj = read_object(vnum, VIRTUAL);
     if (!obj || !IS_ARTIFACT(obj))
     {
       if (obj) extract_obj(obj, FALSE);
       continue;
     }
-    strncpy(r->shortDesc, obj->short_description, 127);
-    r->shortDesc[127] = '\0';
 
-    // get racewar for summary
-    r->ownerRacewar = RACEWAR_NONE;
-    if (r->locType == ARTIFACT_ON_PC || r->locType == ARTIFACT_ONCORPSE)
+    item = cJSON_CreateObject();
+    cJSON_AddNumberToObject(item, "vnum", vnum);
+    cJSON_AddNumberToObject(item, "locType", locType);
+    cJSON_AddNumberToObject(item, "location", location);
+    cJSON_AddBoolToObject(item, "owned", owned);
+    cJSON_AddStringToObject(item, "shortDesc", obj->short_description);
+
+    if (Godlist)
     {
-      locName = get_player_name_from_pid(r->location);
-      owner = load_dummy_char(locName);
-      if (owner)
-      {
-        r->ownerRacewar = GET_RACEWAR(owner);
-        nuke_eq(owner);
-        owner->in_room = NOWHERE;
-        extract_char(owner);
-      }
+      cJSON_AddNumberToObject(item, "timer", atol(row[4]));
+      cJSON_AddStringToObject(item, "lastUpdate", row[5] ? row[5] : "");
     }
 
+    racewar = RACEWAR_NONE;
+    if (locType == ARTIFACT_ON_PC || locType == ARTIFACT_ONCORPSE)
+    {
+      locName = get_player_name_from_pid(location);
+      if (locName)
+      {
+        cJSON_AddStringToObject(item, "ownerName", locName);
+        owner = load_dummy_char(locName);
+        if (owner)
+        {
+          racewar = GET_RACEWAR(owner);
+          nuke_eq(owner);
+          owner->in_room = NOWHERE;
+          extract_char(owner);
+        }
+      }
+    }
+    cJSON_AddNumberToObject(item, "racewar", racewar);
+
+    if (owned && (locType == ARTIFACT_ON_PC || locType == ARTIFACT_ONCORPSE))
+    {
+      articount[RACEWAR_NONE]++;
+      if (racewar != RACEWAR_NONE)
+        articount[racewar]++;
+    }
+
+    cJSON_AddItemToArray(arr, item);
     extract_obj(obj, FALSE);
-    i++;
   }
 
   mysql_free_result(res);
-  cache->count = i;
-  cache->dirty = FALSE;
-  cache->built_at = time(NULL);
+
+  cJSON *summary = cJSON_CreateObject();
+  cJSON_AddNumberToObject(summary, "total", articount[RACEWAR_NONE]);
+  cJSON_AddNumberToObject(summary, "good", articount[RACEWAR_GOOD]);
+  cJSON_AddNumberToObject(summary, "evil", articount[RACEWAR_EVIL]);
+  cJSON_AddItemToObject(root, "summary", summary);
+
+  char *json = cJSON_PrintUnformatted(root);
+  cJSON_Delete(root);
+  return json;
 }
 
-// display cached artifact list, recalculating time column
-static void arti_cache_display(P_char ch, int type, bool Godlist, bool allArtis)
+void arti_redis_cache(int type, bool Godlist)
 {
-  struct arti_cache *cache;
-  struct arti_cache_row *r;
-  char buf[MAX_STRING_LENGTH];
-  char timer[32], locNameBuf[MAX_STRING_LENGTH];
-  char *locName;
-  int i, idx, totalTime, days, hours, minutes;
-  int articount[5] = {0};
-  bool negTime, shownData = FALSE;
-
-  idx = type - 1;
-  cache = &arti_caches[idx][Godlist ? 1 : 0];
-
-  // header
-  if (Godlist)
-  {
-    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner                  Time      Last Update           %s\r\n\r\n",
-      type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
-  }
-  else
-  {
-    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n",
-      type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
-  }
-  send_to_char(buf, ch);
-
-  if (!cache->rows || cache->count < 1)
-  {
-    send_to_char("No artifacts found.\r\n", ch);
+  extern bool redis_enabled;
+  if (!redis_enabled)
     return;
-  }
 
-  for (i = 0; i < cache->count; i++)
-  {
-    r = &cache->rows[i];
-
-    if (!allArtis && !r->owned)
-      continue;
-
-    // mortal view only shows pc/corpse
-    if (!Godlist && !(r->locType == ARTIFACT_ON_PC || r->locType == ARTIFACT_ONCORPSE))
-      continue;
-
-    // get location name
-    switch (r->locType)
-    {
-      case ARTIFACT_NOTINGAME:
-        locName = "&+RNotInGame&n";
-        break;
-      case ARTIFACT_ON_NPC:
-        {
-          P_char mob = read_mobile(r->location, VIRTUAL);
-          if (mob)
-          {
-            snprintf(locNameBuf, MAX_STRING_LENGTH, "%s", J_NAME(mob));
-            locName = locNameBuf;
-            extract_char(mob);
-          }
-          else
-            locName = "&+RBadMobVnum&n";
-        }
-        break;
-      case ARTIFACT_ON_PC:
-        locName = get_player_name_from_pid(r->location);
-        break;
-      case ARTIFACT_ONGROUND:
-        locName = world[real_room0(r->location)].name;
-        snprintf(locNameBuf, MAX_STRING_LENGTH, "%s (Room #%d)\n%-20s", locName, r->location, " ");
-        locName = locNameBuf;
-        break;
-      case ARTIFACT_ONCORPSE:
-        if (Godlist)
-          snprintf(locNameBuf, MAX_STRING_LENGTH, "%s's corpse", get_player_name_from_pid(r->location));
-        else
-          snprintf(locNameBuf, MAX_STRING_LENGTH, "%s", get_player_name_from_pid(r->location));
-        locName = locNameBuf;
-        break;
-      default:
-        continue;
-    }
-
-    // count for summary
-    articount[RACEWAR_NONE]++;
-    if (r->ownerRacewar != RACEWAR_NONE)
-      articount[r->ownerRacewar]++;
-
-    if (!Godlist)
-    {
-      snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", locName, r->shortDesc);
-      send_to_char(buf, ch);
-      shownData = TRUE;
-      continue;
-    }
-
-    // calc countdown from cached timer
-    negTime = FALSE;
-    totalTime = r->timer - time(NULL);
-    if (totalTime < 0)
-    {
-      negTime = TRUE;
-      totalTime *= -1;
-    }
-    totalTime /= 60;
-    minutes = totalTime % 60;
-    totalTime /= 60;
-    hours = totalTime % 24;
-    days = totalTime / 24;
-    if (r->timer == 0)
-      days = hours = minutes = 0;
-    snprintf(timer, 32, "%c%2d:%02d:%02d", negTime ? '-' : ' ', days, hours, minutes);
-
-    if (!locName)
-      locName = "&+RUnknown&n";
-
-    char locPadded[MAX_STRING_LENGTH];
-    snprintf(locPadded, MAX_STRING_LENGTH, "%s", pad_ansi(locName, MAX_NAME_LENGTH + 9, TRUE).c_str());
-    snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n",
-      locPadded, timer, r->lastUpdate, r->shortDesc, r->vnum);
-    send_to_char(buf, ch);
-    shownData = TRUE;
-  }
-
-  if (!shownData)
-  {
-    send_to_char("No artifacts found.\r\n", ch);
+  char *json = arti_generate_json(type, Godlist);
+  if (!json)
     return;
-  }
 
-  // summary
-  snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n");
-  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
-  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
-  if (articount[RACEWAR_UNDEAD])
-    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
-  if (articount[RACEWAR_NEUTRAL])
-    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
-  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
-  send_to_char(buf, ch);
+  redis_cache_artifact_list(type, Godlist, json);
+  free(json);
 }
+#else
+void arti_redis_cache(int type, bool Godlist) { }
+#endif
 
-// Function delcarations
+// forward declarations
 void list_artifacts_sql( P_char ch, int type, bool Godlist, bool allArtis );
 void arti_clear_sql( P_char ch, char *arg );
 void arti_files_to_sql( P_char ch, char *arg );
@@ -526,30 +367,192 @@ void do_artifact_sql( P_char ch, char *arg, int cmd )
   send_to_char( "Valid sub-arguments for list, unique, ioun are [mortal] - shows mortal list and [all] shows un-owned artis.\n\r", ch );
 }
 
-// This function displays either the Godlist or mortal list of artifacts of type type.
-//   The type is either ARTIFACT_MAJOR, ARTIFACT_UNIQUE, or ARTIFACT_IOUN.
-//   Possible edit: Change select ... lastUpdate -> UNIXTIME_STAMP(lastUpdate), then use ctime(row[5]).
-//     This will make the last update time look the same as when you type 'time' in game.
-void list_artifacts_sql( P_char ch, int type, bool Godlist, bool allArtis )
+// display artifact list from redis cache
+void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 {
-  int idx;
+#ifndef __NO_MYSQL__
+  char buf[MAX_STRING_LENGTH];
+  char *json;
+  cJSON *root, *artifacts, *item;
+  int articount[5] = {0};
+  bool shownData = FALSE;
 
   if (type != ARTIFACT_MAJOR && type != ARTIFACT_UNIQUE && type != ARTIFACT_IOUN)
   {
     send_to_char("Invalid artifact type.\n\r", ch);
-    debug("list_artifacts_sql: Invalid artifact type: %d.", type);
     return;
   }
 
-  idx = type - 1;
-
-  // rebuild if dirty
-  if (arti_caches[idx][Godlist ? 1 : 0].dirty || arti_caches[idx][Godlist ? 1 : 0].rows == NULL)
+  // get from redis, or generate directly if redis disabled
+  extern bool redis_enabled;
+  if (redis_enabled)
   {
-    arti_cache_build(type, Godlist);
+    json = redis_get_artifact_list(type, Godlist);
+    if (!json)
+    {
+      // cache miss - rebuild and try again
+      arti_redis_cache(type, Godlist);
+      json = redis_get_artifact_list(type, Godlist);
+    }
+  }
+  else
+  {
+    // no redis - generate json directly
+    json = arti_generate_json(type, Godlist);
   }
 
-  arti_cache_display(ch, type, Godlist, allArtis);
+  if (!json)
+  {
+    send_to_char("No artifacts found.\n\r", ch);
+    return;
+  }
+
+  root = cJSON_Parse(json);
+  free(json);
+  if (!root)
+  {
+    send_to_char("Cache error.\n\r", ch);
+    return;
+  }
+
+  artifacts = cJSON_GetObjectItem(root, "artifacts");
+  if (!artifacts)
+  {
+    cJSON_Delete(root);
+    send_to_char("No artifacts found.\n\r", ch);
+    return;
+  }
+
+  // header
+  if (Godlist)
+    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner                  Time      Last Update           %s\r\n\r\n",
+      type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
+  else
+    snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n",
+      type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
+  send_to_char(buf, ch);
+
+  cJSON_ArrayForEach(item, artifacts)
+  {
+    int vnum = cJSON_GetObjectItem(item, "vnum")->valueint;
+    int locType = cJSON_GetObjectItem(item, "locType")->valueint;
+    int location = cJSON_GetObjectItem(item, "location")->valueint;
+    bool owned = cJSON_IsTrue(cJSON_GetObjectItem(item, "owned"));
+    const char *shortDesc = cJSON_GetObjectItem(item, "shortDesc")->valuestring;
+    int racewar = cJSON_GetObjectItem(item, "racewar")->valueint;
+
+    if (!allArtis && !owned)
+      continue;
+
+    // mortal view only shows pc/corpse
+    if (!Godlist && !(locType == ARTIFACT_ON_PC || locType == ARTIFACT_ONCORPSE))
+      continue;
+
+    // get owner name from json
+    char *locName = NULL;
+    char locNameBuf[MAX_STRING_LENGTH];
+    cJSON *ownerNameItem = cJSON_GetObjectItem(item, "ownerName");
+
+    switch (locType)
+    {
+      case ARTIFACT_NOTINGAME:
+        locName = (char *)"&+RNotInGame&n";
+        break;
+      case ARTIFACT_ON_NPC:
+        locName = (char *)"&+YOnMob&n";
+        break;
+      case ARTIFACT_ON_PC:
+        if (ownerNameItem && ownerNameItem->valuestring)
+          locName = ownerNameItem->valuestring;
+        break;
+      case ARTIFACT_ONGROUND:
+        snprintf(locNameBuf, MAX_STRING_LENGTH, "Room #%d", location);
+        locName = locNameBuf;
+        break;
+      case ARTIFACT_ONCORPSE:
+        if (ownerNameItem && ownerNameItem->valuestring)
+        {
+          if (Godlist)
+            snprintf(locNameBuf, MAX_STRING_LENGTH, "%s's corpse", ownerNameItem->valuestring);
+          else
+            snprintf(locNameBuf, MAX_STRING_LENGTH, "%s", ownerNameItem->valuestring);
+          locName = locNameBuf;
+        }
+        break;
+      default:
+        continue;
+    }
+
+    if (!locName)
+      locName = (char *)"&+RUnknown&n";
+
+    // count for summary
+    if (owned && (locType == ARTIFACT_ON_PC || locType == ARTIFACT_ONCORPSE))
+    {
+      articount[RACEWAR_NONE]++;
+      if (racewar != RACEWAR_NONE)
+        articount[racewar]++;
+    }
+
+    if (!Godlist)
+    {
+      snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", locName, shortDesc);
+      send_to_char(buf, ch);
+      shownData = TRUE;
+      continue;
+    }
+
+    // calc TIME fresh from raw timestamp
+    cJSON *timerItem = cJSON_GetObjectItem(item, "timer");
+    long timer = timerItem ? (long)timerItem->valuedouble : 0;
+    long totalTime = timer - time(NULL);
+    bool negTime = FALSE;
+    if (totalTime < 0)
+    {
+      negTime = TRUE;
+      totalTime *= -1;
+    }
+    totalTime /= 60;
+    int minutes = totalTime % 60;
+    totalTime /= 60;
+    int hours = totalTime % 24;
+    int days = totalTime / 24;
+    if (timer == 0)
+      days = hours = minutes = 0;
+
+    char timerBuf[32];
+    snprintf(timerBuf, 32, "%c%2d:%02d:%02d", negTime ? '-' : ' ', days, hours, minutes);
+
+    cJSON *lastUpdateItem = cJSON_GetObjectItem(item, "lastUpdate");
+    const char *lastUpdate = lastUpdateItem ? lastUpdateItem->valuestring : "";
+
+    char locPadded[MAX_STRING_LENGTH];
+    snprintf(locPadded, MAX_STRING_LENGTH, "%s", pad_ansi(locName, MAX_NAME_LENGTH + 9, TRUE).c_str());
+    snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n",
+      locPadded, timerBuf, lastUpdate, shortDesc, vnum);
+    send_to_char(buf, ch);
+    shownData = TRUE;
+  }
+
+  cJSON_Delete(root);
+
+  if (!shownData)
+  {
+    send_to_char("No artifacts found.\r\n", ch);
+    return;
+  }
+
+  // summary
+  snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n");
+  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
+  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
+  if (articount[RACEWAR_UNDEAD])
+    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
+  if (articount[RACEWAR_NEUTRAL])
+    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
+  snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
+  send_to_char(buf, ch);
+#endif
 }
 
 // Remove artifact entry from the artifacts table.

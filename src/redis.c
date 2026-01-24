@@ -1575,3 +1575,39 @@ void redis_clear_online_players(void)
     freeReplyObject(reply);
 #endif
 }
+
+// arti cache
+static const char *get_artifact_cache_key(int type, bool godlist)
+{
+  static char key[64];
+  snprintf(key, sizeof(key), "mud:cache:artifact:%d:%d", type, godlist ? 1 : 0);
+  return key;
+}
+
+void redis_cache_artifact_list(int type, bool godlist, const char *json)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || type < 1 || type > 3 || !json)
+    return;
+  redis_cache_set(get_artifact_cache_key(type, godlist), json);
+#endif
+}
+
+char *redis_get_artifact_list(int type, bool godlist)
+{
+  return redis_cache_get(get_artifact_cache_key(type, godlist));
+}
+
+void redis_invalidate_artifact_cache(void)
+{
+#ifndef __NO_MYSQL__
+  if (!redis_enabled || !redis_ctx)
+    return;
+
+  for (int t = 1; t <= 3; t++)
+  {
+    redis_cache_del(get_artifact_cache_key(t, false));
+    redis_cache_del(get_artifact_cache_key(t, true));
+  }
+#endif
+}

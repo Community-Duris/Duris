@@ -59,6 +59,11 @@ void redis_cache_epic_zones(void);
 char *redis_get_epic_zones(void);
 void redis_invalidate_epic_zones(void);
 
+// arti cache
+void redis_cache_artifact_list(int type, bool godlist, const char *json);
+char *redis_get_artifact_list(int type, bool godlist);
+void redis_invalidate_artifact_cache(void);
+
 // online players list for web
 void redis_player_online(P_char ch);
 void redis_player_offline(P_char ch);
