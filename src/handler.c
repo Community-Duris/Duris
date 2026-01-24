@@ -1624,6 +1624,13 @@ void obj_from_char(P_obj object)
   {
     for (tmp = object->loc.carrying->carrying; tmp && (tmp->next_content != object); tmp = tmp->next_content) ; /* locate previous */
 
+    if (!tmp) {
+      logit(LOG_BUG, "obj_from_char: object %s (%d) not in carrying list of %s",
+            object->short_description ? object->short_description : "unknown",
+            GET_OBJ_VNUM(object),
+            object->loc.carrying->player.name ? object->loc.carrying->player.name : "unknown");
+      return;
+    }
     tmp->next_content = object->next_content;
   }
 
