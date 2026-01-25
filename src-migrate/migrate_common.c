@@ -6,6 +6,7 @@
 // global vars
 P_Guild guild_list = NULL;
 char buf[MAX_STRING_LENGTH];
+static unsigned long long g_obj_uid_counter = 1;
 
 // format seconds into human readable time
 static void format_time(double seconds, char *buf, size_t buflen) {
@@ -262,6 +263,7 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     format_wear_flags(wear_str, sizeof(wear_str), obj);
 
     // build query based on table type
+    unsigned long long obj_uid = g_obj_uid_counter++;
     char query[8192];
     if (equip_slot >= 0) {
         // player_items has equip_slot
@@ -269,28 +271,28 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
             "INSERT INTO %s (%s, vnum, equip_slot, container_id, quantity, "
             "weight, cost, timer, extra_flags, wear_flags, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
-            "name, short_descr, description, action_descr) VALUES ("
+            "name, short_descr, description, action_descr, obj_uid) VALUES ("
             "%d, %d, %d, %s, 1, %d, %d, %ld, %s, %s, "
-            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, equip_slot, container_str,
             obj->weight, obj->cost, obj->timer, extra_str, wear_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
-            name_str, short_str, desc_str, action_str);
+            name_str, short_str, desc_str, action_str, obj_uid);
     } else {
         // locker_items, corpse_items - no equip_slot
         snprintf(query, sizeof(query),
             "INSERT INTO %s (%s, vnum, container_id, quantity, "
             "weight, cost, timer, extra_flags, wear_flags, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
-            "name, short_descr, description, action_descr) VALUES ("
+            "name, short_descr, description, action_descr, obj_uid) VALUES ("
             "%d, %d, %s, 1, %d, %d, %ld, %s, %s, "
-            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, container_str,
             obj->weight, obj->cost, obj->timer, extra_str, wear_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
-            name_str, short_str, desc_str, action_str);
+            name_str, short_str, desc_str, action_str, obj_uid);
     }
 
     if (esc_name) free(esc_name);

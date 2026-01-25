@@ -828,13 +828,17 @@ void flush_dirty_players(void)
   pid_t pid = fork();
   if (pid < 0)
   {
-    // fork failed, fallback to sync
+    // fork failed, sync fallback
     logit(LOG_SYS, "flush_dirty: fork failed, saving sync");
     for (int i = 0; i < valid; i++)
     {
       P_char ch = find_player_by_pid(pids[i]);
-      if (ch && IS_PC(ch))
-        sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+      if (!ch || !IS_PC(ch))
+        continue;
+      sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+      // gremlin needs to run in main process
+      if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && world[ch->in_room].funct)
+        (*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
     }
     free(pids);
     return;
@@ -842,14 +846,13 @@ void flush_dirty_players(void)
 
   if (pid == 0)
   {
-    // child - create own mysql connection
+    // child
     MYSQL *child_conn = sql_create_child_connection();
     if (!child_conn)
     {
       free(pids);
       _exit(1);
     }
-
     sql_reset_for_child(child_conn);
 
     for (int i = 0; i < valid; i++)
@@ -864,7 +867,15 @@ void flush_dirty_players(void)
     _exit(0);
   }
 
-  // parent
+  // parent - gremlin events wont work in forked child so do it here
+  for (int i = 0; i < valid; i++)
+  {
+    P_char ch = find_player_by_pid(pids[i]);
+    if (ch && IS_PC(ch) && ch->in_room != NOWHERE &&
+        IS_ROOM(ch->in_room, ROOM_LOCKER) && world[ch->in_room].funct)
+      (*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+  }
+
   dirty_flush_pid = pid;
   free(pids);
 #endif

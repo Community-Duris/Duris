@@ -48,3 +48,4 @@ docs/
 etc/group
 etc/passwd
 etc/resolv.conf
+migrate_pfiles
