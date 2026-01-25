@@ -105,6 +105,8 @@ struct mig_obj {
     char *short_descr;
     char *description;
     char *action_descr;
+    char *spellbook_bits;       // binary spell bitfield for spellbooks
+    int spellbook_size;         // size of spellbook_bits
     struct mig_obj *contains;
     struct mig_obj *next;
 };

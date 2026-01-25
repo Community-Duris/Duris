@@ -109,11 +109,15 @@ struct mig_obj *parse_binary_objects(char **buf) {
             parse_unique_fields(buf, obj, o_u_flag);
         }
 
-        // O_F_SPELLBOOK is outside O_F_UNIQUE block
+        // O_F_SPELLBOOK - store spell bitfield for migration
         if (o_f_flag & O_F_SPELLBOOK) {
             int tmp = mig_getInt(buf);
-            for (int i = 0; i < tmp; i++)
-                MIG_GET_BYTE(*buf);
+            if (tmp > 0) {
+                obj->spellbook_bits = (char *)malloc(tmp);
+                obj->spellbook_size = tmp;
+                for (int i = 0; i < tmp; i++)
+                    obj->spellbook_bits[i] = MIG_GET_BYTE(*buf);
+            }
         }
 
         // link to list or container
@@ -196,10 +200,15 @@ struct mig_obj *parse_locker_items(char **buf) {
             parse_unique_fields(buf, obj, o_u_flag);
         }
 
+        // O_F_SPELLBOOK - store spell bitfield for migration
         if (o_f_flag & O_F_SPELLBOOK) {
             int tmp = mig_getInt(buf);
-            for (int i = 0; i < tmp; i++)
-                MIG_GET_BYTE(*buf);
+            if (tmp > 0) {
+                obj->spellbook_bits = (char *)malloc(tmp);
+                obj->spellbook_size = tmp;
+                for (int i = 0; i < tmp; i++)
+                    obj->spellbook_bits[i] = MIG_GET_BYTE(*buf);
+            }
         }
 
         // link to list or container
@@ -276,11 +285,15 @@ int parse_player_items(char **buf, struct mig_player *p) {
             parse_unique_fields(buf, obj, o_u_flag);
         }
 
-        // O_F_SPELLBOOK is outside O_F_UNIQUE block
+        // O_F_SPELLBOOK - store spell bitfield for migration
         if (o_f_flag & O_F_SPELLBOOK) {
             int tmp = mig_getInt(buf);
-            for (int i = 0; i < tmp; i++)
-                MIG_GET_BYTE(*buf);
+            if (tmp > 0) {
+                obj->spellbook_bits = (char *)malloc(tmp);
+                obj->spellbook_size = tmp;
+                for (int i = 0; i < tmp; i++)
+                    obj->spellbook_bits[i] = MIG_GET_BYTE(*buf);
+            }
         }
 
         // link to appropriate place

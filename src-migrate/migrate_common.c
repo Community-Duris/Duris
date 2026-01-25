@@ -127,9 +127,34 @@ void free_mig_obj(struct mig_obj *obj) {
     if (obj->short_descr) free(obj->short_descr);
     if (obj->description) free(obj->description);
     if (obj->action_descr) free(obj->action_descr);
+    if (obj->spellbook_bits) free(obj->spellbook_bits);
     free_mig_obj(obj->contains);
     free_mig_obj(obj->next);
     free(obj);
+}
+
+// convert binary spell bitfield to json array string like "[101,203,456]"
+static char *mig_spellbook_to_json(const char *bits, int size) {
+    if (!bits || size <= 0) return NULL;
+
+    char *buf = (char *)malloc(MIG_MAX_SKILLS * 6);
+    if (!buf) return NULL;
+
+    char *p = buf;
+    *p++ = '[';
+
+    int first = 1;
+    for (int i = 0; i < MIG_MAX_SKILLS && (i / 8) < size; i++) {
+        if (bits[i / 8] & (1 << (i % 8))) {
+            if (!first) *p++ = ',';
+            p += sprintf(p, "%d", i);
+            first = 0;
+        }
+    }
+    *p++ = ']';
+    *p = '\0';
+
+    return buf;
 }
 
 void free_mig_affect(struct mig_affect *af) {
@@ -308,6 +333,18 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     MYSQL_ROW row = mysql_fetch_row(result);
     int item_id = row ? atoi(row[0]) : 0;
     mysql_free_result(result);
+
+    // save spellbook data to player_item_extra_descr (only for player_items table)
+    if (obj->spellbook_bits && item_id > 0 && strcmp(table, "player_items") == 0) {
+        char *json = mig_spellbook_to_json(obj->spellbook_bits, obj->spellbook_size);
+        if (json) {
+            char *esc_json = item_escape(json);
+            item_qry("INSERT INTO player_item_extra_descr (item_id, keyword, description) "
+                     "VALUES (%d, 'SPELLBOOK', '%s')", item_id, esc_json ? esc_json : json);
+            if (esc_json) free(esc_json);
+            free(json);
+        }
+    }
 
     // save contained items recursively
     for (struct mig_obj *c = obj->contains; c; c = c->next) {
