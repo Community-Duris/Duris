@@ -16,6 +16,7 @@
 #include <set>
 
 #include "sql.h"
+#include "sql_player.h"
 #include "comm.h"
 #include "db.h"
 #include "events.h"
@@ -1667,7 +1668,11 @@ P_obj make_corpse(P_char ch, int loss)
     corpse = NULL;
   }
   if (corpse && IS_PC(ch))
+  {
+    if (!sql_delete_player_items(GET_PID(ch)))
+      logit(LOG_DEBUG, "make_corpse: failed to clear items for %s", GET_NAME(ch));
     writeCorpse(corpse);
+  }
 
   return corpse;
 }

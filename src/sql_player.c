@@ -54,6 +54,7 @@ bool sql_save_player_status(P_char ch, int type, int room) { return false; }
 bool sql_save_player_skills(P_char ch) { return false; }
 bool sql_save_player_affects(P_char ch) { return false; }
 bool sql_save_player_items(P_char ch) { return false; }
+bool sql_delete_player_items(int pid) { return false; }
 bool sql_save_player_witnesses(P_char ch) { return false; }
 bool sql_save_player_shapechanges(P_char ch) { return false; }
 bool sql_save_player_recipes(P_char ch) { return false; }
@@ -1318,6 +1319,16 @@ bool sql_save_player_items(P_char ch)
   }
 
   return success;
+}
+
+bool sql_delete_player_items(int pid)
+{
+  if (!DB || pid <= 0)
+    return false;
+
+  char del_query[128];
+  snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
+  return sql_run_query(del_query);
 }
 
 // pet item affects save
