@@ -880,6 +880,7 @@ extern unsigned int game_locked_level;
 #define CMD_POLL         849
 #define CMD_NEWCHAR      850
 #define CMD_JESTROS      851
+#define CMD_REDIS        852
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.

@@ -215,6 +215,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs.zion.o \
 				 spells.o \
 				 redis.o \
+				 wizredis.o \
 				 sql.o	\
 				 sql_player.o \
 				 ssl.o \

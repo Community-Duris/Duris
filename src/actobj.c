@@ -341,6 +341,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
     if (IS_PC(ch) && o_obj->obj_uid > 0)
     {
       redis_log_floor_pickup(o_obj->obj_uid);
+      redis_remove_floor_drop(o_obj->obj_uid);
       mark_player_dirty(GET_PID(ch));
     }
 
@@ -1032,7 +1033,8 @@ void do_get(P_char ch, char *argument, int cmd)
     }
   }
 
-  writeCharacter(ch, 1, ch->in_room);
+  if (IS_PC(ch))
+    mark_player_dirty(GET_PID(ch));
   char_light(ch);
   room_light(ch->in_room, REAL);
 
@@ -1290,7 +1292,11 @@ void do_dropalldot(P_char ch, char *name, int cmd)
     }
 
     if (IS_PC(ch))
-      writeCharacter(ch, 1, ch->in_room);
+    {
+      if (tmp_object->obj_uid > 0)
+        redis_log_floor_drop(tmp_object, world[ch->in_room].number);
+      mark_player_dirty(GET_PID(ch));
+    }
 
     return;
   }
@@ -1308,6 +1314,8 @@ void do_dropalldot(P_char ch, char *name, int cmd)
       {
         obj_from_char(tmp_object);
         obj_to_room(tmp_object, ch->in_room);
+        if (IS_PC(ch) && tmp_object->obj_uid > 0)
+          redis_log_floor_drop(tmp_object, world[ch->in_room].number);
         total++;
         if (IS_TRUSTED(ch))
         {
@@ -1355,7 +1363,7 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 
 
     if (IS_PC(ch))
-      writeCharacter(ch, 1, ch->in_room);
+      mark_player_dirty(GET_PID(ch));
   }
   else
   {
@@ -1513,7 +1521,7 @@ void do_drop(P_char ch, char *argument, int cmd)
     }
 }
     if (IS_PC(ch))
-      writeCharacter(ch, 1, ch->in_room);
+      mark_player_dirty(GET_PID(ch));
 
     /* Send GMCP update for dropped coins */
     gmcp_char_vitals(ch);
@@ -1530,6 +1538,7 @@ void do_drop(P_char ch, char *argument, int cmd)
     }
     else if (!str_cmp(Gbuf1, "all"))
     {
+      bool dropped_any = false;
       for (tmp_object = ch->carrying; tmp_object; tmp_object = next_obj)
       {
         next_obj = tmp_object->next_content;
@@ -1565,9 +1574,9 @@ void do_drop(P_char ch, char *argument, int cmd)
               J_NAME(ch), tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, world[ch->in_room].number );
           }
           obj_to_room(tmp_object, ch->in_room);
-
-          if (IS_PC(ch))
-            writeCharacter(ch, 1, ch->in_room);
+          if (IS_PC(ch) && tmp_object->obj_uid > 0)
+            redis_log_floor_drop(tmp_object, world[ch->in_room].number);
+          dropped_any = true;
 
           test = TRUE;
         }
@@ -1593,6 +1602,9 @@ void do_drop(P_char ch, char *argument, int cmd)
       {
         send_to_char("You do not seem to have anything.\r\n", ch);
       }
+
+      if (dropped_any && IS_PC(ch))
+        mark_player_dirty(GET_PID(ch));
     }
     else
     {
@@ -1625,7 +1637,11 @@ void do_drop(P_char ch, char *argument, int cmd)
           obj_to_room(tmp_object, ch->in_room);
 
           if (IS_PC(ch))
-            writeCharacter(ch, 1, ch->in_room);
+          {
+            if (tmp_object->obj_uid > 0)
+              redis_log_floor_drop(tmp_object, world[ch->in_room].number);
+            mark_player_dirty(GET_PID(ch));
+          }
 
           /*
            * update player corpse file  (if needed)
@@ -1852,7 +1868,7 @@ void do_put(P_char ch, char *argument, int cmd)
     char_light(ch);
     room_light(ch->in_room, REAL);
     if (IS_PC(ch))
-      writeCharacter(ch, 1, ch->in_room);
+      mark_player_dirty(GET_PID(ch));
     if (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE)
       writeSavedItem(s_obj);
   }
@@ -1955,7 +1971,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
           }
 
           if (IS_PC(ch))
-            writeCharacter(ch, 1, ch->in_room);
+            mark_player_dirty(GET_PID(ch));
 
           if (GET_ITEM_TYPE(o_obj) == ITEM_STORAGE)
             writeSavedItem(o_obj);
@@ -2056,7 +2072,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
             if (GET_ITEM_TYPE(o_obj) == ITEM_STORAGE)
               if (IS_PC(ch))
-                writeCharacter(ch, 1, ch->in_room);
+                mark_player_dirty(GET_PID(ch));
 
             return (TRUE);
 #if USE_SPACE
@@ -2199,8 +2215,10 @@ void do_give(P_char ch, char *argument, int cmd)
 
     if (ch != vict)
     {
-      writeCharacter(ch, 1, ch->in_room);
-      writeCharacter(vict, 1, vict->in_room);
+      if (IS_PC(ch))
+        mark_player_dirty(GET_PID(ch));
+      if (IS_PC(vict))
+        mark_player_dirty(GET_PID(vict));
     }
 
     /* Send GMCP updates for coin transfer */
@@ -2304,8 +2322,10 @@ void do_give(P_char ch, char *argument, int cmd)
   }
   if (ch != vict)
   {
-    writeCharacter(ch, 1, ch->in_room);
-    writeCharacter(vict, 1, vict->in_room);
+    if (IS_PC(ch))
+      mark_player_dirty(GET_PID(ch));
+    if (IS_PC(vict))
+      mark_player_dirty(GET_PID(vict));
 #ifndef __NO_MYSQL__
     artifact_switch_check(ch, obj);
 #endif

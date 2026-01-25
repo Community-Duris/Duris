@@ -35,6 +35,7 @@
 #include "mm.h"
 #include "epic.h"
 #include "sql.h"
+#include "redis.h"
 #include "makeexit.h"
 #include "nexus_stones.h"
 #include "testcmd.h"
@@ -1100,7 +1101,8 @@ const char *command[MAX_CMD] = {
   "poll",
   "newchar",
   "jchat",
-  "\n"                          /* MAX_CMD = 852, MAX_CMD_LIST = 1000 */
+  "redis",
+  "\n"                          /* MAX_CMD = 853, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = {
@@ -2425,6 +2427,7 @@ void assign_command_pointers(void)
  // CMD_GRT(CMD_EPICRESET, STAT_DEAD + POS_PRONE, do_epic_reset, GREATER_G);
  
   CMD_GRT(CMD_SQL, STAT_DEAD + POS_PRONE, do_sql, OVERLORD);
+  CMD_GRT(CMD_REDIS, STAT_DEAD + POS_PRONE, do_redis, FORGER);
   CMD_GRT(CMD_MAKEEXIT, STAT_DEAD + POS_PRONE, do_makeexit, GREATER_G);
 
   CMD_GRT(CMD_REVOKE, STAT_DEAD + POS_PRONE, do_revoke, FORGER);

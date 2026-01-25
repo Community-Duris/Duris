@@ -153,7 +153,7 @@ static char *arti_generate_json(int type, bool Godlist)
 
     if (Godlist)
     {
-      cJSON_AddNumberToObject(item, "timer", atol(row[4]));
+      cJSON_AddNumberToObject(item, "timer", row[4] ? atol(row[4]) : 0);
       cJSON_AddStringToObject(item, "lastUpdate", row[5] ? row[5] : "");
     }
 
@@ -3575,28 +3575,55 @@ void arti_syncdb_sql( P_char ch )
 
   send_to_char("Syncing artifact ownership from player saves...\n\r", ch);
 
-  // clear all artifact ownership first
-  const char *clear_sql =
-    "UPDATE artifacts_mortal SET location = 0, owned = 'N', locType = 1";
-  if (mysql_real_query(DB, clear_sql, strlen(clear_sql)) != 0)
+  // clear artifacts table (main table used by god view)
+  const char *clear_artifacts_sql =
+    "UPDATE artifacts SET location = 0, owned = 'N', locType = 1, lastUpdate = SYSDATE() "
+    "WHERE locType = 3 OR locType = 5";
+  if (mysql_real_query(DB, clear_artifacts_sql, strlen(clear_artifacts_sql)) != 0)
   {
     send_to_char_f(ch, "Error clearing artifacts: %s\n\r", mysql_error(DB));
     return;
   }
   int cleared = mysql_affected_rows(DB);
 
-  // update from player_items
-  const char *sync_sql =
-    "UPDATE artifacts_mortal am "
-    "JOIN player_items pi ON pi.vnum = am.vnum "
+  // clear artifacts_mortal table
+  const char *clear_mortal_sql =
+    "UPDATE artifacts_mortal SET location = 0, owned = 'N', locType = 1";
+  mysql_real_query(DB, clear_mortal_sql, strlen(clear_mortal_sql));
+
+  // clear artifact_bind owner_pid for pc-held artifacts
+  const char *clear_bind_sql =
+    "UPDATE artifact_bind SET owner_pid = -1, timer = 0";
+  mysql_real_query(DB, clear_bind_sql, strlen(clear_bind_sql));
+
+  // update artifacts table from player_items
+  const char *sync_artifacts_sql =
+    "UPDATE artifacts a "
+    "JOIN player_items pi ON pi.vnum = a.vnum "
     "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
-    "SET am.location = pi.pid, am.owned = 'Y', am.locType = 3";
-  if (mysql_real_query(DB, sync_sql, strlen(sync_sql)) != 0)
+    "SET a.location = pi.pid, a.owned = 'Y', a.locType = 3, a.lastUpdate = SYSDATE()";
+  if (mysql_real_query(DB, sync_artifacts_sql, strlen(sync_artifacts_sql)) != 0)
   {
     send_to_char_f(ch, "Error syncing artifacts: %s\n\r", mysql_error(DB));
     return;
   }
   int updated = mysql_affected_rows(DB);
+
+  // update artifacts_mortal table from player_items
+  const char *sync_mortal_sql =
+    "UPDATE artifacts_mortal am "
+    "JOIN player_items pi ON pi.vnum = am.vnum "
+    "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
+    "SET am.location = pi.pid, am.owned = 'Y', am.locType = 3";
+  mysql_real_query(DB, sync_mortal_sql, strlen(sync_mortal_sql));
+
+  // update artifact_bind with owner_pid from player_items
+  const char *sync_bind_sql =
+    "UPDATE artifact_bind ab "
+    "JOIN player_items pi ON pi.vnum = ab.vnum "
+    "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
+    "SET ab.owner_pid = pi.pid, ab.timer = UNIX_TIMESTAMP()";
+  mysql_real_query(DB, sync_bind_sql, strlen(sync_bind_sql));
 
   arti_cache_invalidate();
   send_to_char_f(ch, "Cleared %d, updated %d artifact ownerships from player saves.\n\r", cleared, updated);

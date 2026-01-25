@@ -2647,6 +2647,10 @@ void extract_obj(P_obj obj, int gone_for_good)
     raise(SIGSEGV);
   }
 
+  // remove from floor_drops if it was tracked
+  if (obj->obj_uid > 0)
+    redis_remove_floor_drop(obj->obj_uid);
+
   if (OBJ_ROOM(obj))
     obj_from_room(obj);
   else if (OBJ_CARRIED(obj))

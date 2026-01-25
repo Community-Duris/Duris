@@ -19,6 +19,14 @@ void redis_log_floor_pickup(unsigned long obj_uid);
 bool redis_check_floor_pickup(unsigned long obj_uid);
 void redis_clear_floor_pickups(void);
 
+// floor drop tracking for crash recovery
+void redis_log_floor_drop(P_obj obj, int room_vnum);
+void redis_remove_floor_drop(unsigned long obj_uid);
+void redis_clear_floor_drops(void);
+bool redis_check_floor_drop(unsigned long obj_uid);
+void redis_flush_floor_drops(void);
+int redis_restore_floor_drops(void);
+
 void mark_player_dirty(int pid);
 void flush_dirty_players(void);
 int get_dirty_player_count(void);
@@ -68,5 +76,16 @@ void redis_invalidate_artifact_cache(void);
 void redis_player_online(P_char ch);
 void redis_player_offline(P_char ch);
 void redis_clear_online_players(void);
+
+// generic helpers for wiz command
+bool redis_key_exists(const char *key);
+long redis_get_ttl(const char *key);
+long redis_hlen(const char *key);
+long redis_scard(const char *key);
+char *redis_get_string(const char *key);
+void redis_clear_dirty_players(void);
+
+// wiz command
+void do_redis(P_char ch, char *argument, int cmd);
 
 #endif
