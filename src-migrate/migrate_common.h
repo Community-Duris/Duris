@@ -99,8 +99,11 @@ struct mig_obj_affect {
 struct mig_obj {
     int vnum;
     int weight;
+    unsigned char weight_set;   // 1 if weight was explicitly set in pfile
     int cost;
+    unsigned char cost_set;     // 1 if cost was explicitly set in pfile
     long timer;
+    unsigned char timer_set;    // 1 if timer was explicitly set in pfile
     unsigned long extra_flags;
     unsigned char extra_flags_set;  // 1 if extra_flags was explicitly set in pfile
     int wear_flags;

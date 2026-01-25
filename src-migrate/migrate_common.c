@@ -279,6 +279,12 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     format_value(v6, sizeof(v6), obj, 6);
     format_value(v7, sizeof(v7), obj, 7);
 
+    // format weight/cost/timer (NULL if not modified from prototype)
+    char weight_str[16], cost_str[16], timer_str[24];
+    if (obj->weight_set) snprintf(weight_str, sizeof(weight_str), "%d", obj->weight); else strcpy(weight_str, "NULL");
+    if (obj->cost_set) snprintf(cost_str, sizeof(cost_str), "%d", obj->cost); else strcpy(cost_str, "NULL");
+    if (obj->timer_set) snprintf(timer_str, sizeof(timer_str), "%ld", obj->timer); else strcpy(timer_str, "NULL");
+
     // format extra_flags (NULL if not modified from prototype)
     char extra_str[32];
     format_extra_flags(extra_str, sizeof(extra_str), obj);
@@ -313,12 +319,12 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
             "value0, value1, value2, value3, value4, value5, value6, value7, "
             "name, short_descr, description, action_descr, "
             "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid) VALUES ("
-            "%d, %d, %d, %s, 1, %d, %d, %ld, %s, %s, %s, "
+            "%d, %d, %d, %s, 1, %s, %s, %s, %s, %s, %s, "
             "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
             "%s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, equip_slot, container_str,
-            obj->weight, obj->cost, obj->timer, extra_str, wear_str, type_str,
+            weight_str, cost_str, timer_str, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
             name_str, short_str, desc_str, action_str,
             bv1, bv2, bv3, bv4, bv5, obj_uid);
@@ -329,11 +335,11 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
             "weight, cost, timer, extra_flags, wear_flags, item_type, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
             "name, short_descr, description, action_descr, obj_uid) VALUES ("
-            "%d, %d, %d, %s, 1, %d, %d, %ld, %s, %s, %s, "
+            "%d, %d, %d, %s, 1, %s, %s, %s, %s, %s, %s, "
             "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, equip_slot, container_str,
-            obj->weight, obj->cost, obj->timer, extra_str, wear_str, type_str,
+            weight_str, cost_str, timer_str, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
             name_str, short_str, desc_str, action_str, obj_uid);
     } else {
@@ -343,11 +349,11 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
             "weight, cost, timer, extra_flags, wear_flags, item_type, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
             "name, short_descr, description, action_descr, obj_uid) VALUES ("
-            "%d, %d, %s, 1, %d, %d, %ld, %s, %s, %s, "
+            "%d, %d, %s, 1, %s, %s, %s, %s, %s, %s, "
             "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, container_str,
-            obj->weight, obj->cost, obj->timer, extra_str, wear_str, type_str,
+            weight_str, cost_str, timer_str, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
             name_str, short_str, desc_str, action_str, obj_uid);
     }

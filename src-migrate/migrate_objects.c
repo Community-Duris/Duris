@@ -28,6 +28,7 @@ static void parse_unique_fields(char **buf, struct mig_obj *obj, unsigned long o
     if (o_u_flag & O_U_VAL7) { obj->value[7] = mig_getInt(buf); obj->value_set |= (1 << 7); }
     if (o_u_flag & O_U_TIMER) {
         obj->timer = mig_getInt(buf);
+        obj->timer_set = 1;
         mig_getInt(buf); mig_getInt(buf); mig_getInt(buf); // timer[1-3]
     }
     if (o_u_flag & O_U_TRAP) {
@@ -40,9 +41,9 @@ static void parse_unique_fields(char **buf, struct mig_obj *obj, unsigned long o
     if (o_u_flag & O_U_ANTI) mig_getInt(buf);
     if (o_u_flag & O_U_ANTI2) mig_getInt(buf);
     if (o_u_flag & O_U_EXTRA2) mig_getInt(buf);
-    if (o_u_flag & O_U_WEIGHT) obj->weight = mig_getInt(buf);
+    if (o_u_flag & O_U_WEIGHT) { obj->weight = mig_getInt(buf); obj->weight_set = 1; }
     if (o_u_flag & O_U_MATERIAL) MIG_GET_BYTE(*buf);
-    if (o_u_flag & O_U_COST) obj->cost = mig_getInt(buf);
+    if (o_u_flag & O_U_COST) { obj->cost = mig_getInt(buf); obj->cost_set = 1; }
     if (o_u_flag & O_U_BV1) { obj->bitvector1 = mig_getLong(buf); obj->bitvector_set |= 1; }
     if (o_u_flag & O_U_BV2) { obj->bitvector2 = mig_getLong(buf); obj->bitvector_set |= 2; }
     if (o_u_flag & O_U_BV3) { obj->bitvector3 = mig_getLong(buf); obj->bitvector_set |= 4; }

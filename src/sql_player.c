@@ -2446,6 +2446,9 @@ bool sql_load_player_items(P_char ch)
   int loaded_count = idx;
 
   // load all item affects in one query (was N+1 queries, now 1)
+  // track which items have had their prototype affects cleared
+  bool *affects_cleared = (bool *)calloc(num_rows, sizeof(bool));
+
   snprintf(query, sizeof(query),
     "SELECT ia.item_id, ia.location, ia.modifier "
     "FROM player_item_affects ia "
@@ -2465,6 +2468,17 @@ bool sql_load_player_items(P_char ch)
       {
         if (item_ids[i] == affect_item_id && items[i])
         {
+          // clear prototype affects before adding first db affect
+          if (!affects_cleared[i])
+          {
+            for (int a = 0; a < MAX_OBJ_AFFECT; a++)
+            {
+              items[i]->affected[a].location = 0;
+              items[i]->affected[a].modifier = 0;
+            }
+            affects_cleared[i] = true;
+          }
+
           // find next empty affect slot
           for (int a = 0; a < MAX_OBJ_AFFECT; a++)
           {
@@ -2481,6 +2495,7 @@ bool sql_load_player_items(P_char ch)
     }
     mysql_free_result(result);
   }
+  free(affects_cleared);
 
   // load extra descriptions (spellbooks etc)
   snprintf(query, sizeof(query),
