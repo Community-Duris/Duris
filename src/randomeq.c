@@ -1193,6 +1193,7 @@ P_obj create_random_eq_new( P_char killer, P_char mob, int object_type, int mate
   }
   else if(isname("robe", obj->name))
   {
+    GET_ITEM_TYPE(obj) = ITEM_WORN;
     obj->value[0] = (int) (material_data[material].m_stat * number(90, 120));
     obj->value[1] = 0;
     obj->value[2] = 0;

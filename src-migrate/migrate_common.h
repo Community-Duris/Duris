@@ -107,6 +107,8 @@ struct mig_obj {
     char *action_descr;
     char *spellbook_bits;       // binary spell bitfield for spellbooks
     int spellbook_size;         // size of spellbook_bits
+    unsigned char item_type;    // item type (ITEM_ARMOR, ITEM_WEAPON, etc)
+    unsigned char item_type_set;// 1 if item_type was explicitly set in pfile
     struct mig_obj *contains;
     struct mig_obj *next;
 };

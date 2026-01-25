@@ -287,6 +287,13 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     char wear_str[32];
     format_wear_flags(wear_str, sizeof(wear_str), obj);
 
+    // format item_type (NULL if not modified from prototype)
+    char type_str[16];
+    if (obj->item_type_set)
+        snprintf(type_str, sizeof(type_str), "%d", obj->item_type);
+    else
+        strcpy(type_str, "NULL");
+
     // build query based on table type
     unsigned long long obj_uid = g_obj_uid_counter++;
     char query[8192];
@@ -294,28 +301,28 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
         // player_items has equip_slot
         snprintf(query, sizeof(query),
             "INSERT INTO %s (%s, vnum, equip_slot, container_id, quantity, "
-            "weight, cost, timer, extra_flags, wear_flags, "
+            "weight, cost, timer, extra_flags, wear_flags, item_type, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
             "name, short_descr, description, action_descr, obj_uid) VALUES ("
-            "%d, %d, %d, %s, 1, %d, %d, %ld, %s, %s, "
+            "%d, %d, %d, %s, 1, %d, %d, %ld, %s, %s, %s, "
             "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, equip_slot, container_str,
-            obj->weight, obj->cost, obj->timer, extra_str, wear_str,
+            obj->weight, obj->cost, obj->timer, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
             name_str, short_str, desc_str, action_str, obj_uid);
     } else {
         // locker_items, corpse_items - no equip_slot
         snprintf(query, sizeof(query),
             "INSERT INTO %s (%s, vnum, container_id, quantity, "
-            "weight, cost, timer, extra_flags, wear_flags, "
+            "weight, cost, timer, extra_flags, wear_flags, item_type, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
             "name, short_descr, description, action_descr, obj_uid) VALUES ("
-            "%d, %d, %s, 1, %d, %d, %ld, %s, %s, "
+            "%d, %d, %s, 1, %d, %d, %ld, %s, %s, %s, "
             "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, container_str,
-            obj->weight, obj->cost, obj->timer, extra_str, wear_str,
+            obj->weight, obj->cost, obj->timer, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
             name_str, short_str, desc_str, action_str, obj_uid);
     }

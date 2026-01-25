@@ -1085,23 +1085,33 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
   else
     strcpy(wear_str, "NULL");
 
+  // save item_type if different from prototype
+  P_obj proto = read_object(obj->R_num, REAL);
+  char type_str[16];
+  if (proto && obj->type != proto->type)
+    snprintf(type_str, sizeof(type_str), "%d", obj->type);
+  else
+    strcpy(type_str, "NULL");
+  if (proto)
+    extract_obj(proto);
+
   // build the query - only use columns that exist in schema
   // extra fields like bitvectors, trap data, etc can be loaded from prototype
   char query[8192];
   snprintf(query, sizeof(query),
     "INSERT INTO player_items ("
     "pid, vnum, equip_slot, container_id, quantity, "
-    "weight, cost, timer, extra_flags, wear_flags, "
+    "weight, cost, timer, extra_flags, wear_flags, item_type, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
     "name, short_descr, description, action_descr, obj_uid, item_condition"
     ") VALUES ("
     "%d, %d, %d, %s, 1, "
-    "%d, %d, %ld, %u, %s, "
+    "%d, %d, %ld, %u, %s, %s, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
     "%s, %s, %s, %s, %lu, %d"
     ")",
     pid, vnum, equip_slot, container_str,
-    obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags, wear_str,
+    obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags, wear_str, type_str,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
     name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
@@ -2293,7 +2303,7 @@ bool sql_load_player_items(P_char ch)
   char query[1024];
   snprintf(query, sizeof(query),
     "SELECT id, vnum, equip_slot, container_id, "
-    "weight, cost, timer, extra_flags, wear_flags, "
+    "weight, cost, timer, extra_flags, wear_flags, item_type, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
     "name, short_descr, description, action_descr, obj_uid, item_condition "
     "FROM player_items WHERE pid=%d ORDER BY id", pid);
@@ -2341,6 +2351,7 @@ bool sql_load_player_items(P_char ch)
     obj->timer[0] = sql_row_long(row, col++, obj->timer[0]);
     obj->extra_flags = sql_row_ulong(row, col++, obj->extra_flags);
     obj->wear_flags = sql_row_int(row, col++, obj->wear_flags);
+    obj->type = sql_row_int(row, col++, obj->type);
 
     // NULL in db means use prototype value (passed as default)
     obj->value[0] = sql_row_int(row, col++, obj->value[0]);

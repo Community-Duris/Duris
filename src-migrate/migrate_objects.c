@@ -34,7 +34,7 @@ static void parse_unique_fields(char **buf, struct mig_obj *obj, unsigned long o
         mig_getShort(buf); mig_getShort(buf);
         mig_getShort(buf); mig_getShort(buf);
     }
-    if (o_u_flag & O_U_TYPE) MIG_GET_BYTE(*buf);
+    if (o_u_flag & O_U_TYPE) { obj->item_type = MIG_GET_BYTE(*buf); obj->item_type_set = 1; }
     if (o_u_flag & O_U_WEAR) { obj->wear_flags = mig_getInt(buf); obj->wear_flags_set = 1; }
     if (o_u_flag & O_U_EXTRA) { obj->extra_flags = mig_getInt(buf); obj->extra_flags_set = 1; }
     if (o_u_flag & O_U_ANTI) mig_getInt(buf);
