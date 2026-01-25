@@ -395,6 +395,18 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
         if (affects_table) {
             for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
                 if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0) {
+                    // skip duplicates
+                    int is_dup = 0;
+                    for (int j = 0; j < i; j++) {
+                        if (obj->affected[j].location == obj->affected[i].location &&
+                            obj->affected[j].modifier == obj->affected[i].modifier) {
+                            is_dup = 1;
+                            break;
+                        }
+                    }
+                    if (is_dup)
+                        continue;
+
                     item_qry("INSERT INTO %s (item_id, location, modifier) "
                              "VALUES (%d, %d, %d)",
                              affects_table, item_id, obj->affected[i].location, obj->affected[i].modifier);

@@ -955,6 +955,20 @@ static bool sql_save_item_affects(int item_id, P_obj obj)
   {
     if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
     {
+      // skip duplicates (same location+modifier already saved)
+      bool is_dup = false;
+      for (int j = 0; j < i; j++)
+      {
+        if (obj->affected[j].location == obj->affected[i].location &&
+            obj->affected[j].modifier == obj->affected[i].modifier)
+        {
+          is_dup = true;
+          break;
+        }
+      }
+      if (is_dup)
+        continue;
+
       char ins_query[256];
       snprintf(ins_query, sizeof(ins_query),
                "INSERT INTO player_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
@@ -2479,6 +2493,20 @@ bool sql_load_player_items(P_char ch)
             affects_cleared[i] = true;
           }
 
+          // skip if this location+modifier already exists (db has duplicates)
+          bool is_dup = false;
+          for (int a = 0; a < MAX_OBJ_AFFECT; a++)
+          {
+            if (items[i]->affected[a].location == location &&
+                items[i]->affected[a].modifier == modifier)
+            {
+              is_dup = true;
+              break;
+            }
+          }
+          if (is_dup)
+            break;
+
           // find next empty affect slot
           for (int a = 0; a < MAX_OBJ_AFFECT; a++)
           {
@@ -2966,6 +2994,20 @@ static bool sql_save_locker_item_affects(int item_id, P_obj obj)
   {
     if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
     {
+      // skip duplicates (same location+modifier already saved)
+      bool is_dup = false;
+      for (int j = 0; j < i; j++)
+      {
+        if (obj->affected[j].location == obj->affected[i].location &&
+            obj->affected[j].modifier == obj->affected[i].modifier)
+        {
+          is_dup = true;
+          break;
+        }
+      }
+      if (is_dup)
+        continue;
+
       char query[256];
       snprintf(query, sizeof(query),
                "INSERT INTO locker_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
@@ -3252,9 +3294,24 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
       int aff_idx = 0;
       while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
       {
-        obj->affected[aff_idx].location = atoi(aff_row[0]);
-        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
-        aff_idx++;
+        int loc = atoi(aff_row[0]);
+        int mod = atoi(aff_row[1]);
+        // skip duplicates from db
+        bool is_dup = false;
+        for (int d = 0; d < aff_idx; d++)
+        {
+          if (obj->affected[d].location == loc && obj->affected[d].modifier == mod)
+          {
+            is_dup = true;
+            break;
+          }
+        }
+        if (!is_dup)
+        {
+          obj->affected[aff_idx].location = loc;
+          obj->affected[aff_idx].modifier = mod;
+          aff_idx++;
+        }
       }
       mysql_free_result(aff_result);
     }
@@ -3819,9 +3876,24 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
       int aff_idx = 0;
       while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
       {
-        obj->affected[aff_idx].location = atoi(aff_row[0]);
-        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
-        aff_idx++;
+        int loc = atoi(aff_row[0]);
+        int mod = atoi(aff_row[1]);
+        // skip duplicates from db
+        bool is_dup = false;
+        for (int d = 0; d < aff_idx; d++)
+        {
+          if (obj->affected[d].location == loc && obj->affected[d].modifier == mod)
+          {
+            is_dup = true;
+            break;
+          }
+        }
+        if (!is_dup)
+        {
+          obj->affected[aff_idx].location = loc;
+          obj->affected[aff_idx].modifier = mod;
+          aff_idx++;
+        }
       }
       mysql_free_result(aff_result);
     }
@@ -4366,6 +4438,20 @@ static bool sql_save_corpse_item_affects(int item_id, P_obj obj)
   {
     if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
     {
+      // skip duplicates
+      bool is_dup = false;
+      for (int j = 0; j < i; j++)
+      {
+        if (obj->affected[j].location == obj->affected[i].location &&
+            obj->affected[j].modifier == obj->affected[i].modifier)
+        {
+          is_dup = true;
+          break;
+        }
+      }
+      if (is_dup)
+        continue;
+
       char query[256];
       snprintf(query, sizeof(query),
                "INSERT INTO corpse_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
@@ -4851,6 +4937,20 @@ static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
   {
     if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
     {
+      // skip duplicates
+      bool is_dup = false;
+      for (int j = 0; j < i; j++)
+      {
+        if (obj->affected[j].location == obj->affected[i].location &&
+            obj->affected[j].modifier == obj->affected[i].modifier)
+        {
+          is_dup = true;
+          break;
+        }
+      }
+      if (is_dup)
+        continue;
+
       char query[256];
       snprintf(query, sizeof(query),
                "INSERT INTO shopkeeper_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)",
