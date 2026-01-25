@@ -663,6 +663,8 @@ void game_loop(int port, int sslport)
     }
     redis_clear_world_state();
     crash_recovery_boot = 0;
+    // schedule world state saves now that recovery is done
+    add_event(event_save_world_state, 30 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
   }
 
   PROFILES(RESET);

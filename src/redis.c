@@ -497,6 +497,250 @@ void event_flush_dirty_players(P_char ch, P_char victim, P_obj obj, void *data)
     add_event(event_flush_dirty_players, REDIS_FLUSH_INTERVAL, NULL, NULL, NULL, 0, NULL, 0);
 }
 
+// json world state save - v2 format with short keys for compactness
+static bool redis_save_world_state_json(redisContext *ctx)
+{
+#ifdef __NO_MYSQL__
+  return false;
+#else
+  struct timeval start, end;
+  gettimeofday(&start, NULL);
+
+  cJSON *root = cJSON_CreateObject();
+  if (!root)
+    return false;
+
+  cJSON_AddNumberToObject(root, "ver", 2);
+  cJSON_AddNumberToObject(root, "ts", (double)time(NULL));
+
+  // mobs array
+  cJSON *mobs = cJSON_CreateArray();
+  cJSON_AddItemToObject(root, "mobs", mobs);
+
+  for (P_char ch = character_list; ch; ch = ch->next)
+  {
+    if (!IS_NPC(ch) || ch->in_room < 0 || IS_PC_PET(ch))
+      continue;
+
+    cJSON *mob = cJSON_CreateObject();
+    cJSON_AddNumberToObject(mob, "v", GET_VNUM(ch));
+    cJSON_AddNumberToObject(mob, "id", GET_IDNUM(ch));
+    cJSON_AddNumberToObject(mob, "rm", world[ch->in_room].number);
+    cJSON_AddNumberToObject(mob, "hp", GET_HIT(ch));
+    cJSON_AddNumberToObject(mob, "mhp", GET_MAX_HIT(ch));
+    cJSON_AddNumberToObject(mob, "mn", GET_MANA(ch));
+    cJSON_AddNumberToObject(mob, "mmn", GET_MAX_MANA(ch));
+    cJSON_AddNumberToObject(mob, "vt", GET_VITALITY(ch));
+    cJSON_AddNumberToObject(mob, "mvt", GET_MAX_VITALITY(ch));
+    if (GET_GOLD(ch) > 0)
+      cJSON_AddNumberToObject(mob, "gld", GET_GOLD(ch));
+
+    // equipment as slot:vnum object (only non-empty slots)
+    cJSON *eq = cJSON_CreateObject();
+    bool has_eq = false;
+    for (int w = 0; w < MAX_WEAR; w++)
+    {
+      if (ch->equipment[w])
+      {
+        char slot[8];
+        snprintf(slot, sizeof(slot), "%d", w);
+        cJSON_AddNumberToObject(eq, slot, OBJ_VNUM(ch->equipment[w]));
+        has_eq = true;
+      }
+    }
+    if (has_eq)
+      cJSON_AddItemToObject(mob, "eq", eq);
+    else
+      cJSON_Delete(eq);
+
+    // inventory as vnum array
+    P_obj obj;
+    int inv_count = 0;
+    for (obj = ch->carrying; obj; obj = obj->next_content)
+      inv_count++;
+    if (inv_count > 0)
+    {
+      cJSON *inv = cJSON_CreateArray();
+      for (obj = ch->carrying; obj; obj = obj->next_content)
+        cJSON_AddItemToArray(inv, cJSON_CreateNumber(OBJ_VNUM(obj)));
+      cJSON_AddItemToObject(mob, "inv", inv);
+    }
+
+    // affects array
+    struct affected_type *af;
+    int aff_count = 0;
+    for (af = ch->affected; af; af = af->next)
+      aff_count++;
+    if (aff_count > 0)
+    {
+      cJSON *affs = cJSON_CreateArray();
+      for (af = ch->affected; af; af = af->next)
+      {
+        cJSON *a = cJSON_CreateObject();
+        cJSON_AddNumberToObject(a, "t", af->type);
+        cJSON_AddNumberToObject(a, "d", af->duration);
+        if (af->modifier != 0)
+          cJSON_AddNumberToObject(a, "m", af->modifier);
+        if (af->location != 0)
+          cJSON_AddNumberToObject(a, "l", af->location);
+        if (af->level != 0)
+          cJSON_AddNumberToObject(a, "lv", af->level);
+        if (af->bitvector != 0)
+          cJSON_AddNumberToObject(a, "b1", (double)af->bitvector);
+        if (af->bitvector2 != 0)
+          cJSON_AddNumberToObject(a, "b2", (double)af->bitvector2);
+        if (af->bitvector3 != 0)
+          cJSON_AddNumberToObject(a, "b3", (double)af->bitvector3);
+        if (af->bitvector4 != 0)
+          cJSON_AddNumberToObject(a, "b4", (double)af->bitvector4);
+        if (af->bitvector5 != 0)
+          cJSON_AddNumberToObject(a, "b5", (double)af->bitvector5);
+        cJSON_AddItemToArray(affs, a);
+      }
+      cJSON_AddItemToObject(mob, "aff", affs);
+    }
+
+    cJSON_AddItemToArray(mobs, mob);
+  }
+
+  // floor objects array
+  cJSON *objs = cJSON_CreateArray();
+  cJSON_AddItemToObject(root, "objs", objs);
+
+  for (P_obj obj = object_list; obj; obj = obj->next)
+  {
+    if (!OBJ_ROOM(obj))
+      continue;
+
+    int vnum = OBJ_VNUM(obj);
+    if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
+      continue;
+
+    cJSON *o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "uid", (double)obj->obj_uid);
+    cJSON_AddNumberToObject(o, "v", vnum);
+    cJSON_AddNumberToObject(o, "rm", world[obj->loc.room].number);
+    cJSON_AddNumberToObject(o, "tp", obj->type);
+
+    // values - only non-zero
+    for (int i = 0; i < NUMB_OBJ_VALS; i++)
+    {
+      if (obj->value[i] != 0)
+      {
+        char key[4];
+        snprintf(key, sizeof(key), "v%d", i);
+        cJSON_AddNumberToObject(o, key, obj->value[i]);
+      }
+    }
+
+    // timer - only if any non-zero
+    bool has_timer = false;
+    for (int i = 0; i < 6; i++)
+    {
+      if (obj->timer[i] != 0)
+      {
+        has_timer = true;
+        break;
+      }
+    }
+    if (has_timer)
+    {
+      cJSON *tmr = cJSON_CreateArray();
+      for (int i = 0; i < 6; i++)
+        cJSON_AddItemToArray(tmr, cJSON_CreateNumber((double)obj->timer[i]));
+      cJSON_AddItemToObject(o, "tmr", tmr);
+    }
+
+    // strung strings (corpses etc)
+    if (obj->name && obj->name[0])
+      cJSON_AddStringToObject(o, "nm", obj->name);
+    if (obj->short_description && obj->short_description[0])
+      cJSON_AddStringToObject(o, "sd", obj->short_description);
+    if (obj->description && obj->description[0])
+      cJSON_AddStringToObject(o, "ld", obj->description);
+
+    // contents
+    P_obj content;
+    int cont_count = 0;
+    for (content = obj->contains; content; content = content->next_content)
+      cont_count++;
+    if (cont_count > 0)
+    {
+      cJSON *contents = cJSON_CreateArray();
+      for (content = obj->contains; content; content = content->next_content)
+        cJSON_AddItemToArray(contents, cJSON_CreateNumber(OBJ_VNUM(content)));
+      cJSON_AddItemToObject(o, "con", contents);
+    }
+
+    cJSON_AddItemToArray(objs, o);
+  }
+
+  // doors array
+  cJSON *doors = cJSON_CreateArray();
+  cJSON_AddItemToObject(root, "doors", doors);
+
+  for (int room = 0; room <= top_of_world; room++)
+  {
+    for (int dir = 0; dir < NUM_EXITS; dir++)
+    {
+      if (world[room].dir_option[dir] &&
+          IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
+      {
+        cJSON *d = cJSON_CreateObject();
+        cJSON_AddNumberToObject(d, "rm", world[room].number);
+        cJSON_AddNumberToObject(d, "dr", dir);
+        cJSON_AddNumberToObject(d, "st", world[room].dir_option[dir]->exit_info);
+        cJSON_AddItemToArray(doors, d);
+      }
+    }
+  }
+
+  // zones array
+  cJSON *zones = cJSON_CreateArray();
+  cJSON_AddItemToObject(root, "zones", zones);
+
+  for (int z = 0; z <= top_of_zone_table; z++)
+  {
+    cJSON *zn = cJSON_CreateObject();
+    cJSON_AddNumberToObject(zn, "rn", z);
+    cJSON_AddNumberToObject(zn, "age", zone_table[z].age);
+    cJSON_AddNumberToObject(zn, "ls", zone_table[z].lifespan);
+    cJSON_AddItemToArray(zones, zn);
+  }
+
+  // output to redis
+  char *json = cJSON_PrintUnformatted(root);
+  cJSON_Delete(root);
+
+  if (!json)
+    return false;
+
+  size_t json_len = strlen(json);
+  redisReply *reply = (redisReply *)redisCommand(ctx, "SET mud:world_state %s", json);
+  free(json);
+
+  if (!reply)
+    return false;
+  freeReplyObject(reply);
+
+  char timestamp_str[32];
+  snprintf(timestamp_str, sizeof(timestamp_str), "%ld", (long)time(NULL));
+  reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:timestamp %s", timestamp_str);
+  if (reply)
+    freeReplyObject(reply);
+
+  reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 1");
+  if (reply)
+    freeReplyObject(reply);
+
+  gettimeofday(&end, NULL);
+  long ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_usec - start.tv_usec) / 1000;
+  logit(LOG_SYS, "redis: world state json saved in %ldms (%.1fMB)", ms, json_len / 1048576.0);
+
+  return true;
+#endif
+}
+
 // sync version, called by forked child - needs own redis connection
 static bool redis_save_world_state_sync(void)
 {
@@ -528,142 +772,10 @@ static bool redis_save_world_state_sync(void)
   if (valid_reply)
     freeReplyObject(valid_reply);
 
-  int num_mobs, num_objs, num_rooms;
-  copyover_count_items(&num_mobs, &num_objs, &num_rooms);
-  int num_zones = top_of_zone_table + 1;
-
-  size_t estimated_size = sizeof(struct copyover_header) +
-                          (size_t)num_mobs * (sizeof(struct copyover_mob) + 64 * sizeof(struct copyover_affect) + 256 * sizeof(struct copyover_obj_content)) +
-                          (size_t)num_objs * (sizeof(struct copyover_obj) + 64 * sizeof(struct copyover_obj_content)) +
-                          (size_t)num_rooms * sizeof(struct copyover_room) +
-                          (size_t)num_zones * sizeof(struct zone_age_entry);
-
-  size_t buffer_size = estimated_size + (estimated_size / 4); // 25% headroom
-  char *buffer = (char *)malloc(buffer_size);
-  if (!buffer)
-  {
-    redisFree(ctx);
-    return false;
-  }
-
-  size_t offset = 0;
-
-  struct copyover_header header;
-  memset(&header, 0, sizeof(header));
-  memcpy(header.magic, COPYOVER_MAGIC, 4);
-  header.version = COPYOVER_VERSION;
-  header.timestamp = time(NULL);
-  header.num_descriptors = 0;
-  header.num_mobs = num_mobs;
-  header.num_objects = num_objs;
-  header.num_rooms = num_rooms;
-  header.num_combat = 0;
-  header.num_zones = num_zones;
-
-  memcpy(buffer + offset, &header, sizeof(header));
-  offset += sizeof(header);
-
-  int mobs_written = 0;
-  for (P_char ch = character_list; ch; ch = ch->next)
-  {
-    if (IS_NPC(ch) && ch->in_room >= 0 && !IS_PC_PET(ch))
-    {
-      int written = copyover_write_mob_to_buffer(ch, buffer + offset, buffer_size - offset);
-      if (written < 0)
-      {
-        free(buffer);
-        redisFree(ctx);
-        return false;
-      }
-      offset += written;
-      mobs_written++;
-    }
-  }
-
-  int objs_written = 0;
-  for (P_obj obj = object_list; obj; obj = obj->next)
-  {
-    if (OBJ_ROOM(obj))
-    {
-      int vnum = OBJ_VNUM(obj);
-      if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
-        continue;
-
-      int written = copyover_write_obj_to_buffer(obj, buffer + offset, buffer_size - offset);
-      if (written < 0)
-      {
-        free(buffer);
-        redisFree(ctx);
-        return false;
-      }
-      offset += written;
-      objs_written++;
-    }
-  }
-
-  int doors_written = 0;
-  for (int room = 0; room <= top_of_world; room++)
-  {
-    for (int dir = 0; dir < NUM_EXITS; dir++)
-    {
-      if (world[room].dir_option[dir] &&
-          IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
-      {
-        int written = copyover_write_door_to_buffer(room, dir, buffer + offset, buffer_size - offset);
-        if (written < 0)
-        {
-          free(buffer);
-          redisFree(ctx);
-          return false;
-        }
-        offset += written;
-        doors_written++;
-      }
-    }
-  }
-
-  int zones_written = 0;
-  for (int z = 0; z <= top_of_zone_table; z++)
-  {
-    int written = copyover_write_zone_age_to_buffer(z, buffer + offset, buffer_size - offset);
-    if (written < 0)
-    {
-      free(buffer);
-      redisFree(ctx);
-      return false;
-    }
-    offset += written;
-    zones_written++;
-  }
-
-  header.num_mobs = mobs_written;
-  header.num_objects = objs_written;
-  header.num_rooms = doors_written;
-  header.num_zones = zones_written;
-  memcpy(buffer, &header, sizeof(header));
-
-  redisReply *reply = (redisReply *)redisCommand(ctx, "SET mud:world_state %b", buffer, offset);
-  free(buffer);
-
-  if (!reply)
-  {
-    redisFree(ctx);
-    return false;
-  }
-  freeReplyObject(reply);
-
-  char timestamp_str[32];
-  snprintf(timestamp_str, sizeof(timestamp_str), "%ld", (long)time(NULL));
-  reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:timestamp %s", timestamp_str);
-  if (reply)
-    freeReplyObject(reply);
-
-  reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 1");
-  if (reply)
-    freeReplyObject(reply);
-
+  // use json format instead of binary
+  bool result = redis_save_world_state_json(ctx);
   redisFree(ctx);
-  return true;
+  return result;
 #endif
 }
 
@@ -812,6 +924,350 @@ void redis_clear_world_state(void)
 #endif
 }
 
+// json world state load - parses v2 format saved by redis_save_world_state_json
+static bool redis_load_world_state_json(const char *json)
+{
+#ifdef __NO_MYSQL__
+  return false;
+#else
+  cJSON *root = cJSON_Parse(json);
+  if (!root)
+  {
+    logit(LOG_SYS, "redis: json parse failed");
+    return false;
+  }
+
+  // check version
+  cJSON *ver = cJSON_GetObjectItem(root, "ver");
+  if (!ver || !cJSON_IsNumber(ver) || ver->valueint != 2)
+  {
+    logit(LOG_SYS, "redis: json version mismatch (expected 2, got %d)",
+          ver ? ver->valueint : 0);
+    cJSON_Delete(root);
+    return false;
+  }
+
+  int mobs_restored = 0, objs_restored = 0, objs_skipped = 0;
+  int doors_restored = 0, zones_restored = 0;
+
+  // restore mobs
+  cJSON *mobs = cJSON_GetObjectItem(root, "mobs");
+  if (mobs && cJSON_IsArray(mobs))
+  {
+    cJSON *mob_json;
+    cJSON_ArrayForEach(mob_json, mobs)
+    {
+      cJSON *v = cJSON_GetObjectItem(mob_json, "v");
+      cJSON *rm = cJSON_GetObjectItem(mob_json, "rm");
+      if (!v || !rm)
+        continue;
+
+      int vnum = v->valueint;
+      int room_vnum = rm->valueint;
+
+      int mob_rnum = real_mobile(vnum);
+      if (mob_rnum < 0)
+        continue;
+
+      int rnum = real_room(room_vnum);
+      if (rnum < 0 || rnum > top_of_world)
+        continue;
+
+      P_char mob = read_mobile(mob_rnum, REAL);
+      if (!mob)
+        continue;
+
+      // restore idnum
+      cJSON *id = cJSON_GetObjectItem(mob_json, "id");
+      if (id && cJSON_IsNumber(id))
+        GET_IDNUM(mob) = id->valueint;
+
+      char_to_room(mob, rnum, FALSE);
+
+      // restore stats
+      cJSON *hp = cJSON_GetObjectItem(mob_json, "hp");
+      cJSON *mhp = cJSON_GetObjectItem(mob_json, "mhp");
+      cJSON *mn = cJSON_GetObjectItem(mob_json, "mn");
+      cJSON *mmn = cJSON_GetObjectItem(mob_json, "mmn");
+      cJSON *vt = cJSON_GetObjectItem(mob_json, "vt");
+      cJSON *mvt = cJSON_GetObjectItem(mob_json, "mvt");
+      cJSON *gld = cJSON_GetObjectItem(mob_json, "gld");
+
+      if (hp && cJSON_IsNumber(hp))
+        GET_HIT(mob) = hp->valueint;
+      if (mhp && cJSON_IsNumber(mhp))
+        GET_MAX_HIT(mob) = mhp->valueint;
+      if (mn && cJSON_IsNumber(mn))
+        GET_MANA(mob) = mn->valueint;
+      if (mmn && cJSON_IsNumber(mmn))
+        GET_MAX_MANA(mob) = mmn->valueint;
+      if (vt && cJSON_IsNumber(vt))
+        GET_VITALITY(mob) = vt->valueint;
+      if (mvt && cJSON_IsNumber(mvt))
+        GET_MAX_VITALITY(mob) = mvt->valueint;
+      if (gld && cJSON_IsNumber(gld))
+        GET_GOLD(mob) = gld->valueint;
+
+      SET_POS(mob, POS_STANDING + STAT_NORMAL);
+
+      // restore equipment
+      cJSON *eq = cJSON_GetObjectItem(mob_json, "eq");
+      if (eq && cJSON_IsObject(eq))
+      {
+        cJSON *slot_obj;
+        cJSON_ArrayForEach(slot_obj, eq)
+        {
+          if (!cJSON_IsNumber(slot_obj))
+            continue;
+          int slot = atoi(slot_obj->string);
+          int eq_vnum = slot_obj->valueint;
+          if (slot >= 0 && slot < MAX_WEAR && eq_vnum > 0)
+          {
+            P_obj obj = read_object(eq_vnum, VIRTUAL);
+            if (obj)
+              equip_char(mob, obj, slot, 0);
+          }
+        }
+      }
+
+      // restore inventory
+      cJSON *inv = cJSON_GetObjectItem(mob_json, "inv");
+      if (inv && cJSON_IsArray(inv))
+      {
+        cJSON *inv_vnum;
+        cJSON_ArrayForEach(inv_vnum, inv)
+        {
+          if (!cJSON_IsNumber(inv_vnum))
+            continue;
+          int item_vnum = inv_vnum->valueint;
+          if (item_vnum > 0)
+          {
+            P_obj obj = read_object(item_vnum, VIRTUAL);
+            if (obj)
+              obj_to_char(obj, mob);
+          }
+        }
+      }
+
+      // restore affects
+      cJSON *affs = cJSON_GetObjectItem(mob_json, "aff");
+      if (affs && cJSON_IsArray(affs))
+      {
+        cJSON *aff_json;
+        cJSON_ArrayForEach(aff_json, affs)
+        {
+          struct affected_type af;
+          memset(&af, 0, sizeof(af));
+
+          cJSON *t = cJSON_GetObjectItem(aff_json, "t");
+          cJSON *d = cJSON_GetObjectItem(aff_json, "d");
+          cJSON *m = cJSON_GetObjectItem(aff_json, "m");
+          cJSON *l = cJSON_GetObjectItem(aff_json, "l");
+          cJSON *lv = cJSON_GetObjectItem(aff_json, "lv");
+          cJSON *b1 = cJSON_GetObjectItem(aff_json, "b1");
+          cJSON *b2 = cJSON_GetObjectItem(aff_json, "b2");
+          cJSON *b3 = cJSON_GetObjectItem(aff_json, "b3");
+          cJSON *b4 = cJSON_GetObjectItem(aff_json, "b4");
+          cJSON *b5 = cJSON_GetObjectItem(aff_json, "b5");
+
+          if (t && cJSON_IsNumber(t))
+            af.type = t->valueint;
+          if (d && cJSON_IsNumber(d))
+            af.duration = d->valueint;
+          if (m && cJSON_IsNumber(m))
+            af.modifier = m->valueint;
+          if (l && cJSON_IsNumber(l))
+            af.location = l->valueint;
+          if (lv && cJSON_IsNumber(lv))
+            af.level = lv->valueint;
+          if (b1 && cJSON_IsNumber(b1))
+            af.bitvector = (unsigned long)b1->valuedouble;
+          if (b2 && cJSON_IsNumber(b2))
+            af.bitvector2 = (unsigned long)b2->valuedouble;
+          if (b3 && cJSON_IsNumber(b3))
+            af.bitvector3 = (unsigned long)b3->valuedouble;
+          if (b4 && cJSON_IsNumber(b4))
+            af.bitvector4 = (unsigned long)b4->valuedouble;
+          if (b5 && cJSON_IsNumber(b5))
+            af.bitvector5 = (unsigned long)b5->valuedouble;
+
+          affect_to_char(mob, &af);
+        }
+      }
+
+      mobs_restored++;
+    }
+  }
+
+  // restore floor objects
+  cJSON *objs = cJSON_GetObjectItem(root, "objs");
+  if (objs && cJSON_IsArray(objs))
+  {
+    cJSON *obj_json;
+    cJSON_ArrayForEach(obj_json, objs)
+    {
+      cJSON *uid_json = cJSON_GetObjectItem(obj_json, "uid");
+      cJSON *v = cJSON_GetObjectItem(obj_json, "v");
+      cJSON *rm = cJSON_GetObjectItem(obj_json, "rm");
+      if (!v || !rm)
+        continue;
+
+      unsigned long uid = 0;
+      if (uid_json && cJSON_IsNumber(uid_json))
+        uid = (unsigned long)uid_json->valuedouble;
+
+      // check if picked up before crash
+      if (uid > 0 && redis_check_floor_pickup(uid))
+      {
+        objs_skipped++;
+        continue;
+      }
+
+      int vnum = v->valueint;
+      int room_vnum = rm->valueint;
+
+      int rnum = real_room(room_vnum);
+      if (rnum < 0 || rnum > top_of_world)
+        continue;
+
+      P_obj obj = read_object(vnum, VIRTUAL);
+      if (!obj)
+        continue;
+
+      // restore uid
+      if (uid > 0)
+        obj->obj_uid = uid;
+
+      // restore type
+      cJSON *tp = cJSON_GetObjectItem(obj_json, "tp");
+      if (tp && cJSON_IsNumber(tp))
+        obj->type = tp->valueint;
+
+      // restore values
+      for (int i = 0; i < NUMB_OBJ_VALS; i++)
+      {
+        char key[4];
+        snprintf(key, sizeof(key), "v%d", i);
+        cJSON *val = cJSON_GetObjectItem(obj_json, key);
+        if (val && cJSON_IsNumber(val))
+          obj->value[i] = val->valueint;
+      }
+
+      // restore timers
+      cJSON *tmr = cJSON_GetObjectItem(obj_json, "tmr");
+      if (tmr && cJSON_IsArray(tmr))
+      {
+        int idx = 0;
+        cJSON *t;
+        cJSON_ArrayForEach(t, tmr)
+        {
+          if (idx < 6 && cJSON_IsNumber(t))
+            obj->timer[idx] = (time_t)t->valuedouble;
+          idx++;
+        }
+      }
+
+      // restore strings (for corpses etc)
+      cJSON *nm = cJSON_GetObjectItem(obj_json, "nm");
+      cJSON *sd = cJSON_GetObjectItem(obj_json, "sd");
+      cJSON *ld = cJSON_GetObjectItem(obj_json, "ld");
+      if (nm && cJSON_IsString(nm) && nm->valuestring[0])
+        obj->name = str_dup(nm->valuestring);
+      if (sd && cJSON_IsString(sd) && sd->valuestring[0])
+        obj->short_description = str_dup(sd->valuestring);
+      if (ld && cJSON_IsString(ld) && ld->valuestring[0])
+        obj->description = str_dup(ld->valuestring);
+
+      obj_to_room(obj, rnum);
+
+      // restore contents
+      cJSON *con = cJSON_GetObjectItem(obj_json, "con");
+      if (con && cJSON_IsArray(con))
+      {
+        cJSON *cont_vnum;
+        cJSON_ArrayForEach(cont_vnum, con)
+        {
+          if (!cJSON_IsNumber(cont_vnum))
+            continue;
+          int content_vnum = cont_vnum->valueint;
+          if (content_vnum > 0)
+          {
+            P_obj content = read_object(content_vnum, VIRTUAL);
+            if (content)
+              obj_to_obj(content, obj);
+          }
+        }
+      }
+
+      objs_restored++;
+    }
+  }
+
+  // clear pickup log after restore
+  if (objs_skipped > 0)
+    logit(LOG_SYS, "redis: skipped %d items that were picked up before crash", objs_skipped);
+  redis_clear_floor_pickups();
+
+  // restore doors
+  cJSON *doors = cJSON_GetObjectItem(root, "doors");
+  if (doors && cJSON_IsArray(doors))
+  {
+    cJSON *door_json;
+    cJSON_ArrayForEach(door_json, doors)
+    {
+      cJSON *rm = cJSON_GetObjectItem(door_json, "rm");
+      cJSON *dr = cJSON_GetObjectItem(door_json, "dr");
+      cJSON *st = cJSON_GetObjectItem(door_json, "st");
+      if (!rm || !dr || !st)
+        continue;
+
+      int room_vnum = rm->valueint;
+      int dir = dr->valueint;
+      int state = st->valueint;
+
+      int rnum = real_room(room_vnum);
+      if (rnum >= 0 && rnum <= top_of_world &&
+          dir >= 0 && dir < NUM_EXITS &&
+          world[rnum].dir_option[dir])
+      {
+        world[rnum].dir_option[dir]->exit_info = state;
+        doors_restored++;
+      }
+    }
+  }
+
+  // restore zones
+  cJSON *zones = cJSON_GetObjectItem(root, "zones");
+  if (zones && cJSON_IsArray(zones))
+  {
+    cJSON *zone_json;
+    cJSON_ArrayForEach(zone_json, zones)
+    {
+      cJSON *rn = cJSON_GetObjectItem(zone_json, "rn");
+      cJSON *age = cJSON_GetObjectItem(zone_json, "age");
+      cJSON *ls = cJSON_GetObjectItem(zone_json, "ls");
+      if (!rn || !age || !ls)
+        continue;
+
+      int zone_rnum = rn->valueint;
+      if (zone_rnum >= 0 && zone_rnum <= top_of_zone_table)
+      {
+        zone_table[zone_rnum].age = age->valueint;
+        zone_table[zone_rnum].lifespan = ls->valueint;
+        zones_restored++;
+      }
+    }
+  }
+
+  cJSON_Delete(root);
+
+  logit(LOG_SYS, "redis: json world state restored (%d mobs, %d objs, %d doors, %d zones)",
+        mobs_restored, objs_restored, doors_restored, zones_restored);
+
+  return true;
+#endif
+}
+
 bool redis_load_world_state(void)
 {
 #ifdef __NO_MYSQL__
@@ -827,7 +1283,8 @@ bool redis_load_world_state(void)
   }
 
   redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state");
-  if (!reply || redis_ctx->err) {
+  if (!reply || redis_ctx->err)
+  {
     if (reply)
       freeReplyObject(reply);
     return false;
@@ -841,121 +1298,31 @@ bool redis_load_world_state(void)
 
   const char *buffer = reply->str;
   size_t len = reply->len;
-  size_t offset = 0;
 
-  // read header
-  if (len < sizeof(struct copyover_header))
+  // detect format: json starts with '{', binary starts with 'COPY'
+  if (len > 0 && buffer[0] == '{')
   {
+    // json format
+    bool result = redis_load_world_state_json(buffer);
     freeReplyObject(reply);
-    return false;
+    return result;
   }
-
-  struct copyover_header header;
-  memcpy(&header, buffer + offset, sizeof(header));
-  offset += sizeof(header);
-
-  if (memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 ||
-      header.version != COPYOVER_VERSION)
+  else if (len >= 4 && memcmp(buffer, COPYOVER_MAGIC, 4) == 0)
   {
-    logit(LOG_SYS, "redis: world state version mismatch, ignoring");
+    // old binary format - no longer supported
+    logit(LOG_SYS, "redis: detected old binary world state format, clearing");
     freeReplyObject(reply);
     redis_clear_world_state();
     return false;
   }
-
-  logit(LOG_SYS, "redis: restoring world state (%d mobs, %d objs, %d doors, %d zones)",
-        header.num_mobs, header.num_objects, header.num_rooms, header.num_zones);
-
-  // restore mobs
-  int mobs_restored = 0;
-  for (int i = 0; i < header.num_mobs; i++)
+  else
   {
-    size_t bytes_read = 0;
-    P_char mob = copyover_restore_mob_from_buffer(buffer + offset, len - offset, &bytes_read);
-    if (bytes_read == 0) {
-      logit(LOG_SYS, "redis: unexpected end of data at mob %d/%d", i, header.num_mobs);
-      break;
-    }
-    offset += bytes_read;
-    if (mob)
-      mobs_restored++;
+    // unknown format
+    logit(LOG_SYS, "redis: unknown world state format, clearing");
+    freeReplyObject(reply);
+    redis_clear_world_state();
+    return false;
   }
-
-  // restore objects
-  int objs_restored = 0;
-  int objs_skipped = 0;
-  for (int i = 0; i < header.num_objects; i++)
-  {
-    // peek at obj_uid to check if it was picked up before crash
-    struct copyover_obj peek_entry;
-    if (len - offset >= sizeof(peek_entry))
-    {
-      memcpy(&peek_entry, buffer + offset, sizeof(peek_entry));
-      if (peek_entry.obj_uid > 0 && redis_check_floor_pickup(peek_entry.obj_uid))
-      {
-        // skip this object - it was picked up before crash
-        logit(LOG_SYS, "redis: skipping picked up floor item uid %lu vnum %d",
-              peek_entry.obj_uid, peek_entry.vnum);
-        // consume the bytes for this object entry and its contents
-        offset += sizeof(peek_entry);
-        offset += peek_entry.num_contents * sizeof(struct copyover_obj_content);
-        objs_skipped++;
-        continue;
-      }
-    }
-
-    size_t bytes_read = 0;
-    P_obj obj = copyover_restore_obj_from_buffer(buffer + offset, len - offset, &bytes_read);
-    if (bytes_read == 0) {
-      logit(LOG_SYS, "redis: unexpected end of data at obj %d/%d", i, header.num_objects);
-      break;
-    }
-    offset += bytes_read;
-    if (obj)
-      objs_restored++;
-  }
-
-  // clear pickup log after restore
-  if (objs_skipped > 0)
-    logit(LOG_SYS, "redis: skipped %d items that were picked up before crash", objs_skipped);
-  redis_clear_floor_pickups();
-
-  // restore doors
-  int doors_restored = 0;
-  for (int i = 0; i < header.num_rooms; i++)
-  {
-    size_t bytes_read = 0;
-    int result = copyover_restore_door_from_buffer(buffer + offset, len - offset, &bytes_read);
-    if (bytes_read == 0) {
-      logit(LOG_SYS, "redis: unexpected end of data at door %d/%d", i, header.num_rooms);
-      break;
-    }
-    offset += bytes_read;
-    if (result == 0)
-      doors_restored++;
-  }
-
-  // restore zone ages
-  int zones_restored = 0;
-  for (int i = 0; i < header.num_zones; i++)
-  {
-    size_t bytes_read = 0;
-    int result = copyover_restore_zone_age_from_buffer(buffer + offset, len - offset, &bytes_read);
-    if (bytes_read == 0) {
-      logit(LOG_SYS, "redis: unexpected end of data at zone %d/%d", i, header.num_zones);
-      break;
-    }
-    offset += bytes_read;
-    if (result == 0)
-      zones_restored++;
-  }
-
-  freeReplyObject(reply);
-
-  logit(LOG_SYS, "redis: world state restored (%d mobs, %d objs, %d doors, %d zones)",
-        mobs_restored, objs_restored, doors_restored, zones_restored);
-
-  return true;
 #endif
 }
 

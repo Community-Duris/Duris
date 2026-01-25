@@ -726,13 +726,8 @@ bool sql_save_player_status(P_char ch, int type, int room)
   }
   else
   {
-    // update - check if any rows were affected (pid might be stale from rolled back transaction)
-    if (mysql_affected_rows(DB) == 0)
-    {
-      logit(LOG_DEBUG, "sql_save_player_status: UPDATE affected 0 rows for %s pid %d, resetting pid", GET_NAME(ch), pid);
-      ch->only.pc->pid = 0;
-      return false;
-    }
+    // 0 affected rows is ok - means no values changed (e.g. multiple saves per second)
+    // only a real mysql error means failure (which would have been caught by sql_run_query above)
   }
 
   // batched array saves for performance (was 1200+ individual queries, now ~12)
