@@ -71,7 +71,7 @@ bool sql_load_player_affects(P_char ch) { return false; }
 bool sql_load_player_items(P_char ch) { return false; }
 bool sql_load_player_witnesses(P_char ch) { return false; }
 bool sql_load_player_shapechanges(P_char ch) { return false; }
-bool sql_save_player_pets(P_char ch) { return false; }
+bool sql_save_player_pets(P_char ch, int save_type) { return false; }
 bool sql_load_player_pets(P_char ch) { return false; }
 
 bool sql_delete_player(int pid) { return false; }
@@ -492,7 +492,7 @@ bool sql_save_player(P_char ch, int type, int room)
     return false;
   }
 
-  if (!sql_save_player_pets(ch))
+  if (!sql_save_player_pets(ch, type))
   {
     logit(LOG_DEBUG, "sql_save_player: failed to save pets for %s", GET_NAME(ch));
     sql_rollback();
@@ -1389,10 +1389,24 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 }
 
 // pet save - save all player's pets with equipment
-bool sql_save_player_pets(P_char ch)
+bool sql_save_player_pets(P_char ch, int save_type)
 {
   if (!ch || !IS_PC(ch) || !DB)
     return false;
+
+  // only save pets on crash-type saves
+  if (save_type != RENT_CRASH && save_type != RENT_CRASH2)
+  {
+    // clear any existing saved pets on normal logout
+    int pid = GET_PID(ch);
+    if (pid > 0)
+    {
+      char del_query[128];
+      snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
+      sql_run_query(del_query);
+    }
+    return true;
+  }
 
   int pid = GET_PID(ch);
   if (pid <= 0)
