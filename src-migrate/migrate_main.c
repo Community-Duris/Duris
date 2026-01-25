@@ -440,6 +440,17 @@ int main(int argc, char **argv) {
     }
     if (do_all || do_accounts) {
         accounts = migrate_accounts_from_files();
+        // link player_data.account_name from account_characters
+        printf("linking player_data.account_name from account_characters...\n");
+        qry("UPDATE player_data pd "
+            "JOIN account_characters ac ON pd.pid = ac.pid AND ac.deleted_at IS NULL "
+            "SET pd.account_name = ac.account_name");
+        MYSQL_RES *res = db_query("SELECT ROW_COUNT()");
+        if (res) {
+            MYSQL_ROW row = mysql_fetch_row(res);
+            printf("  player_data.account_name: %s linked\n", row ? row[0] : "0");
+            mysql_free_result(res);
+        }
         printf("\n");
     }
     if (do_all || do_recipes) {
