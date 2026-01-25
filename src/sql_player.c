@@ -980,6 +980,60 @@ static bool sql_save_item_affects(int item_id, P_obj obj)
   return true;
 }
 
+// load item affects from db into obj->affected[]
+// clears prototype affects if db has any custom affects
+static void sql_load_item_affects_from_table(int item_id, P_obj obj, const char *table)
+{
+  if (!obj || !DB || item_id <= 0 || !table)
+    return;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT location, modifier FROM %s WHERE item_id=%d", table, item_id);
+  MYSQL_RES *result = db_query("%s", query);
+  if (!result)
+    return;
+
+  MYSQL_ROW row;
+  int aff_idx = 0;
+  bool affects_cleared = false;
+
+  while ((row = mysql_fetch_row(result)) && aff_idx < MAX_OBJ_AFFECT)
+  {
+    // clear prototype affects before loading first db affect
+    if (!affects_cleared)
+    {
+      for (int a = 0; a < MAX_OBJ_AFFECT; a++)
+      {
+        obj->affected[a].location = 0;
+        obj->affected[a].modifier = 0;
+      }
+      affects_cleared = true;
+    }
+
+    int loc = atoi(row[0]);
+    int mod = atoi(row[1]);
+
+    // skip duplicates from db
+    bool is_dup = false;
+    for (int d = 0; d < aff_idx; d++)
+    {
+      if (obj->affected[d].location == loc && obj->affected[d].modifier == mod)
+      {
+        is_dup = true;
+        break;
+      }
+    }
+    if (!is_dup)
+    {
+      obj->affected[aff_idx].location = loc;
+      obj->affected[aff_idx].modifier = mod;
+      aff_idx++;
+    }
+  }
+  mysql_free_result(result);
+}
+
 static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 {
   if (!obj || !obj->ex_description || !DB)
@@ -3298,37 +3352,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
     if (row[21] && strlen(row[21]) > 0)
       obj->condition = atoi(row[21]);
 
-    char aff_query[128];
-    snprintf(aff_query, sizeof(aff_query),
-             "SELECT location, modifier FROM locker_item_affects WHERE item_id=%d", item_id);
-    MYSQL_RES *aff_result = db_query("%s", aff_query);
-    if (aff_result)
-    {
-      MYSQL_ROW aff_row;
-      int aff_idx = 0;
-      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
-      {
-        int loc = atoi(aff_row[0]);
-        int mod = atoi(aff_row[1]);
-        // skip duplicates from db
-        bool is_dup = false;
-        for (int d = 0; d < aff_idx; d++)
-        {
-          if (obj->affected[d].location == loc && obj->affected[d].modifier == mod)
-          {
-            is_dup = true;
-            break;
-          }
-        }
-        if (!is_dup)
-        {
-          obj->affected[aff_idx].location = loc;
-          obj->affected[aff_idx].modifier = mod;
-          aff_idx++;
-        }
-      }
-      mysql_free_result(aff_result);
-    }
+    sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 
     obj->contains = sql_load_locker_items(locker_id, item_id);
     for (P_obj c = obj->contains; c; c = c->next_content)
@@ -3879,38 +3903,7 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
     if (row[21] && strlen(row[21]) > 0)
       obj->condition = atoi(row[21]);
 
-    // load affects
-    char aff_query[128];
-    snprintf(aff_query, sizeof(aff_query),
-             "SELECT location, modifier FROM locker_item_affects WHERE item_id=%d", item_id);
-    MYSQL_RES *aff_result = db_query("%s", aff_query);
-    if (aff_result)
-    {
-      MYSQL_ROW aff_row;
-      int aff_idx = 0;
-      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
-      {
-        int loc = atoi(aff_row[0]);
-        int mod = atoi(aff_row[1]);
-        // skip duplicates from db
-        bool is_dup = false;
-        for (int d = 0; d < aff_idx; d++)
-        {
-          if (obj->affected[d].location == loc && obj->affected[d].modifier == mod)
-          {
-            is_dup = true;
-            break;
-          }
-        }
-        if (!is_dup)
-        {
-          obj->affected[aff_idx].location = loc;
-          obj->affected[aff_idx].modifier = mod;
-          aff_idx++;
-        }
-      }
-      mysql_free_result(aff_result);
-    }
+    sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 
     // load contained items (bags inside the chest)
     obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id);
