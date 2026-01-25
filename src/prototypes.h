@@ -1116,7 +1116,7 @@ void displayPERIODCore(P_char ch, char *arg, int cmd);
 signed char find_first_step(int src, int target, long hunt_flags, int is_ship, int wagon_type, int *ttl_steps);
 ubyte *find_the_path(int from, int to, int *max_steps, long hunt_flags);
 int how_close(int src, int target, int max_steps);
-::byte line_of_sight_dir(int, int);
+signed char line_of_sight_dir(int, int);
 
 /* group.c */
 

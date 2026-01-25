@@ -600,7 +600,7 @@ static void bfs_clear_queue(void)
 
 // some very specialized versions of FFS to hopefully help with speed... less
 // conditionals for the "generic" ffs should reduce its CPU overhead.
-static ::byte FFS_ship(int src, int target, int *ttl_steps)
+static signed char FFS_ship(int src, int target, int *ttl_steps)
 {
   int curr_dir;
   int curr_room;
@@ -662,7 +662,7 @@ static ::byte FFS_ship(int src, int target, int *ttl_steps)
   return BFS_NO_PATH;
 }
 
-static ::byte FFS_wagon(int src, int target, int *ttl_steps)
+static signed char FFS_wagon(int src, int target, int *ttl_steps)
 {
   int curr_dir;
   int curr_room;
@@ -719,7 +719,7 @@ static ::byte FFS_wagon(int src, int target, int *ttl_steps)
 
 extern const int rev_dir[];
 
-static ::byte FFS_flying(int src, int target, int *ttl_steps)
+static signed char FFS_flying(int src, int target, int *ttl_steps)
 {
   int curr_dir;
   int curr_room;
@@ -1043,10 +1043,10 @@ int how_close(int src, int target, int max_steps)
 
 ubyte *find_the_path(int from, int to, int *max_steps, long hunt_flags)
 {
-  ::byte path[MAX_STRING_LENGTH];
+  ubyte path[MAX_STRING_LENGTH];
   ubyte *ret_path;
   unsigned i;
-  ::byte next_step;
+  signed char next_step;
   int room_no;
   int dummy;
 
@@ -1081,7 +1081,7 @@ ubyte *find_the_path(int from, int to, int *max_steps, long hunt_flags)
   return ret_path;
 }
 
-::byte line_of_sight_dir(int src, int target)
+signed char line_of_sight_dir(int src, int target)
 {
   int curr_dir;
   int curr_room;

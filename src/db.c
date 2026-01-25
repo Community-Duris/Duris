@@ -789,10 +789,10 @@ void weather_setup(void)
   FILE *fl;
 
   /* default conditions for season values */
-  const ::byte winds[6] = {2, 12, 30, 40, 50, 80};
-  const ::byte precip[9] = {0, 1, 5, 10, 15, 25, 35, 45, 60};
-  const ::byte humid[9] = {4, 10, 20, 30, 40, 50, 60, 75, 100};
-  const ::byte temps[11] = {-15, -8, 0, 10, 17, 27, 33, 40, 50, 75, 100};
+  const signed char winds[6] = {2, 12, 30, 40, 50, 80};
+  const signed char precip[9] = {0, 1, 5, 10, 15, 25, 35, 45, 60};
+  const signed char humid[9] = {4, 10, 20, 30, 40, 50, 60, 75, 100};
+  const signed char temps[11] = {-15, -8, 0, 10, 17, 27, 33, 40, 50, 75, 100};
 
   if (!(fl = fopen("areas/world.weather", "r")))
   {

@@ -9476,7 +9476,7 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 // bool NewMobHunt(void)
 {
   char buf[MAX_STRING_LENGTH];
-  ::byte next_step;
+  signed char next_step;
   int dummy = 0, dummy2 = 0;
   hunt_data *data;
   P_char vict;
