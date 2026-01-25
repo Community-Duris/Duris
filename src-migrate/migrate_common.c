@@ -378,13 +378,21 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
         }
     }
 
-    // save item affects (for player_items table only - encrusted items, etc)
-    if (obj->affected_set && item_id > 0 && strcmp(table, "player_items") == 0) {
-        for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
-            if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0) {
-                item_qry("INSERT INTO player_item_affects (item_id, location, modifier) "
-                         "VALUES (%d, %d, %d)",
-                         item_id, obj->affected[i].location, obj->affected[i].modifier);
+    // save item affects for player_items and locker_items
+    if (obj->affected_set && item_id > 0) {
+        const char *affects_table = NULL;
+        if (strcmp(table, "player_items") == 0)
+            affects_table = "player_item_affects";
+        else if (strcmp(table, "locker_items") == 0)
+            affects_table = "locker_item_affects";
+
+        if (affects_table) {
+            for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
+                if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0) {
+                    item_qry("INSERT INTO %s (item_id, location, modifier) "
+                             "VALUES (%d, %d, %d)",
+                             affects_table, item_id, obj->affected[i].location, obj->affected[i].modifier);
+                }
             }
         }
     }

@@ -1624,9 +1624,11 @@ static bool redis_load_world_state_json(const char *json)
 
       obj_to_room(obj, rnum);
 
-      // restore contents
+      // restore contents (only if object is a container type)
       cJSON *con = cJSON_GetObjectItem(obj_json, "con");
-      if (con && cJSON_IsArray(con))
+      if (con && cJSON_IsArray(con) &&
+          (obj->type == ITEM_CONTAINER || obj->type == ITEM_QUIVER ||
+           obj->type == ITEM_STORAGE || obj->type == ITEM_CORPSE))
       {
         cJSON *cont_vnum;
         cJSON_ArrayForEach(cont_vnum, con)

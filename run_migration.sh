@@ -1515,6 +1515,24 @@ BEGIN
         ALTER TABLE locker_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER wear_flags;
     END IF;
 
+    -- fix random eq with null item_type based on wear_flags
+    -- ITEM_WEAPON (5): WIELD = 8192
+    UPDATE player_items SET item_type = 5 WHERE item_type IS NULL AND (wear_flags & 8192) != 0;
+    UPDATE locker_items SET item_type = 5 WHERE item_type IS NULL AND (wear_flags & 8192) != 0;
+    UPDATE corpse_items SET item_type = 5 WHERE item_type IS NULL AND (wear_flags & 8192) != 0;
+    -- ITEM_SHIELD (37): WEAR_SHIELD = 512
+    UPDATE player_items SET item_type = 37 WHERE item_type IS NULL AND (wear_flags & 512) != 0;
+    UPDATE locker_items SET item_type = 37 WHERE item_type IS NULL AND (wear_flags & 512) != 0;
+    UPDATE corpse_items SET item_type = 37 WHERE item_type IS NULL AND (wear_flags & 512) != 0;
+    -- ITEM_QUIVER (30): WEAR_QUIVER = 1048576
+    UPDATE player_items SET item_type = 30 WHERE item_type IS NULL AND (wear_flags & 1048576) != 0;
+    UPDATE locker_items SET item_type = 30 WHERE item_type IS NULL AND (wear_flags & 1048576) != 0;
+    UPDATE corpse_items SET item_type = 30 WHERE item_type IS NULL AND (wear_flags & 1048576) != 0;
+    -- ITEM_ARMOR (9): body/head/legs/feet/hands/arms/about/waist/horse_body/spider_body = 553651704
+    UPDATE player_items SET item_type = 9 WHERE item_type IS NULL AND (wear_flags & 553651704) != 0;
+    UPDATE locker_items SET item_type = 9 WHERE item_type IS NULL AND (wear_flags & 553651704) != 0;
+    UPDATE corpse_items SET item_type = 9 WHERE item_type IS NULL AND (wear_flags & 553651704) != 0;
+
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_schema = DATABASE()
                    AND table_name = 'player_pet_items'
@@ -1779,7 +1797,7 @@ CREATE TABLE IF NOT EXISTS account_banks (
 );"
 
 run_sql "migrate player banks to account banks" "
-INSERT IGNORE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
+REPLACE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
 SELECT
     ac.account_name,
     ac.racewar,

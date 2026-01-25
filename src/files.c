@@ -4235,6 +4235,13 @@ void restore_shopkeepers(void)
 #endif
 }
 
+void save_dirty_shopkeepers(void)
+{
+#ifndef __NO_MYSQL__
+  sql_save_dirty_shopkeepers();
+#endif
+}
+
 // old guildhalls (deprecated) - Torgal 1/2010
 ///* house construction Q */
 //int writeConstructionQ()

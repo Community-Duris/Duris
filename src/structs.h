@@ -192,6 +192,7 @@ struct shop_data
   ::byte shopkeeper_race;       /* * Race of the shopkeeper.                 */
   ::byte temper1;               /* * How does keeper react if no money       */
   ::byte temper2;               /* * How does keeper react when attacked     */
+  ::byte dirty;                 /* needs save to db                          */
   shop_proc_type func;          /* * Secondary spec_proc for shopkeeper      */
 };
 
