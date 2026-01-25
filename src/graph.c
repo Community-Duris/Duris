@@ -798,7 +798,7 @@ static ::byte FFS_flying(int src, int target, int *ttl_steps)
 /*
  * NOTE: this uses REAL room numbers!!
  */
-::byte find_first_step(int src, int target, long hunt_flags, int is_ship, int wagon_type, int *ttl_steps)
+signed char find_first_step(int src, int target, long hunt_flags, int is_ship, int wagon_type, int *ttl_steps)
 {
   int curr_dir;
   int curr_room;

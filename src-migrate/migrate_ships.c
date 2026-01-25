@@ -5,7 +5,7 @@
 
 // count ships in index file
 static int count_ships(void) {
-    FILE *f = fopen("Players/Ships/ship_index", "r");
+    FILE *f = fopen("Ships/ship_index", "r");
     if (!f) return 0;
     int total = 0;
     char *ret = fread_string(f);
@@ -32,16 +32,16 @@ int migrate_ships_from_files(void) {
     struct progress_bar pb;
     progress_init(&pb, total, "ships");
 
-    f = fopen("Players/Ships/ship_index", "r");
+    f = fopen("Ships/ship_index", "r");
     if (!f) {
         progress_finish(&pb);
-        printf("error: could not open Players/Ships/ship_index\n");
+        printf("error: could not open Ships/ship_index\n");
         return -1;
     }
 
     ret = fread_string(f);
     while (*ret != '$') {
-        sprintf(buf, "Players/Ships/%s", ret);
+        sprintf(buf, "Ships/%s", ret);
         FREE(ret);
         ret = fread_string(f);
 
