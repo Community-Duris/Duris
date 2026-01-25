@@ -1643,6 +1643,9 @@ void PurgeCorpseFile(P_obj corpse)
   unlink(Gbuf1);
   unlink(Gbuf2);
 
+  if (corpse->action_description && corpse->value[CORPSE_SAVEID])
+    sql_delete_corpse(corpse->action_description, corpse->value[CORPSE_SAVEID]);
+
   return;
 }
 
@@ -4232,6 +4235,13 @@ void restore_shopkeepers(void)
 {
 #ifndef __NO_MYSQL__
   sql_restore_shopkeepers();
+#endif
+}
+
+void save_dirty_shopkeepers(void)
+{
+#ifndef __NO_MYSQL__
+  sql_save_dirty_shopkeepers();
 #endif
 }
 

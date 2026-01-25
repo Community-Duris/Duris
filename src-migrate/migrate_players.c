@@ -630,6 +630,9 @@ static int save_player_to_db(struct mig_player *p) {
         if (pid <= 0) return 0;
     }
 
+    // epic_bonus/epic_gain remapping is done centrally in migrate_main.c
+    // using _old_pid_map since those tables use production db pids, not pfile pids
+
     // === BATCHED ARRAY INSERTS ===
     // instead of 263 individual queries, batch into ~8 multi-value inserts
 

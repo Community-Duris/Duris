@@ -6,6 +6,7 @@
 // global vars
 P_Guild guild_list = NULL;
 char buf[MAX_STRING_LENGTH];
+static unsigned long long g_obj_uid_counter = 1;
 
 // format seconds into human readable time
 static void format_time(double seconds, char *buf, size_t buflen) {
@@ -126,9 +127,34 @@ void free_mig_obj(struct mig_obj *obj) {
     if (obj->short_descr) free(obj->short_descr);
     if (obj->description) free(obj->description);
     if (obj->action_descr) free(obj->action_descr);
+    if (obj->spellbook_bits) free(obj->spellbook_bits);
     free_mig_obj(obj->contains);
     free_mig_obj(obj->next);
     free(obj);
+}
+
+// convert binary spell bitfield to json array string like "[101,203,456]"
+static char *mig_spellbook_to_json(const char *bits, int size) {
+    if (!bits || size <= 0) return NULL;
+
+    char *buf = (char *)malloc(MIG_MAX_SKILLS * 6);
+    if (!buf) return NULL;
+
+    char *p = buf;
+    *p++ = '[';
+
+    int first = 1;
+    for (int i = 0; i < MIG_MAX_SKILLS && (i / 8) < size; i++) {
+        if (bits[i / 8] & (1 << (i % 8))) {
+            if (!first) *p++ = ',';
+            p += sprintf(p, "%d", i);
+            first = 0;
+        }
+    }
+    *p++ = ']';
+    *p = '\0';
+
+    return buf;
 }
 
 void free_mig_affect(struct mig_affect *af) {
@@ -253,6 +279,12 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     format_value(v6, sizeof(v6), obj, 6);
     format_value(v7, sizeof(v7), obj, 7);
 
+    // format weight/cost/timer (NULL if not modified from prototype)
+    char weight_str[16], cost_str[16], timer_str[24];
+    if (obj->weight_set) snprintf(weight_str, sizeof(weight_str), "%d", obj->weight); else strcpy(weight_str, "NULL");
+    if (obj->cost_set) snprintf(cost_str, sizeof(cost_str), "%d", obj->cost); else strcpy(cost_str, "NULL");
+    if (obj->timer_set) snprintf(timer_str, sizeof(timer_str), "%ld", obj->timer); else strcpy(timer_str, "NULL");
+
     // format extra_flags (NULL if not modified from prototype)
     char extra_str[32];
     format_extra_flags(extra_str, sizeof(extra_str), obj);
@@ -261,36 +293,69 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     char wear_str[32];
     format_wear_flags(wear_str, sizeof(wear_str), obj);
 
+    // format item_type (NULL if not modified from prototype)
+    char type_str[16];
+    if (obj->item_type_set)
+        snprintf(type_str, sizeof(type_str), "%d", obj->item_type);
+    else
+        strcpy(type_str, "NULL");
+
+    // format bitvectors (NULL if not set)
+    char bv1[32], bv2[32], bv3[32], bv4[32], bv5[32];
+    if (obj->bitvector_set & 1) snprintf(bv1, sizeof(bv1), "%lu", obj->bitvector1); else strcpy(bv1, "NULL");
+    if (obj->bitvector_set & 2) snprintf(bv2, sizeof(bv2), "%lu", obj->bitvector2); else strcpy(bv2, "NULL");
+    if (obj->bitvector_set & 4) snprintf(bv3, sizeof(bv3), "%lu", obj->bitvector3); else strcpy(bv3, "NULL");
+    if (obj->bitvector_set & 8) snprintf(bv4, sizeof(bv4), "%lu", obj->bitvector4); else strcpy(bv4, "NULL");
+    if (obj->bitvector_set & 16) snprintf(bv5, sizeof(bv5), "%lu", obj->bitvector5); else strcpy(bv5, "NULL");
+
     // build query based on table type
+    unsigned long long obj_uid = g_obj_uid_counter++;
     char query[8192];
-    if (equip_slot >= 0) {
-        // player_items has equip_slot
+    if (strcmp(table, "player_items") == 0) {
+        // player_items has equip_slot and bitvectors
         snprintf(query, sizeof(query),
             "INSERT INTO %s (%s, vnum, equip_slot, container_id, quantity, "
-            "weight, cost, timer, extra_flags, wear_flags, "
+            "weight, cost, timer, extra_flags, wear_flags, item_type, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
-            "name, short_descr, description, action_descr) VALUES ("
-            "%d, %d, %d, %s, 1, %d, %d, %ld, %s, %s, "
-            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "name, short_descr, description, action_descr, "
+            "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid) VALUES ("
+            "%d, %d, %d, %s, 1, %s, %s, %s, %s, %s, %s, "
+            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
+            "%s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, equip_slot, container_str,
-            obj->weight, obj->cost, obj->timer, extra_str, wear_str,
+            weight_str, cost_str, timer_str, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
-            name_str, short_str, desc_str, action_str);
+            name_str, short_str, desc_str, action_str,
+            bv1, bv2, bv3, bv4, bv5, obj_uid);
+    } else if (equip_slot >= 0) {
+        // shopkeeper_items - has equip_slot but no bitvectors
+        snprintf(query, sizeof(query),
+            "INSERT INTO %s (%s, vnum, equip_slot, container_id, quantity, "
+            "weight, cost, timer, extra_flags, wear_flags, item_type, "
+            "value0, value1, value2, value3, value4, value5, value6, value7, "
+            "name, short_descr, description, action_descr, obj_uid) VALUES ("
+            "%d, %d, %d, %s, 1, %s, %s, %s, %s, %s, %s, "
+            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
+            table, owner_col,
+            owner_id, obj->vnum, equip_slot, container_str,
+            weight_str, cost_str, timer_str, extra_str, wear_str, type_str,
+            v0, v1, v2, v3, v4, v5, v6, v7,
+            name_str, short_str, desc_str, action_str, obj_uid);
     } else {
-        // locker_items, corpse_items - no equip_slot
+        // locker_items, corpse_items, saved_items - no equip_slot, no bitvectors
         snprintf(query, sizeof(query),
             "INSERT INTO %s (%s, vnum, container_id, quantity, "
-            "weight, cost, timer, extra_flags, wear_flags, "
+            "weight, cost, timer, extra_flags, wear_flags, item_type, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
-            "name, short_descr, description, action_descr) VALUES ("
-            "%d, %d, %s, 1, %d, %d, %ld, %s, %s, "
-            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "name, short_descr, description, action_descr, obj_uid) VALUES ("
+            "%d, %d, %s, 1, %s, %s, %s, %s, %s, %s, "
+            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, container_str,
-            obj->weight, obj->cost, obj->timer, extra_str, wear_str,
+            weight_str, cost_str, timer_str, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
-            name_str, short_str, desc_str, action_str);
+            name_str, short_str, desc_str, action_str, obj_uid);
     }
 
     if (esc_name) free(esc_name);
@@ -306,6 +371,49 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     MYSQL_ROW row = mysql_fetch_row(result);
     int item_id = row ? atoi(row[0]) : 0;
     mysql_free_result(result);
+
+    // save spellbook data to player_item_extra_descr (only for player_items table)
+    if (obj->spellbook_bits && item_id > 0 && strcmp(table, "player_items") == 0) {
+        char *json = mig_spellbook_to_json(obj->spellbook_bits, obj->spellbook_size);
+        if (json) {
+            char *esc_json = item_escape(json);
+            item_qry("INSERT INTO player_item_extra_descr (item_id, keyword, description) "
+                     "VALUES (%d, 'SPELLBOOK', '%s')", item_id, esc_json ? esc_json : json);
+            if (esc_json) free(esc_json);
+            free(json);
+        }
+    }
+
+    // save item affects for player_items and locker_items
+    if (obj->affected_set && item_id > 0) {
+        const char *affects_table = NULL;
+        if (strcmp(table, "player_items") == 0)
+            affects_table = "player_item_affects";
+        else if (strcmp(table, "locker_items") == 0)
+            affects_table = "locker_item_affects";
+
+        if (affects_table) {
+            for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
+                if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0) {
+                    // skip duplicates
+                    int is_dup = 0;
+                    for (int j = 0; j < i; j++) {
+                        if (obj->affected[j].location == obj->affected[i].location &&
+                            obj->affected[j].modifier == obj->affected[i].modifier) {
+                            is_dup = 1;
+                            break;
+                        }
+                    }
+                    if (is_dup)
+                        continue;
+
+                    item_qry("INSERT INTO %s (item_id, location, modifier) "
+                             "VALUES (%d, %d, %d)",
+                             affects_table, item_id, obj->affected[i].location, obj->affected[i].modifier);
+                }
+            }
+        }
+    }
 
     // save contained items recursively
     for (struct mig_obj *c = obj->contains; c; c = c->next) {

@@ -773,8 +773,7 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
     obj_to_char(temp1, keeper);
   }
 
-  deleteShopKeeper(shop_nr);
-  writeShopKeeper(keeper);
+  shop_index[shop_nr].dirty = 1;
   return;
 }
 

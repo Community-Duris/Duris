@@ -5,10 +5,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/.env"
 
-MYSQL_CMD="mysql -h$DB_HOST -u$DB_USER -p$DB_PASSWD $DB_NAME"
+MYSQL_CMD="mysql -h$DB_HOST -P${DB_PORT:-3306} -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=94
+TOTAL=99
 FAILED=0
 
 run_sql() {
@@ -571,6 +571,7 @@ CREATE TABLE IF NOT EXISTS player_items (
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
     wear_flags INT DEFAULT NULL,
+    item_type TINYINT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -583,10 +584,17 @@ CREATE TABLE IF NOT EXISTS player_items (
     short_descr VARCHAR(512) DEFAULT NULL,
     description TEXT DEFAULT NULL,
     action_descr TEXT DEFAULT NULL,
-    unique_id INT UNSIGNED DEFAULT NULL,
+    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
+    obj_uid BIGINT UNSIGNED DEFAULT NULL,
+    item_condition SMALLINT DEFAULT 100,
     PRIMARY KEY (id),
     INDEX idx_pid (pid),
     INDEX idx_container_id (container_id),
+    INDEX idx_obj_uid (obj_uid),
     CONSTRAINT fk_player_items FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE,
     CONSTRAINT fk_player_items_container FOREIGN KEY (container_id) REFERENCES player_items(id) ON DELETE CASCADE
 );
@@ -1385,6 +1393,48 @@ BEGIN
         ALTER TABLE player_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
     END IF;
 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'item_type') THEN
+        ALTER TABLE player_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER wear_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'bitvector1') THEN
+        ALTER TABLE player_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER action_descr;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'bitvector2') THEN
+        ALTER TABLE player_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'bitvector3') THEN
+        ALTER TABLE player_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'bitvector4') THEN
+        ALTER TABLE player_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_items'
+                   AND column_name = 'bitvector5') THEN
+        ALTER TABLE player_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4;
+    END IF;
+
     IF EXISTS (SELECT 1 FROM information_schema.columns
                WHERE table_schema = DATABASE()
                AND table_name = 'corpse_items'
@@ -1416,6 +1466,13 @@ BEGIN
                    AND table_name = 'corpse_items'
                    AND column_name = 'wear_flags') THEN
         ALTER TABLE corpse_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'corpse_items'
+                   AND column_name = 'item_type') THEN
+        ALTER TABLE corpse_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER wear_flags;
     END IF;
 
     IF EXISTS (SELECT 1 FROM information_schema.columns
@@ -1450,6 +1507,31 @@ BEGIN
                    AND column_name = 'wear_flags') THEN
         ALTER TABLE locker_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'locker_items'
+                   AND column_name = 'item_type') THEN
+        ALTER TABLE locker_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER wear_flags;
+    END IF;
+
+    -- fix random eq with null item_type based on wear_flags
+    -- ITEM_WEAPON (5): WIELD = 8192
+    UPDATE player_items SET item_type = 5 WHERE item_type IS NULL AND (wear_flags & 8192) != 0;
+    UPDATE locker_items SET item_type = 5 WHERE item_type IS NULL AND (wear_flags & 8192) != 0;
+    UPDATE corpse_items SET item_type = 5 WHERE item_type IS NULL AND (wear_flags & 8192) != 0;
+    -- ITEM_SHIELD (37): WEAR_SHIELD = 512
+    UPDATE player_items SET item_type = 37 WHERE item_type IS NULL AND (wear_flags & 512) != 0;
+    UPDATE locker_items SET item_type = 37 WHERE item_type IS NULL AND (wear_flags & 512) != 0;
+    UPDATE corpse_items SET item_type = 37 WHERE item_type IS NULL AND (wear_flags & 512) != 0;
+    -- ITEM_QUIVER (30): WEAR_QUIVER = 1048576
+    UPDATE player_items SET item_type = 30 WHERE item_type IS NULL AND (wear_flags & 1048576) != 0;
+    UPDATE locker_items SET item_type = 30 WHERE item_type IS NULL AND (wear_flags & 1048576) != 0;
+    UPDATE corpse_items SET item_type = 30 WHERE item_type IS NULL AND (wear_flags & 1048576) != 0;
+    -- ITEM_ARMOR (9): body/head/legs/feet/hands/arms/about/waist/horse_body/spider_body = 553651704
+    UPDATE player_items SET item_type = 9 WHERE item_type IS NULL AND (wear_flags & 553651704) != 0;
+    UPDATE locker_items SET item_type = 9 WHERE item_type IS NULL AND (wear_flags & 553651704) != 0;
+    UPDATE corpse_items SET item_type = 9 WHERE item_type IS NULL AND (wear_flags & 553651704) != 0;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_schema = DATABASE()
@@ -1488,6 +1570,25 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_schema = DATABASE()
+                   AND table_name = 'shopkeeper_items'
+                   AND column_name = 'item_type') THEN
+        ALTER TABLE shopkeeper_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER wear_flags;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+               AND table_name = 'shopkeeper_items'
+               AND column_name = 'unique_id') THEN
+        ALTER TABLE shopkeeper_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                       AND table_name = 'shopkeeper_items'
+                       AND column_name = 'obj_uid') THEN
+        ALTER TABLE shopkeeper_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
                    AND table_name = 'saved_items'
                    AND column_name = 'wear_flags') THEN
         ALTER TABLE saved_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
@@ -1495,9 +1596,40 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_schema = DATABASE()
+                   AND table_name = 'saved_items'
+                   AND column_name = 'item_type') THEN
+        ALTER TABLE saved_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER wear_flags;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+               AND table_name = 'saved_items'
+               AND column_name = 'unique_id') THEN
+        ALTER TABLE saved_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                       AND table_name = 'saved_items'
+                       AND column_name = 'obj_uid') THEN
+        ALTER TABLE saved_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
                    AND table_name = 'siege_items'
                    AND column_name = 'wear_flags') THEN
         ALTER TABLE siege_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+               AND table_name = 'siege_items'
+               AND column_name = 'unique_id') THEN
+        ALTER TABLE siege_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
+    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                       AND table_name = 'siege_items'
+                       AND column_name = 'obj_uid') THEN
+        ALTER TABLE siege_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
     END IF;
 
     IF EXISTS (SELECT 1 FROM information_schema.tables
@@ -1648,47 +1780,6 @@ WHERE ac.account_name IS NOT NULL AND ac.account_name != ''
   AND l.locker_name NOT LIKE 'guild.%'
   AND l.locker_name NOT LIKE 'account.%';"
 
-run_sql "copy locker items to account lockers" "
-INSERT INTO locker_items (locker_id, vnum, container_id, quantity, weight, cost, timer,
-    extra_flags, value0, value1, value2, value3, value4, value5, value6, value7,
-    name, short_descr, description, action_descr, obj_uid, item_condition)
-SELECT
-    acct_locker.id,
-    src.vnum,
-    NULL,
-    src.quantity, src.weight, src.cost, src.timer,
-    src.extra_flags, src.value0, src.value1, src.value2, src.value3,
-    src.value4, src.value5, src.value6, src.value7,
-    src.name, src.short_descr, src.description, src.action_descr, src.obj_uid, src.item_condition
-FROM locker_items src
-JOIN lockers char_locker ON src.locker_id = char_locker.id
-JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
-WHERE char_locker.locker_name LIKE '%.locker'
-  AND char_locker.locker_name NOT LIKE 'guild.%'
-  AND char_locker.locker_name NOT LIKE 'account.%'
-  AND src.vnum != 173
-  AND (src.obj_uid IS NULL OR src.obj_uid NOT IN (
-      SELECT obj_uid FROM locker_items WHERE locker_id = acct_locker.id AND obj_uid IS NOT NULL
-  ));"
-
-run_sql "copy locker item affects" "
-INSERT INTO locker_item_affects (item_id, location, modifier)
-SELECT new_item.id, lia.location, lia.modifier
-FROM locker_item_affects lia
-JOIN locker_items old_item ON lia.item_id = old_item.id
-JOIN lockers char_locker ON old_item.locker_id = char_locker.id
-JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
-JOIN locker_items new_item ON old_item.obj_uid = new_item.obj_uid AND new_item.locker_id = acct_locker.id
-WHERE char_locker.locker_name LIKE '%.locker'
-  AND char_locker.locker_name NOT LIKE 'guild.%'
-  AND char_locker.locker_name NOT LIKE 'account.%'
-  AND old_item.obj_uid IS NOT NULL
-  AND NOT EXISTS (
-      SELECT 1 FROM locker_item_affects WHERE item_id = new_item.id AND location = lia.location
-  );"
-
 run_sql "create account_banks table" "
 CREATE TABLE IF NOT EXISTS account_banks (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1706,7 +1797,7 @@ CREATE TABLE IF NOT EXISTS account_banks (
 );"
 
 run_sql "migrate player banks to account banks" "
-INSERT IGNORE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
+REPLACE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
 SELECT
     ac.account_name,
     ac.racewar,
@@ -1762,6 +1853,77 @@ INSERT IGNORE INTO private_chests (locker_id, chest_name, is_public)
 SELECT id, 'public', 1
 FROM lockers
 WHERE locker_name LIKE 'account.%';"
+
+run_sql "create temp mapping table for locker items" "
+DROP TABLE IF EXISTS _locker_item_map;
+CREATE TABLE _locker_item_map (
+    old_id INT UNSIGNED NOT NULL,
+    new_id INT UNSIGNED NOT NULL,
+    old_container_id INT UNSIGNED DEFAULT NULL,
+    PRIMARY KEY (old_id),
+    INDEX idx_new_id (new_id),
+    INDEX idx_old_container (old_container_id)
+);"
+
+run_sql "copy locker items to account lockers" "
+INSERT INTO locker_items (locker_id, chest_id, vnum, container_id, quantity, weight, cost, timer,
+    extra_flags, wear_flags, value0, value1, value2, value3, value4, value5, value6, value7,
+    name, short_descr, description, action_descr, obj_uid, item_condition)
+SELECT
+    acct_locker.id,
+    pc.id,
+    src.vnum,
+    NULL,
+    src.quantity, src.weight, src.cost, src.timer,
+    src.extra_flags, src.wear_flags, src.value0, src.value1, src.value2, src.value3,
+    src.value4, src.value5, src.value6, src.value7,
+    src.name, src.short_descr, src.description, src.action_descr, src.obj_uid, src.item_condition
+FROM locker_items src
+JOIN lockers char_locker ON src.locker_id = char_locker.id
+JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
+JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'public'
+WHERE char_locker.locker_name LIKE '%.locker'
+  AND char_locker.locker_name NOT LIKE 'guild.%'
+  AND char_locker.locker_name NOT LIKE 'account.%'
+  AND src.vnum != 173;"
+
+run_sql "build locker item id mapping" "
+INSERT INTO _locker_item_map (old_id, new_id, old_container_id)
+SELECT src.id, new_item.id, src.container_id
+FROM locker_items src
+JOIN lockers char_locker ON src.locker_id = char_locker.id
+JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
+JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'public'
+JOIN locker_items new_item ON new_item.locker_id = acct_locker.id
+    AND new_item.chest_id = pc.id
+    AND new_item.obj_uid = src.obj_uid
+WHERE char_locker.locker_name LIKE '%.locker'
+  AND char_locker.locker_name NOT LIKE 'guild.%'
+  AND char_locker.locker_name NOT LIKE 'account.%'
+  AND src.vnum != 173
+  AND src.obj_uid IS NOT NULL
+ON DUPLICATE KEY UPDATE new_id = VALUES(new_id);"
+
+run_sql "restore container hierarchy in account lockers" "
+UPDATE locker_items new_item
+JOIN _locker_item_map m ON m.new_id = new_item.id
+JOIN _locker_item_map container_map ON container_map.old_id = m.old_container_id
+SET new_item.container_id = container_map.new_id
+WHERE m.old_container_id IS NOT NULL;"
+
+run_sql "copy locker item affects" "
+INSERT INTO locker_item_affects (item_id, location, modifier)
+SELECT m.new_id, lia.location, lia.modifier
+FROM locker_item_affects lia
+JOIN _locker_item_map m ON m.old_id = lia.item_id
+WHERE NOT EXISTS (
+    SELECT 1 FROM locker_item_affects WHERE item_id = m.new_id AND location = lia.location
+);"
+
+run_sql "cleanup temp mapping table" "
+DROP TABLE IF EXISTS _locker_item_map;"
 
 run_sql "add total_donated column" "
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
@@ -2461,6 +2623,15 @@ if [ -n "$TABLES" ] && [ -n "$DB_CHARSET" ] && [ -n "$DB_COLLATION" ]; then
     done
 fi
 echo "ok"
+
+# flush redis cache
+STEP=$((STEP + 1))
+printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "flush redis cache"
+if command -v redis-cli &> /dev/null; then
+    redis-cli FLUSHDB > /dev/null 2>&1 && echo "ok" || echo "FAILED"
+else
+    echo "skipped (redis-cli not found)"
+fi
 
 echo ""
 echo "done. $FAILED failures."

@@ -1271,6 +1271,8 @@ void game_loop(int port, int sslport)
   // Don't want to save stuff just after we wiped all the tables in SQL.
   if (!_pwipe)
   {
+    save_dirty_shopkeepers();
+
     if (no_ferries == 0)
     {
       shutdown_ferries();

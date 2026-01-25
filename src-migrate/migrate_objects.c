@@ -28,31 +28,33 @@ static void parse_unique_fields(char **buf, struct mig_obj *obj, unsigned long o
     if (o_u_flag & O_U_VAL7) { obj->value[7] = mig_getInt(buf); obj->value_set |= (1 << 7); }
     if (o_u_flag & O_U_TIMER) {
         obj->timer = mig_getInt(buf);
+        obj->timer_set = 1;
         mig_getInt(buf); mig_getInt(buf); mig_getInt(buf); // timer[1-3]
     }
     if (o_u_flag & O_U_TRAP) {
         mig_getShort(buf); mig_getShort(buf);
         mig_getShort(buf); mig_getShort(buf);
     }
-    if (o_u_flag & O_U_TYPE) MIG_GET_BYTE(*buf);
+    if (o_u_flag & O_U_TYPE) { obj->item_type = MIG_GET_BYTE(*buf); obj->item_type_set = 1; }
     if (o_u_flag & O_U_WEAR) { obj->wear_flags = mig_getInt(buf); obj->wear_flags_set = 1; }
     if (o_u_flag & O_U_EXTRA) { obj->extra_flags = mig_getInt(buf); obj->extra_flags_set = 1; }
     if (o_u_flag & O_U_ANTI) mig_getInt(buf);
     if (o_u_flag & O_U_ANTI2) mig_getInt(buf);
     if (o_u_flag & O_U_EXTRA2) mig_getInt(buf);
-    if (o_u_flag & O_U_WEIGHT) obj->weight = mig_getInt(buf);
+    if (o_u_flag & O_U_WEIGHT) { obj->weight = mig_getInt(buf); obj->weight_set = 1; }
     if (o_u_flag & O_U_MATERIAL) MIG_GET_BYTE(*buf);
-    if (o_u_flag & O_U_COST) obj->cost = mig_getInt(buf);
-    if (o_u_flag & O_U_BV1) mig_getLong(buf);
-    if (o_u_flag & O_U_BV2) mig_getLong(buf);
-    if (o_u_flag & O_U_BV3) mig_getLong(buf);
-    if (o_u_flag & O_U_BV4) mig_getLong(buf);
-    if (o_u_flag & O_U_BV5) mig_getLong(buf);
+    if (o_u_flag & O_U_COST) { obj->cost = mig_getInt(buf); obj->cost_set = 1; }
+    if (o_u_flag & O_U_BV1) { obj->bitvector1 = mig_getLong(buf); obj->bitvector_set |= 1; }
+    if (o_u_flag & O_U_BV2) { obj->bitvector2 = mig_getLong(buf); obj->bitvector_set |= 2; }
+    if (o_u_flag & O_U_BV3) { obj->bitvector3 = mig_getLong(buf); obj->bitvector_set |= 4; }
+    if (o_u_flag & O_U_BV4) { obj->bitvector4 = mig_getLong(buf); obj->bitvector_set |= 8; }
+    if (o_u_flag & O_U_BV5) { obj->bitvector5 = mig_getLong(buf); obj->bitvector_set |= 16; }
     if (o_u_flag & O_U_AFFS) {
         for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
-            MIG_GET_BYTE(*buf); // location
-            MIG_GET_BYTE(*buf); // modifier
+            obj->affected[i].location = MIG_GET_BYTE(*buf);
+            obj->affected[i].modifier = MIG_GET_BYTE(*buf);
         }
+        obj->affected_set = 1;
     }
 }
 
@@ -109,11 +111,15 @@ struct mig_obj *parse_binary_objects(char **buf) {
             parse_unique_fields(buf, obj, o_u_flag);
         }
 
-        // O_F_SPELLBOOK is outside O_F_UNIQUE block
+        // O_F_SPELLBOOK - store spell bitfield for migration
         if (o_f_flag & O_F_SPELLBOOK) {
             int tmp = mig_getInt(buf);
-            for (int i = 0; i < tmp; i++)
-                MIG_GET_BYTE(*buf);
+            if (tmp > 0) {
+                obj->spellbook_bits = (char *)malloc(tmp);
+                obj->spellbook_size = tmp;
+                for (int i = 0; i < tmp; i++)
+                    obj->spellbook_bits[i] = MIG_GET_BYTE(*buf);
+            }
         }
 
         // link to list or container
@@ -196,10 +202,15 @@ struct mig_obj *parse_locker_items(char **buf) {
             parse_unique_fields(buf, obj, o_u_flag);
         }
 
+        // O_F_SPELLBOOK - store spell bitfield for migration
         if (o_f_flag & O_F_SPELLBOOK) {
             int tmp = mig_getInt(buf);
-            for (int i = 0; i < tmp; i++)
-                MIG_GET_BYTE(*buf);
+            if (tmp > 0) {
+                obj->spellbook_bits = (char *)malloc(tmp);
+                obj->spellbook_size = tmp;
+                for (int i = 0; i < tmp; i++)
+                    obj->spellbook_bits[i] = MIG_GET_BYTE(*buf);
+            }
         }
 
         // link to list or container
@@ -276,11 +287,15 @@ int parse_player_items(char **buf, struct mig_player *p) {
             parse_unique_fields(buf, obj, o_u_flag);
         }
 
-        // O_F_SPELLBOOK is outside O_F_UNIQUE block
+        // O_F_SPELLBOOK - store spell bitfield for migration
         if (o_f_flag & O_F_SPELLBOOK) {
             int tmp = mig_getInt(buf);
-            for (int i = 0; i < tmp; i++)
-                MIG_GET_BYTE(*buf);
+            if (tmp > 0) {
+                obj->spellbook_bits = (char *)malloc(tmp);
+                obj->spellbook_size = tmp;
+                for (int i = 0; i < tmp; i++)
+                    obj->spellbook_bits[i] = MIG_GET_BYTE(*buf);
+            }
         }
 
         // link to appropriate place

@@ -2373,6 +2373,7 @@ void show_stats_to_char(P_char ch);
 
 P_obj accept_gem_for_debt(P_char, P_char, int);
 void restore_shopkeepers(void);
+void save_dirty_shopkeepers(void);
 void push(struct stack_data *stack, int pushval);
 int topp(struct stack_data *stack);
 int pop(struct stack_data *stack);

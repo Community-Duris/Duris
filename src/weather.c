@@ -105,6 +105,10 @@ void event_another_hour(P_char ch, P_char victim, P_obj obj, void *data)
       }
     }
   }
+
+  // save dirty shopkeepers periodically
+  save_dirty_shopkeepers();
+
   add_event(event_another_hour, PULSES_IN_TICK, NULL, NULL, NULL, 0, NULL, 0);
 }
 const char *astralMsgs[] =
