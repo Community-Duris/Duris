@@ -294,25 +294,36 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
     else
         strcpy(type_str, "NULL");
 
+    // format bitvectors (NULL if not set)
+    char bv1[32], bv2[32], bv3[32], bv4[32], bv5[32];
+    if (obj->bitvector_set & 1) snprintf(bv1, sizeof(bv1), "%lu", obj->bitvector1); else strcpy(bv1, "NULL");
+    if (obj->bitvector_set & 2) snprintf(bv2, sizeof(bv2), "%lu", obj->bitvector2); else strcpy(bv2, "NULL");
+    if (obj->bitvector_set & 4) snprintf(bv3, sizeof(bv3), "%lu", obj->bitvector3); else strcpy(bv3, "NULL");
+    if (obj->bitvector_set & 8) snprintf(bv4, sizeof(bv4), "%lu", obj->bitvector4); else strcpy(bv4, "NULL");
+    if (obj->bitvector_set & 16) snprintf(bv5, sizeof(bv5), "%lu", obj->bitvector5); else strcpy(bv5, "NULL");
+
     // build query based on table type
     unsigned long long obj_uid = g_obj_uid_counter++;
     char query[8192];
     if (equip_slot >= 0) {
-        // player_items has equip_slot
+        // player_items has equip_slot and bitvectors
         snprintf(query, sizeof(query),
             "INSERT INTO %s (%s, vnum, equip_slot, container_id, quantity, "
             "weight, cost, timer, extra_flags, wear_flags, item_type, "
             "value0, value1, value2, value3, value4, value5, value6, value7, "
-            "name, short_descr, description, action_descr, obj_uid) VALUES ("
+            "name, short_descr, description, action_descr, "
+            "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid) VALUES ("
             "%d, %d, %d, %s, 1, %d, %d, %ld, %s, %s, %s, "
-            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %llu)",
+            "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
+            "%s, %s, %s, %s, %s, %llu)",
             table, owner_col,
             owner_id, obj->vnum, equip_slot, container_str,
             obj->weight, obj->cost, obj->timer, extra_str, wear_str, type_str,
             v0, v1, v2, v3, v4, v5, v6, v7,
-            name_str, short_str, desc_str, action_str, obj_uid);
+            name_str, short_str, desc_str, action_str,
+            bv1, bv2, bv3, bv4, bv5, obj_uid);
     } else {
-        // locker_items, corpse_items - no equip_slot
+        // locker_items, corpse_items - no equip_slot, no bitvectors
         snprintf(query, sizeof(query),
             "INSERT INTO %s (%s, vnum, container_id, quantity, "
             "weight, cost, timer, extra_flags, wear_flags, item_type, "
@@ -350,6 +361,17 @@ int save_item_to_db(struct mig_obj *obj, const char *table,
                      "VALUES (%d, 'SPELLBOOK', '%s')", item_id, esc_json ? esc_json : json);
             if (esc_json) free(esc_json);
             free(json);
+        }
+    }
+
+    // save item affects (for player_items table only - encrusted items, etc)
+    if (obj->affected_set && item_id > 0 && strcmp(table, "player_items") == 0) {
+        for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
+            if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0) {
+                item_qry("INSERT INTO player_item_affects (item_id, location, modifier) "
+                         "VALUES (%d, %d, %d)",
+                         item_id, obj->affected[i].location, obj->affected[i].modifier);
+            }
         }
     }
 

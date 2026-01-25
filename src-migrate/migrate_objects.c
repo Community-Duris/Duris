@@ -43,16 +43,17 @@ static void parse_unique_fields(char **buf, struct mig_obj *obj, unsigned long o
     if (o_u_flag & O_U_WEIGHT) obj->weight = mig_getInt(buf);
     if (o_u_flag & O_U_MATERIAL) MIG_GET_BYTE(*buf);
     if (o_u_flag & O_U_COST) obj->cost = mig_getInt(buf);
-    if (o_u_flag & O_U_BV1) mig_getLong(buf);
-    if (o_u_flag & O_U_BV2) mig_getLong(buf);
-    if (o_u_flag & O_U_BV3) mig_getLong(buf);
-    if (o_u_flag & O_U_BV4) mig_getLong(buf);
-    if (o_u_flag & O_U_BV5) mig_getLong(buf);
+    if (o_u_flag & O_U_BV1) { obj->bitvector1 = mig_getLong(buf); obj->bitvector_set |= 1; }
+    if (o_u_flag & O_U_BV2) { obj->bitvector2 = mig_getLong(buf); obj->bitvector_set |= 2; }
+    if (o_u_flag & O_U_BV3) { obj->bitvector3 = mig_getLong(buf); obj->bitvector_set |= 4; }
+    if (o_u_flag & O_U_BV4) { obj->bitvector4 = mig_getLong(buf); obj->bitvector_set |= 8; }
+    if (o_u_flag & O_U_BV5) { obj->bitvector5 = mig_getLong(buf); obj->bitvector_set |= 16; }
     if (o_u_flag & O_U_AFFS) {
         for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
-            MIG_GET_BYTE(*buf); // location
-            MIG_GET_BYTE(*buf); // modifier
+            obj->affected[i].location = MIG_GET_BYTE(*buf);
+            obj->affected[i].modifier = MIG_GET_BYTE(*buf);
         }
+        obj->affected_set = 1;
     }
 }
 

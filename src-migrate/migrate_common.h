@@ -89,6 +89,12 @@
 // binary read macro
 #define MIG_GET_BYTE(buf) (*(char *)((buf)++))
 
+// object affect struct for migration (same as obj_affected_type)
+struct mig_obj_affect {
+    unsigned char location;     // APPLY_XXX
+    signed char modifier;       // how much
+};
+
 // minimal object struct for migration
 struct mig_obj {
     int vnum;
@@ -109,6 +115,14 @@ struct mig_obj {
     int spellbook_size;         // size of spellbook_bits
     unsigned char item_type;    // item type (ITEM_ARMOR, ITEM_WEAPON, etc)
     unsigned char item_type_set;// 1 if item_type was explicitly set in pfile
+    struct mig_obj_affect affected[MAX_OBJ_AFFECT];  // stat modifiers (encrusted items, etc)
+    unsigned char affected_set; // 1 if affects were explicitly set in pfile
+    unsigned long bitvector1;   // encrusted item effects (haste, etc)
+    unsigned long bitvector2;
+    unsigned long bitvector3;
+    unsigned long bitvector4;
+    unsigned long bitvector5;
+    unsigned char bitvector_set; // bitmask: bit N = bitvectorN was explicitly set
     struct mig_obj *contains;
     struct mig_obj *next;
 };

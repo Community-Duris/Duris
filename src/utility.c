@@ -5211,8 +5211,11 @@ void hummer(P_obj obj)
     return;
   if ((OBJ_WORN(obj) || OBJ_CARRIED(obj)))
   {
-    act("&+LA faint hum can be heard from&N $p&n&+L carried by $n&n.", FALSE, obj->loc.wearing, obj, 0, TO_ROOM);
-    act("&+LA faint hum can be heard from&N $p&n&+L you are carrying.", FALSE, obj->loc.wearing, obj, 0, TO_CHAR);
+    P_char ch = OBJ_WORN(obj) ? obj->loc.wearing : obj->loc.carrying;
+    if (!ch || ch->in_room == NOWHERE)
+      return;
+    act("&+LA faint hum can be heard from&N $p&n&+L carried by $n&n.", FALSE, ch, obj, 0, TO_ROOM);
+    act("&+LA faint hum can be heard from&N $p&n&+L you are carrying.", FALSE, ch, obj, 0, TO_CHAR);
   }
   else if (OBJ_ROOM(obj))
   {

@@ -1085,36 +1085,65 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
   else
     strcpy(wear_str, "NULL");
 
-  // save item_type if different from prototype
+  // save item_type and bitvectors if different from prototype
   P_obj proto = read_object(obj->R_num, REAL);
   char type_str[16];
   if (proto && obj->type != proto->type)
     snprintf(type_str, sizeof(type_str), "%d", obj->type);
   else
     strcpy(type_str, "NULL");
+
+  // format bitvectors (NULL if same as prototype)
+  char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+  if (proto && obj->bitvector != proto->bitvector)
+    snprintf(bv1_str, sizeof(bv1_str), "%lu", obj->bitvector);
+  else
+    strcpy(bv1_str, "NULL");
+  if (proto && obj->bitvector2 != proto->bitvector2)
+    snprintf(bv2_str, sizeof(bv2_str), "%lu", obj->bitvector2);
+  else
+    strcpy(bv2_str, "NULL");
+  if (proto && obj->bitvector3 != proto->bitvector3)
+    snprintf(bv3_str, sizeof(bv3_str), "%lu", obj->bitvector3);
+  else
+    strcpy(bv3_str, "NULL");
+  if (proto && obj->bitvector4 != proto->bitvector4)
+    snprintf(bv4_str, sizeof(bv4_str), "%lu", obj->bitvector4);
+  else
+    strcpy(bv4_str, "NULL");
+  if (proto && obj->bitvector5 != proto->bitvector5)
+    snprintf(bv5_str, sizeof(bv5_str), "%lu", obj->bitvector5);
+  else
+    strcpy(bv5_str, "NULL");
+
   if (proto)
     extract_obj(proto);
 
-  // build the query - only use columns that exist in schema
-  // extra fields like bitvectors, trap data, etc can be loaded from prototype
+  // build the query
   char query[8192];
   snprintf(query, sizeof(query),
     "INSERT INTO player_items ("
     "pid, vnum, equip_slot, container_id, quantity, "
     "weight, cost, timer, extra_flags, wear_flags, item_type, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
-    "name, short_descr, description, action_descr, obj_uid, item_condition"
+    "name, short_descr, description, action_descr, "
+    "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+    "obj_uid, item_condition"
     ") VALUES ("
     "%d, %d, %d, %s, 1, "
     "%d, %d, %ld, %u, %s, %s, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
-    "%s, %s, %s, %s, %lu, %d"
+    "%s, %s, %s, %s, "
+    "%s, %s, %s, %s, %s, "
+    "%lu, %d"
     ")",
     pid, vnum, equip_slot, container_str,
     obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags, wear_str, type_str,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-    name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
+    name_str, short_str, desc_str, action_str,
+    bv1_str, bv2_str, bv3_str, bv4_str, bv5_str,
+    obj->obj_uid, obj->condition
   );
 
   // free escaped strings
@@ -2305,7 +2334,9 @@ bool sql_load_player_items(P_char ch)
     "SELECT id, vnum, equip_slot, container_id, "
     "weight, cost, timer, extra_flags, wear_flags, item_type, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
-    "name, short_descr, description, action_descr, obj_uid, item_condition "
+    "name, short_descr, description, action_descr, "
+    "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+    "obj_uid, item_condition "
     "FROM player_items WHERE pid=%d ORDER BY id", pid);
 
   MYSQL_RES *result = db_query("%s", query);
@@ -2389,6 +2420,13 @@ bool sql_load_player_items(P_char ch)
       obj->action_description = str_action;
       obj->str_mask |= STRUNG_DESC3;
     }
+
+    // restore bitvectors (NULL in db means use prototype value)
+    obj->bitvector = sql_row_ulong(row, col++, obj->bitvector);
+    obj->bitvector2 = sql_row_ulong(row, col++, obj->bitvector2);
+    obj->bitvector3 = sql_row_ulong(row, col++, obj->bitvector3);
+    obj->bitvector4 = sql_row_ulong(row, col++, obj->bitvector4);
+    obj->bitvector5 = sql_row_ulong(row, col++, obj->bitvector5);
 
     // restore obj_uid and condition
     unsigned long saved_uid = sql_row_ulong(row, col++, 0);
@@ -4751,6 +4789,7 @@ bool sql_load_all_corpses(void)
 }
 
 extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
 {
@@ -5436,6 +5475,28 @@ void sql_restore_shopkeepers(void)
     }
 
     char_to_room(mob, load_room, 0);
+
+    // add shop's producing items (base stock from zone G commands)
+    int shop_idx;
+    for (shop_idx = 0; shop_idx < number_of_shops; shop_idx++)
+    {
+      if (shop_index[shop_idx].keeper == GET_RNUM(mob))
+        break;
+    }
+    if (shop_idx < number_of_shops)
+    {
+      for (int i = 0; i < shop_index[shop_idx].number_items_produced; i++)
+      {
+        int rnum = shop_index[shop_idx].producing[i];
+        if (rnum >= 0)
+        {
+          P_obj obj = read_object(rnum, REAL);
+          if (obj)
+            obj_to_char(obj, mob);
+        }
+      }
+    }
+
     sql_delete_shopkeeper(shop_nr);
     loaded++;
   }
