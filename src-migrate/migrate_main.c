@@ -99,7 +99,7 @@ static void clean_saved_items(void) {
 // use players_core because prod artifacts reference players_core.pid
 static void save_old_pid_mapping(void) {
     qry("DROP TABLE IF EXISTS _old_pid_map");
-    qry("CREATE TEMPORARY TABLE _old_pid_map AS SELECT pid, name FROM players_core WHERE active = 1");
+    qry("CREATE TEMPORARY TABLE _old_pid_map AS SELECT pid, name FROM players_core");
 }
 
 // remap artifact locations after player migration
@@ -112,7 +112,7 @@ static void remap_artifact_locations(void) {
         "SELECT a.vnum, old.name, new.pid "
         "FROM artifacts a "
         "JOIN _old_pid_map old ON a.location = old.pid "
-        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name)  "
         "WHERE (a.locType = 3 OR a.locType = 5) AND a.owned = 'Y'"  // 3=OnPC, 5=OnCorpse
     );
     if (res) {
@@ -131,7 +131,7 @@ static void remap_artifact_locations(void) {
         "SELECT a.vnum, old.name, new.pid "
         "FROM artifacts_mortal a "
         "JOIN _old_pid_map old ON a.location = old.pid "
-        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name)  "
         "WHERE (a.locType = 3 OR a.locType = 5) AND a.owned = 'Y'"  // 3=OnPC, 5=OnCorpse
     );
     if (res) {
@@ -150,7 +150,7 @@ static void remap_artifact_locations(void) {
         "SELECT ab.vnum, old.name, new.pid "
         "FROM artifact_bind ab "
         "JOIN _old_pid_map old ON ab.owner_pid = old.pid "
-        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name)  "
         "WHERE ab.owner_pid > 0"
     );
     if (res) {
@@ -213,7 +213,7 @@ static void remap_ip_info(void) {
         "  SELECT new.pid as new_pid "
         "  FROM ip_info ii "
         "  JOIN _old_pid_map old ON ii.pid = old.pid "
-        "  JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1 "
+        "  JOIN player_data new ON LOWER(old.name) = LOWER(new.name)  "
         ") remap ON ii_blocker.pid = remap.new_pid");
 
     int updated = 0;
@@ -221,17 +221,58 @@ static void remap_ip_info(void) {
         "SELECT ii.pid, old.name, new.pid as new_pid "
         "FROM ip_info ii "
         "JOIN _old_pid_map old ON ii.pid = old.pid "
-        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) AND new.active = 1"
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) "
     );
     if (res) {
         MYSQL_ROW row;
         while ((row = mysql_fetch_row(res))) {
-            qry("UPDATE ip_info SET pid = %s WHERE pid = %s", row[2], row[0]);
+            qry("UPDATE IGNORE ip_info SET pid = %s WHERE pid = %s", row[2], row[0]);
             updated++;
         }
         mysql_free_result(res);
     }
     printf("  ip_info: %d remapped\n", updated);
+}
+
+// remap epic_bonus/epic_gain pids after player migration
+static void remap_epic_tables(void) {
+    printf("remapping epic_bonus/epic_gain to new pids...\n");
+
+    // remap epic_bonus
+    int updated = 0;
+    MYSQL_RES *res = db_query(
+        "SELECT eb.pid, old.name, new.pid as new_pid "
+        "FROM epic_bonus eb "
+        "JOIN _old_pid_map old ON eb.pid = old.pid "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) "
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE IGNORE epic_bonus SET pid = %s WHERE pid = %s", row[2], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    printf("  epic_bonus: %d remapped\n", updated);
+
+    // remap epic_gain
+    updated = 0;
+    res = db_query(
+        "SELECT DISTINCT eg.pid, new.pid as new_pid "
+        "FROM epic_gain eg "
+        "JOIN _old_pid_map old ON eg.pid = old.pid "
+        "JOIN player_data new ON LOWER(old.name) = LOWER(new.name) "
+    );
+    if (res) {
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            qry("UPDATE epic_gain SET pid = %s WHERE pid = %s", row[1], row[0]);
+            updated++;
+        }
+        mysql_free_result(res);
+    }
+    printf("  epic_gain: %d players remapped\n", updated);
 }
 
 // update player_data.last_ip from ip_info
@@ -429,6 +470,7 @@ int main(int argc, char **argv) {
         players = migrate_players_from_files();
         remap_artifact_locations();
         remap_ip_info();
+        remap_epic_tables();
         update_player_last_ip();
         cleanup_old_pid_mapping();
         populate_frag_leaderboard();
