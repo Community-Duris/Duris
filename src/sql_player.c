@@ -3195,9 +3195,9 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
     if (!obj)
       continue;
 
-    obj->weight = atoi(row[2]);
-    obj->cost = atoi(row[3]);
-    obj->timer[0] = atol(row[4]);
+    if (row[2]) obj->weight = atoi(row[2]);
+    if (row[3]) obj->cost = atoi(row[3]);
+    if (row[4]) obj->timer[0] = atol(row[4]);
     if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
     if (row[6]) obj->wear_flags = atoi(row[6]);
     if (row[7]) obj->type = atoi(row[7]);
@@ -3762,9 +3762,9 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
     if (!obj)
       continue;
 
-    obj->weight = atoi(row[2]);
-    obj->cost = atoi(row[3]);
-    obj->timer[0] = atol(row[4]);
+    if (row[2]) obj->weight = atoi(row[2]);
+    if (row[3]) obj->cost = atoi(row[3]);
+    if (row[4]) obj->timer[0] = atol(row[4]);
     if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
     if (row[6]) obj->wear_flags = atoi(row[6]);
     if (row[7]) obj->type = atoi(row[7]);
@@ -4726,9 +4726,9 @@ bool sql_load_all_corpses(void)
       continue;
     }
 
-    obj->weight = atoi(row[8]);
-    obj->cost = atoi(row[9]);
-    obj->timer[0] = atol(row[10]);
+    if (row[8]) obj->weight = atoi(row[8]);
+    if (row[9]) obj->cost = atoi(row[9]);
+    if (row[10]) obj->timer[0] = atol(row[10]);
     if (row[11]) obj->extra_flags = strtoul(row[11], NULL, 10);
     for (int v = 0; v < 8; v++)
       obj->value[v] = row[12 + v] ? atoi(row[12 + v]) : 0;
@@ -5340,9 +5340,9 @@ static P_obj sql_load_shopkeeper_items(int shopkeeper_id, int equip_slot, int co
     if (!obj)
       continue;
 
-    obj->weight = atoi(row[3]);
-    obj->cost = atoi(row[4]);
-    obj->timer[0] = atol(row[5]);
+    if (row[3]) obj->weight = atoi(row[3]);
+    if (row[4]) obj->cost = atoi(row[4]);
+    if (row[5]) obj->timer[0] = atol(row[5]);
     if (row[6]) obj->extra_flags = strtoul(row[6], NULL, 10);
 
     obj->value[0] = row[7] ? atoi(row[7]) : 0;
@@ -5688,9 +5688,9 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
     if (!obj)
       continue;
 
-    obj->weight = atoi(row[2]);
-    obj->cost = atoi(row[3]);
-    obj->timer[0] = atol(row[4]);
+    if (row[2]) obj->weight = atoi(row[2]);
+    if (row[3]) obj->cost = atoi(row[3]);
+    if (row[4]) obj->timer[0] = atol(row[4]);
     if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
 
     obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
@@ -5795,9 +5795,9 @@ void sql_restore_saved_items(void)
     if (!obj)
       continue;
 
-    obj->weight = atoi(row[4]);
-    obj->cost = atoi(row[5]);
-    obj->timer[0] = atol(row[6]);
+    if (row[4]) obj->weight = atoi(row[4]);
+    if (row[5]) obj->cost = atoi(row[5]);
+    if (row[6]) obj->timer[0] = atol(row[6]);
     if (row[7]) obj->extra_flags = strtoul(row[7], NULL, 10);
 
     obj->value[0] = row[8] ? atoi(row[8]) : 0;
@@ -5896,9 +5896,9 @@ static P_obj sql_load_siege_item_contents(int room_vnum, int container_id)
     if (!obj)
       continue;
 
-    obj->weight = atoi(row[2]);
-    obj->cost = atoi(row[3]);
-    obj->timer[0] = atol(row[4]);
+    if (row[2]) obj->weight = atoi(row[2]);
+    if (row[3]) obj->cost = atoi(row[3]);
+    if (row[4]) obj->timer[0] = atol(row[4]);
     if (row[5]) obj->extra_flags = strtoul(row[5], NULL, 10);
 
     obj->value[0] = row[6] ? atoi(row[6]) : obj->value[0];
@@ -6005,9 +6005,9 @@ void sql_load_siege_list(void)
     if (!obj)
       continue;
 
-    obj->weight = atoi(row[3]);
-    obj->cost = atoi(row[4]);
-    obj->timer[0] = atol(row[5]);
+    if (row[3]) obj->weight = atoi(row[3]);
+    if (row[4]) obj->cost = atoi(row[4]);
+    if (row[5]) obj->timer[0] = atol(row[5]);
     if (row[6]) obj->extra_flags = strtoul(row[6], NULL, 10);
 
     obj->value[0] = row[7] ? atoi(row[7]) : 0;
