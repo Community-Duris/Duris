@@ -899,7 +899,7 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
         return;
     }
     d->account->acct_password = str_dup(hash);
-    free(hash);
+    FREE(hash);
 
     /* mark account as confirmed (skip email verification for web clients) */
     d->account->acct_confirmed = 1;
@@ -1878,7 +1878,7 @@ void ws_cmd_change_password(struct descriptor_data *d, cJSON *data)
         FREE(d->account->acct_password);
     }
     d->account->acct_password = str_dup(hash);
-    free(hash);
+    FREE(hash);
     write_account(d->account);
 
     statuslog(56, "Account %s changed password", d->account->acct_name);

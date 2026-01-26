@@ -325,7 +325,7 @@ void get_account_password(P_desc d, char *arg)
     {
       FREE(d->account->acct_password);
       d->account->acct_password = str_dup(new_hash);
-      free(new_hash);
+      FREE(new_hash);
       write_account(d->account);  // Save upgraded password
     }
   }
@@ -670,7 +670,7 @@ void get_new_account_password(P_desc d, char *arg)
   }
 
   d->account->acct_password = str_dup(hash);
-  free(hash);
+  FREE(hash);
   STATE(d) = CON_VERIFY_NEW_ACCT_PASSWD;
   verify_new_account_password(d, NULL);
   return;
