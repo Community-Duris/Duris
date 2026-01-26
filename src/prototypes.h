@@ -1238,6 +1238,7 @@ void obj_to_char_at_end(P_obj obj, P_char ch);
 void obj_to_obj(P_obj, P_obj);
 void obj_to_obj_at_end(P_obj, P_obj);
 void obj_to_room(P_obj, int);
+void clear_player_dirty_container_flags(P_char);
 void object_list_new_owner(P_obj, P_char);
 void update_char_objects(P_char);
 void update_con_bonus(P_char);

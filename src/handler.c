@@ -2380,6 +2380,52 @@ void obj_from_room(P_obj object)
 
 }
 
+// marks a container dirty for incremental db saves
+static void mark_container_dirty(P_obj container)
+{
+  if (!container)
+    return;
+
+  P_obj top = container;
+  while (OBJ_INSIDE(top))
+    top = top->loc.inside;
+
+  SET_BIT(top->runtime_flags, OBJ_RFLAG_DIRTY_CONTAINER);
+
+  P_char owner = NULL;
+  if (OBJ_CARRIED(top))
+    owner = top->loc.carrying;
+  else if (OBJ_WORN(top))
+    owner = top->loc.wearing;
+
+  if (owner && IS_PC(owner))
+    mark_player_dirty(GET_PID(owner));
+}
+
+// recursively clear dirty flags on object and contents
+static void clear_obj_dirty_flags(P_obj obj)
+{
+  if (!obj)
+    return;
+  REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_DIRTY_CONTAINER);
+  for (P_obj c = obj->contains; c; c = c->next_content)
+    clear_obj_dirty_flags(c);
+}
+
+// clears dirty container flags for a player (call after fork to prevent re-saving)
+void clear_player_dirty_container_flags(P_char ch)
+{
+  if (!ch)
+    return;
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    if (ch->equipment[i])
+      clear_obj_dirty_flags(ch->equipment[i]);
+  }
+  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+    clear_obj_dirty_flags(obj);
+}
+
 /* put an object in an object (quaint) */
 
 void obj_to_obj(P_obj obj, P_obj obj_to)
@@ -2459,6 +2505,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
     owner->specials.carry_weight += GET_OBJ_WEIGHT(obj);
   }
 */
+  mark_container_dirty(obj_to);
 }
 
 // appends obj to end of a linked list - used during load to preserve order
@@ -2506,6 +2553,8 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 
   if (obj->weight > 0)
     add_weight(obj_to, obj->weight);
+
+  mark_container_dirty(obj_to);
 }
 
 void obj_to_char_at_end(P_obj object, P_char ch)
@@ -2602,6 +2651,8 @@ void obj_from_obj(P_obj obj)
       owner->specials.carry_weight -= GET_OBJ_WEIGHT(obj);
     }
 */
+
+    mark_container_dirty(obj_from);
 
     obj->loc_p = LOC_NOWHERE;
     obj->loc.inside = NULL;  // must clear full pointer, not just int-sized loc.room

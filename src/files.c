@@ -3595,6 +3595,11 @@ int restoreItemsOnly(P_char ch, int flatrate)
 
   if (!ch)
     return -2;
+
+  // sql players already have items loaded from sql_load_player_items
+  if (IS_PC(ch) && GET_PID(ch) > 0)
+    return 0;
+
 #ifndef _PFILE_
 
   strcpy(buff, GET_NAME(ch));

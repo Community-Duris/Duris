@@ -981,6 +981,124 @@ static bool sql_save_item_affects(int item_id, P_obj obj)
   return true;
 }
 
+// check if object has any non-default data that needs individual handling
+static bool obj_needs_individual_save(P_obj obj)
+{
+  if (!obj)
+    return false;
+
+  // has affects
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+  {
+    if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
+      return true;
+  }
+
+  // has extra descriptions
+  if (obj->ex_description)
+    return true;
+
+  // has nested containers
+  if (obj->contains)
+    return true;
+
+  // has strung strings
+  if (obj->str_mask & (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3))
+    return true;
+
+  return false;
+}
+
+// batch save simple container contents (items without affects/containers/strings)
+// returns number of items saved, -1 on error
+static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_obj)
+{
+  if (!DB || !first_obj)
+    return 0;
+
+  // count simple items first
+  int simple_count = 0;
+  for (P_obj obj = first_obj; obj; obj = obj->next_content)
+  {
+    if (!IS_SET(obj->extra_flags, ITEM_NORENT) && !obj_needs_individual_save(obj))
+      simple_count++;
+  }
+
+  if (simple_count == 0)
+    return 0;
+
+  // allocate batch buffer - each item needs ~300 bytes for values
+  size_t buf_size = 1024 + (simple_count * 400);
+  char *batch = (char *)malloc(buf_size);
+  if (!batch)
+    return -1;
+
+  int pos = snprintf(batch, buf_size,
+    "INSERT INTO player_items ("
+    "pid, vnum, equip_slot, container_id, quantity, "
+    "weight, cost, timer, extra_flags, "
+    "value0, value1, value2, value3, value4, value5, value6, value7, "
+    "obj_uid, item_condition"
+    ") VALUES ");
+
+  bool first = true;
+  int batch_count = 0;
+
+  for (P_obj obj = first_obj; obj; obj = obj->next_content)
+  {
+    if (IS_SET(obj->extra_flags, ITEM_NORENT))
+      continue;
+    if (obj_needs_individual_save(obj))
+      continue;
+
+    int vnum = obj_index[obj->R_num].virtual_number;
+
+    pos += snprintf(batch + pos, buf_size - pos,
+      "%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%lu,%d)",
+      first ? "" : ",",
+      pid, vnum, container_id,
+      obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags,
+      obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+      obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+      obj->obj_uid, obj->condition);
+
+    first = false;
+    batch_count++;
+
+    // flush batch if getting large (stay under 1mb query limit)
+    if (pos > (int)(buf_size - 500))
+    {
+      if (!sql_run_query(batch))
+      {
+        free(batch);
+        return -1;
+      }
+      // reset for next batch
+      pos = snprintf(batch, buf_size,
+        "INSERT INTO player_items ("
+        "pid, vnum, equip_slot, container_id, quantity, "
+        "weight, cost, timer, extra_flags, "
+        "value0, value1, value2, value3, value4, value5, value6, value7, "
+        "obj_uid, item_condition"
+        ") VALUES ");
+      first = true;
+    }
+  }
+
+  // flush remaining
+  if (!first)
+  {
+    if (!sql_run_query(batch))
+    {
+      free(batch);
+      return -1;
+    }
+  }
+
+  free(batch);
+  return batch_count;
+}
+
 // load item affects from db into obj->affected[]
 // clears prototype affects if db has any custom affects
 static void sql_load_item_affects_from_table(int item_id, P_obj obj, const char *table)
@@ -1230,6 +1348,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 
   // get the inserted item_id
   int item_id = (int)mysql_insert_id(DB);
+  obj->db_item_id = item_id;
 
   // save item affects
   if (!sql_save_item_affects(item_id, obj))
@@ -1239,24 +1358,109 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
       !sql_save_item_extra_descr(item_id, obj, "player_item_extra_descr"))
     return 0;
 
-  // recursively save container contents
+  // save container contents - batch simple items, individual for complex ones
   if (obj->contains)
   {
+    // batch save simple items first (no affects, no strings, no nested containers)
+    int batched = sql_batch_save_simple_items(pid, item_id, obj->contains);
+    if (batched < 0)
+      logit(LOG_DEBUG, "sql_save_player_items: batch save failed for container vnum %d",
+            obj_index[obj->R_num].virtual_number);
+
+    // individually save complex items (affects, strings, nested containers)
     for (P_obj content = obj->contains; content; content = content->next_content)
     {
-      if (!IS_SET(content->extra_flags, ITEM_NORENT))
+      if (IS_SET(content->extra_flags, ITEM_NORENT))
+        continue;
+      if (!obj_needs_individual_save(content))
+        continue; // already batch saved
+
+      if (sql_save_single_item_get_id(pid, content, 0, item_id) == 0)
       {
-        if (sql_save_single_item_get_id(pid, content, 0, item_id) == 0)
-        {
-          // log but continue - don't fail the whole save for one bad item
-          logit(LOG_DEBUG, "sql_save_player_items: failed to save container content vnum %d",
-                obj_index[content->R_num].virtual_number);
-        }
+        logit(LOG_DEBUG, "sql_save_player_items: failed to save container content vnum %d",
+              obj_index[content->R_num].virtual_number);
       }
     }
   }
 
   return item_id;
+}
+
+// false if any item missing db_item_id (needs full save)
+static bool all_items_have_db_ids(P_char ch)
+{
+  for (int i = 0; i < MAX_WEAR; i++)
+  {
+    P_obj eq = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
+    if (eq && eq->db_item_id <= 0)
+      return false;
+  }
+  for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+  {
+    if (obj->db_item_id <= 0)
+      return false;
+  }
+  return true;
+}
+
+// helper: resave a single container's contents
+static bool resave_container_contents(int pid, P_obj container)
+{
+  if (!container || container->db_item_id <= 0)
+    return false;
+
+  int container_db_id = container->db_item_id;
+
+  // delete old contents
+  char del_query[256];
+  snprintf(del_query, sizeof(del_query),
+    "DELETE FROM player_items WHERE container_id=%d", container_db_id);
+  if (!sql_run_query(del_query))
+    return false;
+
+  // re-insert contents
+  if (container->contains)
+  {
+    int batched = sql_batch_save_simple_items(pid, container_db_id, container->contains);
+    if (batched < 0)
+      logit(LOG_DEBUG, "resave_container_contents: batch failed for container id %d", container_db_id);
+
+    for (P_obj content = container->contains; content; content = content->next_content)
+    {
+      if (IS_SET(content->extra_flags, ITEM_NORENT))
+        continue;
+      if (!obj_needs_individual_save(content))
+        continue;
+
+      if (sql_save_single_item_get_id(pid, content, 0, container_db_id) == 0)
+      {
+        logit(LOG_DEBUG, "resave_container_contents: failed item vnum %d",
+              obj_index[content->R_num].virtual_number);
+      }
+    }
+  }
+
+  return true;
+}
+
+// helper: recursively find and resave dirty containers
+static void resave_dirty_containers(int pid, P_obj obj)
+{
+  if (!obj)
+    return;
+
+  if (IS_SET(obj->runtime_flags, OBJ_RFLAG_DIRTY_CONTAINER))
+  {
+    resave_container_contents(pid, obj);
+    REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_DIRTY_CONTAINER);
+  }
+
+  // check nested containers
+  for (P_obj content = obj->contains; content; content = content->next_content)
+  {
+    if (content->contains)
+      resave_dirty_containers(pid, content);
+  }
 }
 
 bool sql_save_player_items(P_char ch)
@@ -1268,8 +1472,25 @@ bool sql_save_player_items(P_char ch)
   if (pid <= 0)
     return false;
 
-  // delete existing items (cascade deletes item_affects too)
-  // note: already inside transaction from sql_save_player
+  bool use_incremental = all_items_have_db_ids(ch);
+
+  if (use_incremental)
+  {
+    // incremental save: only resave dirty containers
+    for (int i = 0; i < MAX_WEAR; i++)
+    {
+      P_obj eq = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
+      if (eq)
+        resave_dirty_containers(pid, eq);
+    }
+    for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+    {
+      resave_dirty_containers(pid, obj);
+    }
+    return true;
+  }
+
+  // full save: delete all and re-insert
   char del_query[128];
   snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
   if (!sql_run_query(del_query))
@@ -2527,6 +2748,9 @@ bool sql_load_player_items(P_char ch)
     if (saved_uid > 0)
       obj->obj_uid = saved_uid;
     obj->condition = sql_row_int(row, col++, obj->condition);
+
+    // store db id for incremental saves
+    obj->db_item_id = db_id;
 
     items[idx] = obj;
     item_ids[idx] = db_id;
@@ -5410,40 +5634,37 @@ bool sql_delete_siege_items(int room_vnum)
   return sql_run_query(query);
 }
 
-static P_obj sql_load_shopkeeper_items(int shopkeeper_id, int equip_slot, int container_id)
+// temp struct for batched item loading
+struct shopkeeper_item_temp {
+  int item_id;
+  int container_id;
+  int equip_slot;
+  P_obj obj;
+  struct shopkeeper_item_temp *next;
+};
+
+static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], P_obj *inventory)
 {
   if (!DB || shopkeeper_id <= 0)
-    return NULL;
+    return;
 
+  // load all items in one query
   char query[512];
-  if (container_id > 0)
-    snprintf(query, sizeof(query),
-             "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
-             "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr "
-             "FROM shopkeeper_items WHERE shopkeeper_id=%d AND container_id=%d",
-             shopkeeper_id, container_id);
-  else if (equip_slot > 0)
-    snprintf(query, sizeof(query),
-             "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
-             "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr "
-             "FROM shopkeeper_items WHERE shopkeeper_id=%d AND equip_slot=%d AND container_id IS NULL",
-             shopkeeper_id, equip_slot);
-  else
-    snprintf(query, sizeof(query),
-             "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
-             "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr "
-             "FROM shopkeeper_items WHERE shopkeeper_id=%d AND equip_slot=0 AND container_id IS NULL",
-             shopkeeper_id);
+  snprintf(query, sizeof(query),
+           "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
+           "value0, value1, value2, value3, value4, value5, value6, value7, "
+           "name, short_descr, description, action_descr, container_id "
+           "FROM shopkeeper_items WHERE shopkeeper_id=%d ORDER BY id",
+           shopkeeper_id);
 
   MYSQL_RES *result = db_query("%s", query);
   if (!result)
-    return NULL;
+    return;
 
-  P_obj first_obj = NULL;
-  P_obj last_obj = NULL;
+  // first pass: create all objects and store metadata
+  struct shopkeeper_item_temp *items = NULL;
+  struct shopkeeper_item_temp *last_item = NULL;
+  int item_count = 0;
   MYSQL_ROW row;
 
   while ((row = mysql_fetch_row(result)))
@@ -5457,6 +5678,9 @@ static P_obj sql_load_shopkeeper_items(int shopkeeper_id, int equip_slot, int co
     P_obj obj = read_object(rnum, REAL);
     if (!obj)
       continue;
+
+    int equip_slot = atoi(row[2]);
+    int container_id = row[19] ? atoi(row[19]) : 0;
 
     if (row[3]) obj->weight = atoi(row[3]);
     if (row[4]) obj->cost = atoi(row[4]);
@@ -5493,40 +5717,115 @@ static P_obj sql_load_shopkeeper_items(int shopkeeper_id, int equip_slot, int co
       obj->str_mask |= STRUNG_DESC3;
     }
 
-    char aff_query[128];
-    snprintf(aff_query, sizeof(aff_query),
-             "SELECT location, modifier FROM shopkeeper_item_affects WHERE item_id=%d", item_id);
-    MYSQL_RES *aff_result = db_query("%s", aff_query);
-    if (aff_result)
-    {
-      MYSQL_ROW aff_row;
-      int aff_idx = 0;
-      while ((aff_row = mysql_fetch_row(aff_result)) && aff_idx < MAX_OBJ_AFFECT)
-      {
-        obj->affected[aff_idx].location = atoi(aff_row[0]);
-        obj->affected[aff_idx].modifier = atoi(aff_row[1]);
-        aff_idx++;
-      }
-      mysql_free_result(aff_result);
-    }
+    struct shopkeeper_item_temp *temp = (struct shopkeeper_item_temp *)malloc(sizeof(struct shopkeeper_item_temp));
+    temp->item_id = item_id;
+    temp->container_id = container_id;
+    temp->equip_slot = equip_slot;
+    temp->obj = obj;
+    temp->next = NULL;
 
-    obj->contains = sql_load_shopkeeper_items(shopkeeper_id, 0, item_id);
-    for (P_obj c = obj->contains; c; c = c->next_content)
-    {
-      c->loc_p = LOC_INSIDE;
-      c->loc.inside = obj;
-    }
-
-    if (!first_obj)
-      first_obj = obj;
+    if (!items)
+      items = temp;
     else
-      last_obj->next_content = obj;
-    last_obj = obj;
-    obj->next_content = NULL;
+      last_item->next = temp;
+    last_item = temp;
+    item_count++;
+  }
+  mysql_free_result(result);
+
+  if (item_count == 0)
+    return;
+
+  // load all item affects in one query
+  snprintf(query, sizeof(query),
+           "SELECT sia.item_id, sia.location, sia.modifier "
+           "FROM shopkeeper_item_affects sia "
+           "INNER JOIN shopkeeper_items si ON sia.item_id = si.id "
+           "WHERE si.shopkeeper_id=%d ORDER BY sia.item_id",
+           shopkeeper_id);
+
+  result = db_query("%s", query);
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int aff_item_id = atoi(row[0]);
+      int location = atoi(row[1]);
+      int modifier = atoi(row[2]);
+
+      // find the item
+      for (struct shopkeeper_item_temp *t = items; t; t = t->next)
+      {
+        if (t->item_id == aff_item_id)
+        {
+          for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+          {
+            if (t->obj->affected[i].location == 0 && t->obj->affected[i].modifier == 0)
+            {
+              t->obj->affected[i].location = location;
+              t->obj->affected[i].modifier = modifier;
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+    mysql_free_result(result);
   }
 
-  mysql_free_result(result);
-  return first_obj;
+  // link container contents
+  for (struct shopkeeper_item_temp *t = items; t; t = t->next)
+  {
+    if (t->container_id > 0)
+    {
+      // find parent container
+      for (struct shopkeeper_item_temp *p = items; p; p = p->next)
+      {
+        if (p->item_id == t->container_id)
+        {
+          t->obj->next_content = p->obj->contains;
+          p->obj->contains = t->obj;
+          t->obj->loc_p = LOC_INSIDE;
+          t->obj->loc.inside = p->obj;
+          break;
+        }
+      }
+    }
+  }
+
+  // assign equipment and inventory
+  P_obj inv_first = NULL;
+  P_obj inv_last = NULL;
+
+  for (struct shopkeeper_item_temp *t = items; t; t = t->next)
+  {
+    if (t->container_id > 0)
+      continue;  // already placed in container
+
+    if (t->equip_slot > 0 && t->equip_slot <= MAX_WEAR)
+      equipment[t->equip_slot - 1] = t->obj;
+    else
+    {
+      if (!inv_first)
+        inv_first = t->obj;
+      else
+        inv_last->next_content = t->obj;
+      inv_last = t->obj;
+      t->obj->next_content = NULL;
+    }
+  }
+
+  *inventory = inv_first;
+
+  // free temp structs
+  struct shopkeeper_item_temp *t = items;
+  while (t)
+  {
+    struct shopkeeper_item_temp *next = t->next;
+    free(t);
+    t = next;
+  }
 }
 
 static bool sql_load_shopkeeper_affects(P_char ch, int shopkeeper_id)
@@ -5599,16 +5898,20 @@ P_char sql_restore_shopkeeper(int shop_nr)
   GET_BIRTHPLACE(ch) = room_vnum;
   sql_load_shopkeeper_affects(ch, shopkeeper_id);
 
-  // load equipment - use equip_char directly since wear() expects item in inventory
-  for (int slot = 1; slot <= MAX_WEAR; slot++)
+  // batched load of all equipment and inventory
+  P_obj equipment[MAX_WEAR];
+  memset(equipment, 0, sizeof(equipment));
+  P_obj inventory = NULL;
+
+  sql_load_all_shopkeeper_items(shopkeeper_id, equipment, &inventory);
+
+  for (int slot = 0; slot < MAX_WEAR; slot++)
   {
-    P_obj obj = sql_load_shopkeeper_items(shopkeeper_id, slot, 0);
-    if (obj)
-      equip_char(ch, obj, slot - 1, 0);
+    if (equipment[slot])
+      equip_char(ch, equipment[slot], slot, 0);
   }
 
-  // load inventory
-  ch->carrying = sql_load_shopkeeper_items(shopkeeper_id, 0, 0);
+  ch->carrying = inventory;
   for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
   {
     obj->loc_p = LOC_CARRIED;
@@ -5618,54 +5921,321 @@ P_char sql_restore_shopkeeper(int shop_nr)
   return ch;
 }
 
+// temp struct for batched shopkeeper loading
+struct shopkeeper_temp {
+  int shop_nr;
+  int shopkeeper_id;
+  int mob_vnum;
+  int room_vnum;
+  P_char mob;
+  P_obj equipment[MAX_WEAR];
+  P_obj inventory;
+  struct shopkeeper_temp *next;
+};
+
+// temp struct for batched item loading across all shopkeepers
+struct all_items_temp {
+  int item_id;
+  int shopkeeper_id;
+  int container_id;
+  int equip_slot;
+  P_obj obj;
+  struct all_items_temp *next;
+};
+
 void sql_restore_shopkeepers(void)
 {
   if (!DB)
     return;
 
-  MYSQL_RES *result = db_query("SELECT shop_id, mob_vnum, room_vnum FROM shopkeepers");
+  // query 1: load all shopkeepers
+  MYSQL_RES *result = db_query("SELECT shop_id, id, mob_vnum, room_vnum FROM shopkeepers");
   if (!result)
     return;
 
+  struct shopkeeper_temp *keepers = NULL;
+  struct shopkeeper_temp *last_keeper = NULL;
+  int keeper_count = 0;
   MYSQL_ROW row;
-  int loaded = 0;
 
   while ((row = mysql_fetch_row(result)))
   {
     int shop_nr = atoi(row[0]);
-    int room_vnum = atoi(row[2]);
+    int shopkeeper_id = atoi(row[1]);
+    int mob_vnum = atoi(row[2]);
+    int room_vnum = atoi(row[3]);
 
-    P_char mob = sql_restore_shopkeeper(shop_nr);
+    P_char mob = read_mobile(mob_vnum, VIRTUAL);
     if (!mob)
     {
-      logit(LOG_DEBUG, "sql_restore_shopkeepers: could not load shop %d", shop_nr);
+      logit(LOG_DEBUG, "sql_restore_shopkeeper: mob vnum %d not found", mob_vnum);
       continue;
     }
 
-    int load_room = real_room(room_vnum);
+    struct shopkeeper_temp *k = (struct shopkeeper_temp *)malloc(sizeof(struct shopkeeper_temp));
+    k->shop_nr = shop_nr;
+    k->shopkeeper_id = shopkeeper_id;
+    k->mob_vnum = mob_vnum;
+    k->room_vnum = room_vnum;
+    k->mob = mob;
+    memset(k->equipment, 0, sizeof(k->equipment));
+    k->inventory = NULL;
+    k->next = NULL;
+
+    GET_BIRTHPLACE(mob) = room_vnum;
+
+    if (!keepers)
+      keepers = k;
+    else
+      last_keeper->next = k;
+    last_keeper = k;
+    keeper_count++;
+  }
+  mysql_free_result(result);
+
+  if (keeper_count == 0)
+    return;
+
+  // query 2: load all shopkeeper affects
+  result = db_query(
+    "SELECT sa.shopkeeper_id, sa.type, sa.duration, sa.modifier, sa.location, "
+    "sa.bitvector1, sa.bitvector2, sa.bitvector3, sa.bitvector4, sa.bitvector5 "
+    "FROM shopkeeper_affects sa "
+    "INNER JOIN shopkeepers s ON sa.shopkeeper_id = s.id");
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int shopkeeper_id = atoi(row[0]);
+      for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+      {
+        if (k->shopkeeper_id == shopkeeper_id)
+        {
+          struct affected_type af;
+          memset(&af, 0, sizeof(af));
+          af.type = atoi(row[1]);
+          af.duration = atoi(row[2]);
+          af.modifier = atoi(row[3]);
+          af.location = atoi(row[4]);
+          af.bitvector = strtoul(row[5], NULL, 10);
+          af.bitvector2 = strtoul(row[6], NULL, 10);
+          af.bitvector3 = strtoul(row[7], NULL, 10);
+          af.bitvector4 = strtoul(row[8], NULL, 10);
+          af.bitvector5 = strtoul(row[9], NULL, 10);
+          affect_to_char(k->mob, &af);
+          break;
+        }
+      }
+    }
+    mysql_free_result(result);
+  }
+
+  // query 3: load all items for all shopkeepers
+  struct all_items_temp *all_items = NULL;
+  struct all_items_temp *last_item = NULL;
+
+  result = db_query(
+    "SELECT si.id, si.shopkeeper_id, si.vnum, si.equip_slot, si.weight, si.cost, si.timer, "
+    "si.extra_flags, si.value0, si.value1, si.value2, si.value3, si.value4, si.value5, "
+    "si.value6, si.value7, si.name, si.short_descr, si.description, si.action_descr, si.container_id "
+    "FROM shopkeeper_items si "
+    "INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
+    "ORDER BY si.shopkeeper_id, si.id");
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int item_id = atoi(row[0]);
+      int shopkeeper_id = atoi(row[1]);
+      int vnum = atoi(row[2]);
+      int rnum = real_object(vnum);
+      if (rnum < 0)
+        continue;
+
+      P_obj obj = read_object(rnum, REAL);
+      if (!obj)
+        continue;
+
+      int equip_slot = atoi(row[3]);
+      int container_id = row[20] ? atoi(row[20]) : 0;
+
+      if (row[4]) obj->weight = atoi(row[4]);
+      if (row[5]) obj->cost = atoi(row[5]);
+      if (row[6]) obj->timer[0] = atol(row[6]);
+      if (row[7]) obj->extra_flags = strtoul(row[7], NULL, 10);
+
+      obj->value[0] = row[8] ? atoi(row[8]) : 0;
+      obj->value[1] = row[9] ? atoi(row[9]) : 0;
+      obj->value[2] = row[10] ? atoi(row[10]) : 0;
+      obj->value[3] = row[11] ? atoi(row[11]) : 0;
+      obj->value[4] = row[12] ? atoi(row[12]) : 0;
+      obj->value[5] = row[13] ? atoi(row[13]) : 0;
+      obj->value[6] = row[14] ? atoi(row[14]) : 0;
+      obj->value[7] = row[15] ? atoi(row[15]) : 0;
+
+      if (row[16] && strlen(row[16]) > 0)
+      {
+        obj->name = str_dup(row[16]);
+        obj->str_mask |= STRUNG_KEYS;
+      }
+      if (row[17] && strlen(row[17]) > 0)
+      {
+        obj->short_description = str_dup(row[17]);
+        obj->str_mask |= STRUNG_DESC2;
+      }
+      if (row[18] && strlen(row[18]) > 0)
+      {
+        obj->description = str_dup(row[18]);
+        obj->str_mask |= STRUNG_DESC1;
+      }
+      if (row[19] && strlen(row[19]) > 0)
+      {
+        obj->action_description = str_dup(row[19]);
+        obj->str_mask |= STRUNG_DESC3;
+      }
+
+      struct all_items_temp *t = (struct all_items_temp *)malloc(sizeof(struct all_items_temp));
+      t->item_id = item_id;
+      t->shopkeeper_id = shopkeeper_id;
+      t->container_id = container_id;
+      t->equip_slot = equip_slot;
+      t->obj = obj;
+      t->next = NULL;
+
+      if (!all_items)
+        all_items = t;
+      else
+        last_item->next = t;
+      last_item = t;
+    }
+    mysql_free_result(result);
+  }
+
+  // query 4: load all item affects
+  result = db_query(
+    "SELECT sia.item_id, sia.location, sia.modifier "
+    "FROM shopkeeper_item_affects sia "
+    "INNER JOIN shopkeeper_items si ON sia.item_id = si.id "
+    "INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
+    "ORDER BY sia.item_id");
+  if (result)
+  {
+    while ((row = mysql_fetch_row(result)))
+    {
+      int aff_item_id = atoi(row[0]);
+      int location = atoi(row[1]);
+      int modifier = atoi(row[2]);
+
+      for (struct all_items_temp *t = all_items; t; t = t->next)
+      {
+        if (t->item_id == aff_item_id)
+        {
+          for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+          {
+            if (t->obj->affected[i].location == 0 && t->obj->affected[i].modifier == 0)
+            {
+              t->obj->affected[i].location = location;
+              t->obj->affected[i].modifier = modifier;
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+    mysql_free_result(result);
+  }
+
+  // link container contents
+  for (struct all_items_temp *t = all_items; t; t = t->next)
+  {
+    if (t->container_id > 0)
+    {
+      for (struct all_items_temp *p = all_items; p; p = p->next)
+      {
+        if (p->item_id == t->container_id)
+        {
+          t->obj->next_content = p->obj->contains;
+          p->obj->contains = t->obj;
+          t->obj->loc_p = LOC_INSIDE;
+          t->obj->loc.inside = p->obj;
+          break;
+        }
+      }
+    }
+  }
+
+  // assign items to shopkeepers
+  for (struct all_items_temp *t = all_items; t; t = t->next)
+  {
+    if (t->container_id > 0)
+      continue;
+
+    for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+    {
+      if (k->shopkeeper_id == t->shopkeeper_id)
+      {
+        if (t->equip_slot > 0 && t->equip_slot <= MAX_WEAR)
+          k->equipment[t->equip_slot - 1] = t->obj;
+        else
+        {
+          t->obj->next_content = k->inventory;
+          k->inventory = t->obj;
+        }
+        break;
+      }
+    }
+  }
+
+  // free item temp structs
+  struct all_items_temp *ti = all_items;
+  while (ti)
+  {
+    struct all_items_temp *next = ti->next;
+    free(ti);
+    ti = next;
+  }
+
+  // process each shopkeeper
+  int loaded = 0;
+  for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+  {
+    int load_room = real_room(k->room_vnum);
     if (load_room == NOWHERE)
     {
-      logit(LOG_DEBUG, "sql_restore_shopkeepers: bad room %d for shop %d", room_vnum, shop_nr);
-      extract_char(mob);
+      logit(LOG_DEBUG, "sql_restore_shopkeepers: bad room %d for shop %d", k->room_vnum, k->shop_nr);
+      extract_char(k->mob);
       continue;
+    }
+
+    // equip and set inventory
+    for (int slot = 0; slot < MAX_WEAR; slot++)
+    {
+      if (k->equipment[slot])
+        equip_char(k->mob, k->equipment[slot], slot, 0);
+    }
+    k->mob->carrying = k->inventory;
+    for (P_obj obj = k->mob->carrying; obj; obj = obj->next_content)
+    {
+      obj->loc_p = LOC_CARRIED;
+      obj->loc.carrying = k->mob;
     }
 
     // find shop index
     int shop_idx;
     for (shop_idx = 0; shop_idx < number_of_shops; shop_idx++)
     {
-      if (shop_index[shop_idx].keeper == GET_RNUM(mob))
+      if (shop_index[shop_idx].keeper == GET_RNUM(k->mob))
         break;
     }
 
-    // remove ALL existing keepers with same vnum anywhere in the world
-    int mob_vnum = mob_index[GET_RNUM(mob)].virtual_number;
+    // remove existing keepers with same vnum
     int extracted = 0;
     for (P_char keeper2 = character_list; keeper2; )
     {
       P_char next = keeper2->next;
-      if (IS_NPC(keeper2) && keeper2 != mob &&
-          mob_index[GET_RNUM(keeper2)].virtual_number == mob_vnum)
+      if (IS_NPC(keeper2) && keeper2 != k->mob &&
+          mob_index[GET_RNUM(keeper2)].virtual_number == k->mob_vnum)
       {
         extract_char(keeper2);
         extracted++;
@@ -5673,9 +6243,11 @@ void sql_restore_shopkeepers(void)
       keeper2 = next;
     }
     logit(LOG_DEBUG, "sql_restore_shopkeepers: shop %d vnum %d extracted %d existing",
-          shop_nr, mob_vnum, extracted);
+          k->shop_nr, k->mob_vnum, extracted);
 
-    char_to_room(mob, load_room, 0);
+    char_to_room(k->mob, load_room, 0);
+
+    // add produced items not in db
     if (shop_idx < number_of_shops)
     {
       for (int i = 0; i < shop_index[shop_idx].number_items_produced; i++)
@@ -5683,9 +6255,8 @@ void sql_restore_shopkeepers(void)
         int rnum = shop_index[shop_idx].producing[i];
         if (rnum >= 0)
         {
-          // skip if already loaded from db
           int found = 0;
-          for (P_obj o = mob->carrying; o; o = o->next_content)
+          for (P_obj o = k->mob->carrying; o; o = o->next_content)
           {
             if (o->R_num == rnum)
             {
@@ -5693,24 +6264,31 @@ void sql_restore_shopkeepers(void)
               break;
             }
           }
-          if (found)
-            continue;
-
-          P_obj obj = read_object(rnum, REAL);
-          if (obj)
-            obj_to_char(obj, mob);
+          if (!found)
+          {
+            P_obj obj = read_object(rnum, REAL);
+            if (obj)
+              obj_to_char(obj, k->mob);
+          }
         }
       }
-    }
-
-    sql_delete_shopkeeper(shop_nr);
-    // mark dirty so items get saved on shutdown even if no transactions
-    if (shop_idx < number_of_shops)
       shop_index[shop_idx].dirty = 1;
+    }
     loaded++;
   }
 
-  mysql_free_result(result);
+  // query 5: delete all shopkeepers in one go
+  sql_run_query("DELETE FROM shopkeepers");
+
+  // free keeper temp structs
+  struct shopkeeper_temp *tk = keepers;
+  while (tk)
+  {
+    struct shopkeeper_temp *next = tk->next;
+    free(tk);
+    tk = next;
+  }
+
   logit(LOG_DEBUG, "sql_restore_shopkeepers: loaded %d shopkeepers", loaded);
 }
 

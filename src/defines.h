@@ -86,6 +86,9 @@ typedef unsigned int uint;
 #define MIN_INT_SIGNED   -2147483647
 #define MAX_INT_UNSIGNED  4294967295U
 
+/* object runtime flags (not saved to db) */
+#define OBJ_RFLAG_DIRTY_CONTAINER  BIT_1
+
 /* The following defs are for obj_data  */
 
 /* note:  before reassigning any of these, especially the ones that you have no

@@ -46,7 +46,7 @@ bool redis_enabled = false;
 bool redis_world_state_enabled = false;
 int crash_recovery_boot = 0;
 
-#define REDIS_FLUSH_INTERVAL (5 * WAIT_SEC)
+#define REDIS_FLUSH_INTERVAL (30 * WAIT_SEC)
 #define REDIS_WORLD_STATE_INTERVAL_DEFAULT 10
 #define REDIS_WORLD_STATE_MAX_AGE_DEFAULT 300
 
@@ -868,12 +868,17 @@ void flush_dirty_players(void)
   }
 
   // parent - gremlin events wont work in forked child so do it here
+  // also clear dirty container flags since child has snapshot of them
   for (int i = 0; i < valid; i++)
   {
     P_char ch = find_player_by_pid(pids[i]);
-    if (ch && IS_PC(ch) && ch->in_room != NOWHERE &&
-        IS_ROOM(ch->in_room, ROOM_LOCKER) && world[ch->in_room].funct)
-      (*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+    if (ch && IS_PC(ch))
+    {
+      clear_player_dirty_container_flags(ch);
+      if (ch->in_room != NOWHERE &&
+          IS_ROOM(ch->in_room, ROOM_LOCKER) && world[ch->in_room].funct)
+        (*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+    }
   }
 
   dirty_flush_pid = pid;

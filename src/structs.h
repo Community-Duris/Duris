@@ -551,6 +551,9 @@ struct obj_data
   sh_int craftsmanship; /* how well made item is            */
   sh_int z_cord;        /* where in the room (up/down)      */
 
+  unsigned char runtime_flags; /* runtime state, not saved to db   */
+  int db_item_id;              /* db id for incremental saves      */
+
   unsigned long bitvector;  /* To set chars bits                */
   unsigned long bitvector2; /* 2nd 32 bits                      */
   unsigned long bitvector3;

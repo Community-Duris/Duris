@@ -1432,7 +1432,7 @@ CREATE TABLE IF NOT EXISTS account_banks (
 );
 
 -- migrate player banks to account banks
-INSERT IGNORE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
+REPLACE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
 SELECT
     ac.account_name,
     ac.racewar,

@@ -2611,6 +2611,9 @@ DELIMITER ;
 CALL convert_zone_touches_timestamps();
 DROP PROCEDURE IF EXISTS convert_zone_touches_timestamps;"
 
+# epic_bonus/epic_gain pid remapping is now handled by the C migration tool
+# (src-migrate/migrate_players.c) which has access to the old pids from pfiles
+
 # final cleanup - ensure ALL tables have consistent collation
 STEP=$((STEP + 1))
 printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "ensure consistent collation on all tables"
