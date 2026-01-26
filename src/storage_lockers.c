@@ -1011,7 +1011,7 @@ static void locker_access_transferAccess(P_char locker, P_char ch);
 static bool locker_access_canAccess(P_char locker, char *ch_name);
 static int locker_access_count(P_char locker);
 static void locker_access_show(P_char ch, P_char locker);
-static bool locker_access_CanAdd(P_char locker, char *ch_name);
+static int locker_access_CanAdd(P_char locker, char *ch_name); // 1=ok, 0=not found, -1=wrong racewar
 static void locker_access_remAccess(P_char locker, char *ch_name);
 
 int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg);
@@ -1863,18 +1863,21 @@ static int locker_grantcmd(P_char ch, char *arg)
     }
     else
     {
-      if (locker_access_CanAdd(chLocker, arg2))
+      int canAdd = locker_access_CanAdd(chLocker, arg2);
+      if (canAdd == 1)
       {
         locker_access_addAccess(chLocker, arg2);
         send_to_char_f( ch, "'%s' given access to your locker.\n", arg2 );
         storage_locker(ch->in_room, ch, (-81), NULL);   // saves the locker
         storage_locker(ch->in_room, ch, CMD_GRANT, "list");
       }
+      else if (canAdd == -1)
+      {
+        send_to_char_f(ch, "'%s' is not on your side of the racewar.\r\n", arg2);
+      }
       else
       {
-        send_to_char("Unknown character: ", ch);
-        send_to_char(arg2, ch);
-        send_to_char("\r\n", ch);
+        send_to_char_f(ch, "Unknown character or account: %s\r\n", arg2);
       }
     }
     return TRUE;
@@ -1913,6 +1916,7 @@ static int locker_grantcmd(P_char ch, char *arg)
     send_to_char("----------------------------------------------------------------------------------\n", ch);
     send_to_char("grant list            shows who has access to your locker.\n", ch);
     send_to_char("grant add <name>      adds <name> to those who can access your locker.\n", ch);
+    send_to_char("                      <name> can be a character name or account name.\n", ch);
     send_to_char("grant remove <name>   removes <name> from those who can access your locker.\n", ch);
     send_to_char("grant transfer        transfers the old list of those with access to the new list.\n", ch);
     send_to_char("grant [? | help]      displays this help.\n\n", ch);
@@ -1954,12 +1958,38 @@ static void locker_access_show(P_char ch, P_char locker)
   return;
 }
 
-static bool locker_access_CanAdd(P_char locker, char *ch_name)
+// check if name is a valid account with characters on same racewar side
+// returns: 1=ok, 0=not found (account check doesn't care about racewar - access check handles that)
+static int locker_access_CanAddAccount(P_char locker, const char *acct_name)
+{
+  if (!DB || !acct_name) return 0;
+
+  char *esc = sql_escape_string(acct_name);
+  if (!esc) return 0;
+
+  // check if account exists (has any characters)
+  char query[512];
+  snprintf(query, sizeof(query),
+    "SELECT char_name FROM account_characters "
+    "WHERE LOWER(account_name) = LOWER('%s') AND deleted_at IS NULL LIMIT 1",
+    esc);
+  free(esc);
+
+  MYSQL_RES *res = db_query("%s", query);
+  if (!res) return 0;
+
+  int result = mysql_num_rows(res) > 0 ? 1 : 0;
+  mysql_free_result(res);
+  return result;
+}
+
+// returns: 1=ok, 0=not found, -1=wrong racewar
+static int locker_access_CanAdd(P_char locker, char *ch_name)
 {
   /* load ch_name, and if loaded, compare RACEWAR() sides.  if they are the
      same, return 1, else return 0.   if the restore of ch_name fails, return 0 */
   P_char vict = NULL;
-  bool bCanAdd = FALSE;
+  int result = 0;
 
   vict = (P_char) mm_get(dead_mob_pool);
   clear_char(vict);
@@ -1968,7 +1998,7 @@ static bool locker_access_CanAdd(P_char locker, char *ch_name)
 
   if( (restoreCharOnly( vict, ch_name )) >= 0 )
   {
-    bCanAdd = GET_RACEWAR(locker) == GET_RACEWAR(vict);
+    result = (GET_RACEWAR(locker) == GET_RACEWAR(vict)) ? 1 : -1;
     // clean up items loaded by restoreCharOnly (sql_load_player_items equips items)
     for (int i = 0; i < MAX_WEAR; i++) {
       if (vict->equipment[i]) {
@@ -1983,8 +2013,13 @@ static bool locker_access_CanAdd(P_char locker, char *ch_name)
     }
     free_char(vict);
   }
+  else
+  {
+    // character not found, try as account name
+    result = locker_access_CanAddAccount(locker, ch_name);
+  }
 
-  return bCanAdd;
+  return result;
 }
 
 static int locker_access_count(P_char locker)
@@ -2009,7 +2044,8 @@ static bool locker_access_canAccess(P_char locker, char *ch_name)
 {
   MYSQL_RES *res;
 
-  if( !qry("select owner, visitor from locker_access where owner = '%s' and visitor = '%s' limit 1",
+  // first check direct character name match
+  if( !qry("select owner, visitor from locker_access where owner = '%s' and LOWER(visitor) = LOWER('%s') limit 1",
     GET_NAME( locker ), ch_name) )
   {
     return FALSE;
@@ -2017,14 +2053,31 @@ static bool locker_access_canAccess(P_char locker, char *ch_name)
 
   res = mysql_store_result(DB);
 
-  if( mysql_num_rows(res) < 1 )
+  if( mysql_num_rows(res) >= 1 )
   {
     mysql_free_result(res);
-    return FALSE;
+    return TRUE;
   }
-
   mysql_free_result(res);
-  return TRUE;
+
+  // check if character's account has access
+  char *esc = sql_escape_string(ch_name);
+  if (!esc) return FALSE;
+
+  char query[512];
+  snprintf(query, sizeof(query),
+    "SELECT la.visitor FROM locker_access la "
+    "JOIN account_characters ac ON LOWER(la.visitor) = LOWER(ac.account_name) "
+    "WHERE la.owner = '%s' AND LOWER(ac.char_name) = LOWER('%s') AND ac.racewar = %d AND ac.deleted_at IS NULL LIMIT 1",
+    GET_NAME(locker), esc, GET_RACEWAR(locker));
+  free(esc);
+
+  res = db_query("%s", query);
+  if (!res) return FALSE;
+
+  bool has_access = mysql_num_rows(res) >= 1;
+  mysql_free_result(res);
+  return has_access;
 }
 
 static void locker_access_remAccess(P_char locker, char *ch_name)

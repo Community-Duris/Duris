@@ -23,16 +23,25 @@ SRCS = migrate_main.c \
 OBJS = $(SRCS:.c=.o)
 
 TARGET = migrate_pfiles
+TARGET_AFFECTS = migrate_locker_affects
+
+AFFECTS_SRCS = migrate_locker_affects.c migrate_common.c migrate_objects.c migrate_stubs.c
+AFFECTS_OBJS = $(AFFECTS_SRCS:.c=.o)
 
 all: $(TARGET)
 
+affects: $(TARGET_AFFECTS)
+
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+
+$(TARGET_AFFECTS): $(AFFECTS_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET_AFFECTS) $(AFFECTS_OBJS) $(LIBS)
 
 %.o: %.c migrate_common.h
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c $< -o $@
 
 clean:
-	rm -f *.o $(TARGET)
+	rm -f *.o $(TARGET) $(TARGET_AFFECTS)
 
 .PHONY: all clean

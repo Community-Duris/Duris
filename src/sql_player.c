@@ -375,7 +375,7 @@ bool sql_player_exists(const char *name)
 
   char query[256];
   snprintf(query, sizeof(query),
-           "SELECT 1 FROM player_data WHERE name='%s' LIMIT 1",
+           "SELECT 1 FROM player_data WHERE LOWER(name)=LOWER('%s') LIMIT 1",
            escaped_name);
   free(escaped_name);
 
@@ -401,7 +401,7 @@ int sql_get_player_pid(const char *name)
 
   char query[256];
   snprintf(query, sizeof(query),
-           "SELECT pid FROM player_data WHERE name='%s' LIMIT 1",
+           "SELECT pid FROM player_data WHERE LOWER(name)=LOWER('%s') LIMIT 1",
            escaped_name);
   free(escaped_name);
 
@@ -1410,6 +1410,25 @@ static bool resave_container_contents(int pid, P_obj container)
     return false;
 
   int container_db_id = container->db_item_id;
+
+  // verify container still exists in database (may have been deleted by full save)
+  char check_query[128];
+  snprintf(check_query, sizeof(check_query),
+    "SELECT 1 FROM player_items WHERE id=%d LIMIT 1", container_db_id);
+  MYSQL_RES *check_result = db_query("%s", check_query);
+  if (!check_result)
+  {
+    container->db_item_id = 0;
+    return false;
+  }
+  MYSQL_ROW row = mysql_fetch_row(check_result);
+  bool exists = (row != NULL);
+  mysql_free_result(check_result);
+  if (!exists)
+  {
+    container->db_item_id = 0;
+    return false;
+  }
 
   // delete old contents
   char del_query[256];
