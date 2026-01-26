@@ -3371,24 +3371,56 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
   else
     strcpy(wear_str, "NULL");
 
+  // bitvectors - compare with prototype, only save if different
+  P_obj proto = read_object(obj->R_num, REAL);
+  char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+  if (proto && obj->bitvector != proto->bitvector)
+    snprintf(bv1_str, sizeof(bv1_str), "%lu", obj->bitvector);
+  else
+    strcpy(bv1_str, "NULL");
+  if (proto && obj->bitvector2 != proto->bitvector2)
+    snprintf(bv2_str, sizeof(bv2_str), "%lu", obj->bitvector2);
+  else
+    strcpy(bv2_str, "NULL");
+  if (proto && obj->bitvector3 != proto->bitvector3)
+    snprintf(bv3_str, sizeof(bv3_str), "%lu", obj->bitvector3);
+  else
+    strcpy(bv3_str, "NULL");
+  if (proto && obj->bitvector4 != proto->bitvector4)
+    snprintf(bv4_str, sizeof(bv4_str), "%lu", obj->bitvector4);
+  else
+    strcpy(bv4_str, "NULL");
+  if (proto && obj->bitvector5 != proto->bitvector5)
+    snprintf(bv5_str, sizeof(bv5_str), "%lu", obj->bitvector5);
+  else
+    strcpy(bv5_str, "NULL");
+  if (proto)
+    extract_obj(proto);
+
   char query[8192];
   snprintf(query, sizeof(query),
     "INSERT INTO locker_items ("
     "locker_id, chest_id, vnum, container_id, quantity, "
     "weight, cost, timer, extra_flags, wear_flags, item_type, "
     "value0, value1, value2, value3, value4, value5, value6, value7, "
-    "name, short_descr, description, action_descr, obj_uid, item_condition"
+    "name, short_descr, description, action_descr, "
+    "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+    "obj_uid, item_condition"
     ") VALUES ("
     "%d, %s, %d, %s, 1, "
     "%d, %d, %ld, %lu, %s, %d, "
     "%d, %d, %d, %d, %d, %d, %d, %d, "
-    "%s, %s, %s, %s, %lu, %d"
+    "%s, %s, %s, %s, "
+    "%s, %s, %s, %s, %s, "
+    "%lu, %d"
     ")",
     locker_id, chest_id_str, vnum, container_str,
     obj->weight, obj->cost, (long)obj->timer[0], (unsigned long)obj->extra_flags, wear_str, obj->type,
     obj->value[0], obj->value[1], obj->value[2], obj->value[3],
     obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-    name_str, short_str, desc_str, action_str, obj->obj_uid, obj->condition
+    name_str, short_str, desc_str, action_str,
+    bv1_str, bv2_str, bv3_str, bv4_str, bv5_str,
+    obj->obj_uid, obj->condition
   );
 
   if (esc_name) free(esc_name);
@@ -3509,14 +3541,16 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
     snprintf(query, sizeof(query),
              "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, item_type, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr, obj_uid, item_condition "
+             "name, short_descr, description, action_descr, obj_uid, item_condition, "
+             "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
              "FROM locker_items WHERE locker_id=%d AND container_id=%d%s",
              locker_id, container_id, chest_filter);
   else
     snprintf(query, sizeof(query),
              "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, item_type, "
              "value0, value1, value2, value3, value4, value5, value6, value7, "
-             "name, short_descr, description, action_descr, obj_uid, item_condition "
+             "name, short_descr, description, action_descr, obj_uid, item_condition, "
+             "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
              "FROM locker_items WHERE locker_id=%d AND container_id IS NULL%s",
              locker_id, chest_filter);
 
@@ -3586,6 +3620,18 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
     }
     if (row[21] && strlen(row[21]) > 0)
       obj->condition = atoi(row[21]);
+
+    // restore bitvectors
+    if (row[22] && strlen(row[22]) > 0)
+      obj->bitvector = strtoul(row[22], NULL, 10);
+    if (row[23] && strlen(row[23]) > 0)
+      obj->bitvector2 = strtoul(row[23], NULL, 10);
+    if (row[24] && strlen(row[24]) > 0)
+      obj->bitvector3 = strtoul(row[24], NULL, 10);
+    if (row[25] && strlen(row[25]) > 0)
+      obj->bitvector4 = strtoul(row[25], NULL, 10);
+    if (row[26] && strlen(row[26]) > 0)
+      obj->bitvector5 = strtoul(row[26], NULL, 10);
 
     sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 
