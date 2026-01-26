@@ -576,13 +576,14 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
         return;
     }
 
-    /* allocate and load account */
+    /* allocate and load account - if one exists, free it first */
+    if (d->account) {
+        d->account = free_account(d->account);
+    }
+    d->account = allocate_account();
     if (!d->account) {
-        d->account = allocate_account();
-        if (!d->account) {
-            ws_send_auth_failed(d, "Failed to allocate account");
-            return;
-        }
+        ws_send_auth_failed(d, "Failed to allocate account");
+        return;
     }
 
     d->account->acct_name = str_dup(tmp_name);
@@ -875,14 +876,15 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
         return;
     }
 
-    /* allocate new account */
+    /* allocate new account - if one exists, free it first to avoid memory leaks */
+    if (d->account) {
+        d->account = free_account(d->account);
+    }
+    d->account = allocate_account();
     if (!d->account) {
-        d->account = allocate_account();
-        if (!d->account) {
-            ws_send_auth_failed(d, "Failed to create account - server error");
-            statuslog(56, "&+RALERT&n: WebSocket could not allocate account for %s", tmp_name);
-            return;
-        }
+        ws_send_auth_failed(d, "Failed to create account - server error");
+        statuslog(56, "&+RALERT&n: WebSocket could not allocate account for %s", tmp_name);
+        return;
     }
 
     /* set account name and email */
