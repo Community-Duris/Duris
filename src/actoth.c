@@ -4298,7 +4298,7 @@ void show_toggles(P_char ch)
            "&+r     Guildname   :&+g %-3s    &+y|"
            "&+r     GMCP        :&+g %-3s    &+y|&n\r\n"
            "&+r   Heal        :&+g %-3s    &+y|"
-           "&+r                 :&+g        &+y|"
+           "&+r     Jchat       :&+g %-3s    &+y|"
            "&+r                 :&+g        &+y|&n\r\n"
            "&+y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
            "-=-=-=-=-=-=-=-=-=-=-=-=-=-&N\r\n",
@@ -4344,7 +4344,8 @@ void show_toggles(P_char ch)
            ONOFF(PLR3_FLAGGED(ch, PLR3_PET_DAMAGE)),
            ONOFF(PLR3_FLAGGED(ch, PLR3_GUILDNAME)),
            ONOFF(!PLR3_FLAGGED(ch, PLR3_NOGMCP)),
-           ONOFF(PLR2_FLAGGED(ch, PLR2_HEAL)));
+           ONOFF(PLR2_FLAGGED(ch, PLR2_HEAL)),
+           ONOFF(!PLR3_FLAGGED(ch, PLR3_JESTROS)));
   send_to_char(Gbuf1, send_ch);
 
   if (GET_LEVEL(ch) >= AVATAR)
@@ -4446,6 +4447,7 @@ static const char *toggles_list[] = {
     "petdamage",
     "guildname",
     "gmcp", // 65
+    "jchat", // 66
     "\n"};
 
 static const char *tog_messages[][2] = {
@@ -4575,7 +4577,9 @@ static const char *tog_messages[][2] = {
     {"You turn off the display of your guild name.\r\n",
      "You turn on the display of your guild name.\r\n"},
     {"&+WGMCP&N data streaming enabled.\r\n",
-     "&+WGMCP&N data streaming disabled.\r\n"}};
+     "&+WGMCP&N data streaming disabled.\r\n"},
+    {"Jchat channel: -=&+ROFF&n=-\r\n",
+     "Jchat channel: -=&+GON&n=-\r\n"}};
 
 void do_more(P_char ch, char *arg, int cmd)
 {
@@ -5080,6 +5084,18 @@ void do_toggle(P_char ch, char *arg, int cmd)
     break;
   case 65: /* gmcp */
     result = PLR3_TOG_CHK(ch, PLR3_NOGMCP);
+    break;
+  case 66: // jchat
+    if (PLR3_FLAGGED(ch, PLR3_JESTROS))
+    {
+      REMOVE_BIT(ch->specials.act3, PLR3_JESTROS);
+      result = 1;  // removing flag = turning ON
+    }
+    else
+    {
+      SET_BIT(ch->specials.act3, PLR3_JESTROS);
+      result = 0;  // setting flag = turning OFF
+    }
     break;
   default:
     break;

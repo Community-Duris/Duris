@@ -3874,6 +3874,181 @@ void do_nchat(P_char ch, char *argument, int cmd)
   }
 }
 
+void do_jestros(P_char ch, char *argument, int cmd)
+{
+  P_desc i;
+  bool good, evil, undead, neutral, all;
+  char Gbuf1[MAX_STRING_LENGTH];
+  char Gbuf2[MAX_STRING_LENGTH];
+  P_char to;
+
+  if (!IS_ALIVE(ch))
+  {
+    return;
+  }
+
+  if (IS_NPC(ch))
+  {
+    send_to_char("You try, but you just can't figure out how.. Maybe this requires being a PC.\n\r", ch);
+    return;
+  }
+
+  if (PLR3_FLAGGED(ch, PLR3_JESTROS))
+  {
+    send_to_char("Jchat channel is turned off, type \"tog jchat\" to turn it on.\n", ch);
+    return;
+  }
+
+  if (IS_AFFECTED2(ch, AFF2_SILENCED))
+  {
+    send_to_char("You move your lips, but no sound comes forth!\n", ch);
+    return;
+  }
+
+  if (is_silent(ch, TRUE))
+  {
+    return;
+  }
+
+  while (*argument == ' ' && *argument != '\0')
+  {
+    argument++;
+  }
+
+  all = good = evil = undead = neutral = FALSE;
+
+  if (!*argument)
+  {
+    send_to_char("Usage: jc <e|g|u|n|a> <message>\n", ch);
+    return;
+  }
+
+  if (ch->desc)
+  {
+    if (IS_TRUSTED(ch))
+    {
+      if (((*argument == 'g') || (*argument == 'G')) &&
+          (*(argument + 1) == ' '))
+        good = TRUE;
+      else if (((*argument == 'e') || (*argument == 'E')) &&
+               (*(argument + 1) == ' '))
+        evil = TRUE;
+      else if (((*argument == 'u') || (*argument == 'U')) &&
+               (*(argument + 1) == ' '))
+        undead = TRUE;
+      else if (((*argument == 'n') || (*argument == 'N')) &&
+               (*(argument + 1) == ' '))
+        neutral = TRUE;
+      else if (((*argument == 'a') || (*argument == 'A')) &&
+               (*(argument + 1) == ' '))
+      {
+        all = good = evil = undead = TRUE;
+      }
+      else
+      {
+        send_to_char("&+YUse jc 'e', 'u', 'g', 'n' or 'a'. &n\n", ch);
+        return;
+      }
+      argument += 2;
+
+      if (all)
+        snprintf(Gbuf2, MAX_STRING_LENGTH, "&+W*all*&n");
+      else if (good)
+        snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_GOOD].color, racewar_color[RACEWAR_GOOD].name);
+      else if (evil)
+        snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_EVIL].color, racewar_color[RACEWAR_EVIL].name);
+      else if (undead)
+        snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_UNDEAD].color, racewar_color[RACEWAR_UNDEAD].name);
+      else if (neutral)
+        snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_NEUTRAL].color, racewar_color[RACEWAR_NEUTRAL].name);
+      else
+        snprintf(Gbuf2, MAX_STRING_LENGTH, "&+Cundefined&n");
+
+      snprintf(Gbuf1, MAX_STRING_LENGTH, "&+GYou jchat to &n(%s): '&+w%s&n&+w'\n", Gbuf2, argument);
+      send_to_char(Gbuf1, ch, LOG_PRIVATE);
+    }
+    else if (IS_SET(ch->specials.act, PLR_ECHO))
+    {
+      snprintf(Gbuf1, MAX_STRING_LENGTH, "&+GYou jchat '&+W%s&n&+w'\n", argument);
+      send_to_char(Gbuf1, ch, LOG_PRIVATE);
+    }
+    else
+      send_to_char("Ok.\n", ch);
+  }
+
+  if (!IS_TRUSTED(ch))
+  {
+    if (IS_RACEWAR_GOOD(ch))
+    {
+      snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_GOOD].color, racewar_color[RACEWAR_GOOD].name);
+      good = TRUE;
+    }
+    else if (IS_RACEWAR_EVIL(ch))
+    {
+      snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_EVIL].color, racewar_color[RACEWAR_EVIL].name);
+      evil = TRUE;
+    }
+    else if (IS_RACEWAR_UNDEAD(ch))
+    {
+      snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_UNDEAD].color, racewar_color[RACEWAR_UNDEAD].name);
+      undead = TRUE;
+    }
+    else if (IS_RACEWAR_NEUTRAL(ch))
+    {
+      snprintf(Gbuf2, MAX_STRING_LENGTH, "&+%c%s&N", racewar_color[RACEWAR_NEUTRAL].color, racewar_color[RACEWAR_NEUTRAL].name);
+      neutral = TRUE;
+    }
+    else
+    {
+      snprintf(Gbuf2, MAX_STRING_LENGTH, "&-Rundefined&n");
+    }
+  }
+
+  for (i = descriptor_list; i; i = i->next)
+  {
+    if (i->connected || !(to = i->character) || to == ch)
+    {
+      continue;
+    }
+    if (!IS_TRUSTED(to) && !all && ((evil && !IS_RACEWAR_EVIL(to)) || (undead && !IS_RACEWAR_UNDEAD(to)) || (good && !IS_RACEWAR_GOOD(to)) || (neutral && !IS_RACEWAR_NEUTRAL(to))))
+    {
+      continue;
+    }
+    if (IS_NPC(to) || PLR3_FLAGGED(to, PLR3_JESTROS))
+    {
+      continue;
+    }
+    if (to->only.pc->ignored == ch)
+    {
+      continue;
+    }
+    if (!IS_TRUSTED(to) && (!good && !evil && !undead && !neutral))
+      continue;
+    if (IS_TRUSTED(to))
+    {
+      snprintf(Gbuf1, MAX_STRING_LENGTH, "&+W%s&n&+G jchat &+w(%s&+w): '&+Y%s&n&+w'\n",
+               PERS(ch, to, FALSE), Gbuf2, language_CRYPT(ch, to, argument));
+    }
+    else
+    {
+      snprintf(Gbuf1, MAX_STRING_LENGTH, "&+W%s&n&+G jchat: &+w'&+Y%s&n&+w'\n",
+               PERS(ch, to, FALSE), language_CRYPT(ch, to, argument));
+    }
+    send_to_char(Gbuf1, to, LOG_PRIVATE);
+
+    gmcp_comm_channel_ex(to, "jchat", PERS(ch, to, FALSE), argument,
+      good ? "good" : evil ? "evil" : undead ? "undead" : "neutral");
+  }
+
+  gmcp_comm_channel_ex(ch, "jchat", GET_NAME(ch), argument,
+    good ? "good" : evil ? "evil" : undead ? "undead" : "neutral");
+
+  if (get_property("logs.chat.status", 0.000))
+  {
+    logit(LOG_CHAT, "%s jchat (%s) '%s'", GET_NAME(ch), Gbuf2, argument);
+  }
+}
+
 void do_wizmsg(P_char ch, char *arg, int cmd)
 {
   P_desc d;
@@ -9962,6 +10137,27 @@ void newb_spellup(P_char ch, P_char victim)
 void do_newb_spellup_all(P_char ch, char *arg, int cmd)
 {
   P_desc d;
+  char buf[MAX_STRING_LENGTH];
+  int racewar_filter = 0;
+  int count = 0;
+
+  one_argument(arg, buf);
+
+  if (*buf)
+  {
+    if (*buf == 'g' || *buf == 'G')
+      racewar_filter = RACEWAR_GOOD;
+    else if (*buf == 'e' || *buf == 'E')
+      racewar_filter = RACEWAR_EVIL;
+    else
+    {
+      send_to_char("Usage: newbsa [g|e]\n", ch);
+      send_to_char("  g = good racewar only\n", ch);
+      send_to_char("  e = evil racewar only\n", ch);
+      send_to_char("  no argument = all players\n", ch);
+      return;
+    }
+  }
 
   for (d = descriptor_list; d; d = d->next)
   {
@@ -9969,11 +10165,15 @@ void do_newb_spellup_all(P_char ch, char *arg, int cmd)
     {
       if (GET_LEVEL(d->character) <= 60)
       {
-        newb_spellup(ch, d->character);
+        if (racewar_filter == 0 || GET_RACEWAR(d->character) == racewar_filter)
+        {
+          newb_spellup(ch, d->character);
+          count++;
+        }
       }
     }
   }
-  send_to_char("Done.\n", ch);
+  send_to_char_f(ch, "Done. Blessed %d player%s.\n", count, count == 1 ? "" : "s");
 }
 
 void do_newb_spellup(P_char ch, char *arg, int cmd)
