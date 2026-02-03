@@ -134,6 +134,7 @@ void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data)
 
     if (verify_durisweb_sig(sig->valuestring)) {
         d->durisweb_verified = 1;
+        d->durisweb_backend = 1;
         statuslog(56, "DurisWeb service authenticated");
         send_auth_response(d, 1, NULL);
     } else {
@@ -302,7 +303,7 @@ void ws_broadcast_player_login(struct descriptor_data *player_d) {
     if (!json) return;
 
     for (d = descriptor_list; d; d = d->next) {
-        if (d->websocket && d->durisweb_verified) {
+        if (d->websocket && d->durisweb_backend) {
             websocket_send_text(d, json);
         }
     }
@@ -332,7 +333,7 @@ void ws_broadcast_player_logout(const char *character, int faction) {
     if (!json) return;
 
     for (d = descriptor_list; d; d = d->next) {
-        if (d->websocket && d->durisweb_verified) {
+        if (d->websocket && d->durisweb_backend) {
             websocket_send_text(d, json);
         }
     }

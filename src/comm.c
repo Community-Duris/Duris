@@ -2732,6 +2732,12 @@ int process_input(P_desc t)
    */
   if (t->sslses)
   {
+    // borked state, bail before gnutls chokes on it
+    if (t->connected == CON_UNKNOWN && t->character) {
+      logit(LOG_BUGS, "process_input: corrupted descriptor state - connected=0 but has character %s, closing",
+            GET_NAME(t->character));
+      return (-1);
+    }
     thisround = gnutls_record_recv(t->sslses, t->buf + begin,
                                    (MAX_QUEUE_LENGTH - begin));
     if (!thisround)

@@ -5849,7 +5849,7 @@ P_char get_char_online( char *name, bool include_linkdead )
   {
     for( i = character_list; i; i = i->next )
     {
-      if (isname(name, GET_NAME(i)))
+      if (IS_PC(i) && isname(name, GET_NAME(i)))
         return i;
     }
   }
