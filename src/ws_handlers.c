@@ -168,7 +168,7 @@ void ws_broadcast_auction_new(int auction_id, const char *seller_name, const cha
     if (!json) return;
 
     for (d = descriptor_list; d; d = d->next) {
-        if (d->websocket && d->durisweb_verified) {
+        if (d->websocket && d->durisweb_backend) {
             websocket_send_text(d, json);
         }
     }
@@ -201,7 +201,7 @@ void ws_broadcast_auction_bid(int auction_id, const char *bidder_name, int bid_a
     if (!json) return;
 
     for (d = descriptor_list; d; d = d->next) {
-        if (d->websocket && d->durisweb_verified) {
+        if (d->websocket && d->durisweb_backend) {
             websocket_send_text(d, json);
         }
     }
@@ -237,7 +237,7 @@ void ws_broadcast_auction_close(int auction_id, const char *winner_name, int win
     if (!json) return;
 
     for (d = descriptor_list; d; d = d->next) {
-        if (d->websocket && d->durisweb_verified) {
+        if (d->websocket && d->durisweb_backend) {
             websocket_send_text(d, json);
         }
     }
