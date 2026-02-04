@@ -1015,6 +1015,10 @@ void game_loop(int port, int sslport)
       if (!FD_ISSET(point->descriptor, &output_set))
         continue;
 
+      // skip ssl connections still negotiating
+      if (point->connected == CON_SSLNEGO)
+        continue;
+
       if (process_output(point) < 0)
       {
         close_socket(point);
@@ -2159,8 +2163,11 @@ int new_descriptor(int s, int conn_type)
 
   descriptor_list = newd;
 
-  if (conn_type == 1 && ssl_negotiate(sslses)) // do first round immediately
+  if (conn_type == 1) // ssl - always use CON_SSLNEGO, let game loop handle greet
+  {
+    ssl_negotiate(sslses); // do first round immediately
     STATE(newd) = CON_SSLNEGO;
+  }
   else if (conn_type == 2)
     STATE(newd) = CON_GET_TERM; /* WebSocket waits for HTTP handshake */
   else
