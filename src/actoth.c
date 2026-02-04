@@ -4320,7 +4320,7 @@ void show_toggles(P_char ch)
            ONOFF(PLR_FLAGGED(ch, PLR_MAP)),
            ONOFF(PLR_FLAGGED(ch, PLR_OLDSMARTP)),
            ONOFF(!PLR2_FLAGGED(ch, PLR2_NOTITLE)),
-           ONOFF(PLR2_FLAGGED(ch, PLR2_BATTLEALERT)),
+           ONOFF(!PLR2_FLAGGED(ch, PLR2_BATTLEALERT)),
            ONOFF(PLR2_FLAGGED(ch, PLR2_KINGDOMVIEW)),
            ONOFF(PLR2_FLAGGED(ch, PLR2_SHIPMAP)),
            ONOFF(!PLR2_FLAGGED(ch, PLR2_NOTAKE)),
@@ -4513,8 +4513,8 @@ static const char *tog_messages[][2] = {
      "You turn your &+Wno-locate&n status on.\r\n"},
     {"You will now see player titles.\r\n",
      "You will no longer see player titles.\r\n"},
-    {"You turn your battle alert status off.\r\n",
-     "You turn your battle alert status on.\r\n"},
+    {"You turn your battle alert status on.\r\n",
+     "You turn your battle alert status off.\r\n"},
     {"You will no longer see kingdom areas on the map.\r\n",
      "You will now see kingdom areas on the map.\r\n"},
     {"You will no longer see maps as ships move.\r\n",
@@ -4972,7 +4972,16 @@ void do_toggle(P_char ch, char *arg, int cmd)
     result = PLR2_TOG_CHK(ch, PLR2_NOTITLE);
     break;
   case 31:
-    result = PLR2_TOG_CHK(ch, PLR2_BATTLEALERT);
+    if (PLR2_FLAGGED(ch, PLR2_BATTLEALERT))
+    {
+      REMOVE_BIT(ch->specials.act2, PLR2_BATTLEALERT);
+      result = 0;
+    }
+    else
+    {
+      SET_BIT(ch->specials.act2, PLR2_BATTLEALERT);
+      result = 1;
+    }
     break;
   case 32:
     result = PLR2_TOG_CHK(ch, PLR2_KINGDOMVIEW);

@@ -971,13 +971,13 @@ void do_fire(P_char ch, char *argument, int cmd)
   } // End of for loop: shots in this one fire action
 
   snprintf(buf, MAX_STRING_LENGTH, "%sYou fire at $N.%s [&+R%d&n hits]",
-           (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G-=[&n" : "",
-           (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G]=-&n" : "", actual);
+           (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G-=[&n" : "",
+           (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G]=-&n" : "", actual);
   act(buf, FALSE, ch, 0, victim, TO_CHAR | ACT_TERSE);
 
   snprintf(buf, MAX_STRING_LENGTH, "%s$n fires at you.%s [&+R%d&n hits]",
-           (IS_PC(victim) && IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R-=[&n" : "",
-           (IS_PC(victim) && IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R]=-&n" : "", actual);
+           (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R-=[&n" : "",
+           (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R]=-&n" : "", actual);
   act(buf, FALSE, ch, 0, victim, TO_VICT | ACT_TERSE);
 
   snprintf(buf, MAX_STRING_LENGTH, "$n fires at $N. [&+R%d&n hits]", actual);
