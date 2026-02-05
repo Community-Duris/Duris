@@ -253,6 +253,10 @@ int initialize_mysql()
     return -1;
   }
 
+  unsigned int timeout = 10;
+  mysql_options(DB, MYSQL_OPT_READ_TIMEOUT, &timeout);
+  mysql_options(DB, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
+
   DB = mysql_real_connect(DB, DB_HOST, DB_USER, DB_PASSWD, db_name,
                           0, NULL, CLIENT_MULTI_STATEMENTS);
   if (DB == NULL)
