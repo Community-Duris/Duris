@@ -13,6 +13,8 @@
 #include "comm.h"
 #include "interp.h"
 #include "assocs.h"
+
+extern const struct race_names race_names_table[];
 #include "prototypes.h"
 #include "specs.prototypes.h"
 #include "alliances.h"
@@ -242,23 +244,11 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
     return TRUE;
   }
 
-  if( pl && (cmd == CMD_GOTHIT && !number(0, 15))
-    || (cmd == CMD_HIT || cmd == CMD_KILL))
+  if( pl && ((cmd == CMD_GOTHIT && !number(0, 15))
+    || cmd == CMD_HIT || cmd == CMD_KILL))
   {
-    //can add check here to see if guild has magic mouth upgrade from db?
-    snprintf(buff, MAX_STRING_LENGTH, "&+cA magic mouth tells your guild 'Alert! $N&n&+c has trespassed into %s&n&+c!'&n", world[ch->in_room].name);
-    for (P_desc i = descriptor_list; i; i = i->next)
-    {
-      if( !i->connected && !is_silent(i->character, TRUE)
-        && IS_SET(i->character->specials.act, PLR_GCC)
-        && IS_MEMBER(GET_A_BITS(i->character))
-        && (GET_ASSOC(i->character) == GET_ASSOC(ch))
-        && !IS_TRUSTED(i->character) )
-      {
-        act(buff, FALSE, i->character, 0, pl, TO_CHAR);
-      }
-      return FALSE;
-    }
+    snprintf(buff, MAX_STRING_LENGTH, "Alert! a %s has trespassed into %s!", race_names_table[GET_RACE(pl)].normal, world[ch->in_room].name);
+    send_to_guild(GET_ASSOC(ch), (char *)"A magic mouth", buff);
   }
   return FALSE;
 }
