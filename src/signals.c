@@ -11,6 +11,9 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <execinfo.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "prototypes.h"
 #include "structs.h"
@@ -84,6 +87,20 @@ void checkpointing(int signum)
   if( !tics )
   {
     logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated");
+
+    // dump backtrace so we know where it got stuck
+    {
+      void *bt[64];
+      int n = backtrace(bt, 64);
+      int fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
+      if (fd >= 0) {
+        const char msg[] = "\n--- hung backtrace ---\n";
+        write(fd, msg, sizeof(msg) - 1);
+        backtrace_symbols_fd(bt, n, fd);
+        close(fd);
+      }
+    }
+
     // The reason for this, is that we don't want to reboot into a hung-during-boot situation.
     // In other words, if the mud hangs during a boot, we just want to die completely until it's fixed.
     if( game_booted )

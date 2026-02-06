@@ -277,7 +277,7 @@ endif
 all: $(PROGS)
 
 dms_new : $(DMS_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -g -o dms_new $(DMS_OBJS) $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -rdynamic -g -o dms_new $(DMS_OBJS) $(LIBS)
 	chmod a+rx dms_new
 
 pfile : $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/mm.o $(OBJDIR)/common.o
