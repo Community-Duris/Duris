@@ -247,7 +247,10 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
   if( pl && ((cmd == CMD_GOTHIT && !number(0, 15))
     || cmd == CMD_HIT || cmd == CMD_KILL))
   {
-    snprintf(buff, MAX_STRING_LENGTH, "Alert! a %s has trespassed into %s!", race_names_table[GET_RACE(pl)].normal, world[ch->in_room].name);
+    if (IS_PC(pl) && GET_RACEWAR(pl) == GET_ASSOC(ch)->get_racewar())
+      snprintf(buff, MAX_STRING_LENGTH, "Alert! %s has trespassed into %s!", GET_NAME(pl), world[ch->in_room].name);
+    else
+      snprintf(buff, MAX_STRING_LENGTH, "Alert! a %s has trespassed into %s!", race_names_table[GET_RACE(pl)].normal, world[ch->in_room].name);
     send_to_guild(GET_ASSOC(ch), (char *)"A magic mouth", buff);
   }
   return FALSE;
