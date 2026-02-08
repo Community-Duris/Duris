@@ -535,6 +535,13 @@ void run_the_game(int port, int sslport)
 
 /* Accept new connects, relay commands, and call 'heartbeat-functs' */
 
+static void check_section_time(struct timespec *start, struct timespec *end, const char *name, int threshold)
+{
+  long elapsed = (end->tv_sec - start->tv_sec) * 1000 + (end->tv_nsec - start->tv_nsec) / 1000000;
+  if (elapsed > threshold * 1000)
+    logit(LOG_EXIT, "SLOW SECTION: %s took %ld ms", name, elapsed);
+}
+
 void game_loop(int port, int sslport)
 {
   P_char t_ch = NULL;
@@ -550,6 +557,8 @@ void game_loop(int port, int sslport)
   sigset_t mask, oldset;
   int s, S;
   int WS; /* WebSocket listener socket */
+  struct timespec section_start, section_end;
+  #define SECTION_WARN_THRESHOLD 10
 
   sentbytes = 0;
   recivedbytes = 0;
@@ -709,6 +718,7 @@ void game_loop(int port, int sslport)
 #endif
 
     /* Continue with original code */
+    clock_gettime(CLOCK_MONOTONIC, &section_start);
     PROFILE_START(connections);
     FD_SET(s, &input_set);
     FD_SET(S, &input_set);
@@ -782,6 +792,7 @@ void game_loop(int port, int sslport)
           }
         }
       }
+      sigprocmask(SIG_SETMASK, &oldset, 0);
       continue;
     }
     sigprocmask(SIG_SETMASK, &oldset, 0);
@@ -834,6 +845,8 @@ void game_loop(int port, int sslport)
       }
     }
     PROFILE_END(connections);
+    clock_gettime(CLOCK_MONOTONIC, &section_end);
+    check_section_time(&section_start, &section_end, "connections", SECTION_WARN_THRESHOLD);
 
 #if 0
     if (debug_mode)
@@ -841,6 +854,7 @@ void game_loop(int port, int sslport)
 #endif
 
     /* process_commands */
+    clock_gettime(CLOCK_MONOTONIC, &section_start);
     PROFILE_START(commands);
     for (point = descriptor_list, player_count = 0; point; point = next_to_process)
     {
@@ -1004,7 +1018,10 @@ void game_loop(int port, int sslport)
       }
     }
     PROFILE_END(commands);
+    clock_gettime(CLOCK_MONOTONIC, &section_end);
+    check_section_time(&section_start, &section_end, "commands", SECTION_WARN_THRESHOLD);
 
+    clock_gettime(CLOCK_MONOTONIC, &section_start);
     PROFILE_START(prompts);
     for (point = descriptor_list; point; point = next_point)
     {
@@ -1027,6 +1044,8 @@ void game_loop(int port, int sslport)
     }
 
     PROFILE_END(prompts);
+    clock_gettime(CLOCK_MONOTONIC, &section_end);
+    check_section_time(&section_start, &section_end, "prompts", SECTION_WARN_THRESHOLD);
 
     /* handle heartbeat stuff */
     /* Note: pulse now changes every 1/4 sec  */
@@ -1047,6 +1066,7 @@ void game_loop(int port, int sslport)
       gmcp_flush_dirty_ship_info();
     }
 
+    clock_gettime(CLOCK_MONOTONIC, &section_start);
     PROFILE_START(activities);
     if (!(pulse % (WAIT_SEC * 60)))
       timers_activity();
@@ -1087,7 +1107,10 @@ void game_loop(int port, int sslport)
       boon_maintenance();
 
     PROFILE_END(activities);
+    clock_gettime(CLOCK_MONOTONIC, &section_end);
+    check_section_time(&section_start, &section_end, "activities", SECTION_WARN_THRESHOLD);
 
+    clock_gettime(CLOCK_MONOTONIC, &section_start);
     PROFILE_START(combat);
     perform_violence();
 
@@ -1156,6 +1179,8 @@ void game_loop(int port, int sslport)
     }
     //      }
     PROFILE_END(combat);
+    clock_gettime(CLOCK_MONOTONIC, &section_end);
+    check_section_time(&section_start, &section_end, "combat", SECTION_WARN_THRESHOLD);
 
     PROFILE_START(pulse_reset);
     // tics since last checkpoint signal
