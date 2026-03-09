@@ -2854,7 +2854,7 @@ int process_input(P_desc t)
 	/* processed before user input - no newline */
 	for (i = begin; *(t->buf + i); i++)
 	{
-		if (*(t->buf + i) == (signed char)IAC)
+		if (t->buf[i] == (char)IAC)
 		{
 			int remaining = strlen(t->buf + i);
 			int consumed  = parse_telnet_options(t, t->buf + i, remaining);
@@ -2891,7 +2891,7 @@ int process_input(P_desc t)
 		if (!ISNEWL(*(t->buf + i)) && !(flag = (k >= (MAX_INPUT_LENGTH - 2))))
 		{
 			/* telnet */
-			if (*(t->buf + i) == (signed char)IAC)
+			if (t->buf[i] == (char)IAC)
 			{
 				int remaining = strlen(t->buf + i);
 				int consumed  = parse_telnet_options(t, t->buf + i, remaining);
@@ -2901,7 +2901,7 @@ int process_input(P_desc t)
 					i++;
 			}
 			/* backspace? (handle both ^H and DEL) */
-			else if (*(t->buf + i) == '\b' || (unsigned char)*(t->buf + i) == 127)
+			else if (t->buf[i] == '\b' || t->buf[i] == 127)
 			{
 				/* more than one char ? */
 				if (k)
