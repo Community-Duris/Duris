@@ -346,7 +346,7 @@ int fread_string_to_buffer(FILE *fl, char *buf)
 
 	for (point = buf + length - 1; point > buf && *point != '&'; point--)
 		;
-	if (*point == '&' && toupper(*(point + 1)) != 'N')
+	if (point > buf && *point == '&' && toupper(*(point + 1)) != 'N')
 	{
 		strcat(buf, "&n");
 		length += 2;
