@@ -1112,7 +1112,7 @@ const char *rude_ass[] = {"ass", "bitch", "cunt", "pussy", "dick", "fuck", "peni
 
 int search_block(char *arg, const char **list, int exact)
 {
-	register int i, l;
+	int i, l;
 
 	if (!arg)
 		return -1;
@@ -2145,8 +2145,8 @@ void half_chop(char *string, char *arg1, char *arg2)
 
 bool special(P_char ch, int cmd, char *arg)
 {
-	register P_obj  i;
-	register P_char k;
+	P_obj  i;
+	P_char k;
 	int             j;
 
 	if (!IS_ALIVE(ch))

@@ -759,7 +759,7 @@ void poison_madness(int level, P_char ch, char *arg, int type, P_char victim, st
 char *FirstWord(char *namelist)
 {
 	static char    holder[30];
-	register char *point;
+	char *point;
 
 	if (!namelist)
 		return (NULL);

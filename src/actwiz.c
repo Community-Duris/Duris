@@ -11984,8 +11984,8 @@ void do_where(P_char ch, char *argument, int cmd)
 	char           *args;
 	int             length = 0, count = 0, o_count = 0, v_num;
 	bool            flag;
-	register P_char i;
-	register P_obj  k;
+	P_char i;
+	P_obj  k;
 	P_desc          d;
 	P_char          t_ch;
 

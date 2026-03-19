@@ -3218,8 +3218,8 @@ void act_convert(char *buf, const char *str, P_char ch, P_char to, P_obj obj, vo
 	char                 tbuf[MAX_STRING_LENGTH];
 	bool                 found;
 	int                  j, tbp, skip, which_z, sil = FALSE, ig_zc = FALSE;
-	register char       *point;
-	register const char *strp, *i;
+	char       *point;
+	const char *strp, *i;
 	int                  terseonly = FALSE;
 	int                  notterse  = FALSE;
 	bool                 no_eol    = FALSE;
@@ -3554,8 +3554,8 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 	 */
 	int                  j, tbp, skip, which_z, sil = type & ACT_SILENCEABLE;
 	bool                 ignore_zcoord = type & ACT_IGNORE_ZCOORD;
-	register char       *point;
-	register const char *strp, *i;
+	char       *point;
+	const char *strp, *i;
 	int                  terseonly = type & ACT_TERSE;
 	int                  notterse  = type & ACT_NOTTERSE;
 	bool                 no_eol    = type & ACT_NOEOL;
