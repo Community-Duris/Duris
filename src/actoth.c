@@ -4294,7 +4294,7 @@ void show_toggles(P_char ch)
 	         ONOFF(PLR_FLAGGED(ch, PLR_MAP)),
 	         ONOFF(PLR_FLAGGED(ch, PLR_OLDSMARTP)),
 	         ONOFF(!PLR2_FLAGGED(ch, PLR2_NOTITLE)),
-	         ONOFF(PLR2_FLAGGED(ch, PLR2_BATTLEALERT)),
+	         ONOFF(!PLR2_FLAGGED(ch, PLR2_BATTLEALERT)),
 	         ONOFF(PLR2_FLAGGED(ch, PLR2_KINGDOMVIEW)),
 	         ONOFF(PLR2_FLAGGED(ch, PLR2_SHIPMAP)),
 	         ONOFF(!PLR2_FLAGGED(ch, PLR2_NOTAKE)),
@@ -4875,7 +4875,16 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			result = PLR2_TOG_CHK(ch, PLR2_NOTITLE);
 			break;
 		case 31:
-			result = PLR2_TOG_CHK(ch, PLR2_BATTLEALERT);
+			if (PLR2_FLAGGED(ch, PLR2_BATTLEALERT))
+			{
+				REMOVE_BIT(ch->specials.act2, PLR2_BATTLEALERT);
+				result = 0;
+			}
+			else
+			{
+				SET_BIT(ch->specials.act2, PLR2_BATTLEALERT);
+				result = 1;
+			}
 			break;
 		case 32:
 			result = PLR2_TOG_CHK(ch, PLR2_KINGDOMVIEW);

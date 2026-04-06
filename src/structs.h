@@ -1751,6 +1751,7 @@ struct descriptor_data
 	char   client_name[64];
 	char   client_version[32];
 	int    durisweb_verified;
+	int    durisweb_backend;    /* true only for backend service, not web clients */
 
 	/* ttype/mtts support */
 	int    ttype_state;        /* 0=none, 1=sent_do, 2=cycling, 3=complete */

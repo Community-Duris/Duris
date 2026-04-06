@@ -3156,7 +3156,7 @@ void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *
 	act(buf_notvict, FALSE, ch, messages->obj, victim, TO_NOTVICTROOM);
 #endif
 
-	if (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_BATTLEALERT) && !IS_SET(ch->specials.act2, PLR2_TERSE))
+	if (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT) && !IS_SET(ch->specials.act2, PLR2_TERSE))
 	{
 		strcat(buf_char, "&+G]=-&N");
 		send_to_char("&+G-=[&N", ch);
@@ -3167,7 +3167,7 @@ void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *
 	act(buf_char, FALSE, ch, messages->obj, victim, TO_CHAR);
 #endif
 
-	if (IS_PC(victim) && IS_SET(victim->specials.act2, PLR2_BATTLEALERT) && !IS_SET(victim->specials.act2, PLR2_TERSE))
+	if (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT) && !IS_SET(victim->specials.act2, PLR2_TERSE))
 	{
 		strcat(buf_vict, "&+R]=-&N");
 		send_to_char("&+R-=[&N", victim);
@@ -9740,16 +9740,16 @@ case RACEWAR_NEUTRAL:
 			snprintf(GBuf1,
 			         MAX_STRING_LENGTH,
 			         "%sYou attack $N.%s [&+R%d&n hits] [&+R%d&n damage]",
-			         (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G-=[&n" : "",
-			         (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G]=-&n" : "",
+			         (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G-=[&n" : "",
+			         (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G]=-&n" : "",
 			         num_hits,
 			         damAccumulator);
 			act(GBuf1, FALSE, ch, 0, opponent, TO_CHAR | ACT_TERSE);
 			snprintf(GBuf1,
 			         MAX_STRING_LENGTH,
 			         "%s$n attacks you.%s [&+R%d&n hits] [&+R%d&n damage]",
-			         (IS_PC(opponent) && IS_SET(opponent->specials.act2, PLR2_BATTLEALERT)) ? "&+R-=[&n" : "",
-			         (IS_PC(opponent) && IS_SET(opponent->specials.act2, PLR2_BATTLEALERT)) ? "&+R]=-&n" : "",
+			         (IS_PC(opponent) && !IS_SET(opponent->specials.act2, PLR2_BATTLEALERT)) ? "&+R-=[&n" : "",
+			         (IS_PC(opponent) && !IS_SET(opponent->specials.act2, PLR2_BATTLEALERT)) ? "&+R]=-&n" : "",
 			         num_hits,
 			         damAccumulator);
 			act(GBuf1, FALSE, ch, 0, opponent, TO_VICT | ACT_TERSE);

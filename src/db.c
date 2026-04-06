@@ -3606,6 +3606,8 @@ void reset_zone(int zone, int force_item_repop)
 							{
 								ZCMD.command = '!';
 								logit(LOG_DEBUG, "reset_zone(): (zone %d) mob %d [%d] not loadable", zone, ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
+								last_cmd = last_mob_load = 0;
+              					break;
 							}
 						}
 						else
@@ -3649,6 +3651,8 @@ void reset_zone(int zone, int force_item_repop)
 							{
 								ZCMD.command = '!';
 								logit(LOG_DEBUG, "reset_zone(): (zone %d) mob %d [%d] not loadable", zone, ZCMD.arg1, mob_index[ZCMD.arg1].virtual_number);
+								last_cmd = last_mob_load = 0;
+              					break;
 							}
 						}
 						else

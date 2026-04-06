@@ -560,6 +560,13 @@ void run_the_game(int port, int sslport)
 
 /* Accept new connects, relay commands, and call 'heartbeat-functs' */
 
+static void check_section_time(struct timespec *start, struct timespec *end, const char *name, int threshold)
+{
+  long elapsed = (end->tv_sec - start->tv_sec) * 1000 + (end->tv_nsec - start->tv_nsec) / 1000000;
+  if (elapsed > threshold * 1000)
+    logit(LOG_EXIT, "SLOW SECTION: %s took %ld ms", name, elapsed);
+}
+
 void game_loop(int port, int sslport)
 {
 	P_char                t_ch = NULL;
@@ -808,7 +815,6 @@ void game_loop(int port, int sslport)
 
 		if (select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time) < 0)
 		{
-			sigprocmask(SIG_SETMASK, &oldset, 0);
 			perror("Select poll");
 			// bad file descriptor - find and nuke it so we dont loop forever
 			if (errno == EBADF)
@@ -824,6 +830,7 @@ void game_loop(int port, int sslport)
 					}
 				}
 			}
+      		sigprocmask(SIG_SETMASK, &oldset, 0);
 			continue;
 		}
 		sigprocmask(SIG_SETMASK, &oldset, 0);
@@ -1054,6 +1061,10 @@ void game_loop(int port, int sslport)
 			// this code tries to skip players who have too much pending text.
 			// But, we currently boot them anyway...
 			if (!FD_ISSET(point->descriptor, &output_set))
+				continue;
+
+			// skip ssl connections still negotiating
+			if (point->connected == CON_SSLNEGO)
 				continue;
 
 			if (process_output(point) < 0)
@@ -2221,8 +2232,11 @@ int new_descriptor(int s, int conn_type)
 
 	descriptor_list = newd;
 
-	if (conn_type == 1 && ssl_negotiate(sslses)) // do first round immediately
+	if (conn_type == 1) // ssl - always use CON_SSLNEGO, let game loop handle greet
+	{
+		ssl_negotiate(sslses); // do first round immediately
 		STATE(newd) = CON_SSLNEGO;
+	}
 	else if (conn_type == 2)
 		STATE(newd) = CON_GET_TERM; /* WebSocket waits for HTTP handshake */
 	else
