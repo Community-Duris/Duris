@@ -7050,10 +7050,6 @@ to them by the rocks.  Along the river small pumping stations can
 be seen, used by the villagers to water their fields.
 ~
 371 33554432 6
-D1
-~
-~
-0 0 550889
 D3
    A slow flowing river.
 ~
@@ -7192,8 +7188,7 @@ D0
 ~
 ~
 0 0 37414
-D1
-   A little used dirt road.
+D2
 ~
 ~
 0 0 37416
@@ -7210,15 +7205,14 @@ road is the beginnings of a forest which streches out from the
 base of the mountains to the north.
 ~
 371 33554432 6
-D2
-~
-~
-0 0 551288
-D3
-   A little used dirt road.
+D0
 ~
 ~
 0 0 37415
+D3
+~
+~
+0 0 563532
 S
 #37417
 &+YChiltern Way&n~
@@ -7443,10 +7437,6 @@ of litter, and in some places small piles of stones have been
 erected to keep water flow from the ruts formed by carts.
 ~
 371 33554432 1
-D0
-~
-~
-0 0 550488
 D2
    Chiltern way.
 ~

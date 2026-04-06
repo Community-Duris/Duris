@@ -1,6 +1,6 @@
 #131200
-pech earth~
-&+yA pech&N~
+pech earth miner~
+&+yA pech&N miner~
 &+yA pech stands here looking for new &n&+Ypassages&n&+y to dig.
 ~
 &+y   This small humanoid seems to be total absorbed in his work.  His eyes
@@ -8,69 +8,69 @@ pech earth~
 &+yhis axe to tunnel in the &n&+Lrock&n&+y all around here.d  He barely notices you when
 &+yyou enter this area, then without warning turns and attacks!
 ~
-1073752296 0 0 0 1573016 0 0 0 -500 S
-H 0 1 0 -1
+1073752280 0 0 0 135790744 0 0 0 400 S
+pg 0 4096 2 -1
 48 0 0 1d1+1 1d1+1
-0.0.0.0 0
+0.0.0.50 0
 8 8 1
 #131201
-dao magician djinn~
-&+yA dao &n&+Ymagician~
-&+yA dao &n&+cdjinn&n&+y sifts through the &n&+Lrock&n&+y here.
+dao magi magician~
+&+yA dao &+Cm&+ma&+Cg&+mi&+Cc&+mi&+Ca&+mn~
+&+yA dao &+Cm&+ma&+Cg&+mi&+Cc&+mi&+Ca&+mn&+y sifts through the &n&+Lrock&n&+y here.
 ~
    &+yThis Dao looks like a legendary &n&+cDjinn&n&+y, a race of powerful magic users.
 &+yIt has a small cloud of dirt at where its feet would be and it seems to
 &+yhover there in midair above it.  This &n&+cDjinn&n&+y looks to be going over some
 &+yaction or order in his mind, probably from the &n&+rKhan&n&+y himself.
 ~
-1073756264 0 0 0 134217736 18 0 0 -1000 S
-EE 0 10 0 -1
-50 0 0 1d1+1 1d1+1
+1409300552 1 0 0 134217864 1063122 0 0 -1000 S
+EE 0 512 2 -1
+60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131202
-dao guardian djinn~
-&+yA dao &n&+Lguardian~
-&+yA &n&+rangry&n&+y dao &n&+Lguardian&n&+y looks for intruders to kill here.
+dao guard guardian~
+&n&+ya &+Ldao &+yg&+Lu&+ya&+Lr&+yd&+Li&+ya&+Ln&N~
+&+yA haughty &+Ldao &n&+yg&+Lu&+ya&+Lr&+yd&+Li&+ya&+Ln&n&+y looks for intruders to kill here.
 ~
   &+y A Dao moves here looking for any intruders that may have been foolish
 &+yenough to come to the Elemental Plane of &n&+LEarth&n&+y.  This &n&+Lguardian&n&+y looks like
 &+yhe loves his work and his duty, to endlessly patrol these caverns and to
 &+ysmash anything he finds thats not susposed to be here.
 ~
-1073756264 0 0 0 134217880 18 0 0 -1000 S
-EE 0 1 0 -1
-50 0 0 1d1+1 1d1+1
+1140865096 1 0 0 134217880 18 0 0 -1000 S
+EE 0 1 2 -1
+58 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131203
-earth mephit~
-&+yAn earth &n&+Ymephit~
-&+yAn earth &n&+Ymephit&n&+y walks here avoiding everything.
+dust mephit~
+&+yA &Ndust &n&+Ymephit~
+&+yA &Ndust &n&+Ymephit&n&+y coalesces from the &+Lth&Nic&+Lke&Nni&+Lng &Nair.
 ~
    &+yThis small humanoid sized creature moves here nervously looking around
 &+ynot wanting to run into anything.  It reacts violently and runs whenever
 &+yanyone does sneak up on him.  How it managed to avoid everything and to
 &+ysurvive this long is a mystery to all.
 ~
-252 0 0 0 34078722 0 0 0 -400 S
-H 0 13 0 -1
-40 0 0 1d1+1 1d1+1
+1073744092 1 0 0 706216088 1063104 0 0 -400 S
+ea 0 4096 1 3
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131204
 small earth elemental~
 &+yA small earth elemental~
-&+yAn earth elemental moves through the rock here.
+&+yAn small earth elemental moves through the rock here.
 ~
    &+yThis smaller earth elemental moves in the rock here.  He is part of the
 &+yplane of earth itself, with half of his body inside the rock and the other
 &+yhalf jutting out.  The only part of a body, if it could be called that, is
 &+ya head of sorts and arms.
 ~
-1073756264 0 0 0 33554584 0 0 0 -1000 S
-EE 0 1 0 -1
-45 0 0 1d1+1 1d1+1
+1073756232 1 0 0 167772312 1063104 0 0 -1000 S
+EE 0 1 3 2
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131205
@@ -84,9 +84,9 @@ gigantic earth elemental~
 &+yground.  It takes one look at you and with no expression as it moves towards
 &+yyou to attack!
 ~
-1073756264 0 0 0 33554584 0 0 0 -1000 S
-EE 0 1 0 -1
-55 0 0 1d1+1 1d1+1
+1073756232 1 0 0 167772312 1048576 0 0 -1000 S
+EE 0 1 1 6
+60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131206
@@ -99,24 +99,24 @@ sandling earth~
 &+ythe &n&+Learth&n&+y at the same time.  It has the the appearance of a man sized
 &+yearthworm, that mindless eats everything in its path.
 ~
-12392 0 0 0 34603144 0 0 0 -500 S
-I 0 1 0 -1
-45 0 0 1d1+1 1d1+1
+536648 1 0 0 706216088 0 0 0 -500 S
+I 0 1 3 -1
+46 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131207
 dao enforcer djinn~
-&+yA dao &n&+renforcer~
-&+yA dao &n&+renforcer&n&+y roams this area.
+&+yA dao &n&+re&+Rn&+rf&+Ro&+rr&+Rc&+re&+Rr&N~
+&+yA dao &n&+re&+Rn&+rf&+Ro&+rr&+Rc&+re&+Rr&n&+y stands here, glaring loathsomely.
 ~
    &+yThis Dao is in direct contact with the Khan himself.  He is a member of
 &+ythe Khans elite unit of &n&+rEnforcers&n&+y, a punisher of those that do not follow
 &+yhis orders to the absolute letter.  Just the sight of anyone being this far
 &+yinto the elemental plane of his home is enough reason for him to attack.
 ~
-1140865128 0 0 0 302514328 2051 0 0 -1000 S
-EE 0 5 0 -1
-51 0 0 1d1+1 1d1+1
+1073756234 1 0 0 436207768 2050 128 4096 -1000 S
+EE 0 1048576 2 -1
+58 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131208
@@ -130,9 +130,9 @@ xorn earth~
 &+yas well.  They protect what is theres fiercely and without mercy, using there
 &+ynatural powers as weapons.
 ~
-14440 0 0 0 33554568 0 0 0 -1000 S
-EE 0 1 0 -1
-55 0 0 1d1+1 1d1+1
+1140865096 1 0 0 167772296 1048576 0 8192 -1000 S
+EE 0 2048 4 4
+58 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131209
@@ -145,9 +145,9 @@ xaren earth~
 &+yof the Xorn, is also a native of the Earth Plane usually working for metal
 &+yfood from the Daos.
 ~
-1140865132 0 0 0 302514312 0 0 0 -1000 S
-EE 0 2 0 -1
-50 0 0 1d1+1 1d1+1
+1140865100 1 0 0 436732040 1048576 0 0 -1000 S
+EE 0 65 0 4
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131210
@@ -160,9 +160,9 @@ galber dher earth~
 &+Lin exact percison towards its targets.  It moves along here looking over
 &+Lthe plane making sure none of the damage here is too extensive to its home.
 ~
-1073756392 0 0 0 33554568 0 0 0 -1000 S
-EE 0 9 0 -1
-50 0 0 1d1+1 1d1+1
+1342192840 1 0 0 704643208 0 524288 37761536 -1000 S
+EE 0 4 0 6
+59 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #131211
@@ -177,15 +177,15 @@ grumbar lord earth br_a~
 &+yof the reason when you enter his &n&+Ychambers&n&+y he looks puzzled for a moment then
 &+yproceeds to smash these bothersome insects.
 ~
-1191213163 0 0 0 436207802 2076 0 0 -1000 S
-EE 0 301 0 7
-62 180 -85 1d100+30000 7d6+70
+1191213131 0 0 0 436207802 1050652 0 0 -1000 S
+EE 0 289 0 7
+60 180 -85 1d100+30000 7d6+70
 0.0.50.30 500000
 8 8 1
 #131212
-titan~
-&+GA Titan~
-&+LAn imprisoned &n&+GTitan&n&+L, stands here.
+titan ancient prisoner~
+&n&+gan ancient &+Ct&+Wi&+Ct&+Wa&+Cn&N~
+&+gAn imprisoned &+Ct&+Wi&+Ct&+Wa&+Cn &+grests here, groaning with discontent.
 ~
    &+yA &n&+GTitan&n&+y stands in front of you here, at least 30 feet high he peers down
 &+yat you and ponders for a second.  Imprisoned here, in this large &n&+Ycavern&n&+y all
@@ -193,8 +193,431 @@ titan~
 &+yis littered with Dao, Xorn, and Xaren bodies, you can only guess he doesn't
 &+ylike there kind at all.
 ~
-1073756264 0 0 0 570466360 2076 0 0 1000 S
-G 0 4 0 -1
+1090533736 1 0 0 570466360 14556 0 0 1000 S
+tt 0 96 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#131213
+living arms stone wall~
+&+ya &+rl&+yi&+rv&+yi&+rn&+yg &+yw&+ra&+yl&+rl&N~
+&+yHundreds of j&+La&+ygg&+Le&+yd stone arms spring out from the fr&+ra&+yctu&+rr&+yed wall.
+~
+   &+yDust and pebbles fall from the animated surface of
+&+Lthe knuckled, claws hands reaching out from the rocky
+&+ytunnel wall. The pulse of the rock heightens with
+&+Lone's proximity, causing the arms to writhe and the
+&+yclaws to grasp to the 'heartbeat.' The living wall
+&+Lgroans as it shifts, clutching at anything that dares
+&+yintrude.
+~
+16808010 1 0 0 939524240 1325248 262144 37761792 0 S
+ee 0 64 2 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131214
+sunnis princess deity dawn~
+&+YSunnis, &+yP&+Yr&+yi&+Yn&+yc&+Ye&+ys&+Ys&+y of the &+YDawn~
+&+YSunnis&+y, the &+YP&+yr&+Yi&+yn&+Yc&+ye&+Ys&+ys of the &+YDawn&+y stands here like a &+rb&+Rl&+Ya&+Rz&+ri&+Rn&+Yg &+ym&+ro&+yu&+Rn&+yt&+Ya&+yi&+Rn&+y.
+~
+   &+YSunnis, whose identity forces its way into the thoughts of mortals in
+&+Yher presence, is the Archomental of Positive Energy, the Princess of the
+&+YDawn, and accepted as all to be the 'eldest sister' of the Elemental Lords.
+&+YSunni is a benevolent elemental lord, one is tied with all energies in
+&+Ykeeping balance between the elemental realms. She is told to embody the
+&+Ylife-giving, creative aspects of fire, standing in contrast to her dest-
+&+Y-ructive counterparts. She appears like a moving mountain, shaped by ever-
+&+Yshifting, creeking relief portraying a feminine form. The flames enveloping
+&+Ythe deity are white, lacking the orange-yellow of primal fire, and move
+&+Yslowly, like water.
+~
+16807946 0 0 0 134217752 4208832 0 0 1000 S
+ee 0 32 0 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#131215
+faceted crysmal~
+&+Ca f&+Wa&+Cc&+We&+Ct&+We&+Cd crysmal&N~
+&+CA faceted crysmal skitters from the tunnel wall, scattering &+Wf&+Cr&+Ya&+Cct&+Wu&+Yr&+Ced &+Ylight&+C across the cavern.
+~
+&+C   This scorpion-lion creature that has been carved entirely
+&+Cfrom living &+Mg&+Ce&+mm&+Ms&+Cto&+mn&+Ce. Its body is made of interlocking crystal
+&+Cplates, each facet catching and bending light so that it seems
+&+Cto sparkle even in darkness. Even its eyes are small, glinting
+&+Cgemstones. A sharp, grinding sound can be heard as its jagged
+&+Cclaws dig against the stone, searching for gemstone sustenance.
+~
+4296 0 0 0 941097112 1048576 0 528384 0 S
+ee 0 1 0 1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131216
+zarqath al-basur albasur al basur dao prince obsidian regent~
+&+yZ&+Lar&+yq&+Lat&+yh al-Basur, &+Lthe Obsidian &+rRegent~
+&+yA decorated &+Ldao &+yprince, &+LZarqath al-Basur, the Obsidian &+rRegent&+y floats here, scanning his surroundings.
+~
+&+L   Zarqath al-Basur&+y, the &+LObsidian &+rRegent&+y, is a very &+Ldark black&+y,
+&+yeven for a &+Ldao&+y, and is considerably larger than most civil-
+&+yized men. His &+Lbasalt skin&+y is v&+Le&+yi&+Ln&+ye&+Ld&+y with faint &+cg&+yl&+ci&+ym&+cm&+ye&+cr&+ys, &+Lblack
+&+yand smooth - giving credit to his namesake. His eyes &+rb&+Ru&+Yr&+Rn&+y with
+&+ya fiery, &+rdeep &+ya&+rm&+yb&+re&+yr, and are met by few. &+LZarqath al-Basur&+y moves
+&+ywith a &+Wforce &+ythat causes the ground to seem to settle beneath him.
+&+yHis manners with his subordinates are precise and deliberate,
+&+ypompous yet commanding.
+~
+1090550856 1 0 0 419430424 1063104 17301504 0 -500 S
+ee 0 768 0 4
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#131217
+pech slave miner~
+&+ya pech &Nslave miner&N~
+&+yA woeful pech &Nslave miner &+Lcarefully chisels the &+Lrocks&+y.
+~
+   &+yThis small humanoid creature looks similar to a svirfneblin,
+only with tougher, stone-like skin and more angular features. He
+&+yis dressed in simple nondescript garb and works barefoot.
+Like most pechs, he spends many years in the earthen planar
+&+ytunnels. In his current circumstances, however, he keeps
+only what he can smuggle away from his cruel Dao masters.
+~
+2250 0 0 0 671613080 12504 0 0 400 S
+pg 0 16384 1 -1
 53 0 0 1d1+1 1d1+1
 0.0.0.0 0
+8 8 1
+#131218
+golem jeweled crag crag-jeweled ore~
+&+ma &+Lc&+cr&+Ca&+Lg&+M-&+Lj&+ce&+Cw&+Le&+ml&+Me&+Ld &+Cg&+co&+Ll&+me&+cm~
+&+LA rocky &+mgolem&+L covered in &+Cg&+Ll&+Ci&+Lt&+Ct&+Le&+Cr&+Li&+Cn&+Lg shards of &+Core&+L lumbers through here.
+~
+&+L   Born of the earth itself, this golem is a seamless fusion of
+&+Lstone and &+Cgem&+L. Its body is composed of smooth, natural &+yrock&+L,
+&+Linterlaced with &+Cv&+Le&+Ci&+Ln&+Cs&+L of glittering &+Cores &+Land &+gc&+Cr&+gy&+Cs&+gt&+Ca&+gl&+Cs&+L that have
+&+Lgrown into it over centuries. Unlike sculptued constructs, its
+&+Lshape is organic, flowing, and irregular.
+~
+29000 1 0 0 939524248 1063104 16777216 0 0 S
+ee 0 1 1 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131219
+faceted crysmal~
+&+Ga f&+Wa&+Gc&+We&+Gt&+We&+Gd crysmal&N~
+&+GA faceted crysmal skitters from the tunnel wall, scattering &+Wf&+Gr&+Ya&+Gct&+Wu&+Yr&+Ged &+Ylight&+G across the cavern.
+~
+&+C   This scorpion-lion creature that has been carved entirely
+&+Cfrom living &+Mg&+Ce&+mm&+Ms&+Cto&+mn&+Ce. Its body is made of interlocking crystal
+&+Cplates, each facet catching and bending light so that it seems
+&+Cto sparkle even in darkness. Even its eyes are small, glinting
+&+Cgemstones. A sharp, grinding sound can be heard as its jagged
+&+Cclaws dig against the stone, searching for gemstone sustenance.
+~
+4296 0 0 0 941097112 1048576 0 528384 0 S
+ee 0 1 0 1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131220
+huge geode dragon~
+&+La huge &+mg&+Me&+Bo&+Cd&+ce&+L dragon&N~
+&+LA huge &+mg&+Me&+Bo&+Cd&+ce &+Ldragon prowls here, &+Ys&+Wp&+Ya&+Wr&+Yk&+Wl&+Yi&+Wn&+Yg&+L with &+Rlu&+Yst&+Ror&+L.
+~
+&+L   This magnificent creature's scales sparkle like raw crystals,
+&+Leach one a miniature &+mg&+Me&+Bo&+Cd&+ce&+L bursting with prismatic colors. It
+&+Lis very girthy and has small wings for a dragon, the results of
+&+Lits kind spending their lives nesting and devouring the same
+&+Lgemstones that make up their hide. From snout to tail, jagged
+&+Lcrystalline spines shimmer and crackle with faint magic, giving
+&+Lthe dragon an aura of both beauty and danger.
+~
+1090550058 0 0 0 956301464 1063104 128 46150656 -1000 S
+d 0 513 0 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#131221
+faceted crysmal~
+&+Ra f&+Wa&+Rc&+We&+Rt&+We&+Rd crysmal&N~
+&+RA faceted crysmal skitters from the tunnel wall, scattering &+Wf&+Rr&+Ya&+Rct&+Wu&+Yr&+Red &+Ylight&+R across the cavern.
+~
+&+R   This scorpion-lion creature that has been carved entirely
+&+Rfrom living &+Mg&+Re&+mm&+Ms&+Rto&+mn&+Re. Its body is made of interlocking crystal
+&+Rplates, each facet catching and bending light so that it seems
+&+Rto sparkle even in darkness. Even its eyes are small, glinting
+&+Rgemstones. A sharp, grinding sound can be heard as its jagged
+&+Rclaws dig against the stone, searching for gemstone sustenance.
+~
+4296 0 0 0 941097112 1048576 0 528384 0 S
+ee 0 1 0 1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131222
+faceted crysmal~
+&+Ba f&+Ca&+Bc&+Ce&+Bt&+Ce&+Bd crysmal&N~
+&+BA faceted crysmal skitters from the tunnel wall, scattering &+Wf&+Br&+Ya&+Bct&+Wu&+Yr&+Bed &+Ylight&+B across the cavern.
+~
+&+B   This scorpion-lion creature that has been carved entirely
+&+Bfrom living &+Mg&+Be&+mm&+Ms&+Bto&+mn&+Be. Its body is made of interlocking crystal
+&+Bplates, each facet catching and bending light so that it seems
+&+Bto sparkle even in darkness. Even its eyes are small, glinting
+&+Bgemstones. A sharp, grinding sound can be heard as its jagged
+&+Bclaws dig against the stone, searching for gemstone sustenance.
+~
+4296 0 0 0 941097112 1048576 0 528384 0 S
+ee 0 1 0 1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131223
+prismatic crysmal~
+&+Wa &+rp&+Rr&+Yi&+Gs&+gm&+Ga&+Bt&+Ci&+cc &+Wcrysmal~
+&+WA &+rp&+Rr&+Yi&+Gs&+gm&+Ga&+Bt&+Ci&+cc &+Wcrysmal skitters from the tunnel wall, scattering &+Wf&+Rr&+Ya&+Bct&+Wu&+Yr&+Ge&+gd &+Ylight&+W across the cavern.
+~
+&+R   This scorpion-lion creature that has been carved entirely
+&+Yfrom living gemstone. Its body is made of interlocking crystal
+&+Gplates, each facet catching and bending light so that it seems
+&+Bto sparkle even in darkness. Even its eyes are small, glinting
+&+Cgemstones. A sharp, grinding sound can be heard as its jagged
+&+cclaws dig against the stone, searching for gemstone sustenance.
+~
+4296 0 0 0 941097112 1048576 0 528384 0 S
+ee 0 1 0 1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131224
+prismatic huge brooding crysmal~
+&+Wa huge, &nbrooding &+rp&+Rr&+Yi&+Gs&+gm&+Ga&+Bt&+Ci&+cc &+Wcrysmal~
+&+WA huge &+rp&+Rr&+Yi&+Gs&+gm&+Ga&+Bt&+Ci&+cc &+Wcrysmal clings to the &+yr&+Lo&+yc&+Lk&+yy&+W wall, &Nbrooding.
+~
+&+R   This scorpion-lion creature that has been carved entirely
+&+Yfrom living gemstone. Its body is made of interlocking crystal
+&+Gplates, each facet catching and bending light so that it seems
+&+Bto sparkle even in darkness. Even its eyes are small, glinting
+&+Cgemstones. A sharp, grinding sound can be heard as its jagged
+&+cclaws dig against the stone, searching for gemstone sustenance.
+~
+16781770 1 0 0 941097112 1048576 16777216 4722688 0 S
+ee 0 1 0 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#131225
+crysmal shardling~
+&+Wa &+cs&+Ch&+Ba&+cr&+Cd&+Bl&+ci&+Cn&+Bg~
+&+BA small, &+csemi-translucent &+Ccrysmal &+Bskitters here, huddled with the others.
+~
+&+B   This small, segmented crysmal resembles a scorpion made
+&+Centirely out of plates of shimmering crystalline chitin.
+&+BNo larger than a rat, this crysmal is very small and
+&+Clikely a youngling.
+~
+67137738 0 0 0 672137344 14336 0 525312 0 S
+ee 0 1 0 1
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131226
+massive golem jeweled crag crag-jeweled ore~
+&+ma &+LM&+cA&+CS&+MS&+LI&+mV&+LE &+Lc&+cr&+Ca&+Lg&+M-&+Lj&+ce&+Cw&+Le&+ml&+Me&+Ld &+Cg&+co&+Ll&+me&+cm~
+&+LA MASSIVE, rocky &+mgolem&+L covered in &+Cg&+Ll&+Ci&+Lt&+Ct&+Le&+Cr&+Li&+Cn&+Lg shards of &+Core&+L emerges from the &+Cw&+ca&+Cl&+cl&+L!
+~
+&+L   Born of the earth itself, this golem is a seamless fusion of
+&+Lstone and &+Cgem&+L. Its body is composed of smooth, natural &+yrock&+L,
+&+Linterlaced with &+Cv&+Le&+Ci&+Ln&+Cs&+L of glittering &+Cores &+Land &+gc&+Cr&+gy&+Cs&+gt&+Ca&+gl&+Cs&+L that have
+&+Lgrown into it over centuries. Unlike sculptued constructs, its
+&+Lshape is organic, flowing, and irregular.
+~
+16806218 1 0 0 957350040 1063104 16777216 4199936 0 S
+ee 0 1 1 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131227
+crystal-veined crystal veined arm~
+&+La &+Cc&+cr&+Cy&+cs&+Ct&+ca&+Cl&+c-&+Lv&+ce&+Li&+cn&+Le&+cd &+Carm~
+&+LA huge, &+Cc&+cr&+Cy&+cs&+Ct&+ca&+Cl&+c-&+Lv&+ce&+Li&+cn&+Le&+cd &+Carm &+Lsprouts out from the &+mgolem&+L.
+~
+&+C   From the heaving stone-hide of the colossal golem, the arm
+&+cjuts outward like a mighty bow of an ancient tree. Jagged blooms
+&+Cof crystals on the shoulder, elbow, and knuckles catch light
+&+cwith every movement, causing the arm to sparkle as it moves.
+~
+67139594 1 0 0 152043672 1063104 0 5120 0 S
+ee 0 65 0 5
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131228
+pillar earth~
+&+La &+cp&+Li&+cl&+Ll&+ca&+Lr of &+yearth&N~
+&+yA colossal &+Lp&+ci&+Ll&+cl&+La&+cr &+Lof &+ye&+La&+yr&+Lt&+yh &+yrises up from the bedrock!
+~
+&+L   The pillar stands like a colossal figure carved from the
+&+ydeepest strata of the earth. Its surface is layered in bands
+&+Lof multi-colored rocks and veins of iron, silver, gold, and
+&+yplatinum. Jagged crystals protrude along its flanks like
+&+Lspikes on armor. Its proportions are massive and immovable,
+&+ybroad and tall, tapering slightly toward a blunt helm-like
+&+Lcrest. Its entire form radiates the dense, unyielding pres-
+&+yence of something born from the bedrock's eternal will.
+~
+28746 1 0 0 402653368 14336 0 4096 0 S
+cn 0 1 0 6
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131229
+dao guard guard high~
+&n&+ya &+Ldao &+mh&+Li&+mg&+Lh &+mg&+Lu&+ma&+Lr&+md&N~
+&+LA sleek dao &+Mh&+yi&+Mg&+yh&+M g&+yu&+Ma&+yr&+Md&+y watches here, grimmacing.
+~
+  &+y A Dao moves here looking for any intruders that may have been foolish
+&+yenough to come to the Elemental Plane of &n&+LEarth&n&+y.  This &n&+Lguardian&n&+y looks like
+&+yhe loves his work and his duty, to endlessly patrol these caverns and to
+&+ysmash anything he finds thats not susposed to be here.
+~
+1140865098 1 0 0 134217880 14546 0 37748736 -1000 S
+EE 0 1 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#131230
+vashur golden lash dao head taskmaster~
+&+LVashur&+y, the &+YGolden &+rL&+Ra&+rs&+Rh&N~
+&+LVashur, the &+YGolden &+rLash&+y, &+Ldao head &+yt&+La&+ys&+Lk&+ym&+La&+ys&+Lt&+ye&+Lr&+y storms through the &+ye&+La&+yr&+Lt&+yh&+L.
+~
+&+Y   Vashur, the Golden Lash, bears the tall, imperious form of
+&+La dao noble, his body sculpted from smooth sandstone marbled
+&+Ywith flowing veins of molten gold that gleam beneath his skin.
+&+YIt isn't clear if his title is because of his gleaming, golden
+&+Laura, or from the infamous golden whip that finds the backs
+&+Yof his enslaved mining force on the plane of Earth. His sharp,
+&+Langular features frame eyes like cut citrine, cold and merci-
+&+Yless. His unflinching look of disdain scans the caverns and
+&+Ltunnels, scanning for reasons to uncoil his whip.
+~
+83916872 1 0 0 687866008 14528 0 4608 -1000 S
+ee 0 1048577 0 4
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#131231
+kharzun efreeti fiery heart diplomat~
+&+YKh&+Rar&+rzun&+L, the &+RFi&+re&+Rry He&+ra&+Rrt &+LDipl&nom&+Lat&N~
+&+rA huge e&+Rfr&+re&+Ret&+ri named &+YKh&+Rar&+rzun&+L, the &+LDiplomat of the &+LOr&Nd&+Ler of the &+RFi&+re&+Rry He&+ra&+Rrt&+r, floats here.
+~
+   &+YDespite being a 'Diplomat' to the Daos, Kharzun shares no
+&+Rkindness with creatures of blood. This efreeti is massive.
+&+rHe is noticably taller than most of the Earth Elementals,
+&+Yand despite being quite frailer in body, the magical flames
+&+Rthat burn off his shoulders nearly triple his girth. Kharzun,
+&+rdespite being of the Order of the Fiery Heart in the City of
+&+YBrass, cherishes his time here deep inside the Elemental Plane
+&+Rof Earth, where he is most revered. While his lower quarters
+&+rblaze under him like a flaming, inverted volcano, his upper-
+&+rbody is in the shape of a muscular humanoid physique.
+~
+1073743976 1 0 0 2818572312 4208833 128 8400896 -900 S
+e 0 2097152 2 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#131232
+ungoro earthen reptile devourer~
+&+Y&-rU&+r&-yn&+Y&-rg&+r&-yo&+Y&-rr&+r&-yo&N &+Y&-rt&+r&-yh&+Y&-re&N &+Y&-rD&+r&-ye&+Y&-rv&+r&-yo&+Y&-ru&+r&-yr&+Y&-re&+r&-yr&N~
+&+yA gargantuan e&+La&+yr&+Lt&+yh&+Le&+yn reptile, &+Y&-rU&+r&-yn&+Y&-rg&+r&-yo&+Y&-rr&+r&-yo&N &+Y&-rt&+r&-yh&+Y&-re&N &+Y&-rD&+r&-ye&+Y&-rv&+r&-yo&+Y&-ru&+r&-yr&+Y&-re&+r&-yr&n&+y, prowls here, mouth &+Lagape&+y.
+~
+   &+Y&-rUngoro is a massive earthen beast that resembles a gargantuan&N
+&+r&-ymonitor lizard, slowly lurching through the caverns and tunnels&N
+&+Y&-rof its elemental domain. Ungoro's gaping mouth hangs open, the&N
+&+r&-ybottom jaw grinding against the rocky floor between heavy foot-&N
+&+Y&-rsteps while its gait drops. It pauses, occasionally, taking long,&N
+&+r&-ygulping bites of various rocky formations across the plane. The&N
+&+Y&-rinside of the beast's mouth has thousands upon thousands of small&N
+&+r&-yspikes, acting as cilium that carry material into the gullet of&N
+&+Y&-rthe great beast. When dormant, Ungoro sprawls into the rocks,&N
+&+r&-ytaking their shape and form, into many-years periods of stasis.&N
+&+Y&-rWitnessing the massive monstrosity in its active form is truly a&N
+&+r&-yrare sight, begotten only by very few.&N
+~
+1091075080 1 0 0 0 1063104 128 37752832 0 S
+d 0 1 1 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131233
+jagged bedrock sentinel~
+&+La jagged bedrock sentinel&N~
+&+LA jagged bedrock sentinel rises from the &+ye&+La&+yr&+Lt&+yh&+L!
+~
+   &+LThis large earth elemental moves very quickly for its size.
+&+LIts body is composed entirely of bedrock, although from the waist down it's
+&+Lpart of the earth from which it rose.
+~
+1140866120 1 0 0 184549528 1048576 0 0 -1000 S
+EE 0 1 1 6
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131234
+efreeti high guard~
+&+Yan &+re&+Rfr&+re&+Ret&+ri &+Rh&+Li&+Rg&+Lh &+Rg&+Lu&+Ra&+Lr&+Rd&N~
+&+YAn &+re&+Rfr&+re&+Ret&+ri &+Rh&+Li&+Rg&+Lh &+Rg&+Lu&+Ra&+Lr&+Rd &+Yblazes softly as he scans the area.
+~
+    &+YThis efreeti looks like a tall, lanky humanoid from the
+&+Ywaist up, and a tornado of fire from the waist down. He has
+&+Ylarge, stunning features and an angular face, which never
+&+Yseems to relent a look of disdain. His head is bare, except
+&+Yfor a tight braid that ends in a small flame.
+~
+1073743978 0 0 0 671088664 4208833 0 0 -800 S
+e 0 1 2 4
+58 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#131235
+enormous stone colossus~
+&n&+can E&+CN&+cO&+LR&+cM&+CO&+cU&+LS&+c s&+Ct&+co&+Ln&+ce c&+Co&+cl&+Lo&+cs&+Cs&+cu&+Ls&N~
+&+cAn ENORMOUS stone colossus slowly lurches through with huge, thundering footsteps.
+~
+&+c   This towering, animated monolith moves without urgency,
+&+Clumbering with a slow, deliberate march. The colossus is shaped
+&+clike an ancient human phalanxman, equipped with a long spear-
+&+Lheaded battlehammer and a tall, rectangular body shield. It
+&+cseldom seems to look directly upon anything, staring off as it
+&+Ccontinues its steady, thunderous patrol. The constant shifting
+&+cof deep, heavy stone-on-stone creates a distinct grinding creak,
+&+Laccompanying the ever-slow beat of it's deafening stride.
+~
+1157658952 0 0 0 671088792 14528 128 37752832 0 S
+ee 0 1 1 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#131236
+thulum stonebone elder pech miner~
+&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce&+y, elder pech &+Yminer&N~
+&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce&+y, elder pech &+Yminer&+y, tiptoes here, singing softly to the &+Lrocks.
+~
+   &+CTh&+cu&+Cl&+cu&+Cm &+CSt&+co&+Cn&+ce&+Cb&+co&+Cn&+ce&+y is an elder pech &+Yminer&+y whose body bears a
+&+yweb of scars and hairline &Nc&+Lr&Nac&+Lk&Ns&+y from long years of beatings
+&+yat the hands of cruel &+Ldao &+rt&+Ra&+rs&+Rk&+rm&+Ra&+rs&+Rt&+re&+Rr&+rs&+y. The fissures in his
+&+ystony skin have &+Ldarkened&+y with age, some packed with &Ndust
+&+yand gem grit, others still sharp as fresh f&+La&+yu&+Ll&+yt lines.
+&+yIn between strikes, he &+msings&+c low&+y, tremoring hymns to the
+&+Lrocks&+y, and walks so softly that even loose shale barely
+&+yshifts beneath him.
+~
+2248 0 0 0 671612952 0 0 0 1000 S
+pg 0 1 0 -1
+53 0 0 1d1+1 1d1+1
+0.0.0.500 0
 8 8 1

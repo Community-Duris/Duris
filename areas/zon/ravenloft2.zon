@@ -1,0 +1,2047 @@
+#590
+&+LThe &+rRavenloft &+LC&Na&+Lt&Na&+Lc&No&+Lm&Nb&+Ls&N~
+59399 0 0 40 50 10
+*
+* Zone edited with durisEdit v3.02
+*
+*
+D 0 59013 0 8 100 0 0 0
+*     north exit from "The Observation Balcony" to
+*     "The Necromancer's Sanctum" - open/blocked
+*
+D 0 59050 2 8 100 0 0 0
+*     south exit from "The Necromancer's Sanctum" to
+*     "The Observation Balcony" - open/blocked
+*
+D 0 59022 1 2 100 0 0 0
+*     east exit from "The Water-Filled South Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59029 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled South Cellblock" - closed/locked
+*
+D 0 59022 3 2 100 0 0 0
+*     west exit from "The Water-Filled South Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59028 1 2 100 0 0 0
+*     east exit from "A Water-Filled Cell" to
+*     "The Water-Filled South Cellblock" - closed/locked
+*
+D 0 59023 1 2 100 0 0 0
+*     east exit from "The Water-Filled South Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59030 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled South Cellblock" - closed/locked
+*
+D 0 59023 3 2 100 0 0 0
+*     west exit from "The Water-Filled South Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59031 1 2 100 0 0 0
+*     east exit from "A Water-Filled Cell" to
+*     "The Water-Filled South Cellblock" - closed/locked
+*
+D 0 59025 1 2 100 0 0 0
+*     east exit from "The Water-Filled South Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59032 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled South Cellblock" - closed/locked
+*
+D 0 59027 1 2 100 0 0 0
+*     east exit from "The Water-Filled South Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59033 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled South Cellblock" - closed/locked
+*
+D 0 59039 1 2 100 0 0 0
+*     east exit from "The Water-Filled North Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59048 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled North Cellblock" - closed/locked
+*
+D 0 59041 1 2 100 0 0 0
+*     east exit from "The Water-Filled North Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59049 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled North Cellblock" - closed/locked
+*
+D 0 59043 0 6 100 0 0 0
+*     north exit from "The Water-Filled North Cellblock" to
+*     "A Suspended Anti-Magic Cage" - closed/locked/secret
+*
+D 0 59081 2 6 100 0 0 0
+*     south exit from "A Suspended Anti-Magic Cage" to
+*     "The Water-Filled North Cellblock" - closed/locked/secret
+*
+D 0 59043 1 2 100 0 0 0
+*     east exit from "The Water-Filled North Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59046 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled North Cellblock" - closed/locked
+*
+D 0 59045 1 2 100 0 0 0
+*     east exit from "The Water-Filled North Cellblock" to
+*     "A Water-Filled Cell" - closed/locked
+*
+D 0 59047 3 2 100 0 0 0
+*     west exit from "A Water-Filled Cell" to
+*     "The Water-Filled North Cellblock" - closed/locked
+*
+D 0 59051 1 9 100 0 0 0
+*     east exit from "Dilapidated Remains of a Wine Cellar" to
+*     "A Huge, Forgotten Storage Hall" - closed/blocked
+*
+D 0 59052 3 5 100 0 0 0
+*     west exit from "A Huge, Forgotten Storage Hall" to
+*     "Dilapidated Remains of a Wine Cellar" - closed/secret
+*
+D 0 59056 0 8 100 0 0 0
+*     north exit from "An Old Cell Full of Bones and Debris" to
+*     "A Huge, Forgotten Storage Hall" - open/blocked
+*
+D 0 59055 2 4 100 0 0 0
+*     south exit from "A Huge, Forgotten Storage Hall" to
+*     "An Old Cell Full of Bones and Debris" - open/secret
+*
+D 0 59064 0 1 100 0 0 0
+*     north exit from "A Short Hallway Above a Tight, Spiral Staircase" to
+*     "An Interrogation Room" - closed
+*
+D 0 59065 2 1 100 0 0 0
+*     south exit from "An Interrogation Room" to
+*     "A Short Hallway Above a Tight, Spiral Staircase" - closed
+*
+D 0 59079 1 2 100 0 0 0
+*     east exit from "Before the Gates of the Ravenloft Catacombs" to
+*     "Within The Gates of the Ravenloft Catacombs" - closed/locked
+*
+D 0 59082 3 2 100 0 0 0
+*     west exit from "Within The Gates of the Ravenloft Catacombs" to
+*     "Before the Gates of the Ravenloft Catacombs" - closed/locked
+*
+D 0 59082 4 8 100 0 0 0
+*     up exit from "Within The Gates of the Ravenloft Catacombs" to
+*     "Bat Loader 1" - open/blocked
+*
+D 0 59117 5 8 100 0 0 0
+*     down exit from "Bat Loader 1" to
+*     "Within The Gates of the Ravenloft Catacombs" - open/blocked
+*
+D 0 59083 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Aurica Dancescu" - closed/locked
+*
+D 0 59111 0 2 100 0 0 0
+*     north exit from "In the Crypt of Aurica Dancescu" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59085 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Lady Iolanda Yonescu" - closed/locked
+*
+D 0 59128 0 2 100 0 0 0
+*     north exit from "In the Crypt of Lady Iolanda Yonescu" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59091 3 2 100 0 0 0
+*     west exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Steliana Albusel" - closed/locked
+*
+D 0 59092 1 2 100 0 0 0
+*     east exit from "In the Crypt of Steliana Albusel" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59099 1 2 100 0 0 0
+*     east exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Saint Markovia" - closed/locked
+*
+D 0 59134 3 2 100 0 0 0
+*     west exit from "In the Crypt of Saint Markovia" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59099 3 8 100 0 0 0
+*     west exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Duchess Dorota Dobre" - open/blocked
+*
+D 0 59132 1 8 100 0 0 0
+*     east exit from "In the Crypt of Duchess Dorota Dobre" to
+*     "A Passage Before a Crypt" - open/blocked
+*
+D 0 59102 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Marius" - closed/locked
+*
+D 0 59147 0 2 100 0 0 0
+*     north exit from "In the Crypt of Marius" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59105 0 2 100 0 0 0
+*     north exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Prince Aurel Plesu" - closed/locked
+*
+D 0 59130 2 2 100 0 0 0
+*     south exit from "In the Crypt of Prince Aurel Plesu" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59107 0 2 100 0 0 0
+*     north exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Duchess Dorota Dobre" - closed/locked
+*
+D 0 59132 2 2 100 0 0 0
+*     south exit from "In the Crypt of Duchess Dorota Dobre" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59112 1 2 100 0 0 0
+*     east exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Adrian Selymes" - closed/locked
+*
+D 0 59151 3 2 100 0 0 0
+*     west exit from "In the Crypt of Adrian Selymes" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59116 1 2 100 0 0 0
+*     east exit from "A Passage Between Crypts" to
+*     "In the Crypt of Tasha Petrovna" - closed/locked
+*
+D 0 59163 3 2 100 0 0 0
+*     west exit from "In the Crypt of Tasha Petrovna" to
+*     "A Passage Between Crypts" - closed/locked
+*
+D 0 59116 3 2 100 0 0 0
+*     west exit from "A Passage Between Crypts" to
+*     "In the Crypt of Vengeance" - closed/locked
+*
+D 0 59153 1 2 100 0 0 0
+*     east exit from "In the Crypt of Vengeance" to
+*     "A Passage Between Crypts" - closed/locked
+*
+D 0 59123 2 2 100 0 0 0
+*     south exit from "A Maze of Passages Through the Ravenloft Catacombs" to
+*     "In the Crypt of Claudiu" - closed/locked
+*
+D 0 59267 0 2 100 0 0 0
+*     north exit from "In the Crypt of Claudiu" to
+*     "A Maze of Passages Through the Ravenloft Catacombs" - closed/locked
+*
+D 0 59127 3 2 100 0 0 0
+*     west exit from "A Passage Before a Crypt" to
+*     "An Empty Crypt With a Portal of Shimmering Mist" - closed/locked
+*
+D 0 59165 1 2 100 0 0 0
+*     east exit from "An Empty Crypt With a Portal of Shimmering Mist" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59129 3 2 100 0 0 0
+*     west exit from "A Passage Before a Crypt" to
+*     "In the Crypt of King Ignatie Kazaku" - closed/locked
+*
+D 0 59188 1 2 100 0 0 0
+*     east exit from "In the Crypt of King Ignatie Kazaku" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59133 1 2 100 0 0 0
+*     east exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Elica Florea" - closed/locked
+*
+D 0 59268 3 2 100 0 0 0
+*     west exit from "In the Crypt of Elica Florea" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59135 1 2 100 0 0 0
+*     east exit from "A Passageway Before a Crypt" to
+*     "In the Crypt of Count Sergiu Solomovici" - closed/locked
+*
+D 0 59269 3 2 100 0 0 0
+*     west exit from "In the Crypt of Count Sergiu Solomovici" to
+*     "A Passageway Before a Crypt" - closed/locked
+*
+D 0 59139 0 2 100 0 0 0
+*     north exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Shuhul Ishai-Bal" - closed/locked
+*
+D 0 59207 2 2 100 0 0 0
+*     south exit from "In the Crypt of Shuhul Ishai-Bal" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59145 3 5 100 0 0 0
+*     west exit from "In the Crypt of Endorovich" to
+*     "A Secret, Secondary Subcrypt" - closed/secret
+*
+D 0 59149 1 5 100 0 0 0
+*     east exit from "A Secret, Secondary Subcrypt" to
+*     "In the Crypt of Endorovich" - closed/secret
+*
+D 0 59145 4 8 100 0 0 0
+*     up exit from "In the Crypt of Endorovich" to
+*     "A Secret, Secondary Subcrypt" - open/blocked
+*
+D 0 59149 1 5 100 0 0 0
+*     east exit from "A Secret, Secondary Subcrypt" to
+*     "In the Crypt of Endorovich" - closed/secret
+*
+D 0 59145 9 8 100 0 0 0
+*     southeast exit from "In the Crypt of Endorovich" to
+*     "In the Crypt of Marius" - open/blocked
+*
+D 0 59147 6 8 100 0 0 0
+*     northwest exit from "In the Crypt of Marius" to
+*     "In the Crypt of Endorovich" - open/blocked
+*
+D 0 59149 5 8 100 0 0 0
+*     down exit from "A Secret, Secondary Subcrypt" to
+*     "In the Crypt of Endorovich" - open/blocked
+*
+D 0 59145 3 5 100 0 0 0
+*     west exit from "In the Crypt of Endorovich" to
+*     "A Secret, Secondary Subcrypt" - closed/secret
+*
+D 0 59156 2 2 100 0 0 0
+*     south exit from "A Central Passage Between Crypts" to
+*     "In the Crypt of Patrina Velikovna" - closed/locked
+*
+D 0 59276 0 2 100 0 0 0
+*     north exit from "In the Crypt of Patrina Velikovna" to
+*     "A Central Passage Between Crypts" - closed/locked
+*
+D 0 59158 0 2 100 0 0 0
+*     north exit from "A Central Passage Between Crypts" to
+*     "In the Crypt of Dhavit Uthurlan" - closed/locked
+*
+D 0 59271 2 2 100 0 0 0
+*     south exit from "In the Crypt of Dhavit Uthurlan" to
+*     "A Central Passage Between Crypts" - closed/locked
+*
+D 0 59158 2 2 100 0 0 0
+*     south exit from "A Central Passage Between Crypts" to
+*     "In the Crypt of Sir Ulrich Bucaravich" - closed/locked
+*
+D 0 59277 0 2 100 0 0 0
+*     north exit from "In the Crypt of Sir Ulrich Bucaravich" to
+*     "A Central Passage Between Crypts" - closed/locked
+*
+D 0 59160 0 2 100 0 0 0
+*     north exit from "A Central Passage Between Crypts" to
+*     "In the Crypt of Sasha Ivliskova" - closed/locked
+*
+D 0 59272 2 2 100 0 0 0
+*     south exit from "In the Crypt of Sasha Ivliskova" to
+*     "A Central Passage Between Crypts" - closed/locked
+*
+D 0 59160 2 2 100 0 0 0
+*     south exit from "A Central Passage Between Crypts" to
+*     "In an Unmarked Crypt" - closed/locked
+*
+D 0 59278 0 2 100 0 0 0
+*     north exit from "In an Unmarked Crypt" to
+*     "A Central Passage Between Crypts" - closed/locked
+*
+D 0 59161 4 8 100 0 0 0
+*     up exit from "A Central Passage Lined With Rows of Sculpted Columns" to
+*     "Wolf Loader 1 (Barov & Ravenovia Crypt)" - open/blocked
+*
+D 0 59301 5 8 100 0 0 0
+*     down exit from "Wolf Loader 1 (Barov & Ravenovia Crypt)" to
+*     "A Central Passage Lined With Rows of Sculpted Columns" - open/blocked
+*
+D 0 59165 2 5 100 0 0 0
+*     south exit from "An Empty Crypt With a Portal of Shimmering Mist" to
+*     "A Secret Bedchamber" - closed/secret
+*
+D 0 59167 0 1 100 0 0 0
+*     north exit from "A Secret Bedchamber" to
+*     "An Empty Crypt With a Portal of Shimmering Mist" - closed
+*
+D 0 59169 0 8 100 0 0 0
+*     north exit from "A Mountain Clearing of Portals Overlooking The Blood Rift" to
+*     "Devil Loader 2" - open/blocked
+*
+D 0 59182 2 8 100 0 0 0
+*     south exit from "Devil Loader 2" to
+*     "A Mountain Clearing of Portals Overlooking The Blood Rift" - open/blocked
+*
+D 0 59169 2 8 100 0 0 0
+*     south exit from "A Mountain Clearing of Portals Overlooking The Blood Rift" to
+*     "Devil Loader 3" - open/blocked
+*
+D 0 59184 0 8 100 0 0 0
+*     north exit from "Devil Loader 3" to
+*     "A Mountain Clearing of Portals Overlooking The Blood Rift" - open/blocked
+*
+D 0 59169 4 8 100 0 0 0
+*     up exit from "A Mountain Clearing of Portals Overlooking The Blood Rift" to
+*     "Devil Loader 1" - open/blocked
+*
+D 0 59171 5 8 100 0 0 0
+*     down exit from "Devil Loader 1" to
+*     "A Mountain Clearing of Portals Overlooking The Blood Rift" - open/blocked
+*
+D 0 59175 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Khuden Doranal" - closed/locked
+*
+D 0 59281 0 2 100 0 0 0
+*     north exit from "In the Crypt of Khuden Doranal" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59181 1 2 100 0 0 0
+*     east exit from "A Passage Between Crypts" to
+*     "In the Crypt of Stephan Gregorovich" - closed/locked
+*
+D 0 59280 3 2 100 0 0 0
+*     west exit from "In the Crypt of Stephan Gregorovich" to
+*     "A Passage Between Crypts" - closed/locked
+*
+D 0 59181 3 2 100 0 0 0
+*     west exit from "A Passage Between Crypts" to
+*     "In the Crypt of Iancu Dudnic" - closed/locked
+*
+D 0 59279 1 2 100 0 0 0
+*     east exit from "In the Crypt of Iancu Dudnic" to
+*     "A Passage Between Crypts" - closed/locked
+*
+D 0 59181 4 8 100 0 0 0
+*     up exit from "A Passage Between Crypts" to
+*     "Bat Loader 2" - open/blocked
+*
+D 0 59353 5 8 100 0 0 0
+*     down exit from "Bat Loader 2" to
+*     "A Passage Between Crypts" - open/blocked
+*
+D 0 59187 1 2 100 0 0 0
+*     east exit from "A Maze of Passages Through the Ravenloft Catacombs" to
+*     "In the Crypt of Ardan Kharkov" - closed/locked
+*
+D 0 59283 3 2 100 0 0 0
+*     west exit from "In the Crypt of Ardan Kharkov" to
+*     "A Maze of Passages Through the Ravenloft Catacombs" - closed/locked
+*
+D 0 59188 4 8 100 0 0 0
+*     up exit from "In the Crypt of King Ignatie Kazaku" to
+*     "Wind-up gnome loader" - open/blocked
+*
+D 0 59199 5 8 100 0 0 0
+*     down exit from "Wind-up gnome loader" to
+*     "In the Crypt of King Ignatie Kazaku" - open/blocked
+*
+D 0 59189 1 2 100 0 0 0
+*     east exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Ivan Pietroviska" - closed/locked
+*
+D 0 59284 3 2 100 0 0 0
+*     west exit from "In the Crypt of Ivan Pietroviska" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59190 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Prefect Cyril Remylich" - closed/locked
+*
+D 0 59285 0 2 100 0 0 0
+*     north exit from "In the Crypt of Prefect Cyril Remylich" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59194 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In an Unmarked Crypt" - closed/locked
+*
+D 0 59286 0 2 100 0 0 0
+*     north exit from "In an Unmarked Crypt" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59195 0 2 100 0 0 0
+*     north exit from "A Passage Before a Crypt" to
+*     "In an Unmarked Crypt" - closed/locked
+*
+D 0 59282 2 2 100 0 0 0
+*     south exit from "In an Unmarked Crypt" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59201 5 8 100 0 0 0
+*     down exit from "Exethanter Load Room" to
+*     "An Ancient Altar of Sacrifice" - open/blocked
+*
+D 0 59334 4 8 100 0 0 0
+*     up exit from "An Ancient Altar of Sacrifice" to
+*     "Exethanter Load Room" - open/blocked
+*
+D 0 59202 3 2 100 0 0 0
+*     west exit from "A Passage Before a Crypt" to
+*     "In the Crypt of Thorgen the Grasping" - closed/locked
+*
+D 0 59291 1 2 100 0 0 0
+*     east exit from "In the Crypt of Thorgen the Grasping" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59206 1 2 100 0 0 0
+*     east exit from "A Passage Before a Crypt" to
+*     "In the Crypt of King Dostron" - closed/locked
+*
+D 0 59292 3 2 100 0 0 0
+*     west exit from "In the Crypt of King Dostron" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59209 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In a Defaced Crypt" - closed/locked
+*
+D 0 59288 0 2 100 0 0 0
+*     north exit from "In a Defaced Crypt" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59213 2 2 100 0 0 0
+*     south exit from "A Passage Before a Crypt" to
+*     "In a Defaced Crypt" - closed/locked
+*
+D 0 59289 0 2 100 0 0 0
+*     north exit from "In a Defaced Crypt" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59214 0 2 100 0 0 0
+*     north exit from "A Passage Before a Crypt" to
+*     "In an Empty Crypt" - closed/locked
+*
+D 0 59287 2 2 100 0 0 0
+*     south exit from "In an Empty Crypt" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59217 3 2 100 0 0 0
+*     west exit from "A Passage Before a Crypt" to
+*     "In an Unmarked Crypt" - closed/locked
+*
+D 0 59293 1 2 100 0 0 0
+*     east exit from "In an Unmarked Crypt" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59219 1 2 100 0 0 0
+*     east exit from "A Passage Before a Crypt" to
+*     "In The Crypt of Jannes" - closed/locked
+*
+D 0 59294 3 2 100 0 0 0
+*     west exit from "In The Crypt of Jannes" to
+*     "A Passage Before a Crypt" - closed/locked
+*
+D 0 59219 4 8 100 0 0 0
+*     up exit from "A Passage Before a Crypt" to
+*     "Bat Loader 1" - open/blocked
+*
+D 0 59358 5 8 100 0 0 0
+*     down exit from "Bat Loader 1" to
+*     "A Passage Before a Crypt" - open/blocked
+*
+D 0 59222 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59237 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59224 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59236 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59225 1 2 100 0 0 0
+*     east exit from "A Passage Between Crypts" to
+*     "In the Crypt of Sateris Taul" - closed/locked
+*
+D 0 59295 3 2 100 0 0 0
+*     west exit from "In the Crypt of Sateris Taul" to
+*     "A Passage Between Crypts" - closed/locked
+*
+D 0 59225 3 2 100 0 0 0
+*     west exit from "A Passage Between Crypts" to
+*     "In an Unmarked Crypt" - closed/locked
+*
+D 0 59290 1 2 100 0 0 0
+*     east exit from "In an Unmarked Crypt" to
+*     "A Passage Between Crypts" - closed/locked
+*
+D 0 59235 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59254 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59238 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59264 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59239 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59265 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59240 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59266 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59241 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59255 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59242 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59256 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59245 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "Inside A Stifling Mass Grave" - open/blocked
+*
+D 0 59319 4 4 100 0 0 0
+*     up exit from "Inside A Stifling Mass Grave" to
+*     "A Dank, Dripping Vault of Coffins" - open/secret
+*
+D 0 59247 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59259 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59248 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59258 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59249 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59257 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59250 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59263 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59251 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59262 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59252 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59261 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59253 5 8 100 0 0 0
+*     down exit from "A Dank, Dripping Vault of Coffins" to
+*     "A Cold, Dark Place" - open/blocked
+*
+D 0 59260 4 8 100 0 0 0
+*     up exit from "A Cold, Dark Place" to
+*     "A Dank, Dripping Vault of Coffins" - open/blocked
+*
+D 0 59268 7 8 100 0 0 0
+*     southwest exit from "In the Crypt of Elica Florea" to
+*     "In the Crypt of Sasha Ivliskova" - open/blocked
+*
+D 0 59272 8 8 100 0 0 0
+*     northeast exit from "In the Crypt of Sasha Ivliskova" to
+*     "In the Crypt of Elica Florea" - open/blocked
+*
+D 0 59271 5 8 100 0 0 0
+*     down exit from "In the Crypt of Dhavit Uthurlan" to
+*     "A Secret Spiral Staircase" - open/blocked
+*
+D 0 59273 4 0 100 0 0 0
+*     up exit from "A Secret Spiral Staircase" to
+*     "In the Crypt of Dhavit Uthurlan" - open
+*
+D 0 59279 3 8 100 0 0 0
+*     west exit from "In the Crypt of Iancu Dudnic" to
+*     "A Vertical Tunnel" - open/blocked
+*
+D 0 59299 1 8 100 0 0 0
+*     east exit from "A Vertical Tunnel" to
+*     "In the Crypt of Iancu Dudnic" - open/blocked
+*
+D 0 59307 0 8 100 0 0 0
+*     north exit from "A Passage Before a Royal Crypt" to
+*     "The Portcullis Slams Shut!" - open/blocked
+*
+D 0 59311 2 8 100 0 0 0
+*     south exit from "The Portcullis Slams Shut!" to
+*     "A Passage Before a Royal Crypt" - open/blocked
+*
+D 0 59308 2 8 100 0 0 0
+*     south exit from "Atop a Grand Marble Staircase" to
+*     "The Portcullis Rises!" - open/blocked
+*
+D 0 59312 0 8 100 0 0 0
+*     north exit from "The Portcullis Rises!" to
+*     "Atop a Grand Marble Staircase" - open/blocked
+*
+D 0 59318 2 2 100 0 0 0
+*     south exit from "A Passage Before a Royal Crypt" to
+*     "Atop a Grand Marble Staircase" - closed/locked
+*
+D 0 59320 0 2 100 0 0 0
+*     north exit from "Atop a Grand Marble Staircase" to
+*     "A Passage Before a Royal Crypt" - closed/locked
+*
+D 0 59321 2 8 100 0 0 0
+*     south exit from "In the Royal Tomb of Strahd Von Zarovich" to
+*     "Strahd (Gas Form) Load Room" - open/blocked
+*
+D 0 59354 0 8 100 0 0 0
+*     north exit from "Strahd (Gas Form) Load Room" to
+*     "In the Royal Tomb of Strahd Von Zarovich" - open/blocked
+*
+D 0 59322 4 8 100 0 0 0
+*     up exit from "Ravenloft Catacombs Dispersement Room - Tunnels" to
+*     "Strahd (Bat Form) Load Start Room 2" - open/blocked
+*
+D 0 59324 5 8 100 0 0 0
+*     down exit from "Strahd (Bat Form) Load Start Room 2" to
+*     "Ravenloft Catacombs Dispersement Room - Tunnels" - open/blocked
+*
+D 0 59323 5 8 100 0 0 0
+*     down exit from "Strahd (Bat Form) Load Start Room 1" to
+*     "Strahd (Bat Form) Load Start Room 2" - open/blocked
+*
+D 0 59324 4 8 100 0 0 0
+*     up exit from "Strahd (Bat Form) Load Start Room 2" to
+*     "Strahd (Bat Form) Load Start Room 1" - open/blocked
+*
+D 0 59351 0 14 100 0 0 0
+*     north exit from "A Troll Stalker's Den" to
+*     "An Old Storage Hold Full of Refuse" - closed/locked/secret/blocked
+*
+D 0 59352 2 14 100 0 0 0
+*     south exit from "An Old Storage Hold Full of Refuse" to
+*     "A Troll Stalker's Den" - closed/locked/secret/blocked
+*
+D 0 59359 2 2 100 0 0 0
+*     south exit from "A Dimensional Tunnel" to
+*     "A Dimensional Tunnel" - closed/locked
+*
+D 0 59360 0 1 100 0 0 0
+*     north exit from "A Dimensional Tunnel" to
+*     "A Dimensional Tunnel" - closed
+*
+D 0 59388 2 2 100 0 0 0
+*     south exit from "Before a Submerged Stone Door" to
+*     "A Submerged Narrow Hallway" - closed/locked
+*
+D 0 59389 0 2 100 0 0 0
+*     north exit from "A Submerged Narrow Hallway" to
+*     "Before a Submerged Stone Door" - closed/locked
+*
+*
+O 0 59000 1 59005 100 0 0 0        * a painting
+O 0 59001 2 59008 100 0 0 0        * teleport trap to south cell1
+O 0 59002 2 59008 100 0 0 0        * teleport trap to south cell1
+O 0 59003 2 59008 100 0 0 0        * teleport trap to south cell1
+O 0 59001 2 59012 100 0 0 0        * teleport trap to south cell1
+O 0 59002 2 59012 100 0 0 0        * teleport trap to south cell1
+O 0 59003 2 59012 100 0 0 0        * teleport trap to south cell1
+O 0 59018 1 59013 100 0 0 0        * a plush red velvet curtain
+O 0 59004 2 59014 100 0 0 0        * teleport trap to south cell2
+O 0 59005 2 59014 100 0 0 0        * teleport trap to south cell2
+O 0 59006 2 59014 100 0 0 0        * teleport trap to south cell2
+O 0 59004 2 59018 100 0 0 0        * teleport trap to south cell2
+O 0 59005 2 59018 100 0 0 0        * teleport trap to south cell2
+O 0 59006 2 59018 100 0 0 0        * teleport trap to south cell2
+O 0 59007 1 59036 100 0 0 0        * a heavy, rusted iron door
+O 0 59212 1 59036 100 0 0 0        * 1-time teleport trap to 59081
+O 0 59009 4 59038 100 0 0 0        * broken cabinets
+P 1 59208 1 59009 100 0 0 0        *   a flask of ghost-touch oil
+O 0 59011 8 59038 100 0 0 0        * broken lab equipment
+O 0 59009 4 59039 100 0 0 0        * broken cabinets
+P 1 59209 1 59009 100 0 0 0        *   a vial of lichbane
+O 0 59011 8 59039 100 0 0 0        * broken lab equipment
+O 0 59010 2 59040 100 0 0 0        * heavy, rotting wooden workbenches
+P 1 59207 1 59010 100 0 0 0        *   a flask of liquid night
+O 0 59011 8 59040 100 0 0 0        * broken lab equipment
+O 0 59010 2 59041 100 0 0 0        * heavy, rotting wooden workbenches
+P 1 58347 3 59010 100 0 0 0        *   (object type not in this .obj file)
+P 1 58347 3 59010 100 0 0 0        *   (object type not in this .obj file)
+O 0 59011 8 59041 100 0 0 0        * broken lab equipment
+O 0 59009 4 59042 100 0 0 0        * broken cabinets
+P 1 59210 2 59009 100 0 0 0        *   a wand of false life
+O 0 59011 8 59042 100 0 0 0        * broken lab equipment
+O 0 59009 4 59043 100 0 0 0        * broken cabinets
+P 1 59211 2 59009 100 0 0 0        *   a potion of gaseous form
+P 1 59211 2 59009 100 0 0 0        *   a potion of gaseous form
+O 0 59011 8 59043 100 0 0 0        * broken lab equipment
+O 0 59008 2 59044 100 0 0 0        * rusted steel cots
+O 0 59011 8 59044 100 0 0 0        * broken lab equipment
+O 0 59008 2 59045 100 0 0 0        * rusted steel cots
+O 0 59011 8 59045 100 0 0 0        * broken lab equipment
+O 0 59019 1 59050 100 0 0 0        * an ancient bookshelf
+P 1 132622 2 59019 100 0 0 0       *   (object type not in this .obj file)
+P 1 132622 2 59019 100 0 0 0       *   (object type not in this .obj file)
+P 1 132632 1 59019 100 0 0 0       *   (object type not in this .obj file)
+P 1 58347 3 59019 100 0 0 0        *   (object type not in this .obj file)
+P 1 83435 2 59019 100 0 0 0        *   (object type not in this .obj file)
+P 1 83435 2 59019 100 0 0 0        *   (object type not in this .obj file)
+P 1 91035 1 59019 100 0 0 0        *   (object type not in this .obj file)
+O 0 59020 1 59050 100 0 0 0        * a great vat
+O 0 59017 1 59050 100 0 0 0        * a plush red velvet curtain
+O 0 59012 1 59051 100 0 0 0        * remains of smashed wine racks
+O 0 59013 1 59051 100 0 0 0        * broken glass
+O 0 59035 4 59051 100 0 0 0        * an old bottle of elven wine
+O 0 59035 4 59051 100 0 0 0        * an old bottle of elven wine
+O 0 59035 4 59051 100 0 0 0        * an old bottle of elven wine
+O 0 59035 4 59051 100 0 0 0        * an old bottle of elven wine
+O 0 59060 2 59051 100 0 0 0        * an old bottle of 'Barovia Red Mountain'
+O 0 59287 3 59056 100 0 0 0        * a mountainous pile of debris
+O 0 59286 1 59056 100 0 0 0        * some shackles dangling from a long chain
+O 0 59022 1 59058 100 0 0 0        * a portrait
+O 0 59021 1 59059 100 0 0 0        * a painting
+O 0 59233 1 59059 100 0 0 0        * a painting
+O 0 59325 1 59065 100 0 0 0        * a fresh hand print
+O 0 59025 1 59073 100 0 0 0        * teleport trap to north cell2 & dart on west
+O 0 59026 1 59074 100 0 0 0        * teleport trap to north cell3
+O 0 59028 1 59075 100 0 0 0        * teleport trap to north cage
+O 0 59027 1 59076 100 0 0 0        * teleport trap to north cell4
+O 0 59024 1 59077 100 0 0 0        * teleport trap to north cell1
+O 0 59023 1 59078 100 0 0 0        * teleporter to catacombs gates
+O 0 59038 1 59082 100 0 0 0        * a tiny, curious bat
+O 0 59032 1 59083 100 0 0 0        * an epitaph
+O 0 59034 1 59085 100 0 0 0        * an epitaph
+O 0 59031 1 59091 100 0 0 0        * an epitaph
+O 0 59050 1 59099 100 0 0 0        * an epitaph
+O 0 59052 1 59102 100 0 0 0        * an epitaph
+O 0 59041 1 59105 100 0 0 0        * an epitaph
+O 0 59046 1 59107 100 0 0 0        * an epitaph
+O 0 59051 1 59110 100 0 0 0        * a fallen door
+O 0 59042 18 59111 100 0 0 0       * a huge marble slab
+O 0 59033 15 59111 100 0 0 0       * a rag-draped skeleton
+O 0 59059 1 59112 100 0 0 0        * an epitaph
+O 0 59063 1 59116 100 0 0 0        * an epitaph
+O 0 59061 1 59116 100 0 0 0        * an epitaph
+O 0 59119 1 59123 100 0 0 0        * an epitaph
+O 0 59070 1 59127 100 0 0 0        * an epitaph
+O 0 59042 18 59128 100 0 0 0       * a huge marble slab
+O 0 59033 15 59128 100 0 0 0       * a rag-draped skeleton
+P 1 59040 1 59033 100 0 0 0        *   a tarnished silver antique ankh
+O 0 59092 1 59129 100 0 0 0        * an epitaph
+O 0 59045 9 59130 100 0 0 0        * a huge marble slab
+P 1 59047 1 59045 100 0 0 0        *   a ring of feather fall
+O 0 59045 9 59132 100 0 0 0        * a huge marble slab
+P 1 59048 1 59045 100 0 0 0        *   a scroll of daylight
+O 0 59121 1 59133 100 0 0 0        * an epitaph
+O 0 59045 9 59134 100 0 0 0        * a huge marble slab
+P 1 59238 1 59045 100 0 0 0        *   Saint Markovia's thighbone
+O 0 59125 1 59135 100 0 0 0        * an epitaph
+O 0 59095 1 59139 100 0 0 0        * an epitaph
+O 0 59057 1 59145 100 0 0 0        * a huge marble slab
+O 0 59039 1 59145 100 0 0 0        * a rag-draped skeleton
+O 0 59042 18 59147 100 0 0 0       * a huge marble slab
+O 0 59301 1 59147 100 0 0 0        * a rag-draped skeleton
+O 0 59055 1 59149 100 0 0 0        * debris of linens and canvas
+P 1 59056 5 59055 100 0 0 0        *   a old canvas sack
+P 1 59056 5 59055 100 0 0 0        *   a old canvas sack
+P 1 59056 5 59055 100 0 0 0        *   a old canvas sack
+O 0 59042 18 59151 100 0 0 0       * a huge marble slab
+O 0 59033 15 59151 100 0 0 0       * a rag-draped skeleton
+P 1 59060 2 59033 100 0 0 0        *   an old bottle of 'Barovia Red Mountain'
+O 0 59062 1 59153 100 0 0 0        * a bloodstained marble slab
+P 1 59069 1 59062 100 0 0 0        *   a severed elf head
+O 0 59064 1 59153 100 0 0 0        * a disembowled dwarf
+O 0 59065 1 59153 100 0 0 0        * a mutilated human
+O 0 59066 1 59153 100 0 0 0        * a charred human
+P 1 59068 1 59066 100 0 0 0        *   a ring of the righteous
+O 0 59067 1 59153 100 0 0 0        * a headless elf
+O 0 59128 1 59156 100 0 0 0        * a fallen door
+O 0 59133 1 59156 100 0 0 0        * an epitaph
+O 0 59129 1 59158 100 0 0 0        * an epitaph
+O 0 59134 1 59158 100 0 0 0        * an epitaph
+O 0 59132 1 59160 100 0 0 0        * an epitaph
+O 0 59042 18 59163 100 0 0 0       * a huge marble slab
+O 0 59033 15 59163 100 0 0 0       * a rag-draped skeleton
+O 0 59071 1 59165 100 0 0 0        * a portal of shimmering mist
+O 0 59072 1 59167 100 0 0 0        * a delicate hammock of human hair
+O 0 59073 1 59167 100 0 0 0        * a fingerbone-framed mirror
+P 1 59206 1 59073 100 0 0 0        *   Saint Bogdan's fingerbone
+O 0 59075 1 59169 100 0 0 0        * a portal
+O 0 59078 1 59169 100 0 0 0        * a portal
+O 0 59079 1 59169 100 0 0 0        * a portal
+O 0 59080 1 59169 100 0 0 0        * a portal
+O 0 59081 1 59169 100 0 0 0        * a portal
+O 0 59076 1 59169 100 0 0 0        * a portal
+O 0 59082 1 59169 100 0 0 0        * a portal
+O 0 59083 1 59169 100 0 0 0        * a portal
+O 0 59084 1 59169 100 0 0 0        * a portal
+O 0 59085 1 59169 100 0 0 0        * a portal
+O 0 7371 1 59169 100 0 0 0         * (object type not in this .obj file)
+O 0 59074 1 59169 100 0 0 0        * a portal
+O 0 59086 1 59169 100 0 0 0        * a portal
+O 0 59087 1 59169 100 0 0 0        * a portal
+O 0 59088 1 59169 100 0 0 0        * a portal
+O 0 59077 1 59169 100 0 0 0        * a portal
+O 0 59089 1 59169 100 0 0 0        * a portal
+O 0 59090 1 59169 100 0 0 0        * a portal
+O 0 59091 1 59169 100 0 0 0        * a portal
+O 0 59137 1 59175 100 0 0 0        * an epitaph
+O 0 59131 1 59181 100 0 0 0        * an epitaph
+O 0 59135 1 59181 100 0 0 0        * an epitaph
+O 0 59138 1 59187 100 0 0 0        * an epitaph
+O 0 59045 9 59188 100 0 0 0        * a huge marble slab
+P 1 59093 1 59045 100 0 0 0        *   a clockwork music player
+O 0 59094 1 59188 100 0 0 0        * a miniature wind-up gnome
+O 0 59139 1 59189 100 0 0 0        * an epitaph
+O 0 59140 1 59190 100 0 0 0        * an epitaph
+O 0 59146 1 59202 100 0 0 0        * an epitaph
+O 0 59149 1 59206 100 0 0 0        * an epitaph
+O 0 59145 2 59209 100 0 0 0        * a defaced epitaph
+O 0 59145 2 59213 100 0 0 0        * a defaced epitaph
+O 0 59151 1 59219 100 0 0 0        * an epitaph
+O 0 59225 1 59221 100 0 0 0        * unlimited teleport trap to 59319
+O 0 59193 1 59221 100 0 0 0        * 1-time teleport trap to 59250
+O 0 59191 1 59221 100 0 0 0        * 1-time teleport trap to 59261
+O 0 59184 1 59221 100 0 0 0        * 1-time teleport trap to 59256
+O 0 59181 1 59221 100 0 0 0        * 1-time teleport trap to 59257
+O 0 59180 1 59221 100 0 0 0        * 1-time teleport trap to 59222
+O 0 59152 1 59225 100 0 0 0        * an epitaph
+O 0 59227 1 59229 100 0 0 0        * unlimited teleport trap to 59319 (mass grave)
+O 0 59188 1 59229 100 0 0 0        * 1-time teleport trap to 59254
+O 0 59187 1 59229 100 0 0 0        * 1-time teleport trap to 59264
+O 0 59186 1 59229 100 0 0 0        * 1-time teleport trap to 59260
+O 0 59185 1 59229 100 0 0 0        * 1-time teleport trap to 59255
+O 0 59182 1 59229 100 0 0 0        * 1-time teleport trap to 29224
+O 0 59226 1 59231 100 0 0 0        * unlimited teleport trap to 59319 (mass grave)
+O 0 59194 1 59231 100 0 0 0        * 1-time teleport trap to 59262
+O 0 59192 1 59231 100 0 0 0        * 1-time teleport trap to 59265
+O 0 59190 1 59231 100 0 0 0        * 1-time teleport trap to 59259
+O 0 59189 1 59231 100 0 0 0        * 1-time teleport trap to 59266
+O 0 59183 1 59231 100 0 0 0        * 1-time teleport trap to 59258
+O 0 59098 1 59235 100 0 0 0        * an old, stone coffin
+O 0 59097 1 59236 100 0 0 0        * an old, stone coffin
+O 0 59096 1 59237 100 0 0 0        * an old, stone coffin
+O 0 59108 1 59238 100 0 0 0        * an old, stone coffin
+O 0 59107 1 59239 100 0 0 0        * an old, stone coffin
+O 0 59106 1 59240 100 0 0 0        * an old, stone coffin
+O 0 59102 1 59241 100 0 0 0        * an old, stone coffin
+O 0 59101 1 59242 100 0 0 0        * an old, stone coffin
+O 0 59103 1 59247 100 0 0 0        * an old, stone coffin
+O 0 59100 1 59248 100 0 0 0        * an old, stone coffin
+O 0 59099 1 59249 100 0 0 0        * an old, stone coffin
+O 0 59110 1 59250 100 0 0 0        * an old, stone coffin
+O 0 59109 1 59251 100 0 0 0        * an old, stone coffin
+O 0 59105 1 59252 100 0 0 0        * an old, stone coffin
+O 0 59104 1 59253 100 0 0 0        * an old, stone coffin
+O 0 59056 5 59254 100 0 0 0        * a old canvas sack
+O 0 59113 1 59255 100 0 0 0        * a wand of hold person
+O 0 59118 1 59259 100 0 0 0        * a scroll of inflict critical wounds
+O 0 59116 1 59260 100 0 0 0        * a scroll of destruction
+O 0 59056 5 59261 100 0 0 0        * a old canvas sack
+O 0 59111 1 59262 100 0 0 0        * an elixir of sneaking
+O 0 59279 1 59263 100 0 0 0        * a loose coffin lid
+O 0 59112 1 59263 100 0 0 0        * a wand of stoneskin
+O 0 59280 1 59264 100 0 0 0        * a loose coffin lid
+O 0 59115 1 59264 100 0 0 0        * an elixir of vision
+O 0 59117 1 59265 100 0 0 0        * a scroll of spell immunity
+O 0 59114 1 59266 100 0 0 0        * a silver necklace encrusted with diamonds
+O 0 59042 18 59267 100 0 0 0       * a huge marble slab
+O 0 59033 15 59267 100 0 0 0       * a rag-draped skeleton
+P 1 59120 1 59033 100 0 0 0        *   a small gold medallion
+O 0 59122 1 59268 100 0 0 0        * a vine-covered marble slab
+O 0 59123 1 59268 100 0 0 0        * a vine-covered skeleton
+P 1 59124 1 59123 100 0 0 0        *   a staff of command plants
+O 0 59045 9 59269 100 0 0 0        * a huge marble slab
+P 1 35589 1 59045 100 0 0 0        *   (object type not in this .obj file)
+P 1 59126 1 59045 100 0 0 0        *   a wondrous clockwork pocket watch
+O 0 59033 15 59269 100 0 0 0       * a rag-draped skeleton
+O 0 59045 9 59270 100 0 0 0        * a huge marble slab
+O 0 59127 1 59270 100 0 0 0        * a golden, jewel-studded comb
+O 0 59042 18 59271 100 0 0 0       * a huge marble slab
+O 0 59130 1 59271 100 0 0 0        * a hidden marble lever
+O 0 59045 9 59272 100 0 0 0        * a huge marble slab
+P 1 59155 1 59045 100 0 0 0        *   a tiny box of rouge
+P 1 59156 3 59045 100 0 0 0        *   a vial of quality perfume
+P 1 59156 3 59045 100 0 0 0        *   a vial of quality perfume
+P 1 59156 3 59045 100 0 0 0        *   a vial of quality perfume
+P 1 59157 1 59045 100 0 0 0        *   a gold locket that bears the name 'Strahd'
+P 1 59158 1 59045 100 0 0 0        *   a small journal
+O 0 59042 18 59276 100 0 0 0       * a huge marble slab
+O 0 44419 1 59276 100 0 0 0        * (object type not in this .obj file)
+O 0 59258 1 59276 100 0 0 0        * the bloody corpse of Kasimir Velikov
+P 1 59249 1 59258 100 0 0 0        *   a wooden quarterstaff topped with a crystal
+P 1 59231 1 59258 100 0 0 0        *   the medallion of thought
+P 1 59248 3 59258 100 0 0 0        *   a moonbeam drop
+P 1 59248 3 59258 100 0 0 0        *   a moonbeam drop
+P 1 59248 3 59258 100 0 0 0        *   a moonbeam drop
+O 0 59042 18 59277 100 0 0 0       * a huge marble slab
+O 0 59033 15 59277 100 0 0 0       * a rag-draped skeleton
+P 1 59162 1 59033 100 0 0 0        *   a sigil of the Knights of the Raven
+O 0 59042 18 59278 100 0 0 0       * a huge marble slab
+O 0 59033 15 59278 100 0 0 0       * a rag-draped skeleton
+P 1 59284 1 59033 100 0 0 0        *   a dust-caked glass slipper
+O 0 59144 1 59279 100 0 0 0        * an unstable wall
+O 0 59033 15 59279 100 0 0 0       * a rag-draped skeleton
+P 1 59136 1 59033 100 0 0 0        *   a dog collar with a jeweled name tag that reads 'Hektor'
+O 0 59054 1 59279 100 0 0 0        * a huge marble slab
+O 0 59042 18 59280 100 0 0 0       * a huge marble slab
+O 0 59033 15 59280 100 0 0 0       * a rag-draped skeleton
+O 0 59042 18 59281 100 0 0 0       * a huge marble slab
+O 0 59042 18 59282 100 0 0 0       * a huge marble slab
+O 0 59033 15 59282 100 0 0 0       * a rag-draped skeleton
+O 0 59042 18 59283 100 0 0 0       * a huge marble slab
+O 0 59033 15 59283 100 0 0 0       * a rag-draped skeleton
+P 1 59283 1 59033 100 0 0 0        *   a delicate clockwork cake-topper of a dancing bride and groom
+O 0 59042 18 59284 100 0 0 0       * a huge marble slab
+O 0 59033 15 59284 100 0 0 0       * a rag-draped skeleton
+O 0 59045 9 59285 100 0 0 0        * a huge marble slab
+O 0 59141 1 59285 100 0 0 0        * a reclined skeleton
+P 1 59142 1 59141 100 0 0 0        *   prefect's vestments of the Knights of the Raven
+O 0 59042 18 59290 100 0 0 0       * a huge marble slab
+O 0 59033 15 59290 100 0 0 0       * a rag-draped skeleton
+O 0 59042 18 59291 100 0 0 0       * a huge marble slab
+O 0 59033 15 59291 100 0 0 0       * a rag-draped skeleton
+P 1 59147 1 59033 100 0 0 0        *   a small chest
+O 0 59045 9 59292 100 0 0 0        * a huge marble slab
+P 1 59150 1 59045 100 0 0 0        *   ashes of a long dead king
+O 0 59153 2 59294 100 0 0 0        * skeletal remains
+P 1 40474 1 59153 100 0 0 0        *   (object type not in this .obj file)
+P 1 59154 1 59153 100 0 0 0        *   a gold, signet ring
+O 0 59245 1 59294 100 0 0 0        * a huge marble slab
+O 0 59042 18 59295 100 0 0 0       * a huge marble slab
+O 0 59153 2 59295 100 0 0 0        * skeletal remains
+O 0 59165 1 59297 100 0 0 0        * a giant bronze statue of a king
+O 0 59166 1 59297 100 0 0 0        * a giant bronze statue of a queen
+O 0 59167 1 59297 100 0 0 0        * a magical blue curtain
+O 0 59174 1 59298 100 0 0 0        * a magical blue curtain
+O 0 59199 1 59299 100 0 0 0        * an unstable wall
+O 0 59169 1 59300 100 0 0 0        * a magnificent marble coffin inlaid with silver
+P 1 59170 3 59169 100 0 0 0        *   mummified remains
+P 1 59172 1 59170 100 0 0 0        *     a band of spell enhancement
+O 0 59168 1 59306 100 0 0 0        * a magnificent marble coffin inlaid with silver
+P 1 59170 3 59168 100 0 0 0        *   mummified remains
+P 1 59171 1 59170 100 0 0 0        *     Saint Ecaterina's burial shroud
+O 0 59195 1 59307 100 0 0 0        * a huge iron portcullis
+O 0 59178 1 59310 100 0 0 0        * two marble statues of ancient kings
+O 0 59175 1 59310 100 0 0 0        * an extra-large marble slab
+P 1 59176 1 59175 100 0 0 0        *   a magnificent jewel-encrusted coffin
+P 1 59170 3 59176 100 0 0 0        *     mummified remains
+P 1 59177 1 59170 100 0 0 0        *       a suit of ruby full-plate of the Knights of the Raven
+O 0 59228 1 59319 100 0 0 0        * a giant pile of garbage
+O 0 59229 1 59321 100 0 0 0        * a shining black coffin of waxed wood
+O 0 59232 1 59321 100 0 0 0        * loose earth
+P 1 59143 1 59232 100 0 0 0        *   a gory heart talisman of a red dragon
+O 0 59203 1 59327 100 0 0 0        * no-show dispel magic trap
+O 0 59236 1 59334 100 0 0 0        * monolith
+O 0 59237 1 59334 100 0 0 0        * slab of sacrifice
+O 0 59256 1 59334 100 0 0 0        * the blood of Zhudun
+O 0 59287 3 59351 100 0 0 0        * a mountainous pile of debris
+O 0 59239 1 59351 100 0 0 0        * an illusionary wall
+O 0 59241 1 59352 100 0 0 0        * an illusionary wall
+O 0 59287 3 59352 100 0 0 0        * a mountainous pile of debris
+O 0 434 3 59382 100 0 0 0          * (object type not in this .obj file)
+O 0 434 3 59383 100 0 0 0          * (object type not in this .obj file)
+O 0 434 3 59384 100 0 0 0          * (object type not in this .obj file)
+O 0 59292 1 59386 100 0 0 0        * the corpse of an adventurer
+P 1 53 1 59292 100 0 0 0           *   (object type not in this .obj file)
+P 1 97 1 59292 100 0 0 0           *   (object type not in this .obj file)
+P 1 96 1 59292 100 0 0 0           *   (object type not in this .obj file)
+P 1 77 1 59292 100 0 0 0           *   (object type not in this .obj file)
+P 1 41 1 59292 100 0 0 0           *   (object type not in this .obj file)
+O 0 72 1 59396 100 0 0 0           * (object type not in this .obj file)
+O 0 360 1 59321 100 0 0 0          * (object type not in this .obj file)
+*
+M 0 59070 1 59000 100 0 0 0        * Rahadin
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59097 1 59000 100 0 0 0        * Rahadin's animated cloak (following)
+G 1 59281 1 0 100 0 0 0            *    a mystical scroll, 'Favor of the Chaplain'
+G 1 59282 1 0 100 0 0 0            *    a mystical scroll, 'Favor of the Dread Guard'
+G 1 59289 1 0 100 0 0 0            *    a mystical scroll, 'Favor of the Whispering Blade'
+G 1 59300 1 0 100 0 0 0            *    a mystical scroll, 'Favor of the Archmage'
+M 0 59004 14 59026 100 0 0 0       * a wraith
+M 0 59003 21 59029 100 0 0 0       * an infectious Strahd zombie
+M 0 59003 21 59029 100 0 0 0       * an infectious Strahd zombie
+M 0 59003 21 59029 100 0 0 0       * an infectious Strahd zombie
+M 0 59003 21 59029 100 0 0 0       * an infectious Strahd zombie
+M 0 59003 21 59032 100 0 0 0       * an infectious Strahd zombie
+M 0 59003 21 59032 100 0 0 0       * an infectious Strahd zombie
+M 0 59003 21 59032 100 0 0 0       * an infectious Strahd zombie
+M 0 59003 21 59032 100 0 0 0       * an infectious Strahd zombie
+M 0 59046 1 59033 100 0 0 0        * Emil the Barovian
+M 0 59047 1 59037 100 0 0 0        * a spectre of "Stefania"
+E 1 59204 1 16 100 0 0 0           *   no-show stefania proc1
+G 1 59037 1 0 100 0 0 0            *    a large, black key
+F 1 59003 21 59037 100 0 0 0       * an infectious Strahd zombie (following)
+F 1 59003 21 59037 100 0 0 0       * an infectious Strahd zombie (following)
+F 1 59003 21 59037 100 0 0 0       * an infectious Strahd zombie (following)
+F 1 59003 21 59037 100 0 0 0       * an infectious Strahd zombie (following)
+F 1 59048 2 59037 100 0 0 0        * a rot reaver (following)
+E 1 59205 4 16 100 0 0 0           *   a rusty metal cleaver
+E 1 59205 4 17 100 0 0 0           *   a rusty metal cleaver
+F 1 59048 2 59037 100 0 0 0        * a rot reaver (following)
+E 1 59205 4 16 100 0 0 0           *   a rusty metal cleaver
+E 1 59205 4 17 100 0 0 0           *   a rusty metal cleaver
+M 0 59001 8 59046 100 0 0 0        * a huge boneclaw
+M 0 59001 8 59046 100 0 0 0        * a huge boneclaw
+M 0 59001 8 59046 100 0 0 0        * a huge boneclaw
+M 0 59001 8 59047 100 0 0 0        * a huge boneclaw
+M 0 59001 8 59047 100 0 0 0        * a huge boneclaw
+M 0 59001 8 59047 100 0 0 0        * a huge boneclaw
+M 0 59002 1 59049 100 0 0 0        * a greater boneclaw
+M 0 59049 1 59050 100 0 0 0        * Thredra Anarax
+E 1 59246 1 5 100 0 0 0            *   a stitched skin vestment studded with teeth
+E 1 59235 1 16 100 0 0 0           *   thredra anarax necromancer proc
+F 1 59050 2 59050 100 0 0 0        * a bloodhulk giant (following)
+F 1 59050 2 59050 100 0 0 0        * a bloodhulk giant (following)
+M 0 59051 1 59050 100 0 0 0        * a deathreap ooze
+M 0 59000 3 59051 100 0 0 0        * an animated mass of broken glass
+E 1 59036 12 16 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 17 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 25 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 26 100 0 0 0          *   a shard of broken glass
+M 0 59000 3 59051 100 0 0 0        * an animated mass of broken glass
+E 1 59036 12 16 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 17 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 25 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 26 100 0 0 0          *   a shard of broken glass
+M 0 59000 3 59051 100 0 0 0        * an animated mass of broken glass
+E 1 59036 12 16 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 17 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 25 100 0 0 0          *   a shard of broken glass
+E 1 59036 12 26 100 0 0 0          *   a shard of broken glass
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59007 20 59056 100 0 0 0       * a swarm rat
+M 0 59060 1 59070 100 0 0 0        * Ezmerelda D'avenir
+E 1 59240 1 16 100 0 0 0           *   a long, jeweled dagger
+G 1 67260 1 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 59059 4 59070 100 0 0 0        * a Vistani wagoner (following)
+F 1 59059 4 59070 100 0 0 0        * a Vistani wagoner (following)
+F 1 59059 4 59070 100 0 0 0        * a Vistani wagoner (following)
+F 1 59059 4 59070 100 0 0 0        * a Vistani wagoner (following)
+F 1 59058 1 59070 100 0 0 0        * Kasimir Velikov (following)
+M 0 59038 1 59084 100 0 0 0        * Kavan the Grim
+E 1 59251 1 5 100 0 0 0            *   an torn shirt of old chainmail
+E 1 59250 1 9 100 0 0 0            *   some gauntlets of ogre power
+E 1 59216 7 16 100 0 0 0           *   a heavy, iron sword
+E 1 59216 7 17 100 0 0 0           *   a heavy, iron sword
+M 0 59057 4 59088 100 0 0 0        * an advanced dread guard
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59088 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59088 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59088 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+M 0 59037 1 59109 100 0 0 0        * a darkweaver
+M 0 59006 4 59117 100 0 0 0        * a bloodthirsty bat
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59117 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59358 100 0 0 0       * a bloodthirsty bat (following)
+M 0 59010 1 59130 100 0 0 0        * the ghost of Prince Aurel Plesu
+E 1 59044 1 16 100 0 0 0           *   prince aurel proc
+F 1 59009 1 59130 100 0 0 0        * a ghost brute hound (following)
+M 0 59008 1 59130 100 0 0 0        * a horrifying skin kite
+M 0 59011 1 59132 100 0 0 0        * a large air elemental
+F 1 59001 8 59132 100 0 0 0        * a huge boneclaw (following)
+F 1 59003 21 59132 100 0 0 0       * an infectious Strahd zombie (following)
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+F 1 59003 21 59132 100 0 0 0       * an infectious Strahd zombie (following)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+F 1 59003 21 59132 100 0 0 0       * an infectious Strahd zombie (following)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59057 4 59136 100 0 0 0        * an advanced dread guard
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59136 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59136 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59136 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+M 0 59004 14 59145 100 0 0 0       * a wraith
+M 0 59004 14 59145 100 0 0 0       * a wraith
+M 0 59004 14 59145 100 0 0 0       * a wraith
+M 0 59012 4 59147 100 0 0 0        * a vicious ghast
+M 0 59012 4 59147 100 0 0 0        * a vicious ghast
+M 0 59012 4 59147 100 0 0 0        * a vicious ghast
+M 0 59012 4 59147 100 0 0 0        * a vicious ghast
+M 0 59013 1 59149 100 0 0 0        * the spectre of Endorovich
+E 1 59161 1 6 100 0 0 0            *   the ghost hood
+E 1 59058 4 16 100 0 0 0           *   an incorporeal curved blade
+E 1 59058 4 17 100 0 0 0           *   an incorporeal curved blade
+M 0 59024 2 59155 100 0 0 0        * a robed caryatid column
+F 1 59032 4 59155 100 0 0 0        * an armored caryatid column (following)
+M 0 59031 2 59155 100 0 0 0        * a robed talemon column
+F 1 59033 4 59155 100 0 0 0        * an armored talemon column (following)
+M 0 59026 1 59156 100 0 0 0        * a robed caryatid column
+F 1 59032 4 59156 100 0 0 0        * an armored caryatid column (following)
+M 0 59030 2 59156 100 0 0 0        * a robed talemon column
+F 1 59033 4 59156 100 0 0 0        * an armored talemon column (following)
+M 0 59027 1 59157 100 0 0 0        * a robed caryatid column
+F 1 59032 4 59157 100 0 0 0        * an armored caryatid column (following)
+M 0 59029 1 59157 100 0 0 0        * a robed talemon column
+F 1 59033 4 59157 100 0 0 0        * an armored talemon column (following)
+M 0 59025 2 59158 100 0 0 0        * a robed caryatid column
+F 1 59032 4 59158 100 0 0 0        * an armored caryatid column (following)
+M 0 59031 2 59158 100 0 0 0        * a robed talemon column
+F 1 59040 4 59158 100 0 0 0        * a green-eyed talemon column (following)
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59024 2 59159 100 0 0 0        * a robed caryatid column
+F 1 59039 4 59159 100 0 0 0        * a green-eyed caryatid column (following)
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59030 2 59159 100 0 0 0        * a robed talemon column
+F 1 59033 4 59159 100 0 0 0        * an armored talemon column (following)
+M 0 59025 2 59160 100 0 0 0        * a robed caryatid column
+F 1 59039 4 59160 100 0 0 0        * a green-eyed caryatid column (following)
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59028 1 59160 100 0 0 0        * a robed talemon column
+F 1 59040 4 59160 100 0 0 0        * a green-eyed talemon column (following)
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59039 4 59161 100 0 0 0        * a green-eyed caryatid column
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59040 4 59161 100 0 0 0        * a green-eyed talemon column
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59039 4 59161 100 0 0 0        * a green-eyed caryatid column
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59040 4 59161 100 0 0 0        * a green-eyed talemon column
+E 1 59159 8 16 100 0 0 0           *   no-show green-eyed column proc
+M 0 59015 1 59165 100 0 0 0        * a massive voor
+M 0 59016 1 59167 100 0 0 0        * a gorgeous erinyes
+M 0 59017 1 59167 100 0 0 0        * a scrawny black imp
+M 0 90702 1 59171 100 0 0 0        * (mob type not in this .mob file)
+M 0 90703 1 59171 100 0 0 0        * (mob type not in this .mob file)
+M 0 90704 1 59171 100 0 0 0        * (mob type not in this .mob file)
+M 0 90705 1 59171 100 0 0 0        * (mob type not in this .mob file)
+M 0 90706 1 59171 100 0 0 0        * (mob type not in this .mob file)
+M 0 59057 4 59180 100 0 0 0        * an advanced dread guard
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59180 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59180 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59180 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+M 0 58842 2 59182 100 0 0 0        * (mob type not in this .mob file)
+M 0 58842 2 59182 100 0 0 0        * (mob type not in this .mob file)
+M 0 58840 2 59182 100 0 0 0        * (mob type not in this .mob file)
+G 1 34534 4 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 34534 4 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 34534 4 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 34534 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 58840 2 59182 100 0 0 0        * (mob type not in this .mob file)
+M 0 58843 1 59182 100 0 0 0        * (mob type not in this .mob file)
+M 0 58351 3 59184 100 0 0 0        * (mob type not in this .mob file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 58351 3 59184 100 0 0 0        * (mob type not in this .mob file)
+M 0 58351 3 59184 100 0 0 0        * (mob type not in this .mob file)
+M 0 58350 3 59186 100 0 0 0        * (mob type not in this .mob file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 58371 12 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 58350 3 59186 100 0 0 0        * (mob type not in this .mob file)
+M 0 58350 3 59186 100 0 0 0        * (mob type not in this .mob file)
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59072 1 59199 100 0 0 0        * a miniature wind-up gnome
+G 1 59254 1 0 100 0 0 0            *    a miniature wind-up gnome
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+F 1 59020 54 59199 100 0 0 0       * a miniature wind-up gnome (following)
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59020 54 59199 100 0 0 0       * a miniature wind-up gnome
+M 0 59035 1 59201 100 0 0 0        * Exethanter
+M 0 59094 1 59203 100 0 0 0        * a GIANT spider
+E 1 59290 1 16 100 0 0 0           *   a giant, venomous chelicerae
+E 1 59312 1 17 100 0 0 0           *   gIANT spider major para proc
+M 0 59096 18 59203 100 0 0 0       * a plague rat
+M 0 59096 18 59203 100 0 0 0       * a plague rat
+M 0 59096 18 59203 100 0 0 0       * a plague rat
+M 0 59096 18 59203 100 0 0 0       * a plague rat
+M 0 59096 18 59203 100 0 0 0       * a plague rat
+M 0 59096 18 59203 100 0 0 0       * a plague rat
+M 0 59021 17 59222 100 0 0 0       * a tall, gaunt wight
+G 1 59259 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59224 100 0 0 0       * a tall, gaunt wight
+G 1 59270 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59078 1 59228 100 0 0 0        * Vanargand the Pack Leader
+E 1 59016 1 7 100 0 0 0            *   a fine skirt of emerald dragonscale
+F 1 59080 4 59228 100 0 0 0        * a large werewolf (following)
+F 1 59080 4 59228 100 0 0 0        * a large werewolf (following)
+F 1 59080 4 59228 100 0 0 0        * a large werewolf (following)
+F 1 59080 4 59228 100 0 0 0        * a large werewolf (following)
+M 0 59057 4 59232 100 0 0 0        * an advanced dread guard
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59232 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59232 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+F 1 59095 12 59232 100 0 0 0       * an advanced dread guard (following)
+E 1 59160 16 16 100 0 0 0          *   a spectral halberd
+M 0 59045 6 59239 100 0 0 0        * a plague rat
+M 0 59045 6 59243 100 0 0 0        * a plague rat
+M 0 59045 6 59244 100 0 0 0        * a plague rat
+M 0 59045 6 59246 100 0 0 0        * a plague rat
+M 0 59045 6 59249 100 0 0 0        * a plague rat
+M 0 59045 6 59251 100 0 0 0        * a plague rat
+M 0 59021 17 59254 100 0 0 0       * a tall, gaunt wight
+G 1 59271 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59255 100 0 0 0       * a tall, gaunt wight
+G 1 59272 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59256 100 0 0 0       * a tall, gaunt wight
+G 1 59268 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59257 100 0 0 0       * a tall, gaunt wight
+G 1 59260 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59258 100 0 0 0       * a tall, gaunt wight
+G 1 59267 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59259 100 0 0 0       * a tall, gaunt wight
+G 1 59273 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59260 100 0 0 0       * a tall, gaunt wight
+G 1 59274 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59261 100 0 0 0       * a tall, gaunt wight
+G 1 59275 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59262 100 0 0 0       * a tall, gaunt wight
+G 1 59278 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59022 8 59263 100 0 0 0        * a shadow
+G 1 58354 6 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59004 14 59264 100 0 0 0       * a wraith
+M 0 59021 17 59265 100 0 0 0       * a tall, gaunt wight
+G 1 59277 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59021 17 59266 100 0 0 0       * a tall, gaunt wight
+G 1 59276 1 0 100 0 0 0            *    a loose coffin lid
+M 0 59023 4 59268 100 0 0 0        * a strangle vine
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59023 4 59268 100 0 0 0        * a strangle vine
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59023 4 59268 100 0 0 0        * a strangle vine
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59023 4 59268 100 0 0 0        * a strangle vine
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 58837 8 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59036 10 59268 100 0 0 0       * a vampire spawn
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59268 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59268 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59268 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+M 0 59034 1 59272 100 0 0 0        * the vampire of Sasha Ivliskova
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59272 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59272 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+M 0 59083 1 59276 100 0 0 0        * the banshee of Patrina Velikovna
+M 0 59042 4 59301 100 0 0 0        * a vicious dire wolf
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+M 0 59042 4 59301 100 0 0 0        * a vicious dire wolf
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+M 0 59042 4 59301 100 0 0 0        * a vicious dire wolf
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+M 0 59042 4 59301 100 0 0 0        * a vicious dire wolf
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+F 1 91053 16 59301 100 0 0 0       * (mob type not in this .mob file) (following)
+M 0 91053 16 59301 100 0 0 0       * (mob type not in this .mob file)
+M 0 91053 16 59301 100 0 0 0       * (mob type not in this .mob file)
+M 0 91053 16 59301 100 0 0 0       * (mob type not in this .mob file)
+M 0 91053 16 59301 100 0 0 0       * (mob type not in this .mob file)
+M 0 59041 1 59303 100 0 0 0        * Count Strahd (dire wolf form)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+G 1 59243 1 0 100 0 0 0            *    Count Strahd's memory of Barov and Ravenovia
+G 1 59173 1 0 100 0 0 0            *    a small onyx figurine in the shape of a wolf
+F 1 59004 14 59303 100 0 0 0       * a wraith (following)
+F 1 59004 14 59303 100 0 0 0       * a wraith (following)
+F 1 59036 10 59303 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59303 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59303 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+F 1 59036 10 59303 100 0 0 0       * a vampire spawn (following)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+M 0 59044 1 59310 100 0 0 0        * Count Strahd (human form)
+E 1 59164 1 16 100 0 0 0           *   Strahd (human) no-show proc2
+E 1 59163 1 17 100 0 0 0           *   Strahd (human) no-show proc1
+G 1 59244 1 0 100 0 0 0            *    Count Strahd's memory of Sergei
+F 1 59043 1 59310 100 0 0 0        * a giant marble statue (following)
+E 1 59196 2 16 100 0 0 0           *   a massive two-handed marble sword
+E 1 59196 2 17 100 0 0 0           *   a massive two-handed marble sword
+G 1 59179 1 0 100 0 0 0            *    a tremendous marble greatsword
+M 0 59021 17 59319 100 0 0 0       * a tall, gaunt wight
+M 0 59021 17 59319 100 0 0 0       * a tall, gaunt wight
+M 0 59021 17 59319 100 0 0 0       * a tall, gaunt wight
+M 0 59021 17 59319 100 0 0 0       * a tall, gaunt wight
+M 0 59062 12 59319 100 0 0 0       * a crawling Strahd zombie
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59319 100 0 0 0       * a crawling Strahd zombie
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59319 100 0 0 0       * a crawling Strahd zombie
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59319 100 0 0 0       * a crawling Strahd zombie
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59319 100 0 0 0       * a crawling Strahd zombie
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59319 100 0 0 0       * a crawling Strahd zombie
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59022 8 59322 100 0 0 0        * a shadow
+G 1 58354 6 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59022 8 59322 100 0 0 0        * a shadow
+G 1 58354 6 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59022 8 59322 100 0 0 0        * a shadow
+G 1 58354 6 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59022 8 59322 100 0 0 0        * a shadow
+G 1 58354 6 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59022 8 59322 100 0 0 0        * a shadow
+G 1 58354 6 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59067 7 59322 100 0 0 0        * a flying sword
+E 1 59043 14 16 100 0 0 0          *   a cutting edge
+E 1 59043 14 17 100 0 0 0          *   a cutting edge
+M 0 59067 7 59322 100 0 0 0        * a flying sword
+E 1 59043 14 16 100 0 0 0          *   a cutting edge
+E 1 59043 14 17 100 0 0 0          *   a cutting edge
+M 0 59067 7 59322 100 0 0 0        * a flying sword
+E 1 59043 14 16 100 0 0 0          *   a cutting edge
+E 1 59043 14 17 100 0 0 0          *   a cutting edge
+M 0 59067 7 59322 100 0 0 0        * a flying sword
+E 1 59043 14 16 100 0 0 0          *   a cutting edge
+E 1 59043 14 17 100 0 0 0          *   a cutting edge
+M 0 59067 7 59322 100 0 0 0        * a flying sword
+E 1 59043 14 16 100 0 0 0          *   a cutting edge
+E 1 59043 14 17 100 0 0 0          *   a cutting edge
+M 0 59062 12 59322 100 0 0 0       * a crawling Strahd zombie
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59322 100 0 0 0       * a crawling Strahd zombie
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59322 100 0 0 0       * a crawling Strahd zombie
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59322 100 0 0 0       * a crawling Strahd zombie
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59062 12 59322 100 0 0 0       * a crawling Strahd zombie
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59068 7 59322 100 0 0 0        * a wandering wight
+E 1 59215 7 16 100 0 0 0           *   a heavy, iron axe
+M 0 59068 7 59322 100 0 0 0        * a wandering wight
+E 1 59215 7 16 100 0 0 0           *   a heavy, iron axe
+M 0 59068 7 59322 100 0 0 0        * a wandering wight
+E 1 59215 7 16 100 0 0 0           *   a heavy, iron axe
+M 0 59068 7 59322 100 0 0 0        * a wandering wight
+E 1 59216 7 16 100 0 0 0           *   a heavy, iron sword
+M 0 59068 7 59322 100 0 0 0        * a wandering wight
+E 1 59216 7 16 100 0 0 0           *   a heavy, iron sword
+M 0 59065 7 59322 100 0 0 0        * a sinister vampire spawn
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+M 0 59065 7 59322 100 0 0 0        * a sinister vampire spawn
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+M 0 59065 7 59322 100 0 0 0        * a sinister vampire spawn
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+M 0 59065 7 59322 100 0 0 0        * a sinister vampire spawn
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+M 0 59065 7 59322 100 0 0 0        * a sinister vampire spawn
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+M 0 59086 11 59322 100 0 0 0       * a flameskull
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+E 1 59053 18 17 100 0 0 0          *   no-show flameskull proc
+M 0 59086 11 59322 100 0 0 0       * a flameskull
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+E 1 59053 18 17 100 0 0 0          *   no-show flameskull proc
+M 0 59086 11 59322 100 0 0 0       * a flameskull
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+E 1 59053 18 17 100 0 0 0          *   no-show flameskull proc
+M 0 59086 11 59322 100 0 0 0       * a flameskull
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+E 1 59053 18 17 100 0 0 0          *   no-show flameskull proc
+M 0 59086 11 59322 100 0 0 0       * a flameskull
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+E 1 59053 18 17 100 0 0 0          *   no-show flameskull proc
+M 0 59003 21 59322 100 0 0 0       * an infectious Strahd zombie
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59003 21 59322 100 0 0 0       * an infectious Strahd zombie
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59003 21 59322 100 0 0 0       * an infectious Strahd zombie
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59003 21 59322 100 0 0 0       * an infectious Strahd zombie
+G 1 91055 11 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59003 21 59322 100 0 0 0       * an infectious Strahd zombie
+G 1 91056 13 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 91057 14 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59068 7 59322 100 0 0 0        * a wandering wight
+E 1 59216 7 16 100 0 0 0           *   a heavy, iron sword
+M 0 59022 8 59322 100 0 0 0        * a shadow
+M 0 59067 7 59322 100 0 0 0        * a flying sword
+E 1 59043 14 16 100 0 0 0          *   a cutting edge
+E 1 59043 14 17 100 0 0 0          *   a cutting edge
+M 0 59086 11 59322 100 0 0 0       * a flameskull
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+E 1 59053 18 17 100 0 0 0          *   no-show flameskull proc
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59096 18 59322 100 0 0 0       * a plague rat
+M 0 59065 7 59322 100 0 0 0        * a sinister vampire spawn
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+M 0 59022 8 59322 100 0 0 0        * a shadow
+M 0 59003 21 59322 100 0 0 0       * an infectious Strahd zombie
+M 0 59086 11 59322 100 0 0 0       * a flameskull
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+E 1 59053 18 17 100 0 0 0          *   no-show flameskull proc
+M 0 59068 7 59322 100 0 0 0        * a wandering wight
+E 1 59215 7 16 100 0 0 0           *   a heavy, iron axe
+M 0 59067 7 59322 100 0 0 0        * a flying sword
+E 1 59043 14 16 100 0 0 0          *   a cutting edge
+E 1 59043 14 17 100 0 0 0          *   a cutting edge
+M 0 59004 14 59322 100 0 0 0       * a wraith
+M 0 59004 14 59322 100 0 0 0       * a wraith
+M 0 59004 14 59322 100 0 0 0       * a wraith
+M 0 59004 14 59322 100 0 0 0       * a wraith
+M 0 59004 14 59322 100 0 0 0       * a wraith
+M 0 59004 14 59322 100 0 0 0       * a wraith
+M 0 59004 14 59322 100 0 0 0       * a wraith
+M 0 59065 7 59322 100 0 0 0        * a sinister vampire spawn
+M 0 59062 12 59322 100 0 0 0       * a crawling Strahd zombie
+M 0 59071 1 59323 100 0 0 0        * Count Strahd (bat form)
+E 1 59197 1 16 100 0 0 0           *   Strahd (bat form) proc1
+E 1 59198 1 17 100 0 0 0           *   Strahd (bat form) proc2
+G 1 59242 1 0 100 0 0 0            *    a dimension door
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59323 100 0 0 0       * a bloodthirsty bat (following)
+M 0 59005 72 59323 100 0 0 0       * a bloodthirsty bat
+M 0 59052 1 59325 100 0 0 0        * the lich of the witch-king Zhengyi
+E 1 59214 1 16 100 0 0 0           *   the mace of terror
+F 1 59053 4 59325 100 0 0 0        * a tomb demon (following)
+F 1 59053 4 59325 100 0 0 0        * a tomb demon (following)
+F 1 59053 4 59325 100 0 0 0        * a tomb demon (following)
+F 1 59053 4 59325 100 0 0 0        * a tomb demon (following)
+M 0 59055 1 59325 100 0 0 0        * Garagos
+E 1 59217 1 12 100 0 0 0           *   the bloody mantle of slaughter
+E 1 59215 7 16 100 0 0 0           *   a heavy, iron axe
+E 1 59216 7 17 100 0 0 0           *   a heavy, iron sword
+E 1 59215 7 25 100 0 0 0           *   a heavy, iron axe
+E 1 59216 7 26 100 0 0 0           *   a heavy, iron sword
+F 1 59056 4 59325 100 0 0 0        * a Bloodreaver (following)
+E 1 59200 4 16 100 0 0 0           *   a bloodstained tentacus
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 59056 4 59325 100 0 0 0        * a Bloodreaver (following)
+E 1 59200 4 16 100 0 0 0           *   a bloodstained tentacus
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 59056 4 59325 100 0 0 0        * a Bloodreaver (following)
+E 1 59200 4 16 100 0 0 0           *   a bloodstained tentacus
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 59056 4 59325 100 0 0 0        * a Bloodreaver (following)
+E 1 59200 4 16 100 0 0 0           *   a bloodstained tentacus
+G 1 44464 8 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 59054 1 59325 100 0 0 0        * Cassiar
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+G 1 59210 2 0 100 0 0 0            *    a wand of false life
+M 0 59069 1 59325 100 0 0 0        * Apex Vicors the Mad Hatter
+E 1 59213 1 3 100 0 0 0            *   a stone symbol of Tempus
+E 1 59219 1 16 100 0 0 0           *   no-show Apex Vicors proc1
+E 1 59220 1 17 100 0 0 0           *   no-show Apex Vicors proc2
+M 0 59063 1 59325 100 0 0 0        * Vladimir Horngaard
+E 1 59015 1 10 100 0 0 0           *   a pair of blood-stained wyrm scale sleeves
+E 1 59218 1 16 100 0 0 0           *   no-show Vladimir Horngaard proc1
+M 0 59061 1 59325 100 0 0 0        * Pidlwick II
+G 1 59255 1 0 100 0 0 0            *    Pidlwick II
+M 0 59018 1 59325 100 0 0 0        * Zyr'zabuul the Master Mindmage
+E 1 59318 1 6 100 0 0 0            *   a mindstone scarab
+F 1 59019 4 59325 100 0 0 0        * a githzerai mindmage (following)
+F 1 59019 4 59325 100 0 0 0        * a githzerai mindmage (following)
+F 1 59019 4 59325 100 0 0 0        * a githzerai mindmage (following)
+F 1 59019 4 59325 100 0 0 0        * a githzerai mindmage (following)
+M 0 59087 6 59325 100 0 0 0        * a decrepit dracolich
+G 1 400204 6 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59087 6 59325 100 0 0 0        * a decrepit dracolich
+G 1 400204 6 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59087 6 59325 100 0 0 0        * a decrepit dracolich
+G 1 400204 6 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59087 6 59325 100 0 0 0        * a decrepit dracolich
+G 1 400204 6 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59087 6 59325 100 0 0 0        * a decrepit dracolich
+G 1 400204 6 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59087 6 59325 100 0 0 0        * a decrepit dracolich
+G 1 400204 6 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 59088 1 59325 100 0 0 0        * Vhalzerek the unblinking
+G 1 59322 1 0 100 0 0 0            *    blood of the Vhalzerek
+M 0 59073 1 59326 100 0 0 0        * a trilloch
+F 1 26603 4 59326 100 0 0 0        * (mob type not in this .mob file) (following)
+F 1 26603 4 59326 100 0 0 0        * (mob type not in this .mob file) (following)
+F 1 26603 4 59326 100 0 0 0        * (mob type not in this .mob file) (following)
+F 1 26603 4 59326 100 0 0 0        * (mob type not in this .mob file) (following)
+M 0 59074 20 59326 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59326 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59326 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59328 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59329 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59330 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59331 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59332 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59332 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59332 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59335 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59335 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59336 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59341 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59346 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59346 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59350 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59350 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59351 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+F 1 59075 31 59351 100 0 0 0       * a giant ant worker (following)
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59074 20 59351 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+F 1 59075 31 59351 100 0 0 0       * a giant ant worker (following)
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59085 1 59352 100 0 0 0        * Cyrus Belview
+G 1 59304 1 0 100 0 0 0            *    a rotting canvas sack
+P 1 22940 3 59304 100 0 0 0        *   (object type not in this .obj file)
+P 1 22940 3 59304 100 0 0 0        *   (object type not in this .obj file)
+P 1 22940 3 59304 100 0 0 0        *   (object type not in this .obj file)
+M 0 59006 4 59353 100 0 0 0        * a bloodthirsty bat
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59353 100 0 0 0       * a bloodthirsty bat (following)
+M 0 59076 1 59354 100 0 0 0        * Count Strahd (gaseous form)
+E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc
+E 1 59321 35 17 100 0 0 0          *   no-show vampire edrain proc
+G 1 59230 1 0 100 0 0 0            *    a key to Strahd's crypt
+G 1 59269 1 0 100 0 0 0            *    the fanged skull of Strahd Von Zarovich
+F 1 59077 1 59354 100 0 0 0        * Strahd's animated golden platemail (following)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+G 1 400154 10 0 100 0 0 0          *    (object type not in this .obj file)
+F 1 59066 1 59354 100 0 0 0        * an unseen servant (following)
+E 1 59221 1 16 100 0 0 0           *   the blade of the unseen
+E 1 59222 1 17 100 0 0 0           *   the blade of the unseen
+F 1 59079 1 59354 100 0 0 0        * a curse-scribed golem (following)
+F 1 59086 11 59354 100 0 0 0       * a flameskull (following)
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+F 1 59086 11 59354 100 0 0 0       * a flameskull (following)
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+F 1 59086 11 59354 100 0 0 0       * a flameskull (following)
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+F 1 59086 11 59354 100 0 0 0       * a flameskull (following)
+E 1 59053 18 16 100 0 0 0          *   no-show flameskull proc
+M 0 59006 4 59354 100 0 0 0        * a bloodthirsty bat
+F 1 59005 72 59354 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59354 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59354 100 0 0 0       * a bloodthirsty bat (following)
+F 1 59005 72 59354 100 0 0 0       * a bloodthirsty bat (following)
+M 0 55252 1 59354 33 0 0 0         * (mob type not in this .mob file)
+M 0 55253 1 59354 33 0 0 0         * (mob type not in this .mob file)
+M 0 55254 1 59354 33 0 0 0         * (mob type not in this .mob file)
+M 0 59081 1 59355 100 0 0 0        * Gadof Blinsky
+G 1 59261 999 0 100 0 0 0          *    a set of marbles painted to look like eyes
+G 1 59262 999 0 100 0 0 0          *    a severed hand standing up on its fingers
+G 1 59263 999 0 100 0 0 0          *    a black wooden horse with a fiery red mane and tail
+G 1 59264 999 0 100 0 0 0          *    a snowglobe with ravens in the place of snow
+G 1 59265 999 0 100 0 0 0          *    a merry-go-round with snarling wolves instead of prancing horses
+G 1 59266 999 0 100 0 0 0          *    a toy bear overly-stuffed with other toy bears
+G 1 59252 1 0 100 0 0 0            *    a miniature wind-up toy woman
+M 0 59084 1 59356 100 0 0 0        * Izek Strazni
+E 1 59215 7 16 100 0 0 0           *   a heavy, iron axe
+F 1 59082 1 59356 100 0 0 0        * Rictavio (following)
+E 1 59306 1 6 100 0 0 0            *   an oversized cavalier bonnet
+F 1 59064 4 59356 100 0 0 0        * a disgruntled Barovian (following)
+F 1 59064 4 59356 100 0 0 0        * a disgruntled Barovian (following)
+F 1 59064 4 59356 100 0 0 0        * a disgruntled Barovian (following)
+F 1 59064 4 59356 100 0 0 0        * a disgruntled Barovian (following)
+M 0 59006 4 59358 100 0 0 0        * a bloodthirsty bat
+M 0 59089 1 59359 100 0 0 0        * a spectral dire wolf
+G 1 59285 1 0 100 0 0 0            *    a spectral portal
+M 0 59090 1 59359 100 0 0 0        * an image of Rahadin
+M 0 59075 31 59361 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59361 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59361 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59361 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59367 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59367 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59367 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59367 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59367 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59375 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59375 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59375 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59375 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59375 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+M 0 59075 31 59377 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59377 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59377 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59377 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59075 31 59377 100 0 0 0       * a giant ant worker
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59382 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59382 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59383 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59383 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59384 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59074 20 59384 100 0 0 0       * a giant ant soldier
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+M 0 59091 1 59397 100 0 0 0        * Jander Sunstar
+E 1 59303 1 16 100 0 0 0           *   the Oathbow
+M 0 59092 1 59398 100 0 0 0        * the Gulthias tree
+E 1 59320 2 16 100 0 0 0           *   no-show gulthias tree proc
+E 1 59320 2 17 100 0 0 0           *   no-show gulthias tree proc
+G 1 59297 1 0 100 0 0 0            *    the living heart of the Gulthias tree
+M 0 59093 1 59399 100 0 0 0        * the giant ant queen
+E 1 59049 68 16 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 17 100 0 0 0          *   no-show giant ant proc
+E 1 59201 58 25 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 26 100 0 0 0          *   a jagged giant ant pincer
+G 1 59307 1 0 100 0 0 0            *    a pulsating giant ant eggsac
+F 1 59074 20 59399 100 0 0 0       * a giant ant soldier (following)
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+F 1 59074 20 59399 100 0 0 0       * a giant ant soldier (following)
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+F 1 59074 20 59399 100 0 0 0       * a giant ant soldier (following)
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+F 1 59074 20 59399 100 0 0 0       * a giant ant soldier (following)
+E 1 59201 58 16 100 0 0 0          *   a jagged giant ant pincer
+E 1 59201 58 17 100 0 0 0          *   a jagged giant ant pincer
+E 1 59049 68 25 100 0 0 0          *   no-show giant ant proc
+E 1 59049 68 26 100 0 0 0          *   no-show giant ant proc
+*
+S

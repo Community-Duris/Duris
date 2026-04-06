@@ -216,9 +216,9 @@ pm 0 16384 0 -1
 0.0.0.0 0
 8 8 1
 #83114
-figure earthen robe emissary _spec4_~
+figure earthen robe emissary~
 &+yan e&+La&+yr&+Lt&+yh&+Le&+yn emissary&N~
-&+yA figure in a long &+Le&+ya&+Lr&+yt&+Lh&+ye&+Ln &+yrobe stands here, eyeing the vagabonds.
+&+yA figure in a long &+Le&+ya&+Lr&+yt&+Lh&+ye&+Ln &+yrobe stands here, eyeing his surroundings.
 ~
    &+yThis pech, deep cousin to the dwarven and gnomish race from the deepest
 &+yroots of existence.  This dwarfish man is covered in clumps of dirt and
@@ -227,12 +227,12 @@ figure earthen robe emissary _spec4_~
 &+ynoble enough to aid him.
 ~
 2122 0 128 0 0 0 0 0 1 S
-pg 0 2048 0 -1
+pg 0 16384 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83115
-man robed flaming emissary burning flames _spec3_~
+man robed flaming emissary burning flames~
 &+Ra &+rfl&+Ram&+Yi&+Rn&+rg emissary&N~
 &+RA man robed in a gown of &+rburning &+Yflames &+Rstands here, &+Lblazing.
 ~
@@ -243,12 +243,12 @@ man robed flaming emissary burning flames _spec3_~
 &+rto &+cAlatorin &+rseeking adventurers, not &+more.
 ~
 2154 0 128 0 536870912 1 0 0 1 S
-ef 0 2048 0 -1
+ef 0 16384 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83116
-slyph emissary _spec1_~
+slyph emissary~
 &+Ca &+Wslyph &+Cemissary&N~
 &+CA &+Wslyph &+Cemissary whirls here in a &+Wgust&+C, searching for assistance.
 ~
@@ -258,12 +258,12 @@ slyph emissary _spec1_~
 &+Wseems to be in search of aid.
 ~
 2122 0 0 0 0 0 0 0 -20 S
-ea 0 2048 0 -1
+ea 0 16384 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #83117
-water dwarf _spec2_~
+water dwarf~
 &+ca &+Bwater &+cdwarf&N~
 &+cA dwarf in a long robe of &+Bflowing water &+cquestions mercenaries.
 ~
@@ -273,7 +273,7 @@ water dwarf _spec2_~
 &+Bmagically-flowing garments.
 ~
 2122 0 0 0 0 0 0 0 40 S
-pd 0 2048 0 -1
+pd 0 16384 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -294,7 +294,7 @@ h 0 1 0 -1
 0.0.0.0 0
 8 8 0
 #83119
-ethereal walker man shrouded mists mist _spec2_~
+ethereal walker man shrouded mists mist figure cloaked~
 &+Lan &+re&+ct&+rh&+ce&+rr&+ce&+ra&+cl &+Lwalker&N~
 &+LA strange, cloaked figure &+mdraped &+Lin &+re&+ct&+rh&+ce&+rr&+ce&+ra&+cl &+mm&+ci&+ms&+ct&+ms &+Lstands here, waiting.
 ~
@@ -634,9 +634,9 @@ pg 0 512 0 -1
 0.0.0.0 0
 8 8 1
 #83141
-odeth hooded deep gnome _spec2_~
+odeth hooded deep gnome~
 &+LOd&+re&+Lth &+Lthe &+mHooded&N~
-&+LA shrouded deep gnome known as Od&+re&+Lth the &+mHooded&+L stands motionless in front of a gateway.
+&+LA shrouded deep gnome known as Od&+re&+Lth the &+mHooded&+L stands motionless in front of a &+br&+Li&+bf&+Lt.
 ~
    &+LThis deep gnome, named Od&+re&+Lth, which translates in a
 &+Lrough deep gnomish translation to 'Foregotten' or 'Foregotten One.'
@@ -649,7 +649,7 @@ odeth hooded deep gnome _spec2_~
 &+Llife guarding this ancient dark secret of the Alatorin mystic ward.
 ~
 2147518538 0 0 0 0 0 0 0 0 S
-pg 0 4194304 0 -1
+pg 0 4194308 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -696,7 +696,8 @@ jedd burningbraids mountain dwarf channeler~
 &+Ycompletely spiritual.  Nonetheless, the blood in Jedd's veins are
 &+Yfilled with the same amount of heritage and determination as are the
 &+Yshield dwarf natives of Alatorin, and he is treated with no less
-&+Yrespect then that of the brotherhood.
+&+Yrespect than that of the brotherhood. Jedd wears a large apron over
+&+Yhis robe, stained with the byproduct of his &+mal&+Mche&+mmy&+Y.
 ~
 34890 0 0 0 0 0 0 0 20 S
 pm 0 2304 0 -1
@@ -735,15 +736,13 @@ pf 0 33554432 0 -1
 #83147
 sturb ironhead shield dwarf general~
 &+YSturb &+cIronhead&N~
-&+YSturb &+cIronhead &+WGeneral of the &+rSeige &+YArmy &+Wstands here, &Nreviewing a war map.
+&+YSturb &+cIronhead &+WGeneral of the &+rSiege &+YArmy &+Wstands here, &Nreviewing a war map.
 ~
 &+Y   Sturb &+cIronhead&+W, rumored to be a cousin of &+RTaark Shanat &+Whimself
 &+Wstands here in all of his battle-worn glory.  A large &Nscar
 &+Wreaches down the side of his face.  A billowing &+Ygolden &+Wbeard
 &+Wflows freely from under his broad chin.  A flat, wide nose sits
-&+Wbetween two piercing &+Bblue &+Weyes.  &+YSturb &+cIronhead &+Whas
-&+Wreached one of the highest positions of the &+cAlatorin &+Wassault
-&+Warmy.
+&+Wbetween two piercing &+Bblue &+Weyes.
 ~
 1140852810 0 0 0 402653336 6336 0 4194304 0 S
 pm 0 16385 0 -1
@@ -875,7 +874,7 @@ silwynthel elven minstrel elf _spec3_~
 ~
 2122 0 0 0 0 0 0 0 420 S
 pe 0 32768 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
 #83156
@@ -890,7 +889,7 @@ sithrezyn drow minstrel~
 ~
 2122 0 0 0 0 0 0 0 -666 S
 pl 0 32768 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83157
@@ -910,8 +909,8 @@ pm 0 1 0 -1
 8 8 1
 #83158
 jig'jagrek jig goblin sage~
-&+GJig'Jagrek &+Lthe &+Ygoblin sage&N~
-&+GJig'Jagrek &+Lthe &+Ygoblin sage&+L and seer of &+GMoregeeth&+L waits here impatiently.
+&+GJig'Jagrek &+Lthe &+Ygoblin &+Cs&+Ya&+Cg&+Ye&N~
+&+GJig'Jagrek &+Lthe &+Ygoblin &+Cs&+Ya&+Cg&+Ye&+L and seer of &+GMoregeeth&+L waits here impatiently.
 ~
    &+GJig'Jagrek, one of the original seven sages of &+rArmageddon&+G, has
 &+Gtaken on a new life from war and instead acts as a diplomat, incredibl
@@ -919,7 +918,7 @@ jig'jagrek jig goblin sage~
 ~
 2122 0 0 0 0 0 0 0 -600 S
 hg 0 33554944 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83159
@@ -934,7 +933,7 @@ sir daxden knight winterhaven~
 ~
 2122 0 0 0 0 0 0 0 0 S
 PH 0 8 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83160
@@ -954,7 +953,7 @@ ditts stomard dwarven holyman dwarf _spec3_~
 ~
 2122 0 0 0 24 0 0 0 1000 S
 pm 0 32 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83161
@@ -969,7 +968,7 @@ osemius cloud giant~
 ~
 2122 0 0 0 0 0 0 0 0 S
 g 0 1 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83162
@@ -985,13 +984,13 @@ babdrabble gnome water magus _spec2_~
 &+Banywhere he desires.
 ~
 2122 0 0 0 0 0 0 0 500 S
-pg 0 2048 0 -1
-60 0 0 1d1+1 1d1+1
+pg 0 2048 2 -1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83163
 crysanthilis noble shaledrieth high elven~
-&+CCrysanthilis, Noble of &+YShaledrieth&N~
+&+CCrysanthilis, noble of &+YShaledrieth&N~
 &+CCrysanthilis the High Elven Noble of &+YShaledrieth &+Ystands here, awaiting his meeting.
 ~
    &+CCrysanthilis wears elegant silk garments with crystal bracelets and
@@ -1001,7 +1000,7 @@ crysanthilis noble shaledrieth high elven~
 ~
 2122 0 0 0 0 0 0 0 500 S
 pe 0 2 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83164
@@ -1187,8 +1186,8 @@ taark shanat king alatorin~
 &+RTaark Shanat&+W, King of &+cAlatorin&N~
 &+RTaark Shanat&+W, the &+gDragon&+rslayer &+WKing of &+cAlatorin &+Lresides here.
 ~
-   &+WTaark Shanat is an imposing figure of dwarven might.  He stands about
-&+Wfour and a half feet tall, quite massive for a &Nsh&+Wie&Nld &+Ydwarf.
+   &+WTaark Shanat is an imposing figure of dwarven might.  He stands
+&+Wabout four and a half feet tall, quite massive for a &Nsh&+Wie&Nld &+Ydwarf.
 &+WTaark Shanat has flowing black hair with wisps of grey in his beard and
 &+Wpulled into a pony tail on the back of his head.  His large, wrinkled
 &+Wbrow has two huge bushy &+Leyebrows &+Wsitting on a ridge just over
@@ -1313,18 +1312,20 @@ hg 0 512 0 -1
 0.0.0.0 0
 8 8 1
 #83184
-hooded shield dwarf merchant~
-&+La h&+moo&+Lded &Nsh&+Wie&Nld &+Ydwarf &+mmerchant&N~
-&+LA hooded &Nsh&+Wie&Nld &+Ydwarf &+mmerchant slowly looks up from the center of the cave.
+scarred dark iron dwarf~
+&+La scarred dark iron dwarf&N~
+&+LA scarred dark iron dwarf skulks about here, checking over his shoulder.
 ~
-   &+LThis aged shield dwarf resides deep within these Caverns of Time
-&+Lin this hidden cave.  He wears a long robe with a huge hood that
-&+Lcovers his head and casts a huge shadow across his face and chest.
+   &+LThis dark iron dwarf, a distant cousin of the shield dwarves,
+&+Lskulks about here, keeping to the shadows and reacting to every
+&+Lsound around him. Several scars can be seen on his exposed flesh,
+&+Lincluding one running down the length of his face from his fore-
+&+Lhead and across his eye.
 ~
-2122 0 0 0 24 0 0 0 -1 S
-pm 0 4 0 -1
-60 0 0 1d1+1 1d1+1
-0.0.0.0 0
+1073743880 0 0 0 24 0 0 0 -1000 S
+pd 0 4097 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.20 0
 8 8 1
 #83185
 mishanen centaur herbalist _spec1_~
@@ -1338,7 +1339,7 @@ mishanen centaur herbalist _spec1_~
 ~
 2250 0 0 0 24 0 0 0 0 S
 ct 0 128 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
 #83186
@@ -1457,7 +1458,7 @@ chuival wind magus mountain dwarf _spec1_~
 &+Lhere within his chamber in the &N&+mMy&+Mstic Wa&N&+mrd&+L.
 ~
 34890 0 0 0 24 0 0 0 0 S
-pm 0 2048 0 -1
+pm 0 2048 1 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 5 5 1
@@ -1517,7 +1518,7 @@ gradden dwarf bounty hunter _spec2_~
 &+Ypowerful blue eyes..
 ~
 3221227722 0 0 0 0 0 0 0 0 S
-pm 0 16384 0 -1
+pm 0 16384 2 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -1674,7 +1675,7 @@ clund hammerhelm shield dwarf _spec1_~
 &+Wmaster of the Hammer&+Yhelm &+Warmy, and oversees the grand production
 &+Wof troops in the entire &N&+cAlatorin &+Warmy from a very young age.
 ~
-1157650888 0 0 0 402653336 47296 1074004096 4722944 1000 S
+1157650760 0 0 0 402653336 47296 1074004096 4722944 1000 S
 pm 0 67108897 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -1764,10 +1765,10 @@ pm 0 1 0 -1
 #83210
 holyman mountain dwarf _spec3_~
 &+Wa holyman&N~
-&+WA holyman stands here, blessing the &+Cpool &+Wfor Hammer&+Yhelm.
+&+WA holyman kneels here, &+Cblessing the waters.
 ~
    &+WThis holyman is actually a &+YMountain Dwarf&+W who is providing
-&+Whis services to the Hammer&+Yhelm &+Warmy.  Dressed in flowing, long
+&+Whis services to his &+ymountainfolk &+Wkin.  Dressed in flowing, long
 &+Wwhite robes, this proud holyman blesses the waters of the reflecting
 &+Wpool that sits in the shadow of the statue of Breuldin, Mountain Dwarf
 &+WGod.
@@ -1836,9 +1837,9 @@ hf 0 512 0 1
 0.0.0.0 0
 8 8 2
 #83214
-gnome gnomish master craftsman emissary~
-&+ya &+Rgnomish &N&+ymaster craftsman&N~
-&+yA &+Rgnomish &N&+ymaster craftsman, emissary of Woodseer, stands here.
+gnome gnomish craftsman emissary~
+&+ya &+Rgnomish &N&+ycraftsman&N~
+&+yA &+Rgnomish &N&+ycraftsman, emissary of Woodseer, stands here.
 ~
    &+yThis short halfling wears bright goggles at all times, most likely
 &+ya personal invention.  Crafting and creating objects and equipment
@@ -1882,13 +1883,14 @@ PH 0 16384 0 -1
 #83217
 chromium dragon~
 &+La &Nc&+Wh&+Cr&+Rom&+Ci&+Wu&Nm &+Ldragon&N~
-&+LA MASSIVE &Nc&+Wh&+Cr&+Rom&+Ci&+Wu&Nm &+Ldragon, longtime admirer of &+RTaark Shanat&+L, coils here.
+&+LA MASSIVE &Nc&+Wh&+Cr&+Rom&+Ci&+Wu&Nm &+Ldragon, ancient wyrm of &+ySh&+La&+yn&+La&+yt&+La&+yr&+L, coils here.
 ~
-   &+LThis massive four-legged dragon is the size of a whale, with the legs of
-&+La lizard.  Its long neck curls around into two heads, both shimmering blue.
-&+LThe body of this chromium dragon shimmers in bright reddish orange and
-&+Lblue colors.  This greater, &+Yholy &+Ldragon stands here in great awe and
-&+Ladmiration and has vowed its service to the &n&+gWyrm&+Wslayer&N.
+   &+LThis massive four-legged dragon is the size of a whale,
+with the legs of &+La lizard.  Its long neck curls around into
+two heads, both shimmering blue. &+LThe body of this chromium
+dragon shimmers in bright reddish orange and&+L blue colors.
+This greater, metallic &+Ldragon hulks here with great agency
+&+Land has vowed its revenge on the &n&+gWyrm&+Wslayer&N.
 ~
 1073744842 0 0 0 0 0 0 33554432 0 S
 d 0 514 0 -1
@@ -1896,18 +1898,18 @@ d 0 514 0 -1
 0.0.0.0 0
 8 8 1
 #83218
-citadel summoner _spec4_~
+citadel summoner~
 &+La &N&+ccitadel &+Ysu&+Wmmon&+Yer&N~
 &+LA guardian &+Ysummoner &+Lof the &N&+ccitadel&+L walks here, pursuing intruders.
 ~
-   &+LThis shield dwarf is one of your typical summoners brought up by the
+   &+LThis svirfneblin is one of your typical summoners brought up by the
 &+Lvery mystic ward which sits within the center of Alatorin.  Robed in hooded
-&+Lwools, this dwarf master summoner feverishly tries to purge all those
+&+Lwools, this deep gnome summoner feverishly tries to purge all those
 &+Lthat do not belong in this sacred, highly-coveted and lored place.
 ~
 1073744072 1 0 0 0 0 0 0 0 S
-pg 0 2048 0 1
-56 0 0 1d1+1 1d1+1
+pg 0 2048 4 1
+60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83219
@@ -2219,8 +2221,8 @@ blazing avatar breuldin~
 &+Was a mortal resemblance of Breuldin, manifested by the great holy might
 &+Wof this holy sanctum.
 ~
-1091569866 0 0 0 152 14528 524288 37880832 1000 S
-ug 0 32 0 -1
+1091569866 0 0 0 152 14528 524288 38405120 1000 S
+ug 0 32 1 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -2277,10 +2279,11 @@ fergulton gnome inventor~
 &+RFergulton &+Cthe &+Yi&n&+cn&+Yv&N&+ce&+Yn&N&+ct&+Yo&N&+cr&N~
 &+CA pudgy &+Rgnome &+Yin&N&+cve&+Ynt&n&+cor &+Cnamed &+RFergulton &+Cmakes a visit to the warmasters of Shanat.
 ~
-   &+RFergulton &+Cis middle-aged, round, and cheerfully-tempered.  This gnomish inventor
-&+Chas gained quite a reputation to the military leaders of &N&+cAlatorin&+C, who reside
-&+Cwithin &N&+cShanat Citadel&+C.  &+RFergulton &+Chas a very defining moustache, twisted
-&+Cat both ends.  Piercing &+Bblue &+Ceyes stare forth with a very special gleam.
+   &+RFergulton &+Cis middle-aged, round, and cheerfully-tempered.
+&+CThis gnomish inventor &+Chas gained quite a reputation to the military
+&+Cleaders of &N&+cAlatorin&+C, who reside &+Cwithin &N&+cShanat Citadel&+C.
+&+RFergulton &+Chas a very defining moustache, twisted&+C at both ends.
+&+CPiercing &+Bblue &+Ceyes stare forth with a very special gleam.
 ~
 268462282 0 0 0 268435608 0 524288 38273024 100 S
 pg 8 524288 0 -1
@@ -2288,16 +2291,16 @@ pg 8 524288 0 -1
 0.0.0.0 0
 8 8 1
 #83243
-strong noble minotaur diplomat~
-&+La &Nstrong, &+Cnoble &N&+rmino&+Ltaur diplomat&N~
-&+LA &Nstrong, &+Cnoble &N&+rmino&+Ltaur diplomat stands here, conversing with his people.
+strong noble minotaur&n~
+&+La &Nstrong, &+Cnoble &N&+rmino&+Ltaur&N~
+&+LA &Nstrong, &+Cnoble &N&+rmino&+Ltaur stands here, grimmacing.
 ~
    &+LThis &N&+rmino&+Ltaur, bearing the two-horned insignia of Naxvaran on the embroidery of
 &+Lhis robes stands here, conversing with the other &N&+rmino&+Ltaurs.  He has two huge,
 &+Lpolished horns, each with small &+Crings &+Lon them.  He has a long, braided mane and
 &+Ldeep-set &N&+bazure &+Leyes.
 ~
-2250 1 0 0 152 0 0 0 0 S
+1073744074 1 0 0 152 0 0 0 0 S
 mt 14 1 0 -1
 59 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -2321,7 +2324,7 @@ pm 0 4 0 -1
 #83245
 royal guard bodyguard body~
 &+La royal &N&+rb&+Lo&N&+rd&+Ly&N&+rg&+Lu&N&+ra&+Lr&N&+rd&N~
-&+LA &+Croyal &+Lperson &N&+rg&+Lu&N&+ra&+Lr&n&+rd &+Lof the &N&+cShanat &+Lfamily stands here, poised ready to fend off any intruders.
+&+LA &+Croyal &+Lpersonal &N&+rg&+Lu&N&+ra&+Lr&n&+rd &+Lof the &N&+cShanat &+Lfamily stands here, poised ready to fend off any intruders.
 ~
    &+LThis well-armored pureblooded shield dwarf guard has been given the most
 &+Lhighest honor a guardian of &N&+cAlatorin&+L can receive; to be in direct service
@@ -2446,19 +2449,22 @@ pm 0 1 0 -1
 0.0.0.0 0
 8 8 1
 #83253
-commander shield dwarf~
-&+Lthe &N&+cCommander&N~
-&+LThe &N&+cCommander &+Lstands here, always poised for &N&+rbattle&+L.
+warden master summoner svirfneblin gnome pebblemantle~
+&+cWarden &+LP&+ye&+Lbb&+yl&+Le&+ym&+Lan&+yt&+Ll&+ye&N~
+&+cWarden &+yPebble&+Lmantle&+y, the &+Rmaster su&Nmmon&+Rer&+L floats here on a slab of g&Nr&+La&Nn&+Li&Nt&+Le.
 ~
-   &+LThis shield dwarf is the &N&+cCommander &+Lof the Shanat Citadel militia
-&+Land all guarding of the Shanat royal family.  Although only the King and
-&+LQueen currently reside in the Citadel, their lives are still of utmost
-&+Limportants to the city.  The &N&+cCommander&+L is dressed in banded mail,
-&+Lwhich is unusual for the normally plate-bearing shield dwarves.  He moves
-&+Lquickly and methodically with all techniques.
+   &+cWarden &+yPebble&+Lmantle&+L is an ancient &+ysvirfneblin &+Lwhose skin has
+&+Lliterally begun to petrify into &Ngrey&+L, slate-like texture from
+&+Lcenturies of communing with &+ySh&+La&+yn&+La&+yt&+La&+yr's&+L roots. He is the Master
+&+Lof the Moving Earth, the Lord Summoner Emeritus, and the well-
+&+Lknown 'First Gnome' of &+ySh&+La&+yn&+La&+yt&+La&+yr&+L. Unlike many of the other &+yEarth
+&+yMagi&+L throughout the realm, he is known to train his apprentices
+&+Lto never summon less than one entity at a time, focusing on the
+&+Lversatility of controlling a squadron of elementals, rather than
+&+Lthe more-traditional single giant earth elemental.
 ~
-1140852938 1 0 0 536871064 14528 0 0 420 S
-pm 0 65 0 3
+1157630154 1 0 0 536871064 14528 17301632 4194304 420 S
+pg 0 2048 4 2
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -2472,23 +2478,23 @@ golden golem~
 &+Ythe deeper hallways of Shanat Citadel from unwanted trespassers.
 ~
 67110986 1 0 0 805306524 14528 0 0 0 S
-og 0 1 0 -1
+og 0 1 1 -1
 60 0 0 1d1+1 1d1+1
-0.0.0.0 0
+0.0.1000.0 0
 8 8 1
 #83255
-spirit avatar dumathoin~
-&+Wa spirit avatar of &N&+cDumathoin&N~
-&+WA spirit avatar of &N&+cDumathoin &+Wfloats through ere, smiling brightly.
+priest high old ones~
+&+Wa priest of &+YThe High Old Ones&N~
+&+WA &Ns&+Wp&Ne&+Wc&Nt&+Wr&Na&+Wl priest of &+YThe High Old Ones&+W hovers here, &+Ys&+Wm&+Yi&+Wl&+Yi&+Wn&+Yg&+W invitingly.
 ~
    &+WThis strange spirit is that of an average-sized shield dwarf man,
 &+Wdressed in silk garments of nobility.  He gestures outwards to the various
 &+Wchests within this ancient mine, then rubs his hands together and grins.
-&+WThis spirit avatar is that of &N&+cDumathoin, God of Buried Wealth, Ore,
-&+Wgems, and exploration.
+&+YKnown as 'The High Old Ones', this protective spirit wears ancient
+&+Yceremonnial regalia, protecting the sanctity of Dumathoin's mine.
 ~
-16584 0 0 0 939524248 8403136 0 524288 400 S
-pm 0 513 0 -1
+16584 0 0 0 939524248 8403136 128 524288 600 S
+pm 0 32 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -2509,7 +2515,7 @@ pm 0 1 0 -1
 #83257
 shield dwarf officer~
 &N&+can &+Cofficer&n~
-&N&+cAn &+Cofficer&N&+c of the Shanat military&N stands here, consulting his superiors.
+&N&+cAn &+Cofficer&N&+c of the Shanat military&N stands here, consulting his peers.
 ~
    &+cThis shield dwarf is dressed in fine chainmail and stands with a
 &+cprosperous poise.  He has clearly worked his way up dilligently
@@ -2570,12 +2576,16 @@ kholai zherd~
 &n&+cKh&+Bol&N&+cai &+BZh&N&+ce&+Brd&N~
 &+cKh&+Bol&N&+cai &+BZh&N&+ce&+Brd&n&+c the gith&+Bzerai &n&+celaphidist &+Bfloats here with her hands in her robes.
 ~
-&+cThis 'beautiful' githzerai woman is tall and lean, but her thin frame is hidden from
-&+cher massive robes.  She has a dark flare in her eyes and wears a massive hood over most
-&+cof her face.  Kholai Zherd is the daughter of Tayr-Dryn, the king of the Githzerai
-&+cFortress on Limbo.  She has trained in the arts of hand to hand combat, after abandoning
-&+cher father and the military ways so many years ago.  Ironically, now she is seeking out
-&+cthe Alatorin army to fight beside the shield dwarves.
+&+cThis 'beautiful' githzerai woman is tall and lean,
+&+Bbut her thin frame is hidden from &+cher massive robes.
+&+CShe has a dark flare in her eyes and wears a massive
+&+Bhood over most &+cof her face.  Kholai Zherd is the
+&+C daughter of Tayr-Dryn, the king of the Githzerai
+&+cFortress on Limbo.  She has trained in the arts
+&+Bof hand to hand combat, after abandoning &+cher father
+&+cand the military ways so many years ago.  Ironically,
+&+Cnow she is seeking out &+cthe Alatorin army to fight
+&+Bbeside the shield dwarves.
 ~
 1073744074 1 0 0 939524120 14528 0 0 -420 S
 gz 0 64 0 -1
@@ -2650,9 +2660,10 @@ mithril golem~
 &+ma mi&+Lth&N&+mri&+Ll g&N&+mol&+Lem&N~
 &+LA fie&N&+mrcely-&+Lspiked &N&+mmithril &+Lgolem &N&+mstan&+Lds here, hulk&N&+ming&+L in size.
 ~
-   &+LThis huge golem is constructed of what seems to be raw &N&+mmithril &+More&+L.  Its
-&+Lbody is made of rock and huge blade-like protrusions.  This mithril golem was created
-&+Lwith the most powerful &N&+yearth &+Lmagic.
+   &+LThis huge golem is constructed of what seems to
+&+mbe raw &N&+mmithril &+More&+L.  Its &+Lbody is made of naturally jagged
+&+mrock and huge blade-like protrusions.  This mithril golem
+&+mwas created &+Lwith the most powerful &N&+yearth &+Lmagic.
 ~
 3274 1 0 0 144 0 0 0 0 S
 ee 0 1 0 6
@@ -2688,7 +2699,7 @@ ambassador kimordril mountain dwarf~
 1073744072 0 0 0 216 0 0 0 1000 S
 pm 5 1 0 -1
 58 0 0 1d1+1 1d1+1
-0.0.0.0 0
+0.0.0.100 0
 8 8 1
 #83269
 citadel patrol guard shield dwarf _spec1_~
@@ -2701,7 +2712,7 @@ citadel patrol guard shield dwarf _spec1_~
 ~
 1140852936 1 0 0 216 0 0 0 0 S
 pm 0 1 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83270
@@ -2779,7 +2790,7 @@ visiting duergar guild leader~
 1073744072 0 0 0 24 0 0 0 -1000 S
 pd 0 12289 0 -1
 59 0 0 1d1+1 1d1+1
-0.0.0.0 0
+0.0.0.100 0
 8 8 1
 #83275
 clansdwarf duergar clans dwarf~
@@ -2838,7 +2849,7 @@ meshadan recruiter shield dwarf~
 &+Y                    *.    .*
 &+Y                      ".."
 ~
-1073762762 0 0 0 408 0 0 0 500 S
+1073762762 2143535104 3992977422 507 408 0 0 0 500 S
 pm 0 69206537 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -2910,24 +2921,27 @@ ee 0 577 0 6
 0.0.0.0 0
 8 8 0
 #83281
-prison guard guardian shield dwarf~
-&+La &n&+cp&+Cr&N&+ci&+Cs&N&+co&+Cn &+Lg&N&+cu&+La&N&+cr&+Ld&N&+ci&+La&N&+cn&N~
-&+LA &Nsh&+Wie&Nld &+Ydwarf &+Lguard of the &N&+ccitadel &+Cprison &+Lstands here, eager to see another life.
+spirit dwarf translucent priest high old ones~
+&na priest of &+WThe High Old Ones~
+&nA translucent &+Wdwarf priest&N clad in &+Wancient ceremonial regalia &Nhovers here.
 ~
-   &+LAn aging shield dwarf, paled by his lack of any light for years upon years.  His
-&+Lmeals consist of huge, generous haunches supplied by the cooks of the castle as
-&+Lcourtesy in honor of their duties.  This dwarf has pale, nearly &+Rred&+L glowing
-&+Leyes and a thick, tangled moustache and beard.  He wears dark platemail and wields
-&+La great dwarven halberd, keeping everyone away from the beasts within this prison
-&+Lwith all of his might.
+&+W   The High Old Ones are venerable dwarf spirits who manifest as
+shimmering, translucent figures clad in the clerical garments of
+&+Wancient high priests. Their ethereal beard flows like liquid metal,
+reaching down to its waist and cinched by belts of ghostly, glowing
+&+Wlight. This guardian carries a spectral cudgel topped with a hover-
+ing gem that casts a soft, rhythmic light across the hallowed halls.
+&+WIt hovers inches above the floor, filling the shrine with a heavy,
+solemn silence that commands absoltue reverence from all those
+&+Wpermitted to enter.
 ~
-1140852810 1 0 0 536871320 14528 0 0 -500 S
-pm 0 16777216 0 -1
+1140881480 4294164480 2113929231 511 536871320 14528 0 0 1000 S
+ug 0 32 1 -1
 59 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 1
+8 8 0
 #83282
-shield dwarf legionnaire _spec1_~
+shield dwarf legionnaire~
 &N&+ra leg&+Yi&N&+ro&+Ynna&N&+ri&+Yre&N~
 &+rA &+Ystern-faced &N&+rlegion&+Yna&N&+ri&+Yr&N&+r&+Ye stands here, obeying his senior officer.
 ~
@@ -2937,7 +2951,7 @@ shield dwarf legionnaire _spec1_~
 &+Lhard, determined face of this warrior shield dwarf.
 ~
 67110986 0 0 0 24 0 0 0 10 S
-pm 0 1 0 -1
+pm 0 1 1 -1
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -3010,10 +3024,11 @@ half visible half-visible dwarf~
 &+La half-visible &N&+cd&Nw&+ca&nr&+cf&N~
 &+LA half-visible &N&+cd&Nw&+ca&Nr&+cf &+Lfloats here, moving towards the &n&+rintrusion&+L.
 ~
-   &+LThis spectre, although bearing dwarven features and characteristics,
-&+Lis merely an appiration.  Be it a lost dwarven soul settled into the heralded
-&+Lhome of &+RTaark Shanat&+L or an appiration summoned by the king himself,
-&+Lthis &N&+cimage&+L does not take kindly to intruders.
+   &+LThis spectre, although bearing dwarven features and character-
+istics, &+Lis merely an appiration.  Be it a lost dwarven soul settled
+into the heralded &+Lhome of &+RTaark Shanat&+L or an appiration
+ummoned by the king himself, &+Lthis &N&+cimage&+L does not take
+kindly to intruders.
 ~
 1140853064 1 0 0 538443800 14528 0 0 0 S
 wr 0 12288 0 -1
@@ -3021,40 +3036,41 @@ wr 0 12288 0 -1
 0.0.0.0 0
 8 8 0
 #83288
-massive blue drake~
-&+Ba massive &N&+bblue &+Bdr&N&+bake&N~
-&+BA massive &N&+bblue drake &+Lhunches here in the darkness.
+spirit dwarf translucent priest high old ones~
+&na priest of &+RThe High Old Ones~
+&nA translucent &+Rdwarf priest&N clad in &+Rancient ceremonial regalia &Nhovers here.
 ~
-   &+BThis massive dragon, although just an infant in terms of dragon lifespan,
-&+Bhas been held captive deep under &N&+cAlatorin&+B within &N&+cShanat Citadel&+B.
-&+BAlthough it is very young, it is still quite massive in size, standing nearly
-&+Bsixty feet tall and weighing an immeasurable amount.  Two burning &+Cblue &+Beyes
-&+Bstare from from a &+Lhorned&+B, scaly head.  Bits of &+Yburning &+Blightning
-&+Bdrip from its gaping maw.  It lets out loud &+Rshrieks &+Bas it struggles to
-&+Bspread its wings in its imprisonment.  Solitary confinement in this deep
-&+Bsubterranean recess have driven this welp into complete and total &+Rr&N&+ra&+Rg&N&+re.
+&+R   The High Old Ones are venerable dwarf spirits who manifest as
+shimmering, translucent figures clad in the clerical garments of
+&+Rancient high priests. Their ethereal beard flows like liquid metal,
+reaching down to its waist and cinched by belts of ghostly, glowing
+&+Rlight. This guardian carries a spectral cudgel topped with a hover-
+ing gem that casts a soft, rhythmic light across the hallowed halls.
+&+RIt hovers inches above the floor, filling the shrine with a heavy,
+solemn silence that commands absoltue reverence from all those
+&+Rpermitted to enter.
 ~
-1358956906 1 0 0 939524312 14528 0 0 -1000 S
-d 0 513 0 -1
-60 0 0 1d1+1 1d1+1
+1140881480 4294164480 2113929231 511 536871320 14528 0 0 -1000 S
+ug 0 32 1 -1
+59 0 0 1d1+1 1d1+1
 0.0.0.0 0
-8 8 1
+8 8 0
 #83289
-massive blue drake~
-&+ba massive &+Bblue drake&N~
-&+bA massive &+Bblue drake &N&+bsnorts with &+rr&+Ra&N&+rg&+Re&+L.
+blazing avatar gorm god gulthyn~
+&+Wthe &+Rb&+Wl&+Ra&+Wz&+Ri&+Wn&+Rg&+W avatar of &+mG&+ro&+Rr&+mm Gul&+Rt&+rh&+myn~
+&+WThe blazing avatar of &+mG&+ro&+Rr&+mm Gult&+Rh&+ry&+mn &+Whovers here, scanning the rift.
 ~
-   &+BThis massive dragon, although just an infant in terms of dragon lifespan,
-&+Bhas been held captive deep under &N&+cAlatorin&+B within &N&+cShanat Citadel&+B.
-&+BAlthough it is very young, it is still quite massive in size, standing nearly
-&+Bsixty feet tall and weighing an immeasurable amount.  Two burning &+Cblue &+Beyes
-&+Bstare from from a &+Lhorned&+B, scaly head.  Bits of &+Yburning &+Blightning
-&+Bdrip from its gaping maw.  It lets out loud &+Rshrieks &+Bas it struggles to
-&+Bspread its wings in its imprisonment.  Solitary confinement in this deep
-&+Bsubterranean recess have driven this welp into complete and total &+Rr&N&+ra&+Rg&N&+re.
+&+W   The blazing avatar of &+mGo&+Rr&+mm Gult&+Rh&+myn&+W manifests as a towering
+&+Wdwarf of molten bronze. His entire form is wreathed in a fierce,
+&+Wunwavering golden-white &+Yf&+Rl&+Ya&+Rm&+Ye&+W. He wears a suit of heavy, artic-
+&+Wulated platemail that glows white-&+Rhot&+W. His eyes are twin beacons
+&+Wof piercing &+rc&+Rr&+ri&+Rm&+rs&+Ro&+rn &+Rlight&+W that cut through the thickest smoke,
+&+Wreflecting a tireless vigilance that never blinks or falters.
+&+WIn his gauntleted hands, he hews a massive great&+caxe&+W of radiant
+&+Wenergy, leaving trails of burning &+Re&+rm&+Rb&+re&+Rr&+rs&+W in the air.
 ~
-1360005482 1 0 0 939524312 14528 0 0 -1000 S
-d 0 1048833 0 -1
+1090549800 4294164480 2113929231 511 402653336 4208833 128 8392704 0 S
+av 0 1048577 0 5
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -3083,8 +3099,8 @@ this typicaly-short gully dwarf has traveed far and wide across the ream of
 &+rDuris &Nto the great city of &+cAlatorin&+L.  &NGimbrin has &+Bblue &+Ceyes&N,
 &Nwhich is not rare for a &+ygully &+Ydwarf&N.  He wears loose-fitting leather
 traveling attire and ademently &+chammers&N away on a piece of &+Mrare&N precious
-metal on the realm-renowned &+YGreat Anvil &Nof &+cAlatorin.  Gimbrin also prides
-himself in his appearance, decorating his wrists with &+Bbr&N&+bac&+re&+Rl&+Yet&n&+gs crafted by
+metal on the realm-renowned &+YGreat Anvil &Nof &+cAlatorin.&N  Gimbrin also prides
+himself in his appearance, decorating his wrists with &+Bbr&N&+bac&+re&+Rl&+Yet&n&+gs &Ncrafted by
 the same precious metals and ores that he seeks.
 ~
 2250 0 0 0 402653208 14528 0 0 600 S
@@ -3093,33 +3109,42 @@ pd 0 16385 0 -1
 0.0.0.0 0
 8 8 1
 #83292
-monaran ancient prison overseer dwarf~
-&+LMo&N&+rna&+Rran&N the &+Lancient &+Cprison &+Woverseer&N~
-&+LMon&N&+rar&+Ran &+Lthe ancient &+Cprison &+Woverseer &+Lwalks the dark ledges of the Shanat underbelly.
+monaran shield dwarf shieldwarden~
+&+WMo&+Yna&+yran &+Ythe &+WShield&+ywarden&N~
+&+WMo&+Yna&+yran &+Ythe &+WShield&+ywarden &+Yproudly patrols the shrine of the &+yMor&+rnd&+yin&+rs&+ya&+rmm&+ya&+rn&+Y.
 ~
-  &+LMonaran is one of the younger nephews of Taark Shanat himself.  A pure-blooded
-&+Lshield dwarf and indirect descendent to the Alatorin throne, Monaran has developed
-&+Lan ancient past with the King in his most secret and deepest needs.
-  &+LOverseeing the dark, fiery depths of the Shanat Citadel prison, Monaran patrols
-&+Lthe rocky ledges with glowing eyes hidden beneath his dark cloak.
+&+Y   The &+WShield&+ywarden&+Y, Holy Guardian of the &+yMor&+rnd&+yin&+rs&+ya&+rmm&+ya&+rn&+Y, &+WMo&+Yna&+yran
+&+Ystands as a motionless pillar of &+msilk-draped&+Y gold armor before
+&+Ythe sacred shrine of the dwarven pantheon. His thick, &+Wsnow-white
+&+Ybeard is meticulously &+Cb&+Yr&+Ca&+Yi&+Cd&+Ye&+Cd &+Ywith rings of &+csilver&+Y. In his right
+&+Yhand, he rests a massive tower &+Wshield&+Y embossed with the stylized
+&+Yimage of the &+yeight greater dwarven gods&+Y, crackling with a protect-
+&+Yive &+yamber &+ma&+Mur&+ma&+Y. His eyes, though aged and framed by deep lines of
+&+Ywisdom, burn with the fierce and unyielding light of a warrior
+&+Ywho has sworn his life to the gods of the &Ndwarves&+Y.
 ~
-1141266504 1 0 0 940048408 14528 262144 0 -888 S
-pm 0 18874433 0 -1
+1158035528 4294164480 2113929231 511 940048408 14528 262144 0 1000 S
+pm 0 9 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83293
-dark dwarven minion~
-&+La dark dwarven &N&+rminion&N~
-&+LA dark dwarven &N&+rminion &+Lstalks the shadows&N
+barakor dwarf guard guardian~
+&+Ya B&+ra&+Yr&+ra&+Yk&+ro&+Yr&N~
+&+YA B&+ra&+Yr&+ra&+Yk&+ro&+Yr, a guardian of the &+mr&+ri&+mf&+rt&+Y, proudly patrols the shrine.
 ~
-   &+LThis dark, hooded dwarf fades in and out of existence, flowing with the other
-&+Lminions behind Monaran like a blurred serpent.  This dwarf wears a long, hooded
-&+Lcloak, underneath which two glowing red eyes peak out.
+&+L   The &+YB&+ra&+Yr&+ra&+Yk&+ro&+Yr&+L guardian is a stout, barrel-chested shield dwarf clad
+&+Lin thick plates of soot-stained mithril, draped with holy robes.
+&+LHis skin is weathered like granite, marked by ritualistic tattoos
+&+Lthat trace the &+yMor&+rn&+ydi&+rns&+ya&+rmman&+L, the holy dwarven pantheon, across his
+&+Lmuscular arms. He grips a heavy, double-headed mattock with white-
+&+Lknuckled intensity. His gaze is fixed forward with a grim and un-
+&+Lwavering resolve. Beneath a helm of dark steel, his braided beard
+&+Lis tucked into his robe.
 ~
-1140852808 0 0 0 208 0 0 0 0 S
-pm 0 1 0 -1
-56 0 0 1d1+1 1d1+1
+1140852808 4294164480 2113929231 511 208 14528 0 0 0 S
+pm 0 67108865 0 -1
+58 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83294
@@ -3260,7 +3285,7 @@ brino stonehammer dwarf~
 ~
 1073743944 0 0 0 402653320 14528 0 0 1000 S
 pm 0 67108872 0 -1
-60 0 0 1d1+1 1d1+1
+59 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83303
@@ -3473,7 +3498,7 @@ wealthy halfling~
 202 0 0 0 0 0 0 0 200 S
 pf 0 65537 0 -1
 51 0 0 1d1+1 1d1+1
-0.0.0.0 0
+0.0.100.50 0
 8 8 1
 #83317
 dwarf miner~
@@ -3716,9 +3741,9 @@ pd 0 16781313 0 -1
 0.0.0.0 0
 8 8 1
 #83333
-ancient white dragon~
-&+Wan ancient white dragon&n~
-&+WAn ancient white dragon stomps through here, clearly disturbed at the intrusion into its cave.
+massive white dragon~
+&+Wa massive white dragon&n~
+&+WAn ancient white dragon stomps through here, &Nexhaling &+Wgusts of &+Cf&+Wr&+Co&+Ws&+Ct&+W.
 ~
    &+WThis huge white dragon is absolutely gargantuan in size.  It stomps
 &+Wthrough the cavern, causing snow to snake and icicles to fall, as it is
@@ -3726,7 +3751,7 @@ ancient white dragon~
 &+Wfour massive trunk-like legs support the fearsome bite of this ravenous
 &+Wbeast.
 ~
-1073743944 1 0 0 0 14528 0 0 1000 S
+1073743944 1 0 0 134217728 14528 0 0 1000 S
 d 0 513 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -3795,13 +3820,13 @@ pd 0 98304 0 -1
 0.0.0.0 0
 8 8 1
 #83338
-tarkorsh duergar inquisitor~
-&+cTar&+Bko&n&+crsh&N~
-&+cTar&+Bko&N&+crsh &+Lthe &N&+rclansdwarf inquisitor &+Lhides here.
+kartorsh duergar inquisitor~
+&+cKar&+Bto&n&+crsh&N~
+&+cKar&+Bto&N&+crsh &+Lthe &N&+rclansdwarf inquisitor &+Lhides here.
 ~
-   &N&+cTar&+Bko&N&+crsh &+Lthe renowned &N&+rduergar inquisitor &+Llurks in the
+   &N&+cKar&+Bto&N&+crsh &+Lthe renowned &N&+rduergar inquisitor &+Llurks in the
 &+Lden of &N&+bClan Stealth Hunter &+L, eyes always scanning his surroundings.
-&N&+cTar&+Bko&N&+crsh &+Lgrins with evil malevolence, taking pleasure in his
+&N&+cKar&+Bto&N&+crsh &+Lgrins with evil malevolence, taking pleasure in his
 &+Linquisition and &+Rtorture &+Lof enemies to his &N&+rclansdwarf&+L brethren.
 ~
 1140852872 4294426624 0 0 0 0 0 0 -1000 S
@@ -4101,7 +4126,7 @@ sneaky clansdwarf duergar dwarf~
 &+Lin his eyes may be a side effect of the sheer &N&+rbloodlust &+Lfilling his
 &+Lveins at this moment.
 ~
-1073744010 1 0 0 24 0 0 0 -1000 S
+1073744010 64 0 0 24 0 0 0 -1000 S
 pd 0 8192 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -4569,7 +4594,7 @@ gust black smoke appirition~
 &+Ltrance of physical existence other then its color.
 ~
 1073770696 0 0 0 134217728 0 0 0 -1000 S
-an 0 128 0 -1
+wr 0 128 0 -1
 41 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
@@ -4615,18 +4640,18 @@ pf 0 2560 0 -1
 0.0.0.0 0
 8 8 1
 #83391
-xamora halfling master magician _spec1_~
-&+CX&N&+ca&+Bmo&N&+cr&+Ca &N&+ythe halfling &+Wmaster &N&+bma&+Yg&n&+bic&+Yi&N&+ban&N~
-&+CX&N&+ca&+Bmo&N&+cr&+Ca &N&+ythe halfling &+Wmaster &N&+bma&+Yg&N&+bi&+Yc&N&+bian &+Wflies here.
+xamora svirfneblin master magician _spec1_~
+&+CX&N&+ca&+Bmo&N&+cr&+Ca &N&+ythe svirfneblin &+Wmaster &N&+bma&+Yg&n&+bic&+Yi&N&+ban&N~
+&+CX&N&+ca&+Bmo&N&+cr&+Ca &N&+ythe &+Wmaster &N&+bma&+Yg&N&+bi&+Yc&N&+bian &+Wflies here.
 ~
-   Xamora is rather beautiful for a halfling mage, with flowing brown hair
+   Xamora is rather beautiful for a deep gnome mage, with flowing brown hair
 and wide, round hazel eyes.  She stands just above three feet tall and boasts
 a powerful magic, legendary amongst her people.  She has taken her craft to the
 far mountains of Shanatar and erected this very stone pillar.  She wears loose,
 but elegant silk robes and flies through her tower having the time of her life.
 ~
 1342228682 0 0 0 2550136856 14528 524416 0 1000 S
-pf 0 4194304 0 -1
+pg 0 4194304 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
@@ -4854,7 +4879,7 @@ lord deramuth portmaster _spec1_~
 1090521290 0 0 0 939524248 14528 0 0 1000 S
 pd 0 1 0 -1
 57 0 0 1d1+1 1d1+1
-0.0.0.0 0
+0.0.0.200 0
 8 8 1
 #83406
 ravi bjornson champion hunter~
@@ -5005,19 +5030,23 @@ pm 0 32 2 -1
 0.0.0.0 0
 8 8 2
 #83415
-black-hooded black hooded dwarf~
-&+La black-hooded dwarf&N~
-&+LA black-hooded dwarf slowly paces around the central spire.
+blazing avatar god vergadain~
+&+Wthe &+Gb&+Wl&+Ga&+Wz&+Gi&+Wn&+Gg&+W avatar of &+gV&+Ye&+gr&+Yg&+ga&+Yd&+ga&+Yi&+gn&N~
+&+WThe blazing avatar of &+gV&+Ye&+gr&+Yg&+ga&+Yd&+ga&+Yi&+gn&+W &+Whovers here, fiddling with some coins.
 ~
-&+L   This dark and ancient dwarf has a long beard that seems to
-&+Ldematerialize towards its tip.  He wears a long, hooded black
-&+Lrobe that flows freely around the hot depths of this place.
-&+Lthe black robe about his body is covered in dark, dwarven
-&+Lrunes.  He can be heard repeating the same phrases 'Akoth
-&+Lmon Rringlor Narath.'
+   &+GThe blazing avatar of &+gV&+Ye&+gr&+Yg&+ga&+Yd&+ga&+Yi&+gn&+G appears as a lithe, emerald-
+&+Gskinned dwarf draped in shimmering robes of woven &+Ylight&+G and
+&+Bg&+Me&+Rm&nstones&+G. His eyes sparkle with multifaceted &+Wd&Ni&+Wa&Nm&+Wo&Nn&+Wd&Ns&+G,
+&+Gconstantly darting with a shrewd, mischevous brilliance that
+&+Gseems to calculate the value of everything they touch.
+   &+GHe carries a handful of &+Wcoins&+G that seem to float about
+&+Gthe air, rotating slowly. A trail of spectral &+Ysparks&+G follows
+&+Ghis movements, smelling faintly of exotic &+yspices&+G and freshly-
+&+Gminted &+Ycoin&+G. He moves with a grace that defies the heavy
+&+Gweight of his riches.
 ~
-1409303752 4294164480 234881039 0 0 0 0 0 -450 S
-pd 0 548 0 2
+1091074056 4294164480 2113929231 511 2550136856 1063105 128 46142464 500 S
+av 0 1 0 5
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -5032,7 +5061,7 @@ white appirition~
 &+Wtimidly and cautious.
 ~
 1073893576 0 0 0 134217728 0 0 0 1000 S
-an 0 128 0 -1
+br 0 128 0 -1
 41 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
@@ -5049,7 +5078,7 @@ birgibir goblin frost magus _spec2_~
 ~
 133322 0 0 0 134217752 14528 0 0 -1000 S
 hg 0 33554432 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83418
@@ -5066,7 +5095,7 @@ sambisam gnome trickster~
 ~
 2250 0 0 0 0 0 0 0 0 S
 pg 0 4227072 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83419
@@ -5175,7 +5204,7 @@ locke mountain dwarf mountaineer~
 ~
 1073743882 0 0 0 0 0 0 0 800 S
 pm 0 16384 0 -1
-60 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83426
@@ -5645,16 +5674,16 @@ ee 0 65 0 5
 #83454
 mithril golem dwarven king~
 &+La &+mm&+Mi&+mt&+Mh&+mr&+Mi&+ml &+ygolem &+Lof a &+ydwarven &+Ck&+Yi&+Cn&+Yg&N~
-&+mA &+Mmithril golem &+Lof a &+ydwarven &+Ck&+Yi&+Cn&+Yg &+mstands &+Lmotionless &+mbeside the &+Bdias&+L.
+&+mA &+Mm&+mi&+Mt&+mh&+Mr&+mi&+Ml&+m golem &+Lof a &+ydwarven &+Ck&+Yi&+Cn&+Yg &+mstands &+Lmotionless &+minside the &+Barch&+L.
 ~
    &+mThis ancient &+Mmithril &+Mgolem &+mstands in the shape of an
 &+ma dwarven king - only much much larger.  A long forked beard of
 &+Mmithril &+mhangs below its stoic face, cascading onto a huge
 &+mbreastplate.  Large shoulder guards eclipse the horned helmet
 &+mof this royal warrior.  This golem wields no weapons, but has
-&+mhuge, mighty arms.  It stands motionless before the center &+Bdias&+m.
+&+mhuge, mighty arms.  It stands motionless before the center &+Barch&+m.
 ~
-2122 0 0 0 805306520 14528 0 0 0 S
+31050 0 0 0 805306520 14528 0 0 0 S
 ee 0 64 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -6033,7 +6062,7 @@ h 0 1 0 -1
 0.0.0.0 0
 8 8 1
 #83476
-large green basilisk _spec1_~
+large green basilisk~
 &+ga large &+Lb&+ga&+Ls&+gi&+Ll&+gi&+Ls&+gk&N~
 &+gA large green &+Lb&+ga&+Ls&+gi&+Ll&+gi&+Ls&+gk &+gstands here, &+Lextending its &+Wc&+gl&+Wa&+gw&+Ws&+g.
 ~
@@ -6043,8 +6072,8 @@ large green basilisk _spec1_~
 &+glook upon the troglodytes with fiendish protection,
 &+gsummoned here by the power of the troglodyte shaman.
 ~
-1074268168 0 0 0 24 0 0 0 0 S
-r 0 1 0 4
+1141377032 1 0 0 24 12480 0 0 0 S
+r 0 1 1 4
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
@@ -6340,3 +6369,563 @@ h 0 1 0 -1
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
+#83492
+keeper sacred stone~
+&+Ya &+ykeeper of the &+Ws&+ya&+Wc&+yr&+We&+yd &+Ws&+yt&+Wo&+yn&+We&N~
+&+YA &+ykeeper of the &+Ws&+ya&+Wc&+yr&+We&+yd&+W s&+yt&+Wo&+yn&+We&+Y &+Yshambles here, performing vestigial acts of mining labor&+y.
+~
+   &+yThis earth elemental is medium-sized, resembling the basic
+&+Wform of a dwarven miner, only made entirely of earthen stone
+&+yand jagged slabs of rock. Despite being without any mining
+&+Wtools, this Keeper of the Sacred Stone moves with repetitious
+&+ymonotony, performing the act of swinging a pick and maneuvering
+&+Wabout the rocky floor of the mine. He seems to pay no mind to
+&+yany other presences in this space, fixated on his eternal task.
+~
+72 0 0 0 0 0 0 0 0 S
+ee 0 0 0 -1
+25 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#83493
+faeral leaf-on-wind wood elf visitor~
+&+GFae&+gral &+GLeaf&+g-&+Gon&+g-&+GWind&N~
+&+GFae&+gral &+GLeaf&+g-&+Gon&+g-&+GWind&+G, the W&+Go&+go&+Gd &+gE&+Gl&+gf visitor, fidgets uncomfortably.
+~
+&+G   Faeral Leaf-on-Wind stands with a lithe grace that feels quite
+&+gout of place amongst the heavy, static architecture of the dwarven
+&+Gdeeps. His skin carries the deep tan of the High Moors, though a
+&+gfine dusting of gray cavern-ash now clings to his emerald-green
+&+Gtraveling leathers. A mantle of woven, foreign leaves slumps over
+&+ghis shoulders and a daisy-chain of exotic flowers festoons, lopsided,
+&+Garound his neck.
+~
+2058 0 0 0 16777224 0 0 0 400 S
+we 0 128 0 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83494
+baron helgrim gold-gulp noble burningbraids~
+&+yBaron &+RH&+Ye&+Rl&+Yg&+Rr&+Yi&+Rm &+Y'Gold-Gulp' &+RBurn&+Yi&+Rng&+Yb&+Rr&+Yai&+Rd&+Ys~
+&+RH&+Ye&+Rl&+Yg&+Rr&+Yi&+Rm Burn&+Yi&+Rng&+Yb&+Rr&+Yai&+Rd&+Ys, &+ylocal Baron&+Y and highborn noble&+y waits here.
+~
+&+Y  Baron Helgrim is a mountain dwarf, like many of his blood,
+&+Rthat relocated to Alatorin many years ago in search of the
+&+Ytreasures buried in the legendary mountain. He is quite
+&+Rsizable, and could be easily mistaken for a stocky human,
+&+Yhis girth nearly matching hs height and draped in heavy,
+&+Rmid-night blue velvet that seems to sag under the weight
+&+Yof his dangling golden jewelry. His gold beard is made up of
+&+Rseveral finely-knotted braids, becoming red at their tips.
+~
+18506 0 0 0 536870936 0 0 0 500 S
+pm 0 1048577 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.1000.0 0
+8 8 1
+#83495
+zarnthrak duergar ore merchant voidvein~
+&+rZarnthrak &+LV&+ro&+Li&+rd&+Lv&+re&+Li&+rn&N~
+&+rZarnthrak &+LV&+ro&+Li&+rd&+Lv&+re&+Li&+rn&+r, the duergar &+Core&+L dealer&+r grumbles to himself.
+~
+&+r   Zarnthrak Voivein is a pale, slab-muscled duergar wrapped in
+&+Lsoot-stained leathers that have been cured in pungent oils to
+&+rward off cave-rot. His skin is a sickly, pale gray covered in
+&+Lweb-like blotches of blackened veins that throb rhythmically.
+&+rHis big, ropey muscles aren't likely the result of his own
+&+Lmining labors, but rather the brutal 'motivation' of his slaves.
+~
+1073743882 0 0 0 24 0 0 0 -1000 S
+pd 0 16384 1 -1
+56 0 0 1d1+1 1d1+1
+0.0.200.150 0
+8 8 1
+#83496
+behmble halfling chef~
+&+yBehmble the halfling &+Wchef&N~
+&+yBehmble, the portly halfling &+Wchef&+y sits here, &+Yh&+ya&+Yp&+yp&+Yi&+yl&+Yy &+ychatting.
+~
+&+y   Behmble is a stout, bright-eyed halfling with flour-dusted
+&+Mcurls and a travel-worn satchel stuffed with spices and culinary
+&+yingredients from lands far beyond Shanatar. His fingers are quick
+&+Mand precise, always moving as if kneading invisible dough, and he
+&+ycarries himself with the quiet confidence of one who believes food
+&+Mcan open doors that steel cannot.
+&+y   He has journeyed tirelessly, likely not the first time, to earn
+&+Mthe favor of King Taark Shanat, hoping that he can bring new tastes
+&+yto the king of the shield dwarves.
+~
+2186 0 0 0 8 0 0 0 900 S
+pf 0 1 2 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83497
+citadel patrol shield dwarf guard leader~
+&+ca citadel patrol &+Wleader&N~
+&+cHead held high, a &+Wleader &+cof the Shanat Citadel patrol &Nconducts his team.
+~
+   &+cThis is one of several leaders of the Shanat Citadel patrol - a group of
+&+cthe most provenly-loyal pure-blooded shield dwarves that have been chosen
+&+cto continuously patrol the stronghold, keeping close watch on any of the
+&+cnumerous visitors, while protecting the royal elite of Alatorin.  He has
+&+cbuldging muscles and a flowing, wrapped beard.  He walks with a certain pride
+&+camongst his men, commanding respect and exonerating leadership.
+~
+1141246024 1 0 0 671088792 14528 0 4199936 400 S
+pm 0 3 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.20 0
+8 8 1
+#83498
+deep gnome apprentice~
+&+La deep gnome &+Mapprentice&N~
+&+LA privelged deem gnome floats here, &+Mapprenticing to his master.
+~
+  &+LThis gnome has much lighter skin than typical surface gnomes, and pale,
+&+Llight-sensitive eyes.  He has much thinner hair as well, and doesn't
+&+Lappear to outwardly care for socializing with other races.  He is dressed
+&+Lin a long, flowing robe that dances below his feet as he floats through
+&+Lthe air, surrounded by magic.
+~
+1073743880 0 0 0 134217752 0 0 0 0 S
+pg 0 2560 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83499
+citadel servant~
+&Na citadel servant&N~
+&NA solemn servant of the citadel walks through the corridors, cleaning and attending to the guests.
+~
+~
+8 0 0 0 0 0 0 0 0 S
+PH 0 0 0 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#83500
+young dwarven dwarf pupil~
+&Na young &+ydwarven pupil&N~
+&+yA young dwarven pupil kneels here&N, eager for instruction.
+~
+   &NThis young &+ydwarf&N looks to either be a mix between a &+Ymountain
+&+Ydwarf &Nand a &Nsh&+Wie&Nld &+Ydwarf&N, judging by his combination of
+strength and size, as he stands quite large for his kind.  Judging by
+&nbeard-length alone, this dwarf is also not very old and has only been
+&ninvolved in combat training for a short amount of time.
+~
+1073744074 0 0 0 0 0 0 0 0 S
+pm 0 1 0 -1
+42 0 0 1d1+1 1d1+1
+0.0.0.0 0
+6 6 1
+#83501
+elite shield dwarf rider ramrider watchman guard _spec1_~
+&+can e&+Ll&+ci&+Lt&+ce &+Yram&+crider &+cwatchman&n~
+&+cAn e&+Ll&+ci&+Lt&+ce &+Yram&+crider watchman &+rpatrols the depths of &+cShanat&+r.
+~
+   &+cLike all other &+Yram&+criders of Alatorin, this guard is of pure &+Wsh&Nie&+Wld
+&+cdwarven &+rblood&+c.  This particular mounted guardian, however, wears a cape
+&+cof &+rcrimson&+c, signifying his status as one of the &+Yram&+crider e&+Ll&+ci&+Lt&+ce - a
+&+cdivision of the Alatorin &+Yram&+criders posted specifically within Shanat
+&+cCitadel.  This e&+Ll&+ci&+Lt&+ce &+Yram&+crider is heavily armored and looks like a worthy
+&+cadversary to even the most skilled warrior.
+~
+1140852744 4294164480 2113929230 511 1006633112 14528 0 4194560 1000 S
+pd 0 3 0 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83502
+ram huge armored _spec1_~
+&+ya huge, &+La&+Cr&+Lm&+Co&+Lr&+Ce&+Ld &+Yram&N~
+&+yA huge &+Yram &+La&+Cr&+Lm&+Co&+Lr&+Ce&+Ld with &+cmithril plating&+L stands here, &+rsnarling.
+~
+   &+yThis &+Yram&+y is simply massive, standing taller and broader than typical
+&+yrams - a trait common amongst the &+Yrams&+y of S&+Lh&+ya&+Ln&+ya&+Lt&+ya&+Lr&+y.  Selective breeding
+&+yby the &+Wsh&Nie&+Wld &+Ydwarves&+y has yielded these colossal beasts, which are often
+&+yused by the &+cAlatorians&+y as steeds.  This particular &+Yram is covered in huge
+&+yplates of &+Mmithril&+y, and studded with spikes of &+Ladamantium&+y - armaraments found
+&+yonly within the halls of &+cShanat Citadel&+y.
+~
+134219784 0 0 0 939524112 0 0 0 600 S
+a 0 1 0 5
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83503
+attendant citadel~
+&Nan attendant of the citadel&N~
+&NAn attendant of the citadel walks through here, running an errand for someone.
+~
+   &nThis shield dwarf female wears a form-fitting white robe with her hair
+&npinned neatly beneath a hood - the typical attire of the attendants of
+&nShanat Citadel.  Constantly running tasks for the guests of the Shanat
+&nroyal family, she is frequently on the move.
+~
+2248 0 0 0 671088664 12480 0 8192 1000 S
+pm 0 32 0 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#83504
+anduroxa duergar priestess zealot~
+&+RAnduroxa, &+rthe duergar &+Yzealot&N~
+&+RAnduroxa&+r, a duergar &+Yzealot &+rand priestess of &+mDeep &+rD&+mu&+re&+mr&+rr&+ma &+rstands here, waiting quietly.
+~
+   &+RThe duergar priestess before you is none other than Anduroxa Strongstone,
+&+Rthe rumored ancestor of the legendary &+rKhildarak&+R himself.  Anduroxa has long,
+&+Rtightly-braided &+Wwhite hair&+R, bound with tiny &+rdurithalite&+R ringlets.  She has
+&+Ra long face for a duergar, featuring arched eyebrows and deep &+Lblack eyes&+R.
+&+RRarely ever speaking, Anduroxa waits to talk only to Taark Shanat personally,
+&+Rbrushing off the other visitors and native dwarves like the buzzing of &Nflies&+R.
+&+RA large &+madamantium mace&+R hangs from her belt, giving off a distinct &+maura&+R.
+&+RHer body looks lithe and able, especially for a gray dwarf like herself.
+&+RBetween her cleavage sits a small holy symbol of &+mDeep D&+ru&+me&+rr&+mr&+ra&+R, the axe princess
+&+Rof conquest and duergar demigod of expansion.
+~
+1073743882 0 0 0 939524248 14528 0 46151168 -1000 S
+pd 6 32 1 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#83505
+khrizkhraken duergar miner~
+&+rKhrizkhraken the duergar miner&N~
+&+rKhrizkhraken, the infamous duergar miner, pays a visit to the shield dwarves.
+~
+   &+rKhrizkhraken, a notorious and legendary duergar miner who has unearthed
+&+rsuch rare treasures of unheralded value that Taark Shanat has been impressed,
+&+rhas made his way to the far-off realm of Shanatar to discuss a new mining
+&+roperation with the shield dwarf king.  Although once a member of Clan Miner,
+&+rthe head mining chapter of Khildarak, bountiful riches have persuaded
+&+rKhrizkhraken to expand his sights to the rock of Shanatar.
+~
+1073744074 0 0 0 24 0 0 0 -1000 S
+pd 0 16384 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83506
+mornil mountain dwarf gem dwarven dealer~
+&+YMornil the dwarven &+Gg&+Me&+Bm &+Ydealer&N~
+&+YMornil the mountain dwarf &+Gg&+Me&+Bm &+Wdealer&+Y waits comfortably, chatting with the other guests.
+~
+   &+YMornil is rather young for a dwarf miner of his prestige, and has
+&+Yfound fame amongst his people as being one of the first dwarves to
+&+Yunearth precious metals in the harsh, unforgiving realm of Shanatar.
+&+YNow seeking acceptance into Alatorin from the king, personally,
+&+YMornil eagerly sets his sights on bigger and more lucrative mining
+&+Yexpeditions - preferably under the protection of Alatorin.
+~
+2058 0 0 0 24 0 0 0 1000 S
+pm 5 16384 0 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83507
+holy dwarven dwarf spirit~
+&+Wa &+Yholy dwarven &+Wspirit&N~
+&+WA &+Yholy dwarven &+Wspirit floats here chanting; &+Yfading in and out of existence.
+~
+   &+WThe form of this spirit continuously melts and re-forms in small
+&+Ypuffs of grey and white smoke.  It floats a couple feet off the ground,
+&+Wand is roughly of the same dimensions of a typical mountain dwarf.
+&+YA billowing colorless beard cascades down a wide, stout chest covered
+&+Win a flowing robe.
+~
+18504 0 0 0 939532442 8403136 0 46272768 1000 S
+pm 0 33 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83508
+blazing avatar god sharindlar~
+&+Wthe &+Mb&+Wl&+Ma&+Wz&+Mi&+Wn&+Mg &+Wavatar of &+mSh&Na&+mri&nn&+mdl&Na&+mr&N~
+&+WThe blazing avatar of &+mSh&Na&+mri&Nn&+mdl&Na&+mr&+W &+Whovers here, releasing spectral &+mf&+Wl&+mo&+Ww&+me&+Wr&+m petals&+W.
+~
+&+M   The blazing avatar of &+mSh&Na&+mri&Nn&+mdl&Na&+mr&+M manifests as a radiant dwarven
+&+Mfigure composed of swirling &+Rrose&+Y-gold&+M flames and soft, ethereal
+&+Ylight&+M. Her hair cascades like a waterfall of &+Rm&+ro&+Rl&+rt&+Re&+rn&+y copper&+M,
+&+Mshimmering with a warmth that &+Wheals&+M the spirit of any dwarf who
+&+Mstands within its &+Rglow&+M. She is draped in &+mg&+Mo&+ms&+Ms&+ma&+Mm&+ma&+Mr silks that
+&+Mtransition from deep &+rc&+Rr&+ri&+Rm&+rs&+Ro&+rn&+M to vibrant magenta, flowing around
+&+Mher as if caught in a gentle perpetual &+cbre&+Ceze&+M. Her crystalline
+&+Meyes shine with a compassionate &+Rheat&+M that speaks &+R'love.'
+~
+1090549800 4294164480 2113929231 511 402653208 4208833 128 8392704 500 S
+av 0 32768 0 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#83509
+uttan shield dwarf bounty hunter~
+&+yUttan&+L, &+ysh&Nie&+yld &+Ydwarf &Nbo&+yunty hunt&ner&N~
+&+yA tough mercenary leader named Uttan stands here, whispering in the ears of his men.
+~
+&+y  Uttan is not the largest dwarf, but he looks like he could be very
+&+ynasty to his enemies if he wanted, and has clearly been in a great
+&+ynumber of fights.  A large scar runs down one side of his face, from
+&+ythe top of his brown to the bottom of his cheek.  Wrinkled crows feet
+&+yat the edge of his eyes hint at his age, but his body still moves with
+&+ythe grace of a young dwarf man.  Today, Uttan wanders through the
+&+yfar corners of Alatorin, like many of his kind.
+~
+1073743880 0 0 0 24 0 0 0 500 S
+pm 0 16384 2 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83510
+omikarz derro assassin~
+&+mOmikarz~
+&+mOmikarz, &+mson of the great &+yderro&+m assassin Karz&+L, lurks in the shadows.
+~
+   &+mOmikarz is a half-breed derro that is renowned throughout the Underdark as being the
+&+mson of the great duergar assassin Karz.  Omikarz is taller than a typical duergar, but
+&+malso leaner and quicker on his feet.  Omikarz is preceded by his own brutal reputation,
+&+mfollowing nicely in his father's footsteps.
+~
+1073744008 0 0 0 134217752 0 0 0 -600 S
+pd 0 12288 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83511
+belmar lead prospector gnome svirfneblin~
+&+YBelmar &+ythe &+Yl&+ye&+Ya&+yd &+Wprospector&N~
+&+YBelmar&+y, l&+Ye&+ya&+Yd &+Wprospector &+yof the Svirfneblin, puts his ear to the floor.
+~
+&+y   Unlike the broad, barrel-chested Shield Dwarves, Belmar is wiry and
+&+ylean, with skin the color of wet slate and a hairless, craggy scalp.
+&+yHe moves with a rhythmic, light-footed grace, due to his padded boots
+&+ythat muffle echoes in the deep tunnels. He wears a gem-riddled tunic
+&+yand carries the quiet, watchful intensity of the svirfneblin.
+~
+1073743882 0 0 0 268959896 1063104 0 0 600 S
+pg 0 1 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83512
+general minotaur warlord brakx~
+&+LGeneral &+cBrakx&N~
+&+LGeneral &+cBrakx&+L the &+Rwar&+rlord&+L, towers here, grimmacing.
+~
+&+L   General &+cBrakx is a hulking &+rmino&+Ltaur warlord whose massive horns
+&+Lare etched with the &+yj&+La&+ygg&+Le&+yd &+Mr&+mu&+Mn&+me&+Ms&+L of his many conquests. He is clad
+&+Lin heavy, soot-stained plate &Narmor&+L that reeks of the &+Yf&+Ro&+rrge&+L, likely
+&+La recent gift from his hosts. Known for a tactical mind as sharp as
+&+Lhis &+Cgreataxe&+L, he inspires fanatical loyalty in his warband through
+&+La mixture of &+rbrutal&+L discipline and undisputed martial prowess.
+~
+1090521162 1 0 0 536870936 14528 128 4608 -400 S
+mt 0 1048577 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83513
+tarak shanat first general~
+&+RTa&+Yr&+Rak &+RShanat, &+CFirst &+cGeneral&N~
+&+RTa&+Yr&+Rak Shanat, &+csecond son of the King and &+CFirst &+BGeneral&+c, &+Rstands here glowering.
+~
+   &+RTa&+Yr&+Rak Shanat &+Wcarries himself with the quiet, sturdy dignity of
+&+Wa prince born to the depths of the &+cAlatorin&+W strongholds. He is often
+&+Wseen wearing finely-crafted &+cch&+Cai&+cn&+Cm&+cai&+Cl&+W that catches the dim light of
+&+Wthe underground kingdom, marking his high status within the royal
+&+Wlineage. His features are defined by a well-groomed beard and a steady
+&+bg&+Ba&+bz&+Be&+W that reflected a deep devotion to the defense of the ancient
+&+Wdwarven shield. As the second son of &+RTaark&+W, his appearance balances
+&+Wthe real heritage of his father with the practical readiness of a
+&+Wcommander prepared to defend against the dangers of the &+mUnderdark&+W.
+~
+1090521098 1 0 0 536870936 14552 0 4194560 900 S
+pm 0 67108873 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83514
+alatorin peacekeeper guard~
+&+La &+cpatrolling &+Lp&+We&+La&+Wc&+Le&+Wk&+Le&+We&+Lp&+We&+Lr&N~
+&+LA &+cpatrolling &+Wp&+Le&+Wa&+Lc&+We&+Lk&+We&+Le&+Wp&+Le&+Wr &+Lwalks here, scanning cautiously.
+~
+   &+LThis &Ns&+Whiel&Nd &+Ydwarf&+L, a distant cousin of both &+rduergar &+Land
+&+ymountain &+Ldwarves, stands here wearing the standard issue sword and shield
+&+Lof the &+cAlatorin &+Lcity guard.  This &+Ydwarf &+Lhas a long beard
+&+Land &+Rfire &+Lin his eyes.
+~
+1140852810 0 0 0 0 0 0 0 0 S
+pm 0 1 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83515
+bladeback pyro pyrolisk~
+&+La &+cb&+Ll&+ca&+Lde&nback &+Ypyro&+rlisk&N~
+&+LA &+cbl&+La&+cd&+Le&Nback &+Ypyro&+rlisk &+Lcrawls across &+ythe j&+La&+ygg&+Le&+yd rocks.
+~
+&+L   The &+cbl&+La&+cd&+Le&nback &+Ypyro&+rlisk&+L is a low-slung, six-legged reptile whose
+&+Lhide consists of overlapping, heat-resistant &+Rscales&+L as hard as
+&+Lobsidian. Along its spine sits a row of &+yj&+La&+ygg&+Le&+yd&+L, &+Crazor-&Nsharp
+&+Lobsidian plates that vibrate with a low &+rhum&+L, dissipating the
+&+Lextreme thermal energy of the nearby &+Rl&+ra&+Rv&+ra &+Rf&+rl&+Ro&+rws&+L.
+~
+1073743912 1 0 0 671088792 5257408 537133056 0 -800 S
+dk 0 1 1 5
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83516
+large bladeback pyro pyrolisk~
+&+La LARGE &+cb&+Ll&+ca&+Lde&nback &+Ypyro&+rlisk&N~
+&+LA LARGE &+cbl&+La&+cd&+Le&Nback &+Ypyro&+rlisk &+Ldominates the &+yt&+Lu&+ynn&+Le&+yls&+L.
+~
+&+L   The &+cbl&+La&+cd&+Le&nback &+Ypyro&+rlisk&+L is a low-slung, six-legged reptile whose
+&+Lhide consists of overlapping, heat-resistant &+Rscales&+L as hard as
+&+Lobsidian. Along its spine sits a row of &+yj&+La&+ygg&+Le&+yd&+L, &+Crazor-&Nsharp
+&+Lobsidian plates that vibrate with a low &+rhum&+L, dissipating the
+&+Lextreme thermal energy of the nearby &+Rl&+ra&+Rv&+ra &+Rf&+rl&+Ro&+rws&+L.
+   &+LThis bladeback pyrolisk is much larger than the others, its back
+&+Las tall as a &+ygiant&+L while its tail as long as a &+gdragon.
+~
+1090537576 1 0 0 671088792 5257408 553910336 0 0 S
+d 0 1 1 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83517
+blazing avatar god abbathor~
+&+Lthe &+mb&+Ll&+ma&+Lz&+mi&+Ln&+mg &+Lavatar of &+rAb&+Lb&+rat&+Lh&+ror~
+&+LThe blazing avatar of &+rAb&+Lb&+rat&+Lh&+ror &+Lhovers here, glaring around the rift.
+~
+   &+LThe blazing avatar of &+rAb&+Lb&+rat&+Lh&+ror&+L manifests as a hunched,
+&+Lpowerful dwarven figure composed of swirling oily &Ns&+Lm&No&+Lk&Ne&+L and
+&+Lflickering &+mvio&+Mlet&+L flames. He is clad in armor of tarnished,
+&+Lblackened &+Yg&+Lo&+Yl&+Ld that seems to suck the light from the room,
+&+Lleaving only a malevolent, metallic sheen in its place.
+&+LHis &+Ye&+Ly&+Ye&+Ls are twin slits of &+rb&+Ru&+Yrni&+Rn&+rg &+Yyellow s&+yu&+Yl&+yf&+Yu&+yr&+L, narrow
+&+Land gleaming with an insatiable hunger for the treasures
+&+Lof the &+ye&+La&+yr&+Lt&+yh&+L. In his shadow-wreathed hands, he cluthes a
+&+Lblack dagger that drips with a caustic, &+ggreen &+Li&+gc&+Lh&+go&+Lr.
+~
+1091598344 4294164480 2113929231 511 402653336 8403137 128 8392704 -1000 S
+av 0 8193 0 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83518
+blazing avatar gorm god clangeddin silverbeard~
+&+Wthe &+Bb&+Wl&+Ba&+Wz&+Bi&+Wn&+Bg &+Wavatar of &+cClangeddin &+CSilver&+cbeard&N~
+&+WThe blazing avatar of &+cClangeddin &+CSilver&+cbeard &+Whovers here, gazing out at the rift.&N
+~
+&+B   The blazing avatar of &+cClangeddin &+CSilver&+cbeard&+B manifests as a
+&+Bmassive, broad-shouldered dwarf warrior, forged from flickering
+&+Bcobalt &+Cfl&+Bam&+bes&+B and polished &+Mm&+mi&+Mt&+mh&+Mr&+mi&+Ml&+B. His &+csilver&+C beard&+B is a roar-
+&+Bing torrent of &+Wf&+Cr&+We&+Ce&+Wz&+Ci&+Wn&+Cg &+Bblue &+bfire&+B that crackles with the sound
+&+Bof clashing &+Csteel&+B and rolling &+Ythunder&+B. He is encased in heavy,
+&+mr&+Lu&+mn&+Le&+B-etched battle plate that glows with a fierce, &+Cfro&+csty&+W light&+B.
+&+BIn each hand, he wields twin battleaxes of &+Ctransl&+cucent&+B sapphire
+&+Benergy, leaving &+cs&+Ch&+cim&+Cme&+cri&+Cn&+cg&+B trails of &+ba&+Bz&+bu&+Br&+be&+Y s&+Bp&+Ya&+Br&+Yk&+Bs that ignite
+&+Bthe martial spirit of all dwarves who follow him into the fray.
+~
+1090550282 4294164480 2113929231 511 402653336 2111681 128 138417664 0 S
+av 0 67108865 0 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83519
+blazing avatar gorm god berronar truesilver~
+&+Wthe &+Cb&+Wl&+Ca&+Wz&+Ci&+Wn&+Cg&+W avatar of &+YBerronar &+CTrue&+csilver&N~
+&+WThe blazing avatar of &+YBerronar &+CTrue&+csilver &+Whovers here, b&+Cl&+We&+Cs&+Ws&+Ci&+Wng the rift.
+~
+   &+WThe blazing avatar of &+YBerronar &+CTrue&+csilver&+W manifests as a regal
+&+Wdwarven matriarch composed of brilliant, blinding white &+Yf&+Wl&+Ya&+Wm&+Ye&+Ws
+&+Wand liquid &+csilver&+W. Her eyes shine with a soft, steady &+Rglow&+W that
+&+Wradiates a profound sense of peace and maternal protection.
+&+WShe is draped in heavy, flowing robes of woven &+Ys&+Wt&+Ya&+Wr&+Yl&+Wi&+Yg&+Wh&+Yt&+W that
+&+Wshimmers with a pristine &+Cf&+Wr&+Co&+Ws&+Ct&+W, held together by a belt of
+&+Winterlocking &+Ygolden &+Wrings. In her hands, she cradles a glowing
+&+Wmace of pure ivory light that hums with a soothing resonance,
+&+Wcapable of mending the deepest &+rw&+Ro&+ru&+Rn&+rd&+Rs&+W or shattering the resolve
+&+Wof those who threatens her children or the sanctity of her home.
+~
+1090549802 4294164480 2113929231 511 2550136856 4208833 16777344 12587008 1000 S
+av 0 33 0 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#83520
+blazing avatar gorm god dumathoin~
+&+Wthe &+Yb&+Wl&+Ya&+Wz&+Yi&+Wn&+Yg&+W avatar of &+cD&+yu&+cm&+ya&+ct&+yh&+co&+yi&+cn&n~
+&+WThe blazing avatar of &+cD&+yu&+cm&+ya&+ct&+yh&+co&+yi&+cn &+Whovers here, eyeing the rift h&+Yu&+Wn&+Yg&+Wr&+Yi&+Wl&+Yy&+W.
+~
+&+y   The blazing avatar of &+cDumathoin&+y manifests as a silent, hulking
+&+Wdwarf composed of deep-&+ye&+La&+yr&+Lt&+yh&+L shadows&+W and pulsing veins of &+mamethyst
+&+mf&+Ml&+Ya&+Mm&+me&+y, engulfed in a heatless &+Ygolden&+W-white&+Y f&+Rl&+Ya&+Rm&+Ye&+y. His skin has the
+&+Wtexture of rough-hewn &+ymountain &+Lstone&+W, shimmering with the iridescent
+&+Mglow&+y of hidden mineral deposits and buried &+Mg&+Be&+Gm&+gs&+y. Instead of eyes,
+&+Wtwin pools of swirling &+ge&+Gm&+ge&+Gr&+ga&+Gl&+gd &+Gf&+Yir&+ge&+W peer out from beneath a heavy
+&+ybrow, reflecting the ancient secrets of the &+Llightless &+md&+Le&+mp&+Lt&+mh&+Ls&+y.
+~
+1090550794 4294164480 2113929231 511 2550136984 1063104 16777344 12587008 0 S
+av 0 1 1 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83521
+blazing avatar gorm god moradin~
+&+Rthe &+Rb&+rl&+Ra&+rz&+Ri&+rn&+Rg &+Ravatar of &+YM&+Ro&+rrad&+Ri&+Yn~
+&+RThe b&+rl&+Ra&+rz&+Ri&+rn&+Rg avatar of &+YM&+Ro&+rrad&+Ri&+Yn &+Rhovers here, gazing authoritatively over the &+mr&+ri&+mf&+rt.&N
+~
+&+R   The blazing avatar of &+YM&+Ro&+rrad&+Ri&+Yn manifests as a titanic, awe-
+&+rinspiring dwarven figure forged from the purest &+Wwhite-&+Rhot &+rs&+Ro&+rl&+Ra&+rr
+&+Rfire and &+rmolten &+Ladamant&+R. His beard is a cascading &+Yf&+Ro&+rrge-&+Yf&+Ri&+rre &+Rof
+&+rs&+Yw&+ri&+Yr&+rl&+Yi&+rng &+Yg&+ro&+Yl&+rd and crimson &+Ys&+Rp&+Ya&+Rr&+Yk&+Rs&+r, flowing down over a chestplate
+&+Rthat radiates with blinding intensity. He grips a colossal war-
+&+rhammer of translucent &+Wd&ni&+Wa&Nm&+Wo&Nn&+Wd&N-&+Ylight&+r, which rings a deafening
+&-L&+Rboom&N&+R of a mountain-cleaving strike every time it is hefted.
+&+rHis eyes are twin furnaces of infinite creation, burning with
+&+Ra stern but righteous &+Yheat&+R.
+~
+1091599402 4294164480 2113929231 511 2550136984 5257409 16777344 13111808 0 S
+av 0 1 1 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83522
+barakor dwarf guard guardian~
+&+ra B&+Ya&+rr&+Ya&+rk&+Yo&+rr&N~
+&+rA B&+Ya&+rr&+Ya&+rk&+Yo&+rr, a guardian of the &+mr&+ri&+mf&+rt&+r, proudly stands watch.
+~
+&+L   The &+rB&+Ya&+rr&+Ya&+rk&+Yo&+rr&+L guardian is a stout, barrel-chested shield dwarf clad
+&+Lin thick plates of soot-stained mithril, draped with holy robes.
+&+LHis skin is weathered like granite, marked by ritualistic tattoos
+&+Lthat trace the &+yMor&+rn&+ydi&+rns&+ya&+rmman&+L, the holy dwarven pantheon, across his
+&+Lmuscular arms. He grips a heavy, double-headed mattock with white-
+&+Lknuckled intensity. His gaze is fixed forward with a grim and un-
+&+Lwavering resolve. Beneath a helm of dark steel, his braided beard
+&+Lis tucked into his robe.
+~
+1140852808 4294164480 2113929231 511 208 14528 0 0 0 S
+pm 0 16777217 0 -1
+58 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#83523
+molting cockatrice~
+&+La molting &+rcoc&+Ykatr&+rice&N~
+&+LA molting &+rcoc&+Ykatr&+rice&+L, flightless for too long, hops around.
+~
+&+r   This creature's once-stiff features hang in ragged,
+&+Ybrittle clumps, revealing patches of leathery, translucent
+&+Yskin beneath. The cockatrice leaves a trail of molted scraps
+&+Yof plumage, stopping frequently to obsessively peck at its
+&+rown raw flanks.
+~
+1073744136 1 0 0 134217752 14528 0 0 -600 S
+b 0 1 1 3
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2

@@ -3,6 +3,10 @@ M
 qc_action 300~
 &N$n peers around the tavern with a stern grin and cracks his &+ykn&Nuc&+yk&Nl&+ye&ns.
 ~
+M
+qc_action 250~
+&N$n nods at a &+ygruff dwarven adventurer &Nwho plops down at the bar.
+~
 S
 #83105
 M
@@ -23,7 +27,7 @@ MA
 recipe~
 &+WThe Stone&+Ybrew &+Wcook says 'Okay for the special recipe that I will bring
 &+Wto the King himself will need the following: some garlic, &+ga green herb&+W,
-&+W&+ya small clam&+W, an &+Rapple&+W, and the bulb of a &+Mwild turnip&+W.'
+&+W&+ya small clam&+W, and an &+Rapple&+W&+W.'
 &+WThe Stone&+Ybrew &+Wcook grins and says 'I know it sounds a little weird, but
 &+Wtrust me!'  He snaps his fingers 'It will be perfect!'
 ~
@@ -33,7 +37,7 @@ QA
 R I 83143
 R I 83143
 R I 83143
-R E 10000
+R E 40000
 G I 83116
 QA
 &+WThe Stone&+Ybrew &+Wcook takes the ingredients, chops them up and throws
@@ -42,12 +46,11 @@ QA
 &+R...the food looks delicious
 ~
 R I 83168
-R E 40000
+R E 2000
 G I 334
 G I 2657
 G I 823
 G I 826
-G I 34442
 S
 #83106
 M
@@ -57,7 +60,7 @@ qc_action 150~
 S
 #83114
 MA
-hi hello~
+hi hello ogremoch~
 &+yThe emissary says to $N 'Greetings.  I noticed you when you walked in, $N.'
 &+yThe emissary eyes $N up and down.
 &+y'Please $N, save the race of my people.  The mind of our leader Ogremoch
@@ -68,7 +71,8 @@ hi hello~
 QA
 &+yThe emissary accepts the &+Yessence.
 ~
-R C 1000000
+R C 4000000
+R I 55033
 G I 55198
 D
 &+yThe emissary says 'Take this.'
@@ -88,7 +92,8 @@ QA
 &+rThe flaming &+Remissary accepts the &+Messence and &+Rbursts into a massive
 &+rball of FIRE!
 ~
-R C 1000000
+R C 4000000
+R I 55033
 G I 55199
 D
 &+RA horrible &+Lvisage &+Rof &+MImix &+Lfloats off in a puff of smoke..
@@ -101,7 +106,8 @@ hi hello akadi yan-c-bin~
 ~
 Q
 ~
-R C 1000000
+R C 4000000
+R I 55033
 G I 55200
 S
 #83117
@@ -113,7 +119,8 @@ hi hello olhydra poseidon~
 QA
 &+cThe &+Bwater &+cdwarf accepts the essence and &+Mmelds &+Bwith it...
 ~
-R C 1000000
+R C 4000000
+R I 55033
 G I 55202
 D
 &+cSuddenly &+Bthe water dwarf disappears in a massive &+WSPLASH!
@@ -121,13 +128,14 @@ D
 S
 #83118
 MA
-hi hello menzellon~
+hi hello demogorgon~
 &+LThe &+Rrunaway &nservant &+Lsays 'Demogorgon threatens our realm!  Yggradsil will burn!  Bring me the essence of Demogorgon to end this destruction!'
 ~
 QA
 &+L'Thank you $N!' &NThe servant exclaims.
 ~
-R C 1000000
+R C 4000000
+R I 55033
 G I 55203
 D
 &+LIn an explosion of darkness, the &Nastral servant is gone&+L, sucked away by the will of &+GDemogorgon&+L...
@@ -144,7 +152,8 @@ hi hello menzellon~
 QA
 &n$n &+Lreaches a hand into its mysterious cloak.
 ~
-R C 1000000
+R C 4000000
+R I 55033
 G I 55201
 D
 &n$n &+Ldisappears instantly.
@@ -230,10 +239,8 @@ clund hammerhelm~
 QA
 &N$n cheers and hugs $N, exclaming &+g'You saved me!  You saved me!'
 &N$n pauses suddenly, and takes out a long, &+Csharp &N&+cknife&n.
-&N$n begins &+Rdi&N&+rggi&+Rng &nthe &+Cknife &Ninto the &+Weye&+L-socket of the head, causing &N&+rblood&N to &+rgush&N out, running down his hands.
-&n$n struggles, working the &+Cblade&N &naround in the &+rga&+Lpi&N&+rng &+Rhole&N&+r, and pops the &+Weye&N out.
+&+C'Knife to see ya, Clund!'&N $n cackles.
 ~
-R I 83347
 R I 83250
 G I 83345
 D
@@ -288,6 +295,45 @@ qc_action 100~
 &NWith a puff of dust, $n invokes a gesture of &+Yelemental &N&+yearth&N.
 ~
 S
+#83141
+MA
+hi hello~
+&N$n says nothing and moves between $N and the &+brift&+L.
+Finally, the old gnome pulls back his hood, revealing his ancient,
+wrinkled face and pale, hairless head.
+
+&+L'Speak the name of this place, if you wish to pass.' &Nhe says
+~
+MA
+ardgral ard'gral~
+&N$n's lips curl into a smile and he steps aside, bowing to $N.
+
+&+L'You may enter, but you must learn the gateways, and fight your
+&+Lown inner demons!' $n balks, making $N's feet waver.
+
+&+L'Perhaps..'&N he says, reaching into a fold of his robe, &+L'..you
+&+Lprefer not to fight your--'&N he pulls out a strange flask.
+&+L'--demons..' &Nhe uncorks the flask.
+
+&+LWispy black tendrils, the same coming from the rift before Od&+re&+Lth,
+&+Lwrithe out from the bottle like grasping fingers. A moment later,
+&+LOd&+re&+Lth re-corks the flask and smiles.
+
+&+L'The recipe is simple really: &None each of &+ra few drips of dragons blood&n,
+&+La &+rstrange &+Lstone&n, and &+msome faerie dust, plus 50 &+Wplatinum coins
+&nand of course &+La &+Rgn&+romi&+Rsh &+Lshopkeepers token&N.
+~
+QA
+&N$n grins at $N and collects the ingredients.
+&NAfter a few minutes of grinding, measuring, mixing, heating, dripping,
+measuring again, mixing again, pouring, and corking, he is done.
+~
+R I 83140
+G I 827
+G I 824
+G I 825
+G I 55033
+S
 #83144
 M
 qc_action 300~
@@ -305,6 +351,54 @@ M
 qc_action 300~
 &+LMagical energy &-L&+Bzaps &N&+Lthrough the area as the &+Yelementals &+Ldominate the channeling ground.
 ~
+MA
+hi hello alchemy~
+&n$n smirks at $N and says &+Y'Well met! Be ye lookin' for a potion?'
+~
+MA
+yes potion elixir~
+&N$n nods excitedly and says &+Y'Good, good!'
+&nWasting no time, $n loosens a drawstring on his rucksack and
+pulls out a glowing &+Yelixir&+r of the &+Yp&+Ry&+rro-&+mmage.
+&+Y'I can make $N one too!' &Nhe says.
+&+Y'Bring me four &+Yfire &+rglands&+Y from &+Ypyro&+rlisks&+Y and a &+rgn&+Rom&+rish&+L shopkeepers token&+Y!'
+&Nhe says, urging $N along.
+~
+MA
+fire gland pyrolisk pyrolisks~
+&N$n says &+YFind pyrolisks near the magma, of course!'
+&N$n peers at $N intently and leans closer &+Y'Some say..'&N he whispers
+&+Y'..ye can find pyrolisks living in the Rift of Dhalnadar!'
+~
+MA
+rift dhalnadar~
+&N$n says &+Y'Aye, the Rift of Dhalnadar is what we mountain folk call
+&+Ythe heart of the first mountain..' &N$n blankly looks up and continues,
+&+Y'..where the great All-Father drew the slag and struck into form the
+&+Yfirst dwarves!'
+&NAfter a moment of composing himself, $n continus &+Y'Beggin' yer pardon.
+&+YThe Rift is a sacred place to us.. now let's quit yappin' and fetch
+&+Yfour &+Yfire &+rglands&+Y and the &+rgn&+Romi&+rsh &+Lshopkeepers token&+Y.'
+~
+M
+qc_action 90~
+&N$n mixes several ingredients and heats the concoction over a &+bblue &+Bflame&n
+After a few minutes, he bottles and corks an &+Yelixir&N and smiles at his work.
+~
+QA
+&N$n collects the &+Yfire &+rglands &Nfrom $N and begins to heat
+them over a strange &+bblue &+Bflame&N.
+After a few seconds, the &+Yfire &+rglands&N begin to glow &+Wbright white!
+&N$n carefully extracts them into an &+Yelixir&N, content with his work,
+and hands it over to $N.
+&+Y'Good for what ails ye!' &N$n he chortles.
+~
+R I 97910
+G I 43138
+G I 43138
+G I 43138
+G I 43138
+G I 55033
 S
 #83146
 M
@@ -345,20 +439,43 @@ qc_action 300~
 ~
 M
 qc_action 300~
-&N$n says 'Bring forth the next battle!  Can you hear me men!?  Victory for the Seige!'
+&N$n says 'Bring forth the next battle!  Can you hear me men!?  Victory for the Siege!'
 ~
 MA
 hi hello~
-&N$n says 'Greetings, you must be $N.  I watched you walk in,' pointing at the door from this vantage point.
-After thoroughly $N up and down, $n raises his eyebrows and says 'You could be Seige Army material, and we do accept others outside of shield dwarven blood..'
-'You see $N,' he continues, pacing, 'The Seige Army is the most fearsome force of Alatorin, and all of our warriors have to go on a task to prove their strength.  Since we are the only army of Alatorin, except for the BrightAxe army..'
+&N$n bows deply before $N.
+&+Y'Welcome.' &nthe burly general says, stepping closer.
+&+Y'The Siege Army could use a lad like ye!' &Nhe says, sizing $N up and down.
+&+Y'First things first. We need weapons. The BrightAxe dwarves have shiny,
+&+Ysilver axes. $N go and fetch some, yeah? Bring me six &+Cbright silver axes&+Y!'
+
+Just as he begins to turn away from $N, $n snaps back and continues:
+&+Y'Hold on, would ye be looking to &+rsiege?&+Y'
 ~
 MA
-brightaxe~
-&N$n says 'The BrightAxe army..'  He cringes and continues 'They still house the throne of the King and are the self-proclaimed 'King's Army'.. Hah!  We are the dwarves in the front lines of every battle!  We are the dwarves who win the King's wars!'
-&N'With great dismay' he says 'we cannot do anything to rid ourselves of these cocky, arrogant dwarves..' He looks up at $N and says '.. but you Can!'
-With a grin on his face, $n says 'The BrightAxe dwarves are easily distinguished by their trademark silver axes.  Yes, quite uncharacteristic of any dwarf to use such a bright, gaudy metal!'
-&N$n snorts and says 'Regardless!  Return to me $N, with seven of these silver axes!  You will have earned the admiration of the Seige Dwarves!'
+yes siege~
+&N$n smiles and roars &+Y'Glad to hear it! Now, here's ye marks...'
+&N$n leans closer and unrolls a huge map-sized &+yparchment and yells
+&+yout his commands as he scans the targets.
+
+&+Y'Storm the gates!' &Nhe grunts.
+   &+Lthe &+rwar&+W banner &+Lof &+rHel&+Rgor&N
+   &+cthe &+rwar &+Wbanner &+cof &+WKhor&+calator&N
+&+Y'Take no prisoners!' &nhe bellows.
+   &+rthe bloody head of General &+RHel&+rgor&N
+   &+rthe bloody head of &+WLord &+WKhor&+calator&N
+&+Y'Thump the trogs!' &Nhe hollars.
+   &+Ga slimy &+yt&+gr&+yo&+gg&+yl&+go&+yd&+gy&+yt&+ge &+cclaw&N (x10)
+   &+rthe bloody head of &+yTrag-guka-kag the &+rhunt &+Rleader&N
+   &+Lthe &+Wh&No&+Lrn&Ne&+Wd &+Rh&+re&+Ra&+rd &+Lof &+YK&+Ger&+geg&+Gh&+gak&+yt&+gi&+ys&N
+&+Y'Slay the dragons!'&N he belches.
+   &+Lsome &+Wc&Nh&+cr&+rom&+ci&nu&+Wm &+Ldragon&+cs&+Cc&+ca&+Cl&+ce&+Cs&N
+   &+Wsome si&Nl&+cv&+Cer &+cdragonscales&N
+   &+Ba dragonling wing&N
+&+Y'Take the harbor back!' &Nbarks.
+   &+rthe bloody head of &+WLord Deramuth&N
+&+Y'Put that prince in his place!' &Nhe gripes.
+   &+rthe bloody head of &+WPrince &+RTa&+rk&+Rar Shanat&N
 ~
 QA
 &N greedily takes the axes, tossing them into a huge crate.
@@ -372,7 +489,92 @@ G I 83177
 G I 83177
 G I 83177
 G I 83177
-G I 83177
+QA
+&N$n snatches the &+Wbanner&N and holds it high.
+&+Y'This day, we take their banner.. tomorrow, we take their lives!' &Nhe roars.
+~
+R I 83599
+R I 83599
+R E 300000
+G I 83353
+QA
+&N$n snatches the &+Wbanner&N and holds it high.
+&+Y'This day, we take their banner.. tomorrow, we take their lives!' &Nhe roars.
+~
+R I 83599
+R I 83599
+R E 300000
+G I 83397
+QA
+&N&+rIn a gruesome display, $n &+yholds the bloody head up high...
+&+Y'AHHH Ha ha ha ha!' &Nhe guffaws.
+~
+R I 83599
+R I 83599
+R I 83599
+R E 300000
+G I 83414
+QA
+&N&+rIn a gruesome display, $n &+yholds the bloody head up high...
+&+Y'AHHH Ha ha ha ha!' &Nhe guffaws.
+~
+R I 83599
+R I 83599
+R I 83599
+R E 300000
+G I 83415
+QA
+&N&+rIn a gruesome display, $n &+yholds the bloody head up high...
+&+Y'AHHH Ha ha ha ha!' &Nhe guffaws.
+~
+R I 83599
+R E 60000
+G I 120055
+QA
+&N&+rIn a gruesome display, $n &+yholds the bloody head up high...
+&+Y'AHHH Ha ha ha ha!' &Nhe guffaws.
+~
+R I 83599
+R I 83599
+R I 83599
+R E 500000
+G I 83509
+Q
+~
+R I 83369
+R I 83599
+R I 83599
+R E 250000
+QA
+&N$n excitedly snatches the dragonscales from $N.
+&+Y'Nicely done!' &Nhe bellows, fondling the dragonhide with bedazzlement.
+~
+R I 83599
+R I 83599
+R E 250000
+G I 83313
+QA
+&N$n excitedly snatches the dragonscales from $N.
+&+Y'Nicely done!' &Nhe bellows, fondling the dragonhide with bedazzlement.
+~
+R I 83599
+R I 83599
+R E 250000
+G I 83377
+Q
+&N$n excitedly snatches the dragonling wing from $N.
+&+Y'Nicely done!' &Nhe bellows, fondling the dragonhide with bedazzlement.
+~
+R I 83599
+R E 250000
+G I 78414
+QA
+&N&+rIn a gruesome display, $n &+yholds the bloody head up high...
+&+Y'AHHH Ha ha ha ha!' &Nhe guffaws.
+~
+R I 83599
+R E 250000
+G I 120056
 S
 #83148
 M
@@ -398,12 +600,19 @@ S
 MA
 hi hello~
 &N$n smiles happily and says &+G'Greetings, $N!'
-&+G'Welcome to my home!  Sorry it is cluttered,' &N&+cDweefniggle &Nsays, giggling to himself.
-&+G'You know, one of my favorite ways to invent something useful is by combining two other things.  Like boot knives!'
-&NWith a grin on his face, &+cDweefniggle &Ncontinues &+G'There are what are commonly referred to as 'random objects' throughout the lands.  This could be anything from &Na &+Wm&+Ya&+Wg&+Yi&+Wc&+Ya&+Wl &+Rgem &N&+ymonolith&+G to &+La strange &+Wsharp &N&+rrubin&+G to &Na piece of &N&+bsapphire&+G!  I'll take it all!'
-After clearing his voice, $n continues 'Give me ten items and I'll give you a piece of a token of &n&+ycollecting!&+W'
-&N$n pauses for a moment, grabs $N's shirt, and says 'Wait $N!  Before you go, I have to ask you for a &+Wfavor.'
-&N'Don't forget to ask me about &+ycrafting&n!' he adds.
+&+G'Have you come to inquire about &+Rcollecting&+G or &+Rcrafting?' &N$n says, looking around $N.
+&+G'Or perhaps,' &Nhe says &+G'You could do me a &+Rfavor&+G..'
+~
+MA
+collecting collector collect~
+&N$n nods at $N and says &+G'We use it all at the workshop! Bring me:
+
+any random object, like a &+Wm&+Ya&+Wg&+Yi&+Wc&+Ya&+Wl &+rruby &+Ltunic&N
+any salvaged component, like &+csome te&Nm&+cpe&Nr&+ced iron&N
+any strange stone, like a &+Lstrange &+Wsharp &+rrubin&N
+any recipe, like &+ya ti&+Yght&+yly &+Lrolled &+yvellum &+Yrecipe &+yfor &+Lan &+Mobs&+mid&+Mian &+Lring&N
+
+&+G...Oh, and uh $N, we get 'lot more out of stones and recipes!' &N$n adds with a wink.
 ~
 M
 qc_action 200~
@@ -415,45 +624,63 @@ qc_action 200~
 ~
 MA
 favor~
-&N$n nods at $N and says &+W'One of my tinkerer cousins here is a big fan of Barlow's brew.  Well, he overheard some of those brewers say they were looking to..' he gulps and continues &+W'Try to my tinkerers!'
-&NHe scoffs and continues &+W'Well, we'll have to get them before they get us, eh $N?'
-&+W'Return to me with eight of their badges, and I'll know the deed is done'&n, $n whispers with &+rbloodlust&N in his eyes.
-&n$n says &+W'Those medals of honor can be very valuable, 'round here, too!'.
+&N$n nods at $N and says &+G'One of my tinkerer cousins here is a big fan of Barlow's brew.  Well, he overheard some of those brewers say they were looking to..' he gulps and continues &+W'Try to my tinkerers!'
+&NHe scoffs and continues &+G'Well, we'll have to get them before they get us, eh $N?'
+&+G'Return to me with five of their &+ybadges&+G, and I'll know the deed is done'&n, $n whispers with &+rbloodlust&N in his eyes.
+
+&n$n says &+G'Another thing, $N..those &+Rmedals of honor&+G?  I'll pay ye for em!'
+~
+MA
+barlow brewstash brew badges brewer brewers~
+&N$n scoffs and grunts &+G'Mind poison!'
+&N$n spits on the floor in front of $N and quickly apologizes.
+&+G'Didn't mean to get ya!' &Nhe chuckles.
+&+G'Bring me eight of the brewers badges, and I'll know the deed is done.'&N he says.
 ~
 MA
 medal medals honor~
-&N$n grins at $N and says &+W'Medals of Honor are rewarded all over Alatorin for certain deeds that honor the king.  Tell ya what, $N, if you bring me &+Rfour&+W of those &+Cmedals of honor&+W, I will repay you with a special &+Rtoken &+Wof &+Rgnome currency&+W!'
+&N$n grins at $N and says &+G'Medals of Honor are rewarded all over Alatorin for certain deeds that honor the king.  Tell ya what, $N, if you bring me &+Rfour&+W of those &+Cmedals of honor&+W, I will repay you with a special &+Rtoken &+Wof &+Rgnome currency&+W!'
 ~
 MA
 craft crafting~
-&n$n nods at $N and says 'I love crafting, $N.  I've been working on these new &+Bbody enhancement mechanics&N where we can increase our own energy output from simple &+Cmechanics &Nthat attach to the body!'
-With a large grin, $n continues 'My prototypes are finished and I'm ready to produce!  Here's what I will require:
-&Nsome &+Mte&n&+mmp&+Mer&N&+med &+Mmi&+mth&+Mril &Narmor, which you'll find at &+CSteel&N&+cgr&+Lip's &+WDepot&N
-a &+Rgn&N&+romi&+Rsh &+Lshopkeepers token&N x2
-&+Wa &Nplastic &+Wbag full of &N&+gd&+Grug&N&+gs&N, which you can get from a &+Ggoblin &Nin &+WDeramuth Port&N
-and &+W50 platinum&N for my troubles
+&n$n nods at $N and says &+G'I love crafting, $N. I've been working on these new &+Bbody enhancement mechanics&N where we can increase our own energy output from simple &+Cmechanics &Nthat attach to the body!'
+With a large grin, $n continues &+G'My prototypes are finished and I'm ready to produce!  Here's what I will require:
+&+Gsome &+Mte&n&+mmp&+Mer&N&+med &+Mmi&+mth&+Mril &+Garmor, which you'll find at &+CSteel&N&+cgr&+Lip's &+WDepot&N
+&+Ga &+Rgn&N&+romi&+Rsh &+Lshopkeepers token&N x2
+&+Wa &Nplastic &+Wbag full of &N&+gd&+Grug&N&+gs&N&+G, which you can get from a &+Ggoblin &Nin &+WDeramuth Port&N
+a&+Gnd &+W50 platinum&+G for my troubles.
 
-'There are five different pieces of &+mte&+Mmpere&+d &+Cmithril &n&+marm&+Mor &Nand thus five different pieces of &+Bbody enhancements&N that I can craft for you, $N!' he says.
+&+G'There are five different pieces of &+mte&+Mmpere&+d &+Cmithril &n&+marm&+Mor &+Gand thus five different pieces of &+Bbody enhancements&+G that I can craft for you, $N!' he says.
 ~
 QA
-&N$n grins and says 'Thanks!  Remember, just give me ten of those pieces and I'll give ya a whole token!'
+&N$n grins and says &+G'Thanks!  Remember, just give me ten of those pieces and I'll give ya a whole token!'
 ~
-R I 83458
+R I 83245
 G I 1252
 QA
-&N$n says 'Thanks!  Remember, just give me ten of those pieces and I'll give ya a whole token!'
-~
-R I 83458
-G I 1250
-QA
-&n$n says 'Thanks!  Remember, just give me ten of those pieces and I'll give ya a whole token!'
-~
-R I 83458
-G I 1254
-QA
-&N$n says 'Excellent work $N!  All ten pieces!  Here is your token!  Now you know where you take these right?  All commendation tokens to &+CCourt Hall.&+W'
+&N$n exclaims &+G'Yes, YES!'
+&+G'I'll give ya a full token and somethin' extra for this, $N!'
 ~
 R I 83246
+R I 400235
+G I 1250
+QA
+&N$n exclaims &+G'Yes, YES!'
+&+G'I'll give ya a full token and somethin' extra for this, $N!'
+~
+R I 83246
+R I 400235
+G I 400210
+QA
+&n$n says &+G'Thanks!  Remember, just give me ten of those pieces and I'll give ya a whole token!'
+~
+R I 83245
+G I 1254
+QA
+&N$n says &+G'Excellent work $N!  All ten pieces!  Here is your token!  Now you know where you take these right?  All commendation tokens to &+CCourt Hall.&+W'
+~
+R I 83246
+R I 400235
 G I 83245
 G I 83245
 G I 83245
@@ -468,9 +695,6 @@ QA
 &N$n gasps and says &+W'Oh thank you $N!  You saved my life!  As a token of my appreciation I will give you this medal of &+Chonor&+W, which I was given a long time ago by Taark Shanat himself.  They say you can trade in a bunch of these medals for a key to the Alatorin Hall of Kings!'
 ~
 R I 83250
-G I 83274
-G I 83274
-G I 83274
 G I 83274
 G I 83274
 G I 83274
@@ -546,6 +770,1270 @@ G I 55033
 G I 55033
 G I 55247
 G I 83192
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400000
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400001
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400002
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400003
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400004
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400005
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400006
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400007
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400008
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400009
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400010
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400011
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400012
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400013
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400014
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400015
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400016
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400017
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400018
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400019
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400020
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400021
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400022
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400023
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400024
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400025
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400026
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400027
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400028
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400029
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400030
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400031
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400032
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400033
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400034
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400035
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400036
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400037
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400038
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400039
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400040
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400041
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400042
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400043
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400044
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400045
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400046
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400047
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400048
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400049
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400050
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400051
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400052
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400053
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400054
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400055
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400056
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400057
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400058
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400059
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400060
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400061
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400062
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400063
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400064
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400065
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400066
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400067
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400068
+QA
+&N$n snatches the $q from $N.
+&-W&+WBlinding light flashes&Mand the &+Wb&No&+Wn&Ne &-L&+Yexplodes&N in a &+cm&+Bi&+cs&+Bt!
+~
+R I 83245
+G I 400069
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400070
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400071
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400072
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400073
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400074
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400075
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400076
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400077
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400078
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400079
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400080
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400081
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400082
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400083
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400084
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400085
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400086
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400087
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400088
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400089
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400090
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400091
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400092
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400093
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400094
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400095
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400096
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400097
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400098
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400099
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400100
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400101
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400102
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400103
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400104
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400105
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400106
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400107
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400108
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400109
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400110
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400111
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400112
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400113
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400114
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400115
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400116
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400117
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400118
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400119
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400120
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400121
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400122
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400123
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400124
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400125
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400126
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400127
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400128
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400129
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400130
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400131
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400132
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400133
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400134
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400135
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400136
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400137
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400138
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400139
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400140
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400141
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400142
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400143
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400144
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400145
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400146
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400147
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400148
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400149
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400150
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400151
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400152
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400153
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400154
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400155
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400156
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400157
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400158
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400159
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400160
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400161
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400162
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400163
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400164
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400165
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400166
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400167
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400168
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400169
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400170
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400171
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400172
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400173
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400174
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400175
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400176
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400177
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400178
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400179
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400180
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400181
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400182
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400183
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400184
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400185
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400186
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400187
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400188
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400189
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400190
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400191
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400192
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400193
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400194
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400195
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400196
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400197
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400198
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400199
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400200
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400201
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400202
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400203
+QA
+&N$n snatches the $q from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400204
+QA
+&N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Ydust&N and greedily snatches the sack from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400205
+QA
+&N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Ydust&N and greedily snatches the sack from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400206
+QA
+&N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Ydust&N and greedily snatches the sack from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400207
+QA
+&N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Yplasma&N and greedily snatches the sack from $N.
+&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+~
+R I 83245
+G I 400208
+QA
+&N$n pauses what he's doing and backs away slowly from $N, examining the &+Cne&+Bbu&+Mla&N from afar.
+After a moment, $n shuffles forward and gently reaches for the &+cm&+Ca&+cg&+Ci&+cc&+Ca&+cl &+ms&+Mpe&+mc&+Mim&+me&+Mn&N.
+&N'It's..  it's beautiful!' he exclaims, reaching into his pocket without breaking his gaze.
+&N$n hands a &+ysmall sack&N of &+Wcoins&N to $N, adding 'Take this. As tribute.'
+H
+~
+R I 83245
+R C 200000
+G I 400209
 S
 #83151
 M
@@ -607,21 +2095,18 @@ Q
 R I 83169
 R I 83169
 R I 83169
-R E 10000
+R E 40000
 G I 83117
 QA
 &+WThe &+CBrightAxe &+Wcook takes the ingredients and gleefully whips up
 &+Wsomething ridiculous looking!
 ~
 R I 83170
-R E 40000
+R E 2000
 G I 2658
 G I 318
 G I 822
 G I 823
-D
-&+WThe &+CBrightAxe &+Wcook&N says, "Ooh, I forgot the salt.  I'll be back later."
-~
 S
 #83173
 M
@@ -641,20 +2126,29 @@ drink~
 ~
 MA
 lore yes~
-&n$n says 'The lore of our people is that a smaller race, such as ourselves, would one day threaten our own existence!  Well, $N, we have just joined alliances with both the goblins and the gnomes.'
-&N$n sighs, stares upwards, then continues 'There haven't been too many goblins wandering around, besides the occasional mage or two, but they mostly stick to themselves.'
-'It's the gnomes, and you know where they are ganging up, working on their evil idols?  Their forsaken witchcraft!?  Down under the great anvil!  Those tinkerers of Dweefniggles!' $n exclaims, as he spits on the ground.
+&n$n says 'The lore of our people is that a smaller race, such as
+ourselves, would one day threaten our own existence!  Well, $N,
+we have just joined alliances with both the goblins and the gnomes.'
+
+&N$n sighs, stares upwards, then continues 'There haven't been too
+many goblins wandering around, besides the occasional mage or two,
+but they mostly stick to themselves.'
+
+'It's the gnomes, and you know where they are ganging up, working
+on their evil idols?  Their forsaken witchcraft!?  Down under the
+great anvil!  Those tinkerers of Dweefniggles!' $n exclaims, as he
+spits on the ground.
 ~
 MA
 dweefniggle dweefniggles tinkerer tinkerers gnome gnomes~
-&N$n nods at $N and says 'Dweefniggle's gnome tinkerers down under the Great Anvil.  They are evil, we just know it up here!  Bring me eight of their badges, and I will give you a symbol of my honor!'
+&N$n nods at $N and says 'Dweefniggle's gnome tinkerers down under
+the Great Anvil.  They are evil, we just know it up here! Bring
+me six of their &+ybadges&N, and I will give you a symbol of my honor!'
 ~
 QA
 &N$n says 'Excellent work $N.  It is foor the good of the dwarven people, always remember that if you ever have second thoughts about what you have done here today.  The blood is on your hands, $N.'
 ~
 R I 83250
-G I 83302
-G I 83302
 G I 83302
 G I 83302
 G I 83302
@@ -692,22 +2186,25 @@ rringlor noroth wyrmskull throne~
 &+RNoroth.  This particular dragon had two identical heads, both equally
 &+Ras vicious.  I was captured along with a band of others and taken back
 &+Rto Mount Gormoroth where the dragons would toy with us before eating us,
-&+Ror at lleast thats what they thought.'
+&+Ror at least thats what they thought.'
 &+RTaark Shanat &+Wgrins and gestures to the &+yW&+gy&+yr&+gm&+Wskull &+Wthrone.
 &+RTaark Shanat &+Wcontinues &+R'Not only did we defeat the beasts, but we also
 &+Rfound a new home, secluded from the evil around us, in what was the den
 &+Rof these dragons.'
-&+RTaark shanat &+Wsmiles and nods at &N$N.
+
+&NAfter several attempts to disregard $N, $n finally relents &+R'What are these
+&+Rso called &+Wrumors&+R that $N goes on about!?'
 ~
 MA
 hi hello~
 &+RTaark Shanat &+Wlooks at $N, nods, and smiles.
+&+W'Be ye lookin to be the next Wyrmslayer?' &Nhe says with a smirk.
 ~
 MA
-dragon dragons dragonslayer taark~
+dragon dragons dragonslayer taark wyrmslayer~
 &+RTaark Shanat&+W, interested in the subject of dragons, turns to $N and
 &+Wsays &-L&+RBEASTS!!&N&+R For every dragon you kill, gather one of their
-&+Lscales&+R.  Proove to me you can be a Dragonslayer and return to me ten
+&+Lscales&+R.  Proove to me you can be a Dragonslayer and return to me &+Wten
 &+Ldragon scales&+R of dragons you have killed and I will give you my
 &+Rcommendation.'
 &+RTaark Shanat &+Wnods proudly at $N.
@@ -729,6 +2226,40 @@ dragonnia tiamat bahamut~
 &+R'Tiamat, Dragonnia, and Bahamut, the three dragon queens of these realms..' &Nhe says, letting out a huge sigh.
 &+R'If you can prove your strength and honor, $N, you will slay these three beasts and return to me with their &+rhearts&+R!'
 ~
+MA
+rumors rumor~
+Finally $n listens carefully to $N about the rumors circulating through Alatorin
+that the great blue wyrm Rringlor Noroth has returned, and lives, even now,
+deep underground, below Alatorin.
+
+&N$n sighs and says &+R'I have not ventured into the Rift of Dhalnadar in years..'
+~
+MA
+rift dhalnadar~
+&N$n nods at $N and says &+R'The Rift of Dhalnadar is what we call the
+&+Rsacred heart of the mountain, where the All-Father Moradin forged
+&+Rthe first dwarven souls.'&N
+
+Suddenly, every single &+Wpeacekeeper&N within an earshot bows their heads
+in honor of their greater god, as does &+RTaark&n.
+
+&+R'Find your way down the Rift'&N he snaps, returning to clarity.
+&+R'Rringlor Noroth has no place in our shrine. Finish him, for once!
+&+RBring me his severed head, and do so with the strength of the
+&+Rdwarves at your side!'
+~
+MA
+shanatar gormoroth~
+&N$n stares ahead and says &+R'I can still remember the feel of that rock,
+&+Rthe first stone I split. Then, we called it Gormoroth.. now: Shanatar.
+&+RAfter Rringlor and the dragons came, everything changed.'
+
+After several minutes of sharing stories, emptying their steins into
+their bellies, and feasting upon the shield dwarves' cuisine that seemed
+to be constantly carried-in by attendants, &N and &+RTaark&N touch on
+the &+Wrumors&N of &+bRringlor Noroth&N's resurrection and new heraldry
+amongst the other greater dragons, &+LTiamat&N, &+WBahamut&N, and &+GDragonnia&N.
+~
 QA
 &+RTaark Shanat &+Wsnaps his finger and a nearby attendant happily collects
 &+Rthe &+Ldragon scales &+Wand carries them off.
@@ -737,6 +2268,7 @@ QA
 &+R'Collect ten of these &Npieces &+Rand return them to me for a full &+Wtoken&+R.'
 ~
 R I 83532
+R E 100000
 G I 392
 G I 392
 G I 392
@@ -763,7 +2295,7 @@ QA
 &N$n raises his eyebros, shakes his head, and continues 'Thank you for bringing this top secret message to me, $N.  Take this medal as a sign of my and all of &N&+cAlatorin&N's appreciatoin.
 ~
 R I 83250
-R C 600000
+R C 2000000
 R E 140000
 G I 83272
 QA
@@ -787,6 +2319,7 @@ graciously takes all ten pieces &Nfrom $N and carries them out as hastily as he 
 &+Rthese tokens&+R'&N he says with a smile and a nod.
 ~
 R I 83178
+R I 400233
 G I 83532
 G I 83532
 G I 83532
@@ -797,6 +2330,20 @@ G I 83532
 G I 83532
 G I 83532
 G I 83532
+QA
+&+R'May the eternal fires of Dhalnadar burn you from this world!'
+&NWith a brief moment of focus, $n swings his &+Caxe&n, splitting the
+&+Wskull&N clean down the middle, and it bursts into &+Rf&+rl&+Ra&+rm&+Re&+rs&N.
+
+&NAfter a few moments, $n regains his composure and returns to his &+Wthrone&n.
+&+R'$N done it. Thank ye for ridding Alatorin once again of this scourge.
+&+RWe be in yer debt. Hopefully this is a start..'&N he says, reaching into
+a deep pocket of his robe.
+~
+R I 83630
+R I 55033
+R I 400233
+G I 120059
 S
 #83178
 M
@@ -813,12 +2360,12 @@ king taark shanat~
 'The BrightAxe dwarved have guarded the Wyrmskull Throne since the dawn of Alatorin
 and the conquest of the shield dwarves.  It is the BrightAxe army who is the most
 honored and therefor valuable to Alatorin and our people!'
-&N$n sighs and continues 'The Seige Army has become getting stronger, so right now
+&N$n sighs and continues 'The Siege Army has become getting stronger, so right now
 we just hope we can maintain King Taark's first-choice approval.
 ~
 MA
-seige siege~
-&N$n frowns at $N and says 'The Seige Army has begun winning the King's approval
+siege army brightaxe~
+&N$n frowns at $N and says 'The Siege Army has begun winning the King's approval
 with their brutal tactics.  It is a frowned on by our people and disgraced by the
 dwarves of Kilmordril!  Please $N!  Help us solidify our position as the King's
 Army by quelling the Seige Army.  We have seen all of their warriors wielding the
@@ -826,7 +2373,7 @@ same barbed swords.   If you can somehow infiltrate their guild and take their
 weapons, then the King will have no choice!'
 &nWith a grin, $n continues 'I saw seven of them in a batallion against the troll
 raids three months past.. and just last week seven were performing drills at the
-ward statue!'  &n smiles and says 'Return to me with seven of their swords, that
+ward statue!'  $n smiles and says 'Return to me with &+Wsix&N of their &+rswords&n, that
 should cripple an entire unit.  Do this and you will have gained my admiration.'
 ~
 QA
@@ -835,7 +2382,6 @@ After gathering them from $N, the recruits return to their duties.
 'With my gratitude, please accept this medal of honor, $N' $n says, bowing deeply before $N.
 ~
 R I 83250
-G I 83175
 G I 83175
 G I 83175
 G I 83175
@@ -863,18 +2409,23 @@ qc_action 500~
 ~
 MA
 hi hello~
-&N$n smiles at $N and says 'Greetings, adventerous one.  Drink from the pools, gain the foresight of &+Ytime..&N'
-&NAfter making a gesture, $n continues 'A presence has threatened us, $N, and we can speak no further until this threat has been abolished.  The mages of the Mystic Ward have recently challenged the livelyhood of the hooded, the very dwarves who generate the power of the caverns!' $n says, throwing his hands up in disgust.
-&N$n says, clearing his throat 'It is unfortunate that it has come to this, but bring me eight &N&+cAl&+Cator&N&+cin &+Lapprentice robes&N, worn by their mages.  We did not want it to come to this, but pre-emptive war is what we have foreseen.'
+&N$n smiles at $N and says 'Greetings, adventerous one.  Drink from the
+pools, gain the foresight of &+Ytime..&N'
+&NAfter making a gesture, $n continues 'A presence has threatened us,
+&N$N, and we can speak no further until this threat has been abolished.
+The mages of the Mystic Ward have recently challenged the livelyhood
+of the hooded, the very dwarves who generate the power of the caverns!'
+&N$n says, throwing his hands up in disgust.
+&N$n says, clearing his throat 'It is unfortunate that it has come to this,
+but bring me five &N&+cAl&+Cator&N&+cin &+Lapprentice robes&N, worn by their
+mages.  We did not want it to come to this, but pre-emptive war is what we
+have foreseen.'
 ~
 QA
 &N$n thanks $N heartidly, much unusual behavior for such an immensely-powerful individual.
 'Take this medal, $N' $n says with a bright smile.
 ~
 R I 83250
-R E 250000
-G I 83184
-G I 83184
 G I 83184
 G I 83184
 G I 83184
@@ -917,8 +2468,12 @@ hi hello~
 ~
 MA
 alatorin epidemic alatorins yes yeah~
-&N$n frowns at $N and says &+L'Alatorin is in the middle of a grave epidemic - as long as those evil &+Chooded &+Ldwarves &N&+gPOLLUTE &+Lthe caverns of time!' &Nslamming her fist onto the table, which winces in pain.
-Stroking the table forgivingly, $n continues 'Bring me eight of those &+Mevil-doer's &+Choods&N&+m and you will have gained my appreciation.'
+&N$n frowns at $N and says &+L'Alatorin is in the middle of a grave epidemic -
+as long as those evil &+Chooded &+Ldwarves &N&+gPOLLUTE &+Lthe caverns of time!'
+&Nslamming her fist onto the table, which winces in pain.
+
+Stroking the table forgivingly, $n continues 'Bring me six of those &+Mevil-
+&+mdoer's &+Choods&N&+m and you will have gained my appreciation.'
 ~
 M
 qc_action 250~
@@ -930,8 +2485,6 @@ QA
 'You can learn more about medals like these, and even commendation tokens, at Court Hall,' she says with a grin.
 ~
 R I 83250
-G I 120007
-G I 120007
 G I 120007
 G I 120007
 G I 120007
@@ -1063,7 +2616,7 @@ QA
 &+rmess and then collects all the ribs and tosses them onto his grill.
 $n says 'Thanks, these are turning out great!  For your troubles have a few on the house..
 ~
-R E 10000
+R E 40000
 R I 83222
 R I 83222
 R I 83222
@@ -1075,6 +2628,7 @@ QA
 'Thank you greatly!  Here, take a few loafs for yourself. 'He says, happily.
 ~
 R I 83225
+R E 40000
 G I 823
 G I 825
 G I 83223
@@ -1204,7 +2758,7 @@ QA
 &N$n says 'Thanks a lot.  Here, take a few for yourself!'
 ~
 R I 83221
-R E 10000
+R E 40000
 R I 83221
 R I 83221
 G I 83201
@@ -1214,6 +2768,7 @@ QA
 &N$n says 'A few batches on the house, thanks!'
 ~
 R I 83224
+R E 40000
 G I 824
 G I 823
 G I 822
@@ -1398,8 +2953,11 @@ qc_action 100~
 MA
 hi hello~
 &N$n says 'Hello, $N.  You do not look like a shield dwarf..'
-$n ponders for a moment, grins, and says 'Makes sense now with all the guards in the Citadel.'
-&N'How you managed to avoid the defenses of Shanat has impressed me, $N.  You may be of some use to me.  Do you wish to assist?'
+$n ponders for a moment, grins, and says 'Makes sense now with all
+the guards in the Citadel.'
+&N'How you managed to avoid the defenses of Shanat has impressed me.
+You may be of some use to me. Do you wish to assist?'
+&N$n relaxes, awaiting your response.
 ~
 MA
 no nope nah~
@@ -1407,7 +2965,12 @@ no nope nah~
 ~
 MA
 yes yeah assist~
-&n$n nods, smiles, and says 'Excellent, $N.  The shield dwarves are not a cruel or violent people, but we do have enemies.  Some of these enemies have alienated themselves with terrible crimes against our people, so we have removed some of their freedoms.  Below Shanat Citadel is a prison..'
+&n$n nods and continues 'Deep below the Citadel is a holy place amongst
+our kind, called the Rift of Dhalnadar. I have heard rumors that the
+ancient dragon has come back to life, and haunts our sacred caverns!'
+
+&N$n sighs and says 'Taark is getting too old to be slayin wyrms, but you..
+&N$N be strong.. fit..' eyeing $N up and down, she adds '..worthy!'
 ~
 MA
 taark shanat~
@@ -1422,17 +2985,22 @@ alatorin~
 &N$n smiles and says 'Ah Alatorin, what a glorious city.'
 ~
 MA
-prison~
-&N$n gulps.
-'Rringlor Noroth was slain, but she did manage to have three eggs before she died.  One of the eggs was burned by the war-crazed dwarves, but the other two they took, kept, held secret, and hatched some thousand years ago.  These spawn of Noroth, these drakes, have grown to enormous size in their young lives and I fear they will grow out of our control and destroy the city we so love and cherish!  Kill these two remaining drakes and bring me their hearts!' The Queen screams in delight.
+rringlor noroth rift dhalnadar worthy~
+&N$n nods at $N and says 'Ye must find yer way down into the Rift of Dhalnadar,
+below the Citadel, and find the wyrm. Find Rrginlor Noroth and cut off 'is head!'
+
+&N$n leans closer and says with maximum intensity 'Bring me his head!'
 ~
 QA
-&NWith a smile on her face, $n graciously accepts the bloody, messy hearts.
+&NWith a smile on her face, $n graciously accepts the &+rbloody &+Bhead.
 'Thank you,' she says to $N, placing a key in $N's hand.
+
+'Help yerself to the royal treasury,' &Nshe says. 'Ye saved us.'
 ~
 R I 83307
-G I 83305
-G I 83306
+R I 55033
+R I 400233
+G I 120059
 D
 &n$n says 'This key opens our private quarters.  Please, go see what you can find, take anything!'
 ~
@@ -1460,6 +3028,7 @@ QA
 &N$n says 'Thanks $N, here you go!'
 ~
 R I 83444
+R I 83250
 G I 83178
 G I 83178
 G I 83178
@@ -1473,7 +3042,8 @@ G I 83178
 QA
 &N$n says 'Thanks $N!  Here you go.'
 ~
-R I 83445
+R I 83250
+R I 55033
 G I 83246
 G I 83246
 G I 83246
@@ -1491,7 +3061,6 @@ QA
 $n smiles at $N and says 'Congradulations, once again.'
 ~
 R I 83338
-R I 83371
 R E 500000
 G I 83250
 G I 83250
@@ -1507,6 +3076,7 @@ QA
 &n$n smiles at $N and says 'Splendid.'
 ~
 R I 83457
+R I 83250
 G I 83317
 G I 83317
 G I 83317
@@ -1535,6 +3105,7 @@ QA
 &N$n grins and smiles at $N.
 ~
 R I 26631
+R I 83250
 G I 83463
 G I 83463
 G I 83463
@@ -1545,6 +3116,98 @@ G I 83463
 G I 83463
 G I 83463
 G I 83463
+QA
+&N$n nods at $N and says &+W'Well done, $N!'
+~
+R I 83250
+R I 83370
+G I 83599
+G I 83599
+G I 83599
+G I 83599
+G I 83599
+G I 83599
+G I 83599
+G I 83599
+G I 83599
+G I 83599
+S
+#83255
+M
+qc_action 250~
+&N$n &+Wleans close to the wall and hums a simple melody.
+&+WAfter repeating the melody several times, $n waves his hand over the rocks,
+&+Wrevealing the &+Yg&+Wl&+Yi&+Wt&+Yt&+We&+Yr&+Wi&+Yn&+Wg&+W signs of ore.
+~
+M
+qc_action 250~
+&N$n meanders around the mine, casually passing through solid &+Lrock&+W.
+~
+MA
+hi hello~
+&N$n &Npauses and smiles at $N.
+&N$n says &+W'You have come far beneath the world's noise, into the silent vault
+&+Wwhere stone remembers all.'
+&+WA &+Yheavenly light&N cascades over the &+Wspirit dwarf&N and into $N.
+&+W'I am a priest of the mountain, keeper of Dumathoin's mine. Prove yourselves
+&+Wworthy, and the deep earth may yet yield its truths to you.'
+~
+MA
+prove worth reveal earth secret secrets truth truths keeper mountain yes how commit~
+&N$n nods at $N and continues &+W'Know this: dwarven mithril is among the most
+&+Wprecious gifts drawn from my domain, rarer than kings and more enduring
+&+Wthan empires.'
+~
+MA
+dwarven mithril kings empires~
+&N$n nods at $N and says &+W'_Dwarven_ mithril,' &Nhe enunciates.
+&+W'If it is dwarven mithril you seek to understand&N he continues,
+&+W'then you must first show reverence for what you ask. Bring to me
+&+Wten &+Cancient chunks of dwarven mithril&+W, obtained however you
+&+Wmust, and I shall unveil to you the truths within the sacred stones.'
+~
+MA
+keeper sacred stones keepers~
+&N$n nods at $N and says &+W'The keepers are no more guardians, $N.'
+&+W'These miners are bound to the deepest veins of the earth and sworn
+&+Wto test all who would claim its riches. They do not yield to force or
+&+Wgreed - only to rightful passage..' &Nhe says, presenting a &+ys&+Wt&+yo&+Wn&+ye &+Wk&+ye&+Wy&N.
+~
+MA
+passage key~
+&N$n nods at $N and says &+W'The price is not measured lightly, $N must commit
+&+Wto the sacred stones within my mine..'&N$n says, drifting away and resuming
+humming a tune into the rocks.
+~
+QA
+&N$N place the ten &+Cchunks of ancient dwarven mithril &Nbefore $n.
+
+Nothing seems to happen.
+
+&+g<>
+
+&NUntil..
+
+The &+Cmetal&+r hums&N softly, quickly escalating into a spastic, excited &+R&-Lv&N&-Li&+R&-Lb&N&-Lr&+R&-La&N&-Lt&+R&-Li&N&-Lo&+R&-Ln&N&-L.&N
+&N$n &Nregards the offering in solemn silence, and suddenly the &+rstone&N around
+&Nyou seems to &+Lin&+bha&+Lle&N as the &+Cmithril&N gets &+y&-Lsucked into the ground!&N
+
+&+W'You have returned what was asked without greed or hesitation.'&N he says.
+&+LFrom the darkness&N a &+Ykey &Nof &+Rliving&+L stone&N and &+Cs&+ci&+Cl&+cv&+Ce&+cr&+Cy &+core&N slowly forms in his grasp.
+&+W'Take this key,' &Nthe &+Wavatar&N says, placing it in $N's outstretched hand.
+&+W'..and know that it opens what is held by the Keepers of the Sacred Stone.'&N
+~
+R I 83253
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
 S
 #83262
 M
@@ -1622,23 +3285,12 @@ D
 ~
 S
 #83276
-MA
-hi hello~
-&N$n says 'Hello.'
-~
-MA
-taark shanat~
-&N$n says 'Taark Shanat is a good man.  He is a great leader and a true friend.'
-&N$n sighs and continues 'Taark and I go back a long way, when I was a child
-and he was only -kind of- old.'
-&N$n chuckles for a moments and nods, then says 'Thanks,' his bald head glistening.
-~
 M
-qc_action 600~
+qc_action 300~
 &N$n says &+R'Legionnaires!  Stomachs in!  Shoulders back!  Chest out!'
 ~
 M
-qc_action 600~
+qc_action 300~
 &N$n yells &+R'SOUND OFF!'
 &N&+rHis &+Ylegionnaire &N&+rrecruits yell back 'ANGRY!'
 &N$n yells &+R'SOUND ON!'
@@ -1647,31 +3299,70 @@ qc_action 600~
 &N&+rHis &+Glegionnaire &N&+rminions respond 'ANGRY DWARF LEGIONNAIRES!'
 ~
 M
-qc_action 600~
+qc_action 300~
 &N$n hears a sound in the hallway and jumps to is feet.
 &NThe nearest &+rleg&+Yi&N&+ron&+Ynai&N&+rre &+Linstantly kneels and offers $n his &+Csword.
 ~
 M
-qc_action 600~
+qc_action 300~
 &N$n twirls a tiny &+cdagger &Nbetween his knuckles.
 ~
 M
-qc_action 600~
+qc_action 300~
 &+rAfter a thunderous roar from his troops, $n yells to his men &+R'Today we fight.. Tomorrow we DIE!!!'
 ~
 M
-qc_action 600~
+qc_action 300~
 &+LA deep and thunderous roar from somewhere deep below the citadel shakes the very pillars on which it rests.
 ~
 M
-qc_action 600~
+qc_action 300~
 &N$n cracks his knuckles and grins at a nearby &+rle&+Yg&n&+rio&+Ynna&n&+yire&N.
 &N&+rThe le&+Ygi&N&+rio&+Yn&N&+rnaire responds with a nervous smile and several beads of &N&+csweat.
 ~
 MA
-graddakk~
-&N$n bursts into the tears at the sound of the name of his former lover, &+rGraddakk.
+hi hello~
+&N$n sizes $N up and down.
+&N$n nods and says &+Y'Aye, us wee folk betta stick togetha.'
+&N$n leans in closer and says &+Y'With war comin 'n all..'
 ~
+MA
+war~
+&N$n nods at $N and continues &+Y'What side ye be on, cousin? Think ye
+&+Yfinna join the great army of King Taark?  Is that why ye came here?'
+~
+MA
+yes army king taark shanat~
+&N$n nods at $N and continues &+Y'Excellent! We could use ya to uhh..'
+&N$n sizes $N up and down once again, continuing &+Y'To uhh..'
+&N$n walks around $N, examining every angle.
+&+Y'Maybe you could..'&N $n says, now scratching his beard.
+&+Y'Agh!'&N he finally exclaims. &+Y'We'll find somethin!'
+&+Y'But first, the matter of your tithes..'
+~
+MA
+tithes tithe~
+&N$n smiles, perhaps for the first time this conversation.
+&+Y'Glad to hear yar ready to join, $N!' &Nhe says.
+&+Y'Entry fees to King Taark's Legionnaires is two thousand coins of platinum,
+&+Y'and of course we would also take a gnomish shopkeeper token.' &Nhe says with a grin.
+&N$n leans back on his large broadsword and says &+Y'We could use ye, $N!'
+&+Y'After all, everyone in King Taark's Legion pays tithes.' he grunts matter-of-factly.
+~
+QA
+&N$n's eyes sparkle at the sight of the &+Wcoins&N.
+&+Y'Yes, YES!' &Nhe bellows, stuffing the tithes into a drawstring sack.
+&+Y'Ye ARE legionnaire material, $N!' &N$n cackles.
+~
+R I 83258
+G C 2000000
+QA
+&N$n's jaw drops as $N presents the &+Rtoken&N.
+&+Y'Welcome aboard!'&N he belches, snatching the requested tithes.
+&+Y'Ye'll make fine Legionnaire material, $N!' &N$n says with a grin.
+~
+R I 83258
+G I 55033
 S
 #83283
 M
@@ -1685,6 +3376,23 @@ qc_action 600~
 &+LA strange &N&+mgloomwing &+Lflies by in a distant darkness, leaving a trail of &N&+bblack haze&+L behind it.
 ~
 S
+#83289
+M
+hi hello~
+&+WThe avatar of Gorm Gulthyn speaks 'Your vigil is noted, kin-warden.
+&+WStand firm against the shadows of the rift, for only the a shard of
+&+Wthe First Mountain may return me to Dwarfhome.'
+~
+Q
+~
+R I 83626
+R I 400233
+R I 400234
+G I 83626
+D
+&+WThe blazing avatar of Gorm Gulthyn bows and flashes out of existence.
+~
+S
 #83290
 M
 qc_action 200~
@@ -1694,57 +3402,1090 @@ S
 #83291
 M
 qc_action 160~
-&+YG&+gi&+Lmbr&+gi&+Gn swings his &+chammer&N, pounding a rare piece of &+More&N, sending &+Ymagical &+Bsparks &Nflying.
+&+YG&+gi&+Lmbr&+gi&+Gn&N swings his &+chammer&N, pounding a rare piece of &+More&N, sending &+Ymagical &+Bsparks &Nflying.
 ~
 M
 qc_action 160~
-&+YG&+gi&+Lmbr&+gi&+Gn grins as he begins shaping a strange piece of &+More &Nwith his &+chammering &+Lprocess&N.
+&+YG&+gi&+Lmbr&+gi&+Gn &Ngrins as he begins shaping a strange piece of &+More &Nwith his &+chammering &+Lprocess&N.
 ~
 M
-qc_action 600~
+qc_action 200~
 &n&+LOutside the distant walls of &N&+cAlatorin&+L, the thunderous roar of a dragon resonates through the atmosphere.
 ~
 MA
 hi hello~
-&N$n smiles at $N and says 'Greetings.'
-&NHe continues a few more deep &N&+msmashes &Nwith his thick-handled &+chammer&N and turns, facing &N to speak.
-'I would say that you have traveled a great distance to &+cAlatorin&N just as I have, $N.  I am a traveler as well, perhaps we can benefit from one another?' He says he with a grin.
-'I am seeking rare and precious ore, and I'm not talking about platinum or mithril' he says, smirking, 'There are precious metals that are rare found in these realms, do you know much of ore?'
-~
-MA
-ore ores~
-&NA serious look on his face, $n says 'There are three types of precious ore that I seek, that can be found by such an able-bodied traveler like yourself $N.'
-some &Nen&+Wdu&Nri&Num &+Lore&N
-&+Csome &+Lblackrock &+Core&N
-&+Lsome &+Mnether &+Lore&N
-'The Twin Worlds,' &n says, his eyes growing wider, 'These ores can only be found through the barrier between the Twin Worlds.  If, in your most impressive and experienced travels, you come across any of this ore, you now know who to think of first!.'
-&N$n grins, shakes hands with $N, and continues with his work during his limited stay in &N&+cAlatorin&N.
-~
-MA
-alatorin~
-&N$n says 'Alatorin!'
-Smiling at $N, $n continues 'I love my shield dwarf cousins here.'
-~
-MA
-bracelet bracelets~
-&N$n smils at $N and shakes his shiny, elaborate &+Wbracelets &Nin $N's face.
-&N$n says 'I make these bracelets myself out of a few select, rare ores!'
+&N$n says &+Y"Gimbrin's the name. Smithin's the game. I work with metal
+&+Ymaterials, ye know, from salvaging armor? Here's what I can do:
+
+&+YGive me eight pieces of the same top tier metal materials, &+mso&+Mme &+mte&+Mmp&+mer&+Med&N
+&+mmit&+Mhri&+ml ar&+mmo&+Mr&+Y, so I know what I'm workin with, and &Nfifty &+Wplatinum coins
+&+Yfor me efforts, and I'll smith ye somethin' boundta' knot their beards!'
+&+Y'If it's a premium metal,' &N$n &Nadds &+Y'Add a &+Rgn&+romi&+Rsh &+Lshopkeepers token&+Y.'
+
+iron : &+ca rare piece of &+Bcold-&+Ciron&N
+steel : rare piece coldsteel cold steel
+brass : &+ya rare piece of magical brass&N
+bronze : &Na rare piece of &+yb&nl&+ye&ns&+ys&Ne&+yd bronze&N
+copper : &+ya rare piece of enchanted c&No&+yp&Np&+ye&Nr&N
+silver : &+Ca rare piece of magical silver&N
+&+Y*&Nelectrum : &+Wa rare piece of glowing electrum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&Ngold : &+Ya rare piece of g&+Wl&+Yi&+Wt&+Yt&+We&+Yr&+Wi&+Yn&+Wg &+Ygold&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&Nplatinum : &+Wa rare piece of glowing platinum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&Nmithril : &+Can ancient chunk of dwarven mithril&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&Nadamantium : &+Lsome ancient &+ma&+Ld&+ma&+Lm&+ma&+Ln&+mn&+Lt&+mi&+Lu&+mm&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+
+&+YFor example: give me eight &+crare pieces of &+Bcold-&+Ciron&+Y, &+mso&+Mme te&+mmpe&+Mred&+m mit&+Mhr&+mil
+&+Mar&+mmpla&+Mtes&+Y from Steelgrip's Depot, and &Nfifty &+Wplatinum coins&+Y, and I'll smith
+&+Yfor ye some special armplates!'
+&+YGive me eight &+Lsome ancient &+ma&+Ld&+ma&+Lm&+ma&+Ln&+mn&+Lt&+mi&+Lu&+mm&N, &+mso&+Mme te&+mmpe&+Mred &+mmit&+Mhril &+mbo&+Mots&+Y,
+&Nfifty &+Wplatinum coins&+Y, and &+La &+Rgn&+romi&+Rsh &+Lshopkeepers token&+Y, and I'll smith
+&+Yfor ye some REALLY special boots!'"
 ~
 QA
-&N$n gracious takes the ore and works away, creating a beautiful masterpiece.
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
 ~
-R I 83314
-G I 78422
+R I 83631
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 83189
+G C 50000
 QA
-&N$n accepts the ore and crafts a beautiful, masterfully-crafted creation!
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
 ~
-R I 83315
-G I 78463
+R I 97092
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 83188
+G C 50000
 QA
-&N$n quickly forges the &+More&N, crafting a master creation.
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
 ~
-R I 83316
-G I 78485
+R I 97051
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 97052
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83632
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 400114
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83631
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 97092
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 97051
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 97052
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83632
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 400124
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83637
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83636
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83633
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83635
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83634
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 400129
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83638
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83639
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83640
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83641
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83642
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 400134
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83643
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83644
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83645
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83646
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83647
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 400139
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83648
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83649
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83650
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83651
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83652
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 400144
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83653
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83654
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83655
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83656
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83657
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 400154
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83658
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83659
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83660
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83661
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83662
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 400149
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83663
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83664
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83665
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83666
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83667
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 400184
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83668
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83219
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83669
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83670
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83671
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 400189
+G I 83192
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83672
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 83189
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83673
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 83188
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83674
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 83190
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83675
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 83191
+G C 50000
+QA
+&N$n &ndrops the &+cm&+Ce&+ct&+Ca&+cl&n materials into a huge, &+Yg&+Rl&+rowi&+Rn&+Yg&+L crucible.
+After several minutes, the smelting process complete, $n pours it
+into some casts and begins the &+Lhammering &nprocess.
+
+An hour later, after a magnificent display of &+Ys&+rm&+Yi&+rt&+Yh&+re&+Yr&+ry, $n proudly
+runs a rag across his completed creation and hands it to $N.
+~
+R I 83676
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 400199
+G I 83192
+G C 50000
 S
 #83294
 M
@@ -1759,24 +4500,28 @@ qc_action 200~
 ~
 MA
 hi hello~
-&+Y'Greetings,' &N$n says, &+Y'Are you interested in the designs and teachings of the master blacksmith?'
-With a boasting smile, $n chuckles and continues &+Y'If you wish to learn the ways and gain the graces of me, $N, you will need to complete a task.'
-&+Y'Have you mined the lands of Duris?  The realms pose some of the finest ore right from the ground.  You may also unearth some &N&+yrolled up parchment &+Yin your travels.  These &N&+yparchments &+Ycontain ancient knowledge.  Bring me &+Wten &+Yof these parchments and I will reward you with a token of your accomplishments.'
+&+Y'Greetings,' &N$n says, &+Y'Are you interested in the designs
+and teachings of the master blacksmith?'
+
+With a boasting smile, $n chuckles and continues &+Y'If you wish to learn
+&+Ythe ways and gain the graces of me, $N, you will need to complete a task.'
+&+Y'Have you mined the lands of Duris?  The realms pose some of the finest
+&+Yore right from the ground.  You may also unearth some &N&+yrolled up parchment
+&+Yin your travels.  These &N&+yparchments &+Ycontain ancient knowledge.
+&+YBring me &+Wone &+Yof these parchments and I will reward you with a token of
+&+Yyour accomplishments. You might find a &+yti&+Yght&+yly &+Lrolled &+yvellum &+Yrecipe &+Ywhen you
+&+Ysalvage your items. Bring me one of these &+Yrecipes &+Yand I will reward you.'
 ~
 QA
 &N$n graciously scoops up the stack of &+yparchments &Nand thanks $N in appreciation.
 ~
 R I 83317
 G I 251
-G I 251
-G I 251
-G I 251
-G I 251
-G I 251
-G I 251
-G I 251
-G I 251
-G I 251
+QA
+&N$n bows deeply before $N and says &+YWell done.'
+~
+R I 83317
+G I 400210
 S
 #83296
 M
@@ -1800,6 +4545,7 @@ QA
 &NHungrily gathering up the &+Yore&N, $n graciously hands $N his token of appreciation.
 ~
 R I 83318
+R I 83317
 G I 400280
 G I 400277
 G I 400274
@@ -1893,57 +4639,57 @@ ulster~
 QA
 &N$n says 'Excellent work, here you are!'
 ~
-R C 25957
+R C 100000
 G I 91049
 QA
 &N'Excellent work, here you are!'
 ~
-R C 11682
+R C 75000
 G I 44404
 QA
 &N$n says 'Excellent work, here you are!'
 ~
-R C 11484
+R C 60000
 G I 44407
 QA
 &N$n says 'Great work, here you is!'
 ~
-R C 25602
+R C 100000
 G I 44410
 QA
 &N$n says 'Great work, $N!'
 ~
-R C 10200
+R C 60000
 G I 80804
 QA
 &N$n says 'Thanks $N!'`
 ~
-R C 13362
+R C 75000
 G I 81403
 QA
 &N$n says 'Great work $N!  You did it!'
 ~
-R C 9108
+R C 50000
 G I 98505
 QA
 &N$n nods at $N.
 ~
-R C 11088
+R C 60000
 G I 43141
 QA
 &N$n says 'Way to go $N!'
 ~
-R C 4434
+R C 35000
 G I 500009
 QA
 &N$n says 'Thank you thanks thankie thank $N!'
 ~
-R C 5594
+R C 35000
 G I 97549
 QA
 &N$n says 'Glorious!'
 ~
-R C 7782
+R C 40000
 G I 80808
 S
 #83306
@@ -2004,7 +4750,7 @@ QA
 &NA look of glee fills $n's eyes.
 ~
 R I 83372
-R C 50000
+R C 2000000
 R I 83463
 G I 78442
 G I 78443
@@ -2183,12 +4929,16 @@ silver dragon scale scales chromium dragonscales dragonscale~
 &NCracking his knuckles, $n continues '&+WI work in three types of scale - &Nc&+Wh&+Cr&+Rom&+Ci&+Wu&Nm &+Ldragon&N&+cscale&+W, which can be found amongst the rare chromium dragons around the realms, special &+Wsil&+Cv&N&+cer dragonscales &+Wfound from the &+Csilver dragons &+Wof &N&+yShan&+La&n&+yt&+La&N&+yr&+W, as well as common &+Ldragon scales &+Wfound on any dragon.'
 &N$n spits on his hands, rubs them together, and grips his hammer.
 &+W'I forge these scales with my hammer, here, onto tempered mithril that Steelgrip makes.'
+
+&NAfter a moment, $n whispers &+W'Don't forget to ask me about &+Ysalvaged&+W dragonscales.'
 ~
 MA
 hi hello~
 &N$n says '&+WGreetings.  With a piece of &N&+mte&+Mmp&N&+mer&N&+med mithril &+Warmor and some particular &+Ldragon&N&+csc&+Lal&N&+ces&+W, I can forge you some very powerful equipment.'
+
+&N$n peers closer at $N and says &+W'Or, ye could ask me about &+Csalvaged&+W dragonscales!'
 ~
-M
+MA
 forge equipment mithril breastplate platemail arm leg plates helmet~
 &n$n nods at $N and says &+W'Simply give me one of the following:
 &+Mso&N&+mme te&+Mmper&N&+med &+Cmithril &n&+ma&+Mrm plates&N
@@ -2199,9 +4949,12 @@ forge equipment mithril breastplate platemail arm leg plates helmet~
 &+W...and one of the following:
 &+Lsome &+Wc&Nh&+Cr&+Rom&+Ci&+Wu&Nm &+Ld&+Cr&+La&+Cg&+Lo&+Cn&n&+cscales&N
 &+Wsome sil&+Cv&N&+cer dragonscales&N
+&+Ba blue dragonling wing &Nx4 (plus one &+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
 &+La dragon scale&N x4
 
 &+W...and 100 platinum coins for my smithing fee, and I will imbue that &N&+mmi&+Mthr&N&+mil &+Warmament with that &+Ldragon&+Cs&N&+cc&+Ca&N&+cl&+Ce&+W.
+
+&+W'Don't forget to ask me about &+Csalvaged&+W dragonscales!' &N$n adds with a wink.
 ~
 MA
 steelgrip~
@@ -2214,6 +4967,47 @@ qc_action 300~
 MA
 blacksmith smith~
 &N$n nods at $N and says &+W'You may have heard of me for my dragonscale craft.'
+~
+MA
+salvage salvaged shadow red blue green metallic cloak~
+&N$n grins at $N and says &+W'Brother, we take em all!'
+&+W'Bring me any green, blue, red, or metallic dragonscales ye find!'
+&+W'...but if ye find any shadow dragonscales, I can make ye something
+&+Wtruly special!' &Nhe adds with a glint of excitement in his intense eyes.
+
+&+W'Bring me six &+Lshadow dragonscales &+Wand a &+Rgn&+romi&+Rsh &+Lshopkeepers token&+W,
+&+Wand don't forget me 100 platinum fee, $N!' $n grunts.
+~
+M
+qc_action 150~
+&N$n continues chatting while working &+W'Aye, some say old Noroth
+&+Whas returned. Ye know what I say to that?'
+&N$n gestures towards the &+Yanvil and delivers a thunderous smash.
+~
+M
+qc_action 150~
+&N$n continues smithing and says to the room &+W'Even if old Rringlor
+&+Wwas alive, Taark would split his skull all over again!'
+&N$n snorts and continues hammering.
+~
+MA
+qc_action 150~
+&N$n looks up and wipes some sweat from his brow.
+After a few minutes of slowing his breath, $n continues smithing.
+&+W'Besides..' &Nhe grumbles to himself, hammering away, &+W'dragons
+&+Wlike Noroth Rringlor wouldn't return to Alatorin, not after the
+&+Wbeating old Taark gave em last time!'
+~
+MA
+alatorin taark shanat rringlor noroth~
+Without looking up from his smithing, $n responds to $N between
+heavy-handed thwacks on the anvil, &+W'Aye. King Taark took the
+&+Wheads of that beast, Rringlor Noroth, and he'd do it again!'
+
+&NAfter a much louder smash than normal, $n continues &+W'Listen $N,
+&+Wif Rringlor e're shows up again, bring -me- one of 'is heads.
+&+WSo ye know I'm serious about it, bring me two &+rgn&+Romi&+rsh &+Lshop-
+&+Lkeepers tokens &+Wwith it, and I'll make ye somethin special!'
 ~
 QA
 &N$n takes the &+Wscales &N&+mand tosses the &+Cmithril &N&+marmor &ninto the forge.
@@ -2311,6 +5105,111 @@ G I 83188
 G I 392
 G I 392
 G I 392
+QA
+&N$n greedily snatches the &+Wplatinum &Nfirst, counting every coin twice.
+&NContent, he takes the &+Ldragonscales &Nand expresses a look of admiration.
+
+&NAfter what seems like hours of continuous heating, pounding, and re-heating,
+&N$n presents $N with &+La shadowy cloak&N.
+~
+R I 41204
+G I 400204
+G I 400204
+G I 400204
+G I 400204
+G I 400204
+G I 400204
+G I 55033
+G C 100000
+QA
+&N$n smelts the &N&+mtempered &+Cmithril&+L, emblazoning it with &+Cdragonscales.
+~
+R I 31544
+G I 78414
+G I 78414
+G I 78414
+G I 78414
+G I 83188
+G I 55033
+G C 100000
+QA
+&N$n smelts the &N&+mtempered &+Cmithril&+L, emblazoning it with &+Cdragonscales.
+~
+R I 83629
+G I 78414
+G I 78414
+G I 78414
+G I 78414
+G I 83189
+G C 100000
+G I 55033
+QA
+&N$n smelts the &N&+mtempered &+Cmithril&+L, emblazoning it with &+Cdragonscales.
+~
+R I 78415
+G I 78414
+G I 78414
+G I 78414
+G I 78414
+G I 83190
+G I 55033
+G C 100000
+QA
+&N$n smelts the &N&+mtempered &+Cmithril&+L, emblazoning it with &+Cdragonscales.
+~
+R I 83347
+G I 78414
+G I 78414
+G I 78414
+G I 78414
+G I 83191
+G I 55033
+G C 100000
+QA
+&N$n smelts the &N&+mtempered &+Cmithril&+L, emblazoning it with &+Cdragonscales.
+~
+R I 83436
+G I 78414
+G I 78414
+G I 78414
+G I 78414
+G I 83192
+G I 55033
+G C 100000
+QA
+&N$n snatches the &+Cdragonscale &Nfrom $N and says &+W'Good!'
+~
+R C 50000
+R E 5000
+G I 400200
+QA
+&N$n snatches the &+Cdragonscale &Nfrom $N and says &+W'Good!'
+~
+R C 100000
+R E 10000
+G I 400201
+QA
+&N$n snatches the &+Cdragonscale &Nfrom $N and says &+W'Good!'
+~
+R C 150000
+R E 15000
+G I 400202
+QA
+&N$n snatches the &+Cdragonscale &Nfrom $N and says &+W'Good!'
+~
+R C 200000
+R E 20000
+G I 400203
+QA
+&N$n gasps in disbelief the moment $N unveils the &+rbloody head&n.
+&+W'So it's true!' &Nhe gasps &+W'Ye have slain the beast!'
+&NAfter several hours of grueling smithing, $n presents a &+Chelm.
+~
+R I 83610
+R E 500000
+G I 120059
+G I 55033
+G I 55033
 S
 #83348
 MA
@@ -2348,12 +5247,13 @@ QA
 ~
 R E 300000
 R C 1000000
+R I 83250
 G I 83539
 QA
 &N$n applauds $N and says 'Excellent work, $N!'
 Gathering the heads, he continues 'Please, as a token of service to Alatorin, take this medal of honor and your reward money.'
 ~
-R C 500000
+R C 1000000
 R I 83250
 R E 200000
 G I 83255
@@ -2361,9 +5261,6 @@ G I 83300
 G I 83323
 G I 83276
 G I 83387
-D
-&N$n bows at $N and concludes 'I will report these acts of chivalry to the king.'
-~
 S
 #83350
 MA
@@ -2393,6 +5290,7 @@ QA
 ~
 R C 2500000
 R E 500000
+R I 400233
 G I 83414
 D
 &N$n says &+y'Enjoy your reward.  Your eternal... reward...'
@@ -2446,6 +5344,7 @@ QA
 ~
 R E 500000
 R C 2500000
+R I 400233
 G I 83415
 D
 &N&+r'Enjoy your reward' he says 'Your eternal reward.'
@@ -2629,6 +5528,16 @@ qc_action 400~
 &+WA huge fat disgusting dwarf finishes off a large plate of food and promptly swabs up the remaining fat and juices on his plate with a whole loaf of bread.
 &+WA huge fat disgusting dwarf stuff the juice-soaked bread into his mouth.
 ~
+MA
+hi hello~
+&N$n &+Wbelches loudly at $N.
+&+W'You the waiter? Got mah food?' &Nhe pants.
+~
+MA
+waiter food yes no torin alatorin cooked cook steak soup ribs~
+&N$n &+Wnods at $N.
+&+W'If it's cooked here in 'Torin.. I'll take the lot of it!' &N$n says.
+~
 QA
 &+WHis mouth salivates as $n grabs the &N&+Rmeat &+Wand wastes no time ripping and biting.
 ~
@@ -2647,27 +5556,27 @@ G I 83117
 QA
 &n$n smiles at $N and picks apart the &+Rribs &None at a time, devouring the meat on each and licking the &+Wbones &Nclean from tip to tip.
 ~
-R E 1500
+R E 4000
 G I 83143
 QA
 &N$n takes the &N&+rrib nuggets &Nand picks them apart, gnawing off all the succulent &+Rmeat &None piece at a &N&+ytime&N.
 ~
-R E 1500
+R E 4000
 G I 83221
 QA
 &N$n rips off length after length of sticky &+Ltheezak &N&+rrib &nwith his huge, &+ystained &Nteeth.  Savoring every bite, he quickly chews and bites the rib meat going from one &+Wbone&N to the next.
 ~
-R E 1500
+R E 4000
 G I 83169
 QA
 &N$n pulls out a huge &N&+ydirty &+cmetal fork &Nand begins shoveling the &N&+ymash &ninto his mouth; huge strands of &+Ycheese &Nstretch down to his dish.
 ~
-R E 4000
+R E 2000
 G I 83168
 QA
 &N$n reaches in and grabs handful after handful of &+yfish 'n chips&N, stuffing the greasy &+Lf&+yr&+Li&+ye&+Ld &N&+yfoods &Ninto his wanting &+Mmouth&N.
 ~
-R E 4500
+R E 2000
 G I 83170
 QA
 &N$n &Ngulps the &+Ysoup &Ndown with several huge, &+Y_mighty_ &Nchomps, slurping, burping, and gargling as he goes.
@@ -2679,6 +5588,21 @@ QA
 ~
 R E 5000
 G I 83225
+QA
+&N$n &+Wsnatches the &+Ysoup&+W from &+r$N &+Wand wastes no time devouring it in seconds!
+~
+R E 60000
+G I 83482
+QA
+&N$n &+Wsnatches the &+Ysoup&+W from &+r$N &+Wand wastes no time devouring it in seconds!
+~
+R E 75000
+G I 83483
+QA
+&N$n &+Wgreedily snatches the &+Rs&+rt&+Re&+ra&+Rk&+W from &+r$N &+Wand devours it in two bites.
+~
+R E 3000
+G I 120035
 S
 #83385
 MA
@@ -2699,6 +5623,124 @@ QA
 ~
 R I 83495
 G I 37117
+S
+#83391
+MA
+hi hello~
+&N$n blushes and says &+M'Well, hi!' and twirls cheerfully.
+&+M'Have you come here for crafting?  I combine top-tier material
+&+Mcomponents, (ya know, from salvaging?), with &+Rgn&+romi&+Rsh &+Lshopkeeper
+&+Ltokens&M to create really special things! Here's what I got:
+
+&+Y*&+ysoft wood&N: &+ya shingle of &+Rancient timber &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
+&+Y*&+yhard wood&N: &+ga plank of &+Cb&+gl&+Ce&+gs&+Cs&+ge&+Cd&+g hardwood &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
+&+Y*&+yraw leather&N: &+Lsome e&+mn&+Lc&+mh&+La&+mn&+Lt&+me&+Ld black leather &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
+&+Y*&+yleather&N: &+ysome e&+Yn&+yc&+Yh&+ya&+Yn&+yt&+Ye&+yd raw leather &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
+&+Y*&Ncloth: &+Lsome &+mr&+Lu&+mn&+Le-c&+mo&+Lv&+me&+Lr&+me&+Ld &+Msilk &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
+&+Y*&+gcrystal&N: &+ca moon&+Lstone &+Ccrystal &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
+
+&+MFor example: bring me eight &+gancient planks of b&+Cl&+ge&+Cs&+gs&+Ce&+gd hardwood &+Mand &+Ltwo &+Rgn&+romi&+Rsh &+Lshopkeepers
+&+Ltokens&+M and &Ntwo hundred &+Wplatinum coins&+M for something special!
+
+&+MOr, bring me eight &+Lsome &+mr&+Lu&+mn&+Le-c&+mo&+Lv&+me&+Lr&+me&+Ld &+Msilks&+M and &+Ltwo &+Rgn&+romi&+Rsh &+Lshopkeeper tokens
+&+Mand &Ntwo hundred &+Wplatinum coins&+M for something special!
+~
+QA
+&N$n claps cheerfully and gets to work.
+After several minutes of tinkering, fiddling, widdling and a fair
+share of &+mm&+ba&+mg&+bi&+mc&N, $n completes her craft.
+~
+R I 83605
+G I 400044
+G I 400044
+G I 400044
+G I 400044
+G I 400044
+G I 400044
+G I 400044
+G I 400044
+G I 55033
+G I 55033
+G C 200000
+QA
+&N$n claps cheerfully and gets to work.
+After several minutes of tinkering, fiddling, widdling and a fair
+share of &+mm&+ba&+mg&+bi&+mc&N, $n completes her craft.
+~
+R I 83605
+G I 400054
+G I 400054
+G I 400054
+G I 400054
+G I 400054
+G I 400054
+G I 400054
+G I 400054
+G I 55033
+G I 55033
+G C 200000
+QA
+&N$n claps cheerfully and gets to work.
+After several minutes of tinkering, fiddling, widdling and a fair
+share of &+mm&+ba&+mg&+bi&+mc&N, $n completes her craft.
+~
+R I 83607
+G I 400064
+G I 400064
+G I 400064
+G I 400064
+G I 400064
+G I 400064
+G I 400064
+G I 400064
+G I 55033
+G C 200000
+QA
+&N$n claps cheerfully and gets to work.
+After several minutes of tinkering, fiddling, widdling and a fair
+share of &+mm&+ba&+mg&+bi&+mc&N, $n completes her craft.
+~
+R I 83607
+G I 400049
+G I 400049
+G I 400049
+G I 400049
+G I 400049
+G I 400049
+G I 400049
+G I 400049
+G I 55033
+G C 200000
+Q
+&+mr&+Lu&+mn&+Le-c&+mo&+Lv&+me&+Lr&+me&+Ld
+~
+R I 83677
+G I 400094
+G I 400094
+G I 400094
+G I 400094
+G I 400094
+G I 400094
+G I 400094
+G I 400094
+G C 200000
+G I 55033
+G I 55033
+QA
+oh yes
+~
+R I 83678
+G I 400019
+G I 400019
+G I 400019
+G I 400019
+G I 400019
+G I 400019
+G I 400019
+G I 400019
+G C 200000
+G I 55033
+G I 55033
 S
 #83392
 MA
@@ -2775,6 +5817,7 @@ QA
 ~
 R I 38779
 R I 83450
+R E 500000
 G I 31538
 QA
 &N$n grins and takes the &+Lpsychomia&N.
@@ -2790,6 +5833,16 @@ S
 M
 qc_action 250~
 &n&+ySeveral halflings are heard shouting at one another somewhere in the Port.
+~
+S
+#83395
+M
+qc_action 150~
+&N$n snorts at you and growls &+r'Scram! This don't concern you!'
+~
+M
+qc_action 150~
+&N$n glares at you and grumbles to himself.
 ~
 S
 #83406
@@ -2824,6 +5877,23 @@ G I 20253
 G I 42948
 D
 &n&+r'Take this ring,'&N he says, before disappearing into the shadows.
+~
+S
+#83415
+M
+hi hello~
+&+WThe blazing avatar of Vergadain says 'Everything has a price, traveler.
+&+WThe heart of Dhalnagar, the shard of the First Mountain, ensure your
+&+Wcurrency won't fail when the bargaining starts..'
+~
+Q
+~
+R I 83626
+R I 83308
+R I 400234
+G I 83626
+D
+&+WThe blazing avatar of Vergadain bows and flashes out of existence.
 ~
 S
 #83419
@@ -2917,12 +5987,15 @@ deramuth~
 &N&+yThe halfling says 'Bastard..'
 ~
 QA
-&N&+yThe halfling says '$N... thank you.'
+&N&+yThe halfling wiggles free and sobs at his stumps in disbelief.
+&+r'Here is what they were after...' &+yhe groans, kicking a &+Lchest&N
+over to $N.
 ~
 R E 115000
+R I 400233
 G I 83481
 D
-&N&+yThe halfling clambers to his feet, and then staggers out the gates.
+&N&+yThe halfling clambers to his feet, and then staggers through the gates.
 ~
 S
 #83422
@@ -3084,6 +6157,7 @@ QA
 ~
 R C 300000
 R E 250000
+R I 400233
 R I 83250
 G I 500021
 D
@@ -3198,7 +6272,7 @@ G I 83118
 QA
 &N$n exclaims &+y'Great work, $N!  You should try smugglin'!
 ~
-R C 100000
+R C 250000
 R E 100000
 G I 55247
 S
@@ -3231,7 +6305,7 @@ QA
 &N$n grins wickedly and dumps the &N&+rbloody hearts&N into a &+yheavy sack&N.
 &+Y'Well done,' &Nthe assassin whispers, moments before disappearing into the shadows.
 ~
-R C 50000
+R C 2000000
 R I 83463
 R I 83504
 G I 78444
@@ -3388,6 +6462,15 @@ qc_action 500~
 &N$n licks his &+rbloody &Nclaws clean.
 ~
 S
+#83463
+MA
+hi hello~
+&N$n scowls at $N and his eyes begin to &+Rglow with hateful magic&N.
+&NA nearby &+cAlatorin &+Wp&+Le&+Wa&+Lc&+We&+Lk&+We&+Le&+Wp&+Le&+Wr&N suddenly interrupts the brooding confrontation.
+&+c'Apologies, Elder Hargorigard. This little one's not worth the trouble.' &Nhe says,
+slipping a small token to the duergar before casting his own scowl at $N.
+~
+S
 #83471
 M
 qc_action 500~
@@ -3428,5 +6511,235 @@ $n &ngroans, clutching his stomach in pain.
 M
 qc_action 400~
 &N$n tightens a handmade &+Wbandage &Naround his arm and lets out a gut-wrenching &+Rshriek &Nof pain.
+~
+QA
+&N$n waves off the &+Wbandage&N and says &+Y'No, somethin' bigger!'
+~
+R I 393
+G I 393
+QA
+&N$n waves off the &+Wbandage&N and says &+Y'No, somethin' bigger!'
+~
+R I 363
+G I 363
+QA
+&N$N offers to help $n bandage his &+rwounds&N but the stubborn &+YDwarf &Nrefuses
+&Nand snatches the &+Wtourniquet&N himself, biting one end to tie it around his
+arm.
+
+&+YBorik &Nattempts to &+Wbandage&N &+YBorik&N
+&+g<>
+
+&+YBorik&N continues to &+Wbandage &NBorik&N
+&+YBorik&N curses under his breath as the &+Wbandage&N breaks!
+&+YBorik&N stops &+Wbandaging&N.
+
+&N$n grimmaces and says &+Y'No, somethin' bigger!'
+~
+R E 1500
+G I 368
+S
+#83492
+M
+qc_action 250~
+&N$n &+yhoists the rocky protrusions that make up his arms slowly before swinging
+&+ydownward with an abrupt might that stops suddenly without consequence.
+~
+M
+qc_action 250~
+&N$n &+yslowly lumbers a few 'paces,' its earthen legs forming and detaching
+&+ywith the rocky cavern floor as it slowly grinds into its next mining position.
+~
+S
+#83494
+MA
+hi hello taark shanat shanatar alatorin business~
+&N$n snorts at $N and says &+Y'Yer business be yers. Mine be mine.'
+~
+MA
+jedd~
+&N$n peers inquisitively at $N.
+&+Y'Aye, m'brother. King Taark could use'm. It's a shame, $N!'
+
+&N$n shakes his head and continues &+Y'Strong as we are, dwarves be
+&+Yhatin' magical folk! Not Jedd. Jedd learn'd how'ta use it. Embraced
+&+Yit, he did!'
+
+&N$n ponders for a moment and then snaps &+Y'I know what ye can do!
+&+YGet Jedd's book! He wrote the story.. be bringin' it to me, $N,
+&+Yand I'll pay ye!'
+~
+QA
+&N$n quickly snatches the &+Ytome &Nand opens it.
+~
+R I 400233
+R I 83250
+G I 83270
+D
+&N$n squints, rotating the &+Ytome&n, flipping it upside down, and finally
+relenting &+Y'I can'na read!'
+
+&+YTome&N in hand, $n &Ncontinues analyzing the words as he shuffles out
+of the chamber and into the throne room, hoping the &+Cking&N is more well-versed
+in written language than he.
+~
+S
+#83495
+MA
+hi hello~
+&N$n turns slowly to $N and mimes a &+R'throat-slit'&N gesture.
+~
+S
+#83503
+M
+qc_action 200~
+&+yThe creaky, crashing sounds of an earth elemental echo through the halls.
+~
+M
+qc_action 200~
+A distant call-and-repeath can be heard amongst several militaristic dwarves.
+~
+M
+qc_action 75~
+&N$n shuffles through the citadel, cleaning up after the officers and royalty.
+~
+M
+qc_action 200~
+&+LYou feel as if something brushed passed you.
+~
+S
+#83504
+MA
+hi hello~
+&N$n glares icily at $N and snorts &+R'Speak to me again, and I'll rip out your tongue and eat it!'
+~
+S
+#83508
+M
+hi hello~
+&+WThe blazing avatar says 'Life persists even in the fire, little flame;
+&+Wbring a compassionaite spirit to the First Mountain, and find its kin
+&+Win you, as you will find the shard for me.'
+~
+Q
+~
+R I 83626
+R I 400233
+R I 400234
+G I 83626
+D
+&+WThe blazing avatar of Shardindlar curtseys and flashes out of existence.
+~
+S
+#83509
+MA
+hi hello~
+&N$n grunts at $N wearily and says &+Y'Aye, well met. Ye lookin to join?
+&+YWe needin' men fit to swing an axe if we finna take on the next mark.'
+&Nhe says, spitting at the floor before your feet.
+
+&+Y'So what'll it be?' &Nhe challenges $N.
+~
+MA
+yes mark swing axe join fit target bounty men~
+&N$n's expression jumps to elation and he pats $N on the back.
+&+Y'Welcome aboard!' he bellows, as his entourage matches his
+newfound affability.
+
+Several hours pass as $N and $n travel through &+cAlatorin&N, beer-hunting
+much until the dawn hours, exchanging anecdotes of their each other's
+triumphs and adventures. The bounty-hunting would wait until the next
+day (and late into it), when the two regain their abilities.
+
+&+Y'Let's go, boys.' $n grunts, returning to coldness.
+&+Y'We attack the trogs all at once. No games. No prisoners.
+&+YWe find the king - we take his head! If one if ye gets to him
+&+Yfirst, aim here..'&N he says, lifting his titanic beard and
+gesturing along his veiny throat, &+Y'and be bringin the head
+&+Ystraight back to me. Now move!' &Nhe orders, and you are off.
+~
+QA
+&N$n snatches the &+Rhead&N from $N and holds it high for all to see.
+In a booming voice, he announces to his company of mercenaries:
+&+Y'Be it known, on this day, with Moradin's witness, the trog king is dead!'
+
+&nA roar of cheers fills every chamber of Alatorin.
+&N$n approaches $N and pulls out his massive &+mcudgel.&N
+&+Y'Here ye go! Ye be the real Trog-Thumper, now!'&N
+~
+R I 83616
+R I 55033
+R E 500000
+R C 1000000
+G I 83509
+S
+#83517
+M
+hi hello~
+&+WThe blazing avatar of Abbathor says 'You seek the greatest treasure
+&+Wof all, do you not? Grasp it tightly, for what is gathered must be
+&+Wguarded, and what is desired must be taken. I will take the heart
+&+Wof the First Mountain.'
+~
+Q
+~
+R I 83626
+R I 83617
+R I 400234
+G I 83626
+D
+&+WThe blazing avatar of Abbathor bows and flashes out of existence.
+~
+S
+#83518
+M
+hi hello~
+&+WThe blazing avatar of Clangeddin Silverbeard says 'Only those with
+&+Wthe mettle of a warrior may claim the First Mountain's bone! Show
+&+Wme a spirit that does not flinch before the fire!'
+~
+Q
+~
+R I 83626
+R I 400233
+R I 400234
+G I 83626
+D
+&+WThe blazing avatar of Clangeddin Silverbeard bows and flashes out of existence.
+~
+S
+#83519
+M
+hi hello~
+&+WThe blazing avatar of Berronar Truesilver says 'The Rift is the cradle
+&+Wof our people, $N; the shard of the First Mountain brings not only glory,
+&+Wbut reinforces the foundations of every dwarven home.
+~
+Q
+~
+R I 83626
+R I 94726
+R I 400234
+G I 83626
+D
+&+WThe blazing avatar of Berronar Truesilver curtseys and flashes out of existence.
+~
+S
+#83521
+M
+hi hello~
+&+WThe blazing avatar of Moradin says 'You stand at the beginning
+&+Wof all things, where the first spark met the first stone. If you
+&+Wbe of true craft and tempered soul, take up the shard of the First
+&+WMountain and forge the future of the Deep Realms.'
+~
+Q
+~
+R I 83626
+R I 14126
+R I 400234
+G I 83626
+D
+&+WThe blazing avatar of Moradin bows and flashes out of existence.
 ~
 S

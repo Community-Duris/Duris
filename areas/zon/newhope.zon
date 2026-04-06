@@ -2,7 +2,7 @@
 &+wThe &+bVil&+rla&+bge &+wof &+bNe&+rw Ho&+bpe&n~
 89227 2 0 40 50 2
 *
-* Zone edited with durisEdit v2.99de
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 89000 2 1 100 0 0 0
@@ -806,6 +806,11 @@ O 0 89150 1 89227 100 0 0 0        * a set of rusty platemail
 O 0 89151 1 89227 100 0 0 0        * a cracked longsword
 O 0 89152 2 89227 100 0 0 0        * a cracked dagger
 O 0 89152 2 89227 100 0 0 0        * a cracked dagger
+O 0 89145 1 89227 20 0 0 0         * a shimmering blue breastplate
+O 0 89146 1 89227 20 0 0 0         * a dragonclaw shortsword
+O 0 89147 1 89227 20 0 0 0         * a shimmering purple bracer
+O 0 89148 1 89227 20 0 0 0         * a set of shimmering green leggings
+O 0 89149 1 89227 20 0 0 0         * a shimmering red femur
 *
 M 0 89026 4 89000 100 0 0 0        * a human child
 M 0 89027 3 89000 100 0 0 0        * a human female
@@ -1465,8 +1470,8 @@ M 0 89165 1 89179 100 0 0 0        * a troll janitor
 E 1 89137 1 16 100 0 0 0           *   a wet mop
 M 0 89177 3 89180 100 0 0 0        * a githyanki servant
 M 0 89157 1 89181 100 0 0 0        * Daisy
-G 1 89130 1 0 100 0 0 0            *    a marble hammer
-G 1 89132 1 0 100 0 0 0            *    a carved femur of a stupid barb
+E 1 89130 1 16 100 0 0 0           *   a marble hammer
+E 1 89132 1 18 20 0 0 0            *   a runed femur carved into a totem
 M 0 89158 1 89181 100 0 0 0        * Snerga
 E 1 89131 1 7 100 0 0 0            *   leggings carved from minotaur bones
 M 0 89152 4 89182 100 0 0 0        * a patrolling guard
@@ -1485,8 +1490,8 @@ M 0 89182 1 89188 100 0 0 0        * a mummified ogre male
 M 0 89183 1 89188 100 0 0 0        * a mummified ogre female
 M 0 89184 1 89188 100 0 0 0        * a mummified human
 M 0 89156 1 89189 100 0 0 0        * Hammerhead
-G 1 89129 1 0 100 0 0 0            *    the eye of the ogre
 G 1 89019 1 0 100 0 0 0            *    a petrified heart
+G 1 89129 1 0 20 0 0 0             *    the undead eye of an ogre
 M 0 89150 4 89190 100 0 0 0        * a patrolling guard
 M 0 89151 4 89191 100 0 0 0        * a patrolling guard
 M 0 89180 3 89191 100 0 0 0        * a barbarian servant
@@ -1548,7 +1553,7 @@ E 1 89153 1 16 100 0 0 0           *   a darkly glowing two-handed sword
 F 1 89006 1 89211 100 0 0 0        * a bored troll (following)
 E 1 89155 1 13 100 0 0 0           *   a pelt loincloth
 F 1 89007 1 89211 100 0 0 0        * a jittery thri-kreen (following)
-E 1 89156 1 14 100 0 0 0           *   an etched mithral bracer
+E 1 89156 1 14 20 0 0 0            *   an etched mithral bracer
 M 0 89002 3 89212 100 0 0 0        * a striped mongoose
 M 0 89000 4 89213 100 0 0 0        * a desert squirrel
 M 0 89000 4 89213 100 0 0 0        * a desert squirrel
@@ -1563,11 +1568,11 @@ M 0 89002 3 89217 100 0 0 0        * a striped mongoose
 M 0 89001 5 89217 100 0 0 0        * a dung beetle
 M 0 89001 5 89217 100 0 0 0        * a dung beetle
 M 0 89181 1 89220 100 0 0 0        * the tentacler
-G 1 89144 1 0 100 0 0 0            *    the tentacle of the tentacler
+E 1 89144 1 16 100 0 0 0           *   the lash of the tentacler
 G 1 89188 1 0 100 0 0 0            *    a solidified tentacler eye
 M 0 89142 1 89223 100 0 0 0        * Feralis
 E 1 89189 1 13 100 0 0 0           *   a belt of woven dreams
-E 1 89136 1 28 100 0 0 0           *   a snuggly cuddlebunny
+E 1 89136 1 28 20 0 0 0            *   a snuggly cuddlebunny
 F 1 89198 1 89223 100 0 0 0        * a suspicious human (following)
 F 1 89199 1 89223 100 0 0 0        * a wary minotaur (following)
 F 1 89200 1 89223 100 0 0 0        * a scarred dwarf (following)

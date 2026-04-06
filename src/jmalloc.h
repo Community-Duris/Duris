@@ -53,8 +53,8 @@
 */
 
 #define malloc_pointer char *
-#define malloc_size unsigned
-#define free_return int
+#define malloc_size    unsigned
+#define free_return    int
 /*
 ** initializes Malloc package
 ** returns 0 on failure (sbrk() failed)
@@ -113,9 +113,9 @@ void MallocStatistics(int type);
 ** 2: MallocTreeDetails
 ** 3: MallocDetailStats
 */
-#define MallocStatisticTypes 4	/** the # of different malloc statistics **/
+#define MallocStatisticTypes 4 /** the # of different malloc statistics **/
 
-typedef void (*MallocCleaner) (long);
+typedef void (*MallocCleaner)(long);
 
 /*
 ** hires a cleaner

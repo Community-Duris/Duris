@@ -38,9 +38,9 @@
 
      */
 
-#undef JUSTICE_DEBUG            /* define for lots of debugging spam */
+#undef JUSTICE_DEBUG /* define for lots of debugging spam */
 
-#define JUSTICE_AGGRO            /* define to allow justice related attacks */
+#define JUSTICE_AGGRO /* define to allow justice related attacks */
 
 #define JUSTICE_HOUR 75
 #define JUSTICE_DAY  JUSTICE_HOUR * 24
@@ -48,50 +48,53 @@
 /* returns the town num a character is in.  0 means not in a town.  To
    use the return of this macro in a index of the hometowns[] array,
    subtract 1 */
-#define CHAR_IN_TOWN(a) (zone_table[world[(a)->in_room].zone].hometown)
+#define CHAR_IN_TOWN(a)         (zone_table[world[(a)->in_room].zone].hometown)
 #define CHAR_IN_JUSTICE_AREA(a) (world[(a)->in_room].justice_area)
 
 /* Max number of guards that should chase each invader... */
 #define JUSTICE_MAX_GROUP 5
 
 /* flags for hometowns */
-#define JUSTICE_EVILHOME       BIT_1 /* aggro to good races */
-#define JUSTICE_GOODHOME       BIT_2 /* aggro to evil races */
-#define JUSTICE_LEVEL_HARSH    BIT_3 /* no concept of "wanted" just kill them */
-#define JUSTICE_LEVEL_CHAOS    BIT_4 /* no "justice" at all.  just use invador code */
-#define JUSTICE_UNDEADHOME     BIT_5
-#define JUSTICE_NEUTRALHOME    BIT_6
+#define JUSTICE_EVILHOME    BIT_1 /* aggro to good races */
+#define JUSTICE_GOODHOME    BIT_2 /* aggro to evil races */
+#define JUSTICE_LEVEL_HARSH BIT_3 /* no concept of "wanted" just kill them */
+#define JUSTICE_LEVEL_CHAOS BIT_4 /* no "justice" at all.  just use invador code */
+#define JUSTICE_UNDEADHOME  BIT_5
+#define JUSTICE_NEUTRALHOME BIT_6
 
 /* For a given NPC, a, a->npc_only.spec[2] is a set of flags used
    excluseively for justice purposes.  This should be used to let the
    justice code if a mob has any justice purpose, and if so, what it
    is */
 
-#define MOB_SPEC_JUSTICE    BIT_1  /* I'm controlled by justice as a
-                                      justice guard! */
+#define MOB_SPEC_JUSTICE                                                                                                                                                                               \
+	BIT_1 /* I'm controlled by justice as a                                                                                                                                                            \
+	         justice guard! */
 
 /* convienent structure used to keep independent linked lists of
    mobs.*/
-struct justice_guard_list {
-  P_char ch;
-  struct justice_guard_list *next;
+struct justice_guard_list
+{
+	P_char                     ch;
+	struct justice_guard_list *next;
 };
 
 /* An array of of these structures called "hometowns" is created,
    containing one structure for each hometown configured.  */
 
-struct hometown_data {
-  ulong flags;                  /* see the JUSTICE_* flags above  */
-  int report_room;              /* where crimes are reported */
-  int guard_room[5];               /* where I'll load new guards */
-  int guard_mob;                /* mob number of the guards I'm using */
-  int jail_room;                /* Take a guess what this is ;) */
+struct hometown_data
+{
+	ulong flags;         /* see the JUSTICE_* flags above  */
+	int   report_room;   /* where crimes are reported */
+	int   guard_room[5]; /* where I'll load new guards */
+	int   guard_mob;     /* mob number of the guards I'm using */
+	int   jail_room;     /* Take a guess what this is ;) */
 };
 
 /* some externs to keep code that includes justice.h from having to
    declare them as well */
 extern struct hometown_data hometowns[];
-extern const char *town_name_list[];
+extern const char          *town_name_list[];
 
 /* okay... having a fucking huge list of macros for different flags in
    different city's is just plain fucking stupid.  My way, which is
@@ -108,19 +111,16 @@ extern const char *town_name_list[];
 
    */
 
-#define IS_TOWN_INVADER(a,b) (IS_PC(a) ? PC_INVADER(a,b) : NPC_INVADER(a,b))
+#define IS_TOWN_INVADER(a, b) (IS_PC(a) ? PC_INVADER(a, b) : NPC_INVADER(a, b))
 // similar to invader, but goods aren't weclome in evil towns (even if not invaders)
-#define IS_TOWN_NOTWELCOME(a,b) (IS_PC(a) ? PC_NOTWELCOME(a,b) : NPC_INVADER(a,b))
+#define IS_TOWN_NOTWELCOME(a, b) (IS_PC(a) ? PC_NOTWELCOME(a, b) : NPC_INVADER(a, b))
 
-  /* for mobs, I need to make a bunch of macro's to make it easier to
-     read.  someof these might be useful elsewhere (ie: VNUM2TOWN) */
+/* for mobs, I need to make a bunch of macro's to make it easier to
+   read.  someof these might be useful elsewhere (ie: VNUM2TOWN) */
 
+#define VNUM2TOWN(a) ((real_room(a) == -1) ? 0 : zone_table[world[real_room(a)].zone].hometown)
 
-#define VNUM2TOWN(a) ((real_room(a)  == -1) ? 0 : \
-                      zone_table[world[real_room(a)].zone].hometown)
-
-#define BORNHERE(a,b) (VNUM2TOWN(GET_BIRTHPLACE(a)) && \
-                       (VNUM2TOWN(GET_BIRTHPLACE(a)) == b))
+#define BORNHERE(a, b) (VNUM2TOWN(GET_BIRTHPLACE(a)) && (VNUM2TOWN(GET_BIRTHPLACE(a)) == b))
 
 /*#define NPC_INVADER(a,b) (IS_NPC(a) && !TRUSTED_NPC(a) && \
                            (!BORNHERE(a,b) || IS_MORPH(a) || \
@@ -130,21 +130,13 @@ extern const char *town_name_list[];
                                   GOODRACE(a) ? JUSTICE_EVILHOME : 0)))*/
 
 // removed check for dracos, it is performed very ineffectively, and why should alarm sound on just lesser dracos anyways? -Odorf
-#define NPC_INVADER(a,b) (IS_NPC(a) && !TRUSTED_NPC(a) && \
-                           (!BORNHERE(a,b) || IS_MORPH(a)) && \
-                          (IS_SET(hometowns[b - 1].flags, \
-                                  EVILRACE(a) ? JUSTICE_GOODHOME : \
-                                  GOODRACE(a) ? JUSTICE_EVILHOME : 0)))
+#define NPC_INVADER(a, b) (IS_NPC(a) && !TRUSTED_NPC(a) && (!BORNHERE(a, b) || IS_MORPH(a)) && (IS_SET(hometowns[b - 1].flags, EVILRACE(a) ? JUSTICE_GOODHOME : GOODRACE(a) ? JUSTICE_EVILHOME : 0)))
 
+/* need a special ma for dealing with elf-town and invaders */
 
-  /* need a special ma for dealing with elf-town and invaders */
+#define IS_ELFIE(a) ((GET_RACE(a) == RACE_GREY) || (GET_RACE(a) == RACE_CENTAUR) || (GET_RACE(a) == RACE_HALFELF))
 
-#define IS_ELFIE(a) ((GET_RACE(a) == RACE_GREY) || \
-                     (GET_RACE(a) == RACE_CENTAUR) || \
-                     (GET_RACE(a) == RACE_HALFELF))
-
-#define IS_CENTAURIE(a) ((GET_RACE(a) == RACE_GREY) || \
-                         (GET_RACE(a) == RACE_CENTAUR))
+#define IS_CENTAURIE(a) ((GET_RACE(a) == RACE_GREY) || (GET_RACE(a) == RACE_CENTAUR))
 
 /* below code used to be part of PC_INVADER macro..  was replaced with
    similar IS_SET(hometowns[b - 1]...) line */
@@ -155,44 +147,31 @@ extern const char *town_name_list[];
                                   JUSTICE_EVILHOME)) || \
 */
 
-#define PC_NOTWELCOME(a, b) ( IS_PC(a) && !TRUSTED_NPC(a) \
-                            && ( (IS_SET(hometowns[b - 1].flags, JUSTICE_GOODHOME) && !IS_RACEWAR_GOOD(a)) \
-                            || (IS_SET(hometowns[b - 1].flags, JUSTICE_EVILHOME) && !IS_RACEWAR_EVIL(a)) \
-                            || (IS_SET(hometowns[b - 1].flags, JUSTICE_UNDEADHOME) && !IS_RACEWAR_UNDEAD(a)) \
-/*                            || (IS_SET(hometowns[b - 1].flags, JUSTICE_NEUTRALHOME) && !RACE_NEUTRAL(a)) */ ) \
-                            && !( (IS_ELFIE(a) && ((b) == HOME_CHARIN)) || \
-                             (IS_CENTAURIE(a) && ((b) == HOME_MARIGOT)) ) )
+#define PC_NOTWELCOME(a, b)                                                                                                                                                                            \
+	(IS_PC(a) && !TRUSTED_NPC(a) &&                                                                                                                                                                    \
+	 ((IS_SET(hometowns[b - 1].flags, JUSTICE_GOODHOME) && !IS_RACEWAR_GOOD(a)) || (IS_SET(hometowns[b - 1].flags, JUSTICE_EVILHOME) && !IS_RACEWAR_EVIL(a)) ||                                        \
+	  (IS_SET(hometowns[b - 1].flags, JUSTICE_UNDEADHOME) && !IS_RACEWAR_UNDEAD(a)) /*                            || (IS_SET(hometowns[b - 1].flags, JUSTICE_NEUTRALHOME) && !RACE_NEUTRAL(a)) */) &&  \
+	 !((IS_ELFIE(a) && ((b) == HOME_CHARIN)) || (IS_CENTAURIE(a) && ((b) == HOME_MARIGOT))))
 
-#define PC_INVADER(a,b) (IS_PC(a) && !TRUSTED_NPC(a) && !IS_DISGUISE(a) \
-  && ((IS_SET(hometowns[b - 1].flags, JUSTICE_GOODHOME) && (!GOOD_RACE(a))) \
-   || (IS_SET(hometowns[b - 1].flags, JUSTICE_EVILHOME) && (!EVIL_RACE(a))) \
-   || (!IS_ELFIE(a) && ((b) == HOME_CHARIN)) || (!IS_CENTAURIE(a) && ((b) == HOME_MARIGOT))) )
+#define PC_INVADER(a, b)                                                                                                                                                                               \
+	(IS_PC(a) && !TRUSTED_NPC(a) && !IS_DISGUISE(a) &&                                                                                                                                                 \
+	 ((IS_SET(hometowns[b - 1].flags, JUSTICE_GOODHOME) && (!GOOD_RACE(a))) || (IS_SET(hometowns[b - 1].flags, JUSTICE_EVILHOME) && (!EVIL_RACE(a))) || (!IS_ELFIE(a) && ((b) == HOME_CHARIN)) ||      \
+	  (!IS_CENTAURIE(a) && ((b) == HOME_MARIGOT))))
 
-  /* special macros for justice that also check NPC races! */
-#define EVILRACE(a) (IS_RACEWAR_EVIL(a) || \
-                     (GET_RACE(a) == RACE_DEMON) || \
-                     (GET_RACE(a) == RACE_DEVIL) || \
-                     (IS_UNDEAD(a) ) || \
-                     (GET_RACE(a) == RACE_GOBLIN) || \
-                     (GET_RACE(a) == RACE_DRAGON && !IS_PC_PET(a)) || \
-                     (GET_RACE(a) == RACE_DRAGON && IS_PC_PET(a) && get_linked_char(a, LNK_PET) != NULL ? GET_RACEWAR(get_linked_char(a, LNK_PET)) == RACEWAR_EVIL : FALSE) || \
-                     (GET_RACE(a) == RACE_HALFORC) || \
-                     (GET_RACE(a) == RACE_DEMON))
+/* special macros for justice that also check NPC races! */
+#define EVILRACE(a)                                                                                                                                                                                    \
+	(IS_RACEWAR_EVIL(a) || (GET_RACE(a) == RACE_DEMON) || (GET_RACE(a) == RACE_DEVIL) || (IS_UNDEAD(a)) || (GET_RACE(a) == RACE_GOBLIN) || (GET_RACE(a) == RACE_DRAGON && !IS_PC_PET(a)) ||            \
+	 (GET_RACE(a) == RACE_DRAGON && IS_PC_PET(a) && get_linked_char(a, LNK_PET) != NULL ? GET_RACEWAR(get_linked_char(a, LNK_PET)) == RACEWAR_EVIL : FALSE) || (GET_RACE(a) == RACE_HALFORC) ||        \
+	 (GET_RACE(a) == RACE_DEMON))
 
 #define GOODRACE(a) (IS_RACEWAR_GOOD(a))
 
 #define UNDEADRACE(a) (IS_RACEWAR_UNDEAD(a))
 
-  /* invaders and outcasts can't hide behind shapechange, so use the
-     GET_PLYR() macros. */
-#define IS_NOTWELCOME(a) (CHAR_IN_TOWN(a) && \
-                       IS_TOWN_NOTWELCOME(a, CHAR_IN_TOWN(a)) && \
-                       !IS_AFFECTED(a, AFF_BOUND))
+/* invaders and outcasts can't hide behind shapechange, so use the
+   GET_PLYR() macros. */
+#define IS_NOTWELCOME(a) (CHAR_IN_TOWN(a) && IS_TOWN_NOTWELCOME(a, CHAR_IN_TOWN(a)) && !IS_AFFECTED(a, AFF_BOUND))
 
-#define IS_INVADER(a) (CHAR_IN_TOWN(a) && \
-                       IS_TOWN_INVADER(a, CHAR_IN_TOWN(a)) && \
-                       !IS_AFFECTED(a, AFF_BOUND))
+#define IS_INVADER(a) (CHAR_IN_TOWN(a) && IS_TOWN_INVADER(a, CHAR_IN_TOWN(a)) && !IS_AFFECTED(a, AFF_BOUND))
 
 #endif
-
-

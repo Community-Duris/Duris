@@ -1,24 +1,22 @@
+#include <list>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-
 #include <string>
 #include <vector>
-#include <list>
 using namespace std;
 
-#include "structs.h"
-#include "spells.h"
-#include "comm.h"
-#include "interp.h"
 #include "prototypes.h"
-#include "utils.h"
+#include "structs.h"
+#include "comm.h"
 #include "db.h"
-#include "sql.h"
-#include "epic.h"
 #include "events.h"
+#include "interp.h"
+#include "utils.h"
+#include "epic.h"
 #include "listen.h"
-
+#include "spells.h"
+#include "sql.h"
 
 extern P_room world;
 extern P_desc descriptor_list;
@@ -27,207 +25,200 @@ extern P_desc descriptor_list;
 // cmd option: 0 = say, 1 = gsay, 2 = improved listen(emote)
 void listen_broadcast(P_char ch, const char *buf, int cmd)
 {
-  P_desc i;
-  P_char tch;
+	P_desc i;
+	P_char tch;
 
-  if (IS_TRUSTED(ch) || IS_ILLITHID(ch) || IS_PILLITHID(ch) || IS_NPC(ch))
-  {
-    return;
-  }
+	if (IS_TRUSTED(ch) || IS_ILLITHID(ch) || IS_PILLITHID(ch) || IS_NPC(ch))
+	{
+		return;
+	}
 
-  for (i = descriptor_list; i; i = i->next)
-  {
-    if (!i->character || i->connected)
-    {
-      continue;
-    }
-    
-    tch = i->character;
-    
-    // Lets weed out anyone who dosn't have listen skill, otherwise we lag!
-    if (!GET_CHAR_SKILL(tch, SKILL_LISTEN))
-    {
-      continue;
-    }
+	for (i = descriptor_list; i; i = i->next)
+	{
+		if (!i->character || i->connected)
+		{
+			continue;
+		}
 
-    if (tch && IS_PC(tch))
-    {
-      switch (cmd)
-      {
-        case LISTEN_SAY: 
-          listen_say(ch, tch, buf); 
-          break;
-      
-        case LISTEN_GSAY:
-          listen_gsay(ch, tch, buf);
-          break;
-        
-        case LISTEN_EMOTE:
-          listen_emote(ch, tch, buf);
-          break;
-          
-        default: 
-          wizlog(57, "function listen_broadcast was called with an invalid subcommand.");
-          break;
-      }
-    }
-  }
+		tch = i->character;
+
+		// Lets weed out anyone who dosn't have listen skill, otherwise we lag!
+		if (!GET_CHAR_SKILL(tch, SKILL_LISTEN))
+		{
+			continue;
+		}
+
+		if (tch && IS_PC(tch))
+		{
+			switch (cmd)
+			{
+				case LISTEN_SAY:
+					listen_say(ch, tch, buf);
+					break;
+
+				case LISTEN_GSAY:
+					listen_gsay(ch, tch, buf);
+					break;
+
+				case LISTEN_EMOTE:
+					listen_emote(ch, tch, buf);
+					break;
+
+				default:
+					wizlog(57, "function listen_broadcast was called with an invalid subcommand.");
+					break;
+			}
+		}
+	}
 }
 
 void listen_say(P_char ch, P_char tch, const char *buf)
 {
-  int iskl, range, nrange, howclose;
-  char strn[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];
-  
-  if (IS_ROOM(tch->in_room, ROOM_SILENT))
-    return;
+	int  iskl, range, nrange, howclose;
+	char strn[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];
 
-  iskl = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
-  nrange = (int) get_property("skill.listen.range.norm", 1);
+	if (IS_ROOM(tch->in_room, ROOM_SILENT))
+		return;
 
-  if (iskl)
-  {
-    range = (nrange + (int)get_property("skill.listen.range.norm.extend", 1));
-  }
-  else
-  {
-    range = nrange;
-  }
+	iskl   = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
+	nrange = (int)get_property("skill.listen.range.norm", 1);
 
-  howclose = how_close(ch->in_room, tch->in_room, range);
+	if (iskl)
+	{
+		range = (nrange + (int)get_property("skill.listen.range.norm.extend", 1));
+	}
+	else
+	{
+		range = nrange;
+	}
 
-  if (howclose < 0)
-  {
-    return;
-  }
+	howclose = how_close(ch->in_room, tch->in_room, range);
 
-  if ((howclose > 1) && (BOUNDED(20, iskl, 95) < number(0, 100)))
-  {
-    return;
-  }
+	if (howclose < 0)
+	{
+		return;
+	}
 
-  if ((GET_CHAR_SKILL(tch, SKILL_LISTEN) && (ch != tch) &&
-      (world[ch->in_room].number != world[tch->in_room].number)))
-  {
-    if (MAX(40, GET_CHAR_SKILL(tch, SKILL_LISTEN)) >
-        (number(25, 45)))
-    {
-      muddle_listened_string(ch, tch, buf, strn, howclose);
+	if ((howclose > 1) && (BOUNDED(20, iskl, 95) < number(0, 100)))
+	{
+		return;
+	}
 
-      snprintf(buf1, MAX_STRING_LENGTH, "You faintly hear %s say the words '%s'.\r\n",
-              (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(15, 35)) ?
-              PERS(ch, tch, 1) : "someone:", strn);
+	if ((GET_CHAR_SKILL(tch, SKILL_LISTEN) && (ch != tch) && (world[ch->in_room].number != world[tch->in_room].number)))
+	{
+		if (MAX(40, GET_CHAR_SKILL(tch, SKILL_LISTEN)) > (number(25, 45)))
+		{
+			muddle_listened_string(ch, tch, buf, strn, howclose);
 
-      send_to_char(buf1, tch);
+			snprintf(buf1, MAX_STRING_LENGTH, "You faintly hear %s say the words '%s'.\r\n", (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(15, 35)) ? PERS(ch, tch, 1) : "someone:", strn);
 
-      notch_skill(tch, SKILL_LISTEN, 17);
-    }
-    else
-    {
-      notch_skill(tch, SKILL_LISTEN, 1);
-    }
-  }
+			send_to_char(buf1, tch);
+
+			notch_skill(tch, SKILL_LISTEN, 17);
+		}
+		else
+		{
+			notch_skill(tch, SKILL_LISTEN, 1);
+		}
+	}
 }
 
 void listen_gsay(P_char ch, P_char tch, const char *buf)
 {
-  int iskl, range, nrange, howclose;
-  char strn[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];
-  
-  if (IS_ROOM(tch->in_room, ROOM_SILENT))
-    return;
-  
-  iskl = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
-  nrange = (int) get_property("skill.listen.range.norm", 1);
+	int  iskl, range, nrange, howclose;
+	char strn[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];
 
-  if (iskl)
-  {
-    range = (nrange + (int)get_property("skill.listen.range.norm.extend", 1));
-  }
-  else
-  {
-    range = nrange;
-  }
+	if (IS_ROOM(tch->in_room, ROOM_SILENT))
+		return;
 
-  howclose = how_close(ch->in_room, tch->in_room, range);
+	iskl   = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
+	nrange = (int)get_property("skill.listen.range.norm", 1);
 
-  if (howclose < 0)
-  {
-    return;
-  }
+	if (iskl)
+	{
+		range = (nrange + (int)get_property("skill.listen.range.norm.extend", 1));
+	}
+	else
+	{
+		range = nrange;
+	}
 
-  if ((howclose > 1) && (BOUNDED(20, iskl, 95) < number(0, 100)))
-  {
-    return;
-  }
+	howclose = how_close(ch->in_room, tch->in_room, range);
 
-  if ((GET_CHAR_SKILL(tch, SKILL_LISTEN) && ch->group != tch->group))
-  {
-    if (MAX(40, GET_CHAR_SKILL(tch, SKILL_LISTEN)) >
-        (number(25, 45)))
-    {
-      muddle_listened_string(ch, tch, buf, strn, howclose);
+	if (howclose < 0)
+	{
+		return;
+	}
 
-      snprintf(buf1, MAX_STRING_LENGTH, "You faintly hear %s groupsay the words '%s'.\r\n",
-              (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(20, 40)) ?
-              PERS(ch, tch, 1) : "someone:", strn);
+	if ((howclose > 1) && (BOUNDED(20, iskl, 95) < number(0, 100)))
+	{
+		return;
+	}
 
-      send_to_char(buf1, tch);
+	if ((GET_CHAR_SKILL(tch, SKILL_LISTEN) && ch->group != tch->group))
+	{
+		if (MAX(40, GET_CHAR_SKILL(tch, SKILL_LISTEN)) > (number(25, 45)))
+		{
+			muddle_listened_string(ch, tch, buf, strn, howclose);
 
-      notch_skill(tch, SKILL_LISTEN, 5);
-    }
-    else
-    {
-      notch_skill(tch, SKILL_LISTEN, 1);
-    }
-  }
+			snprintf(buf1, MAX_STRING_LENGTH, "You faintly hear %s groupsay the words '%s'.\r\n", (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(20, 40)) ? PERS(ch, tch, 1) : "someone:", strn);
+
+			send_to_char(buf1, tch);
+
+			notch_skill(tch, SKILL_LISTEN, 5);
+		}
+		else
+		{
+			notch_skill(tch, SKILL_LISTEN, 1);
+		}
+	}
 }
 
 void listen_emote(P_char ch, P_char tch, const char *buf)
 {
-  int iskl, irange, howclose;
-  char buf1[MAX_STRING_LENGTH];
+	int  iskl, irange, howclose;
+	char buf1[MAX_STRING_LENGTH];
 
-  if (IS_TRUSTED(tch))
-    return;
+	if (IS_TRUSTED(tch))
+		return;
 
-  strcpy(buf1, "You notice in the distance, ");
-  strcat(buf1, buf);
-  
-  if (ch == tch || world[ch->in_room].number == world[tch->in_room].number)
-  {
-    return;
-  }
+	strcpy(buf1, "You notice in the distance, ");
+	strcat(buf1, buf);
 
-  iskl = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
-  irange = (int)get_property("skill.listen.range.improved", 2);
+	if (ch == tch || world[ch->in_room].number == world[tch->in_room].number)
+	{
+		return;
+	}
 
-  howclose = how_close(ch->in_room, tch->in_room, irange);
+	iskl   = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
+	irange = (int)get_property("skill.listen.range.improved", 2);
 
-  if (howclose < 0)
-  {
-    return;
-  }
+	howclose = how_close(ch->in_room, tch->in_room, irange);
 
-  if ((howclose > 1) && (BOUNDED(20, iskl, 95)) < number(0, 100))
-  {
-    return;
-  }
+	if (howclose < 0)
+	{
+		return;
+	}
 
-  if (iskl)
-  {
-    if ((MAX(40, iskl) > (number(15, 55))) && IS_PC(tch))
-    {
-      if ((GET_SIZE(ch) < GET_SIZE(tch)) && (number(70, 90) > MAX(75, iskl)))
-      {
-        send_to_char("You notice someone in the distance scurrying about.\r\n", tch);
-      }
-      else
-      {
-        act(buf1, TRUE, ch, 0, tch, TO_VICT);
-      }
-    }
-  }
+	if ((howclose > 1) && (BOUNDED(20, iskl, 95)) < number(0, 100))
+	{
+		return;
+	}
+
+	if (iskl)
+	{
+		if ((MAX(40, iskl) > (number(15, 55))) && IS_PC(tch))
+		{
+			if ((GET_SIZE(ch) < GET_SIZE(tch)) && (number(70, 90) > MAX(75, iskl)))
+			{
+				send_to_char("You notice someone in the distance scurrying about.\r\n", tch);
+			}
+			else
+			{
+				act(buf1, TRUE, ch, 0, tch, TO_VICT);
+			}
+		}
+	}
 }
 
 /*
@@ -238,105 +229,101 @@ void listen_emote(P_char ch, P_char tch, const char *buf)
  *  arg - stuff said
  *  extr_depth - if one room away, 0, if further, >0
  */
- // Taken from actcomm.c
-void muddle_listened_string(P_char ch, P_char vict, const char *arg,
-                            char *muddled, int extr_depth)
+// Taken from actcomm.c
+void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddled, int extr_depth)
 {
-  const char missed_word[] = "(mumble)";
-  char     buf[MAX_STRING_LENGTH];
-  int      i, j, k, len;
+	const char missed_word[] = "(mumble)";
+	char       buf[MAX_STRING_LENGTH];
+	int        i, j, k, len;
 
+	i = j = 0;
 
-  i = j = 0;
+	// okay drop some words
 
-  // okay drop some words
+	while (TRUE)
+	{
+		// if at space, go to next non-space (word)
 
-  while (TRUE)
-  {
-    // if at space, go to next non-space (word)
+		if (arg[i] == ' ')
+		{
+			while (arg[i] == ' ')
+			{
+				muddled[j++] = ' ';
+				i++;
+			}
 
-    if (arg[i] == ' ')
-    {
-      while (arg[i] == ' ')
-      {
-        muddled[j++] = ' ';
-        i++;
-      }
+			if (!arg[i])
+			{
+				muddled[j] = '\0';
+				break;
+			}
+		}
+		if (MAX(40, GET_CHAR_SKILL(vict, SKILL_LISTEN)) < (number(25, 75) + (extr_depth * 10)))
+		{
+			// insert an appropriate number of asterisks
 
-      if (!arg[i])
-      {
-        muddled[j] = '\0';
-        break;
-      }
-    }
-    if (MAX(40, GET_CHAR_SKILL(vict, SKILL_LISTEN)) <
-        (number(25, 75) + (extr_depth * 10)))
-    {
-      // insert an appropriate number of asterisks
+			for (k = 0; k < strlen(missed_word); k++)
+				muddled[j++] = '*';
 
-      for (k = 0; k < strlen(missed_word); k++)
-        muddled[j++] = '*';
+			// advance to next space
 
-      // advance to next space
+			while ((arg[i] != ' ') && (arg[i] != '\0'))
+				i++;
 
-      while ((arg[i] != ' ') && (arg[i] != '\0'))
-        i++;
+			if (arg[i] == '\0')
+			{
+				muddled[j] = '\0';
+				break;
+			}
+		}
+		else // they passed, give em the whole word
+		{
+			while ((arg[i] != ' ') && (arg[i] != '\0'))
+				muddled[j++] = arg[i++];
 
-      if (arg[i] == '\0')
-      {
-        muddled[j] = '\0';
-        break;
-      }
-    }
-    else                        // they passed, give em the whole word
-    {
-      while ((arg[i] != ' ') && (arg[i] != '\0'))
-        muddled[j++] = arg[i++];
+			if (!arg[i])
+			{
+				muddled[j] = '\0';
+				break;
+			}
+		}
+	}
 
-      if (!arg[i])
-      {
-        muddled[j] = '\0';
-        break;
-      }
-    }
-  }
+	// CRYPT it up
 
-  // CRYPT it up
+	strcpy(buf, muddled);
+	strcpy(muddled, language_CRYPT(ch, vict, buf));
 
-  strcpy(buf, muddled);
-  strcpy(muddled, language_CRYPT(ch, vict, buf));
+	// change ******** stuff to missed_word
 
-  // change ******** stuff to missed_word
+	len = strlen(muddled);
+	k   = 0;
 
-  len = strlen(muddled);
-  k = 0;
+	for (i = 0; i < len; i++)
+	{
+		if (muddled[i] == '*')
+		{
+			// make sure we have the right number of em..
 
-  for (i = 0; i < len; i++)
-  {
-    if (muddled[i] == '*')
-    {
-      // make sure we have the right number of em..
+			for (j = i; j < i + strlen(missed_word); j++)
+			{
+				if (muddled[j] != '*')
+				{
+					while (muddled[i] == '*')
+						i++;
+					k = 1;
+				}
+			}
 
-      for (j = i; j < i + strlen(missed_word); j++)
-      {
-        if (muddled[j] != '*')
-        {
-          while (muddled[i] == '*')
-            i++;
-          k = 1;
-        }
-      }
+			if (!k)
+			{
+				for (j = i; j < i + strlen(missed_word); j++)
+				{
+					muddled[j] = missed_word[k++];
+				}
+			}
 
-      if (!k)
-      {
-        for (j = i; j < i + strlen(missed_word); j++)
-        {
-          muddled[j] = missed_word[k++];
-        }
-      }
-
-      k = 0;
-    }
-  }
+			k = 0;
+		}
+	}
 }
-

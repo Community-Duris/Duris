@@ -51,7 +51,7 @@ negligee~
 &+Ma crumpled negligee&n~
 &+MA crumpled negligee lays among the bedding.&n~
 ~
-9 3 3 1 7 0 0 9 0 1 0
+9 3 3 1 7 0 0 9 0 0 0
 5 0 0 1 0 0 0 0
 0 300 100
 E
@@ -64,7 +64,7 @@ negligee~
 &+Mas soft and supple as the material it is on.&n
 ~
 A
-28 1
+28 15
 #89004
 workbench bench~
 &+ya sturdy workbench&n~
@@ -213,7 +213,7 @@ hammer~
 &+rA massive &+Chammer&+r lays in a dent in the ground.&n~
 ~
 5 16 3 3 11 20 4202496 8193 64 0 0
-4 3 5 7 0 0 0 0
+4 6 5 7 0 0 0 0
 5 10355 100
 E
 hammer~
@@ -225,9 +225,9 @@ hammer~
 &+Cthe god of all smiths.&n
 ~
 A
-18 3
+18 5
 A
-19 3
+19 6
 #89013
 table~
 &+ya scarred table&n~
@@ -250,7 +250,7 @@ grapes iron~
 &+yA &+mbunch of grapes&+y is on the table.&n~
 ~
 19 48 1 0 7 0 0 1 0 0 0
-12 0 0 0 0 0 0 0
+12 8 8 0 5 5 0 0
 0 1 100
 E
 grapes iron~
@@ -264,7 +264,7 @@ meat chunk iron~
 &+yA &+Gc&+yh&+Gun&+gk &+yof &+mr&+Gott&+mi&+yng &+mme&+ya&+mt &+yhas been dropped.&n~
 ~
 19 48 1 0 7 0 0 1 0 0 0
-24 -1 0 0 0 0 0 0
+24 2 2 1 2 2 0 0
 0 1 100
 E
 meat chunk iron~
@@ -279,7 +279,7 @@ bread slice iron~
 &+yA l&+Woa&+yf of th&+Wickly sliced bre&+yad is here.&n~
 ~
 19 48 1 0 7 0 0 1 0 0 0
-12 0 0 0 0 0 0 0
+12 8 8 0 4 4 0 0
 0 1 100
 E
 bread slice iron~
@@ -363,8 +363,8 @@ dagger bone shard~
 &+yA piece of &+Wb&+wone&+y lies on the ground.&n~
 ~
 5 18 1 0 12 20 33562624 8396801 64 0 0
-2 2 3 11 0 0 0 0
-0 25666 100 4 0 2097152 0
+2 4 3 0 0 0 0 0
+0 25666 100
 E
 dagger bone shard~
 &+y   Though this &+ws&+Wh&+war&+Wd&+y originally came from a &+Wb&+wone,&+y it is harder than stone and&n
@@ -399,8 +399,8 @@ bottle elven wine~
 &+ma bottle of &+celven &+mwine&n~
 &+yA bottle of &+celven &+mwine&+y lies in the dust.&n~
 ~
-17 9 2 1 7 0 8200 8388609 0 0 0
-10 10 2 0 0 0 0 0
+10 9 2 1 7 0 8200 8388609 0 0 0
+10 41 141 0 0 0 0 0
 1 1000 100
 E
 bottle elven wine~
@@ -423,6 +423,8 @@ bone sleeves~
 &+was the &+Wb&+wone seems to have been slightly petrified, so that it will not break&n
 &+wthe first time it has been hit.&n
 ~
+A
+17 -5
 #89025
 bone leggings~
 &+wa se&+Wt &+wo&+Wf b&+wone &+Wl&+we&+Wgg&+win&+Wg&+ws&n~
@@ -438,6 +440,8 @@ bone leggings~
 &+wgiven by enemies.  The &+Wb&+wone seems almost as though it has been petrified, the&n
 &+wway it stands up to being hit without breaking.&n
 ~
+A
+17 -5
 #89026
 bone vest~
 &+wa &+Wb&+wone ves&+Wt&n~
@@ -453,6 +457,8 @@ bone vest~
 &+wcan take quite a strong blow without breaking.  The ves&+Wt&+w has been created in&n
 &+wsuch a way that it provides good protection against any blows to the body.&n
 ~
+A
+17 -10
 #89027
 chain sleeves~
 &+ca se&+Ct&+c o&+Cf &+cc&+Ch&+cain s&+Cl&+cee&+Cv&+ces&n~
@@ -469,6 +475,8 @@ cahin sleeves~
 &+cmovement.  These s&+Cl&+cee&+Cv&+ces are not shined to a high polish but rather look more&n
 &+clike the natural metal as it is found in the earth.&n
 ~
+A
+17 -10
 #89028
 chain leggings~
 &+ca se&+Ct &+co&+Cf &+cc&+Ch&+cain &+Cl&+ce&+Cgg&+cin&+Cg&+cs&n~
@@ -484,6 +492,8 @@ chain leggings~
 &+chighly polished finish they look as though the metal has just been taken from&n
 &+cthe earth.&n
 ~
+A
+17 -10
 #89029
 chain vest~
 &+ca c&+Ch&+cain ves&+Ct&n~
@@ -499,6 +509,8 @@ chain vest~
 &+cenemy cares to provide.  The metal has not been highly polished, but was left&n
 &+cto look more natural, as though it has not been long out of the earth.&n
 ~
+A
+17 -20
 #89030
 sword longsword black~
 &+wa &+Lbl&+wac&+Lk-h&+wan&+Ldl&+we&+Ld l&+won&+Lg&+wswor&+Ld&n~
@@ -627,6 +639,10 @@ vest rawhide~
 &+ythe ves&+wt.&+y  It is quite strong, though, and provides adequate protection for&n
 &+ythe wearer against blows to the body.&n
 ~
+A
+14 15
+A
+26 5
 #89038
 leggings rawhide~
 &+ya se&+wt &+yo&+wf &+yraw&+wh&+yi&+wd&+ye &+wl&+ye&+wgg&+yin&+wg&+ys&n~
@@ -657,6 +673,10 @@ bracer rawhide~
 &+wwould &+yotherwise &+whurt more&+y.  The we&+waving of &+ythe diffe&+wrent colo&+yrs has cr&+weated a&n
 &+wspiral pa&+yttern up t&+whe length&+y of the b&+wracer.&n
 ~
+A
+14 5
+A
+26 4
 #89040
 whip rawhide~
 &+ya &+wb&+yrai&+wd&+ye&+wd&+y raw&+wh&+yi&+wd&+ye w&+wh&+yi&+wp&n~
@@ -695,8 +715,8 @@ bp backpack mulehide~
 &+wA woven mu&+Ll&+we&+Lh&+wi&+Ld&+we &+Lb&+wac&+Lkp&+wac&+Lk&+w is leaning against the wall.&n~
 ~
 15 12 3 3 7 0 270336 4194305 0 0 0
-150 5 0 150 0 0 0 0
-3 200 100
+200 5 0 200 0 0 0 0
+3 15000 100
 E
 bp backpack mulehide~
 &+w   S&+Lt&+wri&+Lp&+ws of mu&+Ll&+we&+Lh&+wi&+Ld&+we have been woven together to create a strong, watertight&n
@@ -706,6 +726,10 @@ bp backpack mulehide~
 &+wgoes into it.  The flap is secured by a clever use of the tails so that &+Ltufts&n
 &+wat the ends of the two tails hang below the place where they are secured.&n
 ~
+A
+26 5
+A
+14 20
 #89043
 belt rawhide~
 &+ya &+wb&+yrai&+wd&+ye&+wd &+yraw&+wh&+yi&+wd&+ye &+wb&+ye&+wlt&n~
@@ -722,6 +746,8 @@ belt rawhide~
 &+wa V-sh&+yaped &+wpattern w&+yoven&+w into it &+ywith&+w the diff&+yeren&+wt colors &+yof &+wrawhide w&+yhich&+w is&n
 &+wpleasin&+yg t&+wo the eye.&n
 ~
+A
+14 5
 #89044
 boots rawhide~
 &+ya se&+wt&+y o&+wf &+ywoven raw&+wh&+yi&+wd&+ye &+wb&+yoo&+wt&+ys&n~
@@ -739,7 +765,9 @@ boots rawhide~
 &+ywalking, or for long, drawn-out combat.&n
 ~
 A
-14 5
+14 10
+A
+26 4
 #89045
 pouch rawhide~
 &+ya woven raw&+wh&+yi&+wd&+ye &+wb&+ye&+wlt p&+youc&+wh&n~
@@ -770,6 +798,8 @@ bracer bone~
 &+was stone, as though it has been petrified.  It is good for deflecting attacks&n
 &+wfrom an enemy, providing a small measure of protection.&n
 ~
+A
+17 -5
 #89047
 boots bone~
 &+wa se&+Wt &+wo&+Wf b&+wone &+Wb&+woo&+Wt&+ws&n~
@@ -789,6 +819,8 @@ boots bone~
 ~
 A
 14 5
+A
+17 -5
 #89048
 helm bone~
 &+wa &+Wb&+wone &+Wh&+we&+Wl&+wm&n~
@@ -805,6 +837,8 @@ helm bone~
 &+whow large or how small the head is, for the seams were crafted to be flexible,&n
 &+wand able to adapt to any head size.&n
 ~
+A
+17 -5
 #89049
 bracer chain~
 &+ca c&+Ch&+cain &+Cb&+cracer&n~
@@ -821,6 +855,8 @@ bracer chain~
 &+cin its natural state.  The hammer blows can been seen on the surface, but the&n
 &+ctexture is smooth to the touch.&n
 ~
+A
+17 -10
 #89050
 coif chain~
 &+ca c&+Ch&+cain coi&+Cf&n~
@@ -836,6 +872,8 @@ coif chain~
 &+cin color.  It is very flexible, and does not hinder head movement even as the&n
 &+ccoi&+Cf&+c provides protection for the head wearing it.&n
 ~
+A
+17 -10
 #89051
 boots chain~
 &+ca se&+Ct &+co&+Cf &+cc&+Ch&+cain &+Cb&+coo&+Ct&+cs&n~
@@ -852,7 +890,9 @@ boots chain~
 &+cpolished, leaving it in its natural dark color.&n
 ~
 A
-14 5
+14 10
+A
+17 -10
 #89052
 quiver rawhide~
 &+ya woven raw&+wh&+yi&+wd&+ye &+wq&+yuiver&n~
@@ -883,6 +923,8 @@ shirt black cotton~
 &+wsmooth, feeling very comfortable against the skin.  The fasteners that are on&n
 &+wthe front are faces that seem to be carved from either &+Lobsidian&+w or&+L jet.&n
 ~
+A
+2 8
 #89054
 pants black wool~
 &+La pair of black wool pants&n~
@@ -898,6 +940,8 @@ pants black wool~
 &+wso &+Lblack&+w that they seem to absorb all light around them.  It is hard to see&n
 &+wthe pockets as they are the same &+Ldark black&+w color as the &+Lpants.&n
 ~
+A
+2 4
 #89055
 cloak black wool~
 &+La black wool cloak&n~
@@ -913,6 +957,8 @@ cloak black wool~
 &+Lcloak&+w keep them warm but it also provides a little bit of protection due to&n
 &+wthe thickness of the weave of the wool.&n
 ~
+A
+2 5
 #89056
 hat black felt~
 &+La black felt hat&n~
@@ -929,6 +975,8 @@ hat black felt~
 &+wtimes of combat.  It is pure &+Lblack&+w in color, seeming to absorb all the light&n
 &+wthat is around it.&n
 ~
+A
+2 4
 #89057
 gloves black cotton~
 &+La pair of black cotton gloves&n~
@@ -944,6 +992,8 @@ gloves black cotton~
 &+whands with a small bit of protection as well as keeping them warm.  It is an&n
 &+wintense &+Lblack&+w color, seeming to absorb all of the light around it.&n
 ~
+A
+2 4
 #89058
 shirt red cotton~
 &+ra red cotton shirt&n~
@@ -959,6 +1009,8 @@ shirt red cotton~
 &+ymade from &+rred garnet,&+y carefully carved into the likeness of &+rroses.&+y  Only upon&n
 &+yclose inspection, these &+rroses&+y seem to have faces with displeased looks.&n
 ~
+A
+13 8
 #89059
 pants red wool~
 &+ra pair of red wool pants&n~
@@ -974,6 +1026,8 @@ pants red wool~
 &+ycolor that will match the &+rdried blood&+y that adventurers seem to gather.  There&n
 &+yare enough pockets on them to satisfy even the most hardy of adventurers.&n
 ~
+A
+13 4
 #89060
 cloak red wool~
 &+ra red wool cloak&n~
@@ -990,6 +1044,8 @@ cloak red wool~
 &+wearthworm&+y with hinges in both ends that grab securely onto the material at the&n
 &+yneck to keep it on the wearer.&n
 ~
+A
+13 5
 #89061
 kerchief cotton red~
 &+ra red cotton kerchief&n~
@@ -1005,6 +1061,8 @@ kerchief cotton red~
 &+rseem to create an unease in those attacking, however, that does offer a small&n
 &+rprotection to the wearer.&n
 ~
+A
+13 4
 #89062
 gloves cotton red~
 &+ra pair of red cotton gloves&n~
@@ -1021,6 +1079,8 @@ gloves cotton red~
 &+rof leather is attached to the palm to aid in gripping things - like the handle&n
 &+rof a weapon.&n
 ~
+A
+13 4
 #89063
 shirt cotton green~
 &+ga &+Gg&+green co&+Gtt&+gon s&+Gh&+gir&+Gt&n~
@@ -1037,6 +1097,8 @@ shirt cotton green~
 &+ggreen&+G r&+gun vert&+Gica&+glly at ran&+Gdo&+gm int&+Gerv&+gals on t&+Ghe &+gshirt.  The&+G bu&+gttons down &+Gthe&n
 &+gfront&+G a&+gppear t&+Go h&+gave been c&+Gar&+gved o&+Gut &+gof jade &+Gin &+gthe form of&+G sm&+gall &+Yb&+Le&+Ye&+Ls.&n
 ~
+A
+26 8
 #89064
 pants wool green~
 &+ga &+Gp&+gair of &+Gg&+green woo&+Gl p&+gan&+Gt&+gs&n~
@@ -1053,6 +1115,8 @@ pants wool green~
 &+Gpa&+gnts a&+Gct&+gually blend&+G i&+gnto the s&+Gur&+groundings&+G ou&+gtside of town, ma&+Gki&+gng it hard for&n
 &+Gan&+g arch&+Ger&+g to pick ou&+Gt &+gthe weare&+Gr &+gas a targ&+Get.&n
 ~
+A
+26 4
 #89065
 cloak green wool~
 &+ga &+Gg&+green woo&+Gl &+gc&+Gl&+goa&+Gk&n~
@@ -1069,6 +1133,8 @@ cloak green wool~
 &+gwith drag&+Gon &+gheads a&+Gt e&+gach end.  This p&+Giec&+ge holds &+Gthe&+g cloak closed &+Gat&+g the neck,&n
 &+gkeeping i&+Gt o&+gn the a&+Gdve&+gnturer even duri&+Gng &+gthe wors&+Gt o&+gf battles.&n
 ~
+A
+26 5
 #89066
 hat felt green~
 &+ga &+Gg&+green &+Gf&+ge&+Glt h&+ga&+Gt&n~
@@ -1084,6 +1150,8 @@ hat felt green~
 &+gblows to &+Gthe&+g head, but i&+Gts &+gmain purpose&+G is&+g to keep &+Gthe&+g head of the one t&+Ghat&n
 &+gwears it &+Gwar&+gm even in th&+Ge c&+goldest of we&+Gath&+ger.&n
 ~
+A
+26 4
 #89067
 gloves cotton green~
 &+ga &+Gp&+gair o&+Gf g&+green co&+Gtt&+gon &+Ggl&+goves&n~
@@ -1099,6 +1167,8 @@ gloves cotton green~
 &+Gand&+g keep fingers w&+Gar&+gm while prot&+Gec&+gting them a &+Gsl&+gight bit from b&+Glow&+gs so that it&n
 &+Gis &+gpossible to do &+Gco&+gmplex tasks &+Gev&+gen in the co&+Gld&+gest of weather.&n
 ~
+A
+26 4
 #89068
 shirt cotton blue~
 &+ba blue cotton shirt&n~
@@ -1114,6 +1184,8 @@ shirt cotton blue~
 &+bfootprints going up the length of the front.  Though it is only cotton, it has&n
 &+bbeen woven in such a way that it does provide a bit of protection from blows.&n
 ~
+A
+5 4
 #89069
 pants blue wool~
 &+ba pair of blue wool pants&n~
@@ -1129,6 +1201,8 @@ pants blue wool~
 &+bblows aimed at the wearer during practice or combat.  They also keep him warm&n
 &+bduring cold weather.&n
 ~
+A
+5 4
 #89070
 blue wool cloak~
 &+ba blue wool cloak&n~
@@ -1145,6 +1219,8 @@ blue wool cloak~
 &+bIt is carved in the shape of a serpent biting its tail with scales on either&n
 &+bside that snap shut to hold tight to the fabric.&n
 ~
+A
+5 5
 #89071
 kerchief cotton blue~
 &+ba &+cbl&+bue co&+ctt&+bon &+ck&+berc&+ch&+bie&+cf&n~
@@ -1160,6 +1236,8 @@ kerchief cotton blue~
 &+bno apparent pattern.  It is light, but it does provide a small bit of needed&n
 &+bprotection from blows to the head of the wearer.&n
 ~
+A
+5 4
 #89072
 gloves cotton blue~
 &+ba &+cp&+bair o&+cf bl&+bue co&+ctt&+bon &+cgl&+boves&n~
@@ -1176,6 +1254,8 @@ gloves cotton blue~
 &+ballowing the fingers to do complex jobs, without leaving them open to being&n
 &+bhurt.  They also keep the hands warm during cold weather.&n
 ~
+A
+5 4
 #89073
 vest black leather~
 &+La black leather vest&n~
@@ -1254,7 +1334,7 @@ fringed backpack bp~
 &+yA &+rf&+yrin&+rg&+ye&+rd &+ysue&+rd&+ye &+rb&+yac&+rkp&+yac&+rk &+yleans against a wall.&n~
 ~
 15 12 2 3 7 0 8192 4194305 0 0 0
-100 5 0 100 0 0 0 0
+130 5 0 130 0 0 0 0
 3 400 100
 E
 fringed backpack bp~
@@ -1263,6 +1343,8 @@ fringed backpack bp~
 &+ya purpose other than just being decorations, as they help draw the water away&n
 &+yfrom the seams when it rains, helping keep the contents dry.&n
 ~
+A
+14 10
 #89077
 fringed suede vest~
 &+ya &+rf&+yrin&+rg&+ye&+rd &+ysue&+rd&+ye ves&+rt&n~
@@ -1279,6 +1361,8 @@ fringed suede vest~
 &+yrain, though they won't help keep the wearer drier when immersed in water,&n
 &+ylike swimming across a river.&n
 ~
+A
+14 20
 #89078
 fringed suede pants~
 &+ya &+rp&+yair o&+rf f&+yrin&+rg&+ye&+rd &+ysue&+rd&+ye &+rp&+yan&+rt&+ys&n~
@@ -1294,6 +1378,8 @@ fringed suede pants~
 &+yhelps keep the wearer dry.  The fringes are of a bit darker leather, and swing&n
 &+yfreely when the wearer walks, making a soft sound.&n
 ~
+A
+14 10
 #89079
 fringed suede quiver~
 &+ya &+rf&+yrin&+rg&+ye&+rd &+ysue&+rd&+ye &+rq&+yuiver&n~
@@ -1309,6 +1395,8 @@ fringed suede quiver~
 &+ymade from a supple suede, but it has been worked in such a way that it is&n
 &+ysturdy and durable.&n
 ~
+A
+14 10
 #89080
 fringed suede boots~
 &+ya &+rp&+yair o&+rf f&+yrin&+rg&+ye&+rd &+ysue&+rd&+ye &+rb&+yoo&+rt&+ys&n~
@@ -1325,7 +1413,7 @@ fringed suede boots~
 &+yto the ground.  The fringe has been made of a darker color suede.&n
 ~
 A
-14 3
+14 15
 #89081
 fringed suede waterskin~
 &+ya &+rf&+yrin&+rg&+ye&+rd &+ysue&+rd&+ye wa&+rt&+yers&+rk&+yin&n~
@@ -1341,6 +1429,8 @@ fringed suede waterskin~
 &+ydown the front and back to funnel rainwater away from the waterskin.  Despite&n
 &+ythe softness of the suede, it is sturdy and able to withstand heavy use.&n
 ~
+A
+14 10
 #89082
 fringed suede sleeves~
 &+ya se&+rt&+y o&+rf f&+yrin&+rg&+ye&+rd &+ysue&+rd&+ye s&+rl&+yeeves&n~
@@ -1356,6 +1446,8 @@ fringed suede sleeves~
 &+yand keeps them drier.  The fringe is made from a darker suede, running down in&n
 &+ystrips the entire length of the arm.&n
 ~
+A
+14 10
 #89083
 camel bladder waterskin~
 &+ya ca&+wm&+ye&+wl bl&+ya&+wdd&+yer&n~
@@ -1430,9 +1522,9 @@ pine vulture totem~
 &+ydepth, and the look of a semi-molting bird.&n
 ~
 A
-26 1
+26 5
 A
-4 1
+4 5
 #89087
 ash osprey totem~
 &+wa s&+Wt&+waine&+Wd &+was&+Wh &+wos&+Wp&+wre&+Wy&n~
@@ -1451,9 +1543,9 @@ ash osprey totem~
 &+wof an os&+Wp&+wre&+Wy&+w has been captured in this carving.&n
 ~
 A
-26 3
+26 5
 A
-4 3
+4 5
 #89088
 quartz cube totem~
 &+wa ca&+yr&+wve&+Yd q&+wua&+yr&+Yt&+wz cu&+Yb&+we&n~
@@ -1471,9 +1563,9 @@ quartz cube totem~
 &+wthe &+Yq&+wua&+yr&+Yt&+wz has highlighted some of them.&n
 ~
 A
-26 1
+26 5
 A
-4 1
+4 5
 #89089
 flint pyramid totem~
 &+La ca&+wr&+Lve&+Yd fl&+Lin&+Yt py&+wr&+Lami&+Yd&n~
@@ -1491,9 +1583,9 @@ flint pyramid totem~
 &+Lto withstand even the roughest handling.&n
 ~
 A
-26 3
+26 5
 A
-4 3
+4 5
 #89090
 coral heart totem~
 &+Ma carve&+md &+Mcora&+ml h&+Mear&+mt&n~
@@ -1510,9 +1602,9 @@ coral heart totem~
 &+Mfrom the flow of the color on it.&n
 ~
 A
-26 1
+26 5
 A
-4 1
+4 5
 #89091
 lapis lazuli starburst totem~
 &+ba ca&+Yr&+bve&+Bd l&+ba&+Bp&+bis &+Bl&+ba&+Yz&+bu&+Bl&+bi s&+Bt&+ba&+Yr&+Bb&+bu&+Yr&+bs&+Bt&n~
@@ -1567,7 +1659,7 @@ silver chain necklace~
 &+Cnec&+Wkl&+Cace twinkles in the light as it is moved around.&n
 ~
 A
-13 2
+13 5
 #89094
 silver chain bracelet~
 &+Ca &+Wf&+Cine si&+Wl&+Cver c&+Wh&+Cain &+Wb&+Crace&+Wl&+Ce&+Wt&n~
@@ -1584,7 +1676,7 @@ silver chain necklace~
 &+Cit.  When held, it feels as though it were made of liquid, not a solid metal.&n
 ~
 A
-13 2
+13 5
 #89095
 etched silver ring~
 &+Can e&+Wt&+Cc&+Wh&+Ce&+Wd &+Csi&+Wl&+Cver rin&+Wg&n~
@@ -1602,7 +1694,7 @@ etched silver ring~
 &+Cbelow the crossed bones around the band.&n
 ~
 A
-13 2
+13 5
 #89096
 carved jade amulet~
 &+Ga ca&+gr&+Gve&+gd j&+Ga&+gd&+Ge amu&+gl&+Ge&+gt&n~
@@ -1620,7 +1712,7 @@ carved jade amulet~
 &+Gof any race.&n
 ~
 A
-22 -1
+22 -2
 #89097
 carved ivory nose ring~
 &+wa ca&+Wr&+wve&+Wd &+wivo&+Wry &+wnose &+Wr&+win&+Wg&n~
@@ -1638,6 +1730,8 @@ carved ivory nose ring~
 ~
 A
 24 -1
+A
+13 5
 #89098
 carved ivory horn tips~
 &+wa se&+Wt &+wo&+Wf &+wca&+Wr&+wve&+Wd &+wivo&+Wry h&+wo&+Wr&+wn &+Wt&+wi&+Wp&+ws&n~
@@ -1655,14 +1749,16 @@ carved ivory horn tips~
 &+wdistracting those who would attack the wearer just a bit.&n
 ~
 A
-13 2
+13 5
+A
+24 -1
 #89099
 granite pitchfork fork~
 &+wa carve&+Ld g&+wrani&+Lt&+we &+Lp&+wi&+Lt&+wc&+Lhf&+wor&+Lk&n~
 &+wA &+Lp&+wi&+Lt&+wc&+Lhf&+wor&+Lk &+wcarve&+Ld f&+wrom &+Lg&+wrani&+Lt&+we &+Ll&+weans a&+Lg&+wains&+Lt &+wt&+Lh&+we wa&+Lll.&n~
 ~
 5 37 3 0 9 20 4202496 8193 0 0 0
-18 2 3 11 0 0 0 0
+18 3 12 0 0 0 0 0
 4 15555 100
 E
 granite pitchfork fork~
@@ -1672,9 +1768,9 @@ granite pitchfork fork~
 &+wfinesse to find the weak points in the opponent's defenses.&n
 ~
 A
-18 1
+18 3
 A
-19 1
+19 3
 #89100
 marble dagger~
 &+wa mar&+gbl&+we &+gd&+wa&+ggg&+wer&n~
@@ -1821,7 +1917,7 @@ wood backpack bp~
 &+yA &+rb&+yac&+rkp&+yac&+rk &+yma&+rd&+ye &+rf&+yrom woo&+rd &+ys&+rl&+ya&+rt&+ys is &+rh&+yere.&n~
 ~
 15 6 2 0 7 0 8192 4194305 0 0 0
-100 5 0 100 0 0 0 0
+130 5 0 130 0 0 0 0
 3 200 100
 E
 wood backpack bp~
@@ -1830,6 +1926,8 @@ wood backpack bp~
 &+yto be worn c&+romfortably.  Th&+ye slats come fr&+rom different co&+ylored wood, and&+r the&n
 &+yway it has be&+ren assembled ha&+ys created a dia&+rgonal stripe ef&+yfect.&n
 ~
+A
+26 4
 #89109
 carved tankard~
 &+ya carve&+rd &+ywoo&+rd&+yen &+rt&+yan&+rk&+yar&+rd&n~
@@ -1871,7 +1969,7 @@ carved wood numchucks~
 &+yA se&+rt &+yo&+rf &+ycarve&+rd &+ywoo&+rd&+yen numc&+rh&+yuc&+rk&+ys &+rl&+yies on &+rth&+ye &+rg&+yroun&+rd.&n~
 ~
 5 6 3 0 7 0 8193 8396801 0 0 0
-10 1 5 7 0 0 0 0
+20 4 3 0 0 0 0 0
 4 5500 100
 E
 carved wood numchucks~
@@ -1900,6 +1998,10 @@ tail ring rawhide~
 &+ywell as being pleasing in appearance.  Two different colors of rawhide have
 &+ybeen used in the braiding, giving it an interesting spiral pattern.&n
 ~
+A
+14 10
+A
+26 4
 #89113
 pressed rat iron~
 &+wa &+yp&+wresse&+yd &+wra&+yt&n~
@@ -2040,8 +2142,8 @@ barbed dagger~
 &+rA &+Lb&+rar&+Lb&+re&+Ld d&+ra&+Lgg&+rer has been left behind.&n~
 ~
 5 16 1 0 10 30 8193 8396801 2 0 0
-2 3 3 11 0 0 0 0
-1 18000 100 0 0 2097152 0
+2 5 2 0 0 0 0 0
+1 18000 100
 E
 barbed dagger~
 &+r   This &+Ld&+ra&+Lgg&+rer has the cold feel of death about it when held.  It was crafted&n
@@ -2060,7 +2162,7 @@ two-handed hammer~
 &+rA huge &+Lh&+wammer&+r leans against a wall here.&n~
 ~
 5 16 3 0 11 40 37756928 8193 2 0 0
-4 4 4 6 0 0 0 0
+4 5 4 6 0 0 0 0
 8 24000 100
 E
 two-handed hammer~
@@ -2071,9 +2173,9 @@ two-handed hammer~
 &+ras its wielder is.&n
 ~
 A
-5 3
+5 5
 A
-1 3
+1 5
 #89123
 braided pelt belt~
 &+wa &+yb&+wrai&+yd&+we&+yd p&+we&+ylt b&+we&+ylt&n~
@@ -2110,9 +2212,9 @@ braided raccoon raccoonskin head headband~
 &+rinterfere with the wearer's sight.&n
 ~
 A
-13 8
+13 10
 A
-26 3
+26 5
 #89125
 boots ferret ferretskin~
 &+wa &+Lp&+wair o&+Lf f&+werre&+Lt&+ws&+Lk&+win &+Lb&+woo&+Lt&+ws&n~
@@ -2131,16 +2233,16 @@ boots ferret ferretskin~
 &+rmanaged to keep its little &+Lf&+werre&+Lt&+r spirit, even past its death.&n
 ~
 A
-14 10
+14 20
 A
-26 3
+26 6
 #89126
 meat pie iron~
 &+ya mea&+rt p&+yie&n~
 &+rA &+ymea&+rt p&+yie &+rsits on the table, cooling.&n~
 ~
 19 48 1 0 7 0 0 1 0 0 0
-24 0 0 0 0 0 0 0
+24 6 6 0 2 2 0 0
 0 1 100
 E
 meat pie~
@@ -2155,7 +2257,7 @@ apple pie iron~
 &+yAn a&+wppl&+ye &+wp&+yie sits cooling on the table.&n~
 ~
 19 48 1 0 7 0 0 1 0 0 0
-12 0 0 0 0 0 0 0
+12 8 8 0 4 4 0 0
 0 1 100
 E
 apple pie iron~
@@ -2180,9 +2282,9 @@ chocolate cake iron~
 &+yregular basis.&n
 ~
 #89129
-eye ogre~
-&+Bth&+be e&+By&+be o&+Bf th&+be o&+Bg&+bre&n~
-&+rAn &+bo&+Bg&+bre e&+By&+be &+rlies in the dust.&n~
+eye undead ogre~
+&+Bth&+be &+ru&+Lndea&+rd &+be&+By&+be o&+Bf a&+bn o&+Bg&+bre&n~
+&+rAn &+bo&+Bg&+bre e&+By&+be &+rlies in the dust, still &+ra&+Lliv&+re.&n~
 ~
 11 2 1 0 12 60 33562625 131073 64 0 0
 0 0 0 0 0 0 0 0
@@ -2198,9 +2300,9 @@ eye ogre~
 &+rpain will find that the rewards of wearing the &+be&+By&+be&+r are great.&n
 ~
 A
-13 8
+13 10
 A
-1 2
+1 4
 #89130
 marble hammer~
 &+wa ma&+Gr&+gbl&+we &+gh&+wamme&+Gr&n~
@@ -2245,7 +2347,7 @@ A
 19 1
 #89132
 femur bone totem~
-&+wa carve&+rd f&+wemur o&+rf &+wa s&+rt&+wu&+rp&+wi&+rd b&+war&+rb&n~
+&+wa &+mr&+Mu&+mn&+Me&+md &+rf&nemur carve&+rd i&Nn&+rt&no a &+rt&Note&+rm&N~
 &+rA carved &+wfemur&+r lies on the ground.&n~
 ~
 34 10 2 0 11 40 270337 16385 64 0 0
@@ -2263,9 +2365,9 @@ femur bone totem~
 &+reerie appearance of bleeding at the neck.&n
 ~
 A
-26 4
+26 5
 A
-4 4
+4 5
 #89133
 woven mithral tail ring~
 &+ca woven mi&+Cth&+cra&+Cl t&+cai&+Cl &+crin&+Cg&n~
@@ -2284,9 +2386,9 @@ woven mithral tail ring~
 &+rstanding still, it seems to rotate as the light moves along the strands.&n
 ~
 A
-13 5
+13 10
 A
-1 2
+1 5
 #89134
 necklace tail tails feather feathers~
 &+ya nec&+Lkl&+wa&+yce o&+Lf t&+wa&+yi&+Ll&+ys &+wa&+yn&+Ld f&+ye&+wa&+Lth&+yers&n~
@@ -2304,9 +2406,9 @@ necklace tail tails feather feathers~
 &+rof &+yra&+Lcc&+yoon &+Lt&+yai&+Ll&+ys&+r and &+yow&+wl f&+yea&+wth&+yers.&n
 ~
 A
-26 3
+26 6
 A
-4 3
+4 6
 #89135
 green black oval earring~
 &+ga &+Lg&+green an&+Ld bl&+gac&+Lk &+gova&+Ll &+gearrin&+Lg&n~
@@ -2324,7 +2426,7 @@ green black oval earring~
 &+rof a &+mdrow.&n
 ~
 A
-13 8
+13 10
 A
 24 -2
 #89136
@@ -2375,7 +2477,7 @@ mithral chain barding~
 &+ca se&+Ct &+co&+Cf &+cmi&+Cth&+cra&+Cl &+cc&+Ch&+cain &+Cb&+car&+Cd&+cin&+Cg&n~
 &+rA set of &+cmi&+Cth&+cra&+Cl &+cc&+Ch&+cain &+Cb&+car&+Cd&+cin&+Cg&+r lies crumpled on the ground.&n~
 ~
-9 18 4 0 12 50 33562688 16777217 0 0 0
+9 18 4 0 12 50 33562624 16777217 0 0 0
 25 0 0 4 0 0 0 0
 10 22000 100
 E
@@ -2422,7 +2524,7 @@ mithral dagger~
 &+ca mi&+Cth&+cra&+Cl d&+ca&+Cgg&+cer&n~
 &+cA s&+Ch&+cinin&+Cg &+cmi&+Cth&+cra&+Cl d&+ca&+Cgg&+cer &+Cl&+cies &+Ch&+cere.&n~
 ~
-5 18 1 0 10 30 8256 8396801 32768 0 0
+5 18 1 0 10 30 8192 8396801 32768 0 0
 2 2 3 11 0 0 0 0
 2 6332 100
 E
@@ -2441,7 +2543,7 @@ mithral shortsword sword short~
 &+ca mi&+Cth&+cra&+Cl &+cs&+Ch&+cor&+Ct&+cswor&+Cd&n~
 &+cA mi&+Cth&+cra&+Cl &+cs&+Ch&+cor&+Ct&+cswor&+Cd l&+cies &+Ch&+cere.&n~
 ~
-5 18 2 0 10 30 8256 8396801 32768 0 0
+5 18 2 0 10 30 8192 8396801 32768 0 0
 9 3 2 3 0 0 0 0
 3 5436 100
 E
@@ -2479,8 +2581,8 @@ shining mithral dagger~
 &+ca s&+Ch&+cinin&+Cg &+cmi&+Cth&+cra&+Cl d&+ca&+Cgg&+cer&n~
 &+cA s&+Ch&+cinin&+Cg &+cmi&+Cth&+cra&+Cl d&+ca&+Cgg&+cer &+Cl&+cies &+Ch&+cere.&n~
 ~
-5 18 1 0 11 40 8256 8396801 320 0 0
-2 3 3 11 0 0 0 0
+5 18 1 0 11 40 8192 8396801 64 0 0
+2 5 2 11 0 0 0 0
 1 52432 100
 E
 shining mithral dagger~
@@ -2492,19 +2594,19 @@ shining mithral dagger~
 &+cconditions, especially when coated with &+Rfresh blood.&n
 ~
 A
-18 2
+18 5
 A
-19 2
+19 5
 #89144
-tentacle~
-&+mth&+re &+mt&+ren&+mt&+rac&+ml&+re o&+mf th&+re &+mt&+ren&+mt&+rac&+ml&+rer&n~
-&+rA &+mt&+ren&+mt&+rac&+ml&+re &+mf&+rrom &+mth&+re &+mt&+ren&+mt&+rac&+ml&+rer &+ml&+ries &+mh&+rere.&n~
+lash whip tentacler tentacle~
+&+mth&+re &+mla&+rsh o&+mf th&+re &+mt&+ren&+mt&+rac&+ml&+rer&n~
+&+rA lash &+mf&+rrom &+mth&+re &+mt&+ren&+mt&+rac&+ml&+rer &+ml&+ries &+mh&+rere.&n~
 ~
-5 2 3 0 7 0 12352 8193 0 0 0
-14 2 5 2 0 0 0 0
-5 25000 100
+5 2 3 0 7 0 12288 8193 126 0 0
+14 3 6 0 0 33 40 40
+5 25000 100 0 12288 0 0
 E
-tentacle~
+lash whip tentacle~
 &+r   Somehow during the battle, one of the &+mt&+ren&+mt&+rac&+ml&+res came loose from the body of&n
 &+rthe &+mt&+ren&+mt&+rac&+ml&+rer.  Though no one else could ever wield it as well as the creature&n
 &+rdid, it still is a formidable weapon in the hands of anyone that is proficient&n
@@ -2512,9 +2614,9 @@ tentacle~
 &+rattached to the tentacler, but somehow they seem to have come undone.&n
 ~
 A
-18 3
+18 4
 A
-19 3
+19 4
 #89145
 shimmering blue breastplate breast~
 &+ba s&+Bh&+bimm&+Ber&+bin&+Bg bl&+bue &+Bb&+breas&+Btpl&+ba&+Bt&+be&n~
@@ -2532,16 +2634,16 @@ shimmering blue breastplate breast~
 &+Bthe one w&+bearing it.&n
 ~
 A
-31 3
+31 4
 A
-35 3
+35 4
 #89146
 shortsword sword dragonclaw claw~
 &+wa &+Ld&+wra&+Lg&+wonc&+Ll&+waw s&+Lh&+wor&+Lt&+wswor&+Ld&n~
 &+rA &+Ld&+wra&+Lg&+wonc&+Ll&+waw s&+Lh&+wor&+Lt&+wswor&+Ld&+r has been left here.&n~
 ~
-5 35 2 0 12 50 33566720 8193 64 0 0
-9 3 3 3 0 0 0 0
+5 35 2 0 15 50 33566720 8193 64 0 0
+9 3 7 0 0 0 0 0
 2 80000 100
 E
 shortsword sword dragonclaw claw~
@@ -2602,9 +2704,9 @@ shimmering red femur~
 &+ra s&+Rh&+rimm&+Rer&+rin&+Rg &+rre&+Rd f&+remur~
 &+rA s&+Rh&+rimm&+Rer&+rin&+Rg &+rre&+Rd f&+remur leans against a wall.&n~
 ~
-5 35 3 0 12 50 37761088 8193 64 0 0
-12 4 2 0 0 0 0 0
-3 105000 100 4 0 0 0
+5 35 3 0 12 50 37761024 8193 64 0 0
+12 4 6 0 0 0 0 0
+3 105000 100 36 0 0 0
 E
 shimmering red femur~
 &+r   Ma&+Rde fr&+rom the f&+Remur &+rof a red dr&+Ragon, &+rthis weap&+Ron c&+ran be used t&+Ro pou&+rnd just&n
@@ -2614,9 +2716,9 @@ shimmering red femur~
 &+racross th&+Re sur&+rface lik&+Re rip&+rples on a p&+Rond.&n
 ~
 A
-18 3
+18 6
 A
-19 3
+19 6
 #89150
 rusty platemail plate mail~
 &+ca se&+rt &+co&+rf &+crus&+rty pl&+ca&+rt&+cemai&+rl&n~
@@ -2679,8 +2781,8 @@ sword two-handed dark darkly glow glowing~
 &+ca &+rd&+car&+rkly gl&+cowin&+rg t&+cwo-&+rh&+can&+rd&+ce&+rd &+cswor&+rd&n~
 &+rA d&+car&+rkly gl&+cowin&+rg t&+cwo-&+rh&+can&+rd&+ce&+rd &+cswor&+rd leans against the wall.&n~
 ~
-5 16 4 0 11 40 37756928 8193 64 0 0
-13 4 4 3 0 0 0 0
+5 16 4 0 11 40 37756929 8193 64 0 0
+13 5 6 0 0 0 0 0
 5 22500 100
 E
 sword two-handed dark darkly glow glowing~
@@ -2691,9 +2793,9 @@ sword two-handed dark darkly glow glowing~
 &+rwhen it is coated with slick blood.&n
 ~
 A
-18 4
+18 5
 A
-19 4
+19 6
 #89154
 ferrethide hide ring~
 &+ya &+wb&+yrai&+wd&+ye&+wd f&+yerre&+wth&+yi&+wd&+ye rin&+wg&n~
@@ -2800,7 +2902,7 @@ sunbeam flute~
 &+rA &+Wfl&+Yu&+Wt&+Ye&+r made from a &+Ysun&+Wb&+Yeam&+r floats here.&n~
 ~
 32 1 2 0 12 50 100933632 8404993 64 0 0
-184 1 1 1 0 0 0 0
+184 60 1 1 0 0 0 0
 0 22500 100 32 0 0 0
 E
 sunbeam flute~
@@ -2814,7 +2916,7 @@ sunbeam flute~
 A
 24 -3
 A
-2 3
+2 5
 #89160
 belt braided bearskin~
 &+ya &+wb&+ye&+wlt &+yo&+wf b&+yrai&+wd&+ye&+wd b&+years&+wk&+yin&n~
@@ -2884,7 +2986,7 @@ ankylosaur tail club~
 ~
 5 11 2 0 11 40 8193 8396801 64 0 0
 10 3 4 0 0 0 0 0
-3 22500 100 4 0 0 0
+3 22500 100
 E
 ankylosaur tail club~
 &+b   Someone has taken the end of the tail of an an&+Bkyl&+bosaur and crafted a c&+Bl&+bu&+Bb&n
@@ -2895,15 +2997,15 @@ ankylosaur tail club~
 A
 18 3
 A
-19 3
+34 2
 #89164
 etched mithral faceguard mask~
 &+can e&+Ct&+cc&+Ch&+ce&+Cd &+cmi&+Cth&+cra&+Cl f&+cace&+Cg&+cuar&+Cd&n~
 &+rAn &+ce&+Ct&+cc&+Ch&+ce&+Cd &+cmi&+Cth&+cra&+Cl f&+cace&+Cg&+cuar&+Cd&+r lies in the dust.&n~
 ~
-11 18 2 0 11 40 8193 262145 64 0 0
-0 0 0 0 0 0 0 0
-0 22500 100 0 0 2097152 0
+9 18 2 0 11 40 8193 262145 64 0 0
+10 0 0 0 0 0 0 0
+0 22500 100
 E
 etched mithral faceguard~
 &+r   This &+cmi&+Cth&+cra&+Cl f&+caces&+Ch&+cie&+Cld&+r has been etched to give the wearer a fearsome look&n
@@ -2913,7 +3015,7 @@ etched mithral faceguard~
 &+rthe rest of the mask has been left a darker, more natural hue.&n
 ~
 A
-2 3
+2 6
 A
 19 3
 #89165
@@ -2965,7 +3067,7 @@ translucent crystal hemisphere mask~
 ~
 11 27 2 0 12 50 270337 262145 64 0 0
 0 0 0 0 0 0 0 0
-0 22500 100 4 0 0 0
+0 22500 100
 E
 translucent crystal hemisphere mask~
 &+r   This &+Mh&+memis&+Mph&+mere&+r has been carved from a single diamond that has a &+Mp&+min&+Mk t&+min&+Mt&n
@@ -2976,7 +3078,7 @@ translucent crystal hemisphere mask~
 &+rthough they had the multi-faceted eyes of an insect rather than normal eyes.&n
 ~
 A
-2 3
+32 2
 A
 19 3
 #89168
@@ -2998,9 +3100,9 @@ braided elfskin headband~
 &+rthe time that the headband is worn.&n
 ~
 A
-3 3
+33 2
 A
-26 3
+34 2
 #89169
 panther pantherhide hide quiver~
 &+ya pan&+wth&+yer&+wh&+yi&+wd&+ye &+wq&+yuiver&n~
@@ -3120,7 +3222,7 @@ collar triceratops frill~
 &+rthe back of the neck a complete cover from all blows.&n
 ~
 A
-4 3
+34 2
 A
 22 -3
 #89175
@@ -3150,7 +3252,7 @@ braided rawhide drum~
 &+rA d&+yrum&+r with b&+yrai&+rd&+ye&+rd &+yraw&+rh&+yi&+rd&+ye &+rstretched across is lies here.&n~
 ~
 32 12 2 0 10 30 33562624 8404993 0 0 0
-188 1 0 1 0 0 0 0
+188 60 0 1 0 0 0 0
 2 1712 100
 E
 braided rawhide drum~
@@ -3191,7 +3293,7 @@ inlaid pearl mandolin~
 &+rA &+yman&+wd&+yo&+wl&+yin&+r with &+yin&+wl&+yai&+wd p&+Wear&+wl&+r lies on the ground.&n~
 ~
 32 6 2 0 10 30 33562624 16385 0 0 0
-186 1 1 1 0 0 0 0
+186 60 1 1 0 0 0 0
 1 1452 100
 E
 inlaid pearl mandolin~
@@ -3225,7 +3327,7 @@ marble shard lockpick pick~
 &+wa mar&+gbl&+we s&+gh&+war&+gd&n~
 &+rA long, thin &+wmar&+gbl&+we s&+gh&+war&+gd&+r has been dropped on the ground.&n~
 ~
-31 38 0 0 9 20 33562624 16385 0 0 0
+31 38 0 0 9 20 33562624 0 0 0 0
 30 1 0 0 0 0 0 0
 0 10 100
 E
@@ -3241,8 +3343,8 @@ sow ear sack~
 &+Ma &+Ws&+Mow's ea&+Wr&n~
 &+rA &+Ws&+Mow's ea&+Wr&+r lies on the ground.&n~
 ~
-15 2 2 0 11 40 33824768 9453569 0 0 0
-120 1 0 120 0 0 0 0
+19 2 2 0 11 40 33824768 9453569 0 0 0
+20 6 6 0 2 2 0 0
 1 565 100
 E
 sow ear sack~
@@ -3260,7 +3362,7 @@ horn parasaurolophus~
 &+rA &+mp&+Marasauro&+ml&+Mo&+mph&+Mus &+mh&+Morn&+r lies on the ground.&n~
 ~
 32 10 2 0 10 30 33562624 8404993 0 0 0
-189 1 1 1 0 0 0 0
+189 60 1 1 0 0 0 0
 2 1522 100
 E
 horn parasaurolophus~
@@ -3280,7 +3382,7 @@ carved pearl lyre~
 &+rA &+wly&+Wre&+r carved from &+wp&+Wear&+wl&+r leans against the wall.&n~
 ~
 32 52 2 0 11 40 33562624 8404993 0 0 0
-185 1 1 1 0 0 0 0
+185 60 1 1 0 0 0 0
 1 1536 100
 E
 carved pearl lyre~
@@ -3300,7 +3402,7 @@ inlaid harp~
 &+rA &+wh&+yar&+wp&+r with &+wp&+Wear&+wl &+yin&+wl&+yai&+wd&+r on the surface leans against the wall.&n~
 ~
 32 6 2 0 11 40 33562624 8404993 0 0 0
-187 1 1 1 0 0 0 0
+187 60 1 1 0 0 0 0
 1 1136 100
 E
 inlaid harp~
@@ -3354,8 +3456,8 @@ A
 13 5
 #89187
 mask butterfly~
-&+ba &+Lb&+bu&+wtt&+ber&+Lfl&+wy &+wdo&+bmin&+Lo &+bmas&+Lk&n~
-&+rA &+wdo&+bmin&+Lo &+bmas&+wk &+rmade from &+Lb&+wl&+bue &+Lb&+bu&+wtt&+ber&+Lfl&+wy win&+wg&+bs&+r lies on the ground.&n~
+&+ba &+Lb&+bu&+wtt&+ber&+Lfl&+wy &+bmas&+Lk&n~
+&+rA &+bmas&+wk &+rmade from &+Lb&+wl&+bue &+Lb&+bu&+wtt&+ber&+Lfl&+wy win&+wg&+bs&+r lies on the ground.&n~
 ~
 9 50 2 0 12 50 8193 131073 64 0 0
 5 0 0 2 0 0 0 0
@@ -3411,4 +3513,4 @@ belt woven dreams swirling mist~
 A
 24 -4
 A
-13 15
+13 20

@@ -4,4 +4,3 @@
 int caertannad_summon(P_char, P_char, int, char *);
 
 #endif
-

@@ -258,10 +258,43 @@ S
 #120035
 M
 qc_action 150~
-&NA &+Rcheerful gnome salesman says 'Greetings!  You sure do you have beautiful eyes..'
-&+R'With one of my pairs of eyeglasses on, that is!' he adds.
-&+RA cheerful gnome salesman smiles and gestures to you a piece of his merchandise.
+&NA &+Rcheerful gnome salesman says &+C'Greetings!  You sure do you have beautiful eyes..'
+&+C'With one of my pairs of eyeglasses on, that is!' he adds.
+&N$n smiles and gestures to you a piece of his merchandise.
 ~
+MA
+hi hello~
+&N$n grins at $N and says &+C'What ya see is what we got..'
+&NHe leans closer to $N and says &+C'Unless yer lookin' for somethin' &+cspecial&+C..'
+~
+MA
+glasses eyeglasses~
+&N$n nods at $N.
+&+C'Eyeglasses are my game.. unless yer lookin' fer somethin' &+cspecial&+C..'
+~
+MA
+special~
+&N$n grins at $N and continues &+C'I can fix up &+La pair of &+Rgnomish &+Ce&+Yy&+Ce&+cglasses&+C.'
+
+&+C'Bring me one pair, you know, the same ones I sell here, and also
+&+Ca &+Rgn&+romi&+Rsh &+Lshopkeepers token, &+Cand I'll fix em up real nice!'
+
+&N$n bows deeply before $N.
+~
+M
+qc_action 150~
+&N$n shines &+La pair of &+Rgnomish &+Ce&+Ry&+Ce&+cglasses&N with an old &+mcloth.
+&+C'Lookin for somethin ...special?' &Nhe says with a wink.
+~
+QA
+&N$n opens a small &+ycoin purse&N the moment $N reveals the &+Ltoken&N.
+&+C'Yes. Oh yes!' &N$n exclaims, excitedly.
+
+After what feels like several minutes of spirited tinkering, he is finished.
+~
+R I 120054
+G I 120014
+G I 55033
 S
 #120036
 M
@@ -544,5 +577,15 @@ G I 8
 G I 8
 D
 &N$n sneaks off into the &+bshadows&N.
+~
+S
+#120069
+M
+qc_action 100~
+&n$n says '&+WMove along.'
+~
+M
+qc_action 100~
+&+W$n &+Wpeers out across the &N&+rrampart&+W, clutching his hammer firmly.
 ~
 S

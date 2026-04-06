@@ -1,0 +1,2495 @@
+#59035
+M
+qc_action 200~
+&+yA g&+Ri&+ya&+Rn&+yt a&+Rn&+yt&+L darts across the ceiling, its weight snapping a small &Nstalactite&+L loose;
+&+Lthe shard &+yc&Nr&+ya&Ns&+yh&Ne&+ys&+L to the floor and &-m&+lExethanter&N&+L recoils, his expression twisting
+&+Lwith agitation and disdain.
+~
+M
+qc_action 150~
+&N&-m&+lExethanter's&+L skeletal fingers trail along the carved walls, feeling the grooves
+&+Las though they might whisper something he has forgotten. Every so often he pauses,
+&+Lturning his head sharpy, as if a distant memory has brushed against his mind, only
+&+Lto fade before he can grasp it.
+~
+M
+qc_action 150~
+&+LDrifting like a tattered shadow, his movements slow and uncertain, &-m&+LExethanter&N
+&+Lpauses briefly and listens with the desperation of someone hoping to hear his
+&+Lown name spoken aloud.
+~
+MA
+exethanter~
+&+LThe l&+mic&+Lh freezes mid-step in a rigid posture.
+&+LThe &+yamber lights&+L in &-m&+LExethanter's&N&+L eyes &+yf&+Ylar&+ye&+L into &+Yf&+yl&+Ya&+ym&+Ye&+ys&+L with startled &+Wclarity&+L.
+&+LFor a trembling moment, recognition washes over him and he lifts a skeletal hand
+&+Lto his chest, feeling for a nonexistant &+rheartbeat&+L.
+
+&-m&+L'Yes... that name... it was mine,'&N&+L he whispers, the words sounding gravely and
+&+Lpainful.
+
+&+LThe lights in his eyes &+Yf&+Ll&+Yi&+Lc&+Yk&+Le&+Yr&+L again, only weaker this time.
+
+&-m&+L'Please,'&N&+L he croaks, &-m&+L'find what remains of who I was... before even this memory..'&N
+&-m&+LExethanter&N&+L goes silent and his eyes &+ydim&+L to a dull f&+yl&+Li&+yc&+Lk&+ye&+Lr as his attention drifts
+&+Linto the distance, resuming his lostness.
+~
+MA
+hi hello~
+&-m&+lExethanter&N&+L continues his confused meandering through the temple without pause.
+&-m&+l'There is something... something I was,'&N&+L he murmurs, voice brittle and wavering.
+~
+MA
+steliana albusel aurica dancescu iolanda yonescu aurel plesu dorata dobre markovia endorovich marius adrian selymes~
+&-m&+lExethanter&N&+L frowns for a moment and shakes his head.
+~
+MA
+petrovna ignatie kazaku shuhul ishai-bal claudiu elica florea sergiu solomovici ireena kolyana dhavit uthurlan sasha ivliskova~
+&-m&+LExethanter&N&+L sighs creekily and says &-m&+l'I.. don't... know!'&N
+~
+MA
+patrina velikovna ulrich bucaravich iancu dudnic stephan gregorovich khuden doranal ardan kharkov cyril remylich thorgen jannes sateris taul~
+&-m&+L'These names...' &N&+Lhe says &-m&+l'..mean nothing to me.'&N
+~
+MA
+dostran~
+&n$n's &N&+Lgaze sparkles with a clarity so foreign it surprises the lich.
+&-m&+L'Dostron... yes. Dostron!' &N&+Lthe ancient lich chortles.
+&-m&+L'There is a name I haven't heard in a long time..'&N &+Lhe says, pondering.
+&-m&+L'..A long time.'&N &+Lhe repeats, beginning to once again gaze off.
+
+&N$N says 'You know him?'
+
+&-m&+L'Of course I know him!' Exethanter&N&+L scoffs, &-m&+L'He is me!'&N
+&-m&+L'I haven't gone by the name of Dostron since.. before you were born.'
+
+&N$n &N&+Leyes dart back and forth, unraveling the memories in what is left of
+&+Lhis mortal mind. &-m&+L'Not since Anda Thema..'&N
+~
+MA
+something who confused confusion~
+&N&-m&+L'Who... am I?&N&+L he whispers, listening to the walls around him.
+~
+MA
+amber temple~
+&-m&+LExethanter&+L turns his head slowly toward $N, the &+yamber glow&+L in his eyes &+yp&+Yul&+ys&+Yin&+yg&+L.
+&-m&+L'The Amber Temple...,'&N&+L he murmurs, tasting the words as though they were foreign,
+&-m&+L'I came here once, long ago, but the purpose is gone from me...'&N
+
+&-m&+LExethanter&N&+L scans the walls and ceiling around him and begins to drift away as the
+&+Lf&+yl&+Li&+yc&+Lk&+ye&+Lr&+ys&+L in his eyes &+ydim&+L once again.
+&-m&+L'The ants have taken what I once pursued, and I cannot recall how.. or why.. or who..'
+~
+MA
+who name~
+&n&-m&+LExethanter&+L pauses sharps and says into the air in front of him,
+&-m&+L'I... don't remember.. my own name..'&N&+L he says in a raspy, tortured whisper.
+~
+M
+strahd rahadin eva vistani barovia ravenloft thredra~
+&n&-m&+LExethanter&N&+L ignores you and continues his meandering confusion.
+~
+MA
+anda thema~
+&-m&+l'Anda Thema.. the New World, we called it..'&N&+L the lich says with a
+&+Lclarity he hasn't known in centuries.
+
+&-m&+l'We came for...'&N &+L..but $n &n&+Ltrails off and his eyes begin
+&+Lto once again return to their thoughtless gaze.
+
+&-m&+l'I don't remember...'&N&+L the lich relents.
+&-m&+l'Oh, if I had my thoughts.. my body.. Dostron's body..'
+
+&N$n &n&+Lbegins pacing away, repeating the same words several times until
+&+Ltrailing off, once again lured by the unsolvable mystery of his past.
+~
+QA
+&N$n &+Ltakes several moments to acknowledge $N &+Luntil finally taking the &Nashes&+L.
+
+&+LThe &Nashes&+L begin to stir, swirling into the air in a slow, spiraling dance,
+&+Ldrawn to the concealed phylactery at &-m&+lExethanter's&N&+L throat, which had been
+&+Lconcealed by tattered rags until this moment.
+
+&-m&+LExethanter's&N&+L withered form stiffens.
+&+WCracks of &Npale &+Ylight&+W split his bones and with a sound like parchment tearing,
+&+Whis body collapses inward, unraveling into &+Lash&+W and&N memory&+W.
+
+&+LThe &+Cphylactery&+L remains floating where it was when the lich had stood,
+&+Ldrawing-in the finals &Ndusty wisps&+L of what had been &-m&+lExethanter&N&+L, until it
+&+Lfinally snaps closed and falls lifelessly to the ground. &+YFrom it emerges
+&+Ya golden spirit, burning with a bright radiance. His face is proud and unlined,
+&+Ywhile his eyes are clear with purpose. They fixate on $N.
+
+&+YThe golden spirit&N bows his head solmenly and courtly.
+&+YThe golden spirit&N says &+Y'I am King Dostron,'&N his voice echoing.
+
+&+Y'You have returned what was stolen from me.' he says, then lifts his arm and
+&Ngestures westward, &+Y'Come to my tomb, in the city now called Vallaki.
+&+YThere, my story - and yours - must continue.&+Y' &Nhe says.
+~
+R I 59317
+G I 59150
+D
+&+LWith a final bow, &+Ythe spirit of King Dostron&+L slowly fades out of existence.
+~
+S
+#59045
+M
+qc_action 250~
+&+LA deep groaning in the distance seems to be growing louder.
+~
+S
+#59046
+M
+qc_action 250~
+&+yThe gaunt, naked prisoner lifts his head and says 'You there, help me!'
+~
+MA
+hi hello~
+&N$n turns his weary head towards $N and responds &+y'Help me, $N!'
+
+&N$N looks puzzled for a moment and inquires 'How did you know my name?'&N
+
+&n$n's droopy eyes suddenly open and his broken visage restores.
+&+y'She said you'd come!'&+y he says with a clear voice.
+~
+MA
+she~
+&n$n nods at $N.
+&+y'Stefania..'&N he clarifies, raising the &+Lshackles&N on his bound wrists.
+&+y'She's got the key!'&N $n snorts.
+~
+MA
+stefania key shackle shackles prisoner prison~
+&N$n nods repeatedly, making a bitter face and shaking his &+Lshackles&N.
+&+y'Get me that key, $N!' &Nhe grunts.
+~
+Q
+&N$n instantly takes notice of the &+Llarge, black key&N before $N hands it to him.
+
+&n$n clambers to his feet.
+As &N$n begins to speak, &+yhis hair starts growing as his features begin
+&+yto protrude around his face.
+&+y'These choices you've made to come here, $N..' &Npausing momentarily as
+&nthick brown &+yfur &Nbegins growing from his skin..
+&+y'..were made by the vampires&+y.' &n he says, as his body grows noticably
+&Nlarger.
+&+y'My captor, as well as the ones you've seen in the Castle..&N' &Nhe says as
+his mouth fills with &+Wfangs&N and &+Wlarge, sharp teeth&N.
+&+y'..began their transformations just as you..'&N he says as he falls to his
+&Nhands and knees, now fully in werewolf form.
+~
+R I 59037
+R E 1000000
+G I 59037
+D
+&+y'...just as me.&' he says before bursting through his &+Lshackles&N, which fall
+into &+Lmetal scraps.
+&+y'Beware.'&N' he warns, before galloping down the dungeon into darkness.
+~
+S
+#59049
+M
+qc_action 300~
+&+LStanding in still concentration, &+mThredra Anarax&+L loudly yells '&+rEugszr Zawsucandus!'
+&+LThe pale necromancer's boney face is &+gfaintly illuminated&+L by a &+gbrief &+Gglow&+L from the vat.
+~
+MA
+eugszr zawsucandus~
+&N$n &+Lbreaks from her stoic stillness, snapping her head towards $N.
+&+LA wave of uncomfortable coldness breaks the stale air as &+mThredra Anarax&+L speaks:
+&+W'Your breath is wasted, giorgio. Incantations won't dispel the vampire. Not the First.'
+
+&+mThredra Anarax &+Lhisses &+W'What would a giorgio know of black magic!?'
+
+&+LWith a brief snear, &+mThredra Anarax&+L dismisses $N and returns to her incantation.
+~
+MA
+giorgio~
+&N$n &+Lscoffs at $N &+Land says in her cold, raspy voice &+W'Not a Vistani.. a giorgio.'
+&+mThredra &+Lslowly turns her head and scans $N &+Lup and down.
+&+W'Not Strahd's type, either..' &+Lshe says, peering intently at $N now with dead eyes.
+~
+MA
+vistani spies~
+&N&+mThredra Anarax &+Lgrimmaces and says &+W'Spies... but you, $N are not one of them.'
+&+mThredra Anarax &+Lturns towards $N, revealing her boney, pale human face.
+&+W'You're here for Strahd..' &+Lshe says to $N, unwavering.
+~
+MA
+strahd first vampire~
+&+LWith a raspy growl, &+mThredra Anarax&+L says &+W'I am Thredra Anarax. I've long served Strahd.
+&+WWho wouldn't bow down to such a black-hearted power? But lately.. Strahd has not been
+&+Whimself. I question tying myself to someone who's grip on sanity slowly crumbles.'
+
+&+mThredra Anarax &+Lscowls and continues &+m'His growing insanity manifests itself in many ways.
+&+WMost obviously, he started sending his servants secretly against me, disguising them as
+&+Wvillagers. He's forgotten all I've done for him, and what I could accomplish against him,
+&+Wshould I decide to act.'
+~
+MA
+act~
+&n$n &+Lgrins at $N, a seemingly rare expression for the ancient necromancer.
+&+W'Do you know where the catacombs are, $N? Go through the middle door, ascend the stairs
+&+Wand follow the tunnel. Once you reach the catacombs, proceed directly east past four
+&+Wcrypts to a crypt set into the east wall. The name once inscribed there is clawed away.
+&+WInside, you'll find Saint Markovia's Thighbone - a relic of some power that is useful
+&+Wagainst Strahd. Then return to the crypt gates and follow the southern wall until you
+&+Wreach the second crypt on the wall. Here, you'll find the fingerbone of Saint Bogdan.
+&+WLastly, on the eastern side of the catacombs, down the main hallway, you'll find the
+&+Wroyal crypt of Barov and Ravenovia. Extract the burial shroud of Saint Eceterina
+&+WReturn to me with these three relics.'
+
+&N$n stares into $N's eyes for a moment and growls a warning &+W'Do not waste my time, $N!'
+~
+MA
+hi hello~
+&N$n ignores $N and continues her incantation.
+~
+MA
+black magic spell incantation incantations cauldron~
+&N$n &+Lsnaps her attention towards $N and hisses, &+W'What would you know
+&+Wof the dark arts!? Keep your tongue behind your teeth!'
+
+&N$N steps back, heeding the &+mnecromancer's &Nwarning.
+
+&+LAfter several more failed attempts at her spell, &+mThredra&+L curses and
+&+Lslams her boney fists onto a nearby workbench, breaking several glass
+&+Lflasks and chemistry devices.
+
+&+LOn the brink of rage, &n$n &+Ldigresses, collecting herself into an
+&+Luncharacteristic calm and finally approaches $N.
+
+&+W'An ..'unwanted force' festers in a crypt,' &+Lshe says, hesitating in
+&+Wher speaking to choose her words carefully. &+W'Dostron, find his crypt
+&+Wand bring me his ashes!&+L she whispers, voice quivering.
+
+&+LIgnoring $N's response, $n &+Lquickly turns back to her working area,
+&+Lopens an ancient, dusty grimoire and begins to study intently.
+~
+MA
+dostron~
+&+mThredra Anarax's&+L eyes &Nsquint&+L with mistrust at $N.
+&+W'Do you have his ashes, worm?'&N
+~
+MA
+fortune~
+&N$n immediately halts her &+Lnecromancy&N and slowly turns her gaze to $N.
+
+&+W'You have a fortune of Ravenloft?  ..Give it to me.'&N she growls.
+~
+QA
+&N$n &+Lthrows back her black hood, revealing a scraggly plume of frizzy white hair
+&+Latop her barely-fleshy, skeletal head. She lifts her clawed hands and the three
+&+Wholy relics&+L begin floating in front of her.
+
+&+WA blinding light consumes the darkness for several moments, burning the eyes of any who
+&+Wdon't shield their faces from the vivid spectacle.
+
+&+WThe brightness begins coalescing into two objects of great radiance: a shield and a wooden stake.
+~
+R I 55322
+R I 59247
+G I 59171
+G I 59206
+G I 59238
+D
+As the room begins to dim, &+mThredra Anarax&N is nowhere to be seen.
+~
+QA
+Despite calls and gestures, $n seems lost in her own chanting.
+Finally, $N places the &+Lashes &Non the &+ytable&+L and &+mThredra&N halts.
+
+With an uncharacteristic swiftness, $n snatches the &+Lashes &Nwith a hint
+of glee in her pale eyes and adds them to a beaker of fluid. After several
+minutes of quickly, but precisely, measuring, stirring, heating, measuring
+again, and so on, $n slowly stirs the final concoction into the &+Lvat.
+
+&+LThe black ooze begins to swirl on its own.
+
+&N&+mThredra's &Neyes &+Mglow&N with a &+mpurple haze&N as &+Lthe black ooze&N
+settles into a &+cshimmering &+Wbright &+creflection&n, casting &+Ylight&N that
+this laboratory has never known. Undanted, &+mThredra's &Neyes remain fixated
+on the surface as she steps in...
+
+As her body begins to transform into a rejuvanted, more youthful self,
+&+mThredra &Nturns to $N and says &+W'We will meet again, $N.'
+
+&NNearly stunned by her soft, musical voice, a charmed $N nods and says 'Yes.'
+
+&+mThredra Anarax &Nslips a &+Yring&n from her hands and extends it to $N.
+~
+R I 59305
+G I 59150
+QA
+&N$n grins greedily and snatches the &+Ycoin&N from $N.
+&NWithout looking away from her newfound &+Yfortune&N, &+mThredra &Nflicks
+her wrist, gesturing towards $N and some &+cpotions&N suddenly appear.
+~
+R I 59209
+R I 59209
+R I 59209
+R I 59209
+R C 1000000
+R E 200000
+G I 59202
+S
+#59050
+M
+qc_action 200~
+&N$n &+rlets out a labored, &Ng&+mu&Nr&+mg&Nl&+mi&nn&+mg&N &+rgroan as its bloated limbs writhe and &Ns&+clos&nh&+r.
+~
+S
+#59058
+MA
+hi hello~
+&N$n &Nsnorts at $N and mutters &+c'Begone, graverobber.'
+~
+MA
+graverobber~
+&N$n glances $N up and down, then spits on the floor.
+&+c'Graverobber, indeed. Obviously not a Lightbringer. Nor Vistani' &Nhe scoffs.
+&+c'Speak not the poisonous lies you tell Ezmerelda! Now begone!' &N he insists.
+~
+MA
+vistani ezmerelda~
+&N$n peers at $N and says &+c'Not all of em are servants to Strahd, but all are ruled like such.'
+&+c'$N&+c, is it?'
+&N$N nods at $n.
+&+c'You've done well to get this far in the Castle, $N. Wit and ability aren't enough in
+&+cplaces like.. this.'
+&N$N grimmaces as he waves his arms through the thick &+cfog&n.
+&+c'This is not my first time to Ravenloft, either.' &n he says.
+~
+MA
+lightbringer~
+&N$n lets out a suppressed chuckle at $N.
+&+c'The only Lightbringers that Strahd would allow this deep into Castle Ravenloft are in the dungeon.'
+~
+MA
+dungeon castle ravenloft~
+&N$n nods at $N and says &+c'My first time in this place was on an invitation from Count Strahd,
+&+chimself. To a banquet, years before the castle turned to undead ruin. He had a particular
+&+cinterest in our people. Particularly the priestesses.'
+&N$n looks down and sighs.
+&+c'Particularly my sister'&N he whispers solemly.
+
+&NAfter a moment of gathering his thoughts, $n uprights himself and says:
+&+c'Most of these rubes are in search of the famous fortunes of Ravenloft. Not I.'
+~
+MA
+sister priestesses~
+&N$n sighs deeply.
+&+c'Patrina was her name' &nhe finally says.
+&+c'She is the reason I am here.'
+~
+MA
+patrina~
+&N$n nods at $N and says &+c'Strahd invited us to a banquet at Castle Ravenloft, many years
+&+cago, before the undead came. Before our people were slaughtered.'
+Grinding his teeth for a moment, $n looks away, continuing to speak through the fog:
+&+c'Count Strahd sought our audience in petition for 'spiritual healing.'
+&+cOr so he'd had us believe.. when Patrina and I arrived at this place, she was fully
+&+ctaken by him. Drunk at the chalice of his overflowing power after being so thirsty
+&+cto drink from it. She sought vampirism. She sought him.'
+&+c'Strahd never had any business with the Dusk Elves. Only the courtship of his next
+&+cobsession. His next victim. I could not allow it, $N! Not Patrina!'
+
+&N$n spins around and marches up to $N's face, staring sharply into their eyes.
+&+c'I did what I had to do!' he barks.
+
+&NChoking back tears, $n continues, '&+cI've waited years for this day, $N. There is a way
+&+cto bring Patrina back, through the blood of Zhudun.'
+~
+MA
+strahd~
+&+c'$N.. you may not be a graverobber, but nor are you a vampire-slayer.' $n says.
+&N$n approaches $N and leans closer, whispering &+c'These Vistani have gotten me this far,
+&+cbut if their goal remains Strahd?' &N$n answers his own question with a garrote gesture.
+
+&+c'Death is certain. But even more certain is the endless undeath they'll face when they
+&+crise again as his pets! Much like the beasts wandering this cursed place, many were
+&+cdusk elves, Barovians, outsiders like yourself!' &Nhe growls with a warning tone.
+
+&+c'I've no intention of crawling through this castle in a thousand years. No, $N, I am here
+&+cfor my..' $n pauses as voice suddenly wavers.
+
+&+c'For my sister'&N he concludes.
+~
+MA
+blood zhudun~
+&N$n huddles closer to $N and whispers &+c'Aye. Rumors and forbidden tales that cost many
+&+clives over many years tell of an ancient temple, dug deep within the mountain by primitive
+&+cmen. Savage descendants of today's oligarchs, no doubt.'
+
+&N$n scoffs to himself and continues whispering &+c'According to lore, the rulers of these
+&+cmen would live through many generations, fathering thousands, in unnaturally long life
+&+cthrough the blood of their god, Zhudun. If there is a way to return Patrina to me, it is
+&+cfound in this blood, $N.'
+
+&N$n straightens up for a moment. He quickly dusts off where his knee had dirtied his robes
+and twists his hand around the crystal atop his quarterstaff, causing it to shine a bit brighter.
+
+&+c'Find the Amber Temple, and the 'Blood of Zhudun,' if such a thing exists.' &Nhe says with a
+&Nspeculative tone.
+
+&+c'It is Patrina's last hope.'&N he finishes, solemnly.
+&+c'Bring it back to me. Be silent!' &nhe warns, dismissing $N.
+~
+MA
+amber temple~
+&N$n peers intently at $N and nods &+c'Deep within these catacombs, it is rumored the temple
+&+cstill is buried behind the stone.'
+~
+MA
+fortune fortunes rubes barovians barovia~
+&N$n sighs and nods at $N.
+
+&+c'Treasure hunting, as it were, is the primary motivator for..&N' &Nhe sizes the Barovians
+up and down from across the room, continuing &+c'.."Local help."'
+
+&N$n continues &+c'Should you find one of these 'Fortunes of Ravenloft', you will do
+&+cwell to bring it straight to me, for inspection.'
+~
+QA
+&N$n gasps in astonishment.
+&N$n opens the vial of &+rthe blood of Zhudun&N and uses his free hand to waft air towards his nose.
+&N$n gasps in astonishment a second time and says &+c'This is really it, $N!'
+
+&N$n fishes &+La large key&N from his robe and hands it to $N.
+&+c'Take this!' &Nhe calls out &+c'and meet me at Patrina's crypt, in the central hall!'
+
+&NBefore $N has a chance to respond, $n tears a &+Ldimensional door&N through the air with his
+crystal-topped quarterstaff and quickly steps through, sealing it behind him.
+~
+R I 59257
+R I 59248
+R I 59248
+R I 59248
+G I 59256
+D
+Three &+cmoon&+Cbeam&+L drops &Nare all that remain.
+~
+QA
+&N$n grins with an uncharacteristic greed and snatches the &+Ycoin&N from $N.
+&+c'Well done! Well done, indeed!&' he praises.
+~
+R I 59248
+R I 59248
+R I 59248
+R I 59248
+R C 1000000
+R E 200000
+G I 59202
+S
+#59059
+M
+hi hello~
+&n$n says &+c'Sh-sh-should we go back?'
+~
+M
+yes~
+&N$n peers around, then shakes his head.
+&+c'Nay. I'm stickin' with the raunie.' &Nhe mutters before huddling behind &+gEzmerelda&+c.
+~
+M
+no~
+&+c'Oh really, $N? Well then you go first!' &N$n says, sarcastically.
+~
+M
+qc_action 400~
+&n$n &nhuddles close to &+gEzmerelda&n, desperately squinting through the fog.
+~
+M
+qc_action 700~
+Without turning his head from the tunnel, $n shuffles over to you and says
+&+yc'D-d-do you think the rumors are t-t-true?'
+&N$n stumbles briefly, before you have a moment to respond, and returns to his group.
+~
+MA
+rumors~
+&N$n breaks his gaze from the tunnel and trots over to $N.
+&+c'Rumors about a shapeshifting vampire that cannot be kinned!'
+&N$n removes his gloves and puts his index fingers in his mouth, pulling back the
+gums around his upper lip.
+&+c'Fangs like this!'&N he says, a worried look in his eye, before regloving his hands
+and scurrying back to his group.
+~
+MA
+vampire vampires strahd~
+&n$n gulps and, noticing his comrades watching him, belts out &+c'Death to the undeath!'
+~
+S
+#59060
+M
+qc_action 125~
+&+gEzmerelda D'avenir &Nsays &+g'Evil that feeds on the innocent is the worst of all evils and must be destroyed.'
+~
+M
+qc_action 125~
+&+gEzmerelda D'avenir &Nsays &+g'I go where angels fear to tread.'
+&+gEzmerelda D'avenir &Ngracefully fans her &+ycards&N with one hand.
+~
+MA
+hi hello~
+&N$n &Nsmirks at $N and says &+G'I saw you coming. $N, right?'
+&N$N makes a puzzled face at $n.
+&+G'We &+cVistani &+Gsee many things.' &Nshe quips, assuringly.
+&n$n leans forward and peers intently at $N.
+&+G'You have come to me to learn of the &+cVistani?&+G' she openly ponders,
+before fanning her deck of &+ycards&+G 'Or perhaps to seek your &+Yfortune&+G?'
+~
+MA
+vistani~
+&+G'We Vistani are not your enemy, $N. Strahd is your enemy, so long as you draw breath.'
+&+G'Come, giorgio, hear my story and then tell me yours and why you are in this place.'
+&+G'As a youth, I never forsesaw my future as a raunie, nor a vardos lead I suppose..'
+&+Gyet here we are, $N' &N$n says in a thick accent.
+
+&+G'I was born in Anda Thema, in a vardos no larger than this' &Nshe says, rubbing her many-ringed
+&+Gfingers on the wagon. &+G'Born Vistani to parents of wicked intent. You see, $N, Lord Strahd
+&+Ghas an agreement with the Vistani - live on his land, under his 'protection', but at his
+&+Gprice..'
+~
+MA
+raunie~
+&N$n smiles at $N and explains &+G'A fortune teller, we Vistana call a 'Raunie''
+&+G'You may have encountered another already, yes?  Madam Eva..'
+~
+MA
+madam eva~
+&+G'Great Rema to Madam Eva!'&N $n &Nexclaims into the air, holding her hands open.
+~
+MA
+rema~
+&N$n says &+G'Great Rema to you, $N!  We Vistana consider 'Rema' to be the karma of the
+&+Gself.  Remember always $N, love breeds love. Hate breeds hate. If you are kind to them,
+&+Gthey are kind to you. If you hurt them, they hurt you.'
+~
+MA
+anda thema~
+&+G'Barovia, as you may call it, we Vistana call our homeland 'Anda Thema' &N$n says with a sigh.
+&+G'The name 'Barovia' was stamped on our lands along with the feet of Von Zarovich.'
+~
+MA
+vardos~
+&+G'Vardos is just the Vistana word what you call a 'wagon', $N.' &N$n says politely.
+~
+MA
+strahd von zarovich ravenovia barov sergei~
+&+G'The Zarovich conquest changed everything, $N. When the Vistani lived in Anda Thema
+&+Gsince the start, there were no wolves, no undead. No death.' $n says with a sigh.
+
+&+G'When Count Strahd took rule, he made an agreement with the Vistani - protection, at
+&+Gprice of obedience to his lordship. Many left Anda Thema when they came to find what
+&+Gexactly obedience to his lordship truly meant.'
+~
+MA
+protection price obedience lordship~
+&+G'Yes, $N.' $n says.
+&+G'The Vistani agreed to recognize the realm of Barovia, with the Zarovich oligarchy
+&+Gas rulers, and our common band of fortune-tellers his followers. This is when it got bad,
+&+G$N.' &Nshe says in her thick Vistani accent.
+
+&+G'People would go missing. Women, mostly. But men, too.' &N$n says, frowning and shaking
+&+Gher head.
+
+&+G'Obedient followers to the Count would take people to THIS castle and never be seen again!'
+&n$n grips the pommel of her blade and exclaims &+G'No longer! Death to Strahd!'
+
+&NShe quickly turns to her troope and calls out &+G'Death!'
+&NThe &+cVistani &Nthugs shout back &+G'Death!'
+~
+MA
+death~
+&+G'Once we kill Count Strahd, it will end!  The Madness of Barovia.. the zombie attacks..
+&+Gthe kidnappings..&+G' $n pauses for a moment as a teardrop rolls down her chin.
+
+&NAfter taking a moment to collect herself and adjust her garish jewelry,
+&+gEzmerelda &Nclears her throat and returns to her origins:
+&+G'I am Ezmerelda D'avenir - monster-hunter, wanderer and reader of the hidden.
+&+GWould you seek your &+Yfortune&G?' &Nshe asks, nonchalantly fanning her &+ycards&N.
+~
+MA
+cards fortune~
+&n$n grins and quickly shuffles her &+ydeck of cards&N hand-over-hand,
+before jovially inviting you to join her on a small mat on the ground.
+
+&+G'The winds brought you to me for a reason. Sit.'
+&NShe taps the &+ycards&N with two fingers, her many &+Yr&+Ci&+Yn&+Cg&+Ys&N chiming softly.
+
+&+G'For ten platinum coins, I will unveil what the mists conceal -
+&+Gthe shadows behind you, the path before you, and the truth that
+&+Gclings to your heart,' &Nshe says, her smile sharp and knowing.
+
+&+G'Do you accept a reading, traveler?'&N she asks, raising an eyebrow.
+~
+M
+raven~
+&+G'The raven flies where mortals dare not tread, its omen is one of hidden allies
+&+Gin dark places, but also of a shadowed watcher perched high upon Castle Ravenloft's
+&+Gspires, waiting for you to draw nearer.'
+
+&NHer voice softens.
+
+&+G'It means you are not alone... for good or ill.'
+
+&+gEzmerelda &Ngracefully sweeps the cards from the mat, shuffles twice, and
+deals two more with elegant, deliberate motions:
+
+&+L+------------------+  &+L+------------------+
+&+L|                  &+L|  &+L|                  &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L| &+r       /\        &+L|  &+L|        &+r@         &+L|
+&+L| &+r      /  \       &+L|  &+L|      &+G{&+r@&+R@&+r@&+G}&+g,      &+L|
+&+L| &+r     /    \      &+L|  &+L|     &+G'&+g\_Y,&+G'       &+L|
+&+L| &+r    /      \     &+L|  &+L|       &+G`&+g\\&+G`       &+L|
+&+L| &+r   ( &+Wo&+r      )    &+L|  |         &+g\\&+G,      &+L|
+&+L| &+r    .      .     &+L|  &+L|          &+g\\      &+L|
+&+L| &+r      `--'       &+L|  &+L|           &+g||     &+L|
+&+L|                  &+L|  &+L|           &+G`&+g\\    &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L|  &NBlood Droplet   &+L|  &+L|   &NThorned Rose   &+L|
+&+L+------------------+  &+L+------------------+
+
+She folds her hands, &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&N faintly chiming.
+&+G'Which speaks to you?' &Nshe asks.
+~
+M
+moon~
+&+G'The Full Moon is revelation, traveler - its light strips away every comforting
+&+Gshadow. Under its gaze, Anda Thema shows its true face, and the lies of Castle
+&+GRavenloft can no longer hide behind velvet and charm.
+
+&NHer lips curve in a knowing half-smile.
+
+&+G'It means the truth is coming for you... whether you are ready or not.'
+
+With a graceful flourish, she sweeps the &+ycards&N from the mat and returns them to
+the &+ydeck and with a graceful fluidity, she shuffles and lays down two new cards:
+
+&+L+------------------+  &+L+------------------+
+&+L|                  &+L|  &+L|                  &+L|
+&+L|                  &+L|  &+L|    &+C ]--===[      &+L|
+&+L|        &+r@         &+L|  &+L|    &+C ]    &+c.&+C[      &+L|
+&+L|      &+G{&+r@&+R@&+r@&+G}&+g,      &+L|  &+L|    &+C |    &+c:&+C|      &+L|
+&+L|     &+G'&+g\_Y,&+G'       &+L|  &+L|    &+C |_____|      &+L|
+&+L|       &+G`&+g\\&+G`       &+L|  &+L|    &+C   |&+c|&+C|        &+L|
+&+L|         &+g\\&+G,      &+L|  &+L|    &+C   |&+c|&+C|        &+L|
+&+L|          &+g\\      &+L|  &+L|    &+C  /___\       &+L|
+&+L|           &+g||     &+L|  &+L|    &+C /_____\      &+L|
+&+L|           &+G`&+g\\    &+L|  &+L|                  &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L|   &NThorned Rose   &+L|  &+L|  &NSilver Chalice  &+L|
+&+L+------------------+  &+L+------------------+
+
+&NShe folds her hands atop the table, &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs &Nsoftly chiming.
+&+GNow, traveler.. which fate calls your name?'
+~
+M
+mists mist~
+&N&+gEzmerelda&N's brows lift in quiet surprise as your hand drifts to the Mists.
+The &+ycard&N seems to chill the air around you gently tap it twice.
+
+&+G'Ah.. the Mists themselves claim you,' &Nshe whispers, as though sensing something
+only she can perceive.
+&+GThis omen is the most perilous of all - it speaks of shifting paths, unseen watchers,
+&+Gand a destiny neither fixed nor merciful. The land you call Barovia is moving around
+&+Gyou.. closing in, perhaps.'
+
+&NHer eyes lock onto yours, &+G'When the Mists choose someone, traveler, even Strahd notices.'
+
+With a sharp flick of her wrist, she gathers the &+ycards &Nand returns them to the &+ydeck&N.
+
+Two new &+ycards&N appear before you:
+
+&+L+------------------+  &+L+------------------+
+&+L|                  &+L|  &+L|                  &+L|
+&+L|                  &+L|  &+L|    &+C ]--===[      &+L|
+&+L| &+r       /\        &+L|  &+L|    &+C ]    &+c.&+C[      &+L|
+&+L| &+r      /  \       &+L|  &+L|    &+C |    &+c:&+C|      &+L|
+&+L| &+r     /    \      &+L|  &+L|    &+C |_____|      &+L|
+&+L| &+r    /      \     &+L|  &+L|    &+C   |&+c|&+C|        &+L|
+&+L| &+r   ( &+Wo&+r      )    &+L|  &+L|    &+C   |&+c|&+C|        &+L|
+&+L| &+r    .      .     &+L|  &+L|    &+C  /___\       &+L|
+&+L| &+r      `--'       &+L|  &+L|    &+C /_____\      &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L|  &NBlood Droplet   &+L|  &+L|  &NSilver Chalice  &+L|
+&+L+------------------+  &+L+------------------+
+
+She leans back slightly, hands steepled, &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&N chiming like small bells.
+
+&+G'You have walked into the Mists willingly, traveler. Now which omen do you claim?'
+~
+M
+blood droplet~
+&n&+gEzmerelda&N's eyes narrow with an intensity that sends a ripple through the
+flame of her lantern. When your hand moves to the &+rBlood Droplet&N she nods once, slowly.
+
+She touches the &+ycard&N with the tip of one finger.
+
+&+G'So... it is blood that calls to you,' &Nshe murmurs. Her voice grows low and somber:
+&+G'This omen is ancient - older than the first stone laid at Castle Ravenloft. It speaks
+&+Gof a sacrifice demanded, a bond sealed in crimson, and a price you may not understand.'
+
+&NShe leans closer, &+G'Choose carefully whom you bleed for... and for whom you allow to
+&+Gbleed for you.'
+
+&NWith dancer's flourish, she sweeps the &+ycards&N into the &+ydeck&N and one-handedly shuffles.
+
+&NTwo new &+ycards&N spin through the air, landing perfectly aligned before you:
+
+&+L+------------------+  +------------------+
+&+L|      &N,&+L.-&N-&+L        |  &+L|                  |
+&+L|       /\         |  &+L|                  |
+&+L|      /'`\        |  &+L|    &+Y  ,____.      &+L|
+&+L|     / /\ \       |  &+L|    &+Y //&+W\&+Y```\\     &+L|
+&+L|    ( '&+ro o&+L )      |  &+L|    &+Y||  &+W\ / &+Y||    &+L|
+&+L|     \ `-' /      |  &+L|    &+Y||   &+WY  &+Y||    &+L|
+&+L|      \/ \/       |  &+L|    &+Y||&+W. /   &+Y||    &+L|
+&+L|                  |  &+L|     &+Y\\&+WX&+Y___//     &+L|
+&+L|                  |  &+L|      &+Y`-----'     &+L|
+&+L|                  |  &+L|                  |
+&+L|                  |  &+L|                  |
+&+L|     &NThe Bat      &+L|  &+L|  &NBroken Mirror   &+L|
+&+L+------------------+  +------------------+
+
+&NHer eyes meet yours directly and she asks &+G'Which of these shall you explore first?'
+~
+M
+thorned rose~
+&N&+gEzmerelda &Npauses mid-gesture as your hand settles upon the Thorned Rose.
+Her amber eyes soften, but only slightly.
+
+She lifts the card delicately, as though it might prick her.
+
+&+G'Beauty entwined with pain,' &Nshe murmurs.
+&+G'This omen speaks of desire that wounds, devotion that costs, and a path that
+&+Gtempts even as it bleeds you.'
+
+&NHer gaze briefly detaches from the moment, drifting into the distance.
+
+&+G'In Castle Ravenloft, nothing fair comes without fangs..'
+
+&NWith a practiced flourish, she cuts the &+ydeck&n, while inserting the &+ycards&N back in,
+and masterfully flicks out the next two cards:
+
+&+L+------------------+  +------------------+
+&+L|                  |  &+L|                  |
+&+L|                  |  &+L|                  |
+&+L| &+c ,  ,  ,  ,  ,  &+L |  &+L|    &+Y  ,____.      &+L|
+&+L| &+c || || || || ||  &+L|  &+L|    &+Y //&+W\&+Y```\\     &+L|
+&+L| &+c || || || || ||  &+L|  &+L|    &+Y||  &+W\ / &+Y||    &+L|
+&+L| &N=&+c||&n=&+c||&N=&+c||&N=&+c||&N=&+c||&N= &+L|  &+L|    &+Y||   &+WY  &+Y||    &+L|
+&+L|  &+c|| || &+C[]&+c || ||  &+L|  &+L|    &+Y||&+W. /   &+Y||    &+L|
+&+L|  &+c|| || || || ||  &+L|  &+L|     &+Y\\&+WX&+Y___//     &+L|
+&+L| &N=&+c||&N=&+c||&N=&+c||&N=&+c||&N=&+c||&N= &+L|  &+L|     &+Y`-----'      &+L|
+&+L|  &+c|| || || || ||  &+L|  &+L|                  |
+&+L|                  |  &+L|                  |
+&+L|    &NIron  Gate    &+L|  &+L|  &NBroken Mirror   &+L|
+&+L+------------------+  +------------------+
+
+&+gEzmerelda&N leans forward, her eyes luminous in the lanternlight.
+&+G'The rose cuts deeply, traveler. Now... which omen do you dare turn toward?'
+~
+M
+chalice~
+&NAlmost as soon as she reveals it, your hand reaches out for the Silver Chalice.
+
+&+gEzmerelda&N's expression changes to -recognition-.
+
+Slowly, reverently, she turns the &+ycard&N upright so the lanternlight glints upon it.
+
+&+G'Ah... the chalice of Barovia,' &Nshe whispers &+G'A symbol of purity in a land poisoned
+&+Gby despair. This omen speaks of sacred strength, lost blessings, and the faint
+&+Gpossibility of renewal in a valley that has forgotten hope.'
+
+&NHer gaze sharpens.
+
+&+G'It may also signify a bond: a pact sealed in holy promise or broken in bloody betrayal.'
+
+&NShe lets the card rest between you like a single, fragile candle in the dark.
+With the same grace, she sweeps the &+ycards&N aside, cleaning the mat.
+Two &+ycards&N slide into place, face-up, in their place:
+
+&+L+------------------+  +------------------+
+&+L|      &N,&+L.-&N-&+L        |  &+L|                  |
+&+L|       /\         |  &+L|                  |
+&+L|      /'`\        |  &+L| &+c ,  ,  ,  ,  ,  &+L |
+&+L|     / /\ \       |  &+L| &+c || || || || ||  &+L|
+&+L|    ( '&+ro o&+L )      |  &+L| &+c || || || || ||  &+L|
+&+L|     \ `-' /      |  &+L| &N=&+c||&n=&+c||&N=&+c||&N=&+c||&N=&+c||&N= &+L|
+&+L|      \/ \/       |  &+L|  &+c|| || &+C[]&+c || ||  &+L|
+&+L|                  |  &+L|  &+c|| || || || ||  &+L|
+&+L|                  |  &+L| &N=&+c||&N=&+c||&N=&+c||&N=&+c||&N=&+c||&N= &+L|
+&+L|                  |  &+L|  &+c|| || || || ||  &+L|
+&+L|                  |  &+L|                  |
+&+L|     &NThe Bat      &+L|  &+L|    &NIron  Gate    &+L|
+&+L+------------------+  +------------------+
+
+&+gEzmerelda &Nclasps her hands, &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&N softly chiming like tiny bells in a crypt.
+&+G'Tell me, traveler, which path shall you follow next?'
+~
+M
+bat~
+When your hand moves toward The Bat, her eyes narrow - not in disapproval,
+but in understanding.
+
+Using one finger, &+gEzmerelda&N slides the chosen card closer to you.
+
+&+G'So... you choose the watcher in the dark.'
+&NHer voice drops to a low, resonant tone.
+&+G'The bat is a herald of unseen surveillance, a creature that serves the night
+&+Gwithout question. This omen warns that something small, swift, and loyal to
+&+Ga greater shadow is following you.'
+
+&NShe leans in slightly.
+&+G'Its master rarely lets prey wander unnoticed.'
+
+&+gEzmerelda&N gathers both &+ycards&N and fans the remaining &+ydeck&N before fitting them in.
+Following three rapid-fire shuffles, she produces two new cards:
+
+&+L+------------------+  +------------------+
+&+L|                  |  &+L|     &+r/  \   /\    &+L|
+&+L|        &-r&+Y^&N         &+L|  &+L|    &+r/ &N-- &+r\ /  \   &+L|
+&+L|     &-r&+Y^&N  |&+W|  &-r&+Y^&N     &+L|  &+L|    &N| &+L[] &N|&+r/ &N--&+r \  &+L|
+&+L|     &N|&+W| &N|| |&+W|     &+L|  &+L|    &N| -- || &+L[] &N|  &+L|
+&+L|     &N|| || ||     &+L|  &+L|    &N| &+L[] &N|| -- &N|  &+L|
+&+L|    &+Y[========]    &+L|  &+L|   &N/|____||____|/ &+L|
+&+L|       &+Y]::[       &+L|  &+L|  &N|  --      --   &+L|
+&+L|       &+Y]::[       &+L|  &+L| &+y-&N|  &+L[]  &N___ &+L[]   &+L|
+&+L|       &+Y]::[       &+L|  &+L|  &N|      &+c]#[&N     /&+L|
+&+L|        &+Y`'        &+L|  &+L|  &N|______&+c]#[&N____/ &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L|  &NThe Candelabra  &+L|  &+L|    &NThe Castle    &+L|
+&+L+------------------+  +------------------+
+
+&+gEzmerelda&N taps the two cards lightly, making soft *clicks* from her painted finger-
+nails on their surfaces. She suggestively raises an eyebrow at you, hinting to choose.
+~
+M
+broken mirror~
+&+gEzmerelda&N's amber eyes flicker as your hand reaches for the Broken Mirror.
+
+A faint shiver passes through the lantern flame as she lifts the &+ycard&N gently.
+
+&+G'Ah...'&N she murmurs, letting her voice hang like fog in the room.
+
+&+G'The Broken Mirror reveals truths fractured and hidden. It speaks of deception,
+&+Gillusions, and a destiny splintered into dangerous pieces. What you see...
+&+Gmay not be what it is..' &Nnshe says with an err on the side of caution.
+
+Her &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&n chime softly as she places the&+y card&n before you, edges catching the light.
+
+&+GIn Castle Ravenloft, mirrors are never merely reflections - they are gateways,
+&+Gwarnings, and sometimes traps. This omen warns you to trust neither sight nor shadow.'
+
+&NShe slides both &+ycards&N under the deck and performs two perfect riffle-shuffles,
+cuts it with one-hand, and then deals two more:
+
+&+L+------------------+  +------------------+
+&+L|     &+r/  \   /\    &+L|  &+L|                  &+L|
+&+L|    &+r/ &N-- &+r\ /  \   &+L|  &+L|    __________    &+L|
+&+L|    &N| &+L[] &N|&+r/ &N--&+r \  &+L|  &+L|   |&+m\________/&+L|   &+L|
+&+L|    &N| -- || &+L[] &N|  &+L|  &+L|   | &+m|______| &+L|   &+L|
+&+L|    &N| &+L[] &N|| -- &N|  &+L|  &+L|   |&+m/&+L________&+m\&+L|   &+L|
+&+L|   &N/|____||____|/ &+L|  &+L|   &+L/&+C===&+L----&+C===&+L\   &+L|
+&+L|  &N|  --      --   &+L|  &+L|  &+Y+============+  &+L|
+&+L| &+y-&N|  &+L[]  &N___ &+L[]   &+L|  &+L|  &+L|  &+C`` &+Y_|_ &+C'' &+L|  &+L|
+&+L|  &N|      &+c]#[&N     /&+L|  &+L|  &+L|______&+Y|&+L_____|  &+L|
+&+L|  &N|______&+c]#[&N____/ &+L|  &+L|                  &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L|    &NThe Castle    &+L|  &+L|    &NThe Coffin    &+L|
+&+L+------------------+  +------------------+
+
+&+G'Now, traveler&N..' &Nher voice lowers, intimiate and almost conspiratorial.
+&+G'Which card?'
+~
+M
+irongate iron gate~
+&+gEzmerelda&N's eye narrow slightly as your hand moves, resting upon the Iron Gate.
+
+She lifts the &+ycard&N with deliberate care, letting the lantern light glint upon it.
+
+&+G'Ah... the gate,'&N she murmurs, voice low and resonant.
+&+G'This is a symbol of thresholds, of passage, and of barriers that demand both courage
+&+Gand cunning. Whatever lies beyond this gate is hidden, and yet you are drawn to it.'
+
+&NShe taps the card lightly with a painted fingertip.
+
+&+G'In Anda Thema, every gate guards not only what is inside, but what will be lost
+&+Gshould you pass through. The Iron Gate is both warning and invitation - it asks:
+&+G"Are you prepared to enter?"'
+
+Her &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&N jingle softly as she sweeps the cards to the top of the &+ydeck&N and shuffles.
+With a deliberate grace, &+gEzmerelda &Nelegantly flips over two new &+ycards&N:
+
+&+L+------------------+  +------------------+
+&+L|                  |  &+L|                  &+L|
+&+L|        &-r&+Y^&N         &+L|  &+L|    __________    &+L|
+&+L|     &-r&+Y^&N  |&+W|  &-r&+Y^&N     &+L|  &+L|   |&+m\________/&+L|   &+L|
+&+L|     &N|&+W| &N|| |&+W|     &+L|  &+L|   | &+m|______| &+L|   &+L|
+&+L|     &N|| || ||     &+L|  &+L|   |&+m/&+L________&+m\&+L|   &+L|
+&+L|    &+Y[========]    &+L|  &+L|   &+L/&+C===&+L----&+C===&+L\   &+L|
+&+L|       &+Y]::[       &+L|  &+L|  &+Y+============+  &+L|
+&+L|       &+Y]::[       &+L|  &+L|  &+L|  &+C`` &+Y_|_ &+C'' &+L|  &+L|
+&+L|       &+Y]::[       &+L|  &+L|  &+L|______&+Y|&+L_____|  &+L|
+&+L|        &+Y`'        &+L|  &+L|                  &+L|
+&+L|                  &+L|  &+L|                  &+L|
+&+L|  &NThe Candelabra  &+L|  &+L|    &NThe Coffin    &+L|
+&+L+------------------+  +------------------+
+
+&+G'What waits beyond the gate, $N?' &Nshe asks, leaning her shadow over the &+ycards&N.
+~
+M
+castle~
+&+gEzmerelda&N's amber eyes gleam as your fingers settle on The Castle.
+
+A small, knowing smile curls on her lips.
+
+She lifts it carefully, letting the lantern light play across the glossy surface.
+
+&+G'Ah... Castle Ravenloft,'&N she whispers, voice heavy with reverence and warning.
+&+G'This omen speaks of dominion, shadowed power, and the weight of history pressing
+&+Gupon the present. To draw this card is to acknowledge that some fates are rigid,
+&+Gand some adversaries eternal.'
+
+Her &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&N chime softly as she lays the card before you.
+
+&+G'Within its walls lie danger, secrets, and the lure of ambition. To choose this
+&+Gcard is to court challenge - and perhaps to stand against the watching darkness.'
+
+&NAfter a moment, she flips both cards face-down and smears the deck across them
+before scooping them into a rapid, overhand shuffle. She flicks two more &+ycards&N that
+somehow land perfectly-aligned:
+
+&+L+------------------+  +------------------+
+&+L|                  |  |&+c                  &+L|
+&+L|            &N.     &+L|  |&+c     .,"  ,'.     &+L|
+&+L|  &N.               &+L|  |&+c   ,".   '  ",'   &+L|
+&+L|       &+R****       &+L|  |&+c  '  .,  ",   ,   &+L|
+&+L|     &+R********     &+L|  |&+c     ",  .'  "`   &+L|
+&+L|    &+R**********    &+L|  |&+c   ,'.  "  ,".    &+L|
+&+L|    &+R**********    &+L|  |&+c     "`  ,.' "    &+L|
+&+L|     &+R********     &+L|  |&+c  ,".   '   ",    &+L|
+&+L|       &+R****     &N. &+L|  |&+c    '  ,".  `,    &+L|
+&+L|                  &+L|  |&+c   .,"   '`  ".   &+L|
+&+L| &N.            &N.   &+L|  |&+c     ',.  "  '    &+L|
+&+L|    &NFull Moon     &+L|  |      &NMists       &+L|
+&+L+------------------+  +------------------+
+
+&+gEzmerelda &Nfolds her hands and smiles patiently. &+G'And now?'
+~
+M
+coffin~
+&+gEzmerelda&N's eyes glint as your hand hovers, then settles firmly on The Coffin.
+
+A soft, almost reverent sigh escapes her lips as she lifts it into her lantern's glow.
+
+&+G'The Coffin...'&N she murmurs, voice low and deliberate.
+
+&+G'This is a card of endings and beginnings, of rest taken too soon or a fate
+&+Glong delayed. It speaks of secrets buried deep, of journeys that begin
+&+Gin darkness, and of the thin veil between life and death in Anda Thema.'
+
+&NShe taps the card lightly with her painted nail.
+
+&+GTo draw this is to acknowledge mortality ..and the forces that toy with it.
+&+GCastle Ravenloft watches over all who dwell in its shadows, and The Coffin
+&+Greminds you that nothing escapes its gaze entirely.'
+
+&NHer &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&N tinkle softly as she places the &+ycard&N before you and a quiet
+stillness fills the air.
+
+After a moment she gingerly gathers The Coffin and then snatches up the others,
+gracefully shuffles, then draws two more &+ycards&n from the top:
+
+&+L+------------------+  +------------------+
+&+L|                  &+L|  &+L|         _        &+L|
+&+L|&+c     .,"  ,'.     &+L|  &+L|        /&+ro&+L`&+Y>      &+L|
+&+L|&+c   ,".   '  ",'   &+L|  &+L|      /^^ ')      &+L|
+&+L|&+c  '  .,  ",   ,   &+L|  &+L|     (   )/       &+L|
+&+L|&+c     ",  .'  "`   &+L|  &+L|      \,/&N"        &+L|
+&+L|&+c   ,'.  "  ,".    &+L|  &+L| &+y      //         &+L|
+&+L|&+c     "`  ,.' "    &+L|  &+L| &+y     //          &+L|
+&+L|&+c  ,".   '   ",    &+L|  &+L| &+y `\ //           &+L|
+&+L|&+c    '  ,".  `,    &+L|  &+L|  &+y  Y/            &+L|
+&+L|&+c   .,"   '`  ".   &+L|  &+L|                  &+L|
+&+L|&+c     ',.  "  '    &+L|  &+L|                  &+L|
+&+L|      &NMists       &+L|  &+L|    &NThe Raven     &+L|
+&+L+------------------+  +------------------+
+
+&+G'Traveler, will you choose another card to reveal your omen?'
+~
+M
+candelabra~
+&+gEzmerelda&N's amber eyes brighten ever-so-slightly as your hand settles on
+The Candelabra. She lifts it gracefully, letting the warm lantern glow reflect
+off the multiple candles depicted in delicate multi-colored ink.
+
+&+G'Ah... the Candelabra,' &Nshe murmurs, voice smooth and measured.
+&+GA symbol of light amidst shadow, guidance in the darkness, and vigilance
+&+Gagainst the encroaching night. Its flames illuminate what is hidden, yet
+&+Galso cast long, twisting shadows of their own.'
+
+&NShe taps the card lightly with her painted fingertip, letting the soft chime
+of her &+Cb&Nr&+Ca&Nc&+Ce&Nl&+Ce&Nt&+Cs&N punctuate the moment.
+
+&+G'To draw this card is to be reminded that knowledge and awareness are your
+&+Ggreatest tools.. but even the brightest flame can attract what lurks unseen.'
+
+&+gEzmerelda &Nleans back slightly, eyes locked with yours.
+Stare unbreaking, she fetches the &+ycards&N into the deck, shuffles, and delivers
+another two with deliberate and unwavering grace:
+
+&+L+------------------+  +------------------+
+&+L|                  &+L|  |         _        &+L|
+&+L|            &N.     &+L|  |        /&+ro&+L`&+Y>      &+L|
+&+L|  &N.               &+L|  |      /^^  )      &+L|
+&+L|       &+R****       &+L|  |     (   )/       &+L|
+&+L|     &+R********     &+L|  |      \,/&N"        &+L|
+&+L|    &+R**********    &+L|  |       &+y//         &+L|
+&+L|    &+R**********    &+L|  | &+y     //          &+L|
+&+L|     &+R********     &+L|  | &+y `\ //           &+L|
+&+L|       &+R****     &N. &+L|  | &+y   Y/            &+L|
+&+L|                  &+L|  |                  &+L|
+&+L| &N.            &N.   &+L|  |                  &+L|
+&+L|    &NFull Moon     &+L|  |    &NThe Raven     &+L|
+&+L+------------------+  +------------------+
+
+&+G'Now..' &+gEzmerelda&N says in a near-whisper, &+G'Your choice?'&N
+~
+Q
+&N&+gEzmerelda&N's finger sweep the coins into a &+mvelvet pouch&N with a soft *clink*,
+and her smile curves - half gratitude, half mischief.
+
+She gathers the deck, gives it a final deliberate shuffle.
+&+G'Three cards for you, traveler..' &Nshe says, dealing them one-by-one, face-up on the mat.
+
+&+L+--------------+  +--------------+  +--------------+
+&+L|       _      |  |&+c  .  '`  ,    &+L|  |          &N.   &+L|
+&+L|      /&+ro&+L`&+Y>    &+L|  |&+c  `  .  , '   &+L|  |  &N.  &+R***      &+L|
+&+L|    /^^  )    |  |&+c   , '`  . ,  &+L|  |    &+R*****     &+L|
+&+L|   (   )/     |  |&+c  .   '  , `  &+L|  |   &+R*******    &+L|
+&+L|    \,/&N"      &+L|  |&+c   ` ,  . '`  &+L|  |    &+R*****     &+L|
+&+L|     &+y//       &+L|  |&+c  '  `  ,  .  &+L|  |     &+R***   &N.  &+L|
+&+L|  &+y`\//        &+L|  |&+c   .  '`  , ' &+L|  |              &+L|
+&+L|    &+y/         &+L|  |&+c  `   .  ' ,  &+L|  |  &N.       &N.   &+L|
+&+L|              &+L|  |              &+L|  |              &+L|
+&+L|  &NThe Raven   &+L|  |    &NMists     &+L|  |  &NFull Moon   &+L|
+&+L+--------------+  +--------------+  +--------------+
+
+&+gEzmerelda&N folds her hands, &+Ygolden bracelets&N settling into silence.
+Her amber eyes fix on you with an intensity that fills the room.
+
+&+G'Choose one, traveler.. and the card will speak its truth,' she says, eagerly.
+~
+G C 10000
+QA
+As $N starts to pull the &+Wfanged skull&N from it's hidden location and
+&N$n quickly turns and locks-in with an intense stare.
+
+For several heartbeats she says nothing. She circles the &+Wskull&N like
+a hunter approaching a fallen beast. She crouches, examining the brow,
+the &+Wfangs&N, the hairline fracture at the temple. Her hand trembles as
+her extended fingers hover just above the &+Wb&No&+Wn&Ne.
+
+&+G'It's him,' &Nshe whispers.
+
+&N$n bows her head in somber acknowledgement. She she looks up again,
+her expression is fierce and raw like she is fighting a smile through
+grief and vindication.
+
+&+G'My teacher spent his life proving monsters like this could be hunted'
+&Nshe says. &+G'You proved they can be finished.'
+
+&n$n wraps the &+Wskull &Nin an &+Loil&+ycloth&N covered in old &+cVistani &Nsymbols.
+&N$n puts the tightly-&+ybound &Nartifact in a bundle over her shoulder
+and meets your gaze.
+
+&+G'A pale light touches our horizon, $N.'&N she says, &+G'but this is
+&+Gnot the dawn.'
+
+&N$n gets &+Ya small key&n from her &+ysatchel.&N.
+&+G'Meet me at the private chamber of my wagon, giorgio.&+G' &$n says with a wink.
+~
+R I 59223
+R I 59253
+R I 59298
+R I 59014
+G I 59269
+D
+With a gracefulal twirl, $n curtseys to $N and heads towards the exiting tunnel.
+
+&NSeveral of the &+yBarovian rabblers&N break off into smaller raiding groups,
+greedy with the newfound opportunity. The rest follow &+gEzmerelda&N through the
+tunnel in unwavering loyalty to the fortuneteller.
+~
+S
+#59064
+M
+qc_action 250~
+&+LA disgruntled &+yBarovian &Nshouts 'Death to Strahd!'
+~
+M
+qc_action 250~
+&+LA disgruntled &+yBarovian &Nshouts 'Kill the vampire!'
+~
+S
+#59070
+M
+qc_action 500~
+'No! Please, Rahadin! Spare the children!'
+
+         ..."It doesn't have to be this way, I beg you, don't do this!'
+
+                  ..."May Sehanine Moonbow save your lost soul, Rahadin..'
+~
+M
+qc_action 500~
+'Have mercy, Rahadin! I will give you anything, just spare us!'
+
+         ...'Look at their eyes - they fear for their lives!'
+
+                  ...'Please.. Please don't!  Don't do it!'
+~
+MA
+hi hello~
+&N$n bows deeply before $N.
+&+r'&+WLate is the hour of the guest's arrival. Come, $N. The master awaits.&+r'
+&N$n extends a long, boney hand towards the stairwell.
+~
+MA
+master~
+&N$n smiles widely at $N, revealing his vampiric fangs.
+&NWith a pleasant nod, he says &+r'&+WCount Strahd, master of Castle Ravenloft and lord of Barovia.&+r'
+~
+MA
+awaits~
+&N$n smiles at $N, revealing his vampiric fangs.
+&+r'&+WYour heralded approach,$N&+r' &Nhe says with a slow nod&N, &+r'&+Whas been observed with great
+&+Wregard. The master will be most pleased that his invitation has been accepted so
+&+Wenthusiastically.&+r'
+
+&n$n slowly blinks and says '&+WHe's been expecting you, $N.&+r'
+~
+MA
+count strahd king grace~
+&N$n looks at $N.
+&n$n grins and says &+r'&+WYes, $N. Count Strahd, himself, is most-pleased that you've accepted
+&+Whis invitation so..&+r'
+&n$n pauses for a moment as his pupiles dilate.
+&+r'&+WEnthusiastically.&+r' &Nhe concludes.
+&+r'&+WHe's been expecting you, $N.&+r' &N$n says with a nod.
+~
+MA
+expecting invitation castle ravenloft~
+&N$n turns to $N and says &+r'&+WThe Lord of Barovia sees all inside the mists of this realm -
+&+Wyour journey here, included. His grace's 'intentions' for you are unknown to me, beyond
+&+Wbestowing you the reserved honour of 'imperial company'&+r' &Nhe jokes, widening his smile.
+
+&+r'&+WSuch an honour at Castle Ravenloft is typically reserved for..&+r'
+&N$n pauses momentarily.
+&+r'&+WIndividuals.&+r' &Nhe concludes.
+~
+MA
+imperial company~
+&N$n smirks at $N and clarifies &+r'&+WThe 'Most Welcome' of imperial company, Lord $N.&+r'
+&+r'&+WThe fortunes of Ravenloft are extended to thee, should you be willing to receive them.&+r' &Nhe adds.
+~
+MA
+intentions honour~
+&N$n unfolds his hands and explains &+r'&+WWhy, to bestow upon you the fortunes of Ravenloft, of course.'
+~
+MA
+fortune fortunes~
+&N$n grins widely at $N.
+&+r'&+WA fortune of Ravenloft awaits the heralded few who are in favor of the court, $N.&+r'
+&n$n rolls a &+Ycoin&n through his fingers, grinning slyly at $N's expression.
+&+r'&+WAid the court, earn your fortune. Simple - yes, $N?&+r' &Nhe remarks.
+&NThe &+Ycoin&N seems to move slowly through time, shimmering with irridescense
+&Nas it seemingly disappears and reappears with a &+Yf&Nl&+Yi&Nc&+Yk&Ne&+Yr&Ni&+Yn&Ng &+mmagic&N.
+
+&+r'&+WThis 'fortune'..&+r' &+mRahadin&N says, holding the &+Ls&Np&+Le&Nc&+Lt&Nr&+La&Nl &+Ycoin&N in front of his face,
+&+r'&+Wand many others like it, are earned by aiding the realm.&+r' &NHe smirks and the &+Ycoin&N
+&Ndisappears in a tiny &+Lpuff&N. &+r'&+WQuite simple, really..&+r' &Nhe says, folding his
+&nlong, clawed hands.
+
+&+r'&+WCertain threats&+r' &n$n &Nutters directly to $N, &+r'&+Wboth man and beast, plague
+&+Wour kingdom. Each threat you eliminate earns you a 'fortune'.  Seek these fugitives:
+
+&+WRictavio, who is not who he seems..  Ezmerelda D'avenir, the Vistani bitch..
+&+WMadam Eva, the speaker of lies..  Jander Sunstar, the rogue elf..
+&+WThe Gaulthias tree, corrupting our forests..
+&+WThe dracolich skull, abandoned in a tower..
+&+WThe queen ant, tunneling beneath our mountain..
+&+WThe GIANT spider, stalking our crypts..
+
+&+WYour spirit is strong, noble $N,&+r' &+mRahadin&N says with a grin.
+&+r'&+WNow go and rid our realms of these impurities.&+r'
+~
+MA
+individual individuals~
+&N$n grins at $N and nods.
+&+r'&+WIndividuals of certain tastes, in search of the favor of Ravenloft.&+r' &Nhe says.
+~
+MA
+favor favors~
+&N$n says &+r'&+WThe favors of Ravenloft earn the fortunes of Ravenloft, $N.'
+
+&N$N pauses for a moment behind a confused expression.
+
+&+r'&+WYou see, Lord $N, one does not simply assume the favor of Ravenloft. One must be
+&+Winvited into this domain by His Grace, personally. Then, and only then, young $N, may
+&+Wyou seek...&+r'
+
+&N$n opens a wing of his cloak, revealing four floating &+Wscrolls&N.
+
+&+r'&+W...the favors of Ravenloft.' &Nhe concludes.
+~
+MA
+scroll scrolls~
+&N$n fans out a wing of his cloak, revealing four floating &+Wscrolls&N.
+
+&+r'&+WEach of these parchments, Lord $N, represents a favor of Ravenloft - a list of deeds
+&+Wof great benefit to the kingdom - and why His Grace has summoned you here!&+r'
+
+&N$n gestures towards his &+Wlist&N.
+~
+MA
+jander sunstar sehanine moonbow~
+&N$n cringes at $N for a moment before letting out a small chuckle.
+&+r'&+WJander Sunstar has aimed Oathbow at His lord's heart. Find and destroy this
+&+Wpest; return the Oathbow to me.&+r'
+~
+MA
+deeds benefit benefits kingdom~
+&N$n says &+r'&+WThe favors of Ravenloft are recognized and paid forth through
+&+Wwardship to the castle. It's quite simple, really $N.. complete the instructions
+&+Won the scroll, and receive your reward.&+r'
+&+LShadow&N cascades down his face in a smokey drip as he floats backward towards
+&Nthe top of the crypt stairs.
+&+r'&+WYour eternal reward&+W.&+r' &Nhe adds, gesturing his palm toward the entry.
+~
+M
+wardship~
+&N$n grins toothily at $N.
+&+r'&+WWardship to the Castle comes with the favor of Ravenloft.'
+~
+MA
+madam eva~
+&N$n smirks for a moment.
+&+r'&+WAhh, the fortune teller witch of Barovia, leader of the Vistani! We have
+&+Wa bond here, Madam Eva and I, in that we both serve the master, although only
+&+Wone of us knowingly&+r' &Nhe says with a wicked grin.
+&+r'&+WShe, too, appears in &+Wyour favor, $N&+W, of Ravenloft..&+r,' &+mRahadin&N says.
+&+r'&+WShe may live, but her crystal ball must be recovered, $N.&+r'
+~
+M
+baba zelenna~
+&N$n chortles briefly at $N.
+&+r'&+WYou would laugh, too, $N, if you recalled just how beautiful this witch
+&+Wonce was.&+r'
+&N$n floats closer to $N, inadvertently enhancing the &+Wghostly shrieks&N that follow him.
+                               &+W...'No please! Don't do this, you're one of us!'...&N
+&+r'&+WThe old witch has been in your favor of Ravenloft, $N, since before you came
+&+Winto this realm.&+r' &nhe quips, floating back towards the crypt entry.
+~
+MA
+drowned~
+&N$n scoffs audibly at $N.
+&+r'&+WYour favor to Ravenloft will surely include this vile witch. The Swamp Fane
+&+Wwill find her kind in the Abyss!&+r' he barks.
+~
+MA
+rictavio~
+&N$n sneers at $N, exposing a rare glimpse of his &+Wsharp fangs&N.
+&+r'&+WThis one.. this 'Rictavio' as he wishes to be called..&+r'
+Shaking his head in disdain, &+mRahadin&N continues &+r'&+WScales Mount Ravenloft as
+&+Wwe speak. Find him. Crucify him. Return to me his treasured hat.'
+~
+MA
+ezmerelda~
+&N$n scoffs with unbroken lips, laughing guffly out his nose.
+&+r'&+WSilly girl&+r' &Nhe chuckles, shaking his head with a contemptible smirk.
+&+r'&+WA waste, too,&+r' &Nhe adds, &+r'&+Wof a strong heart and stronger will..
+&+Wthe fortune teller would of made an excellent bride to the Master, had she
+&+Wnot pledged her own bloodlust towards Him.&+r'
+
+&n$n's&N expression droops and he nods solemnly.
+&+r'&+WEnd her quickly. Bring me the bitch's jeweled dagger.&+r'
+~
+MA
+gaulthias tree treant~
+&n$n nods grimly at $N.
+&+r'&+WThe Gaulthias tree, a twisted corruption of Barovia. Purge it from existence, $N,
+&+Wand return to me its dark heart.&+r' &N$n &Ncommands.
+~
+MA
+ant queen eggsac~
+&N$n scowls in disgust.
+&+r'&+WAnts.. &+r' &Nhe sneers after the single word.
+Shaking his head, he continues &+r'&+WBeneath the castle, they tunnel. Kill their queen.&+r'
+~
+MA
+spider~
+&N$n nods grimly at $N.
+&+r'&+WIsn't it curious how such a creature can grow into a great beast?&+r'
+
+&N$n nods again at $N, approvingly, and says &+r'&+WSlay this beast, in the catacombs.&+r's
+~
+MA
+barovia~
+&N$n nods acknowledgingly at $N.
+&+r'&+WBarovia,&+r' &Nthe chamberlain repeats&+r '&+WRemembers evert footstep,
+&+Wevery prayer, every scream.. and it never forgives those who pretend
+&+Wit is merely a land.&+r'
+
+&+r'&+WSpeak of it with respect... or not at all, $N.&+r' &+mRahadin&N says.
+&N$N makes a surprised face at &+mRahadin&N.
+
+&+r'&+WMany who find themselves in Barovia are in search of this..&+r' &Nhe relents,
+gracefully flicking his seemingly-empty hand to summon a magical &+Ycoin&N.
+
+&+r'&+WPerhaps you are in seek of the fortune of Ravenloft, noble $N?&+r'
+~
+MA
+dracolich skull~
+&n$n sighs and very slightly nods at $N.
+
+&+r'&+WOnce a mighty serpent that guarded the Castle, now plagued,
+&+Wlost, but not yet forgotten. In the NorthTower Peak, I still sense
+&+Wthe power of His mighty fallen pet. Return me it's skull.&+r'&N $n commands.
+~
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 59290
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 59306
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 59240
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 59303
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 59297
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 59307
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 58803
+QA
+&N$n presents the requested items, &+Yfortunes&N in one hand, &+Wscroll&N in the other.
+
+&+mRahadin &Nsteps in a grand gesture, he opens his arms wide, as if
+accepting an embrace, and &+Linky black tendrils spill from his spread cape,
+&+Lmasking the room briefly, before residing just as quickly.
+Suddenly, you are elsewhere...
+
+&+g<>&N
+
+&+LThe &+rRavenloft &+LChapel&N
+&+L  This large, rectangular chapel is situated on the north side
+&+Lof Castle Ravenloft.  Three rows of svalich wooden pews line
+&+Lup facing the central dias, known as the Altar of Ravenloft.
+&+LOn the northern side of the chapel are huge stained glass windows,
+&+Ldepicting images of Strahd, the First Vampire surrounded by
+&+Lfollowers and women in scenes of blissful redemption.
+&+gObvious exits: &+c-East &+g# &+c-South&+g# &+c-West &+g#
+&+WA humanoid &+rbody&+W is sprawled over the top and front of the altar, &+Yarm &+Wreaching out.&N
+&+CA crystal statue of a raven sits at the very top of the &+Waltar&+C. &n(&+Mglowing&N) (&+rhumming&N)
+&+WA huge altar stands here, a massive &+Lcrack&+W nearly splitting the stone dais in half. &N[&+r31&N%]
+&+g< &+cPos: &+Mkneeling &+g>
+&+g<>&N
+
+&+mRahadin &Nlifts the &+Wstole &+Lof the Dark &+mAlliance&N with both hands.
+&+r'&+WYou are no longer a voice that petitions,&+r' &+mRahadin&N says quietly,
+&Nsettling it upon $N's shoulders.
+&+r'&+WYou are a voice that answers.&+r' &Nhe says.
+
+&+mRahadin &Nthen presents the &+Wcrozier&N, causing $N &Nto tremble for a
+moment as their hands briefly make contact.
+
+Then he presents a small, dark &+Lvial&N, two-handedly and raised high.
+&+r'&+WThe final sacrament, and you will be -Of- Ravenloft.&+r'
+
+&-L&+YThe deep toll of the castle bell reverberates through the air.&N
+
+&+mRahadin &Nsteps back and inclines his head in a show of reverence.
+&+r'&+WChaplain $N of Ravenloft&+r' &Nhe says, &+r'&+WKeeper of holy rites.
+&+WConfessor to the righteous. Shepherd of those who seek eternity..
+&+W..understand, with unmovable clarity, that from this moment on, no prayer
+&+Wspoken within Barovia or Ravenloft will ever be unanswered again.&+r'
+
+You blink once, the moment &+mRahadin&N finishes speaking, and you return...
+~
+R I 59294
+R I 59314
+R I 59315
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59281
+QA
+&N$n presents the requested items, &+Yfortunes&N in one hand, &+Wscroll&N in the other.
+
+&+mRahadin&N, motionless&N, floats through the air to within a pace from $N.
+&+mRahadin&N flicks his wrist in a whimsical gesture and the items &+Lvanish!&N
+
+Speaking softly, he says with discretion &+r'&+WCastle Ravenloft does not always
+&+Wdefend itself with walls. Sometimes it requires "removal."&+r'
+
+&NFor a moment, $N makes a puzzled face before opening their hand, revealing
+a tiny &+Llapel pin&N.
+
+&+mRahadin &Ngracefully plucks the &+Lpin &Nfrom $N's hand with delicacy of
+a noble's tailor, proudly fastening it to $n's vestments.
+
+..only the chamberlain doesn't just pierce the vestments. $N winces as &+Lit
+&+rdigs &ninto &+Rflesh&n, yet they're unable to resist.
+
+&+r'&+WYou will be my Whispering Blade&+r'&N he says, at last.
+&+r'&+WYou will go where I do not. You will end threats before they
+&+Wbecome wars. You will kill for purpose.&+r' &Nhis eyes never leave $N's.
+
+&+LA long, curved &+Cdagger&N emerges from &+mRahadin's &Nrobes, presented before $N.
+
+&+r'&+WThere will be no songs for your victories. No witnesses to your
+&+Wmercy. Only results.&+r' &nhe says.
+
+At last, he produces the &+cvial&N and places it into $N's palm.
+
+&+r'&+WThis is the final sacrament,&+r' &Nhe says &+r'&+WNot to bind you
+&+Wto obedience, but to silence.&+r'
+
+He steps back.
+
+&-L&+YThe deep toll of the castle bell reverberates through the air.&N
+
+&+r'&+W$n, when you are sent, you will not announce yourself.&+r'
+&+r'&+WWhen you strike, the castle will already have judged.&+r'
+
+&+r'&+WGo.  And let them never hear you coming&+r'
+
+&+mRahadin's &Neyes narrow as he gives $n a final hail with the slightest nod.
+~
+R I 59295
+R I 59299
+R I 59315
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59289
+QA
+&N$n presents the requested items, &+Yfortunes&N in one hand, &+Wscroll&N in the other.
+
+&+mRahadin &Napproaches $n and stops one pace away, inclining his head.
+Without speaking, the items float freely from $n's hands, towards &+mRahadin&N.
+
+&+LIn a flash of darkness, the &+Ytreasures&+L and &+Wscroll&+L vanish!
+
+&+r'&+WThe Eye has watched this place since before memory&R' &Nhe says.
+For you a moment, you feel &+rRavenloft&N seeing -through- you, as a &+Ccrystal
+&+Ctalisman &Nslowly fades into visibility, floating directly before you.
+
+&+r'&+WYou are not appointed to command magic,&+r' &Nhe says.
+&+r'&+WYou are appointed to contain it.&+r'
+
+&+mRahadin &Nopens his hands extends his arms, open palms up, and begins
+a presentation gesture. At first, a small bud of &+Lblackness&N forms between
+his hands, but as they seperate further it extends into &+La long black staff.
+
+&+mRahadin's &Narms return to their sides and the &+Lstaff orients to verticality
+before floating obediently through the air toward $n.
+
+At last, &+mRahadin&N produces the &+cvial&N.
+&+r'&+WThis is a sacrament,' &Nhe says. &+r'&+WNot obedience. Not worship.
+&+WAlignment.&+r' &NHe steps back. &+r'&+WThe Eye aeternum brightens.&+r'
+
+&-L&+YThe deep toll of the castle bell reverberates through the air.&N
+
+&+r'&+WArchmage of Castle Ravenloft&+r' &Nhe declares.
+&+r'&+WBearer of the Nightward. Keeper of the Eye. Bound by blood to eternity.&+r'
+
+&+mRahadin &Nbows again, fully this time, to $n.
+~
+R I 59293
+R I 59316
+R I 59315
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59300
+QA
+&N$n presents the requested items, &+Yfortunes&N in one hand, &+Wscroll&N in the other.
+
+With minimal movement, &+mRahadin&N floats to a pace's distance from $n.
+
+&+mRahadin &Nextends his hand and in a flick of his wrist, the $n's offerings
+&+Lvanish&N and are instantly replaced with a single &+Rsigil&n.
+
+&+r'&+WThe Dread Guard is not bound only by loyalty&+r,' &Nhe says, his voice
+chilling your flesh as the &+Rsigil&N floats towards $n, &+r'&+WIt is bound
+&+Wby blood, by sorrow, by sacrifice.&+r'
+
+The &+Rsigil&N darts at $n, piercing &+rflesh &Nas it hits!
+&N$n flinches slightly on impact, and continues staring into &+mRahadin's &Neyes.
+As the seal pulses, sinking into $n's breast, &+mRahadin &Ncontinues:
+&+r'WYou will feel the weight of a thousand lives behind the mark.
+&+WTheir struggles, their pain, their unwavering loyalty.&+r'
+
+&NAs he speaks, he holds his hand to his side and curls his fingers.
+&+r'&+WThe ones who have wielded this weapon, ready to serve..&+r'
+A &+Cglaive&N begins to materialize within his grasp.
+&+r'&+W..did so to protect this castle, to crush its enemies,
+&+Wand to rule the guard.&+r' &+mRahadin&N intones, his voice respectful
+&nbut still tinged with a restrained command.
+
+&+r'&+WIt is not a weapon to be used lightly; every life taken will leave
+&+Wan echo on your soul.&+r'
+
+Then, &+mRahadin &Nproduces a &+cvial&n and holds it before $n.
+&+r'&+WTo lead the Dread Guard is to become what they are - bound by
+darkness, by death, by eternal loyalty. The sacrament is final.&+r'
+
+&NHe steps back.
+
+&-L&+YThe deep toll of the castle bell reverberates through the air.&N
+
+&+r'&+WYou are now Captain of the Dread Guard&+r' &Nhe exalts.
+&+r'&+WLead them well. Protect the castle. And remember: Your loyalty
+&+Wis absolute, as is theirs.&+r'
+~
+R I 59291
+R I 59313
+R I 59315
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59202
+G I 59282
+QA
+&N$n lowers his head, bowing respectfully at $N.
+&+r'&+WYou stride one step closer to your destiny, $N&+R' &N$n says with a grin.
+
+In a graceful and deliberate gesture, &+mRahadin&N extends his pale arm
+and slowly opens his hand. With a snap of his fingers, and a small &+Mb&+mu&+Mr&+ms&+Mt
+of &+Lb&+ml&+La&+mc&+Lk &+mf&+Ll&+ma&+Lm&+me&+Ls&N, a strange yet breathtaking &+Ycoin&N appears, floating
+over his palm.
+
+&+mRahadin &Nretracts his hand and the &+Ycoin&N moves on its own, floating to
+&Na stunned $N, who plucks it from the air with overwhelming curiousity.
+
+&+r'&+WRemember our Pact, $N. Return five of these &+Yfortunes&+W and choose your
+&+Wfavor..&+r' &nhe says while opening his cloak to reveal the &+cfour scrolls&N,
+&+r'&+Wand you will join our ranks. Now go, noble $N!&+r'
+
+&n$n lowers his head again, bowing in recognition at $N.
+~
+R I 59202
+G I 58397
+S
+#59081
+M
+qc_action 250~
+&+BGadof Blinsky &Nnervously paces back and forth, occasionally pausing to peer between the cracks in the boarded-up window.
+~
+M
+hi hello~
+&+BGadof Blinsky &Nbows deeply before $N.
+&+BGadof Blinsky &Nsays &+B'Greetings. Welcome to Blinsky's Toys ...uh, temporary setup.'
+&+BGadof Blinsky&N sighs for a moment, then scoffs 'Cursed zombies!'
+~
+MA
+zombies zombie~
+&N$n nods at $N and says &+B'Had I known there'd be a zombie incursion, I'd never'a
+&+Bjoined Mister Ric!'
+~
+MA
+barovia~
+&N$n says &+B'Aye, $N. Mister Ric and I come here frequently, mostly for business..'
+~
+MA
+mister ric~
+&+BGadof Blinsky &Nsays '&+BAye. His name is Rictavio, but I call him Mister Ric.
+&+BWe've been friends since the first time he came into my shop, Blinsky's Toys!'
+&+BGadof Blinsky &Npauses for a moment and sighs.
+Shaking his head, he scoffs &+B'Our trip here was supposed to be for business!'
+~
+MA
+business~
+&+BGadof Blinsky &Nleans in and says &+B'Aye.  Business, $N.'
+Speaking in a whisper, he continues &+B'Things have been a bit, eh... slow, back at
+&+BBlinsky's Toys, so I've been 'outsourcing' my craft to the generous folk of Barovia!'
+&N$n clears his throat and corrects himself &+B'Well, to one generous folk. Izek Strazni.'
+~
+MA
+izek strazni~
+&+BGadof Blinsky &Nnods at $N and says &+B'Izek Strazni orders these.. don't ask me!'
+&n$n &Nsuddenly holds up a &+Mminiature wind-up &+mtoy woman&n.
+
+&+B'Problem is..' &Nhe continues, &+B'He never paid me! Will ya buy it from me and
+&+Bbring it to Mister Strazni, if yer not afraid of zombies that is..'
+
+&+BGadof Blinsky &Nsizes you up and says &+B'They're no match for the mighty $N!'
+&+B'Me?' &Nhe chuckles &+B'Not without Mister Ric would I ever leave town, let
+&+Balone go to..' &Nhe gulps for a moment &"B..Castle Ravenloft!'
+~
+MA
+castle ravenloft~
+&N$n &Nshudders for a moment and says &+B'Ever since it became abandoned, people
+&+Bsay that Castle Ravenloft swarms with vampires and beasts much worse than the
+&+Bzombies wandering through Barovia..'
+&N$n sighs and shakes his head.
+&+B'Pity, really..' &Nhe moans &+B'Such wonderous artifacts there..'
+~
+MA
+wonderous artifacts artifact~
+&N$n solemnly nods at $N and says &+B'The greatest toymaker the world has ever known
+&+Bworked for the Von Zaroviches. His name was Fritz Von Weerg and it is rumored
+&+Bthat several of his creations still buzz and whirr deep in the catacombs of
+&+Bthat dreadful castle. Like I said, $N. Truly a pity!'
+~
+MA
+fritz weerg~
+&N$n nods excitedly at $N and says &+B'Fritz Von Weerg was no ordinaly toymaker -
+&+Bhe truly brought his creations to life! It is a shame that they are now all
+&+Blost in that dreadful place, Castle Ravenloft!'
+
+&N$n smirks and says &+B'If you truly are a brave warrior, $N, so much that you'd
+&+Bdare venture into Castle Ravenloft and into the deepest places, that you find
+&+BFritz Von Weerg's creations, I would pay dearly for them.'
+~
+MA
+yes buy toy woman pay price cost~
+&N$n grins toothily at $N and says &+B'You'll buy the toy woman I made for
+&+BMister Strazni? Marvelous! I'm sure he is waiting for it!'
+~
+QA
+&N$n gasps in astonishment.
+&N$n begins quickly pulls something from a deep pocket in his cloak.
+&+B'Great work, $N!' &Nhe says before he excitedly &+yw&ni&+yn&+yd&Ns the &+ydevice&N.
+~
+R I 55033
+R I 55362
+G I 59093
+QA
+&N$n gasps in astonishment.
+&N$n begins quickly pulls something from a deep pocket in his cloak.
+&+B'Great work, $N!' &Nhe says before he excitedly &+yw&ni&+yn&+yd&Ns the &+ydevice&N.
+~
+R I 55033
+R I 55362
+G I 59126
+QA
+&N$n gasps in astonishment.
+&N$n begins quickly pulls something from a deep pocket in his cloak.
+&+B'Great work, $N!' &Nhe says before he excitedly &+yw&ni&+yn&+yd&Ns the &+ydevice&N.
+~
+R I 55033
+R I 55362
+G I 59255
+QA
+&N$n gasps in astonishment.
+&N$n begins quickly pulls something from a deep pocket in his cloak.
+&+B'Great work, $N!' &Nhe says before he excitedly &+yw&ni&+yn&+yd&Ns the &+ydevice&N.
+~
+R I 55033
+R I 55362
+G I 59254
+QA
+&N$n gasps in astonishment.
+&N$n begins quickly pulls something from a deep pocket in his cloak.
+&+B'Great work, $N!' &Nhe says before he excitedly &+yw&ni&+yn&+yd&Ns the &+Cdevice&N.
+~
+R I 55033
+R I 55362
+G I 59283
+S
+#59082
+M
+qc_action 250~
+&+CRictavio&N sings loudly...
+'&+CAs a young boy chasing vampires with your wooden sword, so mighty!
+&+CYou're Saint Bogdan or Markovia and you've always killed the beast!'
+
+&+C'Times change very quickly and you had to grow up early..
+&+Ca house in smoking ruins and bodies at your feet!'
+~
+MA
+qc_action 125~
+&+CRictavio &Nsings loudly...
+&+C'You'll die as you lived in a flash of the blade, in a corner forgotten by no one!'
+&+CYou lived for the touch, for the feel of the steel. &+C&-LOne man and his honor!'&N
+~
+M
+qc_action 250~
+&+CRictavio &Nsings loudly...
+&+C'The smell of resined leather, the steely iron mask..
+&+CAs you cut and thrust and parried at the fencing master's call
+&+CHe taught you all he ever knew, to fear no mortal man
+&+CAnd now you'll wreak your vengeance in the screams of evil man!'
+~
+MA
+hi hello~
+&+CRictavio&N spins around with theatrical flair before dropping into a
+&Nspirited bow, but not before casting a glance, measuring $N like a butcher
+&Ninspecting a blade.
+
+&+C'Ah! A traveled unclaimed by the mists!' &Nhe finally says.
+&+C'How rare! You stride the Svalich roads with both legs intact, and that
+&+Calone is cause for celebration. But do tell me... have you learned where
+&+Cyou've wandered? Into Barovia, land of fog and sorrow..'
+
+&+CRictavio&N casts an expecting grin, awaiting $N's response.
+~
+MA
+mists mist~
+&+CRictavio&N's gaze drifts towards the treeline, where pale vapors curl
+like grasping fingers.
+&+C'Ah yes... the mists. No ordinary fog, friend. They think, they choose,
+&+Cthey separate the living from the lost. Many strangers have tried to
+&+Cwalk through them. None return with their memories whole--if at all.'
+
+&NIn a more serious tone, &+CRictavio&N continues &+C'Mists are woven into the
+&+Cvery history of this land.'
+~
+MA
+history land~
+&+CRictavio &Npaces slowly as he speaks, fingertips brushing the air
+as though painting unseen shapes.
+&+C'The history of Barovia is tangled with wandering folk known as
+&+Cthe Vistani. They alone roam the boundaries between this world
+&+Cand the next. Their caravans cut through darkness like lanterns,
+&+Cbut lanterns can cast shadows as well.'
+~
+MA
+svalich woods wood road roads~
+&+CRictavio&N chuckles grimly, tapping his walking stick on the dirt road.
+&+C'The Svalich road - endless, muddy, unforgiving. It carries merchants,
+&+Cmonsters, and fools in equal measure. Some say the road itself twists
+&+Cto protect its master. If you want to survive long here, you must first
+&+Cknow something of Barovia's history.'
+~
+MA
+master~
+&+CRictavio&N grins ironically at $N.
+&+C'All parts of Barovia have one Master.'&N he relents, expression drooping.
+~
+MA
+barovia~
+&+CRictavio&N's smile flickers.
+&+C'Barovia is more than a country - it is a prison masquerading as a valley.
+&+CThe people here are born afraid, live afraid, and die afraid. To understand
+&+Cwhy, you must know the tale etched into its very soil - the valley's grim
+&+Chistory.'
+~
+MA
+vistani caravans caravan~
+&+CRictavio&N's tone turns thoughtful.
+&+C'The Vistani are many things: guides, traders, spies, survivors. Some serve
+&+Cthe one who rules this valley, while others whisper secrets of ways he might
+&+Cbe undone. Their oldest stories speak of ancient dark powers buried beneath
+&+Cthe mountains - whispers of bargains that should never have been struck.'
+~
+MA
+dark powers power rules ruler rule~
+&+CRictavio &Nstiffens, the jovial air fading like a candle's last breath.
+&+C'Speak not lightly of the dark powers. They slither beneath the valley
+&+Clike roots under old graves. They grant strength ..at a cost.'
+
+&+CRictavio&N exhales sharpyl out his nose and continues with grave seriousness.
+&+C'Their pacts twisted mortal men into eternal fiends - creatures we now call..
+&+CVampires.'
+~
+MA
+vampire vampires~
+&+CRictavio &Nleans close, lowering his voice to a cold whisper.
+&+C'Where vampires reign, terror follows. Their greatest den stands upon
+&+Ca cliff, its towers stabbing the sky. A fortress older than memory,
+&+Cfeared by every Barovian man, woman, and child: Castle Ravenloft.'
+~
+MA
+castle ravenloft~
+&+CRictavio's &Nexpression turns grave; his eyes darken.
+&+C'Ravenloft. The seat of the tyrant. Its stones remember every scream
+&+Cthey've absorbed. Upon it's highest throne sits he who holds the valley
+&+Cin his clenched, undead fist: Strahd von Zarovich.'
+~
+MA
+strahd zarovich~
+Before &+CRictavio &Ncan respond, a &+yBarovian &Nr&+ya&nb&+yb&n&l&+ye&Nr&N who overheard $N interrupts..
+&+y'Death to Strahd!' &Nthe man roars, raising his clenched-fist in salute.
+
+&+CRictavio&N's posture suddenly springs upright and he raises his fist as well.
+&+C'Sword in hand, we stand tall! We slay the vampire, once and for all!'
+
+&NThe &+yBarovian &Nyelps in solidarity before sauntering away to his brethren.
+
+&+CRictavio&N turns back to $N and his voice drops to a razor's edge.
+The jester facade fully cracks, revealing the seasoned hunter beneath..
+&+C'Strahd. The devil. The eternal lord. The first among the damned. He made
+&+Ca pact with the dark powers, slaughtered his own blood, and bound
+&+Cthis valley to his will. I have spent years preparing for the moment
+&+Csomeone like you steps forward.'
+
+&NHe straightens, eyes burning with purpose.
+&+C'If you stand against him... speak the word.'
+~
+MA
+word join~
+&N$N proudly exclaims 'I give you my word.'&N
+
+&+CRictavio&N steps forward and extends a gloved hand, his voice trembling
+with long-suppressed fury.
+
+&+C'Then hear me well. I am gathering a ragtag band - brave, foolish, desperate
+&+Csouls. Together we will descend into the vapmire's private crypt beneath
+&+CRavenloft.. the place where his unholy power sleeps.'
+
+&+CRictavio &Nfixates on $N with a look equal parts hope and vengeance.
+
+&+C'Will you join my rabble.. and help me kill Strahd von Zarovich?'
+~
+MA
+izek strazni~
+&N$n performs a pirouette, cleverly masking his glance towards the rabble.
+...then his expression sours.
+&+C'Izek Strazni is a thug wrapped in muscle and malice. His loyalty is as
+&+Cwarped as his arm. Best to leave that brute to his own violence - his role
+&+Cwith us goes no further than bodyguard.'
+~
+MA
+vallaki~
+&+CRictavio&N chuckles out a tired laugh.
+&+C'Ah Vallaki. A town built entirely out of denial. Endless festivals,
+&+Cforced smiles, and a burgomaster terrified of his own shadow. Trust me,
+&+Cnothing of importance grows in that barren garden of fear.'
+~
+MA
+werewolves werewolf~
+&+CRictavio&N waves dismissively.
+&+C'Yes, the forests have werewolves. Packs of them. Dangerous, yes,
+&+Cbut ultimately distractions - gnats compared to the true predators
+&+Cstalking Barovia.'
+~
+MA
+ezmerelda~
+&+CRictavio&N's jaw tightens.
+&+C'Ezmerelda.. she is fierce, brilliant, and relentless. A hunter without peer.
+&+CBut she walks her own path now, one that does not intersect with ours.
+&+CBest not to chase ghosts.'
+~
+MA
+madam eva baba zelenna drowned lady hags witches witch~
+&N&+CRictavio&N's eyes narrow, warily.
+&+C'The hags meddle with threads even I hestitate to touch. Their visions
+&+Cprobe futures that wound as much as they warn. Leave them be.'
+~
+QA
+&+CRictavio &Nfreezes the moment $N presents him with the &+Wfanged skull&N,
+his breath catching mid-word as though the world itself has just quaked.
+
+For a long, taut moment, he does not blink.
+
+Finally - slowly, reverently - he reaches out.
+
+Fingers trembling, he brushes one gloved hand across the smooth &+Wbone&N and pulls
+back as though it burned him.
+
+&+C'My gods!' &Nhe whispers. The usual theatrical mirth, forced jester's grin, and
+flamboyant bravado - everything falls away like shattered glass.
+
+&+CYou... killed him!' his voice cracks, but not weakly, with the weight of
+decades of grief, fury, and obsession finally losing their anchor.
+
+&+C'Not a projection. Not an echo. Not one of the illusions he spins across the valley
+&+Clike a spider's web..' &nhe gasps a sharp breath, eyes widening as he studies
+the &+Wskull's &Nshape, the fanged jaw.
+
+&+C'So it was true. His vulnerable form, in his crypt. The one place he can
+&+Ctruly be undone.' he says, covering his mouth with shaking fingers.
+&+C'By the Morninglord, by every power that ever turned its face from this
+&+Cdamned valley.. it's done.'
+~
+R I 59296
+R I 59308
+R I 59309
+R I 59302
+G I 59269
+D
+&+C'You have done what no hero, no wizard, no hunter, and no prophecy
+&+Cever truly accomplished. The land itself will feel the shift in its
+&+Cbones. The people will breathe freely for the first time in centuries.'
+
+&+CRictavio &Ntakes a long, steadying breath, the &+Wfanged skull&N still cradled
+in his hands. With deliberate slowness, he removes his hat,
+setting it gently on the ground, then peels away a painted mask
+that has concealed him all this time. Beneath it is the face of a
+seasoned scholar, hunted and relentless, with scars that speak of
+countless battles.
+
+&+C'I am not merely Rictavio the charlatan some fools take me for.
+&+CI am Rudolph van Richten, monster hunter, chronicler of the cursed,
+&+Cand scourge of vampires. I have walked the shadowed paths of this
+&+Cvalley for decades, hunting horrors that would drive most mad.'
+
+&NHe pauses, letting the words settle, then prudces a small &+Ykey&N.
+&+C'This key... unlocks the gate to my tower, my sanctuary, my laboratory
+&+Cof knowledge and strategy. There, I keep the tools and secrets
+&+Cnecessary to ensure that creatures like Strahd never rise again.'
+
+&+C'Take it,' &+CRudolph Van Richten &Ncontinues &+C'and there we will plan
+&+Cwhat comes next - Barovia will not heal itself and I cannot do it alone.'
+~
+S
+#59084
+MA
+hi hello~
+&+YIzek Strazni &Nsnaps his head toward &N, gripping his axe tighter.
+&+Y'Few have died for less..' &Nhe scoffs, scanning $N up and down.
+
+&+YIzek Strazni &Npeers for a moment and says &+Y'You haven't paid your dues..'
+~
+MA
+paid dues~
+&N&+YIzek Strazni &Nholds out his gigantic hand and grunts &+Y'Fifty platinum!'
+~
+MA
+castle ravenloft breech gates~
+&+YIzek Strazni &Nnods at $N.
+&+Y'Once we're inside, you're on your own..'
+&+Y'Find yer own treasure, but leave the wine to me!' &Nhe snorts.
+~
+MA
+wine~
+&N$n raises an eyebrow at $N and leans closer.
+&+Y'Aye.. wine, $N!' &Nhe says with an uncharacteristic smile.
+&+Y'If ya can make it there first, $N, bring me back some wine from the depository
+&+Yand I'll split it with ya!' &Nhe says with a forceful nudge.
+~
+MA
+rictavio~
+&N$n peers at $N and mutters &+Y'Aye, so? His gold is as good as any's.'
+&N$n smirks for a moment and adds &+Y'Him and that gnome friend of his.'
+~
+MA
+gnome friend gadof blinsky~
+&N$n squints at $N and says &+Y'Rictavio's gnome friend, Gadof Blinksy..'
+His already-twisted face droops further into an angry scorn.
+&+Y'If you see that gnome, Gadof Blinsky, back in Barovia, tell him he'd better
+&+Yhave it ready!'
+&N$n picks up on $N's puzzled face and barks &+Y'He'll know what 'it' means!'
+~
+MA
+it~
+&N$n snorts at $N and says &+Y'Gadof Blinsky will know what 'it' means!'
+~
+MA
+barovia~
+&N$n peers intently at $N.
+&+Y'It is well-known that I was the Captain of the Guard of Barovia.
+&+YBut that was a long time ago. I wish no ill will to these people,
+&+Ynor to their burgomaster.' Izek &Nsays, his face drooping to a
+&Ngrimmace as he shakes his head.
+~
+MA
+burgomaster captain guard kolyan indirovich~
+&N'But do you know the fate of the Burgomaster?' $N asks.
+&N'He no longer lives, &+YIzek!&N $N snaps, grabbing the brute's &Nattention.
+
+&N$N explains everything to $n: how they visited the town of Barovia to
+find a zombie incursion.. fighting their way to the Burgomaster's mansion
+only to discover his poisoned corpse.. the note with Kolyan's forged sig-
+nature inviting Ireena to the ambush. The battle-- &+YIzek &Ncuts $N off.
+
+&+Y'She lives!?' &Nhe barks, but before $N could answer $n continues,
+&+Y'Ireena, my love, I knew it to be true!'&N now speaking into the
+air above him, &+ctears&N rolling down his cheeks.
+~
+MA
+ireena~
+&N$n nods with an uncharacteristically somber smile.
+
+&+Y'She is safe, then' &Nhe says.
+
+&N$n sizes his axe up and down for a moment, before turning to $N.
+&+Y'The bard says that Strahd finds her because he has part of her..&N
+
+&N$n grinds his &+Wteeth &Nin a growing rage.
+
+&+Y'..Find it, $N. Go into the castle, scour the Catacombs if you must.'
+&+Y'Whatever piece of her he has, it will be guarded. Return it to me.'
+
+&N$n momentarily calms himself and gestures onward.
+~
+MA
+catacombs~
+&N$n nods at $N and says &+Y'If what the bard says is true, it is in
+&+Ythe Catacombs where will find... piece of Ireena.'&N
+~
+MA
+treasure~
+&N$n peers at $N.
+
+&+Y'Aye. This Castle eats folk like ye, foolish enough to sniff around
+&+Ylookin fer treasure.' $Nhe scoffs.
+
+&N..but then a moment later, $n lowers his voice and leans closer to $N.
+&+Y'Have ye come across one? One of them burnin' coins, a Treasure of
+&+YRavenloft? Well have ye?!  Give it here!'&N $n snorts.
+~
+QA
+&+YIzek Strazni &Ndrops the &+Wplatinum&n into a small coin-bag looped onto his belt.
+&+Y'We breech the castle gates at first light.' &Nhe mutters, returning to honing his axe.
+~
+G C 50000
+QA
+&+YIzek Strazni's &Nface lights up with a rare look of mirth.
+He snatches the &+ybottle&N from $N, bites off the &+ycork&N and downs the whole thing
+in several breathless gulps.
+
+*POP* he pulls his nasty lips from the vacuum he'd sucked into the bottle.
+
+&+Y'Ya done good, $N.  Real good&+Y.' &Nhe grunts between belches.
+&+Y'Your half!'&N he barks, dropping a sack of coins in $N's hand.
+~
+R C 250000
+G I 59035
+QA
+&+YIzek Strazni's &Nface lights up with a rare look of mirth.
+He snatches the &+ybottle&N from $N, bites off the &+ycork&N and downs the whole thing
+in several breathless gulps.
+
+*POP* he pulls his nasty lips from the vacuum he'd sucked into the bottle.
+
+&+Y'Oh my... $N.' &Nhe grunts, turning the bottle upside down and shaking a few stray
+drips onto his extended tongue.
+
+&+Y'This is... the best I've ever had!'&N he declares in astonishment.
+&+Y'Take these, your 'half', $N!'
+~
+R I 55033
+R I 55362
+R C 1000000
+R E 100000
+G I 59060
+QA
+&N$n plucks the &+Ycomb&N from $N with an uncharacteristic delicacy.
+
+Two &+ctears&N from at the corner of the brute's eyes as he holds it close.
+
+Finally, he speaks: &+Y'Ireena is my heart and soul. $N, you understand?'
+
+Using his good hand, he slowly runs his fingers across the &+yd&+La&+yr&+Lk &+ybrown &+Lh&+ya&+Li&+yr
+that was braided into the teeth of the &+Ygolden comb&N.
+
+&+Y'He is powerless to summon her now, but he will still send more of
+&+Yhis minions. You will be ready. Go, protect Ireena. Take my axe.'
+~
+R I 59319
+G I 59127
+QA
+&N$n snatches the &+coin&N from $N.
+
+&n$n's eyes fluctuate between awe and pure greed as he inspects,
+rolling it between his knuckles, flipping it through the air and
+catching it, and finally tucking it away in a &+ypouch&N.
+
+&N$n grunts and presents $N with &+ya small chest&n and a &+ycoin purse.
+~
+R I 400233
+R I 400233
+R I 400233
+R I 400233
+R C 1000000
+R E 200000
+G I 59202
+QA
+&N$n gasps for a moment and snatches the &+mdoll&N from $N.
+
+&N$n's eyes well with tears as he carefully &+ywinds&N it up and places
+&Nit before himself before settling into a crosslegged sit.
+
+&+mThe miniature wind-up &+Mtoy&N marches in a circle and stops at &+YIzek's
+&Nmassive feet, his toes wriggling in his boots with excitement.
+The &+mtoy &Nreaches out and touches &+YIzek&N, releasing an uncharacter
+-istic yelp from the hulk, causing the toy to chortle with a
+robotic &+Mgiggling&N fit.
+
+After a moment of dancing in a circle, the &+mtoy&N slows to a halt and
+&+YIzek Strazni &Nquickly gathers it up, cradling it like a baby.
+
+&+Y'Meet me in my cabin.'&N &+YIzek&N says, petting the &+mtoy&N softly.
+~
+R I 59324
+R E 250000
+G I 59252
+S
+#59085
+MA
+hi hello barovia eva rictavio ezmerelda~
+&N$n scurries to his feet and approaches $N.
+&N&+y'No.. No you... you don't have the treasure..'&N he grunts.
+~
+MA
+rahadin strahd ravenloft treasure treasures favor coin~
+&N$n nods feverishly at $N, eyes wild.
+&+y'Yes.. Yes!  Treasures of Ravenloft, give it to me!' &Nhe grunts,
+tugging at $N's tunic.
+~
+QA
+&N$n snatches the &+Ycoin&N from $N and, without looking, empties his
+&+ysatchel in front of $N.
+~
+R I 400233
+R I 400233
+R I 400233
+R I 400233
+R C 1000000
+R E 200000
+G I 59202
+D
+&N$n scurries away, cackling with glee at his s&+Lp&Ne&+Lc&Nt&+Lr&Na&+Ll&N &+Ycoin.
+~
+S
+#59090
+MA
+hi hello~
+&N$n turns his ghostly face toward $N.
+&NSmiling widely, $n says &+C'The master awaits, $N...'
+
+&+CBring me the key to the Ravenloft Catacombs, $N...' &Nhe says with an outstretched hand.
+~
+MA
+ravenloft catacombs~
+&N$n nods slowly at $N, maintaining unbroken eye-contact.
+~
+MA
+master strahd~
+&N$n grins at $N.
+As his yellowish eyes grow wider, $n says &+C'Master Strahd is expecting you, $N.'
+
+&N$n stretches out an open hand.
+&+C'Give me the key to the Catacombs, $N.' &Nhe says with an eerie smile.
+~
+MA
+barovia eva ashlynn rictavio tatyana sergei barov ravenovia~
+&N$n chuckles at $N.
+~
+QA
+&n$n grasps the &+Ckey&n for a moment, then returns it with a &Ns&+Lp&Ne&+Lc&Nt&+Lr&Na&+Ll &Nkey
+~
+R I 59288
+R I 58419
+G I 58419
+D
+&N$n says &+C'Please join us for dinner, $N.'
+&n$n suddenly vanishes into a burst of &+Lhundreds of tiny bats&N!
+~
+S
+#59091
+MA
+hi hello~
+&+cHis &+Ydawn-colored hair&+c catching what little light the clouds
+&+cwill allow, Jander Sunstar looks up at $N and relaxes his taut bow.
+
+&+C'So&+C,' &+che says quietly, eyes drifting toward Castle Ravenloft
+&+clooming above, &+C'either you're very brave, or very tired of living.'
+
+&+y&-LA rock from somewhere above suddenly crashes down nearby!&N
+
+&+cReflexively and instantly, Jander Sunstar guides $N backwards,
+&+cinto the concealment of the &+Lshadows&+c.
+
+&+cWhispering now, his eyes unflinching out cracks in the shrubbery,
+&+C'Maybe Strahd finally bleeds.'
+~
+MA
+castle ravenloft strahd vampires~
+&N$n sighs and nods solemnly at $N.
+&+C'You can hurt him,' &Nhe says at last.
+&+C'You can burn him, stake him, scatter him to the mists. Many have.
+&+CI did.' &NHis claw tightens. &+C'It doesn't end him'
+
+&n$n turns to you with hardened eyes of bleak experience. &+C'Strahd is
+&+Cbound to that castle like a heart bound to a body. Every stone,
+&+Cevery crypt, every shadow knows him. When his body falls anywhere
+&+Celse, this place just... pulls him back together. Slowly. Patiently.'
+
+&+cJander kneels and draws a rough shape in the dirt with a stick -
+&+ca large, tall retangle with a small circle on the north, east,
+&+cand south walls. He taps the southern circle.
+
+&+C'His crypt,' &Nhe says&+C 'Not just a tomb - a sanctum. It's where
+&+Chis power coils in on itself, where he is anchored to Barovia.
+
+&+cJander's eyes narrow to a glare. &+C'He believe it's a place of
+&+Csafety. He is wrong!'
+
+&NHe looks up. &+C'You have to drive him there. Force him to retreat,
+&+Cor trick him, or make him angry enough to chase you. He won't hide,
+&+Cpride won't allow it.'
+
+&+cJander's voice lowers. &+C'When he falls there, surrounded by the
+&+Cremnants of who he was, the land can't lie for him anymore. All
+&+Cthat will remain is his earthly skull. Bring it to me.'
+~
+MA
+eva rictavio ezmerelda rahadin danovich ireena chernovog ashlyn urik~
+&N$n peers curiously for a moment.
+&+C'That word means nothing to me, $N.'
+~
+M
+qc_action 250~
+&N$n exhales, then quickly bites and chews a bit of &+ya&+Rn&+yt &+Rp&+yi&+Rn&+yc&+Re&+yr &+Rmeat&n.
+&N$n grimmaces as he chews, shuddering while he swallows.
+~
+M
+qc_action 250~
+&N$n lifts a &+yg&+Ri&+ya&+Rn&+yt a&+Rn&+yt p&+Ri&+yn&+Rc&+ye&+Rr&N with his left hand and gestures at it with his right.
+Slowly the &+yp&+Ri&+yn&+Rc&+ye&+Rr&N begins to &+Rglow&N, &+Lcooking&N in his hand.
+~
+MA
+ant ants tunnel tunnels barovia meat pincer pincers~
+&N$n grins at $N for a moment and nods.
+
+&+C'The ants are good for one thing...' &+che says, pulling cooked
+&+cpincer from his satchel and carefully removing a length of tender
+&+cmeat and offering some to $N.
+
+&N$n instinctively recoils at first, but then accepts the food.
+
+&+C'Return to me a giant ant pincer, and I shall prepare the same for
+&+Cyou, too, $N'&+c Jander Sunstar says, with a bow.
+~
+QA
+&NWith quiet approach, $N creeps up and places the &+Wskull&N
+on the ground before $n.
+
+For a long moment, &+cJander&N simply stares.
+His breath slows and his shoulders sag slightly.
+
+He kneels before the &+Wskull&N and turns it with both hands, fingers
+slowly tracing the brow, the fractured temple, the &+Wfangs&N that
+once promised him &+Leternity&N. His jaw tightens and for a
+moment looks like he might smash it out of sheer hatred. Instead,
+he exhales, long and unsteadily.
+
+&+C'It's... finished,' &Nhe says, more to himself than to $N.
+
+&N$n removes his &+ygloves&N and presses his bare palm to the &+Wskull&N.
+
+&+C'I chased him across centuries,' &+cJander&N murmurs. &+C'Across worlds.
+&+CI thought if I could just keep him running, I could outrun what he did
+&+Cto me..' &Nhis voice begins to break &+C'to my family.'
+
+&+C'I never believed I'd see this,' &Nhe continues, bowing his head.
+&+C'You didn't just kill him. You ended the lie that he was inevitable.'
+
+&+cJander &Nwraps the &+Wskull&N in pale cloth marked with the &+cMorninglord's&N sigil.
+
+As the last fold is made, a faint &+Ywarmth&N spreads through the clearing.
+~
+R I 59224
+R I 59029
+R I 59310
+R I 59311
+G I 59269
+D
+&+cJander &Nstands and offers $N a warrior's clasp.
+
+&+C'Barovia may never forigve us,' &Nhe says softly. &+C'But tonight,
+&+Cit can finally remember the sun.'
+
+&+cJander&N carries the skull over to an exposed part of the &+yledge&N
+&Noverlooking the crag, below, and sits down cross-legged with the
+&+Wskull&N in his lap.
+
+&+YThe sun begins to peak through the naked branches of the barren trees,
+&+Ycreeping across the ground that has only known shade for centuries.
+
+&+cJander Sunstar's &Nspine straightens and his breathing slows.
+For centuries he fled this light, cursed to endure a hunger he could
+not forgive. Today, he does neither.
+
+&+RThe &+Ysunlight&+R torches his hair first, turning it briefly to gold.
+&+RThen his skin begins to smoke, not violently, but with a steady hiss.
+&+RHe does not flinch. His eyes close. His lips move once, soundlessly,
+&+Rperhaps a prayer, perhaps an apology.
+
+&+LThe skull blackens, ancient fangs cracking as holy lishg tseeps into
+&+Levery hollow. Vampire and vampire-hunter burn together.
+
+When the &+Ysun &Nclimbs higher, there is only ash on the stone and a faint
+warmth in the air - lingering, peaceful, and utterly &+Cstill&N.
+~
+QA
+&N$n bows at $N and holds the &+yg&+Ri&+ya&+Rn&+yt a&+Rn&+yt p&+Ri&+yn&+Rc&+ye&+Rr&N high with one hand.
+&NAfter muttering a few incantations, the &+yp&+Ri&+yn&+Rc&+ye&+Rr&N begins to &+Rglow&N.
+Just as the &+rmeat&N starts to &+Rs&Ni&+Rz&Nz&+Rl&Ne&N and &+Lsmoke&N to an &+ya&+Ym&+yb&+Ye&+yr-&+Yh&+yu&+Ye&N, $n ends his spell.
+~
+R I 59323
+R I 59323
+R I 59323
+G I 59201
+S
+#59096
+M
+qc_action 300~
+&+LFrom somewhere deep in the c&+ra&+Lt&+ra&+Lc&+ro&+Lmbs, &Nstone &+Lscrapes against &Nstone&+L,
+&+Lthen goes ominously still.
+~
+M
+qc_action 300~
+&+bA sudden chill brushes past you, carrying the faint scent of &+mincense&+b and &+Ldeath&+b.
+~
+M
+qc_action 300~
+&+LAll &+Ylight&N sources &+Lin the room seem to f&+Yl&+Li&+Yc&+Lk&+Ye&+Lr and for a moment it feels
+&+Las if the shadows are m&No&+Lv&Ni&+Ln&Ng&+L...
+~
+M
+qc_action 300~
+&+LA procession of &+rp&+La&+rl&+Le&+r f&+Li&+rg&+Lu&+rr&+Le&+rs&+L marches through the far end of the crypt.
+~
+M
+qc_action 300~
+&+LFor a moment, your shadow lags a second behind your movements.
+~
+M
+qc_action 300~
+&+LAncient &+mr&+Mu&+mn&+Me&+ms&+L carved into the walls begin to weep thin trails of black m&+bo&+Li&+bs&+Lt&+bu&+Lr&+be&+L.
+~
+S

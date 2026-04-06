@@ -323,7 +323,7 @@ D2
    &+CThis massive steel vault has a giant key hole.
 ~
 vault~
-3 83307 83116
+3 83630 83116
 D3
 ~
 ~
@@ -343,7 +343,7 @@ D0
    &+CThe heavy steel vault door of the Alatorin depository.
 ~
 vault~
-3 83307 83115
+3 83630 83115
 S
 #83117
 &+LThe &+CAlatorin &+LAuction House&N~
@@ -370,7 +370,7 @@ S
 &+Lthis lateral access point into the Adventurer's Hall, or as it is also
 &+Lcalled, the Hall of Guilds.
 ~
-831 0 14
+831 0 37
 D1
 ~
 gates~
@@ -390,7 +390,7 @@ S
 &+Lthis lateral access point into the Adventurer's Hall, or as it is also
 &+Lcalled, the Hall of Guilds.
 ~
-831 0 14
+831 0 37
 D1
 ~
 ~
@@ -506,7 +506,7 @@ S
 &+Lcorners further into the Hall of Adventurers.  The center of this
 &+Lchamber stands a large spear with a blood red war standard.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -536,7 +536,7 @@ S
 &+Lcorners further into the Hall of Adventurers.  The center of this
 &+Lchamber stands a large spear with a blood red war standard.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -572,7 +572,7 @@ S
 &+Lthe dwarves, is to find treasure admist finding honor.  The &+RRecruiting
 &+CPost&+L is the central location for such ambitious dwarves.
 ~
-831 0 14
+831 0 37
 D1
 ~
 ~
@@ -799,7 +799,7 @@ D3
 0 0 120931
 S
 #83137
-&+YThe &+rSiege &+YCourt~
+&+YThe Center of the &+rSiege &+YCourt~
    &+YThis giant hall, known as the Council of War, is made up of the open
 &+Yfloor area called the &+rSiege &+YCourt, as well as the officers'
 &+Yplatform above, overlooking the council.  Two identical ramps lead
@@ -1045,7 +1045,7 @@ S
 &+Cmithril walls are quite old, but well-kept.  This pass leads back out
 &+Cto the district.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1085,7 +1085,7 @@ S
 &+CTaark Shanat himself slayed the four rulers of Rringlor Noroth, and
 &+Cclaimed the great city as their own.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1307,7 +1307,7 @@ S
 &+Grelics of the past put on display are a common trend among the
 &+Ghalls of the dwarven kings.
 ~
-831 0 14
+831 0 37
 D1
 ~
 ~
@@ -1336,13 +1336,15 @@ D1
 0 0 83155
 S
 #83162
-&+WAtop a &+CMithril &+WStaircase~
-   &+CThis large, but small-stepped mithril staircase connects the
-&+Cupper portion of BrightAxe Hall to the King's Banquet hall below
-&+Cthe Hallway of Honour.  This staircase is elegant and kept very
-&+Cclean.
+&+WAn Open Corridor Overlooking Dual &+CMithril &+WStaircases~
+   &+CThis circular overlook is a triumph of large-scale dwarven engineering.
+&+CThe heavy masonry of Alatorin is in full display in this dizzying, multi-
+&+Ctiered vault of reinforced granite and blocked mithril. Garish to dwarven
+&+Cstandards, the stone and metal leads west to the eastern gates of Shanat
+&+CCitadel, while the north-south passage connects the sigil-lined Hallway
+&+Cof Honour.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1361,13 +1363,13 @@ D5
 0 0 83163
 S
 #83163
-&+WBottom of a &+CMithril &+WStaircase~
-   &+CThis large, but small-stepped mithril staircase connects the
+&+WA Landing Below Dual &+CMithril &+WStaircases&N~
+   &+CThese large, but small-stepped mithril staircases connect the
 &+Cupper portion of BrightAxe Hall to the King's Banquet hall below
 &+Cthe Hallway of Honour.  This staircase is elegant and kept very
 &+Cclean.
 ~
-831 0 14
+831 0 37
 D1
    &+yThese double doors lead to the King's Banquet Hall.
 ~
@@ -1454,7 +1456,7 @@ S
 &+Wthat these dwarves take for their lineage as well as their attention
 &+Wto detail is astonishing.
 ~
-831 0 14
+831 0 37
 D1
 &+LA large door leads into &+CBrightAxe Hall.
 ~
@@ -1474,7 +1476,7 @@ S
 &+Lsun.  This entryway connects the BrightAxe Hall, home of King Traak
 &+LShanat, to the &+RRamparts&+L west of here.
 ~
-831 0 14
+831 0 37
 D1
 ~
 ~
@@ -1601,7 +1603,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1627,7 +1629,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1650,7 +1652,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1668,7 +1670,7 @@ S
 &+Lof prosperity and good fortune.  This passage births a passage out
 &+Lof the Mystic Ward, or into it depending on ones perspective.
 ~
-831 0 14
+831 0 37
 D1
 ~
 ~
@@ -1688,7 +1690,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 14
+831 0 37
 D1
 ~
 ~
@@ -1712,7 +1714,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1760,7 +1762,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -1773,11 +1775,6 @@ D2
 ~
 ~
 0 0 83175
-D3
-&+LA large stone door &+Wburns with a &+Ybrilliant light&+L.
-~
-door~
-2 83436 83831
 S
 #83183
 &+MBelow the Mystic's Tower~
@@ -1855,7 +1852,7 @@ S
 &+Lof prosperity and good fortune.  This passage births a passage out
 &+Lof the Mystic Ward, or into it depending on ones perspective.
 ~
-831 0 14
+831 0 37
 D0
 ~
 ~
@@ -2811,7 +2808,7 @@ D0
 D4
 ~
 ~
-0 0 83271
+0 0 84005
 S
 #83234
 &+CA Reflecting Pool &+Lin the &+WHammer&+Yhelm &+LBarracks~
@@ -3390,7 +3387,7 @@ D1
    &+LThe gates of &+cShanat Citadel&N
 ~
 gate~
-3 83105 83260
+3 83105 83261
 D3
 ~
 ~
@@ -3412,28 +3409,22 @@ door~
 1 0 83257
 S
 #83260
-&+MAtop a &+mM&+mi&+Mt&+mh&+Mr&+mi&+Ml Staircase&N~
-   &+MThis mithril foyer glows with a deep dwarven power.  Two huge columns
-&+Mare located on either side of a large staircase that leads down into
-&+Mthe depths of Shanat Citadel, the ancient hall of Taark Shanat and his
-&+Mfamily, sharing a deep part of Alatorin beneath Hammerhelm and BrightAxe
-&+MHall.  It is in BrightAxe Hall where Taark carries out diplomatic issues
-&+Mwith his council, but it is deep within Shanat Citadel where the King
-&+Mresides and calls his home.
+&+WA &NSt&+La&Ntu&+Le &+Wof &+YUrtengor&N~
+   &+MThis mithril hall is identical to the perimeter hall of Shanat
+&+MCitadel except for one detail, the drapery.  Lustrous white curtains
+&+Mare hung evenly-spaced throughout either side of this hallway, decorating
+&+Mit with a silky, white, flowing presence.  While the only other tapestries
+&+Mexperienced in this entire city have been standard wall-hangings depicting
+&+Mimages of dwarven lore, these white silky sheets exist much more freely.
 ~
 831 134250496 14
-D3
-   &+LThe gate leading out of Shanat Citadel, to &+WHammerhelm.
-~
-gate~
-1 0 83258
-D5
+D1
 ~
 ~
-0 0 83261
+0 0 83271
 S
 #83261
-&+WA Foyer &+MBelow a M&+mi&+Mt&+mh&+Mr&+mi&+Ml Staircase~
+&+mThe Grand &+MVestibule&+m of &+cShanat Citadel~
    &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
 &+Mconnecting the King's dwelling, as well as the quarters of the
 &+MHonor Guard, and the family of Taark himself.  This Citadel also
@@ -3447,18 +3438,17 @@ D0
 door~
 0 0 83262
 D1
-&+LA massive &+gspruce &+Ldoor.
 ~
-door~
-1 0 83276
+~
+0 0 83276
 D2
 ~
 ~
 0 0 83263
-D4
+D3
 ~
 ~
-0 0 83260
+2 83105 83258
 S
 #83262
 &+MA Mithril Hall&N~
@@ -3521,7 +3511,7 @@ A Bend in a &+MMithril Hall~
 D1
 ~
 ~
-0 0 83268
+0 0 83996
 D2
 ~
 ~
@@ -3544,7 +3534,7 @@ D0
 D1
 ~
 ~
-0 0 83266
+0 0 83993
 S
 #83266
 &+MA Mithril Hall&N~
@@ -3559,7 +3549,7 @@ S
 D1
 ~
 ~
-0 0 83267
+0 0 83994
 D2
 &+LThe locking mechanism on this door is &N&+mmithril &+Land &+Ygold&+L.
 &+LThis &+ydoor &+Lleads to the &+MQueen's Office.
@@ -3569,7 +3559,7 @@ door~
 D3
 ~
 ~
-0 0 83265
+0 0 83993
 S
 #83267
 &+MA Mithril Hall&N, South End of &+WThe Emissaries' Hall~
@@ -3585,10 +3575,14 @@ D0
 ~
 ~
 0 0 83270
+D1
+~
+~
+0 0 83997
 D3
 ~
 ~
-0 0 83266
+0 0 83994
 S
 #83268
 &+MA Mithril Hall&N~
@@ -3604,15 +3598,15 @@ D0
 &+LTwo large &+ydouble doors&+L lead to &+rTaark Shanat's Personal Hall.
 ~
 doors double~
-3 83307 83279
+3 83279 83279
 D1
 ~
 ~
-0 0 83269
+0 0 83995
 D3
 ~
 ~
-0 0 83264
+0 0 83996
 S
 #83269
 &+MA Mithril Hall&N, North End of &+WThe Emissaries' Hall~
@@ -3624,6 +3618,10 @@ S
 &+Mblocked, flawless mithril.
 ~
 831 134250496 14
+D1
+~
+~
+0 0 83998
 D2
 ~
 ~
@@ -3631,7 +3629,7 @@ D2
 D3
 ~
 ~
-0 0 83268
+0 0 83995
 S
 #83270
 &+WThe Emissaries' Hall&N~
@@ -3663,31 +3661,32 @@ door~
 1 0 83289
 S
 #83271
-&+WA &NSt&+La&Ntu&+Le &+Wof &+YUrtengor&N~
-   &+MThis mithril hall is identical to the perimeter hall of Shanat
-&+MCitadel except for one detail, the drapery.  Lustrous white curtains
-&+Mare hung evenly-spaced throughout either side of this hallway, decorating
-&+Mit with a silky, white, flowing presence.  While the only other tapestries
-&+Mexperienced in this entire city have been standard wall-hangings depicting
-&+Mimages of dwarven lore, these white silky sheets exist much more freely.
+&+WA Massive Chamber of Immense &NS&+Wt&Na&+Lt&Nu&+We&Ns&N~
+   &+WThis large, circular chamber wraps around the top of a massive
+&+Wstaircase that leads further down into Shanat Citadel. Twenty-four
+&+Wmassive carved columns, caryatids and telamones alike, depict
+&+Wseveral prominent dwarven figures, including past kings, saints,
+&+Wand the largest of them all - their deities. The concourse around
+&+Wthe chamber leads north and south through the mithril hall, and
+&+Wwest towards the most prominent statue of all.
 ~
 831 134250496 14
 D0
 ~
 ~
 0 0 83272
-D1
-~
-~
-0 0 83273
 D2
 ~
 ~
 0 0 83270
+D3
+~
+~
+0 0 83260
 D5
 ~
 ~
-8 0 83233
+0 0 84004
 S
 #83272
 &+WThe Emissaries' Hall&N~
@@ -3719,7 +3718,7 @@ door~
 1 0 83286
 S
 #83273
-&+WThe Glorious Hallway of Shanat~
+&+WThe &+YG&+Wl&+Yo&+Wr&+Yi&+Wo&+Yu&+Ws Hallway of Shanat~
    &+WThis huge, glorious hallway is much larger then needed for any
 &+Wdwarf, or even army of dwarves - it is simply monolithic.  Lined with
 &+Wivory designs and runes of dwarven honour, this is the hallway of the
@@ -3735,10 +3734,10 @@ D1
 D3
 ~
 ~
-0 0 83271
+0 0 84004
 S
 #83274
-&+WAn Archway of &N&+mMithril &+Wand M&+La&Nr&+Wb&Nl&+We&N~
+&+WAn &+mA&+Mr&+Lc&Nh&+Ww&+Ma&+my&+W of &N&+mMithril &+Wand M&+La&Nr&+Wb&Nl&+We&N~
    &+WThis huge, glorious hallway is much larger then needed for any
 &+Wdwarf, or even army of dwarves - it is simply monolithic.  Lined with
 &+Wivory designs and runes of dwarven honour, this is the hallway of the
@@ -3775,11 +3774,6 @@ D0
 ~
 ~
 0 0 83417
-D1
-&+LThese &+ywooden&+L doors &+Llead back out towards the &+GHallway of Honour.
-~
-doors~
-3 83105 83277
 D2
 ~
 ~
@@ -3790,21 +3784,21 @@ D3
 0 0 83419
 S
 #83276
-&+LThe King's &+WBodyguard's Quarters&N~
-   &+LThese private quarters, home of the personal bodyguard to King Taark,
-&+Lsit here facing the foyer and the staircase of the Citadel.  There is a
-&+Lhuge svalich wood desk facing the doorway with a small cot in a low-walled
-&+Loff corner.  This room is quite large for a dwarf, as it has a miniature
-&+Lhearth as well as a bearskin rug.  Huge axes and swords line the walls
-&+Lby which the bodyguard may choose his choice weapon for protecting his
-&+Llord.
+&+mA Cir&+Lc&+ru&+Rlar &+YH&+Re&+Ya&+Rr&+Yt&+Rh C&+rh&+La&+mmber~
+&+m   This chamber is a masterwork of dwarven geometry: a perfect circle
+&+Lof polished obsidian sixty feet in diameter that serves as the spiritual
+&+rand thermal heart of the Citadel. At its exact center, a massive raised
+&+Rdais of white marble suppor&+Yts a perpetual&+R column of roaring, smokeless
+&+Rblue flame that draws its h&+Yeat from a magma &+Rvein deep beneath the roots
+&+rof the mountain. The outer walls of the chamber are lined with twenty-four
+&+Ltowering alcoves, each housing a suit of ancestral dwarven platemail that
+&+mglows with the reflected orange flicker of the central fire.
 ~
 831 134250496 14
 D3
-&+LA massive &+gspruce &+Ldoor.
 ~
-door~
-1 0 83261
+~
+0 0 83261
 S
 #83277
 &+LA Guard Post Before &+cShanat Citadel&N~
@@ -3823,7 +3817,7 @@ D3
    &+LThese &+ywooden &+Ldoors lead into &+cShanat Citadel.
 ~
 doors~
-3 83105 83275
+3 83105 84002
 S
 #83278
 &+mThe Queen's &+COffice&N~
@@ -3845,7 +3839,7 @@ D1
 0 0 83387
 S
 #83279
-&+LEntrance to &+rTaark Shanat's &+BPrivate Hall&N~
+&+LEntrance to the &+rShanat &+BPrivate Hall&N~
   &+L This hall is full of huge suits of &+Rarmor&+L worn by Taark Shanat during his
 &+Lmany conquests of Duris.  His platemail of &+GDragonslaying &+Lworn famously
 &+Lduring his beheading of Tiamat, the battlerager armor he wore when he defended
@@ -3862,10 +3856,10 @@ D2
 &+LTwo &+ydouble doors&+L exit &+rTaark Shanat's Personal Hall&+L back out to &+cShanat Citadel.
 ~
 doors double~
-1 0 83268
+1 83279 83268
 S
 #83280
-&+LThe &+BPrivate Hall &+Lof &+RTaark Shanat&N~
+&+LThe &+BPrivate Hall &+Lof &+RShanat&N~
   &+L This hall is full of huge suits of &+Rarmor&+L worn by Taark Shanat during his
 &+Lmany conquests of Duris.  His platemail of &+GDragonslaying &+Lworn famously
 &+Lduring his beheading of Tiamat, the battlerager armor he wore when he defended
@@ -3884,7 +3878,7 @@ D3
 0 0 83281
 S
 #83281
-&+LThe &+BPrivate Hall &+Lof &+RTaark Shanat&N~
+&+LThe &+BPrivate Hall &+Lof &+RShanat&N~
   &+L This hall is full of huge suits of &+Rarmor&+L worn by Taark Shanat during his
 &+Lmany conquests of Duris.  His platemail of &+GDragonslaying &+Lworn famously
 &+Lduring his beheading of Tiamat, the battlerager armor he wore when he defended
@@ -3924,7 +3918,7 @@ D5
 0 0 83290
 S
 #83283
-&+LThe &+BPrivate Hall &+Lof &+RTaark Shanat&N~
+&+LThe &+BPrivate Hall &+Lof &+RShanat&N~
   &+L This hall is full of huge suits of &+Rarmor&+L worn by Taark Shanat during his
 &+Lmany conquests of Duris.  His platemail of &+GDragonslaying &+Lworn famously
 &+Lduring his beheading of Tiamat, the battlerager armor he wore when he defended
@@ -3943,7 +3937,7 @@ D2
 0 0 83281
 S
 #83284
-&+LThe &+BPrivate Hall &+Lof &+RTaark Shanat&N~
+&+LThe &+BPrivate Hall &+Lof &+RShanat&N~
   &+L This hall is full of huge suits of &+Rarmor&+L worn by Taark Shanat during his
 &+Lmany conquests of Duris.  His platemail of &+GDragonslaying &+Lworn famously
 &+Lduring his beheading of Tiamat, the battlerager armor he wore when he defended
@@ -4066,7 +4060,7 @@ D4
 0 0 83282
 S
 #83291
-&+LAbove the South &+yPlatform &+LStairs&N~
+&+gTop of A C&+Lor&Nks&+Ccr&New&+L Pa&+gssage~
    &+LThese blocked, stone steps have been built in the same fashion as
 &+Lthe rest of &+cAlatorin &+Lin a load-bearing stack.  The space between
 &+Lthese steps is smaller then average, yet the architecture of this city
@@ -4083,7 +4077,7 @@ D5
 0 0 83292
 S
 #83292
-&NA Narrow Corridor, Below the South &+yPlatform&N Stairs~
+&+LA Va&Nult&+Ced Pas&Nsag&+Leway~
    &+LThese blocked, stone steps have been built in the same fashion as
 &+Lthe rest of &+cAlatorin &+Lin a load-bearing stack.  The space between
 &+Lthese steps is smaller then average, yet the architecture of this city
@@ -4100,12 +4094,12 @@ D4
 0 0 83291
 S
 #83293
-&NA Narrow Corridor&N~
-   This deep, underground corridor is much smaller then the rest of the
+&+LA V&Naul&+Cted Pass&Nage&+Lway~
+   This deep, underground corridor is equal size of the rest of the
 monolithic architecture of &+cShanat Citadel&N and for that matter,
-all of &+cAlatorin&N.  This simple, narrow corridor mysteriously exists
-deep below the citadel of &+RTaark Shanat&N, simplistic and built merely
-&Nfor deep travel.
+all of &+cAlatorin&N.  This long, vaulted corridor exists with little
+light, below the citadel of &+RTaark Shanat&N, simplistic and built
+&Nfor unknown purposes.
 ~
 831 134250496 14
 D0
@@ -4122,28 +4116,27 @@ D3
 0 0 83294
 S
 #83294
-&NEnd of a Narrow Corridor&N~
-   This deep, underground corridor is much smaller then the rest of the
-monolithic architecture of &+cShanat Citadel&N and for that matter,
-all of &+cAlatorin&N.  This simple, narrow corridor mysteriously exists
-deep below the citadel of &+RTaark Shanat&N, simplistic and built merely
-&Nfor deep travel.
+&+WT&Nh&+Le &-w&+lWyrm-Halt&N &+mGrotto&N~
+&+L   The elegant geometry of the eastward va&Nul&+Cted&N pa&+Lssageway dissolves
+&+minto a the rough-hewn walls of a natural grotto. The air here is heavy,
+&+Lvibrating with a low-frequency rumble that resonates through the soles
+&+mof one's boots. Dominating the cavern floor is a massive mithril scuttle,
+&+Lblocking off the natural slope into the deep. Two gargantuan &+cchains
+&+mdisappear into the shadows of the ceiling, pulled taut as they hold the
+&+Lweight of the floor-gate against the opening of the sloping &+mcavern&+L below.
 ~
-831 134250496 14
-D0
-&+yThis large wooden door leads to a bedroom.
-~
-door~
-1 0 83428
+831 134254592 13
 D1
 ~
 ~
 0 0 83293
-D2
-&+LA svalich wood door leads to a bedroom.
+D5
+&+mA gargantuan, rune-covered mithril scuttle blocks the floor's descent
+&+minto the caverns below.
+&+cA small sign in front of the scuttle reads &+C'OFFICERS ONLY'
 ~
-door~
-1 0 83429
+scuttle~
+3 83258 83428
 S
 #83295
 &NA Small Waiting Area~
@@ -5151,7 +5144,7 @@ S
 &+LThis simple chamber sits here buried in the magma, coral, crystal,
 &+Land earth, accessed only through portal.
 ~
-831 1107296256 15
+831 1107296256 11
 D5
 ~
 ~
@@ -5167,7 +5160,7 @@ S
 &+LThis simple chamber sits here buried in the magma, coral, crystal,
 &+Land earth, accessed only through portal.
 ~
-831 1107296256 15
+831 1107296256 21
 D5
 ~
 ~
@@ -5183,7 +5176,7 @@ S
 &+LThis simple chamber sits here buried in the magma, coral, crystal,
 &+Land earth, accessed only through portal.
 ~
-831 1107296256 15
+831 1107296256 20
 D5
 ~
 ~
@@ -5199,7 +5192,7 @@ S
 &+LThis simple chamber sits here burried in the magma, coral, crystal,
 &+Land earth, accessed only through portal.
 ~
-831 1107296256 15
+831 1107296256 19
 D5
 ~
 ~
@@ -5226,34 +5219,13 @@ S
 &+Lplane in this chamber for a large diameter is the flat, smooth and
 &+Lglossy floor.  All around is complete and utter darkness.  A deep
 &+Lfelt inspection of this dark hall reveals a single gate on the far
-&+Lside of the circular chamber, guarded by a dark hooded figure.  This
-&+Ldark, secret hall births an ancient and even darker secret of the
-&+Lcity itself.
+&+Lside of the circular chamber, guarded by darkness.
 ~
 831 1107296256 15
 D1
 ~
 ~
 0 0 83307
-D3
-   &+LThese ancient iron gates are worn and rusted, yet seem unbreakable.
-~
-gate~
-3 83140 83343
-S
-#83343
-&+LA Dark, &+yAncient &+LCave~
-   &+LThis ancient cave, set deep within the belly of the Mystic Ward
-&+Lin Alatorin, homes an ancient rift of misty dark shadow, possibly the
-&+Lsource of the darkness in this and the surrounding chambers.  This old,
-&+Lcramped cave sits deep under the hallway of elements, shimmering slightly
-&+Lby the glow of the rift, only in pure darkness.
-~
-831 1107296256 15
-D1
-~
-~
-1 0 83342
 S
 #83344
 &+LA Conduit to the &+yElemental Plane of Earth&N~
@@ -5262,7 +5234,7 @@ S
 &+LThis shapeless three-dimensionally open vortex twists more and more
 &+Linto the elemental plane, below here.
 ~
-831 1107296256 23
+831 1107296256 21
 D4
 ~
 ~
@@ -5279,7 +5251,7 @@ S
 &+LThis shapeless three-dimensionally open vortex twists more and more
 &+Linto the elemental plane, below here.
 ~
-831 1107296256 23
+831 1107296256 20
 D4
 ~
 ~
@@ -5296,7 +5268,7 @@ S
 &+LThis shapeless three-dimensionally open vortex twists more and more
 &+Linto the elemental plane, below here.
 ~
-831 1107296256 23
+831 1107296256 19
 D4
 ~
 ~
@@ -5313,7 +5285,7 @@ S
 &+LThis shapeless three-dimensionally open vortex twists more and more
 &+Linto the elemental plane, below here.
 ~
-831 1107296256 23
+831 1107296256 11
 D4
 ~
 ~
@@ -5334,7 +5306,7 @@ S
    &+YA massive staircase leads deep below the heart of Alatorin on the northern
 &+Yside of the Great Anvil.
 ~
-831 33554432 15
+831 33554432 37
 D0
 ~
 ~
@@ -5357,11 +5329,14 @@ D5
 0 0 83349
 S
 #83349
-&+LA &+RSearing &+LLanding Below the Great Anvil&N~
-   &+LThis stone landing, located on some steps just north and below the
-&+LGreat Anvil, opens up to the mining, smelting, and blacksmithing factions
-&+Lof the Alatorin people.  This ancient and legendary forge guild is known
-&+Lto all blacksmiths across the realm by its reputation alone.
+&+mA &+YD&+Me&+mco&+Yr&+Ma&+mte&+Yd L&+Ma&+mn&+Yd&+Mi&+mng &+YB&+Me&+mlow &+YThe Great Anvil~
+&+Y   Below the immeasurable weight of The Great Anvil, this landing
+&+rspreads out in a wide, circular expanse of polished obsidian inlaid
+&+Ywith intricate geometric patterns of mithril. Massive, bronze-cased
+&+rpillars rise from the corners of the platform, each carved with the
+&+Yhigh-relief histories of the Alatorin kings and capped with braziers
+&+rthat burn with an eternal, smokeless blue flame. A torch-lit hallway
+&+Ydescends a small, wide set of steps before continuing east-west.
 ~
 831 33554432 15
 D0
@@ -6000,7 +5975,7 @@ door~
 1 0 83219
 S
 #83381
-&+LA Hidden Cave of &+CSh&+ci&+Lmmer&+ci&+Cn&+cg S&+Ct&+ca&+Llag&+ct&+Lite&+cs &+Land &+cS&+Cta&+cla&+Lg&+cm&+Ci&+Ct&+Les&N~
+&+LA Secluded Cave of &+CSh&+ci&+Lmmer&+ci&+Cn&+cg S&+Ct&+ca&+Llag&+ct&+Lite&+cs &+Land &+cS&+Cta&+cla&+Lg&+cm&+Ci&+Ct&+Les&N~
    &+LThis cave shimmers with brilliant silver-colored stalagmites and
 &+Lstalagtites.  Secluded from the hustle-and-bustle of the city portion
 &+Lof Alatorin, this dark and ancient cave is one of the most breath-taking
@@ -6054,7 +6029,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 14
+831 0 37
 D1
 ~
 ~
@@ -6444,7 +6419,7 @@ S
 &+ya feeling of being drugged, but regardless this reality is an incredible
 &+yexperience.
 ~
-831 0 5
+831 32832 5
 D4
 &+yA rocky climb up to the mine entrance.
 ~
@@ -6469,7 +6444,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D0
 ~
 ~
@@ -6496,7 +6471,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D1
 ~
 ~
@@ -6536,7 +6511,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D2
 ~
 ~
@@ -6559,7 +6534,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D0
 ~
 ~
@@ -6590,7 +6565,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D0
 ~
 ~
@@ -6617,7 +6592,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D0
 ~
 ~
@@ -6645,7 +6620,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D0
 ~
 ~
@@ -6668,7 +6643,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 0 13
+831 32832 13
 D2
 ~
 ~
@@ -6767,7 +6742,7 @@ S
 &+Ccitadel west of here.  Twin staircases of carved, blocked stone face each
 &+Cother from the north and south sides of the platform.
 ~
-831 134250496 14
+831 134250500 14
 D0
 ~
 ~
@@ -6822,9 +6797,10 @@ S
 831 134250496 14
 D0
 &+CHuge stone doors lead to a huge, elegant conference hall.
+&+cA small sign on one of the doors reads &+C'OFFICERS ONLY'
 ~
 door doors~
-1 0 83426
+3 83258 83426
 D2
 ~
 ~
@@ -6847,11 +6823,9 @@ D1
 ~
 0 0 83422
 D2
-&+LTwo &+Ymassive doors&+L leading south into the &N&+cShanat &+Ymilitary &+Lcomplex
-.
 ~
-doors~
-1 83303 83430
+~
+0 83303 83430
 D3
 ~
 ~
@@ -6909,7 +6883,7 @@ D2
 &+CHuge stone doors lead back to the Seniors' Hall.
 ~
 door doors~
-1 0 83422
+3 83258 83422
 D3
 ~
 ~
@@ -6930,47 +6904,76 @@ D1
 0 0 83426
 S
 #83428
-&+GA &+BD&+We&+Bc&+Wora&+Bt&+We&+Bd &+GBedroom&N~
-   &+WThis castle bedroom, deep within the protection of Shanat Citadel,
-&+Whas been lavishly decorated with great detail, from the foreign silk
-&+Wtapestries on the walls to the carved miniatures sitting across the
-&+Wintricately-designed dwarven hearth.
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 134250496 14
+831 1207992321 13
+D0
+~
+~
+0 0 83429
+D1
+~
+~
+0 0 84007
 D2
-&+yThis large door leads back out to a hallway.
 ~
-door~
-1 0 83294
+~
+0 0 84006
+D3
+~
+~
+0 0 84008
+D4
+&+mA massive mithril scuttle opens up to the top of the cavern.
+~
+scuttle~
+3 83258 83294
 S
 #83429
-&+GA &+WD&n&+ce&+Wc&N&+cora&+Wt&N&+ce&+Wd &+GBedroom&N~
-   &+WThis castle bedroom, deep within the protection of Shanat Citadel,
-&+Whas been lavishly decorated with great detail, from the foreign silk
-&+Wtapestries on the walls to the carved miniatures sitting across the
-&+Wintricately-designed dwarven hearth.
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 134250496 14
-D0
-&+LA svalich wood door leads back to the hallway.
+831 1207992321 13
+D1
 ~
-door~
-1 0 83294
+~
+0 0 84010
+D2
+~
+~
+0 0 83428
+D3
+~
+~
+0 0 84009
 S
 #83430
-&+LAtop a Set of &+YExtravagant &N&+mM&+Li&N&+mt&+Lh&N&+mr&+Li&N&+ml Steps~
-   &+LThis wide set of steps grows wider and wider as it leads into a huge landing of pure
-&+Lmithril below here.  This set of steps reaches down from the hallway just north of
-&+Lhere, marked architecturally with a stone arch set within the mithril hall and twin
-&+Ltorches sconced on either side of the stair entrance.  The steps themselves are bare, but
-&+Lsurprisingly glossy.
+&+LA Vestibule Above an &+YExtravagant &N&+mM&+Li&N&+mt&+Lh&N&+mr&+Li&N&+ml S&+Mt&+mai&+Mr&+mca&+Ms&+me~
+   &+LThis wide set of steps grows wider and wider as it leads
+&+minto a huge landing of pure &+Lmithril below here.  This set of
+&+msteps reaches down from the hallway just north of &+Lhere, marked
+&+marchitecturally with a stone arch set within the mithril hall and
+&+mtwin &+Ltorches sconced on either side of the stair entrance.
+&+mThe steps themselves are bare, but &+Lsurprisingly glossy.
 ~
 831 134250496 14
 D0
-&+LTwo massive &+Ydoors&+L lead back into the halls of &N&+CShanat Citadel.
 ~
-doors~
-1 0 83423
+~
+0 0 83423
 D5
 ~
 ~
@@ -6978,15 +6981,16 @@ D5
 S
 #83431
 &+LA &N&+mMi&+Lt&N&+mhr&+Li&N&+ml Landing&N~
-   &+LThis great mithril landing sits between four massive pillars.  A glorious staircase
-&+Lleads back up to the Seniors Hallway in the upper level of the Citadel, while a landing
-&+Lto an even deeper sets of stairs falls to the south, and a narrow corridor extends east
-&+Land west.  This deep junction is blocked off with doors in each direction, to the south
-&+La single plaque is posted.
+   &+LThis great mithril landing sits between four massive pillars.
+&+mA glorious staircase &+Lleads back up to the Seniors Hallway in the
+&+mupper level of the Citadel, while a landing &+Lto an even deeper sets
+&+mof stairs falls to the south, and a narrow corridor extends east &+Land
+&+mwest.  This deep junction is blocked off with doors in each direction,
+&+mto the south &+La single plaque is posted.
 ~
 831 134250496 14
 D0
-&+LA huge &+Cmetal &+Ldoor leads to the Commander's Office.
+&+LA huge &+Cmetal &+Ldoor leads to the Warden's Office.
 ~
 door~
 1 0 83432
@@ -7010,12 +7014,13 @@ D4
 0 0 83430
 S
 #83432
-&+LThe Office of the &N&+cCommander&N~
-   &+LThis huge dwarven chamber is nested deep underground and serves as the office and
-&+Lresidence of the citadel's commander, the man responsible for the security and defense
-&+Lof the king's residence.  The most notable feature of this chamber is the far northern
-&+Lwall, where a huge mural has been painted of a dwarf berserker grasping two axes
-&+Lroars in utter bloodlust.
+&+LThe Office of the &N&+cWarden&N~
+   &+LThis huge dwarven chamber is nested deep underground and
+serves as the office of the citadel's warden and weaponsmaster,
+the dwarf responsible for the security and defense &+Lof the king's
+personal army. The most notable feature of this chamber is the far
+northern &+Lwall, where a huge mural has been painted of a dwarf
+berserker grasping two axes &+Lroars in utter bloodlust.
 ~
 831 134250496 14
 D2
@@ -7071,10 +7076,10 @@ D0
 ~
 0 0 83434
 D1
-&+LA small sign above the door reads &+Y'Chungy Taskgulch'
+&+LA small sign above the door reads &+C'OFFICERS ONLY'
 ~
 door~
-3 83303 83446
+3 83258 83446
 D2
 ~
 ~
@@ -7165,10 +7170,10 @@ D2
 ~
 0 0 83441
 D3
-&+YA sign above the western door reads &n&+r'Frahzel Thunderfist'
+&+YA sign above the western door reads &+C'OFFICERS ONLY'
 ~
 door~
-3 83303 83445
+3 83258 83445
 S
 #83441
 &+YA Bend in a Gold and &N&+mMithril &+YHallway~
@@ -7227,13 +7232,21 @@ D3
 0 0 83442
 S
 #83444
-&+WA Spanning Bridge Over a Vast Underworld Chasm~
-   &+WThis massive stone bridges arches high over a massive stone chasm, sitting at
-&+Wthe center of this deep shield dwarf city.  The cavern is very deep, but seems
-&+Wto be exhuming &+Rheat&+W from its black depths.  The bridge is massive and
+&+WThe Great Span of Dhalnadar~
+   &+WThis massive stone bridges arches high over a massive stone chasm,
+&+Wcentered at the heart of this deep shield dwarf city.  The rift is very
+&+Wdeep, yet it radiates &+Rheat&+W from its black depths.  The bridge is massive and
 &+Wquite crucial for the architecture of Shanat Citadel.  The cavern walls have
 &+Wbeen chiseled out over time, and a few small balconies extend out of various
-&+Wparts of these walls.
+&+Wparts of these walls. Stone sentinels are carved into the edges every twenty
+&+Wpaces of softened dwarven visages, weathered by the updrafts of the hot abyss
+&+Wbelow.
+   &+cThe wind from the Rift of Dhalnadar howls upward with a mournful, rhythmic
+&+cwhistle, carrying the metallic tang of deep-earth ores and the ancient scent
+&+cof stagnant water. Looking over the edge reveals nothing but a terrifying,
+&+clightless void where even the strongest magical light is swallowed after a
+&+cfew dozen feet. The bridge itself hums with a low, constant vibration from
+&+cthe sheer tectonic pressure of the mountain roots it connects.
 ~
 831 134250496 14
 D0
@@ -7271,16 +7284,18 @@ S
 ~
 831 134250496 14
 D3
+&+LA large wooden door on mithril hinges is anchored to the blocked stone.
 ~
 door~
 1 0 83435
 S
 #83447
 &+LTop of a Dark &N&+mMithril Staircase~
-   &+LThis dark staircase leads deep within the bowels of &N&+cShanat Citadel&+L.  The
-&+Lfloor is carpeted with a thick fur over mithril-blocked steps.  There are torch
-&+Lsconces ever-so-often on the mithril walls leading deeper and more and more sparse
-&+Linto the depths of the citadel.
+   &+LThis dark staircase leads deep within the bowels of &N&+cShanat
+&+mCitadel&+L.  The &+Lfloor is carpeted with a thick fur over mithril-
+&+mblocked steps.  There are torch &+Lsconces ever-so-often on the
+&+mmithril walls leading deeper and more and more sparse &+Linto the
+&+mdepths of the citadel.
 ~
 831 134250500 14
 D0
@@ -7566,10 +7581,11 @@ D5
 S
 #83464
 &+LBottom of a Dark &N&+mMithril Staircase~
-   &+LThis dark staircase leads deep within the bowels of &N&+cShanat Citadel&+L.  The
-&+Lfloor is carpeted with a thick fur over mithril-blocked steps.  There are torch
-&+Lsconces ever-so-often on the mithril walls leading deeper and more and more sparse
-&+Linto the depths of the citadel.
+   &+LThis dark staircase leads deep within the bowels of
+&N&+cShanat Citadel&+L. The&+L floor is carpeted with a thick
+&+mfur over mithril-blocked steps.  There are torch &+Lsconces
+&+mever-so-often on the mithril walls leading deeper and more
+&+mand more sparse &+Linto the depths of the citadel.
 ~
 831 134250500 14
 D3
@@ -7583,10 +7599,10 @@ D4
 S
 #83465
 &+LA Rocky Landing~
-   &+LThis rocky landing sits at the great bottom of the Shanat prison,
-&+Lformed out of the natural cavernous deep of Lower Shanatar.  This naturally-
-&+Lformed cavern is full of churning &+Rl&N&+ra&+Rv&N&+ra&+L, with a few small
-&+Lisland peaks jutting out of the &+Rmolten&+L rock.
+   &+LThis rocky landing sits at the great bottom of the Shanat
+&+Rcitadel, &+Lformed out of the natural cavernous deep of the Rift
+&+Rof &+yD&+mh&+ya&+ml&+yn&+ma&+yd&+ma&+yr&+L. This naturally-&+Lformed cavern is full of churning
+&+Rl&N&+ra&+Rv&N&+ra&+L, with a few small &+Lisland peaks jutting &+Rout of the &+Rm&+ra&+Rg&+rm&+Ra&+L.
 ~
 831 134250500 14
 D0
@@ -7604,7 +7620,7 @@ S
 &+Lpeak that has since been eaten and assimilated by the churning magma below,
 &+Lheated by the &N&+rburn &+Lof Lower Shanatar.  This narrow rocky bridge
 &+Lleads quite a long distance between a cavern ledge, transformed into the
-&+Lcitadel &N&+bprison&+L, to the east and west.  The rock bridge leading from
+&+Lcitadel &N&+bshrine&+L, to the east and west.  The rock bridge leading from
 &+Lthe north first opens onto a huge rock platform at the center of the
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
@@ -7650,7 +7666,7 @@ S
 &+Lpeak that has since been eaten and assimilated by the churning magma below,
 &+Lheated by the &N&+rburn &+Lof Lower Shanatar.  This narrow rocky bridge
 &+Lleads quite a long distance between a cavern ledge, transformed into the
-&+Lcitadel &N&+bprison&+L, to the east and west.  The rock bridge leading from
+&+Lcitadel &N&+bshrine&+L, to the east and west.  The rock bridge leading from
 &+Lthe north first opens onto a huge rock platform at the center of the
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
@@ -7671,7 +7687,7 @@ S
 &+Lpeak that has since been eaten and assimilated by the churning magma below,
 &+Lheated by the &N&+rburn &+Lof Lower Shanatar.  This narrow rocky bridge
 &+Lleads quite a long distance between a cavern ledge, transformed into the
-&+Lcitadel &N&+bprison&+L, to the east and west.  The rock bridge leading from
+&+Lcitadel &N&+bshrine&+L, to the east and west.  The rock bridge leading from
 &+Lthe north first opens onto a huge rock platform at the center of the
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
@@ -7692,7 +7708,7 @@ S
 &+Lpeak that has since been eaten and assimilated by the churning magma below,
 &+Lheated by the &N&+rburn &+Lof Lower Shanatar.  This narrow rocky bridge
 &+Lleads quite a long distance between a cavern ledge, transformed into the
-&+Lcitadel &N&+bprison&+L, to the east and west.  The rock bridge leading from
+&+Lcitadel &N&+bshrine&+L, to the east and west.  The rock bridge leading from
 &+Lthe north first opens onto a huge rock platform at the center of the
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
@@ -7713,7 +7729,7 @@ S
 &+Lpeak that has since been eaten and assimilated by the churning magma below,
 &+Lheated by the &N&+rburn &+Lof Lower Shanatar.  This narrow rocky bridge
 &+Lleads quite a long distance between a cavern ledge, transformed into the
-&+Lcitadel &N&+bprison&+L, to the east and west.  The rock bridge leading from
+&+Lcitadel &N&+bshrine&+L, to the east and west.  The rock bridge leading from
 &+Lthe north first opens onto a huge rock platform at the center of the
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
@@ -7748,60 +7764,55 @@ D2
 8 0 83465
 S
 #83473
-&+LA Deep Clearing Before the Western &N&+cCage&N~
-   &+LThis rocky expanse is accessible only from a narrow rocky bridge,
-&+Lextending towards a similar rocky expanse across the &+Rmagma &+Lflowing
-&+Lthrough Deep Shanatar.
-   &+LA huge &+cmetal &+Lcage gate of immensely-thick &+Wplatinum &+Lbars,
-&+Lholding the beast within at bay.  Although the construction of these gates
-&+Lto the beast &N&+ccage&+L in the Shanat prison look rather recent, the
-&+Lcaves in which they reside have been the ancient home to the &+Bblue dragons
-&+Lfor their entire existence before the infamous &N&+rRringlor &+Lattacks and
-&N&+rdefeat &+Ltowards near this very location.
+&+LThe Bastion &+YSh&+Cri&+cne&+L of &+cBerronar Truesilver&N~
+&+L   A &+yj&+Lagg&+ye&+Ld spur of dark basalt reaches out over the churning &+rd&+Re&+Ypt&+Rh&+rs&+L,
+&+Lseamlessly carved and fortified with hewn g&Nr&+La&Nn&+Li&Nt&+Le by ancient, master
+&+Lmasons. At the center of this rocky outcrop stands an open-air shrine,
+&+Lshaped like an open-air gazebo, fortified with pillars carved to res-
+&+Lemble interlocking &+chammers&+L that support a dome of tarnished &+csilver&+L.
+&+LIn the center of the shrine, a modest altar of &+mm&+Mi&+mt&+Mh&+mr&+Mi&+ml &+Lrests under
+&+Lthe watchful gaze of a small stone bust depicting &+cBerronar Truesilver&+L,
+&+Lthe Revered &+mMother&+L.
+&+L   A narrow, treacherous bridge of &+ynatural &+Lr&+yo&+Lc&+yk&+L extends eastward from
+&+Lthe protrusion, arching precariously over a lake of bubbling &+rm&+Ragm&+ra
+&+Lthat glows two hundred feet below.
 ~
 831 134250496 14
 D1
 ~
 ~
 0 0 83471
-D3
-&+cA dark, dirty old steel cage.
-~
-cage~
-3 83294 83483
 S
 #83474
-&+LA Rocky Expanse Outside the Eastern &N&+cCage&N~
-   &+LThis rocky expanse is accessible only from a narrow rocky bridge,
-&+Lextending towards a similar rocky expanse across the &+Rmagma &+Lflowing
-&+Lthrough Deep Shanatar.
-   &+LA huge &+cmetal &+Lcage gate of immensely-thick &+Wplatinum &+Lbars,
-&+Lholding the beast within at bay.  Although the construction of these gates
-&+Lto the beast &N&+ccage&+L in the Shanat prison look rather recent, the
-&+Lcaves in which they reside have been the ancient home to the &+Bblue dragons
-&+Lfor their entire existence before the infamous &N&+rRringlor &+Lattacks and
-&N&+rdefeat &+Ltowards near this very location.
+&+LThe &+LBastion &+CSh&+cr&+Ci&+cne&+L of &+cClangeddin Silverbeard&N~
+&+L   A &+yj&+Lagg&+ye&+Ld spur of dark basalt reaches out over the churning &+rd&+Re&+Ypt&+Rh&+rs&+L,
+&+Lseamlessly carved and fortified with hewn g&Nr&+La&Nn&+Li&Nt&+Le by ancient, master
+&+Lmasons. At the center of this rocky outcrop stands an open-air shrine,
+&+Lshaped like an open-air gazebo, fortified with pillars carved to res-
+&+Lemble interlocking &+rwar&+caxes&+L that support a dome of tarnished &+csilver&+L.
+&+LIn the center of the shrine, a modest altar of &+Bcold-&+Ciron&+L rests under
+&+Lthe watchful gaze of a small stone bust depicting &+cClangeddin Silver-
+&+cbeard&+L, the Father of &+rBattle&+L.
+&+L   A narrow, treacherous bridge of &+ynatural &+Lr&+yo&+Lc&+yk&+L extends westward from
+&+Lthe protrusion, arching precariously over a lake of bubbling &+rm&+Ragm&+ra
+&+Lthat glows two hundred feet below.
 ~
 831 134250496 14
-D1
-&+cThis large steel cage leads east into the cave.
-~
-cage~
-3 83294 83484
 D3
 ~
 ~
 0 0 83469
 S
 #83475
-&+LA Rocky Ledge South of a Narrow Rock Bridge&N~
-   &+LThis rocky ledge sits just along the inside of a massive spire, surrounded
-&+Lin all directions ahead by a flow of blistering magma.  This rocky facade
-&+Lis most likely the closest distance that anyone might imagine to get
-&+Lsafely without some sort of magical protection.  The ledge around this
-&+Lportion of the spire exists in a slight slope, leading a bit further
-&+Ldownward the further clockwise it gets.  There are several other huge
-&+Lrock formations and spires jutting out in this deep, ancient area.
+&+LA Rocky Ledge&N~
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D0
@@ -7818,14 +7829,15 @@ D3
 0 0 83477
 S
 #83476
-&+LA Rocky Ledge Around a Spire~
-   &+LThis rocky ledge sits just along the inside of a massive spire, surrounded
-&+Lin all directions ahead by a flow of blistering magma.  This rocky facade
-&+Lis most likely the closest distance that anyone might imagine to get
-&+Lsafely without some sort of magical protection.  The ledge around this
-&+Lportion of the spire exists in a slight slope, leading a bit further
-&+Ldownward the further clockwise it gets.  There are several other huge
-&+Lrock formations and spires jutting out in this deep, ancient area.
+&+LA Walled &+gS&+Yh&+gr&+Yi&+gn&+Ye&+L on the Spire&N~
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D2
@@ -7836,16 +7848,21 @@ D3
 ~
 ~
 0 0 83475
+D4
+~
+~
+8 0 84047
 S
 #83477
-&+LA Rocky Ledge Around a Spire~
-   &+LThis rocky ledge sits just along the inside of a massive spire, surrounded
-&+Lin all directions ahead by a flow of blistering magma.  This rocky facade
-&+Lis most likely the closest distance that anyone might imagine to get
-&+Lsafely without some sort of magical protection.  The ledge around this
-&+Lportion of the spire exists in a slight slope, leading a bit further
-&+Ldownward the further clockwise it gets.  There are several other huge
-&+Lrock formations and spires jutting out in this deep, ancient area.
+&+LA Walled &+mS&+Rh&+rr&+mi&+Rn&+me&+L On the Spire~
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D1
@@ -7856,16 +7873,21 @@ D2
 ~
 ~
 0 0 83479
+D4
+~
+~
+8 0 84046
 S
 #83478
 &+LA Rocky Ledge&N~
-   &+LThis rocky ledge sits just along the inside of a massive spire, surrounded
-&+Lin all directions ahead by a flow of blistering magma.  This rocky facade
-&+Lis most likely the closest distance that anyone might imagine to get
-&+Lsafely without some sort of magical protection.  The ledge around this
-&+Lportion of the spire exists in a slight slope, leading a bit further
-&+Ldownward the further clockwise it gets.  There are several other huge
-&+Lrock formations and spires jutting out in this deep, ancient area.
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D0
@@ -7883,13 +7905,14 @@ D2
 S
 #83479
 &+LA Rocky Ledge&N~
-   &+LThis rocky ledge sits just along the inside of a massive spire, surrounded
-&+Lin all directions ahead by a flow of blistering magma.  This rocky facade
-&+Lis most likely the closest distance that anyone might imagine to get
-&+Lsafely without some sort of magical protection.  The ledge around this
-&+Lportion of the spire exists in a slight slope, leading a bit further
-&+Ldownward the further clockwise it gets.  There are several other huge
-&+Lrock formations and spires jutting out in this deep, ancient area.
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D0
@@ -7906,14 +7929,15 @@ D3
 0 0 83470
 S
 #83480
-&+LA Rocky Ledge Around a Spire~
-   &+LThis rocky ledge sits just along the inside of a massive spire, surrounded
-&+Lin all directions ahead by a flow of blistering magma.  This rocky facade
-&+Lis most likely the closest distance that anyone might imagine to get
-&+Lsafely without some sort of magical protection.  The ledge around this
-&+Lportion of the spire exists in a slight slope, leading a bit further
-&+Ldownward the further clockwise it gets.  There are several other huge
-&+Lrock formations and spires jutting out in this deep, ancient area.
+&+LA Walled &+mS&nh&+mri&nn&+me&+L On the Spire~
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D0
@@ -7924,29 +7948,35 @@ D1
 ~
 ~
 0 0 83481
+D4
+~
+~
+8 0 84049
 S
 #83481
-&+LA &N&+yCr&+Lu&N&+ym&+Lbl&Ni&+Ln&Ng &+LSpire App&Nroach&n~
-   &+LThis crumbling portion of the rocky ledge is on the southern face of the
-&+Lcentral spire, by which the three bridges erect to the two cages and the
-&+Lmithril stairs.  Sitting in the shadow of the central spire, this crumbling
-&+Lnook is quite dark and has seen very little life in its awesome existence.
-&+LThe northern wall, although completely black and devoid of light, has a
-&+Lstrange &N&+rwarmth&+L emanating from deep within.
-   &+LThe lava deep within the Shanatar Mountain city of Alatorin, warms the
-&+Lrocks and cooks everything within it.  The northern &+Rwall &+Ljust resonates
-&+Lwith this natural heat.
+&+LA Rocky Ledge Before &+ca Central Shrine&N~
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D0
-&+LThe &+Rwall &+Lto the north radiates intense &N&+rheat&+L.
 ~
 ~
-8 0 83489
+0 0 83489
 D1
 ~
 ~
 0 0 83482
+D2
+~
+~
+0 0 83483
 D3
 ~
 ~
@@ -7957,14 +7987,15 @@ heat~
 ~
 S
 #83482
-&+LA Sharp Turn on the Spire&N~
-   &+LThis rocky ledge sits just along the inside of a massive spire, surrounded
-&+Lin all directions ahead by a flow of blistering magma.  This rocky facade
-&+Lis most likely the closest distance that anyone might imagine to get
-&+Lsafely without some sort of magical protection.  The ledge around this
-&+Lportion of the spire exists in a slight slope, leading a bit further
-&+Ldownward the further clockwise it gets.  There are several other huge
-&+Lrock formations and spires jutting out in this deep, ancient area.
+&+LA Walled &+rS&+Lh&+rri&+Ln&+re&+L On the Spire&N~
+   &+LThis rocky ledge sits just along the inside of a massive spire,
+&+msurrounded &+Lin all directions ahead by a flow of blistering magma.
+&+mThis rocky facade &+Lis most likely the closest distance that anyone
+&+mmight imagine to get &+Lsafely without some sort of magical protection.
+&+mThe ledge around this&+Lportion of the spire exists in a slight slope,
+&+mleading a bit further &+Ldownward the further clockwise it gets. There
+&+mare several other huge &+Lrock formations and spires jutting out in this
+&+mdeep, ancient cavern.
 ~
 831 134250496 14
 D0
@@ -7975,38 +8006,52 @@ D3
 ~
 ~
 0 0 83481
+D4
+~
+~
+8 0 84050
 S
 #83483
-&+LA Massive, &N&+cCaged &+LCavern&N~
-   &+LThis massive cavern, sitting in the deepest parts of Lower Shanatar,
-&+Lis extraordinarily huge.  It has a small spring on the far southwestern
-&+Lcorner, sprinkling gently.  It is a wonder at the amazing life this
-&+Ltiny spring has been able to support..  A massive nesting area sits within
-&+Lthis huge cave, which has been transformed into a naturally-formed dungeon
-&+Lcell by means of a locked platinum gate.
+&+LA Narrow Rocky Bridge &+ROver &+YSearing &N&+rM&+Ragm&N&+ra&N~
+   &+LThis natural rock bridge was perhaps part of the body of a much larger
+&+Lpeak that has since been eaten and assimilated by the churning magma below,
+&+Lheated by the &N&+rburn &+Lof Lower Shanatar.  This narrow rocky bridge
+&+Lleads quite a long distance between a cavern ledge, transformed into the
+&+Lcitadel &N&+bshrine&+L, to the east and west.  The rock bridge leading from
+&+Lthe north first opens onto a huge rock platform at the center of the
+&+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
+&+Lsides of the main descent.
 ~
-831 1207992321 14
-D1
-&+cThis dark steel gate leads back east towards the bridge over the magma.
+831 134250496 14
+D0
 ~
-cage~
-1 0 83473
+~
+0 0 83481
+D2
+~
+~
+0 0 83484
 S
 #83484
-&+LA Massive, &N&+cCaged &+LCavern&N~
-   &+LThis massive cavern, sitting in the deepest parts of Lower Shanatar,
-&+Lis extraordinarily huge.  It has a small spring on the far southwestern
-&+Lcorner, sprinkling gently.  It is a wonder at the amazing life this
-&+Ltiny spring has been able to support..  A massive nesting area sits within
-&+Lthis huge cave, which has been transformed into a naturally-formed dungeon
-&+Lcell by means of a locked platinum gate.
+&+LA Narrow Rocky Bridge &+ROver &+YSearing &N&+rM&+Ragm&N&+ra&N~
+   &+LThis natural rock bridge was perhaps part of the body of a much larger
+&+Lpeak that has since been eaten and assimilated by the churning magma below,
+&+Lheated by the &N&+rburn &+Lof Lower Shanatar.  This narrow rocky bridge
+&+Lleads quite a long distance between a cavern ledge, transformed into the
+&+Lcitadel &N&+bshrine&+L, to the east and west.  The rock bridge leading from
+&+Lthe north first opens onto a huge rock platform at the center of the
+&+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
+&+Lsides of the main descent.
 ~
-831 1073741825 14
-D3
-&+cA dirty steel cage leads back west to the rock bridge over the magma flow.
+831 134250496 14
+D0
 ~
-cage~
-1 0 83474
+~
+0 0 83483
+D2
+~
+~
+0 0 84044
 S
 #83485
 &+LA Dark, &N&+mGlo&+Lomy Cave&N~
@@ -8072,64 +8117,99 @@ D2
 0 0 83505
 S
 #83489
-&+LA&N&+rn &+LA&N&+rn&+Lc&N&+ri&+Le&N&+rn&+Lt &N&+rS&+Le&N&+rc&+Lr&N&+re&+Lt S&N&+rt&+La&N&+ri&+Lr&N&+rc&+La&N&+rs&+Le&N~
-   &+LThis ancient staircase was cut out of the very blackrock that makes up the
-&+Linner core of S&N&+yhan&+La&N&+yta&+Lr.  Leading down into the depths of the
-&+Lvolcanic mountain, this staircase is small and simple.  Seemingly-carved by
-&+Lhand, this crude set of stairs suggests the astounding age of this great mountain.
+&NThe Summit of the &+WAll-&+YF&+Ra&+Yt&+Rh&+Ye&+Rr&N~
+&+L   Also known as &+W"the Summit of the &+rS&+Ro&+Yu&+Rl&+W-&+YF&+Ror&+rg&+Re&+rr&+W"&+L, this open, stone
+&+Lshrine serves as the most &+Ws&+Ya&+Wc&+Yr&+We&+Yd &+Lplace for all &+ydwarves&+L.
+&+L   A steep staircase, dug out of the &+yj&+La&+ygg&+Le&+yd&+L basalt of the central
+&+Lspire, climbs steeply to a grand shrine. Eight stone pillars, each
+&+Lcarved to resemble one of the eight gods of the &+ydwarven pantheon&+L,
+&+Lsupport a giant &+Bcold-&+ciron&+L dome. At the end of the &nshrine&+L, opposite
+&+Lthe stairs, there is a large altar, set before the bust of &+rMoradin
+&+L- All-Father of the D&+yw&+La&+yr&+Lv&+ye&+Ls and head of the holy pantheon.
 ~
 831 1207992321 13
 D2
 ~
 ~
 0 0 83481
+D4
+~
+~
+0 0 84045
 D5
+   The center of the landing, before the steps up to the shrine,
+a masterfully-crafted mosaic depicts &+YBerronar &+CTrue&+csilver&N with
+her arms outstretched and her robes flowing into the stylized
+shapes of hearth fires and mountain strongholds. A border of
+intricate knotwork weaves together symbols of life.
 ~
 ~
-0 0 83490
+8 0 83490
 S
 #83490
-&+LA&N&+rn &+LA&N&+rn&+Lc&N&+ri&+Le&N&+rn&+Lt &N&+rS&+Le&N&+rc&+Lr&N&+re&+Lt S&N&+rt&+La&N&+ri&+Lr&N&+rc&+La&N&+rs&+Le&N~
-   &+LThis ancient staircase was cut out of the very blackrock that makes up the
-&+Linner core of S&N&+yhan&+La&N&+yta&+Lr.  Leading down into the depths of the
-&+Lvolcanic mountain, this staircase is small and simple.  Seemingly-carved by
-&+Lhand, this crude set of stairs suggests the astounding age of this great mountain.
+&+rA Carved Staircase &+LDeep in The Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+   &+LA wide, spiraling staircase is hewn directly into the side
+&+Lof the yawning abyss. The steps are fashioned from seamless
+&+Lobsidian-like stone that remains cool despite the rising &+Yheat&+L.
+&+LEach riser is intricately c&Na&+Lr&Nv&+Le&Nd&+L with bas-reliefs, depicting
+&+Lsimple imagery of the great migrations of the &+ydeep dwarven
+&+bclans&+L. A massive railing of wrought-iron, shaped like the
+&+Lundulating body of a wyrm, provides a steady grip against
+&+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
 ~
 831 1207992321 13
 D4
+&+r Carved steps continue upwards.
 ~
 ~
 0 0 83489
 D5
+   Carved steps lead down to this landing, on which a brilliant
+mosaic depicts the silhouette of &+cClangeddin &+CSilver&+cbeard&N, wielding
+dual battleaxes in a subterranean siege against tides of giants
+and orcs. The stone is polished, depisite its age, to a rugged
+sheen and inlaid with a border of runes that repeat the same
+ancient dwarven symbols for strength.
 ~
 ~
-0 0 83491
+8 0 83491
 S
 #83491
-&+LA&N&+rn &+LA&N&+rn&+Lc&N&+ri&+Le&N&+rn&+Lt &N&+rS&+Le&N&+rc&+Lr&N&+re&+Lt S&N&+rt&+La&N&+ri&+Lr&N&+rc&+La&N&+rs&+Le&N~
-   &+LThis ancient staircase was cut out of the very blackrock that makes up the
-&+Linner core of S&N&+yhan&+La&N&+yta&+Lr.  Leading down into the depths of the
-&+Lvolcanic mountain, this staircase is small and simple.  Seemingly-carved by
-&+Lhand, this crude set of stairs suggests the astounding age of this great mountain.
+&+rA Carved Staircase &+LDeep in the Rift of &+yD&+mh&+ya&+ml&+yn&+ma&+yd&+ma&+yr&N~
+   &+LA wide, spiraling staircase is hewn directly into the side
+&+Lof the yawning abyss. The steps are fashioned from seamless
+&+Lobsidian-like stone that remains cool despite the rising &+Yheat&+L.
+&+LEach riser is intricately c&Na&+Lr&Nv&+Le&Nd&+L with bas-reliefs, depicting
+&+Lsimple imagery of the great migrations of the &+ydeep dwarven
+&+bclans&+L. A massive railing of wrought-iron, shaped like the
+&+Lundulating body of a wyrm, provides a steady grip against
+&+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
 ~
 831 1207992321 13
 D4
+&+rCarved steps continue upward.
 ~
 ~
 0 0 83490
 D5
+   The carved stairs lead down to a small landing, the center of
+which contains a highly-detailed mosaic of &+cD&+yu&+cm&+ya&+ct&+yh&+co&+yi&+cn&n, surrounded
+by an array of &+Yc&+go&+Bl&+co&+Rr&+Gf&+Cu&+Yl&N stones used to depict precious gemstones.
+A sprawling mountain range above, and deep roots below, form a
+stylized border that weaves around the sparkling gems as well as
+ancient runes of dwarven fortune.
 ~
 ~
-0 0 83492
+8 0 84054
 S
 #83492
-&+LA Stone Landing, Above a &+YL&N&+ra&+Yv&N&+ra &+RFlow&N~
+&+rA Stone Landing&+L Beside a &+YL&N&+ra&+Yv&N&+ra &+RFlow&N~
    &+LThe staircase above leads to a stone landing, traveling a brief tunnel
 &+Lnorth and eastward before leading out into the core of Shanatar, the central
 &+Lcavern and heart of the ancient mountain.  The lava flow below is
 &+Lraging hot, searing with burning flame.
 ~
-831 1207992321 13
+831 1207992325 13
 D0
 ~
 ~
@@ -8137,7 +8217,7 @@ D0
 D4
 ~
 ~
-0 0 83491
+0 0 84055
 S
 #83493
 &+LA Turn in a Rocky Tunnel Over a &+YL&N&+ra&+Yv&N&+ra &+RFlow&N~
@@ -8225,14 +8305,13 @@ D2
 0 0 83496
 S
 #83498
-&+LAn &+WOpening &+Lin a R&N&+yo&+Lc&N&+yky &+LTunnel&n~
-   &+LThe staircase above leads to a stone landing, traveling a brief tunnel
-&+Lnorth and eastward before leading out into the core of Shanatar, the central
-&+Lcavern and heart of the ancient mountain.  The lava flow below is
-&+Lraging hot, searing with burning flame.
-   &+RThe magma flow beneath this rocky tunnel leads out into a massive
-&+Runderground flow east of here - the core of &n&+cAlatorin &+Rand grave of
-&+RRringlor Noroth.
+&+LA R&N&+yo&+Lc&N&+yky &+LTunnel&+L &+rO&+Rp&+Ye&+Rn&+ri&+Rn&+Yg&N~
+&+L   The floor of the Rift of Dhalnadar is a scorched expanse of
+&+Ljagged obsidian and cooling basaslt that shimmers with the orange
+&+Lreflection of the churning magma rivers nearby. Thick plumes of
+&+Lsulfurous smoke rise from hissing vents, partially obscuring
+&+Lthe ancient, heat-cracked pillars that support the crushing
+&+Lweight of the kingdom above.
 ~
 831 1207992321 13
 D1
@@ -9661,7 +9740,7 @@ D9
 0 0 83563
 S
 #83565
-&+LA Turn in the &N&+cHall&N~
+&+BThe &+cHall &+Bof &+BAlatorin &+cKings~
 &+L  This hall stretches through the ancient hall of &N&+cAlatorin &+CKings.
 &+LAlthough there has only been a single king of &N&+cAlatorin&+L - Taark
 &+LShanat&+L, these grounds will serve as the honoring point for all further
@@ -9749,7 +9828,7 @@ D9
 0 0 83569
 S
 #83569
-&+LA Turn in the &N&+cHall~
+&+cThe &+BHall &+cof &+CAlatorin &+BKings&N~
 &+L  This hall stretches through the ancient hall of &N&+cAlatorin &+CKings.
 &+LAlthough there has only been a single king of &N&+cAlatorin&+L - Taark
 &+LShanat&+L, these grounds will serve as the honoring point for all further
@@ -10003,8 +10082,10 @@ S
 &+LThe &N&+cIron &+LGates of &N&+rHel&+Rgor &+WOutpost&N~
    &+LTwo massive &N&+ciron &+Lgates bridge a small gap between rocky ledges
 &+Lmaking up the trail up this spire.  Beyond the &n&+cgates &+La walled
-&+Lstructure with archer parapets gives view to all those around, while a second tower exists beyond the spire's peak north of here.  Within the structure is a very-
-&+Lwell reinforced entry with a long winding staircase leading into &N&+rHelgor.
+&+Lstructure with archer parapets gives view to all those around, while a
+&+Lsecond tower exists beyond the spire's peak north of here.  Within the
+&+Lstructure is heavily reinforced entry with a long winding staircase
+&+Lleading into &N&+rHelgor.
 ~
 831 134250496 5
 D0
@@ -10627,12 +10708,14 @@ door~
 S
 #83614
 &+rGeneral Hel&+Rgor's &+LChamber&N~
-   &+LThis large dark chamber is that of the ruler of this outpost and duergar legend -
-&+rHelgor is huge and cavernous.  Although possibly built into a cavern at some point, this
-&+mdwelling has been built over with adamantite blocks, forming a smooth-walled chamber
-&+Lin which the leader of the outpost resides.  In this particular portion of the chamber
-&+Lsits a huge planning table and a weapon rack hanging upon the ceiling.  A huge curtain
-&+Lhangs to the east before the private quarters of the general.
+   &+LThis large dark chamber is that of the ruler of this outpost
+&+rand duergar legend - &+rHelgor &+Lis huge and cavernous.  Although
+&+rpossibly built into a cavern at some point, this &+Ldwelling has been
+&+rbuilt over with adamantite blocks, forming a smooth-walled chamber
+&+Lin which the leader of the outpost resides.  In this particular
+&+rportion of the chamber &+Lsits a huge planning table and a weapon
+&+rrack hanging upon the ceiling.  A huge curtain &+Lhangs to the east
+&+rbefore the private quarters of the general.
 ~
 831 134250496 15
 D1
@@ -11438,12 +11521,13 @@ D5
 S
 #83655
 &+LAn &N&+yAncient&+L Hidden Dwarven &+RForge&N~
-   &+LThis deep forge sits deep within the heart of &N&+cAlatorin&+L.  A blocked
-&+Lstone staircase leads to a small leedge admist a torrential flow of molten lava,
-&+Lflowing deep within the volcano of &N&+yShana&+Lt&N&+yar&+L, at the heart of which &N&+cAlatorin &+Lsits.
-   &+LThe air here is dry and hot, as the thundering &N&+rmagma &+Lflows with a
-&+Lsteady, blood-like consistency.  The extreme, raging heat is very intense,
-&+Lburning anything that comes too close.
+   &+LThis deep forge sits deep within the heart of &N&+cAlatorin&+L.
+&+LA blocked &+Lstone staircase leads to a small leedge admist a torrential
+&+Lflow of molten lava, &+Lflowing deep within the volcano of &N&+yShana&+Lt&N&+yar&+L,
+&+Lat the heart of which &N&+cAlatorin &+Lsits.
+   &+LThe air here is dry and hot, as the thundering &N&+rmagma &+Lflows
+&+Lwith a &+Lsteady, blood-like consistency.  The extreme, raging heat is
+&+Lvery intense, &+Lburning anything that comes too close.
 ~
 831 1073741824 0
 D4
@@ -12354,11 +12438,13 @@ insignia~
 S
 #83706
 &+mThe Private Quarters of &+LGeneral &N&+rHel&+Rgor&N~
-   &+LThis private hall deep inside the duergar outpost known as Helgor is that of
-&+LGeneral &N&+rHel&+Rgor &+Lhimself.  Equipping with a private stone bath at which
-&+Lslaves are forced to bathe and primp the general, this home serves its host well.
-&+LThe stone floor is finely-kept, with a large rug made of &N&+yskin&+L covering
-&+Lthe floor.  The thick walls hug the stout exit while encircling the central chamber.
+   &+LThis private hall deep inside the duergar outpost known as
+&+rHelgor is that of &+LGeneral &N&+rHel&+Rgor &+Lhimself.  Equipping
+&+rwith a private stone bath at which &+Lslaves are forced to bathe
+&+rand primp the general, this home serves its host well. &+LThe stone
+&+rfloor is finely-kept, with a large rug made of &N&+yskin&+L covering
+&+Lthe floor.  The thick walls hug the stout exit while encircling
+&+rthe central chamber.
 ~
 831 134250505 0
 D3
@@ -14644,7 +14730,7 @@ S
 #83814
 &+WDemilich Load Room~
 ~
-831 1174446208 15
+831 1174438016 15
 D0
 ~
 ~
@@ -14816,7 +14902,7 @@ D5
 &+LA trapdoor with a large &N&+rele&+bmen&+ytal &+Ckeyhole &+Lis below.
 ~
 trapdoor~
-3 83430 83824
+2 83430 83824
 S
 #83824
 &+LWithin the &N&+cTower &+Lof &+CX&N&+ca&+Bmo&N&+cr&+Ca&N~
@@ -14841,7 +14927,7 @@ D4
 &+LA large trapdoor with an &N&+yele&+bmen&+rtal &+Ckeyhole &+Lis here.
 ~
 trapdoor~
-3 83430 83823
+2 83430 83823
 D5
 &+yThe staircase spirals &+Ldownwards.
 ~
@@ -14966,7 +15052,7 @@ D4
 &+LA huge elemental keyhole on the trapdoor.
 ~
 trapdoor~
-3 83430 83826
+2 83430 83826
 S
 #83830
 &+WA Meditation &N&+mCh&+yam&+mber&N~
@@ -14983,19 +15069,24 @@ secret wall door~
 5 0 83824
 S
 #83831
-&+WA Shimmering Po&+Crt&+Wal&N~
-   &+WThis small atrium, secluded from the eastern &+mMystic Ward&+W of
-&+cAlatorin&+W is illuminated by the bright light of the blazing portal
-&+Wfocused on the western wall of this simple stone hold.  The portal here
-&+Wseems to be focused into a magical workshop amongst numerous other
-&+Wportals all leading to other strange places.
+&+yAn &+yAn&+Lc&+yi&+Lent &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
 ~
-831 33554560 0
-D1
-&+LA large stone door to the east.
+831 1207992321 13
+D5
 ~
-door~
-6 83436 83182
+~
+0 0 122947
+D8
+~
+~
+0 0 84042
 S
 #83832
 &N&+yEntrance of a &N&+mFetid &N&+yTunnel&N~
@@ -17367,7 +17458,7 @@ S
 #83923
 &+WMarg D'ghor Load Room~
 ~
-831 1174446208 15
+831 1174438016 15
 D4
 ~
 ~
@@ -17792,15 +17883,15 @@ The crate monster loads here.  This mob is homage to the Stephen King
 story 'The Crate' popularized in the 1982 George Romero movie 'Creepshow'
 segment.
 ~
-831 1174446208 15
+831 1174438016 15
 D5
 ~
 ~
 8 0 83941
 S
 #83943
-&+rAzarem Load Room&N~
-&+rLoad room for Azarem Tumek, the duergar serial killer.
+&+rRares & Azarem Load Room&N~
+&+rLoad room for rares
 ~
 831 1216380928 13
 D0
@@ -17838,11 +17929,11 @@ D7
 D8
 ~
 ~
-0 0 83550
+0 0 120823
 D9
 ~
 ~
-0 0 83895
+0 0 120823
 S
 #83944
 &+yA Small Cave With an &+rOld Campsite&N~
@@ -17865,15 +17956,19 @@ D3
 S
 #83945
 &+LBefore an &+rA&+Ln&+rc&+Li&+re&+Ln&+rt &+LDark Iron &+RArch&N~
-   &+gThis churning river of slime flows through the deep
-&+gregresses of the Shanatar mountain.  Chunks of rock and
-&+gfilth, including feces, bones, and tangled hair, can be
-&+gseen very commonly floating through the sludge, which
-&+gmoves at a staggeringly-slow pace.  The rocky tunnel
-&+gceiling and walls are splattered with the same sludge,
-&+gsuggesting that these tunnels are not without travel.
+   &+LThe material of the arch is a testament to its age; blocked
+&+Ldark iron, found only in the deepst and most remote mines,
+&+Lcovered in ancient dwarven runes, sits at the northern end
+&+Lof the Hallway of Kings. The air is thick with heat, as the
+&+Llow groan of aching rocks act like the heartbeat of the
+&+Lmountains. A huge glowing dais can be seen to the south.
 ~
-831 33025 28
+831 33025 14
+D0
+&+mThe mithril gate behind the wall blocks access to the Rift of Dhalnadar.
+~
+gate~
+11 83371 84013
 D2
 ~
 ~
@@ -18846,4 +18941,1199 @@ D4
 ~
 ~
 0 0 83991
+S
+#83993
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D1
+~
+~
+0 0 83266
+D3
+~
+~
+0 0 83265
+S
+#83994
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D1
+~
+~
+0 0 83267
+D3
+~
+~
+0 0 83266
+S
+#83995
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D1
+~
+~
+0 0 83269
+D3
+~
+~
+0 0 83268
+S
+#83996
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D1
+~
+~
+0 0 83268
+D3
+~
+~
+0 0 83264
+S
+#83997
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D1
+~
+~
+0 0 84000
+D3
+~
+~
+0 0 83267
+S
+#83998
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D1
+~
+~
+0 0 83999
+D3
+~
+~
+0 0 83269
+S
+#83999
+A Bend in a &+MMithril Hall~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D2
+~
+~
+0 0 84003
+D3
+~
+~
+0 0 83998
+S
+#84000
+&NA Bend in a &+MMithril Hall~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D0
+~
+~
+0 0 84001
+D3
+~
+~
+0 0 83997
+S
+#84001
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D0
+~
+~
+0 0 84002
+D2
+~
+~
+0 0 84000
+S
+#84002
+&+mThe Great &+MFoyer&+m of &+cShanat Citadel&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D0
+~
+~
+0 0 84003
+D1
+&+LHeavy doors lead east to &+CBrightAxe &+LHall.
+~
+doors~
+2 83105 83277
+D2
+~
+~
+0 0 84001
+D3
+&+yA huge, polished ironwood barn-style sliding door leads to the larder.
+~
+door~
+1 0 84048
+S
+#84003
+&+MA Mithril Hall&N~
+   &+MThis mithril hall loops throughout the Citadel of Taark Shanat,
+&+Mconnecting the King's dwelling, as well as the quarters of the
+&+MHonor Guard, and the family of Taark himself.  This Citadel also
+&+Mbares with it the Shanat Family Treasury and the Personal Study
+&+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
+&+Mblocked, flawless mithril.
+~
+831 134250496 14
+D0
+~
+~
+0 0 83999
+D2
+~
+~
+0 0 84002
+S
+#84004
+&+mBottom of a &+YG&+Wl&+Yo&+Wr&+Yi&+Wo&+Yu&+Ws &+MSta&+mirc&+Mase&N~
+   &+WThis huge, glorious hallway is much larger then needed for any
+&+Wdwarf, or even army of dwarves - it is simply monolithic.  Lined with
+&+Wivory designs and runes of dwarven honour, this is the hallway of the
+&+Wfamily Shanat, to which all profits in Alatorin are claimed in the name
+&+Wof.  This hallway serves to connect the King's private chambers within
+&+Whis citadel to his throne in BrightAxe Hall.
+~
+831 134250496 14
+D1
+~
+~
+0 0 83273
+D3
+~
+~
+0 0 84005
+D4
+~
+~
+0 0 83271
+S
+#84005
+&+BA &+CR&+Be&+Cf&+Bl&+Ce&+Bc&+Ct&+Bi&+Cn&+Bg Pool &+WBelow a Statue of &+YU&+Rr&+rt&+Re&+rn&+Rg&+ror~
+&+B   Despite the nearby bustle of the always-active shield dwarves,
+&+Lthis chamber is profoundly quiet, set in a natural grotto beneath
+&+Rwhich the massive statue of the dwarf deity Urtengor dominates.
+&+BWeeping veils of moisture, the result of condensation build-up,
+&+Lcollects into a perfectly still, rectangular basin of black slate.
+&+RThe pool itself is preternaturally clear. Its surface is so
+&+Lundisturbed that it mirrors the glowing statue above.
+~
+831 134381568 14
+D1
+~
+~
+0 0 84004
+D5
+~
+~
+8 0 83233
+S
+#84006
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
+~
+831 1207992321 13
+D0
+~
+~
+0 0 83428
+D1
+~
+~
+0 0 84011
+D3
+~
+~
+0 0 84012
+S
+#84007
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
+~
+831 1207992321 13
+D0
+~
+~
+0 0 84010
+D2
+~
+~
+0 0 84011
+D3
+~
+~
+0 0 83428
+S
+#84008
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
+~
+831 1207992321 13
+D0
+~
+~
+0 0 84009
+D1
+~
+~
+0 0 83428
+D2
+~
+~
+0 0 84012
+S
+#84009
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
+~
+831 1207992321 13
+D1
+~
+~
+0 0 83429
+D2
+~
+~
+0 0 84008
+S
+#84010
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
+~
+831 1207992321 13
+D2
+~
+~
+0 0 84007
+D3
+~
+~
+0 0 83429
+S
+#84011
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
+~
+831 1207992321 13
+D0
+~
+~
+0 0 84007
+D3
+~
+~
+0 0 84006
+S
+#84012
+&-w&+lThe Wyrm-Halt Caverns&N~
+&-w&+l   At the heart of these great caverns stands a gargantuan pillar, &N
+&-w&+lreinforced with bands of cold-iron. Nine colossal chains, each &N
+&-w&+letched with magic runes, radiate outward from this central anchor.&N
+&-w&+lThe air here is a thick, sweltering soup of predator musk and hot&N
+&-w&+lash. From every direction, the heavy rhythmic breathing of chained&N
+&-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
+&-w&+lbone-chilling rattle of a struggle against their shackles.&N
+~
+831 1207992321 13
+D0
+~
+~
+0 0 84008
+D1
+~
+~
+0 0 84006
+S
+#84013
+&+mInto the Rift of &+LD&+yh&+La&+yl&+Ln&+ya&+Ld&+ya&+Lr&N~
+&+m   A treacherous, winding path of jagged obsidian and basalt
+&+mleads deeper into the heart of the Shanatar mountains. As the
+&+mair grows heavy with the metallic tang of sulfur, the distant,
+&+mrhythmic thrum of molten stone echoes upward from the lightless
+&+mdepths. Far below, a subterranean river of sluggish, white-hot
+&+mlava carves a glowing vein through the dark, casting amber
+&+mshadows that dance across rocks.
+~
+831 134250497 13
+D2
+&+mA towering, ancient mithril &+Mgate&+m bares the lock of &+Ykings&+m.
+~
+gate~
+3 83371 83945
+D5
+~
+~
+0 0 84014
+S
+#84014
+&+mThe Rift of &+LD&+yh&+La&+yl&+Ln&+ya&+Ld&+ya&+Lr&N~
+&+m   A treacherous, winding path of jagged obsidian and basalt
+&+mleads deeper into the heart of the Shanatar mountains. As the
+&+mair grows heavy with the metallic tang of sulfur, the distant,
+&+mrhythmic thrum of molten stone echoes upward from the lightless
+&+mdepths. Far below, a subterranean river of sluggish, white-hot
+&+mlava carves a glowing vein through the dark, casting amber
+&+mshadows that dance across rocks.
+~
+831 134250501 13
+D4
+~
+~
+0 0 84013
+D5
+~
+~
+0 0 84015
+S
+#84015
+&+mThe Rift of &+LD&+yh&+La&+yl&+Ln&+ya&+Ld&+ya&+Lr&N~
+&+m   A treacherous, winding path of jagged obsidian and basalt
+&+mleads deeper into the heart of the Shanatar mountains. As the
+&+mair grows heavy with the metallic tang of sulfur, the distant,
+&+mrhythmic thrum of molten stone echoes upward from the lightless
+&+mdepths. Far below, a subterranean river of sluggish, white-hot
+&+mlava carves a glowing vein through the dark, casting amber
+&+mshadows that dance across rocks.
+~
+831 134250497 13
+D4
+~
+~
+0 0 84014
+D5
+~
+~
+0 0 84016
+S
+#84016
+&+LThe Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+m   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+mair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+mdepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+mshadows that dance across rocks.
+~
+831 1207992321 13
+D1
+~
+~
+0 0 84018
+D3
+~
+~
+0 0 84017
+D4
+~
+~
+0 0 84015
+S
+#84017
+&+LThe Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+L   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+Lair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+Ldepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+Lshadows that dance across rocks.
+~
+831 1207992321 13
+D1
+~
+~
+0 0 84016
+S
+#84018
+&+LThe Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+L   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+Lair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+Ldepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+Lshadows that dance across rocks.
+~
+831 1207992321 13
+D3
+~
+~
+0 0 84016
+D5
+~
+~
+4 0 84019
+S
+#84019
+&+LDeep in the Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+L   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+Lair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+Ldepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+Lshadows that dance across rocks.
+~
+831 1207992321 13
+D4
+~
+~
+4 0 84018
+D5
+~
+~
+0 0 84020
+S
+#84020
+&+LDeep in the Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+L   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+Lair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+Ldepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+Lshadows that dance across rocks.
+~
+831 1207992321 13
+D0
+~
+~
+0 0 84021
+D2
+~
+~
+0 0 84022
+D4
+~
+~
+0 0 84019
+S
+#84021
+&+LDeep in the Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+L   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+Lair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+Ldepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+Lshadows that dance across rocks.
+~
+831 1207992321 13
+D2
+~
+~
+0 0 84020
+S
+#84022
+&+LDeep in the Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+L   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+Lair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+Ldepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+Lshadows that dance across rocks.
+~
+831 1207992321 13
+D0
+~
+~
+0 0 84020
+D5
+~
+~
+4 0 84023
+S
+#84023
+&+LA &NSmoke-Filled &+LOverlook in the Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+&+L   A treacherous, winding path of jagged obsidian and basalt
+&+Lleads deeper into the heart of the Shanatar mountains. As the
+&+Lair grows heavy with the metallic tang of sulfur, the distant,
+&+Lrhythmic thrum of molten stone echoes upward from the lightless
+&+Ldepths. Far below, a subterranean river of sluggish, white-hot
+&+Llava carves a glowing vein through the dark, casting amber
+&+Lshadows that dance across rocks.
+~
+831 1207992321 13
+D4
+~
+~
+4 0 84022
+D5
+~
+~
+0 0 122218
+S
+#84024
+&+yAn Ancient &+YL&+ra&+Yv&+ra &+YT&+ru&+Yb&+re&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D1
+~
+~
+0 0 84025
+D5
+~
+~
+0 0 121525
+S
+#84025
+&+yAn Ancient &+YL&+ra&+Yv&+ra &+YT&+ru&+Yb&+re&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D3
+~
+~
+0 0 84024
+D4
+~
+~
+0 0 121742
+S
+#84026
+&+yAn Ancient &+YL&+ra&+Yv&+ra &+YT&+ru&+Yb&+re&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D1
+~
+~
+0 0 84027
+D4
+~
+~
+0 0 121746
+S
+#84027
+&+yAn Ancient &+YL&+ra&+Yv&+ra &+YT&+ru&+Yb&+re&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D3
+~
+~
+0 0 84026
+D5
+~
+~
+0 0 121927
+S
+#84028
+&+yAn Ancient &+YL&+ra&+Yv&+ra &+YT&+ru&+Yb&+re&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+S
+#84029
+&+YA D&+ree&+Yp L&+rav&+Ya F&+rlo&+Yw&N~
+   &+YChurning lava&+r seems to flow from multiple d&+Yirections at once,
+&+Ycascading and &+rfolding onto itself like slow-m&+Yoving waves. The
+&+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
+&+Yout into a&+r subterranean lava pool.
+~
+831 1207992321 11
+D4
+~
+~
+0 0 122620
+D9
+~
+~
+0 0 84030
+S
+#84030
+&+YA D&+ree&+Yp L&+rav&+Ya F&+rlo&+Yw&N~
+   &+YChurning lava&+r seems to flow from multiple d&+Yirections at once,
+&+Ycascading and &+rfolding onto itself like slow-m&+Yoving waves. The
+&+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
+&+Yout into a&+r subterranean lava pool.
+~
+831 1207992321 11
+D1
+~
+~
+0 0 84033
+D2
+~
+~
+0 0 84031
+D6
+~
+~
+0 0 84029
+S
+#84031
+&+YA D&+ree&+Yp L&+rav&+Ya F&+rlo&+Yw&N~
+   &+YChurning lava&+r seems to flow from multiple d&+Yirections at once,
+&+Ycascading and &+rfolding onto itself like slow-m&+Yoving waves. The
+&+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
+&+Yout into a&+r subterranean lava pool.
+~
+831 1207992321 11
+D0
+~
+~
+0 0 84030
+D1
+~
+~
+0 0 84032
+D2
+~
+~
+0 0 84034
+S
+#84032
+&+YA D&+ree&+Yp L&+rav&+Ya F&+rlo&+Yw&N~
+   &+YChurning lava&+r seems to flow from multiple d&+Yirections at once,
+&+Ycascading and &+rfolding onto itself like slow-m&+Yoving waves. The
+&+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
+&+Yout into a&+r subterranean lava pool.
+~
+831 1207992321 11
+D0
+~
+~
+0 0 84033
+D3
+~
+~
+0 0 84031
+S
+#84033
+&+YA D&+ree&+Yp L&+rav&+Ya F&+rlo&+Yw&N~
+   &+YChurning lava&+r seems to flow from multiple d&+Yirections at once,
+&+Ycascading and &+rfolding onto itself like slow-m&+Yoving waves. The
+&+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
+&+Yout into a&+r subterranean lava pool.
+~
+831 1207992321 11
+D2
+~
+~
+0 0 84032
+D3
+~
+~
+0 0 84030
+S
+#84034
+&+yAn Ancient &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D0
+~
+~
+4 0 84031
+D5
+~
+~
+0 0 122549
+S
+#84035
+&+yAn Ancient &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D4
+~
+~
+0 0 122751
+D9
+~
+~
+0 0 84036
+S
+#84036
+&+yAn Ancient &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D5
+~
+~
+0 0 122852
+D6
+~
+~
+0 0 84035
+S
+#84037
+&+yA Junction of &+RL&+Ya&+Rv&+Ya &+RT&+Yu&+Rb&+Ye&+Rs&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D1
+~
+~
+0 0 123252
+D3
+~
+~
+0 0 123250
+S
+#84038
+&+yA Junction of &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&+rs&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D0
+~
+~
+0 0 123448
+D2
+~
+~
+0 0 123648
+D3
+~
+~
+0 0 123547
+S
+#84039
+&+yAn Ancient &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D5
+~
+~
+0 0 122944
+D8
+~
+~
+0 0 84040
+S
+#84040
+&+yAn Ancient &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D5
+~
+~
+0 0 122845
+D7
+~
+~
+0 0 84039
+S
+#84041
+&+yAn &+LA&+yn&+Lci&+ye&+Lnt &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D4
+~
+~
+0 0 122747
+D9
+~
+~
+0 0 84042
+S
+#84042
+&+yAn Junction of &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&+rs&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D6
+~
+~
+0 0 84041
+D7
+~
+~
+0 0 83831
+D9
+~
+~
+0 0 84043
+S
+#84043
+&+yAn &+yAnc&+Li&+ye&+Lnt &+rL&+Ya&+rv&+Ya &+rT&+Yu&+rb&+Ye&N~
+   &+LThis smooth tunnel of glass-slick obsidian mirrors the rhythmic
+&+Lpulse of the magma currents far below. Its walls are ribbed with
+&+L"tide marks" of stone, where prehistoric flows once surged and
+&+Lreceded. Faint veins of dormant gold and precious mithril glint
+&+Lthrough the soot, occasionally. Near the ceiling, the air shimmers
+&+Lwith a heavy, distorted heat haze, trapped for eons within the
+&+Lheart of the mountain.
+~
+831 1207992321 13
+D5
+~
+~
+0 0 122949
+D6
+~
+~
+0 0 84042
+S
+#84044
+&+LThe Bastion &+yS&+ch&+yr&+ci&+yn&+ce&+L of &+cDumathoin&N~
+&+L   A &+yj&+Lagg&+ye&+Ld spur of dark basalt reaches out over the churning &+rd&+Re&+Ypt&+Rh&+rs&+L,
+&+Lseamlessly carved and fortified with hewn g&Nr&+La&Nn&+Li&Nt&+Le by ancient, master
+&+Lmasons. At the center of this rocky outcrop stands an open-air shrine,
+&+Lshaped like an open-air gazebo, fortified with pillars carved to res-
+&+Lemble interlocking &+cpick&+Caxes&+L that support a dome of tarnished &+csilver&+L.
+&+LIn the center of the shrine, a modest altar of &+mm&+Mi&+mt&+Mh&+mr&+Mi&+ml &+Lrests under
+&+Lthe watchful gaze of a small stone bust depicting &+cDumathoin&+L,
+&+Lthe Keeper of &+CSecrets&+L.
+&+L   A narrow, treacherous bridge of &+ynatural &+Lr&+yo&+Lc&+yk&+L extends northward from
+&+Lthe protrusion, arching precariously over a lake of bubbling &+rm&+Ragm&+ra
+&+Lthat glows two hundred feet below.
+~
+831 134250496 14
+D0
+~
+~
+0 0 83484
+S
+#84045
+&NThe Apex &+WS&+Yh&+Rr&+rine of &+YM&+Ro&+rra&+rd&+Ri&+Yn&N~
+&+L   A &+yj&+Lagg&+ye&+Ld spire of dark basalt reaches out over the churning &+rd&+Re&+Ypt&+Rh&+rs&+L,
+&+Lseamlessly carved and fortified with hewn g&Nr&+La&Nn&+Li&Nt&+Le by ancient, master
+&+Lmasons. At the center of this rocky outcrop stands an open-air shrine,
+&+Lshaped like an open-air gazebo, fortified with pillars carved to res-
+&+Lemble interlocking &+cha&+Cm&+cm&+Ce&+crs&+L that support a dome of tarnished &+csilver&+L.
+&+LIn the center of the shrine, a modest altar of &+mm&+Mi&+mt&+Mh&+mr&+Mi&+ml &+Lrests under
+&+Lthe watchful gaze of a small stone bust depicting &+YM&+Ro&+rrad&+Ri&+Yn&+L,
+&+Lthe &+WSo&+Yul-&+RFor&+rger&+L and &+WAll-&+RFather&+L of all &+yD&+rw&+ya&+rr&+yv&+re&+ys&+L.
+~
+831 134250496 14
+D5
+~
+~
+0 0 83489
+S
+#84046
+&+LGorm Gulthyn (1 of 4) Extra Avatar Load Room&N~
+One of four disp rooms. The four dwarven gods each have their
+own room, which load into their corresponding shrines.
+~
+831 1216380928 0
+D5
+~
+~
+8 0 83477
+S
+#84047
+&+LVergadain (2 of 4) Extra Avatar Load Room&N~
+One of four disp rooms. The four dwarven gods each have their
+own room, which load into their corresponding shrines.
+~
+831 1216380928 0
+D5
+~
+~
+8 0 83476
+S
+#84048
+&+CA Cavernous &+BLarder&N~
+&+B   The great larder of Shanat is a vast, frost-rimed vault carved
+&+Cdirectly into a natural vein of glacial stone to ensure eternal
+&+Bpreservation of the citadel's massive stores. Towering racks of
+&+Cironwood groan under the weight of various meats and wheels of
+&+Bpungent cheeses, all organized with the meticulous precision
+&+Cof an armory. The vaulted ceiling is hung with bundles of dried
+&+Bcave-moss and sunless herbs. A huge barn-style sliding door leads
+&+Cup a few wide, shallow steps to the grand foyer of Shanat.
+~
+831 1216380928 0
+D1
+&+yA huge, barn-style sliding ironwood door leads east to the grand foyer.
+~
+door~
+1 0 84002
+S
+#84049
+&+LSharindlar (3 of 4) Extra Avatar Load Room&N~
+One of four disp rooms. The four dwarven gods each have their
+own room, which load into their corresponding shrines.
+~
+831 1216380928 0
+D5
+~
+~
+8 0 83480
+S
+#84050
+&+LAbbathor (4 of 4) Extra Avatar Load Room&N~
+One of four disp rooms. The four dwarven gods each have their
+own room, which load into their corresponding shrines.
+~
+831 1216380928 0
+D5
+~
+~
+8 0 83482
+S
+#84054
+&+rA Carved Staircase &+LDeep in the Rift of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr&N~
+   &+LA wide, spiraling staircase is hewn directly into the side
+&+Lof the yawning abyss. The steps are fashioned from seamless
+&+Lobsidian-like stone that remains cool despite the rising &+Yheat&+L.
+&+LEach riser is intricately c&Na&+Lr&Nv&+Le&Nd&+L with bas-reliefs, depicting
+&+Lsimple imagery of the great migrations of the &+ydeep dwarven
+&+bclans&+L. A massive railing of wrought-iron, shaped like the
+&+Lundulating body of a wyrm, provides a steady grip against
+&+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
+~
+831 1207992321 13
+D4
+&+rCarved steps continue upward.
+~
+~
+0 0 83491
+D5
+   The landing below the carved steps features a massive, circular
+mosaic depicting &+YM&+Ro&+rrad&+Ri&+Yn&N striking a cosmic anvil. Radiant lines of
+polished brass radiate outward like sunbeams from his hammer,
+portraying the fiery birth of the dwarven race amidst swirling
+clouds of forge-smoke. The entire surface is warm to the touch
+and bordered by interlocking runes of power that glow with a steady,
+deep-amber light.
+~
+~
+8 0 84055
+S
+#84055
+&+rA Carved Staircase &+Lat the Bottom of the Rift of &+yD&+mh&+ya&+ml&+yn&+ma&+yd&+ma&+yr&N~
+   &+LA wide, spiraling staircase is hewn directly into the side
+&+Lof the yawning abyss. The steps are fashioned from seamless
+&+Lobsidian-like stone that remains cool despite the rising &+Yheat&+L.
+&+LEach riser is intricately c&Na&+Lr&Nv&+Le&Nd&+L with bas-reliefs, depicting
+&+Lsimple imagery of the great migrations of the &+ydeep dwarven
+&+bclans&+L. A massive railing of wrought-iron, shaped like the
+&+Lundulating body of a wyrm, provides a steady grip against
+&+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
+~
+831 1207992321 13
+D4
+&+rCarved steps continue upwards.
+~
+~
+0 0 84054
+D5
+   &+LDeep within the bedrock, a massive adamantine slab is etched
+&+Lwith &+mr&+Mu&+Mn&+me&+Ms&+L that glow with a rhythmic, &+rm&+Ra&+rg&+Rm&+ra&+R-red &+Ylight&+L.
+&+LThe &+mi&+Mn&+ms&+Mc&+mr&+Mi&+mp&+Mt&+mi&+Mo&+mn&+L reads:
+
+   &+m'Here the Great Smith fanned the primordial flame, and in this heat,
+   &+mthe first dwarven hearts found their rhythm. Let these fires burn
+   &+meternal, for so long as the rift glows, the pulse of our people beats.
+~
+~
+0 0 83492
+E
+inscription~
+   &+LDeep within the bedrock, a massive adamantine slab is etched
+&+Lwith &+mr&+Mu&+Mn&+me&+Ms&+L that glow with a rhythmic, &+rm&+Ra&+rg&+Rm&+ra&+R-red &+Ylight&+L.
+&+LThe &+mi&+Mn&+ms&+Mc&+mr&+Mi&+mp&+Mt&+mi&+Mo&+mn&+L reads:
+
+   &+m'Here the Great Smith fanned the primordial flame, and in this heat,
+   &+mthe first dwarven hearts found their rhythm. Let these fires burn
+   &+meternal, for so long as the rift glows, the pulse of our people beats.
+~
 S

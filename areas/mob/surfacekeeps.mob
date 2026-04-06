@@ -167,7 +167,7 @@ h2 0 1 0 -1
 #120011
 hooded dwarf~
 &+ma &+Chooded &+mdwarf&N~
-&+mA dwarf in a purple hood lined with &+Csilver &+mwalks the caverns of time.
+&+mA dwarf in a purple hood lined with &+Csilver &+mwalks through the caverns.
 ~
    &+mThis dwarf wears a deep purple hood with etchings of stars across it.
 &+mEncircling the entire hood is a rim of &+Csilver&+m.  The hood casts
@@ -189,7 +189,7 @@ brightaxe elite stair guard shield dwarf~
 &+Lyouthful braids tossling from his chin.  He has a determined look in his
 &+Leye and looks to have the character of an &+Welite &+Lalready.
 ~
-1677723720 0 0 0 24 0 0 0 10 S
+1140852808 0 0 0 24 0 0 0 10 S
 pm 0 1 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -1043,8 +1043,106 @@ rringlor noroth blue dragon~
 &+Bsp&+Yar&+Bkl&+Ying &+Bblue scales, which shimmer and reflect even the slightest
 &+Blight source.
 ~
-1360165128 1 0 0 3088654360 276673 524416 574624768 -1000 S
-d 0 4194880 0 -1
+1360165128 1 0 0 3087081496 276673 524416 583022336 -1000 S
+d 0 609 0 -1
 61 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#120068
+takar shanat prince shield dwarf alatorin~
+&+RTa&+Yk&+Rar Shanat&+W, &+CP&+Wr&+Ci&+Wn&+Cc&+We &+Wof &n&+cAlatorin&N~
+&+CP&+Wr&+Ci&+Wn&+Cc&+We &+RTa&+Yk&+Rar Shanat&+c smiles proudly, scanning his people.
+~
+   &+RTa&+Yk&+Rar Shanat&+C, the first son of the Great &+RKing Taark&+C, embodies
+&+Cthe stoic resilience and martial discipline of the &+cAla&+Cto&+crin&+C royalty.
+&+CHe is frequently seen clad in magnificent &+Ygold-plated&+C armor that
+&+Cbears the embossed crest of the crossed &Nsword &+Cand &+Lhammer&+C of &+cAla&+Cto&+crin,
+&+Csymbolizing his role as a protector of the first &+ydwarven &+Ck&+Yi&+Cn&+Yg&+Cd&+Yo&+Cm.
+&+CUnlike the boisterous nature of many &+ydwarven &+Ylords&+C, &+RTa&+Yk&+Rar&+C is known
+&+Cfor his somber, calculating gaze and a beard neatly braided with
+&+Csilver rings. As a prince of the Deep Realm, he carries the weight
+&+Cof his lineage with a quiet intensity, always standing as a stead-
+&+Cfast bulwark between the sanctity of the &+LRift&+C and the encroaching
+&+Chorrors of the &+mUnderdark.
+~
+603981832 0 0 0 402653208 2048 0 0 980 S
+pm 0 8 1 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.500 0
+8 8 1
+#120069
+elite alatorin peacekeeper guard patrolling~
+&+La &+cpatrolling &+Le&+Wl&+Li&+Wt&+Le&+W peacekeeper&N~
+&+LAn e&+Wl&+Li&+Wte &+Wpeacekeeper &+Lscans the area, patrolling through the &+ccity.
+~
+   &+WThis burly &Nsh&+Wie&Nld &+Ydwarf &+Wis clad in shining mithril platemail,
+&+Wpolished to a glorious sheen.  A long, flowing, well-groomed beard sits atop
+&+Wthe flawless metal of his armor.  This magnificent &Nsh&+Wie&Nld &+Ydwarf &+Wguards
+&+Whis city with great personal determination.
+~
+1610614792 0 0 0 152 2049 0 0 0 S
+pm 0 1 0 -1
+58 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#120070
+gaudily dressed gaudily-dressed merchant~
+&+Ba g&+Ra&+Mu&+md&+Bily-d&+Yr&+Ce&+cs&+Bs&+re&+md &+Mm&+me&+rr&+Bch&+Ya&+Cn&+ct&N~
+&+BA &+mg&+Ma&+ru&+Rd&+ci&+Cl&+Yy&+B-dressed &+gm&+Ge&+cr&+Gc&+Bh&+ma&+Mn&+Rt &+Bpompously struts around the city.
+~
+&+B   This d&+Gwarf is a&+C walking explosion &+Mof color, draped &+Rin
+&+Blayered &+Gtunics of&+C shimmering saffro&+Mn and violet si&+Rlks that
+&+Bseem &+Gtoo far del&+Cicate for the soot&+M-filled city. &+REvery move
+&+Bis a&+Gccompanied&+C by the frantic &+Mjingle of heavy &+Rplatinum and
+&+Bgo&+Gld chains &+Cand rings that &+Mcrowd nearly every&+Rwhere.
+~
+67740 0 0 0 0 0 0 0 -200 S
+pm 0 4096 2 -1
+45 0 0 1d1+1 1d1+1
+0.0.100.100 0
+8 8 1
+#120071
+wandering dwarf brightaxe champion~
+&+La wandering &+CBrightAxe &+Wch&Na&+Wmp&Nio&+Wn&N~
+&+LA muscle-bound &+CBrightAxe &+Wchampion &+Lwanders the city streets proudly.
+~
+   &+LThis dwarf wears armor-plated chainmail which, like his
+&+Lbattle-scarred visage, has seen its share of combat. He walks
+&+Lproudly through the city, chin high with pride, as he either
+&+Lis returning from, or preparing for, another battle.
+~
+1073743880 0 0 0 0 0 0 0 500 S
+pm 0 1 0 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#120072
+wandering dwarf siege dwarf ragelord~
+&+La wandering &+rs&+Yi&+re&+Yg&+re &+Yd&+rw&+Ya&+rr&+Yf &+Rr&+ra&+Rg&+re&+Rlord&N~
+&+LA battle-scarred &+Ys&+ri&+Ye&+rg&+Ye d&+rw&+Ya&+rr&+Yf &+Rr&+ra&+Rg&+re&+Rlord &+Lwanders the city streets proudly.
+~
+   &+LThis dwarf wears armor-plated chainmail which, like his
+&+Lbattle-scarred visage, has seen its share of combat. He walks
+&+Lproudly through the city, chin high with pride, as he either
+&+Lis returning from, or preparing for, another battle.
+~
+1073743880 0 0 0 0 0 0 0 -200 S
+pd 0 1048576 2 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#120073
+wandering summoner~
+&+Ra wandering &+Ysu&Nmmon&+Yer&N~
+&+RA wandering &+rsvirfneblin&+Y su&Nmmon&+Yer &+Rpauses to listen to the &+yrocks.
+~
+   This short, jolly deep gnome cheerfully walks through the
+streets of Alatorin, enamored by the masonry and dazzling
+ornamentations that cover the city. Likely a student of some
+sort of earth magic, he makes his way through Alatorin.
+~
+2056 0 0 0 0 0 0 0 0 S
+pg 0 2048 4 -1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1

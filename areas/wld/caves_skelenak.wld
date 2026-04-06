@@ -13,7 +13,7 @@ D0
 D2
 ~
 ~
-0 0 557269
+0 0 607420
 E
 sign~
 ........................................................................
@@ -2704,10 +2704,6 @@ smell horrible, and are caked with mud and grime  The cave continues
 to the north and south of here.
 ~
 40 4105 1
-D1
-~
-~
-0 0 4124
 D3
 ~
 ~
@@ -2717,23 +2713,6 @@ blanket blankets~
 The blankets are absolutely disgusting, and of no value to anyone
 but filthy orcs.  A horrible odor rises off of them.
 ~
-S
-#4124
-A Cave Before a Lava Tube&N~
-   This cave stretches to the east here and begins into a
-Lava Tube that seems to have been burnt out of the cave
-from a fiery magma source to the east.  A faint red glow
-is seen in this direction as well as great heat.
-~
-40 0 0
-D0
-~
-~
-0 0 4125
-D3
-~
-~
-0 0 4123
 S
 #4125
 &+rAn Ancient Lava Tube~
@@ -2747,10 +2726,10 @@ D1
 ~
 ~
 0 0 4126
-D2
+D3
 ~
 ~
-0 0 4124
+0 0 557269
 S
 #4126
 &+rAn Ancient Lava Tube~

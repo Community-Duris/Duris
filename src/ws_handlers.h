@@ -41,13 +41,9 @@ void ws_cmd_logout(struct descriptor_data *d, cJSON *data);
 void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data);
 
 /* auction broadcasts to durisweb service */
-void ws_broadcast_auction_new(int auction_id, const char *seller_name, const char *obj_short,
-                               int cur_price, int buy_price, int end_time);
-void ws_broadcast_auction_bid(int auction_id, const char *bidder_name, int bid_amount,
-                               int prev_bidder_pid, const char *prev_bidder_name);
-void ws_broadcast_auction_close(int auction_id, const char *winner_name, int winner_pid,
-                                 int final_price, const char *close_reason,
-                                 int seller_pid, const char *seller_name);
+void ws_broadcast_auction_new(int auction_id, const char *seller_name, const char *obj_short, int cur_price, int buy_price, int end_time);
+void ws_broadcast_auction_bid(int auction_id, const char *bidder_name, int bid_amount, int prev_bidder_pid, const char *prev_bidder_name);
+void ws_broadcast_auction_close(int auction_id, const char *winner_name, int winner_pid, int final_price, const char *close_reason, int seller_pid, const char *seller_name);
 
 /* player events to durisweb service */
 void ws_broadcast_mud_shutdown(const char *type);

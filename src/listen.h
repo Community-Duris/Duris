@@ -1,11 +1,11 @@
 #ifndef __LISTEN_H__
 
-#include <vector>
 #include <string>
+#include <vector>
 using namespace std;
 
-#define LISTEN_SAY      0
-#define LISTEN_GSAY     1
+#define LISTEN_SAY   0
+#define LISTEN_GSAY  1
 #define LISTEN_EMOTE 2
 
 void listen_broadcast(P_char ch, const char *buf, int cmd);

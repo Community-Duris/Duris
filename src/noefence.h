@@ -25,7 +25,6 @@
  * from inside your own headers files.
  */
 
-
 /* remove previous EFence definitions */
 
 #ifdef EF_newFrame
@@ -35,7 +34,6 @@
 #ifdef EF_delFrame
 #undef EF_delFrame
 #endif
-
 
 /* remove previous wrappers to standard C functions */
 
@@ -63,7 +61,6 @@
 #undef valloc
 #endif
 
-
 /* remove previous wrappers to standard C++ functions / operators */
 
 #ifdef new
@@ -73,7 +70,6 @@
 #ifdef delete
 #undef delete
 #endif
-
 
 /* remove previous EFence C++ definitions */
 
@@ -97,12 +93,10 @@
 #undef new
 #endif
 
-
 /* remove special assert definition */
 #ifdef EF_ASSERT
 #undef EF_ASSERT
 #endif
-
 
 /* remove definitions for protection of functions return address */
 
@@ -135,7 +129,6 @@
 #ifdef CA_REF
 #undef CA_REF
 #endif
-
 
 /***************/
 /* END OF FILE */

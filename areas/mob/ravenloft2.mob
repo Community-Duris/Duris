@@ -1,0 +1,1800 @@
+#59000
+animated mass broken glass~
+&n&+can animated &+Wmass of &+Cb&nr&No&+Ck&Ne&+Cn &+Wglass&N~
+&+WShards of &+cbr&nok&+cen &Ng&+cla&nss &+Wfloat up into &+Cair &+Wand swirl into an &+Banimated mass&+W!
+~
+   &+cShards of &+Wglass&+c of different colors that were once various wine bottles
+&+cmake up this swirling animated mass.  &+WSharp edges&+c swirl around a small
+&+ctornado as this construct awakens at the sign of movement in the delapidated
+&+ccellar.
+~
+10 1 0 0 402653240 0 262144 67113984 0 S
+ew 0 4096 1 2
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59001
+huge reptile bone creature boneclaw~
+&n&+ga huge &+Wb&+go&+Wn&+ge&+Wc&+gl&+Wa&+gw&N~
+&+WA huge reptilian creature &+Wcovered in serrated bony armor&+g approaches, driven by its hunger!
+~
+   &+gThis huge, reptilian quadruped stands on all-fours nearly
+&+Gsix feet in height and must weigh as much as a horse.  It's
+&+gentire head and torso are covered in huge serrated &+wbony
+&+Wplates&+G. Its mouth is full of two rows of razor-sharp &+Wteeth
+&+git wields huge black &+rclaws&+g.  A strong &+Lpsionic presence&+g
+&+Gcan also be felt as this &+gboneclaw emits a field of death.
+~
+1073743882 1 0 0 536872976 14528 0 0 0 S
+r 0 68 0 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59002
+greater mutated mutant reptile bone creature boneclaw~
+&n&+ga greater &+Wb&+go&+Wn&+ge&+Wc&+gl&+Wa&+gw&N~
+&+GA massive, mutated reptilian creature &+Wcovered in serrated bony plates&+G snarls aggressively, eating everything in its path.
+~
+   &+gThis enormous creature, known as a greater boneclaw, is the kin of a
+&+gboneclaw, but with a tremendous mutation enhancing its psychic powers
+&+gand massively increasing its size and aggressiveness.  This greater
+&+gboneclaw is nearly the size of a small dragon, living a solitary life
+&+gas it snatches up unsuspecting victims (and lesser boneclaws).
+~
+1090521098 1 0 0 536872976 14528 0 0 -500 S
+dk 0 68 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59003
+strahd zombie~
+&n&+gan infectious &+rStrahd &+gz&+Go&+gm&+Gb&+gi&+Ge&N~
+&+LA partially-decayed &+rStrahd &+Gz&+go&+Gm&+gb&+Gi&+ge &+Lshambles through here, &+Ldrooling black poison.
+~
+   &+gThis human's corpse has been raised under the powerful magic of Strahd
+&+ghimself and finds itself in undeath in the same cellblock it had found
+&+gdeath.  Typical in appearance of any typical zombie in the realm, this
+&+gone seems particularly toxic as it radiates the deep and ancient power
+&+gof the First Vampire.
+~
+1073743880 1 0 0 2072 0 0 0 -1000 S
+zo 0 1 1 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59004
+wraith appiration~
+&n&+ca wraith&N~
+&+cA horrifying appiration of undeath floats here&+C, screeching in agony.
+~
+   &+cThis nearly-invisible wraith bares the faint resemblance of a
+&+cheavily-decayed corpse from the waist up, while its lower quarters
+&+cdisappear into a trail of mist.  It screeches in agony, spreading
+&+cpowerful deathly magic upon those that cross its path.
+~
+1140852744 1 0 0 939524112 14528 524288 37749248 -1000 S
+wr 0 512 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59005
+bloodthirsty swarm bat~
+&+La &+rbloodthirsty &+Lbat&N~
+&+LOne of dozens of swarming &+rbloodthirsty &+Lbats &Nswoops down from above.
+~
+   &+LOne of seemingly endless vampire bats that occupy these vaulted crypts,
+&+Lthis small creature fills with a particularly intense bloodlust as
+&+Lit moves in a black flow with the other swarming bats.
+~
+8 1 0 0 403177528 262144 0 0 0 S
+uv 0 1 1 1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59006
+bloodthirsty swarm bat~
+&+La &+rbloodthirsty &+Lbat&N~
+&+LOne of dozens of swarming &+rbloodthirsty &+Lbats &Nswoops down from above.
+~
+   &+LOne of seemingly endless vampire bats that occupy these vaulted crypts,
+&+Lthis small creature fills with a particularly intense bloodlust as
+&+Lit moves in a black flow with the other swarming bats.
+~
+2184 1 0 0 403177528 262144 0 0 0 S
+uv 0 2097152 0 1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59007
+swarm rat~
+&+La &nswarm &+Lrat&N~
+&+LA mass of &Nswarming &+Lrats &+Lrushes out from scattered debris!
+~
+   &+LOne of hundreds, this small pale-eyed rat burrows through the refuge deep
+&+Lwithin this delapidated dungeon, scavenging for any edible flesh.  Moving
+&+Lwith the swarm almost like liquid, it descends upon any life like a wave.
+~
+2056 1 0 0 268435512 0 0 0 0 S
+a 0 1 1 1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59008
+skin horrifying mass kite~
+&N&+ya horrifying skin kite&N~
+&+yA flaccid mass of skin and rags resting atop the bier suddenly rises and flaps towards you!
+~
+   &+yThis skin appears to be the reanimated flesh of Prince Aurel
+&+yPlesu himself, as his bones remain atop the dier.  The skin kite
+&+yflaps with a grotesque undulation, granted life in undeath by
+&+ya powerful magic.
+~
+1073743882 1 0 0 0 0 0 0 -1000 S
+u 0 16777216 1 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59009
+ghost brute hound~
+&+Ca ghost brute hound&N~
+&+CA ghost brute hound stands here, jaws dripping with glowing ectoplasmic drool.
+~
+   &+CThis large hunting dog appears large and muscular.  Its
+&+Cbody is misty and translucent.  It has huge teeth and snarls
+&+Cviciously, drool dripping out and burning any living flesh
+&+Cit comes into contact with.
+   &+CThis faithful hound served Aurel in life and now hunts
+&+Cwith its master through the catacombs beneath Ravenloft.
+~
+2058 1 0 0 0 0 0 536870912 -1000 S
+ug 0 17825793 0 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59010
+ghost prince aurel plesu~
+&+Wthe ghost of Prince Aurel Plesu&N~
+&+WThe ghost of Prince Aurel Plesu rushes towards the intrusion!
+~
+   &+WAurel appears as a human nobleman, outfitted with well-
+&+Wcrafted heavy plate armor and a shining shield.  His form is
+&+Whazy and translucent.  Aurel is happy to take his aggression
+&+Wout on the living with his trusty hound by his side.
+~
+1090521098 1 0 0 402653208 0 0 536870912 -1000 S
+ug 0 16777217 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59011
+large air elemental~
+&+Ca large air el&+cem&+Cen&+cta&+Cl&N~
+&+CIn an instant gust of wind, an air el&+cem&+Cen&+cta&+Cl &+Cmaterializes.
+~
+   &+CThis air elemental appears in a whirlwind, seeking any
+&+Cliving creature it can find.  It moves with an uncanny speed
+&+Cand proficiency.
+~
+1140850696 1 0 0 134217752 0 0 0 0 S
+ea 0 2097152 0 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59012
+ghast~
+&+ra vicious &+Ggh&+ra&+Gst&N~
+&+GA shambling g&+rh&+Ga&+rs&+Gt &+Gwith sharp &Nteeth &+Gand long &+Wclaws &+Gsnarls aggressively.
+~
+   &+GThis ghast looks like a shirtless zombie with extra long
+&+Gclaws.  It does not decay like a typical zombie, and fights
+&+Gwith a much greater wit.
+~
+1140853768 1 0 0 402653208 0 0 0 -1000 S
+zo 0 65 1 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59013
+spectre endorovich~
+&+rthe spectre of Endorovich&N~
+&+rThe spectre of Endorovich emerges from the stone wall.
+~
+   &+rThe spectre of Endorovich appears as an incorporeal man
+&+rin dark clothes, with long dark hair, and a haunted
+&+rexpression.  His form is luminous and ghostly, and he floats
+&+rmore than walks through any encounter. A feeling of death and
+&+rdread hangs around the spectre like a cloud of flies.
+~
+1158678664 1 0 0 941096984 2240 524288 0 -1000 S
+sp 0 8192 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59014
+minotaur~
+&+rmino&+Ltaur&N~
+&+rthe cool mino&+Ltaur&+L mob&N
+~
+&+L         ,     .
+&+L        /(     )\               &+CA
+&+y   .--.&+L( `.&+y___&+L.' )&+y.--.         &+C/_\
+&+y   `._ `%_&%#%$_ ' _.'     &+C/| <___> &+C|\
+&+y      `|&+r(&+R@&+y\&+L*%%&+y/&+R@&+r)&+y|'       &+C/ (  &+c|&+LL&+c|  &+C) \
+&+y       |  |&+L%%#&+y|  |       &+CJ &+Ld8bo&+c|&+L=&+c|&+Lod8b &+CL
+&+y        \ \&+L$#%&+y/ /        &+C| &+L8888&+c|&+L=&+c|&+L8888 &+C|      &+LThe Minotaur
+&+y        |\|&+L%%#&+y|/|        &+CJ &+LY8P"&+c|&+L=&+c|&+L"Y8P &+CF
+&+y        | &+R(.&+y"&+R.)&+y%|         &+C\ (  &+c|&+LL&+c|  &+C) /
+&+y    ___.'  `-'  `.___      &+C\|  &+c|&+LL&+c|  &+C|/
+&+y  .'&+L#*#&+y`-       -'&+L$#*&+y`.       &+y/ )&+L| &+LTrapped, blinded, led; and in the end
+&+y /&+L#%^#%*&+y_&+L *%^%&+y_&+L  #  %$%&+y\    &+y.J &+y(__)&+LBetrayed daily by new betrayals as he
+&+y #&  &+y.&+L %%%#% ###%*&+y&+L.   *%&+y\.-&+y&+L'&# &+y(__)&+LStays deep in his labyrinth, shaking
+&+y %*  J &+L%.%#&+y_|_&+L#$.&+y\J&+L* \ %'&+L#%*^  &+y(__)&+LAnd going mad, betrayed. Betrayed.
+&+y *&+L#% &+yJ &+L%$%%#&+y|&+L#$#$ &+yJ\&+L%   * &+y  .--&+c|&+y(_)&+LRaving, the beaten head heavy with
+&+y |&+L%  &+yJ\ `&+L%%#&+y|&+L#%%' &+y/ `.   _.'   &+c|&+LL&+c| &+LMadness. Madness. Madness, he stands,
+&+y |&+L#$%&+y||` &+L%%%$### '&+y|   `-'      &+c|&+LL&+c| &+Lhalf-dead and proud. No one again
+&+y (&+L#%%&+y||` &+L#$#$%%% '&+y|            &+c|&+LL&+c| &+Lwill ever see his pride. No one will
+&+y |&+L$%^&+y||   &+L$%#$%   &+y|  VK/cf     &+c|&+LL&+c| &+Lfind him by walking to him straight
+&+y |&+L&^ &+y||  &+L#%#$%#%  &+y|            &+c|&+LL&+c| &+LBut must be led circuitously about,
+&+y |&+L#$*&+y|| &+L#$%$$#%%$ &+y|\           &+c|&+LL&+c| &+Lcalling to him, close and, losing the
+&+y ||||||  &+L%%###$#  &+y|\\          &+c|&+LL&+c| &+Lsubtle thread, lose him again; while
+&+y `|||||  &+L#$$&+y|&+L%#%  &+y| L|         &+c|&+LL&+c| &+Lhe waits, brutalized by loneliness.
+&+y      |  &+L##$&+yH&+L$%%  &+y| |\\        &+c|&+LL&+c| &+LAfraid of his own Suffering. At last,
+&+y      |  &+L#%%&+yH&+L%##  &+y| |\\|       &+c|&+LL&+c| &+Lsavage and made ravenous, ready to
+&+y      |  &+L##% $%#  &+y| Y|||       &+c|&+LL&+c| &+Lprey upon the race if it so much as
+&+y      J &+L$$#* *%#% &+yL  |E/           &+Llearn the clews of blood into his pride
+&+y      (__ &+L$F J$ __)  F/            &+Lhis fear his glistening heart. Now is
+&+y      |$$%#& & %%#|                &+Lthe patient deserted in his fright and
+&+y      J##$ J % %%$F                &+Llove carrying salvage round the world
+&+y       %$# * * %#&                 &+Llost in a crooked city; roundabout,
+&+y       %#$ | |%#$%                 &+LBy the sea, the precipice, all the
+&+y       *#$%| | #$*                 &+Lfantastic ways betrayal weaves its
+&+y      &+y/&+L$#' &+y) ( &+L`%%&+y\                &+Ltrap; loneliness knows the thread,
+&+y     &+L/_/__/   \__\_\               &+Land the heart is blinded, trapped,
+                                   &+Llost and led at the middle of the maze.
+~
+8 0 0 0 0 0 0 0 0 S
+PH 0 0 0 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59015
+massive voor~
+&+Wa massive voor&N~
+&+LAs one &-L&+Wflash &n&+Lof &+Ylight&+L bursts through an expanding cloud of darkness, a terrible &+Wvoor&+L steps out of the ring and fills the crypt with its hulking form.
+~
+   &+WThis hulking yugoloth has an eyeless, armored face, stubby
+&+Wlegs, and powerful clawed arms.  Writhing, talon-tipped
+&+Wtentacles whip from its fingertips and back to lash enemies
+&+Wat a distance. This creature seems to have been called forth
+&+Wwith the opening of this crypt.
+~
+1342179338 1 0 0 402653208 0 16777216 579080192 -1000 S
+x 0 16777728 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59016
+gorgeous erinyes~
+&+ra &+Mgorgeous &+rerinyes&N~
+&+MA gorgeous &+rerinyes&+M poses seductively in front of the mirror&+C.
+~
+   &+rThis stunningly beautiful devil lives in this secret bedchamber,
+&+rhidden at the back of this crypt. She appears as a statuesque woman
+&+rwith flawless skin, glowing eyes, and large, feathery wings.
+   &+rThis erinyes alternates between short trips through the castle
+&+rin search of food, sleeping, and admiring herself before her mirror
+&+rwhile imagining herself taking &+mKhyristrix's &+rplace in Strahd's
+&+rcastle.
+~
+1073744906 1 0 0 402653208 0 0 0 -1000 S
+y 0 16810496 0 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59017
+scrawny black imp~
+&+La scrawny black imp&N~
+&+LA scrawny black imp flies here, energetically gesturing towards the &+Gportal&+L.
+~
+   &+LThis tiny humanoid with leathery bat wings, a barbed tail,
+&+Land sharp, twisted horns flutters at eye level, winking into
+&+Land out of sight. The imp screeches at trespassers, gesturing
+&+Ltowards the &+Gportal&+L in the crypt, urging one to enter.
+~
+1073744074 0 0 0 134217752 0 0 0 -1000 S
+y 0 37 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59018
+zyr zabuul zyr'zabuul githzerai master mind mage mindmage~
+&+CZ&+cy&+Br&+W'&+Cza&+cbu&+Bul the &+rMaster &+MMind&+mmage&N~
+&+CZ&+cy&+Br&+W'&+Cza&+cbu&+Bul the &+Ggith&+Wzerai &+rMaster &+MMind&+rmage &+Yconfidently floats through the &+Wether&+Y.
+~
+   Although his body is old and frail, this githzerai is one of the most
+powerful his people has ever known. Scraggly white sideburns wisp around
+his pointy ears, meeting the thinning, yet wild mane from his head. His
+eyes are a glowing frosty blue, looking almost like magical ice. His
+angular face ends with a deep-clefted, pointy chin. He does not seem to
+ever speak, and barely makes any physical gestures, as he floats
+through the ether with purpose.
+~
+1358977032 1 0 0 939524250 276672 5767296 135168 0 S
+gz 0 2564 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59019
+githzerai mind mage mindmage~
+&+Wa &+Ggith&+Wzerai &+mmind&+Mmage&N~
+&+WFloating through space, a robed &+Ggith&+Wzerai &+rbattles the swarm.
+~
+   &+GmThis githzerai mindmage is old and experienced in his peoples'
+&+mdarkest arts. He is of average build and appears very similar to
+&+Gother humanoids.
+~
+1409288392 1 0 0 402653336 0 0 0 0 S
+gz 0 516 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59020
+miniature wind-up gnome~
+&N&+ya miniature wind-up gnome&N~
+&+yA miniature wind-up gnome &+Ymarches on&+y.
+~
+   &+yA strange, clockwork device is fashioned with the likeliness
+&+yof a round, miniature gnome with large flat feet and swaying,
+&+yrevolving stubby arms, topped on its bearded head with a pointy
+&+ycone hat. A metallic flange protruding from the back of this
+&+ymechanical construct rotates slowly, giving it life.
+~
+67108872 1 0 0 8 0 0 4096 0 S
+og 0 1 0 1
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59021
+tall gaunt wight~
+&+ra tall, gaunt &+Wwight&N~
+&+rA tall, gaunt &+Wwight&+r rises, turning towards the disturbance.
+~
+   &+WThis wight is taller than the average humanoid, suggesting
+&+Wthat this individual may have been one of the Ishai-Bal family
+&+Wtribesmen in his previous life. With eyes of fire and fangs
+&+Wdripping black venom, this undead beast now haunts the family
+&+Wcrypt, ready to feast on any living soul that finds its way
+&+Where.
+~
+67112008 1 0 0 402653208 2240 0 0 -1000 S
+uw 0 1064961 0 4
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59022
+appiration shadow~
+&+La shadow&N~
+&+LAn appiration of total blackness float here, taking a form.
+~
+   &+LThis being of total and utter blackness is the necromantic
+&+Lshadow of an old courtmember. All that remains of its humantity
+&+Lis the faint outline of a humanoid upper torso, head, and arms,
+&+Lthat swirl in and out of a floating black mass.
+~
+1074808904 1 0 0 402653336 0 1572864 0 -1000 S
+sw 0 4 0 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59023
+strangle vine~
+&+ga &+Gst&+gra&+Gn&+gg&+Gl&+ge &+mvine&N~
+&+gA twisting, &+ythorn-covered &+mvine &+Gwrithes and lashes wildly.
+~
+   &+gThis long, twisting vine has taken on a life of its own
+&+Gas it grows from the magical remains of Elica Florea. Tiny
+&+gblack thorns cover the vine, decreasing in size towards
+&+Gthe tip.
+~
+542730 1 0 0 24 0 0 0 -1000 S
+vt 0 1 1 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59024
+robed caryatid column~
+&+La robed &+Mcaryatid &+Lcolumn~
+&+LA huge, robed &+Mcaryatid &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this caryatid is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 512 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59025
+robed caryatid column~
+&+La robed &+Ccaryatid &+Lcolumn~
+&+LA huge, robed &+Ccaryatid &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this caryatid is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 256 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59026
+robed caryatid column~
+&+La robed &+gcaryatid &+Lcolumn~
+&+LA huge, robed &+gcaryatid &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this caryatid is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 128 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59027
+robed caryatid column~
+&+La robed &+ccaryatid &+Lcolumn~
+&+LA huge, robed &+ccaryatid &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this caryatid is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 33554432 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59028
+robed talemon column~
+&+La robed &+Mtalemon &+Lcolumn~
+&+LA huge, robed &+Mtalemon &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this talemon is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 512 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59029
+robed talemon column~
+&+La robed &+Ctalemon &+Lcolumn~
+&+LA huge, robed &+Ctalemon &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this talemon is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 256 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59030
+robed talemon column~
+&+La robed &+gtalemon &+Lcolumn~
+&+LA huge, robed &+gtalemon &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this talemon is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 128 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59031
+robed talemon column~
+&+La robed &+ctalemon &+Lcolumn~
+&+LA huge, robed &+ctalemon &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lmystical figure, this talemon is posed in a manner of spellcraft.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 33554432 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59032
+armored caryatid column~
+&+Lan &Narmored &+Lcaryatid column&N~
+&+LA huge, &Narmored &+Lcaryatid &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lwarrior figure, this caryatid is posed in a manner of melee combat.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 1 1 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59033
+armored caryatid column~
+&+Lan &Narmored &+Ltalemon column&N~
+&+LA huge, &Narmored &+Ltalemon &+Lcolumn stands imposingly in the central corridor.
+~
+   &+LThis massive figure is carved directly into one of the main stone columns
+&+Lin the central corridor of these crypts.  Some sort of lost and forgotten
+&+Lwarrior figure, this caryatid is posed in a manner of melee combat.
+~
+2314 1 0 0 24 0 0 0 0 S
+tt 0 1 1 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59034
+vampire sasha ivliskova~
+&+Mthe vampire of &+LS&+Ma&+Ls&+Mh&+La &+MI&+Lv&+Ml&+Li&+Ms&+Lk&+Mo&+Lv&+Ma~
+&+MBetrayed by her love, the vampire of &+LS&+Ma&+Ls&+Mh&+La &+MI&+Lv&+Ml&+Li&+Ms&+Lk&+Mo&+Lv&+Ma screams in torment.
+~
+   &+MFor many years, Sasha Ivliskova served as the Burgomaster of Barovia
+&+Mand was deeply beloved by her folk. Beautiful and noble, Sasha Ivliskova
+&+Moriginally sought out Strahd to petition for an end to the darkness that
+&+Mplagued her homeland, but instead became the first to live the same night
+&+M-mare that many women would follow.
+   &+MAfter the Burgomaster's expedition to Castle Ravenloft, there was a
+&+Mperiod of stillness and calm in the great realm of Barovia that would
+&+Mnever repeat. The mists subsided, the wolf presence thinned greatly,
+&+Mand the undead attacks all but ceased. Days turned into weeks and rumors
+&+Mfloated that Sasha Ivliskova had stormed the castle and killed Strahd
+&+Mpersonally. Others spoke of a second coming of Strahd's love, and source
+&+Mof his anguish, Tatyana, reincarnated through Sasha Ivliskova.
+   &+MAfter having turned her into a vampire, Strahd no longer saw Sasha as
+&+MTatyana and his interest in her quickly evaporated. She was cast-off into
+&+Man eternal slumber, much like his own, in the Catacombs of Ravenloft.
+~
+1360031754 1 0 0 939524120 0 524288 0 -1000 S
+uv 0 33554432 3 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59035
+exethanter ancient lich~
+&-m&+lExethanter&N~
+&-m&+lExethanter&N&+L the ancient l&+mic&+Lh &Nfloats&+L here in quiet contemplation.
+~
+     &N.-.   &-m&+lExethanter&N&+L appears as a &+Ws&Nk&+We&Nl&+We&Nt&+Wa&Nl&+L, gaunt figure
+    &N(&+yo&N.&+yo&N)  &+Ldraped in the tattered remains of once-regal
+&+L   _&+m.&N|-|&+m+&+L._  &+Lrobes, their e&+mm&+Lb&+mr&+Lo&+mi&+Ld&+me&+Lr&+me&+Ld patterns faded almost
+&+L  /\,&+m)_,'&+L /\  &+Lto nothing. His flesh clings to his &+Wb&No&+Wn&Ne&+Ws&+L in
+&+L :  `-._.'  ;  &+Lthin, papers strips, giving him the look of
+&+L | \        )  &+La body preserved far beyond its natural span.
+&+L |  `.      ;  &+LTwin motes of &+yamber light&+L burn within his eye
+&+L :         /|  &+Lsockets, struggling to &+mglow&+L. Thin c&Nr&+La&Nc&+Lk&Ns&+L run
+&+L |\      -' |  &+Lacross his skull and limbs, as though his form
+&+L | `.       |  &+Lis held together by willpower alone rather than
+&+L `;         )  &+Ltrue substance. A faint &+chaze&+L of &+ba&+Br&+bc&+Ba&+bn&+Be &+be&+Bn&+be&+Br&+bg&+By&+L
+&+L  |      /  | &+Lcoils around him, rising and falling in slow
+&+L  :    .'   : &+Lbreaths that mimic &+Ylife&+L without truly &+rliving&+L.
+&+L  `;         ;  &+LHis presence carries a quiet, ancient weight -
+&+L   :          \ &+Lan impression of a &+Mmind&+L powerful enough to shape
+&+L   /    _     _`-._  &+Lthe world around it, yet fragile from
+&+L  `-.-" `-.___\"""     &+Lcenturies of forgetting itself.
+~
+1179656 0 0 0 402653336 0 0 0 0 S
+ul 0 512 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59036
+vampire spawn~
+&+ra vampire &+mspawn&N~
+&+rA vampire &+mspawn &+rhisses and shows her &+Wfangs&+r.
+~
+   &+rThis young woman was turned into a vampire by Strahd personally,
+&+rnow acting out the cruel intentions of the First Vampire. Whether
+&+racting as an executioner, bodyguard, or servant - the mind of this
+&+rvampire spawn is now under the full and sadistic control of Strahd.
+~
+1140852744 1 0 0 402653208 276672 0 8192 -1000 S
+uv 0 64 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59037
+dark weaver darkweaver~
+&+La &+mdark&+Lweaver&N~
+&+LAs shadows coalesce, a &+mdark&+Lweaver &+Lcomes to life!
+~
+   &+LThis shadow, incorporeal being resembles a woman draped in an
+&+Loverly-baggy robe, cascading down into a pool of churning shadows.
+&+LIt is unclear whether this darkweaver is some sort of reanimated
+&+Ldead or a magical construct with the resemblance of a person.
+&+LNevertheless, her existence  is doomed to this shadowy dungeon.
+~
+2099210 1 0 0 2550136856 276672 524288 37752832 -1000 S
+sw 0 131072 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59038
+kavan grim~
+&+mKavan &+Lthe Grim&N~
+&+mKavan &+Lthe Grim stomps through here, angrily &Npeering&+L around every corner.
+~
+   &+mKavan&+L the Grim, said to be Strahd's most-favored creation, is rumored
+&+Lto be a 'Daywalker' (a vampire immune to the effects of the sun). &+mKavan&+L is
+&+La savage brute who relishes his ability to cause mayhem under the noonday
+&+Lsun. He rushes towards combat at top speed, making no effort at stealth.
+&+LHis battered &+cchainmail&+L swells under the stress of his bulging, mountainous
+&+Lphysique. His wild, unkempt beard is covered in a frothe of &Ndrool&+L and his
+&+Lvictims' &+rblood&+L, spilling out over his chest. He snarls and growls with
+&+Levery breath, constantly on the verge of &+Rf&+rr&+Re&+rn&+Rz&+ry&+L.
+~
+1091569672 1 0 0 939589784 276672 128 46149632 -1000 S
+uv 0 1048577 0 5
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59039
+green-eyed green eyed caryatid column~
+&+ga green-&+Geyed &+Lcaryatid column&N~
+&+LA huge &Ncaryatid &+Lcolumn with &+gb&+Gu&+Yr&+Gn&+Yi&+Gn&+gg green &+Geyes &+Lstands here imposingly.
+~
+   &+LThis massive stone column is carved into the shape of an
+&+Larmored knight, grasping a two-handed sword in a sentry's
+&+Lpose. It has two brightly-burning &+Ggreen eyes.
+~
+266 1 0 0 24 14528 0 0 0 S
+tt 0 25 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59040
+green eyed green-eyed talemon column~
+&+ga green-&+Geyed &+Ltalemon column&N~
+&+LA huge &Ntalemon &+Lcolumn with &+gb&+Gu&+Yr&+Gn&+Yi&+Gn&+gg green &+Geyes&+L stands here imposingly.
+~
+   &+LThis massive stone column is carved into the shape of a valkyrie
+&+Lwarrior wielding a two-handed sword in a sentry's pose. This talemon
+&+Lcolumn has two brightly-burning &+Ggreen eyes&+L.
+~
+28938 1 0 0 536870936 14552 0 0 0 S
+tt 0 25 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59041
+count strahd dire wolf form~
+&+LCount Strahd (dire wolf form)~
+&+LA gargantan black dire wolf the size of a dragon hunches here, showing his giant &+Wteeth&+L.
+~
+&+L                              __
+&+L                            .dWWb   &+rHaving escaped his human shell,
+&+L                          .' TOW;\   &+rStrahd has taken the form of a
+&+L                         /  : TP._;  &+rgigantic dire wolf. Similar in
+&+L                        / _.;  :Tb|  &+rshape and aesthetics to any of
+&+L                       /   /   ;&+Wj&+LW&+Wj  &+rthe dire wolves that prowl the
+&+L                   _.-"       dWWWW  &+rSvalich Woods, Strahd is about
+&+L                 .' &+R..   &+L    dWWWW;  &+rforty times their scale. Giant
+&+L                /  /&+YP&+R'&+L      dWWWWP. &+W|\  &+rwhite fangs protrude from a
+&+L               /   "      .dWWWP' &+W|\^&+L"l  &+rgaping maw that has tasted
+&+L             .'           `TWP^"""""  :  &+rthe blood of thousands. His
+&+L         ._.'      _.'                ;  &+reyes burn with elder hatred
+&+L      `-.-".-'-' ._.       _.-"    .-"  &+ras he claws into the earth,
+&+L    `.-" _____  ._              .-"    &+rpausing on occasion only to
+&+L   -(.gWWWWWWWb.              .'     &+rout an instinctual howl to
+&+L     ""^^TWWWP^)            .(:     &+rhis canine lessers.
+&+L       _/  -"  /.'         /:/;
+&+L    ._.'-'`-'  ")/         /;/;   &+rStrahd leaps in and out of the
+&+L `-.-"..--""   " /         /  ;   &+rshadows, picking his spots as he
+&+L.-" ..--""        -'          :   &+rdefends the crypt from intruders
+&+L..--""--.-"         (\      .-(\  &+rwith the grace of a cat toying
+&+L  ..--""              `-\(\/;`  &+rwith its prey, devouring the more
+&+L    _.                      :   &+rsavory victims in a single bite.
+&+L             &+ljgs/ab         ;`-
+~
+1091596298 1 0 0 2818637848 276672 128 583283200 -1000 S
+uv 0 1048577 0 7
+61 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59042
+vicious dire wolf~
+&+La &+rvicious &+Ldire wolf&N~
+&+LA &+rvicious&+L dire wolf snarls and &+Wdrools&+L.
+~
+   &+LThis huge, black dire wolf has blood-red eyes and bright white teeth.
+&+LIts large, muscular body is covered in thick, black fur. It snarls
+&+Lviciously and hungrily, drooling as it growls.
+~
+67109000 1 0 0 402653208 0 0 0 -1000 S
+a 0 1048580 0 4
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59043
+giant marble statue warrior~
+&+Wa g&Ni&+La&+Wnt m&+La&+Wr&Nb&+Wle s&Nt&+Wa&+Lt&Nu&+We&N~
+&+WA giant m&Na&+Lr&+Wb&Nl&+We statue of a warrior wielding a tremendous greatsword stands in the alcove, motionless.
+~
+&+W   This giant ma&Nr&+Lb&+Wle statue stands near&Nl&+Wy th&ni&+Lr&+Wty feet tall, carved
+&+Wto depict a wa&Nrr&+Li&+Wor wielding a greatsword, po&Ns&+Wed l&Ni&+Lk&+We a sentry.
+~
+67108874 0 0 0 939597848 1063128 262144 4198656 0 S
+ee 0 67108865 0 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59044
+count strahd human form~
+&+rCount Strahd (human form)~
+&+WHalf-sprawled over the coffin, &+rCount Strahd Von Zarovich &+Wweeps.
+~
+&+L                          _.-7
+&+L       ,.-.              ( ,(_    &+rStrahd is a tall man, standing just
+&+L      /(&-L&+R- -&N&+L\              \\  \,  &+rover 6 feet. His body is lean and
+&+L      / )&N;&+L /\         _.--' \  \\  &+rhard, and his gaunt face has strong
+&+L   .-')/'&N-&+L''-\.____.-'    ___)  )\  &+rfeatures and prominent cheekbones.
+&+L  F   _/-``&+L-.__;-.-.--`--' . .' \_L_  &+rHis eyes are dark and hypnotic,
+&+L |   l   / \ ,_\  '.'.      ` __.' )\  &+rlike deep pools with sublte re-
+&+L (    -.;&+b___&+C,&+L;  | '- _       :__.'( /  &+rflections of red light, but when
+&+L | -.__ _/&+b_&+L.'.-'      '-._ .'      \\  &+rhe is enraged they burn like red-
+&+L |     .'   &+b|&+L  -- _                 '\,  &+rhot coals. His skin is usually
+&+L |  \ /&+b--,--{&+L .    '---.__.       .'  .'  &+rpale, but it becomes flushed
+&+L J  ;/&+b___;__]&+L. '.-.            .-' )_/  &+rwith each feeding. His elongated
+&+L J  (-       &+r\&+L'. '. '-._.-.-'--._ /  &+rand thin fingers have long, sharp
+&+L |  |     &+r.  |&+L \'. '.    ._       \  &+rnails. His fangs are not obvious
+&+L |   \   &+rT   |&+L  \  '. '._  '-._    '.  &+runless he wants them to be - when
+&+L F   J   &+r|   |&+L  '.    .  '._   '-,_.--`  &+rhe attacks they protrude from
+&+L F   \   &+r\   F&+L .  \    '.   '.  /  &+rhis mouth. Strahd wears well-tailored
+&+LJ     \  &+r|  J&+L   \  '.   '.    '/  &+rand high-quality, layered clothing
+&+LJ      '.&+rL&+L__&+r|&+L    .   \    '    |  &+rcommon to the nobility. His flowing,
+&+L|   .    \  &+y|&+L     \   '.   '. /  &+rblack hair cascades onto his broad sh-
+&+L|    '    '.&+y|&+L      |    ,-.  (  &+roulders and his entire body is draped
+&+LF   | ' ___  ',._   .  /   '. \  &+rin a dark cloak that shimmers as it
+&+LF   (.'`&+y||&+L (-._\ '.  \-      '-\  &+rflows with a blood-red crimson sparkle.
+&+L\ .-'  &+y( L `._ &+L'\ '._ (          &+rHaving taken on his human form, Strahd
+&+L/'  &+y|  /  '-._\  &+lsnd&+L ''\    &+rlooks youthful, despite his multi-generational
+&+y    `-'   &+ljgs/ab            &+rlegacy of evil and insanity.
+~
+1360033802 1 0 0 3087081496 276672 0 549729792 -1000 S
+uv 0 1605 0 -1
+61 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59045
+plague rat~
+&+ya &Nplague&+y rat&N~
+&+yA filthy &Nplague &+yrat scurries hungrily through here, rabid and frantic.
+~
+   &+yThis rat is quite large, about the size of a small cat, with beady eyes and
+&+ysharp white teeth. It's body is skeletal with patchy fur between large, oozing
+&+ylesions. It has rabid and frantic mannerisms, darting wildly between 'food'.
+~
+8 0 0 0 0 0 0 0 0 S
+a 0 0 0 1
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59046
+emil man barovian~
+&+yEmil &Nthe &+yBarovian&N~
+&+yA gaunt, naked man named Emil lays here, &+Ls&+yh&+La&+yc&+Lk&+yl&+Le&+yd to the wall.
+~
+   &+yThis gaunt man wears nothing but the shredded remains of a
+&+ytattered loincloth, perhaps once a cloth garment at one time.
+&+yHe introduces himself simply as 'Emil of Barovia' and seems
+&+yhappy to be approached and looked at, despite his captivity.
+~
+74 0 0 0 8 0 0 0 -500 S
+l 0 1048576 0 3
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59047
+spectre stefania~
+&+Ma spectre of "Stefania"~
+&+MThe ghostly spectre of a young woman called "Stefania" floats here.
+~
+   &+M"Stefania" as she is called, is a faceless young, thin woman
+&+Mdressed in a flowing incorporeal summer dress. She floats here
+&+Mon a bed of mist, appearing innocent enough.
+~
+1090521098 1 0 0 2818574360 276672 0 0 -1000 S
+sp 0 33 0 2
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59048
+rot reaver~
+&+ya r&+Ro&+yt r&+Re&+ya&+Rv&+ye&+Rr&N~
+&+yA disfigured r&+Ro&+yt r&+Re&+ya&+Rv&+ye&+Rr &+ycrawls here, growling madly.
+~
+   &+yThis disfigured zombie has the portions and mobility of a
+&+yprimate, crawling on all-fours. In the place of hands, its
+&+yoversized arms end with huge embedded blades that are completely
+&+ycovered in rust.
+~
+1140852746 1 0 0 134219800 276672 0 33562624 -1000 S
+zo 0 2097152 1 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59049
+thredra anarax necromancer~
+&+mThredra Anarax&N~
+&+LAn ancient necromancer named &+mT&+Lh&+mr&+Le&+md&+Lr&+ma &+mA&+Ln&+ma&+Lr&+ma&+Lx stands here, curious about the interruption.
+~
+        &+W,     ,          &+rThredra Anarax is a mysterious, ancient
+        &+W\\___//    &+m.   &+rnecromancer dressed in a billowing, hooded
+         &+W(&+Lo&+W^&+Lo&+W)     &+m.   &+rblack robe over a vest of stitched skin.
+&+L    ___   &+W\&N"&+W/           &+rHer face is nearly concealed under the
+&+L   /___\   &NI      &+MO  &+mo   &+rshadow of her hood, only revealing
+&+L  //   \\  &NI     &+m.      &+ra skeletal visage during the brief lumi-
+&+L  \\   //  &NI            &+rnescence of her spellcraft. Sleepless
+&+L  / \-/ \ &N(I3    &+m.  &+MO   &+rand ever-mystic, she dwells deep within
+&+L /. &+c-&+Co&+c-&+L ,\/&NI          &+m.  &+rthe heart of Castle Ravenloft, endlessly
+&+L( <L&+r___&+Lj\ /&NI       &+mo   &+rbuilding and rebuilding her vampire lord's
+&+L \ /&+r-&+c=&+r-&+Lv}' &NI     &+Mo   &+m.   &+rundead army. She grasps a skull-headed
+&+L  |     |  &NI &+L  _________   &+rstaff, waving it over a large cauldron
+&+L  |     |  &NI &+Lc(`       ')o  &+rwhile raspily chanting incantations.
+&+L  |     |  &NI &+L  \.     ,/   &+rShe seems more curious than enraged,
+&+L  |  :  l  &NI &+L   > --- <   &+rhowever, by an outsider's intrusion
+&+L_/j  L  l\_&N! &+L _//^---^\\_  &+rinto her sanctum.
+~
+17844234 0 0 0 939597976 14528 0 579080704 -1000 S
+sk 0 1024 2 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59050
+blood hulk giant bloodhulk~
+&+Ra &+rblood&+Rhulk &+yg&+ri&+ya&+rn&+yt&N~
+&+RA grotesque &+rblood&+Rhulk &+yg&+ri&+ya&+rn&+yt &+Rstands here, convulsing and p&+mu&+Rls&+ma&+Rt&+mi&+Rng.
+~
+   &+RThis massive monstrosity resembles a &+yflesh &+rgolem&+R that has been
+&+Rfully engorged with &+cfluid&+R to the point where it looks like it is
+&+Rready to &nburst&+R. It's massive body churns and p&+mu&+Rls&+ma&+Rt&+me&+Rs with a
+&+Rgrotesque melange of &+Mo&+rr&+Mg&+ra&+Mn&+rs&+R.
+~
+526346 0 0 0 134217752 0 0 0 -1000 S
+u 0 16384 1 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59051
+ooze~
+&+La &+Gdeath&+Lreap &+gooze&N~
+&+LA lump of &+gooze&+L bobbles through the mucus in the &+Lvat&.
+~
+   &+LThis large lump of mucusly ooze squishes about, pulsing and writhing
+&+Las it forms tentacle-like tendrils that propel it about. It squishes
+&+Land shrieks, spitting and gassing as it twitches and convulses.
+~
+2622474 1 0 0 2953838616 276696 0 0 -1000 S
+sl 0 2097153 0 1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59052
+witch-king lich witch king zhengyi~
+&+Lthe l&+mic&+Lh of the &+mwitch-king &+rZhengyi&N~
+&+LThe l&+mic&+Lh of the &+mwitch-king &+rZhengyi &+Lstalks here, &+rplotting evil acts.
+~
+   &+LThis powerful lich is that of an ancient Red Wizard of Thay and
+&+Lservant of the demon prince Orcus. In another realm, Zhengyi created
+&+La castle out of dark stone and iron from where he summoned an army
+&+Lof goblins, orcs, giants, and even undead. After several massive
+&+Lslaughters, his conquest across the northlands ended at the hands
+&+Lof Gareth Dragonsbane. Many years later, however, Zhengyi was granted
+&+La second life by Orcus himself in the form of a lich.
+~
+1091570696 1 0 0 3087007770 276672 0 574632448 -1000 S
+ul 0 8390145 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59053
+tomb demon~
+&+La t&+go&+Lm&+gb &+Ld&+ge&+Lm&+go&+Ln&N~
+&+LA morbid &+gt&+Lo&+gm&+Lb &+gd&+Le&+gm&+Lo&+gn &+Lslighters here &Nhissing &+Land drooling black acid.
+~
+   &+LThis monstrosity looks like the morbid cross between a snake
+&+Land a skeletal humanoid. A writhing, serpent-like tail supports
+&+La boney trunk and head, from wich clawed arms and a snake-like
+&+Lhead sprout. Large spines protrude from its head, shoulders and
+&+Laround its face. It's beady, misty green eyes have no iris.
+~
+1073744904 1 0 0 2684354584 14528 0 0 -1000 S
+x 0 1 1 2
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59054
+cassiar vampire~
+&+WC&+Mas&+msi&+Lar&N~
+&+WC&+Mas&+msi&+Lar the Cruel &+Lfloats through here, grinning with &+mominous &+Lintent.
+~
+&+L   &+WC&+Mas&+msi&+Lar resembles a young noble of &Npale skin&+L and curly, &+Rc&+yo&+Rp&+yp&+Re&+yr&+Ry &+yh&+Ra&+yi&+Rr.
+&+LHe is dressed in elegant clothing, from his &+Msilk &+cshirt&+L and pressed &+bsuede
+&+Ljacket down to his fine &Ncloth pants&+L and &+ycalfskin boots&+L. Despite his seemingly
+&+Linnocent, if not charming facade, he is preceeded by his reputation of
+&+Lgreat &+revil&+L. It is said that &+WC&+Mas&+msi&+Lar was turned into a vampire at a young
+&+Lage and quickly learned to use his predicament to control and manipulate
+&+Lothers. His thirst for &+rblood&+L quickly twisted into a taste for &+mcruelty&+L.
+&+L&+WC&+Mas&+msi&+Lar took pleasure in raiding the homes of unsuspecting innocents,
+&+Lforcing parents into inhuman acts under the threat of turning their children
+&+Linto &+WC&+Mas&+msi&+Lar's &+rvampire &+mspawn&+L. Rumor has it that &+WC&+Mas&+msi&+Lar would laugh and
+&+Lcackle as he commanded his victims to act as vampires - &+Rb&+Li&+Rt&+Le and drink each
+&+Lothers &+rblood&+L, at the witness of their children (who he would turn anyway).
+&+LOnce &+WC&+Mas&+msi&+Lar's reputation grew to infamy, he disappeared to the dark egress
+&+Lof &+rCastle Ravenloft&+L.
+~
+1125122568 1 0 0 671154192 8665280 128 536883200 -1000 S
+uv 0 8389633 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59055
+garagos~
+&+rG&+Ra&+rr&+Ra&+rg&+Ro&+rs&N~
+&+rG&+Ra&+rr&+Ra&+rg&+Ro&+rs the Reaver, Master of All Weapons and Lord of War &+RROARS&+r as he ushers in the apocalypse.
+~
+   &+rGaragos' current incarnation, either awakened from ageless slumber
+&+ror resurrected by a devolted cult of worshipers, has taken on flesh
+&+rinto a whirlwind of carnage that seems to exist only to destroy.
+&+rAn ancient exarch of Tempus, the insane Garagos is a near-elemental
+&+rforce of destruction, living without allies in the great pantheon
+&+rof Duris demi-gods. Despite his vacant mind, Garagos still harbors
+&+rdeep resentment against Tempus simply for his tortured existence.
+~
+1125144584 1 0 0 939524248 14528 262272 0 -1000 S
+d 0 3145729 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59056
+priest blood reaver bloodreaver~
+&+ra Blood&+Lreaver&N~
+&+rA priest of G&+Ra&+rr&+Ra&+rg&+Ro&+rs known as a Blood&+Lreaver &+rchants fanatically.
+~
+   &+rThis gaunt humanoid is completely caked in dark, brownish-red
+&+rblood from head-to-toe - likely part of his religious rites in
+&+rworship of Garagos. Known as a Bloodreaver, this priest is known
+&+rto sacrifice non-believers and 'empower' themselves with the blood
+&+rof their victims, in preparation for the return of Garagos, the
+&+rexarch of Tempus.
+~
+1140852744 1 0 0 134218008 0 0 0 -1000 S
+h 0 32 1 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59057
+advanced dread guard~
+&+Lan &Nadvanced &+Ld&+rr&+Le&+ra&+Ld &+rg&+Lu&+ra&+Lr&+rd~
+&+LAn advanced d&+rr&+Le&+ra&+Ld &+rg&+Lu&+ra&+Lr&+rd&N patrols here endlessly.
+~
+   &+LThis &Ns&+Wk&Ne&+Wl&Ne&+Wt&No&+Wn&+L moves with an uncharacteristic speed and precision, lacking
+&+Lthe haphazard clumsyness of a common &Ns&+Wk&Ne&+Wl&Ne&+Wt&No&+Wn&+L. The advanced dread guard runs,
+&+Lleaps, parrys and lunges like a seasoned fighter, seemingly taking pleasure
+&+Lin its relentless attack.
+~
+1611661320 1 0 0 134217752 14528 128 0 -1000 S
+sk 0 16777217 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59058
+kasimir velikov~
+&+cKasimir Velikov&N~
+&+cKasimir Velikov, a dusk elf mage, stands here clutching his staff.
+~
+   &+cKasimir Velikov is one of the last dusk elves - a race thought to be
+&+cmade extinct during Strahd's conquests. He has golden skin and sleek,
+&+cwhite hair that is pulled back. He wears a long oversized hooded robe,
+&+clikely to help conceal his identity. He is of average height and size
+&+cfor an elf with a youthful face. He has a faint magical glow about
+&+chimself and sparkles in his eyes, albeit with a hint of madness.
+~
+1090521096 0 0 0 24 0 0 0 1000 S
+el 0 640 0 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59059
+vistani wagoner~
+&+La &+cVistani &+ywagoner&N~
+&+LA &+cVistani &+ywagoner &+Lstands here, nervously looking back and forth.
+~
+   &+LThis human wears loosely-fitting cloth garments and a large
+&+Lamount of jewelry, including several necklaces and bracelets
+&+Lof painted wooden beads. He smiles nervously, perhaps out of
+&+Lhabit, while he anxiously looks back and forth. Likely a
+&+Lmerchant, artist, or performer - as the Vistani are, he now
+&+Lseems lost without his wagon.
+~
+2250 0 0 0 24 0 0 0 600 S
+PH 0 16384 0 -1
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59060
+ezmerelda d'avenir~
+&+gEzmerelda D'avenir&N~
+&+gEzmerelda D'avenir&+c the Vistani wagoner&+g shuffles &+ycards &+gas she talks to the others.
+~
+       &+L .-.    &+rEzmerelda D'avenir is a middle-aged human from the Vistani
+       &+L{/^\}   &+rCamp in the realm of Barovia. She has lush, thick brown hair
+     &+L {&+B:&+y\_/&+L&+M:&+L}&+y  &+C_&+y_  &+rwith several small beaded braids that rest on her
+      &+L{.-&+y"&+L-.}&+y_/&+C/&+y-'  &+rshoulders and back. Despite her surroundings, she
+&+y(\&+C_&+y__/&+g( \&+y-&+g/ )&+y--`   &+ris dressed elegantly, in a long, tight red skirt and
+&+y `&+C-&+y--` &+g) ^ (    &+ra fine, green leather vest. She has hazel eyes and an olive
+      &+R/&+g`---`&+R\   &+rcomplexion. Dazzling jewelry from all corners of the world
+      &+R\     /   &+rdecorate her neck, wrists and fingers, hinting that her
+       &+R\   /   &+rtravels have extended well past the dark reaches of Barovia.
+       &+R/   \   &+rShe carries a gaudy leather messanger bag that is adorned
+       &+R\   /   &+rwith multi-colored beads similar to those in her braids.
+      &+R/`   `\  &+rAlthough she isn't equipped in heavy armor, she does carry
+      &+R`"--`"`  &+ra long, curved dagger at her hip and magic on her fingertips.
+~
+1090521098 0 0 0 402653208 0 0 0 1000 S
+PH 0 514 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59061
+pidlwick ii~
+&-w&+RPidlwick II&N~
+&-w&+RPidlwick II, the wind-up mechanical jester, skips through here happily.
+~
+   &+WPidlwick was a fool of the visiting Duchess of Dorfniya Dilsnya, a royal
+&+Wof local nobility who frequented Castle Ravenloft during the reign of Barov
+&+Wand Ravenovia Von Zarovich. After several visits of constant entertainment
+&+Wfor Sergei and his wife-to-be, Tatyana, the Duchess commissioned the great
+&+Wtoymaker Fritz Von Weerg to craft a clockwork toy duplicate - Pidlwick II.
+   &+rDuring a cold winter, Duchess Dorfinya had grown ill, stranded in the
+&+rCastle with Pidlwick and his double. Unfortunately, she gave-in to her
+&+rillness and died. Pidlwick II couldn't move or jest quite like his human
+&+r&+rcounterpart, and only made his hosts cringe. After falling into disuse,
+&+rPidwlick II grew jealous, knowing that it could never get the attention
+&+rit wanted so long as its predecessor lived, and murdered its human counter-
+&+rpart by pushing him down a long flight of stairs. Pidlwick II attempted to
+&+rpick up where the first left off, but it failed miserably, even disturbing
+&+rTatyana before getting locked away in a closet for years to come.
+   &+LAfter Sergei and Tatyana's demise and the castle becoming largely empty
+&+Lof the living, Pidwlick II emerged and began stalking through the corridors.
+&+LEven Strahd knew of its murderous tendencies and took advantage of it from
+&+Ltime to time - finally prompting a smile by a Von Zarovich.
+~
+1090521352 1 0 0 939597848 14528 64 0 -1000 S
+cn 0 64 0 2
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59062
+crawling strahd zombie~
+&Na crawling &+rS&+Lt&+rr&+La&+rh&+Ld &+gzombie&N~
+&+LA skeletal &+rS&+Lt&+rr&+La&+rh&+Ld &+gzombie &ncrawling on its belly&+L lunges forward!
+~
+   &+LThis gaunt, emaciated zombie still fights on for flesh as it crawls
+&+Lthrough here, attracted to the living. This zombie still wears rotting
+&+Land rusting remains of ancient armor, likely animated from a victim
+&+Lmany years ago.
+~
+1073741832 1 0 0 0 0 0 0 0 S
+zo 0 64 1 2
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59063
+vladimir horngaard~
+&+RVladimir Horngaard&N~
+&+RVladimir Horngaard, the cursed knight, snarls as he stomps through here.
+~
+   &+RVladimir Horngaard was once a massive and formidable knight of
+&+Rthe Order of the Silver Dragon; now a cursed undead, doomed for
+&+Reternity to 'guard' these crypts through the twisted influence of
+&+RStrahd.
+   &+RIt is said that after Vladimir Honrgaard was killed and the
+&+ROrder of the Silver Dragon obliterated, the knight returned to
+&+Rlife vowing revenge against the First Vampire. After making his
+&+Rway to these catacombs, however, Vladimir witnessed Strahd's own
+&+Rongoing torment first-hand and decided the best retribution is
+&+Rto ensure Strahd's ongoing torment and actually protect him from
+&+Rthe tranquil permanence of death.
+~
+1158676488 1 0 0 536936600 0 262272 583283200 -1000 S
+uk 0 16777232 0 4
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59064
+disgruntled barovian~
+&+La disgruntled &+yBarovian&N~
+&+yA disgruntled &+LBarovian &+ystands here, angrily shouting towards the castle with the r&+La&+ybb&+Ll&+ye.
+~
+   &+yDressed in makeshift armor over his well-worn commoner's garb
+&+yand carrying a torch and pitchfork, this angry Barovian has joined
+&+ywith his brethren to finally 'kill Strahd and end the madness', so
+&+yhe says. Aged just beyond his youth, well-built and rugged, he is
+&+ylikely a woodsman or forrester.
+~
+1073744072 0 0 0 134217736 0 0 0 0 S
+PH 0 0 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59065
+vampire spawn~
+&+ra sinister vampire &+mspawn&N~
+&+rA sinister-looking vampire &+mspawn &+rprowls here, fangs extended.
+~
+   &+rThis vampire, likely the spawn of Strahd or another powerful host,
+&+rlooks to be formerly a half-elf or human - standing roughly five and
+&+ra half feet tall and extremely gaunt. Its long fangs protrude as
+&+rits mouth hangs open, drooling with readiness for its next feeding.
+~
+1140852744 1 0 0 671612952 0 0 0 -1000 S
+uv 0 1024 3 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59066
+unseen servant~
+&+lan unseen servant&N~
+&+lAn unseen servant stands guard, obeying the will of its master.
+~
+   &+lThis unseen servant is almost fully impercetable, even with the
+&+lmost potent detection magic. Only revealed when dusted or exposed
+&+lto something more opaque, this unseen servant stands close to its
+&+lmaster like a bodyguard.
+~
+1073772554 1 0 0 2684354584 14528 0 33558528 0 S
+ve 0 1 3 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59067
+flying sword~
+&+Ya flying sword&N~
+&+YSwirling and darting about, a flying sword cuts through the air on its own.
+~
+   &+YThis old sword looks simple enough at first glance - a steel long
+&+Ysword one might find at any blacksmith or in the hands of a common
+&+Ytown guard. A closer look, however, reveals tiny, intricately-scribed
+&+Yrunes covering every inch of the blade, which seem to brighten to a
+&+Yfaint glow when the sword 'wakes up', fully engulfing in flames when
+&+Ythe sword swings to strike!
+~
+1140854792 1 0 0 939524120 0 1048576 33555456 0 S
+ea 0 2097152 3 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59068
+wandering wight~
+&+ra wandering &+Wwight&N~
+&+rA wandering &+Wwight &+rshambles through here, slowly peering around.
+~
+   &+rThis wight is dressed in tattered ancient garb, and is likely
+&+ra fallen foe that was reanimated long ago to serve a new master.
+&+rIt has pale, lifeless skin, scraggly faded white hair and two
+&+rdead pools of blackness for eyes.
+~
+1143474184 1 0 0 671088664 276672 0 33558528 -1000 S
+uw 0 1 1 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59069
+apex vicors mad hatter~
+&+BA&+Mp&+Be&+Mx &+BV&+Mi&+Bc&+Mo&+Br&+Ms &+Bthe &+MM&+Ba&+Md &+BH&+Ma&+Bt&+Mt&+Be&+Mr&N~
+&+BA stranger known as &+MT&+Bh&+Me &+BM&+Ma&+Bd &+MH&+Ba&+Mt&+Bt&+Me&+Br phases through here, looking for a worthy opponent.
+~
+   &+BApex Vicors is an ancient human from another time, dressed in
+&+Bold tattered clothes that perhaps were once the garb of nobility.
+&+BIt is rumored that a 'deal' with a greater deity granted him
+&+Bthe ability to duel any warrior, at any time, until he himself
+&+Bhas been bested. Such timeless existence led to immortality and,
+&+Bwith it, insanity.
+~
+1358954632 1 0 0 0 8403136 0 38274048 0 S
+PH 0 2433 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59070
+rahadin chamberlain~
+&+mRahadin&N~
+&+mRahadin&+L, the &+rcastle &+Ycha&+Rm&+Yber&+Rl&+Yain&+L, floats here, &Nsmiling patiently.
+~
+                 &+L ________
+                &+L/|\\\||///|\         &+rAn ancient member of the nearly
+               &+L/||&N. &+L\\//&N .&+L||\        &+rextinct Dusk Elf race, Rahadin
+          &N^   &+L/|/&N__&+L\ \/ /&N__&+L\|\&N   ^   &+rswore fealty to the von Zarovich
+         &N' \ &+L(|(&N.:__;".-__.: &+L|)&N / '  &+rthrone during the reign of Barov,
+         &N\"`\.&+L| &N'<&+R@&N.`; ',&+R@&N>` &+L|&N`-""/  &+rbefore helping conquer his own
+          &N`._J  '-.-'L_`-- ' L_.-/   &+rpeople. Rahadin hunted down the
+           &N`.__,;  .-""-.   :,_.-    &+rDusk Elves, which forced them to
+             &+L||&N\, /.----.\, /&+L||      &+rabandon their homestead and into
+             &+L|||&N\   "--"   /&+L|||      &+rremote hiding. It is said that
+             &+L||||&N;-:_JL_;-;&+L||||      &+ra choir of screams can be heard
+  &+c        .-j/&N'.;  ;      / .'&+c\"-.   &+rechoing from Rahadin's victims
+  &+c      .' /&+b:`. &N"-.:     .-" &+b.'&+c;  `.   &+rwhile in his close proximity,
+  &+c   .-"  / &+b;  "-. &N"-..-" &+b.-"  &+c:    "-.   &+rbegging for their lives.
+  &+c.+"-.  : &+b:      "-.__.-"      ;&+c-._   \
+&+m  ; \  &+c`.; &+b;      Y             : &+m: &+c"+. ; &+rCenturies later, and still the
+&+m  :  ;   ; &+b;         |          : &+m;  : &+c\: &+rhigh chamberlain, Rahadin contin-
+&+m ( `."-; ;  &+b;        |         :  &+m;   ,/; &+rues to serve the dark purposes of
+&+m  ;    -: ;  &+b:       |        ;  &+m: .-"'  ) &+rStrahd with unwavering loyalty.
+&+m  (\     \  : &+b;      |      : \&+m.-"      : &+rEven after the death of Tatyana
+&+m   ;`.    \  ; &+b:     |      ;&+m.'_..--  / ; &+rand Sergei, Rahadin became a vam-
+&+m   :  "-.  "-:  &+b;   /\     :&+m/."      .'  : &+rpire himself and continues his
+&+m    `\       .-`.&+b\ /  \   /&+mt-""  ":-+.   : &+rmaster's bidding.
+&+m      `.  .-"    `l    &+b\_/ &+m^/`. :  ; ; \ )
+&+m        \   .-" &N.-"-.-"  .' .'&+mj \  /   ;/  &+r"&+WWelcome.&+r" he greets with a grin.
+&+m         \ / &N.-"   /.     .'.' &+m;_:'    ;   &+r"&+WThe Master awaits...&+r"
+&+m          :-"&N"-.`./-.'     /    &+m`.___.'
+&+m              &N  \ `t  ._  /  &+lbug :F_P:
+&+m              &N   "-.t-._:'
+~
+1360037898 0 0 0 939597848 6336 0 4096 -1000 S
+uv 0 131653 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59071
+count strahd bat form~
+&+RCount Strahd (bat form)~
+&+RHaving taken the form of a giant bat, Count Strahd swoops in with a deafening shriek!
+~
+&+L     &+W=&+L/\       _   _       /\&+W=   &+rResembling a giant bat in appearance,
+&+L     / \'._    )\_/(    _.'/ \   &+rStrahd swoops and moves like a dragon
+&+L    / .''._'--(&+r(&-L&+Ro&N&+L.&-L&+Ro&N&+r)&+L)--'_.''. \   &+rhellbent on feeding after retreating
+&+L   /.' _/ |`'=/ &+WV&+L^&+WV&+L \='`| \_ `.\   &+rinto this form. Fresh blood drips
+&+L  /' /     \ (  &+r: .&+L  ) /    \  `\   &+rfrom his protruding fangs, soaking
+&+L /` .'^`\;-,'.\_____/.',-;/`^'. '\   &+rthe shaggy black fur on his chest.
+&+L/.-'     &+W'&+L   `\(-V-)/`    &+W`&+L    `-.\   &+rHis eyes burn brightly with an
+&+W`&+L              "   "  &+ljgs/ab       &+W`  &+runhinged rage without end.
+~
+1360031880 0 0 0 939597848 276672 524416 46413312 -1000 S
+uv 0 1621 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59072
+miniature wind-up gnome~
+&N&+ya miniature wind-up gnome&N~
+&+yA miniature wind-up gnome &+Ymarches on&+y.
+~
+   &+yA strange, clockwork device is fashioned with the likeliness
+&+yof a round, miniature gnome with large flat feet and swaying,
+&+yrevolving stubby arms, topped on its bearded head with a pointy
+&+ycone hat. A metallic flange protruding from the back of this
+&+ymechanical construct rotates slowly, giving it life.
+~
+67108872 1 0 0 8 0 0 4096 0 S
+ee 0 4 0 1
+30 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59073
+trilloch~
+&+La &ntril&+cloch&N~
+&+LA grotesque &Ntril&+cloch &+Lflaps here, bolking out bursts of &+bnegative energy.
+~
+   &+LThis grotesque demon looks like a derranged mass of pulsating,
+&+Ltranslucent organs connected to an oversized pair of boney, clawed
+&+Lblack wings. It does not have a discernable face (or even a 'front')
+&+Land continues to bolk out black clouds of negative energy.
+~
+1361577994 1 0 0 3087007768 14528 0 583282688 -1000 S
+x 0 131077 0 1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59074
+giant ant soldier~
+&+ya &+Rg&+yi&+Ra&+yn&+Rt &+ya&+Rn&+yt &+Rsoldier&N~
+&+yA &+Rg&+yi&+Ra&+yn&+Rt &+ya&+Rn&+yt with extra large &+Rmandibles &+yskitters here imposingly.
+~
+   &+yThis giant ant is simply massive - nearly ten feet tall and as wide
+&+yas a small dragon. It has extra large mandibles that it holds open when
+&+yit approaches, powerful enough to bust through rock. Its segmented body
+&+yis shiny and chitinous, with six powerful legs skittering beneath it.
+&+yGreen venom drips from its maw as it hisses at intruders.
+~
+1074269194 1 0 0 24 14528 262272 0 0 S
+i 0 1 1 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59075
+giant ant worker~
+&+Ra g&+yi&+Ra&+yn&+Rt &+ya&+Rn&+yt worker&N~
+&+yStartled by the intrusion, a &+Rg&+yi&+Ra&+yn&+Rt &+yw&+Ro&+yr&+Rk&+ye&+Rr &+yant scampers into a &+rf&+Rr&+re&+Rn&+rz&+Ry&+y.
+~
+   &+yThis monstrous ant is the size of an extra large bull, adopting
+&+ythe same mannerisms after being startled by intruders. It has two
+&+yhuge, chitinous mandibles powerful enough to carve out chunks of
+&+ymountain rock and a giant, segmented body that plows through the
+&+yblack earth.
+~
+1140851720 1 0 0 402653208 0 0 0 0 S
+i 0 1 2 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59076
+count strahd gaseous gas form black cloud~
+&+LCount Strahd (gaseous form)~
+&+LA gaseous, black cloud floats here, taking on the final form of Count Strahd.
+~
+&N       .-""-.&+W'/               \`.&N-""-.    &+rWith the head of a giant bat and
+&N     .'_.-.  &+L|,               ,|  &N.-._'.   &+rthe feathery wings of an angel,
+&N    /    _/ &+L// \             / \\ \&N_    \  &+rStrahd has taken on his final,
+&N   /.--.' | &+L|/\ \    _,_    / /\| |&N '.--.\  &+rmonstrous form. His entire
+&N  /   .-`-| &+L|| \ |.-"   "-.| / || |&N-`-.   \  &+rbeing is gaseous, able to
+&N ;.--':   | &+L||  / -.\\ //.- \  || |&N   :'--.;  &+rmerge into the shadows and
+&N|    _\.'-| &+L|\__| /&-L&+R@&N&+r`&+L>^<&+r'&-L&+R@&N&+L\ | _/| |&N-'./_    |  &+rreappear at will, in a puff
+&N;_.-'/:   | &+L|`--|  `"/Y\"`  |--`| |&N   :\'-._;  &+rof smoke. He writhes as he
+&N|   | _:-'\  &+L\  ; |\ _"__/| ;  /  /&N'-:_ |   |  &+rstruggles to maintain a
+&N;  .:` '._ \  &+L\  \\ &+W\/w\/&+L //  /  /&N _.' `:.  ;  &+rform, desperate to once-
+&N|-` '-.;_ `-\  &+L\  \\  &+rU&+L  //  /  /&N-` _;.-' `-|  &+ragain merge with his body
+&N; / .'\ |`'\ \  &+L\/ \\&+W|M|&+L// \/  /&N./`'| /'. \ ;  &+rand be made flesh. Deathly
+&N| .' / `'.\-&+L/ \  \&+L  \`"`/  /  / \&N \.'` \ '. |  &+rshadows spill from his mouth,
+&N;/  /\_/-`-&+L/   \  |&+L  `'`  |  /   \&N` -\_/\  \;  &+rpreceeding his haunting
+&N |.' .| `;&+L/     \|'======='|/      \&N;` |. '.|  &+rspeech. Almost resembling
+&N |  / \.'&+L/      / _._  .__\.   &+W//&+L(- \&N'./ \  |  &+ra divine figure, Strahd
+&N  \| ; |&+L;    _,.-`-../      ``&+W///&+L,_  ;&N| ; |/  &+rdominates the room with his
+&N   \ | ;&+L|   `    `    \          `   |&N. | /  &+rpresence alone, endlessly
+&N    `\ |&+L|    .    `.   `\            |&N| /`  &+rthirsting for both blood and
+&+l jgs  `&+L\___/` `-._..\_   \        ___/&N_:'  &+rthe love of Tatyana.
+&+l ab     &+W||||&+L          `""-`--"`''
+        &+W`\\`
+~
+1192261640 1 0 0 2550136856 276672 524416 583283200 -1000 S
+sw 0 132705 0 -1
+61 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59077
+animated golden platemail~
+&+YStrahd's animated golden platemail~
+&+YStrahd's golden platemail stands up and comes to life!&N
+~
+   &+YThis beautiful, full-bodied suit of golden platemail is made
+&+Yof many different elements of glittering, heavily-detailed
+&+Ypieces of gold. A treasure in itself, it has now come to life
+&+Yseemingly on its own, moving and striking as if occupied by
+&+Ya skilled swordsman.
+~
+2058 0 0 0 2281766936 14528 0 0 -1000 S
+ar 0 1 1 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59078
+vanargand pack leader~
+&+gV&Na&+gn&na&+gr&Ng&+ga&nn&+gd &+Lthe &+yPack Leader~
+&NV&+ga&nn&+ga&nr&+gg&Na&+gn&Nd &+Lthe &+yPack Leader&+L snarls as he prowls through here.
+~
+   &+LVanargand is extremely large for a werewolf and was likely a barbarian
+&+Lof the northlands before falling into service of Strahd. He currently
+&+Lmaintains a state of a semi-transformed lycanthrope, including a huge
+&+Lwolfish head and furry, hunched torso atop a humanoid trunk and legs,
+&+Lrippled with huge muscles. He wears poorly-patched linens and a skirt
+&+Lof fine dragonscale.
+~
+1627389960 1 0 0 553648152 14528 0 46150144 -1000 S
+l 0 1048576 2 4
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59079
+curse scribed curse-scribed golem~
+&+Ya c&+mu&+Yr&+ms&+Ye&+m-&+Ys&+mc&+Yr&+mi&+Yb&+me&+Yd g&+mo&+Yl&+me&+Ym&N~
+&+YA huge stone golem c&+mo&+Yv&+me&+Yr&+me&+Yd in &+mr&+Yu&+mn&+Ye&+ms &+Ystands here, motionless.
+~
+   &+YThis large, stone golem looks to be made of similar stone blocks
+&+Yused in the fabrication of the &+rRavenloft &+LC&+ra&+Lt&+ra&+Lcombs&+Y. Animated into a
+&+Yfearsome hulk, this golem stands roughly fifteen feet tall and is
+&+Yis of equivillant girth. It's entire body, however, is inscribed
+&+Yin fine glyphs - curses - that &+Mglow &+mmagenta&+Y when it begins to move.
+~
+69732362 1 0 0 536871064 1063104 0 528384 -1000 S
+og 0 65 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59080
+large werewolf were wolf~
+&+La large &+ywere&+Lwolf&N~
+&+LA large, muscular &+ywere&+Lwolf &+Lbrandishes its claws as it sniffs around.
+~
+   &+yThis huge werewolf maintains a quasi-transformation state, with
+&+ya huge wolf's head and neck sprouting out of a furry, muscle-bound
+&+yhumanoid torso and legs. It snarls viciously at anything that moves,
+&+yforever trying to quench its bloodthirst.
+~
+1073741832 1 0 0 24 14528 0 8192 -1000 S
+l 0 16384 1 4
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59081
+gadof blinsky~
+&+BGadof Blinsky&N~
+&+BGadof Blinsky, the gnome toymaker, nervously paces about, pitching his creations.
+~
+   &+BGadof Blinsky is a short, plump gnome dressed in matching blue
+&+Bsilk balloon pants and shirt with a layered purple sash wrapped
+&+Bsnugly around his waist. He wears an oversized vest fit with many
+&+Bpockets, from which he pulls handmade oddities that he sells as toys.
+~
+2184 0 0 0 8 0 0 0 600 S
+pg 0 16384 0 -1
+50 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59082
+rictavio half-elf bard~
+&+CRictavio&N~
+&+CRictavio, an old half-elf bard dressed like nobility, stands here grinning.
+~
+&+W     ,^.&+L____     &+rTall for a half-elf, Rictavio stands at about
+&+W      \&+L|&+B----&+L|    &+r6 feet with a slender build. A wrinkled smile
+&+L   ____&+B'----`&+L___    &+rpeaks out from the shade of a high-crowned
+&+L    `----------'   &+rtop hat that is bound above the brim with a
+&+b     \-\&+y(- )&+b/-/`  &+rshiny blue grosgrain band, supporting a white
+&+b   __,\ `"'&+b/,/---,  &+reagle's feather. He wears a long, navy-blue
+&+b   \_  <|&+c#&+b|>  /`\   &+rbridge coat of heavy wool that ends at the
+&+b    /| `|/'   | |   &+rknee, under which his legs are covered in
+&+b   | `|&+Yo  o&+b  /(  >  &+rfine, form-fitting chainmail. His jacket
+&+y _-&+b'._|=====||\ /  &+rsports gold buttons and an extra-tall collar
+&+y(&+L//&+y_)&+b)|&+Yo  o&+b \\-'   &+rthat brushes against the brim of his hat
+&+L//&+y-   &+b||  |   \   &+rwhen he turns his head. Rictavio walks with
+&+L||    &+b|   |\   \   &+ra polished wooden cane, despite moving ably
+&+L||    &+b|___/|\___|  &+rwith a strong gait.
+&+L||    &+c(##| |##/   &+rRictavio carries on an ongoing tune, shifting
+&+L||    &+c|##) (##|  &+rbetween singing, whistling and humming, cleverly
+&+L||   &+c,|#/   \#|  &+rweaving his interactions with others into the
+&+L||  &+C/&+L___)  &+C/&+L___)  &+rlyrics of his song.
+~
+2184 0 0 0 134217752 0 0 0 1000 S
+p2 0 32768 3 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59083
+banshee patrina velikovna~
+&+Cthe banshee of Patrina Velikovna&N~
+&+CA banshee with vampiric fangs floats here, shrieking with a maddening cry.
+~
+   &+CThis incorporeal banshee floats in the crypt, reanimated from the remains
+&+Cof the vampire Patrina Velikovna. Recently risen, this banshee shrieks with a
+&+Cmaddening scream as its ghostly body writhes into misty wisps. Patrina's face
+&+Cis twisted in agony, with long fangs fully protruding from her drool-dripping
+&+Cmouth. It is rumored that Patrina Velikovna was executed by her own people
+&+Cand kin, after it became clear that she had been dominated (and converted) by
+&+CStrahd. Now eternally entombed along with Strahd's other 'brides', Patrina has
+&+Conce again risen into undeath as a wailing spectre.
+~
+1896904714 1 0 0 939524120 276672 0 0 -1000 S
+sp 0 1537 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59084
+izek strazni brute~
+&+YIzek Strazni&N~
+&+YA massive, muscle-bound brute named Izek Strazni stands here, grimmacing.
+~
+   &+YIzek Strazni is huge pillar of a man, standing nearly
+&+Y7 feet tall and easily weighing over 300 pounds. His body is
+&+Ymassively-wide and powerful - which is on display simply by
+&+Yhis ability to carry and wield his oversized black, steel axe.
+&+YIzek has a bald head, with one patch of long hair at the back
+&+Yof his skull knotted into a braid that rests on his ample back
+&+Ymuscles. He is lightly armored, wearing only patched leather
+&+Ypants and a misshapen vest of animal fur.
+   &+YFormerly the Captain of the Barovian Guard, Izek Strazni's
+&+Yreputation proceeds him. After years of corruption and growing
+&+Ybrutality towards the merchants, he was eventually run out of
+&+Ytown following a bloody standoff in the streets of Barovia. Now
+&+Ya high-priced sellsword, Izek rents his 'services' to the highest
+&+Ybidder.
+~
+1140850696 0 0 0 134217752 0 0 0 -600 S
+pb 0 1 1 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59085
+cyrus belview mongrelman~
+&NCyrus Belview&N~
+&+yA filthy &+gm&+yo&+gn&+yg&+gr&+ye&+gl&+ym&+ga&+yn named &nCyrus Belview &+yrummages through some debris.
+~
+   &NCyrus Belview, born of the multi-generational Belview servants of
+Castle Ravenloft, is the last of his namesake. Given abnormally long
+life at the cost of horrible disfigurement, Cyrus now lives as a result
+of the twisted magic of his Darklord. A long patch of scales cover one
+side of his body, causing him to have one shriveled arm that he mostly
+lets dangle and a gimpy leg that he drags as he shambles about. One
+side of his face looks like an old human man, while the other is dark
+and leathery with a dead eye. Cyrus spends his days simply scouring for
+food and talking to himself, constantly giggling as he drags limbs of
+rotting zombie flesh (sometimes still moving), and fragments of old bone
+back to his stewing cauldron.
+~
+142 0 0 0 8 0 0 0 -600 S
+h 0 16384 0 3
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59086
+flameskull~
+&+ga fl&+Game&+Ws&+Gk&+Wu&+Gl&+Wl&N~
+&+GA burning-green &+gfl&+Game&+Wskull&+G shrieks as it flies on a plume of &+gundead fire.
+~
+&+G                (
+&+G       &+Y.&+G            )        )
+&+G                (  (|              &+Y.
+&+G            )   &+g)\/ ( ( (
+    &+Y*&+G  (   (( &+g /     ))\))  &+G(  )    )
+&+G  (     \  &+g )\(          |  ))( )  (&+G|
+&+G  >)    &+g ))/   |          )/  \((  ) \
+&+G  ( &+g    (      .        -. &+g    V )/   )&+G(    (
+&+g   \   /     .   \            .       &+g\))   ))
+&+g     )(      (  | |   )            .    &+g(  /
+&+g    )(    ,'))     \ /          \( `.    &+g)
+&+g   (\>  ,'/__      ))            __`.  /
+&+g   ( \   | &N/  ___   ( &N\/     ___   \ &+G| ( (
+&+g    \.)  |&N/  /   \__      __/   \   \|  &+G))
+&+g   .  \. |&N>  \   &-L&+Y*&N  | __ |  &-L&+Y*&N   /   <|  &+g/
+&+g        )&N/    \____/ :..: \____/     \ &+g<
+&+G )   \ (&N|__  .      / ;: \          __| &+g)  &+G(
+&+G((    )\)  &N`--_     --  --      _--'   &+g /  &+G))
+&+G \    (    &N|  ||               ||  |  &+g (  /
+&+G       \.  &N|  ||_             _||  | &+g /
+&+g         > &N:  |  `V+-I_I_I-+V'  |  : &+g(.
+&+g        (  &N\:  T\   _     _   /T  : &+g./
+&+g         \  &N:    T^T T-+-T T^T    ;&+g<
+&+g          \..&N`_       -+-       _' &+g )
+&+g             . &N`--=.._____..=--'&+g. ./
+~
+1409304616 1 0 0 3087081472 276672 524288 41947136 -1000 S
+sk 0 513 0 1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59087
+decrepit draco dracolich~
+&+La decrepit &+md&Nr&+ma&Nc&+mo&nl&+mi&Nc&+mh&N~
+&+LA decrepit &+md&Nr&+ma&Nc&+mo&nl&+mi&Nc&+mh &+Lshambles through here, &Ncreeking&+L ominously.
+~
+&+L   This shadow dracolich is a vast, skeletal horror swirling wisps
+&+mof darkness, with massive skeletal wings trailing smoke like great
+&+Lembers. Cracks in its ancient bones leak shadow, and each movement
+&+mis accompanied by a grinding, creeking sounds. Its eye sockets burn
+&+Lwith an unnatural, nearly-black violet flame.
+~
+1141913608 1 0 0 671088664 14528 0 37748736 -1000 S
+d 0 1 1 7
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59088
+vhalzerek unblinking grave-eye grave beholder eye~
+&+WV&Nh&+Wal&-L&+Lz&N&+Wer&Ne&+Wk the &+Gun&+Cb&+clink&+Ci&+Gng&N~
+&+gA huge, globular &+Lgrave-&+Weye&+g called &+WV&Nh&+Wal&-L&+Lz&N&+Wer&Ne&+Wk &+gthe &+Gun&+Cb&+clink&+Ci&+Gng&+g floats here, watching.
+~
+&+g  (&+G(&+CO&+G)&+g)                       ,--'&+G(&+CO&+G)&+g)  &+LNumerous eyestalks of different sizes
+&+g  `,   `,                   ,'   _,`  &+Lmove independently from each other,
+&+g    `.   `.  _ .,- = - . _,'  ,-'         __  &+Lwhile also randomly snapping
+&+g      ``.,"' \  \   /  /  "`.'          ,' &+G(&+Co&+G)  &+Linto sync with the central
+&+g       ,' \                 / `.    ,_,'  ,`'  &+Leye, which dominates the
+&+g  (`'.,\   _,.---=-"-=---.._   /`.,' ,__,'  &+Lmass of this monstrous beholder.
+&+g   `;  _.-" &+C / \ !   ! / \&+g  "-._  .,'  &+LKnown as a 'Grave-Eye', this undead
+&+g   / ,"     &+C/ ,` &+L.---. &+C`, \     &+g". \  &+Lbeholder floats through the crypts,
+&+g  /.'   &+b`-  &+C|   &+L/:::::\ &+C  |  &+b-`   &+g'.\  &+Lalways watching under the command
+&+g  \`.  &+b`-   &+C|   &+L\:::::/ &+C  | &+b-`  - &+g.'/  &+Lof the Dark Lord of this realm.
+&+g   \ `.  &+b`- &+C\ `, &+L`---' &+C,` /   &+b-`&+g.' /  &+LA deep, suctiony sound can be
+&+g   ..  "-._  &+C\ / !   ! \ /  &+g_.-"   `--,__  &+Lheard during abrupt movements,
+&+g ,'`, `/    "=--.._  _..--=`"    \.,_   &+G(&+CO&+g`)  &+Las the grotesque innards
+&+g(  (__ `,/        ""          \,'   `-__.`  &+Lof this creature shift
+&+g `-_ &+Co&+G)&+g   `/             \_.'   &+Land pulsate with an unnatural second life.
+&+g    `'    ,`  ,../._.\._  ',  &+LNot of this plane, nor of this mortality,
+&+g        ,'  /'          `.  `--,  &+Lthis monstrosity serves only one
+&+g        (&+G(&+CO&+G)&+g'             `-&+G(&+CO&+G)&+g,' &+Ldark purpose: the eternity of its
+&+g                            `-'   &+Lmaster.
+~
+1429237768 1 0 0 671088664 14528 0 46149632 -1000 S
+bh 0 581 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59089
+spectral dire wolf~
+&Na spectral dire wolf&N~
+&nA spectral dire wolf sniffs around here, undisturbed.
+~
+   &NIn terms of size and aesthetics, this dire wolf is identical to any
+of the others that prowl the Svalich woods - a large, powerful-looking
+wolf with thick black hair and a huge head. Unlike the others, however,
+this spectral dire wolf randomly phases in and out of existence, like
+a flickering candy fighting the wind.
+~
+8 0 0 0 0 0 0 0 0 S
+ug 0 1 0 4
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59090
+image rahadin~
+&+Lan &+cimage&+L of &+mRahadin&N~
+&+LA ghostly &+cimage&+L of the vampire &+mRahadin&+L stands here, smiling.
+~
+   &+LThis flickering image is roughly five-foot-six and of a slender build.
+&+LHe wears a long black tunic layered over a deep purple robe, seperated
+&+Lat his midsection by a shimmering black sash. The entire being of this
+&+Lmirror image seems to be incorporeal and detached from its controller -
+&+LRahadin - dwelling here in front of this gate with an extended hand,
+&+Lrepeating to anyone who approaches, &+C'The master awaits...'
+~
+2058 0 0 0 0 0 0 0 -1000 S
+u 0 1 0 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59091
+jander elf sunstar~
+&+cJander Sunstar&N~
+&+LA stealthy high elf, &+cJander Sunstar&+L tiptoes silently.
+~
+         &+Y ..-.--..  &+cJander Sunstar carries the ageless poise of a &+Yhigh elf&+c,
+       &+Y,','.-`.-.`.  &+cthough the faint, unnatural pallor of his skin bares
+      &+Y:.',;'     `.\.  &+c the &+rv&+Ram&+rp&+Rir&+ri&+Rc&+c &+ccurse etched into his eternal existence.
+      &+Y||//&+L----&+c,-.&+L--&+Y\|  &+cHis long &+Ygolden hair&+c, once radiant, now hangs with a
+    &N\`:&+Y|/&+L-----&+c`-'&+L--&+Y||&N'/ &+cmuted &+Lsheen&+c that seems to dim in the absence of
+     &N\\&+Y|&N:<`&+yo&N'>|:<&+yo&N>)&N/ &+ctrue sunlight. &+yA&+Ym&+yb&+Ye&+yr eyes&+c glow with an unsettling
+      &N`&+Y|&N|&N      \   |&+Y!  &+cmix of wisdom, hunger, and relentless determination.
+      &+Y|!&N` &+L    .. &+Y  ;|  &+cFine, aristocratic features remain unmarred, yet a
+      &+Y!||&N:.  ---  /&+Y|!  &+csubtle tension in his expression hints at the constant
+     &+Y/||!||:&N.___.'&+Y!||\  &+cbattle within. His &+mclothing&+c is travel-worn but
+    &+Y/|!|||!|    |!||!\\&+m:.  &+cdignified, layered to conceal both weapons and the
+ &+m,--&+Y/!||!||!&+m`._.&+Y||!||,&+m:\\\  &+cvulnerabilities he refuses to show. Every movement
+&+m: :: &+Y|!|||!| &+lSSt&+Y|!||! &+m|!::  &+che makes is graceful yet guarded: the fluidity of
+&+m| |! &+Y!||!|||&+m`---&+Y!|!|| &+m||!| an &+Yelf&+c tempered by the &+Bcoldness&+c of eternity.
+~
+2058 0 0 0 134217752 0 0 0 0 S
+we 0 2 2 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#59092
+gulthias treant black tree~
+&+Lthe &+gGulthias &+Ltree&N~
+&+LA massive black treant lashes out with spiked tendrils!
+~
+&+L         \/  , , |/   .   &+rThis wicked tree has come to life with a
+&+L      `\// \ |/  /_/___)  &+rdark possession unseen by more-common ents.
+&+L  (    (/   )/ \/         &+rThe entire tree has turned pitch-black
+&+L  `\__\_\ , |  /`\___)_   &+rand grown sharp, sizable thorns. It's limbs
+&+L        \(  | /'._    `)   &+rthrash and groan as it moves with uncanny
+&+L  ,_---._`\|{,----\   '   &+rspeed, lashing out like a roper. Dark sap
+&+L ,/     `\ }{'     )      &+rhisses as it burns anything it comes into
+&+L `         }&+g{&+L{    '      &+rcontact with, oozing from the curled, ebony
+&+L           )}{           &+rbark that covers the tree. It propels itself
+&+L           {|)          &+rby ripping its massive roots from the earth
+&+L     ,-==/(( .-^- _     &+rand driving them back in, pulling it's twisted
+&+lejm&+L        `)           &+rtrunk along as it sways and lurches forth.
+&+L           (
+~
+1091597320 1 0 0 2835349520 1325248 262144 41955840 -1000 S
+vt 0 8388609 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59093
+giant ant queen~
+&+Rthe &+yg&+Ri&+ya&+Rn&+yt &+Ra&+yn&+Rt &+mqueen&N~
+&+yAn enormous &+yg&+Ri&+ya&+Rn&+yt &+Ra&+yn&+Rt&+M queen &+ywith a swollen, &Negg&+y-bearing thorax squats here, chittering angrily.
+~
+   &+yThis monstrous ant is roughly ten feet tall and at least thirty feet
+&+ylong, including its swollen, elongated egg-bearing thorax. The queen
+&+yis easily the largest of the giant ants - nearly three times larger
+&+ythan the smallest worker - and much, much nastier to introduers of the
+&+yhive.
+~
+1090538506 1 0 0 2835423256 14528 262272 37752832 0 S
+d 0 16777217 0 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#59094
+giant spider~
+&+ya G&+rI&+yA&+rN&+yT spider&N~
+&+yA GIANT spider silently creeps here, filling the &+Lc&+ra&+Lt&+ra&+Lc&+ro&+Lmbs &+ywith &Nwebs&+L.
+~
+&+y           ____                      ,   &+LEight massive, hairy black legs,
+&+y          /---.'.__             ____//  &+Lthe size deep jungle snakes, move
+&+y               '--.\           /.---'  &+Land carry the great arachnid with
+&+y          _______  \\         //      &+La deathly grace, tiptoeing in alter-
+&+y        /.------.\  \|      .'/  ______  &+Lnating steps. Two huge, boney
+&+y       //  ___  \ \ ||/&+L|&+y\  //  _/_----.\__  &+Lfangs hang extend from its
+&+y      |/  /.-.\  \ \:|&+L< >&+y|// _/.'..\   '--' &+Lwretched maw, dripping with
+&+y         //   \'. | \'.&+L|&+y.'/ /_/ /  \\  &+Lvenom the beast has produced with
+&+y        //     \ \_\/" ' -\-'.-'    \\  &+Lready hunger. Aside from the
+&+y       //       '-._| &+R:&+LH&+R:&+y |'-.__     \\  &+Lgentle hiss of it's web-glands,
+&+y      //           &+W(/&+g'&+r===&+g'&+W\)&+y'-._\     ||  &+Lwhich seem to constantly release
+&+y      ||                        \\    \|  &+Lit's ensnaring webs, the spider
+&+y      ||                         \\    '  &+Lmoves with an eerie silence,
+&+lsnd&+y   |/                          \\  &+Lcrawling through the tombs of the
+&+y                                   ||  &+Lcatacombs with an ancient familiarity.
+&+y                                   \\
+&+y                                    `
+~
+16777224 0 0 0 805904408 14528 0 33555456 0 S
+d 0 16384 1 6
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59095
+advanced dread guard~
+&+Lan &Nadvanced &+Ld&+rr&+Le&+ra&+Ld &+rg&+Lu&+ra&+Lr&+rd~
+&+LAn advanced d&+rr&+Le&+ra&+Ld &+rg&+Lu&+ra&+Lr&+rd&N patrols here endlessly.
+~
+   &+LThis &Ns&+Wk&Ne&+Wl&Ne&+Wt&No&+Wn&+L moves with an uncharacteristic speed and precision, lacking
+&+Lthe haphazard clumsyness of a common &Ns&+Wk&Ne&+Wl&Ne&+Wt&No&+Wn&+L. The advanced dread guard runs,
+&+Lleaps, parrys and lunges like a seasoned fighter, seemingly taking pleasure
+&+Lin its relentless attack.
+~
+1074790408 1 0 0 134217752 14528 128 0 -1000 S
+sk 0 16777217 0 -1
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59096
+plague rat~
+&+ya &Nplague&+y rat&N~
+&+yA filthy &Nplague &+yrat scurries hungrily through here, rabid and frantic.
+~
+   &+yThis rat is quite large, about the size of a small cat, with beady eyes and
+&+ysharp white teeth. It's body is skeletal with patchy fur between large, oozing
+&+ylesions. It has rabid and frantic mannerisms, darting wildly between 'food'.
+~
+8 0 0 0 1572864 0 0 0 0 S
+a 0 0 0 1
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#59097
+animated cloak~
+&+LRahadin's animated cloak&N~
+&+LRahadin's cloak billows behind him like a living shadow, poised and watchful.
+~
+   &+LThis mantle of living shadow drapes over &+mRahadin's &+Lshoulders,
+&+Lsoaking out all &nlight&+L around him. Its folds r&+mi&+Lpp&+ml&+Le without &+Cwi&+Wnd&+L,
+&+Lundulating softly around him. &+WTen&Ndr&+Wi&Nls&+L of da&+brkne&+Lss curl and uncurl
+&+Lalong its edges, reacting to his every movement with a &+rpredatory
+&+Linstinct. The fabric has no visible threading or stitches, and
+&+Lgives off an air of &+bcold&+L. It looms in the air behind &+mRahadin&+L,
+&+Llike an extension of his &+mdark &+Lpresence.
+~
+1077258 0 0 0 134217738 0 0 0 -1000 S
+ea 0 1 0 3
+60 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0

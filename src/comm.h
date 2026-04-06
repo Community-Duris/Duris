@@ -10,24 +10,24 @@
 #include "structs.h"
 #endif
 
-#define TO_ROOM             0
-#define TO_VICT             1
-#define TO_NOTVICT          2
-#define TO_CHAR             3
-#define TO_VICTROOM         4
-#define TO_NOTVICTROOM      5
-#define TO_ZONE             6
-#define TO_WORLD            7
-#define ACT_IGNORE_ZCOORD   8
-#define ACT_SILENCEABLE    16
-#define ACT_TERSE          32
-#define ACT_NOTTERSE       64
+#define TO_ROOM           0
+#define TO_VICT           1
+#define TO_NOTVICT        2
+#define TO_CHAR           3
+#define TO_VICTROOM       4
+#define TO_NOTVICTROOM    5
+#define TO_ZONE           6
+#define TO_WORLD          7
+#define ACT_IGNORE_ZCOORD 8
+#define ACT_SILENCEABLE   16
+#define ACT_TERSE         32
+#define ACT_NOTTERSE      64
 #define ACT_NOEOL         128
 #define ACT_PRIVATE       256
 
-#define SEND_TO_Q(messg, desc)  write_to_q((messg), &(desc)->output, 1)
+#define SEND_TO_Q(messg, desc) write_to_q((messg), &(desc)->output, 1)
 
-extern const char* COMA_SIGN;
+extern const char *COMA_SIGN;
 
 /* following was io.h, for asych I/O operations, not used currently.  If we
    ever use it, makes more sense for it to be here.  JAB */
@@ -51,13 +51,13 @@ extern long sentbytes;
 
 /* Macros */
 
-#define IO_MAX_IO_STRUCT	16
+#define IO_MAX_IO_STRUCT 16
 /* Max number of IOStruct that can be stored in the internal IO list 	*/
 /* Note this number really depends on the number of available of 	*/
 /* descriptors (see getdtablesize), and should NOT be set to a value	*/
 /* larger than the descriptor table size.				*/
 
-#define IO_MAX_CALLBACKS	1
+#define IO_MAX_CALLBACKS 1
 /* Max number of callbacks in a single callback list.  Note that this	*/
 /* constant CANNOT be changed because some package functions make	*/
 /* the assumption that there is ONLY 1 callback per list.		*/

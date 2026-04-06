@@ -516,6 +516,7 @@ O 0 58392 1 58453 100 0 0 0        * some dirty beds
 P 1 58335 4 58392 100 0 0 0        *   some change
 P 1 58336 4 58392 100 0 0 0        *   some change
 O 0 58315 1 58456 100 0 0 0        * a huge key ring with a single key
+O 0 59326 1 58456 100 0 0 0        * (object type not in this .obj file)
 O 0 58359 1 58457 100 0 0 0        * a loose brick
 O 0 58396 1 58470 100 0 0 0        * an Eladrin spear
 O 0 58313 1 58513 100 0 0 0        * a map of the cosmos
@@ -526,7 +527,6 @@ O 0 58349 1 58521 100 0 0 0        * a torch
 O 0 58412 1 58527 100 0 0 0        * a young girl named Gertruda
 O 0 58397 1 58532 100 0 0 0        * a dracolich skull
 O 0 58413 1 58534 100 0 0 0        * a huge copper bell
-O 0 58343 1 58538 100 0 0 0        * an ancient plaque
 O 0 58372 1 58541 100 0 0 0        * an old battered chest
 P 1 58373 1 58372 100 0 0 0        *   boots of thundering might
 P 1 58374 1 58372 100 0 0 0        *   a small heap of coins

@@ -3,107 +3,153 @@ hammer grumbar earth~
 &+ythe earthen ha&+Lmm&N&+yer of &+LGrumbar&N~
 &+LGrumbars hammer lies here, tossed asside.&N~
 ~
-5 11 5 0 15 100 4366336 8193 512 32795 0
-4 8 6 7 0 0 0 0
-6 0 100 268435472 12288 0 0
+5 11 5 0 15 100 4333840 8193 95 0 0
+4 8 6 0 0 247506507 60 20
+6 5000000 100 268435472 1060864 0 0
+E
+hammer grumbar earth~
+&+y   The e&+Lar&+yt&+Lhe&+yn hammer of Grumbar is a massive, &+mr&+yu&+mn&+ye-carved maul
+&+yhewn from a single slab of deep-v&+me&+yi&+mn&+ye&+md&+L g&Nr&+La&Nn&+Li&Nt&+Le&N&+y, its head embedded
+&+ywith &+mv&+ye&+mi&+yn&+ms&+y of &+ciron&+y and &+gcr&+Gys&+gtal&+y that &+mpu&Ml&+mse&+y faintly with earthy
+&+yenergy. The haft is wrapped in strips of ancient leather and
+&+ybraided &+rs&+yi&+rn&+ye&+rw&+y, worn smooth from countless generations of use,
+&+yyet unbroken by the weight of its blows.
+&+y   When swung, the hammer seems to resonate with the heartbeat
+&+yof the land itself, shaking &+Lstone &+yand soil, and causing huge
+&+ysp&+Rik&+yes to erupt through cavern and canyon alike. Legends say
+&+ythat Grumbar, the elemental lord of Earth, imbued it with his
+&+yown steadfast strength: those who wield it feel the patience
+&+yand immovable will of the mountains flowing through their arms.
+~
+E
+_char_msg~
+&NYou &N&-Lcrack&N the &+ye&+La&+yr&+Lt&+yh&N with your mighty swing!
+&+yJ&+La&+ygg&+Le&+yd &+ys&+Yp&+yi&+Yk&+ye&+Ys &+yerupt from the fissure!
+~
+E
+_victim_msg~
+&N$n &N&-Lcracks&N the &+ye&+La&+yr&+Lt&+yh&N with a mighty swing!
+&+yJ&+La&+ygg&+Le&+yd &+ys&+Yp&+yi&+Yk&+ye&+Ys &+yerupt from the fissure!
+~
+E
+_room_msg~
+&N$n &N&-Lcracks&N the &+ye&+La&+yr&+Lt&+yh&N with a mighty swing!
+&+yJ&+La&+ygg&+Le&+yd &+ys&+Yp&+yi&+Yk&+ye&+Ys &+yerupt from the fissure!
+~
 A
-18 8
+17 -200
 A
-19 8
+35 12
 #131201
 shield ancients~
-&+Ya shield of the ancients&N~
+&+Ya shield of the &+Ca&+cn&+Cc&+ci&+Ce&+cn&+Ct&+cs&N~
 A &+Ygolden&N shield rests on the ground here.~
 ~
-37 24 4 0 14 90 0 513 0 1 0
-1 1 3 15 0 0 0 0
-20 0 100 134225944 0 0 0
+37 24 4 0 15 90 0 513 0 0 0
+1 1 3 200 5 0 0 0
+20 1000000 100 134217736 0 0 0
 A
-18 3
+54 50
 A
-19 3
+55 5
 #131202
-stone gauntlets _perm_stone_~
-&+Lsome stone gauntlets&N~
-&+LA pair of stone gauntlets lies here.&N~
+obsidian fault bracers~
+some &+Lobsidian &+rf&+La&+ru&+Ll&+rt &+Lbracers&N~
+&+LSome bracers made of magma-veined obsidian have been left here.~
 ~
-9 15 3 0 7 0 36864 129 0 1 0
+9 36 4 0 15 0 1 289 64 0 0
 10 7 0 0 0 0 0 0
-10 0 100 128 0 0 0
+4 500000 100 536870912 0 0 0
+E
+obsidian fault bracers~
+&+LThese bracers, made of several interlocking bands, are
+&+Lmade smooth, glossy volcanic glass veined with slow-
+&+mpulsing &+Rm&+ra&+Rg&+rm&+Ra&+L cracks that &+Mglow&+L like &+Remb&+rers&+L beneath
+&+Lthe stone.  When worn, the fault lines seem to illuminate
+&+Lbrighter when the wearer moves quickly.
+~
 A
-18 2
+32 5
 A
-19 2
+35 5
 #131203
 necklace granite~
 &+La necklace of g&Nr&+La&Nn&+Li&Nt&+Le&N~
 &+LA necklace of granite lies here.&N~
 ~
-11 15 3 0 7 0 167936 5 0 1 0
+11 11 3 0 12 0 4096 5 0 0 0
 0 0 0 0 0 0 0 0
-0 0 100
+0 40000 100 16777216 0 0 0
 A
-18 3
+17 -40
 A
-13 20
+13 25
 #131204
 stone mask~
-&+La stone mask&N~
+&+La s&+mc&+Lo&+mw&+Ll&+mi&+Ln&+mg&+L stone mask&N~
 &+LA stone mask lies here, forgotten.&N~
 ~
-11 15 3 0 15 100 163840 262145 0 93088 0
+9 11 3 0 15 100 0 262145 64 0 0
 0 0 0 0 0 0 0 0
-2 0 100 536870948 16 0 0
+2 555000 100 0 2064 0 0
 A
-13 50
+17 -50
 A
-23 -8
+35 5
 #131205
 stone dagger~
 &+La stone dagger&N~
 &+LA stone dagger lies here.&N~
 ~
-5 15 3 0 7 0 0 8193 0 1 0
+5 11 3 0 7 0 0 8193 0 0 0
 2 4 3 11 0 0 0 0
-0 0 100
+0 5000 100
 A
-18 2
+18 3
 A
-19 2
+19 3
 #131206
 staff truth~
 &+ythe staff of Truth&N~
 &+yThe staff of Truth lies here.&N~
 ~
-4 15 3 0 7 0 163904 16385 0 416 0
-51 8 8 28 0 0 0 0
-0 0 100 32 131072 0 0
+4 6 3 0 15 0 163840 16385 66 0 0
+51 13 13 371 0 0 0 0
+0 200000 100 40 28 0 83886080
 A
 13 20
 A
-4 5
+34 5
 #131207
 earthen bracer~
 &+Lan &N&+yearthen&N&+L bracer&N~
 A bracer made of stone lies here.~
 ~
-9 15 3 0 8 50 32832 4097 0 1 0
+9 11 3 0 8 50 33587200 4097 64 0 0
 8 11 0 0 0 0 0 0
-2 0 100 0 4240 0 0
+2 100000 100 0 4240 0 0
+E
+earthen bracer~
+   &+LThis magically-shaped armguard is formed of living stone,
+&+yresembling a seamless band of granite, basalt, or crystal-
+&+Lveined stone. Unlike crafted armor, there are no seals or
+&+ymarkings. When magic flows through it, faint tremors ripple
+&+Lacross its surface.
+~
 A
-18 3
+32 4
 A
-13 16
+35 4
 #131208
 granite orb~
-&+La granite orb&N~
+&+La g&nr&+La&Nn&+Li&Nt&+Le orb&N~
 An orb of pure granite lies here.~
 ~
-17 15 3 0 7 0 33718336 16385 0 1 0
-80 80 14 1 0 0 0 0
-0 0 100
+17 11 3 0 15 0 33685504 8404993 64 0 0
+400 400 14 1 0 0 0 0
+0 60000 100
 A
-13 40
+13 45
 A
 23 -5
 #131209
@@ -111,10 +157,433 @@ xaren boots~
 &+Lboots of the xaren&N~
 Some boots of the xaren lie here.~
 ~
-11 15 3 0 7 0 32864 65 0 24 0
+11 11 3 0 15 0 1056 65 0 620789784 0
 0 0 0 0 0 0 0 0
-0 0 100 16 0 0 0
+0 400000 100 16 0 0 0
 A
-17 -10
+17 -50
 A
 13 30
+#131210
+fractured wall~
+&+ya f&+rr&+yactu&+rr&+yed w&+ra&+yll&n~
+&+yA f&+rr&+yactu&+rr&+yed w&+ra&+yll&+y barely stands amongst the r&+Lu&+ybb&+Ll&+ye.~
+~
+29 11 3 0 7 0 0 0 0 0 0
+270 131362 5 1 0 0 0 0
+0 0 100
+E
+fractured wall~
+&+yThe fractured wall has nearly toppled and would likely collapse
+&+ywith one final heave.
+~
+T
+261 4 1 32767
+#131211
+huge key blazing white flame~
+&+Wa huge &+Ykey&+W of b&Nl&+Wa&Nz&+Wi&Nn&+Wg white flame&N~
+&+WA huge &+Ykey&+W of b&Nl&+Wa&Nz&+Wi&Nn&+Wg white flame&N lies here.~
+~
+18 1 3 0 15 0 33554433 16385 64 0 0
+0 100 0 0 0 0 0 0
+0 1 100
+E
+huge key blazing white flame~
+   &+WThis key is massive, the size of a humanoid man's arm. It is also
+&Nsimple in form, bearing only two simple teeth. It almost looks like it
+&+Wis a sculpture of an idea of a key.
+   What distinguishes it, other than its size, is the slow-moving white
+&+Wflame that dances off the key, while harmless to the touch.
+~
+#131212
+heavy earthen flail~
+&+ca heavy, &+ye&+La&+yr&+Lt&+yh&+Le&+yn&+c flail&N~
+&+cA heavy, &+ye&+La&+yr&+Lt&+yh&+Le&+yn&+c flail&N lies here.~
+~
+5 11 5 0 3 0 4194304 8193 67 0 0
+3 7 4 0 0 0 0 0
+15 265000 100
+E
+heavy earthen flail~
+   &+yA massive stone head radiates a deep, otherwordly magic
+&+ycatop a thick, rune-inscribed iron rod.
+~
+A
+19 7
+A
+18 4
+#131213
+no-show maul spike proc~
+&+Lno-show damage (maul + spike) proc&N~
+no-show proc~
+~
+5 15 3 0 7 0 4098 8193 125 0 0
+10 5 5 0 0 367506506 60 15
+0 0 100
+E
+_room_msg~
+&N$n &+yslams its &+Lrocky&+y claws into the ground, creating a j&+La&+ygg&+Le&+yd fissure!
+~
+E
+_victim_msg~
+&N$n &+yslams its &+Lrocky&+y claws into the ground, creating a j&+La&+ygg&+Le&+yd fissure!
+~
+A
+58 -2
+A
+31 15
+#131214
+no-show geg proc~
+&+Lno-show geg proc&N~
+no-show proc~
+~
+5 15 3 0 7 0 4098 8193 125 0 0
+10 5 5 0 0 246 60 20
+0 0 100
+E
+_room_msg~
+&+yDozens of &+Yhands &+yfrom the $n &+ysuddenly jolt, viciously grabbing!
+~
+E
+_victim_msg~
+&+yDozens of &+Yhands &+yfrom the $n &+ysuddenly jolt, viciously grabbing!
+~
+A
+58 -1
+A
+31 10
+#131215
+no-show maul spike proc~
+&+Lno-show damage + para (maul + major para) proc&N~
+no-show proc~
+~
+5 15 3 0 7 0 4098 8193 125 0 0
+10 5 5 0 0 367367101 60 9
+0 0 100
+E
+_room_msg~
+&N$n&+y's massive, rocky arms wrap around $N &+ywith crushing &Nf&+Wo&Nr&+Wc&Ne&+y!
+~
+E
+_victim_msg~
+&N$n&+y's massive, rocky arms wrap around YOU &+ywith crushing &Nf&+Wo&Nr&+Wc&Ne&+y!
+~
+A
+58 -2
+A
+31 15
+T
+509 16 1 99
+#131216
+noshow blink heal proc~
+&+Lno-show blink + heal proc&n~
+no-show proc~
+~
+5 15 3 0 7 0 4098 8193 125 0 0
+10 5 5 0 0 433028028 60 10
+0 0 100
+E
+_room_msg~
+&+yWith a sudden motion, $n &+ymelts into the surrounding &+Le&+ya&+Lr&+yt&+Lh&+y,
+&+ybecoming nearly invisible as it slips into the tunnel walls.
+~
+E
+_victim_msg~
+&+yWith a sudden motion, $n &+ymelts into the surrounding &+Le&+ya&+Lr&+yt&+Lh&+y,
+&+ybecoming nearly invisible as it slips into the tunnel walls.
+~
+A
+58 -2
+A
+31 15
+#131217
+bloodied iron scepter~
+&+La &+rbl&+Lo&+ro&+Ld&+ri&+Led &+ciron scepter&N~
+&+LA &+rbl&+Lo&+ro&+Ld&+ri&+Led &+ciron scepter&N lies here.~
+~
+5 15 4 0 6 0 0 8193 66 0 0
+10 5 4 0 0 0 0 0
+6 55000 100
+E
+bloodied iron scepter~
+   &+cThis iron scepter is long, and well-balanced despite
+&+cit's considerable thickness and weight. Old dark blood,
+&+clikely that of pech slaves, has stained the scepter from
+&+cyears of constant 'motivation' by the Dao.
+~
+A
+19 4
+A
+1 8
+#131218
+small pile refined emeralds~
+&na small pile of &+gu&+yn&+gr&+ye&+gf&+yi&+gn&+ye&+gd &+Gem&+ge&+Gra&+gl&+Gds&N~
+&+yA small pile of &+gu&+yn&+gr&+ye&+gf&+yi&+gn&+ye&+gd &+Gem&+ge&+Gra&+gl&+Gds&+y are scattered on the r&+Lo&+yc&+Lk&+yy floor.~
+~
+20 32 3 0 7 0 0 1 0 0 0
+0 0 0 200 0 0 0 0
+0 0 100
+E
+small pile refined emeralds~
+   &+yThis small pile of raw gems g&+Wl&+yi&+Wt&+yt&+We&+yr&+Ws&+y with speckled radiance.
+~
+#131219
+small pile refined rubies~
+&na small pile of &+ru&+yn&+rr&+ye&+rf&+yi&+rn&+ye&+rd &+Rru&+rb&+Rie&+rs&N~
+&+yA small pile of u&+rn&+yr&+re&+yf&+ri&+yn&+re&+yd &+Rru&+rb&+Rie&+rs &+yare scattered on the r&+Lo&+yc&+Lk&+yy floor.~
+~
+20 31 3 0 7 0 0 1 0 0 0
+0 0 0 300 0 0 0 0
+0 0 100
+E
+small pile refined emeralds~
+   &+yThis small pile of raw gems g&+Wl&+yi&+Wt&+yt&+We&+yr&+Ws&+y with speckled radiance.
+~
+#131220
+small pile refined diamonds~
+&na small pile of &+Wu&+yn&+Wr&+ye&+Wf&+yi&+Wn&+ye&+Wd &nd&+Wi&Na&+Wm&No&+Wn&Nd&+Ws&N~
+&+yA small pile of u&+Wn&+yr&+We&+yf&+Wi&+yn&+We&+yd &+Wd&Ni&+Wa&Nm&+Wo&Nn&+Wd&Ns &+yare scattered on the r&+Lo&+yc&+Lk&+yy floor.~
+~
+20 27 3 0 7 0 0 1 0 0 0
+0 0 0 500 0 0 0 0
+0 0 100
+E
+small pile refined emeralds~
+   &+yThis small pile of raw gems g&+Wl&+yi&+Wt&+yt&+We&+yr&+Ws&+y with speckled radiance.
+~
+#131221
+small pile refined diamonds~
+&na small pile of &+bu&+yn&+br&+ye&+bf&+yi&+bn&+ye&+bd &+Bsa&+bp&+Bph&+bi&+Br&+be&+Bs&N~
+&+yA small pile of u&+Wn&+yr&+We&+yf&+Wi&+yn&+We&+yd &+Wd&Ni&+Wa&Nm&+Wo&Nn&+Wd&Ns &+yare scattered on the r&+Lo&+yc&+Lk&+yy floor.~
+~
+20 33 3 0 7 0 0 1 0 0 0
+0 0 0 500 0 0 0 0
+0 0 100
+E
+small pile refined emeralds~
+   &+yThis small pile of raw gems g&+Wl&+yi&+Wt&+yt&+We&+yr&+Ws&+y with speckled radiance.
+~
+#131222
+geode maw~
+&+Lthe &+mg&+Me&+Bo&+Cd&+ce &+Lmaw&N~
+&+LThe &+mg&+Me&+Bo&+Cd&+ce &+Lmaw&N lies here, &+Ys&+Wp&+Ya&+Wr&+Yk&+Wl&+Yi&+Wn&+Yg &nwith &+Ylu&+Rst&+Yor&N.~
+~
+9 26 4 0 15 0 266241 262145 64 0 0
+5 0 0 3 0 0 0 0
+4 600000 100 536870912 12480 0 0
+E
+geode maw~
+&+L   This &+yj&+La&+ygg&+Le&+yd&+L, crystalline mask is shaped like an open, fang-lined
+&+Ljaw of a geode dragon. Raw, multi-faceted &+Wcr&Ny&+Ms&+mt&+Ba&+Cl&+cs&+L jut outwards in
+&+Lirregular &+Rs&Np&+Ri&Nk&+Re&Ns&+L. When worn, it gives the impression that the wearer's
+&+Lface is a living &+mg&+Me&+Bo&+Cd&+ce&+L about to bite.
+~
+A
+23 -6
+A
+38 6
+#131223
+narrow crevice cave~
+&+ya narrow &+Lcrevice&N~
+&+yA narrow &+Lcrevice &+ybetween rocks opens to a &+Ys&+Wp&+Ya&+Wr&+Yk&+Wl&+Yi&+Wn&+Yg &+Lcave.~
+~
+25 15 3 0 7 0 0 0 0 0 0
+131396 7 -1 0 0 0 0 0
+0 0 100
+E
+narrow crevice cave~
+   &+ySeveral &+Llarge &+yslabs of &+Lrock &+yhave compounded upon one another,
+&+yrevealing a narrow &+Lcrevice &+ythat is curiously &+Willuminated&+y by the
+&+rc&+Ro&+Yl&+Go&+Br&+Cf&+cu&+Gl &+yrefractions of a prismatic &+Lcave&+y, beyond.
+~
+#131224
+noshow ray spray proc~
+&+Lno-show prismatic ray & spray proc&N~
+&+LNo-show prismatic ray & spray proc&N lies here.~
+~
+5 15 3 0 7 0 4098 8192 64 0 0
+2 5 5 0 0 364004107 60 16
+0 0 100
+E
+_room_msg~
+&N$n shudders for a moment and unleashes a beam of &+mp&+Mr&+Ri&+Ys&+Gm&+ga&+Bt&+Ci&+cc &+Rc&+Yo&+Gl&+Bo&+Cr&+cs&N!
+~
+E
+_victim_msg~
+&N$n shudders for a moment and unleashes a beam of &+mp&+Mr&+Ri&+Ys&+Gm&+ga&+Bt&+Ci&+cc &+Rc&+Yo&+Gl&+Bo&+Cr&+cs&N at &-L&+WYOU!&N
+~
+A
+58 -2
+A
+31 25
+#131225
+elemental earth elemental-earth pick~
+&+yan elemental-earth &+Ypick&N~
+&+yAn elemental-earth &+Ypick&N lies here in the &+Lstone&+y.~
+~
+5 11 3 0 14 0 65 8193 64 0 0
+4 4 4 0 0 0 0 0
+1 10000 50
+E
+elemental earth elemental-earth pick~
+   &+yThis dark, rune-etched tool of living stone is veined
+&+Ywith crystal, its head shaped into a long spike and a
+&+ysquared hammer face. Though it appears dense as bedrock,
+&+Yit is surprisingly lightweight in the hand, perfectly
+&+ybalanced as if enhanced by an unseen elemental force.
+~
+A
+14 20
+A
+18 3
+#131226
+no-show earthen grasp proc~
+&+Lno-show 3x earthen grasp proc&N~
+no-show proc~
+~
+5 15 3 0 7 0 4098 8193 125 0 0
+10 5 5 0 0 217100100 60 15
+0 0 100
+E
+_room_msg~
+&N$n &+Lreaches out and &+cg&+Lr&+ca&+Ls&+cp&+Ls $N&+L!
+~
+E
+_victim_msg~
+&N$n &+Lreaches out and &+cg&+Lr&+ca&+Ls&+cp&+Ls YOU!
+~
+A
+58 -1
+A
+31 15
+T
+509 16 1 99
+#131227
+whip golden lash~
+&N&+Ythe golden lash&N~
+&+yA whip called &+Y'the Golden Lash'&+y lays here in a magical coil.~
+~
+5 24 4 0 15 0 33554433 8193 32832 0 0
+14 3 6 0 0 0 0 0
+0 1000000 100
+E
+whip golden lash~
+&+Y   This strange, golden whip resembles a long, tree-climbing vine
+&+Ythat one might normally expect in the verdant jungles of the
+&+YKhomani-Khan. The pommel is like that of a druidic wand, made of
+&+Ythe same golden cord as the whip, tightly braided into a taught
+&+Yhandle. The whip re-coils by itself when not in use, and comes
+&+Yto life when grasped, thirsty for the blood of those it might
+&+Ylash. It writhes and jerks, snaps and cracks, responding to its
+&+Ywielder's movements like an extension of one's arm.
+&+Y   This whip is legendary amongst the Daos and the pechs of the
+&+YElemental Plane of Earth alike, typically wielded by Vashur,
+&+Ythe head taskmaster.
+~
+A
+18 4
+A
+19 4
+#131228
+armlets red flames~
+&n&+csome armlets &+Cof &+rred &+bflames&N~
+&n&+cSome armlets &+Cof &+rred &+bflames&N crackle away here.~
+~
+9 1 3 0 15 0 8192 257 64 0 0
+10 0 0 0 0 0 0 0
+1 37370 100
+E
+armlets red flames~
+   &+RThese flaming armlets burn with intense red and blue flame,
+&+Ryet they do not burn you.
+~
+A
+23 -5
+A
+35 7
+#131229
+husk world-eater world eater~
+&+Rt&+yh&+Re &+yh&+Ru&+ys&+Rk&+y o&+Rf &+yt&+Rh&+ye &+Lw&+yo&+Lr&+yl&+Ld&+y-&+re&+Ra&+rt&+Re&+rr&N~
+&+RT&+yh&+Re &+yh&+Ru&+ys&+Rk&+y o&+Rf &+yt&+Rh&+ye &+Lw&+yo&+Lr&+yl&+Ld&+y-&+re&+Ra&+rt&+Re&+rr&N lies here like rubble.~
+~
+9 37 6 0 15 0 573767680 9 64 0 0
+150 0 0 5 0 0 0 0
+60 1200000 100 16777216 1048576 0 0
+E
+husk world-eater world eater~
+   &+yThe husk of the world-eater encases its wearer's entire
+&+ybody in the interlocking plates of obsidian-black chitin
+&+Rof Ungoro, the Devourer. The remains of the primordial
+&+mleviathan is shaped like a fanged maw over the torso,
+&+ywhich continues up the arms and down the legs. The ground
+&+yrecoils under the wearer of this husk, leaving deep cracks
+&+Rwith every step as if the earth itself was shuddering.
+&+yWhen fully worn, the armor moves as single living husk,
+&+ycreaking, settling, and tightening around its host, until
+&+mthe wearer stands like an avatar of the Devourer itself.
+~
+A
+35 15
+A
+31 15
+#131230
+burning edge~
+&+Ya b&+Rur&+rning &+Ye&+Rd&+rge&N~
+&+YA b&+Rur&+rning &+Ye&+Rd&+rge&N lies here, somehow.~
+~
+5 15 3 0 7 0 524289 8193 126 0 0
+5 4 5 0 0 1110431277 56 16
+0 0 100
+E
+_room_msg~
+&N$n &+Rsneers at &+r$N &+Rand releases a &+Yf&+Rl&+rami&+Rn&+Yg &+rb&+Rl&+Ya&+Rs&+rt&+R!
+~
+E
+_victim_msg~
+&N$n &+Rsneers at &+rYOU &+Rand releases a &+Yf&+Rl&+rami&+Rn&+Yg &+rb&+Rl&+Ya&+Rs&+rt&+R!
+~
+A
+58 -2
+A
+31 25
+#131231
+colossal stone warhammer hammer~
+&+ca colossal s&+Ct&+co&+Ln&+ce &+Lwar&+chamme&+cr&N~
+&+cA colossal stone warhammer&N lies here like a statue.~
+~
+5 11 6 0 5 0 4194320 8193 0 0 0
+4 4 20 0 0 367023 60 20
+40 600000 100
+E
+colossal stone warhammer hammer~
+&+c   This massive warhammer is as tall as a tree and just as heavy.
+&+cCarved from a mountain, this huge stone warhammer delivers a
+&+cmighty wallop.
+~
+E
+_room_msg~
+&n$n's $q smashes into the &+yground&N, causing a huge &+ys&+Yh&+yo&+Yc&+yk&+Yw&+ya&+Yv&+ye&N!
+~
+E
+_char_msg~
+&NYour $q smashes into the &+yground&N, causing a huge &+ys&+Yh&+yo&+Yc&+yk&+Yw&+ya&+Yv&+ye&N!
+~
+E
+_victim_msg~
+&n$n's $q smashes into the ground, causing a huge &+ys&+Yh&+yo&+Yc&+yk&+Yw&+ya&+Yv&+ye&N!
+~
+#131232
+elemental earth elemental-earth gem-seeker gemseeker pick~
+&+yan elemental-earth &+Ypick &+ycalled &+W'&+YG&+Re&+Bm&+c-&+CSe&+cek&+Cer&+W'&n~
+&+yAn elemental-earth &+Ypick &+ycalled &+W'&+YG&+Re&+Bm&+c-&+CSe&+cek&+Cer&+W'&n lies here.~
+~
+5 11 4 0 15 0 33554432 8193 64 0 0
+4 5 3 0 0 0 0 0
+0 55000 100 301990148 2 536870912 1048576
+E
+elemental earth elemental-earth gem-seeker gemseeker pick~
+~
+A
+14 60
+A
+55 5

@@ -1,0 +1,207 @@
+#131200
+M
+qc_action 250~
+&N&+yA &+Lpech &+ysteadily swings his mining pick, knocking small bits
+&+yof &+Lrock&+y loose with constant precision.
+~
+M
+qc_action 250~
+&+yThe low rumbling grinding of stone-on-stone can be heard in the distance.
+~
+S
+#131214
+MA
+hi hello~
+&+YSunnis &+ybows her crystal-veined head at $N.
+&+Y'You stand before Sunnis, child of fragile flesh..' &+yshe says, gazing at $N.
+&+Y'Speak gently, for the Earth remembers every word.'
+
+&+YSunnis&+y continues &+Y'The prison of Grumbar is not broken by courage, alone,
+&+Yand I would know whether you come as liberators.. or as another tremor seeking
+&+Yto crack the foundations of eternity.'
+
+&+YSunnis&+y lifts her head and awaits your response.
+~
+MA
+earth plane~
+&N$n &+ynods at $N and says &+Y'The Plane of Earth is endless pressure
+&+Ywithout mercy and patience without end. The balance of the universe has
+&+Ybeen offset, little fleshling, I fear, by the rage of Grumbar.'
+~
+MA
+grumbar~
+&n$n &+ynods at $N and says &+Y'Grumbar's hunger is unending, but has
+&+Ybegun to sate himself with his own. Hence my presence, little fleshling.'
+
+&N$n &+yextends a massive, yet feminine hand, brushing the &+Wblazing white flame
+&+yconsuming the archway.
+
+&+Y'Precautions had to be taken, I'm afraid. This.. "prison" as you call it..'
+&N&+yshe says with a deep, earthy sigh.
+~
+MA
+prison balance~
+&N$n &+ynods at $N and continues &+Y'The hunger is upon him, and Grumbar's
+&+Ylimits know no end. This "prison"..&+Y' &+yshe says, &+Y'..is an act of
+&+Ydesperation to restore balance, my little creature.'&+y smiling at $N.
+
+&+Y'You have reached this place by yourselves, I see..'&+Y Sunnis &+ysays.
+&+Y'Perhaps you may help feed Grumbar's hunger?'&N&+y she says, looking at $N.
+~
+MA
+feed hunger hungry~
+&+Y'Grumbar's hunger is eternal, quelled only in the moments after
+&+Yhe feeds. I fear he and his kin have begun to dig to deep, and de-
+&+Ystabilize their very home.' &N$n &+ysighs, releasing a wave of &+We&Nn&+We&Nr&+Wg&Ny&+y.
+
+&+Y'Cracks are forming, tunnels collapsing. If the Plane of Earth should
+&+Yfall..' Sunnis &+ylooks deeply at $N, causing $N to &+cs&+Cw&+ce&+Ca&+ct&+y and &ngulp&+y.
+
+&+Y'Balance will be lost, and the universe will be destroyed.' &N$n &+ysays.
+&+Y'Bring me ten shards of &+Cp&+bla&+Cn&+bar&+L g&Nr&+La&Nn&+Li&Nt&+Le&N,&+y then $N&+y will save this and all realms.'
+&n$n bows, causing ripples of &+We&Nn&+We&Nr&+Wg&Ny&+y to &+Wf&+yi&+Wz&+yz&+Wl&+ye off and small landslides of &+Lrocks
+&+yto &Nt&+yu&Nm&+yb&Nl&+ye down her facade, only to absorb into her lower steppe.
+~
+QA
+&N$n &+ynods at $N &+yand waves her massive, rocky arm toward the &+Wb&nl&+Wa&Nz&+Wi&Nn&+Wg archway&+y.
+
+&-L&+WThe blazing energy barrier of the archway recoils!&N
+
+&+YSunnis &N&+ycalls out, into the depths of Grumbar's Lair:
+&+Y'Oh Grumbar, Mountain Without End, I return to you the bones of
+&+Yyour broken realm - let stone remember its maker.'
+
+&+YSunnis &+ylifts the shards of planar granite high and continues,
+&+Y'By pressure unyielding, answer me now Earthlord, and rise from
+&+Ythe prison that denies--'&N -- &+y&-Lshe is interrupted by the smash of
+&+y&-La huge boulder!&N
+
+&+YSix &+yHUGE stone &+ygolems rise from just inside the archway and a deap,
+gurgling voice slowly bellows out &-L&+L'SseEEeiIzZZE TthHEmMm!'&N
+
+&+yIn an instant, &+WThe blazing energy barrier&+y reforms in the archway.
+&+YSunnis &+yturns to $N and says, grimly &+Y'He is too far gone. We are lost.'
+~
+R I 131211
+G I 400104
+G I 400104
+G I 400104
+G I 400104
+G I 400104
+G I 400104
+G I 400104
+G I 400104
+G I 400104
+G I 400104
+D
+&N$n &+ysays to $N &+Y'Take this, it will break the barrier.
+&+YI fear the great pantheon will be effected, and I must warn
+&+Ythe others. Hold off Grumbar for as long as you can.'
+
+&+yBefore $N can respond, $N &+ysinks down, melding into the &+Lrock&+y and
+&+ydirt of the tunnel, until she is gone.
+~
+S
+#131217
+M
+qc_action 250~
+&N&+yA &Npech miner&+y swings his pickaxe into the rock, dislodging small &Nc&+yh&Nu&+yn&Nk&+ys.
+~
+S
+#131235
+M
+qc_action 90~
+&+c...*CRASH*...
+
+&+c    ...*CRASH*...
+
+&+c        ...*CRASH*...
+~
+S
+#131236
+MA
+hi hello~
+&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce&N smiles and says &+Y'Mmm. Footsteps... light ones. Not the
+&+Ygrinding tread of the masters.' &Nand he leans in closer to inspect $N.
+
+&+Y'Ah. You, there. Yes, you. I scent no brimstone on you. No hot gem-oil.
+You are not a dao.. Good! Then you may stand easy in my tunnels, and I will
+not reach for my pick as quickly!' &+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce &Nsays, eyeing $N cautiously.
+
+&+Y'Speak your name, primal.. or do I need my pick after all?' &+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce &Nsays.
+~
+MA
+pick song sing singing~
+Thull Thullstone glances down at the worn pick in his hand
+and gives a slow, gravelly chuckle, pausing his song.
+
+&+Y'This old thing? Hnh.. I keep it for the sentiment.' &Nhe says,
+running his musty hands over the cracks on his upper back.
+
+&+Y'When I sing,' &Nhe says &+Y'It answers. Soft places grow softer,
+&+Yhard veins ring hollow. The gemstone shows itself before ever I
+&+Ystrike'&N &+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce &Nsays.
+
+&+Y'Digging the earth. Stabbing it.. is the way of the Dao' &Nhe says with a sigh.
+~
+MA
+earth plane dao daos master masters slave slaves enslaved~
+&N&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce nods at $N and says:
+&+Y'Most pechs you see in these places swing their picks at the
+&+Ycommand of the masters.. the Dao. My people must be free, $N!'
+
+&N&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce looks around and continues:
+&+Y'Find the Golden Lash, Vashur, and bring his essence to me.'
+~
+MA
+entemoch ogremoch grumbar~
+&N&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce nods at $N and says:
+&+Y'My kin and the Dao share many things: rocks.. tunnels.. even Gods.'
+
+&N&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce grimmaces and continues:
+&+Y'But we have been enslaved..'
+~
+M
+qc_action 150~
+&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce&N sings &+Y'Stone below, old and slow, show me the seam
+&+Ywhere the soft lights flow.'
+~
+M
+qc_action 150~
+&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce &Nsings &+Y'Deep wall, do not fall - bend and open my call.'
+~
+M
+qc_action 150~
+&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce &Nsings &+Y'Gem in night, veiled from sight, hum
+&+Yyour name and guide my strike.'
+~
+QA
+   &+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce &Ngoes still when you place &+Ythe golden lash
+in his hands. The &+Yl&Ni&+Yg&Nh&+Yt&N from it flickers across the old cracks
+in his &+Lstony skin&N, and for a long moment he says nothing.
+
+&+Y'Vashur's lash..' &Nhe murmurs as his hands inspect the whip.
+&+Y'I know the sound it makes.. I've felt it bite.'
+
+His jaws tightens and he straightens himself.
+
+&+Y'You have taken a fang from the deep tyrant. That is no small
+&+Ything.' &+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce&N says.
+
+Slowly, he sets the &+Ywhip&N at his feet like a dead serpent, then
+holds out his &+Ypick&N to $N.
+
+&+Y'Gemseeker has been with me since my first tunnel. It has tasted
+&+Ybasalt, jade, and the black iron veins beneath the lowest halls.
+&+YIt has never struck in cruelty - only in craft.' &Nhe says, pressing
+&Nthe pick into your hands.
+~
+R I 131232
+R E 200000
+G I 131227
+D
+&+CTh&+cu&+Cl&+cu&+Cm St&+co&+Cn&+ce&+Cb&+co&+Cn&+ce says &+Y'Take it. Let it sing better days
+&+Ythan mine. May it guide you to hidden wealth, and never again answer
+&+Yto a Dao's command.'
+~
+S

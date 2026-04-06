@@ -5418,7 +5418,7 @@ D5
 0 0 58537
 S
 #58537
-&+cA Lon&+Cg, Narro&+Wing Staircase~
+&+cA Lon&+Cg, Narro&+Wwing Staircase~
    &+LThis long, spiral staircase runs deeper and deeper under Castle Ravenloft
 &+Lnarrowing as it descends into darkness.  This dark, ancient stairwell is
 &+Lmade of ageless stone brick.  What once perhaps was a red velvet carpet
@@ -5438,7 +5438,7 @@ D5
 0 0 58538
 S
 #58538
-&+WThe Ancient Door of the Ravenloft Catacombs&N~
+&+CA Long, Na&+crrowi&+Lng Stair&+bcase&N~
    &+WThe long, narrowing staircase leads down one final ramped descent before
 &+Wa massive, cavernous underworld chasm.  A small stone bridge leads to a small
 &+Wentrance, crafted of stone blocks in an arch, on a natural rock formation
@@ -5447,14 +5447,17 @@ S
 &+Wknocked is fastened to the center of the aged, cracked, yet magical door.
 &+WA very small plaque with ancient writing is mounted to this door, revealing
 &+Wthe contents behind this door to be known as the Ravenloft Catacombs, the
-&+Wancient burial sanctuary that bares the bodies of the entire Zarovich lineage,
-&+Wincluding Sengir von Zarovich, Father of Strahd.
+&+Wancient burial sanctuary that bares the bodies of the entire Zarovich lineage.
 ~
 583 1249935361 14
 D4
 ~
 ~
 0 0 58537
+D5
+~
+~
+0 0 59057
 S
 #58539
 &+LThe Servants' Quarters~
@@ -5523,6 +5526,10 @@ Sickly yellow lichen covers the ceiling.  Two darker &+Lalcoves&N lie on either
 side of the passage, from which demonic &+ystink&N emanates.
 ~
 583 1249935424 0
+D2
+~
+~
+0 0 59352
 D3
 ~
 ~

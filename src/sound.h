@@ -1,6 +1,6 @@
 /*
  **************************************************************************
- *  File: sound.h                                             Part of Duris 
+ *  File: sound.h                                             Part of Duris
  *  Usage: sound fonction for MSP
  *  Copyright 1994 - 2008 - Duris Systems Ltd.
  **************************************************************************
@@ -103,11 +103,11 @@
 #define SOUND_WIND2          "!!SOUND(wind2.* L=1)"
 #define SOUND_WIND3          "!!SOUND(wind3.* L=1)"
 
-#define MUSIC_OFF            "!!MUSIC(off)"
-#define MUSIC_BAL            "!!MUSIC(Bal.mid L=1)"
-#define MUSIC_COMBAT         "!!MUSIC(combat_music.mid L=1)"
-#define MUSIC_CAST_AWE       "!!MUSIC(cstl_awe.mid L=1)"
-#define MUSIC_HAUNTED_HOUSE  "!!MUSIC(haunted_house_music.mid L=1)"
-#define MUSIC_CAVE_AWE       "!!MUSIC(cave_awe.mid L=1)"
-#define MUSIC_TIAMAT         "!!MUSIC(tiamat_song.mid L=1)"
-#define MUSIC_WALK_AWE       "!!MUSIC(walk_awe.mid L=1)"
+#define MUSIC_OFF           "!!MUSIC(off)"
+#define MUSIC_BAL           "!!MUSIC(Bal.mid L=1)"
+#define MUSIC_COMBAT        "!!MUSIC(combat_music.mid L=1)"
+#define MUSIC_CAST_AWE      "!!MUSIC(cstl_awe.mid L=1)"
+#define MUSIC_HAUNTED_HOUSE "!!MUSIC(haunted_house_music.mid L=1)"
+#define MUSIC_CAVE_AWE      "!!MUSIC(cave_awe.mid L=1)"
+#define MUSIC_TIAMAT        "!!MUSIC(tiamat_song.mid L=1)"
+#define MUSIC_WALK_AWE      "!!MUSIC(walk_awe.mid L=1)"

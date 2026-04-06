@@ -1,11 +1,11 @@
 #ifndef __DISGUISE_H__
 #define __DISGUISE_H__
 
-#include "config.h"
 #include "structs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include "config.h"
 
 void do_disguise(P_char, char *, int);
 void remove_disguise(P_char ch, bool show_messages);

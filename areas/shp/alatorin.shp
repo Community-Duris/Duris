@@ -125,46 +125,6 @@ N
 1
 I do not sell to your people!~
 X
-#83184~
-N
-83185
-0
-0.80
-1.37
-3
-4
-2
-8
-15
-34
-0
-I'm not selling that, %s!~
-You don't seem to have that item, %s.~
-I won't buy that, %s.~
-Sorry there %s, but I don't have the money.~
-You don't have the money, %s!~
-Thank you, %s, that will be %s.~
-%s, I will give you %s for that.~
-0
-0
-83184
-0
-83381
-0
-28
-0
-28
-N
-Y
-N
-I am now open!~
-My shop is now closed.~
-0
-0
-N
-5
-I do not sell to your people!~
-X
 #83188~
 N
 83188
@@ -306,7 +266,7 @@ N
 83253
 0
 0.80
-1.10
+1.00
 0
 I'm not selling that, %s!~
 You don't seem to have that item, %s.~
@@ -319,12 +279,12 @@ Thank you, %s, that will be %s.~
 0
 83255
 0
-83410
+0
 0
 28
 0
 28
-N
+Y
 Y
 N
 I am now open!~
@@ -417,7 +377,9 @@ N
 83390
 83391
 83392
+83401
 66723
+83386
 0
 0.80
 1.05
@@ -463,7 +425,9 @@ N
 83391
 83392
 83401
+83390
 66723
+83365
 0
 0.80
 1.10
@@ -598,6 +562,16 @@ N
 2800
 93914
 412
+829
+830
+831
+832
+833
+834
+835
+836
+837
+838
 0
 0.80
 1.10

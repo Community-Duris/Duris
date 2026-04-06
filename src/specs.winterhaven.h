@@ -1,15 +1,15 @@
 #ifndef _SPECS_WINTERHAVEN_H_
 #define _SPECS_WINTERHAVEN_H_
 
-#define WELL_ROOM 55126
-#define WELL 100
+#define WELL_ROOM   55126
+#define WELL        100
 #define WINTERHAVEN 550
 
 int winterhaven_shout_one(P_char, P_char, int, char *);
 int winterhaven_shout_two(P_char, P_char, int, char *);
 int dagger_ra(P_obj, P_char, int, char *);
 int wh_corpse_to_object(P_char, P_char, int, char *);
-int wh_corpse_decay(P_obj, P_char, int, char *); 
+int wh_corpse_decay(P_obj, P_char, int, char *);
 int illithid_axe(P_obj, P_char, int, char *);
 int deathseeker_mace(P_obj, P_char, int, char *);
 int snowogre_warhammer(P_obj, P_char, int, char *);

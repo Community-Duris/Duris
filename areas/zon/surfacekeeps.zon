@@ -8,47 +8,36 @@
 *
 *
 O 0 120017 2 120827 100 0 0 0      * a wooden merchant stall
+O 0 434 4 120970 100 0 0 0         * (object type not in this .obj file)
 O 0 120041 2 120985 100 0 0 0      * slash trap
 O 0 120041 2 120985 100 0 0 0      * slash trap
 O 0 120034 1 121029 100 0 0 0      * a huge wooden sign reading 'Hammer and Shield Tavern'
 O 0 120002 1 121030 100 0 0 0      * a statue of a great dwarven battle scene
-O 0 193 5 121082 50 0 0 0          * (object type not in this .obj file)
-O 0 120048 3 121200 100 0 0 0      * a small ore deposit
-P 1 223 3 120048 100 0 0 0         *   (object type not in this .obj file)
-P 1 78485 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 78463 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 78422 3 120048 2 0 0 0         *   (object type not in this .obj file)
-O 0 193 5 121200 50 0 0 0          * (object type not in this .obj file)
+O 0 193 4 121082 100 0 0 0         * (object type not in this .obj file)
+O 0 434 4 121100 100 0 0 0         * (object type not in this .obj file)
 O 0 120017 2 121220 100 0 0 0      * a wooden merchant stall
 O 0 120003 1 121314 100 0 0 0      * a sign reading 'Court Hall'
 O 0 1460 1 121484 100 0 0 0        * (object type not in this .obj file)
 O 0 120049 1 121664 100 0 0 0      * a golden band bearing dwarven runes
 O 0 70 1 121680 100 0 0 0          * (object type not in this .obj file)
 O 0 53624 1 121680 100 0 0 0       * (object type not in this .obj file)
-O 0 193 5 121764 60 0 0 0          * (object type not in this .obj file)
-O 0 120048 3 121873 100 0 0 0      * a small ore deposit
-P 1 78422 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 78485 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 78463 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 223 3 120048 100 0 0 0         *   (object type not in this .obj file)
-O 0 193 5 121873 50 0 0 0          * (object type not in this .obj file)
+O 0 193 4 121764 100 0 0 0         * (object type not in this .obj file)
+O 0 193 4 121793 100 0 0 0         * (object type not in this .obj file)
+O 0 434 4 121873 100 0 0 0         * (object type not in this .obj file)
+O 0 434 4 122381 100 0 0 0         * (object type not in this .obj file)
 O 0 120040 2 122775 100 0 0 0      * dart trap
 O 0 120040 2 122775 100 0 0 0      * dart trap
+O 0 120057 1 122947 100 0 0 0      * a lava tube
 O 0 120004 1 123014 100 0 0 0      * a huge sign reading 'Steelgrips Depot'
-O 0 120048 3 123183 100 0 0 0      * a small ore deposit
-P 1 78463 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 78422 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 78485 3 120048 2 0 0 0         *   (object type not in this .obj file)
-P 1 223 3 120048 100 0 0 0         *   (object type not in this .obj file)
-O 0 193 5 123183 50 0 0 0          * (object type not in this .obj file)
+O 0 193 4 123183 100 0 0 0         * (object type not in this .obj file)
 O 0 120006 1 123213 100 0 0 0      * a sign reading 'Muntz's Goods'
 O 0 120000 1 123215 100 0 0 0      * a velvet-covered table with a small sign
 O 0 120001 1 123314 100 0 0 0      * a flag with a white cross
 *
 M 0 120041 5 120578 100 0 0 0      * an Alatorin ramrider watchman
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-R 1 120037 10 120578 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+R 1 120037 11 120578 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120045 8 120578 50 0 0 0       * a six-legged basilisk
 M 0 53642 23 120581 100 0 0 0      * (mob type not in this .mob file)
 M 0 120002 20 120620 100 0 0 0     * a tough Alatorin sentry
@@ -56,6 +45,9 @@ M 0 120002 20 120620 100 0 0 0     * a tough Alatorin sentry
 M 0 120002 20 120626 100 0 0 0     * a tough Alatorin sentry
 M 0 120002 20 120626 100 0 0 0     * a tough Alatorin sentry
 M 0 53642 23 120672 100 0 0 0      * (mob type not in this .mob file)
+M 0 120069 5 120727 100 0 0 0      * a patrolling elite peacekeeper
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 53642 23 120765 100 0 0 0      * (mob type not in this .mob file)
 M 0 53642 23 120767 100 0 0 0      * (mob type not in this .mob file)
 M 0 53642 23 120768 100 0 0 0      * (mob type not in this .mob file)
@@ -75,6 +67,18 @@ E 1 120042 1 6 100 0 0 0           *   an ancient golden helmet
 M 0 120066 1 120823 22 0 0 0       * Gulranor the duergar hunter-killer
 E 1 120005 999 16 100 0 0 0        *   a black-bladed dagger
 E 1 120005 999 17 100 0 0 0        *   a black-bladed dagger
+M 0 120071 1 120823 100 0 0 0      * a wandering BrightAxe champion
+G 1 83177 1 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 120072 1 120823 100 0 0 0      * a wandering siege dwarf ragelord
+G 1 83175 1 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 120011 12 120823 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120073 1 120823 100 0 0 0      * a wandering summoner
+G 1 83302 1 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
+M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
+M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
+M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
 M 0 120038 1 120827 100 0 0 0      * a dwarven blade merchant
 G 1 83290 999 0 100 0 0 0          *    (object type not in this .obj file)
 G 1 83291 999 0 100 0 0 0          *    (object type not in this .obj file)
@@ -90,25 +94,27 @@ G 1 83376 1 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 83366 3 0 50 0 0 0             *    (object type not in this .obj file)
 G 1 83366 3 0 50 0 0 0             *    (object type not in this .obj file)
 G 1 83366 3 0 50 0 0 0             *    (object type not in this .obj file)
+G 1 83377 1 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120062 1 120880 80 0 0 0       * Blendyl the storm druid
-G 1 120047 1 0 40 0 0 0            *    a plush saddle embroided with lightning bolts
+E 1 120047 1 35 40 0 0 0           *   a plush saddle embroided with lightning bolts
 M 0 120061 1 120880 100 0 0 0      * Trag-guka-kag the troglodyte hunt leader
 E 1 120045 1 7 33 0 0 0            *   some skull knee guards lined with feathers
 E 1 120044 1 10 33 0 0 0           *   a skull shoulder guard lined with feathers
 E 1 120046 1 20 33 0 0 0           *   a skull-faced warmask lined with feathers
 G 1 94733 2 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 94733 2 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 120055 1 0 100 0 0 0           *    the bloody head of Trag-guka-kag
 F 1 120058 9 120880 100 0 0 0      * a troglodyte hunter (following)
 F 1 120058 9 120880 100 0 0 0      * a troglodyte hunter (following)
-M 0 120064 1 120880 3 0 0 0        * Zyka the Troll Stalker
+M 0 120064 1 120880 5 0 0 0        * Zyka the Troll Stalker
 E 1 120043 1 18 100 0 0 0          *   a skull-headed totem in an ethereal flux
 M 0 120059 4 120885 60 0 0 0       * a small cockatrice
 M 0 120045 8 120896 80 0 0 0       * a six-legged basilisk
 M 0 120027 5 120917 100 0 0 0      * a duergar dwarf
 M 0 120041 5 120964 100 0 0 0      * an Alatorin ramrider watchman
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-R 1 120037 10 120964 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+R 1 120037 11 120964 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120045 8 120964 80 0 0 0       * a six-legged basilisk
 M 0 120050 1 120992 100 0 0 0      * a cloaked Khoralator Fort scout
 G 1 43708 1 0 100 0 0 0            *    (object type not in this .obj file)
@@ -124,8 +130,8 @@ M 0 120017 5 121014 80 0 0 0       * a wandering shield dwarf common man
 M 0 43132 1 121015 100 0 0 0       * (mob type not in this .mob file)
 M 0 120018 5 121015 100 0 0 0      * a shopping shield dwarf woman
 M 0 120033 1 121030 100 0 0 0      * a Hammerhelm sergeant
-E 1 120019 1 11 100 0 0 0          *   an iron shield of Alatorin
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 E 1 120020 1 24 100 0 0 0          *   a sergeant's badge of the Hammerhelm militia
 F 1 120034 6 121030 100 0 0 0      * a dwarven cadet (following)
 F 1 120034 6 121030 100 0 0 0      * a dwarven cadet (following)
@@ -163,10 +169,10 @@ M 0 120018 5 121115 80 0 0 0       * a shopping shield dwarf woman
 M 0 120051 23 121123 80 0 0 0      * an osquip
 M 0 120036 5 121130 100 0 0 0      * an elite Alatorin ramrider
 E 1 120018 1 8 100 0 0 0           *   some gold-spurred polished mithril boots
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
-R 1 120037 10 121130 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+R 1 120037 11 121130 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120014 3 121131 100 0 0 0      * a holyman
 E 1 120050 3 3 100 0 0 0           *   a dwarven holy symbol
 G 1 2679 999 0 100 0 0 0           *    (object type not in this .obj file)
@@ -180,20 +186,23 @@ M 0 120042 2 121189 100 0 0 0      * a burly Khoralator Fort guardian
 E 1 120026 2 16 100 0 0 0          *   an enormous steel axe
 M 0 120042 2 121189 100 0 0 0      * a burly Khoralator Fort guardian
 E 1 120026 2 16 100 0 0 0          *   an enormous steel axe
-M 0 120019 8 121218 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+M 0 120069 5 121214 100 0 0 0      * a patrolling elite peacekeeper
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
+M 0 120019 11 121218 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120022 5 121219 100 0 0 0      * a halfling traveler
 M 0 120027 5 121219 100 0 0 0      * a duergar dwarf
 M 0 120035 1 121220 100 0 0 0      * A gnome eyeglasses merchant
 G 1 120016 1 0 100 0 0 0           *    a pair of blue-tinted gnomish eyeglasses
 G 1 120014 999 0 100 0 0 0         *    a pair of gnomish eyeglasses
 G 1 120015 999 0 100 0 0 0         *    a pair of pink-tinted gnomish eyeglasses
-M 0 120019 8 121227 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+M 0 120019 11 121227 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120051 23 121231 80 0 0 0      * an osquip
 M 0 120012 4 121253 100 0 0 0      * a BrightAxe elite stair guard
 E 1 120008 4 16 100 0 0 0          *   a huge dwarven battle-axe
@@ -203,6 +212,9 @@ M 0 53642 23 121274 100 0 0 0      * (mob type not in this .mob file)
 M 0 120051 23 121312 80 0 0 0      * an osquip
 M 0 120025 5 121318 100 0 0 0      * a shield dwarf
 M 0 120021 5 121321 100 0 0 0      * a wandering Alatorin guard
+M 0 120069 5 121322 100 0 0 0      * a patrolling elite peacekeeper
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 120026 5 121324 100 0 0 0      * a visiting mountain dwarf
 M 0 120027 5 121328 100 0 0 0      * a duergar dwarf
 M 0 120065 1 121359 100 0 0 0      * Glendarla Shanat, the princess of Alatorin
@@ -219,9 +231,9 @@ P 1 95527 1 120028 100 0 0 0       *   (object type not in this .obj file)
 P 1 8900 1 120028 100 0 0 0        *   (object type not in this .obj file)
 P 1 58335 1 120028 100 0 0 0       *   (object type not in this .obj file)
 M 0 120041 5 121373 100 0 0 0      * an Alatorin ramrider watchman
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-R 1 120037 10 121373 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+R 1 120037 11 121373 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120058 9 121382 80 0 0 0       * a troglodyte hunter
 G 1 11619 22 0 100 0 0 0           *    (object type not in this .obj file)
 G 1 11619 22 0 100 0 0 0           *    (object type not in this .obj file)
@@ -251,26 +263,26 @@ G 1 53610 6 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 53642 23 121490 100 0 0 0      * (mob type not in this .mob file)
 M 0 120002 20 121511 100 0 0 0     * a tough Alatorin sentry
 M 0 120002 20 121511 100 0 0 0     * a tough Alatorin sentry
-M 0 120019 8 121515 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+M 0 120019 11 121515 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120028 5 121517 100 0 0 0      * an Alatorin noble
 G 1 94336 5 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120051 23 121517 80 0 0 0      * an osquip
 M 0 120051 23 121529 80 0 0 0      * an osquip
-M 0 120019 8 121530 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+M 0 120019 11 121530 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120031 5 121534 100 0 0 0      * a well-armored dwarven warrior
 E 1 120013 2 14 100 0 0 0          *   some heavy mithril bracers
-M 0 120055 1 121544 6 0 0 0        * the spirit of Thurghan Sanbraid
+M 0 120055 1 121544 10 0 0 0       * the spirit of Thurghan Sanbraid
 E 1 120036 1 5 100 0 0 0           *   a heavenly flowing white gown
-M 0 120056 1 121544 6 0 0 0        * the spirit of Brigy Stonehammer
+M 0 120056 1 121544 10 0 0 0       * the spirit of Brigy Stonehammer
 E 1 120037 1 9 100 0 0 0           *   some spectral gauntlets of the battleragers
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120011 20 17 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120011 21 17 100 0 0 0         *   a heavy mithril dwarven hammer
 M 0 120012 4 121555 100 0 0 0      * a BrightAxe elite stair guard
 E 1 120008 4 16 100 0 0 0          *   a huge dwarven battle-axe
 M 0 120053 5 121573 50 0 0 0       * a troglodyte ambusher
@@ -282,9 +294,9 @@ G 1 11619 22 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 120053 5 121573 100 0 0 0      * a troglodyte ambusher
 M 0 53642 23 121582 100 0 0 0      * (mob type not in this .mob file)
 M 0 120041 5 121583 100 0 0 0      * an Alatorin ramrider watchman
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
-R 1 120037 10 121583 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+R 1 120037 11 121583 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120051 23 121615 70 0 0 0      * an osquip
 M 0 120025 5 121627 100 0 0 0      * a shield dwarf
 M 0 120002 20 121634 100 0 0 0     * a tough Alatorin sentry
@@ -293,20 +305,21 @@ M 0 120045 8 121671 100 0 0 0      * a six-legged basilisk
 M 0 120040 1 121680 100 0 0 0      * Ungalen the Bounty Hunter
 E 1 120024 1 10 100 0 0 0          *   a pair of wolf hide sleeves
 E 1 120025 1 16 100 0 0 0          *   a thick-bladed hunting knife
+M 0 55246 1 121680 100 0 0 0       * (mob type not in this .mob file)
 M 0 120036 5 121727 100 0 0 0      * an elite Alatorin ramrider
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
-R 1 120037 10 121727 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+R 1 120037 11 121727 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120024 3 121730 100 0 0 0      * a shield dwarf lieutenant
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 121730 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 121730 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 121730 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 120044 8 121768 100 0 0 0      * a huge, furry mountain ram
 M 0 53642 23 121779 100 0 0 0      * (mob type not in this .mob file)
 M 0 120002 20 121808 100 0 0 0     * a tough Alatorin sentry
@@ -327,36 +340,55 @@ G 1 2679 999 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 120029 3 122013 100 0 0 0      * a shield dwarf mother
 F 1 120030 6 122013 100 0 0 0      * a young child (following)
 F 1 120030 6 122013 100 0 0 0      * a young child (following)
+M 0 120068 1 122029 100 0 0 0      * Takar Shanat, Prince of Alatorin
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+G 1 83250 1 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 120056 1 0 100 0 0 0           *    the bloody head of Takar Shanat
+R 1 120037 11 122029 100 0 0 0     * a huge, furry saddled ram (being ridden)
+F 1 120019 11 122029 100 0 0 0     * an elite Alatorin peacekeeper (following)
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
+F 1 120019 11 122029 100 0 0 0     * an elite Alatorin peacekeeper (following)
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
+F 1 120019 11 122029 100 0 0 0     * an elite Alatorin peacekeeper (following)
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 120051 23 122031 80 0 0 0      * an osquip
 M 0 53642 23 122065 100 0 0 0      * (mob type not in this .mob file)
 M 0 53642 23 122066 50 0 0 0       * (mob type not in this .mob file)
+M 0 120069 5 122105 100 0 0 0      * a patrolling elite peacekeeper
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 120036 5 122106 100 0 0 0      * an elite Alatorin ramrider
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
-R 1 120037 10 122106 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+R 1 120037 11 122106 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120020 1 122111 100 0 0 0      * 'Uncle' Istban
 M 0 120036 5 122111 100 0 0 0      * an elite Alatorin ramrider
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
-R 1 120037 10 122111 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+R 1 120037 11 122111 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120026 5 122122 100 0 0 0      * a visiting mountain dwarf
 F 1 16700 1 122122 100 0 0 0       * (mob type not in this .mob file) (following)
 M 0 120021 5 122129 100 0 0 0      * a wandering Alatorin guard
 M 0 120041 5 122179 100 0 0 0      * an Alatorin ramrider watchman
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-R 1 120037 10 122179 100 0 0 0     * a huge, furry saddled ram (being ridden)
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+R 1 120037 11 122179 100 0 0 0     * a huge, furry saddled ram (being ridden)
 M 0 120024 3 122205 100 0 0 0      * a shield dwarf lieutenant
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 122205 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 122205 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 122205 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 120051 23 122205 70 0 0 0      * an osquip
 M 0 120017 5 122213 100 0 0 0      * a wandering shield dwarf common man
 M 0 120026 5 122229 100 0 0 0      * a visiting mountain dwarf
@@ -390,21 +422,21 @@ M 0 120059 4 122482 90 0 0 0       * a small cockatrice
 M 0 120028 5 122510 100 0 0 0      * an Alatorin noble
 G 1 94336 5 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120051 23 122510 80 0 0 0      * an osquip
-M 0 120019 8 122515 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+M 0 120019 11 122515 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120025 5 122515 100 0 0 0      * a shield dwarf
 M 0 120021 5 122517 100 0 0 0      * a wandering Alatorin guard
 M 0 120036 5 122518 100 0 0 0      * an elite Alatorin ramrider
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
-R 1 120037 10 122518 100 0 0 0     * a huge, furry saddled ram (being ridden)
-M 0 120019 8 122530 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+R 1 120037 11 122518 100 0 0 0     * a huge, furry saddled ram (being ridden)
+M 0 120019 11 122530 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120015 12 122536 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
 M 0 53642 23 122563 50 0 0 0       * (mob type not in this .mob file)
@@ -419,8 +451,8 @@ G 1 21567 1 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 77366 2 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 77366 2 0 100 0 0 0            *    (object type not in this .obj file)
 F 1 82524 1 122629 100 0 0 0       * (mob type not in this .mob file) (following)
-M 0 120011 11 122634 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 122634 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120051 23 122634 80 0 0 0      * an osquip
 M 0 120022 5 122710 100 0 0 0      * a halfling traveler
 M 0 120029 3 122710 100 0 0 0      * a shield dwarf mother
@@ -428,13 +460,13 @@ F 1 120030 6 122710 100 0 0 0      * a young child (following)
 F 1 120030 6 122710 100 0 0 0      * a young child (following)
 M 0 120013 2 122717 100 0 0 0      * a boar meat salesman
 M 0 120024 3 122718 100 0 0 0      * a shield dwarf lieutenant
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
 F 1 120023 9 122718 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 122718 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 F 1 120023 9 122718 100 0 0 0      * a shield dwarf patrol guard (following)
-E 1 120012 12 16 100 0 0 0         *   an Alatorin warhammer
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 120028 5 122718 100 0 0 0      * an Alatorin noble
 G 1 94336 5 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120015 12 122734 100 0 0 0     * a gloomwing
@@ -451,15 +483,15 @@ M 0 120044 8 122875 100 0 0 0      * a huge, furry mountain ram
 M 0 120059 4 122875 70 0 0 0       * a small cockatrice
 M 0 120045 8 122885 80 0 0 0       * a six-legged basilisk
 M 0 120026 5 122911 100 0 0 0      * a visiting mountain dwarf
-M 0 120019 8 122918 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+M 0 120019 11 122918 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120027 5 122924 100 0 0 0      * a duergar dwarf
-M 0 120019 8 122926 100 0 0 0      * an elite Alatorin peacekeeper
-E 1 120010 20 11 100 0 0 0         *   a well-polished mithril body shield
-E 1 120011 20 16 100 0 0 0         *   a heavy mithril dwarven hammer
-E 1 120009 14 5 100 0 0 0          *   a full suit of well-polished mithril platemail
+M 0 120019 11 122926 100 0 0 0     * an elite Alatorin peacekeeper
+E 1 120010 21 11 100 0 0 0         *   a well-polished mithril body shield
+E 1 120011 21 16 100 0 0 0         *   a heavy mithril dwarven hammer
+E 1 120009 15 5 100 0 0 0          *   a full suit of well-polished mithril platemail
 M 0 120051 23 122937 80 0 0 0      * an osquip
 M 0 53642 23 122963 100 0 0 0      * (mob type not in this .mob file)
 M 0 120008 1 123011 100 0 0 0      * a mountain dwarf fruit vendor
@@ -468,13 +500,26 @@ G 1 2657 999 0 100 0 0 0           *    (object type not in this .obj file)
 G 1 22017 999 0 100 0 0 0          *    (object type not in this .obj file)
 M 0 120051 23 123012 80 0 0 0      * an osquip
 M 0 120051 23 123022 80 0 0 0      * an osquip
-M 0 120011 11 123033 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123033 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120051 23 123035 80 0 0 0      * an osquip
-M 0 120011 11 123037 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123037 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 78438 6 123046 100 0 0 0       * (mob type not in this .mob file)
+G 1 78414 6 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120067 1 123047 100 0 0 0      * Rringlor Noroth
+E 1 120048 1 16 100 0 0 0          *   rringlor no-show proc 1
+E 1 120058 1 17 100 0 0 0          *   rringlor no-show proc 2
 G 1 359 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 120059 1 0 100 0 0 0           *    the severed head of Rringlor Noroth
+F 1 78438 6 123047 100 0 0 0       * (mob type not in this .mob file) (following)
+G 1 78414 6 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 78438 6 123047 100 0 0 0       * (mob type not in this .mob file) (following)
+G 1 78414 6 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 78438 6 123047 100 0 0 0       * (mob type not in this .mob file) (following)
+G 1 78414 6 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 78438 6 123047 100 0 0 0       * (mob type not in this .mob file) (following)
+G 1 78414 6 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120039 2 123068 100 0 0 0      * an armored guard of Helgor Outpost
 E 1 120022 2 5 100 0 0 0           *   a full suit of heavy adamantite
 E 1 120021 2 6 100 0 0 0           *   a heavy adamantite full-faced helmet
@@ -488,10 +533,12 @@ M 0 120044 8 123091 100 0 0 0      * a huge, furry mountain ram
 M 0 120015 12 123133 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
 M 0 120016 1 123133 100 0 0 0      * Mystardala the prophet
-M 0 120011 11 123135 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123135 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120015 12 123137 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
+M 0 78438 6 123148 100 0 0 0       * (mob type not in this .mob file)
+G 1 78414 6 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120057 1 123164 100 0 0 0      * a rampaging cyclops
 E 1 120027 2 16 100 0 0 0          *   a battered tree trunk
 M 0 53642 23 123165 100 0 0 0      * (mob type not in this .mob file)
@@ -504,8 +551,8 @@ M 0 120015 12 123231 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
 M 0 120015 12 123234 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
-M 0 120011 11 123235 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123235 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120048 1 123235 6 0 0 0        * Gramdell the Sage
 E 1 120032 1 1 100 0 0 0           *   a diorite ring set with an opal
 E 1 120031 1 12 100 0 0 0          *   a tattered old hooded sage's cloak
@@ -524,27 +571,30 @@ M 0 120017 5 123314 100 0 0 0      * a wandering shield dwarf common man
 M 0 43152 1 123315 100 0 0 0       * (mob type not in this .mob file)
 M 0 120015 12 123329 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
-M 0 120011 11 123330 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123330 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120047 1 123330 10 0 0 0       * Shinziler the githzerai traveller
 E 1 120030 1 13 100 0 0 0          *   a pitch-black belt with a mindstone buckle
 M 0 120015 12 123333 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
 M 0 120051 23 123333 80 0 0 0      * an osquip
-M 0 120011 11 123334 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123334 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120029 3 123415 100 0 0 0      * a shield dwarf mother
 F 1 120030 6 123415 100 0 0 0      * a young child (following)
 F 1 120030 6 123415 100 0 0 0      * a young child (following)
 M 0 120018 5 123416 100 0 0 0      * a shopping shield dwarf woman
 M 0 120018 5 123416 100 0 0 0      * a shopping shield dwarf woman
 M 0 120051 23 123428 80 0 0 0      * an osquip
-M 0 120011 11 123432 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123432 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120015 12 123433 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
-M 0 120011 11 123437 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123437 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120069 5 123517 100 0 0 0      * a patrolling elite peacekeeper
+E 1 120019 9 11 100 0 0 0          *   an iron shield of Alatorin
+E 1 120012 20 16 100 0 0 0         *   an Alatorin warhammer
 M 0 120025 5 123518 100 0 0 0      * a shield dwarf
 M 0 120015 12 123538 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
@@ -560,11 +610,11 @@ M 0 120002 20 123625 100 0 0 0     * a tough Alatorin sentry
 M 0 120002 20 123625 100 0 0 0     * a tough Alatorin sentry
 M 0 120015 12 123627 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
-M 0 120011 11 123728 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123728 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120051 23 123731 80 0 0 0      * an osquip
-M 0 120011 11 123732 100 0 0 0     * a hooded dwarf
-E 1 120007 11 6 100 0 0 0          *   a silver-lined purple silk hood
+M 0 120011 12 123732 100 0 0 0     * a hooded dwarf
+E 1 120007 12 6 100 0 0 0          *   a silver-lined purple silk hood
 M 0 120015 12 123828 100 0 0 0     * a gloomwing
 G 1 120052 12 0 100 0 0 0          *    a gloomwing feather
 *

@@ -8,91 +8,89 @@
  * ***************************************************************************
  */
 
-#include <sys/types.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include "spells.h"
-#include "files.h"
-#include "justice.h"
-#include "structs.h"
-#include "config.h"
-#include "mm.h"
-#include "utils.h"
 #include "prototypes.h"
-#include "ships.h"
-#include "random.zone.h"
+#include "structs.h"
+#include "utils.h"
+#include "files.h"
+#include <dirent.h>
+#include <iostream>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "assocs.h"
+#include "config.h"
+#include "justice.h"
+#include "mm.h"
 #include "necromancy.h"
+#include "random.zone.h"
+#include "ships.h"
+#include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "storage_lockers.h"
 #include "trophy.h"
 #include "vnum.obj.h"
-#include "assocs.h"
-#include "storage_lockers.h"
-
-#include <iostream>
 using namespace std;
 
-extern P_char character_list;
-extern P_event event_list;
-extern int mini_mode;
-extern P_index mob_index;
-extern P_desc descriptor_list;
-extern int spl_table[TOTALLVLS][MAX_CIRCLE];
-static P_event save_event;
-char *ibuf;
-static int corpse_room;
-static int int_size = sizeof(int);
-static int long_size = sizeof(long);
-static int save_count;
-static int short_size = sizeof(short);
-static int stat_vers, obj_vers, aff_vers, skill_vers, witness_vers;
+extern P_char            character_list;
+extern P_event           event_list;
+extern int               mini_mode;
+extern P_index           mob_index;
+extern P_desc            descriptor_list;
+extern int               spl_table[TOTALLVLS][MAX_CIRCLE];
+static P_event           save_event;
+char                    *ibuf;
+static int               corpse_room;
+static int               int_size  = sizeof(int);
+static int               long_size = sizeof(long);
+static int               save_count;
+static int               short_size = sizeof(short);
+static int               stat_vers, obj_vers, aff_vers, skill_vers, witness_vers;
 extern struct shop_data *shop_index;
 
 // flag to skip corpse saves during boot (loading from db)
-int skip_corpse_save = 0;
+int                     skip_corpse_save = 0;
 extern struct hold_data TmpAffs;
-extern struct mm_ds *dead_mob_pool;
-//extern struct mm_ds *dead_construction_pool;
+extern struct mm_ds    *dead_mob_pool;
+// extern struct mm_ds *dead_construction_pool;
 extern struct mm_ds *dead_trophy_pool;
 extern struct mm_ds *dead_witness_pool;
 extern struct mm_ds *dead_crime_pool;
 extern struct mm_ds *dead_house_pool;
-//extern P_house first_house;
+// extern P_house first_house;
 extern int LOADED_RANDOM_ZONES;
 
-extern P_index obj_index;
-extern P_room world;
-extern const char *class_types[];
-extern const int min_stats_for_class[][8];
+extern P_index                       obj_index;
+extern P_room                        world;
+extern const char                   *class_types[];
+extern const int                     min_stats_for_class[][8];
 extern const struct racial_data_type racial_data[];
-extern int pulse;
-extern int innate_abilities[];
-extern int class_innates[][5];
-extern int innate2_abilities[];
-extern int class_innates2[][5];
-extern const int top_of_world;
+extern int                           pulse;
+extern int                           innate_abilities[];
+extern int                           class_innates[][5];
+extern int                           innate2_abilities[];
+extern int                           class_innates2[][5];
+extern const int                     top_of_world;
 
 #ifndef _PFILE_
 extern Skill skills[];
 #endif
 #ifdef _PFILE_
-char     buff[SAV_MAXSIZE];
-char    *buf = buff;
-int      skill_off, affect_off, item_off;
+char  buff[SAV_MAXSIZE];
+char *buf = buff;
+int   skill_off, affect_off, item_off;
 #endif
 
 /* local globals */
 P_obj save_equip[MAX_WEAR];
 
-
 int      anchor_room(int room);
 int      calculate_hitpoints(P_char ch);
 int      calculate_mana(P_char ch);
 P_nevent get_scheduled(P_obj obj, event_func func);
-void     proclib_obj_event(P_char, P_char, P_obj obj, void*);
-void     event_poison(P_char, P_char, P_obj obj, void*);
-void     event_short_affect(P_char, P_char , P_obj , void *);
+void     proclib_obj_event(P_char, P_char, P_obj obj, void *);
+void     event_poison(P_char, P_char, P_obj obj, void *);
+void     event_short_affect(P_char, P_char, P_obj, void *);
 
 struct ship_reg_node *ship_reg_db = NULL;
 
@@ -266,398 +264,375 @@ struct ship_reg_node *ship_reg_db = NULL;
 
 // bv6 would be in here, but there's no unique flag for it yet
 
-#define ObjectsMatch(obj, control) \
-(((obj)->str_mask == (control)->str_mask) && \
- ((obj)->affected[0].location == (control)->affected[0].location) && \
- ((obj)->affected[0].modifier == (control)->affected[0].modifier) && \
- ((obj)->affected[1].location == (control)->affected[1].location) && \
- ((obj)->affected[1].modifier == (control)->affected[1].modifier) && \
- ((obj)->extra_flags == (control)->extra_flags) && \
- ((obj)->extra2_flags == (control)->extra2_flags) && \
- ((obj)->anti_flags == (control)->anti_flags) && \
- ((obj)->anti2_flags == (control)->anti2_flags) && \
- ((obj)->bitvector == (control)->bitvector) && \
- ((obj)->bitvector2 == (control)->bitvector2) && \
- ((obj)->bitvector3 == (control)->bitvector3) && \
- ((obj)->bitvector4 == (control)->bitvector4) && \
- ((obj)->value[0] == (control)->value[0]) && \
- ((obj)->value[1] == (control)->value[1]) && \
- ((obj)->value[2] == (control)->value[2]) && \
- ((obj)->value[3] == (control)->value[3]) && \
- ((obj)->value[4] == (control)->value[4]) && \
- ((obj)->value[5] == (control)->value[5]) && \
- ((obj)->value[6] == (control)->value[6]) && \
- ((obj)->value[7] == (control)->value[7]) && \
- ((obj)->timer[0] == (control)->timer[0]) && \
- ((obj)->timer[1] == (control)->timer[1]) && \
- ((obj)->timer[2] == (control)->timer[2]) && \
- ((obj)->timer[3] == (control)->timer[3]) && \
- ((obj)->wear_flags == (control)->wear_flags) && \
- ((obj)->weight == (control)->weight) && \
- ((obj)->material == (control)->material) && \
- ((obj)->cost == (control)->cost) && \
- ((obj)->type == (control)->type))
+#define ObjectsMatch(obj, control)                                                                                                                                                                     \
+	(((obj)->str_mask == (control)->str_mask) && ((obj)->affected[0].location == (control)->affected[0].location) && ((obj)->affected[0].modifier == (control)->affected[0].modifier) &&               \
+	 ((obj)->affected[1].location == (control)->affected[1].location) && ((obj)->affected[1].modifier == (control)->affected[1].modifier) && ((obj)->extra_flags == (control)->extra_flags) &&         \
+	 ((obj)->extra2_flags == (control)->extra2_flags) && ((obj)->anti_flags == (control)->anti_flags) && ((obj)->anti2_flags == (control)->anti2_flags) &&                                             \
+	 ((obj)->bitvector == (control)->bitvector) && ((obj)->bitvector2 == (control)->bitvector2) && ((obj)->bitvector3 == (control)->bitvector3) && ((obj)->bitvector4 == (control)->bitvector4) &&     \
+	 ((obj)->value[0] == (control)->value[0]) && ((obj)->value[1] == (control)->value[1]) && ((obj)->value[2] == (control)->value[2]) && ((obj)->value[3] == (control)->value[3]) &&                   \
+	 ((obj)->value[4] == (control)->value[4]) && ((obj)->value[5] == (control)->value[5]) && ((obj)->value[6] == (control)->value[6]) && ((obj)->value[7] == (control)->value[7]) &&                   \
+	 ((obj)->timer[0] == (control)->timer[0]) && ((obj)->timer[1] == (control)->timer[1]) && ((obj)->timer[2] == (control)->timer[2]) && ((obj)->timer[3] == (control)->timer[3]) &&                   \
+	 ((obj)->wear_flags == (control)->wear_flags) && ((obj)->weight == (control)->weight) && ((obj)->material == (control)->material) && ((obj)->cost == (control)->cost) &&                           \
+	 ((obj)->type == (control)->type))
 
 /*
  * following are functions that write data to disk (or prepare data for
  * writing).  JAB
  */
 
-int writeStatus(char *buf, P_char ch, bool updateTime )
+int writeStatus(char *buf, P_char ch, bool updateTime)
 {
-  char    *start = buf;
-  int      tmp, i;
-  long     tmpl;
-  struct affected_type *af = NULL, *next_af = NULL;
-/*  sh_int dummy_short = 0; */
+	char                 *start = buf;
+	int                   tmp, i;
+	long                  tmpl;
+	struct affected_type *af = NULL, *next_af = NULL;
+	/*  sh_int dummy_short = 0; */
 
-  ADD_BYTE(buf, (char) SAV_STATVERS);
-  ADD_STRING(buf, GET_NAME(ch));
-  ADD_INT(buf, GET_PID(ch));
-  ADD_BYTE(buf, ch->only.pc->screen_length);
-  ADD_STRING(buf, ch->only.pc->pwd);
-  ADD_STRING(buf, ch->player.short_descr);
-  ADD_STRING(buf, ch->player.long_descr);
-  ADD_STRING(buf, ch->player.description);
-  ADD_STRING(buf, GET_TITLE(ch));
-  ADD_INT(buf, ch->player.m_class);
-  ADD_INT(buf, ch->player.secondary_class);
-  ADD_BYTE(buf, ch->player.spec);
+	ADD_BYTE(buf, (char)SAV_STATVERS);
+	ADD_STRING(buf, GET_NAME(ch));
+	ADD_INT(buf, GET_PID(ch));
+	ADD_BYTE(buf, ch->only.pc->screen_length);
+	ADD_STRING(buf, ch->only.pc->pwd);
+	ADD_STRING(buf, ch->player.short_descr);
+	ADD_STRING(buf, ch->player.long_descr);
+	ADD_STRING(buf, ch->player.description);
+	ADD_STRING(buf, GET_TITLE(ch));
+	ADD_INT(buf, ch->player.m_class);
+	ADD_INT(buf, ch->player.secondary_class);
+	ADD_BYTE(buf, ch->player.spec);
 
-/* This isn't the wrong race.
-  //NEVER SAVE THE "WRONG" RACE.. Kvark
-  if ((af = get_spell_from_char(ch, TAG_RACE_CHANGE)) != NULL)
-  {
-    ADD_BYTE(buf, af->modifier);
-  }
-  else
-  {
-*/
-  // never save draconic race - Tyrus MWD25
-   if((af = get_spell_from_char(ch, SPELL_DRACONIC_APOTHEOSIS)) != NULL)
-   {
-     ADD_BYTE(buf, af->modifier);
-   }
-   else
-   {
-    ADD_BYTE(buf, GET_RACE(ch));
-   }
-  
-//  }
+	/* This isn't the wrong race.
+	  //NEVER SAVE THE "WRONG" RACE.. Kvark
+	  if ((af = get_spell_from_char(ch, TAG_RACE_CHANGE)) != NULL)
+	  {
+	    ADD_BYTE(buf, af->modifier);
+	  }
+	  else
+	  {
+	*/
+	// never save draconic race - Tyrus MWD25
+	if ((af = get_spell_from_char(ch, SPELL_DRACONIC_APOTHEOSIS)) != NULL)
+	{
+		ADD_BYTE(buf, af->modifier);
+	}
+	else
+	{
+		ADD_BYTE(buf, GET_RACE(ch));
+	}
 
-  ADD_BYTE(buf, GET_RACEWAR(ch));
-  ADD_BYTE(buf, GET_LEVEL(ch));
-  ADD_BYTE(buf, GET_SEX(ch));
-  ADD_SHORT(buf, ch->player.weight);
-  ADD_SHORT(buf, ch->player.height);
-  ADD_BYTE(buf, GET_SIZE(ch));
-  ADD_INT(buf, GET_HOME(ch));
-  ADD_INT(buf, GET_BIRTHPLACE(ch));
-  ADD_INT(buf, GET_ORIG_BIRTHPLACE(ch));
+	//  }
 
-  ADD_LONG(buf, ch->player.time.birth);
-  if( updateTime )
-  {
-    tmpl = time(0);
-    tmp = ch->player.time.played + (int) (tmpl - ch->player.time.logon);
-    ADD_INT(buf, tmp);            /* player age in secs */
-    ADD_LONG(buf, tmpl);          /* last save time */
-  }
-  else
-  {
-    ADD_INT(buf, ch->player.time.played);
-    ADD_LONG(buf, ch->player.time.saved);
-  }
-  ADD_SHORT(buf, ch->player.time.perm_aging);
+	ADD_BYTE(buf, GET_RACEWAR(ch));
+	ADD_BYTE(buf, GET_LEVEL(ch));
+	ADD_BYTE(buf, GET_SEX(ch));
+	ADD_SHORT(buf, ch->player.weight);
+	ADD_SHORT(buf, ch->player.height);
+	ADD_BYTE(buf, GET_SIZE(ch));
+	ADD_INT(buf, GET_HOME(ch));
+	ADD_INT(buf, GET_BIRTHPLACE(ch));
+	ADD_INT(buf, GET_ORIG_BIRTHPLACE(ch));
 
-  for (i = 0; i < MAX_CIRCLE + 1; i++)
-    ADD_BYTE(buf, ch->specials.undead_spell_slots[i]);
+	ADD_LONG(buf, ch->player.time.birth);
+	if (updateTime)
+	{
+		tmpl = time(0);
+		tmp  = ch->player.time.played + (int)(tmpl - ch->player.time.logon);
+		ADD_INT(buf, tmp);   /* player age in secs */
+		ADD_LONG(buf, tmpl); /* last save time */
+	}
+	else
+	{
+		ADD_INT(buf, ch->player.time.played);
+		ADD_LONG(buf, ch->player.time.saved);
+	}
+	ADD_SHORT(buf, ch->player.time.perm_aging);
 
-  ADD_INT(buf, 0);              //!!! last_level
+	for (i = 0; i < MAX_CIRCLE + 1; i++)
+		ADD_BYTE(buf, ch->specials.undead_spell_slots[i]);
 
-  ch->player.time.saved = tmpl;
+	ADD_INT(buf, 0); //!!! last_level
 
-  // Arih : Changed from ADD_LONG to ADD_INT because pc_timer is int array, not long array.
-  // This was causing offset mismatch errors during character load (restoreStatus offset mismatch).
-  for (i = 0; i < NUMB_PC_TIMERS; i++)
-    ADD_LONG(buf, ch->only.pc->pc_timer[i]);
+	ch->player.time.saved = tmpl;
 
-  //XXX
-//  if (0 && ch->only.pc->trophy)
-//  {
-//    struct trophy_data *tr;
-//
-//    tmp = 0;
-//    for (tr = ch->only.pc->trophy; tr; tr = tr->next)
-//      tmp++;
-//    ADD_BYTE(buf, tmp);
-//    for (tr = ch->only.pc->trophy; tr; tr = tr->next)
-//    {
-//      ADD_INT(buf, tr->vnum);
-//      ADD_INT(buf, tr->kills);
-//    }
-//  }
-//  else
-//  {
-//    ADD_BYTE(buf, 0);
-//  }
+	// Arih : Changed from ADD_LONG to ADD_INT because pc_timer is int array, not long array.
+	// This was causing offset mismatch errors during character load (restoreStatus offset mismatch).
+	for (i = 0; i < NUMB_PC_TIMERS; i++)
+		ADD_LONG(buf, ch->only.pc->pc_timer[i]);
 
-  ADD_SHORT(buf, (short) MAX_TONGUE);
-  for (tmp = 0; tmp < MAX_TONGUE; tmp++)
-    ADD_BYTE(buf, GET_LANGUAGE(ch, tmp));
-  ADD_SHORT(buf, (short) MAX_INTRO);
-  for (tmp = 0; tmp < MAX_INTRO; tmp++)
-  {
-    ADD_INT(buf, ch->only.pc->introd_list[tmp]);
-    ADD_LONG(buf, ch->only.pc->introd_times[tmp]);
-  }
-   for (tmp = 0; tmp < MAX_FORGE_ITEMS; tmp++)
-       {      
-         ADD_INT(buf, ch->only.pc->learned_forged_list[tmp]);
-       }
-   
-  ADD_BYTE(buf, ch->base_stats.Str);
-  ADD_BYTE(buf, ch->base_stats.Dex);
-  ADD_BYTE(buf, ch->base_stats.Agi);
-  ADD_BYTE(buf, ch->base_stats.Con);
-  ADD_BYTE(buf, ch->base_stats.Pow);
-  ADD_BYTE(buf, ch->base_stats.Int);
-  ADD_BYTE(buf, ch->base_stats.Wis);
-  ADD_BYTE(buf, ch->base_stats.Cha);
-  ADD_BYTE(buf, ch->base_stats.Kar);
-  ADD_BYTE(buf, ch->base_stats.Luk);
+	// XXX
+	//  if (0 && ch->only.pc->trophy)
+	//  {
+	//    struct trophy_data *tr;
+	//
+	//    tmp = 0;
+	//    for (tr = ch->only.pc->trophy; tr; tr = tr->next)
+	//      tmp++;
+	//    ADD_BYTE(buf, tmp);
+	//    for (tr = ch->only.pc->trophy; tr; tr = tr->next)
+	//    {
+	//      ADD_INT(buf, tr->vnum);
+	//      ADD_INT(buf, tr->kills);
+	//    }
+	//  }
+	//  else
+	//  {
+	//    ADD_BYTE(buf, 0);
+	//  }
 
-  ADD_SHORT(buf, GET_MANA(ch));
-  ADD_SHORT(buf, ch->points.base_mana);
-  // save difference instead cur HP (Lom)
-//  ADD_SHORT(buf, MAX(1, GET_HIT(ch)));
-  ADD_SHORT(buf, MAX(0, GET_MAX_HIT(ch)-GET_HIT(ch)));
-  ADD_BYTE(buf, ch->only.pc->spells_memmed[MAX_CIRCLE]);
-  ADD_SHORT(buf, ch->points.base_hit);
-  ADD_SHORT(buf, GET_VITALITY(ch));
-  ADD_SHORT(buf, ch->points.base_vitality);
+	ADD_SHORT(buf, (short)MAX_TONGUE);
+	for (tmp = 0; tmp < MAX_TONGUE; tmp++)
+		ADD_BYTE(buf, GET_LANGUAGE(ch, tmp));
+	ADD_SHORT(buf, (short)MAX_INTRO);
+	for (tmp = 0; tmp < MAX_INTRO; tmp++)
+	{
+		ADD_INT(buf, ch->only.pc->introd_list[tmp]);
+		ADD_LONG(buf, ch->only.pc->introd_times[tmp]);
+	}
+	for (tmp = 0; tmp < MAX_FORGE_ITEMS; tmp++)
+	{
+		ADD_INT(buf, ch->only.pc->learned_forged_list[tmp]);
+	}
 
-  ADD_INT(buf, GET_COPPER(ch));
-  ADD_INT(buf, GET_SILVER(ch));
-  ADD_INT(buf, GET_GOLD(ch));
-  ADD_INT(buf, GET_PLATINUM(ch));
-  ADD_INT(buf, GET_EXP(ch));
-  ADD_INT(buf, 0);
-  ADD_INT(buf, ch->only.pc->epics);
-  ADD_INT(buf, ch->only.pc->epic_skill_points);
-  ADD_INT(buf, ch->only.pc->skillpoints);
-  ADD_INT(buf, ch->only.pc->spell_bind_used);
+	ADD_BYTE(buf, ch->base_stats.Str);
+	ADD_BYTE(buf, ch->base_stats.Dex);
+	ADD_BYTE(buf, ch->base_stats.Agi);
+	ADD_BYTE(buf, ch->base_stats.Con);
+	ADD_BYTE(buf, ch->base_stats.Pow);
+	ADD_BYTE(buf, ch->base_stats.Int);
+	ADD_BYTE(buf, ch->base_stats.Wis);
+	ADD_BYTE(buf, ch->base_stats.Cha);
+	ADD_BYTE(buf, ch->base_stats.Kar);
+	ADD_BYTE(buf, ch->base_stats.Luk);
 
-  ADD_INT(buf, ch->specials.act);
-  ADD_INT(buf, ch->specials.act2);
-  ADD_INT(buf, ch->only.pc->vote);
-  ADD_INT(buf, ch->specials.alignment);
-  ADD_INT(buf, 0);
-  ADD_SHORT(buf, ch->only.pc->prestige);
-  ADD_SHORT(buf, GET_ASSOC_ID(ch));
-  ADD_INT(buf, ch->specials.guild_status);
-  ADD_LONG(buf, ch->only.pc->time_left_guild);
-  ADD_BYTE(buf, ch->only.pc->nb_left_guild);
-  ADD_LONG(buf, ch->only.pc->time_unspecced);
+	ADD_SHORT(buf, GET_MANA(ch));
+	ADD_SHORT(buf, ch->points.base_mana);
+	// save difference instead cur HP (Lom)
+	//  ADD_SHORT(buf, MAX(1, GET_HIT(ch)));
+	ADD_SHORT(buf, MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch)));
+	ADD_BYTE(buf, ch->only.pc->spells_memmed[MAX_CIRCLE]);
+	ADD_SHORT(buf, ch->points.base_hit);
+	ADD_SHORT(buf, GET_VITALITY(ch));
+	ADD_SHORT(buf, ch->points.base_vitality);
 
-  ADD_LONG(buf, ch->only.pc->frags);
-  ADD_LONG(buf, ch->only.pc->oldfrags);
+	ADD_INT(buf, GET_COPPER(ch));
+	ADD_INT(buf, GET_SILVER(ch));
+	ADD_INT(buf, GET_GOLD(ch));
+	ADD_INT(buf, GET_PLATINUM(ch));
+	ADD_INT(buf, GET_EXP(ch));
+	ADD_INT(buf, 0);
+	ADD_INT(buf, ch->only.pc->epics);
+	ADD_INT(buf, ch->only.pc->epic_skill_points);
+	ADD_INT(buf, ch->only.pc->skillpoints);
+	ADD_INT(buf, ch->only.pc->spell_bind_used);
 
-  /* granted data */
+	ADD_INT(buf, ch->specials.act);
+	ADD_INT(buf, ch->specials.act2);
+	ADD_INT(buf, ch->only.pc->vote);
+	ADD_INT(buf, ch->specials.alignment);
+	ADD_INT(buf, 0);
+	ADD_SHORT(buf, ch->only.pc->prestige);
+	ADD_SHORT(buf, GET_ASSOC_ID(ch));
+	ADD_INT(buf, ch->specials.guild_status);
+	ADD_LONG(buf, ch->only.pc->time_left_guild);
+	ADD_BYTE(buf, ch->only.pc->nb_left_guild);
+	ADD_LONG(buf, ch->only.pc->time_unspecced);
 
-  ADD_INT(buf, ch->only.pc->numb_gcmd);
-  for (tmp = 0; tmp < ch->only.pc->numb_gcmd; tmp++)
-    ADD_INT(buf, ch->only.pc->gcmd_arr[tmp]);
+	ADD_LONG(buf, ch->only.pc->frags);
+	ADD_LONG(buf, ch->only.pc->oldfrags);
 
-  for (tmp = 0; tmp < MAX_COND; tmp++)
-    ADD_BYTE(buf, ch->specials.conditions[tmp]);
-  ADD_STRING(buf, ch->only.pc->poofIn);
-  ADD_STRING(buf, ch->only.pc->poofOut);
-  ADD_STRING(buf, ch->only.pc->poofInSound);
-  ADD_STRING(buf, ch->only.pc->poofOutSound);
-  ADD_BYTE(buf, ch->only.pc->echo_toggle);
-  ADD_SHORT(buf, ch->only.pc->prompt);
-  ADD_LONG(buf, ch->only.pc->wiz_invis);
-  ADD_LONG(buf, ch->only.pc->law_flags);
-  ADD_SHORT(buf, ch->only.pc->wimpy);
-  ADD_SHORT(buf, ch->only.pc->aggressive);
-  ADD_BYTE(buf, ch->only.pc->highest_level);
-  ADD_INT(buf, GET_BALANCE_COPPER(ch)); /* bank account */
-  ADD_INT(buf, GET_BALANCE_SILVER(ch)); /* bank account */
-  ADD_INT(buf, GET_BALANCE_GOLD(ch));   /* bank account */
-  ADD_INT(buf, GET_BALANCE_PLATINUM(ch));       /* bank account */
-  ADD_LONG(buf, ch->only.pc->numb_deaths);
+	/* granted data */
 
+	ADD_INT(buf, ch->only.pc->numb_gcmd);
+	for (tmp = 0; tmp < ch->only.pc->numb_gcmd; tmp++)
+		ADD_INT(buf, ch->only.pc->gcmd_arr[tmp]);
 
-   ADD_INT(buf, ch->only.pc->quest_active);
-  ADD_INT(buf, ch->only.pc->quest_mob_vnum);
-  ADD_INT(buf, ch->only.pc->quest_type);
-  ADD_INT(buf, ch->only.pc->quest_accomplished );
-  ADD_INT(buf, ch->only.pc->quest_started );
-  ADD_INT(buf, ch->only.pc->quest_zone_number );
-  ADD_INT(buf, ch->only.pc->quest_giver);
-  ADD_INT(buf, ch->only.pc->quest_level );
-  ADD_INT(buf, ch->only.pc->quest_receiver );
-  ADD_INT(buf, ch->only.pc->quest_shares_left );
-  ADD_INT(buf, ch->only.pc->quest_kill_how_many);
-  ADD_INT(buf, ch->only.pc->quest_kill_original);
-  ADD_INT(buf, ch->only.pc->quest_map_room );
-  ADD_INT(buf, ch->only.pc->quest_map_bought );
+	for (tmp = 0; tmp < MAX_COND; tmp++)
+		ADD_BYTE(buf, ch->specials.conditions[tmp]);
+	ADD_STRING(buf, ch->only.pc->poofIn);
+	ADD_STRING(buf, ch->only.pc->poofOut);
+	ADD_STRING(buf, ch->only.pc->poofInSound);
+	ADD_STRING(buf, ch->only.pc->poofOutSound);
+	ADD_BYTE(buf, ch->only.pc->echo_toggle);
+	ADD_SHORT(buf, ch->only.pc->prompt);
+	ADD_LONG(buf, ch->only.pc->wiz_invis);
+	ADD_LONG(buf, ch->only.pc->law_flags);
+	ADD_SHORT(buf, ch->only.pc->wimpy);
+	ADD_SHORT(buf, ch->only.pc->aggressive);
+	ADD_BYTE(buf, ch->only.pc->highest_level);
+	ADD_INT(buf, GET_BALANCE_COPPER(ch));   /* bank account */
+	ADD_INT(buf, GET_BALANCE_SILVER(ch));   /* bank account */
+	ADD_INT(buf, GET_BALANCE_GOLD(ch));     /* bank account */
+	ADD_INT(buf, GET_BALANCE_PLATINUM(ch)); /* bank account */
+	ADD_LONG(buf, ch->only.pc->numb_deaths);
 
+	ADD_INT(buf, ch->only.pc->quest_active);
+	ADD_INT(buf, ch->only.pc->quest_mob_vnum);
+	ADD_INT(buf, ch->only.pc->quest_type);
+	ADD_INT(buf, ch->only.pc->quest_accomplished);
+	ADD_INT(buf, ch->only.pc->quest_started);
+	ADD_INT(buf, ch->only.pc->quest_zone_number);
+	ADD_INT(buf, ch->only.pc->quest_giver);
+	ADD_INT(buf, ch->only.pc->quest_level);
+	ADD_INT(buf, ch->only.pc->quest_receiver);
+	ADD_INT(buf, ch->only.pc->quest_shares_left);
+	ADD_INT(buf, ch->only.pc->quest_kill_how_many);
+	ADD_INT(buf, ch->only.pc->quest_kill_original);
+	ADD_INT(buf, ch->only.pc->quest_map_room);
+	ADD_INT(buf, ch->only.pc->quest_map_bought);
 
-  return (int) (buf - start);
+	return (int)(buf - start);
 }
 
 // This function updates ch's short affect durations for saving purposes.
 //   When called, it walks through ch's affects and finds the corresponding
 //   event for each short affect.  It then updates the duration of the affect
 //   with the time left on the event.
-void updateShortAffects( P_char ch )
+void updateShortAffects(P_char ch)
 {
-  affected_type *paf = ch->affected;
-  P_nevent pnev;
+	affected_type *paf = ch->affected;
+	P_nevent       pnev;
 
-  // Look through each of ch's affects.
-  while( paf != NULL )
-  {
-    // If it's a short affect,
-    if( IS_SET( paf->flags, AFFTYPE_SHORT ) )
-    {
-      // Find the corresponding event.
-      LOOP_EVENTS_CH( pnev, ch->nevents )
-      {
-        // If the event is a short affect wear-off event and it corresponds to paf.
-        if( pnev->func == event_short_affect && pnev->data != NULL
-          && ((struct event_short_affect_data*)pnev->data)->af == paf )
-        {
-          break;
-        }
-      }
-      if( pnev )
-      {
-        // Update the duration (in pulses).
-        paf->duration = ne_event_time( pnev );
-      }
-      else
-      {
-        debug( "updateShortAffects: Couldn't find event for short affect '%s', timer %d, on '%s'.",
-          (paf->type > 0) ? skills[paf->type].name : "Unknown", paf->duration, J_NAME(ch) );
-      }
-    }
-    paf = paf->next;
-  }
+	// Look through each of ch's affects.
+	while (paf != NULL)
+	{
+		// If it's a short affect,
+		if (IS_SET(paf->flags, AFFTYPE_SHORT))
+		{
+			// Find the corresponding event.
+			LOOP_EVENTS_CH(pnev, ch->nevents)
+			{
+				// If the event is a short affect wear-off event and it corresponds to paf.
+				if (pnev->func == event_short_affect && pnev->data != NULL && ((struct event_short_affect_data *)pnev->data)->af == paf)
+				{
+					break;
+				}
+			}
+			if (pnev)
+			{
+				// Update the duration (in pulses).
+				paf->duration = ne_event_time(pnev);
+			}
+			else
+			{
+				debug("updateShortAffects: Couldn't find event for short affect '%s', timer %d, on '%s'.", (paf->type > 0) ? skills[paf->type].name : "Unknown", paf->duration, J_NAME(ch));
+			}
+		}
+		paf = paf->next;
+	}
 }
 
 // Writes the list of affects starting with af to the string buf.
 // af->duration updated with updateShortAffects(ch); please make sure this is called,
 //   or you will have timers being reset each time a player rents out / re enters game.
-int writeAffects( char *buf, struct affected_type *af )
+int writeAffects(char *buf, struct affected_type *af)
 {
-  struct affected_type *first = af;
-  P_event  tmp;
-  char    *start = buf;
-  signed short count = 0;
+	struct affected_type *first = af;
+	P_event               tmp;
+	char                 *start = buf;
+	signed short          count = 0;
 
-  ADD_BYTE(buf, (char) SAV_AFFVERS);
+	ADD_BYTE(buf, (char)SAV_AFFVERS);
 
-  while( af )
-  {
-    if( !IS_SET(af->flags, AFFTYPE_NOSAVE) )
-    {
-      count++;
-    }
-    af = af->next;
-  }
-  ADD_SHORT(buf, count);
+	while (af)
+	{
+		if (!IS_SET(af->flags, AFFTYPE_NOSAVE))
+		{
+			count++;
+		}
+		af = af->next;
+	}
+	ADD_SHORT(buf, count);
 
-  for( af = first; af; af = af->next )
-  {
-    ::byte     custom_messages = 0;       /* 0 - none, 1 - to_char, 2 - to_room, 3 - both */
+	for (af = first; af; af = af->next)
+	{
+		::byte custom_messages = 0; /* 0 - none, 1 - to_char, 2 - to_room, 3 - both */
 
-    if( IS_SET(af->flags, AFFTYPE_NOSAVE) )
-    {
-      continue;
-    }
-
-#ifndef _PFILE_
-    if (af->wear_off_message_index != 0)
-    {
-      if (skills[af->type].wear_off_char[af->wear_off_message_index]) ;
-      custom_messages = 1;
-      if (skills[af->type].wear_off_room[af->wear_off_message_index]) ;
-      custom_messages |= 2;
-    }
-#endif
-
-    ADD_BYTE(buf, custom_messages);
+		if (IS_SET(af->flags, AFFTYPE_NOSAVE))
+		{
+			continue;
+		}
 
 #ifndef _PFILE_
-    if (custom_messages & 1)
-      ADD_STRING(buf, skills[af->type].wear_off_char[af->wear_off_message_index]);
-    if (custom_messages & 2)
-      ADD_STRING(buf, skills[af->type].wear_off_room[af->wear_off_message_index]);
+		if (af->wear_off_message_index != 0)
+		{
+			if (skills[af->type].wear_off_char[af->wear_off_message_index])
+				;
+			custom_messages = 1;
+			if (skills[af->type].wear_off_room[af->wear_off_message_index])
+				;
+			custom_messages |= 2;
+		}
 #endif
 
-    ADD_SHORT(buf, af->type);
-    if( IS_SET(af->flags, AFFTYPE_SHORT) )
-    {
+		ADD_BYTE(buf, custom_messages);
 
 #ifndef _PFILE_
-      for (tmp = event_list; tmp; tmp = tmp->next_event)
-        if ((struct affected_type *) tmp->target.t_arg == af)
-          break;
-
-      if (tmp != NULL)
-      {
-        ADD_INT(buf, event_time(tmp, T_PULSES));
-      }
-      else
+		if (custom_messages & 1)
+			ADD_STRING(buf, skills[af->type].wear_off_char[af->wear_off_message_index]);
+		if (custom_messages & 2)
+			ADD_STRING(buf, skills[af->type].wear_off_room[af->wear_off_message_index]);
 #endif
-        // af->duration updated with updateShortAffects(ch), but we want secs to save not pulses.
-        ADD_INT(buf, af->duration/WAIT_SEC);
-    }
-    else
-    {
-      ADD_INT(buf, af->duration);
-    }
 
-    ADD_SHORT(buf, af->flags);
-    ADD_INT(buf, af->modifier);
-    ADD_BYTE(buf, af->location);
-    ADD_LONG(buf, af->bitvector);
-    ADD_LONG(buf, af->bitvector2);
-    ADD_LONG(buf, af->bitvector3);
-    ADD_LONG(buf, af->bitvector4);
-    ADD_LONG(buf, af->bitvector5);
-    ADD_LONG(buf, 0);           //af->bitvector6);
-	ADD_SHORT(buf, af->level);
-  }
+		ADD_SHORT(buf, af->type);
+		if (IS_SET(af->flags, AFFTYPE_SHORT))
+		{
 
-  return (int) (buf - start);
+#ifndef _PFILE_
+			for (tmp = event_list; tmp; tmp = tmp->next_event)
+				if ((struct affected_type *)tmp->target.t_arg == af)
+					break;
+
+			if (tmp != NULL)
+			{
+				ADD_INT(buf, event_time(tmp, T_PULSES));
+			}
+			else
+#endif
+				// af->duration updated with updateShortAffects(ch), but we want secs to save not pulses.
+				ADD_INT(buf, af->duration / WAIT_SEC);
+		}
+		else
+		{
+			ADD_INT(buf, af->duration);
+		}
+
+		ADD_SHORT(buf, af->flags);
+		ADD_INT(buf, af->modifier);
+		ADD_BYTE(buf, af->location);
+		ADD_LONG(buf, af->bitvector);
+		ADD_LONG(buf, af->bitvector2);
+		ADD_LONG(buf, af->bitvector3);
+		ADD_LONG(buf, af->bitvector4);
+		ADD_LONG(buf, af->bitvector5);
+		ADD_LONG(buf, 0); // af->bitvector6);
+		ADD_SHORT(buf, af->level);
+	}
+
+	return (int)(buf - start);
 }
 
 int writeSkills(char *buf, P_char ch, int num)
 {
-  char    *start = buf;
-  int      i;
-  struct memorize_data *tmp;
+	char                 *start = buf;
+	int                   i;
+	struct memorize_data *tmp;
 
-  ADD_BYTE(buf, (char) SAV_SKILLVERS);
+	ADD_BYTE(buf, (char)SAV_SKILLVERS);
 
-  /* Save the spell memorized, and skill usages info -DCL */
+	/* Save the spell memorized, and skill usages info -DCL */
 
-  ADD_INT(buf, (int) num);
-  for (i = 0; i < num; i++)
-  {
-    ADD_BYTE(buf, ch->only.pc->skills[i].learned);
-    ADD_BYTE(buf, ch->only.pc->skills[i].taught);
-    ADD_BYTE(buf, 0);
-  }
-  ADD_INT(buf, 0);
+	ADD_INT(buf, (int)num);
+	for (i = 0; i < num; i++)
+	{
+		ADD_BYTE(buf, ch->only.pc->skills[i].learned);
+		ADD_BYTE(buf, ch->only.pc->skills[i].taught);
+		ADD_BYTE(buf, 0);
+	}
+	ADD_INT(buf, 0);
 
-  ADD_SHORT(buf, (short) 0);
+	ADD_SHORT(buf, (short)0);
 
-  return (int) (buf - start);
+	return (int)(buf - start);
 }
 
 /* recursive count of all objects in inventory */
@@ -665,40 +640,40 @@ int writeSkills(char *buf, P_char ch, int num)
 
 int countInven(P_obj obj)
 {
-  int      count = 0;
+	int count = 0;
 
-  while (obj)
-  {
-    if (!IS_SET(obj->extra_flags, ITEM_NORENT))
-      count++;
-    if (obj->contains)
-      count += countInven(obj->contains);
-    obj = obj->next_content;
-  }
+	while (obj)
+	{
+		if (!IS_SET(obj->extra_flags, ITEM_NORENT))
+			count++;
+		if (obj->contains)
+			count += countInven(obj->contains);
+		obj = obj->next_content;
+	}
 
-  return count;
+	return count;
 }
 
 int countEquip(P_char ch)
 {
-  int      i, count = 0;
+	int i, count = 0;
 
-  for (i = 0; i < MAX_WEAR; i++)
-    if (ch->equipment[i])
-    {
-      if (!IS_SET(ch->equipment[i]->extra_flags, ITEM_NORENT))
-        count++;
-      if (ch->equipment[i]->contains)
-        count += countInven(ch->equipment[i]->contains);
-    }
-    else if (save_equip[i])
-    {
-      if (!IS_SET(save_equip[i]->extra_flags, ITEM_NORENT))
-        count++;
-      if (save_equip[i]->contains)
-        count += countInven(save_equip[i]->contains);
-    }
-  return count;
+	for (i = 0; i < MAX_WEAR; i++)
+		if (ch->equipment[i])
+		{
+			if (!IS_SET(ch->equipment[i]->extra_flags, ITEM_NORENT))
+				count++;
+			if (ch->equipment[i]->contains)
+				count += countInven(ch->equipment[i]->contains);
+		}
+		else if (save_equip[i])
+		{
+			if (!IS_SET(save_equip[i]->extra_flags, ITEM_NORENT))
+				count++;
+			if (save_equip[i]->contains)
+				count += countInven(save_equip[i]->contains);
+		}
+	return count;
 }
 
 /*
@@ -708,273 +683,266 @@ int countEquip(P_char ch)
 
 ulong ObjUniqueFlags(P_obj obj, P_obj control)
 {
-  // mask the flag to ONLY see the O_U_ flags which corrospond directly to STRUNG_* bits
-  ulong    flag = (ulong) (obj->str_mask & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
-  int      i;
+	// mask the flag to ONLY see the O_U_ flags which corrospond directly to STRUNG_* bits
+	ulong flag = (ulong)(obj->str_mask & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
+	int   i;
 
-  if (obj->str_mask & STRUNG_EDESC)
-    flag |= O_U_EDESC;
+	if (obj->str_mask & STRUNG_EDESC)
+		flag |= O_U_EDESC;
 
-  for (i = 0; i < 4; i++)
-    if (obj->value[i] != control->value[i])
-      flag |= 1 << (i + 4);
+	for (i = 0; i < 4; i++)
+		if (obj->value[i] != control->value[i])
+			flag |= 1 << (i + 4);
 
-  if (obj->value[4] != control->value[4])
-    flag |= O_U_VAL4;
+	if (obj->value[4] != control->value[4])
+		flag |= O_U_VAL4;
 
-  if (obj->value[5] != control->value[5])
-    flag |= O_U_VAL5;
+	if (obj->value[5] != control->value[5])
+		flag |= O_U_VAL5;
 
-  if (obj->value[6] != control->value[6])
-    flag |= O_U_VAL6;
+	if (obj->value[6] != control->value[6])
+		flag |= O_U_VAL6;
 
-  if (obj->value[7] != control->value[7])
-    flag |= O_U_VAL7;
+	if (obj->value[7] != control->value[7])
+		flag |= O_U_VAL7;
 
-  for (i = 0; i < 4; i++)
-    if (obj->timer[i] != control->timer[i])
-      flag |= O_U_TIMER;
+	for (i = 0; i < 4; i++)
+		if (obj->timer[i] != control->timer[i])
+			flag |= O_U_TIMER;
 
-  if (obj->type != control->type)
-    flag |= O_U_TYPE;
+	if (obj->type != control->type)
+		flag |= O_U_TYPE;
 
-  if (obj->trap_charge != control->trap_charge)
-    flag |= O_U_TRAP;
+	if (obj->trap_charge != control->trap_charge)
+		flag |= O_U_TRAP;
 
-  if (obj->wear_flags != control->wear_flags)
-    flag |= O_U_WEAR;
+	if (obj->wear_flags != control->wear_flags)
+		flag |= O_U_WEAR;
 
-  if (obj->extra_flags != control->extra_flags)
-    flag |= O_U_EXTRA;
+	if (obj->extra_flags != control->extra_flags)
+		flag |= O_U_EXTRA;
 
-  if (obj->anti_flags != control->anti_flags)
-    flag |= O_U_ANTI;
+	if (obj->anti_flags != control->anti_flags)
+		flag |= O_U_ANTI;
 
-  if (obj->anti2_flags != control->anti2_flags)
-    flag |= O_U_ANTI2;
+	if (obj->anti2_flags != control->anti2_flags)
+		flag |= O_U_ANTI2;
 
-  if (obj->extra2_flags != control->extra2_flags)
-    flag |= O_U_EXTRA2;
+	if (obj->extra2_flags != control->extra2_flags)
+		flag |= O_U_EXTRA2;
 
-  if (obj->weight != control->weight)
-    flag |= O_U_WEIGHT;
+	if (obj->weight != control->weight)
+		flag |= O_U_WEIGHT;
 
-  if (obj->material != control->material)
-    flag |= O_U_MATERIAL;
+	if (obj->material != control->material)
+		flag |= O_U_MATERIAL;
 
-//  if (obj->space != control->space)
-//    flag |= O_U_SPACE;
+	//  if (obj->space != control->space)
+	//    flag |= O_U_SPACE;
 
-  if (obj->cost != control->cost)
-    flag |= O_U_COST;
+	if (obj->cost != control->cost)
+		flag |= O_U_COST;
 
-  if (obj->bitvector != control->bitvector)
-    flag |= O_U_BV1;
+	if (obj->bitvector != control->bitvector)
+		flag |= O_U_BV1;
 
-  if (obj->bitvector2 != control->bitvector2)
-    flag |= O_U_BV2;
+	if (obj->bitvector2 != control->bitvector2)
+		flag |= O_U_BV2;
 
-  if (obj->bitvector3 != control->bitvector3)
-    flag |= O_U_BV3;
+	if (obj->bitvector3 != control->bitvector3)
+		flag |= O_U_BV3;
 
-  if (obj->bitvector4 != control->bitvector4)
-    flag |= O_U_BV4;
+	if (obj->bitvector4 != control->bitvector4)
+		flag |= O_U_BV4;
 
-  if (obj->bitvector5 != control->bitvector5)
-    flag |= O_U_BV5;
+	if (obj->bitvector5 != control->bitvector5)
+		flag |= O_U_BV5;
 
-  for (i = 0; i < MAX_OBJ_AFFECT; i++)
-  {
-    if( (obj->affected[i].location != control->affected[i].location)
-      || (obj->affected[i].modifier != control->affected[i].modifier) )
-    {
-      flag |= O_U_AFFS;
-      break;
-    }
-  }
+	for (i = 0; i < MAX_OBJ_AFFECT; i++)
+	{
+		if ((obj->affected[i].location != control->affected[i].location) || (obj->affected[i].modifier != control->affected[i].modifier))
+		{
+			flag |= O_U_AFFS;
+			break;
+		}
+	}
 
-  return flag;
+	return flag;
 }
 
 /* write a list of objects (and recursively it's contents...)  JAB */
 
 bool writeObjectlist(P_obj obj, int loc)
 {
-  int      i, done[4000], done_num = 0, cont_wgt, count;
-  P_obj    t_obj = NULL, obj2 = NULL, obj_c = NULL, t_obj2 = NULL, w_obj;
-  ::byte     o_f_flag;
-  ulong    o_u_flag;
-  bool     skip;
+	int    i, done[4000], done_num = 0, cont_wgt, count;
+	P_obj  t_obj = NULL, obj2 = NULL, obj_c = NULL, t_obj2 = NULL, w_obj;
+	::byte o_f_flag;
+	ulong  o_u_flag;
+	bool   skip;
 
-  for (w_obj = obj; w_obj; w_obj = obj2)
-  {
-    obj2 = w_obj->next_content;
-    obj_c = w_obj->contains;
-    o_f_flag = 0;
-    o_u_flag = 0;
-    cont_wgt = 0;
-    count = 1;
+	for (w_obj = obj; w_obj; w_obj = obj2)
+	{
+		obj2     = w_obj->next_content;
+		obj_c    = w_obj->contains;
+		o_f_flag = 0;
+		o_u_flag = 0;
+		cont_wgt = 0;
+		count    = 1;
 
-    if (t_obj && (t_obj->R_num != w_obj->R_num))
-    {
-      extract_obj(t_obj);
-      t_obj = NULL;
-    }
-    if (!t_obj)
-      if (!(t_obj = read_object(w_obj->R_num, REAL)))
-      {
-        logit(LOG_DEBUG, "writeObjectlist(): obj %d [%d] not loadable",
-              w_obj->R_num, obj_index[w_obj->R_num].virtual_number);
-        continue;
-      }
-    if (OBJ_WORN(w_obj) || (loc && (save_equip[loc - 1] == w_obj)))
-      o_f_flag |= O_F_WORN;
+		if (t_obj && (t_obj->R_num != w_obj->R_num))
+		{
+			extract_obj(t_obj);
+			t_obj = NULL;
+		}
+		if (!t_obj)
+			if (!(t_obj = read_object(w_obj->R_num, REAL)))
+			{
+				logit(LOG_DEBUG, "writeObjectlist(): obj %d [%d] not loadable", w_obj->R_num, obj_index[w_obj->R_num].virtual_number);
+				continue;
+			}
+		if (OBJ_WORN(w_obj) || (loc && (save_equip[loc - 1] == w_obj)))
+			o_f_flag |= O_F_WORN;
 
-    if (obj_c)
-    {
-      o_f_flag |= O_F_CONTAINS;
-      for (t_obj2 = obj_c; t_obj2; t_obj2 = t_obj2->next_content)
-        cont_wgt += GET_OBJ_WEIGHT(t_obj2);
-      w_obj->weight -= cont_wgt;
-    }
-    if (w_obj->type == ITEM_SPELLBOOK && find_spell_description(w_obj))
-      o_f_flag |= O_F_SPELLBOOK;
+		if (obj_c)
+		{
+			o_f_flag |= O_F_CONTAINS;
+			for (t_obj2 = obj_c; t_obj2; t_obj2 = t_obj2->next_content)
+				cont_wgt += GET_OBJ_WEIGHT(t_obj2);
+			w_obj->weight -= cont_wgt;
+		}
+		if (w_obj->type == ITEM_SPELLBOOK && find_spell_description(w_obj))
+			o_f_flag |= O_F_SPELLBOOK;
 
-    if (w_obj->affects)
-      o_f_flag |= O_F_AFFECTS;
+		if (w_obj->affects)
+			o_f_flag |= O_F_AFFECTS;
 
-    if ((o_u_flag = ObjUniqueFlags(w_obj, t_obj)))
-      o_f_flag |= O_F_UNIQUE;
+		if ((o_u_flag = ObjUniqueFlags(w_obj, t_obj)))
+			o_f_flag |= O_F_UNIQUE;
 
-// temoprary for fixing messed items
-    if (t_obj->extra_flags & ITEM_ALLOWED_CLASSES)
-      w_obj->extra_flags |= ITEM_ALLOWED_CLASSES;
+		// temoprary for fixing messed items
+		if (t_obj->extra_flags & ITEM_ALLOWED_CLASSES)
+			w_obj->extra_flags |= ITEM_ALLOWED_CLASSES;
 
-    if (t_obj->extra_flags & ITEM_ALLOWED_RACES)
-      w_obj->extra_flags |= ITEM_ALLOWED_RACES;
+		if (t_obj->extra_flags & ITEM_ALLOWED_RACES)
+			w_obj->extra_flags |= ITEM_ALLOWED_RACES;
 
-    /*
-     * ok, to make this work properly, we need to check for stock
-     * (only) items at each level (main carried list, and each
-     * container count as a seperate 'level' of storage) and store
-     * them all together, thus common things like rations, don't take
-     * up inordinate space.  But, to avoid huge cpu overhead, we have
-     * to keep track, since this is a recursive routine, we store
-     * Rnums of already counted objects, to avoid duplication.
-     */
+		/*
+		 * ok, to make this work properly, we need to check for stock
+		 * (only) items at each level (main carried list, and each
+		 * container count as a seperate 'level' of storage) and store
+		 * them all together, thus common things like rations, don't take
+		 * up inordinate space.  But, to avoid huge cpu overhead, we have
+		 * to keep track, since this is a recursive routine, we store
+		 * Rnums of already counted objects, to avoid duplication.
+		 */
 
-    if (o_f_flag)
-    {
+		if (o_f_flag)
+		{
 
-      /*
-       * by definition, if this flag is set, COUNT cannot apply
-       * without going to absurd lengths, so we just write it out,
-       * call to write it's contents (if any), and move on.
-       */
+			/*
+			 * by definition, if this flag is set, COUNT cannot apply
+			 * without going to absurd lengths, so we just write it out,
+			 * call to write it's contents (if any), and move on.
+			 */
+
+			if (!IS_SET(w_obj->extra_flags, ITEM_NORENT))
+				ibuf += writeObject(w_obj, o_f_flag, o_u_flag, (ush_int)1, loc, ibuf);
+
+			if (obj_c)
+				w_obj->weight += cont_wgt;
+
+			if (obj_c)
+				if (!writeObjectlist(obj_c, (::byte)0))
+					return FALSE;
+
+			continue;
+		}
+		else
+		{
+
+			/*
+			 * ok, to keep things sane cpu-wise, but allow us to reduce
+			 * duplicate items to minimal storage requirements, we do
+			 * this:
+			 *
+			 * the done[] array holds R_nums of non-unique items already
+			 * counted and stored, if the current object is on this list,
+			 * it skips it and doesn't store it again.  If current object
+			 * is NOT already in the array, it adds it to the list, then
+			 * scans the rest of the list for duplicates, counts them, and
+			 * if they are contiguous, advances the object pointer so we
+			 * don't have to look at it ever again.  This should
+			 * (theoretically anyway) be lots faster than writing every
+			 * object without checking. Unfortunately, the need to check
+			 * each item for uniqueness as well, can slow things down
+			 * quite a bit.
+			 *
+			 * Note: count only applies to current 'level' of objects, if
+			 * a player has 10 rations in inven and 12 more in a bag,
+			 * there will be two entries for rations, one for 10 and
+			 * another for 12.  Have to do it this way to avoid having to
+			 * store pointers, etc.
+			 */
+
+			for (i = done_num - 1; i >= 0; i--)
+				if (done[i] == w_obj->R_num)
+					break;
+
+			/* found it, it's already been counted, so skip it */
+
+			if ((i >= 0) && (done[i] == w_obj->R_num))
+				continue;
+
+			/* not in done[], so add to done[], then count copies after it.  */
+
+			done[done_num++] = w_obj->R_num;
+			t_obj2           = obj2;
+			skip             = TRUE;
+
+			while (t_obj2)
+			{
+				if ((t_obj2->R_num == w_obj->R_num) && !t_obj2->contains && ObjectsMatch(t_obj2, t_obj) && (t_obj2->type != ITEM_SPELLBOOK || !find_spell_description(t_obj2)))
+				{
+					count++;
+					if (count > 32000)
+					{
+						statuslog(AVATAR, "Some feeb has > 32,000 %s, find him and kill him, he is too clueless to live.", w_obj->short_description);
+						return FALSE;
+					}
+				}
+				else
+					skip = FALSE;
+
+				t_obj2 = t_obj2->next_content;
+
+				if (skip)
+					obj2 = t_obj2;
+			}
+
+			if (count > 1)
+				o_f_flag |= O_F_COUNT;
+		}
+
+		/* okie, we have all data, let's write it out */
 
 		if (!IS_SET(w_obj->extra_flags, ITEM_NORENT))
-		   ibuf += writeObject(w_obj, o_f_flag, o_u_flag, (ush_int) 1, loc, ibuf);
+			ibuf += writeObject(w_obj, o_f_flag, o_u_flag, (ush_int)count, loc, ibuf);
 
-      if (obj_c)
-        w_obj->weight += cont_wgt;
+		if (obj_c)
+			w_obj->weight += cont_wgt;
+	}
 
-      if (obj_c)
-        if (!writeObjectlist(obj_c, (::byte) 0))
-          return FALSE;
+	/*
+	 * end of a list, need the marker ::byte
+	 */
 
-      continue;
+	if (!loc)
+		ADD_BYTE(ibuf, O_F_EOL);
 
-    }
-    else
-    {
+	if (t_obj)
+		extract_obj(t_obj);
 
-      /*
-       * ok, to keep things sane cpu-wise, but allow us to reduce
-       * duplicate items to minimal storage requirements, we do
-       * this:
-       *
-       * the done[] array holds R_nums of non-unique items already
-       * counted and stored, if the current object is on this list,
-       * it skips it and doesn't store it again.  If current object
-       * is NOT already in the array, it adds it to the list, then
-       * scans the rest of the list for duplicates, counts them, and
-       * if they are contiguous, advances the object pointer so we
-       * don't have to look at it ever again.  This should
-       * (theoretically anyway) be lots faster than writing every
-       * object without checking. Unfortunately, the need to check
-       * each item for uniqueness as well, can slow things down
-       * quite a bit.
-       *
-       * Note: count only applies to current 'level' of objects, if
-       * a player has 10 rations in inven and 12 more in a bag,
-       * there will be two entries for rations, one for 10 and
-       * another for 12.  Have to do it this way to avoid having to
-       * store pointers, etc.
-       */
-
-      for (i = done_num - 1; i >= 0; i--)
-        if (done[i] == w_obj->R_num)
-          break;
-
-      /* found it, it's already been counted, so skip it */
-
-      if ((i >= 0) && (done[i] == w_obj->R_num))
-        continue;
-
-      /* not in done[], so add to done[], then count copies after it.  */
-
-      done[done_num++] = w_obj->R_num;
-      t_obj2 = obj2;
-      skip = TRUE;
-
-      while (t_obj2)
-      {
-        if ((t_obj2->R_num == w_obj->R_num) && !t_obj2->contains &&
-            ObjectsMatch(t_obj2, t_obj) && (t_obj2->type != ITEM_SPELLBOOK ||
-                                            !find_spell_description(t_obj2)))
-        {
-          count++;
-          if (count > 32000)
-          {
-            statuslog(AVATAR,
-                      "Some feeb has > 32,000 %s, find him and kill him, he is too clueless to live.",
-                      w_obj->short_description);
-            return FALSE;
-          }
-        }
-        else
-          skip = FALSE;
-
-        t_obj2 = t_obj2->next_content;
-
-        if (skip)
-          obj2 = t_obj2;
-      }
-
-      if (count > 1)
-        o_f_flag |= O_F_COUNT;
-    }
-
-    /* okie, we have all data, let's write it out */
-
-  	if (!IS_SET(w_obj->extra_flags, ITEM_NORENT))
-      ibuf += writeObject(w_obj, o_f_flag, o_u_flag, (ush_int) count, loc, ibuf);
-
-    if (obj_c)
-      w_obj->weight += cont_wgt;
-  }
-
-  /*
-   * end of a list, need the marker ::byte
-   */
-
-  if (!loc)
-    ADD_BYTE(ibuf, O_F_EOL);
-
-  if (t_obj)
-    extract_obj(t_obj);
-
-  return TRUE;
+	return TRUE;
 }
 
 /*
@@ -983,239 +951,237 @@ bool writeObjectlist(P_obj obj, int loc)
 
 int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, char *dest_buff)
 {
-  char *start = dest_buff;
-  char *ibuf = dest_buff;
-  int      i;
-  struct extra_descr_data *tmp;
-  struct obj_affect *af;
+	char                    *start = dest_buff;
+	char                    *ibuf  = dest_buff;
+	int                      i;
+	struct extra_descr_data *tmp;
+	struct obj_affect       *af;
 
-  if( !obj )
-    return FALSE;
-  
-  save_count += count;
+	if (!obj)
+		return FALSE;
 
-  ADD_BYTE(ibuf, o_f_flag);
-  ADD_INT(ibuf, obj_index[obj->R_num].virtual_number);
-  ADD_SHORT(ibuf, obj->craftsmanship);
-  ADD_SHORT(ibuf, obj->condition);
+	save_count += count;
 
-  if (o_f_flag & O_F_WORN)
-    ADD_BYTE(ibuf, loc);
+	ADD_BYTE(ibuf, o_f_flag);
+	ADD_INT(ibuf, obj_index[obj->R_num].virtual_number);
+	ADD_SHORT(ibuf, obj->craftsmanship);
+	ADD_SHORT(ibuf, obj->condition);
 
-  if (o_f_flag & O_F_COUNT)
-    ADD_SHORT(ibuf, (ush_int) count);
+	if (o_f_flag & O_F_WORN)
+		ADD_BYTE(ibuf, loc);
 
-  if (o_f_flag & O_F_AFFECTS)
-  {
-    for (i = 0, af = obj->affects; af; af = af->next)
-      i++;
-    ADD_BYTE(ibuf, i);
-    for (af = obj->affects; af; af = af->next)
-    {
-      ADD_INT(ibuf, obj_affect_time(obj, af));
-      ADD_SHORT(ibuf, af->type);
-      ADD_SHORT(ibuf, af->data);
-      ADD_INT(ibuf, af->extra2);
-    }
-  }
-  if (o_u_flag)
-  {
-    ADD_INT(ibuf, o_u_flag);
+	if (o_f_flag & O_F_COUNT)
+		ADD_SHORT(ibuf, (ush_int)count);
 
-    if (o_u_flag & O_U_KEYS)
-      ADD_STRING(ibuf, obj->name);
+	if (o_f_flag & O_F_AFFECTS)
+	{
+		for (i = 0, af = obj->affects; af; af = af->next)
+			i++;
+		ADD_BYTE(ibuf, i);
+		for (af = obj->affects; af; af = af->next)
+		{
+			ADD_INT(ibuf, obj_affect_time(obj, af));
+			ADD_SHORT(ibuf, af->type);
+			ADD_SHORT(ibuf, af->data);
+			ADD_INT(ibuf, af->extra2);
+		}
+	}
+	if (o_u_flag)
+	{
+		ADD_INT(ibuf, o_u_flag);
 
-    if (o_u_flag & O_U_DESC1)
-      ADD_STRING(ibuf, obj->description);
+		if (o_u_flag & O_U_KEYS)
+			ADD_STRING(ibuf, obj->name);
 
-    if (o_u_flag & O_U_DESC2)
-      ADD_STRING(ibuf, obj->short_description);
+		if (o_u_flag & O_U_DESC1)
+			ADD_STRING(ibuf, obj->description);
 
-    if (o_u_flag & O_U_DESC3)
-      ADD_STRING(ibuf, obj->action_description);
+		if (o_u_flag & O_U_DESC2)
+			ADD_STRING(ibuf, obj->short_description);
 
-    if (o_u_flag & O_U_EDESC)
-    {
-      int nDescs = 0;
-      struct extra_descr_data *ed = obj->ex_description;
-      while (ed)
-      {
-        if (ed->keyword)
-          nDescs++;
-        ed = ed->next;
-      }
-      // count.  foreach: keyword + desc
-      ADD_SHORT(ibuf, nDescs);
-      ed = obj->ex_description;
-      while (ed)
-      {
-        if (ed->keyword)
-        {
-          ADD_STRING(ibuf, ed->keyword);
-          if (ed->description)
-            ADD_STRING(ibuf, ed->description)
-          else
-            ADD_STRING(ibuf, "");
-        }
-        ed = ed->next;
-      }
-    }
+		if (o_u_flag & O_U_DESC3)
+			ADD_STRING(ibuf, obj->action_description);
 
-    for (i = 0; i < 4; i++)
-      if (o_u_flag & (1 << (i + 4)))
-        ADD_INT(ibuf, obj->value[i]);
+		if (o_u_flag & O_U_EDESC)
+		{
+			int                      nDescs = 0;
+			struct extra_descr_data *ed     = obj->ex_description;
+			while (ed)
+			{
+				if (ed->keyword)
+					nDescs++;
+				ed = ed->next;
+			}
+			// count.  foreach: keyword + desc
+			ADD_SHORT(ibuf, nDescs);
+			ed = obj->ex_description;
+			while (ed)
+			{
+				if (ed->keyword)
+				{
+					ADD_STRING(ibuf, ed->keyword);
+					if (ed->description)
+						ADD_STRING(ibuf, ed->description)
+					else
+						ADD_STRING(ibuf, "");
+				}
+				ed = ed->next;
+			}
+		}
 
-    if (o_u_flag & O_U_VAL4)
-      ADD_INT(ibuf, obj->value[4]);
+		for (i = 0; i < 4; i++)
+			if (o_u_flag & (1 << (i + 4)))
+				ADD_INT(ibuf, obj->value[i]);
 
-    if (o_u_flag & O_U_VAL5)
-      ADD_INT(ibuf, obj->value[5]);
+		if (o_u_flag & O_U_VAL4)
+			ADD_INT(ibuf, obj->value[4]);
 
-    if (o_u_flag & O_U_VAL6)
-      ADD_INT(ibuf, obj->value[6]);
+		if (o_u_flag & O_U_VAL5)
+			ADD_INT(ibuf, obj->value[5]);
 
-    if (o_u_flag & O_U_VAL7)
-      ADD_INT(ibuf, obj->value[7]);
+		if (o_u_flag & O_U_VAL6)
+			ADD_INT(ibuf, obj->value[6]);
 
-    if (o_u_flag & O_U_TIMER)
-      for (i = 0; i < 4; i++)
-        ADD_INT(ibuf, obj->timer[i]);
+		if (o_u_flag & O_U_VAL7)
+			ADD_INT(ibuf, obj->value[7]);
 
-    if (o_u_flag & O_U_TRAP)
-    {
-      ADD_SHORT(ibuf, obj->trap_eff);
-      ADD_SHORT(ibuf, obj->trap_dam);
-      ADD_SHORT(ibuf, obj->trap_charge);
-      ADD_SHORT(ibuf, obj->trap_level);
-    }
-    if (o_u_flag & O_U_TYPE)
-      ADD_BYTE(ibuf, obj->type);
+		if (o_u_flag & O_U_TIMER)
+			for (i = 0; i < 4; i++)
+				ADD_INT(ibuf, obj->timer[i]);
 
-    if (o_u_flag & O_U_WEAR)
-      ADD_INT(ibuf, obj->wear_flags);
+		if (o_u_flag & O_U_TRAP)
+		{
+			ADD_SHORT(ibuf, obj->trap_eff);
+			ADD_SHORT(ibuf, obj->trap_dam);
+			ADD_SHORT(ibuf, obj->trap_charge);
+			ADD_SHORT(ibuf, obj->trap_level);
+		}
+		if (o_u_flag & O_U_TYPE)
+			ADD_BYTE(ibuf, obj->type);
 
-    if (o_u_flag & O_U_EXTRA)
-      ADD_INT(ibuf, obj->extra_flags);
+		if (o_u_flag & O_U_WEAR)
+			ADD_INT(ibuf, obj->wear_flags);
 
-    if (o_u_flag & O_U_ANTI)
-      ADD_INT(ibuf, obj->anti_flags);
+		if (o_u_flag & O_U_EXTRA)
+			ADD_INT(ibuf, obj->extra_flags);
 
-    if (o_u_flag & O_U_ANTI2)
-      ADD_INT(ibuf, obj->anti2_flags);
+		if (o_u_flag & O_U_ANTI)
+			ADD_INT(ibuf, obj->anti_flags);
 
-    if (o_u_flag & O_U_EXTRA2)
-      ADD_INT(ibuf, obj->extra2_flags);
+		if (o_u_flag & O_U_ANTI2)
+			ADD_INT(ibuf, obj->anti2_flags);
 
-    if (o_u_flag & O_U_WEIGHT)
-      ADD_INT(ibuf, obj->weight);
+		if (o_u_flag & O_U_EXTRA2)
+			ADD_INT(ibuf, obj->extra2_flags);
 
-    if (o_u_flag & O_U_MATERIAL)
-      ADD_BYTE(ibuf, obj->material);
+		if (o_u_flag & O_U_WEIGHT)
+			ADD_INT(ibuf, obj->weight);
 
-/*    if (o_u_flag & O_U_SPACE)
-      ADD_BYTE(ibuf, obj->space);
-*/
-    if (o_u_flag & O_U_COST)
-      ADD_INT(ibuf, obj->cost);
+		if (o_u_flag & O_U_MATERIAL)
+			ADD_BYTE(ibuf, obj->material);
 
-    if (o_u_flag & O_U_BV1)
-      ADD_LONG(ibuf, obj->bitvector);
+		/*    if (o_u_flag & O_U_SPACE)
+		      ADD_BYTE(ibuf, obj->space);
+		*/
+		if (o_u_flag & O_U_COST)
+			ADD_INT(ibuf, obj->cost);
 
-    if (o_u_flag & O_U_BV2)
-      ADD_LONG(ibuf, obj->bitvector2);
+		if (o_u_flag & O_U_BV1)
+			ADD_LONG(ibuf, obj->bitvector);
 
-    if (o_u_flag & O_U_BV3)
-      ADD_LONG(ibuf, obj->bitvector3);
+		if (o_u_flag & O_U_BV2)
+			ADD_LONG(ibuf, obj->bitvector2);
 
-    if (o_u_flag & O_U_BV4)
-      ADD_LONG(ibuf, obj->bitvector4);
+		if (o_u_flag & O_U_BV3)
+			ADD_LONG(ibuf, obj->bitvector3);
 
-    if (o_u_flag & O_U_BV5)
-      ADD_LONG(ibuf, obj->bitvector5);
+		if (o_u_flag & O_U_BV4)
+			ADD_LONG(ibuf, obj->bitvector4);
 
-    if (o_u_flag & O_U_AFFS)
-      for (i = 0; i < MAX_OBJ_AFFECT; i++)
-      {
-        ADD_BYTE(ibuf, obj->affected[i].location);
-        ADD_BYTE(ibuf, obj->affected[i].modifier);
-      }
-  }
-  if (o_f_flag & O_F_SPELLBOOK)
-    if (!(tmp = find_spell_description(obj)))
-    {                           /*
-                                 * this _SHOULD_
-                                 * not happen..
-                                 * but will it? we
-                                 * shall see.
-                                 */
-      ADD_INT(ibuf, 0);
-    }
-    else
-    {
-      ADD_INT(ibuf, (MAX_SKILLS / 8) + 1);
-      for (i = 0; i < (MAX_SKILLS / 8) + 1; i++)
-      {
-        ADD_BYTE(ibuf, tmp->description[i]);
-      }
-    }
+		if (o_u_flag & O_U_BV5)
+			ADD_LONG(ibuf, obj->bitvector5);
 
-	return (int) (ibuf-start);
+		if (o_u_flag & O_U_AFFS)
+			for (i = 0; i < MAX_OBJ_AFFECT; i++)
+			{
+				ADD_BYTE(ibuf, obj->affected[i].location);
+				ADD_BYTE(ibuf, obj->affected[i].modifier);
+			}
+	}
+	if (o_f_flag & O_F_SPELLBOOK)
+		if (!(tmp = find_spell_description(obj)))
+		{ /*
+		   * this _SHOULD_
+		   * not happen..
+		   * but will it? we
+		   * shall see.
+		   */
+			ADD_INT(ibuf, 0);
+		}
+		else
+		{
+			ADD_INT(ibuf, (MAX_SKILLS / 8) + 1);
+			for (i = 0; i < (MAX_SKILLS / 8) + 1; i++)
+			{
+				ADD_BYTE(ibuf, tmp->description[i]);
+			}
+		}
+
+	return (int)(ibuf - start);
 }
 
 // This function writes one object to a char buffer, and returns the total number of bytes written.
 // This will *not* write the contents of a container object.
-int write_one_object(P_obj obj, char* dest_buff)
+int write_one_object(P_obj obj, char *dest_buff)
 {
 	char *start = dest_buff;
-  char *buff = dest_buff;
+	char *buff  = dest_buff;
 
 	::byte o_f_flag = 0;
-  ulong o_u_flag = 0;
+	ulong  o_u_flag = 0;
 
-	if( !obj )
-  {
+	if (!obj)
+	{
 		logit(LOG_DEBUG, "write_one_object(): invalid object\n");
 		return 0;
 	}
 
-	if( !buff )
-  {
+	if (!buff)
+	{
 		logit(LOG_DEBUG, "write_one_object(): invalid buffer\n");
 		return 0;
 	}
 
 	P_obj t_obj = read_object(obj->R_num, REAL);
 
-	if( !t_obj )
-  {
-		logit(LOG_DEBUG, "write_one_object(): obj %d [%d] not loadable\n",
-				obj->R_num, obj_index[obj->R_num].virtual_number);
-    extract_obj(t_obj);
+	if (!t_obj)
+	{
+		logit(LOG_DEBUG, "write_one_object(): obj %d [%d] not loadable\n", obj->R_num, obj_index[obj->R_num].virtual_number);
+		extract_obj(t_obj);
 		return 0;
 	}
 
-  ADD_BYTE(buff, (char) SAV_ITEMVERS); // object version
-	ADD_INT(buff, 1); // just one item
+	ADD_BYTE(buff, (char)SAV_ITEMVERS); // object version
+	ADD_INT(buff, 1);                   // just one item
 
-  if (obj->type == ITEM_SPELLBOOK && find_spell_description(obj))
-    o_f_flag |= O_F_SPELLBOOK;
+	if (obj->type == ITEM_SPELLBOOK && find_spell_description(obj))
+		o_f_flag |= O_F_SPELLBOOK;
 
-  if (obj->affects)
-    o_f_flag |= O_F_AFFECTS;
+	if (obj->affects)
+		o_f_flag |= O_F_AFFECTS;
 
-  if ((o_u_flag = ObjUniqueFlags(obj, t_obj)))
-    o_f_flag |= O_F_UNIQUE;
+	if ((o_u_flag = ObjUniqueFlags(obj, t_obj)))
+		o_f_flag |= O_F_UNIQUE;
 
-	int len = writeObject(obj, o_f_flag, o_u_flag, (ush_int) 1, 0, buff);
+	int len = writeObject(obj, o_f_flag, o_u_flag, (ush_int)1, 0, buff);
 
 	buff += len;
 
-  ADD_BYTE(buff, O_F_EOL); // end of items
+	ADD_BYTE(buff, O_F_EOL); // end of items
 
-  extract_obj(t_obj);
+	extract_obj(t_obj);
 	return (buff - start);
 }
-
 
 /*
  * this is a combo of writeCharacter and writeItems, stores the corpse,
@@ -1225,428 +1191,424 @@ int write_one_object(P_obj obj, char* dest_buff)
 
 void writeCorpse(P_obj corpse)
 {
-  extern int skip_corpse_save;
-  if (skip_corpse_save)
-    return;
+	extern int skip_corpse_save;
+	if (skip_corpse_save)
+		return;
 
-  if (!corpse || (corpse->type != ITEM_CORPSE) ||
-      !IS_SET(corpse->value[1], PC_CORPSE)) {
-    logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");
-    return;
-  }
+	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[1], PC_CORPSE))
+	{
+		logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");
+		return;
+	}
 
-  // corpse not on ground = delete
-  if (!OBJ_ROOM(corpse) && !(OBJ_CARRIED(corpse) && corpse->loc.carrying != NULL)) {
-    if (corpse->action_description && corpse->value[CORPSE_SAVEID])
-      sql_delete_corpse(corpse->action_description, corpse->value[CORPSE_SAVEID]);
-    return;
-  }
+	// corpse not on ground = delete
+	if (!OBJ_ROOM(corpse) && !(OBJ_CARRIED(corpse) && corpse->loc.carrying != NULL))
+	{
+		if (corpse->action_description && corpse->value[CORPSE_SAVEID])
+			sql_delete_corpse(corpse->action_description, corpse->value[CORPSE_SAVEID]);
+		return;
+	}
 
-  if (corpse->value[CORPSE_SAVEID] == 0)
-    corpse->value[CORPSE_SAVEID] = time(NULL);
+	if (corpse->value[CORPSE_SAVEID] == 0)
+		corpse->value[CORPSE_SAVEID] = time(NULL);
 
-  sql_save_corpse(corpse);
+	sql_save_corpse(corpse);
 }
 
 int writeItems(char *buf, P_char ch)
 {
-  char    *start = buf;
-  int      count, i;
-  int      a, b;                /*
-                                 * Added for easier debugging via GDB
-                                 * -Torm
-                                 */
+	char *start = buf;
+	int   count, i;
+	int   a, b; /*
+	             * Added for easier debugging via GDB
+	             * -Torm
+	             */
 
-  ibuf = buf;
+	ibuf = buf;
 
-  ADD_BYTE(ibuf, (char) SAV_ITEMVERS);
-  a = countEquip(ch);           /*
-                                 * including contents of worn containers
-                                 */
-  b = countInven(ch->carrying);
-  count = a + b;
-  save_count = 0;
+	ADD_BYTE(ibuf, (char)SAV_ITEMVERS);
+	a = countEquip(ch); /*
+	                     * including contents of worn containers
+	                     */
+	b          = countInven(ch->carrying);
+	count      = a + b;
+	save_count = 0;
 
-  ADD_INT(ibuf, count);         /* total number of items being saved */
+	ADD_INT(ibuf, count); /* total number of items being saved */
 
-  /*
-   * writeObjectlist() writes the entire list, with recursive calls to
-   * handle containers in the list.  We call it for each piece of equip
-   * as a list of 1, because it's neater that way.
-   */
+	/*
+	 * writeObjectlist() writes the entire list, with recursive calls to
+	 * handle containers in the list.  We call it for each piece of equip
+	 * as a list of 1, because it's neater that way.
+	 */
 
-  for (i = 0; i < MAX_WEAR; i++)
-    if (save_equip[i])
-      if (!writeObjectlist(save_equip[i], (::byte) (i + 1)))
-        return 0;
+	for (i = 0; i < MAX_WEAR; i++)
+		if (save_equip[i])
+			if (!writeObjectlist(save_equip[i], (::byte)(i + 1)))
+				return 0;
 
-  if (!writeObjectlist(ch->carrying, (::byte) 0))
-    return 0;
+	if (!writeObjectlist(ch->carrying, (::byte)0))
+		return 0;
 
-  if (!(save_count == count))
-  {
-    logit(LOG_DEBUG, "save counts don't match in writeItems!");
-		return 0;    
-  }
-  return (int) (ibuf - start);
+	if (!(save_count == count))
+	{
+		logit(LOG_DEBUG, "save counts don't match in writeItems!");
+		return 0;
+	}
+	return (int)(ibuf - start);
 }
 
 /* write witness record (TASFALEN) */
 
-int writeWitness(char *buf, wtns_rec * rec)
+int writeWitness(char *buf, wtns_rec *rec)
 {
-  wtns_rec *first = rec;
-  char    *start = buf;
-  int      count = 0;
+	wtns_rec *first = rec;
+	char     *start = buf;
+	int       count = 0;
 
-  while (rec)
-  {
-    count++;
-    rec = rec->next;
-  }
-  ADD_BYTE(buf, (char) SAV_WTNSVERS);
+	while (rec)
+	{
+		count++;
+		rec = rec->next;
+	}
+	ADD_BYTE(buf, (char)SAV_WTNSVERS);
 
-  rec = first;
-  ADD_INT(buf, count);
+	rec = first;
+	ADD_INT(buf, count);
 
-  while (rec)
-  {
-    ADD_STRING(buf, rec->attacker);
-    ADD_STRING(buf, rec->victim);
-    ADD_LONG(buf, rec->time);
-    ADD_INT(buf, rec->crime);
-    ADD_INT(buf, rec->room);
+	while (rec)
+	{
+		ADD_STRING(buf, rec->attacker);
+		ADD_STRING(buf, rec->victim);
+		ADD_LONG(buf, rec->time);
+		ADD_INT(buf, rec->crime);
+		ADD_INT(buf, rec->room);
 
-    rec = rec->next;
-  }
+		rec = rec->next;
+	}
 
-  return (int) (buf - start);
+	return (int)(buf - start);
 }
 
 void delete_knownShapes(P_char ch)
 {
-  struct char_shapechange_data *curShape = ch->only.pc->knownShapes;
-  struct char_shapechange_data *pShape;
+	struct char_shapechange_data *curShape = ch->only.pc->knownShapes;
+	struct char_shapechange_data *pShape;
 
-  while (NULL != (pShape = curShape))
-  {
-    curShape = pShape->next;
-    FREE(pShape);
-  }
-  ch->only.pc->knownShapes = NULL;
+	while (NULL != (pShape = curShape))
+	{
+		curShape = pShape->next;
+		FREE(pShape);
+	}
+	ch->only.pc->knownShapes = NULL;
 }
-
 
 void writeShapechangeData(P_char ch)
 {
-  if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
-  {
-    sql_save_player_shapechanges(ch);
-  }
+	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
+	{
+		sql_save_player_shapechanges(ch);
+	}
 }
 
 void readShapechangeData(P_char ch)
 {
-  if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
-  {
-    sql_load_player_shapechanges(ch);
-  }
+	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
+	{
+		sql_load_player_shapechanges(ch);
+	}
 }
 
 int calculate_save_room(P_char ch, int type, int room)
 {
 
-  /* type 7 save char in room, so if crash it will reload there */
-  if ((type == RENT_CRASH2) && (room != NOWHERE))
-    ch->specials.was_in_room = world[room].number;
+	/* type 7 save char in room, so if crash it will reload there */
+	if ((type == RENT_CRASH2) && (room != NOWHERE))
+		ch->specials.was_in_room = world[room].number;
 
-  /*
-   * ok, room given to this func, is real room number, to prevent mass
-   * confusion, xlate to virtual number before writing it to file.  JAB
-   *   the ugliest switch statement ever. Tharkun
-   */
+	/*
+	 * ok, room given to this func, is real room number, to prevent mass
+	 * confusion, xlate to virtual number before writing it to file.  JAB
+	 *   the ugliest switch statement ever. Tharkun
+	 */
 
-  if (room == ch->in_room)
-  {
-  }
-  switch ((room == ch->in_room) ? 1 : (room ==
-                                       real_room(ch->specials.
-                                                 was_in_room)) ? 2 : 0)
-  {
-  case 0:
-    /*
-     * mystery room, make it NOWHERE
-     */
-    room = NOWHERE;
-    break;
+	if (room == ch->in_room)
+	{
+	}
+	switch ((room == ch->in_room) ? 1 : (room == real_room(ch->specials.was_in_room)) ? 2 : 0)
+	{
+		case 0:
+			/*
+			 * mystery room, make it NOWHERE
+			 */
+			room = NOWHERE;
+			break;
 
-  case 1:
-    if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
-      break;
-    room = real_room(ch->specials.was_in_room);
-  case 2:
-    if ((room > 1) && (room <= top_of_world))
-      break;
-    else if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
-    {
-      room = ch->in_room;
-      break;
-    }
-    break;
-  }
+		case 1:
+			if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
+				break;
+			room = real_room(ch->specials.was_in_room);
+		case 2:
+			if ((room > 1) && (room <= top_of_world))
+				break;
+			else if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
+			{
+				room = ch->in_room;
+				break;
+			}
+			break;
+	}
 
-  if (room == NOWHERE)
-    room = real_room(GET_BIRTHPLACE(ch) ? GET_BIRTHPLACE(ch) : GET_HOME(ch));
-  /*
-   * GET_HOME(ch) is now last rent spot
-   */
-  /*
-   * special case, 4 is death, no items, and they come back in
-   * birthplace
-   */
-  if (type == RENT_DEATH)
-  {
-    room = real_room(GET_BIRTHPLACE(ch));
-    GET_HOME(ch) = GET_BIRTHPLACE(ch);
-  }
-  /*
-   * ok, unless I REALLY screwed up, at this point we have a valid
-   * 'real' room number to save in, or room == NOWHERE.  If it's real,
-   * we have to convert it to virtual number to save it properly.  JAB
-   */
+	if (room == NOWHERE)
+		room = real_room(GET_BIRTHPLACE(ch) ? GET_BIRTHPLACE(ch) : GET_HOME(ch));
+	/*
+	 * GET_HOME(ch) is now last rent spot
+	 */
+	/*
+	 * special case, 4 is death, no items, and they come back in
+	 * birthplace
+	 */
+	if (type == RENT_DEATH)
+	{
+		room         = real_room(GET_BIRTHPLACE(ch));
+		GET_HOME(ch) = GET_BIRTHPLACE(ch);
+	}
+	/*
+	 * ok, unless I REALLY screwed up, at this point we have a valid
+	 * 'real' room number to save in, or room == NOWHERE.  If it's real,
+	 * we have to convert it to virtual number to save it properly.  JAB
+	 */
 
-  if (room != NOWHERE)
-    room = world[room].number;
+	if (room != NOWHERE)
+		room = world[room].number;
 
-  return room;
+	return room;
 }
-
 
 int writeCharacter(P_char ch, int type, int room)
 {
-  P_obj obj, obj2;
-  int i;
-  int result = 1;
+	P_obj obj, obj2;
+	int   i;
+	int   result = 1;
 
-  if (!ch || !GET_NAME(ch))
-    return 0;
+	if (!ch || !GET_NAME(ch))
+		return 0;
 
-  if (IS_MORPH(ch))
-  {
-    ch = MORPH_ORIG(ch);
-    if (!ch || !GET_NAME(ch))
-      return 0;
-  }
+	if (IS_MORPH(ch))
+	{
+		ch = MORPH_ORIG(ch);
+		if (!ch || !GET_NAME(ch))
+			return 0;
+	}
 
-  if (IS_NPC(ch))
-    return 0;
+	if (IS_NPC(ch))
+		return 0;
 
-  // locker hook (pre-save)
-  if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
-    room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
+	// locker hook (pre-save)
+	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
+		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
 
-  writeShapechangeData(ch);
-  room = calculate_save_room(ch, type, room);
+	writeShapechangeData(ch);
+	room = calculate_save_room(ch, type, room);
 
-  // skip locker characters for sql operations
-  if (!strstr(GET_NAME(ch), ".locker"))
-  {
-    sql_update_money(ch);
-    if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
-      sql_update_playtime(ch);
-    sql_update_epics(ch);
-  }
+	// skip locker characters for sql operations
+	if (!strstr(GET_NAME(ch), ".locker"))
+	{
+		sql_update_money(ch);
+		if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
+			sql_update_playtime(ch);
+		sql_update_epics(ch);
+	}
 
-  save_zone_trophy(ch);
+	save_zone_trophy(ch);
 
-  if (ch->desc)
-    ch->desc->rtype = type;
+	if (ch->desc)
+		ch->desc->rtype = type;
 
-  // unequip everything and remove affects before saving
-  for (i = 0; i < MAX_WEAR; i++)
-    if (ch->equipment[i])
-      save_equip[i] = unequip_char(ch, i, TRUE);
-    else
-      save_equip[i] = NULL;
+	// unequip everything and remove affects before saving
+	for (i = 0; i < MAX_WEAR; i++)
+		if (ch->equipment[i])
+			save_equip[i] = unequip_char(ch, i, TRUE);
+		else
+			save_equip[i] = NULL;
 
-  all_affects(ch, FALSE);
-  updateShortAffects(ch);
+	all_affects(ch, FALSE);
+	updateShortAffects(ch);
 
-  // save to database
-  if (strstr(GET_NAME(ch), ".locker"))
-  {
-    // save locker to database
-    int owner_pid = 0;
-    int owner_assoc_id = 0;
+	// save to database
+	if (strstr(GET_NAME(ch), ".locker"))
+	{
+		// save locker to database
+		int owner_pid      = 0;
+		int owner_assoc_id = 0;
 
-    if (strncmp(GET_NAME(ch), "guild.", 6) == 0)
-    {
-      // guild locker: guild.X.locker - extract guild id
-      owner_assoc_id = atoi(GET_NAME(ch) + 6);
-    }
-    else if (strncmp(GET_NAME(ch), "account.", 8) == 0)
-    {
-      // account locker - stored by name, no pid
-      owner_pid = 0;
-    }
-    else
-    {
-      // player locker: playername.locker - get player's pid
-      char pname[MAX_NAME_LENGTH + 1];
-      strncpy(pname, GET_NAME(ch), sizeof(pname) - 1);
-      pname[sizeof(pname) - 1] = '\0';
-      char *dot = strstr(pname, ".locker");
-      if (dot)
-        *dot = '\0';
-      owner_pid = sql_get_player_pid(pname);
-    }
+		if (strncmp(GET_NAME(ch), "guild.", 6) == 0)
+		{
+			// guild locker: guild.X.locker - extract guild id
+			owner_assoc_id = atoi(GET_NAME(ch) + 6);
+		}
+		else if (strncmp(GET_NAME(ch), "account.", 8) == 0)
+		{
+			// account locker - stored by name, no pid
+			owner_pid = 0;
+		}
+		else
+		{
+			// player locker: playername.locker - get player's pid
+			char pname[MAX_NAME_LENGTH + 1];
+			strncpy(pname, GET_NAME(ch), sizeof(pname) - 1);
+			pname[sizeof(pname) - 1] = '\0';
+			char *dot                = strstr(pname, ".locker");
+			if (dot)
+				*dot = '\0';
+			owner_pid = sql_get_player_pid(pname);
+		}
 
-    if (!sql_save_locker(ch, owner_pid, owner_assoc_id))
-    {
-      logit(LOG_FILE, "sql_save_locker failed for %s", GET_NAME(ch));
-      wizlog(AVATAR, "&+RERROR&N sql_save_locker failed for %s", GET_NAME(ch));
-      result = 0;
-    }
-  }
-  else
-  {
-    if (!sql_save_player(ch, type, room))
-    {
-      logit(LOG_FILE, "sql_save_player failed for %s", GET_NAME(ch));
-      wizlog(AVATAR, "&+RERROR&N sql_save_player failed for %s", GET_NAME(ch));
-      result = 0;
-    }
-  }
+		if (!sql_save_locker(ch, owner_pid, owner_assoc_id))
+		{
+			logit(LOG_FILE, "sql_save_locker failed for %s", GET_NAME(ch));
+			wizlog(AVATAR, "&+RERROR&N sql_save_locker failed for %s", GET_NAME(ch));
+			result = 0;
+		}
+	}
+	else
+	{
+		if (!sql_save_player(ch, type, room))
+		{
+			logit(LOG_FILE, "sql_save_player failed for %s", GET_NAME(ch));
+			wizlog(AVATAR, "&+RERROR&N sql_save_player failed for %s", GET_NAME(ch));
+			result = 0;
+		}
+	}
 
-  // re-equip or extract based on save type
-  if ((type != RENT_INN) && (type != RENT_LINKDEAD) && (type != RENT_CAMPED) && (type != RENT_DEATH)
-      && (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
-  {
-    for (i = 0; i < MAX_WEAR; i++)
-      if (save_equip[i])
-        equip_char(ch, save_equip[i], i, 9);
-    for (i = 0; i < MAX_WEAR; i++)
-      save_equip[i] = NULL;
-  }
-  else
-  {
-    for (i = 0; i < MAX_WEAR; i++)
-      if (save_equip[i])
-      {
-        extract_obj(save_equip[i]);
-        save_equip[i] = NULL;
-      }
-    for (obj = ch->carrying; obj; obj = obj2)
-    {
-      obj2 = obj->next_content;
-      extract_obj(obj);
-      obj = NULL;
-    }
-  }
+	// re-equip or extract based on save type
+	if ((type != RENT_INN) && (type != RENT_LINKDEAD) && (type != RENT_CAMPED) && (type != RENT_DEATH) && (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
+	{
+		for (i = 0; i < MAX_WEAR; i++)
+			if (save_equip[i])
+				equip_char(ch, save_equip[i], i, 9);
+		for (i = 0; i < MAX_WEAR; i++)
+			save_equip[i] = NULL;
+	}
+	else
+	{
+		for (i = 0; i < MAX_WEAR; i++)
+			if (save_equip[i])
+			{
+				extract_obj(save_equip[i]);
+				save_equip[i] = NULL;
+			}
+		for (obj = ch->carrying; obj; obj = obj2)
+		{
+			obj2 = obj->next_content;
+			extract_obj(obj);
+			obj = NULL;
+		}
+	}
 
-  // reapply affects
-  all_affects(ch, TRUE);
+	// reapply affects
+	all_affects(ch, TRUE);
 
-  // locker hook (post-save)
-  if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
-    (*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+	// locker hook (post-save)
+	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
+		(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
 
-  return result;
+	return result;
 }
 
 #endif
 
 int deleteCharacter(P_char ch, bool bDeleteLocker)
 {
-  char    *tmp;
-  char     name[MAX_STRING_LENGTH];
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  P_obj    obj;
-  FILE    *f;
+	char *tmp;
+	char  name[MAX_STRING_LENGTH];
+	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	P_obj obj;
+	FILE *f;
 
-  strcpy(name, GET_NAME(ch));
-  for( tmp = name; *tmp; tmp++ )
-  {
-    *tmp = LOWER(*tmp);
-  }
+	strcpy(name, GET_NAME(ch));
+	for (tmp = name; *tmp; tmp++)
+	{
+		*tmp = LOWER(*tmp);
+	}
 
-  // Remove all artis from char.
-  remove_all_artifacts_sql( ch );
-  remove_all_locker_access( ch );
-  if( GET_ASSOC(ch) != NULL )
-  {
-    GET_ASSOC(ch)->kick(ch);
-  }
+	// Remove all artis from char.
+	remove_all_artifacts_sql(ch);
+	remove_all_locker_access(ch);
+	if (GET_ASSOC(ch) != NULL)
+	{
+		GET_ASSOC(ch)->kick(ch);
+	}
 
-  // Soft delete character from frag leaderboard tables (for web statistics)
-  sql_soft_delete_character( GET_PID(ch) );
+	// Soft delete character from frag leaderboard tables (for web statistics)
+	sql_soft_delete_character(GET_PID(ch));
 
 #ifdef USE_ACCOUNT
-  // Only remove from account list if descriptor and account exist
-  if (ch->desc && ch->desc->account)
-    remove_char_from_list(ch->desc->account, ch->player.name);
+	// Only remove from account list if descriptor and account exist
+	if (ch->desc && ch->desc->account)
+		remove_char_from_list(ch->desc->account, ch->player.name);
 #endif
 
-  snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s", SAVE_DIR, *name, name);
-  snprintf(Gbuf2, sizeof Gbuf2, "%s.old", Gbuf1);
-  rename(Gbuf1, Gbuf2);
-  if ((f = fopen( Gbuf1, "r" )))
-  {
-    debug( "deleteCharacter: Error: pfile (%s) still exists.", Gbuf1 );
-    debug( "deleteCharacter: Command: (%s) failed.", Gbuf2 );
-    fclose( f );
-    unlink(Gbuf1);
-  }
+	snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s", SAVE_DIR, *name, name);
+	snprintf(Gbuf2, sizeof Gbuf2, "%s.old", Gbuf1);
+	rename(Gbuf1, Gbuf2);
+	if ((f = fopen(Gbuf1, "r")))
+	{
+		debug("deleteCharacter: Error: pfile (%s) still exists.", Gbuf1);
+		debug("deleteCharacter: Command: (%s) failed.", Gbuf2);
+		fclose(f);
+		unlink(Gbuf1);
+	}
 
-  if( bDeleteLocker )
-  {
-    // delete the locker as well
-    snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.locker", SAVE_DIR, LOWER(*ch->player.name), name);
-    snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
-    rename(Gbuf1, Gbuf2);
-  }
+	if (bDeleteLocker)
+	{
+		// delete the locker as well
+		snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.locker", SAVE_DIR, LOWER(*ch->player.name), name);
+		snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
+		rename(Gbuf1, Gbuf2);
+	}
 
-  // Delete file containing conjurable mobs.
-  snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*ch->player.name), name);
-  snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
-  rename(Gbuf1, Gbuf2);
-  // Delete file containing crafting/forging recipe list.
-  snprintf(Gbuf1, sizeof Gbuf1, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR, LOWER(*ch->player.name), name);
-  snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
-  rename(Gbuf1, Gbuf2);
+	// Delete file containing conjurable mobs.
+	snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*ch->player.name), name);
+	snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
+	rename(Gbuf1, Gbuf2);
+	// Delete file containing crafting/forging recipe list.
+	snprintf(Gbuf1, sizeof Gbuf1, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR, LOWER(*ch->player.name), name);
+	snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
+	rename(Gbuf1, Gbuf2);
 
-  // Delete ship.
-  delete_ship( GET_NAME(ch) );
+	// Delete ship.
+	delete_ship(GET_NAME(ch));
 
-  return TRUE;
+	return TRUE;
 }
 
 void PurgeCorpseFile(P_obj corpse)
 {
-  char    *tmp;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char *tmp;
+	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
-  if (!corpse || (corpse->type != ITEM_CORPSE) ||
-      !IS_SET(corpse->value[1], PC_CORPSE)) {
+	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[1], PC_CORPSE))
+	{
 		logit(LOG_DEBUG, "item not a corpse in PurgeCorpseFile");
-    return;
+		return;
 	}
 
-  snprintf(Gbuf2, MAX_STRING_LENGTH, "%s%d", corpse->action_description, corpse->value[CORPSE_SAVEID]);
-  for (tmp = Gbuf2; *tmp; tmp++)
-    *tmp = LOWER(*tmp);
+	snprintf(Gbuf2, MAX_STRING_LENGTH, "%s%d", corpse->action_description, corpse->value[CORPSE_SAVEID]);
+	for (tmp = Gbuf2; *tmp; tmp++)
+		*tmp = LOWER(*tmp);
 
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Corpses/%s", SAVE_DIR, Gbuf2);
-  strcpy(Gbuf2, Gbuf1);
-  strcat(Gbuf2, ".bak");
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Corpses/%s", SAVE_DIR, Gbuf2);
+	strcpy(Gbuf2, Gbuf1);
+	strcat(Gbuf2, ".bak");
 
-  unlink(Gbuf1);
-  unlink(Gbuf2);
+	unlink(Gbuf1);
+	unlink(Gbuf2);
 
-  if (corpse->action_description && corpse->value[CORPSE_SAVEID])
-    sql_delete_corpse(corpse->action_description, corpse->value[CORPSE_SAVEID]);
+	if (corpse->action_description && corpse->value[CORPSE_SAVEID])
+		sql_delete_corpse(corpse->action_description, corpse->value[CORPSE_SAVEID]);
 
-  return;
+	return;
 }
 
 /*
@@ -1656,715 +1618,697 @@ void PurgeCorpseFile(P_obj corpse)
 
 ush_int getShort(char **buf)
 {
-  ush_int  s;
+	ush_int s;
 
-  bcopy(*buf, &s, short_size);
+	bcopy(*buf, &s, short_size);
 
-  s = ((ush_int) s);
-  *buf += short_size;
+	s = ((ush_int)s);
+	*buf += short_size;
 
-  return s;
+	return s;
 }
 
 uint getInt(char **buf)
 {
-  uint     i;
+	uint i;
 
-  bcopy(*buf, &i, int_size);
+	bcopy(*buf, &i, int_size);
 
-  i = (i);
-  *buf += int_size;
+	i = (i);
+	*buf += int_size;
 
-  return i;
+	return i;
 }
 
 long getLong(char **buf)
 {
-  long    l;
+	long l;
 
-  bcopy(*buf, &l, long_size);
+	bcopy(*buf, &l, long_size);
 
-  l = (l);
-  *buf += long_size;
+	l = (l);
+	*buf += long_size;
 
-  return l;
+	return l;
 }
 
-char    *getString(char **buf)
+char *getString(char **buf)
 {
-  int      len;
-  char    *s;
+	int   len;
+	char *s;
 
-  len = (int) GET_SHORT(*buf);
-  if (len == 0)
-    return 0;
-  else
-  {
-    CREATE(s, char, (unsigned) (len + 1), MEM_TAG_STRING);
+	len = (int)GET_SHORT(*buf);
+	if (len == 0)
+		return 0;
+	else
+	{
+		CREATE(s, char, (unsigned)(len + 1), MEM_TAG_STRING);
 
-    strncpy(s, *buf, (unsigned) len);
-    s[len] = 0;
-    *buf += len;
-  } return s;
+		strncpy(s, *buf, (unsigned)len);
+		s[len] = 0;
+		*buf += len;
+	}
+	return s;
 }
 
 int restoreStatus(char *buf, P_char ch)
 {
-  ::byte     dummy_byte;
-  char    *start = buf, *str;
-  long     dummy_long;
-  int      tmp, tmp2, tmp3, dummy_int, i;
-  unsigned short s;             /*, dummy_short; */
-  struct trophy_data *tr, *tr2;
-  char     buffer[2056];
+	::byte              dummy_byte;
+	char               *start = buf, *str;
+	long                dummy_long;
+	int                 tmp, tmp2, tmp3, dummy_int, i;
+	unsigned short      s; /*, dummy_short; */
+	struct trophy_data *tr, *tr2;
+	char                buffer[2056];
 
-  stat_vers = GET_BYTE(buf);
+	stat_vers = GET_BYTE(buf);
 
-  if( stat_vers > (char) SAV_STATVERS )
-  {
-    logit(LOG_FILE, "Save file for %s status restore failed.", GET_NAME(ch));
-    send_to_char
-      ("Your character file is in a format which the game doesn't know how\r\n"
-       "to load. Please log on with another character and talk to a God.\r\n",
-       ch);
-    return 0;
-  }
-  GET_NAME(ch) = GET_STRING(buf);
+	if (stat_vers > (char)SAV_STATVERS)
+	{
+		logit(LOG_FILE, "Save file for %s status restore failed.", GET_NAME(ch));
+		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
+		             "to load. Please log on with another character and talk to a God.\r\n",
+		             ch);
+		return 0;
+	}
+	GET_NAME(ch) = GET_STRING(buf);
 
-  ch->only.pc->pid = GET_INTE(buf);
+	ch->only.pc->pid = GET_INTE(buf);
 
-  ch->only.pc->screen_length = (ubyte) GET_BYTE(buf);
-  str = GET_STRING(buf);
+	ch->only.pc->screen_length = (ubyte)GET_BYTE(buf);
+	str                        = GET_STRING(buf);
 #ifndef _PFILE_
-  if (!str)
-  {
-    send_to_char
-      ("How did you manage to nullify your password!??\r\nPlease contact a GOD!\r\n",
-       ch);
-    fprintf(stderr,
-            "%s somehow managed to clear out his/her password field!\n",
-            GET_NAME(ch));
-    logit(LOG_FILE, "%s somehow managed to clear out his/her password field!",
-          GET_NAME(ch));
-    return 0;
-  }
+	if (!str)
+	{
+		send_to_char("How did you manage to nullify your password!??\r\nPlease contact a GOD!\r\n", ch);
+		fprintf(stderr, "%s somehow managed to clear out his/her password field!\n", GET_NAME(ch));
+		logit(LOG_FILE, "%s somehow managed to clear out his/her password field!", GET_NAME(ch));
+		return 0;
+	}
 #endif
-  strcpy(ch->only.pc->pwd, str);
-  FREE(str);
-  ch->player.short_descr = GET_STRING(buf);
-  ch->player.long_descr = GET_STRING(buf);
-  ch->player.description = GET_STRING(buf);
-  GET_TITLE(ch) = GET_STRING(buf);
-  if (stat_vers < 33)
-  {
-    ch->player.m_class = 1 << (GET_INTE(buf) - 1);
-    GET_INTE(buf);
-  }
-  else
-    ch->player.m_class = GET_INTE(buf);
-  if(stat_vers > 36)
-    ch->player.secondary_class = GET_INTE(buf);
-  if(stat_vers > 38)
-    ch->player.spec = GET_BYTE(buf);
+	strcpy(ch->only.pc->pwd, str);
+	FREE(str);
+	ch->player.short_descr = GET_STRING(buf);
+	ch->player.long_descr  = GET_STRING(buf);
+	ch->player.description = GET_STRING(buf);
+	GET_TITLE(ch)          = GET_STRING(buf);
+	if (stat_vers < 33)
+	{
+		ch->player.m_class = 1 << (GET_INTE(buf) - 1);
+		GET_INTE(buf);
+	}
+	else
+		ch->player.m_class = GET_INTE(buf);
+	if (stat_vers > 36)
+		ch->player.secondary_class = GET_INTE(buf);
+	if (stat_vers > 38)
+		ch->player.spec = GET_BYTE(buf);
 
-  if (IS_MULTICLASS_PC(ch))
-  {
-    ch->player.spec  = 0;
-  }
+	if (IS_MULTICLASS_PC(ch))
+	{
+		ch->player.spec = 0;
+	}
 
-  GET_RACE(ch) = GET_BYTE(buf);
-  GET_RACEWAR(ch) = GET_BYTE(buf);
-  ch->player.level = GET_BYTE(buf);
-  if (ch->player.level > MAXLVL)
-    ch->player.level = 1;
+	GET_RACE(ch)     = GET_BYTE(buf);
+	GET_RACEWAR(ch)  = GET_BYTE(buf);
+	ch->player.level = GET_BYTE(buf);
+	if (ch->player.level > MAXLVL)
+		ch->player.level = 1;
 
-  if (stat_vers < 33)
-  {
-    GET_BYTE(buf);
-  }
+	if (stat_vers < 33)
+	{
+		GET_BYTE(buf);
+	}
 
-  GET_SEX(ch) = GET_BYTE(buf);
-  ch->player.weight = GET_SHORT(buf);
-  ch->player.height = GET_SHORT(buf);
-  GET_SIZE(ch) = GET_BYTE(buf);
+	GET_SEX(ch)       = GET_BYTE(buf);
+	ch->player.weight = GET_SHORT(buf);
+	ch->player.height = GET_SHORT(buf);
+	GET_SIZE(ch)      = GET_BYTE(buf);
 
-  GET_HOME(ch) = GET_INTE(buf);
-  GET_BIRTHPLACE(ch) = 0;
-  GET_BIRTHPLACE(ch) = GET_INTE(buf);
-  GET_ORIG_BIRTHPLACE(ch) = GET_INTE(buf);
+	GET_HOME(ch)            = GET_INTE(buf);
+	GET_BIRTHPLACE(ch)      = 0;
+	GET_BIRTHPLACE(ch)      = GET_INTE(buf);
+	GET_ORIG_BIRTHPLACE(ch) = GET_INTE(buf);
 
-  ch->player.time.birth = GET_LONG(buf);
-  ch->player.time.played = GET_INTE(buf);
-  ch->player.time.saved = GET_LONG(buf);        /* last save time */
-  ch->player.time.logon = time(0);      /* set it */
-  ch->player.time.perm_aging = GET_SHORT(buf);
-  for (i = 0; i < MAX_CIRCLE + 1; i++)
-    ch->specials.undead_spell_slots[i] = GET_BYTE(buf);
-  GET_INTE(buf);                //!!! last_level
+	ch->player.time.birth      = GET_LONG(buf);
+	ch->player.time.played     = GET_INTE(buf);
+	ch->player.time.saved      = GET_LONG(buf); /* last save time */
+	ch->player.time.logon      = time(0);       /* set it */
+	ch->player.time.perm_aging = GET_SHORT(buf);
+	for (i = 0; i < MAX_CIRCLE + 1; i++)
+		ch->specials.undead_spell_slots[i] = GET_BYTE(buf);
+	GET_INTE(buf); //!!! last_level
 
-  for (i = 0; i < NUMB_PC_TIMERS; i++)
-    ch->only.pc->pc_timer[i] = GET_LONG(buf);
+	for (i = 0; i < NUMB_PC_TIMERS; i++)
+		ch->only.pc->pc_timer[i] = GET_LONG(buf);
 
-  /* trophy stuff */
-//  ch->only.pc->trophy = NULL;
-//  if (!dead_trophy_pool)
-//    dead_trophy_pool = mm_create("TROPHY",
-//                                 sizeof(struct trophy_data),
-//                                 offsetof(struct trophy_data, next), 3);
-  ZONE_TROPHY(ch) = NULL;
-  load_zone_trophy(ch);
+	/* trophy stuff */
+	//  ch->only.pc->trophy = NULL;
+	//  if (!dead_trophy_pool)
+	//    dead_trophy_pool = mm_create("TROPHY",
+	//                                 sizeof(struct trophy_data),
+	//                                 offsetof(struct trophy_data, next), 3);
+	ZONE_TROPHY(ch) = NULL;
+	load_zone_trophy(ch);
 
-  if( stat_vers < 45 )
-  {
-    // old trophy data
-    tmp = GET_BYTE(buf);
-    for (tmp2 = 0; tmp2 < tmp; tmp2++)
-    {
-      GET_INTE(buf);
-      GET_INTE(buf);
-      //    tr = (struct trophy_data *) mm_get(dead_trophy_pool);
-      //    tr->vnum = GET_INTE(buf);
-      //    tr->kills = GET_INTE(buf);
-      //    tr->next = NULL;
-      //    /* add it to the END */
-      //    if (!ch->only.pc->trophy)
-      //    {
-      //      ch->only.pc->trophy = tr;
-      //    }
-      //    else
-      //    {
-      //      tr2 = ch->only.pc->trophy;
-      //      while (tr2->next)
-      //        tr2 = tr2->next;
-      //      tr2->next = tr;
-      //    
-    }      
-  }
+	if (stat_vers < 45)
+	{
+		// old trophy data
+		tmp = GET_BYTE(buf);
+		for (tmp2 = 0; tmp2 < tmp; tmp2++)
+		{
+			GET_INTE(buf);
+			GET_INTE(buf);
+			//    tr = (struct trophy_data *) mm_get(dead_trophy_pool);
+			//    tr->vnum = GET_INTE(buf);
+			//    tr->kills = GET_INTE(buf);
+			//    tr->next = NULL;
+			//    /* add it to the END */
+			//    if (!ch->only.pc->trophy)
+			//    {
+			//      ch->only.pc->trophy = tr;
+			//    }
+			//    else
+			//    {
+			//      tr2 = ch->only.pc->trophy;
+			//      while (tr2->next)
+			//        tr2 = tr2->next;
+			//      tr2->next = tr;
+			//
+		}
+	}
 
-  s = GET_SHORT(buf);           /* number of tongues */
-  for (tmp = 0; tmp < MAX(s, MAX_TONGUE); tmp++)
-    if ((tmp < s) && (tmp < MAX_TONGUE))
-    {
-      /* valid language number was stored */
-      GET_LANGUAGE(ch, tmp) = GET_BYTE(buf);
-    }
-    else
-    {
-      if (tmp < s)
-      {
-        /*
-         * MAX_TONGUE is smaller than saved version, so read and
-         * discard the extra bytes
-         */
-        dummy_byte = GET_BYTE(buf);
-      }
-      else
-      {
-        /* number of languages has grown, make sure new ones are 0% */
-        GET_LANGUAGE(ch, tmp) = 0;
-      }
-    }
-  /* intro stuff */
-  s = GET_SHORT(buf);
-  for (tmp = 0; tmp < MAX(s, MAX_INTRO); tmp++)
-  {
-    if ((tmp < s) && (tmp < MAX_INTRO))
-    {
-      ch->only.pc->introd_list[tmp] = GET_INTE(buf);
-      ch->only.pc->introd_times[tmp] = GET_LONG(buf);
-    }
-    else
-    {
-      if (tmp < s)
-      {
-        dummy_int = GET_INTE(buf);
-        dummy_long = GET_LONG(buf);
-      }
-      else
-      {
-        ch->only.pc->introd_list[tmp] = 0;
-        ch->only.pc->introd_times[tmp] = 0;
-      }
-    }
-  }
+	s = GET_SHORT(buf); /* number of tongues */
+	for (tmp = 0; tmp < MAX(s, MAX_TONGUE); tmp++)
+		if ((tmp < s) && (tmp < MAX_TONGUE))
+		{
+			/* valid language number was stored */
+			GET_LANGUAGE(ch, tmp) = GET_BYTE(buf);
+		}
+		else
+		{
+			if (tmp < s)
+			{
+				/*
+				 * MAX_TONGUE is smaller than saved version, so read and
+				 * discard the extra bytes
+				 */
+				dummy_byte = GET_BYTE(buf);
+			}
+			else
+			{
+				/* number of languages has grown, make sure new ones are 0% */
+				GET_LANGUAGE(ch, tmp) = 0;
+			}
+		}
+	/* intro stuff */
+	s = GET_SHORT(buf);
+	for (tmp = 0; tmp < MAX(s, MAX_INTRO); tmp++)
+	{
+		if ((tmp < s) && (tmp < MAX_INTRO))
+		{
+			ch->only.pc->introd_list[tmp]  = GET_INTE(buf);
+			ch->only.pc->introd_times[tmp] = GET_LONG(buf);
+		}
+		else
+		{
+			if (tmp < s)
+			{
+				dummy_int  = GET_INTE(buf);
+				dummy_long = GET_LONG(buf);
+			}
+			else
+			{
+				ch->only.pc->introd_list[tmp]  = 0;
+				ch->only.pc->introd_times[tmp] = 0;
+			}
+		}
+	}
 
-   if(stat_vers > 37 && stat_vers < 40)
-  for (tmp = 0; tmp < 100; tmp++)
-  {
-   ch->only.pc->learned_forged_list[tmp] = GET_INTE(buf);
+	if (stat_vers > 37 && stat_vers < 40)
+		for (tmp = 0; tmp < 100; tmp++)
+		{
+			ch->only.pc->learned_forged_list[tmp] = GET_INTE(buf);
+		}
+	if (stat_vers > 39)
+		for (tmp = 0; tmp < MAX_FORGE_ITEMS; tmp++)
+		{
+			ch->only.pc->learned_forged_list[tmp] = GET_INTE(buf);
+		}
 
-  }
-  if(stat_vers > 39)
-     for (tmp = 0; tmp < MAX_FORGE_ITEMS; tmp++)
-        {
-            ch->only.pc->learned_forged_list[tmp] = GET_INTE(buf);
+	ch->base_stats.Str = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Dex = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Agi = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Con = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Pow = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Int = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Wis = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Cha = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Kar = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Luk = (ubyte)GET_BYTE(buf);
+	ch->curr_stats     = ch->base_stats;
 
-             }
+	GET_MANA(ch)         = GET_SHORT(buf);
+	ch->points.base_mana = GET_SHORT(buf);
+	GET_HIT(ch)          = GET_SHORT(buf);
+	if (GET_HIT(ch) < 0)
+		GET_HIT(ch) = 0;
+	ch->only.pc->spells_memmed[MAX_CIRCLE] = GET_BYTE(buf);
+	ch->points.base_hit                    = GET_SHORT(buf);
+	if (ch->points.base_hit < 1)
+		ch->points.base_hit = 1;
+	GET_VITALITY(ch)         = GET_SHORT(buf);
+	ch->points.base_vitality = GET_SHORT(buf);
+	ch->points.base_ward     = 0;
+	ch->points.hit_reg       = 0;
+	ch->points.move_reg      = 0;
+	ch->points.mana_reg      = 0;
+	ch->points.ward_reg      = 0;
 
-  ch->base_stats.Str = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Dex = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Agi = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Con = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Pow = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Int = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Wis = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Cha = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Kar = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Luk = (ubyte) GET_BYTE(buf);
-  ch->curr_stats = ch->base_stats;
+	GET_COPPER(ch)   = GET_INTE(buf);
+	GET_SILVER(ch)   = GET_INTE(buf);
+	GET_GOLD(ch)     = GET_INTE(buf);
+	GET_PLATINUM(ch) = GET_INTE(buf);
 
-  GET_MANA(ch) = GET_SHORT(buf);
-  ch->points.base_mana = GET_SHORT(buf);
-  GET_HIT(ch) = GET_SHORT(buf);
-  if (GET_HIT(ch) < 0)
-    GET_HIT(ch) = 0;
-  ch->only.pc->spells_memmed[MAX_CIRCLE] = GET_BYTE(buf);
-  ch->points.base_hit = GET_SHORT(buf);
-  if (ch->points.base_hit < 1)
-    ch->points.base_hit = 1;
-  GET_VITALITY(ch) = GET_SHORT(buf);
-  ch->points.base_vitality = GET_SHORT(buf);
-  ch->points.base_ward = 0;
-  ch->points.hit_reg = 0;
-  ch->points.move_reg = 0;
-  ch->points.mana_reg = 0;
-  ch->points.ward_reg = 0;
+	GET_EXP(ch) = GET_INTE(buf);
+	//  ch->points.max_exp =
+	GET_INTE(buf);
+	ch->only.pc->epics = GET_INTE(buf); // Used for lvl withouth potion
 
-  GET_COPPER(ch) = GET_INTE(buf);
-  GET_SILVER(ch) = GET_INTE(buf);
-  GET_GOLD(ch) = GET_INTE(buf);
-  GET_PLATINUM(ch) = GET_INTE(buf);
+	if (stat_vers >= 44)
+	{
+		ch->only.pc->epic_skill_points = GET_INTE(buf);
+	}
+	else
+	{
+		ch->only.pc->epic_skill_points = 0;
+	}
 
-  GET_EXP(ch) = GET_INTE(buf);
-//  ch->points.max_exp =
-  GET_INTE(buf);
-  ch->only.pc->epics = GET_INTE(buf);    // Used for lvl withouth potion
+	if (stat_vers > 46)
+		ch->only.pc->skillpoints = GET_INTE(buf);
 
-  if(stat_vers >= 44)
-  {
-    ch->only.pc->epic_skill_points = GET_INTE(buf);
-  }
-  else
-  {
-    ch->only.pc->epic_skill_points = 0;
-  }
+	if (stat_vers > 40)
+		ch->only.pc->spell_bind_used = GET_INTE(buf);
 
-  if(stat_vers > 46)
-    ch->only.pc->skillpoints = GET_INTE(buf);
+	// quaffed_level
+	if (stat_vers < 43)
+		GET_INTE(buf);
 
-  if(stat_vers > 40)
-    ch->only.pc->spell_bind_used = GET_INTE(buf);
+	SET_POS(ch, POS_STANDING + STAT_NORMAL);
+	ch->specials.act  = GET_INTE(buf);
+	ch->specials.act2 = GET_INTE(buf);
+	REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+	if (stat_vers < 35)
+	{
+		GET_INTE(buf);
+		GET_INTE(buf);
+	}
+	ch->only.pc->vote      = GET_INTE(buf);
+	ch->specials.alignment = GET_INTE(buf);
 
-  // quaffed_level
-  if(stat_vers < 43)
-    GET_INTE(buf);
+	GET_INTE(buf); // orig_align field, not used anymore
 
-  SET_POS(ch, POS_STANDING + STAT_NORMAL);
-  ch->specials.act = GET_INTE(buf);
-  ch->specials.act2 = GET_INTE(buf);
-  REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
-  if (stat_vers < 35)
-  {
-    GET_INTE(buf);
-    GET_INTE(buf);
-  }
-  ch->only.pc->vote = GET_INTE(buf);
-  ch->specials.alignment = GET_INTE(buf);
+	ch->only.pc->prestige = GET_SHORT(buf);
+	if ((tmp = GET_SHORT(buf)) > 0)
+	{
+		ch->specials.guild = get_guild_from_id(tmp);
+		if (GET_ASSOC(ch) == NULL)
+		{
+			clear_title(ch);
+			send_to_char("\n&+CYour guild no longer seems to exist.&n\n\n", ch);
+			// Reset guild bits.
+			GET_A_BITS(ch) = 0;
+			GET_INTE(buf);
+			// Set time left guild to now
+			GET_TIME_LEFT_GUILD(ch) = time(0);
+			GET_LONG(buf);
+			// Increment number of times left guild.
+			GET_NB_LEFT_GUILD(ch) = GET_BYTE(buf) + 1;
+		}
+		// Load guild info
+		else
+		{
+			GET_A_BITS(ch)          = GET_INTE(buf);
+			GET_TIME_LEFT_GUILD(ch) = GET_LONG(buf);
+			GET_NB_LEFT_GUILD(ch)   = GET_BYTE(buf);
+		}
+	}
+	// Not in a guild.
+	else
+	{
+		GET_ASSOC(ch)           = NULL;
+		GET_A_BITS(ch)          = GET_INTE(buf);
+		GET_TIME_LEFT_GUILD(ch) = GET_LONG(buf);
+		GET_NB_LEFT_GUILD(ch)   = GET_BYTE(buf);
+	}
 
-  GET_INTE(buf);  // orig_align field, not used anymore
+	if (stat_vers > 31)
+		ch->only.pc->time_unspecced = GET_LONG(buf);
+	else
+		ch->only.pc->time_unspecced = 0;
 
-  ch->only.pc->prestige = GET_SHORT(buf);
-  if( (tmp = GET_SHORT( buf )) > 0 )
-  {
-    ch->specials.guild = get_guild_from_id(tmp);
-    if( GET_ASSOC(ch) == NULL )
-    {
-      clear_title( ch );
-      send_to_char( "\n&+CYour guild no longer seems to exist.&n\n\n", ch );
-      // Reset guild bits.
-      GET_A_BITS(ch) = 0;
-      GET_INTE(buf);
-      // Set time left guild to now
-      GET_TIME_LEFT_GUILD(ch) = time(0);
-      GET_LONG(buf);
-      // Increment number of times left guild.
-      GET_NB_LEFT_GUILD(ch) = GET_BYTE(buf) + 1;
-    }
-    // Load guild info
-    else
-    {
-      GET_A_BITS(ch) = GET_INTE(buf);
-      GET_TIME_LEFT_GUILD(ch) = GET_LONG(buf);
-      GET_NB_LEFT_GUILD(ch) = GET_BYTE(buf);
-    }
-  }
-  // Not in a guild.
-  else
-  {
-    GET_ASSOC(ch) = NULL;
-    GET_A_BITS(ch) = GET_INTE(buf);
-    GET_TIME_LEFT_GUILD(ch) = GET_LONG(buf);
-    GET_NB_LEFT_GUILD(ch) = GET_BYTE(buf);
-  }
+	if (stat_vers <= 35)
+		for (tmp = 0; tmp < 5; tmp++)
+		{
+			GET_BYTE(buf);
+			GET_BYTE(buf);
+		}
 
-  if (stat_vers > 31)
-    ch->only.pc->time_unspecced = GET_LONG(buf);
-  else
-    ch->only.pc->time_unspecced = 0;
+	if (stat_vers < 46)
+	{
+		ch->only.pc->frags = 0;
+		GET_LONG(buf);
+		ch->only.pc->oldfrags = 0;
+		GET_LONG(buf);
+	}
+	else
+	{
+		ch->only.pc->frags    = GET_LONG(buf);
+		ch->only.pc->oldfrags = GET_LONG(buf);
+	}
 
-  if (stat_vers <= 35)
-    for (tmp = 0; tmp < 5; tmp++)
-    {
-      GET_BYTE(buf);
-      GET_BYTE(buf);
-    }
+	if (stat_vers < 35)
+	{
+		GET_SHORT(buf);
+		GET_SHORT(buf);
+	}
+	if (stat_vers < 34)
+		GET_INTE(buf);
+	if (stat_vers < 35)
+		GET_INTE(buf);
 
-  if (stat_vers < 46)
-  {
-    ch->only.pc->frags = 0; GET_LONG(buf);
-    ch->only.pc->oldfrags = 0; GET_LONG(buf);
-  }
-  else
-  {
-    ch->only.pc->frags = GET_LONG(buf);
-    ch->only.pc->oldfrags = GET_LONG(buf);
-  }
+	ch->only.pc->numb_gcmd = GET_INTE(buf);
+	if (ch->only.pc->numb_gcmd)
+	{
+		CREATE(ch->only.pc->gcmd_arr, int, ch->only.pc->numb_gcmd, MEM_TAG_ARRAY);
 
-  if (stat_vers < 35)
-  {
-    GET_SHORT(buf);
-    GET_SHORT(buf);
-  }
-  if (stat_vers < 34)
-    GET_INTE(buf);
-  if (stat_vers < 35)
-    GET_INTE(buf);
+		for (tmp = 0; tmp < ch->only.pc->numb_gcmd; tmp++)
+			ch->only.pc->gcmd_arr[tmp] = GET_INTE(buf);
+	}
 
-  ch->only.pc->numb_gcmd = GET_INTE(buf);
-  if (ch->only.pc->numb_gcmd)
-  {
-    CREATE(ch->only.pc->gcmd_arr, int, ch->only.pc->numb_gcmd, MEM_TAG_ARRAY);
-
-    for (tmp = 0; tmp < ch->only.pc->numb_gcmd; tmp++)
-      ch->only.pc->gcmd_arr[tmp] = GET_INTE(buf);
-  }
-
-  for (tmp = 0; tmp < MAX_COND; tmp++)
-  {
-    ch->specials.conditions[tmp] = GET_BYTE(buf);
-    if ((ch->specials.conditions[tmp] < 0) && !IS_TRUSTED(ch))
-      ch->specials.conditions[tmp] = 0;
-  }
+	for (tmp = 0; tmp < MAX_COND; tmp++)
+	{
+		ch->specials.conditions[tmp] = GET_BYTE(buf);
+		if ((ch->specials.conditions[tmp] < 0) && !IS_TRUSTED(ch))
+			ch->specials.conditions[tmp] = 0;
+	}
 
 // -Foo Remove hunger/thirst
 #if 1
-  GET_COND(ch, FULL) = -1;
-  GET_COND(ch, THIRST) = -1;
+	GET_COND(ch, FULL)   = -1;
+	GET_COND(ch, THIRST) = -1;
 #endif
-  if (stat_vers < 35)
-    for (tmp = 0; tmp < MAX_PETS; tmp++)
-      GET_INTE(buf);
-  ch->only.pc->poofIn = GET_STRING(buf);
-  ch->only.pc->poofOut = GET_STRING(buf);
-  if (stat_vers > 10)
-  {
-    ch->only.pc->poofInSound = GET_STRING(buf);
-    ch->only.pc->poofOutSound = GET_STRING(buf);
-  }
-  ch->only.pc->echo_toggle = GET_BYTE(buf);
-  ch->only.pc->prompt = GET_SHORT(buf);
-  ch->only.pc->wiz_invis = GET_LONG(buf);
-  ch->only.pc->law_flags = (ulong) GET_LONG(buf);
-  ch->only.pc->wimpy = GET_SHORT(buf);
-  ch->only.pc->aggressive = GET_SHORT(buf);
+	if (stat_vers < 35)
+		for (tmp = 0; tmp < MAX_PETS; tmp++)
+			GET_INTE(buf);
+	ch->only.pc->poofIn  = GET_STRING(buf);
+	ch->only.pc->poofOut = GET_STRING(buf);
+	if (stat_vers > 10)
+	{
+		ch->only.pc->poofInSound  = GET_STRING(buf);
+		ch->only.pc->poofOutSound = GET_STRING(buf);
+	}
+	ch->only.pc->echo_toggle = GET_BYTE(buf);
+	ch->only.pc->prompt      = GET_SHORT(buf);
+	ch->only.pc->wiz_invis   = GET_LONG(buf);
+	ch->only.pc->law_flags   = (ulong)GET_LONG(buf);
+	ch->only.pc->wimpy       = GET_SHORT(buf);
+	ch->only.pc->aggressive  = GET_SHORT(buf);
 
-  ch->only.pc->highest_level = GET_BYTE(buf);
+	ch->only.pc->highest_level = GET_BYTE(buf);
 
-  GET_BALANCE_COPPER(ch) = GET_INTE(buf);
-  GET_BALANCE_SILVER(ch) = GET_INTE(buf);
-  GET_BALANCE_GOLD(ch) = GET_INTE(buf);
-  GET_BALANCE_PLATINUM(ch) = GET_INTE(buf);
+	GET_BALANCE_COPPER(ch)   = GET_INTE(buf);
+	GET_BALANCE_SILVER(ch)   = GET_INTE(buf);
+	GET_BALANCE_GOLD(ch)     = GET_INTE(buf);
+	GET_BALANCE_PLATINUM(ch) = GET_INTE(buf);
 
-  ch->only.pc->numb_deaths = GET_LONG(buf);
+	ch->only.pc->numb_deaths = GET_LONG(buf);
 
-  ch->specials.carry_weight = 0;
-  ch->specials.carry_items = 0;
+	ch->specials.carry_weight = 0;
+	ch->specials.carry_items  = 0;
 
-  ch->points.max_hit = 0; //ch->points.base_hit + calculate_hitpoints(ch);
-  ch->points.max_mana = ch->points.base_mana + calculate_mana(ch);
-  ch->points.max_vitality = vitality_limit(ch);
+	ch->points.max_hit      = 0; // ch->points.base_hit + calculate_hitpoints(ch);
+	ch->points.max_mana     = ch->points.base_mana + calculate_mana(ch);
+	ch->points.max_vitality = vitality_limit(ch);
 
+	if (stat_vers > 41)
+	{
 
-  if (stat_vers > 41)
-  {
+		ch->only.pc->quest_active        = GET_INTE(buf);
+		ch->only.pc->quest_mob_vnum      = GET_INTE(buf);
+		ch->only.pc->quest_type          = GET_INTE(buf);
+		ch->only.pc->quest_accomplished  = GET_INTE(buf);
+		ch->only.pc->quest_started       = GET_INTE(buf);
+		ch->only.pc->quest_zone_number   = GET_INTE(buf);
+		ch->only.pc->quest_giver         = GET_INTE(buf);
+		ch->only.pc->quest_level         = GET_INTE(buf);
+		ch->only.pc->quest_receiver      = GET_INTE(buf);
+		ch->only.pc->quest_shares_left   = GET_INTE(buf);
+		ch->only.pc->quest_kill_how_many = GET_INTE(buf);
+		ch->only.pc->quest_kill_original = GET_INTE(buf);
+		ch->only.pc->quest_map_room      = GET_INTE(buf);
+		ch->only.pc->quest_map_bought    = GET_INTE(buf);
+	}
 
-  ch->only.pc->quest_active = GET_INTE(buf);
-  ch->only.pc->quest_mob_vnum = GET_INTE(buf);
-  ch->only.pc->quest_type = GET_INTE(buf);
-  ch->only.pc->quest_accomplished = GET_INTE(buf);
-  ch->only.pc->quest_started =GET_INTE(buf);
-  ch->only.pc->quest_zone_number = GET_INTE(buf);
-  ch->only.pc->quest_giver = GET_INTE(buf);
-  ch->only.pc->quest_level = GET_INTE(buf);
-  ch->only.pc->quest_receiver = GET_INTE(buf);
-  ch->only.pc->quest_shares_left = GET_INTE(buf);
-  ch->only.pc->quest_kill_how_many = GET_INTE(buf);
-  ch->only.pc->quest_kill_original = GET_INTE(buf);
-  ch->only.pc->quest_map_room = GET_INTE(buf);
-  ch->only.pc->quest_map_bought = GET_INTE(buf);
-
-
-  }
-   
-  return (int) (buf - start);
+	return (int)(buf - start);
 }
 
 #ifndef _PFILE_
 int restoreAffects(char *buf, P_char ch)
 {
-  struct affected_type af;
-  char    *start = buf;
-  short    count;
-  long     short_duration;
-  ::byte     custom_messages = 0;
-  char    *wear_off_char = NULL;
-  char    *wear_off_room = NULL;
+	struct affected_type af;
+	char                *start = buf;
+	short                count;
+	long                 short_duration;
+	::byte               custom_messages = 0;
+	char                *wear_off_char   = NULL;
+	char                *wear_off_room   = NULL;
 
-  if ((aff_vers = GET_BYTE(buf)) > (char) SAV_AFFVERS)
-  {
-    logit(LOG_FILE, "Save file for %s affects restore failed.", GET_NAME(ch));
-    send_to_char
-      ("Your character file is in a format which the game doesn't know how\r\n"
-       "to load. Please log on with another character and talk to a God.\r\n",
-       ch);
-    return 0;
-  }
-  for( count = GET_SHORT(buf); count > 0; count-- )
-  {
-    if (aff_vers > 4)
-    {
-      if (aff_vers > 5)
-      {
-        custom_messages = GET_BYTE(buf);
-        if (custom_messages & 1)
-          wear_off_char = GET_STRING(buf);
-        if (custom_messages & 2)
-          wear_off_room = GET_STRING(buf);
-        af.type = GET_SHORT(buf);
-      }
-      else
-      {
-        af.type = GET_INTE(buf);
-      }
-      af.duration = GET_INTE(buf);
-      af.flags = GET_SHORT(buf);
-      af.modifier = GET_INTE(buf);
-      af.location = GET_BYTE(buf);
-      af.bitvector = GET_LONG(buf);
-      af.bitvector2 = GET_LONG(buf);
-      af.bitvector3 = GET_LONG(buf);
-      af.bitvector4 = GET_LONG(buf);
-      af.bitvector5 = GET_LONG(buf);
-      /*af.bitvector6 = */ GET_LONG(buf);
-      af.wear_off_message_index = 0;
+	if ((aff_vers = GET_BYTE(buf)) > (char)SAV_AFFVERS)
+	{
+		logit(LOG_FILE, "Save file for %s affects restore failed.", GET_NAME(ch));
+		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
+		             "to load. Please log on with another character and talk to a God.\r\n",
+		             ch);
+		return 0;
+	}
+	for (count = GET_SHORT(buf); count > 0; count--)
+	{
+		if (aff_vers > 4)
+		{
+			if (aff_vers > 5)
+			{
+				custom_messages = GET_BYTE(buf);
+				if (custom_messages & 1)
+					wear_off_char = GET_STRING(buf);
+				if (custom_messages & 2)
+					wear_off_room = GET_STRING(buf);
+				af.type = GET_SHORT(buf);
+			}
+			else
+			{
+				af.type = GET_INTE(buf);
+			}
+			af.duration   = GET_INTE(buf);
+			af.flags      = GET_SHORT(buf);
+			af.modifier   = GET_INTE(buf);
+			af.location   = GET_BYTE(buf);
+			af.bitvector  = GET_LONG(buf);
+			af.bitvector2 = GET_LONG(buf);
+			af.bitvector3 = GET_LONG(buf);
+			af.bitvector4 = GET_LONG(buf);
+			af.bitvector5 = GET_LONG(buf);
+			/*af.bitvector6 = */ GET_LONG(buf);
+			af.wear_off_message_index = 0;
 
-	  if( aff_vers > 7 )
-      {
-        af.level = GET_SHORT(buf);
-      }
-	  else
-	  {
-		af.level = GET_LEVEL(ch);
-	  }
+			if (aff_vers > 7)
+			{
+				af.level = GET_SHORT(buf);
+			}
+			else
+			{
+				af.level = GET_LEVEL(ch);
+			}
 
-      // Duration saved as seconds for short affects, but we want to store duration as pulses in game.
-      if( aff_vers > 6 && IS_SET(af.flags, AFFTYPE_SHORT) )
-      {
-        af.duration *= WAIT_SEC;
-      }
-    }
-    else
-    {
-      af.type = GET_INTE(buf);
-      af.duration = GET_SHORT(buf);
-      af.modifier = GET_INTE(buf);
-      af.location = GET_BYTE(buf);
-      GET_INTE(buf);            // loc2
-      af.bitvector = GET_LONG(buf);
-      af.bitvector2 = GET_LONG(buf);
-      af.bitvector3 = GET_LONG(buf);
-      af.bitvector4 = GET_LONG(buf);
-      af.bitvector5 = GET_LONG(buf);
-      af.wear_off_message_index = 0;
-      af.flags = 0;
-      if (aff_vers == 4)
-      {
-        /*af.bitvector6 = */ GET_LONG(buf);
-        short_duration = GET_LONG(buf);
-        if (short_duration > 0)
-        {
-          af.flags = AFFTYPE_SHORT;
-          af.duration = short_duration;
-        }
-      }
-    }
-    if( custom_messages == 0 )
-      affect_to_char(ch, &af);
-    else
-    {
-      affect_to_char_with_messages(ch, &af, wear_off_char, wear_off_room);
-      if (wear_off_char)
-        str_free(wear_off_char);
-      if (wear_off_room)
-        str_free(wear_off_room);
-    }
-    if (IS_POISON(af.type))
-    {
-      add_event(event_poison, PULSE_VIOLENCE * number(1,5), ch, 0, 0, 0, &af.type, sizeof(af.type));
-    }
-  }
-  affect_total(ch, FALSE);
+			// Duration saved as seconds for short affects, but we want to store duration as pulses in game.
+			if (aff_vers > 6 && IS_SET(af.flags, AFFTYPE_SHORT))
+			{
+				af.duration *= WAIT_SEC;
+			}
+		}
+		else
+		{
+			af.type     = GET_INTE(buf);
+			af.duration = GET_SHORT(buf);
+			af.modifier = GET_INTE(buf);
+			af.location = GET_BYTE(buf);
+			GET_INTE(buf); // loc2
+			af.bitvector              = GET_LONG(buf);
+			af.bitvector2             = GET_LONG(buf);
+			af.bitvector3             = GET_LONG(buf);
+			af.bitvector4             = GET_LONG(buf);
+			af.bitvector5             = GET_LONG(buf);
+			af.wear_off_message_index = 0;
+			af.flags                  = 0;
+			if (aff_vers == 4)
+			{
+				/*af.bitvector6 = */ GET_LONG(buf);
+				short_duration = GET_LONG(buf);
+				if (short_duration > 0)
+				{
+					af.flags    = AFFTYPE_SHORT;
+					af.duration = short_duration;
+				}
+			}
+		}
+		if (custom_messages == 0)
+			affect_to_char(ch, &af);
+		else
+		{
+			affect_to_char_with_messages(ch, &af, wear_off_char, wear_off_room);
+			if (wear_off_char)
+				str_free(wear_off_char);
+			if (wear_off_room)
+				str_free(wear_off_room);
+		}
+		if (IS_POISON(af.type))
+		{
+			add_event(event_poison, PULSE_VIOLENCE * number(1, 5), ch, 0, 0, 0, &af.type, sizeof(af.type));
+		}
+	}
+	affect_total(ch, FALSE);
 
-  /*
-   * ok, some innate powers just set bits, so we need to reset those
-   */
-  if (has_innate(ch, INNATE_INFERNAL_FURY))
-    SET_BIT(ch->specials.affected_by, AFF_INFERNAL_FURY);
-  if (has_innate(ch, INNATE_SNEAK))
-    SET_BIT(ch->specials.affected_by, AFF_SNEAK);
-  if (has_innate(ch, INNATE_FARSEE))
-    SET_BIT(ch->specials.affected_by, AFF_FARSEE);
-  if (has_innate(ch, INNATE_PROT_LIGHTNING))
-    SET_BIT(ch->specials.affected_by2, AFF2_PROT_LIGHTNING);
-  if (has_innate(ch, INNATE_PROT_FIRE))
-    SET_BIT(ch->specials.affected_by, AFF_PROT_FIRE);
-  if (has_innate(ch, INNATE_WATERBREATH))
-    SET_BIT(ch->specials.affected_by, AFF_WATERBREATH);
-  if (has_innate(ch, INNATE_INFRAVISION))
-    SET_BIT(ch->specials.affected_by, AFF_INFRAVISION);
-  if (has_innate(ch, INNATE_FLY))
-    SET_BIT(ch->specials.affected_by, AFF_FLY);
-  if (has_innate(ch, INNATE_HASTE))
-    SET_BIT(ch->specials.affected_by, AFF_HASTE);
-  if (has_innate(ch, INNATE_ULTRAVISION))
-    SET_BIT(ch->specials.affected_by2, AFF2_ULTRAVISION);
-  if (has_innate(ch, INNATE_ANTI_GOOD))
-  {
-    SET_BIT(ch->specials.affected_by, AFF_PROTECT_GOOD);
-    SET_BIT(ch->specials.affected_by2, AFF2_DETECT_GOOD);
-  }
-  if (has_innate(ch, INNATE_ANTI_EVIL))
-  {
-    SET_BIT(ch->specials.affected_by, AFF_PROTECT_EVIL);
-    SET_BIT(ch->specials.affected_by2, AFF2_DETECT_EVIL);
-    /* paladin innate soulshield at 51st */
-#   if 0
+	/*
+	 * ok, some innate powers just set bits, so we need to reset those
+	 */
+	if (has_innate(ch, INNATE_INFERNAL_FURY))
+		SET_BIT(ch->specials.affected_by, AFF_INFERNAL_FURY);
+	if (has_innate(ch, INNATE_SNEAK))
+		SET_BIT(ch->specials.affected_by, AFF_SNEAK);
+	if (has_innate(ch, INNATE_FARSEE))
+		SET_BIT(ch->specials.affected_by, AFF_FARSEE);
+	if (has_innate(ch, INNATE_PROT_LIGHTNING))
+		SET_BIT(ch->specials.affected_by2, AFF2_PROT_LIGHTNING);
+	if (has_innate(ch, INNATE_PROT_FIRE))
+		SET_BIT(ch->specials.affected_by, AFF_PROT_FIRE);
+	if (has_innate(ch, INNATE_WATERBREATH))
+		SET_BIT(ch->specials.affected_by, AFF_WATERBREATH);
+	if (has_innate(ch, INNATE_INFRAVISION))
+		SET_BIT(ch->specials.affected_by, AFF_INFRAVISION);
+	if (has_innate(ch, INNATE_FLY))
+		SET_BIT(ch->specials.affected_by, AFF_FLY);
+	if (has_innate(ch, INNATE_HASTE))
+		SET_BIT(ch->specials.affected_by, AFF_HASTE);
+	if (has_innate(ch, INNATE_ULTRAVISION))
+		SET_BIT(ch->specials.affected_by2, AFF2_ULTRAVISION);
+	if (has_innate(ch, INNATE_ANTI_GOOD))
+	{
+		SET_BIT(ch->specials.affected_by, AFF_PROTECT_GOOD);
+		SET_BIT(ch->specials.affected_by2, AFF2_DETECT_GOOD);
+	}
+	if (has_innate(ch, INNATE_ANTI_EVIL))
+	{
+		SET_BIT(ch->specials.affected_by, AFF_PROTECT_EVIL);
+		SET_BIT(ch->specials.affected_by2, AFF2_DETECT_EVIL);
+		/* paladin innate soulshield at 51st */
+#if 0
     if ((GET_CLASS(ch) == CLASS_PALADIN) && (GET_ALIGNMENT(ch) > 950) &&
         (GET_LEVEL(ch) > 50))
       SET_BIT(ch->specials.affected_by2, AFF2_SOULSHIELD);
-#   endif
-  }
-  if (has_innate(ch, INNATE_VAMPIRIC_TOUCH))
-    SET_BIT(ch->specials.affected_by2, AFF2_VAMPIRIC_TOUCH);
-  if (has_innate(ch, INNATE_DAUNTLESS))
-    SET_BIT(ch->specials.affected_by4, AFF4_NOFEAR);
-  if (has_innate(ch, INNATE_BLUR))
-    SET_BIT(ch->specials.affected_by3, AFF3_BLUR);
-  
-  return (int) (buf - start);
+#endif
+	}
+	if (has_innate(ch, INNATE_VAMPIRIC_TOUCH))
+		SET_BIT(ch->specials.affected_by2, AFF2_VAMPIRIC_TOUCH);
+	if (has_innate(ch, INNATE_DAUNTLESS))
+		SET_BIT(ch->specials.affected_by4, AFF4_NOFEAR);
+	if (has_innate(ch, INNATE_BLUR))
+		SET_BIT(ch->specials.affected_by3, AFF3_BLUR);
+
+	return (int)(buf - start);
 }
 #endif
 
 int restoreSkills(char *buf, P_char ch, int maxnum)
 {
-  char    *start = buf;
-  int      i, n;
+	char *start = buf;
+	int   i, n;
 
-  skill_vers = GET_BYTE(buf);
-  if (skill_vers > (char) SAV_SKILLVERS)
-  {
-    logit(LOG_FILE, "Save file for %s skills restore failed.", GET_NAME(ch));
-    send_to_char
-      ("Your character file is in a format which the game doesn't know how\r\n"
-       "to load. Please log on with another character and talk to a God.\r\n",
-       ch);
-    return 0;
-  }
-  n = (int) GET_INTE(buf);
-  if (n > maxnum)
-  {
-    logit(LOG_FILE, "Not all %s skills could be loaded.", GET_NAME(ch));
-    send_to_char
-      ("Not all your skills could be loaded. Please report this to a God.\r\n",
-       ch);
-  }
-  /*
-   * Allow memorized spells and skill usages to be saved. -DCL
-   */
+	skill_vers = GET_BYTE(buf);
+	if (skill_vers > (char)SAV_SKILLVERS)
+	{
+		logit(LOG_FILE, "Save file for %s skills restore failed.", GET_NAME(ch));
+		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
+		             "to load. Please log on with another character and talk to a God.\r\n",
+		             ch);
+		return 0;
+	}
+	n = (int)GET_INTE(buf);
+	if (n > maxnum)
+	{
+		logit(LOG_FILE, "Not all %s skills could be loaded.", GET_NAME(ch));
+		send_to_char("Not all your skills could be loaded. Please report this to a God.\r\n", ch);
+	}
+	/*
+	 * Allow memorized spells and skill usages to be saved. -DCL
+	 */
 
-  for (i = 0; i < maxnum; i++)
-  {
-    if (i < n)
-    {
-      ch->only.pc->skills[i].learned = GET_BYTE(buf);
-      ch->only.pc->skills[i].taught = GET_BYTE(buf);
-      GET_BYTE(buf);
-    }
-    else
-    {
-      ch->only.pc->skills[i].learned = 0;
-      ch->only.pc->skills[i].taught = 0;
-    }
-  }
+	for (i = 0; i < maxnum; i++)
+	{
+		if (i < n)
+		{
+			ch->only.pc->skills[i].learned = GET_BYTE(buf);
+			ch->only.pc->skills[i].taught  = GET_BYTE(buf);
+			GET_BYTE(buf);
+		}
+		else
+		{
+			ch->only.pc->skills[i].learned = 0;
+			ch->only.pc->skills[i].taught  = 0;
+		}
+	}
 
-  do
-  {
-    n = GET_INTE(buf);
-  }
-  while (n != 0);
+	do
+	{
+		n = GET_INTE(buf);
+	} while (n != 0);
 
-  n = (int) GET_SHORT(buf);
-  if (n > MAX_SKILL_USAGE)
-  {
-    logit(LOG_FILE, "Not all %s skill usages could be loaded.", GET_NAME(ch));
-    send_to_char
-      ("Not all your skill usages could be loaded. Please report a God.\r\n",
-       ch);
-  }
-  for (i = 0; i < MAX_SKILL_USAGE; i++)
-  {
-    if (i < n)
-    {
-      GET_LONG(buf);
-      GET_BYTE(buf);
-    }
-  }
-  return (int) (buf - start);
+	n = (int)GET_SHORT(buf);
+	if (n > MAX_SKILL_USAGE)
+	{
+		logit(LOG_FILE, "Not all %s skill usages could be loaded.", GET_NAME(ch));
+		send_to_char("Not all your skill usages could be loaded. Please report a God.\r\n", ch);
+	}
+	for (i = 0; i < MAX_SKILL_USAGE; i++)
+	{
+		if (i < n)
+		{
+			GET_LONG(buf);
+			GET_BYTE(buf);
+		}
+	}
+	return (int)(buf - start);
 }
-
 
 /* Restore witness record  */
 #ifndef _PFILE_
 int restoreWitness(char *buf, P_char ch)
 {
-  wtns_rec *rec;
-  char    *start = buf;
-  int      count;
+	wtns_rec *rec;
+	char     *start = buf;
+	int       count;
 
-  if ((witness_vers = GET_BYTE(buf)) > (char) SAV_WTNSVERS)
-  {
-witnessed_fail:
-    logit(LOG_FILE, "Save file for %s witness restore failed.", GET_NAME(ch));
-    send_to_char
-      ("Your witness record is munged. Please log on with another character and talk to a God.\r\n",
-       ch);
-    return 0;
-  }
-  count = GET_INTE(buf);
-  if (count)
-    goto witnessed_fail;
+	if ((witness_vers = GET_BYTE(buf)) > (char)SAV_WTNSVERS)
+	{
+	witnessed_fail:
+		logit(LOG_FILE, "Save file for %s witness restore failed.", GET_NAME(ch));
+		send_to_char("Your witness record is munged. Please log on with another character and talk to a God.\r\n", ch);
+		return 0;
+	}
+	count = GET_INTE(buf);
+	if (count)
+		goto witnessed_fail;
 
-  return (int) (buf - start);
+	return (int)(buf - start);
 }
 
 /*
@@ -2373,148 +2317,141 @@ witnessed_fail:
 
 int restorePasswdOnly(P_char ch, char *name)
 {
-  FILE    *f;
+	FILE *f;
 
-  struct stat statbuf;
-  char     buff[SAV_MAXSIZE], *str;
-  char    *buf = buff;
-  int      size, csize, type, room;
-  char     Gbuf1[MAX_STRING_LENGTH];
-  char     b_savevers;          /* TASFALEN */
-  char     buffer[2056];
+	struct stat statbuf;
+	char        buff[SAV_MAXSIZE], *str;
+	char       *buf = buff;
+	int         size, csize, type, room;
+	char        Gbuf1[MAX_STRING_LENGTH];
+	char        b_savevers; /* TASFALEN */
+	char        buffer[2056];
 
-  if (!name || !ch)
-    return 0;
+	if (!name || !ch)
+		return 0;
 
-  strcpy(buff, name);
-  for (; *buf; buf++)
-    *buf = LOWER(*buf);
-  buf = buff;
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
-  if (stat(Gbuf1, &statbuf) != 0)
-  {
-    snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, name);
-    if (stat(Gbuf1, &statbuf) != 0)
-      return -1;
-  }
-  f = fopen(Gbuf1, "r");
-  if (!f)
-    return -2;
-  size = fread(buf, 1, SAV_MAXSIZE, f);
-  fclose(f);
-  if (size < 4)
-  {
-    logit(LOG_FILE, "Warning: Save file less than 4 bytes.");
-    fprintf(stderr, "Problem restoring save file of: %s\n", name);
-    logit(LOG_FILE, "Problem restoring save file of %s.", name);
-    send_to_char
-      ("There is something wrong with your save file!  Please talk to a God.\r\n",
-       ch);
-    return -2;
-  }
-  b_savevers = GET_BYTE(buf);
+	strcpy(buff, name);
+	for (; *buf; buf++)
+		*buf = LOWER(*buf);
+	buf = buff;
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
+	if (stat(Gbuf1, &statbuf) != 0)
+	{
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, name);
+		if (stat(Gbuf1, &statbuf) != 0)
+			return -1;
+	}
+	f = fopen(Gbuf1, "r");
+	if (!f)
+		return -2;
+	size = fread(buf, 1, SAV_MAXSIZE, f);
+	fclose(f);
+	if (size < 4)
+	{
+		logit(LOG_FILE, "Warning: Save file less than 4 bytes.");
+		fprintf(stderr, "Problem restoring save file of: %s\n", name);
+		logit(LOG_FILE, "Problem restoring save file of %s.", name);
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
+	b_savevers = GET_BYTE(buf);
 
-/*  if (GET_BYTE(buf) != (char) SAV_SAVEVERS) {
-   logit(LOG_FILE, "Save file of %s is in an older format.", name);
-   send_to_char("Your character file is in an old format which the game doesn't know how\r\n"
-   "to load.  Please log on with another character and talk to a God.\r\n", ch);
-   return -2;
-   }
- */
-  // Read the type sizes from the save file
-  int saved_short_size = GET_BYTE(buf);
-  int saved_int_size = GET_BYTE(buf);
-  int saved_long_size = GET_BYTE(buf);
+	/*  if (GET_BYTE(buf) != (char) SAV_SAVEVERS) {
+	   logit(LOG_FILE, "Save file of %s is in an older format.", name);
+	   send_to_char("Your character file is in an old format which the game doesn't know how\r\n"
+	   "to load.  Please log on with another character and talk to a God.\r\n", ch);
+	   return -2;
+	   }
+	 */
+	// Read the type sizes from the save file
+	int saved_short_size = GET_BYTE(buf);
+	int saved_int_size   = GET_BYTE(buf);
+	int saved_long_size  = GET_BYTE(buf);
 
-  logit(LOG_FILE, "restoreCharacter: %s - saved sizes: short=%d int=%d long=%d, current sizes: short=%d int=%d long=%d",
-    name, saved_short_size, saved_int_size, saved_long_size, short_size, int_size, long_size);
+	logit(LOG_FILE,
+	      "restoreCharacter: %s - saved sizes: short=%d int=%d long=%d, current sizes: short=%d int=%d long=%d",
+	      name,
+	      saved_short_size,
+	      saved_int_size,
+	      saved_long_size,
+	      short_size,
+	      int_size,
+	      long_size);
 
-  if ((saved_short_size != short_size) || (saved_int_size != int_size) ||
-      (saved_long_size != long_size))
-  {
-    logit(LOG_FILE, "Save file of %s has mismatched architecture.", name);
-    send_to_char
-      ("Your character file was created on a machine of a different architecture\r\n"
-       "type than the current one; loading such a file is not yet supported.\r\n"
-       "Please talk to a God.\r\n", ch);
-    return -2;
-  }
-  if (size < 5 * int_size + 5 * sizeof(char) + long_size)
-  {
-    logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
-    fprintf(stderr, "Problem restoring save file of: %s\n", name);
-    logit(LOG_FILE, "Problem restoring save file of %s.", name);
-    send_to_char
-      ("There is something wrong with your save file!  Please talk to a God.\r\n",
-       ch);
-    return -2;
-  }
-  type = (int) GET_BYTE(buf);
-  GET_INTE(buf);                /*
-                                 * skill offset
-                                 */
-  if (b_savevers >= (char) SAV_WTNSVERS)        /* no witness record save in file (TASFALEN) */
-    GET_INTE(buf);
-  /*
-   * witness offset
-   */
+	if ((saved_short_size != short_size) || (saved_int_size != int_size) || (saved_long_size != long_size))
+	{
+		logit(LOG_FILE, "Save file of %s has mismatched architecture.", name);
+		send_to_char("Your character file was created on a machine of a different architecture\r\n"
+		             "type than the current one; loading such a file is not yet supported.\r\n"
+		             "Please talk to a God.\r\n",
+		             ch);
+		return -2;
+	}
+	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
+	{
+		logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
+		fprintf(stderr, "Problem restoring save file of: %s\n", name);
+		logit(LOG_FILE, "Problem restoring save file of %s.", name);
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
+	type = (int)GET_BYTE(buf);
+	GET_INTE(buf);                        /*
+	                                       * skill offset
+	                                       */
+	if (b_savevers >= (char)SAV_WTNSVERS) /* no witness record save in file (TASFALEN) */
+		GET_INTE(buf);
+	/*
+	 * witness offset
+	 */
 
-  GET_INTE(buf);                /*
-                                 * affect offset
-                                 */
-  GET_INTE(buf);                /*
-                                 * item offset
-                                 */
-  csize = GET_INTE(buf);
-  if (size != csize)
-  {
-    logit(LOG_FILE, "Warning: file size %d doesn't match csize %d.", size,
-          csize);
-    fprintf(stderr, "Problem restoring save file of: %s\n", name);
-    logit(LOG_FILE, "Problem restoring save file of %s.", name);
-    send_to_char
-      ("There is something wrong with your save file!  Please talk to a God.\r\n",
-       ch);
-    return -2;
-  }
-  // Surname
-  if( b_savevers > 4 )
-    GET_INTE(buf);
-  room = GET_INTE(buf);         /*
-                                 * virtual room they saved/rented in
-                                 */
+	GET_INTE(buf); /*
+	                * affect offset
+	                */
+	GET_INTE(buf); /*
+	                * item offset
+	                */
+	csize = GET_INTE(buf);
+	if (size != csize)
+	{
+		logit(LOG_FILE, "Warning: file size %d doesn't match csize %d.", size, csize);
+		fprintf(stderr, "Problem restoring save file of: %s\n", name);
+		logit(LOG_FILE, "Problem restoring save file of %s.", name);
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
+	// Surname
+	if (b_savevers > 4)
+		GET_INTE(buf);
+	room = GET_INTE(buf); /*
+	                       * virtual room they saved/rented in
+	                       */
 
-  GET_LONG(buf);
-  stat_vers = GET_BYTE(buf);
-  if( stat_vers > (char) SAV_STATVERS )
-  {
-    logit(LOG_FILE, "Save file for %s status restore failed.", GET_NAME(ch));
-    send_to_char
-      ("Your character file is in a format which the game doesn't know how\r\n"
-       "to load. Please log on with another character and talk to a God.\r\n",
-       ch);
-    return -2;
-  }
-  GET_NAME(ch) = GET_STRING(buf);
-  if (stat_vers > 16)
-    GET_INTE(buf);              /* PC id numb */
-  ch->only.pc->screen_length = (ubyte) GET_BYTE(buf);
-  str = GET_STRING(buf);
-  if (!str)
-  {
-    send_to_char
-      ("How did you manage to nullify your password!??\r\nPlease contact a God!\r\n",
-       ch);
-    fprintf(stderr,
-            "%s somehow managed to clear out his/her password field!\n",
-            GET_NAME(ch));
-    logit(LOG_FILE, "%s somehow managed to clear out his/her password field!",
-          GET_NAME(ch));
-    return -2;
-  }
-  strcpy(ch->only.pc->pwd, str);
-  FREE(str);
-  return type;
+	GET_LONG(buf);
+	stat_vers = GET_BYTE(buf);
+	if (stat_vers > (char)SAV_STATVERS)
+	{
+		logit(LOG_FILE, "Save file for %s status restore failed.", GET_NAME(ch));
+		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
+		             "to load. Please log on with another character and talk to a God.\r\n",
+		             ch);
+		return -2;
+	}
+	GET_NAME(ch) = GET_STRING(buf);
+	if (stat_vers > 16)
+		GET_INTE(buf); /* PC id numb */
+	ch->only.pc->screen_length = (ubyte)GET_BYTE(buf);
+	str                        = GET_STRING(buf);
+	if (!str)
+	{
+		send_to_char("How did you manage to nullify your password!??\r\nPlease contact a God!\r\n", ch);
+		fprintf(stderr, "%s somehow managed to clear out his/her password field!\n", GET_NAME(ch));
+		logit(LOG_FILE, "%s somehow managed to clear out his/her password field!", GET_NAME(ch));
+		return -2;
+	}
+	strcpy(ch->only.pc->pwd, str);
+	FREE(str);
+	return type;
 }
 
 /*
@@ -2523,966 +2460,946 @@ int restorePasswdOnly(P_char ch, char *name)
 #endif
 int restoreCharOnly(P_char ch, char *name)
 {
-  FILE    *f;
+	FILE *f;
 
-  struct stat statbuf;
+	struct stat statbuf;
 
 #ifndef _PFILE_
-  char     buff[SAV_MAXSIZE];
-  char    *buf;
-  int      skill_off, affect_off, item_off, surname;
+	char  buff[SAV_MAXSIZE];
+	char *buf;
+	int   skill_off, affect_off, item_off, surname;
 #endif
-  int      start, size, csize, type, room;
-  int      witness_off;
-  char     Gbuf1[MAX_STRING_LENGTH];
-  char     b_savevers;
+	int  start, size, csize, type, room;
+	int  witness_off;
+	char Gbuf1[MAX_STRING_LENGTH];
+	char b_savevers;
 
-  if( !name || !ch )
-  {
-    return -1;
-  }
+	if (!name || !ch)
+	{
+		return -1;
+	}
 
 #ifndef __NO_MYSQL__
-  // try loading from sql first
-  int pid = sql_get_player_pid(name);
-  if (pid > 0)
-  {
-    if (sql_load_player_status(ch, pid))
-    {
-      sql_load_player_skills(ch);
-      sql_load_player_affects(ch);
-      sql_load_player_items(ch);
-      sql_load_player_witnesses(ch);
-      sql_load_player_shapechanges(ch);
-      return 0;
-    }
-    return -2;
-  }
-  // player not in sql, fall through to pfile loading
+	// try loading from sql first
+	int pid = sql_get_player_pid(name);
+	if (pid > 0)
+	{
+		if (sql_load_player_status(ch, pid))
+		{
+			sql_load_player_skills(ch);
+			sql_load_player_affects(ch);
+			//sql_load_player_items(ch);
+			sql_load_player_witnesses(ch);
+			sql_load_player_shapechanges(ch);
+			return 0;
+		}
+		return -2;
+	}
+	// player not in sql, fall through to pfile loading
 #endif
 
-  strcpy(buff, name);
-  for( buf = buff; *buf; buf++ )
-  {
-    *buf = LOWER(*buf);
-  }
-  buf = buff;
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
+	strcpy(buff, name);
+	for (buf = buff; *buf; buf++)
+	{
+		*buf = LOWER(*buf);
+	}
+	buf = buff;
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
 //  logit(LOG_FILE, "%s is the pfile string!", Gbuf1);
 #ifndef _PFILE_
-  if (stat(Gbuf1, &statbuf) != 0)
-  {
-    snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, name);
-    if (stat(Gbuf1, &statbuf) != 0)
-      return -1;
-  }
+	if (stat(Gbuf1, &statbuf) != 0)
+	{
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, name);
+		if (stat(Gbuf1, &statbuf) != 0)
+			return -1;
+	}
 #endif
-  f = fopen(Gbuf1, "r");
-  if (!f)
-    return -2;
-  size = fread(buf, 1, SAV_MAXSIZE, f);
-  fclose(f);
-  if (size < 4)
-  {
-    logit(LOG_FILE, "Warning: Save file less than 4 bytes.");
-    fprintf(stderr, "Problem restoring save file of: %s\n", name);
-    logit(LOG_FILE, "Problem restoring save file of %s.", name);
-    send_to_char
-      ("There is something wrong with your save file!  Please talk to a God.\r\n",
-       ch);
-    return -2;
-  }
-/* TASFALEN */
+	f = fopen(Gbuf1, "r");
+	if (!f)
+		return -2;
+	size = fread(buf, 1, SAV_MAXSIZE, f);
+	fclose(f);
+	if (size < 4)
+	{
+		logit(LOG_FILE, "Warning: Save file less than 4 bytes.");
+		fprintf(stderr, "Problem restoring save file of: %s\n", name);
+		logit(LOG_FILE, "Problem restoring save file of %s.", name);
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
+	/* TASFALEN */
 
-  b_savevers = GET_BYTE(buf);
+	b_savevers = GET_BYTE(buf);
 
-/*  if (GET_BYTE(buf) != (char) SAV_SAVEVERS) {
-   logit(LOG_FILE, "Save file of %s is in an older format.", name);
-   send_to_char(
-   "Your character file is in an old format which the game doesn't know how\r\n"
-   "to load.  Please log on with another character and talk to a God.\r\n",
-   ch);
-   return -2;
-   }
- */
+	/*  if (GET_BYTE(buf) != (char) SAV_SAVEVERS) {
+	   logit(LOG_FILE, "Save file of %s is in an older format.", name);
+	   send_to_char(
+	   "Your character file is in an old format which the game doesn't know how\r\n"
+	   "to load.  Please log on with another character and talk to a God.\r\n",
+	   ch);
+	   return -2;
+	   }
+	 */
 
-/* end TASFALEN */
+	/* end TASFALEN */
 
-  // Read the type sizes from the save file
-  int saved_short_size = GET_BYTE(buf);
-  int saved_int_size = GET_BYTE(buf);
-  int saved_long_size = GET_BYTE(buf);
+	// Read the type sizes from the save file
+	int saved_short_size = GET_BYTE(buf);
+	int saved_int_size   = GET_BYTE(buf);
+	int saved_long_size  = GET_BYTE(buf);
 
-  logit(LOG_FILE, "restoreCharacter: %s - saved sizes: short=%d int=%d long=%d, current sizes: short=%d int=%d long=%d",
-    name, saved_short_size, saved_int_size, saved_long_size, short_size, int_size, long_size);
+	logit(LOG_FILE,
+	      "restoreCharacter: %s - saved sizes: short=%d int=%d long=%d, current sizes: short=%d int=%d long=%d",
+	      name,
+	      saved_short_size,
+	      saved_int_size,
+	      saved_long_size,
+	      short_size,
+	      int_size,
+	      long_size);
 
-  if ((saved_short_size != short_size) || (saved_int_size != int_size) ||
-      (saved_long_size != long_size))
-  {
-    logit(LOG_FILE, "Save file of %s has mismatched architecture.", name);
-    send_to_char
-      ("Your character file was created on a machine of a different architecture\r\n"
-       "type than the current one; loading such a file is not yet supported.\r\n"
-       "Please talk to a God.\r\n", ch);
-    return -2;
-  }
-  if (size < 5 * int_size + 5 * sizeof(char) + long_size)
-  {
-    logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
-    fprintf(stderr, "Problem restoring save file of: %s\n", name);
-    logit(LOG_FILE, "Problem restoring save file of %s.", name);
-    send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
-    return -2;
-  }
-  type = (int) GET_BYTE(buf);
-  skill_off = GET_INTE(buf);
+	if ((saved_short_size != short_size) || (saved_int_size != int_size) || (saved_long_size != long_size))
+	{
+		logit(LOG_FILE, "Save file of %s has mismatched architecture.", name);
+		send_to_char("Your character file was created on a machine of a different architecture\r\n"
+		             "type than the current one; loading such a file is not yet supported.\r\n"
+		             "Please talk to a God.\r\n",
+		             ch);
+		return -2;
+	}
+	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
+	{
+		logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
+		fprintf(stderr, "Problem restoring save file of: %s\n", name);
+		logit(LOG_FILE, "Problem restoring save file of %s.", name);
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
+	type      = (int)GET_BYTE(buf);
+	skill_off = GET_INTE(buf);
 
-  if (b_savevers >= (char) SAV_WTNSVERS)        /* no witness record save in file */
-    witness_off = GET_INTE(buf);        /* TASFALEN */
+	if (b_savevers >= (char)SAV_WTNSVERS) /* no witness record save in file */
+		witness_off = GET_INTE(buf);      /* TASFALEN */
 
-  affect_off = GET_INTE(buf);
-  item_off = GET_INTE(buf);
-  csize = GET_INTE(buf);
-  if (size != csize)
-  {
-    logit(LOG_FILE, "Warning: file size %d doesn't match csize %d.",
-          size, csize);
-    fprintf(stderr, "Problem restoring save file of: %s\n", name);
-    logit(LOG_FILE, "Problem restoring save file of %s.", name);
-    send_to_char
-      ("There is something wrong with your save file!  Please talk to a God.\r\n",
-       ch);
-    return -2;
-  }
-  if( b_savevers > 4 )
-    surname = GET_INTE(buf);
-  ch->specials.act3 = surname;
+	affect_off = GET_INTE(buf);
+	item_off   = GET_INTE(buf);
+	csize      = GET_INTE(buf);
+	if (size != csize)
+	{
+		logit(LOG_FILE, "Warning: file size %d doesn't match csize %d.", size, csize);
+		fprintf(stderr, "Problem restoring save file of: %s\n", name);
+		logit(LOG_FILE, "Problem restoring save file of %s.", name);
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
+	if (b_savevers > 4)
+		surname = GET_INTE(buf);
+	ch->specials.act3 = surname;
 
-  room = GET_INTE(buf);         /*
-                                 * virtual room they saved/rented in
-                                 */
+	room = GET_INTE(buf); /*
+	                       * virtual room they saved/rented in
+	                       */
 #ifndef _PFILE_
-  ch->in_room = real_room(room);
+	ch->in_room = real_room(room);
 #else
-  ch->in_room = room;
+	ch->in_room = room;
 #endif
 
-  GET_LONG(buf);
-  start = (int) (buf - buff);
-  int bytes_read_by_restoreStatus = restoreStatus(buf, ch);
-  int expected_skill_off = start + bytes_read_by_restoreStatus;
+	GET_LONG(buf);
+	start                           = (int)(buf - buff);
+	int bytes_read_by_restoreStatus = restoreStatus(buf, ch);
+	int expected_skill_off          = start + bytes_read_by_restoreStatus;
 
-  logit(LOG_FILE, "restoreStatus debug: %s - start=%d, bytes_read=%d, expected_skill_off=%d, actual_skill_off=%d",
-    name, start, bytes_read_by_restoreStatus, expected_skill_off, skill_off);
+	logit(LOG_FILE, "restoreStatus debug: %s - start=%d, bytes_read=%d, expected_skill_off=%d, actual_skill_off=%d", name, start, bytes_read_by_restoreStatus, expected_skill_off, skill_off);
 
-  if (expected_skill_off != skill_off)
-  {
-    logit(LOG_FILE, "Warning: restoreStatus() not match offset. Difference: %d bytes",
-      skill_off - expected_skill_off);
-    fprintf(stderr, "Problem restoring save file of: %s\n", name);
-    logit(LOG_FILE, "Problem restoring save file of %s.", name);
-    send_to_char
-      ("There is something wrong with your save file!  Please talk to a God.\r\n",
-       ch);
-    return -2;
-  }
-  if (type == 4)                /*
-                                 * return from death, flaked out. JAB
-                                 */
-    SET_POS(ch, POS_PRONE + STAT_SLEEPING);
+	if (expected_skill_off != skill_off)
+	{
+		logit(LOG_FILE, "Warning: restoreStatus() not match offset. Difference: %d bytes", skill_off - expected_skill_off);
+		fprintf(stderr, "Problem restoring save file of: %s\n", name);
+		logit(LOG_FILE, "Problem restoring save file of %s.", name);
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
+	if (type == 4) /*
+	                * return from death, flaked out. JAB
+	                */
+		SET_POS(ch, POS_PRONE + STAT_SLEEPING);
 
-/* TASFALEN */
+	/* TASFALEN */
 
-  if (b_savevers < (char) SAV_WTNSVERS)
-  {                             /* no witness record save in file */
+	if (b_savevers < (char)SAV_WTNSVERS)
+	{ /* no witness record save in file */
 
-    if ((restoreSkills(buff + skill_off, ch, MAX_SKILLS) + skill_off) !=
-        affect_off)
-    {
-      logit(LOG_FILE, "Warning: restoreSkills() not match offset.");
-      fprintf(stderr, "Problem restoring save file of: %s\n", name);
-      logit(LOG_FILE, "Problem restoring save file of %s.", name);
-      send_to_char
-        ("There is something wrong with your save file!  Please talk to a God.\r\n",
-         ch);
-      return -2;
-    }
-  }
-  else
-  {
+		if ((restoreSkills(buff + skill_off, ch, MAX_SKILLS) + skill_off) != affect_off)
+		{
+			logit(LOG_FILE, "Warning: restoreSkills() not match offset.");
+			fprintf(stderr, "Problem restoring save file of: %s\n", name);
+			logit(LOG_FILE, "Problem restoring save file of %s.", name);
+			send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+			return -2;
+		}
+	}
+	else
+	{
 
-    if ((restoreSkills(buff + skill_off, ch, MAX_SKILLS) + skill_off) !=
-        witness_off)
-    {
-      logit(LOG_FILE, "Warning: restoreSkills() not match offset.");
-      fprintf(stderr, "Problem restoring save file of: %s\n", name);
-      logit(LOG_FILE, "Problem restoring save file of %s.", name);
-      send_to_char
-        ("There is something wrong with your save file!  Please talk to a God.\r\n",
-         ch);
-      return -2;
-    }
+		if ((restoreSkills(buff + skill_off, ch, MAX_SKILLS) + skill_off) != witness_off)
+		{
+			logit(LOG_FILE, "Warning: restoreSkills() not match offset.");
+			fprintf(stderr, "Problem restoring save file of: %s\n", name);
+			logit(LOG_FILE, "Problem restoring save file of %s.", name);
+			send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+			return -2;
+		}
 #ifndef _PFILE_
-    if ((restoreWitness(buff + witness_off, ch) + witness_off) != affect_off)
-    {
-      logit(LOG_FILE, "Warning: restoreWitness() not match offset.");
-      fprintf(stderr, "Problem restoring save file of: %s\n", name);
-      logit(LOG_FILE, "Problem restoring save file of %s.", name);
-      send_to_char
-        ("There is something wrong with your save file!  Please talk to a God.\r\n",
-         ch);
-      return -2;
-    }
+		if ((restoreWitness(buff + witness_off, ch) + witness_off) != affect_off)
+		{
+			logit(LOG_FILE, "Warning: restoreWitness() not match offset.");
+			fprintf(stderr, "Problem restoring save file of: %s\n", name);
+			logit(LOG_FILE, "Problem restoring save file of %s.", name);
+			send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+			return -2;
+		}
 #endif
-  }
-  /* end TASFALEN */
+	}
+	/* end TASFALEN */
 
-  return type;
+	return type;
 }
 
 P_obj restoreObjects(char *buf, P_char ch, int not_room)
 {
-  P_obj    obj, c_obj = NULL;
-  bool     dummy_obj;
-  ::byte     dummy_byte, o_f_flag;
-  int      tmp, count, i, loc, obj_count = 0, V_num, i_count, ignore = 0, k;
-  struct extra_descr_data *t_desc;
-  static struct obj_data d_obj; // dummy object
-  ulong    o_u_flag;
-  int      new_vnum = 0;
-  P_obj    root_obj = NULL;
+	P_obj                    obj, c_obj = NULL;
+	bool                     dummy_obj;
+	::byte                   dummy_byte, o_f_flag;
+	int                      tmp, count, i, loc, obj_count = 0, V_num, i_count, ignore = 0, k;
+	struct extra_descr_data *t_desc;
+	static struct obj_data   d_obj; // dummy object
+	ulong                    o_u_flag;
+	int                      new_vnum = 0;
+	P_obj                    root_obj = NULL;
 
-  obj_vers = (int) GET_BYTE(buf);
-  if (obj_vers > SAV_ITEMVERS)
-  {
-    if (ch)
-    {
-      logit(LOG_FILE, "Item save versions don't match (%d, %d) for %s.",
-            obj_vers, SAV_ITEMVERS, GET_NAME(ch));
-      send_to_char
-        ("Your objects are in a format which the game doesn't know how\r\n"
-         "to load. Please log on with another character and talk to a God.\r\n",
-         ch);
-    }
-    else
-    {
-      logit(LOG_FILE, "Item save versions don't match (%d, %d) for pcorpse.",
-            obj_vers, SAV_ITEMVERS);
-    }
-    return 0;
-  }
+	obj_vers = (int)GET_BYTE(buf);
+	if (obj_vers > SAV_ITEMVERS)
+	{
+		if (ch)
+		{
+			logit(LOG_FILE, "Item save versions don't match (%d, %d) for %s.", obj_vers, SAV_ITEMVERS, GET_NAME(ch));
+			send_to_char("Your objects are in a format which the game doesn't know how\r\n"
+			             "to load. Please log on with another character and talk to a God.\r\n",
+			             ch);
+		}
+		else
+		{
+			logit(LOG_FILE, "Item save versions don't match (%d, %d) for pcorpse.", obj_vers, SAV_ITEMVERS);
+		}
+		return 0;
+	}
 
-  count = GET_INTE(buf);
+	count = GET_INTE(buf);
 
-  /* hack to show its a saved item. Log for debugging */
-  if (!ch && not_room == 2)
-    logit(LOG_OBJ, "Count is %d.", count);
+	/* hack to show its a saved item. Log for debugging */
+	if (!ch && not_room == 2)
+		logit(LOG_OBJ, "Count is %d.", count);
 
-  /*
-   * due to vast changes, much easier to start fresh with version 5
-   */
+	/*
+	 * due to vast changes, much easier to start fresh with version 5
+	 */
 
-  for (;;)
-  {
-    dummy_obj = FALSE;
-    o_u_flag = 0;
-    loc = 0;
-    i_count = 1;
-    o_f_flag = GET_BYTE(buf);
+	for (;;)
+	{
+		dummy_obj = FALSE;
+		o_u_flag  = 0;
+		loc       = 0;
+		i_count   = 1;
+		o_f_flag  = GET_BYTE(buf);
 
-    if (o_f_flag & O_F_EOL)
-    {
-      if (!c_obj && !ignore)
-      {                         /*
-                                 * end of the whole list
-                                 */
-        if (obj_count != count)
-          return NULL;
-        else if (ch)
-        {
-          /*
-           * ok, simplest hack to make sure carried weight
-           * is correct, have to do this because obj_to_obj
-           * does not correctly updated carried weight (and
-           * would be ugly to fix).  JAB
-           */
-          GET_CARRYING_W(ch) = 0;
-          for (obj = ch->carrying; obj; obj = obj->next_content)
-            GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
-        }
-        return root_obj ? root_obj : (P_obj) 1;
-      }
-      if (!ignore)
-      {
-        if (OBJ_INSIDE(c_obj))
-          c_obj = c_obj->loc.inside;
-        else
-          c_obj = NULL;
-      }
-      else
-        ignore--;
+		if (o_f_flag & O_F_EOL)
+		{
+			if (!c_obj && !ignore)
+			{ /*
+			   * end of the whole list
+			   */
+				if (obj_count != count)
+					return NULL;
+				else if (ch)
+				{
+					/*
+					 * ok, simplest hack to make sure carried weight
+					 * is correct, have to do this because obj_to_obj
+					 * does not correctly updated carried weight (and
+					 * would be ugly to fix).  JAB
+					 */
+					GET_CARRYING_W(ch) = 0;
+					for (obj = ch->carrying; obj; obj = obj->next_content)
+						GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
+				}
+				return root_obj ? root_obj : (P_obj)1;
+			}
+			if (!ignore)
+			{
+				if (OBJ_INSIDE(c_obj))
+					c_obj = c_obj->loc.inside;
+				else
+					c_obj = NULL;
+			}
+			else
+				ignore--;
 
-      continue;
-    }
-
-    V_num = GET_INTE(buf);
-
-    obj = read_object(V_num, VIRTUAL);
-
-    if (!obj)
-    {
-      logit(LOG_OBJ, "Could not load object #%d for %s.", V_num,
-            (ch) ? GET_NAME(ch) : "pcorpse");
-      obj = &d_obj;
-      bzero(obj, sizeof(struct obj_data));
-      dummy_obj = TRUE;
-
-      /*
-       * have to fudge, if we can't load a container, we have to
-       * keep track or the list will end prematurely.
-       */
-      if (o_f_flag & O_F_CONTAINS)
-        ignore++;
-
+			continue;
 		}
 
-  	obj->g_key = 1;
+		V_num = GET_INTE(buf);
 
-   	if (!root_obj)
-     	root_obj = obj;
- 		
-    obj->craftsmanship = GET_SHORT(buf);
-    obj->condition = GET_SHORT(buf);
-    if (o_f_flag & O_F_WORN)
-    {
-      loc = GET_BYTE(buf);
-      if (!dummy_obj && (loc > 0))
-        save_equip[loc - 1] = obj;
-    }
+		obj = read_object(V_num, VIRTUAL);
 
-    if (o_f_flag & O_F_COUNT)
-      i_count = GET_SHORT(buf);
+		if (!obj)
+		{
+			logit(LOG_OBJ, "Could not load object #%d for %s.", V_num, (ch) ? GET_NAME(ch) : "pcorpse");
+			obj = &d_obj;
+			bzero(obj, sizeof(struct obj_data));
+			dummy_obj = TRUE;
 
-    if (o_f_flag & O_F_AFFECTS)
-    {
-      tmp = GET_BYTE(buf);
-      while (tmp--)
-      {
-        int      time = GET_INTE(buf);
-        sh_int   type = GET_SHORT(buf);
-        sh_int   data = GET_SHORT(buf);
-        ulong    extra2 = GET_INTE(buf);
-        if (type == TAG_ALTERED_EXTRA2)
-          continue;
+			/*
+			 * have to fudge, if we can't load a container, we have to
+			 * keep track or the list will end prematurely.
+			 */
+			if (o_f_flag & O_F_CONTAINS)
+				ignore++;
+		}
+
+		obj->g_key = 1;
+
+		if (!root_obj)
+			root_obj = obj;
+
+		obj->craftsmanship = GET_SHORT(buf);
+		obj->condition     = GET_SHORT(buf);
+		if (o_f_flag & O_F_WORN)
+		{
+			loc = GET_BYTE(buf);
+			if (!dummy_obj && (loc > 0))
+				save_equip[loc - 1] = obj;
+		}
+
+		if (o_f_flag & O_F_COUNT)
+			i_count = GET_SHORT(buf);
+
+		if (o_f_flag & O_F_AFFECTS)
+		{
+			tmp = GET_BYTE(buf);
+			while (tmp--)
+			{
+				int    time   = GET_INTE(buf);
+				sh_int type   = GET_SHORT(buf);
+				sh_int data   = GET_SHORT(buf);
+				ulong  extra2 = GET_INTE(buf);
+				if (type == TAG_ALTERED_EXTRA2)
+					continue;
 #ifndef _PFILE_
-        if (extra2)
-          set_obj_affected_extra(obj, time, type, data, extra2);
-        else
-          set_obj_affected(obj, time, type, data);
+				if (extra2)
+					set_obj_affected_extra(obj, time, type, data, extra2);
+				else
+					set_obj_affected(obj, time, type, data);
 #endif
-      }
-    }
+			}
+		}
 
-    if (o_f_flag & O_F_UNIQUE)
-    {
-      o_u_flag = GET_INTE(buf);
-      obj->str_mask = (o_u_flag & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
+		if (o_f_flag & O_F_UNIQUE)
+		{
+			o_u_flag      = GET_INTE(buf);
+			obj->str_mask = (o_u_flag & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
 
-      if (obj->str_mask)
-      {
-        if (o_u_flag & O_U_KEYS)
-          obj->name = GET_STRING(buf);
-        if (o_u_flag & O_U_DESC1)
-          obj->description = GET_STRING(buf);
-        if (o_u_flag & O_U_DESC2)
-          obj->short_description = GET_STRING(buf);
-        if (o_u_flag & O_U_DESC3)
-          obj->action_description = GET_STRING(buf);
-      }
-      if (o_u_flag & O_U_EDESC)
-      {
-        // note:  this mask is ONLY used for writing and restoring the object.
-        //   "normal" objects allocate seperate memory for extra descs already
-        obj->str_mask |= STRUNG_EDESC;
+			if (obj->str_mask)
+			{
+				if (o_u_flag & O_U_KEYS)
+					obj->name = GET_STRING(buf);
+				if (o_u_flag & O_U_DESC1)
+					obj->description = GET_STRING(buf);
+				if (o_u_flag & O_U_DESC2)
+					obj->short_description = GET_STRING(buf);
+				if (o_u_flag & O_U_DESC3)
+					obj->action_description = GET_STRING(buf);
+			}
+			if (o_u_flag & O_U_EDESC)
+			{
+				// note:  this mask is ONLY used for writing and restoring the object.
+				//   "normal" objects allocate seperate memory for extra descs already
+				obj->str_mask |= STRUNG_EDESC;
 
-        struct extra_descr_data *ed, *next_one;
-        for (ed = obj->ex_description; ed; ed = next_one)
-        {
-          next_one = ed->next;
-          if (ed->keyword)
-            str_free(ed->keyword);
-          if (ed->description)
-            str_free(ed->description);
-          FREE(ed);
-        }
-        obj->ex_description = NULL;
-        int nDescs = GET_SHORT(buf);
-        struct extra_descr_data **lastOne = &(obj->ex_description);
-        while (*lastOne)
-          lastOne = &((*lastOne)->next);
-        while (nDescs--)
-        {
-          CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-          ed->next = NULL;
-          ed->keyword = GET_STRING(buf);
-          ed->description = GET_STRING(buf);
-          *lastOne = ed;
-          lastOne = &(ed->next);
-        }
-      }
-      if (o_u_flag & O_U_VAL0)
-        obj->value[0] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL1)
-        obj->value[1] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL2)
-        obj->value[2] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL3)
-        obj->value[3] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL4)
-        obj->value[4] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL5)
-        obj->value[5] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL6)
-        obj->value[6] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL7)
-        obj->value[7] = GET_INTE(buf);
+				struct extra_descr_data *ed, *next_one;
+				for (ed = obj->ex_description; ed; ed = next_one)
+				{
+					next_one = ed->next;
+					if (ed->keyword)
+						str_free(ed->keyword);
+					if (ed->description)
+						str_free(ed->description);
+					FREE(ed);
+				}
+				obj->ex_description               = NULL;
+				int                       nDescs  = GET_SHORT(buf);
+				struct extra_descr_data **lastOne = &(obj->ex_description);
+				while (*lastOne)
+					lastOne = &((*lastOne)->next);
+				while (nDescs--)
+				{
+					CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
+					ed->next        = NULL;
+					ed->keyword     = GET_STRING(buf);
+					ed->description = GET_STRING(buf);
+					*lastOne        = ed;
+					lastOne         = &(ed->next);
+				}
+			}
+			if (o_u_flag & O_U_VAL0)
+				obj->value[0] = GET_INTE(buf);
+			if (o_u_flag & O_U_VAL1)
+				obj->value[1] = GET_INTE(buf);
+			if (o_u_flag & O_U_VAL2)
+				obj->value[2] = GET_INTE(buf);
+			if (o_u_flag & O_U_VAL3)
+				obj->value[3] = GET_INTE(buf);
+			if (o_u_flag & O_U_VAL4)
+				obj->value[4] = GET_INTE(buf);
+			if (o_u_flag & O_U_VAL5)
+				obj->value[5] = GET_INTE(buf);
+			if (o_u_flag & O_U_VAL6)
+				obj->value[6] = GET_INTE(buf);
+			if (o_u_flag & O_U_VAL7)
+				obj->value[7] = GET_INTE(buf);
 
-      if (o_u_flag & O_U_TIMER)
-      {
-        for (i = 0; i < 4; i++)
-        {
-          obj->timer[i] = GET_INTE(buf);
-        }
-      }
+			if (o_u_flag & O_U_TIMER)
+			{
+				for (i = 0; i < 4; i++)
+				{
+					obj->timer[i] = GET_INTE(buf);
+				}
+			}
 
-      if (o_u_flag & O_U_TRAP)
-      {
-        obj->trap_eff = GET_SHORT(buf);
-        obj->trap_dam = GET_SHORT(buf);
-        obj->trap_charge = GET_SHORT(buf);
-        obj->trap_level = GET_SHORT(buf);
-      }
-      if (o_u_flag & O_U_TYPE)
-      {
-        obj->type = GET_BYTE(buf);
-      }
-      if (o_u_flag & O_U_WEAR)
-      {
-        obj->wear_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_EXTRA)
-      {
-        obj->extra_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_ANTI)
-      {
-        obj->anti_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_ANTI2)
-      {
-        obj->anti2_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_EXTRA2)
-      {
-        obj->extra2_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_WEIGHT)
-      {
-        obj->weight = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_MATERIAL)
-      {
-        obj->material = GET_BYTE(buf);
-      }
-      if (o_u_flag & O_U_COST)
-      {
-        obj->cost = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_BV1)
-      {
-        obj->bitvector = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV2)
-      {
-        obj->bitvector2 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV3)
-      {
-        obj->bitvector3 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV4)
-      {
-        obj->bitvector4 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV5)
-      {
-        obj->bitvector5 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_AFFS)
-      {
-        for (i = 0; i < MAX_OBJ_AFFECT; i++)
-        {
-          obj->affected[i].location = GET_BYTE(buf);
-          obj->affected[i].modifier = GET_BYTE(buf);
-        }
-      }
-      if (o_f_flag & O_F_SPELLBOOK)
-      {
-        if (obj->type == ITEM_SPELLBOOK)
-        {
-          tmp = GET_INTE(buf);
+			if (o_u_flag & O_U_TRAP)
+			{
+				obj->trap_eff    = GET_SHORT(buf);
+				obj->trap_dam    = GET_SHORT(buf);
+				obj->trap_charge = GET_SHORT(buf);
+				obj->trap_level  = GET_SHORT(buf);
+			}
+			if (o_u_flag & O_U_TYPE)
+			{
+				obj->type = GET_BYTE(buf);
+			}
+			if (o_u_flag & O_U_WEAR)
+			{
+				obj->wear_flags = GET_INTE(buf);
+			}
+			if (o_u_flag & O_U_EXTRA)
+			{
+				obj->extra_flags = GET_INTE(buf);
+			}
+			if (o_u_flag & O_U_ANTI)
+			{
+				obj->anti_flags = GET_INTE(buf);
+			}
+			if (o_u_flag & O_U_ANTI2)
+			{
+				obj->anti2_flags = GET_INTE(buf);
+			}
+			if (o_u_flag & O_U_EXTRA2)
+			{
+				obj->extra2_flags = GET_INTE(buf);
+			}
+			if (o_u_flag & O_U_WEIGHT)
+			{
+				obj->weight = GET_INTE(buf);
+			}
+			if (o_u_flag & O_U_MATERIAL)
+			{
+				obj->material = GET_BYTE(buf);
+			}
+			if (o_u_flag & O_U_COST)
+			{
+				obj->cost = GET_INTE(buf);
+			}
+			if (o_u_flag & O_U_BV1)
+			{
+				obj->bitvector = GET_LONG(buf);
+			}
+			if (o_u_flag & O_U_BV2)
+			{
+				obj->bitvector2 = GET_LONG(buf);
+			}
+			if (o_u_flag & O_U_BV3)
+			{
+				obj->bitvector3 = GET_LONG(buf);
+			}
+			if (o_u_flag & O_U_BV4)
+			{
+				obj->bitvector4 = GET_LONG(buf);
+			}
+			if (o_u_flag & O_U_BV5)
+			{
+				obj->bitvector5 = GET_LONG(buf);
+			}
+			if (o_u_flag & O_U_AFFS)
+			{
+				for (i = 0; i < MAX_OBJ_AFFECT; i++)
+				{
+					obj->affected[i].location = GET_BYTE(buf);
+					obj->affected[i].modifier = GET_BYTE(buf);
+				}
+			}
+			if (o_f_flag & O_F_SPELLBOOK)
+			{
+				if (obj->type == ITEM_SPELLBOOK)
+				{
+					tmp = GET_INTE(buf);
 
-          if (tmp)
-          {                     /*
-                                 * create fake spell description
-                                 * thing
-                                 */
-            CREATE(t_desc, extra_descr_data, 1, MEM_TAG_EXDESCD);
+					if (tmp)
+					{ /*
+					   * create fake spell description
+					   * thing
+					   */
+						CREATE(t_desc, extra_descr_data, 1, MEM_TAG_EXDESCD);
 
-            t_desc->next = obj->ex_description;
-            obj->ex_description = t_desc;
-            t_desc->keyword = str_dup("\03\01\03");
-            CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
+						t_desc->next        = obj->ex_description;
+						obj->ex_description = t_desc;
+						t_desc->keyword     = str_dup("\03\01\03");
+						CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
 
-            for (i = 0; i < tmp; i++)
-              t_desc->description[i] = GET_BYTE(buf);
-            for (i = tmp; i < (MAX_SKILLS / 8 + 1); i++)
-              t_desc->description[i] = 0;
-          }
-        }
-        else
-        {                       /*
-                                 * was causing some silly things before..
-                                 * but now fixed: if item _was_ spellbook
-                                 * and had desc, will have no longer.
-                                 */
-          tmp = GET_BYTE(buf);
-          for (i = 0; i < tmp; i++)
-          {
-            dummy_byte = GET_BYTE(buf);
-          }
-        }
-      }
-    }
+						for (i = 0; i < tmp; i++)
+							t_desc->description[i] = GET_BYTE(buf);
+						for (i = tmp; i < (MAX_SKILLS / 8 + 1); i++)
+							t_desc->description[i] = 0;
+					}
+				}
+				else
+				{ /*
+				   * was causing some silly things before..
+				   * but now fixed: if item _was_ spellbook
+				   * and had desc, will have no longer.
+				   */
+					tmp = GET_BYTE(buf);
+					for (i = 0; i < tmp; i++)
+					{
+						dummy_byte = GET_BYTE(buf);
+					}
+				}
+			}
+		}
 
-    obj_count += i_count;
+		obj_count += i_count;
 
-    if (!dummy_obj)
-    {
-      do
-      {
+		if (!dummy_obj)
+		{
+			do
+			{
 #ifdef _PFILE_
-        if (c_obj)
-        {
-          obj->loc_p = LOC_INSIDE;
-          obj->loc.inside = c_obj;
-        }
+				if (c_obj)
+				{
+					obj->loc_p      = LOC_INSIDE;
+					obj->loc.inside = c_obj;
+				}
 
-        obj_to_char(obj, ch);
+				obj_to_char(obj, ch);
 #else
-        if( IS_SET(obj->extra_flags, ITEM_PROCLIB) && (NULL == get_scheduled(obj, proclib_obj_event)) )
-        {
-          add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
-        }
+				if (IS_SET(obj->extra_flags, ITEM_PROCLIB) && (NULL == get_scheduled(obj, proclib_obj_event)))
+				{
+					add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
+				}
 
-        if (c_obj && (c_obj->type == ITEM_QUIVER || !ch))
-          obj_to_obj_at_end(obj, c_obj);
-        else if (c_obj && ((GET_OBJ_WEIGHT(obj) + GET_OBJ_WEIGHT(c_obj) <= c_obj->value[0]) || !ch))
-        {
-          obj_to_obj_at_end(obj, c_obj);
-        }
-        else
-        {
-          if (ch)
-            obj_to_char_at_end(obj, ch);
-          else
-          {
-            obj_to_room(obj, corpse_room);
-            if (not_room)
-              if (obj->type != ITEM_CORPSE)
-                writeSavedItem(obj);
-          }
-        }
+				if (c_obj && (c_obj->type == ITEM_QUIVER || !ch))
+					obj_to_obj_at_end(obj, c_obj);
+				else if (c_obj && ((GET_OBJ_WEIGHT(obj) + GET_OBJ_WEIGHT(c_obj) <= c_obj->value[0]) || !ch))
+				{
+					obj_to_obj_at_end(obj, c_obj);
+				}
+				else
+				{
+					if (ch)
+						obj_to_char_at_end(obj, ch);
+					else
+					{
+						obj_to_room(obj, corpse_room);
+						if (not_room)
+							if (obj->type != ITEM_CORPSE)
+								writeSavedItem(obj);
+					}
+				}
 #endif
-        if (--i_count)
-          obj = read_object(V_num, VIRTUAL);
-      }
-      while (i_count);
+				if (--i_count)
+					obj = read_object(V_num, VIRTUAL);
+			} while (i_count);
 
-      if (o_f_flag & O_F_CONTAINS)
-        c_obj = obj;
-    }
-  }
+			if (o_f_flag & O_F_CONTAINS)
+				c_obj = obj;
+		}
+	}
 
-  if (ch)
-  {
-    /*
-     * ok, simplest hack to make sure carried weight is correct, have
-     * to do this because obj_to_obj does not correctly updated
-     * carried weight (and would be ugly to fix).  JAB
-     */
+	if (ch)
+	{
+		/*
+		 * ok, simplest hack to make sure carried weight is correct, have
+		 * to do this because obj_to_obj does not correctly updated
+		 * carried weight (and would be ugly to fix).  JAB
+		 */
 
-    GET_CARRYING_W(ch) = 0;
-    for (obj = ch->carrying; obj; obj = obj->next_content)
-      GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
-  }
+		GET_CARRYING_W(ch) = 0;
+		for (obj = ch->carrying; obj; obj = obj->next_content)
+			GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
+	}
 
-  return root_obj ? root_obj : (P_obj) 1;
+	return root_obj ? root_obj : (P_obj)1;
 }
 
-/* this function loads *one* object from a char buffer. 
+/* this function loads *one* object from a char buffer.
   if it is a container, any possible contents will *not* be loaded */
 P_obj read_one_object(char *read_buf)
 {
-  char *buf = read_buf;
-  P_obj    obj;
-  ::byte     dummy_byte, o_f_flag;
-  int      tmp, V_num, count, i_count;
-  struct extra_descr_data *t_desc;
-  struct obj_data d_obj;
-  ulong    o_u_flag;
+	char                    *buf = read_buf;
+	P_obj                    obj;
+	::byte                   dummy_byte, o_f_flag;
+	int                      tmp, V_num, count, i_count;
+	struct extra_descr_data *t_desc;
+	struct obj_data          d_obj;
+	ulong                    o_u_flag;
 
-  obj_vers = (int) GET_BYTE(buf);
-  if (obj_vers > SAV_ITEMVERS)
-  {
-		logit(LOG_DEBUG, "read_one_object(): invalid item save version! (%d, %d)",
-            obj_vers, SAV_ITEMVERS);
+	obj_vers = (int)GET_BYTE(buf);
+	if (obj_vers > SAV_ITEMVERS)
+	{
+		logit(LOG_DEBUG, "read_one_object(): invalid item save version! (%d, %d)", obj_vers, SAV_ITEMVERS);
 		return NULL;
-  }
-  
-  count = GET_INTE(buf);
+	}
 
-    o_f_flag = GET_BYTE(buf);
-    o_u_flag = 0;
-    i_count = 1;
+	count = GET_INTE(buf);
 
-    if (o_f_flag & O_F_EOL)
-    {
+	o_f_flag = GET_BYTE(buf);
+	o_u_flag = 0;
+	i_count  = 1;
+
+	if (o_f_flag & O_F_EOL)
+	{
 		logit(LOG_DEBUG, "read_one_object(): premature end of object string.");
- 		return NULL;
-   	}
+		return NULL;
+	}
 
-    V_num = GET_INTE(buf);
-    obj = read_object(V_num, VIRTUAL);
- 
-    if (!obj)
-    {
-      logit(LOG_DEBUG, "read_one_object(): could not load object %d\n", V_num);
-      return NULL;
-    }
+	V_num = GET_INTE(buf);
+	obj   = read_object(V_num, VIRTUAL);
 
-    obj->g_key = 1;
-    obj->craftsmanship = GET_SHORT(buf);
-    obj->condition = GET_SHORT(buf);
+	if (!obj)
+	{
+		logit(LOG_DEBUG, "read_one_object(): could not load object %d\n", V_num);
+		return NULL;
+	}
 
-    if (o_f_flag & O_F_COUNT)
-      i_count = GET_SHORT(buf);
+	obj->g_key         = 1;
+	obj->craftsmanship = GET_SHORT(buf);
+	obj->condition     = GET_SHORT(buf);
 
-	if( i_count != 1 ) {
+	if (o_f_flag & O_F_COUNT)
+		i_count = GET_SHORT(buf);
+
+	if (i_count != 1)
+	{
 		logit(LOG_DEBUG, "read_one_object(): object i_count != 1\n");
 		return NULL;
 	}
 
-    if (o_f_flag & O_F_AFFECTS)
-    {
-        tmp = GET_BYTE(buf);
-        while (tmp--)
-        {
-          int      time = GET_INTE(buf);
-          sh_int   type = GET_SHORT(buf);
-          sh_int   data = GET_SHORT(buf);
-          ulong    extra2 = GET_INTE(buf);
+	if (o_f_flag & O_F_AFFECTS)
+	{
+		tmp = GET_BYTE(buf);
+		while (tmp--)
+		{
+			int    time   = GET_INTE(buf);
+			sh_int type   = GET_SHORT(buf);
+			sh_int data   = GET_SHORT(buf);
+			ulong  extra2 = GET_INTE(buf);
 
-          if (type == TAG_ALTERED_EXTRA2)
-            continue;
-
-#ifndef _PFILE_
-          if (extra2)
-            set_obj_affected_extra(obj, time, type, data, extra2);
-          else
-            set_obj_affected(obj, time, type, data);
-#endif            
-        }
-      
-    }
-
-    if (o_f_flag & O_F_UNIQUE)
-    {
-      o_u_flag = GET_INTE(buf);
-      obj->str_mask = (o_u_flag & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
-
-      if (obj->str_mask)
-      {
-        if (o_u_flag & O_U_KEYS)
-          obj->name = GET_STRING(buf);
-        if (o_u_flag & O_U_DESC1)
-          obj->description = GET_STRING(buf);
-        if (o_u_flag & O_U_DESC2)
-          obj->short_description = GET_STRING(buf);
-        if (o_u_flag & O_U_DESC3)
-          obj->action_description = GET_STRING(buf);
-      }
-      if (o_u_flag & O_U_EDESC)
-      {
-        // note:  this mask is ONLY used for writing and restoring the object.
-        //   "normal" objects allocate seperate memory for extra descs already
-        obj->str_mask |= STRUNG_EDESC;
-
-        struct extra_descr_data *ed, *next_one;
-        for (ed = obj->ex_description; ed; ed = next_one)
-        {
-          next_one = ed->next;
-          if (ed->keyword)
-            str_free(ed->keyword);
-          if (ed->description)
-            str_free(ed->description);
-          FREE(ed);
-        }
-        obj->ex_description = NULL;
-        int nDescs = GET_SHORT(buf);
-        struct extra_descr_data **lastOne = &(obj->ex_description);
-        while (*lastOne)
-          lastOne = &((*lastOne)->next);
-        while (nDescs--)
-        {
-          CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-          ed->next = NULL;
-          ed->keyword = GET_STRING(buf);
-          ed->description = GET_STRING(buf);
-          *lastOne = ed;
-          lastOne = &(ed->next);
-        }
-      }
-      if (o_u_flag & O_U_VAL0)
-        obj->value[0] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL1)
-        obj->value[1] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL2)
-        obj->value[2] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL3)
-        obj->value[3] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL4)
-        obj->value[4] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL5)
-        obj->value[5] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL6)
-        obj->value[6] = GET_INTE(buf);
-      if (o_u_flag & O_U_VAL7)
-        obj->value[7] = GET_INTE(buf);
-
-      if (o_u_flag & O_U_TIMER)
-      {
-        for (int i = 0; i < 4; i++)
-        {
-          obj->timer[i] = GET_INTE(buf);
-        }
-      }
-
-      if (o_u_flag & O_U_TRAP)
-      {
-        obj->trap_eff = GET_SHORT(buf);
-        obj->trap_dam = GET_SHORT(buf);
-        obj->trap_charge = GET_SHORT(buf);
-        obj->trap_level = GET_SHORT(buf);
-      }
-      if (o_u_flag & O_U_TYPE)
-      {
-        obj->type = GET_BYTE(buf);
-      }
-      if (o_u_flag & O_U_WEAR)
-      {
-        obj->wear_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_EXTRA)
-      {
-        obj->extra_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_ANTI)
-      {
-        obj->anti_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_ANTI2)
-      {
-        obj->anti2_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_EXTRA2)
-      {
-        obj->extra2_flags = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_WEIGHT)
-      {
-        obj->weight = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_MATERIAL)
-      {
-        obj->material = GET_BYTE(buf);
-      }
-      if (o_u_flag & O_U_COST)
-      {
-        obj->cost = GET_INTE(buf);
-      }
-      if (o_u_flag & O_U_BV1)
-      {
-        obj->bitvector = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV2)
-      {
-        obj->bitvector2 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV3)
-      {
-        obj->bitvector3 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV4)
-      {
-        obj->bitvector4 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_BV5)
-      {
-        obj->bitvector5 = GET_LONG(buf);
-      }
-      if (o_u_flag & O_U_AFFS)
-      {
-        for (int i = 0; i < MAX_OBJ_AFFECT; i++)
-        {
-          obj->affected[i].location = GET_BYTE(buf);
-          obj->affected[i].modifier = GET_BYTE(buf);
-        }
-      }
-      if (o_f_flag & O_F_SPELLBOOK)
-      {
-        if (obj->type == ITEM_SPELLBOOK)
-        {
-          tmp = GET_INTE(buf);
-          
-          if (tmp)
-          {                     /*
-                                 * create fake spell description
-                                 * thing
-                                 */
-            CREATE(t_desc, extra_descr_data, 1, MEM_TAG_EXDESCD);
-
-            t_desc->next = obj->ex_description;
-            obj->ex_description = t_desc;
-            t_desc->keyword = str_dup("\03\01\03");
-            CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
-
-            for (int i = 0; i < tmp; i++)
-              t_desc->description[i] = GET_BYTE(buf);
-            for (int i = tmp; i < (MAX_SKILLS / 8 + 1); i++)
-              t_desc->description[i] = 0;
-          }
-        }
-        else
-        {                       /*
-                                 * was causing some silly things before..
-                                 * but now fixed: if item _was_ spellbook
-                                 * and had desc, will have no longer.
-                                 */
-          tmp = GET_BYTE(buf);
-          for (int i = 0; i < tmp; i++)
-          {
-            dummy_byte = GET_BYTE(buf);
-          }
-        }
-      }
-    }
+			if (type == TAG_ALTERED_EXTRA2)
+				continue;
 
 #ifndef _PFILE_
-    if( IS_SET(obj->extra_flags, ITEM_PROCLIB) && (NULL == get_scheduled(obj, proclib_obj_event)) )
-    {
-      add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
-    }
+			if (extra2)
+				set_obj_affected_extra(obj, time, type, data, extra2);
+			else
+				set_obj_affected(obj, time, type, data);
+#endif
+		}
+	}
+
+	if (o_f_flag & O_F_UNIQUE)
+	{
+		o_u_flag      = GET_INTE(buf);
+		obj->str_mask = (o_u_flag & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
+
+		if (obj->str_mask)
+		{
+			if (o_u_flag & O_U_KEYS)
+				obj->name = GET_STRING(buf);
+			if (o_u_flag & O_U_DESC1)
+				obj->description = GET_STRING(buf);
+			if (o_u_flag & O_U_DESC2)
+				obj->short_description = GET_STRING(buf);
+			if (o_u_flag & O_U_DESC3)
+				obj->action_description = GET_STRING(buf);
+		}
+		if (o_u_flag & O_U_EDESC)
+		{
+			// note:  this mask is ONLY used for writing and restoring the object.
+			//   "normal" objects allocate seperate memory for extra descs already
+			obj->str_mask |= STRUNG_EDESC;
+
+			struct extra_descr_data *ed, *next_one;
+			for (ed = obj->ex_description; ed; ed = next_one)
+			{
+				next_one = ed->next;
+				if (ed->keyword)
+					str_free(ed->keyword);
+				if (ed->description)
+					str_free(ed->description);
+				FREE(ed);
+			}
+			obj->ex_description               = NULL;
+			int                       nDescs  = GET_SHORT(buf);
+			struct extra_descr_data **lastOne = &(obj->ex_description);
+			while (*lastOne)
+				lastOne = &((*lastOne)->next);
+			while (nDescs--)
+			{
+				CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
+				ed->next        = NULL;
+				ed->keyword     = GET_STRING(buf);
+				ed->description = GET_STRING(buf);
+				*lastOne        = ed;
+				lastOne         = &(ed->next);
+			}
+		}
+		if (o_u_flag & O_U_VAL0)
+			obj->value[0] = GET_INTE(buf);
+		if (o_u_flag & O_U_VAL1)
+			obj->value[1] = GET_INTE(buf);
+		if (o_u_flag & O_U_VAL2)
+			obj->value[2] = GET_INTE(buf);
+		if (o_u_flag & O_U_VAL3)
+			obj->value[3] = GET_INTE(buf);
+		if (o_u_flag & O_U_VAL4)
+			obj->value[4] = GET_INTE(buf);
+		if (o_u_flag & O_U_VAL5)
+			obj->value[5] = GET_INTE(buf);
+		if (o_u_flag & O_U_VAL6)
+			obj->value[6] = GET_INTE(buf);
+		if (o_u_flag & O_U_VAL7)
+			obj->value[7] = GET_INTE(buf);
+
+		if (o_u_flag & O_U_TIMER)
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				obj->timer[i] = GET_INTE(buf);
+			}
+		}
+
+		if (o_u_flag & O_U_TRAP)
+		{
+			obj->trap_eff    = GET_SHORT(buf);
+			obj->trap_dam    = GET_SHORT(buf);
+			obj->trap_charge = GET_SHORT(buf);
+			obj->trap_level  = GET_SHORT(buf);
+		}
+		if (o_u_flag & O_U_TYPE)
+		{
+			obj->type = GET_BYTE(buf);
+		}
+		if (o_u_flag & O_U_WEAR)
+		{
+			obj->wear_flags = GET_INTE(buf);
+		}
+		if (o_u_flag & O_U_EXTRA)
+		{
+			obj->extra_flags = GET_INTE(buf);
+		}
+		if (o_u_flag & O_U_ANTI)
+		{
+			obj->anti_flags = GET_INTE(buf);
+		}
+		if (o_u_flag & O_U_ANTI2)
+		{
+			obj->anti2_flags = GET_INTE(buf);
+		}
+		if (o_u_flag & O_U_EXTRA2)
+		{
+			obj->extra2_flags = GET_INTE(buf);
+		}
+		if (o_u_flag & O_U_WEIGHT)
+		{
+			obj->weight = GET_INTE(buf);
+		}
+		if (o_u_flag & O_U_MATERIAL)
+		{
+			obj->material = GET_BYTE(buf);
+		}
+		if (o_u_flag & O_U_COST)
+		{
+			obj->cost = GET_INTE(buf);
+		}
+		if (o_u_flag & O_U_BV1)
+		{
+			obj->bitvector = GET_LONG(buf);
+		}
+		if (o_u_flag & O_U_BV2)
+		{
+			obj->bitvector2 = GET_LONG(buf);
+		}
+		if (o_u_flag & O_U_BV3)
+		{
+			obj->bitvector3 = GET_LONG(buf);
+		}
+		if (o_u_flag & O_U_BV4)
+		{
+			obj->bitvector4 = GET_LONG(buf);
+		}
+		if (o_u_flag & O_U_BV5)
+		{
+			obj->bitvector5 = GET_LONG(buf);
+		}
+		if (o_u_flag & O_U_AFFS)
+		{
+			for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+			{
+				obj->affected[i].location = GET_BYTE(buf);
+				obj->affected[i].modifier = GET_BYTE(buf);
+			}
+		}
+		if (o_f_flag & O_F_SPELLBOOK)
+		{
+			if (obj->type == ITEM_SPELLBOOK)
+			{
+				tmp = GET_INTE(buf);
+
+				if (tmp)
+				{ /*
+				   * create fake spell description
+				   * thing
+				   */
+					CREATE(t_desc, extra_descr_data, 1, MEM_TAG_EXDESCD);
+
+					t_desc->next        = obj->ex_description;
+					obj->ex_description = t_desc;
+					t_desc->keyword     = str_dup("\03\01\03");
+					CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
+
+					for (int i = 0; i < tmp; i++)
+						t_desc->description[i] = GET_BYTE(buf);
+					for (int i = tmp; i < (MAX_SKILLS / 8 + 1); i++)
+						t_desc->description[i] = 0;
+				}
+			}
+			else
+			{ /*
+			   * was causing some silly things before..
+			   * but now fixed: if item _was_ spellbook
+			   * and had desc, will have no longer.
+			   */
+				tmp = GET_BYTE(buf);
+				for (int i = 0; i < tmp; i++)
+				{
+					dummy_byte = GET_BYTE(buf);
+				}
+			}
+		}
+	}
+
+#ifndef _PFILE_
+	if (IS_SET(obj->extra_flags, ITEM_PROCLIB) && (NULL == get_scheduled(obj, proclib_obj_event)))
+	{
+		add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
+	}
 #endif
 
 	return obj;
 }
 
-
 #ifndef _PFILE_
 
 int confiscate_item(P_char ch, int debt)
 {
-  int      value = 2, i;
-  P_obj    cobj = 0, obj, obj2;
+	int   value = 2, i;
+	P_obj cobj  = 0, obj, obj2;
 
-  /*
-   * find most expensive item first
-   */
-  obj = ch->carrying;
-  while (obj)
-  {
-    if (obj->cost > value && !obj->contains)
-    {
-      cobj = obj;
-      value = cobj->cost;
-    }
-    if (OBJ_INSIDE(obj))
-      if (obj->next_content)
-        obj = obj->next_content;
-      else
-        obj = obj->loc.inside->next_content;
-    else
-      obj = obj->next_content;
-  }
+	/*
+	 * find most expensive item first
+	 */
+	obj = ch->carrying;
+	while (obj)
+	{
+		if (obj->cost > value && !obj->contains)
+		{
+			cobj  = obj;
+			value = cobj->cost;
+		}
+		if (OBJ_INSIDE(obj))
+			if (obj->next_content)
+				obj = obj->next_content;
+			else
+				obj = obj->loc.inside->next_content;
+		else
+			obj = obj->next_content;
+	}
 
-  if (!value || !cobj)
-    return 0;
+	if (!value || !cobj)
+		return 0;
 
-  /*
-   * if most expensive item won't cover it, grab it
-   */
+	/*
+	 * if most expensive item won't cover it, grab it
+	 */
 
-  if (((value * 3) / 4) < debt)
-  {
-    act("Confiscating your $o", FALSE, ch, cobj, 0, TO_CHAR);
-    for (i = 0; i < MAX_WEAR; i++)
-      if (save_equip[i] == cobj)
-        save_equip[i] = NULL;
-    if (cobj->contains)
-    {
-      obj = cobj->contains;
-      while (obj)
-      {
-        obj2 = obj->next_content;
-        obj_from_obj(obj);
-        obj_to_char(obj, ch);
-        obj = obj2;
-      }
-    }
-    extract_obj(cobj, TRUE); // If arti is confiscated.. ouch.
-    return ((value * 3) / 4);
-  }
-  /*
-   * if we get here most expensive item is worth more than the debt, so
-   * find the LEAST expensive item that will cover the debt
-   */
+	if (((value * 3) / 4) < debt)
+	{
+		act("Confiscating your $o", FALSE, ch, cobj, 0, TO_CHAR);
+		for (i = 0; i < MAX_WEAR; i++)
+			if (save_equip[i] == cobj)
+				save_equip[i] = NULL;
+		if (cobj->contains)
+		{
+			obj = cobj->contains;
+			while (obj)
+			{
+				obj2 = obj->next_content;
+				obj_from_obj(obj);
+				obj_to_char(obj, ch);
+				obj = obj2;
+			}
+		}
+		extract_obj(cobj, TRUE); // If arti is confiscated.. ouch.
+		return ((value * 3) / 4);
+	}
+	/*
+	 * if we get here most expensive item is worth more than the debt, so
+	 * find the LEAST expensive item that will cover the debt
+	 */
 
-  obj = ch->carrying;
-  cobj = NULL;
-  while (obj)
-  {
-    if ((obj->cost < value) &&
-        (((obj->cost * 3) / 4) >= debt) && !cobj->contains)
-    {
-      cobj = obj;
-      value = cobj->cost;
-    }
-    if (OBJ_INSIDE(obj))
-      if (obj->next_content)
-        obj = obj->next_content;
-      else
-        obj = obj->loc.inside->next_content;
-    else
-      obj = obj->next_content;
-  }
-  if (!cobj)
-    return 0;
-  act("Confiscating your $o", FALSE, ch, cobj, 0, TO_CHAR);
-  for (i = 0; i < MAX_WEAR; i++)
-    if (save_equip[i] == cobj)
-      save_equip[i] = NULL;
-#   if 0
+	obj  = ch->carrying;
+	cobj = NULL;
+	while (obj)
+	{
+		if ((obj->cost < value) && (((obj->cost * 3) / 4) >= debt) && !cobj->contains)
+		{
+			cobj  = obj;
+			value = cobj->cost;
+		}
+		if (OBJ_INSIDE(obj))
+			if (obj->next_content)
+				obj = obj->next_content;
+			else
+				obj = obj->loc.inside->next_content;
+		else
+			obj = obj->next_content;
+	}
+	if (!cobj)
+		return 0;
+	act("Confiscating your $o", FALSE, ch, cobj, 0, TO_CHAR);
+	for (i = 0; i < MAX_WEAR; i++)
+		if (save_equip[i] == cobj)
+			save_equip[i] = NULL;
+#if 0
   if (cobj->contains)
   {
     obj = cobj->contains;
@@ -3493,32 +3410,32 @@ int confiscate_item(P_char ch, int debt)
       obj_to_char(obj, ch);
     }
   }
-#   endif
-  extract_obj(cobj, TRUE); // If arti is confiscated.. ouch.
-  return ((value * 3) / 4);
+#endif
+	extract_obj(cobj, TRUE); // If arti is confiscated.. ouch.
+	return ((value * 3) / 4);
 }
 
 void confiscate_all(P_char ch)
 {
-  int      i;
-  P_obj    obj, obj2;
+	int   i;
+	P_obj obj, obj2;
 
-  for (i = 0; i < MAX_WEAR; i++)
-  {
-    save_equip[i] = NULL;
-    if (ch->equipment[i])
-    {
-      extract_obj(ch->equipment[i], TRUE); // If arti is confiscated.. ouch!
-      ch->equipment[i] = NULL;
-    }
-  }
-  obj = ch->carrying;
-  while (obj)
-  {
-    obj2 = obj->next_content;
-    extract_obj(obj, TRUE); // If arti is confiscated.. ouch!
-    obj = obj2;
-  }
+	for (i = 0; i < MAX_WEAR; i++)
+	{
+		save_equip[i] = NULL;
+		if (ch->equipment[i])
+		{
+			extract_obj(ch->equipment[i], TRUE); // If arti is confiscated.. ouch!
+			ch->equipment[i] = NULL;
+		}
+	}
+	obj = ch->carrying;
+	while (obj)
+	{
+		obj2 = obj->next_content;
+		extract_obj(obj, TRUE); // If arti is confiscated.. ouch!
+		obj = obj2;
+	}
 }
 
 /*
@@ -3527,50 +3444,50 @@ void confiscate_all(P_char ch)
 
 #endif
 
-int      restore_wear[MAX_WEAR] = {
-  -2,                           /* WEAR_LIGHT */
-  1,                            /* WEAR_FINGER_R */
-  1,                            /* WEAR_FINGER_L */
-  2,                            /* WEAR_NECK_1 */
-  2,                            /* WEAR_NECK_2 */
-  3,                            /* WEAR_BODY */
-  4,                            /* WEAR_HEAD */
-  5,                            /* WEAR_LEGS */
-  6,                            /* WEAR_FEET */
-  7,                            /* WEAR_HANDS */
-  8,                            /* WEAR_ARMS */
-  14,                           /* WEAR_SHIELD */
-  9,                            /* WEAR_ABOUT */
-  10,                           /* WEAR_WAIST */
-  11,                           /* WEAR_WRIST_R */
-  11,                           /* WEAR_WRIST_L */
-  12,                           /* PRIMARY_WEAPON */
-  12,                           /* SECONDARY_WEAPON */
-  13,                           /* HOLD */
-  15,                           /* WEAR_EYES */
-  16,                           /* WEAR_FACE */
-  17,                           /* WEAR_EARRING_R */
-  17,                           /* WEAR_EARRING_L */
-  18,                           /* WEAR_QUIVER */
-  19,                           /* GUILD_INSIGNIA */
-  12,                           /* THIRD_WEAPON */
-  12,                           /* FOURTH_WEAPON */
-  20,                           /* WEAR_BACK */
-  21,                           /* WEAR_ATTACH_BELT_1 */
-  21,                           /* WEAR_ATTACH_BELT_2 */
-  21,                           /* WEAR_ATTACH_BELT_3 */
-  8,                            /* WEAR_ARMS2 */
-  7,                            /* WEAR_HANDS2 */
-  11,                           /* WEAR_WRIST_LR */
-  11,                           /* WEAR_WRIST_LL */
-  22,                           /* WEAR_HORSE_BODY */
-  5,                            /* WEAR_LEGS_REAR */
-  23,                           /* WEAR_TAIL */
-  6,                            /* WEAR_FEET_REAR */
-  24,                           /* WEAR_NOSE */
-  25,                           /* WEAR_HORN */
-  26,                           /* WEAR_IOUN */
-  27                            /* WEAR_SPIDER_BODY */
+int restore_wear[MAX_WEAR] = {
+	-2, /* WEAR_LIGHT */
+	1,  /* WEAR_FINGER_R */
+	1,  /* WEAR_FINGER_L */
+	2,  /* WEAR_NECK_1 */
+	2,  /* WEAR_NECK_2 */
+	3,  /* WEAR_BODY */
+	4,  /* WEAR_HEAD */
+	5,  /* WEAR_LEGS */
+	6,  /* WEAR_FEET */
+	7,  /* WEAR_HANDS */
+	8,  /* WEAR_ARMS */
+	14, /* WEAR_SHIELD */
+	9,  /* WEAR_ABOUT */
+	10, /* WEAR_WAIST */
+	11, /* WEAR_WRIST_R */
+	11, /* WEAR_WRIST_L */
+	12, /* PRIMARY_WEAPON */
+	12, /* SECONDARY_WEAPON */
+	13, /* HOLD */
+	15, /* WEAR_EYES */
+	16, /* WEAR_FACE */
+	17, /* WEAR_EARRING_R */
+	17, /* WEAR_EARRING_L */
+	18, /* WEAR_QUIVER */
+	19, /* GUILD_INSIGNIA */
+	12, /* THIRD_WEAPON */
+	12, /* FOURTH_WEAPON */
+	20, /* WEAR_BACK */
+	21, /* WEAR_ATTACH_BELT_1 */
+	21, /* WEAR_ATTACH_BELT_2 */
+	21, /* WEAR_ATTACH_BELT_3 */
+	8,  /* WEAR_ARMS2 */
+	7,  /* WEAR_HANDS2 */
+	11, /* WEAR_WRIST_LR */
+	11, /* WEAR_WRIST_LL */
+	22, /* WEAR_HORSE_BODY */
+	5,  /* WEAR_LEGS_REAR */
+	23, /* WEAR_TAIL */
+	6,  /* WEAR_FEET_REAR */
+	24, /* WEAR_NOSE */
+	25, /* WEAR_HORN */
+	26, /* WEAR_IOUN */
+	27  /* WEAR_SPIDER_BODY */
 };
 
 /*
@@ -3580,135 +3497,132 @@ int      restore_wear[MAX_WEAR] = {
 
 int restoreItemsOnly(P_char ch, int flatrate)
 {
-  int      wearSuccess;
+	int wearSuccess;
 #ifndef _PFILE_
-  FILE    *f;
-  char     buff[SAV_MAXSIZE];
-  char    *buf = buff;
-  int      skill_off, item_off, affect_off;
+	FILE *f;
+	char  buff[SAV_MAXSIZE];
+	char *buf = buff;
+	int   skill_off, item_off, affect_off;
 #endif
-  int      size, csize, tmp, witness_off;
-  ::byte     dummy_byte;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  char     b_savevers;
-  char     buf1[256];
+	int    size, csize, tmp, witness_off;
+	::byte dummy_byte;
+	char   Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char   b_savevers;
+	char   buf1[256];
 
-  if (!ch)
-    return -2;
+	if (!ch)
+		return -2;
 
-  // sql players already have items loaded from sql_load_player_items
-  if (IS_PC(ch) && GET_PID(ch) > 0)
-    return 0;
+	// sql players already have items loaded from sql_load_player_items
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+		return 0;
 
 #ifndef _PFILE_
 
-  strcpy(buff, GET_NAME(ch));
-  for (; *buf; buf++)
-    *buf = LOWER(*buf);
-  buf = buff;
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
+	strcpy(buff, GET_NAME(ch));
+	for (; *buf; buf++)
+		*buf = LOWER(*buf);
+	buf = buff;
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
 
-  f = fopen(Gbuf1, "r");
-  if (!f)
-    return -2;
+	f = fopen(Gbuf1, "r");
+	if (!f)
+		return -2;
 
-  buf = buff;
-  size = fread(buf, 1, SAV_MAXSIZE, f);
-  fclose(f);
-  if (size < 4)
-  {
-    fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
-    logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
-    strcpy(Gbuf2, Gbuf1);
-    strcat(Gbuf2, ".bad");
-    rename(Gbuf1, Gbuf2);
-    return -2;
-  }
+	buf  = buff;
+	size = fread(buf, 1, SAV_MAXSIZE, f);
+	fclose(f);
+	if (size < 4)
+	{
+		fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
+		logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
+		strcpy(Gbuf2, Gbuf1);
+		strcat(Gbuf2, ".bad");
+		rename(Gbuf1, Gbuf2);
+		return -2;
+	}
 
-  b_savevers = GET_BYTE(buf);
+	b_savevers = GET_BYTE(buf);
 
-  if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
-      (GET_BYTE(buf) != long_size))
-  {
-    logit(LOG_FILE, "Save file in different machine format.");
-    fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
-    logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
-    strcpy(Gbuf2, Gbuf1);
-    strcat(Gbuf2, ".bad");
-    rename(Gbuf1, Gbuf2);
-    return -2;
-  }
-  if (size < (5 * int_size + 5 * sizeof(char) + long_size))
-  {
-    logit(LOG_FILE, "Save file is too small %d.", size);
-    fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
-    logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
-    strcpy(Gbuf2, Gbuf1);
-    strcat(Gbuf2, ".bad");
-    rename(Gbuf1, Gbuf2);
-    return -2;
-  }
-  dummy_byte = GET_BYTE(buf);
-  skill_off = GET_INTE(buf);
+	if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) || (GET_BYTE(buf) != long_size))
+	{
+		logit(LOG_FILE, "Save file in different machine format.");
+		fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
+		logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
+		strcpy(Gbuf2, Gbuf1);
+		strcat(Gbuf2, ".bad");
+		rename(Gbuf1, Gbuf2);
+		return -2;
+	}
+	if (size < (5 * int_size + 5 * sizeof(char) + long_size))
+	{
+		logit(LOG_FILE, "Save file is too small %d.", size);
+		fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
+		logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
+		strcpy(Gbuf2, Gbuf1);
+		strcat(Gbuf2, ".bad");
+		rename(Gbuf1, Gbuf2);
+		return -2;
+	}
+	dummy_byte = GET_BYTE(buf);
+	skill_off  = GET_INTE(buf);
 
-  if (b_savevers >= (char) SAV_WTNSVERS)        /* no witness record save in file */
-    witness_off = GET_INTE(buf);        /* TASFALEN */
+	if (b_savevers >= (char)SAV_WTNSVERS) /* no witness record save in file */
+		witness_off = GET_INTE(buf);      /* TASFALEN */
 
-  affect_off = GET_INTE(buf);
-  item_off = GET_INTE(buf);
-  csize = GET_INTE(buf);
-  if (size != csize)
-  {
-    logit(LOG_FILE, "Save file size %d not match size read %d.", size, csize);
-    fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
-    logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
-    strcpy(Gbuf2, Gbuf1);
-    strcat(Gbuf2, ".bad");
-    rename(Gbuf1, Gbuf2);
-    return -2;
-  }
+	affect_off = GET_INTE(buf);
+	item_off   = GET_INTE(buf);
+	csize      = GET_INTE(buf);
+	if (size != csize)
+	{
+		logit(LOG_FILE, "Save file size %d not match size read %d.", size, csize);
+		fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
+		logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
+		strcpy(Gbuf2, Gbuf1);
+		strcat(Gbuf2, ".bad");
+		rename(Gbuf1, Gbuf2);
+		return -2;
+	}
 
-  if ((restoreAffects(buff + affect_off, ch) + affect_off) != item_off)
-  {
-    logit(LOG_FILE, "Warning: restoreAffects() not match offset.");
-    fprintf(stderr,
-            "Problem restoring save file of: %s was %d, should be %d\n",
-            GET_NAME(ch), affect_off, item_off);
-    logit(LOG_FILE, "Problem restoring save file of %s.", GET_NAME(ch));
-    send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
-    return -2;
-  }
+	if ((restoreAffects(buff + affect_off, ch) + affect_off) != item_off)
+	{
+		logit(LOG_FILE, "Warning: restoreAffects() not match offset.");
+		fprintf(stderr, "Problem restoring save file of: %s was %d, should be %d\n", GET_NAME(ch), affect_off, item_off);
+		logit(LOG_FILE, "Problem restoring save file of %s.", GET_NAME(ch));
+		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		return -2;
+	}
 
-  readShapechangeData(ch);
+	readShapechangeData(ch);
 
-  for (tmp = 0; tmp < MAX_WEAR; tmp++)
-    save_equip[tmp] = NULL;
+	for (tmp = 0; tmp < MAX_WEAR; tmp++)
+		save_equip[tmp] = NULL;
 
 #endif
 
-  if( !restoreObjects(buff + item_off, ch, 1) )
-  {
-    fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
-    logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
+	if (!restoreObjects(buff + item_off, ch, 1))
+	{
+		fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
+		logit(LOG_FILE, "Problem restoring inventory of %s.", GET_NAME(ch));
 #ifndef _PFILE_
-    strcpy(Gbuf2, Gbuf1);
-    strcat(Gbuf2, ".bad");
-    rename(Gbuf1, Gbuf2);
+		strcpy(Gbuf2, Gbuf1);
+		strcat(Gbuf2, ".bad");
+		rename(Gbuf1, Gbuf2);
 #endif
-    return -2;
-  }
-  for (tmp = 0; tmp < MAX_WEAR; tmp++)
-  {
-    if (save_equip[tmp] != NULL)
-    {
-      wearSuccess = wear(ch, save_equip[tmp], restore_wear[tmp], FALSE);
-      if (!wearSuccess && restore_wear[tmp] == 12)
-        wearSuccess = wear(ch, save_equip[tmp], 13, FALSE);
-    }
-  }
-//  wear(ch, save_equip[tmp], restore_wear[tmp], 0);
+		return -2;
+	}
+	for (tmp = 0; tmp < MAX_WEAR; tmp++)
+	{
+		if (save_equip[tmp] != NULL)
+		{
+			wearSuccess = wear(ch, save_equip[tmp], restore_wear[tmp], FALSE);
+			if (!wearSuccess && restore_wear[tmp] == 12)
+				wearSuccess = wear(ch, save_equip[tmp], 13, FALSE);
+		}
+	}
+	//  wear(ch, save_equip[tmp], restore_wear[tmp], 0);
 
-  return 0;
+	return 0;
 }
 
 #ifndef _PFILE_
@@ -3716,7 +3630,7 @@ int restoreItemsOnly(P_char ch, int flatrate)
 void restoreCorpses(void)
 {
 #ifndef __NO_MYSQL__
-  sql_load_all_corpses();
+	sql_load_all_corpses();
 #endif
 }
 
@@ -3724,117 +3638,117 @@ void restoreCorpses(void)
 
 int writePetStatus(char *buf, P_char ch)
 {
-  char    *start = buf;
+	char *start = buf;
 
-  ADD_STRING(buf, GET_NAME(ch));
-  ADD_STRING(buf, ch->player.short_descr);
-  ADD_STRING(buf, ch->player.long_descr);
-  ADD_STRING(buf, ch->player.description);
-//  if (!ch->only.npc->owner)
-//    ch->only.npc->owner = str_dup("shop");
-//  ADD_STRING(buf, ch->only.npc->owner);
-  ADD_BYTE(buf, ch->player.m_class);    // MUST BE UPGRADED TO INT SOMETIME
-  //GET_CLASS(ch));
-  ADD_BYTE(buf, GET_RACE(ch));
-  ADD_BYTE(buf, GET_LEVEL(ch));
-  ADD_BYTE(buf, GET_SEX(ch));
-  ADD_SHORT(buf, ch->player.weight);
-  ADD_SHORT(buf, ch->player.height);
-  ADD_BYTE(buf, GET_SIZE(ch));
-  ADD_BYTE(buf, GET_HOME(ch));
-  ADD_INT(buf, mob_index[GET_RNUM(ch)].virtual_number);
-  ADD_INT(buf, world[ch->in_room].number);
+	ADD_STRING(buf, GET_NAME(ch));
+	ADD_STRING(buf, ch->player.short_descr);
+	ADD_STRING(buf, ch->player.long_descr);
+	ADD_STRING(buf, ch->player.description);
+	//  if (!ch->only.npc->owner)
+	//    ch->only.npc->owner = str_dup("shop");
+	//  ADD_STRING(buf, ch->only.npc->owner);
+	ADD_BYTE(buf, ch->player.m_class); // MUST BE UPGRADED TO INT SOMETIME
+	// GET_CLASS(ch));
+	ADD_BYTE(buf, GET_RACE(ch));
+	ADD_BYTE(buf, GET_LEVEL(ch));
+	ADD_BYTE(buf, GET_SEX(ch));
+	ADD_SHORT(buf, ch->player.weight);
+	ADD_SHORT(buf, ch->player.height);
+	ADD_BYTE(buf, GET_SIZE(ch));
+	ADD_BYTE(buf, GET_HOME(ch));
+	ADD_INT(buf, mob_index[GET_RNUM(ch)].virtual_number);
+	ADD_INT(buf, world[ch->in_room].number);
 
-  ADD_BYTE(buf, ch->base_stats.Str);
-  ADD_BYTE(buf, ch->base_stats.Dex);
-  ADD_BYTE(buf, ch->base_stats.Agi);
-  ADD_BYTE(buf, ch->base_stats.Con);
-  ADD_BYTE(buf, ch->base_stats.Pow);
-  ADD_BYTE(buf, ch->base_stats.Int);
-  ADD_BYTE(buf, ch->base_stats.Wis);
-  ADD_BYTE(buf, ch->base_stats.Cha);
-  ADD_BYTE(buf, ch->base_stats.Kar);
-  ADD_BYTE(buf, ch->base_stats.Luk);
+	ADD_BYTE(buf, ch->base_stats.Str);
+	ADD_BYTE(buf, ch->base_stats.Dex);
+	ADD_BYTE(buf, ch->base_stats.Agi);
+	ADD_BYTE(buf, ch->base_stats.Con);
+	ADD_BYTE(buf, ch->base_stats.Pow);
+	ADD_BYTE(buf, ch->base_stats.Int);
+	ADD_BYTE(buf, ch->base_stats.Wis);
+	ADD_BYTE(buf, ch->base_stats.Cha);
+	ADD_BYTE(buf, ch->base_stats.Kar);
+	ADD_BYTE(buf, ch->base_stats.Luk);
 
-  ADD_SHORT(buf, GET_MANA(ch));
-  ADD_SHORT(buf, ch->points.base_mana);
-  ADD_SHORT(buf, GET_HIT(ch));
-  ADD_SHORT(buf, ch->points.base_hit);
-  ADD_SHORT(buf, GET_VITALITY(ch));
-  ADD_SHORT(buf, ch->points.base_vitality);
+	ADD_SHORT(buf, GET_MANA(ch));
+	ADD_SHORT(buf, ch->points.base_mana);
+	ADD_SHORT(buf, GET_HIT(ch));
+	ADD_SHORT(buf, ch->points.base_hit);
+	ADD_SHORT(buf, GET_VITALITY(ch));
+	ADD_SHORT(buf, ch->points.base_vitality);
 
-  ADD_INT(buf, GET_COPPER(ch));
-  ADD_INT(buf, GET_SILVER(ch));
-  ADD_INT(buf, GET_GOLD(ch));
-  ADD_INT(buf, GET_PLATINUM(ch));
-  ADD_INT(buf, GET_EXP(ch));
+	ADD_INT(buf, GET_COPPER(ch));
+	ADD_INT(buf, GET_SILVER(ch));
+	ADD_INT(buf, GET_GOLD(ch));
+	ADD_INT(buf, GET_PLATINUM(ch));
+	ADD_INT(buf, GET_EXP(ch));
 
-  ADD_INT(buf, ch->specials.act);
-  ADD_INT(buf, ch->specials.act2);
-  ADD_INT(buf, ch->specials.alignment);
+	ADD_INT(buf, ch->specials.act);
+	ADD_INT(buf, ch->specials.act2);
+	ADD_INT(buf, ch->specials.alignment);
 
-  return (int) (buf - start);
+	return (int)(buf - start);
 }
 
 int writePet(P_char ch)
 {
-  FILE    *f;
-  char    *buf, *affect_off, *item_off, *size_off;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-  int      i, bak;
-  static char buff[SAV_MAXSIZE * 2];
-  struct affected_type *af;
-  struct stat statbuf;
+	FILE                 *f;
+	char                 *buf, *affect_off, *item_off, *size_off;
+	char                  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	int                   i, bak;
+	static char           buff[SAV_MAXSIZE * 2];
+	struct affected_type *af;
+	struct stat           statbuf;
 
-  if (!ch || !GET_NAME(ch))
-  {
-    return 0;
-  }
+	if (!ch || !GET_NAME(ch))
+	{
+		return 0;
+	}
 
-  if (IS_NPC(ch) && (!ch->following))
-  {
-    return 0;
-  }
-  // DISABLED FOR 64-BIT: sizeof(int)=4, sizeof(long)=8 on 64-bit systems
-  // if ((sizeof(char) != 1) || (int_size != long_size))
-  // {
-  //   logit(LOG_DEBUG,
-  //         "sizeof(char) must be 1 and int_size must == long_size for player saves!\n");
-  //   return 0;
-  // }
-  buf = buff;
-  ADD_BYTE(buf, (char) (short_size));
-  ADD_BYTE(buf, (char) (int_size));
-  ADD_BYTE(buf, (char) (long_size));
+	if (IS_NPC(ch) && (!ch->following))
+	{
+		return 0;
+	}
+	// DISABLED FOR 64-BIT: sizeof(int)=4, sizeof(long)=8 on 64-bit systems
+	// if ((sizeof(char) != 1) || (int_size != long_size))
+	// {
+	//   logit(LOG_DEBUG,
+	//         "sizeof(char) must be 1 and int_size must == long_size for player saves!\n");
+	//   return 0;
+	// }
+	buf = buff;
+	ADD_BYTE(buf, (char)(short_size));
+	ADD_BYTE(buf, (char)(int_size));
+	ADD_BYTE(buf, (char)(long_size));
 
-  affect_off = buf;
-  ADD_INT(buf, (int) 0);
-  item_off = buf;
-  ADD_INT(buf, (int) 0);
-  size_off = buf;
-  ADD_INT(buf, (int) 0);
-  ADD_INT(buf, mob_index[GET_RNUM(ch)].virtual_number);
+	affect_off = buf;
+	ADD_INT(buf, (int)0);
+	item_off = buf;
+	ADD_INT(buf, (int)0);
+	size_off = buf;
+	ADD_INT(buf, (int)0);
+	ADD_INT(buf, mob_index[GET_RNUM(ch)].virtual_number);
 
-  ADD_LONG(buf, time(0));       /* save time */
+	ADD_LONG(buf, time(0)); /* save time */
 
-  /* unequip everything and remove affects before saving */
+	/* unequip everything and remove affects before saving */
 
-  for (i = 0; i < MAX_WEAR; i++)
-    if (ch->equipment[i])
-      save_equip[i] = unequip_char(ch, i);
-    else
-      save_equip[i] = NULL;
+	for (i = 0; i < MAX_WEAR; i++)
+		if (ch->equipment[i])
+			save_equip[i] = unequip_char(ch, i);
+		else
+			save_equip[i] = NULL;
 
-  af = ch->affected;
-  all_affects(ch, FALSE);       /* reset to unaffected state */
-  buf += writePetStatus(buf, ch);
-  ADD_INT(affect_off, (int) (buf - buff));
-  updateShortAffects(ch);
-  buf += writeAffects(buf, ch->affected);
-  ADD_INT(item_off, (int) (buf - buff));
-  buf += writeItems(buf, ch);
-  ADD_INT(size_off, (int) (buf - buff));
-#   if 0
+	af = ch->affected;
+	all_affects(ch, FALSE); /* reset to unaffected state */
+	buf += writePetStatus(buf, ch);
+	ADD_INT(affect_off, (int)(buf - buff));
+	updateShortAffects(ch);
+	buf += writeAffects(buf, ch->affected);
+	ADD_INT(item_off, (int)(buf - buff));
+	buf += writeItems(buf, ch);
+	ADD_INT(size_off, (int)(buf - buff));
+#if 0
   for (i = 0; i < MAX_WEAR; i++)
     if (save_equip[i])
     {
@@ -3847,791 +3761,782 @@ int writePet(P_char ch)
     extract_obj(obj);
     obj = NULL;
   }
-#   endif
-  /* might need above if I ever add a type call to this func */
-  for (i = 0; i < MAX_WEAR; i++)
-    if (save_equip[i])
-      equip_char(ch, save_equip[i], i, 1);
+#endif
+	/* might need above if I ever add a type call to this func */
+	for (i = 0; i < MAX_WEAR; i++)
+		if (save_equip[i])
+			equip_char(ch, save_equip[i], i, 1);
 
+	all_affects(ch, TRUE); /* reapply affects (including equip) */
 
-  all_affects(ch, TRUE);        /* reapply affects (including equip) */
+	if ((int)(buf - buff) > SAV_MAXSIZE)
+	{
+		logit(LOG_PLAYER, "Could not save %s, file too large (%d bytes)", GET_NAME(ch), (int)(buf - buff));
+		return 0;
+	}
+	//  if (!ch->only.npc->owner)
+	//    ch->only.npc->owner = str_dup("shop");
+	//  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Pets/%s%d", SAVE_DIR, ch->only.npc->owner, GET_IDNUM(ch));
 
-  if ((int) (buf - buff) > SAV_MAXSIZE)
-  {
-    logit(LOG_PLAYER, "Could not save %s, file too large (%d bytes)",
-          GET_NAME(ch), (int) (buf - buff));
-    return 0;
-  }
-//  if (!ch->only.npc->owner)
-//    ch->only.npc->owner = str_dup("shop");
-//  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Pets/%s%d", SAVE_DIR, ch->only.npc->owner, GET_IDNUM(ch));
+	strcpy(Gbuf2, Gbuf1);
+	strcat(Gbuf2, ".bak");
 
-  strcpy(Gbuf2, Gbuf1);
-  strcat(Gbuf2, ".bak");
+	if (stat(Gbuf1, &statbuf) == 0)
+	{
+		if (rename(Gbuf1, Gbuf2) == -1)
+		{
+			int tmp_errno;
 
-  if (stat(Gbuf1, &statbuf) == 0)
-  {
-    if (rename(Gbuf1, Gbuf2) == -1)
-    {
-      int      tmp_errno;
+			tmp_errno = errno;
+			logit(LOG_FILE, "Problem with pet save files directory!\n");
+			logit(LOG_FILE, "   rename failed, errno = %d\n", tmp_errno);
+			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error backing up petfile for %s!", GET_NAME(ch));
+			return 0;
+		}
+		bak = 1;
+	}
+	else
+	{
+		if (errno != ENOENT)
+		{
+			int tmp_errno;
 
-      tmp_errno = errno;
-      logit(LOG_FILE, "Problem with pet save files directory!\n");
-      logit(LOG_FILE, "   rename failed, errno = %d\n", tmp_errno);
-      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error backing up petfile for %s!",
-             GET_NAME(ch));
-      return 0;
-    }
-    bak = 1;
-  }
-  else
-  {
-    if (errno != ENOENT)
-    {
-      int      tmp_errno;
+			tmp_errno = errno;
 
-      tmp_errno = errno;
+			/*
+			 * NOTE: with the stat() function, only two errors are
+			 * possible: EBADF   filedes is bad. ENOENT  File does not
+			 * exist. Now, EBADF should only occur using fstat().
+			 * Therefore, if I fall into here, I have some SERIOUS
+			 * problems!
+			 */
 
-      /*
-       * NOTE: with the stat() function, only two errors are
-       * possible: EBADF   filedes is bad. ENOENT  File does not
-       * exist. Now, EBADF should only occur using fstat().
-       * Therefore, if I fall into here, I have some SERIOUS
-       * problems!
-       */
+			logit(LOG_FILE, "Problem with pet save files directory!\n");
+			logit(LOG_FILE, "   stat failed, errno = %d\n", tmp_errno);
+			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error finding petfile for %s!", GET_NAME(ch));
+			return 0;
+		}
+		/*
+		 * in this case, no original pfile existed.  Probably a new
+		 * char... so don't panic.
+		 */
+		bak = 0;
+	}
 
-      logit(LOG_FILE, "Problem with pet save files directory!\n");
-      logit(LOG_FILE, "   stat failed, errno = %d\n", tmp_errno);
-      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error finding petfile for %s!",
-             GET_NAME(ch));
-      return 0;
-    }
-    /*
-     * in this case, no original pfile existed.  Probably a new
-     * char... so don't panic.
-     */
-    bak = 0;
-  }
+	f = fopen(Gbuf1, "w");
 
-  f = fopen(Gbuf1, "w");
+	if (!f)
+	{
+		int tmp_errno;
 
-  if (!f)
-  {
-    int      tmp_errno;
+		tmp_errno = errno;
+		logit(LOG_FILE, "Couldn't create pet save file!\n");
+		logit(LOG_FILE, "   fopen failed, errno = %d\n", tmp_errno);
+		wizlog(OVERLORD, "&+R&-LPANIC!&N  Error creating petfile for %s!", GET_NAME(ch));
+		bak -= 2;
+	}
+	else
+	{
+		if (fwrite(buff, 1, (unsigned)(buf - buff), f) != (buf - buff))
+		{
+			int tmp_errno;
 
-    tmp_errno = errno;
-    logit(LOG_FILE, "Couldn't create pet save file!\n");
-    logit(LOG_FILE, "   fopen failed, errno = %d\n", tmp_errno);
-    wizlog(OVERLORD, "&+R&-LPANIC!&N  Error creating petfile for %s!",
-           GET_NAME(ch));
-    bak -= 2;
-  }
-  else
-  {
-    if (fwrite(buff, 1, (unsigned) (buf - buff), f) != (buf - buff))
-    {
-      int      tmp_errno;
+			tmp_errno = errno;
+			logit(LOG_FILE, "Couldn't write to pet save file!\n");
+			logit(LOG_FILE, "   fwrite failed, errno = %d\n", tmp_errno);
+			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error writing petfile for %s!", GET_NAME(ch));
+			fclose(f);
+			bak -= 2;
+		}
+		else
+			fclose(f);
+	}
 
-      tmp_errno = errno;
-      logit(LOG_FILE, "Couldn't write to pet save file!\n");
-      logit(LOG_FILE, "   fwrite failed, errno = %d\n", tmp_errno);
-      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error writing petfile for %s!",
-             GET_NAME(ch));
-      fclose(f);
-      bak -= 2;
-    }
-    else
-      fclose(f);
-  }
+	switch (bak)
+	{
+		case 1:                      /* save worked, just get rid of the backup */
+			if (unlink(Gbuf2) == -1) /* not a critical error */
+				logit(LOG_FILE, "Couldn't delete backup of pet file.\n");
+		case 0: /* save worked, no backup was made to begin with */
+			break;
+		case -1: /* save FAILED, but we have a backup */
+			if (rename(Gbuf2, Gbuf1) == -1)
+			{
+				int tmp_errno;
 
-  switch (bak)
-  {
-  case 1:                      /* save worked, just get rid of the backup */
-    if (unlink(Gbuf2) == -1)    /* not a critical error */
-      logit(LOG_FILE, "Couldn't delete backup of pet file.\n");
-  case 0:                      /* save worked, no backup was made to begin with */
-    break;
-  case -1:                     /* save FAILED, but we have a backup */
-    if (rename(Gbuf2, Gbuf1) == -1)
-    {
-      int      tmp_errno;
+				tmp_errno = errno;
+				logit(LOG_FILE, " Unable to restore backup!  Argh!");
+				logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
+				wizlog(OVERLORD, "&+R&-LPANIC!&N  Error restoring backup petfile for %s!", GET_NAME(ch));
+				logit(LOG_EXIT, "unable to restore backup petfile for %s", GET_NAME(ch));
+				raise(SIGSEGV);
+			}
+			else
+				wizlog(OVERLORD, "        Backup restored.");
+			/* restored or not, the save still failed, so return 0 */
+			return 0;
+		case -2: /* save FAILED, and we have NO backup! */
+			logit(LOG_FILE, " No restore file was made!");
+			wizlog(OVERLORD, "        No backup file available");
+			return 0;
+	}
 
-      tmp_errno = errno;
-      logit(LOG_FILE, " Unable to restore backup!  Argh!");
-      logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
-      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error restoring backup petfile for %s!",
-             GET_NAME(ch));
-      logit(LOG_EXIT, "unable to restore backup petfile for %s", GET_NAME(ch));
-			raise(SIGSEGV);
-    }
-    else
-      wizlog(OVERLORD, "        Backup restored.");
-    /* restored or not, the save still failed, so return 0 */
-    return 0;
-  case -2:                     /* save FAILED, and we have NO backup! */
-    logit(LOG_FILE, " No restore file was made!");
-    wizlog(OVERLORD, "        No backup file available");
-    return 0;
-  }
-
-  return 1;
+	return 1;
 }
 
 int deletePet(char *id)
 {
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
-  if (!id)
-    return FALSE;
+	if (!id)
+		return FALSE;
 
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Pets/%s", SAVE_DIR, id);
-  strcpy(Gbuf2, Gbuf1);
-  strcat(Gbuf2, ".bak");
-  unlink(Gbuf1);
-  unlink(Gbuf2);
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Pets/%s", SAVE_DIR, id);
+	strcpy(Gbuf2, Gbuf1);
+	strcat(Gbuf2, ".bak");
+	unlink(Gbuf1);
+	unlink(Gbuf2);
 
-  return TRUE;
+	return TRUE;
 }
 int restorePetStatus(char *buf, P_char ch)
 {
-  char    *start = buf;
-  int      j;
+	char *start = buf;
+	int   j;
 
-  clearMemory(ch);
+	clearMemory(ch);
 
-  if (IS_SET(ch->specials.act, ACT_SPEC))       /* No bogus procs!  */
-    REMOVE_BIT(ch->specials.act, ACT_SPEC);
-  all_affects(ch, FALSE);       /* Clean the slate first */
-  GET_NAME(ch) = GET_STRING(buf);
-  ch->player.short_descr = GET_STRING(buf);
-  ch->player.long_descr = GET_STRING(buf);
-  ch->player.description = GET_STRING(buf);
-//  ch->only.npc->owner = GET_STRING(buf);
+	if (IS_SET(ch->specials.act, ACT_SPEC)) /* No bogus procs!  */
+		REMOVE_BIT(ch->specials.act, ACT_SPEC);
+	all_affects(ch, FALSE); /* Clean the slate first */
+	GET_NAME(ch)           = GET_STRING(buf);
+	ch->player.short_descr = GET_STRING(buf);
+	ch->player.long_descr  = GET_STRING(buf);
+	ch->player.description = GET_STRING(buf);
+	//  ch->only.npc->owner = GET_STRING(buf);
 
-//  GET_CLASS(ch) = GET_BYTE(buf);
-  ch->player.m_class = GET_BYTE(buf);   // should be updated, must be 16 bits or mroe
-  GET_RACE(ch) = GET_BYTE(buf);
+	//  GET_CLASS(ch) = GET_BYTE(buf);
+	ch->player.m_class = GET_BYTE(buf); // should be updated, must be 16 bits or mroe
+	GET_RACE(ch)       = GET_BYTE(buf);
 
-  setCharPhysTypeInfo(ch);      /* probably necessary..  or maybe not.  shrug */
+	setCharPhysTypeInfo(ch); /* probably necessary..  or maybe not.  shrug */
 
-//  GET_LEVEL(ch) = GET_BYTE(buf);
-  ch->player.level = GET_BYTE(buf);
-  GET_SEX(ch) = GET_BYTE(buf);
-  ch->player.weight = GET_SHORT(buf);
-  ch->player.height = GET_SHORT(buf);
-  GET_HOME(ch) = GET_BYTE(buf);
-  mob_index[GET_RNUM(ch)].virtual_number = GET_INTE(buf);
-  GET_BIRTHPLACE(ch) = GET_INTE(buf);
+	//  GET_LEVEL(ch) = GET_BYTE(buf);
+	ch->player.level                       = GET_BYTE(buf);
+	GET_SEX(ch)                            = GET_BYTE(buf);
+	ch->player.weight                      = GET_SHORT(buf);
+	ch->player.height                      = GET_SHORT(buf);
+	GET_HOME(ch)                           = GET_BYTE(buf);
+	mob_index[GET_RNUM(ch)].virtual_number = GET_INTE(buf);
+	GET_BIRTHPLACE(ch)                     = GET_INTE(buf);
 
-  ch->player.time.birth = time(0);
-  ch->base_stats.Str = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Dex = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Agi = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Con = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Pow = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Int = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Wis = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Cha = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Kar = (ubyte) GET_BYTE(buf);
-  ch->base_stats.Luk = (ubyte) GET_BYTE(buf);
-  ch->curr_stats = ch->base_stats;
-  GET_MANA(ch) = GET_SHORT(buf);
-  ch->points.base_mana = GET_SHORT(buf);
-  GET_HIT(ch) = GET_SHORT(buf);
-  if (GET_HIT(ch) < 0)
-    GET_HIT(ch) = 0;
-  ch->points.base_hit = GET_SHORT(buf);
-  if (ch->points.base_hit < 1)
-    ch->points.base_hit = 1;
-  GET_VITALITY(ch) = GET_SHORT(buf);
-  ch->points.base_vitality = GET_SHORT(buf);
+	ch->player.time.birth = time(0);
+	ch->base_stats.Str    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Dex    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Agi    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Con    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Pow    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Int    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Wis    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Cha    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Kar    = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Luk    = (ubyte)GET_BYTE(buf);
+	ch->curr_stats        = ch->base_stats;
+	GET_MANA(ch)          = GET_SHORT(buf);
+	ch->points.base_mana  = GET_SHORT(buf);
+	GET_HIT(ch)           = GET_SHORT(buf);
+	if (GET_HIT(ch) < 0)
+		GET_HIT(ch) = 0;
+	ch->points.base_hit = GET_SHORT(buf);
+	if (ch->points.base_hit < 1)
+		ch->points.base_hit = 1;
+	GET_VITALITY(ch)         = GET_SHORT(buf);
+	ch->points.base_vitality = GET_SHORT(buf);
 
-  GET_COPPER(ch) = GET_INTE(buf);
-  GET_SILVER(ch) = GET_INTE(buf);
-  GET_GOLD(ch) = GET_INTE(buf);
-  GET_PLATINUM(ch) = GET_INTE(buf);
+	GET_COPPER(ch)   = GET_INTE(buf);
+	GET_SILVER(ch)   = GET_INTE(buf);
+	GET_GOLD(ch)     = GET_INTE(buf);
+	GET_PLATINUM(ch) = GET_INTE(buf);
 
-  GET_COPPER(ch) = 0;
-  GET_SILVER(ch) = 0;
-  GET_GOLD(ch) = 0;
-  GET_PLATINUM(ch) = 0;
+	GET_COPPER(ch)   = 0;
+	GET_SILVER(ch)   = 0;
+	GET_GOLD(ch)     = 0;
+	GET_PLATINUM(ch) = 0;
 
-  GET_EXP(ch) = GET_INTE(buf);
-  ch->specials.act = GET_INTE(buf);
-  ch->specials.act2 = GET_INTE(buf);
-  ch->specials.alignment = GET_INTE(buf);
-  if( GET_OPPONENT(ch) )
-    stop_fighting(ch);
-  ch->points.max_hit = ch->points.base_hit;
-  ch->points.max_mana = ch->points.base_mana;
-  ch->points.max_vitality = ch->points.base_vitality;
+	GET_EXP(ch)            = GET_INTE(buf);
+	ch->specials.act       = GET_INTE(buf);
+	ch->specials.act2      = GET_INTE(buf);
+	ch->specials.alignment = GET_INTE(buf);
+	if (GET_OPPONENT(ch))
+		stop_fighting(ch);
+	ch->points.max_hit      = ch->points.base_hit;
+	ch->points.max_mana     = ch->points.base_mana;
+	ch->points.max_vitality = ch->points.base_vitality;
 
-  SET_BIT(ch->specials.act, ACT_SENTINEL);
-  SET_BIT(ch->specials.act, ACT_ISNPC);
-  ch->specials.undead_spell_slots[0] = 0;
-  for (j = 1; j <= MAX_CIRCLE; j++)
-    ch->specials.undead_spell_slots[j] = spl_table[GET_LEVEL(ch)][j - 1];
+	SET_BIT(ch->specials.act, ACT_SENTINEL);
+	SET_BIT(ch->specials.act, ACT_ISNPC);
+	ch->specials.undead_spell_slots[0] = 0;
+	for (j = 1; j <= MAX_CIRCLE; j++)
+		ch->specials.undead_spell_slots[j] = spl_table[GET_LEVEL(ch)][j - 1];
 
-  return (int) (buf - start);
+	return (int)(buf - start);
 }
 
 P_char restorePet(char *id)
 {
-  FILE    *f;
-  P_char   ch;
-  char     buff[SAV_MAXSIZE];
-  char    *buf = buff;
-  int      start, size, csize, affect_off, item_off, tmp, virt;
-  char     Gbuf1[MAX_STRING_LENGTH];
+	FILE  *f;
+	P_char ch;
+	char   buff[SAV_MAXSIZE];
+	char  *buf = buff;
+	int    start, size, csize, affect_off, item_off, tmp, virt;
+	char   Gbuf1[MAX_STRING_LENGTH];
 
-  if (!id)
-  {
-    wizlog(OVERLORD, "Who? Pet's IDnum not given!");
-    return 0;
-  }
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Pets/%s", SAVE_DIR, id);
+	if (!id)
+	{
+		wizlog(OVERLORD, "Who? Pet's IDnum not given!");
+		return 0;
+	}
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Pets/%s", SAVE_DIR, id);
 
-  f = fopen(Gbuf1, "r");
-  if (!f)
-  {
-    logit(LOG_DEBUG, "Pet %s savefile does not exist!", id);
-    wizlog(OVERLORD, "Pet %s savefile does not exist!", id);
-    return 0;
-  }
-  size = fread(buf, 1, SAV_MAXSIZE, f);
-  fclose(f);
-  if (size < 4)
-  {
-    logit(LOG_FILE, "Warning: Save file less than 4 bytes for %s.", id);
-  }
-  if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
-      (GET_BYTE(buf) != long_size))
-  {
-    wizlog(OVERLORD, "Ouch. Bad file sizing for %d", id);
-    return 0;
-  }
-  if (size < 5 * int_size + 5 * sizeof(char) + long_size)
-  {
-    logit(LOG_FILE, "Warning: Petsave file is only %d bytes for %s.", size,
-          id);
-  }
-  affect_off = GET_INTE(buf);
-  item_off = GET_INTE(buf);
-  csize = GET_INTE(buf);
-  virt = GET_INTE(buf);
-  if (size != csize)
-  {
-    wizlog(OVERLORD, "Warning: pet file size %d doesn't match csize %d for %s.",
-           size, csize, id);
-  }
-  ch = read_mobile(virt, VIRTUAL);
-  if (!ch)
-  {
-    wizlog(AVATAR, "Can not load pet %s, due to missing prototype %d!", id,
-           virt);
-    return 0;
-  }
-  GET_LONG(buf);
-  start = (int) (buf - buff);
-  restorePetStatus(buf, ch);
-  restoreAffects(buff + affect_off, ch);
+	f = fopen(Gbuf1, "r");
+	if (!f)
+	{
+		logit(LOG_DEBUG, "Pet %s savefile does not exist!", id);
+		wizlog(OVERLORD, "Pet %s savefile does not exist!", id);
+		return 0;
+	}
+	size = fread(buf, 1, SAV_MAXSIZE, f);
+	fclose(f);
+	if (size < 4)
+	{
+		logit(LOG_FILE, "Warning: Save file less than 4 bytes for %s.", id);
+	}
+	if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) || (GET_BYTE(buf) != long_size))
+	{
+		wizlog(OVERLORD, "Ouch. Bad file sizing for %d", id);
+		return 0;
+	}
+	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
+	{
+		logit(LOG_FILE, "Warning: Petsave file is only %d bytes for %s.", size, id);
+	}
+	affect_off = GET_INTE(buf);
+	item_off   = GET_INTE(buf);
+	csize      = GET_INTE(buf);
+	virt       = GET_INTE(buf);
+	if (size != csize)
+	{
+		wizlog(OVERLORD, "Warning: pet file size %d doesn't match csize %d for %s.", size, csize, id);
+	}
+	ch = read_mobile(virt, VIRTUAL);
+	if (!ch)
+	{
+		wizlog(AVATAR, "Can not load pet %s, due to missing prototype %d!", id, virt);
+		return 0;
+	}
+	GET_LONG(buf);
+	start = (int)(buf - buff);
+	restorePetStatus(buf, ch);
+	restoreAffects(buff + affect_off, ch);
 
-  for (tmp = 0; tmp < MAX_WEAR; tmp++)
-    save_equip[tmp] = NULL;
-/*
-  restoreObjects(buff + item_off, ch, 1);
-*/
-  for (tmp = 0; tmp < MAX_WEAR; tmp++)
-    if (save_equip[tmp] != NULL)
-      wear(ch, save_equip[tmp], restore_wear[tmp], 0);
+	for (tmp = 0; tmp < MAX_WEAR; tmp++)
+		save_equip[tmp] = NULL;
+	/*
+	  restoreObjects(buff + item_off, ch, 1);
+	*/
+	for (tmp = 0; tmp < MAX_WEAR; tmp++)
+		if (save_equip[tmp] != NULL)
+			wear(ch, save_equip[tmp], restore_wear[tmp], 0);
 
-  convertMob(ch);
-  return ch;
+	convertMob(ch);
+	return ch;
 }
 
 void writeSavedItem(P_obj item)
 {
-  if (!item)
-    return;
+	if (!item)
+		return;
 
-  if (item->cost < 100)
-    return;
+	if (item->cost < 100)
+		return;
 
-  char item_key[MAX_STRING_LENGTH];
-  snprintf(item_key, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long) item);
+	char item_key[MAX_STRING_LENGTH];
+	snprintf(item_key, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
 
-  for (char *p = item_key; *p; p++)
-    *p = LOWER(*p);
+	for (char *p = item_key; *p; p++)
+		*p = LOWER(*p);
 
-  if (!OBJ_ROOM(item)) {
-    sql_delete_saved_item(item_key);
-    return;
-  }
+	if (!OBJ_ROOM(item))
+	{
+		sql_delete_saved_item(item_key);
+		return;
+	}
 
-  if ((item->loc.room <= NOWHERE) || (item->loc.room > top_of_world))
-    return;
+	if ((item->loc.room <= NOWHERE) || (item->loc.room > top_of_world))
+		return;
 
-  sql_save_saved_item(item, item_key);
+	sql_save_saved_item(item, item_key);
 }
 
 void restoreSavedItems(void)
 {
 #ifndef __NO_MYSQL__
-  sql_restore_saved_items();
+	sql_restore_saved_items();
 #endif
 }
 
 void PurgeSavedItemFile(P_obj item)
 {
-  char    *tmp;
-  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char *tmp;
+	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
-  if (!item)
+	if (!item)
 		return;
 
-  snprintf(Gbuf2, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long) item);
-  for (tmp = Gbuf2; *tmp; tmp++)
-    *tmp = LOWER(*tmp);
+	snprintf(Gbuf2, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
+	for (tmp = Gbuf2; *tmp; tmp++)
+		*tmp = LOWER(*tmp);
 
-  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/SavedItems/%s", SAVE_DIR, Gbuf2);
-  strcpy(Gbuf2, Gbuf1);
-  strcat(Gbuf2, ".bak");
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/SavedItems/%s", SAVE_DIR, Gbuf2);
+	strcpy(Gbuf2, Gbuf1);
+	strcat(Gbuf2, ".bak");
 
-  logit(LOG_FILE, "SAVEDITEM: deleting file %s.", Gbuf1);
+	logit(LOG_FILE, "SAVEDITEM: deleting file %s.", Gbuf1);
 
-  unlink(Gbuf1);
-  unlink(Gbuf2);
+	unlink(Gbuf1);
+	unlink(Gbuf2);
 
-  return;
+	return;
 }
 
 int writeShopKeeper(P_char ch)
 {
-  if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
-    return 0;
+	if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
+		return 0;
 
-  if (IS_NPC(ch) && !IS_SHOPKEEPER(ch))
-    return 0;
+	if (IS_NPC(ch) && !IS_SHOPKEEPER(ch))
+		return 0;
 
-  int shop_nr;
-  for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(ch); shop_nr++) ;
+	int shop_nr;
+	for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(ch); shop_nr++)
+		;
 
-  return sql_save_shopkeeper(ch, shop_nr) ? 1 : 0;
+	return sql_save_shopkeeper(ch, shop_nr) ? 1 : 0;
 }
 
 int deleteShopKeeper(int id)
 {
-  if (id < 0)
-    return FALSE;
+	if (id < 0)
+		return FALSE;
 
-  return sql_delete_shopkeeper(id) ? TRUE : FALSE;
+	return sql_delete_shopkeeper(id) ? TRUE : FALSE;
 }
 
 P_char restoreShopKeeper(int id)
 {
 #ifndef __NO_MYSQL__
-  return sql_restore_shopkeeper(id);
+	return sql_restore_shopkeeper(id);
 #else
-  return NULL;
+	return NULL;
 #endif
 }
 
 void restore_shopkeepers(void)
 {
 #ifndef __NO_MYSQL__
-  sql_restore_shopkeepers();
+	sql_restore_shopkeepers();
 #endif
 }
 
 void save_dirty_shopkeepers(void)
 {
 #ifndef __NO_MYSQL__
-  sql_save_dirty_shopkeepers();
+	sql_save_dirty_shopkeepers();
 #endif
 }
 
 // old guildhalls (deprecated) - Torgal 1/2010
 ///* house construction Q */
-//int writeConstructionQ()
+// int writeConstructionQ()
 //{
-//  FILE    *f;
-//  char    *buf;
-//  static char buff[SAV_MAXSIZE * 2];
-//  P_house_upgrade current_job;
-//  char     fname[MAX_STRING_LENGTH];
-//  int      count = 0;
+//   FILE    *f;
+//   char    *buf;
+//   static char buff[SAV_MAXSIZE * 2];
+//   P_house_upgrade current_job;
+//   char     fname[MAX_STRING_LENGTH];
+//   int      count = 0;
 //
-//  buf = buff;
-//  current_job = house_upgrade_list;
+//   buf = buff;
+//   current_job = house_upgrade_list;
 //
-//  while (current_job)
-//  {
-//    count++;
-//    current_job = current_job->next;
-//  }
-//  current_job = house_upgrade_list;
+//   while (current_job)
+//   {
+//     count++;
+//     current_job = current_job->next;
+//   }
+//   current_job = house_upgrade_list;
 //
-//  ADD_INT(buf, count);
-//  while (current_job)
-//  {
-//    ADD_INT(buf, current_job->vnum);
-//    ADD_LONG(buf, current_job->time);
-//    ADD_INT(buf, current_job->type);
-//    ADD_INT(buf, current_job->location);
-//    ADD_INT(buf, current_job->guild);
-//    ADD_INT(buf, current_job->exit_dir);
-//    ADD_INT(buf, current_job->door);
-//    ADD_STRING(buf, current_job->door_keyword);
-//    current_job = current_job->next;
-//  }
-//  if ((int) (buf - buff) > SAV_MAXSIZE)
-//  {
-//    logit(LOG_HOUSE, "Could not save contruction Q");
-//    return 0;
-//  }
-//  snprintf(fname, MAX_STRING_LENGTH, "%s/House/HouseConstructionQ", SAVE_DIR);
-//  if (!(f = fopen(fname, "w")))
-//    return 0;
-//  fwrite(buff, 1, (unsigned) (buf - buff), f);
-//  fclose(f);
-//  return 1;
-//}
+//   ADD_INT(buf, count);
+//   while (current_job)
+//   {
+//     ADD_INT(buf, current_job->vnum);
+//     ADD_LONG(buf, current_job->time);
+//     ADD_INT(buf, current_job->type);
+//     ADD_INT(buf, current_job->location);
+//     ADD_INT(buf, current_job->guild);
+//     ADD_INT(buf, current_job->exit_dir);
+//     ADD_INT(buf, current_job->door);
+//     ADD_STRING(buf, current_job->door_keyword);
+//     current_job = current_job->next;
+//   }
+//   if ((int) (buf - buff) > SAV_MAXSIZE)
+//   {
+//     logit(LOG_HOUSE, "Could not save contruction Q");
+//     return 0;
+//   }
+//   snprintf(fname, MAX_STRING_LENGTH, "%s/House/HouseConstructionQ", SAVE_DIR);
+//   if (!(f = fopen(fname, "w")))
+//     return 0;
+//   fwrite(buff, 1, (unsigned) (buf - buff), f);
+//   fclose(f);
+//   return 1;
+// }
 //
-//int loadConstructionQ()
+// int loadConstructionQ()
 //{
-//  FILE    *f;
-//  char     buff[SAV_MAXSIZE * 2];
-//  char    *buf = buff;
-//  struct house_upgrade_rec *current_job;
-//  char     fname[MAX_STRING_LENGTH];
-//  int      size, count;
+//   FILE    *f;
+//   char     buff[SAV_MAXSIZE * 2];
+//   char    *buf = buff;
+//   struct house_upgrade_rec *current_job;
+//   char     fname[MAX_STRING_LENGTH];
+//   int      size, count;
 //
-//  house_upgrade_list = NULL;
-//  current_job = 0;
-//  snprintf(fname, MAX_STRING_LENGTH, "%s/House/HouseConstructionQ", SAVE_DIR);
-//  if (!(f = fopen(fname, "r")))
-//    return 0;
-//  size = fread(buf, 1, SAV_MAXSIZE, f);
-//  fclose(f);
-//  count = GET_INTE(buf);
-//  for (size = 0; size < count; size++)
-//  {
-//    if (!dead_construction_pool)
-//      dead_construction_pool =
-//        mm_create("CONSTRUCTION", sizeof(struct house_upgrade_rec),
-//                  offsetof(struct house_upgrade_rec, next), 1);
-//    current_job = (struct house_upgrade_rec *) mm_get(dead_construction_pool);
-//    current_job->vnum = GET_INTE(buf);
-//    current_job->time = GET_LONG(buf);
-//    current_job->type = GET_INTE(buf);
-//    current_job->location = GET_INTE(buf);
-//    current_job->guild = GET_INTE(buf);
-//    current_job->exit_dir = GET_INTE(buf);
-//    current_job->door = GET_INTE(buf);
-//    current_job->door_keyword = GET_STRING(buf);
-//    if (current_job->type != HCONTROL_DESC_ROOM)
-//    {
-//      current_job->next = house_upgrade_list;
-//      house_upgrade_list = current_job;
-//    }
-//  };
-//  return 1;
-//}
+//   house_upgrade_list = NULL;
+//   current_job = 0;
+//   snprintf(fname, MAX_STRING_LENGTH, "%s/House/HouseConstructionQ", SAVE_DIR);
+//   if (!(f = fopen(fname, "r")))
+//     return 0;
+//   size = fread(buf, 1, SAV_MAXSIZE, f);
+//   fclose(f);
+//   count = GET_INTE(buf);
+//   for (size = 0; size < count; size++)
+//   {
+//     if (!dead_construction_pool)
+//       dead_construction_pool =
+//         mm_create("CONSTRUCTION", sizeof(struct house_upgrade_rec),
+//                   offsetof(struct house_upgrade_rec, next), 1);
+//     current_job = (struct house_upgrade_rec *) mm_get(dead_construction_pool);
+//     current_job->vnum = GET_INTE(buf);
+//     current_job->time = GET_LONG(buf);
+//     current_job->type = GET_INTE(buf);
+//     current_job->location = GET_INTE(buf);
+//     current_job->guild = GET_INTE(buf);
+//     current_job->exit_dir = GET_INTE(buf);
+//     current_job->door = GET_INTE(buf);
+//     current_job->door_keyword = GET_STRING(buf);
+//     if (current_job->type != HCONTROL_DESC_ROOM)
+//     {
+//       current_job->next = house_upgrade_list;
+//       house_upgrade_list = current_job;
+//     }
+//   };
+//   return 1;
+// }
 //
-//int moveHouse(P_house house, int new_vnum)
+// int moveHouse(P_house house, int new_vnum)
 //{
-//  char Gbuf1[256], Gbuf2[256];
-//  struct stat statbuf;
-//  int      tmp_errno;
+//   char Gbuf1[256], Gbuf2[256];
+//   struct stat statbuf;
+//   int      tmp_errno;
 //
-//  snprintf(Gbuf1, 256, "%s/House/HouseRoom/house.%d", SAVE_DIR, house->vnum);
-//  snprintf(Gbuf2, 256, "%s/House/HouseRoom/house.%d", SAVE_DIR, new_vnum);
-//    
-//  if (stat(Gbuf1, &statbuf) == 0)
-//  {
-//    if (rename(Gbuf1, Gbuf2) == -1)
-//    {
-//      
-//      tmp_errno = errno;
-//      logit(LOG_HOUSE, "Couldn't rename house!\n");
-//      logit(LOG_HOUSE, "   rename failed, errno = %d\n", tmp_errno);
-//      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error renaming house file %d!",
-//             house->vnum);
-//      return 0;
-//    }
-//  }
-//  else
-//  {
-//    tmp_errno = errno;
-//    logit(LOG_HOUSE, "Problem with house save files directory, couldn't find house in rename!\n");
-//    logit(LOG_HOUSE, "   stat failed, errno = %d\n", tmp_errno);
-//    wizlog(OVERLORD, "&+R&-LPANIC!&N  Error renaming house for %d!",
-//           house->vnum);
-//    return 0;
-//  }
+//   snprintf(Gbuf1, 256, "%s/House/HouseRoom/house.%d", SAVE_DIR, house->vnum);
+//   snprintf(Gbuf2, 256, "%s/House/HouseRoom/house.%d", SAVE_DIR, new_vnum);
 //
-//  logit(LOG_HOUSE, "House %d moved to %d", house->vnum, new_vnum);  
-//  return 1;
-//}
+//   if (stat(Gbuf1, &statbuf) == 0)
+//   {
+//     if (rename(Gbuf1, Gbuf2) == -1)
+//     {
+//
+//       tmp_errno = errno;
+//       logit(LOG_HOUSE, "Couldn't rename house!\n");
+//       logit(LOG_HOUSE, "   rename failed, errno = %d\n", tmp_errno);
+//       wizlog(OVERLORD, "&+R&-LPANIC!&N  Error renaming house file %d!",
+//              house->vnum);
+//       return 0;
+//     }
+//   }
+//   else
+//   {
+//     tmp_errno = errno;
+//     logit(LOG_HOUSE, "Problem with house save files directory, couldn't find house in rename!\n");
+//     logit(LOG_HOUSE, "   stat failed, errno = %d\n", tmp_errno);
+//     wizlog(OVERLORD, "&+R&-LPANIC!&N  Error renaming house for %d!",
+//            house->vnum);
+//     return 0;
+//   }
+//
+//   logit(LOG_HOUSE, "House %d moved to %d", house->vnum, new_vnum);
+//   return 1;
+// }
 //
 ///*************************************************************/
 ///* fonction to save and restore house */
-//int writeHouse(P_house house)
+// int writeHouse(P_house house)
 //{
-//  FILE    *f;
-//  char    *buf, housefile[MAX_STRING_LENGTH];
-//  char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-//  int      bak;
-//  static char buff[SAV_MAXSIZE * 2];
-//  struct stat statbuf;
-//  int      count = 0, tmp, count2 = 0;
+//   FILE    *f;
+//   char    *buf, housefile[MAX_STRING_LENGTH];
+//   char     Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+//   int      bak;
+//   static char buff[SAV_MAXSIZE * 2];
+//   struct stat statbuf;
+//   int      count = 0, tmp, count2 = 0;
 //
-//  if ((sizeof(char) != 1) || (int_size != long_size))
-//  {
-//    logit(LOG_HOUSE,
-//          "sizeof(char) must be 1 and int_size must == long_size for player saves!\n");
-//    return 0;
-//  }
-//  buf = buff;
+//   if ((sizeof(char) != 1) || (int_size != long_size))
+//   {
+//     logit(LOG_HOUSE,
+//           "sizeof(char) must be 1 and int_size must == long_size for player saves!\n");
+//     return 0;
+//   }
+//   buf = buff;
 //
-//  ADD_BYTE(buf, (char) SAV_HOUSEVERS);
-//  ADD_BYTE(buf, (char) (short_size));
-//  ADD_BYTE(buf, (char) (int_size));
-//  ADD_BYTE(buf, (char) (long_size));
+//   ADD_BYTE(buf, (char) SAV_HOUSEVERS);
+//   ADD_BYTE(buf, (char) (short_size));
+//   ADD_BYTE(buf, (char) (int_size));
+//   ADD_BYTE(buf, (char) (long_size));
 //
-//  ADD_INT(buf, house->vnum);
-//  ADD_INT(buf, house->built_on);
-//  ADD_SHORT(buf, house->mode);
-//  ADD_SHORT(buf, house->type);
-//  ADD_BYTE(buf, house->construction);
-//  ADD_STRING(buf, house->owner);
+//   ADD_INT(buf, house->vnum);
+//   ADD_INT(buf, house->built_on);
+//   ADD_SHORT(buf, house->mode);
+//   ADD_SHORT(buf, house->type);
+//   ADD_BYTE(buf, house->construction);
+//   ADD_STRING(buf, house->owner);
 //
-//  ADD_INT(buf, house->num_of_guests);
+//   ADD_INT(buf, house->num_of_guests);
 //
-//  for (count = 0; count < house->num_of_guests; count++)
-//    ADD_STRING(buf, house->guests[count]);
+//   for (count = 0; count < house->num_of_guests; count++)
+//     ADD_STRING(buf, house->guests[count]);
 //
-//  ADD_INT(buf, MAX_HOUSE_ROOMS);
-//  for (count = 0; count < MAX_HOUSE_ROOMS; count++)
-//  {
-//    ADD_INT(buf, house->room_vnums[count]);
-//    if (house->room_vnums[count] != -1)
-//      write_guild_room(house->room_vnums[count], house->owner_guild);
-//  }
-//  ADD_INT(buf, house->owner_guild);
-//  ADD_INT(buf, house->last_payment);
-//  ADD_SHORT(buf, house->size);
-//  ADD_LONG(buf, house->upgrades);
-//  ADD_INT(buf, house->exit_num);
-//  ADD_STRING(buf, house->entrance_keyword);
-//  ADD_INT(buf, house->mouth_vnum);
-//  ADD_INT(buf, house->teleporter1_room);
-//  ADD_INT(buf, house->teleporter1_dest);
-//  ADD_INT(buf, house->teleporter2_room);
-//  ADD_INT(buf, house->teleporter2_dest);
-//  ADD_INT(buf, house->inn_vnum);
-//  ADD_INT(buf, house->fountain_vnum);
-//  ADD_INT(buf, house->heal_vnum);
-//  ADD_INT(buf, house->board_vnum);
-//  ADD_INT(buf, house->wizard_golems);
-//  ADD_INT(buf, house->warrior_golems);
-//  ADD_INT(buf, house->cleric_golems);
-//  ADD_INT(buf, house->guard_golems);
-//  ADD_INT(buf, house->shop_vnum);
-//  ADD_INT(buf, house->holy_fount_vnum);
-//  ADD_INT(buf, house->unholy_fount_vnum);
-//  ADD_INT(buf, house->secret_entrance);
-//  if (house->type == HCONTROL_CASTLE)
-//  {
-//    ADD_SHORT(buf, (short) MAX_CONTROLLED_LAND);
-//    for (tmp = 0; tmp < MAX_CONTROLLED_LAND; tmp++)
-//      ADD_INT(buf, house->controlled_land[tmp]);
-//  }
-//  if ((int) (buf - buff) > SAV_MAXSIZE)
-//  {
-//    logit(LOG_HOUSE, "Could not save %d, file too large (%d bytes)",
-//          house->vnum, (int) (buf - buff));
-//    return 0;
-//  }
-//  snprintf(housefile, MAX_STRING_LENGTH, "house.%d", house->vnum);
-//  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/House/HouseRoom/%s", SAVE_DIR, housefile);
+//   ADD_INT(buf, MAX_HOUSE_ROOMS);
+//   for (count = 0; count < MAX_HOUSE_ROOMS; count++)
+//   {
+//     ADD_INT(buf, house->room_vnums[count]);
+//     if (house->room_vnums[count] != -1)
+//       write_guild_room(house->room_vnums[count], house->owner_guild);
+//   }
+//   ADD_INT(buf, house->owner_guild);
+//   ADD_INT(buf, house->last_payment);
+//   ADD_SHORT(buf, house->size);
+//   ADD_LONG(buf, house->upgrades);
+//   ADD_INT(buf, house->exit_num);
+//   ADD_STRING(buf, house->entrance_keyword);
+//   ADD_INT(buf, house->mouth_vnum);
+//   ADD_INT(buf, house->teleporter1_room);
+//   ADD_INT(buf, house->teleporter1_dest);
+//   ADD_INT(buf, house->teleporter2_room);
+//   ADD_INT(buf, house->teleporter2_dest);
+//   ADD_INT(buf, house->inn_vnum);
+//   ADD_INT(buf, house->fountain_vnum);
+//   ADD_INT(buf, house->heal_vnum);
+//   ADD_INT(buf, house->board_vnum);
+//   ADD_INT(buf, house->wizard_golems);
+//   ADD_INT(buf, house->warrior_golems);
+//   ADD_INT(buf, house->cleric_golems);
+//   ADD_INT(buf, house->guard_golems);
+//   ADD_INT(buf, house->shop_vnum);
+//   ADD_INT(buf, house->holy_fount_vnum);
+//   ADD_INT(buf, house->unholy_fount_vnum);
+//   ADD_INT(buf, house->secret_entrance);
+//   if (house->type == HCONTROL_CASTLE)
+//   {
+//     ADD_SHORT(buf, (short) MAX_CONTROLLED_LAND);
+//     for (tmp = 0; tmp < MAX_CONTROLLED_LAND; tmp++)
+//       ADD_INT(buf, house->controlled_land[tmp]);
+//   }
+//   if ((int) (buf - buff) > SAV_MAXSIZE)
+//   {
+//     logit(LOG_HOUSE, "Could not save %d, file too large (%d bytes)",
+//           house->vnum, (int) (buf - buff));
+//     return 0;
+//   }
+//   snprintf(housefile, MAX_STRING_LENGTH, "house.%d", house->vnum);
+//   snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/House/HouseRoom/%s", SAVE_DIR, housefile);
 //
-//  strcpy(Gbuf2, Gbuf1);
-//  strcat(Gbuf2, ".bak");
+//   strcpy(Gbuf2, Gbuf1);
+//   strcat(Gbuf2, ".bak");
 //
-//  if (stat(Gbuf1, &statbuf) == 0)
-//  {
-//    if (rename(Gbuf1, Gbuf2) == -1)
-//    {
-//      int      tmp_errno;
+//   if (stat(Gbuf1, &statbuf) == 0)
+//   {
+//     if (rename(Gbuf1, Gbuf2) == -1)
+//     {
+//       int      tmp_errno;
 //
-//      tmp_errno = errno;
-//      logit(LOG_HOUSE, "Problem with house save files directory!\n");
-//      logit(LOG_HOUSE, "   rename failed, errno = %d\n", tmp_errno);
-//      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error backing up house for %d!",
-//             house->vnum);
-//      return 0;
-//    }
-//    bak = 1;
-//  }
-//  else
-//  {
-//    if (errno != ENOENT)
-//    {
-//      int      tmp_errno;
+//       tmp_errno = errno;
+//       logit(LOG_HOUSE, "Problem with house save files directory!\n");
+//       logit(LOG_HOUSE, "   rename failed, errno = %d\n", tmp_errno);
+//       wizlog(OVERLORD, "&+R&-LPANIC!&N  Error backing up house for %d!",
+//              house->vnum);
+//       return 0;
+//     }
+//     bak = 1;
+//   }
+//   else
+//   {
+//     if (errno != ENOENT)
+//     {
+//       int      tmp_errno;
 //
-//      tmp_errno = errno;
-//      logit(LOG_HOUSE, "Problem with house save files directory!\n");
-//      logit(LOG_HOUSE, "   stat failed, errno = %d\n", tmp_errno);
-//      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error finding house for %d!",
-//             house->vnum);
-//      return 0;
-//    }
-//    bak = 0;
-//  }
+//       tmp_errno = errno;
+//       logit(LOG_HOUSE, "Problem with house save files directory!\n");
+//       logit(LOG_HOUSE, "   stat failed, errno = %d\n", tmp_errno);
+//       wizlog(OVERLORD, "&+R&-LPANIC!&N  Error finding house for %d!",
+//              house->vnum);
+//       return 0;
+//     }
+//     bak = 0;
+//   }
 //
-//  f = fopen(Gbuf1, "w");
+//   f = fopen(Gbuf1, "w");
 //
-//  if (!f)
-//  {
-//    int      tmp_errno;
+//   if (!f)
+//   {
+//     int      tmp_errno;
 //
-//    tmp_errno = errno;
-//    logit(LOG_HOUSE, "Couldn't create house save file!\n");
-//    logit(LOG_HOUSE, "   fopen failed, errno = %d\n", tmp_errno);
-//    wizlog(OVERLORD, "&+R&-LPANIC!&N  Error creating house for %d!",
-//           house->vnum);
-//    bak -= 2;
-//  }
-//  else
-//  {
-//    if (fwrite(buff, 1, (unsigned) (buf - buff), f) != (buf - buff))
-//    {
-//      int      tmp_errno;
-//
-//      tmp_errno = errno;
-//      logit(LOG_HOUSE, "Couldn't write to house save file!\n");
-//      logit(LOG_HOUSE, "   fwrite failed, errno = %d\n", tmp_errno);
-//      wizlog(OVERLORD, "&+R&-LPANIC!&N  Error writing house for %d!",
-//             house->vnum);
-//      fclose(f);
-//      bak -= 2;
-//    }
-//    else
-//      fclose(f);
-//  }
-//
-//  switch (bak)
-//  {
-//  case 1:                      /* save worked, just get rid of the backup */
-//    if (unlink(Gbuf2) == -1)    /* not a critical error  */
-//      logit(LOG_HOUSE, "Couldn't delete backup of house file.\n");
-//
-//  case 0:                      /* save worked, no backup was made to begin with */
-//    break;
-//
-//  case -1:                     /* save FAILED, but we have a backup */
-//    if (rename(Gbuf2, Gbuf1) == -1)
-//    {
-//      int      tmp_errno;
-//
-//      tmp_errno = errno;
-//      logit(LOG_HOUSE, " Unable to restore backup!  Argh!");
-//      logit(LOG_HOUSE, "    rename failed, errno = %d\n", tmp_errno);
-//      logit(LOG_EXIT, "unable to restore backup");
-//			raise(SIGSEGV);
-//    }
-//    else
-//      wizlog(OVERLORD, "        Backup restored.");
-//    /*
-//     * restored or not, the save still failed, so return 0
-//     */
-//    return 0;
-//
-//  case -2:                     /* save FAILED, and we have NO backup! */
-//    logit(LOG_HOUSE, " No restore file was made!");
-//    wizlog(OVERLORD, "        No backup file available");
-//    return 0;
-//  }
-//  return 1;
-//}
-//
-//int restoreHouse(char *file_name)
-//{
-//  FILE    *f;
-//  char     buff[SAV_MAXSIZE];
-//  char    *buf = buff;
-//  int      start, size, count, tmp, s, dummy_int, version;
-//  char     Gbuf1[MAX_STRING_LENGTH];
-//  P_house  house;
-//  P_obj    obj = NULL;
-//
-//  if (!file_name)
-//  {
-//    return 0;
-//  }
-//  snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/House/HouseRoom/%s", SAVE_DIR, file_name);
-//
-//  f = fopen(Gbuf1, "r");
-//  if (!f)
-//  {
-//    logit(LOG_HOUSE, "House %s savefile does not exist!", file_name);
-//    return 0;
-//  }
-//  size = fread(buf, 1, SAV_MAXSIZE, f);
-//  fclose(f);
-//  if (size < 4)
-//  {
-//    logit(LOG_HOUSE, "Warning: Save file less than 4 bytes.");
-//  }
-//  version = GET_BYTE(buf);
-//
-//  if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
-//      (GET_BYTE(buf) != long_size))
-//  {
-//    wizlog(OVERLORD, "Ouch. Bad file sizing for %s", file_name);
-//    return 0;
-//  }
-//  if (size < 5 * int_size + 5 * sizeof(char) + long_size)
-//  {
-//    logit(LOG_HOUSE, "Warning: Save file is only %d bytes.", size);
-//  }
-//  if (!dead_house_pool)
-//    dead_house_pool = mm_create("HOUSE", sizeof(struct house_control_rec),
-//                                offsetof(struct house_control_rec, next), 1);
-//  house = (struct house_control_rec *) mm_get(dead_house_pool);
-//  house->vnum = GET_INTE(buf);
-//  house->built_on = GET_INTE(buf);
-//  house->mode = GET_SHORT(buf);
-//  house->type = GET_SHORT(buf);
-//  if (version > 4)
-//    house->construction = GET_BYTE(buf);
-//  else
-//    house->construction = 0;
-//  house->owner = GET_STRING(buf);
-//  house->num_of_guests = GET_INTE(buf);
-//
-//  for (count = 0; count < house->num_of_guests; count++)
-//    house->guests[count] = GET_STRING(buf);
-//
-//  house->num_of_rooms = GET_INTE(buf);
-//  for (count = 0; count < house->num_of_rooms; count++)
-//  {
-//    house->room_vnums[count] = GET_INTE(buf);
-//    if (house->room_vnums[count] == -1)
-//      continue;
-//    if (house->room_vnums[count] < START_HOUSE_VNUM ||
-//        house->room_vnums[count] > END_HOUSE_VNUM)
-//    {
-//      logit(LOG_HOUSE, "Troubles with room number for house %d.",
+//     tmp_errno = errno;
+//     logit(LOG_HOUSE, "Couldn't create house save file!\n");
+//     logit(LOG_HOUSE, "   fopen failed, errno = %d\n", tmp_errno);
+//     wizlog(OVERLORD, "&+R&-LPANIC!&N  Error creating house for %d!",
 //            house->vnum);
-//      logit(LOG_HOUSE, "TEST, %d.", house->num_of_rooms);
-//      logit(LOG_HOUSE, "TEST, %d.", house->room_vnums[count]);
-//      house->room_vnums[count] = -1;
-//    }
-//  }
-//  house->owner_guild = GET_INTE(buf);
-//  house->last_payment = GET_INTE(buf);
+//     bak -= 2;
+//   }
+//   else
+//   {
+//     if (fwrite(buff, 1, (unsigned) (buf - buff), f) != (buf - buff))
+//     {
+//       int      tmp_errno;
+//
+//       tmp_errno = errno;
+//       logit(LOG_HOUSE, "Couldn't write to house save file!\n");
+//       logit(LOG_HOUSE, "   fwrite failed, errno = %d\n", tmp_errno);
+//       wizlog(OVERLORD, "&+R&-LPANIC!&N  Error writing house for %d!",
+//              house->vnum);
+//       fclose(f);
+//       bak -= 2;
+//     }
+//     else
+//       fclose(f);
+//   }
+//
+//   switch (bak)
+//   {
+//   case 1:                      /* save worked, just get rid of the backup */
+//     if (unlink(Gbuf2) == -1)    /* not a critical error  */
+//       logit(LOG_HOUSE, "Couldn't delete backup of house file.\n");
+//
+//   case 0:                      /* save worked, no backup was made to begin with */
+//     break;
+//
+//   case -1:                     /* save FAILED, but we have a backup */
+//     if (rename(Gbuf2, Gbuf1) == -1)
+//     {
+//       int      tmp_errno;
+//
+//       tmp_errno = errno;
+//       logit(LOG_HOUSE, " Unable to restore backup!  Argh!");
+//       logit(LOG_HOUSE, "    rename failed, errno = %d\n", tmp_errno);
+//       logit(LOG_EXIT, "unable to restore backup");
+//			raise(SIGSEGV);
+//     }
+//     else
+//       wizlog(OVERLORD, "        Backup restored.");
+//     /*
+//      * restored or not, the save still failed, so return 0
+//      */
+//     return 0;
+//
+//   case -2:                     /* save FAILED, and we have NO backup! */
+//     logit(LOG_HOUSE, " No restore file was made!");
+//     wizlog(OVERLORD, "        No backup file available");
+//     return 0;
+//   }
+//   return 1;
+// }
+//
+// int restoreHouse(char *file_name)
+//{
+//   FILE    *f;
+//   char     buff[SAV_MAXSIZE];
+//   char    *buf = buff;
+//   int      start, size, count, tmp, s, dummy_int, version;
+//   char     Gbuf1[MAX_STRING_LENGTH];
+//   P_house  house;
+//   P_obj    obj = NULL;
+//
+//   if (!file_name)
+//   {
+//     return 0;
+//   }
+//   snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/House/HouseRoom/%s", SAVE_DIR, file_name);
+//
+//   f = fopen(Gbuf1, "r");
+//   if (!f)
+//   {
+//     logit(LOG_HOUSE, "House %s savefile does not exist!", file_name);
+//     return 0;
+//   }
+//   size = fread(buf, 1, SAV_MAXSIZE, f);
+//   fclose(f);
+//   if (size < 4)
+//   {
+//     logit(LOG_HOUSE, "Warning: Save file less than 4 bytes.");
+//   }
+//   version = GET_BYTE(buf);
+//
+//   if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
+//       (GET_BYTE(buf) != long_size))
+//   {
+//     wizlog(OVERLORD, "Ouch. Bad file sizing for %s", file_name);
+//     return 0;
+//   }
+//   if (size < 5 * int_size + 5 * sizeof(char) + long_size)
+//   {
+//     logit(LOG_HOUSE, "Warning: Save file is only %d bytes.", size);
+//   }
+//   if (!dead_house_pool)
+//     dead_house_pool = mm_create("HOUSE", sizeof(struct house_control_rec),
+//                                 offsetof(struct house_control_rec, next), 1);
+//   house = (struct house_control_rec *) mm_get(dead_house_pool);
+//   house->vnum = GET_INTE(buf);
+//   house->built_on = GET_INTE(buf);
+//   house->mode = GET_SHORT(buf);
+//   house->type = GET_SHORT(buf);
+//   if (version > 4)
+//     house->construction = GET_BYTE(buf);
+//   else
+//     house->construction = 0;
+//   house->owner = GET_STRING(buf);
+//   house->num_of_guests = GET_INTE(buf);
+//
+//   for (count = 0; count < house->num_of_guests; count++)
+//     house->guests[count] = GET_STRING(buf);
+//
+//   house->num_of_rooms = GET_INTE(buf);
+//   for (count = 0; count < house->num_of_rooms; count++)
+//   {
+//     house->room_vnums[count] = GET_INTE(buf);
+//     if (house->room_vnums[count] == -1)
+//       continue;
+//     if (house->room_vnums[count] < START_HOUSE_VNUM ||
+//         house->room_vnums[count] > END_HOUSE_VNUM)
+//     {
+//       logit(LOG_HOUSE, "Troubles with room number for house %d.",
+//             house->vnum);
+//       logit(LOG_HOUSE, "TEST, %d.", house->num_of_rooms);
+//       logit(LOG_HOUSE, "TEST, %d.", house->room_vnums[count]);
+//       house->room_vnums[count] = -1;
+//     }
+//   }
+//   house->owner_guild = GET_INTE(buf);
+//   house->last_payment = GET_INTE(buf);
 ///*  house->last_payment = 0;                 temp to clear them all */
 //  house->size = GET_SHORT(buf);
 //  house->upgrades = GET_LONG(buf);
@@ -4700,7 +4605,7 @@ void save_dirty_shopkeepers(void)
 //  return (int) (buf - start);
 //}
 //
-//void restore_houses(void)
+// void restore_houses(void)
 //{
 //  DIR     *house_dir;
 //  struct dirent *house_entry;
@@ -4727,39 +4632,39 @@ void save_dirty_shopkeepers(void)
 
 int ship_registered(int vnum)
 {
-  struct ship_reg_node *x;
+	struct ship_reg_node *x;
 
-  x = ship_reg_db;
-  while (x && (x->vnum != vnum))
-    x = x->next;
-  if (x)
-    return TRUE;
-  return FALSE;
+	x = ship_reg_db;
+	while (x && (x->vnum != vnum))
+		x = x->next;
+	if (x)
+		return TRUE;
+	return FALSE;
 };
 
 int register_ship(int vnum)
 {
-  struct ship_reg_node *x;
+	struct ship_reg_node *x;
 
-  CREATE(x, ship_reg_node, 1, MEM_TAG_SHIPREG);
+	CREATE(x, ship_reg_node, 1, MEM_TAG_SHIPREG);
 
-  x->vnum = vnum;
-  x->next = ship_reg_db;
-  ship_reg_db = x;
-  return TRUE;
+	x->vnum     = vnum;
+	x->next     = ship_reg_db;
+	ship_reg_db = x;
+	return TRUE;
 };
 #endif //_PFILE_
 
-void moveToBackup( char *name )
+void moveToBackup(char *name)
 {
-  char lowername[20];
-  char filename[512];
-  char newname[1024];
+	char lowername[20];
+	char filename[512];
+	char newname[1024];
 
-  strcpy( lowername, name );
-  lowername[0] = LOWER(name[0]);
+	strcpy(lowername, name);
+	lowername[0] = LOWER(name[0]);
 
-  snprintf(filename, sizeof filename, "%s/%c/%s", SAVE_DIR, lowername[0], lowername );
-  snprintf(newname, sizeof newname, "%s.bak", filename);
-  rename(filename, newname);
+	snprintf(filename, sizeof filename, "%s/%c/%s", SAVE_DIR, lowername[0], lowername);
+	snprintf(newname, sizeof newname, "%s.bak", filename);
+	rename(filename, newname);
 }

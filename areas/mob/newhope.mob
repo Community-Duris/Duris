@@ -2629,7 +2629,7 @@ daisy barbarian consort barb~
 ~
 1074145354 0 0 0 436281388 28 0 2147483648 0 S
 PB 0 384 0 4
-44 0 0 1d1+1 1d1+1
+56 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
 #89158
@@ -3043,8 +3043,8 @@ tentacler~
 &+rfrom breathing as it kills the poor dragon from inside.  Those who enter would&n
 &+rbe well advised to have already written out their will.&n
 ~
-10909774 1 0 0 2583767224 28 67895488 2182086656 0 S
-DK 0 80 0 6
+10909774 1 0 0 2583767096 264220 128 2182086656 0 S
+DK 0 17 0 6
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
@@ -3062,9 +3062,9 @@ mummified mummy male ogre~
 &+rstates that he once was &+bHammerhead's&+r brother and that he is here as a warning&n
 &+rto those who think to betray the &+blord&+r of this &+Ldark keep.&n
 ~
-276558 0 0 0 285286400 28 0 2182086656 -1000 S
+276558 1 0 0 285286400 28 0 2182086656 -1000 S
 PO 0 1 0 -1
-33 0 0 1d1+1 1d1+1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #89183
@@ -3079,9 +3079,9 @@ ogress ogre mummy mummified female~
 &+rwill be there forever, or until she has been destroyed.  She is wearing a nice&n
 &+rleather dress and matching boots, with a small &+wsign&+r attached to the dress.&n
 ~
-276558 0 0 0 268509184 28 0 2148532224 -1000 S
+276558 1 0 0 268509184 28 0 2148532224 -1000 S
 PO 0 1 0 -1
-32 0 0 1d1+1 1d1+1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
 #89184
@@ -3099,9 +3099,9 @@ human mummy mummified~
 &+rstep close enough to read this &+Wnote&+r will see that every single bone has been&n
 &+rbroken in both hands of this &+ymummy.&n
 ~
-276558 0 0 0 268509184 28 0 2148532224 -1000 S
+276558 1 0 0 268509184 28 0 2148532224 -1000 S
 PH 0 1 0 -1
-32 0 0 1d1+1 1d1+1
+51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #89185

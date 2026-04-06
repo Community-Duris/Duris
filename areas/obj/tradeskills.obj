@@ -751,9 +751,9 @@ prismatic crystalline shard salvaged~
 0 0 0 0 0 0 0 0
 0 163 100
 #400094
-huge blood crystal salvaged~
-&+ra huge &+Rblood &+rcrystal&N~
-&+rJutting out of the ground, a huge &+Rblood crystal &+Lgrows here.~
+moonstone crystal salvaged~
+&+ca small moon&+Lstone &+Ccrystal&N~
+&+cJutting out of the ground, a small moon&+Lstone &+Ccrystal &+cs&+Yp&+ca&+Yr&+ck&+Yl&+ce&+Ys&+c here.~
 ~
 8 8 1 0 15 0 1 16385 64 0 0
 0 0 0 0 0 0 0 0
@@ -783,9 +783,9 @@ large polished stone salvaged~
 0 0 0 0 0 0 0 0
 0 124 100
 #400098
-small piece meteorite salvaged~
-&+La small piece of meteorite&N~
-&+LA small piece of meteorite lies here.~
+shard deepearth salvaged~
+&+La shard of deep&+yearth&N~
+&+LA small shard of primordial deep&+yearth lies here.~
 ~
 8 11 1 0 11 0 0 16385 0 0 0
 0 0 0 0 0 0 0 0
@@ -2340,7 +2340,7 @@ small ore adamantium _ore_~
 ~
 8 19 2 0 7 0 0 16385 0 0 0
 0 0 0 0 0 0 0 0
-0 0 100
+0 600000 100
 #400282
 ore medium adamantium _ore_~
 &+La medium piece of &+Madamantium &+Lore~
@@ -2348,7 +2348,7 @@ ore medium adamantium _ore_~
 ~
 8 19 3 0 7 0 0 16385 0 0 0
 0 0 0 0 0 0 0 0
-0 0 100
+0 750000 100
 #400283
 large ore adamantium _ore_~
 &+La large piece of &+Madamantium &+Lore~
@@ -2356,4 +2356,4 @@ large ore adamantium _ore_~
 ~
 8 19 4 0 7 0 0 16385 0 0 0
 0 0 0 0 0 0 0 0
-0 0 100
+0 900000 100

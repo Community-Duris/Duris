@@ -1,0 +1,5574 @@
+#59000
+painting~
+&+Ra &+Wpainting&N~
+&+RAn enormous &+Wpainting&+R - a portrait of a young &+rBarov Von Zarovich&+R - adorns the southern wall.~
+~
+8 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+painting~
+&+Y                      __....,-="\_,=___
+&+Y               `"""=,'        _        `-
+&+Y             .-'      ""=,     ""=.      `"=,_
+&+Y            .'              ;  ;, `;   ;,    {
+&+Y            }   ;            \, "=, ;   ";   `=,
+&+Y          ;'    ";,           ";     "         {
+&+Y          `,            ;,      `=,_          {
+&+Y          ;             !;;          ,      ;"/`",
+&+Y          ;             `"    ;"     ";, ,;  ";, ;
+&+Y          ;          _/"-._, .-""\    `" "       ;
+&+Y         ;         .'      `"     `,             ;
+&+Y         `,     ;`'&+L_,,,_       _.=" `-.     &+Y    {
+&+Y          ;     |""&+L.==&+R,&+y `\   .'&+R,&+L==,&+Y    ; &+Y       `-,
+&+Y           `.   | &+L" &+BCD&+y ; ;  ; ;`&+BCD&+L "   ;  &+Y        ;
+&+Y             }  :       &+y |  ;          `.        &+Y  {
+&+Y           .'    \     &+y  ;  ;          ;      &+Y    /
+&+Y          ;       ;    &+y ;    }          \    &+Y     ;
+&+Y           ;      ;    &+y `-..-'     &+y      ;    &+Y     \
+&+Y           ;/,     \    &+R,_____,  &+y       /|&+Y`,   &+Y     ;
+&+Y             ;      `.   &+R"---" &+y       .' :  &+Y',_   &+Y /
+&+Y              `._    &+y|\   &+y-==-      .'    ;  &+Y/"` ;
+&+R            .-'  T-._&+y| `-..___i   .'      &+R|  ;    `-,
+&+R      _.--""    /    &+W;    &+y`-.__.-' .     &+R.;  ;   ;   `-,
+&+R    .'    ;    /   &+r ; &+W`.    &+y      ,"  &+W .' &+r| &+R  ;   ;     ;
+&+R   /        .-'    &+r  \  &+W`.  &+y `-. ,"&+W  .' &+r .' &+R   ;  |     ;`"-,
+&+R  /        /         &+r \   &+W\   &+y  ;"&+W .' &+r .'   &+R   ;       /     `"-,
+&+R ;     _.-'           &+r `.  &+W`.    .'&+r  .'         &+R`-,              ',
+&+R      ;                &+r  \   &+W\ .'&+r _.'              `-,
+&+R        &+ljgs             &+r  \   &+r`.-'                    `-
+~
+#59001
+teleport trap cell1~
+&+Lteleport trap to south cell1~
+&+Lno-show teleport trap to cell1~
+~
+25 15 3 0 7 0 12290 0 0 0 0
+59029 4 1 0 0 0 0 0
+0 0 100
+#59002
+teleport trap cell1~
+&+Lteleport trap to south cell1~
+&+Lno-show teleport trap to cell1~
+~
+25 15 3 0 7 0 12290 0 0 0 0
+59029 2 1 0 0 0 0 0
+0 0 100
+#59003
+teleport trap cell1~
+&+Lteleport trap to south cell1~
+&+Lno-show teleport trap to cell1~
+~
+25 15 3 0 7 0 12290 0 0 0 0
+59029 3 1 0 0 0 0 0
+0 0 100
+#59004
+teleport trap cell2~
+&+Lteleport trap to south cell2~
+&+Lno-show teleport trap to cell2~
+~
+25 15 3 0 7 0 12290 0 0 0 0
+59032 4 1 0 0 0 0 0
+0 0 100
+#59005
+teleport trap cell2~
+&+Lteleport trap to south cell2~
+&+Lno-show teleport trap to cell2~
+~
+25 15 3 0 7 0 12290 0 0 0 0
+59032 2 1 0 0 0 0 0
+0 0 100
+#59006
+teleport trap cell2~
+&+Lteleport trap to south cell2~
+&+Lno-show teleport trap to cell2~
+~
+25 15 3 0 7 0 12290 0 0 0 0
+59032 1 1 0 0 0 0 0
+0 0 100
+#59007
+heavy rusted iron door~
+&+La heavy, &+yr&+cu&+ys&+ct&+ye&+cd &+ciron &+Ldoor&N~
+&+cA heavy iron door&+y, r&+cu&+ys&+ct&+ye&+cd &+coff its &+chinges&+L hangs here in dissaray.~
+~
+37 15 5 0 9 0 8192 513 0 0 0
+1 3 5 200 5 0 0 0
+60 4545 45
+E
+heavy rusted iron door~
+   &+yThis massive iron door is encrusted in a thick rust, yet is
+&+ystill extremely heavy and can be worn as a powerful shield. The
+&+yfaint remnants of the &+rZarovich &+yfamily seal from the legendary
+&+rRavenloft &+ycastle can be seen stylized onto the front.
+~
+A
+17 -100
+A
+10 100
+#59008
+rusted steel cots~
+&+yrusted &+Wsteel &+ycots&N~
+&+ySeveral cots made of &+rr&+yu&+rs&+yt&+re&+yd &+Wsteel &+ysit &+bsubmerged several feet deep.~
+~
+13 16 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 24
+E
+rusted steel cots~
+&+W   Several cots made of steel with minimal remains of bedding
+&+Ware strewn about the &+bsubmerged cellblock&+W deep within this
+&+Wdungeon. Remnants of &+yleather straps&+W are attached to each of
+&+Wthe cots.
+~
+#59009
+broken cabinets~
+&+ybroken cabinets~
+&+yTumbled, broken cabinets covered in &+Wbroken glass&+y from lab equipment&+b is submerged here.~
+~
+15 6 4 0 7 0 0 0 0 0 0
+40 1 0 20 0 0 0 0
+0 0 19
+E
+broken cabinets~
+   &+ySeveral large cabinets of ancient &+Lsvalich wood&+yline the
+&+ynorthern wall of what used to be used as a cellblock.  Various
+&+ylab equipment that once filled the cabinets now contributes to
+&+ythe mass of &+Wbroken glass &+ylittering the area.
+~
+#59010
+workbench bench benches workbenches~
+&+yheavy, rotting wooden workbenches&N~
+&+yHeavy, &+Lrotting &+ywooden workbenches lie beneath the &+bwater&+y.~
+~
+15 6 4 0 7 0 0 0 0 0 0
+50 0 0 50 0 0 0 0
+0 19 19
+E
+workbench bench benches workbenches~
+   &+yOnce made of fine &+Lsvalich wood&+y, these workbenches have rotted
+&+yand deteriorated to ruin.  Various beakers, cylinders, tubing, and
+&+yother chemical agents cover the surface of the workbench, mostly in
+&+yshattered bits of broken glass.
+~
+#59011
+broken lab equipment~
+&+Wbroken &+Ylab &+cequipment&N~
+&+WShattered glass and broken remains of &+Ylab &+cequipment &+Wcover the area.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+broken lab equipment~
+   &+WGlassware of all shapes and sizes are scattered throughout
+&+Wthe area in total dissaray; some still in tact, some broken
+&+Wand only contributing to the debris in the area.
+~
+#59012
+remains smashed wine racks~
+&+Lremains of &+msmashed wine racks&N~
+&+LThe remains of several destroyed &+mwine racks&+L fill the corner of the cellar.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+270 59051 1 1 0 0 0 0
+0 0 8
+E
+remains smashed wine rack~
+   &+LSplintered bits of nearly petrified svalich wood now rest in a massive, &Ndust-
+&+Lcovered heap.  The entire area is covered in broken glass, stained with what
+&+Lused to be the precious spirits that were once stored in this great castle.
+~
+#59013
+broken glass~
+&Nbroken &+Wglass&N~
+&+WShattered bits of broken glass are all that remain of the bottles once stored here.~
+~
+13 7 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 6
+E
+broken glass~
+   &+WA massive amount of broken glass is scattered throughout the area, some
+&+Wstained with various liquids and spirits that were once stored here.
+~
+#59014
+boots striding springing~
+&+Bsome boots of &+Cstriding &+Band &+Yspringing&N~
+&+BSome bright blue boots of striding and springing have been left here.~
+~
+9 49 2 0 15 0 67117056 65 66 0 0
+0 0 0 3 0 0 0 0
+-40 145445 100 335544336 0 0 0
+E
+boots striding springing~
+&+gThese knee-high boots are crafted from thick, well-oiled leather,
+&+Yreinforced heel-to-toe with flexible plates of green-black bronze.
+&+gThey look like the sort of footweather meant for asthetics, yet
+&+Cfit like well-made combat boots to their wearer.
+~
+A
+36 5
+A
+32 5
+#59015
+pair blood-stained blood stained wyrm scale sleeves~
+&+Ca pair of &+rblood-stained &+Cwyrm scale &+csleeves&N~
+&+CA pair of &+rblood-stained &+Cwyrm scale &+csleeves have been left here.~
+~
+9 35 4 0 8 0 0 257 0 0 0
+15 0 0 0 0 0 0 0
+1 125555 100 134217728 28 0 0
+E
+pair blood-stained blood stained wyrm scale sleeves~
+   &+CThese magnificent sleeves are made of crystal dragonscale, layered
+&+Cand crafted beautifully so as they are flexible, durable, and breahtaking.
+&+CThey have been caked in blood, however, after years worn in bloody combat.
+~
+A
+13 17
+A
+23 -4
+#59016
+skirt emerald dragon scale dragonscale~
+&N&+ca fine skirt of &+Ge&+gme&+Gra&+gl&+Gd &+gdragon&+Gs&+gc&+Gal&+ge&N~
+&+cA skirt of &+Gemerald &+gdragon&+Gsc&+gal&+Ge &+chas been left here.~
+~
+9 35 3 0 11 0 0 33 0 0 0
+15 0 0 0 0 0 0 0
+1 125555 100 0 12480 0 0
+E
+skirt emerald dragon scale dragonscale~
+   &+cSmall emerald dragonscales have been stitched together, forming a
+&+cbeautiful, shimmering skirt.
+~
+A
+31 5
+A
+23 -4
+#59017
+red plush velvet curtain~
+&+Ra plush red velvet curtain&N~
+&+RA huge, plush red velvet curtain hangs over the southern exit.~
+~
+29 3 5 0 11 0 0 0 0 0 0
+340 59050 2 1 0 0 0 0
+0 0 100
+E
+red plush velvet curtain~
+   &+RA thick curtain of red plush velvet hangs here between the
+&+Rviewing balcony to the south and the sanctum to the north.
+&+RDespite the area being generally covered in thick grime and
+&+Rdebris, this curtain is uncharacteristically pristine.  A small
+&+Rpully-system with a simple velvet rope acts as a means for one
+&+Rto pull this curtain open.
+~
+#59018
+red plush velvet curtain~
+&+Ra plush red velvet curtain&N~
+&+RA huge, plush red velvet curtain hangs over the northern exit.~
+~
+29 3 5 0 11 0 0 0 0 0 0
+340 59013 0 1 0 0 0 0
+0 0 100
+E
+red plush velvet curtain~
+   &+RA thick curtain of red plush velvet hangs here between the
+&+Rviewing balcony to the south and the sanctum to the north.
+&+RDespite the area being generally covered in thick grime and
+&+Rdebris, this curtain is uncharacteristically pristine.  A small
+&+Rpully-system with a simple velvet rope acts as a means for one
+&+Rto pull this curtain open.
+~
+#59019
+huge ancient bookshelf shelf~
+&+Lan ancient &+ybookshelf&N~
+&+LA long, ancient floor-to-ceiling &+ybookshelf&+L dominates the western wall.~
+~
+15 6 3 0 7 0 0 0 0 0 0
+200 0 0 200 0 0 0 0
+0 0 100
+E
+huge ancient bookshelf shelf~
+   &+yThis massive wooden bookshelf has petrified to wood over many, many years.
+&+yCovering the entire western wall of this sanctum, it holds dozens of tomes of
+&+yvarious origins - clearly still in use.
+~
+#59020
+great vat roiling pale mucus~
+&+La great &+mvat&N~
+&+LA great &+mvat &+Lsquats at the center of the chamber, filled with roiling &npale&+W mucus&+L.~
+~
+15 18 3 0 7 0 1 0 64 0 0
+10 0 0 10 0 0 0 0
+0 0 100
+E
+great vat roiling pale mucus~
+&+L   Made of what appears to be ancient dark-mithril, this giant &+mvat&+L dominates
+&+Lthe sanctum, taking up nearly two-thirds of the chamber.  A thick, roiling
+&+Wmucus&+L churns and &Nbubbles&+L in the vat.  It reeks of a foul magic.
+~
+#59021
+painting portrait ravenovia~
+&+Ba &+ypainting&N~
+&+BA dusty &+yportrait &+Bof &+MRavenovia Von Zarovich &+B hangs on the northern wall.~
+~
+13 3 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+painting portrait~
+&+L+-----------------------------------+
+&+L|  &+Y          __.------._            &+L|
+&+L|  &+Y        .' -|  -   . `.          &+L|
+&+L|     &+Y    / '.' `-. `     \         &+L|
+&+L|     &+Y   /  /      &+Y`.  ` \ \        &+L|
+&+L|     &+Y  |  /         &+Y`.  \  |       &+L|
+&+L|     &+Y  |  |           &+Y`.   |       &+L|
+&+L|     &+Y  |  |.---.   .---.&+Y\  |       &+L|
+&+L|     &+Y  | ||&+y>&+W<&+B@&+W>&+y ) ( &+W<&+B@&+W>&+y<|&+Y` |       &+L|
+&+L|     &+Y  |  |&+y     / \     |&+Y| |       &+L|
+&+L|     &+Y  |  |&+y    ((_))    |&+Y  |       &+L|
+&+L|     &+Y  | `|&+y`  /     \  '|&+Y  |       &+L|
+&+L|     &+Y  |  |   &+R_.---._&+y   |&+Y  |       &+L|
+&+L|     &+Y  /  \    &+R`---' &+y   /&+Y  |       &+L|
+&+L|     &+Y /    &+y`.    "    .' &+Y  \       &+L|
+&+L|     &+Y/ / | &+y| `-.___.-' |&+Y|   \      &+L|
+&+L|    &+Y/     '&+y|           |&+Y  \  \     &+L|
+&+L|   &+Y/'  /   &+y|           |&+Y\   ` \    &+L|
+&+L|  &+Y/  &+C_.&+Y  /&+c<&+y'           &+y`&+c>--.__ &+Y\   &+L|
+&+L| &+Y/&+C.-' &+Y| |&+C`.&+c`-._______.-'&+C.'    `-.  &+L|
+&+L|&+Y/&+C/   &+Y/ /   &+c`-----------'        &+C \ &+L|
+&+L|&+C|   &+Y| |                          &+C |&+L|
+&+L+-----------------------------------+
+~
+#59022
+portrait strahd sergei youth painting~
+&+Ra &+gportrait&N~
+&+RAn old &+gportrait&+R of a young brothers Strahd and Sergei Von Zarovich hangs on the western wall.~
+~
+13 3 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+portrait strahd sergei youthful painting~
+&+L +--------------------------------------------------+
+&+L |      &+Y    .x%%%%%%x.            .x%%%%%%x.    &+L    |
+&+L |      &+Y   ,%%%%%%%%%%.          .%%%%%%%%%%.   &+L    |
+&+L |      &+Y  ,%%%' &+y )'  \)          :(  `(  &+Y`%%%.  &+L    |
+&+L |     &+Y  ,%x%)&+y________)          ( _   __ (&+Y%x%. &+L    |
+&+L |     &+Y  (%%%~&+y^&+W<&+Bo &+W><&+Bo&n.&+y|          |~=> .=-~ &+Y%%%) &+L    |
+&+L |     &+Y  (%%&+y::. .:,\ .'          `. /,:. .::&+Y%%) &+L    |
+&+L |     &+Y  `;%:&+y`\. `-' |            | `-' ./':&+Y%:' &+L    |
+&+L |      &+Y  ``&+yx`. &+r-===&+y.'            `.&+r===-&+y .'x''  &+L    |
+&+L |         &+y/ `:`.__.;              :.__.':' \   &+L    |
+&+L |      &+R.d8b&+y.     ..`.            .'..     .&+rd8b.&+L    |
+&+L +--------------------------------------------------+
+~
+#59023
+teleporter gates~
+&+Lteleporter to catacombs gates~
+&+LNo-show teleporter to catacombs gates~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59079 3 -1 0 0 0 0 0
+0 0 100
+#59024
+teleport trap cell1~
+&+Lteleport trap to north cell1&N~
+&+LNo-show teleport trap to north cell1~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59046 3 2 0 0 0 0 0
+0 0 100
+#59025
+teleport trap cell2~
+&+Lteleport trap to north cell2 & dart on west&N~
+&+LNo-show teleport trap to north cell2 & dart on west~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59047 3 2 0 0 0 0 0
+0 0 100
+T
+2085 7 1 400
+#59026
+teleport trap cell3~
+&+Lteleport trap to north cell3&N~
+&+LNo-show teleport trap to north cell3~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59048 3 1 0 0 0 0 0
+0 0 100
+#59027
+teleport trap cell4~
+&+Lteleport trap to north cell4&N~
+&+LNo-show teleport trap to north cell4~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59049 3 1 0 0 0 0 0
+0 0 100
+#59028
+teleport trap cage~
+&+Lteleport trap to north cage~
+&+LNo-show teleport trap to north cage~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59081 3 1 0 0 0 0 0
+0 0 100
+#59029
+dawn-tear dawn tear earring~
+&+cthe &+YDawn-&+Wte&Nar &+cearring&N~
+&+cThe &+YDawn-&+Wte&Nar &+cearring&N lies here.~
+~
+9 8 1 0 15 0 1 524289 64 0 0
+5 0 0 0 0 0 0 0
+0 1000000 100
+E
+dawn-tear dawn tear earring~
+&+YThis single ear&+Rring is a tea&+Yrdrop-shaped &+Rcrystal sus&+Ypended from a
+&+Rslender hook &+Yof pale gold.&+R The crystal is&+Y colored in a&+R rosey-gold,
+&+Ygiving off a&+R faint glow.
+~
+A
+57 -1
+A
+58 -1
+#59030
+silver charm shape maple leaf _id_~
+&+ca silver &+Ccharm&+c in the shape of a &+cm&+Ca&+cp&+Cl&+ce &+Cl&+ce&+Ca&+cf&N~
+&+cA silver charm in the shape of a maple leaf has been left here.~
+~
+9 22 1 0 15 0 1 5 65 0 0
+5 0 0 0 0 0 0 0
+0 200000 100
+E
+_id_name_~
+pendant good health
+~
+E
+_id_short_~
+&+Cthe pendant of &+Ygood &+Whealth&N
+~
+E
+_id_desc_~
+&+cA silver charm pendant of good health has been left here.
+~
+A
+13 50
+A
+54 50
+#59031
+epitaph~
+&+Lan &+yepitaph&N~
+&+LAn &+yepitaph &+Linscribed on this stone door identifies the crypt of &nSteliana Albusel&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+             &+ySteliana Albusel
+&+yShe now walks a path of pain and torment
+  &+yA gift to all who look upon her still.
+~
+#59032
+epitaph~
+&+yan &+Lepitaph&N~
+&+yAn &+Lepitaph &+yinscribed on this stone door identifies the crypt of &+cAurica Dancescu&N~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+           &+cAurica Dancescu
+&+cCourt Painter, Beloved of Dragomir
+~
+#59033
+rag draped skeleton~
+&+ma rag-draped &+Wskeleton&N~
+&+mA rag-draped &+Wskeleton &+mreclines on a huge slab of &+Wma&nr&+Lb&+Wle&+m.~
+~
+15 10 3 0 7 0 0 0 0 0 0
+20 0 0 20 0 0 0 0
+0 0 100
+E
+rag draped skeleton~
+   &+mAn ancient sketeton rests in peace, reclined with its hands
+&+mcrossed over its chest eternally.  Burial garments have been
+&+mreduced to deteriorating rags, draped across its bones. The
+&+mskeleton rests atop a 3-foot-by-5-foot rectangular slab of
+&+mmarble.
+~
+#59034
+epitaph~
+&+can &nepitaph&N~
+&+cAn &nepitaph &+cinscribed on this stone door identifies the crypt of &+GLady Iolanda Yonescu&+c.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+      &+GLady Iolanda Yonescu
+&+GMerchant Queen Extraordinaire
+       &+GPurveyor of Hope
+~
+#59035
+old bottle elven wine~
+&n&+yan old bottle of &+celven wine&N~
+&+yPeaking out from the debris, an in-tact &+cbottle of wine&+y is partially buried.~
+~
+17 44 2 0 14 0 4096 16385 32768 0 0
+15 15 26 0 0 0 0 0
+0 15000 100
+E
+old bottle elven wine~
+   &+yThis bottle of wine is dated by its contents, labled:
+&+c'Spirits of Sylvandawn&+c'
+&+ySylvandawn, a legendary and once-great Grey Elven city exists now
+&+yonly in the memories of its ancesters and relics of the world, such
+&+yas this bottle of fine wine.  No doubt, this item would be worth
+&+ya large quantity of platinum to the right collector.
+~
+#59036
+shard broken glass~
+&+Wa shard of &nbr&+cok&Nen &+cgl&Nas&+cs&N~
+&+WA shard of broken glass lies here amongst the debris.~
+~
+5 44 1 0 1 0 64 8193 0 0 0
+2 2 10 0 0 0 0 0
+0 10 77
+A
+19 5
+#59037
+large black key~
+&+La large, black key&N~
+&+LA large, black key pokes out of the &+ydebris&+L.~
+~
+18 15 3 0 7 0 8388608 16385 32768 0 0
+0 0 0 0 0 0 0 0
+0 10 100
+#59038
+tiny curious bat~
+&+La tiny, curious bat&N~
+&+LA tiny bat hangs motionless between bars of the &+cgates&+L, occasionally blinking.~
+~
+29 2 1 0 7 0 8192 0 0 0 0
+15 59117 5 0 0 0 0 0
+0 0 100
+E
+tiny curious bat~
+   &NThis curious &+Lblack bat&N hangs upside down from the right
+&ngate's horizontal support bar. It is statuesquely motionless,
+&Nsave for brief moments when it blinks its beady &+rred eyes&N.
+~
+#59039
+rag draped skeleton~
+&+ma rag-draped &+Wskeleton&N~
+&+mA rag-draped &+Wskeleton &+mreclines on a huge slab of &+Wma&nr&+Lb&+Wle&+m.~
+~
+29 10 3 0 7 0 0 0 0 0 0
+294 59147 6 0 0 0 0 0
+0 0 100
+E
+rag draped skeleton~
+   &+mAn ancient sketeton rests in peace, reclined with its hands
+&+mcrossed over its chest eternally.  Burial garments have been
+&+mreduced to deteriorating rags, draped across its bones. The
+&+mskeleton rests atop a 3-foot-by-5-foot rectangular slab of
+&+mmarble.
+~
+#59040
+tarnished silver antique ankh~
+&+ca &+yt&+ca&+yr&+cn&+yi&+cs&+yh&+ce&+yd &+Csilver &+cantique ankh&N~
+&+cA tarnished silver antique ankh has been left here.~
+~
+8 22 2 0 15 0 4096 16385 1 0 0
+0 0 0 0 0 0 0 0
+0 1100000 100
+E
+tarnished silver antique ankh~
+   &+cThis intricately ankh is made of an extremely pure
+&+csilver and was once a significant prayer idol of what
+&+cmust be an ancient civilization.  It is no doubt of
+&+cgreat value to the right collector.
+~
+#59041
+epitaph~
+&+Lan &+yepitaph&N~
+&+LAn &+yepitaph &+Linscribed on this stone door identifies the crypt of &+yPrince Aurel Plesu&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+         &+yPrince Aurel Plesu
+&+yHis quest for the sky never ceased
+~
+#59042
+huge marble slab~
+&+Wa huge mar&+Lb&Nl&+We slab~
+&+WA huge, three foot tall &+Wslab of mar&+Lb&Nl&+We sits at the center of the crypt.~
+~
+15 38 5 0 9 0 0 0 0 0 0
+200 5 0 0 0 0 0 0
+0 0 77
+E
+huge marble slab~
+   &+LThis huge slab of &+Wmar&nb&+Ll&+We&+L dominates the center of the crypt,
+&+Lhere to bare the eternal remains of royalty.  A finely crafted
+&+Lwooden &+ybier &+Lsits atop the &+Wmar&nb&+Ll&+We slab.
+~
+E
+bier~
+&+yThis bier is an ornately-crafted wooden stretcher that is used
+&+yto transport a corpse from the chapel to the grave.
+~
+#59043
+cutting edge~
+&+Ya cutting edge&N~
+&+YA cutting edge is here, somehow!?~
+~
+5 15 3 0 7 0 524288 8192 64 0 0
+5 3 7 0 0 0 0 0
+0 0 40
+A
+18 5
+A
+19 5
+#59044
+prince aurel proc~
+&+Lprince aurel proc&n~
+&+LRIP Prince Aurel~
+~
+5 15 3 0 7 0 134221826 8192 0 0 0
+14 5 5 0 0 135134 60 10
+0 0 100
+E
+_room_msg~
+&n$n suddenly &+Wglows brightly&N as his incorporeal form &+bb&+Bl&+bu&+Br&+bs&N.
+~
+A
+32 50
+A
+13 100
+#59045
+huge marble slab~
+&+Wa huge mar&+Lb&Nl&+We slab~
+&+WA huge, three foot tall &+Wslab of mar&+Lb&Nl&+We sits at the center of the crypt.~
+~
+15 38 5 0 9 0 0 0 0 0 0
+50 5 0 50 0 0 0 0
+0 0 77
+E
+huge marble slab~
+   &+LThis huge slab of &+Wmar&nb&+Ll&+We&+L dominates the center of the crypt,
+&+Lhere to bare the eternal remains of royalty.  A finely crafted
+&+Lwooden &+ybier &+Lsits atop the &+Wmar&nb&+Ll&+We slab.
+~
+E
+bier~
+&+yThis bier is an ornately-crafted wooden stretcher that is used
+&+yto transport a corpse from the chapel to the grave.
+&+yThis particular bier seems to contain some sort of extra
+&+ycompartment.
+~
+T
+512 15 1 60
+#59046
+epitaph~
+&+man &+Lepitaph&N~
+&+mAn &+Lepitaph &+minscribed on this stone door identifies the crypt of &+LDuchess Dorota Dobre&+m.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+ &+LDuchess Dorota Dobre
+     &+LLoved Forever
+&+LBy Her Grieving Family
+~
+#59047
+ring feather fall~
+&+ca ring of &+Wf&Ne&+Wa&Nt&+Wh&Ne&+Wr &+Lfall&N~
+&+cA ring of &+Wfeather &+Lfall&+L floats here.~
+~
+9 9 1 0 15 0 4097 3 66 0 0
+5 0 0 0 0 0 0 0
+-100 220000 100 402653184 0 0 0
+A
+36 6
+A
+26 16
+T
+6 15 1 200
+#59048
+scroll daylight~
+&+ya scroll of &+Ydaylight&N~
+&+yA scroll of &+Ydaylight &+yhas been left here.~
+~
+2 29 2 0 14 0 266240 16385 64 0 0
+60 359 359 18 0 0 0 0
+0 125555 100
+E
+scroll daylight~
+   &+yThis magical scroll radiates with a powerful, brilliant magic.
+~
+#59049
+noshow ant proc~
+&+Lno-show giant ant proc&N~
+&+LNo-show giant ant proc&N lies here.~
+~
+5 15 3 0 7 0 143134722 8192 64 0 0
+2 5 5 0 0 229428 60 17
+0 0 100
+E
+_room_msg~
+&N$n &+rsp&+Rrea&+rds &+yits mandibles and &+Gspews a blast&+y of &+gs&+Gt&+gi&+Gc&+gk&+Gy green &+gacid &+yat &+G$N&N!
+~
+A
+58 -4
+A
+18 10
+#59050
+epitaph~
+&+Lan &+Wepitaph&N~
+&+LAn &+Wepitaph &+Linscribed on this stone door has been &Ns&+Lcr&Na&+Lt&Nch&+Led so as to be almost unreadable.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+321 59132 1 0 0 0 0 0
+0 0 100
+E
+epitaph~
+      &+W--i-t --r-o-ia
+   &+WG--at --s H-r M-g-t
+&+WU-d--e B- a Je-l-us H--d
+~
+T
+69 0 1 60
+#59051
+fallen door epitaph~
+&+La fallen &Ndoor&N~
+&+LA fallen &Nstone &+Ldoor bearing an &+repitaph&+L is partially concealed by the &+gf&+Go&+gg&+L.~
+~
+13 11 5 0 11 0 4096 0 0 0 0
+0 0 0 0 0 0 0 0
+200 0 88
+E
+fallen door epitaph~
+&+LThe door of this crypt is off its &+ciron &+Lhinges and lies upon
+&+Lthe &+Gfog-swirled &+Lcatacomb floor.
+&+LCloser inspection reveals the &+repitaph&+L:
+
+       &+rEndorovich the Terrible
+&+rWhat the Blood of Slaves Could Not
+     &+rA Woman's Scorn Achieved
+~
+#59052
+epitaph~
+&+Lan &+gepitaph&N~
+&+gAn &+Lepitaph&+g inscribed on this stone door identifies the crypt of &+LMarius&+g.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+               &+gMarius
+        &+gA Life Well-Lived
+&+gLong Suffering, He Found Peace
+~
+#59053
+noshow proc~
+&+Lno-show flameskull proc&N~
+~
+~
+5 15 3 0 7 0 142643202 8192 0 0 0
+2 5 5 0 0 631640640 60 17
+0 0 100 0 0 0 1024
+E
+_room_msg~
+&N&+G$n &+r&-LS&+GH&+r&-LR&+G&-LI&+r&-LE&+G&-LK&+r&-LS &n&+Gat $N &+Gand &+Ye&+Gx&+Yp&+Gl&+Yo&+Gd&+Ye&+Gs in a &+Rburst&+G of &+gb&+Gu&+gr&+Gn&+gi&+Gn&+gg gas&+G!
+~
+A
+58 -5
+A
+18 20
+#59054
+huge marble slab~
+&+Wa huge mar&+Lb&Nl&+We slab~
+&+WA huge, three foot tall &+Wslab of mar&+Lb&Nl&+We sits at the center of the crypt.~
+~
+29 38 5 0 9 0 0 0 0 0 0
+99 59353 5 0 0 0 0 0
+0 0 77
+E
+huge marble slab~
+   &+LThis huge slab of &+Wmar&nb&+Ll&+We&+L dominates the center of the crypt,
+&+Lhere to bare the eternal remains of royalty.  A finely crafted
+&+Lwooden &+ybier &+Lsits atop the &+Wmar&nb&+Ll&+We slab.
+~
+E
+bier~
+&+yThis bier is an ornately-crafted wooden stretcher that is used
+&+yto transport a corpse from the chapel to the grave.
+~
+#59055
+debris linens canvas piles~
+&+Ldebris of &+Wlinens &+Land &Ncanvas&N~
+&+LDebris fills the room, from piles of &+Wtattered linens &+Lto several &+yold canvas sacks.~
+~
+15 3 3 0 7 0 0 0 0 0 0
+50 0 0 50 0 0 0 0
+0 0 100
+E
+canvas old sacks~
+   &+LThe disintegrating fabrics that are strewn about this cavern-like
+&+Lsubcrypt appear to be the remains of old gowns, dresses, and other
+&+Lwomen's clothes.  Several large canvas sacks are also buried amidst
+&+Lthe debris.
+~
+#59056
+old canvas sack~
+&+ya old &Ncanvas &+ysack&N~
+&+yAn old tattered canvas sack sits here in a small mound.~
+~
+20 15 3 0 7 0 4096 16385 0 0 0
+0 0 0 340 0 0 0 0
+0 0 100
+E
+old canvas sack~
+&+yThe canvas material of this sack is ready to give way.
+~
+#59057
+huge marble slab~
+&+Wa huge mar&+Lb&Nl&+We slab~
+&+WA huge, three foot tall &+Wslab of mar&+Lb&Nl&+We sits at the center of the crypt.~
+~
+29 38 5 0 9 0 0 0 0 0 0
+99 59149 5 0 0 0 0 0
+0 0 77
+E
+huge marble slab~
+   &+LThis huge slab of &+Wmar&nb&+Ll&+We&+L dominates the center of the crypt,
+&+Lhere to bare the eternal remains of royalty.  A finely crafted
+&+Lwooden &+ybier &+Lsits atop the &+Wmar&nb&+Ll&+We slab.
+~
+E
+bier~
+&+yThis bier is an ornately-crafted wooden stretcher that is used
+&+yto transport a corpse from the chapel to the grave.
+~
+#59058
+incorporeal curved blade~
+&n&+ran incorporeal curved blade&N~
+&+rAn incorporeal curved blade floats here.~
+~
+5 15 3 0 7 0 34078720 8192 0 0 0
+2 5 8 0 0 101101101 60 25
+0 0 100
+E
+_room_msg~
+&N$n suddenly locks eyes with $N in a &+Rm&+ma&+Rd&+md&+Re&+mn&+Ri&+mn&+Rg &+Ggaze!
+~
+E
+_victim_msg~
+&n$n turns his &+Lgaze &nto YOU!
+
+&+L  ,,=====,,,  &+y~~-~~&+L  ,,,=====,,
+&+L'"          `'     &+L'"          "'
+&+L _--~~~~--__         &+L__--~~~~--_
+&+W:  &+L/       \&+L~~&+y-___-&+W~~&+L/       \  &+W:
+&+W -_&+L\  &+r(&+Ro&+r) &+L /&+y ,'; ;', &+L\  &+r(&+Ro&+r)&+W  /_-
+&+W   ~-____-&+y-~'  ; ;  '~-&+W-____-~
+&+y          &+y,`   ;   ;   ',
+~
+A
+19 40
+A
+58 -2
+#59059
+epitaph~
+&nan &+Bepitaph&N~
+&+BAn &nepitaph &+Binscribed on this stone door identifies the crypt of &NAdrian Selymes&n~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+        &+BAdrian Selmyes
+       &+BKing of Vintners
+&+BInterred with Great Mourning
+~
+#59060
+old bottle barovia red mountain wine~
+&+man old bottle of &+R'Barovia Red Mountain'&N~
+&+mAn old bottle of wine labled &+R'Barovia Red Mountain'&+m has been left here.~
+~
+17 27 2 0 15 0 4096 16385 32832 0 0
+15 15 2 0 0 0 0 0
+0 1200000 100
+E
+old bottle barovia red mountain~
+&+mMade in a very short supply, nearly two hundred years ago, this bottle
+&+mof wine is truly a one-of-a-kind specimen.
+~
+#59061
+epitaph~
+&+Man &+repitaph~
+&+MAn &+repitaph&+M inscribed on the western stone door identifies the crypt of &+rVengeance&+M.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+&+rLet these remind those who would contest the Master's will.
+~
+#59062
+bloodstained marble slab~
+&+ra b&+Wlood&+rs&+Wta&+ri&+Wned m&+ra&+Wr&+Lb&Nl&+We &+rs&+Wl&+rab&N~
+&+WA b&+rlo&+Wo&+rd&+Wsta&+ri&+Wn&+re&+Wd &+rr&+Wec&+rt&+Wag&+rul&+Wa&+rr &+Wsl&+ra&+Wb of m&+ra&+Wr&+rb&nl&+We s&+ri&+Wts at &+rth&+We &+rc&+Wen&+rt&+Wer of t&+rh&+We to&+rm&+Wb.~
+~
+15 38 5 0 7 0 0 0 0 0 0
+20 0 0 20 0 0 0 0
+0 0 82
+E
+bloodstained marble slab~
+&+W   This huge, rectangular marble slab is three feet tall and
+&+Wroughly three feet by seven feet in size. &+rCovered in blood
+&+rsplattered&+W, this tomb appears to have been used for &+rgruesome
+&+Rtorture&+W.
+~
+#59063
+epitaph~
+&+yan &+Cepitaph&N~
+&+yAn &+Cepitaph&+y inscribed on the eastern stone door identifies the crypt of &+CTasha Petrovna&+y.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+   &+CTasha Petrovna
+&+CLight Unto the West
+&+CFriend and Companion
+~
+#59064
+disembowled remains dwarf~
+&+Ra di&+rse&+Rmb&+row&+Rle&+rd &+Ydwarf&N~
+&+LThe remains of a &+rdi&+Rse&+rmb&+Row&+rle&+Rd &+Ydwarf &+Lhang from a wall by &+ciron bands&+L.~
+~
+15 2 3 0 7 0 0 0 0 0 0
+20 0 0 20 0 0 0 0
+0 0 37
+E
+disembowled remains dwarf~
+   &+rThe result of gruesome torture, this long-deceased dwarf
+&+rmust be one of the few bodies in these crypts that has not
+&+rbeen reanimated - suggesting that it poses as a warning to
+&+rthose who trespass in these sacred grounds.
+   &+rThe body hangs lifelessly, as a huge gash from throat to
+&+rgroin has exposed an avalanche of guts, now rotted, to spill
+&+rforth.
+~
+#59065
+remains mutilated human~
+&+ra m&+Mu&+rt&+Mi&+rl&+Ma&+rt&+Me&+rd &+Chuman&N~
+&+LThe remains of a &+rm&+Mu&+rt&+Mi&+rl&+Ma&+rt&+Me&+rd &+Chuman &+Lhang from a wall by &+ciron bands&+L.~
+~
+15 2 3 0 7 0 0 0 0 0 0
+20 0 0 20 0 0 0 0
+0 0 42
+E
+remains mutilated human~
+&+M   This disfugred, lifeless corpse hangs from a wall in this
+&+Mcrypt as one of the few bodies in the castle that have not
+&+Mbeen reanimated by powerful magic - suggesting that it was
+&+Mintentionally left here as a warning.
+   &+MThis corpse is fully nude and appears to have been violently
+&+Mcastrated. All fingers and toes have either been crushed
+&+Mor severed completely.  There are no mortal wounds on its head
+&+Mand face, however, suggesting that this pour soul died from
+&+Mblood loss from its castration.
+~
+#59066
+remains charred human~
+&+ra &+Lcharred &N&+Chuman&N~
+&+LThe remains of a c&+rh&+La&+rr&+Lr&+re&+Ld &+Chuman &+Lhang from a wall by &+ciron bands&+L.~
+~
+15 2 3 0 7 0 0 0 0 0 0
+20 0 0 20 0 0 0 0
+0 0 36
+E
+remains charred human~
+&+L   This burnt, lifeless corpse hangs from a wall in this
+&+Lcrypt as one of the few bodies in the castle that have not
+&+Lbeen reanimated by powerful magic - suggesting that it was
+&+Lintentionally left here as a warning.
+   &+LThis rotten flesh of this corpse appear to have dozens
+&+rof burn markets, mostly around the face.  Charred holes
+&+Lare all that remain of its eyes.  A toothless mouth hangs
+&+ropen, frozen in its final screams.
+~
+#59067
+remains headless elf~
+&+La &+Whead&Nless &+celf&N~
+&+LThe remains of a &+Whead&Nless &+celf &+Lhang from the ceiling by &+ciron bands&+L.~
+~
+15 2 3 0 7 0 0 0 0 0 0
+20 0 20 0 0 0 0 0
+0 0 20
+E
+remains headless elf~
+  &+cThe body of this elf bare the most horrific signs of torture of
+&+call the bodies in this crypt.  Ragged, part of her tongue, and
+&+csome broken vertebrae suggestion a gruesome, unclean decapitation.
+&+cPossibly the leader of these adventurers, she in particular received
+&+cthe most excruciating final hours of torture.
+   &+rHer body hangs from the ceiling by iron bands directly over the
+&+rmarble slab at the center, which is now stained with her blood.
+~
+#59068
+ring righteous~
+&+Wa ring of the righteous&N~
+&+WA ring of the righteous has been left here, glowing with positivity.~
+~
+9 25 3 0 15 0 33558528 3 66 0 0
+5 0 0 1 0 0 0 0
+0 225222 100 8192 32780 0 0
+E
+ring righteous~
+&+WThis wide band is completely white, as if forged of snow
+&+Was hard as iron. This ring suffuses the wearer with
+&+Wpositive energy.
+~
+A
+13 35
+A
+31 5
+#59069
+severed elf elven woman head _id_~
+&+ra severed &+celf &+Whead&N~
+&+rThe severed &+Whead &+rof an &+celven woman &+rsits upon the &+Wma&+Lr&Nb&+Wle slab&+r.~
+~
+4 2 2 0 5 0 0 8404993 64 0 0
+60 4 4 121 0 0 0 0
+0 15222 42
+E
+severed elf elven woman head~
+   &+rOnly small bits of flesh remain on the skull of this
+&+rsevered head, as well as stringly clumps of partially burnt,
+&+rfilth-encrusted hair. It reeks of the terrible magic that
+&+rit has been in the long exposure of.
+   &+rThe name &+c'Dysania'&+r is crudely &+Rburned&+r into the elf skull.
+~
+E
+_id_name_~
+stifled skull dysania
+~
+E
+_id_short_~
+&+Wthe &+ystifled &+Wskull of &+cDysania&n
+~
+E
+_id_desc_~
+&+WLeft here in the debris, &+Wa &+ystifled &+Wskull bares an evil aura.
+~
+A
+22 -4
+A
+24 -4
+#59070
+epitaph~
+&+Lan &+Cepitaph&+L~
+&+LAn &+Cepitaph&+L inscribed on this stone door identifies the crypt of &+CKing Tomescu&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+ &+CKing Tomescu
+&+CHe Traveled Far
+~
+#59071
+portal shimmering green mist~
+&+ga &+Gportal &+gof &+Gs&+gh&+Gi&+gm&+Gm&+ge&+Gr&+gi&+Gn&+gg&+c mist~
+&+LA great stone ring frames a &+Gportal&+L of &+gs&+Gh&+gi&+Gm&+gm&+Ge&+gr&+Gi&+gn&+Gg &+ggreen &+cmist&+L.~
+~
+25 15 3 0 7 0 1 0 64 0 0
+59169 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering green mist~
+   &+LA huge circular stone ring is built into the far western wall
+&+Lof the crypt, framing this shimmering green portal. Waves of green
+&+Llight flicker over the two-dimensional surface, which almost
+&+Lresembles liquid. Flashes of light, stars, and magic flickers
+&+Lacross this crackling portal.
+~
+#59072
+hammock human hair~
+&na delicate hammock of &+chuman hair&N~
+&nA delicate hammock woven of &+chuman hair&N hangs in the northwest corner of the room.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+hammock human hair~
+   &+cThis hammock has been maticulously woven of fine human hair of
+&+cwhat must be dozens of unfortunate souls.  It hangs in the northwest
+&+ccorner of this chamber, suspended from the stone ceiling.
+~
+#59073
+fingerbone mirror~
+&+Wa fingerbone-framed &+Cmirror&N~
+&+CA mirror&+W, its frame composed of fused human fingerbones&+C, hangs on the south wall.~
+~
+15 10 3 0 7 0 0 0 64 0 0
+20 0 0 20 0 0 0 0
+0 0 100
+E
+fingerbone mirror~
+   &+WA few dozen human fingerbones have been magically fused together,
+&+Wforming the frame of this magical mirror. Although the mirror's
+&+Wsurface does not appear to be magical in nature, the fingerbones
+&+Wframing the mirror hint of magic.
+~
+#59074
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+59165 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59075
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+29 15 3 0 7 0 4097 0 64 0 0
+7 59171 5 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59076
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+29 15 3 0 7 0 4097 0 64 0 0
+7 59182 2 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59077
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+29 15 3 0 7 0 4097 0 64 0 0
+7 59184 0 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59078
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+32063 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59079
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+44487 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59080
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+32029 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59081
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+19721 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59082
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+87528 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59083
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+83823 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59084
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+32057 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59085
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+22053 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59086
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+32290 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59087
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+26600 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59088
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+32279 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59089
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+12494 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59090
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+32090 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59091
+portal~
+&+ga portal&N~
+&+GA portal hovers here, slowly dispersing into reality.~
+~
+25 15 3 0 7 0 4097 0 64 0 0
+58964 7 -1 0 0 0 0 0
+0 0 100
+E
+portal shimmering mist~
+&+L   This large two-dimensional portal ripples and swirls, almost like liquid.
+~
+#59092
+epitaph~
+&Nan &+bepitaph&N~
+&+bAn &Nepitaph&+b inscribed on this stone door identifies the crypt of &NKing Ignatie Kazaku&+b.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+     &+bKing Ignatie Kazaku
+      &+bKazaku the Bright
+&+bKing, Leader, and Inventor
+~
+#59093
+clockwork music player~
+&+ca &+ycl&+co&+yck&+cw&+yor&+ck &+Mmusic &+mpl&+Yay&+mer&N~
+&+yA clockwork &+Mmusic &+mpl&+Yay&+mer&n has been left here.~
+~
+32 44 1 0 15 0 33559552 8404993 32832 32768 0
+185 60 0 0 0 0 0 0
+0 1000555 100
+E
+clockwork music player~
+&+c  A strange, metallic device with a stylized design and a
+&+csmall metallic flange. Despite its rusted, pitted exterior,
+&+cif the metallic flange is wound a few times and released,
+&+ca haunting tune plays as a testament to the maker and the
+&+cmasterwork materials used to craft it. A lightly-etched
+&+cinscription on the rear of the device reads 'Fritz Von Weerg'
+~
+A
+57 -1
+A
+58 -1
+T
+6 0 1 60
+#59094
+miniature wind-up gnome~
+&+ya miniature wind-up gnome&N~
+&+yA rusty, brass miniature wind-up gnome sits atop the &+Wmar&+Lb&Nl&+We slab&+y.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+15 59199 5 0 0 0 0 0
+0 0 100
+E
+miniature wind-up gnome~
+&+y   This strange, clockwork device has been crafted in the
+&+yshape of a one-foot tall, round mechanical gnome. A large
+&+ymetallic flange protruding from the back of the gnome
+&+yseems to have started turning&+y the moment this crypt
+&+ywas disturbed.
+~
+#59095
+epitaph~
+&+Yan &+Lepitaph&N~
+&+YAn &+Lepitaph&+Y inscribed on this stone door identifies the crypt of &+LShuhul Ishai-Bal&+Y.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+       &+YShuhul Ishai-Bal
+    &+YAdvisor to Endorovich
+     &+YFriend from the East
+&+YHere Lies His Family in Honor
+~
+#59096
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59237 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59097
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59236 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59098
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59235 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59099
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59249 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59100
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59248 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59101
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59242 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59102
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59241 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59103
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59247 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59104
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59253 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59105
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59252 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59106
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59240 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59107
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59239 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59108
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59238 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59109
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59251 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59110
+stone coffin~
+&+Lan old, &Nstone &+ycoffin&N~
+&+yAn old, &Nstone &+ycoffin lies here, ominously propped up to face north.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+99 59250 5 1 0 0 0 0
+0 0 100
+E
+stone coffin~
+   &+LThis old, heavy stone coffin has been somewhat ominously
+&+Lpropped up, along with all the others in the crypt of Shuhul
+&+LIshai-Bal, to face north. The markings of the far-eastern
+&+Lfamily, Ishai-Bal, can be faintly seen on top of each coffin:
+&+La stylized scarab with a curved scimitar running down the
+&+Lcenter of its back. The Ishai-Bal tribe, and its patriarch
+&+LShuhul, were said to be the personal servants of the nobleman,
+&+LEndorovich.
+~
+#59111
+elixir potion sneaking~
+&+Lan elixir of &+rsneaking&+L~
+&+LAn elixir of &+rsneaking&+L has been left here.~
+~
+10 7 1 0 10 0 4096 16385 64 0 0
+60 393 280 534 0 0 0 0
+0 55555 100
+E
+elixir potion sneaking~
+   &+LThis thin vial contains a blackish, reddish liquid - almost
+&+Lthe color and viscosity of blood.
+~
+#59112
+wand stone stoneskin~
+&+ya wand of &+Lstoneskin&N~
+&+yA wand of &+Lstoneskin&+y has been left here.~
+~
+3 11 1 0 10 0 4097 8404993 66 0 0
+60 35 25 36 0 0 0 0
+0 55555 100
+E
+wand stone stoneskin~
+&+L  This small wand looks like a simple rod of magical, glowing stone.
+~
+A
+13 15
+A
+20 -2
+#59113
+wand hold person~
+&+ca wand of &+Mhold person&N~
+&+cA wand of &+Mhold person&+c has been left here.~
+~
+3 23 1 0 10 0 4097 16385 64 0 0
+60 6 6 101 0 0 0 0
+0 65222 100
+E
+wand hold person~
+   &+CThis shiny, electrum wand is shaped like two intertwined hands.
+~
+A
+13 15
+A
+21 -2
+#59114
+silver necklace encrusted diamonds~
+&+Ca &+csilver &+Cnecklace encrusted with &+Wd&Ni&+Wa&Nm&+Wo&Nn&+Wd&ns&N~
+&+CAn extremely valuable-looking &+csilver&+C necklace has been left here.~
+~
+8 22 2 0 14 0 4096 5 0 0 0
+0 0 0 0 0 0 0 0
+0 355555 100
+E
+silver necklace encrusted diamonds~
+&+C  This fine, silver chain attaches to a single tear-drop shaped
+&+Cpendant, that has been completely covered in tiny, encrusted
+&+Cdiamonds.
+~
+#59115
+elixir vision~
+&+Lan elixir of &+Wvision&N~
+&+LAn elixir of &+Wvision&+L has been forgotten here.~
+~
+10 7 1 0 11 0 4097 8404993 64 0 0
+60 158 414 225 0 0 0 0
+0 25555 100
+E
+elixir vision~
+&+L  A thick, oblong bottle holds a &+Wthick white fluid&+L.
+~
+#59116
+scroll destruction~
+&+La scroll of &+rde&+Rst&+Yr&+Wu&+Yc&+Rti&+ron&N~
+&+yA dirty, tightly-wrapped scroll has been left here.~
+~
+2 28 1 0 9 0 4097 8404993 64 0 0
+60 47 47 47 0 0 0 0
+0 66555 100
+E
+scroll destruction~
+&+yThis old and dirty, tightly-rolled scroll glows with magic and smells like &+Rfire&+y.
+~
+#59117
+scroll spell immunity~
+&+La scroll of &+mspell &+Yimmunity&N~
+&+yAn old, dirty scroll has been forgotten here.~
+~
+2 29 1 0 8 0 4097 8404993 64 0 0
+60 301 286 287 0 0 0 0
+0 25666 100
+E
+scroll spell immunity~
+&+yThis tightly-rolled, old scroll is written in &+rInfernal&+y and seems to
+&+yresist magic in all forms.
+~
+#59118
+scroll inflict critical wounds~
+&n&+ya scroll of &+rinflict critical wounds&N~
+&+yA scroll of &+rinflict critical wounds&+y has been left here, forgotten.~
+~
+2 29 2 0 7 0 4096 8404993 64 0 0
+60 115 115 115 0 0 0 0
+0 25555 100
+E
+scroll inflict critical wounds~
+&+yThis old parchment scroll's seal reads &+r'Inflict Critical Wounds'
+~
+#59119
+epitaph~
+&+Lan &+Ye&+Lp&+Yi&+Lt&+Ya&+Lp&+Yh&N~
+&+LAn &+Ye&+Lp&+Yi&+Lt&+Ya&+Lp&+Yh &+Linscribed on this stone door identifies the crypt of &+YC&+Ll&+Ya&+Lu&+Yd&+Li&+Yu&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+          &+YClaudiu
+  &+LNone Shall Ever Forget
+&+YHis Courage and Sacrifice
+~
+#59120
+small gold medallion~
+&+Ya small gold medallion&N~
+&+YA small gold medallion has been left here, sparkling.~
+~
+8 24 2 0 11 0 0 16389 0 0 0
+0 0 0 0 0 0 0 0
+0 320000 100
+E
+small gold medallion~
+&+YAlthough small, this gold medallion is full of sparkling luster.
+~
+#59121
+epitaph~
+&+Lan &+Gepitaph&N~
+&+LAn &+Gepitaph&+L inscribed on this stone door identifies the crypt of &+GE&+gl&+Gi&+gc&+Ga F&+gl&+Go&+gr&+Ge&+ga&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+       &+GElica Florea
+&+GLoyal Servant and Gardner
+~
+#59122
+vine-covered marble slab~
+&+ga &+Gvine&+g-covered &+Wmar&+Lb&Nl&+We slab&N~
+&+gOvergrown with &+Gvines&+g, this &+Wmar&+Lb&Nl&+We slab &+gsits at the center of the chamber.~
+~
+15 38 5 0 9 0 0 0 0 0 0
+50 0 0 50 0 0 0 0
+0 0 77
+E
+huge marble slab~
+   &+gThis marble slab has been nearly fully wrapped with wild vines
+&+gthat seem to be growing out of the skeleton that sits on top.
+~
+E
+bier~
+&+yThis bier is an ornately-crafted wooden stretcher that is used
+&+yto transport a corpse from the chapel to the grave.
+&+yThis particular bier seems to contain some sort of extra
+&+ycompartment.
+~
+#59123
+vine-covered skeleton~
+&+ga &+Gvine&+g-covered &+Wskeleton&N~
+&+gA &+Gvine&+g-covered &+Wskeleton &+grests atop the overgrown &+Wma&+Lr&Nb&+Wle slab&+g.~
+~
+15 10 3 0 7 0 0 0 0 0 0
+20 0 0 20 0 0 0 0
+0 0 100
+E
+vine-covered skeleton~
+&+G   This skeleton reclines here peacefully, but has been fully
+&+govergrown with intensely-magical vines. This flowering plant-
+&+Ggrowth appears to be coming out of the chest of this skeleton,
+&+gwinding out of the ribcage and throughout the immediate surr-
+&+Goundings.
+~
+#59124
+staff command plants~
+&n&+ya staff of &+gco&+Gmm&+ga&+Gn&+gd &+Gpl&+ga&+Gn&+gt&+Gs&N~
+&+yA twisted, wooden staff has been left here, &+Ggrowing&+g.~
+~
+4 6 3 0 15 0 4097 16385 64 0 0
+60 6 6 446 0 0 0 0
+0 125555 100 16809984 0 0 0
+E
+staff command plants~
+&+yA long, twisted staff that seems to continuously call plantlife
+&+yaround it to &+Gawaken&+y.
+~
+A
+34 5
+A
+55 5
+T
+2 15 1 60
+#59125
+epitaph~
+&+ban &+Bepitaph&N~
+&+BAn &+bepitaph &+Binscribed on this stone door identifies the crypt of &+bCount Sergiu Solomovici&+b.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+    &+BCount Sergiu Solomovici
+    &+BNever Afraid To Attempt
+&+BWhat Others Deemed Impossible
+~
+#59126
+wondrous clockwork pocket watch~
+&+ya wondrous &+cc&+yl&+co&+yc&+ck&+yw&+co&+yr&+ck&+y pocket watch&N~
+&+yA beautiful golden pocket watch has been left here.~
+~
+8 24 1 0 15 0 4096 16385 32768 0 0
+0 0 0 0 0 0 0 0
+0 400555 100
+E
+wondrous clockwork pocket watch~
+&+y   This beautiful, hand-held pocket watch has a small flange
+&+ythat winds the crystalline time-piece. It is intricately carved
+&+ywith a beautiful design of a 6-sailed cruiser ship surrounded
+&+yby clouds. A lightly-etched inscription on the back of the watch
+&+yreads 'Fritz Von Weerg'
+~
+#59127
+golden jewel jewel-studded studded comb~
+&+Ya golden, &+Cj&+ce&+mw&+Me&+Bl&+Y-studded comb&N~
+&+YA golden, &+Cj&+ce&+mw&+Me&+Bl&+Y-studded comb rests at the center of the &+Wslab&+Y, bearing neatly-thredded &+Ldark hair&+G.~
+~
+8 24 1 0 14 0 0 16401 32768 0 0
+0 0 0 0 0 0 0 0
+0 425000 100
+E
+golden jewel jewel-studded studded comb~
+&+YThis fine, intricately-crafted golden comb has several gems
+&+Yof multiple colors studded across the handle. Several long
+&+Ystrands of &+Ld&+ya&+Lr&+yk h&+La&+yi&+Lr&+Y have been maticulously, neatly woven
+&+Ythrough the teeth.
+&+YJust below the jewels is inscribed the name 'Ireena Kolyana Zarovich'
+~
+#59128
+fallen door epitaph~
+&+La fallen &Ndoor&N~
+&+LA fallen &Nstone &+Ldoor bearing an &+mepitaph&+L is partially concealed by the &+gf&+Go&+gg&+L.~
+~
+13 11 5 0 11 0 4096 0 0 0 0
+0 0 0 0 0 0 0 0
+200 0 88
+E
+fallen door epitaph~
+&+LThe door of this crypt is off its &+ciron &+Lhinges and lies upon
+&+Lthe &+Gfog-swirled &+Lcatacomb floor.
+&+LCloser inspection reveals the &+mepitaph&+L has been recently mounted:
+
+       &+mIreena Kolyana
+             &+mWife
+~
+#59129
+epitaph~
+&+Lan &+gepitaph&N~
+&+LAn &+gepitaph&+L inscribed on the northern stone door identifies the crypt of &+gD&+rh&+ga&+rv&+gi&+rt &+gU&+rt&+gh&+ru&+gr&+rl&+ga&+rn&n~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+             &+gDhavit The Builder
+&+rThou Standeth Admist A Monmument To His Life
+~
+#59130
+uncovered hidden marble lever~
+&+La hidden &+Wm&Na&+Lr&+Wble &+Llever&N~
+&+LAn uncovered lever &+Wprotrudes from the base of the ma&+Lr&Nb&+Wle slab&+L.~
+~
+29 38 3 0 7 0 4096 0 0 0 0
+340 59271 5 1 0 0 0 0
+0 0 100
+E
+uncovered hidden marble lever~
+   &+WA stubby shaft of reinforced marble protrudes from the side of the
+&+Wbase of this marble slab, forming a secret lever.
+~
+#59131
+epitaph~
+&+yan &+Yepitaph&n~
+&+yAn &+Yepitaph&+y inscribed on the western stone door identifies the crypt of &+YI&Na&+Yn&nc&+Yu D&Nu&+Yd&Nn&+Yi&nc&+y.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+   &+YIancu Dudnic
+&+YDog  Sled  Champion
+   &+YUnjustly Slain
+~
+#59132
+epitaph~
+&+Lan &+Mepitaph&N~
+&+MAn &+Lepitaph&+M inscribed on this stone door identifies the crypt of &+LS&+Ma&+Ls&+Mh&+La I&+Mv&+Ll&+Mi&+Ls&+Mk&+Lo&+Mv&+La.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+15 59268 7 0 0 0 0 0
+0 0 100
+E
+epitaph~
+&+MSasha Ivliskova
+&+M     Wife
+~
+#59133
+epitaph~
+&+Can &+cepitaph&N~
+&+LAn &+Cepitaph&+L inscribed on the southern stone door identifies the crypt of &+CPatrina Velikovna&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+     &+CPatrina Velikovna
+            &+CWife
+~
+#59134
+epitaph~
+&+Ran &nepitaph&N~
+&+LAn &+Repitaph&+L inscribed on the southern stone door identifies the crypt of &+RSir Ulrich Bucaravich&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+&+RSir Ulrich Bucaravich
+~
+#59135
+epitaph~
+&+Lan &+repitaph&+L~
+&+LAn &+repitaph&+L inscribed on the eastern stone door identifies the crypt of &+rStephan Gregorovich&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+         &+rStephan Gregorovich
+&+rFirst Counselor to Baron von Zarovich
+~
+#59136
+dog collar jeweled name tag hektor~
+&+ya dog collar with a &+Rj&+re&+Mw&+me&+Bl&+ce&+Cd &+yname tag that reads &+c'&+YHektor&+c'~
+&+yA thick leather dog collar with a &+Rj&+re&+mw&+Me&+Bl&+ce&+Cd &+cname tag has been left here.~
+~
+9 14 3 0 11 0 4096 16389 0 0 0
+5 0 0 0 0 0 0 0
+0 125000 100
+E
+dog collar jeweled name tag hektor~
+&+yA well-crafted thick, buckled leather dog collar attaches under a
+&+Csilver&+y plate covered in &+Rj&+re&+Mw&+me&+cl&+Bs &+yreading &+c'&+YHektor&+c.'
+~
+#59137
+epitaph~
+&+ran &+bepitaph&N~
+&+bAn &+repitaph&+b inscribed on this stone door identifies the crypt of &+rKhuden Doranal&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+        &+bKhuden Doranal
+&+bAscetic Monk of the Ectarines
+~
+#59138
+epitaph~
+&+Wan &+Repitaph&N~
+&+RAn &+Wepitaph&+R inscribed on this stone door identifies the crypt of &+WA&+rr&+Wd&+ra&+Wn K&+rh&+Wa&+rr&+Wk&+ro&+Wv~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+  &+RArdan Kharkov
+&+WChef to the Court
+~
+#59139
+epitaph~
+&+ran &+me&+rp&+mi&+rt&+ma&+rp&+mh~
+&+rAn &+mepitaph&+r inscribed on this stone door identifies the crypt of &+mIvan Pietroviska&+r.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+     &+rIvan Pietroviska
+&+mBeloved of Anna Philippia
+~
+#59140
+epitaph~
+&nan &+Wepitaph&N~
+&NAn &+Wepitaph&N inscribed on this door identifies the crypt of &+WPrefect Cyril Remylich&n.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+        &+WPrefect Cyril Remylich
+    &+WBeloved of Barov and Ravenovia
+&+WHigh Priest of the Order of the Raven
+~
+#59141
+reclined undisturbed skeleton~
+&na reclined &+Wskeleton&N~
+&nAn undisturbed &+Wskeleton &nreclines on a huge slab of &+Wma&nr&+Lb&+Wle&+m.~
+~
+15 10 3 0 7 0 0 0 0 0 0
+20 0 0 20 0 0 0 0
+0 0 100
+E
+reclined undisturbed skeleton~
+&+W   This skeleton reclines across the bier of the marble slab showing
+&+Wno signs of disturbance or desecration.
+~
+#59142
+prefect's prefects vestments knights raven~
+&+Wprefect's vestments of the &+rKnights of the Raven&N~
+&+WSome bright white holy vestments lay here, uncorrupted.~
+~
+9 3 3 0 14 0 67109888 9 66 33554848 0
+125 0 0 3 0 0 0 0
+0 300555 100 8192 0 0 33554432
+E
+prefect's prefects vestments knights raven~
+   &+WA long white chasuble - a circular outer robe with a hole
+&+Win the center for the head, designed to be worn over clothing,
+&+Warmor, or another robe. The front of the garment is embroidered
+&+Wwith white thread, forming holy symbols of good deities
+&+Winterspersed with white ravens.
+   &+WFormerly worn by the head of the church in Barovia, these
+&+Wvestments are ecclesiastical garb that were a common badge of
+&+Wfaith for the spiritual leaders of the Knights of the Raven.
+~
+A
+57 -1
+A
+35 6
+#59143
+gory heart talisman red dragon~
+&+ra &+Rg&+ro&+Rr&+ry &+mh&+Re&+ma&+Rr&+mt &+rtalisman of a &+Rred dragon&N~
+&+rA &+Rg&+ro&+Rr&+ry &+mh&+Re&+ma&+Rr&+mt &+rtalisman of a &+Rred dragon&N lies here.~
+~
+4 2 3 0 0 0 33554497 5 64 0 0
+60 12 12 108 0 0 0 0
+2 45000 100 536870912 4194305 0 0
+E
+gory heart talisman red dragon~
+   &+rThe large, fleshy heart of a red dragon has dried, shriveled and
+&+rpetrified into this nearly-black hunk of gnarled flesh. A single
+&+rsilver chain pierces through the top, allowing the grotesque
+&+rknot to be worn as a talisman.
+~
+A
+23 -5
+A
+35 5
+#59144
+unstable wall~
+&+Lan unstable &Nwall&N~
+&+LA no-show unstable wall&N~
+~
+29 15 3 0 7 0 2 0 0 0 0
+70 59279 3 1 0 0 0 0
+0 0 100
+E
+unstable wall~
+&+L   The western wall of this crypt is made of unstable, packed earth and looks
+&+Llike it could collapse with a strong enough blow.
+~
+#59145
+defaced epitaph~
+&+La defaced &Nepitaph&N~
+&+LA defaced &Nepitaph&+L on the south stone door has been &Nc&+Lh&Ni&+Lp&Np&+Le&Nd&+L away and is now unreadable.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+defaced epitaph~
+   &+LThis epitaph has been intentionally scratched and chipped away and is
+&+Lno longer readable.
+~
+#59146
+epitaph~
+&+Lan &+Yepitaph&N~
+&+LAn &+Yepitaph&+L on this stone door identifies the crypt of &+YThorgen the Grasping&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+    &+YThorgen the Grasping
+  &+YGold Is His Only Legacy
+~
+#59147
+small chest~
+&+ya small chest&N~
+&+yAn open, small chest has been left here, face-down.~
+~
+15 15 3 0 7 0 0 16385 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+#59148
+single gold coin~
+&na single &+Ygold &Ncoin&N~
+&+YA single gold coin has been left here.~
+~
+20 24 3 0 7 0 0 0 0 0 0
+0 0 1 0 0 0 0 0
+0 0 100
+E
+single gold coin~
+&+YThis gold coin is singular.
+~
+#59149
+epitaph~
+&+Lan &+Re&+Yp&+Ri&+Yt&+Ra&+Rp&+Yh&N~
+&+LAn &+Re&+Yp&+Ri&+Yt&+Ra&+Yh &+Linscribed on this stone door identifies the crypt of &+RK&+Yi&+Rn&+Yg &+RD&+Yo&+Rs&+Yt&+Rr&+Yo&+Rn&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+        &+YKing Dostron
+  &+RHellborn and Hellbound
+~
+#59150
+ashes long dead king ash~
+&+Lashes of a long dead king&N~
+&+LA small pile of ash sits at the center of the &+Wma&nr&+Lb&+Wle slab&+L.~
+~
+8 5 2 0 7 0 0 16385 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+ashes long dead king ash~
+&+LThe gray dust carries a faint, unnatural chill, as though some remnant
+&+Lof the king's tragic reign still clings to it. Those who draw near often
+&+Lreport a whisper of old authority in their minds, a ghostly echo of
+&+Lcommands once obeyed by thousands. Legends claim that if the ashes are
+&+Lever disturbed, the spirit of Dostran may stir again - whether in sorrow,
+&+Lwrath, or something far darker.
+~
+#59151
+epitaph~
+&+Lan &+Bepitaph&N~
+&+LAn &+Bepitaph &+Linscribed on this stone door identifies the crypt of &+BJannes&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+     &+BJannes
+~
+#59152
+epitaph~
+&+Lan &+Re&+Lp&+Ri&+Lt&+Ra&+Lp&+Rh~
+&+LAn &+Re&+Lp&+Ri&+Lt&+Ra&+Lp&+Rh&+L inscribed on the east stone door reveals the crypt of &+RS&+La&+Rt&+Le&+Rr&+Li&+Rs &+LT&+Ra&+Lu&+Rl&+L.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+epitaph~
+        &+RSateris Taul
+      &+LLast of Her Line
+~
+#59153
+skeletal remains~
+&+Ws&Nk&+We&Nl&+We&Nt&+Wa&Nl remains&N~
+&+WS&Nk&+We&Nl&+We&nt&+Wa&Nl remains litter the top of the &+Wm&Na&+Wr&+Lb&+Wle slab&N.~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+#59154
+gold signet ring~
+&+Ya gold, signet ring&N~
+&+YAn old, dusty signet ring made of sparkling gold has been left here.~
+~
+8 24 1 0 7 0 4096 16385 0 0 0
+0 0 0 0 0 0 0 0
+0 250000 100
+E
+gold signet ring~
+   &+YThis tiny signet ring has an unknown crest of an ancient family on its face.
+&+YIt looks to be made of high-quality gold and is likely quite valuable.
+~
+#59155
+tiny box rouge~
+&+La tiny box of &+Rrouge&N~
+&+LA tiny box of &+Rrouge&+L makeup has been left here.~
+~
+8 5 1 0 13 0 4096 16385 0 0 0
+0 0 0 0 0 0 0 0
+0 200000 100
+E
+tiny box rouge~
+&+L   This tiny wooden box is full of a vibrant red &+Rrouge&+L of the purest quality.
+~
+#59156
+old vial quality perfume~
+&+ma vial of &+Yquality perfume&N~
+&+mAn old vial of &+Yquality perfume&+m has been left here in the &Ndust&+m.~
+~
+8 7 1 0 14 0 4096 16385 0 0 0
+0 0 0 0 0 0 0 0
+0 155000 100
+E
+old vial quality perfume~
+   &+MThis tiny, corked bottle is still full of a deeply-aromatic perfume
+&+Mof exquisite quality.
+~
+#59157
+gold locket~
+&+Ya gold locket that bears the name 'Strahd'&N~
+&+YA gold locket that bears the name 'Strahd' has been left here.~
+~
+8 24 2 0 15 0 4096 16385 0 0 0
+0 0 0 0 0 0 0 0
+0 800000 100
+E
+gold locket~
+   &+YThis small gold locket is emblazoned with the depiction of a raven
+&+Yclutching a long-stemmed rose, under which the name -Strahd- is engraved.
+&+YThe locket gives no hints of magic, but is quite heavy for its size and
+&+Ysuggests it is quite valuable.
+~
+#59158
+journal~
+&+ya small journal&N~
+&+yA small, partially-ruined journal has been left here in the &Ndust&+y.~
+~
+8 15 3 0 7 0 4096 16385 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+journal~
+   &+yThe journal is blank and water-damaged, except for the last page:
+
+     &+y"He tells me what a good wife I'd be.  If only... if only his heart
+   &+ywas not pledged to another. My own heart, already still, turned black
+   &+ythat day. he has brought me here, into this silent grave. My passion
+   &+yhas blossomed to hate. I'd destroy him if I could, yet his power over
+   &+yme is uncontestable. He lets me suffer this way when he could simply
+   &+ycommand me to love him. How I hate him.
+
+     &+yIf you are reading this, I am destroyed. You can destroy Strahd if
+   &+yyou are strong. Find the Dayheart and destroy it. Perhaps you'll also
+   &+yfind the Sunsword, Strahd's bane. Unprotected by the Dayheart, his
+   &+yflesh is vulnerable to the light I forswore for him, in vain."
+~
+#59159
+column proc~
+&+Lno-show green-eyed column proc&N~
+&+Lno-show green-eyed column proc is here.~
+~
+5 15 3 0 7 0 134221826 8192 0 0 0
+10 5 5 0 0 112112 60 15
+0 0 100
+E
+_room_msg~
+&N$n's &+Geyes unleash beams of burning green light at $N!
+~
+E
+_victim_msg~
+&N$n's &+Geyes unleash two beams of burning green light at YOU!&N
+~
+A
+58 -3
+A
+54 125
+#59160
+spectral halberd~
+&na &+Ls&Np&+Le&nc&+Lt&Nr&+La&Nl halberd&N~
+&+LA half-visible &Nhalberd &+Lwith a wicked &Nb&+Ll&Na&+Ld&Ne &+Lfloats here.~
+~
+5 1 4 0 7 0 4194304 8193 64 0 0
+8 6 6 0 0 0 0 0
+0 55000 100
+E
+spectral halberd~
+   &+LThis halberd is composed of a long wooden pole fitted with a large
+&+Liron spearhead and axe blade. The halberd fades in and out of existence,
+&+Lalmost like a ghost.
+~
+A
+18 5
+A
+19 5
+#59161
+ghost hood~
+&+bthe &Nghost &+bhood&N~
+&+bThe &nghost &+bhood floats here eerily.~
+~
+9 1 3 0 15 0 4128 17 64 0 0
+10 0 0 2 0 0 0 0
+0 200000 100 0 0 0 2048
+E
+ghost hood~
+&+bThe &Mghost&+b hood is a tattered, &+Lash-gray&+b cowl that seems woven of
+&+bmist itself. When lifted, its folds drift like &Nsmoke&+b in still air,
+&+band its edges dissolve into faint wisps that never fully settle.
+&+bTo the touch, it feels weightless and &+Bcold&+b, as though it remembers
+&+bthe grave from which it came. Tiny threads of &+Csilver&+b embroidery,
+&+bhalf-faded and frayed, form a pattern of &+mr&+Mu&+mn&+Me&+ms&+b around the hem -
+&+bsymbols of mourning and loss.
+&+LThose who gaze too long into the hood's shadow claim to see faint,
+&+Lflickering faces of the &n&+mdead&+L.
+~
+A
+32 5
+A
+36 5
+#59162
+sigil knights raven~
+&+La &+csigil&+L of the &+rKnights of the Raven&N~
+&+LA &+csigil &+Lof the &+rKnights of the Raven&N has been left here.~
+~
+4 36 1 0 14 0 0 11550721 64 0 0
+60 11 11 495 0 0 0 0
+0 66666 100
+E
+sigil knights raven~
+   &+LThis sigil of the Knights of the Raven depicts a black raven
+&+Lclutching a long-stemmed rose in its talons.
+~
+A
+5 10
+A
+17 -50
+#59163
+strahd proc1 proc~
+&+LStrahd (human) no-show proc1~
+&+LStrahd (human) no-show proc1 is here.~
+~
+5 15 3 0 7 0 134221826 8192 0 0 0
+14 6 6 0 5 244078351 60 25
+0 0 100
+E
+_room_msg~
+&+rCount Strahd &Nproclaims &-L&+r'Guardians of the Tomb, protect my brother Sergei's final place of rest!'&N
+~
+A
+58 -5
+A
+34 100
+#59164
+strahd proc2 proc~
+&+LStrahd (human) no-show proc2~
+&+LStrahd (human) no-show proc2 is here.~
+~
+5 15 3 0 7 0 134221826 8192 0 0 0
+14 6 6 0 5 119120121 60 25
+0 0 100
+E
+_room_msg~
+&N&+rCount Strahd&N's face twists into a snarl as he screams &-L&+r'Death! Death to all who oppose me!'&N
+~
+A
+35 100
+A
+54 125
+#59165
+giant bronze statue~
+&+ya giant bronze statue of a king&N~
+&+yA giant bronze statue of a king stands here, sword-arm outstretched to meet the queen.~
+~
+13 20 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+giant bronze statue~
+   &+yThis massive bronze statue sits in the southern alcove of this landing
+&+yin a glorious pose of conquest - extending his right, sword-wielding arm
+&+yout high above the landing where it meets the queen's spearhead.
+~
+#59166
+bronze statue queen~
+&+ya giant bronze statue of a queen&N~
+&+yA giant bronze statue of a queen stands here, extending a spear out to the king.~
+~
+13 20 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+bronze statue queen~
+   &+yThis magnificent, bronze statue ornately depicts a queen wielding a long
+&+yspear that extends above the landing, meeting the king's sword.
+~
+#59167
+magical blue curtain~
+&+Ba magical blue curtain~
+&+BA magical blue curtain hangs here, suspended between the king's sword and queen's spear.~
+~
+25 15 3 0 7 0 0 0 0 0 0
+59303 2 -1 0 0 0 0 0
+0 0 100
+E
+magical blue curtain~
+&+B   This magical blue curtain almost moves like magical water, floating
+&+Band glistening beautifully above the landing, despite the utter pitch-blackness
+&+Bof the surrounding area.
+~
+#59168
+coffin~
+&+Wa magnificent ma&nr&+Lb&Nl&+We coffin &+cinlaid with &+Csilver&N~
+&+WA magnificent ma&Nr&+Lb&Nl&+We coffin &+cinlaid with &+Csilver &+Wis placed in a &+Rr&+ra&+Mi&+mn&+Bb&+co&+Gw&N,~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+coffin~
+   &+WThis magnificent, polished coffin is made entirely of marble and
+&+Wstylized with a silver-inlaid image of a raven clutching a long-stemmed
+&+Wrose in its talons.  A &+Csilver&+c-inlaid &+Winscription reads:
+              &+CRavenovia Von Zarovich
+~
+#59169
+magnificent marble coffin~
+&+Wa magnificent m&Na&+Lr&Nb&+Wle coffin &+cinlaid with &+Csilver&N~
+&+WA magnificent m&Na&+Lr&Nb&+Wl&Ne &+Wcoffin &+cinlaid with &+Csilver&+W is placed in a beam of &+Ylight&+W.~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+magnificent marble coffin~
+   &+WThis huge coffin is hinged by polished &+Ybrass &+Wfittings and decorated
+&+Wwith ornate, silver inlays depicting a wolf howling behind a downward-
+pointed &+Wsword.  An &+Csilver-&+cinlaid &+Winscription reads:
+                  &+CBarov Von Zarovich
+~
+#59170
+mummified remains~
+&+ym&Nu&+ymm&Ni&+yf&Nied &+Lremains~
+&+ySome m&Nu&+ymm&ni&+yf&nied &+Lremains &+yhave been left here.~
+~
+15 15 3 0 7 0 524288 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+mummified remains~
+&+y   These remains were cured and wrapped with linens before being
+&+yentombed, resulting in a relatively-well preserved skeleton.
+~
+#59171
+saint ecaterina burial shroud~
+&+WS&+ra&+Wi&+rn&+Wt E&+rc&+Wa&+rt&+We&+rr&+Wi&+r&+Wn&+ra&+W's &+Lburial &+Wshroud&N~
+&+WA majestic, magical shroud floats here, dancing in the breeze.~
+~
+9 3 3 0 15 0 0 9 32768 0 0
+15 0 0 0 0 0 0 0
+0 225000 100 0 0 0 8192
+E
+saint ecaterina burial shroud~
+   &+WWhen Ecaterina was seventeen, she sought to martyr herself in a hopeless
+&+Wfight against orc barbarians so she could see Pelor, but she triumphed
+&+Winstead. Victorious, she founded several Ecaterine convents.
+   &+WWhen she was thirty-seven, Ecaterine decided to establish one of her
+&+Wconvents near Barovia. Despite being nightly accosted by vicious wolves,
+&+Whaunts, and the occasional undead avenger, Ecaterine managed to accomplish
+&+Wher goal. After making certain that the convent, located in a well-defended
+&+Wtower, was secure against the kind of threats she had come to expect, she
+&+Wleft to report her success. When she returned a month later, she found the
+&+Wtower a burnt out shell with nothing inhabiting it but the ghosts of slain
+&+Wsisters. Ecaterine is said to have gone mad, and none ever saw her alive
+&+Wagain, though it was whispered she was captured and buried alive in a prison
+&+Wbelow Castle Ravenloft. All that remains is this shroud.
+~
+A
+54 60
+A
+13 50
+#59172
+band spell enhancement~
+&+Ba band of &+Yspell &+cen&+Bha&+Cnce&+Bme&+cnt&N~
+&+BA tiny, yet powerful, ring of spell enhancement sits here &+Mglowing&+B.~
+~
+3 23 1 0 14 0 4097 3 64 0 0
+5 -1 -1 175 0 0 0 0
+0 155555 100
+E
+band spell enhancement~
+   &+CThis tiny electrum ring has a small engraving of an &+Yexplosion &+Con its
+&+Cface and looks to be made of one solid piece. The ring pulses with a magical glow.
+~
+A
+57 -1
+A
+37 5
+#59173
+onyx figurine wolf~
+&+La small onyx figurine in the shape of a wolf&N~
+&+LA small, onyx figurine in the shape of a wolf sits here&+b, glowing faintly.~
+~
+29 15 3 0 7 0 1 0 0 0 0
+10 59301 5 0 0 0 0 0
+0 0 100
+E
+onyx figurine wolf~
+&+b                 .   &+L.&+b . &+LThis tiny statuette is intricately-
+&+b              .     &+L/ V\  carved and shines with a magical
+&+b               :  &+L/ `  /  luster. Faint speckles of blue
+&+b            .    &+L<<   |  light rise from the statue, like
+&+b          .    : &+L/'  }|&+b.&+L smoke from a flame. The beast is
+&+b     .      : &+L_/`     }  is depicted flawlessly in resemb-
+&+b          : &+L,/        ,  -lance to Svalich wolves that
+&+b  :     .  &+L/   `\ `\ /  guard the forests engulfing the
+&+b      . : &+L(      ) | | &+b.&+LBarovian countryside. No larger
+&+b.&+L,________|  ._/_  | |&+b. &+Lthan a man's fist, this tiny relic
+&+L<__________\______)\__)  &+Lholds a curious magic.
+~
+T
+129 7 2 300
+#59174
+magical blue curtain~
+&+Ba magical blue curtain&N~
+&+BA magical blue curtain hangs here, draped from the statues in the western landing.~
+~
+25 15 3 0 7 0 0 0 0 0 0
+59161 4 -1 0 0 0 0 0
+0 0 100
+E
+magical blue curtain~
+&+B   This magical blue curtain flows like water, glistening with magic
+&+Bsparkles.  It hangs suspended from the two bronze statues in the landing,
+&+Bbrushing against any of those who pass through.
+~
+#59175
+marble extra large extra-large slab~
+&+Wan extra-large m&Na&+Lr&Nb&+Wl&Ne &+Wslab&N~
+&+WAn extra-large ma&+Lr&Nb&+Wle slab sits at the center of a stepped foyer.~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+marble extra large extra-large slab~
+   &+WThis immaculate slab of beautiful white marble is enormous - roughly
+&+Wtwice the size needed to hold a single coffin and was likely originally
+&+Wcut to support two.
+~
+#59176
+magnificent jewel encrusted jewel-encrusted coffin~
+&+Wa magnificent &+Rj&+re&+Mw&+me&+Yl&+g-&+Ge&+Bn&+cc&+Cr&+Yu&+Rs&+rt&+Me&+md &+Wcoffin~
+&+WA magnificent, white coffin encrusted in &+Rj&+re&+Mw&+me&+Bl&+cs&+W sits here.~
+~
+15 6 4 0 14 0 0 16385 0 0 0
+300 5 0 0 0 0 0 0
+666 10000000 100
+E
+magnificent jewel encrusted jewel-encrusted coffin~
+   &+WThis magnificent, white-painted coffin is nearly covered in a
+&+Wgreat many jewels, carefully fitted to stylize the portrait of
+&+Wthe diamond head and bust of a young prince - Sergei von Zarovich
+&+Wgazing off into the distance with sapphire eyes and hair of inlaid
+&+Wgold.  The entire top rim of the coffin is covered in tiny rubies
+&+Yand emeralds, stylized to depict intertwined roses. However heavy,
+&+Ythis coffin itself is quite a treasure.
+~
+#59177
+suit ruby full plate full-plate knights raven~
+&+Ra suit of &+rr&+Ru&+rb&+Ry full-plate of the &+rKnights of the Raven&N~
+&+RA sparkling suit of ruby-encrusted full platemail has been left here.~
+~
+3 31 4 0 14 0 537198593 9 64 0 0
+60 999 999 481 0 0 0 0
+5 1000000 100 512 0 0 33554432
+E
+suit ruby full plate full-plate knights raven~
+   &+rThis dazzling suit of full platemail has been maticulously fitted
+&+rwith sparkling rubies, covering the armplates, legplates and breastplate.
+&+rThe arrangement of rubies around the chest of the breastplate form the
+&+rbust of a stylized raven, scintillating with luxury.
+~
+A
+17 -250
+A
+24 -9
+#59178
+marble statues ancient kings~
+&+Wtwo ma&Nr&+Lb&+wl&Ne &+Wst&Na&+Wt&+Lu&Ne&+Ws of an&Nc&+Li&+We&Nn&+Wt ki&Nn&+Wgs~
+&+WTwin g&Ni&+La&+Wnt m&Na&+Lr&+Wb&Nl&+We st&Na&+Wtu&+Le&+Ws of an&Nc&+Li&Ne&+Wnt kings sta&Nn&+Wd in the e&Na&+Wst and west alc&+Lo&Nv&+Wes.~
+~
+13 38 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+marble statues ancient kings~
+   &+WTwo identical giant m&Na&+Lr&+Wble statues, roug&+Lh&Nl&+Wy thirty feet tall,
+&+Wstand in the east a&Nn&+Ld&+W west alcoves. The statues &+La&Nr&+We of moderate
+&+Wdetail, rou&ng&+Lh&+Wly depicting crowned rulers in simple robes, &+Ls&Nt&+Wanding
+&+Wproud&Nl&+Ly&+W with their hands at their sid&+Le&Ns&+W.
+~
+#59179
+tremendous marble greatsword great sword~
+&+Wa tremendous m&Na&+Lr&+Wble greatsword&N~
+&+WA tremendous m&na&+Lr&+Wble greatsword stands upright, dug into the center alcove.~
+~
+29 38 3 0 7 0 0 0 0 0 0
+340 59308 2 0 0 0 0 0
+0 0 100
+E
+tremendous marble greatsword great sword~
+   &+WThis carved marble greatsword is about twenty feet long, currently
+&+Wdug into the earth.  This sword is so massive, pulling it would be a
+&+Wtremendous feat of strength in itself.
+~
+#59180
+trap~
+&+L1-time teleport trap to 59222~
+&+L1-time trap to 59222~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59222 3 1 0 0 0 0 0
+0 0 100
+#59181
+trap~
+&+L1-time teleport trap to 59257~
+&+L1-time trap to 59257~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59257 3 1 0 0 0 0 0
+0 0 100
+#59182
+trap~
+&+L1-time teleport trap to 29224~
+&+L1-time trap to 59224~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59224 2 1 0 0 0 0 0
+0 0 100
+#59183
+trap~
+&+L1-time teleport trap to 59258~
+&+L1-time teleport trap to 59258~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59258 4 1 0 0 0 0 0
+0 0 100
+#59184
+trap~
+&+L1-time teleport trap to 59256~
+&+L1-time trap to 59256~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59256 3 1 0 0 0 0 0
+0 0 100
+#59185
+trap~
+&+L1-time teleport trap to 59255~
+&+L1-time trap to 59255~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59255 2 1 0 0 0 0 0
+0 0 100
+#59186
+trap~
+&+L1-time teleport trap to 59260~
+&+L1-time trap to 59260~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59260 2 1 0 0 0 0 0
+0 0 100
+#59187
+trap~
+&+L1-time teleport trap to 59264~
+&+L1-time trao tp 59264~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59264 2 1 0 0 0 0 0
+0 0 100
+#59188
+trap~
+&+L1-time teleport trap to 59254~
+&+L1-time trap to 59254~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59254 2 1 0 0 0 0 0
+0 0 100
+#59189
+trap~
+&+L1-time teleport trap to 59266~
+&+L1-time teleport trap to 59266~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59266 4 1 0 0 0 0 0
+0 0 100
+#59190
+trap~
+&+L1-time teleport trap to 59259~
+&+L1-time teleport trap to 59259~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59259 4 1 0 0 0 0 0
+0 0 100
+#59191
+trap~
+&+L1-time teleport trap to 59261~
+&+L1-time trap to 59261~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59261 3 1 0 0 0 0 0
+0 0 100
+#59192
+trap~
+&+L1-time teleport trap to 59265~
+&+L1-time teleport trap to 59265~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59265 4 1 0 0 0 0 0
+0 0 100
+#59193
+trap~
+&+L1-time teleport trap to 59250~
+&+L1-time trap to 59250~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59250 3 1 0 0 0 0 0
+0 0 100
+#59194
+trap~
+&+L1-time teleport trap to 59262~
+&+L1-time teleport trap to 59262~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59262 4 1 0 0 0 0 0
+0 0 100
+#59195
+iron portcullis~
+&+ra huge &+ciron &+rportcullis&N~
+&+rA huge &+ciron &+rportcullis fastened into the stone &+rb&+Ll&+ro&+Lc&+rk&+Ls &+rthe northern passage.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+340 59307 0 1 0 0 0 0
+0 0 100
+E
+iron portcullis~
+   &+rThis massive iron portcullis is bolted into the stone blocks
+&+ron either side of the northern passage, suggesting that if it
+&+ronce opened, before being rusted shut, it swung southwards.
+~
+#59196
+massive two-handed two handed stone sword~
+&+Wa m&Na&+Wss&Ni&+Lv&+We two-ha&Nn&+Ld&Ne&+Wd m&Na&+Lr&+Wble sword&N~
+&+WA massive two-handed marble sword is here.~
+~
+5 38 3 0 7 0 138936320 8193 0 0 0
+13 8 6 0 0 23217217 60 25
+0 0 100
+E
+_room_msg~
+&N$n &+Wgrabs $N &+Wwith its massive hand and throws them into the ground!
+~
+E
+_victim_msg~
+&N$n grabs YOU with its massive hand!
+&n$n throws you, crashing hard into the ground with stunning force!
+~
+A
+31 40
+A
+58 -5
+#59197
+strahd bat proc proc1~
+&+LStrahd (bat form) proc1&N~
+&+LStrahd (bat form) proc1 is here.~
+~
+5 15 3 0 7 0 134221826 8192 0 0 0
+14 5 6 0 0 25025025 60 25
+0 0 100
+E
+_room_msg~
+&+RCount Strahd &Nreappears behind $N!
+&+RCount Strahd buries his fully-protruded fangs into $N's neck!
+~
+E
+_victim_msg~
+&+RCount Strahd &Nreappears behind YOU!
+&+RCount Strahd buries his fully-protruded fangs into YOUR neck!
+~
+A
+58 -5
+A
+35 100
+#59198
+strahd bat proc proc2~
+&+LStrahd (bat form) proc2&N~
+&+LStrahd (bat form) proc2 is here.~
+~
+5 15 3 0 7 0 134221826 8192 0 0 0
+14 5 6 0 0 101185283 60 25
+0 0 100
+E
+_room_msg~
+&+RCount Strahd wraps his wings around $N!
+&+RCount Strahd screeches &-L&+R'Behold, $N&-L&+R, your darkest fears!'&N
+~
+E
+_victim_msg~
+&+RCount Strahd &+Rwraps his wings around YOU!
+&+RCount Strahd screeches &-L&+R'Behold, $N, your darkest fears!'&N
+You are suddenly overwelmed by rapid hallucinations of your own demise!
+~
+A
+54 125
+A
+34 100
+#59199
+unstable wall~
+&+Lan unstable &nwall~
+&+Lno-show unstable wall&N~
+~
+29 15 3 0 7 0 2 0 0 0 0
+70 59299 1 1 0 0 0 0
+0 0 100
+E
+unstable wall~
+&+L   The eastern wall of this tunnel is made of unstable, packed earth and looks
+&+Llike it could collapse with a strong enough blow.
+~
+#59200
+bloodstained tentacus~
+&+ra bloodstained t&+Re&+rn&+Rt&+ra&+Rc&+ru&+Rs&N~
+&+rA five-tailed t&+Re&+rn&+Rt&+ra&+Rc&+ru&+Rs&N lies here in a &+rpool of blood&N.~
+~
+5 13 4 0 8 0 0 8193 64 0 0
+14 3 7 0 0 0 0 0
+3 5000 100
+E
+bloodstained tentacus~
+   &+LThis tentacus resembles a five-headed &+rwhip&+L with shortened tails
+&+Lthat have each been topped with double-edged &+Cblades&+L the size of
+&+Ldaggers. The entire weapon is caked in brownish-red dried &+rblood&+L.
+~
+A
+19 5
+A
+32 5
+#59201
+jagged giant ant pincer~
+&+Ra jagged &+yg&+Ri&+ya&+Rn&+yt a&+Rn&+yt &+Rpincer&N~
+&+RA jagged &+yg&+Ri&+ya&+Rn&+yt a&+Rn&+yt &+Rpincer&N lies here.~
+~
+5 46 5 0 7 0 134217728 8193 32768 0 0
+9 3 7 0 2 0 0 0
+1 200 100
+E
+jagged giant ant pincer~
+   &+LThis giant pincer is roughly the size of a shortsword, but much girthier.
+&+LThe jagged pincer comes to a crescent-shaped edge and still drips with
+&+Lthe acid of a giant ant.
+~
+A
+19 5
+A
+2 5
+#59202
+spectral coin fortune ravenloft~
+&+La &Ns&+Lp&Ne&+Lc&Nt&+Lr&Na&+Ll coin called &+W'&+rA Fortune of Ravenloft&+W'&n~
+&+LA curious, &Nh&+La&Nl&+Lf&N-&+Li&Nn&+Lv&Ni&+Ls&Ni&+Lb&Nl&+Le &+Ycoin&+L floats here, &Nspinning slowly &+Cand calling..~
+~
+8 1 1 0 15 0 67117088 8404993 32768 0 0
+0 0 0 0 0 0 0 0
+0 2200000 100
+E
+spectral coin fortune ravenloft~
+           &+L        _.-'--`--'-._
+           &+L     .'`   E  N  L   `'.
+           &+L    /   V           O   \
+           &+L  /`  A               F  `\
+           &+L ;  R       ,::.        T  ;
+           &+L;       _-'``(o)`-_    /\   ;
+           &+L|     ,' `:::;'-''  /\/  \  |
+           &+L|    /    / ;/     /__\_--\ |
+           &+L;  ''.::,' ;)   ..:| __ | / ;
+           &+L ;     _:`;/     .:| HH |/ ;
+           &+L  \      \\     ..::::::: /
+           &+L   `\  `===""==''{@  .::/`
+           &+L     '._   Zarovich  _.'
+           &+L        `'-..,,,..-'`
+
+&+LA &+W'&+rFortune of Ravenloft&+W'&+L is a &+Bcold,&+L s&Np&+Le&Nc&+Lt&Nr&+La&Nl &+Ycoin&+L that seems
+&+Lto absorb the &+Ylight&+L around it. Its surface is etched with the
+&+Lfaint outlines of a raven clutching a &+rrose &+Lin front of the poin-
+&+Lted spires of &+rCastle Ravenloft&+L, piercing the surrounding &+cmists&+L.
+
+&+LNotoriously rewarded by the &+rRavenloft&+L stewardship to those
+&+Lwho complete shadowy tasks, it carries an unsettling aura of
+&+Lboth reward and &+mm&+La&+ml&+Le&+mf&+Li&+mc&+Le&+mn&+Ls&+me&+L. When held, it &Nwhispers &+Lfaintly
+&+Land inaudibly, as if calling its owner to the &+cmist-enshrouded
+&+Lrealm of &+yBarovia &+Lfrom which it came. Legends say the &+Ycoin
+&+Lbrings fortune to the bearer - but always at a dark cost.
+~
+#59203
+trap~
+&+Lno-show dispel magic trap&N~
+&+LNo-show dispel magic trap&N is here.~
+~
+13 15 3 0 7 0 4098 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+T
+2317 9 4 100
+#59204
+stefania proc1~
+&+Lno-show stefania proc1&N~
+&+LNo-show stefania proc1&N lies here.~
+~
+3 15 3 0 7 0 4098 8192 0 0 0
+10 5 6 0 0 168168127 60 17
+0 0 100
+E
+_room_msg~
+&+LA raspy voice from behind the curtain echoes &-L&+M'Stefania, choke the life from $N!'
+&+MA spectre called "Stefania" &+Mreaches out and grabs $N by the throat with &+Cgh&+cos&+Ct&+cl&+Cy &+cha&+Cn&+cd&+Cs!&+M'&N
+~
+E
+_victim_msg~
+&+LA raspy voice from behind the curtain echoes &-L&+M'Stefania, choke the life from $N!'
+&+MA spectre called "Stefania" &+Mreaches out and grabs YOU by the throat with &+Cgh&+cos&+Ct&+cl&+Cy &+cha&+Cn&+cd&+Cs!&+M'&N
+~
+A
+58 -5
+A
+35 100
+#59205
+rusty metal cleaver~
+&+ya rusty metal cleaver&N~
+&+yA rusty metal cleaver&N lies here.~
+~
+5 15 3 0 7 0 0 8193 0 0 0
+1 5 3 0 0 0 0 0
+3 5000 69
+E
+rusty metal cleaver~
+   &+yThis large, iron cleaver is roughly three feet long - much larger
+&+ythan a kitchen utencil, but of similar aesthetic. The entire thing is
+&+ycoated in dark brown rust.
+~
+A
+18 4
+A
+19 4
+#59206
+saint bogdan fingerbone finger bone~
+&+WSaint &+YBogdan's &nfinger&+Wbone&N~
+An unnamed object lies here, looking lonely and forelorn.~
+~
+9 10 1 0 3 0 4096 3 32770 0 0
+5 0 0 0 0 0 0 0
+0 22000 100
+E
+saint bogdan fingerbone finger bone~
+   &+WThis fingerbone's three segments are connected at each joint with
+&+Wthreads of &+cpale silver&+W, and the joint is wrapped with hammered &+Ygold+W.
+   &+WAfter he was born, St. Bogdan was consecrated to Pelor because it seemed
+&+Whis mother might die of disase before he could be born. The consecration seemed
+&+Wto do the trick -- his mother recovered, and he was born healthy. Throughout
+&+Whis long life, his very presence seemed to bring good luck to his friends and
+&+Will luck to his foes. In the end, Saint Bogdan died of natural causes at the
+&+Wripe old age of 104.
+~
+A
+30 15
+A
+40 15
+#59207
+flask liquid night~
+&+La flask of &+bliquid night&N~
+&+LA flask of &+bliquid night&+L has been left here in the &Ndust&+L.~
+~
+10 15 3 0 7 0 4096 16385 0 0 0
+60 302 99 95 0 0 0 0
+0 0 100
+E
+flask liquid night~
+   &+LThis twisted, black flask has the words '&+bLiquid Night' &+Lwritten in
+&+Lfine blue paint.
+~
+#59208
+flask ghost touch ghost-touch oil~
+&+La flask of &ng&+Wh&No&+Ws&Nt&n-&+ctouch &+Loil&N~
+&+LA flask of &Nghost-&+ctouch&+L oil has been left here in the &Ndust&+L.~
+~
+10 7 1 0 7 0 4096 16385 0 0 0
+60 134 189 294 0 0 0 0
+0 25000 100
+E
+flask ghost touch ghost-touch oil~
+&+L   This small flask of black oil glows with a deep &+mpurple &+Lmagic mist.
+~
+#59209
+vial lichbane lich bane~
+&+Wa vial of &+Ll&+mic&+Lh&+rbane&N~
+&+WA milky-white vial of &+Ll&+mic&+Lh&+rbane&+L has been left here in the &Ndust&+L.~
+~
+10 7 1 0 14 0 4096 16385 0 0 0
+60 136 395 390 60 0 0 0
+0 100000 100
+E
+vial lichbane lich bane~
+   &+WThis vial of milky-white paste can be dabbed and rubbed onto the blade
+&+Wof an edged weapon, or quaffed, to supposedly kill liches.
+~
+#59210
+wand false life~
+&+La wand of &+mf&+Ra&+ml&+Rs&+me &+Rl&+mi&+Rf&+me&N~
+&+LA twisted, black wand of &+Rfalse &+mlife&+L has been left here in the &Ndust&+L.~
+~
+3 36 1 0 3 0 4097 16385 0 0 0
+60 5 5 377 0 0 0 0
+0 155555 100
+E
+wand false life~
+   &+LThis twisted, black wand causes dead flesh to twitch and writhe.
+~
+A
+22 -5
+#59211
+potion gaseous form~
+&+Ca potion of &+cgaseous form&N~
+&+CA potion of &+cgaseous form&+C has been left here in the &Ndust&+C.~
+~
+10 15 3 0 7 0 4096 16385 0 0 0
+60 396 0 0 0 0 0 0
+0 0 100
+E
+potion gaseous form~
+   &+CThis small, bulbous glass bottle has a small, painted marking:
+                        &+c'Gaseous Form'
+~
+#59212
+trap~
+&+L1-time teleport trap to 59081~
+&+L1-time teleport trap to 59081~
+~
+25 15 3 0 7 0 8192 0 0 0 0
+59081 4 1 0 0 0 0 0
+0 0 100
+#59213
+stone symbol tempus _id_~
+&+La stone symbol of &+rTempus&n~
+&+LA stone symbol of &+rTempus&+L has been left here, &+rhumming&+L with a strong magic.~
+~
+3 39 3 0 5 0 33554433 5 64 0 0
+60 12 12 255 0 0 0 0
+1 25000 100 16 0 0 0
+E
+stone symbol tempus~
+&+L   This stone symbol depicts an inlaid-silver sword, ablaze in front
+&+Lof a &+rpainted-red &+Lshield. A strong glow and strange vibration from
+&+Lthis symbol, however, suggest there is a much greater, hidden power
+&+Lthan meets the eye.
+~
+E
+_id_name_~
+medallion time
+~
+E
+_id_short_~
+&+Cthe medallion of &+Lt&+Ci&+Lm&+Ce&N
+~
+E
+_id_desc_~
+&+CThe medallion of &+Lt&+Ci&+Lm&+Ce &+Lhas been left here, &+Mglowing&+L brightly.
+~
+A
+32 5
+A
+18 5
+#59214
+mace terror~
+&+Lthe mace of t&+me&+Lrr&+mo&+Lr&N~
+&+LAn oversized mace stylized like a &+mb&+Ru&+mr&+Rn&+mi&+Rn&+mg &+Wskull&+L has been left here.~
+~
+5 19 4 0 15 0 129 8193 64 0 0
+7 4 6 0 0 619410 60 20
+4 100000 100 0 0 0 4096
+E
+mace terror~
+&+L   The head of this oversized mace is engulfed in an everburning, purple
+&+Lflame and stylized like a black, humanoid skull.
+~
+E
+_room_msg~
+&N$n's $q &+Mf&+rl&+Ma&+rr&+Me&+rs u&+Mp &+Lwith &+mpurple &+Mflame&+L!
+~
+E
+_victim_msg~
+&N$n's $q &+Mf&+rl&+Ma&+rr&+Me&+rs u&+Mp &+Lwith &+mpurple &+Mflame&+L!
+~
+E
+_char_msg~
+&NYour $q &+Mf&+rl&+Ma&+rr&+Me&+rs u&+Mp &+Lwith &+mpurple &+Mflame&+L!
+~
+A
+31 5
+A
+37 5
+#59215
+heavy iron axe~
+&+La heavy, iron axe&N~
+&+LA heavy, iron axe&N lies here.~
+~
+5 15 3 0 2 0 134217728 8193 0 0 0
+1 4 4 0 0 0 0 0
+4 500 100
+E
+heavy iron axe~
+   &+LA long, heavy polearm topped with a heavy, iron axe-head.
+~
+A
+18 4
+A
+19 4
+#59216
+heavy iron sword~
+&+La heavy, iron sword&N~
+&+LA heavy, iron sword&N lies here.~
+~
+5 15 3 0 2 0 0 8193 0 0 0
+5 3 6 0 0 0 0 0
+4 500 100
+E
+heavy iron sword~
+   &+LA long, heavy sword forged entirely of iron.
+~
+A
+18 4
+A
+19 4
+#59217
+bloody mantle slaughter~
+&+rthe bloody &+Lmantle&+r of &+Rs&+rl&+Ra&+ru&+Rg&+rh&+Rt&+re&+Rr&n~
+&+rThe bloody &+Lmantle&+r of &+Rs&+rl&+Ra&+ru&+Rg&+rh&+Rt&+re&+Rr&n lies here.~
+~
+3 2 4 0 7 0 33554432 1025 64 0 0
+60 666 666 163 0 0 0 0
+-100 500000 100 0 2048 0 0
+E
+bloody mantle slaughter~
+   &+rThis daunting cape swirls like smoke, yet is hard to the touch. It
+&+rresembles a shroud of living blood.
+~
+A
+32 5
+A
+31 5
+#59218
+no-show proc1 proc~
+&+Lno-show Vladimir Horngaard proc1&N~
+&+LNo-show Vladimir Horngaard proc1&N lies here.~
+~
+5 15 3 0 7 0 138416130 8192 64 0 0
+13 10 10 0 0 571283 60 20
+0 0 100
+E
+_room_msg~
+&N$n roars &-L&+R'GO NO FURTHER! STRAHD MUST SUFFER FOR ALL ETERNITY!'&N
+&n$n spreads his hands out and in one gesture unleashes &+La wave of darkness!
+~
+A
+31 100
+A
+34 100
+#59219
+noshow apex proc1~
+&+Lno-show Apex Vicors proc1&N~
+&+LNo-show Apex Vicors proc1&N lies here.~
+~
+5 15 3 0 7 0 134221826 8192 64 0 0
+5 6 6 0 0 102100101 60 30
+0 0 100
+E
+_room_msg~
+&N$n &Nscoffs &+B'Not so fast, $N!'
+&N$n smirks and makes a magical gesture.
+~
+A
+34 100
+A
+35 100
+#59220
+noshow apex proc2~
+&+Lno-show Apex Vicors proc2&N~
+&+LNo-show Apex Vicors proc2&N lies here.~
+~
+5 15 3 0 7 0 134221826 8192 64 0 0
+5 6 6 0 0 433407009 60 30
+0 0 100
+E
+_room_msg~
+&N$n &Nbursts out into exaggerated laughter.
+&n$n snaps his fingers.
+~
+A
+34 100
+A
+35 100
+#59221
+blade unseen~
+&+lthe blade of the unseen&N~
+&+lThe blade of the unseen&N lies here.~
+~
+5 1 3 0 15 0 8912896 8192 64 0 0
+5 20 10 0 0 0 0 0
+0 0 100
+A
+35 100
+A
+19 50
+#59222
+blade unseen~
+&+lthe blade of the unseen&N~
+&+lThe blade of the unseen&N lies here.~
+~
+5 1 3 0 15 0 8912896 8192 64 0 0
+2 20 10 0 0 0 0 0
+0 0 100
+A
+35 100
+A
+19 50
+#59223
+javelin lightning~
+&+Bthe javelin of l&+Yi&+Bg&+Yh&+Bt&+Yn&+Bi&+Yn&+Bg&N~
+&+BA javelin enshrouded with crackling arcs of lightning is stuck here, buzzing.~
+~
+5 18 3 0 15 0 33554705 8193 127 0 0
+9 3 6 0 0 563577 60 25
+0 300000 100 16 0 1048576 0
+E
+javelin lightning~
+   &+BA long, well-balanced mithril-tipped javelin is fully enshrouded in
+&+Bcrackling arcs of lightning, surging through its wielder.
+~
+E
+_room_msg~
+&N$n's $q &+Bsurges with e&+Yl&+Be&+Yc&+Bt&+Yr&+Bi&+Yc&+Bi&+Yt&+By, crackling as it arcs!
+~
+A
+32 5
+A
+18 5
+#59224
+full moon sickle~
+&+Cthe &+bfull-&+Lmoon &+Csickle&N~
+&+CThe &+bfull-&+Lmoon&+C sickle floats upright here, rotating m&+My&+Cs&+Mt&+Ci&+Mc&+Ca&+Ml&+Cl&+My&+C.~
+~
+5 22 4 0 15 0 67118080 8193 64 10915744 0
+17 3 7 0 0 93433353 60 20
+3 300000 100 8 0 0 0
+E
+full moon sickle~
+&+LThis long, moorwood polearm is affixed with a huge iron sickle in the
+&+Lshape of a full moon.  A gap between the pointy tips of the moon crests
+&+Lseems to sparkle with &+Yf&+Ll&+Yi&+Lc&+Yk&+Le&+Yr&+Ls of magical light when the sickle is swung.
+~
+E
+_room_msg~
+&N$n's $q &+Yf&+Ll&+Yi&+Lc&+Yk&+Le&+Yr&+Ls &+Lwith a &+Cmagical &+Wlight&+L...
+~
+E
+_char_msg~
+&NYour $q &+Lf&+Yl&+Yi&+Lc&+Yk&+Le&+Yr&+Ls with &+Cmagical &+Wlight&+L..
+~
+A
+57 -1
+A
+35 5
+#59225
+trap~
+&+Lunlimited teleport trap to 59319~
+&+Lunlimited teleport trap to 59319 (mass grave)~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59319 3 -1 0 0 0 0 0
+0 0 100
+#59226
+trap~
+&+Lunlimited teleport trap to 59319 (mass grave)~
+&+Lunlimited teleport trap to 59319 (mass grave)~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59319 4 -1 0 0 0 0 0
+0 0 100
+#59227
+trap~
+&+Lunlimited teleport trap to 59319 (mass grave)~
+&+Lunlimited teleport trap to 59319 (mass grave)~
+~
+25 15 3 0 7 0 4098 0 0 0 0
+59319 2 -1 0 0 0 0 0
+0 0 100
+#59228
+giant pile garbage~
+&+ya giant pile of garbage&N~
+&+yA reeking pile of old, rotting bodies and severed limbs sits at the center of the dug-out crypt.~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+giant pile garbage~
+   &+rA massive mound of garbage, earth, and bodies lays in a
+&+yhuge mound at the center of this dug-out crypt. Shreds of
+&+rclothing, some still clinging to body parts, peak out
+&+yfrom the rotting heap. Large insects writhe across the
+&+rmound, with worms and roaches cohabitating amidst the
+&+ybounty of flesh and decay.
+~
+#59229
+black coffin~
+&+La &+Wshining&+L black coffin of &+Ywaxed &+ywood&N~
+&+LA &+Wshining&+L black coffin of &+Ywaxed &+ywood&+L sits at the center of a depressed foyer.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59354 0 1 0 0 0 0
+0 0 100
+E
+black coffin~
+   &+LThis coffin is crafted from fine wood, painted a glossy black and
+&+Lwaxed to shine. Brass fittings are placed at the sides and hinges of
+&+Lthe coffin. The coffin sits at the center of a depression in this
+&+Lcrypt above bare, recently-turned earth.
+~
+#59230
+key~
+&+La key to Strahd's crypt&N~
+&+Lkey to Strahd's crypt~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+#59231
+medallion thought~
+&+Wthe medallion of &+ct&+Wh&+co&+Wu&+cg&+Wh&+ct&N~
+&+WThe medallion of &+ct&+Wh&+co&+Wu&+cg&+Wh&+ct&N lies here.~
+~
+9 25 2 0 13 0 4097 5 64 0 0
+5 0 0 0 0 0 0 0
+0 125555 100 268435456 0 0 0
+E
+medallion thought~
+&+W   A single unknown gemstone sits nested in a beautiful, hand-crafted
+&+Wplatinum brooch. A thin, intricately-crafted platinum chain hangs from
+&+Wthe medallion, pulsing with a glow of curious magic.
+~
+A
+33 5
+A
+57 -1
+T
+6 9 1 60
+#59232
+loose earth~
+&+Lloose &+yearth&N~
+&+Lloose &+yearth&N~
+~
+15 15 3 0 7 0 2 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+loose earth~
+   &+yThe blocked stone floor here has been completely removed and the
+&+yexposed earth has been recently turned and re-packed.
+~
+#59233
+painting portrait barov~
+&+Ba &+Ypainting&N~
+&+BA dusty &+Yportrait &+Bof &+yBarov Von Zarovich&+B hangs on the southern wall.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+painting~
+&+L+-----------------------------------------+
+&+L|                   &+Y.                     &+L|
+&+L|                  &+Y/ \                    &+L|
+&+L|                 &+Y_\ /_                   &+L|
+&+L|       &+Y.     .  (,'v`.)  .     .         &+L|
+&+L|       &+Y\)   ( )  ,' `.  ( )   (/         &+L|
+&+L|        &+Y\`. / `-'     `-' \ ,'/          &+L|
+&+L|         &+Y: '    _______    ' :           &+L|
+&+L|         &+Y|  _,-'  &+r,&+R-&+r.  &+Y`-._  |           &+L|
+&+L|         &+Y|,' ( )__&+r`&+R-&+r'&+Y__( ) `.|           &+L|
+&+L|         &+Y(|&+c,-,&+L'-._   _.-`&+c.-.&+Y|)           &+L|
+&+L|         &+c/  /&+r<&+W( &+Co&+W)&+r> <&+W( &+Co&+W)&+r>&+c\  \           &+L|
+&+L|         &+c:  :     &+y| |     &+c:  :           &+L|
+&+L|         &+c|  |     &+y; :     &+c|  |           &+L|
+&+L|         &+c|  |    &+y(.-.)    &+c|  |           &+L|
+&+L|         &+c|  |  &+L,&+y' ___ `&+L.  &+c|  |           &+L|
+&+L|         &+c;  |)&+L/&+y ,'---'. &+L\&+c(|  :           &+L|
+&+L|     &+W_,-&+c/   |&+L/\&+y(       )&+L/\&+c|   \&+W-._       &+L|
+&+L|&+W..--'&N.-&+W(    &+c|   &+L`-'''-'   &+c|    &+W)&N-.&+W`--.._ &+L|
+&+L|      &+W  `.  &+c;`._________,'&+W:  ,'          &+L|
+&+L|       &n,'&+W `/               \'&N`.  &+lSSt&+L     |
+&+L|       &+W     `------.------'              &+L|
+&+L+-----------------------------------------+
+~
+#59234
+extra-large extra large top hat~
+&+Lan extra-large top hat&N~
+&+LAn extra-large top hat&N has been left here.~
+~
+3 3 3 0 7 0 0 17 64 0 0
+60 12 12 408 0 0 0 0
+0 0 100
+A
+38 5
+A
+34 5
+#59235
+no-show thredra proc~
+&+Lthredra anarax necromancer proc&N~
+&+Lno-show thredra anarax necromancer proc is here.~
+~
+5 15 3 0 7 0 142610434 8192 64 0 0
+12 6 6 0 0 166437 60 17
+0 0 100
+E
+_room_msg~
+&+W'Strahd can send all the spies he wants - I'll kill 'em all and raise them as my pets!' &+Lshrieks &+mThredra Anarax&+L!
+~
+#59236
+monolith~
+&+Lmonolith&N~
+&+LA massive circular, stone monolith dominates the center of the cave.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+monolith~
+&+L   This massive circular stone monolith reaches from the carved-out floor
+&+Lup into the dark carved-out ceiling above. The stone is smooth and stoic,
+&+Lcontrasting the otherwise roughness of the cavern. It is truly a wonder if
+&+Lthis massive monolith was part of the original castle's construction, or
+&+Lsomething else.
+~
+#59237
+slab sacrifice~
+&+Rslab of sacrifice~
+&+LThe huge granite &+rs&+Ll&+ra&+Lb&+r o&+Lf &+rs&+La&+rc&+Lr&+ri&+Lf&+ri&+Lc&+re&+L sits before a massive stone monolith.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+179 59201 5 1 0 0 0 0
+0 0 100
+E
+slab sacrifice~
+&+L   Tw&+ro&+L hu&+rg&+Le s&+rt&+Lon&+re&+Ls &+rpr&+Lop up &+ra &+Lla&+rr&+Lg&+re&+L, fl&+ra&+Lt g&+rr&+Lan&+rit&+Le sl&+rab&+L up &+rag&+La&+ri&+Lns&+rt &+La h&+ru&+Lge,
+&+Lc&+ri&+Lrcu&+rl&+Lar sto&+rn&+Le m&+ro&+Lnol&+rit&+Lh. T&+rh&+Le &+rs&+Lla&+rb&+L is &+rc&+Lo&+rv&+Lere&+rd&+L i&+rn&+L a&+rnc&+Li&+re&+Lnt &+rb&+Llo&+ro&+Ld-&+rs&+Lpl&+ra&+Ltte&+rr&+Ls
+&+Lo&+rf &+rd&+Lar&+rk&+L, v&+ra&+Lry&+ri&+Lng &+rs&+Lhad&+res&+L. S&+rt&+Lra&+rng&+Le g&+rl&+Lyphs &+ro&+Lf an anc&+rie&+Lnt a&+rn&+Ld f&+ror&+Lgott&+re&+Ln
+&+rl&+La&+rng&+Luag&+re&+L c&+ro&+Lmpl&+re&+Lt&+re&+Lly c&+rov&+Ler th&+re mo&+Ln&+ro&+Llith&+r; m&+Lany f&+ri&+Lll&+re&+Ld w&+ri&+Lth c&+ra&+Lk&+re&+Ld bl&+roo&+Ld.
+~
+#59238
+saint markovia thighbone thigh bone~
+&+WSaint Markovia's &Nt&+Wh&Ni&+Wg&nh&+Wb&No&+Wn&Ne~
+&+WA single thigh bone sits here, &+Ys&+Wp&+Ya&+Wr&+Yk&+Wl&+Yi&+Wn&+Yg&+W with holy power.~
+~
+5 10 3 0 4 0 0 8193 32842 0 0
+10 4 5 0 0 58 60 30
+1 15555 100
+E
+saint markovia thighbone thigh bone~
+  &+WThe powerful priestess Markovia caught the attention of Strahd
+&+Was a potential threat and challenge to his soverign power. He sent
+&+Wa garrison of vampire spawn to descend on Barovia and slay her -
+&+Wbut she destroyed them one-by-one. It is rumored that on that same
+&+Wnight she ventured to Castle Ravenloft to confront Strahd. Battles
+&+Wwaged for sleepless days from the highest tower to the darkest
+&+Wcatacomb. Alas, Markovia never returned to Barovia and it is said
+&+Wthat Strahd trapped her in a crypt deep beneath the castle. Once her
+&+Wbody fully decomposed, the magic power of this thighbone was all
+&+Wthat remained.
+~
+E
+_room_msg~
+&N$n's $q &+Wsuddenly &+Cglows &+Wwith holy &+Ylight&N&+W
+~
+A
+18 5
+A
+19 5
+#59239
+illusionary wall~
+&+can illusionary wall&N~
+&+cA no-show illusionary wall is here.~
+~
+29 15 3 0 7 0 2 0 0 0 0
+320 59351 0 1 0 0 0 0
+0 0 100
+E
+illusionary wall~
+&+cThe stone wall to the north appears to be an illusion, concealing a secret door!
+~
+T
+260 16 1 100
+#59240
+long magical jeweled dagger _id_~
+&+Ca long, &+cj&+Ce&+mw&+Me&+cl&+Ge&+Bd &+Cdagger&n~
+&+CA long, &+cj&+Ce&+mw&+Me&+cl&+Ge&+Bd &+Cdagger&n lies here.~
+~
+5 16 2 0 15 0 100671488 8193 32848 0 0
+2 3 7 0 0 0 0 0
+0 500000 100 0 0 0 1024
+E
+long magical dagger~
+     &+Y.-.   &+LThe Jeweled dagger of &+gEzmerelda D'avenir&+L is a master-
+     &+Y/&+g@&+Y\  &+Lpiece of elegance and subtle menace. Its pommel
+     &+L<&+r8&+L>  &+Lis wrapped in fine black leather, with clusters
+&+Y _   &+L<Y>   &+Y_  &+Lof &+rr&+Ru&+rb&+Ri&+re&+Rs&+L peaking through the seams like
+&+Y(&+L@&+Y__//&+L@&+Y\\__&+L@&+Y) &+Ldrops of &+rblood&+L upon shadow. The &+Yhilt&+L spreads
+&+Y `-=:&+r8&+m@&+r8&+Y:=-' &+Linto stylized &+Ygolden &+mf&+Ma&+mi&+Mr&+my &+Wwings&+L, each side
+    &+C |:|  &+Lset with a gleaming black &+mo&+Lp&+ma&+Ll, while another black
+    &+C |:|  &+mo&+Lp&+ma&+Ll crowns the bottom of the &+Ypommel&+L beneath the &+rr&+Ru&+rb&+Ri&+re&+Rs&+L.
+    &+C |:|  &+LA &+csteel &+Cblade&+L gleams with a &+cs&+Ci&+cl&+Cv&+ce&+Cr&+cy &Nshe&+Wen&+L. Intricate
+    &+C |:|  &+Lengravings depict &ndancing &+mf&+Ma&+mi&+Mr&+mi&+Me&+ms&+L around looping,
+    &+C |:|  &+Lflowered &+gv&+Gi&+gn&+Ge&+gs&+L, lending the dagger an unsettling
+    &+C | |  &+Lcombination of &+Mbea&+muty &+Land &-r&+ldanger&N&+L.
+    &+C | |
+    &+C | |  &+LNormally sheathed, the legendary dagger has served
+    &+C | |  &+Las a constant companion in the &+Wfortune&+mteller's
+    &+C \ /  &+Lpursuits, revealed only in the most dire moments.
+    &+C  `
+~
+E
+_id_name_~
+long magical dagger ezmerelda davenir
+~
+E
+_id_short_~
+&+gEzmerelda D'avenir's &+cj&+Ce&+mw&+Me&+gl&+Ge&+Bd &+Cdagger&N
+~
+E
+_id_desc_~
+&+gEzmerelda d'avenir's &+cj&+ce&+mw&+Me&+gl&+ge&+Bd &+cdagger&N has been left here.
+~
+A
+38 10
+A
+40 10
+#59241
+illusionary wall~
+&+can illusionary wall&N~
+&+cA No-show illusionary wall~
+~
+29 1 3 0 7 0 2 0 0 0 0
+320 59352 2 1 0 0 0 0
+0 0 100
+E
+illusionary wall~
+&+cThe southern stone wall appears to be an illusion, concealing a secret door!
+~
+#59242
+dimension door~
+&+La d&+Ci&+Lmen&+Cs&+Lion do&+Co&+Lr~
+&+LHovering a foot off the ground, a dimension door pulls you closer.~
+~
+25 15 3 0 7 0 33554433 0 64 0 0
+59321 7 -1 0 0 0 0 0
+0 0 100
+#59243
+memory barov ravenovia~
+&+CCount Strahd's memory of &+yBarov and Ravenovia&N~
+&+CCount Strahd's memory of &+yBarov and Ravenovia &+Cprogresses in a &+Wgh&Nos&+Wt&Nl&+Wy &+Cloop.&N~
+~
+29 15 3 0 7 0 0 0 0 0 0
+320 59324 5 0 0 0 0 0
+0 0 100
+E
+memory barov ravenovia~
+&+CA ghostly scene from Strahd Von Zarovich's perspective, many years ago,
+&+Ctransforms the immediate area into the grand foyer of Castle Ravenloft.
+
+&+LThe year is 320 BC and a young prince Strahd, still in his teens, shuffles
+&+Lthrough the gates bearing the weight of his mortally wounded father, King
+&+LBarov. Drenched in blood, Strahd slows the king's slump to the ground and
+&+Lviciously tears free his father's breastplate before looking on in shock,
+&+Ltears starting to swell. Queen Ravenovia forces her way past her queens-
+&+Lguard and crumbles beside them, clutching the weakened king in his final
+&+Lmoment...
+
+&+C'My sweet king.. don't go..' weeps a distraught Ravenovia.
+
+&+CKing Barov coughs and turns, looking up at you. He mutters 'Strahd, my son..
+&+Chave the Tergs been stopped?'
+
+&+CRestraining a growing rage, you muster the words 'Yes, father.'
+
+&+CKing Barov's face relaxes into a sedated smile for a moment.
+&+C'Strahd..' &Nhe calls.
+&+C'Yes, father?' &Nyou reply, but he does not respond.
+&+C'Father?' you repeat with more intensity.
+A teardrop falls from your cheek, landing on the king's face without a flinch.
+
+&+CQueen Ravenovia sits up abruptly, her face stained with her husband's blood.
+&+C'Barov?' she asks abruptly.
+&+C'BAROV!' she repeats, before descending into hysterics.
+~
+#59244
+memory sergei~
+&+CCount Strahd's memory of &+BSergei&N~
+&+CCount Strahd's memory of &+BSergei &+Cprogresses in a &+Wgh&Nos&+Wt&Nl&+Wy &+Cloop.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+320 59323 5 0 0 0 0 0
+0 0 100
+E
+memory sergei~
+&+CA ghostly scene from Strahd Von Zarovich's perspective many years ago
+&+Ctransforms the immediate area into the ballroom of Castle Ravenloft, where
+&+Cthe Count and his brother Sergei are hosting a celebration of recent conquest.
+&+CA beautiful maiden stands out - a common girl dressed in red, dancing alone.
+
+&+L'May I have this dance?' you ask, with a tap on the strange girl's shoulder.
+&+LShe gasps with her hand on her chest and says 'My king, of course!'
+&+LYou feign a comforting chuckle and take her hand. The crowded dancefloor
+&+Lquickly opens and, for the next several minutes, you and Tatyana share the
+&+Lgaze of every reveller at the party. She praises your conquests and laments
+&+Lthe loss of her father (a soldier recruited to your army years ago), then
+&+Lpolitely accepts your invitation to dinner. Arms linked, you walk together
+&+Lto the banquet hall.
+
+&+LAs you gentlemanly hold open one of the double-doors, the other suddenly
+&+Lswings back, briefly startling Tatyana. Her arm loosens from yours as she
+&+Lsees your grinning brother, Sergei; eyes locked with hers and sparkling with
+&+La charming mischief.
+
+&+CThe scene suddenly bursts into mist before quickly reshaping into the crowded
+&+Cchapel of Castle Ravenloft. Bathed in the prismatic sunshine of the colorful
+&+Cstained glass windows, a white-dressed Tatyana and her beloved Sergei stand
+&+Cface-to-face, holding hands before a smiling priest.
+
+&+L'You may now kiss the bride.' &+Lsays the priest with a gentle nod.
+&+LAs Tatyana slowly lifts her veil to kiss her groom, she's met with a look of
+&+Lshock and pain. Blood spurts from Sergei's stomach onto Tatyana's dress as
+&+Lyou yank your blade from his back. She turns, horrified, and runs.
+
+&+LYou chase her through the chaos of the screaming crowd, begging her to listen.
+&+L'Let me explain!' you roar.
+&+L'You belong with me! Not that boy, Sergei!'
+&+LTatyana doesn't listen. She races through the banquet hall and onto the
+&+Lbalcony, where she watched so many sunsets with Sergei. Cornered, she turns
+&+Ltowards you and grasps the edge.
+&+L'Let me show you that you should be mine..' you say, ignoring the arrows being
+&+Lfired into your back by your own guards.
+&+L'I will never be yours, Strahd Von Zarovich' she says boldly, before closing
+&+Lher eyes and falling backwards into the darkness.
+~
+#59245
+huge marble slab~
+&+Wa huge mar&+Lb&Nl&+We slab~
+&+WA huge, three foot tall &+Wslab of mar&+Lb&Nl&+We sits at the center of the crypt.~
+~
+29 38 5 0 9 0 0 0 0 0 0
+99 59358 5 0 0 0 0 0
+0 0 77
+E
+huge marble slab~
+   &+LThis huge slab of &+Wmar&nb&+Ll&+We&+L dominates the center of the crypt,
+&+Lhere to bare the eternal remains of royalty.  A finely crafted
+&+Lwooden &+ybier &+Lsits atop the &+Wmar&nb&+Ll&+We slab.
+~
+E
+bier~
+&+yThis bier is an ornately-crafted wooden stretcher that is used
+&+yto transport a corpse from the chapel to the grave.
+~
+#59246
+stitched skin vestment studded teeth~
+&+ya stitched skin vestment &Ns&+yt&Nu&+yd&nd&+ye&Nd &+yw&Ni&+yt&Nh &+yt&Ne&+ye&Nt&+yh&n~
+&+yA stitched skin vestment &Ns&+yt&Nu&+yd&nd&+ye&Nd &+yw&Ni&+yt&Nh &+yt&Ne&+ye&Nt&+yh&n lies here.~
+~
+9 12 3 0 1 0 8320 9 64 0 0
+15 0 0 0 0 0 0 0
+4 5000 100 0 0 0 33554432
+E
+stitched skin vestment studded teeth~
+   &+yAt first glance, this vestment is crude and stiff, made of large sections of
+&+ystitched-together skin and other sections of dried flesh. Humanoid teeth of varying
+&+ysizes cover the shoulders and neckline in no apparent pattern.
+   &+yDespite its crude makings, a deep magic can be felt coming from this vestment.
+~
+A
+35 5
+A
+55 5
+#59247
+shiny white crucifix sharpened stake~
+&na &+Wstake&N made from a &+Ws&Nh&+La&+Wr&np&+Le&+Wn&ne&+Ld &+Wcrucifix&N~
+&nA &+Wstake&N made from a &+Ws&Nh&+La&+Wr&np&+Le&+Wn&ne&+Ld &+Wcrucifix&N lies here.~
+~
+5 6 2 0 11 0 67117056 8193 66 0 0
+2 4 6 0 0 119120121 56 40
+0 25000 100 0 32768 128 16777216
+E
+polished crucifix sharpened stake~
+&+W   This beautiful, white-painted crucifix is much too large to be worn as
+&+Wjewelry, likely the size of a staff-head or doorway decor. The bottom of
+&+Wthe crucifix has been sharpened into a narrowing, perfect point.
+   &+WThe words 'Peaceful Rest' are inscribed in an illuminated etching,
+&+Wlengthwise on the crucifix face.
+~
+E
+_room_msg~
+&+WBeams of white light suddenly burst forth from $n's $q!
+&+WAs the brightness subsides, &+Ct&+Li&+Cm&+Le seems to slow to a halt for a moment...
+&n$n emerges, dressed in &+Wceremonial priest robes&N above $N, unconscious on a &+Wm&nar&+Lb&+Wle slab.
+&n$n shouts &-L&+W'Away, Devil! I extinguish thee!'&N
+&+r$n &+rthrusts $q &+rdown into the heart of $N&+r!
+&+L...t&+Ci&+Lm&+Ce &+Lseems to return to normalcy, $n stands over a stunned, wincing $N.
+~
+A
+19 5
+A
+18 5
+#59248
+vial moonbeam moon beam drop~
+&+La &+cmoon&+Cbeam&+L drop&N~
+&+LA small, bulbous vial containing a &+cmoon&+Cbeam&+L drop sits here, &+mglowing faintly&+L.~
+~
+10 7 1 0 9 0 1 11026433 64 0 0
+60 457 56 301 0 0 0 0
+0 150000 100
+E
+vial moonbeam moon beam drop~
+&+L   This small vial contains what the &+ydusk elves&+L call &+c'the tears of Sehanine Moongaze'
+&+Lor otherwise known as mythical &+c'moon&+Cbeam &+Ldrops&+c'.
+   &+LThe vial itself is bulbous in shape with a small, corked top opposite a flat base.
+&+LThick, cloudy glass holds a bright, silvery potion that glows like a full moon.
+~
+A
+24 -2
+A
+21 -2
+#59249
+wooden quarterstaff quarter staff topped crystal~
+&+ya wooden quarterstaff topped with a &+Ccr&+cyst&+Cal&N~
+&+yA wooden quarterstaff topped with a &+Ccr&+cyst&+Cal&N lies here.~
+~
+5 6 4 0 5 0 1025 8193 64 411996128 0
+12 3 12 0 0 1001012851 60 25
+2 200000 100
+E
+wooden quarterstaff quarter staff topped crystal~
+   &+yThis long quarterstaff comes to a gnarled head, where the &+ywood&+L grips a
+&+ylarge, &+csilverish &+Ccr&+cyst&+Cal. &+LA glowing &+Baura&+L about the crystal leaves a faint
+&+bblue &+Chaze&+L.
+~
+E
+_room_msg~
+&+bThe blue aura surrounding the &+Ccr&+cyst&+Cal &+batop $n's &+bstaff &+Cbrightly flares up!
+&+bThe aura suddenly takes shape into a giant &+Bhand&+b and reaches for $N!
+~
+A
+18 5
+A
+37 5
+#59250
+gauntlets ogre power~
+&n&+csome gauntlets of &+bogre power&N~
+&+cSome gauntlets of &+bogre power&+c have been left here.~
+~
+3 15 4 0 9 0 33554432 129 64 0 0
+50 999 999 157 0 0 0 0
+4 125000 100
+E
+gauntlets ogre power~
+   &+cThis large, heavy gauntlets hum with a deep strength.
+~
+A
+41 9
+A
+58 5
+#59251
+old shirt torn chainmail chain mail~
+&+can torn shirt of old chainmail&N~
+&+cA torn shirt of old chainmail has been left here.~
+~
+9 22 4 0 14 0 0 9 1 0 0
+5 0 0 0 0 0 0 0
+1 10555 100
+E
+old shirt torn chainmail chain mail~
+&+c   This old, chainmail shirt has several small tears, resulting from countless
+&+cblows throughout the years. The links themselves are silver and finely-joined,
+&+chinting that this may have been armor of some ancient nobility.
+~
+A
+17 -20
+A
+26 4
+#59252
+miniature wind-up wind up toy woman~
+&+Ma miniature wind-up &+mtoy woman&N~
+&+MA miniature wind-up &+mtoy woman&+M sits here, motionless.~
+~
+8 17 2 0 14 0 0 0 32768 0 0
+0 0 0 0 0 0 0 0
+4 500000 100
+E
+miniature wind-up wind up toy woman~
+   &+yThis brass effigy looks like some sort of woman - a round body with
+&+ybulbous limbs of burnished brass. Her round head, also brass, and all
+&+yof her limbs are jointed or hinged to her body with metal caps over
+&+ythe joints, as if she is suited in armor. A small &+Mpink &+ytag pokes
+&+yout from a gap between her neck and back.
+~
+E
+pink tag~
+&+M'Ireena #62'
+~
+#59253
+ring greater invisibility~
+&+ca ring of &+Lgreater &+cinvisibility&N~
+&+cA ring of &+Lgreater &+cinvisibility&N lies here.~
+~
+4 23 1 0 7 0 0 3 64 0 0
+41 999 999 95 0 0 0 0
+0 255000 100 2 0 0 0
+E
+ring greater invisibility~
+&+LThis slender band is forged from a metal so finely polished,
+&+cit borders on translucence. The edges blur with a subtle
+&+Lrefusal to be noticed. The surface of the ring is engraved
+&+cwith overlapping sigils so shallow that they can only be
+&+Lseen when light strikes at the right angle. These runes
+&+cnever appear all at once, fading as others emerge, taking
+&+Lturns and suggesting that the enchantment is in constant
+&+cmotion. Along the inner, a single character is etched of
+&+Lan unknown languange.
+~
+A
+22 -4
+A
+20 -4
+#59254
+miniature wind-up wind up gnome~
+&+ya miniature wind-up gnome&N~
+&+yA miniature wind-up gnome whirrs and buzzes with life.~
+~
+8 17 2 0 15 0 0 16385 32768 0 0
+0 0 0 0 0 0 0 0
+0 500000 100
+E
+miniature wind-up wind up gnome~
+&+yThis intricate trinket is crafted of finely-molded pieces of
+&+ybrass, painstainkinly assembled by the only the steadiest
+&+yhands.
+
+&+yA small inscription along the foot says: Fritz Von Weerg
+~
+#59255
+pidlwick ii~
+&-w&+RPidlwick II&N~
+&-w&+RPidlwick II&N~
+~
+8 17 2 0 15 0 0 0 32768 0 0
+0 0 0 0 0 0 0 0
+0 500000 100
+E
+pidlwick ii~
+   &+WPidlwick was a fool of the visiting Duchess of Dorfniya Dilsnya, a royal
+&+Wof local nobility who frequented Castle Ravenloft during the reign of Barov
+&+Wand Ravenovia Von Zarovich. After several visits of constant entertainment
+&+Wfor Sergei and his wife-to-be, Tatyana, the Duchess commissioned the great
+&+Wtoymaker Fritz Von Weerg to craft a clockwork toy duplicate - Pidlwick II.
+   &+rDuring a cold winter, Duchess Dorfinya had grown ill, stranded in the
+&+rCastle with Pidlwick and his double. Unfortunately, she gave-in to her
+&+rillness and died. Pidlwick II couldn't move or jest quite like his human
+&+r&+rcounterpart, and only made his hosts cringe. After falling into disuse,
+&+rPidwlick II grew jealous, knowing that it could never get the attention
+&+rit wanted so long as its predecessor lived, and murdered its human counter-
+&+rpart by pushing him down a long flight of stairs. Pidlwick II attempted to
+&+rpick up where the first left off, but it failed miserably, even disturbing
+&+rTatyana before getting locked away in a closet for years to come.
+   &+LAfter Sergei and Tatyana's demise and the castle becoming largely empty
+&+Lof the living, Pidwlick II emerged and began stalking through the corridors.
+&+LEven Strahd knew of its murderous tendencies and took advantage of it from
+&+Ltime to time - finally prompting a smile by a Von Zarovich.
+   &+yA small, embroidered name on a partially-concealed tag protruding from
+&+ya seem in the doll's backside reads 'Fritz Von Weerg'
+~
+#59256
+blood zhudun~
+&+rthe blood of Zhudun&N~
+&+rA small vial of the blood of Zhudun sits here, upright.~
+~
+10 40 1 0 2 0 4096 8404993 32832 0 0
+60 609 522 0 1000 0 0 0
+0 1000 100
+E
+blood zhudun~
+&+L   This small, nondescript vial has a small marking on the side in an ancient
+&+Lform of common that reads 'Blood of Zhudun'&N.
+~
+#59257
+reforged re-forged crypt key~
+&+La re-forged &+Cc&+mr&+Cy&+mp&+Ct &+mk&+Ce&+my&N~
+&+LA re-forged &+Cc&+mr&+Cy&+mp&+Ct &+mk&+Ce&+my&+L has been left here.~
+~
+18 15 3 0 7 0 8388608 16385 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+reforged re-forged crypt key~
+   &+LThis large, iron key has been reforged in a nondescript, single piece.
+&+LA tiny etching scratched onto the bottom edge of the key: &+c"Velikovna"
+~
+#59258
+bloody corpse velikov kasimir~
+&+rthe bloody corpse of &+cKasimir Velikov&N~
+&+rThe bloody corpse of &+cVelikov Kasimir&+r is sprawled out beside the slab.~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+bloody corpse velikov kasimir~
+   &+cStreams of fresh blood pour from open wounds on the neck of this Dusk Elf -
+&+cperhaps now making the race extinct. His robes still worn over his body, and his
+&+cstaff still in hand, it appears that Kasimir Velikov was slain by the very sister
+&+che had attempted to resurrect with the dark magic of an ancient blood god.
+~
+T
+8 15 3 60
+#59259
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59222 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59260
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59257 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59261
+set marbles painted eyes~
+&+La &+Ws&+Be&+Wt &+Lof m&+Wa&+Br&+Wb&+Lles p&+Wa&+Bi&+Wn&+Lted to l&+Wo&+Bo&+Wk &+Llike &+We&+By&+We&+Ls~
+&+yA small sack of &+Lma&+Wr&+Bb&+Wl&+Les pa&+Wi&+Bn&+Wt&+Led to l&+Wo&+Bo&+Wk &+Llike &+We&+By&+We&+Ls &+yhas been left here.~
+~
+4 7 1 0 8 0 0 16385 64 0 0
+50 11 11 53 0 0 0 0
+0 25000 100
+E
+set marbles painted eyes~
+   &+yThis small leather sack contains a set of marbles, each intricately painted
+&+ylike &+We&+Ly&+We&+Ls of different &+Csha&+Bdes &+cof &+bblue.
+~
+#59262
+severed hand fingers~
+&+ya s&+Re&+yver&+Re&+yd hand standing up on its f&+Ri&+yng&+Re&+yrs&N~
+&+yA s&+Re&+yver&+Re&+yd hand standing up on its f&+Ri&+yng&+Re&+yrs&+y sits here eerily.~
+~
+4 2 1 0 7 0 0 16385 64 0 0
+50 12 12 213 0 0 0 0
+0 65000 100
+E
+severed hand fingers~
+   &+yThis petrified humanoid hand retains all of its fingers, on which it
+&+ystands itself up and performs pseudo-gestures.
+~
+#59263
+black wooden horse fiery red mane tail~
+&+La black wooden horse with a &+Yf&+Ri&+rery red &+Ym&+Ra&+rne and &+Yt&+Ra&+ril&n~
+&+LA black wooden horse painted with a &+Yf&+Ri&+rery red &+Ym&+Ra&+rne and &+Yt&+Ra&+ril &+Lhas been left here.~
+~
+4 6 1 0 9 0 0 16385 64 0 0
+50 12 12 108 0 0 0 0
+0 15000 100
+E
+black wooden horse fiery red mane tail~
+   &+LThis small, carved wooden horse has been painted black, with a
+&+Yyellow-&+Rto-&+rred &+Lpainted mane, tail, and hooves. It resembles a &+rnight&+Lmare.
+~
+#59264
+snowglobe snow globe ravens snow~
+&+ca &+Wsnow&+Cg&+cl&+Co&+cb&+Ce &+cwith &+Lravens &+cin the place of &+Wsnow&N~
+&+CA tiny, &+Wglass snow&+Cg&+cl&+Co&+cb&+Ce &+cwith &+Lravens &+cin the place of &+Wsnow&+c sits here, mystically.~
+~
+4 7 1 0 13 0 0 16385 64 0 0
+50 12 12 131 0 0 0 0
+0 15000 100
+E
+snowglobe snow globe ravens snow~
+   &+LChipped stone flakes, painstakingly carved to resemble tiny ravens,
+&+Lfloat around a single dead tree in this morbid snowglobe.
+~
+#59265
+merry go round merry-go-round snarling wolves prancing horses~
+&+Ya m&+Me&+Yr&+Mr&+Yy-&+Mg&+Yo-&+Mr&+Yo&+Mu&+Yn&+Md &+Ywith &+Lsnarling wolves&+Y instead of &+yprancing horses&N~
+&+YA miniature wind-up &+Mm&+Ye&+Mr&+Yr&+My&+Y-&+Mg&+Yo-&+Mr&+Yo&+Mu&+Yn&+Md&+Y with &+Lsnarling wolves &+Yin the place of &+yprancing horses &+Lsits here.~
+~
+32 24 1 0 14 0 33554432 8404993 0 0 0
+185 60 0 0 0 0 0 0
+0 85000 100
+E
+merry go round merry-go-round snarling wolves prancing horses~
+   &+YThis tiny, intricately-crafted wind-up merry-go-round has had its
+&+yprancing horses&+Y replaced by chipped-stone &+Lwolves&+Y. Despite the
+&+Ymismatching material, the wolves still bob and rotate as the merry-
+&+Ygo-round winds down, playing a haunting off-key tune.
+~
+A
+38 5
+A
+30 15
+#59266
+toy bear overly-stuffed overly stuffed bears totem~
+&+ya toy bear overly-stuffed with other toy bears&N~
+&+yA toy bear overly-stuffed with other toy bears lays here &+Lattracting flies&+y.~
+~
+34 12 1 0 0 0 0 8404993 0 0 0
+23 0 0 0 0 0 0 0
+0 5000 100
+E
+toy bear overly-stuffed overly stuffed bears totem~
+   &+yThis taught, stiff toy bear has been packed with several other older,
+&+yrotten toy bears that had seemingly been made from poorly-cured hides.
+~
+A
+4 5
+A
+14 15
+#59267
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59258 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59268
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59256 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59269
+skull strahd~
+&nthe &+Wfanged sk&Nu&+Wll&N of &+rStrahd Von Zarovich&N~
+&+WThe fanged sk&Nu&+Wll &Nof &+rStrahd Von Zarovich &+Llays here lifelessly.~
+~
+8 10 2 0 15 0 0 8404993 32832 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+E
+skull strahd~
+             _____          &+rWith the final defeat of Strahd Von Zarovich,
+     ,---""`` `.  ``""--_   &+rall that remains of the darklord is his skull.
+   ,'           \        ',   &+rA huge crack runs down the crown, splitting
+  (              \         Y   &+rjust above the brow. Two long fangs that
+ {               .>-.       I   &+rhave drained the blood of countless souls
+{      -        /`   `      `,   &+rprotrude from the upper jaw. Now britle
+|       ',                   )   &+rand lifeless, the skull of 'the First
+|        |   ,..__      __. Y    &+rVampire' is now nothing more than a
+|    .,_./  Y ' / ^Y   J   )|   &+rtrophy, symbolizing the razing of
+\           |' /   |   |   ||   &+rCastle Ravenloft and the end of the
+ \          L_/    . _ (_,.'(   &+rhorrors carried out by Strahd and his
+  \,   ,      `^""' / |      )   &+rminions.
+    \_  \          /,L]     /
+      '-_--,       ` `   ./`
+         `'{_  ,.      ,.)
+             ^^\ |u|uu| /
+                \|    |/
+                 `    `
+~
+#59270
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59224 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59271
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59254 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59272
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59255 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59273
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59259 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59274
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59260 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59275
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59261 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59276
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59266 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59277
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59265 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59278
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59262 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59279
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59263 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59280
+loose coffin lid~
+&+La loose &+ycoffin &+Llid&N~
+&+LA loose &+ccoffin lid&+L sits atop the &+yl&No&+yo&Ns&+ye &Ne&+ya&nr&+yt&Nh&+L.~
+~
+29 6 3 0 7 0 0 0 0 0 0
+99 59264 4 1 0 0 0 0
+0 0 100
+E
+loose coffin lid~
+   &+LThis coffin lid is black and thick with a mixture of earth,
+&+Ldecomposing corpse, and webs, and rat feces.
+~
+#59281
+mystical scroll favor chaplain~
+&+Wa mystical scroll, &+c'Favor of the Chaplain'&n~
+&+WA mystical scroll, &+c'Favor of the Chaplain'&n floats here.~
+~
+8 28 2 0 7 0 67117057 8404993 32832 0 0
+0 0 0 0 0 0 0 0
+0 9000000 100
+E
+mystical scroll favor chaplain~
+                                             ___________________________
+   _______________________-------------------                           `\
+ /:--__                                                                  |
+||< > |                                   _______________________________/
+| \__/_________________-------------------                             |
+|                                                                      |
+ |  To the Esteemed Practitioner of the Healing Arts,                   |
+  |                                                                      |
+ |  From the shadowed halls of Castle Ravenloft, I, Rahadin,            |
+ |  Chamberlain and faithful servant to His Excellency, Count           |
+ |  Strahd von Zarovich, extend to you an invitation both rare          |
+ |  and consequential.                                                  |
+ |                                                                      |
+ |  Your reputation has reached even these mist-enshrouded peaks-      |
+  |  your skill with tinctures, draughts, and the subtle balances      |
+  |  between life and decay has been noted by discerning eyes.         |
+  |  His Excellency ever values those whose talents straddle           |
+  |  the line between mercy and mastery. Thus, you are entreated       |
+  |  to take up residence within the Castle's Apothecary, a chamber   |
+ |  of both reverence and quiet dread, where few have worked..        |
+ |  and fewer have endured. The laboratory lies within the eastern    |
+ |  wing, its windows forever gazing into the mists of Barovia.       |
+ |  There, you will find ample materials for your craft, though       |
+ |  I caution: many reagents within these walls obey laws known        |
+  |  only to the Dark Powers that cradle this valley.                  |
+  |                                                                    |
+  | Your duties will be few, but exacting. The Count desires           |
+  | restoratives for the body and spirit - though the latter, as you   |
+  | will discover, is a far more delicate matter in this land. You    |
+  | will prepare elixirs, distillations, and perhaps, when the night  |
+  | grows long and the thunder stills, you will assist in deeper      |
+  | studies: the nature of vitality itself, the quiet rhythm between  |
+  | death and what persists beyond it.                                |
+ |                                                                   |
+ | Understand this: service in Castle Ravenloft is no common employ. |
+ | It is a covenant. You will find reward in abundance, for His      |
+ | Excellency is a generous patron to those who serve faithfully.    |
+ | Yet disloyalty, neglect, or curiosity beyond your station will    |
+ | invite consequences of a kind best left undescribed.              |
+ |                                                                   |
+  |  Should you accept, seek my audience and inquire about the        |
+  |  fortunes of Ravenloft. Procure five of such fortunes,            |
+  |  along with the presentation of this letter, and you will be      |
+  |  conveyed through the mists to your new home.                     |
+ |                                                                   |
+ |                                                                   |
+ |         &+L,_  &+g`{&+r@&+g)'                       &+b/R /4 /-/ /4 /> / /\/&+L  &N   |
+ |        &+L<)')-&+g//`                       &+BHigh Chamberlain Rahadin&+L     &N|
+ |        &+L(_.\\=        &N                                             |
+ |          &+L"&+g//&+L`&N                              _______________________|_
+ |  ___________________-----------------------                         `\
+ |/`--_                                                                  |
+ ||[ ]||                                          ______________________/
+  \===/___________________------------------------
+~
+#59282
+mystical scroll favor high guard~
+&+Wa mystical scroll, &+c'Favor of the Dread Guard'&n~
+&+WA mstical scroll, &+c'Favor of the Dread Guard'&n floats here.~
+~
+8 28 2 0 7 0 67117057 8404993 32832 0 0
+0 0 0 0 0 0 0 0
+0 9000000 100
+E
+mystical scroll favor high guard~
+                                             ___________________________
+   _______________________-------------------                           `\
+ /:--__                                                                  |
+||< > |                                   _______________________________/
+| \__/_________________-------------------                             |
+|                                                                      |
+ |  To the One Whose Courage Whispers Louder Than Fear,                |
+  |                                                                     |
+ |  It is with deliberate purpose and the Count's discerning eye       |
+ |  that I extend to you a solemn invitation - to stand among          |
+ |  the ranks of the Royal Guard of Castle Ravenloft, the vigilant     |
+ |  few who serve under the shadow and glory of Count Strahd von       |
+ |  Zarovich, Lord of Barovia and Master of this realm.                |
+ |                                                                     |
+ |  You forgive, I trust, the formal tone of this summons; such is     |
+ |  the way of our House. Those who guard the immortal Count do not    |
+ |  merely bear arms - they bear honor, silence, and eternity. Within |
+|  the storm-wreathed towers of Ravenloft, a thousand candles burn    |
+|  in remembrance of those who served before you. Their names echo    |
+|  through the stones - though few now live to speak them.            |
+|                                                                     |
+|  Should you accept, you will find your training most rigorous.      |
+|  You will learn the stillness of the grave and the swiftness        |
+|  of the wolf. You will stand your watch beneath windows that gaze    |
+|  upon endless mists, and your heart will learn to beat not in fear,  |
+|  but in reverence. The Lord of Barovia rewards loyalty beyond mortal |
+|  measure; even death bends knee to his favor.                        |
+|                                                                     |
+|  Know, however, that service here is not for the faint or fickle.   |
+|  Many have walked through the gates of Ravenloft with trembling     |
+ |  hands and bright ambition - only to find the weight of the Count's |
+ |  gaze too vast to bear. Yet those who endure, who learn to love the |
+ |  hush of the crypt and the thunder of his approach, find themselves |
+ |  remade. You will no longer belong to the fleeting world beyond     |
+ |  these mountains. You will belong to him - and in that belonging,   |
+ |  find purpose everlasting.                                          |
+ |                                                                     |
+ |  Present yourself to the High Chancellor upon the next moonless     |
+ |  night. Inquire, then, about the fortunes of Ravenloft and I shall  |
+ |  personally present your trials. Return, finally, with five earned  |
+ |  fortunes along with this note, and I will see that your armor      |
+ |  gleams crimson in His honor.                                       |
+ |                                                                    |
+ |         &+L,_  &+g`{&+r@&+g)'                       &+b/R /4 /-/ /4 /> / /\/&N     |
+ |        &+L<)')-&+g//`                       &+BHigh Chamberlain Rahadin&N     |
+ |        &+L(_.\\=&N                                                     |
+ |          &+L"&+g//&+L`&N                              _______________________|_
+ |  ___________________-----------------------                         `\
+ |/`--_                                                                  |
+ ||[ ]||                                          ______________________/
+  \===/___________________------------------------
+~
+#59283
+delicate clockwork cake-topper cake topper dancing bride groom~
+&+Ca delicate clockwork cake-topper of a dancing bride and groom&N~
+&+CA delicate clockwork cake-topper of a dancing bride and groom&N lies here, &+yforgotten&N.~
+~
+8 22 1 0 15 0 4096 16385 32769 0 0
+0 0 0 0 0 0 0 0
+0 1000000 100
+E
+delicate clockwork cake-topper cake topper dancing bride groom~
+   &+CThis small box, no larger than an average man's shoe, is
+&+cmaticulously engraved across all surfaces, including the
+&+Cscene of a man and woman joining hands in front of a full
+&+cmoon over a mountainous horizon. On the back of the box,
+&+Cjust below the center point, a collapsable, silvery tab
+&+ccan be opened outward and rotated clockwise, gradually
+&+Cadding gentle tension to the gear mechanism inside.
+   &+cWhen opened, the dancing couple of Sergei Von Zarovich
+&+Cand his newlywed wife, Tatyana, comes to life, spinning
+&+cwhile following a figure-eight path until the box is
+&+Cclosed again. Across the front of the box, a finely-etched
+&+cinscription: &+C"For Love, Unending."
+   &+COn the base of the box, an even smaller inscription
+&+Cin common script reads &N'Fritz Von Weerg'
+~
+T
+6 0 1 32767
+#59284
+dust-caked dust caked glass slipper~
+&+ya d&Nu&+ys&nt&+y-ca&nke&+yd g&Nla&+yss &Nsl&+yip&Np&+ye&nr~
+&nA glass slipper sits here, caked in a thick layer of &+ydust&N.~
+~
+8 7 3 0 14 0 4096 16385 0 0 0
+0 0 0 0 0 0 0 0
+0 600000 100
+E
+dust-caked dust caked glass slipper~
+   &+cUpon closer inspection, it appears this slipper was made with masterful
+&+cprecision and craftsmanship. Intricate designs along the heel and sides
+&+cof the slipper portray stylized wildflowers, blooming in an angle up and
+&+caway from the heel. The slippers are of average, adult size for a dainty
+&+chumanoid, and were crafted on hard crystal that has withstood the stresses
+&+cof time.
+~
+#59285
+spectral portal~
+&na &+Ls&Np&+Le&Nc&+Lt&Nr&+La&Nl &+rportal&N~
+&+LA half-visible &+rportal &+Lfloats here, &+cph&+Las&+ci&+Lng in and out of existence.~
+~
+25 15 3 0 7 0 0 0 64 0 0
+59056 7 -1 0 0 0 0 0
+0 0 100
+#59286
+iron shackles chain~
+&+Lsome shackles &+cd&+La&+cn&+Lg&+cl&+Li&+cn&+Lg from a long &+cc&+Ch&+ca&+Ci&+cn&N~
+&+LSome &+ciron &+Lshackles dangle from a long &+cc&+Ch&+ca&+Ci&+cn&+L.~
+~
+29 15 3 0 7 0 0 0 0 0 0
+340 59056 0 0 0 0 0 0
+0 0 100
+E
+iron shackles chain~
+   &+LSome old, dirty iron shackles hang from a long chain at the center of the
+&+Lcell, likely used for interrogating prisoners.
+   &+LThe &+cc&+Ch&+ca&+Ci&+cn&+L ascends all the way up through a gap in the stone blocked ceiling.
+~
+#59287
+pile debris~
+&+ya mountainous pile of &ndebris~
+&+yA mountainous pile of &ndebris &+yfills this chamber.~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+pile debris~
+   &+yThis mountain of refuse includes: smashed furniture, rusted and broken weapons
+&+yand armor, corpses and the remains of expired undead, tattered and soiled rags and
+&+ylinens, dirt, excrement, and other various waste.
+~
+#59288
+spectral key~
+&na &Ns&+Lp&ne&+Lc&Nt&+Lr&na&+Ll &Nkey&N~
+&+LA half-visible key made of s&+Lp&Ne&+Lc&Nt&+Lr&Na&+Ll&N mists floats here.~
+~
+18 1 2 0 7 0 8388608 0 0 0 0
+0 100 0 0 0 0 0 0
+0 0 100
+E
+spectral key~
+&+L   This small, plain looking key appears to be iron one moment, and
+&+Lcompletely invisible the next. It phases in and out of existence
+&+Llike some kind of spectre.
+~
+#59289
+mystical scroll favor whispering blades~
+&+Wa mystical scroll, &+c'Favor of the Whispering Blade'&n~
+&+WA mystical scroll, &+c'Favor of the Whispering Blades'&n floats here.~
+~
+8 28 2 0 7 0 67117057 8404993 32832 0 0
+0 0 0 0 0 0 0 0
+0 9000000 100
+E
+scroll mystical favor whispering blade~
+                                             ___________________________
+   _______________________-------------------                           `\
+ /:--__                                                                  |
+||< > |                                   _______________________________/
+| \__/_________________-------------------                             |
+|                                                                      |
+|   To the Silent Hand Who Moves Unseen,                               |
+ |                                                                    |
+ |  Your name has reached my ear, whispered in the hush between       |
+ |  dying breaths. It comes to me on the wind that howls through      |
+ |  the Alduran Mountains - soft, but persistent. Such whispers       |
+ |  are seldom false. Thus, I address you with an offer few would     |
+  |  dare to make, and fewer still would survive to refuse.            |
+  |                                                                    |
+  |  Within the veiled courts of Barovia, beneath the Count's eternal  |
+  |  gaze, there exists a concordance of those who serve not with      |
+  |  oaths or banners, but with silence and precision. We are known    |
+ |  to none, save our own, and even among us names are seldom spoken.  |
+ |  The Count calls us his Whispered Blades. Others, in their fear     |
+ |  and ignorance, speak of a guild of assassins. We prefer "artists." |
+ |                                                                    |
+ |  To join us is to shed the budens of conscience and hesitation.    |
+ |  We deal in the currency of inevitability. Each task is not an     |
+ |  act of murder, but a correction of imbalance - the removal of     |
+ |  a piece no longer fit upon the board. In Barovia, mercy is myth;  |
+ |  necessity is law. You, it seems, understand this already.         |
+ |                                                                    |
+  |  Membership brings privilege. You will walk unseen through the     |
+  |  Castle's corridors, dine in silence with nobility who never       |
+  |  sense your shadow. Wealth, protection, and purpose will be        |
+  |  yours - but they come bound in blood. Once your blade drinks      |
+  |  in service to the Count, it may never again be drawn without      |
+  |  His will. Betrayal is not punished; it is erased.                |
+ |                                                                    |
+ |  Should you accept, travel alone to gallery where the cellar       |
+ |  meets the stairs, to seek my private audience. There, under       |
+ |  mask of shadow, you will ask me of the fortunes of Ravenloft      |
+ |  and receive your first five marks. Return to me this scroll      |
+ |  and five fortunes of Ravenloft and then we shall see whether     |
+  |  your silence cuts as sharply as your steel.                      |
+ |                                                                   |
+ |         &+L,_  &+g`{&+r@&+g)'                       &+b/R /4 /-/ /4 /> / /\/&+L    &N |
+ |        &+L<)')-&+g//`                       &+BHigh Chamberlain Rahadin&+L    &N |
+ |        &+L(_.\\=                                                  &N   |
+ |          &+L"&+g//&+L` &N                             _______________________|_
+ |  ___________________-----------------------                         `\
+ |/`--_                                                                  |
+ ||[ ]||                                          ______________________/
+  \===/___________________------------------------
+~
+#59290
+giant venomous chelicerae~
+&+ma giant, v&+ge&+mn&+gom&+mo&+gu&+ms &+Lchelicerae&N~
+&+mA long, twitching &+Lchelicerae&+m of a &+Lgiant spider&+m writhes here in a puddle of &+gvenom&+Lm.~
+~
+5 46 4 0 15 0 33558528 8396801 32832 0 0
+2 1 50 0 2 33 60 17
+1 85000 100
+E
+giant venomous chelicerae~
+&+m   This large, mandible-like fang was formerly half of a pair
+&+Lthat fed the mouth of a monstrously-giant spider. Spikey black
+&+mhairs carpet the chelicerae, which is quite light for its
+&+Lsize and dangerously sharp at it's tip. A void runs through
+&+mthe fang, steadily leaking a strong supply of venom.
+~
+A
+32 5
+A
+19 5
+#59291
+crimson sigil dread guard~
+&n&+rthe crimson &+Rs&+ri&+Rg&+ri&+Rl &+rof the &+LD&+rr&+Le&+ra&+Ld G&+ru&+La&+rr&+Ld&N~
+&n&+rThe crimson &+Rs&+ri&+Rg&+ri&+Rl &+rof the &+LD&+rr&+Le&+ra&+Ld G&+ru&+La&+rr&+Ld&N lies here.~
+~
+9 2 3 0 15 0 67108864 10485761 64 126976 0
+15 0 0 2 0 0 0 0
+0 10000000 100 16 262144 0 0
+E
+crimson sigil dread guard~
+&+LThis insignia is no larger than a clenched fist, yet weighed-down
+&+Lby the dark, heavy &+cmetal&+L of which it was intricately crafted.
+&+LForged from dark &+ci&+Lr&+co&+Ln washed deep in &+rc&+Rr&+ri&+Rm&+rs&+Ro&+rn&+L enamel, the &+rsigil
+&+Ldepicts a stylized &Ntower&+L rising from a field of &+gt&+Lh&+go&+Lr&+gn&+Ls, which
+&+Lis all coiled around by a &+yb&+La&+yr&+Lb&+ye&+Ld &+yc&+Lr&+yo&+Lw&+yn&+L. A &+rblood-red &+Rg&+re&+Rm&+L rests
+&+Lat the heart of the &+rsigil&+L, flat-cut and dull. The reverse of
+&+Lthe &+rsigil&+L is etched with a single phrase in &+yHigh Barovian&+L:
+
+                "We stand so He may endure."
+
+&+LTo the common &+yBarovian&+L, this &+rsigil&+L inspires awe and fear in
+&+Lequal measure. To enemies, it is a warning of eternity.
+&+LThe Captain of the &+rRavenloft &+LGuard doesn't merely defend the
+&+Lcastle, he &N-is-&+L the castle.
+~
+A
+55 10
+A
+58 -1
+#59292
+corpse~
+&+Lthe corpse of an &+yadventurer&N~
+&+LThe &Ns&+Lk&Ne&+Ll&Ne&+Lt&Na&+Ll corpse of an &+yadventurer &+Llays here, &+yhalf-buried&+L in sediment.~
+~
+15 15 3 0 7 0 0 0 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+#59293
+crystal talisman eye aeternum~
+&+Cthe crystal &+cta&+ml&+Mi&+Bs&+Cm&+can &+Cof the &+B(&+CE&+Ly&+Ce&+B) &+mA&+Me&+mt&+Me&+mr&+Mn&+mu&+Mm&n~
+&+CThe crystal &+cta&+ml&+Mi&+Bs&+Cm&+can &+Cof the &+B(&+CE&+Ly&+Ce&+B) &+mA&+Me&+mt&+Me&+mr&+Mn&+mu&+Mm&n lies here.~
+~
+9 8 3 0 15 0 67108865 10485761 64 407145988 0
+5 0 0 2 0 0 0 0
+0 10000000 100 16 262144 0 0
+E
+crystal talisman eye aeternum~
+&+cThis talisman takes &+Bthe form of a faceted c&+crystal lens, roughly the
+&+csize of a human e&+Bye, suspended within a delicate &+ccage of blackened
+&+csilver and da&+Brk steel. The me&+Ltal twists li&+Bke frozen &+csmoke, etched
+&+cwith Barovi&+Ban sigils o&+Lf eternity, domin&+Bion, and vigilan&+cce.
+&+cThere is &+Bno chain;&+L the talisman floats a f&+Binger's breadth fr&+com
+&+cthe wear&+Ber's ch&+Lest, orbiting slowly as though gui&+Bded by unseen wi&+cll.
+
+&+cAt its he&+Bart, a de&+Lep amethyst core streaked wi&+Bth veins of &+cpale,
+&+csparkling li&+Bght endles&+Lsly refracts. When vie&+Bwed strai&+cght on,
+&+cthe facets align &+Band the illu&+Lsion resolve&+Bs unmistaka&+cbly into
+&+can unblinking eye - &+Bancient, patient, and calmly&+c watching.
+&+cThe "pupil" is a void that &+Bseems to recede&+c forever.
+~
+A
+55 10
+A
+57 -1
+#59294
+priestly stole dark alliance~
+&+Wthe priestly stole &+Lof the &+W/> &+LDark &+mAlliance &+W<\&n~
+&+WThe priestly stole &+Lof the &+W/> &+LDark &+mAlliance &+W<\&n lies here.~
+~
+9 3 2 0 15 0 67108864 10485761 64 42107296 0
+5 0 0 2 0 0 0 0
+0 10000000 100 134217728 0 0 0
+E
+priestly stole dark alliance~
+&+W  The stole is long and narrow, cut from finely-loomed
+&+Wcloth in a traditional clerical fashion, yet its presence
+&+Wis anything but comforting. The silk is shadowy and dark,
+&+Wbut gleams in a deep &+rcrimsony-&+mvio&+Mlet&+W in &+Ysun&+W or &+Ytorch&+Wlight,
+&+Wshifting with a &+msh&+Mim&+mme&+rri&+Rng&+W vibrance with its wearer's
+&+Wmovements.
+&+W  Embroidered &+csigils&+W of a &+Csil&+cvery&+C thr&+cead&+W run the length of
+&+Wthe vestment, including ecclesiastical symbols and forbidden
+&+Wiconography: inverted halos, stylized &+Lravens&+W with out-
+&+Wstretched wings, &+gthorn-covered vines&+W and &+Lbatwings&+W where one
+&+Wmight expect &+Yfe&+yat&+Whers. The stitching is impossibly fine,
+&+Wsuggesting obsessive, masterful craftsmanship.
+&+W  The stole exudes an oppressive &+maura&+W, carrying the weight
+&+Wof countless &+rrites&+L performed without mercy. When worn by
+&+Wthe &+Lchaplain of Castle &+rRavenloft&+w, the stole completes the
+&+Wtransformation from priest to &+Ldark intermediary&+W.
+~
+A
+55 10
+A
+35 5
+#59295
+lapel pin whispering blade~
+&Nthe lapel pin &+Lof the -=&+cW&+Ch&+ci&+Cs&+cp&+Ce&+cr&+Ci&+cn&+Cg&+L=&+cB&+Cl&+ca&+Cd&+ce&+L=-&n~
+&NThe lapel pin &+Lof the -=&+cW&+Ch&+ci&+Cs&+cp&+Ce&+cr&+Ci&+cn&+Cg&+L=&+cB&+Cl&+ca&+Cd&+ce&+L=-&n lies here.~
+~
+9 16 1 0 15 0 67108864 10485761 64 126976 0
+5 0 0 2 0 0 0 0
+0 10000000 100 16 262144 0 0
+E
+lapel pin whispering blade~
+&+L   At first glance, it appears to be a simple pin of darkened
+&+Lsteel, no larger than a clipped &+Ycoin&+L. It's the shape of a narrow
+&+Ldagger, stylized and elongated, with a &+Cblade&+L so thin it borders
+&+Lon abstract. The metal is matte and black, making it difficult
+&+Lto notice when pinned to dark &Ncloth&+L.
+&+L   Closer inspection reveals the craftsmanship to be immaculately
+&+Lprecise. Along the &+Cblade&+L run microscopic etchings of compressed
+&+mr&+Mu&+mn&+Me&+ms&+L, spiraling subtly toward the tip. The hilt bears an inlaid
+&+Lshard of smoky &+cc&+Lr&+cy&+Ls&+ct&+La&+cl&+L, opaque and faintly &+Bcold&+L.
+&+L   Worn by &+mRahadin's&+L secret assassin, the shadowy eliminator of
+&+Lthreats to Castle &+rRavenloft&+L, the pin grows &+Bcol&+cd&+Cer&+L when a &+ylife &+Lis
+&+rtaken&+L, sometimes &+Cfros&+Wting&+L over, while simultaneously only briefly
+&+Lsatisfying its wearer's &neternal &+rhun&+Rger&+L.
+~
+A
+55 10
+A
+58 -1
+#59296
+rod immovability~
+&+Lthe &+yrod &+Lof &-w&+limmovability&N~
+&+LSmall &-L&+Bflashes&n&+L of &+cenergy &+Lcrackle around the legendary &+yrod &+Lof &-w&+limmovability&n&+L.~
+~
+5 18 3 0 15 0 33555456 8193 64 986615712 0
+12 4 5 0 0 1458036478 40 20
+4 1000000 100 0 8388608 0 2048
+E
+rod immovability~
+&+yForged by ancient Dusk Elves in an age when twilight magic
+&-w&+lstill shaped the realm that became Barovia, it anchors
+&N&+yitself to its wielder, and its wielder to the earth.
+&-w&+lDusk elven runes etched along its length glow faintly
+&N&+yat sunset, binding the rod to the stillness between
+&-w&+lday and night. Legends say it was used to hold open
+&N&+ycollapsing sanctuaries and to pin shadows to the earth.
+~
+A
+36 10
+A
+13 45
+#59297
+living heart gulthias tree~
+&+Lthe &+gl&+Gi&+gv&+Gi&+gn&+Gg &+mheart&+L of the &+gGulthias &+Ltree~
+&+LThe living heart of the Gulthias tree~
+~
+13 15 3 0 7 0 0 0 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+#59298
+personal flying carpet~
+&+Ya personal &+Wflying carpet&N~
+&+YAn ornately-crafted magical &+Wcarpet&+Y flies here, seeking a new owner.~
+~
+4 3 3 0 15 0 37748736 16385 64 0 0
+41 999 999 470 0 0 0 0
+0 1000000 100 134217730 0 0 0
+A
+55 12
+A
+14 250
+#59299
+fang bladed dagger fang-bladed raven's claw ravens claw~
+&+La &+Wfang-&+Lblad&Ne&+Wd &+Ldagger named &+L'&+rRaven's Claw&+L'&N~
+&+LAn ancient black dagger with &+rred veins&+L, crafted with intricate artistry, sits here unclaimed.~
+~
+5 16 2 0 15 0 33554432 8193 64 0 0
+2 3 7 0 0 618618065 56 20
+1 1000000 100 0 2048 0 0
+E
+fang bladed dagger fang-bladed raven's claw ravens claw~
+&+rRaven's Claw&+L is a dagger of exquisite yet unsettling craftsmanship.
+&+LThe blade curves like the &+Wfang &+Lof a predatory animal, blacked to a
+&+Cmirror&+c sheen&+L. Along its edge, faint &+rc&+Rr&+ri&+Rm&+rs&+Ro&+rn &+Rv&+re&+Ri&+rn&+Rs&+L pulse with a dim,
+&+Lhungry &n&+mglow&+L when near living &+rblood&+L. The hilt is bound in worn, black
+&+Lleather and the guard is shaped like unfurled raven wings, tipped
+&+Lwith &+Csilver&+L. A small &+Rr&+ru&+Rb&+ry&+L gleams at the center of the pommel,
+&+Lshimmering with an inner light. When unsheathed, the dagger emits a
+&+Lfaint &Nwhispering&+L sound..
+
+According to legend, Strahd von Zarovich commissioned the dagger
+during his mortal years as a weapon of ceremony. When he became the
+vampire lord of Barovia, he reforged it through necromantic rites
+and the Dark Powers that rule Ravenloft. The weapon became a symbol
+of intimate death - used in dark rituals and executions. It is said
+that the dagger drank as much blood as Strahd himself. Some say that
+the blade remembers each of its victims - and that those who hold it
+hear the faint echoes of their dying pleas.
+~
+E
+_room_msg~
+&N$n's &q &+rglows blood-red!
+~
+E
+_char_msg~
+Your &q &+rglows blood-red!
+~
+E
+_victim_msg~
+&N$n's &q &+rglows blood-red!
+~
+A
+18 5
+A
+19 5
+#59300
+mystical scroll favor archmage~
+&+Wa mystical scroll, &+c'Favor of the Archmage'&n~
+&+WA mystical scroll, &+c'Favor of the Archmage'&n floats here.~
+~
+8 28 2 0 7 0 67117057 8404993 32832 0 0
+0 0 0 0 0 0 0 0
+0 9000000 100
+E
+mystical scroll favor archmage~
+                                             ___________________________
+   _______________________-------------------                           `\
+ /:--__                                                                  |
+||< > |                                   _______________________________/
+| \__/_________________-------------------                             |
+|                                                                      |
+|   To the One Whose Mind Commands the Unseen,                         |
+ |                                                                      |
+ | From the shadowed halls of Castle Ravenloft, I, Rahadin, Chamberlain |
+ | and eternal servant to His Excellency, Count Strahd von Zarovich,    |
+  | extend to you a summons most rare.                                 |
+  |                                                                    |
+  | The mists whisper your name - a name spoken with both reverence    |
+  | and unease - and so it has reached my master's ear. He has watched |
+  | your will, as you have shaped light and shadow as one might shape  |
+  | molten gold. The Count has deemed you worthy of a mantle long      |
+  | vacant: that of Archmage of Castle Ravenloft, a title held by none |
+  | since the fall of Exethanter himself.                              |
+ |                                                                    |
+ | Within these walls, the air hums with ancient power. The very      |
+ | stones remember spells whispered centuries ago. Here, your talents |
+ | would not be confined to petty courts or trembling apprentices.    |
+ | You would command the Sanctum Arcanum, a sanctified wing sealed by |
+ | wards of Strahd's own design. Its libraries hold volumes thought   |
+ | lost to time, tomes that breathe when opened and bleed when read.  |
+ | The laboratories await your hand; the night itself, your inquiry.  |
+  |                                                                    |
+  | Your charge, should you accept, is simple yet eternal: to serve    |
+  | the Count in all matters of the arcane. To study the forces that   |
+  | bind this land and to seek understanding where others would flee.  |
+  | You will find your freedom vast - within the limits of His will.   |
+  | In return, the Count offers knowledge beyond mortal measure:       |
+ | the secrets of life, death, and the still-beating heart of eternity. |
+  |                                                                     |
+  | Take heed - refusal is not punished, but it is remembered.          |
+  | Acceptance, however, grants you purpose beyond mortality. When you  |
+  | have resolved your affairs, present yourself to me before the moon  |
+  | reaches its zenith. Speak to me of the treasures of Ravenloft, and  |
+  | I shall issue your final trials. Return five treasures with this    |
+  | scroll to me, and the mists will open the way.                      |
+  | The Count awaits your arrival. I await your obedience.             |
+  |                                                                   |
+ |         &+L,_  &+g`{&+r@&+g)'                       &+b/R /4 /-/ /4 /> / /\/&n     |
+ |        &+L<)')-&+g//`                       &+BHigh Chamberlain Rahadin&n     |
+ |        &+L(_.\\=                                                    &N |
+ |          &+L"&+g//&+L`                              &N_______________________|_
+ |  ___________________-----------------------                         `\
+ |/`--_                                                                  |
+ ||[ ]||                                          ______________________/
+  \===/___________________------------------------
+~
+#59301
+rag draped skeleton~
+&+ma rag-draped &+Wskeleton&N~
+&+mA rag-draped &+Wskeleton &+mreclines on a huge slab of &+Wma&nr&+Lb&+Wle&+m.~
+~
+29 10 3 0 7 0 0 0 0 0 0
+294 59145 8 0 0 0 0 0
+0 0 100
+E
+rag draped skeleton~
+   &+mAn ancient sketeton rests in peace, reclined with its hands
+&+mcrossed over its chest eternally.  Burial garments have been
+&+mreduced to deteriorating rags, draped across its bones. The
+&+mskeleton rests atop a 3-foot-by-5-foot rectangular slab of
+&+mmarble.
+~
+#59302
+vaniquisher's motley coat~
+&+gthe &+Wvan&+Rqui&+yshe&+rr's &+gmot&+Wley&N~
+&+gA patchwork, quilted coat of magical fabric sits here, scintillating.~
+~
+4 3 4 0 15 0 1 1033 64 0 0
+60 999 999 128 0 0 0 0
+0 600000 100 536944640 12480 0 0
+E
+vaniquisher's motley coat~
+&+gThe coat is unmistakably quilted, heavy with layers sewn atop
+&+Wone another in deliberate, uneven squares. Each patch is cut
+&+Rfrom a different fabric: weathered canvas, worn velvet, strange
+&+Yhide, monastery wool, and various colored strips of salvaged silk
+&+rfrom ruined finery. Inside the coat, the quilting grows denser
+&+gover the heart and shoulders. The lining is a collage of symbols
+&+Wpieced together from many traditions - druidic knots, bestial
+&+Rtotems, broken heraldry, sunbursts split, cut apart, then re-
+&+Ystitched so that no single faith or order claims the garment.
+~
+A
+57 -1
+A
+58 -1
+#59303
+oathbow oath bow~
+&+Ythe &+WOath&+Ybow&N~
+&+YA brilliant, golden bow floats here, rotating magically.~
+~
+6 24 3 0 15 0 1 8193 32834 0 0
+135 135 0 1 0 0 0 0
+0 1000000 100
+E
+oathbow oath bow~
+&+YThe &+WOath&+Ybow is a long, elegant weapon of magical gold that
+&+Ybends and moves without flaw. Its limbs are slender and
+&+Ysevere, etched with precise runes of oath and judgement
+&+Ythat lie dormant until a vow is spoken. When one nocks
+&+Yan arrow upon the Oathbow, it is said that it whispers:
+
+            &N'Swift defeat to my enemies'
+
+&+YThe grip is wrapped in pale leather, worn smooth by hands
+&+Ythat meant to kill. When drawn, the bow grows warm with
+&+Ythe runes igniting in a steady glow. The string hums with
+&+Yrestrained force, and the air itself seems to lean toward
+&+Ythe named enemy.
+~
+A
+19 5
+A
+32 5
+#59304
+rotting canvas sack~
+&+ya rotting canvas sack&N~
+&+yA rotting canvas sack lays here in a puddle of filth.~
+~
+15 15 3 0 7 0 0 16385 0 0 0
+50 0 0 0 0 0 0 0
+0 0 100
+E
+rotting canvas sack~
+   &+yThis filthy canvas sack is discolored nearly to the point of blackness,
+&+ywith several gaping, wet holes.
+~
+#59305
+ring dire lantern~
+&n&+bthe ring of the &+Ld&+bi&+Lr&+be &+Ll&+ba&+Ln&+bt&+Le&+br&+Ln&n~
+&n&+bThe ring of the &+Ld&+bi&+Lr&+be &+Ll&+ba&+Ln&+bt&+Le&+br&+Ln&n lies here, &+Lleaking darkness&N.~
+~
+4 15 3 0 7 0 33554432 3 64 0 0
+60 999 999 302 0 0 0 0
+0 0 100 0 2 0 0
+E
+ring dire lantern~
+&+LThis heavy, silver &+bring is streaked wi&+Lth faint veins of amber.
+&+LThe wide band is squar&+be on the top, smooth &+Lfrom any gemstones
+&+Lor markings. Instead, the&+b whole ring is carved &+Llike a square-
+&+Lhooded lantern. There amber &+bveins seem to pulse with&+L a beckoning
+&+Llight when the ring isn't being&+b worn, but dim to a shadowy &+Lblack
+&+Lwhen it is.
+~
+A
+14 60
+A
+24 -5
+#59306
+cavalier bonnet _id_~
+&+Lan ov&+Bersiz&+Led &+Lca&+Bvali&+Ler &+Wbonnet&N~
+&+LAn ov&+Bersiz&+Led &+Lca&+Bvali&+Ler &+Wbonnet&N lies here, offering a curious &+mpull&n.~
+~
+3 15 3 0 7 0 0 17 32832 0 0
+60 5 5 417 0 0 0 0
+0 0 100 8 0 0 67108864
+E
+cavalier bonnet~
+&+LThis bonnet is outrageously oversized, even by the standards
+&+Lof traveling performers and self-important &+l&-wbards&N&+L. Its broad,
+&+Lsweeping brim curves upward on one side and dips low on the
+&+Lother. The felt is a sun-faded, deep &+rcrimson red&+L.
+&+LA thick band of &+bbl&+Bue velv&+bet&+L cinches the crown, studded with
+&+Lsmall &+ybrass&+Y t&+ya&+Yc&+yk&+Ys&+L that catch the light. Tucked into the band
+&+Lis a single long, &+Wwhite feather&+L standing nearly a foot above
+&+Lthe hat, swaying with every gesture.
+~
+E
+_id_name_~
+rictavios cavalier bonnet
+~
+E
+_id_short_~
+&+CRictavio's &+mgrand &+Lcavalier &+Wbonnet
+~
+E
+_id_desc_~
+&+CRictavio's &+Lcavalier bonnet has been left here.
+~
+A
+17 -40
+A
+21 -4
+#59307
+giant ant eggsac pulsating egg sac~
+&+ya &+m&-Lp&N&+Mu&+m&-Ll&N&+Ms&+m&-La&N&+Mt&+m&-Li&N&+Mn&+m&-Lg &N&+yg&+Ri&+ya&+Rn&+yt a&+Rn&+yt &+Wegg&Nsac&N~
+&+ygiant ant &+Weggsac&N~
+~
+8 2 3 0 15 0 0 0 32768 0 0
+0 0 0 0 0 0 0 0
+500 0 100
+E
+giant ant eggsac pulsating egg sac~
+&+yThe &+Wegg&Nsac&+y is a swollen, obscene mass, nearly the size of a small
+&+yhorse, slumped to the ground in a barely-rigid blob. An outer
+&+ymembrane of thick, semi-&Ntranslucent &+yamber stretches to the point
+&+yof nearly tearing. Thick &+mv&+Me&+mi&+Mn&+ms&+y crawl across the surface, some
+&+ydeep into the &+rviscera&+y, pumping viscous fluids in slow, rhythmic
+&+ysurges. Each &+Rpulse&+y makes the &+Wegg&Nsac&+y quiver, accompanied by wet,
+&+yrubbery sounds. Within the &Nsac&+y, the rounded shapes of hundreds
+&+yof oblong &+Weggs&+y press outward in waves in faint impressions of
+&+ytheir &+Wwhite&+y, glossy shells briefly before sinking back into the
+&+ymurk. The &+Wegg&Nsac&+y gives off a faint &+Rheat&+y and a strong earthy scent.
+~
+#59308
+ring three wishes~
+&+Wa ring of &+Cthree &+Ywishes&N~
+&+WA ring of &+Cthree &+Ywishes&N lies here.~
+~
+4 22 1 0 14 0 33554433 3 64 0 0
+60 3 3 314 0 0 0 0
+0 125000 100
+E
+ring three wishes~
+&+WThis ring is deceptively simple - a plain band of polished gold
+&+Ywith no gemstones nor intricate carvings, just a smooth, unbroken
+&+Wcircle that feels unnaturally warm to the touch. When held, it
+&+Ygives a faint hum and seems to listen to its wearers wishes.
+~
+A
+17 -50
+A
+35 5
+#59309
+bracelet wandering star~
+&+ya b&+Cr&+yac&+Ce&+yl&+Cet&+y o&+Cf&+y t&+Ch&+ye &+Cwa&+yn&+Cd&+ye&+Cr&+yin&+Cg&+y s&+Ct&+ya&+Cr&N~
+&+yA b&+Cr&+yac&+Ce&+yl&+Cet&+y o&+Cf&+y t&+Ch&+ye &+Cwa&+yn&+Cd&+ye&+Cr&+yin&+Cg&+y s&+Ct&+ya&+Cr&N lies here.~
+~
+9 20 2 0 15 0 33554433 4097 64 0 0
+5 0 0 0 0 0 0 0
+0 125000 100 524288 0 0 0
+E
+bracelet wandering star~
+&+CThis bracelet is made of finely interwoven silver and dark bronze,
+&+ypolished to a dull gleam that seems to shift depending on the light.
+&+CTiny, star-shaped silver charms dangle along the band, each one
+&+ysligtly different.
+~
+A
+33 5
+A
+34 5
+#59310
+magical gloves missile summoning missile-summoning~
+&+ysome magical gloves of &+Ym&+Wi&+Ys&+Ws&+Yi&+Wl&+Ye-&+csummoning&N~
+&+ySome magical gloves of &+Ym&+Wi&+Ys&+Ws&+Yi&+Wl&+Ye-&+csummoning&N lies here.~
+~
+3 13 2 0 15 0 33619969 129 64 0 0
+25 99999 99999 32 0 0 0 0
+0 100000 100 0 0 0 1024
+E
+magical gloves missile summoning missile-summoning~
+&+yThese leather gloves are stitched with intricate precision and great
+&+ydetail. In identical common in an old, but not unknown, dialect are
+&+ythe words &N'waouz wuggurz' &+yrepeating in a serpentine pattern across
+&+yboth gloves, which seem to &+Wt&Nw&+Wi&nn&+Wk&Nl&+We&+y with a &+mmag&+Mic&+y spark.
+~
+A
+24 -6
+A
+21 -6
+#59311
+penitent's penitents baldric~
+&+Wthe penitent's &+Lbaldric&N~
+&+WThe penitent's &+Lbaldric&N lies here.~
+~
+4 12 4 0 11 0 36896768 1050625 64 0 0
+60 999 999 192 0 0 0 0
+1 65000 100 0 0 0 4096
+E
+penitent's penitents baldric~
+&+yWider and heavier than most belts, this one can be worn across
+&+cthe body, like a sash, or around one's waist. It is reinforced
+&+ywith stitched panels of pale leather and dull bronze. Old holy
+&+csymbols have been scored out and reworked into simple lines.
+&+yWhen worn, the baldric seems to redistribute weight, making
+&+carmor and weapons feel easier to bear.
+~
+A
+31 5
+A
+35 5
+#59312
+object unnamed~
+&+LgIANT spider major para proc&N~
+&+LGIANT spider major para proc&N lies here.~
+~
+5 15 3 0 7 0 134221826 8192 64 0 0
+14 0 0 0 2 101101101 60 15
+0 0 100
+E
+_victim_msg~
+&+LThe &+yG&+RI&+yA&+RN&+yT s&+Rp&+yi&+Rd&+ye&+Rr&+L arches its thorax and spews &Ns&+Wt&Ni&+Wc&Nk&+Wy &Nw&+We&Nb&+Ws&+L at you!
+&+W       `.    \_______/    ,'
+&+W         `.,-'\_____/`-.,'
+&+W          /`..'\ _ /`.,'\
+&+W         /  /`.,' `.,'\  \
+&+W    ____/__/__/     \__\__\____
+&+W        \  \  \     /  /  /
+&+W         \  \,'`._,'`./  /
+&+W          \,'`./___\,'`./
+&+W         ,'`-./_____\,-'`.
+&+W       ,'    /       \    `.
+~
+E
+_room_msg~
+&+LThe &+yG&+RI&+yA&+RN&+yT s&+Rp&+yi&+Rd&+ye&+Rr&+L arches its thorax and spews &Ns&+Wt&Ni&+Wc&Nk&+Wy &Nw&+We&Nb&+Ws&+L at $N!
+~
+A
+58 -5
+#59313
+glaive thousand sorrows~
+&+Cthe glaive of &+La thousand sorrows&N~
+&+LA black glaive, headed by a sharp, stylized bat, lays here, emitting &+revil&+L.~
+~
+5 15 4 0 15 0 37748736 8193 127 0 0
+8 8 6 0 0 630632103 60 20
+2 1200000 100
+E
+glaive thousand sorrows~
+&+mAn eerie dread fills the air surrounding the glaive...
+
+&+LThe symbolic weapon of the captain of &+rCastle Ravenloft's &+LD&+rr&+Le&+ra&+Ld
+&+LG&+ru&+La&+rr&+Ld, this glaive may be unspectacular in it's forging, long and
+&+Lslightly bowed black iron, but it exudes an unmistakable gloom in
+&+Lits presence. An endless howl of dying &Nscreams&+L, sometimes solo
+&+Lvoices and other times layered together, form a deathly chorus
+&+Lthat follows the revered blade. What appears to be a decorative
+&+Lpattern of &Ne&+Lt&Nc&+Lh&Ni&+Ln&Ng&+Ls, up close, are revealed to actually be &nnames
+&+Lwritten in &+ya&+Ln&+yc&+Li&+ye&+Ln&+yt&n script&+L and worn smooth by use.
+&+LThe blade itself is a cruel crescent of metal, never truly shining
+&+Lnor catching sunlight. Although the inner curve runs faint &+rcrimson
+&+Lv&+Re&+Li&+Rn&+Ls that &+mpu&+Ml&+mse&+L in different, unique ways for every scream.
+&+LWhen &+cdrawn&+L, the air around the blade grows heavy, as the endless,
+&+Lechoing screams gain in frequency and magnitute.
+~
+E
+_char_msg~
+&+LThe screams of your &+Cglaive &+Lintensify as the air around $N thickens with &+rd&+Lr&+re&+La&+rd&+L!
+~
+E
+_room_msg~
+&+LThe screams of &N$n's &+Cglaive &+Lintensify as the air around $N thickens with &+rd&+Lr&+re&+La&+rd&+L!
+~
+E
+_victim_msg~
+&NAs $n swings $q, &+Lthe air around you suddenly thickens..
+&N    "Please... not again..."
+&N         "I had a name..."    "It..still..hurts.."
+&N  "We were innocent"   "Tell my son--(cuts off)"
+&+LYou feel weakened as the overlapping chorus of ghostly screams subsides.
+~
+A
+58 -1
+A
+32 6
+#59314
+holy crozier staff hollow sun~
+&+Wthe crozier of &+Lthe hollow sun&N~
+&+WAn intricately-carved staff of pale ash-white wood levitates here, &+rglowing.~
+~
+5 6 4 0 15 0 33555456 8193 127 42860960 0
+12 3 8 0 0 645 60 20
+2 1000000 100
+E
+holy crozier staff hollow sun~
+&+LThe staff is tall and austere, fashioned from pale, ash-white
+&+Lhardwood, likely from ancient Svalich. Its surface is smooth,
+&+Lyet fissured with fine cracks. Faint &+Ygold filaments&+L run through
+&+Lthose cracks, &+Mglowing&+L softly with a &+rdeep red&+L, as though a hot
+&+rlight&+L burned from within as it struggles to escape.
+
+&+LAt the crown of the crozier rises the hollow sun. The crook forms
+&+La perfect disc of dull, sanctified &+Ygold&+L, unadormed by gems or sigils.
+&+LWhere a radiant sun would blaze, there is instead an empty void at
+&+Lthe center, a circular absence that seems to warp and swallow any
+&+Lnearby &+Wlight&+L.
+~
+E
+_char_msg~
+&NYour $q &+Lsw&+bel&+Lls with &+bda&+Lrkne&+bss&+L as all &+Ylight &+Wsources &+Lseep into its void.
+~
+E
+_room_msg~
+&N$n's $q &+Lsw&+bel&+Lls with &+bda&+Lrkne&+bss&+L as all &+Ylight &+Wsources &+Lseep into its void.
+~
+E
+_victim_msg~
+&N$n's $q &+Lsw&+bel&+Lls with &+bda&+Lrkne&+bss&+L as all &+Ylight &+Wsources &+Lseep into its void.
+~
+A
+57 -1
+A
+58 -1
+#59315
+vial blood first vampire~
+&+La small &+cvial&+L of &+rbl&+Ro&+ro&+Rd &+rof the &+RFi&+rr&+Rst V&+ra&+Rm&+rp&+Ri&+rr&+Re&N~
+&+LA small &+cvial&+L of &+rbl&+Ro&+ro&+Rd &+rof the &+RFi&+rr&+Rst V&+ra&+Rm&+rp&+Ri&+rr&+Re&N lies here.~
+~
+10 7 1 0 15 0 67108865 8404993 64 0 0
+60 284 56 292 0 0 0 0
+0 1000000 100
+E
+vial blood first vampire~
+&+L  No larger than a finger, this small &Nglass &+cvial&+L is sealed
+&+Lwith a rubber stopper and etched with blackened &+yBarovian
+&+Lfunerary &+mru&+Mn&+me&+Ms&+L, nearly rubbed off with age. The &Nglass&+L itself
+&+Lis unnaturally &+Bcold &+Land faintly smoky. Suspended inside is
+&+La single dram of &+rbl&+Ro&+ro&+Rd&+L so dark it appears almost black -
+&+Lrevealing a deep &+rcrimson&+L when swirled in a &+Ylight&+W source&+L.
+&+L  The &+cvial&+L radiates with a subtle sense of &+rdr&+Le&+ra&+Ld, causing
+&+Ldiscomfort around those with &+mmagic&+b sensitivity&+L. Those who
+&+Lhold it for too long start to feel their own &+rhe&+Rar&+rtb&+Rea&+rt
+&+Lpulsing from the &+cvial&+L.
+&+L  Barovian legends claim this &+rb&+Rl&+roo&+Rd&+L was drawn from the first
+&+Ltrue &+Rva&+rmpi&+Rre&+L, &+rStrahd Von Zarovich&+L, the primordial source
+&+Lfrom which all &+Rva&+rmpir&+Ric&+L curses flowed. Whether stolen by
+&+Lancient ritual or offered willingly as part of a dark
+&+Lpact remains unknown.
+&+L  When unsealed, the &+cvial&+L releases a faint scent of &+Wiron
+&+Land grave-&+ysoil&+L. Shadows deapen nearby and &+Yf&+rl&+Ya&+rm&+Ye&+rs &+ydim&+L.
+&+LThe &+rb&+Rl&+roo&+Rd&+L never coagulates, never dries, and cannot be
+&+Ldiluted. Even a single &+Rdrop&+L is said to be enough to perm-
+&+Lanently &Nt&+La&Ni&+Ln&Nt&+L a &+cso&+Cu&+cl&+L.
+~
+#59316
+nightward crook staff~
+&+Lthe Nightward crook&n~
+&+LA black staff headed with dark-silver v&+Wo&+Li&+Wd&+L crystal, floats here.~
+~
+5 6 4 0 15 0 37749760 8193 127 407670276 0
+12 9 5 0 0 1317317632 56 6
+0 1000000 100 33554688 0 0 262144
+E
+nightward crook staff~
+&+L   The staff stands just taller than its typical bearer, fashioned
+&+Lfrom a single length of ancient black svalich, so old the wood has
+&+Lhardened almost to stone. Its surface is smooth where hands have
+&+Lrested for centuries, yet elsewhere e&Nt&+Lc&Nh&+Le&Nd&+L with shallow, delicate
+&+Lcarvings of &+yBarovian &+Lprayer. The runes are subtle, only catching
+&+Lthe when shadow passes over them, with a deep azure glow.
+&+L   The head of the staff curves into a restrained chepherd's crook.
+&+LSet within the curve is a fist-sized, multi-faceted &+Lv&+Lo&+Wi&+Ld &+cc&+Br&+cy&+Bs&+ct&+Ba&+cl.
+&+LDarkness and shadow seems to bend towards the &+cc&+Br&+cy&+Bs&+ct&+Ba&+cl&+L, dimming
+&+Lnearby light sources with an unnatural draw. When held alof, nearby
+&+Lshadows bend like &+gtall grass&+L in a &+cslow wind&+L.
+&+L   Known through &+yBarovian&+L lore to be wielded by the notorious
+&+mArch&+Mmage of Castle &+rRavenloft&+L, the Nightward Crook &+rhums&+L with a low,
+&+Lsubsonic resonance that seems to establish a quiet dominion when
+&+Lheld with such, causing creatures in its presence to feel an
+&+Linstinctive urge to lower themselves in &+yrepose&+L.
+~
+E
+_char_msg~
+As you swing $q, nearby &+Lshadows bend toward &N$N&+L.
+~
+E
+_room_msg~
+As $n swings $q, nearby &+Lshadows bend toward &N$N&+L.
+~
+E
+_victim_msg~
+As $n swings $N, &+Lnearby shadows bend, engulfing you.
+~
+A
+57 -2
+A
+58 -2
+#59317
+tarnished silver phylactery exethanter~
+&+Lthe &+ct&+La&+cr&+Ln&+ci&+Ls&+ch&+Le&+cd&+C silver &+Gph&+Cyla&+Bcte&+mry &+Lof &-m&+lExethanter&N~
+&+LThe &+ct&+La&+cr&+Ln&+ci&+Ls&+ch&+Le&+cd&+C silver phylactery &+Lof &-m&+lExethanter&N has been left here.~
+~
+18 22 2 0 15 0 67108864 8388613 1 0 0
+0 0 0 0 0 0 0 0
+0 666666 100
+E
+tarnished silver phylactery exethanter~
+&+L  This small ovoid flask of dull &+csilver &+Lhas tarnished with
+&+Lage to near blackness. A small hinge on the back of the cap
+&+Lis &+Ysealed&+L with a necromantic clasp that resembles a &Ns&+Wk&Ne&+Wl&Ne&+Wt&Na&+Wl
+&+Ljaw biting its own tongue. A hairline &Nc&+Lr&na&+Lc&Nk&+L runs through
+&+Lthe bottom of the reliquary, visible only when viewed at
+&+Lthe right angle in &+Ysun&+Wlight&+L.
+&+L  Small &Netchings&+L that run along the top rim of, at closer
+&+Linspection, appear to spell out the word &-m&+l'EXETHANTER'&N&+L in
+&+Lan ancient &+mwizards' &+yscript&+L. Along the bottom rim, similar
+&+mr&+Mu&+mn&+Me&+ms&+L spell out, in common high &+yBarovian&+L, '&+RD&NO&+RS&NT&+RR&NO&+RN&+L.'
+~
+A
+37 5
+A
+33 5
+#59318
+mindstone scarab~
+&N&+La &+mmin&+Md&+Cs&+Mto&+mne &+rs&+yc&+rar&+ya&+rb&N~
+&+rA grotesque &+ys&+rc&+yar&+ra&+yb&+r made of glistening &+mmi&+Mnd&+Cs&+Mto&+mne &+Lcrawls about here.~
+~
+9 11 1 0 15 0 4097 335937553 64 0 0
+5 0 0 0 0 0 0 0
+0 400000 100 0 0 16777216 0
+E
+mindstone scarab~
+   &+mUpon first glance, this object looks like a mindstone - one of
+&+mthe gemstones found only in the blackrock of the Astral Plane.
+&+mA smooth gemstone of curious magenta that pulses with thin
+&+Ccyan veins&+m at its heart.
+   &+LCloser inspection reveals this to actually be a tiny beetle,
+&+Lno larger than a child's fist, which scurries to its host's
+&+Lhead and burrows into the &+mb&+Rr&+ma&+Ri&+mn&+L, or perhaps an &+We&+By&+We &+rso&+Rck&+ret&+L, or
+&+Lsomewhere on the &+Cface&+L.
+~
+A
+56 10
+A
+37 5
+#59319
+heavy iron axe runecutter rune cutter~
+&+La heavy, iron axe named &+R'&+MR&+mu&+Mn&+me&+Mc&+mu&+Mt&+mt&+Me&+mr&+R'&n~
+&+LA heavy, iron axe named &+R'&+MR&+mu&+Mn&+me&+Mc&+mu&+Mt&+mt&+Me&+mr&+R'&n lies here.~
+~
+5 15 4 0 15 0 33554704 8193 93 0 0
+1 4 5 0 0 1093093363 60 20
+2 600000 100
+E
+heavy iron axe runecutter rune cutter~
+   &+LDeceptively light for it's size and material, &+MR&+mu&+Mn&+me&+Mc&+mu&+Mt&+mt&+Me&+mr&+L is a
+&+Ldouble-bladed axe forged of dark iron, &+Bv&+Le&+Bi&+Ln&+Be&+Ld with faint sigils
+&+Lthat seem to &+Mglow&+L slightly when spells are cast nearby.
+&+LThe edges &+rhum&+L with a &+Rhun&+rgry&+L vibration, drawing the wielder towards
+&+Lnearby &+mmagic&+L like a dog tugging a leash.
+~
+E
+_char_msg~
+The &+ms&ni&+mg&Ni&+ml&Ns on your $q &Nbegin to &+Mglow &Nas it's &+Cedges &+rvibrate&N!
+~
+E
+_victim_msg~
+The &+ms&ni&+mg&Ni&+ml&Ns on $n's $q &Nbegin to &+Mglow &Nas it's &+Cedges &+rvibrate&N!
+~
+E
+_room_msg~
+The &+ms&ni&+mg&Ni&+ml&Ns on $n's $q &Nbegin to &+Mglow &Nas it's &+Cedges &+rvibrate&N!
+~
+A
+18 5
+A
+19 5
+#59320
+noshow gulthias tree proc~
+&+Lno-show gulthias tree proc&N~
+&+LNo-show gulthias tree proc&N lies here.~
+~
+5 15 3 0 7 0 201330690 8192 94 0 0
+14 7 7 0 0 1446386571 60 11
+0 0 100
+E
+_victim_msg~
+&+LThe &+gGulthias&+L tree's &+mv&+Me&+mi&+Mn&+ms&n pulse violently and &+Lblackened &+yr&+Lo&+yo&+Lt&+ys&N surge from
+the ground as its ancient branches snap hungrily toward fresh &+rbl&+Ro&+ro&+Rd&n.
+~
+E
+_room_msg~
+&+LThe &+gGulthias&+L tree's &+mv&+Me&+mi&+Mn&+ms&n pulse violently and &+Lblackened &+yr&+Lo&+yo&+Lt&+ys&N surge from
+the ground as its ancient branches snap hungrily toward fresh &+rbl&+Ro&+ro&+Rd&n.
+~
+A
+58 -4
+A
+31 50
+#59321
+noshow vampire proc~
+&+Lno-show vampire edrain proc&n~
+&+LNo-show vampire edrain proc&n lies here.~
+~
+5 15 3 0 7 0 209719298 8192 93 0 0
+5 5 5 0 0 326025025 60 14
+0 0 100
+E
+_room_msg~
+&NSuddenly $n leaps forward, viciously biting $N!
+&N$N screams in &+mhorror&N as $n's &+Wf&+wang&+Ws &+rbite deeply&N into &+rf&+Rl&+re&+Rs&+rh&N!
+~
+E
+_victim_msg~
+&NSuddenly $n leaps forward, viciously biting &-L&+wYOU&N!
+&NYou scream in &+mhorror&N as $n's &+Wf&+wang&+Ws &+rbite deeply&N into your &+rf&+Rl&+re&+Rs&+rh&N!
+~
+A
+58 -4
+A
+31 40
+#59322
+blood beholder vhalzerek~
+&+Wblood &Nof the &+WVh&Na&+Wlz&+Le&Nr&+Wek&n~
+&+WA glowing ampoule of &nblood&+W of the beholder Vh&Na&+Wlz&+Le&Nr&+Wek floats here.~
+~
+10 2 4 0 15 0 67112961 8404993 64 0 0
+60 248 248 169 0 0 0 0
+0 400000 100
+E
+blood beholder vhalzerek~
+   &+WAs strange as it is unique, this white blood is sluggish
+&+wand thick, with tiny veils of black that form and pulse when
+&+Wthe ampoule is agitated. The liquid is extremely viscous and
+&+wdoes not spill or splash like regular fluids. Instead, it
+&+Wseems to crawl and creep as it spreads, with tiny, deliberate
+&+wtendrils that recoil from warmth and living flesh.
+   &+WThe fluid reeks of rave dust and old incense, carrying a
+&+wfaint metallic tang that burns the throat. Left undisturbed,
+&+Wthe blood eventually stiffens into a glassy, pearly crust,
+&+wfaintly warm and watching.
+~
+A
+24 -5
+A
+20 -5
+#59323
+amber hued amber-hued seared ant pincer~
+&+yan a&+Ym&+yb&+Ye&+yr-&+Yh&+yu&+Ye&+yd, &+Rseared &+ya&+Rn&+yt p&+Ri&+yn&+Rc&+ye&+Rr&N~
+&+yAn a&+Ym&+yb&+Ye&+yr-&+Yh&+yu&+Ye&+yd, &+Rseared &+ya&+Rn&+yt p&+Ri&+yn&+Rc&+ye&+Rr&N lies here.~
+~
+19 48 2 0 8 0 0 0 0 0 0
+60 20 20 0 0 0 0 0
+0 2500 100
+E
+seared amber hued amber-hued ant pincer meat~
+&+y   Glossy chitin catches the light in gradients of honey and burnt
+&+Rsugar. The edges are charred to a deep umber where the seared it
+&+ytoo hot. The claw itself is hooked and formidable with a serrated
+&+Rinner edge that has been blackened and smoky.
+~
+#59324
+key~
+&+La key to &+YIzek Strazni's&N~
+&+LA key to &+YIzek Strazni's&N lies here.~
+~
+18 15 3 0 7 0 8388608 16385 0 0 0
+0 100 0 0 0 0 0 0
+0 0 100
+E
+key~
+&+LThis iron key is the size of a small dagger and bares the
+&+Lresemblance of the prison key to a large cell. Nevertheless,
+&+Llarge, identifying words etched into either face of the
+&+Lkey read "IZEK" and "STRAZNI".
+~
+#59325
+hand print wall~
+&+La fresh &Nhand print&N~
+&+LFreshly disturbed dust outlines a &Nhand print&+L on the western wall.~
+~
+25 11 3 0 7 0 4096 0 0 0 0
+58456 270 -1 0 0 0 0 0
+0 0 100
+E
+hand print wall~
+   &+LThe western wall is marked by the outline print of a &+Lright hand.
+~
+#59326
+hand print wall~
+&+La fresh &Nhand print&N~
+&+LFreshly disturbed dust outlines a &Nhand print&+L on the eastern wall.~
+~
+25 11 3 0 7 0 4096 0 0 0 0
+59065 270 -1 0 0 0 0 0
+0 0 100
+E
+hand print wall~
+   &+LThe eastern wall is marked by the outline print of a &+Lleft hand.
+~

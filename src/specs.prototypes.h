@@ -1,15 +1,15 @@
 /* constants below are used to recognize wall type -
         they are set in val[3] of wall object */
-#define WALL_OF_FLAMES     0
-#define WALL_OF_ICE        1
-#define LIGHTNING_CURTAIN  2
-#define WALL_OF_FOG        3
-#define PRISMATIC_WALL     4
-#define WEB                5
-#define LIFE_WARD          6
-#define ILLUSIONARY_WALL   7
-#define WALL_OF_FORCE      8
-#define WALL_OF_STONE      9
+#define WALL_OF_FLAMES    0
+#define WALL_OF_ICE       1
+#define LIGHTNING_CURTAIN 2
+#define WALL_OF_FOG       3
+#define PRISMATIC_WALL    4
+#define WEB               5
+#define LIFE_WARD         6
+#define ILLUSIONARY_WALL  7
+#define WALL_OF_FORCE     8
+#define WALL_OF_STONE     9
 #define WALL_OF_IRON      10
 #define WATCHING_WALL     11
 #define WALL_OUTPOST      12
@@ -44,7 +44,6 @@ int conj_specpet_triton(P_char ch, P_char pl, int cmd, char *arg);
 int conj_specpet_salamander(P_char ch, P_char pl, int cmd, char *arg);
 int conj_specpet_serpent(P_char ch, P_char pl, int cmd, char *arg);
 
-
 /* misc other */
 // int mithril_dagger(P_obj obj, P_char ch, int cmd, char *argument);
 int rax_red_dagger(P_obj, P_char, int, char *);
@@ -66,18 +65,16 @@ int resurrect_totem(P_obj obj, P_char ch, int cmd, char *arg);
 /* Ailvio procs */
 int burbul_map_obj(P_obj obj, P_char ch, int cmd, char *arg);
 int chyron_search_obj(P_obj obj, P_char ch, int cmd, char *arg);
-int bandage_mob(P_char, P_char, int, char*);
-int bandage_reward_mob(P_char, P_char, int, char*);
+int bandage_mob(P_char, P_char, int, char *);
+int bandage_reward_mob(P_char, P_char, int, char *);
 /* Avernus procs */
 int sinister_tactics_staff(P_obj obj, P_char ch, int cmd, char *arg);
 int shard_frozen_styx_water(P_obj obj, P_char ch, int cmd, char *arg);
-
 
 /* Shabo Procs */
 int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument);
 int shaboath_enchantment_tower(int room, P_char ch, int cmd, char *argument);
 int shaboath_necromancy_tower(int room, P_char ch, int cmd, char *argument);
-
 
 int pesky_imp_chest(P_obj obj, P_char ch, int cmd, char *arg);
 int mox_totem(P_obj obj, P_char ch, int cmd, char *argument);
@@ -122,7 +119,6 @@ int gargoyle_master(P_char ch, P_char pl, int cmd, char *arg);
 int harpy_good(P_char ch, P_char pl, int cmd, char *arg);
 int harpy_evil(P_char ch, P_char pl, int cmd, char *arg);
 
-
 /* RaxQuest(tm) Stuff */
 int long_john_silver_shout(P_char ch, P_char tch, int cmd, char *arg);
 int circlet_of_light(P_obj obj, P_char ch, int cmd, char *arg);
@@ -145,7 +141,6 @@ int cow_talk(P_char ch, P_char tch, int cmd, char *arg);
 int cookie_monster(P_char ch, P_char pl, int cmd, char *arg);
 int imprison_armor(P_obj obj, P_char ch, int cmd, char *arg);
 int lightning_armor(P_obj obj, P_char ch, int cmd, char *arg);
-
 
 int magic_mouth(P_obj, P_char, int, char *);
 int guildwindow(P_obj, P_char, int, char *);
@@ -176,7 +171,7 @@ int dagger_submission(P_obj, P_char, int, char *);
 int demon_chick(P_char, P_char, int, char *);
 int wristthrow_and_gore(P_char, P_char, int, char *);
 
- /* specs.zalrix.c */
+/* specs.zalrix.c */
 int drowcrusher(P_obj, P_char, int, char *);
 int dragonarmor(P_obj, P_char, int, char *);
 int squelcher(P_obj, P_char, int, char *);
@@ -213,60 +208,60 @@ int hoa_death(P_char, P_char, int, char *);
 int hoa_sin(P_char, P_char, int, char *);
 
 /* specs.vecna.c */
-int vecna_bubble_room(int, P_char, int, char *);
-int vecna_deathaltar(P_obj, P_char, int, char *);
-int vecna_black_mass(P_char, P_char, int, char *);
-int vecnas_fight_proc(P_char, P_char, int, char *);
-int chressan_shout(P_char, P_char, int, char *);
-int vecna_deathportal(P_obj, P_char, int, char *);
-int vecna_ghosthands(P_obj, P_char, int, char *);
-int vecna_torturerroom(P_obj, P_char, int, char *);
-int vecna_gorge(P_obj, P_char, int, char *);
-int vecna_stonemist(P_obj, P_char, int, char *);
-int vecna_mob_rebirth(P_char, P_char, int, char *);
-int vecna_pestilence(P_obj, P_char, int, char *);
-int vecna_minifist(P_obj, P_char, int, char *);
-int vecna_dispel(P_obj, P_char, int, char *);
-int vecna_boneaxe(P_obj, P_char, int, char *);
-int vecna_staffoaken(P_obj, P_char, int, char *);
-int vecna_krindor_main(P_obj, P_char, int, char *);
+int  vecna_bubble_room(int, P_char, int, char *);
+int  vecna_deathaltar(P_obj, P_char, int, char *);
+int  vecna_black_mass(P_char, P_char, int, char *);
+int  vecnas_fight_proc(P_char, P_char, int, char *);
+int  chressan_shout(P_char, P_char, int, char *);
+int  vecna_deathportal(P_obj, P_char, int, char *);
+int  vecna_ghosthands(P_obj, P_char, int, char *);
+int  vecna_torturerroom(P_obj, P_char, int, char *);
+int  vecna_gorge(P_obj, P_char, int, char *);
+int  vecna_stonemist(P_obj, P_char, int, char *);
+int  vecna_mob_rebirth(P_char, P_char, int, char *);
+int  vecna_pestilence(P_obj, P_char, int, char *);
+int  vecna_minifist(P_obj, P_char, int, char *);
+int  vecna_dispel(P_obj, P_char, int, char *);
+int  vecna_boneaxe(P_obj, P_char, int, char *);
+int  vecna_staffoaken(P_obj, P_char, int, char *);
+int  vecna_krindor_main(P_obj, P_char, int, char *);
 void reset_krindor(P_obj);
-int krindor_rogue(P_obj, P_char, int, char *);
-int krindor_bard(P_obj, P_char, int, char *);
-int krindor_psionicist(P_obj, P_char, int, char *);
-int krindor_monk(P_obj, P_char, int, char *);
-int krindor_illusionist(P_obj, P_char, int, char *);
-int vecna_death_mask(P_obj, P_char, int, char *);
-int mob_vecna_procs(P_obj, P_char, int, char *); // Many procs on one item.
+int  krindor_rogue(P_obj, P_char, int, char *);
+int  krindor_bard(P_obj, P_char, int, char *);
+int  krindor_psionicist(P_obj, P_char, int, char *);
+int  krindor_monk(P_obj, P_char, int, char *);
+int  krindor_illusionist(P_obj, P_char, int, char *);
+int  vecna_death_mask(P_obj, P_char, int, char *);
+int  mob_vecna_procs(P_obj, P_char, int, char *); // Many procs on one item.
 
 /* specs.highway.c */
 
 void event_smoke_to_fire(P_char ch, P_char victim, P_obj obj, void *data);
 void event_web_to_smoke(P_char ch, P_char victim, P_obj obj, void *data);
-int wand_of_wonder(P_obj, P_char, int, char *);
-int hewards_mystical_organ(P_obj, P_char, int, char *);
-int amethyst_orb(P_obj, P_char, int, char *);
-int lobos_jacket(P_obj, P_char, int, char *);
-int soul_render(P_obj, P_char, int, char *);
-int breale_townsfolk(P_char, P_char, int, char *);
-int kearonor_hide(P_obj, P_char, int, char *);
-int mir_spider(P_char, P_char, int, char *);
-int mir_fire(P_obj, P_char, int, char *);
-int blackness_sword(P_obj, P_char, int, char *);
-int soulrender(P_obj, P_char, int, char *);
-int white_wyrm_shout(P_char, P_char, int, char *);
-int blue_wyrm_shout(P_char, P_char, int, char *);
-int red_wyrm_shout(P_char, P_char, int, char *);
-int amphisbean(P_char, P_char, int, char *);
+int  wand_of_wonder(P_obj, P_char, int, char *);
+int  hewards_mystical_organ(P_obj, P_char, int, char *);
+int  amethyst_orb(P_obj, P_char, int, char *);
+int  lobos_jacket(P_obj, P_char, int, char *);
+int  soul_render(P_obj, P_char, int, char *);
+int  breale_townsfolk(P_char, P_char, int, char *);
+int  kearonor_hide(P_obj, P_char, int, char *);
+int  mir_spider(P_char, P_char, int, char *);
+int  mir_fire(P_obj, P_char, int, char *);
+int  blackness_sword(P_obj, P_char, int, char *);
+int  soulrender(P_obj, P_char, int, char *);
+int  white_wyrm_shout(P_char, P_char, int, char *);
+int  blue_wyrm_shout(P_char, P_char, int, char *);
+int  red_wyrm_shout(P_char, P_char, int, char *);
+int  amphisbean(P_char, P_char, int, char *);
 
 /* specs.dragonnia.c */
 
-int baby_dragon(P_char, P_char, int, char *);
-int demodragon(P_char, P_char, int, char *);
-int dragon_guard(P_char, P_char, int, char *);
-int dragons_of_dragonnia(P_char, P_char, int, char *);
-int room_of_sanctum(int, P_char, int, char *);
-int statue(P_char, P_char, int, char *);
+int  baby_dragon(P_char, P_char, int, char *);
+int  demodragon(P_char, P_char, int, char *);
+int  dragon_guard(P_char, P_char, int, char *);
+int  dragons_of_dragonnia(P_char, P_char, int, char *);
+int  room_of_sanctum(int, P_char, int, char *);
+int  statue(P_char, P_char, int, char *);
 void call_b_acid(P_char, P_char, int);
 void call_b_fire(P_char, P_char, int);
 void call_b_frost(P_char, P_char, int);
@@ -399,109 +394,108 @@ int yeenoghu(P_char, P_char, int, char *);
 int demogorgon(P_char, P_char, int, char *);
 int astral_succubus(P_char, P_char, int, char *);
 
-
-int janitor(P_char, P_char, int, char *);
-int jester(P_char, P_char, int, char *);
-int neg_pocket(P_char, P_char, int, char *);
-int jotun_balor(P_char, P_char, int, char *);
-int jotun_mimer(P_char, P_char, int, char *);
-int jotun_thrym(P_char, P_char, int, char *);
-int jotun_utgard_loki(P_char, P_char, int, char *);
-int kobold_priest(P_char, P_char, int, char *);
-int loviatar(P_obj, P_char, int, char *);
-int mage_anapest(P_char, P_char, int, char *);
-int magic_user(P_char, P_char, int, char *);
-int mailed_fist_guardian(P_char, P_char, int, char *);
-int menden_figurine_die(P_char, P_char, int, char *);
-int menden_fisherman(P_char, P_char, int, char *);
-int menden_inv_serv_die(P_char, P_char, int, char *);
-int menden_magus(P_char, P_char, int, char *);
-int money_changer(P_char, P_char, int, char *);
-int mystra(P_obj, P_char, int, char *);
-int mystra_dragon(P_char, P_char, int, char *);
-int navagator(P_char, P_char, int, char *);
-int neophyte(P_char, P_char, int, char *);
-int nw_agatha(P_char, P_char, int, char *);
-int nw_ammaster(P_char, P_char, int, char *);
-int nw_ansal(P_char, P_char, int, char *);
-int nw_brock(P_char, P_char, int, char *);
-int nw_builder(P_char, P_char, int, char *);
-int nw_carpen(P_char, P_char, int, char *);
-int nw_chicken(P_char, P_char, int, char *);
-int nw_chief(P_char, P_char, int, char *);
-int nw_cow(P_char, P_char, int, char *);
-int nw_cutter(P_char, P_char, int, char *);
-int nw_diamaster(P_char, P_char, int, char *);
-int nw_elfhealer(P_char, P_char, int, char *);
-int nw_emmaster(P_char, P_char, int, char *);
-int nw_farmer(P_char, P_char, int, char *);
-int nw_foreman(P_char, P_char, int, char *);
-int nw_golem(P_char, P_char, int, char *);
-int nw_hafbreed(P_char, P_char, int, char *);
-int nw_human(P_char, P_char, int, char *);
-int nw_logger(P_char, P_char, int, char *);
-int nw_malchor(P_char, P_char, int, char *);
-int nw_merthol(P_char, P_char, int, char *);
-int nw_mirroid(P_char, P_char, int, char *);
-int nw_owl(P_char, P_char, int, char *);
-int nw_pig(P_char, P_char, int, char *);
-int nw_rubmaster(P_char, P_char, int, char *);
-int nw_sapmaster(P_char, P_char, int, char *);
-int nw_vitnor(P_char, P_char, int, char *);
-int nw_woodelf(P_char, P_char, int, char *);
-int obsid_cit_death_knight(P_char, P_char, int, char *);
-int obsid_cit_satar_ghulan(P_char, P_char, int, char *);
-int offensive(P_char, P_char, int, char *);
-int phalanx(P_char, P_char, int, char *);
-int plant_attacks_blindness(P_char, P_char, int, char *);
-int plant_attacks_paralysis(P_char, P_char, int, char *);
-int plant_attacks_poison(P_char, P_char, int, char *);
-int poison(P_char, P_char, int, char *);
-int puff(P_char, P_char, int, char *);
-int raoul(P_char, P_char, int, char *);
-int realms_master_shout(P_char, P_char, int, char *);
-int sales_spec(P_char, P_char, int, char *);
-int seas_coral_golem(P_char, P_char, int, char *);
-int shadow_demon(P_char, P_char, int, char *);
-int shadow_demon_of_torm(P_char, P_char, int, char *);
-int shady_man(P_char, P_char, int, char *);
-int kimordril_shout(P_char, P_char, int, char*);
-int silver_lady_shout(P_char, P_char, int, char*);
-int sister_knight(P_char, P_char, int, char *);
-int skeleton(P_char, P_char, int, char *);
-int animated_skeleton(P_char, P_char, int, char *);
-int snowbeast(P_char, P_char, int, char *);
-int snowvulture(P_char, P_char, int, char *);
-int spiny(P_char, P_char, int, char *);
-int spore_ball(P_char, P_char, int, char *);
-int stone_crumble(P_char, P_char, int, char *);
-int stone_golem(P_char, P_char, int, char *);
+int    janitor(P_char, P_char, int, char *);
+int    jester(P_char, P_char, int, char *);
+int    neg_pocket(P_char, P_char, int, char *);
+int    jotun_balor(P_char, P_char, int, char *);
+int    jotun_mimer(P_char, P_char, int, char *);
+int    jotun_thrym(P_char, P_char, int, char *);
+int    jotun_utgard_loki(P_char, P_char, int, char *);
+int    kobold_priest(P_char, P_char, int, char *);
+int    loviatar(P_obj, P_char, int, char *);
+int    mage_anapest(P_char, P_char, int, char *);
+int    magic_user(P_char, P_char, int, char *);
+int    mailed_fist_guardian(P_char, P_char, int, char *);
+int    menden_figurine_die(P_char, P_char, int, char *);
+int    menden_fisherman(P_char, P_char, int, char *);
+int    menden_inv_serv_die(P_char, P_char, int, char *);
+int    menden_magus(P_char, P_char, int, char *);
+int    money_changer(P_char, P_char, int, char *);
+int    mystra(P_obj, P_char, int, char *);
+int    mystra_dragon(P_char, P_char, int, char *);
+int    navagator(P_char, P_char, int, char *);
+int    neophyte(P_char, P_char, int, char *);
+int    nw_agatha(P_char, P_char, int, char *);
+int    nw_ammaster(P_char, P_char, int, char *);
+int    nw_ansal(P_char, P_char, int, char *);
+int    nw_brock(P_char, P_char, int, char *);
+int    nw_builder(P_char, P_char, int, char *);
+int    nw_carpen(P_char, P_char, int, char *);
+int    nw_chicken(P_char, P_char, int, char *);
+int    nw_chief(P_char, P_char, int, char *);
+int    nw_cow(P_char, P_char, int, char *);
+int    nw_cutter(P_char, P_char, int, char *);
+int    nw_diamaster(P_char, P_char, int, char *);
+int    nw_elfhealer(P_char, P_char, int, char *);
+int    nw_emmaster(P_char, P_char, int, char *);
+int    nw_farmer(P_char, P_char, int, char *);
+int    nw_foreman(P_char, P_char, int, char *);
+int    nw_golem(P_char, P_char, int, char *);
+int    nw_hafbreed(P_char, P_char, int, char *);
+int    nw_human(P_char, P_char, int, char *);
+int    nw_logger(P_char, P_char, int, char *);
+int    nw_malchor(P_char, P_char, int, char *);
+int    nw_merthol(P_char, P_char, int, char *);
+int    nw_mirroid(P_char, P_char, int, char *);
+int    nw_owl(P_char, P_char, int, char *);
+int    nw_pig(P_char, P_char, int, char *);
+int    nw_rubmaster(P_char, P_char, int, char *);
+int    nw_sapmaster(P_char, P_char, int, char *);
+int    nw_vitnor(P_char, P_char, int, char *);
+int    nw_woodelf(P_char, P_char, int, char *);
+int    obsid_cit_death_knight(P_char, P_char, int, char *);
+int    obsid_cit_satar_ghulan(P_char, P_char, int, char *);
+int    offensive(P_char, P_char, int, char *);
+int    phalanx(P_char, P_char, int, char *);
+int    plant_attacks_blindness(P_char, P_char, int, char *);
+int    plant_attacks_paralysis(P_char, P_char, int, char *);
+int    plant_attacks_poison(P_char, P_char, int, char *);
+int    poison(P_char, P_char, int, char *);
+int    puff(P_char, P_char, int, char *);
+int    raoul(P_char, P_char, int, char *);
+int    realms_master_shout(P_char, P_char, int, char *);
+int    sales_spec(P_char, P_char, int, char *);
+int    seas_coral_golem(P_char, P_char, int, char *);
+int    shadow_demon(P_char, P_char, int, char *);
+int    shadow_demon_of_torm(P_char, P_char, int, char *);
+int    shady_man(P_char, P_char, int, char *);
+int    kimordril_shout(P_char, P_char, int, char *);
+int    silver_lady_shout(P_char, P_char, int, char *);
+int    sister_knight(P_char, P_char, int, char *);
+int    skeleton(P_char, P_char, int, char *);
+int    animated_skeleton(P_char, P_char, int, char *);
+int    snowbeast(P_char, P_char, int, char *);
+int    snowvulture(P_char, P_char, int, char *);
+int    spiny(P_char, P_char, int, char *);
+int    spore_ball(P_char, P_char, int, char *);
+int    stone_crumble(P_char, P_char, int, char *);
+int    stone_golem(P_char, P_char, int, char *);
 P_char summon_creature(int, P_char, int, int, const char *, const char *);
-int tako_demon(P_char, P_char, int, char *);
-int taxman(P_char, P_char, int, char *);
-int tentacle(P_char, P_char, int, char *);
-int tentacler_death(P_char, P_char, int, char *);
-int charon(P_char, P_char, int, char *);
-int thief(P_char, P_char, int, char *);
-int tiaka_ghoul(P_char, P_char, int, char *);
-int ticket_taker(P_char, P_char, int, char *);
-int waiter(P_char, P_char, int, char *);
-int warhorse(P_char ch, P_char pl, int cmd, char *arg);
-int water_elemental(P_char ch, P_char pl, int cmd, char *arg);
-int xexos(P_char, P_char, int, char *);
-int archer(P_char, P_char, int, char *);
-void nw_block_exit(int, int, int);
-void nw_reset_maze(int);
-int assoc_golem (P_char, P_char, int, char *);
-int house_guard (P_char, P_char, int, char *);
-int patrol_leader(P_char, P_char, int, char *);
-int patrol_leader_road(P_char, P_char, int, char *);
-int transp_tow_acerlade(P_char, P_char, int, char *);
-int recharm_ch(P_char, P_char, bool, char *);
-int underdark_track(P_char, P_char, int, char *);
-int undeadcont_track(P_char, P_char, int, char *);
-int fooquest_mob(P_char, P_char, int, char *);
-int fooquest_boss(P_char, P_char, int, char *);
+int    tako_demon(P_char, P_char, int, char *);
+int    taxman(P_char, P_char, int, char *);
+int    tentacle(P_char, P_char, int, char *);
+int    tentacler_death(P_char, P_char, int, char *);
+int    charon(P_char, P_char, int, char *);
+int    thief(P_char, P_char, int, char *);
+int    tiaka_ghoul(P_char, P_char, int, char *);
+int    ticket_taker(P_char, P_char, int, char *);
+int    waiter(P_char, P_char, int, char *);
+int    warhorse(P_char ch, P_char pl, int cmd, char *arg);
+int    water_elemental(P_char ch, P_char pl, int cmd, char *arg);
+int    xexos(P_char, P_char, int, char *);
+int    archer(P_char, P_char, int, char *);
+void   nw_block_exit(int, int, int);
+void   nw_reset_maze(int);
+int    assoc_golem(P_char, P_char, int, char *);
+int    house_guard(P_char, P_char, int, char *);
+int    patrol_leader(P_char, P_char, int, char *);
+int    patrol_leader_road(P_char, P_char, int, char *);
+int    transp_tow_acerlade(P_char, P_char, int, char *);
+int    recharm_ch(P_char, P_char, bool, char *);
+int    underdark_track(P_char, P_char, int, char *);
+int    undeadcont_track(P_char, P_char, int, char *);
+int    fooquest_mob(P_char, P_char, int, char *);
+int    fooquest_boss(P_char, P_char, int, char *);
 
 int io_assistant(P_char ch, P_char pl, int cmd, char *arg);
 
@@ -516,13 +510,12 @@ int smelter(P_char ch, P_char pl, int cmd, char *arg);
 int timoro_die(P_char, P_char, int, char *);
 
 // newbie zone Paladin
-int newbie_guard_north (P_char, P_char, int, char *);
-int newbie_guard_west (P_char, P_char, int, char *);
-int newbie_guard_east (P_char, P_char, int, char *);
-int newbie_guard_south (P_char, P_char, int, char *);
-//tharn map justice
+int newbie_guard_north(P_char, P_char, int, char *);
+int newbie_guard_west(P_char, P_char, int, char *);
+int newbie_guard_east(P_char, P_char, int, char *);
+int newbie_guard_south(P_char, P_char, int, char *);
+// tharn map justice
 int outpost_captain(P_char, P_char, int, char *);
-
 
 int world_quest(P_char, P_char, int, char *);
 
@@ -533,7 +526,7 @@ int Malevolence(P_char, P_char, int, char *);
 int Malevolence_vapor(P_char, P_char, int, char *);
 int celestia_pulsar(P_char, P_char, int, char *);
 
- // Nyneth
+// Nyneth
 int construct(P_char, P_char, int, char *);
 int nyneth(P_char, P_char, int, char *);
 int living_stone(P_char, P_char, int, char *);
@@ -549,7 +542,6 @@ int elemental_swarm_earth(P_char, P_char, int, char *);
 int elemental_swarm_air(P_char, P_char, int, char *);
 int elemental_swarm_water(P_char, P_char, int, char *);
 
-
 /* specs.ioun.c */
 int ioun_sustenance(P_obj, P_char, int, char *);
 int ioun_testicle(P_obj, P_char, int, char *);
@@ -558,9 +550,7 @@ int ioun_warp(P_obj, P_char, int, char *);
 /* specs.lohrr.c */
 int leviathan(P_char, P_char, int, char *);
 
-
 /* specs.object.c */
-
 
 /* START 56 ZONE */
 int transparent_blade(P_obj, P_char, int, char *);
@@ -569,7 +559,7 @@ int Einjar(P_obj, P_char, int, char *);
 // END 56 ZONE
 
 int artifact_monolith(P_obj, P_char, int, char *);
-int disarm_pick_gloves (P_obj, P_char, int, char *);
+int disarm_pick_gloves(P_obj, P_char, int, char *);
 int master_set(P_obj, P_char, int, char *);
 // used inr andomobj.c
 int random_eq_proc(P_obj, P_char, int, char *);
@@ -592,7 +582,7 @@ int brainripper(P_obj, P_char, int, char *);
 int hammer_titans(P_obj, P_char, int, char *);
 int stormbringer(P_obj, P_char, int, char *);
 
-//Thanks giving eq.
+// Thanks giving eq.
 int generic_riposte_proc(P_obj, P_char, int, char *);
 int generic_parry_proc(P_obj, P_char, int, char *);
 int tripboots(P_obj, P_char, int, char *);
@@ -742,7 +732,6 @@ int random_tomb(P_obj, P_char, int, char *);
 int random_slab(P_obj, P_char, int, char *);
 int random_glass(P_obj, P_char, int, char *);
 
-
 /* TIKI MADMAN PROCS */
 
 int madman_mangler(P_obj, P_char, int, char *);
@@ -760,8 +749,8 @@ int vaprak_claw(P_obj, P_char, int, char *);
 
 int berserker_proc_room(int room, P_char, int cmd, char *arg);
 int multiclass_proc(int room, P_char, int cmd, char *arg);
-int inn (int, P_char, int, char *);
-int undead_inn (int, P_char, int, char *);
+int inn(int, P_char, int, char *);
+int undead_inn(int, P_char, int, char *);
 int GlyphOfWarding(int, P_char, int, char *);
 int GithyankiCave(int, P_char, int, char *);
 int TiamatThrone(int, P_char, int, char *);
@@ -865,8 +854,8 @@ int unholy_avenger_bloodlust(P_obj, P_char, int, char *);
 int tiamat_stinger(P_obj, P_char, int, char *);
 int gfstone(P_obj, P_char, int, char *);
 int tendrils(P_obj, P_char, int, char *);
-int elvenkind_cloak(P_obj, P_char, int, char*);
-int deflect_ioun(P_obj, P_char, int, char*);
+int elvenkind_cloak(P_obj, P_char, int, char *);
+int deflect_ioun(P_obj, P_char, int, char *);
 int epic_teacher(P_char, P_char, int, char *);
 int learn_tradeskill(P_char, P_char, int, char *);
 int epic_store(P_char, P_char, int, char *);
@@ -904,144 +893,143 @@ int reliance_pegasus(P_obj, P_char, int, char *);
 #ifdef CONFIG_JAIL
 int verzanan_witness(P_char, P_char, int, char *);
 #endif
-int artillery_one(P_char, P_char, int, char *);
-int assassin_one(P_char, P_char, int, char *);
-int baker_one(P_char, P_char, int, char *);
-int baker_two(P_char, P_char, int, char *);
-int bouncer_four(P_char, P_char, int, char *);
-int bouncer_one(P_char, P_char, int, char *);
-int bouncer_three(P_char, P_char, int, char *);
-int bouncer_two(P_char, P_char, int, char *);
-int brigand_one(P_char, P_char, int, char *);
-int casino_four(P_char, P_char, int, char *);
-int casino_one(P_char, P_char, int, char *);
-int casino_three(P_char, P_char, int, char *);
-int casino_two(P_char, P_char, int, char *);
-int cat_one(P_char, P_char, int, char *);
-int cell_drunk(P_char, P_char, int, char *);
-int cleric_one(P_char, P_char, int, char *);
-int clock_tower(P_obj, P_char, int, char *);
-int commoner_five(P_char, P_char, int, char *);
-int commoner_four(P_char, P_char, int, char *);
-int commoner_one(P_char, P_char, int, char *);
-int commoner_six(P_char, P_char, int, char *);
-int commoner_three(P_char, P_char, int, char *);
-int commoner_two(P_char, P_char, int, char *);
-int crier_one(P_char, P_char, int, char *);
-int dog_one(P_char, P_char, int, char *);
-int dog_two(P_char, P_char, int, char *);
-int drunk_one(P_char, P_char, int, char *);
-int drunk_three(P_char, P_char, int, char *);
-int drunk_two(P_char, P_char, int, char *);
-int farmer_one(P_char, P_char, int, char *);
-int fisherman_one(P_char, P_char, int, char *);
-int fisherman_two(P_char, P_char, int, char *);
-int gesen(P_obj obj, P_char, int, char *);
-int guard_one(P_char, P_char, int, char *);
-int guard_two(P_char, P_char, int, char *);
-int guild_guard_eight(P_char, P_char, int, char *);
-int guild_guard_eleven(P_char, P_char, int, char *);
-int guild_guard_five(P_char, P_char, int, char *);
-int guild_guard_four(P_char, P_char, int, char *);
-int guild_guard_nine(P_char, P_char, int, char *);
-int guild_guard_one(P_char, P_char, int, char *);
-int guild_guard_seven(P_char, P_char, int, char *);
-int guild_guard_six(P_char, P_char, int, char *);
-int guild_guard_ten(P_char, P_char, int, char *);
-int guild_guard_thirteen(P_char, P_char, int, char *);
-int guild_guard_three(P_char, P_char, int, char *);
-int guild_guard_twelve(P_char, P_char, int, char *);
-int guild_guard_two(P_char, P_char, int, char *);
-int guild_protection(P_char, P_char);
-int guildmaster_eight(P_char, P_char, int, char *);
-int guildmaster_eleven(P_char, P_char, int, char *);
-int guildmaster_five(P_char, P_char, int, char *);
-int guildmaster_four(P_char, P_char, int, char *);
-int guildmaster_nine(P_char, P_char, int, char *);
-int guildmaster_one(P_char, P_char, int, char *);
-int guildmaster_seven(P_char, P_char, int, char *);
-int guildmaster_six(P_char, P_char, int, char *);
-int guildmaster_ten(P_char, P_char, int, char *);
-int guildmaster_three(P_char, P_char, int, char *);
-int guildmaster_twelve(P_char, P_char, int, char *);
-int guildmaster_two(P_char, P_char, int, char *);
-int homeless_one(P_char, P_char, int, char *);
-int homeless_two(P_char, P_char, int, char *);
-int lighthouse_one(P_char, P_char, int, char *);
-int lighthouse_two(P_char, P_char, int, char *);
-int lloth(P_obj, P_char, int, char *);
-int lloth_avatar(P_obj, P_char, int, char *);
-int mage_one(P_char, P_char, int, char *);
-int mercenary_one(P_char, P_char, int, char *);
-int mercenary_three(P_char, P_char, int, char *);
-int mercenary_two(P_char, P_char, int, char *);
-int merchant_one(P_char, P_char, int, char *);
-int merchant_two(P_char, P_char, int, char *);
-int naval_four(P_char, P_char, int, char *);
-int naval_one(P_char, P_char, int, char *);
-int naval_three(P_char, P_char, int, char *);
-int naval_two(P_char, P_char, int, char *);
-int park_five(P_char, P_char, int, char *);
-int park_four(P_char, P_char, int, char *);
-int park_one(P_char, P_char, int, char *);
-int park_six(P_char, P_char, int, char *);
-int park_three(P_char, P_char, int, char *);
-int park_two(P_char, P_char, int, char *);
-int piergeiron(P_char, P_char, int, char *);
-int piergeiron_guard(P_char, P_char, int, char *);
-int prostitute_one(P_char, P_char, int, char *);
-int rambo(P_obj obj, P_char, int, char *);
-int rogue_one(P_char, P_char, int, char *);
-int sailor_one(P_char, P_char, int, char *);
-int seabird_one(P_char, P_char, int, char *);
-int seabird_two(P_char, P_char, int, char *);
-int seaman_one(P_char, P_char, int, char *);
-int secret_door(P_obj, P_char, int, char *);
-int selune_five(P_char, P_char, int, char *);
-int selune_four(P_char, P_char, int, char *);
-int selune_one(P_char, P_char, int, char *);
-int selune_six(P_char, P_char, int, char *);
-int selune_three(P_char, P_char, int, char *);
-int selune_two(P_char, P_char, int, char *);
-int shopper_one(P_char, P_char, int, char *);
-int shopper_two(P_char, P_char, int, char *);
-int tailor_one(P_char, P_char, int, char *);
-int varon(P_obj obj, P_char, int, char *);
-int wanderer(P_char, P_char, int, char *);
-int warrior_one(P_char, P_char, int, char *);
-int verzanan_guard_one(P_char, P_char, int, char *);
-int verzanan_guard_three(P_char, P_char, int, char *);
-int verzanan_guard_two(P_char, P_char, int, char *);
-int verzanan_guild_eight(int, P_char, int, char *);
-int verzanan_guild_eleven(int, P_char, int, char *);
-int verzanan_guild_five(int, P_char, int, char *);
-int verzanan_guild_four(int, P_char, int, char *);
-int verzanan_guild_nine(int, P_char, int, char *);
-int verzanan_guild_one(int, P_char, int, char *);
-int verzanan_guild_seven(int, P_char, int, char *);
-int verzanan_guild_six(int, P_char, int, char *);
-int verzanan_guild_ten(int, P_char, int, char *);
-int verzanan_guild_three(int, P_char, int, char *);
-int verzanan_guild_twelve(int, P_char, int, char *);
-int verzanan_guild_two(int, P_char, int, char *);
-int verzanan_portal(P_obj, P_char, int, char *);
-int wrestler_one(P_char, P_char, int, char *);
-int young_druid_one(P_char, P_char, int, char *);
-int young_mercenary_one(P_char, P_char, int, char *);
-int young_monk_one(P_char, P_char, int, char *);
-int young_necro_one(P_char, P_char, int, char *);
-int young_paladin_one(P_char, P_char, int, char *);
-int youth_one(P_char, P_char, int, char *);
-int youth_two(P_char, P_char, int, char *);
+int  artillery_one(P_char, P_char, int, char *);
+int  assassin_one(P_char, P_char, int, char *);
+int  baker_one(P_char, P_char, int, char *);
+int  baker_two(P_char, P_char, int, char *);
+int  bouncer_four(P_char, P_char, int, char *);
+int  bouncer_one(P_char, P_char, int, char *);
+int  bouncer_three(P_char, P_char, int, char *);
+int  bouncer_two(P_char, P_char, int, char *);
+int  brigand_one(P_char, P_char, int, char *);
+int  casino_four(P_char, P_char, int, char *);
+int  casino_one(P_char, P_char, int, char *);
+int  casino_three(P_char, P_char, int, char *);
+int  casino_two(P_char, P_char, int, char *);
+int  cat_one(P_char, P_char, int, char *);
+int  cell_drunk(P_char, P_char, int, char *);
+int  cleric_one(P_char, P_char, int, char *);
+int  clock_tower(P_obj, P_char, int, char *);
+int  commoner_five(P_char, P_char, int, char *);
+int  commoner_four(P_char, P_char, int, char *);
+int  commoner_one(P_char, P_char, int, char *);
+int  commoner_six(P_char, P_char, int, char *);
+int  commoner_three(P_char, P_char, int, char *);
+int  commoner_two(P_char, P_char, int, char *);
+int  crier_one(P_char, P_char, int, char *);
+int  dog_one(P_char, P_char, int, char *);
+int  dog_two(P_char, P_char, int, char *);
+int  drunk_one(P_char, P_char, int, char *);
+int  drunk_three(P_char, P_char, int, char *);
+int  drunk_two(P_char, P_char, int, char *);
+int  farmer_one(P_char, P_char, int, char *);
+int  fisherman_one(P_char, P_char, int, char *);
+int  fisherman_two(P_char, P_char, int, char *);
+int  gesen(P_obj obj, P_char, int, char *);
+int  guard_one(P_char, P_char, int, char *);
+int  guard_two(P_char, P_char, int, char *);
+int  guild_guard_eight(P_char, P_char, int, char *);
+int  guild_guard_eleven(P_char, P_char, int, char *);
+int  guild_guard_five(P_char, P_char, int, char *);
+int  guild_guard_four(P_char, P_char, int, char *);
+int  guild_guard_nine(P_char, P_char, int, char *);
+int  guild_guard_one(P_char, P_char, int, char *);
+int  guild_guard_seven(P_char, P_char, int, char *);
+int  guild_guard_six(P_char, P_char, int, char *);
+int  guild_guard_ten(P_char, P_char, int, char *);
+int  guild_guard_thirteen(P_char, P_char, int, char *);
+int  guild_guard_three(P_char, P_char, int, char *);
+int  guild_guard_twelve(P_char, P_char, int, char *);
+int  guild_guard_two(P_char, P_char, int, char *);
+int  guild_protection(P_char, P_char);
+int  guildmaster_eight(P_char, P_char, int, char *);
+int  guildmaster_eleven(P_char, P_char, int, char *);
+int  guildmaster_five(P_char, P_char, int, char *);
+int  guildmaster_four(P_char, P_char, int, char *);
+int  guildmaster_nine(P_char, P_char, int, char *);
+int  guildmaster_one(P_char, P_char, int, char *);
+int  guildmaster_seven(P_char, P_char, int, char *);
+int  guildmaster_six(P_char, P_char, int, char *);
+int  guildmaster_ten(P_char, P_char, int, char *);
+int  guildmaster_three(P_char, P_char, int, char *);
+int  guildmaster_twelve(P_char, P_char, int, char *);
+int  guildmaster_two(P_char, P_char, int, char *);
+int  homeless_one(P_char, P_char, int, char *);
+int  homeless_two(P_char, P_char, int, char *);
+int  lighthouse_one(P_char, P_char, int, char *);
+int  lighthouse_two(P_char, P_char, int, char *);
+int  lloth(P_obj, P_char, int, char *);
+int  lloth_avatar(P_obj, P_char, int, char *);
+int  mage_one(P_char, P_char, int, char *);
+int  mercenary_one(P_char, P_char, int, char *);
+int  mercenary_three(P_char, P_char, int, char *);
+int  mercenary_two(P_char, P_char, int, char *);
+int  merchant_one(P_char, P_char, int, char *);
+int  merchant_two(P_char, P_char, int, char *);
+int  naval_four(P_char, P_char, int, char *);
+int  naval_one(P_char, P_char, int, char *);
+int  naval_three(P_char, P_char, int, char *);
+int  naval_two(P_char, P_char, int, char *);
+int  park_five(P_char, P_char, int, char *);
+int  park_four(P_char, P_char, int, char *);
+int  park_one(P_char, P_char, int, char *);
+int  park_six(P_char, P_char, int, char *);
+int  park_three(P_char, P_char, int, char *);
+int  park_two(P_char, P_char, int, char *);
+int  piergeiron(P_char, P_char, int, char *);
+int  piergeiron_guard(P_char, P_char, int, char *);
+int  prostitute_one(P_char, P_char, int, char *);
+int  rambo(P_obj obj, P_char, int, char *);
+int  rogue_one(P_char, P_char, int, char *);
+int  sailor_one(P_char, P_char, int, char *);
+int  seabird_one(P_char, P_char, int, char *);
+int  seabird_two(P_char, P_char, int, char *);
+int  seaman_one(P_char, P_char, int, char *);
+int  secret_door(P_obj, P_char, int, char *);
+int  selune_five(P_char, P_char, int, char *);
+int  selune_four(P_char, P_char, int, char *);
+int  selune_one(P_char, P_char, int, char *);
+int  selune_six(P_char, P_char, int, char *);
+int  selune_three(P_char, P_char, int, char *);
+int  selune_two(P_char, P_char, int, char *);
+int  shopper_one(P_char, P_char, int, char *);
+int  shopper_two(P_char, P_char, int, char *);
+int  tailor_one(P_char, P_char, int, char *);
+int  varon(P_obj obj, P_char, int, char *);
+int  wanderer(P_char, P_char, int, char *);
+int  warrior_one(P_char, P_char, int, char *);
+int  verzanan_guard_one(P_char, P_char, int, char *);
+int  verzanan_guard_three(P_char, P_char, int, char *);
+int  verzanan_guard_two(P_char, P_char, int, char *);
+int  verzanan_guild_eight(int, P_char, int, char *);
+int  verzanan_guild_eleven(int, P_char, int, char *);
+int  verzanan_guild_five(int, P_char, int, char *);
+int  verzanan_guild_four(int, P_char, int, char *);
+int  verzanan_guild_nine(int, P_char, int, char *);
+int  verzanan_guild_one(int, P_char, int, char *);
+int  verzanan_guild_seven(int, P_char, int, char *);
+int  verzanan_guild_six(int, P_char, int, char *);
+int  verzanan_guild_ten(int, P_char, int, char *);
+int  verzanan_guild_three(int, P_char, int, char *);
+int  verzanan_guild_twelve(int, P_char, int, char *);
+int  verzanan_guild_two(int, P_char, int, char *);
+int  verzanan_portal(P_obj, P_char, int, char *);
+int  wrestler_one(P_char, P_char, int, char *);
+int  young_druid_one(P_char, P_char, int, char *);
+int  young_mercenary_one(P_char, P_char, int, char *);
+int  young_monk_one(P_char, P_char, int, char *);
+int  young_necro_one(P_char, P_char, int, char *);
+int  young_paladin_one(P_char, P_char, int, char *);
+int  youth_one(P_char, P_char, int, char *);
+int  youth_two(P_char, P_char, int, char *);
 void verzanan_city_noises(void);
 
 // ships
 int ship_panel_proc(P_obj, P_char, int, char *);
 int ship_obj_proc(P_obj, P_char, int, char *);
-int crew_shop_proc(int,P_char,int,char *);
+int crew_shop_proc(int, P_char, int, char *);
 int erzul_proc(P_char, P_char, int, char *);
 int moonstone_fragment(P_obj obj, P_char ch, int cmd, char *argument);
-
 
 // sea kingdom stuff
 int SeaKingdom_Tsunami(P_obj, P_char, int, char *);
@@ -1049,25 +1037,23 @@ int SeaKingdom_Tsunami(P_obj, P_char, int, char *);
 // jind ticketmaster stuff
 int jindo_ticket_master(P_char, P_char, int, char *);
 
-
 int witch_doctor(P_char, P_char, int, char *);
 int llyren(P_char, P_char, int, char *);
 
 // sevenoaks stuff
-int sevenoaks_longsword(P_obj, P_char, int, char*);
+int sevenoaks_longsword(P_obj, P_char, int, char *);
 
-//airp2
-int dagger_of_wind(P_obj, P_char, int, char*);
+// airp2
+int dagger_of_wind(P_obj, P_char, int, char *);
 int staff_of_air_conjuration(P_obj, P_char, int, char *);
 
-//newbie zone stuff
+// newbie zone stuff
 int stream_of_life(P_obj obj, P_char ch, int cmd, char *arg);
 int newbie_sign1(P_obj obj, P_char ch, int cmd, char *arg);
 int newbie_sign2(P_obj obj, P_char ch, int cmd, char *arg);
 
-//Duris Tournament
+// Duris Tournament
 int arenaobj_proc(P_obj, P_char, int, char *);
-
 
 // Ako Stuff
 
@@ -1077,12 +1063,10 @@ int ako_vulture(P_char ch, P_char pl, int cmd, char *arg);
 int ako_wildmare(P_char ch, P_char pl, int cmd, char *arg);
 int ako_cow(P_char ch, P_char pl, int cmd, char *arg);
 
-
 // Mossi Modification:   DECAY
 int blood_stains(P_obj ch, P_char pl, int cmd, char *arg);
 int tracks(P_obj ch, P_char pl, int cmd, char *arg);
 int ice_shattered_bits(P_obj ch, P_char pl, int cmd, char *arg);
-
 
 // storag lockers
 int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg);
@@ -1110,13 +1094,13 @@ int wh_guard(P_char, P_char, int, char *);
 int lucrot_mindstone(P_obj obj, P_char ch, int cmd, char *arg);
 
 // specs.venthix.c
-int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg);
-int orb_of_deception(P_obj obj, P_char ch, int cmd, char *arg);
+int  roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg);
+int  orb_of_deception(P_obj obj, P_char ch, int cmd, char *arg);
 void event_super_cannon(P_char ch, P_char vict, P_obj obj, void *data);
-int super_cannon(P_obj obj, P_char ch, int cmd, char *arg);
+int  super_cannon(P_obj obj, P_char ch, int cmd, char *arg);
 void halloween_mine_proc(P_char ch);
-int zombies_game(P_obj obj, P_char ch, int cmd, char *arg);
-int zg_count_zombies(P_obj obj);
+int  zombies_game(P_obj obj, P_char ch, int cmd, char *arg);
+int  zg_count_zombies(P_obj obj);
 
 // nexus_uc
 int obj_tp_no_high_levels(P_obj obj, P_char ch, int cmd, char *arg);

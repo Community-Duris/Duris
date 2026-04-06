@@ -36,10 +36,9 @@
   PROFILE_##action(mundane_attack) \
   PROFILE_##action(mundane_assist) \
   PROFILE_##action(mundane_wander) \
-  PROFILE_##action(mundane_newevent)
-   
-
-
+  PROFILE_##action(mundane_newevent) \
+  PROFILE_##action(mobhunt_dijkstra) \
+  PROFILE_##action(random_mob_create)
 
 #define PROFILE_DEFINE(var) \
 clock_t var##_profile_beg; \
@@ -97,7 +96,7 @@ extern void reset_func_call_info();
 #define PROFILE_DEFINE(var)
 #define PROFILE_DECLARE(var)
 #define PROFILE_RESET(var)
-#define PROFILE_START(var) 
+#define PROFILE_START(var)
 #define PROFILE_END(var)
 #define PROFILE_SAVE(var)
 #define PROFILE_REGISTER_CALL(func, time)
@@ -107,4 +106,3 @@ extern void reset_func_call_info();
 PROFILES(DECLARE);
 
 #endif // __PROFILE_H__
-

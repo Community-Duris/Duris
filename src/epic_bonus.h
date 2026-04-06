@@ -11,23 +11,24 @@
 
 #define EPIC_HEALTH_REGEN_MOD 40
 
-struct EpicBonusData {
-  int pid;
-  int type;
-  char time[32];
+struct EpicBonusData
+{
+	int  pid;
+	int  type;
+	char time[32];
 };
 
 struct epic_bonus_data
 {
-  int type;
-  const char *name;
-  const char *description;
+	int         type;
+	const char *name;
+	const char *description;
 };
 
-void do_epic_bonus(P_char, char*, int);
-void epic_bonus_help(P_char);
-void epic_bonus_set(P_char, int);
+void  do_epic_bonus(P_char, char *, int);
+void  epic_bonus_help(P_char);
+void  epic_bonus_set(P_char, int);
 float get_epic_bonus_max(int);
-bool get_epic_bonus_data(P_char, EpicBonusData*);
+bool  get_epic_bonus_data(P_char, EpicBonusData *);
 float get_epic_bonus(P_char, int);
 #endif
