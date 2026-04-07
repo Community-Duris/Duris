@@ -24,6 +24,7 @@
 #include "mm.h"
 #include "poll.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "websocket.h"
 
 extern struct descriptor_data  *descriptor_list;
@@ -1606,7 +1607,7 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 	}
 
 	/* check if name already exists */
-	if (pfile_exists(SAVE_DIR, capitalized_name))
+	if (sql_player_exists(capitalized_name))
 	{
 		cJSON *err = cJSON_CreateObject();
 		cJSON_AddStringToObject(err, "type", "create_character");
