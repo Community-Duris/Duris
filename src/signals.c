@@ -10,17 +10,13 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"
+#include <execinfo.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <sys/wait.h>
-#include <execinfo.h>
-#include <fcntl.h>
 #include <unistd.h>
-
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
 
 extern void exit(int);
 
@@ -89,49 +85,50 @@ static int hung_strikes = 0;
 void checkpointing(int signum)
 {
 
-  if( !tics )
-  {
-    hung_strikes++;
+	if (!tics)
+	{
+		hung_strikes++;
 
-    {
-      void *bt[64];
-      int n = backtrace(bt, 64);
-      int fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
-      if (fd >= 0) {
-        char msg[64];
-        int len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n", hung_strikes);
-        write(fd, msg, len);
-        backtrace_symbols_fd(bt, n, fd);
-        close(fd);
-      }
-    }
+		{
+			void *bt[64];
+			int   n  = backtrace(bt, 64);
+			int   fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
+			if (fd >= 0)
+			{
+				char msg[64];
+				int  len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n", hung_strikes);
+				write(fd, msg, len);
+				backtrace_symbols_fd(bt, n, fd);
+				close(fd);
+			}
+		}
 
-    // collect two samples before killing
-    if (hung_strikes < 2)
-    {
-      logit(LOG_EXIT, "CHECKPOINT warning: tics not updated (strike %d)", hung_strikes);
-      signal(SIGVTALRM, checkpointing);
-      return;
-    }
+		// collect two samples before killing
+		if (hung_strikes < 2)
+		{
+			logit(LOG_EXIT, "CHECKPOINT warning: tics not updated (strike %d)", hung_strikes);
+			signal(SIGVTALRM, checkpointing);
+			return;
+		}
 
-    logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated (%d strikes)", hung_strikes);
+		logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated (%d strikes)", hung_strikes);
 
-    // The reason for this, is that we don't want to reboot into a hung-during-boot situation.
-    // In other words, if the mud hangs during a boot, we just want to die completely until it's fixed.
-    if( game_booted )
-    {
-      exit( 56 );
-    }
-    else
-    {
-      exit( -1 );
-    }
-  }
-  else
-  {
-    tics = 0;
-    hung_strikes = 0;
-  }
+		// The reason for this, is that we don't want to reboot into a hung-during-boot situation.
+		// In other words, if the mud hangs during a boot, we just want to die completely until it's fixed.
+		if (game_booted)
+		{
+			exit(56);
+		}
+		else
+		{
+			exit(-1);
+		}
+	}
+	else
+	{
+		tics         = 0;
+		hung_strikes = 0;
+	}
 
 	// Add this linefor signal 26 -DCL
 	signal(SIGVTALRM, checkpointing);
