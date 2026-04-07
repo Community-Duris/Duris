@@ -292,6 +292,7 @@ M 0 131214 1 131366 100 0 0 0      * Sunnis, Princess of the Dawn
 M 0 131211 1 131369 100 0 0 0      * Grumbar
 E 1 131204 1 20 100 0 0 0          *   a scowling stone mask
 E 1 131200 1 16 100 0 0 0          *   the earthen hammer of Grumbar
+G 1 360 1 0 100 0 0 0              *    (object type not in this .obj file)
 F 1 1121 13 131369 100 0 0 0       * (mob type not in this .mob file) (following)
 F 1 1121 13 131369 100 0 0 0       * (mob type not in this .mob file) (following)
 F 1 1121 13 131369 100 0 0 0       * (mob type not in this .mob file) (following)

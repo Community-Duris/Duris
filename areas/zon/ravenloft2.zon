@@ -1074,6 +1074,7 @@ O 0 59228 1 59319 100 0 0 0        * a giant pile of garbage
 O 0 59229 1 59321 100 0 0 0        * a shining black coffin of waxed wood
 O 0 59232 1 59321 100 0 0 0        * loose earth
 P 1 59143 1 59232 100 0 0 0        *   a gory heart talisman of a red dragon
+O 0 360 1 59321 100 0 0 0          * (object type not in this .obj file)
 O 0 59203 1 59327 100 0 0 0        * no-show dispel magic trap
 O 0 59236 1 59334 100 0 0 0        * monolith
 O 0 59237 1 59334 100 0 0 0        * slab of sacrifice
