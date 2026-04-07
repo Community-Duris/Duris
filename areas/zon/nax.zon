@@ -2,7 +2,7 @@
 &+LNa&+rx&n~
 37944 2 4 20 25 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 37701 3 1 100 0 0 0
@@ -155,6 +155,17 @@ M 0 37715 1 37717 100 0 0 0        * a drunk minotaur
 M 0 37764 1 37718 100 0 0 0        * Syrm
 M 0 37707 2 37718 100 0 0 0        * a drunken minotaur
 M 0 37707 2 37718 100 0 0 0        * a drunken minotaur
+M 0 101 1 37718 100 0 0 0          * (mob type not in this .mob file)
+G 1 829 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 830 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 831 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 832 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 833 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 834 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 835 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 836 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 837 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 838 999 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 37708 1 37719 100 0 0 0        * Brukish
 G 1 37709 999 0 100 0 0 0          *    a sausage
 G 1 37707 999 0 100 0 0 0          *    some venison strips
@@ -339,7 +350,7 @@ M 0 37746 7 37915 100 0 0 0        * a cavern worm
 M 0 37749 8 37924 100 0 0 0        * a minotaur
 E 1 37731 1 15 100 0 0 0           *   an obsidian bracer
 M 0 37749 8 37925 100 0 0 0        * a minotaur
-E 1 37732 2 10 100 0 0 0           *   an obsidian pair of sleeves
+E 1 37732 1 10 100 0 0 0           *   an obsidian pair of sleeves
 M 0 37749 8 37926 100 0 0 0        * a minotaur
 E 1 37733 1 13 100 0 0 0           *   an obsidian belt
 M 0 37749 8 37927 100 0 0 0        * a minotaur
@@ -347,7 +358,7 @@ E 1 37734 1 21 100 0 0 0           *   an obsidian earring
 M 0 37749 8 37928 100 0 0 0        * a minotaur
 E 1 37735 1 40 100 0 0 0           *   an obsidian horn ring
 M 0 37749 8 37929 100 0 0 0        * a minotaur
-E 1 37732 2 10 100 0 0 0           *   an obsidian pair of sleeves
+E 1 37736 1 39 100 0 0 0           *   an obsidian nose ring
 M 0 37749 8 37930 100 0 0 0        * a minotaur
 E 1 37737 1 3 100 0 0 0            *   an obsidian pendant
 M 0 37752 1 37938 100 0 0 0        * a carniverous shark
@@ -372,16 +383,5 @@ G 1 368 999 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 369 999 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 37763 1 37943 100 0 0 0        * A meditating shaman
 M 0 37765 1 37944 100 0 0 0        * Asterion, the minotaur Archmage
-M 0 101 1 37718 100 0 0 0          * your local drug dealer
-G 1 829 999 0 100 0 0 0            *    some resin of Ocularius
-G 1 830 999 0 100 0 0 0            *    some heirloom Blue Haze
-G 1 831 999 0 100 0 0 0            *    some landrace Medicus
-G 1 832 999 0 100 0 0 0            *    some feral Black Kush
-G 1 833 999 0 100 0 0 0            *    some wild Gootwiet
-G 1 834 999 0 100 0 0 0            *    a piece of rolling paper
-G 1 835 999 0 100 0 0 0            *    a ceramic chillum
-G 1 836 999 0 100 0 0 0            *    an obsidian hookah
-G 1 837 999 0 100 0 0 0            *    a mistweyd nose-pipe
-G 1 838 999 0 100 0 0 0            *    a handcarved pipe
 *
 S

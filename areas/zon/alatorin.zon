@@ -621,17 +621,17 @@ D 0 83447 0 1 100 0 0 0
 *     north exit from "Top of a Dark Mithril Staircase" to
 *     "A Mithril Landing" - closed
 *
-D 0 83435 1 2 100 0 0 0
+D 0 83435 1 1 100 0 0 0
 *     east exit from "A Gold and Mithril Hallway" to
-*     "The Chamber of Chungy Taskgulch" - closed/locked
+*     "The Chamber of Chungy Taskgulch" - closed
 *
 D 0 83446 3 1 100 0 0 0
 *     west exit from "The Chamber of Chungy Taskgulch" to
 *     "A Gold and Mithril Hallway" - closed
 *
-D 0 83440 3 2 100 0 0 0
+D 0 83440 3 1 100 0 0 0
 *     west exit from "A Gold and Mithril Hallway" to
-*     "The Chamber of Frahzel Thunderfist" - closed/locked
+*     "The Chamber of Frahzel Thunderfist" - closed
 *
 D 0 83445 1 1 100 0 0 0
 *     east exit from "The Chamber of Frahzel Thunderfist" to
@@ -3036,9 +3036,9 @@ E 1 83256 10 17 100 0 0 0          *   a polished mithril axe
 F 1 83256 3 83427 100 0 0 0        * a shield dwarf general (following)
 E 1 83256 10 16 100 0 0 0          *   a polished mithril axe
 E 1 83256 10 17 100 0 0 0          *   a polished mithril axe
-M 0 83516 4 83428 100 0 0 0        * a LARGE bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83516 7 83428 100 0 0 0        * a LARGE bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 78438 2 83429 100 0 0 0        * (mob type not in this .mob file)
 G 1 78414 2 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 78438 2 83429 20 0 0 0         * (mob type not in this .mob file)
@@ -3858,6 +3858,8 @@ E 1 83437 1 5 100 0 0 0            *   a beautiful blue silk robe
 E 1 83438 1 19 100 0 0 0           *   some sun-glasses with pink-painted frames
 G 1 83430 2 0 100 0 0 0            *    a thick elemental key
 M 0 83119 1 83823 100 0 0 0        * an ethereal walker
+M 0 83416 2 83823 100 0 0 0        * a white appirition
+M 0 83387 2 83823 100 0 0 0        * a black appirition
 M 0 83389 6 83827 100 0 0 0        * a halfling scribe
 G 1 83435 999 0 100 0 0 0          *    a scroll of revelations
 M 0 83389 6 83827 100 0 0 0        * a halfling scribe
@@ -3883,8 +3885,8 @@ M 0 55550 3 83829 25 0 0 0         * (mob type not in this .mob file)
 M 0 55552 3 83829 25 0 0 0         * (mob type not in this .mob file)
 M 0 55553 3 83829 25 0 0 0         * (mob type not in this .mob file)
 M 0 55554 2 83829 25 0 0 0         * (mob type not in this .mob file)
-M 0 83416 1 83829 100 0 0 0        * a white appirition
-M 0 83387 1 83829 100 0 0 0        * a black appirition
+M 0 83416 2 83829 100 0 0 0        * a white appirition
+M 0 83387 2 83829 100 0 0 0        * a black appirition
 M 0 83390 6 83830 100 0 0 0        * a meditative halfling mage
 M 0 83390 6 83830 100 0 0 0        * a meditative halfling mage
 M 0 83390 6 83830 100 0 0 0        * a meditative halfling mage
@@ -4489,38 +4491,68 @@ M 0 83476 4 84012 100 0 0 0        * a large basilisk
 G 1 76060 1 0 20 0 0 0             *    (object type not in this .obj file)
 M 0 83476 4 84012 100 0 0 0        * a large basilisk
 M 0 83476 4 84012 100 0 0 0        * a large basilisk
-M 0 83515 12 84012 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84012 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84012 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84016 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84020 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84020 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83516 4 84023 100 0 0 0        * a LARGE bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84024 100 0 0 0       * a bladeback pyrolisk
-M 0 83515 12 84026 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83516 4 84030 100 0 0 0        * a LARGE bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84038 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84038 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84039 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83516 4 84042 100 0 0 0        * a LARGE bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
-M 0 83515 12 84042 100 0 0 0       * a bladeback pyrolisk
-G 1 43138 19 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84012 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84012 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84012 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84016 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84020 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84020 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83516 7 84023 100 0 0 0        * a LARGE bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84024 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84024 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84026 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84026 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83516 7 84030 100 0 0 0        * a LARGE bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84030 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84034 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83516 7 84034 100 0 0 0        * a LARGE bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84036 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83516 7 84036 100 0 0 0        * a LARGE bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84038 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84038 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84039 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83516 7 84041 100 0 0 0        * a LARGE bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84041 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84041 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83516 7 84042 100 0 0 0        * a LARGE bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84042 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84042 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84043 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 83515 22 84043 100 0 0 0       * a bladeback pyrolisk
+G 1 43138 36 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 83522 16 84044 100 0 0 0       * a Barakor
 E 1 83293 10 16 100 0 0 0          *   a two-handed mithril broadsword
 F 1 83522 16 84044 100 0 0 0       * a Barakor (following)

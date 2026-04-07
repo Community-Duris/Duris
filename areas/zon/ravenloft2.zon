@@ -1,6 +1,6 @@
 #590
 &+LThe &+rRavenloft &+LC&Na&+Lt&Na&+Lc&No&+Lm&Nb&+Ls&N~
-59399 0 0 40 50 10
+59399 0 0 40 50 5
 *
 * Zone edited with durisEdit v3.02
 *
@@ -1092,7 +1092,6 @@ P 1 96 1 59292 100 0 0 0           *   (object type not in this .obj file)
 P 1 77 1 59292 100 0 0 0           *   (object type not in this .obj file)
 P 1 41 1 59292 100 0 0 0           *   (object type not in this .obj file)
 O 0 72 1 59396 100 0 0 0           * (object type not in this .obj file)
-O 0 360 1 59321 100 0 0 0          * (object type not in this .obj file)
 *
 M 0 59070 1 59000 100 0 0 0        * Rahadin
 E 1 59321 35 16 100 0 0 0          *   no-show vampire edrain proc

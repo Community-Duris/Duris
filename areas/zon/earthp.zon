@@ -69,7 +69,6 @@ O 0 434 6 131373 100 0 0 0         * (object type not in this .obj file)
 O 0 749 1 131387 100 0 0 0         * (object type not in this .obj file)
 O 0 434 6 131395 100 0 0 0         * (object type not in this .obj file)
 O 0 434 6 131396 100 0 0 0         * (object type not in this .obj file)
-O 0 360 1 131369 100 0 0 0          * (object type not in this .obj file)
 *
 M 0 131228 6 131200 100 0 0 0      * a pillar of earth
 E 1 131226 20 16 100 0 0 0         *   no-show 3x earthen grasp proc

@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include "account.h"
 #include "assocs.h"
+#include "boon.h"
 #include "epic.h"
 #include "graph.h"
 #include "mm.h"
@@ -478,16 +479,11 @@ int sql_level_cap(int racewar_side)
 	// 25 is the lower limit.
 	if (level_cap <= 25)
 		return 25;
-	// Otherwise, we have a 1 level penalty for non-leading racewar sides (on non-circle levels).
-	if ((racewar_side != leading_racewar) && (level_cap % 5 != 1))
-		return level_cap - 1;
-	else
-		return level_cap;
+	
+	return level_cap;
 }
 
-// #define CAP_DELAY(old_level) (time(NULL) + SECS_PER_REAL_DAY * (old_level / 10 - 1))
-//  1 Day for under lvl 40, 2 days over + random number of hours up to a day..
-#define CAP_DELAY(old_level) (time(NULL) + SECS_PER_REAL_DAY * (old_level / 39 + 1) + SECS_PER_REAL_HOUR * number(1, 24))
+#define CAP_DELAY(old_level) (time(NULL) + SECS_PER_REAL_DAY * 7)
 
 // Checks the number of frags against the current highest and sets the new highest if applicable.
 // Adjusted the time inbetween notches from a static 1 day to 1 day for levels 26-29, 2 days for 30-39,
@@ -511,8 +507,21 @@ void sql_check_level_cap(long max_frags, int racewar)
 		// Have enough frags to update level.
 		if (old_level < FRAGS_TO_LEVEL(max_frags / 100.))
 		{
+			// when level cap increases, give a boon to the side that caused it
+			BoonData bdata;
+			bdata.duration  = 2880;        // 48 hours
+			bdata.racewar   = racewar;
+			bdata.type      = BTYPE_EXPM;  // exp mod
+			bdata.option    = BOPT_MOB;
+			bdata.criteria  = 1;           // 1 kill
+			bdata.criteria2 = -1;          // any mob
+			bdata.bonus     = 2;           // 100% bonus 
+			bdata.active    = 1;
+			bdata.repeat    = 1;
+			create_boon(&bdata);
+
 			snprintf(
-				query, 1024, "UPDATE level_cap SET most_frags = %f, racewar_leader = %d, level = %d, next_update = FROM_UNIXTIME(%ld)", max_frags / 100., racewar, old_level + 1, CAP_DELAY(old_level));
+				query, 1024, "UPDATE level_cap SET most_frags = %f, racewar_leader = %d, level = %d, next_update = FROM_UNIXTIME(%ld)", max_frags / 100., racewar, old_level + 5, CAP_DELAY(old_level));
 			db_query(query);
 		}
 		else if (max_frags > old_max_frags)
@@ -2181,8 +2190,8 @@ bool sql_pwipe(int code_verify)
 		}
 		logit(LOG_DEBUG, "sql_pwipe: Resetting level_cap data... .. .");
 		send_to_all("Resetting level_cap data... .. .");
-		// Level 25 is base level for no frags.
-		if (qry("UPDATE level_cap SET most_frags=0, racewar_leader=0, level=25, next_update=NOW()"))
+		// needs to get this parameterized
+		if (qry("UPDATE level_cap SET most_frags=0, racewar_leader=0, level=31, next_update=NOW() + INTERVAL 7 DAY"))
 		{
 			logit(LOG_DEBUG, "  success!");
 			send_to_all("  success!\n");

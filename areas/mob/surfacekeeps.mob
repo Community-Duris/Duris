@@ -1146,3 +1146,17 @@ pg 0 2048 4 -1
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
+#120074
+wandering brewer~
+&+ya wandering &+Yb&+yr&+Ye&+yw&+Ye&+yr&N~
+&+yA stocky &+Yb&+yr&+Ye&+yw&+Ye&+yr waddles through here, eyeing his kin.
+~
+   &+yThis stout, muscular dwarf is dressed in ale-stained
+&+yoveralls, fitting tight against his large frame. He has
+&+ya long double-braided beard that carries the same stains.
+~
+2056 0 0 0 0 0 0 0 200 S
+pm 0 16384 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1

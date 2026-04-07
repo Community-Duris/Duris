@@ -535,8 +535,8 @@ int validate_boon_data(BoonData *bdata, int flag)
 					break;
 
 				case BOPT_MOB:
-					// Vnum must be > 0.
-					if (bdata->criteria2 <= 0)
+					// Vnum must be > 0 (-1 means any mob)
+					if (bdata->criteria2 <= 0 && bdata->criteria2 != -1)
 					{
 						return 1;
 					}
@@ -2219,6 +2219,11 @@ int boon_display(P_char ch, char *argument)
 			{
 				int    r_num = 0;
 				P_char mob;
+				if ((int)criteria2 == -1)
+				{
+					snprintf(buffoption, MAX_STRING_LENGTH, boon_options[option].desc, (int)criteria, "of anything");
+					break;
+				}
 				if ((int)criteria2 < 0 || (r_num = real_mobile((int)criteria2)) < 0 || !(mob = read_mobile(r_num, REAL)))
 				{
 					snprintf(buffoption, MAX_STRING_LENGTH, "Error, can't read mobile.");
@@ -2824,7 +2829,7 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 	{
 		if (IS_NPC(victim) && !IS_PC_PET(victim))
 		{
-			snprintf(buff, MAX_STRING_LENGTH, " AND (criteria2 = '%d')", GET_VNUM(victim));
+			snprintf(buff, MAX_STRING_LENGTH, " AND (criteria2 = '%d' OR criteria2 = '-1')", GET_VNUM(victim));
 		}
 		else
 		{

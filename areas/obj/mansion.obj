@@ -83,7 +83,7 @@ crystal jade green glowing~
 a &+gja&+Gd&+ge cr&+Gy&+gsta&+Gl&N~
 A &+gglowing green&n crystal shimmers upon the ground.&N~
 ~
-8 8 2 0 14 0 33793 16385 2 37883808 0
+8 8 2 0 14 0 33793 8404993 2 37883808 0
 0 0 0 0 0 0 0 0
 0 50000 100
 E
@@ -212,6 +212,8 @@ circlet platinum~
 ~
 A
 13 20
+A
+27 5
 #3514
 katana silver slender blade~
 &+Ca silver katana&N~
@@ -269,7 +271,7 @@ mask wyvern reptile~
 A
 13 20
 A
-14 20
+14 30
 #3517
 earring sapphire tiny~
 &+ba tiny sapphire earring&N~
@@ -292,7 +294,7 @@ gythka crystal weapon~
 &+CSome sort of crystal weapon has been abandoned here.&N~
 ~
 5 8 3 0 13 0 1296 8396801 64 87556099 0
-17 2 4 3 0 0 0 0
+17 4 4 3 0 0 0 0
 4 47524 100 0 16 0 0
 E
 gythka crystal weapon~
@@ -395,9 +397,9 @@ gauntlet magma~
 &+Lhave been cooled down and enchanted to cause extra damage in battle.&N
 ~
 A
-1 9
+1 10
 A
-19 4
+19 5
 #3525
 sword flesh enchanted living~
 an &+menchanted &+Rflesh &nsword~
@@ -455,7 +457,7 @@ a &+rblood-soaked &+Lgr&+ra&+Lni&+rt&+Le dag&+rg&+Ler &ncalled &n'&+rA&+Ln&+rg&+
 An extremely sharp shard of &+Lgranite&n soaked in &+rblood&n has been dropped here.~
 ~
 5 37 2 0 13 0 46080 8193 66 8515584 0
-2 2 4 11 0 0 0 0
+2 5 3 11 0 0 0 0
 3 22465 100
 E
 anger dagger granite blood~
@@ -495,7 +497,7 @@ attractive to look at, but they provide excellent protection from the elements.
 A
 5 10
 A
-24 -2
+24 -4
 #3531
 claws wyvern gloves reptilian~
 the &+yclaws &nof a wyvern~
@@ -519,7 +521,7 @@ a &+rm&+Ragm&+ra &+Ls&nh&+Li&ne&+Ll&nd~
 A &+Yglowing &nshield of &+Lpumice &nand &+rmagma &nhas been left behind.~
 ~
 37 11 4 9 12 0 230400 513 66 85458969 0
-2 1 4 193 4 1 0 0
+2 1 4 200 4 1 0 0
 24 32500 100
 E
 magma shield~
@@ -528,16 +530,16 @@ and awkward to use, this shield can keep opponents on the ground and protect
 against weapon blows.
 ~
 A
-31 3
+31 4
 A
-19 3
+19 4
 #3533
 trident granite shortened spear~
 &+La &nshortened &+Lgranite trident~
 A short &+Lgranite &nspear with three blades has been dropped here.~
 ~
 5 37 3 0 12 0 4228096 8193 0 85475353 0
-18 2 4 11 0 0 0 0
+18 3 6 11 0 0 0 0
 15 12634 100
 E
 trident granite shortened spear~
@@ -546,7 +548,7 @@ fighter capable of using it with skill.  Because of its weight, all but the
 strongest of races would have to use both hands to control this weapon.
 ~
 A
-26 6
+36 5
 A
 19 5
 #3534
@@ -564,7 +566,7 @@ dagger vampires serrated unholy~
 &+cof enchantment.&N
 ~
 A
-13 15
+13 20
 A
 22 -3
 #3535
@@ -581,9 +583,9 @@ collar magma~
 &+Rheat from the gl&+ro&+Rwing s&+ru&+Rper-heat&+re&+Rd r&+ro&+Rck cannot be f&+re&+Rlt.&N
 ~
 A
-18 2
+18 4
 A
-19 2
+19 3
 #3536
 cloak demon kings~
 &+cthe cloak &+Lof the &+rdemon &+Lkings&N~
@@ -591,7 +593,7 @@ cloak demon kings~
 ~
 9 35 3 0 14 0 3309569 1025 66 0 0
 15 9 1 3 0 0 0 0
-5 99000 100
+5 99000 100 671088640 0 0 0
 E
 cloak demon kings~
 This incredible cloak has been made from the scales of a dragon making it very
@@ -600,9 +602,9 @@ cured to allow more pliability, and then &+rblood was used to paint the sigils
 of the demon lords on it.&N
 ~
 A
-24 -3
+24 -4
 A
-13 15
+13 30
 #3537
 visor bone~
 &+Wa b&no&+Wn&ne&+W vi&ns&+Wor~
@@ -617,9 +619,9 @@ visor bone~
 &+Wpowers with its magical properties.&N
 ~
 A
-3 12
+33 4
 A
-4 12
+34 4
 #3538
 ring jade~
 &+ga &+Gjade&N ring~
@@ -627,14 +629,14 @@ ring jade~
 ~
 9 26 1 0 12 0 65536 3 66 0 0
 6 1 4 3 0 0 0 0
-1 32875 100
+1 32875 100 32768 0 0 0
 E
 ring jade~
 This small jade ring looks rather plain, but better judgment suggests that the
 ring holds unknown powers.
 ~
 A
-13 20
+13 30
 A
 24 -3
 #3539
@@ -691,9 +693,9 @@ belt silver~
 &+cLined with silver, this leather belt seems somehow magical.&N
 ~
 A
-19 2
+19 3
 A
-24 -2
+24 -3
 #3543
 cloak styx black~
 the &+Lcloak&N of &+Lstyx&N~
@@ -735,7 +737,7 @@ the &+cblade&n of &+Ch&+Weave&+Cn&N~
 &+CA glimmering two-handed sword has been left behind.&N~
 ~
 5 22 3 0 14 0 4228097 8193 66 85458969 0
-13 3 5 3 0 0 0 0
+13 7 7 3 0 0 0 0
 15 105000 100 0 32768 0 0
 E
 sword blade heaven glimmering~
@@ -745,9 +747,9 @@ sword blade heaven glimmering~
 &+Che was cast down to&+r hell&+C.&N
 ~
 A
-18 6
+18 7
 A
-19 6
+19 7
 #3546
 bracer pit worm scales reptile circular scale~
 a &+cbracer &nof &+Gpit &+gworm &+Gscales~
@@ -767,7 +769,7 @@ bracer reptile pit worm scales circular scale~
 A
 13 25
 A
-24 -2
+24 -3
 #3547
 key obsidian wooden black~
 &+Lan obsidian key&N~
@@ -810,7 +812,7 @@ book demon skin tome~
 A large tome of &+rdemon flesh&n rests here.~
 ~
 33 2 2 0 7 0 66560 8388609 64 4197888 0
-0 0 200 0 0 0 0 0
+0 0 800 0 0 0 0 0
 0 2 100
 E
 book demon skin tome~
@@ -843,9 +845,9 @@ demon demonbone bone leggings~
 &+Larmor.&N
 ~
 A
-19 2
+19 3
 A
-18 1
+18 3
 #3553
 devil crown barzuul fantastic~
 &+Lthe &+rd&+Le&+rv&+Li&+rl &+rcrown &+Wof&+L Bar&+r'zu&+Lul&N~
@@ -860,6 +862,6 @@ devil crown barzuul fantastic~
 &+Lonce been worn by the king of the Devils himself.&N
 ~
 A
-13 20
+13 40
 A
 24 -3

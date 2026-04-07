@@ -320,8 +320,8 @@ ardgral ard'gral~
 &+LOd&+re&+Lth re-corks the flask and smiles.
 
 &+L'The recipe is simple really: &None each of &+ra few drips of dragons blood&n,
-&+La &+rstrange &+Lstone&n, and &+msome faerie dust, plus 50 &+Wplatinum coins
-&nand of course &+La &+Rgn&+romi&+Rsh &+Lshopkeepers token&N.
+&+La &+rstrange &+Lstone&n, and &+msome faerie dust, an &+La&Nn&+Lt&Ni&+L-&Nm&+La&Nt&+Lt&Ne&+Lr &+Cne&+Bbu&+Mla&N,
+plus fifty &+Wplatinum coins &nand &+La &+Rgn&+romi&+Rsh &+Lshopkeepers token&N.
 ~
 QA
 &N$n grins at $N and collects the ingredients.
@@ -333,6 +333,7 @@ G I 827
 G I 824
 G I 825
 G I 55033
+G I 400209
 S
 #83144
 M
@@ -635,7 +636,7 @@ barlow brewstash brew badges brewer brewers~
 &N$n scoffs and grunts &+G'Mind poison!'
 &N$n spits on the floor in front of $N and quickly apologizes.
 &+G'Didn't mean to get ya!' &Nhe chuckles.
-&+G'Bring me eight of the brewers badges, and I'll know the deed is done.'&N he says.
+&+G'Bring me six of the brewers badges, and I'll know the deed is done.'&N he says.
 ~
 MA
 medal medals honor~
@@ -695,6 +696,7 @@ QA
 &N$n gasps and says &+W'Oh thank you $N!  You saved my life!  As a token of my appreciation I will give you this medal of &+Chonor&+W, which I was given a long time ago by Taark Shanat himself.  They say you can trade in a bunch of these medals for a key to the Alatorin Hall of Kings!'
 ~
 R I 83250
+G I 83274
 G I 83274
 G I 83274
 G I 83274
@@ -5695,6 +5697,7 @@ G I 400064
 G I 400064
 G I 55033
 G C 200000
+G I 55033
 QA
 &N$n claps cheerfully and gets to work.
 After several minutes of tinkering, fiddling, widdling and a fair
@@ -5711,6 +5714,7 @@ G I 400049
 G I 400049
 G I 55033
 G C 200000
+G I 55033
 Q
 &+mr&+Lu&+mn&+Le-c&+mo&+Lv&+me&+Lr&+me&+Ld
 ~

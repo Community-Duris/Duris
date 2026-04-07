@@ -1242,7 +1242,7 @@ madman stabber _noquest_~
 &+rThis stabber looks like it would really hurt.&N~
 ~
 5 18 3 0 13 0 16777488 8193 64 4248567899 0
-2 2 6 11 0 25 50 30
+2 5 2 11 0 25 50 30
 2 60000 100 32 0 0 0
 E
 madman stabber~
@@ -1270,7 +1270,7 @@ madman slasher _noquest_~
 &+RA very sharp slasher was left here by mistake.&N~
 ~
 5 18 3 0 13 0 16777472 8193 66 0 0
-5 4 3 3 0 93 57 30
+5 4 5 3 0 93 57 30
 3 80000 100 0 16 0 0
 E
 madman slasher~
@@ -1290,16 +1290,16 @@ _room_msg~
 &+L$n's&N $q &+Lgoes &+rmad...&N
 ~
 A
-18 4
+18 5
 A
-19 3
+19 5
 #44179
 madman slicer mangler _noquest_~
 &+ra &+RMaDMaNs &+rma&+Rngl&+rer&N~
 &+RA large, two-handed slicer lays here.&N~
 ~
 5 19 4 0 13 0 20972816 4202497 64 24 0
-13 3 7 3 0 0 0 0
+13 5 7 3 0 0 0 0
 4 100000 100
 E
 madman slicer mangler~
@@ -1307,9 +1307,9 @@ This immense two-handed sword is extremely fearsome looking. With sharp, jagged
 edges, it is easily capable of mangling anything it slashes.
 ~
 A
-18 3
+18 6
 A
-19 4
+19 6
 #44180
 lizard eye~
 &+Ya lizards &+Reye&N~

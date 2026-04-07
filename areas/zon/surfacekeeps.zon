@@ -1,6 +1,6 @@
 #1200
 &+LThe &N&+mD&+Le&N&+mp&+Lt&N&+mh&+Ls of &N&+rDuris~
-123833 2 16 60 65 2
+123833 2 16 60 65 3
 100 100
 *
 * Zone edited with durisEdit v3.02
@@ -79,6 +79,8 @@ M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
 M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
 M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
 M 0 120070 4 120823 100 0 0 0      * a gaudily-dressed merchant
+M 0 120074 1 120823 100 0 0 0      * a wandering brewer
+G 1 83274 1 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 120038 1 120827 100 0 0 0      * a dwarven blade merchant
 G 1 83290 999 0 100 0 0 0          *    (object type not in this .obj file)
 G 1 83291 999 0 100 0 0 0          *    (object type not in this .obj file)
