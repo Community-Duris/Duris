@@ -2283,6 +2283,7 @@ void assign_rooms(void)
 	obj_index[real_object0(29236)].func.obj = newbie_portal;
 	/* centaur fort */
 	world[real_room0(5300)].funct = inn;
+	mob_index[real_mobile0(5347)].func.mob = world_quest;
 
 	/* Dragonnia */
 	world[real_room0(6841)].funct = room_of_sanctum;
