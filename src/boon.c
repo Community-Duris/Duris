@@ -543,7 +543,7 @@ int validate_boon_data(BoonData *bdata, int flag)
 
 					// Get the R_num from the vnum. .. Do we really car what the R_num is? no.
 					//   This is to verify that there is an actual mob type with said vnum.
-					if (real_mobile((int)bdata->criteria2) < 0)
+					if (bdata->criteria2 != -1 && real_mobile((int)bdata->criteria2) < 0)
 					{
 						return 2;
 					}
