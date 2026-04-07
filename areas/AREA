@@ -408,7 +408,7 @@ siege                     *4010
 *OPEN 4011-4019
 library                   *4020-4021
 *OPEN 4022-4999
-IC3			  *4200-4300
+*OPEN 4200-4300
 surface                   *5000-6600
 underdark	          *7000-8599
 *    end zone adds top_of_world marker
