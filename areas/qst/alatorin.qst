@@ -295,6 +295,705 @@ qc_action 100~
 &NWith a puff of dust, $n invokes a gesture of &+Yelemental &N&+yearth&N.
 ~
 S
+#83140
+MA
+hi hello~
+&N$n looks up from the studious scribing of a &+Wscroll&N and springs to his feet.
+&+W'So, be ye lookin for &+Rscrolls&+W?&N' $n asks $N.
+
+&N$n quickly ducks low and looks to see if anyone is listening.
+&+W'Or be ye lookin for &+Renchanted &Nscrolls?'&N he whispers.
+~
+MA
+scrolls scroll yes scribe~
+&N$n grins and quickly twirls his feather &+Wquill&N between his fingers.
+&+W'I can combine &Na blank plank piece of paper &+Wwith two of the same
+&+Rsalvaged material components &+Wor mystical &+Rbauble&+W from the elemental &+RIncarnates
+&+Wthroughout &+Wthe realm. Here's what I take:
+
+&+gcrystal&n: &+ca small moon&+Lstone &+Ccrystal&N
+&+Lnon-substantial&N: &+Lan &Na&+Ln&Nt&+Li&N-&+Lm&Na&+Lt&Nt&+Le&Nr &+Cne&+Bbu&+Mla&N
+&+yhard wood&N: &+gan ancient plank of &+Cblessed &+ghard wood&N
+&+ysoft wood&N: &+ya shingle of &+Rancient timber&N
+&+ybark&N: &+Gsome ancient &+gbark &+Gof the EarthMother&N
+&+Yb&+yam&+Yb&+yoo&N: &+ga piece of legendary &+Wever&+mbl&+Mo&+Yom&N &+Yb&+gam&+Yb&+goo&N
+&+ghemp&N: &+gsome strangely-fl&+Wow&+Mer&+Yed &+gpungent hemp&N
+&+greeds&N: &+ys&+mo&+yme e&+mn&+ychan&+mt&+yed &+mr&+yee&+md&+y-tha&+mt&+ych&N
+&+Lstone&N: &na tiny shard of &+rvolcanic &+Lrock&N
+&+Lg&Nr&+La&Nn&+Li&Nt&+Le&N: &+La shard of &+Cp&+bla&+Cn&+bar &+Lg&Nr&+La&nn&+Li&Nt&+Le&N
+&+Wma&Nr&+Lb&+Wle&N: &+La small chunk of dark m&Nar&+Wb&+Ll&Ne&N
+&+cglassteel&n: &+csome &+me&+cn&+mc&+ch&+ma&+cn&+mt&+ce&+md &+cme&+Cta&+Lll&+Ci&+cc glass&N
+&+Lobsidian&N: &+Lsome pitch-black obsidian&N
+&+rflesh&N: &+ra still-beating h&+me&+ra&+Mr&+rt&N
+&+Wbone&N: &+Wa piece of &+cimmortal &+Wbone&N
+&+Wfeathers&N: &+La pitch-black feather
+&+Gchitin&N: &+Gsome &Ntranslucent&+G, primordial &+yc&+Gh&+yi&+Gt&+yi&+Gn &+ggoo&N
+
+&+CIn&+cca&+Crn&+cat&+Ce &+mba&+mub&+Mle&+ms&+W:
+&+Ra bu&+rrn&+Ri&+rng fl&+Ra&+rm&+Re          &+Ca s&+Bma&+Cll s&+Bno&+Cwfl&+Bake
+&+La f&Nli&+Lnt &Nof &+Lg&Nr&+La&Nn&+Li&Nt&+Le       &na &+Ww&+Yis&+Wp o&+Yf w&+Win&Nd
+&+Ma d&+me&+Mlica&+mte &+Mbu&+mbb&+ml&+Me
+
+&+WFor example: Give me &Na blank piece of paper&+W and &Ntwo &+Lan &Na&+Ln&Nt&+Li&N-&+Lm&Na&+Lt&Nt&+Le&Nr &+Cne&+Bbu&+Mla&N's
+&+Wand I will give you a special &+cscroll&+W!
+&+WGive me &Na blank piece of paper&+W and &Ntwo &+Ca s&+Bma&+Cll s&+Bno&+Cwfl&+Bakes&N
+&+Wand I will give you a special &+cscroll&+W!
+
+&+WHath $N ever seen an &+Renchanted&+W scroll?' &N$n says&N.
+~
+MA
+enchanted arcanum~
+&N$n nods excitedly at $N.
+&+W'Bring me the &Nfull &+Lli&+bb&+rr&+Ba&+Rr&+Ly&+W, all &Nten &+mar&+Mcan&+mum&+L scrolls&+W, and I'll
+&+Wcombine em for ye into one &+cen&+Cchant&+ced &+Lscroll&+W!'
+
+&N$n inches closer to $N and continues &+W'Recite &+cenc&+Chan&+cted&+L scrolls,
+&+Wbring me two with the same attribute, plus &+Lan &+Celectrum &+Lingot &+Wfrom
+&+Wour pal &+RRagdagan&+W, and I'll forge 'er into a special &+Rring!'
+
+&+W'..and that's just part of me masterpiece..'
+~
+MA
+electrum ingot ragdagan~
+&N$n nods at $N and says &+W'I can't forge ye a ring without somethin
+&+Wte forge it from, ye knobhead!'
+&N$n chuckles for a moment, then adds &+W'Ragdagan is an old friend,
+&+Wdown in the Miner's Guild, under the Great Anvil, ye'll find em!
+&+WRemember, bring me two &+Crecitten &+cen&+Cchan&+cted&+L scrolls of the same
+&+Wattribute and &+Lan &+Celectrum &+Lingot!'
+~
+MA
+ring~
+&N$n nods at $N and says &+W'Aye, I forge these rings to boost yer
+&+Wstrengths, yer will, yer mind.. everything that makes $N into
+&+Wthe best $N!' &Nadding a hearty slap on the back.
+
+&+W'After I combine all ten of my &+mar&+Mcan&+mum&+L scrolls&+W, I'll give ye the
+&+cen&+Ccha&+cn&+Ct&+ced&+L scroll&+W. If ye recite two that have the same attribute,
+&+Wbring both to me with &+Lan &+Celectrum&+L ingot &+Wfrom &+RRagdagan&+W, and I'll
+&+Wforge 'er into the ring!' &N$n says.
+
+&+W'Once ye get one of em rings,' &Nhe adds, fidgeting with a shard
+of a strange &+ccrystal&N, &+W'then ye eight more away from the ultimate.'
+~
+MA
+fragment masterpiece ultimate~
+&N$n grins at $N and says &+W'My ultimate masterpiece is a true
+&+Wtreasure that will not be easy to make, for it requires all
+&+Wnine of the enchanted rings! Strength, intelligence, dexterity,
+&+Wwisdom, constitution, agility, luck, power, and charisma must
+&+Wall come together (plus a small fee of &Nfive &+Whundred platinum)!'
+~
+MA
+underdark xeanlor~
+&N$n shakes his head and mutters &+W'I want nothin'ta do with it!'
+~
+MA
+crystal crystals~
+&N$n nods at $N and says &+W'We folk of the earth have a pact with
+&+Wthe tunnels. We provide for eachother, ye see?'
+
+&N$n sings a guttural &+mtune&N to the nearby cavern wall, pausing
+to listen intently for it to sing back.
+
+&+W'If ye find any crystal materials, big or small, I'll take it.'
+~
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83688
+G I 5
+G I 55554
+G I 55554
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83679
+G I 5
+G I 55551
+G I 55551
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83680
+G I 5
+G I 55550
+G I 55550
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83681
+G I 5
+G I 55552
+G I 55552
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83682
+G I 5
+G I 55553
+G I 55553
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83683
+G I 5
+G I 400094
+G I 400094
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83684
+G I 5
+G I 400209
+G I 400209
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83685
+G I 5
+G I 400059
+G I 400059
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83685
+G I 5
+G I 400054
+G I 400054
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83685
+G I 5
+G I 400044
+G I 400044
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83685
+G I 5
+G I 400024
+G I 400024
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83685
+G I 5
+G I 400014
+G I 400014
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83686
+G I 5
+G I 400099
+G I 400099
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83686
+G I 5
+G I 400104
+G I 400104
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83686
+G I 5
+G I 400109
+G I 400109
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83686
+G I 5
+G I 400119
+G I 400119
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83686
+G I 5
+G I 400179
+G I 400179
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83687
+G I 5
+G I 400004
+G I 400004
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83687
+G I 5
+G I 400009
+G I 400009
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83687
+G I 5
+G I 400069
+G I 400069
+QA
+&N$n takes the &+ymaterials&N from $N and gets to work with his quill,
+eloquently chanting and incanting as he scribes.
+
+After several minutes, and satisified with his work, $n presents
+an &+mar&+Mcan&+mum &+Lscroll&N to $N.
+
+&+W'This is one of my ten &+mar&+Mcan&+mum&+L scrolls&+W. Give me all ten,
+&+Wand I can combine em for ye into &+Lan &+cenc&+Chan&+cted&+L scroll!&+W'
+~
+R I 83687
+G I 5
+G I 400084
+G I 400084
+QA
+&N$n grabs each of the &+Lscrolls&N from $N until they overflow from
+his clutches.
+
+&NAfter a few moments of fumbling through each of them, haphazardly
+unrolling one while another snaps closed, $n finally arranges them
+in a particular order and begins transcribing them into a &+Cst&+cr&+Ca&+cnge
+&+Lscroll of &+cen&+Cch&+cant&+Cmen&+ct&n.
+
+&+W'Recite this,' &Nhe instructs &+W'..and if you collect two &+cenc&+Chan&+cted
+&+Lscrolls&+W of the same attribute, return it to me along with &+Lan&+C electrum
+&+Lingot&+W and I'll make for ye a special &+Rring&+W!
+~
+R I 55362
+R I 55033
+G I 83679
+G I 83680
+G I 83681
+G I 83682
+G I 83683
+G I 83684
+G I 83685
+G I 83686
+G I 83687
+G I 83688
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83689
+G I 55130
+G I 55352
+G I 55352
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83690
+G I 55130
+G I 55353
+G I 55353
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83691
+G I 55130
+G I 55354
+G I 55354
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83692
+G I 55130
+G I 55355
+G I 55355
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83693
+G I 55130
+G I 55356
+G I 55356
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83694
+G I 55130
+G I 55357
+G I 55357
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83695
+G I 55130
+G I 55358
+G I 55358
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83696
+G I 55130
+G I 55359
+G I 55359
+QA
+&N$n snatches the &+ymaterials&N from $N and places the &+Cingot &Non his work
+table, between two glowing blue &+Bcr&+Cy&+Bs&+Ct&+Bals&N.
+
+&+W'Recite on my command'&N he says to $N, lifting a &+ywooden mallet&N high
+over his head.
+
+&+W'Now!'&N he barks, swinging the &+ymallet&N as $N recites the first &+cenc&+Chan&+cted
+&+Lscroll.
+
+&N$n's&+y mallet &Nsmashes the first blue &+Bcr&+Cy&+Bst&+Ca&+Bl&N, sending &+Wb&+Bl&+bue &+Wf&+Cl&+Ba&+bming&N wisps
+into the air, arcing towards the &+Celectrum &+Lingot&N.
+
+&+W'Again!'&N he bellows, heaving the &+ymallet &Nfor a second smash.
+
+&N$n's &+ymallet &Nobliterates the second blue &+Bcr&+Cy&+Bs&+Ct&+Bal&N, causing the &+Celectrum
+&+Lingot &Nto &+Ci&+Yg&+Cn&+Yi&+Ct&+Ye&N with &+Wb&+Cl&+Bu&+be &+Wf&+Cl&+Ba&+bme&N. Several minutes of widdling and fiddling
+later, $n completes a &+Yring&N. Content with his work, he smiles at it
+as he hands it to $N and says &+W'This ring is only a fragment of my true
+&+Rmasterpiece&+W. My &+Rultimate ring&+W.'
+~
+R I 83697
+G I 55130
+G I 55360
+G I 55360
+QA
+&N$n gathers the rings in a small crucible and places it over a small
+blue flame heart. After several minutes adding chemicals, removing
+slag, and refining impurities, $n pours the alloy into a ring mold.
+
+&+W'While this dries, let me tell ye of the tale ..behind this!'
+&Nhe says, pulling the neck of his robe down to reveal a massive
+burn-scar. &+W'Gather round, friendly folk. Our story begins with
+&+Wpromises of redstone, but ends with the beast Xeanlor!' &Nhe says
+&Nwith a theatrical hiss.
+
+Several minutes pass as $n spins an elaborate yarn of his heroics
+during his past life in the &+mUnderdark&N.
+
+Finally, the &+Yring&N is ready.
+~
+R I 83698
+G C 500000
+G I 83697
+G I 83696
+G I 83695
+G I 83694
+G I 83693
+G I 83692
+G I 83691
+G I 83690
+G I 83689
+QA
+&N$n collects the &+gc&+Cr&+gy&+Cs&+gt&+Ca&+gl &nmaterials in a huge glass jar.
+~
+R C 10000
+R E 10000
+G I 400090
+QA
+&N$n collects the &+gc&+Cr&+gy&+Cs&+gt&+Ca&+gl &nmaterials in a huge glass jar.
+~
+R C 15000
+R E 15000
+G I 400091
+QA
+&N$n collects the &+gc&+Cr&+gy&+Cs&+gt&+Ca&+gl &nmaterials in a huge glass jar.
+~
+R C 20000
+R E 20000
+G I 400092
+QA
+&N$n collects the &+gc&+Cr&+gy&+Cs&+gt&+Ca&+gl &nmaterials in a huge glass jar.
+~
+R C 30000
+R E 30000
+G I 400093
+S
 #83141
 MA
 hi hello~
@@ -394,6 +1093,7 @@ After a few seconds, the &+Yfire &+rglands&N begin to glow &+Wbright white!
 and hands it over to $N.
 &+Y'Good for what ails ye!' &N$n he chortles.
 ~
+R I 97910
 R I 97910
 G I 43138
 G I 43138
@@ -621,7 +1321,7 @@ qc_action 200~
 ~
 M
 qc_action 200~
-&N$n says to his crew '&+RTry again, don't give up!'
+&N$n says to his crew '&+GTry again, don't give up!'
 ~
 MA
 favor~
@@ -629,7 +1329,7 @@ favor~
 &NHe scoffs and continues &+G'Well, we'll have to get them before they get us, eh $N?'
 &+G'Return to me with five of their &+ybadges&+G, and I'll know the deed is done'&n, $n whispers with &+rbloodlust&N in his eyes.
 
-&n$n says &+G'Another thing, $N..those &+Rmedals of honor&+G?  I'll pay ye for em!'
+&n$n says &+G'Another thing, $N..those &+Rmedals of honor&+G?  I'll pay ye for four of em!'
 ~
 MA
 barlow brewstash brew badges brewer brewers~
@@ -666,11 +1366,12 @@ R I 83246
 R I 400235
 G I 1250
 QA
-&N$n exclaims &+G'Yes, YES!'
-&+G'I'll give ya a full token and somethin' extra for this, $N!'
+&N$n exclaims &+G'Nice job!'
+&+G'Remember, just give me ten of those pieces and I'll give ya a whole token!'
 ~
-R I 83246
-R I 400235
+R I 83245
+R I 83245
+R I 83245
 G I 400210
 QA
 &n$n says &+G'Thanks!  Remember, just give me ten of those pieces and I'll give ya a whole token!'
@@ -681,7 +1382,6 @@ QA
 &N$n says &+G'Excellent work $N!  All ten pieces!  Here is your token!  Now you know where you take these right?  All commendation tokens to &+CCourt Hall.&+W'
 ~
 R I 83246
-R I 400235
 G I 83245
 G I 83245
 G I 83245
@@ -721,6 +1421,7 @@ QA
 &N$n says &+W'Well done, $N!  Take this token, it is of special &+Rgnomish &+Wcurrency.  There are numerous people around the world who may offer great services for these &+Rtokens&+W.'
 ~
 R I 55033
+G I 83250
 G I 83250
 G I 83250
 G I 83250
@@ -773,1256 +1474,1256 @@ G I 55033
 G I 55247
 G I 83192
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400000
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400001
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400002
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400003
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400004
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400005
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400006
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400007
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400008
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400009
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400010
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400011
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400012
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400013
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400014
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400015
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400016
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400017
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400018
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400019
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400020
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400021
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400022
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400023
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400024
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400025
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400026
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400027
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400028
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400029
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400030
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400031
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400032
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400033
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400034
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400035
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400036
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400037
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400038
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400039
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400040
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400041
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400042
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400043
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400044
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400045
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400046
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400047
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400048
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400049
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400050
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400051
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400052
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400053
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400054
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400055
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400056
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400057
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400058
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400059
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400060
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400061
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400062
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400063
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400064
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400065
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400066
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400067
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400068
 QA
-&N$n snatches the $q from $N.
+&N$n snatches the items from $N.
 &-W&+WBlinding light flashes&Mand the &+Wb&No&+Wn&Ne &-L&+Yexplodes&N in a &+cm&+Bi&+cs&+Bt!
 ~
 R I 83245
 G I 400069
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400070
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400071
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400072
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400073
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400074
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400075
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400076
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400077
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400078
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400079
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400080
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400081
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400082
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400083
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400084
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400085
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400086
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400087
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400088
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400089
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400090
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400091
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400092
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400093
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400094
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400095
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400096
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400097
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400098
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400099
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400100
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400101
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400102
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400103
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400104
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400105
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400106
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400107
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400108
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400109
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400110
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400111
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400112
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400113
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400114
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400115
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400116
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400117
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400118
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400119
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400120
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400121
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400122
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400123
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400124
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400125
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400126
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400127
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400128
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400129
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400130
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400131
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400132
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400133
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400134
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400135
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400136
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400137
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400138
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400139
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400140
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400141
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400142
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400143
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400144
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400145
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400146
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400147
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400148
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400149
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400150
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400151
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400152
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400153
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400154
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400155
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400156
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400157
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400158
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400159
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400160
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400161
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400162
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400163
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400164
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400165
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400166
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400167
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400168
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400169
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400170
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400171
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400172
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400173
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400174
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400175
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400176
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400177
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400178
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400179
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400180
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400181
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400182
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400183
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400184
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400185
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400186
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400187
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400188
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400189
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400190
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400191
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400192
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400193
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400194
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400195
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400196
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400197
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400198
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400199
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400200
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400201
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400202
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400203
 QA
-&N$n snatches the $q from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n snatches the items from $N.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400204
 QA
 &N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Ydust&N and greedily snatches the sack from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400205
 QA
 &N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Ydust&N and greedily snatches the sack from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400206
 QA
 &N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Ydust&N and greedily snatches the sack from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400207
 QA
 &N$n gasps at the &+Cm&+ca&+Cg&+ci&+Cc&+ca&+Cl &+Yplasma&N and greedily snatches the sack from $N.
-&N$n tosses $q to a nearby &+cassistant&n who quickly gets to work.
+&N$n tosses items to a nearby &+cassistant&n who quickly gets to work.
 ~
 R I 83245
 G I 400208
@@ -3045,7 +3746,7 @@ QA
 &N$n says 'Thanks $N!  Here you go.'
 ~
 R I 83250
-R I 55033
+R I 400235
 G I 83246
 G I 83246
 G I 83246
@@ -3424,17 +4125,17 @@ hi hello~
 &+Yfor me efforts, and I'll smith ye somethin' boundta' knot their beards!'
 &+Y'If it's a premium metal,' &N$n &Nadds &+Y'Add a &+Rgn&+romi&+Rsh &+Lshopkeepers token&+Y.'
 
-iron : &+ca rare piece of &+Bcold-&+Ciron&N
-steel : rare piece coldsteel cold steel
-brass : &+ya rare piece of magical brass&N
-bronze : &Na rare piece of &+yb&nl&+ye&ns&+ys&Ne&+yd bronze&N
-copper : &+ya rare piece of enchanted c&No&+yp&Np&+ye&Nr&N
-silver : &+Ca rare piece of magical silver&N
-&+Y*&Nelectrum : &+Wa rare piece of glowing electrum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
-&+Y*&Ngold : &+Ya rare piece of g&+Wl&+Yi&+Wt&+Yt&+We&+Yr&+Wi&+Yn&+Wg &+Ygold&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
-&+Y*&Nplatinum : &+Wa rare piece of glowing platinum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
-&+Y*&Nmithril : &+Can ancient chunk of dwarven mithril&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
-&+Y*&Nadamantium : &+Lsome ancient &+ma&+Ld&+ma&+Lm&+ma&+Ln&+mn&+Lt&+mi&+Lu&+mm&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+ciron&N: &+ca rare piece of &+Bcold-&+Ciron&N
+steel: &Na rare piece of &+bcold&+csteel&N
+&+ybrass&N: &+ya rare piece of magical brass&N
+&+ybronze: &Na rare piece of &+yb&nl&+ye&ns&+ys&Ne&+yd bronze&N
+&+yc&No&+ypp&Ne&+yr&N: &+ya rare piece of enchanted c&No&+yp&Np&+ye&Nr&N
+&+csilver&N: &+Ca rare piece of magical silver&N
+&+Y*&Welectrum&N: &+Wa rare piece of glowing electrum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&+Ygold&N: &+Ya rare piece of g&+Wl&+Yi&+Wt&+Yt&+We&+Yr&+Wi&+Yn&+Wg &+Ygold&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&+Wplatinum&N: &+Wa rare piece of glowing platinum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&+mm&+Mi&+mt&+Mh&+mr&+Mi&+ml&N: &+Can ancient chunk of dwarven mithril&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&+La&+md&+La&+mm&+La&+mn&+Lt&+mi&+Lu&+mm&N: &+Lsome ancient &+ma&+Ld&+ma&+Lm&+ma&+Ln&+mn&+Lt&+mi&+Lu&+mm&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
 
 &+YFor example: give me eight &+crare pieces of &+Bcold-&+Ciron&+Y, &+mso&+Mme te&+mmpe&+Mred&+m mit&+Mhr&+mil
 &+Mar&+mmpla&+Mtes&+Y from Steelgrip's Depot, and &Nfifty &+Wplatinum coins&+Y, and I'll smith
@@ -4977,7 +5678,7 @@ salvage salvaged shadow red blue green metallic cloak~
 &+W'...but if ye find any shadow dragonscales, I can make ye something
 &+Wtruly special!' &Nhe adds with a glint of excitement in his intense eyes.
 
-&+W'Bring me six &+Lshadow dragonscales &+Wand a &+Rgn&+romi&+Rsh &+Lshopkeepers token&+W,
+&+W'Bring me six &+Lshadow dragonscales &+Wand two &+Rgn&+romi&+Rsh &+Lshopkeepers tokens&+W,
 &+Wand don't forget me 100 platinum fee, $N!' $n grunts.
 ~
 M
@@ -5123,6 +5824,7 @@ G I 400204
 G I 400204
 G I 55033
 G C 100000
+G I 55033
 QA
 &N$n smelts the &N&+mtempered &+Cmithril&+L, emblazoning it with &+Cdragonscales.
 ~
@@ -5628,7 +6330,7 @@ G I 37117
 S
 #83391
 MA
-hi hello~
+hi hello craft crafting~
 &N$n blushes and says &+M'Well, hi!' and twirls cheerfully.
 &+M'Have you come here for crafting?  I combine top-tier material
 &+Mcomponents, (ya know, from salvaging?), with &+Rgn&+romi&+Rsh &+Lshopkeeper
@@ -6542,6 +7244,9 @@ arm.
 ~
 R E 1500
 G I 368
+D
+&+YBorik&N dusts himself off and scurries out of the &+ycave&n.
+~
 S
 #83492
 M

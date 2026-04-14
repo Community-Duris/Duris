@@ -210,7 +210,7 @@ tough mercenary~
 &+Lso close to the &+YGreat Forge&+L.  This &Ns&+Whiel&Nd &+Ldwarf has a
 &+Lstern eye and a strong fist, living in his beloved city &+cAlatorin&+L.
 ~
-2122 0 0 0 0 0 0 0 -15 S
+2120 0 0 0 0 0 0 0 -15 S
 pm 0 16384 0 -1
 46 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -573,7 +573,7 @@ a 0 1 0 3
 0.0.0.0 0
 8 8 2
 #83137
-gnome merchant~
+gnome merchant shopkeeper~
 &+La &+Rgnome &+Lmerchant&N~
 &+LA &+Rgnome &+Cmystic&+L-turned&+L-&+mshopkeeper &+Lsits here on a &+ystool&+L, selling items off his person.
 ~
@@ -618,8 +618,8 @@ PH 0 2304 0 -1
 8 8 1
 #83140
 miboli snoblesniz deep gnome mage trainer sorcerer teacher _spec1_~
-&+MMiboli &+BSno&+cbl&+Csniz&N~
-&+MMiboli &+BSno&+cbl&+Csniz &+Mthe &+Ldeep gnome &+Mmystic, mage trainer of &+cAlatorin&+M flies here.
+&+MM&+Ribol&+Mi &+BSno&+cbl&+Csniz&N~
+&+MM&+Ribol&+Mi &+BSno&+cbl&+Csniz &+Mthe &+Ldeep gnome &+Mmystic, mage trainer of &+cAlatorin&+M flies here.
 ~
    &+MMiboli Snoblesniz is a short, plump deep gnome with dark skin and
 &+Mbright eyes.  This gnome has huge bright white teeth and wears
@@ -4580,8 +4580,8 @@ halfling magician~
 &+ybasking in the paradise of his master's tower.
 ~
 2250 0 0 0 24 14528 0 0 800 S
-pf 0 4194816 0 -1
-56 0 0 1d1+1 1d1+1
+pf 0 512 2 -1
+55 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83387
@@ -6756,7 +6756,7 @@ alatorin peacekeeper guard~
 &+Lof the &+cAlatorin &+Lcity guard.  This &+Ydwarf &+Lhas a long beard
 &+Land &+Rfire &+Lin his eyes.
 ~
-1140852810 0 0 0 0 0 0 0 0 S
+1140852808 0 0 0 0 0 0 0 0 S
 pm 0 1 0 -1
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0

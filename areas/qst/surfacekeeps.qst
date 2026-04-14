@@ -127,11 +127,11 @@ S
 #120019
 M
 qc_action 100~
-&M$n says '&+WMove along.'
+&n$n says '&+WMove along.'
 ~
 M
 qc_action 100~
-&+W$n &+Wpeers out across the &N&+rrampart&+W, clutching his hammer firmly.
+&N$n &+Wpeers out across the &N&+rrampart&+W, clutching his hammer firmly.
 ~
 S
 #120020

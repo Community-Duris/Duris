@@ -435,7 +435,7 @@ small lion cub~
 ~
 #83130
 portal~
-&+Ra portal&N~
+&+Ra po&+rrt&+Ral&N~
 &+RA portal set in a massive frame of &+Lcooled magma fluctuates here.~
 ~
 25 1 3 0 7 0 1 0 64 0 0
@@ -449,7 +449,7 @@ portal~
 ~
 #83131
 portal~
-&+Ra portal&N~
+&+Ra &+rpo&+Rrt&+ral&N~
 &+RA portal set in a massive frame of &+Lcooled magma fluctuates here.~
 ~
 25 1 3 0 7 0 1 0 64 0 0
@@ -463,7 +463,7 @@ portal~
 ~
 #83132
 portal~
-&+ya portal&N~
+&+ya &+Ypo&+yrt&+Yal&N~
 &+yA portal surrounded by &+Lrocks &+yand &+Lea&+yrt&+Lh&+ye&+Ln growth stands here, facing the hallway.~
 ~
 25 1 3 0 7 0 1 0 64 0 0
@@ -477,7 +477,7 @@ portal~
 ~
 #83133
 portal~
-&+ya portal&N~
+&+ya po&+Yrt&+yal&N~
 &+yA portal framed by &+Lmassive twisting rocks &+yis here, glowing.~
 ~
 25 1 3 0 7 0 1 0 64 0 0
@@ -491,7 +491,7 @@ portal~
 ~
 #83134
 portal~
-&+Ba portal&N~
+&+Ba po&+brt&+Bal&N~
 &+BA portal of flowing water &+Cframed by a huge entwined coral branches stands here.~
 ~
 25 1 3 0 7 0 1 0 64 0 0
@@ -504,7 +504,7 @@ portal~
 ~
 #83135
 portal~
-&+Ba portal&N~
+&+Ba &+bpo&+Brt&+bal&N~
 &+BA portal of flowing water &+Cframed by a huge entwined coral branches stands here.~
 ~
 25 1 3 0 7 0 1 0 64 0 0
@@ -517,7 +517,7 @@ portal~
 ~
 #83136
 portal cyclone~
-&+Ca portal&N~
+&+Ca po&+Wrt&+Cal&N~
 &+CA swirling cyclone makes a &+Wportal&+C, surrounded by strange crystal.~
 ~
 25 1 3 0 7 0 0 0 64 0 0
@@ -530,7 +530,7 @@ exists with a powerful magic within a frame of naturally-grown crystal.
 ~
 #83137
 portal cyclone~
-&+Ca portal&N~
+&+Ca &+Wpo&+Crt&+Wal&N~
 &+CA swirling cyclone makes a &+Wportal&+C, surrounded by strange crystal.~
 ~
 25 1 3 0 7 0 0 0 64 0 0
@@ -4303,7 +4303,7 @@ ornate detailed ornately-detailed armor plating armor-plating siege master~
 25 0 0 5 0 0 0 0
 2 500000 100 73728 0 0 33554432
 A
-17 -10
+17 -25
 A
 54 40
 #83371
@@ -9165,8 +9165,8 @@ shard first mountain~
 &N&+ma shard of the &+LF&+yi&+Lr&+ys&+Lt &+yM&+Lo&+yu&+Ln&+yt&+La&+yi&+Ln&N~
 &N&+mA shard of the &+LF&+yi&+Lr&+ys&+Lt &+yM&+Lo&+yu&+Ln&+yt&+La&+yi&+Ln &+mjuts out of the crown of &+YM&+Ro&+rrad&+Ri&+Yn&+y's &Nbust&+L.~
 ~
-5 11 3 0 15 0 33558592 8193 32862 0 0
-2 4 4 0 0 1000398452 56 22
+5 36 3 0 15 0 33558592 8193 32862 0 0
+9 4 4 0 0 1000398452 56 22
 12 1100000 100 16777216 0 0 0
 E
 shard first mountain~
@@ -9855,7 +9855,7 @@ A
 A
 40 5
 #83678
-bindings arcane~
+bindings arcane _noquest_~
 &+Lthe &+mb&+Li&+mn&+Ld&+mi&+Ln&+mg&+Ls of the &+Carcane&n~
 &+LThe &+mb&+Li&+mn&+Ld&+mi&+Ln&+mg&+Ls of the &+Carcane&n lies here.~
 ~
@@ -9875,3 +9875,251 @@ A
 24 -5
 A
 21 -5
+#83679
+scroll arcanum frosty~
+&+La &Nscroll&+L of &+Cf&+cr&+Co&+cs&+Ct&+cy &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+Cf&+cr&+Co&+cs&+Ct&+cy &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 511 591 591 0 0 0 0
+0 100000 100
+E
+scroll arcanum frosty~
+This scroll of pale parchment, when unfurled, releases a
+&+Cblizzard &Nthat flashes-&+Bfreezes&N the caster in a column of &+Ci&+cc&+Ce&N.
+~
+#83680
+scroll arcanum fiery~
+&+La &Nscroll&+L of &+rf&+Ri&+Ye&+Rr&+ry &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+rf&+Ri&+Ye&+Rr&+ry &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 516 108 390 0 0 0 0
+0 100000 100
+E
+scroll arcanum fiery~
+This scroll of pale parchment, when unfurled, releases a
+&+Rfirestorm &Nthat flashes-&+rfires&N the caster in a column of &+rfl&+Ram&+Yes&N.
+~
+#83681
+scroll arcanum earthen~
+&+La &Nscroll&+L of &+ye&+La&+yr&+Lt&+yh&+Le&+yn &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+ye&+La&+yr&+Lt&+yh&+Le&+yn &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 151 0 0 0 0 0 0
+0 100000 100
+E
+scroll arcanum earthen~
+This scroll of pale parchment, when unfurled, releases a
+&+ytremor &Nthat &+Yshakes&N the caster, summoning a wall of &+Lrock&N.
+~
+#83682
+scroll arcanum aerial~
+&+La &Nscroll&+L of &+Wae&+Cri&+Wal &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+Wae&+Cri&+Wal &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 476 469 469 0 0 0 0
+0 100000 100
+E
+scroll arcanum aerial~
+This scroll of pale parchment, when unfurled, releases a
+&+Cwhirlwind &Nthat &+csw&+Bir&+Cls&N around the caster in a vortex of &+Ww&+Yi&+Wn&+Yd&N.
+~
+#83683
+scroll arcanum vital~
+&+La &Nscroll&+L of &+Cv&+Bi&+Ct&+Ba&+Cl&N &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+Cv&+Bi&+Ct&+Ba&+Cl &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 396 476 469 0 0 0 0
+0 100000 100
+E
+scroll arcanum vital~
+This scroll of pale parchment, when unfurled, releases a
+&+Bsurge &Nthat envelopes the room in a &+Csphere&N of &+Yh&+We&+Ya&+Wl&+Yi&+Wn&+Yg&+b ene&+Brgy&N.
+~
+#83684
+scroll arcanum cosmic~
+&+La &Nscroll&+L of &+Yco&+Wsm&+Yic &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+Yco&+Wsm&+Yic &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 333 629 590 0 0 0 0
+0 100000 100
+E
+scroll arcanum cosmic~
+This scroll of pale parchment, when unfurled, releases a
+&+Lvortex &nthat envelopes the caster in a &+Lv&+Wo&+Li&+Wd&+L of &+bnegative &+Lenergy&N.
+~
+#83685
+scroll arcanum sylvan~
+&+La &Nscroll&+L of &+Gsy&+gl&+Gv&+ga&+Gn &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+Gsy&+gl&+Gv&+ga&+Gn &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 444 307 237 0 0 0 0
+0 100000 100
+E
+scroll arcanum sylvan~
+This scroll of pale parchment, when unfurled, releases an
+eruption of &+ggrowth&N, enveloping the caster in &+Gvines&N and small
+&+gp&+Gl&+ga&+Gn&+gt&+Gs&N that spring up from every surface.
+~
+#83686
+scroll arcanum lithic~
+&+La &Nscroll&+L of &+Ll&Ni&+Lt&Nh&+Li&Nc &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+Ll&Ni&+Lt&Nh&+Li&Nc &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 247 36 0 0 0 0 0
+0 100000 100
+E
+scroll arcanum lithic~
+This scroll of pale parchment, when unfurled, releases a
+surge of &+Lrocks&N to protrude from a &+rl&+Ra&+rv&+Ra &+rb&+Rl&+ra&+Rs&+rt&N, enveloping the
+caster in a &+Lshell&N of &+cmagi&+Ccal &+Lstone&N.
+~
+#83687
+scroll arcanum sanguine~
+&+La &Nscroll&+L of &+Ysan&+Cg&+Yu&+Cin&+Ye &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+Ysan&+Cg&+Yu&+Cin&+Ye &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 294 355 162 0 0 0 0
+0 100000 100
+E
+scroll arcanum sanguine~
+This scroll of pale parchment, when unfurled, releases a
+&+ch&+Ca&+cz&+Ce &Nthat &+menshrouds &Nthe caster in a &+bb&+Bl&+bu&+Br&N of &+mma&+Mg&+mi&+Mc&N.
+~
+#83688
+scroll arcanum mystic~
+&+La &Nscroll&+L of &+Mm&+my&+Ms&+mt&+Mi&+mc&N &+mar&+Mcan&+mum&N~
+&+LA &Nscroll&+L of &+mm&+My&+ms&+Mt&+mi&+Mc &+mar&+Mcan&+mum&N floats here, &+Yro&Nta&+Yti&Nng slowly.~
+~
+2 28 2 0 10 0 0 8388609 32832 0 0
+56 93 93 93 0 0 0 0
+0 100000 100
+E
+scroll arcanum mystic~
+This scroll of pale parchment, when unfurled, releases a
+&+Cs&+Yu&+Cr&+Yg&+Ce &Nthat &+Ldispels&N the &+mma&+Mg&+mi&+Mc&N of anything it touches.
+~
+#83689
+enchanted ring strength~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+Rstrength&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+Rstrength&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+1 10
+A
+31 4
+#83690
+enchanted ring intelligence~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+Mintelligence&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+Mintelligence&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+3 10
+A
+33 4
+#83691
+enchanted ring dexterity~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+Gdexterity&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+Gdexterity&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+2 10
+A
+32 4
+#83692
+enchanted ring wisdom~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+Cwisdom&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+Cwisdom&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+4 10
+A
+34 4
+#83693
+enchanted ring constitution~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+bconstitution&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+bconstitution&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+5 10
+A
+35 4
+#83694
+enchanted ring agility~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+Yagility&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+Yagility&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+26 10
+A
+36 4
+#83695
+enchanted ring luck~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+Gluck&n~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+Gluck&n lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+30 15
+A
+40 5
+#83696
+enchanted ring power~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+mpower&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+mpower&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+27 15
+A
+37 5
+#83697
+enchanted ring charisma~
+&+Lan &+Cenc&+chan&+Cted&n &+Lring of &+Bcharisma&N~
+&+LAn &+Cenc&+chan&+Cted&n &+Lring of &+Bcharisma&N lies here.~
+~
+9 23 1 0 9 0 0 3 32768 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+A
+28 15
+A
+38 5
+#83698
+ring wondrous wonderous power~
+&+La &+Cr&+ci&+Cn&+cg &+Lof &+Mw&+mo&+Mn&+md&+Mr&+mo&+Mu&+ms &+rp&+Ro&+rw&+Re&+rr&N~
+&+LA &+Cr&+ci&+Cn&+cg &+Lof &+Mw&+mo&+Mn&+md&+Mr&+mo&+Mu&+ms &+rp&+Ro&+rw&+Re&+rr&N lies here.~
+~
+9 35 1 0 14 0 1 3 64 0 0
+0 0 0 0 0 0 0 0
+0 0 100 16777232 0 0 0

@@ -1479,7 +1479,7 @@ O 0 361 2 83218 100 0 0 0          * (object type not in this .obj file)
 O 0 83461 1 83225 100 0 0 0        * a marble statue of Taark Shanat
 O 0 83139 8 83227 100 0 0 0        * a small wooden desk
 P 1 58335 5 83139 100 0 0 0        *   (object type not in this .obj file)
-P 1 5 1 83139 100 0 0 0            *   (object type not in this .obj file)
+P 1 5 999 83139 100 0 0 0          *   (object type not in this .obj file)
 P 1 204 999 83139 100 0 0 0        *   (object type not in this .obj file)
 O 0 83251 1 83227 100 0 0 0        * a large sign
 O 0 95519 1 83229 50 0 0 0         * (object type not in this .obj file)
@@ -1641,7 +1641,7 @@ O 0 89008 4 83518 100 0 0 0        * (object type not in this .obj file)
 O 0 83428 1 83519 100 0 0 0        * a cask of vintage Hammer and Shield brand ale
 O 0 95527 1 83523 100 0 0 0        * (object type not in this .obj file)
 O 0 83114 6 83535 100 0 0 0        * a closet
-P 1 40444 9 83114 100 0 0 0        *   (object type not in this .obj file)
+P 1 40444 19 83114 100 0 0 0       *   (object type not in this .obj file)
 O 0 83114 6 83536 100 0 0 0        * a closet
 P 1 500 999 83114 100 0 0 0        *   (object type not in this .obj file)
 P 1 500 999 83114 100 0 0 0        *   (object type not in this .obj file)
@@ -1755,6 +1755,9 @@ P 1 55392 1 83429 50 0 0 0         *   (object type not in this .obj file)
 P 1 83182 999 83429 40 0 0 0       *   an Alatorin spellbook
 P 1 5823 3 83429 100 0 0 0         *   (object type not in this .obj file)
 P 1 83196 2 83429 100 0 0 0        *   a flying spellbook
+P 1 5 999 83429 100 0 0 0          *   (object type not in this .obj file)
+P 1 5 999 83429 100 0 0 0          *   (object type not in this .obj file)
+P 1 5 999 83429 100 0 0 0          *   (object type not in this .obj file)
 O 0 83139 8 83828 100 0 0 0        * a small wooden desk
 P 1 58335 5 83139 100 0 0 0        *   (object type not in this .obj file)
 P 1 40404 1 83139 100 0 0 0        *   (object type not in this .obj file)
@@ -1969,7 +1972,7 @@ M 0 83147 1 83145 100 0 0 0        * Sturb Ironhead
 E 1 83228 1 14 100 0 0 0           *   a spiked mithril wristguard
 E 1 83229 2 16 100 0 0 0           *   a spiked mithril mace
 E 1 83229 2 17 100 0 0 0           *   a spiked mithril mace
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83175 1 83145 100 0 0 0        * a commander of the siege army (following)
 G 1 40442 9 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 83174 1 83145 100 0 0 0        * Birch Scruden
@@ -2097,7 +2100,7 @@ G 1 32857 1 0 80 0 0 0             *    (object type not in this .obj file)
 G 1 83270 1 0 100 0 0 0            *    the story of Jedd Burningbraids
 M 0 83146 1 83181 100 0 0 0        * Horusite
 E 1 83146 2 18 100 0 0 0           *   a wand of comet control
-E 1 83269 1 18 5 0 0 0             *   a book entitled 'Sol'
+E 1 83269 1 18 10 0 0 0            *   a book entitled 'Sol'
 M 0 83137 1 83185 100 0 0 0        * a gnome merchant
 G 1 74021 999 0 100 0 0 0          *    (object type not in this .obj file)
 G 1 66004 999 0 100 0 0 0          *    (object type not in this .obj file)
@@ -2106,6 +2109,7 @@ G 1 204 999 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 83182 999 0 100 0 0 0          *    an Alatorin spellbook
 G 1 83336 999 0 100 0 0 0          *    a hide-bound spellbook with a glowing Alatorin insignia
 G 1 83435 999 0 100 0 0 0          *    a scroll of revelations
+G 1 5 999 0 100 0 0 0              *    (object type not in this .obj file)
 M 0 83120 16 83186 100 0 0 0       * an Alatorin elite guard
 E 1 83112 999 11 100 0 0 0         *   an iron shield bearing the crest of Alatorin
 E 1 83119 999 16 100 0 0 0         *   a polished iron broadsword
@@ -2314,6 +2318,7 @@ R 1 83502 8 83260 100 0 0 0        * a huge, armored ram (being ridden)
 M 0 83503 9 83262 100 0 0 0        * an attendant of the citadel
 M 0 83497 7 83263 100 0 0 0        * a citadel patrol leader
 E 1 83291 21 16 100 0 0 0          *   a mithril longsword
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83269 33 83263 100 0 0 0       * a citadel patrol guard (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 E 1 83111 999 17 100 0 0 0         *   an iron broadsword
@@ -2325,6 +2330,7 @@ E 1 83304 18 16 100 0 0 0          *   an illusionary dagger
 E 1 83304 18 17 100 0 0 0          *   an illusionary dagger
 M 0 83497 7 83264 100 0 0 0        * a citadel patrol leader
 E 1 83291 21 16 100 0 0 0          *   a mithril longsword
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83269 33 83264 100 0 0 0       * a citadel patrol guard (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 E 1 83111 999 17 100 0 0 0         *   an iron broadsword
@@ -2342,9 +2348,11 @@ E 1 83304 18 17 100 0 0 0          *   an illusionary dagger
 M 0 83503 9 83266 100 0 0 0        * an attendant of the citadel
 M 0 83267 1 83267 100 0 0 0        * a royal shield dwarf delegate
 F 1 83268 1 83267 100 0 0 0        * an ambassador of Kimordril (following)
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83274 1 83267 100 0 0 0        * a visiting duergar guild leader (following)
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83273 2 83267 100 0 0 0        * an elite guard (following)
 F 1 83273 2 83267 100 0 0 0        * an elite guard (following)
 F 1 83275 2 83267 100 0 0 0        * a clansdwarf (following)
@@ -2374,6 +2382,7 @@ E 1 83304 18 16 100 0 0 0          *   an illusionary dagger
 E 1 83304 18 17 100 0 0 0          *   an illusionary dagger
 M 0 83497 7 83273 100 0 0 0        * a citadel patrol leader
 E 1 83291 21 16 100 0 0 0          *   a mithril longsword
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83269 33 83273 100 0 0 0       * a citadel patrol guard (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 E 1 83111 999 17 100 0 0 0         *   an iron broadsword
@@ -2515,6 +2524,7 @@ E 1 83119 999 17 100 0 0 0         *   a polished iron broadsword
 M 0 83503 9 83291 100 0 0 0        * an attendant of the citadel
 M 0 83497 7 83292 100 0 0 0        * a citadel patrol leader
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83269 33 83292 100 0 0 0       * a citadel patrol guard (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 E 1 83111 999 17 100 0 0 0         *   an iron broadsword
@@ -2647,6 +2657,7 @@ M 0 83276 1 83300 100 0 0 0        * Meshadan the recruiter
 E 1 83465 1 6 100 0 0 0            *   a magnificent horned dwarven warhelm
 E 1 83293 10 16 100 0 0 0          *   a two-handed mithril broadsword
 G 1 83258 1 0 100 0 0 0            *    a Shanat officer's key
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83282 17 83300 100 0 0 0       * a legionnaire (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 E 1 83111 999 17 100 0 0 0         *   an iron broadsword
@@ -2758,6 +2769,7 @@ G 1 74132 999 0 100 0 0 0          *    (object type not in this .obj file)
 G 1 74181 999 0 100 0 0 0          *    (object type not in this .obj file)
 G 1 83309 999 0 100 0 0 0          *    a huge mining sack
 G 1 3069 999 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 55130 999 0 100 0 0 0          *    (object type not in this .obj file)
 M 0 120051 48 83352 100 0 0 0      * (mob type not in this .mob file)
 M 0 83424 2 83353 100 0 0 0        * a steam-powered mechanical construct
 M 0 83251 8 83355 100 0 0 0        * a gnomish tinkerer
@@ -2826,7 +2838,7 @@ M 0 40467 2 83377 100 0 0 0        * (mob type not in this .mob file)
 M 0 40468 1 83377 100 0 0 0        * (mob type not in this .mob file)
 M 0 40467 2 83377 100 0 0 0        * (mob type not in this .mob file)
 M 0 83383 1 83378 100 0 0 0        * a huge sloppy fat dwarf
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 83303 4 83378 100 0 0 0        * a raucous goblin drunk
 M 0 83360 3 83379 100 0 0 0        * a Deramuth mercenary
 M 0 83384 4 83379 100 0 0 0        * a derro rogue
@@ -2977,6 +2989,7 @@ M 0 55246 1 83420 100 0 0 0        * (mob type not in this .mob file)
 M 0 83218 8 83421 100 0 0 0        * a citadel summoner
 M 0 83497 7 83423 100 0 0 0        * a citadel patrol leader
 E 1 83291 21 16 100 0 0 0          *   a mithril longsword
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83269 33 83423 100 0 0 0       * a citadel patrol guard (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 F 1 83269 33 83423 100 0 0 0       * a citadel patrol guard (following)
@@ -3051,6 +3064,7 @@ F 1 83257 7 83432 100 0 0 0        * an officer (following)
 F 1 83257 7 83432 100 0 0 0        * an officer (following)
 M 0 83497 7 83434 100 0 0 0        * a citadel patrol leader
 E 1 83291 21 16 100 0 0 0          *   a mithril longsword
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83269 33 83434 100 0 0 0       * a citadel patrol guard (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 E 1 83111 999 17 100 0 0 0         *   an iron broadsword
@@ -3247,6 +3261,9 @@ M 0 83290 3 83509 100 0 0 0        * a dwarf miner
 M 0 83290 3 83509 100 0 0 0        * a dwarf miner
 M 0 83317 3 83510 100 0 0 0        * a miner
 M 0 83296 1 83511 100 0 0 0        * Harmon, the smeltmaster
+M 0 17264 1 83511 100 0 0 0        * (mob type not in this .mob file)
+G 1 400223 1 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 400224 1 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 83101 2 83512 100 0 0 0        * a burly bouncer
 M 0 83309 2 83514 100 0 0 0        * a relaxing peacekeeper
 G 1 83119 999 0 100 0 0 0          *    a polished iron broadsword
@@ -3612,7 +3629,7 @@ E 1 83557 1 9 50 0 0 0             *   some fingerless orog-hide gloves
 E 1 83275 6 16 100 0 0 0           *   a concealed dirk
 E 1 83275 6 17 100 0 0 0           *   a concealed dirk
 E 1 83423 1 20 100 0 0 0           *   a smuggler's black mask
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83380 8 83699 100 0 0 0        * a human smuggler (following)
 F 1 83380 8 83699 100 0 0 0        * a human smuggler (following)
 M 0 83379 1 83700 100 0 0 0        * a fast-talking goblin dealer
@@ -3829,7 +3846,7 @@ M 0 83405 1 83801 100 0 0 0        * Lord Deramuth the portmaster
 E 1 83448 1 3 100 0 0 0            *   a string of disembodied hands
 E 1 83394 20 16 100 0 0 0          *   a mithril-bladed battle-axe
 E 1 83394 20 17 100 0 0 0          *   a mithril-bladed battle-axe
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 G 1 83369 1 0 100 0 0 0            *    the bloody head of Lord Deramuth
 F 1 83409 1 83801 100 0 0 0        * a crooked advisor (following)
 E 1 83477 1 1 100 0 0 0            *   a blue crystalline band
@@ -3858,8 +3875,8 @@ E 1 83437 1 5 100 0 0 0            *   a beautiful blue silk robe
 E 1 83438 1 19 100 0 0 0           *   some sun-glasses with pink-painted frames
 G 1 83430 2 0 100 0 0 0            *    a thick elemental key
 M 0 83119 1 83823 100 0 0 0        * an ethereal walker
-M 0 83416 2 83823 100 0 0 0        * a white appirition
-M 0 83387 2 83823 100 0 0 0        * a black appirition
+M 0 83416 3 83823 100 0 0 0        * a white appirition
+M 0 83387 3 83823 100 0 0 0        * a black appirition
 M 0 83389 6 83827 100 0 0 0        * a halfling scribe
 G 1 83435 999 0 100 0 0 0          *    a scroll of revelations
 M 0 83389 6 83827 100 0 0 0        * a halfling scribe
@@ -3885,8 +3902,10 @@ M 0 55550 3 83829 25 0 0 0         * (mob type not in this .mob file)
 M 0 55552 3 83829 25 0 0 0         * (mob type not in this .mob file)
 M 0 55553 3 83829 25 0 0 0         * (mob type not in this .mob file)
 M 0 55554 2 83829 25 0 0 0         * (mob type not in this .mob file)
-M 0 83416 2 83829 100 0 0 0        * a white appirition
-M 0 83387 2 83829 100 0 0 0        * a black appirition
+M 0 83416 3 83829 100 0 0 0        * a white appirition
+M 0 83387 3 83829 100 0 0 0        * a black appirition
+M 0 83416 3 83829 100 0 0 0        * a white appirition
+M 0 83387 3 83829 100 0 0 0        * a black appirition
 M 0 83390 6 83830 100 0 0 0        * a meditative halfling mage
 M 0 83390 6 83830 100 0 0 0        * a meditative halfling mage
 M 0 83390 6 83830 100 0 0 0        * a meditative halfling mage
@@ -3911,7 +3930,7 @@ M 0 83480 5 83841 100 0 0 0        * a small trog
 M 0 99460 5 83841 100 0 0 0        * (mob type not in this .mob file)
 M 0 83475 1 83843 100 0 0 0        * an extremely fat black troglodyte
 E 1 83291 21 16 100 0 0 0          *   a mithril longsword
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83477 3 83843 100 0 0 0        * a black troglodyte henchman (following)
 E 1 83530 28 16 100 0 0 0          *   a heavy bone club
 E 1 83530 28 17 100 0 0 0          *   a heavy bone club
@@ -4128,7 +4147,7 @@ M 0 83428 1 83892 100 0 0 0        * a well-traveled wanderer
 M 0 83429 2 83892 100 0 0 0        * a hungry shield dwarf
 M 0 83429 2 83892 100 0 0 0        * a hungry shield dwarf
 M 0 83431 1 83893 100 0 0 0        * a muscular githzerai prince
-G 1 40444 9 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 G 1 83484 1 0 100 0 0 0            *    a ball of crackling energy
 M 0 83439 1 83894 100 0 0 0        * Wikzor the dwarven warlord
 E 1 83514 1 13 100 0 0 0           *   a thick duergar-hide belt with a mithril buckle
@@ -4434,6 +4453,7 @@ E 1 83304 18 17 100 0 0 0          *   an illusionary dagger
 M 0 83503 9 84000 100 0 0 0        * an attendant of the citadel
 M 0 83497 7 84003 100 0 0 0        * a citadel patrol leader
 E 1 83291 21 16 100 0 0 0          *   a mithril longsword
+G 1 40444 19 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83269 33 84003 100 0 0 0       * a citadel patrol guard (following)
 E 1 83111 999 16 100 0 0 0         *   an iron broadsword
 E 1 83111 999 17 100 0 0 0         *   an iron broadsword

@@ -8,7 +8,7 @@
 &+Lthrough the air, drying out the mountain winds with a chilling
 &+Lbreeze.
 ~
-831 4 5
+831 33554436 5
 D0
 ~
 ~
@@ -28,7 +28,7 @@ S
 &+Lthrough the air, drying out the mountain winds with a chilling
 &+Lbreeze.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -48,7 +48,7 @@ S
 &+Lthrough the air, drying out the mountain winds with a chilling
 &+Lbreeze.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -66,7 +66,7 @@ S
 &+Cthe mountain itself, this forge stronghold serves as one of the grand
 &+Cdwarf settlements in all of Duris.
 ~
-831 4 14
+831 33554436 14
 D1
 ~
 ~
@@ -86,7 +86,7 @@ S
 &+Lfloor is carpeted with heavy &+colyx &+Lhide and the walls decorated with
 &+Lpaintings of dwarven lords and deities.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -114,7 +114,7 @@ S
 &+Lfloor is carpeted with heavy &+colyx &+Lhide and the walls decorated with
 &+Lpaintings of dwarven lords and deities.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LA swinging wooden door leads to the kitchen.
 ~
@@ -135,7 +135,7 @@ S
 &+Lfloor is carpeted with heavy &+colyx &+Lhide and the walls decorated with
 &+Lpaintings of dwarven lords and deities.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 door~
@@ -154,7 +154,7 @@ S
 &+Wunderstandably quite busy with the hustle and bustle of the dwarf
 &+Wcity, but also from the hearty appetites of the mountain-dwellers.
 ~
-831 0 14
+831 33554432 14
 D2
 &+LA swinging wooden door leads to the bar.
 ~
@@ -179,7 +179,7 @@ S
 &+Llands.  Although it is quite dark and dusty, this reclusive chamber
 &+Lserves its purpose.
 ~
-831 0 14
+831 33554432 14
 D4
 &+LAn old trapdoor leads back up to the kitchen.
 ~
@@ -195,7 +195,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -214,7 +214,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -236,7 +236,7 @@ S
 &+Wthe bedchamber &+ydoor&+W to the east is *HUGE*.  All three of them
 &+Whowever, remain occupied.
 ~
-831 524288 14
+831 34078720 14
 D0
 &+yA small, arched doorway leads into an &+Woccupied &+ybedchamber.
 ~
@@ -267,7 +267,7 @@ warming this bunked bedchamber with its glowing warming glow.
    This particular bedroom has a large wooden &+ycloset &Nsitting against
 the wall opposite the bed.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 door~
@@ -282,7 +282,7 @@ rests on the floor, and a hearth is located on the far side of the room,
 warming this bunked bedchamber with its glowing warming glow.
    A huge wooden &+ycloset &Nsits on the side wall of this lodge.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 door~
@@ -295,7 +295,7 @@ S
 &+WClearly reserved for the highest of royalty that graces this inn
 &+Wof Alatorin, this chamber is fit for a king.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 door~
@@ -314,7 +314,7 @@ S
 &+Yonto it many times, suggesting that this banker takes his job very
 &+Yseriously.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -338,7 +338,7 @@ S
 &+Cshelves built into the thick steel walls and numerous stacks of
 &+Cgold and silver.
 ~
-831 0 14
+831 33554432 14
 D0
    &+CThe heavy steel vault door of the Alatorin depository.
 ~
@@ -354,7 +354,7 @@ S
 &+Llineage and Alatorin.  A few small steps lead back out of the auction
 &+Lhouse to the main hall of the city.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -370,7 +370,7 @@ S
 &+Lthis lateral access point into the Adventurer's Hall, or as it is also
 &+Lcalled, the Hall of Guilds.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 gates~
@@ -390,7 +390,7 @@ S
 &+Lthis lateral access point into the Adventurer's Hall, or as it is also
 &+Lcalled, the Hall of Guilds.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 ~
@@ -410,7 +410,7 @@ S
 &+Lthis lateral access point into the Adventurer's Hall, or as it is also
 &+Lcalled, the Hall of Guilds.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 gates~
@@ -432,7 +432,7 @@ S
 &+Lcorners further into the Hall of Adventurers.  The center of this
 &+Lchamber stands a large spear with a blood red war standard.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -462,7 +462,7 @@ S
 &+Lcorners further into the Hall of Adventurers.  The center of this
 &+Lchamber stands a large spear with a blood red war standard.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -484,7 +484,7 @@ S
 &+Lcorners further into the Hall of Adventurers.  The center of this
 &+Lchamber stands a large spear with a blood red war standard.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -506,7 +506,7 @@ S
 &+Lcorners further into the Hall of Adventurers.  The center of this
 &+Lchamber stands a large spear with a blood red war standard.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -536,7 +536,7 @@ S
 &+Lcorners further into the Hall of Adventurers.  The center of this
 &+Lchamber stands a large spear with a blood red war standard.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -572,7 +572,7 @@ S
 &+Lthe dwarves, is to find treasure admist finding honor.  The &+RRecruiting
 &+CPost&+L is the central location for such ambitious dwarves.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 ~
@@ -595,7 +595,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -621,7 +621,7 @@ S
 &+Wstone hearths rest in the far corner of the chamber to keep food
 &+Wbrought from the various taverns of Alatorin hot and fresh.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LThis &n&+ydoor&+L leads into the kitchen.
 ~
@@ -647,7 +647,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -670,7 +670,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LA huge door leads north to the Hall of &+YLegends.
 ~
@@ -690,7 +690,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -709,7 +709,7 @@ S
 &+Mof Taark Shanat, the Wyrmslayer and King of Alatorin and the shield
 &+Mdwarves.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 door~
@@ -735,7 +735,7 @@ S
 &+Wfine &+Bvelvet &+Wrug.  A wide-open practice area is located next to
 &+Wa small sleeping abode.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 door~
@@ -749,7 +749,7 @@ those who do not share the gift of ultravision as some of the deeper
 dwarves of Alatorin.  This chamber has a large meditation circle and
 a combat sparring circle, and that is all.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LA large &+Rvelvet-lined &+Ldoor.
 ~
@@ -768,7 +768,7 @@ S
 &+Las well as the surrounding furniture, if any.  Ones stealth senses
 &+Lare definitely heightened in this reclusive chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -788,7 +788,7 @@ S
 &+Ypivotal location for the movement of the shield dwarf army and
 &+Yabove all else, the protection of the Alatorians.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -807,7 +807,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -834,7 +834,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LThe stone wall to the east seems uneasy.
 ~
@@ -854,7 +854,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -873,7 +873,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -892,7 +892,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -911,7 +911,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -930,7 +930,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -949,7 +949,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -969,7 +969,7 @@ S
 &+WSiege Court below, giving officials of the Alatorin army the ability
 &+Wto address huge gatherings of troops all at once.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -988,7 +988,7 @@ S
 &+YCouncil of War chamber acts as both a staging ground for the Alatorin
 &+Ymilitia as well as a central location for drills.
 ~
-831 0 14
+831 33554432 14
 D0
   &+LA small &+Cplaque &+Lreads &+L'Military Plate'
 ~
@@ -1015,7 +1015,7 @@ S
 &+Lshields and armor, while the southern hold carries warhammers swords
 &+Land whetstones.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 door~
@@ -1031,7 +1031,7 @@ S
 &+Lshields and armor, while the southern hold carries warhammers swords
 &+Land whetstones.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 door~
@@ -1045,7 +1045,7 @@ S
 &+Cmithril walls are quite old, but well-kept.  This pass leads back out
 &+Cto the district.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1063,7 +1063,7 @@ S
 &+Cmithril walls are quite old, but well-kept.  This pass leads back out
 &+Cto the district.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1085,7 +1085,7 @@ S
 &+CTaark Shanat himself slayed the four rulers of Rringlor Noroth, and
 &+Cclaimed the great city as their own.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1115,7 +1115,7 @@ S
 &+CTaark Shanat himself slayed the four rulers of Rringlor Noroth, and
 &+Cclaimed the great city as their own.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -1137,7 +1137,7 @@ S
 &+CTaark Shanat himself slayed the four rulers of Rringlor Noroth, and
 &+Cclaimed the great city as their own.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1167,7 +1167,7 @@ S
 &+CTaark Shanat himself slayed the four rulers of Rringlor Noroth, and
 &+Cclaimed the great city as their own.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1193,7 +1193,7 @@ S
 &+CTaark Shanat himself slayed the four rulers of Rringlor Noroth, and
 &+Cclaimed the great city as their own.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1223,7 +1223,7 @@ S
 &+CTaark Shanat himself slayed the four rulers of Rringlor Noroth, and
 &+Cclaimed the great city as their own.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1243,7 +1243,7 @@ S
 &+Lroom in which messengers are sent and gathered, visitors consult
 &+Lthe king, peasants petitioning, and lordly dues.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -1264,7 +1264,7 @@ S
 &+WThis chamber has a vaulted ceiling, its highest point being shrouded
 &+Win darkness.  One's voice booms incredibly loudly in this chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1293,7 +1293,7 @@ S
 &+Lthese caverns long ago.  The Throne gives off a magical radiance and
 &+Lserves as a symbol of the Shield Dwarves and their mark on the world.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -1307,7 +1307,7 @@ S
 &+Grelics of the past put on display are a common trend among the
 &+Ghalls of the dwarven kings.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 ~
@@ -1325,7 +1325,7 @@ S
 &+Grelics of the past put on display are a common trend among the
 &+Ghalls of the dwarven kings.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1344,7 +1344,7 @@ S
 &+CCitadel, while the north-south passage connects the sigil-lined Hallway
 &+Cof Honour.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1369,7 +1369,7 @@ S
 &+Cthe Hallway of Honour.  This staircase is elegant and kept very
 &+Cclean.
 ~
-831 0 37
+831 33554432 37
 D1
    &+yThese double doors lead to the King's Banquet Hall.
 ~
@@ -1396,7 +1396,7 @@ S
 &+Cbanquet hall rests a well-stocked kitchen, chamber of the King's
 &+Cpersonal chefs.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -1419,7 +1419,7 @@ S
 &+Cbanquet hall rests a well-stocked kitchen, chamber of the King's
 &+Cpersonal chefs.
 ~
-831 0 14
+831 33554432 14
 D1
    &+WThis door leads into the kitchen of the King's Banquets Hall.
 ~
@@ -1439,7 +1439,7 @@ S
 &+Wunderstandably quite busy with the hustle and bustle of the dwarf
 &+Wcity, but also from the hearty appetites of the mountain-dwellers.
 ~
-831 0 14
+831 33554432 14
 D3
    &+WThis door leads back to the King's Banquet Hall.
 ~
@@ -1456,7 +1456,7 @@ S
 &+Wthat these dwarves take for their lineage as well as their attention
 &+Wto detail is astonishing.
 ~
-831 0 37
+831 33554432 37
 D1
 &+LA large door leads into &+CBrightAxe Hall.
 ~
@@ -1476,7 +1476,7 @@ S
 &+Lsun.  This entryway connects the BrightAxe Hall, home of King Traak
 &+LShanat, to the &+RRamparts&+L west of here.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 ~
@@ -1496,7 +1496,7 @@ S
 &+LThis cavern scintillates and glimmers from the flickering,
 &+Lmagical waters of the Pools of Foresight to the east and north.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1518,7 +1518,7 @@ S
 &+Lwho caretakers and basks in these Caverns, at the Pools of
 &+LForesight.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -1534,7 +1534,7 @@ S
 &+Gnatural portion of the city that has been preserved for its
 &+Gmagical, natural essence.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -1549,7 +1549,7 @@ S
 &+Lspiral format suggests that it may have been crafted by non-dwarven
 &+Lhands.  Nevertheless, this mystic tunnel leads west into the Mystic Ward.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -1567,7 +1567,7 @@ S
 &+Lin this hall.  Various runes and glyphs can be seen scribed onto
 &+Lvarious portions of the architecture.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -1585,7 +1585,7 @@ S
 &+Lin this hall.  Various runes and glyphs can be seen scribed onto
 &+Lvarious portions of the architecture.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -1603,7 +1603,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1629,7 +1629,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1652,7 +1652,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1670,7 +1670,7 @@ S
 &+Lof prosperity and good fortune.  This passage births a passage out
 &+Lof the Mystic Ward, or into it depending on ones perspective.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 ~
@@ -1690,7 +1690,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 ~
@@ -1714,7 +1714,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1762,7 +1762,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1786,7 +1786,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1814,7 +1814,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1838,7 +1838,7 @@ S
 &+Lsizes rest in all parts of the Mystic Ward, melted to the ground
 &+Land on various magic relics.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -1852,7 +1852,7 @@ S
 &+Lof prosperity and good fortune.  This passage births a passage out
 &+Lof the Mystic Ward, or into it depending on ones perspective.
 ~
-831 0 37
+831 33554432 37
 D0
 ~
 ~
@@ -1871,7 +1871,7 @@ S
 &+MMystic Ward.  The chamber of the high mystic himself rests atop
 &+Mthe Mystic's Tower, while the Ward lies below.
 ~
-831 0 14
+831 33554432 14
 D4
 ~
 ~
@@ -1890,7 +1890,7 @@ S
 &+MMystic Ward.  The chamber of the high mystic himself rests atop
 &+Mthe Mystic's Tower, while the Ward lies below.
 ~
-831 0 14
+831 33554432 14
 D5
 ~
 ~
@@ -1906,7 +1906,7 @@ S
 &+LThis cavern scintillates and glimmers from the flickering,
 &+Lmagical waters of the Pools of Foresight to the east and north.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1929,7 +1929,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 4 14
+831 33554436 14
 D0
 ~
 ~
@@ -1956,7 +1956,7 @@ S
 &+Lcitizens, looking forward to the family recipe of the master
 &+Ldistiller himself, &+yBarlow Brewstash&+L.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -1983,7 +1983,7 @@ S
 &+Lcitizens, looking forward to the family recipe of the master
 &+Ldistiller himself, &+yBarlow Brewstash&+L.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2010,7 +2010,7 @@ S
 &+Lcitizens, looking forward to the family recipe of the master
 &+Ldistiller himself, &+yBarlow Brewstash&+L.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2037,7 +2037,7 @@ S
 &+Lcitizens, looking forward to the family recipe of the master
 &+Ldistiller himself, &+yBarlow Brewstash&+L.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2065,7 +2065,7 @@ S
 &+Lcitizens, looking forward to the family recipe of the master
 &+Ldistiller himself, &+yBarlow Brewstash&+L.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2088,7 +2088,7 @@ S
 &+Lcitizens, looking forward to the family recipe of the master
 &+Ldistiller himself, &+yBarlow Brewstash&+L.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2107,7 +2107,7 @@ S
 &+Lcitizens, looking forward to the family recipe of the master
 &+Ldistiller himself, &+yBarlow Brewstash&+L.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2122,7 +2122,7 @@ S
 &+Llands.  Although it is quite dark and dusty, this reclusive chamber
 &+Lserves its purpose.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 door~
@@ -2136,7 +2136,7 @@ S
 &+Lto protect.  Their considerably smaller stature also warrants
 &+Lsuch architecture.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2158,7 +2158,7 @@ S
 &+Lto protect.  Their considerably smaller stature also warrants
 &+Lsuch architecture.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2180,7 +2180,7 @@ S
 &+Lto protect.  Their considerably smaller stature also warrants
 &+Lsuch architecture.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 door~
@@ -2198,7 +2198,7 @@ S
 &+Lto protect.  Their considerably smaller stature also warrants
 &+Lsuch architecture.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 door~
@@ -2219,7 +2219,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2244,7 +2244,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2261,7 +2261,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2286,7 +2286,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -2303,7 +2303,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2320,7 +2320,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2334,7 +2334,7 @@ S
 &+Lto protect.  Their considerably smaller stature also warrants
 &+Lsuch architecture.
 ~
-831 4 14
+831 33554436 14
 D1
 ~
 door~
@@ -2352,7 +2352,7 @@ S
 &+Lto protect.  Their considerably smaller stature also warrants
 &+Lsuch architecture.
 ~
-831 4 14
+831 33554436 14
 D0
 ~
 door~
@@ -2373,7 +2373,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2398,7 +2398,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2415,7 +2415,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -2432,7 +2432,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2457,7 +2457,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2474,7 +2474,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2488,7 +2488,7 @@ S
 &+Call over this great chamber.  Behind the counter, a large anvil and
 &+Cblacksmithing area can be seen, as Steelgrip forges his wares himself.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2508,7 +2508,7 @@ S
 &+Cwithin this foundry.  A large anvil and a massive blacksmithing hammer
 &+Cawaits their master.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -2522,7 +2522,7 @@ S
 &+La light layer of dust.  Most of the items up front, however
 &+Lare quite interesting.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2541,7 +2541,7 @@ S
 &+Lheavily guarded, as this Hall holds some important officials of
 &+LAlatorin, including the massager carrier and the clerk.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2563,7 +2563,7 @@ S
 &+Lheavily guarded, as this Hall holds some important officials of
 &+LAlatorin, including the massager carrier and the clerk.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -2581,7 +2581,7 @@ S
 &+Lheavily guarded, as this Hall holds some important officials of
 &+LAlatorin, including the messenger carrier and the clerk.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2599,7 +2599,7 @@ S
 &+Lheavily guarded, as this Hall holds some important officials of
 &+LAlatorin, including the messenger carrier and the clerk.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LA large wooden door.
 ~
@@ -2622,7 +2622,7 @@ S
 &+Lheavily guarded, as this Hall holds some important officials of
 &+LAlatorin, including the messenger carrier and the clerk.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2640,7 +2640,7 @@ S
 &+Lheavily guarded, as this Hall holds some important officials of
 &+LAlatorin, including the messenger carrier and the clerk.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2662,7 +2662,7 @@ S
 &+Lheavily guarded, as this Hall holds some important officials of
 &+LAlatorin, including the messenger carrier and the clerk.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2680,7 +2680,7 @@ S
 &+Lred carpet rolls into this chamber, stopping just under the
 &+Lsmall, yet well-made wooden chair behind the desk.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2697,7 +2697,7 @@ S
 &+Ldwarves housed in this great city, it is the militia that serves
 &+Las the city guard, while the army that is dispatched to war.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2716,7 +2716,7 @@ S
 &+Lextra equipment for dwarves who are unequipped can be obtained
 &+Lfrom this storage closet, as well as be forgotten.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 door~
@@ -2735,7 +2735,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2758,7 +2758,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LThe gates back to the Entry of the Barracks.
 ~
@@ -2781,7 +2781,7 @@ S
 &+Whundreds of battles.  Even young Taark Shanat would dine here during
 &+Wthe origin of Alatorin, some few hundred years ago.
 ~
-831 0 14
+831 33554432 14
 D2
 &+LSome swinging doors leading into the &+WKitchen&+L.
 ~
@@ -2800,7 +2800,7 @@ S
 &+Lthese steps is smaller then average, yet the architecture of this city
 &+Lis monolithic.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -2823,7 +2823,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 131072 14
+831 33685504 14
 D0
 ~
 ~
@@ -2850,7 +2850,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2869,7 +2869,7 @@ S
 &+Wunderstandably quite busy with the hustle and bustle of the dwarf
 &+Wcity, but also from the hearty appetites of the mountain-dwellers.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LSome swinging doors back to the mess hall.
 ~
@@ -2889,7 +2889,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2912,7 +2912,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -2943,7 +2943,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -2970,7 +2970,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LThis swinging &Ndoor&+L leads to the &+GMess Hall.
 ~
@@ -2994,7 +2994,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -3017,7 +3017,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3040,7 +3040,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3071,7 +3071,7 @@ S
 &+WHammer&+Yhelm &+LDojo, where the Army trains under the cruel
 &+Lbut wise tutelage of &+WClund Hammer&+Yhelm&+L himself.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3090,7 +3090,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 4 14
+831 33554436 14
 D1
 ~
 ~
@@ -3112,7 +3112,7 @@ S
 &+Rleaders.  A few weapon racks with wooden weapons are used to
 &+Rhelp strengthen the warriors and temper their bodies.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -3138,7 +3138,7 @@ S
 &+Rleaders.  A few weapon racks with wooden weapons are used to
 &+Rhelp strengthen the warriors and temper their bodies.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -3164,7 +3164,7 @@ S
 &+Rleaders.  A few weapon racks with wooden weapons are used to
 &+Rhelp strengthen the warriors and temper their bodies.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3190,7 +3190,7 @@ S
 &+Rleaders.  A few weapon racks with wooden weapons are used to
 &+Rhelp strengthen the warriors and temper their bodies.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3210,7 +3210,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3230,7 +3230,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3250,7 +3250,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -3270,7 +3270,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3294,7 +3294,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -3319,7 +3319,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -3339,7 +3339,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -3359,7 +3359,7 @@ S
 &+Wfinely-blocked stone walls have been smoothed out with great
 &+Wdeal of attention put to their craftsmanship.
 ~
-831 0 14
+831 33554432 14
 D0
 &+WA large white oak door.
 ~
@@ -3382,7 +3382,7 @@ S
 &+Lthis citadel is off limits, as this guard-post is enforced
 &+Lto protect the citadel at all costs.
 ~
-831 0 14
+831 33554432 14
 D1
    &+LThe gates of &+cShanat Citadel&N
 ~
@@ -3401,7 +3401,7 @@ S
 &+Wto the commander of the Alatorin army, Clund Hammer&+Yhelm&+W, who
 &+Wis also the fourth son of Taark Shanat.
 ~
-831 0 14
+831 33554432 14
 D2
 &+WA large white oak door.
 ~
@@ -3417,7 +3417,7 @@ S
 &+Mexperienced in this entire city have been standard wall-hangings depicting
 &+Mimages of dwarven lore, these white silky sheets exist much more freely.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -3432,7 +3432,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 door~
@@ -3459,7 +3459,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3483,7 +3483,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3507,7 +3507,7 @@ A Bend in a &+MMithril Hall~
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -3526,7 +3526,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3545,7 +3545,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -3570,7 +3570,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3593,7 +3593,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 &+LTwo large &+ydouble doors&+L lead to &+rTaark Shanat's Personal Hall.
 ~
@@ -3617,7 +3617,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -3640,7 +3640,7 @@ S
 &+Mexperienced in this entire city have been standard wall-hangings depicting
 &+Mimages of dwarven lore, these white silky sheets exist much more freely.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3670,7 +3670,7 @@ S
 &+Wthe chamber leads north and south through the mithril hall, and
 &+Wwest towards the most prominent statue of all.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3697,7 +3697,7 @@ S
 &+Mexperienced in this entire city have been standard wall-hangings depicting
 &+Mimages of dwarven lore, these white silky sheets exist much more freely.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3726,7 +3726,7 @@ S
 &+Wof.  This hallway serves to connect the King's private chambers within
 &+Whis citadel to his throne in BrightAxe Hall.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -3745,7 +3745,7 @@ S
 &+Wof.  This hallway serves to connect the King's private chambers within
 &+Whis citadel to his throne in BrightAxe Hall.
 ~
-831 134250496 14
+831 167804928 14
 D0
 &+CA &+Lsvalich wood &+Cdoor to a Huge, Lavish Study.
 ~
@@ -3769,7 +3769,7 @@ S
 &+Ccitadel west of here.  Twin staircases of carved, blocked stone face each
 &+Lother from the north and south sides of the platform.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -3794,7 +3794,7 @@ S
 &+Ltowering alcoves, each housing a suit of ancestral dwarven platemail that
 &+mglows with the reflected orange flicker of the central fire.
 ~
-831 134250496 14
+831 167804928 14
 D3
 ~
 ~
@@ -3808,7 +3808,7 @@ S
 &+Lthis citadel is off limits, as this guard-post is enforced
 &+Lto protect the citadel at all costs.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -3827,7 +3827,7 @@ S
 &+Lby personal &+rescorts&+L, similar to the ones who stand beside the queen
 &+Lat all times.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LThis &+ydoor&+L leads back to &+cShanat Citadel's &+mmithril hallway.
 ~
@@ -3847,7 +3847,7 @@ S
 &+Lhe wore after dismantling the &+Wlich &+Lmagus in the land of undeath.  A black
 &+Lcarpet leads through this massive hall east and west.
 ~
-831 1207992324 14
+831 1241546756 14
 D1
 ~
 ~
@@ -3867,7 +3867,7 @@ S
 &+Lhe wore after dismantling the &+Wlich &+Lmagus in the land of undeath.  A black
 &+Lcarpet leads through this massive hall east and west.
 ~
-831 1207992320 14
+831 1241546752 14
 D0
 ~
 ~
@@ -3886,7 +3886,7 @@ S
 &+Lhe wore after dismantling the &+Wlich &+Lmagus in the land of undeath.  A black
 &+Lcarpet leads through this massive hall east and west.
 ~
-831 1207992320 14
+831 1241546752 14
 D0
 ~
 ~
@@ -3907,7 +3907,7 @@ S
 &+Lthese steps is smaller then average, yet the architecture of this city
 &+Lis monolithic.
 ~
-831 134250496 14
+831 167804928 14
 D2
 ~
 ~
@@ -3926,7 +3926,7 @@ S
 &+Lhe wore after dismantling the &+Wlich &+Lmagus in the land of undeath.  A black
 &+Lcarpet leads through this massive hall east and west.
 ~
-831 1207992320 14
+831 1241546752 14
 D1
 ~
 ~
@@ -3945,7 +3945,7 @@ S
 &+Lhe wore after dismantling the &+Wlich &+Lmagus in the land of undeath.  A black
 &+Lcarpet leads through this massive hall east and west.
 ~
-831 1207992320 14
+831 1241546752 14
 D0
 &+LA massive &N&+mmithril &+Ldoor.
 ~
@@ -3969,7 +3969,7 @@ S
 &+Lrug sigs in the center of the chamber.  Two massive dwarf-made armoire and chest
 &+Lcombinations sit on opposite sides of the chamber.
 ~
-831 134250496 14
+831 167804928 14
 D1
 &+LThe &+yarmoire &+Lon the eastern wall is positioned perfectly to match
 &+Lthe vaulted design on the adjacent wall.
@@ -3990,7 +3990,7 @@ S
 &+Lsmaller then the hall of Taark Shanat, but is of comparable size to the common
 &+Lhousing of &+cAlatorin&+L.
 ~
-831 134250496 14
+831 167804928 14
 D1
    &+LThis &+ydoor&+L leads to the Hall of Emissaries.
 ~
@@ -4005,7 +4005,7 @@ S
 &+Lsmaller then the hall of Taark Shanat, but is of comparable size to the common
 &+Lhousing of &+cAlatorin&+L.
 ~
-831 134250496 14
+831 167804928 14
 D3
   &+LThis door leads back to the Hall of Emissaries.
 ~
@@ -4020,7 +4020,7 @@ S
 &+Lsmaller then the hall of Taark Shanat, but is of comparable size to the common
 &+Lhousing of &+cAlatorin&+L.
 ~
-831 134250496 14
+831 167804928 14
 D3
    &+LThis &+ydoor&+L leads back to the Hall.
 ~
@@ -4035,7 +4035,7 @@ S
 &+Lsmaller then the hall of Taark Shanat, but is of comparable size to the common
 &+Lhousing of &+cAlatorin&+L.
 ~
-831 134250496 14
+831 167804928 14
 D1
 &+LAn &+yoak &+Ldoor leads out.
 ~
@@ -4049,7 +4049,7 @@ S
 &+Lthese steps is smaller then average, yet the architecture of this city
 &+Lis monolithic.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -4066,7 +4066,7 @@ S
 &+Lthese steps is smaller then average, yet the architecture of this city
 &+Lis monolithic.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -4083,7 +4083,7 @@ S
 &+Lthese steps is smaller then average, yet the architecture of this city
 &+Lis monolithic.
 ~
-831 134250496 14
+831 167804928 14
 D3
 ~
 ~
@@ -4101,7 +4101,7 @@ all of &+cAlatorin&N.  This long, vaulted corridor exists with little
 light, below the citadel of &+RTaark Shanat&N, simplistic and built
 &Nfor unknown purposes.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -4125,7 +4125,7 @@ S
 &+mdisappear into the shadows of the ceiling, pulled taut as they hold the
 &+Lweight of the floor-gate against the opening of the sloping &+mcavern&+L below.
 ~
-831 134254592 13
+831 167809024 13
 D1
 ~
 ~
@@ -4145,7 +4145,7 @@ and &+cAlatorin&N, this waiting area is still quite massive, with an amaz-
 ingly high ceiling held up by smooth, polished pillars.  Numerous benches
 and tables sit around a large &+rhearth&N.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -4162,7 +4162,7 @@ S
 &+Ythe south door Clangeddin Silverbeard and the north Urtengor.  The keyholes
 &+Yon these doors are each covered with the same fuzzily-glowing &+Mpink &+Yrunes.
 ~
-831 134250496 14
+831 167804928 14
 D0
 &+LAn arch bearing the mark of Urtehgor.
 ~
@@ -4195,7 +4195,7 @@ S
 &+Lbutton, most likely a commissioned installment by the &+Rgnomish&+L friends
 &+Land distant cousins of the &+WSh&Nie&+Wld &+YDwarves&+L.
 ~
-831 134250497 14
+831 167804929 14
 D3
 ~
 ~
@@ -4212,7 +4212,7 @@ S
 &+YThe western wall is nested under a strange &+Rarch &+Yof mechanical,
 &+Ygnomish design.
 ~
-831 134250496 14
+831 167804928 14
 D1
 &+YThe great golden door of the &+Cvault.
 ~
@@ -4237,7 +4237,7 @@ S
 &+Ydirectly to the &+cShanat &+YTreasury, the personal treasure bank
 &+Yof &+RTaark Shanat &+Yand his ancestors.
 ~
-831 134250496 14
+831 167804928 14
 D2
 ~
 ~
@@ -4259,7 +4259,7 @@ S
 &+Cany breed of dwarf, containing countless tomes and texts of dwarven lore
 &+Cand literature.
 ~
-831 134250496 14
+831 167804928 14
 D2
 &+CA &+Lsvalich wood &+Cdoor to the &+WHallway of Seniors.
 ~
@@ -4274,7 +4274,7 @@ S
 &+gswords between each.  Each of these wall-mounted &+Cswords &+gbares the grand
 &+gHammer and Anvil insignia of &+cAlatorin&+L.
 ~
-831 0 14
+831 33554432 14
 D1
 &+gA greenwood door &+Wleading back to the elegant hallway, deep within Hammer&+Yhelm.
 ~
@@ -4291,7 +4291,7 @@ S
 &+Wand evil banished on it, and the massive walls contain huge mural images
 &+Wof the Dwarf Deity.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 door~
@@ -4305,7 +4305,7 @@ S
 &+WFrom the tiles on the floor to the etchings on the bases of the columns,
 &+WBerronar True&+Csilver &+Wis displayed in great glory.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 door~
@@ -4319,7 +4319,7 @@ S
 &+rUrtengor&+L, rumored to have once forged the &Nkelrarin &+rhimself for
 &+Lthe barbarian king, serves as the treasury for Taark Shanat.
 ~
-831 134250496 14
+831 167804928 14
 D2
 ~
 door~
@@ -4333,7 +4333,7 @@ S
 &+ma potent magical essence to it, as all of the &+WFour Elements&+m are exposed
 &+mthrough various positions in this hallway.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -4351,7 +4351,7 @@ S
 &+ma potent magical essence to it, as all of the &+WFour Elements&+m are exposed
 &+mthrough various positions in this hallway.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -4369,7 +4369,7 @@ S
 &+Lposessions as well as holy rituals and healing ceremonies are all
 &+Loutlined in this seemingly never ending wall of &N&+cknowledge&+L.
 ~
-831 16 14
+831 33554448 14
 D0
 ~
 ~
@@ -4395,7 +4395,7 @@ S
 &+ma potent magical essence to it, as all of the &+WFour Elements&+m are exposed
 &+mthrough various positions in this hallway.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -4413,7 +4413,7 @@ S
 &+ma potent magical essence to it, as all of the &+WFour Elements&+m are exposed
 &+mthrough various positions in this hallway.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -4431,7 +4431,7 @@ S
 &+Lmarked with candles at each intersection.  A portal of dark shadow swirls
 &+Ltwo-dimensionally, floating at the center of this pentagram.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -4443,7 +4443,7 @@ S
 &+LAll sights and sounds are amplified as this dark prison consumes all
 &+Lvision.
 ~
-831 1073741824 35
+831 1107296256 35
 D0
 ~
 ~
@@ -5886,7 +5886,7 @@ S
 &+Lshields and armor, while the southern hold carries warhammers swords
 &+Land whetstones.
 ~
-831 0 14
+831 33554432 14
 D2
    &+LA &+ydoor&+L leads back to the Rogue Guild main hallway.
 ~
@@ -6011,7 +6011,7 @@ S
 &+Lroom in which messengers are sent and gathered, visitors consult
 &+Lthe king, peasants petitioning, and lordly dues.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -6029,7 +6029,7 @@ S
 &+Leach other is a large, inscribed &+Mglyph&+L, each giving off a faint
 &+Lmagical glow.
 ~
-831 0 37
+831 33554432 37
 D1
 ~
 ~
@@ -6046,7 +6046,7 @@ S
 &+Lfurniture.  &+YMaggeynel&+L, a master &+Rgnome &+Yenchantress&+L, has made her
 &+Lmagic take over her shop, in her curious and ridiculous store.
 ~
-831 0 0
+831 33554432 0
 D1
    &+LA small &N&+ydoor&+L with a &+Ysmiling doorknob &+Lleads back east to the &+MMystic Ward.
 ~
@@ -6061,7 +6061,7 @@ S
 &+ywall.  Large stone cubbies are built into the southern wall, while
 &+yarmor racks and bulkier garments are on the north.
 ~
-831 134250496 0
+831 167804928 0
 D1
 &+LThe &N&+ydoor &+Lout of a closet.
 ~
@@ -6076,7 +6076,7 @@ S
 &+Lby personal &+rescorts&+L, similar to the ones who stand beside the queen
 &+Lat all times.
 ~
-831 134250496 14
+831 167804928 14
 D3
 ~
 ~
@@ -6090,7 +6090,7 @@ S
 &+Weach of the faucets on either side of the bathhouse.  There is a seating
 &+Wand changing area with benches on the far corner of this royal bathhouse.
 ~
-831 134250496 0
+831 167804928 0
 D1
 &+LThis door leads to the citadel.
 ~
@@ -6106,7 +6106,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -6125,7 +6125,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -6144,7 +6144,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -6163,7 +6163,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -6182,7 +6182,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -6201,7 +6201,7 @@ S
 &+cdecorated with fine dwarven tapestries depicting hard fought victories
 &+cover invaders.  This hallway continues throughout this guild chamber.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -6223,7 +6223,7 @@ S
 &+Ywhere a flight of carved marble stairs lead up an arched pass to the
 &+YTemple of Fortune.
 ~
-831 0 0
+831 33554432 0
 D0
 ~
 ~
@@ -6251,7 +6251,7 @@ S
 &+Wunderstandably quite busy with the hustle and bustle of the dwarf
 &+Wcity, but also from the hearty appetites of the mountain-dwellers.
 ~
-831 0 14
+831 33554432 14
 D2
 &+LThis &N&+ydoor &+Lleads to the banquet hall.
 ~
@@ -6271,7 +6271,7 @@ S
 &+Ypodium.  This grand altar is that of Dumathoin, God of Buried Wealth,
 &+YOre, Gems, and Exploration.
 ~
-831 131072 0
+831 33685504 0
 D2
 ~
 ~
@@ -6286,7 +6286,7 @@ S
 &+Mof Taark Shanat, the Wyrmslayer and King of Alatorin and the shield
 &+Mdwarves.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -6310,7 +6310,7 @@ S
 &+Mof Taark Shanat, the Wyrmslayer and King of Alatorin and the shield
 &+Mdwarves.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -6333,7 +6333,7 @@ S
 &+Llarge mesh grating.  It is not uncommon for dwarves to occasionally
 &+Lroast a slab of meat over this reliable source of fire.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -6350,7 +6350,7 @@ S
 &+Lof the &N&+cAlatorin &+Lguard.  It is no wonder that the swordplay taught in
 &+Lthe depths of the Hall of Adventurers is influenced by the city itself.
 ~
-831 131072 0
+831 33685504 0
 D3
 ~
 ~
@@ -6365,7 +6365,7 @@ S
 &+Mof Taark Shanat, the Wyrmslayer and King of Alatorin and the shield
 &+Mdwarves.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -6384,7 +6384,7 @@ S
 &+Mof Taark Shanat, the Wyrmslayer and King of Alatorin and the shield
 &+Mdwarves.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -6403,7 +6403,7 @@ S
 &+ya feeling of being drugged, but regardless this reality is an incredible
 &+yexperience.
 ~
-831 0 5
+831 33554432 5
 D5
 &+yA rocky descent into an ancient, &+Ymagical &N&+ymine.
 ~
@@ -6419,7 +6419,7 @@ S
 &+ya feeling of being drugged, but regardless this reality is an incredible
 &+yexperience.
 ~
-831 32832 5
+831 33587264 5
 D4
 &+yA rocky climb up to the mine entrance.
 ~
@@ -6444,7 +6444,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D0
 ~
 ~
@@ -6471,7 +6471,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D1
 ~
 ~
@@ -6488,7 +6488,7 @@ S
 &+Lsconced on the wall, burning with &n&+ggreen &+Gflame&+L.  The staircase
 &+Lis uncarpeted and bare, made of blocked black stone.
 ~
-831 134250496 13
+831 167804928 13
 D4
 ~
 ~
@@ -6511,7 +6511,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D2
 ~
 ~
@@ -6534,7 +6534,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D0
 ~
 ~
@@ -6565,7 +6565,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D0
 ~
 ~
@@ -6592,7 +6592,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D0
 ~
 ~
@@ -6620,7 +6620,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D0
 ~
 ~
@@ -6643,7 +6643,7 @@ S
 &+Ldeity.  This huge rocky cavern extends to the southeast and northwest,
 &+Lleaning in an angle that direction.
 ~
-831 32832 13
+831 33587264 13
 D2
 ~
 ~
@@ -6664,7 +6664,7 @@ S
 &+YAlatorin itself or by Breuldin, the very God it is in worship to,
 &+Yis full of intense amplified magic.
 ~
-831 134250496 13
+831 167804928 13
 D4
 ~
 ~
@@ -6680,7 +6680,7 @@ S
 &+RTaark Shanat&+W, who is responsible for organizing the King's diplomatic
 &+Wlife, which is crucial to the survival of the shield dwarf people.
 ~
-831 0 13
+831 33554432 13
 D0
 &+LThis large &N&+ywooden &+Ldoor leads back out into the royal sector of &N&+cBrightaxe Hall.
 ~
@@ -6696,7 +6696,7 @@ S
 &+Ccitadel west of here.  Twin staircases of carved, blocked stone face each
 &+Lother from the north and south sides of the platform.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -6719,7 +6719,7 @@ S
 &+Lcitadel west of here.  Twin staircases of carved, blocked stone face each
 &+Lother from the north and south sides of the platform.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -6742,7 +6742,7 @@ S
 &+Ccitadel west of here.  Twin staircases of carved, blocked stone face each
 &+Cother from the north and south sides of the platform.
 ~
-831 134250500 14
+831 167804932 14
 D0
 ~
 ~
@@ -6764,7 +6764,7 @@ S
 &+mbeneath the bench row is made up of exotic flowers, some magical, from
 &+mall parts of the realms.
 ~
-831 134250496 31
+831 167804928 31
 D1
 ~
 ~
@@ -6777,7 +6777,7 @@ S
 &+Cin small alcoves every several feet throughout this hall, where various
 &+Coffices and officiating chambers of the shield dwarves are located.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -6794,7 +6794,7 @@ S
 &+Cin small alcoves every several feet throughout this hall, where various
 &+Coffices and officiating chambers of the shield dwarves are located.
 ~
-831 134250496 14
+831 167804928 14
 D0
 &+CHuge stone doors lead to a huge, elegant conference hall.
 &+cA small sign on one of the doors reads &+C'OFFICERS ONLY'
@@ -6817,7 +6817,7 @@ S
 &+Cin small alcoves every several feet throughout this hall, where various
 &+Coffices and officiating chambers of the shield dwarves are located.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -6838,7 +6838,7 @@ S
 &+Cin small alcoves every several feet throughout this hall, where various
 &+Coffices and officiating chambers of the shield dwarves are located.
 ~
-831 134250496 14
+831 167804928 14
 D0
 &+LA svalich wood door &+Cto a lavish office.
 ~
@@ -6860,7 +6860,7 @@ S
 &+Cin small alcoves every several feet throughout this hall, where various
 &+Coffices and officiating chambers of the shield dwarves are located.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -6878,7 +6878,7 @@ S
 &+Rworld, continent, and sea maps hanging from all the walls with huge
 &+Rbullseye lanterns illuminating them.
 ~
-831 1207992320 14
+831 1241546752 14
 D2
 &+CHuge stone doors lead back to the Seniors' Hall.
 ~
@@ -6897,7 +6897,7 @@ S
 &+Rworld, continent, and sea maps hanging from all the walls with huge
 &+Rbullseye lanterns illuminating them.
 ~
-831 1207992320 14
+831 1241546752 14
 D1
 ~
 ~
@@ -6913,7 +6913,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -6946,7 +6946,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -6969,7 +6969,7 @@ S
 &+mtwin &+Ltorches sconced on either side of the stair entrance.
 &+mThe steps themselves are bare, but &+Lsurprisingly glossy.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -6988,7 +6988,7 @@ S
 &+mwest.  This deep junction is blocked off with doors in each direction,
 &+mto the south &+La single plaque is posted.
 ~
-831 134250496 14
+831 167804928 14
 D0
 &+LA huge &+Cmetal &+Ldoor leads to the Warden's Office.
 ~
@@ -7022,7 +7022,7 @@ personal army. The most notable feature of this chamber is the far
 northern &+Lwall, where a huge mural has been painted of a dwarf
 berserker grasping two axes &+Lroars in utter bloodlust.
 ~
-831 134250496 14
+831 167804928 14
 D2
 &+LThis heavy &+Cmetal &+Ldoor leads to a &N&+mmithril foyer.
 ~
@@ -7036,7 +7036,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7053,7 +7053,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D2
 ~
 ~
@@ -7070,7 +7070,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7092,7 +7092,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7109,7 +7109,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7126,7 +7126,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7143,7 +7143,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7160,7 +7160,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7182,7 +7182,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7199,7 +7199,7 @@ S
 &+Yore hints to the grandeur of the King's wealth, while also depicting the amazing
 &+Yprecision in dwarven architecture.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7217,7 +7217,7 @@ S
 &+YThe warriors poised in this statue are those of Chungy Taskgulch the dwarven general,
 &+Yand &N&+rFrahzel Thunderfist, the &+Lhalf dark iron dwarf, &N&+rhalf duergar &+Ygeneral.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7248,7 +7248,7 @@ S
 &+cfew dozen feet. The bridge itself hums with a low, constant vibration from
 &+cthe sheer tectonic pressure of the mountain roots it connects.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7260,14 +7260,14 @@ D2
 S
 #83445
 &+LThe Chamber of &N&+rFrahzel Thunderfist&N~
-   &+LThis dark chamber is like a miniature guildhall it is so large.  There are two
-&+Lhuge weapon racks able to equip a small military regiment on either side of the hall,
-&+Lwith a sleeping chamber high up on a platform to make an ambush or assassination
-&+Lattempt much harder.
-   &+LA huge &N&+rblood-red &+Lcarpet covers the ground.  This chamber houses one of the
-&+Lmost prominent officers in the Shanat military.
+   &+LThis dark chamber is like a miniature guildhall it is so large.
+&+LThere are two &+Lhuge weapon racks able to equip a small military regi-
+&+Lment on either side of the hall, &+Lwith a sleeping chamber high up on a
+&+Lplatform to make an ambush or assassination &+Lattempt much harder.
+   &+LA huge &N&+rblood-red &+Lcarpet covers the ground.  This chamber
+&+Lhouses one of the &+Lmost prominent officers in the Shanat military.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 door~
@@ -7275,14 +7275,14 @@ door~
 S
 #83446
 &+LThe Chamber of &+YChungy Taskgulch&N~
-   &+LThis dark chamber is like a miniature guildhall it is so large.  There are two
-&+Lhuge weapon racks able to equip a small military regiment on either side of the hall,
-&+Lwith a sleeping chamber high up on a platform to make an ambush or assassination
-&+Lattempt much harder.
-   &+LA huge &N&+rblood-red &+Lcarpet covers the ground.  This chamber houses one of the
-&+Lmost prominent officers in the Shanat military.
+   &+LThis dark chamber is like a miniature guildhall it is so large.
+&+LThere are two &+Lhuge weapon racks able to equip a small military regi-
+&+Lment on either side of the hall, &+Lwith a sleeping chamber high up on
+&+L a platform to make an ambush or assassination &+Lattempt much harder.
+   &+LA huge &N&+rblood-red &+Lcarpet covers the ground.  This chamber
+&+Lhouses one of the &+Lmost prominent officers in the Shanat military.
 ~
-831 134250496 14
+831 167804928 14
 D3
 &+LA large wooden door on mithril hinges is anchored to the blocked stone.
 ~
@@ -7297,7 +7297,7 @@ S
 &+mmithril walls leading deeper and more and more sparse &+Linto the
 &+mdepths of the citadel.
 ~
-831 134250500 14
+831 167804932 14
 D0
 ~
 door~
@@ -7314,7 +7314,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7331,7 +7331,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7348,7 +7348,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7365,7 +7365,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7382,7 +7382,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7399,7 +7399,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7416,7 +7416,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7433,7 +7433,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7450,7 +7450,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7467,7 +7467,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7484,7 +7484,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7501,7 +7501,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7518,7 +7518,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7535,7 +7535,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7552,7 +7552,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7569,7 +7569,7 @@ S
 &+Lthe way until its dismal prison belly, this deep steadily-descending
 &+Lstaircase continues.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -7587,7 +7587,7 @@ S
 &+mever-so-often on the mithril walls leading deeper and more
 &+mand more sparse &+Linto the depths of the citadel.
 ~
-831 134250500 14
+831 167804932 14
 D3
 ~
 ~
@@ -7604,7 +7604,7 @@ S
 &+Rof &+yD&+mh&+ya&+ml&+yn&+ma&+yd&+ma&+yr&+L. This naturally-&+Lformed cavern is full of churning
 &+Rl&N&+ra&+Rv&N&+ra&+L, with a few small &+Lisland peaks jutting &+Rout of the &+Rm&+ra&+Rg&+rm&+Ra&+L.
 ~
-831 134250500 14
+831 167804932 14
 D0
 ~
 ~
@@ -7625,7 +7625,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7646,7 +7646,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -7671,7 +7671,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7692,7 +7692,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7713,7 +7713,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7734,7 +7734,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7753,7 +7753,7 @@ S
 &+Larchitecture - stout, blocky figures carved in segmented right angles in
 &+Lbands around huge columns and vaulted ceilings.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7777,7 +7777,7 @@ S
 &+Lthe protrusion, arching precariously over a lake of bubbling &+rm&+Ragm&+ra
 &+Lthat glows two hundred feet below.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7797,7 +7797,7 @@ S
 &+Lthe protrusion, arching precariously over a lake of bubbling &+rm&+Ragm&+ra
 &+Lthat glows two hundred feet below.
 ~
-831 134250496 14
+831 167804928 14
 D3
 ~
 ~
@@ -7814,7 +7814,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7839,7 +7839,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D2
 ~
 ~
@@ -7864,7 +7864,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -7889,7 +7889,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7914,7 +7914,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7939,7 +7939,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7964,7 +7964,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -7997,7 +7997,7 @@ S
 &+mare several other huge &+Lrock formations and spires jutting out in this
 &+mdeep, ancient cavern.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -8022,7 +8022,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -8043,7 +8043,7 @@ S
 &+Lmagma &+Rflow&+L beneath, while the other two bridges span out to the
 &+Lsides of the main descent.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -8061,7 +8061,7 @@ S
 &+Lbeen unaltered, like the rest of the Caverns of &+YT&+Li&+Ym&+Le, by the masons of
 &+Lthe &N&+cAlatorin &+Larchitecture.
 ~
-831 1 13
+831 33554433 13
 D1
 ~
 ~
@@ -8079,7 +8079,7 @@ S
 &+Lbeen unaltered, like the rest of the Caverns of &+YT&+Li&+Ym&+Le, by the masons of
 &+Lthe &N&+cAlatorin &+Larchitecture.
 ~
-831 1073741825 13
+831 1107296257 13
 D5
 ~
 ~
@@ -8127,7 +8127,7 @@ S
 &+Lthe stairs, there is a large altar, set before the bust of &+rMoradin
 &+L- All-Father of the D&+yw&+La&+yr&+Lv&+ye&+Ls and head of the holy pantheon.
 ~
-831 1207992321 13
+831 1241546753 13
 D2
 ~
 ~
@@ -8157,7 +8157,7 @@ S
 &+Lundulating body of a wyrm, provides a steady grip against
 &+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 &+r Carved steps continue upwards.
 ~
@@ -8185,7 +8185,7 @@ S
 &+Lundulating body of a wyrm, provides a steady grip against
 &+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 &+rCarved steps continue upward.
 ~
@@ -8209,7 +8209,7 @@ S
 &+Lcavern and heart of the ancient mountain.  The lava flow below is
 &+Lraging hot, searing with burning flame.
 ~
-831 1207992325 13
+831 1241546757 13
 D0
 ~
 ~
@@ -8226,7 +8226,7 @@ S
 &+Lcavern and heart of the ancient mountain.  The lava flow below is
 &+Lraging hot, searing with burning flame.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -8243,7 +8243,7 @@ S
 &+Lcavern and heart of the ancient mountain.  The lava flow below is
 &+Lraging hot, searing with burning flame.
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -8260,7 +8260,7 @@ S
 &+Lcavern and heart of the ancient mountain.  The lava flow below is
 &+Lraging hot, searing with burning flame.
 ~
-831 1207992321 13
+831 1241546753 13
 D2
 ~
 ~
@@ -8277,7 +8277,7 @@ S
 &+Lcavern and heart of the ancient mountain.  The lava flow below is
 &+Lraging hot, searing with burning flame.
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -8294,7 +8294,7 @@ S
 &+Lcavern and heart of the ancient mountain.  The lava flow below is
 &+Lraging hot, searing with burning flame.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -8313,7 +8313,7 @@ S
 &+Lthe ancient, heat-cracked pillars that support the crushing
 &+Lweight of the kingdom above.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -8331,7 +8331,7 @@ S
 &+Lthe lava flow from the inception of &N&+cAlatorin&+L.  The ground here is
 &+Lcarpeted with a thick, black carpet.
 ~
-831 1073741825 13
+831 1107296257 13
 D0
 ~
 ~
@@ -8354,7 +8354,7 @@ S
 &+Lthe lava flow from the inception of &N&+cAlatorin&+L.  The ground here is
 &+Lcarpeted with a thick, black carpet.
 ~
-831 1073741825 13
+831 1107296257 13
 D0
 ~
 ~
@@ -8372,7 +8372,7 @@ S
 &+Lthe lava flow from the inception of &N&+cAlatorin&+L.  The ground here is
 &+Lcarpeted with a thick, black carpet.
 ~
-831 1 14
+831 33554433 14
 D0
 ~
 ~
@@ -8390,7 +8390,7 @@ S
 &+Lthe lava flow from the inception of &N&+cAlatorin&+L.  The ground here is
 &+Lcarpeted with a thick, black carpet.
 ~
-831 1 14
+831 33554433 14
 D0
 &+CTo the north there is a huge shimmering &N&+ccrystal &+Cdoor with a large &+Mglowing &+Lkeyhole&+C, above which a large &+Ysign &+Cdemands attention.
 &+CThis door leads to the honored sanction of the king of Alatorin himself.
@@ -8415,7 +8415,7 @@ S
 &+Lthe lava flow from the inception of &N&+cAlatorin&+L.  The ground here is
 &+Lcarpeted with a thick, black carpet.
 ~
-831 1 14
+831 33554433 14
 D0
 ~
 ~
@@ -8433,7 +8433,7 @@ S
 &+Lthe lava flow from the inception of &N&+cAlatorin&+L.  The ground here is
 &+Lcarpeted with a thick, black carpet.
 ~
-831 1 14
+831 33554433 14
 D0
 ~
 ~
@@ -8455,7 +8455,7 @@ S
 &+Lthe lava flow from the inception of &N&+cAlatorin&+L.  The ground here is
 &+Lcarpeted with a thick, black carpet.
 ~
-831 1 14
+831 33554433 14
 D0
 ~
 ~
@@ -8473,7 +8473,7 @@ S
 &+Land even a few blasting devices.  There are a few small smelting pots, but
 &+Lgenerally that work is taken elsewhere.
 ~
-831 1073741825 14
+831 1107296257 14
 D0
 ~
 ~
@@ -8491,7 +8491,7 @@ S
 &+Land even a few blasting devices.  There are a few small smelting pots, but
 &+Lgenerally that work is taken elsewhere.
 ~
-831 1 14
+831 33554433 14
 D1
 ~
 ~
@@ -8513,7 +8513,7 @@ S
 &+Land even a few blasting devices.  There are a few small smelting pots, but
 &+Lgenerally that work is taken elsewhere.
 ~
-831 1073741825 14
+831 1107296257 14
 D0
 ~
 ~
@@ -8534,7 +8534,7 @@ S
 &+Lgratings sit atop huge bins of fresh sand and bits of rock, ready to catch
 &+Land cradle and precious gems that might sift through the crushed rock.
 ~
-831 1 14
+831 33554433 14
 D0
 ~
 ~
@@ -8552,7 +8552,7 @@ S
 &+Land even a few blasting devices.  There are a few small smelting pots, but
 &+Lgenerally that work is taken elsewhere.
 ~
-831 1073741825 14
+831 1107296257 14
 D2
 ~
 ~
@@ -8570,7 +8570,7 @@ S
 &+Land even a few blasting devices.  There are a few small smelting pots, but
 &+Lgenerally that work is taken elsewhere.
 ~
-831 1073741825 14
+831 1107296257 14
 D1
 ~
 ~
@@ -8584,7 +8584,7 @@ S
 &+Yward&+L, this huge, two-story bar deep within &N&+cAlatorin &+Lserves as quite the popular
 &+Llocation for its warrior patrons.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -8611,7 +8611,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -8643,7 +8643,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -8674,7 +8674,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -8706,7 +8706,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -8733,7 +8733,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -8768,7 +8768,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -8799,7 +8799,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LThis small &N&+ywooden &+Ldoor leads back to the bar of the Hammer and Shield Tavern.
 ~
@@ -8823,7 +8823,7 @@ work with the Alatorin military.  On the northwestern corner of the tavern, a hu
 staircase extends upward to the second level of the establishment, on which there is
 a second-floor lounge, and guests quarters.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -8843,7 +8843,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 14
+831 33554432 14
 D1
 &+yA small, simple wooden door leads into the Hammer and Shield Tavern, bar area.
 ~
@@ -8863,7 +8863,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -8884,7 +8884,7 @@ S
 &+mcase, in which some plush furniture sits, which has most likely been imported
 &+mto Alatorin from a halfling or gnomish craftsman.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -8902,7 +8902,7 @@ S
 &+Lnext big act.  This small chamber is definitely dwarf-sized, existing deep
 &+Lwithin the Hammer and Shield Tavern.
 ~
-831 0 14
+831 33554432 14
 D9
 &+LA small door leads back out to the stage.
 ~
@@ -8912,7 +8912,7 @@ S
 #83525
 &+LS&+Ypecia&+Ll &+GMobs &+Lo&+Yf Alatori&+Ln&N~
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -8945,7 +8945,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -8964,7 +8964,7 @@ S
 &+Was are the ceiling and pillars.  Huge tapestrie&+bs&+W of the gre&+ba&+Wt Taark Sha&+bn&+Wat defeating
 &+Wthe blue dragon &N&+mRringlor Moroth&+W cover the walls.
 ~
-831 524288 14
+831 34078720 14
 D0
 ~
 ~
@@ -8987,7 +8987,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D1
 &+WA white oak door leads to the reception room.
 ~
@@ -9005,7 +9005,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -9023,7 +9023,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -9045,7 +9045,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -9062,7 +9062,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D0
 &+yA large &+Lmoorwood &N&+ydoor leads to a lavish &+Ysuite&N.
 ~
@@ -9089,7 +9089,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -9106,7 +9106,7 @@ S
 &+Lsconces spaced sparingly across the long hallway walls, gapped only by portals into
 &+Lsleeping domiciles.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -9131,7 +9131,7 @@ S
 &+Lhold sits at the foot.
    &+LA small &N&+ycloset &+Lis placed beside the bed.
 ~
-831 0 14
+831 33554432 14
 D3
 &+LThis &N&+ydoor&+L leads to the second floor inn hallway.
 ~
@@ -9148,7 +9148,7 @@ S
 &+Lhold sits at the foot.
   &+LThis chamber is fit with a large &N&+ycloset&+L, set on the far wall.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LA &N&+ydoor&+L leads to the second floor hallway.
 ~
@@ -9162,7 +9162,7 @@ S
 &+Wtapestries on the walls to the carved miniatures sitting across the
 &+Wintricately-designed dwarven hearth.
 ~
-831 0 14
+831 33554432 14
 D2
 &+yA &+Lmoorwood&N&+y door leads back to the top floor of the Hammer and Shield Inn.
 ~
@@ -9176,7 +9176,7 @@ S
 &+Wtapestries on the walls to the carved miniatures sitting across the
 &+Wintricately-designed dwarven hearth.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LThis svalich wood door leads back to the second floor hallway of the Hammer and
 &+LShield Tavern.
@@ -9269,7 +9269,7 @@ S
 &+mthe dwarves.  There are numerous old crates and debris cluttered around
 &+mthe various cornices of this cavern.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LA huge pile-up of rocks sits to the north.
 ~
@@ -9297,7 +9297,7 @@ S
 &+mthe dwarves.  There are numerous old crates and debris cluttered around
 &+mthe various cornices of this cavern.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 secret~
@@ -9316,7 +9316,7 @@ S
 &+Lthe dwarves.  There are numerous old crates and debris cluttered around
 &+Lthe various cornices of this cavern.
 ~
-831 0 14
+831 33554432 14
 D2
 &+LA huge pile of rocks sits to the south.
 ~
@@ -9332,7 +9332,7 @@ also appears to have been once-used as a storage nook of some sort for
 the dwarves.  There are numerous old crates and debris cluttered around
 the various cornices of this cavern.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -9345,7 +9345,7 @@ S
 &+Lunfortunate enough to feed off the greedy dwarves that dwell in this
 &+Lshady underground.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -9367,7 +9367,7 @@ S
 &+Lunfortunate enough to feed off the greedy dwarves that dwell in this
 &+Lshady underground.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -9389,7 +9389,7 @@ S
 &+Lunfortunate enough to feed off the greedy dwarves that dwell in this
 &+Lshady underground.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LA large &N&+rdoor&+L leads to a shop.
 ~
@@ -9421,7 +9421,7 @@ S
 &+LIt seems the &N&+rclansdwarves&+L and the &Nsh&+Wie&Nld &+Ydwarves&+L have gotten along
 &+Lto a certain degree if these &N&+rmurderers &+Lare allowed to stay in &N&+cAlatorin&+L.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -9448,7 +9448,7 @@ S
 &+LIt seems the &N&+rclansdwarves&+L and the &Nsh&+Wie&Nld &+Ydwarves&+L have gotten along
 &+Lto a certain degree if these &N&+rmurderers &+Lare allowed to stay in &N&+cAlatorin&+L.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -9470,7 +9470,7 @@ S
 &+LIt seems the &N&+rclansdwarves&+L and the &Nsh&+Wie&Nld &+Ydwarves&+L have gotten along
 &+Lto a certain degree if these &N&+rmurderers &+Lare allowed to stay in &N&+cAlatorin&+L.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -9492,7 +9492,7 @@ S
 &+LIt seems the &N&+rclansdwarves&+L and the &Nsh&+Wie&Nld &+Ydwarves&+L have gotten along
 &+Lto a certain degree if these &N&+rmurderers &+Lare allowed to stay in &N&+cAlatorin&+L.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -9513,7 +9513,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D2
 &+CThe door to the south leads to the Hallway in the heart of &N&+cAlatorin&N.
 ~
@@ -9535,7 +9535,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -9556,7 +9556,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -9577,7 +9577,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -9598,7 +9598,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -9619,7 +9619,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -9640,7 +9640,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -9661,7 +9661,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D4
 ~
 ~
@@ -9682,7 +9682,7 @@ S
 &+Ydwarf &+Chero that would be so honored access down these stairs would surely
 &+Cbe of great blood, as so it is written in &n&+cAlatorin &+Clore.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -9702,7 +9702,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -9729,7 +9729,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D6
 ~
 ~
@@ -9748,7 +9748,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -9771,7 +9771,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D7
 ~
 ~
@@ -9790,7 +9790,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -9817,7 +9817,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D6
 ~
 ~
@@ -9836,7 +9836,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D3
 ~
 ~
@@ -9859,7 +9859,7 @@ S
 &+Lvery heart of &N&+cAlatorin&+L, this hall stretches around several display
 &+Ccases&+L, with a central dias set in the middle of the &+Chall&+L.
 ~
-831 134250496 14
+831 167804928 14
 D7
 ~
 ~
@@ -9876,7 +9876,7 @@ S
 &+mhall of &+Ckings&N&+m.  This mithril bridge is elegantly-built and completely
 &+msturdy, made by the top craftsman &N&+cAlatorin &N&+mhas to offer.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -9893,7 +9893,7 @@ S
 &+mhall of &+Ckings&N&+m.  This mithril bridge is elegantly-built and completely
 &+msturdy, made by the top craftsman &N&+cAlatorin &N&+mhas to offer.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -9910,7 +9910,7 @@ S
 &+mhall of &+Ckings&N&+m.  This mithril bridge is elegantly-built and completely
 &+msturdy, made by the top craftsman &N&+cAlatorin &N&+mhas to offer.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -9927,7 +9927,7 @@ S
 &+mhall of &+Ckings&N&+m.  This mithril bridge is elegantly-built and completely
 &+msturdy, made by the top craftsman &N&+cAlatorin &N&+mhas to offer.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -9950,7 +9950,7 @@ S
 &+Lcenter of this dark and ancient stone spiral out the heart of &N&+cAlatorin&+L.
 &+LAtop this stone spiral is a dias, from which the key of kings rests.
 ~
-831 1207992320 14
+831 1241546752 14
 D0
 ~
 ~
@@ -9976,7 +9976,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32772 5
+831 33587204 5
 D1
 ~
 ~
@@ -9994,7 +9994,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -10012,7 +10012,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32768 5
+831 33587200 5
 D1
 ~
 ~
@@ -10030,7 +10030,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32768 5
+831 33587200 5
 D3
 ~
 ~
@@ -10048,7 +10048,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32768 5
+831 33587200 5
 D2
 ~
 ~
@@ -10068,7 +10068,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -10087,7 +10087,7 @@ S
 &+Lstructure is heavily reinforced entry with a long winding staircase
 &+Lleading into &N&+rHelgor.
 ~
-831 134250496 5
+831 167804928 5
 D0
 &+LThe &N&+ciron &+Lgates of &N&+rHel&+Rgor &+WOutpost&+L.
 ~
@@ -10106,7 +10106,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -10124,7 +10124,7 @@ S
 &+Lall-valuable &N&+yShanatar &+Lmountain range admist this rocky climb, up
 &+Lin the clouds.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -10142,7 +10142,7 @@ S
 &+Ldown at unsuspecting victims.  There center of this upper structure leads
 &+Ldown into the spire, where the structure continues.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -10157,7 +10157,7 @@ S
 &+Lare carpeted with a &N&+rblood-red &+Lrug, while the bulk of the outpost
 &+Lis made up of the natural &N&+yShanatar &+Lrock.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -10189,7 +10189,7 @@ S
 &+Ldown at unsuspecting victims.  There center of this upper structure leads
 &+Ldown into the spire, where the structure continues.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -10211,7 +10211,7 @@ S
 &+Ldown at unsuspecting victims.  There center of this upper structure leads
 &+Ldown into the spire, where the structure continues.
 ~
-831 134250496 0
+831 167804928 0
 D1
 ~
 ~
@@ -10229,7 +10229,7 @@ S
 &+Ldown at unsuspecting victims.  There center of this upper structure leads
 &+Ldown into the spire, where the structure continues.
 ~
-831 134250496 0
+831 167804928 0
 D1
 ~
 ~
@@ -10251,7 +10251,7 @@ S
 &+Ldown at unsuspecting victims.  There center of this upper structure leads
 &+Ldown into the spire, where the structure continues.
 ~
-831 134250496 0
+831 167804928 0
 D2
 ~
 ~
@@ -10270,7 +10270,7 @@ S
 &+Lare carpeted with a &N&+rblood-red &+Lrug, while the bulk of the outpost
 &+Lis made up of the natural &N&+yShanatar &+Lrock.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10293,7 +10293,7 @@ S
 &+Lare carpeted with a &N&+rblood-red &+Lrug, while the bulk of the outpost
 &+Lis made up of the natural &N&+yShanatar &+Lrock.
 ~
-831 134250496 15
+831 167804928 15
 D1
 ~
 ~
@@ -10316,7 +10316,7 @@ S
 &+Lare carpeted with a &N&+rblood-red &+Lrug, while the bulk of the outpost
 &+Lis made up of the natural &N&+yShanatar &+Lrock.
 ~
-831 134250496 15
+831 167804928 15
 D4
 ~
 ~
@@ -10335,7 +10335,7 @@ S
 &+Lare carpeted with a &N&+rblood-red &+Lrug, while the bulk of the outpost
 &+Lis made up of the natural &N&+yShanatar &+Lrock.
 ~
-831 134250496 15
+831 167804928 15
 D0
 &+LThe adamantite gates to General Helgor's chamber.
 &+LA large keyhole surrounded by runes sits on the adamantite door.
@@ -10369,7 +10369,7 @@ S
    &+rThe northern wall of this stretch of &+Ltunnel &N&+rhas been blocked off
 &+rwith numerous wooden planks and seems to have been a doorway at one point..
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 secret door~
@@ -10390,7 +10390,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 15
+831 167804928 15
 D2
 ~
 ~
@@ -10407,7 +10407,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10429,7 +10429,7 @@ S
 &+Lladder &N&+crailing &+Lis dirty and worn.  The heavy wear on this place suggests
 &+Lfrequent and heavy usage by the villainous &N&+rclansdwarves &+Lwithin.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10452,7 +10452,7 @@ S
 &+Lladder &N&+crailing &+Lis dirty and worn.  The heavy wear on this place suggests
 &+Lfrequent and heavy usage by the villainous &N&+rclansdwarves &+Lwithin.
 ~
-831 134250496 15
+831 167804928 15
 D4
 &+LA &N&+ytrapdoor&+L to the &+Wlookout post&+L.
 ~
@@ -10471,7 +10471,7 @@ S
 &+many possibilities of an escape attempt by the weakened prisoner in habitants, who
 &+rreceive their daily whipping from this very spot.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10499,7 +10499,7 @@ S
 &+Ltunneled out by the rumored &N&+mgargantuan purple worm &+Lsome thousands of
 &+Lyears ago.
 ~
-831 134250496 15
+831 167804928 15
 D2
 ~
 ~
@@ -10518,7 +10518,7 @@ S
 &+Ltunneled out by the rumored &N&+mgargantuan purple worm &+Lsome thousands of
 &+Lyears ago.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10537,7 +10537,7 @@ S
 &+Ltunneled out by the rumored &N&+mgargantuan purple worm &+Lsome thousands of
 &+Lyears ago.
 ~
-831 134250496 15
+831 167804928 15
 D1
 &+LA small adamantite gate to the east.
 ~
@@ -10551,7 +10551,7 @@ S
 &+Lledge turns off from the main staircase and leads off to a huge &N&+ycave
 &+Lopening just north of here, sitting in the side of the cavern wall.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10570,7 +10570,7 @@ S
 &+ymounts to be chained up comfortably enough for their riders to go about their
 &+ybusiness in the outpost.
 ~
-831 134250496 15
+831 167804928 15
 D2
 ~
 ~
@@ -10598,7 +10598,7 @@ S
 &+yhas become a frequent stop for raiders looking to unload treasure they
 &+ycome across at reasonable prices, or so they assume.
 ~
-831 134250496 15
+831 167804928 15
 D2
 ~
 ~
@@ -10611,7 +10611,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 15
+831 167804928 15
 D1
 ~
 ~
@@ -10628,7 +10628,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10645,7 +10645,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10664,7 +10664,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 29
+831 167804928 29
 D0
 ~
 ~
@@ -10681,7 +10681,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10699,7 +10699,7 @@ S
 &+Lthe natural rock of the &N&+yShanatar &+Lmountain.  Adamantite and mithril
 &+Lsupports protect and stabalize the structural integrity of this chamber.
 ~
-831 134250496 15
+831 167804928 15
 D0
 &+LA large door back through &N&+rHel&+Rgor &+Woutpost.
 ~
@@ -10717,7 +10717,7 @@ S
 &+rrack hanging upon the ceiling.  A huge curtain &+Lhangs to the east
 &+rbefore the private quarters of the general.
 ~
-831 134250496 15
+831 167804928 15
 D1
 &+LA large sheet of &N&+yhide &+Lacting as a &Ncurtain &+Lhangs to the east over a passage.
 ~
@@ -10736,7 +10736,7 @@ S
 &+rneeds.  This tunnel leads deep through the inside of &+rHel&+Rgor &+WOutpost&+L,
 &N&+rgiving access to the various caves of use.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10754,7 +10754,7 @@ S
 &+Lcan be seen throughout the weapon, from the &N&+rthumb screws&+L on hanging from
 &+Lhooks on the wall to the &N&+ciron maiden &+Lset up in the southwestern corner.
 ~
-831 134250496 15
+831 167804928 15
 D0
 ~
 ~
@@ -10768,7 +10768,7 @@ S
 &+Cdanger by their &+Wpointy &+Ctips.  This huge cave &+Lentrance &+Csits
 &+Cbelow &N&+cAlatorin&+C, deep below in the &n&+ymountain &+Cvalley.
 ~
-831 4 0
+831 33554436 0
 D0
 ~
 ~
@@ -10787,7 +10787,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D1
 ~
 ~
@@ -10806,7 +10806,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D1
 ~
 ~
@@ -10829,7 +10829,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D2
 ~
 ~
@@ -10848,7 +10848,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D0
 ~
 ~
@@ -10871,7 +10871,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D0
 ~
 ~
@@ -10898,7 +10898,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D0
 ~
 ~
@@ -10921,7 +10921,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D0
 ~
 ~
@@ -10940,7 +10940,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D0
 ~
 ~
@@ -10967,7 +10967,7 @@ S
 &+Ldeeper recesses of this ancient mountain cave perhaps house a more vicious
 &+Lfoe then just the bitter cold of this region.
 ~
-831 0 13
+831 33554432 13
 D0
 ~
 ~
@@ -10985,7 +10985,7 @@ S
 &+Cjust barely large enough to hold it.  A massive carved stone chair sits
 &+Cimmovable behind the desk, looking outward onto the shackling posts.
 ~
-831 0 14
+831 33554432 14
 D2
 &+RA huge lock seperates the prisoner within the brig from civilization.
 ~
@@ -11006,7 +11006,7 @@ S
 &+Llands.  Although it is quite dark and dusty, this reclusive chamber
 &+Lserves its purpose.
 ~
-831 0 14
+831 33554432 14
 D4
 &+LAn old &N&+ytrapdoor&+L leads up to the tavern.
 ~
@@ -11085,7 +11085,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -11103,7 +11103,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -11121,7 +11121,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -11139,7 +11139,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D2
 ~
 ~
@@ -11157,7 +11157,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D4
 ~
 ~
@@ -11177,7 +11177,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D1
 ~
 ~
@@ -11197,7 +11197,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -11215,7 +11215,7 @@ S
 &+Lnumerous footprints on the ground below, becoming fainter and fainter
 &+Las the trail gets rockier.
 ~
-831 32768 5
+831 33587200 5
 D0
 ~
 ~
@@ -11234,7 +11234,7 @@ S
 &+Lgreat dwarven warrior &+WKhor&N&+calator&+L, dignifying this structure in his
 &+Lpersonal favor.
 ~
-831 134250496 5
+831 167804928 5
 D0
 &+LThe massive &+Csteel &+Lgates of &+WKhor&n&+calator &+CFort.
 ~
@@ -11254,7 +11254,7 @@ S
 &+Lwalls ever-so-many feet apart, although mostly never see flame.  The hallway
 &+Lto the east and west is quite wide, traversing the perimeter of the fort.
 ~
-831 134250496 0
+831 167804928 0
 D1
 ~
 ~
@@ -11279,7 +11279,7 @@ S
 &+Lfootprints across.  This wide, stone corridor has been widened in the
 &+Lareas deemed necessary, having been created from a natural cavern formation.
 ~
-831 134250496 0
+831 167804928 0
 D0
 &+LA large &n&+ywooden door &+Lsits within the stone wall.
 ~
@@ -11304,7 +11304,7 @@ S
 &+Lfootprints across.  This wide, stone corridor has been widened in the
 &+Lareas deemed necessary, having been created from a natural cavern formation.
 ~
-831 134250496 0
+831 167804928 0
 D1
 ~
 ~
@@ -11328,7 +11328,7 @@ S
 &+Lfootprints across.  This wide, stone corridor has been widened in the
 &+Lareas deemed necessary, having been created from a natural cavern formation.
 ~
-831 134250496 0
+831 167804928 0
 D0
 &+LA large &N&+ywooden door &+Lleads into the northeastern tower.
 ~
@@ -11353,7 +11353,7 @@ S
 &+Lfootprints across.  This wide, stone corridor has been widened in the
 &+Lareas deemed necessary, having been created from a natural cavern formation.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11369,7 +11369,7 @@ S
 &+LA spiral staircase provides passage up and down these spires, which sit visible
 &+Lto one another at their peaks.
 ~
-831 134250496 0
+831 167804928 0
 D2
 &+LA large &N&+ywooden door &+Lleads back to the &+Cfort &+Lperimeter corridor.
 ~
@@ -11390,7 +11390,7 @@ S
 &+Lfootprints across.  This wide, stone corridor has been widened in the
 &+Lareas deemed necessary, having been created from a natural cavern formation.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11410,7 +11410,7 @@ S
 &+Lfootprints across.  This wide, stone corridor has been widened in the
 &+Lareas deemed necessary, having been created from a natural cavern formation.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11431,7 +11431,7 @@ S
 &+LA spiral staircase provides passage up and down these spires, which sit visible
 &+Lto one another at their peaks.
 ~
-831 134250496 0
+831 167804928 0
 D2
 &+LA large &N&+yoak &+Ldoor leads back to the perimeter corridor.
 ~
@@ -11452,7 +11452,7 @@ S
 &+Lfootprints across.  This wide, stone corridor has been widened in the
 &+Lareas deemed necessary, having been created from a natural cavern formation.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11473,7 +11473,7 @@ S
 &+LA spiral staircase provides passage up and down these spires, which sit visible
 &+Lto one another at their peaks.
 ~
-831 134250496 0
+831 167804928 0
 D0
 &+BA large &+Lmoorwood door&+B gives passage to the perimeter corridor.
 ~
@@ -11490,7 +11490,7 @@ S
 &+LA spiral staircase provides passage up and down these spires, which sit visible
 &+Lto one another at their peaks.
 ~
-831 134250496 0
+831 167804928 0
 D0
 &+LA large &+Wpine &+Ldoor sits to the north.
 ~
@@ -11508,7 +11508,7 @@ S
 &+Lthe blocked-stone steps, leading to a secret, ancient chamber deep
 &+Lwithin the heart of &N&+cAlatorin&+L.
 ~
-831 1073741824 0
+831 1107296256 0
 D4
 &+LA trapdoor leads up to the landing beneath the Great Anvil.
 ~
@@ -11520,7 +11520,7 @@ D5
 0 0 83655
 S
 #83655
-&+LAn &N&+yAncient&+L Hidden Dwarven &+RForge&N~
+&+LAn &N&+yAncient&+L Hidden Dwarven &+WF&+Yo&+Rr&+rge&N~
    &+LThis deep forge sits deep within the heart of &N&+cAlatorin&+L.
 &+LA blocked &+Lstone staircase leads to a small leedge admist a torrential
 &+Lflow of molten lava, &+Lflowing deep within the volcano of &N&+yShana&+Lt&N&+yar&+L,
@@ -11529,7 +11529,7 @@ S
 &+Lwith a &+Lsteady, blood-like consistency.  The extreme, raging heat is
 &+Lvery intense, &+Lburning anything that comes too close.
 ~
-831 1073741824 0
+831 1107296256 0
 D4
 ~
 ~
@@ -11542,7 +11542,7 @@ S
 &+Lparapets surrounding the top of this - and the other watch towers - give access
 &+Lto the &+WKhor&N&+calator &+Larchers to defend their outpost from a distance.
 ~
-831 134250496 0
+831 167804928 0
 D5
 ~
 ~
@@ -11555,7 +11555,7 @@ S
 &+Lparapets surrounding the top of this - and the other watch towers - give access
 &+Lto the &+WKhor&N&+calator &+Larchers to defend their outpost from a distance.
 ~
-831 134250496 0
+831 167804928 0
 D5
 ~
 ~
@@ -11568,7 +11568,7 @@ S
 &+Lparapets surrounding the top of this - and the other watch towers - give access
 &+Lto the &+WKhor&N&+calator &+Larchers to defend their outpost from a distance.
 ~
-831 134250496 0
+831 167804928 0
 D5
 ~
 ~
@@ -11581,7 +11581,7 @@ S
 &+Lparapets surrounding the top of this - and the other watch towers - give access
 &+Lto the &+WKhor&N&+calator &+Larchers to defend their outpost from a distance.
 ~
-831 134250496 0
+831 167804928 0
 D5
 ~
 ~
@@ -11594,7 +11594,7 @@ S
 &+Lsteps of this staircase are made of carved rock, chiseled into steps from
 &+Lthe natural rock beneath.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11611,7 +11611,7 @@ S
 &+Lsteps of this staircase are made of carved rock, chiseled into steps from
 &+Lthe natural rock beneath.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11628,7 +11628,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 &+LA small &N&+ysign &+Labove this doorway reads &+C'Guild Officer.'
 ~
@@ -11654,7 +11654,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11671,7 +11671,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11688,7 +11688,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11705,7 +11705,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11722,7 +11722,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11739,7 +11739,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11756,7 +11756,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250500 0
+831 167804932 0
 D0
 ~
 ~
@@ -11777,7 +11777,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 &+LA door with a large &+Wmithril &+Llock.
 ~
@@ -11803,7 +11803,7 @@ S
 &+Csit deep beneath the surface of the mountain.  Every fifteen paces a
 &+Ctorch sconce sts unused, posted on the rocky fort walls.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11825,7 +11825,7 @@ S
 &+Lthe natural rock of the &N&+yShanatar &+Lmountain.  Adamantite and mithril
 &+Lsupports protect and stabalize the structural integrity of this chamber.
 ~
-831 134250496 15
+831 167804928 15
 D2
 &+LThis &N&+ydoor&+L leads back out to the &+WKhor&N&+calator &+Whallway.
 ~
@@ -11839,7 +11839,7 @@ S
 &+Lcan only be traversed in a single-file formation through this long, dark
 &+Lsubterennean shaft.
 ~
-831 134250496 0
+831 167804928 0
 D0
 ~
 ~
@@ -11856,7 +11856,7 @@ S
 &+Lcan only be traversed in a single-file formation through this long, dark
 &+Lsubterranean shaft.
 ~
-831 134250500 0
+831 167804932 0
 D4
 ~
 ~
@@ -11873,7 +11873,7 @@ S
 &+Lcan only be traversed in a single-file formation through this long, dark
 &+Lsubterranean shaft.
 ~
-831 134250496 0
+831 167804928 0
 D4
 ~
 ~
@@ -11890,7 +11890,7 @@ S
 &+Lcan only be traversed in a single-file formation through this long, dark
 &+Lsubterranean shaft.
 ~
-831 134250496 0
+831 167804928 0
 D4
 ~
 ~
@@ -11907,7 +11907,7 @@ S
 &+Lcan only be traversed in a single-file formation through this long, dark
 &+Lsubterranean shaft.
 ~
-831 134250496 0
+831 167804928 0
 D4
 ~
 ~
@@ -11924,7 +11924,7 @@ S
 &+Lcan only be traversed in a single-file formation through this long, dark
 &+Lsubterranean shaft.
 ~
-831 134250496 0
+831 167804928 0
 D4
 ~
 ~
@@ -11942,7 +11942,7 @@ S
 &+Ldesk and greeting area on one side, and a bed and private quarters along
 &+La low-stone wall.
 ~
-831 134250496 0
+831 167804928 0
 D2
 &+LA door with a large &+Wmithril &+Llock.
 ~
@@ -11957,7 +11957,7 @@ S
 &n&+ytethered&+L to on their owner's accord.  A maintenance crew frequents this
 &+Lunderstandably-filthy cave.
 ~
-831 134250496 0
+831 167804928 0
 D2
 ~
 ~
@@ -11970,7 +11970,7 @@ S
 &+yhas become a frequent stop for raiders looking to unload treasure they
 &+ycome across at reasonable prices, or so they assume.
 ~
-831 134250496 15
+831 167804928 15
 D2
 ~
 ~
@@ -11987,7 +11987,7 @@ S
 &+Lthe ocean is close.  This part of the Shanatar mountains begins to descend
 &+Ltowards the western coast from this pass.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -12004,7 +12004,7 @@ S
 &+Lthe ocean is close.  This part of the Shanatar mountains begins to descend
 &+Ltowards the western coast from this pass.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -12021,7 +12021,7 @@ S
 &+Lthe ocean is close.  This part of the Shanatar mountains begins to descend
 &+Ltowards the western coast from this pass.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -12040,7 +12040,7 @@ S
 &+Lthe ocean is close.  This part of the Shanatar mountains begins to descend
 &+Ltowards the western coast from this pass.
 ~
-831 0 5
+831 33554432 5
 D4
 ~
 ~
@@ -12057,7 +12057,7 @@ S
 &+Lthe ocean is close.  This part of the Shanatar mountains begins to descend
 &+Ltowards the western coast from this pass.
 ~
-831 0 5
+831 33554432 5
 D2
 ~
 ~
@@ -12078,7 +12078,7 @@ S
 &+Wfrom the oceanic coast to the west.  The sounds of a shipyard can be heard in the
 &+Wdistance; bells are ringing and men shouting.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -12095,7 +12095,7 @@ S
 &+Wfrom the oceanic coast to the west.  The sounds of a shipyard can be heard in the
 &+Wdistance; bells are ringing and men shouting.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -12112,7 +12112,7 @@ S
 &+Wfrom the oceanic coast to the west.  The sounds of a shipyard can be heard in the
 &+Wdistance; bells are ringing and men shouting.
 ~
-831 0 5
+831 33554432 5
 D0
 ~
 ~
@@ -12129,7 +12129,7 @@ S
 &+Wfrom the oceanic coast to the west.  The sounds of a shipyard can be heard in the
 &+Wdistance; bells are ringing and men shouting.
 ~
-831 0 5
+831 33554432 5
 D0
 ~
 ~
@@ -12146,7 +12146,7 @@ S
 &+Wfrom the oceanic coast to the west.  The sounds of a shipyard can be heard in the
 &+Wdistance; bells are ringing and men shouting.
 ~
-831 0 5
+831 33554432 5
 D0
 ~
 ~
@@ -12167,7 +12167,7 @@ S
 &+Wfrom the oceanic coast to the west.  The sounds of a shipyard can be heard in the
 &+Wdistance; bells are ringing and men shouting.
 ~
-831 0 5
+831 33554432 5
 D0
 ~
 ~
@@ -12187,7 +12187,7 @@ S
 &+gleading down the hill branching off to the north - where the terrain descends
 &+gwalkably gradual.
 ~
-831 0 2
+831 33554432 2
 D0
 ~
 ~
@@ -12208,7 +12208,7 @@ S
 &+gare tree roots hanging out from various spots of the cliff face, suggesting
 &+gthat this terrain may be the result of a recent shift in the world's makeup.
 ~
-831 0 2
+831 33554432 2
 D2
 ~
 ~
@@ -12225,7 +12225,7 @@ S
 &+gare tree roots hanging out from various spots of the cliff face, suggesting
 &+gthat this terrain may be the result of a recent shift in the world's makeup.
 ~
-831 0 2
+831 33554432 2
 D0
 &+yA rickety wooden door to a makeshift dwelling.
 ~
@@ -12247,7 +12247,7 @@ S
 &+gare tree roots hanging out from various spots of the cliff face, suggesting
 &+gthat this terrain may be the result of a recent shift in the world's makeup.
 ~
-831 0 2
+831 33554432 2
 D2
 ~
 ~
@@ -12264,7 +12264,7 @@ S
 &+gare tree roots hanging out from various spots of the cliff face, suggesting
 &+gthat this terrain may be the result of a recent shift in the world's makeup.
 ~
-831 0 2
+831 33554432 2
 D1
 ~
 ~
@@ -12281,7 +12281,7 @@ S
 &+ycliff face is jagged and not completely impossible to climb.  There
 &+yare sounds and sights of an active dwarven port just to the west.
 ~
-831 0 2
+831 33554432 2
 D0
 ~
 ~
@@ -12298,7 +12298,7 @@ S
 &+Lfloor is made out of blocked stone, set in a design that has gone unused
 &+Lfor years.  The walls are decorated with aging, fading fresco.
 ~
-831 0 0
+831 33554432 0
 D2
 ~
 ~
@@ -12316,7 +12316,7 @@ S
 &+ybehind a large merchant's stall.  The owner of this shop has turned quite
 &+ya profit, but the ingredients of his vile mixtures remain questionable.
 ~
-831 0 0
+831 33554432 0
 D2
 &+LA large door &N&+rexits the shop.
 ~
@@ -12330,7 +12330,7 @@ S
 &+gshelves of this small stand.  There is a large &N&+Rsign &N&+gposted next to the
 &+gmerchant stall.
 ~
-831 134250496 0
+831 167804928 0
 D1
 ~
 secret door~
@@ -12347,7 +12347,7 @@ S
 &+Ldoor behind the Fort merchant stall.  There are numerous dark footprints
 &+Lin the dirty, unkept floor below - all dwarfish in side.
 ~
-831 134250505 0
+831 167804937 0
 D0
 ~
 ~
@@ -12368,7 +12368,7 @@ S
 &+Ldoor behind the Fort merchant stall.  There are numerous dark footprints
 &+Lin the dirty, unkept floor below - all dwarfish in side.
 ~
-831 134250505 0
+831 167804937 0
 D2
 ~
 ~
@@ -12389,7 +12389,7 @@ S
 &+gshelves of this small stand.  There is a large &N&+Rsign &N&+gposted next to the
 &+gmerchant stall.
 ~
-831 134250496 0
+831 167804928 0
 D2
 ~
 ~
@@ -12407,7 +12407,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D2
 ~
 ~
@@ -12446,7 +12446,7 @@ S
 &+Lthe floor.  The thick walls hug the stout exit while encircling
 &+rthe central chamber.
 ~
-831 134250505 0
+831 167804937 0
 D3
 &+LA &N&+yhide sheet&+L acting as a &Ncurtain&+L hangs to the west over a passage.
 ~
@@ -12461,7 +12461,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D4
 ~
 ~
@@ -12498,7 +12498,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D4
 ~
 ~
@@ -12535,7 +12535,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D4
 ~
 ~
@@ -12572,7 +12572,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D4
 ~
 ~
@@ -12609,7 +12609,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D4
 ~
 ~
@@ -12646,7 +12646,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D4
 ~
 ~
@@ -12683,7 +12683,7 @@ S
 &+Lthe heart of &N&+rHel&+Rgor &+Loutpost.  Small red &+Rflags &+Lare tied off
 &+Lat the top of this shaft, baring the insignia of &+RHel&N&+rgor.
 ~
-831 134250505 13
+831 167804937 13
 D4
 &+mThe shaft opens up &+Wto the mountains above &N&+yShanatar.
 ~
@@ -12719,7 +12719,7 @@ S
 &+Lgravel-ridden ground.  It eventually sinks deeper and deeper within the
 &+Lmountain as it enters a vaulted cavern in which numerous stalagmites hang.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12735,7 +12735,7 @@ S
 &+Lgravel-ridden ground.  It eventually sinks deeper and deeper within the
 &+Lmountain as it enters a vaulted cavern in which numerous stalagmites hang.
 ~
-831 9 13
+831 33554441 13
 D4
 ~
 ~
@@ -12753,7 +12753,7 @@ S
 &+Lmoans in the distance that are unhuman in nature.  The air here is
 &+Lthick and musty.
 ~
-831 13 13
+831 33554445 13
 D2
 ~
 ~
@@ -12771,7 +12771,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D1
 ~
 ~
@@ -12789,7 +12789,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D1
 ~
 ~
@@ -12811,7 +12811,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12833,7 +12833,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12859,7 +12859,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12885,7 +12885,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12907,7 +12907,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12929,7 +12929,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12955,7 +12955,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12977,7 +12977,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -12995,7 +12995,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -13021,7 +13021,7 @@ S
 &+Lfallen stalagmites, and even some bone, this brutal terrain hints at
 &+Lthe danger one may face deeper through the pass.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -13040,7 +13040,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 13 13
+831 33554445 13
 D0
 ~
 ~
@@ -13063,7 +13063,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -13082,7 +13082,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -13101,7 +13101,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 9 13
+831 33554441 13
 D2
 ~
 ~
@@ -13120,7 +13120,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -13139,7 +13139,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -13158,7 +13158,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 9 13
+831 33554441 13
 D0
 ~
 ~
@@ -13175,7 +13175,7 @@ S
 &+ghaving been sitting here, gathering pollution for some time.  The cavern
 &+gceiling is very low and there are numerous parasites infecting the waters.
 ~
-831 1073741833 9
+831 1107296265 9
 D3
 ~
 ~
@@ -13188,7 +13188,7 @@ S
 &+mis rather wide and should not impede the movement of any travelers who
 &+mhave ventured into these depths of the cavern.
 ~
-831 9 13
+831 33554441 13
 D1
 ~
 ~
@@ -13204,7 +13204,7 @@ S
 &+Llooks to be reclusive from the rest of the unforgiving terrain of this
 &+Lsubterranean nightmare.
 ~
-831 5 13
+831 33554437 13
 D4
 ~
 ~
@@ -13216,7 +13216,7 @@ S
 &+WThe cliff face to the east is visible beyond the expanse, growing with grass
 &+Wover a rocky ledge.
 ~
-831 0 8
+831 33554432 8
 D5
 ~
 ~
@@ -13230,7 +13230,7 @@ S
 &+WThe cliff face to the east is visible beyond the expanse, growing with grass
 &+Wover a rocky ledge.
 ~
-831 1 8
+831 33554433 8
 S
 #83741
 &+WMid-Air Above a Clearing&N~
@@ -13238,7 +13238,7 @@ S
 &+WThe cliff face to the east is visible beyond the expanse, growing with grass
 &+Wover a rocky ledge.
 ~
-831 0 8
+831 33554432 8
 D5
 ~
 ~
@@ -13255,7 +13255,7 @@ S
 &+ynearly over-grown, having been unkept and forgotten in its location off
 &+ythe thoroughfare.
 ~
-831 1 0
+831 33554433 0
 D2
 &+yA makeshift wooden door leading back to the thoroughfare.
 ~
@@ -13269,7 +13269,7 @@ S
 &+Lhad been planted purposely rather then from natural growth.  This small
 &+Lroadway leads east-west, with the port of &+WDeramuth&+L visible to the west.
 ~
-831 0 2
+831 33554432 2
 D1
 ~
 ~
@@ -13286,7 +13286,7 @@ S
 &+Lhad been planted purposely rather then from natural growth.  This small
 &+Lroadway leads east-west, with the port of &+WDeramuth&+L visible to the west.
 ~
-831 0 2
+831 33554432 2
 D0
 ~
 ~
@@ -13311,7 +13311,7 @@ S
 &+Lsense of peace and harmony amongst this twisted place.  The port of &+WDeramuth&+L
 &+Lcan be seen to the west.
 ~
-831 0 2
+831 33554432 2
 D0
 ~
 ~
@@ -13332,7 +13332,7 @@ S
 &+Lhad been planted purposely rather then from natural growth.  This small
 &+Lroadway leads east-west, with the port of &+WDeramuth&+L visible to the west.
 ~
-831 0 2
+831 33554432 2
 D1
 ~
 ~
@@ -13354,7 +13354,7 @@ S
 &+Lhad been planted purposely rather then from natural growth.  This small
 &+Lroadway leads east-west, with the port of &+WDeramuth&+L visible to the west.
 ~
-831 0 2
+831 33554432 2
 D1
 ~
 ~
@@ -13373,7 +13373,7 @@ S
 &+ynearly over-grown, having been unkept and forgotten in its location off
 &+ythe thoroughfare.
 ~
-831 1 0
+831 33554433 0
 D0
 &+LThe &N&+ydoor &+Lout of this shack.
 ~
@@ -13387,7 +13387,7 @@ S
 &+yhere.  The wooden fence is made of thick brittle planks brought together
 &+yby metal fastening.
 ~
-831 4 2
+831 33554436 2
 D1
 ~
 ~
@@ -13408,7 +13408,7 @@ S
    &+WSeveral large rocks are arranged as huge steps down to the dock
 &+Warea below.
 ~
-831 0 1
+831 33554432 1
 D0
 &+LA &N&+ylarge wooden door &+Lwith a small &+Wsign &+Lreading:
 &n&+cWelcome to Deramuth Port
@@ -13436,7 +13436,7 @@ S
 &+Wmountains.  The promenade is covered with thick imported cobblestones,
 &+Wfrom which thick bright green grass grows between.
 ~
-831 0 1
+831 33554432 1
 D1
 &+yA long fence extends around the perimeter of Deramuth port.
 ~
@@ -13459,7 +13459,7 @@ S
 &+Wmountains.  The promenade is covered with thick imported cobblestones,
 &+Wfrom which thick bright green grass grows between.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -13481,7 +13481,7 @@ S
 &+Wmountains.  The promenade is covered with thick imported cobblestones,
 &+Wfrom which thick bright green grass grows between.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -13499,7 +13499,7 @@ S
 &+Lofficials and the Deramuth guildmasters, this chamber sees
 &+Lmany trade and contract negotiations.
 ~
-831 0 0
+831 33554432 0
 D2
 &+LA &N&+ylarge wooden door.
 ~
@@ -13514,7 +13514,7 @@ S
 &+yleads behind several huge sand dunes protecting the inner port and
 &+ydock area from flooding during times of high tide.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -13532,7 +13532,7 @@ S
 &+yleads behind several huge sand dunes protecting the inner port and
 &+ydock area from flooding during times of high tide.
 ~
-831 0 1
+831 33554432 1
 D1
 &+LA &N&+rjodani &+ywood &+Ldoor to the &+YGolden Pearl &N&+yTavern&N.
 ~
@@ -13555,7 +13555,7 @@ S
 &+yleads behind several huge sand dunes protecting the inner port and
 &+ydock area from flooding during times of high tide.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -13578,7 +13578,7 @@ S
 &+yleads behind several huge sand dunes protecting the inner port and
 &+ydock area from flooding during times of high tide.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -13607,7 +13607,7 @@ S
 &+Ldirectly through a doorway to the north, a large bar to the east, with
 &+Lside area to the south with tables and benches.
 ~
-831 0 0
+831 33554432 0
 D0
 &+LA small &N&+ywooden &+Ldoor leads to a staircase.
 ~
@@ -13637,7 +13637,7 @@ S
 &+Ldirectly through a doorway to the west, a large bar to the north, with a
 &+Lside area to the east.
 ~
-831 0 0
+831 33554432 0
 D0
 ~
 ~
@@ -13666,7 +13666,7 @@ S
 &+Ldirectly through a doorway to the west, a large bar to the north, with a
 &+Lside area to the east.
 ~
-831 1 0
+831 33554433 0
 D0
 ~
 ~
@@ -13686,7 +13686,7 @@ S
 &+Ldirectly through a doorway to the west, a large bar to the north, with a
 &+Lside area to the east.
 ~
-831 0 0
+831 33554432 0
 D0
 ~
 ~
@@ -13705,7 +13705,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 0
+831 33554432 0
 D2
 &+LA &N&+ywooden door&+L leads south into the bottom floor of the tavern.
 ~
@@ -13725,7 +13725,7 @@ S
 &+cpassengers, adventurers, and warriors of the many ships that cross
 &+cthrough these parts.
 ~
-831 524288 0
+831 34078720 0
 D2
 ~
 ~
@@ -13744,7 +13744,7 @@ S
 &+LHall, Berronar Truesilver, and other fables of their short-raced
 &+Llineage.
 ~
-831 0 0
+831 33554432 0
 D1
 ~
 ~
@@ -13763,7 +13763,7 @@ S
 &+cpassengers, adventurers, and warriors of the many ships that cross
 &+cthrough these parts.
 ~
-831 0 0
+831 33554432 0
 D0
 ~
 ~
@@ -13792,7 +13792,7 @@ S
 &+cpassengers, adventurers, and warriors of the many ships that cross
 &+cthrough these parts.
 ~
-831 0 0
+831 33554432 0
 D0
 ~
 ~
@@ -13825,7 +13825,7 @@ S
 &+Lhold sits at the foot.
    &+LA small &N&+ycloset &+Lis placed beside the bed.
 ~
-831 0 14
+831 33554432 14
 D3
 &+LA door of the guest room.
 ~
@@ -13842,7 +13842,7 @@ S
 &+Lhold sits at the foot.
    &+LA small &N&+ycloset &+Lis placed beside the bed.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LA door to a guest room.
 ~
@@ -13858,7 +13858,7 @@ S
 &+Lsome fine, yet thick linens sits in the far corner, while a small clothes
 &+Lhold sits at the foot.
 ~
-831 0 14
+831 33554432 14
 D1
 &+LA door of the guest room.
 ~
@@ -13874,7 +13874,7 @@ S
 &+Lsome fine, yet thick linens sits in the far corner, while a small clothes
 &+Lhold sits at the foot.
 ~
-831 0 14
+831 33554432 14
 D3
 &+RA door to a guest room.
 ~
@@ -13889,7 +13889,7 @@ S
 &N&+ydocks&+L.  They are creakly, yet sturdy and able to support quite a hefty
 &+Lmass, having been constructed to withstand cargo shipments.
 ~
-831 0 4
+831 33554432 4
 D1
 ~
 ~
@@ -13907,7 +13907,7 @@ S
 &N&+ydocks&+L.  They are creakly, yet sturdy and able to support quite a hefty
 &+Lmass, having been constructed to withstand cargo shipments.
 ~
-831 0 4
+831 33554432 4
 D3
 ~
 ~
@@ -13924,7 +13924,7 @@ S
 &+Lwooden dock below.  The cliffside of &+WDeramuth Port &+Loverlooks the
 &+Ldock down below, which is accessed only by one of the ascents below.
 ~
-831 0 4
+831 33554432 4
 D1
 ~
 ~
@@ -13941,7 +13941,7 @@ S
 &+Lwooden dock below.  The cliffside of &+WDeramuth Port &+Loverlooks the
 &+Ldock down below, which is accessed only by one of the ascents below.
 ~
-831 0 4
+831 33554432 4
 D3
 ~
 ~
@@ -13961,7 +13961,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D0
 &+LThe entry &N&+yflap &+Lof a covered &N&+ystall&+L is to the north.
 ~
@@ -13990,7 +13990,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -14010,7 +14010,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -14034,7 +14034,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -14054,7 +14054,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D1
 ~
 ~
@@ -14074,7 +14074,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -14098,7 +14098,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D0
 ~
 ~
@@ -14118,7 +14118,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 0 1
+831 33554432 1
 D3
 ~
 ~
@@ -14134,7 +14134,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 1048576 1
+831 34603008 1
 D1
 ~
 ~
@@ -14158,7 +14158,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 1048576 1
+831 34603008 1
 D1
 ~
 ~
@@ -14182,7 +14182,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 1048576 1
+831 34603008 1
 D1
 ~
 ~
@@ -14206,7 +14206,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 1048576 1
+831 34603008 1
 D0
 ~
 ~
@@ -14230,7 +14230,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 1048576 1
+831 34603008 1
 D0
 ~
 ~
@@ -14254,7 +14254,7 @@ S
 &+yrocky embankment further down to the south.  These long wooden docks
 &+yare supported by huge posts of thick moorwood.
 ~
-831 1048576 1
+831 34603008 1
 D0
 ~
 ~
@@ -14277,7 +14277,7 @@ S
 &+mis quite large, the structure having been made of imported wood, as very
 &+mfew trees grow on the Shanatar mountain.
 ~
-831 0 0
+831 33554432 0
 D1
 &+LThis &N&+ywooden door&+L leads back to the cobblestone streets of Deramuth.
 ~
@@ -14346,7 +14346,7 @@ S
 &+Lis quite large, the structure having been made of imported wood, as very
 &+Lfew trees grow on the Shanatar mountain.
 ~
-831 0 0
+831 33554432 0
 D3
 &+LA large moorwood door leads back to the cobblestone street of Deramuth Port.
 ~
@@ -14425,7 +14425,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -14442,7 +14442,7 @@ S
 &+La few small stools, a large cutting board, and a few weapon
 &+Lracks.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -14455,7 +14455,7 @@ S
 &+Ldoor behind the Fort merchant stall.  There are numerous dark footprints
 &+Lin the dirty, unkept floor below - all dwarfish in side.
 ~
-831 9 0
+831 33554441 0
 D0
 ~
 ~
@@ -15078,7 +15078,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D5
 ~
 ~
@@ -16077,7 +16077,7 @@ S
 &+Rbasic &N&+mload-bearing structures &+Rof &N&+cAlatorin&+R.  The floor is
 &+Rdirty and there are heavy scents of waste in the air.
 ~
-831 0 14
+831 33554432 14
 D0
 &+RThe brig entrance leads back to the Constable's office.
 ~
@@ -16093,7 +16093,7 @@ S
 &+LClearly thus liquor hutch is no longer used for the tavern and has gone
 &+Luntouched for some time.
 ~
-831 0 0
+831 33554432 0
 D4
 &+LA &N&+ywooden &+Ltrapdoor leads back up to the bar.
 ~
@@ -16108,7 +16108,7 @@ S
 &N&+ciron &+Lsconces, but no torches.  A small stepped staircase leads
 &+Leastward beyond a foyer, north of here.
 ~
-831 0 0
+831 33554432 0
 D0
 ~
 ~
@@ -16128,7 +16128,7 @@ S
 &+Cwith similar &N&+mmithril &+Cin the floor bricks standing as supportive
 &+Ccolumns throughout the passage.
 ~
-831 0 0
+831 33554432 0
 D1
 ~
 ~
@@ -16147,7 +16147,7 @@ S
 &+cthe &Nsh&+Wie&Nld &+Ydwarves&N&+c.  There are small &+Ytorches &N&+csconced on either wall,
 &+cleading all the way up to the top of the staircase.
 ~
-831 0 0
+831 33554432 0
 D3
 ~
 ~
@@ -16183,7 +16183,7 @@ S
 &+cthe &Nsh&+Wie&Nld &+Ydwarves&N&+c.  There are small &+Ytorches &N&+csconced on either wall,
 &+cleading all the way up to the top of the staircase.
 ~
-831 0 0
+831 33554432 0
 D4
 ~
 ~
@@ -16219,7 +16219,7 @@ S
 &+cthe &Nsh&+Wie&Nld &+Ydwarves&N&+c.  There are small &+Ytorches &N&+csconced on either wall,
 &+cleading all the way up to the top of the staircase.
 ~
-831 0 0
+831 33554432 0
 D4
 ~
 ~
@@ -16255,7 +16255,7 @@ S
 &+cthe &Nsh&+Wie&Nld &+Ydwarves&N&+c.  There are small &+Ytorches &N&+csconced on either wall,
 &+cleading all the way up to the top of the staircase.
 ~
-831 0 0
+831 33554432 0
 D4
 ~
 ~
@@ -16291,7 +16291,7 @@ S
 &+cthe &Nsh&+Wie&Nld &+Ydwarves&N&+c.  There are small &+Ytorches &N&+csconced on either wall,
 &+cleading all the way up to the top of the staircase.
 ~
-831 0 0
+831 33554432 0
 D4
 ~
 ~
@@ -16327,7 +16327,7 @@ S
 &+cthe &Nsh&+Wie&Nld &+Ydwarves&N&+c.  There are small &+Ytorches &N&+csconced on either wall,
 &+cleading all the way up to the top of the staircase.
 ~
-831 0 0
+831 33554432 0
 D4
 ~
 ~
@@ -16363,7 +16363,7 @@ S
 &+cthe &Nsh&+Wie&Nld &+Ydwarves&N&+c.  There are small &+Ytorches &N&+csconced on either wall,
 &+cleading all the way up to the top of the staircase.
 ~
-831 0 0
+831 33554432 0
 D1
 ~
 ~
@@ -16397,7 +16397,7 @@ S
 &+ca few small steps before the glorious balcony of the royal Shanat family,
 &+coverlooking the mountain trails of &N&+yShanatar&N&+c.
 ~
-831 0 0
+831 33554432 0
 D1
 ~
 ~
@@ -16434,7 +16434,7 @@ S
 &+Wothers come and go as they feast upon the delicious food served at
 &+Wthe &+RFeed &N&+rHole&+W.
 ~
-831 0 0
+831 33554432 0
 D2
 ~
 ~
@@ -16466,7 +16466,7 @@ S
 &+Wfront.  A large carpet sits at the very center of this room, on which a large
 &+Wbed sits.  A huge closet sits on the wall adjacent to the door.
 ~
-831 0 0
+831 33554432 0
 D0
 &+yA door leads back to the inn.
 ~
@@ -16499,7 +16499,7 @@ S
 &+LThere are &N&+mmithril &+Ltorch sconces screwed into the walls every ten-to
 &+Lfifteen feet beyond one another in the rare gaps between tapestries.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -16535,7 +16535,7 @@ S
 &+LThere are &N&+mmithril &+Ltorch sconces screwed into the walls every ten-to
 &+Lfifteen feet beyond one another in the rare gaps between tapestries.
 ~
-831 0 14
+831 33554432 14
 D0
 &+LA large &N&+ywooden door &+Lwith &N&+mmithril hinges &+Lis set to the north.
 ~
@@ -16576,7 +16576,7 @@ S
 &+LThere are &N&+mmithril &+Ltorch sconces screwed into the walls every ten-to
 &+Lfifteen feet beyond one another in the rare gaps between tapestries.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -16612,7 +16612,7 @@ S
 &+LThere are &N&+mmithril &+Ltorch sconces screwed into the walls every ten-to
 &+Lfifteen feet beyond one another in the rare gaps between tapestries.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -16705,7 +16705,7 @@ S
 &+ythe northwest with many dazzling peaks reaching far higher than the
 &+yclouds.
 ~
-831 0 5
+831 33554432 5
 D1
 ~
 ~
@@ -16742,7 +16742,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -16779,7 +16779,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D0
 ~
 ~
@@ -16816,7 +16816,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -16853,7 +16853,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -16890,7 +16890,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -16931,7 +16931,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D6
 ~
 ~
@@ -16968,7 +16968,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -17009,7 +17009,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -17046,7 +17046,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -17083,7 +17083,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -17120,7 +17120,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -17157,7 +17157,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -17194,7 +17194,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D6
 ~
 ~
@@ -17231,7 +17231,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D3
 ~
 ~
@@ -17268,7 +17268,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D1
 ~
 ~
@@ -17301,7 +17301,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D2
 ~
 ~
@@ -17338,7 +17338,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 E
 torch torches~
 &+r       '
@@ -17367,7 +17367,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 4 14
+831 33554436 14
 D0
 ~
 ~
@@ -17404,7 +17404,7 @@ S
 &+Lair.  This naturally-formed tunnel continues beneath the rock-solid
 &+Lwalls of the mountain.
 ~
-831 0 14
+831 33554432 14
 D8
 ~
 ~
@@ -17544,7 +17544,7 @@ S
 &+Lmountains.  The ground is muddy and the walls are rich
 &+Lwith strange fungus.
 ~
-831 33025 13
+831 33587457 13
 D1
 ~
 ~
@@ -17563,7 +17563,7 @@ natural erosion of the rocks.  The walls are teaming with
 a common fungus.  There are no steps or other means of
 support that would aid ones travels into the depths below.
 ~
-831 33025 13
+831 33587457 13
 D1
 ~
 ~
@@ -17585,7 +17585,7 @@ sing spores into the air.  The walls of this shaft are
 utterly covered with such fungus, which suggests that
 deep below a source of liquid exists.
 ~
-831 33025 13
+831 33587457 13
 D4
 ~
 ~
@@ -17607,7 +17607,7 @@ quite trecherous.  On the rocky cavern walls there is a large
 amount of thick fungal growth.  The tunnel continues to the
 south.
 ~
-831 33025 13
+831 33587457 13
 D2
 ~
 ~
@@ -17626,7 +17626,7 @@ S
 &+Ltunnel, as the ceiling seems to be higher and more vaulted the further
 &+Lnorth one travels.
 ~
-831 13 13
+831 33554445 13
 D0
 ~
 ~
@@ -17646,7 +17646,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D1
 ~
 ~
@@ -17666,7 +17666,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D0
 ~
 ~
@@ -17694,7 +17694,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D2
 ~
 ~
@@ -17714,7 +17714,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D0
 ~
 ~
@@ -17745,7 +17745,7 @@ S
 &+Gand brown sludgy maelstrom as the slime in the area all
 &+Gcomes to one main focal point.
 ~
-831 32769 28
+831 33587201 28
 D0
 ~
 ~
@@ -17778,7 +17778,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D0
 ~
 ~
@@ -17802,7 +17802,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D0
 ~
 ~
@@ -17822,7 +17822,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D0
 ~
 ~
@@ -17846,7 +17846,7 @@ S
 &+gceiling and walls are splattered with the same sludge,
 &+gsuggesting that these tunnels are not without travel.
 ~
-831 33025 28
+831 33587457 28
 D0
 ~
 ~
@@ -17866,7 +17866,7 @@ S
 &+Lshields and armor, while the southern hold carries warhammers swords
 &+Land whetstones.
 ~
-831 0 14
+831 33554432 14
 D2
 &+L   A &+ywooden&+L door leads back into the hallway.
 ~
@@ -17893,7 +17893,7 @@ S
 &+rRares & Azarem Load Room&N~
 &+rLoad room for rares
 ~
-831 1216380928 13
+831 1249935360 13
 D0
 ~
 ~
@@ -17948,7 +17948,7 @@ S
 &+Lhave been arranged and several small piles of fur and
 &+Lrags have been left behind.
 ~
-831 134381568 15
+831 167936000 15
 D3
 ~
 ~
@@ -17963,7 +17963,7 @@ S
 &+Llow groan of aching rocks act like the heartbeat of the
 &+Lmountains. A huge glowing dais can be seen to the south.
 ~
-831 33025 14
+831 33587457 14
 D0
 &+mThe mithril gate behind the wall blocks access to the Rift of Dhalnadar.
 ~
@@ -17982,7 +17982,7 @@ S
 &+gwithin the mountain.  The largest and most prominent of these
 &+gconduits opens into a large, traversable tunnel to the west.
 ~
-831 1073774849 28
+831 1107329281 28
 D0
 ~
 ~
@@ -18018,7 +18018,7 @@ S
 &+Lriver of &+Gslime&+L flows beside this conduit, eventually lead-
 &+Ling up to a vortex of sludge.
 ~
-831 33025 13
+831 33587457 13
 D1
 ~
 ~
@@ -18037,7 +18037,7 @@ S
 &+Lriver of &+Gslime&+L flows beside this conduit, eventually lead-
 &+Ling up to a vortex of sludge.
 ~
-831 33025 13
+831 33587457 13
 D8
 ~
 ~
@@ -18052,7 +18052,7 @@ S
 &+Lriver of &+Gslime&+L flows beside this conduit, eventually lead-
 &+Ling up to a vortex of sludge.
 ~
-831 33025 13
+831 33587457 13
 D3
 ~
 ~
@@ -18071,7 +18071,7 @@ S
 &+Lriver of &+Gslime&+L flows beside this conduit, eventually lead-
 &+Ling up to a vortex of sludge.
 ~
-831 33025 28
+831 33587457 28
 D7
 ~
 ~
@@ -18086,7 +18086,7 @@ S
 &+Lriver of &+Gslime&+L flows beside this conduit, eventually lead-
 &+Ling up to a vortex of sludge.
 ~
-831 33025 13
+831 33587457 13
 D2
 ~
 ~
@@ -18101,7 +18101,7 @@ S
 &+Lriver of &+Gslime&+L flows beside this conduit, eventually lead-
 &+Ling up to a vortex of sludge.
 ~
-831 33025 13
+831 33587457 13
 D0
 ~
 ~
@@ -18119,7 +18119,7 @@ S
 &+Gand &+Yore &+Ldeposits.  A violent churning of slime can be
 &+Lheard very distinctly coming from the neighboring tunnels.
 ~
-831 33025 13
+831 33587457 13
 D6
 ~
 ~
@@ -18177,7 +18177,7 @@ S
 &+gslime itself is unknown, as it seems to flow with an ever-
 &+gpresent movement.
 ~
-831 1073774849 28
+831 1107329281 28
 D4
 ~
 ~
@@ -18192,7 +18192,7 @@ S
 &+Lwas once very large in size itself.  However now crumbling bits
 &+Lof rocky debris cover much of the cavern floor.
 ~
-831 33025 13
+831 33587457 13
 D0
 ~
 ~
@@ -18212,7 +18212,7 @@ S
 &+Lfungus that grows upon the other portions of the Shanatar
 &+Lunder-tunnels.
 ~
-831 33025 13
+831 33587457 13
 D0
 ~
 ~
@@ -18237,7 +18237,7 @@ S
 &+Lfungus that grows upon the other portions of the Shanatar
 &+Lunder-tunnels.
 ~
-831 33025 13
+831 33587457 13
 D2
 ~
 ~
@@ -18256,7 +18256,7 @@ S
 &+Lfungus that grows upon the other portions of the Shanatar
 &+Lunder-tunnels.
 ~
-831 33025 13
+831 33587457 13
 D1
 ~
 ~
@@ -18275,7 +18275,7 @@ S
 &+Lfungus that grows upon the other portions of the Shanatar
 &+Lunder-tunnels.
 ~
-831 33025 13
+831 33587457 13
 D4
 &+LThe rocks of the ceiling are above.
 ~
@@ -18295,7 +18295,7 @@ S
 &+Lwas once very large in size itself.  However now crumbling bits
 &+Lof rocky debris cover much of the cavern floor.
 ~
-831 33025 13
+831 33587457 13
 D1
 &+LSeveral rocks are piled up to the east, before a &+yfetid tunnel.
 ~
@@ -18317,7 +18317,7 @@ S
 &+Lwell hidden from the brutish troglodytes that haunt
 &+Lthese foul tunnels.
 ~
-831 33025 13
+831 33587457 13
 D3
 &+LA large stone wall to the west appears to be the only exit out
 &+Lof this secretive cave.
@@ -18335,7 +18335,7 @@ S
 &+LA large, deep shaft opens at the north of the chamber, extending
 &+Linto the darkness below.
 ~
-831 33029 13
+831 33587461 13
 D2
 &+LA large cr&na&+Lck splits the rocks of the unstable southern wall.
 ~
@@ -18356,7 +18356,7 @@ S
 &+LA large, deep shaft opens at the north of the chamber, extending
 &+Linto the darkness below.
 ~
-831 33029 13
+831 33587461 13
 D2
 &+LA large &Ncr&+La&Nck &+Lruns down the southern cavern wall.
 ~
@@ -18375,7 +18375,7 @@ S
 &+Lthese tunnel walls are completely smoothed out, as if melted
 &+Ldown by a strong &+gacid&+L.
 ~
-831 33025 13
+831 33587457 13
 D4
 ~
 ~
@@ -18395,7 +18395,7 @@ S
 &+Lthese tunnel walls are completely smoothed out, as if melted
 &+Ldown by a strong &+gacid&+L.
 ~
-831 33025 13
+831 33587457 13
 D4
 ~
 ~
@@ -18420,7 +18420,7 @@ S
 &+Lthese tunnel walls are completely smoothed out, as if melted
 &+Ldown by a strong &+gacid&+L.
 ~
-831 33025 13
+831 33587457 13
 D4
 ~
 ~
@@ -18440,7 +18440,7 @@ S
 &+Lthese tunnel walls are completely smoothed out, as if melted
 &+Ldown by a strong &+gacid&+L.
 ~
-831 33025 13
+831 33587457 13
 D1
 &+LAn unstable rocky wall is on the east of this portion of the shaft.
 ~
@@ -18467,7 +18467,7 @@ S
 &+Gvines&+L is particularly long and seems like it may be able to
 &+Lpose useful to someone stuck in the &+mworm&+y nest&+L, below.
 ~
-831 32769 13
+831 33587201 13
 D1
 ~
 ~
@@ -18483,7 +18483,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D1
 ~
 ~
@@ -18503,7 +18503,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D1
 ~
 ~
@@ -18533,7 +18533,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D2
 ~
 ~
@@ -18553,7 +18553,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D1
 ~
 ~
@@ -18573,7 +18573,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D0
 ~
 ~
@@ -18601,7 +18601,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D0
 ~
 ~
@@ -18625,7 +18625,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D0
 ~
 ~
@@ -18645,7 +18645,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D0
 ~
 ~
@@ -18665,7 +18665,7 @@ S
 &+ymuck&+L covers the cavern floor - made up of &+mworm &+yexcrement&+L,&+g s&+Gl&+gi&+Gm&+ge&+L,
 &+Land decomposing &+yt&+Yr&+yo&+Yg&+yl&+Yo&+yd&+Yy&+yt&+Ye&+r flesh&+L.
 ~
-831 32769 28
+831 33587201 28
 D0
 ~
 ~
@@ -18685,7 +18685,7 @@ S
 &+Gvines&+L is particularly long and seems like it may be able to
 &+Lpose useful to someone stuck in the &+mworm&+y nest&+L, below.
 ~
-831 32769 13
+831 33587201 13
 D1
 ~
 ~
@@ -18709,7 +18709,7 @@ S
 &+Gvines&+L is particularly long and seems like it may be able to
 &+Lpose useful to someone stuck in the &+mworm&+y nest&+L, below.
 ~
-831 32769 13
+831 33587201 13
 D3
 ~
 ~
@@ -18726,7 +18726,7 @@ S
 &+Lquite common and there may be other passages hidden beneath
 &+Lfallen stones that shape the corners of the river of slime.
 ~
-831 32773 13
+831 33587205 13
 D0
 &+L   A few rocks in the northern cave-in may be movable.
 ~
@@ -18748,7 +18748,7 @@ S
 &+Lveled, although it would not be a surprise if there are
 &+Ldarker wonders within the depths of the Shanatar mountains.
 ~
-831 32769 13
+831 33587201 13
 D2
 &+L   Huge jagged rocks protrude from the south, from which some may seem movable.
 ~
@@ -18770,7 +18770,7 @@ S
 &+Lveled, although it would not be a surprise if there are
 &+Ldarker wonders within the depths of the Shanatar mountains.
 ~
-831 33025 13
+831 33587457 13
 D0
 ~
 ~
@@ -18796,7 +18796,7 @@ S
 &+Lveled, although it would not be a surprise if there are
 &+Ldarker wonders within the depths of the Shanatar mountains.
 ~
-831 33025 13
+831 33587457 13
 D0
 ~
 ~
@@ -18825,7 +18825,7 @@ S
 &+Lveled, although it would not be a surprise if there are
 &+Ldarker wonders within the depths of the Shanatar mountains.
 ~
-831 33025 13
+831 33587457 13
 D1
 ~
 ~
@@ -18847,7 +18847,7 @@ S
 &+Lveled, although it would not be a surprise if there are
 &+Ldarker wonders within the depths of the Shanatar mountains.
 ~
-831 33025 13
+831 33587457 13
 D3
 ~
 ~
@@ -18869,7 +18869,7 @@ S
 &+Lveled, although it would not be a surprise if there are
 &+Ldarker wonders within the depths of the Shanatar mountains.
 ~
-831 33025 13
+831 33587457 13
 D0
 ~
 ~
@@ -18888,7 +18888,7 @@ S
 &+Ltunnels.  Although it is not totally unscalable, the walls
 &+mof this deep shaft seem quite difficult to climb.
 ~
-831 32769 13
+831 33587201 13
 D2
 &+LThe rocky cavern wall to the south of here seems to be quite unstable.
 ~
@@ -18910,7 +18910,7 @@ S
 &+Ltunnels.  Although it is not totally unscalable, the walls
 &+mof this deep shaft seem quite difficult to climb.
 ~
-831 32769 13
+831 33587201 13
 D4
 ~
 ~
@@ -18931,7 +18931,7 @@ S
 &+Ltunnels.  Although it is not totally unscalable, the walls
 &+mof this deep shaft seem quite difficult to climb.
 ~
-831 32769 13
+831 33587201 13
 D1
 &+LThe rocky wall to the east of here appears to be quite unstable.
 ~
@@ -18951,7 +18951,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -18970,7 +18970,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -18989,7 +18989,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -19008,7 +19008,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -19027,7 +19027,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -19046,7 +19046,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -19065,7 +19065,7 @@ A Bend in a &+MMithril Hall~
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D2
 ~
 ~
@@ -19084,7 +19084,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -19103,7 +19103,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -19122,7 +19122,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -19151,7 +19151,7 @@ S
 &+Mof Taark Shanat.  The walls, floor, and ceiling, are made of
 &+Mblocked, flawless mithril.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -19170,7 +19170,7 @@ S
 &+Wof.  This hallway serves to connect the King's private chambers within
 &+Whis citadel to his throne in BrightAxe Hall.
 ~
-831 134250496 14
+831 167804928 14
 D1
 ~
 ~
@@ -19194,7 +19194,7 @@ S
 &+RThe pool itself is preternaturally clear. Its surface is so
 &+Lundisturbed that it mirrors the glowing statue above.
 ~
-831 134381568 14
+831 167936000 14
 D1
 ~
 ~
@@ -19214,7 +19214,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19238,7 +19238,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19262,7 +19262,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19286,7 +19286,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -19306,7 +19306,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D2
 ~
 ~
@@ -19326,7 +19326,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19346,7 +19346,7 @@ S
 &-w&+lwyrms echoes off the damp cavern walls, punctuated by the occasional,&N
 &-w&+lbone-chilling rattle of a struggle against their shackles.&N
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19366,7 +19366,7 @@ S
 &+mlava carves a glowing vein through the dark, casting amber
 &+mshadows that dance across rocks.
 ~
-831 134250497 13
+831 167804929 13
 D2
 &+mA towering, ancient mithril &+Mgate&+m bares the lock of &+Ykings&+m.
 ~
@@ -19387,7 +19387,7 @@ S
 &+mlava carves a glowing vein through the dark, casting amber
 &+mshadows that dance across rocks.
 ~
-831 134250501 13
+831 167804933 13
 D4
 ~
 ~
@@ -19407,7 +19407,7 @@ S
 &+mlava carves a glowing vein through the dark, casting amber
 &+mshadows that dance across rocks.
 ~
-831 134250497 13
+831 167804929 13
 D4
 ~
 ~
@@ -19427,7 +19427,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+mshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -19451,7 +19451,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+Lshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -19467,7 +19467,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+Lshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D3
 ~
 ~
@@ -19487,7 +19487,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+Lshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 ~
 ~
@@ -19507,7 +19507,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+Lshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19531,7 +19531,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+Lshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D2
 ~
 ~
@@ -19547,7 +19547,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+Lshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19567,7 +19567,7 @@ S
 &+Llava carves a glowing vein through the dark, casting amber
 &+Lshadows that dance across rocks.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 ~
 ~
@@ -19587,7 +19587,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -19607,7 +19607,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D3
 ~
 ~
@@ -19627,7 +19627,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -19647,7 +19647,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D3
 ~
 ~
@@ -19667,7 +19667,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 S
 #84029
 &+YA D&+ree&+Yp L&+rav&+Ya F&+rlo&+Yw&N~
@@ -19676,7 +19676,7 @@ S
 &+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
 &+Yout into a&+r subterranean lava pool.
 ~
-831 1207992321 11
+831 1241546753 11
 D4
 ~
 ~
@@ -19693,7 +19693,7 @@ S
 &+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
 &+Yout into a&+r subterranean lava pool.
 ~
-831 1207992321 11
+831 1241546753 11
 D1
 ~
 ~
@@ -19714,7 +19714,7 @@ S
 &+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
 &+Yout into a&+r subterranean lava pool.
 ~
-831 1207992321 11
+831 1241546753 11
 D0
 ~
 ~
@@ -19735,7 +19735,7 @@ S
 &+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
 &+Yout into a&+r subterranean lava pool.
 ~
-831 1207992321 11
+831 1241546753 11
 D0
 ~
 ~
@@ -19752,7 +19752,7 @@ S
 &+Yhot, molten &+rrock gradually swirls to a lowe&+Yr lava tube, spilling
 &+Yout into a&+r subterranean lava pool.
 ~
-831 1207992321 11
+831 1241546753 11
 D2
 ~
 ~
@@ -19772,7 +19772,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19792,7 +19792,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 ~
 ~
@@ -19812,7 +19812,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D5
 ~
 ~
@@ -19832,7 +19832,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D1
 ~
 ~
@@ -19852,7 +19852,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D0
 ~
 ~
@@ -19876,7 +19876,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D5
 ~
 ~
@@ -19896,7 +19896,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D5
 ~
 ~
@@ -19916,7 +19916,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 ~
 ~
@@ -19936,7 +19936,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D6
 ~
 ~
@@ -19960,7 +19960,7 @@ S
 &+Lwith a heavy, distorted heat haze, trapped for eons within the
 &+Lheart of the mountain.
 ~
-831 1207992321 13
+831 1241546753 13
 D5
 ~
 ~
@@ -19984,7 +19984,7 @@ S
 &+Lthe protrusion, arching precariously over a lake of bubbling &+rm&+Ragm&+ra
 &+Lthat glows two hundred feet below.
 ~
-831 134250496 14
+831 167804928 14
 D0
 ~
 ~
@@ -20001,7 +20001,7 @@ S
 &+Lthe watchful gaze of a small stone bust depicting &+YM&+Ro&+rrad&+Ri&+Yn&+L,
 &+Lthe &+WSo&+Yul-&+RFor&+rger&+L and &+WAll-&+RFather&+L of all &+yD&+rw&+ya&+rr&+yv&+re&+ys&+L.
 ~
-831 134250496 14
+831 167804928 14
 D5
 ~
 ~
@@ -20012,7 +20012,7 @@ S
 One of four disp rooms. The four dwarven gods each have their
 own room, which load into their corresponding shrines.
 ~
-831 1216380928 0
+831 1249935360 0
 D5
 ~
 ~
@@ -20023,7 +20023,7 @@ S
 One of four disp rooms. The four dwarven gods each have their
 own room, which load into their corresponding shrines.
 ~
-831 1216380928 0
+831 1249935360 0
 D5
 ~
 ~
@@ -20040,7 +20040,7 @@ S
 &+Bcave-moss and sunless herbs. A huge barn-style sliding door leads
 &+Cup a few wide, shallow steps to the grand foyer of Shanat.
 ~
-831 1216380928 0
+831 1249935360 0
 D1
 &+yA huge, barn-style sliding ironwood door leads east to the grand foyer.
 ~
@@ -20052,7 +20052,7 @@ S
 One of four disp rooms. The four dwarven gods each have their
 own room, which load into their corresponding shrines.
 ~
-831 1216380928 0
+831 1249935360 0
 D5
 ~
 ~
@@ -20063,7 +20063,7 @@ S
 One of four disp rooms. The four dwarven gods each have their
 own room, which load into their corresponding shrines.
 ~
-831 1216380928 0
+831 1249935360 0
 D5
 ~
 ~
@@ -20080,7 +20080,7 @@ S
 &+Lundulating body of a wyrm, provides a steady grip against
 &+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 &+rCarved steps continue upward.
 ~
@@ -20109,7 +20109,7 @@ S
 &+Lundulating body of a wyrm, provides a steady grip against
 &+Lthe dizzying two-hundred-foot drop into the &+rm&+Ra&+rg&+Rm&+ra&+L below.
 ~
-831 1207992321 13
+831 1241546753 13
 D4
 &+rCarved steps continue upwards.
 ~
