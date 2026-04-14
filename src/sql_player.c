@@ -1664,7 +1664,12 @@ bool sql_save_player_items(P_char ch)
 	if (pid <= 0)
 		return false;
 
-	bool use_incremental = all_items_have_db_ids(ch);
+	bool save_equipment  = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	bool save_inventory  = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+	bool use_incremental = all_items_have_db_ids(ch) && !save_equipment && !save_inventory;
+
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 
 	if (use_incremental)
 	{
@@ -1682,17 +1687,25 @@ bool sql_save_player_items(P_char ch)
 		return true;
 	}
 
-	// full save: delete all and re-insert
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
-	if (!sql_run_query(del_query))
+	char del_query[128] = {0};
+	if (save_inventory)
+	{
+		// full save: delete all and re-insert
+		snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
+	}
+	else if (save_equipment)
+	{
+		// only saving equipment, so only remove existing equipment
+		snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d AND equip_slot>0", pid);
+	}
+	if (del_query[0] && !sql_run_query(del_query))
 		return false;
 
 	bool success = true;
 
 	// save equipment (slots 1-42, 0 is special)
 	// check ch->equipment first (redis path), fall back to save_equip (save_char path)
-	if (success)
+	if (success && (save_equipment || save_inventory))
 	{
 		for (int i = 0; i < MAX_WEAR; i++)
 		{
@@ -1713,7 +1726,7 @@ bool sql_save_player_items(P_char ch)
 	}
 
 	// save inventory (equip_slot = 0)
-	if (success)
+	if (success && save_inventory)
 	{
 		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 		{
@@ -7399,7 +7412,7 @@ bool sql_save_ship(P_ship ship)
 
 	if (ship->db_id == -1)
 	{
-		char initQuery[200];
+		char initQuery[1024];
 		snprintf(initQuery,
 		         ARRAY_SIZE(initQuery),
 		         "insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) "

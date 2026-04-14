@@ -713,7 +713,7 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 			{
 				world[location].number;
 			}
-			qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
+			qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
 			    vnum,
 			    ARTIFACT_ONGROUND,
 			    location,
@@ -737,7 +737,7 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 				if (IS_NPC(owner))
 				{
 					location = GET_VNUM(owner);
-					qry("INSERT INTO artifacts VALUES(%d, 'N', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
+					qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'N', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
 					    vnum,
 					    ARTIFACT_ON_NPC,
 					    location,
@@ -751,7 +751,7 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 				else
 				{
 					location = GET_PID(owner);
-					qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
+					qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
 					    vnum,
 					    ARTIFACT_ON_PC,
 					    location,
@@ -1068,7 +1068,7 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 			logit(LOG_ARTIFACT, "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
 		}
 
-		qry("INSERT INTO artifacts VALUES( %d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())", vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
+		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES( %d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())", vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
 		arti_cache_invalidate();
 	}
 }
@@ -1119,7 +1119,7 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 	}
 	else
 	{
-		qry("INSERT INTO artifacts VALUES(%d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())", vnum, owned ? 'Y' : 'N', locType, location, timer, type);
+		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())", vnum, owned ? 'Y' : 'N', locType, location, timer, type);
 		arti_cache_invalidate();
 	}
 }
@@ -1187,8 +1187,7 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 	else if (pid > 0)
 	{
 		// On a PC corpse -> owned == 'Y', locType == 'OnCorpse', and location == pid.
-		qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, 0, %d, SYSDATE())", vnum, ARTIFACT_ONCORPSE, pid, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR);
-		arti_cache_invalidate();
+		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, 0, %d, SYSDATE())", vnum, ARTIFACT_ONCORPSE, pid, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR);		arti_cache_invalidate();
 	}
 
 	// Safe to assume that a poofed arti has an entry in artifact_bind.  We don't really care either way though,
@@ -1362,7 +1361,7 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 	{
 		statuslog(MINLVLIMMORTAL, "artifact_feed_sql: called without an entry in DB?!");
 		send_to_char("&+RYou feel a deep sense of satisfaction from somewhere...\r\n", owner);
-		qry("INSERT INTO artifacts VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
+		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
 		    vnum,
 		    ARTIFACT_ON_PC,
 		    GET_PID(owner),

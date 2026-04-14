@@ -1565,6 +1565,7 @@ void obj_to_char(P_obj object, P_char ch)
 	}
 
 	mark_char_or_owner_dirty(ch);
+	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 }
 
 /*
@@ -1612,6 +1613,7 @@ void obj_from_char(P_obj object)
 	object->z_cord = object->loc.carrying->specials.z_cord;
 
 	mark_char_or_owner_dirty(ch);
+	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 
 	object->loc_p        = LOC_NOWHERE;
 	object->loc.carrying = NULL; // must clear full pointer, not just int-sized loc.room
@@ -1692,6 +1694,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 		}
 
 	mark_char_or_owner_dirty(ch);
+	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 }
 
 // Removes an object from a char's equipped slot [pos].
@@ -1737,6 +1740,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	GET_CARRYING_W(ch) -= (GET_OBJ_WEIGHT(obj) / 2);
 
 	mark_char_or_owner_dirty(ch);
+	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 
 	return (obj);
 }

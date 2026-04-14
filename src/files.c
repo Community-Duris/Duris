@@ -1543,6 +1543,9 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	// Soft delete character from frag leaderboard tables (for web statistics)
 	sql_soft_delete_character(GET_PID(ch));
 
+	// delete the player_data
+	sql_delete_player(GET_PID(ch));
+
 #ifdef USE_ACCOUNT
 	// Only remove from account list if descriptor and account exist
 	if (ch->desc && ch->desc->account)
@@ -1562,6 +1565,7 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 
 	if (bDeleteLocker)
 	{
+		sql_delete_locker(GET_PID(ch), 0);
 		// delete the locker as well
 		snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.locker", SAVE_DIR, LOWER(*ch->player.name), name);
 		snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);

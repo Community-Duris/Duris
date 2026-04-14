@@ -1538,6 +1538,7 @@ struct char_data
 	struct char_link_data     *linked;    // Slave links to other characters
 	struct char_link_data     *linking;   // Master links to other characters
 	struct char_obj_link_data *obj_linked;
+	unsigned int               runtime_flags;
 };
 
 /* ======================================================================== */

@@ -83,6 +83,10 @@ typedef unsigned int uint;
 #define MIN_INT_SIGNED   -2147483647
 #define MAX_INT_UNSIGNED 4294967295U
 
+/* character runtime flags (not saved to db) */
+#define CHAR_RFLAG_DIRTY_EQUIPMENT BIT_1
+#define CHAR_RFLAG_DIRTY_INVENTORY BIT_2
+
 /* object runtime flags (not saved to db) */
 #define OBJ_RFLAG_DIRTY_CONTAINER BIT_1
 

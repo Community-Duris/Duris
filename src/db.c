@@ -4156,6 +4156,8 @@ void reset_char(P_char ch)
 {
 	int i;
 
+	ch->runtime_flags = 0;
+
 	for (i = 0; i < MAX_WEAR; i++) /* Initialisering  */
 		ch->equipment[i] = 0;
 
