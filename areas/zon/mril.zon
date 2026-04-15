@@ -94,12 +94,12 @@ M 0 33705 1 33745 100 0 0 0        * Tarik, a black bird humanoid
 E 1 33701 1 20 100 0 0 0           *   a lithixl beak
 M 0 33715 6 33746 100 0 0 0        * a hulking olyx
 M 0 33715 6 33747 100 0 0 0        * a hulking olyx
-M 0 33720 1 33748 70 0 0 0         * an abominable frost giant
-E 1 33715 3 16 100 0 0 0           *   a huge olyx leg bone
-G 1 33710 1 0 100 0 0 0            *    a frozen heart of the abominable
 M 0 33715 6 33749 100 0 0 0        * a hulking olyx
 M 0 33715 6 33750 100 0 0 0        * a hulking olyx
 M 0 33715 6 33751 100 0 0 0        * a hulking olyx
+M 0 33720 1 33752 70 0 0 0         * an abominable frost giant
+E 1 33715 3 16 100 0 0 0           *   a huge olyx leg bone
+G 1 33710 1 0 100 0 0 0            *    a frozen heart of the abominable
 M 0 33715 6 33753 100 0 0 0        * a hulking olyx
 M 0 33701 1 33754 100 0 0 0        * Uduku, a renown mystic magus
 M 0 33706 4 33756 100 0 0 0        * a brutish protector
