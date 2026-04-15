@@ -553,7 +553,7 @@ void show_cargo_prices(P_char ch)
 
 	bool delayed = (bool)!IS_TRUSTED(ch);
 
-	send_to_char("&+y/------------------------------------------------------------------------------------\\\r\n", ch);
+	send_to_char("&+y/--------------------------------------------------------------------------------------------\\\r\n", ch);
 
 	line[0] = '\0';
 	strcat(line, "&+y|&n                    ");
@@ -604,7 +604,7 @@ void show_cargo_prices(P_char ch)
 
 	send_to_char("&+y|                                                                                    &+y|\r\n", ch);
 	send_to_char("&+y| &nAll prices in platinum per crate, and are current within the last hour.            &+y|\r\n", ch);
-	send_to_char("&+y\\------------------------------------------------------------------------------------/\r\n", ch);
+	send_to_char("&+y\\--------------------------------------------------------------------------------------------/\r\n", ch);
 }
 
 void show_contra_prices(P_char ch)
@@ -613,7 +613,7 @@ void show_contra_prices(P_char ch)
 	char buff[MAX_STRING_LENGTH];
 
 	send_to_char("&+yCurrent contraband market:\r\n"
-	             "&+y-------------------------------------------------------------------------------------------------\r\n",
+	             "&+y---------------------------------------------------------------------------------------------------------\r\n",
 	             ch);
 
 	line[0] = '\0';

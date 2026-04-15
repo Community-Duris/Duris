@@ -868,7 +868,6 @@ void spell_enervation(int level, P_char ch, char *arg, int type, P_char victim, 
 
 	if (IS_PC(ch) && !(GET_CLASS(ch, CLASS_NECROMANCER | CLASS_ANTIPALADIN)))
 	{
-		send_to_char("&+rLacking the proper training in necromancy, you do not utilize the full potential of the spell!\r\n", ch);
 		dam = (int)(dam * 0.80);
 	}
 
