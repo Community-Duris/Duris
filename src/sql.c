@@ -577,14 +577,26 @@ void sql_modify_frags(P_char ch, int gain)
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
 	sql_save_progress(GET_PID(ch), gain, PROGRESS_FRAGS);
-	if (gain > 0)
-		sql_check_level_cap(ch->only.pc->frags, GET_RACEWAR(ch));
-
 	// Update frag leaderboard with new frag count (incremental update for performance)
 	// Only update if the character is in the database (pid > 0)
 	if (GET_PID(ch) > 0)
 	{
 		db_query("UPDATE frag_leaderboard SET total_frags = %d, last_updated = NOW() WHERE pid = %ld AND deleted_at IS NULL", ch->only.pc->frags, GET_PID(ch));
+	}
+
+	if (gain > 0)
+	{
+		MYSQL_RES *res = db_query("SELECT SUM(total_frags) FROM frag_leaderboard WHERE racewar=%d", GET_RACEWAR(ch));
+		if (res)
+		{
+			MYSQL_ROW row = mysql_fetch_row(res);
+			if(row and row[0])
+			{
+				long total = atol(row[0]);
+				sql_check_level_cap(total, GET_RACEWAR(ch));
+			}
+			mysql_free_result(res);
+		}
 	}
 }
 
