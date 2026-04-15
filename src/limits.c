@@ -1458,7 +1458,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	// }
 
 	// increase exp only to some limit (cumulative exp for mortals)
-	if (GET_LEVEL(ch) < MINLVLIMMORTAL && (XP_final < 0 || GET_EXP(ch) < global_exp_limit))
+	if (GET_LEVEL(ch) < MINLVLIMMORTAL && (XP_final < 0 || (GET_EXP(ch) < global_exp_limit) && GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1])))
 	{
 		GET_EXP(ch) += (int)XP_final;
 		mark_player_dirty(GET_PID(ch));

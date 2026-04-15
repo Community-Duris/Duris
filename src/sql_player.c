@@ -3123,6 +3123,9 @@ bool sql_load_player_items(P_char ch)
 		{
 			if (item_ids[j] == container_ids[i] && items[j])
 			{
+				// container weight is stored with total contents weight
+				// need to remove the weight from the container since obj_to_obj will add it again
+				items[j]->weight -= items[i]->weight;
 				obj_to_obj(items[i], items[j]);
 				break;
 			}
