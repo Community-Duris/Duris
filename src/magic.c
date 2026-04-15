@@ -5228,15 +5228,8 @@ void spell_blindness(int level, P_char ch, char *arg, int type, P_char victim, P
 	if (resists_spell(ch, victim))
 		return;
 
-	/*
-	 * negative level negates save
-	 */
-
-	if ((level < 0) || !saves_spell(victim, SAVING_SPELL))
-	{
-		blind(ch, victim, 75 * WAIT_SEC);
-		return;
-	}
+	blind(ch, victim, number(4, 12) * WAIT_SEC);
+	
 	if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
 		appear(ch);
 
@@ -10385,7 +10378,7 @@ void spell_blinding_breath(int level, P_char ch, char *arg, int type, P_char vic
 	{
 		act("&+gThe toxic gas seems to have blinded $n&n!", TRUE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+gYour eyes sting as the toxic gas blinds you!\n", victim);
-		blind(ch, victim, 60 * WAIT_SEC);
+		blind(ch, victim, number(6, 12) * WAIT_SEC);
 	}
 }
 
@@ -12414,7 +12407,7 @@ void spell_single_obtenebration(int level, P_char ch, char *arg, int type, P_cha
 		act("&+LYou direct a cloud of &+yu&+Lm&+yb&+Lr&+ya&+Ll &+yd&+Lu&+ys&+Lt in $N's face, blinding them!&n", FALSE, ch, 0, victim, TO_CHAR);
 		act("&+LA cloud of &+yu&+Lm&+yb&+Lr&+ya&+Ll &+yd&+Lu&+ys&+Lt kicks up, blinding $N!", FALSE, ch, 0, victim, TO_ROOM);
 		act("&+LA cloud of &+yu&+Lm&+yb&+Lr&+ya&+Ll &+yd&+Lu&+ys&+Lt kicks up, blinding YOU!", FALSE, ch, 0, victim, TO_VICT);
-		blind(ch, victim, GET_LEVEL(ch) / 3);
+		blind(ch, victim, number(4, 12) * WAIT_SEC);
 	}
 
 	if (IS_ALIVE(ch) && number(1, 100) < 1)
@@ -13683,7 +13676,7 @@ void spell_solar_flare(int level, P_char ch, char *arg, int type, P_char victim,
 
 	int mod = get_default_save_mod(victim, ch, SAVING_SPELL, SPELL_SOLAR_FLARE);
 	if (!number(0, 1) && !NewSaves(victim, SAVING_SPELL, mod))
-		blind(ch, victim, 60 * WAIT_SEC);
+		blind(ch, victim, number(4, 12) * WAIT_SEC);
 
 	if (!number(0, 1))
 		spell_immolate(level, ch, NULL, 0, victim, NULL);
@@ -13718,7 +13711,7 @@ void spell_sunray(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	}
 
 	if (!NewSaves(victim, SAVING_SPELL, (int)(mod / 3)) && !IS_BLIND(victim))
-		blind(ch, victim, number((int)(level / 3), (int)(level / 2)) * WAIT_SEC);
+		blind(ch, victim, number(4, 12) * WAIT_SEC);
 
 	spell_damage(ch, victim, dam, SPLDAM_FIRE, 0, &messages);
 }
@@ -13993,22 +13986,10 @@ void spell_pword_blind(int level, P_char ch, char *arg, int type, P_char victim,
 	if (has_innate(victim, INNATE_EYELESS) || IS_TRUSTED(victim))
 		return;
 
-	int mod = get_default_save_mod(victim, ch, SAVING_SPELL, SPELL_PWORD_BLIND);
-	save    = NewSaves(victim, SAVING_SPELL, mod);
-
-	debug("PWB: (%s) saving throw is (%d).", J_NAME(victim), save);
-
-	if (save) // NewSaves(victim, SAVING_SPELL, number(0, mindpower)))
-	{
-		send_to_char("Your victim has saved against your spell!\r\n", ch);
-		send_to_char("You have saved against your attacker's spell!\r\n", victim);
-		return;
-	}
-
 	act("$N gropes around, blinded after hearing $n's powerful word!", FALSE, ch, 0, victim, TO_NOTVICT);
 	act("&+rSuddenly, the world goes &+Lblack!", FALSE, ch, 0, victim, TO_VICT);
 	act("$N won't be seeing much in the near future...", TRUE, ch, 0, victim, TO_CHAR);
-	blind(ch, victim, WAIT_SEC * MAX(20, GET_LEVEL(ch)));
+	blind(ch, victim, MAX(4, level - GET_LEVEL(victim)) * WAIT_SEC);
 }
 
 /* rocking spell now, stun is extremely unpleasant */

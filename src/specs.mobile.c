@@ -8910,7 +8910,7 @@ int jotun_balor(P_char ch, P_char pl, int cmd, char *arg)
 				bzero(&af, sizeof(af));
 				if (vict->in_room != NOWHERE)
 					send_to_char("Aaarrrggghhh!!  The heat blinds you!!\n", ch);
-				blind(ch, vict, 60 * WAIT_SEC);
+				blind(ch, vict, 30 * WAIT_SEC);
 			}
 
 			if (IS_AFFECTED(vict, AFF_PROT_FIRE))

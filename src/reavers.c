@@ -833,7 +833,7 @@ bool ilesh_fury(P_char ch, P_char victim, P_obj wpn)
 				break;
 			default:
 				act("&+LThe &+ydust&+L flies into your &+reyes&n.", FALSE, ch, 0, victim, TO_VICT);
-				blind(ch, victim, number(5, 20) * WAIT_SEC);
+				blind(ch, victim, number(4, 12) * WAIT_SEC);
 				afp->modifier = 0; // lets not go over max int
 				break;
 		}

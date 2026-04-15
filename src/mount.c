@@ -190,27 +190,50 @@ void do_mount(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (IS_PC(mount) && IS_CENTAUR(mount))
+	if (IS_PC(mount))
 	{
-		if (IS_CENTAUR(ch))
+		if (IS_CENTAUR(mount))
 		{
-			send_to_char("Most centaurs do that in the privacy of their own home..\r\n", ch);
-			return;
-		}
+			if (IS_CENTAUR(ch))
+			{
+				send_to_char("Most centaurs do that in the privacy of their own home..\r\n", ch);
+				return;
+			}
 
-		if (!is_linked_to(ch, mount, LNK_CONSENT) || IS_THRIKREEN(ch))
-		{
-			send_to_char("They don't seem to want you on their back..\r\n", ch);
-			return;
+			if (!is_linked_to(ch, mount, LNK_CONSENT) || IS_THRIKREEN(ch) || IS_DRIDER(ch))
+			{
+				send_to_char("They don't seem to want you on their back..\r\n", ch);
+				return;
+			}
+			/* Saddle Check */
+			if (!mount->equipment[WEAR_HORSE_BODY])
+			{ /* nothing worn there */
+				send_to_char("Ride without a saddle?  I think not...\r\n", ch);
+				return;
+			}
 		}
-		/* Saddle Check */
-		if (!mount->equipment[WEAR_HORSE_BODY])
-		{ /* nothing worn there */
-			send_to_char("Ride without a saddle?  I think not...\r\n", ch);
-			return;
+		else if (IS_DRIDER(mount))
+		{
+			if (IS_DRIDER(ch))
+			{
+				send_to_char("Most driders do that in the privacy of their own home..\r\n", ch);
+				return;
+			}
+
+			if (!is_linked_to(ch, mount, LNK_CONSENT) || IS_THRIKREEN(ch) || IS_CENTAUR(ch))
+			{
+				send_to_char("They don't seem to want you on their back..\r\n", ch);
+				return;
+			}
+			/* Saddle Check */
+			if (!mount->equipment[WEAR_SPIDER_BODY])
+			{ /* nothing worn there */
+				send_to_char("Ride without a saddle?  I think not...\r\n", ch);
+				return;
+			}
 		}
 	}
-	else if (IS_CENTAUR(ch) || has_innate(ch, INNATE_HORSE_BODY) || has_innate(ch, INNATE_SPIDER_BODY))
+	else if (has_innate(ch, INNATE_HORSE_BODY) || has_innate(ch, INNATE_SPIDER_BODY))
 	{
 		send_to_char("It's a tad hard for you to mount much of anything.\r\n", ch);
 		return;

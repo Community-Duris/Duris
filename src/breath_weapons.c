@@ -422,7 +422,7 @@ void breath_weapon_blind(int level, P_char ch, char *arg, int type, P_char victi
 	{
 		act("&+gThe toxic gas seems to have blinded $n&n!", TRUE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+gYour eyes sting as the toxic gas blinds you!\n", victim);
-		blind(ch, victim, 60 * WAIT_SEC);
+		blind(ch, victim, number(6, 12) * WAIT_SEC);
 	}
 }
 

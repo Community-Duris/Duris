@@ -277,7 +277,7 @@ void spell_contagion(int level, P_char ch, char *arg, int type, P_char victim, P
 			if ((level < 0) || !saves_spell(victim, SAVING_SPELL))
 			{
 				send_to_char("&+LYou suddenly go blind!\n", victim);
-				blind(ch, victim, 25 * WAIT_SEC);
+				blind(ch, victim, number(4, 12) * WAIT_SEC);
 			}
 			break;
 		// Cackle fever: 1d6 Wis
@@ -606,7 +606,7 @@ void spell_horrid_wilting(int level, P_char ch, char *arg, int type, P_char vict
 	if (!NewSaves(victim, SAVING_SPELL, mod / 2) && !IS_BLIND(victim))
 	{
 		send_to_char("&+CYour &+ceyes &+Bdry &+bout&+L!!!&n\n", victim);
-		blind(ch, victim, number((int)(level / 3), (int)(level / 2)) * WAIT_SEC);
+		blind(ch, victim, number(6, 12) * WAIT_SEC);
 	}
 
 	if (GET_SPEC(ch, CLASS_BLIGHTER, SPEC_RUINER))
@@ -775,7 +775,7 @@ void event_sandstorm(P_char ch, P_char victim, P_obj obj, void *data)
 			spell_damage(ch, victim, dice(level * 3, 6), SPLDAM_GAS, 0, &messages);
 			if (victim && IS_ALIVE(victim))
 			{
-				blind(ch, victim, number((int)(level / 3), (int)(level / 2)) * WAIT_SEC);
+				blind(ch, victim, number(6, 12) * WAIT_SEC);
 			}
 		}
 		else

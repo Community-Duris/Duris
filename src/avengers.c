@@ -165,7 +165,7 @@ void do_holy_smite(P_char ch, char *argument, int cmd)
 			act("&+L$N&+L is blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict, TO_CHAR);
 			act("&+LYou are blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict, TO_VICT);
 			act("&+L$N &+Lis blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict, TO_NOTVICT);
-			blind(ch, vict, 25 * WAIT_SEC);
+			blind(ch, vict, number(8, 10) * WAIT_SEC);
 		}
 	}
 	CharWait(ch, 2 * PULSE_VIOLENCE);

@@ -2486,14 +2486,13 @@ void do_dirttoss(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	i = skl_lvl - (GET_C_AGI(vict) / 6);
-
 	act("You reach for the ground, quickly tossing a clump of dirt at $N's face!", FALSE, ch, 0, vict, TO_CHAR);
 	act("$n reaches for the ground, quickly tossing a clump of dirt at your face!", TRUE, ch, 0, vict, TO_VICT);
 	act("$n reaches for the ground, quickly tossing a clump of dirt at $N's face!", TRUE, ch, 0, vict, TO_NOTVICT);
 
-	if (number(1, 100) < i)
-		blind(ch, vict, 6 * PULSE_VIOLENCE);
+	// 1 seconds to 10 seconds
+	int duration = BOUNDED(WAIT_SEC, (skl_lvl * GET_C_DEX(ch) / 100) - GET_C_AGI(vict), WAIT_SEC * 10);
+	blind(ch, vict, duration);
 
 	notch_skill(ch, SKILL_DIRTTOSS, get_property("skill.notch.offensive", 7));
 	CharWait(ch, PULSE_VIOLENCE * 2);

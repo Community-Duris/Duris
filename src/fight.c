@@ -4629,8 +4629,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags, str
 		damage_mod dam_mod = {dam_mod_type::None, 0.0};
 		spell_damage_modifiers[i](ch, victim, dam, type, flags, &dam_mod, messages);
 
-		if (dam_mod.type != dam_mod_type::None && (dam_mod.mod < 0 || dam_mod.mod > 0))
-			debug("spell_damage: spell_damage_modifiers[%d] - mod: %f, type: %d", i, dam_mod.mod, dam_mod.type);
+		// if (dam_mod.type != dam_mod_type::None && (dam_mod.mod < 0 || dam_mod.mod > 0))
+		// 	debug("spell_damage: spell_damage_modifiers[%d] - mod: %f, type: %d", i, dam_mod.mod, dam_mod.type);
 
 		switch (dam_mod.type)
 		{
@@ -4649,15 +4649,15 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags, str
 	dam = (damProf.baseDamage + BOUNDEDF(-100.0, damProf.addedMod, 100.0)) * BOUNDEDF(0.05, damProf.increasedMod, 4.0) * BOUNDEDF(0.1, damProf.moreMod, 2.0);
 	dam = MAX(1, dam);
 
-	debug("spell_damage: %s doing %f damage to %s (base=%f, added=%f, increased=%f, more=%f, type=%d)!",
-	      GET_NAME(ch),
-	      dam,
-	      GET_NAME(victim),
-	      damProf.baseDamage,
-	      damProf.addedMod,
-	      damProf.increasedMod,
-	      damProf.moreMod,
-	      type);
+	// debug("spell_damage: %s doing %f damage to %s (base=%f, added=%f, increased=%f, more=%f, type=%d)!",
+	//       GET_NAME(ch),
+	//       dam,
+	//       GET_NAME(victim),
+	//       damProf.baseDamage,
+	//       damProf.addedMod,
+	//       damProf.increasedMod,
+	//       damProf.moreMod,
+	//       type);
 
 	// ugly hack - we smuggle damage_type for eq poofing messages on 8 highest bits
 	messages->type |= type << 24;
@@ -4842,7 +4842,7 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 							act(buf, FALSE, ch, 0, victim, TO_NOTVICT);
 							snprintf(buf, MAX_STRING_LENGTH, "&+wYou send a prayer to %s, to shroud your foes in &+Ldarkness.&n", get_god_name(victim));
 							act(buf, FALSE, ch, 0, victim, TO_VICT);
-							blind(victim, ch, 2 * PULSE_VIOLENCE);
+							blind(victim, ch, number(4, 8) * WAIT_SEC);
 							break;
 						}
 					case 3:
@@ -5900,8 +5900,8 @@ case RACEWAR_NEUTRAL:
 				damage_mod dam_mod = {dam_mod_type::None, 0.0};
 				raw_damage_modifiers[i](ch, victim, dam, 0, flags, &dam_mod, messages);
 
-				if (dam_mod.type != dam_mod_type::None && (dam_mod.mod < 0 || dam_mod.mod > 0))
-					debug("raw_damage: raw_damage_modifiers[%d] - mod: %f, type: %d", i, dam_mod.mod, dam_mod.type);
+				// if (dam_mod.type != dam_mod_type::None && (dam_mod.mod < 0 || dam_mod.mod > 0))
+				// 	debug("raw_damage: raw_damage_modifiers[%d] - mod: %f, type: %d", i, dam_mod.mod, dam_mod.type);
 
 				switch (dam_mod.type)
 				{
@@ -5920,14 +5920,14 @@ case RACEWAR_NEUTRAL:
 			dam = (damProf.baseDamage + BOUNDEDF(-100.0, damProf.addedMod, 100.0)) * BOUNDEDF(0.10, damProf.increasedMod, 4.0) * BOUNDEDF(0.1, damProf.moreMod, 2.0);
 			dam = MAX(1, dam);
 
-			debug("raw_damage: %s doing %f damage to %s (base=%f, added=%f, increased=%f, more=%f)!",
-			      GET_NAME(ch),
-			      dam,
-			      GET_NAME(victim),
-			      damProf.baseDamage,
-			      damProf.addedMod,
-			      damProf.increasedMod,
-			      damProf.moreMod);
+			// debug("raw_damage: %s doing %f damage to %s (base=%f, added=%f, increased=%f, more=%f)!",
+			//       GET_NAME(ch),
+			//       dam,
+			//       GET_NAME(victim),
+			//       damProf.baseDamage,
+			//       damProf.addedMod,
+			//       damProf.increasedMod,
+			//       damProf.moreMod);
 
 			dam = BOUNDED(1, (int)dam, 32766);
 
@@ -6617,7 +6617,7 @@ case RACEWAR_NEUTRAL:
 
 			if (af->modifier == 3 && !IS_BLIND(victim))
 			{
-				blind(ch, victim, (5 * WAIT_SEC));
+				blind(ch, victim, (4 * WAIT_SEC));
 			}
 
 			if (af->modifier == 4)

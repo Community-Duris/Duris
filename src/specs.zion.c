@@ -195,7 +195,7 @@ int zion_shield_absorb_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+LYour $q &+Llashes out with the stored magical energies, blasting $N &+Lwith pure eldritch power!&n", FALSE, ch, obj, vict, TO_CHAR);
 		act("&+L$n's $q &+Llashes out with the stored magical energies, blasting you &+Lwith pure eldritch power!&n", FALSE, ch, obj, vict, TO_VICT);
 
-		blind(vict, ch, 3 * PULSE_VIOLENCE);
+		blind(vict, ch, number(4, 10) * WAIT_SEC);
 		damage(ch, vict, (80 + number(0, 40)), TYPE_UNDEFINED);
 
 		act("&+rThe swift drain of magical energies from $q &+Lcauses $n &+Lto look queasy!&n", FALSE, ch, obj, 0, TO_ROOM);

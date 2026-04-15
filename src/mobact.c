@@ -8693,7 +8693,7 @@ bool InitNewMobHunt(P_char ch)
 	return (TryToGetHome(ch));
 }
 
-bool valid_mob_hunt_edge(int from_room, int dir) { return VALID_MOB_HUNT_EDGE(from_room, dir); }
+bool valid_mob_hunt_edge(int from_room, int dir) { return VALID_TRACK_EDGE(from_room, dir); }
 
 /*
  * NewMobHunt.  This will only be called from an event. InitNewMobHunt

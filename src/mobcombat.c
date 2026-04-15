@@ -259,7 +259,7 @@ void ShadowCombat(P_char ch, P_char victim)
 			{
 				act("$n suddenly flares black, and encases you in darkness!", TRUE, ch, 0, victim, TO_VICT);
 				act("$n emits a pure sphere of darkness, enveloping $N!", TRUE, ch, 0, victim, TO_NOTVICT);
-				blind(ch, victim, 10 * WAIT_SEC);
+				blind(ch, victim, number(4, 10) * WAIT_SEC);
 			}
 			break;
 		default:

@@ -8458,7 +8458,7 @@ int blind_boots(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+y$n &+ykicks up a cloud of dust, obscuring your vision!&N", TRUE, ch, obj, vict, TO_VICT);
 		act("&+y$n &+ykicks up a cloud of dust at $N.&N", TRUE, ch, obj, vict, TO_NOTVICT);
 		act("&+yYou &+ykick up a cloud of dust at $N!&N", TRUE, ch, obj, vict, TO_CHAR);
-		blind(ch, vict, number(1, 3) * PULSE_VIOLENCE);
+		blind(ch, vict, number(2, 10) * WAIT_SEC);
 		return TRUE;
 	}
 
@@ -13466,7 +13466,7 @@ int critical_attack_proc(P_obj obj, P_char ch, int cmd, char *arg)
 			act("&nYou slam the &+yhandle&n of your $q in $N's face!&n", FALSE, ch, obj, victim, TO_CHAR);
 			act("$n makes a quick move and slams the &+yhandle&n of $s $q in your face!&n", FALSE, ch, obj, victim, TO_VICT);
 			act("$n makes a quick move and slams the &+yhandle&n of $s $q in $N's face!&n", FALSE, ch, obj, victim, TO_NOTVICT);
-			blind(ch, victim, 2 * PULSE_VIOLENCE);
+			blind(ch, victim, number(2, 10) * WAIT_SEC);
 			break;
 		case 1:
 			act("&nYou point your&n $q at&n $N and utter a word of &+rc&+Ro&+rm&+Rm&+ra&+Rn&+rd&n!", FALSE, ch, obj, victim, TO_CHAR);

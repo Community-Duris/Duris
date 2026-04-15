@@ -4473,7 +4473,7 @@ void spell_cascading_elemental_beam(int level, P_char ch, char *arg, int type, P
 		{
 			if (!NewSaves(victim, SAVING_SPELL, mod))
 			{
-				blind(ch, victim, (int)(number(level / 3, level)) * WAIT_SEC);
+				blind(ch, victim, number(4, 12) * WAIT_SEC);
 			}
 			// Victims with deflect will also deflect blind affect.
 		}
@@ -4481,7 +4481,7 @@ void spell_cascading_elemental_beam(int level, P_char ch, char *arg, int type, P
 		{
 			if (!NewSaves(victim, SAVING_SPELL, mod))
 			{
-				blind(ch, ch, (int)(number(level / 3, level)) * WAIT_SEC);
+				blind(ch, ch, number(4, 12) * WAIT_SEC);
 			}
 		}
 	}
