@@ -1103,7 +1103,10 @@
 #define POISON_WEAKNESS    (FIRST_POISON + 1)
 #define POISON_NEUROTOXIN  (FIRST_POISON + 2)
 #define POISON_HEART_TOXIN (FIRST_POISON + 3)
-#define LAST_POISON        (POISON_HEART_TOXIN)
+#define POISON_MOVELEAK    (FIRST_POISON + 4)
+#define POISON_SLOWNESS    (FIRST_POISON + 5)
+#define POISON_MADNESS     (FIRST_POISON + 6)
+#define LAST_POISON        (POISON_MADNESS)
 
 // These need to be static since they're set in .obj files in zones.
 

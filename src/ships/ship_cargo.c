@@ -602,8 +602,8 @@ void show_cargo_prices(P_char ch)
 		send_to_char(line, ch);
 	}
 
-	send_to_char("&+y|                                                                                    &+y|\r\n", ch);
-	send_to_char("&+y| &nAll prices in platinum per crate, and are current within the last hour.            &+y|\r\n", ch);
+	send_to_char("&+y|                                                                                            &+y|\r\n", ch);
+	send_to_char("&+y| &nAll prices in platinum per crate, and are current within the last hour.                    &+y|\r\n", ch);
 	send_to_char("&+y\\--------------------------------------------------------------------------------------------/\r\n", ch);
 }
 

@@ -601,6 +601,27 @@ void poison_lifeleak(int level, P_char ch, char *arg, int type, P_char victim, s
 }
 
 /*
+ * lose 10 moves every 10 seconds
+ */
+void poison_moveleak(int level, P_char ch, char *arg, int type, P_char victim, struct affected_type *af)
+{
+	if (!af)
+	{
+		if (!(af = poison_common(victim, POISON_MOVELEAK)))
+			return;
+	}
+	else
+	{
+		send_to_char("&+yYe feel a burning sensation in yer blood.&n\n", victim);
+		GET_VITALITY(victim) = MAX(0, GET_VITALITY(victim) - 10);
+	}
+	if (number(0, 20))
+		add_event(event_poison, WAIT_SEC * (IS_AFFECTED(victim, AFF_SLOW_POISON) ? 30 : 10), victim, 0, 0, 0, &af->type, sizeof(af->type));
+	else
+		affect_remove(victim, af);
+}
+
+/*
  * take once 40ish damage a while after being poisoned
  * can frag with this poison
  */
@@ -627,10 +648,13 @@ void poison_heart_toxin(int level, P_char ch, char *arg, int type, P_char victim
 	}
 	else
 	{
-		affect_remove(victim, af);
 		if (!ch)
 			ch = victim;
 		raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT, &messages);
+		if (IS_ALIVE(victim) && !number(0, 3))
+			add_event(event_poison, IS_AFFECTED(victim, AFF_SLOW_POISON) ? 3 * PULSE_VIOLENCE : PULSE_VIOLENCE * 3 / 2, victim, ch, 0, 0, &af->type, sizeof(af->type));
+		else
+			affect_remove(victim, af);
 	}
 }
 
@@ -648,7 +672,7 @@ void poison_neurotoxin(int level, P_char ch, char *arg, int type, P_char victim,
 	else
 	{
 		send_to_char("Your muscles contract suddenly as toxin attacks your neural system.\n", victim);
-		CharWait(victim, PULSE_VIOLENCE / 2);
+		CharWait(victim, number(2, 4) * WAIT_SEC);
 	}
 	if (number(0, 20))
 		add_event(event_poison, WAIT_SEC * (IS_AFFECTED(victim, AFF_SLOW_POISON) ? 60 : 20), victim, 0, 0, 0, &af->type, sizeof(af->type));
@@ -657,7 +681,7 @@ void poison_neurotoxin(int level, P_char ch, char *arg, int type, P_char victim,
 }
 
 /*
- * lose strength, lost value changes randomly from 5 to 20 every 2 minutes
+ * lose strength, lost value changes randomly from 5 to 20 every minute
  */
 void poison_weakness(int level, P_char ch, char *arg, int type, P_char victim, struct affected_type *af)
 {
@@ -673,11 +697,57 @@ void poison_weakness(int level, P_char ch, char *arg, int type, P_char victim, s
 	if (number(0, 100))
 	{
 		send_to_char("Ye feel a wave of strange weakness running through yer body.\n", victim);
-		add_event(event_poison, WAIT_SEC * 120, victim, 0, 0, 0, &af->type, sizeof(af->type));
+		add_event(event_poison, WAIT_SEC * 60, victim, 0, 0, 0, &af->type, sizeof(af->type));
 	}
 	else
 	{
 		send_to_char("Ye feel at yer full strength again.\n", victim);
+		affect_remove(victim, af);
+	}
+}
+
+/*
+ * applies slowness for 1 minute
+ */
+void poison_slowness(int level, P_char ch, char *arg, int type, P_char victim, struct affected_type *af)
+{
+	if (!af)
+	{
+		if (!(af = poison_common(victim, POISON_SLOWNESS)))
+			return;
+		af->duration   = 1;
+		af->bitvector2 = AFF2_SLOW;
+
+		send_to_char("&+cYe feel a wave of strange weakness running through yer body.&n\n", victim);
+		add_event(event_poison, WAIT_SEC * 60, victim, 0, 0, 0, &af->type, sizeof(af->type));
+	}
+	else
+	{
+		send_to_char("&+CYe feel at yer full strength again.&n\n", victim);
+		affect_remove(victim, af);
+	}
+}
+
+/*
+ * applies berserk for 2 to 10 seconds every 20 seconds for 5 minutes
+ */
+void poison_madness(int level, P_char ch, char *arg, int type, P_char victim, struct affected_type *af)
+{
+	if (!af)
+	{
+		if (!(af = poison_common(victim, POISON_MADNESS)))
+			return;
+		af->duration = 5;
+	}
+
+	if (number(0, 20))
+	{
+		send_to_char("&+RWhispers in your mind drive you mad!&n\n", victim);
+		berserk(victim, number(WAIT_SEC * 2, WAIT_SEC * 10));
+		add_event(event_poison, WAIT_SEC * (IS_AFFECTED(victim, AFF_SLOW_POISON) ? 60 : 20), victim, 0, 0, 0, &af->type, sizeof(af->type));
+	}
+	else
+	{
 		affect_remove(victim, af);
 	}
 }

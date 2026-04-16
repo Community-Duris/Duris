@@ -3196,6 +3196,9 @@ void poison_lifeleak(int, P_char, char *, int, P_char, struct affected_type *);
 void poison_weakness(int, P_char, char *, int, P_char, struct affected_type *);
 void poison_neurotoxin(int, P_char, char *, int, P_char, struct affected_type *);
 void poison_heart_toxin(int, P_char, char *, int, P_char, struct affected_type *);
+void poison_moveleak(int, P_char, char *, int, P_char, struct affected_type *);
+void poison_slowness(int, P_char, char *, int, P_char, struct affected_type *);
+void poison_madness(int, P_char, char *, int, P_char, struct affected_type *);
 int  poison_common_remove(P_char ch);
 
 void unspecialize(P_char ch, P_obj obj);

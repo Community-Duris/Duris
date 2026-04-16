@@ -4376,6 +4376,9 @@ void create_poisons()
 	POISON_CREATE("weakness", POISON_WEAKNESS, poison_weakness);
 	POISON_CREATE("neurotoxin", POISON_NEUROTOXIN, poison_neurotoxin);
 	POISON_CREATE("heart toxin", POISON_HEART_TOXIN, poison_heart_toxin);
+	POISON_CREATE("moveleak", POISON_MOVELEAK, poison_moveleak);
+	POISON_CREATE("slowness", POISON_SLOWNESS, poison_slowness);
+	POISON_CREATE("madness", POISON_MADNESS, poison_madness);
 }
 
 void create_tags()
