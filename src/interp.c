@@ -1100,6 +1100,7 @@ const char *command[MAX_CMD] = {
 	"newchar",
 	"jchat",
 	"redis",
+	"mixpoison",
 	"\n" /* MAX_CMD = 853, MAX_CMD_LIST = 1000 */
 };
 
@@ -2644,6 +2645,7 @@ void assign_command_pointers(void)
 	CMD_N(CMD_AREA, STAT_RESTING + POS_PRONE, do_area, 0, FALSE);
 	CMD_N(CMD_DEATHS_DOOR, STAT_NORMAL + POS_PRONE, do_deaths_door, 25, FALSE);
 	CMD_N(CMD_SMOKE, STAT_RESTING + POS_PRONE, do_smoke, 1, TRUE);
+	CMD_N(CMD_MIXPOISON, STAT_NORMAL + POS_STANDING, do_mixpoison, 0, TRUE);
 	/*
 	 * normal commands (allowed while fighting)
 	 */

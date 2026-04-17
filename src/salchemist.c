@@ -83,6 +83,26 @@ struct potion potion_data[] = {
 	{0}
 };
 
+struct poison
+{
+	int poison_type;
+	int level_required;
+	int skill_required;
+	int ingredients[MAX_INGREDIENTS + 1];
+	int vnum;
+};
+
+struct poison poison_data[] = {
+	{POISON_MADNESS, 51, 100, {VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_MANGROVE_ROOT, VOBJ_FORAGE_PURPLE_MUSHROOMS, VOBJ_FORAGE_PINK_MUSHROOMS}, VOBJ_POISON_VIAL_MADNESS},
+	{POISON_SLOWNESS, 30, 70, {VOBJ_FORAGE_FAERIE_DUST, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_BLUE_MUSHROOMS}, VOBJ_POISON_VIAL_SLOWNESS},
+	{POISON_MOVELEAK, 30, 50, {VOBJ_FORAGE_WIREGRASS, VOBJ_FORAGE_GREEN_MUSHROOMS, VOBJ_FORAGE_TREEROOT_MOSS}, VOBJ_POISON_VIAL_MOVELEAK},
+	{POISON_HEART_TOXIN, 36, 80, {VOBJ_FORAGE_NIGHTSHADE, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_FAERIE_DUST}, VOBJ_POISON_VIAL_HEART_TOXIN},
+	{POISON_NEUROTOXIN, 30, 20, {VOBJ_FORAGE_MANGROVE_ROOT, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_CRABAPPLES}, VOBJ_POISON_VIAL_NEUROTOXIN},
+	{POISON_WEAKNESS, 30, 1, {VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_LICHEN, VOBJ_FORAGE_BLUEBERRIES}, VOBJ_POISON_VIAL_WEAKNESS},
+	{POISON_LIFELEAK, 30, 1, {VOBJ_FORAGE_FOREST_TOADSTOOL, VOBJ_FORAGE_RASPBERRIES}, VOBJ_POISON_VIAL_LIFELEAK},
+	{0}
+};
+
 int basic_ingredients[] = {
 	VOBJ_FORAGE_NIGHTSHADE, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_GARLIC, VOBJ_FORAGE_FAERIE_DUST, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_GREEN_HERB, VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_HUMAN_BONE};
 
@@ -380,6 +400,85 @@ int got_all_ingredients(P_char ch, int required[])
 	return 1;
 }
 
+int got_all_poison_ingredients(P_char ch, int required[])
+{
+	int   found[MAX_INGREDIENTS + 1];
+	int   i;
+	int   temp;
+	P_obj t_obj, next_obj;
+	int   object_id;
+
+	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
+	{
+		found[i] = required[i];
+	}
+
+	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
+	{
+		next_obj  = t_obj->next_content;
+		object_id = obj_index[t_obj->R_num].virtual_number;
+
+		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
+		{
+			if (found[i] == object_id)
+			{
+				found[i] = 0;
+				break;
+			}
+		}
+	}
+
+	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
+	{
+		if (found[i])
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+void extract_used_poison_ingredients(P_char ch, int ingredients[])
+{
+	int   found[MAX_INGREDIENTS + 1];
+	P_obj used_objs[MAX_INGREDIENTS + 1];
+	P_obj t_obj, next_obj;
+	int   object_id;
+	int   i;
+
+	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
+	{
+		found[i]     = ingredients[i];
+		used_objs[i] = NULL;
+	}
+
+	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
+	{
+		next_obj = t_obj->next_content;
+
+		object_id = obj_index[t_obj->R_num].virtual_number;
+
+		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
+		{
+			if (found[i] == object_id)
+			{
+				found[i]     = 0;
+				used_objs[i] = t_obj;
+				break;
+			}
+		}
+	}
+
+	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
+	{
+		if (used_objs[i])
+		{
+			extract_obj(used_objs[i]);
+		}
+	}
+}
+
 void extract_used_ingredients(P_char ch, int ingredients[])
 {
 	int   found[MAX_INGREDIENTS + 1];
@@ -434,6 +533,122 @@ P_obj get_bottle(P_char ch)
 	}
 
 	return NULL;
+}
+
+P_obj get_vial(P_char ch)
+{
+	P_obj t_obj, next_obj;
+
+	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
+	{
+		next_obj = t_obj->next_content;
+		if (OBJ_VNUM(t_obj) == VOBJ_POISON_VIALS && strstr(t_obj->name, "vial"))
+		{
+			return t_obj;
+		}
+	}
+
+	return NULL;
+}
+
+char* print_poison_ingredients(int ingredients[])
+{
+	static char buffer[MAX_STRING_LENGTH];
+
+	memset(buffer, 0, sizeof(buffer));
+	for (int i = 0; i < MAX_INGREDIENTS; i++)
+	{
+		P_obj ingredient = read_object(ingredients[i], VIRTUAL);
+		if (!ingredient)
+			continue;
+
+		if (buffer[0])
+		{
+			strcat(buffer, ", ");
+		}
+		strcat(buffer, ingredient->short_description);
+		extract_obj(ingredient);
+	}
+
+	return buffer;
+}
+
+void do_mixpoison(P_char ch, char *argument, int cmd)
+{
+	P_obj vial;
+	char  arg[MAX_STRING_LENGTH];
+	int   i;
+	int   x = 1;
+	char  Gbuf2[MAX_STRING_LENGTH];
+	int   skl_lvl;
+
+	if (!(skl_lvl = GET_CHAR_SKILL(ch, SKILL_MIXPOISON)))
+	{
+		act("You wouldn't have the first clue.", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
+
+	CharWait(ch, PULSE_VIOLENCE * 1);
+	one_argument(argument, arg);
+	if (*arg)
+	{
+		send_to_char("Get a poison vial, and have the ingredients and stuff in inventory and type mixpoison!\r\n\r\n", ch);
+		send_to_char("Poisons you can make:\r\n", ch);
+		send_to_char("---------------------\r\n\r\n", ch);
+		for (i = 0; poison_data[i].poison_type; i++)
+		{
+			if (GET_LEVEL(ch) >= poison_data[i].level_required && skl_lvl >= poison_data[i].skill_required)
+			{
+				char buffer[MAX_STRING_LENGTH];
+				P_obj poison_vial = read_object(poison_data[i].vnum, VIRTUAL);
+				snprintf(buffer, MAX_STRING_LENGTH, " %-40s - %s\r\n", poison_vial->short_description, print_poison_ingredients(poison_data[i].ingredients));
+				extract_obj(poison_vial);
+				send_to_char(buffer, ch);
+			}
+		}
+		return;
+	}
+
+	vial = get_vial(ch);
+
+	if (!vial)
+	{
+		act("You need to have a poison vial in your inventory.", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
+	notch_skill(ch, SKILL_MIXPOISON, 6.25);
+	for (i = 0; poison_data[i].poison_type; i++)
+	{
+		if (GET_LEVEL(ch) >= poison_data[i].level_required && skl_lvl >= poison_data[i].skill_required)
+		{
+			while (got_all_poison_ingredients(ch, poison_data[i].ingredients))
+			{
+				P_obj poison_vial;
+				char  gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
+
+				poison_vial = read_object(poison_data[i].vnum, VIRTUAL);
+				act("You've &+Wcreated&n $p!", FALSE, ch, poison_vial, 0, TO_CHAR);
+				snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), poison_vial->name);
+				poison_vial->name = str_dup(gbuf2);
+				snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s", poison_vial->short_description, GET_NAME(ch));
+				set_short_description(poison_vial, buffer);
+				obj_to_char(poison_vial, ch);
+				extract_obj(vial);
+				extract_used_poison_ingredients(ch, poison_data[i].ingredients);
+
+				vial = get_vial(ch);
+				if (!vial)
+				{
+					break;
+				}				
+			}
+			CharWait(ch, PULSE_VIOLENCE * 2);
+			return;
+		}
+	}
+
+	act("No poison created in the vial!", FALSE, ch, 0, 0, TO_CHAR);
+	return;
 }
 
 void do_mix(P_char ch, char *argument, int cmd)

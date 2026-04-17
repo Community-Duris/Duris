@@ -1039,7 +1039,8 @@
 #define SKILL_DRAGON_STRIKE          1305
 #define SKILL_TAUNT                  1306
 #define SKILL_EPIC_WARDING_FAITH     1307
-#define LAST_SKILL                   SKILL_EPIC_WARDING_FAITH
+#define SKILL_MIXPOISON              1308
+#define LAST_SKILL                   SKILL_MIXPOISON
 
 // #ifdef SKILLPOINTS
 // #define WHITE_SKILL                  -1

@@ -3176,6 +3176,7 @@ bool  randomize_potion_non_damage(P_obj, int);
 void  do_enchant(P_char, char *, int);
 P_obj check_furnace(P_char);
 void  do_smelt(P_char, char *, int);
+void  do_mixpoison(P_char, char *, int);
 
 /* mccp.c */
 int  compress_get_ratio(P_desc player);

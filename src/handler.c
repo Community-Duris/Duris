@@ -737,7 +737,7 @@ void poison_madness(int level, P_char ch, char *arg, int type, P_char victim, st
 	{
 		if (!(af = poison_common(victim, POISON_MADNESS)))
 			return;
-		af->duration = 5;
+		af->duration = 3;
 	}
 
 	if (number(0, 20))
