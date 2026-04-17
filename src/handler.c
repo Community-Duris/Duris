@@ -650,11 +650,14 @@ void poison_heart_toxin(int level, P_char ch, char *arg, int type, P_char victim
 	{
 		if (!ch)
 			ch = victim;
-		raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT, &messages);
-		if (IS_ALIVE(victim) && !number(0, 3))
-			add_event(event_poison, IS_AFFECTED(victim, AFF_SLOW_POISON) ? 3 * PULSE_VIOLENCE : PULSE_VIOLENCE * 3 / 2, victim, ch, 0, 0, &af->type, sizeof(af->type));
-		else
-			affect_remove(victim, af);
+		int dam_result = raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT, &messages);
+		if (dam_result == DAM_NONEDEAD)
+		{
+			if (!number(0, 3))
+				add_event(event_poison, IS_AFFECTED(victim, AFF_SLOW_POISON) ? 3 * PULSE_VIOLENCE : PULSE_VIOLENCE * 3 / 2, victim, ch, 0, 0, &af->type, sizeof(af->type));
+			else
+				affect_remove(victim, af);
+		}
 	}
 }
 
@@ -671,7 +674,8 @@ void poison_neurotoxin(int level, P_char ch, char *arg, int type, P_char victim,
 	}
 	else
 	{
-		send_to_char("Your muscles contract suddenly as toxin attacks your neural system.\n", victim);
+		send_to_char("&+YYour muscles contract suddenly as toxin attacks your neural system.&n\n", victim);
+		act("$n's &+Ymuscles contract suddenly.&n", TRUE, victim, NULL, NULL, TO_ROOM);
 		CharWait(victim, number(2, 4) * WAIT_SEC);
 	}
 	if (number(0, 20))
