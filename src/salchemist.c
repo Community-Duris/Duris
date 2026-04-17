@@ -588,7 +588,7 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	CharWait(ch, PULSE_VIOLENCE * 1);
+	CharWait(ch, PULSE_VIOLENCE);
 	one_argument(argument, arg);
 	if (*arg)
 	{
@@ -621,6 +621,7 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 	{
 		if (GET_LEVEL(ch) >= poison_data[i].level_required && skl_lvl >= poison_data[i].skill_required)
 		{
+			bool made_poison = false;
 			while (got_all_poison_ingredients(ch, poison_data[i].ingredients))
 			{
 				P_obj poison_vial;
@@ -635,15 +636,18 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 				obj_to_char(poison_vial, ch);
 				extract_obj(vial);
 				extract_used_poison_ingredients(ch, poison_data[i].ingredients);
+				CharWait(ch, PULSE_VIOLENCE);
+				made_poison = true;
 
 				vial = get_vial(ch);
 				if (!vial)
 				{
 					break;
-				}				
+				}
 			}
-			CharWait(ch, PULSE_VIOLENCE * 2);
-			return;
+
+			if (!vial || made_poison)
+				return;
 		}
 	}
 
