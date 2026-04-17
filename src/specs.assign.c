@@ -2086,6 +2086,7 @@ void assign_objects(void)
 	obj_index[real_object0(55362)].func.obj = attribute_scroll;
 	obj_index[real_object0(97923)].func.obj = elemental_wand;
 	obj_index[real_object0(55361)].func.obj = earring_powers;
+	obj_index[real_object0(83698)].func.obj = earring_powers;
 	obj_index[real_object0(55363)].func.obj = lorekeeper_scroll;
 	obj_index[real_object0(55500)].func.obj = obj_index[real_object0(55501)].func.obj = obj_index[real_object0(55502)].func.obj = obj_index[real_object0(55503)].func.obj =
 		obj_index[real_object0(55504)].func.obj = obj_index[real_object0(55505)].func.obj = obj_index[real_object0(55506)].func.obj = obj_index[real_object0(55507)].func.obj =

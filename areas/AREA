@@ -167,7 +167,7 @@ long                      *344
 4horse                    *345-349
 *OPEN 350-351
 newhaven                  *352
-asunwa                    *353-354
+*asunwa                    *353-354
 lavcav                    *355-357 
 elvish                    *358-359
 arac_wild                 *360-361
@@ -249,7 +249,7 @@ ashrumite                 *660-661
 cityruin                  *662-663 (kharne)
 battlefi                  *664-665 (scip)
 torrhan                   *666-669 (denel)
-jungle                    *670
+*jungle                    *670
 cloister                  *671
 unique                    *672
 sea                       *673-675
