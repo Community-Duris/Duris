@@ -28,5 +28,8 @@
         },
     ],
     "C_Cpp.default.compilerPath": "/usr/bin/g++",
-    "C_Cpp.errorSquiggles": "disabled"
+	"C_Cpp.errorSquiggles": "disabled",
+	"C_Cpp.clang_format_fallbackStyle": "Visual Studio",
+	"C_Cpp.clang_format_style": "file",
+	"C_Cpp.formatting": "clangFormat"
 }
