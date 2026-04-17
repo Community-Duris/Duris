@@ -1,1 +1,1 @@
-../../../src/objmisc.h
+#include "../../../src/objmisc.h"

@@ -1960,7 +1960,6 @@ bool load_one_mine(int map)
 
 	if (tries >= 10000 || invalid_mine_room(to_room))
 	{
-		extract_obj(mine);
 		return FALSE;
 	}
 
