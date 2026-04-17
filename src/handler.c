@@ -743,8 +743,8 @@ void poison_madness(int level, P_char ch, char *arg, int type, P_char victim, st
 	if (number(0, 20))
 	{
 		send_to_char("&+RWhispers in your mind drive you mad!&n\n", victim);
-		berserk(victim, number(WAIT_SEC * 2, WAIT_SEC * 10));
-		add_event(event_poison, WAIT_SEC * (IS_AFFECTED(victim, AFF_SLOW_POISON) ? 60 : 20), victim, 0, 0, 0, &af->type, sizeof(af->type));
+		berserk(victim, number(WAIT_SEC * 2, WAIT_SEC * 4));
+		add_event(event_poison, WAIT_SEC * (IS_AFFECTED(victim, AFF_SLOW_POISON) ? 45 : 15), victim, 0, 0, 0, &af->type, sizeof(af->type));
 	}
 	else
 	{

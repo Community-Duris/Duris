@@ -723,6 +723,7 @@ G 1 132595 4 0 100 0 0 0           *    a Belialian sword of venom
 G 1 500 999 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 73 999 0 100 0 0 0             *    (object type not in this .obj file)
 G 1 77 999 0 100 0 0 0             *    (object type not in this .obj file)
+G 1 102 999 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 132584 2 132533 100 0 0 0      * a rogue in training
 M 0 132584 2 132533 100 0 0 0      * a rogue in training
 M 0 132595 26 132534 100 0 0 0     * a militia archer
@@ -1352,6 +1353,17 @@ M 0 132553 5 132766 100 0 0 0      * a scumbag drunk
 M 0 132553 5 132766 100 0 0 0      * a scumbag drunk
 M 0 132553 5 132766 100 0 0 0      * a scumbag drunk
 M 0 132587 1 132767 100 0 0 0      * a slack-jawed prostitute
+M 0 101 1 132767 100 0 0 0         * (mob type not in this .mob file)
+G 1 829 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 830 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 831 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 832 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 833 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 834 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 835 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 836 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 837 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 838 999 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 132588 1 132768 100 0 0 0      * a shitting youth
 M 0 132579 2 132769 100 0 0 0      * a poor commoner
 M 0 132565 6 132771 100 0 0 0      * a homeless peasant
@@ -1830,16 +1842,5 @@ G 1 132507 999 0 100 0 0 0         *    a piece of fried mutton
 M 0 400000 1 133072 100 0 0 0      * (mob type not in this .mob file)
 M 0 132675 1 133073 100 0 0 0      * Kotil
 M 0 400001 1 133074 100 0 0 0      * (mob type not in this .mob file)
-M 0 101 1 132767 100 0 0 0         * your local drug dealer
-G 1 829 999 0 100 0 0 0            *    some resin of Ocularius
-G 1 830 999 0 100 0 0 0            *    some heirloom Blue Haze
-G 1 831 999 0 100 0 0 0            *    some landrace Medicus
-G 1 832 999 0 100 0 0 0            *    some feral Black Kush
-G 1 833 999 0 100 0 0 0            *    some wild Gootwiet
-G 1 834 999 0 100 0 0 0            *    a piece of rolling paper
-G 1 835 999 0 100 0 0 0            *    a ceramic chillum
-G 1 836 999 0 100 0 0 0            *    an obsidian hookah
-G 1 837 999 0 100 0 0 0            *    a mistweyd nose-pipe
-G 1 838 999 0 100 0 0 0            *    a handcarved pipe
 *
 S
