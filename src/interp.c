@@ -1682,7 +1682,7 @@ void command_interpreter(P_char ch, char *argument)
 					// Ambush.. allows one to stay hidden through tackle/backstab/headbutt?
 					if (affected_by_spell(exec_char, SKILL_AMBUSH))
 					{
-						if (cmd == CMD_TACKLE || cmd == CMD_BACKSTAB || cmd == CMD_HEADBUTT)
+						if (cmd == CMD_TACKLE || cmd == CMD_BACKSTAB || cmd == CMD_HEADBUTT || cmd == CMD_APPLY)
 						{
 							if (number(0, 101) < GET_CHAR_SKILL(exec_char, SKILL_AMBUSH))
 							{

@@ -5775,12 +5775,17 @@ void do_apply_poison(P_char ch, char *argument, int cmd)
 		send_to_char("Apply poison from what to what weapon?\r\n", ch);
 		return;
 	}
-	if (!(weapon = get_obj_in_list_vis(ch, Gbuf2, ch->carrying)))
+	if (!(weapon = get_obj_in_list_vis(ch, Gbuf2, ch->carrying)) &&
+		!(weapon = ch->equipment[WIELD] && isname(ch->equipment[WIELD]->name, Gbuf2) ? ch->equipment[WIELD] : NULL) && 
+	    !(weapon = ch->equipment[WIELD2] && isname(ch->equipment[WIELD2]->name, Gbuf2) ? ch->equipment[WIELD2] : NULL) )
 	{
 		act("You don't have any such weapon!", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	if (!(poison = get_obj_in_list_vis(ch, Gbuf1, ch->carrying)))
+	if (!(poison = get_obj_in_list_vis(ch, Gbuf1, ch->carrying)) &&
+		!(poison = ch->equipment[WEAR_ATTACH_BELT_1] && isname(ch->equipment[WEAR_ATTACH_BELT_1]->name, Gbuf2) ? ch->equipment[WEAR_ATTACH_BELT_1] : NULL) &&
+	    !(poison = ch->equipment[WEAR_ATTACH_BELT_2] && isname(ch->equipment[WEAR_ATTACH_BELT_2]->name, Gbuf2) ? ch->equipment[WEAR_ATTACH_BELT_2] : NULL) &&
+	    !(poison = ch->equipment[WEAR_ATTACH_BELT_3] && isname(ch->equipment[WEAR_ATTACH_BELT_3]->name, Gbuf2) ? ch->equipment[WEAR_ATTACH_BELT_3] : NULL) )
 	{
 		act("You don't have any such container!", FALSE, ch, 0, 0, TO_CHAR);
 		return;
