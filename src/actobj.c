@@ -5783,9 +5783,9 @@ void do_apply_poison(P_char ch, char *argument, int cmd)
 		return;
 	}
 	if (!(poison = get_obj_in_list_vis(ch, Gbuf1, ch->carrying)) &&
-		!(poison = ch->equipment[WEAR_ATTACH_BELT_1] && isname(ch->equipment[WEAR_ATTACH_BELT_1]->name, Gbuf2) ? ch->equipment[WEAR_ATTACH_BELT_1] : NULL) &&
-	    !(poison = ch->equipment[WEAR_ATTACH_BELT_2] && isname(ch->equipment[WEAR_ATTACH_BELT_2]->name, Gbuf2) ? ch->equipment[WEAR_ATTACH_BELT_2] : NULL) &&
-	    !(poison = ch->equipment[WEAR_ATTACH_BELT_3] && isname(ch->equipment[WEAR_ATTACH_BELT_3]->name, Gbuf2) ? ch->equipment[WEAR_ATTACH_BELT_3] : NULL) )
+		!(poison = ch->equipment[WEAR_ATTACH_BELT_1] && isname(ch->equipment[WEAR_ATTACH_BELT_1]->name, Gbuf1) ? ch->equipment[WEAR_ATTACH_BELT_1] : NULL) &&
+	    !(poison = ch->equipment[WEAR_ATTACH_BELT_2] && isname(ch->equipment[WEAR_ATTACH_BELT_2]->name, Gbuf1) ? ch->equipment[WEAR_ATTACH_BELT_2] : NULL) &&
+	    !(poison = ch->equipment[WEAR_ATTACH_BELT_3] && isname(ch->equipment[WEAR_ATTACH_BELT_3]->name, Gbuf1) ? ch->equipment[WEAR_ATTACH_BELT_3] : NULL) )
 	{
 		act("You don't have any such container!", FALSE, ch, 0, 0, TO_CHAR);
 		return;
