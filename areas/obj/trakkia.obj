@@ -175,7 +175,7 @@ cave~
 ~
 #57013
 slender shard meteorite~
-&+La slender shard of &+Rmet&+ror&+Rite&n~
+&+La slender shard of &+Rmet&+reor&+Rite&n~
 &+LA shard of a strange &+rrock&+L has been dropped here.&n~
 ~
 5 11 3 0 7 0 4097 8193 0 0 0
@@ -216,7 +216,7 @@ cave~
 ~
 #57016
 shield meteorite~
-&+La shield of &+Rmet&+ror&+Rite&n~
+&+La shield of &+Rmet&+reor&+Rite&n~
 &+LA stone shield glowing &+rred&+L has been left here.&n~
 ~
 37 11 3 0 7 0 4097 513 0 0 0
@@ -224,7 +224,7 @@ shield meteorite~
 10 8229 100
 #57017
 meteorite visor~
-&+La &+Rme&+rtor&+Rite&+L visor&n~
+&+La &+Rme&+rteor&+Rite&+L visor&n~
 &+LA visor of glowing &+rred&+L rock is here.&n~
 ~
 9 11 3 0 7 0 4097 131073 0 0 0
@@ -520,13 +520,13 @@ mantis nest~
 &+gunderworld vegetation.
 ~
 #57038
-royal trakkian crown~
-&+ythe &+Yroyal&+y trakkian tribesmen &+Ycrown&n~
+antlered royal trakkian crown tribes~
+&+ythe antlered &+Yc&+yr&+Yo&+yw&+Yn&+y of the Trakkian &+Ltribes&N~
 &+yA crown adorned with royal tribal markings has been left here.&n~
 ~
 9 11 3 0 12 0 8193 17 64 0 0
 12 0 0 4 0 0 0 0
-0 21111 100
+0 21111 100 16777216 0 0 0
 E
 royal trakkian crown~
 &+yThis bronzed crown is decorated with numerous etchings and sigils from ages
@@ -535,9 +535,9 @@ royal trakkian crown~
 &+yfront center of it, symbolizing the importance of this headwear.
 ~
 A
-54 40
+54 50
 A
-18 4
+18 5
 #57039
 cowl sasquatch~
 &+ya sasquatch cowl&n~
@@ -617,10 +617,10 @@ goat hides filthy~
 ~
 #57045
 meteorite orb~
-&+Lan orb of &+Rmet&+ror&+Rite&n~
+&+Lan orb of &+Rmet&+reor&+Rite&n~
 &+LA small &+Rmet&+ror&+Rite&+L orb lies here.&n~
 ~
-9 11 3 0 7 0 1 524289 0 0 0
+9 11 3 0 7 0 1 8912897 0 0 0
 7 0 0 4 0 0 0 0
 0 11122 100
 A

@@ -2,7 +2,7 @@
 &+LTower of &+GH&+gi&+Gg&+gh &+GS&+go&+Gr&+gc&+Ge&+gr&+Gy&N~
 9399 1 0 15 25 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 9300 5 2 100 0 0 0
@@ -136,6 +136,7 @@ E 1 9304 1 15 100 0 0 0            *   a glowing emerald bracelet
 E 1 9303 1 16 100 0 0 0            *   a jewel-studded silver dagger
 E 1 9302 1 18 100 0 0 0            *   a wizard's staff
 G 1 359 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55441 1 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 9305 10 9301 100 0 0 0         * a patrolling guard
 E 1 9321 8 5 100 0 0 0             *   a heavy tarnished suit of platemail
 E 1 9320 11 16 100 0 0 0           *   a crude tarnished longsword

@@ -188,6 +188,7 @@ O 0 22000 12 22069 100 0 0 0       * a palm tree
 P 1 22014 7 22000 100 0 0 0        *   a small coconut
 O 0 22000 12 22070 100 0 0 0       * a palm tree
 O 0 358 1 22071 100 0 0 0          * (object type not in this .obj file)
+O 0 55452 1 22071 100 0 0 0        * (object type not in this .obj file)
 O 0 22031 1 22073 100 0 0 0        * a tarnished bronze ring
 O 0 22049 1 22074 100 0 0 0        * a pitch black bodycloak
 O 0 22036 1 22075 100 0 0 0        * a golden weave vest

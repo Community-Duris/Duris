@@ -1965,7 +1965,7 @@ ambassador forgotten mansion~
 &+Lgreat city comes at no surprise to you as representatives and diplomats
 &+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
 &+Lties and expand upon trading opportunities. It is very obvious that his
-&+Lman takes a lot of pride in wearing the sigil of The Obsidian Citadel.&n
+&+Lman takes a lot of pride in wearing the sigil of The Forgotten Mansion.&n
 ~
 1074137096 0 0 0 134217736 28 0 0 0 S
 ph 0 1 0 -1
@@ -1983,7 +1983,7 @@ ambassador village werrun~
 &+Lgreat city comes at no surprise to you as representatives and diplomats
 &+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
 &+Lties and expand upon trading opportunities. It is very obvious that his
-&+Lman takes a lot of pride in wearing the sigil of The Obsidian Citadel.&n
+&+Lman takes a lot of pride in wearing the sigil of The Village of &+rWerrun.&n
 ~
 1074137096 0 0 0 134217736 28 0 0 0 S
 ph 0 1 0 -1
@@ -2001,7 +2001,7 @@ ambassador quintaragon castle~
 &+Lgreat city comes at no surprise to you as representatives and diplomats
 &+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
 &+Lties and expand upon trading opportunities. It is very obvious that his
-&+Lman takes a lot of pride in wearing the sigil of The Obsidian Citadel.&n
+&+Lman takes a lot of pride in wearing the sigil of Quintaragon Citadel.&n
 ~
 1074137096 0 0 0 134217736 28 0 0 0 S
 ph 0 1 0 -1
@@ -2970,6 +2970,24 @@ so 0 1048577 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
+#55213
+ambassador fields between~
+&+Lan Amb&+yassa&+Ldor from The &+yFields &+LBetween~
+&+LAn Amb&+yassa&+Ldor from The &+yFields &+LBetween wanders here.&n
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of The &+yFields &+LBetween.&n
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #55214
 ithaquua illithid~
 &+WIthaquua&n~
@@ -3352,7 +3370,7 @@ ambassador hall knighthood~
 &+Lgreat city comes at no surprise to you as representatives and diplomats
 &+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
 &+Lties and expand upon trading opportunities. It is very obvious that his
-&+Lman takes a lot of pride in wearing the sigil of &+YDawndale&+L.&n
+&+Lman takes a lot of pride in wearing the sigil of &+YKnighthood&+L.&n
 ~
 1074137096 0 0 0 134217736 28 0 0 0 S
 ph 0 1 0 -1
@@ -3408,7 +3426,7 @@ mg 0 16 0 -1
 0.0.0.0 0
 8 8 1
 #55242
-ambassador venan'trut~
+ambassador venan'trut venan~
 &+Lan &+YAmbassador &+Lfrom &+YVenan'Trut&n~
 &+LAn &+YAmbassador &+Lfrom &+YVenan'Trut &+Lis exploring the city streets.&n
 ~
@@ -3436,7 +3454,7 @@ ambassador rogue plains~
 &+Lgreat city comes at no surprise to you as representatives and diplomats
 &+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
 &+Lties and expand upon trading opportunities. It is very obvious that his
-&+Lman takes a lot of pride in wearing the sigil of &+YDawndale&+L.&n
+&+Lman takes a lot of pride in wearing the sigil of &NThe Rogue Plains&+L.&n
 ~
 1074137096 0 0 0 134217736 28 0 0 0 S
 ph 0 1 0 -1
@@ -3760,6 +3778,366 @@ PH 0 16384 0 -1
 45 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 2
+#55268
+ambassador trakkia mountains~
+&+yan Ambassador from The Trakkia Mountains&N~
+&+LAn &+yAmb&+Lassa&+ydor &+Lfrom&+y The Trakkia Mountains &+Lwanders around cautiously.&n
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+yThe Trakkia Mountains.&n
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+pb 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55269
+ambassador city torrhan~
+&+Lan &+WAmbas&+Ysador &+Lfrom &+WCity of &+YTorrhan&N~
+&+LAn &+WAmbas&+Ysador&+L from &+WCity of &+YTorrhan&+L walks confidently, greeting his hosts.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+WCity of &+YTorrhan&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55270
+ambassador nizari~
+&+Lan &+yAmbassador &+Lfrom &+yNizari&N~
+&+LAn &+yAmbassador&+L from &+yNizari&+L wanders around here cautiously.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+yNizari.&n
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55271
+ambassador faerie realm~
+&+Lan &+gA&Nm&+gb&Na&+gs&Ns&+ga&Nd&+go&Nr &+Lfrom &+gFaerie Realm&N~
+&+LAn &+gA&Nm&+gb&Na&+gs&Ns&+ga&Nd&+go&Nr&+L from &+gFaerie Realm &+Lfloats here, wandering curiously.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+gFaerie Realm.&n
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+hf 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55272
+ambassador kobold settlement~
+&+Lan &+Gambas&+gsador &+Lfrom &+GKobold &+gSettlement&N~
+&+LAn &+Gambas&+gsador &+Lfrom &+GKobold &+gSettlement &+Lprowls here.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+GKobold &+gSettlement.&n
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+kb 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55273
+ambassador tower high sorcery~
+&+Lan &+GA&+gm&+Gb&+ga&+Gs&+gs&+Ga&+gd&+Go&+gr&+L from &+GT&+go&+Gw&+ge&+Gr&+L of &+GH&+gi&+Gg&+gh &+GS&+go&+Gr&+gc&+Ge&+gr&+Gy&N~
+&+LAn &+GA&+gm&+Gb&+ga&+Gs&+gs&+Ga&+gd&+Go&+gr&+L from &+GT&+go&+Gw&+ge&+Gr &+Lof &+GH&+gi&+Gg&+gh &+GS&+go&+Gr&+gc&+Ge&+gr&+Gy &+Leyes his surroundings curiously.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+GT&+go&+Gw&+ge&+Gr&+L of &+GH&+gi&+Gg&+gh &+GS&+go&+Gr&+gc&+Ge&+gr&+Gy.&n
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55274
+ambassador kingdom torg~
+&+Lan &+rAm&+gbassad&+ror&+L from Kingdom of &+rT&+gor&+rg&n~
+&+LAn &+rAm&+gbassad&+ror&+L from Kingdom of &+rT&+gor&+rg&+L walks through here, disgusted.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of Kingdom of &+rT&+gor&+rg.&n
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ho 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55275
+ambassador sevenoaks~
+&+Lan &+BAmbassador&+L from &+BSevenoaks~
+&+LAn &+BAmbassador&+L from &+BSevenoaks&+L walks through here, sweating.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+BSevenoaks.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55276
+ambassador mountain banished banishment~
+&+Lan &+yAmba&+Lssador from The &+yMountain&+L of the Banished~
+&+LAn &+yAmb&+Lassador from The &+yMountain&+L of the Banished wanders here, his face hidden under his hood.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+LThe &+yMountain&+L of the Banished.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55277
+ambassador bloodstone keep~
+&+Lan &+RAmbassador &+Lfrom &+RBloodstone Keep&N~
+&+LAn &+RAmbassador&+L from &+RBloodstone Keep&+L wanders here, scowling.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+RBloodstone Keep.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55278
+ambassador orrak~
+&+Lan A&+rm&+Lb&+ra&+Ls&+rs&+La&+rd&+Lo&+rr&+L from Orrak~
+&+LAn A&+rm&+Lb&+ra&+Ls&+rs&+La&+rd&+Lo&+rr&+L from Orrak prowls here, glaring.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of Orrak.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+or 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55279
+ambassador outcasts tower~
+&+Lan &+yAm&+gba&+Gss&+gad&+yor &+Lfrom &+yThe O&+gut&+Gca&+gst&+ys Tower~
+&+LAn &+yAm&+gba&+Gss&+gad&+yor&+L from &+yThe O&+gut&+Gca&+gst&+ys Tower&+L wanders here.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+yThe O&+gut&+Gca&+gst&+ys Tower&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+pd 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55280
+ambassador court muse~
+&+Lan &+gA&+Gm&+gb&+Ga&+gs&+Gs&+ga&+Gd&+go&+Gr&+L from &+gC&+Go&+gu&+Gr&+gt of the &+GMuse&N~
+&+LAn &+gA&+Gm&+gb&+Ga&+gs&+Gs&+ga&+Gd&+go&+Gr &+Lfrom &+gC&+Go&+gu&+Gr&+gt of the &+GMuse &+Lfloats here, looking around curiously.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+gC&+Go&+gu&+Gr&+gt of the &+GMuse&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+hf 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55281
+ambassador caverns armageddon~
+&+Lan Ambas&+rsador&+L from The Caverns of &+rArmageddon&N~
+&+LAn Ambas&+rsador&+L from The Caverns of &+rArmageddon &+Lwanders here.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of Caverns of &+rArmageddon&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ho 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55282
+ambassador elemental groves~
+&+Lan &+GAmb&+Rassa&+Gdor &+Lfrom &+GThe &+RElemental &+GGroves&N~
+&+LAn &+GAmb&+Rassa&+Gdor from &+GThe &+RElemental &+GGroves&+L floats here, curiously looking around.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+GThe &+RElemental &+GGroves&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+pe 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55283
+ambassador clan stoutdorf settlement~
+&+Lan Amb&+cassa&+Ldor from Clan &+cStoutdorf &+LSettlement~
+&+LAn Amb&+cassa&+Ldor from Clan &+cStoutdorf &+LSettlement struts proudly.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of Clan &+cStoutdorf &+LSettlement&N.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+pd 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55284
+ambassador pits cerberus~
+&+Lan Amba&+rss&+La&+rdo&+Lr from Pits of C&+rer&+Lb&+rer&+Lus&N~
+&+LAn Amba&+rss&+La&+rdo&+Lr from Pits of C&+rer&+Lb&+rer&+Lus wanders here curiously.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of Pits of C&+rer&+Lb&+rer&+Lus&N.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+sg 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55285
+ambassador drustl yerdonia enslaved~
+&+Lan &+rAm&+Lbass&+Ra&+rdo&+Rr&+L from &+rDrustl&+L's Yerdonia &+REn&+rslave&+Rd&N~
+&+LAn &+rAm&+Lbass&+Ra&+rdo&+Rr&+L from &+rDrustl&+L's Yerdonia &+REn&+rslave&+Rd &+Lstruts through here, sneering.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+rDrustl&+L's Yerdonia &+REn&+rslave&+Rd&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+pd 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55286
+ambassador dark stone tower northern realms~
+&+Lan &+CA&nm&+Cb&Na&+Cs&Ns&+Ca&Nd&+Co&Nr&+L from &NThe Dark Stone Tower of the Northern Realms&N~
+&+LAn &+CA&Nm&+Cb&Na&+Cs&Ns&+Ca&Nd&+Co&Nr &+Lfrom &Nthe Dark Stone Tower of the Northern Realms&+L wanders here.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+YTeka&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+ph 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#55287
+ambassador myrloch vale~
+&+Lan &+YAmbassador&+L from &+YMyrloch Vale&N~
+&+LAn &+YAmbassador&+L from &+YMyrloch Vale&+L wanders the streets.
+~
+&+L   Dressed in extravagantly decorated attire, this man stands before you
+&+Las a &+rregal &+Rrepresentative &+Lof far away lands. His stiff shoulders depict
+&+La rigid formality and hint at a no-nonsense attitude. His presence in this
+&+Lgreat city comes at no surprise to you as representatives and diplomats
+&+Lfrequently visit the local &+rroyalty &+Land &+rnobility &+Lto strengthen economic
+&+Lties and expand upon trading opportunities. It is very obvious that his
+&+Lman takes a lot of pride in wearing the sigil of &+YMyrloch Vale&+L.
+~
+1074137096 0 0 0 134217736 28 0 0 0 S
+p2 0 1 0 -1
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #55500
 white-tailed deer~
 &+ya &+Wwh&+wi&+Wt&+we&+W-t&+wai&+Wl&+we&+Wd &+Yd&+yee&+Yr&n~

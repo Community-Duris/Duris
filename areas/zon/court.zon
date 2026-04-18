@@ -72,6 +72,7 @@ E 1 6710 1 18 100 0 0 0            *   the codex of the muse of dreams
 E 1 6711 1 20 100 0 0 0            *   a veil of dreams and nightmares
 E 1 6736 1 24 100 0 0 0            *   a wisp of shimmering faerie light
 G 1 359 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55448 1 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 6709 10 6706 100 0 0 0         * a beautiful nymph
 E 1 6712 4 16 100 0 0 0            *   a blade of ethereal magic
 M 0 6710 8 6706 100 0 0 0          * a beautiful nymph

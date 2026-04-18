@@ -2,7 +2,7 @@
 &+LOrrak&n~
 9038 1 0 50 60 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 9009 0 1 100 0 0 0
@@ -94,6 +94,7 @@ M 0 9015 1 9036 100 0 0 0          * Vellel, the Arch-Angel of Sin
 E 1 9007 1 6 100 0 0 0             *   a helm of gnome scalps
 G 1 9010 1 0 100 0 0 0             *    a purple key
 G 1 358 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55446 1 0 100 0 0 0            *    (object type not in this .obj file)
 F 1 9003 3 9036 100 0 0 0          * an orrak guardian (following)
 F 1 9011 2 9036 100 0 0 0          * a dazed orrak (following)
 M 0 9016 1 9038 100 0 0 0          * an old, imprisoned man

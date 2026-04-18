@@ -97,7 +97,11 @@ O 0 1435 1 1482 100 0 0 0          * a stone sarcophagus
 P 1 1446 1 1435 100 0 0 0          *   the treasure of Tyxru's tomb
 P 1 1444 1 1435 100 0 0 0          *   a lustrous golden-red ring
 P 1 1459 1 1435 100 0 0 0          *   an ancient stone tablet
+P 1 1458 1 1435 20 0 0 0           *   a glowing orb of power
+P 1 1402 1 1435 20 0 0 0           *   a pair of strange boots
+P 1 1401 1 1435 20 0 0 0           *   an enchanted ki-rin's horn
 O 0 358 1 1482 100 0 0 0           * (object type not in this .obj file)
+O 0 55440 1 1482 100 0 0 0         * (object type not in this .obj file)
 O 0 1450 1 1489 100 0 0 0          * a pile of junk
 O 0 1449 1 1498 100 0 0 0          * an ironshod mining cart
 O 0 1460 1 1536 100 0 0 0          * scattered bones

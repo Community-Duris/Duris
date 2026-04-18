@@ -571,7 +571,7 @@ dagger darkness~
 A dagger has been pitched on the ground here.~
 ~
 5 16 4 3 7 0 209152 8193 0 4198895524 0
-2 2 3 11 0 0 0 0
+2 5 2 11 0 0 0 0
 1 14500 100
 E
 dagger darkness dark~
@@ -580,7 +580,7 @@ pulses with a magical dark aura.  The blade is made from a flat-black
 metal and looks quite sharp.
 ~
 A
-18 2
+18 5
 A
 19 2
 #75542
@@ -853,16 +853,28 @@ A
 13 20
 #75561
 flaming mace ruzdo~
-a &+rflaming mace&N of the &+gRuzdo&N~
+a &+Yf&+Rl&+rami&+Rn&+Yg &+rmace&N of the &+gRuzdo&N~
 A &+rflaming mace&N of the&N &+gRuzdo&N leans against the wall here.~
 ~
 5 16 3 8 7 0 1024 8193 64 37883812 0
-6 4 3 6 0 21 40 30
+6 4 5 0 0 637004 40 25
 3 9999 100
 E
 flaming mace~
      This ornate mace feels warm to the touch.  The insignia
 of the &+gRuzdo&N adorns the hilt.
+~
+E
+_room_msg~
+&N$n's $q &+Yf&+Rl&+Ya&+Rr&+Ye&+Rs &+rwith magical &+Yf&+Rl&+ram&+Re&+Ys&n!
+~
+E
+_victim_msg~
+&N$n's $q &+Yf&+Rl&+Ya&+Rr&+Ye&+Rs &+rwith magical &+Yf&+Rl&+ram&+Re&+Ys&n!
+~
+E
+_char_msg~
+&NYour $q &+Yf&+Rl&+Ya&+Rr&+Ye&+Rs &+rwith magical &+Yf&+Rl&+ram&+Re&+Ys&n!
 ~
 A
 18 3

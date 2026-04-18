@@ -2480,7 +2480,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55415
 S
@@ -2491,7 +2491,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55416
 S
@@ -2502,7 +2502,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55417
 S
@@ -2727,7 +2727,7 @@ emperor~
 Q
 ~
 R I 55033
-R C 250000
+R C 1000000
 R I 55362
 G I 55170
 Q
@@ -2752,7 +2752,7 @@ hi hello~
 Q
 ~
 R I 55033
-R C 250000
+R C 1000000
 R I 55362
 G I 55171
 S
@@ -2787,13 +2787,13 @@ city icecrag~
 ~
 Q
 ~
-R C 250000
+R C 1000000
 R I 55033
 R I 55362
 G I 55172
 Q
 ~
-R C 100000
+R C 1000000
 R I 55034
 G I 55032
 S
@@ -2804,7 +2804,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55173
 S
@@ -2815,7 +2815,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55174
 S
@@ -2836,7 +2836,7 @@ hi hello jotunheim~
 Q
 ~
 R I 55033
-R C 250000
+R C 1000000
 R I 55362
 G I 55175
 S
@@ -2865,7 +2865,7 @@ He starts to laugh hysterically.
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55176
 Q
@@ -2881,7 +2881,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55177
 S
@@ -2900,7 +2900,7 @@ hi hello~
 Q
 ~
 R I 55033
-R C 250000
+R C 1000000
 R I 55362
 G I 55178
 S
@@ -2949,7 +2949,7 @@ Q
 &+Wthat Chibbleniffle has a thing for these tokens, so he might just give you
 &+Wsomething nice for a few of those.&+L'&n
 ~
-R C 250000
+R C 1000000
 R I 55033
 R I 55362
 G I 55179
@@ -2959,7 +2959,7 @@ Q
 &+Wbrave, or foolish, of you to venture into the &+LDomain&+W, but a wager is a wager,
 &+Wso I guess you've earned this.&+L'&n
 ~
-R C 100000
+R C 250000
 R I 55039
 G I 55038
 S
@@ -2970,7 +2970,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55180
 S
@@ -3075,6 +3075,17 @@ hi signal hello howdy~
 &+LThe Indomitable Snowman says to you, '
 ~
 S
+#55213
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55435
+S
 #55217
 MA
 qc_action 120~
@@ -3096,7 +3107,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55182
 S
@@ -3107,7 +3118,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55183
 S
@@ -3118,7 +3129,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55184
 S
@@ -3134,7 +3145,7 @@ Q
 ~
 R I 55362
 R I 55033
-R C 250000
+R C 1000000
 G I 55185
 S
 #55222
@@ -3144,7 +3155,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55186
 S
@@ -3155,7 +3166,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55187
 S
@@ -3166,7 +3177,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55188
 S
@@ -3177,7 +3188,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55189
 S
@@ -3188,7 +3199,7 @@ default~
 QA
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55190
 S
@@ -3199,7 +3210,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55191
 S
@@ -3210,7 +3221,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55192
 S
@@ -3399,7 +3410,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55269
 S
@@ -3509,7 +3520,7 @@ hi hello howdy~
 ~
 Q
 ~
-R C 250000
+R C 1000000
 R I 55362
 R I 55033
 G I 55285
@@ -3529,7 +3540,7 @@ default~
 Q
 ~
 R I 55362
-R C 250000
+R C 1000000
 R I 55033
 G I 55286
 S
@@ -3595,4 +3606,218 @@ R I 55204
 G I 32031
 G I 87510
 G I 55313
+S
+#55268
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55436
+S
+#55269
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55437
+S
+#55270
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55438
+S
+#55271
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55439
+S
+#55272
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55440
+S
+#55273
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55441
+S
+#55274
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55442
+S
+#55275
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55443
+S
+#55276
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55444
+S
+#55277
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55445
+S
+#55278
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55446
+S
+#55279
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55447
+S
+#55280
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55448
+S
+#55281
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55449
+S
+#55282
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55450
+S
+#55283
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55451
+S
+#55284
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55452
+S
+#55285
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55453
+S
+#55286
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55454
+S
+#55287
+M
+default~
+~
+Q
+~
+R I 55362
+R C 1000000
+R I 55033
+G I 55455
 S

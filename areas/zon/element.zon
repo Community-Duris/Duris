@@ -2,7 +2,7 @@
 &+GThe &+RElemental &+GGroves&n~
 3974 1 0 5 15 3
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 3897 0 2 100 0 0 0
@@ -162,6 +162,7 @@ O 0 358 1 3967 100 0 0 0           * (object type not in this .obj file)
 O 0 3832 1 3967 100 0 0 0          * a small black cube
 P 1 3817 1 3832 100 0 0 0          *   a wand of black obsidian
 P 1 3833 1 3832 100 0 0 0          *   a jagged obsidian dagger with a sapphire hilt
+O 0 55450 1 3967 100 0 0 0         * (object type not in this .obj file)
 O 0 750 1 3973 100 0 0 0           * (object type not in this .obj file)
 *
 M 0 3822 1 3800 100 0 0 0          * the special forest protector

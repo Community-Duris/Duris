@@ -2,7 +2,7 @@
 &+LThe &+yMountain &+Lof the Banished&n~
 9166 1 0 40 50 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 9112 5 2 100 0 0 0
@@ -86,6 +86,7 @@ M 0 9110 1 9141 100 0 0 0          * Tolog, Demi-God of the Apocalypse
 E 1 9114 1 5 100 0 0 0             *   the hide of the apocalypse demon
 G 1 9117 1 0 100 0 0 0             *    the essence of Tolog
 G 1 359 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55444 1 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 9127 1 9141 100 0 0 0          * the demonic advisor
 M 0 9111 2 9143 100 0 0 0          * the warangel sentinel
 M 0 9111 2 9143 100 0 0 0          * the warangel sentinel

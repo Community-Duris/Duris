@@ -2,7 +2,7 @@
 &+yThe Trakkia Mountains&n~
 57165 1 0 40 50 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 57001 5 9 100 0 0 0
@@ -113,19 +113,20 @@ O 0 57025 1 57097 100 0 0 0        * a tiny orb of obsidian
 O 0 57010 1 57097 100 0 0 0        * a fire elemental figurine
 O 0 57031 1 57097 100 0 0 0        * an ancient, tribal coif
 O 0 359 1 57097 100 0 0 0          * (object type not in this .obj file)
-O 0 57057 3 57097 100 0 0 0        * An small chest
+O 0 57057 3 57097 100 0 0 0        * A small chest
 P 1 57023 6 57057 100 0 0 0        *   a pile of coins
 P 1 57023 6 57057 100 0 0 0        *   a pile of coins
 P 1 57023 6 57057 100 0 0 0        *   a pile of coins
 P 1 57023 6 57057 100 0 0 0        *   a pile of coins
+O 0 55436 1 57097 100 0 0 0        * (object type not in this .obj file)
 O 0 57018 2 57100 100 0 0 0        * a casket
 P 1 57019 1 57018 100 0 0 0        *   an ancient skeleton key
 O 0 57012 1 57101 100 0 0 0        * a cave
 O 0 57014 1 57102 100 0 0 0        * a cave
 O 0 57015 1 57103 100 0 0 0        * a cave
-O 0 57016 1 57114 100 0 0 0        * a shield of metorite
-O 0 57013 1 57114 100 0 0 0        * a slender shard of metorite
-O 0 57017 1 57114 100 0 0 0        * a metorite visor
+O 0 57016 1 57114 100 0 0 0        * a shield of meteorite
+O 0 57013 1 57114 100 0 0 0        * a slender shard of meteorite
+O 0 57017 1 57114 100 0 0 0        * a meteorite visor
 O 0 57027 1 57114 100 0 0 0        * a stone lever
 O 0 57026 1 57129 100 0 0 0        * a stone lever
 O 0 57056 1 57136 100 0 0 0        * A flat stone
@@ -138,12 +139,12 @@ O 0 57047 1 57158 100 0 0 0        * a set of trakkian tribal greaves
 O 0 57050 1 57158 100 0 0 0        * an embroidered trakkian belt
 O 0 57046 1 57159 100 0 0 0        * a basilisk claw
 O 0 57052 1 57159 100 0 0 0        * an ancestoral tribal mask
-O 0 57045 1 57160 100 0 0 0        * an orb of metorite
-O 0 57057 3 57160 100 0 0 0        * An small chest
+O 0 57045 1 57160 100 0 0 0        * an orb of meteorite
+O 0 57057 3 57160 100 0 0 0        * A small chest
 P 1 57023 6 57057 100 0 0 0        *   a pile of coins
 O 0 57049 1 57161 100 0 0 0        * an ancient ring of spellweaving
 O 0 57051 1 57161 100 0 0 0        * a bronze trakkian breastplate
-O 0 57057 3 57161 100 0 0 0        * An small chest
+O 0 57057 3 57161 100 0 0 0        * A small chest
 P 1 57023 6 57057 100 0 0 0        *   a pile of coins
 O 0 57037 4 57163 100 0 0 0        * a nest
 P 1 57040 4 57037 100 0 0 0        *   a grangle root

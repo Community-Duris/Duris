@@ -2,7 +2,7 @@
 &+BSevenoaks&n~
 38676 0 0 40 50 2
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 38602 0 2 100 0 0 0
@@ -179,6 +179,7 @@ O 0 38634 1 38632 50 0 0 0         * the ice dagger of Sevenoaks
 O 0 38649 1 38632 100 0 0 0        * a longsword of Sevenoaks
 O 0 38644 1 38632 100 0 0 0        * a shiny ring of the faeries
 O 0 38660 1 38632 50 0 0 0         * the ancestral bracelet of Sevenoaks
+O 0 55443 1 38632 100 0 0 0        * (object type not in this .obj file)
 O 0 38625 2 38641 100 0 0 0        * a large mirror
 O 0 38625 2 38645 100 0 0 0        * a large mirror
 O 0 38612 3 38650 100 0 0 0        * a large skylight

@@ -2,7 +2,7 @@
 The Dark Stone Tower of the Northern Realms~
 75598 1 0 15 25 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 75508 1 1 100 0 0 0
@@ -111,6 +111,7 @@ D 0 75586 0 2 100 0 0 0
 *
 *
 O 0 358 1 75519 100 0 0 0          * (object type not in this .obj file)
+O 0 55454 1 75519 100 0 0 0        * (object type not in this .obj file)
 O 0 75511 4 75532 100 0 0 0        * a puddle of blood
 O 0 75550 1 75535 100 0 0 0        * a skeleton
 O 0 75511 4 75536 100 0 0 0        * a puddle of blood
@@ -184,6 +185,7 @@ E 1 75533 4 16 100 0 0 0           *   a guard's longsword
 M 0 75514 5 75518 100 0 0 0        * The barrack guard
 M 0 75540 1 75519 100 0 0 0        * the soul of Lashan Blackfeather
 E 1 75563 1 3 100 0 0 0            *   a tekan amulet of dragon's blood
+E 1 75526 1 18 100 0 0 0           *   a staff of absorption
 F 1 75537 2 75519 100 0 0 0        * a crypt guardian (following)
 F 1 75538 2 75519 100 0 0 0        * a crypt guardian (following)
 M 0 75526 9 75521 100 0 0 0        * A hooded sentry

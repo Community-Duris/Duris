@@ -2,7 +2,7 @@
 &+yNizari&n~
 40198 2 0 25 35 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 40011 2 2 100 0 0 0
@@ -625,5 +625,6 @@ E 1 40067 1 2 100 0 0 0            *   a ring of sandstone
 E 1 40065 1 6 100 0 0 0            *   the turban of power
 E 1 40073 1 16 100 0 0 0           *   a bronze sword
 G 1 358 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55438 1 0 100 0 0 0            *    (object type not in this .obj file)
 *
 S

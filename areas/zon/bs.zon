@@ -2,7 +2,7 @@
 &+RBloodstone Keep&n~
 74917 2 0 40 50 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 74007 5 1 100 0 0 0
@@ -1049,6 +1049,7 @@ E 1 74198 3 16 100 0 0 0           *   a razor-edge battleaxe of black steel
 E 1 74198 3 17 100 0 0 0           *   a razor-edge battleaxe of black steel
 G 1 74262 1 0 100 0 0 0            *    a piece of a broken amulet
 G 1 358 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55445 1 0 100 0 0 0            *    (object type not in this .obj file)
 F 1 74115 4 74371 100 0 0 0        * a royal bodyguard (following)
 F 1 74115 4 74371 100 0 0 0        * a royal bodyguard (following)
 M 0 74062 3 74372 100 0 0 0        * a wild black stallion

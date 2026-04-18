@@ -2,7 +2,7 @@
 &N&+LThe &N&+yFields&N&+L Between&N~
 71153 2 0 60 120 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 71045 1 5 100 0 0 0
@@ -98,6 +98,7 @@ O 0 71001 1 71014 100 0 0 0        * the beat up farmhouse
 O 0 71002 1 71104 100 0 0 0        * the door
 O 0 71030 1 71126 100 0 0 0        * a small circular rift
 O 0 359 1 71128 100 0 0 0          * (object type not in this .obj file)
+O 0 55435 1 71128 100 0 0 0        * (object type not in this .obj file)
 O 0 71031 1 71153 100 0 0 0        * a gateway back
 *
 M 0 71001 6 71003 100 0 0 0        * a hungry field mouse

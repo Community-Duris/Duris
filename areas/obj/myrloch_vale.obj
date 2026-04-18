@@ -243,7 +243,7 @@ artifact under realms~
 &+Can artifact of the under-realms&N~
 &+CAn artifact of the under-realms rests here.&N~
 ~
-12 16 0 0 7 0 0 16385 64 0 0
+12 16 0 0 7 0 0 8404993 64 0 0
 0 0 0 0 0 0 0 0
 5 1 100 0 2 0 0
 E
@@ -340,9 +340,9 @@ bag depth llewyrr~
 &+Ya Llewyrr bag of depth&N~
 &+YA small bag was dropped here carelesly.&N~
 ~
-15 3 3 10 7 0 0 16385 64 0 0
-300 1 -1 100 0 0 0 0
-4 1000000 100
+15 3 3 0 7 0 0 16385 64 0 0
+1000 1 0 1000 0 0 0 0
+-300 1000000 100
 E
 bag depth llewyrr~
 This bag can hold its own wieght. it was crafted by
@@ -365,7 +365,7 @@ it has the elven symble writtin on it. it fits
 perfectly on one's little finger.
 ~
 A
-14 14
+14 20
 A
 20 -1
 #26428
@@ -374,7 +374,7 @@ potion flash~
 &+RA flash potion hovers here on its own.&N~
 ~
 10 7 2 4 7 0 0 1 64 0 0
-40 65 0 0 0 0 0 0
+40 581 355 201 0 0 0 0
 2 43234 100
 E
 potion flash~
@@ -387,7 +387,7 @@ wand water~
 &+BA wand of water lies here alone on the floor.&N~
 ~
 3 40 2 4 7 0 1 16385 64 0 0
-5 1 1 1 0 0 0 0
+5 6 6 140 0 0 0 0
 3 14563 100
 E
 wand water~
@@ -443,8 +443,8 @@ twisted sphere piercing~
 &+La twisted sphere of&N &+rpiercing&N~
 &+LA mystical sphere lies here unwatched.&N~
 ~
-5 16 3 0 7 0 1024 8193 0 8515584 0
-2 2 4 11 0 0 0 0
+5 16 3 0 11 0 1024 8193 0 8515584 0
+2 4 4 11 0 0 0 0
 2 23456 100
 E
 twisted sphere~

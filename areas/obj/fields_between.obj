@@ -191,7 +191,7 @@ magical tangle vine magic~
 &+ga &+ytangle&+g of &+Bma&+Cgi&+Bca&+Cl&+g vine&n~
 &+gTwisted here this &+Bma&+Cgi&+Bca&+Cl&+y tangle &+glies.&n~
 ~
-9 6 3 0 12 0 33562624 1025 64 0 0
+9 6 3 0 12 0 33562624 33555457 64 0 0
 2 0 0 5 0 0 0 0
 1 0 100 4 0 0 0
 E
@@ -199,9 +199,9 @@ magical tangle vine magic~
 &+gThis swarth of &+Bma&+Cgi&+Bca&+Cl&+g vines is imbued with wildmage energy.&N
 ~
 A
-20 -3
+20 -4
 A
-24 -3
+24 -4
 #71016
 clump overipe overripe bannanas bannana bananas banana bananna banannas~
 &+Ya c&+Ll&+Yump of over&+Li&+Ype b&+La&+Yn&+Ln&+Yan&+La&+Ys&n~
@@ -335,7 +335,7 @@ fez clarity troll brewer brewers hat~
 &+yThis funny looking fez, belongs to a very intellectual &+gtroll&+y.&n
 ~
 A
-33 2
+33 3
 A
 13 15
 #71025
@@ -345,7 +345,7 @@ writhing shield arms arm~
 ~
 37 2 3 0 11 0 8192 513 0 0 0
 1 3 4 190 4 0 0 0
-5 0 100 73728 16 0 0
+5 0 100 73728 16 0 33554432
 E
 writhing shield arms arm~
 &+LThis &+Rwrithing&+L mass of arms has been somehow attached to a strap making it into&n

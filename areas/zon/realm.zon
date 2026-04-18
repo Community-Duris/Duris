@@ -2,7 +2,7 @@
 &+gFaerie Realm&n~
 14210 2 0 19 20 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 14006 2 5 100 0 0 0
@@ -235,6 +235,8 @@ E 1 14080 1 12 100 0 0 0           *   a well worn traveling cloak
 P 1 14081 1 14080 100 0 0 0        *   a key of dark steel
 G 1 14079 1 0 100 0 0 0            *    a smooth horn of protection
 M 0 14068 6 14024 100 0 0 0        * a lubberkin
+M 0 14070 1 14024 20 0 0 0         * Jivbo, the wandering gleeman
+E 1 14113 1 16 100 0 0 0           *   the dancing knife of Jivbo
 M 0 14058 5 14025 100 0 0 0        * a dwarfish derrick
 M 0 14068 6 14025 100 0 0 0        * a lubberkin
 M 0 14048 7 14027 100 0 0 0        * a cricket
@@ -534,6 +536,7 @@ E 1 14038 1 3 100 0 0 0            *   an amulet of the tree spirit guardian
 E 1 14054 1 4 100 0 0 0            *   the wooden amulet of the ancient tree spirit
 E 1 14045 1 13 100 0 0 0           *   a belt encrusted with black sapphires
 G 1 359 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55439 1 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 14073 1 14209 100 0 0 0        * Jamfluul, the legendary blacksmith of Dirk'nspire Stronghold
 M 0 14074 1 14209 100 0 0 0        * Dopplepopper the Tinker Gnome
 *

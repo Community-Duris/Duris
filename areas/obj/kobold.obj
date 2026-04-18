@@ -3,8 +3,8 @@ staff shadow~
 &+La shadow staff~
 A staff with a dark overwhelming sense of death and decay is here.~
 ~
-1 6 3 10 7 0 0 16385 64 0 0
-0 0 -1 0 0 0 0 0
+3 6 3 10 7 0 0 16385 64 0 0
+30 5 5 302 0 0 0 0
 5 5000 100
 E
 shadow staff~
@@ -15,17 +15,21 @@ A
 4 4
 #1401
 horn enchanted ki-rin ki~
-an enchanted ki-rin's horn~
-An enchanted ki-rin's horn is here collecting dust.~
+an &+Ce&Nn&+Cc&Nh&+Ca&Nn&+Ct&Ne&+Cd&N ki-rin's &+Whorn&n~
+An &+Ce&Nn&+Cc&Nh&+Ca&Nn&+Ct&Ne&+Cd&N ki-rin's &+Whorn&N is here collecting dust.~
 ~
-5 1 2 0 7 0 0 8193 0 0 0
-15 1 5 11 0 0 0 0
-6 20000 100
+5 1 2 0 14 0 0 8193 0 0 0
+15 5 2 0 0 1015016057 35 35
+6 250000 100
 E
 horn~
 The horn looks very much like a Ki-Rin's horn and glows softly with
 powerful magic.  Its tip is extremely sharp looking as though it
 would make an excellent weapon to backstab someone with.
+~
+E
+_char_msg~
+&NYour $q &+Yt&Ni&+Yn&ng&+Yl&Ne&+Ys &Nin your hands.
 ~
 A
 18 4
@@ -33,8 +37,8 @@ A
 19 4
 #1402
 strange boots~
-&+La pair of strange boots~
-A pair of strange boots sit on the floor rather correctly.~
+&+La pair of &+ms&+Mt&+mr&+Ma&+mn&+Mg&+me&+L boots&n~
+&+LA pair of &+Ms&+mt&+Mr&+ma&+Mn&+mg&+Me&+L boots sit on the floor rather correctly.~
 ~
 9 14 3 8 7 0 0 65 64 0 0
 10 6 1 3 0 0 0 0
@@ -45,16 +49,16 @@ This is an odd pair of boots made from a black material.  There are
 strange designs covering the length of them.
 ~
 A
-1 2
+1 10
 A
-5 2
+5 10
 #1403
 loaf dark bread~
-a loaf of dark bread~
-A loaf of dark bread lies here giving off a mouth-watering aroma.~
+&+ya loaf of &+Ldark bread&n~
+&+yA loaf of &+Ldark bread&+y lies here giving off a mouth-watering aroma.~
 ~
 19 5 2 2 7 0 0 16385 0 0 0
-28 0 0 0 0 0 0 0
+28 3 3 0 3 0 0 0
 1 111 100
 #1404
 cloak mottled brown~
@@ -75,7 +79,7 @@ A
 24 -1
 #1405
 ring crystal~
-&+Wa ring of crystal&n~
+&+Wa ring of cry&+Ms&+Bt&+Wal&n~
 A ring made of &+Wdazling, clear crystal&n has been left here.~
 ~
 11 8 1 1 7 0 0 16387 64 0 0
@@ -88,7 +92,7 @@ Turning the ring in the light causes it to sparkle like it was light
 with an inner light.
 ~
 A
-17 -6
+17 -10
 A
 19 1
 #1406
@@ -108,7 +112,7 @@ A
 19 1
 #1407
 finely woven bracelet silver~
-a finely woven bracelet of &+csilver&n~
+a finely woven bracelet of &+cs&+Ci&+cl&+Cv&+ce&+Cr&n~
 A bracelet made of &+csilver&n strands woven together lies here on the ground.~
 ~
 9 22 3 3 7 0 0 4097 64 0 0
@@ -123,7 +127,7 @@ definately not kobold in origin... it seems to have a magical pull to it.
 A
 18 2
 A
-24 3
+24 -1
 #1408
 rawhide girth~
 a girth of thick &+Yrawhide&n~
@@ -705,7 +709,7 @@ you want to hide it far away from anyone who might want to steal the
 precious ring from you...
 ~
 A
-18 2
+18 3
 A
 19 3
 #1445
@@ -718,11 +722,11 @@ A beaten copper bowl of steaming &+Rblood&n stands here on a tripod.~
 30 1000 100
 #1446
 treasure~
-the treasure of Tyxru's tomb~
+&+Ythe treasure of Tyxru's tomb&n~
 The treasure of Tyxru lies here scattered within the coffin.~
 ~
 20 24 1 0 7 0 0 1 0 0 0
-435 239 136 29 0 0 0 0
+435 239 136 109 0 0 0 0
 200 1 100
 #1447
 nugget silver~
@@ -783,8 +787,8 @@ shiny silver plated shield~
 &+Ca shiny, silver-plated shield&n~
 A &+Cshiny, silver shield&n lies here on the ground attracting your attention.~
 ~
-37 22 3 15 7 0 0 513 64 4165209604 0
-2 1 3 135 3 0 0 0
+37 22 3 15 7 0 0 513 64 3221225472 0
+2 1 3 185 3 0 0 0
 11 20000 100
 E
 silver plated shield~
@@ -795,9 +799,9 @@ fairly light for a shield seems to look like it would be more than
 adequate at protecting its holder.
 ~
 A
-24 -2
+24 -3
 A
-13 15
+13 20
 #1452
 clawed talon demon tako~
 &+La &+Mglowing&+L, clawed talon of a tako demon~
@@ -905,16 +909,18 @@ A
 2 2
 #1458
 glowing orb power~
-&+ma glowing orb of power~
-A small orb sits here, glowing with a bright light.~
+&+ma &+Mglowing &+Corb&+m of &+Mp&+mo&+Mw&+me&+Mr&N~
+&+mA small &+Corb &+msits here, &+Mglowing &+mwith a bright &+Ylight.~
 ~
-1 16 1 2 7 0 8193 16385 64 0 0
-0 0 -1 0 0 0 0 0
-2 1000 100
+34 8 1 2 14 0 8193 8929281 64 0 0
+60 0 -1 0 0 0 0 0
+2 1000000 100 0 0 16777216 0
 A
-18 2
+37 5
 A
-19 2
+56 2
+T
+6 16 1 100
 #1459
 ancient stone tablet~
 &+Wan ancient stone tablet&n~

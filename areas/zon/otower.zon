@@ -71,6 +71,7 @@ D 0 11342 5 1 100 0 0 0
 *
 *
 O 0 359 1 11342 100 0 0 0          * (object type not in this .obj file)
+O 0 55447 1 11342 100 0 0 0        * (object type not in this .obj file)
 *
 M 0 11300 1 11303 100 0 0 0        * Brahvinos, the gatekeeper
 E 1 11301 1 15 100 0 0 0           *   a sparkling diamond bracer

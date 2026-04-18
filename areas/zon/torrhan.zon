@@ -298,6 +298,7 @@ O 0 66680 1 66868 60 0 0 0         * some robes of protection
 O 0 66690 1 66868 70 0 0 0         * boots of the panther
 O 0 66683 1 66870 100 0 0 0        * ring of the dragons
 O 0 359 1 66902 100 0 0 0          * (object type not in this .obj file)
+O 0 55437 1 66902 100 0 0 0        * (object type not in this .obj file)
 *
 M 0 66681 7 66600 100 0 0 0        * a young guard
 M 0 66603 1 66601 100 0 0 0        * an elven woman

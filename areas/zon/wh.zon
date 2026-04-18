@@ -959,6 +959,26 @@ M 0 55238 1 55400 100 0 0 0        * an Ambassador from The Hall of Knighthood
 M 0 55135 1 55400 100 0 0 0        * an Ambassador from The Forgotten Mansion
 M 0 55136 1 55400 100 0 0 0        * an Ambassador from the Village of Werrun
 M 0 55137 1 55400 100 0 0 0        * an Ambassador from Quintaragon Castle
+M 0 55213 1 55400 100 0 0 0        * an Ambassador from The Fields Between
+M 0 55268 1 55400 100 0 0 0        * an Ambassador from The Trakkia Mountains
+M 0 55269 1 55400 100 0 0 0        * an Ambassador from City of Torrhan
+M 0 55270 1 55400 100 0 0 0        * an Ambassador from Nizari
+M 0 55271 1 55400 100 0 0 0        * an Ambassador from Faerie Realm
+M 0 55272 1 55400 100 0 0 0        * an ambassador from Kobold Settlement
+M 0 55273 1 55400 100 0 0 0        * an Ambassador from Tower of High Sorcery
+M 0 55275 1 55400 100 0 0 0        * an Ambassador from Sevenoaks
+M 0 55276 1 55400 100 0 0 0        * an Ambassador from The Mountain of the Banished
+M 0 55277 1 55400 100 0 0 0        * an Ambassador from Bloodstone Keep
+M 0 55278 1 55400 100 0 0 0        * an Ambassador from Orrak
+M 0 55279 1 55400 100 0 0 0        * an Ambassador from The Outcasts Tower
+M 0 55280 1 55400 100 0 0 0        * an Ambassador from Court of the Muse
+M 0 55281 1 55400 100 0 0 0        * an Ambassador from The Caverns of Armageddon
+M 0 55282 1 55400 100 0 0 0        * an Ambassador from The Elemental Groves
+M 0 55283 1 55400 100 0 0 0        * an Ambassador from Clan Stoutdorf Settlement
+M 0 55284 1 55400 100 0 0 0        * an Ambassador from Pits of Cerberus
+M 0 55285 1 55400 100 0 0 0        * an Ambassador from Drustl's Yerdonia Enslaved
+M 0 55286 1 55400 100 0 0 0        * an Ambassador from The Dark Stone Tower of the Northern Realms
+M 0 55287 1 55400 100 0 0 0        * an Ambassador from Myrloch Vale
 M 0 55034 1 55401 100 0 0 0        * Tarn Bloodblade, the outlaw of Tharnadia
 E 1 55376 6 16 100 0 0 0           *   a blood-soaked dagger
 E 1 55376 6 17 100 0 0 0           *   a blood-soaked dagger
@@ -1079,7 +1099,6 @@ G 1 55018 1 0 100 0 0 0            *    the heart of Kileek
 M 0 55214 1 55514 20 0 0 0         * Ithaquua
 E 1 55429 1 6 100 0 0 0            *   the spiked crown of mental resistance
 G 1 55427 1 0 100 0 0 0            *    the butchered tentacle of an Illithid-lord
-M 0 55213 1 55515 100 0 0 0        * (mob type not in this .mob file)
 M 0 55049 7 55549 100 0 0 0        * a puffadder
 M 0 55049 7 55549 100 0 0 0        * a puffadder
 M 0 55049 7 55549 100 0 0 0        * a puffadder

@@ -119,7 +119,7 @@ snow globe snowglobe wonderous~
 &+wa &+Cwonderous&n &+Ws&+wn&+Wo&+ww&+Wg&+wl&+Wo&+wb&+We&n~
 &+WLying here snow swirls in this&+C globe&+w.&n~
 ~
-9 15 3 0 7 0 0 16385 0 0 0
+9 15 3 0 7 0 0 8404993 0 0 0
 1 0 0 5 0 0 0 0
 1 0 100 0 64 0 0
 E
@@ -145,7 +145,7 @@ demonic mask torture~
 &+Langel wings these sleeves transplant that malice to their wearer.&n
 ~
 A
-1 5
+31 3
 A
 19 3
 #9110
@@ -162,7 +162,7 @@ sleeves forged malice malicious armplates~
 &+Wthese malicious looking sleeves.&n
 ~
 A
-24 -2
+24 -3
 A
 13 10
 #9111
@@ -171,7 +171,7 @@ sliver swirling blackness swirl~
 &+LLying here is a &+Wsliver&+L of strange matter.&n~
 ~
 5 1 3 0 13 0 0 8193 0 0 0
-2 2 3 11 0 0 0 0
+2 5 3 0 0 0 0 0
 1 0 100
 E
 sliver swirling blackness swirl~
@@ -199,6 +199,8 @@ dark pair angel wings angelwings~
 ~
 A
 24 -4
+A
+14 20
 #9113
 halo bloodshed blood~
 &+Wthe &+Yhalo &+Wof &+rblood&+Lshed&n~
@@ -216,7 +218,7 @@ halo bloodshed blood~
 A
 40 5
 A
-19 2
+19 3
 #9114
 apocalypse demon hide~
 &+Lthe hide of the &+rapocalypse&+L d&+we&+Lm&+wo&+Ln&n~
@@ -232,7 +234,7 @@ apocalypse demon hide~
 A
 13 20
 A
-18 3
+18 5
 #9115
 belt moving water~
 &+ba &+Bb&+be&+Bl&+bt&+B o&+bf&+B m&+bo&+Bv&+bi&+Bn&+bg &+Bwa&+bt&+Be&+Br&n~
@@ -262,7 +264,7 @@ ringlet mutated flesh~
 &+m  This circle of flesh seems very odd in its mutated state.&n
 ~
 A
-54 5
+54 20
 A
 13 15
 #9117
@@ -326,9 +328,9 @@ chunk mountain dragon hide hunk~
 &+La chunk of mountain dragon hide~
 &+LLYing here is a huge hunk of dark dragon hide.&n~
 ~
-37 11 3 0 10 100 4096 513 64 0 0
-1 3 5 12 5 0 0 0
-30 0 100 536870912 0 0 0
+37 35 3 0 10 100 4096 513 64 0 0
+1 3 5 190 5 0 0 0
+35 125000 100 536870912 0 0 0
 E
 chunk mountain dragon hide~
 &+L  This dark hunk of dragon flesh protected the dark mountain dragon well.  It&n
@@ -336,6 +338,8 @@ chunk mountain dragon hide~
 ~
 A
 19 4
+A
+23 -2
 #9122
 razored sharp wrist wristguard guard~
 &+La &+Wrazored&+L wristguard&n~
@@ -382,7 +386,7 @@ boots dust dusty pair~
 &+yelemental creation.&n
 ~
 A
-13 0
+13 10
 A
 35 4
 #9125
@@ -467,9 +471,9 @@ hollowed eye stalk~
 former owner makes it uncomfortable to wear.&n
 ~
 A
-19 1
+19 2
 A
-24 -1
+24 -2
 #9131
 boots smashing quivering~
 &+Lthe &+yboots&+L of &+ysmashing&n~
@@ -484,9 +488,9 @@ boots smashing quivering~
 &+Lthem making them difficult to hold.&n
 ~
 A
-26 6
+36 4
 A
-19 2
+19 3
 #9132
 symbol chaos badge~
 &+Lthe symbol of &+rchaos&n~
@@ -500,7 +504,7 @@ symbol chaos badge~
 &+L  This dark &+rsymbol&+L makes you want to lose control.&n
 ~
 A
-13 15
+13 20
 A
 20 -2
 #9133
@@ -517,7 +521,7 @@ slimy skin discards~
 &+Lterrible shape to have a &+gskin&+L so soaked in refuse.&n
 ~
 A
-19 2
+19 3
 A
 18 1
 #9134
@@ -533,9 +537,9 @@ ring demonic flames~
 &+L  This ring glows &+rdemonically&+L.&n
 ~
 A
-19 2
+19 4
 A
-13 5
+13 15
 #9135
 visor destruction~
 &+Lthe visor of &+rdestruction&n~
@@ -552,23 +556,23 @@ visor destruction~
 A
 19 3
 A
-31 1
+31 3
 #9136
 gloves randomness pair random~
 &+Mthe gloves of randomness&n~
 &+mA pair of pink twitching gloves lie here.&N~
 ~
-9 15 3 0 7 0 0 129 64 0 0
+9 1 3 0 15 0 0 129 64 0 0
 6 0 0 2 0 0 0 0
-2 0 100
+2 100000 100
 E
 gloves randomness pair random~
 &+M  These gloves seem to make strange magic vortex's about themselves.&n
 ~
 A
-13 10
+40 5
 A
-33 3
+33 5
 #9137
 bracer circlet clouds~
 &+La &+bcirclet&+L of the stones&n~

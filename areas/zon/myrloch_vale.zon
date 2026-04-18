@@ -98,7 +98,7 @@ O 0 26413 1 26547 100 0 0 0        * a stalagmite
 O 0 26414 1 26549 100 0 0 0        * a stalagmite
 O 0 26415 1 26551 100 0 0 0        * a stalagmite
 O 0 26416 1 26553 100 0 0 0        * a stalagmite
-O 0 26435 0 26558 100 0 0 0        * a glittering mountain of coins
+O 0 26435 1 26558 100 0 0 0        * a glittering mountain of coins
 *
 M 0 26416 15 26401 100 0 0 0       * a Llewyrr child
 E 1 26436 11 18 100 0 0 0          *   a toy
@@ -210,6 +210,7 @@ M 0 26402 1 26555 100 0 0 0        * the warlord of fire
 E 1 26438 1 11 100 0 0 0           *   a flaming shield
 G 1 26418 1 0 100 0 0 0            *    a bloodied head of the warlord of fire
 G 1 358 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 55455 1 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 26403 10 26560 100 0 0 0       * a Llewyrr elf
 E 1 26422 10 16 100 0 0 0          *   a short sword
 M 0 26405 10 26560 100 0 0 0       * a Llewyrr guard

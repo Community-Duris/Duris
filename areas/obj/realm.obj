@@ -323,7 +323,7 @@ diamond shield~
 &+WA shield made of magically bonded diamonds is here radiating in the light.~
 ~
 37 27 3 15 11 0 262145 513 64 0 0
-2 1 3 160 4 0 0 0
+2 1 3 185 4 0 0 0
 9 28000 100
 E
 shield diamond~
@@ -334,9 +334,9 @@ to radiate with power and you know that you'd be well protected behind
 such a shield.
 ~
 A
-1 4
+1 8
 A
-4 2
+4 8
 #14025
 green stone ring~
 &+ga green stone ring&N~
@@ -1390,7 +1390,7 @@ shield fianna~
 &+WA shield of the Fianna knights lies here on the ground.~
 ~
 37 16 3 15 7 0 0 513 66 0 0
-2 1 3 135 3 0 0 0
+2 1 3 175 3 0 0 0
 9 20000 100
 E
 shield fianna~
@@ -1400,7 +1400,7 @@ fighting a lone warrior is depicted in embossed silverwork on the front;
 the emblem of the Fianna.
 ~
 A
-1 5
+31 2
 A
 20 -2
 #14112
@@ -1425,7 +1425,7 @@ dancing knife jivbo~
 &+LA knife which looks to be made with much skill lies here in the dust.~
 ~
 5 16 2 3 7 0 1024 8193 64 12713476 0
-2 1 4 11 0 0 0 0
+2 3 6 11 0 0 0 0
 11 600000 100
 E
 dancing knife jivbo~
@@ -1434,9 +1434,9 @@ and nasty.  The blade feels remarkable balanced and looks very well made,
 perfect for the quick, penetrating slash or deft backstab.
 ~
 A
-18 4
+32 4
 A
-19 3
+36 4
 #14114
 potion of faerie detection~
 &+Wa potion of faerie detection&N~

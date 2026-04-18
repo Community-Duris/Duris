@@ -2,7 +2,7 @@
 &+LThe Caverns of &+rArmageddon&n~
 13448 1 0 40 50 2
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 13348 2 5 100 0 0 0
@@ -163,6 +163,7 @@ O 0 13306 1 13355 100 0 0 0        * a magnificent statue
 P 1 13308 1 13306 100 0 0 0        *   a ring of liquid fire
 O 0 67278 1 13371 100 0 0 0        * (object type not in this .obj file)
 O 0 359 1 13371 100 0 0 0          * (object type not in this .obj file)
+O 0 55449 1 13371 100 0 0 0        * (object type not in this .obj file)
 O 0 13341 2 13383 100 0 0 0        * a pile of corpses
 O 0 13340 1 13384 100 0 0 0        * a wounded Myrabolan soldier
 P 1 13359 2 13340 100 0 0 0        *   the tags of the Myrabolan guard

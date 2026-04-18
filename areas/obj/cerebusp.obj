@@ -471,7 +471,7 @@ extinction silver dirk~
 &+La &+Csilver&+L dirk dubbed '&+CEx&+Ltinc&+Ction&+L'&n~
 &+LA &+Csilver&+L dirk has been dropped here.&n~
 ~
-5 22 3 0 11 0 1024 8193 65 49152 0
+5 22 3 0 11 0 1024 8193 65 126976 0
 2 2 8 11 0 0 0 0
 0 33882 100 16 8 0 0
 E
@@ -919,7 +919,7 @@ elephant tusk~
 &+WA long &+welephant&+W tusk has been dropped here.&n~
 ~
 5 10 3 0 7 0 17408 8193 0 86359642 0
-13 3 4 11 0 0 0 0
+13 6 2 11 0 0 0 0
 0 9890 100
 E
 elephant tusk~
