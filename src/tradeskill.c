@@ -2012,7 +2012,7 @@ void load_mines(bool set_event, bool load_all, int map)
 	mine_type = mine_data[map].type;
 	for (P_obj tobj = object_list; tobj; tobj = tobj->next)
 	{
-		if ((OBJ_VNUM(tobj) == mine_type) && (tobj->loc.room > 0) && (world[tobj->loc.room].number >= mine_data[map].start) && (world[tobj->loc.room].number <= mine_data[map].end))
+		if ((OBJ_VNUM(tobj) == mine_type) && IS_SET(tobj->loc_p, LOC_ROOM) && (tobj->loc.room > 0) && (world[tobj->loc.room].number >= mine_data[map].start) && (world[tobj->loc.room].number <= mine_data[map].end))
 		{
 			num_mines++;
 		}
