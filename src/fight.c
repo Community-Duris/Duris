@@ -4715,6 +4715,10 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 
 	uint sflags = SPLDAM_GLOBE | SPLDAM_NODEFLECT | RAWDAM_TRANCEVAMP;
 
+	// if the incoming damage is not reduced, don't reduce the shield damage
+	if (flags & PHSDAM_NOREDUCE)
+		sflags |= PHSDAM_NOREDUCE;
+
 	char buf[256];
 
 	struct damage_messages lightningshield = {"$N &+Ygets zapped as $E hits you!&n",
@@ -6630,7 +6634,7 @@ case RACEWAR_NEUTRAL:
 
 			if (af->modifier == 5)
 			{
-				if (DAM_NONEDEAD != raw_damage(ch, victim, 240 + dice(4, 40), RAWDAM_DEFAULT, &messages))
+				if (DAM_NONEDEAD != raw_damage(ch, victim, 240 + dice(4, 40), PHSDAM_TOUCH | RAWDAM_DEFAULT, &messages))
 				{
 					return TRUE;
 				}

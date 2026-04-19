@@ -2404,7 +2404,7 @@ void Guild::ostracize(P_char member, char *target)
 	}
 
 	// Make sure char exists.
-	if (!pfile_exists(SAVE_DIR, target))
+	if (!sql_player_exists(target))
 	{
 		send_to_char("No idea who that is.\n", member);
 		return;

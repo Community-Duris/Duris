@@ -68,6 +68,9 @@ P_char sql_load_player(const char *name);
 // check if player exists in db
 bool sql_player_exists(const char *name);
 
+// character rename
+bool sql_player_rename(P_char ch, const char *new_name);
+
 // get player pid by name
 int sql_get_player_pid(const char *name);
 

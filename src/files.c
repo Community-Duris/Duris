@@ -1543,43 +1543,19 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	// Soft delete character from frag leaderboard tables (for web statistics)
 	sql_soft_delete_character(GET_PID(ch));
 
-	// delete the player_data
-	sql_delete_player(GET_PID(ch));
-
 #ifdef USE_ACCOUNT
 	// Only remove from account list if descriptor and account exist
 	if (ch->desc && ch->desc->account)
 		remove_char_from_list(ch->desc->account, ch->player.name);
 #endif
 
-	snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s", SAVE_DIR, *name, name);
-	snprintf(Gbuf2, sizeof Gbuf2, "%s.old", Gbuf1);
-	rename(Gbuf1, Gbuf2);
-	if ((f = fopen(Gbuf1, "r")))
-	{
-		debug("deleteCharacter: Error: pfile (%s) still exists.", Gbuf1);
-		debug("deleteCharacter: Command: (%s) failed.", Gbuf2);
-		fclose(f);
-		unlink(Gbuf1);
-	}
-
 	if (bDeleteLocker)
 	{
 		sql_delete_locker(GET_PID(ch), 0);
-		// delete the locker as well
-		snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.locker", SAVE_DIR, LOWER(*ch->player.name), name);
-		snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
-		rename(Gbuf1, Gbuf2);
 	}
 
-	// Delete file containing conjurable mobs.
-	snprintf(Gbuf1, sizeof Gbuf1, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*ch->player.name), name);
-	snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
-	rename(Gbuf1, Gbuf2);
-	// Delete file containing crafting/forging recipe list.
-	snprintf(Gbuf1, sizeof Gbuf1, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR, LOWER(*ch->player.name), name);
-	snprintf(Gbuf2, sizeof Gbuf2, "%s.bak", Gbuf1);
-	rename(Gbuf1, Gbuf2);
+	// delete the player_data
+	sql_delete_player(GET_PID(ch));
 
 	// Delete ship.
 	delete_ship(GET_NAME(ch));

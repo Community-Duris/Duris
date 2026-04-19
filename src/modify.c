@@ -24,6 +24,7 @@
 #include "ships.h"
 #include "spells.h"
 #include "sql.h"
+#include "sql_player.h"
 
 /*
    external variables
@@ -1572,7 +1573,7 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 	// New name must not be in use.
 	// Simplifying this!
 	//  if( restoreCharOnly(finger_foo, skip_spaces(new_name)) < 0 || !finger_foo )
-	if (!pfile_exists(SAVE_DIR, new_name))
+	if (!sql_player_exists(new_name))
 	{
 		/* be sure new name isn't in declined list */
 		if (pfile_exists(BADNAME_DIR, new_name))
@@ -1592,17 +1593,9 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 			}
 		}
 
-		/* If failed rename spellbook (list of conjurable pets), then don't rename */
-		if (!rename_spellbook(old_name, new_name))
+		if(!sql_player_rename(doofus, new_name))
 		{
-			send_to_char("Failed to move spellbook?!?\r\n", ch);
-			return FALSE;
-		}
-
-		/* If failed rename craft/forge list, then don't rename */
-		if (!rename_craftlist(old_name, new_name))
-		{
-			send_to_char("Failed to move craft list?!?\r\n", ch);
+			send_to_char("Failed to rename character in DB!\r\n", ch);
 			return FALSE;
 		}
 

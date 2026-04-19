@@ -397,6 +397,28 @@ bool sql_player_exists(const char *name)
 	return exists;
 }
 
+bool sql_player_rename(P_char ch, const char *new_name)
+{
+	if (!DB || !new_name || !ch)
+		return false;
+
+	char *escaped_name = sql_escape_string(new_name);
+	if (!escaped_name)
+		return false;
+
+	char query[256];
+	snprintf(query, sizeof(query), "UPDATE player_data SET name=LOWER('%s') WHERE pid ='%d'", escaped_name, GET_PID(ch));
+	free(escaped_name);
+
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+
+	mysql_free_result(result);
+
+	return true;
+}
+
 int sql_get_player_pid(const char *name)
 {
 	if (!DB || !name)

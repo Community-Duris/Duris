@@ -1839,7 +1839,7 @@ void ws_cmd_validate_name(struct descriptor_data *d, cJSON *data)
 	statuslog(56, "WS validate_name: checking '%s' in SAVE_DIR='%s'", capitalized_name, SAVE_DIR);
 
 	/* check if player file exists */
-	if (pfile_exists(SAVE_DIR, capitalized_name))
+	if (sql_player_exists(capitalized_name))
 	{
 		statuslog(56, "WS validate_name: '%s' EXISTS - returning invalid", capitalized_name);
 		response = cJSON_CreateObject();
