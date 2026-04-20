@@ -6570,7 +6570,7 @@ case RACEWAR_NEUTRAL:
 		return BOUNDED(1, (to_hit + (victim_ac * 85 / 100)), 100);
 	}
 
-	bool monk_critic(P_char ch, P_char victim)
+	bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
 	{
 		struct affected_type   aff, *af;
 		struct damage_messages messages = {"$N screams as you sink five fingers into soft spots in $S shoulder.",
@@ -6634,7 +6634,7 @@ case RACEWAR_NEUTRAL:
 
 			if (af->modifier == 5)
 			{
-				if (DAM_NONEDEAD != raw_damage(ch, victim, 240 + dice(4, 40), PHSDAM_TOUCH | RAWDAM_DEFAULT, &messages))
+				if (DAM_NONEDEAD != melee_damage(ch, victim, 240 + dice(4, 40), PHSDAM_TOUCH | RAWDAM_DEFAULT, &messages, damAccumulator))
 				{
 					return TRUE;
 				}
@@ -7480,7 +7480,7 @@ case RACEWAR_NEUTRAL:
 				dam *= 1.5;
 			}
 			// Monk special critical hits don't work against a variety of victims.
-			else if (IS_HUMANOID(victim) && !IS_UNDEADRACE(victim) && !IS_ANGEL(victim) && !IS_GREATER_RACE(victim) && !IS_ELITE(victim) && monk_critic(ch, victim))
+			else if (IS_HUMANOID(victim) && !IS_UNDEADRACE(victim) && !IS_ANGEL(victim) && !IS_GREATER_RACE(victim) && !IS_ELITE(victim) && monk_critic(ch, victim, damAccumulator))
 			{
 				return FALSE;
 			}

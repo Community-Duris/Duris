@@ -513,21 +513,26 @@ void herb_ocularius(int level, int duration, P_char smoker)
 	// duration mud hours + 1/10th herb level seems okay for now.  ~10+ RL mins.
 	af.duration = duration + level / 10;
 
+	ulong optionalFlags = 0;
+	optionalFlags |= ("smoke.ocularius.applyDetectInvis", 0) == 1 ? AFF_DETECT_INVISIBLE : 0;
+	ulong optionalFlags2 = 0;
+	optionalFlags2 |= ("smoke.ocularius.applySlow", 1) == 1 ? AFF2_SLOW : 0;	
+
 	af.bitvector4 = AFF4_SENSE_HOLINESS;
 	// AFF2_SLOW for the obligatory negative affect.
 	if (IS_EVIL(smoker))
 	{
-		af.bitvector2 = AFF2_DETECT_GOOD | AFF2_SLOW;
+		af.bitvector2 = AFF2_DETECT_GOOD | optionalFlags2;
 	}
 	else if (IS_GOOD(smoker))
 	{
-		af.bitvector2 = AFF2_DETECT_EVIL | AFF2_SLOW;
+		af.bitvector2 = AFF2_DETECT_EVIL | optionalFlags2;
 	}
 	else
 	{
-		af.bitvector2 = AFF2_DETECT_EVIL | AFF2_DETECT_GOOD | AFF2_SLOW;
+		af.bitvector2 = AFF2_DETECT_EVIL | AFF2_DETECT_GOOD | optionalFlags2;
 	}
-	af.bitvector = AFF_SENSE_LIFE | AFF_INFRAVISION;
+	af.bitvector = AFF_SENSE_LIFE | AFF_INFRAVISION | optionalFlags;
 	affect_to_char(smoker, &af);
 
 	send_to_char("&nYou feel the &+Ws&+wm&+Wo&+wk&+We&n strengthening your paranoia.\n\r", smoker);
@@ -581,12 +586,14 @@ void herb_blue_haze(int level, int duration, P_char smoker)
 	// Set the Herb's Affects.
 	bzero(&af, sizeof(af));
 
+	int multi = get_property("smoke.blueHaze.multi", 1);
+
 	af.type     = HERB_BLUE_HAZE;
 	af.duration = duration;
 	// The APPLY_AC does stack.  It's not much, in bump or time, and it's just more expedient than checking
 	//   for every existing armor spell as we do for vitality portion below.
 	// Actually, we could use the AFF_ARMOR flag, but meh.
-	af.modifier = (int)(-1 * ((4 / 5) * level)); // -20 AC at herb->level = 25
+	af.modifier = (int)(-1 * ((4 / 5) * level)) * multi; // -20 AC at herb->level = 25
 	af.location = APPLY_AC;
 	affect_to_char(smoker, &af);
 	// Slight decrease in Apply_Casting_Pulse.
@@ -601,11 +608,13 @@ void herb_blue_haze(int level, int duration, P_char smoker)
 	}
 	else
 	{
-		af.modifier = 3 * level; // 75hp at herb->level = 25 (Standard vitality is 100hp)
+		ulong optionalFlags = get_property("smoke.blueHaze.applyHaste", 0) == 1 ? AFF_HASTE : 0;
+		af.modifier = 3 * level * multi; // 75hp at herb->level = 25 (Standard vitality is 100hp)
 		af.location = APPLY_HIT;
 		affect_to_char(smoker, &af);
-		af.modifier = (int)(3 + level / 10); // +5 at herb->level = 25 (Standard Vitality is +6)
+		af.modifier = (int)(3 + level / 10) * multi; // +5 at herb->level = 25 (Standard Vitality is +6)
 		af.location = APPLY_HITROLL;
+		af.bitvector = optionalFlags;
 		affect_to_char(smoker, &af);
 		update_pos(smoker);
 		send_to_char("&nThe &+Ws&+wm&+Wo&+wk&+We&n brings a &+Ch&+ca&+Cz&+ce&n down upon you.\n\r", smoker);
@@ -636,11 +645,12 @@ void herb_medicus(int level, int duration, P_char smoker)
 
 	// Set the Herb's Affects.
 	bzero(&af, sizeof(af));
+	int multi = get_property("smoke.medicus.multi", 1);
 
 	af.type     = HERB_MEDICUS;
 	af.duration = SECS_PER_MUD_HOUR * 5; // 5 Hours seems okay for now.  ~6.5 RL mins.
 	af.location = APPLY_HIT_REG;
-	af.modifier = (level * level * 4) / 3; // Standard SPELL_REGENERATION is level * level * 2.
+	af.modifier = ((level * level * 4) / 3) * multi; // Standard SPELL_REGENERATION is level * level * 2.
 	affect_to_char(smoker, &af);
 	send_to_char("&nThe &+Ws&+wm&+Wo&+wk&+We&n begins to help your body mend itself.\n\r", smoker);
 
@@ -687,17 +697,18 @@ void herb_black_kush(int level, int duration, P_char smoker)
 
 	// Set the Herb's Affects.
 	bzero(&af, sizeof(af));
+	int multi = get_property("smoke.blackKush.multi", 1);
 
 	af.type     = HERB_BLACK_KUSH;
 	af.duration = duration;
 	// General boost to each "caster" stat.
-	af.modifier = (GET_C_POW(smoker) / 10) + (level / 10) - 5;
+	af.modifier = multi * (GET_C_POW(smoker) / 10) + (level / 10) - 5;
 	af.location = APPLY_POW;
 	affect_to_char(smoker, &af);
-	af.modifier = (GET_C_INT(smoker) / 10) + (level / 10) - 5;
+	af.modifier = multi * (GET_C_INT(smoker) / 10) + (level / 10) - 5;
 	af.location = APPLY_INT;
 	affect_to_char(smoker, &af);
-	af.modifier = (GET_C_WIS(smoker) / 10) + (level / 10) - 5;
+	af.modifier = multi * (GET_C_WIS(smoker) / 10) + (level / 10) - 5;
 	af.location = APPLY_WIS;
 	affect_to_char(smoker, &af);
 
@@ -759,8 +770,10 @@ void herb_gootwiet(int level, int duration, P_char smoker)
 	af.type     = HERB_GOOTWIET;
 	af.duration = duration;
 
+	int saveBonusChance = get_property("smoke.gootwiet.saveBonusChance", 75);
+
 	// 75% chance to add a small boost to Save Para so long as smoker isn't affected by Herb_Ocularius.
-	if ((number(1, 100) <= 75) && !affected_by_spell(smoker, HERB_OCULARIUS))
+	if ((number(1, 100) <= saveBonusChance) && !affected_by_spell(smoker, HERB_OCULARIUS))
 	{
 		// Apply_Saving_Para
 		af.modifier = -(level / 10) - number(1, 3); // herb->level = 25 gives -3 to -5 Save Para
@@ -770,7 +783,7 @@ void herb_gootwiet(int level, int duration, P_char smoker)
 	}
 
 	// 75% chance to add a small boost to Save Spell so long as smoker isn't affected by Herb_Blue_Haze.
-	if ((number(1, 100) <= 75) && !affected_by_spell(smoker, HERB_BLUE_HAZE))
+	if ((number(1, 100) <= saveBonusChance) && !affected_by_spell(smoker, HERB_BLUE_HAZE))
 	{
 		// Apply_Saving_Spell
 		af.modifier = -(level / 10) - number(1, 3); // herb->level = 25 gives -3 to -5 Save Spell
@@ -780,7 +793,7 @@ void herb_gootwiet(int level, int duration, P_char smoker)
 	}
 
 	// 75% chance to add a small boost to Save Breath so long as smoker isn't affected by Herb_Medicus.
-	if ((number(1, 100) <= 75) && !affected_by_spell(smoker, HERB_MEDICUS))
+	if ((number(1, 100) <= saveBonusChance) && !affected_by_spell(smoker, HERB_MEDICUS))
 	{
 		// Apply_Saving_Breath
 		af.modifier = -(level / 10) - number(1, 3); // herb->level = 25 gives -3 to -5 Save Breath
@@ -790,7 +803,7 @@ void herb_gootwiet(int level, int duration, P_char smoker)
 	}
 
 	// 75% chance to add a small boost to Save Fear so long as smoker isn't affected by Herb_Black_Kush.
-	if ((number(1, 100) <= 75) && !affected_by_spell(smoker, HERB_BLACK_KUSH))
+	if ((number(1, 100) <= saveBonusChance) && !affected_by_spell(smoker, HERB_BLACK_KUSH))
 	{
 		// Apply_Saving_Fear
 		af.modifier = -(level / 10) - number(1, 3); // herb->level = 25 gives -3 to -5 Save Fear
