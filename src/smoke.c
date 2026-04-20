@@ -514,9 +514,9 @@ void herb_ocularius(int level, int duration, P_char smoker)
 	af.duration = duration + level / 10;
 
 	ulong optionalFlags = 0;
-	optionalFlags |= ("smoke.ocularius.applyDetectInvis", 0) == 1 ? AFF_DETECT_INVISIBLE : 0;
+	optionalFlags |= get_property("smoke.ocularius.applyDetectInvis", 0) == 1 ? AFF_DETECT_INVISIBLE : 0;
 	ulong optionalFlags2 = 0;
-	optionalFlags2 |= ("smoke.ocularius.applySlow", 1) == 1 ? AFF2_SLOW : 0;	
+	optionalFlags2 |= get_property("smoke.ocularius.applySlow", 1) == 1 ? AFF2_SLOW : 0;	
 
 	af.bitvector4 = AFF4_SENSE_HOLINESS;
 	// AFF2_SLOW for the obligatory negative affect.
