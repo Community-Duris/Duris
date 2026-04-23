@@ -1081,7 +1081,7 @@ void epic_zone_balance()
 		if (row)
 		{
 			alignment = atoi(row[0]);
-			lt        = rowCount > 1 ? atoi(row[1]) : 0;
+			lt        = rowCount > 1 ? atol(row[1]) : 0;
 		}
 
 		mysql_free_result(res);
