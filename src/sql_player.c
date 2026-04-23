@@ -5494,12 +5494,12 @@ bool sql_load_all_corpses(void)
 
 			if (row[27])
 			{
-				FREE(cur_corpse->short_description);
+				//FREE(cur_corpse->short_description);
 				cur_corpse->short_description = str_dup(row[27]);
 			}
 			if (row[28])
 			{
-				FREE(cur_corpse->description);
+				//FREE(cur_corpse->description);
 				cur_corpse->description = str_dup(row[28]);
 			}
 		}
