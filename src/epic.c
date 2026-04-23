@@ -1057,7 +1057,8 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 
 void epic_zone_balance()
 {
-	int                    i, alignment, delta, lt;
+	int                    i, alignment, delta;
+	long                   lt;
 	vector<epic_zone_data> epic_zones = get_epic_zones();
 
 	for (i = 0; i < epic_zones.size(); i++)
@@ -1093,7 +1094,7 @@ void epic_zone_balance()
 
 		// debug("zone %d alignment %d", epic_zones[i].number, alignment);
 
-		if (time(NULL) - lt > ((int)get_property("epic.alignment.reset.hour", 7 * 24) * 60 * 60))
+		if ((time(NULL) - lt) > ((int)get_property("epic.alignment.reset.hour", 7 * 24) * 60 * 60))
 		{
 			if (alignment > 0)
 				delta = -1;

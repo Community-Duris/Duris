@@ -223,6 +223,8 @@ CREATE TABLE IF NOT EXISTS corpses (
     save_id BIGINT NOT NULL,
     room_vnum INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	short_descr VARCHAR(512) DEFAULT NULL,
+    description TEXT DEFAULT NULL,
     INDEX idx_player_name (player_name),
     UNIQUE KEY uk_player_saveid (player_name, save_id)
 );
@@ -1127,6 +1129,27 @@ CREATE TABLE IF NOT EXISTS player_pet_item_extra_descr (
     REFERENCES player_pet_items(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS corpse_item_extra_descr (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  item_id INT UNSIGNED NOT NULL,
+  keyword VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY (id),
+  INDEX idx_item_id (item_id),
+  CONSTRAINT fk_corpse_item_ed FOREIGN KEY (item_id)
+    REFERENCES corpse_items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS locker_item_extra_descr (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  item_id INT UNSIGNED NOT NULL,
+  keyword VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY (id),
+  INDEX idx_item_id (item_id),
+  CONSTRAINT fk_locker_item_ed FOREIGN KEY (item_id)
+    REFERENCES locker_items(id) ON DELETE CASCADE
+);
 
 -- obj_uid for item duplication prevention
 DELIMITER //

@@ -410,13 +410,7 @@ bool sql_player_rename(P_char ch, const char *new_name)
 	snprintf(query, sizeof(query), "UPDATE player_data SET name=LOWER('%s') WHERE pid ='%d'", escaped_name, GET_PID(ch));
 	free(escaped_name);
 
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return false;
-
-	mysql_free_result(result);
-
-	return true;
+	return sql_run_query(query);
 }
 
 int sql_get_player_pid(const char *name)
@@ -1273,6 +1267,56 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 
 	free(batch);
 	return batch_count;
+}
+
+static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const char *table)
+{
+	char query[256];
+	if (!obj || obj->ex_description || !DB)
+		return true;
+
+	// load extra descriptions (spellbooks etc)
+	snprintf(query,
+	         sizeof(query),
+	         "SELECT keyword, description "
+	         "FROM %s_extra_descr "
+	         "WHERE item_id=%d",
+	         table, item_id);
+
+	MYSQL_RES* result = db_query("%s", query);
+	if (result)
+	{
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(result)))
+		{
+			struct extra_descr_data *ed;
+			CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
+
+			if (row[0] && strcmp(row[0], "SPELLBOOK") == 0)
+			{
+				CREATE(ed->keyword, char, 4, MEM_TAG_STRING);
+				ed->keyword[0] = 3;
+				ed->keyword[1] = 1;
+				ed->keyword[2] = 3;
+				ed->keyword[3] = '\0';
+
+				size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
+				CREATE(ed->description, char, buflen, MEM_TAG_STRING);
+				json_to_spellbook(row[1], ed->description);
+			}
+			else
+			{
+				ed->keyword     = row[0] ? str_dup(row[0]) : str_dup("");
+				ed->description = row[1] ? str_dup(row[1]) : NULL;
+			}
+
+			ed->next            = obj->ex_description;
+			obj->ex_description = ed;
+			obj->str_mask |= STRUNG_EDESC;
+		}
+		mysql_free_result(result);
+	}
+	return true;
 }
 
 // load item affects from db into obj->affected[]
@@ -2230,6 +2274,9 @@ bool sql_load_player_pets(P_char ch)
 					{
 						if (items[j].db_id == items[i].container_id && items[j].obj)
 						{
+							// container weight is stored with total contents weight
+							// need to remove the weight from the container since obj_to_obj will add it again
+							items[j].obj->weight -= items[i].obj->weight;
 							obj_to_obj(items[i].obj, items[j].obj);
 							break;
 						}
@@ -3764,6 +3811,9 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	if (!sql_save_locker_item_affects(item_id, obj))
 		return 0;
 
+	if (obj->ex_description && !sql_save_item_extra_descr(item_id, obj, "locker_item_extra_descr"))
+		return 0;
+
 	if (obj->contains)
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
@@ -3978,6 +4028,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			obj->bitvector5 = strtoul(row[26], NULL, 10);
 
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
+		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item");
 
 		obj->contains = sql_load_locker_items(locker_id, item_id);
 		for (P_obj c = obj->contains; c; c = c->next_content)
@@ -5200,6 +5251,9 @@ static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
 	if (!sql_save_corpse_item_affects(item_id, obj))
 		return 0;
 
+	if (obj->ex_description && !sql_save_item_extra_descr(item_id, obj, "corpse_item_extra_descr"))
+		return 0;
+
 	if (obj->contains)
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
@@ -5236,14 +5290,24 @@ bool sql_save_corpse(P_obj corpse)
 	char *esc_name = sql_escape_string(player_name);
 	if (!esc_name)
 		return false;
+	
+	char *esc_sdesc = sql_escape_string(corpse->short_description);
+	if (!esc_sdesc)
+		return false;
+	
+	char *esc_desc = sql_escape_string(corpse->description);
+	if (!esc_desc)
+		return false;
 
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d", esc_name, save_id);
 	sql_run_query(del_query);
 
 	char ins_query[512];
-	snprintf(ins_query, sizeof(ins_query), "INSERT INTO corpses (player_name, save_id, room_vnum) VALUES ('%s', %d, %d)", esc_name, save_id, room_vnum);
+	snprintf(ins_query, sizeof(ins_query), "INSERT INTO corpses (player_name, save_id, room_vnum, short_descr, description) VALUES ('%s', %d, %d, '%s', '%s')", esc_name, save_id, room_vnum, esc_sdesc, esc_desc);
 	free(esc_name);
+	free(esc_sdesc);
+	free(esc_desc);
 
 	if (!sql_run_query(ins_query))
 		return false;
@@ -5292,7 +5356,8 @@ bool sql_load_all_corpses(void)
 	                             "ci.weight, ci.cost, ci.timer, "
 	                             "ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
 	                             "ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
-	                             "ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0) "
+	                             "ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0), "
+								 "c.short_descr, c.description "
 	                             "FROM corpses c "
 	                             "LEFT JOIN corpse_items ci ON ci.corpse_id = c.id "
 	                             "LEFT JOIN corpse_item_affects cia ON cia.item_id = ci.id "
@@ -5426,6 +5491,17 @@ bool sql_load_all_corpses(void)
 			if (cur_corpse->action_description)
 				FREE(cur_corpse->action_description);
 			cur_corpse->action_description = str_dup(player_name);
+
+			if (row[27])
+			{
+				FREE(cur_corpse->short_description);
+				cur_corpse->short_description = str_dup(row[27]);
+			}
+			if (row[28])
+			{
+				FREE(cur_corpse->description);
+				cur_corpse->description = str_dup(row[28]);
+			}
 		}
 
 		// no item in this row (corpse with no items)
@@ -5509,6 +5585,8 @@ bool sql_load_all_corpses(void)
 			obj->affected[0].location = aff_loc;
 			obj->affected[0].modifier = atoi(row[25]);
 		}
+
+		sql_load_item_extra_descr_from_table(item_id, obj, "corpse_item");
 
 		obj_map[num_objs]       = obj;
 		id_map[num_objs]        = item_id;
@@ -7453,22 +7531,20 @@ bool sql_save_ship(P_ship ship)
 		         ship->money,
 		         ship->flags);
 		// new ship
-		MYSQL_RES *result = db_query("%s", initQuery);
-		if (!result)
+		if (!sql_run_query(initQuery))
 		{
-			sql_player_error("sql_save_ship", batch);
+			sql_player_error("sql_save_ship", initQuery);
 			free(batch);
 			free(esc_owner);
 			if (esc_name)
 				free(esc_name);
 			return false;
 		}
-		mysql_free_result(result);
 
 		// get ship id
 		char query[200];
 		snprintf(query, ARRAY_SIZE(query), "select id from ships where owner_name='%s'", esc_owner);
-		result = db_query("%s", query);
+		MYSQL_RES* result = db_query("%s", query);
 		free(esc_owner);
 		if (esc_name)
 			free(esc_name);

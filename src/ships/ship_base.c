@@ -393,7 +393,6 @@ bool rename_ship_owner(char *old_name, char *new_name)
 	ship->ownername = str_dup(new_name);
 	name_ship(SHIP_NAME(ship), ship);
 	write_ship(ship);
-	write_ships_index(); // reset index file
 
 	sprintf(buf, "Ships/%s", old_name);
 	unlink(buf);
@@ -2041,25 +2040,6 @@ void land_ship(P_ship ship)
 //--------------------------------------------------------------------
 // Writing ships to disk
 //--------------------------------------------------------------------
-int write_ships_index()
-{
-	FILE *f = fopen("Ships/ship_index", "w");
-	if (!f)
-	{
-		logit(LOG_FILE, "Ship index file open error.");
-		return FALSE;
-	}
-	ShipVisitor svs;
-	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
-	{
-		if (SHIP_LOADED(svs) && !IS_NPC_SHIP(svs))
-			fprintf(f, "%s~\n", svs->ownername);
-	}
-	fprintf(f, "$~");
-	fclose(f);
-	return TRUE;
-}
-
 int write_ship(P_ship ship)
 {
 	if (IS_NPC_SHIP(ship))

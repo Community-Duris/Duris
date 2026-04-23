@@ -2197,7 +2197,6 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 			send_to_char_f(ch, "&=LrError loading ship (%d), please notify a god.&n\n", shiperror);
 			return TRUE;
 		}
-		write_ships_index();
 
 		// everything went successfully, substracting the cost
 		SUB_MONEY(ch, SHIPTYPE_COST(hull_type), 0);
