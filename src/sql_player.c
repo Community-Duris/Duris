@@ -5270,6 +5270,9 @@ bool sql_save_corpse(P_obj corpse)
 	if (!corpse || !DB)
 		return false;
 
+    if (!sql_begin_transaction())
+		return false;
+
 	if (corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[1], PC_CORPSE))
 		return false;
 
@@ -5319,7 +5322,7 @@ bool sql_save_corpse(P_obj corpse)
 		sql_save_corpse_item(corpse_id, obj, 0);
 	}
 
-	return true;
+	return sql_commit();
 }
 
 bool sql_delete_corpse(const char *player_name, int save_id)
