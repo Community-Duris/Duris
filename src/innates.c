@@ -1505,7 +1505,7 @@ int bite_poison(P_char ch, P_char victim, int mod)
 
 	if (!IS_TRUSTED(victim) && !IS_UNDEADRACE(victim))
 	{
-		(skills[number(FIRST_POISON, LAST_POISON)].spell_pointer)(GET_LEVEL(ch), ch, 0, 0, victim, 0);
+		(skills[POISON_LIFELEAK].spell_pointer)(GET_LEVEL(ch), ch, 0, 0, victim, 0);
 		act("&+G$n shivers slightly.", TRUE, victim, 0, 0, TO_ROOM);
 		if (was_poisoned)
 			send_to_char("&+GYou feel even more ill.\n", victim);
