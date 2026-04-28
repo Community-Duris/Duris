@@ -1,6 +1,6 @@
 #825
 &+MMyrabolus&n~
-82683 1 0 25 35 1
+82687 1 0 25 35 1
 *
 * Zone edited with durisEdit v3.02
 *
@@ -300,10 +300,8 @@ M 0 82503 9 82567 100 0 0 0        * a myrabolan hunter guard
 F 1 82504 5 82567 100 0 0 0        * a black panther (following)
 M 0 82520 5 82568 100 0 0 0        * a minotaur townsperson
 M 0 82531 9 82568 100 0 0 0        * a half-orc commoner
-M 0 82576 1 82569 100 0 0 0        * a myrabolan guard hunter captain
-M 0 82575 2 82569 100 0 0 0        * a Myrabolan hunter guard
-M 0 82575 2 82569 100 0 0 0        * a Myrabolan hunter guard
-M 0 82574 1 82569 100 0 0 0        * a wounded myrabolan hunter guard
+M 0 82508 1 82569 100 0 0 0        * Mardoc
+E 1 82547 1 18 100 0 0 0           *   a staff of melded drider bones
 M 0 82530 9 82570 100 0 0 0        * a myrabolan commoner
 M 0 82543 1 82570 100 0 0 0        * a monkey hunter
 M 0 82562 4 82570 100 0 0 0        * a kitty
@@ -387,6 +385,10 @@ M 0 82527 8 82622 100 0 0 0        * a shock troop
 M 0 82527 8 82622 100 0 0 0        * a shock troop
 M 0 82527 8 82622 100 0 0 0        * a shock troop
 M 0 82527 8 82622 100 0 0 0        * a shock troop
+M 0 82576 1 82623 100 0 0 0        * a myrabolan guard hunter captain
+M 0 82575 2 82623 100 0 0 0        * a Myrabolan hunter guard
+M 0 82575 2 82623 100 0 0 0        * a Myrabolan hunter guard
+M 0 82574 1 82623 100 0 0 0        * a wounded myrabolan hunter guard
 M 0 82528 3 82624 100 0 0 0        * a resting hunter guard
 M 0 82528 3 82624 100 0 0 0        * a resting hunter guard
 M 0 82528 3 82624 100 0 0 0        * a resting hunter guard
@@ -446,12 +448,12 @@ G 1 13321 4 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 82500 1 82667 100 0 0 0        * Roland
 E 1 82560 1 13 100 0 0 0           *   a black leather belt embossed with a silver cresent moon
 E 1 82500 1 16 100 0 0 0           *   a black double-edged shortsword dubbed, Huntsmaster
-M 0 82569 1 82669 100 0 0 0        * Balance
-M 0 82573 1 82670 100 0 0 0        * the dock master
+M 0 82573 1 82669 100 0 0 0        * the dock master
 M 0 82558 6 82672 100 0 0 0        * a su-monster
 M 0 82558 6 82672 100 0 0 0        * a su-monster
 M 0 82572 1 82673 100 0 0 0        * a huge su-monster
 E 1 82556 1 13 100 0 0 0           *   a strip of su-monster skin
 G 1 82561 1 0 100 0 0 0            *    a su-monster pelt
+M 0 82569 1 82686 100 0 0 0        * Balance
 *
 S

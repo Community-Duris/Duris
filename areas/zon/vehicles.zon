@@ -1,8 +1,8 @@
 #470
 vehicles~
-47028 1 0 25 35 1
+47197 1 0 25 35 1
 *
-* Zone edited with durisEdit v3.00
+* Zone edited with durisEdit v3.02
 *
 *
 D 0 47012 0 1 100 0 0 0
@@ -44,6 +44,342 @@ D 0 47015 2 1 100 0 0 0
 D 0 47016 0 1 100 0 0 0
 *     north exit from "The Cargo Hold of the WaveDancer" to
 *     "Below Deck on the WaveDancer" - closed
+*
+D 0 47040 3 1 100 0 0 0
+*     west exit from "Starboard Heavy Catapults of The Ironhold Grudge" to
+*     "A Mess Hall Called 'The Anvil's Appetite'" - closed
+*
+D 0 47061 1 1 100 0 0 0
+*     east exit from "A Mess Hall Called 'The Anvil's Appetite'" to
+*     "Starboard Heavy Catapults of The Ironhold Grudge" - closed
+*
+D 0 47042 3 1 100 0 0 0
+*     west exit from "Starboard Heavy Catapults of The Ironhold Grudge" to
+*     "The Passenger Cabin" - closed
+*
+D 0 47059 1 1 100 0 0 0
+*     east exit from "The Passenger Cabin" to
+*     "Starboard Heavy Catapults of The Ironhold Grudge" - closed
+*
+D 0 47043 0 1 100 0 0 0
+*     north exit from "Central Deck of The Ironhold Grudge" to
+*     "A Mess Hall Called 'The Anvil's Appetite'" - closed
+*
+D 0 47060 2 1 100 0 0 0
+*     south exit from "A Mess Hall Called 'The Anvil's Appetite'" to
+*     "Central Deck of The Ironhold Grudge" - closed
+*
+D 0 47043 1 1 100 0 0 0
+*     east exit from "Central Deck of The Ironhold Grudge" to
+*     "The Helm-Warden's Quarters" - closed
+*
+D 0 47062 3 1 100 0 0 0
+*     west exit from "The Helm-Warden's Quarters" to
+*     "Central Deck of The Ironhold Grudge" - closed
+*
+D 0 47043 2 1 100 0 0 0
+*     south exit from "Central Deck of The Ironhold Grudge" to
+*     "The Passenger Cabin" - closed
+*
+D 0 47058 0 1 100 0 0 0
+*     north exit from "The Passenger Cabin" to
+*     "Central Deck of The Ironhold Grudge" - closed
+*
+D 0 47043 5 1 100 0 0 0
+*     down exit from "Central Deck of The Ironhold Grudge" to
+*     "Landing in The Ironhold Grudge Cargo Hold" - closed
+*
+D 0 47044 4 1 100 0 0 0
+*     up exit from "Landing in The Ironhold Grudge Cargo Hold" to
+*     "Central Deck of The Ironhold Grudge" - closed
+*
+D 0 47044 3 1 100 0 0 0
+*     west exit from "Landing in The Ironhold Grudge Cargo Hold" to
+*     "The Brig of The Ironhold Grudge" - closed
+*
+D 0 47067 1 1 100 0 0 0
+*     east exit from "The Brig of The Ironhold Grudge" to
+*     "Landing in The Ironhold Grudge Cargo Hold" - closed
+*
+D 0 47045 0 1 100 0 0 0
+*     north exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47053 2 1 100 0 0 0
+*     south exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47045 3 1 100 0 0 0
+*     west exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47057 1 1 100 0 0 0
+*     east exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47046 2 1 100 0 0 0
+*     south exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47050 0 1 100 0 0 0
+*     north exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47046 3 1 100 0 0 0
+*     west exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47056 1 1 100 0 0 0
+*     east exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47047 1 1 100 0 0 0
+*     east exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47055 3 1 100 0 0 0
+*     west exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47047 2 1 100 0 0 0
+*     south exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47051 0 1 100 0 0 0
+*     north exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47048 1 5 100 0 0 0
+*     east exit from "A Cavernous Cargo Hold" to
+*     "A Dank Crawlspace" - closed/secret
+*
+D 0 47065 3 5 100 0 0 0
+*     west exit from "A Dank Crawlspace" to
+*     "A Cavernous Cargo Hold" - closed/secret
+*
+D 0 47049 0 1 100 0 0 0
+*     north exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47052 2 1 100 0 0 0
+*     south exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47049 1 1 100 0 0 0
+*     east exit from "A Cavernous Cargo Hold" to
+*     "The Great Beastiary Hold" - closed
+*
+D 0 47054 3 1 100 0 0 0
+*     west exit from "The Great Beastiary Hold" to
+*     "A Cavernous Cargo Hold" - closed
+*
+D 0 47062 4 2 100 0 0 0
+*     up exit from "The Helm-Warden's Quarters" to
+*     "Command Platform of The Ironhold Grudge" - closed/locked
+*
+D 0 47066 5 1 100 0 0 0
+*     down exit from "Command Platform of The Ironhold Grudge" to
+*     "The Helm-Warden's Quarters" - closed
+*
+D 0 47100 3 2 100 0 0 0
+*     west exit from "Amidst the Ribs of The Stalval" to
+*     "The High Seat of The Stalval" - closed/locked
+*
+D 0 47104 1 1 100 0 0 0
+*     east exit from "The High Seat of The Stalval" to
+*     "Amidst the Ribs of The Stalval" - closed
+*
+D 0 47105 3 1 100 0 0 0
+*     west exit from "The Central Deck of The Stalval" to
+*     "A Low-Slung Cabin of Furred Hammocks" - closed
+*
+D 0 47130 1 1 100 0 0 0
+*     east exit from "A Low-Slung Cabin of Furred Hammocks" to
+*     "The Central Deck of The Stalval" - closed
+*
+D 0 47108 3 1 100 0 0 0
+*     west exit from "Below Deck of The Stalval" to
+*     "A Filthy Warren of Pelts" - closed
+*
+D 0 47132 1 1 100 0 0 0
+*     east exit from "A Filthy Warren of Pelts" to
+*     "Below Deck of The Stalval" - closed
+*
+D 0 47121 0 1 100 0 0 0
+*     north exit from "The Gullet" to
+*     "In a Cramped Verdigris Cage" - closed
+*
+D 0 47123 2 1 100 0 0 0
+*     south exit from "In a Cramped Verdigris Cage" to
+*     "The Gullet" - closed
+*
+D 0 47121 1 1 100 0 0 0
+*     east exit from "The Gullet" to
+*     "In a Cramped Verdigris Cage" - closed
+*
+D 0 47125 3 1 100 0 0 0
+*     west exit from "In a Cramped Verdigris Cage" to
+*     "The Gullet" - closed
+*
+D 0 47121 2 1 100 0 0 0
+*     south exit from "The Gullet" to
+*     "In a Cramped Verdigris Cage" - closed
+*
+D 0 47127 0 1 100 0 0 0
+*     north exit from "In a Cramped Verdigris Cage" to
+*     "The Gullet" - closed
+*
+D 0 47121 6 1 100 0 0 0
+*     northwest exit from "The Gullet" to
+*     "In a Cramped Verdigris Cage" - closed
+*
+D 0 47122 9 1 100 0 0 0
+*     southeast exit from "In a Cramped Verdigris Cage" to
+*     "The Gullet" - closed
+*
+D 0 47121 7 1 100 0 0 0
+*     southwest exit from "The Gullet" to
+*     "In a Cramped Verdigris Cage" - closed
+*
+D 0 47128 8 1 100 0 0 0
+*     northeast exit from "In a Cramped Verdigris Cage" to
+*     "The Gullet" - closed
+*
+D 0 47121 8 1 100 0 0 0
+*     northeast exit from "The Gullet" to
+*     "In a Cramped Verdigris Cage" - closed
+*
+D 0 47124 7 1 100 0 0 0
+*     southwest exit from "In a Cramped Verdigris Cage" to
+*     "The Gullet" - closed
+*
+D 0 47121 9 1 100 0 0 0
+*     southeast exit from "The Gullet" to
+*     "In a Cramped Verdigris Cage" - closed
+*
+D 0 47126 6 1 100 0 0 0
+*     northwest exit from "In a Cramped Verdigris Cage" to
+*     "The Gullet" - closed
+*
+D 0 47153 0 1 100 0 0 0
+*     north exit from "The Central Deck Below the Foremast" to
+*     "The Bridge-Boss' Quarters" - closed
+*
+D 0 47156 2 1 100 0 0 0
+*     south exit from "The Bridge-Boss' Quarters" to
+*     "The Central Deck Below the Foremast" - closed
+*
+D 0 47156 4 2 100 0 0 0
+*     up exit from "The Bridge-Boss' Quarters" to
+*     "The Bridge-Boss' Steering Platform" - closed/locked
+*
+D 0 47157 5 1 100 0 0 0
+*     down exit from "The Bridge-Boss' Steering Platform" to
+*     "The Bridge-Boss' Quarters" - closed
+*
+D 0 47161 4 1 100 0 0 0
+*     up exit from "The Crimson Gate of the Storm-Aerie" to
+*     "The Storm-Aerie" - closed
+*
+D 0 47195 5 1 100 0 0 0
+*     down exit from "The Storm-Aerie" to
+*     "The Crimson Gate of the Storm-Aerie" - closed
+*
+D 0 47162 1 1 100 0 0 0
+*     east exit from "Below Deck of The Crimson Fulgur" to
+*     "The Bilge Bunks" - closed
+*
+D 0 47188 3 1 100 0 0 0
+*     west exit from "The Bilge Bunks" to
+*     "Below Deck of The Crimson Fulgur" - closed
+*
+D 0 47162 3 1 100 0 0 0
+*     west exit from "Below Deck of The Crimson Fulgur" to
+*     "The Bilge Bunks" - closed
+*
+D 0 47187 1 1 100 0 0 0
+*     east exit from "The Bilge Bunks" to
+*     "Below Deck of The Crimson Fulgur" - closed
+*
+D 0 47163 1 1 100 0 0 0
+*     east exit from "Below Deck of The Crimson Fulgur" to
+*     "The Bilge Bunks" - closed
+*
+D 0 47189 3 1 100 0 0 0
+*     west exit from "The Bilge Bunks" to
+*     "Below Deck of The Crimson Fulgur" - closed
+*
+D 0 47163 3 1 100 0 0 0
+*     west exit from "Below Deck of The Crimson Fulgur" to
+*     "The Bilge Bunks" - closed
+*
+D 0 47190 1 1 100 0 0 0
+*     east exit from "The Bilge Bunks" to
+*     "Below Deck of The Crimson Fulgur" - closed
+*
+D 0 47164 0 0 100 0 0 0
+*     north exit from "The Bilge of The Crimson Fulgur" to
+*     "A Flooded Storage Cell" - open
+*
+D 0 47176 2 0 100 0 0 0
+*     south exit from "A Flooded Storage Cell" to
+*     "The Bilge of The Crimson Fulgur" - open
+*
+D 0 47165 2 1 100 0 0 0
+*     south exit from "The Bilge of The Crimson Fulgur" to
+*     "A Partially-Flooded Storage Cell" - closed
+*
+D 0 47180 0 1 100 0 0 0
+*     north exit from "A Partially-Flooded Storage Cell" to
+*     "The Bilge of The Crimson Fulgur" - closed
+*
+D 0 47167 1 1 100 0 0 0
+*     east exit from "A Partially-Flooded Bilge Corridor" to
+*     "A Partially-Flooded Storage Cell" - closed
+*
+D 0 47181 3 1 100 0 0 0
+*     west exit from "A Partially-Flooded Storage Cell" to
+*     "A Partially-Flooded Bilge Corridor" - closed
+*
+D 0 47168 1 1 100 0 0 0
+*     east exit from "A Partially-Flooded Bilge Corridor" to
+*     "A Partially-Flooded Storage Cell" - closed
+*
+D 0 47182 3 1 100 0 0 0
+*     west exit from "A Partially-Flooded Storage Cell" to
+*     "A Partially-Flooded Bilge Corridor" - closed
+*
+D 0 47169 1 1 100 0 0 0
+*     east exit from "A Partially-Flooded Bilge Corridor" to
+*     "A Partially-Flooded Storage Cell" - closed
+*
+D 0 47183 3 1 100 0 0 0
+*     west exit from "A Partially-Flooded Storage Cell" to
+*     "A Partially-Flooded Bilge Corridor" - closed
+*
+D 0 47172 3 1 100 0 0 0
+*     west exit from "A Partially-Flooded Bilge Corridor" to
+*     "A Partially-Flooded Storage Cell" - closed
+*
+D 0 47177 1 1 100 0 0 0
+*     east exit from "A Partially-Flooded Storage Cell" to
+*     "A Partially-Flooded Bilge Corridor" - closed
+*
+D 0 47173 3 1 100 0 0 0
+*     west exit from "A Partially-Flooded Bilge Corridor" to
+*     "A Partially-Flooded Storage Cell" - closed
+*
+D 0 47178 1 1 100 0 0 0
+*     east exit from "A Partially-Flooded Storage Cell" to
+*     "A Partially-Flooded Bilge Corridor" - closed
+*
+D 0 47174 3 1 100 0 0 0
+*     west exit from "A Partially-Flooded Bilge Corridor" to
+*     "A Partially-Flooded Storage Cell" - closed
+*
+D 0 47179 1 1 100 0 0 0
+*     east exit from "A Partially-Flooded Storage Cell" to
+*     "A Partially-Flooded Bilge Corridor" - closed
 *
 *
 O 0 47007 3 47006 100 0 0 0        * an automatic navigational system
@@ -88,5 +424,420 @@ M 0 47012 4 47028 100 0 0 0        * an old sailor
 M 0 47012 4 47028 100 0 0 0        * an old sailor
 M 0 47013 4 47028 100 0 0 0        * a strong sailor
 M 0 47013 4 47028 100 0 0 0        * a strong sailor
+M 0 47121 21 47029 100 0 0 0       * a small mouse
+M 0 47101 10 47030 100 0 0 0       * a catapult winch-cranker
+M 0 47101 10 47030 100 0 0 0       * a catapult winch-cranker
+M 0 47101 10 47031 100 0 0 0       * a catapult winch-cranker
+M 0 47101 10 47031 100 0 0 0       * a catapult winch-cranker
+M 0 47090 5 47032 100 0 0 0        * a stern Grudge guard
+M 0 47099 5 47032 100 0 0 0        * a sun-tanned deckhand
+M 0 47098 5 47032 100 0 0 0        * a Grudge rigger
+M 0 47090 5 47033 100 0 0 0        * a stern Grudge guard
+M 0 47099 5 47033 100 0 0 0        * a sun-tanned deckhand
+M 0 47098 5 47033 100 0 0 0        * a Grudge rigger
+M 0 47098 5 47035 100 0 0 0        * a Grudge rigger
+M 0 47090 5 47036 100 0 0 0        * a stern Grudge guard
+M 0 47099 5 47036 100 0 0 0        * a sun-tanned deckhand
+M 0 47098 5 47036 100 0 0 0        * a Grudge rigger
+M 0 47121 21 47037 100 0 0 0       * a small mouse
+M 0 47090 5 47038 100 0 0 0        * a stern Grudge guard
+M 0 47099 5 47038 100 0 0 0        * a sun-tanned deckhand
+M 0 47121 21 47038 100 0 0 0       * a small mouse
+M 0 47090 5 47039 100 0 0 0        * a stern Grudge guard
+M 0 47099 5 47039 100 0 0 0        * a sun-tanned deckhand
+M 0 47098 5 47039 100 0 0 0        * a Grudge rigger
+M 0 47101 10 47040 100 0 0 0       * a catapult winch-cranker
+M 0 47101 10 47040 100 0 0 0       * a catapult winch-cranker
+M 0 47101 10 47041 100 0 0 0       * a catapult winch-cranker
+M 0 47101 10 47041 100 0 0 0       * a catapult winch-cranker
+M 0 47096 1 47041 100 0 0 0        * Gunnar Gale-Grip
+E 1 47083 1 16 100 0 0 0           *   a heavy dwarven arbalest
+M 0 47121 21 47041 100 0 0 0       * a small mouse
+M 0 47101 10 47042 100 0 0 0       * a catapult winch-cranker
+M 0 47101 10 47042 100 0 0 0       * a catapult winch-cranker
+M 0 47091 7 47044 100 0 0 0        * a tough Grudge sentinel
+M 0 47091 7 47044 100 0 0 0        * a tough Grudge sentinel
+M 0 47103 4 47050 50 0 0 0         * a shackled lion
+G 1 83201 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47103 4 47050 100 0 0 0        * a shackled lion
+G 1 83201 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47104 4 47051 50 0 0 0         * a shackled snow buffalo
+M 0 47104 4 47051 100 0 0 0        * a shackled snow buffalo
+M 0 47113 4 47052 50 0 0 0         * a shackled olyx
+G 1 83220 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47113 4 47052 100 0 0 0        * a shackled olyx
+G 1 83220 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47114 4 47053 50 0 0 0         * a shackled theezak
+G 1 83117 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47114 4 47053 100 0 0 0        * a shackled theezak
+G 1 83117 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47112 4 47054 50 0 0 0         * a shackled boar
+G 1 83223 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47112 4 47054 100 0 0 0        * a shackled boar
+G 1 83223 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47107 4 47055 50 0 0 0         * a shackled caribou
+G 1 83116 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47107 4 47055 100 0 0 0        * a shackled caribou
+G 1 83116 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47111 4 47056 50 0 0 0         * a shackled wyvern
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 47111 4 47056 100 0 0 0        * a shackled wyvern
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 47108 4 47057 50 0 0 0         * a shackled ram
+M 0 47108 4 47057 100 0 0 0        * a shackled ram
+M 0 47088 10 47058 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47058 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47058 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47058 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47058 100 0 0 0       * an exhausted sailor
+M 0 47054 2 47058 100 0 0 0        * a gnome traveler
+M 0 47088 10 47059 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47059 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47059 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47059 100 0 0 0       * an exhausted sailor
+M 0 47088 10 47059 100 0 0 0       * an exhausted sailor
+M 0 47053 2 47059 100 0 0 0        * a grey elf traveler
+M 0 47095 1 47060 100 0 0 0        * Bruna Ironkettle
+M 0 47051 1 47060 100 0 0 0        * a noble from Tharnadia
+G 1 40444 5 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47089 8 47060 100 0 0 0        * a ravenous sailor
+M 0 47089 8 47060 100 0 0 0        * a ravenous sailor
+M 0 47089 8 47060 100 0 0 0        * a ravenous sailor
+M 0 47089 8 47060 100 0 0 0        * a ravenous sailor
+M 0 47115 3 47061 100 0 0 0        * a shrouded stranger
+M 0 47089 8 47061 100 0 0 0        * a ravenous sailor
+M 0 47089 8 47061 100 0 0 0        * a ravenous sailor
+M 0 47089 8 47061 100 0 0 0        * a ravenous sailor
+M 0 47089 8 47061 100 0 0 0        * a ravenous sailor
+M 0 47093 1 47062 100 0 0 0        * a holyman of Abbathor
+G 1 47040 3 0 100 0 0 0            *    a captain's quarters key
+F 1 47091 7 47062 100 0 0 0        * a tough Grudge sentinel (following)
+F 1 47091 7 47062 100 0 0 0        * a tough Grudge sentinel (following)
+F 1 47091 7 47062 100 0 0 0        * a tough Grudge sentinel (following)
+M 0 47092 1 47064 100 0 0 0        * a stoic lookout
+M 0 47097 1 47065 100 0 0 0        * 'Muck-Finger' Thrain
+G 1 838 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 47050 999 0 100 0 0 0          *    a finely-carved pipe shaped like a warhammer
+G 1 833 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 47056 999 0 100 0 0 0          *    a clump of Dhalnadar moss
+M 0 47094 1 47066 100 0 0 0        * Kurgonn Grudgebearer, the Helm-Warden
+E 1 47077 1 13 50 0 0 0            *   a thick leather belt with a warhammer-shaped buckle
+E 1 47043 1 18 100 0 0 0           *   the flag of The Ironhold Grudge
+E 1 47076 1 19 50 0 0 0            *   some forge-fire goggles
+F 1 47102 1 47066 100 0 0 0        * High Exarch Valerka (following)
+E 1 47084 1 3 50 0 0 0             *   a pendant of an oversized gem-encrusted coin
+G 1 40444 5 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 40444 5 0 100 0 0 0            *    (object type not in this .obj file)
+F 1 47091 7 47066 100 0 0 0        * a tough Grudge sentinel (following)
+F 1 47091 7 47066 100 0 0 0        * a tough Grudge sentinel (following)
+M 0 55246 3 47067 100 0 0 0        * (mob type not in this .mob file)
+M 0 47100 8 47068 100 0 0 0        * a burly ballistoneer
+M 0 47100 8 47068 100 0 0 0        * a burly ballistoneer
+M 0 47100 8 47069 100 0 0 0        * a burly ballistoneer
+M 0 47100 8 47069 100 0 0 0        * a burly ballistoneer
+M 0 47100 8 47070 100 0 0 0        * a burly ballistoneer
+M 0 47100 8 47070 100 0 0 0        * a burly ballistoneer
+M 0 47121 21 47070 100 0 0 0       * a small mouse
+M 0 47100 8 47071 100 0 0 0        * a burly ballistoneer
+M 0 47100 8 47071 100 0 0 0        * a burly ballistoneer
+M 0 47057 8 47073 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47057 8 47073 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47067 9 47074 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47067 9 47074 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47058 10 47075 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47121 21 47076 100 0 0 0       * a small mouse
+M 0 47067 9 47077 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47067 9 47077 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47058 10 47078 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47121 21 47078 100 0 0 0       * a small mouse
+M 0 47060 3 47079 100 0 0 0        * a whale-song chanter
+M 0 47057 8 47080 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47057 8 47080 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47058 10 47081 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47060 3 47082 100 0 0 0        * a whale-song chanter
+M 0 47058 10 47083 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47058 10 47084 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47121 21 47084 100 0 0 0       * a small mouse
+M 0 47058 10 47085 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47058 10 47087 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47058 10 47088 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47067 9 47089 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47067 9 47089 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47058 10 47091 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47057 8 47092 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47057 8 47092 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47060 3 47093 100 0 0 0        * a whale-song chanter
+M 0 47121 21 47093 100 0 0 0       * a small mouse
+M 0 47067 9 47094 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47067 9 47094 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47057 8 47095 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47057 8 47095 100 0 0 0        * a Tribe of the Whale skerrer
+M 0 47058 10 47097 100 0 0 0       * a Tribe of the Whale harpooner
+M 0 47121 21 47098 100 0 0 0       * a small mouse
+M 0 47122 1 47100 100 0 0 0        * a huge ghost bear
+F 1 47066 6 47100 100 0 0 0        * a Tribe of the Whale huskarl (following)
+G 1 47040 3 0 100 0 0 0            *    a captain's quarters key
+F 1 47066 6 47100 100 0 0 0        * a Tribe of the Whale huskarl (following)
+F 1 47066 6 47100 100 0 0 0        * a Tribe of the Whale huskarl (following)
+M 0 47061 1 47103 100 0 0 0        * Bjornstag
+G 1 835 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 47051 999 0 100 0 0 0          *    a ceremonial chillum of scrimshawed whale bone
+G 1 930 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 47055 999 0 100 0 0 0          *    a large bud of Northern Tundra flower
+M 0 47065 1 47104 100 0 0 0        * Haafgurd, jarl of the Tribe of the Whale
+E 1 47079 1 13 50 0 0 0            *   a kraken-hide loincloth
+E 1 47041 1 18 100 0 0 0           *   the flag of The Stalval
+E 1 47075 1 19 50 0 0 0            *   some snow goggles of scrimshawed whale bone
+F 1 47068 1 47104 100 0 0 0        * Aethor (following)
+E 1 47078 1 14 50 0 0 0            *   a festoon of scrimshawed whale bones
+F 1 47066 6 47104 100 0 0 0        * a Tribe of the Whale huskarl (following)
+F 1 47066 6 47104 100 0 0 0        * a Tribe of the Whale huskarl (following)
+M 0 47066 6 47107 100 0 0 0        * a Tribe of the Whale huskarl
+M 0 47121 21 47109 100 0 0 0       * a small mouse
+M 0 47067 9 47110 100 0 0 0        * a Tribe of the Whale warrior
+M 0 47121 21 47111 100 0 0 0       * a small mouse
+M 0 47059 24 47113 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47113 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47113 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47114 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47114 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47114 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47115 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47115 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47115 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47116 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47116 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47116 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47117 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47117 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47117 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47118 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47118 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47118 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47119 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47119 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47119 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47120 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47120 100 0 0 0       * a brine-scarred oarman
+M 0 47059 24 47120 100 0 0 0       * a brine-scarred oarman
+M 0 47121 21 47121 100 0 0 0       * a small mouse
+M 0 47105 2 47122 50 0 0 0         * a shackled tundra panther
+G 1 43140 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47105 2 47122 100 0 0 0        * a shackled tundra panther
+G 1 43140 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 55246 3 47123 100 0 0 0        * (mob type not in this .mob file)
+M 0 47113 4 47124 50 0 0 0         * a shackled olyx
+G 1 83220 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47113 4 47124 100 0 0 0        * a shackled olyx
+G 1 83220 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47108 4 47125 50 0 0 0         * a shackled ram
+M 0 47108 4 47125 100 0 0 0        * a shackled ram
+M 0 47114 4 47126 50 0 0 0         * a shackled theezak
+G 1 83117 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47114 4 47126 100 0 0 0        * a shackled theezak
+G 1 83117 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47107 4 47127 50 0 0 0         * a shackled caribou
+G 1 83116 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47107 4 47127 100 0 0 0        * a shackled caribou
+G 1 83116 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47104 4 47128 50 0 0 0         * a shackled snow buffalo
+M 0 47104 4 47128 100 0 0 0        * a shackled snow buffalo
+M 0 47064 1 47129 100 0 0 0        * Wulfholm
+M 0 47050 1 47129 100 0 0 0        * a noble from Winterhaven
+G 1 40444 5 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47115 3 47129 100 0 0 0        * a shrouded stranger
+M 0 47063 4 47129 100 0 0 0        * a hungry tribesman
+M 0 47063 4 47129 100 0 0 0        * a hungry tribesman
+M 0 47063 4 47129 100 0 0 0        * a hungry tribesman
+M 0 47063 4 47129 100 0 0 0        * a hungry tribesman
+M 0 47062 8 47130 100 0 0 0        * a tired tribesman
+M 0 47062 8 47130 100 0 0 0        * a tired tribesman
+M 0 47062 8 47130 100 0 0 0        * a tired tribesman
+M 0 47062 8 47130 100 0 0 0        * a tired tribesman
+M 0 47053 2 47130 100 0 0 0        * a grey elf traveler
+M 0 47069 1 47131 100 0 0 0        * Urog Irongrip
+G 1 47085 1 0 50 0 0 0             *    a massive harpoon named 'The Breach-Maker'
+M 0 47062 8 47132 100 0 0 0        * a tired tribesman
+M 0 47062 8 47132 100 0 0 0        * a tired tribesman
+M 0 47062 8 47132 100 0 0 0        * a tired tribesman
+M 0 47062 8 47132 100 0 0 0        * a tired tribesman
+M 0 47054 2 47132 100 0 0 0        * a gnome traveler
+M 0 47121 21 47133 100 0 0 0       * a small mouse
+M 0 47079 5 47134 100 0 0 0        * a storm orc wyvern-rider
+R 1 47081 5 47134 100 0 0 0        * a Crimson wyvern (being ridden)
+M 0 47085 5 47135 100 0 0 0        * a storm orc rigger
+M 0 47080 5 47135 100 0 0 0        * a Crimson stormcaller
+M 0 47075 5 47136 100 0 0 0        * a calloused grunt
+M 0 47085 5 47137 100 0 0 0        * a storm orc rigger
+M 0 47085 5 47139 100 0 0 0        * a storm orc rigger
+M 0 47080 5 47139 100 0 0 0        * a Crimson stormcaller
+M 0 47121 21 47139 100 0 0 0       * a small mouse
+M 0 47079 5 47141 100 0 0 0        * a storm orc wyvern-rider
+R 1 47081 5 47141 100 0 0 0        * a Crimson wyvern (being ridden)
+M 0 47075 5 47143 100 0 0 0        * a calloused grunt
+M 0 47080 5 47143 100 0 0 0        * a Crimson stormcaller
+M 0 47079 5 47144 100 0 0 0        * a storm orc wyvern-rider
+R 1 47081 5 47144 100 0 0 0        * a Crimson wyvern (being ridden)
+M 0 47085 5 47145 100 0 0 0        * a storm orc rigger
+M 0 47121 21 47145 100 0 0 0       * a small mouse
+M 0 47075 5 47147 100 0 0 0        * a calloused grunt
+M 0 47080 5 47147 100 0 0 0        * a Crimson stormcaller
+M 0 47070 1 47149 100 0 0 0        * Jul'thax
+G 1 836 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 47052 999 0 100 0 0 0          *    a large storm giant-skull hookah
+G 1 831 999 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 47057 999 0 100 0 0 0          *    a small bushel of DarkPeak weedflower
+M 0 47079 5 47150 100 0 0 0        * a storm orc wyvern-rider
+R 1 47081 5 47150 100 0 0 0        * a Crimson wyvern (being ridden)
+M 0 47080 5 47150 100 0 0 0        * a Crimson stormcaller
+M 0 47085 5 47151 100 0 0 0        * a storm orc rigger
+M 0 47075 5 47151 100 0 0 0        * a calloused grunt
+M 0 47079 5 47152 100 0 0 0        * a storm orc wyvern-rider
+R 1 47081 5 47152 100 0 0 0        * a Crimson wyvern (being ridden)
+M 0 47075 5 47152 100 0 0 0        * a calloused grunt
+M 0 47121 21 47153 100 0 0 0       * a small mouse
+M 0 47121 21 47154 100 0 0 0       * a small mouse
+M 0 47123 1 47156 100 0 0 0        * a LARGE lightning elemental
+F 1 47083 8 47156 100 0 0 0        * a storm orc sentinel (following)
+G 1 47040 3 0 100 0 0 0            *    a captain's quarters key
+F 1 47083 8 47156 100 0 0 0        * a storm orc sentinel (following)
+F 1 47083 8 47156 100 0 0 0        * a storm orc sentinel (following)
+M 0 47072 1 47157 100 0 0 0        * Fulgur, the Bridge-boss
+E 1 47080 1 3 50 0 0 0             *   a dangling necklace of kraken teeth
+E 1 47082 1 7 30 0 0 0             *   some wyvern-skull poleyns
+E 1 47081 1 10 30 0 0 0            *   some wyvern-skull pauldrons
+E 1 47042 1 18 100 0 0 0           *   the flag of The Crimson Fulgur
+F 1 47086 1 47157 100 0 0 0        * Morkull Stormscream (following)
+E 1 47091 1 5 50 0 0 0             *   the mantle of the squall
+F 1 47083 8 47157 100 0 0 0        * a storm orc sentinel (following)
+F 1 47083 8 47157 100 0 0 0        * a storm orc sentinel (following)
+M 0 47077 2 47158 100 0 0 0        * a Crimson ballistoneer
+M 0 47077 2 47158 100 0 0 0        * a Crimson ballistoneer
+M 0 47071 1 47159 100 0 0 0        * Kernnax
+G 1 47090 1 0 50 0 0 0             *    an orcish crossbow called 'The Crimson Claw'
+M 0 47078 2 47160 100 0 0 0        * a catapult winch-cranker
+M 0 47078 2 47160 100 0 0 0        * a catapult winch-cranker
+M 0 47083 8 47161 100 0 0 0        * a storm orc sentinel
+M 0 47083 8 47164 100 0 0 0        * a storm orc sentinel
+M 0 47083 8 47165 100 0 0 0        * a storm orc sentinel
+M 0 47121 21 47167 100 0 0 0       * a small mouse
+M 0 47121 21 47173 100 0 0 0       * a small mouse
+M 0 47112 4 47177 50 0 0 0         * a shackled boar
+G 1 83223 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47112 4 47177 100 0 0 0        * a shackled boar
+G 1 83223 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47111 4 47178 50 0 0 0         * a shackled wyvern
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 47111 4 47178 100 0 0 0        * a shackled wyvern
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 47109 2 47179 50 0 0 0         * a shackled stonescale pyrolisk
+G 1 43138 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47109 2 47179 100 0 0 0        * a shackled stonescale pyrolisk
+G 1 43138 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 55246 3 47180 100 0 0 0        * (mob type not in this .mob file)
+M 0 47110 2 47181 50 0 0 0         * a shackled hydralisk
+G 1 43142 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47110 2 47181 100 0 0 0        * a shackled hydralisk
+G 1 43142 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47106 2 47182 50 0 0 0         * a shackled snapjaw turtle
+G 1 43137 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47106 2 47182 100 0 0 0        * a shackled snapjaw turtle
+G 1 43137 2 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47103 4 47183 50 0 0 0         * a shackled lion
+G 1 83201 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47103 4 47183 100 0 0 0        * a shackled lion
+G 1 83201 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47074 12 47184 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47184 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47184 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47184 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47185 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47185 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47185 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47185 100 0 0 0       * a blustery storm orc
+M 0 47073 1 47186 100 0 0 0        * Thokka Thunderpot
+M 0 47052 1 47186 100 0 0 0        * a noble from Sarmiz'Duul
+G 1 40444 5 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47115 3 47186 100 0 0 0        * a shrouded stranger
+M 0 47074 12 47186 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47186 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47186 100 0 0 0       * a blustery storm orc
+M 0 47074 12 47186 100 0 0 0       * a blustery storm orc
+M 0 47121 21 47186 100 0 0 0       * a small mouse
+M 0 47082 16 47187 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47187 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47187 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47187 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47188 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47188 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47188 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47188 100 0 0 0       * a sleepy storm orc
+M 0 47055 1 47188 100 0 0 0        * a goblin traveler
+M 0 47082 16 47189 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47189 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47189 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47189 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47190 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47190 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47190 100 0 0 0       * a sleepy storm orc
+M 0 47082 16 47190 100 0 0 0       * a sleepy storm orc
+M 0 47056 1 47190 100 0 0 0        * a kobold traveler
+M 0 47087 2 47192 100 0 0 0        * a storm orc Crimson lookout
+M 0 47087 2 47194 100 0 0 0        * a storm orc Crimson lookout
+M 0 47084 1 47195 100 0 0 0        * a giant wyvern broodmare
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 500026 8 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 47076 4 47195 100 0 0 0        * an onerous wyvern whelp
+M 0 47076 4 47195 100 0 0 0        * an onerous wyvern whelp
+M 0 47076 4 47195 100 0 0 0        * an onerous wyvern whelp
+M 0 47076 4 47195 100 0 0 0        * an onerous wyvern whelp
+M 0 55550 1 47196 100 0 0 0        * (mob type not in this .mob file)
+M 0 55551 1 47196 100 0 0 0        * (mob type not in this .mob file)
+M 0 55552 1 47196 100 0 0 0        * (mob type not in this .mob file)
+M 0 55553 1 47196 100 0 0 0        * (mob type not in this .mob file)
+M 0 55554 1 47196 100 0 0 0        * (mob type not in this .mob file)
+M 0 47116 1 47196 100 0 0 0        * Zorka the tiefling outcast
+G 1 834 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 47053 1 0 100 0 0 0            *    some half-visible Abyssal smoking parchment
+G 1 832 1 0 100 0 0 0              *    (object type not in this .obj file)
+G 1 47058 1 0 100 0 0 0            *    a stalk of Abyssal spikeweed
+M 0 47118 1 47197 50 0 0 0         * Urg'Thok the adventurer
+E 1 47089 1 40 100 0 0 0           *   a wreath of entwined lupines
+M 0 47119 1 47197 25 0 0 0         * Sorem-Krell, avatar of the masters
+G 1 22621 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 82545 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 82559 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 75857 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 13320 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 13321 4 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 45530 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 45531 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 22063 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 22237 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 13321 4 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 13321 4 0 100 0 0 0            *    (object type not in this .obj file)
+G 1 13321 4 0 100 0 0 0            *    (object type not in this .obj file)
+M 0 47120 1 47197 25 0 0 0         * Drak'Azath, avatar of the maelstrom
+G 1 34541 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 22631 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 75856 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 82553 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 82554 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 82555 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 76634 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 76050 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 76066 1 0 20 0 0 0             *    (object type not in this .obj file)
+G 1 76243 1 0 20 0 0 0             *    (object type not in this .obj file)
+M 0 47117 1 47197 25 0 0 0         * Revallyn the half-drow outcast
+E 1 47086 1 14 100 0 0 0           *   a spider-shaped wrist-bow
+G 1 400235 1 0 100 0 0 0           *    (object type not in this .obj file)
+G 1 47087 1 0 100 0 0 0            *    a small spider-shaped quiver
+G 1 47088 5 0 100 0 0 0            *    a finely-carved dart
+G 1 47088 5 0 100 0 0 0            *    a finely-carved dart
+G 1 47088 5 0 100 0 0 0            *    a finely-carved dart
+G 1 47088 5 0 100 0 0 0            *    a finely-carved dart
+G 1 47088 5 0 100 0 0 0            *    a finely-carved dart
 *
 S

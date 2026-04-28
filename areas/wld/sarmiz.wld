@@ -11113,7 +11113,7 @@ D0
 0 0 9964
 S
 #9967
-&+yThe Dock&N~
+&+LThe Sarmiz'Duul &+yShip Yard&N~
    This short dock is used for ships entering and leaving the city.  Merchants
 carrying good, private vessels looking for refitting, and ship of foriegn
 officials all must use this dock to enter the city from the sea.  Although
@@ -11125,11 +11125,19 @@ D0
 ~
 ~
 0 0 9740
+D1
+~
+~
+0 0 9979
 D2
 The ocean is that way.
 ~
 ~
-0 0 9975
+0 0 9980
+D3
+~
+~
+0 0 9978
 S
 #9968
 &+cThe King's Residence&N~
@@ -11253,10 +11261,155 @@ D0
 A dock is that way.
 ~
 ~
-0 0 9967
+0 0 9980
+D1
+~
+~
+0 0 9977
 D2
 The ocean is that way.
 ~
 ~
 0 0 622675
+D3
+~
+~
+0 0 9976
+S
+#9976
+&+rA Small Harbor&n~
+&+b   This small harbor seems just large enough for a few ships, being
+&+bnarrow and apparently fairly shallow.  To the north, the walls of a
+&+bfairly large city can be seen, and to the south, the ocean awaits.  A
+&+bdock can be seen just to the north.
+~
+94 4 12
+D0
+~
+~
+0 0 9982
+D1
+~
+~
+0 0 9975
+S
+#9977
+&+rA Small Harbor&n~
+&+b   This small harbor seems just large enough for a few ships, being
+&+bnarrow and apparently fairly shallow.  To the north, the walls of a
+&+bfairly large city can be seen, and to the south, the ocean awaits.  A
+&+bdock can be seen just to the north.
+~
+94 4 12
+D0
+~
+~
+0 0 9981
+D3
+~
+~
+0 0 9975
+S
+#9978
+&+LThe Sarmiz'Duul &+yPassenger Dock&N~
+   This short dock is used for ships entering and leaving the city.  Merchants
+carrying good, private vessels looking for refitting, and ship of foriegn
+officials all must use this dock to enter the city from the sea.  Although
+the pier cannot dock more than two or three small ships, there is only a short
+walk to the city.
+~
+94 1048576 1
+D1
+~
+~
+0 0 9967
+D2
+~
+~
+0 0 9982
+S
+#9979
+&+LThe Sarmiz'Duul &+yPassenger Dock&N~
+   This short dock is used for ships entering and leaving the city.  Merchants
+carrying good, private vessels looking for refitting, and ship of foriegn
+officials all must use this dock to enter the city from the sea.  Although
+the pier cannot dock more than two or three small ships, there is only a short
+walk to the city.
+~
+94 1048576 1
+D2
+~
+~
+0 0 9981
+D3
+~
+~
+0 0 9967
+S
+#9980
+&+rA Small Harbor&n~
+&+b   This small harbor seems just large enough for a few ships, being
+&+bnarrow and apparently fairly shallow.  To the north, the walls of a
+&+bfairly large city can be seen, and to the south, the ocean awaits.  A
+&+bdock can be seen just to the north.
+~
+94 4 12
+D0
+~
+~
+0 0 9967
+D1
+~
+~
+0 0 9981
+D2
+~
+~
+0 0 9975
+D3
+~
+~
+0 0 9982
+S
+#9981
+&+rA Small Harbor&n~
+&+b   This small harbor seems just large enough for a few ships, being
+&+bnarrow and apparently fairly shallow.  To the north, the walls of a
+&+bfairly large city can be seen, and to the south, the ocean awaits.  A
+&+bdock can be seen just to the north.
+~
+94 4 12
+D0
+~
+~
+0 0 9979
+D2
+~
+~
+0 0 9977
+D3
+~
+~
+0 0 9980
+S
+#9982
+&+rA Small Harbor&n~
+&+b   This small harbor seems just large enough for a few ships, being
+&+bnarrow and apparently fairly shallow.  To the north, the walls of a
+&+bfairly large city can be seen, and to the south, the ocean awaits.  A
+&+bdock can be seen just to the north.
+~
+94 4 12
+D0
+~
+~
+0 0 9978
+D1
+~
+~
+0 0 9980
+D2
+~
+~
+0 0 9976
 S

@@ -1,6 +1,6 @@
 #1325
 &+WTharnadia &+L- City of &+CHumans&N~
-133075 2 4 15 25 1
+133083 2 4 15 25 1
 *
 * Zone edited with durisEdit v3.02
 *
@@ -723,7 +723,6 @@ G 1 132595 4 0 100 0 0 0           *    a Belialian sword of venom
 G 1 500 999 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 73 999 0 100 0 0 0             *    (object type not in this .obj file)
 G 1 77 999 0 100 0 0 0             *    (object type not in this .obj file)
-G 1 102 999 0 100 0 0 0            *    (object type not in this .obj file)
 M 0 132584 2 132533 100 0 0 0      * a rogue in training
 M 0 132584 2 132533 100 0 0 0      * a rogue in training
 M 0 132595 26 132534 100 0 0 0     * a militia archer
@@ -1788,9 +1787,6 @@ E 1 132642 999 7 100 0 0 0         *   some leather leggings
 E 1 132643 999 8 100 0 0 0         *   a pair of high-soft leather boots
 E 1 132646 26 16 100 0 0 0         *   a Tannadian rapier
 E 1 132647 28 17 100 0 0 0         *   a short sword
-M 0 132652 2 133043 100 0 0 0      * a strong seaman
-E 1 132639 2 13 100 0 0 0          *   a vorhide dock worker's loincloth
-E 1 132648 2 16 100 0 0 0          *   a wooden knobkerrie
 M 0 132643 3 133043 100 0 0 0      * a dock guard
 E 1 132651 4 11 100 0 0 0          *   a Caer Tannad militia shield
 G 1 132649 2 0 100 0 0 0           *    a warhammer
@@ -1798,6 +1794,9 @@ M 0 132616 12 133043 100 0 0 0     * a tharnadian thief-hunter
 M 0 132652 2 133051 100 0 0 0      * a strong seaman
 E 1 132639 2 13 100 0 0 0          *   a vorhide dock worker's loincloth
 E 1 132650 1 16 100 0 0 0          *   a flail
+M 0 132652 2 133051 100 0 0 0      * a strong seaman
+E 1 132639 2 13 100 0 0 0          *   a vorhide dock worker's loincloth
+E 1 132648 2 16 100 0 0 0          *   a wooden knobkerrie
 M 0 132643 3 133052 100 0 0 0      * a dock guard
 E 1 132651 4 11 100 0 0 0          *   a Caer Tannad militia shield
 M 0 132625 1 133052 100 0 0 0      * an elite guard

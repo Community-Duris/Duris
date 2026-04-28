@@ -3856,10 +3856,12 @@ hi hello~
 &+Wworthy, and the deep earth may yet yield its truths to you.'
 ~
 MA
-prove worth reveal earth secret secrets truth truths keeper mountain yes how commit~
-&N$n nods at $N and continues &+W'Know this: dwarven mithril is among the most
+prove worth reveal earth secret secrets truth truths keeper mountain yes how commit tithes~
+&N$n nods at $N and continues &+W'Know this: &+Cdwarven mithril &+Wis among the most
 &+Wprecious gifts drawn from my domain, rarer than kings and more enduring
-&+Wthan empires.'
+&+Wthan their empires. Even kings pay tithes to Dumathoin.'
+&N$n bows and extends a spectral hand, palm up.
+&+W'For tithes of five hundred platinum coins, we may share the sacred stone.'
 ~
 MA
 dwarven mithril kings empires~
@@ -3911,6 +3913,13 @@ G I 400189
 G I 400189
 G I 400189
 G I 400189
+QA
+&N$n collects the &+Wplatinum &Ncoins, which float into a rotating
+circle around $N. The &+Wplatinum coins&N rise higher and in a &+Y&-Lflash&N
+of light, they magically merge into a &+ykey&N!
+~
+R I 83253
+G C 500000
 S
 #83262
 M

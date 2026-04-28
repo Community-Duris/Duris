@@ -2493,9 +2493,9 @@ priest high old ones~
 &+YKnown as 'The High Old Ones', this protective spirit wears ancient
 &+Yceremonnial regalia, protecting the sanctity of Dumathoin's mine.
 ~
-16584 0 0 0 939524248 8403136 128 524288 600 S
-pm 0 32 0 -1
-56 0 0 1d1+1 1d1+1
+28872 0 0 0 939524248 8665280 16777344 46673920 900 S
+pm 0 33 0 -1
+60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
 #83256

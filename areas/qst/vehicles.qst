@@ -1,0 +1,2498 @@
+#47064
+MA
+hi hello cook cooking~
+&N$n nods at $N and says &+W'Well met $N! Feedin' the Tribe is no small task!'
+
+In several quick thwacks, $n chops a tentacle into several
+sections and continues &+W'Fish? They'll eat it if it's in front
+&+Wof 'em, but what the Tribe is starvin for is land meat!'
+
+&+W'Go &+Wfishing&+W, will ye? Catch two &+Wfish&+W and bring 'em back to me
+&+Wand we'll have us &+Wfish skewers&+W, aye?!
+
+&+WOr if ye come across a &+Whaunch of land meat&+W, maybe an &+Yolyx&+W,&+Y lion&+W,
+&+Ytheezak&+W, &+Ycaribou&+W, or even just a plain &+Yside of boar&+W, I'd pay ye!'
+~
+MA
+fishing fish skewer skewers~
+&n$n nods hungrily at $N and says:
+&+W'Bring us back two fish for a skewer, but if they're the same type
+&+Wof fish, I always find they come out a bit sizzlier!'&n he says.
+~
+MA
+meat landmeat land theezak olyx lion caribou~
+&N$n nods hungrily at $N and says &+W'Many of the Tribe of the Whale
+&+Ware always on the lookout for land meat. If ye come across a bloody
+&+Whaunch of lion, theezak, caribou, olyx, or even just a plain old side
+&+Wof boar, I'll pay ye handsomely for it!'&N $n says.
+~
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+~
+R C 30000
+G I 83223
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N he says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 60000
+G I 83220
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N he says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 60000
+G I 83116
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N he says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 60000
+G I 83117
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N he says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 60000
+G I 83201
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 295
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 318
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 295
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 318
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 318
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 335
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 335
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 355
+G I 356
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Ys&+ri&+Yz&+rz&+Yl&+re&n!
+~
+R I 47102
+G I 293
+G I 293
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Ys&+ri&+Yz&+rz&+Yl&+re&n!
+~
+R I 47102
+G I 294
+G I 294
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 295
+G I 295
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 318
+G I 318
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 319
+G I 319
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 330
+G I 330
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 332
+G I 332
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 333
+G I 333
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 334
+G I 334
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 335
+G I 335
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 355
+G I 355
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 356
+G I 356
+QA
+&N$n grins and says &+Y'Piranha and bass, together at last!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Ys&+ri&+Yz&+rz&+Yl&+re&n!
+~
+R I 47102
+G I 293
+G I 294
+S
+#47065
+MA
+hi hello~
+&N$n grunts at $N and says &+W'Greetings, $N. I watched you board the
+&+WStalval, and now you are here with me.' &Nhe says, taking a long
+&Ndraw from his pipe.
+
+&+W'I foresee you have come to aid the Tribe of the Whale. You are
+&+Wan honored guest, $N.' &Nhe says, exhaling a &+Wplume&N of smoke.
+
+&+W'Have you come to stop the rivals?'&N he asks $N.
+~
+MA
+yes rivals stalval~
+&N$n nods at $N and says &+W'Yes it is true. The Tribe of the Whale
+&+Whunts the whale just the same as the rivals, but--'&N he says,
+staring $N in the eyes, &+W'they kill for pleasure. They have no
+&+Whonor. They have no right!' &nhe says, his nostrils flaring.
+
+&+W'Bring me the flags of The Crimson Fulgur and The Ironhold Grudge.'
+&n$n takes a truly heroic pull from his pipe, stifling a cough as
+he says &+W'...and you will be part of the Tribe.' spewing a plume
+of earthy smoke, filling the chamber.
+~
+QA
+&N$n makes no change in expression as he takes the flags from $N.
+
+&N$n bows solemnly and places a scrimshawed bracer in $N's hands.
+
+&N$n lets out another massive &+Lplume of smoke&N that he had apparently
+been holding in this whole time.
+~
+R I 47094
+R I 55362
+R I 55033
+G I 47043
+G I 47042
+S
+#47072
+MA
+hi hello~
+&N$n glares at $N and snarls &+R'What do -you- want?'
+Two burly &+Wsto&+Lrm orc &+rs&+Re&+rn&+Rt&+ri&+Rn&+re&+Rl&+rs&N lurch forward, stopped abruptly by &+RF&+ru&+ylg&+ru&+Rr.
+&+R'You have one chance..&+R' &Nhe grows.
+
+&N'I'm here to serve you, lord!' $n pleads, falling to the floor.
+
+&N$n and the other &+Wsto&+Lrm orcs&N erupt into laughter.
+
+&+R'Serve me? Hah!' &N he barks &+R'Serve me the blood of the rivals!'
+~
+MA
+serve rivals blood~
+&N$n nods at $N and says &+R'The dwarves and the northmen.. they are
+&+Rour enemies. Bring me their flags, noble $N, and you may serve me.'
+~
+MA
+dwarves northmen flags~
+&N$n nods at $N and says &+R'The Ironhold Grudge and the Stalval. Bring
+&+Rme their flags and you may join my crew.'
+~
+QA
+&N$n snatches the flags from $N before a word can be spoken and
+roars in triumphant delight.
+
+&+R'The seas are ours, boys!' &nhe bellows, causing a thunderous
+roar, and some violence, from the crew.
+
+Amidst the rabble, $n looks at his personal &+Cstorm&+cscreamer&+L,
+who prepares an incantation of &+Ba&+Yr&+Bc&+Yi&+Bn&+Yg &+Belectricty:&+L a &+Ccloak&+L forms.
+~
+R I 47092
+R I 55362
+R I 55033
+G I 47043
+G I 47041
+S
+#47073
+MA
+hi hello cook cooking~
+&N$n nods at $N and says &+G'Grog for ya?! Keepin' their bellies
+&+Gfull be just as much work as climbin' the ropes or mannin' the
+&+Gballist's!'
+
+In several quick thwacks, $n chops a tentacle into several
+sections and continues &+G'Fish? They'll eat it if it's in front
+&+Gof 'em, but these sailors be droolin' for land meat! I'm nay
+&+Gopposed to fish meself, raised on the sea!' &n$n nods proudly.
+
+&+G'Go &+Wfishing&+G, will ye? Catch two &+Wfish&+G and bring 'em back to me
+&+Gand we'll have us &+Wfish skewers&+G, eh?!
+
+&+GOr if ye come across a &+Whaunch of land meat&+G, maybe an &+Wolyx&+G,&+W lion&+G,
+&+Wtheezak&+G, &+Wcaribou&+G, or even just a plain &+Wside of boar&+G, I'd pay ye!'
+~
+MA
+fishing fish skewer skewers~
+&n$n nods hungrily at $N and says &+G'Ye grow up on em, ye got hooked!'
+&N$n lets out a boisterous laugh, causing several patrons to turn
+and laugh with her.
+
+&+G'Bring us back two fish for a skewer, but if they're the same type
+&+Gof fish, I always find they come out a bit sizzlier!'&n she says.
+~
+MA
+meat landmeat land theezak olyx lion caribou~
+&N$n nods hungrily at $N and says &+G'Many of these orcs are recruits..
+&+Gnot accustomed to the life at sea!' &Nshe adds loudly enough to
+draw a few glares from some nearby horde.
+
+&+G'Be that as it may, gentle $N, I'm always on the lookout for
+&+Gland meat. If ye come across a bloody haunch of lion, theezak,
+&+Gcaribou, olyx, or even just a plain old side of boar, I'll pay
+&+Gye handsomely for it!'&N $n says.
+~
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+~
+R C 50000
+G I 83223
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+G'Ahh..'&N she says, &+G'They'll enjoy 'er mightily, thank ye!'
+~
+R C 75000
+G I 83220
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+G'Ahh..'&N she says, &+G'They'll enjoy 'er mightily, thank ye!'
+~
+R C 75000
+G I 83116
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+G'Ahh..'&N she says, &+G'They'll enjoy 'er mightily, thank ye!'
+~
+R C 75000
+G I 83117
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+G'Ahh..'&N she says, &+G'They'll enjoy 'er mightily, thank ye!'
+~
+R C 75000
+G I 83201
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 295
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 318
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 319
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 330
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 332
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 333
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 295
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 318
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 319
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 330
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 332
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 333
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 318
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 319
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 330
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 332
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 333
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 319
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 330
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 332
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 333
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 330
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 332
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 333
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 332
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 333
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 334
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 335
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 335
+G I 355
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 335
+G I 356
+QA
+&N$n grins and says &+G'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 355
+G I 356
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Gs&+ri&+Gz&+rz&+Gl&+re&n!
+~
+R I 47102
+G I 293
+G I 293
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Gs&+ri&+Gz&+rz&+Gl&+re&n!
+~
+R I 47102
+G I 294
+G I 294
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 295
+G I 295
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 318
+G I 318
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 319
+G I 319
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 330
+G I 330
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 332
+G I 332
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 333
+G I 333
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 334
+G I 334
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 335
+G I 335
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 355
+G I 355
+QA
+&N$n grins and says &+G'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 356
+G I 356
+QA
+&N$n grins and says &+G'Piranha and bass, together at last!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Gs&+ri&+Gz&+rz&+Gl&+re&n!
+~
+R I 47102
+G I 293
+G I 294
+S
+#47093
+M
+qc_action 150~
+&+cA holyman of Abbathor bows and performs a blessful gesture.
+&+c'Fortune be with thee,' he says.
+~
+S
+#47094
+MA
+hi hello~
+&N$n grunts at $N &+Y'Welcome aboard, thank ye for buyin' a
+&+Yticket! The Ironhold Grudge will take ye where ye need to be!'
+
+&N$n sighs and continues &+Y'The seas ain't a safe place no morem.
+&+YFor ye see, $N, there be rivals..'
+~
+MA
+seas rivals~
+&N$n nods at $N and says &+Y'Best ye wary of the Stalval and the Fulgur.
+&+YThey're happy to take yer gold, but ye might end up as fish food
+&+Yif ye set sail with them!' &+YKur&+Cg&+Yo&+Cnn &Nspits on the floor.
+
+&+Y'Bring me back the &+Cflags&+Y of the Stalval and the Crimson Fulgur,
+&+Yand the seas will be safer for everyone, especially the Grudge
+&+Yand her coffers!' &Nhe guffaws along with his &+Ca&+cdviso&+Cr&N.
+~
+QA
+&+YKur&+Cg&+Yo&+Cnn&N gasps and says &+Y'Saints be praised, ye did it!'
+Almost immediately, he begins unfurling the great flags and inspecting
+them, along with his advisors.
+
+&+YKur&+Cg&+Yo&+Cnn&N says &+Y'By law of the the Ironhold Grudge and in the
+&+Yholy eyes of Abbathor, I award ye this ..uhh..'&N he fidgets and quickly
+slides an &+cold ring&N off his pinky finger. &+Y'This ring!'&N he says.
+~
+R I 47093
+R I 55362
+R I 55033
+G I 47041
+G I 47042
+S
+#47095
+MA
+hi hello cook cooking~
+&N$n nods at $N and says &+Y'Well met $N! Keepin' their bellies
+&+Yfull be just as much work as climbin' the ropes or mannin' the
+&+Yballist's!'
+
+In several quick thwacks, $n chops a tentacle into several
+sections and continues &+Y'Fish? They'll eat it if it's in front
+&+Yof 'em, but these sailors be droolin' for land meat! I'm nay
+&+Yopposed to fish meself, raised on the sea!' &n$n nods proudly.
+
+&+Y'Go &+Wfishing&+Y, will ye? Catch two &+Wfish&+Y and bring 'em back to me
+&+Yand we'll have us &+Wfish skewers&+Y, eh?!
+
+&+YOr if ye come across a &+Whaunch of land meat&+Y, maybe an &+Wolyx&+Y,&+W lion&+Y,
+&+Wtheezak&+Y, &+Wcaribou&+Y, or even just a plain &+Wside of boar&+Y, I'd pay ye!'
+~
+MA
+fishing fish skewer skewers~
+&n$n nods hungrily at $N and says &+Y'Ye grow up on em, ye got hooked!'
+&N$n lets out a boisterous laugh, causing several patrons to turn
+and laugh with her.
+
+&+Y'Bring us back two fish for a skewer, but if they're the same type
+&+Yof fish, I always find they come out a bit sizzlier!'&n she says.
+~
+MA
+meat landmeat land theezak olyx lion caribou~
+&N$n nods hungrily at $N and says &+Y'Many of these men are recruits..
+&+Ynot accustomed to the life at sea!' &Nshe adds loudly enough to
+draw a few glares from some nearby mountain dwarves.
+
+&+Y'Be that as it may, gentle $N, I'm always on the lookout for
+&+Yland meat. If ye come across a bloody haunch of lion, theezak,
+&+Ycaribou, olyx, or even just a plain old side of boar, I'll pay
+&+Yye handsomely for it!'&N $n says.
+~
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+~
+R C 25000
+G I 83223
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N she says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 50000
+G I 83220
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N she says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 50000
+G I 83116
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N she says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 50000
+G I 83117
+QA
+&N$n hauls the &+Rmeat&N from $N and tosses it beside the &+Lg&+Rr&+Li&+Rl&+Ll&N.
+&+Y'Ahh..'&N she says, &+Y'They'll enjoy 'er mightily, thank ye!'
+~
+R C 50000
+G I 83201
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 295
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 318
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 293
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 295
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 318
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 294
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 318
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 295
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 319
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 318
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 330
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 319
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 332
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 330
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 333
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 332
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 334
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 333
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 335
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 334
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 335
+G I 355
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 335
+G I 356
+QA
+&N$n grins and says &+Y'Nothin' beats a fresh catch, eh?'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47100
+G I 355
+G I 356
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Ys&+ri&+Yz&+rz&+Yl&+re&n!
+~
+R I 47102
+G I 293
+G I 293
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Ys&+ri&+Yz&+rz&+Yl&+re&n!
+~
+R I 47102
+G I 294
+G I 294
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 295
+G I 295
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 318
+G I 318
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 319
+G I 319
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 330
+G I 330
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 332
+G I 332
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 333
+G I 333
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 334
+G I 334
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 335
+G I 335
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 355
+G I 355
+QA
+&N$n grins and says &+Y'Two offa kind, nice!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+~
+R I 47101
+G I 356
+G I 356
+QA
+&N$n grins and says &+Y'Piranha and bass, together at last!'
+&N$n skewers the &+cfish&n and slaps them on the &+Lg&+Rr&+Li&+Rl&+Ll.
+
+&N$n flips them after a few minutes.
+They really &+Ys&+ri&+Yz&+rz&+Yl&+re&n!
+~
+R I 47102
+G I 293
+G I 294
+S
+#47115
+MA
+hi hello~
+&N$n peers intently at $N and responds &+L'Well, you aren't like
+&+Lthe others here, are you?'
+&N$n chuckles and says &+L'Well neither am I. Perhaps you would
+&+Lbe of the likes of someone that would assist me?  I seek the
+&+Lflag of this ship.'
+~
+MA
+help yes flag ship captain~
+&N$n grins at $N and says &+L'Excellent. Reach the bridge of this
+&+Lship and capture its flag. Return it to me for a handsome reward.'
+~
+QA
+&N$n grins and hastily rolls up the &+cflag&N.
+&+L'Excellent work.'
+&N$n fishes a large &+Ycoin sack&N from his cloak.
+&+W'As promised..'&N he says, tossing it to $N.
+~
+R C 250000
+R I 400235
+G I 47043
+D
+&N$n looks over both shoulders and says &+W'Until next time..'&N
+
+And he is gone.
+~
+QA
+&N$n grins and hastily rolls up the &+cflag&N.
+&+L'Excellent work.'
+&N$n fishes a large &+Ycoin sack&N from his cloak.
+&+W'As promised..'&N he says, tossing it to $N.
+~
+R C 250000
+R I 400235
+G I 47041
+D
+&n$n looks over both shoulders, then says to $N &+W'Until next time..'&N
+
+..and he is gone.
+~
+QA
+&N$n grins and hastily rolls up the &+cflag&N.
+&+L'Excellent work.'
+&N$n fishes a large &+Ycoin sack&N from his cloak.
+&+W'As promised..'&N he says, tossing it to $N.
+~
+R C 250000
+R I 400235
+G I 47042
+D
+&N$n looks over both shoulders, then says to $N &+L'Until next time.'
+
+&N..and he's gone.
+~
+S
+#47121
+M
+qc_action 250~
+&+yThe massive tumber hull groans with the weight of its stone-
+&+yreinforced deck as the ship crests another towering wave.
+~
+M
+qc_action 250~
+&+LFrom somewhere deep in the hold, the unhuman roar of a monstrous
+&+Lbeast shakes the walls of the ship.
+~
+M
+qc_action 250~
+&+BA spray of icy seawater washes over the deck, pooling in the
+&+Bcrevices and cracks of the floorboards.
+~
+M
+qc_action 250~
+&+CThe wind howls through the gaps of the rigging, sounding like
+&+Cthe distant wailing of ghosts.
+~
+M
+qc_action 250~
+&+cThe heavy scent of wet fur and sea water fills your lungs as
+&+cstorm clouds descend low over the masts.
+~
+S
+#47122
+M
+qc_action 150~
+&+CA huge &Nghost &+Cbear sniffs around the deck and then steps onto
+&+Cits hind legs, vestigially scratching its back on the hull.
+~
+S
+#47123
+M
+qc_action 150~
+&+B&-LA LARGE lightning elemental crackles and sizzles, arcs of energy
+&+B&-Lzigzagging through the area leaving small puffs of smoke in their wake.
+~
+S

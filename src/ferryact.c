@@ -37,123 +37,234 @@ extern P_room world;
 // all created Ferrys
 list<Ferry *> ferry_list;
 
-// individual ferry loading function declarations
-Ferry *load_wavedancer();
-Ferry *load_seastalker();
-Ferry *load_seaspray();
-Ferry *load_oldferry();
+struct ferry_definition 
+{
+	char       *name;
+	int         id;
+	int         obj_vnum;
+	int         board_room_vnum;
+	int        *other_rooms;
+	int         speed;
+	int         wait_time;
+	int         depart_notice_time;
+	int         ticket_price;
+	struct stop_info
+	{
+		int room_vnum;
+		char *name;
+	} *stops;
+};
 
-// loading functions. return a ferry pointer, which shutdown_ferries is responsible for freeing
-Ferry *load_wavedancer()
+Ferry *create_ferry(struct ferry_definition *fd)
 {
 	Ferry *wd = new Ferry();
 
-	wd->name              = "&+WWave&+BDancer&n";
-	wd->id                = 1;
-	wd->obj_num           = real_object0(47013); // the ship object the ferry is bound to
-	wd->boarding_room_num = real_room0(47011);   // the room num of the room passengers board/disembark from
-	wd->ticket_price      = 10000;
+	wd->name              = fd->name;
+	wd->id                = fd->id;
+	wd->obj_num           = real_object0(fd->obj_vnum); // the ship object the ferry is bound to
+	wd->boarding_room_num = real_room0(fd->board_room_vnum);   // the room num of the room passengers board/disembark from
+	wd->ticket_price      = fd->ticket_price;
+
 
 	// all rooms on ship
-	for (int i = 47003; i < 47024; i++)
+	wd->rooms.push_back(real_room0(fd->board_room_vnum));
+	int start_room = fd->other_rooms[0];
+	int end_room = fd->other_rooms[1];
+	for (int room_num = start_room; room_num <= end_room; room_num++)
 	{
-		wd->rooms.push_back(real_room0(i));
+		wd->rooms.push_back(real_room0(room_num));
 	}
 
-	wd->speed              = 1;   // number of seconds to wait between moves. 0 == move every step
-	wd->wait_time          = 240; // number of seconds to wait at each named destination
-	wd->depart_notice_time = 60;  // number of seconds before departure to announce
+	wd->speed              = fd->speed;   // number of seconds to wait between moves. 0 == move every step
+	wd->wait_time          = fd->wait_time; // number of seconds to wait at each named destination
+	wd->depart_notice_time = fd->depart_notice_time;  // number of seconds before departure to announce
 
 	// stops on the route. stops without names are considered just waypoints and are not stopped at
-	wd->add_stop(real_room0(513273), "&+MMyrabolus&n");
-	wd->add_stop(real_room0(76660), "&+gThe &+GJade &+gEmpire&n");
-	wd->add_stop(real_room0(1712), "&+LQuietus Quay&n");
+	struct ferry_definition::stop_info *stops = fd->stops;
+	while(stops->room_vnum != 0)
+	{
+		wd->add_stop(real_room0(stops->room_vnum), stops->name);
+		stops++;
+	}
 
 	return wd;
 }
 
-Ferry *load_seastalker()
-{
-	Ferry *ss = new Ferry();
-
-	ss->name              = "&+BSea&+LStalker&n";
-	ss->id                = 2;
-	ss->obj_num           = real_object0(22423); // the ship object the ferry is bound to
-	ss->boarding_room_num = real_room0(22508);   // the room num of the room passengers board/disembark from
-	ss->ticket_price      = 15000;
-
-	// all rooms on ship
-	ss->rooms.push_back(real_room0(22540));
-	ss->rooms.push_back(real_room0(22539));
-	ss->rooms.push_back(real_room0(22538));
-	ss->rooms.push_back(real_room0(22511));
-	ss->rooms.push_back(real_room0(22509));
-	ss->rooms.push_back(real_room0(22508));
-	ss->rooms.push_back(real_room0(22510));
-
-	ss->speed              = 1;   // number of seconds to wait between moves. 0 == move every step
-	ss->wait_time          = 180; // number of seconds to wait at each named destination
-	ss->depart_notice_time = 60;  // number of seconds before departure to announce
-
-	// stops on the route. stops without names are considered just waypoints and are not stopped at
-	ss->add_stop(real_room0(22441), "&+WSto&+Lrm &+bPort");
-	ss->add_stop(real_room0(605640), "&+gKhomeni &+GKhan");
-	ss->add_stop(real_room0(66688), "&+WThe City of &+YTorrhan&n");
-
-	return ss;
-}
-
-Ferry *load_seaspray()
-{
-	Ferry *wd = new Ferry();
-
-	wd->name              = "&+bSe&+Cas&+Wp&+Cra&+by&n";
-	wd->id                = 3;
-	wd->obj_num           = real_object0(47014); // the ship object the ferry is bound to
-	wd->boarding_room_num = real_room0(47025);   // the room num of the room passengers board/disembark from
-	wd->ticket_price      = 10000;
-
-	// all rooms on ship
-	wd->rooms.push_back(real_room0(47025));
-	wd->rooms.push_back(real_room0(47026));
-
-	wd->speed              = 1;   // number of seconds to wait between moves. 0 == move every step
-	wd->wait_time          = 240; // number of seconds to wait at each named destination
-	wd->depart_notice_time = 60;  // number of seconds before departure to announce
-
-	// stops on the route. stops without names are considered just waypoints and are not stopped at
-	wd->add_stop(real_room0(550724), "&+bMenden-on-the-Deep&n");
-	wd->add_stop(real_room0(564319), "&+rFort &+RBoyard&n");
-	wd->add_stop(real_room0(22445), "&+WSto&+Lrm &+bPort&n");
-
-	return wd;
-}
-
-Ferry *load_oldferry()
-{
-	Ferry *wd = new Ferry();
-
-	wd->name              = "&+yOld Ferry&n";
-	wd->id                = 4;
-	wd->obj_num           = real_object0(47004); // the ship object the ferry is bound to
-	wd->boarding_room_num = real_room0(47024);   // the room num of the room passengers board/disembark from
-	wd->ticket_price      = 5000;
-
-	// all rooms on ship
-	wd->rooms.push_back(real_room0(47024));
-	wd->rooms.push_back(real_room0(47027));
-	wd->rooms.push_back(real_room0(47028));
-
-	wd->speed              = 4;   // number of seconds to wait between moves. 0 == move every step
-	wd->wait_time          = 120; // number of seconds to wait at each named destination
-	wd->depart_notice_time = 30;  // number of seconds before departure to announce
-
-	// stops on the route. stops without names are considered just waypoints and are not stopped at
-	wd->add_stop(real_room0(43191), "&+cFenaline");
-	wd->add_stop(real_room0(550722), "&+bMenden-on-the-Deep");
-
-	return wd;
-}
+const struct ferry_definition ferries[] = {
+	{ 
+		"&+yThe &+WWave&+BDancer&N",      // name
+		1,                     // id
+		47013,                 // shop object
+		47011,                 // boarding room vnum
+		(int[]){47003, 47010, 0}, // other rooms
+		1,                     // speed
+		240,                   // wait time
+		60,                    // depart notice time
+		10000,                  // ticket price
+		(struct ferry_definition::stop_info[]){         // stops
+			{
+				635261, 
+				"&+gKhomani-Khan&N"
+			}, 
+			{
+				1712,
+				"&+mQuietus Quay&N"
+			},
+			{
+				76654,
+				"&+gThe &+GJade &+gEmpire&N"
+			},
+			{
+				82686,
+				"&+MMyrabolus&N"
+			},
+			{ 0 }
+		}
+	},
+	{ 
+		"&+yThe &+bSe&+ca&+Wsp&+Cr&+bay&N",      // name
+		2,                     // id
+		47014,                 // shop object
+		47026,                 // boarding room vnum
+		(int[]){47025, 47025, 0}, // other rooms
+		1,                     // speed
+		240,                   // wait time
+		60,                    // depart notice time
+		10000,                  // ticket price
+		(struct ferry_definition::stop_info[]){         // stops
+			{
+				22444, 
+				"&+WSto&+Lrm Port&n"
+			}, 
+			{
+				564720,
+				"&+rFort &+RBoyard&N"
+			},
+			{
+				550724,
+				"&+bMenden-on-the-Deep"
+			},
+			{ 0 }
+		}
+	},
+	{ 
+		"&+yThe &+CStalval&N",      // name
+		3,                     // id
+		47016,                 // shop object
+		47072,                 // boarding room vnum
+		(int[]){47073, 47132, 0}, // other rooms
+		2,                     // speed
+		300,                   // wait time
+		60,                    // depart notice time
+		10000,                  // ticket price
+		(struct ferry_definition::stop_info[]){         // stops
+			{
+				83788, 
+				"&+WDeramuth Port&N"
+			}, 
+			{
+				634862,
+				"&+gKhomani-Khan&N"
+			},
+			{
+				9979,
+				"&+ySarmiz'Duul&N"
+			},
+			{
+				133054,
+				"&+WTharnadia&N"
+			},
+			{ 0 }
+		}
+	},
+	{ 
+		"&+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&N",      // name
+		4,                     // id
+		47017,                 // shop object
+		47146,                 // boarding room vnum
+		(int[]){47133, 47195, 0}, // other rooms
+		2,                     // speed
+		240,                   // wait time
+		30,                    // depart notice time
+		10000,                  // ticket price
+		(struct ferry_definition::stop_info[]){         // stops
+			{
+				76660, 
+				"&+gThe &+GJade &+gEmpire&N"
+			}, 
+			{
+				22601,
+				"&+WSto&+Lrm Port Stronghold&n"
+			},
+			{
+				22445,
+				"&+WSto&+Lrm Port&N"
+			},
+			{
+				43151,
+				"&+LThur'Gurax&N"
+			},
+			{ 0 }
+		}
+	},
+	{ 
+		"&+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&n",      // name
+		5,                     // id
+		47015,                 // shop object
+		47029,                 // boarding room vnum
+		(int[]){47030, 47071, 0}, // other rooms
+		3,                     // speed
+		300,                   // wait time
+		60,                    // depart notice time
+		10000,                  // ticket price
+		(struct ferry_definition::stop_info[]){         // stops
+			{
+				83789, 
+				"&+WDeramuth Port&N"
+			}, 
+			{
+				49089,
+				"&+YVenan'Trut&N"
+			},
+			{
+				43111,
+				"&+WCanderthal Harbor&N"
+			},
+			{
+				1713,
+				"&+mQuietus Quay&N"
+			},
+			{ 0 }
+		}
+	},
+	{ 
+		"&+yOld Rickety Ferry&N",      // name
+		6,                     // id
+		47004,                 // shop object
+		47024,                 // boarding room vnum
+		(int[]){47027, 47028, 0}, // other rooms
+		4,                     // speed
+		120,                   // wait time
+		30,                    // depart notice time
+		5000,                  // ticket price
+		(struct ferry_definition::stop_info[]){         // stops
+			{
+				133052, 
+				"&+WTharnadia&N"
+			}, 
+			{
+				557216,
+				"&+CMoonshae &+GIsland&N"
+			},
+			{
+				564319,
+				"&+rFort &+RBoyard&N"
+			},
+			{ 0 }
+		}
+	},
+	{ 0 }
+};
 
 void init_ferries()
 {
@@ -167,10 +278,12 @@ void init_ferries()
 
 	fprintf(stderr, "--    Booting Ferries\r\n");
 
-	ferry_list.push_back(load_wavedancer());
-	ferry_list.push_back(load_seastalker());
-	ferry_list.push_back(load_seaspray());
-	ferry_list.push_back(load_oldferry());
+	struct ferry_definition *it = (struct ferry_definition *)ferries;
+	while(it->name != NULL)
+	{
+		ferry_list.push_back(create_ferry(it));
+		it++;
+	}
 
 	for (list<Ferry *>::iterator it = ferry_list.begin(); it != ferry_list.end(); it++)
 	{

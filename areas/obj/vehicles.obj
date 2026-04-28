@@ -112,3 +112,595 @@ E
 ferry ship seaspray~
 &+yThis is the Seaspray, a local ferry that travels around the world.&n
 ~
+#47015
+ferry ship ironhold grudge __ferry__~
+&+Lthe &+cIron&+Lhold &+CG&+crudg&+Ce&N~
+&+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&N &+yfloats here, ready to ferry passengers.~
+~
+28 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+ferry ship ironhold grudge __ferry__~
+&+L   Rising from the &+Bwaters&+L like a &+Cfortress&+L of iron and timber,
+&+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&+L is an imposing silhouette of militarized
+&+Ydwarven&+L engineering that towers over every other vessel in
+&+Lthe port.  Its hull is not made of overlapping plates of &+Csteel&+L,
+&+Lreinforced with &+Wplatinum&+L r&+Wi&+Lv&+We&+Lt&+Ws&+L that shimmer against the water.
+&+LTwo tiers of medium catapults line its flanks, with formidable
+&+Lballistae on the fore and aft decks.
+~
+#47016
+ferry ship stalval __ferry__~
+&n&+ythe &+CStalval&N~
+&+yThe &+CStalval &+yfloats here, ready to ferry passengers.~
+~
+28 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+ferry ship stalval __ferry__~
+&+y   Floating majestically with the waves like a breaching whale,
+&+ythe &+CStalval&+y is a wooden longboat with large, &+Ww&Nh&+Wa&Nl&+We&N-&+Wb&No&+Wn&Ne&+y ribcage
+&+yat it's center that smokes with an ever-burning &+rf&+Rir&+Ye&+y. Heavily-
+&+ymuscled barbarians wielding long &+charpoons&+y can be seen straddling
+&+ythe gunwales, readying their weapons at their shoulders while
+&+ypeering intently into the waters. Rhythmic chanting can be heard
+&+yin between sudden bursts of &+cbl&+Bu&+Ce&+y and &+ggr&+Gee&+Yn&+y flames during shamanic
+&+yritualist aboard the &+CStalval&+y.
+~
+#47017
+ferry ship crimson fulgur __ferry__~
+&n&+rthe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&N~
+&+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr &+yfloats here, ready to ferry passengers.~
+~
+28 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+ferry ship crimson fulgur __ferry__~
+&+r   Dominating the waters around it like a shark in a feeding-
+&+rfrenzy, The &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&+r and its twin blood-red masts is a
+&+rfearsome vessel. The most notable part, however, is the aft-
+&+rside ram, made of tapered iron that is constantly polished and
+&+rhoned into a &+Cs&+char&+Cp&+r blade. The '&+BW&+ca&+Bk&+ce&+B-Br&+cea&+Bk&+ce&+Br&+r', as it is called,
+&+ris both a nautical invention to help the medium-sized vessel
+&+rsail through harsh &+Wsto&+Lrms&+r like a dreadnaught, but also a deadly
+&+rweapon of ocean warfare. Seemingly everywhere there can be any,
+&+rcrude pikes jut out sea-ward from The &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&+r, like the
+&+rspines on a blood-soaked crown.
+~
+#47040
+captains quarters key~
+&+La &+Yc&+Wa&+Yp&+Wt&+Ya&+Wi&+Yn&+W'&+Ys &+mquarters &+Lkey&N~
+&+LA plainly-labeld '&+YC&+Wa&+Yp&+Wt&+Ya&+Wi&+Yn&+W'&+Ys &+mQuarters' &+Lkey&N lies here.~
+~
+18 24 2 0 7 0 8388608 16385 0 0 0
+0 100 0 0 0 0 0 0
+1 0 100
+E
+captains quarters key~
+   This golden key is plainly labeled &+Y'Captain's Quarters'
+&Nand has likely been entrusted to the highest ranking guard.
+~
+#47041
+flag stalval~
+&+Cthe &+Wflag &+Cof &+yThe &+CStalval&N~
+&+CThe &+Wflag &+Cof &+yThe &+CStalval&+C blows majestically in the wind.~
+~
+8 3 6 0 11 0 8396800 16385 32768 0 0
+0 0 0 0 0 0 0 0
+15 100000 100
+E
+flag stalval~
+&+CThis is the flag of the longboat, &+yThe &+CStalval.
+~
+#47042
+flag crimson fulgur~
+&+Cthe &+Wflag &+Cof &+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&N~
+&+CThe &+Wflag &+Cof &+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr &+Cblows majestically in the wind.~
+~
+8 3 6 0 11 0 8396800 16385 32768 0 0
+0 0 0 0 0 0 0 0
+15 100000 100
+E
+flag crimson fulgur~
+&+CThis is the flag of the galleon &+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&+C.
+~
+#47043
+flag ironhold grudge~
+&+Cthe &+Wflag &+Cof &+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&N~
+&+CThe &+Wflag &+Cof &+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&N blows majestically in the wind.~
+~
+8 3 6 0 11 0 8396800 16385 32768 0 0
+0 0 0 0 0 0 0 0
+15 100000 100
+E
+flag ironhold grudge~
+&+CThis is the flag of the warferry, &+LThe &+cIron&+Lhold &+CG&+crudg&+Ce.
+~
+#47050
+finely-carved finely carved pipe shaped warhammer~
+&+ma finely-carved &+Lp&+mip&+Le&+m shaped like a &+Mw&+La&+Mrh&+La&+Mmm&+Le&+Mr&N~
+&+mA finely-carved &+Lp&+mip&+Le&+m shaped like a &+Mw&+La&+Mrh&+La&+Mmm&+Le&+Mr&N lies here.~
+~
+41 18 2 0 11 0 0 8404993 0 0 0
+5 10 5 0 0 0 0 0
+0 25000 100
+#47051
+ceremonial chillum scrimshawed whale bone~
+&+Wa &+cce&+Cre&+Wmo&+Cni&+cal &+Wch&Ni&+Wll&Nu&+Wm of &Ns&+Wc&Nr&+Wi&Nm&+Ws&Nh&+Wa&Nw&+We&Nd &+Bwh&+ca&+Bl&+ce &+Wb&No&+Wn&Ne&n~
+&+WA &+cce&+Cre&+Wmo&+Cni&+cal &+Wch&Ni&+Wll&Nu&+Wm of &Ns&+Wc&Nr&+Wi&Nm&+Ws&Nh&+Wa&Nw&+We&Nd &+Bwh&+ca&+Bl&+ce &+Wb&No&+Wn&Ne&n lies here.~
+~
+41 34 2 0 11 0 8192 8404993 0 0 0
+2 4 3 0 0 0 0 0
+0 120000 100
+#47052
+large storm giant skull giant-skull hookah~
+&+ca large &+Ws&Nt&+Wo&nr&+Wm g&Ni&+Wa&Nn&+Wt&N-&+Wsk&Nu&+Wll &+chookah&N~
+&+cA large &+Ws&Nt&+Wo&nr&+Wm g&Ni&+Wa&Nn&+Wt&N-&+Wsk&Nu&+Wll &+chookah&N lies here.~
+~
+41 10 4 0 11 0 0 8404993 0 0 0
+3 6 2 0 0 0 0 0
+0 150000 100
+#47053
+half-visible abyssal smoking parchment rolling paper~
+&Nsome &+Lh&Na&+Ll&Nf-&+Lv&Ni&+Ls&Ni&+Lb&Nl&+Le &+rAbyssal &+Lsm&Noki&+Lng &+ypar&+Lchm&N&+yent&N~
+&NSome &+Lh&Na&+Ll&Nf-&+Lv&Ni&+Ls&Ni&+Lb&Nl&+Le &+rAbyssal &+Lsm&Noki&+Lng &+ypar&+Lchm&N&+yent&N lies here.~
+~
+41 28 1 0 11 0 8192 16385 0 0 0
+1 2 50 0 0 0 0 0
+0 2000 100
+#47055
+large bud northern tundra flower _id_~
+&na large bud of &+cNo&+Crt&+Bh&+Ye&+Br&+Yn &+CTundra &nflower~
+&nA large bud of &+cNo&+Crt&+Bh&+Ye&+Br&+Yn &+CTundra &nflower &+gg&+Gr&+go&+Gw&+gs&N here.~
+~
+40 43 2 0 10 0 0 0 0 0 0
+40 1902 0 0 0 0 3 24
+0 4000 100
+E
+_id_name_~
+large bud northern tundra blue haze flower
+~
+E
+_id_short_~
+&Na large bud of &+cNo&+Crt&+Bh&+Ye&+Br&+Yn &+CTundra &+Bbl&+cu&+Ce &+Bha&+cz&+Ce&N
+~
+E
+_id_desc_~
+&NA large bud of &+cNo&+Crt&+Bh&+Ye&+Br&+Yn &+CTundra &+Bbl&+cu&+Ce &+Bha&+cz&+Ce&N &+gg&+Gr&+go&+Gw&+gs &Nhere.
+~
+#47056
+clump dhalnadar moss _id_~
+&Na clump of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr &+Lm&+go&+Ls&+gs&N~
+&+gA sticky clump of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr &+Lm&+go&+Ls&+gs&N &+ggrows here.~
+~
+40 43 2 0 7 0 0 0 0 0 0
+40 1905 0 0 0 0 3 15
+0 2400 100
+E
+_id_name_~
+clump deepcave dhalnadar gootwiet moss
+~
+E
+_id_short_~
+&Na clump of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr &+Ldeep&+ycave &+LGoo&+mt&+Lw&+mie&+Lt&N
+~
+E
+_id_desc_~
+&+gA small clump of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr &+Ldeep&+ycave &+LGoo&+mt&+Lw&+mie&+Lt&+g grows here.
+~
+#47057
+bushel darkpeak weed flower weedflower _id_~
+&na small bushel of &+LDark&+yPeak &+gweedflower&N~
+&+gA small bushel of &+LDark&+yPeak &+gweedflower &+Gg&+gr&+Go&+gw&+Gs&+g here.~
+~
+40 43 2 0 7 0 0 0 0 0 0
+40 1903 0 0 0 0 3 12
+0 2400 100
+E
+_id_name_~
+bushel darkpeak medicus weedflower weed flower
+~
+E
+_id_short_~
+&Na small bushel of &+LDark&+yPeak &+gM&+Ge&+gd&+Gi&+gc&+Gu&+gs&N
+~
+E
+_id_desc_~
+&+gA small bushel of &+LDark&+yPeak &+gM&+Ge&+gd&+Gi&+gc&+Gu&+gs&N &+ggrows here.
+~
+#47058
+stalk abyssal spikeweed weed _id_~
+&na stalk of &+rAbyssal &+Rs&+gp&+Ri&+gk&+Re&+gw&+Re&+ge&+Rd&N~
+&nA stalk of &+rAbyssal &+Rs&+gp&+Ri&+gk&+Re&+gw&+Re&+ge&+Rd&N &+Gg&+gr&+Go&+gw&+Gs &nhere.~
+~
+40 43 2 0 11 0 0 0 0 0 0
+40 1904 0 0 0 0 3 30
+0 8000 100
+E
+_id_name_~
+stalk abyssal spikeweed black kush
+~
+E
+_id_short_~
+&+Lsome &+rAbyssal &+Rs&+gp&+Ri&+gk&+Re&+gw&+Re&+ge&+Rd &+LBlack K&+mu&+Ls&+mh&N
+~
+E
+_id_desc_~
+&+LSome &+rAbyssal &+Rs&+gp&+Ri&+gk&+Re&+gw&+Re&+ge&+Rd &+LBlack K&+mu&+Ls&+mh&N &+Gg&+gr&+Go&+gw&+Gs &nhere.
+~
+#47075
+snow goggles scrimshawed whale bone~
+&+Wsome s&Nno&+Ww g&Noggle&+Ws of &Ns&+Wcri&Nm&+Wsh&Na&+Wwe&Nd &+Bwh&+ca&+Bl&+ce &+Wb&No&+Wn&Ne&N~
+&+WSome s&Nno&+Ww g&Noggle&+Ws of &Ns&+Wcri&Nm&+Wsh&Na&+Wwle&Nd &+Bwh&+ca&+Bl&+ce &+Wb&No&+Wn&Ne&N have been left here.~
+~
+9 10 2 0 11 0 8192 131073 66 0 0
+5 0 0 0 0 0 0 0
+0 20555 100 4 0 0 0
+E
+snow goggles scrimshawed whale bone~
+&+W   Carved from the dense jawbone of a leviathan, these
+goggles feature a singular, wraparound frame polished to
+&+Wa glass-like sheen. The bone surface is covered in fine,
+ink-rubbed scrimshaw depicting hunting tribesmen in the
+&+Wrolling waves. A single horizontal slit blocks the glare
+of the sun, sharpening the wearer's focus on the horizon.
+~
+A
+55 3
+A
+20 -3
+#47076
+forge-fire forge fire goggles~
+&+Ys&+Ro&+rme &+Yf&+Ro&+rrge-&+Yf&+Ri&+rre &+Yg&+Ro&+rggles&N~
+&+YS&+Ro&+rme &+Yf&+Ro&+rrge-&+Yf&+Ri&+rre &+Yg&+Ro&+rggles&N have been left here.~
+~
+9 18 2 0 13 0 1 131073 64 0 0
+10 0 0 0 0 0 0 0
+1 55000 100 536870912 0 0 0
+E
+forge-fire forge fire goggles~
+&+r   These old goggles are built to withstand the blinding
+&+Rintensity of a molten furnace, featuring heavy frames of
+&+Ytreated mithril. The lenses are crafted from thick, tinted
+&+Rquartz that glows with a faint crimson hue.
+~
+A
+17 -20
+A
+24 -3
+#47077
+thick leather belt warhammer shaped buckle~
+&n&+ya thick leather belt with &+ma w&+Ma&+mrh&+Ma&+mmm&+Me&+mr-sh&+Ma&+mp&+Me&+md &+mbuckle&N~
+&n&+yA thick leather belt with &+ma w&+Ma&+mrh&+Ma&+mmm&+Me&+mr-sh&+Ma&+mp&+Me&+md &+mbuckle&N lies here.~
+~
+9 13 3 0 10 0 0 2049 0 0 0
+10 0 0 0 0 0 0 0
+1 20000 100
+E
+thick leather belt warhammer shaped buckle~
+&+M   This belt is forged of a broad strip of thick ram hide,
+&+mheavily oiled to remain supple despite its rugged durability.
+&+MIts surace is embossed with interlocking geometric patterns
+&+mthat mirror the structural ribbing of a dwarven ship. The
+&+Mwarhammer buckle is the same emblem used for The Ironhold
+&+mGrudge - the infamous dwarven warferry.
+~
+A
+31 3
+A
+18 3
+#47078
+festoon scrimshawed whale bones~
+&+Wa f&Ne&+Wst&Noo&+Wn &No&+Wf &Ns&+Wcri&Nm&+Ws&Nh&+Wawe&Nd &+Bwh&+ca&+Bl&+ce &+Wb&No&+Wn&Ne&+Ws&N~
+&+WA f&Ne&+Wst&Noo&+Wn &No&+Wf &Ns&+Wcri&Nm&+Ws&Nh&+Wawe&Nd &+Bwh&+ca&+Bl&+ce &+Wb&No&+Wn&Ne&+Ws&N lies here.~
+~
+9 10 3 0 6 0 8192 150999045 64 0 0
+2 0 0 0 0 0 0 0
+0 5000 100
+E
+festoon scrimshawed whale bone~
+&+W   A series of sun-bleached whale bone ribs and vertebrae
+&Nare strung together by thick hemp rope. Each segment of
+&+Wbone is intricately etched with sprawling, ink-stained
+&Nillustrations of rolling waves and sea serpents.
+~
+A
+34 2
+A
+31 2
+#47079
+kraken hide kraken-hide loin cloth loincloth~
+&N&+ca &+Lk&+Gr&+La&+Gk&+Le&+Gn&n&+c-hide &+cloincloth&N~
+&N&+cA &+Lk&+Gr&+La&+Gk&+Le&+Gn&n&+c-hide &+cloincloth&N lies here.~
+~
+9 12 4 0 2 0 33554432 2049 64 0 0
+10 0 0 0 0 0 0 0
+2 150000 100 32768 12288 0 0
+E
+kraken hide kraken-hide loincloth~
+   This quivering, fleshy section of kraken-hide has been
+stitched with thick cords of sinew into the ancestral
+garment of the &+BTribe of the Whale.
+~
+A
+23 -3
+A
+20 -3
+#47080
+dangling necklace kraken teeth~
+&+ca dangling necklace of &+Lk&+Gr&+La&+Gk&+Le&+Gn &+Wteeth&N~
+&+cA dangling necklace of &+Lk&+Gr&+La&+Gk&+Le&+Gn &+Wteeth&N lies here.~
+~
+9 34 2 0 6 0 8192 5 64 0 0
+10 0 0 0 0 0 0 0
+0 125000 100 32768 12288 0 0
+A
+20 -3
+A
+23 -3
+#47081
+wyvern skull wyvern-skull pauldrons~
+&+Ws&Nom&+We &+ywyvern&n-&+Wsk&Nu&+Wll&N &+Wpau&Nldr&+Wons&N~
+&+WS&Nom&+We &+ywyvern&n-&+Wsk&Nu&+Wll&N &+Wpau&Nldr&+Wons&N have been left here.~
+~
+9 10 4 0 5 0 67108864 257 0 0 0
+15 0 0 0 0 0 0 0
+2 25000 100 67108864 128 0 0
+A
+14 30
+A
+23 -3
+#47082
+wyvern skull wyvern-skull poleyns~
+&+Ws&Nom&+We &+ywyvern&n-&+Wsk&Nu&+Wll&N &+Wpo&Nley&+Wns&n~
+&+WS&Nom&+We &+ywyvern&n-&+Wsk&Nu&+Wll&N &+Wpo&Nley&+Wns&N have been left here.~
+~
+9 10 4 0 5 0 67108864 33 0 0 0
+15 0 0 0 0 0 0 0
+2 25000 100 67108864 128 0 0
+A
+14 30
+A
+23 -3
+#47083
+heavy dwarven arbalest~
+&+La heavy &+ydwarven &+Ca&+yr&+Cb&+ya&+Cl&+ye&+Cs&+yt&N~
+&+LA heavy &+ydwarven &+Ca&+yr&+Cb&+ya&+Cl&+ye&+Cs&+yt&N lies here.~
+~
+6 18 4 0 13 0 4194304 8193 0 0 0
+105 90 0 3 0 0 0 0
+5 65000 100
+E
+heavy dwarven arbalest~
+&+C   Built from reinforced mithril, this massive siege-weapon is
+&+ya marvel of dwarven metallurgy. Designed for to both eliminate
+&+Cfoes as well as damage ship infrastructure, this heavy crossbow
+&+ypacks a mighty bolt. The bowstave itself is a thick spring of
+&+Ctempered steel, so rigid that it requires a windlass with a
+&+yhand-crank to tension the bowstring.
+~
+A
+18 4
+A
+19 4
+#47084
+pendant oversized gem-encrusted gem-encrusted coin _id_~
+&n&+ma pendant of an oversized &+Bg&+Re&+Gm&+m-&+Ce&+cn&+Bc&+gr&+Gu&+Ys&+Rt&+Me&+md coin&N~
+&n&+mA pendant of an oversized &+Bg&+Re&+Gm&+m-&+Ce&+cn&+Bc&+gr&+Gu&+Ys&+Rt&+Me&+md coin&N lies here.~
+~
+9 26 2 0 10 0 1 5 64 0 0
+15 0 0 0 0 0 0 0
+1 350000 100
+E
+_id_name_~
+pendant gem gem-encrusted encrusted holy symbol abbathor
+~
+E
+_id_short_~
+&n&+ma &+Bg&+Re&+Gm&+m-&+Ce&+cn&+Bc&+gr&+Gu&+Ys&+Rt&+Me&+md h&+co&+ml&+cy&+m symbol of A&+cb&+mb&+ca&+mt&+ch&+mo&+cr&N
+~
+E
+_id_desc_~
+&n&+mA &+Bg&+Re&+Gm&+m-&+Ce&+cn&+Bc&+Gr&+mus&+Rt&+Me&+md h&+co&+ml&+cy symbol of A&+cb&+mb&+ca&+mt&+ch&+mo&+cr&N has been left here.
+~
+A
+40 5
+A
+34 3
+#47085
+harpoon breach-maker breach maker~
+&+La massive &+Ch&+ca&+Crp&+coo&+Cn&+L named &+y'&+LThe Breach-&+rM&+La&+rk&+Le&+rr&+y'&N~
+&+LA massive &+Ch&+ca&+Crp&+coo&+Cn&+L lies here.~
+~
+5 6 6 0 10 0 4194576 8193 0 0 0
+8 7 4 0 0 0 0 0
+20 105000 100
+E
+harpoon breach-maker breach maker~
+&+y   This harpoon is simply massive. Longer than any greatsword
+&+yfashioned in the realms of men, the Breach-Maker carries the
+&+Llore of a hero. Fired into the hearts of many sea beasts,
+&+Lfrom leviathan to kraken, the Breach-Maker serves a dual role
+&+Las an anti-ship ballistae projectile as well. The entire wooden
+&+Lharpoon is made of a singular ancient pine that has been cured
+&+ywith rendered whale oil and magic. The harpoon's head is a
+&+ydeathly-sharp double-edged mithril spade, likely replaced.
+~
+A
+18 5
+A
+19 5
+#47086
+spider shaped spider-shaped wrist bow wrist-bow~
+&+La sp&+mid&+Ler-shaped &+mw&+Lr&+mi&+Ls&+mt&+L-&+mb&+Lo&+mw&N~
+&+LA sp&+mid&+Ler-shaped &+mw&+Lr&+mi&+Ls&+mt&+L-&+mb&+Lo&+mw&N lies here.~
+~
+6 46 2 0 13 0 4096 12289 64 0 0
+105 100 0 6 0 0 0 0
+0 225000 100
+A
+32 3
+A
+36 3
+#47087
+small spider shaped spider-shaped quiver~
+&+La small sp&+mid&+Ler-shaped &+mq&+Lu&+mi&+Lv&+me&+Lr&N~
+&+LA small sp&+mid&+Ler-shaped &+mq&+Lu&+mi&+Lv&+me&+Lr&N lies here.~
+~
+30 46 2 0 13 0 0 0 0 0 0
+120 5 6 0 0 0 0 0
+0 165000 100
+E
+small spider shaped spider-shaped quiver~
+&+L   This spider-shaped quiver masterfully-crafted of
+&+Ldrow design, intended to carry poison darts fired by
+&+La concealed wrist-bow.
+~
+A
+32 3
+A
+36 3
+#47088
+finely carved finely-carved dart~
+&+La finely-carved &+mdart&+L&n~
+&+LA finely-carved &+mdart&+L&n lies here.~
+~
+7 5 1 0 10 0 134225920 1 64 0 0
+9 5 2 6 0 0 0 0
+0 500 100
+E
+finely carved finely-carved dart~
+&+L   This finely-carved dart is a widdled splinter of a
+&+Lpetrified mushroom stalk, grown deep in the underdark.
+&+LStrange purple streaks stain the dart.
+~
+A
+18 4
+A
+19 4
+#47089
+wreath entwined lupines~
+&+ga &+Bw&+mr&+Bea&+mt&+Bh &+go&+mf &+Ben&+mt&+Bwi&+mn&+Be&+gd &+Bl&+mu&+Bpi&+mn&+Bes&n~
+&+gA wreath of &+Be&+mn&+Btw&+mi&+Bn&+me&+Bd l&+mu&+Bp&+mi&+Bn&+me&+Bs &+ghas been left here, attracting &+Yb&+Le&+Ye&+Ls&+Y.~
+~
+4 30 4 0 6 0 0 142606353 66 0 0
+41 21 21 352 0 0 0 0
+0 2000 100
+E
+wreath entwined lupines~
+&+m   This wr&+Beath is&+m made o&+Bf a lon&+mg spira&+Bl of &+mdaisy-ch&+Bained&+m lupi&+Bnes
+&+mtha&+Bt has b&+meen tw&+Bisted tog&+mether w&+Bith mo&+mre dais&+By-cha&+mine&+Bd lupi&+mnes.
+~
+A
+38 5
+A
+40 5
+#47090
+heavy orcish crossbow crimson claw~
+&+ran &+Lorcish &+rcrossbow called 'The &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn &+LClaw&+r'&n~
+&+rAn &+Lorcish &+rcrossbow called 'The &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn &+LClaw&+r'&n lies here.~
+~
+6 6 4 0 11 0 0 8193 0 0 0
+120 100 0 2 0 0 0 0
+2 125000 100
+E
+crossbow crimson claw~
+   This crossbow is surprisingly well made. Despite its heavy
+size, it is extremely well-balanced and fires &+Rlight bolts &Nat
+rapid succession, due to the bolt-feeding compartment allowing
+the shooter to nudge the next bolt into place while cranking
+the windsall.
+~
+A
+18 4
+A
+19 4
+#47091
+mantle squall~
+&n&+bthe mantle&+L &+rof the &+Ws&+Cq&+Wu&+Ca&+Wl&+Cl&N~
+&n&+bThe mantle&+L &+rof the &+Ws&+Cq&+Wu&+Ca&+Wl&+Cl&N lies here.~
+~
+4 3 4 0 14 0 33554432 1033 64 0 0
+46 15 15 6 0 0 0 0
+-50 100000 100 0 192 0 0
+A
+55 4
+A
+36 4
+T
+6 3 1 100
+#47092
+cloak crackling energy~
+&+Ca cloak of &+Yc&+Br&+Ya&+Bc&+Yk&+Bl&+Yi&+Bn&+Yg &+Be&+Yn&+Be&+Yr&+Bg&+Yy&n~
+&+CA cloak of &+cc&+Br&+ca&+Bc&+ck&+Bl&+ci&+Bn&+cg e&+Bn&+ce&+Br&+cg&+By&n floats here&+Y a&+Cr&+Yc&+Ci&+Yn&+Cg&N.~
+~
+9 1 4 0 15 0 33554433 1025 64 0 0
+15 0 0 0 0 0 0 0
+-100 500000 100 0 128 1048576 0
+A
+26 12
+A
+36 4
+#47093
+old signet ring _id_~
+&n&+can old signet ring&N~
+&n&+cAn old signet ring&N lies here, forgotten.~
+~
+9 18 1 0 15 0 0 3 0 0 0
+5 0 0 0 0 0 0 0
+0 500000 100
+E
+_id_name_~
+ancient signet ring clan battlehammer
+~
+E
+_id_short_~
+&n&+can ancient signet ring of &+WC&+Clan &+WB&+Cattlehammer&N
+~
+E
+_id_desc_~
+&n&+cAn ancient signet ring of &+WC&+Clan &+WB&+Cattlehammer&N&+c has been left here!
+~
+A
+31 5
+A
+35 5
+#47094
+ancestral bracer tribe whale~
+&+Wan a&Nn&+Lcestr&Na&+Wl br&Na&+Wc&Ne&+Wr &No&+Wf th&Ne &+BTribe of the Whale&n~
+&+WAn a&Nn&+Lcestr&Na&+Wl br&Na&+Wc&Ne&+Wr &No&+Wf th&Ne &+BTribe of the Whale&n lies here.~
+~
+9 34 2 0 14 0 8192 4097 0 0 0
+5 0 0 0 0 0 0 0
+0 250000 100 2080 92 0 0
+A
+13 30
+A
+14 30
+#47100
+charred seafood skewer~
+&+La charred &+Bs&+ge&+Ba&+gf&+Bo&+go&+Bd &+rs&+Rk&+re&+Rw&+re&+Rr&N~
+&+LA charred &+Bs&+ge&+Ba&+gf&+Bo&+go&+Bd &+rs&+Rk&+re&+Rw&+re&+Rr&N lies here, attracting &+Lflies&N.~
+~
+19 48 3 0 5 0 0 16385 0 0 0
+12 10 15 0 4 4 4 4
+0 1000 100
+#47101
+searred seafood skewer~
+&+La &+rs&+Rea&+rr&+Red &+Bs&+ge&+Ba&+gf&+Bo&+go&+Bd &+rs&+Rk&+re&+Rw&+re&+Rr&N~
+&+LA &+rs&+Rea&+rr&+Red &+Bs&+ge&+Ba&+gf&+Bo&+go&+Bd &+rs&+Rk&+re&+Rw&+re&+Rr&N lies here, attracting &+Lflies&N.~
+~
+19 48 3 0 5 0 0 16385 0 0 0
+24 10 15 0 4 4 4 4
+0 1000 100
+#47102
+sizzling seafood skewer~
+&+La &+Ys&+ri&+Yz&+rz&+Yl&+ri&+Yn&+rg &+Bs&+ge&+Ba&+gf&+Bo&+go&+Bd &+rs&+Rk&+re&+Rw&+re&+Rr&N~
+&+LA &+Ys&+ri&+Yz&+rz&+Yl&+ri&+Yn&+rg &+Bs&+ge&+Ba&+gf&+Bo&+go&+Bd &+rs&+Rk&+re&+Rw&+re&+Rr&N lies here, attracting &+Lflies&N.~
+~
+19 48 3 0 5 0 0 16385 0 0 0
+24 11 16 0 5 5 5 5
+0 1000 100

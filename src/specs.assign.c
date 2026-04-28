@@ -2333,6 +2333,7 @@ void assign_rooms(void)
 	world[real_room0(635260)].funct = ship_shop_proc;
 	world[real_room0(584171)].funct = ship_shop_proc;
 	world[real_room0(55410)].funct  = ship_shop_proc;
+	world[real_room0(133051)].funct = ship_shop_proc;
 
 	world[real_room0(77)].funct     = crew_shop_proc; // whole-list room
 	world[real_room0(1734)].funct   = crew_shop_proc; // Quietus
@@ -2358,7 +2359,7 @@ void assign_rooms(void)
 	world[real_room0(559633)].funct = ship_shop_proc;
 
 	/* Myrabolis */
-	world[real_room0(82670)].funct = ship_shop_proc;
+	world[real_room0(82669)].funct = ship_shop_proc;
 
 	/* Venan */
 	world[real_room0(49090)].funct = ship_shop_proc;

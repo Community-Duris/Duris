@@ -2939,6 +2939,8 @@ P 1 400263 2 83254 100 0 0 0       *   (object type not in this .obj file)
 P 1 400264 1 83254 100 0 0 0       *   (object type not in this .obj file)
 P 1 400265 1 83254 100 0 0 0       *   (object type not in this .obj file)
 M 0 83255 1 83410 100 0 0 0        * a priest of The High Old Ones
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 17 100 0 0 0          *   a magical flaming cudgel
 G 1 83253 1 0 100 0 0 0            *    an ancient key of the sacred stone
 M 0 83492 10 83410 50 0 0 0        * a keeper of the sacred stone
 G 1 83254 10 0 100 0 0 0           *    an earthen chest
@@ -2967,15 +2969,15 @@ P 1 400273 1 83254 100 0 0 0       *   (object type not in this .obj file)
 P 1 400274 1 83254 100 0 0 0       *   (object type not in this .obj file)
 M 0 83238 1 83415 100 0 0 0        * a blazing avatar of Breuldin
 E 1 83219 1 5 15 0 0 0             *   an ancient suit of mithril dwarven scalemail
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83507 4 83415 100 0 0 0        * a holy dwarven spirit (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83507 4 83415 100 0 0 0        * a holy dwarven spirit (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83507 4 83415 100 0 0 0        * a holy dwarven spirit (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83507 4 83415 100 0 0 0        * a holy dwarven spirit (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 83240 1 83416 100 0 0 0        * the King's attendant
 M 0 83501 8 83417 100 0 0 0        * an elite ramrider watchman
 E 1 83281 16 16 100 0 0 0          *   a mithril dwarven halberd
@@ -3233,23 +3235,23 @@ M 0 83317 3 83488 100 0 0 0        * a miner
 M 0 83519 1 83490 100 0 0 0        * the blazing avatar of Berronar Truesilver
 G 1 94726 1 0 100 0 0 0            *    (object type not in this .obj file)
 F 1 83281 15 83490 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 83490 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 83490 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 83490 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 83518 1 83491 100 0 0 0        * the blazing avatar of Clangeddin Silverbeard
 G 1 400233 3 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83288 15 83491 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 83491 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 83491 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 83491 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 120051 48 83501 80 0 0 0       * (mob type not in this .mob file)
 M 0 120051 48 83503 100 0 0 0      * (mob type not in this .mob file)
 M 0 83294 3 83507 100 0 0 0        * a dwarf miner
@@ -4597,60 +4599,60 @@ E 1 83293 10 16 100 0 0 0          *   a two-handed mithril broadsword
 M 0 83289 1 84046 100 0 0 0        * the blazing avatar of Gorm Gulthyn
 G 1 400233 3 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83288 15 84046 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84046 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84046 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 83415 1 84047 100 0 0 0        * the blazing avatar of Vergadain
 G 1 83308 1 0 100 0 0 0            *    vergadain's magical coins
 F 1 83281 15 84047 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 84047 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 84047 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 120051 48 84048 100 0 0 0      * (mob type not in this .mob file)
 M 0 83508 1 84049 100 0 0 0        * the blazing avatar of Sharindlar
 F 1 83281 15 84049 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 84049 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 84049 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 83517 1 84050 100 0 0 0        * the blazing avatar of Abbathor
 E 1 83304 18 16 100 0 0 0          *   an illusionary dagger
 E 1 83304 18 17 100 0 0 0          *   an illusionary dagger
 G 1 83617 1 0 100 0 0 0            *    abbathor's bottomless satchel of greed
 F 1 83288 15 84050 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84050 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84050 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 83520 1 84054 100 0 0 0        * the blazing avatar of Dumathoin
 G 1 400233 3 0 100 0 0 0           *    (object type not in this .obj file)
 F 1 83281 15 84054 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84054 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 84054 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84054 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 M 0 83521 1 84055 100 0 0 0        * the blazing avatar of Moradin
 G 1 14126 1 0 100 0 0 0            *    (object type not in this .obj file)
 F 1 83281 15 84055 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 84055 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83281 15 84055 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84055 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84055 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 F 1 83288 15 84055 100 0 0 0       * a priest of The High Old Ones (following)
-E 1 83613 35 16 100 0 0 0          *   a magical flaming cudgel
+E 1 83613 37 16 100 0 0 0          *   a magical flaming cudgel
 *
 S

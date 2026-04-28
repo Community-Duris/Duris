@@ -1530,7 +1530,7 @@ a &+Lblack &+rassassin's &+Wdagger&n~
 &+LA black assassin's dagger lies here.&n~
 ~
 5 16 2 3 7 0 1024 8193 0 8515584 0
-2 1 5 11 0 0 0 0
+2 4 2 11 0 0 0 0
 3 800 100
 E
 dagger black~
@@ -1683,7 +1683,7 @@ a &+Lgladius&+W called '&+LBac&+wks&+Wta&+Rbb&+rer&+W'&n~
 &+LA peculiar gladius has been left behind, here.&n~
 ~
 5 16 3 10 7 0 16777488 8193 64 4198895524 0
-9 2 7 3 0 0 0 0
+9 5 2 0 0 0 0 0
 3 10000 100
 E
 gladius blacksteel shortsword~

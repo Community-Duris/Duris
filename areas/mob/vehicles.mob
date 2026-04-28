@@ -428,3 +428,1248 @@ d 0 513 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1
+#47050
+noble winterhaven~
+&+ca noble from &+WWinterhaven&N~
+&+cA noble from &+WWinterhaven &+csmiles uneasily at his hosts.
+~
+&+c   This young human wears the distinct garb of Winterhaven nobility.
+&+cA tunic of elegant silk is cinched by silver chain-link belt. He
+&+cwears fine, shimmering pantaloons and knee-high leather boots.
+&+cHe carries an expression of weary friendliness, eager to conclude
+&+chis journey.
+~
+2058 0 0 0 0 0 0 0 550 S
+ph 0 1 3 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47051
+noble tharnadia~
+&+Ga noble from &+WTharnadia&N~
+&+GA noble from &+WTharnadia &+Gsmiles uneasily at his hosts.
+~
+&+c   This young human wears the distinct garb of Tharnadian nobility.
+&+cA tunic of elegant silk is cinched by silver chain-link belt. He
+&+cwears fine, shimmering pantaloons and knee-high leather boots.
+&+cHe carries an expression of weary friendliness, eager to conclude
+&+chis journey.
+~
+2058 0 0 0 0 0 0 0 550 S
+ph 0 1 3 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47052
+noble half-orc sarmiz duul sarmiz'duul~
+&na noble from &+ySarmiz'Duul&N~
+&nA noble from &+ySarmiz'Duul &nsmiles uneasily at his hosts.
+~
+&+c   This elder half-orc wears the distinct garb of a Sarmiz'Duul noble.
+&+cA tunic of elegant silk is cinched by mithril chain-link belt. He
+&+cwears fine, shimmering leggings and knee-high leather boots.
+&+cHe carries an expression of weary friendliness, eager to conclude
+&+chis journey.
+~
+2058 0 0 0 0 0 0 0 -550 S
+h2 0 1 3 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47053
+grey elf traveler~
+&+ca grey elf &+ytraveler&N~
+&+cA grey elf &+ytraveler &+ccringes uneasily at his hosts.
+~
+   &+cWrapped in an old elven cloak, this grey elf peers
+&+cout cautiously from the shade of a large hood she wears
+&+cat all times. She is mature and able-bodied, carrying
+&+canything from a sword to a longbow under the conceal-
+&+cment of her cloak.
+~
+2186 0 0 0 671088640 12480 0 0 1000 S
+pe 0 130 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+4 4 2
+#47054
+gnome traveler~
+&+Ra gnome &+ytraveler&N~
+&+RA curious gnome &+ytraveler&+R rests comfortable beside his hosts.
+~
+   &+RThis gnome is dressed in colorful garb made of finely-stitched
+&+Rlinens. He has a round belly and waddles with a childish gait,
+&+Rbouncing with every step as he trods. He wears an old sailor's
+&+Rhat, fit with a fresh, out-of-place wyvern feather.
+~
+2058 0 0 0 671088640 12480 0 0 660 S
+pg 0 512 2 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+4 4 1
+#47055
+goblin traveler~
+&+Ga goblin &+ytraveler&N~
+&+GA goblin &+ytraveler &+Gfidgets here, trying to rest.
+~
+   &+GThis wirey, lithe goblin wears an old apprentice's robe that
+&+Ghas had large glyphs of wildmage chaotically scrolled across it.
+&+GHe grins, wild-eyed yet suspicious at his hosts, sizing up
+&+Gevery storm orc he encounters.
+~
+2058 0 0 0 671088640 12480 0 0 -950 S
+hg 0 512 1 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+4 4 1
+#47056
+kobold traveler~
+&+La kobold &+ytraveler&N~
+&+LA kobold &+ytraveler &+Lsquirms here, struggling to rest.
+~
+   &+LThis wirey, lithe kobold wears old, shamanic robes that
+&+Lhas had large glyphs of the elements chaotically scrolled
+&+Lacross. He grins, wild-eyed yet suspicious at his hosts,
+&+Lsizing up every storm orc he encounters.
+~
+2058 0 0 0 671088640 12480 0 0 -950 S
+kb 0 256 1 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+4 4 1
+#47057
+young barbarian tribe whale skerrer~
+&Na &+BTribe of the Whale&n skerrer&N~
+&nA young barbarian &Nskerrer&N of the &+BTribe of the Whale&N looks at the &+Cs&+Be&+Ca&N.
+~
+   This young barbarian man is a skerrer, a youthful reaching
+&+Badulthood engaged in an ongoing rite of passage to spot and
+leap upon a wild whale with nothing but his ancestral dagger.
+&+BHis eyes are rimmed with black soot to cut the glare of the
+sun, and his shoulders are covered in light pelt cloak.
+~
+1073743880 0 0 0 0 0 0 0 300 S
+pb 0 20480 2 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47058
+barbarian tribe whale harpooner~
+&na &+BTribe of the Whale &+charpooner&N~
+&NA &Nbarbarian &+BTribe of the Whale &+charpooner &Npeers over the ship's edge.
+~
+&+c   This large, muscular barbarian warrior of the Tribe of the Whale
+&+Bstraddles the rim of the Stalval, peering out to the sea immediately
+&+cadjacent to his ship. Harpoon in hand, he is dressed in only a small
+&+Bseal-hide loincloth, ready to pounce upon the sea beasts.
+~
+1073743882 0 0 0 0 0 0 0 300 S
+pb 0 16385 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47059
+brine-scarred brine scarred barbarian oarman~
+&+ca brine-sc&+ra&+crr&+re&+cd &+yoarman&N~
+&+cA brine-sc&+ra&+crr&+re&+cd &+yoarman &+cgrunts as he rhythmically pulls and pushes a great &+Loar&+y.
+~
+&+y   The oarman is a barbarian of rippled muscle, permanently hunched
+&+cfrom years of pulling against the crushing weight of the sea. His skin
+&+yis deeply etched with salt-tracks - white scars where the constant
+&+cspray has chafed and cauterized his flesh. He wears only a tattered
+&+yloincloth of seal-hide and his bare feet are calloused into thick pads.
+~
+2058 0 0 0 0 0 0 0 0 S
+pb 0 16384 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47060
+whale-song barbarian whale song towering chanter~
+&na &+Bwhale-song c&Nh&+Ba&Nn&+Bt&Ne&+Br&n~
+&NA towering barbarian &+Bc&Nh&+Ba&nn&+Bt&Ns &+Bwhale-song&N towards the ocean.
+~
+&+B   Standing at the edge of the Stalval's prow, the whale-song
+chanter is a towering barbarian seen most-often here, bellowing
+&+Bto the leviathans of the sea. Unlike the warriors, his neck is
+&+Bthick with corded muscle from his loud chants, while his beard
+is braided with hollowed whale-teeth that act as tiny chimes
+&+Bthat clatter during his 'ceremonies.'
+~
+2056 0 0 0 0 0 0 0 0 S
+pb 0 32768 3 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47061
+bjornstag barbarian tribe whale medicine man~
+&+CBj&+corn&+Lstag&N~
+&+CBj&+corn&+Lstag &nthe &+BTribe of the Whale &+Cmedicine man &Nstands here, chanting over the &+Yf&+ri&+Yr&+re&N.
+~
+   &+CBj&+corn&+Lstag &nis a gnarled, imposing figure who smells of dried
+kelp, rendered blubber, and smoke. His face is a weathered visage
+of deep-set wrinkles and ritualistic paint. From his belt hang
+various pouches of salt-cured &+gherbs&n, spirit-flasks made of fish
+parts, and cloudy glass bottled tonics. He moves with a rhythmic,
+limping gait, routinely chanting above the &+rHe&+Rar&+Yt &+ro&+Rf &+rt&+Rh&+Ye &+rWh&+Ral&+Ye.
+~
+2058 0 0 0 24 0 0 0 350 S
+pb 0 256 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47062
+tired barbarian tribesman~
+&+Ba &+Ltired &+Btribesman&N~
+&+BA tired barbarian tribesman sprawls out here, snoring.
+~
+   &+BThis large barbarian tribesman is either one of the
+&+Bwarriors of the Tribe of the Whale, or an up-and-coming
+&+Bskerrer. He is well-muscled and wearing only the flimsiest
+&+Bof pelts, suggesting he remains ready to shed his furs to
+&+Bdive into the seas. Nevertheless, his exhausting hours
+&+Babove deck lead to much-needed rest in the warren of pelts.
+~
+2058 0 0 0 0 0 0 0 0 S
+pb 0 1 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+4 4 1
+#47063
+hungry barbarian tribesman~
+&+Ba &+Rhungry &+Btribesman&N~
+&+BA hungry barbarian tribesman huddles around the &+Wr&+Re&+rn&+yd-&+Lslab&+B.
+~
+&+B   This large barbarian, likely a warrior or advanced skerrer
+&+rof the Tribe of the Whale, after many exhaustive hours of crew
+&+Bduties aboard the Stalval, now borders impatience awaiting his
+&+rmeal. His muscular body seems to flex like one giant muscle with
+&+Bevery breath, labored after a brutal day of seafaring.
+~
+2058 0 0 0 0 0 0 0 0 S
+pb 0 1 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47064
+wulfholm barbarian master~
+&+YWulf&+Bh&+Yo&+Bl&+Ym&N~
+&+YWulf&+Bh&+Yo&+Bl&+Ym &+rthe &+WR&+Re&+rnd&+L-slab &+Lg&+Rr&+Li&+Rl&+Ll &+rmaster &+Lleans over the &+Re&+rm&+Rb&+re&+Rr&+rs&+L.
+~
+&+Y   The most immediately noticable &+Bfeature of Wulfholm is his one arm.
+&+YRumor has it many years ago his le&+Bft arm was severed-clean during his
+&+Bskerr with a deep-sea leviathan. W&+Yulfholm fell the beast, though, and
+&+Ystarted his new life as Rend-slab &+Bmaster aboard his ancestral sea-home.
+&+YLegend goes on that the Tribe of t&+Bhe Whale fed for sixty days off the
+&+Btentacles of the great kraken. Pre&+Ysently, Wulfholm remains the great
+&+Yrespected master of the Rend-slab,&+B preparing the fish and meat brought
+&+Yto him by his noble brethren.
+~
+2058 0 0 0 8 0 0 0 0 S
+pb 0 1 0 -1
+50 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47065
+haafgurd barbarian tribe whale jarl~
+&+WHaafgurd&+C, &+cjarl &+Cof the &+BTribe of the Whale&N~
+&+WHaafgurd, &+cJarl &+Cof the &+BTribe of the Whale&+C stands here scanning the horizon.
+~
+   &+WHaafgurd &+Cis a mountain of a man, standing as tall as a troll
+&+Cand twice as wide. His skin is a collage of frostbitten leather
+&+Cand jagged scars, partially obscured by a massive cloak made
+&+Cfrom the hide of a whale. He has only a single eye, the color of
+&+Cthe deep sea, which peers out from a face framed by a beard stiff
+&+Cwith salty frost.
+~
+1157630474 0 0 0 24 14528 0 0 0 S
+pb 0 1 1 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47066
+burly barbarian tribe whale huskarl~
+&Na &+BTribe of the Whale&+C huskarl&N~
+&nA noble &+Chuskarl&N of the &+BTribe of the Whale&N stands guard.
+~
+&+C   This barbarian warrior is a towering figure draped in salt-
+crusted pelts and cracked, imported leathers. His muscular arms
+&+Care marked with blue tattoos of leviathans, typically given to
+warriors of his Tribe. Given the title of 'huskarl', this warrior
+&+Cstands watch over the tribal royalty.
+~
+1140852746 0 0 0 0 0 0 0 300 S
+pb 0 1 2 -1
+49 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47067
+burly barbarian tribe whale warrior~
+&Na &+BTribe of the Whale&+b warrior&N~
+&nA burly barbarian of the &+BTribe of the Whale&N patrols here.
+~
+&+B   This barbarian warrior is a towering figure draped in salt-
+crusted pelts and cracked, imported leathers. His muscular arms
+&+Bare marked with blue tattoos of leviathans, typically given to
+warriors of his Tribe.
+~
+1140852744 0 0 0 0 0 0 0 300 S
+pb 0 1 2 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47068
+aethor high tribe whale song whale-song chanter~
+&+CAe&+ct&+Ch&+cor&N~
+&+CAe&+ct&+Ch&+cor&N the &+Bhigh whale-song &Nc&+Bh&Na&+Bn&nt&+Be&Nr&N of the &+BTribe of the Whale&N stands here.
+~
+&+B   This tall, senior barbarian has only a small patch of silver
+hair, grown long into a single braid that hangs down his muscular
+&+Bback. His body is taught and ripped, with every movement causing
+the striations across his defined muscles to swell and stretch
+&+Bwith every breath. The braiding in his long, silver beard matches
+that of his ponytail, accented only by a festoon of scrimshawed
+&+Bwhale teeth that dangles from his neck. Aethor, which is actually
+the shortened version of the name Aeth'Thor, leads whale-song
+&+Bchants throughout The Stalval, instilling the Tribe of the Whale
+with the essence of their namesake, while also attracting the
+&+Bwild beasts to the hunters.
+~
+1073743880 0 0 0 24 0 0 0 0 S
+pb 0 33024 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47069
+urog ballistoneer irongrip~
+&+CU&+Br&+Co&+Bg &+LIron&+cgrip&N~
+&+CU&+Br&+Co&+Bg &+LIron&+cgrip&+L, the Breach-&+rM&+La&+rk&+Le&+rr &+cballistoneer&+L, clings here silently.
+~
+&+C   Urog Irongrip is a massive barbarian that more closely compares
+&+Cto a storm giant due to his extreme size. Known to his kin as "the
+&+Csilent giant", he speaks only in the rarest whispers. Urog, formerly
+&+Ca ward of The Tribe of the Whale after the destruction of a rival
+&+Ctribe, utilizes his extreme strength by wielding the great ballistae
+&+Cthat &+Rfires&+C the &+L"The Breach-Maker"&+C as if it were a crossbow.
+~
+1157629962 0 0 0 134217752 0 0 0 800 S
+pb 0 1 1 5
+53 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47070
+jul'thax julthax jul thax orc storm caller stormcaller~
+&+CJul't&+ch&+Lax&N~
+&+CJul't&+ch&+Lax the &+Wstorm&+Lcaller chants fanatically before the &+cs&+Cp&+Wi&+Cr&+ce&+L.
+~
+   &+CJul't&+ch&+Lax is a towering, powerful figure whose presence
+&+Lis frequently accompanied by dark clouds and &+Wsto&+Lrms. His
+&+Lflesh is a combination of &+ci&+mn&+cd&+mi&+cg&+mo&+L and &Ngrey&+L, covered in
+&+Lintricate, &+mgl&+Mowi&+mng&+L tattoos that trace the path of lightning
+&+Lstrikes across his chest and arms. He is draped in the
+&+Ltattered hide of a &+Bblue dragon&+L.
+~
+2058 0 0 0 24 0 0 0 -900 S
+ho 0 33554432 1 -1
+53 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47071
+kernnax storm orc champion marine~
+&+RKe&+rr&+Ln&+rn&+Rax&N~
+&+RKe&+rr&+Ln&+rn&+Rax &+Lthe &Nc&+Wh&Na&+Lmp&Ni&+Wo&Nn&+W sto&+Lrm orc &+Bm&+ca&+Br&+ci&+Bn&+ce &+Lwalks here, glowering.
+~
+   &+RKe&+rr&+Ln&+rn&+Rax&+L is a mountain of scarred, corded muscle standing as
+&+La testament to a lifetime of boarding actions and brutal deck-
+&+Lto-deck &+rbrawls&+L. His skin is the color of a bruised &+Wsto&+Lrm cloud,
+&+Lcovered in scars from &+charpoon &+Rb&+rar&+Rb&+rs&+L and semi-severe &+Yb&+rur&+Yn&+rs.
+&+LHe is armored in a mismatched suit of "trophy plate", including
+&+Lblackened dwarven chest plates and pauldrons, gauntlets of
+&+Lhuman cavalier design, and furred boots worn by the tribals.
+~
+1090521098 0 0 0 134217752 0 0 0 -900 S
+ho 0 16385 0 -1
+53 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47072
+fulgur bridge bridge-boss orc boss~
+&+WF&+Ru&+rlg&+yur&+r, the &+WB&+rr&+Wi&+rd&+Wg&+re-&+Rb&+ro&+Rs&+rs&N~
+&+WF&+Ru&+rlg&+yur &+rthe &+WB&+rr&+Wi&+rd&+Wg&+re-&+Rb&+ro&+Rs&+rs of the &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn &+RF&+ru&+ylg&+ru&+Rr &+rpaces here, scowling.
+~
+   &+WF&+Ru&+rlg&+yur&+r is a titan of an &+Lorc&+r, rumored to actually be half-Orog.
+&+rHe scowls at the sea before him, never satisfied with the bounty
+&+rhe's wrought from her. He wears a heavy coat of leviathan hide,
+&+rreinforced with &+yj&+La&+ygg&+Le&+yd&+r copper plates that conduct stray &+Bc&+Cu&+Brr&+Ce&+Bnt
+&+rfrom the frequent chain-lightning upon his ship. His eyes burn
+&+rwith &+Clight&+B-blue &+Ws&+Ct&+Wa&+Ct&+Wi&+Cc&+r, and his voice booms like thunderclaps
+&+rwhen he speaks.
+~
+1157629962 0 0 0 0 0 0 0 -999 S
+or 0 2097152 3 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47073
+thokka thunderpot storm orc grog-master grog master~
+&+YT&+Gh&+Yo&+Gk&+gka &+YThunder&+gpot&N~
+&+YT&+Gh&+Yo&+Gk&+gka &+YThunder&+gpot&+g the &+Wsto&+Lrm orc &+Gg&+mr&+Go&+mg-&+mmaster&+g stirs the s&+yw&+gi&+yl&+gl.
+~
+   &+YT&+Gh&+Yo&+Gk&+gka&+Y Thunder&+gpot&+G is a formidable presence in the galley,
+&+Gone of only a few female orcs powerful enough to command the
+&+Gallegient respect of the horde. Standing broader than most of
+&+Gher kin, her skin is a &+Bblu&+bish-&+Lgray&+G, etched with faint scars
+&+Gthat resemble lightning across her arms.
+&+Y   T&+Gh&+Yo&+Gk&+gka&+G doesn't wear a traditional chef's uniform, instead,
+&+Gshe sports a heavy, &+Lgrease&+G-stained leather apron reinforced
+&+Gwith blackened iron scales to protect against the violent
+&+Glurches of the ship. Her sleeves are perpetually rolled up,
+&+Grevealing massive forearms corded with muscle.
+~
+2058 0 0 0 0 0 0 0 -900 S
+ho 0 33554433 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47074
+blustery storm orc~
+&+La b&+ml&+Lus&+mt&+Le&+mr&+Ly &+Wsto&+Lrm orc&N~
+&+LA bl&+mu&+Lst&+me&+Lry &+Wsto&+Lrm orc shouts over the &+rr&+La&+rbb&+Ll&+re&+L.
+~
+&+L   This shirtless, &+mdark-skinned and a&+Lble-bodied orc is&+m currently
+&+mrecu&+Lsed from his above&+m-deck seafaring du&+Lties, instead spe&+mnding
+&+mthe mom&+Lent enjoying the '&+mrecreation' of the&+L grog-pit. His in&+mdigo-
+&+mgrey skin &+Lhas webbed scar-pa&+mtterns from freque&+Lnt electrical bur&+mns,
+&+mwhile his han&+Lds are calloused f&+mrom the hard work &+Lof the dredge.
+~
+1073743882 0 0 0 0 0 0 0 -850 S
+ho 0 16385 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47075
+calloused orc grunt~
+&N&+ya calloused &+Lgrunt~
+&+LA &+ycalloused&+L grunt meagerly hurries across the deck.
+~
+&+L   This orc grunt, performing the typical duties of a deckhand,
+&+ris of average size, muscular, and carries a fierceness in his
+&+Leyes similar to his larger, more-mature kin. Despite the loyalty
+&+rto the ship and his agency to hurry through the strenuous labor
+&+Lof his duties, it isn't uncommon to see grunts fed to a wyvern
+&+ror simply slain for sport. For these reasons, he bides his time
+&+Land culls the bloodthirst that consumes his elders.. for now.
+~
+2056 0 0 0 0 0 0 0 0 S
+ho 0 1 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47076
+wyvern onerous whelp~
+&+yan onerous wyvern whelp&N~
+&+yA wyvern whelp onerously screeches at anything that comes near it.
+~
+   &+yThis whelp resembles a smaller version of it's elders:
+&+yA feathered dragonkin with a black beak and forked tongue
+&+ythat spews scorching arcs of lightning. The beast's eyes
+&+yare a fuzzy blue-white, darting erratically between per-
+&+yceived threats. It's talons are glossy black, like it's
+&+ybeak, able to support its upright form much like a roc.
+~
+1073744136 1 0 0 134217728 0 0 0 -600 S
+dk 0 1 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47077
+burly orc crimson ballistoneer~
+&+ra &+RC&+rr&+ri&+Rm&+rs&+Ro&+rn &+Lballistoneer&N~
+&+rA burly orc &+Lballistoneer&+r peers down the sights of a &+Lheavy ballista&+r.
+~
+   &+rThis burly orc, built like a warrior, operates one
+&+Lof several heavy ballistae, eagerly and constantly peering
+&+rdown the sights of his mastered weapon in high-hopes for
+&+Lan opportunity to fire it. His eyes are wrinkled with age,
+&+rbut pierce the scopes of his weaponry with an unwavering
+&+Lintensity.
+~
+1073743882 0 0 0 0 0 0 0 -850 S
+ho 0 1 0 -1
+47 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47078
+orc catapult winch cranker winch-cranker~
+&+La catapult &+rwinch-cranker&N~
+&+rAn orc winch-cranker stands ready beside &+La large catapult&+c.
+~
+   &+rThis burly orc, built like a warrior, operates one
+&+Lof several heavy catapults, eagerly cracking his knuckles
+&+rand testing the huge, carved-pine catapult in high-hopes for
+&+Lan opportunity to fire it. His eyes are wrinkled with age,
+&+rbut stare intently as he readies the weapon to fire.
+~
+2058 0 0 0 0 0 0 0 -850 S
+or 0 1 0 -1
+48 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47079
+orc experienced storm rider wyvern-rider~
+&+La &+Wsto&+Lrm orc &+ywyvern-&+Yr&+yi&+Yd&+ye&+Yr&N~
+&+LAn experienced &+Wsto&+Lrm orc &+ywyvern-&+Yr&+yi&+Yd&+ye&+Yr &+Lscans the &+Bs&+ce&+Ba&+cs&+L.
+~
+&+B   Despite being considered one of the highest warriors of
+&+Lthe Crimson Fulgur's crew, this wyvern-rider is dressed
+&+clightly, shedding the heavy plate favored by his kin in
+&+Bpreference for banded leather mail and chainmail. He moves
+&+Ldeliberately and controls his wyvern with great confidence,
+&+clikely the result of raising the beast since it was a whelp.
+&+BHis arms are tattooed over lightning-bolt scars that web
+&+Lfrom his chest down to his fingertips. He wields only his
+&+cbeast, ordering it through the sky like a charging cavalier.
+~
+1140852744 0 0 0 134217752 0 0 0 -900 S
+ho 0 1 0 -1
+50 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47080
+crimson orc storm caller stormcaller~
+&+ra &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn &+Wstorm&+Lcaller&N~
+&+rAn &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn &+Lorc &+Wstorm&+Lcaller&+r walks here, chanting towards the sky.
+~
+   &+LThis orc wears a brine-crusted robe, cuffed at the sleeves,
+&+Bcovered in repeating runes of lightning and the storm-god, Rull.
+&+LAs he chants, occasional sparks snap and arc across his tusks,
+&+Breleasing crackling bolts toward the ship's spire.
+~
+1073743880 0 0 0 0 0 0 0 -900 S
+ho 0 33554432 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47081
+crimson wyvern~
+&+ra &+RC&+rr&+Rim&+rso&+Rn &+ywyvern&N~
+&+rA &+RC&+rr&+Rim&+rso&+Rn &+ywyvern &+Lsnarls &+B&-Larcs&N&+L of crackling e&+Cl&+Le&+Cc&+Lt&+Cr&+Li&+Cc&+Li&+Ct&+Ly.
+~
+&+R   This giant, full-grown wyvern resembles a feathered-covered
+&+ydragon that perches like a great bird. It's glossy, black beak
+&+rmatches its enormous talons. Large, fuzzy blue-white eyes dart
+&+Rerratically, as it pants small arcs of crackling electricity
+&+yin anticipation of its next meal. This wyvern has been painted
+&+Rbright Crimson, with a color the consistency of red algae mixed
+&+rwith redstone dust and blood.
+~
+1073744136 0 0 0 671105048 14528 0 0 0 S
+ae 0 65 0 5
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47082
+sleepy storm orc seaman~
+&+La sleepy &+Wsto&+Lrm orc&N~
+&+LA sleepy &+Wsto&+Lrm orc seaman sprawls here, snoring.
+~
+&+L   This orc, stripped down to a loincloth, is one of the
+seaman of the Crimson Fulgur, currently recuperrating after
+&+La strenuous day performing seafaring labors. He reeks of
+grog, contributing to the foul mixture in the air of smoke,
+&+Lsweat, and waste.
+~
+2058 0 0 0 0 0 0 0 -900 S
+ho 0 1 0 -1
+47 0 0 1d1+1 1d1+1
+0.0.0.0 0
+4 4 1
+#47083
+orc grizzled storm sentinel~
+&+La &+Wsto&+Lrm orc &+rs&+Re&+rn&+Rt&+ri&+Rn&+re&+Rl&N~
+&+LA grizzled &+Wsto&+Lrm orc &+rs&+Re&+rn&+Rt&+ri&+Rn&+re&+Rl &+Lstands here protectively.
+~
+&+L   This &+Wsto&+Lrm orc is burly and imposing, muscle-bound from years
+&+Lof swinging his heavy &+ciron axe&+L in the many raids &+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr
+&+Lhas performed. The ridge of his brow shades his beady, deep-set &+Re&+ry&+Re&+rs.
+&+LHis neck throbs with the pulse of a warrior as he breathes with a
+&+Lwaver of momentary restraint, always hungry to &+rkill.
+~
+1140852746 0 0 0 24 0 0 0 -1000 S
+ho 0 1 2 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47084
+giant wyvern brood mare broodmare~
+&n&+ya giant wyvern &+rbrood&+Rmare&N~
+&+yA giant wovern &+rbrood&+Rmare&+y hulks here, keeping low.
+~
+&+y   This wyver&+rn is a massive,&+R low-slung b&+yeast with a h&+ruge,
+&+rdistended tor&+Rso and avian le&+ygs thickened&+r with muscle.&+R Her
+&+rbody is cover&+Red in thick sca&+yles, except &+rfor patches o&+Rf long,
+&+rard feathers.&+R Her glossy bla&+yck beak matc&+rhes her talon&+Rs, which
+&+Ris much large&+rr than the agil&+ye hunters of&+R the sky.
+~
+2314 1 0 0 24 0 0 0 -500 S
+dk 0 1 2 6
+55 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47085
+orc storm rigger~
+&+La &+Wsto&+Lrm orc &+Lr&Ni&+Lg&ng&+Le&Nr&N~
+&+LA &+Wsto&+Lrm orc r&Ni&+Lg&Ng&+Le&Nr &+Ldrags a &+cc&+Ch&+ca&+Ci&+cn&+L behind him.
+~
+&+L   The rigger is a lean, wire-muscled orc whose skin has
+&+cweathered to a dark, bruised purple by constant exposure
+&+rto high-altitude lightning and freezing salt spray. As a
+&+Lstorm orc aboard the Crimson Fulgur, the honor to climb
+&+cthe apex points of the ship places him far above the lowly
+&+rgrunts in the caste of his clan.
+~
+1073743880 0 0 0 0 0 0 0 -800 S
+ho 0 1 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47086
+morkull stormscream storm orc tempest magus~
+&+mMo&+Lr&+mk&+Lul&+ml &+CS&+cto&+Lrm&+Csc&+cre&+Lam&N~
+&+mMo&+Lr&+mk&+Lul&+ml &+CS&+cto&+Lrm&+Csc&+cre&+Lam the &+rt&+Re&+rm&+Rp&+re&+Rs&+rt &+Rm&+ra&+Rg&+ru&+Rs &+Lsizzles with &+bp&+Bo&+Cw&+Be&+br&+L.
+~
+&+C   One of the few orcs to reach old age, Morkull 'Stormscream'
+&+cis a time-withered tempest magus who has spent his entire life
+&+Lat sea. His ability to summon and harness the power of storms
+&+cby invoking thunderous commands into the forming clouds has
+&+Cearned him his namesake, and his reputation for destruction.
+~
+1073743880 0 0 0 671088664 14528 0 0 -1000 S
+ho 0 33554432 1 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47087
+storm orc crimson lookout~
+&+La &+Wsto&+Lrm orc &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn &+Llookout&N~
+&+LA &+Wsto&+Lrm orc lookout farsees from the apex of &+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&+L.
+~
+   &+LThis lightly armored orc jolts and twitches, as if he
+&+crecovering from the recent affects of being electrocuted.
+&+LHis body is bruised an indigo-grey, lightning-bolt scars
+&+cspiderwebbing across his arms. He is lighter and more lithe
+&+Lthan many of his kin, suggesting his natural ability to
+&+cclimb the highest riggings of his ship.
+~
+1073743882 0 0 0 134217752 0 0 0 -850 S
+ho 0 2097152 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47088
+exhausted dwarf sailor~
+&+Can &+Lexhausted &+Csailor&N~
+&+CAn &+Lexhausted &+Cdwarf sailor sleeps here, snoring loudly.
+~
+   &+cThis sun-tanned sailor, likely one of the many deckhands
+&+Lor riggers living on The Ironhold Grudge, is stout, strong,
+&+cand exhausted from many hours of intense seafarer's labor.
+&+LThe braids of his golden beard are tightly bound as he
+&+chuddles with a pile of animal pelts.
+~
+2058 0 0 0 0 0 0 0 0 S
+pm 0 1 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+4 4 1
+#47089
+ravenous dwarf sailor~
+&+Ca &+rravenous &+Csailor&N~
+&+CA &+rravenous &+Cdwarf sailor sits here, festively squabbling.
+~
+   &+CThis sun-tanned sailor, strong and barrel-chested like
+&+rhis peers, seems ravenous after many laborious hours under
+&+Cthe hot, unrelenting sun. His arms are thick with muscle,
+&+rand his beard is braided and robust. He loudly squabbles
+&+Cwith his kin over portions of meat and ale: the currencies
+&+rof the dwarf sailor.
+~
+2058 0 0 0 0 0 0 0 0 S
+pm 0 1 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+5 5 1
+#47090
+stern dwarf grudge guard~
+&+La stern &+CG&+crudg&+Ce &+cg&+Lu&+ca&+Lr&+cd&N~
+&+LA stern &+CG&+crudg&+Ce &+cg&+Lu&+ca&+Lr&+cd &+Lscans the area as he patrols the &+cship&+L.
+~
+&+c   This dwarf warrior is muscular and able-bodied, walking
+&+Lwith a stern authority as he scans every person aboard his
+&+chome, The Ironhold Grudge. His beard bounces across his
+&+Lample torso as he marches around the deck, slapping the
+&+cbroad-face of his flail in in his callused palm.
+~
+1140852744 0 0 0 0 0 0 0 0 S
+pm 0 1 2 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47091
+tough dwarf grudge sentinel guard~
+&+La tough &+CG&+crudg&+Ce &+Ls&+Ce&+Ln&+Ct&+Li&+Cn&+Le&+Cl&N~
+&+LA tough &+CG&+crudg&+Ce &+Ls&+Ce&+Ln&+Ct&+Li&+Cn&+Le&+Cl &+Lguards the area.
+~
+&+c   This dwarf warrior is muscular and able-bodied, walking
+&+Lwith a stern authority as he scans every person aboard his
+&+chome, The Ironhold Grudge. His beard bounces across his
+&+Lample torso as he marches around the deck, slapping the
+&+cbroad-face of his flail in in his callused palm.
+~
+1140852746 0 0 0 0 0 0 0 0 S
+pm 0 1 2 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47092
+stoic dwarf lookout~
+&+La stoic &+Clookout&N~
+&+LA stoic dwarf &+Clookout&+L scans the horizon through his &+Cs&+ccop&+Ce&+L.
+~
+&+C   This dwarf is both taller and more patient than his kinfolk,
+&+Lan obvious sign as to his position as lookout. Muscular arms
+&+Coperate an arbalest - one to guide the crossbow and the other
+&+Lready on the windlass to crank a reload. He is dressed in a similar
+&+Csea-weathered tunic as the Grudge guards of warferry.
+~
+2058 0 0 0 134217752 0 0 0 0 S
+pm 0 4097 0 -1
+48 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47093
+holyman dwarf abbathor~
+&n&+ca holyman of &+LA&+cb&+Lb&+ca&+Lt&+ch&+Lo&+cr&N~
+&+cA dwarven holyman bearing symbols of &+LA&+cb&+Lb&+ca&+Lt&+ch&+Lo&+cr talks with the &ncrew.
+~
+&+c   This dwarf is a vision of prosperous faith and gilded avarice.
+&+cHe is encased in freshly-polished heavy &+Ygolden &+cplate armor that
+&+creflects a bright &+Wsheen&+c whenever the &+Ysun&+Wlight&+c hits it. Beneath a
+&+csnarling gold mask shaped like a dragon, his beard hangs in thick,
+&+cgrease-slicked braids weighted with polished &+cgolden&+c rings.
+&+c   He always seems to have a coin in his hand, blessing it upon
+&+chis brethren like it itself is the holy symbol of &+LA&+cb&+Lb&+ca&+Lt&+ch&+Lo&+cr.
+~
+1140852746 0 0 0 0 0 0 0 0 S
+pd 0 32 3 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47094
+kurgonn grudgebearer dwarf captain helm-warden helm warden~
+&+YKur&+Cg&+Yo&+Cnn &+CG&+crudg&+Ce&+Lbearer&+W, the &+cHelm-&+WW&na&+Wr&Nd&+We&Nn&N~
+&+YKur&+Cg&+Yo&+Cnn &+CG&+crudg&+Ce&+Lbearer&+W, the &+cHelm-&+WW&Na&+Wr&Nd&+We&Nn&+W of &+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&+W stands here stoically.
+~
+&+W   Kurgonn Grudgebearer is a mountain of a dwarf. His wide,
+&+Cbarrel-chested frame clad is in interlocking platemail at all
+&+Wtimes, polished regularly to a glistening shine. His beard is
+&+Ca dense thicket of iron-grey hair, intricately braided with
+&+Wheavy platinum rings. He shambles about The Ironhold Grudge
+&+Cwith a rhythmic, metallic clanking, drowned out by the thunder-
+&+Wous commands of his booming voice. His massive, spade-like
+&+Chands are thick with callouses from guiding his great warferry
+&+Wwith unwavering strength.
+~
+1157629962 0 0 0 134217752 14528 0 0 0 S
+pm 0 1 1 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47095
+bruna dwarf cook chef ironkettle~
+&+YBruna &+cIron&+Lkettle&N~
+&+YBruna &+cIron&+Lkettle&+Y presides over a &+Rg&+Yl&+Ro&+Yw&+Ri&+Yn&+Rg&+Y-&+Rhot &+Rg&+Lr&+Ri&+Ll&+Rl&+Y.
+~
+   &+YBruna Ironkettle is a barrel-chested dwarf with an ash-
+&+Rstained apron and braids tied back with platinum rings to keep
+&+Ythem clear of the flames. She commands The Anvil's Appetite
+&+Rlike a blacksmith, wielding a massive flat-headed hammer she
+&+Ycalls 'The Tenderizer.' Her skin is weathered like old leather
+&+Rfrom years spent over the searing heat of the grill; her left
+&+Yeyebrow is perpetually singed from her habit of leaning directly
+&+Rinto the smoke.
+~
+2058 0 0 0 134217736 0 0 0 800 S
+pm 0 1 0 -1
+49 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47096
+gunnar dwarf bosun gale grip gale-grip~
+&+CGun&+cn&+Ca&+cr &+CG&+Wa&+Cl&+We-&+LGrip&N~
+&+CGun&+cn&+Ca&+cr G&+Wa&+Cl&+We-&+LGrip&+c, &+Cbosun&+c of &+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&+c, inspects the &+Cr&+cig&+Cg&+cin&+Cg&+cs.
+~
+&+C   Gunnar Gale-Grip is a weathered dwarf whose broad shoulders
+&+Wseem permanently hunched from years of bracing against the
+&+L&+Cviolent sprays of the open sea. His thick, salt-crusted beard
+&+cis tied back with heavy, tarnished silver rings to keep it
+&+Cfrom sagging in the iron-rigging he obsessively maintains.
+&+WHe carries a stout, weighted baton crafted from petrified oak,
+&+Cusing it both as a tool for testing tension and as a blunt
+&+Lmotivator for any deckhand lagging in their duties.
+&+C   Despite his gruff exterior, his eyes are as sharp as a hawk's,
+&+Wconstantly scanning the ferry's ines and catapult winches to
+&+Censure the vessel remains a flawless instrument of dwarven war,
+&+Land passenger transport.
+~
+1157627912 0 0 0 134217736 0 0 0 0 S
+pm 0 16387 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47097
+muck-finger muck finger dwarf merchant thrain~
+&+G'&+gMuck-Finger&+G' &+GT&+gh&+Gr&+ga&+Gi&+gn&N~
+&+G'&+gMuck-Finger&+G' T&+gh&+Gr&+ga&+Gi&+gn, the seedy dwarf merchant, crouches here.
+~
+   &+gMuck-Finger &+GT&+gh&+Gr&+ga&+Gi&+gn&+L is a stout, disheveled figure whose skin
+&+Lhas taken on a &Ngreyish&+L hue from years spent away from the &+Ysun&+L.
+&+LHis wild, unkempt beard is stained with streaks of &+cindigo &+mresin
+&+Land tangled with dried &+Yspores&+L, smelling faintly of damp &+yearth&+L.
+&+LHe wears a heavy, oil-slicked leather apron riddled with hidden
+&+Lpockets that crinkle with the sound of dried &+gherbs&+L whenever he
+&+Lshifts his weight. His most striking feature is his name-sake
+&+ghands&+L, where the deep &+ggrime&+L of &+mD&+rh&+ma&+rl&+mn&+ra&+md&+ra&+mr&+L's soil is permanently
+&+Letched into his knuckles.
+~
+2058 0 0 0 134217736 0 0 0 420 S
+pm 0 1 0 -1
+50 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47098
+dwarf grudge rigger~
+&+La &+CG&+crudg&+Ce &+Lr&Ni&+Lg&Ng&+Le&Nr&N~
+&+LA stout, dwarf &+CG&+crudg&+Ce &+Lr&Ni&+Lg&Ng&+Le&Nr &Nhurries about the ship, tugging huge &+Cc&+ch&+Ca&+ci&+Cn&+cs.
+~
+&+L   The &+CG&+crudg&+Ce &+Lr&Ni&+Lg&Ng&+Le&Nr&+L is a well-built dwarf, muscled from
+&+La life of hard labor on the &+Bhigh seas&+L. He is very tan from
+&+Lmany hours under the sun - a rarity for his people. He wears
+&+Lgrease-stained overalls with large sewn-on shoulder flaps
+&+Ldesigned to help shield his shoulders from the &+Ysun&+L. He storms
+&+Lback and forth, aboard The &+cIron&+Lhold &+CGrudge&+L, working alongside
+&+Lhis kin, constantly adjusting the heavy &+Cc&+ch&+Ca&+ci&+Cn&+cs&+L that control
+&+Lthe great machinations of his vessel.
+~
+2056 0 0 0 0 0 0 0 0 S
+pm 0 16384 0 -1
+42 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47099
+sun-tanned sun tanned dwarf deckhand deck hand~
+&+ca &+ysun-tanned &+cdeckhand&N~
+&+cA &+ysun-tanned dwarf &+cdeckhand scuffles about, aiding where he's needed.
+~
+   &+cThis dwarf is young, but strong and barrel-chested like
+&+chis senior peers. Quicker too. He hurridly scampers across
+&+LThe &+cIron&+Lhold &+CGrudge&+c, in a seemingly endless series of tasks.
+&+cHis &+Ybeard&+c is tightly braided and bounces about as he moves,
+&+cbrightened naturally from long hours under the &+Ysun&+c; just as
+&+chis skin is &+ytan&+c where exposed.
+~
+2056 0 0 0 0 0 0 0 0 S
+pm 0 1 0 -1
+40 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47100
+burly dwarf ballistoneer~
+&+ca burly &+Lballistoneer&N~
+&+cA burly dwarf &+Lballistoneer&+c peers down the scope of a &+Lheavy ballista&+c.
+~
+   &+cThis burly dwarf, built like a warrior, operates one
+&+Lof several heavy ballistae, eagerly and constantly peering
+&+cdown the sights of his mastered weapon in high-hopes for
+&+Lan opportunity to fire it. His eyes are wrinkled with age,
+&+cbut pierce the scopes of his weaponry with an unwavering
+&+Lintensity.
+~
+2058 0 0 0 0 0 0 0 0 S
+pm 0 1 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47101
+dwarf catapult winch cranker winch-cranker~
+&+La catapult &+cwinch-cranker&N~
+&+cA dwarf winch-cranker stands ready beside &+La large catapult&+c.
+~
+   &+cThis burly dwarf, built like a warrior, operates one
+&+Lof several heavy catapults, eagerly cracking his knuckles
+&+cand testing the huge, carved-pine catapult in high-hopes for
+&+Lan opportunity to fire it. His eyes are wrinkled with age,
+&+cbut stare intently as he readies the weapon to fire.
+~
+2058 0 0 0 0 0 0 0 0 S
+pm 0 1 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47102
+high exarch dwarf advisor valerka~
+&+WH&+Cig&+Wh &+WE&+Cxarc&+Wh &+MV&+ma&+Ml&+me&+Mrk&+ma~
+&+WH&+Cig&+Wh E&+Cxarc&+Wh &+MV&+ma&+Ml&+mer&+Mka&+C, spiritual advisor to the &+CH&+ce&+Cl&+cm-&+WW&nar&+Wd&Ne&+Wn&+C, provides her &+Y'divine guidance&+C.&+Y'
+~
+&+m   Valerka is the opposite of a typical priest, who might pray
+&+Mto their deities for health and long-life. As a High Exarch of
+&+CAbbathor, Valerka's primary concern is the thickness of the
+&+cship's coffers. She views The Ironhold Grudge itself like a
+&+Choly temple, where profits are the sign of Abbathor's love.
+&+mValerka is dressed in a garish purple velvet robe, adorned
+&+Mwith finely-stitched gold threaded illuminations of gemstones
+&+Cand stacks of coins. Her holy symbol is an oversized gold
+&+ccoin on a pendant, with a silhouette of Abbathor on its face.
+~
+1073743882 0 0 0 671088648 12480 128 0 900 S
+pd 0 32 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47103
+shackled huge lion~
+&+La s&+ch&+La&+cck&+Ll&+ced&N &+Ylion&N~
+&+LA huge&+Y lion&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+LThis huge lion, several years into its prime,
+&+Ymust have taken a cunning strategy to capture.
+&+LIt's muscular body twitches as it pants, eyes
+&+Yconstantly darting around at those who approach.
+~
+2058 1 0 0 16 0 0 0 -600 S
+ac 0 1 0 4
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47104
+shackled large snow buffalo~
+&+La s&+ch&+La&+cck&+Ll&+ced&N &+Wsnow &+Cbuffalo&N~
+&+LA large &+Wsnow &+Cbuffalo&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+CThis huge snow buffalo is quite massive, measuring
+&+Leasily six feet long and three feet wide, like a well-
+&+Cfed bull. It's body is covered in matted, thick white
+&+Lfur, which provides natural camouflage in the tundra.
+~
+2058 0 0 0 0 0 0 0 -600 S
+ah 0 1 0 5
+35 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47105
+shackled tundra panther~
+&+La &+cs&+Lh&+ca&+cc&+Lk&+cl&+ce&+Ld &+Wtundra panther~
+&+LA lithe &+Wtundra panther&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+LThis snow cat, several years into its prime,
+&+Ymust have taken a cunning strategy to capture.
+&+LIt's muscular body twitches as it pants, eyes
+&+Yconstantly darting around at those who approach.
+~
+2058 1 0 0 16 0 0 0 -300 S
+ac 0 1 0 4
+41 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47106
+shackled snapjaw turtle~
+&+La &+cs&+Lh&+ca&+cc&+Lk&+cl&+ce&+Ld &+Wsnapjaw turtle&N~
+&+LA huge &+Wsnapjaw turtle&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+LThis huge turtle, covered in a spikey shell,
+&+Wmoves with huge, clumsy-trodding steps.
+&+LIt's reptillian body moves under its shell,
+&+Wbarely able to shift its weight under restraints.
+~
+2058 1 0 0 0 0 0 0 -400 S
+r 0 1 0 4
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47107
+shackled large caribou~
+&+La s&+ch&+La&+cck&+Ll&+ced&N &+ycaribou&N~
+&+LA large &+ycaribou&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+CThis large caribou is quite massive, measuring
+&+Leasily six feet long and two feet wide, like a well-
+&+Cfed stag. It's body is covered in sleek, smooth white
+&+Lfur, which provides natural camouflage in the tundra.
+~
+2058 0 0 0 0 0 0 0 -600 S
+ah 0 1 0 5
+36 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47108
+shackled huge ram~
+&+La s&+ch&+La&+cck&+Ll&+ced&N &+Yram&N~
+&+LA huge &+Yram&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+CThis huge ram is quite massive, measuring easily
+&+Lsix feet long and three feet wide, like a gigantic
+&+Cgoat. It's body is covered in matted, thick white
+&+Lfur, which provides natural camouflage in the tundra.
+~
+2058 0 0 0 0 0 0 0 0 S
+ah 0 1 0 5
+47 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47109
+shackled stonescale pyrolisk~
+&+La &+csh&+La&+cck&+Ll&+ced&+L stonescale &+Ypyro&+rlisk~
+&+LA stonescale &+Ypyro&+rlisk &+Lsprawls here, &+csh&+La&+cck&+Ll&+ced&+L to the floor.
+~
+   &+LThis huge stonescale pyrolisk has been shackled, tightly,
+&+cwith thick, heavy chains and little slack. The beast's head
+&+Lis restrained by a dedicated chain that includes a fitted
+&+cmuzzle, restricting it's jaw and dampening it's abilities.
+~
+42 1 0 0 671088648 1 0 0 -600 S
+r 0 1 0 4
+50 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#47110
+shackled hydralisk~
+&+La &+csh&+La&+cck&+Ll&+ced&+L &+Ghydra&+Llisk~
+&+LA &+Ghydra&+Llisk &+Lsprawls here, &+csh&+La&+cck&+Ll&+ced&+L to the floor.
+~
+   &+LThis huge scaly green hydralisk has been shackled, tightly,
+&+cwith thick, heavy chains and little slack. The beast's head
+&+Lis restrained by a dedicated chain that includes a fitted
+&+cmuzzle, restricting it's jaw and dampening it's abilities.
+~
+524298 1 0 0 134217736 4096 0 0 -600 S
+r 0 1 0 4
+50 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#47111
+shackled wyvern~
+&+La &+csh&+La&+cck&+Ll&+ced&+y wyvern&N~
+&+LA &+ywyvern &+Lsprawls here, &+csh&+La&+cck&+Ll&+ced&+L to the floor.
+~
+   &+LThis giant, feathered wyvern has been shackled, tightly,
+&+cwith thick, heavy chains and little slack. The beast's head
+&+Lis restrained by a dedicated chain that includes a fitted
+&+cmuzzle, restricting it's jaw and dampening it's abilities.
+~
+266 1 0 0 134217728 0 0 0 0 S
+dk 0 1 1 5
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#47112
+shackled wild boar~
+&+La s&+ch&+La&+cck&+Ll&+ced&N &Nboar&N~
+&+LA &Nwild boar&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+LThis huge boar has large tusks and a massive body,
+&Nnearly the size of a small bull. It has huge gnarly-
+&+Lyellow tusks that come to vicious points, and a wild,
+&nunpredictable glint in its eyes.
+~
+2058 1 0 0 0 0 0 0 -600 S
+a 0 1 0 3
+20 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47113
+shackled huge olyx~
+&+La s&+ch&+La&+cck&+Ll&+ced&N &+colyx&N~
+&+LA huge&+c olyx&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+LThis huge olyx resembles a bovine. It has a massive
+&Nbody and two small ineffectual horns. Its large snout
+&+Lhelps grab the vegetation that it stuffs into its
+&Nmouth, typically peaceful and unassuming.
+~
+2058 0 0 0 0 0 0 0 -600 S
+a 0 1 0 5
+38 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47114
+shackled large theezak~
+&+La s&+ch&+La&+cck&+Ll&+ced&N &+Ltheezak&N~
+&+LA &+Llarge theezak&+L sprawls here, &+cs&+Lh&+ca&+Lc&+ckl&+Le&+cd &+Lto the floor.
+~
+   &+LThis large theezak resembles a horse. It has a
+&Nstrong body and two small ineffectual horns. Its large
+&+Lsnout helps grab the vegetation that it stuffs into
+&Nits mouth, typically peaceful and unassuming.
+~
+134219786 0 0 0 134217736 0 0 0 -600 S
+ae 0 1 0 4
+30 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47115
+shrouded stranger~
+&N&+La shrouded stranger&N~
+&+LA shrouded stranger sits alone in the shadows.
+~
+   &+LThe stranger sits in the deepest reach of the tavern's
+&+Lgloom, impervious to the rabble. The figure is lean and
+&+Lelegant, with shadows cast from a travel-worn cloak of
+&+Ldark-grey wool. Her hood is pulled low, revealing only
+&+La pale, angular chin. She possesses a strange, muted
+&+Lnobility that is otherwise foreign to her surroundings,
+&+Lintense with mechanical stilness. Her slender, gloved
+&+Lfingers occasionally trace the ring around her mug as
+&+Lshe quietly observes.
+~
+1073743882 0 0 0 402653208 0 0 0 -600 S
+p2 0 4096 1 -1
+50 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47116
+zorka tiefling outcast~
+&+rZo&+Lr&+mk&+La the &+rtie&+cfl&+ming &+Loutcast&N~
+&+rZo&+Lr&+mk&+La the &+rtie&+cfl&+ming &+Loutcast nervously t&Ni&+Lp&Nt&+Lo&Ne&+Ls about.
+~
+&+m   Zorka is roughly six feet tall and has distinct dark-red skin
+&+Land two small nubs for horns. He has flaming red eyes and long,
+&+rdark hair pulled back into a tight ponytail. He wears simple,
+&+mclean leathers, which are uncommon for voyagers aboard this
+&+Lship. It isn't clear if he is a welcome passenger, or if his
+&+rpresence is even known, but acts sneakily passive.
+~
+2056 0 0 0 134742024 0 0 0 0 S
+tf 0 4096 0 -1
+46 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47117
+revallyn half-drow half drow outcast~
+&+rRe&+mv&+ra&+rll&+ryn the half-drow &+Loutcast&N~
+&+mRe&+rv&+ma&+rll&+myn&+L the &+rhalf-drow &+Loutcast &+Lkeeps to the shadows.
+~
+&+m   Revallyn has the same complexion of a typical dark elf, but
+&+rmuch softer features and she is noticably taller. She wears a
+&+mblack piwafwi wrapped tight around her form, assisting her in
+&+rbending into the shadows. Her silvery hair is tied back, under
+&+mher menacing hood, exposed only when she moves suddenly. Her
+&+reyes burn with an intense violet flame, darting towards anything
+&+mthat notices her in the shadows.
+~
+1073743880 0 0 0 672661528 12480 0 0 0 S
+p2 0 4161 0 -1
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 2
+#47118
+urg'thok urgthok urg thok adventurer minotaur~
+&+YU&+yrg'&+YT&+yhok the &+Ladven&+rturer&N~
+&+yA towering minotaur named &+YU&+yrg'&+YT&+yhok fares passage across the &+Bs&+Ce&+Ba&+y.
+~
+&+Y   Urg'Thok is a towering pillar of beast-man, standing even larger
+&+ythan most of his kin. His massive horns have been scrimshawed with
+&+yornate designs from various sources, making testament to his many
+&+Yjournies. Urg'Thok curiously doesn't wield a weapon, relying instead
+&+yon his tremendous body, entirely, should the need arise. He speaks
+&+yvery slowly and has a smile uncharacteristic for a tauren, showing
+&+Yoff his gem-studded teeth.
+~
+1090521096 0 0 0 402653208 0 0 0 600 S
+mt 0 64 0 6
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47119
+sorem-krell sorem krell young masters avatar~
+&+WS&+Ro&+Wr&+Re&+Wm&+R-K&+Wr&+Re&+Wl&+Rl&+W, &+Ra&+Wv&+Rat&+Wa&+Rr o&+Wf t&+Rh&+We &+Wm&+Ra&+Ws&+Rt&+We&+Rr&+Ws~
+&+WS&+Ro&+Wr&+Re&+Wm-&+RK&+Wr&+Re&+Wl&+Rl&+W, t&+Rh&+We &+Ryo&+Wu&+Rng&+W avatar&+R o&+Wf t&+Rh&+We m&+Ra&+Ws&+Rt&+We&+Rr&+Ws &+Rtravels here, curiously.
+~
+&+W   Sor&+Rem-Krel&+Wl is a li&+Rthe, athlet&+Wic youth w&+Rith a wir&+Wy frame.
+&+WHe mo&+Rves qui&+Wckly and &+Rwith fluid&+W motion, &+Rlike every&+W action
+&+Rhas been pra&+Wcticed. He &+Rhas chise&+Wled featur&+Res, framed&+W by
+&+Rdark hair&+W braided tig&+Rhtly in di&+Wstinct row&+Rs along h&+Wis scalp.
+&+RHe wears&+W simple a s&+Rimple traini&+Wng gi and&+R plain wo&+Woden sandals.
+&+RDespit&+We his modes&+Rt appearance&+W, there &+Ris an anci&+Went power
+&+Rthat&+W lives with&+Rin this myst&+Werious av&+Ratar of &+Wthe masters.
+~
+1090533384 0 0 0 3087007768 47296 16777344 13312 1000 S
+av 0 67108929 0 3
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#47120
+drak'azath drak azath avatar maelstrom~
+&+LDr&+ca&+Ck'&+LAz&+ca&+Cth&N, &+La&+cv&+Cat&+ca&+Lr o&+cf &+Lt&+ch&+Ce &+Lm&Nae&+Ll&+cs&+Ct&+cr&No&+Lm~
+&+LDr&+ca&+Ck'&+LAz&+ca&+Cth&N, &+Lt&+ch&+Ce &+cyo&+Lun&+cg &+Cavatar &+Lo&+cf &+Lt&+ch&+Ce &+Lm&Nae&+Ll&+cs&+Ct&+cr&+Lo&+cm &+Ltr&+cave&+Cls &+Lhe&+cre&+L, cur&+ciou&+Csly&+L.
+~
+&+L   Drak'Azath appe&+cars as a la&+Cnky, unas&+Lsuming y&+couth with
+&+Lmessy silve&+cr-streaked h&+Cair and re&+Lstless ene&+crgy. His sk&+Cin
+&+Lis pal&+ce and clamm&+Cy-looking,&+L while his&+c eyes are b&+Cloodshot
+&+Lvo&+cids of flic&+Ckering blu&+Le. Steam s&+ceems to ris&+Ce off his
+&+cshoulders a&+Cs tiny arcs &+Lof energy d&+cance acros&+Cs his back
+&+cand shou&+Clders as he &+Lfloats throu&+cgh the air,&+C his legs
+&+cdangl&+Cing beneath h&+Lim uselessly&+c. A low, pop&+Cping buzz
+&+Cfollows Drak'A&+Lzath wherever h&+ce passes.
+~
+1090537480 0 0 0 939524120 8403136 128 12288 -1000 S
+av 0 16777281 0 -1
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47121
+mouse~
+&+ya small &Nmouse&N~
+&+yA small mouse sniffs here, scurrying through the cracks.
+~
+   &+yThis small mouse scurries through the cracks between
+&+ywooden supports in the ship. It has beady, black eyes
+&+yand a small, soft fuzzy body. While harmless on an indiv-
+&+yidual level, a swarm of these creatures could be a problem.
+~
+8 0 0 0 1572864 0 0 0 0 S
+a 0 1 0 1
+2 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#47122
+huge spirit ghost bear~
+&+Ca huge &Nghost &+Cbear&N~
+&+CA huge &Nghost &+Cbear stoically guards the gate.
+~
+   This spirit bear is roughly eight feet tall when on its
+hind legs, and likely over five hundred pounds in physicality.
+Incorporeal and spiritual, this hazy image of a bear still
+leaves just as real of a mark as it's living kin. The spirit
+of a gigantic grizzly bear covered in strange druidic runes,
+this manifestation has been summoned to protect the Stalval.
+~
+1140852746 0 0 0 536870936 12480 0 0 0 S
+sp 0 1048576 0 5
+51 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
+#47123
+large lightning elemental~
+&+B&-La LARGE lightning elemental&N~
+&+B&-LA LARGE lightning elemental floats here imposingly.
+~
+   &+BThis crackling monstrosity resembles a tornado made of
+&+Bforking electrical arcs in a constant tempest of bolts. Its
+&+Bform roughly resembles a V-shaped torso with two lengths
+&+Bof wavering electricity that act like arms.
+~
+1140853002 0 0 0 134217744 14528 1048576 0 0 S
+ea 0 1 1 4
+56 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0

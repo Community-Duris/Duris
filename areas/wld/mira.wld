@@ -3213,7 +3213,7 @@ Unnamed~
 825 0 0
 S
 #82669
-&+yThe Pier&n~
+&+yThe &+MMyrabolus &+yShip Yard&n~
 &+y   This is the single pier that makes up the &+MMyrabolan&+Y Docks&+y.  Though
 &+yno where near as large as the docks in other capital cities, the dock
 &+ydoes serve its purpose well and is able to handle many ships in harbour
@@ -3225,28 +3225,45 @@ D0
 ~
 ~
 0 0 82670
+D1
+~
+~
+0 0 82686
 D2
 ~
 ~
 0 0 82638
+D3
+~
+~
+0 0 82687
 S
 #82670
-&+yThe Pier&n~
-&+y   This is the single pier that makes up the &+MMyrabolan&+Y Docks&+y.  Though
-&+yno where near as large as the docks in other capital cities, the dock
-&+ydoes serve its purpose well and is able to handle many ships in harbour
-&+yat the same time.  Straight south are the gates of the docks that
-&+yexit to the road to &+MMyrabolus&+y.&n
+&+BThe &+MMyrabolan &+BLa&+cgo&+Con&N~
+&+B   Twin ridges of tropical reef arc around this huge semi-circular
+&+Cnatural lagoon of crystal clear water. Twin waterfalls crash down
+&+Bthe northern tip of the Blackthorn mountains, opening up the
+&+Cbay at the mouth of the Kilfray river. Ships of all different
+&+Bstyles from every corner of the world find their way through
+&+Cthese serene waters.
 ~
-825 1048576 1
+825 0 12
 D0
 ~
 ~
 0 0 512874
+D1
+~
+~
+0 0 82685
 D2
 ~
 ~
 0 0 82669
+D3
+~
+~
+0 0 82684
 S
 #82671
 &+yThe Harbour Master's Station&n~
@@ -3432,4 +3449,78 @@ S
 Unnamed~
 ~
 825 0 0
+S
+#82684
+&+BThe &+MMyrabolan &+BLa&+cgo&+Con&N~
+&+B   Twin ridges of tropical reef arc around this huge semi-circular
+&+Cnatural lagoon of crystal clear water. Twin waterfalls crash down
+&+Bthe northern tip of the Blackthorn mountains, opening up the
+&+Cbay at the mouth of the Kilfray river. Ships of all different
+&+Bstyles from every corner of the world find their way through
+&+Cthese serene waters.
+~
+825 0 12
+D1
+~
+~
+0 0 82670
+D2
+~
+~
+0 0 82687
+S
+#82685
+&+BThe &+MMyrabolan &+BLa&+cgo&+Con&N~
+&+B   Twin ridges of tropical reef arc around this huge semi-circular
+&+Cnatural lagoon of crystal clear water. Twin waterfalls crash down
+&+Bthe northern tip of the Blackthorn mountains, opening up the
+&+Cbay at the mouth of the Kilfray river. Ships of all different
+&+Bstyles from every corner of the world find their way through
+&+Cthese serene waters.
+~
+825 0 12
+D2
+~
+~
+0 0 82686
+D3
+~
+~
+0 0 82670
+S
+#82686
+&+yThe Pier&n~
+&+y   This is the single pier that makes up the &+MMyrabolan&+Y Docks&+y.  Though
+&+yno where near as large as the docks in other capital cities, the dock
+&+ydoes serve its purpose well and is able to handle many ships in harbour
+&+yat the same time.  Straight south are the gates of the docks that
+&+yexit to the road to &+MMyrabolus&+y.&n
+~
+825 1048576 1
+D0
+~
+~
+0 0 82685
+D3
+~
+~
+0 0 82669
+S
+#82687
+&+yThe Pier&n~
+&+y   This is the single pier that makes up the &+MMyrabolan&+Y Docks&+y.  Though
+&+yno where near as large as the docks in other capital cities, the dock
+&+ydoes serve its purpose well and is able to handle many ships in harbour
+&+yat the same time.  Straight south are the gates of the docks that
+&+yexit to the road to &+MMyrabolus&+y.&n
+~
+825 1048576 1
+D0
+~
+~
+0 0 82684
+D1
+~
+~
+0 0 82669
 S

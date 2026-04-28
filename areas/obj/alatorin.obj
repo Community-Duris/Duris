@@ -619,7 +619,7 @@ glazed rack caribou ribs~
 &+RA glazed rack of &+ycaribou &+Rribs has been left here, uneaten.~
 ~
 19 2 2 0 7 0 0 16385 32768 0 0
-36 8 12 0 0 0 0 1
+36 8 15 0 0 0 0 1
 0 1000 100
 E
 glazed rack caribou ribs~
@@ -1018,7 +1018,7 @@ cheese-covered garlic apple clam mash~
 &+WA bowl of famous Stone&+Ybrew &+Wapple clam mash has been left here.~
 ~
 19 48 2 0 10 0 0 16385 32768 0 0
-10 8 8 0 3 3 0 0
+24 10 10 0 10 0 0 0
 0 1332 100
 E
 cheese-covered garlic apple clam mash~
@@ -1031,7 +1031,7 @@ juicy theezak ribs~
 &+RSome juicy &+Ltheezak &+Rribs have been left here.~
 ~
 19 48 2 0 10 0 0 16385 32768 0 0
-36 8 6 0 2 0 0 1
+36 8 8 0 2 0 0 2
 0 1430 100
 E
 juicy theezak ribs~
@@ -1044,7 +1044,7 @@ fish chips fried deep orange accented~
 &+LA bowl of &+yfried fish, seasoned to perfection is here.~
 ~
 19 15 3 0 7 0 0 16385 32768 0 0
-8 6 4 0 0 0 0 0
+24 10 10 0 0 0 10 0
 0 0 100
 E
 fish chips fried deep orange accented~
@@ -1835,7 +1835,7 @@ seasoned lion rib nuggets ribs~
 &+ySome seasoned &+Ylion &+Rrib &N&+rnuggets&N have been left here.~
 ~
 19 2 2 0 11 0 0 16385 32768 0 0
-36 6 4 0 1 1 0 0
+36 6 4 0 2 2 0 0
 0 6449 100
 E
 seasoned lion rib nuggets~
@@ -1850,7 +1850,7 @@ tender baby back olyx ribs~
 &+rSome &Ntender &N&+colyx &+Rribs have been left here.~
 ~
 19 2 2 0 11 0 0 16385 0 0 0
-36 8 8 0 0 2 0 0
+36 8 8 0 0 2 0 2
 0 9443 100
 E
 tender baby back olyx ribs~
@@ -1875,7 +1875,7 @@ bowl stew zing~
 &n&+rA bowl of &N&+ystew &N&+rsits here, steaming.~
 ~
 19 48 3 0 9 0 0 16385 32768 0 0
-25 10 7 0 0 0 2 0
+24 10 10 0 0 0 0 10
 0 2000 100
 E
 bowl stew zing~
@@ -1888,7 +1888,7 @@ broiled zesty meatloaf loaf meat~
 &+LA broiled, zesty &+Rmeatloaf&+L has been left here, &Nsteaming&+L.~
 ~
 19 2 2 0 7 0 0 16385 32768 0 0
-30 8 6 0 1 0 0 1
+24 10 10 0 0 10 0 0
 0 3444 100
 E
 broiled zesty meatloaf loaf meat~
@@ -2566,8 +2566,8 @@ drop droplet baobob sap~
 &+La single &n&+cdroplet &+Lof &N&+gb&Nao&+gb&No&+gb &+Ysap&N~
 &+LA small &N&+cdroplet &+Lof gooey &+Ytree sap&+L lies here, adhered to the &N&+yearth&+L.~
 ~
-10 40 3 0 7 0 4096 8404993 64 0 0
-55 141 237 515 0 0 0 0
+19 40 3 0 7 0 4096 8404993 64 0 0
+24 15 15 0 15 15 0 0
 0 15343 100
 E
 drop droplet baobob sap~
@@ -3516,7 +3516,7 @@ gored tongue swamp troll~
 &+gThe gored &+Gtongue &n&+gof a &+Lswamp troll &Nhas been left here.~
 ~
 19 2 3 0 7 0 8392704 8404993 32768 0 0
-72 12 9 0 3 1 0 0
+12 15 5 0 15 15 0 5
 0 0 100
 E
 gored tongue swamp troll~
@@ -6242,7 +6242,7 @@ bowl white dragon egg soup~
 &+WA bowl of white dragon egg &N&+rsoup &Nhas been left here.~
 ~
 19 48 2 0 10 0 0 16385 32768 0 0
-24 9 6 0 0 0 2 0
+24 0 20 0 10 10 10 10
 0 4333 100
 E
 bowl white dragon egg soup~
@@ -6255,7 +6255,7 @@ bowl wyvern egg soup~
 &+yA bowl of wyvern &+Wegg &N&+rsoup has been left here.~
 ~
 19 48 2 0 7 0 0 16385 32768 0 0
-24 10 7 0 0 3 0 0
+24 10 17 0 0 15 0 5
 0 3221 100
 E
 bowl wyvern egg soup~

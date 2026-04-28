@@ -115,7 +115,7 @@ void Ferry::init()
 
 		if (!found_path)
 		{
-			fprintf(stderr, "           %s-> no path found!\r\n", route[i].name());
+			fprintf(stderr, "   %s        %s-> no path found!\r\n", name.c_str(), route[i].name());
 		}
 	}
 }
