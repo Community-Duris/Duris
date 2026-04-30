@@ -44,6 +44,7 @@ using namespace std;
 #include "nexus_stones.h"
 #include "spells.h"
 #include "sql.h"
+#include "sql_player.h"
 
 extern P_desc                         descriptor_list;
 extern P_room                         world;
@@ -3015,6 +3016,7 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 				GET_BALANCE_GOLD(ch) += (((int)bdata.bonus % 1000) / 100);
 				GET_BALANCE_SILVER(ch) += ((((int)bdata.bonus % 1000) % 100) / 10);
 				GET_BALANCE_COPPER(ch) += ((((int)bdata.bonus % 1000) % 100) % 10);
+				sql_save_account_bank(get_account_name_safe(ch), GET_RACEWAR(ch), ch);
 				break;
 			case BTYPE_LEVEL:
 				boon_notify(bdata.id, ch, BN_COMPLETE);

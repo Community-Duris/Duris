@@ -40,6 +40,7 @@ using namespace std;
 #include "specializations.h"
 #include "spells.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "weather.h"
 
 /*
@@ -1889,6 +1890,8 @@ int SUB_BALANCE(P_char ch, int amount, int mode)
 	}
 	if (amount < 0)
 		ADD_MONEY(ch, -(amount));
+
+	sql_save_account_bank(get_account_name_safe(ch), GET_RACEWAR(ch), ch);
 
 	return 0;
 }
