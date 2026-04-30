@@ -256,7 +256,7 @@ large bud northern tundra flower _id_~
 &na large bud of &+cNo&+Crt&+Bh&+Ye&+Br&+Yn &+CTundra &nflower~
 &nA large bud of &+cNo&+Crt&+Bh&+Ye&+Br&+Yn &+CTundra &nflower &+gg&+Gr&+go&+Gw&+gs&N here.~
 ~
-40 43 2 0 10 0 0 0 0 0 0
+40 43 2 0 10 0 0 16385 0 0 0
 40 1902 0 0 0 0 3 24
 0 4000 100
 E
@@ -276,7 +276,7 @@ clump dhalnadar moss _id_~
 &Na clump of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr &+Lm&+go&+Ls&+gs&N~
 &+gA sticky clump of &+mD&+yh&+ma&+yl&+mn&+ya&+md&+ya&+mr &+Lm&+go&+Ls&+gs&N &+ggrows here.~
 ~
-40 43 2 0 7 0 0 0 0 0 0
+40 43 2 0 7 0 0 16385 0 0 0
 40 1905 0 0 0 0 3 15
 0 2400 100
 E
@@ -296,8 +296,8 @@ bushel darkpeak weed flower weedflower _id_~
 &na small bushel of &+LDark&+yPeak &+gweedflower&N~
 &+gA small bushel of &+LDark&+yPeak &+gweedflower &+Gg&+gr&+Go&+gw&+Gs&+g here.~
 ~
-40 43 2 0 7 0 0 0 0 0 0
-40 1903 0 0 0 0 3 12
+40 43 2 0 7 0 0 16385 0 0 0
+40 1903 0 0 0 0 3 15
 0 2400 100
 E
 _id_name_~
@@ -316,7 +316,7 @@ stalk abyssal spikeweed weed _id_~
 &na stalk of &+rAbyssal &+Rs&+gp&+Ri&+gk&+Re&+gw&+Re&+ge&+Rd&N~
 &nA stalk of &+rAbyssal &+Rs&+gp&+Ri&+gk&+Re&+gw&+Re&+ge&+Rd&N &+Gg&+gr&+Go&+gw&+Gs &nhere.~
 ~
-40 43 2 0 11 0 0 0 0 0 0
+40 43 2 0 11 0 0 16385 0 0 0
 40 1904 0 0 0 0 3 30
 0 8000 100
 E

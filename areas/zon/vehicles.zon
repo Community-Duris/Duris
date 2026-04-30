@@ -582,8 +582,8 @@ F 1 47066 6 47100 100 0 0 0        * a Tribe of the Whale huskarl (following)
 M 0 47061 1 47103 100 0 0 0        * Bjornstag
 G 1 835 999 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 47051 999 0 100 0 0 0          *    a ceremonial chillum of scrimshawed whale bone
-G 1 930 999 0 100 0 0 0            *    (object type not in this .obj file)
 G 1 47055 999 0 100 0 0 0          *    a large bud of Northern Tundra flower
+G 1 830 1 0 100 0 0 0              *    (object type not in this .obj file)
 M 0 47065 1 47104 100 0 0 0        * Haafgurd, jarl of the Tribe of the Whale
 E 1 47079 1 13 50 0 0 0            *   a kraken-hide loincloth
 E 1 47041 1 18 100 0 0 0           *   the flag of The Stalval
