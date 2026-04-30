@@ -528,15 +528,29 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 		days = cap_timer;
 	}
 
+	long frag_totals[MAX_RACEWAR] = {0};
+	for (int i = 0; i < MAX_RACEWAR; i++)
+	{
+		MYSQL_RES *res = db_query("SELECT SUM(total_frags) FROM frag_leaderboard WHERE racewar=%d", i);
+		if (res)
+		{
+			MYSQL_ROW row = mysql_fetch_row(res);
+			if(row and row[0])
+			{
+				frag_totals[i] = atol(row[0]);
+			}
+			mysql_free_result(res);
+		}
+	}
+
 	snprintf(buf,
 	         MAX_STRING_LENGTH,
-	         "&+YFrag Level Cap:&+w %d - &+%c%s&n, &+w%d&N - Others, &+YTop Frag Amount: &+w%d.%02d\n&+YTimer:&+w %02d:%02d:%02d:%02d &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
+	         "&+YFrag Level Cap:&+w %d - All, &+WGoodies Total Frags - &+w%d.%02d, &+REvils Total Frags - &+w%d.%02d\n&+YTimer:&+w %02d:%02d:%02d:%02d &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
 	         cap_level,
-	         racewar_color[cap_racewar].color,
-	         racewar_color[cap_racewar].name,
-	         cap_others,
-	         (int)(cap_frags / 100),
-	         (int)(cap_frags % 100),
+	         (int)(frag_totals[RACEWAR_GOOD] / 100),
+	         (int)(frag_totals[RACEWAR_GOOD] % 100),
+			 (int)(frag_totals[RACEWAR_EVIL] / 100),
+	         (int)(frag_totals[RACEWAR_EVIL] % 100),
 	         days,
 	         hours,
 	         mins,
