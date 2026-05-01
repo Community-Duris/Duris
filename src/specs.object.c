@@ -2091,7 +2091,7 @@ int bloodfeast(P_obj obj, P_char ch, int cmd, char *arg)
 		act("$p &+Lemits a &n&+rblood curdling &+RsCrEaM!!!&n", TRUE, ch, obj, victim, TO_NOTVICT);
 		act("$p &+Lemits a &n&+rblood curdling &+RsCrEaM!!!&n", TRUE, ch, obj, victim, TO_VICT);
 		spell_damage(ch, victim, 400, SPLDAM_NEGATIVE, SPLDAM_NODEFLECT | SPLDAM_NOSHRUG | RAWDAM_NOKILL, &messages);
-		vamp(ch, 50, (int)(GET_MAX_HIT(ch) * 1.3));
+		vamp(ch, 50, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 		return TRUE;
 	}
 	return FALSE;
@@ -7518,7 +7518,7 @@ int rod_of_zarbon(P_obj obj, P_char ch, int cmd, char *arg)
 
 		spell_damage(ch, vict, dam, SPLDAM_NEGATIVE, SPLDAM_NOSHRUG | SPLDAM_NODEFLECT | RAWDAM_NOKILL, &messages);
 
-		vamp(ch, dam / 4, (int)(GET_MAX_HIT(ch) * 1.1));
+		vamp(ch, dam / 4, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 
 		if (GET_VITALITY(vict) >= 25 && !number(0, 2))
 		{
@@ -13374,7 +13374,7 @@ int bel_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	act("$n's $q &+bglows &+rcrimson &+Las it slices into you!&n", FALSE, ch, obj, vict, TO_VICT);
 	spell_damage(ch, vict, 400, SPLDAM_NEGATIVE, SPLDAM_NODEFLECT | SPLDAM_NOSHRUG | RAWDAM_NOKILL, &messages);
 
-	vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * 1.3));
+	vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 
 	return TRUE;
 }
@@ -14291,7 +14291,7 @@ void soul_taking_check(P_char ch, P_char tch)
 	{
 		if ((stiletto = ch->equipment[WIELD]) && obj_index[stiletto->R_num].virtual_number == SOUL_TAKING_STILETTO)
 		{
-			if (vamp(ch, 1.5 * GET_LEVEL(tch), 1.2 * GET_MAX_HIT(ch)))
+			if (vamp(ch, 1.5 * GET_LEVEL(tch), VAMPPERCENT(ch) * GET_MAX_HIT(ch)))
 			{
 				act("&+LYour stiletto &+Wglows &+Lwith power as it &+wdevours &+Lanother &+Wsoul!&n", FALSE, ch, 0, 0, TO_CHAR);
 				act("&+L$p &+Wglows brightly in $n&+L's hands as it &+wdevours &+Lanother &+Wsoul!&n", FALSE, ch, stiletto, 0, TO_ROOM);

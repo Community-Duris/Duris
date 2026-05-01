@@ -3046,27 +3046,27 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 				if ((int)bdata.bonus == 1)
 				{
 					snprintf(buff, MAX_STRING_LENGTH, "%s", affected1_bits[(int)bdata.bonus2].flagLong);
-					af.bitvector = 1 << (int)bdata.bonus2;
+					af.bitvector = (long)1 << (int)bdata.bonus2;
 				}
 				if ((int)bdata.bonus == 2)
 				{
 					snprintf(buff, MAX_STRING_LENGTH, "%s", affected2_bits[(int)bdata.bonus2].flagLong);
-					af.bitvector2 = 1 << (int)bdata.bonus2;
+					af.bitvector2 = (long)1 << (int)bdata.bonus2;
 				}
 				if ((int)bdata.bonus == 3)
 				{
 					snprintf(buff, MAX_STRING_LENGTH, "%s", affected3_bits[(int)bdata.bonus2].flagLong);
-					af.bitvector3 = 1 << (int)bdata.bonus2;
+					af.bitvector3 = (long)1 << (int)bdata.bonus2;
 				}
 				if ((int)bdata.bonus == 4)
 				{
 					snprintf(buff, MAX_STRING_LENGTH, "%s", affected4_bits[(int)bdata.bonus2].flagLong);
-					af.bitvector4 = 1 << (int)bdata.bonus2;
+					af.bitvector4 = (long)1 << (int)bdata.bonus2;
 				}
 				if ((int)bdata.bonus == 5)
 				{
 					snprintf(buff, MAX_STRING_LENGTH, "%s", affected5_bits[(int)bdata.bonus2].flagLong);
-					af.bitvector5 = 1 << (int)bdata.bonus2;
+					af.bitvector5 = (long)1 << (int)bdata.bonus2;
 				}
 				if (!*buff)
 				{

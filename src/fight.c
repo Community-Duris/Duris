@@ -4609,7 +4609,7 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags, str
 		act("&+LYour spell is absorbed by&n $N's &+Rhellfire!", FALSE, ch, 0, victim, TO_CHAR);
 		act("$n's&+L spell is absorbed by your &+Rhellfire!", FALSE, ch, 0, victim, TO_VICT);
 		act("$n's&+L spell is absorbed by&n $N's &+Rhellfire!", FALSE, ch, 0, victim, TO_NOTVICT);
-		vamp(victim, dam * get_property("vamping.hellfire.absorb", 0.14), (int)(GET_MAX_HIT(victim) * 1.3));
+		vamp(victim, dam * get_property("vamping.hellfire.absorb", 0.14), GET_MAX_HIT(victim) * VAMPPERCENT(victim));
 		return DAM_NONEDEAD;
 	}
 
@@ -5503,7 +5503,7 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 		if (IS_NPC(ch))
 		{
 			temp_dam = dam * get_property("vamping.self.NPCbattleEcstasy", 0.050);
-			vamp(ch, temp_dam, GET_MAX_HIT(ch) * 1.1);
+			vamp(ch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
 		}
 	}
 
@@ -5519,7 +5519,7 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 				if (IS_AFFECTED4(tch, AFF4_BATTLE_ECSTASY) && tch->in_room == ch->in_room && tch != ch)
 				{
 					// Have to use BOUNDEDF here for floats.. *sigh*
-					vamp(tch, dam * get_property("vamping.battleEcstasy", .140), BOUNDEDF(1.10, (GET_C_POW(tch) / 90.0), 2.20) * GET_MAX_HIT(tch));
+					vamp(tch, dam * get_property("vamping.battleEcstasy", .140), VAMPPERCENT(tch) * GET_MAX_HIT(tch));
 				}
 			}
 		}

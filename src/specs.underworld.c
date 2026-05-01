@@ -1021,7 +1021,7 @@ int unholy_avenger_bloodlust(P_obj obj, P_char ch, int cmd, char *arg)
 		act("$n's $q turns &+rblood red as it slashes into you!", FALSE, ch, obj, vict, TO_VICT);
 		spell_damage(ch, vict, 300, SPLDAM_NEGATIVE, SPLDAM_NODEFLECT | SPLDAM_NOSHRUG | RAWDAM_NOKILL, &messages);
 
-		vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * 1.4));
+		vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 
 		return TRUE;
 	}
@@ -1328,9 +1328,9 @@ int avernus(P_obj obj, P_char ch, int cmd, char *arg)
 		act("$n's sword &+Wglows with a bright light as it bites into you.", FALSE, ch, obj, vict, TO_VICT);
 		act("&+LYou feel your life flowing away and $n &+Wlooks revitalized.", FALSE, ch, obj, vict, TO_VICT);
 
-		vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * 1.8));
+		vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 
-		spell_damage(ch, vict, (BOUNDED(0, (GET_HIT(vict) + 9), 150) * 4), SPLDAM_NEGATIVE, SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0);
+		spell_damage(ch, vict, dam, SPLDAM_NEGATIVE, SPLDAM_NODEFLECT | SPLDAM_NOSHRUG | PHSDAM_NOREDUCE, 0);
 		return TRUE;
 	}
 	return FALSE;
@@ -1792,7 +1792,7 @@ int githyanki(P_obj obj, P_char ch, int cmd, char *arg)
 				act("&+cYou feel slightly invigorated!", FALSE, ch, obj, vict, TO_CHAR);
 				act("$n&+c's $q &+Csings &+cas it slashes into $N!", FALSE, ch, obj, vict, TO_NOTVICT);
 				act("$n&+c's $q &+Csings &+cas it slashes into you!", FALSE, ch, obj, vict, TO_VICT);
-				vamp(ch, 200, (int)(GET_MAX_HIT(ch) * 1.3));
+				vamp(ch, 200, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 				GET_HIT(vict) -= 200;
 				update_pos(vict);
 				break;

@@ -2171,7 +2171,7 @@ int helmet_vampires(P_obj obj, P_char ch, int cmd, char *arg)
 							{
 								GET_HIT(vict) = 0;
 							}
-							vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * 1.3));
+							vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 							break;
 						case 1:
 							dam = BOUNDED(0, (GET_HIT(vict) + 9), 75);
@@ -2180,7 +2180,7 @@ int helmet_vampires(P_obj obj, P_char ch, int cmd, char *arg)
 							{
 								GET_HIT(vict) = 0;
 							}
-							vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * 1.3));
+							vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 							break;
 						case 2:
 							dam = BOUNDED(0, (GET_HIT(vict) + 9), 100);
@@ -2189,7 +2189,7 @@ int helmet_vampires(P_obj obj, P_char ch, int cmd, char *arg)
 							{
 								GET_HIT(vict) = 0;
 							}
-							vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * 1.3));
+							vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
 							break;
 						default:
 							break;
