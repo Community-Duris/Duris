@@ -98,7 +98,7 @@ const struct ferry_definition ferries[] = {
 		47011,                 // boarding room vnum
 		(int[]){47003, 47010, 0}, // other rooms
 		1,                     // speed
-		240,                   // wait time
+		180,                   // wait time
 		60,                    // depart notice time
 		10000,                  // ticket price
 		(struct ferry_definition::stop_info[]){         // stops
@@ -136,8 +136,8 @@ const struct ferry_definition ferries[] = {
 		47026,                 // boarding room vnum
 		(int[]){47025, 47025, 0}, // other rooms
 		1,                     // speed
-		180,                   // wait time
-		30,                    // depart notice time
+		120,                   // wait time
+		60,                    // depart notice time
 		10000,                  // ticket price
 		(struct ferry_definition::stop_info[]){         // stops
 			{
@@ -145,16 +145,8 @@ const struct ferry_definition ferries[] = {
 				"&+WSto&+Lrm Port&n"
 			}, 
 			{
-				564720,
-				"&+rFort &+RBoyard&N"
-			},
-			{
 				550724,
 				"&+bMenden-on-the-Deep&n"
-			},
-			{
-				564720,
-				"&+rFort &+RBoyard&N"
 			},
 			{ 0 }
 		}
@@ -166,7 +158,7 @@ const struct ferry_definition ferries[] = {
 		47072,                 // boarding room vnum
 		(int[]){47073, 47132, 0}, // other rooms
 		2,                     // speed
-		300,                   // wait time
+		180,                   // wait time
 		60,                    // depart notice time
 		10000,                  // ticket price
 		(struct ferry_definition::stop_info[]){         // stops
@@ -175,16 +167,8 @@ const struct ferry_definition ferries[] = {
 				"&+WDeramuth Port&N"
 			}, 
 			{
-				634862,
-				"&+gKhomani-Khan&N"
-			},
-			{
-				9979,
-				"&+ySarmiz'Duul&N"
-			},
-			{
-				133054,
-				"&+WTharnadia&N"
+				564319,
+				"&+rFort &+RBoyard&N"
 			},
 			{ 0 }
 		}
@@ -201,20 +185,12 @@ const struct ferry_definition ferries[] = {
 		10000,                  // ticket price
 		(struct ferry_definition::stop_info[]){         // stops
 			{
-				76660, 
-				"&+gThe &+GJade &+gEmpire&N"
+				83788, 
+				"&+WDeramuth Port&N"
 			}, 
 			{
-				22601,
-				"&+WSto&+Lrm Port Stronghold&n"
-			},
-			{
-				22445,
-				"&+WSto&+Lrm Port&N"
-			},
-			{
-				43151,
-				"&+LThur'Gurax&N"
+				9979,
+				"&+ySarmiz'Duul&N"
 			},
 			{ 0 }
 		}
@@ -225,8 +201,8 @@ const struct ferry_definition ferries[] = {
 		47015,                 // shop object
 		47029,                 // boarding room vnum
 		(int[]){47030, 47071, 0}, // other rooms
-		3,                     // speed
-		300,                   // wait time
+		2,                     // speed
+		180,                   // wait time
 		60,                    // depart notice time
 		10000,                  // ticket price
 		(struct ferry_definition::stop_info[]){         // stops
@@ -238,14 +214,6 @@ const struct ferry_definition ferries[] = {
 				49089,
 				"&+YVenan'Trut&N"
 			},
-			{
-				43111,
-				"&+WCanderthal Harbor&N"
-			},
-			{
-				1713,
-				"&+mQuietus Quay&N"
-			},
 			{ 0 }
 		}
 	},
@@ -255,9 +223,9 @@ const struct ferry_definition ferries[] = {
 		47004,                 // shop object
 		47024,                 // boarding room vnum
 		(int[]){47027, 47028, 0}, // other rooms
-		4,                     // speed
+		2,                     // speed
 		120,                   // wait time
-		30,                    // depart notice time
+		60,                    // depart notice time
 		5000,                  // ticket price
 		(struct ferry_definition::stop_info[]){         // stops
 			{
@@ -269,8 +237,8 @@ const struct ferry_definition ferries[] = {
 				"&+CMoonshae &+GIsland&N"
 			},
 			{
-				564319,
-				"&+rFort &+RBoyard&N"
+				550723,
+				"&+bMenden-of-the-Deep&N"
 			},
 			{ 0 }
 		}
