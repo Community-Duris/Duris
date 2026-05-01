@@ -9612,6 +9612,11 @@ void spell_identify(int level, P_char ch, char *arg, int type, P_char victim, P_
 				}
 				break;
 
+			case ITEM_FOOD:
+                send_to_char("You magically sense the nourishment effects:\n", ch);
+                send_to_char(food_modifiers(obj), ch);
+                send_to_char("\n", ch);
+                break;
 			case ITEM_FIREWEAPON:
 				snprintf(Gbuf1,
 				         MAX_STRING_LENGTH,
@@ -9872,7 +9877,12 @@ void spell_lore(int level, P_char ch, char *arg, int type, P_char victim, P_obj 
 
 		switch (GET_ITEM_TYPE(obj))
 		{
-
+			case ITEM_FOOD:
+                send_to_char("You magically sense the nourishment effects:\n", ch);
+                send_to_char(food_modifiers(obj), ch);
+                send_to_char("\n", ch);
+                break;
+				
 			case ITEM_SCROLL:
 			case ITEM_POTION:
 				send_to_char("Contains spells of: ", ch);

@@ -667,6 +667,7 @@ void do_account(P_char ch, char *arg, int cmd);
 #endif
 void do_newchar(P_char ch, char *arg, int cmd);
 void do_protocol(P_char ch, char *arg, int cmd);
+char *food_modifiers(P_obj food);
 
 /* artifact.c */
 void addOnGroundArtis_sql();
