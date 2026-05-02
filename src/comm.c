@@ -130,7 +130,7 @@ int                   was_upper = FALSE;
 pid_t                 lookup_host_process;
 pid_t                 lookup_ident_process;
 int                   max_users_playing = 0;
-int                   used_descs = 0, avail_descs = 0, max_descs = 0;
+int                   used_descs = 0, avail_descs = 0, max_descs = 0, max_descs_this_hour = 0;
 struct mm_ds         *dead_desc_pool = NULL;
 int                   RUNNING_PORT   = 0;
 int                   no_random      = 0;
@@ -692,6 +692,7 @@ void game_loop(int port, int sslport)
 	mother_desc_ssl = S;
 	ws_desc         = WS;
 
+	long    last_desc_per_hour_reset = time(0);
 	clock_t loop_time_end;
 	/* Main loop */
 	while (!shutdownflag)
@@ -727,6 +728,11 @@ void game_loop(int port, int sslport)
 		}
 		//PROFILE_END(process_signal_shutdown_pending);
 
+		if ((last_desc_per_hour_reset + 3600) <= time(0))
+		{
+			max_descs_this_hour = used_descs;
+			last_desc_per_hour_reset = time(0);
+		}
 		/*
 		    struct host_answer host_ans_buf;
 		    struct ident_answer ident_ans_buf;
@@ -1998,6 +2004,9 @@ int new_descriptor(int s, int conn_type)
 	}
 	else if (used_descs > max_descs)
 		max_descs = used_descs;
+	
+	if (used_descs > max_descs_this_hour)
+		max_descs_this_hour = used_descs;
 
 #if 0
 #ifdef MEM_DEBUG

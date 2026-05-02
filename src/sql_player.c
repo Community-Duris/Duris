@@ -7031,7 +7031,10 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 
 		obj->contains = sql_load_saved_item_contents(item_key, item_id);
 		for (P_obj c = obj->contains; c; c = c->next_content)
+		{
+			c->loc_p      = LOC_INSIDE;
 			c->loc.inside = obj;
+		}
 
 		if (!first_obj)
 			first_obj = obj;
@@ -7140,7 +7143,10 @@ void sql_restore_saved_items(void)
 
 		obj->contains = sql_load_saved_item_contents(item_key, item_id);
 		for (P_obj c = obj->contains; c; c = c->next_content)
+		{
+			c->loc_p      = LOC_INSIDE;
 			c->loc.inside = obj;
+		}
 
 		obj_to_room(obj, room);
 		loaded++;
@@ -7246,7 +7252,10 @@ static P_obj sql_load_siege_item_contents(int room_vnum, int container_id)
 
 		obj->contains = sql_load_siege_item_contents(room_vnum, item_id);
 		for (P_obj c = obj->contains; c; c = c->next_content)
+		{
+			c->loc_p      = LOC_INSIDE;
 			c->loc.inside = obj;
+		}
 
 		if (!first_obj)
 			first_obj = obj;
@@ -7357,7 +7366,10 @@ void sql_load_siege_list(void)
 
 		obj->contains = sql_load_siege_item_contents(room_vnum, item_id);
 		for (P_obj c = obj->contains; c; c = c->next_content)
+		{
 			c->loc.inside = obj;
+			c->loc_p      = LOC_INSIDE;
+		}
 
 		obj_to_room(obj, room);
 

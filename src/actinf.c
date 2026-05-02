@@ -87,6 +87,7 @@ extern int                        avail_descs;
 extern int                        help_array[27][2];
 extern int                        info_array[27][2];
 extern int                        max_descs;
+extern int                        max_descs_this_hour;
 extern const int                  curr_ingame_good;
 extern const int                  max_ingame_good;
 extern const int                  curr_ingame_evil;
@@ -6457,8 +6458,14 @@ void do_who(P_char ch, char *argument, int cmd)
 			         who_list_size,
 			         who_list_size + who_gods_size);
 			if (IS_TRUSTED(ch))
+			{
 				snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), "&+cTotal in-game connections: %d.&N\n", total_ingame_connections);
-			snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), "&+rRecord number of connections this boot: %d.&n\n", max_descs);
+				snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), "&+rRecord number of connections this boot: %d.&n\n", max_descs);
+			}
+			else
+			{
+				snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), "&+rRecord number of connections this hour: %d.&n\n", max_descs_this_hour);
+			}
 			if ((curr_ingame_good > 0) && !IS_RACEWAR_GOOD(ch) && !IS_TRUSTED(ch))
 				snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), "There are &+Ygood(s)&N online.\n");
 			if ((curr_ingame_evil > 0) && !IS_RACEWAR_EVIL(ch) && !IS_TRUSTED(ch))
