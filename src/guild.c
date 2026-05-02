@@ -64,10 +64,6 @@ void update_skills(P_char ch)
 	if (!ch || !IS_PC(ch))
 		return;
 
-	// #ifdef SKILLPOINTS
-	//   return;
-	// #endif
-
 	for (skl = FIRST_SKILL; skl <= LAST_SKILL; skl++)
 	{
 		skllvl = GET_LVL_FOR_SKILL(ch, skl);
@@ -152,10 +148,6 @@ bool notch_skill(P_char ch, int skill, float chance)
 {
 	int  intel, t, lvl, l, slvl, i;
 	char buf[MAX_STRING_LENGTH];
-
-	// #ifdef SKILLPOINTS
-	//   return 0;
-	// #endif
 
 	if (!IS_ALIVE(ch))
 		return FALSE;
@@ -712,14 +704,7 @@ void do_spells(P_char ch, char *argument, int cmd)
 
 			if (!SKILL_DATA_ALL(target, spell).maxlearn[0] && !SKILL_DATA_ALL(target, spell).maxlearn[target->player.spec])
 				continue;
-			// #ifdef SKILLPOINTS
-			//         snprintf(buf, MAX_STRING_LENGTH, "%3d %s%-25s %s",
-			//           (target && IS_PC(target)) ? target->only.pc->skills[spell].taught : 0,
-			//           (target && (circle > get_max_circle(target))) ? "&+L" : "",
-			//           skills[spell].name, buf2);
-			// #else
 			snprintf(buf, MAX_STRING_LENGTH, "%s%-25s %s", (target && (circle > get_max_circle(target))) ? "&+L" : "", skills[spell].name, buf2);
-			// #endif
 			if (target)
 			{
 				if (meming_class(target))
@@ -936,11 +921,6 @@ void do_practice(P_char ch, char *arg, int cmd)
 	char   buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], obuf[MAX_STRING_LENGTH];
 	int    skl, spl, circle, i, meming_cl, cost, ret;
 	P_char teacher;
-
-#ifdef SKILLPOINTS
-	do_practice_new(ch, arg, cmd);
-	return;
-#endif
 
 	if (!IS_ALIVE(ch) || !IS_PC(ch))
 		return;

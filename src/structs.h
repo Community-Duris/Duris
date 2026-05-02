@@ -1932,15 +1932,6 @@ struct s_skill
 	/* func pointer, 0 for skills */
 	void (*spell_pointer)(int, P_char, char *, int, P_char, P_obj);
 	struct ClassSkillInfo m_class[CLASS_COUNT]; /* info for each class */
-												// #ifdef SKILLPOINTS
-	                                            //   int maxtrainwarr;
-	                                            //   int maxtrainsorc;
-	                                            //   int maxtrainprst;
-	                                            //   int maxtrainrogu;
-	                                            //   int dependency[7];
-	                                            //   int mintotrain[7];
-	                                            //   bool specskill;
-	                                            // #endif
 };
 
 #ifndef _PFILE_

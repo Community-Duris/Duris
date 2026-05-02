@@ -5051,9 +5051,6 @@ void do_score(P_char ch, char *argument, int cmd)
 		send_to_char_f(ch, "&nEpic Bonus: &+C%s&n (&+C%.0f&n)\r\n", ebd[ebdata.type].description, get_epic_bonus(ch, ebdata.type) * EPIC_HEALTH_REGEN_MOD);
 	else
 		send_to_char_f(ch, "&nEpic Bonus: &+C%s&n (&+C%.2f%%&n)\r\n", ebd[ebdata.type].description, get_epic_bonus(ch, ebdata.type) * 100.);
-	// #ifdef SKILLPOINTS
-	// send_to_char_f(ch, "&nSkill Points: &+W%d&n\r\n", ch->only.pc->skillpoints);
-	// #endif
 	send_to_char("&+RFrags:&n   ", ch);
 
 	fragnum = (float)ch->only.pc->frags;
