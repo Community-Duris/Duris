@@ -1013,7 +1013,7 @@
 #define SKILL_ENHANCEDMELEE          1279
 #define SKILL_RESCUEALL              1280
 #define SKILL_ENHANCEDBASH           1281
-#define SKILL_GROUNDFIGHTING         1282
+//#define SKILL_GROUNDFIGHTING         1282
 #define SKILL_MELEE_MASTERY          1283
 #define SKILL_TRAMPLE                1284
 #define SKILL_HANDCONTROL            1285

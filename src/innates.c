@@ -233,7 +233,7 @@ const struct innate_data        innates_data[LAST_INNATE + 1] = {
     {"pyrokinesis", do_immolate, SKILL_NONE},
     {"vulnerable to sun", NULL, SKILL_NONE},
     {"decrepify", NULL, SKILL_NONE},
-    {"groundfighting", NULL, SKILL_GROUNDFIGHTING},
+    {"groundfighting", NULL, SKILL_NONE},
     {"bow mastery", NULL, SKILL_NONE},
     {"summon warg", do_summon_warg, SKILL_NONE},
     {"hatred", NULL, SKILL_NONE},
@@ -4797,18 +4797,6 @@ void update_regen_properties()
 	regen_factor[REG_HUNTSMAN]   = get_property("hit.regen.Huntsman", 4.000);
 	regen_factor[REG_WATERMAGUS] = get_property("hit.regen.WaterMagus", 4.000);
 	regen_factor[REG_SPELL]      = get_property("hit.regen.Spell", 9.000);
-}
-
-int get_innate_from_skill(int skill)
-{
-	for (int innate = 0; innate <= LAST_INNATE; innate++)
-	{
-		if (innates_data[innate].skill == skill)
-		{
-			return innate;
-		}
-	}
-	return -1;
 }
 
 int get_level_from_innate(P_char ch, int innate)

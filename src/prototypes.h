@@ -1275,7 +1275,6 @@ void   engulf(P_char, P_char);
 void   do_slime(P_char, char *, int);
 void   slime(P_char, P_char);
 void   do_squidrage(P_char ch, char *arg, int cmd);
-int    get_innate_from_skill(int skill);
 int    get_level_from_innate(P_char ch, int innate);
 /* interp.c */
 
