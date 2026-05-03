@@ -822,6 +822,11 @@ void do_skills(P_char ch, char *argument, int cmd)
 			{
 				if (IS_PC(target))
 				{
+					const char *color = "";
+					if (IS_EPIC_SKILL(skl))
+						color = GET_CHAR_SKILL(target, skl)<100 ? "&+y" : "&+Y";
+					else if (GET_CHAR_SKILL(target, skl) >= target->only.pc->skills[skl].taught)
+						color = "&+W";
 					int lvl = GET_LVL_FOR_SKILL(target, skl);
 					if (lvl > GET_LEVEL(target))
 						if (IS_TRUSTED(ch))
@@ -835,12 +840,12 @@ void do_skills(P_char ch, char *argument, int cmd)
 						         MAX_STRING_LENGTH,
 						         "%-25s %s%6d&n [%d]\n",
 						         skills[skl].name,
-						         GET_CHAR_SKILL(target, skl) < target->only.pc->skills[skl].taught ? "" : "&+W",
+						         color,
 						         GET_CHAR_SKILL(target, skl),
 						         target->only.pc->skills[skl].taught);
 					else
 						snprintf(
-							buf, MAX_STRING_LENGTH, "%-25s %s%6d&n\n", skills[skl].name, GET_CHAR_SKILL(target, skl) < target->only.pc->skills[skl].taught ? "" : "&+W", GET_CHAR_SKILL(target, skl));
+							buf, MAX_STRING_LENGTH, "%-25s %s%6d&n\n", skills[skl].name, color, GET_CHAR_SKILL(target, skl));
 				}
 				else
 				{
