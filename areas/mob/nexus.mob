@@ -2025,17 +2025,6 @@ UG 0 1 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#57624
-mob unnamed~
-~
-An unnamed mob stands here, looking lonely and forelorn.
-~
-~
-8 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-1 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
 #57625
 fire ant~
 a &+RFIRE &+Lant~
@@ -2105,17 +2094,6 @@ UL 0 1024 0 3
 #57631
 mob unnamed~
 &+L~
-An unnamed mob stands here, looking lonely and forelorn.
-~
-~
-8 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-1 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#57632
-mob unnamed~
-~
 An unnamed mob stands here, looking lonely and forelorn.
 ~
 ~
@@ -2230,17 +2208,6 @@ A &+Gcontroller&n protects the wolf lord.
 67110922 0 0 0 16 0 0 0 0 S
 PB 0 262144 0 -1
 60 0 0 1d1+1 1d1+1
-0.0.0.0 0
-8 8 0
-#57642
-mob unnamed~
-~
-An unnamed mob stands here, looking lonely and forelorn.
-~
-~
-8 0 0 0 0 0 0 0 0 S
-PH 0 0 0 -1
-1 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
 #57643
