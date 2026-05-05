@@ -505,6 +505,9 @@ void initialize_skills()
 
 	SPELL_CREATE("Battle Mages Aura", SPELL_BATTLEMAGE, PULSE_SPELLCAST, TAR_CHAR_ROOM | TAR_AGGRO, do_nothing_spell);
 
+	SPELL_CREATE_MSG("learning", SPELL_LEARNING, PULSE_SPELLCAST, TAR_SELF_ONLY, spell_learning,
+		"&+cThat's probably enough for today's learning session. Time for a drink?");
+
 	SPELL_CREATE("contain being", SPELL_CONTAIN_BEING, PULSE_SPELLCAST * 3, TAR_CHAR_ROOM | TAR_FIGHT_VICT, spell_contain_being);
 	SPEC_SPELL_ADD(CLASS_SUMMONER, 5, SPEC_CONTROLLER);
 	SPEC_SPELL_ADD(CLASS_SUMMONER, 5, SPEC_MENTALIST);

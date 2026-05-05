@@ -614,7 +614,7 @@
 #define SPELL_BLOOD_SIROCCO           565
 #define SPELL_EXTRACT_WATER_ELEMENTAL 566
 #define SPELL_DEADFALL                567
-// #define SPELL_                    568 Unused.
+#define SPELL_LEARNING                568
 #define SPELL_EXPLOSIVE_CASCADE        569
 #define SPELL_CELESTIAL_AURA           570
 #define SPELL_SUMMON_GHASTS            571

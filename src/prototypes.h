@@ -1155,6 +1155,7 @@ void   do_spec(P_char, char *, int);
 void   do_skills(P_char, char *, int);
 void   do_spells(P_char, char *, int);
 bool   notch_skill(P_char, int, float);
+void   spell_learning(int, P_char, char *, int, P_char, P_obj);
 void   SetGuildSpellLvl(void);
 void   update_skills(P_char);
 string list_spells(int, int);

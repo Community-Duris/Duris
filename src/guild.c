@@ -252,6 +252,7 @@ bool notch_skill(P_char ch, int skill, float chance)
 	}
 #endif
 
+again:
 	snprintf(buf, MAX_STRING_LENGTH, "&+cYou feel your skill in %s improving.\n", skills[skill].name);
 	send_to_char(buf, ch);
 	// If skill is maxxed, check it vs. the epic skill list to see if an epic skill has opened up.
@@ -267,7 +268,24 @@ bool notch_skill(P_char ch, int skill, float chance)
 		}
 	}
 
+	if (l < t && number(0,1) && affected_by_spell(ch, SPELL_LEARNING))
+		goto again; // 2 notches on average
+
 	return TRUE;
+}
+
+void spell_learning(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	affect_from_char(ch, SPELL_LEARNING);
+
+	struct affected_type af;
+	bzero(&af, sizeof(af));
+	af.type       = SPELL_LEARNING;
+	af.flags      = AFFTYPE_NOAPPLY;
+	af.duration   = 2 * level;
+	affect_to_char(ch, &af);
+
+	act("&+cYou feel more capable of improving your skills.", FALSE, ch, 0, 0, TO_CHAR);
 }
 
 int SpellCopyCost(P_char ch, int spell)
