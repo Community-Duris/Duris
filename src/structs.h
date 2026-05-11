@@ -28,6 +28,7 @@
 #include "defines.h"
 #include "map.h"
 #include "player_log.h"
+#include "ansi.h"
 
 #include <sys/types.h>
 #include <zlib.h>
@@ -1301,6 +1302,8 @@ struct pc_only_data
 
 	int *gcmd_arr;  /* granted arr, stores granted cmd numbs */
 	int  numb_gcmd; /* number of granted cmds */
+
+	vector<AnsiString> map_glyphs;
 
 #ifdef OVL
 	sh_int ovl_count;
