@@ -90,7 +90,6 @@ extern const flagDef                    affected3_bits[];
 extern const flagDef                    affected4_bits[];
 extern const flagDef                    affected5_bits[];
 extern const char                      *item_types[];
-extern const char                      *language_names[];
 extern const char                      *missileweapons[];
 extern const char                      *shot_types[];
 extern const char                      *player_bits[];
@@ -2795,19 +2794,6 @@ void do_stat(P_char ch, char *argument, int cmd)
 			strcat(o_buf, buf);
 		}
 
-		if (IS_PC(k))
-		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+YLanguages known:&n\n");
-			for (i = 1; i <= TONGUE_GOD; i++)
-			{
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+Y%-12s&n%3d%% ", language_names[i - 1], GET_LANGUAGE(k, i));
-				if (!(i % 4))
-					strcat(buf, "\n");
-			}
-			if (TONGUE_GOD % 4)
-				strcat(buf, "\n");
-			strcat(o_buf, buf);
-		}
 		/* Show player on mobs piss list */
 		if (IS_NPC(k) && IS_SET(k->specials.act, ACT_MEMORY))
 		{
@@ -5348,8 +5334,6 @@ void do_start(P_char ch, int nomsg)
 	{
 		load_obj_to_newbies(ch);
 	}
-
-	init_defaultlanguages(ch);
 
 	if (nomsg == CMD_MULTICLASS)
 	{

@@ -667,7 +667,7 @@ const char *command[MAX_CMD] = {
 	"feigndeath",
 	"chant",
 	"drag",
-	"speak",
+	"speak", // removed
 	"reload", /*
                * 440
                */
@@ -2761,7 +2761,6 @@ void assign_command_pointers(void)
 	//  CMD_Y(CMD_SING, STAT_RESTING + POS_PRONE, do_bardcheck_action, 0, TRUE);
 	CMD_Y(CMD_SIP, STAT_RESTING + POS_SITTING, do_sip, 0, TRUE);
 	CMD_Y(CMD_SIT, STAT_RESTING + POS_PRONE, do_sit, 0, TRUE);
-	CMD_Y(CMD_SPEAK, STAT_SLEEPING + POS_PRONE, do_speak, 0, FALSE);
 	CMD_Y(CMD_SPRINGLEAP, STAT_RESTING + POS_PRONE, do_springleap, 0, TRUE);
 	CMD_Y(CMD_STAND, STAT_RESTING + POS_PRONE, do_stand, 0, TRUE);
 	CMD_Y(CMD_STAT, STAT_DEAD + POS_PRONE, do_stat, 0, FALSE);

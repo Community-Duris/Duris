@@ -1339,17 +1339,7 @@ void      clean_town_justice(void);
 
 char *language_CRYPT(P_char, P_char, char *);
 char *language_known(P_char, P_char);
-char *language_singlepass(P_char, int, char *);
-char  casecorrect(int);
-char  low_case(int);
-int   npc_get_pseudo_language_skill(P_char, int);
-int   npc_get_pseudo_spoken_language(P_char);
-int   on_aakkonen(int);
-int   on_vokaali(int);
-void  do_speak(P_char, char *, int);
-void  init_defaultlanguages(P_char);
-void  language_gain(P_char, P_char, int);
-void  language_show(P_char);
+int can_understand_language(P_char speaker, P_char victim);
 
 /* limits.c */
 
