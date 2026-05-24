@@ -469,31 +469,6 @@ float BOUNDEDF(float a, float b, float c)
 	return b;
 }
 
-/* too bad we're not using C++...
-
-template <class T>
-T BOUNDED(T a, T b, T c)
-{
-  return (MIN (MAX (a, b), c));
-}
-*/
-
-/*
- * creates a random number in interval [from;to]
- */
-
-int number(int from, int to)
-{
-	if (to == from)
-		return from;
-
-	if (to < from)
-	{
-		return ((/*erandom () */ (int)(genrand_real2() * (from - to + 1))) + to);
-	}
-	return ((/*erandom () */ (int)(genrand_real2() * (to - from + 1))) + from);
-}
-
 /*
  * simulates dice roll
  */

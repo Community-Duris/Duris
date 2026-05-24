@@ -16,6 +16,7 @@
 #include "structs.h"
 #endif
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -2322,13 +2323,7 @@ P_obj createRandomItem(P_char, P_char, int, int, int);
 
 /* random.c */
 
-// char *initstate(unsigned int, char *, int);
-// char *setstate(char *);
-int  irand(int);
-long erandom(void);
-long lrand(long num);
-void esrand(unsigned int);
-void setrandom(void);
+void randomize(uint64_t seed);
 
 /*  arena.c */
 void initialize_arena(void);
@@ -3144,13 +3139,6 @@ void sound_to_room(const char *, int);
 void sound_to_all(const char *);
 void sound_to_zone(const char *, int);
 void zone_noises(void);
-
-/* genrand.c */
-void          init_genrand(unsigned long);
-double        genrand_real1(void);
-double        genrand_real2(void);
-double        genrand_real3(void);
-unsigned long genrand_int32(void);
 
 void do_specialize(P_char, char *, int);
 

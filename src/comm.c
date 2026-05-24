@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 	dir     = DFLT_DIR;
 	sslport = SSL_PORT;
 
-	init_genrand(time(NULL));
+	randomize(0);
 
 	// check for --migrate-all before regular arg parsing
 	for (int i = 1; i < argc; i++)
@@ -332,8 +332,6 @@ int main(int argc, char **argv)
 	initialize_properties();
 
 	load_event_names();
-
-	setrandom(); /* new random functions - SAM */
 
 	init_cmdlog(); /* init cmd.debug file - DCL */
 
