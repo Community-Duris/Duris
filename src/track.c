@@ -35,9 +35,6 @@ extern struct sector_data     *sector_table;
 
 struct trackrecordtype *first_track, *last_track, *spare_track_base;
 
-void set_short_description(P_obj t_obj, const char *newShort);
-void set_long_description(P_obj t_obj, const char *newDescription);
-
 #define MAX_ROOMS 100
 #define NOTRACKoff
 

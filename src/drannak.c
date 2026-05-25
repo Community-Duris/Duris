@@ -72,10 +72,6 @@ extern int                    getItemFromZone(int zone);
 extern const surname_struct   surnames[MAX_SURNAME + 1];
 extern const surname_struct   feudal_surnames[7];
 
-void set_short_description(P_obj t_obj, const char *newShort);
-void set_keywords(P_obj t_obj, const char *newKeys);
-void set_long_description(P_obj t_obj, const char *newDescription);
-
 /* Surname List
  *   0 - Update
  *   1 - Feudal Surname

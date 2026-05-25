@@ -88,9 +88,6 @@ int magic_deck(P_obj obj, P_char ch, int cmd, char *argument);
 int unmulti_altar(P_obj obj, P_char ch, int cmd, char *arg);
 int blackjack_table(P_obj obj, P_char ch, int cmd, char *argument);
 
-void set_keywords(P_obj t_obj, const char *newKeys);
-void set_short_description(P_obj t_obj, const char *newShort);
-void set_long_description(P_obj t_obj, const char *newDescription);
 int  get_ival_from_proc(obj_proc_type);
 int  get_mincircle(int spell);
 int  calc_ore_cost(P_char ch, P_obj ore);

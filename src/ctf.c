@@ -48,9 +48,6 @@ extern P_room            world;
 extern P_desc            descriptor_list;
 extern struct zone_data *zone_table;
 
-void set_short_description(P_obj t_obj, const char *newShort);
-void set_long_description(P_obj t_obj, const char *newDescription);
-
 // Set RANDOM on the room it will randomize the room spawning point on
 // the MUD bootup.  If you set the flag type to CTF_RANDOM instead of
 // CTF_SECONDARY it will randomize the spawn of the flag every time it's

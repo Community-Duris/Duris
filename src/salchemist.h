@@ -22,9 +22,6 @@
 #define FIRST_POTION_VIRTUAL  850
 
 #define MAX_INGREDIENTS 9
-void set_long_description(P_obj, const char);
-void set_keywords(P_obj, const char);
-void set_short_descrption(P_obj, const char);
 
 struct potion
 {
