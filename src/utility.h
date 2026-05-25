@@ -43,4 +43,6 @@ bool sub_string_set(const char *, const char **);
 char *coin_stringv(int amount, int padfront = 0);
 char *coins_to_string(int platinum, int gold, int silver, int copper, char *color_string);
 
+int yes_no(const char *);
+
 #endif // _UTILITY_H_

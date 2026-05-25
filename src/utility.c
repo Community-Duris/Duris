@@ -6479,3 +6479,26 @@ void trim_and_end_colorless(char *orig, char *good, int length)
 		*good = '\0';
 	}
 }
+
+int yes_no(const char *str)
+{
+	while (*str == ' ')
+		str++;
+	if (is_abbrev(str, "yes"))
+		return 1;
+	if (is_abbrev(str, "no"))
+		return 0;
+	if (!strcmp(str, "1"))
+		return 1;
+	if (!strcmp(str, "0"))
+		return 0;
+	if (!strcmp(str, "on"))
+		return 1;
+	if (!strcmp(str, "off"))
+		return 0;
+	if (is_abbrev(str, "true"))
+		return 1;
+	if (is_abbrev(str, "false"))
+		return 0;
+	return -1;
+}
