@@ -2358,10 +2358,6 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
 		str_free(ch->only.pc->poofIn);
 	if (ch->only.pc->poofOut)
 		str_free(ch->only.pc->poofOut);
-	if (ch->only.pc->poofInSound)
-		str_free(ch->only.pc->poofInSound);
-	if (ch->only.pc->poofOutSound)
-		str_free(ch->only.pc->poofOutSound);
 	if (ch->only.pc->gcmd_arr)
 		FREE(ch->only.pc->gcmd_arr);
 
@@ -2655,10 +2651,6 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 		str_free(ch->only.pc->poofIn);
 	if (ch->only.pc->poofOut)
 		str_free(ch->only.pc->poofOut);
-	if (ch->only.pc->poofInSound)
-		str_free(ch->only.pc->poofInSound);
-	if (ch->only.pc->poofOutSound)
-		str_free(ch->only.pc->poofOutSound);
 	if (ch->only.pc->gcmd_arr)
 		FREE(ch->only.pc->gcmd_arr);
 
