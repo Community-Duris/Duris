@@ -1020,7 +1020,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->only.pc->echo_toggle,
 		                   ch->only.pc->prompt,
 		                   ch->only.pc->wiz_invis,
-		                   ch->only.pc->law_flags,
+		                   0,
 		                   ch->only.pc->wimpy,
 		                   ch->only.pc->aggressive,
 		                   ch->only.pc->highest_level,
@@ -1162,7 +1162,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->only.pc->echo_toggle,
 		                   ch->only.pc->prompt,
 		                   ch->only.pc->wiz_invis,
-		                   ch->only.pc->law_flags,
+		                   0,
 		                   ch->only.pc->wimpy,
 		                   ch->only.pc->aggressive,
 		                   ch->only.pc->highest_level,
@@ -3855,7 +3855,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	ch->only.pc->echo_toggle   = sql_row_int(row, col++, 0);
 	ch->only.pc->prompt        = sql_row_int(row, col++, 0);
 	ch->only.pc->wiz_invis     = sql_row_long(row, col++, 0);
-	ch->only.pc->law_flags     = sql_row_ulong(row, col++, 0);
+	col++;
 	ch->only.pc->wimpy         = sql_row_int(row, col++, 0);
 	ch->only.pc->aggressive    = sql_row_int(row, col++, -1);
 	ch->only.pc->highest_level = sql_row_int(row, col++, 0);
