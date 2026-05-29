@@ -1126,6 +1126,7 @@ int  is_guild_golem(P_char, P_char);
 void do_group(P_char, char *, int);
 void do_appoint(P_char, char *, int);
 void do_disband(P_char, char *, int);
+void update_groupies(P_char, bool only_in_room = false);
 bool group_remove_member(P_char);
 bool group_add_member(P_char, P_char);
 void fix_group_ranks(P_char);

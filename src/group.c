@@ -350,17 +350,7 @@ void do_appoint(P_char ch, char *argument, int cmd)
 		}
 	}
 
-	/* Flag group clients for a group update (MSP and WebSocket/GMCP clients) */
-	for (gl = ch->group; gl; gl = gl->next)
-	{
-		if (gl->ch && gl->ch->desc)
-		{
-			if (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled)
-			{
-				gl->ch->desc->last_group_update = 1;
-			}
-		}
-	}
+	update_groupies(ch);
 }
 
 void do_group(P_char ch, char *argument, int cmd)
@@ -717,14 +707,7 @@ void do_group(P_char ch, char *argument, int cmd)
 			SET_BIT(ch->specials.act2, PLR2_BACK_RANK);
 			send_to_char("You move back to the back rank!\n", ch);
 			on_front_line(ch);
-			// Client
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch, true);
 			return;
 		}
 		else if (!str_cmp(name, "front"))
@@ -735,14 +718,7 @@ void do_group(P_char ch, char *argument, int cmd)
 				return;
 			REMOVE_BIT(ch->specials.act2, PLR2_BACK_RANK);
 			send_to_char("You move up to the front rank!\n", ch);
-			// Client
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch, true);
 			on_front_line(ch);
 			return;
 		}
@@ -810,26 +786,13 @@ void do_group(P_char ch, char *argument, int cmd)
 		else
 		{
 			send_to_char("You leave the group.\n", ch);
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch);
 			group_remove_member(ch);
 			purge_linked_auras(ch);
 			REMOVE_BIT(ch->specials.affected_by3, AFF3_PALADIN_AURA);
 			clear_links(ch, LNK_PALADIN_AURA);
 		}
-		// Client
-		for (gl = ch->group; gl; gl = gl->next)
-		{
-			if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-			{
-				gl->ch->desc->last_group_update = 1;
-			}
-		}
+		update_groupies(ch);
 		return;
 	}
 	/* only the group leader can do anything below this point */
@@ -867,22 +830,8 @@ void do_group(P_char ch, char *argument, int cmd)
 			act("You have been kicked out of $n's group.", FALSE, ch, 0, victim, TO_VICT);
 			act("$N has been kicked out of $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
 			group_remove_member(victim);
-			// Client
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
-			// Client
-			for (gl = victim->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch);
+			update_groupies(victim);
 			return;
 		}
 	}
@@ -972,14 +921,7 @@ void do_group(P_char ch, char *argument, int cmd)
 	act("$N is now a member of your group.", TRUE, ch, 0, victim, TO_CHAR);
 	act("$N is now a member of $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
 	act("You are now a member of $n's group.", FALSE, ch, 0, victim, TO_VICT);
-	// Client
-	for (gl = victim->group; gl; gl = gl->next)
-	{
-		if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-		{
-			gl->ch->desc->last_group_update = 1;
-		}
-	}
+	update_groupies(ch);
 }
 
 void do_disband(P_char ch, char *arg, int cmd)
@@ -1134,14 +1076,21 @@ bool group_remove_member(P_char ch)
 	/* check for rank balance, move the first poor sap in the back rank up to front */
 	if (gl && free_back_slots(gl->ch) < 0)
 		fix_group_ranks(gl->ch);
-	for (gl = ch->group; gl; gl = gl->next)
+	update_groupies(ch);
+	return TRUE;
+}
+
+void update_groupies(P_char ch, bool only_in_room)
+{
+	/* Flag group clients for a group update (MSP and WebSocket/GMCP clients) */
+	for (struct group_list *gl = ch->group; gl; gl = gl->next)
 	{
-		if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
+		if (gl->ch && gl->ch->desc && (ch->in_room == gl->ch->in_room || !only_in_room))
 		{
-			gl->ch->desc->last_group_update = 1;
+			if (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled)
+				gl->ch->desc->last_group_update = 1;
 		}
 	}
-	return TRUE;
 }
 
 int num_group_members_in_room(P_char ch)

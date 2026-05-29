@@ -1166,14 +1166,7 @@ bool char_to_room(P_char ch, int room, int dir)
 		}
 	}
 
-	for (gl = ch->group; gl; gl = gl->next)
-	{
-		if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-		{
-			if (ch->in_room == gl->ch->in_room)
-				gl->ch->desc->last_group_update = 1;
-		}
-	}
+	update_groupies(ch);
 
 	// if anything has moved on the map, find everyone who can see them
 	// and set their flag to send a map update
