@@ -993,7 +993,8 @@ void do_encrust(P_char ch, char *argument, int cmd)
 		act("What item do you wish to encrust?", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	if (jewel->value[6] == 0 && obj_index[jewel->R_num].virtual_number != RANDOM_OBJ_VNUM)
+	if ((jewel->type != ITEM_TREASURE && jewel->type != ITEM_OTHER) ||
+	    (jewel->value[6] == 0 && obj_index[jewel->R_num].virtual_number != RANDOM_OBJ_VNUM))
 	{
 		act("Is THAT a jewel?!?!?", FALSE, ch, 0, 0, TO_CHAR);
 		return;
@@ -1010,13 +1011,6 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	wizlog(56, buf2);
 
 	craftsmanship = item->craftsmanship;
-	//  if(!item->value[5] || !item->value[6] || !item->value[7])
-	{
-
-		item->value[5] = jewel->value[6];
-		item->value[6] = GET_LEVEL(ch);
-		item->value[7] = 30;
-	}
 
 	if (number(1, 110) > skill)
 	{
@@ -1070,6 +1064,10 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	{
 		new_item->value[i] = item->value[i];
 	}
+
+	new_item->value[5] = jewel->value[6];
+	new_item->value[6] = GET_LEVEL(ch);
+	new_item->value[7] = 30;
 
 	new_item->cost = item->cost;
 	new_item->condition = item->condition;
@@ -1135,7 +1133,7 @@ int encrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		if (j != SPELL_ENERGY_DRAIN && j != 0)
 		{
 			// validation
-			if (j >= MAX_AFFECT_TYPES || *skills[j].spell_pointer == 0)
+			if (j < 0 || j >= MAX_AFFECT_TYPES || *skills[j].spell_pointer == 0)
 			{
 				return FALSE;
 			}
