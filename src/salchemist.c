@@ -1071,11 +1071,22 @@ void do_encrust(P_char ch, char *argument, int cmd)
 		new_item->value[i] = item->value[i];
 	}
 
+	new_item->cost = item->cost;
+	new_item->condition = item->condition;
+	new_item->trap_eff = item->trap_eff;
+	new_item->trap_dam = item->trap_dam;
+	new_item->trap_charge = item->trap_charge;
+	new_item->trap_level = item->trap_level;
+	for (i = 0; i < 6; i++)
+	{
+		new_item->timer[i] = item->timer[i];
+	}
+
 	SET_BIT(new_item->extra_flags, ITEM_ENCRUSTED | ITEM_NOREPAIR);
 
-	snprintf(buf1, MAX_STRING_LENGTH, "%s with %s", str_dup(item->short_description), str_dup(jewel->short_description));
+	snprintf(buf1, MAX_STRING_LENGTH, "%s with %s", item->short_description, jewel->short_description);
 	set_short_description(new_item, buf1);
-	snprintf(buf1, MAX_STRING_LENGTH, "%s", str_dup(item->description));
+	snprintf(buf1, MAX_STRING_LENGTH, "%s", item->description);
 	set_long_description(new_item, buf1);
 	snprintf(buf1, MAX_STRING_LENGTH, "%s %s", item->name, "encrust");
 	set_keywords(new_item, buf1);
