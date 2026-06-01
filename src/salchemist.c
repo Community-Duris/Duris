@@ -972,6 +972,14 @@ void do_encrust(P_char ch, char *argument, int cmd)
 		return;
 	}
 
+	if (item->type != ITEM_WEAPON && item->type != ITEM_ARMOR &&
+	    item->type != ITEM_SHIELD && item->type != ITEM_WORN &&
+	    item->type != ITEM_LIGHT && item->type != ITEM_INSTRUMENT)
+	{
+		act("You can only encrust weapons, armor, shields, and worn equipment.", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
+
 	if (isname("encrust", item->name))
 	{
 		act("You may not further encrust this item.", FALSE, ch, 0, 0, TO_CHAR);
