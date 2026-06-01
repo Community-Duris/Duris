@@ -1044,10 +1044,11 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	new_item->material             = item->material;
 	new_item->type                 = item->type;
 	new_item->weight               = item->weight + 1;
-	new_item->affected[0].location = item->affected[0].location;
-	new_item->affected[0].modifier = item->affected[0].modifier;
-	new_item->affected[1].location = item->affected[1].location;
-	new_item->affected[1].modifier = item->affected[1].modifier;
+	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
+	{
+		new_item->affected[i].location = item->affected[i].location;
+		new_item->affected[i].modifier = item->affected[i].modifier;
+	}
 
 	SET_BIT(new_item->wear_flags, ITEM_TAKE);
 	SET_BIT(new_item->wear_flags, item->wear_flags);
@@ -1056,6 +1057,7 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	SET_BIT(new_item->bitvector2, item->bitvector2);
 	SET_BIT(new_item->bitvector3, item->bitvector3);
 	SET_BIT(new_item->bitvector4, item->bitvector4);
+	SET_BIT(new_item->bitvector5, item->bitvector5);
 	new_item->anti_flags |= item->anti_flags;
 	new_item->anti2_flags |= item->anti2_flags;
 	SET_BIT(new_item->extra_flags, item->extra_flags);
@@ -1064,13 +1066,12 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	new_item->craftsmanship = MIN(craftsmanship + 1, OBJCRAFT_HIGHEST);
 
 	int i = 0;
-	for (i; i < 7; i++)
+	for (i = 0; i < NUMB_OBJ_VALS; i++)
 	{
 		new_item->value[i] = item->value[i];
 	}
 
 	SET_BIT(new_item->extra_flags, ITEM_ENCRUSTED | ITEM_NOREPAIR);
-	SET_BIT(new_item->type, item->type);
 
 	snprintf(buf1, MAX_STRING_LENGTH, "%s with %s", str_dup(item->short_description), str_dup(jewel->short_description));
 	set_short_description(new_item, buf1);
