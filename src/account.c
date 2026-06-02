@@ -1172,7 +1172,6 @@ struct char_display_info
 {
 	char         charname[32];
 	int          level;
-	int          secondary_level;
 	int          race;
 	unsigned int m_class;
 	unsigned int secondary_class;
@@ -1293,7 +1292,6 @@ int load_char_display_data(char *charname, struct char_display_info *info)
 	// Extract display data
 	strlcpy(info->charname, GET_NAME(temp_ch), sizeof info->charname);
 	info->level           = GET_LEVEL(temp_ch);
-	info->secondary_level = GET_SECONDARY_LEVEL(temp_ch);
 	info->race            = GET_RACE(temp_ch);
 	info->m_class         = temp_ch->player.m_class;
 	info->secondary_class = temp_ch->player.secondary_class;
@@ -1487,16 +1485,15 @@ void display_delete_character_list(P_desc d)
 		int                             primary_idx   = flag2idx(info.m_class);
 		int                             secondary_idx = info.secondary_class ? flag2idx(info.secondary_class) : 0;
 
+		snprintf(level_str, 16, "%d", info.level);
 		if (info.secondary_class && secondary_idx > 0)
 		{
 			// Multiclass
-			snprintf(level_str, 16, "%d/%d", info.level, info.secondary_level);
 			snprintf(class_str, sizeof class_str, "%s/%s", class_names_table[primary_idx].normal, class_names_table[secondary_idx].normal);
 		}
 		else
 		{
 			// Single class
-			snprintf(level_str, 16, "%d", info.level);
 			strlcpy(class_str, class_names_table[primary_idx].normal, sizeof class_str);
 		}
 
