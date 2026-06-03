@@ -2532,18 +2532,24 @@ void boon_notify(int id, P_char ch, int action)
 					}
 					else if (bdata.option == BOPT_MOB)
 					{
-						int    r_num = 0;
-						char   tmp[MAX_STRING_LENGTH];
-						P_char mob;
+						int          r_num = 0;
+						char         tmp[MAX_STRING_LENGTH];
+						P_char       mob;
+						const char  *mob_name;
 
-						if ((int)bdata.criteria2 > 0 && (r_num = real_mobile((int)bdata.criteria2)) > 0 && (mob = read_mobile(r_num, REAL)))
+						if ((int)bdata.criteria2 == -1)
 						{
-							snprintf(tmp, MAX_STRING_LENGTH, "%s", J_NAME(mob));
+							snprintf(tmp, MAX_STRING_LENGTH, "anything");
+						}
+						else if ((int)bdata.criteria2 > 0 && (r_num = real_mobile((int)bdata.criteria2)) > 0) && (mob = read_mobile(r_num, REAL)))
+						{
+							mob_name = J_NAME(mob);
+							snprintf(tmp, MAX_STRING_LENGTH, "%s", (mob_name && *mob_name) ? mob_name : "unknown mob");
 							extract_char(mob);
 						}
 						else
 						{
-							snprintf(tmp, MAX_STRING_LENGTH, "Invalid Mob");
+							snprintf(tmp, MAX_STRING_LENGTH, "unknown mob");
 						}
 						snprintf(buff, MAX_STRING_LENGTH, "&+CYou have killed %d of %d %s&+C(s) for boon # %d.&n\r\n", (int)bpg.counter, (int)bdata.criteria, tmp, bdata.id);
 					}
