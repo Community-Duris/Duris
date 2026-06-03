@@ -358,18 +358,10 @@ string list_innates(int race, int cls, int spec)
 	return return_str;
 }
 
-bool has_innate(P_char ch, int innate)
+static int innate_char_race(P_char ch)
 {
-	int                   i, race;
+	int                   race;
 	struct affected_type *af, *af2;
-
-	if (class_innates_at_all[innate] & ch->player.m_class)
-		for (i = 0; i < CLASS_COUNT; i++)
-			if (GET_CLASS(ch, 1 << i))
-				if (class_innates[innate][i][0] && GET_LEVEL(ch) >= class_innates[innate][i][0])
-					return TRUE;
-				else if (((IS_SPECIALIZED(ch) && class_innates[innate][i][ch->player.spec])) && GET_LEVEL(ch) >= class_innates[innate][i][ch->player.spec])
-					return TRUE;
 
 	race = ch->player.race;
 
@@ -387,18 +379,64 @@ bool has_innate(P_char ch, int innate)
 			}
 		}
 	}
+	return race;
+}
 
-	if (race < 0 || race > LAST_RACE)
+/*
+ * Lowest level at which ch gains this innate from race or class (0 = never).
+ */
+static int innate_unlock_level(P_char ch, int innate)
+{
+	int i, race, req, minlevel = 0;
+
+	if (class_innates_at_all[innate] & ch->player.m_class)
 	{
-		logit(LOG_DEBUG, "Invalid race (%d) for %s", race, GET_NAME(ch));
-		debug("Invalid race (%d) for %s", race, GET_NAME(ch));
-		return FALSE;
+		for (i = 0; i < CLASS_COUNT; i++)
+		{
+			if (!GET_CLASS(ch, 1 << i))
+			{
+				continue;
+			}
+			if (class_innates[innate][i][0])
+			{
+				req = class_innates[innate][i][0];
+				if (!minlevel || req < minlevel)
+				{
+					minlevel = req;
+				}
+			}
+			if (IS_SPECIALIZED(ch) && class_innates[innate][i][ch->player.spec])
+			{
+				req = class_innates[innate][i][ch->player.spec];
+				if (!minlevel || req < minlevel)
+				{
+					minlevel = req;
+				}
+			}
+		}
 	}
 
-	if (racial_innates[innate][race])
-		return GET_LEVEL(ch) >= racial_innates[innate][race];
-	else
+	race = innate_char_race(ch);
+	if (race >= 0 && race <= LAST_RACE && racial_innates[innate][race])
+	{
+		req = racial_innates[innate][race];
+		if (!minlevel || req < minlevel)
+		{
+			minlevel = req;
+		}
+	}
+	return minlevel;
+}
+
+bool has_innate(P_char ch, int innate)
+{
+	int unlock = innate_unlock_level(ch, innate);
+
+	if (!unlock)
+	{
 		return FALSE;
+	}
+	return GET_LEVEL(ch) >= unlock;
 }
 
 void assign_innates()
@@ -3406,27 +3444,35 @@ void do_innate(P_char ch, char *arg, int cmd)
 		send_to_char("Your innate abilities: ('*' marked innates are always active)\n", ch);
 		for (i = 0; i <= LAST_INNATE; i++)
 		{
-			if (has_innate(ch, i))
-			{
-				if (innates_data[i].func)
-				{
-					snprintf(buf, MAX_STRING_LENGTH, "   %s", innates_data[i].name);
-				}
-				else
-				{
-					snprintf(buf, MAX_STRING_LENGTH, "  *%s", innates_data[i].name);
-				}
+			int unlock_lvl = innate_unlock_level(ch, i);
 
-				if (can_use_innate(ch, i))
-				{
-					strcat(buf, "\n");
-				}
-				else
-				{
-					strcat(buf, " [too tired to use again]\n");
-				}
-				send_to_char(buf, ch);
+			if (!unlock_lvl)
+			{
+				continue;
 			}
+
+			if (innates_data[i].func)
+			{
+				snprintf(buf, MAX_STRING_LENGTH, "   %s", innates_data[i].name);
+			}
+			else
+			{
+				snprintf(buf, MAX_STRING_LENGTH, "  *%s", innates_data[i].name);
+			}
+
+			if (!has_innate(ch, i))
+			{
+				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), " (unlocks at level %d)\n", unlock_lvl);
+			}
+			else if (can_use_innate(ch, i))
+			{
+				strcat(buf, "\n");
+			}
+			else
+			{
+				strcat(buf, " [too tired to use again]\n");
+			}
+			send_to_char(buf, ch);
 		}
 		return;
 	}
