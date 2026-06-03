@@ -1232,6 +1232,9 @@ void                  extract_obj(P_obj obj, int gone_for_good = FALSE); // Only
                                                                          //   and it's going away completely, then use.
 void                   obj_from_char(P_obj);
 void                   obj_from_obj(P_obj);
+void                   recalc_container_weight(P_obj);
+void                   container_reset_empty_weight(P_obj);
+int                    container_total_weight(P_obj);
 void                   obj_from_room(P_obj);
 void                   obj_to_char(P_obj obj, P_char ch);
 void                   obj_to_char_at_end(P_obj obj, P_char ch);
