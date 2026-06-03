@@ -20,7 +20,14 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
+#ifdef _WIN32
+#include <direct.h>
+#ifndef mkdir
+#define mkdir(path, mode) _mkdir(path)
+#endif
+#endif
 #include "justice.h"
 #include "mm.h"
 
@@ -33,6 +40,51 @@ extern int                no_mail;
 extern int                top_of_mobt;
 
 #define MAIL_MAX_CHAIN_BLOCKS ((MAX_MAIL_SIZE / DATA_BLOCK_DATASIZE) + 4)
+
+static const char *mail_active_path = MAIL_FILE;
+
+static void mail_ensure_dir(const char *path)
+{
+	char  dir[256];
+	char *slash;
+	struct stat st;
+
+	if (stat(path, &st) == 0)
+	{
+		return;
+	}
+
+	strncpy(dir, path, sizeof(dir) - 1);
+	dir[sizeof(dir) - 1] = '\0';
+	slash = strrchr(dir, '/');
+	if (!slash)
+	{
+		return;
+	}
+	*slash = '\0';
+	mkdir(dir, 0755);
+}
+
+/* After Players/ -> Accounts/ migration, mail may still live at Players/mail. */
+static void mail_pick_path(void)
+{
+	struct stat st;
+
+	if (stat(MAIL_FILE, &st) == 0)
+	{
+		mail_active_path = MAIL_FILE;
+		return;
+	}
+	if (stat(MAIL_FILE_LEGACY, &st) == 0)
+	{
+		mail_active_path = MAIL_FILE_LEGACY;
+		logit(LOG_STATUS, "Mail: using legacy %s — copy to %s when convenient.", MAIL_FILE_LEGACY, MAIL_FILE);
+		return;
+	}
+
+	mail_active_path = MAIL_FILE;
+	mail_ensure_dir(MAIL_FILE);
+}
 
 static void mail_ensure_pools(void)
 {
@@ -55,10 +107,10 @@ static int mail_open_rw(FILE **mail_file, long filepos, int err_code)
 		return 0;
 	}
 
-	*mail_file = fopen(MAIL_FILE, "r+b");
+	*mail_file = fopen(mail_active_path, "r+b");
 	if (!*mail_file)
 	{
-		logit(LOG_DEBUG, "SYSERR: Mail system -- cannot open %s", MAIL_FILE);
+		logit(LOG_DEBUG, "SYSERR: Mail system -- cannot open %s", mail_active_path);
 		no_mail = 1;
 		return 0;
 	}
@@ -209,19 +261,21 @@ int scan_mail_file(void)
 	int               total_messages = 0, block_num = 0;
 	char              buf[100];
 
+	mail_pick_path();
 	mail_ensure_pools();
 
-	if (!(mail_file = fopen(MAIL_FILE, "r")))
+	if (!(mail_file = fopen(mail_active_path, "r")))
 	{
-		logit(LOG_DEBUG, "Mail file non-existant... creating new file.");
-		mail_file = fopen(MAIL_FILE, "w");
+		logit(LOG_DEBUG, "Mail file non-existant... creating new file at %s.", mail_active_path);
+		mail_ensure_dir(mail_active_path);
+		mail_file = fopen(mail_active_path, "w");
 		if (mail_file)
 		{
 			fclose(mail_file);
 		}
 		else
 		{
-			logit(LOG_DEBUG, "SYSERR: Mail system -- cannot create %s", MAIL_FILE);
+			logit(LOG_DEBUG, "SYSERR: Mail system -- cannot create %s", mail_active_path);
 			no_mail = 1;
 		}
 		return 1;
