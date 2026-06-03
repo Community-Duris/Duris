@@ -105,6 +105,7 @@ extern void   apply_honing(P_obj, int);
 extern void   holy_crusade_check(P_char, P_char);
 extern int    is_wearing_necroplasm(P_char);
 extern int    top_of_zone_table;
+extern int    wearing_invis(P_char ch);
 
 extern bool   has_dragoon_mount(P_char ch);
 extern bool   is_dragoon_mounted(P_char ch);
@@ -708,8 +709,16 @@ void appear(P_char ch, bool removeHide)
 		REMOVE_BIT(ch->specials.affected_by3, AFF3_NON_DETECTION);
 	}
 
-	act("$n snaps into visibility.", TRUE, ch, 0, 0, TO_ROOM);
-	act("You snap into visibility.", FALSE, ch, 0, 0, TO_CHAR);
+	if (wearing_invis(ch))
+	{
+		act("$n flickers into visibility.", TRUE, ch, 0, 0, TO_ROOM);
+		act("You flicker into visibility.", FALSE, ch, 0, 0, TO_CHAR);
+	}
+	else
+	{
+		act("$n snaps into visibility.", TRUE, ch, 0, 0, TO_ROOM);
+		act("You snap into visibility.", FALSE, ch, 0, 0, TO_CHAR);
+	}
 }
 
 // This function figures a time for victim to sit around in heaven (and sets it).
