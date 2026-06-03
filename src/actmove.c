@@ -1273,10 +1273,10 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 		return FALSE;
 	}
 
-	if (IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+	if (IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 	{
 		send_to_char("You reappear, visible to all.\n", ch);
-		affect_from_char(ch, SPELL_INVISIBLE);
+		affect_from_char(ch, SPELL_CONCEALMENT);
 	}
 
 	if (IS_CARRYING_W(ch, rider) > CAN_CARRY_W(ch) && IS_PC(ch))

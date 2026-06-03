@@ -1591,7 +1591,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	spl = search_block(argument, (const char **)spells, FALSE);
+	spl = lookup_spell(argument, strlen(argument));
 
 	if (spl <= -1 || !skills[spl].spell_pointer)
 	{
@@ -1772,7 +1772,7 @@ void do_forget(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	spl = search_block(argument, (const char **)spells, FALSE);
+	spl = lookup_spell(argument, strlen(argument));
 	if (spl == -1 || !skills[spl].spell_pointer)
 	{
 		send_to_char("Um.. what spell are you trying to forget?\n", ch);
@@ -2303,11 +2303,7 @@ void do_teach(P_char ch, char *arg, int cmd)
 		return;
 	}
 	arg = skip_spaces(arg);
-	spl = old_search_block(arg, 0, strlen(arg), (const char **)spells, 0);
-	if (spl != -1)
-	{
-		spl--;
-	}
+	spl = lookup_spell(arg, strlen(arg));
 	if (spl == -1 || get_spell_circle(target, (tmp = spl)) > MAX_CIRCLE)
 	{
 		send_to_char("Teach _WHAT_ spell?? That your target cannot learn, at least.\n", ch);
@@ -2365,11 +2361,7 @@ void do_scribe(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	spl = old_search_block(arg, 0, strlen(arg), (const char **)spells, 0);
-	if (spl != -1)
-	{
-		spl--;
-	}
+	spl = lookup_spell(arg, strlen(arg));
 	if (spl == -1)
 	{
 		send_to_char("Scribe _WHAT_ spell?\n", ch);

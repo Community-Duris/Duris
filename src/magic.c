@@ -5229,7 +5229,7 @@ void spell_blindness(int level, P_char ch, char *arg, int type, P_char victim, P
 
 	blind(ch, victim, number(4, 12) * WAIT_SEC);
 	
-	if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+	if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 		appear(ch);
 
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
@@ -6814,15 +6814,15 @@ void spell_dispel_invisible(int level, P_char ch, char *arg, int type, P_char vi
 	}
 	else
 	{
-		if (affected_by_spell(victim, SPELL_INVISIBLE))
+		if (affected_by_spell(victim, SPELL_CONCEALMENT))
 		{
 			act("&+W$n slowly fades into existance.", TRUE, victim, 0, 0, TO_ROOM);
 			send_to_char("&+WYou turn visible.\n", victim);
-			affect_from_char(victim, SPELL_INVISIBLE);
+			affect_from_char(victim, SPELL_CONCEALMENT);
 			if (IS_SET(victim->specials.affected_by, AFF_INVISIBLE))
 				REMOVE_BIT(victim->specials.affected_by, AFF_INVISIBLE);
-			if (IS_SET(victim->specials.affected_by2, AFF2_MINOR_INVIS))
-				REMOVE_BIT(victim->specials.affected_by2, AFF2_MINOR_INVIS);
+			if (IS_SET(victim->specials.affected_by2, AFF2_CONCEALMENT))
+				REMOVE_BIT(victim->specials.affected_by2, AFF2_CONCEALMENT);
 		}
 	}
 }
@@ -6855,7 +6855,7 @@ void spell_shadow_projection(int level, P_char ch, char *arg, int type, P_char v
 	}
 }
 
-void spell_invisibility(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_concealment(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	int                  room;
 	struct affected_type af;
@@ -6869,7 +6869,7 @@ void spell_invisibility(int level, P_char ch, char *arg, int type, P_char victim
 	{ /*
 	   * Then it is a PC | NPC
 	   */
-		if (!affected_by_spell(victim, SPELL_INVISIBLE))
+		if (!affected_by_spell(victim, SPELL_CONCEALMENT))
 		{
 
 			act("&+L$n slowly fades out of existence.", TRUE, victim, 0, 0, TO_ROOM);
@@ -6877,7 +6877,7 @@ void spell_invisibility(int level, P_char ch, char *arg, int type, P_char victim
 
 			bzero(&af, sizeof(af));
 
-			af.type     = SPELL_INVISIBLE;
+			af.type     = SPELL_CONCEALMENT;
 			af.duration = level / 2;
 
 			if (GET_SPEC(ch, CLASS_SORCERER, SPEC_SHADOW) && ch == victim && !IS_WATER_ROOM(ch->in_room) && world[room].sector_type != SECT_OCEAN)
@@ -6885,7 +6885,7 @@ void spell_invisibility(int level, P_char ch, char *arg, int type, P_char victim
 				af.bitvector = AFF_HIDE;
 			}
 
-			af.bitvector2 = AFF2_MINOR_INVIS;
+			af.bitvector2 = AFF2_CONCEALMENT;
 			affect_to_char(victim, &af);
 		}
 		else
@@ -6893,7 +6893,7 @@ void spell_invisibility(int level, P_char ch, char *arg, int type, P_char victim
 			struct affected_type *af1;
 
 			for (af1 = victim->affected; af1; af1 = af1->next)
-				if (af1->type == SPELL_INVISIBLE)
+				if (af1->type == SPELL_CONCEALMENT)
 				{
 					af1->duration = level / 2;
 				}
@@ -6901,7 +6901,7 @@ void spell_invisibility(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void spell_improved_invisibility(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_invisibility(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	struct affected_type af;
 
@@ -6919,7 +6919,7 @@ void spell_improved_invisibility(int level, P_char ch, char *arg, int type, P_ch
 	{ /*
 	   * Then it is a PC | NPC
 	   */
-		if (!affected_by_spell(victim, SPELL_INVIS_MAJOR))
+		if (!affected_by_spell(victim, SPELL_INVISIBILITY))
 		{
 
 			act("&+L$n slowly fades out of existence.", TRUE, victim, 0, 0, TO_ROOM);
@@ -6927,7 +6927,7 @@ void spell_improved_invisibility(int level, P_char ch, char *arg, int type, P_ch
 
 			bzero(&af, sizeof(af));
 
-			af.type      = SPELL_INVIS_MAJOR;
+			af.type      = SPELL_INVISIBILITY;
 			af.duration  = level / 2;
 			af.bitvector = AFF_INVISIBLE;
 			affect_to_char(victim, &af);
@@ -6937,7 +6937,7 @@ void spell_improved_invisibility(int level, P_char ch, char *arg, int type, P_ch
 			struct affected_type *af1;
 
 			for (af1 = victim->affected; af1; af1 = af1->next)
-				if (af1->type == SPELL_INVIS_MAJOR)
+				if (af1->type == SPELL_INVISIBILITY)
 				{
 					af1->duration = level / 2;
 				}
@@ -7237,7 +7237,7 @@ void spell_stornogs_lowered_magical_res(int level, P_char ch, char *arg, int typ
 		send_to_char("&+mYou feel more susceptible to magic.\n", victim);
 	}
 
-	if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+	if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 		appear(ch);
 
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
@@ -7553,7 +7553,7 @@ void spell_sleep(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 		return;
 	}
 
-	if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+	if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 		appear(ch);
 
 	if (resists_spell(ch, victim))
@@ -11912,8 +11912,8 @@ void spell_elemental_form(int level, P_char ch, char *arg, int type, P_char vict
 					spell_fly(level, ch, NULL, 0, ch, 0);
 				if (!affected_by_spell(victim, SPELL_DETECT_INVISIBLE))
 					spell_detect_invisibility(level, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
-				if (!affected_by_spell(victim, SPELL_INVISIBLE))
-					spell_improved_invisibility(level, ch, 0, 0, ch, 0);
+				if (!affected_by_spell(victim, SPELL_CONCEALMENT))
+					spell_invisibility(level, ch, 0, 0, ch, 0);
 				bzero(&af, sizeof(af));
 				af.type     = SPELL_ARMOR;
 				af.duration = 25;
@@ -12929,19 +12929,19 @@ void spell_faerie_fire(int level, P_char ch, char *arg, int type, P_char victim,
 	act("$n points at $N.", TRUE, ch, 0, victim, TO_NOTVICT);
 	act("You point at $N.", TRUE, ch, 0, victim, TO_CHAR);
 	act("$n points at you.", TRUE, ch, 0, victim, TO_VICT);
-	if (affected_by_spell(ch, SPELL_INVISIBLE))
+	if (affected_by_spell(ch, SPELL_CONCEALMENT))
 		for (af2 = victim->affected; af2; af2 = af3)
 		{
 			af3 = af2->next;
-			if (af2->type == SPELL_INVISIBLE)
+			if (af2->type == SPELL_CONCEALMENT)
 				affect_remove(victim, af2);
 		}
 	a = 0;
-	if (IS_SET(victim->specials.affected_by, AFF_INVISIBLE) || IS_AFFECTED2(victim, AFF2_MINOR_INVIS))
+	if (IS_SET(victim->specials.affected_by, AFF_INVISIBLE) || IS_AFFECTED2(victim, AFF2_CONCEALMENT))
 	{
 		a = 1;
 		REMOVE_BIT(victim->specials.affected_by, AFF_INVISIBLE);
-		REMOVE_BIT(victim->specials.affected_by2, AFF2_MINOR_INVIS);
+		REMOVE_BIT(victim->specials.affected_by2, AFF2_CONCEALMENT);
 	}
 	else if (!number(0, 1) && IS_DISGUISE(victim))
 	{
@@ -12951,7 +12951,7 @@ void spell_faerie_fire(int level, P_char ch, char *arg, int type, P_char victim,
 	act("$N is surrounded by the dancing outline of &+mpurplish flames!&n", TRUE, ch, 0, victim, TO_CHAR);
 	act("You are surrounded by the dancing outline of &+mpurplish flames!&n", TRUE, ch, 0, victim, TO_VICT);
 	if (a)
-		SET_BIT(victim->specials.affected_by2, AFF2_MINOR_INVIS);
+		SET_BIT(victim->specials.affected_by2, AFF2_CONCEALMENT);
 	bzero(&af, sizeof(af));
 	af.type     = SPELL_FAERIE_FIRE;
 	af.duration = 5;
@@ -12978,14 +12978,14 @@ void spell_faerie_fog(int level, P_char ch, char *arg, int type, P_char victim, 
 
 	LOOP_THRU_PEOPLE(tmp_victim, ch)
 	{
-		if ((ch != tmp_victim) && !IS_TRUSTED(tmp_victim) && (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED(tmp_victim, AFF_HIDE) || IS_AFFECTED2(tmp_victim, AFF2_MINOR_INVIS)))
+		if ((ch != tmp_victim) && !IS_TRUSTED(tmp_victim) && (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED(tmp_victim, AFF_HIDE) || IS_AFFECTED2(tmp_victim, AFF2_CONCEALMENT)))
 		{
 			if (NewSaves(tmp_victim, SAVING_SPELL, (int)(level - GET_LEVEL(tmp_victim))))
 			{
 				a  = tmp_victim->specials.affected_by;
 				a2 = tmp_victim->specials.affected_by2;
-				if (IS_AFFECTED2(tmp_victim, AFF2_MINOR_INVIS))
-					REMOVE_BIT(tmp_victim->specials.affected_by2, AFF2_MINOR_INVIS);
+				if (IS_AFFECTED2(tmp_victim, AFF2_CONCEALMENT))
+					REMOVE_BIT(tmp_victim->specials.affected_by2, AFF2_CONCEALMENT);
 				if (IS_AFFECTED(tmp_victim, AFF_INVISIBLE))
 					REMOVE_BIT(tmp_victim->specials.affected_by, AFF_INVISIBLE);
 				if (IS_AFFECTED(tmp_victim, AFF_HIDE))
@@ -12997,10 +12997,10 @@ void spell_faerie_fog(int level, P_char ch, char *arg, int type, P_char victim, 
 			}
 			else
 			{
-				if (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED2(tmp_victim, AFF2_MINOR_INVIS))
-					affect_from_char(tmp_victim, SPELL_INVISIBLE);
-				if (IS_AFFECTED2(tmp_victim, AFF2_MINOR_INVIS))
-					REMOVE_BIT(tmp_victim->specials.affected_by2, AFF2_MINOR_INVIS);
+				if (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED2(tmp_victim, AFF2_CONCEALMENT))
+					affect_from_char(tmp_victim, SPELL_CONCEALMENT);
+				if (IS_AFFECTED2(tmp_victim, AFF2_CONCEALMENT))
+					REMOVE_BIT(tmp_victim->specials.affected_by2, AFF2_CONCEALMENT);
 				if (IS_AFFECTED(tmp_victim, AFF_INVISIBLE))
 					REMOVE_BIT(tmp_victim->specials.affected_by, AFF_INVISIBLE);
 				if (IS_AFFECTED(tmp_victim, AFF_HIDE))
@@ -14095,7 +14095,7 @@ RemoveableSpellBit mobAffects[] = {
 	{	  AFF_STONE_SKIN,          SPELL_STONE_SKIN},
 	{   AFF_INFERNAL_FURY,       SPELL_INFERNAL_FURY},
 	{AFF_FREEDOM_OF_MVMNT, SPELL_FREEDOM_OF_MOVEMENT},
-	{	   AFF_INVISIBLE,           SPELL_INVISIBLE},
+	{	   AFF_INVISIBLE,           SPELL_CONCEALMENT},
 	{AFF_DETECT_INVISIBLE,    SPELL_DETECT_INVISIBLE},
 	{		   AFF_HASTE,               SPELL_HASTE},
 	{		   AFF_ARMOR,               SPELL_ARMOR},
@@ -14295,7 +14295,7 @@ void spell_dispel_magic(int level, P_char ch, char *arg, int type, P_char victim
 			act("&+Yand $e has some &+Gsuccess!&n", FALSE, ch, 0, victim, TO_NOTVICT);
 		}
 
-		if (!nosave && (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS)))
+		if (!nosave && (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT)))
 			appear(ch);
 
 		if (!nosave && IS_NPC(victim) && CAN_SEE(victim, ch))
@@ -15157,14 +15157,14 @@ void spell_mass_invisibility(int level, P_char ch, char *arg, int type, P_char v
 
 	LOOP_THRU_PEOPLE(victim, ch)
 	if (!IS_TRUSTED(ch) && !IS_TRUSTED(victim))
-		spell_improved_invisibility(level, ch, 0, 0, victim, 0);
+		spell_invisibility(level, ch, 0, 0, victim, 0);
 	else if (IS_TRUSTED(ch))
-		spell_improved_invisibility(level, ch, 0, 0, victim, 0);
+		spell_invisibility(level, ch, 0, 0, victim, 0);
 
 	// for (obj = world[ch->in_room].contents; obj; obj = obj->next_content)
 	// {
 	// if(IS_SET(obj->wear_flags, ITEM_TAKE))
-	// spell_improved_invisibility(level, ch, 0, 0, 0, obj);
+	// spell_invisibility(level, ch, 0, 0, 0, obj);
 	// }
 }
 

@@ -1608,6 +1608,22 @@ bool parse_spell_arguments(P_char ch, struct spell_target_data *data, char *argu
 	return TRUE;
 }
 
+int lookup_spell(const char *name, int len)
+{
+	if (len <= 0)
+		return -1;
+	int spl = old_search_block(name, 0, len, spells, 0) - 1;
+
+	// aliases for renamed spells
+	if (spl == -2)
+		if (!strncmp(name, "improved invisibility", len))
+			spl = SPELL_INVISIBILITY;
+		else
+			spl = -1;
+
+	return spl;
+}
+
 bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_data, int cmd)
 {
 	int    qend;
@@ -1659,7 +1675,7 @@ bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_dat
 		send_to_char("Spells are always to be enclosed by the holy symbols known only as 'apostrophes'.\n", ch);
 		return FALSE;
 	}
-	spl = old_search_block(argument, 1, (uint)(MAX(0, (qend - 1))), spells, 0) - 1;
+	spl = lookup_spell(argument + 1, qend - 1);
 
 	if (spl < 0 || (!IS_SPELL(spl) && !(IS_TRUSTED(ch) && IS_POISON(spl))))
 	{

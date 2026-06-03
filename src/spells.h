@@ -39,7 +39,7 @@
 #define SPELL_FIREBALL               26
 #define SPELL_HARM                   27
 #define SPELL_HEAL                   28
-#define SPELL_INVISIBLE              29
+#define SPELL_CONCEALMENT            29
 #define SPELL_LIGHTNING_BOLT         30
 #define SPELL_LOCATE_OBJECT          31
 #define SPELL_MAGIC_MISSILE          32
@@ -198,7 +198,7 @@
 #define SPELL_DISEASE                186
 #define SPELL_CHARM_ANIMAL           187
 #define SPELL_SOULSHIELD             188
-#define SPELL_INVIS_MAJOR            189
+#define SPELL_INVISIBILITY           189
 #define SPELL_MASS_HEAL              190
 
 /* shaman spells */

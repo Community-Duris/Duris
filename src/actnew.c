@@ -4306,7 +4306,7 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 				{
 					if (IS_AGG_SPELL(j) && victim && (ch != victim))
 					{
-						if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+						if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 							appear(ch);
 					}
 					in_room = ch->in_room;

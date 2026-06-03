@@ -6062,7 +6062,7 @@ void do_vis(P_char ch, char *argument, int cmd)
 	{ /* Inquire visibility */
 		if (IS_TRUSTED(ch))
 			snprintf(buf, MAX_STRING_LENGTH, "You are currently visible only to players with level > %d.\n", ch->only.pc->wiz_invis);
-		if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+		if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 			if (strlen(buf) > 0)
 				strcat(buf, "You are also affected by invisibility.\n");
 			else

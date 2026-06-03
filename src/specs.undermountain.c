@@ -250,7 +250,7 @@ int fade_drusus(P_obj obj, P_char ch, int cmd, char *argument)
 				act("Your $q glows, and you feel power grow within it.", FALSE, ch, obj, obj, TO_CHAR);
 				obj->timer[0] = time_info.day;
 				act("$n says 'invisible' to $p.", TRUE, ch, obj, obj, TO_ROOM);
-				spell_improved_invisibility(35, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+				spell_invisibility(35, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 				spell_detect_invisibility(35, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 				return TRUE;
 			}
@@ -956,7 +956,7 @@ int staff_of_blue_flames(P_obj obj, P_char ch, int cmd, char *arg)
 			if (ch->group)
 				spell_mass_invisibility(60, ch, NULL, 0, NULL, NULL);
 			else
-				spell_improved_invisibility(60, ch, NULL, SPELL_TYPE_SPELL, ch, NULL);
+				spell_invisibility(60, ch, NULL, SPELL_TYPE_SPELL, ch, NULL);
 			return TRUE;
 		}
 		else if (isname(arg, "stone"))

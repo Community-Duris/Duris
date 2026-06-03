@@ -1670,10 +1670,10 @@ void command_interpreter(P_char ch, char *argument)
 			{
 				// Kill minor invis if applicable.
 				if ((cmd != CMD_LOOK) && (cmd != CMD_MEMORIZE) && (cmd != CMD_GCC) && (cmd != CMD_HELP) && (cmd != CMD_PRAY) && (cmd != CMD_REST) && (cmd != CMD_SLEEP) && (cmd != CMD_SIT) &&
-				    (cmd != CMD_RECLINE) && (cmd != CMD_EAT) && (cmd != CMD_DRINK) && (cmd != CMD_MEDITATE) && (cmd != CMD_RWC) && (cmd != CMD_ASSIMILATE) && IS_AFFECTED2(exec_char, AFF2_MINOR_INVIS))
+				    (cmd != CMD_RECLINE) && (cmd != CMD_EAT) && (cmd != CMD_DRINK) && (cmd != CMD_MEDITATE) && (cmd != CMD_RWC) && (cmd != CMD_ASSIMILATE) && IS_AFFECTED2(exec_char, AFF2_CONCEALMENT))
 				{
 					send_to_char("You reappear, visible to all.\r\n", exec_char);
-					affect_from_char(ch, SPELL_INVISIBLE);
+					affect_from_char(ch, SPELL_CONCEALMENT);
 				}
 				// Kill hide if applicable
 				if (((cmd != CMD_LOOK) && (cmd != CMD_LISTEN) && (cmd != CMD_SNEAK) && (cmd != CMD_GLANCE) && (cmd != CMD_READ) && (cmd != CMD_STEAL) && (cmd != CMD_SCAN) &&

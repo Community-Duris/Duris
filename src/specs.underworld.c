@@ -1091,7 +1091,7 @@ int mace(P_obj obj, P_char ch, int cmd, char *arg)
 
 				act("$n says 'invisible'", TRUE, ch, obj, NULL, TO_ROOM);
 				act("$n's $q hums briefly.", TRUE, ch, obj, NULL, TO_ROOM);
-				spell_improved_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+				spell_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 
 				obj->timer[1] = curr_time;
 

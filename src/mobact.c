@@ -826,13 +826,13 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_FLY) && !IS_AFFECTED(target, AFF_FLY) && !IS_FIGHTING(ch))
 		spl = SPELL_FLY;
 
-	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_VANISH) && !IS_FIGHTING(ch) && !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_MINOR_INVIS) && !IS_ACT(ch, ACT_TEACHER) &&
+	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_VANISH) && !IS_FIGHTING(ch) && !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_CONCEALMENT) && !IS_ACT(ch, ACT_TEACHER) &&
 	    !mob_index[GET_RNUM(ch)].qst_func && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) && !number(0, 2))
 		spl = SPELL_VANISH;
 
 	/*if(!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_REFLECTION)
 	   && !IS_FIGHTING(ch) && !IS_AFFECTED(ch, AFF_INVISIBLE)
-	   && !IS_AFFECTED2(ch, AFF2_MINOR_INVIS)
+	   && !IS_AFFECTED2(ch, AFF2_CONCEALMENT)
 	   && !IS_AFFECTED(ch, AFF_HIDE)
 	   && !mob_index[GET_RNUM(ch)].qst_func
 	   && (GET_HIT(target) < (GET_MAX_HIT(target)/2))
@@ -1161,17 +1161,17 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	 */
 	if (!number(0, 3))
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_INVIS_MAJOR) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) && !IS_AFFECTED2(target, AFF2_MINOR_INVIS) &&
+		if (!spl && npc_has_spell_slot(ch, SPELL_INVISIBILITY) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) && !IS_AFFECTED2(target, AFF2_CONCEALMENT) &&
 		    !IS_ACT(target, ACT_TEACHER) && !IS_FIGHTING(target) && (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) &&
 		    !CHAR_IN_TOWN(target))
-			spl = SPELL_INVIS_MAJOR;
+			spl = SPELL_INVISIBILITY;
 	}
 	else
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_INVISIBLE) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) && !IS_AFFECTED2(target, AFF2_MINOR_INVIS) &&
+		if (!spl && npc_has_spell_slot(ch, SPELL_CONCEALMENT) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) && !IS_AFFECTED2(target, AFF2_CONCEALMENT) &&
 		    !IS_ACT(target, ACT_TEACHER) && !IS_FIGHTING(target) && (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) &&
 		    !CHAR_IN_TOWN(target) && ((ch == target) && !number(0, 9)))
-			spl = SPELL_INVISIBLE;
+			spl = SPELL_CONCEALMENT;
 	}
 
 	if (!spl && npc_has_spell_slot(ch, SPELL_DETECT_INVISIBLE) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_DETECT_INVISIBLE))
@@ -1863,10 +1863,10 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 			spl = SPELL_HASTE;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_INVISIBLE) && !IS_FIGHTING(target) && !IS_FIGHTING(ch) && !IS_AFFECTED2(target, AFF2_MINOR_INVIS) && !IS_AFFECTED(target, AFF_INVISIBLE) &&
+	if (!spl && npc_has_spell_slot(ch, SPELL_CONCEALMENT) && !IS_FIGHTING(target) && !IS_FIGHTING(ch) && !IS_AFFECTED2(target, AFF2_CONCEALMENT) && !IS_AFFECTED(target, AFF_INVISIBLE) &&
 	    !IS_ACT(target, ACT_TEACHER) && (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) && !CHAR_IN_TOWN(target) &&
 	    ((target == ch) && !number(0, 9)))
-		spl = SPELL_INVISIBLE;
+		spl = SPELL_CONCEALMENT;
 
 	if (!IS_FIGHTING(ch))
 	{
@@ -3999,7 +3999,7 @@ bool WillPsionicistSpell(P_char ch, P_char victim)
 
 	if (!number(0, 4))
 		if (!spl && npc_has_spell_slot(ch, SPELL_ECTOPLASMIC_FORM) && !affected_by_spell(ch, SPELL_ECTOPLASMIC_FORM) && !IS_AFFECTED3(ch, AFF3_ECTOPLASMIC_FORM) && !IS_FIGHTING(ch) &&
-		    !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_MINOR_INVIS) && !IS_ACT(ch, ACT_TEACHER) && !mob_index[GET_RNUM(ch)].qst_func && !CHAR_IN_TOWN(ch))
+		    !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_CONCEALMENT) && !IS_ACT(ch, ACT_TEACHER) && !mob_index[GET_RNUM(ch)].qst_func && !CHAR_IN_TOWN(ch))
 			spl = SPELL_ECTOPLASMIC_FORM;
 
 	/* cannibalize is very important, especially in battle */

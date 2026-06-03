@@ -1511,11 +1511,11 @@ void initialize_skills()
 	SPELL_ADD(CLASS_ILLUSIONIST, 7);
 	SPELL_ADD(CLASS_THEURGIST, 8);
 
-	SPELL_CREATE_MSG("improved invisibility",
-	                 SPELL_INVIS_MAJOR,
+	SPELL_CREATE_MSG("invisibility",
+	                 SPELL_INVISIBILITY,
 	                 PULSE_SPELLCAST * 4 / 3,
 	                 TAR_CHAR_ROOM | TAR_OBJ_INV | TAR_OBJ_ROOM | TAR_OBJ_EQUIP | TAR_NOCOMBAT,
-	                 spell_improved_invisibility,
+	                 spell_invisibility,
 	                 "You slowly fade back into visibility.");
 	SPELL_ADD(CLASS_NECROMANCER, 8);
 	SPELL_ADD(CLASS_SORCERER, 7);
@@ -1524,10 +1524,10 @@ void initialize_skills()
 	SPELL_ADD(CLASS_THEURGIST, 8);
 
 	SPELL_CREATE_MSG("concealment",
-	                 SPELL_INVISIBLE,
+	                 SPELL_CONCEALMENT,
 	                 PULSE_SPELLCAST * 4 / 3,
 	                 TAR_CHAR_ROOM | TAR_OBJ_INV | TAR_OBJ_ROOM | TAR_OBJ_EQUIP | TAR_NOCOMBAT,
-	                 spell_invisibility,
+	                 spell_concealment,
 	                 "You slowly fade back into visibility.");
 	SPELL_ADD(CLASS_NECROMANCER, 5);
 	SPELL_ADD(CLASS_SORCERER, 3);

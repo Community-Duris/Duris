@@ -813,7 +813,7 @@ int artifact_invisible(P_obj obj, P_char ch, int cmd, char *argument)
 				act("Your $q hums briefly.", FALSE, ch, obj, obj, TO_CHAR);
 
 				act("$n's $q hums briefly.", TRUE, ch, obj, NULL, TO_ROOM);
-				spell_improved_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+				spell_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 
 				obj->timer[0] = curr_time;
 			}
@@ -874,7 +874,7 @@ int transp_tow_misty_gloves(P_obj obj, P_char ch, int cmd, char *argument)
 		{
 			act("Your hands tingle for a brief moment.", FALSE, ch, obj, obj, TO_CHAR);
 
-			spell_improved_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+			spell_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 			SET_BIT(ch->specials.affected_by, AFF_HIDE);
 
 			obj->timer[1] = curr_time;
@@ -7798,7 +7798,7 @@ int trans_tower_shadow_globe(P_obj obj, P_char ch, int cmd, char *arg)
 
 				act("$n says 'invisible'", TRUE, ch, obj, NULL, TO_ROOM);
 				act("$n's $q hums briefly.", TRUE, ch, obj, NULL, TO_ROOM);
-				spell_improved_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+				spell_invisibility(55, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 
 				obj->timer[0] = curr_time;
 

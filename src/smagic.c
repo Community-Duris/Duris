@@ -3857,13 +3857,13 @@ void spell_reveal_true_form(int level, P_char ch, char *arg, int type, P_char vi
 
 	LOOP_THRU_PEOPLE(tmp_victim, ch)
 	{
-		if ((ch != tmp_victim) && (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED(tmp_victim, AFF_HIDE) || IS_AFFECTED2(tmp_victim, AFF2_MINOR_INVIS)))
+		if ((ch != tmp_victim) && (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED(tmp_victim, AFF_HIDE) || IS_AFFECTED2(tmp_victim, AFF2_CONCEALMENT)))
 		{
-			if (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED2(tmp_victim, AFF2_MINOR_INVIS))
-				affect_from_char(tmp_victim, SPELL_INVISIBLE);
+			if (IS_AFFECTED(tmp_victim, AFF_INVISIBLE) || IS_AFFECTED2(tmp_victim, AFF2_CONCEALMENT))
+				affect_from_char(tmp_victim, SPELL_CONCEALMENT);
 
-			if (IS_AFFECTED2(tmp_victim, AFF2_MINOR_INVIS))
-				REMOVE_BIT(tmp_victim->specials.affected_by2, AFF2_MINOR_INVIS);
+			if (IS_AFFECTED2(tmp_victim, AFF2_CONCEALMENT))
+				REMOVE_BIT(tmp_victim->specials.affected_by2, AFF2_CONCEALMENT);
 
 			if (IS_AFFECTED(tmp_victim, AFF_INVISIBLE))
 				REMOVE_BIT(tmp_victim->specials.affected_by, AFF_INVISIBLE);
