@@ -244,7 +244,8 @@ int vecna_deathportal(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (isname(arg, "portal") || isname(arg, "death"))
 		{
-			if ((obj->value[5] >= 0) && (obj->value[5] <= 3))
+			/* round-robin portals
+			if ((obj->value[5] >= 0) && (obj->value[5] < 3))
 			{
 				obj->value[0] = rooms[obj->value[5]];
 				obj->value[5]++;
@@ -259,6 +260,8 @@ int vecna_deathportal(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				obj->value[5] = 0;
 			}
+			*/
+			obj->value[0] = rooms[number(0, 2)];
 			return FALSE;
 		}
 	}
