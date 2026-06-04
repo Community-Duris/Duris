@@ -896,11 +896,8 @@ void do_group(P_char ch, char *argument, int cmd)
 
 	if (IS_NPC(victim) && (victim->following != ch) && !is_linked_to(ch, victim, LNK_CONSENT))
 	{
-		if (!is_guild_golem(victim, ch))
-		{
-			act("$N doesn't want to be in your group.", TRUE, ch, 0, victim, TO_CHAR);
-			return;
-		}
+		act("$N doesn't want to be in your group.", TRUE, ch, 0, victim, TO_CHAR);
+		return;
 	}
 
 	/*
@@ -1280,44 +1277,6 @@ bool group_add_member(P_char leader, P_char member)
 	if (in_command_aura(member))
 		add_aura_message(member, leader);
 	return TRUE;
-}
-
-/* fonction to check if ch is guild golem */
-
-int is_guild_golem(P_char ch, P_char pl)
-{
-	uint    bits;
-	char   *tmp;
-	int     allowed = FALSE;
-	P_Guild guild;
-
-	if (!GET_ASSOC(ch))
-	{
-		tmp = strstr(GET_NAME(ch), "assoc");
-		if (!tmp)
-		{
-			return FALSE;
-		}
-		guild = get_guild_from_id(atoi(tmp + 5));
-
-		if (guild == NULL)
-		{
-			return FALSE;
-		}
-		GET_ASSOC(ch) = guild;
-	}
-
-	tmp = strstr(GET_NAME(ch), "assoc");
-
-	guild = GET_ASSOC(ch);
-
-	allowed = FALSE;
-
-	bits = GET_A_BITS(pl);
-
-	allowed = (((GET_ASSOC(pl) == guild) && IS_MEMBER(bits) && GT_PAROLE(bits)) || IS_TRUSTED(pl));
-
-	return (allowed);
 }
 
 bool is_in_dragoon_group(P_char ch, P_char vict)

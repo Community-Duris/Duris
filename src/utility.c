@@ -5016,7 +5016,19 @@ void hummer(P_obj obj)
 	return;
 }
 
-bool grouped(P_char ch, P_char ch2) { return ch->group && ch->group == ch2->group; }
+bool grouped(P_char ch, P_char ch2)
+{
+	if (ch->group && ch->group == ch2->group)
+		return true;
+
+	if (SET_BIT(ch->specials.act, ACT_GUILD_GOLEM) || SET_BIT(ch2->specials.act, ACT_GUILD_GOLEM))
+	{
+		if (ch->player.racewar == ch2->player.racewar)
+			return true;
+	}
+
+	return false;
+}
 
 int get_takedown_size(P_char ch)
 {
