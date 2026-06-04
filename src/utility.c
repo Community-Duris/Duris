@@ -4735,6 +4735,11 @@ bool should_area_hit(P_char ch, P_char victim)
 
 	if (grouped(ch, victim))
 		return FALSE;
+
+	P_char rider = get_linking_char(victim, LNK_RIDING);
+	if (rider && (rider == ch || grouped(ch, rider)))
+		return FALSE;
+
 	/*
 	if (grouped(ch, victim) && on_front_line(ch))
 	  return FALSE;
