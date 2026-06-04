@@ -1324,6 +1324,14 @@ bool guildhall_map_check(P_char ch)
 {
 	int rroom = ch->in_room;
 
+	// Dranfat
+	if (Guildhall::find_by_vnum(world[rroom].number))
+	{
+		send_to_char("There is already a guildhall here.\r\n", ch);
+		return FALSE;
+	}
+
+	/*
 	if (!IS_RACEWAR_GOOD(ch) && IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number) - 1].flags, JUSTICE_GOODHOME))
 	{
 		send_to_char("Sure, call in the contractors!... Find a non-good hometown to build in.\n", ch);
@@ -1335,18 +1343,12 @@ bool guildhall_map_check(P_char ch)
 		return FALSE;
 	}
 
-	// Dranfat
-	if (Guildhall::find_by_vnum(world[rroom].number))
-	{
-		send_to_char("There is already a guildhall here.\r\n", ch);
-		return FALSE;
-	}
-
 	if ((IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number) - 1].flags, JUSTICE_EVILHOME)) || (IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number) - 1].flags, JUSTICE_GOODHOME)))
 	{
 		send_to_char("Guildhalls can only be built &+Woutside&n the confines of a city.\r\n", ch);
 		return FALSE;
 	}
+	*/
 
 	/* if( GET_RACEWAR(ch) == RACEWAR_GOOD )
 	 {
