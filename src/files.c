@@ -50,12 +50,8 @@ extern struct shop_data *shop_index;
 int                     skip_corpse_save = 0;
 extern struct hold_data TmpAffs;
 extern struct mm_ds    *dead_mob_pool;
-// extern struct mm_ds *dead_construction_pool;
 extern struct mm_ds *dead_trophy_pool;
-extern struct mm_ds *dead_witness_pool;
-extern struct mm_ds *dead_crime_pool;
 extern struct mm_ds *dead_house_pool;
-// extern P_house first_house;
 extern int LOADED_RANDOM_ZONES;
 
 extern P_index                       obj_index;
@@ -1295,38 +1291,6 @@ int writeItems(char *buf, P_char ch)
 	return (int)(ibuf - start);
 }
 
-/* write witness record (TASFALEN) */
-
-int writeWitness(char *buf, wtns_rec *rec)
-{
-	wtns_rec *first = rec;
-	char     *start = buf;
-	int       count = 0;
-
-	while (rec)
-	{
-		count++;
-		rec = rec->next;
-	}
-	ADD_BYTE(buf, (char)SAV_WTNSVERS);
-
-	rec = first;
-	ADD_INT(buf, count);
-
-	while (rec)
-	{
-		ADD_STRING(buf, rec->attacker);
-		ADD_STRING(buf, rec->victim);
-		ADD_LONG(buf, rec->time);
-		ADD_INT(buf, rec->crime);
-		ADD_INT(buf, rec->room);
-
-		rec = rec->next;
-	}
-
-	return (int)(buf - start);
-}
-
 static int persistence_write_character_flat_fallback(P_char ch, int type, int room)
 {
 	FILE        *f;
@@ -1363,8 +1327,13 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	buf += writeStatus(buf, ch, ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI)) ? TRUE : FALSE);
 	ADD_INT(skill_off, (int)(buf - fallback_buff));
 	buf += writeSkills(buf, ch, MAX_SKILLS);
+#if 1
+	// remove on wipe
 	ADD_INT(witness_off, (int)(buf - fallback_buff));
-	buf += writeWitness(buf, ch->specials.witnessed);
+	ADD_BYTE(buf, (char)SAV_WTNSVERS);
+        ADD_INT(buf, 0);
+	buf += 1 + sizeof(int);
+#endif
 	ADD_INT(affect_off, (int)(buf - fallback_buff));
 	updateShortAffects(ch);
 	buf += writeAffects(buf, ch->affected);
@@ -2506,7 +2475,6 @@ int restoreSkills(char *buf, P_char ch, int maxnum)
 #ifndef _PFILE_
 int restoreWitness(char *buf, P_char ch)
 {
-	wtns_rec *rec;
 	char     *start = buf;
 	int       count;
 
@@ -2702,7 +2670,6 @@ int restoreCharOnly(P_char ch, char *name)
 			sql_load_player_skills(ch);
 			sql_load_player_affects(ch);
 			//sql_load_player_items(ch);
-			sql_load_player_witnesses(ch);
 			sql_load_player_shapechanges(ch);
 			return 0;
 		}
