@@ -51,6 +51,8 @@ struct mm_ds *dead_group_pool = NULL;
 void          remove_aura_message(P_char ch, P_char commander);
 void          add_aura_message(P_char ch, P_char commander);
 
+static bool do_group_add(P_char ch, P_char victim);
+
 /*
  * Calculates free slots in back rank, might be negative
  */
@@ -739,30 +741,17 @@ void do_group(P_char ch, char *argument, int cmd)
 			return;
 		}
 		for (f = ch->followers, found = FALSE; f; f = f->next)
-			if (CAN_SEE(ch, f->follower) && f->follower->group)
-				if (ch->group == f->follower->group)
-				{
-					act("$N already grouped by you.", TRUE, ch, 0, f->follower, TO_CHAR);
-				}
-				else
-				{
-					act("$N is in another group.", TRUE, ch, 0, f->follower, TO_CHAR);
-				}
-			else if (ch && (IS_ILLITHID(f->follower) || IS_ILLITHID(ch)))
+		{
+			if (!CAN_SEE(ch, f->follower))
+				continue;
+			if (f->follower->group && ch->group == f->follower->group)
 			{
-				return;
+				act("$N already grouped by you.", TRUE, ch, 0, f->follower, TO_CHAR);
+				continue;
 			}
-			else if ((f->follower->in_room == ch->in_room) && CAN_SEE(ch, f->follower) && ((IS_ILLITHID(f->follower) == IS_ILLITHID(ch)) || (IS_ILLITHID(ch) && IS_NPC(f->follower))))
-			{
-				if (group_add_member(ch, f->follower))
-				{
-					act("$N is now a member of your group.", TRUE, ch, 0, f->follower, TO_CHAR);
-					act("$N is now a member of $n's group.", TRUE, ch, 0, f->follower, TO_NOTVICT);
-					act("You are now a member of $n's group.", FALSE, ch, 0, f->follower, TO_VICT);
-
-					found = TRUE;
-				}
-			}
+			if (do_group_add(ch, f->follower))
+				found = TRUE;
+		}
 		if (!found)
 			send_to_char("No new group members.\n", ch);
 
@@ -838,87 +827,54 @@ void do_group(P_char ch, char *argument, int cmd)
 	/* well.. nothing left to do.. if the victim isn't in another group,
 	   then group them :) */
 
-	if (victim->group)
+	do_group_add(ch, victim);
+}
+
+static bool do_group_add(P_char ch, P_char victim)
+{
+	if (victim->group && victim->group->ch != victim)
 	{
 		act("$N is in another group.", TRUE, ch, 0, victim, TO_CHAR);
-		return;
+		return false;
 	}
-	/* NPC's only allow themselves to be grouped with people they are
-	   following */
-	/* if(IS_ILLITHID(ch) || // Illithids cannot group with anything. Nov08 -Lucrot
-	   IS_ILLITHID(victim))
-	{
-	  act("$N doesn't want to be in your group.", TRUE, ch, 0, victim, TO_CHAR);
-	  return;
-	} */
-	/*
-	//Paladins and AP cannot group together - Drannak
-	if(GET_CLASS(victim, CLASS_PALADIN))
-	{
-	for (gl = ch->group; gl; gl = gl->next)
-	 {
-	  if (GET_CLASS(gl->ch, CLASS_ANTIPALADIN))
-	   {
-	    send_to_char("&+WYou do not wish to group with such unholy scum!&n\n", victim);
-	    send_to_char("&+LAhh, but grouping with someone so &+Wholy &+Lwould disturb the unholy energies of your group.&n\n", ch);
-	  return;
-	   }
-
-	  }
-	 }
-
-	if(GET_CLASS(victim, CLASS_ANTIPALADIN))
-	{
-	for (gl = ch->group; gl; gl = gl->next)
-	 {
-	  if (GET_CLASS(gl->ch, CLASS_PALADIN))
-	   {
-	    send_to_char("&+WYou do not wish to group with such holy scum!&n\n", victim);
-	    send_to_char("&+WAhh, but grouping with someone so &+Lunholy &+Wwould disturb the holy energies of your group.&n\n", ch);
-	  return;
-	   }
-
-	  }
-	 }
-	if(GET_CLASS(victim, CLASS_ANTIPALADIN) && GET_CLASS(ch, CLASS_PALADIN))
-	{
-	    send_to_char("&+WYou do not wish to group with such unholy scum!&n\n", ch);
-	    send_to_char("&+LAhh, but grouping with someone so &+Wholy &+Lwould disturb the unholy energies of your group.&n\n", victim);
-	  return;
-	   }
-	if(GET_CLASS(victim, CLASS_PALADIN) && GET_CLASS(ch, CLASS_ANTIPALADIN))
-	  {
-	    send_to_char("&+WYou do not wish to group with such holy scum!&n\n", ch);
-	    send_to_char("&+WAhh, but grouping with someone so &+Lunholy &+Wwould disturb the holy energies of your group.&n\n", victim);
-	  return;
-	   }
-	*/
 
 	if (IS_NPC(victim) && (victim->following != ch) && !is_linked_to(ch, victim, LNK_CONSENT))
 	{
 		act("$N doesn't want to be in your group.", TRUE, ch, 0, victim, TO_CHAR);
-		return;
+		return false;
 	}
 
-	/*
-	   if(IS_ILLITHID(ch) && !IS_NPC(victim) && IS_ILLITHID(victim)) {
-	   send_to_char("You feel more like being alone right now...\n", ch);
-	   return;
-	   }
-	 */
-
-	/*
-	 * Group caps for CHAOS_MUD only
-	 * group sizes are controlled in config.h
-	 */
-
+	struct group_list *old_group = victim->group;
+	victim->group = 0;
 	if (!group_add_member(ch, victim))
-		return;
+	{
+		victim->group = old_group;
+		return false;
+	}
 
 	act("$N is now a member of your group.", TRUE, ch, 0, victim, TO_CHAR);
 	act("$N is now a member of $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
 	act("You are now a member of $n's group.", FALSE, ch, 0, victim, TO_VICT);
+
+	while (old_group)
+	{
+		struct group_list *next = old_group->next;
+		if ((victim = old_group->ch) && victim->group != ch->group)
+		{
+			victim->group = 0;
+			if (group_add_member(ch, victim))
+			{
+				act("$N also joins your group.", TRUE, ch, 0, victim, TO_CHAR);
+				act("$N also joins $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
+				act("Your group has merged into $n's group.", FALSE, ch, 0, victim, TO_VICT);
+			}
+		}
+		mm_release(dead_group_pool, old_group);
+		old_group = next;
+	}
+
 	update_groupies(ch);
+	return true;
 }
 
 void do_disband(P_char ch, char *arg, int cmd)
