@@ -810,17 +810,6 @@ struct info_index_element
 	long  pos;
 };
 
-/* EMAIL registration defs */
-struct registration_node
-{
-	char                      host[80];
-	char                      login[20];
-	char                      name[20];
-	struct registration_node *next;
-};
-
-typedef struct registration_node *P_ereg;
-
 struct trackrecordtype
 {
 	sbyte dir, from;            /* direction; 6 = death has happened
@@ -1684,9 +1673,6 @@ struct descriptor_data
 	sh_int            descriptor; /* file descriptor for socket */
 	char              host[50];   /* hostname                   */
 	char              host2[254];
-	char              login[9]; /* userid from host           */
-	char              registered_host[50];
-        char              registered_login[9];
 	::byte            rtype;                        /* character restore status   */
 	::byte            connected;                    /* mode of 'connectedness'    */
 	int               wait;                         /* wait for how many loops    */
