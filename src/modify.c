@@ -939,7 +939,11 @@ void string_add(struct descriptor_data *d, char *str)
 			}
 			else
 				SEND_TO_Q("Mail aborted.\r\n", d);
-			d->name = 0;
+			if (d->name)
+			{
+				FREE(d->name);
+			}
+			d->name = NULL;
 			FREE(*d->str);
 			*d->str = NULL;
 			d->str  = NULL;
