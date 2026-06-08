@@ -69,7 +69,6 @@ extern const char                *craftsmanship_names[];
 extern const char                *dirs[];
 extern const char                *event_names[];
 extern const char                *fullness[];
-extern const char                *language_names[];
 extern struct material_data       materials[];
 extern const char                *month_name[];
 extern const char                *player_bits[];
@@ -2014,12 +2013,6 @@ void ShowCharSpellBookSpells(P_char ch, P_obj obj, char *short_desc)
 	}
 	i = 0;
 	j = 0;
-	/*
-	   if (obj->value[0] && GET_LANGUAGE (ch, obj->value[0]) <= (25 + number (1, 10))) {
-	   act ("$p is written in some language you don't understand!", TRUE, ch, obj, 0, TO_CHAR);
-	   return;
-	   }
-	 */
 	if (obj->value[1] && !GET_CLASS(ch, obj->value[1]))
 	{
 		snprintf(buf, MAX_STRING_LENGTH, "%s appears to have been originally written by a %s.", short_desc, class_names_table[flag2idx(obj->value[1])].ansi);
