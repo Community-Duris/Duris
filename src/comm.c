@@ -1628,6 +1628,20 @@ int init_socket(int port)
 	/*  sa.sin_family = hp->h_addrtype; */
 	sa.sin_family = AF_INET;
 	sa.sin_port   = htons((unsigned short int)port);
+#ifdef IPPROTO_MPTCP
+	/*
+	 * Multipath TCP: if there are multiple routes available and enabled, they
+	 * will be used together.  In our case (hardly any bandwidth used), the
+	 * worse route will be kept on standby, to be used when lag happens.
+	 *
+	 * The kernel silently falls back to non-MPTCP extremely fast, thus broken
+	 * routers or middleware rejecting packets with a flag they don't know
+	 * doesn't require a retry from us.  Thus, the only concerns are platforms
+	 * that don't support MPTCP (Windows, old BSDs) or have CONFIG_MPTCP=n.
+	 */
+	s             = socket(PF_INET, SOCK_STREAM, IPPROTO_MPTCP);
+	if (s < 0)
+#endif
 	s             = socket(PF_INET, SOCK_STREAM, 0);
 	if (s < 0)
 	{
