@@ -5289,13 +5289,6 @@ void NewbySkillSet(P_char ch, bool fullReset)
 	// Walk through skills..
 	for (i = FIRST_SKILL; i <= LAST_SKILL; i++)
 	{
-		// #ifdef SKILLPOINTS
-		//     if(SKILL_DATA_ALL(ch, i).rlevel[0] &&
-		//         SKILL_DATA_ALL(ch, i).rlevel[0] <= GET_LEVEL(ch) )
-		//     {
-		//       ch->only.pc->skills[i].learned = 10;
-		//       ch->only.pc->skills[i].taught = 10;
-		// #else
 		if (!fullReset && (IS_EPIC_SKILL(i) || IS_TRADESKILL(i)))
 		{
 			continue;
@@ -5305,7 +5298,6 @@ void NewbySkillSet(P_char ch, bool fullReset)
 		{
 			ch->only.pc->skills[i].learned = number(5, 20);
 			ch->only.pc->skills[i].taught  = SKILL_DATA_ALL(ch, i).maxlearn[0] - 10;
-			// #endif
 		}
 		else if (SKILL_DATA_ALL(ch, i).rlevel[0] && IS_SPELL(i) && SKILL_DATA_ALL(ch, i).rlevel[0] <= GET_LEVEL(ch) && praying_class(ch))
 		{

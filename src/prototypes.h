@@ -1155,6 +1155,7 @@ void   do_spec(P_char, char *, int);
 void   do_skills(P_char, char *, int);
 void   do_spells(P_char, char *, int);
 bool   notch_skill(P_char, int, float);
+void   spell_learning(int, P_char, char *, int, P_char, P_obj);
 void   SetGuildSpellLvl(void);
 void   update_skills(P_char);
 string list_spells(int, int);
@@ -1275,7 +1276,6 @@ void   engulf(P_char, P_char);
 void   do_slime(P_char, char *, int);
 void   slime(P_char, P_char);
 void   do_squidrage(P_char ch, char *arg, int cmd);
-int    get_innate_from_skill(int skill);
 int    get_level_from_innate(P_char ch, int innate);
 /* interp.c */
 
