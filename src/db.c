@@ -3486,10 +3486,6 @@ void reset_zone(int zone, int force_item_repop)
 							}
 							if (mob)
 							{
-								// Drannak trying out item stat randomization 3/28/14
-								//  Added check for shopkeeper so their wares don't look goofy.
-								if (!IS_ARTIFACT(obj) && !IS_SHOPKEEPER(mob))
-									randomizeitem(mob, obj);
 								obj_to_char(obj, mob);
 								last_cmd = 1;
 								break;
@@ -3556,11 +3552,6 @@ void reset_zone(int zone, int force_item_repop)
 							}
 							if (mob && (ZCMD.arg3 > 0) && (ZCMD.arg3 <= CUR_MAX_WEAR))
 							{
-								// Drannak trying out item stat randomization 3/28/14
-								// Added check for shopkeeper so their wares don't look goofy.
-								//   Removed shopkeeper check: this is eq'd items not for-sale items.
-								if (!IS_ARTIFACT(obj))
-									randomizeitem(mob, obj);
 								if (mob->equipment[ZCMD.arg3])
 									obj_to_char(unequip_char(mob, ZCMD.arg3), mob);
 								equip_char(mob, obj, ZCMD.arg3, 1);
