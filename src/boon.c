@@ -3199,7 +3199,7 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 					break;
 				}
 				snprintf(buff, MAX_STRING_LENGTH, "%s", flag_name);
-				affect_to_char_with_messages(ch, &af, "&+CYour bonus power fa&+cdes away...&n\r\n");
+				affect_to_char_with_messages(ch, &af, "&+CYour bonus power fa&+cdes away...&n\r\n", "$n&+C's bonus power fades.&n\r\n");
 				boon_notify(bdata.id, ch, BN_COMPLETE);
 				send_to_char_f(ch, "You have been granted the power of %s for a while.\r\n", buff);
 				break;

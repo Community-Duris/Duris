@@ -43,6 +43,12 @@ extern int                top_of_mobt;
 
 static const char *mail_active_path = MAIL_FILE;
 
+struct mm_ds       *dead_mail_pool  = NULL;
+struct mm_ds       *dead_mail2_pool = NULL;
+mail_index_type    *mail_index      = 0; /* list of recs in the mail file  */
+position_list_type *free_list       = 0; /* list of free positions in file */
+long                file_end_pos    = 0; /* length of file */
+
 static void mail_ensure_dir(const char *path)
 {
 	char  dir[256];
@@ -117,11 +123,7 @@ static int mail_open_rw(FILE **mail_file, long filepos, int err_code)
 	return 1;
 }
 
-struct mm_ds       *dead_mail_pool  = NULL;
-struct mm_ds       *dead_mail2_pool = NULL;
-mail_index_type    *mail_index      = 0; /* list of recs in the mail file  */
-position_list_type *free_list       = 0; /* list of free positions in file */
-long                file_end_pos    = 0; /* length of file */
+
 
 /* mail isn't done by hometown, so just make a list of valid postman vnums */
 
