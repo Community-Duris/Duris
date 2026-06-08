@@ -1367,7 +1367,8 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 			strcat(buffer, "&+R(Q)&n");
 		}
 
-		if (IS_PC(i) || (i->specials.position != i->only.npc->default_pos) || IS_FIGHTING(i) || IS_RIDING(i) || i->lobj->Visible_Type() || (GET_RNUM(i) == real_mobile(IMAGE_REFLECTION_VNUM)) ||
+		if (IS_PC(i) || (i->specials.position != i->only.npc->default_pos) || IS_FIGHTING(i) || IS_RIDING(i) ||
+		    i->lobj && i->lobj->Visible_Type() || (GET_RNUM(i) == real_mobile(IMAGE_REFLECTION_VNUM)) ||
 		    IS_DESTROYING(ch))
 		{
 			/* A player char or a mobile w/o long descr, or not in default pos. */
@@ -1697,7 +1698,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 			if (IS_TRUSTED(ch) && IS_SET(ch->specials.act, PLR_VNUM) && IS_NPC(i))
 				snprintf(buffer + strlen(buffer), MAX_STRING_LENGTH - strlen(buffer), " [&+Y%d&n]", mob_index[GET_RNUM(i)].virtual_number);
 
-			act(buffer, TRUE, ch, i->lobj->Visible_Object(), GET_OPPONENT(i), TO_CHAR);
+			act(buffer, TRUE, ch, i->lobj? i->lobj->Visible_Object() : 0, GET_OPPONENT(i), TO_CHAR);
 		}
 		else
 		{ /* npc with long */
