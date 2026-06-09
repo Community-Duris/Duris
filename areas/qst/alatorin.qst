@@ -1365,7 +1365,7 @@ With a large grin, $n continues &+G'My prototypes are finished and I'm ready to 
 &+Wa &Nplastic &+Wbag full of &N&+gd&+Grug&N&+gs&N&+G, which you can get from a &+Ggoblin &Nin &+WDeramuth Port&N
 a&+Gnd &+W50 platinum&+G for my troubles.
 
-&+G'There are five different pieces of &+mte&+Mmpere&+d &+Cmithril &n&+marm&+Mor &+Gand thus five different pieces of &+Bbody enhancements&+G that I can craft for you, $N!' he says.
+&+G'There are five different pieces of &+mte&+Mmpere&+md &+Cmithril &n&+marm&+Mor &+Gand thus five different pieces of &+Bbody enhancements&+G that I can craft for you, $N!' he says.
 ~
 QA
 &N$n grins and says &+G'Thanks!  Remember, just give me ten of those pieces and I'll give ya a whole token!'
@@ -1903,7 +1903,7 @@ R I 83245
 G I 400068
 QA
 &N$n snatches the items from $N.
-&-W&+WBlinding light flashes&Mand the &+Wb&No&+Wn&Ne &-L&+Yexplodes&N in a &+cm&+Bi&+cs&+Bt!
+&-W&+WBlinding light flashes&+M and the &+Wb&No&+Wn&Ne &-L&+Yexplodes&N in a &+cm&+Bi&+cs&+Bt!
 ~
 R I 83245
 G I 400069
@@ -3294,7 +3294,7 @@ no~
 ~
 MA
 favor hammerhelm treasure~
-&N$n says '&+YHammer&+Whelm would be in great debt if you helped improve the &&N&+cAlatorin &+Yempire.  You see, &N&+cAlatorin &+Wwas raised by &Nsh&+Wie&Nld &+Ydwarves&+W, this it should remain run by &Nsh&+Wie&Nld &+Ydwarves&+W.  There is a member of the high council running the Hall of Adventurers.  You may have heard his name murmured among the less refined citizens of Alatorin as 'Short Stack.'
+&N$n says '&+YHammer&+Whelm would be in great debt if you helped improve the &N&+cAlatorin &+Yempire.  You see, &N&+cAlatorin &+Wwas raised by &Nsh&+Wie&Nld &+Ydwarves&+W, this it should remain run by &Nsh&+Wie&Nld &+Ydwarves&+W.  There is a member of the high council running the Hall of Adventurers.  You may have heard his name murmured among the less refined citizens of Alatorin as 'Short Stack.'
 &N$n rolls his eyes, and continues 'Remove Brudo from his command.  I will know the task is complete when you return to me with his &N&+memerald shortsword&n. &+WHis feeble mind has attributed his leadership to the finding of this blade and we, at &+YHammer&+Whelm believe he is not of fit &N&+rblood &+Wfor an honor among &Nsh&+Wie&Nld &+Ydwarwves!&N'
 ~
 MA
@@ -3641,7 +3641,7 @@ lotus lotuses loti~
 MA
 volo~
 &NA huge smile graces the face of $n.
-&'Volo!' he says excitedly, 'the legendary traveler..'
+&N'Volo!' he says excitedly, 'the legendary traveler..'
 ~
 QA
 &NWith a great smile on his face, $n says 'Excellent work, $N!'
@@ -3661,7 +3661,7 @@ S
 #83248
 M
 qc_action 150~
-&L$n &+Leyes you up and down, raises an eyebrow and ponders for a moment, then grins.
+&+L$n &+Leyes you up and down, raises an eyebrow and ponders for a moment, then grins.
 ~
 M
 qc_action 100~
@@ -4172,7 +4172,7 @@ steel: &Na rare piece of &+bcold&+csteel&N
 &+ybronze: &Na rare piece of &+yb&nl&+ye&ns&+ys&Ne&+yd bronze&N
 &+yc&No&+ypp&Ne&+yr&N: &+ya rare piece of enchanted c&No&+yp&Np&+ye&Nr&N
 &+csilver&N: &+Ca rare piece of magical silver&N
-&+Y*&Welectrum&N: &+Wa rare piece of glowing electrum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
+&+Y*&+Welectrum&N: &+Wa rare piece of glowing electrum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
 &+Y*&+Ygold&N: &+Ya rare piece of g&+Wl&+Yi&+Wt&+Yt&+We&+Yr&+Wi&+Yn&+Wg &+Ygold&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
 &+Y*&+Wplatinum&N: &+Wa rare piece of glowing platinum&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
 &+Y*&+mm&+Mi&+mt&+Mh&+mr&+Mi&+ml&N: &+Can ancient chunk of dwarven mithril&N (&+Y* &N+&+Rgn&+romi&+Rsh &+Lshopkeepers token&N)
@@ -6332,7 +6332,7 @@ hi hello craft crafting~
 &N$n blushes and says &+M'Well, hi!' and twirls cheerfully.
 &+M'Have you come here for crafting?  I combine top-tier material
 &+Mcomponents, (ya know, from salvaging?), with &+Rgn&+romi&+Rsh &+Lshopkeeper
-&+Ltokens&M to create really special things! Here's what I got:
+&+Ltokens&+M to create really special things! Here's what I got:
 
 &+Y*&+ysoft wood&N: &+ya shingle of &+Rancient timber &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
 &+Y*&+yhard wood&N: &+ga plank of &+Cb&+gl&+Ce&+gs&+Cs&+ge&+Cd&+g hardwood &N(&+Y*&N+2 &+Rgn&+romi&+Rsh &+Lshopkeeper tokens&N)
@@ -6964,7 +6964,7 @@ psychomia~
 ~
 QA
 &N$n snaps his fingers and two &+ysmugglers&N - one a barbarian and the other a halfling - burst through the curtain.
-The two &+ysmugglers&N carry the &+ybarrels&, and &+ykegs&N off into the tunnels.
+The two &+ysmugglers&N carry the &+ybarrels&N, and &+ykegs&N off into the tunnels.
 ~
 R E 80000
 R I 83463

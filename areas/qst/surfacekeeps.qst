@@ -108,7 +108,7 @@ miboli snoblsniz~
 ~
 QA
 &+LWith a smile on her face, $n says 'Excellent work $N, now I have an even more daunting mission for you..'
-&+'Take this dagger,' she says 'it is yours to keep.  If you should accept your next task then it will be plunged into the heart of an evil adversary corrupt to the cause of the seers.  There are two great wizards that can still pose a threat to the seers that we must have eliminated.  The legendary human &n&+bGhiran&+L and the ancient drow &N&+gOfnil&+L.  Bring me the &N&+ybracelet&+L of the human and the staff of the drow.. plunge the dagger of &+Cseers &+Linto &N&+bGhiran &+Land &N&+gOfnil&+L's &N&+rhearts&+L and return to me with their private possessions and the dagger of &+Cseers&+L.  With these three items in my possession, you will receive your &+Yeternal &+Lreward.'
+&+L'Take this dagger,' she says 'it is yours to keep.  If you should accept your next task then it will be plunged into the heart of an evil adversary corrupt to the cause of the seers.  There are two great wizards that can still pose a threat to the seers that we must have eliminated.  The legendary human &n&+bGhiran&+L and the ancient drow &N&+gOfnil&+L.  Bring me the &N&+ybracelet&+L of the human and the staff of the drow.. plunge the dagger of &+Cseers &+Linto &N&+bGhiran &+Land &N&+gOfnil&+L's &N&+rhearts&+L and return to me with their private possessions and the dagger of &+Cseers&+L.  With these three items in my possession, you will receive your &+Yeternal &+Lreward.'
 ~
 R I 120038
 G I 83340
@@ -422,7 +422,7 @@ S
 #120047
 M
 qc_action 200~
-&N$n fades in and out of existence, &b&+bmagic crackling around his body.
+&N$n fades in and out of existence, &+bmagic crackling around his body.
 ~
 M
 qc_action 200~

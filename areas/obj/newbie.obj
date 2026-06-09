@@ -847,7 +847,7 @@ A
 #29253
 leather pouch~
 a simple &+yleather&n &+Gpouch&n~
-A simple &+yleather& &+Gpouch&n lays here.~
+A simple &+yleather&n &+Gpouch&n lays here.~
 ~
 15 13 3 0 5 0 8192 8388609 0 0 0
 100 1 100 0 0 0 0 0
@@ -969,7 +969,7 @@ A recently &+csevered&n &+yscalp&n lies here &+Rbleeding&n~
 #29264
 grubby toe~
 a &+ggrubby&n &+ytoe&n~
-A &+ggrubby&n &+toe&n lies here.~
+A &+ggrubby&n &+ytoe&n lies here.~
 ~
 13 2 3 0 5 0 12288 16385 32768 0 0
 0 0 0 0 0 0 0 0
@@ -1465,7 +1465,7 @@ tome elegant spellbook~
 #29306
 quill~
 a &+Lplain&n quill~
-&+A &+Lplain&n quill lies here.~
+&nA &+Lplain&n quill lies here.~
 ~
 21 50 3 1 5 0 0 16385 0 0 0
 0 0 0 0 0 0 0 0

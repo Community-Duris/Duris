@@ -27,12 +27,12 @@ M
 behemoth riders~
    &+L"&+mYes Zugle is the warlord in charge of the behemoth riders.
    &+mNow leave me alone, killing this gnome slowly is more important to
-   &+n&+mme right now then talking to the likes of you!&+L"
+   &+mme right now then talking to the likes of you!&+L"
 ~
 M
 flaming horde~
    &+L"&+mYes the flaming horde live deep within &+WMount Olympus&+L.  I
-   &+N&+mdo not believe our tunnels have reached there yet but we are still
+   &+mdo not believe our tunnels have reached there yet but we are still
    &+mdigging with the &+Yp&+Ry&+rro&+Mbeast&+L."
 ~
 M
@@ -156,7 +156,7 @@ G I 94306
 G C 20000
 QA
    &+LArgle&N takes the different pieces of &+Wbone&N and the &+Lscales&N and
-begins to fashion them.  He separates the scales and &+Mmagically &+Nbinds them
+begins to fashion them.  He separates the scales and &+Mmagically &Nbinds them
 together in two separate forms.  Then, taking the large pieces of &+Wbone&N fashions
 the heels of the nearly formed boots.
 
@@ -235,7 +235,7 @@ As his body gains shape and he becomes one with the &+Bwaters, &Nthe
 R I 94386
 G I 94385
 D
-    Upon handing you the &+Ccrystal&N, the &+Wne&+Bre&+bid &+Nforms into the
+    Upon handing you the &+Ccrystal&N, the &+Wne&+Bre&+bid &Nforms into the
  &+Bwater&N, finally at &+Wpeace.
 ~
 S
@@ -243,7 +243,7 @@ S
 M
 zugle viscerith~
    &+WZugle was my former pupil, and then he got power-hungry with
-&+WWhis pet &+LViscerith&+W!  I have been condemned and sentenced to spend
+&+Whis pet &+LViscerith&+W!  I have been condemned and sentenced to spend
 &+Wthe rest of my unnatural life in this misty cavern, for I can no
 &+Wlonger see because of the mist!  Those two, Zugle and Viscerith, are
 &+Wthe cause of my destruction!  Although I still have powers of battle-
