@@ -163,7 +163,7 @@ const struct ferry_definition ferries[] = {
 		10000,                  // ticket price
 		(struct ferry_definition::stop_info[]){         // stops
 			{
-				83788, 
+				83787,
 				"&+WDeramuth Port&N"
 			}, 
 			{
