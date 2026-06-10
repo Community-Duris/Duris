@@ -177,7 +177,6 @@ int get_name(char return_namn[256])
 		}
 	}
 	fclose(infil);
-	srand(number(0, 444)); /* Kick on the rand-generator... */
 
 	/* correct the nr of available syllables...                                 */
 
@@ -187,9 +186,9 @@ int get_name(char return_namn[256])
 
 	for (loop = 0; loop < number(1, 15); loop++) /* loop through nr of names   */
 	{
-		strcpy(namn, start[rand() % antal_start]); /* get a start                  */
-		strcat(namn, mitt[rand() % antal_mitt]);   /* get a middle                 */
-		strcat(namn, slut[rand() % antal_slut]);   /* get an ending                */
+		strcpy(namn, start[number(0, antal_start - 1)]); /* get a start                  */
+		strcat(namn, mitt[number(0, antal_mitt - 1)]);   /* get a middle                 */
+		strcat(namn, slut[number(0, antal_slut - 1)]);   /* get an ending                */
 		snprintf(return_namn, MAX_STRING_LENGTH, "%s", namn);
 	}
 
