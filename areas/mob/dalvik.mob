@@ -1,0 +1,44 @@
+#1
+dalvik~
+&+yDalvik&N~
+An unnamed mob stands here, looking lonely and forelorn.
+~
+~
+8 0 0 0 0 0 0 0 0 S
+PH 0 0 0 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#2
+trade guild leader~
+&+Gthe trade guild leader (plat for all)&N~
+&+Gthe trade guild leader is here.&N
+~
+~
+10 0 0 0 8 0 0 0 0 S
+PH 0 0 0 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#3
+doomsayer high priest~
+&+mthe doomsayer high priest (gives exp)&N~
+&+mThe doomsayer high priest is here.
+~
+~
+10 0 0 0 0 8 0 0 0 S
+PH 0 0 0 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+#162
+mob unnamed~
+&+ythe M&+ra&+yn&+rs&+yh&+ra&+yk&+ra &nslave&+rmaster&N~
+slavemaster master
+~
+~
+10 0 0 0 0 0 0 0 -900 S
+mt 0 16384 2 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0

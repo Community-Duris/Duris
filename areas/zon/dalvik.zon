@@ -1,0 +1,240 @@
+#1
+&+yDalvik's &+rDockyard&N~
+476 2 0 40 50 1
+*
+* Zone edited with durisEdit v3.02
+*
+*
+D 0 66 9 5 100 0 0 0
+*     southeast exit from "A Marshy Pool" to
+*     "Thick Brush in the Forbidden Forest of the Khomani-Khan" - closed/secret
+*
+D 0 67 6 5 100 0 0 0
+*     northwest exit from "Thick Brush in the Forbidden Forest of the Khomani-Khan" to
+*     "A Marshy Pool" - closed/secret
+*
+D 0 67 8 2 100 0 0 0
+*     northeast exit from "Thick Brush in the Forbidden Forest of the Khomani-Khan" to
+*     "Back of an Ancient Overgrown Cemetary" - closed/locked
+*
+D 0 91 7 2 100 0 0 0
+*     southwest exit from "Back of an Ancient Overgrown Cemetary" to
+*     "Thick Brush in the Forbidden Forest of the Khomani-Khan" - closed/locked
+*
+D 0 117 1 1 100 0 0 0
+*     east exit from "A Shady, Narrow Cobblestone Road" to
+*     "Amongst Several Makeshift Ramadas" - closed
+*
+D 0 211 3 1 100 0 0 0
+*     west exit from "Amongst Several Makeshift Ramadas" to
+*     "A Shady, Narrow Cobblestone Road" - closed
+*
+D 0 118 1 1 100 0 0 0
+*     east exit from "A Shady, Narrow Cobblestone Road" to
+*     "Amongst Several Makeshift Ramadas" - closed
+*
+D 0 212 3 1 100 0 0 0
+*     west exit from "Amongst Several Makeshift Ramadas" to
+*     "A Shady, Narrow Cobblestone Road" - closed
+*
+D 0 124 0 5 100 0 0 0
+*     north exit from "A Sloped, Gravelly Trail" to
+*     "A Hidden Embankment" - closed/secret
+*
+D 0 209 2 5 100 0 0 0
+*     south exit from "A Hidden Embankment" to
+*     "A Sloped, Gravelly Trail" - closed/secret
+*
+D 0 138 2 0 100 0 0 0
+*     south exit from "An Unpaved Dirt Road" to
+*     "The Towering Wooden Gates of Manshaka" - open
+*
+D 0 139 0 0 100 0 0 0
+*     north exit from "The Towering Wooden Gates of Manshaka" to
+*     "An Unpaved Dirt Road" - open
+*
+D 0 145 1 1 100 0 0 0
+*     east exit from "A Dirt Road Through Manshaka" to
+*     "A Cramped Barracks" - closed
+*
+D 0 473 3 1 100 0 0 0
+*     west exit from "A Cramped Barracks" to
+*     "A Dirt Road Through Manshaka" - closed
+*
+D 0 146 1 1 100 0 0 0
+*     east exit from "A Dirt Road Through Manshaka" to
+*     "The Frothy Cistern" - closed
+*
+D 0 176 3 1 100 0 0 0
+*     west exit from "The Frothy Cistern" to
+*     "A Dirt Road Through Manshaka" - closed
+*
+D 0 151 0 0 100 0 0 0
+*     north exit from "A Bustling Square Outside The Blood Arena" to
+*     "Entry Foyer of the Blood Arena" - open
+*
+D 0 167 2 0 100 0 0 0
+*     south exit from "Entry Foyer of the Blood Arena" to
+*     "A Bustling Square Outside The Blood Arena" - open
+*
+D 0 159 2 1 100 0 0 0
+*     south exit from "Drudach Street" to
+*     "Aeternum Hem" - closed
+*
+D 0 181 0 1 100 0 0 0
+*     north exit from "Aeternum Hem" to
+*     "Drudach Street" - closed
+*
+D 0 160 0 1 100 0 0 0
+*     north exit from "Drudach Street" to
+*     "A Smoke-Filled Entry Parlor" - closed
+*
+D 0 203 2 1 100 0 0 0
+*     south exit from "A Smoke-Filled Entry Parlor" to
+*     "Drudach Street" - closed
+*
+D 0 164 2 1 100 0 0 0
+*     south exit from "Drudach Street" to
+*     "Brimin's Concoctions" - closed
+*
+D 0 180 0 1 100 0 0 0
+*     north exit from "Brimin's Concoctions" to
+*     "Drudach Street" - closed
+*
+D 0 166 1 1 100 0 0 0
+*     east exit from "Drudach Street" to
+*     "The Prism" - closed
+*
+D 0 395 3 1 100 0 0 0
+*     west exit from "The Prism" to
+*     "Drudach Street" - closed
+*
+D 0 182 1 1 100 0 0 0
+*     east exit from "A Heavily-Traveled Boardwalk" to
+*     "'The Iron Vault' of Manshaka" - closed
+*
+D 0 199 3 1 100 0 0 0
+*     west exit from "'The Iron Vault' of Manshaka" to
+*     "A Heavily-Traveled Boardwalk" - closed
+*
+D 0 185 0 0 100 0 0 0
+*     north exit from "The Main Dock of the Manshaka Shipyard" to
+*     "Oddities and Commodities" - open
+*
+D 0 206 2 0 100 0 0 0
+*     south exit from "Oddities and Commodities" to
+*     "The Main Dock of the Manshaka Shipyard" - open
+*
+D 0 186 0 1 100 0 0 0
+*     north exit from "An Energetic Boardwalk of the Manshaka Dock" to
+*     "In a Massive Log Warehouse" - closed
+*
+D 0 207 2 1 100 0 0 0
+*     south exit from "In a Massive Log Warehouse" to
+*     "An Energetic Boardwalk of the Manshaka Dock" - closed
+*
+D 0 186 1 1 100 0 0 0
+*     east exit from "An Energetic Boardwalk of the Manshaka Dock" to
+*     "A Small, Dingy Office" - closed
+*
+D 0 202 3 1 100 0 0 0
+*     west exit from "A Small, Dingy Office" to
+*     "An Energetic Boardwalk of the Manshaka Dock" - closed
+*
+D 0 187 0 1 100 0 0 0
+*     north exit from "The Main Dock of the Manshaka Shipyard" to
+*     "A Lobby Lounge of The Broken Mast" - closed
+*
+D 0 200 2 1 100 0 0 0
+*     south exit from "A Lobby Lounge of The Broken Mast" to
+*     "The Main Dock of the Manshaka Shipyard" - closed
+*
+D 0 188 0 1 100 0 0 0
+*     north exit from "The Main Dock of the Manshaka Shipyard" to
+*     "The Seashell Shack" - closed
+*
+D 0 198 2 1 100 0 0 0
+*     south exit from "The Seashell Shack" to
+*     "The Main Dock of the Manshaka Shipyard" - closed
+*
+D 0 208 1 1 100 0 0 0
+*     east exit from "In a Massive Log Warehouse" to
+*     "A Muddy Staging Area" - closed
+*
+D 0 334 3 1 100 0 0 0
+*     west exit from "A Muddy Staging Area" to
+*     "In a Massive Log Warehouse" - closed
+*
+D 0 209 5 5 100 0 0 0
+*     down exit from "A Hidden Embankment" to
+*     "A Secluded, Sandy Landing" - closed/secret
+*
+D 0 210 4 5 100 0 0 0
+*     up exit from "A Secluded, Sandy Landing" to
+*     "A Hidden Embankment" - closed/secret
+*
+D 0 277 1 1 100 0 0 0
+*     east exit from "A Hallway of The Broken Mast" to
+*     "Guests' Quarters of The Broken Mast" - closed
+*
+D 0 281 3 1 100 0 0 0
+*     west exit from "Guests' Quarters of The Broken Mast" to
+*     "A Hallway of The Broken Mast" - closed
+*
+D 0 277 3 1 100 0 0 0
+*     west exit from "A Hallway of The Broken Mast" to
+*     "Guests' Quarters of The Broken Mast" - closed
+*
+D 0 282 1 1 100 0 0 0
+*     east exit from "Guests' Quarters of The Broken Mast" to
+*     "A Hallway of The Broken Mast" - closed
+*
+D 0 278 1 1 100 0 0 0
+*     east exit from "A Hallway of The Broken Mast" to
+*     "Guests' Quarters of The Broken Mast" - closed
+*
+D 0 279 3 1 100 0 0 0
+*     west exit from "Guests' Quarters of The Broken Mast" to
+*     "A Hallway of The Broken Mast" - closed
+*
+D 0 278 3 1 100 0 0 0
+*     west exit from "A Hallway of The Broken Mast" to
+*     "Guests' Quarters of The Broken Mast" - closed
+*
+D 0 280 1 1 100 0 0 0
+*     east exit from "Guests' Quarters of The Broken Mast" to
+*     "A Hallway of The Broken Mast" - closed
+*
+D 0 311 0 0 100 0 0 0
+*     north exit from "Drudach Street" to
+*     "A Lower Foyer of The Trade Guild" - open
+*
+D 0 469 2 0 100 0 0 0
+*     south exit from "A Lower Foyer of The Trade Guild" to
+*     "Drudach Street" - open
+*
+D 0 474 3 1 100 0 0 0
+*     west exit from "Second Floor of a Cramped Barracks" to
+*     "A Rickety Wooden Guards' Walk" - closed
+*
+D 0 476 1 1 100 0 0 0
+*     east exit from "A Rickety Wooden Guards' Walk" to
+*     "Second Floor of a Cramped Barracks" - closed
+*
+*
+O 0 1 1 2 100 0 0 0                * a dozen old, rusty crow's cages
+O 0 2 1 8 100 0 0 0                * an entangled stone monolith
+O 0 5 1 159 100 0 0 0              * a sign reading 'Aeternum Hem'
+O 0 4 1 164 100 0 0 0              * a sign reading 'Brimin's Concoctions'
+O 0 3 1 166 100 0 0 0              * a sign reading 'The Prism'
+O 0 8 1 185 100 0 0 0              * a sign reading 'Oddities and Commodities'
+O 0 7 1 187 100 0 0 0              * a sign reading 'The Broken Mast'
+O 0 6 1 188 100 0 0 0              * a sign reading 'The Seashell Shack'
+O 0 132581 1 199 100 0 0 0         * (object type not in this .obj file)
+O 0 72 1 257 100 0 0 0             * (object type not in this .obj file)
+O 0 63 1 259 100 0 0 0             * a large circular saw blade
+*
+M 0 162 1 162 100 0 0 0            * the Manshaka slavemaster
+M 0 2 1 470 100 0 0 0              * the trade guild leader (plat for all)
+*
+S

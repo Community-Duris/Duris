@@ -1,0 +1,818 @@
+#1
+crows cages cage~
+&+ya dozen old, &+rr&+yu&+rs&+yt&+ry &+ycrow's cages~
+&+yA dozen &+rr&+yu&+rs&+yt&+ry &+ymetal crow's cages in various stages of disrepair hang in a rough circle around the clearing.~
+~
+15 15 4 0 7 0 0 0 0 0 0
+22000 0 0 0 0 0 0 0
+0 0 50
+E
+crows cages cage~
+   &+yA dozen crow's cages were suspended from trees before the area was
+cleared, long ago, forming an open space at the center.
+&+yThis was how it stood, presumably, before two of the trees have fallen,
+with another one leaning dramatically and ready to collapse as well.
+&+yOne of the other cages supportive branches was sawed off with an even cut,
+leaving a total of three cages strewn upon the ground, consumed by
+overgrowth. One of the two cages on the northeastern corner of the clearing
+&+yis missing its door and has been enveloped by a massive oak tree,
+having literally grown around the metal. This leaves eight operable cages,
+&+ysix on the southern, shaded perimeter of the clearing and two adjacent
+to the northern path, fully operable and as far as one may assume - still
+&+yused for the prolonged executions of thieves and outcasts in a cruel display.
+~
+#2
+entangled stone monolith~
+&+Lan en&+gta&+Lng&+gle&+Ld s&+gt&+Lo&+gn&+Le m&+go&+Ln&+go&+Ll&+gi&+Lth&N~
+&+LA large, stone monolith stands here, &+gentangled in &+ythorny&+g vines.~
+~
+13 11 4 0 1 0 0 0 64 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+entangled monolith~
+   &+LThe deta&+gil&+Ls reveal&+ged &+Lin a closer&+g in&+Lspection of&+g th&+Lis monolith
+&+Lonly bolste&+gr &+Lthe myst&+gery&+L of its ori&+ggin&+L. The surfa&+gce &+Lis smooth
+&+Lto the poin&+gt &+Lwhere it&+g se&+Lems like it&+g wa&+Ls polished &+g- m&+Luch different
+&+Lthan the ro&+gug&+Lh, layer&+ged &+Lshale that &+gfil&+Lls the loca&+gl e&+Larth. The
+&+Lfaint signs&+g o&+Lf very l&+gigh&+Ltly-etched &+grun&+Les of unkno&+gwn &+Lscript cover
+&+Levery inch &+gof&+L the gre&+gat,&+L oblong sto&+gne.&+L It stands,&+g er&+Lect, on the
+&+Lblocked sto&+gne&+L base, a&+gt a&+L quiet peac&+ge w&+Lith its veg&+geta&+Ltive bindings.
+&+LWhile it do&+ges&+Ln't hum &+gwit&+Lh radiant m&+gagi&+Lc, there is&+g st&+Lill a great
+&+Lpeculiarity&+g o&+Lf the mo&+gnol&+Lith's purpo&+gse &+Land an unde&+gnia&+Lble sense of
+&+Ldeeper powe&+gr.
+~
+#3
+sign prism~
+&+Wa sign reading '&+CThe &+BP&+cr&+Gi&+Ys&+Rm&+W'&n~
+&+WA sign reading '&+CThe &+BP&+cr&+Gi&+Ys&+Rm&+W' is posted on the eastern building.~
+~
+13 15 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+sign prism~
+     &+L| |      | |
+     &+L| |      | |
+&+y+====&N+&+y-&N+&+y======&N+&+y-&N+&+y====+
+&+y|                    |
+&+y|     &+WThe &+BP&+cr&+Gi&+Ys&+Rm&+y      |
+&+y|                    |
+&+y+====================+
+~
+#4
+sign~
+&+ca sign reading &+C'Brimin's Concoctions'&N~
+&+cA sign reading &+C'Brimin's Concoctions'&+c is posted on the southern building.~
+~
+8 6 2 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+sign~
+     &+L| |      | |
+     &+L| |      | |
+&+y+====&N+&+y-&N+&+y======&N+&+y-&N+&+y====+
+&+y|    &+C  Brimin's    &+y  |
+&+y|    &+CConcoctions&+y     |
+&+y|                    |
+&+y+====================+
+~
+#5
+sign~
+&+Ma sign reading &+m'Aeternum Hem'&N~
+&+MA sign reading &+m'Aeternum Hem'&+M is posted on the southern building.~
+~
+8 6 2 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+sign~
+     &+L| |      | |
+     &+L| |      | |
+&+y+====&N+&+y-&N+&+y======&N+&+y-&N+&+y====+
+&+y|                    |
+&+y|    &+MAeternum Hem&+y    |
+&+y|                    |
+&+y+====================+
+~
+#6
+sign~
+&+ya sign reading &+c'The Seashell Shack'&N~
+&+yA sign reading &+c'The Seashell Shack'&+y hangs on the northern hut.~
+~
+8 6 2 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+sign~
+     &+L| |      | |
+     &+L| |      | |
+&+y+====&N+&+y-&N+&+y======&N+&+y-&N+&+y====+
+&+y|     &+c    The     &+y   |
+&+y|   &+cSeashell Shack&+y   |
+&+y|                    |
+&+y+====================+
+~
+#7
+sign~
+&+ga sign reading &+Y'The Broken Mast'&N~
+&+gA sign reading &+Y'The Broken Mast'&+g is posted on the northern building.~
+~
+8 6 2 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+sign~
+     &+L| |      | |
+     &+L| |      | |
+&+y+====&N+&+y-&N+&+y======&N+&+y-&N+&+y====+
+&+y|                    |
+&+y|   &+YThe Broken Mast&+y  |
+&+y|                    |
+&+y+====================+
+~
+#8
+sign~
+&+ma sign reading &+C'Oddities and Commodities'&N~
+&+mA sign reading &+C'Oddities and Commodities'&+m is posted on the northern building.~
+~
+8 6 2 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+E
+sign~
+     &+L| |      | |
+     &+L| |      | |
+&+y+====&N+&+y-&N+&+y======&N+&+y-&N+&+y====+
+&+y|     &+C Oddities     &+y |
+&+y|     &+C   and     &+y    |
+&+y|     &+CCommodities&+y    |
+&+y+====================+
+~
+#9
+fine rune-covered silk sleeves~
+&+Lsome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk sleeves&N~
+&+LSome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk sleeves&N have been left here.~
+~
+9 3 3 0 15 0 0 257 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 32 0 0 0
+A
+13 20
+A
+33 5
+#10
+fine rune-covered silk leggings~
+&+Lsome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk leggings&N~
+&+LSome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk leggings&N have been left here.~
+~
+9 3 3 0 15 0 0 33 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 32 0 0 0
+A
+13 20
+A
+33 5
+#11
+fine rune-covered silk hood~
+&+La fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk hood&N~
+&+LA fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk hood&N has been left here.~
+~
+9 3 3 0 15 0 0 17 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 32 0 0 0
+A
+13 20
+A
+33 5
+#12
+fine rune-covered silk robes~
+&+Lsome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk robes&N~
+&+LSome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk robes&N have been left here.~
+~
+9 3 3 0 15 0 0 9 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 32 0 0 0
+A
+13 35
+A
+33 5
+#13
+fine rune-covered silk slippers~
+&+Lsome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk slippers&N~
+&+LSome fine &+mr&+Lu&+mn&+Le-co&+mv&+Le&+mr&+Led &+Msilk slippers&N have been left here.~
+~
+9 3 3 0 15 0 0 65 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 32 0 0 0
+A
+13 20
+A
+33 5
+#14
+fine ceremonial hides sleeves~
+&+ysome fine sleeves of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N~
+&+ySome fine sleeves of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N lie here.~
+~
+9 12 3 0 15 0 1 257 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 4 0 0 0
+A
+13 20
+A
+34 5
+#15
+fine ceremonial hides leggings~
+&+ysome fine leggings of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N~
+&+ySome fine leggings of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N lie here.~
+~
+9 12 3 0 15 0 1 33 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 4 0 0 0
+A
+13 20
+A
+34 5
+#16
+fine ceremonial hides hood~
+&+ya fine hood of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N~
+&+ya fine hood of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N lie here.~
+~
+9 12 3 0 15 0 1 17 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 4 0 0 0
+A
+13 20
+A
+34 5
+#17
+fine ceremonial hides robes~
+&+ysome fine robes of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N~
+&+ySome fine robes of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N lie here.~
+~
+9 12 3 0 15 0 1 9 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 4 0 0 0
+A
+13 35
+A
+34 5
+#18
+fine ceremonial hides moccasins~
+&+ysome fine moccasins of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N~
+&+ySome fine moccasins of &+ccer&+Ce&+Wmo&+Cn&+cial &+yhides&N lie here.~
+~
+9 12 3 0 15 0 1 65 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100 4 0 0 0
+A
+13 20
+A
+34 5
+#19
+fine enchanted leather sleeves~
+&+ysome fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather sleeves&n~
+&+ySome fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather sleeves&n lies here.~
+~
+9 13 3 0 15 0 0 257 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+14 30
+#20
+fine enchanted leather pants~
+&+ysome fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather pants&n~
+&+ySome fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather pants&n lies here.~
+~
+9 13 3 0 15 0 0 33 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+14 30
+#21
+fine enchanted leather helm~
+&+ya fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather helm&n~
+&+yA fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather helm&n lies here.~
+~
+9 13 3 0 15 0 0 17 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+14 30
+#22
+fine enchanted leather tunic~
+&+ya fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather tunic&n~
+&+yA fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather tunic&n lies here.~
+~
+9 13 3 0 15 0 0 9 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 35
+A
+14 30
+#23
+fine enchanted leather boots~
+&+ysome fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather boots&n~
+&+ySome fine &+Ye&+yn&+Yc&+yh&+Ya&+yn&+Yt&+ye&+Yd&+y leather boots&n lies here.~
+~
+9 13 3 0 15 0 0 65 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+14 30
+#24
+fine enchanted black leather sleeves~
+&+Lsome fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather sleeves&N~
+&+LSome fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather sleeves&N lies here.~
+~
+9 14 3 0 15 0 1 257 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+36 5
+#25
+fine enchanted black leather pants~
+&+Lsome fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather pants&N~
+&+LSome fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather pants&N lies here.~
+~
+9 14 3 0 15 0 1 257 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+36 5
+#26
+fine enchanted black leather helm~
+&+La fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather helm&N~
+&+LA fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather helm&N lies here.~
+~
+9 14 3 0 15 0 1 17 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+36 5
+#27
+fine enchanted black leather tunic~
+&+La fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather tunic&N~
+&+LA fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather tunic&N lies here.~
+~
+9 14 3 0 15 0 1 9 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 35
+A
+36 5
+#28
+fine enchanted black leather boots~
+&+Lsome fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather boots&N~
+&+LSome fine &+me&+Ln&+mc&+Lh&+ma&+Ln&+mt&+Le&+md &+Lblack leather boots&N lies here.~
+~
+9 14 3 0 15 0 1 65 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+36 5
+#29
+aged reptillian wyrm scale sleeves~
+&n&+gsome aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale sleeves&n~
+&n&+gSome aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale sleeves&n lies here.~
+~
+9 47 3 0 15 0 0 257 0 0 0
+25 0 0 0 0 0 0 0
+0 100000 100
+A
+23 -5
+A
+20 -5
+#30
+aged reptillian wyrm scale leggings~
+&n&+gsome aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale leggings&n~
+&n&+gSome aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale leggings&n lies here.~
+~
+9 47 3 0 15 0 0 33 0 0 0
+25 0 0 0 0 0 0 0
+0 100000 100
+A
+23 -5
+A
+20 -5
+#31
+aged reptillian wyrm scale hood~
+&n&+gan aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale hood&n~
+&n&+gAn aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale hood&n lies here.~
+~
+9 47 3 0 15 0 0 17 0 0 0
+25 0 0 0 0 0 0 0
+0 100000 100
+A
+23 -5
+A
+20 -5
+#32
+aged reptillian wyrm scale tunic~
+&n&+gan aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale tunic&n~
+&n&+gAn aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale tunic&n lies here.~
+~
+9 47 3 0 15 0 0 9 0 0 0
+45 0 0 0 0 0 0 0
+0 100000 100
+A
+23 -6
+A
+20 -6
+#33
+aged reptillian wyrm scale boots~
+&n&+gsome aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale boots&n~
+&n&+gSome aged r&+Ge&+gp&+Gt&+gi&+Gl&+gl&+Gi&+ga&+Gn &+Cwyrm &+Gscale boots&n lies here.~
+~
+9 47 3 0 15 0 0 65 0 0 0
+25 0 0 0 0 0 0 0
+0 100000 100
+A
+23 -5
+A
+20 -5
+#34
+pitch-black pitch black rubber sleeves~
+&+Lsome pitch-black rubber sleeves&N~
+&+LSome pitch-black rubber sleeves&N lies here.~
+~
+9 49 3 0 15 0 0 257 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#35
+pitch-black pitch black rubber pants~
+&+Lsome pitch-black rubber pants&N~
+&+LSome pitch-black rubber pants&N lies here.~
+~
+9 49 3 0 15 0 0 33 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#36
+pitch-black pitch black rubber helm~
+&+La pitch-black rubber helm&N~
+&+LA pitch-black rubber helm&N lies here.~
+~
+9 49 3 0 15 0 0 17 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#37
+pitch-black pitch black rubber tunic~
+&+La pitch-black rubber tunic&N~
+&+LA pitch-black rubber tunic&N lies here.~
+~
+9 49 3 0 15 0 0 9 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+2 12
+A
+32 6
+#38
+pitch-black pitch black rubber shoes~
+&+Lsome pitch-black rubber shoes&N~
+&+LSome pitch-black rubber shoes&N lies here.~
+~
+9 49 3 0 15 0 0 65 64 0 0
+5 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#39
+dazzling pearl stud~
+&+Wa &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wstud&N~
+&+WA &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wstud&N lies here.~
+~
+9 52 1 0 15 0 0 524289 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+24 -5
+A
+20 -5
+#40
+dazzling pearl ring~
+&+Wa &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wring&N~
+&+WA &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wring&N lies here.~
+~
+9 52 1 0 15 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+24 -5
+A
+20 -5
+#41
+dazzling pearl bracelet~
+&+Wa &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wbracelet&N~
+&+WA &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wbracelet&N lies here.~
+~
+9 52 1 0 15 0 0 4097 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+24 -5
+A
+20 -5
+#42
+dazzling pearl necklace~
+&+Wa &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wnecklace&N~
+&+WA &Nd&+Wa&Nz&+Wz&Nl&+Wi&Nn&+Wg pe&Na&+Wrl &+Wnecklace&N lies here.~
+~
+9 52 1 0 15 0 0 5 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+24 -5
+A
+20 -5
+#43
+dazzling gemstone stud~
+&+Ya d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone stud&N~
+&+YA d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone stud&N lies here.~
+~
+9 26 1 0 15 0 0 524289 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+24 -5
+#44
+dazzling gemstone ring~
+&+Ya d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone ring&N~
+&+YA d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone ring&N lies here.~
+~
+9 26 1 0 15 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+24 -5
+#45
+dazzling gemstone bracelet~
+&+Ya d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone bracelet&N~
+&+YA d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone bracelet&N lies here.~
+~
+9 26 1 0 15 0 0 4097 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+24 -5
+#46
+dazzling gemstone necklace~
+&+Ya d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone necklace&N~
+&+YA d&+Wa&+Yz&+Wz&+Yl&+Wi&+Yn&+Wg&n &+ggem&+Ystone necklace&N lies here.~
+~
+9 26 1 0 15 0 0 5 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+13 20
+A
+24 -5
+#47
+dazzling emerald stud~
+&+ga &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gstud&N~
+&+gA &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gstud&N lies here.~
+~
+9 32 1 0 15 0 0 524289 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#48
+dazzling emerald ring~
+&+ga &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gring&N~
+&+gA &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gring&N lies here.~
+~
+9 32 1 0 15 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#49
+dazzling emerald bracelet~
+&+ga &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gbracelet&N~
+&+gA &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gbracelet&N lies here.~
+~
+9 32 1 0 15 0 0 4097 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#50
+dazzling emerald necklace~
+&+ga &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gnecklace&N~
+&+gA &+Gd&+ga&+Gz&+gz&+Gl&+gi&+Gn&+Gg &+Gem&+ge&+gr&+Ga&+gld &+Gnecklace&N lies here.~
+~
+9 32 1 0 15 0 0 5 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+2 10
+A
+32 5
+#51
+dazzling sapphire stud~
+&+Ba d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bstud&N~
+&+BA d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bstud&N lies here.~
+~
+9 33 1 0 15 0 0 524289 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+5 10
+A
+35 5
+#52
+dazzling sapphire ring~
+&+Ba d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bring&N~
+&+BA d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bring&N lies here.~
+~
+9 33 1 0 15 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+5 10
+A
+35 5
+#53
+dazzling sapphire bracelet~
+&+Ba d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bbracelet&N~
+&+BA d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bbracelet&N lies here.~
+~
+9 33 1 0 15 0 0 4097 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+5 10
+A
+35 5
+#54
+dazzling sapphire necklace~
+&+Ba d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bnecklace&N~
+&+BA d&+ca&+Bz&+cz&+Bl&+ci&+Bn&+cg &+Bs&+ba&+Bp&+bp&+Bh&+bi&+Br&+be &+Bnecklace&N lies here.~
+~
+9 33 1 0 15 0 0 5 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+5 10
+A
+35 5
+#55
+dazzling ruby stud~
+&+ra &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry stud&N~
+&+rA &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry stud&N lies here.~
+~
+9 31 1 0 15 0 0 524289 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+1 10
+A
+31 5
+#56
+dazzling ruby ring~
+&+ra &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry ring&N~
+&+rA &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry ring&N lies here.~
+~
+9 31 1 0 15 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+1 10
+A
+31 5
+#57
+dazzling ruby bracelet~
+&+ra &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry bracelet&N~
+&+rA &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry bracelet&N lies here.~
+~
+9 31 1 0 15 0 0 4097 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+1 10
+A
+31 5
+#58
+dazzling ruby necklace~
+&+ra &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry necklace&N~
+&+rA &+Rd&+ra&+Rz&+rz&+Rl&+ri&+Rn&+rg r&+Ru&+rb&+Ry necklace&N lies here.~
+~
+9 31 1 0 15 0 0 5 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+1 10
+A
+31 5
+#59
+dazzling diamond stud~
+&+Wa d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wstud&N~
+&+WA d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wstud&N lies here.~
+~
+9 27 1 0 15 0 0 524289 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+4 10
+A
+34 5
+#60
+dazzling diamond ring~
+&+Wa d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wring&N~
+&+WA d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wring&N lies here.~
+~
+9 27 1 0 15 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+4 10
+A
+34 5
+#61
+dazzling diamond bracelet~
+&+Wa d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wbracelet&N~
+&+WA d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wbracelet&N lies here.~
+~
+9 27 1 0 15 0 0 4097 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+4 10
+A
+34 5
+#62
+dazzling diamond necklace~
+&+Wa d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wnecklace&N~
+&+WA d&+Ya&+Wz&+Yz&+Wl&+Yi&+Wn&+Yg &+Wd&Ni&+Wa&nm&+Wo&Nn&+Wd&n &+Wnecklace&N lies here.~
+~
+9 27 1 0 15 0 0 5 0 0 0
+0 0 0 0 0 0 0 0
+0 100000 100
+A
+4 10
+A
+34 5
+#63
+large circular saw blade~
+&n&+ca lar&+Cge circular saw bla&+cde~
+&+CThe circlar saw blade gleams, &+yready to buzz through some timber.~
+~
+5 16 4 0 10 0 0 1 0 0 0
+1 1 8 0 0 0 0 0
+15 5000 100
+E
+large circular saw blade~
+   &+cThis large, steel blade&+C is evenly serrated wi&+cth sharp, eager teeth.
+&+cA medium log-sized gap &+Cat its center allows a&+c brace with two posts to
+&+cbe inserted, with ea&+Cch post being attached&+c to opposite sides of a cog-
+&+cwheel, which is i&+Cn turn rotated by the &+chydro-powered force of the water
+&+cpushing primar&+Cy waterwheel.
+~
+A
+19 2
