@@ -1727,6 +1727,8 @@ void event_bardsong(P_char ch, P_char victim, P_obj obj, void *data)
 		return;
 	}
 
+	REMOVE_BIT(ch->specials.affected_by, AFF_HIDE);
+
 	song_chance = bard_calc_chance(ch, song);
 	// Ok, this averages song_chance with 75, if song_chance < 75, so closer to 3/4 chance to complete verse.
 	//   So, @1 chance -> 38%, @25 chance -> 50%, and at 75%, it stays 75%.
@@ -2142,8 +2144,8 @@ void do_riff(P_char ch, char *arg, int cmd)
 		{
 			if (songwords[i].num == s)
 			{
-				act("$n &+Csuddenly breaks out a &+Wquick verse&+C from their &+Crepitiore &+Cof songs...&n", FALSE, ch, 0, 0, TO_ROOM);
-				act("&+CYou suddenly break out a &+Wquick verse&+C from your &+Crepitiore &+Cof songs...&n", FALSE, ch, 0, 0, TO_CHAR);
+				act("$n &+Csuddenly breaks out a &+Wquick verse&+C from their &+Crepertoire &+Cof songs...&n", FALSE, ch, 0, 0, TO_ROOM);
+				act("&+CYou suddenly break out a &+Wquick verse&+C from your &+Crepertoire &+Cof songs...&n", FALSE, ch, 0, 0, TO_CHAR);
 
 				act(songwords[i].tochar, FALSE, ch, 0, 0, TO_CHAR);
 				act(songwords[i].toroom, FALSE, ch, 0, 0, TO_ROOM);
