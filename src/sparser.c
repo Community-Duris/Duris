@@ -733,6 +733,9 @@ void add_follower(P_char ch, P_char leader)
 		act("$n starts following you.", TRUE, ch, 0, leader, TO_VICT);
 		act("$n now follows $N.", TRUE, ch, 0, leader, TO_NOTVICT);
 	}
+
+	if (IS_NPC(ch) && IS_PC(leader))
+		group_add_member(leader->group? leader->group->ch : leader, ch);
 }
 
 /* shamans used to be considered type cleric, they aren't anymore, so or

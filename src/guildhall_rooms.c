@@ -237,6 +237,7 @@ bool EntranceRoom::init()
 			}
 			add_tag_to_char(golem, TAG_GUILDHALL, this->guildhall->id, AFFTYPE_PERM);
 			add_tag_to_char(golem, TAG_DIRECTION, rev_dir[this->value[GH_VALUE_ENTRANCE_DIR]], AFFTYPE_PERM);
+			golem->player.racewar = guildhall->racewar;
 
 			char_to_room(golem, real_room0(this->vnum), -1);
 

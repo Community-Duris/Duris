@@ -51,6 +51,8 @@ struct mm_ds *dead_group_pool = NULL;
 void          remove_aura_message(P_char ch, P_char commander);
 void          add_aura_message(P_char ch, P_char commander);
 
+static bool do_group_add(P_char ch, P_char victim);
+
 /*
  * Calculates free slots in back rank, might be negative
  */
@@ -350,17 +352,7 @@ void do_appoint(P_char ch, char *argument, int cmd)
 		}
 	}
 
-	/* Flag group clients for a group update (MSP and WebSocket/GMCP clients) */
-	for (gl = ch->group; gl; gl = gl->next)
-	{
-		if (gl->ch && gl->ch->desc)
-		{
-			if (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled)
-			{
-				gl->ch->desc->last_group_update = 1;
-			}
-		}
-	}
+	update_groupies(ch);
 }
 
 void do_group(P_char ch, char *argument, int cmd)
@@ -717,14 +709,7 @@ void do_group(P_char ch, char *argument, int cmd)
 			SET_BIT(ch->specials.act2, PLR2_BACK_RANK);
 			send_to_char("You move back to the back rank!\n", ch);
 			on_front_line(ch);
-			// Client
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch, true);
 			return;
 		}
 		else if (!str_cmp(name, "front"))
@@ -735,14 +720,7 @@ void do_group(P_char ch, char *argument, int cmd)
 				return;
 			REMOVE_BIT(ch->specials.act2, PLR2_BACK_RANK);
 			send_to_char("You move up to the front rank!\n", ch);
-			// Client
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch, true);
 			on_front_line(ch);
 			return;
 		}
@@ -763,30 +741,17 @@ void do_group(P_char ch, char *argument, int cmd)
 			return;
 		}
 		for (f = ch->followers, found = FALSE; f; f = f->next)
-			if (CAN_SEE(ch, f->follower) && f->follower->group)
-				if (ch->group == f->follower->group)
-				{
-					act("$N already grouped by you.", TRUE, ch, 0, f->follower, TO_CHAR);
-				}
-				else
-				{
-					act("$N is in another group.", TRUE, ch, 0, f->follower, TO_CHAR);
-				}
-			else if (ch && (IS_ILLITHID(f->follower) || IS_ILLITHID(ch)))
+		{
+			if (!CAN_SEE(ch, f->follower))
+				continue;
+			if (f->follower->group && ch->group == f->follower->group)
 			{
-				return;
+				act("$N already grouped by you.", TRUE, ch, 0, f->follower, TO_CHAR);
+				continue;
 			}
-			else if ((f->follower->in_room == ch->in_room) && CAN_SEE(ch, f->follower) && ((IS_ILLITHID(f->follower) == IS_ILLITHID(ch)) || (IS_ILLITHID(ch) && IS_NPC(f->follower))))
-			{
-				if (group_add_member(ch, f->follower))
-				{
-					act("$N is now a member of your group.", TRUE, ch, 0, f->follower, TO_CHAR);
-					act("$N is now a member of $n's group.", TRUE, ch, 0, f->follower, TO_NOTVICT);
-					act("You are now a member of $n's group.", FALSE, ch, 0, f->follower, TO_VICT);
-
-					found = TRUE;
-				}
-			}
+			if (do_group_add(ch, f->follower))
+				found = TRUE;
+		}
 		if (!found)
 			send_to_char("No new group members.\n", ch);
 
@@ -810,26 +775,13 @@ void do_group(P_char ch, char *argument, int cmd)
 		else
 		{
 			send_to_char("You leave the group.\n", ch);
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch);
 			group_remove_member(ch);
 			purge_linked_auras(ch);
 			REMOVE_BIT(ch->specials.affected_by3, AFF3_PALADIN_AURA);
 			clear_links(ch, LNK_PALADIN_AURA);
 		}
-		// Client
-		for (gl = ch->group; gl; gl = gl->next)
-		{
-			if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-			{
-				gl->ch->desc->last_group_update = 1;
-			}
-		}
+		update_groupies(ch);
 		return;
 	}
 	/* only the group leader can do anything below this point */
@@ -867,119 +819,62 @@ void do_group(P_char ch, char *argument, int cmd)
 			act("You have been kicked out of $n's group.", FALSE, ch, 0, victim, TO_VICT);
 			act("$N has been kicked out of $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
 			group_remove_member(victim);
-			// Client
-			for (gl = ch->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
-			// Client
-			for (gl = victim->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+			update_groupies(ch);
+			update_groupies(victim);
 			return;
 		}
 	}
 	/* well.. nothing left to do.. if the victim isn't in another group,
 	   then group them :) */
 
-	if (victim->group)
+	do_group_add(ch, victim);
+}
+
+static bool do_group_add(P_char ch, P_char victim)
+{
+	if (victim->group && victim->group->ch != victim)
 	{
 		act("$N is in another group.", TRUE, ch, 0, victim, TO_CHAR);
-		return;
+		return false;
 	}
-	/* NPC's only allow themselves to be grouped with people they are
-	   following */
-	/* if(IS_ILLITHID(ch) || // Illithids cannot group with anything. Nov08 -Lucrot
-	   IS_ILLITHID(victim))
-	{
-	  act("$N doesn't want to be in your group.", TRUE, ch, 0, victim, TO_CHAR);
-	  return;
-	} */
-	/*
-	//Paladins and AP cannot group together - Drannak
-	if(GET_CLASS(victim, CLASS_PALADIN))
-	{
-	for (gl = ch->group; gl; gl = gl->next)
-	 {
-	  if (GET_CLASS(gl->ch, CLASS_ANTIPALADIN))
-	   {
-	    send_to_char("&+WYou do not wish to group with such unholy scum!&n\n", victim);
-	    send_to_char("&+LAhh, but grouping with someone so &+Wholy &+Lwould disturb the unholy energies of your group.&n\n", ch);
-	  return;
-	   }
-
-	  }
-	 }
-
-	if(GET_CLASS(victim, CLASS_ANTIPALADIN))
-	{
-	for (gl = ch->group; gl; gl = gl->next)
-	 {
-	  if (GET_CLASS(gl->ch, CLASS_PALADIN))
-	   {
-	    send_to_char("&+WYou do not wish to group with such holy scum!&n\n", victim);
-	    send_to_char("&+WAhh, but grouping with someone so &+Lunholy &+Wwould disturb the holy energies of your group.&n\n", ch);
-	  return;
-	   }
-
-	  }
-	 }
-	if(GET_CLASS(victim, CLASS_ANTIPALADIN) && GET_CLASS(ch, CLASS_PALADIN))
-	{
-	    send_to_char("&+WYou do not wish to group with such unholy scum!&n\n", ch);
-	    send_to_char("&+LAhh, but grouping with someone so &+Wholy &+Lwould disturb the unholy energies of your group.&n\n", victim);
-	  return;
-	   }
-	if(GET_CLASS(victim, CLASS_PALADIN) && GET_CLASS(ch, CLASS_ANTIPALADIN))
-	  {
-	    send_to_char("&+WYou do not wish to group with such holy scum!&n\n", ch);
-	    send_to_char("&+WAhh, but grouping with someone so &+Lunholy &+Wwould disturb the holy energies of your group.&n\n", victim);
-	  return;
-	   }
-	*/
 
 	if (IS_NPC(victim) && (victim->following != ch) && !is_linked_to(ch, victim, LNK_CONSENT))
 	{
-		if (!is_guild_golem(victim, ch))
-		{
-			act("$N doesn't want to be in your group.", TRUE, ch, 0, victim, TO_CHAR);
-			return;
-		}
+		act("$N doesn't want to be in your group.", TRUE, ch, 0, victim, TO_CHAR);
+		return false;
 	}
 
-	/*
-	   if(IS_ILLITHID(ch) && !IS_NPC(victim) && IS_ILLITHID(victim)) {
-	   send_to_char("You feel more like being alone right now...\n", ch);
-	   return;
-	   }
-	 */
-
-	/*
-	 * Group caps for CHAOS_MUD only
-	 * group sizes are controlled in config.h
-	 */
-
+	struct group_list *old_group = victim->group;
+	victim->group = 0;
 	if (!group_add_member(ch, victim))
-		return;
+	{
+		victim->group = old_group;
+		return false;
+	}
 
 	act("$N is now a member of your group.", TRUE, ch, 0, victim, TO_CHAR);
 	act("$N is now a member of $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
 	act("You are now a member of $n's group.", FALSE, ch, 0, victim, TO_VICT);
-	// Client
-	for (gl = victim->group; gl; gl = gl->next)
+
+	while (old_group)
 	{
-		if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
+		struct group_list *next = old_group->next;
+		if ((victim = old_group->ch) && victim->group != ch->group)
 		{
-			gl->ch->desc->last_group_update = 1;
+			victim->group = 0;
+			if (group_add_member(ch, victim))
+			{
+				act("$N also joins your group.", TRUE, ch, 0, victim, TO_CHAR);
+				act("$N also joins $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
+				act("Your group has merged into $n's group.", FALSE, ch, 0, victim, TO_VICT);
+			}
 		}
+		mm_release(dead_group_pool, old_group);
+		old_group = next;
 	}
+
+	update_groupies(ch);
+	return true;
 }
 
 void do_disband(P_char ch, char *arg, int cmd)
@@ -1049,6 +944,8 @@ bool group_remove_member(P_char ch)
 	if (!ch->group)
 		return TRUE;
 
+	purge_linked_auras(ch);
+
 	/* okay.. 2 possible special conditions:
 	   1) group LEADER is removed.
 	   2) only 2 people in the group now, so remove all members
@@ -1063,8 +960,6 @@ bool group_remove_member(P_char ch)
 		   (who is the second person in the group list */
 		for (elem = gl->next; elem; elem = elem->next)
 		{
-			if (IS_AFFECTED3(elem->ch, AFF3_PALADIN_AURA))
-				purge_linked_auras(elem->ch);
 			if (in_command_aura(elem->ch))
 				remove_aura_message(elem->ch, ch);
 			elem->ch->group = gl->next;
@@ -1134,14 +1029,21 @@ bool group_remove_member(P_char ch)
 	/* check for rank balance, move the first poor sap in the back rank up to front */
 	if (gl && free_back_slots(gl->ch) < 0)
 		fix_group_ranks(gl->ch);
-	for (gl = ch->group; gl; gl = gl->next)
+	update_groupies(ch);
+	return TRUE;
+}
+
+void update_groupies(P_char ch, bool only_in_room)
+{
+	/* Flag group clients for a group update (MSP and WebSocket/GMCP clients) */
+	for (struct group_list *gl = ch->group; gl; gl = gl->next)
 	{
-		if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
+		if (gl->ch && gl->ch->desc && (ch->in_room == gl->ch->in_room || !only_in_room))
 		{
-			gl->ch->desc->last_group_update = 1;
+			if (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled)
+				gl->ch->desc->last_group_update = 1;
 		}
 	}
-	return TRUE;
 }
 
 int num_group_members_in_room(P_char ch)
@@ -1331,44 +1233,6 @@ bool group_add_member(P_char leader, P_char member)
 	if (in_command_aura(member))
 		add_aura_message(member, leader);
 	return TRUE;
-}
-
-/* fonction to check if ch is guild golem */
-
-int is_guild_golem(P_char ch, P_char pl)
-{
-	uint    bits;
-	char   *tmp;
-	int     allowed = FALSE;
-	P_Guild guild;
-
-	if (!GET_ASSOC(ch))
-	{
-		tmp = strstr(GET_NAME(ch), "assoc");
-		if (!tmp)
-		{
-			return FALSE;
-		}
-		guild = get_guild_from_id(atoi(tmp + 5));
-
-		if (guild == NULL)
-		{
-			return FALSE;
-		}
-		GET_ASSOC(ch) = guild;
-	}
-
-	tmp = strstr(GET_NAME(ch), "assoc");
-
-	guild = GET_ASSOC(ch);
-
-	allowed = FALSE;
-
-	bits = GET_A_BITS(pl);
-
-	allowed = (((GET_ASSOC(pl) == guild) && IS_MEMBER(bits) && GT_PAROLE(bits)) || IS_TRUSTED(pl));
-
-	return (allowed);
 }
 
 bool is_in_dragoon_group(P_char ch, P_char vict)

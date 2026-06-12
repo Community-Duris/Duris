@@ -448,7 +448,6 @@ int vamp(P_char ch, double fhits, double fcap)
 	struct affected_type *af;
 	static char           buf[100];
 	P_char                tch;
-	struct group_list    *gl;
 	int                   hits = (int)fhits, cap = (int)fcap, blocked;
 
 	if (!IS_ALIVE(ch))
@@ -516,14 +515,7 @@ int vamp(P_char ch, double fhits, double fcap)
 		send_to_char(buf, ch);
 	}
 
-	// Client
-	for (gl = ch->group; gl; gl = gl->next)
-	{
-		if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-		{
-			gl->ch->desc->last_group_update = 1;
-		}
-	}
+	update_groupies(ch);
 
 	return hits;
 }
@@ -5852,14 +5844,8 @@ case RACEWAR_NEUTRAL:
 					return DAM_NONEDEAD;
 				}
 			}
-			// Client
-			for (gl = victim->group; gl; gl = gl->next)
-			{
-				if (gl->ch && gl->ch->desc && (gl->ch->desc->term_type == TERM_MSP || gl->ch->desc->gmcp_enabled))
-				{
-					gl->ch->desc->last_group_update = 1;
-				}
-			}
+
+			update_groupies(ch);
 
 			/* we crash, because victim has most likely been extracted and its memory may now belong to something else */
 			if (GET_STAT(victim) == STAT_DEAD)

@@ -7699,6 +7699,8 @@ void spell_word_of_recall(int level, P_char ch, char *arg, int type, P_char vict
 	int    loc_nr, e_pos, heavy;
 	int    a, b = 0;
 
+	// ch may be in a !recall room like a guildhall by now, thus most checks check victim
+
 	if (!SanityCheck(ch, "spell_word_of_recall") || !SanityCheck(victim, "spell_word_of_recall"))
 		return;
 
@@ -7708,19 +7710,19 @@ void spell_word_of_recall(int level, P_char ch, char *arg, int type, P_char vict
 	if (IS_NPC(victim) && IS_PC_PET(victim))
 		return;
 
-	if (IS_ROOM(ch->in_room, ROOM_SILENT))
+	if (IS_ROOM(victim->in_room, ROOM_SILENT))
 	{
 		send_to_char("No sound can be heard.\n", ch);
 		return;
 	}
 
-	if (affected_by_spell(ch, SKILL_BEARHUG))
+	if (affected_by_spell(victim, SKILL_BEARHUG))
 	{
 		send_to_char("You can't seem to get enough breath to speak!", ch);
 		return;
 	}
 
-	if (IS_ROOM(ch->in_room, ROOM_NO_RECALL))
+	if (IS_ROOM(victim->in_room, ROOM_NO_RECALL))
 	//||(world[ch->in_room].sector_type == SECT_OCEAN))
 	{
 		if (ch == victim)
@@ -7732,9 +7734,9 @@ void spell_word_of_recall(int level, P_char ch, char *arg, int type, P_char vict
 		}
 		return;
 	}
-	if (IS_FIGHTING(ch))
+	if (IS_FIGHTING(victim))
 	{
-		if (IS_PC(ch) && IS_PC(GET_OPPONENT(ch)) && !number(0, 2))
+		if (IS_PC(victim) && IS_PC(GET_OPPONENT(victim)) && !number(0, 2))
 		{
 			if (ch == victim)
 				act("$n utters a single word.", TRUE, ch, 0, 0, TO_ROOM);
@@ -7837,34 +7839,29 @@ void spell_group_recall(int level, P_char ch, char *arg, int type, P_char victim
 {
 	struct group_list *gl;
 
-	if (ch->group)
+	if (!ch->group)
+		return spell_word_of_recall(level, ch, 0, 0, ch, 0);
+
+	if (IS_BACKRANKED(ch))
 	{
-#if 0
-    gl = ch->group;
-    /* leader first */
-    if(gl->ch->in_room == ch->in_room)
-      spell_word_of_recall((level / 3) * 2, ch, gl->ch, 0);
-    /* followers */
-#endif
-		if (IS_BACKRANKED(ch))
-		{
-			send_to_char("How can you do that from back here?!\n", ch);
-			return;
-		}
-		if (IS_FIGHTING(ch))
-		{
-			send_to_char("You are fighting for your life!\n", ch);
-			return;
-		}
+		send_to_char("How can you do that from back here?!\n", ch);
+		return;
+	}
+	if (IS_FIGHTING(ch))
+	{
+		send_to_char("You are fighting for your life!\n", ch);
+		return;
+	}
 
-		if (IS_NPC(ch) && IS_PC_PET(ch))
-			return;
+	if (IS_NPC(ch) && IS_PC_PET(ch))
+		return;
 
-		for (gl = /*gl->next */ ch->group; gl; gl = gl->next)
-		{
-			if ((gl->ch->in_room == ch->in_room) && (ch->specials.z_cord == gl->ch->specials.z_cord))
-				spell_word_of_recall((level / 3) * 2, ch, 0, 0, gl->ch, 0);
-		}
+	int room = ch->in_room;
+	int z_cord = ch->specials.z_cord;
+	for (gl = ch->group; gl; gl = gl->next)
+	{
+		if ((gl->ch->in_room == room) && (gl->ch->specials.z_cord == z_cord))
+			spell_word_of_recall(level, ch, 0, 0, gl->ch, 0);
 	}
 }
 
