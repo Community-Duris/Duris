@@ -2392,6 +2392,7 @@ void           run_the_game(int, int);
 
 /* sparser.c */
 
+int         lookup_spell(const char *name, int len);
 bool        parse_spell_arguments(P_char ch, struct spell_target_data *data, char *argument);
 int         get_default_save_mod(P_char ch, P_char aggressor, int save_type, int spell);
 bool        NewSaves(P_char, int, int);
@@ -2618,8 +2619,8 @@ void spell_perm_increase_cha(int, P_char, char *, int, P_char, P_obj);
 
 void spell_reveal_true_name(int, P_char, char *, int, P_char, P_obj);
 void spell_infravision(int, P_char, char *, int, P_char, P_obj);
+void spell_concealment(int, P_char, char *, int, P_char, P_obj);
 void spell_invisibility(int, P_char, char *, int, P_char, P_obj);
-void spell_improved_invisibility(int, P_char, char *, int, P_char, P_obj);
 void cast_locate_object(int, P_char, char *, int, P_char, P_obj);
 void spell_lore(int, P_char, char *, int, P_char, P_obj);
 void spell_major_paralysis(int, P_char, char *, int, P_char, P_obj);

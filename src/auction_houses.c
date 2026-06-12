@@ -1855,7 +1855,7 @@ EqSort::EqSort()
 	flags.push_back(new EqAff2Flag("poisoned", "that poison the wearer", AFF2_POISONED));
 	flags.push_back(new EqAff2Flag("soulshield", "that grant soulshield", AFF2_SOULSHIELD));
 	flags.push_back(new EqAff2Flag("silenced", "that silence the wearer", AFF2_SILENCED));
-	flags.push_back(new EqAff2Flag("minor_invis", "that grant minor invisibility", AFF2_MINOR_INVIS));
+	flags.push_back(new EqAff2Flag("concealment", "that grant concealment", AFF2_CONCEALMENT));
 	flags.push_back(new EqAff2Flag("vamp", "that grant vampiric touch", AFF2_VAMPIRIC_TOUCH));
 	flags.push_back(new EqAff2Flag("stunned", "that look absolutely stunning", AFF2_STUNNED));
 	flags.push_back(new EqAff2Flag("earth_aura", "that grant earth aura", AFF2_EARTH_AURA));

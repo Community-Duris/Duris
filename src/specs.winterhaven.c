@@ -2669,7 +2669,7 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
     SPELL_ENHANCED_DEX,
     SPELL_ENHANCED_AGI,
     SPELL_ENHANCED_CON,
-    SPELL_INVISIBLE,
+    SPELL_CONCEALMENT,
     SPELL_INFRAVISION,
     SPELL_FARSEE,
     SPELL_MAGE_FLAME,
@@ -3395,7 +3395,7 @@ int platemail_fame(P_obj obj, P_char ch, int cmd, char *arg)
       if(fame > 0)
       {
         spell_haste(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
-        spell_improved_invisibility(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+        spell_invisibility(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
         spell_fly(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
       }
 

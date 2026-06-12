@@ -3054,7 +3054,7 @@ int itemvalue(P_obj obj)
 	if (IS_SET(obj->bitvector2, AFF2_SOULSHIELD))
 		workingvalue += 45;
 
-	if (IS_SET(obj->bitvector2, AFF2_MINOR_INVIS))
+	if (IS_SET(obj->bitvector2, AFF2_CONCEALMENT))
 		workingvalue += 15;
 
 	if (IS_SET(obj->bitvector2, AFF2_VAMPIRIC_TOUCH))

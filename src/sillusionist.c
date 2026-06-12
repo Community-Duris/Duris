@@ -1057,7 +1057,7 @@ void spell_vanish(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 		logit(LOG_EXIT, "assert: bogus parms");
 		raise(SIGSEGV);
 	}
-	if (!affected_by_spell(victim, SPELL_INVIS_MAJOR))
+	if (!affected_by_spell(victim, SPELL_INVISIBILITY))
 	{
 
 		act("&+L$n instantly vanishes out of existence.", TRUE, victim, 0, 0, TO_ROOM);
@@ -1065,7 +1065,7 @@ void spell_vanish(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 
 		bzero(&af, sizeof(af));
 
-		af.type      = SPELL_INVIS_MAJOR;
+		af.type      = SPELL_INVISIBILITY;
 		af.duration  = level / 2;
 		af.bitvector = AFF_INVISIBLE;
 		affect_to_char(victim, &af);
@@ -1075,7 +1075,7 @@ void spell_vanish(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 		struct affected_type *af1;
 
 		for (af1 = victim->affected; af1; af1 = af1->next)
-			if (af1->type == SPELL_INVIS_MAJOR)
+			if (af1->type == SPELL_INVISIBILITY)
 			{
 				af1->duration = level / 2;
 			}
@@ -1649,7 +1649,7 @@ void spell_nonexistence(int level, P_char ch, char *arg, int type, P_char victim
 	{
 		act("&+L$N shimmers in and out of view as $n's &+millusion&+L starts to cover $M.", 0, ch, 0, victim, TO_NOTVICT);
 		act("&+LYou shimmer in and out of existence as $n's &+millusion&+L starts to cover you.", 0, ch, 0, victim, TO_VICT);
-		spell_improved_invisibility(level, ch, 0, 0, victim, 0);
+		spell_invisibility(level, ch, 0, 0, victim, 0);
 	}
 
 	if (IS_WATER_ROOM(ch->in_room) || world[ch->in_room].sector_type == SECT_OCEAN)
@@ -1664,7 +1664,7 @@ void spell_nonexistence(int level, P_char ch, char *arg, int type, P_char victim
 	for (obj = world[ch->in_room].contents; obj; obj = obj->next_content)
 	{
 	  if( IS_SET(obj->wear_flags, ITEM_TAKE) )
-	    spell_improved_invisibility(level, ch, 0, 0, 0, obj);
+	    spell_invisibility(level, ch, 0, 0, 0, obj);
 	}
 	*/
 }

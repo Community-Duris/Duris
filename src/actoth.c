@@ -3978,7 +3978,7 @@ void do_recite(P_char ch, char *argument, int cmd)
 				{
 					if (IS_AGG_SPELL(j) && victim && (ch != victim))
 					{
-						if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+						if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 							appear(ch);
 
 						if (IS_PC(victim) && should_not_kill(ch, victim))
@@ -4107,7 +4107,7 @@ void do_use(P_char ch, char *argument, int cmd)
 		{
 			if (IS_AGG_SPELL(spl) && tmp_char && (tmp_char != ch))
 			{
-				if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+				if (IS_AFFECTED(ch, AFF_INVISIBLE) || IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 					appear(ch);
 
 				act("$N tries to harm you by casting a malicious spell.", FALSE, tmp_char, 0, ch, TO_CHAR);

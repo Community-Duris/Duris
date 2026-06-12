@@ -299,13 +299,13 @@ int wand_of_wonder(P_obj obj, P_char ch, int cmd, char *arg)
 					spell_darkness(level, ch, 0, SPELL_TYPE_WAND, 0, 0);
 					break;
 				case 5:
-					spell_invisibility(level, ch, 0, SPELL_TYPE_WAND, vict, 0);
+					spell_concealment(level, ch, 0, SPELL_TYPE_WAND, vict, 0);
 					break;
 				case 6:
 					spell_fireball(level, ch, 0, SPELL_TYPE_WAND, vict, 0);
 					break;
 				case 7:
-					spell_invisibility(level, ch, 0, SPELL_TYPE_WAND, ch, 0);
+					spell_concealment(level, ch, 0, SPELL_TYPE_WAND, ch, 0);
 					break;
 				case 8:
 					if ((rat = read_mobile(5710, VIRTUAL)))

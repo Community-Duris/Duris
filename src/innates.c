@@ -2047,7 +2047,7 @@ void do_ud_invisibility(P_char ch, char *arg, int cmd)
 	}
 
 	bzero(&af, sizeof(af));
-	af.type      = SPELL_INVISIBLE;
+	af.type      = SPELL_INVISIBILITY;
 	af.duration  = 45;
 	af.bitvector = AFF_INVISIBLE;
 	affect_to_char(ch, &af);

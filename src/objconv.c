@@ -327,7 +327,7 @@ int getSpellCost(const int spell)
 			return 50000;
 		case SPELL_HEAL:
 			return 100000;
-		case SPELL_INVISIBLE:
+		case SPELL_CONCEALMENT:
 			return 200000;
 		case SPELL_LIGHTNING_BOLT:
 			return 55000;
@@ -644,7 +644,7 @@ int getSpellCost(const int spell)
 			return 65000;
 		case SPELL_SOULSHIELD:
 			return 85000;
-		case SPELL_INVIS_MAJOR:
+		case SPELL_INVISIBILITY:
 			return 400000;
 		case SPELL_MASS_HEAL:
 			return 500000;
@@ -1287,7 +1287,7 @@ void convertObj(P_obj obj)
 		cost += 25000;
 	if (IS_SET(obj->bitvector2, AFF2_SOULSHIELD))
 		cost += 75000;
-	if (IS_SET(obj->bitvector2, AFF2_MINOR_INVIS))
+	if (IS_SET(obj->bitvector2, AFF2_CONCEALMENT))
 		cost += 200000;
 	if (IS_SET(obj->bitvector2, AFF2_VAMPIRIC_TOUCH))
 		cost += 150000;

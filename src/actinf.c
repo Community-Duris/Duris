@@ -1328,7 +1328,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 			return;
 		}
 
-		if ((IS_AFFECTED(i, AFF_INVISIBLE) || IS_AFFECTED2(i, AFF2_MINOR_INVIS) || IS_AFFECTED3(i, AFF3_ECTOPLASMIC_FORM)) && !IS_AFFECTED(ch, AFF_WRAITHFORM))
+		if ((IS_AFFECTED(i, AFF_INVISIBLE) || IS_AFFECTED2(i, AFF2_CONCEALMENT) || IS_AFFECTED3(i, AFF3_ECTOPLASMIC_FORM)) && !IS_AFFECTED(ch, AFF_WRAITHFORM))
 		{
 			strcat(buffer, "*");
 		}
@@ -5204,7 +5204,7 @@ void do_score(P_char ch, char *argument, int cmd)
 		strcat(buf, " &+CBlur&n");
 	}
 
-	if (IS_AFFECTED2(ch, AFF2_MINOR_INVIS) || IS_AFFECTED(ch, AFF_INVISIBLE))
+	if (IS_AFFECTED2(ch, AFF2_CONCEALMENT) || IS_AFFECTED(ch, AFF_INVISIBLE))
 	{
 		strcat(buf, " &+cInv&+Cisi&+cbil&+City&n");
 	}
@@ -6328,7 +6328,7 @@ void do_who(P_char ch, char *argument, int cmd)
 			if (IS_TRUSTED(ch))
 			{
 				snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), " (%d)", who_gods[j]->only.pc->wiz_invis);
-				if (IS_AFFECTED(who_gods[j], AFF_INVISIBLE) || IS_AFFECTED2(who_gods[j], AFF2_MINOR_INVIS) || IS_AFFECTED3(who_gods[j], AFF3_ECTOPLASMIC_FORM))
+				if (IS_AFFECTED(who_gods[j], AFF_INVISIBLE) || IS_AFFECTED2(who_gods[j], AFF2_CONCEALMENT) || IS_AFFECTED3(who_gods[j], AFF3_ECTOPLASMIC_FORM))
 				{
 					strcat(who_output, " (inv)");
 				}
@@ -6385,7 +6385,7 @@ void do_who(P_char ch, char *argument, int cmd)
 						strcat(who_output, GET_TITLE(who_list[j]));
 					}
 
-					if (IS_AFFECTED(who_list[j], AFF_INVISIBLE) || IS_AFFECTED2(who_list[j], AFF2_MINOR_INVIS) || IS_AFFECTED3(who_list[j], AFF3_ECTOPLASMIC_FORM))
+					if (IS_AFFECTED(who_list[j], AFF_INVISIBLE) || IS_AFFECTED2(who_list[j], AFF2_CONCEALMENT) || IS_AFFECTED3(who_list[j], AFF3_ECTOPLASMIC_FORM))
 					{
 						strcat(who_output, " (inv)");
 					}

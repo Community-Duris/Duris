@@ -3305,7 +3305,7 @@ void perform_wear(P_char ch, P_obj obj_object, int keyword)
 		 * Only show vanish if ch was visible first.  Should actually check per person in room to see if
 		 * they could see ch and then show message if they aren't affected by detect invis. - Sniktiorg (Nov.9.12)
 		 */
-		if (!IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+		if (!IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 		{
 			act("&+L$n slowly fades out of existence.&n", TRUE, ch, 0, 0, TO_ROOM);
 			send_to_char("&+LYou vanish.&n\r\n", ch);
@@ -3315,7 +3315,7 @@ void perform_wear(P_char ch, P_obj obj_object, int keyword)
 
 	/*
 	  if (IS_SET(obj_object->bitvector, AFF_INVISIBLE) && !IS_AFFECTED(ch, AFF_INVISIBLE)
-	      && !IS_AFFECTED2(ch, AFF2_MINOR_INVIS))
+	      && !IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 	    if ((keyword != 13) || (obj_object->wear_flags == (ITEM_TAKE + ITEM_HOLD))) {
 	      act("$n slowly fades out of existence.", TRUE, ch, 0, 0, TO_ROOM);
 	      send_to_char("You vanish.\r\n", ch);
@@ -4941,7 +4941,7 @@ void do_remove(P_char ch, char *argument, int cmd)
 	one_argument(argument, Gbuf1);
 
 	// Determine Current Visibility
-	was_invis = IS_SET(ch->specials.affected_by, AFF_INVISIBLE) || IS_SET(ch->specials.affected_by2, AFF2_MINOR_INVIS);
+	was_invis = IS_SET(ch->specials.affected_by, AFF_INVISIBLE) || IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT);
 
 	if (*Gbuf1) // If Argument Exists
 	{
@@ -5063,7 +5063,7 @@ void do_remove(P_char ch, char *argument, int cmd)
 
 	// Make Proper Adjustments for Changed Affects
 	balance_affects(ch);
-	if (was_invis && !IS_SET(ch->specials.affected_by, AFF_INVISIBLE) && !IS_SET(ch->specials.affected_by2, AFF2_MINOR_INVIS))
+	if (was_invis && !IS_SET(ch->specials.affected_by, AFF_INVISIBLE) && !IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT))
 	{
 		act("$n snaps into visibility.", FALSE, ch, 0, 0, TO_ROOM);
 		act("You snap into visibility.", FALSE, ch, 0, 0, TO_CHAR);

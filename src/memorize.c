@@ -1070,6 +1070,7 @@ void handle_memorize(P_char ch)
 {
 	struct affected_type *af;
 	bool                  memorized = FALSE;
+	bool                  no_book = FALSE;
 	int                   time;
 
 	if (!IS_AFFECTED2(ch, AFF2_MEMORIZING))
@@ -1087,20 +1088,24 @@ void handle_memorize(P_char ch)
 		{
 			if (memorized)
 			{
+#if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
+				if (book_class(ch) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
+				{
+					no_book = true;
+					continue;
+				}
+#endif
 				time = get_circle_memtime(ch, get_spell_circle(ch, af->modifier));
 				add_event(event_memorize, time / 2, ch, 0, 0, 0, &time, sizeof(time));
 				return;
 			}
 			else
-			{
 #if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
 				if (book_class(ch) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
-				{
-					send_to_char("You have managed to misplace your spellbook!\n", ch);
-					show_stop_memorizing(ch);
-					return;
-				}
+					no_book = TRUE;
+			else
 #endif
+			{
 				if (meming_class(ch))
 				{
 					snprintf(Gbuf1, MAX_STRING_LENGTH, "You have finished memorizing %s.\n", skills[af->modifier].name);
@@ -1114,6 +1119,13 @@ void handle_memorize(P_char ch)
 				memorized = TRUE;
 			}
 		}
+	}
+
+	if (no_book)
+	{
+		send_to_char("You have managed to misplace your spellbook!\n", ch);
+		show_stop_memorizing(ch);
+		return;
 	}
 
 	if (GET_CLASS(ch, CLASS_SHAMAN))
@@ -1591,7 +1603,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	spl = search_block(argument, (const char **)spells, FALSE);
+	spl = lookup_spell(argument, strlen(argument));
 
 	if (spl <= -1 || !skills[spl].spell_pointer)
 	{
@@ -1772,7 +1784,7 @@ void do_forget(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	spl = search_block(argument, (const char **)spells, FALSE);
+	spl = lookup_spell(argument, strlen(argument));
 	if (spl == -1 || !skills[spl].spell_pointer)
 	{
 		send_to_char("Um.. what spell are you trying to forget?\n", ch);
@@ -2303,11 +2315,7 @@ void do_teach(P_char ch, char *arg, int cmd)
 		return;
 	}
 	arg = skip_spaces(arg);
-	spl = old_search_block(arg, 0, strlen(arg), (const char **)spells, 0);
-	if (spl != -1)
-	{
-		spl--;
-	}
+	spl = lookup_spell(arg, strlen(arg));
 	if (spl == -1 || get_spell_circle(target, (tmp = spl)) > MAX_CIRCLE)
 	{
 		send_to_char("Teach _WHAT_ spell?? That your target cannot learn, at least.\n", ch);
@@ -2365,11 +2373,7 @@ void do_scribe(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	spl = old_search_block(arg, 0, strlen(arg), (const char **)spells, 0);
-	if (spl != -1)
-	{
-		spl--;
-	}
+	spl = lookup_spell(arg, strlen(arg));
 	if (spl == -1)
 	{
 		send_to_char("Scribe _WHAT_ spell?\n", ch);

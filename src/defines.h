@@ -692,7 +692,7 @@ struct attr_names_struct
 #define AFF2_POISONED        BIT_15
 #define AFF2_SOULSHIELD      BIT_16
 #define AFF2_SILENCED        BIT_17
-#define AFF2_MINOR_INVIS     BIT_18
+#define AFF2_CONCEALMENT     BIT_18
 #define AFF2_VAMPIRIC_TOUCH  BIT_19
 #define AFF2_STUNNED         BIT_20
 #define AFF2_EARTH_AURA      BIT_21
