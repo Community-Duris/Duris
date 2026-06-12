@@ -198,17 +198,6 @@ void downgrade_string(char *out, const char *in, const unimap &conv)
 {
 	while (*in)
 	{
-		// let TELNET through unmolested
-		if (*in == (char)255)
-		{
-			// Hack!  The only SB/SE we use is COMPRESS.
-			int len = in[1] == (char)250 ? 5 : 3;
-			for (int i = 0; i < len; i++)
-				if (*in) // end in a string inside a TELNET command?  Can't happen but...
-					*out++ = *in++;
-			continue;
-		}
-
 		int c = get_utf8(in);
 		int r = conv[c];
 		if (!r)
@@ -220,4 +209,39 @@ void downgrade_string(char *out, const char *in, const unimap &conv)
 		*out++ = r;
 	}
 	*out = 0;
+}
+
+void upgrade_cp437_and_dollars(char *out, const char *in)
+{
+	while (*in)
+	{
+		int c = (unsigned char)*in++;
+		if (c < ' ') // controls are illegal, including \n
+			continue;
+		if (c == '$')
+			*out++ = '$';
+		put_utf8(out, cp437_u[c]);
+	}
+	*out = 0;
+}
+
+bool validate_utf8_and_dollars(char *out, const char *in)
+{
+	bool err = false;
+
+	while (*in)
+	{
+		int c = get_utf8(in);
+		if (c < ' ') // controls are illegal, including \n
+			continue;
+		if (c == '$')
+			*out++ = '$';
+		if (c < 127 || ascii[c]) // rule: anything we can downgrade is allowed
+			put_utf8(out, c);
+		else
+			err = true; // complain
+	}
+	*out = 0;
+
+	return err;
 }

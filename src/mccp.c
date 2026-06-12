@@ -24,12 +24,12 @@ extern long   sentbytes;
 int mccp_alloc = 0;
 int mccp_free  = 0;
 
-const unsigned char compress_on_str[]  = {IAC, WILL, TELOPT_COMPRESS, '\0'};
-const unsigned char compress2_on_str[] = {IAC, WILL, TELOPT_COMPRESS2, '\0'};
-const unsigned char enable_compress[]  = {IAC, SB, TELOPT_COMPRESS, WILL, SE, '\0'};
-const unsigned char enable_compress2[] = {IAC, SB, TELOPT_COMPRESS2, IAC, SE, '\0'};
-const unsigned char sga_will_str[]     = {IAC, WILL, TELOPT_SGA, '\0'};
-const unsigned char ga_str[]           = {IAC, GA, '\0'};
+const unsigned char compress_on_str[]  = {IAC, WILL, TELOPT_COMPRESS};
+const unsigned char compress2_on_str[] = {IAC, WILL, TELOPT_COMPRESS2};
+const unsigned char enable_compress[]  = {IAC, SB, TELOPT_COMPRESS, WILL, SE};
+const unsigned char enable_compress2[] = {IAC, SB, TELOPT_COMPRESS2, IAC, SE};
+const unsigned char sga_will_str[]     = {IAC, WILL, TELOPT_SGA};
+const unsigned char ga_str[]           = {IAC, GA};
 
 void *zlib_alloc(void *opaque, unsigned int items, unsigned int size);
 void  zlib_free(void *opaque, void *address);
@@ -51,8 +51,8 @@ void zlib_free(void *opaque, void *address)
 
 void advertise_mccp(P_desc desc)
 {
-	write_to_descriptor(desc, (const char *)compress2_on_str);
-	write_to_descriptor(desc, (const char *)compress_on_str);
+	write_to_descriptor_binary(desc, compress2_on_str, sizeof compress2_on_str);
+	write_to_descriptor_binary(desc, compress_on_str, sizeof compress_on_str);
 }
 
 void sga_negotiate(P_desc desc) { write_to_descriptor_binary(desc, sga_will_str, 3); }
@@ -71,23 +71,23 @@ int send_ga(P_desc desc)
 int parse_telnet_options(P_desc player, char *buf, int buflen)
 {
 	ubyte *p        = (ubyte *)(buf);
-	int    mccp_ver = 0;
 
 	if (buflen < 1 || *p != IAC)
 		return 0;
 
 	switch (*(p + 1))
 	{
+		case IAC: // ignore escaped 255 byte: illegal in UTF-8, redundant in CP437
+			return 2;
 		case DO:
 			switch (*(p + 2))
 			{
 				case TELOPT_COMPRESS:
-					if (mccp_ver < MCCP_VER2) // prefer version 2 over 1
-						mccp_ver = MCCP_VER1;
-					break;
+					compress_start(player, MCCP_VER1);
+					return 3;
 				case TELOPT_COMPRESS2:
-					mccp_ver = MCCP_VER2;
-					break;
+					compress_start(player, MCCP_VER2);
+					return 3;
 				case TELOPT_GMCP:
 					gmcp_handle_negotiation(player, DO);
 					return 3;
@@ -95,7 +95,7 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 					player->sga_disabled = 1;
 					return 3;
 			}
-			break;
+			return 3;
 		case DONT:
 			switch (*(p + 2))
 			{
@@ -106,31 +106,31 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 					player->sga_disabled = 0;
 					return 3;
 			}
-			/* fall through */
+			return 3;
 		case WILL:
 			if (*(p + 2) == TELOPT_TTYPE)
 				ttype_handle_negotiation(player, WILL);
-			return (*(p + 2) != '\0') ? 3 : 2;
+			return 3;
 		case WONT:
 			if (*(p + 2) == TELOPT_TTYPE)
 				ttype_handle_negotiation(player, WONT);
-			return (*(p + 2) != '\0') ? 3 : 2;
+			return 3;
 		case SB: /* subnegotiation */
 		{
-			int len = 2;
-			while (len < buflen && p[len] != '\0' && !(p[len] == IAC && p[len + 1] == SE))
+			int len = 3;
+			while (len < buflen && !(p[len] == IAC && p[len + 1] == SE))
 				len++;
 
+			if (len > 128) // arbitrary; a telnet subnego is not supposed to be long
+				return 128;
+
 			/* incomplete, wait for more */
-			if (len >= buflen || p[len] == '\0')
+			if (len >= buflen)
 				return 0;
 
-			if (p[len] == IAC && p[len + 1] == SE)
-				len += 2;
-			else
-				return 0;
+			len += 2;
 
-			if (p[2] == TELOPT_TTYPE && len > 4)
+			if (p[2] == TELOPT_TTYPE)
 			{
 				if (p[3] == TELQUAL_IS)
 				{
@@ -151,11 +151,6 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 		}
 	}
 
-	if (mccp_ver)
-	{
-		compress_start(player, mccp_ver);
-		return 3;
-	}
 	return 1; /* lets cut at least IAC from stream */
 }
 
@@ -189,11 +184,11 @@ int compress_start(P_desc player, int mccp_version)
 
 	if (mccp_version == MCCP_VER1)
 	{
-		write_to_descriptor(player, (const char *)enable_compress);
+		write_to_descriptor_binary(player, enable_compress, sizeof enable_compress);
 	}
 	else if (mccp_version == MCCP_VER2)
 	{
-		write_to_descriptor(player, (const char *)enable_compress2);
+		write_to_descriptor_binary(player, enable_compress2, sizeof enable_compress2);
 	}
 	else
 	{
@@ -250,8 +245,7 @@ int compress_end(P_desc player, int flush)
 int write_to_descriptor(P_desc player, const char *txt)
 {
 	int   len, total, status, i, j;
-	char  static_conv_buf[MAX_STRING_LENGTH];
-	char *conv_buf = static_conv_buf;
+	char  conv_buf[MAX_STRING_LENGTH * 2];
 
 	if (player->write_failed)
 		return -1;
@@ -278,10 +272,6 @@ int write_to_descriptor(P_desc player, const char *txt)
 		return 0;
 	}
 
-	if ((len = strlen(txt)) > MAX_STRING_LENGTH * 0.8)
-		CREATE(conv_buf, char, (unsigned int)(len * 1.1), MEM_TAG_BUFFER);
-	// conv_buf = (char *) malloc((unsigned int) (len * 1.1));
-
 	for (i = 0, j = 0; txt[i]; i++)
 	{
 		if (txt[i] == '\n')
@@ -296,84 +286,17 @@ int write_to_descriptor(P_desc player, const char *txt)
 	conv_buf[j] = '\0';
 	txt         = conv_buf;
 	total       = j;
-
-	/*
-	 * charset logic:
-	 * - ssl connections: always utf8
-	 * - mtts with utf8 flag: utf8
-	 * - mtts without utf8 flag: cp437
-	 * - zmud/cmud (no mtts support): cp437
-	 * - everyone else: utf8 (modern default)
-	 */
 	char down[j + 1];
-	int  need_cp437 = 0;
 
-	if (!player->sslses)
+	if (player->cp437)
 	{
-		if (player->mtts_flags && !(player->mtts_flags & MTTS_UTF8))
-			need_cp437 = 1;
-		else if (player->ttype_client[0] && (strncasecmp(player->ttype_client, "ZMUD", 4) == 0 || strncasecmp(player->ttype_client, "CMUD", 4) == 0 ||
-		                                     strncasecmp(player->ttype_client, "VT", 2) == 0 || strncasecmp(player->ttype_client, "ANSI", 4) == 0 || strncasecmp(player->ttype_client, "DUMB", 4) == 0))
-			need_cp437 = 1;
-	}
-
-	if (need_cp437)
-	{
-		char *dend = down;
-		downgrade_string(dend, txt, u_cp437);
+		downgrade_string(down, txt, u_cp437);
 		txt   = down;
 		total = strlen(txt);
 	}
 
-	if (!player->out_compress)
-	{
-		if (raw_write_to_descriptor(player, txt, total) < 0)
-		{
-			if (conv_buf != static_conv_buf)
-				FREE(conv_buf);
-			return (-1);
-		}
-	}
-	else
-	{
-		if (player && player->z_str)
-		{
-			player->z_str->next_in  = (unsigned char *)txt;
-			player->z_str->avail_in = total;
-
-			while (player->z_str->avail_in)
-			{
-				do
-				{
-					player->z_str->next_out  = (Bytef *)player->out_compress_buf;
-					player->z_str->avail_out = COMPRESS_BUF_SIZE;
-
-					status = deflate(player->z_str, Z_SYNC_FLUSH);
-					if (status != Z_OK)
-					{
-						logit(LOG_DEBUG, "MCCP: deflate failed");
-						if (conv_buf != static_conv_buf)
-							FREE(conv_buf);
-						return (-1);
-					}
-
-					len = (long)player->z_str->next_out - (long)player->out_compress_buf;
-					if (raw_write_to_descriptor(player, player->out_compress_buf, len) < 0)
-					{
-						if (conv_buf != static_conv_buf)
-							FREE(conv_buf);
-						return (-1);
-					}
-
-				} while (player->z_str->avail_out == 0);
-			}
-		}
-	}
-
-	if (conv_buf != static_conv_buf)
-		FREE(conv_buf);
-
-	return (0);
+	int ret = write_to_descriptor_binary(player, (const unsigned char*)txt, total);
+	return ret;
 }
 
 /* never ever call this function, unless you are write_to_descriptor */
