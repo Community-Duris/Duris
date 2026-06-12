@@ -4506,9 +4506,27 @@ void do_more(P_char ch, char *arg, int cmd)
 		command_interpreter(ch, arg);
 }
 
+static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int reverse = 0)
+{
+	if (!*arg)
+		return !!((var ^= flag) & flag);
+
+	int res = yes_no(arg);
+	if (res != -1)
+		if (res ^ reverse)
+			var |= flag;
+		else
+			var &= ~flag;
+	return res;
+}
+
+#define PLR_TOG(flag) plr_tog(PLR_FLAGS(ch), flag, arg)
+#define PLR2_TOG(flag) plr_tog(PLR2_FLAGS(ch), flag, arg)
+#define PLR3_TOG(flag) plr_tog(PLR3_FLAGS(ch), flag, arg)
+
 void do_toggle(P_char ch, char *arg, int cmd)
 {
-	int    i, j, tog_nr = -1, result = -1, length, number;
+	int    i, j, tog_nr = -1, result = -1, number;
 	char   Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH], buf[80];
 	P_char send_ch = ch;
 
@@ -4532,17 +4550,9 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	length = strlen(arg);
-	// Look at the end of the string backwards skipping over numbers
-	while (isdigit(arg[length - 1]))
-		length--;
-	// Set number to the end-string of numbers
-	number = atoi(&(arg[length]));
-	// Skip the spaces before the end-string of numbers.
-	while (isspace(arg[length - 1]))
-		length--;
-
-	tog_nr = (old_search_block(arg, 0, length, toggles_list, 0) - 1);
+	arg = one_argument(arg, Gbuf1);
+	number = atoi(arg);
+	tog_nr = (old_search_block(Gbuf1, 0, strlen(Gbuf1), toggles_list, 0) - 1);
 
 	if (tog_nr < 0)
 	{
@@ -4578,12 +4588,12 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		case 1: /*
 		         * brief
 		         */
-			result = PLR_TOG_CHK(ch, PLR_BRIEF);
+			result = PLR_TOG(PLR_BRIEF);
 			break;
 		case 2: /*
 		         * compact
 		         */
-			result = PLR_TOG_CHK(ch, PLR_COMPACT);
+			result = PLR_TOG(PLR_COMPACT);
 			break;
 		case 3: /*
 		         * no who
@@ -4596,7 +4606,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 				send_to_char("Sorry, you must be at least level 30 to toggle who!\r\n", send_ch);
 				return;
 			}
-			result = PLR_TOG_CHK(ch, PLR_NOWHO);
+			result = PLR_TOG(PLR_NOWHO);
 			break;
 		case 4: /*
 		         * vicious
@@ -4607,12 +4617,12 @@ void do_toggle(P_char ch, char *arg, int cmd)
 				return;
 			}
 			else
-				result = PLR_TOG_CHK(ch, PLR_VICIOUS);
+				result = PLR_TOG(PLR_VICIOUS);
 			break;
 		case 5: /*
 		         * tell
 		         */
-			result = PLR_TOG_CHK(ch, PLR_NOTELL);
+			result = PLR_TOG(PLR_NOTELL);
 			break;
 		case 6: /*
 		         * name accept
@@ -4622,17 +4632,17 @@ void do_toggle(P_char ch, char *arg, int cmd)
 				send_to_char("Watching for bad names is part of your job :P\r\n", ch);
 				return;
 			}
-			result = PLR_TOG_CHK(ch, PLR_NAMES);
+			result = PLR_TOG(PLR_NAMES);
 			break;
 		case 7: /*
 		         * gcc
 		         */
-			result = PLR_TOG_CHK(ch, PLR_GCC);
+			result = PLR_TOG(PLR_GCC);
 			break;
 		case 8: /*
 		         * shout
 		         */
-			result = PLR_TOG_CHK(ch, PLR_NOSHOUT);
+			result = PLR_TOG(PLR_NOSHOUT);
 			break;
 		case 9: /*
 		         * anonymous
@@ -4652,22 +4662,22 @@ void do_toggle(P_char ch, char *arg, int cmd)
 				return;
 			}
 			// else
-			// result = PLR_TOG_CHK(ch, PLR_ANONYMOUS);
+			// result = PLR_TOG(PLR_ANONYMOUS);
 			break;
 		case 10: /*
 		          * petition
 		          */
-			result = PLR_TOG_CHK(ch, PLR_PETITION);
+			result = PLR_TOG(PLR_PETITION);
 			break;
 		case 11: /*
 		          * paging
 		          */
-			result = PLR_TOG_CHK(ch, PLR_PAGING_ON);
+			result = PLR_TOG(PLR_PAGING_ON);
 			break;
 		case 12: /*
 		          * echo
 		          */
-			result = PLR_TOG_CHK(ch, PLR_ECHO);
+			result = PLR_TOG(PLR_ECHO);
 			break;
 		case 13: // wimpy level
 			if (number < 0)
@@ -4696,7 +4706,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		          * aggimmune
 		          */
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_AGGIMMUNE);
+				result = PLR_TOG(PLR_AGGIMMUNE);
 			else
 			{
 				send_to_char("Humf?!\r\n", send_ch);
@@ -4706,28 +4716,24 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		case 15: /*
 		          * term
 		          */
-			/*
-			 * code for Terminal setting!
-			 */
-			one_argument(arg, Gbuf1);
-			if (send_ch->desc->term_type == 1)
+			if (send_ch->desc->term_type == 1 || is_abbrev(arg, "ansi"))
 			{
 				send_ch->desc->term_type = 2;
 				strcpy(Gbuf3, "ANSI");
 			}
-			else if (send_ch->desc->term_type == 2)
+			else if (send_ch->desc->term_type == 2 || is_abbrev(arg, "msp"))
 			{
 				send_ch->desc->term_type = 3;
 				strcpy(Gbuf3, "MSP ");
 			}
-			else if (send_ch->desc->term_type == 3)
+			else if (send_ch->desc->term_type == 3 || is_abbrev(arg, "gen"))
 			{
 				send_ch->desc->term_type = 1;
 				strcpy(Gbuf3, "GEN ");
 			}
 			else
 			{
-				send_to_char("USAGE: TOGGLE terminal\r\n", send_ch);
+				send_to_char("USAGE: TOGGLE terminal [ansi|msp]\r\n", send_ch);
 				return;
 			}
 			result = TRUE;
@@ -4735,13 +4741,13 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		case 16: /*
 		          * savenotify
 		          */
-			result = PLR_TOG_CHK(ch, PLR_SNOTIFY);
+			result = PLR_TOG(PLR_SNOTIFY);
 			break;
 		case 17: /*
 		          * wizmessages
 		          */
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_WIZMUFFED);
+				result = PLR_TOG(PLR_WIZMUFFED);
 			else
 			{
 				send_to_char("Humf?!\r\n", send_ch);
@@ -4752,7 +4758,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		          * wizlog
 		          */
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_WIZLOG);
+				result = PLR_TOG(PLR_WIZLOG);
 			else
 			{
 				send_to_char("Humf?!\r\n", send_ch);
@@ -4763,7 +4769,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		          * status
 		          */
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_STATUS);
+				result = PLR_TOG(PLR_STATUS);
 			else
 			{
 				send_to_char("Humf?!\r\n", send_ch);
@@ -4774,7 +4780,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		          * status
 		          */
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_VNUM);
+				result = PLR_TOG(PLR_VNUM);
 			else
 			{
 				send_to_char("Humf?!\r\n", send_ch);
@@ -4802,7 +4808,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		case 22:
 			send_to_char("Smartprompt was never fully implemented.  Sorry.\n\r", send_ch);
 			return;
-			// result = PLR_TOG_CHK(ch, PLR_SMARTPROMPT);
+			// result = PLR_TOG(PLR_SMARTPROMPT);
 			// if (!IS_SET(ch->specials.act, PLR_SMARTPROMPT))
 			// {
 			// snprintf(buf, MAX_STRING_LENGTH, VT_HOMECLR);
@@ -4817,7 +4823,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			if (IS_MORPH(send_ch))
 				return;
 			if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
-				result = PLR_TOG_CHK(ch, PLR_MORTAL);
+				result = PLR_TOG(PLR_MORTAL);
 			else
 			{
 				send_to_char("Don't you wish it was that easy?\r\n", send_ch);
@@ -4825,13 +4831,13 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			}
 			break;
 		case 24:
-			result = PLR_TOG_CHK(ch, PLR_MAP);
+			result = PLR_TOG(PLR_MAP);
 			break;
 		case 25:
 			if (IS_MORPH(send_ch))
 				return;
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_DEBUG);
+				result = PLR_TOG(PLR_DEBUG);
 			else
 			{
 				send_to_char("Don't you wish it was that easy?\r\n", send_ch);
@@ -4839,13 +4845,13 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			}
 			break;
 		case 26: /* old smartprompt */
-			result = PLR_TOG_CHK(ch, PLR_OLDSMARTP);
+			result = PLR_TOG(PLR_OLDSMARTP);
 			break;
 		case 27: /*
 		          * ban
 		          */
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_BAN);
+				result = PLR_TOG(PLR_BAN);
 			else
 			{
 				send_to_char("Humf?!\r\n", send_ch);
@@ -4854,7 +4860,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			break;
 		case 28:
 			if (IS_TRUSTED(ch))
-				result = PLR_TOG_CHK(ch, PLR_PLRLOG);
+				result = PLR_TOG(PLR_PLRLOG);
 			else
 			{
 				send_to_char("Say what?\r\n", send_ch);
@@ -4869,10 +4875,10 @@ void do_toggle(P_char ch, char *arg, int cmd)
 				return;
 			}
 			else
-				result = PLR2_TOG_CHK(ch, PLR2_NOLOCATE);
+				result = PLR2_TOG(PLR2_NOLOCATE);
 			break;
 		case 30:
-			result = PLR2_TOG_CHK(ch, PLR2_NOTITLE);
+			result = PLR2_TOG(PLR2_NOTITLE);
 			break;
 		case 31:
 			if (PLR2_FLAGGED(ch, PLR2_BATTLEALERT))
@@ -4887,28 +4893,28 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			}
 			break;
 		case 32:
-			result = PLR2_TOG_CHK(ch, PLR2_KINGDOMVIEW);
+			result = PLR2_TOG(PLR2_KINGDOMVIEW);
 			break;
 		case 33:
-			result = PLR2_TOG_CHK(ch, PLR2_SHIPMAP);
+			result = PLR2_TOG(PLR2_SHIPMAP);
 			break;
 		case 34:
-			result = PLR2_TOG_CHK(ch, PLR2_NOTAKE);
+			result = PLR2_TOG(PLR2_NOTAKE);
 			break;
 		case 35:
-			result = PLR2_TOG_CHK(ch, PLR2_TERSE);
+			result = PLR2_TOG(PLR2_TERSE);
 			break;
 		case 36:
-			result = PLR2_TOG_CHK(ch, PLR2_QUICKCHANT);
+			result = PLR2_TOG(PLR2_QUICKCHANT);
 			break;
 		case 37:
-			result = PLR2_TOG_CHK(ch, PLR2_RWC);
+			result = PLR2_TOG(PLR2_RWC);
 			break;
 		case 38:
-			result = PLR2_TOG_CHK(ch, PLR2_PROJECT);
+			result = PLR2_TOG(PLR2_PROJECT);
 			break;
 		case 39:
-			result = PLR2_TOG_CHK(ch, PLR2_NPC_HOG);
+			result = PLR2_TOG(PLR2_NPC_HOG);
 			break;
 		case 40:
 			result = TOGGLE_BIT(ch->specials.act, PLR_AFK) & (PLR_AFK);
@@ -4924,13 +4930,13 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			      ch);
 			   return;
 			 }*/
-			result = PLR2_TOG_CHK(ch, PLR2_NCHAT);
+			result = PLR2_TOG(PLR2_NCHAT);
 			break;
 		case 42:
-			result = PLR2_TOG_CHK(ch, PLR2_DAMAGE);
+			result = PLR2_TOG(PLR2_DAMAGE);
 			break;
 		case 48:
-			result = PLR2_TOG_CHK(ch, PLR2_HEAL);
+			result = PLR2_TOG(PLR2_HEAL);
 			break;
 		case 49:
 			if ((GET_LEVEL(ch) > 50) && !IS_SET(PLR2_FLAGS(ch), PLR2_LGROUP))
@@ -4938,49 +4944,49 @@ void do_toggle(P_char ch, char *arg, int cmd)
 				send_to_char("You don't need to find a group.\r\n", ch);
 				return;
 			}
-			result = PLR2_TOG_CHK(ch, PLR2_LGROUP);
+			result = PLR2_TOG(PLR2_LGROUP);
 			break;
 		case 50:
-			result = PLR2_TOG_CHK(ch, PLR2_EXP);
+			result = PLR2_TOG(PLR2_EXP);
 			break;
 		case 51:
-			result = PLR2_TOG_CHK(ch, PLR2_SPEC);
+			result = PLR2_TOG(PLR2_SPEC);
 			break;
 		case 52:
-			result = PLR2_TOG_CHK(ch, PLR2_HINT_CHANNEL);
+			result = PLR2_TOG(PLR2_HINT_CHANNEL);
 			break;
 		case 53:
-			result = PLR2_TOG_CHK(ch, PLR2_WEBINFO);
+			result = PLR2_TOG(PLR2_WEBINFO);
 			sql_webinfo_toggle(ch);
 			break;
 		case 54:
-			result = PLR2_TOG_CHK(ch, PLR2_ACC);
+			result = PLR2_TOG(PLR2_ACC);
 			break;
 		case 55:
-			result = PLR2_TOG_CHK(ch, PLR2_SHOW_QUEST);
+			result = PLR2_TOG(PLR2_SHOW_QUEST);
 			break;
 		case 56:
-			result = PLR2_TOG_CHK(ch, PLR2_BOON);
+			result = PLR2_TOG(PLR2_BOON);
 			break;
 		case 57:
-			result = PLR2_TOG_CHK(ch, PLR2_NEWBIEEQ);
+			result = PLR2_TOG(PLR2_NEWBIEEQ);
 			break;
 		case 58:
-			result = PLR3_TOG_CHK(ch, PLR3_NOBEEP);
+			result = PLR3_TOG(PLR3_NOBEEP);
 			break;
 		case 59:
-			result = PLR3_TOG_CHK(ch, PLR3_UNDERLINE);
+			result = PLR3_TOG(PLR3_UNDERLINE);
 			break;
 		case 60:
-			result = PLR3_TOG_CHK(ch, PLR3_SURNAMES);
+			result = PLR3_TOG(PLR3_SURNAMES);
 			break;
 		case 61:
-			result = PLR3_TOG_CHK(ch, PLR3_NOLEVEL);
+			result = PLR3_TOG(PLR3_NOLEVEL);
 			break;
 		case 62:
 			if (IS_TRUSTED(ch))
 			{
-				result = PLR3_TOG_CHK(ch, PLR3_EPICWATCH);
+				result = PLR3_TOG(PLR3_EPICWATCH);
 			}
 			else
 			{
@@ -4989,30 +4995,23 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			}
 			break;
 		case 63:
-			result = PLR3_TOG_CHK(ch, PLR3_PET_DAMAGE);
+			result = PLR3_TOG(PLR3_PET_DAMAGE);
 			break;
 		case 64:
-			result = PLR3_TOG_CHK(ch, PLR3_GUILDNAME);
+			result = PLR3_TOG(PLR3_GUILDNAME);
 			break;
 		case 65: /* gmcp */
-			result = PLR3_TOG_CHK(ch, PLR3_NOGMCP);
+			result = plr_tog(PLR3_FLAGS(ch), PLR3_NOGMCP, arg, 1);
 			break;
 		case 66: // jchat
-			if (PLR3_FLAGGED(ch, PLR3_JESTROS))
-			{
-				REMOVE_BIT(ch->specials.act3, PLR3_JESTROS);
-				result = 1; // removing flag = turning ON
-			}
-			else
-			{
-				SET_BIT(ch->specials.act3, PLR3_JESTROS);
-				result = 0; // setting flag = turning OFF
-			}
+			result = plr_tog(PLR3_FLAGS(ch), PLR3_JESTROS, arg, 1);
 			break;
 		default:
 			break;
 	}
 
+	if (result == -1)
+		return send_to_char("A boolean flag needed: yes/no/1/0/on/off\n", ch);
 	if (result)
 	{
 		snprintf(Gbuf1, MAX_STRING_LENGTH, tog_messages[tog_nr][TOG_ON], Gbuf3);
