@@ -2352,7 +2352,7 @@ void generate_account_confirmation_code(P_desc d, char *arg)
 	char  a[256], b[256];
 	FILE *f = NULL;
 
-	snprintf(a, 256, "%d%ld", rand(), (long)time(NULL));
+	snprintf(a, 256, "%d%d", number(0, 32767), number(0, 2147483647));
 	snprintf(b, 256, "%s", CRYPT2(a, d->account->acct_name));
 
 	d->account->acct_confirmation = str_dup(b);

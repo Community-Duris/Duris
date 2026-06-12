@@ -20,11 +20,6 @@
 #ifndef _DURIS_DEFINES_H_
 #define _DURIS_DEFINES_H_
 
-#ifdef _HPUX_SOURCE
-#define srandom srand
-#define random  rand
-#endif
-
 #include <limits.h>
 #include <sys/types.h>
 

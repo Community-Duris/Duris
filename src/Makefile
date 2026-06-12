@@ -108,7 +108,6 @@ OBJS =  $(SHIP_OBJS) \
 				 files.o \
 				 fraglist.o \
 				 forge_items.o \
-				 genrand.o \
 				 graph.o \
 				 group.o \
 				 guild.o \

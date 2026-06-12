@@ -29,11 +29,6 @@
 #include "map.h"
 #include "player_log.h"
 
-#ifdef _HPUX_SOURCE
-#define srandom srand
-#define random  rand
-#endif
-
 #include <sys/types.h>
 #include <zlib.h>
 
