@@ -21,7 +21,7 @@
 #include "specs.caertannad.h"
 #include "specs.eth2.h"
 #include "specs.firep.h"
-#include "specs.jubilex.h"
+#include "specs.juiblex.h"
 #include "specs.keleks.h"
 #include "specs.prototypes.h"
 #include "specs.ravenloft.h"
@@ -2525,14 +2525,14 @@ void assign_rooms(void)
 	/* Trakkia */
 	world[real_room0(57068)].funct = pet_shops;
 
-	/* Jubilex */
+	/* Juiblex */
 	mob_index[real_mobile0(87542)].func.mob = slime_lake;
-	mob_index[real_mobile0(87543)].func.mob = jubilex_one;
+	mob_index[real_mobile0(87543)].func.mob = juiblex_one;
 
 	obj_index[real_object0(87546)].func.obj = mask_of_wildmagic;
 	// obj_index[real_object0(87600)].func.obj = ebb_vambraces;
 	obj_index[real_object0(87601)].func.obj = flow_amulet;
-	obj_index[real_object0(87611)].func.obj = jubilex_grid_mob_generator;
+	obj_index[real_object0(87611)].func.obj = juiblex_grid_mob_generator;
 	obj_index[real_object0(67274)].func.obj = zion_netheril;
 
 	/* Fortress of Dreams */

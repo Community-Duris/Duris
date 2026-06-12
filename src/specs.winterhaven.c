@@ -1921,22 +1921,22 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 				return TRUE;
 			}
 		}
-		else if (isname(arg, "jubilex"))
+		else if (isname(arg, "juiblex") || isname(arg, "jubilex"))
 		{
 			curr_time = time(NULL);
 			vict      = ParseTarget(ch, arg);
 			// 450 sec == 7 min 30 sec & 10 min timers.
 			if (obj->timer[0] + 450 <= curr_time && obj->timer[1] + 600 <= curr_time)
 			{
-				act("&+WYou say '&+rJubilex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&+WYou say '&+rJuiblex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_CHAR);
 				act("&+WYou thrust $q &+Winto the ground!&n", TRUE, ch, obj, vict, TO_CHAR);
 				act("&+LA thin line of &+ggreen &+Glight &+Lcuts into the &+Cair&+L, revealing a &+gportal &+Lto another &+Gdimension&+L.", TRUE, ch, obj, vict, TO_CHAR);
-				act("&+LSuddenly, &+rJubilex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&+LSuddenly, &+rJuiblex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_CHAR);
 
-				act("$n says '&+rJubilex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_ROOM);
+				act("$n says '&+rJuiblex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_ROOM);
 				act("$n &+Lthrusts $q &+Winto the ground!&n", TRUE, ch, obj, vict, TO_ROOM);
 				act("&+LA thin line of &+ggreen &+Glight &+Lcuts into the &+Cair&+L, revealing a &+gportal &+Lto another &+Gdimension&+L.&n", TRUE, ch, obj, vict, TO_ROOM);
-				act("&+LSuddenly, &+rJubilex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_ROOM);
+				act("&+LSuddenly, &+rJuiblex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_ROOM);
 
 				rand = number(0, 100);
 				if (rand >= 76)
@@ -1968,8 +1968,8 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 					spell_invigorate(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 				}
 
-				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJubilex &+Lflashes you a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_CHAR);
-				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJubilex &+Lflashes $n a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_ROOM);
+				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJuiblex &+Lflashes you a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJuiblex &+Lflashes $n a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_ROOM);
 
 				CharWait(ch, PULSE_VIOLENCE * 2);
 
@@ -2007,9 +2007,9 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 					/* spell_bigbys_crushing_hand(50, ch, 0, SPELL_TYPE_SPELL, vict, 0);*/
 					break;
 				case 2:
-					act("&+LYour $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon your foe!&n", TRUE, ch, obj, vict, TO_CHAR);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
+					act("&+LYour $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon your foe!&n", TRUE, ch, obj, vict, TO_CHAR);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
 					spell_full_heal(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 					break;
 			}
@@ -2035,8 +2035,8 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 					break;
 				case 2:
 					act("&+LYour $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubliex &+Lupon your foe!&n", TRUE, ch, obj, vict, TO_CHAR);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
 
 					spell_heal(56, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 					break;

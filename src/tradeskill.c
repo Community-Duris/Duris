@@ -34,7 +34,7 @@
 #include "sound.h"
 #include "specs.barovia.h"
 #include "specs.eth2.h"
-#include "specs.jubilex.h"
+#include "specs.juiblex.h"
 #include "specs.keleks.h"
 #include "specs.prototypes.h"
 #include "specs.ravenloft.h"
@@ -3803,7 +3803,7 @@ int get_ival_from_proc(obj_proc_type proc)
 	    proc == random_slab || proc == refreshing_fountain || proc == magical_fountain || proc == changelog || proc == wall_generic || proc == huntsman_ward || proc == item_switch ||
 	    proc == verzanan_portal || proc == die_roller || proc == elfgate || proc == guildwindow || proc == guildhome || proc == automaton_lever ||
 	    proc == illithid_teleport_veil || proc == teleporting_pool || proc == llyms_altar || proc == newbie_sign1 || proc == newbie_sign2 || proc == vareena_statue || proc == wh_corpse_decay ||
-	    proc == dragon_heart_decay || proc == ravenloft_bell || proc == toe_chamber_switch || proc == flesh_golem_repop || proc == unmulti_altar || proc == jubilex_grid_mob_generator ||
+	    proc == dragon_heart_decay || proc == ravenloft_bell || proc == toe_chamber_switch || proc == flesh_golem_repop || proc == unmulti_altar || proc == juiblex_grid_mob_generator ||
 	    proc == eth2_tree_obj || proc == magic_deck || proc == blackjack_table || proc == toe_chamber_switch || proc == drowcrusher)
 	{
 		return -100000;

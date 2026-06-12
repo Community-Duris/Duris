@@ -5,7 +5,7 @@
 #include "events.h"
 #include "interp.h"
 #include "utils.h"
-#include "specs.jubilex.h"
+#include "specs.juiblex.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -80,11 +80,11 @@ int slime_lake(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int jubilex_one(P_char ch, P_char pl, int cmd, char *arg)
+int juiblex_one(P_char ch, P_char pl, int cmd, char *arg)
 {
 	if (cmd == CMD_DEATH)
 	{
-		P_obj obj = read_object(JUBILEX_WORMHOLE_VNUM, VIRTUAL);
+		P_obj obj = read_object(JUIBLEX_WORMHOLE_VNUM, VIRTUAL);
 		if (!obj)
 		{
 			logit(LOG_DEBUG, "slime_lake: object failed to load.");
@@ -105,13 +105,13 @@ int jubilex_one(P_char ch, P_char pl, int cmd, char *arg)
 		act("$p &nsuddenly glows brightly!\n $n &nslowly fades out of existence.", FALSE, ch, obj, 0, TO_ROOM);
 
 		P_char tch, temp;
-		for (tch = world[real_room0(JUBILEX_DEATH_FROM_ROOM)].people; tch; tch = temp)
+		for (tch = world[real_room0(JUIBLEX_DEATH_FROM_ROOM)].people; tch; tch = temp)
 		{
 			temp = tch->next_in_room;
 
 			if (IS_NPC(tch))
 			{
-				char_to_room(tch, real_room0(JUBILEX_DEATH_TO_ROOM), -1);
+				char_to_room(tch, real_room0(JUIBLEX_DEATH_TO_ROOM), -1);
 			}
 		}
 
@@ -300,7 +300,7 @@ int flow_amulet(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int jubilex_grid_mob_generator(P_obj obj, P_char ch, int cmd, char *arg)
+int juiblex_grid_mob_generator(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int mob_vnums[] = {87507, 87505, 87508, 87604, 87599, 87504, 87506, 87515, 87552, 87514, 0};
 

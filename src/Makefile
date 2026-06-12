@@ -212,7 +212,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs.zalrix.o \
 				 specs.set.o \
 				 specs.shabo.o \
-				 specs.jubilex.o \
+				 specs.juiblex.o \
 				 specs.keleks.o \
 				 specs.caertannad.o \
 				 specs.firep.o \

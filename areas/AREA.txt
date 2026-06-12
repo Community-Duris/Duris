@@ -269,7 +269,7 @@ alatorin                  *831-832
 ancientb                  *856 Bridge Zone
 arcium                    *857-862
 crakkaro                  *870-875
-jubilex                   *876
+juiblex                   *876
 snogres                   *877
 church                    *878
 kelek                     *879

@@ -133,7 +133,7 @@ const int highdrop_mobs[NUM_HIGHDROP_MOBS + 1] = {
 	70941, // 19 Kithron
 	88316, // 20 Kossuth
 	87561, // 21 Zuggtmoy
-	87544, // 22 Jubilex
+	87544, // 22 Juiblex
 	87613, // 23 Graz'zt
 	87612, // 24 Lolth
 	32637, // 25 Aramus
