@@ -37,7 +37,6 @@ bool lliendils_stormshock(P_char ch, P_char victim, P_obj wpn);
 
 bool reaver_hit_proc(P_char ch, P_char victim, P_obj weapon);
 
-int  required_weapon_skill(P_obj wpn); // defined in fight.c
 void apply_reaver_mods(P_char ch);
 
 #endif // __REAVERS_H__

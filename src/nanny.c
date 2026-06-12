@@ -322,6 +322,18 @@ static void LoadNewbyShit(P_char ch, int *items)
 					}
 				}
 			}
+
+			if (obj->type == ITEM_WEAPON)
+			{
+				// during char creation skills are not initialized yet
+				int slev = GET_LVL_FOR_SKILL(ch, required_weapon_skill(obj));
+				if (!slev || slev > GET_LEVEL(ch) || !can_char_use_item(ch, obj))
+				{
+					extract_obj(obj);
+					continue;
+				}
+			}
+
 			obj_to_char(obj, ch);
 			if (!IS_PC(ch))
 				CheckEqWorthUsing(ch, obj);
@@ -1427,30 +1439,34 @@ void load_obj_to_newbies(P_char ch)
 		LoadNewbyShit(ch, blighter_stuff);
 	}
 
-	if (world[ch->in_room].number == 29201)
+	if (world[ch->in_room].number == 29201) // Ailvio
 	{
 		P_obj note = read_object(29319, VIRTUAL);
 
 		obj_to_char(note, ch);
 	}
 
-	P_obj bandage = read_object(393, VIRTUAL);
-	obj_to_char(bandage, ch);
+	if (GET_LVL_FOR_SKILL(ch, SKILL_BANDAGE)) // all but necros
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			P_obj bandage = read_object(393, VIRTUAL);
+			obj_to_char(bandage, ch);
+		}
+	}
 
-	bandage = read_object(393, VIRTUAL);
-	obj_to_char(bandage, ch);
+	if (!GET_CLASS(ch, CLASS_PALADIN) && !GET_CLASS(ch, CLASS_ANTIPALADIN))
+	{
+		P_obj shield = read_object(458, VIRTUAL);
+		obj_to_char(shield, ch);
+	}
 
-	bandage = read_object(393, VIRTUAL);
-	obj_to_char(bandage, ch);
-
-	bandage = read_object(393, VIRTUAL);
-	obj_to_char(bandage, ch);
-
-	bandage = read_object(393, VIRTUAL);
-	obj_to_char(bandage, ch);
-
-	bandage = read_object(458, VIRTUAL);
-	obj_to_char(bandage, ch);
+	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+	{
+		char keywords[MAX_STRING_LENGTH];
+		sprintf(keywords, "%s newbie", obj->name);
+		set_keywords(obj, keywords);
+	}
 }
 
 #undef CREATE_KIT

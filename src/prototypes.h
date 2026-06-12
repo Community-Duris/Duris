@@ -992,6 +992,7 @@ void                  engage(P_char, P_char);
 void                  soul_taking_check(P_char, P_char);
 struct affected_type *get_ward_from_char(P_char ch);
 int                   check_damage_ward(P_char ch, int dam);
+int  required_weapon_skill(P_obj wpn);
 /*
 void swapWeapon(P_char);
 */
@@ -3159,6 +3160,9 @@ void  do_enchant(P_char, char *, int);
 P_obj check_furnace(P_char);
 void  do_smelt(P_char, char *, int);
 void  do_mixpoison(P_char, char *, int);
+void  set_keywords(P_obj, const char *);
+void  set_long_description(P_obj, const char *);
+void  set_short_description(P_obj, const char *);
 
 /* mccp.c */
 int  compress_get_ratio(P_desc player);

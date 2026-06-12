@@ -89,8 +89,6 @@ extern const char                    *carve_part_name[];
 extern const int                      carve_part_flag[];
 extern struct mm_ds                  *dead_mob_pool;
 extern struct mm_ds                  *dead_pconly_pool;
-extern void                           set_long_description(P_obj t_obj, const char *newDescription);
-extern void                           set_short_description(P_obj t_obj, const char *newDescription);
 extern const struct golem_description golem_data[];
 extern float                          exp_mods[EXPMOD_MAX + 1];
 extern float                          breath_saved_multiplier;

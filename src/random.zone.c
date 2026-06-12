@@ -71,9 +71,6 @@ extern struct random_spells   spells_data[];
 extern const int              rev_dir[];
 
 int  find_map_place();
-void set_long_description(P_obj t_obj, const char *newDescription);
-void set_keywords(P_obj t_obj, const char *newKeys);
-void set_short_description(P_obj t_obj, const char *newShort);
 void writeCorpseNumbs(int start, int end, int map);
 int  find_a_zone();
 int  connect_lab(int room, int dir);

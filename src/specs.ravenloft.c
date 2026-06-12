@@ -52,9 +52,6 @@ extern struct class_names     class_names_table[];
 int                           range_scan_track(P_char ch, int distance, int type_scan);
 extern P_obj                  object_list;
 
-void set_short_description(P_obj t_obj, const char *newShort);
-void set_long_description(P_obj t_obj, const char *newDescription);
-
 int ravenloft_vistani_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
 	int helpers[] = {58382, 0};

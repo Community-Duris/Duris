@@ -63,9 +63,6 @@ extern void                   material_restrictions(P_obj);
 
 int  find_map_place();
 void create_zone(int theme, int map_room1, int map_room2, int level_range, int rooms);
-void set_keywords(P_obj t_obj, const char *newKeys);
-void set_short_description(P_obj t_obj, const char *newShort);
-void set_long_description(P_obj t_obj, const char *newDescription);
 
 struct randomeq_weapon_data
 {

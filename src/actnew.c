@@ -78,8 +78,6 @@ extern int                       top_of_zone_table;
 
 void yank_make_item(P_char, P_obj);
 void lore_item(P_char ch, P_obj obj);
-void set_keywords(P_obj t_obj, const char *newKeys);
-void set_short_description(P_obj t_obj, const char *newShort);
 
 int voting_enabled = 0;
 
