@@ -68,6 +68,11 @@
 #include "websocket.h"
 #include "world_quest.h"
 #include "ws_handlers.h"
+#include "latency_trace.h"
+#include "persistence_queue.h"
+#ifndef __NO_TESTS__
+#include "test_async.h"
+#endif
 
 /* external variables */
 
@@ -497,7 +502,27 @@ void run_the_game(int port, int sslport)
 
 	fprintf(stderr, "Entering game loop.\n\r");
 	logit(LOG_STATUS, "Entering game loop.");
+	persistence_replay_fallback_events();
+	persistence_start_item_event_worker();
+	persistence_start_scalar_event_worker();
+	persistence_start_large_event_worker();
+
+	/* Boot-time scalar queue flood test: overflows the queue so the
+	 * latency_trace instrumentation can capture scalar_enq_ok/drop
+	 * and fallback_file_write statistics in the next periodic dump.
+	 * Reset all TU-level ring buffers before the test so data is clean. */
+	latency_trace_reset();
+	persistence_queue_latency_reset();
+	utility_latency_reset();
+#ifndef __NO_TESTS__
+	test_persistence_run_one("queue_flood_scalar");
+	test_persistence_run_one("worker_scalar_fallback");
+#endif
+
 	game_loop(port, sslport);
+	persistence_stop_scalar_event_worker();
+	persistence_stop_large_event_worker();
+	persistence_stop_item_event_worker();
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
 	// Look for dropped artis and remove them from the next boot.
@@ -890,6 +915,7 @@ void game_loop(int port, int sslport)
 		}
 		PROFILE_END(connections);
 		double connections_time = (double)(connections_profile_end - connections_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("connections", (long)(connections_time * 1000000.0), pulse);
 
 #if 0
     if (debug_mode)
@@ -1058,6 +1084,7 @@ void game_loop(int port, int sslport)
 		}
 		PROFILE_END(commands);
 		double commands_time = (double)(commands_profile_end - commands_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("commands", (long)(commands_time * 1000000.0), pulse);
 
 		PROFILE_START(prompts);
 		for (point = descriptor_list; point; point = next_point)
@@ -1082,6 +1109,7 @@ void game_loop(int port, int sslport)
 
 		PROFILE_END(prompts);
 		double prompts_time = (double)(prompts_profile_end - prompts_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("prompts", (long)(prompts_time * 1000000.0), pulse);
 
 		/* handle heartbeat stuff */
 		/* Note: pulse now changes every 1/4 sec  */
@@ -1096,13 +1124,16 @@ void game_loop(int port, int sslport)
 		ne_events();
 		clock_t ne_events_end = clock();
 		double ne_events_time = (double)(ne_events_end - ne_events_begin) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("ne_events", (long)(ne_events_time * 1000000.0), pulse);
 
 		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
 		if (!(pulse % 2))
 		{
+			clock_t _gmcp = clock();
 			gmcp_flush_dirty_rooms();
 			gmcp_flush_dirty_ship_contacts();
 			gmcp_flush_dirty_ship_info();
+			latency_trace_record("gmcp_flush", (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC), pulse);
 		}
 
 		PROFILE_START(activities);
@@ -1141,11 +1172,12 @@ void game_loop(int port, int sslport)
 			epic_zone_balance();
 		}
 
-		if (!(pulse % WAIT_SEC))
+		if (!(pulse % (WAIT_SEC * 60)))
 			boon_maintenance();
 
 		PROFILE_END(activities);
 		double activities_time = (double)(activities_profile_end - activities_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("activities", (long)(activities_time * 1000000.0), pulse);
 
 		PROFILE_START(combat);
 		perform_violence();
@@ -1214,6 +1246,7 @@ void game_loop(int port, int sslport)
 		//      }
 		PROFILE_END(combat);
 		double combat_time = (double)(combat_profile_end - combat_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("combat", (long)(combat_time * 1000000.0), pulse);
 
 		PROFILE_START(pulse_reset);
 		// tics since last checkpoint signal
@@ -1235,6 +1268,7 @@ void game_loop(int port, int sslport)
 		}
 		clock_t affect_and_points_end = clock();
 		double affect_and_points_time = (double)(affect_and_points_end - affect_and_points_begin) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("affect_and_points", (long)(affect_and_points_time * 1000000.0), pulse);
 		/* check out the time */
 #if 1
 		loop_time_end = clock();
@@ -1250,6 +1284,8 @@ void game_loop(int port, int sslport)
 			statuslog(56, "  - prompts time - %f", prompts_time);
 			statuslog(56, "  - aff/pts time - %f", affect_and_points_time);
 		}
+		latency_trace_record("total_tick", (long)(loop_time * 1000000.0), pulse);
+		if (!(tics % 300)) { FILE *_ltf = fopen("/durismud/logs/latency_trace.log", "a"); if(_ltf){ latency_trace_dump(_ltf); fclose(_ltf); } latency_trace_dump(stderr); fflush(stderr); persistence_queue_latency_dump(); utility_latency_dump(); }
 		memcpy(&timeout, &opt_time, sizeof(timeout));
 		suseconds_t usec_spent = (suseconds_t)(loop_time * 1000 * 1000);
 		timeout.tv_usec = MAX(0, timeout.tv_usec - usec_spent);
@@ -1304,6 +1340,7 @@ void game_loop(int port, int sslport)
 
 	// skip character extraction during copyover - we need them intact
 	if (!_copyover)
+		persistence_flush_all_character_saves();
 	{
 		for (point = descriptor_list; point; point = point->next)
 		{
@@ -1858,7 +1895,23 @@ void close_socket(struct descriptor_data *d)
 				loginlog(d->character->player.level, "%s [%s] has lost link @ %s EST.", GET_NAME(GET_PLYR(d->character)), d->host, Gbuf1);
 				sql_log(d->character, CONNECTLOG, "Lost Link");
 			}
-			writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+			persistence_flush_character_saves(d->character);
+
+			// Wrap final save in transaction (flush already completed above)
+			if (sql_begin_transaction())
+			{
+				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+				if (!sql_commit())
+				{
+					logit(LOG_DEBUG, "close_socket: commit failed for %s", GET_NAME(d->character));
+					sql_rollback();
+				}
+			}
+			else
+			{
+				// still try to save even if transaction start fails
+				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+			}
 			d->character->desc = 0;
 		}
 		else
@@ -2890,6 +2943,7 @@ int process_input(P_desc t)
 			if (consumed <= 0)
 				goto incomplete; // partial; need to wait for more
 			i += consumed - 1;
+			break; /* prevent fall-through to backspace handler */
 		}
 
 		case '\b':
@@ -2933,7 +2987,14 @@ static void process_line(P_desc t, char *in)
 	if (t->cp437)
 		upgrade_cp437_and_dollars(out, in);
 	else if (validate_utf8_and_dollars(out, in))
-		write_to_descriptor(t, "Bad characters in input, skipped.\r\n");
+	{
+		// During login (non-zero connected), bad bytes come from client negotiation;
+		// silently discard and re-prompt instead of confusing the user.
+		if (!t->connected)
+			write_to_descriptor(t, "Bad characters in input, skipped.\r\n");
+		out[0] = '\0';
+	}
+
 
 	int k = strlen(out);
 	if (k > (MAX_INPUT_LENGTH - 1))

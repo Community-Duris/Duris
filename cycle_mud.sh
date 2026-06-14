@@ -54,6 +54,16 @@ if [ -f "src/sql.h" ]; then
       INDEX idx_shutdown_type (shutdown_type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   " 2>/dev/null
+
+  # ---- Incremental migrations ----------------------------------------
+  # When MIGRATION_AUTO_RUNNER is defined in CFLAGS, the MUD binary
+  # handles all migrations during initialize_mysql() (via auto-runner).
+  # When the flag is off, uncomment the lines below for shell-level
+  # migration execution.
+  # echo "Running schema migrations..."
+  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v17_schema_fixes.sql || true)
+  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v18_player_affects_unique.sql || true)
+  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v19_item_table_columns.sql || true)
 else
   echo "Warning: src/sql.h not found, skipping database operations"
   DB_HOST=""

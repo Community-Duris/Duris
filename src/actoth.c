@@ -1683,6 +1683,7 @@ void do_quit(P_char ch, char *argument, int cmd)
 	}
 
 	sql_log_player_login(ch, "logout");
+	persistence_flush_character_saves(ch);
 	redis_player_offline(ch);
 	extract_char(ch);
 	ch = NULL;
@@ -1697,8 +1698,225 @@ void event_autosave(P_char ch, P_char victim, P_obj obj, void *data)
 		logit(LOG_DEBUG, "event_autosave: DEAD/NONEXISTANT char %s '%s'.", (ch == NULL) ? "!" : IS_NPC(ch) ? "NPC" : "PC", (ch == NULL) ? "NULL" : J_NAME(ch));
 		return;
 	}
+	persistence_flush_item_events(64);
 	do_save_silent(ch, 1);
 	add_event(event_autosave, 1200, ch, 0, 0, 0, 0, 0);
+}
+
+#define PERSISTENCE_DEFERRED_SAVE_SLOTS 512
+
+struct deferred_save_slot
+{
+  int pid;
+  int type;
+  int level_dirty;
+  char reason[64];
+};
+
+static struct deferred_save_slot deferred_saves[PERSISTENCE_DEFERRED_SAVE_SLOTS];
+
+static struct deferred_save_slot *find_deferred_save_slot(int pid)
+{
+  int i;
+
+  for (i = 0; i < PERSISTENCE_DEFERRED_SAVE_SLOTS; i++)
+    if (deferred_saves[i].pid == pid)
+      return &deferred_saves[i];
+
+  return NULL;
+}
+
+static struct deferred_save_slot *find_empty_deferred_save_slot(void)
+{
+  int i;
+
+  for (i = 0; i < PERSISTENCE_DEFERRED_SAVE_SLOTS; i++)
+    if (!deferred_saves[i].pid)
+      return &deferred_saves[i];
+
+  return NULL;
+}
+
+static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj,
+                                          void *data)
+{
+  struct deferred_save_slot pending;
+  struct deferred_save_slot *slot;
+  int pid = data ? *((int *)data) : 0;
+
+  (void) victim;
+  (void) obj;
+
+  if (!pid && ch && !IS_NPC(ch))
+    pid = GET_PID(ch);
+
+  if (!pid)
+    return;
+
+  slot = find_deferred_save_slot(pid);
+  if (!slot)
+    return;
+
+  pending = *slot;
+  memset(slot, 0, sizeof(*slot));
+
+  if (!ch || IS_NPC(ch))
+  {
+    persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
+                      "deferred_save_character_missing",
+                      "discarded deferred save slot for pid=%d reason=%s",
+                      pending.pid, pending.reason);
+    return;
+  }
+
+  if (!IS_ALIVE(ch))
+  {
+    persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
+                      "deferred_save_character_not_alive",
+                      "discarded deferred save slot for pid=%d reason=%s",
+                      pending.pid, pending.reason);
+    return;
+  }
+
+  if (pending.level_dirty)
+    sql_update_level(ch);
+
+  do_save_silent(ch, pending.type ? pending.type : 1);
+}
+
+static void persistence_schedule_checkpoint(P_char ch, int type, int delay,
+                                            const char *reason,
+                                            int level_dirty)
+{
+  struct deferred_save_slot *slot;
+
+  if (!IS_ALIVE(ch) || IS_NPC(ch))
+    return;
+
+  slot = find_deferred_save_slot(GET_PID(ch));
+  if (slot)
+  {
+    slot->type = type ? type : slot->type;
+    slot->level_dirty = slot->level_dirty || level_dirty;
+    return;
+  }
+
+  slot = find_empty_deferred_save_slot();
+  if (!slot)
+  {
+    persistence_alert(AVATAR, "player_save", GET_NAME(ch), "none", "none",
+                      "deferred_save_full",
+                      "deferred save table full; saving synchronously for %s",
+                      reason ? reason : "unknown");
+    if (level_dirty)
+      sql_update_level(ch);
+    do_save_silent(ch, type ? type : 1);
+    return;
+  }
+
+  slot->pid = GET_PID(ch);
+  slot->type = type ? type : 1;
+  slot->level_dirty = level_dirty;
+  snprintf(slot->reason, sizeof(slot->reason), "%s",
+           reason ? reason : "unknown");
+
+  add_event(event_deferred_character_save, delay > 0 ? delay : 1, ch, 0, 0, 0,
+            &slot->pid, sizeof(slot->pid));
+}
+
+void persistence_schedule_character_save(P_char ch, int type, int delay,
+                                         const char *reason)
+{
+  persistence_schedule_checkpoint(ch, type, delay, reason, 0);
+}
+
+void persistence_schedule_level_checkpoint(P_char ch, int type, int delay,
+                                           const char *reason)
+{
+  persistence_schedule_checkpoint(ch, type, delay, reason, 1);
+}
+
+
+/*
+ * persistence_flush_character_saves: synchronously flush any pending deferred
+ * character save for `ch`.  This is called on disconnect paths (do_quit, link-dead,
+ * copyover, ghost extraction) so that a recently-scheduled deferred save is
+ * applied before the character is saved with the disconnect-time RENT_* type
+ * or before the character is extracted.
+ *
+ * Mechanism: find the slot for ch's PID, copy its pending state, clear the
+ * slot (memset to 0) so the still-queued event_deferred_character_save will
+ * be a no-op when it fires, then run the synchronous save.  This is safe
+ * because event_deferred_character_save checks find_deferred_save_slot(pid)
+ * and bails on NULL.
+ */
+void persistence_flush_character_saves(P_char ch)
+{
+	struct deferred_save_slot pending;
+	struct deferred_save_slot *slot;
+
+	if (!ch || IS_NPC(ch) || !IS_ALIVE(ch))
+		return;
+
+	slot = find_deferred_save_slot(GET_PID(ch));
+	if (!slot)
+		return;
+
+	pending = *slot;
+	memset(slot, 0, sizeof(*slot));
+
+	if (pending.level_dirty)
+		sql_update_level(ch);
+
+	do_save_silent(ch, pending.type ? pending.type : 1);
+
+	persistence_alert(AVATAR, "player_save", GET_NAME(ch), "none", "none",
+			"deferred_save_flushed",
+			"flushed deferred save for pid=%d reason=%s",
+			pending.pid, pending.reason);
+}
+
+/*
+ * persistence_flush_all_character_saves: flush every pending deferred save.
+ * Intended for global shutdown / copyover so no scheduled save is lost.
+ */
+void persistence_flush_all_character_saves(void)
+{
+	int i;
+	P_char ch;
+	struct deferred_save_slot pending;
+	struct deferred_save_slot *slot;
+
+	for (i = 0; i < PERSISTENCE_DEFERRED_SAVE_SLOTS; i++)
+	{
+		slot = &deferred_saves[i];
+		if (!slot->pid)
+			continue;
+
+		/* find the char by PID; if extracted/not-alive, just clear the slot */
+		for (ch = character_list; ch; ch = ch->next)
+		{
+			if (IS_PC(ch) && GET_PID(ch) == slot->pid)
+				break;
+		}
+
+		pending = *slot;
+		memset(slot, 0, sizeof(*slot));
+
+		if (!ch || !IS_ALIVE(ch))
+		{
+			persistence_alert(AVATAR, "player_save", "none", "none", "none",
+					"deferred_save_discard_global",
+					"discarded deferred save pid=%d reason=%s (char not in list)",
+					pending.pid, pending.reason);
+			continue;
+		}
+
+		if (pending.level_dirty)
+			sql_update_level(ch);
+
+		do_save_silent(ch, pending.type ? pending.type : 1);
+	}
 }
 
 void do_save_silent(P_char ch, int type)
@@ -1759,7 +1977,11 @@ void do_save_silent(P_char ch, int type)
 			send_to_char("Danger -- cannot save your character!\r\n", ch);
 			send_to_char("Better contact an Implementor ASAP.\r\n", ch);
 		}
-	}
+	
+
+  /* Also save player's ship if they have one */
+  { extern P_ship get_ship_from_char(P_char ch); P_ship ship = get_ship_from_char(ch); if (ship) { extern int write_ship(P_ship ship); write_ship(ship); } }
+}
 }
 
 void do_save(P_char ch, char *argument, int cmd)

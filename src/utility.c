@@ -8,11 +8,15 @@
  */
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/time.h>
 using namespace std;
 #ifdef _HPUX_SOURCE
 #include <varargs.h>
@@ -36,7 +40,9 @@ using namespace std;
 #include "map.h"
 #include "mm.h"
 #include "new_combat.h"
+#include "persistence_queue.h"
 #include "redis.h"
+#include "latency_trace.h"
 #include "specializations.h"
 #include "spells.h"
 #include "sql.h"
@@ -78,6 +84,17 @@ uint                                 debugcount = 0;
 extern P_index                       mob_index;
 extern const int                     rev_dir[];
 extern void                          event_spellcast(P_char, P_char, P_obj, void *);
+#define PERSISTENCE_ITEM_EVENT_PREFIX "PERSISTENCE_ITEM_EVENT|"
+#define PERSISTENCE_SCALAR_EVENT_PREFIX "PERSISTENCE_SCALAR_EVENT|"
+#define PERSISTENCE_LARGE_EVENT_PREFIX "PERSISTENCE_LARGE_EVENT|"
+static pthread_mutex_t persistence_fallback_log_mutex = PTHREAD_MUTEX_INITIALIZER;
+unsigned long                        persistence_fallback_count = 0;
+unsigned long                        persistence_replay_handled = 0;
+unsigned long                        persistence_item_worker_fallback_count = 0;
+unsigned long                        persistence_scalar_fallback_count = 0;
+unsigned long                        persistence_item_worker_restart_count = 0;
+unsigned long                        persistence_scalar_worker_restart_count = 0;
+unsigned long                        persistence_large_worker_restart_count = 0;
 int                                  ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg);
 extern struct mm_ds                 *dead_mob_pool;
 extern struct mm_ds                 *dead_pconly_pool;
@@ -787,6 +804,784 @@ void wizlog(int level, const char *format, ...)
 		}
 	}
 	va_end(args);
+}
+
+void persistence_alert(int level, const char *domain, const char *owner,
+                       const char *item_uid, const char *event_id,
+                       const char *action, const char *format, ...)
+{
+  va_list args;
+  char details[MAX_STRING_LENGTH];
+  char alert[MAX_STRING_LENGTH * 2];
+
+  details[0] = '\0';
+  if (format && *format)
+  {
+    va_start(args, format);
+    vsnprintf(details, sizeof(details), format, args);
+    va_end(args);
+  }
+
+  snprintf(alert, sizeof(alert),
+           "domain=%s owner=%s item_uid=%s event_id=%s action=%s%s%s",
+           (domain && *domain) ? domain : "unknown",
+           (owner && *owner) ? owner : "unknown",
+           (item_uid && *item_uid) ? item_uid : "none",
+           (event_id && *event_id) ? event_id : "none",
+           (action && *action) ? action : "unknown",
+           details[0] ? " detail=" : "",
+           details);
+
+  logit(LOG_FILE, "PERSISTENCE: %s", alert);
+  logit(LOG_WIZ, "PERSISTENCE: %s", alert);
+  wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
+}
+
+unsigned long long persistence_next_item_uid(void)
+{
+  return (unsigned long long) next_obj_uid++;
+}
+
+void persistence_assign_item_uid(P_obj obj, const char *reason)
+{
+  if (!obj || obj->obj_uid)
+    return;
+
+  obj->obj_uid = (unsigned long) persistence_next_item_uid();
+
+  if (!obj->obj_uid)
+  {
+    persistence_alert(AVATAR, "item_uid",
+                      reason ? reason : "unknown", "0", "none",
+                      "assignment_failed", "object pointer=%p", obj);
+  }
+}
+
+const char *persistence_item_uid_text(P_obj obj, char *buf, int buf_size)
+{
+  if (!buf || buf_size <= 0)
+    return "none";
+
+  if (!obj || !obj->obj_uid)
+  {
+    snprintf(buf, buf_size, "none");
+  }
+  else
+  {
+    snprintf(buf, buf_size, "%lu", obj->obj_uid);
+  }
+
+  return buf;
+}
+
+int persistence_write_fallback_event_line(const char *line,
+                                          const char *domain,
+                                          const char *owner,
+                                          const char *action)
+{
+  FILE *log_f;
+  int ok = 1;
+  static unsigned long fallback_count = 0;
+
+  if (!line || !*line)
+    return 0;
+
+  pthread_mutex_lock(&persistence_fallback_log_mutex);
+  log_f = fopen(LOG_EVENT, "a");
+  if (!log_f)
+  {
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+    persistence_alert(AVATAR,
+                      domain ? domain : "persistence",
+                      owner ? owner : "fallback",
+                      "none",
+                      "none",
+                      action ? action : "fallback_open_failed",
+                      "could not open %s; event not persisted", LOG_EVENT);
+    return 0;
+  }
+
+  clock_t _fb_beg = clock();
+  if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+    ok = 0;
+
+  if (fclose(log_f))
+    ok = 0;
+  { long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
+    latency_trace_record("fallback_file_write", _fb_us, 0); }
+  persistence_fallback_count++;
+  pthread_mutex_unlock(&persistence_fallback_log_mutex);
+
+  fallback_count++;
+  if (!ok)
+  {
+    persistence_alert(AVATAR,
+                      domain ? domain : "persistence",
+                      owner ? owner : "fallback",
+                      "none",
+                      "none",
+                      action ? action : "fallback_write_failed",
+                      "write to %s failed; event not persisted", LOG_EVENT);
+    return 0;
+  }
+
+  if (fallback_count <= 5 || !(fallback_count % 1000))
+  {
+    logit(LOG_FILE,
+          "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
+          domain ? domain : "persistence",
+          owner ? owner : "fallback",
+          action ? action : "flat_fallback",
+          fallback_count);
+    logit(LOG_WIZ,
+          "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
+          domain ? domain : "persistence",
+          owner ? owner : "fallback",
+          action ? action : "flat_fallback",
+          fallback_count);
+  }
+
+  return 1;
+}
+
+static const char *persistence_clean_field(const char *in, char *buf,
+                                           int buf_size)
+{
+  int i;
+
+  if (!buf || buf_size <= 0)
+    return "";
+
+  if (!in)
+  {
+    snprintf(buf, buf_size, "none");
+    return buf;
+  }
+
+  for (i = 0; in[i] && i < buf_size - 1; i++)
+  {
+    if (in[i] == '|' || in[i] == '\r' || in[i] == '\n')
+      buf[i] = ' ';
+    else
+      buf[i] = in[i];
+  }
+  buf[i] = '\0';
+  return buf;
+}
+
+static unsigned long long persistence_event_time_usec(void)
+{
+  struct timeval tv;
+
+  if (gettimeofday(&tv, NULL))
+    return (unsigned long long)time(NULL) * 1000000ULL;
+
+  return ((unsigned long long)tv.tv_sec * 1000000ULL) +
+         (unsigned long long)tv.tv_usec;
+}
+/* Forward declaration: defined after persistence_flush_scalar_events(). */
+void persistence_worker_heartbeat_check(int threshold_secs);
+
+
+int persistence_flush_item_events(int max_events)
+{
+  char line[PERSISTENCE_EVENT_MAX_LEN];
+  unsigned long dropped;
+  FILE *log_f = NULL;
+  int flushed = 0;
+  int pending;
+
+  if (persistence_item_event_worker_running())
+    return 0;
+
+  if (max_events <= 0)
+    max_events = PERSISTENCE_EVENT_QUEUE_CAPACITY;
+
+  pending = persistence_item_event_queue_pending();
+  if (pending > 0)
+  {
+    log_f = fopen(LOG_EVENT, "a");
+    if (!log_f)
+    {
+      persistence_alert(AVATAR, "item_event", "queue", "none", "none",
+                        "flush_open_failed",
+                        "could not open %s; %d events remain queued",
+                        LOG_EVENT, pending);
+      return 0;
+    }
+  }
+
+  while (flushed < max_events &&
+         persistence_item_event_queue_dequeue(line, sizeof(line)))
+  {
+    fputs(line, log_f);
+    fputs("\n", log_f);
+    flushed++;
+  }
+
+  if (log_f)
+  {
+    if (fclose(log_f))
+    {
+      persistence_alert(AVATAR, "item_event", "queue", "none", "none",
+                        "flush_close_failed",
+                        "close failed after flushing %d events", flushed);
+    }
+  }
+
+  dropped = persistence_item_event_queue_dropped();
+  if (dropped)
+  {
+    persistence_alert(AVATAR, "item_event", "queue", "none", "none",
+                      "dropped_events",
+                      "%lu item persistence events were dropped before flush",
+                      dropped);
+    persistence_item_event_queue_clear_dropped();
+  }
+
+  return flushed;
+}
+
+int persistence_flush_scalar_events(int max_events)
+{
+  char line[PERSISTENCE_EVENT_MAX_LEN];
+  unsigned long dropped;
+  FILE *log_f = NULL;
+  int flushed = 0;
+  int pending;
+
+  if (persistence_scalar_event_worker_running())
+    return 0;
+
+  if (max_events <= 0)
+    max_events = PERSISTENCE_EVENT_QUEUE_CAPACITY;
+
+  pending = persistence_scalar_event_queue_pending();
+  if (pending > 0)
+  {
+    log_f = fopen(LOG_EVENT, "a");
+    if (!log_f)
+    {
+      persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+                        "flush_open_failed",
+                        "could not open %s; %d scalar events remain queued",
+                        LOG_EVENT, pending);
+      return 0;
+    }
+  }
+
+  while (flushed < max_events &&
+         persistence_scalar_event_queue_dequeue(line, sizeof(line)))
+  {
+    fputs(line, log_f);
+    fputs("\n", log_f);
+    flushed++;
+  }
+
+  if (log_f && fclose(log_f))
+  {
+    persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+                      "flush_close_failed",
+                      "close failed after flushing %d scalar events", flushed);
+  }
+
+  dropped = persistence_scalar_event_queue_dropped();
+  if (dropped)
+  {
+    persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+                      "dropped_events",
+                      "%lu scalar persistence events were dropped before flush",
+                      dropped);
+    persistence_scalar_event_queue_clear_dropped();
+  }
+
+  /* Deadlock-detection watchdog: runs on the main thread, periodically. */
+  persistence_worker_heartbeat_check(0);
+
+  return flushed;
+}
+
+
+void persistence_worker_heartbeat_check(int threshold_secs)
+{
+  int age;
+
+  if (threshold_secs <= 0)
+    threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+
+  /* Item event worker */
+  if (!persistence_item_event_worker_running())
+  {
+    age = persistence_item_event_worker_heartbeat_age();
+    if (age > 0 && age >= threshold_secs)
+    {
+      persistence_alert(AVATAR, "item_event", "worker", "none", "none",
+                        "auto_restart",
+                        "item worker dead (heartbeat_age=%d threshold=%d); restarting",
+                        age, threshold_secs);
+      persistence_item_worker_restart_count++;
+      logit(LOG_STATUS, "PERSISTENCE: domain=item_event owner=worker action=auto_restart detail=restarted count=%lu", persistence_item_worker_restart_count);
+      persistence_start_item_event_worker();
+    }
+  }
+
+  /* Scalar event worker */
+  if (!persistence_scalar_event_worker_running())
+  {
+    age = persistence_scalar_event_worker_heartbeat_age();
+    if (age > 0 && age >= threshold_secs)
+    {
+      persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+	                    "auto_restart",
+	                    "scalar worker dead (heartbeat_age=%d threshold=%d); restarting",
+	                    age, threshold_secs);
+	  persistence_scalar_worker_restart_count++;
+	  logit(LOG_STATUS, "PERSISTENCE: domain=scalar_event owner=worker action=auto_restart detail=restarted count=%lu", persistence_scalar_worker_restart_count);
+	  persistence_start_scalar_event_worker();
+    }
+  }
+
+  /* Large event worker */
+  if (!persistence_large_event_worker_running())
+  {
+    age = persistence_large_event_worker_heartbeat_age();
+    if (age > 0 && age >= threshold_secs)
+    {
+      persistence_alert(AVATAR, "large_event", "worker", "none", "none",
+	                    "auto_restart",
+	                    "large-event worker dead (heartbeat_age=%d threshold=%d); restarting",
+	                    age, threshold_secs);
+	  persistence_large_worker_restart_count++;
+	  logit(LOG_STATUS, "PERSISTENCE: domain=large_event owner=worker action=auto_restart detail=restarted count=%lu", persistence_large_worker_restart_count);
+	  persistence_start_large_event_worker();
+    }
+  }
+
+}
+static int persistence_line_has_prefix(const char *line, const char *prefix)
+{
+  return line && prefix && !strncmp(line, prefix, strlen(prefix));
+}
+
+static void persistence_trim_record_line(char *line)
+{
+  int len;
+
+  if (!line)
+    return;
+
+  len = strlen(line);
+  while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+  {
+    line[len - 1] = '\0';
+    len--;
+  }
+}
+
+int persistence_replay_fallback_events(void)
+{
+  FILE *in_f;
+  FILE *out_f;
+  /* Sized to the largest event type we replay (large = 128KB). The scalar
+   * and item events are 1KB so the extra space is unused but harmless.
+   * Stack cost: ~256KB, well within the default 8MB thread stack.
+   */
+  char line[PERSISTENCE_LARGE_EVENT_MAX_LEN + 8];
+  char event_line[PERSISTENCE_LARGE_EVENT_MAX_LEN + 8];
+  char tmp_path[512];
+  char backup_path[512];
+  int replayed = 0;
+  int failed = 0;
+  int saw_persistence = 0;
+  int rewrite_failed = 0;
+
+  in_f = fopen(LOG_EVENT, "r");
+  if (!in_f)
+  {
+    if (errno != ENOENT)
+    {
+      persistence_alert(AVATAR, "persistence_replay", "boot", "none",
+                        "none", "open_failed",
+                        "could not open %s for fallback replay: errno=%d",
+                        LOG_EVENT, errno);
+    }
+    return 0;
+  }
+
+  snprintf(tmp_path, sizeof(tmp_path), "%s.persistence-replay.tmp", LOG_EVENT);
+  out_f = fopen(tmp_path, "w");
+  if (!out_f)
+  {
+    fclose(in_f);
+    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
+                      "none", "temp_open_failed",
+                      "could not open %s while replaying fallback events",
+                      tmp_path);
+    return 0;
+  }
+
+  while (fgets(line, sizeof(line), in_f))
+  {
+    snprintf(event_line, sizeof(event_line), "%s", line);
+    persistence_trim_record_line(event_line);
+
+    if (persistence_line_has_prefix(event_line, PERSISTENCE_ITEM_EVENT_PREFIX))
+    {
+      saw_persistence = 1;
+      if (sql_persistence_write_item_event_line(event_line))
+        replayed++;
+      else
+      {
+        failed++;
+        if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
+          rewrite_failed = 1;
+      }
+    }
+    else if (persistence_line_has_prefix(event_line,
+                                         PERSISTENCE_SCALAR_EVENT_PREFIX))
+    {
+      saw_persistence = 1;
+      if (sql_persistence_write_scalar_event_line(event_line))
+        replayed++;
+      else
+      {
+        failed++;
+        if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
+          rewrite_failed = 1;
+      }
+    }
+    else if (persistence_line_has_prefix(event_line,
+                                         PERSISTENCE_LARGE_EVENT_PREFIX))
+    {
+      saw_persistence = 1;
+      if (sql_persistence_write_large_event_line(event_line))
+        replayed++;
+      else
+      {
+        failed++;
+        if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
+          rewrite_failed = 1;
+      }
+    }
+    else if (fputs(line, out_f) < 0)
+      rewrite_failed = 1;
+  }
+
+  if (fclose(in_f))
+    rewrite_failed = 1;
+  if (fclose(out_f))
+    rewrite_failed = 1;
+
+  if (!saw_persistence)
+  {
+    remove(tmp_path);
+    return 0;
+  }
+
+  if (rewrite_failed)
+  {
+    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
+                      "none", "rewrite_failed",
+                      "fallback replay wrote SQL but could not safely rewrite %s; leaving original log for retry",
+                      LOG_EVENT);
+    remove(tmp_path);
+    return replayed;
+  }
+
+  snprintf(backup_path, sizeof(backup_path), "%s.persistence-replay.%ld",
+           LOG_EVENT, (long)time(NULL));
+  if (rename(LOG_EVENT, backup_path))
+  {
+    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
+                      "none", "backup_failed",
+                      "could not backup %s to %s after replay; leaving original log for retry",
+                      LOG_EVENT, backup_path);
+    remove(tmp_path);
+    return replayed;
+  }
+
+  if (rename(tmp_path, LOG_EVENT))
+  {
+    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
+                      "none", "replace_failed",
+                      "could not replace %s after replay; backup retained at %s",
+                      LOG_EVENT, backup_path);
+    rename(backup_path, LOG_EVENT);
+    remove(tmp_path);
+    return replayed;
+  }
+
+  persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+                    failed ? "partial_replay" : "replayed",
+                    "replayed %d fallback persistence events; %d remain queued in %s",
+                    replayed, failed, LOG_EVENT);
+
+  if (replayed > 0 || failed > 0)
+  {
+    persistence_replay_handled = replayed + failed;
+    wizlog(AVATAR, "&+R&-LPERSISTENCE FALLBACK REPLAY:&n %d events WERE handled (replayed into SQL). %d events WILL be retried on next boot. Location: %s (rotated to backup on replay).",
+           replayed, failed, LOG_EVENT);
+  }
+  else
+  {
+    persistence_replay_handled = 0;
+  }
+
+  return replayed;
+}
+
+static int persistence_item_event_log_writer(const char *line, void *context)
+{
+  FILE *log_f;
+  int ok = 1;
+  static unsigned long fallback_count = 0;
+
+  (void) context;
+
+  if (!line || !*line)
+    return 1;
+
+  if (sql_persistence_write_item_event_line(line))
+    return 1;
+
+  fallback_count++;
+  if (fallback_count <= 5 || !(fallback_count % 1000))
+  {
+    logit(LOG_FILE,
+          "PERSISTENCE: domain=item_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote event to flat log fallback count=%lu",
+          fallback_count);
+    logit(LOG_WIZ,
+          "PERSISTENCE: domain=item_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote event to flat log fallback count=%lu",
+          fallback_count);
+  }
+
+  pthread_mutex_lock(&persistence_fallback_log_mutex);
+  log_f = fopen(LOG_EVENT, "a");
+  if (!log_f)
+  {
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+    return 0;
+  }
+
+  clock_t _fb_beg = clock();
+  if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+    ok = 0;
+
+  if (fclose(log_f))
+    ok = 0;
+  { long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
+    latency_trace_record("fallback_file_write", _fb_us, 0); }
+  persistence_item_worker_fallback_count++;
+  pthread_mutex_unlock(&persistence_fallback_log_mutex);
+
+  return ok;
+}
+
+void utility_latency_dump(void)
+{
+  FILE *f = fopen("/durismud/logs/latency_trace.log", "a");
+  if (!f) return;
+  latency_trace_dump(f);
+  fclose(f);
+}
+
+void utility_latency_reset(void)
+{
+  latency_trace_reset();
+}
+
+int persistence_start_item_event_worker(void)
+{
+  if (!persistence_item_event_worker_start(persistence_item_event_log_writer,
+                                           NULL))
+  {
+    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
+                      "start_failed",
+                      "item persistence worker could not start; using sync fallback");
+    return 0;
+  }
+
+  logit(LOG_STATUS, "Started item persistence worker.");
+  return 1;
+}
+
+static int persistence_scalar_event_log_writer(const char *line, void *context)
+{
+  FILE *log_f;
+  int ok = 1;
+  static unsigned long fallback_count = 0;
+
+  (void) context;
+
+  if (!line || !*line)
+    return 1;
+
+  if (sql_persistence_write_scalar_event_line(line))
+    return 1;
+
+  fallback_count++;
+  if (fallback_count <= 5 || !(fallback_count % 1000))
+  {
+    logit(LOG_FILE,
+          "PERSISTENCE: domain=scalar_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote scalar event to flat log fallback count=%lu",
+          fallback_count);
+    logit(LOG_WIZ,
+          "PERSISTENCE: domain=scalar_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote scalar event to flat log fallback count=%lu",
+          fallback_count);
+  }
+
+  pthread_mutex_lock(&persistence_fallback_log_mutex);
+  log_f = fopen(LOG_EVENT, "a");
+  if (!log_f)
+  {
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+    return 0;
+  }
+
+  clock_t _fb_beg = clock();
+  if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+    ok = 0;
+
+  if (fclose(log_f))
+    ok = 0;
+  { long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
+    latency_trace_record("fallback_file_write", _fb_us, 0); }
+  persistence_scalar_fallback_count++;
+  pthread_mutex_unlock(&persistence_fallback_log_mutex);
+
+  return ok;
+}
+
+int persistence_start_scalar_event_worker(void)
+{
+  if (!persistence_scalar_event_worker_start(persistence_scalar_event_log_writer,
+                                             NULL))
+  {
+    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+                      "start_failed",
+                      "scalar persistence worker could not start; using sync fallback");
+    return 0;
+  }
+
+  logit(LOG_STATUS, "Started scalar persistence worker.");
+  return 1;
+}
+
+void persistence_stop_scalar_event_worker(void)
+{
+  unsigned long failures;
+
+  persistence_scalar_event_worker_stop(0);
+  persistence_flush_scalar_events(0);
+
+  failures = persistence_scalar_event_worker_write_failures();
+  if (failures)
+  {
+    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+                      "write_failures",
+                      "%lu scalar persistence worker writes failed and were retried",
+                      failures);
+  }
+
+  logit(LOG_STATUS, "Stopped scalar persistence worker.");
+}
+
+int persistence_scalar_event_worker_active(void)
+{
+  return persistence_scalar_event_worker_running();
+}
+
+int persistence_pending_scalar_events(void)
+{
+  return persistence_scalar_event_queue_pending();
+}
+
+unsigned long persistence_dropped_scalar_events(void)
+{
+  return persistence_scalar_event_queue_dropped();
+}
+
+void persistence_stop_item_event_worker(void)
+{
+  unsigned long failures;
+
+  persistence_item_event_worker_stop(0);
+  persistence_flush_item_events(0);
+
+  failures = persistence_item_event_worker_write_failures();
+  if (failures)
+  {
+    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
+                      "write_failures",
+                      "%lu item persistence worker writes failed and were retried",
+                      failures);
+  }
+
+  logit(LOG_STATUS, "Stopped item persistence worker.");
+}
+
+int persistence_item_event_worker_active(void)
+{
+  return persistence_item_event_worker_running();
+}
+
+int persistence_pending_item_events(void)
+{
+  return persistence_item_event_queue_pending();
+}
+
+unsigned long persistence_dropped_item_events(void)
+{
+  return persistence_item_event_queue_dropped();
+}
+
+void persistence_record_item_event(const char *event_type, P_obj obj,
+                                   P_char actor, const char *source,
+                                   const char *target, const char *note)
+{
+  char uid[32];
+  char line[MAX_STRING_LENGTH];
+  char event_buf[128];
+  char item_buf[256];
+  char actor_buf[128];
+  char source_buf[256];
+  char target_buf[256];
+  char note_buf[256];
+  int item_vnum = -1;
+  int actor_id = -1;
+
+  if (obj)
+  {
+    persistence_assign_item_uid(obj, event_type ? event_type : "item_event");
+    if (obj->R_num >= 0)
+      item_vnum = obj_index[obj->R_num].virtual_number;
+  }
+
+  if (actor)
+    actor_id = IS_NPC(actor) ? GET_VNUM(actor) : GET_PID(actor);
+
+  snprintf(line, sizeof(line),
+           "PERSISTENCE_ITEM_EVENT|ts=%llu|event=%s|item_uid=%s|vnum=%d|item=%s|actor=%s|actor_id=%d|source=%s|target=%s|note=%s",
+           persistence_event_time_usec(),
+           persistence_clean_field(event_type, event_buf, sizeof(event_buf)),
+           persistence_item_uid_text(obj, uid, sizeof(uid)),
+           item_vnum,
+           persistence_clean_field(obj ? OBJ_SHORT(obj) : "none",
+                                   item_buf, sizeof(item_buf)),
+           persistence_clean_field(actor ? J_NAME(actor) : "system",
+                                   actor_buf, sizeof(actor_buf)),
+           actor_id,
+           persistence_clean_field(source, source_buf, sizeof(source_buf)),
+           persistence_clean_field(target, target_buf, sizeof(target_buf)),
+           persistence_clean_field(note, note_buf, sizeof(note_buf)));
+
+  if (!persistence_item_event_queue_enqueue(line))
+  {
+    persistence_write_fallback_event_line(line,
+                                          "item_event",
+                                          actor ? J_NAME(actor) : "system",
+                                          "queue_full_flat_fallback");
+  }
 }
 
 void debug(const char *format, ...)
@@ -2080,8 +2875,13 @@ int move_cost(P_char ch, int dir)
 		return 1;
 	}
 
-	a = movement_loss[(int)world[ch->in_room].sector_type];
-	b = movement_loss[(int)world[world[ch->in_room].dir_option[dir]->to_room].sector_type];
+	int sector_idx_a = (int)world[ch->in_room].sector_type;
+	int sector_idx_b = (int)world[world[ch->in_room].dir_option[dir]->to_room].sector_type;
+	int num_sectors = 12;
+	if (sector_idx_a < 0 || sector_idx_a >= num_sectors) sector_idx_a = 3; /* SECT_FIELD */
+	if (sector_idx_b < 0 || sector_idx_b >= num_sectors) sector_idx_b = 3;
+	a = movement_loss[sector_idx_a];
+	b = movement_loss[sector_idx_b];
 
 	moves = a + b;
 	moves = (load_modifier(ch) * moves) / 200;
@@ -5317,6 +6117,10 @@ char *get_player_name_from_pid(int pid)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res)
+	{
+		return 0;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -6494,3 +7298,55 @@ int yes_no(const char *str)
 		return 0;
 	return -1;
 }
+
+static int persistence_large_event_log_writer(const char *line, void *context)
+{
+  (void) context;
+
+  if (!line || !*line)
+    return 1;
+
+  if (sql_persistence_write_large_event_line(line))
+    return 1;
+
+  return 0;
+}
+
+int persistence_start_large_event_worker(void)
+{
+  if (!persistence_large_event_worker_start(persistence_large_event_log_writer,
+                                             NULL))
+  {
+    persistence_alert(AVATAR, "large_event", "worker", "none", "none",
+                      "start_failed",
+                      "large-event persistence worker could not start; using sync fallback");
+    return 0;
+  }
+
+  logit(LOG_STATUS, "Started large-event persistence worker.");
+  return 1;
+}
+
+void persistence_stop_large_event_worker(void)
+{
+  unsigned long failures;
+
+  persistence_large_event_worker_stop(0);
+
+  failures = persistence_large_event_worker_write_failures();
+  if (failures)
+  {
+    persistence_alert(AVATAR, "large_event", "worker", "none", "none",
+                      "write_failures",
+                      "%lu large-event persistence worker writes failed and were retried",
+                      failures);
+  }
+
+  logit(LOG_STATUS, "Stopped large-event persistence worker.");
+}
+
+int persistence_large_event_worker_active(void)
+{
+  return persistence_large_event_worker_running();
+}
+

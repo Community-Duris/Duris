@@ -12838,8 +12838,17 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-			extract_char(vict);
+				persistence_flush_character_saves(vict);
+				// Wrap final save in transaction (flush already completed above)
+				if (sql_begin_transaction())
+				{
+					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+					if (!sql_commit())
+						sql_rollback();
+				}
+				else
+					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+				extract_char(vict);
 			count++;
 		}
 
@@ -12883,8 +12892,17 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-			extract_char(vict);
+				persistence_flush_character_saves(vict);
+				// Wrap final save in transaction (flush already completed above)
+				if (sql_begin_transaction())
+				{
+					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+					if (!sql_commit())
+						sql_rollback();
+				}
+				else
+					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+				extract_char(vict);
 			count++;
 		}
 

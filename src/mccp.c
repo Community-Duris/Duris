@@ -118,17 +118,14 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 		case SB: /* subnegotiation */
 		{
 			int len = 3;
-			while (len < buflen && !(p[len] == IAC && p[len + 1] == SE))
+			while (len + 1 < buflen && !(p[len] == IAC && p[len + 1] == SE))
 				len++;
 
-			if (len > 128) // arbitrary; a telnet subnego is not supposed to be long
-				return 128;
-
 			/* incomplete, wait for more */
-			if (len >= buflen)
+			if (len + 1 >= buflen)
 				return 0;
 
-			len += 2;
+			len += 2; /* include IAC SE */
 
 			if (p[2] == TELOPT_TTYPE)
 			{

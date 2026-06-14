@@ -230,6 +230,114 @@ bool sql_rollback(void)
 
 bool sql_in_transaction(void) { return in_transaction; }
 
+// Helper: safely append a formatted string to a batch buffer.
+//
+// Replaces the dangerous pattern:
+//   if (pos > buf_size - 200) break;
+//   pos += snprintf(buf + pos, buf_size - pos, ...);
+// which is fragile because snprintf returns the number of chars it
+// *would* have written when truncated, so pos can exceed buf_size
+// after a truncated snprintf, and the next iteration's pre-check
+// relies on a magic 200-byte margin to avoid an OOB write.
+//
+// This helper does the proper post-check: it inspects the snprintf
+// return value and returns -1 (with the buffer null-terminated at
+// buf_size-1) on truncation or encoding error, so callers can break
+// the loop without ever leaving pos in an unsafe state.
+//
+// Returns the new position on success, or -1 on truncation/error.
+static int batch_append(char *buf, int pos, size_t buf_size, const char *fmt, ...)
+{
+	if (!buf || pos < 0 || (size_t)pos >= buf_size)
+	{
+		return -1;
+	}
+
+	va_list args;
+	va_start(args, fmt);
+	int written = vsnprintf(buf + pos, buf_size - pos, fmt, args);
+	va_end(args);
+
+	if (written < 0)
+	{
+		// encoding error
+		buf[buf_size - 1] = '\0';
+		return -1;
+	}
+
+	if ((size_t)written >= buf_size - pos)
+	{
+		// truncated - null-terminate at end of buffer to keep it usable
+		// for diagnostic logging without scribbling past buf_size.
+		buf[buf_size - 1] = '\0';
+		return -1;
+	}
+
+	return pos + written;
+}
+
+// Shared helper: for an item being saved, fill the
+// wear_str, type_str, and bv1-5_str output buffers with the
+// item's wear_flags, type, and bitvectors.  Each buffer must be
+// at least 32 bytes (16 for type_str).  The bitvector buffers
+// are set to the numeric value if it differs from the prototype,
+// or to the literal "NULL" otherwise (load code uses NULL to
+// mean "use prototype value").
+//
+// SIDE EFFECT: the prototype object loaded internally is freed
+// (extract_obj) before returning.  The function name makes this
+// explicit so callers can't accidentally skip the cleanup.
+static void sql_format_item_diff_fields_and_free_proto(
+	P_obj obj,
+	char  *wear_str,
+	char  *type_str,
+	char  *material_str,
+	char  *bv1_str,
+	char  *bv2_str,
+	char  *bv3_str,
+	char  *bv4_str,
+	char  *bv5_str)
+{
+	P_obj proto = read_object(obj->R_num, REAL);
+
+	if (obj->wear_flags)
+		snprintf(wear_str, 32, "%d", obj->wear_flags);
+	else
+		strcpy(wear_str, "0");
+
+	snprintf(type_str, 16, "%d", obj->type);
+
+	if (proto && obj->material != proto->material)
+		snprintf(material_str, 16, "%d", obj->material);
+	else
+		strcpy(material_str, "NULL");
+
+	if (proto && obj->bitvector != proto->bitvector)
+		snprintf(bv1_str, 32, "%lu", obj->bitvector);
+	else
+		strcpy(bv1_str, "NULL");
+	if (proto && obj->bitvector2 != proto->bitvector2)
+		snprintf(bv2_str, 32, "%lu", obj->bitvector2);
+	else
+		strcpy(bv2_str, "NULL");
+	if (proto && obj->bitvector3 != proto->bitvector3)
+		snprintf(bv3_str, 32, "%lu", obj->bitvector3);
+	else
+		strcpy(bv3_str, "NULL");
+	if (proto && obj->bitvector4 != proto->bitvector4)
+		snprintf(bv4_str, 32, "%lu", obj->bitvector4);
+	else
+		strcpy(bv4_str, "NULL");
+	if (proto && obj->bitvector5 != proto->bitvector5)
+		snprintf(bv5_str, 32, "%lu", obj->bitvector5);
+	else
+		strcpy(bv5_str, "NULL");
+
+	if (proto)
+		extract_obj(proto);
+}
+
+
 // utility functions
 
 // escape string for sql, caller must free
@@ -476,11 +584,16 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
-	// start transaction for atomic save
-	if (!sql_begin_transaction())
+	// Start own transaction if not already in one (allows parent to wrap)
+	bool own_txn = false;
+	if (!sql_in_transaction())
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to start transaction");
-		return false;
+		if (!sql_begin_transaction())
+		{
+			logit(LOG_DEBUG, "sql_save_player: failed to start transaction");
+			return false;
+		}
+		own_txn = true;
 	}
 
 	// save all components
@@ -526,12 +639,21 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
-	// commit transaction
-	if (!sql_commit())
+	if (!sql_save_player_shapechanges(ch))
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to commit for %s", GET_NAME(ch));
+		logit(LOG_DEBUG, "sql_save_player: failed to save shapechanges for %s", GET_NAME(ch));
 		sql_rollback();
 		return false;
+	}
+
+	if (own_txn)
+	{
+		if (!sql_commit())
+		{
+			logit(LOG_DEBUG, "sql_save_player: failed to commit for %s", GET_NAME(ch));
+			sql_rollback();
+			return false;
+		}
 	}
 
 	return true;
@@ -543,6 +665,15 @@ bool sql_save_player_status(P_char ch, int type, int room)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
+
+	// Start own transaction if not already in one
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
 
 	int pid = GET_PID(ch);
 
@@ -874,6 +1005,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	if (!sql_run_query(query))
 	{
 		sql_player_error("sql_save_player_status", query);
+		if (own_txn) sql_rollback();
 		return false;
 	}
 
@@ -894,22 +1026,25 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	// allocate buffer for batch inserts
 	char *batch = (char *)malloc(65536);
 	if (!batch)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	int  pos;
 	bool has_data;
 
 	// languages - batch delete then batch insert
-	snprintf(query, sizeof(query), "DELETE FROM player_languages WHERE pid=%d", pid);
-	sql_run_query(query);
 
-	pos      = snprintf(batch, 65536, "INSERT INTO player_languages (pid, tongue_id, proficiency) VALUES ");
+	pos      = snprintf(batch, 65536, "REPLACE INTO player_languages (pid, tongue_id, proficiency) VALUES ");
 	has_data = false;
 	for (int i = 0; i < MAX_TONGUE; i++)
 	{
 		if (GET_LANGUAGE(ch, i) > 0)
 		{
-			pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%d)", has_data ? "," : "", pid, i, GET_LANGUAGE(ch, i));
+			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%d)", has_data ? "," : "", pid, i, GET_LANGUAGE(ch, i));
+			if (new_pos < 0) break;
+			pos = new_pos;
 			has_data = true;
 		}
 	}
@@ -917,16 +1052,16 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		sql_run_query(batch);
 
 	// intros - batch delete then batch insert
-	snprintf(query, sizeof(query), "DELETE FROM player_intros WHERE pid=%d", pid);
-	sql_run_query(query);
 
-	pos      = snprintf(batch, 65536, "INSERT INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES ");
+	pos      = snprintf(batch, 65536, "REPLACE INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES ");
 	has_data = false;
 	for (int i = 0; i < MAX_INTRO; i++)
 	{
 		if (ch->only.pc->introd_list[i] != 0)
 		{
-			pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld,FROM_UNIXTIME(NULLIF(%lu,0)))", has_data ? "," : "", pid, i, ch->only.pc->introd_list[i], ch->only.pc->introd_times[i]);
+			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%ld,FROM_UNIXTIME(NULLIF(%lu,0)))", has_data ? "," : "", pid, i, ch->only.pc->introd_list[i], ch->only.pc->introd_times[i]);
+			if (new_pos < 0) break;
+			pos = new_pos;
 			has_data = true;
 		}
 	}
@@ -934,16 +1069,16 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		sql_run_query(batch);
 
 	// timers - batch delete then batch insert
-	snprintf(query, sizeof(query), "DELETE FROM player_timers WHERE pid=%d", pid);
-	sql_run_query(query);
 
-	pos      = snprintf(batch, 65536, "INSERT INTO player_timers (pid, timer_id, timer_value) VALUES ");
+	pos      = snprintf(batch, 65536, "REPLACE INTO player_timers (pid, timer_id, timer_value) VALUES ");
 	has_data = false;
 	for (int i = 0; i < NUMB_PC_TIMERS; i++)
 	{
 		if (ch->only.pc->pc_timer[i] != 0)
 		{
-			pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,FROM_UNIXTIME(NULLIF(%ld,0)))", has_data ? "," : "", pid, i, (long)ch->only.pc->pc_timer[i]);
+			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,FROM_UNIXTIME(NULLIF(%ld,0)))", has_data ? "," : "", pid, i, (long)ch->only.pc->pc_timer[i]);
+			if (new_pos < 0) break;
+			pos = new_pos;
 			has_data = true;
 		}
 	}
@@ -951,16 +1086,16 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		sql_run_query(batch);
 
 	// undead spell slots - batch delete then batch insert
-	snprintf(query, sizeof(query), "DELETE FROM player_undead_slots WHERE pid=%d", pid);
-	sql_run_query(query);
 
-	pos      = snprintf(batch, 65536, "INSERT INTO player_undead_slots (pid, circle, slots) VALUES ");
+	pos      = snprintf(batch, 65536, "REPLACE INTO player_undead_slots (pid, circle, slots) VALUES ");
 	has_data = false;
 	for (int i = 0; i <= MAX_CIRCLE; i++)
 	{
 		if (ch->specials.undead_spell_slots[i] != 0)
 		{
-			pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%d)", has_data ? "," : "", pid, i, ch->specials.undead_spell_slots[i]);
+			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%d)", has_data ? "," : "", pid, i, ch->specials.undead_spell_slots[i]);
+			if (new_pos < 0) break;
+			pos = new_pos;
 			has_data = true;
 		}
 	}
@@ -968,16 +1103,16 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		sql_run_query(batch);
 
 	// forged items - batch delete then batch insert
-	snprintf(query, sizeof(query), "DELETE FROM player_forged_items WHERE pid=%d", pid);
-	sql_run_query(query);
 
-	pos      = snprintf(batch, 65536, "INSERT INTO player_forged_items (pid, forge_index, item_vnum) VALUES ");
+	pos      = snprintf(batch, 65536, "REPLACE INTO player_forged_items (pid, forge_index, item_vnum) VALUES ");
 	has_data = false;
 	for (int i = 0; i < MAX_FORGE_ITEMS; i++)
 	{
 		if (ch->only.pc->learned_forged_list[i] != 0)
 		{
-			pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d,%ld)", has_data ? "," : "", pid, i, ch->only.pc->learned_forged_list[i]);
+			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%ld)", has_data ? "," : "", pid, i, ch->only.pc->learned_forged_list[i]);
+			if (new_pos < 0) break;
+			pos = new_pos;
 			has_data = true;
 		}
 	}
@@ -985,16 +1120,16 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		sql_run_query(batch);
 
 	// granted commands - batch delete then batch insert
-	snprintf(query, sizeof(query), "DELETE FROM player_granted_cmds WHERE pid=%d", pid);
-	sql_run_query(query);
 
 	if (ch->only.pc->numb_gcmd > 0)
 	{
-		pos      = snprintf(batch, 65536, "INSERT INTO player_granted_cmds (pid, cmd_num) VALUES ");
+		pos      = snprintf(batch, 65536, "REPLACE INTO player_granted_cmds (pid, cmd_num) VALUES ");
 		has_data = false;
 		for (int i = 0; i < ch->only.pc->numb_gcmd; i++)
 		{
-			pos += snprintf(batch + pos, 65536 - pos, "%s(%d,%d)", has_data ? "," : "", pid, ch->only.pc->gcmd_arr[i]);
+			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d)", has_data ? "," : "", pid, ch->only.pc->gcmd_arr[i]);
+			if (new_pos < 0) break;
+			pos = new_pos;
 			has_data = true;
 		}
 		if (has_data)
@@ -1002,6 +1137,11 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	}
 
 	free(batch);
+
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
 	return true;
 }
 
@@ -1012,29 +1152,44 @@ bool sql_save_player_skills(P_char ch)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
+	// Start own transaction if not already in one
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	int pid = GET_PID(ch);
 	if (pid <= 0)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	// delete all skills for this player in one query
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_skills WHERE pid=%d", pid);
-	sql_run_query(del_query);
+	// DELETE replaced by REPLACE INTO player_skills
 
 	// build multi-row insert for skills that have values
 	// max ~100 skills learned * ~40 bytes per value = ~4kb, use 64kb to be safe
 	char *query = (char *)malloc(65536);
 	if (!query)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
-	int pos = snprintf(query, 65536, "INSERT INTO player_skills (pid, skill_id, learned, taught) VALUES ");
+	int pos = snprintf(query, 65536, "REPLACE INTO player_skills (pid, skill_id, learned, taught) VALUES ");
 
 	bool has_skills = false;
 	for (int i = 0; i < MAX_SKILLS; i++)
 	{
 		if (ch->only.pc->skills[i].learned > 0 || ch->only.pc->skills[i].taught > 0)
 		{
-			pos += snprintf(query + pos, 65536 - pos, "%s(%d,%d,%d,%d)", has_skills ? "," : "", pid, i, ch->only.pc->skills[i].learned, ch->only.pc->skills[i].taught);
+			int new_pos = batch_append(query, pos, 65536, "%s(%d,%d,%d,%d)", has_skills ? "," : "", pid, i, ch->only.pc->skills[i].learned, ch->only.pc->skills[i].taught);
+			if (new_pos < 0) break;
+			pos = new_pos;
 			has_skills = true;
 		}
 	}
@@ -1043,6 +1198,11 @@ bool sql_save_player_skills(P_char ch)
 		sql_run_query(query);
 
 	free(query);
+
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
 	return true;
 }
 
@@ -1053,24 +1213,34 @@ bool sql_save_player_affects(P_char ch)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
+	// Start own transaction if not already in one
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	int pid = GET_PID(ch);
 	if (pid <= 0)
+	{
+		if (own_txn) sql_rollback();
 		return false;
-
-	// delete existing affects
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_affects WHERE pid=%d", pid);
-	sql_run_query(del_query);
+	}
 
 	// batch insert current affects
 	// each affect ~150 bytes, max ~50 affects = ~8kb, use 32kb to be safe
 	char *batch = (char *)malloc(32768);
 	if (!batch)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	int pos = snprintf(batch,
 	                   32768,
-	                   "INSERT INTO player_affects (pid, type, duration, flags, modifier, location, level, "
+	                   "REPLACE INTO player_affects (pid, type, duration, flags, modifier, location, level, "
 	                   "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5) VALUES ");
 
 	bool has_affects = false;
@@ -1078,10 +1248,7 @@ bool sql_save_player_affects(P_char ch)
 	{
 		if (IS_SET(af->flags, AFFTYPE_NOSAVE))
 			continue;
-
-		pos += snprintf(batch + pos,
-		                32768 - pos,
-		                "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu)",
+			int new_pos = batch_append(batch, pos, 32768, "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu)",
 		                has_affects ? "," : "",
 		                pid,
 		                af->type,
@@ -1095,6 +1262,8 @@ bool sql_save_player_affects(P_char ch)
 		                af->bitvector3,
 		                af->bitvector4,
 		                af->bitvector5);
+			if (new_pos < 0) break;
+			pos = new_pos;
 		has_affects = true;
 	}
 
@@ -1102,6 +1271,11 @@ bool sql_save_player_affects(P_char ch)
 		sql_run_query(batch);
 
 	free(batch);
+
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
 	return true;
 }
 
@@ -1194,7 +1368,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 	                   "pid, vnum, equip_slot, container_id, quantity, "
 	                   "weight, cost, timer, extra_flags, "
 	                   "value0, value1, value2, value3, value4, value5, value6, value7, "
-	                   "obj_uid, item_condition"
+	                   "wear_flags, item_type, item_material, obj_uid, item_condition"
 	                   ") VALUES ");
 
 	bool first       = true;
@@ -1209,27 +1383,31 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 
 		int vnum = obj_index[obj->R_num].virtual_number;
 
-		pos += snprintf(batch + pos,
-		                buf_size - pos,
-		                "%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%lu,%d)",
-		                first ? "" : ",",
-		                pid,
-		                vnum,
-		                container_id,
-		                obj->weight,
-		                obj->cost,
-		                (long)obj->timer[0],
-		                obj->extra_flags,
-		                obj->value[0],
-		                obj->value[1],
-		                obj->value[2],
-		                obj->value[3],
-		                obj->value[4],
-		                obj->value[5],
-		                obj->value[6],
-		                obj->value[7],
-		                obj->obj_uid,
-		                obj->condition);
+		int new_pos = batch_append(batch, pos, buf_size,
+		                           "%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%u,%d,%d,%lu,%d)",
+		                           first ? "" : ",",
+		                           pid,
+		                           vnum,
+		                           container_id,
+		                           obj->weight,
+		                           obj->cost,
+		                           (long)obj->timer[0],
+		                           obj->extra_flags,
+		                           obj->value[0],
+		                           obj->value[1],
+		                           obj->value[2],
+		                           obj->value[3],
+		                           obj->value[4],
+		                           obj->value[5],
+		                           obj->value[6],
+		                           obj->value[7],
+		                           obj->wear_flags,
+		                           obj->type,
+		                           obj->material,
+		                           obj->obj_uid,
+		                           obj->condition);
+		if (new_pos < 0) break;
+		pos = new_pos;
 
 		first = false;
 		batch_count++;
@@ -1486,45 +1664,9 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	else
 		strcpy(action_str, "NULL");
 
-	char wear_str[32];
-	if (obj->wear_flags)
-		snprintf(wear_str, sizeof(wear_str), "%d", obj->wear_flags);
-	else
-		strcpy(wear_str, "NULL");
-
-	// save item_type and bitvectors if different from prototype
-	P_obj proto = read_object(obj->R_num, REAL);
-	char  type_str[16];
-	if (proto && obj->type != proto->type)
-		snprintf(type_str, sizeof(type_str), "%d", obj->type);
-	else
-		strcpy(type_str, "NULL");
-
-	// format bitvectors (NULL if same as prototype)
-	char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
-	if (proto && obj->bitvector != proto->bitvector)
-		snprintf(bv1_str, sizeof(bv1_str), "%lu", obj->bitvector);
-	else
-		strcpy(bv1_str, "NULL");
-	if (proto && obj->bitvector2 != proto->bitvector2)
-		snprintf(bv2_str, sizeof(bv2_str), "%lu", obj->bitvector2);
-	else
-		strcpy(bv2_str, "NULL");
-	if (proto && obj->bitvector3 != proto->bitvector3)
-		snprintf(bv3_str, sizeof(bv3_str), "%lu", obj->bitvector3);
-	else
-		strcpy(bv3_str, "NULL");
-	if (proto && obj->bitvector4 != proto->bitvector4)
-		snprintf(bv4_str, sizeof(bv4_str), "%lu", obj->bitvector4);
-	else
-		strcpy(bv4_str, "NULL");
-	if (proto && obj->bitvector5 != proto->bitvector5)
-		snprintf(bv5_str, sizeof(bv5_str), "%lu", obj->bitvector5);
-	else
-		strcpy(bv5_str, "NULL");
-
-	if (proto)
-		extract_obj(proto);
+	char wear_str[32], type_str[16], material_str[16], bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	/* shared helper; also frees the loaded proto via extract_obj() */
+	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
 
 	// build the query
 	char query[8192];
@@ -1536,14 +1678,14 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
 	         "name, short_descr, description, action_descr, "
 	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-	         "obj_uid, item_condition"
+	         "item_material, obj_uid, item_condition"
 	         ") VALUES ("
 	         "%d, %d, %d, %s, 1, "
 	         "%d, %d, %ld, %u, %s, %s, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
 	         "%s, %s, %s, %s, "
 	         "%s, %s, %s, %s, %s, "
-	         "%lu, %d"
+	         "%s, %lu, %d"
 	         ")",
 	         pid,
 	         vnum,
@@ -1555,6 +1697,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	         obj->extra_flags,
 	         wear_str,
 	         type_str,
+	         material_str,
 	         obj->value[0],
 	         obj->value[1],
 	         obj->value[2],
@@ -1721,14 +1864,388 @@ static void resave_dirty_containers(int pid, P_obj obj)
 	}
 }
 
+// Batched player item save — flattens entire item tree into one
+// multi-row INSERT, then fixes up container_id relationships and saves
+// affects/extra_descrs.  Replaces the per-item INSERT loop, reducing
+// ~170 individual queries to ~3 per save.
+
+// Structure for one item in the flattened tree
+struct flat_item {
+	P_obj obj;
+	P_obj parent;         // NULL for top-level items
+	int   equip_slot;     // 1..MAX_WEAR for equipment, 0 for inventory/container contents
+	bool  single_saved;   // true if saved via per-item fallback (affects/descr already handled)
+};
+
+// Recursively flatten item tree: pre-order traversal (parent before children)
+static bool flatten_item_tree(P_obj obj, P_obj parent, int equip_slot,
+                              struct flat_item **list, int *count, int *capacity)
+{
+	if (!obj || IS_SET(obj->extra_flags, ITEM_NORENT))
+		return true;
+
+	if (*count >= *capacity)
+	{
+		int new_cap = *capacity * 2;
+		struct flat_item *tmp = (struct flat_item *)realloc(*list, new_cap * sizeof(struct flat_item));
+		if (!tmp)
+			return false;  // old *list still valid — caller can inspect count
+		*list     = tmp;
+		*capacity = new_cap;
+	}
+
+	(*list)[*count].obj        = obj;
+	(*list)[*count].parent     = parent;
+	(*list)[*count].equip_slot = equip_slot;
+	(*list)[*count].single_saved = false;
+	(*count)++;
+
+	// Recurse into container contents
+	for (P_obj content = obj->contains; content; content = content->next_content)
+	{
+		if (!flatten_item_tree(content, obj, 0, list, count, capacity))
+			return false;
+	}
+
+	return true;
+}
+
+static bool sql_save_player_items_batch_all(int pid, P_char ch,
+                                            bool save_equipment, bool save_inventory)
+{
+	// ——— Step 1: flatten item tree ———————————————————————————————————————————————————————————————
+	int cap = 128;
+	struct flat_item *flat = (struct flat_item *)malloc(cap * sizeof(struct flat_item));
+	if (!flat)
+		return false;
+
+	int count = 0;
+
+	// Equipment (equip_slot = 1..MAX_WEAR for the save query)
+	if (save_equipment || save_inventory)
+	{
+		for (int i = 0; i < MAX_WEAR; i++)
+		{
+			P_obj eq = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
+			if (eq && !flatten_item_tree(eq, NULL, i + 1, &flat, &count, &cap))
+			{ free(flat); return false; }
+		}
+	}
+
+	// Inventory (equip_slot = 0)
+	if (save_inventory)
+	{
+		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+			if (!flatten_item_tree(obj, NULL, 0, &flat, &count, &cap))
+		{ free(flat); return false; }
+	}
+
+	if (count == 0)
+	{
+		free(flat);
+		return true;   // nothing to save
+	}
+
+	// ——— Step 2 & 3: build multi-row INSERTs in sub-batches —————————————————————————————
+	// Use 1MB buffer to respect MySQL max_allowed_packet (4MB default on 5.7).
+	// Large inventories automatically split across multiple INSERT statements.
+	const size_t BATCH_BUF_SIZE = 1048576;      // 1 MB
+	const int    FLUSH_THRESHOLD = 1000000;      // flush when approaching 1 MB
+	char  *batch = (char *)malloc(BATCH_BUF_SIZE);
+	if (!batch)
+	{
+		free(flat);
+		return false;
+	}
+
+	const char *insert_header = "INSERT INTO player_items ("
+	                   "pid, vnum, equip_slot, container_id, quantity, "
+	                   "weight, cost, timer, extra_flags, wear_flags, item_type, "
+	                   "value0, value1, value2, value3, value4, value5, value6, value7, "
+	                   "name, short_descr, description, action_descr, "
+	                   "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	                   "item_material, obj_uid, item_condition"
+	                   ") VALUES ";
+
+	int pos             = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header);
+	int batch_start_idx = 0;
+	int items_in_batch  = 0;
+
+	for (int i = 0; i < count; i++)
+	{
+		P_obj obj  = flat[i].obj;
+		int   vnum = obj_index[obj->R_num].virtual_number;
+
+		// Escape strung strings (same logic as sql_save_single_item_get_id)
+		char *esc_name   = NULL;
+		char *esc_short  = NULL;
+		char *esc_desc   = NULL;
+		char *esc_action = NULL;
+
+		if (obj->str_mask & STRUNG_KEYS)
+			esc_name = sql_escape_string(obj->name ? obj->name : "");
+		if (obj->str_mask & STRUNG_DESC2)
+			esc_short = sql_escape_string(obj->short_description ? obj->short_description : "");
+		if (obj->str_mask & STRUNG_DESC1)
+			esc_desc = sql_escape_string(obj->description ? obj->description : "");
+		if (obj->str_mask & STRUNG_DESC3)
+			esc_action = sql_escape_string(obj->action_description ? obj->action_description : "");
+
+		// Build name/short/desc/action strings with quotes or NULL
+		char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
+		if (esc_name)
+			snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+		else
+			strcpy(name_str, "NULL");
+		if (esc_short)
+			snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+		else
+			strcpy(short_str, "NULL");
+		if (esc_desc)
+			snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+		else
+			strcpy(desc_str, "NULL");
+		if (esc_action)
+			snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+		else
+			strcpy(action_str, "NULL");
+
+		// Get diff-from-prototype fields (wear_flags, type, material, bitvectors)
+		char wear_str[32], type_str[16], material_str[16];
+		char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+		sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str,
+		                                           bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+
+		// Pre-format this single row into a temp buffer.
+		// If the row itself is too large (>16KB) for a single INSERT,
+		// fall back to per-item sql_save_single_item_get_id().
+		char row_buf[16384];
+		int row_len = snprintf(row_buf, sizeof(row_buf),
+		                       "%s(%d,%d,%d,NULL,1,%d,%d,%ld,%u,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%lu,%d)",
+		                       (items_in_batch == 0) ? "" : ",",
+		                       pid, vnum, flat[i].equip_slot,
+		                       obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags,
+		                       wear_str, type_str,
+		                       obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+		                       obj->value[4], obj->value[5], obj->value[6], obj->value[7],
+		                       name_str, short_str, desc_str, action_str,
+		                       bv1_str, bv2_str, bv3_str, bv4_str, bv5_str,
+		                       material_str, (unsigned long)obj->obj_uid, obj->condition);
+
+		// Free escaped strings
+		if (esc_name)
+			free(esc_name);
+		if (esc_short)
+			free(esc_short);
+		if (esc_desc)
+			free(esc_desc);
+		if (esc_action)
+			free(esc_action);
+
+		// Per-row overflow fallback: single item exceeds format buffer.
+		if (row_len >= (int)sizeof(row_buf) - 1 || row_len < 0)
+		{
+			logit(LOG_DEBUG, "sql_save_player_items_batch_all: item vnum %d row too large, using single-insert fallback", vnum);
+
+			// Temporarily detach contents so sql_save_single_item_get_id
+			// doesn't recurse (tree is already flattened).  Restore after.
+			P_obj saved_contains = obj->contains;
+			obj->contains        = NULL;
+
+			obj->db_item_id       = sql_save_single_item_get_id(pid, obj, flat[i].equip_slot, 0);
+			flat[i].single_saved  = true;
+
+			obj->contains = saved_contains;
+
+			if (obj->db_item_id <= 0)
+			{
+				free(batch);
+				free(flat);
+				return false;
+			}
+			continue;
+		}
+
+		// Sub-batch flush: approaching 1 MB — execute current batch and restart.
+		if (items_in_batch > 0 && pos + row_len > FLUSH_THRESHOLD)
+		{
+			if (!sql_run_query(batch))
+			{
+				sql_player_error("sql_save_player_items_batch_all sub-batch", batch);
+				free(batch);
+				free(flat);
+				return false;
+			}
+
+			// Assign db_item_ids for this sub-batch (64-bit mysql_insert_id)
+			unsigned long long first_id = mysql_insert_id(DB);
+			int offset = 0;
+			for (int k = batch_start_idx; k < i; k++)
+			{
+				if (!flat[k].single_saved)
+				{
+					flat[k].obj->db_item_id = (int)(first_id + offset);
+					offset++;
+				}
+			}
+
+			// Restart batch for remaining items
+			pos             = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header);
+			batch_start_idx = i;
+			items_in_batch  = 0;
+
+			// Strip leading comma from the first row of the new batch
+			if (row_buf[0] == ',')
+			{
+				memmove(row_buf, row_buf + 1, (size_t)row_len);  // shifts null terminator too
+				row_len--;
+			}
+		}
+
+		int new_pos = batch_append(batch, pos, BATCH_BUF_SIZE, "%s", row_buf);
+		if (new_pos < 0)
+		{
+			logit(LOG_DEBUG, "sql_save_player_items_batch_all: batch_append failed at item %d/%d", i, count);
+			free(batch);
+			free(flat);
+			return false;
+		}
+		pos = new_pos;
+		items_in_batch++;
+	}
+
+	// Flush the final sub-batch
+	if (items_in_batch > 0)
+	{
+		if (!sql_run_query(batch))
+		{
+			sql_player_error("sql_save_player_items_batch_all final batch", batch);
+			free(batch);
+			free(flat);
+			return false;
+		}
+
+		unsigned long long first_id = mysql_insert_id(DB);
+		int offset = 0;
+		for (int k = batch_start_idx; k < count; k++)
+		{
+			if (!flat[k].single_saved)
+			{
+				flat[k].obj->db_item_id = (int)(first_id + offset);
+				offset++;
+			}
+		}
+	}
+
+	// ——— Step 4: fix up container_id for items inside containers —————————————————————————
+	int container_child_count = 0;
+	for (int i = 0; i < count; i++)
+	{
+		if (flat[i].parent)
+			container_child_count++;
+	}
+
+	if (container_child_count > 0)
+	{
+		pos = snprintf(batch, BATCH_BUF_SIZE, "UPDATE player_items SET container_id = CASE id ");
+
+		for (int i = 0; i < count; i++)
+		{
+			if (flat[i].parent)
+			{
+				int new_pos = batch_append(batch, pos, BATCH_BUF_SIZE,
+				                           "WHEN %d THEN %d ", flat[i].obj->db_item_id, flat[i].parent->db_item_id);
+				if (new_pos < 0)
+				{
+					free(batch);
+					free(flat);
+					return false;
+				}
+				pos = new_pos;
+			}
+		}
+
+		pos = batch_append(batch, pos, BATCH_BUF_SIZE, "END WHERE id IN (");
+		bool first_in = true;
+		for (int i = 0; i < count; i++)
+		{
+			if (flat[i].parent)
+			{
+				int new_pos = batch_append(batch, pos, BATCH_BUF_SIZE,
+				                           "%s%d", first_in ? "" : ",", flat[i].obj->db_item_id);
+				if (new_pos < 0)
+				{
+					free(batch);
+					free(flat);
+					return false;
+				}
+				pos = new_pos;
+				first_in = false;
+			}
+		}
+		pos = batch_append(batch, pos, BATCH_BUF_SIZE, ")");
+
+		if (!sql_run_query(batch))
+		{
+			sql_player_error("sql_save_player_items_batch_all container UPDATE", batch);
+			free(batch);
+			free(flat);
+			return false;
+		}
+	}
+
+	free(batch);
+
+	// ——— Step 5: save affects and extra descriptions per item ————————————————————————————
+	for (int i = 0; i < count; i++)
+	{
+		// Items saved via per-item fallback already had affects/descr handled
+		if (flat[i].single_saved)
+			continue;
+
+		P_obj obj     = flat[i].obj;
+		int   item_id = obj->db_item_id;
+
+		if (!sql_save_item_affects(item_id, obj))
+		{
+			free(flat);
+			return false;
+		}
+
+		if (obj->ex_description)
+		{
+			if (!sql_save_item_extra_descr(item_id, obj, "player_item_extra_descr"))
+			{
+				free(flat);
+				return false;
+			}
+		}
+	}
+
+	free(flat);
+	return true;
+}
+
 bool sql_save_player_items(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
+	// Start own transaction if not already in one
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	int pid = GET_PID(ch);
 	if (pid <= 0)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	bool save_equipment  = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 	bool save_inventory  = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
@@ -1750,6 +2267,10 @@ bool sql_save_player_items(P_char ch)
 		{
 			resave_dirty_containers(pid, obj);
 		}
+		if (own_txn)
+		{
+			if (!sql_commit()) { sql_rollback(); return false; }
+		}
 		return true;
 	}
 
@@ -1765,49 +2286,25 @@ bool sql_save_player_items(P_char ch)
 		snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d AND equip_slot>0", pid);
 	}
 	if (del_query[0] && !sql_run_query(del_query))
+	{
+		if (own_txn) sql_rollback();
 		return false;
-
-	bool success = true;
-
-	// save equipment (slots 1-42, 0 is special)
-	// check ch->equipment first (redis path), fall back to save_equip (save_char path)
-	if (success && (save_equipment || save_inventory))
-	{
-		for (int i = 0; i < MAX_WEAR; i++)
-		{
-			P_obj equip_item = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
-			if (equip_item)
-			{
-				if (!IS_SET(equip_item->extra_flags, ITEM_NORENT))
-				{
-					if (sql_save_single_item_get_id(pid, equip_item, i + 1, 0) == 0)
-					{
-						logit(LOG_DEBUG, "sql_save_player_items: failed to save equipment slot %d for %s", i, GET_NAME(ch));
-						success = false;
-						break;
-					}
-				}
-			}
-		}
 	}
 
-	// save inventory (equip_slot = 0)
-	if (success && save_inventory)
+	bool success = sql_save_player_items_batch_all(pid, ch, save_equipment, save_inventory);
+
+	if (own_txn)
 	{
-		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+		if (success)
 		{
-			if (!IS_SET(obj->extra_flags, ITEM_NORENT))
-			{
-				if (sql_save_single_item_get_id(pid, obj, 0, 0) == 0)
-				{
-					logit(LOG_DEBUG, "sql_save_player_items: failed to save inventory item for %s", GET_NAME(ch));
-					success = false;
-					break;
-				}
-			}
+			if (!sql_commit()) { sql_rollback(); return false; }
+		}
+		else
+		{
+			sql_rollback();
+			return false;
 		}
 	}
-
 	return success;
 }
 
@@ -1893,6 +2390,10 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 	else
 		strcpy(action_str, "NULL");
 
+	// shared helper for diff-from-prototype fields (wear_flags, item_type, item_material, bitvectors)
+	char wear_str[32], type_str[16], material_str[16], bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+
 	char query[8192];
 	snprintf(query,
 	         sizeof(query),
@@ -1900,12 +2401,14 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 	         "pet_id, vnum, equip_slot, container_id, "
 	         "weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr"
+	         "name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	         "item_material"
 	         ") VALUES ("
 	         "%d, %d, %d, %s, "
 	         "%d, %d, %ld, %lu, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s"
+	         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
+	         "%s"
 	         ")",
 	         pet_id,
 	         vnum,
@@ -1926,7 +2429,15 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 	         name_str,
 	         short_str,
 	         desc_str,
-	         action_str);
+	         action_str,
+	         wear_str,
+	         obj->type,
+	         material_str,
+	         bv1_str,
+	         bv2_str,
+	         bv3_str,
+	         bv4_str,
+	         bv5_str);
 
 	if (esc_name)
 		free(esc_name);
@@ -1966,6 +2477,15 @@ bool sql_save_player_pets(P_char ch, int save_type)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
+	// Start own transaction if not already in one
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	// only save pets on crash-type saves
 	if (save_type != RENT_CRASH && save_type != RENT_CRASH2)
 	{
@@ -1977,18 +2497,28 @@ bool sql_save_player_pets(P_char ch, int save_type)
 			snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
 			sql_run_query(del_query);
 		}
+		if (own_txn)
+		{
+			if (!sql_commit()) { sql_rollback(); return false; }
+		}
 		return true;
 	}
 
 	int pid = GET_PID(ch);
 	if (pid <= 0)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	// delete existing pets for this player (cascade deletes items/affects)
 	char del_query[128];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
 	if (!sql_run_query(del_query))
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	// iterate through followers and save npc pets
 	int pet_order = 0;
@@ -2061,6 +2591,10 @@ bool sql_save_player_pets(P_char ch, int save_type)
 		logit(LOG_DEBUG, "sql_save_player_pets: saved pet %s (vnum %d) for %s with %d hp", GET_NAME(pet), mob_vnum, GET_NAME(ch), GET_HIT(pet));
 	}
 
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
 	return true;
 }
 
@@ -2133,7 +2667,9 @@ bool sql_load_player_pets(P_char ch)
 		         sizeof(item_query),
 		         "SELECT id, vnum, equip_slot, container_id, weight, cost, timer, extra_flags, "
 		         "value0, value1, value2, value3, value4, value5, value6, value7, "
-		         "name, short_descr, description, action_descr "
+		         "name, short_descr, description, action_descr, "
+		         "wear_flags, item_type, item_material, "
+		         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
 		         "FROM player_pet_items WHERE pet_id=%d ORDER BY id",
 		         pet_db_id);
 
@@ -2202,6 +2738,23 @@ bool sql_load_player_pets(P_char ch)
 					obj->action_description = str_dup(item_row[19]);
 					obj->str_mask |= STRUNG_DESC3;
 				}
+
+				if (item_row[20])
+					obj->wear_flags = atoi(item_row[20]);
+				if (item_row[21])
+					obj->type = atoi(item_row[21]);
+				if (item_row[22])
+					obj->material = atoi(item_row[22]);
+				if (item_row[23])
+					obj->bitvector = strtoul(item_row[23], NULL, 10);
+				if (item_row[24])
+					obj->bitvector2 = strtoul(item_row[24], NULL, 10);
+				if (item_row[25])
+					obj->bitvector3 = strtoul(item_row[25], NULL, 10);
+				if (item_row[26])
+					obj->bitvector4 = strtoul(item_row[26], NULL, 10);
+				if (item_row[27])
+					obj->bitvector5 = strtoul(item_row[27], NULL, 10);
 
 				// load item affects
 				char affect_query[256];
@@ -2318,36 +2871,54 @@ bool sql_save_player_witnesses(P_char ch)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
+	// Start own transaction if not already in one
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	int pid = GET_PID(ch);
 	if (pid <= 0)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
-	// delete existing witnesses
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_witnesses WHERE pid=%d", pid);
-	sql_run_query(del_query);
+	// DELETE + INSERT batch in one multi-statement round-trip.
+	char batch[16384];
+	int  bpos = snprintf(batch, sizeof(batch),
+	                     "DELETE FROM player_witnesses WHERE pid=%d", pid);
 
 	// insert current witnesses
 	for (wtns_rec *w = ch->specials.witnessed; w; w = w->next)
 	{
 		char *esc_attacker = sql_escape_string(w->attacker ? w->attacker : "");
 		char *esc_victim   = sql_escape_string(w->victim ? w->victim : "");
-		char  ins_query[512];
-		snprintf(ins_query,
-		         sizeof(ins_query),
-		         "INSERT INTO player_witnesses (pid, crime, room_vnum, attacker_name, victim_name, witness_time) "
-		         "VALUES (%d, %d, %d, '%s', '%s', FROM_UNIXTIME(NULLIF(%ld,0)))",
-		         pid,
-		         w->crime,
-		         w->room,
-		         esc_attacker ? esc_attacker : "",
-		         esc_victim ? esc_victim : "",
-		         (long)w->time);
+		int new_pos = batch_append(batch, bpos, sizeof(batch),
+		                           ";INSERT INTO player_witnesses (pid, crime, room_vnum, attacker_name, victim_name, witness_time) "
+		                           "VALUES (%d, %d, %d, '%s', '%s', FROM_UNIXTIME(NULLIF(%ld,0)))",
+		                           pid,
+		                           w->crime,
+		                           w->room,
+		                           esc_attacker ? esc_attacker : "",
+		                           esc_victim ? esc_victim : "",
+		                           (long)w->time);
 		free(esc_attacker);
 		free(esc_victim);
-		sql_run_query(ins_query);
+		if (new_pos < 0)
+			break;  // buffer full — flush what we have
+		bpos = new_pos;
 	}
 
+	sql_run_multi_query(batch);
+
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
 	return true;
 }
 
@@ -2358,34 +2929,52 @@ bool sql_save_player_shapechanges(P_char ch)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
-	int pid = GET_PID(ch);
-	if (pid <= 0)
-		return false;
-
-	// delete existing shapechanges
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_shapechanges WHERE pid=%d", pid);
-	sql_run_query(del_query);
-
-	// insert current shapechanges
-	if (!has_innate(ch, INNATE_SHAPECHANGE) || !ch->only.pc->knownShapes)
-		return true;
-
-	for (struct char_shapechange_data *shape = ch->only.pc->knownShapes; shape; shape = shape->next)
+	// Start own transaction if not already in one
+	bool own_txn = false;
+	if (!sql_in_transaction())
 	{
-		char ins_query[512];
-		snprintf(ins_query,
-		         sizeof(ins_query),
-		         "INSERT INTO player_shapechanges (pid, mob_vnum, times_researched, last_researched, last_shapechanged) "
-		         "VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)))",
-		         pid,
-		         shape->mobVnum,
-		         shape->timesResearched,
-		         (long)shape->lastResearched,
-		         (long)shape->lastShapechanged);
-		sql_run_query(ins_query);
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
 	}
 
+	int pid = GET_PID(ch);
+	if (pid <= 0)
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
+
+	// DELETE + INSERT batch in one multi-statement round-trip.
+	char batch[24576];
+	int  bpos  = snprintf(batch, sizeof(batch),
+	                       "DELETE FROM player_shapechanges WHERE pid=%d", pid);
+
+	// insert current shapechanges
+	if (has_innate(ch, INNATE_SHAPECHANGE) && ch->only.pc->knownShapes)
+	{
+		for (struct char_shapechange_data *shape = ch->only.pc->knownShapes; shape; shape = shape->next)
+		{
+			int new_pos = batch_append(batch, bpos, sizeof(batch),
+			                           ";INSERT INTO player_shapechanges (pid, mob_vnum, times_researched, last_researched, last_shapechanged) "
+			                           "VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)))",
+			                           pid,
+			                           shape->mobVnum,
+			                           shape->timesResearched,
+			                           (long)shape->lastResearched,
+			                           (long)shape->lastShapechanged);
+			if (new_pos < 0)
+				break;  // buffer full — flush what we have
+			bpos = new_pos;
+		}
+	}
+
+	sql_run_multi_query(batch);
+
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
 	return true;
 }
 
@@ -2449,15 +3038,11 @@ bool sql_load_player_shapechanges(P_char ch)
 
 bool sql_save_player_recipes(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
-		return false;
-
-	int pid = GET_PID(ch);
-	if (pid <= 0)
-		return false;
-
-	// recipes are saved individually when learned, not in bulk
-	// this function is a no-op for now
+	// No guard: this function is a no-op (recipes are saved individually via
+	// sql_add_player_recipe() when learned, not in bulk). It is intentionally
+	// safe to call outside a transaction - no SQL queries are issued.
+	// Still called by sql_save_player() so the transaction chain is complete.
+	(void)ch;
 	return true;
 }
 
@@ -2939,6 +3524,8 @@ bool sql_load_player_items(P_char ch)
 	int pid = GET_PID(ch);
 	if (pid <= 0)
 		return false;
+	char owner_ref[32];
+	snprintf(owner_ref, sizeof(owner_ref), "%d", pid);
 
 	// first, load all items into a temp array indexed by db id
 	// then resolve container relationships
@@ -2951,7 +3538,7 @@ bool sql_load_player_items(P_char ch)
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
 	         "name, short_descr, description, action_descr, "
 	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-	         "obj_uid, item_condition "
+	         "item_material, obj_uid, item_condition "
 	         "FROM player_items WHERE pid=%d ORDER BY id",
 	         pid);
 
@@ -3037,17 +3624,23 @@ bool sql_load_player_items(P_char ch)
 			obj->str_mask |= STRUNG_DESC3;
 		}
 
-		// restore bitvectors (NULL in db means use prototype value)
+		// restore bitvectors and item_material (NULL in db means use prototype value)
 		obj->bitvector  = sql_row_ulong(row, col++, obj->bitvector);
 		obj->bitvector2 = sql_row_ulong(row, col++, obj->bitvector2);
 		obj->bitvector3 = sql_row_ulong(row, col++, obj->bitvector3);
 		obj->bitvector4 = sql_row_ulong(row, col++, obj->bitvector4);
 		obj->bitvector5 = sql_row_ulong(row, col++, obj->bitvector5);
+		obj->material   = sql_row_int(row, col++, obj->material);
 
 		// restore obj_uid and condition
 		unsigned long saved_uid = sql_row_ulong(row, col++, 0);
 		if (saved_uid > 0)
 			obj->obj_uid = saved_uid;
+		if (!sql_persistence_item_owner_matches(saved_uid, "player", owner_ref, "sql_load_player_items"))
+		{
+			extract_obj(obj, FALSE);
+			continue;
+		}
 		obj->condition = sql_row_int(row, col++, obj->condition);
 
 		// store db id for incremental saves
@@ -3423,10 +4016,18 @@ bool sql_save_account(struct acct_entry *acc)
 		return false;
 
 	// save ips
-	sql_save_account_ips(acc->acct_name, acc->acct_unique_ips);
+	if (!sql_save_account_ips(acc->acct_name, acc->acct_unique_ips))
+	{
+		logit(LOG_DEBUG, "sql_save_account: failed to save ips for %s", acc->acct_name);
+		return false;
+	}
 
 	// save characters
-	sql_save_account_characters(acc);
+	if (!sql_save_account_characters(acc))
+	{
+		logit(LOG_DEBUG, "sql_save_account: failed to save characters for %s", acc->acct_name);
+		return false;
+	}
 
 	return true;
 }
@@ -3457,7 +4058,7 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 		         sizeof(query),
 		         "insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
 		         "values ('%s', '%s', %d, %lu, FROM_UNIXTIME(NULLIF(%ld,0)), %d, %d) "
-		         "on duplicate key update login_count=%lu, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), blocked=%d, racewar=%d",
+		         "on duplicate key update login_count=%lu, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), blocked=%d, racewar=%d, deleted_at=NULL, pid=VALUES(pid), account_name=VALUES(account_name), char_name=VALUES(char_name)",
 		         esc_name,
 		         esc_char,
 		         pid > 0 ? pid : 0,
@@ -3647,6 +4248,15 @@ static bool sql_save_locker_item_affects(int item_id, P_obj obj)
 	if (!obj || !DB || item_id <= 0)
 		return false;
 
+	// Own_txn wrapper for standalone-call safety
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
@@ -3667,8 +4277,15 @@ static bool sql_save_locker_item_affects(int item_id, P_obj obj)
 			char query[256];
 			snprintf(query, sizeof(query), "INSERT INTO locker_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)", item_id, obj->affected[i].location, obj->affected[i].modifier);
 			if (!sql_run_query(query))
+			{
+				if (own_txn) sql_rollback();
 				return false;
+			}
 		}
+	}
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
 	}
 	return true;
 }
@@ -3677,6 +4294,15 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 {
 	if (!obj || !DB || locker_id <= 0)
 		return 0;
+
+	// Own_txn wrapper for standalone-call safety
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return 0;
+		own_txn = true;
+	}
 
 	int vnum = obj_index[obj->R_num].virtual_number;
 
@@ -3724,38 +4350,9 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	else
 		strcpy(action_str, "NULL");
 
-	char wear_str[32];
-	if (obj->wear_flags)
-		snprintf(wear_str, sizeof(wear_str), "%d", obj->wear_flags);
-	else
-		strcpy(wear_str, "NULL");
-
-	// bitvectors - compare with prototype, only save if different
-	P_obj proto = read_object(obj->R_num, REAL);
-	char  bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
-	if (proto && obj->bitvector != proto->bitvector)
-		snprintf(bv1_str, sizeof(bv1_str), "%lu", obj->bitvector);
-	else
-		strcpy(bv1_str, "NULL");
-	if (proto && obj->bitvector2 != proto->bitvector2)
-		snprintf(bv2_str, sizeof(bv2_str), "%lu", obj->bitvector2);
-	else
-		strcpy(bv2_str, "NULL");
-	if (proto && obj->bitvector3 != proto->bitvector3)
-		snprintf(bv3_str, sizeof(bv3_str), "%lu", obj->bitvector3);
-	else
-		strcpy(bv3_str, "NULL");
-	if (proto && obj->bitvector4 != proto->bitvector4)
-		snprintf(bv4_str, sizeof(bv4_str), "%lu", obj->bitvector4);
-	else
-		strcpy(bv4_str, "NULL");
-	if (proto && obj->bitvector5 != proto->bitvector5)
-		snprintf(bv5_str, sizeof(bv5_str), "%lu", obj->bitvector5);
-	else
-		strcpy(bv5_str, "NULL");
-	if (proto)
-		extract_obj(proto);
-
+	char wear_str[32], type_str[16], material_str[16], bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	/* type_str is unused here (locker INSERT formats item_type as %d) but the shared helper writes to it for signature uniformity */
+	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
 	char query[8192];
 	snprintf(query,
 	         sizeof(query),
@@ -3765,14 +4362,14 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
 	         "name, short_descr, description, action_descr, "
 	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-	         "obj_uid, item_condition"
+	         "item_material, obj_uid, item_condition"
 	         ") VALUES ("
 	         "%d, %s, %d, %s, 1, "
 	         "%d, %d, %ld, %lu, %s, %d, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
 	         "%s, %s, %s, %s, "
 	         "%s, %s, %s, %s, %s, "
-	         "%lu, %d"
+	         "%d, %lu, %d"
 	         ")",
 	         locker_id,
 	         chest_id_str,
@@ -3784,6 +4381,7 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	         (unsigned long)obj->extra_flags,
 	         wear_str,
 	         obj->type,
+	         obj->material,
 	         obj->value[0],
 	         obj->value[1],
 	         obj->value[2],
@@ -3814,15 +4412,24 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 		free(esc_action);
 
 	if (!sql_run_query(query))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	int item_id = (int)mysql_insert_id(DB);
 
 	if (!sql_save_locker_item_affects(item_id, obj))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	if (obj->ex_description && !sql_save_item_extra_descr(item_id, obj, "locker_item_extra_descr"))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	if (obj->contains)
 	{
@@ -3830,6 +4437,10 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 			sql_save_locker_item(locker_id, chest_id, content, item_id);
 	}
 
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return 0; }
+	}
 	return item_id;
 }
 
@@ -3846,8 +4457,13 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 	if (!esc_name)
 		return false;
 
-	// use transaction to batch all inserts
-	sql_begin_transaction();
+	// start transaction (must succeed before any writes)
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_locker: failed to start transaction for %s", locker_name);
+		free(esc_name);
+		return false;
+	}
 
 	// check if locker already exists
 	int locker_id = sql_get_locker_id_by_name(locker_name);
@@ -3856,10 +4472,18 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 	{
 		// locker exists - delete only PUBLIC chest items, keep private chest items
 		int  public_id = sql_get_or_create_public_chest(locker_id);
+		if (public_id <= 0)
+		{
+			logit(LOG_DEBUG, "sql_save_locker: failed to get/create public chest for %s", locker_name);
+			free(esc_name);
+			sql_rollback();
+			return false;
+		}
 		char del_query[512];
 		snprintf(del_query, sizeof(del_query), "DELETE FROM locker_items WHERE locker_id=%d AND (chest_id IS NULL OR chest_id=%d)", locker_id, public_id);
 		if (!sql_run_query(del_query))
 		{
+			logit(LOG_DEBUG, "sql_save_locker: failed to delete old items for %s", locker_name);
 			free(esc_name);
 			sql_rollback();
 			return false;
@@ -3891,6 +4515,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 
 		if (!sql_run_query(ins_query))
 		{
+			logit(LOG_DEBUG, "sql_save_locker: failed to insert new locker %s", locker_name);
 			free(esc_name);
 			sql_rollback();
 			return false;
@@ -3903,18 +4528,37 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 
 	// get or create public chest for this locker
 	int public_chest_id = sql_get_or_create_public_chest(locker_id);
+	if (public_chest_id <= 0)
+	{
+		logit(LOG_DEBUG, "sql_save_locker: failed to get/create public chest after insert for %s", locker_name);
+		sql_rollback();
+		return false;
+	}
 
-	// save all items the locker char is carrying to public chest
+	// save all items the locker char is carrying to public chest - any failure rolls back the whole locker save
 	for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
-		sql_save_locker_item(locker_id, public_chest_id, obj, 0);
+	{
+		if (sql_save_locker_item(locker_id, public_chest_id, obj, 0) == 0)
+		{
+			logit(LOG_DEBUG, "sql_save_locker: failed to save item, rolling back for %s", locker_name);
+			sql_rollback();
+			return false;
+		}
+	}
 
-	sql_commit();
+	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "sql_save_locker: failed to commit for %s", locker_name);
+		sql_rollback();
+		return false;
+	}
+
 	return true;
 }
 
-static P_obj sql_load_locker_items(int locker_id, int container_id);
+static P_obj sql_load_locker_items(int locker_id, int container_id, const char *owner_ref);
 
-static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int chest_id)
+static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int chest_id, const char *owner_ref)
 {
 	if (!DB || locker_id <= 0)
 		return NULL;
@@ -4014,6 +4658,23 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			obj->action_description = str_dup(row[19]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
+		// bitvectors - compare with prototype, only load if different
+		if (row[22])
+			obj->bitvector = strtoul(row[22], NULL, 10);
+		if (row[23])
+			obj->bitvector2 = strtoul(row[23], NULL, 10);
+		if (row[24])
+			obj->bitvector3 = strtoul(row[24], NULL, 10);
+		if (row[25])
+			obj->bitvector4 = strtoul(row[25], NULL, 10);
+		if (row[26])
+			obj->bitvector5 = strtoul(row[26], NULL, 10);
+
+		// item_material - NULL means use prototype value
+		if (row[27])
+			obj->material = atoi(row[27]);
+
+
 
 		// restore obj_uid and condition
 		if (row[20] && strlen(row[20]) > 0)
@@ -4021,6 +4682,11 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			unsigned long saved_uid = strtoul(row[20], NULL, 10);
 			if (saved_uid > 0)
 				obj->obj_uid = saved_uid;
+			if (!sql_persistence_item_owner_matches(obj->obj_uid, "locker", owner_ref, "sql_load_locker_items"))
+			{
+				extract_obj(obj, FALSE);
+				continue;
+			}
 		}
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
@@ -4040,7 +4706,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item");
 
-		obj->contains = sql_load_locker_items(locker_id, item_id);
+		obj->contains = sql_load_locker_items(locker_id, item_id, owner_ref);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			c->loc_p      = LOC_INSIDE;
@@ -4059,7 +4725,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 	return first_obj;
 }
 
-static P_obj sql_load_locker_items(int locker_id, int container_id) { return sql_load_locker_items_filtered(locker_id, container_id, 0); }
+static P_obj sql_load_locker_items(int locker_id, int container_id, const char *owner_ref) { return sql_load_locker_items_filtered(locker_id, container_id, 0, owner_ref); }
 
 P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 {
@@ -4087,6 +4753,8 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 
 	int         locker_id   = atoi(row[0]);
 	const char *locker_name = row[1];
+	char owner_ref[MAX_INPUT_LENGTH] = "";
+	snprintf(owner_ref, sizeof(owner_ref), "%s", locker_name);
 	int         racewar     = atoi(row[2]);
 	int         race        = atoi(row[3]);
 
@@ -4118,7 +4786,7 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 	mysql_free_result(result);
 
 	// load items
-	ch->carrying = sql_load_locker_items(locker_id, 0);
+	ch->carrying = sql_load_locker_items(locker_id, 0, owner_ref);
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		obj->loc_p        = LOC_CARRIED;
@@ -4157,6 +4825,8 @@ P_char sql_load_locker_by_name(const char *locker_name)
 	int racewar   = atoi(row[1]);
 	int race      = atoi(row[2]);
 	mysql_free_result(result);
+	char owner_ref[MAX_INPUT_LENGTH] = "";
+	snprintf(owner_ref, sizeof(owner_ref), "%s", locker_name);
 
 	// allocate locker character
 	P_char ch = (P_char)mm_get(dead_mob_pool);
@@ -4180,7 +4850,7 @@ P_char sql_load_locker_by_name(const char *locker_name)
 	GET_RACE(ch)    = race;
 
 	// load items
-	ch->carrying = sql_load_locker_items(locker_id, 0);
+	ch->carrying = sql_load_locker_items(locker_id, 0, owner_ref);
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		obj->loc_p        = LOC_CARRIED;
@@ -4485,15 +5155,54 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	if (!DB || locker_id <= 0 || chest_id <= 0 || !chest_obj)
 		return false;
 
+	// detect nested-transaction case explicitly so the failure is visible in
+	// logs (not just code comments). sql_begin_transaction() returns false if
+	// already in a transaction, which would cause this function to bail out
+	// before the DELETE/inserts. The current caller in storage_lockers.c
+	// ignores the return value, so a silent save skip is the main risk; a
+	// future caller that checks the return and proceeds with cleanup would
+	// cause chest data loss.
+	if (sql_in_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_private_chest_items: called from within an existing transaction - chest save skipped to avoid data loss");
+		return false;
+	}
+
+	// start transaction (must succeed before the DELETE - otherwise the chest
+	// could be left empty if the inserts fail, losing all stored items)
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_private_chest_items: failed to start transaction for chest %d", chest_id);
+		return false;
+	}
+
 	// delete existing items for this chest
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM locker_items WHERE locker_id=%d AND chest_id=%d", locker_id, chest_id);
 	if (!sql_run_query(del_query))
+	{
+		logit(LOG_DEBUG, "sql_save_private_chest_items: failed to delete old items for chest %d", chest_id);
+		sql_rollback();
 		return false;
+	}
 
-	// save all items in the chest
+	// save all items in the chest - any failure rolls back the DELETE above
 	for (P_obj obj = chest_obj->contains; obj; obj = obj->next_content)
-		sql_save_locker_item(locker_id, chest_id, obj, 0);
+	{
+		if (sql_save_locker_item(locker_id, chest_id, obj, 0) == 0)
+		{
+			logit(LOG_DEBUG, "sql_save_private_chest_items: failed to save item, rolling back for chest %d", chest_id);
+			sql_rollback();
+			return false;
+		}
+	}
+
+	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "sql_save_private_chest_items: failed to commit for chest %d", chest_id);
+		sql_rollback();
+		return false;
+	}
 
 	return true;
 }
@@ -4504,11 +5213,23 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
 		return NULL;
 
 	char query[1024];
+	char owner_ref[MAX_INPUT_LENGTH] = "";
+	snprintf(query, sizeof(query), "SELECT locker_name FROM lockers WHERE id=%d LIMIT 1", locker_id);
+	MYSQL_RES *locker_result = db_query("%s", query);
+	if (locker_result)
+	{
+		MYSQL_ROW locker_row = mysql_fetch_row(locker_result);
+		if (locker_row && locker_row[0])
+			snprintf(owner_ref, sizeof(owner_ref), "%s", locker_row[0]);
+		mysql_free_result(locker_result);
+	}
+
 	snprintf(query,
 	         sizeof(query),
 	         "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, item_type, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr, obj_uid, item_condition "
+	         "name, short_descr, description, action_descr, obj_uid, item_condition, "
+	         "item_material "
 	         "FROM locker_items WHERE locker_id=%d AND container_id IS NULL AND chest_id=%d",
 	         locker_id,
 	         chest_id);
@@ -4585,10 +5306,16 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
 
+		if (!sql_persistence_item_owner_matches(obj->obj_uid, "locker", owner_ref, "sql_load_private_chest_items"))
+		{
+			extract_obj(obj, FALSE);
+			continue;
+		}
+
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 
 		// load contained items (bags inside the chest)
-		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id);
+		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			c->loc_p      = LOC_INSIDE;
@@ -4863,7 +5590,20 @@ bool sql_save_towns(void)
 	if (!DB)
 		return false;
 
-	sql_run_query("DELETE FROM towns");
+	// start transaction (must succeed before the DELETE - otherwise the towns
+	// table could be left empty if the inserts fail)
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_towns: failed to start transaction");
+		return false;
+	}
+
+	if (!sql_run_query("DELETE FROM towns"))
+	{
+		logit(LOG_DEBUG, "sql_save_towns: failed to delete old towns");
+		sql_rollback();
+		return false;
+	}
 
 	for (P_town town = towns; town; town = town->next_town)
 	{
@@ -4899,7 +5639,19 @@ bool sql_save_towns(void)
 		         town->portal_load_room);
 
 		free(escaped_filename);
-		sql_run_query(query);
+		if (!sql_run_query(query))
+		{
+			logit(LOG_DEBUG, "sql_save_towns: failed to insert town, rolling back");
+			sql_rollback();
+			return false;
+		}
+	}
+
+	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "sql_save_towns: failed to commit");
+		sql_rollback();
+		return false;
 	}
 
 	return true;
@@ -5136,6 +5888,15 @@ static bool sql_save_corpse_item_affects(int item_id, P_obj obj)
 	if (!obj || !DB || item_id <= 0)
 		return false;
 
+	// Own_txn wrapper for standalone-call safety
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
@@ -5156,18 +5917,39 @@ static bool sql_save_corpse_item_affects(int item_id, P_obj obj)
 			char query[256];
 			snprintf(query, sizeof(query), "INSERT INTO corpse_item_affects (item_id, location, modifier) VALUES (%d, %d, %d)", item_id, obj->affected[i].location, obj->affected[i].modifier);
 			if (!sql_run_query(query))
+			{
+				if (own_txn) sql_rollback();
 				return false;
+			}
 		}
+	}
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
 	}
 	return true;
 }
 
-static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
+static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int container_id)
 {
 	if (!obj || !DB || corpse_id <= 0)
 		return 0;
 
+	// Own_txn wrapper for standalone-call safety
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return 0;
+		own_txn = true;
+	}
+
 	int vnum = obj_index[obj->R_num].virtual_number;
+	char corpse_owner[64];
+	snprintf(corpse_owner, sizeof(corpse_owner), "corpse:%d", save_id);
+	persistence_record_item_event("owner_corpse", obj, NULL, "nowhere",
+	                              corpse_owner, "sql_save_corpse_item");
+
 
 	char *esc_name   = NULL;
 	char *esc_short  = NULL;
@@ -5208,18 +5990,30 @@ static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
 		strcpy(action_str, "NULL");
 
 	char query[8192];
+	// Shared helper formats wear_str, type_str, and bv1-5_str
+	// (NULL when matching the prototype) and frees the loaded prototype.
+	// See sql_format_item_diff_fields_and_free_proto().
+	char wear_str[32];
+	char type_str[16];
+	char material_str[16];
+	char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	sql_format_item_diff_fields_and_free_proto(
+		obj, wear_str, type_str, material_str,
+		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+
 	snprintf(query,
 	         sizeof(query),
 	         "INSERT INTO corpse_items ("
 	         "corpse_id, vnum, item_type, container_id, quantity, "
 	         "weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr, obj_uid, item_condition"
+	         "name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	         "item_material, obj_uid, item_condition"
 	         ") VALUES ("
 	         "%d, %d, %d, %s, 1, "
 	         "%d, %d, %ld, %lu, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s, %lu, %d"
+	         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %lu, %d"
 	         ")",
 	         corpse_id,
 	         vnum,
@@ -5241,6 +6035,14 @@ static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
 	         short_str,
 	         desc_str,
 	         action_str,
+	         wear_str,
+	         type_str,
+	         material_str,
+	         bv1_str,
+	         bv2_str,
+	         bv3_str,
+	         bv4_str,
+	         bv5_str,
 	         obj->obj_uid,
 	         obj->condition);
 
@@ -5254,24 +6056,37 @@ static int sql_save_corpse_item(int corpse_id, P_obj obj, int container_id)
 		free(esc_action);
 
 	if (!sql_run_query(query))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	int item_id = (int)mysql_insert_id(DB);
 
 	if (!sql_save_corpse_item_affects(item_id, obj))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	if (obj->ex_description && !sql_save_item_extra_descr(item_id, obj, "corpse_item_extra_descr"))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	if (obj->contains)
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
 		{
-			sql_save_corpse_item(corpse_id, content, item_id);
+			sql_save_corpse_item(corpse_id, save_id, content, item_id);
 		}
 	}
 
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return 0; }
+	}
 	return item_id;
 }
 
@@ -5280,15 +6095,25 @@ bool sql_save_corpse(P_obj corpse)
 	if (!corpse || !DB)
 		return false;
 
-    if (!sql_begin_transaction())
-		return false;
-
 	if (corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[1], PC_CORPSE))
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: not a PC corpse");
 		return false;
+	}
 
 	const char *player_name = corpse->action_description;
 	if (!player_name || !*player_name)
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: missing player name");
 		return false;
+	}
+
+	// start transaction (must succeed before any writes)
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: failed to start transaction");
+		return false;
+	}
 
 	int save_id = corpse->value[CORPSE_SAVEID];
 	if (save_id == 0)
@@ -5302,19 +6127,39 @@ bool sql_save_corpse(P_obj corpse)
 
 	char *esc_name = sql_escape_string(player_name);
 	if (!esc_name)
+	{
+		sql_rollback();
 		return false;
-	
+	}
+
 	char *esc_sdesc = sql_escape_string(corpse->short_description);
 	if (!esc_sdesc)
+	{
+		free(esc_name);
+		sql_rollback();
 		return false;
-	
+	}
+
 	char *esc_desc = sql_escape_string(corpse->description);
 	if (!esc_desc)
+	{
+		free(esc_name);
+		free(esc_sdesc);
+		sql_rollback();
 		return false;
+	}
 
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d", esc_name, save_id);
-	sql_run_query(del_query);
+	if (!sql_run_query(del_query))
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: failed to delete old corpse for %s", esc_name);
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		sql_rollback();
+		return false;
+	}
 
 	char ins_query[512];
 	snprintf(ins_query, sizeof(ins_query), "INSERT INTO corpses (player_name, save_id, room_vnum, short_descr, description) VALUES ('%s', %d, %d, '%s', '%s')", esc_name, save_id, room_vnum, esc_sdesc, esc_desc);
@@ -5323,16 +6168,33 @@ bool sql_save_corpse(P_obj corpse)
 	free(esc_desc);
 
 	if (!sql_run_query(ins_query))
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: failed to insert corpse for %s", player_name);
+		sql_rollback();
 		return false;
+	}
 
 	int corpse_id = (int)mysql_insert_id(DB);
 
+	// save contained items atomically - any failure rolls back the whole corpse save
 	for (P_obj obj = corpse->contains; obj; obj = obj->next_content)
 	{
-		sql_save_corpse_item(corpse_id, obj, 0);
+		if (sql_save_corpse_item(corpse_id, save_id, obj, 0) == 0)
+		{
+			logit(LOG_DEBUG, "sql_save_corpse: failed to save contained item, rolling back");
+			sql_rollback();
+			return false;
+		}
 	}
 
-	return sql_commit();
+	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: failed to commit for %s", player_name);
+		sql_rollback();
+		return false;
+	}
+
+	return true;
 }
 
 bool sql_delete_corpse(const char *player_name, int save_id)
@@ -5344,6 +6206,21 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 	if (!esc_name)
 		return false;
 
+	// Delete item affects first (child of corpse_items)
+	char cascade_query[512];
+	snprintf(cascade_query, sizeof(cascade_query),
+		"DELETE FROM corpse_item_affects WHERE item_id IN "
+		"(SELECT ci.id FROM corpse_items ci JOIN corpses c ON ci.corpse_id = c.id "
+		"WHERE c.player_name='%s' AND c.save_id=%d)", esc_name, save_id);
+	sql_run_query(cascade_query);
+
+	// Delete corpse items next
+	snprintf(cascade_query, sizeof(cascade_query),
+		"DELETE FROM corpse_items WHERE corpse_id IN "
+		"(SELECT id FROM corpses WHERE player_name='%s' AND save_id=%d)", esc_name, save_id);
+	sql_run_query(cascade_query);
+
+	// Delete the corpse itself
 	char query[256];
 	snprintf(query, sizeof(query), "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d", esc_name, save_id);
 	free(esc_name);
@@ -5370,7 +6247,10 @@ bool sql_load_all_corpses(void)
 	                             "ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
 	                             "ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
 	                             "ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0), "
-								 "c.short_descr, c.description "
+	                             "ci.obj_uid, ci.item_condition, "
+								 "c.short_descr, c.description, "
+	                             "ci.wear_flags, ci.item_type, ci.item_material, "
+	                             "ci.bitvector1, ci.bitvector2, ci.bitvector3, ci.bitvector4, ci.bitvector5 "
 	                             "FROM corpses c "
 	                             "LEFT JOIN corpse_items ci ON ci.corpse_id = c.id "
 	                             "LEFT JOIN corpse_item_affects cia ON cia.item_id = ci.id "
@@ -5391,6 +6271,7 @@ bool sql_load_all_corpses(void)
 	int   container_map[MAX_CORPSE_ITEMS];
 	int   num_objs     = 0;
 	int   last_item_id = -1;
+	int   skipped_item_id = -1;
 
 	int       loaded = 0;
 	MYSQL_ROW row;
@@ -5464,18 +6345,21 @@ bool sql_load_all_corpses(void)
 					o->loc.inside = cur_corpse;
 				}
 				obj_to_room(cur_corpse, cur_room);
+				persistence_refresh_restored_corpse(cur_corpse, "sql_load_all_corpses");
 				loaded++;
 			}
 			else if (cur_corpse)
 			{
 				// corpse with no items
 				obj_to_room(cur_corpse, cur_room);
+				persistence_refresh_restored_corpse(cur_corpse, "sql_load_all_corpses");
 				loaded++;
 			}
 
 			// start new corpse
 			num_objs      = 0;
 			last_item_id  = -1;
+			skipped_item_id = -1;
 			cur_corpse_id = corpse_id;
 
 			const char *player_name = row[1] ? row[1] : "";
@@ -5592,6 +6476,43 @@ bool sql_load_all_corpses(void)
 			obj->str_mask |= STRUNG_DESC3;
 		}
 
+		unsigned long saved_uid = row[26] ? strtoul(row[26], NULL, 10) : 0;
+		if (saved_uid > 0)
+		{
+			obj->obj_uid = saved_uid;
+			if (obj->obj_uid >= next_obj_uid)
+				next_obj_uid = obj->obj_uid + 1;
+		}
+		if (row[27])
+			obj->condition = atoi(row[27]);
+
+		// v19 diff columns - NULL means use prototype value from read_object()
+		if (row[30])
+			obj->wear_flags = atoi(row[30]);
+		if (row[31])
+			obj->type = atoi(row[31]);
+		if (row[32])
+			obj->material = atoi(row[32]);
+		if (row[33])
+			obj->bitvector = strtoul(row[33], NULL, 10);
+		if (row[34])
+			obj->bitvector2 = strtoul(row[34], NULL, 10);
+		if (row[35])
+			obj->bitvector3 = strtoul(row[35], NULL, 10);
+		if (row[36])
+			obj->bitvector4 = strtoul(row[36], NULL, 10);
+		if (row[37])
+			obj->bitvector5 = strtoul(row[37], NULL, 10);
+
+		char owner_ref[32];
+		snprintf(owner_ref, sizeof(owner_ref), "%d", cur_corpse->value[CORPSE_SAVEID]);
+		if (!sql_persistence_item_owner_matches(saved_uid, "corpse", owner_ref, "sql_load_all_corpses"))
+		{
+			extract_obj(obj, FALSE);
+			skipped_item_id = item_id;
+			continue;
+		}
+
 		int aff_loc = atoi(row[24]);
 		if (aff_loc >= 0)
 		{
@@ -5666,11 +6587,13 @@ bool sql_load_all_corpses(void)
 			o->loc.inside = cur_corpse;
 		}
 		obj_to_room(cur_corpse, cur_room);
+		persistence_refresh_restored_corpse(cur_corpse, "sql_load_all_corpses");
 		loaded++;
 	}
 	else if (cur_corpse)
 	{
 		obj_to_room(cur_corpse, cur_room);
+		persistence_refresh_restored_corpse(cur_corpse, "sql_load_all_corpses");
 		loaded++;
 	}
 
@@ -5759,18 +6682,33 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 		strcpy(action_str, "NULL");
 
 	char query[8192];
+	// Shared helper formats wear_str, type_str, and bv1-5_str
+	// (NULL when matching the prototype) and frees the loaded prototype.
+	// See sql_format_item_diff_fields_and_free_proto().
+	char wear_str[32];
+	char type_str[16];
+	char material_str[16];
+	char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	sql_format_item_diff_fields_and_free_proto(
+		obj, wear_str, type_str, material_str,
+		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+
 	snprintf(query,
 	         sizeof(query),
 	         "INSERT INTO shopkeeper_items ("
 	         "shopkeeper_id, vnum, equip_slot, container_id, quantity, "
 	         "weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr"
+	         "name, short_descr, description, action_descr, "
+	         "wear_flags, item_type, item_material, "
+	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5"
 	         ") VALUES ("
 	         "%d, %d, %d, %s, 1, "
 	         "%d, %d, %ld, %lu, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s"
+	         "%s, %s, %s, %s, "
+	         "%s, %d, %s, "
+	         "%s, %s, %s, %s, %s"
 	         ")",
 	         shopkeeper_id,
 	         vnum,
@@ -5791,7 +6729,14 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	         name_str,
 	         short_str,
 	         desc_str,
-	         action_str);
+	         action_str,
+	         wear_str,
+	         type_str,
+	         bv1_str,
+	         bv2_str,
+	         bv3_str,
+	         bv4_str,
+	         bv5_str);
 
 	if (esc_name)
 		free(esc_name);
@@ -5859,8 +6804,12 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	if (IS_PC(ch) || !IS_SHOPKEEPER(ch))
 		return false;
 
-	// use transaction to batch all inserts
-	sql_run_query("START TRANSACTION");
+	// start transaction
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to start transaction for shop %d", shop_nr);
+		return false;
+	}
 
 	int  mob_vnum  = mob_index[GET_RNUM(ch)].virtual_number;
 	int  room_vnum = world[ch->in_room].number;
@@ -5868,7 +6817,12 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 
 	char del_query[128];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM shopkeepers WHERE shop_id=%d", shop_nr);
-	sql_run_query(del_query);
+	if (!sql_run_query(del_query))
+	{
+		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to delete old shopkeeper %d", shop_nr);
+		sql_rollback();
+		return false;
+	}
 
 	char ins_query[256];
 	snprintf(
@@ -5876,18 +6830,31 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 
 	if (!sql_run_query(ins_query))
 	{
-		sql_run_query("ROLLBACK");
+		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to insert shopkeeper %d", shop_nr);
+		sql_rollback();
 		return false;
 	}
 
 	int shopkeeper_id = (int)mysql_insert_id(DB);
 
-	sql_save_shopkeeper_affects(shopkeeper_id, ch);
+	if (!sql_save_shopkeeper_affects(shopkeeper_id, ch))
+	{
+		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to save affects for shop %d", shop_nr);
+		sql_rollback();
+		return false;
+	}
 
 	for (int i = 0; i < MAX_WEAR; i++)
 	{
 		if (ch->equipment[i])
-			sql_save_shopkeeper_item(shopkeeper_id, ch->equipment[i], i + 1, 0);
+		{
+			if (!sql_save_shopkeeper_item(shopkeeper_id, ch->equipment[i], i + 1, 0))
+			{
+				logit(LOG_DEBUG, "sql_save_shopkeeper: failed to save equip slot %d for shop %d", i, shop_nr);
+				sql_rollback();
+				return false;
+			}
+		}
 	}
 
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
@@ -5895,10 +6862,21 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 		// skip producing items - they're regenerated from zone definitions
 		if (shop_producing(obj, shop_nr))
 			continue;
-		sql_save_shopkeeper_item(shopkeeper_id, obj, 0, 0);
+		if (!sql_save_shopkeeper_item(shopkeeper_id, obj, 0, 0))
+		{
+			logit(LOG_DEBUG, "sql_save_shopkeeper: failed to save inventory item for shop %d", shop_nr);
+			sql_rollback();
+			return false;
+		}
 	}
 
-	sql_run_query("COMMIT");
+	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to commit for shop %d", shop_nr);
+		sql_rollback();
+		return false;
+	}
+
 	return true;
 }
 
@@ -5978,18 +6956,31 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 	char *esc_key = sql_escape_string(item_key);
 
 	char query[8192];
+	// Shared helper formats wear_str, type_str, and bv1-5_str
+	// (NULL when matching the prototype) and frees the loaded prototype.
+	// See sql_format_item_diff_fields_and_free_proto().
+	char wear_str[32];
+	char type_str[16];
+	char material_str[16];
+	char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	sql_format_item_diff_fields_and_free_proto(
+		obj, wear_str, type_str, material_str,
+		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+
 	snprintf(query,
 	         sizeof(query),
 	         "INSERT INTO saved_items ("
 	         "item_key, room_vnum, vnum, container_id, quantity, "
 	         "weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr"
+	         "name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	         "item_material"
 	         ") VALUES ("
 	         "'%s', %d, %d, %s, 1, "
 	         "%d, %d, %ld, %lu, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s"
+	         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
+	         "%s"
 	         ")",
 	         esc_key ? esc_key : "",
 	         room_vnum,
@@ -6010,7 +7001,15 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 	         name_str,
 	         short_str,
 	         desc_str,
-	         action_str);
+	         action_str,
+	         wear_str,
+	         type_str,
+	         material_str,
+	         bv1_str,
+	         bv2_str,
+	         bv3_str,
+	         bv4_str,
+	         bv5_str);
 
 	if (esc_key)
 		free(esc_key);
@@ -6142,18 +7141,31 @@ static int sql_save_siege_item_one(int room_vnum, P_obj obj, int container_id)
 		strcpy(action_str, "NULL");
 
 	char query[8192];
+	// Shared helper formats wear_str, type_str, and bv1-5_str
+	// (NULL when matching the prototype) and frees the loaded prototype.
+	// See sql_format_item_diff_fields_and_free_proto().
+	char wear_str[32];
+	char type_str[16];
+	char material_str[16];
+	char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	sql_format_item_diff_fields_and_free_proto(
+		obj, wear_str, type_str, material_str,
+		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+
 	snprintf(query,
 	         sizeof(query),
 	         "INSERT INTO siege_items ("
 	         "room_vnum, vnum, container_id, quantity, "
 	         "weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr"
+	         "name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	         "item_material"
 	         ") VALUES ("
 	         "%d, %d, %s, 1, "
 	         "%d, %d, %ld, %lu, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s"
+	         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
+	         "%s"
 	         ")",
 	         room_vnum,
 	         vnum,
@@ -6173,7 +7185,15 @@ static int sql_save_siege_item_one(int room_vnum, P_obj obj, int container_id)
 	         name_str,
 	         short_str,
 	         desc_str,
-	         action_str);
+	         action_str,
+	         wear_str,
+	         type_str,
+	         material_str,
+	         bv1_str,
+	         bv2_str,
+	         bv3_str,
+	         bv4_str,
+	         bv5_str);
 
 	if (esc_name)
 		free(esc_name);
@@ -6249,7 +7269,10 @@ static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], 
 	         sizeof(query),
 	         "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr, container_id "
+	         "name, short_descr, description, action_descr, "
+	         "wear_flags, item_type, item_material, "
+	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	         "container_id "
 	         "FROM shopkeeper_items WHERE shopkeeper_id=%d ORDER BY id",
 	         shopkeeper_id);
 
@@ -6276,7 +7299,7 @@ static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], 
 			continue;
 
 		int equip_slot   = atoi(row[2]);
-		int container_id = row[19] ? atoi(row[19]) : 0;
+		int container_id = row[27] ? atoi(row[27]) : 0;
 
 		if (row[3])
 			obj->weight = atoi(row[3]);
@@ -6316,6 +7339,25 @@ static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], 
 			obj->action_description = str_dup(row[18]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
+		// v19 diff columns - NULL means use prototype value from read_object()
+		if (row[19])
+			obj->wear_flags = atoi(row[19]);
+		if (row[20])
+			obj->type = atoi(row[20]);
+		if (row[21])
+			obj->material = atoi(row[21]);
+		if (row[22])
+			obj->bitvector = strtoul(row[22], NULL, 10);
+		if (row[23])
+			obj->bitvector2 = strtoul(row[23], NULL, 10);
+		if (row[24])
+			obj->bitvector3 = strtoul(row[24], NULL, 10);
+		if (row[25])
+			obj->bitvector4 = strtoul(row[25], NULL, 10);
+		if (row[26])
+			obj->bitvector5 = strtoul(row[26], NULL, 10);
+
+
 
 		struct shopkeeper_item_temp *temp = (struct shopkeeper_item_temp *)malloc(sizeof(struct shopkeeper_item_temp));
 		temp->item_id                     = item_id;
@@ -6958,7 +8000,9 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 	         sizeof(query),
 	         "SELECT id, vnum, weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr "
+	         "name, short_descr, description, action_descr, "
+	         "wear_flags, item_type, item_material, "
+	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
 	         "FROM saved_items WHERE item_key='%s' AND container_id=%d",
 	         esc_key,
 	         container_id);
@@ -7022,6 +8066,25 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 			obj->action_description = str_dup(row[17]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
+		// v19 diff columns - NULL means use prototype value from read_object()
+		if (row[18])
+			obj->wear_flags = atoi(row[18]);
+		if (row[19])
+			obj->type = atoi(row[19]);
+		if (row[20])
+			obj->material = atoi(row[20]);
+		if (row[21])
+			obj->bitvector = strtoul(row[21], NULL, 10);
+		if (row[22])
+			obj->bitvector2 = strtoul(row[22], NULL, 10);
+		if (row[23])
+			obj->bitvector3 = strtoul(row[23], NULL, 10);
+		if (row[24])
+			obj->bitvector4 = strtoul(row[24], NULL, 10);
+		if (row[25])
+			obj->bitvector5 = strtoul(row[25], NULL, 10);
+
+
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query), "SELECT location, modifier FROM saved_item_affects WHERE item_id=%d", item_id);
@@ -7180,7 +8243,9 @@ static P_obj sql_load_siege_item_contents(int room_vnum, int container_id)
 	         sizeof(query),
 	         "SELECT id, vnum, weight, cost, timer, extra_flags, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr "
+	         "name, short_descr, description, action_descr, "
+	         "wear_flags, item_type, item_material, "
+	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
 	         "FROM siege_items WHERE room_vnum=%d AND container_id=%d",
 	         room_vnum,
 	         container_id);
@@ -7243,6 +8308,25 @@ static P_obj sql_load_siege_item_contents(int room_vnum, int container_id)
 			obj->action_description = str_dup(row[17]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
+		// v19 diff columns - NULL means use prototype value from read_object()
+		if (row[18])
+			obj->wear_flags = atoi(row[18]);
+		if (row[19])
+			obj->type = atoi(row[19]);
+		if (row[20])
+			obj->material = atoi(row[20]);
+		if (row[21])
+			obj->bitvector = strtoul(row[21], NULL, 10);
+		if (row[22])
+			obj->bitvector2 = strtoul(row[22], NULL, 10);
+		if (row[23])
+			obj->bitvector3 = strtoul(row[23], NULL, 10);
+		if (row[24])
+			obj->bitvector4 = strtoul(row[24], NULL, 10);
+		if (row[25])
+			obj->bitvector5 = strtoul(row[25], NULL, 10);
+
+
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query), "SELECT location, modifier FROM siege_item_affects WHERE item_id=%d", item_id);
@@ -7538,6 +8622,17 @@ bool sql_save_ship(P_ship ship)
 	}
 	memset(batch, 0, batchSize);
 
+	// start transaction
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_ship: failed to start transaction");
+		free(batch);
+		free(esc_owner);
+		if (esc_name)
+			free(esc_name);
+		return false;
+	}
+
 	if (ship->db_id == -1)
 	{
 		char initQuery[1024];
@@ -7563,6 +8658,7 @@ bool sql_save_ship(P_ship ship)
 			free(esc_owner);
 			if (esc_name)
 				free(esc_name);
+			sql_rollback();
 			return false;
 		}
 
@@ -7578,6 +8674,7 @@ bool sql_save_ship(P_ship ship)
 		{
 			sql_player_error("sql_save_ship_2", query);
 			free(batch);
+			sql_rollback();
 			return false;
 		}
 
@@ -7586,6 +8683,7 @@ bool sql_save_ship(P_ship ship)
 		{
 			free(batch);
 			mysql_free_result(result);
+			sql_rollback();
 			return false;
 		}
 
@@ -7619,6 +8717,7 @@ bool sql_save_ship(P_ship ship)
 	{
 		sql_player_error("sql_save_ship_3", NULL);
 		free(batch);
+		sql_rollback();
 		return false;
 	}
 	
@@ -7627,17 +8726,31 @@ bool sql_save_ship(P_ship ship)
 	{
 		sql_player_error("sql_save_ship_4", batch);
 		result = NULL;
+		free(batch);
+		if (result)
+		{
+			mysql_free_result(result);
+		}
+		sql_clear_results();
+		sql_rollback();
+		logit(LOG_DEBUG, "sql_save_ship: mysql_real_query failed for ship %d", ship->db_id);
+		return false;
 	}
-	else
-	{
-		result = mysql_store_result(DB);
-	}
+	result = mysql_store_result(DB);
 	free(batch);
 	if (result)
 	{
 		mysql_free_result(result);
 	}
 	sql_clear_results(); // need to clear all of the batch results
+
+	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "sql_save_ship: failed to commit for ship %d", ship->db_id);
+		sql_rollback();
+		return false;
+	}
+
 	logit(LOG_DEBUG, "sql_save_ship: finished saving ship %d", ship->db_id);
 
 	return true;
@@ -7914,22 +9027,47 @@ bool sql_save_guild(Guild *guild)
 	if (!sql_run_query(query))
 		return false;
 
+	// start transaction for ranks + members (DELETEs run before INSERTs, so a
+	// failure mid-loop would otherwise leave the guild with stale or empty
+	// ranks/members)
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_guild: failed to start transaction for guild %u", gid);
+		return false;
+	}
+
 	// save ranks
 	snprintf(query, sizeof(query), "delete from guild_ranks where guild_id=%u", gid);
-	sql_run_query(query);
+	if (!sql_run_query(query))
+	{
+		logit(LOG_DEBUG, "sql_save_guild: failed to delete old ranks for guild %u", gid);
+		sql_rollback();
+		return false;
+	}
 	for (int i = 0; i < ASC_NUM_RANKS; i++)
 	{
 		char *esc_title = sql_escape_string(guild->titles[i]);
 		if (!esc_title)
 			continue;
 		snprintf(query, sizeof(query), "insert into guild_ranks (guild_id, rank_index, title) values (%u, %d, '%s')", gid, i, esc_title);
-		sql_run_query(query);
+		bool ok = sql_run_query(query);
 		free(esc_title);
+		if (!ok)
+		{
+			logit(LOG_DEBUG, "sql_save_guild: failed to insert rank %d for guild %u", i, gid);
+			sql_rollback();
+			return false;
+		}
 	}
 
 	// save members
 	snprintf(query, sizeof(query), "delete from guild_members where guild_id=%u", gid);
-	sql_run_query(query);
+	if (!sql_run_query(query))
+	{
+		logit(LOG_DEBUG, "sql_save_guild: failed to delete old members for guild %u", gid);
+		sql_rollback();
+		return false;
+	}
 	for (P_member mem = guild->members; mem; mem = mem->next)
 	{
 		char *esc_mname = sql_escape_string(mem->name);
@@ -7945,8 +9083,21 @@ bool sql_save_guild(Guild *guild)
 		         pid > 0 ? pid : 0,
 		         mem->bits,
 		         mem->debt);
-		sql_run_query(query);
+		bool ok = sql_run_query(query);
 		free(esc_mname);
+		if (!ok)
+		{
+			logit(LOG_DEBUG, "sql_save_guild: failed to insert member for guild %u", gid);
+			sql_rollback();
+			return false;
+		}
+	}
+
+	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "sql_save_guild: failed to commit for guild %u", gid);
+		sql_rollback();
+		return false;
 	}
 
 	return true;

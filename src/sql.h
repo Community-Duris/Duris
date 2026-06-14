@@ -93,10 +93,22 @@ int         sql_find_racewar_for_ip(char *ip, int *racewar_side);
 // to log disconnect times...
 void sql_disconnectIP(P_char ch);
 bool qry(const char *format, ...);
+bool sql_persistence_write_item_event_line(const char *line);
+bool sql_persistence_write_scalar_event_line(const char *line);
+bool sql_persistence_write_large_event_line(const char *line);
+MYSQL *sql_persistence_connection(void);
+void    sql_persistence_release_connection(MYSQL *conn);
+bool sql_persistence_execute_raw(const char *sql);
+bool sql_persistence_item_owner_matches(unsigned long long item_uid,
+                                        const char *owner_type,
+                                        const char *owner_ref,
+                                        const char *context);
 void sql_world_quest_finished(P_char ch, P_obj obj);
 int  sql_world_quest_done_already(P_char ch, int number);
 int  sql_world_quest_can_do_another(P_char ch);
+void sql_zone_touch_finished(const char *event_key, int boot_time, int touched_at, int zone_number, int toucher_pid, int group_size, int epic_value, int alignment_delta);
 void sql_clear_results();
+bool sql_run_multi_query(const char *query);
 
 void send_to_pid_offline(const char *msg, int pid);
 void send_offline_messages(P_char ch);
@@ -170,4 +182,9 @@ void sql_add_sincesunk_frags(char owner, float frags);
 
 bool sql_pwipe(int code_verify);
 bool sql_clear_zone_trophy();
+/* ---- Persistence layer declarations ---- */
+/* (duplicate item/scalar event declarations removed; remaining: */
+void log_epic_gain_event(const char *event_key, int pid, int type,
+                         int type_id, int epics);
+
 #endif

@@ -737,7 +737,16 @@ void mark_player_dirty(int pid)
 			redis_enabled = false;
 			P_char ch     = find_player_by_pid(pid);
 			if (ch && IS_PC(ch))
-				sql_save_player(ch, RENT_CRASH, 0);
+			{
+				// Wrap save in transaction
+				if (sql_begin_transaction())
+				{
+					sql_save_player(ch, RENT_CRASH, 0);
+					if (!sql_commit()) sql_rollback();
+				}
+				else
+					sql_save_player(ch, RENT_CRASH, 0);
+			}
 			return;
 		}
 	}
@@ -747,7 +756,16 @@ void mark_player_dirty(int pid)
 	{
 		P_char ch = find_player_by_pid(pid);
 		if (ch && IS_PC(ch))
-			sql_save_player(ch, RENT_CRASH, 0);
+		{
+			// Wrap save in transaction
+			if (sql_begin_transaction())
+			{
+				sql_save_player(ch, RENT_CRASH, 0);
+				if (!sql_commit()) sql_rollback();
+			}
+			else
+				sql_save_player(ch, RENT_CRASH, 0);
+		}
 		return;
 	}
 	freeReplyObject(reply);
@@ -835,7 +853,14 @@ void flush_dirty_players(void)
 			P_char ch = find_player_by_pid(pids[i]);
 			if (!ch || !IS_PC(ch))
 				continue;
-			sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+			// Wrap save in transaction
+			if (sql_begin_transaction())
+			{
+				sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+				if (!sql_commit()) sql_rollback();
+			}
+			else
+				sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
 			// gremlin needs to run in main process
 			if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && world[ch->in_room].funct)
 				(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
@@ -859,7 +884,16 @@ void flush_dirty_players(void)
 		{
 			P_char ch = find_player_by_pid(pids[i]);
 			if (ch && IS_PC(ch))
-				sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+			{
+				// Wrap save in transaction
+				if (sql_begin_transaction())
+				{
+					sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+					if (!sql_commit()) sql_rollback();
+				}
+				else
+					sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+			}
 		}
 
 		mysql_close(child_conn);

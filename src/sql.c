@@ -13,13 +13,14 @@
 #include "interp.h"
 #include "utils.h"
 #include "sql.h"
+#include "sql_pool.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <unistd.h>
+#include <pthread.h>
 #include "account.h"
 #include "assocs.h"
 #include "boon.h"
@@ -31,7 +32,10 @@
 #include "specializations.h"
 #include "spells.h"
 #include "sql_player.h"
+#include "sql_migrate.h"
 #include "timers.h"
+#include "persistence_queue.h"
+#include "utility.h"
 
 extern P_index                         mob_index;
 extern const struct race_names         race_names_table[];
@@ -88,6 +92,8 @@ bool qry(const char *format, ...) { return TRUE; }
 void send_to_char_offline(const char *msg, int pid) {}
 void send_offline_messages(P_char ch) {}
 void log_epic_gain(int pid, int zone_id, int type, int epics) {}
+void log_epic_gain_event(const char *event_key, int pid, int type, int type_id, int epics) {}
+bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type, const char *owner_ref, const char *context) { return true; }
 void update_zone_db() {}
 void update_zone_epic_level(int zone_id, int level) {}
 void show_frag_trophy(P_char ch, P_char who) { send_to_char("Disabled.", ch); }
@@ -124,6 +130,13 @@ static void sql_resetConnectTimes(void);
 
 // The global database handler
 MYSQL *DB;
+
+/* persistenceDB replaced by connection pool (sql_pool.c).
+ * persistence_sql_mutex kept for backward compatibility — no longer
+ * needed for connection serialisation but still referenced by
+ * sql_persistence_raw.c for now. */
+MYSQL *persistenceDB = NULL;
+pthread_mutex_t persistence_sql_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Escapes a string. */
 char *mysql_str(const char *str, char *buf)
@@ -306,6 +319,23 @@ int initialize_mysql()
 
 	sql_resetConnectTimes();
 	sql_populate_lookup_tables();
+
+	/* Run schema migrations (auto-runner).
+	 * When MIGRATION_AUTO_RUNNER is not defined, this is a no-op
+	 * and shell scripts handle migrations instead. */
+	if (sql_run_migrations(DB, "migrations") != 0) {
+		logit(LOG_STATUS, "FATAL: schema migrations failed, aborting boot");
+		mysql_close(DB);
+		return -1;
+	}
+
+	/* Initialise the connection pool for async persistence
+	 * workers (item, scalar, large-payload event queues). */
+	if (sql_pool_init(SQL_POOL_DEFAULT_SIZE) != 0)
+	{
+		logit(LOG_STATUS, "Warning: connection pool init failed — persistence workers will use sync fallback.");
+		/* Non-fatal: the main DB connection still works. */
+	}
 
 	return 1;
 }
@@ -1291,6 +1321,30 @@ void sql_clear_results()
 	} while (status == 0);
 }
 
+/* Execute a semicolon-separated multi-statement query.
+ * Uses mysql_real_query (supports multi-statement with
+ * CLIENT_MULTI_STATEMENTS) and drains all result sets. */
+/* Execute a semicolon-separated multi-statement query.
+ * Uses mysql_real_query (supports multi-statement with
+ * CLIENT_MULTI_STATEMENTS) and drains all result sets. */
+bool sql_run_multi_query(const char *query)
+{
+	if (!DB || !query || !*query)
+		return false;
+
+	if (mysql_real_query(DB, query, strlen(query)) != 0)
+	{
+		sql_player_error("sql_run_multi_query", query);
+		// Drain any partial result sets from statements that succeeded
+		// before the failing one (multi-statement with CLIENT_MULTI_STATEMENTS).
+		sql_clear_results();
+		return false;
+	}
+
+	sql_clear_results();
+	return true;
+}
+
 bool qry(const char *format, ...)
 {
 	char    buf[MAX_STRING_LENGTH];
@@ -1442,6 +1496,27 @@ int sql_quest_trophy(P_char giver)
 }
 
 void log_epic_gain(int pid, int type, int type_id, int epics) { qry("INSERT INTO epic_gain (pid, time, type, type_id, epics) values ('%d', now(), '%d', '%d', '%d')", pid, type, type_id, epics); }
+
+void log_epic_gain_event(const char *event_key, int pid, int type, int type_id, int epics)
+{
+	char line[PERSISTENCE_EVENT_MAX_LEN];
+
+	snprintf(line,
+	         sizeof(line),
+	         "INSERT INTO epic_gain (pid, time, type, type_id, epics) VALUES ('%d', NOW(), '%d', '%d', '%d')",
+	         pid, type, type_id, epics);
+
+	if (persistence_scalar_event_worker_running())
+	{
+		if (persistence_scalar_event_queue_enqueue(line))
+			return;
+		if (persistence_write_fallback_event_line(line, "scalar_event", "epic_gain", "queue_full_flat_fallback"))
+			return;
+	}
+
+	qry("INSERT INTO epic_gain (pid, time, type, type_id, epics) VALUES ('%d', NOW(), '%d', '%d', '%d')",
+	    pid, type, type_id, epics);
+}
 
 /* The prepstatement_duris_sql table looks like:
 +-------------+---------+------+-----+---------+----------------+
@@ -2231,49 +2306,222 @@ void sql_log_player_login(P_char ch, const char *status)
 	if (!ch || IS_NPC(ch) || !ch->desc)
 		return;
 
-	// copy data before fork since child can't access parent memory safely
-	char name[32], ip[64], account[64], client[64], client_ver[32];
-	int  pid_num;
+	// Async scalar-event queue replaces fork().
+	// Escape all user-supplied strings then build the INSERT line.
+	char line[PERSISTENCE_EVENT_MAX_LEN];
+	char esc_name[128], esc_ip[128], esc_account[128], esc_client[256];
+	char esc_status[64], esc_client_ver[128];
 
-	strncpy(name, GET_NAME(ch), sizeof(name) - 1);
-	name[sizeof(name) - 1] = '\0';
-	strncpy(ip, ch->desc->host, sizeof(ip) - 1);
-	ip[sizeof(ip) - 1] = '\0';
-	const char *acct   = get_account_name_safe(ch);
-	strncpy(account, acct ? acct : "", sizeof(account) - 1);
-	account[sizeof(account) - 1] = '\0';
-	strncpy(client, ch->desc->client_name[0] ? ch->desc->client_name : "", sizeof(client) - 1);
-	client[sizeof(client) - 1] = '\0';
-	strncpy(client_ver, ch->desc->client_version[0] ? ch->desc->client_version : "", sizeof(client_ver) - 1);
-	client_ver[sizeof(client_ver) - 1] = '\0';
-	pid_num                            = GET_PID(ch);
+	const char *acct = get_account_name_safe(ch);
 
-	pid_t pid = fork();
-	if (pid < 0)
-		return; // fork failed, skip logging
+	persistence_sql_escape_field(GET_NAME(ch), esc_name, sizeof(esc_name));
+	persistence_sql_escape_field(ch->desc->host, esc_ip, sizeof(esc_ip));
+	persistence_sql_escape_field(acct ? acct : "", esc_account, sizeof(esc_account));
+	persistence_sql_escape_field(ch->desc->client_name[0] ? ch->desc->client_name : "",
+	                             esc_client, sizeof(esc_client));
+	persistence_sql_escape_field(ch->desc->client_version[0] ? ch->desc->client_version : "",
+	                             esc_client_ver, sizeof(esc_client_ver));
+	persistence_sql_escape_field(status, esc_status, sizeof(esc_status));
 
-	if (pid == 0)
+	snprintf(line, sizeof(line),
+	         "INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
+	         "VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
+	         esc_status,
+	         esc_ip,
+	         GET_PID(ch),
+	         esc_name,
+	         esc_account,
+	         esc_client,
+	         esc_client_ver);
+
+	if (persistence_scalar_event_worker_running())
 	{
-		// child process
-		MYSQL *child_conn = sql_create_child_connection();
-		if (!child_conn)
-			_exit(1);
-
-		sql_reset_for_child(child_conn);
-
-		db_query("INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
-		         "VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
-		         status,
-		         ip,
-		         pid_num,
-		         name,
-		         account,
-		         client,
-		         client_ver);
-
-		mysql_close(child_conn);
-		_exit(0);
+		if (persistence_scalar_event_queue_enqueue(line))
+			return;
+		if (persistence_write_fallback_event_line(line, "scalar_event",
+		                                          "player_login",
+		                                          "queue_full_fallback"))
+			return;
 	}
-	// parent continues immediately
+
+	// Fallback: execute synchronously
+	qry("%s", line);
+}
+
+/* ---- Persistence DB connection ---- */
+MYSQL *sql_persistence_connection(void)
+{
+	/* Prefer the connection pool.  Falls back to the
+	 * legacy persistenceDB singleton if the pool was never initialised
+	 * (sql_pool_acquire returns NULL when pool is NULL). */
+	MYSQL *conn = sql_pool_acquire();
+	if (conn)
+		return conn;
+
+	/* Legacy fallback: lazy-initialise the singleton.
+	 * Kept for bootstrap / early-start paths that run before
+	 * the pool is initialised (e.g. sql_populate_lookup_tables). */
+	if (!persistenceDB)
+	{
+		persistenceDB = mysql_init(NULL);
+		if (!persistenceDB)
+			return NULL;
+		if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD, DB_NAME, DB_PORT, NULL, 0))
+		{
+			logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_connection failed: %s", mysql_error(persistenceDB));
+			mysql_close(persistenceDB);
+			persistenceDB = NULL;
+			return NULL;
+		}
+	}
+	return persistenceDB;
+}
+
+/* Return a connection previously acquired via
+ * sql_persistence_connection().  Pool connections go back to the pool;
+ * legacy singleton connections are a no-op (they're owned by the
+ * caller indefinitely). */
+void sql_persistence_release_connection(MYSQL *conn)
+{
+	if (!conn)
+		return;
+
+	/* If this connection came from the pool, release it.  The pool
+	 * checks pointer equality against its slots, so passing a
+	 * non-pool connection is harmless — it simply won't match. */
+	sql_pool_release(conn);
+}
+
+bool sql_persistence_write_item_event_line(const char *line)
+{
+	return sql_persistence_execute_raw(line);
+}
+
+bool sql_persistence_write_scalar_event_line(const char *line)
+{
+	return sql_persistence_execute_raw(line);
+}
+
+bool sql_persistence_write_large_event_line(const char *line)
+{
+	return sql_persistence_execute_raw(line);
+}
+
+/* Validates that an item's persistence_event log matches its expected
+ * owner.  Queries persistence_item_events for the most recent event
+ * involving item_uid and checks that the target field matches the
+ * expected owner_type:owner_ref.
+ *
+ * Returns true if:
+ *   - item_uid == 0 (no ownership data, keep item)
+ *   - No recent event found (safe default, keep item)
+ *   - Most recent event target matches expected owner
+ * Returns false if the item was last seen at a different owner (stolen item)
+ */
+bool sql_persistence_item_owner_matches(unsigned long long item_uid,
+                                        const char *owner_type,
+                                        const char *owner_ref,
+                                        const char *context)
+{
+	/* No ownership data to validate */
+	if (item_uid == 0)
+		return true;
+
+	if (!owner_type || !owner_ref || !context)
+		return true;
+
+	if (!DB)
+		return true;
+
+	/* Build the expected target prefix, e.g. "player:", "locker:", "corpse:" */
+	char expected_prefix[64];
+	snprintf(expected_prefix, sizeof(expected_prefix), "%s:", owner_type);
+	size_t prefix_len = strlen(expected_prefix);
+
+	/* Query the most recent persistence event for this item_uid.
+	 * ORDER BY ts_usec DESC, id DESC gives us the latest event. */
+	char query[512];
+	snprintf(query, sizeof(query),
+	         "SELECT target FROM persistence_item_events "
+	         "WHERE item_uid=%llu "
+	         "ORDER BY ts_usec DESC, id DESC LIMIT 1",
+	         item_uid);
+
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return true;  /* query failed, keep item (conservative) */
+
+	MYSQL_ROW row = mysql_fetch_row(result);
+	if (!row || !row[0])
+	{
+		mysql_free_result(result);
+		return true;  /* no events found, keep item (conservative) */
+	}
+
+	const char *target = row[0];
+
+	/* Check that the target starts with the expected owner_type prefix */
+	if (strncmp(target, expected_prefix, prefix_len) != 0)
+	{
+		logit(LOG_DEBUG,
+		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
+		      "expected=%s%s actual_target=%s context=%s",
+		      item_uid, expected_prefix, owner_ref, target, context);
+		mysql_free_result(result);
+		return false;
+	}
+
+	/* Extract the owner ref from target (after the prefix) and compare */
+	const char *actual_ref = target + prefix_len;
+	if (strcmp(actual_ref, owner_ref) != 0)
+	{
+		logit(LOG_DEBUG,
+		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
+		      "expected=%s%s actual_target=%s context=%s",
+		      item_uid, expected_prefix, owner_ref, target, context);
+		mysql_free_result(result);
+		return false;
+	}
+
+	mysql_free_result(result);
+	return true;
+}
+
+/* Logs zone touch events to persistence_scalar_events for epic analysis.
+ * Uses the async persistence queue with flat-file and direct SQL fallbacks. */
+void sql_zone_touch_finished(const char *event_key, int boot_time,
+                             int touched_at, int zone_number,
+                             int toucher_pid, int group_size,
+                             int epic_value, int alignment_delta)
+{
+	char line[PERSISTENCE_EVENT_MAX_LEN];
+	const char *safe_key;
+
+	safe_key = (event_key && *event_key) ? event_key : "none";
+
+	snprintf(line, sizeof(line),
+	         "INSERT INTO persistence_scalar_events "
+	         "(event_type, event_key, boot_time, touched_at, zone_number, "
+	         "toucher_pid, group_size, epic_value, alignment_delta, created_at) "
+	         "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, NOW())",
+	         safe_key, boot_time, touched_at, zone_number,
+	         toucher_pid, group_size, epic_value, alignment_delta);
+
+	if (persistence_scalar_event_worker_running())
+	{
+		if (persistence_scalar_event_queue_enqueue(line))
+			return;
+		if (persistence_write_fallback_event_line(line, "scalar_event",
+		                                          "zone_touch",
+		                                          "queue_full_fallback"))
+			return;
+	}
+
+	qry("INSERT INTO persistence_scalar_events "
+	    "(event_type, event_key, boot_time, touched_at, zone_number, "
+	    "toucher_pid, group_size, epic_value, alignment_delta, created_at) "
+	    "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, NOW())",
+	    safe_key, boot_time, touched_at, zone_number,
+	    toucher_pid, group_size, epic_value, alignment_delta);
 }
 #endif

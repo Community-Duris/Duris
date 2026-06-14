@@ -406,6 +406,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
 
 	// first pass - save all players, disconnect websocket/ssl
+	persistence_flush_all_character_saves();
 	for (d = descriptor_list; d; d = d_next)
 	{
 		d_next = d->next;
@@ -418,7 +419,16 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 
 		logit(LOG_STATUS, "copyover: saving %s with RENT_CRASH", GET_NAME(d->character));
-		do_save_silent(d->character, RENT_CRASH);
+		// Wrap save in transaction
+		if (sql_begin_transaction())
+		{
+			do_save_silent(d->character, RENT_CRASH);
+			if (!sql_commit()) sql_rollback();
+		}
+		else
+		{
+			do_save_silent(d->character, RENT_CRASH);
+		}
 
 		if (d->websocket)
 		{

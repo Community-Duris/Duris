@@ -626,7 +626,7 @@ void ws_send_full_game_state(struct descriptor_data *d)
 		return;
 
 	/* trigger gmcp updates to send current state */
-	if (d->character->in_room >= 0)
+	if (d->character->in_room >= 0 && d->ws_handshake_done)
 	{
 		extern void gmcp_room_info(struct char_data * ch);
 		extern void gmcp_room_map(struct char_data * ch);
@@ -635,16 +635,19 @@ void ws_send_full_game_state(struct descriptor_data *d)
 	}
 
 	extern void gmcp_char_vitals(struct char_data * ch);
-	gmcp_char_vitals(d->character);
-
 	extern void gmcp_char_status(struct char_data * ch);
-	gmcp_char_status(d->character);
-
 	extern void gmcp_char_affects(struct char_data * ch);
-	gmcp_char_affects(d->character);
-
 	extern void gmcp_quest_status(struct char_data * ch);
-	gmcp_quest_status(d->character);
+
+	/* Guard GMCP sends behind WS handshake to prevent leaking
+	 * frames into the login stream before handshake completes */
+	if (d->ws_handshake_done)
+	{
+		gmcp_char_vitals(d->character);
+		gmcp_char_status(d->character);
+		gmcp_char_affects(d->character);
+		gmcp_quest_status(d->character);
+	}
 
 	/* send a "look" to show the room */
 	write_to_q("look", &d->input, 0);

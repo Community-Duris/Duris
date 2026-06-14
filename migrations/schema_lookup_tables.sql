@@ -1,10 +1,14 @@
 -- lookup tables for races and classes
 -- these get populated by the mud on every boot
+--
+-- Idempotency: DROP TABLE IF EXISTS + CREATE TABLE IF NOT EXISTS.
+-- On re-run, tables are dropped and recreated (safe — they're repopulated
+-- by sql_populate_lookup_tables() every boot anyway).
 
 DROP TABLE IF EXISTS classes;
 DROP TABLE IF EXISTS races;
 
-CREATE TABLE races (
+CREATE TABLE IF NOT EXISTS races (
     id INT UNSIGNED PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
     short_name VARCHAR(32),
@@ -14,7 +18,7 @@ CREATE TABLE races (
     playable TINYINT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE classes (
+CREATE TABLE IF NOT EXISTS classes (
     id INT UNSIGNED PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
     ansi_name VARCHAR(128),

@@ -2,6 +2,10 @@
 -- generated: 2025-12-30
 -- change: normalized item storage (no blob)
 -- follows player_items pattern for all item tables
+--
+-- Idempotency: DROP TABLE IF EXISTS is destructive by design (v2 replaces
+-- blob-based tables with normalized ones). CREATE TABLE uses IF NOT EXISTS
+-- as a safety net. This migration should only run once via the auto-runner.
 
 -- ============================================================================
 -- drop old blob-based tables
@@ -17,7 +21,7 @@ DROP TABLE IF EXISTS siege_objects;
 -- corpse items (normalized)
 -- ============================================================================
 
-CREATE TABLE corpse_items (
+CREATE TABLE IF NOT EXISTS corpse_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     corpse_id INT NOT NULL,
     vnum INT NOT NULL,
@@ -46,7 +50,7 @@ CREATE TABLE corpse_items (
     INDEX idx_vnum (vnum)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE corpse_item_affects (
+CREATE TABLE IF NOT EXISTS corpse_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_id INT UNSIGNED NOT NULL,
     location TINYINT UNSIGNED DEFAULT 0,
@@ -60,7 +64,7 @@ CREATE TABLE corpse_item_affects (
 -- shopkeeper items (normalized)
 -- ============================================================================
 
-CREATE TABLE shopkeeper_items (
+CREATE TABLE IF NOT EXISTS shopkeeper_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     shopkeeper_id INT NOT NULL,
     vnum INT NOT NULL,
@@ -90,7 +94,7 @@ CREATE TABLE shopkeeper_items (
     INDEX idx_vnum (vnum)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE shopkeeper_item_affects (
+CREATE TABLE IF NOT EXISTS shopkeeper_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_id INT UNSIGNED NOT NULL,
     location TINYINT UNSIGNED DEFAULT 0,
@@ -104,7 +108,7 @@ CREATE TABLE shopkeeper_item_affects (
 -- saved items (normalized)
 -- ============================================================================
 
-CREATE TABLE saved_items (
+CREATE TABLE IF NOT EXISTS saved_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_key VARCHAR(100) NOT NULL UNIQUE,
     room_vnum INT DEFAULT 0,
@@ -135,7 +139,7 @@ CREATE TABLE saved_items (
     INDEX idx_vnum (vnum)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE saved_item_affects (
+CREATE TABLE IF NOT EXISTS saved_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_id INT UNSIGNED NOT NULL,
     location TINYINT UNSIGNED DEFAULT 0,
@@ -149,7 +153,7 @@ CREATE TABLE saved_item_affects (
 -- siege items (normalized, replaces siege_objects blob table)
 -- ============================================================================
 
-CREATE TABLE siege_items (
+CREATE TABLE IF NOT EXISTS siege_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     room_vnum INT NOT NULL,
     vnum INT NOT NULL,
@@ -178,7 +182,7 @@ CREATE TABLE siege_items (
     INDEX idx_vnum (vnum)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE siege_item_affects (
+CREATE TABLE IF NOT EXISTS siege_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_id INT UNSIGNED NOT NULL,
     location TINYINT UNSIGNED DEFAULT 0,
