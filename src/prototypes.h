@@ -2020,6 +2020,7 @@ void convertObj(P_obj obj);
 
 int   get_weapon_msg(P_obj weapon);
 int   getWeaponDamType(const int weaptype);
+void  describe_encrusted_enhanced(P_obj obj);
 
 /* prompt.c */
 
@@ -2126,6 +2127,7 @@ P_obj createRandomItem(P_char, P_char, int, int, int);
 
 /* random.c */
 
+uint64_t hash64(uint64_t x);
 void randomize(uint64_t seed);
 
 /*  arena.c */
