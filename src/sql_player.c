@@ -5850,13 +5850,31 @@ bool sql_save_account_ips(const char *account_name, struct acct_ip *ips)
 	if (!DB || !account_name)
 		return false;
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	char *escaped_name = sql_escape_string(account_name);
 	if (!escaped_name)
+	{
+		if (own_txn)
+			sql_rollback();
 		return false;
+	}
 
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM account_ips WHERE account_name='%s'", escaped_name);
-	sql_run_query(del_query);
+	if (!sql_run_query(del_query))
+	{
+		free(escaped_name);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	for (struct acct_ip *ip = ips; ip; ip = ip->next)
 	{
@@ -5874,7 +5892,17 @@ bool sql_save_account_ips(const char *account_name, struct acct_ip *ips)
 			         escaped_hostname,
 			         escaped_ip,
 			         ip->count);
-			sql_run_query(query);
+			if (!sql_run_query(query))
+			{
+				if (escaped_hostname)
+					free(escaped_hostname);
+				if (escaped_ip)
+					free(escaped_ip);
+				free(escaped_name);
+				if (own_txn)
+					sql_rollback();
+				return false;
+			}
 		}
 
 		if (escaped_hostname)
@@ -5884,6 +5912,11 @@ bool sql_save_account_ips(const char *account_name, struct acct_ip *ips)
 	}
 
 	free(escaped_name);
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
 	return true;
 }
 
@@ -5953,11 +5986,31 @@ bool sql_save_kingdom_land(void)
 	if (!DB)
 		return false;
 
-	sql_run_query("DELETE FROM kingdom_land");
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
+	if (!sql_run_query("DELETE FROM kingdom_land"))
+	{
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	FILE *f = fopen(SAVE_DIR "/../Kingdoms/kingdom.land", "r");
 	if (!f)
+	{
+		if (own_txn && !sql_commit())
+		{
+			sql_rollback();
+			return false;
+		}
 		return true;
+	}
 
 	char line[256];
 	while (fgets(line, sizeof(line), f))
@@ -5991,11 +6044,22 @@ bool sql_save_kingdom_land(void)
 			         start_vnum,
 			         end_vnum,
 			         type);
-			sql_run_query(query);
+			if (!sql_run_query(query))
+			{
+				fclose(f);
+				if (own_txn)
+					sql_rollback();
+				return false;
+			}
 		}
 	}
 
 	fclose(f);
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
 	return true;
 }
 
@@ -6328,13 +6392,21 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 		"DELETE FROM corpse_item_affects WHERE item_id IN "
 		"(SELECT ci.id FROM corpse_items ci JOIN corpses c ON ci.corpse_id = c.id "
 		"WHERE c.player_name='%s' AND c.save_id=%d)", esc_name, save_id);
-	sql_run_query(cascade_query);
+	if (!sql_run_query(cascade_query))
+	{
+		free(esc_name);
+		return false;
+	}
 
 	// Delete corpse items next
 	snprintf(cascade_query, sizeof(cascade_query),
 		"DELETE FROM corpse_items WHERE corpse_id IN "
 		"(SELECT id FROM corpses WHERE player_name='%s' AND save_id=%d)", esc_name, save_id);
-	sql_run_query(cascade_query);
+	if (!sql_run_query(cascade_query))
+	{
+		free(esc_name);
+		return false;
+	}
 
 	// Delete the corpse itself
 	char query[256];

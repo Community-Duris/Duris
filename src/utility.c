@@ -990,6 +990,7 @@ int persistence_flush_item_events(int max_events)
   FILE *log_f = NULL;
   int flushed = 0;
   int pending;
+  int ok = 1;
 
   if (persistence_item_event_worker_running())
     return 0;
@@ -1011,21 +1012,24 @@ int persistence_flush_item_events(int max_events)
     }
   }
 
-  while (flushed < max_events &&
+  while (ok && flushed < max_events &&
          persistence_item_event_queue_dequeue(line, sizeof(line)))
   {
-    fputs(line, log_f);
-    fputs("\n", log_f);
-    flushed++;
+    if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+      ok = 0;
+    else
+      flushed++;
   }
 
   if (log_f)
   {
     if (fclose(log_f))
+      ok = 0;
+    if (!ok)
     {
       persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-                        "flush_close_failed",
-                        "close failed after flushing %d events", flushed);
+                        "flush_write_failed",
+                        "write failed after flushing %d events", flushed);
     }
   }
 
@@ -1049,6 +1053,7 @@ int persistence_flush_scalar_events(int max_events)
   FILE *log_f = NULL;
   int flushed = 0;
   int pending;
+  int ok = 1;
 
   if (persistence_scalar_event_worker_running())
     return 0;
@@ -1070,19 +1075,22 @@ int persistence_flush_scalar_events(int max_events)
     }
   }
 
-  while (flushed < max_events &&
+  while (ok && flushed < max_events &&
          persistence_scalar_event_queue_dequeue(line, sizeof(line)))
   {
-    fputs(line, log_f);
-    fputs("\n", log_f);
-    flushed++;
+    if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+      ok = 0;
+    else
+      flushed++;
   }
 
   if (log_f && fclose(log_f))
+    ok = 0;
+  if (log_f && !ok)
   {
     persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                      "flush_close_failed",
-                      "close failed after flushing %d scalar events", flushed);
+                      "flush_write_failed",
+                      "write failed after flushing %d scalar events", flushed);
   }
 
   dropped = persistence_scalar_event_queue_dropped();
