@@ -66,7 +66,6 @@ tests/db_write/*.h
 tests/db_write/Dockerfile.*
 tests/db_write/Makefile*
 tests/db_write/schema.sql
-tests/async/test_*
 
 # Docker build files — not part of production PR
 /Dockerfile

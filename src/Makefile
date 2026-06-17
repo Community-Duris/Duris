@@ -243,9 +243,6 @@ OBJS =  $(SHIP_OBJS) \
 				 nexus_stones.o \
 				 test_async.o \
 				 testcmd.o \
-# NOTE: test_async.o and testcmd.o excluded from production builds;
-# guard with #ifndef __NO_TESTS__ in comm.c.  To re-enable, add
-# the objects back above and remove -D__NO_TESTS__ from CFLAGS.
 				 wikihelp.o \
 				 reavers.o \
 				 avengers.o \

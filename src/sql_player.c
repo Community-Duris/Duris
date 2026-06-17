@@ -396,6 +396,16 @@ static bool sql_run_query(const char *query)
 	return true;
 }
 
+static bool sql_delete_player_subtable(int pid, const char *table_name)
+{
+	if (!DB || pid <= 0 || !table_name || !*table_name)
+		return false;
+
+	char query[128];
+	snprintf(query, sizeof(query), "DELETE FROM %s WHERE pid=%d", table_name, pid);
+	return sql_run_query(query);
+}
+
 // converts spellbook binary bits to json array string "[101,203,456]"
 static char *spellbook_to_json(const char *bits)
 {
@@ -1035,6 +1045,12 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	bool has_data;
 
 	// languages - batch delete then batch insert
+	if (!sql_delete_player_subtable(pid, "player_languages"))
+	{
+		free(batch);
+		if (own_txn) sql_rollback();
+		return false;
+	}
 
 	pos      = snprintf(batch, 65536, "REPLACE INTO player_languages (pid, tongue_id, proficiency) VALUES ");
 	has_data = false;
@@ -1043,15 +1059,33 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		if (GET_LANGUAGE(ch, i) > 0)
 		{
 			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%d)", has_data ? "," : "", pid, i, GET_LANGUAGE(ch, i));
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 			has_data = true;
 		}
 	}
 	if (has_data)
-		sql_run_query(batch);
+	{
+		if (!sql_run_query(batch))
+		{
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+	}
 
 	// intros - batch delete then batch insert
+	if (!sql_delete_player_subtable(pid, "player_intros"))
+	{
+		free(batch);
+		if (own_txn) sql_rollback();
+		return false;
+	}
 
 	pos      = snprintf(batch, 65536, "REPLACE INTO player_intros (pid, intro_index, intro_pid, intro_time) VALUES ");
 	has_data = false;
@@ -1060,13 +1094,25 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		if (ch->only.pc->introd_list[i] != 0)
 		{
 			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%ld,FROM_UNIXTIME(NULLIF(%lu,0)))", has_data ? "," : "", pid, i, ch->only.pc->introd_list[i], ch->only.pc->introd_times[i]);
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 			has_data = true;
 		}
 	}
 	if (has_data)
-		sql_run_query(batch);
+	{
+		if (!sql_run_query(batch))
+		{
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+	}
 
 	// timers - batch delete then batch insert
 
@@ -1083,7 +1129,14 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		}
 	}
 	if (has_data)
-		sql_run_query(batch);
+	{
+		if (!sql_run_query(batch))
+		{
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+	}
 
 	// undead spell slots - batch delete then batch insert
 
@@ -1100,7 +1153,14 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		}
 	}
 	if (has_data)
-		sql_run_query(batch);
+	{
+		if (!sql_run_query(batch))
+		{
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+	}
 
 	// forged items - batch delete then batch insert
 
@@ -1117,7 +1177,14 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		}
 	}
 	if (has_data)
-		sql_run_query(batch);
+	{
+		if (!sql_run_query(batch))
+		{
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+	}
 
 	// granted commands - batch delete then batch insert
 
@@ -1133,7 +1200,14 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			has_data = true;
 		}
 		if (has_data)
-			sql_run_query(batch);
+		{
+			if (!sql_run_query(batch))
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
+		}
 	}
 
 	free(batch);
@@ -1168,8 +1242,13 @@ bool sql_save_player_skills(P_char ch)
 		return false;
 	}
 
-	// delete all skills for this player in one query
-	// DELETE replaced by REPLACE INTO player_skills
+	char del_query[128];
+	snprintf(del_query, sizeof(del_query), "DELETE FROM player_skills WHERE pid=%d", pid);
+	if (!sql_run_query(del_query))
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
 
 	// build multi-row insert for skills that have values
 	// max ~100 skills learned * ~40 bytes per value = ~4kb, use 64kb to be safe
@@ -1188,14 +1267,26 @@ bool sql_save_player_skills(P_char ch)
 		if (ch->only.pc->skills[i].learned > 0 || ch->only.pc->skills[i].taught > 0)
 		{
 			int new_pos = batch_append(query, pos, 65536, "%s(%d,%d,%d,%d)", has_skills ? "," : "", pid, i, ch->only.pc->skills[i].learned, ch->only.pc->skills[i].taught);
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(query);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 			has_skills = true;
 		}
 	}
 
 	if (has_skills)
-		sql_run_query(query);
+	{
+		if (!sql_run_query(query))
+		{
+			free(query);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+	}
 
 	free(query);
 
@@ -1224,6 +1315,14 @@ bool sql_save_player_affects(P_char ch)
 
 	int pid = GET_PID(ch);
 	if (pid <= 0)
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
+
+	char del_query[128];
+	snprintf(del_query, sizeof(del_query), "DELETE FROM player_affects WHERE pid=%d", pid);
+	if (!sql_run_query(del_query))
 	{
 		if (own_txn) sql_rollback();
 		return false;
@@ -1262,13 +1361,25 @@ bool sql_save_player_affects(P_char ch)
 		                af->bitvector3,
 		                af->bitvector4,
 		                af->bitvector5);
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 		has_affects = true;
 	}
 
 	if (has_affects)
-		sql_run_query(batch);
+	{
+		if (!sql_run_query(batch))
+		{
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+	}
 
 	free(batch);
 
@@ -2495,7 +2606,11 @@ bool sql_save_player_pets(P_char ch, int save_type)
 		{
 			char del_query[128];
 			snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
-			sql_run_query(del_query);
+			if (!sql_run_query(del_query))
+			{
+				if (own_txn) sql_rollback();
+				return false;
+			}
 		}
 		if (own_txn)
 		{
@@ -2859,7 +2974,10 @@ bool sql_load_player_pets(P_char ch)
 	// delete the saved pets after successful load
 	char del_query[128];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
-	sql_run_query(del_query);
+	if (!sql_run_query(del_query))
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -3053,8 +3171,7 @@ bool sql_add_player_recipe(int pid, int recipe_vnum)
 
 	char query[256];
 	snprintf(query, sizeof(query), "INSERT IGNORE INTO player_recipes (pid, recipe_vnum) VALUES (%d, %d)", pid, recipe_vnum);
-	sql_run_query(query);
-	return true;
+	return sql_run_query(query);
 }
 
 bool sql_delete_player_recipes(int pid)
@@ -3064,8 +3181,7 @@ bool sql_delete_player_recipes(int pid)
 
 	char query[128];
 	snprintf(query, sizeof(query), "DELETE FROM player_recipes WHERE pid=%d", pid);
-	sql_run_query(query);
-	return true;
+	return sql_run_query(query);
 }
 
 bool sql_has_player_recipe(int pid, int recipe_vnum)
