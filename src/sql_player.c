@@ -2575,7 +2575,13 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 		for (P_obj content = obj->contains; content; content = content->next_content)
 		{
 			if (!IS_SET(content->extra_flags, ITEM_NORENT))
-				sql_save_single_pet_item(pet_id, content, 0, item_id);
+			{
+				if (sql_save_single_pet_item(pet_id, content, 0, item_id) <= 0)
+				{
+					if (own_txn) sql_rollback();
+					return false;
+				}
+			}
 		}
 	}
 
@@ -2692,14 +2698,26 @@ bool sql_save_player_pets(P_char ch, int save_type)
 		for (int i = 0; i < MAX_WEAR; i++)
 		{
 			if (pet->equipment[i] && !IS_SET(pet->equipment[i]->extra_flags, ITEM_NORENT))
-				sql_save_single_pet_item(pet_id, pet->equipment[i], i + 1, 0);
+			{
+				if (sql_save_single_pet_item(pet_id, pet->equipment[i], i + 1, 0) <= 0)
+				{
+					if (own_txn) sql_rollback();
+					return false;
+				}
+			}
 		}
 
 		// save pet inventory
 		for (P_obj obj = pet->carrying; obj; obj = obj->next_content)
 		{
 			if (!IS_SET(obj->extra_flags, ITEM_NORENT))
-				sql_save_single_pet_item(pet_id, obj, 0, 0);
+			{
+				if (sql_save_single_pet_item(pet_id, obj, 0, 0) <= 0)
+				{
+					if (own_txn) sql_rollback();
+					return false;
+				}
+			}
 		}
 
 		pet_order++;
@@ -4550,7 +4568,13 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	if (obj->contains)
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
-			sql_save_locker_item(locker_id, chest_id, content, item_id);
+		{
+			if (sql_save_locker_item(locker_id, chest_id, content, item_id) <= 0)
+			{
+				if (own_txn) sql_rollback();
+				return 0;
+			}
+		}
 	}
 
 	if (own_txn)
@@ -6259,7 +6283,11 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
 		{
-			sql_save_corpse_item(corpse_id, save_id, content, item_id);
+			if (sql_save_corpse_item(corpse_id, save_id, content, item_id) <= 0)
+			{
+				if (own_txn) sql_rollback();
+				return 0;
+			}
 		}
 	}
 
@@ -7411,7 +7439,10 @@ static int sql_save_siege_item_one(int room_vnum, P_obj obj, int container_id)
 	if (obj->contains)
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
-			sql_save_siege_item_one(room_vnum, content, item_id);
+		{
+			if (sql_save_siege_item_one(room_vnum, content, item_id) <= 0)
+				return 0;
+		}
 	}
 
 	return item_id;
