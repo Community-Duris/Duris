@@ -7232,9 +7232,6 @@ bool sql_save_saved_item(P_obj item, const char *item_key)
 	if (!item || !item_key || !DB)
 		return false;
 
-	if (!OBJ_ROOM(item) || item->loc.room <= NOWHERE || item->loc.room > top_of_world)
-		return false;
-
 	int room_vnum = world[item->loc.room].number;
 
 	char *esc_key = sql_escape_string(item_key);
@@ -7244,7 +7241,8 @@ bool sql_save_saved_item(P_obj item, const char *item_key)
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM saved_items WHERE item_key='%s'", esc_key);
 	free(esc_key);
-	sql_run_query(del_query);
+	if (!sql_run_query(del_query))
+		return false;
 
 	return sql_save_saved_item_recursive(item_key, room_vnum, item, 0) > 0;
 }
