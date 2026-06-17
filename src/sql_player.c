@@ -6946,7 +6946,10 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	if (obj->contains)
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
-			sql_save_shopkeeper_item(shopkeeper_id, content, 0, item_id);
+		{
+			if (!sql_save_shopkeeper_item(shopkeeper_id, content, 0, item_id))
+				return 0;
+		}
 	}
 
 	return item_id;
@@ -6978,7 +6981,8 @@ static bool sql_save_shopkeeper_affects(int shopkeeper_id, P_char ch)
 		         af->bitvector3,
 		         af->bitvector4,
 		         af->bitvector5);
-		sql_run_query(query);
+		if (!sql_run_query(query))
+			return false;
 	}
 
 	return true;
@@ -7221,7 +7225,10 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 	if (obj->contains)
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
-			sql_save_saved_item_recursive(item_key, room_vnum, content, item_id);
+		{
+			if (sql_save_saved_item_recursive(item_key, room_vnum, content, item_id) <= 0)
+				return 0;
+		}
 	}
 
 	return item_id;
@@ -7230,6 +7237,9 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 bool sql_save_saved_item(P_obj item, const char *item_key)
 {
 	if (!item || !item_key || !DB)
+		return false;
+
+	if (!OBJ_ROOM(item) || item->loc.room <= NOWHERE || item->loc.room > top_of_world)
 		return false;
 
 	int room_vnum = world[item->loc.room].number;
@@ -7420,7 +7430,8 @@ bool sql_save_siege_list(void)
 	if (!DB)
 		return false;
 
-	sql_run_query("DELETE FROM siege_items");
+	if (!sql_run_query("DELETE FROM siege_items"))
+		return false;
 	return true;
 }
 
@@ -8104,7 +8115,8 @@ void sql_restore_shopkeepers(void)
 	}
 
 	// query 5: delete all shopkeepers in one go
-	sql_run_query("DELETE FROM shopkeepers");
+	if (!sql_run_query("DELETE FROM shopkeepers"))
+		logit(LOG_DEBUG, "sql_restore_shopkeepers: failed to delete old shopkeepers");
 
 	// free keeper temp structs
 	struct shopkeeper_temp *tk = keepers;
@@ -8414,7 +8426,8 @@ void sql_restore_saved_items(void)
 	mysql_free_result(result);
 
 	// delete all saved items after loading (they get re-saved on next tick)
-	sql_run_query("DELETE FROM saved_items");
+	if (!sql_run_query("DELETE FROM saved_items"))
+		logit(LOG_DEBUG, "sql_restore_saved_items: failed to delete old saved items");
 
 	logit(LOG_DEBUG, "sql_restore_saved_items: loaded %d items", loaded);
 }
