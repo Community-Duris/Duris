@@ -176,6 +176,19 @@ cp dms_new ../dms
 
 **Note:** The Makefile compiles to `src/dms_new`, which you then copy to `dms` in the root directory.
 
+### Area File Bootstrap
+
+The runtime expects generated `areas/world.*` files. On a fresh clone, the area-generator helpers may need to be rebuilt first:
+
+```bash
+cd areas/src
+make -j1
+cd ..
+./m_slow
+```
+
+This rebuilds the missing `areas/make_*` helper binaries, then generates the combined `world.*` files used at boot.
+
 ### Clean Build
 
 ```bash
@@ -240,6 +253,20 @@ This is configured in `src/sql.c` `initialize_mysql()` function.
 ## Running the MUD
 
 ### Starting the Server
+
+The helper scripts now self-anchor to the repository root, so you can launch them from anywhere as long as the checkout is intact.
+
+**Preferred startup:**
+```bash
+./start_mud.sh
+```
+
+**Direct startup / debugging:**
+```bash
+./cycle_mud.sh
+```
+
+If the area helper binaries are missing, `cycle_mud.sh` will rebuild them automatically before running `areas/m_slow`.
 
 **Development (port 4000):**
 ```bash

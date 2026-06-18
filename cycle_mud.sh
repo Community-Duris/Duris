@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Always run from the repository root so relative paths resolve correctly.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+
 # Load environment variables from .env if it exists
 if [ -f .env ]; then
   echo "Loading environment from .env"
@@ -93,8 +97,13 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   echo "Backing up pfiles..."
   ./backup_pfiles.sh
 
+  echo "Building area tools if needed..."
+  if [ ! -x "areas/make_mob" ] || [ ! -x "areas/make_obj" ] || [ ! -x "areas/make_qst" ] || [ ! -x "areas/make_shp" ] || [ ! -x "areas/make_wld" ] || [ ! -x "areas/make_zon" ]; then
+    (cd ./areas/src && make -j1) || exit 1
+  fi
+
   echo "Building areas..."
-  (cd ./areas  && ./m_slow)
+  (cd ./areas && ./m_slow)
 
   echo "Generating list of function names.."
   nm --demangle dms | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
