@@ -37,6 +37,7 @@ sudo apt-get install libxml2 libxml2-dev
 sudo apt-get install zlib1g zlib1g-dev
 sudo apt-get install gnutls-dev
 sudo apt-get install libcjson-dev libssl-dev
+sudo apt-get install libhiredis-dev libbsd-dev
 ```
 
 **CentOS/RHEL:**

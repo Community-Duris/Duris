@@ -8,8 +8,17 @@
 
 #include "test_async.h"
 
+/* test_async.h includes ../tests/real/test_persistence_real.h when
+ * TEST_REAL_PERSISTENCE is defined, which provides all declarations.
+ * The implementations live in tests/real/test_persistence_real.c and
+ * are compiled via this wrapper when TEST_REAL_PERSISTENCE is defined.
+ */
+#ifdef TEST_REAL_PERSISTENCE
+#include "../tests/real/test_persistence_real.c"
+#elif defined(TEST_PERSISTENCE)
 /* test_async.h includes ../tests/async/test_persistence.h when
  * TEST_PERSISTENCE is defined, which provides all declarations.
  * The implementations live in tests/async/test_persistence.c and
  * are compiled via a custom Makefile rule.
  */
+#endif

@@ -163,12 +163,8 @@ void reboot_request(int signum)
  */
 void hupsig(int signum)
 {
-
-	logit(LOG_EXIT, "Received SIGHUP, SIGINT, or SIGTERM. Shutting down");
-	raise(SIGSEGV);
-#if 0
-  exit(-1);
-#endif
+	signal_shutdown_pending = 1;
+	signal(signum, hupsig);
 }
 
 void logsig(int signum) { logit(LOG_SYS, "Signal received. Ignoring."); }

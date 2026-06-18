@@ -40,7 +40,7 @@ public:
 	P_char GetLockerChar(void) { return m_chLocker; };
 	P_char GetLockerUser(void) { return m_chUser; };
 
-	void LockerToPFile(void);
+	bool LockerToPFile(void);
 	void PFileToLocker(void);
 	void SortIValues(void);
 

@@ -186,12 +186,25 @@ int persistence_item_event_queue_enqueue(const char *line)
 
   /* Lazy init */
   if (!q->events)
-    persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY);
+  {
+    if (!persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY))
+    {
+      fprintf(stderr, "persistence_item_event_queue_enqueue: failed to allocate queue\n");
+      pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+      return 0;
+    }
+  }
 
   if (q->count >= q->capacity)
   {
     /* Auto-resize: try to double capacity */
-    persistence_queue_auto_grow(q, PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY);
+    if (!persistence_queue_auto_grow(q, PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY))
+    {
+      fprintf(stderr, "persistence_item_event_queue_enqueue: failed to grow queue\n");
+      q->dropped++;
+      pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+      return 0;
+    }
   }
 
   if (q->count >= q->capacity)
@@ -563,12 +576,25 @@ int persistence_large_event_queue_enqueue(const char *line)
 
   /* Lazy init */
   if (!q->events)
-    persistence_queue_alloc(q, PERSISTENCE_LARGE_EVENT_QUEUE_CAPACITY);
+  {
+    if (!persistence_queue_alloc(q, PERSISTENCE_LARGE_EVENT_QUEUE_CAPACITY))
+    {
+      fprintf(stderr, "persistence_large_event_queue_enqueue: failed to allocate queue\n");
+      pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+      return 0;
+    }
+  }
 
   if (q->count >= q->capacity)
   {
     /* Auto-resize: try to double capacity */
-    persistence_queue_auto_grow(q, PERSISTENCE_LARGE_EVENT_QUEUE_MAX_CAPACITY);
+    if (!persistence_queue_auto_grow(q, PERSISTENCE_LARGE_EVENT_QUEUE_MAX_CAPACITY))
+    {
+      fprintf(stderr, "persistence_large_event_queue_enqueue: failed to grow queue\n");
+      q->dropped++;
+      pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+      return 0;
+    }
   }
 
   if (q->count >= q->capacity)

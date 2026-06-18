@@ -2395,7 +2395,11 @@ void enter_game(P_desc d)
 #endif
 
 	writeCharacter(ch, 1, NOWHERE);
-	sql_save_player_core(ch);
+	if (!sql_save_player_core(ch))
+	{
+		statuslog(56, "&+RALERT&n: failed to save post-entry core for %s", GET_NAME(ch));
+		persistence_alert(AVATAR, "player", GET_NAME(ch), "none", "none", "sql_save_failed", "post-entry core save failed");
+	}
 	sql_connectIP(ch);
 	displayShutdownMsg(ch);
 

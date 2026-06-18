@@ -1631,7 +1631,11 @@ void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj obj, vo
 	int nOldCount = pLocker->m_itemCount;
 
 	// usually, everything will already be on pfile, but just make sure
-	pLocker->LockerToPFile();
+	if (!pLocker->LockerToPFile())
+	{
+		send_to_char("&+RLocker save failed; please try again or contact staff.\r\n", ch);
+		return;
+	}
 
 	// move everything from the pfile to the locker - this also sorts it
 	pLocker->PFileToLocker();
@@ -1699,7 +1703,11 @@ static int locker_equipcmd(P_char ch, char *arg)
 
 	if (pLocker->MakeChests(ch, arg))
 	{
-		pLocker->LockerToPFile();
+		if (!pLocker->LockerToPFile())
+		{
+			send_to_char("&+RLocker save failed; could not sort chests.\r\n", ch);
+			return FALSE;
+		}
 		StorageLocker::event_resortLocker(chLocker, ch, NULL, (void *)-1);
 		/* resort event will move everything back into the room */
 	}
@@ -2350,10 +2358,6 @@ static P_char create_locker_char(P_char chOwner, P_char ch, char *locker_name)
 
 static int save_locker_char(P_char ch, int bTerminal)
 {
-	// reap any finished locker save children
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		;
-
 	StorageLocker *pLocker = GetChestList(ch->in_room);
 
 	if (NULL != pLocker)
@@ -2363,7 +2367,11 @@ static int save_locker_char(P_char ch, int bTerminal)
 		chLocker = pLocker->GetLockerChar();
 		if (chLocker)
 		{
-			pLocker->LockerToPFile();
+			if (!pLocker->LockerToPFile())
+			{
+				logit(LOG_OBJ, "Locker save failed while saving locker char %s", GET_NAME(ch));
+				return 0;
+			}
 
 			if (bTerminal)
 			{
@@ -2373,12 +2381,19 @@ static int save_locker_char(P_char ch, int bTerminal)
 				{
 					// child
 					MYSQL *child_conn = sql_create_child_connection();
-					if (child_conn)
+					if (!child_conn)
 					{
-						sql_reset_for_child(child_conn);
-						writeCharacter(chLocker, 3, NOWHERE);
-						mysql_close(child_conn);
+						logit(LOG_OBJ, "Failed to create child DB connection for locker save of %s", GET_NAME(ch));
+						_exit(1);
 					}
+					sql_reset_for_child(child_conn);
+					if (!writeCharacter(chLocker, 3, NOWHERE))
+					{
+						logit(LOG_OBJ, "Async locker save failed for %s", GET_NAME(ch));
+						mysql_close(child_conn);
+						_exit(1);
+					}
+					mysql_close(child_conn);
 					_exit(0);
 				}
 				// parent continues, dont wait for child
@@ -2420,11 +2435,13 @@ static int save_locker_char(P_char ch, int bTerminal)
 	return 1;
 }
 
-void StorageLocker::LockerToPFile(void)
+bool StorageLocker::LockerToPFile(void)
 {
 	P_obj tmp_object, next_obj;
 
 	const int lockerChestRNUM = real_object(LockerChest::m_chestVnum);
+
+	bool ok = true;
 
 	// first, save private chest items directly to db with their chest_id
 	for (LockerChest *p = m_pChestList; p; p = p->m_pNextInChain)
@@ -2432,9 +2449,16 @@ void StorageLocker::LockerToPFile(void)
 		if (p->IsPrivateChest())
 		{
 			P_obj chest_obj = p->GetChestObj();
-			if (chest_obj && chest_obj->contains)
+			if (!chest_obj)
 			{
-				sql_save_private_chest_items(m_lockerId, p->GetChestId(), chest_obj);
+				logit(LOG_DEBUG, "LockerToPFile: missing chest object for private chest %d", p->GetChestId());
+				ok = false;
+				continue;
+			}
+			if (!sql_save_private_chest_items(m_lockerId, p->GetChestId(), chest_obj))
+			{
+				logit(LOG_DEBUG, "LockerToPFile: failed to save private chest %d for locker %d", p->GetChestId(), m_lockerId);
+				ok = false;
 			}
 		}
 	}
@@ -2473,6 +2497,7 @@ void StorageLocker::LockerToPFile(void)
 			obj_to_char(tmp_object, m_chLocker);
 		}
 	}
+	return ok;
 }
 
 void StorageLocker::PFileToLocker(void)
@@ -2576,6 +2601,7 @@ bool rename_locker(P_char ch, char *old_charname, char *new_charname)
 	{
 		logit(LOG_OBJ, "Char save failed for %s in rename_locker()!", GET_NAME(ch));
 		debug("Char save failed for %s in rename_locker()!", GET_NAME(ch));
+		return FALSE;
 	}
 
 	free_char(chLocker);

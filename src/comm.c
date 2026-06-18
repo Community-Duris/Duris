@@ -70,7 +70,7 @@
 #include "ws_handlers.h"
 #include "latency_trace.h"
 #include "persistence_queue.h"
-#ifndef __NO_TESTS__
+#if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
 #endif
 
@@ -436,64 +436,84 @@ void run_the_game(int port, int sslport)
 	fprintf(stderr, "--  Done calculating maps coordinates.\r\n");
 
 	fprintf(stderr, "-- Calculating avg mob level for each zone.\r\n");
-	calc_zone_mob_level();
+	if (!mini_mode)
+	{
+		calc_zone_mob_level();
+	}
+	else
+	{
+		fprintf(stderr, "--  Skipping mob-level tradeskill load in mini mode.\r\n");
+	}
 	fprintf(stderr, "--  Done calculating mob level.\r\n");
 
-	initialize_tradeskills();
+	if (!mini_mode)
+		initialize_tradeskills();
+	else
+		fprintf(stderr, "--  Skipping tradeskills/mines in mini mode.\r\n");
 	fprintf(stderr, "--  Done loading tradeskills/mines.\r\n");
 
-	load_cmd_attributes();
+	if (!mini_mode)
+		load_cmd_attributes();
+	else
+		fprintf(stderr, "--  Skipping command attributes in mini mode.\r\n");
 	fprintf(stderr, "--  Done loading command attributes.\r\n");
 
-	if (no_ferries == 0)
-		init_ferries();
+	if (!mini_mode)
+	{
+		if (no_ferries == 0)
+			init_ferries();
+		else
+			fprintf(stderr, "Starting without ferries.\r\n");
+
+		initialize_transport();
+
+		update_breath_weapon_properties();
+		update_regen_properties();
+
+		// initialize_buildings();
+
+		Guild::initialize();
+		fprintf(stderr, "-- Done loading guilds\r\n");
+
+		Guildhall::initialize();
+		fprintf(stderr, "-- Done loading guildhalls\r\n");
+
+		init_auction_houses();
+
+		reset_racewar_stat_mods();
+		init_nexus_stones();
+
+		init_outposts();
+
+		fprintf(stderr, "-- Loading alliances\r\n");
+		load_alliances();
+
+	#ifdef SIEGE_ENABLED
+		fprintf(stderr, "-- Loading town data\r\n");
+		init_towns();
+
+		fprintf(stderr, "-- Loading siege data\r\n");
+		init_siege();
+	#endif
+
+		// This guarentees that files exist for reading.
+		fprintf(stderr, "-- Touching leaderboard\r\n");
+		touch(leaderboard_file);
+		newLeaderBoard(NULL, "boot", 0);
+		fprintf(stderr, "-- Touching hall of fame\r\n");
+		touch(halloffamelist_file);
+		newHardcoreBoard(NULL, "boot", 0);
+		init_ctf();
+
+		loadHints();
+		epic_initialization();
+		ssl_read_cert();
+	}
 	else
-		fprintf(stderr, "Starting without ferries.\r\n");
-
-	initialize_transport();
-
-	update_breath_weapon_properties();
-	update_regen_properties();
-
-	// initialize_buildings();
-
-	Guild::initialize();
-	fprintf(stderr, "-- Done loading guilds\r\n");
-
-	Guildhall::initialize();
-	fprintf(stderr, "-- Done loading guildhalls\r\n");
-
-	init_auction_houses();
-
-	reset_racewar_stat_mods();
-	init_nexus_stones();
-
-	init_outposts();
-
-	fprintf(stderr, "-- Loading alliances\r\n");
-	load_alliances();
-
-#ifdef SIEGE_ENABLED
-	fprintf(stderr, "-- Loading town data\r\n");
-	init_towns();
-
-	fprintf(stderr, "-- Loading siege data\r\n");
-	init_siege();
-#endif
-
-	// This guarentees that files exist for reading.
-	fprintf(stderr, "-- Touching leaderboard\r\n");
-	touch(leaderboard_file);
-	newLeaderBoard(NULL, "boot", 0);
-	fprintf(stderr, "-- Touching hall of fame\r\n");
-	touch(halloffamelist_file);
-	newHardcoreBoard(NULL, "boot", 0);
-	init_ctf();
-
-	loadHints();
-	epic_initialization();
-	ssl_read_cert();
-	time_after = clock();
+	{
+		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
+	}
+	 time_after = clock();
 	bfs_reset_marks();
 	fprintf(stderr, "Boot completed in: %d milliseconds\n", (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
 	logit(LOG_STATUS, "Boot completed in:%d milliseconds\n", (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
@@ -502,10 +522,18 @@ void run_the_game(int port, int sslport)
 
 	fprintf(stderr, "Entering game loop.\n\r");
 	logit(LOG_STATUS, "Entering game loop.");
-	persistence_replay_fallback_events();
-	persistence_start_item_event_worker();
-	persistence_start_scalar_event_worker();
-	persistence_start_large_event_worker();
+	if (mini_mode)
+	{
+		persistence_replay_fallback_events();
+		logit(LOG_STATUS, "Skipping persistence worker startup in mini mode.");
+	}
+	else
+	{
+		persistence_replay_fallback_events();
+		persistence_start_item_event_worker();
+		persistence_start_scalar_event_worker();
+		persistence_start_large_event_worker();
+	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
 	 * latency_trace instrumentation can capture scalar_enq_ok/drop
@@ -517,6 +545,10 @@ void run_the_game(int port, int sslport)
 #ifndef __NO_TESTS__
 	test_persistence_run_one("queue_flood_scalar");
 	test_persistence_run_one("worker_scalar_fallback");
+#endif
+#ifdef TEST_REAL_PERSISTENCE
+	test_real_persistence_run_all();
+	test_real_persistence_print_summary();
 #endif
 
 	game_loop(port, sslport);

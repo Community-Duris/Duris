@@ -12,6 +12,11 @@
 
 #include <signal.h>
 #include "config.h"
+#if defined(__has_include)
+#if __has_include(<bsd/string.h>)
+#include <bsd/string.h>
+#endif
+#endif
 #include "ships/ships.h"
 #define str_cmp(a, b) ((!(a) && !(b)) ? 0 : !(a) ? -1 : !(b) ? 1 : strcasecmp((a), (b)))
 

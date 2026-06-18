@@ -20,7 +20,7 @@ CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
 
 INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -pthread
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lbsd -pthread
 
 ifdef EFENCE
 	LDFLAGS += -L.

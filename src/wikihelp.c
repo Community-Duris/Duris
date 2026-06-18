@@ -645,6 +645,12 @@ void load_cmd_attributes()
 	{
 		// First line is the name.
 		cmd_attribs[count].name = strdup(line);
+		attributes[0] = '\0';
+		#define APPEND_ATTR(text) do { \
+			size_t __attr_len = strlen(attributes); \
+			size_t __attr_add = strlen(text); \
+			if (__attr_len + __attr_add < sizeof(attributes)) strcat(attributes, text); \
+		} while (0)
 		// Set all attributes to false
 		for (i = 0; i < ATT_MAX; i++)
 		{
@@ -735,47 +741,47 @@ void load_cmd_attributes()
 		}
 		// create the list of attributes.
 		attributes[0] = '\0';
-		strcat(attributes, "The following character attributes are used in execution of this ability (if any):\n");
+		APPEND_ATTR("The following character attributes are used in execution of this ability (if any):\n");
 		if (ch_attributes[ATT_STR])
-			strcat(attributes, "Char's Strength.\n");
+			APPEND_ATTR("Char's Strength.\n");
 		if (vi_attributes[ATT_STR])
-			strcat(attributes, "Victim's Strength.\n");
+			APPEND_ATTR("Victim's Strength.\n");
 		if (ch_attributes[ATT_DEX])
-			strcat(attributes, "Char's Dexterity.\n");
+			APPEND_ATTR("Char's Dexterity.\n");
 		if (vi_attributes[ATT_DEX])
-			strcat(attributes, "Victim's Dexterity.\n");
+			APPEND_ATTR("Victim's Dexterity.\n");
 		if (ch_attributes[ATT_AGI])
-			strcat(attributes, "Char's Agility.\n");
+			APPEND_ATTR("Char's Agility.\n");
 		if (vi_attributes[ATT_AGI])
-			strcat(attributes, "Victim's Agility.\n");
+			APPEND_ATTR("Victim's Agility.\n");
 		if (ch_attributes[ATT_CON])
-			strcat(attributes, "Char's Constitution.\n");
+			APPEND_ATTR("Char's Constitution.\n");
 		if (vi_attributes[ATT_CON])
-			strcat(attributes, "Victim's Constitution.\n");
+			APPEND_ATTR("Victim's Constitution.\n");
 		if (ch_attributes[ATT_POW])
-			strcat(attributes, "Char's Power.\n");
+			APPEND_ATTR("Char's Power.\n");
 		if (vi_attributes[ATT_POW])
-			strcat(attributes, "Victim's Power.\n");
+			APPEND_ATTR("Victim's Power.\n");
 		if (ch_attributes[ATT_INT])
-			strcat(attributes, "Char's Intelligence.\n");
+			APPEND_ATTR("Char's Intelligence.\n");
 		if (vi_attributes[ATT_INT])
-			strcat(attributes, "Victim's Intelligence.\n");
+			APPEND_ATTR("Victim's Intelligence.\n");
 		if (ch_attributes[ATT_WIS])
-			strcat(attributes, "Char's Wisdom.\n");
+			APPEND_ATTR("Char's Wisdom.\n");
 		if (vi_attributes[ATT_WIS])
-			strcat(attributes, "Victim's Wisdom.\n");
+			APPEND_ATTR("Victim's Wisdom.\n");
 		if (ch_attributes[ATT_CHA])
-			strcat(attributes, "Char's Charisma.\n");
+			APPEND_ATTR("Char's Charisma.\n");
 		if (vi_attributes[ATT_CHA])
-			strcat(attributes, "Victim's Charisma.\n");
+			APPEND_ATTR("Victim's Charisma.\n");
 		if (ch_attributes[ATT_KAR])
-			strcat(attributes, "Char's Karma.\n");
+			APPEND_ATTR("Char's Karma.\n");
 		if (vi_attributes[ATT_KAR])
-			strcat(attributes, "Victim's Karma.\n");
+			APPEND_ATTR("Victim's Karma.\n");
 		if (ch_attributes[ATT_STR])
-			strcat(attributes, "Char's Luck.\n");
+			APPEND_ATTR("Char's Luck.\n");
 		if (vi_attributes[ATT_STR])
-			strcat(attributes, "Victim's Luck.\n");
+			APPEND_ATTR("Victim's Luck.\n");
 
 		// add list to the array.
 		cmd_attribs[count++].attributes = strdup(attributes);

@@ -6,8 +6,9 @@
  *
  * When MIGRATION_AUTO_RUNNER is defined (via Makefile -D flag), the real
  * implementation in sql_migrate.c is compiled and sql_run_migrations()
- * scans the migrations/ directory, executes unapplied .sql files in
- * alphabetical order, and records them in a schema_migrations table.
+ * scans versioned schema_migration_v*.sql files in the migrations/
+ * directory, executes unapplied ones in numeric order, and records them
+ * in a schema_migrations table.
  *
  * When MIGRATION_AUTO_RUNNER is NOT defined, sql_run_migrations() is a
  * no-op stub (returns 0).  Shell scripts (entrypoint.sh, cycle_mud.sh)

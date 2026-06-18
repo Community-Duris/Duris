@@ -490,12 +490,12 @@ void boot_db(int mini_mode)
 	}
 	else
 	{
-		if (!(mob_f = fopen("areas/mini.mob", "r")))
+		if (!(mob_f = fopen("areas_mini/mini.mob", "r")))
 		{
 			perror("boot");
 			raise(SIGSEGV);
 		}
-		if (!(obj_f = fopen("areas/mini.obj", "r")))
+		if (!(obj_f = fopen("areas_mini/mini.obj", "r")))
 		{
 			perror("boot");
 			raise(SIGSEGV);
@@ -1074,7 +1074,8 @@ P_index generate_indices(FILE *fl, int *top)
 	num = 0;
 	for (;;)
 	{
-		fgets(buf, 511, fl);
+		if (!fgets(buf, 511, fl))
+			break; /* tolerate EOF-terminated legacy files */
 		if (*buf == '$')
 			break;
 		if (*buf == '#')
@@ -1112,8 +1113,7 @@ P_index generate_indices(FILE *fl, int *top)
 		}
 		else
 		{
-			perror("generate indices");
-			raise(SIGSEGV);
+			break; /* EOF-terminated legacy files */
 		}
 	}
 	*top = i - 2;
@@ -1124,13 +1124,14 @@ P_index generate_indices(FILE *fl, int *top)
 void boot_world(int mini_mode)
 {
 	FILE                    *fl;
-	int                      num_rooms, room_nr = 0, zone = 0, virtual_nr, flag;
+	int                      num_rooms, room_nr = 0, zone = 0, virtual_nr;
 	int                      tmp = 0, tmp1 = 0, tmp2 = 0, tmp3 = 0, i, name_length, desc_length;
 	char                     chk[MAX_STRING_LENGTH], tmp_buf[MAX_STRING_LENGTH];
 	char                     buf[MAX_INPUT_LENGTH];
 	char                     name_buf[MAX_STRING_LENGTH] = {0}, desc_buf[MAX_STRING_LENGTH] = {0};
 	struct extra_descr_data *new_descr;
 	bool                     found_name, found_desc;
+	char                     chk_fmt[32];
 
 	world          = 0;
 	character_list = 0;
@@ -1148,30 +1149,54 @@ void boot_world(int mini_mode)
 	}
 	else if (mini_mode == 1)
 	{
-		if (!(fl = fopen("areas/mini.wld", "r")))
+		if (!(fl = fopen("areas_mini/mini.wld", "r")))
 		{
 			perror("fopen");
 			raise(SIGSEGV);
 		}
 	}
 
+	snprintf(chk_fmt, sizeof(chk_fmt), " %%%zus \n", sizeof(chk) - 1);
+
 	fseek(fl, 0, SEEK_END);
 	size_t fsize = ftell(fl);
 
-	char *memBuf  = (char *)malloc(fsize);
+	char *memBuf  = (char *)malloc(fsize + 1);
 	char *seekPtr = memBuf;
+	if (!memBuf)
+	{
+		logit(LOG_FILE, "boot_world: could not allocate memory for world file.");
+		logit(LOG_SYS, "boot_world: could not allocate memory for world file.");
+		raise(SIGSEGV);
+	}
 
 	fseek(fl, 0, SEEK_SET);
 	size_t bytesRead = fread(memBuf, sizeof(char), fsize, fl);
+	if (bytesRead != fsize)
+	{
+		logit(LOG_FILE, "boot_world: short read while loading world file.");
+		logit(LOG_SYS, "boot_world: short read while loading world file.");
+		free(memBuf);
+		raise(SIGSEGV);
+	}
+	memBuf[fsize] = '\0';
 	fclose(fl);
 
 	fl = fmemopen(memBuf, fsize, "r");
+	if (!fl)
+	{
+		logit(LOG_FILE, "boot_world: could not open memory stream for world file.");
+		logit(LOG_SYS, "boot_world: could not open memory stream for world file.");
+		free(memBuf);
+		raise(SIGSEGV);
+	}
 
 	/* Count the number of rooms, to make allocation more efficient!! */
 	num_rooms = 0;
 	for (;;)
 	{
-		fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+		if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+			break;
 		if (tmp_buf[0] == '$')
 			break;
 		if (tmp_buf[0] == '#')
@@ -1195,15 +1220,17 @@ void boot_world(int mini_mode)
 	 * well). JAB
 	 */
 
-	do
+	for (;;)
 	{
-		fscanf(fl, " #%d\n", &virtual_nr);
+		if (fscanf(fl, " #%d\n", &virtual_nr) != 1)
+			break;
 		if (mini_mode == 2)
 			fprintf(stderr, "#%d  ", virtual_nr);
 
 		name_length = fread_string_to_buffer(fl, name_buf);
-		if ((flag = (*name_buf != '$')))
-		{ /* a new record to be read */
+		if (*name_buf == '$')
+			break;
+		/* a new record to be read */
 			world[room_nr].number = virtual_nr;
 			desc_length           = fread_string_to_buffer(fl, desc_buf);
 			found_name            = FALSE;
@@ -1309,7 +1336,8 @@ void boot_world(int mini_mode)
 
 			for (;;)
 			{
-				fscanf(fl, " %s \n", chk);
+				if (fscanf(fl, chk_fmt, chk) != 1)
+					break;
 
 				if (*chk == 'D') /* direction field  */
 					setup_dir(fl, room_nr, atoi(chk + 1));
@@ -1353,8 +1381,7 @@ void boot_world(int mini_mode)
 
 			room_light(room_nr, REAL);
 			room_nr++;
-		}
-	} while (flag);
+	}
 
 	fclose(fl);
 	free(memBuf);
@@ -1451,6 +1478,14 @@ void setup_dir(FILE *fl, int room, int dir)
 
 	general_description = fread_string(fl);
 	keyword             = fread_string(fl);
+	if (dir < 0 || dir >= NUM_EXITS)
+	{
+		if (fscanf(fl, " %d %d %d ", &state, &key, &to_room) != 3 || to_room < 0)
+			return;
+		FREE(general_description);
+		FREE(keyword);
+		return;
+	}
 	if (fscanf(fl, " %d %d %d ", &state, &key, &to_room) != 3 || to_room < 0)
 		return;
 
@@ -1616,7 +1651,7 @@ void boot_zones(int mini_mode)
 	}
 	else
 	{
-		if (!(fl = fopen("areas/mini.zon", "r")))
+		if (!(fl = fopen("areas_mini/mini.zon", "r")))
 		{
 			perror("boot_zones");
 			raise(SIGSEGV);
@@ -1626,7 +1661,8 @@ void boot_zones(int mini_mode)
 	num_zones = 0;
 	for (;;)
 	{
-		fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+		if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+			break;
 		if (tmp_buf[0] == '$')
 			break;
 		if (tmp_buf[0] == '#')
@@ -1646,13 +1682,15 @@ void boot_zones(int mini_mode)
 	num_commands = 0;
 	for (;;)
 	{
-		fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+		if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+			break;
 		if (tmp_buf[0] == '$')
 			break;
 		if (tmp_buf[0] == '#')
 		{
 			/* skip over zone name */
-			fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+			if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+				break;
 		}
 		else if (tmp_buf[0] == 'S')
 		{
@@ -1679,7 +1717,8 @@ void boot_zones(int mini_mode)
 
 	for (;;)
 	{
-		fscanf(fl, " #%d\n", &tmp);
+		if (fscanf(fl, " #%d\n", &tmp) != 1)
+			break; /* accept EOF or a legacy $~ terminator */
 		check = fread_string(fl); /* zone name as specified by builder */
 		if (*check == '$')
 			break; /* * end of file */

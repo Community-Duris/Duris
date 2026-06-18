@@ -26,6 +26,8 @@ void ssl_read_cert(void)
 	gnutls_certificate_credentials_t cred    = 0;
 	const char                      *errfunc = 0;
 	int                              err;
+	const char                      *certfile = CERTFILE;
+	const char                      *keyfile  = KEYFILE;
 
 	if (!priority_cache)
 		if ((err = gnutls_priority_init(&priority_cache, NULL, NULL)) < 0)
@@ -34,20 +36,31 @@ void ssl_read_cert(void)
 			exit(1);
 		}
 
-	if ((err = stat(CERTFILE, &st)))
+	if ((err = stat(certfile, &st)))
 	{
-		YELL("Can't stat cert file %s: %s\n", CERTFILE, strerror(errno));
-		if (x509_cred)
+		struct stat fallback_cert;
+		struct stat fallback_key;
+		if (!stat("localhost.crt", &fallback_cert) && !stat("localhost.key", &fallback_key))
+		{
+			certfile = "localhost.crt";
+			keyfile  = "localhost.key";
+			st       = fallback_cert;
+		}
+		else
+		{
+			YELL("Can't stat cert file %s: %s\n", certfile, strerror(errno));
+			if (x509_cred)
+				return;
 			return;
-		exit(1);
+		}
 	}
 
 	if (st.st_mtim.tv_sec == cert_time.tv_sec && st.st_mtim.tv_nsec == cert_time.tv_nsec)
 		return;
 
-	printf("[%ld] reading ssl cert: %s key: %s (old_mtime=%ld.%ld new_mtime=%ld.%ld)\n", time(NULL), CERTFILE, KEYFILE, cert_time.tv_sec, cert_time.tv_nsec, st.st_mtim.tv_sec, st.st_mtim.tv_nsec);
+	printf("[%ld] reading ssl cert: %s key: %s (old_mtime=%ld.%ld new_mtime=%ld.%ld)\n", time(NULL), certfile, keyfile, cert_time.tv_sec, cert_time.tv_nsec, st.st_mtim.tv_sec, st.st_mtim.tv_nsec);
 	cert_time = st.st_mtim;
-	if ((err = gnutls_certificate_allocate_credentials(&cred)) < 0 || (err = gnutls_certificate_set_x509_key_file(cred, CERTFILE, KEYFILE, GNUTLS_X509_FMT_PEM)) < 0 ||
+	if ((err = gnutls_certificate_allocate_credentials(&cred)) < 0 || (err = gnutls_certificate_set_x509_key_file(cred, certfile, keyfile, GNUTLS_X509_FMT_PEM)) < 0 ||
 	    (err = gnutls_certificate_set_known_dh_params(cred, GNUTLS_SEC_PARAM_MEDIUM)) < 0)
 	{
 		if (cred)
@@ -70,6 +83,9 @@ gnutls_session_t ssl_new(int s)
 	const char      *errfunc = 0;
 
 	ssl_read_cert();
+
+	if (!x509_cred)
+		return NULL;
 
 	if ((err = gnutls_init(&ses, GNUTLS_SERVER | GNUTLS_NONBLOCK | GNUTLS_NO_SIGNAL)) < 0)
 		errfunc = "gnutls_init";

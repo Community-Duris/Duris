@@ -9,6 +9,7 @@
 #include "db.h"
 #include "utils.h"
 #include "copyover.h"
+#include "sql_player.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <gnutls/gnutls.h>

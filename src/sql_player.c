@@ -24,6 +24,7 @@
 #include "siege.h"
 #include "spells.h"
 #include "sql.h"
+#include "player_name.h"
 
 // external tables
 extern P_index            obj_index;
@@ -520,12 +521,17 @@ bool sql_player_rename(P_char ch, const char *new_name)
 	if (!DB || !new_name || !ch)
 		return false;
 
-	char *escaped_name = sql_escape_string(new_name);
+	char normalized_name[MAX_STRING_LENGTH];
+	strncpy(normalized_name, new_name, sizeof(normalized_name) - 1);
+	normalized_name[sizeof(normalized_name) - 1] = '\0';
+	normalize_player_name_case(normalized_name);
+
+	char *escaped_name = sql_escape_string(normalized_name);
 	if (!escaped_name)
 		return false;
 
 	char query[256];
-	snprintf(query, sizeof(query), "UPDATE player_data SET name=LOWER('%s') WHERE pid ='%d'", escaped_name, GET_PID(ch));
+	snprintf(query, sizeof(query), "UPDATE player_data SET name='%s' WHERE pid='%d'", escaped_name, GET_PID(ch));
 	free(escaped_name);
 
 	return sql_run_query(query);
@@ -1495,7 +1501,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 		int vnum = obj_index[obj->R_num].virtual_number;
 
 		int new_pos = batch_append(batch, pos, buf_size,
-		                           "%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%u,%d,%d,%lu,%d)",
+		                           "%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%u,%d,%d,%d,%lu,%d)",
 		                           first ? "" : ",",
 		                           pid,
 		                           vnum,
@@ -1538,7 +1544,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 			                 "pid, vnum, equip_slot, container_id, quantity, "
 			                 "weight, cost, timer, extra_flags, "
 			                 "value0, value1, value2, value3, value4, value5, value6, value7, "
-			                 "obj_uid, item_condition"
+			                 "wear_flags, item_type, item_material, obj_uid, item_condition"
 			                 ") VALUES ");
 			first = true;
 		}
@@ -1561,7 +1567,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const char *table)
 {
 	char query[256];
-	if (!obj || obj->ex_description || !DB)
+	if (!obj || !DB)
 		return true;
 
 	// load extra descriptions (spellbooks etc)
@@ -1862,7 +1868,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 		// batch save simple items first (no affects, no strings, no nested containers)
 		int batched = sql_batch_save_simple_items(pid, item_id, obj->contains);
 		if (batched < 0)
-			logit(LOG_DEBUG, "sql_save_player_items: batch save failed for container vnum %d", obj_index[obj->R_num].virtual_number);
+			return 0;
 
 		// individually save complex items (affects, strings, nested containers)
 		for (P_obj content = obj->contains; content; content = content->next_content)
@@ -1873,9 +1879,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 				continue; // already batch saved
 
 			if (sql_save_single_item_get_id(pid, content, 0, item_id) == 0)
-			{
-				logit(LOG_DEBUG, "sql_save_player_items: failed to save container content vnum %d", obj_index[content->R_num].virtual_number);
-			}
+				return 0;
 		}
 	}
 
@@ -1936,7 +1940,7 @@ static bool resave_container_contents(int pid, P_obj container)
 	{
 		int batched = sql_batch_save_simple_items(pid, container_db_id, container->contains);
 		if (batched < 0)
-			logit(LOG_DEBUG, "resave_container_contents: batch failed for container id %d", container_db_id);
+			return false;
 
 		for (P_obj content = container->contains; content; content = content->next_content)
 		{
@@ -1946,9 +1950,7 @@ static bool resave_container_contents(int pid, P_obj container)
 				continue;
 
 			if (sql_save_single_item_get_id(pid, content, 0, container_db_id) == 0)
-			{
-				logit(LOG_DEBUG, "resave_container_contents: failed item vnum %d", obj_index[content->R_num].virtual_number);
-			}
+				return false;
 		}
 	}
 
@@ -1956,14 +1958,15 @@ static bool resave_container_contents(int pid, P_obj container)
 }
 
 // helper: recursively find and resave dirty containers
-static void resave_dirty_containers(int pid, P_obj obj)
+static bool resave_dirty_containers(int pid, P_obj obj)
 {
 	if (!obj)
-		return;
+		return true;
 
 	if (IS_SET(obj->runtime_flags, OBJ_RFLAG_DIRTY_CONTAINER))
 	{
-		resave_container_contents(pid, obj);
+		if (!resave_container_contents(pid, obj))
+			return false;
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_DIRTY_CONTAINER);
 	}
 
@@ -1971,8 +1974,12 @@ static void resave_dirty_containers(int pid, P_obj obj)
 	for (P_obj content = obj->contains; content; content = content->next_content)
 	{
 		if (content->contains)
-			resave_dirty_containers(pid, content);
+		{
+			if (!resave_dirty_containers(pid, content))
+				return false;
+		}
 	}
+	return true;
 }
 
 // Batched player item save — flattens entire item tree into one
@@ -2028,7 +2035,10 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 	int cap = 128;
 	struct flat_item *flat = (struct flat_item *)malloc(cap * sizeof(struct flat_item));
 	if (!flat)
+	{
+		std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: malloc(flat) failed\n");
 		return false;
+	}
 
 	int count = 0;
 
@@ -2039,7 +2049,11 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		{
 			P_obj eq = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
 			if (eq && !flatten_item_tree(eq, NULL, i + 1, &flat, &count, &cap))
-			{ free(flat); return false; }
+			{
+				std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: flatten equipment failed at slot=%d\n", i);
+				free(flat);
+				return false;
+			}
 		}
 	}
 
@@ -2048,8 +2062,12 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 	{
 		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 			if (!flatten_item_tree(obj, NULL, 0, &flat, &count, &cap))
-		{ free(flat); return false; }
-	}
+			{
+				std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: flatten inventory failed\n");
+				free(flat);
+				return false;
+			}
+}
 
 	if (count == 0)
 	{
@@ -2065,6 +2083,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 	char  *batch = (char *)malloc(BATCH_BUF_SIZE);
 	if (!batch)
 	{
+		std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: malloc(batch) failed\n");
 		free(flat);
 		return false;
 	}
@@ -2156,6 +2175,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		// Per-row overflow fallback: single item exceeds format buffer.
 		if (row_len >= (int)sizeof(row_buf) - 1 || row_len < 0)
 		{
+			std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: row too large at item %d/%d vnum=%d\n", i, count, vnum);
 			logit(LOG_DEBUG, "sql_save_player_items_batch_all: item vnum %d row too large, using single-insert fallback", vnum);
 
 			// Temporarily detach contents so sql_save_single_item_get_id
@@ -2182,7 +2202,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		{
 			if (!sql_run_query(batch))
 			{
-				sql_player_error("sql_save_player_items_batch_all sub-batch", batch);
+				std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: sub-batch query failed at item %d/%d\n", i, count);
 				free(batch);
 				free(flat);
 				return false;
@@ -2216,8 +2236,8 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		int new_pos = batch_append(batch, pos, BATCH_BUF_SIZE, "%s", row_buf);
 		if (new_pos < 0)
 		{
-			logit(LOG_DEBUG, "sql_save_player_items_batch_all: batch_append failed at item %d/%d", i, count);
-			free(batch);
+			std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: row append failed at item %d/%d\n", i, count);
+free(batch);
 			free(flat);
 			return false;
 		}
@@ -2230,7 +2250,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 	{
 		if (!sql_run_query(batch))
 		{
-			sql_player_error("sql_save_player_items_batch_all final batch", batch);
+			std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: final batch query failed\nQUERY=%s\n", batch);
 			free(batch);
 			free(flat);
 			return false;
@@ -2268,6 +2288,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 				                           "WHEN %d THEN %d ", flat[i].obj->db_item_id, flat[i].parent->db_item_id);
 				if (new_pos < 0)
 				{
+					std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
 					free(batch);
 					free(flat);
 					return false;
@@ -2286,6 +2307,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 				                           "%s%d", first_in ? "" : ",", flat[i].obj->db_item_id);
 				if (new_pos < 0)
 				{
+					std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
 					free(batch);
 					free(flat);
 					return false;
@@ -2362,6 +2384,15 @@ bool sql_save_player_items(P_char ch)
 	bool save_inventory  = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 	bool use_incremental = all_items_have_db_ids(ch) && !save_equipment && !save_inventory;
 
+	std::fprintf(stderr,
+	             "[real-persistence-test] sql_save_player_items debug: pid=%d save_equipment=%d save_inventory=%d use_incremental=%d carrying=%p eq0=%p\n",
+	             pid,
+	             save_equipment,
+	             save_inventory,
+	             use_incremental,
+	             ch->carrying,
+	             ch->equipment[0]);
+
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 
@@ -2372,11 +2403,21 @@ bool sql_save_player_items(P_char ch)
 		{
 			P_obj eq = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
 			if (eq)
-				resave_dirty_containers(pid, eq);
+			{
+				if (!resave_dirty_containers(pid, eq))
+				{
+					if (own_txn) sql_rollback();
+					return false;
+				}
+			}
 		}
 		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 		{
-			resave_dirty_containers(pid, obj);
+			if (!resave_dirty_containers(pid, obj))
+			{
+				if (own_txn) sql_rollback();
+				return false;
+			}
 		}
 		if (own_txn)
 		{
@@ -2403,6 +2444,8 @@ bool sql_save_player_items(P_char ch)
 	}
 
 	bool success = sql_save_player_items_batch_all(pid, ch, save_equipment, save_inventory);
+	if (!success)
+		std::fprintf(stderr, "[real-persistence-test] sql_save_player_items debug: batch_all failed for pid=%d\n", pid);
 
 	if (own_txn)
 	{
@@ -2454,6 +2497,14 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 
 	if (IS_SET(obj->extra_flags, ITEM_NORENT))
 		return 0;
+
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return 0;
+		own_txn = true;
+	}
 
 	int vnum = obj_index[obj->R_num].virtual_number;
 
@@ -2560,15 +2611,24 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 		free(esc_action);
 
 	if (!sql_run_query(query))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	int item_id = (int)mysql_insert_id(DB);
 
 	if (!sql_save_pet_item_affects(item_id, obj))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	if (obj->ex_description && !sql_save_item_extra_descr(item_id, obj, "player_pet_item_extra_descr"))
+	{
+		if (own_txn) sql_rollback();
 		return 0;
+	}
 
 	if (obj->contains)
 	{
@@ -2585,6 +2645,10 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 		}
 	}
 
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return 0; }
+	}
 	return item_id;
 }
 
@@ -4605,6 +4669,13 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 		return false;
 	}
 
+	std::fprintf(stderr,
+	             "[real-persistence-test] sql_save_locker debug: locker=%s owner_pid=%d owner_assoc=%d carrying=%p\n",
+	             locker_name,
+	             owner_pid,
+	             owner_assoc_id,
+	             locker_ch->carrying);
+
 	// check if locker already exists
 	int locker_id = sql_get_locker_id_by_name(locker_name);
 
@@ -4720,7 +4791,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		         "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, item_type, "
 		         "value0, value1, value2, value3, value4, value5, value6, value7, "
 		         "name, short_descr, description, action_descr, obj_uid, item_condition, "
-		         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
+		         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, item_material "
 		         "FROM locker_items WHERE locker_id=%d AND container_id=%d%s",
 		         locker_id,
 		         container_id,
@@ -4731,7 +4802,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		         "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, item_type, "
 		         "value0, value1, value2, value3, value4, value5, value6, value7, "
 		         "name, short_descr, description, action_descr, obj_uid, item_condition, "
-		         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
+		         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, item_material "
 		         "FROM locker_items WHERE locker_id=%d AND container_id IS NULL%s",
 		         locker_id,
 		         chest_filter);
@@ -6217,7 +6288,7 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 	         "%d, %d, %d, %s, 1, "
 	         "%d, %d, %ld, %lu, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %lu, %d"
+	         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %lu, %d"
 	         ")",
 	         corpse_id,
 	         vnum,
@@ -6923,7 +6994,7 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	         "%d, %d, %ld, %lu, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
 	         "%s, %s, %s, %s, "
-	         "%s, %d, %s, "
+	         "%s, %s, %s, "
 	         "%s, %s, %s, %s, %s"
 	         ")",
 	         shopkeeper_id,
@@ -6948,6 +7019,7 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	         action_str,
 	         wear_str,
 	         type_str,
+	         material_str,
 	         bv1_str,
 	         bv2_str,
 	         bv3_str,

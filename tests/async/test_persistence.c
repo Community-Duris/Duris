@@ -125,6 +125,76 @@ static bool test_worker_scalar_fallback_impl()
 	       expect(persistence_scalar_event_queue_pending() == 0, "retry test should leave no queued scalar events");
 }
 
+static bool test_worker_scalar_fifo_after_retry_impl()
+{
+	persistence_scalar_event_worker_stop(0);
+	persistence_scalar_event_queue_reset();
+
+	capture_state state;
+	state.fail_first_n = 2;
+	if (!expect(persistence_scalar_event_worker_start(capture_writer, &state), "failed to start scalar worker for FIFO retry test"))
+		return false;
+
+	if (!expect(persistence_scalar_event_queue_enqueue("first"), "enqueue first scalar event failed"))
+	{
+		persistence_scalar_event_worker_stop(0);
+		return false;
+	}
+	if (!expect(persistence_scalar_event_queue_enqueue("second"), "enqueue second scalar event failed"))
+	{
+		persistence_scalar_event_worker_stop(0);
+		return false;
+	}
+
+	if (!expect(wait_for_queue_empty(8000), "scalar queue did not drain in FIFO retry test"))
+	{
+		persistence_scalar_event_worker_stop(0);
+		return false;
+	}
+
+	persistence_scalar_event_worker_stop(1);
+
+	return expect(state.lines.size() == 2, "FIFO retry test should persist two scalar events") &&
+	       expect(state.lines[0] == "first", "first scalar event should persist first") &&
+	       expect(state.lines[1] == "second", "second scalar event should persist second") &&
+	       expect(persistence_scalar_event_worker_write_failures() >= 2, "FIFO retry test should count transient failures") &&
+	       expect(persistence_scalar_event_queue_pending() == 0, "FIFO retry test should leave no queued scalar events");
+}
+
+static bool test_worker_item_fifo_impl()
+{
+	persistence_item_event_worker_stop(0);
+	persistence_item_event_queue_reset();
+
+	capture_state state;
+	if (!expect(persistence_item_event_worker_start(capture_writer, &state), "failed to start item worker"))
+		return false;
+
+	if (!expect(persistence_item_event_queue_enqueue("item-one"), "enqueue first item event failed"))
+	{
+		persistence_item_event_worker_stop(0);
+		return false;
+	}
+	if (!expect(persistence_item_event_queue_enqueue("item-two"), "enqueue second item event failed"))
+	{
+		persistence_item_event_worker_stop(0);
+		return false;
+	}
+
+	if (!expect(wait_for_queue_empty(8000), "item queue did not drain"))
+	{
+		persistence_item_event_worker_stop(0);
+		return false;
+	}
+
+	persistence_item_event_worker_stop(1);
+
+	return expect(state.lines.size() == 2, "item worker should persist both events") &&
+	       expect(state.lines[0] == "item-one", "item queue should preserve FIFO order for first event") &&
+	       expect(state.lines[1] == "item-two", "item queue should preserve FIFO order for second event") &&
+	       expect(persistence_item_event_queue_pending() == 0, "item queue should be empty after drain");
+}
+
 struct suite_case
 {
 	const char *name;
@@ -135,6 +205,8 @@ static const suite_case kCases[] =
 {
 	{"queue_flood_scalar", test_queue_flood_scalar_impl},
 	{"worker_scalar_fallback", test_worker_scalar_fallback_impl},
+	{"worker_scalar_fifo_after_retry", test_worker_scalar_fifo_after_retry_impl},
+	{"worker_item_fifo", test_worker_item_fifo_impl},
 };
 
 static int g_run_count = 0;

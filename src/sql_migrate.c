@@ -4,13 +4,13 @@
  * Called from initialize_mysql() during MUD boot when
  * MIGRATION_AUTO_RUNNER is defined.
  *
- * Scans the migrations/ directory for .sql files, executes
- * unapplied ones in alphabetical order, and records them in
+ * Scans the migrations/ directory for versioned schema_migration_v*.sql
+ * files, executes unapplied ones in numeric order, and records them in
  * a schema_migrations tracking table.
  *
- * On first run against an existing database (schema_migrations is
- * empty but player_data exists), all migration files are recorded
- * as "applied" without executing SQL — safe for existing installs.
+ * If the tracking table is missing or empty on an existing database,
+ * the versioned migrations are still executed in order so a partially
+ * migrated schema can converge safely.
  ************************************************************************/
 
 #ifdef MIGRATION_AUTO_RUNNER
@@ -19,6 +19,7 @@
 #include "sql.h"
 
 #include <dirent.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,17 +29,51 @@
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-static int ends_with(const char *s, const char *suffix)
+typedef struct migration_file {
+    char *name;
+    long  version;
+} migration_file;
+
+/* Only versioned schema migrations are auto-run.  This keeps one-off
+ * bootstrap / cleanup SQL files out of the automatic path. */
+static int parse_versioned_migration(const char *filename, long *version_out)
 {
-    size_t slen = strlen(s);
-    size_t xlen = strlen(suffix);
-    return slen >= xlen && strcmp(s + slen - xlen, suffix) == 0;
+    const char *prefix = "schema_migration_v";
+    size_t prefix_len = strlen(prefix);
+    if (strncmp(filename, prefix, prefix_len) != 0)
+        return 0;
+
+    const char *p = filename + prefix_len;
+    if (!isdigit((unsigned char)*p))
+        return 0;
+
+    char *end = NULL;
+    long version = strtol(p, &end, 10);
+    if (end == p || version < 0)
+        return 0;
+
+    /* Allow only suffixes that end in .sql; the contents after the
+     * numeric version are informational and do not affect ordering. */
+    if (!end || strcmp(end, ".sql") == 0) {
+        *version_out = version;
+        return 1;
+    }
+
+    if (strncmp(end, "_", 1) == 0 && strstr(end, ".sql") != NULL) {
+        *version_out = version;
+        return 1;
+    }
+
+    return 0;
 }
 
-/* Compare function for qsort — alphabetical */
-static int cmp_alpha(const void *a, const void *b)
+static int cmp_migration_file(const void *a, const void *b)
 {
-    return strcmp(*(const char **)a, *(const char **)b);
+    const migration_file *ma = (const migration_file *)a;
+    const migration_file *mb = (const migration_file *)b;
+    if (ma->version < mb->version) return -1;
+    if (ma->version > mb->version) return 1;
+    return strcmp(ma->name, mb->name);
 }
 
 /* Check if a migration has already been applied */
@@ -61,26 +96,6 @@ static int migration_applied(MYSQL *db, const char *filename)
     int applied = mysql_num_rows(res) > 0;
     mysql_free_result(res);
     return applied;
-}
-
-/* Check if this looks like an existing database (not a fresh install) */
-static int is_existing_database(MYSQL *db)
-{
-    const char *query =
-        "SELECT 1 FROM information_schema.tables "
-        "WHERE table_schema = DATABASE() "
-        "AND table_name = 'player_data'";
-
-    if (mysql_real_query(db, query, strlen(query)) != 0)
-        return 0;
-
-    MYSQL_RES *res = mysql_store_result(db);
-    if (!res)
-        return 0;
-
-    int exists = mysql_num_rows(res) > 0;
-    mysql_free_result(res);
-    return exists;
 }
 
 /* ------------------------------------------------------------------ */
@@ -314,12 +329,16 @@ int sql_run_migrations(MYSQL *db, const char *migrations_dir)
         return -1;
     }
 
-    char *files[256];
+    migration_file files[256];
     int   n = 0;
     struct dirent *entry;
     while ((entry = readdir(dir)) && n < 256) {
-        if (ends_with(entry->d_name, ".sql"))
-            files[n++] = strdup(entry->d_name);
+        long version = -1;
+        if (parse_versioned_migration(entry->d_name, &version)) {
+            files[n].name = strdup(entry->d_name);
+            files[n].version = version;
+            n++;
+        }
     }
     closedir(dir);
 
@@ -328,38 +347,38 @@ int sql_run_migrations(MYSQL *db, const char *migrations_dir)
         return 0;
     }
 
-    /* Sort alphabetically */
-    qsort(files, n, sizeof(char *), cmp_alpha);
+    /* Sort by numeric version first, then filename for stable tie-breaking. */
+    qsort(files, n, sizeof(migration_file), cmp_migration_file);
 
-    /* 3. Bootstrap: if this is an existing database with no migration
-     *    records, mark all files as applied without executing */
+    for (int i = 1; i < n; i++) {
+        if (files[i - 1].version == files[i].version) {
+            fprintf(stderr,
+                    "migrate: warning: multiple migrations share version %ld (%s, %s); applying in filename order\n",
+                    files[i].version, files[i - 1].name, files[i].name);
+        }
+    }
+
+    /* 3. Apply unapplied migrations in numeric order.
+     *
+     * Trust the tracking table when present, but never infer a complete
+     * bootstrap from database contents alone.  If the tracking table is
+     * missing or empty on an existing database, the versioned migrations
+     * are still executed in order so the schema can converge from a
+     * partial / interrupted state. */
     int total_applied = 0;
     for (int i = 0; i < n; i++)
-        total_applied += migration_applied(db, files[i]);
-
-    if (total_applied == 0 && is_existing_database(db)) {
-        printf("  Bootstrapping migration tracking for existing database...\n");
-        for (int i = 0; i < n; i++) {
-            if (record_migration(db, files[i]) != 0) {
-                for (int j = 0; j < n; j++) free(files[j]);
-                return -1;
-            }
-        }
-        printf("  %d migrations recorded as 'applied' (pre-existing DB)\n", n);
-        for (int i = 0; i < n; i++) free(files[i]);
-        return 0;
-    }
+        total_applied += migration_applied(db, files[i].name);
 
     /* 4. Run unapplied migrations */
     int applied = 0, failed = 0;
     for (int i = 0; i < n; i++) {
-        if (migration_applied(db, files[i]))
+        if (migration_applied(db, files[i].name))
             continue;
 
         char path[1024];
-        snprintf(path, sizeof(path), "%s/%s", migrations_dir, files[i]);
+        snprintf(path, sizeof(path), "%s/%s", migrations_dir, files[i].name);
 
-        printf("  Applying: %s ... ", files[i]);
+        printf("  Applying: %s ... ", files[i].name);
         fflush(stdout);
 
         if (execute_migration_file(db, path) != 0) {
@@ -368,7 +387,7 @@ int sql_run_migrations(MYSQL *db, const char *migrations_dir)
             break;
         }
 
-        if (record_migration(db, files[i]) != 0) {
+        if (record_migration(db, files[i].name) != 0) {
             printf("FAILED (record)\n");
             failed++;
             break;
@@ -378,7 +397,7 @@ int sql_run_migrations(MYSQL *db, const char *migrations_dir)
         applied++;
     }
 
-    for (int i = 0; i < n; i++) free(files[i]);
+    for (int i = 0; i < n; i++) free(files[i].name);
 
     if (failed > 0) {
         fprintf(stderr,

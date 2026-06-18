@@ -2023,7 +2023,7 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	res = mysql_store_result(DB);
 
 	// If there were any artis to pull
-	if (mysql_num_rows(res) > 0)
+	if (res && mysql_num_rows(res) > 0)
 	{
 		while ((row = mysql_fetch_row(res)))
 		{
