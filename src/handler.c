@@ -57,6 +57,7 @@ extern const char                   *dirs[];
 extern const struct stat_data        stat_factor[];
 extern const int                     rev_dir[];
 extern const int                     top_of_world;
+extern int                            top_of_objt;
 extern struct con_app_type           con_app[];
 extern struct dex_app_type           dex_app[];
 extern struct max_stat               max_stats[];
@@ -2530,6 +2531,37 @@ void clear_player_dirty_container_flags(P_char ch)
 		clear_obj_dirty_flags(obj);
 }
 
+bool obj_can_nest(P_obj obj, P_obj obj_to)
+{
+	int   limit = top_of_objt + 1;
+	P_obj cur;
+
+	if (!obj || !obj_to)
+		return FALSE;
+
+	if (!OBJ_NOWHERE(obj))
+		return FALSE;
+
+	if ((obj_to->type != ITEM_CONTAINER) && (obj_to->type != ITEM_QUIVER) && (obj_to->type != ITEM_STORAGE) && (obj_to->type != ITEM_CORPSE))
+		return FALSE;
+
+	if (obj == obj_to)
+		return FALSE;
+
+	for (cur = obj_to; cur && (limit-- > 0); )
+	{
+		if (cur == obj)
+			return FALSE;
+		if (!OBJ_INSIDE(cur))
+			return TRUE;
+		if (!cur->loc.inside)
+			return FALSE;
+		cur = cur->loc.inside;
+	}
+
+	return FALSE;
+}
+
 /* put an object in an object (quaint) */
 
 void obj_to_obj(P_obj obj, P_obj obj_to)
@@ -2539,18 +2571,17 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 	int    wgt = 0, t_wgt = 0;
 	char   buf[MAX_STRING_LENGTH];
 
-	if (!obj || !obj_to || ((obj_to->type != ITEM_CONTAINER) && (obj_to->type != ITEM_QUIVER) && (obj_to->type != ITEM_STORAGE) && (obj_to->type != ITEM_CORPSE)))
+	if (!obj_can_nest(obj, obj_to))
 	{
-
 		if (obj && obj_to)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Object %d: %s to Object %d: %s error\r\n", obj->R_num, obj->short_description, obj_to->R_num, obj_to->short_description);
+			snprintf(buf, MAX_STRING_LENGTH, "obj_to_obj: invalid nest attempt %d:%s -> %d:%s", OBJ_VNUM(obj), obj->short_description ? obj->short_description : "?", OBJ_VNUM(obj_to), obj_to->short_description ? obj_to->short_description : "?");
 			logit(LOG_EXIT, buf);
 		}
 		else
 			logit(LOG_EXIT, "obj_to_obj: obj or obj_to is somehow invalid");
 
-		raise(SIGSEGV);
+		return;
 	}
 	obj->loc_p      = LOC_INSIDE;
 	obj->loc.inside = obj_to;
@@ -2627,17 +2658,17 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 {
 	char buf[MAX_STRING_LENGTH];
 
-	if (!obj || !obj_to || ((obj_to->type != ITEM_CONTAINER) && (obj_to->type != ITEM_QUIVER) && (obj_to->type != ITEM_STORAGE) && (obj_to->type != ITEM_CORPSE)))
+	if (!obj_can_nest(obj, obj_to))
 	{
 		if (obj && obj_to)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Object %d: %s to Object %d: %s error\r\n", obj->R_num, obj->short_description, obj_to->R_num, obj_to->short_description);
+			snprintf(buf, MAX_STRING_LENGTH, "obj_to_obj_at_end: invalid nest attempt %d:%s -> %d:%s", OBJ_VNUM(obj), obj->short_description ? obj->short_description : "?", OBJ_VNUM(obj_to), obj_to->short_description ? obj_to->short_description : "?");
 			logit(LOG_EXIT, buf);
 		}
 		else
 			logit(LOG_EXIT, "obj_to_obj_at_end: obj or obj_to is somehow invalid");
 
-		raise(SIGSEGV);
+		return;
 	}
 
 	obj->loc_p      = LOC_INSIDE;
@@ -2703,25 +2734,50 @@ void obj_from_obj(P_obj obj)
 	P_obj  tmp, obj_from;
 	int    wgt;
 
-	if (OBJ_INSIDE(obj))
+	if (!obj)
 	{
-		obj_from = obj->loc.inside;
-		if (obj == obj_from->contains) /* head of list */
-			obj_from->contains = obj->next_content;
-		else
+		logit(LOG_EXIT, "obj_from_obj(): called with NULL obj");
+		return;
+	}
+
+	if (!OBJ_INSIDE(obj))
+	{
+		logit(LOG_EXIT, "obj_from_obj(): object %s (%d) is not flagged inside", obj->short_description ? obj->short_description : "?", OBJ_VNUM(obj));
+		return;
+	}
+
+	if (!obj->loc.inside || !obj_is_in_container(obj, obj->loc.inside))
+	{
+		logit(LOG_EXIT,
+		      "obj_from_obj(): object %s (%d) has broken container linkage (inside=%p)",
+		      obj->short_description ? obj->short_description : "?",
+		      OBJ_VNUM(obj),
+		      (void *)obj->loc.inside);
+		return;
+	}
+
+	obj_from = obj->loc.inside;
+	if (obj == obj_from->contains) /* head of list */
+		obj_from->contains = obj->next_content;
+	else
+	{
+		for (tmp = obj_from->contains; tmp && (tmp->next_content != obj); tmp = tmp->next_content)
+			; /* locate previous */
+
+		if (!tmp)
 		{
-			for (tmp = obj_from->contains; tmp && (tmp->next_content != obj); tmp = tmp->next_content)
-				; /* locate previous */
-
-			if (!tmp)
-			{
-				logit(LOG_EXIT, "obj_from_obj(): Fatal error in object structures");
-				raise(SIGSEGV);
-			}
-			tmp->next_content = obj->next_content;
+			logit(LOG_EXIT,
+			      "obj_from_obj(): container list missing %s (%d) from %s (%d)",
+			      obj->short_description ? obj->short_description : "?",
+			      OBJ_VNUM(obj),
+			      obj_from->short_description ? obj_from->short_description : "?",
+			      OBJ_VNUM(obj_from));
+			return;
 		}
+		tmp->next_content = obj->next_content;
+	}
 
-		add_weight(obj_from, -(obj->weight));
+	add_weight(obj_from, -(obj->weight));
 		/*    wgt = GET_OBJ_WEIGHT(obj);
 		    for( tmp = obj->loc.inside; wgt && tmp; tmp = OBJ_INSIDE(tmp) ? tmp->loc.inside : NULL )
 		    {
@@ -2747,16 +2803,10 @@ void obj_from_obj(P_obj obj)
 
 		if (GET_ITEM_TYPE(obj_from) == ITEM_STORAGE)
 			writeSavedItem(obj_from);
-	}
-	else
-	{
-		logit(LOG_EXIT, "obj_from_obj(): call with no object");
-		raise(SIGSEGV);
-	}
-}
+		}
 
-/*
- * Set all loc.carrying to point to new owner
+		/*
+* Set all loc.carrying to point to new owner
  */
 
 void object_list_new_owner(P_obj list, P_char ch)
@@ -2780,7 +2830,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 	if (!obj)
 	{
 		logit(LOG_EXIT, "extract_obj: NULL obj!");
-		raise(SIGSEGV);
+		return;
 	}
 
 	// remove from floor_drops if it was tracked
@@ -2802,7 +2852,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 		if (!temp1)
 		{
 			logit(LOG_EXIT, "obj loc.wearing, but not in equipment list");
-			raise(SIGSEGV);
+			return;
 		}
 		unequip_char(obj->loc.wearing, i);
 	}
@@ -2870,6 +2920,23 @@ void extract_obj(P_obj obj, int gone_for_good)
 		(obj_index[obj->R_num].number)--;
 
 	free_obj(obj);
+}
+
+bool obj_is_in_container(P_obj obj, P_obj container)
+{
+	int   limit = top_of_objt + 1;
+	P_obj cur;
+
+	if (!obj || !container || !OBJ_INSIDE(obj) || (obj->loc.inside != container))
+		return FALSE;
+
+	for (cur = container->contains; cur && (limit-- > 0); cur = cur->next_content)
+	{
+		if (cur == obj)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 /*

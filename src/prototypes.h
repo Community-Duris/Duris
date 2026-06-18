@@ -1237,6 +1237,8 @@ void                  extract_obj(P_obj obj, int gone_for_good = FALSE); // Only
                                                                          //   and it's going away completely, then use.
 void                   obj_from_char(P_obj);
 void                   obj_from_obj(P_obj);
+bool                   obj_can_nest(P_obj obj, P_obj obj_to);
+bool                   obj_is_in_container(P_obj obj, P_obj container);
 void                   recalc_container_weight(P_obj);
 void                   container_reset_empty_weight(P_obj);
 int                    container_total_weight(P_obj);
