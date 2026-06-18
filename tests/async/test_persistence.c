@@ -217,6 +217,32 @@ static bool test_worker_item_fifo_impl()
 	       expect(persistence_item_event_queue_pending() == 0, "item queue should be empty after drain");
 }
 
+static bool test_queue_rejects_oversize_scalar_impl()
+{
+	persistence_scalar_event_worker_stop(0);
+	persistence_scalar_event_queue_reset();
+
+	std::string payload(PERSISTENCE_EVENT_MAX_LEN + 64, 'S');
+	payload.replace(0, 32, "oversize-scalar-event");
+
+	return expect(!persistence_scalar_event_queue_enqueue(payload.c_str()), "oversize scalar payload should be rejected") &&
+	       expect(persistence_scalar_event_queue_pending() == 0, "oversize scalar payload must not be queued") &&
+	       expect(persistence_scalar_event_queue_dropped() == 0, "oversize scalar payload should fall back, not drop");
+}
+
+static bool test_queue_rejects_oversize_item_impl()
+{
+	persistence_item_event_worker_stop(0);
+	persistence_item_event_queue_reset();
+
+	std::string payload(PERSISTENCE_EVENT_MAX_LEN + 64, 'I');
+	payload.replace(0, 30, "oversize-item-event");
+
+	return expect(!persistence_item_event_queue_enqueue(payload.c_str()), "oversize item payload should be rejected") &&
+	       expect(persistence_item_event_queue_pending() == 0, "oversize item payload must not be queued") &&
+	       expect(persistence_item_event_queue_dropped() == 0, "oversize item payload should fall back, not drop");
+}
+
 static bool test_worker_large_roundtrip_impl()
 {
 	persistence_large_event_worker_stop(0);
@@ -258,6 +284,8 @@ struct suite_case
 static const suite_case kCases[] =
 {
 	{"queue_flood_scalar", test_queue_flood_scalar_impl},
+	{"queue_rejects_oversize_scalar", test_queue_rejects_oversize_scalar_impl},
+	{"queue_rejects_oversize_item", test_queue_rejects_oversize_item_impl},
 	{"worker_scalar_fallback", test_worker_scalar_fallback_impl},
 	{"worker_scalar_fifo_after_retry", test_worker_scalar_fifo_after_retry_impl},
 	{"worker_item_fifo", test_worker_item_fifo_impl},

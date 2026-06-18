@@ -166,6 +166,14 @@ static int persistence_queue_auto_grow(persistence_event_queue_data *q, int max_
   return persistence_queue_grow(q, new_cap);
 }
 
+static int persistence_queue_line_too_long(const persistence_event_queue_data *q, const char *line)
+{
+  if (!q || !line)
+    return 1;
+
+  return (int)strlen(line) >= q->slot_size;
+}
+
 static void persistence_item_event_queue_pop_head(void)
 {
   persistence_event_queue_data *q = &persistence_item_event_queue;
@@ -196,6 +204,13 @@ int persistence_item_event_queue_enqueue(const char *line)
       pthread_mutex_unlock(&persistence_item_event_queue_mutex);
       return 0;
     }
+  }
+
+  if (persistence_queue_line_too_long(q, line))
+  {
+    fprintf(stderr, "persistence_item_event_queue_enqueue: line too long for queue slot\n");
+    pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+    return 0;
   }
 
   if (q->count >= q->capacity)
@@ -514,6 +529,13 @@ int persistence_scalar_event_queue_enqueue(const char *line)
     }
   }
 
+  if (persistence_queue_line_too_long(q, line))
+  {
+    fprintf(stderr, "persistence_scalar_event_queue_enqueue: line too long for queue slot\n");
+    pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+    return 0;
+  }
+
   if (q->count >= q->capacity)
   {
     /* Auto-resize: try to double capacity */
@@ -599,6 +621,13 @@ int persistence_large_event_queue_enqueue(const char *line)
       pthread_mutex_unlock(&persistence_large_event_queue_mutex);
       return 0;
     }
+  }
+
+  if (persistence_queue_line_too_long(q, line))
+  {
+    fprintf(stderr, "persistence_large_event_queue_enqueue: line too long for queue slot\n");
+    pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+    return 0;
   }
 
   if (q->count >= q->capacity)
