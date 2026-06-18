@@ -25,6 +25,7 @@
 #include "poll.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "player_name.h"
 #include "websocket.h"
 
 extern struct descriptor_data  *descriptor_list;
@@ -386,9 +387,14 @@ static void ws_send_wholist_to_client(struct descriptor_data *d) {
     for (target = descriptor_list; target; target = target->next) {
         if (target->connected != CON_PLAYING || !target->character)
             continue;
+        if (d->character && !who_visible_to(d->character, target->character))
+            continue;
 
         player = cJSON_CreateObject();
-        cJSON_AddStringToObject(player, "character", GET_NAME(target->character));
+        {
+            char display_name[MAX_STRING_LENGTH];
+            cJSON_AddStringToObject(player, "character", who_display_name(d->character, target->character, display_name, sizeof(display_name)));
+        }
         cJSON_AddStringToObject(player, "account", target->account ? target->account->acct_name : "");
         cJSON_AddStringToObject(player, "ip", target->host);
         cJSON_AddNumberToObject(player, "level", GET_LEVEL(target->character));
@@ -1661,6 +1667,7 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 		str_free(ch->player.name);
 	}
 	ch->player.name = str_dup(capitalized_name);
+	normalize_player_name_case(ch->player.name);
 
 	/* set race, sex, class */
 	GET_RACE(ch)       = race_id;

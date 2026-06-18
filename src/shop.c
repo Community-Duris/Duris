@@ -1489,6 +1489,8 @@ static FILE *open_shop_stream(void)
 	char buf[8192];
 	for (size_t i = 0; i < gl.gl_pathc; ++i)
 	{
+		if (strstr(gl.gl_pathv[i], "/end.shp"))
+			continue;
 		FILE *in = fopen(gl.gl_pathv[i], "r");
 		if (!in)
 			continue;
@@ -1512,7 +1514,7 @@ void boot_the_shops(void)
 	static bool          shop_end = TRUE;
 	struct shop_buy_data list[MAX_SHOP_OBJ + 1];
 
-	shop_end        = TRUE;
+	shop_end       = TRUE;
 	number_of_shops = 0;
 	if (!(shop_f = open_shop_stream()))
 	{

@@ -3003,6 +3003,8 @@ void      ereglog(int level, const char *format, ...);
 const int char_in_list(const P_char);
 const int is_char_in_room(const P_char, int);
 bool      racewar(P_char, P_char);
+bool      who_visible_to(P_char, P_char);
+const char *who_display_name(P_char viewer, P_char viewee, char *buf, size_t bufsize);
 P_char    char_in_room(int);
 bool      spell_can_affect_char(P_char, int);
 bool      FightingCheck(P_char, P_char, const char *);

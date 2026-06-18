@@ -4412,6 +4412,66 @@ bool racewar(P_char viewer, P_char viewee)
 	return FALSE;
 }
 
+bool who_visible_to(P_char viewer, P_char viewee)
+{
+	if (!viewer || !viewee || !IS_ALIVE(viewer) || !IS_ALIVE(viewee))
+	{
+		return FALSE;
+	}
+
+	if (IS_MORPH(viewer))
+	{
+		viewer = MORPH_ORIG(viewer);
+		if (!IS_ALIVE(viewer))
+		{
+			return FALSE;
+		}
+	}
+
+	if (viewer == viewee)
+	{
+		return TRUE;
+	}
+
+	if (IS_TRUSTED(viewer) || IS_TRUSTED(viewee) || IS_NPC(viewer))
+	{
+		return TRUE;
+	}
+
+	if (IS_NPC(viewee))
+	{
+		return FALSE;
+	}
+
+	return GET_RACEWAR(viewer) == GET_RACEWAR(viewee);
+}
+
+const char *who_display_name(P_char viewer, P_char viewee, char *buf, size_t bufsize)
+{
+	if (!buf || bufsize == 0)
+	{
+		return "";
+	}
+
+	if (viewer && IS_TRUSTED(viewer))
+	{
+		if (IS_DISGUISE(viewee))
+		{
+			snprintf(buf, bufsize, "%s (disguised)", GET_NAME(viewee));
+		}
+		else
+		{
+			snprintf(buf, bufsize, "%s", GET_NAME(viewee));
+		}
+	}
+	else
+	{
+		snprintf(buf, bufsize, "%s", GET_NAME1(viewee));
+	}
+
+	return buf;
+}
+
 int IS_MORPH(P_char ch)
 {
 	if (!ch || !IS_NPC(ch))
