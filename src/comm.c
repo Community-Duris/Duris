@@ -545,6 +545,9 @@ void run_the_game(int port, int sslport)
 #ifndef __NO_TESTS__
 	test_persistence_run_one("queue_flood_scalar");
 	test_persistence_run_one("worker_scalar_fallback");
+	test_persistence_run_one("worker_scalar_fifo_after_retry");
+	test_persistence_run_one("worker_item_fifo");
+	test_persistence_run_one("worker_large_roundtrip");
 #endif
 #ifdef TEST_REAL_PERSISTENCE
 	test_real_persistence_run_all();

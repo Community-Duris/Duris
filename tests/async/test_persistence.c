@@ -39,7 +39,7 @@ static int capture_writer(const char *line, void *context)
 	return 1;
 }
 
-static bool wait_for_queue_empty(int timeout_ms)
+static bool wait_for_scalar_queue_empty(int timeout_ms)
 {
 	for (int i = 0; i < timeout_ms; ++i)
 	{
@@ -48,6 +48,28 @@ static bool wait_for_queue_empty(int timeout_ms)
 		usleep(1000);
 	}
 	return persistence_scalar_event_queue_pending() == 0;
+}
+
+static bool wait_for_item_queue_empty(int timeout_ms)
+{
+	for (int i = 0; i < timeout_ms; ++i)
+	{
+		if (persistence_item_event_queue_pending() == 0)
+			return true;
+		usleep(1000);
+	}
+	return persistence_item_event_queue_pending() == 0;
+}
+
+static bool wait_for_large_queue_empty(int timeout_ms)
+{
+	for (int i = 0; i < timeout_ms; ++i)
+	{
+		if (persistence_large_event_queue_pending() == 0)
+			return true;
+		usleep(1000);
+	}
+	return persistence_large_event_queue_pending() == 0;
 }
 
 static bool expect(bool cond, const char *message)
@@ -79,7 +101,7 @@ static bool test_queue_flood_scalar_impl()
 		}
 	}
 
-	if (!expect(wait_for_queue_empty(8000), "scalar queue did not drain in time"))
+	if (!expect(wait_for_scalar_queue_empty(8000), "scalar queue did not drain in time"))
 	{
 		persistence_scalar_event_worker_stop(0);
 		return false;
@@ -110,7 +132,7 @@ static bool test_worker_scalar_fallback_impl()
 		return false;
 	}
 
-	if (!expect(wait_for_queue_empty(8000), "scalar queue did not recover after transient writer failures"))
+	if (!expect(wait_for_scalar_queue_empty(8000), "scalar queue did not recover after transient writer failures"))
 	{
 		persistence_scalar_event_worker_stop(0);
 		return false;
@@ -146,7 +168,7 @@ static bool test_worker_scalar_fifo_after_retry_impl()
 		return false;
 	}
 
-	if (!expect(wait_for_queue_empty(8000), "scalar queue did not drain in FIFO retry test"))
+	if (!expect(wait_for_scalar_queue_empty(8000), "scalar queue did not drain in FIFO retry test"))
 	{
 		persistence_scalar_event_worker_stop(0);
 		return false;
@@ -181,7 +203,7 @@ static bool test_worker_item_fifo_impl()
 		return false;
 	}
 
-	if (!expect(wait_for_queue_empty(8000), "item queue did not drain"))
+	if (!expect(wait_for_item_queue_empty(8000), "item queue did not drain"))
 	{
 		persistence_item_event_worker_stop(0);
 		return false;
@@ -193,6 +215,38 @@ static bool test_worker_item_fifo_impl()
 	       expect(state.lines[0] == "item-one", "item queue should preserve FIFO order for first event") &&
 	       expect(state.lines[1] == "item-two", "item queue should preserve FIFO order for second event") &&
 	       expect(persistence_item_event_queue_pending() == 0, "item queue should be empty after drain");
+}
+
+static bool test_worker_large_roundtrip_impl()
+{
+	persistence_large_event_worker_stop(0);
+	persistence_large_event_queue_reset();
+
+	capture_state state;
+	if (!expect(persistence_large_event_worker_start(capture_writer, &state), "failed to start large worker"))
+		return false;
+
+	std::string payload(4096, 'L');
+	payload.replace(0, 18, "large-event-roundtrip");
+	if (!expect(persistence_large_event_queue_enqueue(payload.c_str()), "enqueue large payload failed"))
+	{
+		persistence_large_event_worker_stop(0);
+		return false;
+	}
+
+	if (!expect(wait_for_large_queue_empty(8000), "large queue did not drain"))
+	{
+		persistence_large_event_worker_stop(0);
+		return false;
+	}
+
+	persistence_large_event_worker_stop(1);
+
+	return expect(state.lines.size() == 1, "large worker should persist exactly one payload") &&
+	       expect(state.lines[0] == payload, "large payload should round-trip byte-for-byte") &&
+	       expect(persistence_large_event_queue_pending() == 0, "large queue should be empty after drain") &&
+	       expect(persistence_large_event_queue_dropped() == 0, "large queue should not drop the round-trip payload") &&
+	       expect(!persistence_large_event_worker_running(), "large worker should not be running after stop");
 }
 
 struct suite_case
@@ -207,6 +261,7 @@ static const suite_case kCases[] =
 	{"worker_scalar_fallback", test_worker_scalar_fallback_impl},
 	{"worker_scalar_fifo_after_retry", test_worker_scalar_fifo_after_retry_impl},
 	{"worker_item_fifo", test_worker_item_fifo_impl},
+	{"worker_large_roundtrip", test_worker_large_roundtrip_impl},
 };
 
 static int g_run_count = 0;
@@ -270,6 +325,21 @@ int test_persistence_queue_flood_scalar(void)
 int test_persistence_worker_scalar_fallback(void)
 {
 	return test_worker_scalar_fallback_impl() ? 1 : 0;
+}
+
+int test_persistence_worker_scalar_fifo_after_retry(void)
+{
+	return test_worker_scalar_fifo_after_retry_impl() ? 1 : 0;
+}
+
+int test_persistence_worker_item_fifo(void)
+{
+	return test_worker_item_fifo_impl() ? 1 : 0;
+}
+
+int test_persistence_worker_large_roundtrip(void)
+{
+	return test_worker_large_roundtrip_impl() ? 1 : 0;
 }
 #endif
 

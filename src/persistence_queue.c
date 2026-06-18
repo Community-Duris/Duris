@@ -19,6 +19,7 @@ extern void logit(const char *filename, const char *format, ...);
 struct persistence_event_queue_data
 {
   char **events;       /* dynamically allocated: events[i] = malloc(MAX_LEN) */
+  int slot_size;       /* bytes allocated for each events[i] slot */
   int head;
   int tail;
   int count;
@@ -73,12 +74,12 @@ static time_t persistence_large_event_worker_last_heartbeat;
 
 /* Allocate internal buffer for 'capacity' event slots.
  * Returns 1 on success, 0 on failure (unchanged on failure). */
-static int persistence_queue_alloc(persistence_event_queue_data *q, int capacity)
+static int persistence_queue_alloc(persistence_event_queue_data *q, int capacity, int slot_size)
 {
   char **new_events = (char **)calloc(capacity, sizeof(char *));
   if (!new_events) return 0;
   for (int i = 0; i < capacity; i++) {
-    new_events[i] = (char *)malloc(PERSISTENCE_EVENT_MAX_LEN);
+    new_events[i] = (char *)malloc(slot_size);
     if (!new_events[i]) {
       for (int j = 0; j < i; j++) free(new_events[j]);
       free(new_events);
@@ -86,6 +87,7 @@ static int persistence_queue_alloc(persistence_event_queue_data *q, int capacity
     }
   }
   q->events = new_events;
+  q->slot_size = slot_size;
   q->capacity = capacity;
   return 1;
 }
@@ -97,7 +99,7 @@ static int persistence_queue_grow(persistence_event_queue_data *q, int new_capac
   char **new_events = (char **)calloc(new_capacity, sizeof(char *));
   if (!new_events) return 0;
   for (int i = 0; i < new_capacity; i++) {
-    new_events[i] = (char *)malloc(PERSISTENCE_EVENT_MAX_LEN);
+    new_events[i] = (char *)malloc(q->slot_size);
     if (!new_events[i]) {
       for (int j = 0; j < i; j++) free(new_events[j]);
       free(new_events);
@@ -109,7 +111,7 @@ static int persistence_queue_grow(persistence_event_queue_data *q, int new_capac
   int old_count = q->count;
   for (int i = 0; i < old_count; i++) {
     int old_idx = (q->head + i) % q->capacity;
-    memcpy(new_events[i], q->events[old_idx], PERSISTENCE_EVENT_MAX_LEN);
+    memcpy(new_events[i], q->events[old_idx], q->slot_size);
   }
 
   /* Free old storage */
@@ -149,6 +151,7 @@ static void persistence_queue_free(persistence_event_queue_data *q)
   q->tail = 0;
   q->count = 0;
   q->capacity = 0;
+  q->slot_size = 0;
   q->dropped = 0;
   q->resize_count = 0;
 }
@@ -187,7 +190,7 @@ int persistence_item_event_queue_enqueue(const char *line)
   /* Lazy init */
   if (!q->events)
   {
-    if (!persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY))
+    if (!persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY, PERSISTENCE_EVENT_MAX_LEN))
     {
       fprintf(stderr, "persistence_item_event_queue_enqueue: failed to allocate queue\n");
       pthread_mutex_unlock(&persistence_item_event_queue_mutex);
@@ -214,7 +217,7 @@ int persistence_item_event_queue_enqueue(const char *line)
   }
   else
   {
-    snprintf(q->events[q->tail], PERSISTENCE_EVENT_MAX_LEN, "%s", line);
+    snprintf(q->events[q->tail], q->slot_size, "%s", line);
     q->tail = (q->tail + 1) % q->capacity;
     q->count++;
     pthread_cond_signal(&persistence_item_event_queue_cond);
@@ -502,12 +505,25 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 
   /* Lazy init */
   if (!q->events)
-    persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY);
+  {
+    if (!persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY, PERSISTENCE_EVENT_MAX_LEN))
+    {
+      fprintf(stderr, "persistence_scalar_event_queue_enqueue: failed to allocate queue\n");
+      pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+      return 0;
+    }
+  }
 
   if (q->count >= q->capacity)
   {
     /* Auto-resize: try to double capacity */
-    persistence_queue_auto_grow(q, PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY);
+    if (!persistence_queue_auto_grow(q, PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY))
+    {
+      fprintf(stderr, "persistence_scalar_event_queue_enqueue: failed to grow queue\n");
+      q->dropped++;
+      ok = 0;
+      latency_trace_record("scalar_enq_drop", 0, 0);
+    }
   }
 
   if (q->count >= q->capacity)
@@ -518,7 +534,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
   }
   else
   {
-    snprintf(q->events[q->tail], PERSISTENCE_EVENT_MAX_LEN, "%s", line);
+    snprintf(q->events[q->tail], q->slot_size, "%s", line);
     q->tail = (q->tail + 1) % q->capacity;
     q->count++;
     pthread_cond_signal(&persistence_scalar_event_queue_cond);
@@ -577,7 +593,7 @@ int persistence_large_event_queue_enqueue(const char *line)
   /* Lazy init */
   if (!q->events)
   {
-    if (!persistence_queue_alloc(q, PERSISTENCE_LARGE_EVENT_QUEUE_CAPACITY))
+    if (!persistence_queue_alloc(q, PERSISTENCE_LARGE_EVENT_QUEUE_CAPACITY, PERSISTENCE_LARGE_EVENT_MAX_LEN))
     {
       fprintf(stderr, "persistence_large_event_queue_enqueue: failed to allocate queue\n");
       pthread_mutex_unlock(&persistence_large_event_queue_mutex);
@@ -604,7 +620,7 @@ int persistence_large_event_queue_enqueue(const char *line)
   }
   else
   {
-    snprintf(q->events[q->tail], PERSISTENCE_LARGE_EVENT_MAX_LEN, "%s", line);
+    snprintf(q->events[q->tail], q->slot_size, "%s", line);
     q->tail = (q->tail + 1) % q->capacity;
     q->count++;
     pthread_cond_signal(&persistence_large_event_queue_cond);

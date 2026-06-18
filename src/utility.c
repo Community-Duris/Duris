@@ -995,10 +995,9 @@ int persistence_flush_item_events(int max_events)
   if (persistence_item_event_worker_running())
     return 0;
 
-  if (max_events <= 0)
-    max_events = PERSISTENCE_EVENT_QUEUE_CAPACITY;
-
   pending = persistence_item_event_queue_pending();
+  if (max_events <= 0)
+    max_events = pending;
   if (pending > 0)
   {
     log_f = fopen(LOG_EVENT, "a");
@@ -1058,10 +1057,9 @@ int persistence_flush_scalar_events(int max_events)
   if (persistence_scalar_event_worker_running())
     return 0;
 
-  if (max_events <= 0)
-    max_events = PERSISTENCE_EVENT_QUEUE_CAPACITY;
-
   pending = persistence_scalar_event_queue_pending();
+  if (max_events <= 0)
+    max_events = pending;
   if (pending > 0)
   {
     log_f = fopen(LOG_EVENT, "a");
@@ -7339,7 +7337,7 @@ void persistence_stop_large_event_worker(void)
 {
   unsigned long failures;
 
-  persistence_large_event_worker_stop(0);
+  persistence_large_event_worker_stop(1);
 
   failures = persistence_large_event_worker_write_failures();
   if (failures)
