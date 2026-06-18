@@ -544,8 +544,8 @@ void run_the_game(int port, int sslport)
 	utility_latency_reset();
 #ifndef __NO_TESTS__
 	test_persistence_run_one("queue_flood_scalar");
-	test_persistence_run_one("queue_rejects_oversize_scalar");
-	test_persistence_run_one("queue_rejects_oversize_item");
+	test_persistence_run_one("queue_routes_oversize_scalar_to_large");
+	test_persistence_run_one("queue_routes_oversize_item_to_large");
 	test_persistence_run_one("worker_scalar_fallback");
 	test_persistence_run_one("worker_scalar_fifo_after_retry");
 	test_persistence_run_one("worker_item_fifo");

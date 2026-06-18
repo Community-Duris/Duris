@@ -208,7 +208,18 @@ int persistence_item_event_queue_enqueue(const char *line)
 
   if (persistence_queue_line_too_long(q, line))
   {
-    fprintf(stderr, "persistence_item_event_queue_enqueue: line too long for queue slot\n");
+    int routed = 0;
+
+    if (strlen(line) < PERSISTENCE_LARGE_EVENT_MAX_LEN)
+      routed = persistence_large_event_queue_enqueue(line);
+
+    if (routed)
+    {
+      pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+      return 1;
+    }
+
+    fprintf(stderr, "persistence_item_event_queue_enqueue: line too long for small queue slot; large queue unavailable\n");
     pthread_mutex_unlock(&persistence_item_event_queue_mutex);
     return 0;
   }
@@ -531,7 +542,18 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 
   if (persistence_queue_line_too_long(q, line))
   {
-    fprintf(stderr, "persistence_scalar_event_queue_enqueue: line too long for queue slot\n");
+    int routed = 0;
+
+    if (strlen(line) < PERSISTENCE_LARGE_EVENT_MAX_LEN)
+      routed = persistence_large_event_queue_enqueue(line);
+
+    if (routed)
+    {
+      pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+      return 1;
+    }
+
+    fprintf(stderr, "persistence_scalar_event_queue_enqueue: line too long for small queue slot; large queue unavailable\n");
     pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
     return 0;
   }

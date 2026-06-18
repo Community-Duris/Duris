@@ -221,26 +221,70 @@ static bool test_queue_rejects_oversize_scalar_impl()
 {
 	persistence_scalar_event_worker_stop(0);
 	persistence_scalar_event_queue_reset();
+	persistence_large_event_worker_stop(0);
+	persistence_large_event_queue_reset();
+
+	capture_state state;
+	if (!expect(persistence_large_event_worker_start(capture_writer, &state), "failed to start large worker for oversize scalar route test"))
+		return false;
 
 	std::string payload(PERSISTENCE_EVENT_MAX_LEN + 64, 'S');
 	payload.replace(0, 32, "oversize-scalar-event");
+	if (!expect(persistence_scalar_event_queue_enqueue(payload.c_str()), "oversize scalar payload should route to large queue"))
+	{
+		persistence_large_event_worker_stop(0);
+		return false;
+	}
 
-	return expect(!persistence_scalar_event_queue_enqueue(payload.c_str()), "oversize scalar payload should be rejected") &&
-	       expect(persistence_scalar_event_queue_pending() == 0, "oversize scalar payload must not be queued") &&
-	       expect(persistence_scalar_event_queue_dropped() == 0, "oversize scalar payload should fall back, not drop");
+	if (!expect(wait_for_large_queue_empty(8000), "oversize scalar payload did not drain through large queue"))
+	{
+		persistence_large_event_worker_stop(0);
+		return false;
+	}
+
+	persistence_large_event_worker_stop(1);
+
+	return expect(state.lines.size() == 1, "oversize scalar payload should persist exactly once") &&
+	       expect(state.lines[0] == payload, "oversize scalar payload should round-trip through large queue") &&
+	       expect(persistence_scalar_event_queue_pending() == 0, "oversize scalar payload should not remain in scalar queue") &&
+	       expect(persistence_large_event_queue_pending() == 0, "oversize scalar payload should not remain in large queue") &&
+	       expect(persistence_scalar_event_queue_dropped() == 0, "oversize scalar payload should not be dropped") &&
+	       expect(persistence_large_event_queue_dropped() == 0, "oversize scalar payload should not be dropped from large queue");
 }
 
 static bool test_queue_rejects_oversize_item_impl()
 {
 	persistence_item_event_worker_stop(0);
 	persistence_item_event_queue_reset();
+	persistence_large_event_worker_stop(0);
+	persistence_large_event_queue_reset();
+
+	capture_state state;
+	if (!expect(persistence_large_event_worker_start(capture_writer, &state), "failed to start large worker for oversize item route test"))
+		return false;
 
 	std::string payload(PERSISTENCE_EVENT_MAX_LEN + 64, 'I');
 	payload.replace(0, 30, "oversize-item-event");
+	if (!expect(persistence_item_event_queue_enqueue(payload.c_str()), "oversize item payload should route to large queue"))
+	{
+		persistence_large_event_worker_stop(0);
+		return false;
+	}
 
-	return expect(!persistence_item_event_queue_enqueue(payload.c_str()), "oversize item payload should be rejected") &&
-	       expect(persistence_item_event_queue_pending() == 0, "oversize item payload must not be queued") &&
-	       expect(persistence_item_event_queue_dropped() == 0, "oversize item payload should fall back, not drop");
+	if (!expect(wait_for_large_queue_empty(8000), "oversize item payload did not drain through large queue"))
+	{
+		persistence_large_event_worker_stop(0);
+		return false;
+	}
+
+	persistence_large_event_worker_stop(1);
+
+	return expect(state.lines.size() == 1, "oversize item payload should persist exactly once") &&
+	       expect(state.lines[0] == payload, "oversize item payload should round-trip through large queue") &&
+	       expect(persistence_item_event_queue_pending() == 0, "oversize item payload should not remain in item queue") &&
+	       expect(persistence_large_event_queue_pending() == 0, "oversize item payload should not remain in large queue") &&
+	       expect(persistence_item_event_queue_dropped() == 0, "oversize item payload should not be dropped") &&
+	       expect(persistence_large_event_queue_dropped() == 0, "oversize item payload should not be dropped from large queue");
 }
 
 static bool test_worker_large_roundtrip_impl()
@@ -284,8 +328,8 @@ struct suite_case
 static const suite_case kCases[] =
 {
 	{"queue_flood_scalar", test_queue_flood_scalar_impl},
-	{"queue_rejects_oversize_scalar", test_queue_rejects_oversize_scalar_impl},
-	{"queue_rejects_oversize_item", test_queue_rejects_oversize_item_impl},
+	{"queue_routes_oversize_scalar_to_large", test_queue_rejects_oversize_scalar_impl},
+	{"queue_routes_oversize_item_to_large", test_queue_rejects_oversize_item_impl},
 	{"worker_scalar_fallback", test_worker_scalar_fallback_impl},
 	{"worker_scalar_fifo_after_retry", test_worker_scalar_fifo_after_retry_impl},
 	{"worker_item_fifo", test_worker_item_fifo_impl},
