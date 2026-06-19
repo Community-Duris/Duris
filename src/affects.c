@@ -141,10 +141,10 @@ int apply_ac(P_char ch, int eq_pos)
 		      ch ? J_NAME(ch) : "NULL",
 		      eq_pos,
 		      ch ? (ch->equipment[eq_pos] ? ch->equipment[eq_pos]->short_description : "No Eq in Slot") : "NULL");
-		raise(SIGSEGV);
+		return 0;
 	}
 
-	if (!GET_ITEM_TYPE(ch->equipment[eq_pos]) == ITEM_ARMOR && !GET_ITEM_TYPE(ch->equipment[eq_pos]) == ITEM_SHIELD)
+	if ((GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_ARMOR) && (GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_SHIELD))
 	{
 		return 0;
 	}
@@ -630,7 +630,7 @@ void add_racial_stat_bonus(P_char ch, struct hold_data *affs)
 
 	if (!affs || !ch)
 	{
-		raise(SIGSEGV);
+		return;
 	}
 
 	snprintf(buf, 256, "stats.bonus.%s", race_names_table[ch->player.race].no_spaces);
@@ -2095,8 +2095,8 @@ void affect_remove(P_char ch, struct affected_type *af)
 
 	if (!(ch && ch->affected))
 	{
-		logit(LOG_EXIT, "affect_remove(): %s: %s", (ch ? "(NULL)" : J_NAME(ch)), (ch ? "no affects." : "no ch."));
-		raise(SIGSEGV);
+		logit(LOG_EXIT, "affect_remove(): %s: %s", (ch ? J_NAME(ch) : "(NULL)"), (ch ? "no affects." : "no ch."));
+		return;
 	}
 
 	/*
@@ -2121,7 +2121,16 @@ void affect_remove(P_char ch, struct affected_type *af)
 		if (hjp->next != af)
 		{
 			logit(LOG_EXIT, "affect_remove(): could not locate affected_type in ch->affected for %s.", GET_NAME(ch));
-			raise(SIGSEGV);
+			all_affects(ch, TRUE);
+
+			char_light(ch);
+			room_light(ch->in_room, REAL);
+
+			balance_affects(ch);
+
+			/* Update web client affects display */
+			gmcp_char_affects(ch);
+			return;
 		}
 		// Remove af from the list.
 		hjp->next = af->next;
