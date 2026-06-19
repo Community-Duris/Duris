@@ -946,7 +946,7 @@ void init_rand_tables()
 
 	if (!(tfile = fopen("areas/world.tab", "r")))
 	{
-		raise(SIGSEGV);
+		fatal_boot_error("db", "boot_tables: could not open areas/world.tab: %s", strerror(errno));
 	}
 
 	/* First, count the number of each table. */
