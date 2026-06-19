@@ -592,7 +592,10 @@ void stop_follower(P_char ch)
 		if (!k->next)
 		{
 			logit(LOG_EXIT, "can't find follower in follower list");
-			raise(SIGSEGV);
+			if (IS_NPC(ch) && (ch->group))
+				group_remove_member(ch);
+			ch->following = 0;
+			return;
 		}
 		j       = k->next;
 		k->next = j->next;
@@ -702,7 +705,7 @@ void add_follower(P_char ch, P_char leader)
 	if (!(ch && leader))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 #if defined(CTF_MUD) && (CTF_MUD == 1)
