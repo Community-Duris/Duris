@@ -318,7 +318,7 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
 	P_char i, next;
 
 	if (!stone || !ch)
-		raise(SIGSEGV);
+		return false;
 
 	for (i = world[ch->in_room].people; i; i = next)
 	{
@@ -504,7 +504,7 @@ void event_nexus_stone_hum(P_char __ch, P_char __victim, P_obj stone, void *data
 int nexus_stone(P_obj stone, P_char ch, int cmd, char *arg)
 {
 	if (!stone)
-		raise(SIGSEGV);
+		return FALSE;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
