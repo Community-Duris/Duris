@@ -486,13 +486,11 @@ void boot_db(int mini_mode)
 	{
 		if (!(mob_f = fopen("areas_mini/mini.mob", "r")))
 		{
-			perror("boot");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening mini mobile file areas_mini/mini.mob: %s", strerror(errno));
 		}
 		if (!(obj_f = fopen("areas_mini/mini.obj", "r")))
 		{
-			perror("boot");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening mini object file areas_mini/mini.obj: %s", strerror(errno));
 		}
 	}
 	/*
