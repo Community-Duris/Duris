@@ -37,6 +37,7 @@
 extern P_desc                 descriptor_list;
 extern P_index                obj_index;
 extern P_obj                  object_list;
+extern P_char                 character_list;
 extern P_room                 world;
 extern const int              top_of_world;
 extern int                    top_of_objt;
@@ -98,7 +99,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (!o_obj || !ch)
 	{
 		logit(LOG_EXIT, "call to get with NULL obj or ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (o_obj->condition <= 0)
@@ -1166,6 +1167,13 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 			return;
 		}
 
+		if (ch->in_room == NOWHERE)
+		{
+			logit(LOG_EXIT, "do_dropalldot: ch in NOWHERE");
+			send_to_char("You can't drop coins here.\r\n", ch);
+			return;
+		}
+
 		snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coin%s.\n\r", copp, silv, gold, plat, ((plat + gold + silv + copp) > 1) ? "s" : "");
 		act(Gbuf3, TRUE, ch, 0, 0, TO_CHAR);
 		act("$n drops some coins.", TRUE, ch, 0, 0, TO_ROOM);
@@ -1335,6 +1343,12 @@ void do_drop(P_char ch, char *argument, int cmd)
 					return;
 				}
 				break;
+		}
+
+		if (ch->in_room == NOWHERE)
+		{
+			send_to_char("You can't drop coins here.\r\n", ch);
+			return;
 		}
 
 		if (cmd == 1 && IS_PC(ch))
@@ -2181,14 +2195,71 @@ void weight_change_object(P_obj obj, int weight)
 	}
 	else if (OBJ_WORN(obj))
 	{
+		P_char found = NULL;
+		int    found_pos = -1;
+
 		tmp_ch = obj->loc.wearing;
-		for (pos = 0; pos < MAX_WEAR; pos++)
-			if (tmp_ch->equipment[pos] == obj)
-				break;
-		if (pos >= MAX_WEAR)
+		if (tmp_ch && !char_in_list(tmp_ch))
 		{
-			logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
-			raise(SIGSEGV);
+			logit(LOG_DEBUG, "weight_change_object: stale wearer pointer, obj=%s", obj->short_description ? obj->short_description : "unknown");
+			tmp_ch = NULL;
+		}
+
+		if (!tmp_ch)
+		{
+			for (found = character_list; found; found = found->next)
+			{
+				for (pos = 0; pos < MAX_WEAR; pos++)
+					if (found->equipment[pos] == obj)
+						break;
+				if (pos < MAX_WEAR)
+					{
+						found_pos = pos;
+						break;
+					}
+			}
+
+			if (found_pos < 0)
+			{
+				logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
+				obj->weight += weight;
+				obj->loc_p       = LOC_NOWHERE;
+				obj->loc.wearing = NULL;
+				return;
+			}
+
+			tmp_ch = found;
+			pos    = found_pos;
+		}
+		else
+		{
+			for (pos = 0; pos < MAX_WEAR; pos++)
+				if (tmp_ch->equipment[pos] == obj)
+					break;
+			if (pos >= MAX_WEAR)
+			{
+				logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
+				for (found = character_list; found; found = found->next)
+				{
+					for (found_pos = 0; found_pos < MAX_WEAR; found_pos++)
+						if (found->equipment[found_pos] == obj)
+							break;
+					if (found_pos < MAX_WEAR)
+						break;
+				}
+				if (found && found_pos < MAX_WEAR)
+				{
+					tmp_ch = found;
+					pos    = found_pos;
+				}
+				else
+				{
+					obj->weight += weight;
+					obj->loc_p       = LOC_NOWHERE;
+					obj->loc.wearing = NULL;
+					return;
+				}
+			}
 		}
 		unequip_char(tmp_ch, pos);
 		obj->weight += weight;
