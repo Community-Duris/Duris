@@ -1626,16 +1626,14 @@ void boot_zones(int mini_mode)
 	{
 		if (!(fl = fopen(ZONE_FILE, "r")))
 		{
-			perror("boot_zones");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_zones: could not open %s: %s", ZONE_FILE, strerror(errno));
 		}
 	}
 	else
 	{
 		if (!(fl = fopen("areas_mini/mini.zon", "r")))
 		{
-			perror("boot_zones");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_zones: could not open areas_mini/mini.zon: %s", strerror(errno));
 		}
 	}
 	logit(LOG_STATUS, "Counting zones...");
