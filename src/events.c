@@ -671,7 +671,7 @@ void event_wait(P_char ch, P_char victim, P_obj obj, void *data)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "event_wait called in events.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
@@ -708,7 +708,7 @@ void CharWait(P_char ch, int delay)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "CharWait called in events.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!IS_ALIVE(ch))
