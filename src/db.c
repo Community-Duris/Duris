@@ -2232,8 +2232,7 @@ P_char read_mobile(int nr, int type)
 			}
 			else
 			{
-				logit(LOG_DEBUG, "Bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
-				raise(SIGSEGV);
+				fatal_boot_error("db", "boot_mobiles: bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
 			}
 		}
 	}
@@ -2601,8 +2600,7 @@ P_char read_mobile(int nr, int type)
 			}
 			else
 			{
-				logit(LOG_DEBUG, "Bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
-				raise(SIGSEGV);
+				fatal_boot_error("db", "boot_mobiles: bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
 			}
 		}
 	}
