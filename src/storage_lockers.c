@@ -2251,7 +2251,7 @@ static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess
 		logit(LOG_WIZ, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
 		sql_log(ch, PLAYERLOG, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
 		logit(LOG_EXIT, "load_locker_char() called in storage_lockers.c without ch.");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	bool bPlayerIsGod = (GET_LEVEL(ch) >= OVERLORD || god_check(ch->player.name));

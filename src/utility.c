@@ -1983,7 +1983,7 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 	if (!sub)
 	{
 		logit(LOG_EXIT, "No P_char sub found during ac_can_see() call");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	// No idea what happened, but let's hack this until we figure it out.
@@ -2554,7 +2554,7 @@ void ADD_MONEY(P_char ch, int amount)
 	if (amount < 0)
 	{
 		logit(LOG_EXIT, "ADD_MONEY: negative amount");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (amount == 0)
@@ -2792,7 +2792,7 @@ bool SanityCheck(P_char ch, const char *calling)
 		if (ch->specials.was_in_room == NOWHERE && (IS_NPC(ch) && GET_VNUM(ch) != IMAGE_REFLECTION_VNUM))
 		{
 			logit(LOG_EXIT, "%s in NOWHERE in call to SanityCheck from %s().", GET_NAME(ch), calling);
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		else
 		{

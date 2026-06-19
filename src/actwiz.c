@@ -4447,7 +4447,7 @@ void do_shutdown(P_char ch, char *argument, int cmd)
 	else if (!str_cmp(arg, "segfault"))
 	{
 		sql_log(ch, WIZLOG, "Shutdown - SIGSEGV by %s", GET_NAME(ch));
-		raise(SIGSEGV);
+		panic_corruption("actwiz", "shutdown segfault requested by %s", GET_NAME(ch));
 	}
 	else
 	{
@@ -9549,7 +9549,7 @@ int vnum_mobile(char *searchname, struct char_data *ch)
 			else
 			{
 				logit(LOG_EXIT, "GLITCH 1");
-				raise(SIGSEGV);
+				panic_corruption("actwiz", "GLITCH 1 in mobile list rendering");
 			}
 			if ((strlen(buf) + length + 40) < MAX_STRING_LENGTH)
 			{
