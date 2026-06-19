@@ -3137,7 +3137,7 @@ void internal_unlink_char(P_char ch, struct char_link_data *cld, struct char_lin
 			break;
 	}
 	if (!cld2) // link must be found in the linked list of the target as well
-		raise(SIGSEGV);
+		logit(LOG_EXIT, "internal_unlink_char: missing reverse link for type %u", cld->type);
 	else if (prev)
 		prev->next_linked = cld->next_linked;
 	else
