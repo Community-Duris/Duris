@@ -1169,10 +1169,7 @@ void boot_world(int mini_mode)
 	fl = fmemopen(memBuf, fsize, "r");
 	if (!fl)
 	{
-		logit(LOG_FILE, "boot_world: could not open memory stream for world file.");
-		logit(LOG_SYS, "boot_world: could not open memory stream for world file.");
-		free(memBuf);
-		raise(SIGSEGV);
+		fatal_boot_error("db", "boot_world: could not open memory stream for world file");
 	}
 
 	/* Count the number of rooms, to make allocation more efficient!! */
