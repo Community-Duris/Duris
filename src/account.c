@@ -1776,7 +1776,11 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 				    (ch != ch->only.pc->switched->only.npc->orig_char))
 				{
 					logit(LOG_EXIT, "Something fucked while trying to reconnect linkless morph");
-					raise(SIGSEGV);
+					ch->desc = NULL;
+					d->character = NULL;
+					STATE(d) = CON_ACCT_SELECT_CHAR;
+					display_character_list(d);
+					return 1;
 				}
 				d->original        = ch;
 				d->character       = ch->only.pc->switched;
