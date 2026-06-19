@@ -5077,12 +5077,9 @@ void setCharPhysTypeInfo(P_char ch)
 #endif
 	size = getNumbBodyLocsbyPhysType(GET_PHYS_TYPE(ch));
 
-	CREATE(ch->points.location_hit, sh_int, size);
-
-	if (!ch->points.location_hit)
+	if (!(ch->points.location_hit = (sh_int *)__malloc(sizeof(sh_int) * size, MEM_TAG_ARRAY, __FILE__, __LINE__)))
 	{
-		logit(LOG_EXIT, "setCharPhysInfo(): couldn't alloc phys info");
-		raise(SIGSEGV);
+		panic_corruption("utility", "setCharPhysTypeInfo(): couldn't alloc phys info for %s (size %d)", GET_NAME(ch), size);
 	}
 
 	bzero(ch->points.location_hit, sizeof(sh_int) * size);
