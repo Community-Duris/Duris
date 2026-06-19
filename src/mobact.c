@@ -5699,7 +5699,6 @@ void MobCombat(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "MobCombat called in mobact.c with no ch");
-		raise(SIGSEGV);
 		return;
 	}
 
@@ -6233,7 +6232,6 @@ void MobStartFight(P_char ch, P_char vict)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "MobStartFight called in mobact.c with no ch");
-		raise(SIGSEGV);
 		return;
 	}
 
@@ -7621,8 +7619,7 @@ bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "MobDestroyWall called in mobact.c with null ch");
-		raise(SIGSEGV);
-		;
+		return false;
 	}
 	if ((ch->following) && ((CAN_SEE(ch, ch->following))))
 	{
@@ -8593,8 +8590,7 @@ bool InitNewMobHunt(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "InitNewMobHunt called with null ch");
-		raise(SIGSEGV);
-		;
+		return false;
 	}
 	if (IS_PC(ch))
 		return FALSE;
