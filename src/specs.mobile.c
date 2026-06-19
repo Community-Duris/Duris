@@ -3227,7 +3227,7 @@ int         xexos(P_char ch, P_char pl, int cmd, char *arg)
 		if (!tempchar)
 		{
 			logit(LOG_EXIT, "assert: mob load failed in xexos()");
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		/*
 		 * stick agthrodos in same room
@@ -3345,7 +3345,7 @@ int agthrodos(P_char ch, P_char pl, int cmd, char *arg)
 		if (!tempchar)
 		{
 			logit(LOG_EXIT, "assert: mob load failed in agthrodos()");
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		/*
 		 * stick Xexos in same room
@@ -4048,8 +4048,13 @@ int sales_spec(P_char ch, P_char pl, int cmd, char *arg)
 						case 0:
 							if (!(selling))
 							{
-								logit(LOG_EXIT, "assert: salesman proc");
-								raise(SIGSEGV);
+								act("$n looks puzzled.", TRUE, ch, 0, 0, TO_ROOM);
+								if (ch->following)
+								{
+									stop_follower(ch);
+								}
+								REMOVE_BIT(ch->specials.act, ACT_SENTINEL);
+								return TRUE;
 							}
 							act("$n says 'I tell you this $o is of the finest quality.'", FALSE, ch, selling, 0, TO_ROOM);
 							break;
@@ -4074,8 +4079,13 @@ int sales_spec(P_char ch, P_char pl, int cmd, char *arg)
 						case 4:
 							if (!(selling))
 							{
-								logit(LOG_EXIT, "assert: salesman proc");
-								raise(SIGSEGV);
+								act("$n looks puzzled.", TRUE, ch, 0, 0, TO_ROOM);
+								if (ch->following)
+								{
+									stop_follower(ch);
+								}
+								REMOVE_BIT(ch->specials.act, ACT_SENTINEL);
+								return TRUE;
 							}
 							act("The salesman demonstrates the unique usefulness of the $o.", TRUE, ch, selling, 0, TO_ROOM);
 							break;
@@ -4089,8 +4099,13 @@ int sales_spec(P_char ch, P_char pl, int cmd, char *arg)
 					{
 						if (!(selling))
 						{
-							logit(LOG_EXIT, "assert: salesman proc");
-							raise(SIGSEGV);
+							act("$n looks puzzled.", TRUE, ch, 0, 0, TO_ROOM);
+							if (ch->following)
+							{
+								stop_follower(ch);
+							}
+							REMOVE_BIT(ch->specials.act, ACT_SENTINEL);
+							return TRUE;
 						}
 						act("$n tries to sell the $o to $N.", FALSE, ch, selling, ch->following, TO_NOTVICT);
 						ch->only.npc->spec[0] += 1;
@@ -4132,8 +4147,13 @@ int sales_spec(P_char ch, P_char pl, int cmd, char *arg)
 					         i_val);
 					if (!(selling))
 					{
-						logit(LOG_EXIT, "assert: salesman proc");
-						raise(SIGSEGV);
+						act("$n looks puzzled.", TRUE, ch, 0, 0, TO_ROOM);
+						if (ch->following)
+						{
+							stop_follower(ch);
+						}
+						REMOVE_BIT(ch->specials.act, ACT_SENTINEL);
+						return TRUE;
 					}
 					act(Gbuf4, FALSE, pl, selling, 0, TO_CHAR);
 					act("$N makes a sales pitch to $n.", FALSE, pl, 0, ch, TO_ROOM);
@@ -4848,8 +4868,8 @@ int phalanx(P_char ch, P_char pl, int cmd, char *arg)
 		obj = read_object(12000, VIRTUAL);
 		if (!(obj))
 		{
-			logit(LOG_EXIT, "assert: phalanx proc");
-			raise(SIGSEGV);
+			logit(LOG_OBJ, "phalanx: could not load object 12000");
+			return FALSE;
 		}
 		act("BOOM! $n explodes, leaving a $p, which\r\nfalls toward the ground, sparkling along the way.\r\n", FALSE, ch, obj, 0, TO_ROOM);
 		obj_to_room(obj, ch->in_room);
@@ -5557,8 +5577,8 @@ int goodie_guardian(P_char ch, P_char pl, int cmd, char *arg)
 				guardian = read_mobile(446, VIRTUAL);
 				if (!guardian)
 				{
-					logit(LOG_EXIT, "assert: error in highwayman() proc");
-					raise(SIGSEGV);
+					logit(LOG_MOB, "goodie_guardian: could not load helper mob 446");
+					return FALSE;
 				}
 				act("$n &nyells 'To arms brothers! Help me destroy this threat to our &+glands&n!&n\r\n"
 				    "&+WAn elite guard &ncharges into the fray, assisting his comrade...&n\r\n",
@@ -5663,8 +5683,8 @@ int bahamut(P_char ch, P_char pl, int cmd, char *arg)
 				dragon = read_mobile(25758, VIRTUAL);
 				if (!dragon)
 				{
-					logit(LOG_EXIT, "assert: error in bahamut() proc");
-					raise(SIGSEGV);
+					logit(LOG_MOB, "bahamut: could not load helper mob 25758");
+					return FALSE;
 				}
 				act("$n &+Wraises onto his hind legs and releases a tremendous &+RROAR!!!!&n\r\n"
 				    "&+BA magnificant &+Wsilver dragon&+B steps out of a &+Lportal&+B that closes instantly...&n\r\n",
@@ -5709,31 +5729,23 @@ int kobold_priest(P_char ch, P_char pl, int cmd, char *arg)
 	}
 	if (world[ch->in_room].number == 1482)
 	{
-		if ((cmd == CMD_NORTH) || (cmd == CMD_SOUTH) || (cmd == CMD_EAST))
+		if (pl && ((cmd == CMD_NORTH) || (cmd == CMD_SOUTH) || (cmd == CMD_EAST)))
 		{
-			if (pl)
-			{
-				act("$N makes a strange gesture!\r\n"
-				    "Suddenly, the way is blocked by an invisible wall of force!",
-				    FALSE,
-				    pl,
-				    0,
-				    ch,
-				    TO_CHAR);
-				act("$N makes a strange gesture!\r\n"
-				    "$n tries to leave the room but runs into an invisible barrier!",
-				    FALSE,
-				    pl,
-				    0,
-				    ch,
-				    TO_NOTVICT);
-				return (TRUE);
-			}
-			else
-			{
-				logit(LOG_DEBUG, "cmd in kobold_priest() but no pl!");
-				raise(SIGSEGV);
-			}
+			act("$N makes a strange gesture!\r\n"
+			    "Suddenly, the way is blocked by an invisible wall of force!",
+			    FALSE,
+			    pl,
+			    0,
+			    ch,
+			    TO_CHAR);
+			act("$N makes a strange gesture!\r\n"
+			    "$n tries to leave the room but runs into an invisible barrier!",
+			    FALSE,
+			    pl,
+			    0,
+			    ch,
+			    TO_NOTVICT);
+			return (TRUE);
 		}
 		else if (cmd == CMD_WEST)
 		{
@@ -5763,14 +5775,13 @@ int kobold_priest(P_char ch, P_char pl, int cmd, char *arg)
 			}
 			else
 			{
-				logit(LOG_EXIT, "cmd to kobold_priest but no pl!");
-				raise(SIGSEGV);
+				return (FALSE);
 			}
 		}
 	}
 	else
 	{
-		if (((cmd == CMD_NORTH) || (cmd == CMD_EAST) || (cmd == CMD_SOUTH) || (cmd == CMD_UP) || (cmd == CMD_DOWN)) && (!IS_TRUSTED(pl)) && (number(1, 100) > 20))
+		if (pl && ((cmd == CMD_NORTH) || (cmd == CMD_EAST) || (cmd == CMD_SOUTH) || (cmd == CMD_UP) || (cmd == CMD_DOWN)) && (!IS_TRUSTED(pl)) && (number(1, 100) > 20))
 		{
 			if (pl)
 			{
@@ -5799,8 +5810,7 @@ int kobold_priest(P_char ch, P_char pl, int cmd, char *arg)
 			}
 			else
 			{
-				logit(LOG_EXIT, "cmd to kobold_priest but no pl!");
-				raise(SIGSEGV);
+				return (FALSE);
 			}
 		}
 		else
@@ -10322,7 +10332,7 @@ int fooquest_mob(P_char ch, P_char pl, int cmd, char *arg)
 		if (!tempchar)
 		{
 			logit(LOG_EXIT, "assert: mob load failed in xexos()");
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		/*
 		 * stick agthrodos in same room
