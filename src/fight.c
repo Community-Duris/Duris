@@ -9557,6 +9557,8 @@ case RACEWAR_NEUTRAL:
 			if (IS_PC(ch))
 			{
 				opponent = misfire_check(ch, opponent, DISALLOW_SELF | DISALLOW_BACKRANK);
+				if (!opponent)
+					continue;
 			}
 
 			if (HOLD_CANT_ATTACK(ch))
