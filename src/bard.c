@@ -1030,7 +1030,7 @@ void bard_harming(int lvl, P_char ch, P_char victim, int song)
 	if (!ch) // Hrm something amiss... Nov08 -Lucrot
 	{
 		logit(LOG_EXIT, "bard_harming called in bard.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
