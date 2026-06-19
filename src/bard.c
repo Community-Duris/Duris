@@ -410,7 +410,7 @@ int bard_song_level(P_char ch, int song)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "bard_song_level in bard.c called without ch");
-		raise(SIGSEGV);
+		return 1;
 	}
 
 	// If we aren't alive and singing (SINGING checks IS_ALIVE) a valid song, return minimum.
