@@ -16,7 +16,7 @@ vector<struct stat_data> racewar_stat_mods(2);
 int add_racewar_stat_mods(P_char ch, struct hold_data *affs)
 {
 	if (!affs || !ch)
-		raise(SIGSEGV);
+		return FALSE;
 
 	if (!IS_PC(ch) || (GET_RACEWAR(ch) != RACEWAR_GOOD && GET_RACEWAR(ch) != RACEWAR_EVIL))
 		return FALSE;
