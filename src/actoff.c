@@ -682,14 +682,14 @@ void do_hit(P_char ch, char *argument, int cmd)
 {
 	P_char victim;
 
+	if (!ch)
+	{
+		logit(LOG_EXIT, "do_hit: bogus params: ch is NULL, cmd = %s %d.", (cmd > 0 && cmd < MAX_CMD) ? command[cmd] : "unknown", cmd);
+		return;
+	}
 	if (!IS_ALIVE(ch))
 	{
-		// This is complex because more info and multiple cmd possibilities (CMD_HIT/CMD_MURDER/etc).
-		logit(LOG_EXIT,
-		      "do_hit: bogus params: ch not alive: %s %d, cmd = %s %d.",
-		      (ch != NULL) ? (J_NAME(ch), IS_NPC(ch) ? mob_index[ch->only.npc->R_num].virtual_number : ch->only.pc->pid) : ("unknown", -1),
-		      (cmd > 0 && cmd < MAX_CMD) ? command[cmd] : "unknown");
-		raise(SIGSEGV);
+		send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
 
@@ -7767,10 +7767,10 @@ void do_shieldpunch(P_char ch, char *argument, int cmd)
 {
 	P_char victim = NULL;
 
-	if (!ch) // Something bad happened.
+	if (!ch)
 	{
 		logit(LOG_EXIT, "do_shieldpunch called in actoff.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure...
 	{
@@ -9955,7 +9955,7 @@ void restrain(P_char ch, P_char victim)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "restrain: no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (ch == victim)
@@ -10203,10 +10203,14 @@ void do_shriek(P_char ch, char *argument, int cmd)
 	P_char person      = 0;
 	P_char next_person = 0;
 
+	if (!ch)
+	{
+		logit(LOG_EXIT, "assert: bogus params (do_shriek) - NULL ch");
+		return;
+	}
 	if (!IS_ALIVE(ch))
 	{
-		logit(LOG_EXIT, "assert: bogus params (do_shriek)");
-		raise(SIGSEGV);
+		send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
 
