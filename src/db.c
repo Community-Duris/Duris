@@ -1761,8 +1761,7 @@ void boot_zones(int mini_mode)
 		}
 		else
 		{
-			fprintf(stderr, "zone %d has NO commands!\n", zon);
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_zones: zone %d has no commands", zon);
 		}
 
 		/* read the command table */
