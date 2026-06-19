@@ -545,7 +545,7 @@ void spell_windwalk(int level, P_char ch, char *arg, int type, P_char victim, P_
 	if (!ch)
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (IS_PC(ch))
