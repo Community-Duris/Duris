@@ -1745,7 +1745,7 @@ void obj_from_char(P_obj object)
 	if (!OBJ_CARRIED(object) || !object->loc.carrying)
 	{
 		logit(LOG_EXIT, "obj not carried in obj_from_char");
-		raise(SIGSEGV);
+		return;
 	}
 	if (object->loc.carrying->carrying == object) /* head of list */
 		object->loc.carrying->carrying = object->next_content;
@@ -1820,7 +1820,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 		      (!obj) ? "NULL" : OBJ_SHORT(obj),
 		      (!obj) ? -1 : OBJ_VNUM(obj),
 		      pos);
-		raise(SIGSEGV);
+		return;
 	}
 	if (!OBJ_NOWHERE(obj))
 	{
@@ -1874,15 +1874,10 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	if (!(ch && (pos >= 0) && (pos < MAX_WEAR) && ch->equipment[pos]))
 	{
 		logit(LOG_EXIT, "assert: unequip_char char called with bad args");
-		raise(SIGSEGV);
+		return NULL;
 	}
 	obj = ch->equipment[pos];
 
-	if (!OBJ_WORN(obj))
-	{
-		logit(LOG_EXIT, "equip: obj is not flagged equipped when in equip.");
-		raise(SIGSEGV);
-	}
 	if (IS_PC(ch) && GET_ITEM_TYPE(ch->equipment[pos]) == ITEM_ARMOR)
 		ch->only.pc->prestige -= obj->value[2];
 
@@ -3220,12 +3215,12 @@ void extract_char(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "No ch in extract_char");
-		raise(SIGSEGV);
+		return;
 	}
 	if (!(*ch->player.name))
 	{
 		logit(LOG_EXIT, "No name in extract_char");
-		raise(SIGSEGV);
+		return;
 	}
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	while (affected_by_spell(ch, TAG_CTF))
@@ -3471,7 +3466,6 @@ void extract_char(P_char ch)
 		else
 		{
 			logit(LOG_EXIT, "extract_char(), Char not in character_list. (%s)", GET_NAME(ch));
-			raise(SIGSEGV);
 		}
 	}
 
@@ -4057,7 +4051,7 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	if ((copper < 0) || (silver < 0) || (gold < 0) || (platinum < 0))
 	{
 		logit(LOG_EXIT, "add_coins: trying to add negative coins");
-		raise(SIGSEGV);
+		return;
 	}
 
 	pile->value[0] += copper;
@@ -4068,7 +4062,7 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	if ((pile->value[0] < 0) || (pile->value[1] < 0) || (pile->value[2] < 0) || (pile->value[3] < 0))
 	{
 		logit(LOG_EXIT, "add_coins: pile has negative coins");
-		raise(SIGSEGV);
+		return;
 	}
 
 	num = (pile->value[0] + pile->value[1] + pile->value[2] + pile->value[3]);
@@ -4076,7 +4070,7 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	if (num < 0)
 	{
 		logit(LOG_EXIT, "add_coins: total number of coins in pile is negative");
-		raise(SIGSEGV);
+		return;
 	}
 	else if (num == 0)
 		return;
@@ -4199,7 +4193,7 @@ P_obj create_money(int copper, int silver, int gold, int platinum)
 	if (!obj)
 	{
 		logit(LOG_EXIT, "create_money: cannot load coin pile object");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	add_coins(obj, copper, silver, gold, platinum);
