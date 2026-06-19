@@ -591,8 +591,7 @@ void ne_events(void)
 
 	if ((pulse < 0) || (pulse >= PULSES_IN_TICK))
 	{
-		logit(LOG_EXIT, "pulse (%d) out of range in Events", pulse);
-		raise(SIGSEGV);
+		panic_corruption("ne_events", "pulse (%d) out of range", pulse);
 	}
 
 	if (debug_event_list)
