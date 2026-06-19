@@ -219,7 +219,7 @@ P_obj has_instrument(P_char ch)
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_EXIT, "has_instrument in bard.c called without ch");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	for (i = WIELD; i <= WEAR_ATTACH_BELT_3; i++)
