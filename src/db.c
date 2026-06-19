@@ -309,9 +309,7 @@ int fread_string_to_buffer(FILE *fl, char *buf)
 	{
 		if (!fgets(tmp, MAX_STRING_LENGTH - 5, fl))
 		{
-			perror("fread_string:");
-			logit(LOG_DEBUG, "%s", tmp);
-			raise(SIGSEGV);
+			fatal_boot_error("db", "fread_string_to_buffer: unexpected EOF while reading string");
 		}
 		t_length = strlen(tmp);
 
@@ -335,8 +333,7 @@ int fread_string_to_buffer(FILE *fl, char *buf)
 
 		if (length + t_length >= MAX_STRING_LENGTH)
 		{
-			logit(LOG_EXIT, "fread_string: string too large (db.c)");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "fread_string: string too large (db.c)");
 		}
 		else
 		{
