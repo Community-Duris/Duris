@@ -3803,11 +3803,6 @@ void do_world(P_char ch, char *argument, int cmd)
 							extract_char(t_mob);
 							t_mob = NULL;
 						}
-						else
-						{
-							logit(LOG_EXIT, "GLITCH 1");
-							raise(SIGSEGV);
-						}
 						if ((strlen(buf) + length + 40) < MAX_STRING_LENGTH)
 						{
 							strcat(buff, buf);
@@ -3886,11 +3881,6 @@ void do_world(P_char ch, char *argument, int cmd)
 						{
 							extract_char(t_mob);
 							t_mob = NULL;
-						}
-						else
-						{
-							logit(LOG_EXIT, "GLITCH 1");
-							raise(SIGSEGV);
 						}
 						if ((strlen(buf) + length + 40) < MAX_STRING_LENGTH)
 						{
