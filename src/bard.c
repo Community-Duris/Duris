@@ -519,7 +519,7 @@ void do_bardsing(P_char ch, char *arg)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "do_bardsing in bard.c called without ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
@@ -556,7 +556,7 @@ void do_bardcheck_action(P_char ch, char *arg, int cmd)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "do_bardcheck_action in bard.c called without ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
