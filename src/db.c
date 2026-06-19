@@ -1268,13 +1268,13 @@ void boot_world(int mini_mode)
 				if (world[room_nr].number <= (zone ? zone_table[zone - 1].top : -1))
 				{
 					logit(LOG_DEBUG, "Room nr %d (%d) is below zone %d.\n", room_nr, world[room_nr].number, zone);
-					raise(SIGSEGV);
+					fatal_boot_error("db", "boot_world: room %d (%d) is below zone %d", room_nr, world[room_nr].number, zone);
 				}
 				while (world[room_nr].number > zone_table[zone].top)
 					if (++zone > top_of_zone_table)
 					{
 						logit(LOG_DEBUG, "Room %d is outside of any zone.\n", virtual_nr);
-						raise(SIGSEGV);
+						fatal_boot_error("db", "boot_world: room %d is outside of any zone", virtual_nr);
 					}
 				world[room_nr].zone = zone;
 				if (zone_table[zone].real_bottom == -1)
