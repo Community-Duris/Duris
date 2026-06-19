@@ -222,8 +222,8 @@ void clear_nevent(P_nevent e)
 		// If not in list!?
 		if (!e1)
 		{
-			// Should let us try to survive or just bail out here and raise(SIGSEGV)?
 			debug("Event e '%s' not in ne_schedule[e->element] list.", (e->func != NULL) ? get_function_name((void *)e->func) : "NoFunc");
+			e->next_sched = e->prev_sched = NULL;
 		}
 		// Remove from list.
 		else
