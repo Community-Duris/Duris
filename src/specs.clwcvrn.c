@@ -66,8 +66,8 @@ int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
 		pile = read_object(VOBJ_CLWCVRN_CRYSTAL_SHARDS, VIRTUAL);
 		if (!pile)
 		{
-			logit(LOG_EXIT, "assert: clwcvrn_golem_shatter proc");
-			raise(SIGSEGV);
+			logit(LOG_OBJ, "clwcvrn_golem_shatter: could not load object %d", VOBJ_CLWCVRN_CRYSTAL_SHARDS);
+			return FALSE;
 		}
 		if (pile->type == ITEM_CONTAINER)
 		{
