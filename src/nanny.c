@@ -3011,12 +3011,16 @@ void reconnect(P_desc d, P_char tmp_ch)
 		    (tmp_ch != tmp_ch->only.pc->switched->only.npc->orig_char))
 		{
 			logit(LOG_EXIT, "Something fucked while trying to reconnect linkless morph");
-			raise(SIGSEGV);
+			REMOVE_BIT(tmp_ch->specials.act, PLR_MORPH);
+			tmp_ch->only.pc->switched = NULL;
 		}
-		d->original        = tmp_ch;
-		d->character       = tmp_ch->only.pc->switched;
-		d->character->desc = d;
-		tmp_ch->desc       = NULL;
+		else
+		{
+			d->original        = tmp_ch;
+			d->character       = tmp_ch->only.pc->switched;
+			d->character->desc = d;
+			tmp_ch->desc       = NULL;
+		}
 	}
 	send_offline_messages(d->character);
 }
