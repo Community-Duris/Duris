@@ -1735,7 +1735,7 @@ P_char un_morph(P_char mob)
 	if (!mob || IS_PC(mob) || !IS_MORPH(mob))
 	{
 		logit(LOG_EXIT, "un_morph: Bogus morph passed");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	virt = mob_index[GET_RNUM(mob)].virtual_number;
@@ -1752,7 +1752,7 @@ P_char un_morph(P_char mob)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "un_morph: redundant orig pointer is null. Argh!");
-		raise(SIGSEGV);
+		return NULL;
 	}
 	if (mob->desc)
 	{
@@ -1763,7 +1763,6 @@ P_char un_morph(P_char mob)
 		if (ch != mob->desc->original)
 		{
 			logit(LOG_EXIT, "un_morph: redundant original pointers don't match!");
-			raise(SIGSEGV);
 		}
 		/*
 		 * move a snoop from the morph to the owning player
