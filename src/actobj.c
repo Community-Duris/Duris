@@ -1191,13 +1191,7 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 			logit(LOG_DEBUG, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch), plat, gold, silv, copp, world[ch->in_room].number);
 		}
 
-		if (tmp_object && (ch->in_room != NOWHERE))
-			obj_to_room(tmp_object, ch->in_room);
-		else
-		{
-			logit(LOG_EXIT, "do_dropalldot: no tmp_object or ch in NOWHERE");
-			raise(SIGSEGV);
-		}
+		obj_to_room(tmp_object, ch->in_room);
 
 		if (IS_PC(ch))
 		{
