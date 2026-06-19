@@ -483,7 +483,7 @@ bool bard_saves(P_char ch, P_char victim, int song)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "bard_saves in bard.c called without ch");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 	// Can't save vs dead bard or dead victim.
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
