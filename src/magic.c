@@ -10693,7 +10693,7 @@ void event_airy_water_dissipate(P_char ch, P_char victim, P_obj obj, void *data)
 	if ((d->room < 0) || (d->room > top_of_world))
 	{
 		logit(LOG_EXIT, "Airy water dissipation in invalid room.");
-		raise(SIGSEGV);
+		return;
 	}
 	if (d->readd_uw)
 		SET_BIT(world[d->room].room_flags, ROOM_UNDERWATER);
@@ -14168,11 +14168,12 @@ int CheckMobRemoveableSpellBits(P_char ch, RemoveableSpellBit *spellBits, int co
 						paffectBits = &paf->bitvector5;
 						break;
 					default:
-						raise(SIGSEGV);
+						logit(LOG_EXIT, "Invalid affect vector in CheckMobRemoveableSpellBits");
+						return success;
+					}
+					// add the suppressed bits
+					SET_BIT(*paffectBits, spellBits[i].bit);
 				}
-				// add the suppressed bits
-				SET_BIT(*paffectBits, spellBits[i].bit);
-			}
 		}
 	}
 
@@ -15404,7 +15405,7 @@ void darkness_dissipate_event(P_char ch, P_char victim, P_obj obj, void *data)
 	if (!data)
 	{
 		logit(LOG_EXIT, "Call to darkness dissipation with invalid data");
-		raise(SIGSEGV);
+		return;
 	}
 	/*
 	 * Ok, let's rock

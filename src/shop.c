@@ -1552,7 +1552,7 @@ void boot_the_shops(void)
 			{
 				fprintf(stderr, "boot_the_shops: Old shop: '%s'!\r\n", buf);
 				perror("Old shop exists!");
-				raise(SIGSEGV);
+				fatal_boot_error("shop", "boot_the_shops: old shop format in '%s'", buf);
 			}
 
 			for (count = 0; count < MAX_PROD; count++)
@@ -1584,12 +1584,12 @@ void boot_the_shops(void)
 			if (fscanf(shop_f, "%f \n", &t_buy) != 1)
 			{
 				fprintf(stderr, "boot_the_shops: '%s' has bad t_buy!\r\n", buf);
-				raise(SIGSEGV);
+				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_buy", buf);
 			}
 			if (fscanf(shop_f, "%f \n", &t_sell) != 1)
 			{
 				fprintf(stderr, "boot_the_shops: '%s' has bad t_sell!\r\n", buf);
-				raise(SIGSEGV);
+				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_sell", buf);
 			}
 
 			shop_index[number_of_shops].sell_percent = t_sell;
@@ -1733,7 +1733,7 @@ void boot_the_shops(void)
 	{
 		fprintf(stderr, "WARNING! The shop file has an error in it! (boot stopped)\r\n");
 		logit(LOG_STATUS, "WARNING! The shop file has an error in it! (boot stopped)");
-		raise(SIGSEGV);
+		fatal_boot_error("shop", "boot_the_shops: shop file ended unexpectedly");
 	}
 	fclose(shop_f);
 }
@@ -1810,7 +1810,7 @@ bool transact(P_char from, P_obj merchandise, P_char to, int value)
 				if (OBJ_WORN(merchandise))
 				{
 					logit(LOG_EXIT, "assert: couldn't unequip in transact()");
-					raise(SIGSEGV);
+					return FALSE;
 				}
 			}
 			else
