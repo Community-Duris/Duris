@@ -2424,11 +2424,6 @@ int charon(P_char ch, P_char pl, int cmd, char *arg)
 
 int shadow_demon_of_torm(P_char ch, P_char pl, int cmd, char *arg)
 {
-#if 0
-  int      dam = cmd / 1000;
-
-#endif
-
 	/*
 	 * check for periodic event calls
 	 */
@@ -4891,13 +4886,11 @@ int phalanx(P_char ch, P_char pl, int cmd, char *arg)
 				}
 			}
 		}
-#if 1
 		else if (ch->points.base_armor == -50)
 		{
 			act("$n forms a new configuration.", TRUE, ch, 0, 0, TO_ROOM);
 			ch->points.base_armor = -100;
 		}
-#endif
 		else
 		{
 			switch (dice(3, 7))
