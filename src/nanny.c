@@ -2871,7 +2871,7 @@ void select_name(P_desc d, char *arg, int flag)
 	}
 	/* should never get here!!! */
 	logit(LOG_EXIT, "create_name: should never get here!!");
-	raise(SIGSEGV);
+	return;
 }
 
 P_char find_ch_from_same_host(P_desc d)
