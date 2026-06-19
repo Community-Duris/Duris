@@ -349,11 +349,10 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	bool                 corpselog = FALSE;
 	int                  life      = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 
-	if (!(obj && ch))
-	{
-		logit(LOG_EXIT, "raise_undead: bogus parms - missing ch or obj");
-		raise(SIGSEGV);
-	}
+	if (!require_char(ch, "raise_undead", "bogus parms - missing ch"))
+		return;
+	if (!require_data(obj, "raise_undead", "bogus parms - missing obj"))
+		return;
 
 	if (GET_SPEC(ch, CLASS_NECROMANCER, SPEC_REAPER) || GET_SPEC(ch, CLASS_THEURGIST, SPEC_THAUMATURGE))
 	{
@@ -2529,9 +2528,8 @@ void spell_taint(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 
 	if (!ch)
 	{
-		logit(LOG_EXIT, "spell_taint called in magic.c with no ch");
-		raise(SIGSEGV);
-		return;
+		if (!require_char(ch, "spell_taint", "called in magic.c with no ch"))
+			return;
 	}
 
 	if (ch && victim && !IS_ANGEL(victim))
