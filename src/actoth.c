@@ -6814,7 +6814,7 @@ void do_old_descend(P_char ch, char *arg, int cmd)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "do_descend called in actoth.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
