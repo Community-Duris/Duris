@@ -2130,7 +2130,8 @@ void enter_game(P_desc d)
 						}
 						else
 						{
-							raise(SIGSEGV);
+							logit(LOG_EXIT, "enter_game: missing ne_schedule tail link while rescheduling offline affect");
+							break;
 						}
 
 						// If we're not at the beginning.
@@ -2144,7 +2145,8 @@ void enter_game(P_desc d)
 						}
 						else
 						{
-							raise(SIGSEGV);
+							logit(LOG_EXIT, "enter_game: missing ne_schedule head link while rescheduling offline affect");
+							break;
 						}
 
 						// Update the timer.  The +1 is because we want the range from 1..MAX not 0..MAX,
