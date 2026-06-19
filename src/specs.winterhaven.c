@@ -4212,7 +4212,7 @@ int key_mold(P_obj obj, P_char ch, int cmd, char *args)
 	if (!corpse)
 	{
 		logit(LOG_EXIT, "wh_corpse_decay: unable to load obj #%d.", VOBJ_WH_ROTTING_CORPSE);
-		raise(SIGSEGV);
+		return FALSE;
 	}
     corpse->weight = obj->weight;
     set_obj_affected(corpse, get_property("timer.decay.corpse.npc", 120), TAG_OBJ_DECAY, 0);
