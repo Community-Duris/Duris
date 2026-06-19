@@ -1315,7 +1315,7 @@ char *fread_action(FILE *fl)
 		if (feof(fl))
 		{
 			logit(LOG_EXIT, "Fread_action - unexpected EOF.");
-			raise(SIGSEGV);
+			fatal_boot_error("actcomm", "fread_action: unexpected EOF");
 		}
 		if (*buf == '#')
 			return (0);
