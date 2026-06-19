@@ -8578,7 +8578,7 @@ int ice_wolf(P_char ch, P_char pl, int cmd, char *arg)
 		if (!tempchar)
 		{
 			logit(LOG_EXIT, "assert: mob load failed in ice_wolf()");
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		char_to_room(tempchar, ch->in_room, -2);
 		for (item = ch->carrying; item; item = next_item)
@@ -8632,7 +8632,7 @@ int ice_wolf(P_char ch, P_char pl, int cmd, char *arg)
 				if (!tempchar2)
 				{
 					logit(LOG_EXIT, "assert: second mob load failed in ice_wolf()");
-					raise(SIGSEGV);
+					continue;
 				}
 				act("The $n suddenly drops to the floor, howling in pain!", 0, i, 0, 0, TO_ROOM);
 				act("A moment later, $e trasforms into $N!", 1, i, 0, tempchar2, TO_ROOM);
