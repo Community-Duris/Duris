@@ -87,8 +87,7 @@ int load_proc_lib(char *name)
 			if (!handle)
 			{
 				logit(LOG_EXIT, "lib: %s: %s", buf, dlerror());
-				raise(SIGSEGV);
-				;
+				return 0;
 			}
 			dynam_proc_list[i].handle = handle;
 			return 1;
@@ -111,9 +110,8 @@ int unload_proc_lib(char *name)
 			error = dlerror();
 			if (error)
 			{
-				logit(LOG_EXIT, "lib: %s: %s", buf, error);
-				raise(SIGSEGV);
-				;
+				logit(LOG_EXIT, "lib: %s.so: %s", dynam_proc_list[i].name, error);
+				return 0;
 			}
 			dynam_proc_list[i].handle = NULL;
 			return 1;
@@ -133,9 +131,7 @@ void load_all_proc_libs(void)
 		handle = dlopen(name, RTLD_NOW);
 		if (!handle)
 		{
-			logit(LOG_EXIT, "lib: %s: %s", name, dlerror());
-			raise(SIGSEGV);
-			;
+			fatal_boot_error("specs.assign", "lib: %s: %s", name, dlerror());
 		}
 		dynam_proc_list[i].handle = handle;
 	}
