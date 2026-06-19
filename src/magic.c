@@ -5066,10 +5066,7 @@ void spell_aid(int level, P_char ch, char *arg, int type, P_char victim, P_obj o
 	int                   temp = (int)(level / 10);
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "spell_aid called in magic.c with no ch");
-		raise(SIGSEGV);
-	}
+		return;
 	if (!victim)
 	{
 		return;
@@ -9158,10 +9155,7 @@ void spell_plague(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	// int timer;
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "spell_plague called in magic.c with no ch");
-		raise(SIGSEGV);
-	}
+		return;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
