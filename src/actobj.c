@@ -1413,7 +1413,7 @@ void do_drop(P_char ch, char *argument, int cmd)
 			else
 			{
 				logit(LOG_EXIT, "do_drop: no tmp_object or ch in NOWHERE");
-				raise(SIGSEGV);
+				return;
 			}
 		}
 		if (IS_PC(ch))
