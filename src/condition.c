@@ -210,15 +210,71 @@ void MakeScrap(P_char ch, P_obj obj)
 	}
 	else if (OBJ_WORN(obj))
 	{
-		for (pos = 0; pos < MAX_WEAR; pos++)
-			if (ch->equipment[pos] == obj)
-				break;
-		if (pos >= MAX_WEAR)
+		P_char wearer = obj->loc.wearing;
+
+		if (wearer && !char_in_list(wearer))
 		{
-			logit(LOG_DEBUG, "MakeScrap(), can't find worn object in equip");
-			raise(SIGSEGV);
+			logit(LOG_DEBUG, "MakeScrap(): stale wearer pointer, caller=%s obj=%s", J_NAME(ch), obj->short_description ? obj->short_description : "unknown");
+			wearer = NULL;
 		}
-		obj = unequip_char(ch, pos);
+
+		if (!wearer)
+		{
+			for (wearer = character_list; wearer; wearer = wearer->next)
+			{
+				for (pos = 0; pos < MAX_WEAR; pos++)
+					if (wearer->equipment[pos] == obj)
+						break;
+				if (pos < MAX_WEAR)
+						break;
+			}
+		}
+
+		if (wearer)
+		{
+			if (wearer != ch)
+				logit(LOG_DEBUG, "MakeScrap(): caller/wearer mismatch, caller=%s wearer=%s obj=%s", J_NAME(ch), J_NAME(wearer), obj->short_description ? obj->short_description : "unknown");
+
+			for (pos = 0; pos < MAX_WEAR; pos++)
+				if (wearer->equipment[pos] == obj)
+					break;
+			if (pos < MAX_WEAR)
+				unequip_char(wearer, pos);
+			else
+			{
+				P_char found = NULL;
+				int    found_pos = -1;
+
+				logit(LOG_EXIT, "MakeScrap(): worn object not found in wearer equipment: caller=%s wearer=%s obj=%s", J_NAME(ch), J_NAME(wearer), obj->short_description ? obj->short_description : "unknown");
+				for (found = character_list; found; found = found->next)
+				{
+					for (pos = 0; pos < MAX_WEAR; pos++)
+						if (found->equipment[pos] == obj)
+							break;
+					if (pos < MAX_WEAR)
+						{
+							found_pos = pos;
+							break;
+						}
+				}
+				if (found_pos >= 0)
+				{
+					logit(LOG_DEBUG, "MakeScrap(): recovered worn object via global rescan, caller=%s wearer=%s obj=%s", J_NAME(ch), J_NAME(found), obj->short_description ? obj->short_description : "unknown");
+					unequip_char(found, found_pos);
+				}
+				else
+				{
+					obj->loc_p       = LOC_NOWHERE;
+					obj->loc.wearing = NULL;
+				}
+			}
+		}
+		else
+		{
+			logit(LOG_EXIT, "MakeScrap(): worn object missing live wearer: caller=%s obj=%s", J_NAME(ch), obj->short_description ? obj->short_description : "unknown");
+			obj->loc_p       = LOC_NOWHERE;
+			obj->loc.wearing = NULL;
+		}
 	}
 
 	set_obj_affected(t, 400, TAG_OBJ_DECAY, 0);
