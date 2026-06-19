@@ -66,6 +66,8 @@ char *read_delete(char *recipient, char *recipient_formatted);
    header block when booting mail system.
 */
 
+#pragma pack(push, 1)
+
 struct header_block_type_d
 {
 	long block_type;                     /* is this a header block or data block? */
@@ -82,6 +84,8 @@ struct data_block_type_d
 	                                  in mail, otherwise a link to the next */
 	char txt[DATA_BLOCK_DATASIZE + 1]; /* the actual text		 */
 };
+
+#pragma pack(pop)
 
 typedef struct header_block_type_d header_block_type;
 typedef struct data_block_type_d   data_block_type;

@@ -2911,7 +2911,7 @@ int process_input(P_desc t)
 
 	begin = t->buflen;
 	if (begin < 0 || begin >= MAX_QUEUE_LENGTH)
-		abort(); // likely memory corruption
+		panic_corruption("comm", "process_input: invalid buffer length %d", begin);
 	buf = t->buf;
 
 	/*

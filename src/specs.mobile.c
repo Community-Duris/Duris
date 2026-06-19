@@ -5855,7 +5855,7 @@ int kobold_priest(P_char ch, P_char pl, int cmd, char *arg)
 					if (!imp)
 					{
 						logit(LOG_EXIT, "assert: error in kobold_priest() proc");
-						raise(SIGSEGV);
+						return FALSE;
 					}
 					act("&+M$n incants a powerful spell of summoning.\r\n"
 					    "&+M$N arrives from the depths of &+RHell&+M to aid its master!\r\n",
@@ -8712,7 +8712,7 @@ int ice_malice(P_char ch, P_char pl, int cmd, char *arg)
 		if (!vapor)
 		{
 			logit(LOG_EXIT, "assert: mob load failed in ice_malice()");
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		char_to_room(vapor, ch->in_room, 0);
 
@@ -10268,7 +10268,7 @@ int fooquest_boss(P_char ch, P_char pl, int cmd, char *arg)
 				if (!dragon)
 				{
 					logit(LOG_EXIT, "assert: error in bahamut() proc");
-					raise(SIGSEGV);
+					return FALSE;
 				}
 				act("&+LThe air before you seems to rend and tear, revealing a black rift.&N\r\n"
 				    "An &+MIllithid&N stumbles out of &+Lthe wormhole&N.",
@@ -10707,12 +10707,12 @@ int Malevolence(P_char ch, P_char pl, int cmd, char *arg)
 	if (GET_HIT(ch) < (GET_MAX_HIT(ch) / 3))
 	{
 		vapor          = read_mobile(45571, VIRTUAL);
-		GET_HIT(vapor) = GET_MAX_HIT(vapor) = vapor->points.base_hit = MAX(GET_HIT(ch) * 4, 1500);
 		if (!vapor)
 		{
 			logit(LOG_EXIT, "assert: mob load failed in Malevolence()");
-			raise(SIGSEGV);
+			return FALSE;
 		}
+		GET_HIT(vapor) = GET_MAX_HIT(vapor) = vapor->points.base_hit = MAX(GET_HIT(ch) * 4, 1500);
 		char_to_room(vapor, ch->in_room, 0);
 
 		for (item = ch->carrying; item; item = next_item)
@@ -10935,7 +10935,7 @@ int nyneth(P_char ch, P_char pl, int cmd, char *arg)
 			if (!fury)
 			{
 				logit(LOG_EXIT, "assert: error in nyneth proc");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			act("A &+rFuRy&n enters from somewhere.\r\n", FALSE, ch, 0, fury, TO_ROOM);
 			char_to_room(fury, ch->in_room, 0);
