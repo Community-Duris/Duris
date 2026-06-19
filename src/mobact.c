@@ -551,7 +551,7 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 	if (!ch || !(victim || object || IS_SET(skills[spl].targets, TAR_AREA | TAR_OFFAREA)) || spl < FIRST_SPELL || spl > LAST_SPELL)
 	{
 		logit(LOG_EXIT, "MobCastSpell() bogus parms");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	if (!IS_NPC(ch)) /* NPCs only should call this function */
