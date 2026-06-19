@@ -769,8 +769,7 @@ void weather_setup(void)
 
 	if (!(fl = fopen("areas/world.weather", "r")))
 	{
-		logit(LOG_EXIT, "weather_setup");
-		raise(SIGSEGV);
+		fatal_boot_error("db", "weather_setup: could not open areas/world.weather: %s", strerror(errno));
 	}
 	for (zon = 0; zon <= 99; zon++)
 	{
