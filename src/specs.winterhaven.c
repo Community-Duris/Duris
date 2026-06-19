@@ -78,8 +78,8 @@ int wh_corpse_to_object(P_char ch, P_char pl, int cmd, char *arg)
 		obj = read_object(GET_VNUM(ch), VIRTUAL);
 		if (!(obj))
 		{
-			logit(LOG_EXIT, "winterhaven_object: death object for mob %d doesn't exist", GET_VNUM(ch));
-			raise(SIGSEGV);
+			logit(LOG_OBJ, "winterhaven_object: death object for mob %d doesn't exist", GET_VNUM(ch));
+			return FALSE;
 		}
 		obj_to_room(obj, ch->in_room);
 
@@ -4209,11 +4209,11 @@ int key_mold(P_obj obj, P_char ch, int cmd, char *args)
     P_obj    corpse;
 
     corpse = read_object(VOBJ_WH_ROTTING_CORPSE, VIRTUAL);
-    if (!corpse)
-    {
-      logit(LOG_EXIT, "wh_corpse_decay: unable to load obj #%d.", VOBJ_WH_ROTTING_CORPSE);
-      raise(SIGSEGV);
-    }
+	if (!corpse)
+	{
+		logit(LOG_EXIT, "wh_corpse_decay: unable to load obj #%d.", VOBJ_WH_ROTTING_CORPSE);
+		raise(SIGSEGV);
+	}
     corpse->weight = obj->weight;
     set_obj_affected(corpse, get_property("timer.decay.corpse.npc", 120), TAG_OBJ_DECAY, 0);
 
@@ -4274,8 +4274,8 @@ int tiamat_human_to_rareloads(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (!(obj))
 		{
-			logit(LOG_EXIT, "winterhaven_object: death object for mob %d doesn't exist", GET_VNUM(ch));
-			raise(SIGSEGV);
+			logit(LOG_OBJ, "winterhaven_object: death object for mob %d doesn't exist", GET_VNUM(ch));
+			return FALSE;
 		}
 
 		obj_to_room(obj, ch->in_room);
@@ -4472,8 +4472,8 @@ int lanella_heart(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (!(obj))
 		{
-			logit(LOG_EXIT, "winterhaven_object: death object for mob %d doesn't exist", GET_VNUM(ch));
-			raise(SIGSEGV);
+			logit(LOG_OBJ, "winterhaven_object: death object for mob %d doesn't exist", GET_VNUM(ch));
+			return FALSE;
 		}
 
 		obj_to_room(obj, ch->in_room);
