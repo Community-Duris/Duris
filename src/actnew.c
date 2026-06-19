@@ -926,10 +926,7 @@ void do_hitall(P_char ch, char *arg, int cmd)
 	char   Gbuf2[MAX_STRING_LENGTH];
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "do_hitall call in actnew.c with no ch");
-		raise(SIGSEGV);
-	}
+		return;
 
 	if (!SanityCheck(ch, "do_hitall"))
 	{
@@ -1582,10 +1579,7 @@ P_char morph(P_char ch, int rnum, int mode)
 	int            is_avatar = FALSE, virt;
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "morph: Bogus ch passed");
-		raise(SIGSEGV);
-	}
+		return NULL;
 	if (IS_NPC(ch) || IS_MORPH(ch))
 	{
 		return NULL;
@@ -1595,15 +1589,15 @@ P_char morph(P_char ch, int rnum, int mode)
 	else
 		mob = read_mobile(rnum, VIRTUAL);
 
-	virt = mob_index[GET_RNUM(mob)].virtual_number;
-	if (virt == EVIL_AVATAR_MOB || virt == GOOD_AVATAR_MOB)
-		is_avatar = TRUE;
-
 	if (!mob)
 	{
 		logit(LOG_EXIT, "morph: Unable to load mob %d", rnum);
-		raise(SIGSEGV);
+		return NULL;
 	}
+
+	virt = mob_index[GET_RNUM(mob)].virtual_number;
+	if (virt == EVIL_AVATAR_MOB || virt == GOOD_AVATAR_MOB)
+		is_avatar = TRUE;
 	while (mob->affected)
 		affect_remove(mob, mob->affected);
 
