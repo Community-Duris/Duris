@@ -1817,7 +1817,7 @@ void boot_pose_messages(void)
 	if (!(fl = fopen(POSEMESS_FILE, "r")))
 	{
 		logit(LOG_EXIT, "boot_pose_messages");
-		raise(SIGSEGV);
+		fatal_boot_error("actcomm", "boot_pose_messages: could not open %s: %s", POSEMESS_FILE, strerror(errno));
 	}
 	for (counter = 0; counter < MAX_MESSAGES; counter++)
 		pose_messages[counter].level = -1;
