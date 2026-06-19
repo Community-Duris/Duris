@@ -3701,7 +3701,7 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "falling_char with NULL char.");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	if (ch->in_room == NOWHERE)
@@ -4031,7 +4031,7 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 	if (!obj)
 	{
 		logit(LOG_EXIT, "falling_obj: NULL obj.");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	if (!OBJ_ROOM(obj))
