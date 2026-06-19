@@ -1335,7 +1335,7 @@ void boot_social_messages(void)
 	if (!(fl = fopen(SOCMESS_FILE, "r")))
 	{
 		logit(LOG_EXIT, "boot_social_messages");
-		raise(SIGSEGV);
+		fatal_boot_error("actcomm", "boot_social_messages: could not open %s: %s", SOCMESS_FILE, strerror(errno));
 	}
 	for (;;)
 	{
