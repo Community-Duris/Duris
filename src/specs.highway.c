@@ -549,7 +549,7 @@ int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
 			if (!web)
 			{
 				logit(LOG_EXIT, "assert: mir_spider() failed to load object 41900");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			obj_to_room(web, ch->in_room);
 			act("$n &nspins a wonderous web across the thick trees.", 1, ch, 0, 0, TO_ROOM);
@@ -559,7 +559,7 @@ int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
 			if (!web)
 			{
 				logit(LOG_EXIT, "assert: mir_spider() failed to load object 41901");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			obj_to_room(web, ch->in_room);
 			act("$n &nbegins to spin a web.", 1, ch, 0, 0, TO_ROOM);
@@ -624,7 +624,7 @@ int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
 					if (!smoke)
 					{
 						logit(LOG_EXIT, "assert: mir_fire() failed to load object 41908");
-						raise(SIGSEGV);
+						break;
 					}
 					add_event(event_smoke_to_fire, number(1, 5), NULL, NULL, NULL, 0, &room, sizeof(room));
 					// AddEvent(EVENT_SPECIAL, number(1, 5), TRUE, smoke_to_fire, room);
