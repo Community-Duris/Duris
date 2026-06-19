@@ -4298,7 +4298,7 @@ int dragonnia_heart(P_char ch, P_char pl, int cmd, char *arg)
 		if (!(obj = read_object(VOBJ_WH_DRAGONHEART_DRAGONNIA, VIRTUAL)))
 		{
 			logit(LOG_EXIT, "dragonnia_heart: could not load heart vnum %d", VOBJ_WH_DRAGONHEART_DRAGONNIA);
-			raise(SIGSEGV);
+			return FALSE;
 		}
 
 		obj_to_room(obj, ch->in_room);
@@ -4374,7 +4374,7 @@ int dragon_heart_decay(P_obj obj, P_char ch, int cmd, char *args)
 		if (!(decayed_heart = read_object(VOBJ_WH_DRAGONHEART_ROTTED, VIRTUAL)))
 		{
 			logit(LOG_EXIT, "wh_corpse_decay: unable to load decayed heart #%d.", VOBJ_WH_DRAGONHEART_ROTTED);
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		decayed_heart->weight = obj->weight;
 		set_obj_affected(decayed_heart, 15000, TAG_OBJ_DECAY, 0);
