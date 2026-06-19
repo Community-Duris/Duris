@@ -6499,10 +6499,7 @@ void ascend_theurgist(P_char ch)
 	int    i;
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "ascend_theurgist called in actoth.c with no ch");
-		raise(SIGSEGV);
-	}
+		return;
 	if (IS_NPC(ch))
 		return;
 
@@ -6576,13 +6573,8 @@ void do_ascend(P_char ch, char *arg, int cmd)
 	char buffer[256];
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "do_ascend called in actoth.c with no ch");
-		raise(SIGSEGV);
-	}
-	if (ch) // Just making sure.
-	{
-		if (!IS_NPC(ch))
+		return;
+	if (!IS_NPC(ch))
 		{
 			send_to_char("&+WThis is too powerful an enchantment for you to master...&n\n\r", ch);
 			return;
@@ -6683,7 +6675,6 @@ void do_ascend(P_char ch, char *arg, int cmd)
 		         get_god_name(ch),
 		         GET_SPEC_NAME(ch->player.m_class, spec - 1));
 		send_to_char(buffer, ch);
-	}
 }
 
 void do_descend(P_char ch, char *arg, int cmd)
