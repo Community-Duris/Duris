@@ -168,16 +168,10 @@ void mobsay(P_char ch, const char *msg)
 		return;
 
 	if (!msg || !*msg)
-	{
-		logit(LOG_EXIT, "No text in mobsay()");
-		raise(SIGSEGV);
-	}
+		return;
 	if (strlen(msg) > (MAX_INPUT_LENGTH - 1))
-	{
-		logit(LOG_EXIT, "text too long in mobsay()");
-		raise(SIGSEGV);
-	}
-	strcpy(Gbuf, msg);
+		logit(LOG_DEBUG, "mobsay(): truncating overlong text");
+	snprintf(Gbuf, sizeof(Gbuf), "%s", msg);
 	do_say(ch, Gbuf, -4);
 }
 
