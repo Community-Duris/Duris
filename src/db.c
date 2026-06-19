@@ -2663,7 +2663,7 @@ P_char read_mobile(int nr, int type)
 
 	if (mob->nevents)
 	{
-		raise(SIGSEGV);
+		disarm_char_nevents(mob, NULL);
 	}
 
 	/* init a periodic event for each mob */
@@ -3796,7 +3796,6 @@ char *fread_string(FILE *fl)
 		{
 			perror("fread_string");
 			logit(LOG_DEBUG, "%s", tmp);
-			raise(SIGSEGV);
 			return NULL;
 		}
 		/* If there is a '~', END the string stop; else put an "\r\n" over
@@ -3826,7 +3825,7 @@ char *fread_string(FILE *fl)
 		if (length + templength >= MAX_STRING_LENGTH)
 		{
 			logit(LOG_EXIT, "fread_string: string too large (db.c)");
-			raise(SIGSEGV);
+			return NULL;
 		}
 		else
 		{
@@ -3878,7 +3877,7 @@ void skip_fread(FILE *fl)
 		{
 			perror("skip_fread");
 			logit(LOG_DEBUG, "%s", tmp);
-			raise(SIGSEGV);
+			return;
 		}
 		for (point = tmp + strlen(tmp) - 1; (point >= tmp) && isspace(*point); point--)
 			;
