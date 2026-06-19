@@ -716,7 +716,7 @@ void nuke_track(struct trackrecordtype *hmm)
     return;
   }
   logit(LOG_EXIT, "error in track decay! *PANIC*!");
-  raise(SIGSEGV);
+  return;
 #endif
 }
 

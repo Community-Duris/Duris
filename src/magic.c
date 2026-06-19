@@ -3325,11 +3325,8 @@ void spell_earthquake(int level, P_char ch, char *arg, int type, P_char victim, 
 	 * only! (In other words, extremely dangerous to cast when not
 	 * outside).
 	 */
-	if (!ch)
-	{
-		logit(LOG_EXIT, "spell_earthquake called in magic.c with no ch");
-		raise(SIGSEGV);
-	}
+	if (!require_char(ch, "spell_earthquake", "called in magic.c with no ch"))
+		return;
 	if (ch->in_room > 0)
 	{
 		switch (world[ch->in_room].sector_type)
@@ -3798,12 +3795,8 @@ void spell_destroy_undead(int level, P_char ch, char *arg, int type, P_char vict
 	                                         "$N is completely destroyed by $n's raw will!",
 	                                         0};
 
-	if (!ch)
-	{
-		logit(LOG_EXIT, "spell_destroy_undead called in magic.c with no ch");
-		raise(SIGSEGV);
+	if (!require_char(ch, "spell_destroy_undead", "called in magic.c with no ch"))
 		return;
-	}
 
 	if (ch && victim && !IS_UNDEADRACE(victim) && !IS_AFFECTED(victim, AFF_WRAITHFORM))
 	{
@@ -10591,11 +10584,8 @@ void cont_light_dissipate_event(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	int room, readd_dark, readd_twilight, had_light = TRUE;
 
-	if (!data)
-	{
-		logit(LOG_EXIT, "Call to cont light dissipation with invalid data");
-		raise(SIGSEGV);
-	}
+	if (!require_data(data, "cont_light_dissipation", "invalid data"))
+		return;
 
 	/*
 	 * Ok, let's rock

@@ -96,7 +96,7 @@ void shutdown_ships()
 	char *batch     = (char *)malloc(batchSize);
 	if (!batch)
 	{
-		raise(SIGABRT);
+		fatal_boot_error("ship_base", "shutdown_ships: could not allocate batch buffer");
 	}
 
 	// do this update as a transaction 
@@ -139,7 +139,7 @@ void shutdown_ships()
 			{
 				logit(LOG_DEBUG, "shutdown_ships: rollback failed: %s", mysql_error(DB));
 			}
-			raise(SIGABRT);
+			panic_corruption("shutdown_ships", "write_ship failed after rollback");
 		}
 	}
 

@@ -84,7 +84,7 @@ void cmdlog(P_char ch, char *str)
 	if (!ch || !ch->player.name)
 	{
 		logit(LOG_EXIT, "bogus char in call to cmdlog");
-		raise(SIGSEGV);
+		return;
 	}
 	if (IS_NPC(ch))
 		return;

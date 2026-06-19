@@ -3103,11 +3103,23 @@ void                  sprinttype(int, const char **, char *);
 void                  loginlog(int, const char *, ...);
 void                  statuslog(int, const char *, ...);
 void                  banlog(int, const char *, ...);
+void                  logit(const char *, const char *, ...);
+void                  persistence_alert(int level, const char *domain,
+                                        const char *owner,
+                                        const char *fmt,
+                                        ...);
 void                  epiclog(int, const char *, ...);
 void                  strToLower(char *);
 void                  wizlog(int level, const char *, ...);
 void                  debug(const char *, ...);
 void                  logexp(const char *, ...);
+
+void                  fatal_boot_error(const char *component, const char *fmt, ...);
+void                  panic_corruption(const char *component, const char *fmt, ...);
+bool                  require_char(P_char ch, const char *component, const char *fmt, ...);
+bool                  require_data(const void *data, const char *component, const char *fmt, ...);
+void                  request_shutdown(int shutdown_type, const char *issuer, const char *reason);
+
 int                   distance_from_shore(int);
 int                   dir_from_keyword(char *);
 int                   weight_notches_above_naked(P_char);

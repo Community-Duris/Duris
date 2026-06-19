@@ -97,6 +97,30 @@ long sentbytes    = 0;
 long recivedbytes = 0;
 bool game_booted  = FALSE;
 
+void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
+{
+	shutdownData.reboot_time  = time(0);
+	shutdownData.next_warning = -1;
+	snprintf(shutdownData.IssuedBy, sizeof(shutdownData.IssuedBy), "%s", issuer ? issuer : "Launcher");
+	snprintf(shutdownData.Reason, sizeof(shutdownData.Reason), "%s", reason ? reason : "signal from launcher");
+	switch (shutdown_type)
+	{
+		case 1:
+			shutdownData.eShutdownType = TimedShutdownData::OK;
+			break;
+		case 2:
+			shutdownData.eShutdownType = TimedShutdownData::REBOOT;
+			break;
+		case 3:
+			shutdownData.eShutdownType = TimedShutdownData::COPYOVER;
+			break;
+		default:
+			shutdownData.eShutdownType = TimedShutdownData::OK;
+			break;
+	}
+	timedShutdown(NULL, NULL, NULL, NULL);
+}
+
 extern void ne_events();
 
 long unsigned int ip2ul(const char *ip);
@@ -236,8 +260,7 @@ int main(int argc, char **argv)
 					dir = argv[pos];
 				else
 				{
-					logit(LOG_EXIT, "Directory arg expected after option -d.");
-					raise(SIGSEGV);
+					fatal_boot_error("comm", "Directory arg expected after option -d.");
 				}
 				break;
 			case 's':
@@ -276,13 +299,11 @@ int main(int argc, char **argv)
 	if (pos < argc)
 		if (!isdigit(*argv[pos]))
 		{
-			fprintf(stderr, "Usage: %s [-l] [-m] [-s] [-p] [-n] [-f] [-d pathname] [ port # ]\n", argv[0]);
-			raise(SIGSEGV);
+			fatal_boot_error("comm", "Usage: %s [-l] [-m] [-s] [-p] [-n] [-f] [-d pathname] [ port # ]", argv[0]);
 		}
 		else if ((port = atoi(argv[pos])) <= 1024)
 		{
-			printf("Illegal port #\n");
-			raise(SIGSEGV);
+			fatal_boot_error("comm", "Illegal port #");
 		}
 		else
 			sslport = port + 1;
@@ -293,8 +314,7 @@ int main(int argc, char **argv)
 	/*
 	  ipc_id = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0600);
 	  if (ipc_id < 0) {
-	    fprintf(stderr, "Unable to create message queue due to %d!\r\n", ipc_id);
-	    raise(SIGSEGV);;
+	    fatal_boot_error("comm", "Unable to create message queue due to %d!", ipc_id);
 	  }
 	*/
 	/* fork() off a new process to deal with hostname lookups. */
@@ -310,8 +330,7 @@ int main(int argc, char **argv)
 	*/
 	if (chdir(dir) < 0)
 	{
-		perror("chdir");
-		raise(SIGSEGV);
+		fatal_boot_error("comm", "chdir failed: %s", strerror(errno));
 	}
 	logit(LOG_STATUS, "Running game on port %d.", port);
 
@@ -321,8 +340,7 @@ int main(int argc, char **argv)
 
 	if (initialize_mysql() < 0)
 	{
-		fprintf(stderr, "MySQL initialization failed! Dying!");
-		raise(SIGSEGV);
+		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
 
 	redis_init();
@@ -766,27 +784,7 @@ void game_loop(int port, int sslport)
 		{
 			int type                = signal_shutdown_pending;
 			signal_shutdown_pending = 0;
-
-			// set to current time so timedShutdown schedules properly
-			shutdownData.reboot_time  = time(0);
-			shutdownData.next_warning = -1;
-			strncpy(shutdownData.IssuedBy, "Launcher", sizeof(shutdownData.IssuedBy) - 1);
-			strncpy(shutdownData.Reason, "signal from launcher", sizeof(shutdownData.Reason) - 1);
-
-			switch (type)
-			{
-				case 1: // shutdown
-					shutdownData.eShutdownType = TimedShutdownData::OK;
-					break;
-				case 2: // reboot
-					shutdownData.eShutdownType = TimedShutdownData::REBOOT;
-					break;
-				case 3: // copyover
-					shutdownData.eShutdownType = TimedShutdownData::COPYOVER;
-					break;
-			}
-			// call timedShutdown - it will schedule event for next tick
-			timedShutdown(NULL, NULL, NULL, NULL);
+			request_shutdown(type, "Launcher", "signal from launcher");
 		}
 		//PROFILE_END(process_signal_shutdown_pending);
 
@@ -2233,7 +2231,7 @@ int new_descriptor(int s, int conn_type)
         /*
          * msgsnd() failed... DAMN!  for now, just segfault
          */
-        raise(SIGSEGV);;
+			panic_corruption("comm", "msgsnd failed");
       }
       /*
        * I'll use yellow to indicate the address is being looked up
@@ -2279,7 +2277,7 @@ int new_descriptor(int s, int conn_type)
       /*
        * msgsnd() failed... DAMN!  for now, just segfault
        */
-      raise(SIGSEGV);;
+			panic_corruption("comm", "msgsnd failed");
     }
 #endif
 		/*

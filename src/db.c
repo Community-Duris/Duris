@@ -17,6 +17,7 @@
 #include "interp.h"
 #include "utils.h"
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -477,15 +478,11 @@ void boot_db(int mini_mode)
 	{
 		if (!(mob_f = fopen(MOB_FILE, "r")))
 		{
-			perror("boot");
-			fprintf(stderr, "ERROR! Trouble opening mobile file world.mob! Exiting.\r\n");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening mobile file world.mob: %s", strerror(errno));
 		}
 		if (!(obj_f = fopen(OBJ_FILE, "r")))
 		{
-			perror("boot");
-			fprintf(stderr, "ERROR! Trouble opening object file world.obj! Exiting.\r\n");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening object file world.obj: %s", strerror(errno));
 		}
 	}
 	else
@@ -1142,17 +1139,14 @@ void boot_world(int mini_mode)
 		if (!(fl = fopen(WORLD_FILE, "r")))
 		{
 			perror("fopen");
-			logit(LOG_FILE, "boot_world: could not open world file.");
-			logit(LOG_SYS, "boot_world: could not open world file.");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_world: could not open world file");
 		}
 	}
 	else if (mini_mode == 1)
 	{
 		if (!(fl = fopen("areas_mini/mini.wld", "r")))
 		{
-			perror("fopen");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_world: fopen failed: %s", strerror(errno));
 		}
 	}
 
@@ -1165,19 +1159,15 @@ void boot_world(int mini_mode)
 	char *seekPtr = memBuf;
 	if (!memBuf)
 	{
-		logit(LOG_FILE, "boot_world: could not allocate memory for world file.");
-		logit(LOG_SYS, "boot_world: could not allocate memory for world file.");
-		raise(SIGSEGV);
+		fatal_boot_error("db", "boot_world: could not allocate memory for world file");
 	}
 
 	fseek(fl, 0, SEEK_SET);
 	size_t bytesRead = fread(memBuf, sizeof(char), fsize, fl);
 	if (bytesRead != fsize)
 	{
-		logit(LOG_FILE, "boot_world: short read while loading world file.");
-		logit(LOG_SYS, "boot_world: short read while loading world file.");
 		free(memBuf);
-		raise(SIGSEGV);
+		fatal_boot_error("db", "boot_world: short read while loading world file");
 	}
 	memBuf[fsize] = '\0';
 	fclose(fl);
