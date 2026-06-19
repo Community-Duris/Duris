@@ -11113,7 +11113,7 @@ void spell_barkskin(int level, P_char ch, char *arg, int type, P_char victim, P_
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_barkskin called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (!IS_ALIVE(ch))
 	{
@@ -13024,7 +13024,7 @@ void spell_blackmantle(int level, P_char ch, char *arg, int type, P_char victim,
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_blackmantle called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -16880,7 +16880,7 @@ void event_immolate(P_char ch, P_char vict, P_obj obj, void *data)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "event_immolate called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (!vict)
 	{
@@ -16934,7 +16934,7 @@ void spell_immolate(int level, P_char ch, char *arg, int type, P_char victim, P_
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_immolate called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (!victim)
 	{
@@ -18588,7 +18588,7 @@ void spell_negative_concussion_blast(int level, P_char ch, char *arg, int type, 
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_negative_concussion_blast called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch)
 	{
@@ -18623,7 +18623,7 @@ void event_acidimmolate(P_char ch, P_char vict, P_obj obj, void *data)
 	if (!ch || !vict)
 	{
 		logit(LOG_EXIT, "event_acidimmolate called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	// Dead just means something died but hasn't 'gone to heaven' yet.
 	if (!IS_ALIVE(ch) || !IS_ALIVE(vict))
@@ -18692,7 +18692,7 @@ void spell_acidimmolate(int level, P_char ch, char *arg, int type, P_char victim
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_immolate called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -18740,7 +18740,7 @@ void spell_chaotic_ripple(int level, P_char ch, char *arg, int type, P_char vict
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_chaotic_ripple called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	messages.attacker = "&+LYou shatter the fabric of reality sending&n &+Cr&+ci&+Cp&+cp&+Cl&+ce&+Cs&n &+Lof&n &+RCh&+rA&+Ro&+rT&+Ri&+rC energy&n &+Lflowing into&n $N.";
 	messages.victim   = "&+LRipples of&n &+RCh&+rA&+Ro&+rT&+Ri&+rC energy &+Lslam into you as reality comes crashing down.&n";
@@ -18889,7 +18889,7 @@ void spell_single_banish(int level, P_char ch, char *arg, int type, P_char victi
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_single_banish called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (IS_TRUSTED(victim) || IS_PC(victim))
@@ -18974,7 +18974,7 @@ bool can_banish(P_char ch, P_char victim)
 	if (!ch) // Something is amiss.
 	{
 		logit(LOG_EXIT, "can_banish called in magic.c with no ch");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	if (IS_NPC(victim))
@@ -20238,7 +20238,7 @@ void event_holy_dharma(P_char ch, P_char victim, P_obj obj, void *data)
 	if (!ch) // Something amiss.
 	{
 		logit(LOG_EXIT, "event_holy_dharma called in magic.c without ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
@@ -20310,7 +20310,7 @@ void spell_holy_dharma(int level, P_char ch, char *arg, int type, P_char victim,
 	if (!ch) // Something amiss. Nov08 -Lucrot
 	{
 		logit(LOG_EXIT, "spell_holy_dharma called in magic.c without ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
@@ -20358,7 +20358,7 @@ void event_electrical_execution(P_char ch, P_char vict, P_obj obj, void *data)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "event_electrical_execution called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (!IS_ALIVE(ch) || !IS_ALIVE(vict))
 	{
