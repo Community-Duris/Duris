@@ -4100,7 +4100,6 @@ int writePet(P_char ch)
 				logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
 				wizlog(OVERLORD, "&+R&-LPANIC!&N  Error restoring backup petfile for %s!", GET_NAME(ch));
 				logit(LOG_EXIT, "unable to restore backup petfile for %s", GET_NAME(ch));
-				raise(SIGSEGV);
 			}
 			else
 				wizlog(OVERLORD, "        Backup restored.");
