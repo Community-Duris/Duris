@@ -146,7 +146,7 @@ void stop_singing(P_char ch)
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_EXIT, "stop_singing in bard.c called without a living ch (%s)", (ch == NULL) ? "NULL" : J_NAME(ch));
-		raise(SIGSEGV);
+		return;
 	}
 
 	for (af = ch->affected; af; af = next_af)
