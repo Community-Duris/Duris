@@ -177,7 +177,7 @@ void swimming_char(P_char ch)
 	if (GET_STAT(ch) == STAT_DEAD)
 	{
 		logit(LOG_EXIT, "assert: dead char in call to swimming_char");
-		raise(SIGSEGV);
+		return;
 	}
 
 	/*  if (current_event && (current_event->type == EVENT_SWIMMING)) {
