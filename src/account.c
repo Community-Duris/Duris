@@ -2565,9 +2565,6 @@ P_acct allocate_account(void)
 
 	CREATE(acct, acct_entry, 1, MEM_TAG_OTHER);
 
-	if (!acct)
-		raise(SIGSEGV);
-
 	memset(acct, 0, sizeof(acct_entry));
 	add_account_to_list(acct);
 
