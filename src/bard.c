@@ -1898,7 +1898,7 @@ void do_play(P_char ch, char *arg, int cmd)
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_EXIT, "do_play in bard.c called without a living ch: %s%s.", (ch == NULL) ? "" : "DEAD ", (ch == NULL) ? "NULL" : J_NAME(ch));
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!CAN_SING(ch))
