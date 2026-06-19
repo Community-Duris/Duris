@@ -1249,11 +1249,8 @@ void spell_ethereal_grounds(int level, P_char ch, char *arg, int type, P_char vi
 	int                terrain_type, seconds;
 	struct room_affect af;
 
-	if (!ch)
-	{
-		logit(LOG_EXIT, "spell_ethereal_grounds called in magic.c with no ch");
-		raise(SIGSEGV);
-	}
+	if (!require_char(ch, "spell_ethereal_grounds", "called with no ch"))
+		return;
 
 	seconds      = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
