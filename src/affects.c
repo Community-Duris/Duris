@@ -2847,7 +2847,10 @@ struct char_link_data *link_char_with_affect(P_char ch, P_char target, ush_int t
 
 	// attempt to create an undefined link - have a look at initialize_links
 	if (!link_types[type].name)
-		raise(SIGSEGV);
+	{
+		logit(LOG_EXIT, "link_char_with_affect called with undefined link type %u", type);
+		return NULL;
+	}
 
 	if (link_types[type].flags & LNKFLG_EXCLUSIVE)
 		clear_links(ch, type);
@@ -2875,7 +2878,10 @@ struct char_obj_link_data *link_char_obj_with_affect(P_char ch, P_obj obj, ush_i
 
 	// attempt to create an undefined link - have a look at initialize_links
 	if ((type > LNK_MAX) || (type < 0))
-		raise(SIGSEGV);
+	{
+		logit(LOG_EXIT, "link_char_obj_with_affect called with invalid link type %u", type);
+		return NULL;
+	}
 
 	if (link_types[type].flags & LNKFLG_EXCLUSIVE)
 		clear_links(ch, type);
