@@ -796,7 +796,7 @@ bool RemoveEvent(void)
 	if (!e1 || (e1->element == -1))
 	{
 		logit(LOG_EXIT, "RemoveEvent: no valid event to remove");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	/*
@@ -870,7 +870,7 @@ bool RemoveEvent(void)
 				if (!e2)
 				{
 					logit(LOG_EXIT, "event not found in obj->events list");
-					raise(SIGSEGV);
+					break;
 				}
 				e2->next = e1->next;
 			}
