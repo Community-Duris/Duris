@@ -69,6 +69,21 @@ void copyover_prepare_socket(int fd)
 	}
 }
 
+static void raw_write_to_fd(int fd, const char *msg);
+
+static void notify_copyover_failure(const char *message)
+{
+	P_desc d;
+
+	for (d = descriptor_list; d; d = d->next)
+	{
+		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character)
+		{
+			raw_write_to_fd(d->descriptor, message);
+		}
+	}
+}
+
 static int write_desc_entry(FILE *fp, P_desc d)
 {
 	struct copyover_desc entry;
@@ -470,6 +485,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!fp)
 	{
 		logit(LOG_STATUS, "copyover: cant open %s for writing", copyover_tmp);
+		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		return;
 	}
 
@@ -487,6 +503,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (fwrite(&header, sizeof(header), 1, fp) != 1 || fwrite(&mother_desc, sizeof(int), 1, fp) != 1 || fwrite(&mother_desc_ssl, sizeof(int), 1, fp) != 1 || fwrite(&ws_desc, sizeof(int), 1, fp) != 1)
 	{
 		logit(LOG_STATUS, "copyover: failed to write header/sockets");
+		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
 		return;
@@ -500,7 +517,14 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 			// keep socket open across exec
 			copyover_prepare_socket(d->descriptor);
-			write_desc_entry(fp, d);
+			if (!write_desc_entry(fp, d))
+			{
+				logit(LOG_STATUS, "copyover: failed to write descriptor entry for %s host=%s term_type=%d", GET_NAME(d->character), d->host, d->term_type);
+				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				fclose(fp);
+				unlink(copyover_tmp);
+				return;
+			}
 
 			// let player know
 			raw_write_to_fd(d->descriptor, "\r\n*** Copyover in progress... ***\r\n");
@@ -512,9 +536,14 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !IS_PC_PET(ch))
 		{
-			write_mob_entry(fp, ch);
-			write_mob_affects(fp, ch);
-			write_mob_inventory(fp, ch);
+			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) || !write_mob_inventory(fp, ch))
+			{
+				logit(LOG_STATUS, "copyover: failed to write mob entry for %s", GET_NAME(ch));
+				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				fclose(fp);
+				unlink(copyover_tmp);
+				return;
+			}
 		}
 	}
 
@@ -529,7 +558,14 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				continue;
 			if (IS_SHIP_ROOM(obj->loc.room))
 				continue;
-			write_obj_entry(fp, obj);
+			if (!write_obj_entry(fp, obj))
+			{
+				logit(LOG_STATUS, "copyover: failed to write object entry vnum %d", OBJ_VNUM(obj));
+				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				fclose(fp);
+				unlink(copyover_tmp);
+				return;
+			}
 		}
 	}
 
@@ -540,15 +576,29 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		{
 			if (world[room].dir_option[dir] && IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
 			{
-				write_room_door(fp, room, dir);
+				if (!write_room_door(fp, room, dir))
+				{
+					logit(LOG_STATUS, "copyover: failed to write room door %d/%d", room, dir);
+					notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					fclose(fp);
+					unlink(copyover_tmp);
+					return;
+				}
 			}
 		}
 	}
 
-	fclose(fp);
+	if (fclose(fp) != 0)
+	{
+		logit(LOG_STATUS, "copyover: failed to close %s: %s", copyover_tmp, strerror(errno));
+		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		unlink(copyover_tmp);
+		return;
+	}
 	if (rename(copyover_tmp, COPYOVER_FILE) != 0)
 	{
 		logit(LOG_STATUS, "copyover: failed to publish %s as %s: %s", copyover_tmp, COPYOVER_FILE, strerror(errno));
+		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		unlink(copyover_tmp);
 		return;
 	}
@@ -636,7 +686,7 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	return player;
 }
 
-void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
+int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 {
 	FILE                  *fp;
 	struct copyover_header header;
@@ -645,6 +695,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	P_desc                 d;
 	P_char                 ch;
 	int                    i, rnum, save_room;
+	int                    success = 0;
 
 	copyover_in_progress = 1;
 
@@ -653,17 +704,15 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	{
 		logit(LOG_STATUS, "copyover_recover: no %s found, normal boot", COPYOVER_FILE);
 		copyover_in_progress = 0;
-		return;
+		copyover_boot = 0;
+		return 0;
 	}
 
 	// read and verify header
 	if (fread(&header, sizeof(header), 1, fp) != 1 || memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 || header.version != COPYOVER_VERSION)
 	{
 		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
-		fclose(fp);
-		unlink(COPYOVER_FILE);
-		copyover_in_progress = 0;
-		return;
+		goto copyover_recover_fail;
 	}
 
 	logit(LOG_STATUS, "copyover_recover: restoring %d descs, %d mobs, %d doors", header.num_descriptors, header.num_mobs, header.num_rooms);
@@ -672,10 +721,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	if (fread(mother_desc, sizeof(int), 1, fp) != 1 || fread(mother_desc_ssl, sizeof(int), 1, fp) != 1 || fread(ws_desc, sizeof(int), 1, fp) != 1)
 	{
 		logit(LOG_STATUS, "copyover_recover: failed to read listener sockets");
-		fclose(fp);
-		unlink(COPYOVER_FILE);
-		copyover_in_progress = 0;
-		return;
+		goto copyover_recover_fail;
 	}
 
 	// restore descriptors
@@ -689,7 +735,16 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 		d = (P_desc)mm_get(dead_desc_pool);
 		if (!d)
-			continue;
+		{
+			logit(LOG_STATUS,
+			      "copyover_recover: descriptor pool exhausted after %d/%d descs; pool=%s used=%lu pages=%lu size=%zu",
+			      i, header.num_descriptors, dead_desc_pool ? dead_desc_pool->name : "<null>",
+			      dead_desc_pool ? (unsigned long)dead_desc_pool->objs_used : 0UL,
+			      dead_desc_pool ? (unsigned long)dead_desc_pool->pages_owned : 0UL,
+			      dead_desc_pool ? dead_desc_pool->size : 0UL);
+			close(desc_entry.fd);
+			goto copyover_recover_fail;
+		}
 		memset(d, 0, sizeof(struct descriptor_data));
 
 		d->descriptor = desc_entry.fd;
@@ -699,7 +754,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		socklen_t optlen = sizeof(sock_type);
 		if (getsockopt(d->descriptor, SOL_SOCKET, SO_TYPE, &sock_type, &optlen) < 0)
 		{
-			logit(LOG_STATUS, "copyover: fd=%d is NOT a valid socket! errno=%d", d->descriptor, errno);
+			logit(LOG_STATUS, "copyover: fd=%d is NOT a valid socket for %s host=%s! errno=%d", d->descriptor, desc_entry.player_name, desc_entry.host, errno);
 			close(d->descriptor);
 			mm_release(dead_desc_pool, d);
 			continue;
@@ -1055,6 +1110,15 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		}
 	}
 
+	success = 1;
+
+copyover_recover_done:
+	copyover_in_progress = 0;
+	fclose(fp);
+	unlink(COPYOVER_FILE);
+	logit(LOG_STATUS, "copyover_recover: complete");
+	return success;
+
 copyover_recover_fail:
 	if (mother_desc)
 		*mother_desc = -1;
@@ -1065,8 +1129,8 @@ copyover_recover_fail:
 	copyover_in_progress = 0;
 	fclose(fp);
 	unlink(COPYOVER_FILE);
-
-	logit(LOG_STATUS, "copyover_recover: complete");
+	logit(LOG_STATUS, "copyover_recover: failed, copyover state discarded");
+	return 0;
 }
 
 // link up fighting pointers after zones loaded

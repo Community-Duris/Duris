@@ -709,10 +709,12 @@ void game_loop(int port, int sslport)
 	// copyover recovery - pool must exist first
 	if (copyover_boot)
 	{
-		copyover_recover(&recovered_mother_desc, &recovered_mother_desc_ssl, &recovered_ws_desc);
-		copyover_restore_combat();
-		// recalculate avg mob level now that mobs are restored
-		calc_zone_mob_level();
+		if (copyover_recover(&recovered_mother_desc, &recovered_mother_desc_ssl, &recovered_ws_desc))
+		{
+			copyover_restore_combat();
+			// recalculate avg mob level now that mobs are restored
+			calc_zone_mob_level();
+		}
 	}
 
 	// redis crash recovery - restore world state from redis snapshot
