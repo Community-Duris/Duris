@@ -43,26 +43,37 @@ void reap(int);
 void checkpointing(void);
 static void checkpointing_signal(int);
 
+static void install_signal_handler(int signo, void (*handler)(int), int flags)
+{
+	struct sigaction sa;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = handler;
+	sa.sa_flags   = flags;
+	sigemptyset(&sa.sa_mask);
+	sigaction(signo, &sa, NULL);
+}
+
 void signal_setup(void)
 {
 	struct itimerval itime;
 	struct timeval   interval;
 
-	signal(SIGUSR2, shutdown_request); // shutdown (no restart)
-	signal(SIGUSR1, shutdown_notice);  // copyover
-	signal(SIGRTMIN, reboot_request);  // reboot
+	install_signal_handler(SIGUSR2, shutdown_request, SA_RESTART); // shutdown (no restart)
+	install_signal_handler(SIGUSR1, shutdown_notice, SA_RESTART);  // copyover
+	install_signal_handler(SIGRTMIN, reboot_request, SA_RESTART);  // reboot
 
 	/*
 	   just to be on the safe side:
 	 */
 
-	signal(SIGHUP, hupsig);
+	install_signal_handler(SIGHUP, hupsig, SA_RESTART);
 	signal(SIGPIPE, SIG_IGN);
-	signal(SIGINT, hupsig);
-	signal(SIGALRM, logsig);
-	signal(SIGTERM, hupsig);
+	install_signal_handler(SIGINT, hupsig, SA_RESTART);
+	install_signal_handler(SIGALRM, logsig, SA_RESTART);
+	install_signal_handler(SIGTERM, hupsig, SA_RESTART);
 	/* new by fafhrd 11/28/99 */
-	signal(SIGCHLD, reap);
+	install_signal_handler(SIGCHLD, reap, SA_RESTART | SA_NOCLDSTOP);
 
 	/*
 	   set up the deadlock-protection
@@ -77,7 +88,7 @@ void signal_setup(void)
 	// Changing this to 5 min since we don't need to hang for 15 min to know we're stuck.
 	itime.it_interval.tv_sec = 300;
 	setitimer(ITIMER_VIRTUAL, &itime, 0);
-	signal(SIGVTALRM, checkpointing_signal);
+	install_signal_handler(SIGVTALRM, checkpointing_signal, SA_RESTART);
 }
 
 static volatile sig_atomic_t checkpoint_strikes = 0;
@@ -138,29 +149,27 @@ static void checkpointing_signal(int signum)
 		checkpoint_strikes = 0;
 		checkpoint_pending  = 0;
 	}
-
-	signal(SIGVTALRM, checkpointing_signal);
 }
 
 // sigusr1 - copyover request from launcher
 void shutdown_notice(int signum)
 {
+	(void)signum;
 	signal_shutdown_pending = 3; // copyover
-	signal(SIGUSR1, shutdown_notice);
 }
 
 // sigusr2 - clean shutdown (no restart)
 void shutdown_request(int signum)
 {
+	(void)signum;
 	signal_shutdown_pending = 1; // shutdown
-	signal(SIGUSR2, shutdown_request);
 }
 
 // sigrtmin - reboot request from launcher
 void reboot_request(int signum)
 {
+	(void)signum;
 	signal_shutdown_pending = 2; // reboot
-	signal(SIGRTMIN, reboot_request);
 }
 
 /*
@@ -168,8 +177,8 @@ void reboot_request(int signum)
  */
 void hupsig(int signum)
 {
+	(void)signum;
 	signal_shutdown_pending = 1;
-	signal(signum, hupsig);
 }
 
 void logsig(int signum)
@@ -182,10 +191,9 @@ void logsig(int signum)
 /* clean up our zombie kids to avoid defunct processes */
 void reap(int sig)
 {
+	(void)sig;
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
-
-	signal(SIGCHLD, reap);
 }
 
 void reaper(int signum) {}
