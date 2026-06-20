@@ -4155,6 +4155,14 @@ bool sql_save_account(struct acct_entry *acc)
 	if (!DB || !acc || !acc->acct_name)
 		return false;
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	char *esc_name  = sql_escape_string(acc->acct_name);
 	char *esc_email = sql_escape_string(acc->acct_email ? acc->acct_email : "");
 	char *esc_pass  = sql_escape_string(acc->acct_password ? acc->acct_password : "");
@@ -4216,12 +4224,18 @@ bool sql_save_account(struct acct_entry *acc)
 	free(esc_conf);
 
 	if (!sql_run_query(query))
+	{
+		if (own_txn)
+			sql_rollback();
 		return false;
+	}
 
 	// save ips
 	if (!sql_save_account_ips(acc->acct_name, acc->acct_unique_ips))
 	{
 		logit(LOG_DEBUG, "sql_save_account: failed to save ips for %s", acc->acct_name);
+		if (own_txn)
+			sql_rollback();
 		return false;
 	}
 
@@ -4229,6 +4243,14 @@ bool sql_save_account(struct acct_entry *acc)
 	if (!sql_save_account_characters(acc))
 	{
 		logit(LOG_DEBUG, "sql_save_account: failed to save characters for %s", acc->acct_name);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
+
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
 		return false;
 	}
 
@@ -4240,11 +4262,22 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 	if (!DB || !acc || !acc->acct_name)
 		return false;
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	char *esc_name = sql_escape_string(acc->acct_name);
 	if (!esc_name)
+	{
+		if (own_txn)
+			sql_rollback();
 		return false;
+	}
 
-	int saved = 0;
 	for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next)
 	{
 		if (!ch->charname)
@@ -4274,12 +4307,23 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 		         ch->blocked,
 		         ch->racewar);
 
-		if (sql_run_query(query))
-			saved++;
+		bool ok = sql_run_query(query);
 		free(esc_char);
+		if (!ok)
+		{
+			free(esc_name);
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
 	}
 
 	free(esc_name);
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
 	return true;
 }
 

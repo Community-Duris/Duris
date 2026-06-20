@@ -786,6 +786,19 @@ void flush_dirty_players(void)
 		pid_t result = waitpid(dirty_flush_pid, &status, WNOHANG);
 		if (result == 0)
 			return;
+		if (result > 0)
+		{
+			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+			{
+				redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
+				if (del)
+					freeReplyObject(del);
+			}
+			else
+			{
+				logit(LOG_SYS, "flush_dirty: previous async save failed, keeping dirty set for retry");
+			}
+		}
 		dirty_flush_pid = 0;
 	}
 
@@ -837,10 +850,6 @@ void flush_dirty_players(void)
 		return;
 	}
 
-	// clear dirty set now so stale entries don't accumulate
-	redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
-	if (del)
-		freeReplyObject(del);
 
 	// fork for async save
 	logit(LOG_SYS, "flush_dirty: saving %d online players async", valid);
@@ -881,6 +890,7 @@ void flush_dirty_players(void)
 		}
 		sql_reset_for_child(child_conn);
 
+		bool all_ok = true;
 		for (int i = 0; i < valid; i++)
 		{
 			P_char ch = find_player_by_pid(pids[i]);
@@ -889,17 +899,24 @@ void flush_dirty_players(void)
 				// Wrap save in transaction
 				if (sql_begin_transaction())
 				{
-					sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
-					if (!sql_commit()) sql_rollback();
+					if (!sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
+						all_ok = false;
+					if (!sql_commit())
+					{
+						sql_rollback();
+						all_ok = false;
+					}
 				}
-				else
-					sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
+				else if (!sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
+				{
+					all_ok = false;
+				}
 			}
 		}
 
 		mysql_close(child_conn);
 		free(pids);
-		_exit(0);
+		_exit(all_ok ? 0 : 1);
 	}
 
 	// parent - gremlin events wont work in forked child so do it here

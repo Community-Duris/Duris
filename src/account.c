@@ -2288,7 +2288,10 @@ void write_unique_ip(P_acct acct, FILE *f)
 	struct acct_ip *c     = NULL;
 
 	if (acct->acct_name)
-		sql_save_account_ips(acct->acct_name, acct->acct_unique_ips);
+	{
+		if (!sql_save_account_ips(acct->acct_name, acct->acct_unique_ips))
+			logit(LOG_DEBUG, "write_unique_ip: failed to save IPs for %s", acct->acct_name);
+	}
 
 	c = acct->acct_unique_ips;
 	if (!c)

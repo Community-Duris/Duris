@@ -9,12 +9,16 @@ checks = []
 sql_c = (ROOT / "src/sql.c").read_text()
 sql_pool_c = (ROOT / "src/sql_pool.c").read_text()
 sql_player_c = (ROOT / "src/sql_player.c").read_text()
+account_c = (ROOT / "src/account.c").read_text()
 
 checks.append(("sql.c defines sql_persistence_db_name", "const char *sql_persistence_db_name(void)" in sql_c))
 checks.append(("sql_pool.c uses sql_persistence_db_name in mysql_real_connect", "sql_persistence_db_name()" in sql_pool_c and "mysql_real_connect" in sql_pool_c))
 checks.append(("sql_player.c uses sql_persistence_db_name in mysql_real_connect", "sql_persistence_db_name()" in sql_player_c and "mysql_real_connect" in sql_player_c))
 checks.append(("sql_pool.c no longer hardcodes DB_NAME in mysql_real_connect", "mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, DB_NAME" not in sql_pool_c))
 checks.append(("sql_player.c no longer hardcodes DB_NAME in mysql_real_connect", "mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, DB_NAME" not in sql_player_c))
+checks.append(("sql_save_account wraps account/ips/characters in a transaction", "bool own_txn = false;" in sql_player_c and "sql_save_account: failed to save characters" in sql_player_c and "if (own_txn && !sql_commit())" in sql_player_c))
+checks.append(("sql_save_account_characters fails hard on insert errors", "sql_save_account_characters" in sql_player_c and "if (!ok)" in sql_player_c and "sql_rollback();" in sql_player_c))
+checks.append(("write_unique_ip logs failed ip saves", "write_unique_ip: failed to save IPs" in account_c and "if (!sql_save_account_ips" in account_c))
 
 release_fn = re.search(r"void sql_pool_release\(MYSQL \*conn\)\n\{.*?\n\}", sql_pool_c, re.S)
 if not release_fn:
