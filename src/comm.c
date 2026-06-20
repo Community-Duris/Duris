@@ -92,6 +92,7 @@ extern const int             max_ingame_good;
 extern const int             max_ingame_evil;
 extern TimedShutdownData     shutdownData;
 extern void                  timedShutdown(P_char ch, P_char, P_obj, void *data);
+extern void                  checkpointing(void);
 
 long sentbytes    = 0;
 long recivedbytes = 0;
@@ -787,6 +788,7 @@ void game_loop(int port, int sslport)
 			request_shutdown(type, "Launcher", "signal from launcher");
 		}
 		//PROFILE_END(process_signal_shutdown_pending);
+		checkpointing();
 
 		if ((last_desc_per_hour_reset + 3600) <= time(0))
 		{

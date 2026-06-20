@@ -40,7 +40,8 @@ void reboot_request(int);
 void hupsig(int);
 void logsig(int);
 void reap(int);
-void checkpointing(int);
+void checkpointing(void);
+static void checkpointing_signal(int);
 
 void signal_setup(void)
 {
@@ -76,62 +77,69 @@ void signal_setup(void)
 	// Changing this to 5 min since we don't need to hang for 15 min to know we're stuck.
 	itime.it_interval.tv_sec = 300;
 	setitimer(ITIMER_VIRTUAL, &itime, 0);
-	signal(SIGVTALRM, checkpointing);
+	signal(SIGVTALRM, checkpointing_signal);
 }
 
-static int hung_strikes = 0;
+static volatile sig_atomic_t checkpoint_strikes = 0;
+static volatile sig_atomic_t checkpoint_pending = 0;
 
-// This handles a nothing-happens over a period of time.
-void checkpointing(int signum)
+void checkpointing(void)
 {
-
-	if (!tics)
+	if (!checkpoint_pending)
 	{
-		hung_strikes++;
+		return;
+	}
 
-		{
-			void *bt[64];
-			int   n  = backtrace(bt, 64);
-			int   fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
-			if (fd >= 0)
-			{
-				char msg[64];
-				int  len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n", hung_strikes);
-				write(fd, msg, len);
-				backtrace_symbols_fd(bt, n, fd);
-				close(fd);
-			}
-		}
+	if (checkpoint_strikes < 2)
+	{
+		logit(LOG_EXIT, "CHECKPOINT warning: tics not updated (strike %d)", (int)checkpoint_strikes);
+		checkpoint_pending = 0;
+		return;
+	}
 
-		// collect two samples before killing
-		if (hung_strikes < 2)
-		{
-			logit(LOG_EXIT, "CHECKPOINT warning: tics not updated (strike %d)", hung_strikes);
-			signal(SIGVTALRM, checkpointing);
-			return;
-		}
+	logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated (%d strikes)", (int)checkpoint_strikes);
 
-		logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated (%d strikes)", hung_strikes);
+	void *bt[64];
+	int   n  = backtrace(bt, 64);
+	int   fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
+	if (fd >= 0)
+	{
+		char msg[64];
+		int  len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n", (int)checkpoint_strikes);
+		write(fd, msg, len);
+		backtrace_symbols_fd(bt, n, fd);
+		close(fd);
+	}
 
-		// The reason for this, is that we don't want to reboot into a hung-during-boot situation.
-		// In other words, if the mud hangs during a boot, we just want to die completely until it's fixed.
-		if (game_booted)
-		{
-			exit(56);
-		}
-		else
-		{
-			exit(-1);
-		}
+	// The reason for this, is that we don't want to reboot into a hung-during-boot situation.
+	// In other words, if the mud hangs during a boot, we just want to die completely until it's fixed.
+	if (game_booted)
+	{
+		exit(56);
 	}
 	else
 	{
-		tics         = 0;
-		hung_strikes = 0;
+		exit(-1);
+	}
+}
+
+static void checkpointing_signal(int signum)
+{
+	(void)signum;
+
+	if (!tics)
+	{
+		checkpoint_strikes = checkpoint_strikes + 1;
+		checkpoint_pending = 1;
+	}
+	else
+	{
+		tics              = 0;
+		checkpoint_strikes = 0;
+		checkpoint_pending  = 0;
 	}
 
-	// Add this linefor signal 26 -DCL
-	signal(SIGVTALRM, checkpointing);
+	signal(SIGVTALRM, checkpointing_signal);
 }
 
 // sigusr1 - copyover request from launcher
