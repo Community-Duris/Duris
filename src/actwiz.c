@@ -103,7 +103,7 @@ extern const char                      *sector_types[];
 extern const flagDef                    wear_bits[];
 extern const char                      *zone_bits[];
 extern const char                      *justice_obj_status[];
-extern const char                      *shutdown_message;
+extern char                            *shutdown_message;
 extern const char                      *item_material[];
 extern const char                      *kingdom_type_list[];
 extern const char                      *resource_list[];
@@ -4172,6 +4172,10 @@ void timedShutdown(P_char ch, P_char, P_obj, void *data)
 			default:
 				wizlog(60, "WARNING:  Unknown shutdown type ABORTED!!");
 				return;
+		}
+		if (shutdown_message)
+		{
+			FREE(shutdown_message);
 		}
 		shutdown_message = str_dup(buf);
 	}

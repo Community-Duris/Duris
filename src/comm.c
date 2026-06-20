@@ -87,7 +87,7 @@ extern struct wizban_t      *wizconnect;
 extern struct time_info_data time_info;
 extern struct zone_data     *zone;
 extern struct zone_data     *zone_table;
-extern const char           *shutdown_message;
+extern char                 *shutdown_message;
 extern const int             max_ingame_good;
 extern const int             max_ingame_evil;
 extern TimedShutdownData     shutdownData;
@@ -155,7 +155,7 @@ int    shutdownflag      = 0;
 // signal-initiated shutdown: 0=none, 1=shutdown, 2=reboot, 3=copyover
 volatile sig_atomic_t signal_shutdown_pending = 0;
 int                   slow_death              = 0;
-int                   tics                    = 0;
+volatile sig_atomic_t tics                    = 0;
 long                  boot_time;
 int                   ipc_id    = 0;
 int                   was_upper = FALSE;
@@ -1291,7 +1291,8 @@ void game_loop(int port, int sslport)
 
 		PROFILE_START(pulse_reset);
 		// tics since last checkpoint signal
-		if (++tics > BIT_30)
+		tics = tics + 1;
+		if (tics > BIT_30)
 		{
 			tics = 1;
 			debug("Huge value for tics, resetting to 1.");

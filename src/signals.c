@@ -11,9 +11,11 @@
 #include "structs.h"
 #include "utils.h"
 #include <execinfo.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -24,7 +26,7 @@ extern void exit(int);
    external variables
  */
 
-extern int  tics;
+extern volatile sig_atomic_t tics;
 extern bool game_booted;
 extern int  shutdownflag;
 // signal-initiated shutdown: 0=none, 1=shutdown, 2=reboot, 3=copyover
@@ -51,7 +53,10 @@ static void install_signal_handler(int signo, void (*handler)(int), int flags)
 	sa.sa_handler = handler;
 	sa.sa_flags   = flags;
 	sigemptyset(&sa.sa_mask);
-	sigaction(signo, &sa, NULL);
+	if (sigaction(signo, &sa, NULL) < 0)
+	{
+		fatal_boot_error("signals", "sigaction(%d) failed: %s", signo, strerror(errno));
+	}
 }
 
 void signal_setup(void)
@@ -87,7 +92,10 @@ void signal_setup(void)
 	itime.it_interval = interval;
 	// Changing this to 5 min since we don't need to hang for 15 min to know we're stuck.
 	itime.it_interval.tv_sec = 300;
-	setitimer(ITIMER_VIRTUAL, &itime, 0);
+	if (setitimer(ITIMER_VIRTUAL, &itime, 0) < 0)
+	{
+		fatal_boot_error("signals", "setitimer(ITIMER_VIRTUAL) failed: %s", strerror(errno));
+	}
 	install_signal_handler(SIGVTALRM, checkpointing_signal, SA_RESTART);
 }
 
