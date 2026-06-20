@@ -1375,8 +1375,8 @@ void game_loop(int port, int sslport)
 
 	// skip character extraction during copyover - we need them intact
 	if (!_copyover)
-		persistence_flush_all_character_saves();
 	{
+		persistence_flush_all_character_saves();
 		for (point = descriptor_list; point; point = point->next)
 		{
 			if (point->character)

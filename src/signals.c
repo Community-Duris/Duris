@@ -137,7 +137,6 @@ void checkpointing(int signum)
 // sigusr1 - copyover request from launcher
 void shutdown_notice(int signum)
 {
-	logit(LOG_STATUS, "Received USR1 - copyover request");
 	signal_shutdown_pending = 3; // copyover
 	signal(SIGUSR1, shutdown_notice);
 }
@@ -145,7 +144,6 @@ void shutdown_notice(int signum)
 // sigusr2 - clean shutdown (no restart)
 void shutdown_request(int signum)
 {
-	logit(LOG_STATUS, "Received USR2 - shutdown request");
 	signal_shutdown_pending = 1; // shutdown
 	signal(SIGUSR2, shutdown_request);
 }
@@ -153,7 +151,6 @@ void shutdown_request(int signum)
 // sigrtmin - reboot request from launcher
 void reboot_request(int signum)
 {
-	logit(LOG_STATUS, "Received SIGRTMIN - reboot request");
 	signal_shutdown_pending = 2; // reboot
 	signal(SIGRTMIN, reboot_request);
 }
