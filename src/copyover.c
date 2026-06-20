@@ -55,6 +55,11 @@ static int copyover_in_progress = 0;
 
 int is_copyover_boot(void) { return copyover_in_progress; }
 
+void copyover_clear_boot(void)
+{
+	copyover_in_progress = 0;
+}
+
 void copyover_prepare_socket(int fd)
 {
 	int flags = fcntl(fd, F_GETFD);
@@ -394,7 +399,7 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 
 void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 {
-	FILE                  *fp;
+	FILE                  *fp = NULL;
 	struct copyover_header header;
 	P_desc                 d, d_next;
 	P_char                 ch;
@@ -402,6 +407,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	int                    room, dir;
 	int                    num_descs, num_mobs, num_objs, num_rooms;
 	char                   exec_buf[256];
+	const char            *copyover_tmp = COPYOVER_FILE ".tmp";
 
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
@@ -460,10 +466,10 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// count items to save
 	count_copyover_items(&num_descs, &num_mobs, &num_objs, &num_rooms);
 
-	fp = fopen(COPYOVER_FILE, "wb");
+	fp = fopen(copyover_tmp, "wb");
 	if (!fp)
 	{
-		logit(LOG_STATUS, "copyover: cant open %s for writing", COPYOVER_FILE);
+		logit(LOG_STATUS, "copyover: cant open %s for writing", copyover_tmp);
 		return;
 	}
 
@@ -482,6 +488,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: failed to write header/sockets");
 		fclose(fp);
+		unlink(copyover_tmp);
 		return;
 	}
 
@@ -539,6 +546,12 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	}
 
 	fclose(fp);
+	if (rename(copyover_tmp, COPYOVER_FILE) != 0)
+	{
+		logit(LOG_STATUS, "copyover: failed to publish %s as %s: %s", copyover_tmp, COPYOVER_FILE, strerror(errno));
+		unlink(copyover_tmp);
+		return;
+	}
 
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs, num_mobs, num_objs, num_rooms);
 
@@ -554,9 +567,24 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// copy new binary if exists
 	if (access("src/dms_new", X_OK) == 0)
 	{
+		int old_binary_renamed = 0;
 		logit(LOG_STATUS, "copyover: copying src/dms_new to ./dms");
-		rename("./dms", "./dms.old");
-		rename("src/dms_new", "./dms");
+		if (rename("./dms", "./dms.old") == 0)
+		{
+			old_binary_renamed = 1;
+		}
+		else
+		{
+			logit(LOG_STATUS, "copyover: failed to rename ./dms to ./dms.old: %s", strerror(errno));
+		}
+		if (rename("src/dms_new", "./dms") != 0)
+		{
+			logit(LOG_STATUS, "copyover: failed to install src/dms_new as ./dms: %s", strerror(errno));
+			if (old_binary_renamed && rename("./dms.old", "./dms") != 0)
+			{
+				logit(LOG_STATUS, "copyover: failed to restore ./dms from ./dms.old: %s", strerror(errno));
+			}
+		}
 	}
 
 	logit(LOG_STATUS, "copyover: executing new binary...");
@@ -656,7 +684,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		if (fread(&desc_entry, sizeof(desc_entry), 1, fp) != 1)
 		{
 			logit(LOG_STATUS, "copyover_recover: failed reading desc %d", i);
-			break;
+			goto copyover_recover_fail;
 		}
 
 		d = (P_desc)mm_get(dead_desc_pool);
@@ -672,6 +700,8 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		if (getsockopt(d->descriptor, SOL_SOCKET, SO_TYPE, &sock_type, &optlen) < 0)
 		{
 			logit(LOG_STATUS, "copyover: fd=%d is NOT a valid socket! errno=%d", d->descriptor, errno);
+			close(d->descriptor);
+			mm_release(dead_desc_pool, d);
 			continue;
 		}
 		logit(LOG_STATUS, "copyover: fd=%d is valid socket type=%d", d->descriptor, sock_type);
@@ -799,7 +829,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		int                    num_affs, num_inv;
 
 		if (fread(&mob_entry, sizeof(mob_entry), 1, fp) != 1)
-			break;
+			goto copyover_recover_fail;
 
 		// read affects into temp array
 		num_affs = mob_entry.num_affects;
@@ -809,7 +839,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		{
 			struct copyover_affect aff_entry;
 			if (fread(&aff_entry, sizeof(aff_entry), 1, fp) != 1)
-				break;
+				goto copyover_recover_fail;
 			if (a < 64)
 				aff_entries[a] = aff_entry;
 		}
@@ -822,7 +852,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		{
 			copyover_carried_item inv_entry;
 			if (fread(&inv_entry, sizeof(inv_entry), 1, fp) != 1)
-				break;
+				goto copyover_recover_fail;
 			if (c < 256)
 				inv_entries[c] = inv_entry;
 		}
@@ -933,7 +963,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	{
 		struct copyover_obj obj_entry;
 		if (fread(&obj_entry, sizeof(obj_entry), 1, fp) != 1)
-			break;
+			goto copyover_recover_fail;
 
 		rnum = real_room(obj_entry.room);
 		if (rnum < 0 || rnum > top_of_world)
@@ -942,7 +972,8 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			for (int c = 0; c < obj_entry.num_contents; c++)
 			{
 				struct copyover_obj_content dummy;
-				fread(&dummy, sizeof(dummy), 1, fp);
+				if (fread(&dummy, sizeof(dummy), 1, fp) != 1)
+					goto copyover_recover_fail;
 			}
 			continue;
 		}
@@ -953,7 +984,8 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			for (int c = 0; c < obj_entry.num_contents; c++)
 			{
 				struct copyover_obj_content dummy;
-				fread(&dummy, sizeof(dummy), 1, fp);
+				if (fread(&dummy, sizeof(dummy), 1, fp) != 1)
+					goto copyover_recover_fail;
 			}
 			continue;
 		}
@@ -966,7 +998,8 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			for (int c = 0; c < obj_entry.num_contents; c++)
 			{
 				struct copyover_obj_content dummy;
-				fread(&dummy, sizeof(dummy), 1, fp);
+				if (fread(&dummy, sizeof(dummy), 1, fp) != 1)
+					goto copyover_recover_fail;
 			}
 			continue;
 		}
@@ -999,7 +1032,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		{
 			struct copyover_obj_content cont_entry;
 			if (fread(&cont_entry, sizeof(cont_entry), 1, fp) != 1)
-				break;
+				goto copyover_recover_fail;
 
 			P_obj content = read_object(cont_entry.vnum, VIRTUAL);
 			if (content)
@@ -1013,7 +1046,7 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	for (i = 0; i < header.num_rooms; i++)
 	{
 		if (fread(&room_entry, sizeof(room_entry), 1, fp) != 1)
-			break;
+			goto copyover_recover_fail;
 
 		rnum = real_room(room_entry.vnum);
 		if (rnum >= 0 && rnum <= top_of_world && room_entry.dir >= 0 && room_entry.dir < NUM_EXITS && world[rnum].dir_option[room_entry.dir])
@@ -1022,6 +1055,14 @@ void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		}
 	}
 
+copyover_recover_fail:
+	if (mother_desc)
+		*mother_desc = -1;
+	if (mother_desc_ssl)
+		*mother_desc_ssl = -1;
+	if (ws_desc)
+		*ws_desc = -1;
+	copyover_in_progress = 0;
 	fclose(fp);
 	unlink(COPYOVER_FILE);
 

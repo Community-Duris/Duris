@@ -772,6 +772,8 @@ void game_loop(int port, int sslport)
 	mother_desc     = s;
 	mother_desc_ssl = S;
 	ws_desc         = WS;
+	copyover_boot   = 0;
+	copyover_clear_boot();
 
 	long    last_desc_per_hour_reset = time(0);
 	clock_t loop_time_end;
