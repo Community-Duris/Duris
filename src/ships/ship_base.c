@@ -488,21 +488,57 @@ void queue_ship_save(P_ship ship, const char *reason)
 bool rename_ship_owner(char *old_name, char *new_name)
 {
 	P_ship ship;
+	char   *old_ownername;
+	char   *old_ship_name;
+	char   *renamed_ship_name;
+	char   *renamed_ship_description;
+	char   *renamed_ship_short_description;
+	char   *renamed_ship_object_name;
+	char   *renamed_ship_keywords;
 
 	ship = get_ship_from_owner(old_name);
 	if (!ship || !*new_name)
 		return FALSE;
 
+	old_ownername = str_dup(ship->ownername ? ship->ownername : "");
+	old_ship_name = str_dup(SHIP_NAME(ship) ? SHIP_NAME(ship) : "");
+	if (!old_ownername || !old_ship_name)
+	{
+		if (old_ownername)
+			FREE(old_ownername);
+		if (old_ship_name)
+			FREE(old_ship_name);
+		return FALSE;
+	}
+
 	CAP(new_name);
 	str_free(ship->ownername);
 	ship->ownername = str_dup(new_name);
 	name_ship(SHIP_NAME(ship), ship);
+	
+	char *failed_ship_name = ship->name;
+	char *failed_ship_description = ship->shipobj->description;
+	char *failed_ship_short_description = ship->shipobj->short_description;
+	char *failed_ship_object_name = ship->shipobj->name;
+	char *failed_ship_keywords = ship->keywords;
 	if (!write_ship(ship))
 	{
 		logit(LOG_DEBUG, "Failed to save re-owned ship %s for %s.",
 		      SHIP_NAME(ship), old_name);
+		str_free(ship->ownername);
+		ship->ownername = old_ownername;
+		name_ship(old_ship_name, ship);
+		FREE(failed_ship_name);
+		FREE(failed_ship_description);
+		FREE(failed_ship_short_description);
+		FREE(failed_ship_object_name);
+		FREE(failed_ship_keywords);
+		FREE(old_ship_name);
 		return FALSE;
 	}
+
+	FREE(old_ownername);
+	FREE(old_ship_name);
 
 	redis_invalidate_ship_snapshot(old_name);
 
