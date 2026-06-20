@@ -164,7 +164,10 @@ void hupsig(int signum)
 	signal(signum, hupsig);
 }
 
-void logsig(int signum) { logit(LOG_SYS, "Signal received. Ignoring."); }
+void logsig(int signum)
+{
+	(void)signum;
+}
 
 /* This should do the trick... fafhrd 11/28/99 */
 
