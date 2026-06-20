@@ -1861,7 +1861,8 @@ P_char un_morph(P_char mob)
 	char_to_room(ch, in_rm, -1);
 	//  }                           /* shouldn't trigger agg
 	//                               */
-	do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+		logit(LOG_DEBUG, "Failed to save %s after room move.", GET_NAME(ch));
 
 	return ch;
 }
@@ -4011,7 +4012,8 @@ void do_craft(P_char ch, char *argument, int cmd)
 		extract_obj(matLowest);
 		extract_obj(matHighest);
 		// Save the character! 1 -> in game.
-		do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+		logit(LOG_DEBUG, "Failed to save %s after heroics reward.", GET_NAME(ch));
 	}
 
 	/*
@@ -4511,13 +4513,24 @@ void do_home(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	SUB_MONEY(ch, cost, 0);
+	int old_hometown        = ch->player.hometown;
+	int old_birthplace      = ch->player.birthplace;
+	int old_orig_birthplace = ch->player.orig_birthplace;
 
 	ch->player.hometown        = world[ch->in_room].number;
 	ch->player.birthplace      = world[ch->in_room].number;
 	ch->player.orig_birthplace = world[ch->in_room].number;
 
-	do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+	{
+		ch->player.hometown        = old_hometown;
+		ch->player.birthplace      = old_birthplace;
+		ch->player.orig_birthplace = old_orig_birthplace;
+		send_to_char("\r\n&+RYour new birth home could not be saved right now.&n\r\n", ch);
+		return;
+	}
+
+	SUB_MONEY(ch, cost, 0);
 
 	send_to_char("\r\n&+WThank you for the payment and welcome to your new birth home whenever you die you will return here.&n\r\n", ch);
 	return;

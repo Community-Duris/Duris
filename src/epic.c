@@ -2149,7 +2149,8 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 	if (!send_to_pid(buff2, GET_PID(t_ch)))
 		send_to_pid_offline(buff2, GET_PID(t_ch));
 
-	do_save_silent(t_ch, 1);
+	if (!do_save_silent(t_ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic reset refund.", GET_NAME(t_ch));
 }
 
 void do_epic_reset(P_char ch, char *arg, int cmd)
@@ -2258,7 +2259,8 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 	if (!send_to_pid(buff2, GET_PID(t_ch)))
 		send_to_pid_offline(buff2, GET_PID(t_ch));
 
-	do_save_silent(t_ch, 1);
+	if (!do_save_silent(t_ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic reset refund.", GET_NAME(t_ch));
 }
 
 // This is here to clear out the racial skills set along with the tag TAG_RACIAL_SKILLS
@@ -2330,7 +2332,8 @@ void clear_racial_skills(P_char ch)
 
 	affect_from_char(ch, TAG_RACIAL_SKILLS);
 
-	do_save_silent(ch, 1); // racial skills require a save.
+	if (!do_save_silent(ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after clearing racial skills.", GET_NAME(ch)); // racial skills require a save.
 }
 
 void refund_epic_skills(P_char ch)

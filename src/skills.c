@@ -4587,12 +4587,14 @@ void update_racial_skills(P_char ch)
 			// assign gnome racial epic skills
 			ch->only.pc->skills[SKILL_FIX].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_FIX].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_HALFLING:
 			ch->only.pc->skills[SKILL_EXPERT_PARRY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_EXPERT_PARRY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_GOBLIN:
 			ch->only.pc->skills[SKILL_EXPERT_PARRY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
@@ -4600,13 +4602,15 @@ void update_racial_skills(P_char ch)
 			ch->only.pc->skills[SKILL_FIX].taught           = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_FIX].learned          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_GITHYANKI:
 		case RACE_GITHZERAI:
 			ch->only.pc->skills[SKILL_ADVANCED_MEDITATION].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_ADVANCED_MEDITATION].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_HUMAN:
 			ch->only.pc->skills[SKILL_SHIELD_COMBAT].taught           = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
@@ -4619,7 +4623,8 @@ void update_racial_skills(P_char ch)
 			ch->only.pc->skills[SKILL_DEVOTION].learned               = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught      = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned     = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_ORC:
 			ch->only.pc->skills[SKILL_SHIELD_COMBAT].taught           = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
@@ -4632,7 +4637,8 @@ void update_racial_skills(P_char ch)
 			ch->only.pc->skills[SKILL_DEVOTION].learned               = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught      = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned     = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_CENTAUR:
 			ch->only.pc->skills[SKILL_EXPERT_RIPOSTE].taught      = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
@@ -4641,29 +4647,34 @@ void update_racial_skills(P_char ch)
 			ch->only.pc->skills[SKILL_TWOWEAPON].learned          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_TWOWEAPON].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_TWOWEAPON].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_BARBARIAN:
 			ch->only.pc->skills[SKILL_ANATOMY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_ANATOMY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_TROLL:
 			ch->only.pc->skills[SKILL_ANATOMY].taught          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_ANATOMY].learned         = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_TOTEMIC_MASTERY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_TOTEMIC_MASTERY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_OGRE:
 			ch->only.pc->skills[SKILL_DEVASTATING_CRITICAL].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_DEVASTATING_CRITICAL].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_FIRBOLG:
 			ch->only.pc->skills[SKILL_NATURES_SANCTITY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_NATURES_SANCTITY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		case RACE_THRIKREEN:
 			// assign thri-kreen racial epic skills
@@ -4671,7 +4682,8 @@ void update_racial_skills(P_char ch)
 			// ch->only.pc->skills[SKILL_SHIELDLESS_BASH].learned = BOUNDED(10, GET_LEVEL(ch) *2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
 			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			do_save_silent(ch, 1); // racial skills require a save.
+			if (!do_save_silent(ch, 1))
+				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
 			break;
 		default:
 			// do nothing - not a race that has skills

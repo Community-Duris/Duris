@@ -21,6 +21,7 @@
 #include "mm.h"
 #include "necromancy.h"
 #include "ships/ships.h"
+#include "redis.h"
 #include "siege.h"
 #include "spells.h"
 #include "sql.h"
@@ -475,7 +476,7 @@ MYSQL *sql_create_child_connection(void)
 	if (!conn)
 		return NULL;
 
-	conn = mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, DB_NAME, DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
+	conn = mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(), DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
 	if (!conn)
 		return NULL;
 
@@ -2393,9 +2394,6 @@ bool sql_save_player_items(P_char ch)
 	             ch->carrying,
 	             ch->equipment[0]);
 
-	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
-	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
-
 	if (use_incremental)
 	{
 		// incremental save: only resave dirty containers
@@ -2423,6 +2421,8 @@ bool sql_save_player_items(P_char ch)
 		{
 			if (!sql_commit()) { sql_rollback(); return false; }
 		}
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 		return true;
 	}
 
@@ -2458,6 +2458,11 @@ bool sql_save_player_items(P_char ch)
 			sql_rollback();
 			return false;
 		}
+	}
+	if (success)
+	{
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 	}
 	return success;
 }
@@ -9124,6 +9129,7 @@ bool sql_save_ship(P_ship ship)
 	}
 
 	logit(LOG_DEBUG, "sql_save_ship: finished saving ship %d", ship->db_id);
+	redis_cache_ship_snapshot(ship);
 
 	return true;
 }
@@ -9227,7 +9233,14 @@ static bool sql_load_ship_slots(int ship_id, P_ship ship)
 
 P_ship sql_load_ship(const char *owner_name)
 {
-	if (!DB || !owner_name)
+	if (!owner_name)
+		return NULL;
+
+	P_ship cached_ship = redis_load_ship_snapshot(owner_name);
+	if (cached_ship)
+		return cached_ship;
+
+	if (!DB)
 		return NULL;
 
 	char *esc_owner = sql_escape_string(owner_name);
@@ -9279,9 +9292,14 @@ P_ship sql_load_ship(const char *owner_name)
 	sql_load_ship_armor(ship_id, ship);
 	sql_load_ship_crew(ship_id, ship);
 	sql_load_ship_slots(ship_id, ship);
+	ship->save_pending         = false;
+	ship->save_retry_after     = 0;
+	ship->save_saved_signature = ship_save_signature(ship);
+	redis_cache_ship_snapshot(ship);
 
 	return ship;
 }
+
 
 bool sql_load_all_ships()
 {
@@ -9344,7 +9362,11 @@ bool sql_delete_ship(const char *owner_name)
 	snprintf(query, sizeof(query), "delete from ships where owner_name='%s'", esc_owner);
 	free(esc_owner);
 
-	return sql_run_query(query);
+	if (!sql_run_query(query))
+		return false;
+
+	redis_invalidate_ship_snapshot(owner_name);
+	return true;
 }
 
 bool sql_save_guild(Guild *guild)

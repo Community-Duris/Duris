@@ -237,6 +237,19 @@ void sql_populate_lookup_tables()
 	logit(LOG_STATUS, "Lookup tables populated.");
 }
 
+/* Single source of truth for database selection.  On non-default
+ * ports (typically dev/sandbox builds started by mortals) we
+ * deliberately swap the production "duris" database for the
+ * "duris_dev" sandbox so a misconfigured boot can never clobber
+ * live data.  Sync (DB) and async/pool paths must call this so they
+ * agree on the target database. */
+const char *sql_persistence_db_name(void)
+{
+	if (RUNNING_PORT != DFLT_PORT)
+		return "duris_dev";
+	return DB_NAME;
+}
+
 /* load .env file if present, setting environment variables */
 int load_env_file(void)
 {
@@ -286,15 +299,10 @@ int load_env_file(void)
  * throughout the mud session. */
 int initialize_mysql()
 {
-	/* use database from .env / environment variable */
-	/* hack to ensure we're not using the live database when not running on default port */
-	char db_name[50];
-	snprintf(db_name, 50, "%s", DB_NAME);
-
-	if (RUNNING_PORT != DFLT_PORT)
-	{
-		snprintf(db_name, 50, "duris_dev");
-	}
+	/* Resolve the target database through the shared helper so the
+	 * main DB connection, the connection pool slots, and the legacy
+	 * persistenceDB fallback all connect to the same database. */
+	const char *db_name = sql_persistence_db_name();
 
 	logit(LOG_STATUS, "Initializing MySQL persistent connection to %s (host=%s port=%d).", db_name, DB_HOST, DB_PORT);
 	DB = mysql_init(NULL);
@@ -2360,13 +2368,17 @@ MYSQL *sql_persistence_connection(void)
 
 	/* Legacy fallback: lazy-initialise the singleton.
 	 * Kept for bootstrap / early-start paths that run before
-	 * the pool is initialised (e.g. sql_populate_lookup_tables). */
+	 * the pool is initialised (e.g. sql_populate_lookup_tables).
+	 * Must use the shared db-name resolver so pool/fallback never
+	 * disagrees with the main DB connection about which database
+	 * is the production one. */
 	if (!persistenceDB)
 	{
 		persistenceDB = mysql_init(NULL);
 		if (!persistenceDB)
 			return NULL;
-		if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD, DB_NAME, DB_PORT, NULL, 0))
+		if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD,
+		                        sql_persistence_db_name(), DB_PORT, NULL, 0))
 		{
 			logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_connection failed: %s", mysql_error(persistenceDB));
 			mysql_close(persistenceDB);

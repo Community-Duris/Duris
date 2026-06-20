@@ -1174,6 +1174,7 @@ void game_loop(int port, int sslport)
 			gmcp_flush_dirty_rooms();
 			gmcp_flush_dirty_ship_contacts();
 			gmcp_flush_dirty_ship_info();
+			flush_pending_ship_saves();
 			latency_trace_record("gmcp_flush", (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC), pulse);
 		}
 
@@ -1367,6 +1368,7 @@ void game_loop(int port, int sslport)
 	if (!_pwipe)
 	{
 		save_dirty_shopkeepers();
+		flush_pending_ship_saves();
 
 		if (no_ferries == 0)
 		{
@@ -1410,7 +1412,8 @@ void game_loop(int port, int sslport)
 					if (!_pwipe)
 					{
 						write_to_descriptor(point, "\r\nSaving...\r\n");
-						do_save_silent(point->character, 3);
+				if (!do_save_silent(point->character, 3))
+				logit(LOG_STATUS, "Failed to save %s during shutdown.", GET_NAME(point->character));
 					}
 					// If it's not an immortal.
 					if (GET_LEVEL(point->character) < MINLVLIMMORTAL)

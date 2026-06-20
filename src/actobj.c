@@ -2620,7 +2620,8 @@ void do_eat(P_char ch, char *argument, int cmd)
 			// GET_EXP(ch) = new_exp_table[GET_LEVEL(ch)];
 			statuslog(ch->player.level, "&+CLevel:&n (%s&n) just ate level mushroom at [%d]!", GET_NAME(ch), (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
 			advance_level(ch);
-			do_save_silent(ch, 1);
+			if (!do_save_silent(ch, 1))
+				logit(LOG_DEBUG, "Failed to save %s after level mushroom.", GET_NAME(ch));
 			extract_obj(temp);
 			return;
 		}

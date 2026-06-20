@@ -22,6 +22,7 @@
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "ships/ships.h"
 
 #ifndef __NO_MYSQL__
 #include <cjson/cJSON.h>
@@ -2022,6 +2023,307 @@ void redis_cache_del(const char *key)
 		freeReplyObject(reply);
 #endif
 }
+
+#ifndef __NO_MYSQL__
+static void redis_ship_cache_key(char *buf, size_t buf_size, const char *owner_name)
+{
+	snprintf(buf, buf_size, "ship:snapshot:%s", owner_name ? owner_name : "");
+}
+
+static int redis_json_int(cJSON *object, const char *key, int fallback)
+{
+	if (!cJSON_IsObject(object))
+		return fallback;
+	cJSON *item = cJSON_GetObjectItemCaseSensitive(object, key);
+	if (!cJSON_IsNumber(item))
+		return fallback;
+	return item->valueint;
+}
+
+static double redis_json_double(cJSON *object, const char *key, double fallback)
+{
+	if (!cJSON_IsObject(object))
+		return fallback;
+	cJSON *item = cJSON_GetObjectItemCaseSensitive(object, key);
+	if (!cJSON_IsNumber(item))
+		return fallback;
+	return item->valuedouble;
+}
+
+static const char *redis_json_string(cJSON *object, const char *key)
+{
+	if (!cJSON_IsObject(object))
+		return NULL;
+	cJSON *item = cJSON_GetObjectItemCaseSensitive(object, key);
+	if (!cJSON_IsString(item) || !item->valuestring)
+		return NULL;
+	return item->valuestring;
+}
+
+static int redis_json_array_int(cJSON *array, int index, int fallback)
+{
+	if (!cJSON_IsArray(array))
+		return fallback;
+	cJSON *item = cJSON_GetArrayItem(array, index);
+	if (!cJSON_IsNumber(item))
+		return fallback;
+	return item->valueint;
+}
+
+static cJSON *redis_ship_snapshot_to_json(const struct ShipData *ship)
+{
+	if (!ship)
+		return NULL;
+
+	cJSON *root = cJSON_CreateObject();
+	if (!root)
+		return NULL;
+
+	cJSON_AddNumberToObject(root, "db_id", ship->db_id);
+	cJSON_AddStringToObject(root, "ownername", ship->ownername ? ship->ownername : "");
+	cJSON_AddStringToObject(root, "name", ship->name ? ship->name : "");
+	cJSON_AddNumberToObject(root, "m_class", ship->m_class);
+	cJSON_AddNumberToObject(root, "frags", ship->frags);
+	cJSON_AddNumberToObject(root, "anchor", ship->anchor);
+	cJSON_AddNumberToObject(root, "time", ship->time);
+	cJSON_AddNumberToObject(root, "mainsail", ship->mainsail);
+	cJSON_AddNumberToObject(root, "race", ship->race);
+	cJSON_AddNumberToObject(root, "money", ship->money);
+	char flags_buf[32];
+	snprintf(flags_buf, sizeof(flags_buf), "%lu", ship->flags);
+	cJSON_AddStringToObject(root, "flags", flags_buf);
+
+	cJSON *armor = cJSON_CreateArray();
+	cJSON *internal = cJSON_CreateArray();
+	if (!armor || !internal)
+	{
+		if (armor)
+			cJSON_Delete(armor);
+		if (internal)
+			cJSON_Delete(internal);
+		cJSON_Delete(root);
+		return NULL;
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		cJSON *arc = cJSON_CreateArray();
+		cJSON *hin = cJSON_CreateArray();
+		if (!arc || !hin)
+		{
+			if (arc)
+				cJSON_Delete(arc);
+			if (hin)
+				cJSON_Delete(hin);
+			cJSON_Delete(armor);
+			cJSON_Delete(internal);
+			cJSON_Delete(root);
+			return NULL;
+		}
+		cJSON_AddItemToArray(arc, cJSON_CreateNumber(ship->armor[i]));
+		cJSON_AddItemToArray(arc, cJSON_CreateNumber(ship->maxarmor[i]));
+		cJSON_AddItemToArray(hin, cJSON_CreateNumber(ship->internal[i]));
+		cJSON_AddItemToArray(hin, cJSON_CreateNumber(ship->maxinternal[i]));
+		cJSON_AddItemToArray(armor, arc);
+		cJSON_AddItemToArray(internal, hin);
+	}
+	cJSON_AddItemToObject(root, "armor", armor);
+	cJSON_AddItemToObject(root, "internal", internal);
+
+	cJSON *crew = cJSON_CreateObject();
+	if (!crew)
+	{
+		cJSON_Delete(root);
+		return NULL;
+	}
+	cJSON_AddNumberToObject(crew, "index", ship->crew.index);
+	cJSON_AddNumberToObject(crew, "sail_skill", ship->crew.sail_skill);
+	cJSON_AddNumberToObject(crew, "guns_skill", ship->crew.guns_skill);
+	cJSON_AddNumberToObject(crew, "rpar_skill", ship->crew.rpar_skill);
+	cJSON_AddNumberToObject(crew, "sail_chief", ship->crew.sail_chief);
+	cJSON_AddNumberToObject(crew, "guns_chief", ship->crew.guns_chief);
+	cJSON_AddNumberToObject(crew, "rpar_chief", ship->crew.rpar_chief);
+	cJSON_AddItemToObject(root, "crew", crew);
+
+	cJSON *slots = cJSON_CreateArray();
+	if (!slots)
+	{
+		cJSON_Delete(root);
+		return NULL;
+	}
+	for (int i = 0; i < MAXSLOTS; i++)
+	{
+		cJSON *slot = cJSON_CreateObject();
+		if (!slot)
+		{
+			cJSON_Delete(slots);
+			cJSON_Delete(root);
+			return NULL;
+		}
+		cJSON_AddNumberToObject(slot, "type", ship->slot[i].type);
+		cJSON_AddNumberToObject(slot, "index", ship->slot[i].index);
+		cJSON_AddNumberToObject(slot, "position", ship->slot[i].position);
+		cJSON_AddNumberToObject(slot, "timer", ship->slot[i].timer);
+		cJSON_AddNumberToObject(slot, "val0", ship->slot[i].val0);
+		cJSON_AddNumberToObject(slot, "val1", ship->slot[i].val1);
+		cJSON_AddNumberToObject(slot, "val2", ship->slot[i].val2);
+		cJSON_AddNumberToObject(slot, "val3", ship->slot[i].val3);
+		cJSON_AddNumberToObject(slot, "val4", ship->slot[i].val4);
+		cJSON_AddItemToArray(slots, slot);
+	}
+	cJSON_AddItemToObject(root, "slots", slots);
+	return root;
+}
+
+static bool redis_ship_snapshot_from_json(cJSON *root, struct ShipData *ship)
+{
+	if (!cJSON_IsObject(root) || !ship)
+		return false;
+
+	int ship_class = redis_json_int(root, "m_class", -1);
+	if (ship_class < 0)
+		return false;
+
+	ship->db_id    = redis_json_int(root, "db_id", -1);
+	ship->ownername = str_dup(redis_json_string(root, "ownername") ? redis_json_string(root, "ownername") : "");
+	ship->name      = str_dup(redis_json_string(root, "name") ? redis_json_string(root, "name") : "");
+	ship->m_class   = ship_class;
+	ship->frags     = redis_json_int(root, "frags", 0);
+	ship->anchor    = redis_json_int(root, "anchor", 0);
+	ship->time      = redis_json_int(root, "time", 0);
+	ship->mainsail  = redis_json_int(root, "mainsail", 0);
+	ship->race      = redis_json_int(root, "race", 0);
+	ship->money     = redis_json_int(root, "money", 0);
+	ship->flags     = strtoul(redis_json_string(root, "flags") ? redis_json_string(root, "flags") : "0", NULL, 10);
+
+	cJSON *armor = cJSON_GetObjectItemCaseSensitive(root, "armor");
+	cJSON *internal = cJSON_GetObjectItemCaseSensitive(root, "internal");
+	if (!cJSON_IsArray(armor) || !cJSON_IsArray(internal))
+		return false;
+	for (int i = 0; i < 4; i++)
+	{
+		cJSON *arc = cJSON_GetArrayItem(armor, i);
+		cJSON *hin = cJSON_GetArrayItem(internal, i);
+		if (!cJSON_IsArray(arc) || !cJSON_IsArray(hin))
+			return false;
+		ship->armor[i] = redis_json_array_int(arc, 0, ship->armor[i]);
+		ship->maxarmor[i] = redis_json_array_int(arc, 1, ship->maxarmor[i]);
+		ship->internal[i] = redis_json_array_int(hin, 0, ship->internal[i]);
+		ship->maxinternal[i] = redis_json_array_int(hin, 1, ship->maxinternal[i]);
+	}
+
+	cJSON *crew = cJSON_GetObjectItemCaseSensitive(root, "crew");
+	if (!cJSON_IsObject(crew))
+		return false;
+	ship->crew.index      = redis_json_int(crew, "index", ship->crew.index);
+	ship->crew.sail_skill = (float)redis_json_double(crew, "sail_skill", ship->crew.sail_skill);
+	ship->crew.guns_skill = (float)redis_json_double(crew, "guns_skill", ship->crew.guns_skill);
+	ship->crew.rpar_skill = (float)redis_json_double(crew, "rpar_skill", ship->crew.rpar_skill);
+	ship->crew.sail_chief = redis_json_int(crew, "sail_chief", ship->crew.sail_chief);
+	ship->crew.guns_chief = redis_json_int(crew, "guns_chief", ship->crew.guns_chief);
+	ship->crew.rpar_chief = redis_json_int(crew, "rpar_chief", ship->crew.rpar_chief);
+
+	cJSON *slots = cJSON_GetObjectItemCaseSensitive(root, "slots");
+	if (!cJSON_IsArray(slots))
+		return false;
+	for (int i = 0; i < MAXSLOTS; i++)
+	{
+		cJSON *slot = cJSON_GetArrayItem(slots, i);
+		if (!cJSON_IsObject(slot))
+			return false;
+		ship->slot[i].type     = redis_json_int(slot, "type", ship->slot[i].type);
+		ship->slot[i].index    = redis_json_int(slot, "index", ship->slot[i].index);
+		ship->slot[i].position = redis_json_int(slot, "position", ship->slot[i].position);
+		ship->slot[i].timer    = redis_json_int(slot, "timer", ship->slot[i].timer);
+		ship->slot[i].val0     = redis_json_int(slot, "val0", ship->slot[i].val0);
+		ship->slot[i].val1     = redis_json_int(slot, "val1", ship->slot[i].val1);
+		ship->slot[i].val2     = redis_json_int(slot, "val2", ship->slot[i].val2);
+		ship->slot[i].val3     = redis_json_int(slot, "val3", ship->slot[i].val3);
+		ship->slot[i].val4     = redis_json_int(slot, "val4", ship->slot[i].val4);
+	}
+
+	return true;
+}
+
+bool redis_cache_ship_snapshot(struct ShipData *ship)
+{
+	if (!ship || !ship->ownername)
+		return false;
+
+	char key[256];
+	redis_ship_cache_key(key, sizeof(key), ship->ownername);
+	cJSON *root = redis_ship_snapshot_to_json(ship);
+	if (!root)
+		return false;
+
+	char *json = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	if (!json)
+		return false;
+
+	bool ok = redis_cache_set(key, json);
+	free(json);
+	return ok;
+}
+
+struct ShipData *redis_load_ship_snapshot(const char *owner_name)
+{
+	if (!owner_name)
+		return NULL;
+
+	char key[256];
+	redis_ship_cache_key(key, sizeof(key), owner_name);
+	char *json = redis_cache_get(key);
+	if (!json)
+		return NULL;
+
+	cJSON *root = cJSON_Parse(json);
+	free(json);
+	if (!root)
+		return NULL;
+
+	int ship_class = redis_json_int(root, "m_class", -1);
+	if (ship_class < 0)
+	{
+		cJSON_Delete(root);
+		return NULL;
+	}
+
+	struct ShipData *ship = new_ship(ship_class);
+	if (!ship)
+	{
+		cJSON_Delete(root);
+		return NULL;
+	}
+
+	if (!redis_ship_snapshot_from_json(root, ship))
+	{
+		cJSON_Delete(root);
+		if (ship->ownername)
+			FREE(ship->ownername);
+		if (ship->name)
+			FREE(ship->name);
+		FREE(ship);
+		return NULL;
+	}
+
+	ship->save_pending         = false;
+	ship->save_retry_after     = 0;
+	ship->save_saved_signature = ship_save_signature(ship);
+
+	cJSON_Delete(root);
+	return ship;
+}
+
+void redis_invalidate_ship_snapshot(const char *owner_name)
+{
+	if (!owner_name)
+		return;
+
+	char key[256];
+	redis_ship_cache_key(key, sizeof(key), owner_name);
+	redis_cache_del(key);
+}
+#endif
 
 bool redis_publish(const char *channel, const char *message)
 {

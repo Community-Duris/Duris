@@ -777,7 +777,8 @@ void do_newbie(P_char ch, char *argument, int cmd)
 		REMOVE_BIT(victim->specials.act2, PLR2_NCHAT);
 	}
 
-	do_save_silent(victim, 1);
+	if (!do_save_silent(victim, 1))
+		logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
 	logit(LOG_WIZ, "%s toggled %s's newbie status.", ch->player.name, victim->player.name);
 }
@@ -820,7 +821,8 @@ void do_make_guide(P_char ch, char *argument, int cmd)
 		REMOVE_BIT(victim->specials.act2, PLR2_NCHAT);
 	}
 
-	do_save_silent(victim, 1);
+	if (!do_save_silent(victim, 1))
+		logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
 	logit(LOG_WIZ, "%s toggled %s's newbie helper status.", ch->player.name, victim->player.name);
 }
@@ -9024,7 +9026,8 @@ void do_revoketitle(P_char ch, char *args, int cmd)
   else
     act("You revoke your 'title' command.", FALSE, ch, 0, 0, TO_CHAR);
 
-  do_save_silent(victim, 1);
+  if (!do_save_silent(victim, 1))
+    logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
   logit(LOG_WIZ, "<REVOKE>: %s revokes %s's 'title' command.",
         GET_NAME(ch), GET_NAME(victim));

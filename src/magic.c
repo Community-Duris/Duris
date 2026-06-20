@@ -20793,7 +20793,8 @@ void do_soulbind(P_char ch, char *argument, int cmd)
 		SET_BIT(obj->extra2_flags, ITEM2_CRUMBLELOOT);
 		SET_BIT(obj->extra2_flags, ITEM2_SOULBIND);
 		// So our item updates right.
-		do_save_silent(victim, 1);
+		if (!do_save_silent(victim, 1))
+			logit(LOG_WIZ, "Failed to save %s after soulbind.", GET_NAME(victim));
 
 		// Transfer the object to victim if necessary.
 		if (ch != victim)

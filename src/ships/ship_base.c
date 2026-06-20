@@ -28,9 +28,84 @@
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "redis.h"
 
 extern char buf[MAX_STRING_LENGTH];
 extern bool insert_money_pickup(int pid, int money);
+
+static unsigned long long ship_save_signature_mix(unsigned long long hash, const void *data, size_t len)
+{
+	const unsigned char *ptr = (const unsigned char *)data;
+	for (size_t i = 0; i < len; i++)
+	{
+		hash ^= (unsigned long long)ptr[i];
+		hash *= 1099511628211ULL;
+	}
+	return hash;
+}
+
+unsigned long long ship_save_signature(const P_ship ship)
+{
+	unsigned long long hash = 1469598103934665603ULL;
+	if (!ship)
+		return 0;
+
+	#define SHIP_SIG_MIX(value) hash = ship_save_signature_mix(hash, &(value), sizeof(value))
+	#define SHIP_SIG_MIX_CSTR(value) \
+		do { \
+			const char *sig_val__ = (value); \
+			if (sig_val__) \
+				hash = ship_save_signature_mix(hash, sig_val__, strlen(sig_val__)); \
+			else \
+			{ \
+				const char sig_zero__ = '\0'; \
+				hash = ship_save_signature_mix(hash, &sig_zero__, 1); \
+			} \
+		} while (0)
+
+	SHIP_SIG_MIX(ship->m_class);
+	SHIP_SIG_MIX_CSTR(ship->name);
+	SHIP_SIG_MIX(ship->frags);
+	SHIP_SIG_MIX(ship->anchor);
+	SHIP_SIG_MIX(ship->time);
+	SHIP_SIG_MIX(ship->mainsail);
+	SHIP_SIG_MIX(ship->race);
+	SHIP_SIG_MIX(ship->money);
+	SHIP_SIG_MIX(ship->flags);
+
+	for (int i = 0; i < 4; i++)
+	{
+		SHIP_SIG_MIX(ship->maxarmor[i]);
+		SHIP_SIG_MIX(ship->armor[i]);
+		SHIP_SIG_MIX(ship->maxinternal[i]);
+		SHIP_SIG_MIX(ship->internal[i]);
+	}
+
+	SHIP_SIG_MIX(ship->crew.index);
+	SHIP_SIG_MIX(ship->crew.sail_skill);
+	SHIP_SIG_MIX(ship->crew.guns_skill);
+	SHIP_SIG_MIX(ship->crew.rpar_skill);
+	SHIP_SIG_MIX(ship->crew.sail_chief);
+	SHIP_SIG_MIX(ship->crew.guns_chief);
+	SHIP_SIG_MIX(ship->crew.rpar_chief);
+
+	for (int i = 0; i < MAXSLOTS; i++)
+	{
+		SHIP_SIG_MIX(ship->slot[i].type);
+		SHIP_SIG_MIX(ship->slot[i].index);
+		SHIP_SIG_MIX(ship->slot[i].position);
+		SHIP_SIG_MIX(ship->slot[i].timer);
+		SHIP_SIG_MIX(ship->slot[i].val0);
+		SHIP_SIG_MIX(ship->slot[i].val1);
+		SHIP_SIG_MIX(ship->slot[i].val2);
+		SHIP_SIG_MIX(ship->slot[i].val3);
+		SHIP_SIG_MIX(ship->slot[i].val4);
+	}
+
+	#undef SHIP_SIG_MIX
+	#undef SHIP_SIG_MIX_CSTR
+	return hash;
+}
 
 struct ContactData contacts[MAXSHIPS];
 struct ShipMap     tactical_map[101][101];
@@ -203,6 +278,9 @@ struct ShipData *new_ship(int m_class, bool npc)
 	ship->time               = time(NULL);
 	ship->contacts_hash      = 0;
 	ship->last_gmcp_location = -1;
+	ship->save_retry_after   = 0;
+	ship->save_pending       = false;
+	ship->save_saved_signature = 0;
 
 	for (int j = 0; j < MAXSLOTS; j++)
 	{
@@ -375,9 +453,35 @@ bool rename_ship(P_char ch, char *owner_name, char *new_name)
 
 	name_ship(new_name, temp);
 	name_ship_rooms(temp);
-	write_ship(temp);
+	if (!write_ship(temp))
+	{
+		logit(LOG_DEBUG, "Failed to save renamed ship %s for owner %s.",
+		      SHIP_NAME(temp), owner_name);
+		return FALSE;
+	}
 
 	return TRUE;
+}
+
+void queue_ship_save(P_ship ship, const char *reason)
+{
+	if (!ship || IS_NPC_SHIP(ship) || !SHIP_LOADED(ship))
+		return;
+
+	if (!ship->save_pending)
+	{
+		ship->save_pending = true;
+		logit(LOG_DEBUG, "Queued ship save for %s%s%s.",
+		      SHIP_NAME(ship),
+		      reason ? " after " : "",
+		      reason ? reason : "");
+	}
+	else if (reason)
+	{
+		logit(LOG_DEBUG, "Refreshed pending ship save for %s after %s.", SHIP_NAME(ship), reason);
+	}
+
+	ship->save_retry_after = 0;
 }
 
 bool rename_ship_owner(char *old_name, char *new_name)
@@ -392,7 +496,14 @@ bool rename_ship_owner(char *old_name, char *new_name)
 	str_free(ship->ownername);
 	ship->ownername = str_dup(new_name);
 	name_ship(SHIP_NAME(ship), ship);
-	write_ship(ship);
+	if (!write_ship(ship))
+	{
+		logit(LOG_DEBUG, "Failed to save re-owned ship %s for %s.",
+		      SHIP_NAME(ship), old_name);
+		return FALSE;
+	}
+
+	redis_invalidate_ship_snapshot(old_name);
 
 	sprintf(buf, "Ships/%s", old_name);
 	unlink(buf);
@@ -1818,7 +1929,7 @@ void dock_ship(P_ship ship, int to_room)
 	if ((real_room0(world[to_room].number) == to_room) && (to_room != 0))
 	{
 		ship->anchor = world[to_room].number;
-		write_ship(ship);
+		queue_ship_save(ship, "docking anchor update");
 	}
 	if (to_room == 0)
 	{
@@ -1950,7 +2061,7 @@ void finish_sinking(P_ship ship)
 
 		reset_crew_stamina(ship);
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "sink cleanup");
 	}
 	else
 	{
@@ -1982,7 +2093,7 @@ void summon_ship_event(P_char ch, P_char victim, P_obj obj, void *data)
 					REMOVE_BIT(ship->flags, ATTACKBYNPC);
 				ship->speed    = 0;
 				ship->setspeed = 0;
-				write_ship(ship);
+				queue_ship_save(ship, "summon arrival");
 				return;
 			}
 		}
@@ -2050,14 +2161,61 @@ int write_ship(P_ship ship)
 #ifndef __NO_MYSQL__
 	if (!sql_save_ship(ship))
 	{
-		logit(LOG_FILE, "sql_save_ship failed for %s", ship->ownername);
+		ship->save_pending     = true;
+		ship->save_retry_after = time(NULL) + 1;
+		logit(LOG_FILE, "sql_save_ship failed for %s; will retry soon", ship->ownername);
 		return FALSE;
 	}
+	ship->save_pending         = false;
+	ship->save_retry_after     = 0;
+	ship->save_saved_signature = ship_save_signature(ship);
 	return TRUE;
 #else
+	ship->save_pending     = true;
+	ship->save_retry_after = time(NULL) + 1;
 	return FALSE;
 #endif
 }
+
+void flush_pending_ship_saves(void)
+{
+	time_t now = time(NULL);
+	int    flushed = 0;
+	ShipVisitor svs;
+	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
+	{
+		P_ship ship = svs;
+		if (!ship || !ship->save_pending)
+			continue;
+		if (ship->save_retry_after && ship->save_retry_after > now)
+			continue;
+
+		unsigned long long current_signature = ship_save_signature(ship);
+		if (current_signature == ship->save_saved_signature)
+		{
+			ship->save_pending     = false;
+			ship->save_retry_after = 0;
+			continue;
+		}
+
+		if (write_ship(ship))
+		{
+			ship->save_pending         = false;
+			ship->save_retry_after     = 0;
+			ship->save_saved_signature = current_signature;
+			flushed++;
+			logit(LOG_DEBUG, "Recovered pending ship save for %s.", SHIP_NAME(ship));
+		}
+		else
+		{
+			ship->save_pending     = true;
+			ship->save_retry_after = now + 1;
+		}
+	}
+	if (flushed > 0)
+		logit(LOG_DEBUG, "Flushed %d pending ship save(s).", flushed);
+}
+
 
 int read_ships()
 {

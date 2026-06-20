@@ -100,12 +100,17 @@ int sql_pool_init(int size)
 		pool[i].conn = conn;
 
 		/* Connect with CLIENT_MULTI_STATEMENTS so multi-statement
-		 * batches (multi-statement batches) work through the pool too. */
+		 * batches (multi-statement batches) work through the pool too.
+		 * Use the shared db-name resolver so every slot agrees with
+		 * the main DB connection (and the legacy persistenceDB fallback)
+		 * about which database to target — without this, sync writes
+		 * hitting duris_dev on a non-default port could diverge from
+		 * async pool writes hitting duris (production). */
 		if (!mysql_real_connect(conn,
 		                        DB_HOST,
 		                        DB_USER,
 		                        DB_PASSWD,
-		                        DB_NAME,
+		                        sql_persistence_db_name(),
 		                        DB_PORT,
 		                        NULL,             /* unix_socket */
 		                        CLIENT_MULTI_STATEMENTS))
@@ -201,15 +206,27 @@ MYSQL *sql_pool_acquire(void)
 
 		/* All busy — block until someone releases. */
 		pthread_cond_wait(&pool_cond, &pool_mutex);
+
+		if (!pool)
+		{
+			pthread_mutex_unlock(&pool_mutex);
+			return NULL;
+		}
 	}
 }
 
 void sql_pool_release(MYSQL *conn)
 {
-	if (!conn || !pool)
+	if (!conn)
 		return;
 
 	pthread_mutex_lock(&pool_mutex);
+
+	if (!pool)
+	{
+		pthread_mutex_unlock(&pool_mutex);
+		return;
+	}
 
 	for (int i = 0; i < pool_size; i++)
 	{

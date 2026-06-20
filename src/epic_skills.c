@@ -483,7 +483,8 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 		snprintf(buffer, MAX_STRING_LENGTH, "You have mastered &+W%s&N.\n", skills[skl].name);
 		send_to_char(buffer, pl);
 	}
-	do_save_silent(pl, 1); // Epic stats require a save.
+	if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic skill purchase.", GET_NAME(pl)); // Epic stats require a save.
 	CharWait(pl, PULSE_VIOLENCE);
 	return TRUE;
 }

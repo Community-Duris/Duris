@@ -510,7 +510,7 @@ void  do_quit(P_char, char *, int);
 void  do_recite(P_char, char *, int);
 void  do_rub(P_char, char *, int);
 void  do_save(P_char, char *, int);
-void  do_save_silent(P_char, int);
+bool  do_save_silent(P_char, int);
 void  do_sneak(P_char, char *, int);
 void  do_split(P_char, char *, int);
 void  do_steal(P_char, char *, int);

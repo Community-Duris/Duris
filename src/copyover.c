@@ -444,12 +444,23 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		// Wrap save in transaction
 		if (sql_begin_transaction())
 		{
-			do_save_silent(d->character, RENT_CRASH);
+			if (!do_save_silent(d->character, RENT_CRASH))
+			{
+				sql_rollback();
+				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover", GET_NAME(d->character));
+				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				return;
+			}
 			if (!sql_commit()) sql_rollback();
 		}
 		else
 		{
-			do_save_silent(d->character, RENT_CRASH);
+			if (!do_save_silent(d->character, RENT_CRASH))
+			{
+				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover", GET_NAME(d->character));
+				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				return;
+			}
 		}
 
 		if (d->websocket)
