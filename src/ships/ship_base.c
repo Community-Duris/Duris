@@ -65,6 +65,7 @@ unsigned long long ship_save_signature(const P_ship ship)
 
 	SHIP_SIG_MIX(ship->m_class);
 	SHIP_SIG_MIX_CSTR(ship->name);
+	SHIP_SIG_MIX_CSTR(ship->ownername);
 	SHIP_SIG_MIX(ship->frags);
 	SHIP_SIG_MIX(ship->anchor);
 	SHIP_SIG_MIX(ship->time);

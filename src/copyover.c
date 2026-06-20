@@ -428,6 +428,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
 
 	// first pass - save all players, disconnect websocket/ssl
+	flush_pending_ship_saves();
 	persistence_flush_all_character_saves();
 	for (d = descriptor_list; d; d = d_next)
 	{
