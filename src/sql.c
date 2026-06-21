@@ -1157,7 +1157,7 @@ void sql_connectIP(P_char ch)
 
 void sql_world_quest_finished(P_char ch, P_obj reward)
 {
-	char buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH * 2 + 1];
 
 	int   reward_vnum = reward ? ((reward->R_num >= 0) ? obj_index[reward->R_num].virtual_number : 0) : 0;
 	char *reward_desc = reward ? mysql_str(reward->short_description, buf) : mysql_str("", buf);
