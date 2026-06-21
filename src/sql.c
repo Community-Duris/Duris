@@ -97,7 +97,91 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 void update_zone_db() {}
 void update_zone_epic_level(int zone_id, int level) {}
 void show_frag_trophy(P_char ch, P_char who) { send_to_char("Disabled.", ch); }
-void sql_log(P_char ch, char *kind, char *format, ...) {}
+void sql_log(P_char ch, char *kind, char *format, ...)
+{
+	if (!ch)
+	{
+		debug("sql_log called for non-existent ch!");
+		return;
+	}
+
+	if (!IS_PC(ch))
+	{
+		debug("sql_log called in sql.c for mobile ch - %s - Vnum %d", GET_NAME(ch), GET_VNUM(ch));
+		debug("sql_log kind '%s', format '%s'", kind, format);
+		return;
+	}
+
+	va_list args;
+	int     raw_len;
+	char   *raw_msg;
+	char   *escaped_msg;
+	string  esc_kind;
+	string  esc_ip;
+	string  esc_name;
+	string  query;
+
+	va_start(args, format);
+	raw_len = vsnprintf(NULL, 0, format, args);
+	va_end(args);
+	if (raw_len < 0)
+	{
+		debug("sql_log: Message formatting error");
+		return;
+	}
+
+	raw_msg = (char *)malloc((size_t)raw_len + 1);
+	if (!raw_msg)
+		return;
+
+	va_start(args, format);
+	vsnprintf(raw_msg, (size_t)raw_len + 1, format, args);
+	va_end(args);
+
+	escaped_msg = (char *)malloc(((size_t)raw_len * 2) + 1);
+	if (!escaped_msg)
+	{
+		free(raw_msg);
+		return;
+	}
+	mysql_real_escape_string(DB, escaped_msg, raw_msg, (unsigned long)raw_len);
+
+	auto escape_sql = [](const char *src) -> string {
+		if (!src)
+			return string();
+		size_t len = strlen(src);
+		string out;
+		out.resize((len * 2) + 1);
+		unsigned long out_len = mysql_real_escape_string(DB, &out[0], src, (unsigned long)len);
+		out.resize(out_len);
+		return out;
+	};
+
+	esc_kind = escape_sql(kind);
+	if (ch->desc && ch->desc->host)
+		esc_ip = escape_sql(ch->desc->host);
+	esc_name = escape_sql(GET_NAME(ch));
+
+	query = "INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) VALUES (NOW(), '";
+	query += esc_kind;
+	query += "', '";
+	query += esc_ip;
+	query += "', ";
+	query += std::to_string(GET_PID(ch));
+	query += ", '";
+	query += esc_name;
+	query += "', ";
+	query += std::to_string(zone_table[world[ch->in_room].zone].number);
+	query += ", ";
+	query += std::to_string(world[ch->in_room].number);
+	query += ", '";
+	query += escaped_msg;
+	query += "')";
+
+	qry("%s", query.c_str());
+	free(raw_msg);
+	free(escaped_msg);
+}
 
 bool get_zone_info(int zone_number, struct zone_info *info) { return FALSE; }
 
@@ -351,59 +435,74 @@ int initialize_mysql()
 /* Handle a query, log possible errors and return results (if available) */
 MYSQL_RES *db_query(const char *format, ...)
 {
-	char    buf[MAX_LOG_LEN + MAX_STRING_LENGTH + 512];
 	va_list args;
-	int     ret;
+	int     needed;
+	char   *buf;
+	MYSQL_RES *res;
 
 	va_start(args, format);
-	buf[0] = '\0';
-	// SECURITY FIX: Replace vsprintf with vsnprintf to prevent buffer overflow
-	ret = vsnprintf(buf, sizeof(buf), format, args);
+	needed = vsnprintf(NULL, 0, format, args);
 	va_end(args);
-
-	// Check for overflow
-	if (ret < 0 || ret >= (int)sizeof(buf))
+	if (needed < 0)
 	{
-		logit(LOG_DEBUG, "MySQL: Query too long, truncated or error in formatting");
+		logit(LOG_DEBUG, "MySQL: Query formatting error");
 		return NULL;
 	}
 
-	if (!buf[0])
+	buf = (char *)malloc((size_t)needed + 1);
+	if (!buf)
 		return NULL;
+
+	va_start(args, format);
+	vsnprintf(buf, (size_t)needed + 1, format, args);
+	va_end(args);
+
+	if (!buf[0])
+	{
+		free(buf);
+		return NULL;
+	}
 
 	if (mysql_real_query(DB, buf, strlen(buf)) != 0)
 	{
 		logit(LOG_DEBUG, "MySQL: \"%s\" failed: %s", buf, mysql_error(DB));
+		free(buf);
 		return NULL;
 	}
 
-	return mysql_store_result(DB);
+	res = mysql_store_result(DB);
+	free(buf);
+	return res;
 }
 
 /* Same as above, but won't log failed queries, ie when key restrictions suffice */
 MYSQL_RES *db_query_nolog(const char *format, ...)
 {
-	char    buf[MAX_STRING_LENGTH];
 	va_list args;
-	int     ret;
+	int     needed;
+	char   *buf;
 
 	va_start(args, format);
-	buf[0] = '\0';
-	// SECURITY FIX: Replace vsprintf with vsnprintf to prevent buffer overflow
-	ret = vsnprintf(buf, sizeof(buf), format, args);
+	needed = vsnprintf(NULL, 0, format, args);
 	va_end(args);
-
-	// Check for overflow
-	if (ret < 0 || ret >= (int)sizeof(buf))
-	{
+	if (needed < 0)
 		return NULL;
-	}
+
+	buf = (char *)malloc((size_t)needed + 1);
+	if (!buf)
+		return NULL;
+
+	va_start(args, format);
+	vsnprintf(buf, (size_t)needed + 1, format, args);
+	va_end(args);
 
 	if (mysql_real_query(DB, buf, strlen(buf)) != 0)
 	{
+		free(buf);
 		return NULL;
 	}
 
+	free(buf);
 	return mysql_store_result(DB);
 }
 
@@ -413,7 +512,7 @@ int sql_save_player_core(P_char ch)
 {
 	char                     query[MAX_STRING_LENGTH];
 	char                     assoc_name[MAX_STRING_LENGTH];
-	char                     assoc_name_sql[MAX_STRING_LENGTH];
+	char                     assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	const char              *spec_name = "";
 	struct char_player_data *p;
 	int                      val;
@@ -647,8 +746,8 @@ void sql_modify_frags(P_char ch, int gain)
 /* Update account_characters mapping table */
 void sql_update_account_character(P_char ch)
 {
-	char        account_name_sql[MAX_STRING_LENGTH];
-	char        char_name_sql[MAX_STRING_LENGTH];
+	char        account_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        char_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	const char *account_name;
 
 	if (!ch || IS_NPC(ch))
@@ -703,10 +802,10 @@ double sql_get_total_donated(const char *account_name)
 /* Update frag_leaderboard table with current character data */
 void sql_update_frag_leaderboard(P_char ch)
 {
-	char        account_name_sql[MAX_STRING_LENGTH];
-	char        char_name_sql[MAX_STRING_LENGTH];
-	char        race_sql[MAX_STRING_LENGTH];
-	char        class_sql[MAX_STRING_LENGTH];
+	char        account_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        char_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        race_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        class_sql[MAX_STRING_LENGTH * 2 + 1];
 	const char *account_name;
 	const char *race_name;
 	const char *class_name;
@@ -759,8 +858,8 @@ void sql_insert_item(P_char ch, P_obj obj, char *desc)
 {
 
 	char query[MAX_STRING_LENGTH];
-	char sql_desc[MAX_STRING_LENGTH];
-	char sql_short[MAX_STRING_LENGTH];
+	char sql_desc[MAX_STRING_LENGTH * 2 + 1];
+	char sql_short[MAX_STRING_LENGTH * 2 + 1];
 
 	int m_virtual = (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : 0;
 	mysql_str(desc, sql_desc);
@@ -796,16 +895,20 @@ void sql_insert_new_item(P_char ch, P_obj obj)
 
 unsigned long new_pkill_event(P_char ch)
 {
-	char room_name_sql[MAX_STRING_LENGTH];
-	char query[MAX_STRING_LENGTH];
+	char  room_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	string query;
 
 	mysql_str(world[ch->in_room].name, room_name_sql);
-	snprintf(query, MAX_STRING_LENGTH, "INSERT INTO pkill_event (stamp, room_vnum, room_name) VALUES( NOW(), %d, '%s' )", world[ch->in_room].number, room_name_sql);
+	query = "INSERT INTO pkill_event (stamp, room_vnum, room_name) VALUES( NOW(), ";
+	query += std::to_string(world[ch->in_room].number);
+	query += ", '";
+	query += room_name_sql;
+	query += "' )";
 
-	if (mysql_real_query(DB, query, strlen(query)) != 0)
+	if (mysql_real_query(DB, query.c_str(), query.size()) != 0)
 	{
 		logit(LOG_DEBUG, "MYSQL: Failed to create pkill event");
-		logit(LOG_DEBUG, "MYSQL: Query was: %s", query);
+		logit(LOG_DEBUG, "MYSQL: Query was: %s", query.c_str());
 		return 0;
 	}
 
@@ -833,9 +936,9 @@ void get_pkill_player_description(P_char ch, char *buffer)
 void store_pkill_info(unsigned long pkill_event, P_char ch, const char *type, int leader, int in_room)
 {
 	char buf[MAX_STRING_LENGTH];
-	char equip_sql[MAX_STRING_LENGTH];
-	char player_description_sql[MAX_STRING_LENGTH];
-	char log_sql[MAX_LOG_LEN];
+	char equip_sql[MAX_STRING_LENGTH * 2 + 1];
+	char player_description_sql[MAX_STRING_LENGTH * 2 + 1];
+	char log_sql[MAX_LOG_LEN * 2 + 1];
 
 	if (!ch || !IS_PC(ch))
 		return;
@@ -985,8 +1088,8 @@ void manual_log(P_char ch)
 
 	char a[256], b[256];
 	char buf[MAX_STRING_LENGTH];
-	char equip_sql[MAX_STRING_LENGTH];
-	char log_sql[MAX_LOG_LEN];
+	char equip_sql[MAX_STRING_LENGTH * 2 + 1];
+	char log_sql[MAX_LOG_LEN * 2 + 1];
 	char buf2[MAX_LOG_LEN];
 	int  space = MAX_LOG_LEN;
 
