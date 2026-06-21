@@ -673,6 +673,10 @@ bool sql_save_player(P_char ch, int type, int room)
 		}
 	}
 
+	clear_player_dirty_container_flags(ch);
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+
 	return true;
 }
 
@@ -2421,8 +2425,6 @@ bool sql_save_player_items(P_char ch)
 		{
 			if (!sql_commit()) { sql_rollback(); return false; }
 		}
-		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
-		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 		return true;
 	}
 
@@ -2458,11 +2460,6 @@ bool sql_save_player_items(P_char ch)
 			sql_rollback();
 			return false;
 		}
-	}
-	if (success)
-	{
-		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
-		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 	}
 	return success;
 }
