@@ -5,6 +5,12 @@ import sys
 src = Path(__file__).resolve().parents[2] / 'src' / 'auction_houses.c'
 text = src.read_text()
 
+epic = Path(__file__).resolve().parents[2] / 'src' / 'epic.c'
+epic_text = epic.read_text()
+
+ship = Path(__file__).resolve().parents[2] / 'src' / 'ships' / 'ship_base.c'
+ship_text = ship.read_text()
+
 ok = True
 
 # auction_pickup quantity chain safety
@@ -57,6 +63,26 @@ else:
         print('[FAIL] web broadcast happens before commit')
         ok = False
 
+# insert_money_pickup should be atomic upsert
+helper_start = text.find('bool insert_money_pickup(int pid, int money)')
+if helper_start == -1:
+    print('[FAIL] insert_money_pickup not found')
+    ok = False
+else:
+    helper_end = text.find('\nbool ', helper_start + 1)
+    helper_section = text[helper_start:helper_end if helper_end != -1 else len(text)]
+    upsert = helper_section.find('ON DUPLICATE KEY UPDATE money = money + VALUES(money)')
+    legacy_select = helper_section.find('SELECT pid FROM auction_money_pickups')
+    legacy_update = helper_section.find('UPDATE auction_money_pickups SET money = money + %d')
+    if upsert == -1:
+        print('[FAIL] insert_money_pickup is not using an atomic upsert')
+        ok = False
+    else:
+        print('[PASS] insert_money_pickup uses a single atomic upsert')
+    if legacy_select != -1 or legacy_update != -1:
+        print('[FAIL] legacy select/update refund helper logic still present')
+        ok = False
+
 # auction_bid buy-it-now failure handling
 bid_start = text.find('bool auction_bid(P_char ch, char *args)')
 if bid_start == -1:
@@ -70,5 +96,22 @@ else:
         ok = False
     else:
         print('[PASS] auction_bid refunds the buyer if finalize_auction fails')
+    outbid_log = text.find('failed to stage refund pickup for pid', bid_start)
+    if outbid_log == -1:
+        print('[FAIL] auction_bid still ignores refund staging failures')
+        ok = False
+    else:
+        print('[PASS] auction_bid logs refund staging failures')
+
+# other insert_money_pickup callers should also check failures
+for label, file_text, needle in [
+    ('epic.c', epic_text, 'failed to stage refund pickup for pid'),
+    ('ship_base.c', ship_text, 'refund failed to stage for pid'),
+]:
+    if needle in file_text:
+        print(f'[PASS] {label} logs insert_money_pickup failures')
+    else:
+        print(f'[FAIL] {label} does not log insert_money_pickup failures')
+        ok = False
 
 sys.exit(0 if ok else 1)

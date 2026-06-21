@@ -2060,7 +2060,8 @@ void finish_sinking(P_ship ship)
 			 wizlog(56, "Ship insurance to ship's coffer: %d", insurance / 1000);
 			 logit(LOG_SHIP, "%s's insurance to ship's coffer: %d", ship->ownername, insurance / 1000);
 			 */
-			insert_money_pickup(get_player_pid_from_name(SHIP_OWNER(ship)), insurance);
+			if (!insert_money_pickup(get_player_pid_from_name(SHIP_OWNER(ship)), insurance))
+				logit(LOG_SHIP, "%s's insurance refund failed to stage for pid %d", ship->ownername, get_player_pid_from_name(SHIP_OWNER(ship)));
 			wizlog(56, "Ship insurance to auction house: %s", coin_stringv(insurance));
 			logit(LOG_SHIP, "%s's insurance to auction hourse: %s", ship->ownername, coin_stringv(insurance));
 		}

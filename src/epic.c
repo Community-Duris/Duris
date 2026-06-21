@@ -1697,7 +1697,8 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
   snprintf(buff2, MAX_STRING_LENGTH, "Total: &+W%d&n esp, %s&n refunded\r\n", point_refund, coin_stringv(coins_refund));
   send_to_char(buff2, ch);
 
-  insert_money_pickup(GET_PID(t_ch), coins_refund);
+  if (!insert_money_pickup(GET_PID(t_ch), coins_refund))
+    logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(t_ch));
   t_ch->only.pc->epic_skill_points += point_refund;
 
   snprintf(buff2, MAX_STRING_LENGTH, "\r\n&+GYour epic skills have been reset: your skill points have been refunded, \r\n&+Gand %s&+G has been reimbursed and is waiting for you at the nearest auction
@@ -2140,7 +2141,8 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 	  snprintf(buff2, MAX_STRING_LENGTH, "Total: &+W%d&n esp, %s&n refunded\r\n", point_refund, coin_stringv(coins_refund));
 	  send_to_char(buff2, ch);
 
-	  insert_money_pickup(GET_PID(t_ch), coins_refund);
+	  if (!insert_money_pickup(GET_PID(t_ch), coins_refund))
+	    logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(t_ch));
 	  t_ch->only.pc->epic_skill_points += point_refund;
 
 	  snprintf(buff2, MAX_STRING_LENGTH, "\r\n&+GYour epic skills have been reset: your skill points have been refunded, \r\n&+Gand %s&+G has been reimbursed and is waiting for you at the nearest
@@ -2250,7 +2252,8 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 	  snprintf(buff2, MAX_STRING_LENGTH, "Total: &+W%d&n esp, %s&n refunded\r\n", point_refund, coin_stringv(coins_refund));
 	  send_to_char(buff2, ch);
 
-	  insert_money_pickup(GET_PID(t_ch), coins_refund);
+	  if (!insert_money_pickup(GET_PID(t_ch), coins_refund))
+	    logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(t_ch));
 	  t_ch->only.pc->epic_skill_points += point_refund;
 
 	  snprintf(buff2, MAX_STRING_LENGTH, "\r\n&+GYour epic skills have been reset: your skill points have been refunded, \r\n&+Gand %s&+G has been reimbursed and is waiting for you at the nearest

@@ -1295,7 +1295,8 @@ bool auction_bid(P_char ch, char *args)
 		// refund previous bidder
 		if (winning_bidder_pid && winning_bidder_pid != GET_PID(ch))
 		{
-			insert_money_pickup(winning_bidder_pid, cur_price);
+			if (!insert_money_pickup(winning_bidder_pid, cur_price))
+				logit(LOG_DEBUG, "auction_bid(): failed to stage refund pickup for pid %d", winning_bidder_pid);
 			logit(LOG_DEBUG, "%s was outbid on auction %d, refunding %s", winning_bidder_name.c_str(), auction_id, coin_stringv(cur_price));
 		}
 
@@ -1350,7 +1351,8 @@ bool auction_bid(P_char ch, char *args)
 		// refund previous bidder if this was a new bidder
 		if (GET_PID(ch) != winning_bidder_pid && winning_bidder_pid != 0)
 		{
-			insert_money_pickup(winning_bidder_pid, cur_price);
+			if (!insert_money_pickup(winning_bidder_pid, cur_price))
+				logit(LOG_DEBUG, "auction_bid(): failed to stage refund pickup for pid %d", winning_bidder_pid);
 			logit(LOG_DEBUG, "%s was outbid on auction %d, refunding %s", winning_bidder_name.c_str(), auction_id, coin_stringv(cur_price));
 
 			// alert loser that they were outbid!
@@ -1655,27 +1657,8 @@ fail:
 
 bool insert_money_pickup(int pid, int money)
 {
-	if (!qry("SELECT pid FROM auction_money_pickups WHERE pid = '%d' LIMIT 1", pid))
+	if (!qry("INSERT INTO auction_money_pickups (pid, money) VALUES ('%d', '%d') ON DUPLICATE KEY UPDATE money = money + VALUES(money)", pid, money))
 		return FALSE;
-
-	MYSQL_RES *res = mysql_store_result(DB);
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	if (!row)
-	{
-		mysql_free_result(res);
-
-		if (!qry("INSERT INTO auction_money_pickups (pid, money) VALUES ('%d', '%d')", pid, money))
-			return FALSE;
-	}
-	else
-	{
-		mysql_free_result(res);
-
-		if (!qry("UPDATE auction_money_pickups SET money = money + %d WHERE pid = '%d'", money, pid))
-			return FALSE;
-	}
 
 	logit(LOG_STATUS, "PID %d picked up %d", pid, money);
 
