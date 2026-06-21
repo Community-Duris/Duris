@@ -8526,6 +8526,16 @@ void sql_restore_saved_items(void)
 	if (!DB)
 		return;
 
+	struct restored_saved_item
+	{
+		char *item_key;
+		P_obj item;
+		struct restored_saved_item *next;
+	};
+
+	struct restored_saved_item *restored_head = NULL;
+	struct restored_saved_item *restored_tail = NULL;
+
 	// get distinct item keys with root items only
 	MYSQL_RES *result = db_query("SELECT DISTINCT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
 	                             "value0, value1, value2, value3, value4, value5, value6, value7, "
@@ -8627,6 +8637,20 @@ void sql_restore_saved_items(void)
 		}
 
 		obj_to_room(obj, room);
+
+		struct restored_saved_item *entry;
+		CREATE(entry, struct restored_saved_item, 1, MEM_TAG_OTHER);
+		if (entry)
+		{
+			entry->item_key = str_dup(item_key ? item_key : "");
+			entry->item     = obj;
+			entry->next     = NULL;
+			if (!restored_head)
+				restored_head = entry;
+			else
+				restored_tail->next = entry;
+			restored_tail = entry;
+		}
 		loaded++;
 	}
 
@@ -8634,7 +8658,23 @@ void sql_restore_saved_items(void)
 
 	// delete all saved items after loading (they get re-saved on next tick)
 	if (!sql_run_query("DELETE FROM saved_items"))
-		logit(LOG_DEBUG, "sql_restore_saved_items: failed to delete old saved items");
+	{
+		logit(LOG_DEBUG, "sql_restore_saved_items: failed to delete old saved items; attempting to rewrite loaded items");
+		for (struct restored_saved_item *entry = restored_head; entry; entry = entry->next)
+		{
+			if (!sql_save_saved_item(entry->item, entry->item_key))
+				logit(LOG_DEBUG, "sql_restore_saved_items: failed to rewrite %s after delete failure", entry->item_key ? entry->item_key : "<null>");
+		}
+	}
+
+	for (struct restored_saved_item *entry = restored_head; entry; )
+	{
+		struct restored_saved_item *next = entry->next;
+		if (entry->item_key)
+			free(entry->item_key);
+		free(entry);
+		entry = next;
+	}
 
 	logit(LOG_DEBUG, "sql_restore_saved_items: loaded %d items", loaded);
 }
