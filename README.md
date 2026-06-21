@@ -112,9 +112,17 @@ mysql -u duris -p duris < src/duris.sql
 ### 4. Apply Migrations
 
 ```bash
-# Apply frag leaderboard tables (if using web statistics):
-mysql -u duris -p duris_dev < sql/migrations/add_frag_leaderboard_tables.sql
+# Safe consolidated bootstrap/migration for new or existing databases
+mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
 ```
+
+`migrations/bootstrap_multithread_safe.sql` is the recommended migration file for this branch.
+
+It is safe because:
+- it is **idempotent**: tables and indexes are created with `IF NOT EXISTS` or guarded with `information_schema` checks
+- it is **non-destructive**: it does not use `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, or column-drop operations
+- it is designed to work on both **fresh databases** and **already-migrated databases**
+- it can be run **multiple times** without wiping data or duplicating schema objects
 
 **Note:** The frag leaderboard tables will be automatically populated as players log in and save. No manual population is needed.
 

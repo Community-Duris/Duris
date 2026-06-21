@@ -151,7 +151,6 @@ CREATE TABLE IF NOT EXISTS shopkeeper_affects (
     bitvector3 BIGINT UNSIGNED DEFAULT 0,
     bitvector4 BIGINT UNSIGNED DEFAULT 0,
     bitvector5 BIGINT UNSIGNED DEFAULT 0,
-	item_material TINYINT DEFAULT NULL,
     FOREIGN KEY (shopkeeper_id) REFERENCES shopkeepers(id) ON DELETE CASCADE,
     INDEX idx_shopkeeper_id (shopkeeper_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
