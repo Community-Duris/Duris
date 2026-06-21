@@ -1400,6 +1400,19 @@ bool auction_pickup(P_char ch, char *args)
 			string obj_short(auction_row[1]);
 			mysql_free_result(res);
 
+			if (!qry("SELECT 1 FROM auction_item_pickups WHERE pid = '%d' AND retrieved = 0 AND obj_blob_str = (SELECT obj_blob_str FROM auctions WHERE id = '%d' LIMIT 1) LIMIT 1", GET_PID(ch), auction_id))
+				return FALSE;
+
+			MYSQL_RES *existing_res = mysql_store_result(DB);
+			MYSQL_ROW existing_row = mysql_fetch_row(existing_res);
+			if (existing_row)
+			{
+				mysql_free_result(existing_res);
+				send_to_char("&+WThat auction item is already staged for pickup.\r\n", ch);
+				return TRUE;
+			}
+			mysql_free_result(existing_res);
+
 			if (!qry("INSERT INTO auction_item_pickups (pid, obj_blob_str) (SELECT '%d', obj_blob_str FROM auctions WHERE id = '%d')", GET_PID(ch), auction_id))
 				return FALSE;
 

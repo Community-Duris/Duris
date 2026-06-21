@@ -21,6 +21,7 @@ if pickup_start == -1:
 else:
     next_check = text.find('if (!temp_obj->next_content)', pickup_start)
     old_check = text.find('if (!temp_obj)', pickup_start)
+    bypass_guard = text.find('That auction item is already staged for pickup', pickup_start)
     if next_check == -1:
         print('[FAIL] auction_pickup still uses the wrong null check for chained objects')
         ok = False
@@ -29,6 +30,11 @@ else:
     if old_check != -1 and old_check < next_check:
         print('[FAIL] stale temp_obj null-check still appears in auction_pickup')
         ok = False
+    if bypass_guard == -1:
+        print('[FAIL] auction_pickup admin bypass can still duplicate a staged pickup')
+        ok = False
+    else:
+        print('[PASS] auction_pickup admin bypass rejects duplicate staging')
 
 # finalize_auction transaction wrapper and ordering
 final_start = text.find('bool finalize_auction(int auction_id, P_char to_ch)')
