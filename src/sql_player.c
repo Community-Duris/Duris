@@ -428,7 +428,7 @@ static char *spellbook_to_json(const char *bits)
 		{
 			if (!first)
 				*p++ = ',';
-			p += sprintf(p, "%d", i);
+			p += snprintf(p, buf + MAX_SKILLS * 6 - p, "%d", i);
 			first = 0;
 		}
 	}

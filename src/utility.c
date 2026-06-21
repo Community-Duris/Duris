@@ -799,14 +799,15 @@ void logit(const char *filename, const char *format, ...)
 void ereglog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
 	level = MIN(60, level);
-	strcpy(lbuf, "$&+M*** EMAIL REG:&N ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("$&+M*** EMAIL REG:&N ", "\r\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 	for (d = descriptor_list; d; d = d->next)
 	{
 		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) && GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act, PLR_SNOTIFY))
@@ -814,19 +815,20 @@ void ereglog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
+	free(lbuf);
 }
 
 void wizlog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
-	strcpy(lbuf, "&+C*** WIZLOG:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+C*** WIZLOG:&n ", "\r\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -835,7 +837,7 @@ void wizlog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
+	free(lbuf);
 }
 
 void persistence_alert(int level, const char *domain, const char *owner,
