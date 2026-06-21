@@ -444,6 +444,8 @@ int persistence_item_event_worker_running(void)
 {
   int running;
   int kill_rc;
+  time_t last;
+  int age;
 
   pthread_mutex_lock(&persistence_item_event_queue_mutex);
   running = persistence_item_event_worker_is_running;
@@ -456,15 +458,26 @@ int persistence_item_event_worker_running(void)
      * the flag here so the next producer falls through to the sync
      * path instead of enqueuing into an undrained queue.
      *
-     * Note: this does NOT detect deadlocks - a thread stuck in a
-     * blocking MySQL call will pass this check. For deadlock
-     * detection, a separate heartbeat is needed.
+     * A thread that is still alive but has not advanced its heartbeat
+     * for too long is also treated as unavailable so the main thread can
+     * fail closed and fall back to synchronous persistence instead of
+     * waiting forever on a wedged worker.
      */
     kill_rc = pthread_kill(persistence_item_event_worker_thread, 0);
     if (kill_rc == ESRCH)
     {
       persistence_item_event_worker_is_running = 0;
       running = 0;
+    }
+    else
+    {
+      last = persistence_item_event_worker_last_heartbeat;
+      age = last ? (int)(time(NULL) - last) : -1;
+      if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+      {
+        persistence_item_event_worker_is_running = 0;
+        running = 0;
+      }
     }
     /* EINVAL: tid is no longer valid (already joined) - shouldn't
      * happen here since the flag is still 1, but ignore it.
@@ -894,6 +907,8 @@ int persistence_scalar_event_worker_running(void)
 {
   int running;
   int kill_rc;
+  time_t last;
+  int age;
 
   pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
   running = persistence_scalar_event_worker_is_running;
@@ -906,15 +921,26 @@ int persistence_scalar_event_worker_running(void)
      * the flag here so the next producer falls through to the sync
      * path instead of enqueuing into an undrained queue.
      *
-     * Note: this does NOT detect deadlocks - a thread stuck in a
-     * blocking MySQL call will pass this check. For deadlock
-     * detection, a separate heartbeat is needed.
+     * A thread that is still alive but has not advanced its heartbeat
+     * for too long is also treated as unavailable so the main thread can
+     * fail closed and fall back to synchronous persistence instead of
+     * waiting forever on a wedged worker.
      */
     kill_rc = pthread_kill(persistence_scalar_event_worker_thread, 0);
     if (kill_rc == ESRCH)
     {
       persistence_scalar_event_worker_is_running = 0;
       running = 0;
+    }
+    else
+    {
+      last = persistence_scalar_event_worker_last_heartbeat;
+      age = last ? (int)(time(NULL) - last) : -1;
+      if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+      {
+        persistence_scalar_event_worker_is_running = 0;
+        running = 0;
+      }
     }
     /* EINVAL: tid is no longer valid (already joined) - shouldn't
      * happen here since the flag is still 1, but ignore it.
@@ -1074,6 +1100,8 @@ int persistence_large_event_worker_running(void)
 {
   int running;
   int kill_rc;
+  time_t last;
+  int age;
 
   pthread_mutex_lock(&persistence_large_event_queue_mutex);
   running = persistence_large_event_worker_is_running;
@@ -1086,15 +1114,26 @@ int persistence_large_event_worker_running(void)
      * the flag here so the next producer falls through to the sync
      * path instead of enqueuing into an undrained queue.
      *
-     * Note: this does NOT detect deadlocks - a thread stuck in a
-     * blocking MySQL call will pass this check. For deadlock
-     * detection, a separate heartbeat is needed.
+     * A thread that is still alive but has not advanced its heartbeat
+     * for too long is also treated as unavailable so the main thread can
+     * fail closed and fall back to synchronous persistence instead of
+     * waiting forever on a wedged worker.
      */
     kill_rc = pthread_kill(persistence_large_event_worker_thread, 0);
     if (kill_rc == ESRCH)
     {
       persistence_large_event_worker_is_running = 0;
       running = 0;
+    }
+    else
+    {
+      last = persistence_large_event_worker_last_heartbeat;
+      age = last ? (int)(time(NULL) - last) : -1;
+      if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+      {
+        persistence_large_event_worker_is_running = 0;
+        running = 0;
+      }
     }
     /* EINVAL: tid is no longer valid (already joined) - shouldn't
      * happen here since the flag is still 1, but ignore it.
@@ -1143,6 +1182,32 @@ int persistence_item_event_worker_heartbeat_age(void)
   return age >= 0 ? age : 0;
 }
 
+int persistence_item_event_worker_stuck(int threshold_secs)
+{
+  time_t last;
+  int age;
+
+  if (threshold_secs <= 0)
+    threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+
+  pthread_mutex_lock(&persistence_item_event_queue_mutex);
+  if (!persistence_item_event_worker_is_running)
+  {
+    pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+    return 0;
+  }
+  last = persistence_item_event_worker_last_heartbeat;
+  pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+
+  if (last == 0)
+    return 0;
+
+  age = (int)(time(NULL) - last);
+  if (age < 0)
+    age = 0;
+  return age >= threshold_secs;
+}
+
 int persistence_scalar_event_worker_heartbeat_age(void)
 {
   time_t last;
@@ -1159,6 +1224,32 @@ int persistence_scalar_event_worker_heartbeat_age(void)
   return age >= 0 ? age : 0;
 }
 
+int persistence_scalar_event_worker_stuck(int threshold_secs)
+{
+  time_t last;
+  int age;
+
+  if (threshold_secs <= 0)
+    threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+
+  pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
+  if (!persistence_scalar_event_worker_is_running)
+  {
+    pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+    return 0;
+  }
+  last = persistence_scalar_event_worker_last_heartbeat;
+  pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+
+  if (last == 0)
+    return 0;
+
+  age = (int)(time(NULL) - last);
+  if (age < 0)
+    age = 0;
+  return age >= threshold_secs;
+}
+
 int persistence_large_event_worker_heartbeat_age(void)
 {
   time_t last;
@@ -1173,6 +1264,32 @@ int persistence_large_event_worker_heartbeat_age(void)
 
   age = (int)(time(NULL) - last);
   return age >= 0 ? age : 0;
+}
+
+int persistence_large_event_worker_stuck(int threshold_secs)
+{
+  time_t last;
+  int age;
+
+  if (threshold_secs <= 0)
+    threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+
+  pthread_mutex_lock(&persistence_large_event_queue_mutex);
+  if (!persistence_large_event_worker_is_running)
+  {
+    pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+    return 0;
+  }
+  last = persistence_large_event_worker_last_heartbeat;
+  pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+
+  if (last == 0)
+    return 0;
+
+  age = (int)(time(NULL) - last);
+  if (age < 0)
+    age = 0;
+  return age >= threshold_secs;
 }
 
 void persistence_item_event_worker_heartbeat_set(time_t timestamp)

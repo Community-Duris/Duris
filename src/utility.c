@@ -1076,6 +1076,8 @@ int persistence_flush_item_events(int max_events)
     persistence_item_event_queue_clear_dropped();
   }
 
+  persistence_worker_heartbeat_check(0);
+
   return flushed;
 }
 
@@ -1622,6 +1624,8 @@ void persistence_record_item_event(const char *event_type, P_obj obj,
                                           actor ? J_NAME(actor) : "system",
                                           "queue_full_flat_fallback");
   }
+
+  persistence_worker_heartbeat_check(0);
 }
 
 void debug(const char *format, ...)

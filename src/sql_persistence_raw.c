@@ -38,21 +38,18 @@ bool sql_persistence_execute_raw(const char *sql)
 	if (!sql || !*sql)
 		return FALSE;
 
-	/* Acquire from the connection pool.  Each persistence
-	 * worker thread gets its own connection, so we no longer need
-	 * persistence_sql_mutex here — the pool is internally synchronised.
-	 *
-	 * We keep the mutex lock/unlock for callers that still rely on it
-	 * for ordering guarantees, but the connection itself is now
-	 * independently owned per-call. */
-	pthread_mutex_lock(&persistence_sql_mutex);
 	db = sql_persistence_connection();
 	if (!db)
 	{
-		pthread_mutex_unlock(&persistence_sql_mutex);
 		logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_execute_raw() failed - no connection");
 		return FALSE;
 	}
+
+	/* The pool provides one connection per worker, so the raw execution
+	 * path can run concurrently when the pool is active.  Keep the legacy
+	 * singleton serialized if we ever fall back to it before pool init. */
+	if (db == persistenceDB)
+		pthread_mutex_lock(&persistence_sql_mutex);
 
 	ret = mysql_real_query(db, sql, strlen(sql));
 	if (ret)
@@ -65,7 +62,9 @@ bool sql_persistence_execute_raw(const char *sql)
 	 * worker threads can use it. */
 	sql_persistence_release_connection(db);
 
-	pthread_mutex_unlock(&persistence_sql_mutex);
+	if (db == persistenceDB)
+		pthread_mutex_unlock(&persistence_sql_mutex);
+
 	return ret == 0;
 }
 #endif /* __NO_MYSQL__ */
