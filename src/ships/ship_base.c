@@ -175,10 +175,10 @@ void shutdown_ships()
 		fatal_boot_error("ship_base", "shutdown_ships: could not allocate batch buffer");
 	}
 
-	// do this update as a transaction 
-	if (mysql_real_query(DB, "START TRANSACTION", 17) != 0)
+	// do this update as a transaction
+	if (!sql_begin_transaction())
 	{
-		logit(LOG_DEBUG, "shutdown_ships: start transaction failed: %s", mysql_error(DB));
+		logit(LOG_DEBUG, "shutdown_ships: start transaction failed");
 	}
 
 	ShipVisitor svs;
@@ -211,17 +211,17 @@ void shutdown_ships()
 		}
 		if(!write_ship(ship) && !IS_NPC_SHIP(ship) && SHIP_LOADED(ship))
 		{
-			if (mysql_real_query(DB, "ROLLBACK", 8) != 0)
-			{
-				logit(LOG_DEBUG, "shutdown_ships: rollback failed: %s", mysql_error(DB));
-			}
+			if (sql_rollback())
+				logit(LOG_DEBUG, "shutdown_ships: rolled back after write_ship failed");
 			panic_corruption("shutdown_ships", "write_ship failed after rollback");
 		}
 	}
 
-	if (mysql_real_query(DB, "COMMIT", 6) != 0)
+	if (!sql_commit())
 	{
-		logit(LOG_DEBUG, "shutdown_ships: commit failed: %s", mysql_error(DB));
+		logit(LOG_DEBUG, "shutdown_ships: commit failed");
+		if (sql_rollback())
+			logit(LOG_DEBUG, "shutdown_ships: rolled back after commit failure");
 	}
 }
 
