@@ -1698,7 +1698,11 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
   send_to_char(buff2, ch);
 
   if (!insert_money_pickup(GET_PID(t_ch), coins_refund))
+  {
     logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(t_ch));
+    ADD_MONEY(t_ch, coins_refund);
+    send_to_char("&+WEpic refund could not be staged, so it was credited directly instead.&n\r\n", ch);
+  }
   t_ch->only.pc->epic_skill_points += point_refund;
 
   snprintf(buff2, MAX_STRING_LENGTH, "\r\n&+GYour epic skills have been reset: your skill points have been refunded, \r\n&+Gand %s&+G has been reimbursed and is waiting for you at the nearest auction
@@ -2381,7 +2385,12 @@ void refund_epic_skills(P_char ch)
 		}
 		ch->only.pc->skills[skl].learned = ch->only.pc->skills[skl].taught = 0;
 	}
-	insert_money_pickup(GET_PID(ch), coins_refund);
+	if (!insert_money_pickup(GET_PID(ch), coins_refund))
+	{
+		logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(ch));
+		ADD_MONEY(ch, coins_refund);
+		send_to_char("&+WEpic refund could not be staged, so it was credited directly instead.&n\r\n", ch);
+	}
 	ch->only.pc->epics += point_refund;
 	debug("%s getting epic-skill refund of %d epics and %s.", GET_NAME(ch), point_refund, coin_stringv(coins_refund));
 	logit(LOG_EPIC, "%s getting epic-skill refund of %d epics and %s coins.", GET_NAME(ch), point_refund, comma_string(coins_refund));

@@ -2061,9 +2061,17 @@ void finish_sinking(P_ship ship)
 			 logit(LOG_SHIP, "%s's insurance to ship's coffer: %d", ship->ownername, insurance / 1000);
 			 */
 			if (!insert_money_pickup(get_player_pid_from_name(SHIP_OWNER(ship)), insurance))
+			{
 				logit(LOG_SHIP, "%s's insurance refund failed to stage for pid %d", ship->ownername, get_player_pid_from_name(SHIP_OWNER(ship)));
-			wizlog(56, "Ship insurance to auction house: %s", coin_stringv(insurance));
-			logit(LOG_SHIP, "%s's insurance to auction hourse: %s", ship->ownername, coin_stringv(insurance));
+				ship->money += insurance;
+				wizlog(56, "Ship insurance staged in ship coffers instead: %s", coin_stringv(insurance));
+				logit(LOG_SHIP, "%s's insurance fell back to ship coffers: %s", ship->ownername, coin_stringv(insurance));
+			}
+			else
+			{
+				wizlog(56, "Ship insurance to auction house: %s", coin_stringv(insurance));
+				logit(LOG_SHIP, "%s's insurance to auction hourse: %s", ship->ownername, coin_stringv(insurance));
+			}
 		}
 
 		int old_class = ship->m_class;

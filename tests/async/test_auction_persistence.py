@@ -21,7 +21,9 @@ if pickup_start == -1:
 else:
     next_check = text.find('if (!temp_obj->next_content)', pickup_start)
     old_check = text.find('if (!temp_obj)', pickup_start)
-    bypass_guard = text.find('That auction item is already staged for pickup', pickup_start)
+    bypass_guard = text.find('That auction item is already staged or picked up.', pickup_start)
+    persist_fail = text.find('failed to persist pickup state', pickup_start)
+    select_any = text.find("SELECT 1 FROM auction_item_pickups WHERE pid = '%d' AND obj_blob_str", pickup_start)
     if next_check == -1:
         print('[FAIL] auction_pickup still uses the wrong null check for chained objects')
         ok = False
@@ -30,11 +32,16 @@ else:
     if old_check != -1 and old_check < next_check:
         print('[FAIL] stale temp_obj null-check still appears in auction_pickup')
         ok = False
-    if bypass_guard == -1:
+    if bypass_guard == -1 or select_any == -1:
         print('[FAIL] auction_pickup admin bypass can still duplicate a staged pickup')
         ok = False
     else:
-        print('[PASS] auction_pickup admin bypass rejects duplicate staging')
+        print('[PASS] auction_pickup admin bypass rejects duplicate staging or re-pickup')
+    if persist_fail == -1:
+        print('[FAIL] auction_pickup still ignores writeCharacter() failures')
+        ok = False
+    else:
+        print('[PASS] auction_pickup checks writeCharacter() result and logs persistence failures')
 
 # finalize_auction transaction wrapper and ordering
 final_start = text.find('bool finalize_auction(int auction_id, P_char to_ch)')
@@ -109,15 +116,17 @@ else:
     else:
         print('[PASS] auction_bid logs refund staging failures')
 
-# other insert_money_pickup callers should also check failures
-for label, file_text, needle in [
-    ('epic.c', epic_text, 'failed to stage refund pickup for pid'),
-    ('ship_base.c', ship_text, 'refund failed to stage for pid'),
-]:
-    if needle in file_text:
-        print(f'[PASS] {label} logs insert_money_pickup failures')
-    else:
-        print(f'[FAIL] {label} does not log insert_money_pickup failures')
-        ok = False
+# other insert_money_pickup callers should also check failures and use safe fallbacks
+if 'ADD_MONEY(ch, coins_refund)' in epic_text and 'could not be staged, so it was credited directly instead' in epic_text:
+    print('[PASS] epic.c falls back to direct credit when pickup staging fails')
+else:
+    print('[FAIL] epic.c does not fall back to direct credit on refund staging failure')
+    ok = False
+
+if 'ship->money += insurance;' in ship_text and 'fell back to ship coffers' in ship_text:
+    print('[PASS] ship_base.c falls back to ship coffers when pickup staging fails')
+else:
+    print('[FAIL] ship_base.c does not route insurance failures to ship coffers')
+    ok = False
 
 sys.exit(0 if ok else 1)
