@@ -52,7 +52,31 @@ bool sql_persistence_execute_raw(const char *sql)
 		pthread_mutex_lock(&persistence_sql_mutex);
 
 	ret = mysql_real_query(db, sql, strlen(sql));
-	if (ret)
+	if (!ret)
+	{
+		/* Drain every result set produced by CLIENT_MULTI_STATEMENTS so the
+		 * pooled connection is clean for the next caller.  Ignore the returned
+		 * result set when the statement has no rows; still advance through any
+		 * remaining results until mysql_more_results() is false. */
+		do
+		{
+			MYSQL_RES *res = mysql_store_result(db);
+			if (res)
+				mysql_free_result(res);
+		} while (mysql_more_results(db) && mysql_next_result(db) == 0);
+
+		if (mysql_more_results(db))
+		{
+			logit(LOG_DEBUG,
+			      "Persistence MySQL error in sql_persistence_execute_raw(): %s",
+			      mysql_error(db));
+			logit(LOG_DEBUG,
+			      "Persistence MySQL failed query (first 200 chars): %.200s",
+			      sql);
+			ret = 1;
+		}
+	}
+	else
 	{
 		logit(LOG_DEBUG, "Persistence MySQL error in sql_persistence_execute_raw(): %s", mysql_error(db));
 		logit(LOG_DEBUG, "Persistence MySQL failed query (first 200 chars): %.200s", sql);

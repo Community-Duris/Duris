@@ -5,6 +5,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 queue_c = (ROOT / "src/persistence_queue.c").read_text()
 utility_c = (ROOT / "src/utility.c").read_text()
+raw_c = (ROOT / "src/sql_persistence_raw.c").read_text()
 test_c = (ROOT / "tests/async/test_persistence.c").read_text()
 
 checks = []
@@ -23,6 +24,8 @@ checks.append(("worker loop marks in_write around callbacks",
 checks.append(("item event producer refreshes watchdog heartbeat",
                "persistence_worker_heartbeat_check(0);" in utility_c and
                "persistence_record_item_event" in utility_c))
+checks.append(("raw SQL executor drains multi-statement result sets",
+               "mysql_more_results" in raw_c and "mysql_next_result" in raw_c and "mysql_store_result" in raw_c))
 checks.append(("scalar stale-heartbeat regression test is present",
                "worker_scalar_stale_heartbeat_shutdown_fallback" in test_c and
                "stale-heartbeat helper should report a stuck worker before stop" in test_c and
