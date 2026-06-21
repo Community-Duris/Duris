@@ -7421,17 +7421,47 @@ bool sql_save_saved_item(P_obj item, const char *item_key)
 
 	int room_vnum = world[item->loc.room].number;
 
+	bool  own_txn = false;
+	bool  ok      = false;
 	char *esc_key = sql_escape_string(item_key);
 	if (!esc_key)
 		return false;
+
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+		{
+			free(esc_key);
+			return false;
+		}
+		own_txn = true;
+	}
 
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM saved_items WHERE item_key='%s'", esc_key);
 	free(esc_key);
 	if (!sql_run_query(del_query))
-		return false;
+		goto done;
 
-	return sql_save_saved_item_recursive(item_key, room_vnum, item, 0) > 0;
+	ok = sql_save_saved_item_recursive(item_key, room_vnum, item, 0) > 0;
+
+	done:
+	if (own_txn)
+	{
+		if (ok)
+		{
+			if (!sql_commit())
+			{
+				sql_rollback();
+				return false;
+			}
+		}
+		else
+		{
+			sql_rollback();
+		}
+	}
+	return ok;
 }
 
 bool sql_delete_saved_item(const char *item_key)
