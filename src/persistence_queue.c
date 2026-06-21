@@ -428,16 +428,33 @@ int persistence_item_event_worker_start(persistence_item_event_writer writer,
 void persistence_item_event_worker_stop(int drain_remaining)
 {
   int was_running;
+  int stuck;
 
   pthread_mutex_lock(&persistence_item_event_queue_mutex);
   was_running = persistence_item_event_worker_is_running;
+  stuck = was_running &&
+          persistence_item_event_worker_last_heartbeat != 0 &&
+          (int)(time(NULL) - persistence_item_event_worker_last_heartbeat) >=
+            PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+  if (stuck)
+    persistence_item_event_worker_is_running = 0;
   persistence_item_event_worker_stop_requested = 1;
   persistence_item_event_worker_drain_requested = drain_remaining ? 1 : 0;
   pthread_cond_signal(&persistence_item_event_queue_cond);
   pthread_mutex_unlock(&persistence_item_event_queue_mutex);
 
   if (was_running)
+  {
+    if (stuck)
+    {
+      logit("logs/log/debug",
+            "PERSISTENCE: domain=item_event owner=worker action=stop_timeout detail=worker heartbeat stale; skipping join to avoid shutdown hang");
+      pthread_detach(persistence_item_event_worker_thread);
+      return;
+    }
+
     pthread_join(persistence_item_event_worker_thread, NULL);
+  }
 }
 
 int persistence_item_event_worker_running(void)
@@ -891,16 +908,33 @@ int persistence_scalar_event_worker_start(persistence_scalar_event_writer writer
 void persistence_scalar_event_worker_stop(int drain_remaining)
 {
   int was_running;
+  int stuck;
 
   pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
   was_running = persistence_scalar_event_worker_is_running;
+  stuck = was_running &&
+          persistence_scalar_event_worker_last_heartbeat != 0 &&
+          (int)(time(NULL) - persistence_scalar_event_worker_last_heartbeat) >=
+            PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+  if (stuck)
+    persistence_scalar_event_worker_is_running = 0;
   persistence_scalar_event_worker_stop_requested = 1;
   persistence_scalar_event_worker_drain_requested = drain_remaining ? 1 : 0;
   pthread_cond_signal(&persistence_scalar_event_queue_cond);
   pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
 
   if (was_running)
+  {
+    if (stuck)
+    {
+      logit("logs/log/debug",
+            "PERSISTENCE: domain=scalar_event owner=worker action=stop_timeout detail=worker heartbeat stale; skipping join to avoid shutdown hang");
+      pthread_detach(persistence_scalar_event_worker_thread);
+      return;
+    }
+
     pthread_join(persistence_scalar_event_worker_thread, NULL);
+  }
 }
 
 int persistence_scalar_event_worker_running(void)
@@ -1084,16 +1118,33 @@ int persistence_large_event_worker_start(persistence_scalar_event_writer writer,
 void persistence_large_event_worker_stop(int drain_remaining)
 {
   int was_running;
+  int stuck;
 
   pthread_mutex_lock(&persistence_large_event_queue_mutex);
   was_running = persistence_large_event_worker_is_running;
+  stuck = was_running &&
+          persistence_large_event_worker_last_heartbeat != 0 &&
+          (int)(time(NULL) - persistence_large_event_worker_last_heartbeat) >=
+            PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+  if (stuck)
+    persistence_large_event_worker_is_running = 0;
   persistence_large_event_worker_stop_requested = 1;
   persistence_large_event_worker_drain_requested = drain_remaining ? 1 : 0;
   pthread_cond_signal(&persistence_large_event_queue_cond);
   pthread_mutex_unlock(&persistence_large_event_queue_mutex);
 
   if (was_running)
+  {
+    if (stuck)
+    {
+      logit("logs/log/debug",
+            "PERSISTENCE: domain=large_event owner=worker action=stop_timeout detail=worker heartbeat stale; skipping join to avoid shutdown hang");
+      pthread_detach(persistence_large_event_worker_thread);
+      return;
+    }
+
     pthread_join(persistence_large_event_worker_thread, NULL);
+  }
 }
 
 int persistence_large_event_worker_running(void)

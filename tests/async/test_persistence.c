@@ -6,6 +6,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <unistd.h>
 
 #include "persistence_queue.h"
@@ -183,6 +184,45 @@ static bool test_worker_scalar_fifo_after_retry_impl()
 	       expect(persistence_scalar_event_queue_pending() == 0, "FIFO retry test should leave no queued scalar events");
 }
 
+static bool test_worker_scalar_stale_heartbeat_shutdown_fallback_impl()
+{
+	persistence_scalar_event_worker_stop(0);
+	persistence_scalar_event_queue_reset();
+
+	capture_state state;
+	state.sleep_us = 200000;
+	if (!expect(persistence_scalar_event_worker_start(capture_writer, &state), "failed to start scalar worker for stale-heartbeat stop test"))
+		return false;
+
+	if (!expect(persistence_scalar_event_queue_enqueue("stale-heartbeat-stop"), "enqueue should succeed for stale-heartbeat stop test"))
+	{
+		persistence_scalar_event_worker_stop(0);
+		return false;
+	}
+
+	usleep(50000);
+	persistence_scalar_event_worker_heartbeat_set(time(NULL) - (PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS + 10));
+
+	if (!expect(persistence_scalar_event_worker_stuck(PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS), "stale-heartbeat helper should report a stuck worker before stop"))
+	{
+		persistence_scalar_event_worker_stop(0);
+		return false;
+	}
+
+	auto start = std::chrono::steady_clock::now();
+	persistence_scalar_event_worker_stop(0);
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::steady_clock::now() - start).count();
+
+	usleep(300000);
+
+	return expect(elapsed_ms < 150, "stale-heartbeat stop should not block on a wedged worker") &&
+	       expect(!persistence_scalar_event_worker_running(), "scalar worker should be marked stopped after stale-heartbeat fallback") &&
+	       expect(state.lines.size() == 1, "stale-heartbeat stop should not lose the queued event") &&
+	       expect(state.lines[0] == "stale-heartbeat-stop", "stale-heartbeat stop should persist the queued scalar event") &&
+	       expect(persistence_scalar_event_queue_pending() == 0, "stale-heartbeat stop should leave the scalar queue empty");
+}
+
 static bool test_worker_item_fifo_impl()
 {
 	persistence_item_event_worker_stop(0);
@@ -332,6 +372,7 @@ static const suite_case kCases[] =
 	{"queue_routes_oversize_item_to_large", test_queue_rejects_oversize_item_impl},
 	{"worker_scalar_fallback", test_worker_scalar_fallback_impl},
 	{"worker_scalar_fifo_after_retry", test_worker_scalar_fifo_after_retry_impl},
+	{"worker_scalar_stale_heartbeat_shutdown_fallback", test_worker_scalar_stale_heartbeat_shutdown_fallback_impl},
 	{"worker_item_fifo", test_worker_item_fifo_impl},
 	{"worker_large_roundtrip", test_worker_large_roundtrip_impl},
 };
@@ -402,6 +443,11 @@ int test_persistence_worker_scalar_fallback(void)
 int test_persistence_worker_scalar_fifo_after_retry(void)
 {
 	return test_worker_scalar_fifo_after_retry_impl() ? 1 : 0;
+}
+
+int test_persistence_worker_scalar_stale_heartbeat_shutdown_fallback(void)
+{
+	return test_worker_scalar_stale_heartbeat_shutdown_fallback_impl() ? 1 : 0;
 }
 
 int test_persistence_worker_item_fifo(void)
