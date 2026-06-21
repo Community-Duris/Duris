@@ -14,9 +14,12 @@ checks.append(("persistence_queue.c defines item/scalar/large worker_stuck helpe
                    "int persistence_scalar_event_worker_stuck(int threshold_secs)",
                    "int persistence_large_event_worker_stuck(int threshold_secs)",
                ])))
-checks.append(("worker stop paths skip join when heartbeat is stale",
-               queue_c.count("skipping join to avoid shutdown hang") >= 3 and
+checks.append(("worker stop paths use bounded join and keep stop gate set on timeout",
+               queue_c.count("stop did not complete within %d sec; keeping stop gate set") >= 3 and
+               "pthread_timedjoin_np" in queue_c and
                all(domain in queue_c for domain in ["domain=item_event", "domain=scalar_event", "domain=large_event"])))
+checks.append(("worker loop marks in_write around callbacks",
+               queue_c.count("_worker_in_write = 1;") >= 3 and queue_c.count("_worker_in_write = 0;") >= 3))
 checks.append(("item event producer refreshes watchdog heartbeat",
                "persistence_worker_heartbeat_check(0);" in utility_c and
                "persistence_record_item_event" in utility_c))

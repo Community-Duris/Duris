@@ -1152,7 +1152,8 @@ void persistence_worker_heartbeat_check(int threshold_secs)
     threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
 
   /* Item event worker */
-  if (!persistence_item_event_worker_running())
+  if (!persistence_item_event_worker_stop_pending() &&
+      !persistence_item_event_worker_running())
   {
     age = persistence_item_event_worker_heartbeat_age();
     if (age > 0 && age >= threshold_secs)
@@ -1168,7 +1169,8 @@ void persistence_worker_heartbeat_check(int threshold_secs)
   }
 
   /* Scalar event worker */
-  if (!persistence_scalar_event_worker_running())
+  if (!persistence_scalar_event_worker_stop_pending() &&
+      !persistence_scalar_event_worker_running())
   {
     age = persistence_scalar_event_worker_heartbeat_age();
     if (age > 0 && age >= threshold_secs)
@@ -1184,7 +1186,8 @@ void persistence_worker_heartbeat_check(int threshold_secs)
   }
 
   /* Large event worker */
-  if (!persistence_large_event_worker_running())
+  if (!persistence_large_event_worker_stop_pending() &&
+      !persistence_large_event_worker_running())
   {
     age = persistence_large_event_worker_heartbeat_age();
     if (age > 0 && age >= threshold_secs)

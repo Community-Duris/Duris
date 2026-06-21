@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,8 @@
  * translation unit. */
 extern void wizlog(int level, const char *format, ...);
 extern void logit(const char *filename, const char *format, ...);
+
+#define PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS 2
 
 struct persistence_event_queue_data
 {
@@ -40,6 +43,8 @@ static void *persistence_item_event_worker_context;
 static unsigned long persistence_item_event_worker_write_count;
 static unsigned long persistence_item_event_worker_failure_count;
 static time_t persistence_item_event_worker_last_heartbeat;
+static int persistence_item_event_worker_in_write;
+static int persistence_item_event_worker_stop_pending_flag;
 
 static persistence_event_queue_data persistence_scalar_event_queue;
 static pthread_mutex_t persistence_scalar_event_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -53,6 +58,8 @@ static void *persistence_scalar_event_worker_context;
 static unsigned long persistence_scalar_event_worker_write_count;
 static unsigned long persistence_scalar_event_worker_failure_count;
 static time_t persistence_scalar_event_worker_last_heartbeat;
+static int persistence_scalar_event_worker_in_write;
+static int persistence_scalar_event_worker_stop_pending_flag;
 
 /* Large-payload event queue */
 static persistence_event_queue_data persistence_large_event_queue;
@@ -67,6 +74,19 @@ static void *persistence_large_event_worker_context;
 static unsigned long persistence_large_event_worker_write_count;
 static unsigned long persistence_large_event_worker_failure_count;
 static time_t persistence_large_event_worker_last_heartbeat;
+static int persistence_large_event_worker_in_write;
+static int persistence_large_event_worker_stop_pending_flag;
+
+static int persistence_worker_timed_join(pthread_t thread)
+{
+  struct timespec deadline;
+
+  if (clock_gettime(CLOCK_REALTIME, &deadline) != 0)
+    return pthread_join(thread, NULL) == 0;
+
+  deadline.tv_sec += PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS;
+  return pthread_timedjoin_np(thread, NULL, &deadline) == 0;
+}
 
 /* ===================================================================
  * Dynamic queue helpers – callers MUST hold the queue mutex.
@@ -359,11 +379,16 @@ static void *persistence_item_event_worker_main(void *unused)
     if (!should_write)
       continue;
 
+    pthread_mutex_lock(&persistence_item_event_queue_mutex);
+    persistence_item_event_worker_in_write = 1;
+    pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+
     write_ok = persistence_item_event_worker_writer ?
       persistence_item_event_worker_writer(line,
                                            persistence_item_event_worker_context) : 1;
 
     pthread_mutex_lock(&persistence_item_event_queue_mutex);
+    persistence_item_event_worker_in_write = 0;
     if (write_ok)
     {
       if (persistence_item_event_queue.count > 0 &&
@@ -404,6 +429,17 @@ int persistence_item_event_worker_start(persistence_item_event_writer writer,
     return 1;
   }
 
+  if (persistence_item_event_worker_stop_pending_flag)
+  {
+    if (pthread_kill(persistence_item_event_worker_thread, 0) == ESRCH)
+      persistence_item_event_worker_stop_pending_flag = 0;
+    else
+    {
+      pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+      return 0;
+    }
+  }
+
   persistence_item_event_worker_writer = writer;
   persistence_item_event_worker_context = context;
   persistence_item_event_worker_stop_requested = 0;
@@ -436,6 +472,7 @@ void persistence_item_event_worker_stop(int drain_remaining)
           persistence_item_event_worker_last_heartbeat != 0 &&
           (int)(time(NULL) - persistence_item_event_worker_last_heartbeat) >=
             PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+  persistence_item_event_worker_stop_pending_flag = was_running ? 1 : persistence_item_event_worker_stop_pending_flag;
   if (stuck)
     persistence_item_event_worker_is_running = 0;
   persistence_item_event_worker_stop_requested = 1;
@@ -445,15 +482,17 @@ void persistence_item_event_worker_stop(int drain_remaining)
 
   if (was_running)
   {
-    if (stuck)
+    if (!persistence_worker_timed_join(persistence_item_event_worker_thread))
     {
       logit("logs/log/debug",
-            "PERSISTENCE: domain=item_event owner=worker action=stop_timeout detail=worker heartbeat stale; skipping join to avoid shutdown hang");
-      pthread_detach(persistence_item_event_worker_thread);
+            "PERSISTENCE: domain=item_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
+            PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
       return;
     }
 
-    pthread_join(persistence_item_event_worker_thread, NULL);
+    pthread_mutex_lock(&persistence_item_event_queue_mutex);
+    persistence_item_event_worker_stop_pending_flag = 0;
+    pthread_mutex_unlock(&persistence_item_event_queue_mutex);
   }
 }
 
@@ -480,20 +519,37 @@ int persistence_item_event_worker_running(void)
      * fail closed and fall back to synchronous persistence instead of
      * waiting forever on a wedged worker.
      */
-    kill_rc = pthread_kill(persistence_item_event_worker_thread, 0);
-    if (kill_rc == ESRCH)
+    if (persistence_item_event_worker_stop_pending_flag)
     {
-      persistence_item_event_worker_is_running = 0;
+      kill_rc = pthread_kill(persistence_item_event_worker_thread, 0);
+      if (kill_rc == ESRCH)
+      {
+        persistence_item_event_worker_is_running = 0;
+        persistence_item_event_worker_stop_pending_flag = 0;
+      }
       running = 0;
+    }
+    else if (persistence_item_event_worker_in_write)
+    {
+      running = 1;
     }
     else
     {
-      last = persistence_item_event_worker_last_heartbeat;
-      age = last ? (int)(time(NULL) - last) : -1;
-      if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+      kill_rc = pthread_kill(persistence_item_event_worker_thread, 0);
+      if (kill_rc == ESRCH)
       {
         persistence_item_event_worker_is_running = 0;
         running = 0;
+      }
+      else
+      {
+        last = persistence_item_event_worker_last_heartbeat;
+        age = last ? (int)(time(NULL) - last) : -1;
+        if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+        {
+          persistence_item_event_worker_is_running = 0;
+          running = 0;
+        }
       }
     }
     /* EINVAL: tid is no longer valid (already joined) - shouldn't
@@ -839,11 +895,16 @@ static void *persistence_scalar_event_worker_main(void *unused)
     if (!should_write)
       continue;
 
+    pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
+    persistence_scalar_event_worker_in_write = 1;
+    pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+
     write_ok = persistence_scalar_event_worker_writer ?
       persistence_scalar_event_worker_writer(line,
                                              persistence_scalar_event_worker_context) : 1;
 
     pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
+    persistence_scalar_event_worker_in_write = 0;
     if (write_ok)
     {
       if (persistence_scalar_event_queue.count > 0 &&
@@ -884,6 +945,17 @@ int persistence_scalar_event_worker_start(persistence_scalar_event_writer writer
     return 1;
   }
 
+  if (persistence_scalar_event_worker_stop_pending_flag)
+  {
+    if (pthread_kill(persistence_scalar_event_worker_thread, 0) == ESRCH)
+      persistence_scalar_event_worker_stop_pending_flag = 0;
+    else
+    {
+      pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+      return 0;
+    }
+  }
+
   persistence_scalar_event_worker_writer = writer;
   persistence_scalar_event_worker_context = context;
   persistence_scalar_event_worker_stop_requested = 0;
@@ -916,6 +988,7 @@ void persistence_scalar_event_worker_stop(int drain_remaining)
           persistence_scalar_event_worker_last_heartbeat != 0 &&
           (int)(time(NULL) - persistence_scalar_event_worker_last_heartbeat) >=
             PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+  persistence_scalar_event_worker_stop_pending_flag = was_running ? 1 : persistence_scalar_event_worker_stop_pending_flag;
   if (stuck)
     persistence_scalar_event_worker_is_running = 0;
   persistence_scalar_event_worker_stop_requested = 1;
@@ -925,15 +998,17 @@ void persistence_scalar_event_worker_stop(int drain_remaining)
 
   if (was_running)
   {
-    if (stuck)
+    if (!persistence_worker_timed_join(persistence_scalar_event_worker_thread))
     {
       logit("logs/log/debug",
-            "PERSISTENCE: domain=scalar_event owner=worker action=stop_timeout detail=worker heartbeat stale; skipping join to avoid shutdown hang");
-      pthread_detach(persistence_scalar_event_worker_thread);
+            "PERSISTENCE: domain=scalar_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
+            PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
       return;
     }
 
-    pthread_join(persistence_scalar_event_worker_thread, NULL);
+    pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
+    persistence_scalar_event_worker_stop_pending_flag = 0;
+    pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
   }
 }
 
@@ -960,20 +1035,37 @@ int persistence_scalar_event_worker_running(void)
      * fail closed and fall back to synchronous persistence instead of
      * waiting forever on a wedged worker.
      */
-    kill_rc = pthread_kill(persistence_scalar_event_worker_thread, 0);
-    if (kill_rc == ESRCH)
+    if (persistence_scalar_event_worker_stop_pending_flag)
     {
-      persistence_scalar_event_worker_is_running = 0;
+      kill_rc = pthread_kill(persistence_scalar_event_worker_thread, 0);
+      if (kill_rc == ESRCH)
+      {
+        persistence_scalar_event_worker_is_running = 0;
+        persistence_scalar_event_worker_stop_pending_flag = 0;
+      }
       running = 0;
+    }
+    else if (persistence_scalar_event_worker_in_write)
+    {
+      running = 1;
     }
     else
     {
-      last = persistence_scalar_event_worker_last_heartbeat;
-      age = last ? (int)(time(NULL) - last) : -1;
-      if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+      kill_rc = pthread_kill(persistence_scalar_event_worker_thread, 0);
+      if (kill_rc == ESRCH)
       {
         persistence_scalar_event_worker_is_running = 0;
         running = 0;
+      }
+      else
+      {
+        last = persistence_scalar_event_worker_last_heartbeat;
+        age = last ? (int)(time(NULL) - last) : -1;
+        if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+        {
+          persistence_scalar_event_worker_is_running = 0;
+          running = 0;
+        }
       }
     }
     /* EINVAL: tid is no longer valid (already joined) - shouldn't
@@ -1049,11 +1141,16 @@ static void *persistence_large_event_worker_main(void *unused)
     if (!should_write)
       continue;
 
+    pthread_mutex_lock(&persistence_large_event_queue_mutex);
+    persistence_large_event_worker_in_write = 1;
+    pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+
     write_ok = persistence_large_event_worker_writer ?
       persistence_large_event_worker_writer(line,
                                              persistence_large_event_worker_context) : 1;
 
     pthread_mutex_lock(&persistence_large_event_queue_mutex);
+    persistence_large_event_worker_in_write = 0;
     if (write_ok)
     {
       if (persistence_large_event_queue.count > 0 &&
@@ -1094,6 +1191,17 @@ int persistence_large_event_worker_start(persistence_scalar_event_writer writer,
     return 1;
   }
 
+  if (persistence_large_event_worker_stop_pending_flag)
+  {
+    if (pthread_kill(persistence_large_event_worker_thread, 0) == ESRCH)
+      persistence_large_event_worker_stop_pending_flag = 0;
+    else
+    {
+      pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+      return 0;
+    }
+  }
+
   persistence_large_event_worker_writer = writer;
   persistence_large_event_worker_context = context;
   persistence_large_event_worker_stop_requested = 0;
@@ -1126,6 +1234,7 @@ void persistence_large_event_worker_stop(int drain_remaining)
           persistence_large_event_worker_last_heartbeat != 0 &&
           (int)(time(NULL) - persistence_large_event_worker_last_heartbeat) >=
             PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+  persistence_large_event_worker_stop_pending_flag = was_running ? 1 : persistence_large_event_worker_stop_pending_flag;
   if (stuck)
     persistence_large_event_worker_is_running = 0;
   persistence_large_event_worker_stop_requested = 1;
@@ -1135,15 +1244,17 @@ void persistence_large_event_worker_stop(int drain_remaining)
 
   if (was_running)
   {
-    if (stuck)
+    if (!persistence_worker_timed_join(persistence_large_event_worker_thread))
     {
       logit("logs/log/debug",
-            "PERSISTENCE: domain=large_event owner=worker action=stop_timeout detail=worker heartbeat stale; skipping join to avoid shutdown hang");
-      pthread_detach(persistence_large_event_worker_thread);
+            "PERSISTENCE: domain=large_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
+            PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
       return;
     }
 
-    pthread_join(persistence_large_event_worker_thread, NULL);
+    pthread_mutex_lock(&persistence_large_event_queue_mutex);
+    persistence_large_event_worker_stop_pending_flag = 0;
+    pthread_mutex_unlock(&persistence_large_event_queue_mutex);
   }
 }
 
@@ -1170,20 +1281,37 @@ int persistence_large_event_worker_running(void)
      * fail closed and fall back to synchronous persistence instead of
      * waiting forever on a wedged worker.
      */
-    kill_rc = pthread_kill(persistence_large_event_worker_thread, 0);
-    if (kill_rc == ESRCH)
+    if (persistence_large_event_worker_stop_pending_flag)
     {
-      persistence_large_event_worker_is_running = 0;
+      kill_rc = pthread_kill(persistence_large_event_worker_thread, 0);
+      if (kill_rc == ESRCH)
+      {
+        persistence_large_event_worker_is_running = 0;
+        persistence_large_event_worker_stop_pending_flag = 0;
+      }
       running = 0;
+    }
+    else if (persistence_large_event_worker_in_write)
+    {
+      running = 1;
     }
     else
     {
-      last = persistence_large_event_worker_last_heartbeat;
-      age = last ? (int)(time(NULL) - last) : -1;
-      if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+      kill_rc = pthread_kill(persistence_large_event_worker_thread, 0);
+      if (kill_rc == ESRCH)
       {
         persistence_large_event_worker_is_running = 0;
         running = 0;
+      }
+      else
+      {
+        last = persistence_large_event_worker_last_heartbeat;
+        age = last ? (int)(time(NULL) - last) : -1;
+        if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
+        {
+          persistence_large_event_worker_is_running = 0;
+          running = 0;
+        }
       }
     }
     /* EINVAL: tid is no longer valid (already joined) - shouldn't
@@ -1242,7 +1370,9 @@ int persistence_item_event_worker_stuck(int threshold_secs)
     threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
 
   pthread_mutex_lock(&persistence_item_event_queue_mutex);
-  if (!persistence_item_event_worker_is_running)
+  if (!persistence_item_event_worker_is_running ||
+      persistence_item_event_worker_stop_pending_flag ||
+      persistence_item_event_worker_in_write)
   {
     pthread_mutex_unlock(&persistence_item_event_queue_mutex);
     return 0;
@@ -1257,6 +1387,17 @@ int persistence_item_event_worker_stuck(int threshold_secs)
   if (age < 0)
     age = 0;
   return age >= threshold_secs;
+}
+
+int persistence_item_event_worker_stop_pending(void)
+{
+  int stop_in_progress;
+
+  pthread_mutex_lock(&persistence_item_event_queue_mutex);
+  stop_in_progress = persistence_item_event_worker_stop_pending_flag;
+  pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+
+  return stop_in_progress;
 }
 
 int persistence_scalar_event_worker_heartbeat_age(void)
@@ -1284,7 +1425,9 @@ int persistence_scalar_event_worker_stuck(int threshold_secs)
     threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
 
   pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
-  if (!persistence_scalar_event_worker_is_running)
+  if (!persistence_scalar_event_worker_is_running ||
+      persistence_scalar_event_worker_stop_pending_flag ||
+      persistence_scalar_event_worker_in_write)
   {
     pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
     return 0;
@@ -1299,6 +1442,17 @@ int persistence_scalar_event_worker_stuck(int threshold_secs)
   if (age < 0)
     age = 0;
   return age >= threshold_secs;
+}
+
+int persistence_scalar_event_worker_stop_pending(void)
+{
+  int stop_in_progress;
+
+  pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
+  stop_in_progress = persistence_scalar_event_worker_stop_pending_flag;
+  pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+
+  return stop_in_progress;
 }
 
 int persistence_large_event_worker_heartbeat_age(void)
@@ -1326,7 +1480,9 @@ int persistence_large_event_worker_stuck(int threshold_secs)
     threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
 
   pthread_mutex_lock(&persistence_large_event_queue_mutex);
-  if (!persistence_large_event_worker_is_running)
+  if (!persistence_large_event_worker_is_running ||
+      persistence_large_event_worker_stop_pending_flag ||
+      persistence_large_event_worker_in_write)
   {
     pthread_mutex_unlock(&persistence_large_event_queue_mutex);
     return 0;
@@ -1341,6 +1497,17 @@ int persistence_large_event_worker_stuck(int threshold_secs)
   if (age < 0)
     age = 0;
   return age >= threshold_secs;
+}
+
+int persistence_large_event_worker_stop_pending(void)
+{
+  int stop_in_progress;
+
+  pthread_mutex_lock(&persistence_large_event_queue_mutex);
+  stop_in_progress = persistence_large_event_worker_stop_pending_flag;
+  pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+
+  return stop_in_progress;
 }
 
 void persistence_item_event_worker_heartbeat_set(time_t timestamp)

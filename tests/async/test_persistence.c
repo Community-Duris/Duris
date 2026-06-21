@@ -80,6 +80,96 @@ static bool expect(bool cond, const char *message)
 	return cond;
 }
 
+template <typename StartFn, typename StopFn, typename RunningFn, typename StuckFn,
+          typename HeartbeatSetFn, typename EnqueueFn, typename PendingFn,
+          typename ResetFn, typename WaitEmptyFn>
+static bool test_worker_slow_write_not_stuck_case(const char *worker_name,
+                                                  const char *event_name,
+                                                  StartFn start_fn,
+                                                  StopFn stop_fn,
+                                                  RunningFn running_fn,
+                                                  StuckFn stuck_fn,
+                                                  HeartbeatSetFn heartbeat_set_fn,
+                                                  EnqueueFn enqueue_fn,
+                                                  PendingFn pending_fn,
+                                                  ResetFn reset_fn,
+                                                  WaitEmptyFn wait_empty_fn)
+{
+	capture_state state;
+	state.sleep_us = 200000;
+
+	stop_fn(0);
+	reset_fn();
+
+	if (!expect(start_fn(capture_writer, &state), "failed to start worker for slow-write stale-heartbeat test"))
+		return false;
+	if (!expect(enqueue_fn(event_name), "enqueue should succeed for slow-write stale-heartbeat test"))
+	{
+		stop_fn(0);
+		return false;
+	}
+
+	usleep(50000);
+	heartbeat_set_fn(time(NULL) - (PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS + 10));
+	if (!expect(!stuck_fn(PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS),
+	            "slow in-write worker should not be flagged stuck by stale heartbeat"))
+	{
+		stop_fn(0);
+		return false;
+	}
+
+	stop_fn(1);
+	return expect(state.lines.size() == 1, "slow-write test should persist exactly one event") &&
+	       expect(state.lines[0] == event_name, "slow-write test should round-trip the queued event") &&
+	       expect(pending_fn() == 0, "slow-write test should leave no queued events") &&
+	       expect(!running_fn(), "worker should not be running after slow-write stop");
+}
+
+template <typename StartFn, typename StopFn, typename RunningFn, typename HeartbeatSetFn,
+          typename EnqueueFn, typename PendingFn, typename ResetFn, typename WaitEmptyFn>
+static bool test_worker_bounded_stop_timeout_case(const char *worker_name,
+                                                  const char *event_name,
+                                                  StartFn start_fn,
+                                                  StopFn stop_fn,
+                                                  RunningFn running_fn,
+                                                  HeartbeatSetFn heartbeat_set_fn,
+                                                  EnqueueFn enqueue_fn,
+                                                  PendingFn pending_fn,
+                                                  ResetFn reset_fn,
+                                                  WaitEmptyFn wait_empty_fn)
+{
+	capture_state state;
+	state.sleep_us = 3000000;
+
+	stop_fn(0);
+	reset_fn();
+
+	if (!expect(start_fn(capture_writer, &state), "failed to start worker for bounded-stop test"))
+		return false;
+	if (!expect(enqueue_fn(event_name), "enqueue should succeed for bounded-stop test"))
+	{
+		stop_fn(0);
+		return false;
+	}
+
+	usleep(50000);
+	heartbeat_set_fn(time(NULL) - (PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS + 10));
+	auto start = std::chrono::steady_clock::now();
+	stop_fn(0);
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::steady_clock::now() - start).count();
+
+	if (!expect(wait_empty_fn(8000), "bounded-stop test queue did not drain"))
+		return false;
+
+	return expect(elapsed_ms >= 1500 && elapsed_ms < 6000,
+	              "bounded-stop test should return before the writer finishes but not hang forever") &&
+	       expect(state.lines.size() == 1, "bounded-stop test should persist exactly one event") &&
+	       expect(state.lines[0] == event_name, "bounded-stop test should round-trip the queued event") &&
+	       expect(pending_fn() == 0, "bounded-stop test should leave no queued events") &&
+	       expect(!running_fn(), "worker should not be running after bounded stop");
+}
+
 static bool test_queue_flood_scalar_impl()
 {
 	persistence_scalar_event_worker_stop(0);
