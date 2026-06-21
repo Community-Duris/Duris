@@ -8365,8 +8365,9 @@ void sql_save_dirty_shopkeepers(void)
 		}
 		else
 		{
-			// keeper not found, clear dirty to avoid repeated attempts
-			shop_index[i].dirty = 0;
+			// keeper not found; keep dirty so a later flush can retry when the
+			// NPC is present again.
+			logit(LOG_DEBUG, "sql_save_dirty_shopkeepers: keeper not found for shop %d; leaving dirty", i);
 		}
 	}
 
