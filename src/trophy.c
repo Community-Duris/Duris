@@ -342,6 +342,9 @@ void load_zone_trophy(P_char ch)
 
 void zone_trophy_update()
 {
+	if (!get_property("exp.zoneTrophy.enabled", 0))
+		return;
+
 	if (!has_elapsed("zone_trophy_reduction", (int)get_property("exp.zoneTrophy.update.secs", 3600)))
 		return;
 
