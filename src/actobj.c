@@ -894,24 +894,24 @@ void do_get(P_char ch, char *argument, int cmd)
 									{
 										CharWait(ch, PULSE_VIOLENCE);
 									}
-								}
-								get(ch, o_obj, s_obj, TRUE);
-
-								found = TRUE;
-								if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
-									if (s_obj->value[3] > 0)
-										s_obj->value[3]--;
-							}
-							else
-							{
-								snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takable.\r\n", o_obj->short_description);
-								send_to_char(Gbuf3, ch);
-								fail = TRUE;
-							}
-						}
-						else
-						{
-							snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy.\r\n", o_obj->short_description);
+									}
+									get(ch, o_obj, s_obj, TRUE);
+									total++;
+									if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
+										if (s_obj->value[3] > 0)
+											s_obj->value[3]--;
+									found = TRUE;
+									}
+					else
+					{
+snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takable.\r\n", o_obj->short_description);
+									send_to_char(Gbuf3, ch);
+									fail = TRUE;
+									}
+									}
+					else
+					{
+snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy.\r\n", o_obj->short_description);
 							send_to_char(Gbuf3, ch);
 							fail = TRUE;
 						}

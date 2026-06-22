@@ -170,7 +170,8 @@ bool sql_begin_transaction(void)
 		return false;
 	}
 
-	if (mysql_real_query(DB, "START TRANSACTION", 17) != 0)
+	sql_clear_results();
+	if (!sql_trace_exec("sql_begin_transaction", "START TRANSACTION", 17, false, false))
 	{
 		logit(LOG_DEBUG, "sql_begin_transaction: failed: %s", mysql_error(DB));
 		return false;
@@ -194,7 +195,7 @@ bool sql_commit(void)
 		return false;
 	}
 
-	if (mysql_real_query(DB, "COMMIT", 6) != 0)
+	if (!sql_trace_exec("sql_commit", "COMMIT", 6, false, false))
 	{
 		logit(LOG_DEBUG, "sql_commit: failed: %s", mysql_error(DB));
 		in_transaction = false;
@@ -219,7 +220,7 @@ bool sql_rollback(void)
 		return false;
 	}
 
-	if (mysql_real_query(DB, "ROLLBACK", 8) != 0)
+	if (!sql_trace_exec("sql_rollback", "ROLLBACK", 8, false, false))
 	{
 		logit(LOG_DEBUG, "sql_rollback: failed: %s", mysql_error(DB));
 		in_transaction = false;
@@ -384,7 +385,7 @@ static bool sql_run_query(const char *query)
 	if (!DB || !query)
 		return false;
 
-	if (mysql_real_query(DB, query, strlen(query)) != 0)
+	if (!sql_trace_exec("sql_run_query", query, strlen(query), false, false))
 	{
 		sql_player_error("sql_run_query", query);
 		return false;
@@ -9211,15 +9212,10 @@ bool sql_save_ship(P_ship ship)
 	}
 	
 	MYSQL_RES *result = NULL;
-	if (mysql_real_query(DB, batch, strlen(batch)) != 0)
+	if (!sql_trace_exec("sql_save_ship_batch", batch, strlen(batch), false, true))
 	{
 		sql_player_error("sql_save_ship_4", batch);
-		result = NULL;
 		free(batch);
-		if (result)
-		{
-			mysql_free_result(result);
-		}
 		sql_clear_results();
 		sql_rollback();
 		logit(LOG_DEBUG, "sql_save_ship: mysql_real_query failed for ship %d", ship->db_id);

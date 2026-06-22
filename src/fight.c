@@ -753,12 +753,12 @@ void setHeavenTime(P_char victim)
 			//   and res should have 0 or 1 rows, depending on whether the event was within the 60 minutes.
 			if (qry("SELECT * from pkill_event WHERE id=%d AND TIMESTAMPDIFF( MINUTE, stamp, NOW() ) < 60", kill_ids[i--]))
 			{
-				res = mysql_store_result(DB);
-				if (mysql_num_rows(res) > 0)
+				MYSQL_RES *event_res = mysql_store_result(DB);
+				if (mysql_num_rows(event_res) > 0)
 				{
 					counter++;
 				}
-				mysql_free_result(res);
+				mysql_free_result(event_res);
 			}
 		}
 

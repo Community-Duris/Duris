@@ -1061,36 +1061,23 @@ void epic_zone_balance()
 	long                   lt;
 	vector<epic_zone_data> epic_zones = get_epic_zones();
 
+	bool                   touch_last;
+
 	for (i = 0; i < epic_zones.size(); i++)
 	{
-		if (!qry("SELECT alignment, UNIX_TIMESTAMP(last_touch) FROM zones WHERE number = %d", epic_zones[i].number))
-			return;
-
-		MYSQL_RES *res = mysql_store_result(DB);
-
-		int rowCount = mysql_num_rows(res);
-
-		if (rowCount < 1)
-		{
-			mysql_free_result(res);
-			return;
-		}
-
-		MYSQL_ROW row = mysql_fetch_row(res);
-
-		if (row)
-		{
-			alignment = atoi(row[0]);
-			lt        = rowCount > 1 ? atol(row[1]) : 0;
-		}
-
-		mysql_free_result(res);
+		touch_last = false;
+		alignment  = epic_zones[i].alignment;
+		lt         = epic_zones[i].last_touch;
 
 		if (lt == 0)
-			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
+			touch_last = true;
 
 		if ((alignment == 0))
+		{
+			if (touch_last)
+				db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
 			continue;
+		}
 
 		// debug("zone %d alignment %d", epic_zones[i].number, alignment);
 
@@ -1102,10 +1089,12 @@ void epic_zone_balance()
 				delta = 1;
 
 			// debug("calling update_epic_zone_alignment");
-			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
+			touch_last = true;
 			update_epic_zone_alignment(epic_zones[i].number, delta);
-			continue;
 		}
+
+		if (touch_last)
+			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
 	}
 }
 
@@ -2033,7 +2022,7 @@ vector<epic_zone_data> get_epic_zones()
 	return zones;
 #else
 
-	if (!qry("SELECT number, name, frequency_mod, alignment FROM zones WHERE epic_type > 0 ORDER BY (suggested_group_size*epic_payout), id"))
+	if (!qry("SELECT number, name, frequency_mod, alignment, UNIX_TIMESTAMP(last_touch) FROM zones WHERE epic_type > 0 ORDER BY (suggested_group_size*epic_payout), id"))
 	{
 		return zones;
 	}
@@ -2044,7 +2033,7 @@ vector<epic_zone_data> get_epic_zones()
 
 	while ((row = mysql_fetch_row(res)))
 	{
-		zones.push_back(epic_zone_data(atoi(row[0]), string(row[1]), atof(row[2]), atoi(row[3])));
+		zones.push_back(epic_zone_data(atoi(row[0]), string(row[1]), atof(row[2]), atoi(row[3]), row[4] ? atol(row[4]) : 0));
 	}
 
 	mysql_free_result(res);

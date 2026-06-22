@@ -60,10 +60,8 @@ if [ -f "src/sql.h" ]; then
   " 2>/dev/null
 
   # ---- Incremental migrations ----------------------------------------
-  # MIGRATION_AUTO_RUNNER is enabled in the build, so the MUD binary
-  # applies versioned migrations (schema_migration_v*.sql) itself during
-  # initialize_mysql().  Keep the shell fallback commented out unless you
-  # are explicitly testing a no-auto-runner build.
+  # Migrations are handled externally now; use one of the explicit mysql
+  # import commands below when you need to bootstrap or patch a database.
   # echo "Running schema migrations..."
   # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v17_schema_fixes.sql || true)
   # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v18_player_affects_unique.sql || true)

@@ -219,7 +219,7 @@ OBJS =  $(SHIP_OBJS) \
 				 spells.o \
 				 redis.o \
 				 wizredis.o \
-				 sql.o	\
+				 sql.o \
 				 sql_player.o \
 				 ssl.o \
 				 statistics.o \

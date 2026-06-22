@@ -51,6 +51,7 @@ bool sql_persistence_execute_raw(const char *sql)
 	if (db == persistenceDB)
 		pthread_mutex_lock(&persistence_sql_mutex);
 
+	sql_clear_results_on(db);
 	ret = mysql_real_query(db, sql, strlen(sql));
 	if (!ret)
 	{

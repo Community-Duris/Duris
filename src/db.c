@@ -1598,15 +1598,31 @@ void recalc_zone_numbers()
 
 void update_zone_difficulties()
 {
-	for (int z = 0; z <= top_of_zone_table; z++)
-	{
-		struct zone_info zinfo;
+	MYSQL_RES *res = db_query("SELECT number, difficulty FROM zones WHERE difficulty <> 0");
 
-		if (get_zone_info(zone_table[z].number, &zinfo) && zinfo.difficulty)
+	if (!res)
+		return;
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(res)))
+	{
+		int number     = atoi(row[0]);
+		int difficulty  = atoi(row[1]);
+
+		if (!difficulty)
+			continue;
+
+		for (int z = 0; z <= top_of_zone_table; z++)
 		{
-			zone_table[z].difficulty = zinfo.difficulty;
+			if (zone_table[z].number == number)
+			{
+				zone_table[z].difficulty = difficulty;
+				break;
+			}
 		}
 	}
+
+	mysql_free_result(res);
 }
 
 #define IS_ZONE_COMMAND(ch) (ch == 'M' || ch == 'O' || ch == 'E' || ch == 'P' || ch == 'D' || ch == 'G' || ch == 'R' || ch == 'F' || ch == 'A' || ch == 'B' || ch == 'C' || ch == 'Y' || ch == 'S')

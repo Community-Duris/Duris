@@ -111,6 +111,9 @@ mysql -u duris -p duris < src/duris.sql
 
 ### 4. Apply Migrations
 
+This branch does **not** use an in-process automigration feature at boot.
+Run schema changes explicitly with a shell script or direct `mysql` import.
+
 ```bash
 # Safe consolidated bootstrap/migration for new or existing databases
 mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
@@ -178,7 +181,7 @@ ln -s /var/lib/dehydrated/certs/testduris.net/privkey.pem duris.key
 
 ```bash
 cd src
-make -f Makefile.linux
+make
 cp dms_new ../dms
 ```
 
@@ -201,21 +204,21 @@ This rebuilds the missing `areas/make_*` helper binaries, then generates the com
 
 ```bash
 cd src
-make -f Makefile.linux clean
-make -f Makefile.linux
+make clean
+make
 cp dms_new ../dms
 ```
 
 ### Build Configuration
 
-The build is configured in `src/Makefile.linux`:
+The build is configured in `src/Makefile`:
 
 - **MySQL Enabled:** MySQL support is enabled by default
 - **Test Mode:** `TEST_MUD` flag is enabled for development builds
 
 To disable MySQL (not recommended):
 ```bash
-# Edit src/Makefile.linux and uncomment:
+# Edit src/Makefile and uncomment:
 # CFLAGS += -D__NO_MYSQL__
 ```
 
@@ -243,7 +246,7 @@ Database connection settings are **hardcoded** in `src/sql.h` (lines 6-16):
 
 **Important Notes:**
 - These credentials are compiled into the binary
-- Changes require recompilation: `cd src && make -f Makefile.linux clean && make -f Makefile.linux`
+- Changes require recompilation: `cd src && make clean && make`
 - For production: Change `DB_PASSWD` to a secure password before compiling
 - Default credentials: **user:** `duris`, **password:** `duris`
 
@@ -401,8 +404,8 @@ sudo apt-get install libmysqlclient-dev
 ```bash
 # Clean and rebuild:
 cd src
-make -f Makefile.linux clean
-make -f Makefile.linux
+make clean
+make
 ```
 
 ---
