@@ -1330,7 +1330,7 @@ struct pc_only_data
 
 	// Traffic messure.
 	long     send_data;
-	long     recived_data;
+	long     received_data;
 	int      master_set;
 	long int learned_forged_list[MAX_FORGE_ITEMS];
 

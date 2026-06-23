@@ -1072,7 +1072,7 @@ int websocket_process_input(struct descriptor_data *d)
 	}
 
 	if (d->character && d->character->only.pc)
-		d->character->only.pc->recived_data += bytes_read;
+		d->character->only.pc->received_data += bytes_read;
 
 	/* buffer http handshake until complete */
 	if (!d->ws_handshake_done)

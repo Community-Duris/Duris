@@ -104,7 +104,7 @@ extern void                  timedShutdown(P_char ch, P_char, P_obj, void *data)
 extern void                  checkpointing(void);
 
 long sentbytes    = 0;
-long recivedbytes = 0;
+long receivedbytes = 0;
 bool game_booted  = FALSE;
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
@@ -720,7 +720,7 @@ void game_loop(int port, int sslport)
 	unsigned long         accept_debug_pulse = 0;
 
 	sentbytes         = 0;
-	recivedbytes      = 0;
+	receivedbytes     = 0;
 	null_time.tv_sec  = 0;
 	null_time.tv_usec = 0;
 
@@ -2995,8 +2995,8 @@ static void process_line(P_desc t, char *in)
 
 	if (t && t->character && IS_PC(t->character))
 	{
-		t->character->only.pc->recived_data += k;
-		recivedbytes                        += k;
+		t->character->only.pc->received_data += k;
+		receivedbytes                        += k;
 	}
 	write_to_q(out, &t->input, 0);
 

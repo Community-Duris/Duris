@@ -116,7 +116,7 @@ extern uint                       event_counter[];
 extern char                      *specdata[][MAX_SPEC];
 extern const char                *sector_types[];
 extern long                       sentbytes;
-extern long                       recivedbytes;
+extern long                       receivedbytes;
 extern const struct race_names    race_names_table[];
 extern Skill                      skills[];
 extern long                       new_exp_table[]; // Arih: Fixed type mismatch bug - was const int, should be long
@@ -3631,7 +3631,7 @@ void do_world(P_char ch, char *argument, int cmd)
 			snprintf(buf, MAX_STRING_LENGTH, "Total MB sent since boot:                %5.4f\n", (float)sentbytes / 1048576.00);
 			send_to_char(buf, ch);
 
-			snprintf(buf, MAX_STRING_LENGTH, "Total MB received since boot:             %5.4f\n", (float)recivedbytes / 1048576.00);
+			snprintf(buf, MAX_STRING_LENGTH, "Total MB received since boot:             %5.4f\n", (float)receivedbytes / 1048576.00);
 			send_to_char(buf, ch);
 
 			break;
@@ -4434,7 +4434,7 @@ void do_score(P_char ch, char *argument, int cmd)
 		snprintf(buf, MAX_STRING_LENGTH, "&+wReceived data:&+y %5.4f &+wMB this session.\n", (float)(ch->only.pc->send_data / 1048576.0000));
 		send_to_char(buf, ch);
 
-		snprintf(buf, MAX_STRING_LENGTH, "&+wSend data:    &+y %5.4f &+wMB this session.\n", (float)(ch->only.pc->recived_data / 1048576.0000));
+		snprintf(buf, MAX_STRING_LENGTH, "&+wSend data:    &+y %5.4f &+wMB this session.\n", (float)(ch->only.pc->received_data / 1048576.0000));
 		send_to_char(buf, ch);
 
 		/* compression */
