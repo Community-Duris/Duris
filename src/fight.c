@@ -5707,19 +5707,12 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	    ((flags & RAWDAM_BTXVAMP) || (flags & RAWDAM_SHRTVMP)) &&
 	    (IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY) || affected_by_spell(ch, SKILL_SHORT_VAMP)))
 	{
-		temp_dam = 0;
-		temp_dam = number(1, (int)(temp_dam));
-
 		if (IS_PC(ch))
-		// && GET_LEVEL(ch) >= 46)
 		{
 			temp_dam = dam * get_property("vamping.self.battleEcstasy", 0.150);
-			// vamp(ch, temp_dam, GET_MAX_HIT(ch) * get_property("vamping.BTX.self.HP.PC", 1.10));
-			// vamp(ch, temp_dam, GET_MAX_HIT(ch) * 1.10);
 			vamp(ch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
 		}
-
-		if (IS_NPC(ch))
+		else
 		{
 			temp_dam = dam * get_property("vamping.self.NPCbattleEcstasy", 0.050);
 			vamp(ch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
