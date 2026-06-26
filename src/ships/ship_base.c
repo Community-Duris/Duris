@@ -1948,16 +1948,11 @@ void ship_activity()
 			if (ship->npc_ai)
 				ship->npc_ai->activity();
 
-			if (has_eq_diplomat(ship))
-			{
-				if (ship->target == 0 && ship->speed > 0 && number(0, get_property("ships.pirate.diplomat.load.chance", 30000)) == 0)
-					try_load_pirate_ship(ship);
-			}
-			else
-			{
-				if (ship->target == 0 && ship->speed > 0 && number(0, get_property("ships.pirate.load.chance", 7200)) == 0)
-					try_load_pirate_ship(ship);
-			}
+			int pirate_chance = has_eq_diplomat(ship) ?
+				get_property("ships.pirate.diplomat.load.chance", 30000) :
+				get_property("ships.pirate.load.chance", 7200);
+			if (ship->target == 0 && ship->speed > 0 && number(0, pirate_chance) == 0)
+				try_load_pirate_ship(ship);
 		}
 	}
 }
