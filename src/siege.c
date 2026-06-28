@@ -1691,9 +1691,26 @@ void remove_siege(P_obj siege)
 void save_siege_list()
 {
 #ifndef __NO_MYSQL__
-	sql_save_siege_list();
+	if (!sql_begin_transaction())
+		return;
+
+	if (!sql_save_siege_list())
+	{
+		sql_rollback();
+		return;
+	}
+
 	for (P_siege siege = siege_objects; siege != NULL; siege = siege->next_siege)
-		sql_save_siege_item(siege->obj, siege->obj->loc.room);
+	{
+		if (!sql_save_siege_item(siege->obj, siege->obj->loc.room))
+		{
+			sql_rollback();
+			return;
+		}
+	}
+
+	if (!sql_commit())
+		sql_rollback();
 #endif
 }
 
