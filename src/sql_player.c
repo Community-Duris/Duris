@@ -6545,42 +6545,42 @@ bool sql_load_all_corpses(void)
 
 	skip_corpse_save = 1; // don't write corpses back during load
 
-	// one query gets everything: corpses + items + affects
-	MYSQL_RES *result = db_query("SELECT c.id, c.player_name, c.save_id, c.room_vnum, "
-	                             "ci.id, COALESCE(ci.container_id, 0), ci.vnum, COALESCE(ci.item_type, 0), "
-	                             "ci.weight, ci.cost, ci.timer, "
-	                             "ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
-	                             "ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
-	                             "ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0), "
-	                             "ci.obj_uid, ci.item_condition, "
-								 "c.short_descr, c.description, "
-	                             "ci.wear_flags, ci.item_type, ci.item_material, "
-	                             "ci.bitvector1, ci.bitvector2, ci.bitvector3, ci.bitvector4, ci.bitvector5 "
-	                             "FROM corpses c "
-	                             "LEFT JOIN corpse_items ci ON ci.corpse_id = c.id "
-	                             "LEFT JOIN corpse_item_affects cia ON cia.item_id = ci.id "
-	                             "ORDER BY c.id, ci.id, cia.id");
-	if (!result)
-		return false;
-
-	int total_rows = mysql_num_rows(result);
-
-	// tracking for current corpse being built
-	int   cur_corpse_id = -1;
-	P_obj cur_corpse    = NULL;
-	int   cur_room      = 0;
-
-	// tracking for items in current corpse
-	P_obj obj_map[MAX_CORPSE_ITEMS];
-	int   id_map[MAX_CORPSE_ITEMS];
-	int   container_map[MAX_CORPSE_ITEMS];
-	int   num_objs     = 0;
-	int   last_item_id = -1;
-	int   skipped_item_id = -1;
-
+	bool ok = false;
+	MYSQL_RES *result = NULL;
+	int       total_rows = 0;
+	int       cur_corpse_id = -1;
+	P_obj     cur_corpse = NULL;
+	int       cur_room = 0;
+	P_obj     obj_map[MAX_CORPSE_ITEMS];
+	int       id_map[MAX_CORPSE_ITEMS];
+	int       container_map[MAX_CORPSE_ITEMS];
+	int       num_objs = 0;
+	int       last_item_id = -1;
+	int       skipped_item_id = -1;
 	int       loaded = 0;
 	MYSQL_ROW row;
 
+	// one query gets everything: corpses + items + affects
+	result = db_query("SELECT c.id, c.player_name, c.save_id, c.room_vnum, "
+	                  "ci.id, COALESCE(ci.container_id, 0), ci.vnum, COALESCE(ci.item_type, 0), "
+	                  "ci.weight, ci.cost, ci.timer, "
+	                  "ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
+	                  "ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
+	                  "ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0), "
+	                  "ci.obj_uid, ci.item_condition, "
+	                  "c.short_descr, c.description, "
+	                  "ci.wear_flags, ci.item_type, ci.item_material, "
+	                  "ci.bitvector1, ci.bitvector2, ci.bitvector3, ci.bitvector4, ci.bitvector5 "
+	                  "FROM corpses c "
+	                  "LEFT JOIN corpse_items ci ON ci.corpse_id = c.id "
+	                  "LEFT JOIN corpse_item_affects cia ON cia.item_id = ci.id "
+	                  "ORDER BY c.id, ci.id, cia.id");
+	if (!result)
+		goto cleanup;
+
+	total_rows = mysql_num_rows(result);
+
+	// tracking for current corpse being built
 	while ((row = mysql_fetch_row(result)))
 	{
 
@@ -6912,9 +6912,13 @@ bool sql_load_all_corpses(void)
 		loaded++;
 	}
 
-	mysql_free_result(result);
+	ok = true;
+
+cleanup:
+	if (result)
+		mysql_free_result(result);
 	skip_corpse_save = 0; // re-enable corpse saves
-	return true;
+	return ok;
 }
 
 extern struct shop_data *shop_index;
@@ -7378,11 +7382,33 @@ bool sql_save_saved_item(P_obj item, const char *item_key)
 
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM saved_items WHERE item_key='%s'", esc_key);
-	free(esc_key);
-	if (!sql_run_query(del_query))
-		return false;
+	bool ok = false;
 
-	return sql_save_saved_item_recursive(item_key, room_vnum, item, 0) > 0;
+	if (!sql_begin_transaction())
+	{
+		free(esc_key);
+		return false;
+	}
+
+	if (!sql_run_query(del_query))
+		goto rollback;
+
+	if (sql_save_saved_item_recursive(item_key, room_vnum, item, 0) <= 0)
+		goto rollback;
+
+	if (!sql_commit())
+		goto rollback;
+
+	ok = true;
+	goto cleanup;
+
+rollback:
+	sql_rollback();
+
+cleanup:
+	if (esc_key)
+		free(esc_key);
+	return ok;
 }
 
 bool sql_delete_saved_item(const char *item_key)
