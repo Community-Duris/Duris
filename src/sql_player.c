@@ -1585,7 +1585,11 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 		                           obj->material,
 		                           obj->obj_uid,
 		                           obj->condition);
-		if (new_pos < 0) break;
+		if (new_pos < 0)
+		{
+			free(batch);
+			return -1;
+		}
 		pos = new_pos;
 
 		first = false;
