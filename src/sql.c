@@ -879,10 +879,20 @@ void sql_update_frag_leaderboard(P_char ch)
 	mysql_str(class_name, class_sql);
 
 	// Insert or update frag_leaderboard
-	// Using REPLACE to handle both insert and update cases
-	if (!db_query("REPLACE INTO frag_leaderboard "
+	// Using INSERT ... ON DUPLICATE KEY UPDATE to preserve the row id while
+	// refreshing the current stats.
+	if (!db_query("INSERT INTO frag_leaderboard "
 	         "(pid, account_name, char_name, total_frags, racewar, race, class, level, deleted_at) "
-	         "VALUES(%ld, '%s', '%s', %d, %d, '%s', '%s', %d, NULL)",
+	         "VALUES(%ld, '%s', '%s', %d, %d, '%s', '%s', %d, NULL) "
+	         "ON DUPLICATE KEY UPDATE "
+	         "account_name=VALUES(account_name), "
+	         "char_name=VALUES(char_name), "
+	         "total_frags=VALUES(total_frags), "
+	         "racewar=VALUES(racewar), "
+	         "race=VALUES(race), "
+	         "class=VALUES(class), "
+	         "level=VALUES(level), "
+	         "deleted_at=NULL",
 	         GET_PID(ch),
 	         account_name_sql,
 	         char_name_sql,
