@@ -1557,8 +1557,16 @@ P_obj make_corpse(P_char ch, int loss)
 	if (corpse && IS_PC(ch))
 	{
 		if (!sql_delete_player_items(GET_PID(ch)))
+		{
 			logit(LOG_DEBUG, "make_corpse: failed to clear items for %s", GET_NAME(ch));
-		writeCorpse(corpse);
+			obj_from_room(corpse);
+			extract_obj(corpse);
+			corpse = NULL;
+		}
+		else
+		{
+			writeCorpse(corpse);
+		}
 	}
 
 	return corpse;
