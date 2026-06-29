@@ -2941,7 +2941,21 @@ CREATE TABLE IF NOT EXISTS account_locker_item_extra_descr (
 -- same character with the same duration, flags, modifier, location, and
 -- level are semantically identical and can be safely collapsed.
 
--- Step 1: Add the UNIQUE KEY. Uses the idempotent prepared-statement
+-- Step 1: Remove any existing duplicate rows, keeping the lowest id in each
+-- duplicate group.
+DELETE p1
+FROM player_affects p1
+INNER JOIN player_affects p2
+        ON p1.pid = p2.pid
+       AND p1.type = p2.type
+       AND p1.duration = p2.duration
+       AND p1.flags = p2.flags
+       AND p1.modifier = p2.modifier
+       AND p1.location = p2.location
+       AND p1.level = p2.level
+       AND p1.id > p2.id;
+
+-- Step 2: Add the UNIQUE KEY. Uses the idempotent prepared-statement
 -- pattern so the migration is safe to re-run.
 -- Note: if duplicates already exist, this step will fail rather than deleting data.
 SET @key_exists := (

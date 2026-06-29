@@ -450,6 +450,16 @@ static void fmt_sql_str(char *out, size_t sz, const char *esc) {
         strcpy(out, "NULL");
 }
 
+static bool mig_affect_same_signature(const struct mig_affect *a, const struct mig_affect *b) {
+    return a && b &&
+           a->type == b->type &&
+           a->duration == b->duration &&
+           a->flags == b->flags &&
+           a->modifier == b->modifier &&
+           a->location == b->location &&
+           a->level == b->level;
+}
+
 // thread-local flag for using thread-safe db functions
 static __thread int use_thread_db = 0;
 
@@ -736,8 +746,20 @@ static int save_player_to_db(struct mig_player *p) {
     }
 
     // affects - these have string fields so batch them too
+    // collapse exact duplicates on the same semantic key used by the
+    // player_affects UNIQUE index so old pfiles cannot violate the import.
     len = 0;
     for (struct mig_affect *af = p->affects; af; af = af->next) {
+        bool is_dup = false;
+        for (struct mig_affect *prev = p->affects; prev != af; prev = prev->next) {
+            if (mig_affect_same_signature(prev, af)) {
+                is_dup = true;
+                break;
+            }
+        }
+        if (is_dup)
+            continue;
+
         char *esc_woc = af->wear_off_char ? sql_escape_string(af->wear_off_char) : NULL;
         char *esc_wor = af->wear_off_room ? sql_escape_string(af->wear_off_room) : NULL;
         char woc_str[256], wor_str[256];
