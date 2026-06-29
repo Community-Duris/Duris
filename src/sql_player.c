@@ -1383,7 +1383,7 @@ bool sql_save_player_affects(P_char ch)
 
 		const char *wear_off_char = NULL;
 		const char *wear_off_room = NULL;
-		if (af->wear_off_message_index > 0 && af->type >= 0 && af->type < MAX_SKILLS)
+		if (af->wear_off_message_index > 0 && af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES && af->type >= 0 && af->type < MAX_SKILLS)
 		{
 			wear_off_char = skills[af->type].wear_off_char[af->wear_off_message_index];
 			wear_off_room = skills[af->type].wear_off_room[af->wear_off_message_index];

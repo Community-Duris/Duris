@@ -2008,11 +2008,13 @@ void affect_to_char_with_messages(P_char ch, struct affected_type *af, char *wea
 	if (i == 0 && !skill->wear_off_char[i] && !skill->wear_off_room[i])
 		i = 1;
 
-	if (i == MAX_WEAR_OFF_MESSAGES)
+	if (i >= MAX_WEAR_OFF_MESSAGES)
 	{
 		affected_alloc->wear_off_message_index = 0;
+		return;
 	}
-	else if (skill->wear_off_char[i] == 0 && skill->wear_off_room[i] == 0)
+
+	if (skill->wear_off_char[i] == 0 && skill->wear_off_room[i] == 0)
 	{
 		if (wear_off_char)
 			skill->wear_off_char[i] = str_dup(wear_off_char);
@@ -2319,29 +2321,15 @@ void wear_off_message(P_char ch, struct affected_type *af)
 		af->type = TAG_LAYONHANDS;
 	}
 
-	if (af->wear_off_message_index)
+	int idx = (af->wear_off_message_index > 0 && af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES) ? af->wear_off_message_index : 0;
+	if (skills[af->type].wear_off_char[idx])
 	{
-		if (skills[af->type].wear_off_char[af->wear_off_message_index])
-		{
-			send_to_char(skills[af->type].wear_off_char[af->wear_off_message_index], ch);
-			send_to_char("\n", ch);
-		}
-		if (skills[af->type].wear_off_room[af->wear_off_message_index])
-		{
-			act(skills[af->type].wear_off_room[af->wear_off_message_index], FALSE, ch, 0, 0, TO_ROOM);
-		}
+		send_to_char(skills[af->type].wear_off_char[idx], ch);
+		send_to_char("\n", ch);
 	}
-	else
+	if (skills[af->type].wear_off_room[idx])
 	{
-		if (skills[af->type].wear_off_char[0])
-		{
-			send_to_char(skills[af->type].wear_off_char[0], ch);
-			send_to_char("\n", ch);
-		}
-		if (skills[af->type].wear_off_room[0])
-		{
-			act(skills[af->type].wear_off_room[0], FALSE, ch, 0, 0, TO_ROOM);
-		}
+		act(skills[af->type].wear_off_room[idx], FALSE, ch, 0, 0, TO_ROOM);
 	}
 }
 

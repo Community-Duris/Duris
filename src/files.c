@@ -560,14 +560,12 @@ int writeAffects(char *buf, struct affected_type *af)
 		}
 
 #ifndef _PFILE_
-		if (af->wear_off_message_index != 0)
+		if (af->wear_off_message_index > 0 && af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES)
 		{
 			if (skills[af->type].wear_off_char[af->wear_off_message_index])
-				;
-			custom_messages = 1;
+				custom_messages = 1;
 			if (skills[af->type].wear_off_room[af->wear_off_message_index])
-				;
-			custom_messages |= 2;
+				custom_messages |= 2;
 		}
 #endif
 
