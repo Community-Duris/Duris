@@ -5517,10 +5517,52 @@ bool sql_delete_private_chest(int chest_id)
 	if (!DB || chest_id <= 0)
 		return false;
 
-	char query[256];
-	snprintf(query, sizeof(query), "DELETE FROM private_chests WHERE id=%d AND is_public=0", chest_id);
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
 
-	return sql_run_query(query);
+	char query[256];
+	snprintf(query, sizeof(query), "SELECT is_public FROM private_chests WHERE id=%d", chest_id);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
+
+	MYSQL_ROW row = mysql_fetch_row(result);
+	bool is_private = (row && atoi(row[0]) == 0);
+	mysql_free_result(result);
+	if (!is_private)
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
+
+	snprintf(query, sizeof(query), "DELETE FROM locker_items WHERE chest_id=%d", chest_id);
+	if (!sql_run_query(query))
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
+
+	snprintf(query, sizeof(query), "DELETE FROM private_chests WHERE id=%d AND is_public=0", chest_id);
+	if (!sql_run_query(query))
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
+
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
+
+	return true;
 }
 
 int sql_get_chest_id(int locker_id, const char *chest_name)
@@ -6758,9 +6800,20 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 	if (!player_name || !DB)
 		return false;
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	char *esc_name = sql_escape_string(player_name);
 	if (!esc_name)
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	// Delete item affects first (child of corpse_items)
 	char cascade_query[512];
@@ -6771,6 +6824,7 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 	if (!sql_run_query(cascade_query))
 	{
 		free(esc_name);
+		if (own_txn) sql_rollback();
 		return false;
 	}
 
@@ -6781,6 +6835,7 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 	if (!sql_run_query(cascade_query))
 	{
 		free(esc_name);
+		if (own_txn) sql_rollback();
 		return false;
 	}
 
@@ -6788,8 +6843,18 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 	char query[256];
 	snprintf(query, sizeof(query), "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d", esc_name, save_id);
 	free(esc_name);
+	if (!sql_run_query(query))
+	{
+		if (own_txn) sql_rollback();
+		return false;
+	}
 
-	return sql_run_query(query);
+	if (own_txn)
+	{
+		if (!sql_commit()) { sql_rollback(); return false; }
+	}
+
+	return true;
 }
 
 // single query corpse loading - all data in one query
