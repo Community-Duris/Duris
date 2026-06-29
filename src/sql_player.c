@@ -3133,7 +3133,7 @@ bool sql_save_player_witnesses(P_char ch)
 	int  bpos = snprintf(batch, sizeof(batch),
 	                     "DELETE FROM player_witnesses WHERE pid=%d", pid);
 
-	// insert current witnesses
+	// insert current witnesses, flushing as needed
 	for (wtns_rec *w = ch->specials.witnessed; w; w = w->next)
 	{
 		char *esc_attacker = sql_escape_string(w->attacker ? w->attacker : "");
@@ -3150,11 +3150,33 @@ bool sql_save_player_witnesses(P_char ch)
 		free(esc_attacker);
 		free(esc_victim);
 		if (new_pos < 0)
-			break;  // buffer full — flush what we have
+		{
+			if (bpos > 0 && !sql_run_multi_query(batch))
+			{
+				if (own_txn) sql_rollback();
+				return false;
+			}
+			batch[0] = '\0';
+			bpos = 0;
+			new_pos = batch_append(batch, bpos, sizeof(batch),
+			                       "INSERT INTO player_witnesses (pid, crime, room_vnum, attacker_name, victim_name, witness_time) "
+			                       "VALUES (%d, %d, %d, '%s', '%s', FROM_UNIXTIME(NULLIF(%ld,0)))",
+			                       pid,
+			                       w->crime,
+			                       w->room,
+			                       esc_attacker ? esc_attacker : "",
+			                       esc_victim ? esc_victim : "",
+			                       (long)w->time);
+			if (new_pos < 0)
+			{
+				if (own_txn) sql_rollback();
+				return false;
+			}
+		}
 		bpos = new_pos;
 	}
 
-	if (!sql_run_multi_query(batch))
+	if (bpos > 0 && !sql_run_multi_query(batch))
 	{
 		if (own_txn)
 			sql_rollback();
@@ -3196,7 +3218,7 @@ bool sql_save_player_shapechanges(P_char ch)
 	int  bpos  = snprintf(batch, sizeof(batch),
 	                       "DELETE FROM player_shapechanges WHERE pid=%d", pid);
 
-	// insert current shapechanges
+	// insert current shapechanges, flushing as needed
 	if (has_innate(ch, INNATE_SHAPECHANGE) && ch->only.pc->knownShapes)
 	{
 		for (struct char_shapechange_data *shape = ch->only.pc->knownShapes; shape; shape = shape->next)
@@ -3210,12 +3232,33 @@ bool sql_save_player_shapechanges(P_char ch)
 			                           (long)shape->lastResearched,
 			                           (long)shape->lastShapechanged);
 			if (new_pos < 0)
-				break;  // buffer full — flush what we have
+			{
+				if (bpos > 0 && !sql_run_multi_query(batch))
+				{
+					if (own_txn) sql_rollback();
+					return false;
+				}
+				batch[0] = '\0';
+				bpos = 0;
+				new_pos = batch_append(batch, bpos, sizeof(batch),
+				                       "INSERT INTO player_shapechanges (pid, mob_vnum, times_researched, last_researched, last_shapechanged) "
+				                       "VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)))",
+				                       pid,
+				                       shape->mobVnum,
+				                       shape->timesResearched,
+				                       (long)shape->lastResearched,
+				                       (long)shape->lastShapechanged);
+				if (new_pos < 0)
+				{
+					if (own_txn) sql_rollback();
+					return false;
+				}
+			}
 			bpos = new_pos;
 		}
 	}
 
-	if (!sql_run_multi_query(batch))
+	if (bpos > 0 && !sql_run_multi_query(batch))
 	{
 		if (own_txn)
 			sql_rollback();
