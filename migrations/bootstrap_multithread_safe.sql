@@ -1940,6 +1940,256 @@ create table if not exists outposts (
     primary key (id)
 ) engine=innodb;
 
+-- additional runtime tables aligned from run_migration.sh
+
+create table if not exists artifacts (
+    vnum int not null,
+    owned char(1) not null,
+    locType int not null default 1,
+    location int not null,
+    timer datetime default null,
+    type int not null,
+    lastUpdate datetime default null,
+    primary key (vnum)
+) engine=innodb;
+
+create table if not exists artifacts_mortal (
+    vnum int not null,
+    owned char(1) not null,
+    locType int not null,
+    location int not null,
+    timer datetime default null,
+    type int not null,
+    primary key (vnum)
+) engine=innodb;
+
+create table if not exists artifact_bind (
+    vnum int not null primary key,
+    owner_pid int default null,
+    timer int default null
+) engine=innodb;
+
+create table if not exists alliances (
+    id int auto_increment primary key,
+    created_at datetime default null,
+    forging_assoc_id int not null,
+    joining_assoc_id int not null,
+    tribute_owed int not null default 0
+) engine=innodb;
+
+create table if not exists associations (
+    id int not null primary key,
+    name varchar(255) not null default '',
+    prestige int not null default 0,
+    active tinyint(1) not null default 1,
+    wood int not null default 0,
+    stone int not null default 0,
+    construction_points int not null default 0,
+    over_max int not null default 0
+) engine=innodb;
+
+create table if not exists guild_transactions (
+    id int unsigned auto_increment primary key,
+    soc_id int unsigned not null default 0,
+    date int not null default 0,
+    transaction_info varchar(255) not null default '',
+    index idx_soc_id (soc_id)
+) engine=innodb;
+
+create table if not exists guildhall_rooms (
+    id int auto_increment primary key,
+    guildhall_id int not null default 0,
+    vnum int not null default 0,
+    type int not null default 0,
+    value0 int unsigned not null default 0,
+    value1 int unsigned not null default 0,
+    value2 int unsigned not null default 0,
+    value3 int unsigned not null default 0,
+    value4 int unsigned not null default 0,
+    value5 int unsigned not null default 0,
+    value6 int unsigned not null default 0,
+    value7 int unsigned not null default 0,
+    exit0 int not null default 0,
+    exit1 int not null default 0,
+    exit2 int not null default 0,
+    exit3 int not null default 0,
+    exit4 int not null default 0,
+    exit5 int not null default 0,
+    exit6 int not null default 0,
+    exit7 int not null default 0,
+    exit8 int not null default 0,
+    exit9 int not null,
+    name varchar(255) not null,
+    index idx_vnum (vnum),
+    index idx_guildhall_id (guildhall_id)
+) engine=innodb;
+
+create table if not exists guildhalls (
+    id int auto_increment primary key,
+    assoc_id int not null default 0,
+    type int not null default 0,
+    outside_vnum int not null default 0,
+    racewar int not null default 0,
+    index idx_assoc_id (assoc_id)
+) engine=innodb;
+
+create table if not exists ship_cargo_market_mods (
+    type varchar(255) not null default '',
+    port_id int not null default -1,
+    cargo_type int not null default -1,
+    modifier float not null default 0,
+    key type_port_id_cargo_type (type, port_id, cargo_type)
+) engine=innodb;
+
+create table if not exists ship_cargo_prices (
+    type varchar(255) not null default '',
+    port_id int not null default -1,
+    cargo_type int not null default -1,
+    price int not null default 0,
+    key type_port_id_cargo_type (type, port_id, cargo_type)
+) engine=innodb;
+
+create table if not exists shop_trophy (
+    id int auto_increment primary key,
+    item int not null default 0,
+    value int not null default 0,
+    seller int not null default 0,
+    timestamp timestamp not null default current_timestamp on update current_timestamp
+) engine=innodb;
+
+create table if not exists statistics (
+    id int auto_increment primary key,
+    date int not null default 0,
+    goods_count int not null default 0,
+    evils_count int not null default 0,
+    illithids_count int not null default 0,
+    undeads_count int not null default 0,
+    gods_count int not null default 0,
+    in_guildhall_count int not null default 0,
+    sum_goods_levels int not null default 0,
+    sum_evils_levels int not null default 0,
+    sum_illithids_levels int not null default 0,
+    sum_undeads_levels int not null default 0,
+    unique_ips_count int not null default 0
+) engine=innodb;
+
+create table if not exists timers (
+    name varchar(255) not null default '',
+    date int not null default 0,
+    primary key (name)
+) engine=innodb;
+
+create table if not exists world_quest_accomplished (
+    id int unsigned auto_increment primary key,
+    pid varchar(45) not null default '',
+    timestamp timestamp not null default current_timestamp on update current_timestamp,
+    quest_giver int unsigned not null default 0,
+    player_name varchar(45) not null default '',
+    player_level int unsigned not null default 0,
+    quest_target int not null default 0,
+    reward_vnum int not null default 0,
+    reward_desc varchar(255) not null default ''
+) engine=innodb;
+
+create table if not exists zones (
+    id int auto_increment primary key,
+    number int default null,
+    name varchar(100) not null default '',
+    epic_type int not null default 0,
+    frequency_mod float not null default 1,
+    zone_freq_mod float not null default 1,
+    epic_level int not null default 0,
+    task_zone tinyint(1) not null default 0,
+    quest_zone tinyint(1) not null default 0,
+    trophy_zone tinyint(1) not null default 1,
+    suggested_group_size int not null default 1,
+    epic_payout int not null default 0,
+    difficulty int not null default 0,
+    randoms_zone tinyint(1) not null default 1,
+    alignment int not null default 0,
+    last_touch timestamp null default null,
+    reset_perc int default 0,
+    stonecount int not null default 1,
+    index idx_number (number)
+) engine=innodb;
+
+create table if not exists zone_touches (
+    id int auto_increment primary key,
+    boot_time timestamp null default null,
+    zone_number int default null,
+    touched_at timestamp null default null,
+    toucher_pid int default null,
+    group_size int default null,
+    epic_value int default null,
+    alignment_delta int default null,
+    index idx_zone_number (zone_number)
+) engine=innodb;
+
+create table if not exists zone_trophy (
+    pid bigint not null default 0,
+    zone_number int not null default 0,
+    exp int not null default 0,
+    primary key (pid, zone_number),
+    index idx_pid (pid),
+    index idx_zone_number (zone_number),
+    index idx_exp (exp)
+) engine=innodb;
+
+create table if not exists locker_access (
+    owner varchar(255) not null,
+    visitor varchar(255) not null,
+    primary key (owner, visitor)
+) engine=innodb;
+
+create table if not exists ctf_data (
+    id int auto_increment primary key,
+    time timestamp null default null,
+    pid int not null default 0,
+    type int not null default 0,
+    flagtype int not null default 0,
+    racewar int not null default 0
+) engine=innodb;
+
+create table if not exists epic_bonus (
+    pid int not null,
+    type int not null default 0,
+    time datetime default null,
+    unique key uk_pid (pid)
+) engine=innodb;
+
+create table if not exists epic_gain (
+    id int unsigned auto_increment primary key,
+    pid bigint not null default 0,
+    time datetime not null,
+    type int not null default 0,
+    type_id int not null default 0,
+    epics int not null default 0,
+    index idx_pid (pid)
+) engine=innodb;
+
+create table if not exists eq_drop (
+    id int unsigned auto_increment primary key,
+    date timestamp not null default current_timestamp on update current_timestamp,
+    vnum int unsigned not null default 0,
+    pid_looter bigint unsigned not null default 0,
+    room_id int unsigned not null default 0,
+    index idx_vnum (vnum)
+) engine=innodb;
+
+create table if not exists racewar_stat_mods (
+    racewar int not null default 0,
+    Str int not null default 0,
+    Dex int not null default 0,
+    Agi int not null default 0,
+    Con int not null default 0,
+    Pow int not null default 0,
+    Intl int not null default 0,
+    Wis int not null default 0,
+    Cha int not null default 0,
+    Kar int not null default 0,
+    Luc int not null default 0
+) engine=innodb;
+
 -- ============================================================================
 -- FILE: schema_migration_v7_player_fixes.sql
 -- adds missing player fields for existing databases
