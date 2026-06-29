@@ -3719,6 +3719,8 @@ bool sql_load_player_affects(P_char ch)
 		af.bitvector3 = sql_row_ulong(row, 8, 0);
 		af.bitvector4 = sql_row_ulong(row, 9, 0);
 		af.bitvector5 = sql_row_ulong(row, 10, 0);
+		if (af.type == SKILL_DIAMOND_SOUL && af.location == APPLY_SAVING_PARA)
+			af.wear_off_message_index = 1;
 
 		affect_to_char(ch, &af);
 	}

@@ -2331,6 +2331,8 @@ int restoreAffects(char *buf, P_char ch)
 			af.bitvector5 = GET_LONG(buf);
 			/*af.bitvector6 = */ GET_LONG(buf);
 			af.wear_off_message_index = 0;
+			if (af.type == SKILL_DIAMOND_SOUL && af.location == APPLY_SAVING_PARA)
+				af.wear_off_message_index = 1;
 
 			if (aff_vers > 7)
 			{
