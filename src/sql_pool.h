@@ -46,6 +46,11 @@ MYSQL *sql_pool_acquire(void);
  * Signals one waiting acquirer.  No-op when conn is NULL. */
 void sql_pool_release(MYSQL *conn);
 
+/* Replace a pooled connection with a fresh handle after it has become
+ * unusable. Returns the replacement handle on success, or NULL if the
+ * pool is unavailable or reconnect fails. */
+MYSQL *sql_pool_replace_connection(MYSQL *conn);
+
 /* ---- Stats (debug / monitoring) ---- */
 
 int sql_pool_available(void);   /* how many connections are free */

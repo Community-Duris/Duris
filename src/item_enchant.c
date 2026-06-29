@@ -71,7 +71,7 @@ void spell_enchant(int level, P_char ch, P_char victim, P_obj obj)
 	if (!((MAX_OBJ_AFFECT >= 2) && obj && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (((GET_ITEM_TYPE(obj) == ITEM_WEAPON) || (GET_ITEM_TYPE(obj) == ITEM_DRINKCON) || (GET_ITEM_TYPE(obj) == ITEM_NOTE)) && !IS_SET(obj->extra_flags, ITEM_MAGIC) && !(obj->enchant.prepared))
@@ -129,7 +129,7 @@ void spell_enchant_weapon(int level, P_char ch, P_char victim, P_obj obj)
 	if (!((MAX_OBJ_AFFECT >= 2) && obj && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if ((GET_ITEM_TYPE(obj) == ITEM_WEAPON) && (obj->enchant.prepared) && IS_SET(obj->extra_flags, ITEM_MAGIC))
@@ -172,7 +172,7 @@ void cast_spell_to_object(int level, P_char ch, P_obj obj, int spell)
 	if (!((MAX_OBJ_AFFECT >= 2) && obj && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 	if (((GET_ITEM_TYPE(obj) == ITEM_WEAPON) || (GET_ITEM_TYPE(obj) == ITEM_NOTE) || (GET_ITEM_TYPE(obj) == ITEM_DRINKCON)) && (obj->enchant.prepared) && IS_SET(obj->extra_flags, ITEM_MAGIC) &&
 	    !obj->value[6])

@@ -388,10 +388,15 @@ void do_fire(P_char ch, char *argument, int cmd)
 	                                           0,
 	                                           0};
 
+	if (!ch)
+	{
+		logit(LOG_EXIT, "do_fire: bogus ch: NULL, cmd = %d.", cmd);
+		return;
+	}
 	if (!IS_ALIVE(ch))
 	{
-		logit(LOG_EXIT, "do_fire: bogus ch: '%s' %d.", (ch == NULL) ? "NULL" : J_NAME(ch), (ch == NULL) ? -1 : (IS_NPC(ch)) ? GET_VNUM(ch) : GET_PID(ch));
-		raise(SIGSEGV);
+		send_to_char("Lay still, you seem to be dead.\r\n", ch);
+		return;
 	}
 
 	if (IS_DESTROYING(ch))

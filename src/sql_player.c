@@ -21,6 +21,7 @@
 #include "mm.h"
 #include "necromancy.h"
 #include "ships/ships.h"
+#include "redis.h"
 #include "siege.h"
 #include "spells.h"
 #include "sql.h"
@@ -169,7 +170,8 @@ bool sql_begin_transaction(void)
 		return false;
 	}
 
-	if (mysql_real_query(DB, "START TRANSACTION", 17) != 0)
+	sql_clear_results();
+	if (!sql_trace_exec("sql_begin_transaction", "START TRANSACTION", 17, false, false))
 	{
 		logit(LOG_DEBUG, "sql_begin_transaction: failed: %s", mysql_error(DB));
 		return false;
@@ -193,7 +195,7 @@ bool sql_commit(void)
 		return false;
 	}
 
-	if (mysql_real_query(DB, "COMMIT", 6) != 0)
+	if (!sql_trace_exec("sql_commit", "COMMIT", 6, false, false))
 	{
 		logit(LOG_DEBUG, "sql_commit: failed: %s", mysql_error(DB));
 		in_transaction = false;
@@ -218,7 +220,7 @@ bool sql_rollback(void)
 		return false;
 	}
 
-	if (mysql_real_query(DB, "ROLLBACK", 8) != 0)
+	if (!sql_trace_exec("sql_rollback", "ROLLBACK", 8, false, false))
 	{
 		logit(LOG_DEBUG, "sql_rollback: failed: %s", mysql_error(DB));
 		in_transaction = false;
@@ -383,7 +385,7 @@ static bool sql_run_query(const char *query)
 	if (!DB || !query)
 		return false;
 
-	if (mysql_real_query(DB, query, strlen(query)) != 0)
+	if (!sql_trace_exec("sql_run_query", query, strlen(query), false, false))
 	{
 		sql_player_error("sql_run_query", query);
 		return false;
@@ -427,7 +429,7 @@ static char *spellbook_to_json(const char *bits)
 		{
 			if (!first)
 				*p++ = ',';
-			p += sprintf(p, "%d", i);
+			p += snprintf(p, buf + MAX_SKILLS * 6 - p, "%d", i);
 			first = 0;
 		}
 	}
@@ -475,7 +477,7 @@ MYSQL *sql_create_child_connection(void)
 	if (!conn)
 		return NULL;
 
-	conn = mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, DB_NAME, DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
+	conn = mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(), DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
 	if (!conn)
 		return NULL;
 
@@ -671,6 +673,10 @@ bool sql_save_player(P_char ch, int type, int room)
 			return false;
 		}
 	}
+
+	clear_player_dirty_container_flags(ch);
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 
 	return true;
 }
@@ -2393,9 +2399,6 @@ bool sql_save_player_items(P_char ch)
 	             ch->carrying,
 	             ch->equipment[0]);
 
-	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
-	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
-
 	if (use_incremental)
 	{
 		// incremental save: only resave dirty containers
@@ -2753,7 +2756,9 @@ bool sql_save_player_pets(P_char ch, int save_type)
 		if (!sql_run_query(ins_query))
 		{
 			logit(LOG_DEBUG, "sql_save_player_pets: failed to save pet %s for %s", GET_NAME(pet), GET_NAME(ch));
-			continue;
+			if (own_txn)
+				sql_rollback();
+			return false;
 		}
 
 		int pet_id = (int)mysql_insert_id(DB);
@@ -3113,7 +3118,12 @@ bool sql_save_player_witnesses(P_char ch)
 		bpos = new_pos;
 	}
 
-	sql_run_multi_query(batch);
+	if (!sql_run_multi_query(batch))
+	{
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	if (own_txn)
 	{
@@ -3169,7 +3179,12 @@ bool sql_save_player_shapechanges(P_char ch)
 		}
 	}
 
-	sql_run_multi_query(batch);
+	if (!sql_run_multi_query(batch))
+	{
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	if (own_txn)
 	{
@@ -4150,6 +4165,14 @@ bool sql_save_account(struct acct_entry *acc)
 	if (!DB || !acc || !acc->acct_name)
 		return false;
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	char *esc_name  = sql_escape_string(acc->acct_name);
 	char *esc_email = sql_escape_string(acc->acct_email ? acc->acct_email : "");
 	char *esc_pass  = sql_escape_string(acc->acct_password ? acc->acct_password : "");
@@ -4211,12 +4234,18 @@ bool sql_save_account(struct acct_entry *acc)
 	free(esc_conf);
 
 	if (!sql_run_query(query))
+	{
+		if (own_txn)
+			sql_rollback();
 		return false;
+	}
 
 	// save ips
 	if (!sql_save_account_ips(acc->acct_name, acc->acct_unique_ips))
 	{
 		logit(LOG_DEBUG, "sql_save_account: failed to save ips for %s", acc->acct_name);
+		if (own_txn)
+			sql_rollback();
 		return false;
 	}
 
@@ -4224,6 +4253,14 @@ bool sql_save_account(struct acct_entry *acc)
 	if (!sql_save_account_characters(acc))
 	{
 		logit(LOG_DEBUG, "sql_save_account: failed to save characters for %s", acc->acct_name);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
+
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
 		return false;
 	}
 
@@ -4235,11 +4272,22 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 	if (!DB || !acc || !acc->acct_name)
 		return false;
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	char *esc_name = sql_escape_string(acc->acct_name);
 	if (!esc_name)
+	{
+		if (own_txn)
+			sql_rollback();
 		return false;
+	}
 
-	int saved = 0;
 	for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next)
 	{
 		if (!ch->charname)
@@ -4269,12 +4317,23 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 		         ch->blocked,
 		         ch->racewar);
 
-		if (sql_run_query(query))
-			saved++;
+		bool ok = sql_run_query(query);
 		free(esc_char);
+		if (!ok)
+		{
+			free(esc_name);
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
 	}
 
 	free(esc_name);
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
 	return true;
 }
 
@@ -7376,38 +7435,46 @@ bool sql_save_saved_item(P_obj item, const char *item_key)
 
 	int room_vnum = world[item->loc.room].number;
 
+	bool  own_txn = false;
+	bool  ok      = false;
 	char *esc_key = sql_escape_string(item_key);
 	if (!esc_key)
 		return false;
 
-	char del_query[256];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM saved_items WHERE item_key='%s'", esc_key);
-	bool ok = false;
-
-	if (!sql_begin_transaction())
+	if (!sql_in_transaction())
 	{
-		free(esc_key);
-		return false;
+		if (!sql_begin_transaction())
+		{
+			free(esc_key);
+			return false;
+		}
+		own_txn = true;
 	}
 
+	char del_query[256];
+	snprintf(del_query, sizeof(del_query), "DELETE FROM saved_items WHERE item_key='%s'", esc_key);
+	free(esc_key);
 	if (!sql_run_query(del_query))
-		goto rollback;
+		goto done;
 
-	if (sql_save_saved_item_recursive(item_key, room_vnum, item, 0) <= 0)
-		goto rollback;
+	ok = sql_save_saved_item_recursive(item_key, room_vnum, item, 0) > 0;
 
-	if (!sql_commit())
-		goto rollback;
-
-	ok = true;
-	goto cleanup;
-
-rollback:
-	sql_rollback();
-
-cleanup:
-	if (esc_key)
-		free(esc_key);
+done:
+	if (own_txn)
+	{
+		if (ok)
+		{
+			if (!sql_commit())
+			{
+				sql_rollback();
+				return false;
+			}
+		}
+		else
+		{
+			sql_rollback();
+		}
+	}
 	return ok;
 }
 
@@ -8339,11 +8406,16 @@ void sql_save_dirty_shopkeepers(void)
 				shop_index[i].dirty = 0;
 				saved++;
 			}
+			else
+			{
+				logit(LOG_DEBUG, "sql_save_dirty_shopkeepers: failed to save shopkeeper for shop %d", i);
+			}
 		}
 		else
 		{
-			// keeper not found, clear dirty to avoid repeated attempts
-			shop_index[i].dirty = 0;
+			// keeper not found; keep dirty so a later flush can retry when the
+			// NPC is present again.
+			logit(LOG_DEBUG, "sql_save_dirty_shopkeepers: keeper not found for shop %d; leaving dirty", i);
 		}
 	}
 
@@ -8502,6 +8574,16 @@ void sql_restore_saved_items(void)
 	if (!DB)
 		return;
 
+	struct restored_saved_item
+	{
+		char *item_key;
+		P_obj item;
+		struct restored_saved_item *next;
+	};
+
+	struct restored_saved_item *restored_head = NULL;
+	struct restored_saved_item *restored_tail = NULL;
+
 	// get distinct item keys with root items only
 	MYSQL_RES *result = db_query("SELECT DISTINCT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
 	                             "value0, value1, value2, value3, value4, value5, value6, value7, "
@@ -8603,6 +8685,20 @@ void sql_restore_saved_items(void)
 		}
 
 		obj_to_room(obj, room);
+
+		struct restored_saved_item *entry;
+		CREATE(entry, struct restored_saved_item, 1, MEM_TAG_OTHER);
+		if (entry)
+		{
+			entry->item_key = str_dup(item_key ? item_key : "");
+			entry->item     = obj;
+			entry->next     = NULL;
+			if (!restored_head)
+				restored_head = entry;
+			else
+				restored_tail->next = entry;
+			restored_tail = entry;
+		}
 		loaded++;
 	}
 
@@ -8610,7 +8706,23 @@ void sql_restore_saved_items(void)
 
 	// delete all saved items after loading (they get re-saved on next tick)
 	if (!sql_run_query("DELETE FROM saved_items"))
-		logit(LOG_DEBUG, "sql_restore_saved_items: failed to delete old saved items");
+	{
+		logit(LOG_DEBUG, "sql_restore_saved_items: failed to delete old saved items; attempting to rewrite loaded items");
+		for (struct restored_saved_item *entry = restored_head; entry; entry = entry->next)
+		{
+			if (!sql_save_saved_item(entry->item, entry->item_key))
+				logit(LOG_DEBUG, "sql_restore_saved_items: failed to rewrite %s after delete failure", entry->item_key ? entry->item_key : "<null>");
+		}
+	}
+
+	for (struct restored_saved_item *entry = restored_head; entry; )
+	{
+		struct restored_saved_item *next = entry->next;
+		if (entry->item_key)
+			free(entry->item_key);
+		free(entry);
+		entry = next;
+	}
 
 	logit(LOG_DEBUG, "sql_restore_saved_items: loaded %d items", loaded);
 }
@@ -9120,15 +9232,10 @@ bool sql_save_ship(P_ship ship)
 	}
 	
 	MYSQL_RES *result = NULL;
-	if (mysql_real_query(DB, batch, strlen(batch)) != 0)
+	if (!sql_trace_exec("sql_save_ship_batch", batch, strlen(batch), false, true))
 	{
 		sql_player_error("sql_save_ship_4", batch);
-		result = NULL;
 		free(batch);
-		if (result)
-		{
-			mysql_free_result(result);
-		}
 		sql_clear_results();
 		sql_rollback();
 		logit(LOG_DEBUG, "sql_save_ship: mysql_real_query failed for ship %d", ship->db_id);
@@ -9150,6 +9257,7 @@ bool sql_save_ship(P_ship ship)
 	}
 
 	logit(LOG_DEBUG, "sql_save_ship: finished saving ship %d", ship->db_id);
+	redis_cache_ship_snapshot(ship);
 
 	return true;
 }
@@ -9253,7 +9361,14 @@ static bool sql_load_ship_slots(int ship_id, P_ship ship)
 
 P_ship sql_load_ship(const char *owner_name)
 {
-	if (!DB || !owner_name)
+	if (!owner_name)
+		return NULL;
+
+	P_ship cached_ship = redis_load_ship_snapshot(owner_name);
+	if (cached_ship)
+		return cached_ship;
+
+	if (!DB)
 		return NULL;
 
 	char *esc_owner = sql_escape_string(owner_name);
@@ -9305,9 +9420,14 @@ P_ship sql_load_ship(const char *owner_name)
 	sql_load_ship_armor(ship_id, ship);
 	sql_load_ship_crew(ship_id, ship);
 	sql_load_ship_slots(ship_id, ship);
+	ship->save_pending         = false;
+	ship->save_retry_after     = 0;
+	ship->save_saved_signature = ship_save_signature(ship);
+	redis_cache_ship_snapshot(ship);
 
 	return ship;
 }
+
 
 bool sql_load_all_ships()
 {
@@ -9370,7 +9490,11 @@ bool sql_delete_ship(const char *owner_name)
 	snprintf(query, sizeof(query), "delete from ships where owner_name='%s'", esc_owner);
 	free(esc_owner);
 
-	return sql_run_query(query);
+	if (!sql_run_query(query))
+		return false;
+
+	redis_invalidate_ship_snapshot(owner_name);
+	return true;
 }
 
 bool sql_save_guild(Guild *guild)

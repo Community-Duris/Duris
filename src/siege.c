@@ -951,7 +951,11 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 		obj_from_char(donation);
 		town->resources += itemvalue(donation);
 		extract_obj(donation, TRUE); // Will never bi arti, but ok.
-		save_towns();
+		if (!save_towns())
+		{
+			send_to_char("Failed to save town state.\n", pl);
+			return FALSE;
+		}
 		return TRUE;
 	}
 	if (cmd == CMD_DEPLOY)
@@ -992,7 +996,11 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 				send_to_char("Town guards will now be deployed.\n", pl);
 				town->deploy_guard = TRUE;
 			}
-			save_towns();
+			if (!save_towns())
+			{
+				send_to_char("Failed to save town state.\n", pl);
+				return FALSE;
+			}
 			return TRUE;
 		}
 		else if (is_abbrev(arg1, "cavalry"))
@@ -1019,7 +1027,11 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 				send_to_char("Town calvary will now be deployed.\n", pl);
 				town->deploy_cavalry = TRUE;
 			}
-			save_towns();
+			if (!save_towns())
+			{
+				send_to_char("Failed to save town state.\n", pl);
+				return FALSE;
+			}
 			return TRUE;
 		}
 		else if (is_abbrev(arg1, "portals"))
@@ -1043,7 +1055,11 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 				send_to_char("Town portals will now be deployed.\n", pl);
 				town->deploy_portals = TRUE;
 			}
-			save_towns();
+			if (!save_towns())
+			{
+				send_to_char("Failed to save town state.\n", pl);
+				return FALSE;
+			}
 			return TRUE;
 		}
 	}
@@ -1448,7 +1464,15 @@ void init_towns()
 	mob_index[real_mobile0(401090)].func.mob = warmaster;
 }
 
-void save_towns() { sql_save_towns(); }
+bool save_towns()
+{
+	if (!sql_save_towns())
+	{
+		logit(LOG_SYS, "save_towns(): failed to persist town state");
+		return FALSE;
+	}
+	return TRUE;
+}
 
 void list_town(P_char ch, P_town town)
 {
@@ -1516,8 +1540,8 @@ void add_troopresources(P_char ch, P_town town, int amount)
 	if (town->resources < 0)
 		town->resources = 0;
 	list_town(ch, town);
-	// Save the town info.
-	save_towns();
+	if (!save_towns())
+		logit(LOG_SYS, "add_troopresources(): failed to persist town state");
 }
 
 void add_troopdefense(P_char ch, P_town town, int amount)
@@ -1526,8 +1550,8 @@ void add_troopdefense(P_char ch, P_town town, int amount)
 	if (town->defense < 0)
 		town->defense = 0;
 	list_town(ch, town);
-	// Save the town info.
-	save_towns();
+	if (!save_towns())
+		logit(LOG_SYS, "add_troopresources(): failed to persist town state");
 }
 
 void add_troopoffense(P_char ch, P_town town, int amount)
@@ -1536,8 +1560,8 @@ void add_troopoffense(P_char ch, P_town town, int amount)
 	if (town->offense < 0)
 		town->offense = 0;
 	list_town(ch, town);
-	// Save the town info.
-	save_towns();
+	if (!save_towns())
+		logit(LOG_SYS, "add_troopresources(): failed to persist town state");
 }
 
 P_town add_findtown(char *arg)
@@ -1710,7 +1734,10 @@ void save_siege_list()
 	}
 
 	if (!sql_commit())
+	{
+		logit(LOG_DEBUG, "save_siege_list: commit failed");
 		sql_rollback();
+	}
 #endif
 }
 

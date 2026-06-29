@@ -2038,9 +2038,17 @@ static bool locker_access_canAccess(P_char locker, char *ch_name)
 	return has_access;
 }
 
-static void locker_access_remAccess(P_char locker, char *ch_name) { qry("DELETE FROM locker_access WHERE owner='%s' AND visitor='%s'", GET_NAME(locker), ch_name); }
+static void locker_access_remAccess(P_char locker, char *ch_name)
+{
+	if (!qry("DELETE FROM locker_access WHERE owner='%s' AND visitor='%s'", GET_NAME(locker), ch_name))
+		logit(LOG_DEBUG, "locker_access_remAccess: failed to delete %s for %s", ch_name, GET_NAME(locker));
+}
 
-static void locker_access_addAccess(P_char locker, char *ch_name) { qry("INSERT INTO locker_access (owner, visitor) VALUES ('%s', '%s')", GET_NAME(locker), ch_name); }
+static void locker_access_addAccess(P_char locker, char *ch_name)
+{
+	if (!qry("INSERT INTO locker_access (owner, visitor) VALUES ('%s', '%s')", GET_NAME(locker), ch_name))
+		logit(LOG_DEBUG, "locker_access_addAccess: failed to insert %s for %s", ch_name, GET_NAME(locker));
+}
 
 static void create_private_chest_objects(StorageLocker *pLocker)
 {
@@ -2270,7 +2278,7 @@ static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess
 		logit(LOG_WIZ, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
 		sql_log(ch, PLAYERLOG, "load_locker_char() in storage_lockers.c without ch : locker %s!", locker_name);
 		logit(LOG_EXIT, "load_locker_char() called in storage_lockers.c without ch.");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	bool bPlayerIsGod = (GET_LEVEL(ch) >= OVERLORD || god_check(ch->player.name));
@@ -2415,7 +2423,18 @@ static int save_locker_char(P_char ch, int bTerminal)
 					mysql_close(child_conn);
 					_exit(0);
 				}
-				// parent continues, dont wait for child
+				if (pid < 0)
+				{
+					logit(LOG_OBJ, "Fork failed for locker save of %s", GET_NAME(ch));
+					return 0;
+				}
+				int status = 0;
+				if (waitpid(pid, &status, 0) < 0)
+				{
+					logit(LOG_OBJ, "waitpid failed for locker save of %s", GET_NAME(ch));
+					return 0;
+				}
+				return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 			}
 			else
 			{
@@ -2427,6 +2446,7 @@ static int save_locker_char(P_char ch, int bTerminal)
 					send_to_char(
 						"&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
 						ch);
+					return 0;
 				}
 			}
 
@@ -2620,6 +2640,9 @@ bool rename_locker(P_char ch, char *old_charname, char *new_charname)
 	{
 		logit(LOG_OBJ, "Char save failed for %s in rename_locker()!", GET_NAME(ch));
 		debug("Char save failed for %s in rename_locker()!", GET_NAME(ch));
+		GET_NAME(chLocker) = str_dup(lockerOldName);
+		if (!writeCharacter(chLocker, 0, NOWHERE))
+			logit(LOG_OBJ, "rename_locker(): failed to restore original locker %s after rename failure", lockerOldName);
 		return FALSE;
 	}
 
@@ -2715,8 +2738,15 @@ static void locker_access_transferAccess(P_char chLocker, P_char ch)
 		else
 		{
 			// Insert it into the table
-			qry("INSERT INTO locker_access (owner, visitor) VALUES ('%s', '%s')", locker_name, ch_name);
-			send_to_char_f(ch, "'%s' given access to your locker.\n", ch_name);
+			if (!qry("INSERT INTO locker_access (owner, visitor) VALUES ('%s', '%s')", locker_name, ch_name))
+			{
+				send_to_char_f(ch, "Failed to give '%s' access to your locker.\n", ch_name);
+				logit(LOG_DEBUG, "locker_access_transferAccess: failed to insert %s for %s", ch_name, locker_name);
+			}
+			else
+			{
+				send_to_char_f(ch, "'%s' given access to your locker.\n", ch_name);
+			}
 		}
 	} while (pIndex[0] != '\0');
 }

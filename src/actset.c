@@ -606,7 +606,8 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 
 			set_char_size(ppl);
 			balance_affects(ppl);
-			do_save_silent(ppl, 1); /* to make it stick */
+			if (!do_save_silent(ppl, 1))
+				logit(LOG_WIZ, "Failed to save %s after set command.", GET_NAME(ppl)); /* to make it stick */
 		}
 		if (ppl)
 		{
@@ -706,7 +707,8 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 	if (IS_PC(ppl))
 		update_skills(ppl);
 
-	do_save_silent(ppl, 1); /* to make it stick */
+	if (!do_save_silent(ppl, 1))
+		logit(LOG_WIZ, "Failed to save %s after set command.", GET_NAME(ppl)); /* to make it stick */
 }
 
 static void setbit_ship(P_char ch, char *name, char *flag, char *val, int on_off)

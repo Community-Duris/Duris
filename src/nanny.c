@@ -2130,7 +2130,8 @@ void enter_game(P_desc d)
 						}
 						else
 						{
-							raise(SIGSEGV);
+							logit(LOG_EXIT, "enter_game: missing ne_schedule tail link while rescheduling offline affect");
+							break;
 						}
 
 						// If we're not at the beginning.
@@ -2144,7 +2145,8 @@ void enter_game(P_desc d)
 						}
 						else
 						{
-							raise(SIGSEGV);
+							logit(LOG_EXIT, "enter_game: missing ne_schedule head link while rescheduling offline affect");
+							break;
 						}
 
 						// Update the timer.  The +1 is because we want the range from 1..MAX not 0..MAX,
@@ -2871,7 +2873,7 @@ void select_name(P_desc d, char *arg, int flag)
 	}
 	/* should never get here!!! */
 	logit(LOG_EXIT, "create_name: should never get here!!");
-	raise(SIGSEGV);
+	return;
 }
 
 P_char find_ch_from_same_host(P_desc d)
@@ -3011,12 +3013,16 @@ void reconnect(P_desc d, P_char tmp_ch)
 		    (tmp_ch != tmp_ch->only.pc->switched->only.npc->orig_char))
 		{
 			logit(LOG_EXIT, "Something fucked while trying to reconnect linkless morph");
-			raise(SIGSEGV);
+			REMOVE_BIT(tmp_ch->specials.act, PLR_MORPH);
+			tmp_ch->only.pc->switched = NULL;
 		}
-		d->original        = tmp_ch;
-		d->character       = tmp_ch->only.pc->switched;
-		d->character->desc = d;
-		tmp_ch->desc       = NULL;
+		else
+		{
+			d->original        = tmp_ch;
+			d->character       = tmp_ch->only.pc->switched;
+			d->character->desc = d;
+			tmp_ch->desc       = NULL;
+		}
 	}
 	send_offline_messages(d->character);
 }

@@ -4,6 +4,8 @@
 #include "structs.h"
 #include <stdbool.h>
 
+struct ShipData;
+
 extern bool redis_enabled;
 
 bool redis_init(void);
@@ -84,6 +86,11 @@ long  redis_hlen(const char *key);
 long  redis_scard(const char *key);
 char *redis_get_string(const char *key);
 void  redis_clear_dirty_players(void);
+
+// ship snapshot cache (read-through cache for ship DB rows)
+bool         redis_cache_ship_snapshot(struct ShipData *ship);
+struct ShipData *redis_load_ship_snapshot(const char *owner_name);
+void         redis_invalidate_ship_snapshot(const char *owner_name);
 
 // wiz command
 void do_redis(P_char ch, char *argument, int cmd);

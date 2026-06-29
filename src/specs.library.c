@@ -65,7 +65,7 @@ char *proclib_getNext_string(char *source, char *nextString)
 {
 	if (!nextString)
 	{
-		raise(SIGSEGV);
+		return source;
 	}
 	nextString[0] = '\0';
 	if (!source)

@@ -90,7 +90,7 @@ void spell_phantom_armor(int level, P_char ch, char *arg, int type, P_char victi
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!IS_AFFECTED(victim, AFF_ARMOR))
@@ -277,7 +277,7 @@ void spell_boulder(int level, P_char ch, char *arg, int type, P_char victim, P_o
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "Damm boulders it's messed up!");
-		raise(SIGSEGV);
+		return;
 	}
 
 	dam     = dice(2 * level, 8);
@@ -312,7 +312,7 @@ void spell_shadow_travel(int level, P_char ch, char *arg, int type, P_char victi
 	if (!ch)
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (GET_SPEC(ch, CLASS_ILLUSIONIST, SPEC_DARK_DREAMER))
@@ -911,7 +911,7 @@ void spell_nightmare(int level, P_char ch, char *arg, int type, P_char victim, P
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (affected_by_spell(victim, SKILL_BERSERK) || resists_spell(ch, victim))
@@ -1055,7 +1055,7 @@ void spell_vanish(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	if (!((victim || obj) && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 	if (!affected_by_spell(victim, SPELL_INVISIBILITY))
 	{
@@ -1154,7 +1154,7 @@ void spell_detect_illusion(int level, P_char ch, char *arg, int type, P_char vic
 	if (!((level >= 0) && victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (IS_AFFECTED4(victim, AFF4_DETECT_ILLUSION))
@@ -1350,7 +1350,7 @@ void spell_clone_form(int level, P_char ch, char *arg, int type, P_char victim, 
 	if ((level < 0) || !IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (IS_NPC(ch))

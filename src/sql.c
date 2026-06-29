@@ -18,6 +18,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <pthread.h>
@@ -32,7 +34,6 @@
 #include "specializations.h"
 #include "spells.h"
 #include "sql_player.h"
-#include "sql_migrate.h"
 #include "timers.h"
 #include "persistence_queue.h"
 #include "utility.h"
@@ -54,6 +55,16 @@ extern P_obj                           object_list;
 extern P_room                          world;
 
 void get_pkill_player_description(P_char ch, char *buffer);
+
+static int  sql_trace_burst = 0;
+static char sql_trace_last_site[64] = "";
+static char sql_trace_last_sql[240] = "";
+static bool sql_trace_enabled(void);
+static bool sql_trace_active(void);
+static const char *sql_trace_kind(const char *sql);
+static void sql_trace_preview(const char *sql, char *out, size_t outsz);
+static void sql_trace_log(const char *phase, MYSQL *conn, const char *sql);
+static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
 
 #ifdef __NO_MYSQL__
 int  initialize_mysql() { return 1; }
@@ -97,7 +108,91 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 void update_zone_db() {}
 void update_zone_epic_level(int zone_id, int level) {}
 void show_frag_trophy(P_char ch, P_char who) { send_to_char("Disabled.", ch); }
-void sql_log(P_char ch, char *kind, char *format, ...) {}
+void sql_log(P_char ch, char *kind, char *format, ...)
+{
+	if (!ch)
+	{
+		debug("sql_log called for non-existent ch!");
+		return;
+	}
+
+	if (!IS_PC(ch))
+	{
+		debug("sql_log called in sql.c for mobile ch - %s - Vnum %d", GET_NAME(ch), GET_VNUM(ch));
+		debug("sql_log kind '%s', format '%s'", kind, format);
+		return;
+	}
+
+	va_list args;
+	int     raw_len;
+	char   *raw_msg;
+	char   *escaped_msg;
+	string  esc_kind;
+	string  esc_ip;
+	string  esc_name;
+	string  query;
+
+	va_start(args, format);
+	raw_len = vsnprintf(NULL, 0, format, args);
+	va_end(args);
+	if (raw_len < 0)
+	{
+		debug("sql_log: Message formatting error");
+		return;
+	}
+
+	raw_msg = (char *)malloc((size_t)raw_len + 1);
+	if (!raw_msg)
+		return;
+
+	va_start(args, format);
+	vsnprintf(raw_msg, (size_t)raw_len + 1, format, args);
+	va_end(args);
+
+	escaped_msg = (char *)malloc(((size_t)raw_len * 2) + 1);
+	if (!escaped_msg)
+	{
+		free(raw_msg);
+		return;
+	}
+	mysql_real_escape_string(DB, escaped_msg, raw_msg, (unsigned long)raw_len);
+
+	auto escape_sql = [](const char *src) -> string {
+		if (!src)
+			return string();
+		size_t len = strlen(src);
+		string out;
+		out.resize((len * 2) + 1);
+		unsigned long out_len = mysql_real_escape_string(DB, &out[0], src, (unsigned long)len);
+		out.resize(out_len);
+		return out;
+	};
+
+	esc_kind = escape_sql(kind);
+	if (ch->desc && ch->desc->host)
+		esc_ip = escape_sql(ch->desc->host);
+	esc_name = escape_sql(GET_NAME(ch));
+
+	query = "INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) VALUES (NOW(), '";
+	query += esc_kind;
+	query += "', '";
+	query += esc_ip;
+	query += "', ";
+	query += std::to_string(GET_PID(ch));
+	query += ", '";
+	query += esc_name;
+	query += "', ";
+	query += std::to_string(zone_table[world[ch->in_room].zone].number);
+	query += ", ";
+	query += std::to_string(world[ch->in_room].number);
+	query += ", '";
+	query += escaped_msg;
+	query += "')";
+
+	qry("%s", query.c_str());
+	free(raw_msg);
+	free(escaped_msg);
+}
 
 bool get_zone_info(int zone_number, struct zone_info *info) { return FALSE; }
 
@@ -127,6 +222,7 @@ bool sql_clear_zone_trophy() { return FALSE; }
 #else
 
 static void sql_resetConnectTimes(void);
+static bool sql_verify_boot_database(void);
 
 // The global database handler
 MYSQL *DB;
@@ -237,6 +333,19 @@ void sql_populate_lookup_tables()
 	logit(LOG_STATUS, "Lookup tables populated.");
 }
 
+/* Single source of truth for database selection.  On non-default
+ * ports (typically dev/sandbox builds started by mortals) we
+ * deliberately swap the production "duris" database for the
+ * "duris_dev" sandbox so a misconfigured boot can never clobber
+ * live data.  Sync (DB) and async/pool paths must call this so they
+ * agree on the target database. */
+const char *sql_persistence_db_name(void)
+{
+	if (RUNNING_PORT != DFLT_PORT)
+		return "duris_dev";
+	return DB_NAME;
+}
+
 /* load .env file if present, setting environment variables */
 int load_env_file(void)
 {
@@ -286,15 +395,10 @@ int load_env_file(void)
  * throughout the mud session. */
 int initialize_mysql()
 {
-	/* use database from .env / environment variable */
-	/* hack to ensure we're not using the live database when not running on default port */
-	char db_name[50];
-	snprintf(db_name, 50, "%s", DB_NAME);
-
-	if (RUNNING_PORT != DFLT_PORT)
-	{
-		snprintf(db_name, 50, "duris_dev");
-	}
+	/* Resolve the target database through the shared helper so the
+	 * main DB connection, the connection pool slots, and the legacy
+	 * persistenceDB fallback all connect to the same database. */
+	const char *db_name = sql_persistence_db_name();
 
 	logit(LOG_STATUS, "Initializing MySQL persistent connection to %s (host=%s port=%d).", db_name, DB_HOST, DB_PORT);
 	DB = mysql_init(NULL);
@@ -320,12 +424,14 @@ int initialize_mysql()
 	sql_resetConnectTimes();
 	sql_populate_lookup_tables();
 
-	/* Run schema migrations (auto-runner).
-	 * When MIGRATION_AUTO_RUNNER is not defined, this is a no-op
-	 * and shell scripts handle migrations instead. */
-	if (sql_run_migrations(DB, "migrations") != 0) {
-		logit(LOG_STATUS, "FATAL: schema migrations failed, aborting boot");
-		mysql_close(DB);
+	if (!sql_verify_boot_database())
+	{
+		logit(LOG_STATUS, "FATAL: required database connection/schema check failed, aborting boot");
+		if (DB)
+		{
+			mysql_close(DB);
+			DB = NULL;
+		}
 		return -1;
 	}
 
@@ -343,59 +449,96 @@ int initialize_mysql()
 /* Handle a query, log possible errors and return results (if available) */
 MYSQL_RES *db_query(const char *format, ...)
 {
-	char    buf[MAX_LOG_LEN + MAX_STRING_LENGTH + 512];
 	va_list args;
-	int     ret;
+	int     needed;
+	char   *buf;
+	MYSQL_RES *res;
 
 	va_start(args, format);
-	buf[0] = '\0';
-	// SECURITY FIX: Replace vsprintf with vsnprintf to prevent buffer overflow
-	ret = vsnprintf(buf, sizeof(buf), format, args);
+	needed = vsnprintf(NULL, 0, format, args);
+	va_end(args);
+	if (needed < 0)
+	{
+		logit(LOG_DEBUG, "MySQL: Query formatting error");
+		return NULL;
+	}
+
+	buf = (char *)malloc((size_t)needed + 1);
+	if (!buf)
+		return NULL;
+
+	va_start(args, format);
+	vsnprintf(buf, (size_t)needed + 1, format, args);
 	va_end(args);
 
-	// Check for overflow
-	if (ret < 0 || ret >= (int)sizeof(buf))
-	{
-		logit(LOG_DEBUG, "MySQL: Query too long, truncated or error in formatting");
-		return NULL;
-	}
-
 	if (!buf[0])
-		return NULL;
-
-	if (mysql_real_query(DB, buf, strlen(buf)) != 0)
 	{
-		logit(LOG_DEBUG, "MySQL: \"%s\" failed: %s", buf, mysql_error(DB));
+		free(buf);
 		return NULL;
 	}
 
-	return mysql_store_result(DB);
+	if (!sql_trace_exec("db_query", buf, strlen(buf), true, false))
+	{
+		free(buf);
+		return NULL;
+	}
+
+	res = mysql_store_result(DB);
+	if (res)
+		sql_trace_log("db_query/rows", DB, buf);
+	free(buf);
+	return res;
+}
+
+static bool sql_verify_boot_database(void)
+{
+	if (!DB)
+	{
+		logit(LOG_STATUS, "FATAL: database connection is not initialized at boot.");
+		return false;
+	}
+
+	const char *probe = "SELECT 1 FROM accounts LIMIT 1";
+	if (!sql_trace_exec("boot/accounts_probe", probe, strlen(probe), true, false))
+	{
+		logit(LOG_STATUS, "FATAL: required accounts table is missing or unreadable at boot: %s", mysql_error(DB));
+		return false;
+	}
+
+	MYSQL_RES *result = mysql_store_result(DB);
+	if (result)
+		mysql_free_result(result);
+	return true;
 }
 
 /* Same as above, but won't log failed queries, ie when key restrictions suffice */
 MYSQL_RES *db_query_nolog(const char *format, ...)
 {
-	char    buf[MAX_STRING_LENGTH];
 	va_list args;
-	int     ret;
+	int     needed;
+	char   *buf;
 
 	va_start(args, format);
-	buf[0] = '\0';
-	// SECURITY FIX: Replace vsprintf with vsnprintf to prevent buffer overflow
-	ret = vsnprintf(buf, sizeof(buf), format, args);
+	needed = vsnprintf(NULL, 0, format, args);
+	va_end(args);
+	if (needed < 0)
+		return NULL;
+
+	buf = (char *)malloc((size_t)needed + 1);
+	if (!buf)
+		return NULL;
+
+	va_start(args, format);
+	vsnprintf(buf, (size_t)needed + 1, format, args);
 	va_end(args);
 
-	// Check for overflow
-	if (ret < 0 || ret >= (int)sizeof(buf))
+	if (!sql_trace_exec("db_query_nolog", buf, strlen(buf), true, false))
 	{
+		free(buf);
 		return NULL;
 	}
 
-	if (mysql_real_query(DB, buf, strlen(buf)) != 0)
-	{
-		return NULL;
-	}
-
+	free(buf);
 	return mysql_store_result(DB);
 }
 
@@ -405,7 +548,7 @@ int sql_save_player_core(P_char ch)
 {
 	char                     query[MAX_STRING_LENGTH];
 	char                     assoc_name[MAX_STRING_LENGTH];
-	char                     assoc_name_sql[MAX_STRING_LENGTH];
+	char                     assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	const char              *spec_name = "";
 	struct char_player_data *p;
 	int                      val;
@@ -639,8 +782,8 @@ void sql_modify_frags(P_char ch, int gain)
 /* Update account_characters mapping table */
 void sql_update_account_character(P_char ch)
 {
-	char        account_name_sql[MAX_STRING_LENGTH];
-	char        char_name_sql[MAX_STRING_LENGTH];
+	char        account_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        char_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	const char *account_name;
 
 	if (!ch || IS_NPC(ch))
@@ -695,10 +838,10 @@ double sql_get_total_donated(const char *account_name)
 /* Update frag_leaderboard table with current character data */
 void sql_update_frag_leaderboard(P_char ch)
 {
-	char        account_name_sql[MAX_STRING_LENGTH];
-	char        char_name_sql[MAX_STRING_LENGTH];
-	char        race_sql[MAX_STRING_LENGTH];
-	char        class_sql[MAX_STRING_LENGTH];
+	char        account_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        char_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        race_sql[MAX_STRING_LENGTH * 2 + 1];
+	char        class_sql[MAX_STRING_LENGTH * 2 + 1];
 	const char *account_name;
 	const char *race_name;
 	const char *class_name;
@@ -751,8 +894,8 @@ void sql_insert_item(P_char ch, P_obj obj, char *desc)
 {
 
 	char query[MAX_STRING_LENGTH];
-	char sql_desc[MAX_STRING_LENGTH];
-	char sql_short[MAX_STRING_LENGTH];
+	char sql_desc[MAX_STRING_LENGTH * 2 + 1];
+	char sql_short[MAX_STRING_LENGTH * 2 + 1];
 
 	int m_virtual = (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : 0;
 	mysql_str(desc, sql_desc);
@@ -788,16 +931,21 @@ void sql_insert_new_item(P_char ch, P_obj obj)
 
 unsigned long new_pkill_event(P_char ch)
 {
-	char room_name_sql[MAX_STRING_LENGTH];
-	char query[MAX_STRING_LENGTH];
+	char  room_name_sql[MAX_STRING_LENGTH * 2 + 1];
+	string query;
 
 	mysql_str(world[ch->in_room].name, room_name_sql);
-	snprintf(query, MAX_STRING_LENGTH, "INSERT INTO pkill_event (stamp, room_vnum, room_name) VALUES( NOW(), %d, '%s' )", world[ch->in_room].number, room_name_sql);
+	query = "INSERT INTO pkill_event (stamp, room_vnum, room_name) VALUES( NOW(), ";
+	query += std::to_string(world[ch->in_room].number);
+	query += ", '";
+	query += room_name_sql;
+	query += "' )";
 
-	if (mysql_real_query(DB, query, strlen(query)) != 0)
+	sql_clear_results_on(DB);
+	if (!sql_trace_exec("new_pkill_event", query.c_str(), query.size(), false, false))
 	{
 		logit(LOG_DEBUG, "MYSQL: Failed to create pkill event");
-		logit(LOG_DEBUG, "MYSQL: Query was: %s", query);
+		logit(LOG_DEBUG, "MYSQL: Query was: %s", query.c_str());
 		return 0;
 	}
 
@@ -825,9 +973,9 @@ void get_pkill_player_description(P_char ch, char *buffer)
 void store_pkill_info(unsigned long pkill_event, P_char ch, const char *type, int leader, int in_room)
 {
 	char buf[MAX_STRING_LENGTH];
-	char equip_sql[MAX_STRING_LENGTH];
-	char player_description_sql[MAX_STRING_LENGTH];
-	char log_sql[MAX_LOG_LEN];
+	char equip_sql[MAX_STRING_LENGTH * 2 + 1];
+	char player_description_sql[MAX_STRING_LENGTH * 2 + 1];
+	char log_sql[MAX_LOG_LEN * 2 + 1];
 
 	if (!ch || !IS_PC(ch))
 		return;
@@ -977,8 +1125,8 @@ void manual_log(P_char ch)
 
 	char a[256], b[256];
 	char buf[MAX_STRING_LENGTH];
-	char equip_sql[MAX_STRING_LENGTH];
-	char log_sql[MAX_LOG_LEN];
+	char equip_sql[MAX_STRING_LENGTH * 2 + 1];
+	char log_sql[MAX_LOG_LEN * 2 + 1];
 	char buf2[MAX_LOG_LEN];
 	int  space = MAX_LOG_LEN;
 
@@ -1046,7 +1194,7 @@ void sql_connectIP(P_char ch)
 
 void sql_world_quest_finished(P_char ch, P_obj reward)
 {
-	char buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH * 2 + 1];
 
 	int   reward_vnum = reward ? ((reward->R_num >= 0) ? obj_index[reward->R_num].virtual_number : 0) : 0;
 	char *reward_desc = reward ? mysql_str(reward->short_description, buf) : mysql_str("", buf);
@@ -1289,36 +1437,223 @@ void perform_wiki_search(P_char ch, const char *query)
 	send_to_char(buf, ch);
 }
 
-void sql_clear_results()
+static bool sql_trace_enabled(void)
 {
-	int status = 0;
+	static int cached = -1;
+	if (cached < 0)
+	{
+		const char *env = getenv("SQL_TRACE");
+		bool        on  = false;
+
+		if (env && *env && strcmp(env, "0") != 0 && strcasecmp(env, "false") != 0 && strcasecmp(env, "off") != 0)
+		{
+			on = true;
+		}
+		else
+		{
+			on = true;
+		}
+		cached = on ? 1 : 0;
+	}
+	return cached != 0;
+}
+
+static bool sql_trace_active(void)
+{
+	return sql_trace_enabled() || sql_trace_burst > 0;
+}
+
+static const char *sql_trace_kind(const char *sql)
+{
+	while (sql && *sql && isspace((unsigned char)*sql))
+		++sql;
+
+	if (!sql || !*sql)
+		return "EMPTY";
+	if (!strncasecmp(sql, "SELECT", 6))
+		return "SELECT";
+	if (!strncasecmp(sql, "UPDATE", 6))
+		return "UPDATE";
+	if (!strncasecmp(sql, "INSERT", 6))
+		return "INSERT";
+	if (!strncasecmp(sql, "DELETE", 6))
+		return "DELETE";
+	if (!strncasecmp(sql, "REPLACE", 7))
+		return "REPLACE";
+	if (!strncasecmp(sql, "START TRANSACTION", 17))
+		return "TXN_BEGIN";
+	if (!strncasecmp(sql, "COMMIT", 6))
+		return "COMMIT";
+	if (!strncasecmp(sql, "ROLLBACK", 8))
+		return "ROLLBACK";
+	return "OTHER";
+}
+
+static void sql_trace_preview(const char *sql, char *out, size_t outsz)
+{
+	size_t j = 0;
+
+	if (!out || outsz == 0)
+		return;
+	out[0] = '\0';
+	if (!sql)
+		return;
+
+	for (size_t i = 0; sql[i] && j + 1 < outsz; ++i)
+	{
+		unsigned char c = (unsigned char)sql[i];
+		if (c == '\n' || c == '\r' || c == '	')
+			c = ' ';
+		out[j++] = (char)c;
+		if (j + 4 >= outsz)
+			break;
+	}
+	out[j] = '\0';
+	if (sql[j] != '\0' && outsz > 4)
+		strcat(out, "...");
+}
+
+static void sql_trace_log(const char *phase, MYSQL *conn, const char *sql)
+{
+	if (!conn)
+		return;
+	const bool trace_on  = sql_trace_enabled();
+	const bool burst_on  = (sql_trace_burst > 0 && !trace_on);
+	if (!trace_on && !burst_on)
+		return;
+	if (burst_on)
+		--sql_trace_burst;
+
+	char preview[240];
+	sql_trace_preview(sql, preview, sizeof(preview));
+	logit(LOG_DEBUG,
+	      "[SQLTRACE] phase=%s conn=%lu kind=%s burst=%d errno=%u field_count=%u more_results=%d sql=\"%s\"",
+	      phase,
+	      (unsigned long)mysql_thread_id(conn),
+	      sql_trace_kind(sql),
+	      sql_trace_burst,
+	      (unsigned int)mysql_errno(conn),
+	      (unsigned int)mysql_field_count(conn),
+	      mysql_more_results(conn),
+	      preview);
+}
+
+static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained)
+{
+	char preview[240];
+
+	if (!conn)
+		return;
+	if (drained)
+		sql_trace_burst = 100;
+	if (!sql_trace_active() && !drained)
+		return;
+
+	sql_trace_preview(sql_trace_last_sql, preview, sizeof(preview));
+	logit(LOG_DEBUG,
+	      "[SQLTRACE] phase=%s conn=%lu drained=%d burst=%d errno=%u field_count=%u more_results=%d site=%s sql=\"%s\"",
+	      phase,
+	      (unsigned long)mysql_thread_id(conn),
+	      drained ? 1 : 0,
+	      sql_trace_burst,
+	      (unsigned int)mysql_errno(conn),
+	      (unsigned int)mysql_field_count(conn),
+	      mysql_more_results(conn),
+	      *sql_trace_last_site ? sql_trace_last_site : "unknown",
+	      preview);
+}
+
+void sql_trace_panic(void)
+{
+	sql_trace_burst = 100;
+}
+
+bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_before, bool drain_after)
+{
+	if (!DB || !sql)
+		return false;
+
+	snprintf(sql_trace_last_site, sizeof(sql_trace_last_site), "%s", site ? site : "unknown");
+	sql_trace_preview(sql, sql_trace_last_sql, sizeof(sql_trace_last_sql));
+
+	if (drain_before)
+		sql_clear_results_on(DB);
+	sql_trace_log(site, DB, sql);
+	if (mysql_real_query(DB, sql, len) != 0)
+	{
+		logit(LOG_DEBUG, "MySQL error: %s", mysql_error(DB));
+		logit(LOG_DEBUG, "on MySQL query: %s", sql);
+		sql_trace_panic();
+		sql_trace_log("exec/fail", DB, sql);
+		return false;
+	}
+
+	if (drain_after)
+		sql_clear_results_on(DB);
+	sql_trace_log("exec/ok", DB, sql);
+	return true;
+}
+
+void sql_clear_results_on(MYSQL *conn)
+{
+	if (!conn)
+		return;
+
+	int  status = 0;
+	bool drained_any = false;
 	do
 	{
 		/* did current statement return data? */
-		MYSQL_RES *result = mysql_store_result(DB);
+		MYSQL_RES *result = mysql_store_result(conn);
 		if (result)
 		{
+			my_ulonglong rows = mysql_num_rows(result);
+			unsigned int fields = mysql_num_fields(result);
+			drained_any = true;
+			logit(LOG_DEBUG,
+			      "[SQLTRACE] phase=%s conn=%lu drained_result rows=%llu fields=%u more_results=%d",
+			      "clear/result",
+			      (unsigned long)mysql_thread_id(conn),
+			      (unsigned long long)rows,
+			      fields,
+			      mysql_more_results(conn));
 			mysql_free_result(result);
 		}
 		else /* no result set or error */
 		{
-			if (mysql_field_count(DB) == 0)
+			if (mysql_field_count(conn) == 0)
 			{
-				// printf("%lld rows affected\n", mysql_affected_rows(DB));
+				// printf("%lld rows affected\n", mysql_affected_rows(conn));
 			}
-			else /* some error occurred */
+			else if (mysql_errno(conn) == 0)
 			{
-				logit(LOG_DEBUG, "MySQL error: %s", mysql_error(DB));
+				// Benign pre-clear: no pending result and no MySQL error.
+				// Keep this silent; the query/site trace already shows the caller.
+			}
+			else /* actual error occurred */
+			{
+				logit(LOG_DEBUG, "MySQL error: %s", mysql_error(conn));
+				sql_trace_log_drain(conn, "clear/error", true);
 				break;
 			}
 		}
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
-		if ((status = mysql_next_result(DB)) > 0)
+		if ((status = mysql_next_result(conn)) > 0)
 		{
-			logit(LOG_DEBUG, "MySQL error: %s", mysql_error(DB));
+			logit(LOG_DEBUG, "MySQL error: %s", mysql_error(conn));
+			sql_trace_log_drain(conn, "clear/next_result_error", true);
 			break;
 		}
 	} while (status == 0);
+
+	if (drained_any)
+		sql_trace_log_drain(conn, "clear/drained", true);
+}
+
+
+void sql_clear_results()
+{
+	sql_clear_results_on(DB);
 }
 
 /* Execute a semicolon-separated multi-statement query.
@@ -1332,7 +1667,7 @@ bool sql_run_multi_query(const char *query)
 	if (!DB || !query || !*query)
 		return false;
 
-	if (mysql_real_query(DB, query, strlen(query)) != 0)
+	if (!sql_trace_exec("sql_run_multi_query", query, strlen(query), true, false))
 	{
 		sql_player_error("sql_run_multi_query", query);
 		// Drain any partial result sets from statements that succeeded
@@ -1370,7 +1705,7 @@ bool qry(const char *format, ...)
 		return FALSE;
 	}
 
-	if (mysql_real_query(DB, buf, strlen(buf)))
+	if (!sql_trace_exec("qry/direct", buf, strlen(buf), true, false))
 	{
 		logit(LOG_DEBUG, "MySQL error: %s", mysql_error(DB));
 		logit(LOG_DEBUG, "on MySQL query: %s", buf);
@@ -1405,14 +1740,20 @@ void send_offline_messages(P_char ch)
 		return;
 	}
 
-	MYSQL_ROW row;
+	std::vector<int> delete_ids;
+	MYSQL_ROW      row;
 	while ((row = mysql_fetch_row(res)))
 	{
 		send_to_char(row[1], ch);
-		qry("DELETE FROM offline_messages WHERE id = '%d'", atoi(row[0]));
+		delete_ids.push_back(atoi(row[0]));
 	}
 
 	mysql_free_result(res);
+
+	for (int id : delete_ids)
+	{
+		qry("DELETE FROM offline_messages WHERE id = '%d'", id);
+	}
 }
 
 int sql_shop_sell(P_char ch, P_obj obj, int value)
@@ -1668,7 +2009,8 @@ void do_sql(P_char ch, char *argument, int cmd)
 	MYSQL_FIELD *fields;
 	result[0] = '\0';
 
-	if (mysql_real_query(DB, argument, strlen(argument)))
+	sql_clear_results_on(DB);
+	if (!sql_trace_exec("do_sql", argument, strlen(argument), false, false))
 	{
 		snprintf(result, MAX_STRING_LENGTH, "%s", mysql_error(DB));
 		logit(LOG_DEBUG, "MySQL error(sql command): %s", mysql_error(DB));
@@ -2360,19 +2702,32 @@ MYSQL *sql_persistence_connection(void)
 
 	/* Legacy fallback: lazy-initialise the singleton.
 	 * Kept for bootstrap / early-start paths that run before
-	 * the pool is initialised (e.g. sql_populate_lookup_tables). */
+	 * the pool is initialised (e.g. sql_populate_lookup_tables).
+	 * Must use the shared db-name resolver so pool/fallback never
+	 * disagrees with the main DB connection about which database
+	 * is the production one. */
 	if (!persistenceDB)
 	{
-		persistenceDB = mysql_init(NULL);
+		pthread_mutex_lock(&persistence_sql_mutex);
 		if (!persistenceDB)
-			return NULL;
-		if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD, DB_NAME, DB_PORT, NULL, 0))
 		{
-			logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_connection failed: %s", mysql_error(persistenceDB));
-			mysql_close(persistenceDB);
-			persistenceDB = NULL;
-			return NULL;
+			persistenceDB = mysql_init(NULL);
+			if (!persistenceDB)
+			{
+				pthread_mutex_unlock(&persistence_sql_mutex);
+				return NULL;
+			}
+			if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD,
+			                        sql_persistence_db_name(), DB_PORT, NULL, 0))
+			{
+				logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_connection failed: %s", mysql_error(persistenceDB));
+				mysql_close(persistenceDB);
+				persistenceDB = NULL;
+				pthread_mutex_unlock(&persistence_sql_mutex);
+				return NULL;
+			}
 		}
+		pthread_mutex_unlock(&persistence_sql_mutex);
 	}
 	return persistenceDB;
 }

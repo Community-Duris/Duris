@@ -49,7 +49,7 @@ int forest_animals(P_char ch, P_char pl, int cmd, char *arg)
 		if (!(obj))
 		{
 			logit(LOG_EXIT, "forest_animals: death object for mob %d doesn't exist", GET_VNUM(ch));
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		obj_to_room(obj, ch->in_room);
 

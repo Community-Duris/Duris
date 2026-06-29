@@ -1503,7 +1503,8 @@ void writeShapechangeData(P_char ch)
 {
 	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
 	{
-		sql_save_player_shapechanges(ch);
+		if (!sql_save_player_shapechanges(ch))
+			logit(LOG_FILE, "writeShapechangeData: failed to save shapechange data for %s", GET_NAME(ch));
 	}
 }
 
@@ -1604,7 +1605,11 @@ int writeCharacter(P_char ch, int type, int room)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
 		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
 
-	writeShapechangeData(ch);
+	if (!sql_save_player_shapechanges(ch))
+	{
+		logit(LOG_FILE, "sql_save_player_shapechanges failed for %s", GET_NAME(ch));
+		result = 0;
+	}
 	room = calculate_save_room(ch, type, room);
 
 	// skip locker characters for sql operations
@@ -4100,7 +4105,6 @@ int writePet(P_char ch)
 				logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
 				wizlog(OVERLORD, "&+R&-LPANIC!&N  Error restoring backup petfile for %s!", GET_NAME(ch));
 				logit(LOG_EXIT, "unable to restore backup petfile for %s", GET_NAME(ch));
-				raise(SIGSEGV);
 			}
 			else
 				wizlog(OVERLORD, "        Backup restored.");
@@ -4306,7 +4310,8 @@ void writeSavedItem(P_obj item)
 	if ((item->loc.room <= NOWHERE) || (item->loc.room > top_of_world))
 		return;
 
-	sql_save_saved_item(item, item_key);
+	if (!sql_save_saved_item(item, item_key))
+		logit(LOG_FILE, "sql_save_saved_item failed for %s", item_key);
 }
 
 void restoreSavedItems(void)

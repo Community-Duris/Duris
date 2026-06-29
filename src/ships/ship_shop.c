@@ -509,7 +509,7 @@ int summon_ship(P_char ch, P_ship ship, bool time_only)
 		if (!IS_TRUSTED(ch))
 		{
 			clear_cargo(ship);
-			write_ship(ship);
+			queue_ship_save(ship, "cargo clear during summon");
 		}
 		SET_BIT(ship->flags, SUMMONED);
 		kick_everyone_off(ship);
@@ -678,7 +678,7 @@ int sell_cargo(P_char ch, P_ship ship, int slot)
 
 		update_crew(ship);
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "cargo sale");
 
 		write_cargo();
 	}
@@ -793,7 +793,7 @@ int sell_contra(P_char ch, P_ship ship, int slot)
 
 		update_crew(ship);
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "cargo sale");
 
 		write_cargo();
 	}
@@ -831,7 +831,7 @@ int sell_slot(P_char ch, P_ship ship, int slot)
 		send_to_char_f(ch, "&+gHere's &n%s &+gfor that &+W%s&+g.&n\n", coin_stringv(value), ship->slot[slot].get_description());
 		ship->slot[slot].clear();
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "slot sale");
 		return TRUE;
 	}
 	else if (is_diplomat_slot(ship, slot))
@@ -858,7 +858,7 @@ int sell_slot(P_char ch, P_ship ship, int slot)
 		ship->slot[slot].clear();
 		ADD_MONEY(ch, value);
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "slot sale");
 		return TRUE;
 	}
 	else if (ship->slot[slot].type == SLOT_EQUIPMENT)
@@ -872,7 +872,7 @@ int sell_slot(P_char ch, P_ship ship, int slot)
 		ship->slot[slot].clear();
 		ADD_MONEY(ch, value);
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "slot sale");
 		return TRUE;
 	}
 	else if (ship->slot[slot].type == SLOT_CARGO)
@@ -1072,7 +1072,7 @@ int repair_all(P_char ch, P_ship ship)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "repair");
 	return TRUE;
 }
 
@@ -1107,7 +1107,7 @@ int repair_sail(P_char ch, P_ship ship)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1191,7 +1191,7 @@ int repair_armor(P_char ch, P_ship ship, char *arg)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1232,7 +1232,7 @@ int repair_internal(P_char ch, P_ship ship, char *arg)
 		if (!IS_TRUSTED(ch) && BUILDTIME)
 			ship->timer[T_MAINTENANCE] += buildtime;
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "repair");
 		return TRUE;
 	}
 	if (isname(arg, "fore") || isname(arg, "f"))
@@ -1278,7 +1278,7 @@ int repair_internal(P_char ch, P_ship ship, char *arg)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1335,7 +1335,7 @@ int repair_weapon(P_char ch, P_ship ship, char *arg)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1416,7 +1416,7 @@ int reload_ammo(P_char ch, P_ship ship, char *arg)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1588,7 +1588,7 @@ int buy_cargo(P_char ch, P_ship ship, char *arg)
 	send_to_char("&+gThank you for your purchase, your cargo is loaded and set to go!&n\n", ch);
 
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1745,7 +1745,7 @@ int buy_contra(P_char ch, P_ship ship, char *arg)
 	send_to_char("&+gThank you for your 'purchase' &+w*snicker*&+g, your 'cargo' is loaded and set to go!&n\n", ch);
 
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1877,7 +1877,7 @@ int buy_weapon(P_char ch, P_ship ship, char *arg1, char *arg2)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -1983,7 +1983,7 @@ int buy_equipment(P_char ch, P_ship ship, char *arg1)
 	if (!IS_TRUSTED(ch) && BUILDTIME)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -2214,7 +2214,7 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 		ship->timer[T_MAINTENANCE] += buildtime;
 	}
 	update_ship_status(ship);
-	write_ship(ship);
+	queue_ship_save(ship, "ship shop update");
 	return TRUE;
 }
 
@@ -2243,7 +2243,7 @@ int swap_slots(P_char ch, P_ship ship, char *arg1, char *arg2)
 	ship->slot[slot1].clone(ship->slot[slot2]);
 	ship->slot[slot2].clone(temp);
 	send_to_char("&+gDone! Thank you for your business!&n\n", ch);
-	write_ship(ship);
+	queue_ship_save(ship, "slot swap");
 	return TRUE;
 }
 
@@ -2662,7 +2662,7 @@ int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 				send_to_char("Aye aye cap'n!  We'll be on yer ship before you board!\r\n", ch);
 				change_crew(ship, i, true);
 				update_ship_status(ship);
-				write_ship(ship);
+				queue_ship_save(ship, "chief hire");
 				return TRUE;
 			}
 		}
@@ -2699,7 +2699,7 @@ int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 				send_to_char("Aye aye cap'n!  I'll be on yer ship before you board!\r\n", ch);
 				set_chief(ship, i);
 				update_ship_status(ship);
-				write_ship(ship);
+				queue_ship_save(ship, "chief hire");
 				return TRUE;
 			}
 		}
@@ -2904,7 +2904,7 @@ int erzul_proc(P_char ch, P_char pl, int cmd, char *arg)
 						extract_obj(moonstone, TRUE);
 						set_crew(ship, AUTOMATON_CREW, false);
 						update_ship_status(ship);
-						write_ship(ship);
+						queue_ship_save(ship, "automaton crew purchase");
 						send_to_char("Erzul says '&+GThey'll be at your ship by the time you get there!&N'\r\n", pl);
 						return TRUE;
 					}

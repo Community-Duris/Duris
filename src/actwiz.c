@@ -103,7 +103,7 @@ extern const char                      *sector_types[];
 extern const flagDef                    wear_bits[];
 extern const char                      *zone_bits[];
 extern const char                      *justice_obj_status[];
-extern const char                      *shutdown_message;
+extern char                            *shutdown_message;
 extern const char                      *item_material[];
 extern const char                      *kingdom_type_list[];
 extern const char                      *resource_list[];
@@ -777,7 +777,8 @@ void do_newbie(P_char ch, char *argument, int cmd)
 		REMOVE_BIT(victim->specials.act2, PLR2_NCHAT);
 	}
 
-	do_save_silent(victim, 1);
+	if (!do_save_silent(victim, 1))
+		logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
 	logit(LOG_WIZ, "%s toggled %s's newbie status.", ch->player.name, victim->player.name);
 }
@@ -820,7 +821,8 @@ void do_make_guide(P_char ch, char *argument, int cmd)
 		REMOVE_BIT(victim->specials.act2, PLR2_NCHAT);
 	}
 
-	do_save_silent(victim, 1);
+	if (!do_save_silent(victim, 1))
+		logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
 	logit(LOG_WIZ, "%s toggled %s's newbie helper status.", ch->player.name, victim->player.name);
 }
@@ -4173,6 +4175,10 @@ void timedShutdown(P_char ch, P_char, P_obj, void *data)
 				wizlog(60, "WARNING:  Unknown shutdown type ABORTED!!");
 				return;
 		}
+		if (shutdown_message)
+		{
+			FREE(shutdown_message);
+		}
 		shutdown_message = str_dup(buf);
 	}
 	else
@@ -4447,7 +4453,7 @@ void do_shutdown(P_char ch, char *argument, int cmd)
 	else if (!str_cmp(arg, "segfault"))
 	{
 		sql_log(ch, WIZLOG, "Shutdown - SIGSEGV by %s", GET_NAME(ch));
-		raise(SIGSEGV);
+		panic_corruption("actwiz", "shutdown segfault requested by %s", GET_NAME(ch));
 	}
 	else
 	{
@@ -9020,7 +9026,8 @@ void do_revoketitle(P_char ch, char *args, int cmd)
   else
     act("You revoke your 'title' command.", FALSE, ch, 0, 0, TO_CHAR);
 
-  do_save_silent(victim, 1);
+  if (!do_save_silent(victim, 1))
+    logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
   logit(LOG_WIZ, "<REVOKE>: %s revokes %s's 'title' command.",
         GET_NAME(ch), GET_NAME(victim));
@@ -9549,7 +9556,7 @@ int vnum_mobile(char *searchname, struct char_data *ch)
 			else
 			{
 				logit(LOG_EXIT, "GLITCH 1");
-				raise(SIGSEGV);
+				panic_corruption("actwiz", "GLITCH 1 in mobile list rendering");
 			}
 			if ((strlen(buf) + length + 40) < MAX_STRING_LENGTH)
 			{
@@ -12838,17 +12845,31 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-				persistence_flush_character_saves(vict);
-				// Wrap final save in transaction (flush already completed above)
-				if (sql_begin_transaction())
+			persistence_flush_character_saves(vict);
+			/* Wrap final save in transaction (flush already completed above) */
+			bool saved = false;
+			if (sql_begin_transaction())
+			{
+				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
 				{
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-					if (!sql_commit())
+					if (sql_commit())
+						saved = true;
+					else
 						sql_rollback();
 				}
 				else
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-				extract_char(vict);
+					sql_rollback();
+			}
+			else
+			{
+				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			}
+			if (!saved)
+			{
+				send_to_char("Failed to save ghost character before extraction.\r\n", ch);
+				continue;
+			}
+			extract_char(vict);
 			count++;
 		}
 
@@ -12892,17 +12913,31 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-				persistence_flush_character_saves(vict);
-				// Wrap final save in transaction (flush already completed above)
-				if (sql_begin_transaction())
+			persistence_flush_character_saves(vict);
+			/* Wrap final save in transaction (flush already completed above) */
+			bool saved = false;
+			if (sql_begin_transaction())
+			{
+				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
 				{
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-					if (!sql_commit())
+					if (sql_commit())
+						saved = true;
+					else
 						sql_rollback();
 				}
 				else
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-				extract_char(vict);
+					sql_rollback();
+			}
+			else
+			{
+				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			}
+			if (!saved)
+			{
+				send_to_char("Failed to save ghost character before extraction.\r\n", ch);
+				continue;
+			}
+			extract_char(vict);
 			count++;
 		}
 

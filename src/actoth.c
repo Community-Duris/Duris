@@ -1699,7 +1699,8 @@ void event_autosave(P_char ch, P_char victim, P_obj obj, void *data)
 		return;
 	}
 	persistence_flush_item_events(64);
-	do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+		logit(LOG_DEBUG, "Failed to autosave %s.", GET_NAME(ch));
 	add_event(event_autosave, 1200, ch, 0, 0, 0, 0, 0);
 }
 
@@ -1758,7 +1759,6 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj,
     return;
 
   pending = *slot;
-  memset(slot, 0, sizeof(*slot));
 
   if (!ch || IS_NPC(ch))
   {
@@ -1766,6 +1766,7 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj,
                       "deferred_save_character_missing",
                       "discarded deferred save slot for pid=%d reason=%s",
                       pending.pid, pending.reason);
+    memset(slot, 0, sizeof(*slot));
     return;
   }
 
@@ -1775,13 +1776,15 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj,
                       "deferred_save_character_not_alive",
                       "discarded deferred save slot for pid=%d reason=%s",
                       pending.pid, pending.reason);
+    memset(slot, 0, sizeof(*slot));
     return;
   }
 
   if (pending.level_dirty)
     sql_update_level(ch);
 
-  do_save_silent(ch, pending.type ? pending.type : 1);
+  if (do_save_silent(ch, pending.type ? pending.type : 1))
+    memset(slot, 0, sizeof(*slot));
 }
 
 static void persistence_schedule_checkpoint(P_char ch, int type, int delay,
@@ -1810,7 +1813,9 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay,
                       reason ? reason : "unknown");
     if (level_dirty)
       sql_update_level(ch);
-    do_save_silent(ch, type ? type : 1);
+    if (!do_save_silent(ch, type ? type : 1))
+      logit(LOG_DEBUG, "Failed to flush deferred save for %s (pid=%d reason=%s).",
+            GET_NAME(ch), GET_PID(ch), reason ? reason : "unknown");
     return;
   }
 
@@ -1863,17 +1868,20 @@ void persistence_flush_character_saves(P_char ch)
 		return;
 
 	pending = *slot;
-	memset(slot, 0, sizeof(*slot));
 
 	if (pending.level_dirty)
-		sql_update_level(ch);
+	  sql_update_level(ch);
 
-	do_save_silent(ch, pending.type ? pending.type : 1);
+	if (do_save_silent(ch, pending.type ? pending.type : 1))
+	  memset(slot, 0, sizeof(*slot));
+	else
+	  logit(LOG_DEBUG, "Failed to flush deferred save for %s (pid=%d reason=%s).",
+	        GET_NAME(ch), pending.pid, pending.reason);
 
 	persistence_alert(AVATAR, "player_save", GET_NAME(ch), "none", "none",
-			"deferred_save_flushed",
-			"flushed deferred save for pid=%d reason=%s",
-			pending.pid, pending.reason);
+	                  "deferred_save_flushed",
+	                  "flushed deferred save for pid=%d reason=%s",
+	                  pending.pid, pending.reason);
 }
 
 /*
@@ -1901,7 +1909,6 @@ void persistence_flush_all_character_saves(void)
 		}
 
 		pending = *slot;
-		memset(slot, 0, sizeof(*slot));
 
 		if (!ch || !IS_ALIVE(ch))
 		{
@@ -1909,17 +1916,19 @@ void persistence_flush_all_character_saves(void)
 					"deferred_save_discard_global",
 					"discarded deferred save pid=%d reason=%s (char not in list)",
 					pending.pid, pending.reason);
+			memset(slot, 0, sizeof(*slot));
 			continue;
 		}
 
 		if (pending.level_dirty)
 			sql_update_level(ch);
 
-		do_save_silent(ch, pending.type ? pending.type : 1);
+		if (do_save_silent(ch, pending.type ? pending.type : 1))
+			memset(slot, 0, sizeof(*slot));
 	}
 }
 
-void do_save_silent(P_char ch, int type)
+bool do_save_silent(P_char ch, int type)
 {
 	FILE  *f;
 	char   tmp_buf[MAX_STRING_LENGTH], tmp_buf2[MAX_STRING_LENGTH];
@@ -1928,7 +1937,7 @@ void do_save_silent(P_char ch, int type)
 	P_obj  obj;
 
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
-		return;
+		return false;
 
 	if (IS_HARDCORE(ch))
 	{
@@ -1976,12 +1985,23 @@ void do_save_silent(P_char ch, int type)
 			logit(LOG_DEBUG, "Problem saving player %s in do_save_silent()", GET_NAME(ch));
 			send_to_char("Danger -- cannot save your character!\r\n", ch);
 			send_to_char("Better contact an Implementor ASAP.\r\n", ch);
+			return false;
 		}
-	
+	}
 
-  /* Also save player's ship if they have one */
-  { extern P_ship get_ship_from_char(P_char ch); P_ship ship = get_ship_from_char(ch); if (ship) { extern int write_ship(P_ship ship); write_ship(ship); } }
-}
+	/* Also save player's ship if they have one */
+	{
+		extern P_ship get_ship_from_char(P_char ch);
+		P_ship ship = get_ship_from_char(ch);
+		if (ship)
+		{
+			extern int write_ship(P_ship ship);
+			if (!write_ship(ship))
+				return false;
+		}
+	}
+
+	return true;
 }
 
 void do_save(P_char ch, char *argument, int cmd)
@@ -6499,10 +6519,7 @@ void ascend_theurgist(P_char ch)
 	int    i;
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "ascend_theurgist called in actoth.c with no ch");
-		raise(SIGSEGV);
-	}
+		return;
 	if (IS_NPC(ch))
 		return;
 
@@ -6576,13 +6593,8 @@ void do_ascend(P_char ch, char *arg, int cmd)
 	char buffer[256];
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "do_ascend called in actoth.c with no ch");
-		raise(SIGSEGV);
-	}
-	if (ch) // Just making sure.
-	{
-		if (!IS_NPC(ch))
+		return;
+	if (!IS_NPC(ch))
 		{
 			send_to_char("&+WThis is too powerful an enchantment for you to master...&n\n\r", ch);
 			return;
@@ -6683,7 +6695,6 @@ void do_ascend(P_char ch, char *arg, int cmd)
 		         get_god_name(ch),
 		         GET_SPEC_NAME(ch->player.m_class, spec - 1));
 		send_to_char(buffer, ch);
-	}
 }
 
 void do_descend(P_char ch, char *arg, int cmd)
@@ -6799,7 +6810,8 @@ void do_descend(P_char ch, char *arg, int cmd)
 	ch->points.max_vitality = 0;
 	NewbySkillSet(ch, FALSE);
 	do_start(ch, 0);
-	do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+		logit(LOG_DEBUG, "Failed to save %s after new character setup.", GET_NAME(ch));
 }
 
 void do_old_descend(P_char ch, char *arg, int cmd)
@@ -6823,7 +6835,7 @@ void do_old_descend(P_char ch, char *arg, int cmd)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "do_descend called in actoth.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{

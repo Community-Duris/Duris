@@ -96,6 +96,19 @@ bool qry(const char *format, ...);
 bool sql_persistence_write_item_event_line(const char *line);
 bool sql_persistence_write_scalar_event_line(const char *line);
 bool sql_persistence_write_large_event_line(const char *line);
+bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_before, bool drain_after);
+void sql_trace_panic(void);
+
+/* Resolve which database name to connect to based on the current
+ * running port.  On non-default ports (e.g. dev builds) the live
+ * "duris" database is replaced by the "duris_dev" sandbox so the
+ * boot-time hack can never accidentally clobber production data.
+ * This single helper is used by initialize_mysql(), the legacy
+ * persistenceDB fallback, and every slot in sql_pool_init() so the
+ * sync DB connection and the async/pool connections always target
+ * the same database. */
+const char *sql_persistence_db_name(void);
+
 MYSQL *sql_persistence_connection(void);
 void    sql_persistence_release_connection(MYSQL *conn);
 bool sql_persistence_execute_raw(const char *sql);
@@ -136,6 +149,8 @@ string get_mud_info(const char *name);
 void   send_mud_info(const char *name, P_char ch);
 
 string escape_str(const char *str);
+
+void sql_clear_results_on(MYSQL *conn);
 
 #include <vector>
 using namespace std;

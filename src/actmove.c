@@ -149,7 +149,7 @@ void SwapCharsInList(P_char ch1, P_char ch2)
 	if (!t_ch1 || !t_ch2 || !p1 || (!p2 && (t_ch1 != world[ch1->in_room].people)))
 	{
 		logit(LOG_EXIT, "char_in_room list corrupt - SwapCharsInList");
-		raise(SIGSEGV);
+		return;
 	}
 	/*
 	 * cheating a little to simplify things: t_ch1 now holds 'first' of
@@ -3503,10 +3503,7 @@ void do_stand(P_char ch, char *argument, int cmd)
 {
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "do_stand called in actmove.c with no ch");
-		raise(SIGSEGV);
-	}
+		return;
 
 	if (!IS_ALIVE(ch))
 	{

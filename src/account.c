@@ -1776,7 +1776,11 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 				    (ch != ch->only.pc->switched->only.npc->orig_char))
 				{
 					logit(LOG_EXIT, "Something fucked while trying to reconnect linkless morph");
-					raise(SIGSEGV);
+					ch->desc = NULL;
+					d->character = NULL;
+					STATE(d) = CON_ACCT_SELECT_CHAR;
+					display_character_list(d);
+					return 1;
 				}
 				d->original        = ch;
 				d->character       = ch->only.pc->switched;
@@ -2284,7 +2288,10 @@ void write_unique_ip(P_acct acct, FILE *f)
 	struct acct_ip *c     = NULL;
 
 	if (acct->acct_name)
-		sql_save_account_ips(acct->acct_name, acct->acct_unique_ips);
+	{
+		if (!sql_save_account_ips(acct->acct_name, acct->acct_unique_ips))
+			logit(LOG_DEBUG, "write_unique_ip: failed to save IPs for %s", acct->acct_name);
+	}
 
 	c = acct->acct_unique_ips;
 	if (!c)
@@ -2564,9 +2571,6 @@ P_acct allocate_account(void)
 	P_acct acct = NULL;
 
 	CREATE(acct, acct_entry, 1, MEM_TAG_OTHER);
-
-	if (!acct)
-		raise(SIGSEGV);
 
 	memset(acct, 0, sizeof(acct_entry));
 	add_account_to_list(acct);

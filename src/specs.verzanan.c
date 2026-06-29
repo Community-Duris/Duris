@@ -68,7 +68,7 @@ int clock_tower(P_obj obj, P_char ch, int cmd, char *arg)
 	if (!current_event || (current_event->type != EVENT_OBJ_SPECIAL))
 	{
 		logit(LOG_EXIT, "Call to clock_tower with messed current_event");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 	// Clock is off (event is rather), so reschedule for +1 hour
 	if (time_info.hour % 3)
@@ -760,11 +760,6 @@ int dog_one(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		if ((GET_ITEM_TYPE(i) == ITEM_CORPSE) || (GET_ITEM_TYPE(i) == ITEM_FOOD))
 		{
-			if (!(i))
-			{
-				logit(LOG_EXIT, "assert: dog_one");
-				raise(SIGSEGV);
-			}
 			if (GET_ITEM_TYPE(i) == ITEM_CORPSE)
 			{
 				struct obj_affect *af = get_obj_affect(i, TAG_OBJ_DECAY);
@@ -839,11 +834,6 @@ int dog_two(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		if ((GET_ITEM_TYPE(i) == ITEM_CORPSE) || (GET_ITEM_TYPE(i) == ITEM_FOOD))
 		{
-			if (!(i))
-			{
-				logit(LOG_EXIT, "assert: dog_two");
-				raise(SIGSEGV);
-			}
 			if (GET_ITEM_TYPE(i) == ITEM_CORPSE)
 			{
 				struct obj_affect *af = get_obj_affect(i, TAG_OBJ_DECAY);

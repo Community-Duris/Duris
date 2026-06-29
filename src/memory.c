@@ -147,7 +147,7 @@ void *getmem(size_t size, char *tag, char *file, int line)
 		if ((mem_log = fopen(MEMORY_LOG, "w")) == NULL)
 		{
 			logit(LOG_EXIT, "fopen memory log");
-			raise(SIGSEGV);
+			exit(1);
 		}
 	}
 
@@ -157,7 +157,7 @@ void *getmem(size_t size, char *tag, char *file, int line)
 	if ((NewAllocation = (ALLOCATION_HEADER *)malloc(sizeof(ALLOCATION_HEADER) + size)) == NULL)
 	{
 		logit(LOG_EXIT, "Failed to malloc memory");
-		raise(SIGSEGV);
+		exit(1);
 	}
 
 	memset(NewAllocation, 0, sizeof(ALLOCATION_HEADER) + size);
@@ -206,7 +206,7 @@ void *changemem(void *p, size_t size, char *file, int line)
 		if (m->tag[0] != 'M')
 		{
 			logit(LOG_EXIT, "changemem: memory failed check!");
-			raise(SIGSEGV);
+			exit(1);
 		}
 
 		// if (m == allocation_list)
@@ -220,7 +220,7 @@ void *changemem(void *p, size_t size, char *file, int line)
 		if ((m = (ALLOCATION_HEADER *)realloc(m, sizeof(ALLOCATION_HEADER) + size)) == NULL)
 		{
 			logit(LOG_EXIT, "Failed to realloc memory");
-			raise(SIGSEGV);
+			exit(1);
 		}
 
 		decrement_mem_used(m->tag, m->size);
@@ -239,7 +239,7 @@ void *changemem(void *p, size_t size, char *file, int line)
 		fprintf(mem_log, "Attempting to realloc non-alloced memory, file %s:%d\n", file, line);
 #endif
 		logit(LOG_EXIT, "RECREATE called, but memory not in allocation list!");
-		raise(SIGSEGV);
+		exit(1);
 	}
 
 	return m->body;
@@ -271,7 +271,7 @@ void delmem(void *p, char *file, int line)
 		if (m->tag[0] != 'M')
 		{
 			logit(LOG_EXIT, "delmem: memory failed check!");
-			raise(SIGSEGV);
+			exit(1);
 		}
 
 #if MEMCHK > 1
@@ -299,7 +299,7 @@ void delmem(void *p, char *file, int line)
 		fprintf(mem_log, "Attempting to free non-alloced memory, file %s:%d\n", file, line);
 #endif
 		logit(LOG_EXIT, "FREE called, but memory not in allocation list!");
-		raise(SIGSEGV);
+		exit(1);
 	}
 }
 

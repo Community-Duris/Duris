@@ -712,10 +712,42 @@ int exitnumb_to_cmd(int exitnumb)
  * writes a string to the log
  */
 
+static char *format_variadic_message(const char *prefix, const char *suffix, const char *format, va_list args)
+{
+	va_list copy;
+	int     body_len;
+	size_t  prefix_len;
+	size_t  suffix_len;
+	char   *buf;
+	const char *safe_prefix = prefix ? prefix : "";
+	const char *safe_suffix = suffix ? suffix : "";
+
+	va_copy(copy, args);
+	body_len = vsnprintf(NULL, 0, format, copy);
+	va_end(copy);
+	if (body_len < 0)
+		return NULL;
+
+	prefix_len = strlen(safe_prefix);
+	suffix_len = strlen(safe_suffix);
+	buf        = (char *)malloc(prefix_len + (size_t)body_len + suffix_len + 1);
+	if (!buf)
+		return NULL;
+
+	memcpy(buf, safe_prefix, prefix_len);
+	va_copy(copy, args);
+	vsnprintf(buf + prefix_len, (size_t)body_len + 1, format, copy);
+	va_end(copy);
+	memcpy(buf + prefix_len + (size_t)body_len, safe_suffix, suffix_len);
+	buf[prefix_len + (size_t)body_len + suffix_len] = '\0';
+	return buf;
+}
+
 void logit(const char *filename, const char *format, ...)
 {
 	FILE  *log_f;
-	char   lbuf[MAX_STRING_LENGTH], tbuf[MAX_STRING_LENGTH];
+	char   tbuf[MAX_STRING_LENGTH];
+	char  *lbuf;
 	time_t ct;
 
 	// long ct;
@@ -724,7 +756,6 @@ void logit(const char *filename, const char *format, ...)
 	va_start(args, format);
 	ct = time(0);
 
-	bzero(lbuf, MAX_STRING_LENGTH);
 	bzero(tbuf, MAX_STRING_LENGTH);
 
 	if (str_cmp(filename, LOG_EVENT))
@@ -739,14 +770,15 @@ void logit(const char *filename, const char *format, ...)
 	if (str_cmp(filename, LOG_DEBUG))
 		debugcount++;
 
-	vsprintf(lbuf, format, args);
-
-	strcat(tbuf, lbuf);
-	strcat(tbuf, "\n");
+	lbuf = format_variadic_message(tbuf, "\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 
 	log_f = fopen(filename, "a");
 	if (!log_f)
 	{
+		free(lbuf);
 		if (str_cmp(filename, LOG_FILE))
 			logit(LOG_FILE, "failure opening logfile %s", filename);
 		return;
@@ -755,26 +787,27 @@ void logit(const char *filename, const char *format, ...)
 	{
 		rewind(log_f);
 	}
-	fputs(tbuf, log_f);
+	fputs(lbuf, log_f);
 	fclose(log_f);
 	if (!str_cmp(filename, LOG_EXIT))
 	{
-		perror(tbuf);
+		perror(lbuf);
 	}
-	va_end(args);
+	free(lbuf);
 }
 
 void ereglog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
 	level = MIN(60, level);
-	strcpy(lbuf, "$&+M*** EMAIL REG:&N ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("$&+M*** EMAIL REG:&N ", "\r\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 	for (d = descriptor_list; d; d = d->next)
 	{
 		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) && GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act, PLR_SNOTIFY))
@@ -782,19 +815,20 @@ void ereglog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
+	free(lbuf);
 }
 
 void wizlog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
-	strcpy(lbuf, "&+C*** WIZLOG:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+C*** WIZLOG:&n ", "\r\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -803,7 +837,7 @@ void wizlog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
+	free(lbuf);
 }
 
 void persistence_alert(int level, const char *domain, const char *owner,
@@ -1042,6 +1076,8 @@ int persistence_flush_item_events(int max_events)
     persistence_item_event_queue_clear_dropped();
   }
 
+  persistence_worker_heartbeat_check(0);
+
   return flushed;
 }
 
@@ -1116,7 +1152,8 @@ void persistence_worker_heartbeat_check(int threshold_secs)
     threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
 
   /* Item event worker */
-  if (!persistence_item_event_worker_running())
+  if (!persistence_item_event_worker_stop_pending() &&
+      !persistence_item_event_worker_running())
   {
     age = persistence_item_event_worker_heartbeat_age();
     if (age > 0 && age >= threshold_secs)
@@ -1132,7 +1169,8 @@ void persistence_worker_heartbeat_check(int threshold_secs)
   }
 
   /* Scalar event worker */
-  if (!persistence_scalar_event_worker_running())
+  if (!persistence_scalar_event_worker_stop_pending() &&
+      !persistence_scalar_event_worker_running())
   {
     age = persistence_scalar_event_worker_heartbeat_age();
     if (age > 0 && age >= threshold_secs)
@@ -1148,7 +1186,8 @@ void persistence_worker_heartbeat_check(int threshold_secs)
   }
 
   /* Large event worker */
-  if (!persistence_large_event_worker_running())
+  if (!persistence_large_event_worker_stop_pending() &&
+      !persistence_large_event_worker_running())
   {
     age = persistence_large_event_worker_heartbeat_age();
     if (age > 0 && age >= threshold_secs)
@@ -1588,51 +1627,56 @@ void persistence_record_item_event(const char *event_type, P_obj obj,
                                           actor ? J_NAME(actor) : "system",
                                           "queue_full_flat_fallback");
   }
+
+  persistence_worker_heartbeat_check(0);
 }
 
 void debug(const char *format, ...)
 {
 	P_desc  i;
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 
-	strcpy(lbuf, "&+C*** DEBUG:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+C*** DEBUG:&n ", "\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 	// logit(LOG_DEBUG, lbuf);
 	for (i = descriptor_list; i; i = i->next)
 		if (!i->connected && i->character && IS_TRUSTED(i->character) && IS_SET(i->character->specials.act, PLR_DEBUG))
 			send_to_char(lbuf, i->character);
-	va_end(args);
+	free(lbuf);
 }
 
 void logexp(const char *format, ...)
 {
 	P_desc  i;
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 
-	strcpy(lbuf, "&+C*** EXP:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+C*** EXP:&n ", "\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 	for (i = descriptor_list; i; i = i->next)
 		if (!i->connected && i->character && IS_TRUSTED(i->character) && IS_SET(i->character->specials.act2, PLR2_EXP))
 			send_to_char(lbuf, i->character);
-	va_end(args);
+	free(lbuf);
 }
 
 void loginlog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
-	strcpy(lbuf, "&+c*** LOGMSG:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+c*** LOGMSG:&n ", "\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -1641,20 +1685,20 @@ void loginlog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
+	free(lbuf);
 }
 
 void statuslog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
-	char    sbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
-	strcpy(lbuf, "&+c*** STATUS:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+c*** STATUS:&n ", "\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -1663,24 +1707,24 @@ void statuslog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
 
 	// Remove the newline/carriage return and send it to the log file.
 	lbuf[strlen(lbuf) - 2] = '\0';
 	logit(LOG_STATUS, strip_ansi(lbuf).c_str());
+	free(lbuf);
 }
 
 void epiclog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
-	char    sbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
-	strcpy(lbuf, "&+c*** EPIC:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+c*** EPIC:&n ", "\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -1689,23 +1733,24 @@ void epiclog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
 
 	// Remove the newline/carriage return and send it to the log file.
 	lbuf[strlen(lbuf) - 2] = '\0';
 	logit(LOG_EPIC, strip_ansi(lbuf).c_str());
+	free(lbuf);
 }
 
 void banlog(int level, const char *format, ...)
 {
 	va_list args;
-	char    lbuf[MAX_STRING_LENGTH];
+	char   *lbuf;
 	P_desc  d;
 
-	strcpy(lbuf, "&+y*&+Y*&N&+y*&+Y B&N&+yA&+YN&N&+y:&n ");
 	va_start(args, format);
-	vsprintf(lbuf + strlen(lbuf), format, args);
-	strcat(lbuf, "\r\n");
+	lbuf = format_variadic_message("&+y*&+Y*&N&+y*&+Y B&N&+yA&+YN&N&+y:&n ", "\n", format, args);
+	va_end(args);
+	if (!lbuf)
+		return;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -1714,7 +1759,7 @@ void banlog(int level, const char *format, ...)
 			send_to_char(lbuf, d->character);
 		}
 	}
-	va_end(args);
+	free(lbuf);
 }
 
 void sprintbit(ulong vektor, const char *names[], char *result)
@@ -1983,7 +2028,7 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 	if (!sub)
 	{
 		logit(LOG_EXIT, "No P_char sub found during ac_can_see() call");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	// No idea what happened, but let's hack this until we figure it out.
@@ -2554,7 +2599,7 @@ void ADD_MONEY(P_char ch, int amount)
 	if (amount < 0)
 	{
 		logit(LOG_EXIT, "ADD_MONEY: negative amount");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (amount == 0)
@@ -2792,7 +2837,7 @@ bool SanityCheck(P_char ch, const char *calling)
 		if (ch->specials.was_in_room == NOWHERE && (IS_NPC(ch) && GET_VNUM(ch) != IMAGE_REFLECTION_VNUM))
 		{
 			logit(LOG_EXIT, "%s in NOWHERE in call to SanityCheck from %s().", GET_NAME(ch), calling);
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		else
 		{
@@ -5077,12 +5122,9 @@ void setCharPhysTypeInfo(P_char ch)
 #endif
 	size = getNumbBodyLocsbyPhysType(GET_PHYS_TYPE(ch));
 
-	CREATE(ch->points.location_hit, sh_int, size);
-
-	if (!ch->points.location_hit)
+	if (!(ch->points.location_hit = (sh_int *)__malloc(sizeof(sh_int) * size, MEM_TAG_ARRAY, __FILE__, __LINE__)))
 	{
-		logit(LOG_EXIT, "setCharPhysInfo(): couldn't alloc phys info");
-		raise(SIGSEGV);
+		panic_corruption("utility", "setCharPhysTypeInfo(): couldn't alloc phys info for %s (size %d)", GET_NAME(ch), size);
 	}
 
 	bzero(ch->points.location_hit, sizeof(sh_int) * size);

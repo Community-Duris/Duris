@@ -3478,6 +3478,12 @@ void arti_fixit_sql(P_char ch)
 	P_obj      arti;
 	MYSQL_RES *res;
 	MYSQL_ROW  row = NULL;
+	struct arti_fix_row
+	{
+		int vnum;
+		int location;
+	};
+	std::vector<arti_fix_row> rows;
 
 	if (!qry("SELECT vnum, location FROM artifacts WHERE locType=%d", ARTIFACT_ON_PC))
 	{
@@ -3494,21 +3500,28 @@ void arti_fixit_sql(P_char ch)
 		return;
 	}
 
+	while ((row = mysql_fetch_row(res)))
+	{
+		rows.push_back({atoi(row[0]), atoi(row[1])});
+	}
+	mysql_free_result(res);
+
 	new_time  = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
 	curr_time = (int)time(NULL);
 
 	counter = 0;
 	// Walk through each arti that's on a PC.
-	while ((row = mysql_fetch_row(res)))
+	for (const auto &entry : rows)
 	{
-		vnum     = atoi(row[0]);
-		location = atoi(row[1]);
+		vnum     = entry.vnum;
+		location = entry.location;
 		sql_get_bind_data(vnum, &pid, &timer);
 		timer = curr_time;
 		arti  = read_object(vnum, VIRTUAL);
 		// If the arti is on a different PC, we want to update artifact_bind AND increase the timer to max in artifacts.
 		if (location != pid)
 		{
+			extract_obj(arti);
 			sql_update_bind_data(vnum, &location, &timer);
 			qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d", new_time, vnum);
 			arti_cache_invalidate();
@@ -3522,7 +3535,6 @@ void arti_fixit_sql(P_char ch)
 		}
 		extract_obj(arti);
 	}
-	mysql_free_result(res);
 	if (counter == 0)
 	{
 		send_to_char("All artifact bind_data are up to date.\n\r", ch);
@@ -3568,7 +3580,7 @@ void arti_syncdb_sql(P_char ch)
 	// clear artifacts table (main table used by god view)
 	const char *clear_artifacts_sql = "UPDATE artifacts SET location = 0, owned = 'N', locType = 1, lastUpdate = SYSDATE() "
 									  "WHERE locType = 3 OR locType = 5";
-	if (mysql_real_query(DB, clear_artifacts_sql, strlen(clear_artifacts_sql)) != 0)
+	if (!sql_trace_exec("arti_fixit/clear_artifacts", clear_artifacts_sql, strlen(clear_artifacts_sql), true, false))
 	{
 		send_to_char_f(ch, "Error clearing artifacts: %s\n\r", mysql_error(DB));
 		return;
@@ -3577,18 +3589,18 @@ void arti_syncdb_sql(P_char ch)
 
 	// clear artifacts_mortal table
 	const char *clear_mortal_sql = "UPDATE artifacts_mortal SET location = 0, owned = 'N', locType = 1";
-	mysql_real_query(DB, clear_mortal_sql, strlen(clear_mortal_sql));
+	sql_trace_exec("arti_fixit/clear_mortal", clear_mortal_sql, strlen(clear_mortal_sql), true, false);
 
 	// clear artifact_bind owner_pid for pc-held artifacts
 	const char *clear_bind_sql = "UPDATE artifact_bind SET owner_pid = -1, timer = 0";
-	mysql_real_query(DB, clear_bind_sql, strlen(clear_bind_sql));
+	sql_trace_exec("arti_fixit/clear_bind", clear_bind_sql, strlen(clear_bind_sql), true, false);
 
 	// update artifacts table from player_items
 	const char *sync_artifacts_sql = "UPDATE artifacts a "
 									 "JOIN player_items pi ON pi.vnum = a.vnum "
 									 "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
 									 "SET a.location = pi.pid, a.owned = 'Y', a.locType = 3, a.lastUpdate = SYSDATE()";
-	if (mysql_real_query(DB, sync_artifacts_sql, strlen(sync_artifacts_sql)) != 0)
+	if (!sql_trace_exec("arti_fixit/sync_artifacts", sync_artifacts_sql, strlen(sync_artifacts_sql), true, false))
 	{
 		send_to_char_f(ch, "Error syncing artifacts: %s\n\r", mysql_error(DB));
 		return;
@@ -3600,14 +3612,14 @@ void arti_syncdb_sql(P_char ch)
 								  "JOIN player_items pi ON pi.vnum = am.vnum "
 								  "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
 								  "SET am.location = pi.pid, am.owned = 'Y', am.locType = 3";
-	mysql_real_query(DB, sync_mortal_sql, strlen(sync_mortal_sql));
+	sql_trace_exec("arti_fixit/sync_mortal", sync_mortal_sql, strlen(sync_mortal_sql), true, false);
 
 	// update artifact_bind with owner_pid from player_items
 	const char *sync_bind_sql = "UPDATE artifact_bind ab "
 								"JOIN player_items pi ON pi.vnum = ab.vnum "
 								"JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
 								"SET ab.owner_pid = pi.pid, ab.timer = UNIX_TIMESTAMP()";
-	mysql_real_query(DB, sync_bind_sql, strlen(sync_bind_sql));
+	sql_trace_exec("arti_fixit/sync_bind", sync_bind_sql, strlen(sync_bind_sql), true, false);
 
 	arti_cache_invalidate();
 	send_to_char_f(ch, "Cleared %d, updated %d artifact ownerships from player saves.\n\r", cleared, updated);

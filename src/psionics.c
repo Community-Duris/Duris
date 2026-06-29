@@ -255,7 +255,7 @@ void spell_molecular_control(int level, P_char ch, char *arg, int type, P_char v
 	if (!((level >= 0) && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms in molecular control");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (affected_by_spell(ch, SPELL_MOLECULAR_CONTROL))
 	{
@@ -333,7 +333,7 @@ void spell_aura_sight(int level, P_char ch, char *arg, int type, P_char victim, 
 	if (!((level >= 0) && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms in aura sight");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (affected_by_spell(ch, SPELL_AURA_SIGHT))
 	{
@@ -883,7 +883,7 @@ void spell_psychic_crush(int level, P_char ch, char *arg, int type, P_char victi
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_psychic_crush called in psionics.c with no ch");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (!IS_ALIVE(victim))
 	{
@@ -1111,7 +1111,7 @@ void spell_spinal_corruption(int level, P_char ch, char *arg, int type, P_char v
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_spinal_corruption called in psionics.c without ch");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (!IS_ALIVE(ch))
 	{
@@ -1351,7 +1351,7 @@ void spell_ectoplasmic_form(int level, P_char ch, char *arg, int type, P_char vi
 	if (!((victim || obj) && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms in ectoplasmic form");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (obj)
 	{
@@ -1422,7 +1422,7 @@ void spell_energy_containment(int level, P_char ch, char *arg, int type, P_char 
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms in energy containment");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (affected_by_spell(ch, SPELL_ENERGY_CONTAINMENT))
 	{
@@ -1455,7 +1455,7 @@ void spell_enhance_armor(int level, P_char ch, char *arg, int type, P_char victi
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms in enhance armor");
-		raise(SIGSEGV);
+		exit(1);
 	}
 
 	// Allowing this to stack with other armor spells, since it's "enhance" and there's flesh armor too.
@@ -1637,7 +1637,7 @@ void spell_inertial_barrier(int level, P_char ch, char *arg, int type, P_char vi
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus params (inertial barrier)");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (affected_by_spell(ch, SPELL_INERTIAL_BARRIER))
 	{
@@ -2244,7 +2244,7 @@ void spell_mind_blank(int level, P_char ch, char *arg, int type, P_char victim, 
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus params in mind blank");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (CheckMindflayerPresence(ch))
 	{
@@ -2288,7 +2288,7 @@ void spell_cannibalize(int level, P_char ch, char *arg, int type, P_char victim,
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus params in cannibalize");
-		raise(SIGSEGV);
+		exit(1);
 	}
 
 	if (affected_by_spell(ch, SPELL_CANNIBALIZE))
@@ -2325,7 +2325,7 @@ void spell_tower_iron_will(int level, P_char ch, char *arg, int type, P_char vic
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus params in tower of iron will");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (affected_by_spell(ch, SPELL_TOWER_IRON_WILL))
 	{
@@ -2606,7 +2606,7 @@ void spell_ether_warp(int level, P_char ch, char *arg, int type, P_char victim, 
 	if (!ch) // Something is amiss... Nov08 -Lucrot
 	{
 		logit(LOG_EXIT, "spell_ether_warp called in psionics.c with no ch.");
-		raise(SIGSEGV);
+		exit(1);
 	}
 
 	if (!victim)
@@ -2798,7 +2798,7 @@ void spell_wormhole(int level, P_char ch, char *arg, int type, P_char victim, P_
 	if (!ch) // Something is amiss... Nov08 -Lucrot
 	{
 		logit(LOG_EXIT, "spell_wormhole called in psionics.c with no ch.");
-		raise(SIGSEGV);
+		exit(1);
 	}
 
 	if (!victim)
@@ -2926,7 +2926,7 @@ void spell_excogitate(int level, P_char ch, char *arg, int type, P_char victim, 
 	if (!ch) // Something is amiss... Nov08 -Lucrot
 	{
 		logit(LOG_EXIT, "spell_excogitate called in psionics.c with no ch.");
-		raise(SIGSEGV);
+		exit(1);
 	}
 	if (ch)
 	{

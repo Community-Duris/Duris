@@ -1400,7 +1400,7 @@ void do_innate_decrepify(P_char ch, P_char victim)
 	if (!ch || !victim)
 	{
 		logit(LOG_EXIT, "do_innate_decrepify called in innates.c with no ch or victim");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch && victim)
 	{
@@ -3726,7 +3726,7 @@ bool resists_spell(P_char caster, P_char victim)
 	if (!caster)
 	{
 		logit(LOG_DEBUG, "resists_spell()bogus parms missing ch!! (victim %s'%s').", IS_ALIVE(victim) ? "" : "Dead ", victim ? J_NAME(victim) : "Null");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	// Dead/missing victims don't shrug, although we log a message just in case.

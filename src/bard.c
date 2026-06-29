@@ -146,7 +146,7 @@ void stop_singing(P_char ch)
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_EXIT, "stop_singing in bard.c called without a living ch (%s)", (ch == NULL) ? "NULL" : J_NAME(ch));
-		raise(SIGSEGV);
+		return;
 	}
 
 	for (af = ch->affected; af; af = next_af)
@@ -219,7 +219,7 @@ P_obj has_instrument(P_char ch)
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_EXIT, "has_instrument in bard.c called without ch");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	for (i = WIELD; i <= WEAR_ATTACH_BELT_3; i++)
@@ -410,7 +410,7 @@ int bard_song_level(P_char ch, int song)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "bard_song_level in bard.c called without ch");
-		raise(SIGSEGV);
+		return 1;
 	}
 
 	// If we aren't alive and singing (SINGING checks IS_ALIVE) a valid song, return minimum.
@@ -483,7 +483,7 @@ bool bard_saves(P_char ch, P_char victim, int song)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "bard_saves in bard.c called without ch");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 	// Can't save vs dead bard or dead victim.
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -519,7 +519,7 @@ void do_bardsing(P_char ch, char *arg)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "do_bardsing in bard.c called without ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
@@ -556,7 +556,7 @@ void do_bardcheck_action(P_char ch, char *arg, int cmd)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "do_bardcheck_action in bard.c called without ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
@@ -1030,7 +1030,7 @@ void bard_harming(int lvl, P_char ch, P_char victim, int song)
 	if (!ch) // Hrm something amiss... Nov08 -Lucrot
 	{
 		logit(LOG_EXIT, "bard_harming called in bard.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -1898,7 +1898,7 @@ void do_play(P_char ch, char *arg, int cmd)
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_EXIT, "do_play in bard.c called without a living ch: %s%s.", (ch == NULL) ? "" : "DEAD ", (ch == NULL) ? "NULL" : J_NAME(ch));
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!CAN_SING(ch))

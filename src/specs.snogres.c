@@ -109,7 +109,7 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 				if (!golem)
 				{
 					logit(LOG_EXIT, "assert: error in snogres_flesh_golem() proc");
-					raise(SIGSEGV);
+					return FALSE;
 				}
 				act("$n &+rsuddenly &+Rshambles &+rfor a moment, and a piece of living &+rflesh&n drops to the ground.&n\r\n"
 				    "&+rThe piece of flesh suddenly sprouts four arms and two legs, and begins shambling towards &-L&+RYOU&+R!&n&n\r\n",
@@ -145,7 +145,7 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 		if (!golem)
 		{
 			logit(LOG_EXIT, "assert: error in snogres_flesh_golem() proc");
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		char_to_room(golem, 87798, 0);
 		add_follower(golem, lich);

@@ -630,7 +630,7 @@ void boot_the_quests(void)
 			if (temp <= 0)
 			{
 				perror("Error in boot quest: mob id must be greater than 0\n");
-				raise(SIGSEGV);
+				exit(1);
 			}
 			if (quest_index[number_of_quests].quester < 0)
 			{
@@ -679,7 +679,7 @@ void boot_the_quests(void)
 						else
 						{
 							logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-							raise(SIGSEGV);
+							exit(1);
 						}
 						break;
 					case 'G':
@@ -701,7 +701,7 @@ void boot_the_quests(void)
 									break;
 								default:
 									logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-									raise(SIGSEGV);
+									exit(1);
 							}
 							gp->number = 0;
 							fscanf(quest_f, " %d \n", &(gp->number));
@@ -711,7 +711,7 @@ void boot_the_quests(void)
 						else
 						{
 							logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-							raise(SIGSEGV);
+							exit(1);
 						}
 						break;
 					case 'R':
@@ -736,7 +736,7 @@ void boot_the_quests(void)
 									break;
 								default:
 									logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-									raise(SIGSEGV);
+									exit(1);
 							}
 							gp->number = 0;
 							fscanf(quest_f, " %d \n", &(gp->number));
@@ -751,17 +751,17 @@ void boot_the_quests(void)
 						else
 						{
 							logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-							raise(SIGSEGV);
+							exit(1);
 						}
 						break;
 					default:
 						logit(LOG_EXIT, "Error in boot quest: quester %d, letterStrn=%s.\n", mob_index[quest_index[number_of_quests].quester].virtual_number, letterStrn);
-						raise(SIGSEGV);
+						exit(1);
 				}
 				if (!fscanf(quest_f, " %s \n", letterStrn))
 				{
 					logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-					raise(SIGSEGV);
+					exit(1);
 				}
 			}
 		}
@@ -772,7 +772,7 @@ void boot_the_quests(void)
 		else
 		{
 			logit(LOG_EXIT, "Error in boot quest: quester #%d.\n", number_of_quests);
-			raise(SIGSEGV);
+			exit(1);
 		}
 	}
 	fclose(quest_f);
@@ -780,7 +780,7 @@ void boot_the_quests(void)
 	if (number_of_quests == MAX_QUESTS)
 	{
 		logit(LOG_EXIT, "\t\tMaximum of %d quests exceeded\n", MAX_QUESTS);
-		raise(SIGSEGV);
+		exit(1);
 	}
 	fprintf(stderr, "\t\t%d quests allocated\n", number_of_quests);
 

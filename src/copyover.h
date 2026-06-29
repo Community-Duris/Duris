@@ -148,9 +148,10 @@ extern int copyover_boot;
 
 // main copyover functions
 void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc);
-void copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc);
+int  copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc);
 void copyover_restore_combat(void);
 int  is_copyover_boot(void);
+void copyover_clear_boot(void);
 
 // helper to clear fd_cloexec on accepted sockets
 void copyover_prepare_socket(int fd);

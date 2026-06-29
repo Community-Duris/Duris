@@ -1061,36 +1061,23 @@ void epic_zone_balance()
 	long                   lt;
 	vector<epic_zone_data> epic_zones = get_epic_zones();
 
+	bool                   touch_last;
+
 	for (i = 0; i < epic_zones.size(); i++)
 	{
-		if (!qry("SELECT alignment, UNIX_TIMESTAMP(last_touch) FROM zones WHERE number = %d", epic_zones[i].number))
-			return;
-
-		MYSQL_RES *res = mysql_store_result(DB);
-
-		int rowCount = mysql_num_rows(res);
-
-		if (rowCount < 1)
-		{
-			mysql_free_result(res);
-			return;
-		}
-
-		MYSQL_ROW row = mysql_fetch_row(res);
-
-		if (row)
-		{
-			alignment = atoi(row[0]);
-			lt        = rowCount > 1 ? atol(row[1]) : 0;
-		}
-
-		mysql_free_result(res);
+		touch_last = false;
+		alignment  = epic_zones[i].alignment;
+		lt         = epic_zones[i].last_touch;
 
 		if (lt == 0)
-			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
+			touch_last = true;
 
 		if ((alignment == 0))
+		{
+			if (touch_last)
+				db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
 			continue;
+		}
 
 		// debug("zone %d alignment %d", epic_zones[i].number, alignment);
 
@@ -1102,10 +1089,12 @@ void epic_zone_balance()
 				delta = 1;
 
 			// debug("calling update_epic_zone_alignment");
-			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
+			touch_last = true;
 			update_epic_zone_alignment(epic_zones[i].number, delta);
-			continue;
 		}
+
+		if (touch_last)
+			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
 	}
 }
 
@@ -1697,7 +1686,12 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
   snprintf(buff2, MAX_STRING_LENGTH, "Total: &+W%d&n esp, %s&n refunded\r\n", point_refund, coin_stringv(coins_refund));
   send_to_char(buff2, ch);
 
-  insert_money_pickup(GET_PID(t_ch), coins_refund);
+  if (!insert_money_pickup(GET_PID(t_ch), coins_refund))
+  {
+    logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(t_ch));
+    ADD_MONEY(t_ch, coins_refund);
+    send_to_char("&+WEpic refund could not be staged, so it was credited directly instead.&n\r\n", ch);
+  }
   t_ch->only.pc->epic_skill_points += point_refund;
 
   snprintf(buff2, MAX_STRING_LENGTH, "\r\n&+GYour epic skills have been reset: your skill points have been refunded, \r\n&+Gand %s&+G has been reimbursed and is waiting for you at the nearest auction
@@ -2028,7 +2022,7 @@ vector<epic_zone_data> get_epic_zones()
 	return zones;
 #else
 
-	if (!qry("SELECT number, name, frequency_mod, alignment FROM zones WHERE epic_type > 0 ORDER BY (suggested_group_size*epic_payout), id"))
+	if (!qry("SELECT number, name, frequency_mod, alignment, UNIX_TIMESTAMP(last_touch) FROM zones WHERE epic_type > 0 ORDER BY (suggested_group_size*epic_payout), id"))
 	{
 		return zones;
 	}
@@ -2039,7 +2033,7 @@ vector<epic_zone_data> get_epic_zones()
 
 	while ((row = mysql_fetch_row(res)))
 	{
-		zones.push_back(epic_zone_data(atoi(row[0]), string(row[1]), atof(row[2]), atoi(row[3])));
+		zones.push_back(epic_zone_data(atoi(row[0]), string(row[1]), atof(row[2]), atoi(row[3]), row[4] ? atol(row[4]) : 0));
 	}
 
 	mysql_free_result(res);
@@ -2140,7 +2134,8 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 	  snprintf(buff2, MAX_STRING_LENGTH, "Total: &+W%d&n esp, %s&n refunded\r\n", point_refund, coin_stringv(coins_refund));
 	  send_to_char(buff2, ch);
 
-	  insert_money_pickup(GET_PID(t_ch), coins_refund);
+	  if (!insert_money_pickup(GET_PID(t_ch), coins_refund))
+	    logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(t_ch));
 	  t_ch->only.pc->epic_skill_points += point_refund;
 
 	  snprintf(buff2, MAX_STRING_LENGTH, "\r\n&+GYour epic skills have been reset: your skill points have been refunded, \r\n&+Gand %s&+G has been reimbursed and is waiting for you at the nearest
@@ -2149,7 +2144,8 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 	if (!send_to_pid(buff2, GET_PID(t_ch)))
 		send_to_pid_offline(buff2, GET_PID(t_ch));
 
-	do_save_silent(t_ch, 1);
+	if (!do_save_silent(t_ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic reset refund.", GET_NAME(t_ch));
 }
 
 void do_epic_reset(P_char ch, char *arg, int cmd)
@@ -2249,7 +2245,8 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 	  snprintf(buff2, MAX_STRING_LENGTH, "Total: &+W%d&n esp, %s&n refunded\r\n", point_refund, coin_stringv(coins_refund));
 	  send_to_char(buff2, ch);
 
-	  insert_money_pickup(GET_PID(t_ch), coins_refund);
+	  if (!insert_money_pickup(GET_PID(t_ch), coins_refund))
+	    logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(t_ch));
 	  t_ch->only.pc->epic_skill_points += point_refund;
 
 	  snprintf(buff2, MAX_STRING_LENGTH, "\r\n&+GYour epic skills have been reset: your skill points have been refunded, \r\n&+Gand %s&+G has been reimbursed and is waiting for you at the nearest
@@ -2258,7 +2255,8 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 	if (!send_to_pid(buff2, GET_PID(t_ch)))
 		send_to_pid_offline(buff2, GET_PID(t_ch));
 
-	do_save_silent(t_ch, 1);
+	if (!do_save_silent(t_ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic reset refund.", GET_NAME(t_ch));
 }
 
 // This is here to clear out the racial skills set along with the tag TAG_RACIAL_SKILLS
@@ -2330,7 +2328,8 @@ void clear_racial_skills(P_char ch)
 
 	affect_from_char(ch, TAG_RACIAL_SKILLS);
 
-	do_save_silent(ch, 1); // racial skills require a save.
+	if (!do_save_silent(ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after clearing racial skills.", GET_NAME(ch)); // racial skills require a save.
 }
 
 void refund_epic_skills(P_char ch)
@@ -2375,7 +2374,12 @@ void refund_epic_skills(P_char ch)
 		}
 		ch->only.pc->skills[skl].learned = ch->only.pc->skills[skl].taught = 0;
 	}
-	insert_money_pickup(GET_PID(ch), coins_refund);
+	if (!insert_money_pickup(GET_PID(ch), coins_refund))
+	{
+		logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(ch));
+		ADD_MONEY(ch, coins_refund);
+		send_to_char("&+WEpic refund could not be staged, so it was credited directly instead.&n\r\n", ch);
+	}
 	ch->only.pc->epics += point_refund;
 	debug("%s getting epic-skill refund of %d epics and %s.", GET_NAME(ch), point_refund, coin_stringv(coins_refund));
 	logit(LOG_EPIC, "%s getting epic-skill refund of %d epics and %s coins.", GET_NAME(ch), point_refund, comma_string(coins_refund));

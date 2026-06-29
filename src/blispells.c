@@ -40,11 +40,8 @@ void spell_thornskin(int level, P_char ch, char *arg, int type, P_char victim, P
 	struct affected_type af1;
 	bool                 shown;
 
-	if (!ch)
-	{
-		logit(LOG_EXIT, "spell_thornskin called in magic.c with no ch");
-		raise(SIGSEGV);
-	}
+	if (!require_char(ch, "spell_thornskin", "called in magic.c with no ch"))
+		return;
 	if (!IS_ALIVE(ch))
 	{
 		act("Lay still, you seem to be dead!", TRUE, ch, 0, 0, TO_CHAR);
@@ -1041,11 +1038,8 @@ void spell_faluzures_vitality(int level, P_char ch, char *arg, int type, P_char 
 	bool                 message    = FALSE;
 	int                  healpoints = 3 * level + level / 2;
 
-	if (!ch)
-	{
-		logit(LOG_EXIT, "spell_faluzures_vitality: No ch!");
-		raise(SIGSEGV);
-	}
+	if (!require_char(ch, "spell_faluzures_vitality", "No ch!"))
+		return;
 
 	if (affected_by_spell(ch, SPELL_ESHABALAS_VITALITY))
 	{

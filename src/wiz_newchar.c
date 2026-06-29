@@ -351,8 +351,8 @@ void do_newchar(P_char ch, char *argument, int cmd)
 
 	// link to account via direct sql
 	{
-		char account_sql[MAX_STRING_LENGTH];
-		char name_sql[MAX_STRING_LENGTH];
+		char account_sql[MAX_STRING_LENGTH * 2 + 1];
+		char name_sql[MAX_STRING_LENGTH * 2 + 1];
 
 		mysql_str(ch->desc->account->acct_name, account_sql);
 		mysql_str(newch->player.name, name_sql);

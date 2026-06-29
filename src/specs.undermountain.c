@@ -293,7 +293,7 @@ int magebane_falchion(P_obj obj, P_char ch, int cmd, char *arg)
 	if (!obj)
 	{
 		logit(LOG_EXIT, "magebane_falchion() called with null obj");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 	/*
 	  okay.  Deal with the periodic calls first.... periodics are known as ch,

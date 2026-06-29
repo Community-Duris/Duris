@@ -41,12 +41,6 @@ struct mm_ds *mm_create(const char *name, size_t size, size_t next_off, unsigned
 	struct mm_ds_list *list_entry;
 
 	CREATE(mmds, mm_ds, 1, MEM_TAG_MEMMAN);
-
-	if (!mmds)
-	{
-		logit(LOG_EXIT, "Unable to create memory management data structure!");
-		raise(SIGSEGV);
-	}
 	strncpy(mmds->name, name, 7);
 	mmds->name[7] = '\0';
 
@@ -132,9 +126,8 @@ void mm_alloc_chunk(struct mm_ds *mmds)
 	{
 		int tmp_errno = errno;
 
-		logit(LOG_EXIT, "Unable to allocate mm_ memory");
-		logit(LOG_EXIT, "   mmap() failed, errno = %d", tmp_errno);
-		raise(SIGSEGV);
+		fatal_boot_error("mm", "mmap failed for pool '%s' (%zu bytes): %s", mmds->name, howmuch,
+		                 strerror(tmp_errno));
 	}
 	/*
 	   should I memset it to all 0's?

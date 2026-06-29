@@ -168,16 +168,10 @@ void mobsay(P_char ch, const char *msg)
 		return;
 
 	if (!msg || !*msg)
-	{
-		logit(LOG_EXIT, "No text in mobsay()");
-		raise(SIGSEGV);
-	}
+		return;
 	if (strlen(msg) > (MAX_INPUT_LENGTH - 1))
-	{
-		logit(LOG_EXIT, "text too long in mobsay()");
-		raise(SIGSEGV);
-	}
-	strcpy(Gbuf, msg);
+		logit(LOG_DEBUG, "mobsay(): truncating overlong text");
+	snprintf(Gbuf, sizeof(Gbuf), "%s", msg);
 	do_say(ch, Gbuf, -4);
 }
 
@@ -1321,7 +1315,7 @@ char *fread_action(FILE *fl)
 		if (feof(fl))
 		{
 			logit(LOG_EXIT, "Fread_action - unexpected EOF.");
-			raise(SIGSEGV);
+			fatal_boot_error("actcomm", "fread_action: unexpected EOF");
 		}
 		if (*buf == '#')
 			return (0);
@@ -1341,7 +1335,7 @@ void boot_social_messages(void)
 	if (!(fl = fopen(SOCMESS_FILE, "r")))
 	{
 		logit(LOG_EXIT, "boot_social_messages");
-		raise(SIGSEGV);
+		fatal_boot_error("actcomm", "boot_social_messages: could not open %s: %s", SOCMESS_FILE, strerror(errno));
 	}
 	for (;;)
 	{
@@ -1823,7 +1817,7 @@ void boot_pose_messages(void)
 	if (!(fl = fopen(POSEMESS_FILE, "r")))
 	{
 		logit(LOG_EXIT, "boot_pose_messages");
-		raise(SIGSEGV);
+		fatal_boot_error("actcomm", "boot_pose_messages: could not open %s: %s", POSEMESS_FILE, strerror(errno));
 	}
 	for (counter = 0; counter < MAX_MESSAGES; counter++)
 		pose_messages[counter].level = -1;

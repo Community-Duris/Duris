@@ -547,7 +547,8 @@ void do_outpost(P_char ch, char *arg, int cmd)
 			if (!building)
 			{
 				wizlog(56, "Failed to get building id from rubble.");
-				raise(SIGSEGV);
+				send_to_char("Can't find building associated with outpost, tell a god.\r\n", ch);
+				return;
 			}
 			op = building->get_mob();
 			if (GET_ASSOC(ch))

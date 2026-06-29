@@ -31,11 +31,15 @@ struct epic_trophy_data
 
 struct epic_zone_data
 {
-	epic_zone_data(int _number, string _name, float _freq, int _alignment) : number(_number), name(_name), freq(_freq), alignment(_alignment) {}
+	epic_zone_data(int _number, string _name, float _freq, int _alignment, long _last_touch = 0)
+	    : number(_number), name(_name), freq(_freq), alignment(_alignment), last_touch(_last_touch)
+	{
+	}
 	int    number;
 	string name;
 	float  freq;
 	int    alignment;
+	long   last_touch;
 	int    displayed_alignment() const;
 };
 

@@ -9,8 +9,13 @@
  */
 
 #include "defines.h"
+#include "prototypes.h"
 #include "objmisc.h"
 #include "spells.h"
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // #include <vector>
 // using namespace std;
@@ -1204,3 +1209,57 @@ char *modifier_descs[100];
 int   num_appearances;
 int   num_shapes;
 int   num_modifiers;
+
+static void fatal_message_v(const char *component, const char *fmt, va_list ap)
+{
+	char msg[MAX_STRING_LENGTH];
+	const char *site = component ? component : "fatal";
+
+	vsnprintf(msg, sizeof(msg), fmt ? fmt : "", ap);
+	logit(LOG_EXIT, "%s: %s", site, msg);
+	fprintf(stderr, "%s: %s\n", site, msg);
+}
+
+void fatal_boot_error(const char *component, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fatal_message_v(component, fmt, ap);
+	va_end(ap);
+	exit(EXIT_FAILURE);
+}
+
+void panic_corruption(const char *component, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fatal_message_v(component, fmt, ap);
+	va_end(ap);
+	abort();
+}
+
+bool require_char(P_char ch, const char *component, const char *fmt, ...)
+{
+	if (ch)
+		return true;
+
+	va_list ap;
+	va_start(ap, fmt);
+	fatal_message_v(component, fmt, ap);
+	va_end(ap);
+	return false;
+}
+
+bool require_data(const void *data, const char *component, const char *fmt, ...)
+{
+	if (data)
+		return true;
+
+	va_list ap;
+	va_start(ap, fmt);
+	fatal_message_v(component, fmt, ap);
+	va_end(ap);
+	return false;
+}

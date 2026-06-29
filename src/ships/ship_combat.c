@@ -466,13 +466,13 @@ bool sink_ship(P_ship ship, P_ship attacker)
 				{
 					ship_gain_frags(contacts[i].ship, ship, frag_gain);
 					ship_gain_money(contacts[i].ship, ship, salvage, bounty);
-					write_ship(contacts[i].ship);
+					queue_ship_save(contacts[i].ship, "combat reward");
 				}
 			}
 		}
 
 		ship_loss_on_sink(ship, attacker, frag_gain);
-		write_ship(ship);
+		queue_ship_save(ship, "sink resolution");
 
 		if (attacker->target == ship)
 		{

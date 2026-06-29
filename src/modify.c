@@ -1461,7 +1461,11 @@ int mob_do_rename_hook(P_char npc, P_char ch, int cmd, char *arg)
 		{
 			return TRUE;
 		}
-		rename_ship_owner(old_name, new_name);
+		if (!rename_ship_owner(old_name, new_name))
+		{
+			send_to_char("Ship ownership update failed.\r\n", ch);
+			return FALSE;
+		}
 		SUB_MONEY(ch, renamePrice, 0);
 
 		snprintf(buffer, MAX_STRING_LENGTH, "&+WCongratulations! From now on you will be known as %s!\r\n", GET_NAME(ch));

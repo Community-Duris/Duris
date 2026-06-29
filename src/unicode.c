@@ -1,4 +1,5 @@
 #include "unicode.h"
+#include "prototypes.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,7 +21,7 @@ ushort unimap::operator[](int c) const
 void unimap::set(int c, ushort v)
 {
 	if (c < 0 || c >= (1 << 21))
-		abort();
+		panic_corruption("unicode", "codepoint out of range: %d", c);
 
 	// radix with fanout of 128 (7 bits)
 	// levels are: Global/Segment/Page/char

@@ -118,7 +118,7 @@ void spell_frost_beam(int level, P_char ch, char *arg, int type, P_char victim, 
 	if (!ch)
 	{
 		logit(LOG_EXIT, "spell_frost_beam called in magic.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!victim)
@@ -182,7 +182,7 @@ void spell_faerie_sight(int level, P_char ch, char *arg, int type, P_char victim
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "spell_faerie_sight: bogus params.");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (affected_by_spell(victim, SPELL_FAERIE_SIGHT))
@@ -286,7 +286,7 @@ void spell_cold_snap(int level, P_char ch, char *arg, int type, P_char victim, P
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus params");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (affected_by_spell(victim, SPELL_COLD_SNAP))
@@ -545,7 +545,7 @@ void spell_windwalk(int level, P_char ch, char *arg, int type, P_char victim, P_
 	if (!ch)
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (IS_PC(ch))

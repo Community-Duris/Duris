@@ -539,8 +539,7 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 	if (!ch || !max_distance || (act_mask & no_act_mask))
 	{
 		logit(LOG_EXIT, "shout_and_hunt proc called with bogus params");
-		raise(SIGSEGV);
-		;
+		return FALSE;
 	}
 
 	if (IS_PC(ch))
@@ -789,7 +788,7 @@ void load_justice_area(void)
 		perror("fopen");
 		logit(LOG_FILE, "justice_area: could not open file.");
 		logit(LOG_SYS, "justice_area: could not open file.");
-		raise(SIGSEGV);
+		return;
 	}
 
 	do

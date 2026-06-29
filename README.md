@@ -111,10 +111,21 @@ mysql -u duris -p duris < src/duris.sql
 
 ### 4. Apply Migrations
 
+This branch does **not** use an in-process automigration feature at boot.
+Run schema changes explicitly with a shell script or direct `mysql` import.
+
 ```bash
-# Apply frag leaderboard tables (if using web statistics):
-mysql -u duris -p duris_dev < sql/migrations/add_frag_leaderboard_tables.sql
+# Safe consolidated bootstrap/migration for new or existing databases
+mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
 ```
+
+`migrations/bootstrap_multithread_safe.sql` is the recommended migration file for this branch.
+
+It is safe because:
+- it is **idempotent**: tables and indexes are created with `IF NOT EXISTS` or guarded with `information_schema` checks
+- it is **non-destructive**: it does not use `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, or column-drop operations
+- it is designed to work on both **fresh databases** and **already-migrated databases**
+- it can be run **multiple times** without wiping data or duplicating schema objects
 
 **Note:** The frag leaderboard tables will be automatically populated as players log in and save. No manual population is needed.
 
@@ -170,7 +181,7 @@ ln -s /var/lib/dehydrated/certs/testduris.net/privkey.pem duris.key
 
 ```bash
 cd src
-make -f Makefile.linux
+make
 cp dms_new ../dms
 ```
 
@@ -193,21 +204,21 @@ This rebuilds the missing `areas/make_*` helper binaries, then generates the com
 
 ```bash
 cd src
-make -f Makefile.linux clean
-make -f Makefile.linux
+make clean
+make
 cp dms_new ../dms
 ```
 
 ### Build Configuration
 
-The build is configured in `src/Makefile.linux`:
+The build is configured in `src/Makefile`:
 
 - **MySQL Enabled:** MySQL support is enabled by default
 - **Test Mode:** `TEST_MUD` flag is enabled for development builds
 
 To disable MySQL (not recommended):
 ```bash
-# Edit src/Makefile.linux and uncomment:
+# Edit src/Makefile and uncomment:
 # CFLAGS += -D__NO_MYSQL__
 ```
 
@@ -235,7 +246,7 @@ Database connection settings are **hardcoded** in `src/sql.h` (lines 6-16):
 
 **Important Notes:**
 - These credentials are compiled into the binary
-- Changes require recompilation: `cd src && make -f Makefile.linux clean && make -f Makefile.linux`
+- Changes require recompilation: `cd src && make clean && make`
 - For production: Change `DB_PASSWD` to a secure password before compiling
 - Default credentials: **user:** `duris`, **password:** `duris`
 
@@ -393,8 +404,8 @@ sudo apt-get install libmysqlclient-dev
 ```bash
 # Clean and rebuild:
 cd src
-make -f Makefile.linux clean
-make -f Makefile.linux
+make clean
+make
 ```
 
 ---

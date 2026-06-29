@@ -37,6 +37,7 @@
 extern P_desc                 descriptor_list;
 extern P_index                obj_index;
 extern P_obj                  object_list;
+extern P_char                 character_list;
 extern P_room                 world;
 extern const int              top_of_world;
 extern int                    top_of_objt;
@@ -98,7 +99,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (!o_obj || !ch)
 	{
 		logit(LOG_EXIT, "call to get with NULL obj or ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (o_obj->condition <= 0)
@@ -893,24 +894,24 @@ void do_get(P_char ch, char *argument, int cmd)
 									{
 										CharWait(ch, PULSE_VIOLENCE);
 									}
-								}
-								get(ch, o_obj, s_obj, TRUE);
-
-								found = TRUE;
-								if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
-									if (s_obj->value[3] > 0)
-										s_obj->value[3]--;
-							}
-							else
-							{
-								snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takable.\r\n", o_obj->short_description);
-								send_to_char(Gbuf3, ch);
-								fail = TRUE;
-							}
-						}
-						else
-						{
-							snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy.\r\n", o_obj->short_description);
+									}
+									get(ch, o_obj, s_obj, TRUE);
+									total++;
+									if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
+										if (s_obj->value[3] > 0)
+											s_obj->value[3]--;
+									found = TRUE;
+									}
+					else
+					{
+snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takable.\r\n", o_obj->short_description);
+									send_to_char(Gbuf3, ch);
+									fail = TRUE;
+									}
+									}
+					else
+					{
+snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy.\r\n", o_obj->short_description);
 							send_to_char(Gbuf3, ch);
 							fail = TRUE;
 						}
@@ -1166,6 +1167,13 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 			return;
 		}
 
+		if (ch->in_room == NOWHERE)
+		{
+			logit(LOG_EXIT, "do_dropalldot: ch in NOWHERE");
+			send_to_char("You can't drop coins here.\r\n", ch);
+			return;
+		}
+
 		snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coin%s.\n\r", copp, silv, gold, plat, ((plat + gold + silv + copp) > 1) ? "s" : "");
 		act(Gbuf3, TRUE, ch, 0, 0, TO_CHAR);
 		act("$n drops some coins.", TRUE, ch, 0, 0, TO_ROOM);
@@ -1183,13 +1191,7 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 			logit(LOG_DEBUG, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch), plat, gold, silv, copp, world[ch->in_room].number);
 		}
 
-		if (tmp_object && (ch->in_room != NOWHERE))
-			obj_to_room(tmp_object, ch->in_room);
-		else
-		{
-			logit(LOG_EXIT, "do_dropalldot: no tmp_object or ch in NOWHERE");
-			raise(SIGSEGV);
-		}
+		obj_to_room(tmp_object, ch->in_room);
 
 		if (IS_PC(ch))
 		{
@@ -1337,6 +1339,12 @@ void do_drop(P_char ch, char *argument, int cmd)
 				break;
 		}
 
+		if (ch->in_room == NOWHERE)
+		{
+			send_to_char("You can't drop coins here.\r\n", ch);
+			return;
+		}
+
 		if (cmd == 1 && IS_PC(ch))
 			send_to_char("Oops, trying to juggle too many loose coins, you drop a few.\r\n", ch);
 		else
@@ -1399,7 +1407,7 @@ void do_drop(P_char ch, char *argument, int cmd)
 			else
 			{
 				logit(LOG_EXIT, "do_drop: no tmp_object or ch in NOWHERE");
-				raise(SIGSEGV);
+				return;
 			}
 		}
 		if (IS_PC(ch))
@@ -2181,14 +2189,71 @@ void weight_change_object(P_obj obj, int weight)
 	}
 	else if (OBJ_WORN(obj))
 	{
+		P_char found = NULL;
+		int    found_pos = -1;
+
 		tmp_ch = obj->loc.wearing;
-		for (pos = 0; pos < MAX_WEAR; pos++)
-			if (tmp_ch->equipment[pos] == obj)
-				break;
-		if (pos >= MAX_WEAR)
+		if (tmp_ch && !char_in_list(tmp_ch))
 		{
-			logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
-			raise(SIGSEGV);
+			logit(LOG_DEBUG, "weight_change_object: stale wearer pointer, obj=%s", obj->short_description ? obj->short_description : "unknown");
+			tmp_ch = NULL;
+		}
+
+		if (!tmp_ch)
+		{
+			for (found = character_list; found; found = found->next)
+			{
+				for (pos = 0; pos < MAX_WEAR; pos++)
+					if (found->equipment[pos] == obj)
+						break;
+				if (pos < MAX_WEAR)
+					{
+						found_pos = pos;
+						break;
+					}
+			}
+
+			if (found_pos < 0)
+			{
+				logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
+				obj->weight += weight;
+				obj->loc_p       = LOC_NOWHERE;
+				obj->loc.wearing = NULL;
+				return;
+			}
+
+			tmp_ch = found;
+			pos    = found_pos;
+		}
+		else
+		{
+			for (pos = 0; pos < MAX_WEAR; pos++)
+				if (tmp_ch->equipment[pos] == obj)
+					break;
+			if (pos >= MAX_WEAR)
+			{
+				logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
+				for (found = character_list; found; found = found->next)
+				{
+					for (found_pos = 0; found_pos < MAX_WEAR; found_pos++)
+						if (found->equipment[found_pos] == obj)
+							break;
+					if (found_pos < MAX_WEAR)
+						break;
+				}
+				if (found && found_pos < MAX_WEAR)
+				{
+					tmp_ch = found;
+					pos    = found_pos;
+				}
+				else
+				{
+					obj->weight += weight;
+					obj->loc_p       = LOC_NOWHERE;
+					obj->loc.wearing = NULL;
+					return;
+				}
+			}
 		}
 		unequip_char(tmp_ch, pos);
 		obj->weight += weight;
@@ -2555,7 +2620,8 @@ void do_eat(P_char ch, char *argument, int cmd)
 			// GET_EXP(ch) = new_exp_table[GET_LEVEL(ch)];
 			statuslog(ch->player.level, "&+CLevel:&n (%s&n) just ate level mushroom at [%d]!", GET_NAME(ch), (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
 			advance_level(ch);
-			do_save_silent(ch, 1);
+			if (!do_save_silent(ch, 1))
+				logit(LOG_DEBUG, "Failed to save %s after level mushroom.", GET_NAME(ch));
 			extract_obj(temp);
 			return;
 		}

@@ -461,12 +461,20 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 		return TRUE;
 	}
 
+	int old_plat   = pl->points.cash[0];
+	int old_gold   = pl->points.cash[1];
+	int old_silver = pl->points.cash[2];
+	int old_copper = pl->points.cash[3];
+	int old_epics  = pl->only.pc->epics;
+	int old_skill  = pl->only.pc->skills[skl].learned;
+	int old_taught = pl->only.pc->skills[skl].taught;
+
 	snprintf(buffer,
-	         MAX_STRING_LENGTH,
-	         "$n takes you aside and teaches you the finer points of &+W%s&n.\n"
-	         "&+cYou feel your skill in %s improving.&n\n",
-	         skills[skl].name,
-	         skills[skl].name);
+         MAX_STRING_LENGTH,
+         "$n takes you aside and teaches you the finer points of &+W%s&n.\n"
+         "&+cYou feel your skill in %s improving.&n\n",
+         skills[skl].name,
+         skills[skl].name);
 	act(buffer, FALSE, ch, 0, pl, TO_VICT);
 
 	SUB_MONEY(pl, coins_cost, 0);
@@ -483,7 +491,19 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 		snprintf(buffer, MAX_STRING_LENGTH, "You have mastered &+W%s&N.\n", skills[skl].name);
 		send_to_char(buffer, pl);
 	}
-	do_save_silent(pl, 1); // Epic stats require a save.
+	if (!do_save_silent(pl, 1))
+	{
+		pl->points.cash[0] = old_plat;
+		pl->points.cash[1] = old_gold;
+		pl->points.cash[2] = old_silver;
+		pl->points.cash[3] = old_copper;
+		pl->only.pc->epics = old_epics;
+		pl->only.pc->skills[skl].learned = old_skill;
+		pl->only.pc->skills[skl].taught = old_taught;
+		send_to_char("Your purchase could not be recorded. Please try again later.\n", pl);
+		logit(LOG_WIZ, "Failed to save %s after epic skill purchase.", GET_NAME(pl));
+		return TRUE;
+	}
 	CharWait(pl, PULSE_VIOLENCE);
 	return TRUE;
 }

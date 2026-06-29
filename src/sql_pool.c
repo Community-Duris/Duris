@@ -41,6 +41,42 @@ static int              pool_size  = 0;
 static pthread_mutex_t  pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t   pool_cond  = PTHREAD_COND_INITIALIZER;
 
+static MYSQL *sql_pool_create_connection(const char *site, int slot)
+{
+	MYSQL *conn = mysql_init(NULL);
+	if (!conn)
+	{
+		logit(LOG_DEBUG, "%s: mysql_init failed for slot %d", site, slot);
+		return NULL;
+	}
+
+	/* Match the main connection: 10-second read/write timeouts. */
+	unsigned int timeout = 10;
+	mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout);
+	mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
+
+	/* Connect with CLIENT_MULTI_STATEMENTS so multi-statement batches work
+	 * through the pool too. Use the shared db-name resolver so every slot
+	 * agrees with the main DB connection about which database to target. */
+	if (!mysql_real_connect(conn,
+	                        DB_HOST,
+	                        DB_USER,
+	                        DB_PASSWD,
+	                        sql_persistence_db_name(),
+	                        DB_PORT,
+	                        NULL,             /* unix_socket */
+	                        CLIENT_MULTI_STATEMENTS))
+	{
+		logit(LOG_DEBUG, "%s: mysql_real_connect failed for slot %d: %s",
+		      site, slot, mysql_error(conn));
+		mysql_close(conn);
+		return NULL;
+	}
+
+	mysql_set_character_set(conn, "utf8mb4");
+	return conn;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Lifecycle                                                          */
 /* ------------------------------------------------------------------ */
@@ -69,12 +105,9 @@ int sql_pool_init(int size)
 
 	for (int i = 0; i < size; i++)
 	{
-		/* mysql_init may reuse an existing handle on failure (historical
-		 * behaviour), but we pass NULL so it allocates a fresh one. */
-		MYSQL *conn = mysql_init(NULL);
+		MYSQL *conn = sql_pool_create_connection("sql_pool_init", i);
 		if (!conn)
 		{
-			logit(LOG_DEBUG, "sql_pool_init: mysql_init failed for slot %d", i);
 			/* Clean up slots already created. */
 			for (int j = 0; j < i; j++)
 			{
@@ -87,48 +120,8 @@ int sql_pool_init(int size)
 			return -1;
 		}
 
-		/* Match the main connection: 10-second read/write timeouts. */
-		unsigned int timeout = 10;
-		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout);
-		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
-
-		/* Store the handle BEFORE connect so cleanup code below can
-		 * close it on failure.  mysql_real_connect() returns NULL on
-		 * error but does not overwrite the input handle, so we close
-		 * the local `conn` directly — it still points to the valid
-		 * mysql_init() handle. */
-		pool[i].conn = conn;
-
-		/* Connect with CLIENT_MULTI_STATEMENTS so multi-statement
-		 * batches (multi-statement batches) work through the pool too. */
-		if (!mysql_real_connect(conn,
-		                        DB_HOST,
-		                        DB_USER,
-		                        DB_PASSWD,
-		                        DB_NAME,
-		                        DB_PORT,
-		                        NULL,             /* unix_socket */
-		                        CLIENT_MULTI_STATEMENTS))
-		{
-			logit(LOG_DEBUG, "sql_pool_init: mysql_real_connect failed for slot %d: %s",
-			      i, mysql_error(conn));
-			mysql_close(conn);
-			pool[i].conn = NULL;
-
-			for (int j = 0; j < i; j++)
-			{
-				if (pool[j].conn)
-					mysql_close(pool[j].conn);
-			}
-			free(pool);
-			pool      = NULL;
-			pool_size = 0;
-			return -1;
-		}
-
-		mysql_set_character_set(conn, "utf8mb4");
-		/* pool[i].conn was set above; conn is still the same pointer. */
-		pool[i].in_use = 0;
+		pool[i].conn    = conn;
+		pool[i].in_use  = 0;
 	}
 
 	logit(LOG_STATUS, "SQL connection pool initialised with %d connections.", size);
@@ -201,15 +194,27 @@ MYSQL *sql_pool_acquire(void)
 
 		/* All busy — block until someone releases. */
 		pthread_cond_wait(&pool_cond, &pool_mutex);
+
+		if (!pool)
+		{
+			pthread_mutex_unlock(&pool_mutex);
+			return NULL;
+		}
 	}
 }
 
 void sql_pool_release(MYSQL *conn)
 {
-	if (!conn || !pool)
+	if (!conn)
 		return;
 
 	pthread_mutex_lock(&pool_mutex);
+
+	if (!pool)
+	{
+		pthread_mutex_unlock(&pool_mutex);
+		return;
+	}
 
 	for (int i = 0; i < pool_size; i++)
 	{
@@ -222,6 +227,49 @@ void sql_pool_release(MYSQL *conn)
 	}
 
 	pthread_mutex_unlock(&pool_mutex);
+}
+
+MYSQL *sql_pool_replace_connection(MYSQL *conn)
+{
+	MYSQL *replacement = NULL;
+
+	if (!conn)
+		return NULL;
+
+	pthread_mutex_lock(&pool_mutex);
+	if (!pool)
+	{
+		pthread_mutex_unlock(&pool_mutex);
+		return NULL;
+	}
+
+	for (int i = 0; i < pool_size; i++)
+	{
+		if (pool[i].conn == conn)
+		{
+			if (pool[i].conn)
+			{
+				mysql_close(pool[i].conn);
+				pool[i].conn = NULL;
+			}
+
+			replacement = sql_pool_create_connection("sql_pool_replace_connection", i);
+			if (!replacement)
+			{
+				pool[i].in_use = 0;
+				pthread_cond_signal(&pool_cond);
+				pthread_mutex_unlock(&pool_mutex);
+				return NULL;
+			}
+
+			pool[i].conn = replacement;
+			pthread_mutex_unlock(&pool_mutex);
+			return replacement;
+		}
+	}
+
+	pthread_mutex_unlock(&pool_mutex);
+	return NULL;
 }
 
 /* ------------------------------------------------------------------ */
@@ -285,6 +333,12 @@ MYSQL *sql_pool_acquire(void)
 void sql_pool_release(MYSQL *conn)
 {
 	(void)conn;
+}
+
+MYSQL *sql_pool_replace_connection(MYSQL *conn)
+{
+	(void)conn;
+	return NULL;
 }
 
 int sql_pool_available(void) { return 0; }

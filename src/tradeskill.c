@@ -2486,7 +2486,13 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// add recipe to database
-	sql_add_player_recipe(GET_PID(ch), recipenumber);
+	if (!sql_add_player_recipe(GET_PID(ch), recipenumber))
+	{
+		send_to_char("Your recipe could not be recorded. Please try again later.\r\n", ch);
+		logit(LOG_DEBUG, "learn_recipe: failed to save recipe %d for %s", recipenumber, GET_NAME(ch));
+		extract_obj(tobj);
+		return TRUE;
+	}
 	act("$n opens their &+Ltome &+yof &+Ycraf&+ytsman&+Lship&n and begins scribing the &+yrecipe&n...\n"
 	    "As they finish the last entry of the &+yrecipe&n, a &+Mbri&+mgh&+Wt &nflash of &+Clight&n appears,\n"
 	    "quickly consuming $p, which vanishes from sight.\r\n",
@@ -2624,7 +2630,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_MUSHROOM, COST_EPIC_MUSHROOM);
 			return TRUE;
@@ -2644,7 +2651,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_FIX_SCROLL, COST_EPIC_FIX_SCROLL);
 			return TRUE;
@@ -2664,7 +2672,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_FAERIE_BAG, COST_EPIC_FAERIE_BAG);
 			return TRUE;
@@ -2684,7 +2693,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_BATTLEROBE, COST_EPIC_BATTLEROBE);
 			return TRUE;
@@ -2704,7 +2714,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_TOCORPSE_POTION, COST_EPIC_TOCORPSE_POTION);
 			return TRUE;
@@ -2724,7 +2735,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_LANTAN_TOOLS, COST_EPIC_LANTAN_TOOLS);
 			return TRUE;
@@ -2746,7 +2758,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Why isn't this set in the zone files?  How peculiar.
 			SET_BIT(obj->bitvector5, AFF5_FOREST_SIGHT);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_FOREST_EYES, COST_EPIC_FOREST_EYES);
 			return TRUE;
@@ -2765,7 +2778,8 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
-			do_save_silent(pl, 1);
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
 			// Log the transaction in epic log file.
 			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_BOTTLE_EPICS, COST_EPIC_BOTTLE_EPICS);
 			return TRUE;
@@ -2827,12 +2841,15 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 					send_to_char("&nGixnif says '&+GI'm sorry, but you do not seem to have the &+Wepics&+G available for me to reset your &+gtradeskill&+G.\r\n&n", pl);
 				return TRUE;
 			}
-			// subtract 200 epics
-			pl->only.pc->epics -= 200;
-
 			// wipe their learned recipes from database
-			sql_delete_player_recipes(GET_PID(pl));
+			if (!sql_delete_player_recipes(GET_PID(pl)))
+			{
+				send_to_char("Your tradeskill reset could not be recorded. Please try again later.\r\n", pl);
+				logit(LOG_WIZ, "Failed to delete learned recipes for %s during tradeskill reset.", GET_NAME(pl));
+				return TRUE;
+			}
 
+			pl->only.pc->epics -= 200;
 			snprintf(buffer, MAX_STRING_LENGTH, "Your teacher takes you aside, and performs a cleansing geasture about your body&n. Your mind feels &+Wrenewed&n!\n");
 			act(buffer, FALSE, ch, 0, pl, TO_VICT);
 			pl->only.pc->skills[SKILL_FORGE].taught  = 0;
@@ -2842,7 +2859,8 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 			pl->only.pc->skills[SKILL_CRAFT].taught  = 0;
 			pl->only.pc->skills[SKILL_CRAFT].learned = 0;
 
-			do_save_silent(pl, 1); // tradeskills require a save.
+			if (!do_save_silent(pl, 1))
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 
 			return TRUE;
@@ -2867,7 +2885,8 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 			pl->only.pc->skills[SKILL_FORGE].taught  = 100;
 			pl->only.pc->skills[SKILL_FORGE].learned = 10;
 			// MIN(100, pl->only.pc->skills[SKILL_FORGE].learned + 10);
-			do_save_silent(pl, 1); // tradeskills require a save.
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 			return TRUE;
 		}
@@ -2889,7 +2908,8 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 			pl->only.pc->skills[SKILL_MINE].taught  = 100;
 			pl->only.pc->skills[SKILL_MINE].learned = 10;
 			// MIN(100, pl->only.pc->skills[SKILL_MINE].learned + 10);
-			do_save_silent(pl, 1); // tradeskills require a save.
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 			return TRUE;
 		}
@@ -2911,7 +2931,8 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 			pl->only.pc->skills[SKILL_CRAFT].taught  = 100;
 			pl->only.pc->skills[SKILL_CRAFT].learned = 10;
 			// MIN(100, pl->only.pc->skills[SKILL_CRAFT].learned + 10);
-			do_save_silent(pl, 1); // tradeskills require a save.
+			if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 			return TRUE;
 		}

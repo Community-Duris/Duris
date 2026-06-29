@@ -34,38 +34,74 @@ bool sql_persistence_execute_raw(const char *sql)
 {
 	MYSQL *db;
 	int ret;
+	bool need_repair = false;
 
 	if (!sql || !*sql)
 		return FALSE;
 
-	/* Acquire from the connection pool.  Each persistence
-	 * worker thread gets its own connection, so we no longer need
-	 * persistence_sql_mutex here — the pool is internally synchronised.
-	 *
-	 * We keep the mutex lock/unlock for callers that still rely on it
-	 * for ordering guarantees, but the connection itself is now
-	 * independently owned per-call. */
-	pthread_mutex_lock(&persistence_sql_mutex);
 	db = sql_persistence_connection();
 	if (!db)
 	{
-		pthread_mutex_unlock(&persistence_sql_mutex);
 		logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_execute_raw() failed - no connection");
 		return FALSE;
 	}
 
+	/* The pool provides one connection per worker, so the raw execution
+	 * path can run concurrently when the pool is active.  Keep the legacy
+	 * singleton serialized if we ever fall back to it before pool init. */
+	if (db == persistenceDB)
+		pthread_mutex_lock(&persistence_sql_mutex);
+
+	sql_clear_results_on(db);
 	ret = mysql_real_query(db, sql, strlen(sql));
-	if (ret)
+	if (!ret)
+	{
+		/* Drain every result set produced by CLIENT_MULTI_STATEMENTS so the
+		 * pooled connection is clean for the next caller.  Ignore the returned
+		 * result set when the statement has no rows; still advance through any
+		 * remaining results until mysql_more_results() is false. */
+		do
+		{
+			MYSQL_RES *res = mysql_store_result(db);
+			if (res)
+				mysql_free_result(res);
+		} while (mysql_more_results(db) && mysql_next_result(db) == 0);
+
+		if (mysql_more_results(db))
+		{
+			logit(LOG_DEBUG,
+			      "Persistence MySQL error in sql_persistence_execute_raw(): %s",
+			      mysql_error(db));
+			logit(LOG_DEBUG,
+			      "Persistence MySQL failed query (first 200 chars): %.200s",
+			      sql);
+			ret = 1;
+			need_repair = (db != persistenceDB);
+		}
+	}
+	else
 	{
 		logit(LOG_DEBUG, "Persistence MySQL error in sql_persistence_execute_raw(): %s", mysql_error(db));
 		logit(LOG_DEBUG, "Persistence MySQL failed query (first 200 chars): %.200s", sql);
+		need_repair = (db != persistenceDB);
+	}
+
+	if (need_repair)
+	{
+		MYSQL *replacement = sql_pool_replace_connection(db);
+		if (replacement)
+			db = replacement;
+		else
+			logit(LOG_DEBUG, "Persistence MySQL: failed to repair pooled connection after query error");
 	}
 
 	/* Release the connection back to the pool so other
 	 * worker threads can use it. */
 	sql_persistence_release_connection(db);
 
-	pthread_mutex_unlock(&persistence_sql_mutex);
+	if (db == persistenceDB)
+		pthread_mutex_unlock(&persistence_sql_mutex);
+
 	return ret == 0;
 }
 #endif /* __NO_MYSQL__ */

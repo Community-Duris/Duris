@@ -926,10 +926,7 @@ void do_hitall(P_char ch, char *arg, int cmd)
 	char   Gbuf2[MAX_STRING_LENGTH];
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "do_hitall call in actnew.c with no ch");
-		raise(SIGSEGV);
-	}
+		return;
 
 	if (!SanityCheck(ch, "do_hitall"))
 	{
@@ -1582,10 +1579,7 @@ P_char morph(P_char ch, int rnum, int mode)
 	int            is_avatar = FALSE, virt;
 
 	if (!ch)
-	{
-		logit(LOG_EXIT, "morph: Bogus ch passed");
-		raise(SIGSEGV);
-	}
+		return NULL;
 	if (IS_NPC(ch) || IS_MORPH(ch))
 	{
 		return NULL;
@@ -1595,15 +1589,15 @@ P_char morph(P_char ch, int rnum, int mode)
 	else
 		mob = read_mobile(rnum, VIRTUAL);
 
-	virt = mob_index[GET_RNUM(mob)].virtual_number;
-	if (virt == EVIL_AVATAR_MOB || virt == GOOD_AVATAR_MOB)
-		is_avatar = TRUE;
-
 	if (!mob)
 	{
 		logit(LOG_EXIT, "morph: Unable to load mob %d", rnum);
-		raise(SIGSEGV);
+		return NULL;
 	}
+
+	virt = mob_index[GET_RNUM(mob)].virtual_number;
+	if (virt == EVIL_AVATAR_MOB || virt == GOOD_AVATAR_MOB)
+		is_avatar = TRUE;
 	while (mob->affected)
 		affect_remove(mob, mob->affected);
 
@@ -1727,7 +1721,8 @@ P_char morph(P_char ch, int rnum, int mode)
 	/*
 	 * force a save at this point, simply because its a smart thing
 	 */
-	writeCharacter(ch, 1, NOWHERE);
+	if (!writeCharacter(ch, 1, NOWHERE))
+		logit(LOG_DEBUG, "Failed to save %s after morph room move.", GET_NAME(ch));
 
 	return mob;
 }
@@ -1741,7 +1736,7 @@ P_char un_morph(P_char mob)
 	if (!mob || IS_PC(mob) || !IS_MORPH(mob))
 	{
 		logit(LOG_EXIT, "un_morph: Bogus morph passed");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	virt = mob_index[GET_RNUM(mob)].virtual_number;
@@ -1758,7 +1753,7 @@ P_char un_morph(P_char mob)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "un_morph: redundant orig pointer is null. Argh!");
-		raise(SIGSEGV);
+		return NULL;
 	}
 	if (mob->desc)
 	{
@@ -1769,7 +1764,6 @@ P_char un_morph(P_char mob)
 		if (ch != mob->desc->original)
 		{
 			logit(LOG_EXIT, "un_morph: redundant original pointers don't match!");
-			raise(SIGSEGV);
 		}
 		/*
 		 * move a snoop from the morph to the owning player
@@ -1868,7 +1862,8 @@ P_char un_morph(P_char mob)
 	char_to_room(ch, in_rm, -1);
 	//  }                           /* shouldn't trigger agg
 	//                               */
-	do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+		logit(LOG_DEBUG, "Failed to save %s after room move.", GET_NAME(ch));
 
 	return ch;
 }
@@ -3604,13 +3599,14 @@ void do_vote(P_char ch, char *arg, int cmd)
 		return;
 	}
 	ip = sql_select_IP_info(ch, ipbuf, sizeof(char) * 255, &lastConnect, &lastDisconnect);
-	fprintf(f, "%s\t%s\t%s\n", ip, J_NAME(ch), vote_options[votes]);
-	ch->only.pc->vote = vote_serial;
-
-	if (f)
+	bool vote_write_ok = fprintf(f, "%s	%s	%s\n", ip, J_NAME(ch), vote_options[votes]) >= 0;
+	bool vote_close_ok = fclose(f) == 0;
+	if (!vote_write_ok || !vote_close_ok)
 	{
-		fclose(f);
+		send_to_char("There was a problem recording your vote, notify a Forger.\r\n", ch);
+		return;
 	}
+	ch->only.pc->vote = vote_serial;
 
 	send_to_char(voted, ch);
 }
@@ -4018,7 +4014,8 @@ void do_craft(P_char ch, char *argument, int cmd)
 		extract_obj(matLowest);
 		extract_obj(matHighest);
 		// Save the character! 1 -> in game.
-		do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+		logit(LOG_DEBUG, "Failed to save %s after heroics reward.", GET_NAME(ch));
 	}
 
 	/*
@@ -4518,13 +4515,24 @@ void do_home(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	SUB_MONEY(ch, cost, 0);
+	int old_hometown        = ch->player.hometown;
+	int old_birthplace      = ch->player.birthplace;
+	int old_orig_birthplace = ch->player.orig_birthplace;
 
 	ch->player.hometown        = world[ch->in_room].number;
 	ch->player.birthplace      = world[ch->in_room].number;
 	ch->player.orig_birthplace = world[ch->in_room].number;
 
-	do_save_silent(ch, 1);
+	if (!do_save_silent(ch, 1))
+	{
+		ch->player.hometown        = old_hometown;
+		ch->player.birthplace      = old_birthplace;
+		ch->player.orig_birthplace = old_orig_birthplace;
+		send_to_char("\r\n&+RYour new birth home could not be saved right now.&n\r\n", ch);
+		return;
+	}
+
+	SUB_MONEY(ch, cost, 0);
 
 	send_to_char("\r\n&+WThank you for the payment and welcome to your new birth home whenever you die you will return here.&n\r\n", ch);
 	return;

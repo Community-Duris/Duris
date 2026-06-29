@@ -33,7 +33,7 @@ run_sql() {
 }
 
 run_sql "set database to server default" "
-ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;"
+ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;"
 
 STEP=$((STEP + 1))
 printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "convert existing tables to database default"
@@ -431,6 +431,30 @@ CREATE TABLE IF NOT EXISTS classes (
     ansi_name VARCHAR(128),
     short_name VARCHAR(8),
     menu_char CHAR(1)
+);"
+
+run_sql "create frag leaderboard table" "
+CREATE TABLE IF NOT EXISTS frag_leaderboard (
+  id int(11) NOT NULL auto_increment,
+  pid bigint(20) NOT NULL,
+  account_name varchar(255) NOT NULL,
+  char_name varchar(255) NOT NULL,
+  total_frags int(11) NOT NULL DEFAULT 0,
+  racewar int(11) NOT NULL,
+  race varchar(50) DEFAULT NULL,
+  class varchar(50) DEFAULT NULL,
+  level int(11) DEFAULT NULL,
+  deleted_at datetime NULL DEFAULT NULL,
+  last_updated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY pid (pid),
+  KEY char_name (char_name),
+  KEY account_name (account_name),
+  KEY total_frags_active (deleted_at, total_frags),
+  KEY racewar_leaderboard (deleted_at, racewar, total_frags),
+  KEY race_leaderboard (deleted_at, race, total_frags),
+  KEY class_leaderboard (deleted_at, class, total_frags),
+  KEY level_range (deleted_at, level, total_frags)
 );"
 
 run_sql "create players_view" "
@@ -2610,6 +2634,17 @@ END //
 DELIMITER ;
 CALL convert_zone_touches_timestamps();
 DROP PROCEDURE IF EXISTS convert_zone_touches_timestamps;"
+
+# additional item_material migrations needed by sql_save_player() and sql_load_player_items()
+run_sql "add item_material columns to item tables" "
+ALTER TABLE corpse_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;
+ALTER TABLE locker_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;
+ALTER TABLE shopkeeper_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;
+ALTER TABLE siege_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;
+ALTER TABLE saved_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;
+ALTER TABLE player_pet_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;
+ALTER TABLE account_locker_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;
+ALTER TABLE player_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT NULL;"
 
 # epic_bonus/epic_gain pid remapping is now handled by the C migration tool
 # (src-migrate/migrate_players.c) which has access to the old pids from pfiles
