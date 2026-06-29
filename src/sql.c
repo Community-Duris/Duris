@@ -806,7 +806,7 @@ void sql_update_account_character(P_char ch)
 
 	// Insert or update account_characters mapping
 	// Using INSERT...ON DUPLICATE KEY UPDATE to preserve created_at for existing records
-	db_query("INSERT INTO account_characters "
+	if (!db_query("INSERT INTO account_characters "
 	         "(account_name, pid, char_name, created_at, deleted_at) "
 	         "VALUES('%s', %ld, '%s', NOW(), NULL) "
 	         "ON DUPLICATE KEY UPDATE "
@@ -816,7 +816,11 @@ void sql_update_account_character(P_char ch)
 	         "deleted_at = NULL",
 	         account_name_sql,
 	         GET_PID(ch),
-	         char_name_sql);
+	         char_name_sql))
+	{
+		logit(LOG_DEBUG, "sql_update_account_character: failed for %s", GET_NAME(ch) ? GET_NAME(ch) : "<null>");
+	}
+
 }
 
 double sql_get_total_donated(const char *account_name)
@@ -876,7 +880,7 @@ void sql_update_frag_leaderboard(P_char ch)
 
 	// Insert or update frag_leaderboard
 	// Using REPLACE to handle both insert and update cases
-	db_query("REPLACE INTO frag_leaderboard "
+	if (!db_query("REPLACE INTO frag_leaderboard "
 	         "(pid, account_name, char_name, total_frags, racewar, race, class, level, deleted_at) "
 	         "VALUES(%ld, '%s', '%s', %d, %d, '%s', '%s', %d, NULL)",
 	         GET_PID(ch),
@@ -886,7 +890,11 @@ void sql_update_frag_leaderboard(P_char ch)
 	         GET_RACEWAR(ch),
 	         race_sql,
 	         class_sql,
-	         GET_LEVEL(ch));
+	         GET_LEVEL(ch)))
+	{
+		logit(LOG_DEBUG, "sql_update_frag_leaderboard: failed for %s", GET_NAME(ch) ? GET_NAME(ch) : "<null>");
+	}
+
 }
 
 /* Soft delete a character from the leaderboard tables */
