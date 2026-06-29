@@ -1746,6 +1746,7 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	P_obj obj;
 	FILE *f;
+	bool  ok = TRUE;
 
 	strcpy(name, GET_NAME(ch));
 	for (tmp = name; *tmp; tmp++)
@@ -1775,16 +1776,24 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 
 	if (bDeleteLocker)
 	{
-		sql_delete_locker(GET_PID(ch), 0);
+		if (!sql_delete_locker(GET_PID(ch), 0))
+		{
+			logit(LOG_DEBUG, "deleteCharacter(): failed to delete locker data for pid %d", GET_PID(ch));
+			ok = FALSE;
+		}
 	}
 
 	// delete the player_data
-	sql_delete_player(GET_PID(ch));
+	if (!sql_delete_player(GET_PID(ch)))
+	{
+		logit(LOG_DEBUG, "deleteCharacter(): failed to delete player_data for pid %d", GET_PID(ch));
+		ok = FALSE;
+	}
 
 	// Delete ship.
 	delete_ship(GET_NAME(ch));
 
-	return TRUE;
+	return ok;
 }
 
 void PurgeCorpseFile(P_obj corpse)
