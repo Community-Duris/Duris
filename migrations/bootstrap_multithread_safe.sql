@@ -2190,6 +2190,165 @@ create table if not exists racewar_stat_mods (
     Luc int not null default 0
 ) engine=innodb;
 
+create table if not exists categories (
+    id int auto_increment primary key,
+    name varchar(255) default null,
+    `desc` varchar(255) default null
+) engine=innodb;
+
+create table if not exists changes (
+    id int auto_increment primary key,
+    history_id int default null,
+    history_text text,
+    history_title varchar(255) default null,
+    history_category_id int default null,
+    new_text text,
+    new_title varchar(255) default null,
+    new_category_id int default null,
+    timestamp datetime default null,
+    action varchar(255) default null,
+    ip_number varchar(255) default null
+) engine=innodb;
+
+create table if not exists ip_info (
+    pid bigint not null default 0,
+    last_ip varchar(50) not null default 'none',
+    last_connect datetime null default null,
+    last_disconnect datetime null default null,
+    racewar_side int not null default 0,
+    primary key (pid)
+) engine=innodb;
+
+create table if not exists items (
+    vnum int unsigned not null default 0,
+    short_desc varchar(100) not null default '',
+    obj_stat text not null,
+    num_sold int not null default 0,
+    avg_sell_price int not null default 0,
+    primary key (vnum)
+) engine=innodb;
+
+create table if not exists level_cap (
+    id int auto_increment primary key,
+    most_frags float not null default 0,
+    racewar_leader int not null default 0,
+    level int not null default 25,
+    next_update datetime default current_timestamp
+) engine=innodb;
+
+create table if not exists log_entries (
+    id int unsigned auto_increment primary key,
+    date datetime not null,
+    kind varchar(255) not null default '',
+    player_name varchar(255) not null default '',
+    pid int not null default 0,
+    ip_address varchar(15) not null default '',
+    room_vnum int not null default 0,
+    zone_number int not null default 0,
+    message varchar(255) not null default '',
+    index idx_date (date),
+    index idx_kind (kind),
+    index idx_player_name (player_name),
+    index idx_pid (pid),
+    index idx_ip_address (ip_address),
+    index idx_room_vnum (room_vnum),
+    index idx_zone_number (zone_number)
+) engine=innodb;
+
+create table if not exists mud_info (
+    name varchar(255) not null,
+    content text not null,
+    primary key (name)
+) engine=innodb;
+
+create table if not exists multiplay_whitelist (
+    id int auto_increment primary key,
+    pattern varchar(255) not null,
+    admin varchar(255) not null,
+    description varchar(255) not null,
+    created_on date default null,
+    player varchar(255) not null
+) engine=innodb;
+
+create table if not exists nexus_stones (
+    id int auto_increment primary key,
+    name varchar(255) not null default '',
+    room_vnum int not null default 0,
+    align int not null default 0,
+    stat_affect int not null default -1,
+    affect_amount int not null default 0,
+    last_touched_at timestamp null default null,
+    bonus int not null default 0
+) engine=innodb;
+
+create table if not exists offline_messages (
+    id int auto_increment primary key,
+    pid bigint not null default 0,
+    sender varchar(255) not null default '',
+    message text not null,
+    sent_at datetime not null default current_timestamp,
+    read_at datetime default null,
+    index idx_pid (pid)
+) engine=innodb;
+
+create table if not exists pages (
+    id int auto_increment primary key,
+    title varchar(255) default null,
+    text text,
+    last_update datetime default null,
+    last_update_by varchar(255) default null,
+    category_id int default null,
+    ip_number varchar(255) default null
+) engine=innodb;
+
+create table if not exists ping (
+    id bigint auto_increment primary key,
+    timestamp datetime not null,
+    url varchar(100) not null default '',
+    ip varchar(100) not null default '',
+    seq bigint not null default 0,
+    time int not null default 0
+) engine=innodb;
+
+create table if not exists pkill_event (
+    id int unsigned auto_increment primary key,
+    stamp datetime not null,
+    room_vnum int not null default 0,
+    room_name text not null,
+    tweeted tinyint(1) not null default 0
+) engine=innodb;
+
+create table if not exists pkill_info (
+    id bigint unsigned auto_increment primary key,
+    event_id int unsigned not null default 0,
+    pid bigint not null default 0,
+    level int not null default 0,
+    pk_type text not null,
+    equip text not null,
+    log text,
+    inroom int not null default 0,
+    leader int default null,
+    player_description varchar(255),
+    index idx_event_id (event_id),
+    index idx_pid (pid)
+) engine=innodb;
+
+create table if not exists prepstatment_duris_sql (
+    id int unsigned auto_increment primary key,
+    `desc` text not null,
+    `sql` text not null
+) engine=innodb;
+
+create table if not exists progress (
+    id int unsigned auto_increment primary key,
+    pid bigint not null default 0,
+    var_type int not null default 1,
+    stamp datetime not null,
+    delta int not null default 0,
+    index idx_pid (pid),
+    index idx_var_type (var_type)
+) engine=innodb;
+
 -- ============================================================================
 -- FILE: schema_migration_v7_player_fixes.sql
 -- adds missing player fields for existing databases
