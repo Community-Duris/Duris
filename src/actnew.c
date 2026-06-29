@@ -1721,7 +1721,8 @@ P_char morph(P_char ch, int rnum, int mode)
 	/*
 	 * force a save at this point, simply because its a smart thing
 	 */
-	writeCharacter(ch, 1, NOWHERE);
+	if (!writeCharacter(ch, 1, NOWHERE))
+		logit(LOG_DEBUG, "Failed to save %s after morph room move.", GET_NAME(ch));
 
 	return mob;
 }
@@ -3598,13 +3599,14 @@ void do_vote(P_char ch, char *arg, int cmd)
 		return;
 	}
 	ip = sql_select_IP_info(ch, ipbuf, sizeof(char) * 255, &lastConnect, &lastDisconnect);
-	fprintf(f, "%s\t%s\t%s\n", ip, J_NAME(ch), vote_options[votes]);
-	ch->only.pc->vote = vote_serial;
-
-	if (f)
+	bool vote_write_ok = fprintf(f, "%s	%s	%s\n", ip, J_NAME(ch), vote_options[votes]) >= 0;
+	bool vote_close_ok = fclose(f) == 0;
+	if (!vote_write_ok || !vote_close_ok)
 	{
-		fclose(f);
+		send_to_char("There was a problem recording your vote, notify a Forger.\r\n", ch);
+		return;
 	}
+	ch->only.pc->vote = vote_serial;
 
 	send_to_char(voted, ch);
 }

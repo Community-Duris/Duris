@@ -2486,7 +2486,13 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// add recipe to database
-	sql_add_player_recipe(GET_PID(ch), recipenumber);
+	if (!sql_add_player_recipe(GET_PID(ch), recipenumber))
+	{
+		send_to_char("Your recipe could not be recorded. Please try again later.\r\n", ch);
+		logit(LOG_DEBUG, "learn_recipe: failed to save recipe %d for %s", recipenumber, GET_NAME(ch));
+		extract_obj(tobj);
+		return TRUE;
+	}
 	act("$n opens their &+Ltome &+yof &+Ycraf&+ytsman&+Lship&n and begins scribing the &+yrecipe&n...\n"
 	    "As they finish the last entry of the &+yrecipe&n, a &+Mbri&+mgh&+Wt &nflash of &+Clight&n appears,\n"
 	    "quickly consuming $p, which vanishes from sight.\r\n",
@@ -2835,12 +2841,15 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 					send_to_char("&nGixnif says '&+GI'm sorry, but you do not seem to have the &+Wepics&+G available for me to reset your &+gtradeskill&+G.\r\n&n", pl);
 				return TRUE;
 			}
-			// subtract 200 epics
-			pl->only.pc->epics -= 200;
-
 			// wipe their learned recipes from database
-			sql_delete_player_recipes(GET_PID(pl));
+			if (!sql_delete_player_recipes(GET_PID(pl)))
+			{
+				send_to_char("Your tradeskill reset could not be recorded. Please try again later.\r\n", pl);
+				logit(LOG_WIZ, "Failed to delete learned recipes for %s during tradeskill reset.", GET_NAME(pl));
+				return TRUE;
+			}
 
+			pl->only.pc->epics -= 200;
 			snprintf(buffer, MAX_STRING_LENGTH, "Your teacher takes you aside, and performs a cleansing geasture about your body&n. Your mind feels &+Wrenewed&n!\n");
 			act(buffer, FALSE, ch, 0, pl, TO_VICT);
 			pl->only.pc->skills[SKILL_FORGE].taught  = 0;
@@ -2851,7 +2860,7 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 			pl->only.pc->skills[SKILL_CRAFT].learned = 0;
 
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 
 			return TRUE;

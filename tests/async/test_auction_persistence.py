@@ -102,14 +102,15 @@ if bid_start == -1:
     print('[FAIL] auction_bid not found')
     ok = False
 else:
-    finalize_check = text.find('if (!finalize_auction(auction_id, ch))', bid_start)
-    refund_check = text.find('ADD_MONEY(ch, to_pay);', bid_start)
+    buy_start = text.find('if (buy_price > 0 && bid_value >= buy_price)', bid_start)
+    finalize_check = text.find('if (!finalize_auction(auction_id, ch))', buy_start)
+    refund_check = text.find('ADD_MONEY(ch, to_pay);', finalize_check if finalize_check != -1 else buy_start)
     if finalize_check == -1 or refund_check == -1 or refund_check < finalize_check:
         print('[FAIL] auction_bid does not refund on finalize_auction failure')
         ok = False
     else:
         print('[PASS] auction_bid refunds the buyer if finalize_auction fails')
-    outbid_log = text.find('failed to stage refund pickup for pid', bid_start)
+    outbid_log = text.find('failed to stage refund pickup for pid', buy_start)
     if outbid_log == -1:
         print('[FAIL] auction_bid still ignores refund staging failures')
         ok = False

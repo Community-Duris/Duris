@@ -2708,17 +2708,26 @@ MYSQL *sql_persistence_connection(void)
 	 * is the production one. */
 	if (!persistenceDB)
 	{
-		persistenceDB = mysql_init(NULL);
+		pthread_mutex_lock(&persistence_sql_mutex);
 		if (!persistenceDB)
-			return NULL;
-		if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD,
-		                        sql_persistence_db_name(), DB_PORT, NULL, 0))
 		{
-			logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_connection failed: %s", mysql_error(persistenceDB));
-			mysql_close(persistenceDB);
-			persistenceDB = NULL;
-			return NULL;
+			persistenceDB = mysql_init(NULL);
+			if (!persistenceDB)
+			{
+				pthread_mutex_unlock(&persistence_sql_mutex);
+				return NULL;
+			}
+			if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD,
+			                        sql_persistence_db_name(), DB_PORT, NULL, 0))
+			{
+				logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_connection failed: %s", mysql_error(persistenceDB));
+				mysql_close(persistenceDB);
+				persistenceDB = NULL;
+				pthread_mutex_unlock(&persistence_sql_mutex);
+				return NULL;
+			}
 		}
+		pthread_mutex_unlock(&persistence_sql_mutex);
 	}
 	return persistenceDB;
 }

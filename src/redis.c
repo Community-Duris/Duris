@@ -721,6 +721,27 @@ static bool check_dirty_debounce(int pid)
 	return true;
 }
 
+static void redis_restore_dirty_snapshot(const char *inflight_key)
+{
+	if (!redis_enabled || !redis_ctx || !inflight_key)
+		return;
+
+	redisReply *restore = (redisReply *)redisCommand(redis_ctx,
+	                                               "SUNIONSTORE mud:dirty_players 2 mud:dirty_players %s",
+	                                               inflight_key);
+	if (restore)
+	{
+		bool restored = (restore->type != REDIS_REPLY_ERROR);
+		freeReplyObject(restore);
+		if (restored)
+		{
+			redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
+			if (del)
+				freeReplyObject(del);
+		}
+	}
+}
+
 void mark_player_dirty(int pid)
 {
 #ifndef __NO_MYSQL__
@@ -729,7 +750,16 @@ void mark_player_dirty(int pid)
 
 	// debounce - skip if we marked this pid dirty within the last second
 	if (!check_dirty_debounce(pid))
-		return;
+	{
+		redisReply *queued = (redisReply *)redisCommand(redis_ctx, "SISMEMBER mud:dirty_players %d", pid);
+		if (queued)
+		{
+			bool already_queued = (queued->type == REDIS_REPLY_INTEGER && queued->integer == 1);
+			freeReplyObject(queued);
+			if (already_queued)
+				return;
+		}
+	}
 
 	if (!redis_ctx || redis_ctx->err)
 	{
@@ -779,6 +809,8 @@ void flush_dirty_players(void)
 	if (!redis_enabled)
 		return;
 
+	const char *inflight_key = "mud:dirty_players:flushing";
+
 	// skip if previous async save still running
 	if (dirty_flush_pid > 0)
 	{
@@ -790,13 +822,14 @@ void flush_dirty_players(void)
 		{
 			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			{
-				redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
+				redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
 				if (del)
 					freeReplyObject(del);
 			}
 			else
 			{
-				logit(LOG_SYS, "flush_dirty: previous async save failed, keeping dirty set for retry");
+				logit(LOG_SYS, "flush_dirty: previous async save failed, restoring dirty set for retry");
+				redis_restore_dirty_snapshot(inflight_key);
 			}
 		}
 		dirty_flush_pid = 0;
@@ -811,7 +844,17 @@ void flush_dirty_players(void)
 		}
 	}
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS mud:dirty_players");
+	redisReply *rename = (redisReply *)redisCommand(redis_ctx, "RENAME mud:dirty_players %s", inflight_key);
+	if (!rename)
+		return;
+	if (rename->type == REDIS_REPLY_ERROR)
+	{
+		freeReplyObject(rename);
+		return;
+	}
+	freeReplyObject(rename);
+
+	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS %s", inflight_key);
 	if (!reply)
 		return;
 
@@ -827,6 +870,7 @@ void flush_dirty_players(void)
 	if (!pids)
 	{
 		freeReplyObject(reply);
+		redis_restore_dirty_snapshot(inflight_key);
 		return;
 	}
 
@@ -847,6 +891,9 @@ void flush_dirty_players(void)
 	if (valid == 0)
 	{
 		free(pids);
+		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
+		if (del)
+			freeReplyObject(del);
 		return;
 	}
 
@@ -876,6 +923,9 @@ void flush_dirty_players(void)
 				(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
 		}
 		free(pids);
+		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
+		if (del)
+			freeReplyObject(del);
 		return;
 	}
 
@@ -3004,5 +3054,10 @@ void redis_clear_dirty_players(void)
 	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
 	if (reply)
 		freeReplyObject(reply);
+
+	redisReply *inflight = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players:flushing");
+	if (inflight)
+		freeReplyObject(inflight);
+
 #endif
 }

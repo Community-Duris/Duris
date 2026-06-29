@@ -452,7 +452,12 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				return;
 			}
-			if (!sql_commit()) sql_rollback();
+			if (!sql_commit())
+			{
+				logit(LOG_STATUS, "copyover: commit failed for %s, aborting copyover", GET_NAME(d->character));
+				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				return;
+			}
 		}
 		else
 		{

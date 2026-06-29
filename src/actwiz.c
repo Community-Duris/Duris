@@ -12845,17 +12845,31 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-				persistence_flush_character_saves(vict);
-				// Wrap final save in transaction (flush already completed above)
-				if (sql_begin_transaction())
+			persistence_flush_character_saves(vict);
+			/* Wrap final save in transaction (flush already completed above) */
+			bool saved = false;
+			if (sql_begin_transaction())
+			{
+				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
 				{
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-					if (!sql_commit())
+					if (sql_commit())
+						saved = true;
+					else
 						sql_rollback();
 				}
 				else
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-				extract_char(vict);
+					sql_rollback();
+			}
+			else
+			{
+				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			}
+			if (!saved)
+			{
+				send_to_char("Failed to save ghost character before extraction.\r\n", ch);
+				continue;
+			}
+			extract_char(vict);
 			count++;
 		}
 
@@ -12899,17 +12913,31 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-				persistence_flush_character_saves(vict);
-				// Wrap final save in transaction (flush already completed above)
-				if (sql_begin_transaction())
+			persistence_flush_character_saves(vict);
+			/* Wrap final save in transaction (flush already completed above) */
+			bool saved = false;
+			if (sql_begin_transaction())
+			{
+				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
 				{
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-					if (!sql_commit())
+					if (sql_commit())
+						saved = true;
+					else
 						sql_rollback();
 				}
 				else
-					writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-				extract_char(vict);
+					sql_rollback();
+			}
+			else
+			{
+				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			}
+			if (!saved)
+			{
+				send_to_char("Failed to save ghost character before extraction.\r\n", ch);
+				continue;
+			}
+			extract_char(vict);
 			count++;
 		}
 

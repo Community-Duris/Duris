@@ -6,8 +6,8 @@ root = Path(__file__).resolve().parents[2]
 text = (root / 'src/redis.c').read_text()
 
 wait_block = text.find('if (dirty_flush_pid > 0)')
-clear_on_success = text.find('redisCommand(redis_ctx, "DEL mud:dirty_players")', wait_block)
-keep_on_fail = text.find('keeping dirty set for retry', wait_block)
+clear_on_success = text.find('redisCommand(redis_ctx, "DEL %s", inflight_key)', wait_block)
+keep_on_fail = text.find('restoring dirty set for retry', wait_block)
 pre_fork_region = text[text.find('// fork for async save'):text.find('if (pid < 0)', text.find('// fork for async save'))]
 pre_fork_del = 'DEL mud:dirty_players' in pre_fork_region
 child_block = text.find('if (pid == 0)')

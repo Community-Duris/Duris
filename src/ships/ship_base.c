@@ -515,6 +515,11 @@ bool rename_ship_owner(char *old_name, char *new_name)
 	{
 		logit(LOG_DEBUG, "Failed to save re-owned ship %s for %s.",
 		      SHIP_NAME(ship), old_name);
+		str_free(ship->ownername);
+		ship->ownername = old_ownername;
+		name_ship(old_ship_name, ship);
+		FREE(old_ship_name);
+		return FALSE;
 	}
 
 	FREE(old_ownername);

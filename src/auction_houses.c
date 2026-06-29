@@ -1272,36 +1272,69 @@ bool auction_bid(P_char ch, char *args)
 		return TRUE;
 	}
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return FALSE;
+		own_txn = true;
+	}
+
 	// check if its buy it now
 	// if so, send money to seller, transfer item to buyer, close auction
 	if (buy_price > 0 && bid_value >= buy_price)
 	{
 		// do db update first before taking money
 		if (!qry("UPDATE auctions SET winning_bidder_pid = '%d', winning_bidder_name = '%s', cur_price = '%d' WHERE id = '%d'", GET_PID(ch), ch->player.name, buy_price, auction_id))
+		{
+			if (own_txn)
+				sql_rollback();
 			return FALSE;
+		}
 
 		// db update succeeded, now take money and do refunds
 		SUB_MONEY(ch, to_pay, 0);
 		snprintf(buff, MAX_STRING_LENGTH, "&+WYou pay &n%s&n.\r\n", coin_stringv(to_pay));
 		send_to_char(buff, ch);
 
-		qry("INSERT INTO auction_bid_history (date, auction_id, bidder_pid, bidder_name, bid_amount) VALUES "
+		if (!qry("INSERT INTO auction_bid_history (date, auction_id, bidder_pid, bidder_name, bid_amount) VALUES "
 		    "(unix_timestamp(), %d, %d, '%s', %d)",
 		    auction_id,
 		    GET_PID(ch),
 		    ch->player.name,
-		    bid_value);
+		    bid_value))
+		{
+			if (own_txn)
+				sql_rollback();
+			ADD_MONEY(ch, to_pay);
+			return FALSE;
+		}
 
 		// refund previous bidder
 		if (winning_bidder_pid && winning_bidder_pid != GET_PID(ch))
 		{
 			if (!insert_money_pickup(winning_bidder_pid, cur_price))
+			{
 				logit(LOG_DEBUG, "auction_bid(): failed to stage refund pickup for pid %d", winning_bidder_pid);
+				if (own_txn)
+					sql_rollback();
+				ADD_MONEY(ch, to_pay);
+				return FALSE;
+			}
 			logit(LOG_DEBUG, "%s was outbid on auction %d, refunding %s", winning_bidder_name.c_str(), auction_id, coin_stringv(cur_price));
 		}
 
 		if (!finalize_auction(auction_id, ch))
 		{
+			if (own_txn)
+				sql_rollback();
+			ADD_MONEY(ch, to_pay);
+			send_to_char("&+WAuction finalization failed; your money has been refunded.&n\r\n", ch);
+			return FALSE;
+		}
+		if (own_txn && !sql_commit())
+		{
+			sql_rollback();
 			ADD_MONEY(ch, to_pay);
 			send_to_char("&+WAuction finalization failed; your money has been refunded.&n\r\n", ch);
 			return FALSE;
@@ -1333,12 +1366,18 @@ bool auction_bid(P_char ch, char *args)
 		snprintf(buff, MAX_STRING_LENGTH, "&+WYou pay &n%s&n.\r\n", coin_stringv(to_pay));
 		send_to_char(buff, ch);
 
-		qry("INSERT INTO auction_bid_history (date, auction_id, bidder_pid, bidder_name, bid_amount) VALUES "
+		if (!qry("INSERT INTO auction_bid_history (date, auction_id, bidder_pid, bidder_name, bid_amount) VALUES "
 		    "(unix_timestamp(), %d, %d, '%s', %d)",
 		    auction_id,
 		    GET_PID(ch),
 		    ch->player.name,
-		    bid_value);
+		    bid_value))
+		{
+			if (own_txn)
+				sql_rollback();
+			ADD_MONEY(ch, to_pay);
+			return FALSE;
+		}
 
 		snprintf(buff, MAX_STRING_LENGTH, "&+WYou bid &n%s&+W on &n%d %s&n.\r\n", coin_stringv(bid_value), quantity, obj_short.c_str());
 		send_to_char(buff, ch);
@@ -1352,7 +1391,13 @@ bool auction_bid(P_char ch, char *args)
 		if (GET_PID(ch) != winning_bidder_pid && winning_bidder_pid != 0)
 		{
 			if (!insert_money_pickup(winning_bidder_pid, cur_price))
+			{
 				logit(LOG_DEBUG, "auction_bid(): failed to stage refund pickup for pid %d", winning_bidder_pid);
+				if (own_txn)
+					sql_rollback();
+				ADD_MONEY(ch, to_pay);
+				return FALSE;
+			}
 			logit(LOG_DEBUG, "%s was outbid on auction %d, refunding %s", winning_bidder_name.c_str(), auction_id, coin_stringv(cur_price));
 
 			// alert loser that they were outbid!
@@ -1366,7 +1411,13 @@ bool auction_bid(P_char ch, char *args)
 			if (!send_to_pid(buff, winning_bidder_pid))
 				send_to_pid_offline(buff, winning_bidder_pid);
 		}
-	}
+		}
+		if (own_txn && !sql_commit())
+		{
+			sql_rollback();
+			ADD_MONEY(ch, to_pay);
+			return FALSE;
+		}
 	return TRUE;
 }
 
@@ -1559,8 +1610,13 @@ bool finalize_auction(int auction_id, P_char to_ch)
 	string      seller_name;
 	string      final_price_str;
 
-	if (!sql_begin_transaction())
-		return FALSE;
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return FALSE;
+		own_txn = true;
+	}
 
 	if (!qry("UPDATE auctions SET status = %d WHERE id = '%d'", AUCTION_STATUS_CLOSED, auction_id))
 		goto fail;
@@ -1615,8 +1671,11 @@ bool finalize_auction(int auction_id, P_char to_ch)
 			goto fail;
 	}
 
-	if (!sql_commit())
-		goto fail;
+	if (own_txn)
+	{
+		if (!sql_commit())
+			goto fail;
+	}
 
 	success = true;
 
@@ -1666,7 +1725,7 @@ bool finalize_auction(int auction_id, P_char to_ch)
 fail:
 	if (res)
 		mysql_free_result(res);
-	if (!success)
+	if (!success && own_txn)
 		sql_rollback();
 	return FALSE;
 }

@@ -2756,7 +2756,9 @@ bool sql_save_player_pets(P_char ch, int save_type)
 		if (!sql_run_query(ins_query))
 		{
 			logit(LOG_DEBUG, "sql_save_player_pets: failed to save pet %s for %s", GET_NAME(pet), GET_NAME(ch));
-			continue;
+			if (own_txn)
+				sql_rollback();
+			return false;
 		}
 
 		int pet_id = (int)mysql_insert_id(DB);
@@ -3116,7 +3118,12 @@ bool sql_save_player_witnesses(P_char ch)
 		bpos = new_pos;
 	}
 
-	sql_run_multi_query(batch);
+	if (!sql_run_multi_query(batch))
+	{
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	if (own_txn)
 	{
@@ -3172,7 +3179,12 @@ bool sql_save_player_shapechanges(P_char ch)
 		}
 	}
 
-	sql_run_multi_query(batch);
+	if (!sql_run_multi_query(batch))
+	{
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	if (own_txn)
 	{
@@ -8393,6 +8405,10 @@ void sql_save_dirty_shopkeepers(void)
 			{
 				shop_index[i].dirty = 0;
 				saved++;
+			}
+			else
+			{
+				logit(LOG_DEBUG, "sql_save_dirty_shopkeepers: failed to save shopkeeper for shop %d", i);
 			}
 		}
 		else
