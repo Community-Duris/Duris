@@ -424,6 +424,8 @@ CREATE TABLE IF NOT EXISTS player_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    wear_flags INT DEFAULT NULL,
+    item_type TINYINT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -441,10 +443,13 @@ CREATE TABLE IF NOT EXISTS player_items (
     bitvector3 BIGINT UNSIGNED DEFAULT NULL,
     bitvector4 BIGINT UNSIGNED DEFAULT NULL,
     bitvector5 BIGINT UNSIGNED DEFAULT NULL,
-    unique_id INT UNSIGNED DEFAULT NULL,
+    item_material TINYINT DEFAULT NULL,
+    obj_uid BIGINT UNSIGNED DEFAULT NULL,
+    item_condition SMALLINT DEFAULT 100,
     PRIMARY KEY (id),
     INDEX idx_pid (pid),
     INDEX idx_container_id (container_id),
+    INDEX idx_obj_uid (obj_uid),
     CONSTRAINT fk_player_items FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE,
     CONSTRAINT fk_player_items_container FOREIGN KEY (container_id) REFERENCES player_items(id) ON DELETE CASCADE
 );
@@ -679,11 +684,13 @@ CREATE TABLE IF NOT EXISTS locker_items (
     short_descr VARCHAR(512) DEFAULT NULL,
     description TEXT DEFAULT NULL,
     action_descr TEXT DEFAULT NULL,
-    unique_id INT UNSIGNED DEFAULT NULL,
+    obj_uid BIGINT UNSIGNED DEFAULT NULL,
+    item_condition SMALLINT DEFAULT 100,
     FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
     FOREIGN KEY (container_id) REFERENCES locker_items(id) ON DELETE CASCADE,
     INDEX idx_locker_id (locker_id),
-    INDEX idx_vnum (vnum)
+    INDEX idx_vnum (vnum),
+    INDEX idx_obj_uid (obj_uid)
 );
 
 CREATE TABLE IF NOT EXISTS locker_item_affects (
@@ -1041,6 +1048,8 @@ CREATE TABLE IF NOT EXISTS `player_pet_items` (
   `cost` INT DEFAULT 0,
   `timer` INT DEFAULT -1,
   `extra_flags` BIGINT UNSIGNED DEFAULT 0,
+  `wear_flags` INT DEFAULT NULL,
+  `item_type` TINYINT DEFAULT NULL,
   `value0` INT DEFAULT 0,
   `value1` INT DEFAULT 0,
   `value2` INT DEFAULT 0,
@@ -1053,9 +1062,18 @@ CREATE TABLE IF NOT EXISTS `player_pet_items` (
   `short_descr` VARCHAR(512) DEFAULT NULL,
   `description` TEXT DEFAULT NULL,
   `action_descr` TEXT DEFAULT NULL,
+  `bitvector1` BIGINT UNSIGNED DEFAULT NULL,
+  `bitvector2` BIGINT UNSIGNED DEFAULT NULL,
+  `bitvector3` BIGINT UNSIGNED DEFAULT NULL,
+  `bitvector4` BIGINT UNSIGNED DEFAULT NULL,
+  `bitvector5` BIGINT UNSIGNED DEFAULT NULL,
+  `item_material` TINYINT DEFAULT NULL,
+  `obj_uid` BIGINT UNSIGNED DEFAULT NULL,
+  `item_condition` SMALLINT DEFAULT 100,
   PRIMARY KEY (`id`),
   KEY `idx_pet_id` (`pet_id`),
   KEY `idx_container_id` (`container_id`),
+  KEY `idx_obj_uid` (`obj_uid`),
   CONSTRAINT `fk_pet_items_pet` FOREIGN KEY (`pet_id`)
     REFERENCES `player_pets` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_pet_items_container` FOREIGN KEY (`container_id`)
