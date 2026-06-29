@@ -339,7 +339,12 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	setCharPhysTypeInfo(newch);
 
 	// save character to db - this assigns auto-increment pid
-	writeCharacter(newch, RENT_QUIT, NOWHERE);
+	if (!writeCharacter(newch, RENT_QUIT, NOWHERE))
+	{
+		send_to_char("failed to save character to database.\r\n", ch);
+		free_char(newch);
+		return;
+	}
 
 	// now we have a valid pid from db auto-increment
 	if (GET_PID(newch) <= 0)
