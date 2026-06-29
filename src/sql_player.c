@@ -1975,6 +1975,14 @@ static bool resave_container_contents(int pid, P_obj container)
 	if (!container || container->db_item_id <= 0)
 		return false;
 
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+
 	int container_db_id = container->db_item_id;
 
 	// verify container still exists in database (may have been deleted by full save)
@@ -1984,6 +1992,7 @@ static bool resave_container_contents(int pid, P_obj container)
 	if (!check_result)
 	{
 		container->db_item_id = 0;
+		if (own_txn) sql_rollback();
 		return false;
 	}
 	MYSQL_ROW row    = mysql_fetch_row(check_result);
@@ -1992,6 +2001,7 @@ static bool resave_container_contents(int pid, P_obj container)
 	if (!exists)
 	{
 		container->db_item_id = 0;
+		if (own_txn) sql_rollback();
 		return false;
 	}
 
@@ -1999,14 +2009,20 @@ static bool resave_container_contents(int pid, P_obj container)
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE container_id=%d", container_db_id);
 	if (!sql_run_query(del_query))
+	{
+		if (own_txn) sql_rollback();
 		return false;
+	}
 
 	// re-insert contents
 	if (container->contains)
 	{
 		int batched = sql_batch_save_simple_items(pid, container_db_id, container->contains);
 		if (batched < 0)
+		{
+			if (own_txn) sql_rollback();
 			return false;
+		}
 
 		for (P_obj content = container->contains; content; content = content->next_content)
 		{
@@ -2016,7 +2032,19 @@ static bool resave_container_contents(int pid, P_obj container)
 				continue;
 
 			if (sql_save_single_item_get_id(pid, content, 0, container_db_id) == 0)
+			{
+				if (own_txn) sql_rollback();
 				return false;
+			}
+		}
+	}
+
+	if (own_txn)
+	{
+		if (!sql_commit())
+		{
+			sql_rollback();
+			return false;
 		}
 	}
 
