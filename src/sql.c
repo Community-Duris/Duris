@@ -792,6 +792,12 @@ void sql_update_account_character(P_char ch)
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
 
+	if (GET_PID(ch) <= 0)
+	{
+		logit(LOG_DEBUG, "sql_update_account_character: invalid pid for %s", GET_NAME(ch) ? GET_NAME(ch) : "<null>");
+		return;
+	}
+
 	account_name = get_account_name_safe(ch);
 
 	// Escape strings for SQL safety
@@ -852,6 +858,12 @@ void sql_update_frag_leaderboard(P_char ch)
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
 
+	if (GET_PID(ch) <= 0)
+	{
+		logit(LOG_DEBUG, "sql_update_frag_leaderboard: invalid pid for %s", GET_NAME(ch) ? GET_NAME(ch) : "<null>");
+		return;
+	}
+
 	account_name = get_account_name_safe(ch);
 	race_name    = race_names_table[ch->player.race].normal;
 	class_name   = class_names_table[flag2idx(ch->player.m_class)].normal;
@@ -878,15 +890,41 @@ void sql_update_frag_leaderboard(P_char ch)
 }
 
 /* Soft delete a character from the leaderboard tables */
-void sql_soft_delete_character(long pid)
+bool sql_soft_delete_character(long pid)
 {
-	if (pid <= 0)
-		return;
+	if (!DB || pid <= 0)
+		return false;
+
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
 
 	// Set deleted_at timestamp to NOW() for this character
-	db_query("UPDATE account_characters SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL", pid);
+	if (!db_query("UPDATE account_characters SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL", pid))
+	{
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
-	db_query("UPDATE frag_leaderboard SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL", pid);
+	if (!db_query("UPDATE frag_leaderboard SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL", pid))
+	{
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
+
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
+
+	return true;
 }
 
 /* Save frags delta */

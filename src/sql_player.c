@@ -4303,17 +4303,24 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 		if (!esc_char)
 			continue;
 
-		int pid = sql_get_player_pid(ch->charname);
+		int  pid = sql_get_player_pid(ch->charname);
+		char pid_buf[32];
+		const char *pid_sql = "NULL";
+		if (pid > 0)
+		{
+			snprintf(pid_buf, sizeof(pid_buf), "%d", pid);
+			pid_sql = pid_buf;
+		}
 
 		char query[512];
 		snprintf(query,
 		         sizeof(query),
 		         "insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
-		         "values ('%s', '%s', %d, %lu, FROM_UNIXTIME(NULLIF(%ld,0)), %d, %d) "
+		         "values ('%s', '%s', %s, %lu, FROM_UNIXTIME(NULLIF(%ld,0)), %d, %d) "
 		         "on duplicate key update login_count=%lu, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), blocked=%d, racewar=%d, deleted_at=NULL, pid=VALUES(pid), account_name=VALUES(account_name), char_name=VALUES(char_name)",
 		         esc_name,
 		         esc_char,
-		         pid > 0 ? pid : 0,
+		         pid_sql,
 		         ch->count,
 		         ch->last,
 		         ch->blocked,
@@ -9654,14 +9661,21 @@ bool sql_save_guild(Guild *guild)
 		char *esc_mname = sql_escape_string(mem->name);
 		if (!esc_mname)
 			continue;
-		int pid = sql_get_player_pid(mem->name);
+		int  pid = sql_get_player_pid(mem->name);
+		char pid_buf[32];
+		const char *pid_sql = "NULL";
+		if (pid > 0)
+		{
+			snprintf(pid_buf, sizeof(pid_buf), "%d", pid);
+			pid_sql = pid_buf;
+		}
 		snprintf(query,
 		         sizeof(query),
 		         "insert into guild_members (guild_id, player_name, player_pid, bits, debt) "
-		         "values (%u, '%s', %d, %u, %u)",
+		         "values (%u, '%s', %s, %u, %u)",
 		         gid,
 		         esc_mname,
-		         pid > 0 ? pid : 0,
+		         pid_sql,
 		         mem->bits,
 		         mem->debt);
 		bool ok = sql_run_query(query);

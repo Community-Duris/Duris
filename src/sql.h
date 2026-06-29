@@ -143,7 +143,7 @@ void show_frag_trophy(P_char ch, P_char who);
 void   sql_update_frag_leaderboard(P_char ch);
 void   sql_update_account_character(P_char ch);
 double sql_get_total_donated(const char *account_name);
-void   sql_soft_delete_character(long pid);
+bool   sql_soft_delete_character(long pid);
 
 string get_mud_info(const char *name);
 void   send_mud_info(const char *name, P_char ch);

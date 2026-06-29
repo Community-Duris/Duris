@@ -2341,8 +2341,11 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
 	statuslog(ch->player.level, "%s deleted %s via web client (%s@%s).", d->account->acct_name, char_name, d->login, d->host);
 	logit(LOG_PLAYER, "%s deleted %s via web client (%s@%s).", d->account->acct_name, char_name, d->login, d->host);
 
-	/* delete character file and free temp character */
-	deleteCharacter(ch);
+	if (!deleteCharacter(ch))
+	{
+		ws_send_account_message(d, "error", NULL, "Failed to delete character database records");
+		return;
+	}
 
 	/* free strings allocated by restoreCharOnly */
 	if (ch->player.name)
@@ -2592,7 +2595,11 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 
 		/* soft delete from frag leaderboard tables using the provided PID */
 		ws_send_admin_delete_progress(d, request_id, "Removing from frag leaderboard...", "info");
-		sql_soft_delete_character(char_pid);
+		if (!sql_soft_delete_character(char_pid))
+		{
+			ws_send_admin_delete_progress(d, request_id, "Failed to remove from frag leaderboard", "error");
+			return;
+		}
 		ws_send_admin_delete_progress(d, request_id, "Removed from frag leaderboard", "success");
 
 		/* remove from account character list */

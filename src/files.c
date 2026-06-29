@@ -1761,8 +1761,11 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 		GET_ASSOC(ch)->kick(ch);
 	}
 
-	// Soft delete character from frag leaderboard tables (for web statistics)
-	sql_soft_delete_character(GET_PID(ch));
+	if (!sql_soft_delete_character(GET_PID(ch)))
+	{
+		logit(LOG_DEBUG, "deleteCharacter(): failed to soft-delete pid %d", GET_PID(ch));
+		return FALSE;
+	}
 
 #ifdef USE_ACCOUNT
 	// Only remove from account list if descriptor and account exist
