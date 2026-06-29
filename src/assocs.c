@@ -389,7 +389,7 @@ bool found_asc(P_char god, P_char leader, char *bits, char *asc_name)
 
 #ifndef __NO_MYSQL__
 	mysql_real_escape_string(DB, buf, asc_name, strlen(asc_name));
-	qry("REPLACE INTO associations (id, name, active) VALUES (%d, '%s', 1)", i, buf);
+	qry("INSERT INTO associations (id, name, active) VALUES (%d, '%s', 1) ON DUPLICATE KEY UPDATE name = VALUES(name), active = VALUES(active)", i, buf);
 #endif
 
 	send_to_char("Ok, new association is set up.\n", god);
