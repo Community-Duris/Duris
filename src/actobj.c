@@ -733,6 +733,103 @@ void do_get(P_char ch, char *argument, int cmd)
 						       world[ch->in_room].number);
 						continue;
 					}
+
+					if (CAN_SEE_OBJ(ch, o_obj))
+					{
+						if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) >= LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
+						{
+							if (((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) < CAN_CARRY_W(ch)) || OBJ_CARRIED(s_obj))
+							{
+								if (CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)))
+								{
+									if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
+									{
+										logit(LOG_CORPSE, "%s%s: corpse of %s from %s", GET_NAME(ch), (hood == ch) ? "" : GET_NAME(hood), o_obj->action_description, s_obj->name);
+									}
+									else if (corpse_flag && o_obj)
+									{
+										if (o_obj->type == ITEM_MONEY)
+										{
+											logit(LOG_CORPSE,
+											      "%s%s: %dp, %dg, %ds, %dc from %s",
+											      GET_NAME(ch),
+											      (hood == ch) ? "" : GET_NAME(hood),
+											      o_obj->value[3],
+											      o_obj->value[2],
+											      o_obj->value[1],
+											      o_obj->value[0],
+											      s_obj->action_description);
+									}
+									else
+									{
+										if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
+										{
+											logit(LOG_CORPSE,
+											      "%s%s: %s [%d] (ARTIFACT) from %s",
+											      GET_NAME(ch),
+											      (hood == ch) ? "" : GET_NAME(hood),
+											      o_obj->name,
+											      obj_index[o_obj->R_num].virtual_number,
+											      s_obj->action_description);
+
+											act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
+
+											// If the artifact was picked up across racewar lines.
+											if ((s_obj->value[5] != RACEWAR_NONE) && (GET_RACEWAR(ch) != s_obj->value[5]))
+											{
+												int vnum      = OBJ_VNUM(o_obj);
+												int owner_pid = -1;
+												int timer     = time(NULL);
+												// This sets the 'soul' of the artifact to the new owner.
+												sql_update_bind_data(vnum, &owner_pid, &timer);
+												// Feed artifact to at least the minimum for across racewar sides.
+												artifact_feed_to_min_sql(o_obj, 5 * MINS_PER_REAL_DAY);
+											}
+										}
+										else
+										{
+											logit(LOG_CORPSE,
+											      "%s%s: %s [%d] from %s",
+											      GET_NAME(ch),
+											      (hood == ch) ? "" : GET_NAME(hood),
+											      o_obj->name,
+											      obj_index[o_obj->R_num].virtual_number,
+											      s_obj->action_description);
+
+											act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
+										}
+									}
+									if (!IS_TRUSTED(ch))
+									{
+										CharWait(ch, PULSE_VIOLENCE);
+									}
+									get(ch, o_obj, s_obj, TRUE);
+									total++;
+									if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
+										if (s_obj->value[3] > 0)
+											s_obj->value[3]--;
+								}
+								else
+								{
+									snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takeable.\r\n", o_obj->short_description);
+									send_to_char(Gbuf3, ch);
+									fail = TRUE;
+								}
+							}
+							else
+							{
+								snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy.\r\n", o_obj->short_description);
+								send_to_char(Gbuf3, ch);
+								fail = TRUE;
+							}
+						}
+						else
+						{
+							send_to_char("You can't carry any more.\r\n", ch);
+							fail = TRUE;
+						}
+					}
+				}
 				}
 				if (!total && !fail)
 				{
