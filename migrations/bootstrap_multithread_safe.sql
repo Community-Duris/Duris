@@ -1703,7 +1703,7 @@ SET @sql = IF(@idx_exists = 0,
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
--- FILE: schema_migration_v5_ships.sql
+-- FILE: retired_schema_migration_v5_ships.sql
 -- ============================================================================
 -- ships tables
 
@@ -1767,8 +1767,32 @@ create table if not exists ship_slots (
     unique key uk_ship_slots_index (ship_id, slot_index)
 ) engine=innodb;
 
+create table if not exists ship_armor (
+    id int unsigned auto_increment primary key,
+    ship_id int unsigned not null,
+    side tinyint not null,
+    armor int default 0,
+    internal int default 0,
+    constraint fk_ship_armor_ship foreign key (ship_id) references ships(id) on delete cascade,
+    unique key uk_ship_armor (ship_id, side)
+) engine=innodb;
+
+create table if not exists ship_crew (
+    id int unsigned auto_increment primary key,
+    ship_id int unsigned not null,
+    crew_index int default 0,
+    sail_skill int default 0,
+    guns_skill int default 0,
+    rpar_skill int default 0,
+    sail_chief int default 0,
+    guns_chief int default 0,
+    rpar_chief int default 0,
+    constraint fk_ship_crew_ship foreign key (ship_id) references ships(id) on delete cascade,
+    unique key uk_ship_crew (ship_id)
+) engine=innodb;
+
 -- ============================================================================
--- FILE: schema_migration_v6_guilds.sql
+-- FILE: retired_schema_migration_v6_guilds.sql
 -- ============================================================================
 -- guilds tables
 
@@ -1803,27 +1827,84 @@ create table if not exists guild_ranks (
 create table if not exists guild_members (
     id int unsigned auto_increment primary key,
     guild_id int unsigned not null,
-    member_name varchar(50) not null,
+    player_name varchar(64) not null,
+    player_pid int unsigned default null,
     bits int unsigned not null default 0,
     debt int unsigned not null default 0,
     online_status tinyint not null default 0,
     constraint fk_guild_members_guild foreign key (guild_id) references guilds(id) on delete cascade,
-    unique key uk_guild_members_name (guild_id, member_name)
+    unique key uk_guild_members_name (guild_id, player_name)
 ) engine=innodb;
 
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'guild_members' AND index_name = 'idx_guild_members_name');
 SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX idx_guild_members_name ON guild_members(member_name)',
+    'CREATE INDEX idx_guild_members_name ON guild_members(player_name)',
     'SELECT "idx_guild_members_name already exists"');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+
+-- ============================================================================
+-- FILE: bootstrap_base_boons_outposts.sql
+-- ============================================================================
+-- boons tables
+
+create table if not exists boons (
+    id int auto_increment primary key,
+    time int not null default 0,
+    duration int not null default 0,
+    racewar int not null default 0,
+    type int not null default 0,
+    opt int not null default 0,
+    criteria decimal(10,2) not null default 0.00,
+    criteria2 decimal(10,2) not null default 0.00,
+    bonus decimal(10,2) not null default 0.00,
+    bonus2 decimal(10,2) not null default 0.00,
+    random int not null default 0,
+    author varchar(20) default null,
+    active int not null default 0,
+    pid int not null default 0,
+    rpt int not null default 0
+) engine=innodb;
+
+create table if not exists boons_progress (
+    id int auto_increment primary key,
+    boonid int not null default 0,
+    pid int not null default 0,
+    counter decimal(10,2) not null default 0.00
+) engine=innodb;
+
+create table if not exists boons_shop (
+    id int auto_increment primary key,
+    pid int not null default 0,
+    points int not null default 0,
+    stats int not null default 0,
+    unique key uk_pid (pid)
+) engine=innodb;
+
+-- outposts tables
+
+create table if not exists outposts (
+    id int not null,
+    owner_id int not null default 0,
+    level int not null default 1,
+    walls int not null default 0,
+    archers int not null default 0,
+    resources int not null default 0,
+    applied_resources int not null default 100000,
+    hitpoints int not null default 0,
+    territory int not null default 0,
+    portal_room int not null default 0,
+    golems int not null default 0,
+    meurtriere int not null default 0,
+    scouts int not null default 0,
+    primary key (id)
+) engine=innodb;
+
 -- ============================================================================
 -- FILE: schema_migration_v7_player_fixes.sql
--- ============================================================================
--- schema_migration_v7_player_fixes.sql
 -- adds missing player fields for existing databases
 -- act3: surname/achievement flags
 -- last_room: room vnum where player was saved

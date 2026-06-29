@@ -9468,12 +9468,14 @@ P_ship sql_load_ship(const char *owner_name)
 	ship->race      = atoi(row[7]);
 	ship->money     = atoi(row[8]);
 	ship->flags     = row[9] ? strtoul(row[9], NULL, 10) : 0;
-
 	mysql_free_result(result);
 
-	sql_load_ship_armor(ship_id, ship);
-	sql_load_ship_crew(ship_id, ship);
-	sql_load_ship_slots(ship_id, ship);
+	if (!sql_load_ship_armor(ship_id, ship) || !sql_load_ship_crew(ship_id, ship) || !sql_load_ship_slots(ship_id, ship))
+	{
+		logit(LOG_DEBUG, "sql_load_ship: failed to load dependent ship rows for %s", ship->ownername ? ship->ownername : "<unknown>");
+		delete_ship(ship, true);
+		return NULL;
+	}
 	ship->save_pending         = false;
 	ship->save_retry_after     = 0;
 	ship->save_saved_signature = ship_save_signature(ship);
@@ -9512,7 +9514,10 @@ bool sql_load_all_ships()
 	{
 		P_ship ship = sql_load_ship(owner_names[i]);
 		if (!ship)
+		{
+			logit(LOG_FILE, "sql_load_all_ships: failed to load ship rows for %s", owner_names[i]);
 			continue;
+		}
 
 		name_ship(ship->name, ship);
 		if (!load_ship(ship, real_room0(ship->anchor)))
@@ -9722,41 +9727,47 @@ Guild *sql_load_guild(unsigned int guild_id)
 	// load ranks
 	snprintf(query, sizeof(query), "select rank_index, title from guild_ranks where guild_id=%u order by rank_index", guild_id);
 	result = db_query("%s", query);
-	if (result)
+	if (!result)
 	{
-		while ((row = mysql_fetch_row(result)))
-		{
-			int idx = atoi(row[0]);
-			if (idx >= 0 && idx < ASC_NUM_RANKS)
-				strncpy(guild->titles[idx], row[1] ? row[1] : "", ASC_MAX_STR_RANK - 1);
-		}
-		mysql_free_result(result);
+		logit(LOG_DEBUG, "sql_load_guild: failed to load ranks for guild %u", guild_id);
+		delete guild;
+		return NULL;
 	}
+	while ((row = mysql_fetch_row(result)))
+	{
+		int idx = atoi(row[0]);
+		if (idx >= 0 && idx < ASC_NUM_RANKS)
+			strncpy(guild->titles[idx], row[1] ? row[1] : "", ASC_MAX_STR_RANK - 1);
+	}
+	mysql_free_result(result);
 
 	// load members
 	snprintf(query, sizeof(query), "select player_name, bits, debt from guild_members where guild_id=%u", guild_id);
 	result = db_query("%s", query);
-	if (result)
+	if (!result)
 	{
-		P_member tail = NULL;
-		while ((row = mysql_fetch_row(result)))
-		{
-			P_member mem = new guild_member();
-			strncpy(mem->name, row[0] ? row[0] : "", MAX_NAME_LENGTH);
-			mem->bits          = row[1] ? atoi(row[1]) : 0;
-			mem->debt          = row[2] ? atoi(row[2]) : 0;
-			mem->online_status = GSTAT_OFFLINE;
-			mem->next          = NULL;
-
-			if (!guild->members)
-				guild->members = mem;
-			else
-				tail->next = mem;
-			tail = mem;
-			guild->member_count++;
-		}
-		mysql_free_result(result);
+		logit(LOG_DEBUG, "sql_load_guild: failed to load members for guild %u", guild_id);
+		delete guild;
+		return NULL;
 	}
+	P_member tail = NULL;
+	while ((row = mysql_fetch_row(result)))
+	{
+		P_member mem = new guild_member();
+		strncpy(mem->name, row[0] ? row[0] : "", MAX_NAME_LENGTH);
+		mem->bits          = row[1] ? atoi(row[1]) : 0;
+		mem->debt          = row[2] ? atoi(row[2]) : 0;
+		mem->online_status = GSTAT_OFFLINE;
+		mem->next          = NULL;
+
+		if (!guild->members)
+			guild->members = mem;
+		else
+			tail->next = mem;
+		tail = mem;
+		guild->member_count++;
+	}
+	mysql_free_result(result);
 
 	return guild;
 }
@@ -9784,11 +9795,13 @@ bool sql_load_all_guilds()
 	for (int i = 0; i < num_guilds; i++)
 	{
 		Guild *guild = sql_load_guild(guild_ids[i]);
-		if (guild)
+		if (!guild)
 		{
-			guild->next_guild = guild_list;
-			guild_list        = guild;
+			logit(LOG_FILE, "sql_load_all_guilds: failed to load guild rows for %u", guild_ids[i]);
+			continue;
 		}
+		guild->next_guild = guild_list;
+		guild_list        = guild;
 	}
 
 	return true;
