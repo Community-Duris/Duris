@@ -76,6 +76,22 @@ inline StorageLocker *GetChestList(int real_room)
 	}
 	return pRet;
 }
+
+static int locker_exit_room(P_char ch, int fallback_room)
+{
+	if (ch && (ch->in_room != NOWHERE) && world[ch->in_room].dir_option[0] && (world[ch->in_room].dir_option[0]->to_room != NOWHERE))
+		return world[ch->in_room].dir_option[0]->to_room;
+
+	if (ch && (ch->specials.was_in_room != NOWHERE))
+	{
+		int was_in = real_room(ch->specials.was_in_room);
+		if (was_in != NOWHERE)
+			return was_in;
+	}
+
+	return fallback_room;
+}
+
 const unsigned LockerChest::m_chestVnum = 173;
 
 StorageLocker::StorageLocker(int rroom, P_char chLocker, P_char chUser)
@@ -1188,7 +1204,7 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		send_to_char("..but you don't have the money not even in your bank account!, GET OUT!\r\n\r\n", ch);
 		room = ch->in_room;
 		char_from_room(ch);
-		char_to_room(ch, world[room].dir_option[0]->to_room, 0);
+		char_to_room(ch, locker_exit_room(ch, room), 0);
 		return TRUE;
 	}
 
@@ -1397,7 +1413,7 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 int storage_locker(int room, P_char ch, int cmd, char *arg)
 {
 	P_char            tmpChar = NULL;
-	int               troom, cost;
+	int               troom = locker_exit_room(ch, room), cost;
 	struct zone_data *zone;
 	int               bits, wtype, craft, mat;
 	P_char            tmp_char;
@@ -1495,7 +1511,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 				char_from_room(tmpChar);
 				// char_to_room(tmpChar, world[ch->in_room].dir_option[0]->to_room, 0);
 				//  functionality of alt_hometown_check disabled
-				char_to_room(tmpChar, alt_hometown_check(ch, world[ch->in_room].dir_option[0]->to_room, 0), 0);
+				char_to_room(tmpChar, alt_hometown_check(ch, locker_exit_room(ch, room), 0), 0);
 				tmpChar = world[ch->in_room].people;
 			} /* while */
 
@@ -1514,19 +1530,22 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 					snprintf(buf, MAX_STRING_LENGTH, "%s&n flies out in front of you!\r\n", tmp_obj->short_description);
 					send_to_char(buf, ch);
 					obj_from_room(tmp_obj);
-					obj_to_room(tmp_obj, world[ch->in_room].dir_option[0]->to_room);
+					obj_to_room(tmp_obj, locker_exit_room(ch, room));
 				}
 			}
 			send_to_char("As you leave, you see the &+YSLSC&n member applying magic locks to the door...\r\n", ch);
 
-			troom = world[ch->in_room].dir_option[0]->to_room;
+			troom = locker_exit_room(ch, room);
 
 			zone = &zone_table[world[troom].zone];
 
 			if (zone->status > ZONE_NORMAL)
 			{
 				// functionality of alt_hometown_check disabled
-				world[ch->in_room].dir_option[0]->to_room = alt_hometown_check(ch, troom, 0);
+				if (world[ch->in_room].dir_option[0])
+					world[ch->in_room].dir_option[0]->to_room = alt_hometown_check(ch, troom, 0);
+				else
+					logit(LOG_WIZ, "locker_exit_room missing while saving %s in room %d", GET_NAME(ch), ch->in_room);
 			}
 
 			free_locker(room);
@@ -1539,10 +1558,10 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 
 		/* quick adjustment - if someone dropped an arti, give it back to them before saving 'em */
 		check_for_artisInRoom(ch, ch->in_room);
-		ch->specials.was_in_room = world[world[ch->in_room].dir_option[0]->to_room].number;
+		ch->specials.was_in_room = world[troom].number;
 		/* this return value will ensure that the pfile is saved where the locker_hook is, and NOT
 		   in the actual locker room */
-		return (world[ch->in_room].dir_option[0]->to_room);
+		return (troom);
 	}
 
 	if (cmd == (-81))
@@ -1558,7 +1577,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 				   to deal with it is to eject the player from the locker */
 				room = ch->in_room;
 				char_from_room(ch);
-				char_to_room(ch, world[room].dir_option[0]->to_room, 0);
+				char_to_room(ch, locker_exit_room(ch, room), 0);
 			}
 			else
 			{
@@ -1596,7 +1615,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 					send_to_char("You can only sit idle in your own locker...  GET OUT!\r\n", ch);
 					room = ch->in_room;
 					char_from_room(ch);
-					char_to_room(ch, world[room].dir_option[0]->to_room, 0);
+					char_to_room(ch, locker_exit_room(ch, room), 0);
 				}
 			}
 		}
