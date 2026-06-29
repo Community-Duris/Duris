@@ -1719,7 +1719,14 @@ create table if not exists ships (
     updated_at timestamp default current_timestamp on update current_timestamp
 ) engine=innodb;
 
-create index idx_ships_owner_pid on ships(owner_pid);
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE() AND table_name = 'ships' AND index_name = 'idx_ships_owner_pid');
+SET @sql = IF(@idx_exists = 0,
+    'CREATE INDEX idx_ships_owner_pid ON ships(owner_pid)',
+    'SELECT "idx_ships_owner_pid already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 create table if not exists ship_slots (
     id int unsigned auto_increment primary key,
@@ -1782,7 +1789,14 @@ create table if not exists guild_members (
     unique key uk_guild_members_name (guild_id, member_name)
 ) engine=innodb;
 
-create index idx_guild_members_name on guild_members(member_name);
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE() AND table_name = 'guild_members' AND index_name = 'idx_guild_members_name');
+SET @sql = IF(@idx_exists = 0,
+    'CREATE INDEX idx_guild_members_name ON guild_members(member_name)',
+    'SELECT "idx_guild_members_name already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
 -- FILE: schema_migration_v7_player_fixes.sql
