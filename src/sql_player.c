@@ -39,6 +39,7 @@ extern struct mm_ds      *dead_obj_pool;
 extern P_obj              object_list;
 extern unsigned long      next_obj_uid;
 extern P_Guild            guild_list;
+extern Skill               skills[];
 void                      ensure_pconly_pool(void);
 
 #ifdef __NO_MYSQL__
@@ -1352,14 +1353,45 @@ bool sql_save_player_affects(P_char ch)
 	int pos = snprintf(batch,
 	                   32768,
 	                   "REPLACE INTO player_affects (pid, type, duration, flags, modifier, location, level, "
-	                   "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5) VALUES ");
+	                   "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, custom_msg_char, custom_msg_room) VALUES ");
 
 	bool has_affects = false;
 	for (struct affected_type *af = ch->affected; af; af = af->next)
 	{
 		if (IS_SET(af->flags, AFFTYPE_NOSAVE))
 			continue;
-			int new_pos = batch_append(batch, pos, 32768, "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu)",
+
+		const char *wear_off_char = NULL;
+		const char *wear_off_room = NULL;
+		if (af->wear_off_message_index > 0)
+		{
+			wear_off_char = skills[af->type].wear_off_char[af->wear_off_message_index];
+			wear_off_room = skills[af->type].wear_off_room[af->wear_off_message_index];
+		}
+
+		char *esc_wear_off_char = wear_off_char ? sql_escape_string(wear_off_char) : NULL;
+		char *esc_wear_off_room = wear_off_room ? sql_escape_string(wear_off_room) : NULL;
+		if ((wear_off_char && !esc_wear_off_char) || (wear_off_room && !esc_wear_off_room))
+		{
+			free(esc_wear_off_char);
+			free(esc_wear_off_room);
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+
+		char wear_off_char_sql[MAX_STRING_LENGTH * 2 + 3];
+		char wear_off_room_sql[MAX_STRING_LENGTH * 2 + 3];
+		if (esc_wear_off_char)
+			snprintf(wear_off_char_sql, sizeof(wear_off_char_sql), "'%s'", esc_wear_off_char);
+		else
+			strcpy(wear_off_char_sql, "NULL");
+		if (esc_wear_off_room)
+			snprintf(wear_off_room_sql, sizeof(wear_off_room_sql), "'%s'", esc_wear_off_room);
+		else
+			strcpy(wear_off_room_sql, "NULL");
+
+		int new_pos = batch_append(batch, pos, 32768, "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s)",
 		                has_affects ? "," : "",
 		                pid,
 		                af->type,
@@ -1372,14 +1404,18 @@ bool sql_save_player_affects(P_char ch)
 		                af->bitvector2,
 		                af->bitvector3,
 		                af->bitvector4,
-		                af->bitvector5);
-			if (new_pos < 0)
-			{
-				free(batch);
-				if (own_txn) sql_rollback();
-				return false;
-			}
-			pos = new_pos;
+		                af->bitvector5,
+		                wear_off_char_sql,
+		                wear_off_room_sql);
+		free(esc_wear_off_char);
+		free(esc_wear_off_room);
+		if (new_pos < 0)
+		{
+			free(batch);
+			if (own_txn) sql_rollback();
+			return false;
+		}
+		pos = new_pos;
 		has_affects = true;
 	}
 
@@ -3694,7 +3730,8 @@ bool sql_load_player_affects(P_char ch)
 	snprintf(query,
 	         sizeof(query),
 	         "SELECT type, duration, flags, modifier, location, level, "
-	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
+	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	         "custom_msg_char, custom_msg_room "
 	         "FROM player_affects WHERE pid=%d",
 	         pid);
 
@@ -3719,10 +3756,17 @@ bool sql_load_player_affects(P_char ch)
 		af.bitvector3 = sql_row_ulong(row, 8, 0);
 		af.bitvector4 = sql_row_ulong(row, 9, 0);
 		af.bitvector5 = sql_row_ulong(row, 10, 0);
+		char *wear_off_char = sql_row_str(row, 11);
+		char *wear_off_room = sql_row_str(row, 12);
 		if (af.type == SKILL_DIAMOND_SOUL && af.location == APPLY_SAVING_PARA)
 			af.wear_off_message_index = 1;
 
-		affect_to_char(ch, &af);
+		if (wear_off_char || wear_off_room)
+			affect_to_char_with_messages(ch, &af, wear_off_char, wear_off_room);
+		else
+			affect_to_char(ch, &af);
+		free(wear_off_char);
+		free(wear_off_room);
 	}
 	mysql_free_result(result);
 
