@@ -4160,6 +4160,10 @@ P_char sql_load_player(const char *name)
 }
 
 static bool               sql_save_account_characters(struct acct_entry *acc);
+static bool               sql_account_ips_query_failed       = false;
+static bool               sql_account_chars_query_failed     = false;
+static void               free_acct_ip_list(struct acct_ip *ips);
+static void               free_acct_char_list(struct acct_chars *chars);
 static struct acct_chars *sql_load_account_characters(const char *account_name);
 
 bool sql_save_account(struct acct_entry *acc)
@@ -4398,19 +4402,59 @@ struct acct_entry *sql_load_account(const char *name)
 	mysql_free_result(result);
 
 	// load ips
-	acc->acct_unique_ips = sql_load_account_ips(name);
-	acc->num_ips         = 0;
+	sql_account_ips_query_failed = false;
+	acc->acct_unique_ips        = sql_load_account_ips(name);
+	if (sql_account_ips_query_failed)
+	{
+		free_acct_ip_list(acc->acct_unique_ips);
+		free(esc_name);
+		free(acc);
+		return NULL;
+	}
+	acc->num_ips = 0;
 	for (struct acct_ip *ip = acc->acct_unique_ips; ip; ip = ip->next)
 		acc->num_ips++;
 
 	// load characters
-	acc->acct_character_list = sql_load_account_characters(name);
-	acc->num_chars           = 0;
+	sql_account_chars_query_failed = false;
+	acc->acct_character_list       = sql_load_account_characters(name);
+	if (sql_account_chars_query_failed)
+	{
+		free_acct_ip_list(acc->acct_unique_ips);
+		free_acct_char_list(acc->acct_character_list);
+		free(esc_name);
+		free(acc);
+		return NULL;
+	}
+	acc->num_chars = 0;
 	for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next)
 		acc->num_chars++;
 
 	free(esc_name);
 	return acc;
+}
+
+static void free_acct_ip_list(struct acct_ip *ips)
+{
+	while (ips)
+	{
+		struct acct_ip *next = ips->next;
+		ips->hostname        = check_and_clear(ips->hostname);
+		ips->ip_address      = check_and_clear(ips->ip_address);
+		FREE(ips);
+		ips = next;
+	}
+}
+
+static void free_acct_char_list(struct acct_chars *chars)
+{
+	while (chars)
+	{
+		struct acct_chars *next = chars->next;
+		chars->charname         = check_and_clear(chars->charname);
+		FREE(chars);
+		chars = next;
+	}
 }
 
 static struct acct_chars *sql_load_account_characters(const char *account_name)
@@ -4436,7 +4480,11 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
 	MYSQL_RES *result = db_query("%s", query);
 
 	if (!result)
+	{
+		sql_account_chars_query_failed = true;
+		logit(LOG_DEBUG, "sql_load_account_characters: query failed for %s", account_name);
 		return NULL;
+	}
 
 	struct acct_chars *head = NULL;
 	struct acct_chars *tail = NULL;
@@ -6109,7 +6157,11 @@ struct acct_ip *sql_load_account_ips(const char *account_name)
 
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
+	{
+		sql_account_ips_query_failed = true;
+		logit(LOG_DEBUG, "sql_load_account_ips: query failed for %s", account_name);
 		return NULL;
+	}
 
 	struct acct_ip *head = NULL;
 	struct acct_ip *tail = NULL;
