@@ -3297,7 +3297,13 @@ void select_pwd(P_desc d, char *arg)
 			          d->host);
 			logit(LOG_PLAYER, "%s deleted %sself (%s@%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->login, d->host);
 			sql_log(d->character, PLAYERLOG, "Deleted self");
-			deleteCharacter(d->character);
+			if (!deleteCharacter(d->character))
+			{
+				SEND_TO_Q("\r\nCharacter deletion failed; please contact an immortal.\r\n", d);
+				logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE for %s", GET_NAME(d->character));
+				close_socket(d);
+				return;
+			}
 			STATE(d) = CON_FLUSH;
 			break;
 	}
@@ -4861,7 +4867,13 @@ void nanny(P_desc d, char *arg)
 			SEND_TO_Q("\r\n\r\nCharacter is deleted!\r\n", d);
 			statuslog(d->character->player.level, "%s forced to delete character.", GET_NAME(d->character));
 			logit(LOG_PLAYER, "%s deleted by a forger.", GET_NAME(d->character));
-			deleteCharacter(d->character);
+			if (!deleteCharacter(d->character))
+			{
+				SEND_TO_Q("\r\nCharacter deletion failed; please contact an immortal.\r\n", d);
+				logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE for %s", GET_NAME(d->character));
+				close_socket(d);
+				return;
+			}
 			STATE(d) = CON_FLUSH;
 			break;
 
