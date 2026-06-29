@@ -4,6 +4,7 @@
 #include "epic.h"
 #include "ships/ships.h"
 #include "sql.h"
+#include "utility.h"
 
 #ifdef __NO_MYSQL__
 void set_timer(const char *name) {}
@@ -14,7 +15,11 @@ int get_timer(const char *name) { return 0; }
 #else
 void set_timer(const char *name) { set_timer(name, time(NULL)); }
 
-void set_timer(const char *name, int date) { qry("REPLACE INTO timers (name, date) VALUES ('%s', '%d')", name, date); }
+void set_timer(const char *name, int date)
+{
+	if (!qry("REPLACE INTO timers (name, date) VALUES ('%s', '%d')", name, date))
+		logit(LOG_DEBUG, "set_timer: failed to save timer %s", name ? name : "<null>");
+}
 
 int get_timer(const char *name)
 {

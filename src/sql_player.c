@@ -1136,7 +1136,12 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		if (ch->only.pc->pc_timer[i] != 0)
 		{
 			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,FROM_UNIXTIME(NULLIF(%ld,0)))", has_data ? "," : "", pid, i, (long)ch->only.pc->pc_timer[i]);
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 			has_data = true;
 		}
@@ -1160,7 +1165,12 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		if (ch->specials.undead_spell_slots[i] != 0)
 		{
 			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%d)", has_data ? "," : "", pid, i, ch->specials.undead_spell_slots[i]);
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 			has_data = true;
 		}
@@ -1184,7 +1194,12 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		if (ch->only.pc->learned_forged_list[i] != 0)
 		{
 			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d,%ld)", has_data ? "," : "", pid, i, ch->only.pc->learned_forged_list[i]);
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 			has_data = true;
 		}
@@ -1208,7 +1223,12 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		for (int i = 0; i < ch->only.pc->numb_gcmd; i++)
 		{
 			int new_pos = batch_append(batch, pos, 65536, "%s(%d,%d)", has_data ? "," : "", pid, ch->only.pc->gcmd_arr[i]);
-			if (new_pos < 0) break;
+			if (new_pos < 0)
+			{
+				free(batch);
+				if (own_txn) sql_rollback();
+				return false;
+			}
 			pos = new_pos;
 			has_data = true;
 		}
