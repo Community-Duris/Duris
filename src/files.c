@@ -1754,7 +1754,11 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 
 	// Remove all artis from char.
 	remove_all_artifacts_sql(ch);
-	remove_all_locker_access(ch);
+	if (!remove_all_locker_access(ch))
+	{
+		logit(LOG_DEBUG, "deleteCharacter(): failed to clear locker access for %s", GET_NAME(ch));
+		ok = FALSE;
+	}
 	if (GET_ASSOC(ch) != NULL)
 	{
 		GET_ASSOC(ch)->kick(ch);

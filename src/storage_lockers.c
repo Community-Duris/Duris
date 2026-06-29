@@ -2702,7 +2702,13 @@ void StorageLocker::SortIValues(void)
 	m_bIValue = false;
 }
 
-void remove_all_locker_access(P_char ch) { qry("DELETE FROM locker_access WHERE visitor='%s'", GET_NAME(ch)); }
+bool remove_all_locker_access(P_char ch)
+{
+	if (!ch || !GET_NAME(ch))
+		return false;
+
+	return qry("DELETE FROM locker_access WHERE visitor='%s'", GET_NAME(ch));
+}
 
 static void locker_access_transferAccess(P_char chLocker, P_char ch)
 {
