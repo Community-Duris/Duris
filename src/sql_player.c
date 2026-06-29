@@ -5962,7 +5962,12 @@ bool sql_migrate_player(const char *name)
 	ch->carrying = NULL;
 	for (int i = 0; i < MAX_WEAR; i++)
 		ch->equipment[i] = NULL;
-	restoreItemsOnly(ch, 0);
+	if (restoreItemsOnly(ch, 0) < 0)
+	{
+		logit(LOG_FILE, "sql_migrate_player: failed to load items for %s", name);
+		free_temp_char(ch);
+		return false;
+	}
 
 	// save to db
 	// use status as rent type, room 0 (will be fixed on login)
@@ -6073,7 +6078,8 @@ int sql_migrate_all_players(void)
 
 		while ((pf_entry = readdir(pf_dir)) != NULL)
 		{
-			strcpy(fname, pf_entry->d_name);
+			strncpy(fname, pf_entry->d_name, sizeof(fname) - 1);
+			fname[sizeof(fname) - 1] = '\0';
 
 			// skip . and ..
 			if (fname[0] == '.')
