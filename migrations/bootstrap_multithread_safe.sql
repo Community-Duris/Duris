@@ -41,10 +41,14 @@ CREATE TABLE IF NOT EXISTS account_characters (
     last_login BIGINT DEFAULT 0,
     blocked TINYINT DEFAULT 0,
     racewar TINYINT DEFAULT 0,
+    deleted_at DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
+    UNIQUE KEY idx_char_name_unique (char_name),
+    UNIQUE KEY acct_char (account_name, char_name),
     INDEX idx_account_name (account_name),
-    INDEX idx_char_name (char_name)
+    INDEX idx_char_name (char_name),
+    INDEX account_active (account_name, deleted_at)
 );
 
 CREATE TABLE IF NOT EXISTS player_data (
@@ -725,6 +729,24 @@ SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
 SET @sql = IF(@col_exists = 0,
     'ALTER TABLE account_characters ADD COLUMN racewar TINYINT DEFAULT 0',
     'SELECT "racewar already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'deleted_at');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE account_characters ADD COLUMN deleted_at DATETIME DEFAULT NULL',
+    'SELECT "deleted_at already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND index_name = 'account_active');
+SET @sql = IF(@idx_exists = 0,
+    'CREATE INDEX account_active ON account_characters(account_name, deleted_at)',
+    'SELECT "account_active already exists"');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
