@@ -25,27 +25,88 @@ run_sql() {
         echo "ok"
     else
         echo "FAILED"
-        cat "$err_file" | head -20
+        head -20 "$err_file"
         FAILED=$((FAILED + 1))
     fi
     rm -f "$err_file"
     rm -f "$tmpfile"
 }
 
+convert_tables_to_charset() {
+    local desc="$1"
+    local with_collation="$2"
+    STEP=$((STEP + 1))
+    printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "$desc"
+
+    local db_charset=""
+    local db_collation=""
+    local tables=""
+    local table_failed=0
+
+    if ! db_charset=$($MYSQL_CMD -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
+        echo "FAILED"
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+
+    if [ "$with_collation" = "1" ]; then
+        if ! db_collation=$($MYSQL_CMD -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
+            echo "FAILED"
+            FAILED=$((FAILED + 1))
+            return 1
+        fi
+    fi
+
+    if ! tables=$($MYSQL_CMD -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null); then
+        echo "FAILED"
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+
+    if [ -n "$tables" ] && [ -n "$db_charset" ] && { [ "$with_collation" != "1" ] || [ -n "$db_collation" ]; }; then
+        while IFS= read -r t; do
+            [ -z "$t" ] && continue
+            local err_file
+            err_file=$(mktemp)
+            if [ "$with_collation" = "1" ]; then
+                if $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $db_charset COLLATE $db_collation; SET FOREIGN_KEY_CHECKS=1;" >/dev/null 2>"$err_file"; then
+                    :
+                else
+                    if [ "$table_failed" -eq 0 ]; then
+                        echo "FAILED"
+                    fi
+                    table_failed=1
+                    head -20 "$err_file"
+                fi
+            else
+                if $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $db_charset; SET FOREIGN_KEY_CHECKS=1;" >/dev/null 2>"$err_file"; then
+                    :
+                else
+                    if [ "$table_failed" -eq 0 ]; then
+                        echo "FAILED"
+                    fi
+                    table_failed=1
+                    head -20 "$err_file"
+                fi
+            fi
+            rm -f "$err_file"
+        done <<EOF
+$tables
+EOF
+    fi
+
+    if [ "$table_failed" -ne 0 ]; then
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+
+    echo "ok"
+}
+
 run_sql "set database to server default" "
 ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;"
 
-STEP=$((STEP + 1))
-printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "convert existing tables to database default"
-DB_CHARSET=$($MYSQL_CMD -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
-DB_COLLATION=$($MYSQL_CMD -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
-TABLES=$($MYSQL_CMD -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null) || true
-if [ -n "$TABLES" ] && [ -n "$DB_CHARSET" ] && [ -n "$DB_COLLATION" ]; then
-    for t in $TABLES; do
-        $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $DB_CHARSET COLLATE $DB_COLLATION; SET FOREIGN_KEY_CHECKS=1;" 2>/dev/null || true
-    done
-fi
-echo "ok"
+convert_tables_to_charset "convert existing tables to database default" 1
 
 run_sql "create accounts table" "
 CREATE TABLE IF NOT EXISTS accounts (
@@ -2649,18 +2710,7 @@ ALTER TABLE player_items ADD COLUMN IF NOT EXISTS item_material TINYINT DEFAULT 
 # epic_bonus/epic_gain pid remapping is now handled by the C migration tool
 # (src-migrate/migrate_players.c) which has access to the old pids from pfiles
 
-# final cleanup - ensure ALL tables have consistent collation
-STEP=$((STEP + 1))
-printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "ensure consistent collation on all tables"
-DB_CHARSET=$($MYSQL_CMD -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
-DB_COLLATION=$($MYSQL_CMD -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null) || true
-TABLES=$($MYSQL_CMD -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null) || true
-if [ -n "$TABLES" ] && [ -n "$DB_CHARSET" ] && [ -n "$DB_COLLATION" ]; then
-    for t in $TABLES; do
-        $MYSQL_CMD -e "SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $DB_CHARSET COLLATE $DB_COLLATION; SET FOREIGN_KEY_CHECKS=1;" 2>/dev/null || true
-    done
-fi
-echo "ok"
+convert_tables_to_charset "ensure consistent collation on all tables" 1
 
 # flush redis cache
 STEP=$((STEP + 1))
