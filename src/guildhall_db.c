@@ -30,7 +30,7 @@ int next_guildhall_id()
 #ifndef __NO_MYSQL__
 	if (_next_guildhall_id == -1)
 	{
-		if (!qry("select max(id) from guildhalls"))
+		if (!qry("select coalesce(max(id), 0) from guildhalls"))
 		{
 			logit(LOG_GUILDHALLS, "next_guildhall_id(): query failed");
 			return -1;
@@ -60,7 +60,7 @@ int next_guildhall_room_id()
 #ifndef __NO_MYSQL__
 	if (_next_guildhall_room_id == -1)
 	{
-		if (!qry("select max(id) from guildhall_rooms"))
+		if (!qry("select coalesce(max(id), 0) from guildhall_rooms"))
 		{
 			logit(LOG_GUILDHALLS, "next_guildhall_room_id(): query failed");
 			return -1;

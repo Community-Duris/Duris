@@ -2412,25 +2412,12 @@ int create_boon(BoonData *bdata)
 	        bdata->repeat))
 	{
 
-		// Get the new ID
-		if (qry("SELECT MAX(id) FROM boons"))
+		// Get the new ID from the INSERT we just performed.
+		bdata->id = (int)mysql_insert_id(DB);
+		if (bdata->id <= 0)
 		{
-			MYSQL_RES *res = boon_store_result("create_boon");
-			MYSQL_ROW  row;
-
-			if (!res)
-			{
-				return FALSE;
-			}
-			if (mysql_num_rows(res) < 1)
-			{
-				mysql_free_result(res);
-				return FALSE;
-			}
-
-			row       = mysql_fetch_row(res);
-			bdata->id = (row && row[0]) ? atoi(row[0]) : 0;
-			mysql_free_result(res);
+			debug("create_boon(): mysql_insert_id returned invalid id");
+			return FALSE;
 		}
 
 		boon_notify(bdata->id, NULL, BN_CREATE);
