@@ -4319,7 +4319,8 @@ void writeSavedItem(P_obj item)
 
 	if (!OBJ_ROOM(item))
 	{
-		sql_delete_saved_item(item_key);
+		if (!sql_delete_saved_item(item_key))
+			logit(LOG_FILE, "sql_delete_saved_item failed for %s", item_key);
 		return;
 	}
 

@@ -552,7 +552,6 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	}
 	SET_BIT(temp1->extra2_flags, ITEM2_STOREITEM);
 	obj_to_char(temp1, ch);
-	deleteShopKeeper(shop_nr);
 	writeShopKeeper(keeper);
 
 	// Format: buy <object> <container> <amount>
