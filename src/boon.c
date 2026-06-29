@@ -2451,26 +2451,7 @@ int create_boon_progress(BoonProgress *bpg)
 
 	if (qry("INSERT into boons_progress (boonid, pid, counter) VALUES (%d, %d, %f)", bpg->boonid, bpg->pid, bpg->counter))
 	{
-		if (qry("SELECT MAX(id) FROM boons_progress"))
-		{
-			MYSQL_RES *res = boon_store_result("create_boon_progress");
-			MYSQL_ROW  row;
-
-			if (!res)
-			{
-				return FALSE;
-			}
-			if (mysql_num_rows(res) < 1)
-			{
-				mysql_free_result(res);
-				return FALSE;
-			}
-
-			row     = mysql_fetch_row(res);
-			bpg->id = (row && row[0]) ? atoi(row[0]) : 0;
-			mysql_free_result(res);
-		}
-
+		bpg->id = (int)mysql_insert_id(DB);
 		return TRUE;
 	}
 

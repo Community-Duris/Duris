@@ -97,7 +97,9 @@ int init_outposts()
 	// mob_index[real_mobile(0)].func.mob = ;
 	// obj_index[real_object(0)].func.obj = ;
 
-	load_outposts();
+	if (!load_outposts())
+		fatal_boot_error("outposts", "init_outposts: failed to load outposts from DB");
+
 	// init_outpost_resources();
 	return 0;
 }
@@ -116,12 +118,11 @@ int load_outposts()
 	if (mysql_num_rows(res) < 1)
 	{
 		mysql_free_result(res);
-		return FALSE;
+		return TRUE;
 	}
 
-	Building *building;
-
 	MYSQL_ROW row;
+	Building *building;
 	while ((row = mysql_fetch_row(res)))
 	{
 		int id     = atoi(row[0]);
@@ -137,6 +138,11 @@ int load_outposts()
 			outpost_generate_walls(building, walls, golems);
 			if (portal)
 				building->generate_portals();
+		}
+		else
+		{
+			mysql_free_result(res);
+			fatal_boot_error("outposts", "load_outposts: failed to instantiate outpost %d for guild %d", id, guild);
 		}
 	}
 
