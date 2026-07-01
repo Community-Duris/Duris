@@ -503,6 +503,34 @@ int fight_in_room(P_char ch)
 	return FALSE;
 }
 
+static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total, bool &found, const char *post_tag)
+{
+	if (!IS_TRUSTED(ch))
+	{
+		CharWait(ch, PULSE_VIOLENCE);
+	}
+
+	found = TRUE;
+	get(ch, o_obj, s_obj, TRUE);
+	logit(LOG_DEBUG,
+	      "%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
+	      post_tag,
+	      GET_NAME(ch),
+	      world[ch->in_room].number,
+	      o_obj->short_description ? o_obj->short_description : "?",
+	      OBJ_VNUM(o_obj),
+	      o_obj->obj_uid,
+	      OBJ_CARRIED_BY(o_obj, ch) ? 1 : 0,
+	      s_obj->short_description ? s_obj->short_description : "(none)",
+	      OBJ_VNUM(s_obj),
+	      s_obj->obj_uid,
+	      total + 1);
+	total++;
+	if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
+		if (s_obj->value[3] > 0)
+			s_obj->value[3]--;
+}
+
 void do_get(P_char ch, char *argument, int cmd)
 {
 	P_char hood = NULL, owner = NULL, rider;
@@ -1545,24 +1573,7 @@ fail = TRUE;
 										CharWait(ch, PULSE_VIOLENCE);
 									}
 									}
-									get(ch, o_obj, s_obj, TRUE);
-									logit(LOG_DEBUG,
-									      "GETDBG[get-container-single-post]: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
-									      GET_NAME(ch),
-									      world[ch->in_room].number,
-									      o_obj->short_description ? o_obj->short_description : "?",
-									      OBJ_VNUM(o_obj),
-									      o_obj->obj_uid,
-									      OBJ_CARRIED_BY(o_obj, ch) ? 1 : 0,
-									      s_obj->short_description ? s_obj->short_description : "(none)",
-									      OBJ_VNUM(s_obj),
-									      s_obj->obj_uid,
-									      total + 1);
-									total++;
-									if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
-										if (s_obj->value[3] > 0)
-											s_obj->value[3]--;
-									found = TRUE;
+									do_get_finalize_container_item(ch, s_obj, o_obj, total, found, "GETDBG[get-container-single-post]");
 									}
 					else
 					{
