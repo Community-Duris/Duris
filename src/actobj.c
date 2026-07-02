@@ -533,6 +533,15 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 
 static bool do_get_container_target_is_valid(P_obj s_obj);
 
+static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
+{
+	if (IS_ARTIFACT(o_obj))
+	{
+		wizlog(56, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
+		logit(LOG_OBJ, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
+	}
+}
+
 static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carried)
 {
 	P_obj carried_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
@@ -798,11 +807,7 @@ void do_get(P_char ch, char *argument, int cmd)
 						if (do_get_obj_is_takeable(ch, o_obj))
 						{
 							get(ch, o_obj, 0, TRUE);
-							if (IS_ARTIFACT(o_obj))
-							{
-								wizlog(56, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
-								logit(LOG_OBJ, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
-							}
+							do_get_log_room_artifact_pickup(ch, o_obj);
 							total++;
 						}
 						else
@@ -911,11 +916,7 @@ fail = TRUE;
 						}
 						found = TRUE;
 						get(ch, o_obj, s_obj, TRUE);
-						if (IS_ARTIFACT(o_obj))
-						{
-							wizlog(56, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
-							logit(LOG_OBJ, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
-						}
+						do_get_log_room_artifact_pickup(ch, o_obj);
 					}
 					else
 					{
