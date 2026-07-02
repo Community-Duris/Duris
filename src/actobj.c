@@ -551,6 +551,11 @@ static bool do_get_container_target_is_valid(P_obj s_obj)
 	       (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE);
 }
 
+static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
+{
+	return CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch));
+}
+
 void do_get(P_char ch, char *argument, int cmd)
 {
 	P_char hood = NULL, owner = NULL, rider;
@@ -709,7 +714,7 @@ void do_get(P_char ch, char *argument, int cmd)
 			      GET_OBJ_WEIGHT(o_obj),
 			      IS_CARRYING_N(ch),
 			      IS_CARRYING_W(ch, rider),
-			      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0,
+			      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
 			      ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)) ? 1 : 0,
 			      alldot ? 1 : 0,
 			      Gbuf2);
@@ -737,7 +742,7 @@ void do_get(P_char ch, char *argument, int cmd)
 				{
 					if ((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
 					{
-						if (CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)))
+						if (do_get_obj_is_takeable(ch, o_obj))
 						{
 							get(ch, o_obj, 0, TRUE);
 							if (IS_ARTIFACT(o_obj))
@@ -833,7 +838,7 @@ fail = TRUE;
 			{
 				if ((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
 				{
-					if (CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)))
+					if (do_get_obj_is_takeable(ch, o_obj))
 					{
 						if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
 						{
@@ -1049,7 +1054,7 @@ fail = TRUE;
 					      IS_CARRYING_W(ch, rider),
 					      CAN_CARRY_N(ch),
 					      CAN_CARRY_W(ch),
-					      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0,
+					      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
 					      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
 					      o_obj->type == ITEM_CORPSE ? 1 : 0);
 
@@ -1093,12 +1098,12 @@ fail = TRUE;
 						      OBJ_VNUM(o_obj),
 						      s_obj->short_description ? s_obj->short_description : "(none)",
 						      OBJ_VNUM(s_obj),
-						      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0,
+						      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
 						      IS_CARRYING_N(ch),
 						      IS_CARRYING_W(ch, rider),
 						      CAN_CARRY_N(ch),
 						      CAN_CARRY_W(ch));
-						if (CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)))
+						if (do_get_obj_is_takeable(ch, o_obj))
 						{
 							if (!IS_TRUSTED(ch))
 							{
@@ -1136,7 +1141,7 @@ fail = TRUE;
 							      OBJ_VNUM(o_obj),
 							      s_obj->short_description ? s_obj->short_description : "(none)",
 							      OBJ_VNUM(s_obj),
-							      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0);
+							      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
 						}
 						continue;
 					}
@@ -1154,7 +1159,7 @@ fail = TRUE;
 					      IS_CARRYING_W(ch, rider),
 					      CAN_CARRY_N(ch),
 					      CAN_CARRY_W(ch),
-					      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0);
+					      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
 					if (corpse_contents)
 					{
 						logit(LOG_DEBUG,
@@ -1169,8 +1174,8 @@ fail = TRUE;
 						      IS_CARRYING_W(ch, rider),
 						      CAN_CARRY_N(ch),
 						      CAN_CARRY_W(ch),
-						      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0);
-						if (CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)))
+						      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
+						if (do_get_obj_is_takeable(ch, o_obj))
 						{
 							if (!IS_TRUSTED(ch))
 							{
@@ -1209,7 +1214,7 @@ fail = TRUE;
 							      OBJ_VNUM(o_obj),
 							      s_obj->short_description ? s_obj->short_description : "(none)",
 							      OBJ_VNUM(s_obj),
-							      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0);
+							      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
 						}
 						continue;
 					}
@@ -1246,7 +1251,7 @@ fail = TRUE;
 							      CAN_CARRY_W(ch),
 							      s_obj->short_description ? s_obj->short_description : "(none)",
 							      OBJ_VNUM(s_obj));
-							if (CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)))
+							if (do_get_obj_is_takeable(ch, o_obj))
 							{
 								logit(LOG_DEBUG,
 								      "GETDBG[get-all take-ok]: ch=%s room=%d obj=%s [%d] take=%d level=%d npc=%d",
@@ -1254,7 +1259,7 @@ fail = TRUE;
 								      world[ch->in_room].number,
 								      o_obj->short_description ? o_obj->short_description : "?",
 								      OBJ_VNUM(o_obj),
-								      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0,
+								      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
 								      GET_LEVEL(ch),
 								      IS_NPC(ch) ? 1 : 0);
 								if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
@@ -1349,7 +1354,7 @@ fail = TRUE;
 								      OBJ_VNUM(o_obj),
 								      s_obj->short_description ? s_obj->short_description : "(none)",
 								      OBJ_VNUM(s_obj),
-								      CAN_WEAR(o_obj, ITEM_TAKE) ? 1 : 0);
+								      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
 							}
 						}
 						else
@@ -1528,7 +1533,7 @@ fail = TRUE;
 							      s_obj->short_description ? s_obj->short_description : "(none)",
 							      OBJ_VNUM(s_obj),
 							      OBJ_CARRIED(s_obj) ? 1 : 0);
-							if (CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)))
+							if (do_get_obj_is_takeable(ch, o_obj))
 							{
 								// SAM 7-94 log corpse looting of player
 								if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
