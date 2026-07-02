@@ -632,6 +632,33 @@ static void do_get_reject_text(P_char ch, const char *text)
 	send_to_char(text, ch);
 }
 
+static void do_get_reject_fighting_bags(P_char ch, bool &fail)
+{
+	do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
+}
+
+static void do_get_reject_carry_limit(P_char ch, bool &fail)
+{
+	do_get_reject_text(ch, "You can't carry any more.\r\n", fail);
+}
+
+static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail)
+{
+	do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+}
+
+static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
+{
+	do_get_reject_object(ch, o_obj, "is too heavy.", fail);
+}
+
+static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total)
+{
+	do_get_commit_pickup_core(ch, 0, o_obj, found);
+	do_get_log_room_artifact_pickup(ch, o_obj);
+	total++;
+}
+
 static void do_get_mark_alldot(char *arg1, bool &alldot)
 {
 	snprintf(arg1, MAX_INPUT_LENGTH, "all");
@@ -824,9 +851,7 @@ void do_get(P_char ch, char *argument, int cmd)
 					{
 						if (do_get_obj_is_takeable(ch, o_obj))
 						{
-							do_get_commit_pickup_core(ch, 0, o_obj, found);
-							do_get_log_room_artifact_pickup(ch, o_obj);
-							total++;
+							do_get_finalize_room_item(ch, o_obj, found, total);
 						}
 						else
 						{
@@ -840,7 +865,7 @@ void do_get(P_char ch, char *argument, int cmd)
 							      CAN_CARRY_N(ch),
 							      IS_CARRYING_W(ch, rider),
 							      CAN_CARRY_W(ch));
-							do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+							do_get_reject_not_takeable(ch, o_obj, fail);
 						}
 					}
 					else
@@ -932,22 +957,21 @@ fail = TRUE;
 								return;
 							}
 						}
-						do_get_commit_pickup_core(ch, s_obj, o_obj, found);
-						do_get_log_room_artifact_pickup(ch, o_obj);
+						do_get_finalize_room_item(ch, o_obj, found, total);
 					}
 					else
 					{
-						do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+						do_get_reject_not_takeable(ch, o_obj, fail);
 					}
 				}
 				else
 				{
-					do_get_reject_object(ch, o_obj, "is too heavy.", fail);
+					do_get_reject_too_heavy(ch, o_obj, fail);
 				}
 			}
 			else
 			{
-			do_get_reject_text(ch, "You can't carry any more.\r\n", fail);
+			do_get_reject_carry_limit(ch, fail);
 			}
 		}
 		else
@@ -1054,7 +1078,7 @@ fail = TRUE;
 					      IS_FIGHTING(ch) ? 1 : 0,
 					      IS_DESTROYING(ch) ? 1 : 0,
 					      corpse_flag ? 1 : 0);
-					do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
+					do_get_reject_fighting_bags(ch, fail);
 					return;
 				}
 				if ((GET_ITEM_TYPE(s_obj) == ITEM_CORPSE) && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE))
@@ -1163,7 +1187,7 @@ fail = TRUE;
 						}
 						else
 						{
-							do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+							do_get_reject_not_takeable(ch, o_obj, fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 							      GET_NAME(ch),
@@ -1234,7 +1258,7 @@ fail = TRUE;
 						}
 						else
 						{
-							do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+							do_get_reject_not_takeable(ch, o_obj, fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 							      GET_NAME(ch),
@@ -1343,7 +1367,7 @@ fail = TRUE;
 						}
 						else
 							{
-								do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+								do_get_reject_not_takeable(ch, o_obj, fail);
 								logit(LOG_DEBUG,
 								      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 								      GET_NAME(ch),
@@ -1357,7 +1381,7 @@ fail = TRUE;
 						}
 						else
 						{
-						do_get_reject_text(ch, "You can't carry any more.\r\n", fail);
+						do_get_reject_carry_limit(ch, fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:too-heavy]: ch=%s room=%d obj=%s [%d] container=%s [%d] carry_w=%d cap_w=%d wt=%d carried_container=%d",
 							      GET_NAME(ch),
@@ -1461,7 +1485,7 @@ fail = TRUE;
 
 				if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 				{
-					do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
+					do_get_reject_fighting_bags(ch, fail);
 					return;
 				}
 
@@ -1481,7 +1505,7 @@ fail = TRUE;
 					      IS_FIGHTING(ch) ? 1 : 0,
 					      IS_DESTROYING(ch) ? 1 : 0,
 					      corpse_flag ? 1 : 0);
-					do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
+					do_get_reject_fighting_bags(ch, fail);
 					return;
 				}
 
@@ -1593,7 +1617,7 @@ fail = TRUE;
 						      IS_CARRYING_W(ch, rider),
 						      CAN_CARRY_W(ch),
 						      CAN_CARRY_W(ch));
-						do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+						do_get_reject_not_takeable(ch, o_obj, fail);
 					}
 					}
 					else
@@ -1609,7 +1633,7 @@ fail = TRUE;
 					CAN_CARRY_W(ch),
 					s_obj->short_description ? s_obj->short_description : "(none)",
 					OBJ_VNUM(s_obj));
-					do_get_reject_object(ch, o_obj, "is too heavy.", fail);
+					do_get_reject_too_heavy(ch, o_obj, fail);
 					}
 					}
 					else
@@ -1624,7 +1648,7 @@ fail = TRUE;
 					CAN_CARRY_N(ch),
 					s_obj->short_description ? s_obj->short_description : "(none)",
 					OBJ_VNUM(s_obj));
-				do_get_reject_text(ch, "You can't carry any more.\r\n", fail);
+				do_get_reject_carry_limit(ch, fail);
 				}
 				}
 				else
