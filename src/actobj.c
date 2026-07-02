@@ -577,6 +577,12 @@ static void do_get_reject_named(P_char ch, const char *name, const char *lead, b
 	fail = TRUE;
 }
 
+static void do_get_reject_text(P_char ch, const char *text, bool &fail)
+{
+	send_to_char(text, ch);
+	fail = TRUE;
+}
+
 static void do_get_mark_alldot(char *arg1, bool &alldot)
 {
 	snprintf(arg1, MAX_INPUT_LENGTH, "all");
@@ -901,8 +907,7 @@ fail = TRUE;
 			}
 			else
 			{
-				send_to_char("You can't carry any more.\r\n", ch);
-				fail = TRUE;
+			do_get_reject_text(ch, "You can't carry any more.\r\n", fail);
 			}
 		}
 		else
@@ -995,7 +1000,7 @@ fail = TRUE;
 					      s_obj->obj_uid,
 					      arg1,
 					      arg2);
-					send_to_char("It seems to be closed.\r\n", ch);
+					do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
 					return;
 				}
 				if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
@@ -1009,7 +1014,7 @@ fail = TRUE;
 					      IS_FIGHTING(ch) ? 1 : 0,
 					      IS_DESTROYING(ch) ? 1 : 0,
 					      corpse_flag ? 1 : 0);
-					send_to_char("You're too busy fighting to be pulling things out of bags!\r\n", ch);
+					do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
 					return;
 				}
 				if ((GET_ITEM_TYPE(s_obj) == ITEM_CORPSE) && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE))
@@ -1321,8 +1326,7 @@ fail = TRUE;
 						}
 						else
 						{
-							send_to_char("You can't carry any more.\r\n", ch);
-							fail = TRUE;
+						do_get_reject_text(ch, "You can't carry any more.\r\n", fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:too-heavy]: ch=%s room=%d obj=%s [%d] container=%s [%d] carry_w=%d cap_w=%d wt=%d carried_container=%d",
 							      GET_NAME(ch),
@@ -1339,7 +1343,7 @@ fail = TRUE;
 					}
 					else
 					{
-						send_to_char("That is too much stuff at once.\r\n", ch);
+						do_get_reject_text(ch, "That is too much stuff at once.\r\n", fail);
 						fail = TRUE;
 						logit(LOG_DEBUG,
 						      "GETDBG[get-all reject:carry-n]: ch=%s room=%d obj=%s [%d] container=%s [%d] carry_n=%d cap_n=%d material=%d",
@@ -1394,7 +1398,7 @@ fail = TRUE;
 	/* get ??? all */
 	if (type == 5)
 	{
-		send_to_char("You can't take things from two or more containers.\r\n", ch);
+		do_get_reject_text(ch, "You can't take things from two or more containers.\r\n", fail);
 	}
 
 	/* get ??? ??? */
@@ -1420,13 +1424,13 @@ fail = TRUE;
 					      s_obj->obj_uid,
 					      arg1,
 					      arg2);
-					send_to_char("It seems to be closed.\r\n", ch);
+					do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
 					return;
 				}
 
 				if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 				{
-					send_to_char("You're too busy fighting to be pulling things out of bags!\r\n", ch);
+					do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
 					return;
 				}
 
@@ -1446,7 +1450,7 @@ fail = TRUE;
 					      IS_FIGHTING(ch) ? 1 : 0,
 					      IS_DESTROYING(ch) ? 1 : 0,
 					      corpse_flag ? 1 : 0);
-					send_to_char("You're too busy fighting to be pulling things out of bags!\r\n", ch);
+					do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
 					return;
 				}
 
@@ -1595,9 +1599,8 @@ fail = TRUE;
 					CAN_CARRY_N(ch),
 					s_obj->short_description ? s_obj->short_description : "(none)",
 					OBJ_VNUM(s_obj));
-					send_to_char("You can't carry any more.\r\n", ch);
-					fail = TRUE;
-					}
+				do_get_reject_text(ch, "You can't carry any more.\r\n", fail);
+				}
 				}
 				else
 				{
@@ -2529,11 +2532,11 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				else
 				{
 					if (showit)
-						send_to_char("The quiver is full.\r\n", ch);
+						do_get_reject_text(ch, "The quiver is full.\r\n", fail);
 				}
 			}
 			else if (showit)
-				send_to_char("It seems to be closed.\r\n", ch);
+				do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
 		}
 		else if (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER || GET_ITEM_TYPE(s_obj) == ITEM_STORAGE || GET_ITEM_TYPE(s_obj) == ITEM_CORPSE)
 		{
@@ -2624,7 +2627,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				}
 			}
 			else if (showit)
-				send_to_char("It seems to be closed.\r\n", ch);
+				do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
 		}
 		else
 		{
