@@ -568,6 +568,15 @@ static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, boo
 	fail = TRUE;
 }
 
+static void do_get_reject_named(P_char ch, const char *name, const char *lead, bool &fail)
+{
+	char Gbuf3[MAX_STRING_LENGTH];
+
+	snprintf(Gbuf3, sizeof(Gbuf3), "%s %s.\r\n", lead, name ? name : "(null)");
+	send_to_char(Gbuf3, ch);
+	fail = TRUE;
+}
+
 static void do_get_mark_alldot(char *arg1, bool &alldot)
 {
 	snprintf(arg1, MAX_INPUT_LENGTH, "all");
@@ -1373,16 +1382,12 @@ fail = TRUE;
 				      GET_ITEM_TYPE(s_obj),
 				      arg1,
 				      arg2);
-				snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is not a container.\r\n", s_obj->short_description);
-				send_to_char(Gbuf3, ch);
-				fail = TRUE;
+				do_get_reject_object(ch, s_obj, "is not a container.", fail);
 			}
 		}
 		else
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not see or have the %s.\r\n", arg2);
-			send_to_char(Gbuf3, ch);
-			fail = TRUE;
+			do_get_reject_named(ch, arg2, "You do not see or have the", fail);
 		}
 	}
 
@@ -1603,16 +1608,12 @@ fail = TRUE;
 			}
 			else
 			{
-				snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't a container.\r\n", s_obj->short_description);
-				send_to_char(Gbuf3, ch);
-				fail = TRUE;
+				do_get_reject_object(ch, s_obj, "isn't a container.", fail);
 			}
 		}
 		else
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not see or have the %s.\r\n", arg2);
-			send_to_char(Gbuf3, ch);
-			fail = TRUE;
+			do_get_reject_named(ch, arg2, "You do not see or have the", fail);
 		}
 	}
 
