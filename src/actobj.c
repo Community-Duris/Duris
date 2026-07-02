@@ -509,10 +509,18 @@ static void do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool 
 	get(ch, o_obj, s_obj, TRUE);
 }
 
+static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found, int &total)
+{
+	do_get_commit_pickup_core(ch, s_obj, o_obj, found);
+	total++;
+	if (s_obj && (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
+		if (s_obj->value[3] > 0)
+			s_obj->value[3]--;
+}
+
 static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total, bool &found, const char *post_tag)
 {
-
-	do_get_commit_pickup_core(ch, s_obj, o_obj, found);
+	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total);
 	logit(LOG_DEBUG,
 	      "%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
 	      post_tag,
@@ -525,12 +533,9 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 	      s_obj->short_description ? s_obj->short_description : "(none)",
 	      OBJ_VNUM(s_obj),
 	      s_obj->obj_uid,
-	      total + 1);
-	total++;
-	if (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER)
-		if (s_obj->value[3] > 0)
-			s_obj->value[3]--;
+	      total);
 }
+
 static bool do_get_container_target_is_valid(P_obj s_obj);
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -676,9 +681,8 @@ static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
 
 static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total)
 {
-	do_get_commit_pickup_core(ch, 0, o_obj, found);
+	do_get_finalize_pickup_core(ch, 0, o_obj, found, total);
 	do_get_log_room_artifact_pickup(ch, o_obj);
-	total++;
 }
 
 static void do_get_mark_alldot(char *arg1, bool &alldot)
