@@ -568,6 +568,12 @@ static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, boo
 	fail = TRUE;
 }
 
+static void do_get_mark_alldot(char *arg1, bool &alldot)
+{
+	snprintf(arg1, MAX_INPUT_LENGTH, "all");
+	alldot = TRUE;
+}
+
 void do_get(P_char ch, char *argument, int cmd)
 {
 	P_char hood = NULL, owner = NULL, rider;
@@ -651,8 +657,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		Gbuf2[0] = '\0';
 		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
 		{
-			snprintf(arg1, sizeof(arg1), "all");
-			alldot = TRUE;
+			do_get_mark_alldot(arg1, alldot);
 		}
 		if (!str_cmp(arg1, "all"))
 		{
@@ -669,8 +674,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		Gbuf2[0] = '\0';
 		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
 		{
-			snprintf(arg1, sizeof(arg1), "all");
-			alldot = TRUE;
+			do_get_mark_alldot(arg1, alldot);
 		}
 		if (!str_cmp(arg1, "all"))
 		{
