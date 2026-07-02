@@ -14,7 +14,7 @@ CFLAGS = -g -std=c++20 -D_FORTIFY_SOURCE=0 -Wno-write-strings
 CFLAGS += -DTEST_MUD
 
 # to turn on/off chaos mud, change the flag at the top of db.h
-#CFLAGS += -DCHAOS_MUD=1
+CFLAGS += -DCHAOS_MUD=1
 #CFLAGS += -DCTF_MUD=1
 
 INCLUDES	= -I. -I/usr/include/libxml2 -I/usr/include/mysql -I./ships

@@ -70,8 +70,8 @@ void update_skills(P_char ch)
 		if (IS_EPIC_SKILL(skl))
 		{
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[s].taught  = 100;
-			ch->only.pc->skills[s].learned = 100;
+			ch->only.pc->skills[skl].taught  = 100;
+			ch->only.pc->skills[skl].learned = 100;
 #endif
 		}
 		// If they get th skill and they're high enough level for it.
@@ -112,7 +112,7 @@ void update_skills(P_char ch)
 		if (!IS_EPIC_SKILL(skl) && (ch->only.pc->skills[skl].taught < ch->only.pc->skills[skl].learned))
 		{
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[skl].taught = ch->only.pc->skills[s].learned = 100;
+			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 100;
 #else
 			ch->only.pc->skills[skl].learned = ch->only.pc->skills[skl].taught;
 #endif
