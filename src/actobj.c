@@ -542,6 +542,17 @@ static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
 	}
 }
 
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj)
+{
+	logit(LOG_CORPSE, "%s %s: %s [%d] (ARTIFACT) from %s",
+	      GET_NAME(ch),
+	      (hood == ch) ? "" : GET_NAME(hood),
+	      o_obj->name,
+	      obj_index[o_obj->R_num].virtual_number,
+	      s_obj->action_description);
+	act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
+}
+
 static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carried)
 {
 	P_obj carried_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
@@ -1296,16 +1307,7 @@ fail = TRUE;
 								{
 									if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
 									{
-										logit(LOG_CORPSE,
-										      "%s%s: %s [%d] (ARTIFACT) from %s",
-										      GET_NAME(ch),
-										      (hood == ch) ? "" : GET_NAME(hood),
-										      o_obj->name,
-										      obj_index[o_obj->R_num].virtual_number,
-										      s_obj->action_description);
-										
-										act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
-										
+										do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
 										// If the artifact was picked up across racewar lines.
 										if ((s_obj->value[5] != RACEWAR_NONE) && (GET_RACEWAR(ch) != s_obj->value[5]))
 										{
@@ -1543,13 +1545,7 @@ fail = TRUE;
 									{
 										if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
 										{
-											logit(LOG_CORPSE,
-											      "%s %s: %s [%d] (ARTIFACT) from %s",
-											      GET_NAME(ch),
-											      (hood == ch) ? "" : GET_NAME(hood),
-											      o_obj->name,
-											      obj_index[o_obj->R_num].virtual_number,
-											      s_obj->action_description);
+											do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
 											// If the artifact was picked up across racewar lines.
 											if ((s_obj->value[5] != RACEWAR_NONE) && (GET_RACEWAR(ch) != s_obj->value[5]))
 											{
