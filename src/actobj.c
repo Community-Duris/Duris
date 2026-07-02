@@ -503,9 +503,6 @@ int fight_in_room(P_char ch)
 	return FALSE;
 }
 
-static void do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found);
-static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total, bool &found, const char *post_tag);
-
 static void do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
 {
 	found = TRUE;
