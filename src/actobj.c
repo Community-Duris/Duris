@@ -531,6 +531,26 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 			s_obj->value[3]--;
 }
 
+static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carried)
+{
+	P_obj s_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
+	carried = TRUE;
+	if (!s_obj)
+	{
+		s_obj = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
+		carried = FALSE;
+	}
+	return s_obj;
+}
+
+static bool do_get_container_target_is_valid(P_obj s_obj)
+{
+	return (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) ||
+	       (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) ||
+	       (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER) ||
+	       (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE);
+}
+
 void do_get(P_char ch, char *argument, int cmd)
 {
 	P_char hood = NULL, owner = NULL, rider;
@@ -930,13 +950,11 @@ fail = TRUE;
 		found = FALSE;
 		fail  = FALSE;
 
-		s_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
-		if (!s_obj)
-			s_obj = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
+		s_obj = do_get_resolve_container_target(ch, arg2, carried);
 
 		if (s_obj)
 		{
-			if ((GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) || (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) || (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER) || (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
+			if (do_get_container_target_is_valid(s_obj))
 			{
 				logit(LOG_DEBUG,
 				      "GETDBG[get-container-start]: ch=%s room=%d container=%s [%d] uid=%lu type=%d wear=0x%x extra=0x%x corpse_flag=%d arg1='%s' arg2='%s'",
@@ -1422,15 +1440,10 @@ fail = TRUE;
 		found   = FALSE;
 		fail    = FALSE;
 		carried = TRUE;
-		s_obj   = get_obj_in_list_vis(ch, arg2, ch->carrying);
-		if (!s_obj)
-		{
-			s_obj   = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
-			carried = FALSE;
-		}
+		s_obj   = do_get_resolve_container_target(ch, arg2, carried);
 		if (s_obj)
 		{
-			if ((GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) || (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE) || (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) || (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
+			if (do_get_container_target_is_valid(s_obj))
 			{
 
 				if ((GET_ITEM_TYPE(s_obj) != ITEM_CORPSE) && IS_SET(s_obj->value[1], CONT_CLOSED))
