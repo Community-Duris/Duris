@@ -556,7 +556,7 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 	return CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch));
 }
 
-static void do_get_reject_room_object(P_char ch, P_obj o_obj, const char *reason, bool &fail)
+static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, bool &fail)
 {
 	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	const char *desc = o_obj->short_description ? o_obj->short_description : "(null)";
@@ -776,12 +776,12 @@ void do_get(P_char ch, char *argument, int cmd)
 							      CAN_CARRY_N(ch),
 							      IS_CARRYING_W(ch, rider),
 							      CAN_CARRY_W(ch));
-							do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
+							do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
 						}
 					}
 					else
 					{
-						do_get_reject_room_object(ch, o_obj, "is too heavy to lift.", fail);
+						do_get_reject_object(ch, o_obj, "is too heavy to lift.", fail);
 					}
 				}
 				else
@@ -878,12 +878,12 @@ fail = TRUE;
 					}
 					else
 					{
-						do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
+						do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
 					}
 				}
 				else
 				{
-					do_get_reject_room_object(ch, o_obj, "is too heavy.", fail);
+					do_get_reject_object(ch, o_obj, "is too heavy.", fail);
 				}
 			}
 			else
@@ -1105,7 +1105,7 @@ fail = TRUE;
 						}
 						else
 						{
-							do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
+							do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 							      GET_NAME(ch),
@@ -1176,7 +1176,7 @@ fail = TRUE;
 						}
 						else
 						{
-							do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
+							do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 							      GET_NAME(ch),
@@ -1294,7 +1294,7 @@ fail = TRUE;
 						}
 						else
 							{
-								do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
+								do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
 								logit(LOG_DEBUG,
 								      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 								      GET_NAME(ch),
@@ -1555,9 +1555,7 @@ fail = TRUE;
 						      IS_CARRYING_W(ch, rider),
 						      CAN_CARRY_W(ch),
 						      CAN_CARRY_W(ch));
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takable.\r\n", o_obj->short_description);
-						send_to_char(Gbuf3, ch);
-						fail = TRUE;
+						do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
 					}
 					}
 					else
@@ -1573,7 +1571,7 @@ fail = TRUE;
 					CAN_CARRY_W(ch),
 					s_obj->short_description ? s_obj->short_description : "(none)",
 					OBJ_VNUM(s_obj));
-					do_get_reject_room_object(ch, o_obj, "is too heavy.", fail);
+					do_get_reject_object(ch, o_obj, "is too heavy.", fail);
 					}
 					}
 					else
