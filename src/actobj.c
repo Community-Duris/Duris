@@ -1192,45 +1192,6 @@ fail = TRUE;
 
 					bool corpse_contents = (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE);
 
-					if (corpse_contents)
-					{
-						logit(LOG_DEBUG,
-						      "GETDBG[get-all corpse-fast]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d carry_n=%d carry_w=%d cap_n=%d cap_w=%d",
-						      GET_NAME(ch),
-						      world[ch->in_room].number,
-						      o_obj->short_description ? o_obj->short_description : "?",
-						      OBJ_VNUM(o_obj),
-						      s_obj->short_description ? s_obj->short_description : "(none)",
-						      OBJ_VNUM(s_obj),
-						      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
-						      IS_CARRYING_N(ch),
-						      IS_CARRYING_W(ch, rider),
-						      CAN_CARRY_N(ch),
-						      CAN_CARRY_W(ch));
-						if (do_get_obj_is_takeable(ch, o_obj))
-						{
-							if (!IS_TRUSTED(ch))
-							{
-								CharWait(ch, PULSE_VIOLENCE);
-							}
-							do_get_finalize_container_item(ch, s_obj, o_obj, total, found, "GETDBG[get-all corpse-post]");
-						}
-						else
-						{
-							do_get_reject_not_takeable(ch, o_obj, fail);
-							logit(LOG_DEBUG,
-							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
-							      GET_NAME(ch),
-							      world[ch->in_room].number,
-							      o_obj->short_description ? o_obj->short_description : "?",
-							      OBJ_VNUM(o_obj),
-							      s_obj->short_description ? s_obj->short_description : "(none)",
-							      OBJ_VNUM(s_obj),
-							      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
-						}
-						continue;
-					}
-
 					logit(LOG_DEBUG,
 					      "GETDBG[get-all corpse-branch-enter]: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d carry_n=%d carry_w=%d cap_n=%d cap_w=%d take=%d",
 					      GET_NAME(ch),
