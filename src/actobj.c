@@ -536,6 +536,67 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 	      total);
 }
 
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj);
+static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, const char *post_tag)
+{
+	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
+	{
+		logit(LOG_CORPSE, "%s%s: corpse of %s from %s", GET_NAME(ch), (hood == ch) ? "" : GET_NAME(hood), o_obj->action_description, s_obj->name);
+	}
+	else if (corpse_flag && o_obj)
+	{
+		if (o_obj->type == ITEM_MONEY)
+		{
+			logit(LOG_CORPSE,
+			      "%s%s: %dp, %dg, %ds, %dc from %s",
+			      GET_NAME(ch),
+			      (hood == ch) ? "" : GET_NAME(hood),
+			      o_obj->value[3],
+			      o_obj->value[2],
+			      o_obj->value[1],
+			      o_obj->value[0],
+			      s_obj->action_description);
+		}
+		else
+		{
+			if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
+			{
+				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
+				// If the artifact was picked up across racewar lines.
+				if ((s_obj->value[5] != RACEWAR_NONE) && (GET_RACEWAR(ch) != s_obj->value[5]))
+				{
+					int vnum      = OBJ_VNUM(o_obj);
+					int owner_pid = -1;
+					int timer     = time(NULL);
+					// This sets the 'soul' of the artifact to the new owner.
+					sql_update_bind_data(vnum, &owner_pid, &timer);
+					// Feed artifact to at least the minimum for across racewar sides.
+					artifact_feed_to_min_sql(o_obj, 5 * MINS_PER_REAL_DAY);
+				}
+			}
+			else
+			{
+				logit(LOG_CORPSE,
+				      "%s%s: %s [%d] from %s",
+				      GET_NAME(ch),
+				      (hood == ch) ? "" : GET_NAME(hood),
+				      o_obj->name,
+				      obj_index[o_obj->R_num].virtual_number,
+				      s_obj->action_description);
+
+				act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
+			}
+		}
+	}
+
+	if (!IS_TRUSTED(ch))
+	{
+		CharWait(ch, PULSE_VIOLENCE);
+	}
+
+	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag);
+}
+
 static bool do_get_container_target_is_valid(P_obj s_obj);
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -1223,11 +1284,7 @@ fail = TRUE;
 						      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
 						if (do_get_obj_is_takeable(ch, o_obj))
 						{
-							if (!IS_TRUSTED(ch))
-							{
-								CharWait(ch, PULSE_VIOLENCE);
-							}
-							do_get_finalize_container_item(ch, s_obj, o_obj, total, found, "GETDBG[get-all corpse-post]");
+							do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, "GETDBG[get-all corpse-post]");
 							continue;
 						}
 						else
@@ -1530,58 +1587,8 @@ fail = TRUE;
 							      OBJ_CARRIED(s_obj) ? 1 : 0);
 							if (do_get_obj_is_takeable(ch, o_obj))
 							{
-								// SAM 7-94 log corpse looting of player
-								if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
-								{
-									logit(LOG_CORPSE, "%s%s: corpse of %s from %s", GET_NAME(ch), (hood == ch) ? "" : GET_NAME(hood), o_obj->action_description, s_obj->name);
-								}
-								else if (corpse_flag && o_obj)
-								{
-									if (GET_ITEM_TYPE(o_obj) == ITEM_MONEY)
-									{
-										logit(LOG_CORPSE,
-										      "%s%s: %dp, %dg, %ds, %dc from %s",
-										      GET_NAME(ch),
-										      (hood == ch) ? "" : GET_NAME(hood),
-										      o_obj->value[3],
-										      o_obj->value[2],
-										      o_obj->value[1],
-										      o_obj->value[0],
-										      s_obj->action_description);
-									}
-									else
-									{
-										if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
-										{
-											do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
-											// If the artifact was picked up across racewar lines.
-											if ((s_obj->value[5] != RACEWAR_NONE) && (GET_RACEWAR(ch) != s_obj->value[5]))
-											{
-												int vnum      = OBJ_VNUM(o_obj);
-												int owner_pid = -1;
-												int timer     = time(NULL);
-												sql_update_bind_data(vnum, &owner_pid, &timer);
-												artifact_feed_to_min_sql(o_obj, (ARTIFACT_BLOOD_DAYS / 2) * MINS_PER_REAL_DAY);
-											}
-										}
-										else
-										{
-											logit(LOG_CORPSE,
-											      "%s%s: %s [%d] from %s",
-											      GET_NAME(ch),
-											      (hood == ch) ? "" : GET_NAME(hood),
-											      o_obj->name,
-											      obj_index[o_obj->R_num].virtual_number,
-											      s_obj->action_description);
-										}
-										if (!IS_TRUSTED(ch))
-										{
-											CharWait(ch, PULSE_VIOLENCE);
-										}
-										do_get_finalize_container_item(ch, s_obj, o_obj, total, found, "GETDBG[get-container-single-post]");
-									}
-									}
-									}
+								do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, "GETDBG[get-container-single-post]");
+							}
 
 					else
 					{
