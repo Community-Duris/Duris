@@ -1276,6 +1276,20 @@ QA
 R I 83599
 R E 250000
 G I 120056
+QA
+&N$n orders a nearby &+rbattlerager&N to dispose of the &+cclaws&N in a hearth.
+~
+R I 83599
+G I 83548
+G I 83548
+G I 83548
+G I 83548
+G I 83548
+G I 83548
+G I 83548
+G I 83548
+G I 83548
+G I 83548
 S
 #83148
 M
