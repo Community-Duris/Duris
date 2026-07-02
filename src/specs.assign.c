@@ -578,6 +578,7 @@ void assign_mobiles(void)
 	 */
 	mob_index[real_mobile0(4480)].func.mob   = purple_worm;
 	mob_index[real_mobile0(700004)].func.mob = purple_worm;
+	mob_index[real_mobile0(131232)].func.mob = purple_worm;
 	mob_index[real_mobile0(4530)].func.mob   = piercer;
 	mob_index[real_mobile0(4520)].func.mob   = underdark_track;
 	mob_index[real_mobile0(4510)].func.mob   = underdark_track;
