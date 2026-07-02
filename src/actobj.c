@@ -556,6 +556,18 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 	return CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch));
 }
 
+static void do_get_reject_room_object(P_char ch, P_obj o_obj, const char *reason, bool &fail)
+{
+	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
+	const char *desc = o_obj->short_description ? o_obj->short_description : "(null)";
+
+	strcpy(Gbuf4, desc);
+	CAP(Gbuf4);
+	snprintf(Gbuf3, MAX_STRING_LENGTH, "%s %s\r\n", Gbuf4, reason);
+	send_to_char(Gbuf3, ch);
+	fail = TRUE;
+}
+
 void do_get(P_char ch, char *argument, int cmd)
 {
 	P_char hood = NULL, owner = NULL, rider;
@@ -764,20 +776,12 @@ void do_get(P_char ch, char *argument, int cmd)
 							      CAN_CARRY_N(ch),
 							      IS_CARRYING_W(ch, rider),
 							      CAN_CARRY_W(ch));
-							strcpy(Gbuf4, o_obj->short_description);
-							CAP(Gbuf4);
-							snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takeable.\r\n", Gbuf4);
-							send_to_char(Gbuf3, ch);
-							fail = TRUE;
+							do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
 						}
 					}
 					else
 					{
-						strcpy(Gbuf4, o_obj->short_description);
-						CAP(Gbuf4);
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy to lift.\r\n", Gbuf4);
-						send_to_char(Gbuf3, ch);
-						fail = TRUE;
+						do_get_reject_room_object(ch, o_obj, "is too heavy to lift.", fail);
 					}
 				}
 				else
@@ -874,11 +878,7 @@ fail = TRUE;
 					}
 					else
 					{
-						strcpy(Gbuf4, o_obj->short_description);
-						CAP(Gbuf4);
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takeable.\r\n", Gbuf4);
-						send_to_char(Gbuf3, ch);
-						fail = TRUE;
+						do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
 					}
 				}
 				else
