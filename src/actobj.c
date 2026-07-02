@@ -651,7 +651,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		Gbuf2[0] = '\0';
 		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
 		{
-			strcpy(arg1, "all");
+			snprintf(arg1, sizeof(arg1), "all");
 			alldot = TRUE;
 		}
 		if (!str_cmp(arg1, "all"))
@@ -669,7 +669,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		Gbuf2[0] = '\0';
 		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
 		{
-			strcpy(arg1, "all");
+			snprintf(arg1, sizeof(arg1), "all");
 			alldot = TRUE;
 		}
 		if (!str_cmp(arg1, "all"))
