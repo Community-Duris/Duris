@@ -632,6 +632,35 @@ static void do_get_reject_text(P_char ch, const char *text)
 	send_to_char(text, ch);
 }
 
+static void do_get_reject_closed(P_char ch, bool &fail)
+{
+	do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
+}
+
+static void do_get_reject_missing_container(P_char ch, const char *arg2, bool &fail)
+{
+	do_get_reject_named(ch, arg2, "You do not see or have the", fail);
+}
+
+static void do_get_reject_not_container(P_char ch, P_obj s_obj, bool &fail)
+{
+	do_get_reject_object(ch, s_obj, "is not a container.", fail);
+}
+
+static void do_get_reject_too_much_stuff(P_char ch, bool &fail)
+{
+	do_get_reject_text(ch, "That is too much stuff at once.\r\n", fail);
+}
+
+static void do_get_reject_out_of_sight(P_char ch, P_obj o_obj, bool &fail)
+{
+	char Gbuf3[MAX_STRING_LENGTH];
+
+	snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n", o_obj->short_description);
+	send_to_char(Gbuf3, ch);
+	fail = TRUE;
+}
+
 static void do_get_reject_fighting_bags(P_char ch, bool &fail)
 {
 	do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
@@ -1064,7 +1093,7 @@ fail = TRUE;
 					      s_obj->obj_uid,
 					      arg1,
 					      arg2);
-					do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
+					do_get_reject_closed(ch, fail);
 					return;
 				}
 				if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
@@ -1398,7 +1427,7 @@ fail = TRUE;
 					}
 					else
 					{
-						do_get_reject_text(ch, "That is too much stuff at once.\r\n", fail);
+						do_get_reject_too_much_stuff(ch, fail);
 						fail = TRUE;
 						logit(LOG_DEBUG,
 						      "GETDBG[get-all reject:carry-n]: ch=%s room=%d obj=%s [%d] container=%s [%d] carry_n=%d cap_n=%d material=%d",
@@ -1441,12 +1470,12 @@ fail = TRUE;
 				      GET_ITEM_TYPE(s_obj),
 				      arg1,
 				      arg2);
-				do_get_reject_object(ch, s_obj, "is not a container.", fail);
+				do_get_reject_not_container(ch, s_obj, fail);
 			}
 		}
 		else
 		{
-			do_get_reject_named(ch, arg2, "You do not see or have the", fail);
+			do_get_reject_missing_container(ch, arg2, fail);
 		}
 	}
 
@@ -1479,7 +1508,7 @@ fail = TRUE;
 					      s_obj->obj_uid,
 					      arg1,
 					      arg2);
-					do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
+					do_get_reject_closed(ch, fail);
 					return;
 				}
 
@@ -1665,7 +1694,7 @@ fail = TRUE;
 		}
 		else
 		{
-			do_get_reject_named(ch, arg2, "You do not see or have the", fail);
+			do_get_reject_missing_container(ch, arg2, fail);
 		}
 	}
 
