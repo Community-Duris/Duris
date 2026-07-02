@@ -531,16 +531,33 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 			s_obj->value[3]--;
 }
 
+static bool do_get_container_target_is_valid(P_obj s_obj);
+
 static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carried)
 {
-	P_obj s_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
-	carried = TRUE;
-	if (!s_obj)
+	P_obj carried_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
+	P_obj room_obj    = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
+
+	if (carried_obj && do_get_container_target_is_valid(carried_obj))
 	{
-		s_obj = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
-		carried = FALSE;
+		carried = TRUE;
+		return carried_obj;
 	}
-	return s_obj;
+
+	if (room_obj && do_get_container_target_is_valid(room_obj))
+	{
+		carried = FALSE;
+		return room_obj;
+	}
+
+	if (carried_obj)
+	{
+		carried = TRUE;
+		return carried_obj;
+	}
+
+	carried = FALSE;
+	return room_obj;
 }
 
 static bool do_get_container_target_is_valid(P_obj s_obj)
@@ -581,6 +598,11 @@ static void do_get_reject_text(P_char ch, const char *text, bool &fail)
 {
 	send_to_char(text, ch);
 	fail = TRUE;
+}
+
+static void do_get_reject_text(P_char ch, const char *text)
+{
+	send_to_char(text, ch);
 }
 
 static void do_get_mark_alldot(char *arg1, bool &alldot)
@@ -2532,11 +2554,11 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				else
 				{
 					if (showit)
-						do_get_reject_text(ch, "The quiver is full.\r\n", fail);
+						do_get_reject_text(ch, "The quiver is full.\r\n");
 				}
 			}
 			else if (showit)
-				do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
+				do_get_reject_text(ch, "It seems to be closed.\r\n");
 		}
 		else if (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER || GET_ITEM_TYPE(s_obj) == ITEM_STORAGE || GET_ITEM_TYPE(s_obj) == ITEM_CORPSE)
 		{
@@ -2627,7 +2649,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				}
 			}
 			else if (showit)
-				do_get_reject_text(ch, "It seems to be closed.\r\n", fail);
+				do_get_reject_text(ch, "It seems to be closed.\r\n");
 		}
 		else
 		{
