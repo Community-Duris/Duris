@@ -537,6 +537,7 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 }
 
 static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj);
+static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail);
 static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, const char *post_tag)
 {
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
@@ -661,22 +662,20 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 
 static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj)
 {
-	if (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE)
-	{
-		return do_get_obj_is_takeable(ch, o_obj);
-	}
-
-	/*
-	 * Container contents are already being removed from an open container,
-	 * so let the container transfer path own the legality check instead of
-	 * re-applying the room pickup ITEM_TAKE gate here.
-	 */
-	if ((GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) || (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) || (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
-	{
-		return TRUE;
-	}
-
+	(void)s_obj;
 	return do_get_obj_is_takeable(ch, o_obj);
+}
+
+static bool do_get_finalize_container_item_or_reject(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, const char *post_tag, bool &fail)
+{
+	if (!do_get_container_item_is_takeable(ch, s_obj, o_obj))
+	{
+		do_get_reject_not_takeable(ch, o_obj, fail);
+		return FALSE;
+	}
+
+	do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, post_tag);
+	return TRUE;
 }
 
 static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, bool &fail)
@@ -753,6 +752,23 @@ static void do_get_reject_carry_limit(P_char ch, bool &fail)
 static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail)
 {
 	do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
+}
+
+static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj, const char *tag, int carried, int carry_w, int cap_w, bool &fail)
+{
+	logit(LOG_DEBUG,
+	      "%s: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d carry_w=%d cap=%d",
+	      tag,
+	      GET_NAME(ch),
+	      world[ch->in_room].number,
+	      o_obj->short_description ? o_obj->short_description : "?",
+	      OBJ_VNUM(o_obj),
+	      s_obj->short_description ? s_obj->short_description : "(none)",
+	      OBJ_VNUM(s_obj),
+	      carried,
+	      carry_w,
+	      cap_w);
+	do_get_reject_not_takeable(ch, o_obj, fail);
 }
 
 static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
@@ -1309,16 +1325,7 @@ fail = TRUE;
 						}
 						else
 						{
-							do_get_reject_not_takeable(ch, o_obj, fail);
-							logit(LOG_DEBUG,
-							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
-							      GET_NAME(ch),
-							      world[ch->in_room].number,
-							      o_obj->short_description ? o_obj->short_description : "?",
-							      OBJ_VNUM(o_obj),
-							      s_obj->short_description ? s_obj->short_description : "(none)",
-							      OBJ_VNUM(s_obj),
-							      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
+							do_get_reject_container_not_takeable(ch, s_obj, o_obj, "GETDBG[get-all reject:not-takeable]", IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), CAN_CARRY_W(ch), fail);
 						}
 						continue;
 					}
@@ -1355,7 +1362,8 @@ fail = TRUE;
 							      CAN_CARRY_W(ch),
 							      s_obj->short_description ? s_obj->short_description : "(none)",
 							      OBJ_VNUM(s_obj));
-							if (do_get_container_item_is_takeable(ch, s_obj, o_obj))
+							const bool takeable = do_get_container_item_is_takeable(ch, s_obj, o_obj);
+							if (takeable)
 							{
 								logit(LOG_DEBUG,
 								      "GETDBG[get-all take-ok]: ch=%s room=%d obj=%s [%d] take=%d level=%d npc=%d",
@@ -1363,7 +1371,7 @@ fail = TRUE;
 								      world[ch->in_room].number,
 								      o_obj->short_description ? o_obj->short_description : "?",
 								      OBJ_VNUM(o_obj),
-								      do_get_container_item_is_takeable(ch, s_obj, o_obj) ? 1 : 0,
+								      takeable ? 1 : 0,
 								      GET_LEVEL(ch),
 								      IS_NPC(ch) ? 1 : 0);
 								if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
@@ -1421,19 +1429,10 @@ fail = TRUE;
 						do_get_finalize_container_item(ch, s_obj, o_obj, total, found, "GETDBG[get-container-post]");
 						}
 						else
-							{
-								do_get_reject_not_takeable(ch, o_obj, fail);
-								logit(LOG_DEBUG,
-								      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
-								      GET_NAME(ch),
-								      world[ch->in_room].number,
-								      o_obj->short_description ? o_obj->short_description : "?",
-								      OBJ_VNUM(o_obj),
-								      s_obj->short_description ? s_obj->short_description : "(none)",
-								      OBJ_VNUM(s_obj),
-								      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
-							}
+						{
+							do_get_reject_container_not_takeable(ch, s_obj, o_obj, "GETDBG[get-all reject:not-takeable]", IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), CAN_CARRY_W(ch), fail);
 						}
+}
 						else
 						{
 						do_get_reject_carry_limit(ch, fail);
@@ -1612,18 +1611,7 @@ fail = TRUE;
 
 					else
 					{
-						logit(LOG_DEBUG,
-						      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d carry_w=%d cap=%d",
-						      GET_NAME(ch),
-						      world[ch->in_room].number,
-						      o_obj->short_description ? o_obj->short_description : "?",
-						      OBJ_VNUM(o_obj),
-						      s_obj->short_description ? s_obj->short_description : "(none)",
-						      OBJ_VNUM(s_obj),
-						      IS_CARRYING_W(ch, rider),
-						      CAN_CARRY_W(ch),
-						      CAN_CARRY_W(ch));
-						do_get_reject_not_takeable(ch, o_obj, fail);
+						do_get_reject_container_not_takeable(ch, s_obj, o_obj, "GETDBG[get-container-single reject:not-takeable]", IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), CAN_CARRY_W(ch), fail);
 					}
 					}
 					else
