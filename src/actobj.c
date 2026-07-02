@@ -503,6 +503,15 @@ int fight_in_room(P_char ch)
 	return FALSE;
 }
 
+static void do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found);
+static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total, bool &found, const char *post_tag);
+
+static void do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
+{
+	found = TRUE;
+	get(ch, o_obj, s_obj, TRUE);
+}
+
 static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total, bool &found, const char *post_tag)
 {
 	if (!IS_TRUSTED(ch))
@@ -510,8 +519,7 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 		CharWait(ch, PULSE_VIOLENCE);
 	}
 
-	found = TRUE;
-	get(ch, o_obj, s_obj, TRUE);
+	do_get_commit_pickup_core(ch, s_obj, o_obj, found);
 	logit(LOG_DEBUG,
 	      "%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
 	      post_tag,
@@ -530,7 +538,6 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 		if (s_obj->value[3] > 0)
 			s_obj->value[3]--;
 }
-
 static bool do_get_container_target_is_valid(P_obj s_obj);
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -817,7 +824,7 @@ void do_get(P_char ch, char *argument, int cmd)
 					{
 						if (do_get_obj_is_takeable(ch, o_obj))
 						{
-							get(ch, o_obj, 0, TRUE);
+							do_get_commit_pickup_core(ch, 0, o_obj, found);
 							do_get_log_room_artifact_pickup(ch, o_obj);
 							total++;
 						}
@@ -925,8 +932,7 @@ fail = TRUE;
 								return;
 							}
 						}
-						found = TRUE;
-						get(ch, o_obj, s_obj, TRUE);
+						do_get_commit_pickup_core(ch, s_obj, o_obj, found);
 						do_get_log_room_artifact_pickup(ch, o_obj);
 					}
 					else
