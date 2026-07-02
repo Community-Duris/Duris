@@ -659,6 +659,26 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 	return CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch));
 }
 
+static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj)
+{
+	if (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE)
+	{
+		return do_get_obj_is_takeable(ch, o_obj);
+	}
+
+	/*
+	 * Container contents are already being removed from an open container,
+	 * so let the container transfer path own the legality check instead of
+	 * re-applying the room pickup ITEM_TAKE gate here.
+	 */
+	if ((GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) || (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) || (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
+	{
+		return TRUE;
+	}
+
+	return do_get_obj_is_takeable(ch, o_obj);
+}
+
 static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, bool &fail)
 {
 	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
@@ -1335,7 +1355,7 @@ fail = TRUE;
 							      CAN_CARRY_W(ch),
 							      s_obj->short_description ? s_obj->short_description : "(none)",
 							      OBJ_VNUM(s_obj));
-							if (do_get_obj_is_takeable(ch, o_obj))
+							if (do_get_container_item_is_takeable(ch, s_obj, o_obj))
 							{
 								logit(LOG_DEBUG,
 								      "GETDBG[get-all take-ok]: ch=%s room=%d obj=%s [%d] take=%d level=%d npc=%d",
@@ -1343,7 +1363,7 @@ fail = TRUE;
 								      world[ch->in_room].number,
 								      o_obj->short_description ? o_obj->short_description : "?",
 								      OBJ_VNUM(o_obj),
-								      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
+								      do_get_container_item_is_takeable(ch, s_obj, o_obj) ? 1 : 0,
 								      GET_LEVEL(ch),
 								      IS_NPC(ch) ? 1 : 0);
 								if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
@@ -1585,7 +1605,7 @@ fail = TRUE;
 							      s_obj->short_description ? s_obj->short_description : "(none)",
 							      OBJ_VNUM(s_obj),
 							      OBJ_CARRIED(s_obj) ? 1 : 0);
-							if (do_get_obj_is_takeable(ch, o_obj))
+							if (do_get_container_item_is_takeable(ch, s_obj, o_obj))
 							{
 								do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, "GETDBG[get-container-single-post]");
 							}
