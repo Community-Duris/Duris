@@ -883,11 +883,7 @@ fail = TRUE;
 				}
 				else
 				{
-					strcpy(Gbuf4, o_obj->short_description);
-					CAP(Gbuf4);
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy.\r\n", Gbuf4);
-					send_to_char(Gbuf3, ch);
-					fail = TRUE;
+					do_get_reject_room_object(ch, o_obj, "is too heavy.", fail);
 				}
 			}
 			else
@@ -1109,9 +1105,7 @@ fail = TRUE;
 						}
 						else
 						{
-							snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takeable.\r\n", o_obj->short_description);
-							send_to_char(Gbuf3, ch);
-							fail = TRUE;
+							do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 							      GET_NAME(ch),
@@ -1182,9 +1176,7 @@ fail = TRUE;
 						}
 						else
 						{
-							snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takeable.\r\n", o_obj->short_description);
-							send_to_char(Gbuf3, ch);
-							fail = TRUE;
+							do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
 							logit(LOG_DEBUG,
 							      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 							      GET_NAME(ch),
@@ -1302,9 +1294,7 @@ fail = TRUE;
 						}
 						else
 							{
-								snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't takeable.\r\n", o_obj->short_description);
-								send_to_char(Gbuf3, ch);
-								fail = TRUE;
+								do_get_reject_room_object(ch, o_obj, "isn't takeable.", fail);
 								logit(LOG_DEBUG,
 								      "GETDBG[get-all reject:not-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] take=%d",
 								      GET_NAME(ch),
@@ -1583,9 +1573,7 @@ fail = TRUE;
 					CAN_CARRY_W(ch),
 					s_obj->short_description ? s_obj->short_description : "(none)",
 					OBJ_VNUM(s_obj));
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is too heavy.\r\n", o_obj->short_description);
-					send_to_char(Gbuf3, ch);
-					fail = TRUE;
+					do_get_reject_room_object(ch, o_obj, "is too heavy.", fail);
 					}
 					}
 					else
