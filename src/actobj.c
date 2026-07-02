@@ -561,9 +561,9 @@ static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, boo
 	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	const char *desc = o_obj->short_description ? o_obj->short_description : "(null)";
 
-	strcpy(Gbuf4, desc);
+	snprintf(Gbuf4, sizeof(Gbuf4), "%s", desc);
 	CAP(Gbuf4);
-	snprintf(Gbuf3, MAX_STRING_LENGTH, "%s %s\r\n", Gbuf4, reason);
+	snprintf(Gbuf3, sizeof(Gbuf3), "%s %s\r\n", Gbuf4, reason);
 	send_to_char(Gbuf3, ch);
 	fail = TRUE;
 }
