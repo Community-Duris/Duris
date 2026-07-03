@@ -538,6 +538,9 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 
 static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj);
 static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail);
+static void do_get_reject_closed(P_char ch, bool &fail);
+static void do_get_reject_fighting_bags(P_char ch, bool &fail);
+static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj, const char *tag, int carried, int carry_w, int cap_w, bool &fail);
 static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, const char *post_tag)
 {
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
@@ -620,15 +623,47 @@ static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o
 	act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 }
 
+static P_obj do_get_obj_in_equipment_vis(P_char ch, char *name)
+{
+	char name_copy[MAX_INPUT_LENGTH];
+	char *name_ptr = name_copy;
+	int match_num;
+	int matched = 0;
+
+	snprintf(name_copy, sizeof(name_copy), "%s", name ? name : "");
+	match_num = get_number(&name_ptr);
+
+	for (int i = 0; i < MAX_WEAR; i++)
+	{
+		P_obj obj = ch->equipment[i];
+
+		if (obj && CAN_SEE_OBJ(ch, obj) && isname(name_ptr, obj->name))
+		{
+			matched++;
+			if (matched == match_num)
+				return obj;
+		}
+	}
+
+	return NULL;
+}
+
 static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carried)
 {
 	P_obj carried_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
+	P_obj worn_obj    = do_get_obj_in_equipment_vis(ch, arg2);
 	P_obj room_obj    = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
 
 	if (carried_obj && do_get_container_target_is_valid(carried_obj))
 	{
 		carried = TRUE;
 		return carried_obj;
+	}
+
+	if (worn_obj && do_get_container_target_is_valid(worn_obj))
+	{
+		carried = TRUE;
+		return worn_obj;
 	}
 
 	if (room_obj && do_get_container_target_is_valid(room_obj))
@@ -643,8 +678,20 @@ static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carrie
 		return carried_obj;
 	}
 
+	if (worn_obj)
+	{
+		carried = TRUE;
+		return worn_obj;
+	}
+
+	if (room_obj)
+	{
+		carried = FALSE;
+		return room_obj;
+	}
+
 	carried = FALSE;
-	return room_obj;
+	return NULL;
 }
 
 static bool do_get_container_target_is_valid(P_obj s_obj)
@@ -660,26 +707,169 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 	return CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch));
 }
 
-static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj)
+static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj, bool source_is_local)
 {
-	if (s_obj && (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj)))
-	{
-		return TRUE;
-	}
+	const bool carried = source_is_local;
+	const bool worn    = s_obj && OBJ_WORN(s_obj);
+	const bool takeable = source_is_local ? TRUE : do_get_obj_is_takeable(ch, o_obj);
 
-	return do_get_obj_is_takeable(ch, o_obj);
+	logit(LOG_DEBUG,
+	      "GETDBG[container-item-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d worn=%d takeable=%d",
+	      GET_NAME(ch),
+	      world[ch->in_room].number,
+	      o_obj && o_obj->short_description ? o_obj->short_description : "?",
+	      o_obj ? OBJ_VNUM(o_obj) : -1,
+	      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+	      s_obj ? OBJ_VNUM(s_obj) : -1,
+	      carried ? 1 : 0,
+	      worn ? 1 : 0,
+	      takeable ? 1 : 0);
+
+	return takeable;
 }
 
-static bool do_get_finalize_container_item_or_reject(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, const char *post_tag, bool &fail)
+static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag, bool check_front_line, const char *arg1, const char *arg2, bool &fail)
 {
-	if (!do_get_container_item_is_takeable(ch, s_obj, o_obj))
+	if ((GET_ITEM_TYPE(s_obj) != ITEM_CORPSE) && IS_SET(s_obj->value[1], CONT_CLOSED))
 	{
-		do_get_reject_not_takeable(ch, o_obj, fail);
+		logit(LOG_DEBUG,
+		      "GETDBG[get-container-closed]: ch=%s room=%d container=%s [%d] uid=%lu arg1='%s' arg2='%s'",
+		      GET_NAME(ch),
+		      world[ch->in_room].number,
+		      s_obj->short_description ? s_obj->short_description : "(none)",
+		      OBJ_VNUM(s_obj),
+		      s_obj->obj_uid,
+		      arg1,
+		      arg2);
+		do_get_reject_closed(ch, fail);
+		return FALSE;
+	}
+
+	if ((GET_ITEM_TYPE(s_obj) == ITEM_CORPSE) && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE))
+		corpse_flag = 1;
+	else
+		corpse_flag = 0;
+
+	if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
+	{
+		logit(LOG_DEBUG,
+		      "GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d destroying=%d corpse_flag=%d",
+		      GET_NAME(ch),
+		      world[ch->in_room].number,
+		      s_obj->short_description ? s_obj->short_description : "(none)",
+		      OBJ_VNUM(s_obj),
+		      IS_FIGHTING(ch) ? 1 : 0,
+		      IS_DESTROYING(ch) ? 1 : 0,
+		      corpse_flag ? 1 : 0);
+		do_get_reject_fighting_bags(ch, fail);
+		return FALSE;
+	}
+
+	if (check_front_line && corpse_flag && fight_in_room(ch) && !on_front_line(ch))
+	{
+		logit(LOG_DEBUG,
+		      "GETDBG[get-all front-line-gate]: ch=%s room=%d corpse_flag=%d fighting=%d front_line=%d container=%s [%d]",
+		      GET_NAME(ch),
+	      world[ch->in_room].number,
+		      corpse_flag ? 1 : 0,
+		      fight_in_room(ch) ? 1 : 0,
+		      on_front_line(ch) ? 1 : 0,
+		      s_obj->short_description ? s_obj->short_description : "(none)",
+		      OBJ_VNUM(s_obj));
+		send_to_char("There's too much &+Rb&+rl&+Ro&+ro&+Rd&n flying around for you to do that!\r\n", ch);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static P_obj do_get_container_resolve_item(P_char ch, P_obj s_obj, char *arg1, bool carried)
+{
+	if (carried)
+		return get_obj_in_list(arg1, s_obj->contains);
+
+	return get_obj_in_list_vis(ch, arg1, s_obj->contains);
+}
+
+static bool do_get_finalize_container_item_or_reject(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, int carried, int carry_w, int cap_w, const char *reject_tag, const char *post_tag, bool &fail)
+{
+	if (!do_get_container_item_is_takeable(ch, s_obj, o_obj, carried))
+	{
+		do_get_reject_container_not_takeable(ch, s_obj, o_obj, reject_tag, carried, carry_w, cap_w, fail);
 		return FALSE;
 	}
 
 	do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, post_tag);
 	return TRUE;
+}
+
+
+static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, bool source_is_local, bool &fail, const char *invisible_tag, const char *too_heavy_tag, const char *carry_tag, const char *reject_tag, const char *post_tag)
+{
+	const bool local_container = source_is_local;
+	P_char rider = NULL;
+	char Gbuf3[MAX_STRING_LENGTH];
+
+	if (!CAN_SEE_OBJ(ch, o_obj) && !local_container)
+	{
+		snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n", o_obj->short_description);
+		send_to_char(Gbuf3, ch);
+		fail = TRUE;
+		logit(LOG_DEBUG,
+		      "%s: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d cansee=%d local=%d",
+		      invisible_tag,
+		      GET_NAME(ch),
+		      world[ch->in_room].number,
+		      o_obj->short_description ? o_obj->short_description : "?",
+		      OBJ_VNUM(o_obj),
+		      s_obj->short_description ? s_obj->short_description : "(none)",
+		      OBJ_VNUM(s_obj),
+		      corpse_flag ? 1 : 0,
+		      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
+		      local_container ? 1 : 0);
+		return FALSE;
+	}
+
+	if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) >= LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
+	{
+		if (((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch)) || local_container)
+		{
+			return do_get_finalize_container_item_or_reject(ch, hood, s_obj, o_obj, total, found, corpse_flag, local_container ? 1 : 0, IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), reject_tag, post_tag, fail);
+		}
+
+		logit(LOG_DEBUG,
+		      "%s: ch=%s room=%d obj=%s [%d] wt=%d carry_w=%d cap=%d container=%s [%d] local=%d",
+		      too_heavy_tag,
+		      GET_NAME(ch),
+		      world[ch->in_room].number,
+		      o_obj->short_description ? o_obj->short_description : "?",
+		      OBJ_VNUM(o_obj),
+		      GET_OBJ_WEIGHT(o_obj),
+		      IS_CARRYING_W(ch, rider),
+		      CAN_CARRY_W(ch),
+		      s_obj->short_description ? s_obj->short_description : "(none)",
+		      OBJ_VNUM(s_obj),
+		      local_container ? 1 : 0);
+		send_to_char("You can't carry any more.\r\n", ch);
+		fail = TRUE;
+		return FALSE;
+	}
+
+	logit(LOG_DEBUG,
+	      "%s: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d container=%s [%d] local=%d",
+	      carry_tag,
+	      GET_NAME(ch),
+	      world[ch->in_room].number,
+	      o_obj->short_description ? o_obj->short_description : "?",
+	      OBJ_VNUM(o_obj),
+	      IS_CARRYING_N(ch),
+	      CAN_CARRY_N(ch),
+	      s_obj->short_description ? s_obj->short_description : "(none)",
+	      OBJ_VNUM(s_obj),
+	      local_container ? 1 : 0);
+	send_to_char("You can't carry any more.\r\n", ch);
+	fail = TRUE;
+	return FALSE;
 }
 
 static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, bool &fail)
@@ -1180,52 +1370,8 @@ fail = TRUE;
 				      arg1,
 				      arg2);
 
-				if ((GET_ITEM_TYPE(s_obj) != ITEM_CORPSE) && IS_SET(s_obj->value[1], CONT_CLOSED))
-				{
-					logit(LOG_DEBUG,
-					      "GETDBG[get-container-closed]: ch=%s room=%d container=%s [%d] uid=%lu arg1='%s' arg2='%s'",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      s_obj->obj_uid,
-					      arg1,
-					      arg2);
-					do_get_reject_closed(ch, fail);
+				if (!do_get_container_preflight(ch, s_obj, corpse_flag, TRUE, arg1, arg2, fail))
 					return;
-				}
-				if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
-				{
-					logit(LOG_DEBUG,
-					      "GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d destroying=%d corpse_flag=%d",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      IS_FIGHTING(ch) ? 1 : 0,
-					      IS_DESTROYING(ch) ? 1 : 0,
-					      corpse_flag ? 1 : 0);
-					do_get_reject_fighting_bags(ch, fail);
-					return;
-				}
-				if ((GET_ITEM_TYPE(s_obj) == ITEM_CORPSE) && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE))
-					corpse_flag = 1;
-				else
-					corpse_flag = 0;
-				if (corpse_flag && fight_in_room(ch) && !on_front_line(ch))
-				{
-					logit(LOG_DEBUG,
-					      "GETDBG[get-all front-line-gate]: ch=%s room=%d corpse_flag=%d fighting=%d front_line=%d container=%s [%d]",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      corpse_flag ? 1 : 0,
-					      fight_in_room(ch) ? 1 : 0,
-					      on_front_line(ch) ? 1 : 0,
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj));
-					send_to_char("There's too much &+Rb&+rl&+Ro&+ro&+Rd&n flying around for you to do that!\r\n", ch);
-					return;
-				}
 
 				int container_safety = top_of_objt + 1;
 
@@ -1245,24 +1391,6 @@ fail = TRUE;
 
 				for (o_obj = s_obj->contains; o_obj; o_obj = next_obj)
 				{
-					logit(LOG_DEBUG,
-					      "GETDBG[get-all iter]: ch=%s room=%d container=%s [%d] item=%s [%d] uid=%lu wt=%d carry_n=%d carry_w=%d can_n=%d can_w=%d take=%d visible=%d cansee=%d iscorpse=%d",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      o_obj->short_description ? o_obj->short_description : "(null)",
-					      OBJ_VNUM(o_obj),
-					      o_obj->obj_uid,
-					      GET_OBJ_WEIGHT(o_obj),
-					      IS_CARRYING_N(ch),
-					      IS_CARRYING_W(ch, rider),
-					      CAN_CARRY_N(ch),
-					      CAN_CARRY_W(ch),
-					      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
-					      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
-					      o_obj->type == ITEM_CORPSE ? 1 : 0);
-
 					if (container_safety-- <= 0)
 					{
 						send_to_char("That container has a malformed item. Tell a god.\r\n", ch);
@@ -1291,225 +1419,62 @@ fail = TRUE;
 						continue;
 					}
 
-					bool corpse_contents = (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE);
-
 					logit(LOG_DEBUG,
-					      "GETDBG[get-all corpse-branch-enter]: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d carry_n=%d carry_w=%d cap_n=%d cap_w=%d take=%d",
+					      "GETDBG[get-all iter]: ch=%s room=%d container=%s [%d] item=%s [%d] uid=%lu wt=%d carry_n=%d carry_w=%d can_n=%d can_w=%d take=%d cansee=%d iscorpse=%d local=%d",
 					      GET_NAME(ch),
 					      world[ch->in_room].number,
-					      o_obj->short_description ? o_obj->short_description : "?",
-					      OBJ_VNUM(o_obj),
 					      s_obj->short_description ? s_obj->short_description : "(none)",
 					      OBJ_VNUM(s_obj),
-					      corpse_contents ? 1 : 0,
+					      o_obj->short_description ? o_obj->short_description : "(null)",
+					      OBJ_VNUM(o_obj),
+					      o_obj->obj_uid,
+					      GET_OBJ_WEIGHT(o_obj),
 					      IS_CARRYING_N(ch),
 					      IS_CARRYING_W(ch, rider),
 					      CAN_CARRY_N(ch),
 					      CAN_CARRY_W(ch),
-					      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
-					if (corpse_contents)
-					{
-						logit(LOG_DEBUG,
-						      "GETDBG[get-all corpse-direct]: ch=%s room=%d obj=%s [%d] container=%s [%d] carry_n=%d carry_w=%d cap_n=%d cap_w=%d take=%d",
-						      GET_NAME(ch),
-						      world[ch->in_room].number,
-						      o_obj->short_description ? o_obj->short_description : "?",
-						      OBJ_VNUM(o_obj),
-						      s_obj->short_description ? s_obj->short_description : "(none)",
-						      OBJ_VNUM(s_obj),
-						      IS_CARRYING_N(ch),
-						      IS_CARRYING_W(ch, rider),
-						      CAN_CARRY_N(ch),
-						      CAN_CARRY_W(ch),
-						      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0);
-						if (do_get_obj_is_takeable(ch, o_obj))
-						{
-							do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, "GETDBG[get-all corpse-post]");
-							continue;
-						}
-						else
-						{
-							do_get_reject_container_not_takeable(ch, s_obj, o_obj, "GETDBG[get-all reject:not-takeable]", IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), CAN_CARRY_W(ch), fail);
-						}
-						continue;
-					}
-					logit(LOG_DEBUG,
-					      "GETDBG[get-all entered]: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d visible=%d",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      o_obj->short_description ? o_obj->short_description : "?",
-					      OBJ_VNUM(o_obj),
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      corpse_contents ? 1 : 0,
-					      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0);
-					if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) >= LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
-					{
-						logit(LOG_DEBUG,
-						      "GETDBG[get-all carry-n-ok]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d",
-						      GET_NAME(ch),
-						      world[ch->in_room].number,
-						      o_obj->short_description ? o_obj->short_description : "?",
-						      OBJ_VNUM(o_obj),
-						      IS_CARRYING_N(ch),
-						      CAN_CARRY_N(ch));
-						if (((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) < CAN_CARRY_W(ch)) || OBJ_CARRIED(s_obj))
-						{
-							logit(LOG_DEBUG,
-							      "GETDBG[get-all carry-w-ok]: ch=%s room=%d obj=%s [%d] wt=%d carry_w=%d cap_w=%d container=%s [%d]",
-							      GET_NAME(ch),
-							      world[ch->in_room].number,
-							      o_obj->short_description ? o_obj->short_description : "?",
-							      OBJ_VNUM(o_obj),
-							      GET_OBJ_WEIGHT(o_obj),
-							      IS_CARRYING_W(ch, rider),
-							      CAN_CARRY_W(ch),
-							      s_obj->short_description ? s_obj->short_description : "(none)",
-							      OBJ_VNUM(s_obj));
-							const bool takeable = do_get_container_item_is_takeable(ch, s_obj, o_obj);
-							if (takeable)
-							{
-								logit(LOG_DEBUG,
-								      "GETDBG[get-all take-ok]: ch=%s room=%d obj=%s [%d] take=%d level=%d npc=%d",
-								      GET_NAME(ch),
-								      world[ch->in_room].number,
-								      o_obj->short_description ? o_obj->short_description : "?",
-								      OBJ_VNUM(o_obj),
-								      takeable ? 1 : 0,
-								      GET_LEVEL(ch),
-								      IS_NPC(ch) ? 1 : 0);
-								if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
-								{
-									logit(LOG_CORPSE, "%s%s: corpse of %s from %s", GET_NAME(ch), (hood == ch) ? "" : GET_NAME(hood), o_obj->action_description, s_obj->name);
-								}
-								else if (corpse_flag && o_obj)
-								{
-									if (o_obj->type == ITEM_MONEY)
-									{
-										logit(LOG_CORPSE,
-										      "%s%s: %dp, %dg, %ds, %dc from %s",
-										      GET_NAME(ch),
-										      (hood == ch) ? "" : GET_NAME(hood),
-										      o_obj->value[3],
-										      o_obj->value[2],
-										      o_obj->value[1],
-										      o_obj->value[0],
-										      s_obj->action_description);
-								}
-								else
-								{
-									if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
-									{
-										do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
-										// If the artifact was picked up across racewar lines.
-										if ((s_obj->value[5] != RACEWAR_NONE) && (GET_RACEWAR(ch) != s_obj->value[5]))
-										{
-											int vnum      = OBJ_VNUM(o_obj);
-											int owner_pid = -1;
-											int timer     = time(NULL);
-											// This sets the 'soul' of the artifact to the new owner.
-											sql_update_bind_data(vnum, &owner_pid, &timer);
-											// Feed artifact to at least the minimum for across racewar sides.
-											artifact_feed_to_min_sql(o_obj, 5 * MINS_PER_REAL_DAY);
-										}
-									}
-									else
-									{
-										logit(LOG_CORPSE,
-										      "%s%s: %s [%d] from %s",
-										      GET_NAME(ch),
-										      (hood == ch) ? "" : GET_NAME(hood),
-										      o_obj->name,
-										      obj_index[o_obj->R_num].virtual_number,
-										      s_obj->action_description);
-										
-										act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
-									}
-								}
-								if (!IS_TRUSTED(ch))
-						{
-							CharWait(ch, PULSE_VIOLENCE);
-						}
-						do_get_finalize_container_item(ch, s_obj, o_obj, total, found, "GETDBG[get-container-post]");
-						}
-						else
-						{
-							do_get_reject_container_not_takeable(ch, s_obj, o_obj, "GETDBG[get-all reject:not-takeable]", IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), CAN_CARRY_W(ch), fail);
-						}
-}
-						else
-						{
-						do_get_reject_carry_limit(ch, fail);
-							logit(LOG_DEBUG,
-							      "GETDBG[get-all reject:too-heavy]: ch=%s room=%d obj=%s [%d] container=%s [%d] carry_w=%d cap_w=%d wt=%d carried_container=%d",
-							      GET_NAME(ch),
-							      world[ch->in_room].number,
-							      o_obj->short_description ? o_obj->short_description : "?",
-							      OBJ_VNUM(o_obj),
-							      s_obj->short_description ? s_obj->short_description : "(none)",
-							      OBJ_VNUM(s_obj),
-							      IS_CARRYING_W(ch, rider),
-							      CAN_CARRY_W(ch),
-							      GET_OBJ_WEIGHT(o_obj),
-							      OBJ_CARRIED(s_obj) ? 1 : 0);
-						}
-					}
-					else
-					{
-						do_get_reject_too_much_stuff(ch, fail);
-						fail = TRUE;
-						logit(LOG_DEBUG,
-						      "GETDBG[get-all reject:carry-n]: ch=%s room=%d obj=%s [%d] container=%s [%d] carry_n=%d cap_n=%d material=%d",
-						      GET_NAME(ch),
-						      world[ch->in_room].number,
-						      o_obj->short_description ? o_obj->short_description : "?",
-						      OBJ_VNUM(o_obj),
-						      s_obj->short_description ? s_obj->short_description : "(none)",
-						      OBJ_VNUM(s_obj),
-						      IS_CARRYING_N(ch),
-						      CAN_CARRY_N(ch),
-						      (OBJ_VNUM(o_obj) >= LOWEST_MAT_VNUM && OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM) ? 1 : 0);
-					}
+					      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
+					      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
+					      o_obj->type == ITEM_CORPSE ? 1 : 0,
+					      (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj)) ? 1 : 0);
+
+					(void)do_get_try_container_item(ch,
+					                              hood,
+					                              s_obj,
+					                              o_obj,
+					                              total,
+					                              found,
+					                              corpse_flag,
+					                              carried,
+					                              fail,
+					                              "GETDBG[get-all reject:invisible]",
+					                              "GETDBG[get-all reject:too-heavy]",
+					                              "GETDBG[get-all reject:carry-limit]",
+					                              "GETDBG[get-all reject:not-takeable]",
+					                              "GETDBG[get-container-post]");
 				}
-				else
-				{
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n", o_obj->short_description);
-					send_to_char(Gbuf3, ch);
-					fail = TRUE;
-					logit(LOG_DEBUG,
-					      "GETDBG[get-all reject:invisible]: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d cansee=%d",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      o_obj->short_description ? o_obj->short_description : "?",
-					      OBJ_VNUM(o_obj),
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      corpse_contents ? 1 : 0,
-					      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0);
-				}
-				continue;
+
+				return;
 			}
 
-				logit(LOG_DEBUG,
-				      "GETDBG[get-container-not-container]: ch=%s room=%d container=%s [%d] type=%d arg1='%s' arg2='%s'",
-				      GET_NAME(ch),
-				      world[ch->in_room].number,
-				      s_obj->short_description ? s_obj->short_description : "(none)",
-				      OBJ_VNUM(s_obj),
-				      GET_ITEM_TYPE(s_obj),
-				      arg1,
-				      arg2);
-				do_get_reject_not_container(ch, s_obj, fail);
-			}
+			logit(LOG_DEBUG,
+			      "GETDBG[get-container-not-container]: ch=%s room=%d container=%s [%d] type=%d arg1='%s' arg2='%s'",
+			      GET_NAME(ch),
+			      world[ch->in_room].number,
+			      s_obj->short_description ? s_obj->short_description : "(none)",
+			      OBJ_VNUM(s_obj),
+			      GET_ITEM_TYPE(s_obj),
+			      arg1,
+			      arg2);
+			do_get_reject_not_container(ch, s_obj, fail);
 			return;
 		}
-		else
-		{
-			do_get_reject_missing_container(ch, arg2, fail);
-		}
+
+		do_get_reject_missing_container(ch, arg2, fail);
 	}
 
-	/* get ??? all */
+
+/* get ??? all */
 	if (type == 5)
 	{
 		do_get_reject_text(ch, "You can't take things from two or more containers.\r\n", fail);
@@ -1526,57 +1491,10 @@ fail = TRUE;
 		{
 			if (do_get_container_target_is_valid(s_obj))
 			{
-
-				if ((GET_ITEM_TYPE(s_obj) != ITEM_CORPSE) && IS_SET(s_obj->value[1], CONT_CLOSED))
-				{
-					logit(LOG_DEBUG,
-					      "GETDBG[get-container-closed]: ch=%s room=%d container=%s [%d] uid=%lu arg1='%s' arg2='%s'",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      s_obj->obj_uid,
-					      arg1,
-					      arg2);
-					do_get_reject_closed(ch, fail);
+				if (!do_get_container_preflight(ch, s_obj, corpse_flag, FALSE, arg1, arg2, fail))
 					return;
-				}
 
-				if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
-				{
-					do_get_reject_fighting_bags(ch, fail);
-					return;
-				}
-
-				if ((GET_ITEM_TYPE(s_obj) == ITEM_CORPSE) && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE))
-					corpse_flag = 1;
-				else
-					corpse_flag = 0;
-
-				if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
-				{
-					logit(LOG_DEBUG,
-					      "GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d destroying=%d corpse_flag=%d",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      IS_FIGHTING(ch) ? 1 : 0,
-					      IS_DESTROYING(ch) ? 1 : 0,
-					      corpse_flag ? 1 : 0);
-					do_get_reject_fighting_bags(ch, fail);
-					return;
-				}
-
-				/*
-				 * fixed an annoying bug, you can now always get
-				 * something from a container in your inv, in spite of
-				 * weight  -JAB
-				 */
-				if (carried)
-					o_obj = get_obj_in_list(arg1, s_obj->contains);
-				else
-					o_obj = get_obj_in_list_vis(ch, arg1, s_obj->contains);
+				o_obj = do_get_container_resolve_item(ch, s_obj, arg1, carried);
 				if (o_obj)
 				{
 					if (!obj_is_in_container(o_obj, s_obj))
@@ -1593,62 +1511,20 @@ fail = TRUE;
 						return;
 					}
 
-					if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) >= LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
-					{
-						if (((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) < CAN_CARRY_W(ch)) || OBJ_CARRIED(s_obj))
-						{
-							logit(LOG_DEBUG,
-							      "GETDBG[get-all weight]: ch=%s room=%d obj=%s [%d] wt=%d carry_w=%d cap=%d container=%s [%d] carried_container=%d",
-							      GET_NAME(ch),
-							      world[ch->in_room].number,
-							      o_obj->short_description ? o_obj->short_description : "?",
-							      OBJ_VNUM(o_obj),
-							      GET_OBJ_WEIGHT(o_obj),
-							      IS_CARRYING_W(ch, rider),
-							      CAN_CARRY_W(ch),
-							      s_obj->short_description ? s_obj->short_description : "(none)",
-							      OBJ_VNUM(s_obj),
-							      OBJ_CARRIED(s_obj) ? 1 : 0);
-							if (do_get_container_item_is_takeable(ch, s_obj, o_obj))
-							{
-								do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, "GETDBG[get-container-single-post]");
-							}
-
-					else
-					{
-						do_get_reject_container_not_takeable(ch, s_obj, o_obj, "GETDBG[get-container-single reject:not-takeable]", IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), CAN_CARRY_W(ch), fail);
-					}
-					}
-					else
-					{
-					logit(LOG_DEBUG,
-					"GETDBG[get-all reject:too-heavy]: ch=%s room=%d obj=%s [%d] wt=%d carry_w=%d cap=%d container=%s [%d]",
-					GET_NAME(ch),
-					world[ch->in_room].number,
-					o_obj->short_description ? o_obj->short_description : "?",
-					OBJ_VNUM(o_obj),
-					GET_OBJ_WEIGHT(o_obj),
-					IS_CARRYING_W(ch, rider),
-					CAN_CARRY_W(ch),
-					s_obj->short_description ? s_obj->short_description : "(none)",
-					OBJ_VNUM(s_obj));
-					do_get_reject_too_heavy(ch, o_obj, fail);
-					}
-					}
-					else
-					{
-					logit(LOG_DEBUG,
-					"GETDBG[get-all reject:carry-limit]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d container=%s [%d]",
-					GET_NAME(ch),
-					world[ch->in_room].number,
-					o_obj->short_description ? o_obj->short_description : "?",
-					OBJ_VNUM(o_obj),
-					IS_CARRYING_N(ch),
-					CAN_CARRY_N(ch),
-					s_obj->short_description ? s_obj->short_description : "(none)",
-					OBJ_VNUM(s_obj));
-				do_get_reject_carry_limit(ch, fail);
-				}
+					(void)do_get_try_container_item(ch,
+					                              hood,
+					                              s_obj,
+					                              o_obj,
+					                              total,
+					                              found,
+					                              corpse_flag,
+					                              carried,
+					                              fail,
+					                              "GETDBG[get-container-single reject:invisible]",
+					                              "GETDBG[get-container-single reject:too-heavy]",
+					                              "GETDBG[get-container-single reject:carry-limit]",
+					                              "GETDBG[get-container-single reject:not-takeable]",
+					                              "GETDBG[get-container-single-post]");
 				}
 				else
 				{
