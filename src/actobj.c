@@ -1497,6 +1497,7 @@ fail = TRUE;
 				      arg2);
 				do_get_reject_not_container(ch, s_obj, fail);
 			}
+			return;
 		}
 		else
 		{
