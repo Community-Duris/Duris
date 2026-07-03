@@ -3005,7 +3005,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE corpse_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "item_type already exists on corpse_items"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -3013,7 +3013,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'player_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE player_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "item_type already exists on player_items"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -3021,7 +3021,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'player_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE player_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "wear_flags already exists on player_items"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -3105,42 +3105,42 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE locker_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "locker_items.item_type already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE shopkeeper_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "shopkeeper_items.item_type already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE saved_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "saved_items.item_type already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE siege_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "siege_items.item_type already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE account_locker_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "account_locker_items.item_type already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'item_type');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN item_type INT NOT NULL DEFAULT 0',
+    'ALTER TABLE player_pet_items ADD COLUMN item_type TINYINT DEFAULT NULL',
     'SELECT "player_pet_items.item_type already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -3154,49 +3154,49 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE corpse_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "corpse_items.wear_flags already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE locker_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "locker_items.wear_flags already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE shopkeeper_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "shopkeeper_items.wear_flags already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE saved_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "saved_items.wear_flags already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE siege_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "siege_items.wear_flags already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE account_locker_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "account_locker_items.wear_flags already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'wear_flags');
 SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN wear_flags INT UNSIGNED NOT NULL DEFAULT 0',
+    'ALTER TABLE player_pet_items ADD COLUMN wear_flags INT DEFAULT NULL',
     'SELECT "player_pet_items.wear_flags already exists"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
