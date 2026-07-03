@@ -2325,7 +2325,7 @@ void obj_to_room(P_obj object, int room)
 			object->z_cord = -(distance_from_shore(room));
 		}
 		else if ((object->type >= ITEM_SCROLL && object->type <= ITEM_WORN) || (object->type == ITEM_CONTAINER) || (object->type == ITEM_MONEY) ||
-		         (object->type >= ITEM_QUIVER && object->type <= ITEM_TOTEM) || (object->type = ITEM_SHIELD))
+		         (object->type >= ITEM_QUIVER && object->type <= ITEM_TOTEM) || (object->type == ITEM_SHIELD))
 		// else
 		{
 			for (i = world[room].people; i; i = i->next_in_room)

@@ -291,6 +291,33 @@ static int batch_append(char *buf, int pos, size_t buf_size, const char *fmt, ..
 // SIDE EFFECT: the prototype object loaded internally is freed
 // (extract_obj) before returning.  The function name makes this
 // explicit so callers can't accidentally skip the cleanup.
+static int sql_validate_loaded_item_type(P_obj obj, int saved_type, const char *context)
+{
+	if (!obj)
+		return saved_type;
+
+	if (saved_type <= 0)
+		return obj->type;
+
+	if (saved_type > ITEM_LAST)
+	{
+		logit(LOG_DEBUG,
+		      "sql item repair: ignoring out-of-range item_type for vnum=%d saved_type=%d proto_type=%d context=%s",
+		      OBJ_VNUM(obj), saved_type, obj->type, context ? context : "(null)");
+		return obj->type;
+	}
+
+	if (saved_type == ITEM_CORPSE && obj->type != ITEM_CORPSE)
+	{
+		logit(LOG_DEBUG,
+		      "sql item repair: ignoring corpse item_type for vnum=%d saved_type=%d proto_type=%d context=%s",
+		      OBJ_VNUM(obj), saved_type, obj->type, context ? context : "(null)");
+		return obj->type;
+	}
+
+	return saved_type;
+}
+
 static void sql_format_item_diff_fields_and_free_proto(
 	P_obj obj,
 	char  *wear_str,
@@ -304,38 +331,55 @@ static void sql_format_item_diff_fields_and_free_proto(
 {
 	P_obj proto = read_object(obj->R_num, REAL);
 
-	if (obj->wear_flags)
+	if (proto)
+	{
+		if (obj->wear_flags != proto->wear_flags)
+			snprintf(wear_str, 32, "%d", obj->wear_flags);
+		else
+			strcpy(wear_str, "NULL");
+
+		if (obj->type != proto->type)
+			snprintf(type_str, 16, "%d", obj->type);
+		else
+			strcpy(type_str, "NULL");
+
+		if (obj->material != proto->material)
+			snprintf(material_str, 16, "%d", obj->material);
+		else
+			strcpy(material_str, "NULL");
+
+		if (obj->bitvector != proto->bitvector)
+			snprintf(bv1_str, 32, "%lu", obj->bitvector);
+		else
+			strcpy(bv1_str, "NULL");
+		if (obj->bitvector2 != proto->bitvector2)
+			snprintf(bv2_str, 32, "%lu", obj->bitvector2);
+		else
+			strcpy(bv2_str, "NULL");
+		if (obj->bitvector3 != proto->bitvector3)
+			snprintf(bv3_str, 32, "%lu", obj->bitvector3);
+		else
+			strcpy(bv3_str, "NULL");
+		if (obj->bitvector4 != proto->bitvector4)
+			snprintf(bv4_str, 32, "%lu", obj->bitvector4);
+		else
+			strcpy(bv4_str, "NULL");
+		if (obj->bitvector5 != proto->bitvector5)
+			snprintf(bv5_str, 32, "%lu", obj->bitvector5);
+		else
+			strcpy(bv5_str, "NULL");
+	}
+	else
+	{
 		snprintf(wear_str, 32, "%d", obj->wear_flags);
-	else
-		strcpy(wear_str, "0");
-
-	snprintf(type_str, 16, "%d", obj->type);
-
-	if (proto && obj->material != proto->material)
+		snprintf(type_str, 16, "%d", obj->type);
 		snprintf(material_str, 16, "%d", obj->material);
-	else
-		strcpy(material_str, "NULL");
-
-	if (proto && obj->bitvector != proto->bitvector)
 		snprintf(bv1_str, 32, "%lu", obj->bitvector);
-	else
-		strcpy(bv1_str, "NULL");
-	if (proto && obj->bitvector2 != proto->bitvector2)
 		snprintf(bv2_str, 32, "%lu", obj->bitvector2);
-	else
-		strcpy(bv2_str, "NULL");
-	if (proto && obj->bitvector3 != proto->bitvector3)
 		snprintf(bv3_str, 32, "%lu", obj->bitvector3);
-	else
-		strcpy(bv3_str, "NULL");
-	if (proto && obj->bitvector4 != proto->bitvector4)
 		snprintf(bv4_str, 32, "%lu", obj->bitvector4);
-	else
-		strcpy(bv4_str, "NULL");
-	if (proto && obj->bitvector5 != proto->bitvector5)
 		snprintf(bv5_str, 32, "%lu", obj->bitvector5);
-	else
-		strcpy(bv5_str, "NULL");
+	}
 
 	if (proto)
 		extract_obj(proto);
@@ -1552,6 +1596,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 
 	bool first       = true;
 	int  batch_count = 0;
+	char wear_str[32], type_str[16], material_str[16], bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
 
 	for (P_obj obj = first_obj; obj; obj = obj->next_content)
 	{
@@ -1562,29 +1607,30 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 
 		int vnum = obj_index[obj->R_num].virtual_number;
 
-		int new_pos = batch_append(batch, pos, buf_size,
-		                           "%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%u,%d,%d,%d,%lu,%d)",
-		                           first ? "" : ",",
-		                           pid,
-		                           vnum,
-		                           container_id,
-		                           obj->weight,
-		                           obj->cost,
-		                           (long)obj->timer[0],
-		                           obj->extra_flags,
-		                           obj->value[0],
-		                           obj->value[1],
-		                           obj->value[2],
-		                           obj->value[3],
-		                           obj->value[4],
-		                           obj->value[5],
-		                           obj->value[6],
-		                           obj->value[7],
-		                           obj->wear_flags,
-		                           obj->type,
-		                           obj->material,
-		                           obj->obj_uid,
-		                           obj->condition);
+			sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+			int new_pos = batch_append(batch, pos, buf_size,
+			                           "%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%lu,%d)",
+			                           first ? "" : ",",
+			                           pid,
+			                           vnum,
+			                           container_id,
+			                           obj->weight,
+			                           obj->cost,
+			                           (long)obj->timer[0],
+			                           obj->extra_flags,
+			                           obj->value[0],
+			                           obj->value[1],
+			                           obj->value[2],
+			                           obj->value[3],
+			                           obj->value[4],
+			                           obj->value[5],
+			                           obj->value[6],
+			                           obj->value[7],
+			                           wear_str,
+			                           type_str,
+			                           material_str,
+			                           obj->obj_uid,
+			                           obj->condition);
 		if (new_pos < 0)
 		{
 			free(batch);
@@ -1880,7 +1926,6 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	         obj->extra_flags,
 	         wear_str,
 	         type_str,
-	         material_str,
 	         obj->value[0],
 	         obj->value[1],
 	         obj->value[2],
@@ -1898,6 +1943,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	         bv3_str,
 	         bv4_str,
 	         bv5_str,
+	         material_str,
 	         obj->obj_uid,
 	         obj->condition);
 
@@ -2684,13 +2730,13 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 	         desc_str,
 	         action_str,
 	         wear_str,
-	         obj->type,
-	         material_str,
+	         type_str,
 	         bv1_str,
 	         bv2_str,
 	         bv3_str,
 	         bv4_str,
-	         bv5_str);
+	         bv5_str,
+	         material_str);
 
 	if (esc_name)
 		free(esc_name);
@@ -3032,7 +3078,7 @@ bool sql_load_player_pets(P_char ch)
 				if (item_row[20])
 					obj->wear_flags = atoi(item_row[20]);
 				if (item_row[21])
-					obj->type = atoi(item_row[21]);
+					obj->type = sql_validate_loaded_item_type(obj, atoi(item_row[21]), "sql_load_player_pet_items");
 				if (item_row[22])
 					obj->material = atoi(item_row[22]);
 				if (item_row[23])
@@ -3939,7 +3985,7 @@ bool sql_load_player_items(P_char ch)
 		obj->timer[0]    = sql_row_long(row, col++, obj->timer[0]);
 		obj->extra_flags = sql_row_ulong(row, col++, obj->extra_flags);
 		obj->wear_flags  = sql_row_int(row, col++, obj->wear_flags);
-		obj->type        = sql_row_int(row, col++, obj->type);
+		obj->type        = sql_validate_loaded_item_type(obj, sql_row_int(row, col++, obj->type), "sql_load_player_items");
 
 		// NULL in db means use prototype value (passed as default)
 		obj->value[0] = sql_row_int(row, col++, obj->value[0]);
@@ -4818,11 +4864,11 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	         "item_material, obj_uid, item_condition"
 	         ") VALUES ("
 	         "%d, %s, %d, %s, 1, "
-	         "%d, %d, %ld, %lu, %s, %d, "
+	         "%d, %d, %ld, %lu, %s, %s, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
 	         "%s, %s, %s, %s, "
 	         "%s, %s, %s, %s, %s, "
-	         "%d, %lu, %d"
+	         "%s, %lu, %d"
 	         ")",
 	         locker_id,
 	         chest_id_str,
@@ -4833,8 +4879,7 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	         (long)obj->timer[0],
 	         (unsigned long)obj->extra_flags,
 	         wear_str,
-	         obj->type,
-	         obj->material,
+	         type_str,
 	         obj->value[0],
 	         obj->value[1],
 	         obj->value[2],
@@ -4852,6 +4897,7 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	         bv3_str,
 	         bv4_str,
 	         bv5_str,
+	         material_str,
 	         obj->obj_uid,
 	         obj->condition);
 
@@ -5101,7 +5147,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		if (row[6])
 			obj->wear_flags = atoi(row[6]);
 		if (row[7])
-			obj->type = atoi(row[7]);
+			obj->type = sql_validate_loaded_item_type(obj, atoi(row[7]), "sql_load_locker_items");
 
 		obj->value[0] = row[8] ? atoi(row[8]) : obj->value[0];
 		obj->value[1] = row[9] ? atoi(row[9]) : obj->value[1];
@@ -5786,7 +5832,7 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
 		if (row[6])
 			obj->wear_flags = atoi(row[6]);
 		if (row[7])
-			obj->type = atoi(row[7]);
+			obj->type = sql_validate_loaded_item_type(obj, atoi(row[7]), "sql_load_private_chest_items");
 
 		obj->value[0] = row[8] ? atoi(row[8]) : obj->value[0];
 		obj->value[1] = row[9] ? atoi(row[9]) : obj->value[1];
@@ -6604,25 +6650,29 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 	snprintf(query,
 	         sizeof(query),
 	         "INSERT INTO corpse_items ("
-	         "corpse_id, vnum, item_type, container_id, quantity, "
-	         "weight, cost, timer, extra_flags, "
+	         "corpse_id, vnum, container_id, quantity, "
+	         "weight, cost, timer, extra_flags, wear_flags, item_type, "
 	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+	         "name, short_descr, description, action_descr, "
+	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
 	         "item_material, obj_uid, item_condition"
 	         ") VALUES ("
-	         "%d, %d, %d, %s, 1, "
-	         "%d, %d, %ld, %lu, "
+	         "%d, %d, %s, 1, "
+	         "%d, %d, %ld, %lu, %s, %s, "
 	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %lu, %d"
+	         "%s, %s, %s, %s, "
+	         "%s, %s, %s, %s, %s, "
+	         "%s, %lu, %d"
 	         ")",
 	         corpse_id,
 	         vnum,
-	         obj->type,
 	         container_str,
 	         obj->weight,
 	         obj->cost,
 	         (long)obj->timer[0],
 	         (unsigned long)obj->extra_flags,
+	         wear_str,
+	         type_str,
 	         obj->value[0],
 	         obj->value[1],
 	         obj->value[2],
@@ -6635,14 +6685,12 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 	         short_str,
 	         desc_str,
 	         action_str,
-	         wear_str,
-	         type_str,
-	         material_str,
 	         bv1_str,
 	         bv2_str,
 	         bv3_str,
 	         bv4_str,
 	         bv5_str,
+	         material_str,
 	         obj->obj_uid,
 	         obj->condition);
 
@@ -7130,7 +7178,7 @@ bool sql_load_all_corpses(void)
 		if (row[30])
 			obj->wear_flags = atoi(row[30]);
 		if (row[31])
-			obj->type = atoi(row[31]);
+			obj->type = sql_validate_loaded_item_type(obj, atoi(row[31]), "sql_load_all_corpses");
 		if (row[32])
 			obj->material = atoi(row[32]);
 		if (row[33])
@@ -7658,12 +7706,12 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 	         action_str,
 	         wear_str,
 	         type_str,
-	         material_str,
 	         bv1_str,
 	         bv2_str,
 	         bv3_str,
 	         bv4_str,
-	         bv5_str);
+	         bv5_str,
+	         material_str);
 
 	if (esc_key)
 		free(esc_key);
@@ -7876,12 +7924,12 @@ static int sql_save_siege_item_one(int room_vnum, P_obj obj, int container_id)
 	         action_str,
 	         wear_str,
 	         type_str,
-	         material_str,
 	         bv1_str,
 	         bv2_str,
 	         bv3_str,
 	         bv4_str,
-	         bv5_str);
+	         bv5_str,
+	         material_str);
 
 	if (esc_name)
 		free(esc_name);
@@ -8035,7 +8083,7 @@ static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], 
 		if (row[19])
 			obj->wear_flags = atoi(row[19]);
 		if (row[20])
-			obj->type = atoi(row[20]);
+			obj->type = sql_validate_loaded_item_type(obj, atoi(row[20]), "sql_load_shopkeeper_items");
 		if (row[21])
 			obj->material = atoi(row[21]);
 		if (row[22])
@@ -8784,7 +8832,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 		if (row[18])
 			obj->wear_flags = atoi(row[18]);
 		if (row[19])
-			obj->type = atoi(row[19]);
+			obj->type = sql_validate_loaded_item_type(obj, atoi(row[19]), "sql_load_saved_item_contents");
 		if (row[20])
 			obj->material = atoi(row[20]);
 		if (row[21])
@@ -9083,7 +9131,7 @@ static P_obj sql_load_siege_item_contents(int room_vnum, int container_id, int d
 		if (row[18])
 			obj->wear_flags = atoi(row[18]);
 		if (row[19])
-			obj->type = atoi(row[19]);
+			obj->type = sql_validate_loaded_item_type(obj, atoi(row[19]), "sql_load_siege_items");
 		if (row[20])
 			obj->material = atoi(row[20]);
 		if (row[21])
