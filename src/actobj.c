@@ -662,7 +662,11 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 
 static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj)
 {
-	(void)s_obj;
+	if (s_obj && (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj)))
+	{
+		return TRUE;
+	}
+
 	return do_get_obj_is_takeable(ch, o_obj);
 }
 
