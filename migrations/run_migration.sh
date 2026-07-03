@@ -1538,6 +1538,118 @@ BEGIN
                    AND index_name = 'idx_obj_uid') THEN
         ALTER TABLE player_pet_items ADD INDEX idx_obj_uid (obj_uid);
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'item_type') THEN
+        ALTER TABLE player_pet_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE player_pet_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'bitvector1') THEN
+        ALTER TABLE player_pet_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'bitvector2') THEN
+        ALTER TABLE player_pet_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'bitvector3') THEN
+        ALTER TABLE player_pet_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'bitvector4') THEN
+        ALTER TABLE player_pet_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'bitvector5') THEN
+        ALTER TABLE player_pet_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'player_pet_items'
+                   AND column_name = 'item_material') THEN
+        ALTER TABLE player_pet_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'item_type') THEN
+        ALTER TABLE account_locker_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'wear_flags') THEN
+        ALTER TABLE account_locker_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'bitvector1') THEN
+        ALTER TABLE account_locker_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'bitvector2') THEN
+        ALTER TABLE account_locker_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'bitvector3') THEN
+        ALTER TABLE account_locker_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'bitvector4') THEN
+        ALTER TABLE account_locker_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'bitvector5') THEN
+        ALTER TABLE account_locker_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                   AND table_name = 'account_locker_items'
+                   AND column_name = 'item_material') THEN
+        ALTER TABLE account_locker_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5;
+    END IF;
 END //
 
 DELIMITER ;
