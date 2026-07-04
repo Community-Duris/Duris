@@ -5224,9 +5224,9 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			obj->bitvector5 = strtoul(row[26], NULL, 10);
 
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
-		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item");
+		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item_extra_descr");
 
-		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref, 0);
+		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref, depth + 1);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))
@@ -5881,7 +5881,7 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		obj_to_obj(obj, chest_obj);
 
 		// load contained items (bags inside the chest)
-		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref, 0);
+		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref, 1);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))

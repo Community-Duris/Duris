@@ -113,7 +113,7 @@ class UnsortedChest : public LockerChest
 	friend class StorageLocker;
 
 public:
-	virtual bool ItemFits(P_obj obj) { return ((obj->type == ITEM_CONTAINER) || (obj->type == ITEM_CORPSE)) ? false : true; };
+	virtual bool ItemFits(P_obj obj) { return (obj->type == ITEM_CORPSE) ? false : true; };
 
 protected:
 	UnsortedChest(void) : LockerChest("unsorted", "that are unsorted") {};
