@@ -709,12 +709,13 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 
 static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj, bool source_is_local)
 {
-	const bool carried = source_is_local;
-	const bool worn    = s_obj && OBJ_WORN(s_obj);
-	const bool takeable = source_is_local ? TRUE : do_get_obj_is_takeable(ch, o_obj);
+	const bool carried      = source_is_local;
+	const bool worn         = s_obj && OBJ_WORN(s_obj);
+	const bool actual_local = s_obj && (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj));
+	const bool takeable     = source_is_local ? TRUE : do_get_obj_is_takeable(ch, o_obj);
 
 	logit(LOG_DEBUG,
-	      "GETDBG[container-item-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d worn=%d takeable=%d",
+	      "GETDBG[container-item-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d worn=%d source_local=%d actual_local=%d takeable=%d",
 	      GET_NAME(ch),
 	      world[ch->in_room].number,
 	      o_obj && o_obj->short_description ? o_obj->short_description : "?",
@@ -723,7 +724,26 @@ static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_ob
 	      s_obj ? OBJ_VNUM(s_obj) : -1,
 	      carried ? 1 : 0,
 	      worn ? 1 : 0,
+	      source_is_local ? 1 : 0,
+	      actual_local ? 1 : 0,
 	      takeable ? 1 : 0);
+
+	if (source_is_local != actual_local)
+	{
+		logit(LOG_DEBUG,
+		      "GETDBG[container-item-local-mismatch]: ch=%s room=%d obj=%s [%d] container=%s [%d] source_local=%d actual_local=%d carried=%d worn=%d inside=%d",
+		      GET_NAME(ch),
+		      world[ch->in_room].number,
+		      o_obj && o_obj->short_description ? o_obj->short_description : "?",
+		      o_obj ? OBJ_VNUM(o_obj) : -1,
+		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+		      s_obj ? OBJ_VNUM(s_obj) : -1,
+		      source_is_local ? 1 : 0,
+		      actual_local ? 1 : 0,
+		      s_obj && OBJ_CARRIED(s_obj) ? 1 : 0,
+		      worn ? 1 : 0,
+		      s_obj && OBJ_INSIDE(s_obj) ? 1 : 0);
+	}
 
 	return takeable;
 }

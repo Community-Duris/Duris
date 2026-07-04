@@ -1637,8 +1637,8 @@ bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_be
 	sql_trace_log(site, DB, sql);
 	if (mysql_real_query(DB, sql, len) != 0)
 	{
-		logit(LOG_DEBUG, "MySQL error: %s", mysql_error(DB));
-		logit(LOG_DEBUG, "on MySQL query: %s", sql);
+		logit(LOG_STATUS, "MySQL error: %s", mysql_error(DB));
+		logit(LOG_STATUS, "on MySQL query: %s", sql);
 		sql_trace_panic();
 		sql_trace_log("exec/fail", DB, sql);
 		return false;
