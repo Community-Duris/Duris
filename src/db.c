@@ -1359,6 +1359,11 @@ void boot_world(int mini_mode)
 			}
 			if (world[room_nr].room_flags & ROOM_INN)
 				world[room_nr].funct = inn;
+			if ((room_nr >= 65201) && (room_nr <= 65300))
+			{
+				world[room_nr].room_flags |= ROOM_LOCKER;
+				world[room_nr].funct = storage_locker;
+			}
 
 			room_light(room_nr, REAL);
 			room_nr++;
