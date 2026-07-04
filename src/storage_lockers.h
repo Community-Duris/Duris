@@ -14,6 +14,11 @@
 
 #include <string.h>
 
+// Type-specific locker chests only accept matching items; container chests also
+// refuse filled containers so nested contents never have to round-trip through
+// the locker sorter.
+bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj);
+
 int  guild_locker_room_hook(int room, P_char ch, int cmd, char *arg);
 bool remove_all_locker_access(P_char ch);
 
@@ -152,7 +157,10 @@ class EqTypeChest : public LockerChest
 	friend class StorageLocker;
 
 public:
-	virtual bool ItemFits(P_obj obj) { return (obj->type == m_eqType) ? true : false; };
+	virtual bool ItemFits(P_obj obj)
+	{
+		return locker_eq_type_fits_for_storage(m_eqType, obj);
+	};
 
 protected:
 	EqTypeChest(::byte eqType, const char *keyword, const char *prettyDesc) : LockerChest(keyword, prettyDesc), m_eqType(eqType) {};

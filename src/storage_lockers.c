@@ -77,6 +77,30 @@ inline StorageLocker *GetChestList(int real_room)
 	return pRet;
 }
 
+bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj)
+{
+	if (!obj || obj->type != eqType)
+		return false;
+
+	if (eqType == ITEM_CONTAINER && obj->contains)
+	{
+		int  content_count = 0;
+		P_obj content;
+		for (content = obj->contains; content; content = content->next_content)
+			content_count++;
+
+		logit(LOG_DEBUG,
+		      "locker_eq_type_fits: rejecting filled container vnum=%d name=%s short=%s contents=%d",
+		      obj->R_num >= 0 ? obj_index[obj->R_num].virtual_number : -1,
+		      obj->name ? obj->name : "(null)",
+		      obj->short_description ? obj->short_description : "(null)",
+		      content_count);
+		return false;
+	}
+
+	return true;
+}
+
 static int locker_exit_room(P_char ch, int fallback_room)
 {
 	if (ch && (ch->in_room != NOWHERE) && world[ch->in_room].dir_option[0] && (world[ch->in_room].dir_option[0]->to_room != NOWHERE))
@@ -90,6 +114,85 @@ static int locker_exit_room(P_char ch, int fallback_room)
 	}
 
 	return fallback_room;
+}
+
+static bool locker_name_matches_player(const char *locker_name, P_char ch)
+{
+	char name[MAX_INPUT_LENGTH];
+
+	if (!locker_name || !ch)
+		return false;
+
+	strcpy(name, locker_name);
+	if (strrchr(name, '.'))
+		*(strrchr(name, '.')) = '\0';
+
+	if (strstr(name, "account.") == name)
+	{
+		const char *player_acct = get_account_name_safe(ch);
+		char        locker_acct[MAX_INPUT_LENGTH];
+		char       *src = name + 8;
+		char       *dot = strchr(src, '.');
+		if (dot)
+		{
+			int len = dot - src;
+			if (len < 0)
+				len = 0;
+			if (len >= MAX_INPUT_LENGTH)
+				len = MAX_INPUT_LENGTH - 1;
+			strncpy(locker_acct, src, len);
+			locker_acct[len]   = '\0';
+			int locker_racewar = atoi(dot + 1);
+			return (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
+		}
+		return false;
+	}
+
+	return !str_cmp(name, GET_NAME(ch));
+}
+
+static StorageLocker *locker_current(P_char ch)
+{
+	if (!ch)
+		return NULL;
+
+	return GetChestList(ch->in_room);
+}
+
+static StorageLocker *locker_current_or_error(P_char ch, const char *message)
+{
+	StorageLocker *pLocker = locker_current(ch);
+
+	if (!pLocker && ch && message)
+		send_to_char(message, ch);
+
+	return pLocker;
+}
+
+static bool locker_require_active_user(StorageLocker *pLocker, P_char ch, const char *message)
+{
+	if (!pLocker || !ch)
+		return false;
+
+	if (ch == pLocker->GetLockerUser())
+		return true;
+
+	if (message)
+		send_to_char(message, ch);
+
+	return false;
+}
+
+static P_char locker_char_or_error(StorageLocker *pLocker, P_char ch, const char *message)
+{
+	if (!pLocker)
+		return NULL;
+
+	P_char chLocker = pLocker->GetLockerChar();
+	if (!chLocker && ch && message)
+		send_to_char(message, ch);
+
+	return chLocker;
 }
 
 const unsigned LockerChest::m_chestVnum = 173;
@@ -1228,39 +1331,12 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		CharWait(ch, WAIT_SEC * 3);
 	}
 
-	strcpy(lockerName, GET_NAME(chLocker));
-
-	if (strrchr(lockerName, '.'))
-	{
-		*(strrchr(lockerName, '.')) = '\0';
-	}
-
-	bool is_owner = false;
-	if (strstr(lockerName, "account.") == lockerName)
-	{
-		const char *player_acct = get_account_name_safe(ch);
-		char        locker_acct[MAX_INPUT_LENGTH];
-		char       *src = lockerName + 8;
-		char       *dot = strchr(src, '.');
-		if (dot)
-		{
-			int len = dot - src;
-			strncpy(locker_acct, src, len);
-			locker_acct[len]   = '\0';
-			int locker_racewar = atoi(dot + 1);
-			is_owner           = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
-		}
-	}
-	else
-	{
-		if (!str_cmp(lockerName, GET_NAME(ch)))
-			is_owner = true;
-	}
+	bool is_owner = locker_name_matches_player(GET_NAME(chLocker), ch);
 
 	// warn them that they can't idle in the locker...
 	if (!is_owner)
 	{
-		logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), lockerName);
+		logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), GET_NAME(chLocker));
 		send_to_char("&+RWARNING:&n This isn't your own locker.  Therefore, you'll be ejected if\r\n"
 		             "you are idle for more then 2 minutes.\r\n",
 		             ch);
@@ -1371,37 +1447,12 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 
 	StorageLocker *pLocker = GetChestList(locker_room);
 
-	strcpy(lockerName, GET_NAME(chLocker));
-
-	if (strrchr(lockerName, '.'))
-		*(strrchr(lockerName, '.')) = '\0';
-
-	bool is_guild_owner = false;
-	if (strstr(lockerName, "account.") == lockerName)
-	{
-		const char *player_acct = get_account_name_safe(ch);
-		char        locker_acct[MAX_INPUT_LENGTH];
-		char       *src = lockerName + 8;
-		char       *dot = strchr(src, '.');
-		if (dot)
-		{
-			int len = dot - src;
-			strncpy(locker_acct, src, len);
-			locker_acct[len]   = '\0';
-			int locker_racewar = atoi(dot + 1);
-			is_guild_owner     = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
-		}
-	}
-	else
-	{
-		if (!str_cmp(lockerName, GET_NAME(ch)))
-			is_guild_owner = true;
-	}
+	bool is_guild_owner = locker_name_matches_player(GET_NAME(chLocker), ch);
 
 	// warn them that they can't idle in the locker...
 	if (!is_guild_owner)
 	{
-		logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), lockerName);
+		logit(LOG_WIZ, "LOCKER: (%s) entered (%s's) locker.", GET_NAME(ch), GET_NAME(chLocker));
 		send_to_char("&+RWARNING:&n This isn't your own locker.  Therefore, you'll be ejected if\r\n"
 		             "you are idle for more then 2 minutes.\r\n",
 		             ch);
@@ -1413,8 +1464,17 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 int storage_locker(int room, P_char ch, int cmd, char *arg)
 {
 	P_char            tmpChar = NULL;
-	int               troom = locker_exit_room(ch, room), cost;
+	int               cost;
 	struct zone_data *zone;
+	int               troom;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return FALSE;
+
+	if (!ch)
+		return FALSE;
+
+	troom = locker_exit_room(ch, room);
 	int               bits, wtype, craft, mat;
 	P_char            tmp_char;
 	P_obj             tmp_object;
@@ -1491,6 +1551,9 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 		}
 	}
 	StorageLocker *pLocker = GetChestList(ch->in_room);
+
+	if (!pLocker)
+		return FALSE;
 
 	if (cmd == (-75))
 	{ /* they are leaving the locker - say bye-bye! */
@@ -1582,33 +1645,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 			else
 			{
 				/* anti-idle code.  only let people idle in their own locker */
-				char arg1[MAX_INPUT_LENGTH];
-
-				strcpy(arg1, GET_NAME(pLocker->GetLockerChar()));
-				if (strrchr(arg1, '.'))
-					*(strrchr(arg1, '.')) = '\0';
-
-				bool idle_is_owner = false;
-				if (strstr(arg1, "account.") == arg1)
-				{
-					const char *player_acct = get_account_name_safe(ch);
-					char        locker_acct[MAX_INPUT_LENGTH];
-					char       *src = arg1 + 8;
-					char       *dot = strchr(src, '.');
-					if (dot)
-					{
-						int len = dot - src;
-						strncpy(locker_acct, src, len);
-						locker_acct[len]   = '\0';
-						int locker_racewar = atoi(dot + 1);
-						idle_is_owner      = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
-					}
-				}
-				else
-				{
-					if (!str_cmp(arg1, GET_NAME(ch)))
-						idle_is_owner = true;
-				}
+				bool idle_is_owner = locker_name_matches_player(GET_NAME(pLocker->GetLockerChar()), ch);
 
 				if (!idle_is_owner && (ch->specials.timer > 3))
 				{
@@ -1645,7 +1682,11 @@ void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj obj, vo
 	   will already be in the room.  ch will be the player, and chLocker is the locker..
 	   if 'data' is null, this was called from the event mgr, meaning a save or initial
 	   entry.  Otherwise, its being called directly - from an eq sort command */
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current_or_error(ch, "Error: no locker found.\r\n");
+	if (!pLocker)
+	{
+		return;
+	}
 
 	int nOldCount = pLocker->m_itemCount;
 
@@ -1690,17 +1731,20 @@ static int locker_equipcmd(P_char ch, char *arg)
 	char   arg1[MAX_INPUT_LENGTH];
 	char   arg2[MAX_INPUT_LENGTH];
 
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current_or_error(ch, "Error: no locker found.\r\n");
 
-	if (ch != pLocker->GetLockerUser())
+	if (!pLocker)
 	{
-		send_to_char("Sort your own locker!.\r\n", ch);
 		return TRUE;
 	}
-	chLocker = pLocker->GetLockerChar();
+
+	if (!locker_require_active_user(pLocker, ch, "Sort your own locker!.\r\n"))
+	{
+		return TRUE;
+	}
+	chLocker = locker_char_or_error(pLocker, ch, "Error: unable to locate chLocker.  Please report ASAP\r\n");
 	if (!chLocker)
 	{
-		send_to_char("Error: unable to locate chLocker.  Please report ASAP\r\n", ch);
 		return TRUE;
 	}
 	arg = one_argument(arg, arg1);
@@ -1740,49 +1784,22 @@ static int locker_grantcmd(P_char ch, char *arg)
 	char   arg1[MAX_INPUT_LENGTH];
 	char   arg2[MAX_INPUT_LENGTH];
 
-	StorageLocker *pLocker      = GetChestList(ch->in_room);
+	StorageLocker *pLocker      = locker_current_or_error(ch, "Error: no locker found.\r\n");
 	bool           bPlayerIsGod = ((GET_LEVEL(ch) >= OVERLORD) || god_check(ch->player.name));
 
-	strcpy(arg1, GET_NAME(pLocker->GetLockerChar()));
-	const char *player_acct = get_account_name_safe(ch);
-	bool        is_owner    = false;
-
-	if (strstr(arg1, "account.") == arg1)
+	if (!pLocker)
 	{
-		char  locker_acct[MAX_INPUT_LENGTH];
-		char *src = arg1 + 8;
-		char *dot = strchr(src, '.');
-		if (dot)
-		{
-			int len = dot - src;
-			strncpy(locker_acct, src, len);
-			locker_acct[len]   = '\0';
-			int locker_racewar = atoi(dot + 1);
-			is_owner           = (player_acct && !str_cmp(locker_acct, player_acct) && locker_racewar == GET_RACEWAR(ch));
-		}
-	}
-	else if (strstr(arg1, "guild.") == arg1)
-	{
-		is_owner = false;
-	}
-	else
-	{
-		if (strrchr(arg1, '.'))
-			*(strrchr(arg1, '.')) = '\0';
-		is_owner = !str_cmp(arg1, GET_NAME(ch));
-	}
-
-	if (!is_owner && !bPlayerIsGod)
-	{
-		send_to_char("Only the actual owner of a locker can manipulate access lists.\r\n", ch);
 		return TRUE;
 	}
-	chLocker = pLocker->GetLockerChar();
+
+	chLocker = locker_char_or_error(pLocker, ch, "Error: unable to locate chLocker.  Please report ASAP\r\n");
 	if (!chLocker)
 	{
-		send_to_char("Error: unable to locate chLocker.  Please report ASAP\r\n", ch);
 		return TRUE;
 	}
+
+	strcpy(arg1, GET_NAME(chLocker));
+	bool is_owner = locker_name_matches_player(arg1, ch);
 	if (!bPlayerIsGod)
 		GET_RACEWAR(chLocker) = GET_RACEWAR(ch);
 	argument_interpreter(arg, arg1, arg2);
@@ -2378,7 +2395,7 @@ static P_char create_locker_char(P_char chOwner, P_char ch, char *locker_name)
 
 static int save_locker_char(P_char ch, int bTerminal)
 {
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current_or_error(ch, "Error: which locker are you in?\r\n");
 
 	if (NULL != pLocker)
 	{
@@ -2769,17 +2786,14 @@ static void locker_access_transferAccess(P_char chLocker, P_char ch)
 
 static int locker_chestcmd(P_char ch, char *arg)
 {
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current_or_error(ch, "Error: no locker found.\r\n");
 	if (!pLocker)
 	{
-		send_to_char("Error: no locker found.\r\n", ch);
 		return TRUE;
 	}
 
-	P_char chUser = pLocker->GetLockerUser();
-	if (ch != chUser)
+	if (!locker_require_active_user(pLocker, ch, "Only the locker owner can manage chests.\r\n"))
 	{
-		send_to_char("Only the locker owner can manage chests.\r\n", ch);
 		return TRUE;
 	}
 
@@ -2940,7 +2954,7 @@ static int locker_chestcmd(P_char ch, char *arg)
 
 static int locker_opencmd(P_char ch, char *arg)
 {
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current(ch);
 	if (!pLocker)
 		return FALSE;
 
@@ -2979,7 +2993,7 @@ static int locker_opencmd(P_char ch, char *arg)
 
 static int locker_closecmd(P_char ch, char *arg)
 {
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current(ch);
 	if (!pLocker)
 		return FALSE;
 
@@ -2997,17 +3011,14 @@ static int locker_closecmd(P_char ch, char *arg)
 
 static int locker_logcmd(P_char ch, char *arg)
 {
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current(ch);
 	if (!pLocker)
 	{
-		send_to_char("Error: no locker found.\r\n", ch);
 		return TRUE;
 	}
 
-	P_char chUser = pLocker->GetLockerUser();
-	if (ch != chUser)
+	if (!locker_require_active_user(pLocker, ch, "Only the locker owner can view the log.\r\n"))
 	{
-		send_to_char("Only the locker owner can view the log.\r\n", ch);
 		return TRUE;
 	}
 

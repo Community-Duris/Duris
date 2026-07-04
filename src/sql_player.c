@@ -755,8 +755,12 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	bool is_update = (pid > 0 && sql_player_exists(GET_NAME(ch)));
 
 	// for crash saves, preserve the existing last_room (camp/rent location)
-	// don't overwrite with crash location so player returns to safe spot
-	if (is_update && (type == RENT_CRASH || type == RENT_CRASH2))
+	// don't overwrite with crash location so player returns to safe spot.
+	// Exception: players currently inside locker rooms rely on the locker pre-save
+	// hook (-80) to rewrite the save room to the room outside the locker. If we
+	// blindly restore the previous DB last_room here, we strand them back inside
+	// the transient locker room on next login.
+	if (is_update && (type == RENT_CRASH || type == RENT_CRASH2) && !(ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER)))
 	{
 		char room_query[256];
 		snprintf(room_query, sizeof(room_query), "SELECT last_room FROM player_data WHERE pid=%d", pid);
@@ -4969,13 +4973,6 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 		free(esc_name);
 		return false;
 	}
-
-	std::fprintf(stderr,
-	             "[real-persistence-test] sql_save_locker debug: locker=%s owner_pid=%d owner_assoc=%d carrying=%p\n",
-	             locker_name,
-	             owner_pid,
-	             owner_assoc_id,
-	             locker_ch->carrying);
 
 	// check if locker already exists
 	int locker_id = sql_get_locker_id_by_name(locker_name);
