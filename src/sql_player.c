@@ -5772,10 +5772,10 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	return true;
 }
 
-P_obj sql_load_private_chest_items(int locker_id, int chest_id)
+void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 {
-	if (!DB || locker_id <= 0 || chest_id <= 0)
-		return NULL;
+	if (!DB || locker_id <= 0 || chest_id <= 0 || !chest_obj)
+		return;
 
 	char query[1024];
 	char owner_ref[MAX_INPUT_LENGTH] = "";
@@ -5801,12 +5801,9 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
 
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
-		return NULL;
+		return;
 
-	P_obj     first_obj = NULL;
-	P_obj     last_obj  = NULL;
 	MYSQL_ROW row;
-
 	while ((row = mysql_fetch_row(result)))
 	{
 		int item_id = atoi(row[0]);
@@ -5879,6 +5876,10 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
 
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 
+		// Put the chest item into the room before loading nested contents so
+		// nested containers do not get rejected by a fit check while still full.
+		obj_to_obj(obj, chest_obj);
+
 		// load contained items (bags inside the chest)
 		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref, 0);
 		for (P_obj c = obj->contains; c; c = c->next_content)
@@ -5891,17 +5892,8 @@ P_obj sql_load_private_chest_items(int locker_id, int chest_id)
 			c->loc_p      = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
-
-		if (!first_obj)
-			first_obj = obj;
-		else
-			last_obj->next_content = obj;
-		last_obj          = obj;
-		obj->next_content = NULL;
 	}
 	mysql_free_result(result);
-
-	return first_obj;
 }
 
 // migration helpers

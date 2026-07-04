@@ -2085,14 +2085,7 @@ static void create_private_chest_objects(StorageLocker *pLocker)
 			obj_to_room(chest_obj, realRoom);
 
 			// load items into the private chest
-			P_obj items = sql_load_private_chest_items(locker_id, chest_id);
-			for (P_obj obj = items; obj;)
-			{
-				P_obj next        = obj->next_content;
-				obj->next_content = NULL;
-				obj_to_obj(obj, chest_obj);
-				obj = next;
-			}
+			sql_load_private_chest_items(locker_id, chest_id, chest_obj);
 		}
 	}
 	mysql_free_result(result);

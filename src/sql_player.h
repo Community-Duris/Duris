@@ -151,7 +151,7 @@ int  sql_count_private_chests(int locker_id);
 
 bool  sql_log_chest_activity(int locker_id, int chest_id, const char *char_name, int action_type, const char *item_short);
 bool  sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
-P_obj sql_load_private_chest_items(int locker_id, int chest_id);
+void  sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
 
 // account bank
 bool      sql_load_account_bank(const char *account_name, int racewar, P_char ch);
