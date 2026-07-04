@@ -1599,27 +1599,32 @@ int writeCharacter(P_char ch, int type, int room)
 	if (IS_NPC(ch))
 		return 0;
 
+	const bool is_locker_char = (strstr(GET_NAME(ch), ".locker") != NULL);
+
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
 		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
 
-	if (!sql_save_player_shapechanges(ch))
+	if (!is_locker_char)
 	{
-		logit(LOG_FILE, "sql_save_player_shapechanges failed for %s", GET_NAME(ch));
-		result = 0;
-	}
-	room = calculate_save_room(ch, type, room);
+		if (!sql_save_player_shapechanges(ch))
+		{
+			logit(LOG_FILE, "sql_save_player_shapechanges failed for %s", GET_NAME(ch));
+			result = 0;
+		}
+		room = calculate_save_room(ch, type, room);
 
-	// skip locker characters for sql operations
-	if (!strstr(GET_NAME(ch), ".locker"))
-	{
+		// skip locker characters for sql operations
 		sql_update_money(ch);
 		if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
 			sql_update_playtime(ch);
 		sql_update_epics(ch);
+		save_zone_trophy(ch);
 	}
-
-	save_zone_trophy(ch);
+	else
+	{
+		room = calculate_save_room(ch, type, room);
+	}
 
 	if (ch->desc)
 		ch->desc->rtype = type;

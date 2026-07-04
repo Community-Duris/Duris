@@ -5722,25 +5722,21 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	if (!DB || locker_id <= 0 || chest_id <= 0 || !chest_obj)
 		return false;
 
-	// detect nested-transaction case explicitly so the failure is visible in
-	// logs (not just code comments). sql_begin_transaction() returns false if
-	// already in a transaction, which would cause this function to bail out
-	// before the DELETE/inserts. The current caller in storage_lockers.c
-	// ignores the return value, so a silent save skip is the main risk; a
-	// future caller that checks the return and proceeds with cleanup would
-	// cause chest data loss.
-	if (sql_in_transaction())
+	bool own_txn = false;
+	if (!sql_in_transaction())
 	{
-		logit(LOG_DEBUG, "sql_save_private_chest_items: called from within an existing transaction - chest save skipped to avoid data loss");
-		return false;
+		// start transaction (must succeed before the DELETE - otherwise the chest
+		// could be left empty if the inserts fail, losing all stored items)
+		if (!sql_begin_transaction())
+		{
+			logit(LOG_DEBUG, "sql_save_private_chest_items: failed to start transaction for chest %d", chest_id);
+			return false;
+		}
+		own_txn = true;
 	}
-
-	// start transaction (must succeed before the DELETE - otherwise the chest
-	// could be left empty if the inserts fail, losing all stored items)
-	if (!sql_begin_transaction())
+	else
 	{
-		logit(LOG_DEBUG, "sql_save_private_chest_items: failed to start transaction for chest %d", chest_id);
-		return false;
+		logit(LOG_DEBUG, "sql_save_private_chest_items: joining existing transaction for chest %d", chest_id);
 	}
 
 	// delete existing items for this chest
@@ -5749,7 +5745,8 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	if (!sql_run_query(del_query))
 	{
 		logit(LOG_DEBUG, "sql_save_private_chest_items: failed to delete old items for chest %d", chest_id);
-		sql_rollback();
+		if (own_txn)
+			sql_rollback();
 		return false;
 	}
 
@@ -5759,12 +5756,13 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		if (sql_save_locker_item(locker_id, chest_id, obj, 0) == 0)
 		{
 			logit(LOG_DEBUG, "sql_save_private_chest_items: failed to save item, rolling back for chest %d", chest_id);
-			sql_rollback();
+			if (own_txn)
+				sql_rollback();
 			return false;
 		}
 	}
 
-	if (!sql_commit())
+	if (own_txn && !sql_commit())
 	{
 		logit(LOG_DEBUG, "sql_save_private_chest_items: failed to commit for chest %d", chest_id);
 		sql_rollback();

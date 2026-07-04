@@ -2588,9 +2588,22 @@ static int lockerName_is_inuse(char *lockerName)
 
 	for (chLocker = character_list; chLocker; chLocker = chLocker->next)
 	{
-		if (isname(lockerName, GET_NAME(chLocker)))
+		if (chLocker && GET_NAME(chLocker) && !str_cmp(lockerName, GET_NAME(chLocker)))
 		{
-			nCnt++;
+			StorageLocker *pLocker = NULL;
+
+			if (chLocker->in_room != NOWHERE && IS_ROOM(chLocker->in_room, ROOM_LOCKER))
+				pLocker = GetChestList(chLocker->in_room);
+
+			if (pLocker && pLocker->GetLockerChar() == chLocker)
+				nCnt++;
+			else
+				logit(LOG_DEBUG,
+				      "lockerName_is_inuse: ignoring stale locker char %s room=%d desc=%p locker=%p",
+				      GET_NAME(chLocker),
+				      chLocker->in_room,
+				      (void *)chLocker->desc,
+				      (void *)pLocker);
 		}
 	}
 	return nCnt;
