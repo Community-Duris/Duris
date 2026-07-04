@@ -623,35 +623,48 @@ bool auction_offer(P_char ch, char *args)
 	char item_name[MAX_STRING_LENGTH];
 
 	half_chop(args, item_name, args);
+	logit(LOG_DEBUG,
+	      "auction_offer: ch=%s room=%d item_name='%s' rest='%s' carry_n=%d money=%ld",
+	      GET_NAME(ch),
+	      world[ch->in_room].number,
+	      item_name,
+	      args,
+	      IS_CARRYING_N(ch),
+	      (long)GET_MONEY(ch));
 
 	P_obj tmp_obj = get_obj_in_list_vis(ch, item_name, ch->carrying);
 
 	if (!tmp_obj)
 	{
+		logit(LOG_DEBUG, "auction_offer: item not found for %s item_name='%s'", GET_NAME(ch), item_name);
 		send_to_char("&+WYou don't seem have that item!\r\n", ch);
 		return TRUE;
 	}
 
 	if (IS_ARTIFACT(tmp_obj))
 	{
+		logit(LOG_DEBUG, "auction_offer: artifact reject %s item=%s [%d]", GET_NAME(ch), tmp_obj->short_description ? tmp_obj->short_description : "?", OBJ_VNUM(tmp_obj));
 		send_to_char("&+WYou can't sell artifacts!\r\n", ch);
 		return TRUE;
 	}
 
 	if (IS_SET(tmp_obj->extra_flags, ITEM_NODROP))
 	{
+		logit(LOG_DEBUG, "auction_offer: nodrop reject %s item=%s [%d] extra=0x%lx", GET_NAME(ch), tmp_obj->short_description ? tmp_obj->short_description : "?", OBJ_VNUM(tmp_obj), (unsigned long)tmp_obj->extra_flags);
 		send_to_char("&+WYou can't sell that item, it must be &+RCursed&+W!\r\n", ch);
 		return TRUE;
 	}
 
 	if (IS_SET(tmp_obj->extra_flags, ITEM_NORENT) || tmp_obj->condition < 90)
 	{
+		logit(LOG_DEBUG, "auction_offer: no rent or low condition reject %s item=%s [%d] extra=0x%lx cond=%d", GET_NAME(ch), tmp_obj->short_description ? tmp_obj->short_description : "?", OBJ_VNUM(tmp_obj), (unsigned long)tmp_obj->extra_flags, tmp_obj->condition);
 		send_to_char("&+WYou can't sell that item.\r\n", ch);
 		return TRUE;
 	}
 
 	if (tmp_obj->contains)
 	{
+		logit(LOG_DEBUG, "auction_offer: non-empty container reject %s item=%s [%d] contains=%s", GET_NAME(ch), tmp_obj->short_description ? tmp_obj->short_description : "?", OBJ_VNUM(tmp_obj), tmp_obj->contains ? (tmp_obj->contains->short_description ? tmp_obj->contains->short_description : "?") : "(none)");
 		send_to_char("&+WYou can only sell containers if they are empty.\r\n", ch);
 		return TRUE;
 	}
@@ -750,7 +763,7 @@ bool auction_offer(P_char ch, char *args)
 	// try insert with obj_info_text column first
 	// if column doesn't exist, fall back to old insert - some devs dont have full schema
 	if (qry("INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity, obj_info_text) VALUES ('%d', '%s', "
-	        "NOW(), NOW() + INTERVAL %d SECOND, '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%s')",
+	        "UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%s')",
 	        GET_PID(ch),
 	        ch->player.name,
 	        auction_length,
@@ -767,10 +780,15 @@ bool auction_offer(P_char ch, char *args)
 	}
 	else
 	{
+		logit(LOG_STATUS,
+		      "auction_offer: insert with obj_info_text failed for %s errno=%u sqlerr=%s",
+		      GET_NAME(ch),
+		      mysql_errno(DB),
+		      mysql_error(DB));
+		send_to_char_f(ch, "Auction insert failed: errno=%u %s\r\n", mysql_errno(DB), mysql_error(DB));
 		// column probably doesn't exist, try without it
 		logit(LOG_DEBUG, "auction: obj_info_text column missing? trying old insert");
-		if (qry("INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity) VALUES ('%d', '%s', NOW(), NOW() "
-		        "+ INTERVAL %d SECOND, '%s', '%d', '%s', '%d', '%d', '%s', '%d')",
+		if (qry("INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity) VALUES ('%d', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, '%s', '%d', '%s', '%d', '%d', '%s', '%d')",
 		        GET_PID(ch),
 		        ch->player.name,
 		        auction_length,
@@ -782,6 +800,13 @@ bool auction_offer(P_char ch, char *args)
 		        obj_id_keywords.c_str(),
 		        auction_quantity))
 			saved_to_db = TRUE;
+		else
+			logit(LOG_STATUS,
+			      "auction_offer: insert without obj_info_text also failed for %s errno=%u sqlerr=%s",
+			      GET_NAME(ch),
+			      mysql_errno(DB),
+			      mysql_error(DB));
+			send_to_char_f(ch, "Auction insert failed (fallback): errno=%u %s\r\n", mysql_errno(DB), mysql_error(DB));
 	}
 
 	if (!saved_to_db)
@@ -1464,7 +1489,7 @@ bool auction_pickup(P_char ch, char *args)
 			}
 			mysql_free_result(existing_res);
 
-			if (!qry("INSERT INTO auction_item_pickups (pid, obj_blob_str) (SELECT '%d', obj_blob_str FROM auctions WHERE id = '%d')", GET_PID(ch), auction_id))
+			if (!qry("INSERT INTO auction_item_pickups (pid, obj_blob_str, quantity) (SELECT '%d', obj_blob_str, quantity FROM auctions WHERE id = '%d')", GET_PID(ch), auction_id))
 				return FALSE;
 
 			snprintf(buff, MAX_STRING_LENGTH, "&+WA voice in your mind says, &+W'&n%s &+Wis ready for pickup, oh Great Master!'\r\n", obj_short.c_str());
