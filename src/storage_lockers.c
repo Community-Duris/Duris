@@ -21,6 +21,7 @@
 #include "storage_lockers.h"
 #include <stdio.h>
 #include <string.h>
+#include <vector>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "assocs.h"
@@ -77,6 +78,31 @@ inline StorageLocker *GetChestList(int real_room)
 	return pRet;
 }
 
+static std::vector<P_obj> locker_snapshot_char_carrying(P_char ch)
+{
+	std::vector<P_obj> objs;
+
+	if (!ch)
+		return objs;
+
+	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+		objs.push_back(obj);
+
+	return objs;
+}
+
+static std::vector<P_obj> locker_snapshot_room_contents(int room)
+{
+	std::vector<P_obj> objs;
+
+	if (room < 0 || room > top_of_world)
+		return objs;
+
+	for (P_obj obj = world[room].contents; obj; obj = obj->next_content)
+		objs.push_back(obj);
+
+	return objs;
+}
 bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj)
 {
 	if (!obj || obj->type != eqType)
@@ -2254,7 +2280,7 @@ static int create_new_locker(P_char ch, P_char locker)
 
 static void free_locker(int roomNum)
 {
-	P_obj tmp_object, next_obj;
+	P_obj tmp_object;
 
 	/* perform cleanup - basically just frees a couple pointers and marks the room as
 	   available for reuse */
@@ -2486,8 +2512,6 @@ static int save_locker_char(P_char ch, int bTerminal)
 
 bool StorageLocker::LockerToPFile(void)
 {
-	P_obj tmp_object, next_obj;
-
 	const int lockerChestRNUM = real_object(LockerChest::m_chestVnum);
 
 	bool ok = true;
@@ -2513,10 +2537,9 @@ bool StorageLocker::LockerToPFile(void)
 	}
 
 	// now handle non-private chests - move items to locker char
-	for (tmp_object = world[m_realRoom].contents; tmp_object; tmp_object = next_obj)
+	for (P_obj tmp_object : locker_snapshot_room_contents(m_realRoom))
 	{
-		next_obj = tmp_object->next_content;
-		if (tmp_object->type == ITEM_CORPSE)
+		if (!tmp_object || tmp_object->type == ITEM_CORPSE)
 			continue;
 		if (tmp_object->R_num == lockerChestRNUM)
 		{
@@ -2552,13 +2575,11 @@ bool StorageLocker::LockerToPFile(void)
 void StorageLocker::PFileToLocker(void)
 {
 	/* drop everything chLocker is holding into rroom - sorting into chests if they're present */
-	P_obj tmp_object, next_obj;
 	int   nCount = 0;
 
-	for (tmp_object = m_chLocker->carrying; tmp_object; tmp_object = next_obj)
+	for (P_obj tmp_object : locker_snapshot_char_carrying(m_chLocker))
 	{
-		next_obj = tmp_object->next_content;
-		nCount++;
+		++nCount;
 		obj_from_char(tmp_object);
 		if ((tmp_object->type == ITEM_MONEY) || !PutInProperChest(tmp_object))
 			obj_to_room(tmp_object, m_realRoom);
