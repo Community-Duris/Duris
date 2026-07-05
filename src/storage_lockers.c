@@ -52,6 +52,9 @@ extern struct zone_data *zone_table;
 extern P_nevent get_scheduled(P_char ch, event_func func);
 void            event_memorize(P_char, P_char, P_obj, void *);
 int             is_wearing_necroplasm(P_char);
+static int      save_locker_char(P_char chInLocker, int bTerminal);
+static void     free_locker(int roomNum);
+static void     check_for_artisInRoom(P_char ch, int rroom);
 
 #define LOCKERS_START 65201
 #define LOCKERS_MAX   99
@@ -103,27 +106,14 @@ static std::vector<P_obj> locker_snapshot_room_contents(int room)
 
 	return objs;
 }
+
 bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj)
 {
 	if (!obj || obj->type != eqType)
 		return false;
 
-	if (eqType == ITEM_CONTAINER && obj->contains)
-	{
-		int  content_count = 0;
-		P_obj content;
-		for (content = obj->contains; content; content = content->next_content)
-			content_count++;
-
-		logit(LOG_DEBUG,
-		      "locker_eq_type_fits: rejecting filled container vnum=%d name=%s short=%s contents=%d",
-		      obj->R_num >= 0 ? obj_index[obj->R_num].virtual_number : -1,
-		      obj->name ? obj->name : "(null)",
-		      obj->short_description ? obj->short_description : "(null)",
-		      content_count);
-		return false;
-	}
-
+	// Filled containers are allowed; locker save/load preserves the nested
+	// contents tree and should restore the container back into the chest.
 	return true;
 }
 
@@ -137,6 +127,32 @@ static int locker_exit_room(P_char ch, int fallback_room)
 		int was_in = real_room(ch->specials.was_in_room);
 		if (was_in != NOWHERE)
 			return was_in;
+	}
+
+	if (ch && GET_HOME(ch))
+	{
+		int home = real_room(GET_HOME(ch));
+		if (home != NOWHERE)
+			return home;
+	}
+
+	if (ch && GET_BIRTHPLACE(ch))
+	{
+		int birth = real_room(GET_BIRTHPLACE(ch));
+		if (birth != NOWHERE)
+			return birth;
+	}
+
+	if (ch)
+	{
+		logit(LOG_DEBUG,
+		      "locker_exit_room: fallback to locker room for %s in_room=%d fallback_room=%d was_in=%d home=%d birth=%d",
+		      GET_NAME(ch),
+		      ch->in_room,
+		      fallback_room,
+		      ch->specials.was_in_room,
+		      GET_HOME(ch),
+		      GET_BIRTHPLACE(ch));
 	}
 
 	return fallback_room;
@@ -175,6 +191,110 @@ static bool locker_name_matches_player(const char *locker_name, P_char ch)
 	}
 
 	return !str_cmp(name, GET_NAME(ch));
+}
+
+static void locker_eject_to_exit(P_char ch, int room)
+{
+	if (!ch)
+		return;
+
+	char_from_room(ch);
+	char_to_room(ch, locker_exit_room(ch, room), 0);
+}
+
+static void locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int troom)
+{
+	P_char tmpChar = NULL;
+
+	if (!ch || !pLocker || (ch != pLocker->GetLockerUser()))
+		return;
+
+	tmpChar = world[ch->in_room].people;
+	while (tmpChar)
+	{
+		if (ch == world[ch->in_room].people)
+		{
+			tmpChar = ch->next_in_room;
+			continue;
+		}
+		/* this person isn't the proper occupant, so kick them the hell out */
+		send_to_char("You feel yourself being (ungracefully) ejected from the locker.\r\n", tmpChar);
+		char_from_room(tmpChar);
+		// char_to_room(tmpChar, world[ch->in_room].dir_option[0]->to_room, 0);
+		//  functionality of alt_hometown_check disabled
+		char_to_room(tmpChar, alt_hometown_check(ch, locker_exit_room(ch, room), 0), 0);
+		tmpChar = world[ch->in_room].people;
+	} /* while */
+
+	/* only person that wasn't kicked out was the proper occupant... */
+	save_locker_char(ch, TRUE);
+	/* throw any corpses out as well */
+	P_obj next_obj;
+
+	for (P_obj tmp_obj = world[ch->in_room].contents; tmp_obj; tmp_obj = next_obj)
+	{
+		next_obj = tmp_obj->next_content;
+		if (tmp_obj->type == ITEM_CORPSE)
+		{
+			char buf[MAX_STRING_LENGTH];
+
+			snprintf(buf, MAX_STRING_LENGTH, "%s&n flies out in front of you!\r\n", tmp_obj->short_description);
+			send_to_char(buf, ch);
+			obj_from_room(tmp_obj);
+			obj_to_room(tmp_obj, locker_exit_room(ch, room));
+		}
+	}
+	send_to_char("As you leave, you see the &+YSLSC&n member applying magic locks to the door...\r\n", ch);
+
+	troom = locker_exit_room(ch, room);
+
+	struct zone_data *zone = &zone_table[world[troom].zone];
+	if (zone->status > ZONE_NORMAL)
+	{
+		// functionality of alt_hometown_check disabled
+		if (world[ch->in_room].dir_option[0])
+			world[ch->in_room].dir_option[0]->to_room = alt_hometown_check(ch, troom, 0);
+		else
+			logit(LOG_WIZ, "locker_exit_room missing while saving %s in room %d", GET_NAME(ch), ch->in_room);
+	}
+
+	free_locker(room);
+}
+
+static int locker_handle_save_hook(P_char ch, int troom)
+{
+	check_for_artisInRoom(ch, ch->in_room);
+	{
+		int exit_room = locker_exit_room(ch, troom);
+		ch->specials.was_in_room = (exit_room != NOWHERE) ? world[exit_room].number : world[troom].number;
+	}
+	return troom;
+}
+
+static void locker_handle_postsave(P_char ch, StorageLocker *pLocker, int room)
+{
+	if (!ch || !pLocker || (ch != pLocker->GetLockerUser()))
+		return;
+
+	/* if so, save the locker too */
+	if (!save_locker_char(ch, FALSE))
+	{
+		/* wasn't able to save the locker char.  This is bad, but can happen
+		   if the locker char was purged by a god, or idle rented.  the only way
+		   to deal with it is to eject the player from the locker */
+		locker_eject_to_exit(ch, room);
+	}
+	else
+	{
+		/* anti-idle code.  only let people idle in their own locker */
+		bool idle_is_owner = locker_name_matches_player(GET_NAME(pLocker->GetLockerChar()), ch);
+
+		if (!idle_is_owner && (ch->specials.timer > 3))
+		{
+			send_to_char("You can only sit idle in your own locker...  GET OUT!\r\n", ch);
+			locker_eject_to_exit(ch, room);
+		}
+	}
 }
 
 static StorageLocker *locker_current(P_char ch)
@@ -324,6 +444,20 @@ LockerChest *StorageLocker::AddLockerChest(LockerChest *p)
 		}
 	}
 	return p;
+}
+
+LockerChest *StorageLocker::FindChestForObject(P_obj obj)
+{
+	if (!obj)
+		return NULL;
+
+	for (LockerChest *p = m_pChestList; p; p = p->m_pNextInChain)
+	{
+		if (p->GetChestObj() == obj)
+			return p;
+	}
+
+	return NULL;
 }
 
 #define LOCKER_HELP_NONE      0
@@ -1302,30 +1436,30 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 
 	// PFileToLocker
 
-	GetChestList(locker_room)->PFileToLocker();
+	StorageLocker *pLocker = GetChestList(locker_room);
+	if (pLocker)
+		pLocker->PFileToLocker();
 	// MONEY HACK
 
 	char_from_room(ch);
 
 	char_to_room(ch, locker_room, 0);
 
-	StorageLocker *pLocker = GetChestList(locker_room);
+	int temp = pLocker ? (1 + (3 * pLocker->m_itemCount)) : 1;
 
-	int temp = 1 + (3 * pLocker->m_itemCount);
-
-	if (pLocker->m_itemCount >= 5001)
+	if (pLocker && pLocker->m_itemCount >= 5001)
 	{
 		send_to_char("\r\n&+RYou have a ton of &+WSTUFF&+R, as in more than 5000 items - so there's a surcharge!\r\n", ch);
 		temp += (pLocker->m_itemCount - 5000) * 2000;
 	}
 
-	if (is_guild_locker)
+	if (is_guild_locker && pLocker)
 	{
 		temp = 1 + (1 * pLocker->m_itemCount);
 	}
 
 	char money_string[MAX_INPUT_LENGTH];
-	snprintf(money_string, MAX_INPUT_LENGTH, "\r\nThe escort says 'You have &+W%d items&n, this cost you %s'&n\r\n", pLocker->m_itemCount, coin_stringv(temp));
+	snprintf(money_string, MAX_INPUT_LENGTH, "\r\nThe escort says 'You have &+W%d items&n, this cost you %s'&n\r\n", pLocker ? pLocker->m_itemCount : 0, coin_stringv(temp));
 	send_to_char(money_string, ch);
 
 	if (GET_MONEY(ch) < temp && GET_BALANCE(ch) < temp)
@@ -1465,15 +1599,16 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 
 	// PFileToLocker
 
-	GetChestList(locker_room)->PFileToLocker();
+	StorageLocker *pLocker = GetChestList(locker_room);
+	if (pLocker)
+		pLocker->PFileToLocker();
+	// MONEY HACK
 
 	char_from_room(ch);
-
 	char_to_room(ch, locker_room, 0);
 
-	StorageLocker *pLocker = GetChestList(locker_room);
-
 	bool is_guild_owner = locker_name_matches_player(GET_NAME(chLocker), ch);
+	int  temp           = pLocker ? (1 + (3 * pLocker->m_itemCount)) : 1;
 
 	// warn them that they can't idle in the locker...
 	if (!is_guild_owner)
@@ -1489,9 +1624,7 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 
 int storage_locker(int room, P_char ch, int cmd, char *arg)
 {
-	P_char            tmpChar = NULL;
 	int               cost;
-	struct zone_data *zone;
 	int               troom;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1576,112 +1709,29 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 	}
-	StorageLocker *pLocker = GetChestList(ch->in_room);
+	StorageLocker *pLocker = locker_current(ch);
 
 	if (!pLocker)
 		return FALSE;
 
 	if (cmd == (-75))
 	{ /* they are leaving the locker - say bye-bye! */
-		/* someone is leaving the locker room.  If it's the proper occupant, kick
-		   everyone else out... */
-		if (ch == pLocker->GetLockerUser())
-		{
-			tmpChar = world[ch->in_room].people;
-			while (tmpChar)
-			{
-				if (ch == world[ch->in_room].people)
-				{
-					tmpChar = ch->next_in_room;
-					continue;
-				}
-				/* this person isn't the proper occupant, so kick them the hell out */
-				send_to_char("You feel yourself being (ungracefully) ejected from the locker.\r\n", tmpChar);
-				char_from_room(tmpChar);
-				// char_to_room(tmpChar, world[ch->in_room].dir_option[0]->to_room, 0);
-				//  functionality of alt_hometown_check disabled
-				char_to_room(tmpChar, alt_hometown_check(ch, locker_exit_room(ch, room), 0), 0);
-				tmpChar = world[ch->in_room].people;
-			} /* while */
-
-			/* only person that wasn't kicked out was the proper occupant... */
-			save_locker_char(ch, TRUE);
-			/* throw any corpses out as well */
-			P_obj next_obj;
-
-			for (P_obj tmp_obj = world[ch->in_room].contents; tmp_obj; tmp_obj = next_obj)
-			{
-				next_obj = tmp_obj->next_content;
-				if (tmp_obj->type == ITEM_CORPSE)
-				{
-					char buf[MAX_STRING_LENGTH];
-
-					snprintf(buf, MAX_STRING_LENGTH, "%s&n flies out in front of you!\r\n", tmp_obj->short_description);
-					send_to_char(buf, ch);
-					obj_from_room(tmp_obj);
-					obj_to_room(tmp_obj, locker_exit_room(ch, room));
-				}
-			}
-			send_to_char("As you leave, you see the &+YSLSC&n member applying magic locks to the door...\r\n", ch);
-
-			troom = locker_exit_room(ch, room);
-
-			zone = &zone_table[world[troom].zone];
-
-			if (zone->status > ZONE_NORMAL)
-			{
-				// functionality of alt_hometown_check disabled
-				if (world[ch->in_room].dir_option[0])
-					world[ch->in_room].dir_option[0]->to_room = alt_hometown_check(ch, troom, 0);
-				else
-					logit(LOG_WIZ, "locker_exit_room missing while saving %s in room %d", GET_NAME(ch), ch->in_room);
-			}
-
-			free_locker(room);
-		}
+		locker_handle_leave(ch, pLocker, room, troom);
 	}
 	if (cmd == (-80))
 	{
 		/* save hook - someone in the room is being saved. adjust things so they don't
 		   really get saved in the locker room */
-
-		/* quick adjustment - if someone dropped an arti, give it back to them before saving 'em */
-		check_for_artisInRoom(ch, ch->in_room);
-		ch->specials.was_in_room = world[troom].number;
 		/* this return value will ensure that the pfile is saved where the locker_hook is, and NOT
 		   in the actual locker room */
-		return (troom);
+		return locker_handle_save_hook(ch, troom);
 	}
 
 	if (cmd == (-81))
 	{
 		/* another save hook... this one is called AFTER the player is saved.  If it happens that
 		   the character being saved is the proper occupant, save the locker character too */
-		if (ch == pLocker->GetLockerUser())
-		{ /* if so, save the locker too */
-			if (!save_locker_char(ch, FALSE))
-			{
-				/* wasn't able to save the locker char.  This is bad, but can happen
-				   if the locker char was purged by a god, or idle rented.  the only way
-				   to deal with it is to eject the player from the locker */
-				room = ch->in_room;
-				char_from_room(ch);
-				char_to_room(ch, locker_exit_room(ch, room), 0);
-			}
-			else
-			{
-				/* anti-idle code.  only let people idle in their own locker */
-				bool idle_is_owner = locker_name_matches_player(GET_NAME(pLocker->GetLockerChar()), ch);
-
-				if (!idle_is_owner && (ch->specials.timer > 3))
-				{
-					send_to_char("You can only sit idle in your own locker...  GET OUT!\r\n", ch);
-					room = ch->in_room;
-					char_from_room(ch);
-					char_to_room(ch, locker_exit_room(ch, room), 0);
-				}
-			}
-		}
+		locker_handle_postsave(ch, pLocker, room);
 	}
 	if (cmd == CMD_GRANT)
 	{
@@ -2423,104 +2473,140 @@ static int save_locker_char(P_char ch, int bTerminal)
 {
 	StorageLocker *pLocker = locker_current_or_error(ch, "Error: which locker are you in?\r\n");
 
-	if (NULL != pLocker)
+	if (!pLocker)
 	{
-		P_char chLocker = NULL;
+		logit(LOG_OBJ, "Locker save failed: no locker context for %s", GET_NAME(ch));
+		return 0;
+	}
 
-		chLocker = pLocker->GetLockerChar();
-		if (chLocker)
+	P_char chLocker = pLocker->GetLockerChar();
+	if (!chLocker)
+	{
+		logit(LOG_OBJ, "Locker save failed: no locker character loaded for %s", GET_NAME(ch));
+		return 0;
+	}
+
+	bool started_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
 		{
-			if (!pLocker->LockerToPFile())
-			{
-				logit(LOG_OBJ, "Locker save failed while saving locker char %s", GET_NAME(ch));
-				return 0;
-			}
-
-			if (bTerminal)
-			{
-				// async save - fork so parent doesnt block
-				pid_t pid = fork();
-				if (pid == 0)
-				{
-					// child
-					MYSQL *child_conn = sql_create_child_connection();
-					if (!child_conn)
-					{
-						logit(LOG_OBJ, "Failed to create child DB connection for locker save of %s", GET_NAME(ch));
-						_exit(1);
-					}
-					sql_reset_for_child(child_conn);
-					if (!writeCharacter(chLocker, 3, NOWHERE))
-					{
-						logit(LOG_OBJ, "Async locker save failed for %s", GET_NAME(ch));
-						mysql_close(child_conn);
-						_exit(1);
-					}
-					mysql_close(child_conn);
-					_exit(0);
-				}
-				if (pid < 0)
-				{
-					logit(LOG_OBJ, "Fork failed for locker save of %s", GET_NAME(ch));
-					return 0;
-				}
-				int status = 0;
-				if (waitpid(pid, &status, 0) < 0)
-				{
-					logit(LOG_OBJ, "waitpid failed for locker save of %s", GET_NAME(ch));
-					return 0;
-				}
-				return WIFEXITED(status) && WEXITSTATUS(status) == 0;
-			}
-			else
-			{
-				// sync save for non-terminal (periodic saves while in locker)
-				if (!writeCharacter(chLocker, 0, NOWHERE))
-				{
-					logit(LOG_OBJ, "%s's locker not saving properly!", GET_NAME(ch));
-					debug("%s's locker not saving properly!", GET_NAME(ch));
-					send_to_char(
-						"&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
-						ch);
-					return 0;
-				}
-			}
-
-			chLocker->specials.timer = 0;
-			if (bTerminal)
-			{
-				extract_char(chLocker);
-			}
-			else
-			{
-				if (!get_scheduled(chLocker, StorageLocker::event_resortLocker))
-					add_event(StorageLocker::event_resortLocker, 1, chLocker, ch, NULL, 0, NULL, 0);
-			}
+			logit(LOG_OBJ, "Locker save failed to start transaction while saving locker char %s", GET_NAME(ch));
+			return 0;
 		}
-		else
+		started_txn = true;
+	}
+
+	if (!pLocker->LockerToPFile())
+	{
+		logit(LOG_OBJ, "Locker save failed while preparing locker char %s", GET_NAME(ch));
+		if (started_txn)
+			sql_rollback();
+		pLocker->PFileToLocker();
+		return 0;
+	}
+
+	if (bTerminal)
+	{
+		// async save - fork so parent doesnt block
+		pid_t pid = fork();
+		if (pid == 0)
 		{
+			// child
+			MYSQL *child_conn = sql_create_child_connection();
+			if (!child_conn)
+			{
+				logit(LOG_OBJ, "Failed to create child DB connection for locker save of %s", GET_NAME(ch));
+				_exit(1);
+			}
+			sql_reset_for_child(child_conn);
+			if (!writeCharacter(chLocker, 3, NOWHERE))
+			{
+				logit(LOG_OBJ, "Async locker save failed for %s", GET_NAME(ch));
+				mysql_close(child_conn);
+				_exit(1);
+			}
+			mysql_close(child_conn);
+			_exit(0);
+		}
+		if (pid < 0)
+		{
+			logit(LOG_OBJ, "Fork failed for locker save of %s", GET_NAME(ch));
+			if (started_txn)
+				sql_rollback();
+			pLocker->PFileToLocker();
+			return 0;
+		}
+		int status = 0;
+		if (waitpid(pid, &status, 0) < 0)
+		{
+			logit(LOG_OBJ, "waitpid failed for locker save of %s", GET_NAME(ch));
+			if (started_txn)
+				sql_rollback();
+			pLocker->PFileToLocker();
+			return 0;
+		}
+		if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0))
+		{
+			if (started_txn)
+				sql_rollback();
+			pLocker->PFileToLocker();
 			return 0;
 		}
 	}
 	else
 	{
-		send_to_char("Error: which locker are you in?\r\n", ch);
-		return 0;
+		// sync save for non-terminal (periodic saves while in locker)
+		if (!writeCharacter(chLocker, 0, NOWHERE))
+		{
+			logit(LOG_OBJ, "%s's locker not saving properly!", GET_NAME(ch));
+			debug("%s's locker not saving properly!", GET_NAME(ch));
+			send_to_char(
+				"&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
+				ch);
+			if (started_txn)
+				sql_rollback();
+			pLocker->PFileToLocker();
+			return 0;
+		}
 	}
+
+	if (started_txn)
+	{
+		if (!sql_commit())
+		{
+			logit(LOG_OBJ, "Locker save failed to commit while saving locker char %s", GET_NAME(ch));
+			sql_rollback();
+			pLocker->PFileToLocker();
+			return 0;
+		}
+	}
+
+	chLocker->specials.timer = 0;
+	if (bTerminal)
+	{
+		extract_char(chLocker);
+	}
+	else
+	{
+		if (!get_scheduled(chLocker, StorageLocker::event_resortLocker))
+			add_event(StorageLocker::event_resortLocker, 1, chLocker, ch, NULL, 0, NULL, 0);
+	}
+
 	return 1;
 }
 
 bool StorageLocker::LockerToPFile(void)
 {
-	const int lockerChestRNUM = real_object(LockerChest::m_chestVnum);
-
 	bool ok = true;
 
 	// first, save private chest items directly to db with their chest_id
+	int private_chest_count = 0;
 	for (LockerChest *p = m_pChestList; p; p = p->m_pNextInChain)
 	{
 		if (p->IsPrivateChest())
 		{
+			++private_chest_count;
 			P_obj chest_obj = p->GetChestObj();
 			if (!chest_obj)
 			{
@@ -2528,33 +2614,58 @@ bool StorageLocker::LockerToPFile(void)
 				ok = false;
 				continue;
 			}
+			int chest_contents = 0;
+			for (P_obj cur = chest_obj->contains; cur; cur = cur->next_content)
+				++chest_contents;
+			logit(LOG_DEBUG,
+			      "LockerToPFile: saving private chest locker_id=%d chest_id=%d chest_vnum=%d chest_uid=%lu contains=%d room=%d",
+			      m_lockerId,
+			      p->GetChestId(),
+			      (chest_obj->R_num >= 0) ? obj_index[chest_obj->R_num].virtual_number : -1,
+			      chest_obj->obj_uid,
+			      chest_contents,
+			      m_realRoom);
 			if (!sql_save_private_chest_items(m_lockerId, p->GetChestId(), chest_obj))
 			{
-				logit(LOG_DEBUG, "LockerToPFile: failed to save private chest %d for locker %d", p->GetChestId(), m_lockerId);
+				logit(LOG_DEBUG,
+				      "LockerToPFile: failed to save private chest locker_id=%d chest_id=%d chest_vnum=%d chest_uid=%lu contains=%d",
+				      m_lockerId,
+				      p->GetChestId(),
+				      (chest_obj->R_num >= 0) ? obj_index[chest_obj->R_num].virtual_number : -1,
+				      chest_obj->obj_uid,
+				      chest_contents);
 				ok = false;
 			}
 		}
 	}
+	logit(LOG_DEBUG,
+	      "LockerToPFile: private chest scan complete locker_id=%d room=%d private_chests=%d ok=%d",
+	      m_lockerId,
+	      m_realRoom,
+	      private_chest_count,
+	      ok ? 1 : 0);
 
 	// now handle non-private chests - move items to locker char
 	for (P_obj tmp_object : locker_snapshot_room_contents(m_realRoom))
 	{
 		if (!tmp_object || tmp_object->type == ITEM_CORPSE)
 			continue;
-		if (tmp_object->R_num == lockerChestRNUM)
+		LockerChest *chest = FindChestForObject(tmp_object);
+		if (chest)
 		{
-			// check if this is a private chest - if so, skip it
-			bool is_private = false;
-			for (LockerChest *p = m_pChestList; p; p = p->m_pNextInChain)
-			{
-				if (p->IsPrivateChest() && p->GetChestObj() == tmp_object)
-				{
-					is_private = true;
-					break;
-				}
-			}
-			if (is_private)
+			if (chest->IsPrivateChest())
 				continue;
+
+			int inner_count = 0;
+			for (P_obj cur = tmp_object->contains; cur; cur = cur->next_content)
+				++inner_count;
+			logit(LOG_DEBUG,
+			      "LockerToPFile: moving public chest contents locker_id=%d chest_id=%d chest_vnum=%d chest_uid=%lu contains=%d",
+			      m_lockerId,
+			      chest->GetChestId(),
+			      (tmp_object->R_num >= 0) ? obj_index[tmp_object->R_num].virtual_number : -1,
+			      tmp_object->obj_uid,
+			      inner_count);
 
 			// not a private chest, dump contents to locker char
 			for (P_obj innerObj = tmp_object->contains; tmp_object->contains; innerObj = tmp_object->contains)
@@ -2565,6 +2676,13 @@ bool StorageLocker::LockerToPFile(void)
 		}
 		else
 		{
+			logit(LOG_DEBUG,
+			      "LockerToPFile: moving loose room object locker_id=%d room=%d vnum=%d uid=%lu contains=%s",
+			      m_lockerId,
+			      m_realRoom,
+			      (tmp_object->R_num >= 0) ? obj_index[tmp_object->R_num].virtual_number : -1,
+			      tmp_object->obj_uid,
+			      tmp_object->contains ? "yes" : "no");
 			obj_from_room(tmp_object);
 			obj_to_char(tmp_object, m_chLocker);
 		}
@@ -2580,6 +2698,14 @@ void StorageLocker::PFileToLocker(void)
 	for (P_obj tmp_object : locker_snapshot_char_carrying(m_chLocker))
 	{
 		++nCount;
+		logit(LOG_DEBUG,
+		      "PFileToLocker: moving carried object locker_id=%d room=%d vnum=%d uid=%lu type=%d contains=%s",
+		      m_lockerId,
+		      m_realRoom,
+		      (tmp_object->R_num >= 0) ? obj_index[tmp_object->R_num].virtual_number : -1,
+		      tmp_object->obj_uid,
+		      tmp_object->type,
+		      tmp_object->contains ? "yes" : "no");
 		obj_from_char(tmp_object);
 		if ((tmp_object->type == ITEM_MONEY) || !PutInProperChest(tmp_object))
 			obj_to_room(tmp_object, m_realRoom);

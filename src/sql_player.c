@@ -152,6 +152,10 @@ bool      sql_ensure_account_bank(const char *account_name, int racewar) { retur
 
 extern MYSQL *DB;
 
+static int sql_count_obj_contents(P_obj obj);
+static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int container_id);
+static bool sql_save_locker_item_children(int locker_id, int chest_id, P_obj obj, int item_id, bool own_txn);
+
 // track transaction state
 static bool in_transaction = false;
 
@@ -2753,6 +2757,7 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 
 	if (!sql_run_query(query))
 	{
+		logit(LOG_DEBUG, "sql_save_item: insert failed errno=%u sqlerr=%s", mysql_errno(DB), mysql_error(DB));
 		if (own_txn) sql_rollback();
 		return 0;
 	}
@@ -4793,10 +4798,59 @@ static bool sql_save_locker_item_affects(int item_id, P_obj obj)
 	return true;
 }
 
+static int sql_count_obj_contents(P_obj obj)
+{
+	int count = 0;
+	for (P_obj cur = obj ? obj->contains : NULL; cur; cur = cur->next_content)
+		++count;
+	return count;
+}
+
+static bool sql_save_locker_item_children(int locker_id, int chest_id, P_obj obj, int item_id, bool own_txn)
+{
+	if (!obj || !obj->contains)
+		return true;
+
+	for (P_obj content = obj->contains; content; content = content->next_content)
+	{
+		logit(LOG_DEBUG,
+		      "sql_save_locker_item: recurse child from item_id=%d parent_vnum=%d child_vnum=%d child_uid=%lu",
+		      item_id,
+		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+		      (content->R_num >= 0) ? obj_index[content->R_num].virtual_number : -1,
+		      content->obj_uid);
+		if (sql_save_locker_item(locker_id, chest_id, content, item_id) <= 0)
+		{
+			logit(LOG_DEBUG,
+			      "sql_save_locker_item: child save failed parent_item_id=%d parent_vnum=%d child_vnum=%d child_uid=%lu parent_contains=%d child_contains=%d",
+			      item_id,
+			      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+			      (content->R_num >= 0) ? obj_index[content->R_num].virtual_number : -1,
+			      content->obj_uid,
+			      sql_count_obj_contents(obj),
+			      sql_count_obj_contents(content));
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int container_id)
 {
 	if (!obj || !DB || locker_id <= 0)
 		return 0;
+
+	logit(LOG_DEBUG,
+	      "sql_save_locker_item: begin locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu short=%s",
+	      locker_id,
+	      chest_id,
+	      container_id,
+	      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+	      obj->obj_uid,
+	      obj->short_description ? obj->short_description : "(null)");
 
 	// Own_txn wrapper for standalone-call safety
 	bool own_txn = false;
@@ -4916,35 +4970,52 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 
 	if (!sql_run_query(query))
 	{
+		logit(LOG_DEBUG, "sql_save_item: insert failed errno=%u sqlerr=%s", mysql_errno(DB), mysql_error(DB));
 		if (own_txn) sql_rollback();
 		return 0;
 	}
 
 	int item_id = (int)mysql_insert_id(DB);
+	logit(LOG_DEBUG,
+	      "sql_save_locker_item: saved item_id=%d locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu contains=%s",
+	      item_id,
+	      locker_id,
+	      chest_id,
+	      container_id,
+	      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+	      obj->obj_uid,
+	      obj->contains ? "yes" : "no");
 
 	if (!sql_save_locker_item_affects(item_id, obj))
 	{
+		logit(LOG_DEBUG,
+		      "sql_save_locker_item: affects save failed item_id=%d locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu",
+		      item_id,
+		      locker_id,
+		      chest_id,
+		      container_id,
+		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+		      obj->obj_uid);
 		if (own_txn) sql_rollback();
 		return 0;
 	}
 
 	if (obj->ex_description && !sql_save_item_extra_descr(item_id, obj, "locker_item_extra_descr"))
 	{
+		logit(LOG_DEBUG,
+		      "sql_save_locker_item: extra descr save failed item_id=%d locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu",
+		      item_id,
+		      locker_id,
+		      chest_id,
+		      container_id,
+		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+		      obj->obj_uid);
 		if (own_txn) sql_rollback();
 		return 0;
 	}
 
-	if (obj->contains)
-	{
-		for (P_obj content = obj->contains; content; content = content->next_content)
-		{
-			if (sql_save_locker_item(locker_id, chest_id, content, item_id) <= 0)
-			{
-				if (own_txn) sql_rollback();
-				return 0;
-			}
-		}
-	}
+	if (!sql_save_locker_item_children(locker_id, chest_id, obj, item_id, own_txn))
+		return 0;
 
 	if (own_txn)
 	{
@@ -4953,84 +5024,152 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	return item_id;
 }
 
-bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
+static bool sql_save_locker_upsert(P_char locker_ch,
+	                                 const char *locker_name,
+	                                 char *esc_name,
+	                                 int owner_pid,
+	                                 int owner_assoc_id,
+	                                 int *locker_id)
 {
-	if (!locker_ch || !DB)
-		return false;
+	int existing_locker_id = sql_get_locker_id_by_name(locker_name);
 
-	const char *locker_name = GET_NAME(locker_ch);
-	if (!locker_name)
-		return false;
-
-	char *esc_name = sql_escape_string(locker_name);
-	if (!esc_name)
-		return false;
-
-	// start transaction (must succeed before any writes)
-	if (!sql_begin_transaction())
+	if (existing_locker_id > 0)
 	{
-		logit(LOG_DEBUG, "sql_save_locker: failed to start transaction for %s", locker_name);
-		free(esc_name);
-		return false;
-	}
+		int carrying_count = 0;
+		for (P_obj cur = locker_ch->carrying; cur; cur = cur->next_content)
+			carrying_count++;
+		logit(LOG_DEBUG,
+		      "sql_save_locker: locker_id=%d name=%s saving %d top-level items to public chest",
+		      existing_locker_id,
+		      locker_name,
+		      carrying_count);
 
-	// check if locker already exists
-	int locker_id = sql_get_locker_id_by_name(locker_name);
-
-	if (locker_id > 0)
-	{
 		// locker exists - delete only PUBLIC chest items, keep private chest items
-		int  public_id = sql_get_or_create_public_chest(locker_id);
+		int public_id = sql_get_or_create_public_chest(existing_locker_id);
 		if (public_id <= 0)
 		{
 			logit(LOG_DEBUG, "sql_save_locker: failed to get/create public chest for %s", locker_name);
-			free(esc_name);
 			sql_rollback();
 			return false;
 		}
 		char del_query[512];
-		snprintf(del_query, sizeof(del_query), "DELETE FROM locker_items WHERE locker_id=%d AND (chest_id IS NULL OR chest_id=%d)", locker_id, public_id);
+		snprintf(del_query, sizeof(del_query), "DELETE FROM locker_items WHERE locker_id=%d AND (chest_id IS NULL OR chest_id=%d)", existing_locker_id, public_id);
 		if (!sql_run_query(del_query))
 		{
 			logit(LOG_DEBUG, "sql_save_locker: failed to delete old items for %s", locker_name);
-			free(esc_name);
 			sql_rollback();
+			return false;
+		}
+		*locker_id = existing_locker_id;
+		return true;
+	}
+
+	// new locker - insert locker record
+	char owner_pid_str[32], owner_assoc_str[32];
+	if (owner_pid > 0)
+		snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
+	else
+		strcpy(owner_pid_str, "NULL");
+	if (owner_assoc_id > 0)
+		snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
+	else
+		strcpy(owner_assoc_str, "NULL");
+
+	char ins_query[512];
+	snprintf(ins_query,
+	         sizeof(ins_query),
+	         "INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
+	         "VALUES ('%s', %s, %s, %d, %d)",
+	         esc_name,
+	         owner_pid_str,
+	         owner_assoc_str,
+	         GET_RACEWAR(locker_ch),
+	         GET_RACE(locker_ch));
+
+	if (!sql_run_query(ins_query))
+	{
+		logit(LOG_DEBUG, "sql_save_locker: failed to insert new locker %s", locker_name);
+		sql_rollback();
+		return false;
+	}
+
+	*locker_id = (int)mysql_insert_id(DB);
+	return true;
+}
+
+static bool sql_save_locker_items(P_char locker_ch, int locker_id, int public_chest_id, const char *locker_name, bool own_txn)
+{
+	// save all items the locker char is carrying to public chest - any failure rolls back the whole locker save
+	for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
+	{
+		logit(LOG_DEBUG,
+		      "sql_save_locker: saving top-level item vnum=%d uid=%lu to locker_id=%d chest_id=%d",
+		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+		      obj->obj_uid,
+		      locker_id,
+		      public_chest_id);
+		if (sql_save_locker_item(locker_id, public_chest_id, obj, 0) == 0)
+		{
+			logit(LOG_DEBUG, "sql_save_locker: failed to save item, rolling back for %s", locker_name);
+			if (own_txn)
+				sql_rollback();
 			return false;
 		}
 	}
-	else
+
+	if (own_txn && !sql_commit())
 	{
-		// new locker - insert locker record
-		char owner_pid_str[32], owner_assoc_str[32];
-		if (owner_pid > 0)
-			snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
-		else
-			strcpy(owner_pid_str, "NULL");
-		if (owner_assoc_id > 0)
-			snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
-		else
-			strcpy(owner_assoc_str, "NULL");
+		logit(LOG_DEBUG, "sql_save_locker: failed to commit for %s", locker_name);
+		sql_rollback();
+		return false;
+	}
 
-		char ins_query[512];
-		snprintf(ins_query,
-		         sizeof(ins_query),
-		         "INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
-		         "VALUES ('%s', %s, %s, %d, %d)",
-		         esc_name,
-		         owner_pid_str,
-		         owner_assoc_str,
-		         GET_RACEWAR(locker_ch),
-		         GET_RACE(locker_ch));
+	return true;
+}
 
-		if (!sql_run_query(ins_query))
+bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
+{
+	if (!locker_ch || !DB)
+	{
+		logit(LOG_DEBUG,
+		      "sql_save_locker: cannot save locker (locker_ch=%p, db=%s)",
+		      (void *)locker_ch,
+		      DB ? "ready" : "null");
+		return false;
+	}
+
+	const char *locker_name = GET_NAME(locker_ch);
+	if (!locker_name)
+	{
+		logit(LOG_DEBUG, "sql_save_locker: null locker name");
+		return false;
+	}
+
+	char *esc_name = sql_escape_string(locker_name);
+	if (!esc_name)
+	{
+		logit(LOG_DEBUG, "sql_save_locker: failed to escape locker name for %s", locker_name);
+		return false;
+	}
+
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		// start transaction (must succeed before any writes)
+		if (!sql_begin_transaction())
 		{
-			logit(LOG_DEBUG, "sql_save_locker: failed to insert new locker %s", locker_name);
+			logit(LOG_DEBUG, "sql_save_locker: failed to start transaction for %s", locker_name);
 			free(esc_name);
-			sql_rollback();
 			return false;
 		}
+		own_txn = true;
+	}
 
-		locker_id = (int)mysql_insert_id(DB);
+	int locker_id = 0;
+	if (!sql_save_locker_upsert(locker_ch, locker_name, esc_name, owner_pid, owner_assoc_id, &locker_id))
+	{
+		free(esc_name);
+		return false;
 	}
 
 	free(esc_name);
@@ -5044,25 +5183,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 		return false;
 	}
 
-	// save all items the locker char is carrying to public chest - any failure rolls back the whole locker save
-	for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
-	{
-		if (sql_save_locker_item(locker_id, public_chest_id, obj, 0) == 0)
-		{
-			logit(LOG_DEBUG, "sql_save_locker: failed to save item, rolling back for %s", locker_name);
-			sql_rollback();
-			return false;
-		}
-	}
-
-	if (!sql_commit())
-	{
-		logit(LOG_DEBUG, "sql_save_locker: failed to commit for %s", locker_name);
-		sql_rollback();
-		return false;
-	}
-
-	return true;
+	return sql_save_locker_items(locker_ch, locker_id, public_chest_id, locker_name, own_txn);
 }
 
 static P_obj sql_load_locker_items(int locker_id, int container_id, const char *owner_ref);
@@ -5073,6 +5194,14 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 {
 	if (!DB || locker_id <= 0)
 		return NULL;
+
+	logit(LOG_DEBUG,
+	      "sql_load_locker_items_filtered: begin locker_id=%d container_id=%d chest_id=%d owner_ref=%s depth=%d",
+	      locker_id,
+	      container_id,
+	      chest_id,
+	      owner_ref ? owner_ref : "(null)",
+	      depth);
 
 	if (depth > MAX_CONTAINER_LOAD_DEPTH)
 	{
@@ -5126,12 +5255,40 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		int item_id = atoi(row[0]);
 		int vnum    = atoi(row[1]);
 		int rnum    = real_object(vnum);
+		logit(LOG_DEBUG,
+		      "sql_load_locker_items_filtered: row item_id=%d locker_id=%d container_id=%d chest_id=%d vnum=%d rnum=%d depth=%d",
+		      item_id,
+		      locker_id,
+		      container_id,
+		      chest_id,
+		      vnum,
+		      rnum,
+		      depth);
 		if (rnum < 0)
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: skip unknown vnum item_id=%d vnum=%d locker_id=%d chest_id=%d container_id=%d",
+			      item_id,
+			      vnum,
+			      locker_id,
+			      chest_id,
+			      container_id);
 			continue;
+		}
 
 		P_obj obj = read_object(rnum, REAL);
 		if (!obj)
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: skip failed read_object item_id=%d vnum=%d rnum=%d locker_id=%d chest_id=%d container_id=%d",
+			      item_id,
+			      vnum,
+			      rnum,
+			      locker_id,
+			      chest_id,
+			      container_id);
 			continue;
+		}
 
 		if (row[2])
 			obj->weight = atoi(row[2]);
@@ -5175,7 +5332,6 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			obj->action_description = str_dup(row[19]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
-		// bitvectors - compare with prototype, only load if different
 		if (row[22])
 			obj->bitvector = strtoul(row[22], NULL, 10);
 		if (row[23])
@@ -5186,14 +5342,9 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			obj->bitvector4 = strtoul(row[25], NULL, 10);
 		if (row[26])
 			obj->bitvector5 = strtoul(row[26], NULL, 10);
-
-		// item_material - NULL means use prototype value
 		if (row[27])
 			obj->material = atoi(row[27]);
 
-
-
-		// restore obj_uid and condition
 		if (row[20] && strlen(row[20]) > 0)
 		{
 			unsigned long saved_uid = strtoul(row[20], NULL, 10);
@@ -5201,6 +5352,15 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 				obj->obj_uid = saved_uid;
 			if (!sql_persistence_item_owner_matches(obj->obj_uid, "locker", owner_ref, "sql_load_locker_items"))
 			{
+				logit(LOG_DEBUG,
+				      "sql_load_locker_items_filtered: owner mismatch item_id=%d vnum=%d uid=%lu locker_id=%d chest_id=%d container_id=%d owner_ref=%s",
+				      item_id,
+				      vnum,
+				      obj->obj_uid,
+				      locker_id,
+				      chest_id,
+				      container_id,
+				      owner_ref ? owner_ref : "(null)");
 				extract_obj(obj, FALSE);
 				continue;
 			}
@@ -5208,29 +5368,46 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
 
-		// restore bitvectors
-		if (row[22] && strlen(row[22]) > 0)
-			obj->bitvector = strtoul(row[22], NULL, 10);
-		if (row[23] && strlen(row[23]) > 0)
-			obj->bitvector2 = strtoul(row[23], NULL, 10);
-		if (row[24] && strlen(row[24]) > 0)
-			obj->bitvector3 = strtoul(row[24], NULL, 10);
-		if (row[25] && strlen(row[25]) > 0)
-			obj->bitvector4 = strtoul(row[25], NULL, 10);
-		if (row[26] && strlen(row[26]) > 0)
-			obj->bitvector5 = strtoul(row[26], NULL, 10);
-
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item_extra_descr");
 
 		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref, depth + 1);
+		{
+			int child_count = 0;
+			for (P_obj c = obj->contains; c; c = c->next_content)
+				child_count++;
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: loaded %d children for item_id=%d vnum=%d uid=%lu locker_id=%d chest_id=%d container_id=%d",
+			      child_count,
+			      item_id,
+			      vnum,
+			      obj->obj_uid,
+			      locker_id,
+			      chest_id,
+			      container_id);
+		}
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))
 			{
-				logit(LOG_DEBUG, "sql_load_locker_items_filtered: skipping malformed container link %d -> %d", c->db_item_id, obj->db_item_id);
+				logit(LOG_DEBUG,
+				      "sql_load_locker_items_filtered: skipping malformed container link child_db_id=%d parent_db_id=%d child_vnum=%d parent_vnum=%d child_uid=%lu parent_uid=%lu",
+				      c->db_item_id,
+				      obj->db_item_id,
+				      (c->R_num >= 0) ? obj_index[c->R_num].virtual_number : -1,
+				      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+				      c->obj_uid,
+				      obj->obj_uid);
 				continue;
 			}
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: linked child_db_id=%d to parent_db_id=%d child_vnum=%d parent_vnum=%d child_uid=%lu parent_uid=%lu",
+			      c->db_item_id,
+			      obj->db_item_id,
+			      (c->R_num >= 0) ? obj_index[c->R_num].virtual_number : -1,
+			      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+			      c->obj_uid,
+			      obj->obj_uid);
 			c->loc_p      = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
@@ -5246,7 +5423,6 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 	mysql_free_result(result);
 	return first_obj;
 }
-
 static P_obj sql_load_locker_items(int locker_id, int container_id, const char *owner_ref) { return sql_load_locker_items_filtered(locker_id, container_id, 0, owner_ref, 0); }
 
 P_char sql_load_locker(int owner_pid, int owner_assoc_id)
@@ -5309,6 +5485,16 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 
 	// load items
 	ch->carrying = sql_load_locker_items(locker_id, 0, owner_ref);
+	{
+		int carry_count = 0;
+		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+			carry_count++;
+		logit(LOG_DEBUG,
+		      "sql_load_locker: locker_id=%d name=%s loaded %d top-level items",
+		      locker_id,
+		      locker_name,
+		      carry_count);
+	}
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		obj->loc_p        = LOC_CARRIED;
@@ -5719,6 +5905,15 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	if (!DB || locker_id <= 0 || chest_id <= 0 || !chest_obj)
 		return false;
 
+	logit(LOG_DEBUG,
+	      "sql_save_private_chest_items: begin locker_id=%d chest_id=%d chest_vnum=%d chest_uid=%lu contains=%d in_txn=%d",
+	      locker_id,
+	      chest_id,
+	      (chest_obj->R_num >= 0) ? obj_index[chest_obj->R_num].virtual_number : -1,
+	      chest_obj->obj_uid,
+	      sql_count_obj_contents(chest_obj),
+	      sql_in_transaction() ? 1 : 0);
+
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
@@ -5737,6 +5932,12 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	}
 
 	// delete existing items for this chest
+	logit(LOG_DEBUG,
+	      "sql_save_private_chest_items: deleting old rows locker_id=%d chest_id=%d chest_uid=%lu contains=%d",
+	      locker_id,
+	      chest_id,
+	      chest_obj->obj_uid,
+	      sql_count_obj_contents(chest_obj));
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query), "DELETE FROM locker_items WHERE locker_id=%d AND chest_id=%d", locker_id, chest_id);
 	if (!sql_run_query(del_query))
@@ -5750,9 +5951,24 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	// save all items in the chest - any failure rolls back the DELETE above
 	for (P_obj obj = chest_obj->contains; obj; obj = obj->next_content)
 	{
+		logit(LOG_DEBUG,
+		      "sql_save_private_chest_items: saving child locker_id=%d chest_id=%d obj_vnum=%d uid=%lu contains=%d type=%d container_id=NULL",
+		      locker_id,
+		      chest_id,
+		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+		      obj->obj_uid,
+		      sql_count_obj_contents(obj),
+		      obj->type);
 		if (sql_save_locker_item(locker_id, chest_id, obj, 0) == 0)
 		{
-			logit(LOG_DEBUG, "sql_save_private_chest_items: failed to save item, rolling back for chest %d", chest_id);
+			logit(LOG_DEBUG,
+			      "sql_save_private_chest_items: failed to save item locker_id=%d chest_id=%d obj_vnum=%d uid=%lu errno=%u sqlerr=%s",
+			      locker_id,
+			      chest_id,
+			      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
+			      obj->obj_uid,
+			      mysql_errno(DB),
+			      mysql_error(DB));
 			if (own_txn)
 				sql_rollback();
 			return false;
@@ -6692,6 +6908,7 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 
 	if (!sql_run_query(query))
 	{
+		logit(LOG_DEBUG, "sql_save_item: insert failed errno=%u sqlerr=%s", mysql_errno(DB), mysql_error(DB));
 		if (own_txn) sql_rollback();
 		return 0;
 	}

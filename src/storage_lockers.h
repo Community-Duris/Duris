@@ -48,6 +48,7 @@ public:
 	bool LockerToPFile(void);
 	void PFileToLocker(void);
 	void SortIValues(void);
+	LockerChest *FindChestForObject(P_obj obj);
 
 	static void event_resortLocker(P_char chLocker, P_char ch, P_obj obj, void *data);
 	int         m_itemCount;
