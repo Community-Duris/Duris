@@ -763,7 +763,7 @@ bool auction_offer(P_char ch, char *args)
 	// try insert with obj_info_text column first
 	// if column doesn't exist, fall back to old insert - some devs dont have full schema
 	if (qry("INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity, obj_info_text) VALUES ('%d', '%s', "
-	        "UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%s')",
+	        "FROM_UNIXTIME(UNIX_TIMESTAMP()), FROM_UNIXTIME(UNIX_TIMESTAMP() + %d), '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%s')",
 	        GET_PID(ch),
 	        ch->player.name,
 	        auction_length,
@@ -788,7 +788,7 @@ bool auction_offer(P_char ch, char *args)
 		send_to_char_f(ch, "Auction insert failed: errno=%u %s\r\n", mysql_errno(DB), mysql_error(DB));
 		// column probably doesn't exist, try without it
 		logit(LOG_DEBUG, "auction: obj_info_text column missing? trying old insert");
-		if (qry("INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity) VALUES ('%d', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, '%s', '%d', '%s', '%d', '%d', '%s', '%d')",
+		if (qry("INSERT INTO auctions (seller_pid, seller_name, start_time, end_time, obj_short, obj_vnum, obj_blob_str, cur_price, buy_price, id_keywords, quantity) VALUES ('%d', '%s', FROM_UNIXTIME(UNIX_TIMESTAMP()), FROM_UNIXTIME(UNIX_TIMESTAMP() + %d), '%s', '%d', '%s', '%d', '%d', '%s', '%d')",
 		        GET_PID(ch),
 		        ch->player.name,
 		        auction_length,
