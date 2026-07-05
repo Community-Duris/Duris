@@ -1798,6 +1798,8 @@ void enter_game(P_desc d)
 	P_nevent             evp;
 	P_Guild              guild;
 
+	logit(LOG_FILE, "[enter_game] name=%s level=%d rtype=%d", ch ? GET_NAME(ch) : "(null)", ch ? GET_LEVEL(ch) : -1, d ? d->rtype : -1);
+
 	// Bring them to life!
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
@@ -1945,14 +1947,29 @@ void enter_game(P_desc d)
 		}
 		else if (d->rtype == 0)
 		{
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game rtype=%d -> sql_load_player_items\r\n", d->rtype);
+				send_to_char(trace, ch);
+			}
 			// sql load - items were loaded in restoreCharOnly but reset_char cleared them
 			// reload from sql
 #ifndef __NO_MYSQL__
 			sql_load_player_items(ch);
 #endif
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game after sql_load_player_items rtype=%d\r\n", d->rtype);
+				send_to_char(trace, ch);
+			}
 		}
 		else
 		{
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game rtype=%d -> storage branch\r\n", d->rtype);
+				send_to_char(trace, ch);
+			}
 			send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
 		}
 

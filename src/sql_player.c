@@ -42,6 +42,18 @@ extern P_Guild            guild_list;
 extern Skill               skills[];
 void                      ensure_pconly_pool(void);
 
+static void trace_append_file(const char *fmt, ...)
+{
+	FILE *fp = fopen("/tmp/garp-item-trace.log", "a");
+	if (!fp)
+		return;
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fclose(fp);
+}
+
 #ifdef __NO_MYSQL__
 
 // stubs when mysql is disabled
@@ -645,6 +657,9 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
+	trace_append_file("sql_save_player begin name=%s pid=%d type=%d room=%d\n",
+	                  GET_NAME(ch), GET_PID(ch), type, room);
+
 	if (!DB)
 	{
 		logit(LOG_DEBUG, "sql_save_player: db not initialized");
@@ -719,6 +734,8 @@ bool sql_save_player(P_char ch, int type, int room)
 		{
 			logit(LOG_DEBUG, "sql_save_player: failed to commit for %s", GET_NAME(ch));
 			sql_rollback();
+			trace_append_file("sql_save_player commit failed name=%s pid=%d type=%d room=%d\n",
+			                  GET_NAME(ch), GET_PID(ch), type, room);
 			return false;
 		}
 	}
@@ -726,6 +743,9 @@ bool sql_save_player(P_char ch, int type, int room)
 	clear_player_dirty_container_flags(ch);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+
+	trace_append_file("sql_save_player done name=%s pid=%d type=%d room=%d\n",
+	                  GET_NAME(ch), GET_PID(ch), type, room);
 
 	return true;
 }
@@ -2529,6 +2549,9 @@ bool sql_save_player_items(P_char ch)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
+	trace_append_file("sql_save_player_items begin name=%s pid=%d eq0=%p carrying=%p\n",
+	                  GET_NAME(ch), GET_PID(ch), ch->equipment[0], ch->carrying);
+
 	// Start own transaction if not already in one
 	bool own_txn = false;
 	if (!sql_in_transaction())
@@ -2602,12 +2625,16 @@ bool sql_save_player_items(P_char ch)
 	if (del_query[0] && !sql_run_query(del_query))
 	{
 		if (own_txn) sql_rollback();
+		trace_append_file("sql_save_player_items delete failed name=%s pid=%d query=%s\n",
+		                  GET_NAME(ch), GET_PID(ch), del_query);
 		return false;
 	}
 
 	bool success = sql_save_player_items_batch_all(pid, ch, save_equipment, save_inventory);
 	if (!success)
 		std::fprintf(stderr, "[real-persistence-test] sql_save_player_items debug: batch_all failed for pid=%d\n", pid);
+	trace_append_file("sql_save_player_items batch result name=%s pid=%d success=%d save_equipment=%d save_inventory=%d\n",
+	                  GET_NAME(ch), pid, success ? 1 : 0, save_equipment, save_inventory);
 
 	if (own_txn)
 	{
@@ -2621,6 +2648,8 @@ bool sql_save_player_items(P_char ch)
 			return false;
 		}
 	}
+
+	trace_append_file("sql_save_player_items done name=%s pid=%d\n", GET_NAME(ch), pid);
 	return success;
 }
 
@@ -3953,24 +3982,31 @@ bool sql_load_player_items(P_char ch)
 	char owner_ref[32];
 	snprintf(owner_ref, sizeof(owner_ref), "%d", pid);
 
+	trace_append_file("sql_load_player_items begin name=%s pid=%d\n", GET_NAME(ch), pid);
+
+	logit(LOG_FILE, "[sql_load_player_items] begin name=%s pid=%d", GET_NAME(ch), pid);
+
 	// first, load all items into a temp array indexed by db id
 	// then resolve container relationships
 
 	char query[1024];
 	snprintf(query,
-	         sizeof(query),
-	         "SELECT id, vnum, equip_slot, container_id, "
-	         "weight, cost, timer, extra_flags, wear_flags, item_type, "
-	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr, "
-	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-	         "item_material, obj_uid, item_condition "
-	         "FROM player_items WHERE pid=%d ORDER BY id",
-	         pid);
+         sizeof(query),
+         "SELECT id, vnum, equip_slot, container_id, "
+         "weight, cost, timer, extra_flags, wear_flags, item_type, "
+         "value0, value1, value2, value3, value4, value5, value6, value7, "
+         "name, short_descr, description, action_descr, "
+         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+         "item_material, obj_uid, item_condition "
+         "FROM player_items WHERE pid=%d ORDER BY id",
+         pid);
 
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
+	{
+		logit(LOG_FILE, "[sql_load_player_items] query failed name=%s pid=%d", GET_NAME(ch), pid);
 		return false;
+	}
 
 	// count rows
 	int num_rows = mysql_num_rows(result);
@@ -3995,6 +4031,20 @@ bool sql_load_player_items(P_char ch)
 		int vnum         = sql_row_int(row, col++, 0);
 		int equip_slot   = sql_row_int(row, col++, 0);
 		int container_id = sql_row_int(row, col++, 0);
+		if (idx < 12 || equip_slot > 0)
+		{
+			char trace[MAX_STRING_LENGTH];
+			snprintf(trace,
+			         sizeof(trace),
+			         "&+w[TRACE]&n row idx=%d db_id=%d vnum=%d equip=%d container=%d\r\n",
+			         idx,
+			         db_id,
+			         vnum,
+			         equip_slot,
+			         container_id);
+			send_to_char(trace, ch);
+		}
+		logit(LOG_FILE, "[sql_load_player_items] row pid=%d db_id=%d vnum=%d equip=%d container=%d", pid, db_id, vnum, equip_slot, container_id);
 
 		// create object from prototype
 		P_obj obj = read_object(vnum, VIRTUAL);
@@ -4064,6 +4114,12 @@ bool sql_load_player_items(P_char ch)
 			obj->obj_uid = saved_uid;
 		if (!sql_persistence_item_owner_matches(saved_uid, "player", owner_ref, "sql_load_player_items"))
 		{
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n skip db_id=%d vnum=%d uid=%lu owner_mismatch\r\n", db_id, vnum, saved_uid);
+				send_to_char(trace, ch);
+			}
+			logit(LOG_FILE, "[sql_load_player_items] skip db_id=%d vnum=%d uid=%lu owner_mismatch", db_id, vnum, saved_uid);
 			extract_obj(obj, FALSE);
 			continue;
 		}
@@ -4076,6 +4132,18 @@ bool sql_load_player_items(P_char ch)
 		item_ids[idx]      = db_id;
 		container_ids[idx] = container_id;
 		equip_slots[idx]   = equip_slot;
+		if (idx < 12 || equip_slot > 0)
+		{
+			char trace[MAX_STRING_LENGTH];
+			snprintf(trace,
+			         sizeof(trace),
+			         "&+w[TRACE]&n loaded db_id=%d vnum=%d short=%s\r\n",
+			         db_id,
+			         vnum,
+			         obj->short_description ? obj->short_description : "(null)");
+			send_to_char(trace, ch);
+		}
+		logit(LOG_FILE, "[sql_load_player_items] loaded db_id=%d vnum=%d uid=%lu short=%s", db_id, vnum, saved_uid, obj->short_description ? obj->short_description : "(null)");
 		idx++;
 	}
 	mysql_free_result(result);
@@ -4241,16 +4309,45 @@ bool sql_load_player_items(P_char ch)
 			// equipment slot (1-indexed in db, 0-indexed in array)
 			int slot = equip_slots[i] - 1;
 			if (!ch->equipment[slot])
+			{
+				{
+					char trace[MAX_STRING_LENGTH];
+					snprintf(trace, sizeof(trace), "&+w[TRACE]&n equip db_id=%d vnum=%d slot=%d\r\n", item_ids[i], OBJ_VNUM(items[i]), slot);
+					send_to_char(trace, ch);
+				}
+				logit(LOG_FILE, "[sql_load_player_items] equip db_id=%d vnum=%d slot=%d", item_ids[i], OBJ_VNUM(items[i]), slot);
 				equip_char(ch, items[i], slot, 0);
+			}
 			else
+			{
+				{
+					char trace[MAX_STRING_LENGTH];
+					snprintf(trace, sizeof(trace), "&+w[TRACE]&n carry-instead-of-equip db_id=%d vnum=%d slot=%d occupied\r\n", item_ids[i], OBJ_VNUM(items[i]), slot);
+					send_to_char(trace, ch);
+				}
+				logit(LOG_FILE, "[sql_load_player_items] carry-instead-of-equip db_id=%d vnum=%d slot=%d occupied", item_ids[i], OBJ_VNUM(items[i]), slot);
 				obj_to_char(items[i], ch);
+			}
 		}
 		else
 		{
 			// inventory
+			if (i < 12)
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n carry db_id=%d vnum=%d\r\n", item_ids[i], OBJ_VNUM(items[i]));
+				send_to_char(trace, ch);
+			}
+			logit(LOG_FILE, "[sql_load_player_items] carry db_id=%d vnum=%d", item_ids[i], OBJ_VNUM(items[i]));
 			obj_to_char(items[i], ch);
 		}
 	}
+	{
+		char trace[MAX_STRING_LENGTH];
+		snprintf(trace, sizeof(trace), "&+w[TRACE]&n load items done num_rows=%d kept=%d\r\n", num_rows, loaded_count);
+		send_to_char(trace, ch);
+	}
+	logit(LOG_FILE, "[sql_load_player_items] done name=%s loaded=%d kept=%d", GET_NAME(ch), num_rows, loaded_count);
 
 	free(items);
 	free(item_ids);

@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -36,6 +37,18 @@ extern P_desc                descriptor_list;
 extern P_char                character_list;
 extern struct mm_ds         *dead_mob_pool;
 extern struct mm_ds         *dead_pconly_pool;
+
+static void trace_append_file(const char *fmt, ...)
+{
+	FILE *fp = fopen("/tmp/garp-item-trace.log", "a");
+	if (!fp)
+		return;
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fclose(fp);
+}
 
 struct acct_entry *account_list = NULL;
 
@@ -1812,7 +1825,6 @@ struct acct_chars *find_char_in_list(struct acct_chars *list, char *arg)
 
 P_char load_char_into_game(struct acct_chars *c, P_desc d)
 {
-
 	P_char player = NULL;
 	int    status = 0;
 
@@ -1828,6 +1840,7 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 
 	setCharPhysTypeInfo(player);
 	status = restoreCharOnly(player, c->charname);
+	trace_append_file("load_char_into_game name=%s restoreCharOnly status=%d\n", c->charname, status);
 
 	if (status == -1)
 	{

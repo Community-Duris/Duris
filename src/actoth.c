@@ -1939,6 +1939,11 @@ bool do_save_silent(P_char ch, int type)
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
 		return false;
 
+	logit(LOG_FILE,
+	      "[TRACE] do_save_silent begin name=%s pid=%d type=%d room=%d desc=%p connected=%d",
+	      GET_NAME(ch), GET_PID(ch), type, ch->in_room, (void *)ch->desc,
+	      ch->desc ? ch->desc->connected : -1);
+
 	if (IS_HARDCORE(ch))
 	{
 		snprintf(tmp_buf, MAX_STRING_LENGTH, "NotDead %lu", ch->only.pc->numb_deaths);
@@ -1985,8 +1990,14 @@ bool do_save_silent(P_char ch, int type)
 			logit(LOG_DEBUG, "Problem saving player %s in do_save_silent()", GET_NAME(ch));
 			send_to_char("Danger -- cannot save your character!\r\n", ch);
 			send_to_char("Better contact an Implementor ASAP.\r\n", ch);
+			logit(LOG_FILE,
+			      "[TRACE] do_save_silent writeCharacter FAILED name=%s pid=%d type=%d room=%d",
+			      GET_NAME(ch), GET_PID(ch), type, ch->in_room);
 			return false;
 		}
+		logit(LOG_FILE,
+		      "[TRACE] do_save_silent writeCharacter OK name=%s pid=%d type=%d room=%d",
+		      GET_NAME(ch), GET_PID(ch), type, ch->in_room);
 	}
 
 	/* Also save player's ship if they have one */
@@ -2058,10 +2069,16 @@ void do_save(P_char ch, char *argument, int cmd)
 	send_to_char(Gbuf1, ch);
 	update_pos(ch);
 
+	logit(LOG_FILE, "[TRACE] do_save manual begin name=%s pid=%d room=%d", GET_NAME(ch), GET_PID(ch), ch->in_room);
 	if (!writeCharacter(ch, 1, ch->in_room))
 	{
 		send_to_char("Danger -- cannot save your character!\r\n", ch);
 		send_to_char("Better contact an Implementator ASAP.\r\n", ch);
+		logit(LOG_FILE, "[TRACE] do_save manual FAILED name=%s pid=%d room=%d", GET_NAME(ch), GET_PID(ch), ch->in_room);
+	}
+	else
+	{
+		logit(LOG_FILE, "[TRACE] do_save manual OK name=%s pid=%d room=%d", GET_NAME(ch), GET_PID(ch), ch->in_room);
 	}
 }
 
