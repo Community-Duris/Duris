@@ -778,6 +778,23 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		}
 	}
 
+	// Update the in-memory account character list if the character is currently active
+	if (ch->desc && ch->desc->account)
+	{
+		struct acct_chars *c = ch->desc->account->acct_character_list;
+		while (c)
+		{
+			if (c->charname && !strcasecmp(c->charname, GET_NAME(ch)))
+			{
+				c->last_room = room;
+				c->level     = GET_LEVEL(ch);
+				c->last_save = time(NULL);
+				break;
+			}
+			c = c->next;
+		}
+	}
+
 	// build the query
 	// this is a big query, we'll use a large buffer
 	char  query[16384];
