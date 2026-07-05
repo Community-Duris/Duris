@@ -54,7 +54,7 @@ void            event_memorize(P_char, P_char, P_obj, void *);
 int             is_wearing_necroplasm(P_char);
 static int      save_locker_char(P_char chInLocker, int bTerminal);
 static void     free_locker(int roomNum);
-static void     check_for_artisInRoom(P_char ch, int rroom);
+static bool     check_for_artisInRoom(P_char ch, int rroom);
 
 #define LOCKERS_START 65201
 #define LOCKERS_MAX   99
@@ -263,11 +263,8 @@ static void locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int
 
 static int locker_handle_save_hook(P_char ch, int troom)
 {
-	check_for_artisInRoom(ch, ch->in_room);
-	{
-		int exit_room = locker_exit_room(ch, troom);
-		ch->specials.was_in_room = (exit_room != NOWHERE) ? world[exit_room].number : world[troom].number;
-	}
+	int exit_room = locker_exit_room(ch, troom);
+	ch->specials.was_in_room = (exit_room != NOWHERE) ? world[exit_room].number : world[troom].number;
 	return troom;
 }
 
@@ -275,6 +272,13 @@ static void locker_handle_postsave(P_char ch, StorageLocker *pLocker, int room)
 {
 	if (!ch || !pLocker || (ch != pLocker->GetLockerUser()))
 		return;
+
+	if (check_for_artisInRoom(ch, ch->in_room))
+	{
+		logit(LOG_OBJ, "Locker save preflight returned artifact(s) for %s before save", GET_NAME(ch));
+		send_to_char("&+YNOTICE:&n An artifact was returned to your hands before locker save continued.\r\n",
+		             ch);
+	}
 
 	/* if so, save the locker too */
 	if (!save_locker_char(ch, FALSE))
@@ -1237,7 +1241,7 @@ static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess
 static P_char create_locker_char(P_char chOwner, P_char newCh, char *locker_name);
 static int    save_locker_char(P_char chInLocker, int bTerminal);
 
-static void check_for_artisInRoom(P_char ch, int rroom);
+static bool    check_for_artisInRoom(P_char ch, int rroom);
 static int  lockerName_is_inuse(char *lockerName);
 
 static int locker_grantcmd(P_char ch, char *arg);
@@ -2716,9 +2720,10 @@ void StorageLocker::PFileToLocker(void)
 		SortIValues();
 }
 
-static void check_for_artisInRoom(P_char ch, int rroom)
+static bool check_for_artisInRoom(P_char ch, int rroom)
 {
 	P_obj tmp_object, next_obj;
+	bool  found = false;
 
 	for (tmp_object = world[rroom].contents; tmp_object; tmp_object = next_obj)
 	{
@@ -2734,8 +2739,10 @@ static void check_for_artisInRoom(P_char ch, int rroom)
 			act("&+LThe overpowering will of $p &+Ldefies you as it flies back into your hands.", TRUE, ch, tmp_object, 0, TO_CHAR);
 			wizlog(56, "Artifact %s (%d) returns to %s's hands in room %d.", tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, J_NAME(ch), world[ch->in_room].number);
 			logit(LOG_OBJ, "Artifact %s (%d) returns to %s's hands in room %d.", tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, J_NAME(ch), world[ch->in_room].number);
+			found = true;
 		}
 	}
+	return found;
 }
 
 static int lockerName_is_inuse(char *lockerName)
