@@ -4477,3 +4477,50 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+
+-- Ensure item_type and wear_flags columns are DEFAULT NULL (and not NOT NULL)
+-- for locker_items, saved_items, and siege_items. This prevents save failures
+-- when C code tries to insert NULL (when properties match their prototype).
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'item_type');
+SET @sql = IF(@col_exists = 1,
+              'ALTER TABLE locker_items MODIFY COLUMN item_type TINYINT DEFAULT NULL',
+              'SELECT "locker_items.item_type not present to modify"');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'wear_flags');
+SET @sql = IF(@col_exists = 1,
+              'ALTER TABLE locker_items MODIFY COLUMN wear_flags INT DEFAULT NULL',
+              'SELECT "locker_items.wear_flags not present to modify"');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'item_type');
+SET @sql = IF(@col_exists = 1,
+              'ALTER TABLE saved_items MODIFY COLUMN item_type TINYINT DEFAULT NULL',
+              'SELECT "saved_items.item_type not present to modify"');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'wear_flags');
+SET @sql = IF(@col_exists = 1,
+              'ALTER TABLE saved_items MODIFY COLUMN wear_flags INT DEFAULT NULL',
+              'SELECT "saved_items.wear_flags not present to modify"');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'item_type');
+SET @sql = IF(@col_exists = 1,
+              'ALTER TABLE siege_items MODIFY COLUMN item_type TINYINT DEFAULT NULL',
+              'SELECT "siege_items.item_type not present to modify"');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'wear_flags');
+SET @sql = IF(@col_exists = 1,
+              'ALTER TABLE siege_items MODIFY COLUMN wear_flags INT DEFAULT NULL',
+              'SELECT "siege_items.wear_flags not present to modify"');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
