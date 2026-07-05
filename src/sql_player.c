@@ -676,6 +676,38 @@ int sql_get_player_pid(const char *name)
 	return pid;
 }
 
+static bool sql_try_get_player_pid(const char *name, int *pid_out)
+{
+	if (!pid_out)
+		return false;
+
+	*pid_out = -1;
+	if (!DB || !name)
+		return false;
+
+	char *escaped_name = sql_escape_string(name);
+	if (!escaped_name)
+		return false;
+
+	char query[256];
+	snprintf(query, sizeof(query), "SELECT pid FROM player_data WHERE LOWER(name)=LOWER('%s') LIMIT 1", escaped_name);
+	free(escaped_name);
+
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+	{
+		sql_player_error("sql_try_get_player_pid", query);
+		return false;
+	}
+
+	MYSQL_ROW row = mysql_fetch_row(result);
+	if (row && row[0])
+		*pid_out = atoi(row[0]);
+	mysql_free_result(result);
+
+	return true;
+}
+
 // player delete
 
 bool sql_delete_player(int pid)
@@ -807,26 +839,20 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
-	// Start own transaction if not already in one
-	bool own_txn = false;
-	if (!sql_in_transaction())
-	{
-		if (!sql_begin_transaction())
-			return false;
-		own_txn = true;
-	}
-
 	int pid = GET_PID(ch);
+	int db_pid = -1;
+
+	if (!sql_try_get_player_pid(GET_NAME(ch), &db_pid))
+		return false;
 
 	// if pid is 0 but player exists by name, look up the pid
-	if (pid == 0 && sql_player_exists(GET_NAME(ch)))
+	if (pid == 0 && db_pid > 0)
 	{
-		pid = sql_get_player_pid(GET_NAME(ch));
-		if (pid > 0)
-			ch->only.pc->pid = pid;
+		pid = db_pid;
+		ch->only.pc->pid = pid;
 	}
 
-	bool is_update = (pid > 0 && sql_player_exists(GET_NAME(ch)));
+	bool is_update = (db_pid > 0);
 
 	// for crash saves, preserve the existing last_room (camp/rent location)
 	// don't overwrite with crash location so player returns to safe spot.
@@ -848,7 +874,6 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		}
 	}
 
-	sql_queue_account_character_cache_sync(ch, room);
 
 	// build the query
 	// this is a big query, we'll use a large buffer
@@ -867,6 +892,28 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	char *esc_poofout    = sql_escape_string(ch->only.pc->poofOut ? ch->only.pc->poofOut : "");
 	char *esc_poofinsnd  = sql_escape_string(ch->only.pc->poofInSound ? ch->only.pc->poofInSound : "");
 	char *esc_poofoutsnd = sql_escape_string(ch->only.pc->poofOutSound ? ch->only.pc->poofOutSound : "");
+
+	// Start own transaction only after all preflight lookups and string escaping succeed.
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+		{
+			free(esc_name);
+			free(esc_short);
+			free(esc_long);
+			free(esc_desc);
+			free(esc_title);
+			free(esc_poofin);
+			free(esc_poofout);
+			free(esc_poofinsnd);
+			free(esc_poofoutsnd);
+			return false;
+		}
+		own_txn = true;
+	}
+
+	sql_queue_account_character_cache_sync(ch, room);
 
 	if (is_update)
 	{
@@ -7113,13 +7160,6 @@ bool sql_save_corpse(P_obj corpse)
 		return false;
 	}
 
-	// start transaction (must succeed before any writes)
-	if (!sql_begin_transaction())
-	{
-		logit(LOG_DEBUG, "sql_save_corpse: failed to start transaction");
-		return false;
-	}
-
 	int save_id = corpse->value[CORPSE_SAVEID];
 	if (save_id == 0)
 		save_id = time(NULL);
@@ -7132,16 +7172,12 @@ bool sql_save_corpse(P_obj corpse)
 
 	char *esc_name = sql_escape_string(player_name);
 	if (!esc_name)
-	{
-		sql_rollback();
 		return false;
-	}
 
 	char *esc_sdesc = sql_escape_string(corpse->short_description);
 	if (!esc_sdesc)
 	{
 		free(esc_name);
-		sql_rollback();
 		return false;
 	}
 
@@ -7150,7 +7186,16 @@ bool sql_save_corpse(P_obj corpse)
 	{
 		free(esc_name);
 		free(esc_sdesc);
-		sql_rollback();
+		return false;
+	}
+
+	// start transaction (must succeed before any writes)
+	if (!sql_begin_transaction())
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: failed to start transaction");
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
 		return false;
 	}
 
@@ -7207,19 +7252,19 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 	if (!player_name || !DB)
 		return false;
 
+	char *esc_name = sql_escape_string(player_name);
+	if (!esc_name)
+		return false;
+
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
 		if (!sql_begin_transaction())
+		{
+			free(esc_name);
 			return false;
+		}
 		own_txn = true;
-	}
-
-	char *esc_name = sql_escape_string(player_name);
-	if (!esc_name)
-	{
-		if (own_txn) sql_rollback();
-		return false;
 	}
 
 	// Delete item affects first (child of corpse_items)
