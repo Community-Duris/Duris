@@ -107,6 +107,29 @@ static std::vector<P_obj> locker_snapshot_room_contents(int room)
 	return objs;
 }
 
+static int locker_count_carried_objects(P_char ch)
+{
+	int count = 0;
+
+	for (P_obj obj = ch ? ch->carrying : NULL; obj; obj = obj->next_content)
+		++count;
+
+	return count;
+}
+
+static void locker_log_save_failure(StorageLocker *pLocker, P_char ch, P_char chLocker, const char *phase, const char *detail)
+{
+	logit(LOG_OBJ,
+	      "Locker save failed (%s): user=%s locker_id=%d room=%d item_count=%d carried=%d detail=%s",
+	      phase,
+	      ch ? GET_NAME(ch) : "<null>",
+	      pLocker ? pLocker->GetLockerId() : -1,
+	      pLocker ? pLocker->GetRealRoom() : -1,
+	      pLocker ? pLocker->m_itemCount : -1,
+	      locker_count_carried_objects(chLocker),
+	      detail ? detail : "<none>");
+}
+
 bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj)
 {
 	if (!obj || obj->type != eqType)
@@ -2503,7 +2526,7 @@ static int save_locker_char(P_char ch, int bTerminal)
 
 	if (!pLocker->LockerToPFile())
 	{
-		logit(LOG_OBJ, "Locker save failed while preparing locker char %s", GET_NAME(ch));
+		locker_log_save_failure(pLocker, ch, chLocker, "locker-to-pfile", "LockerToPFile failed before locker serialization");
 		if (started_txn)
 			sql_rollback();
 		pLocker->PFileToLocker();
@@ -2526,7 +2549,12 @@ static int save_locker_char(P_char ch, int bTerminal)
 			sql_reset_for_child(child_conn);
 			if (!writeCharacter(chLocker, 3, NOWHERE))
 			{
-				logit(LOG_OBJ, "Async locker save failed for %s", GET_NAME(ch));
+				locker_log_save_failure(
+					pLocker,
+					ch,
+					chLocker,
+					"async-writeCharacter",
+					"child writeCharacter returned false while serializing locker contents");
 				mysql_close(child_conn);
 				_exit(1);
 			}
@@ -2544,7 +2572,7 @@ static int save_locker_char(P_char ch, int bTerminal)
 		int status = 0;
 		if (waitpid(pid, &status, 0) < 0)
 		{
-			logit(LOG_OBJ, "waitpid failed for locker save of %s", GET_NAME(ch));
+			locker_log_save_failure(pLocker, ch, chLocker, "async-waitpid", "waitpid failed while waiting for locker save child");
 			if (started_txn)
 				sql_rollback();
 			pLocker->PFileToLocker();
@@ -2552,6 +2580,7 @@ static int save_locker_char(P_char ch, int bTerminal)
 		}
 		if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0))
 		{
+			locker_log_save_failure(pLocker, ch, chLocker, "async-child-exit", "locker save child exited non-zero");
 			if (started_txn)
 				sql_rollback();
 			pLocker->PFileToLocker();
@@ -2563,10 +2592,17 @@ static int save_locker_char(P_char ch, int bTerminal)
 		// sync save for non-terminal (periodic saves while in locker)
 		if (!writeCharacter(chLocker, 0, NOWHERE))
 		{
-			logit(LOG_OBJ, "%s's locker not saving properly!", GET_NAME(ch));
+			const bool too_much_stuff = (pLocker && pLocker->m_itemCount >= 5001);
+			locker_log_save_failure(
+				pLocker,
+				ch,
+				chLocker,
+				"sync-writeCharacter",
+				too_much_stuff ? "likely too much stuff / serialized locker too large" : "writeCharacter returned false while serializing locker contents");
 			debug("%s's locker not saving properly!", GET_NAME(ch));
 			send_to_char(
-				"&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it, or another error.  Please pick items up until this error goes away.&n\r\n",
+				too_much_stuff ? "&+R&-LWARNING:  The locker is not saving properly.  This may be due to having too much stuff in it.  Please pick items up until this error goes away.&n\r\n"
+				              : "&+R&-LWARNING:  The locker hit a save error while serializing its contents.  Please contact staff if this keeps happening.&n\r\n",
 				ch);
 			if (started_txn)
 				sql_rollback();
@@ -2648,6 +2684,12 @@ bool StorageLocker::LockerToPFile(void)
 	      m_realRoom,
 	      private_chest_count,
 	      ok ? 1 : 0);
+
+	if (!ok)
+	{
+		logit(LOG_DEBUG, "LockerToPFile: aborting before non-private chest moves locker_id=%d room=%d", m_lockerId, m_realRoom);
+		return false;
+	}
 
 	// now handle non-private chests - move items to locker char
 	for (P_obj tmp_object : locker_snapshot_room_contents(m_realRoom))
