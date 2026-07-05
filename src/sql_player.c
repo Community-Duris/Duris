@@ -170,6 +170,13 @@ static bool sql_save_locker_item_children(int locker_id, int chest_id, P_obj obj
 
 // track transaction state
 static bool in_transaction = false;
+static P_char pending_account_cache_char = NULL;
+static int    pending_account_cache_room = NOWHERE;
+static bool   pending_account_cache_sync = false;
+
+static void sql_sync_account_character_cache(P_char ch, int room);
+static void sql_queue_account_character_cache_sync(P_char ch, int room);
+static void sql_clear_account_character_cache_sync(void);
 
 // transaction helpers
 
@@ -216,10 +223,18 @@ bool sql_commit(void)
 	{
 		logit(LOG_DEBUG, "sql_commit: failed: %s", mysql_error(DB));
 		in_transaction = false;
+		sql_clear_account_character_cache_sync();
 		return false;
 	}
 
 	in_transaction = false;
+	if (pending_account_cache_sync)
+	{
+		P_char ch = pending_account_cache_char;
+		int    room = pending_account_cache_room;
+		sql_clear_account_character_cache_sync();
+		sql_sync_account_character_cache(ch, room);
+	}
 	return true;
 }
 
@@ -241,14 +256,49 @@ bool sql_rollback(void)
 	{
 		logit(LOG_DEBUG, "sql_rollback: failed: %s", mysql_error(DB));
 		in_transaction = false;
+		sql_clear_account_character_cache_sync();
 		return false;
 	}
 
 	in_transaction = false;
+	sql_clear_account_character_cache_sync();
 	return true;
 }
 
 bool sql_in_transaction(void) { return in_transaction; }
+
+static void sql_sync_account_character_cache(P_char ch, int room)
+{
+	if (!ch || !ch->desc || !ch->desc->account)
+		return;
+
+	struct acct_chars *c = ch->desc->account->acct_character_list;
+	while (c)
+	{
+		if (c->charname && !strcasecmp(c->charname, GET_NAME(ch)))
+		{
+			c->last_room = room;
+			c->level     = GET_LEVEL(ch);
+			c->last_save = time(NULL);
+			break;
+		}
+		c = c->next;
+	}
+}
+
+static void sql_queue_account_character_cache_sync(P_char ch, int room)
+{
+	pending_account_cache_char = ch;
+	pending_account_cache_room = room;
+	pending_account_cache_sync = (ch != NULL);
+}
+
+static void sql_clear_account_character_cache_sync(void)
+{
+	pending_account_cache_char = NULL;
+	pending_account_cache_room = NOWHERE;
+	pending_account_cache_sync = false;
+}
 
 // Helper: safely append a formatted string to a batch buffer.
 //
@@ -798,22 +848,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		}
 	}
 
-	// Update the in-memory account character list if the character is currently active
-	if (ch->desc && ch->desc->account)
-	{
-		struct acct_chars *c = ch->desc->account->acct_character_list;
-		while (c)
-		{
-			if (c->charname && !strcasecmp(c->charname, GET_NAME(ch)))
-			{
-				c->last_room = room;
-				c->level     = GET_LEVEL(ch);
-				c->last_save = time(NULL);
-				break;
-			}
-			c = c->next;
-		}
-	}
+	sql_queue_account_character_cache_sync(ch, room);
 
 	// build the query
 	// this is a big query, we'll use a large buffer

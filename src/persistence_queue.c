@@ -220,7 +220,7 @@ int persistence_item_event_queue_enqueue(const char *line)
   {
     if (!persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY, PERSISTENCE_EVENT_MAX_LEN))
     {
-      fprintf(stderr, "persistence_item_event_queue_enqueue: failed to allocate queue\n");
+      logit("logs/log/debug", "persistence_item_event_queue_enqueue: failed to allocate queue\n");
       pthread_mutex_unlock(&persistence_item_event_queue_mutex);
       return 0;
     }
@@ -239,7 +239,7 @@ int persistence_item_event_queue_enqueue(const char *line)
       return 1;
     }
 
-    fprintf(stderr, "persistence_item_event_queue_enqueue: line too long for small queue slot; large queue unavailable\n");
+    logit("logs/log/debug", "persistence_item_event_queue_enqueue: line too long for small queue slot; large queue unavailable\n");
     pthread_mutex_unlock(&persistence_item_event_queue_mutex);
     return 0;
   }
@@ -249,7 +249,7 @@ int persistence_item_event_queue_enqueue(const char *line)
     /* Auto-resize: try to double capacity */
     if (!persistence_queue_auto_grow(q, PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY))
     {
-      fprintf(stderr, "persistence_item_event_queue_enqueue: failed to grow queue\n");
+      logit("logs/log/debug", "persistence_item_event_queue_enqueue: failed to grow queue\n");
       q->dropped++;
       pthread_mutex_unlock(&persistence_item_event_queue_mutex);
       return 0;
@@ -620,7 +620,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
   {
     if (!persistence_queue_alloc(q, PERSISTENCE_EVENT_QUEUE_CAPACITY, PERSISTENCE_EVENT_MAX_LEN))
     {
-      fprintf(stderr, "persistence_scalar_event_queue_enqueue: failed to allocate queue\n");
+      logit("logs/log/debug", "persistence_scalar_event_queue_enqueue: failed to allocate queue\n");
       pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
       return 0;
     }
@@ -639,7 +639,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
       return 1;
     }
 
-    fprintf(stderr, "persistence_scalar_event_queue_enqueue: line too long for small queue slot; large queue unavailable\n");
+    logit("logs/log/debug", "persistence_scalar_event_queue_enqueue: line too long for small queue slot; large queue unavailable\n");
     pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
     return 0;
   }
@@ -649,7 +649,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
     /* Auto-resize: try to double capacity */
     if (!persistence_queue_auto_grow(q, PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY))
     {
-      fprintf(stderr, "persistence_scalar_event_queue_enqueue: failed to grow queue\n");
+      logit("logs/log/debug", "persistence_scalar_event_queue_enqueue: failed to grow queue\n");
       q->dropped++;
       ok = 0;
       latency_trace_record("scalar_enq_drop", 0, 0);
@@ -725,7 +725,7 @@ int persistence_large_event_queue_enqueue(const char *line)
   {
     if (!persistence_queue_alloc(q, PERSISTENCE_LARGE_EVENT_QUEUE_CAPACITY, PERSISTENCE_LARGE_EVENT_MAX_LEN))
     {
-      fprintf(stderr, "persistence_large_event_queue_enqueue: failed to allocate queue\n");
+      logit("logs/log/debug", "persistence_large_event_queue_enqueue: failed to allocate queue\n");
       pthread_mutex_unlock(&persistence_large_event_queue_mutex);
       return 0;
     }
@@ -733,7 +733,7 @@ int persistence_large_event_queue_enqueue(const char *line)
 
   if (persistence_queue_line_too_long(q, line))
   {
-    fprintf(stderr, "persistence_large_event_queue_enqueue: line too long for queue slot\n");
+    logit("logs/log/debug", "persistence_large_event_queue_enqueue: line too long for queue slot\n");
     pthread_mutex_unlock(&persistence_large_event_queue_mutex);
     return 0;
   }
@@ -743,7 +743,7 @@ int persistence_large_event_queue_enqueue(const char *line)
     /* Auto-resize: try to double capacity */
     if (!persistence_queue_auto_grow(q, PERSISTENCE_LARGE_EVENT_QUEUE_MAX_CAPACITY))
     {
-      fprintf(stderr, "persistence_large_event_queue_enqueue: failed to grow queue\n");
+      logit("logs/log/debug", "persistence_large_event_queue_enqueue: failed to grow queue\n");
       q->dropped++;
       pthread_mutex_unlock(&persistence_large_event_queue_mutex);
       return 0;

@@ -232,6 +232,8 @@ void sql_pool_release(MYSQL *conn)
 MYSQL *sql_pool_replace_connection(MYSQL *conn)
 {
 	MYSQL *replacement = NULL;
+	MYSQL *old_conn    = NULL;
+	int    slot        = -1;
 
 	if (!conn)
 		return NULL;
@@ -247,29 +249,43 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	{
 		if (pool[i].conn == conn)
 		{
-			if (pool[i].conn)
-			{
-				mysql_close(pool[i].conn);
-				pool[i].conn = NULL;
-			}
-
-			replacement = sql_pool_create_connection("sql_pool_replace_connection", i);
-			if (!replacement)
-			{
-				pool[i].in_use = 0;
-				pthread_cond_signal(&pool_cond);
-				pthread_mutex_unlock(&pool_mutex);
-				return NULL;
-			}
-
-			pool[i].conn = replacement;
-			pthread_mutex_unlock(&pool_mutex);
-			return replacement;
+			slot     = i;
+			old_conn = pool[i].conn;
+			break;
 		}
 	}
-
 	pthread_mutex_unlock(&pool_mutex);
-	return NULL;
+
+	if (slot < 0)
+		return NULL;
+
+	replacement = sql_pool_create_connection("sql_pool_replace_connection", slot);
+	if (!replacement)
+	{
+		pthread_mutex_lock(&pool_mutex);
+		if (pool && slot < pool_size && pool[slot].conn == old_conn)
+		{
+			mysql_close(pool[slot].conn);
+			pool[slot].conn    = NULL;
+			pool[slot].in_use  = 0;
+			pthread_cond_signal(&pool_cond);
+		}
+		pthread_mutex_unlock(&pool_mutex);
+		return NULL;
+	}
+
+	pthread_mutex_lock(&pool_mutex);
+	if (!pool || slot >= pool_size || pool[slot].conn != old_conn)
+	{
+		pthread_mutex_unlock(&pool_mutex);
+		mysql_close(replacement);
+		return NULL;
+	}
+
+	mysql_close(pool[slot].conn);
+	pool[slot].conn = replacement;
+	pthread_mutex_unlock(&pool_mutex);
+	return replacement;
 }
 
 /* ------------------------------------------------------------------ */
