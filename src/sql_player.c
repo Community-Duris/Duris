@@ -2221,7 +2221,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 	struct flat_item *flat = (struct flat_item *)malloc(cap * sizeof(struct flat_item));
 	if (!flat)
 	{
-		std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: malloc(flat) failed\n");
+		logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: malloc(flat) failed\n");
 		return false;
 	}
 
@@ -2235,7 +2235,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 			P_obj eq = ch->equipment[i] ? ch->equipment[i] : save_equip[i];
 			if (eq && !flatten_item_tree(eq, NULL, i + 1, &flat, &count, &cap))
 			{
-				std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: flatten equipment failed at slot=%d\n", i);
+				logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: flatten equipment failed at slot=%d\n", i);
 				free(flat);
 				return false;
 			}
@@ -2248,7 +2248,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 			if (!flatten_item_tree(obj, NULL, 0, &flat, &count, &cap))
 			{
-				std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: flatten inventory failed\n");
+				logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: flatten inventory failed\n");
 				free(flat);
 				return false;
 			}
@@ -2268,7 +2268,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 	char  *batch = (char *)malloc(BATCH_BUF_SIZE);
 	if (!batch)
 	{
-		std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: malloc(batch) failed\n");
+		logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: malloc(batch) failed\n");
 		free(flat);
 		return false;
 	}
@@ -2360,7 +2360,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		// Per-row overflow fallback: single item exceeds format buffer.
 		if (row_len >= (int)sizeof(row_buf) - 1 || row_len < 0)
 		{
-			std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: row too large at item %d/%d vnum=%d\n", i, count, vnum);
+			logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: row too large at item %d/%d vnum=%d\n", i, count, vnum);
 			logit(LOG_DEBUG, "sql_save_player_items_batch_all: item vnum %d row too large, using single-insert fallback", vnum);
 
 			// Temporarily detach contents so sql_save_single_item_get_id
@@ -2387,7 +2387,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		{
 			if (!sql_run_query(batch))
 			{
-				std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: sub-batch query failed at item %d/%d\n", i, count);
+				logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: sub-batch query failed at item %d/%d\n", i, count);
 				free(batch);
 				free(flat);
 				return false;
@@ -2421,7 +2421,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch,
 		int new_pos = batch_append(batch, pos, BATCH_BUF_SIZE, "%s", row_buf);
 		if (new_pos < 0)
 		{
-			std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: row append failed at item %d/%d\n", i, count);
+			logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: row append failed at item %d/%d\n", i, count);
 free(batch);
 			free(flat);
 			return false;
@@ -2435,7 +2435,7 @@ free(batch);
 	{
 		if (!sql_run_query(batch))
 		{
-			std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: final batch query failed\nQUERY=%s\n", batch);
+			logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: final batch query failed\nQUERY=%s\n", batch);
 			free(batch);
 			free(flat);
 			return false;
@@ -2473,7 +2473,7 @@ free(batch);
 				                           "WHEN %d THEN %d ", flat[i].obj->db_item_id, flat[i].parent->db_item_id);
 				if (new_pos < 0)
 				{
-					std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
+					logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
 					free(batch);
 					free(flat);
 					return false;
@@ -2492,7 +2492,7 @@ free(batch);
 				                           "%s%d", first_in ? "" : ",", flat[i].obj->db_item_id);
 				if (new_pos < 0)
 				{
-					std::fprintf(stderr, "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
+					logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
 					free(batch);
 					free(flat);
 					return false;
@@ -2572,7 +2572,7 @@ bool sql_save_player_items(P_char ch)
 	bool save_inventory  = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 	bool use_incremental = all_items_have_db_ids(ch) && !save_equipment && !save_inventory;
 
-	std::fprintf(stderr,
+	logit(LOG_DEBUG,
 	             "[real-persistence-test] sql_save_player_items debug: pid=%d save_equipment=%d save_inventory=%d use_incremental=%d carrying=%p eq0=%p\n",
 	             pid,
 	             save_equipment,
@@ -2632,7 +2632,7 @@ bool sql_save_player_items(P_char ch)
 
 	bool success = sql_save_player_items_batch_all(pid, ch, save_equipment, save_inventory);
 	if (!success)
-		std::fprintf(stderr, "[real-persistence-test] sql_save_player_items debug: batch_all failed for pid=%d\n", pid);
+		logit(LOG_DEBUG, "[real-persistence-test] sql_save_player_items debug: batch_all failed for pid=%d\n", pid);
 	trace_append_file("sql_save_player_items batch result name=%s pid=%d success=%d save_equipment=%d save_inventory=%d\n",
 	                  GET_NAME(ch), pid, success ? 1 : 0, save_equipment, save_inventory);
 
