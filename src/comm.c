@@ -1967,7 +1967,12 @@ void close_socket(struct descriptor_data *d)
 		}
 	}
 	else
-		logit(LOG_COMM, "Losing descriptor without char.");
+		logit(LOG_COMM,
+		      "Losing descriptor without char [host=%s desc=%d connected=%d ssl=%s].",
+		      d->host ? d->host : "unknown",
+		      d->descriptor,
+		      d->connected,
+		      d->sslses ? "yes" : "no");
 
 	if (next_to_process == d)
 		next_to_process = next_to_process->next;
@@ -2932,7 +2937,13 @@ int process_input(P_desc t)
 		thisround = gnutls_record_recv(t->sslses, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
 		if (!thisround)
 		{
-			logit(LOG_COMM, "EOF encountered on socket read for %s.", (t->character) ? GET_NAME(t->character) : "NOCHAR");
+			logit(LOG_COMM,
+			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
+			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
+			      t->host ? t->host : "unknown",
+			      t->descriptor,
+			      t->connected,
+			      t->sslses ? "yes" : "no");
 			return (-1);
 		}
 		else if (thisround < 0)
@@ -2950,7 +2961,13 @@ int process_input(P_desc t)
 		thisround = read(t->descriptor, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
 		if (!thisround)
 		{
-			logit(LOG_COMM, "EOF encountered on socket read.");
+			logit(LOG_COMM,
+			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
+			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
+			      t->host ? t->host : "unknown",
+			      t->descriptor,
+			      t->connected,
+			      t->sslses ? "yes" : "no");
 			return (-1);
 		}
 		else if (thisround < 0)

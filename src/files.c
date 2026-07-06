@@ -2836,6 +2836,40 @@ int restoreCharOnly(P_char ch, char *name)
 #else
 	ch->in_room = room;
 #endif
+	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER))
+	{
+		int locker_room = ch->in_room;
+		int exit_room   = NOWHERE;
+
+		if (world[locker_room].dir_option[0] && world[locker_room].dir_option[0]->to_room != NOWHERE)
+			exit_room = world[locker_room].dir_option[0]->to_room;
+		else if (GET_HOME(ch))
+		{
+			int home = real_room(GET_HOME(ch));
+			if (home != NOWHERE)
+				exit_room = home;
+		}
+
+		if (exit_room == NOWHERE && GET_BIRTHPLACE(ch))
+		{
+			int birth = real_room(GET_BIRTHPLACE(ch));
+			if (birth != NOWHERE)
+				exit_room = birth;
+		}
+
+		if (exit_room != NOWHERE)
+		{
+			logit(LOG_DEBUG,
+			      "restoreCharacter: redirecting %s out of locker room %d(%s) to %d(%s)",
+			      name,
+			      locker_room,
+			      (world[locker_room].name) ? world[locker_room].name : "<unnamed>",
+			      exit_room,
+			      (world[exit_room].name) ? world[exit_room].name : "<unnamed>");
+			ch->specials.was_in_room = world[exit_room].number;
+			ch->in_room              = exit_room;
+		}
+	}
 
 	GET_LONG(buf);
 	start                           = (int)(buf - buff);

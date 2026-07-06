@@ -3739,6 +3739,40 @@ bool sql_load_player_status(P_char ch, int pid)
 	int last_room_vnum       = sql_row_int(row, col++, 0);
 	ch->specials.was_in_room = last_room_vnum;            // vnum for nanny.c placement
 	ch->in_room              = real_room(last_room_vnum); // rnum as fallback
+	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER))
+	{
+		int locker_room = ch->in_room;
+		int exit_room   = NOWHERE;
+
+		if (world[locker_room].dir_option[0] && world[locker_room].dir_option[0]->to_room != NOWHERE)
+			exit_room = world[locker_room].dir_option[0]->to_room;
+		else if (GET_HOME(ch))
+		{
+			int home = real_room(GET_HOME(ch));
+			if (home != NOWHERE)
+				exit_room = home;
+		}
+
+		if (exit_room == NOWHERE && GET_BIRTHPLACE(ch))
+		{
+			int birth = real_room(GET_BIRTHPLACE(ch));
+			if (birth != NOWHERE)
+				exit_room = birth;
+		}
+
+		if (exit_room != NOWHERE)
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_player_status: redirecting %s out of locker room %d(%s) to %d(%s)",
+			      GET_NAME(ch),
+			      locker_room,
+			      (world[locker_room].name) ? world[locker_room].name : "<unnamed>",
+			      exit_room,
+			      (world[exit_room].name) ? world[exit_room].name : "<unnamed>");
+			ch->specials.was_in_room = world[exit_room].number;
+			ch->in_room              = exit_room;
+		}
+	}
 
 	// time
 	ch->player.time.birth      = sql_row_long(row, col++, 0);
@@ -4122,7 +4156,7 @@ bool sql_load_player_items(P_char ch)
 			         vnum,
 			         equip_slot,
 			         container_id);
-			send_to_char(trace, ch);
+			logit(LOG_FILE, "%s", trace);
 		}
 		logit(LOG_FILE, "[sql_load_player_items] row pid=%d db_id=%d vnum=%d equip=%d container=%d", pid, db_id, vnum, equip_slot, container_id);
 
@@ -4197,7 +4231,7 @@ bool sql_load_player_items(P_char ch)
 			{
 				char trace[MAX_STRING_LENGTH];
 				snprintf(trace, sizeof(trace), "&+w[TRACE]&n skip db_id=%d vnum=%d uid=%lu owner_mismatch\r\n", db_id, vnum, saved_uid);
-				send_to_char(trace, ch);
+				logit(LOG_FILE, "%s", trace);
 			}
 			logit(LOG_FILE, "[sql_load_player_items] skip db_id=%d vnum=%d uid=%lu owner_mismatch", db_id, vnum, saved_uid);
 			extract_obj(obj, FALSE);
@@ -4221,7 +4255,7 @@ bool sql_load_player_items(P_char ch)
 			         db_id,
 			         vnum,
 			         obj->short_description ? obj->short_description : "(null)");
-			send_to_char(trace, ch);
+			logit(LOG_FILE, "%s", trace);
 		}
 		logit(LOG_FILE, "[sql_load_player_items] loaded db_id=%d vnum=%d uid=%lu short=%s", db_id, vnum, saved_uid, obj->short_description ? obj->short_description : "(null)");
 		idx++;
@@ -4393,7 +4427,7 @@ bool sql_load_player_items(P_char ch)
 				{
 					char trace[MAX_STRING_LENGTH];
 					snprintf(trace, sizeof(trace), "&+w[TRACE]&n equip db_id=%d vnum=%d slot=%d\r\n", item_ids[i], OBJ_VNUM(items[i]), slot);
-					send_to_char(trace, ch);
+					logit(LOG_FILE, "%s", trace);
 				}
 				logit(LOG_FILE, "[sql_load_player_items] equip db_id=%d vnum=%d slot=%d", item_ids[i], OBJ_VNUM(items[i]), slot);
 				equip_char(ch, items[i], slot, 0);
@@ -4403,7 +4437,7 @@ bool sql_load_player_items(P_char ch)
 				{
 					char trace[MAX_STRING_LENGTH];
 					snprintf(trace, sizeof(trace), "&+w[TRACE]&n carry-instead-of-equip db_id=%d vnum=%d slot=%d occupied\r\n", item_ids[i], OBJ_VNUM(items[i]), slot);
-					send_to_char(trace, ch);
+					logit(LOG_FILE, "%s", trace);
 				}
 				logit(LOG_FILE, "[sql_load_player_items] carry-instead-of-equip db_id=%d vnum=%d slot=%d occupied", item_ids[i], OBJ_VNUM(items[i]), slot);
 				obj_to_char(items[i], ch);
@@ -4416,7 +4450,7 @@ bool sql_load_player_items(P_char ch)
 			{
 				char trace[MAX_STRING_LENGTH];
 				snprintf(trace, sizeof(trace), "&+w[TRACE]&n carry db_id=%d vnum=%d\r\n", item_ids[i], OBJ_VNUM(items[i]));
-				send_to_char(trace, ch);
+				logit(LOG_FILE, "%s", trace);
 			}
 			logit(LOG_FILE, "[sql_load_player_items] carry db_id=%d vnum=%d", item_ids[i], OBJ_VNUM(items[i]));
 			obj_to_char(items[i], ch);
@@ -4425,7 +4459,7 @@ bool sql_load_player_items(P_char ch)
 	{
 		char trace[MAX_STRING_LENGTH];
 		snprintf(trace, sizeof(trace), "&+w[TRACE]&n load items done num_rows=%d kept=%d\r\n", num_rows, loaded_count);
-		send_to_char(trace, ch);
+		logit(LOG_FILE, "%s", trace);
 	}
 	logit(LOG_FILE, "[sql_load_player_items] done name=%s loaded=%d kept=%d", GET_NAME(ch), num_rows, loaded_count);
 

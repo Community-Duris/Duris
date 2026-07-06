@@ -1950,7 +1950,7 @@ void enter_game(P_desc d)
 			{
 				char trace[MAX_STRING_LENGTH];
 				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game rtype=%d -> sql_load_player_items\r\n", d->rtype);
-				send_to_char(trace, ch);
+				logit(LOG_FILE, "%s", trace);
 			}
 			// sql load - items were loaded in restoreCharOnly but reset_char cleared them
 			// reload from sql
@@ -1960,7 +1960,7 @@ void enter_game(P_desc d)
 			{
 				char trace[MAX_STRING_LENGTH];
 				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game after sql_load_player_items rtype=%d\r\n", d->rtype);
-				send_to_char(trace, ch);
+				logit(LOG_FILE, "%s", trace);
 			}
 		}
 		else
@@ -1968,7 +1968,7 @@ void enter_game(P_desc d)
 			{
 				char trace[MAX_STRING_LENGTH];
 				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game rtype=%d -> storage branch\r\n", d->rtype);
-				send_to_char(trace, ch);
+				logit(LOG_FILE, "%s", trace);
 			}
 			send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
 		}
