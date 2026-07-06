@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-python3 tests/async/test_ship_save_guards.py
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+python3 "$ROOT/tests/async/test_ship_save_guards.py"

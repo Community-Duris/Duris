@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")"
-python3 test_dirty_shopkeeper_retry.py
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+python3 "$ROOT/tests/async/test_dirty_shopkeeper_retry.py"
