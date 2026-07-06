@@ -122,8 +122,13 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   # Record boot time (will be used for shutdown record later)
   BOOT_TIME=$(date +%s)
 
-  echo "Starting duris..."
-  ./dms 7777 # > dms.out
+  MUD_PORT=7777
+  if [ $DEV_MODE -eq 1 ]; then
+    MUD_PORT=4000
+  fi
+
+  echo "Starting duris on port ${MUD_PORT}..."
+  ./dms ${MUD_PORT} # > dms.out
 
 	# capture the exit code
   RESULT=${PIPESTATUS[0]}
