@@ -2148,14 +2148,6 @@ static bool resave_container_contents(int pid, P_obj container)
 	if (!container || container->db_item_id <= 0)
 		return false;
 
-	bool own_txn = false;
-	if (!sql_in_transaction())
-	{
-		if (!sql_begin_transaction())
-			return false;
-		own_txn = true;
-	}
-
 	int container_db_id = container->db_item_id;
 
 	// verify container still exists in database (may have been deleted by full save)
@@ -2165,7 +2157,6 @@ static bool resave_container_contents(int pid, P_obj container)
 	if (!check_result)
 	{
 		container->db_item_id = 0;
-		if (own_txn) sql_rollback();
 		return false;
 	}
 	MYSQL_ROW row    = mysql_fetch_row(check_result);
@@ -2174,8 +2165,15 @@ static bool resave_container_contents(int pid, P_obj container)
 	if (!exists)
 	{
 		container->db_item_id = 0;
-		if (own_txn) sql_rollback();
 		return false;
+	}
+
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
 	}
 
 	// delete old contents
@@ -4668,20 +4666,19 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 	if (!DB || !acc || !acc->acct_name)
 		return false;
 
+	char *esc_name = sql_escape_string(acc->acct_name);
+	if (!esc_name)
+		return false;
+
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
 		if (!sql_begin_transaction())
+		{
+			free(esc_name);
 			return false;
+		}
 		own_txn = true;
-	}
-
-	char *esc_name = sql_escape_string(acc->acct_name);
-	if (!esc_name)
-	{
-		if (own_txn)
-			sql_rollback();
-		return false;
 	}
 
 	for (struct acct_chars *ch = acc->acct_character_list; ch; ch = ch->next)
@@ -5942,30 +5939,24 @@ bool sql_delete_private_chest(int chest_id)
 	if (!DB || chest_id <= 0)
 		return false;
 
+	char query[256];
+	snprintf(query, sizeof(query), "SELECT is_public FROM private_chests WHERE id=%d", chest_id);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+
+	MYSQL_ROW row = mysql_fetch_row(result);
+	bool is_private = (row && atoi(row[0]) == 0);
+	mysql_free_result(result);
+	if (!is_private)
+		return false;
+
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
 		if (!sql_begin_transaction())
 			return false;
 		own_txn = true;
-	}
-
-	char query[256];
-	snprintf(query, sizeof(query), "SELECT is_public FROM private_chests WHERE id=%d", chest_id);
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-	{
-		if (own_txn) sql_rollback();
-		return false;
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(result);
-	bool is_private = (row && atoi(row[0]) == 0);
-	mysql_free_result(result);
-	if (!is_private)
-	{
-		if (own_txn) sql_rollback();
-		return false;
 	}
 
 	snprintf(query, sizeof(query), "DELETE FROM locker_items WHERE chest_id=%d", chest_id);
@@ -6711,20 +6702,16 @@ bool sql_save_account_ips(const char *account_name, struct acct_ip *ips)
 	if (!DB || !account_name)
 		return false;
 
+	char *escaped_name = sql_escape_string(account_name);
+	if (!escaped_name)
+		return false;
+
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
 		if (!sql_begin_transaction())
 			return false;
 		own_txn = true;
-	}
-
-	char *escaped_name = sql_escape_string(account_name);
-	if (!escaped_name)
-	{
-		if (own_txn)
-			sql_rollback();
-		return false;
 	}
 
 	char del_query[256];
