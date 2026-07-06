@@ -832,6 +832,47 @@ CREATE TABLE IF NOT EXISTS ships (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Existing production dumps may have the older ships table; CREATE IF NOT EXISTS
+-- does not add columns, so add the runtime columns before indexing them.
+DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
+DELIMITER $$
+CREATE PROCEDURE add_ship_runtime_columns()
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'owner_pid') THEN
+        ALTER TABLE ships ADD COLUMN owner_pid INT UNSIGNED DEFAULT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_index') THEN
+        ALTER TABLE ships ADD COLUMN crew_index INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_skill') THEN
+        ALTER TABLE ships ADD COLUMN crew_sail_skill INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_skill') THEN
+        ALTER TABLE ships ADD COLUMN crew_guns_skill INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_skill') THEN
+        ALTER TABLE ships ADD COLUMN crew_rpar_skill INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_chief') THEN
+        ALTER TABLE ships ADD COLUMN crew_sail_chief INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_chief') THEN
+        ALTER TABLE ships ADD COLUMN crew_guns_chief INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_chief') THEN
+        ALTER TABLE ships ADD COLUMN crew_rpar_chief INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'maxspeed_bonus') THEN
+        ALTER TABLE ships ADD COLUMN maxspeed_bonus INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'capacity_bonus') THEN
+        ALTER TABLE ships ADD COLUMN capacity_bonus INT DEFAULT 0;
+    END IF;
+END$$
+DELIMITER ;
+CALL add_ship_runtime_columns();
+DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
+
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'ships' AND index_name = 'idx_ships_owner_pid');
 SET @sql = IF(@idx_exists = 0,
@@ -1792,6 +1833,47 @@ create table if not exists ships (
     created_at timestamp default current_timestamp,
     updated_at timestamp default current_timestamp on update current_timestamp
 ) engine=innodb;
+
+-- Existing production dumps may have the older ships table; CREATE IF NOT EXISTS
+-- does not add columns, so add the runtime columns before indexing them.
+DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
+DELIMITER $$
+CREATE PROCEDURE add_ship_runtime_columns()
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'owner_pid') THEN
+        ALTER TABLE ships ADD COLUMN owner_pid INT UNSIGNED DEFAULT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_index') THEN
+        ALTER TABLE ships ADD COLUMN crew_index INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_skill') THEN
+        ALTER TABLE ships ADD COLUMN crew_sail_skill INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_skill') THEN
+        ALTER TABLE ships ADD COLUMN crew_guns_skill INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_skill') THEN
+        ALTER TABLE ships ADD COLUMN crew_rpar_skill INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_chief') THEN
+        ALTER TABLE ships ADD COLUMN crew_sail_chief INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_chief') THEN
+        ALTER TABLE ships ADD COLUMN crew_guns_chief INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_chief') THEN
+        ALTER TABLE ships ADD COLUMN crew_rpar_chief INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'maxspeed_bonus') THEN
+        ALTER TABLE ships ADD COLUMN maxspeed_bonus INT DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'capacity_bonus') THEN
+        ALTER TABLE ships ADD COLUMN capacity_bonus INT DEFAULT 0;
+    END IF;
+END$$
+DELIMITER ;
+CALL add_ship_runtime_columns();
+DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
 
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'ships' AND index_name = 'idx_ships_owner_pid');
