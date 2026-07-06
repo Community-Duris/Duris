@@ -685,6 +685,7 @@ CREATE TABLE IF NOT EXISTS lockers (
 CREATE TABLE IF NOT EXISTS locker_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     locker_id INT UNSIGNED NOT NULL,
+    chest_id INT UNSIGNED DEFAULT NULL,
     vnum INT NOT NULL,
     container_id INT UNSIGNED DEFAULT NULL,
     quantity SMALLINT UNSIGNED DEFAULT 1,
@@ -692,6 +693,8 @@ CREATE TABLE IF NOT EXISTS locker_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    item_type TINYINT DEFAULT NULL,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -704,6 +707,11 @@ CREATE TABLE IF NOT EXISTS locker_items (
     short_descr VARCHAR(512) DEFAULT NULL,
     description TEXT DEFAULT NULL,
     action_descr TEXT DEFAULT NULL,
+    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
     item_material TINYINT DEFAULT NULL,
     obj_uid BIGINT UNSIGNED DEFAULT NULL,
     item_condition SMALLINT DEFAULT 100,
@@ -713,7 +721,6 @@ CREATE TABLE IF NOT EXISTS locker_items (
     INDEX idx_vnum (vnum),
     INDEX idx_obj_uid (obj_uid)
 );
-
 CREATE TABLE IF NOT EXISTS locker_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_id INT UNSIGNED NOT NULL,
@@ -1334,13 +1341,41 @@ DROP PROCEDURE IF EXISTS add_obj_uid_columns;
 
 CREATE TABLE IF NOT EXISTS account_lockers (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    account_name VARCHAR(50) NOT NULL UNIQUE,
+    account_name VARCHAR(50) NOT NULL,
     racewar TINYINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
+    UNIQUE KEY uk_account_racewar (account_name, racewar),
     INDEX idx_account_name (account_name)
 );
+
+-- Existing installs created account_lockers.account_name as UNIQUE, which
+-- prevents separate good/evil racewar lockers for one account. Drop that
+-- single-column unique key if present, then enforce the intended racewar scope.
+SET @old_account_locker_unique = (
+    SELECT index_name
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'account_lockers'
+      AND non_unique = 0
+      AND index_name <> 'PRIMARY'
+    GROUP BY index_name
+    HAVING COUNT(*) = 1 AND SUM(column_name = 'account_name') = 1
+    LIMIT 1
+);
+SET @sql = IF(@old_account_locker_unique IS NOT NULL,
+    CONCAT('ALTER TABLE account_lockers DROP INDEX `', @old_account_locker_unique, '`'),
+    'DO 0');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE() AND table_name = 'account_lockers'
+    AND index_name = 'uk_account_racewar');
+SET @sql = IF(@idx_exists = 0,
+    'ALTER TABLE account_lockers ADD UNIQUE KEY uk_account_racewar (account_name, racewar)',
+    'DO 0');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS locker_chests (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1364,6 +1399,8 @@ CREATE TABLE IF NOT EXISTS account_locker_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    item_type TINYINT DEFAULT NULL,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -1376,6 +1413,11 @@ CREATE TABLE IF NOT EXISTS account_locker_items (
     short_descr VARCHAR(512) DEFAULT NULL,
     description TEXT DEFAULT NULL,
     action_descr TEXT DEFAULT NULL,
+    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
     item_material TINYINT DEFAULT NULL,
     obj_uid BIGINT UNSIGNED DEFAULT NULL,
     item_condition SMALLINT DEFAULT 100,
@@ -1385,7 +1427,6 @@ CREATE TABLE IF NOT EXISTS account_locker_items (
     INDEX idx_vnum (vnum),
     INDEX idx_obj_uid (obj_uid)
 );
-
 CREATE TABLE IF NOT EXISTS account_locker_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_id INT UNSIGNED NOT NULL,
@@ -1442,7 +1483,9 @@ CREATE TABLE IF NOT EXISTS locker_session_state (
 );
 
 
--- migrate char lockers to account lockers (non-destructive)
+-- migrate character lockers to racewar-scoped account locker rows (non-destructive)
+-- Runtime account lockers are represented in the legacy lockers table as:
+--   account.<account_name>.<racewar>.locker
 
 -- sync account_name
 UPDATE player_data pd
@@ -1450,7 +1493,8 @@ JOIN account_characters ac ON pd.pid = ac.pid
 SET pd.account_name = ac.account_name
 WHERE pd.account_name IS NULL OR pd.account_name = '';
 
--- create account lockers
+-- create account locker rows. Item copy happens later, after private_chests,
+-- chest_id, bitvectors, and item_material are guaranteed to exist.
 INSERT IGNORE INTO lockers (locker_name, racewar, race)
 SELECT DISTINCT CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker'), ac.racewar, 0
 FROM account_characters ac
@@ -1459,48 +1503,6 @@ WHERE ac.account_name IS NOT NULL AND ac.account_name != ''
   AND l.locker_name LIKE '%.locker'
   AND l.locker_name NOT LIKE 'guild.%'
   AND l.locker_name NOT LIKE 'account.%';
-
--- copy items
-INSERT INTO locker_items (locker_id, vnum, container_id, quantity, weight, cost, timer,
-    extra_flags, value0, value1, value2, value3, value4, value5, value6, value7,
-    name, short_descr, description, action_descr, obj_uid, item_condition)
-SELECT
-    acct_locker.id,
-    src.vnum,
-    NULL,
-    src.quantity, src.weight, src.cost, src.timer,
-    src.extra_flags, src.value0, src.value1, src.value2, src.value3,
-    src.value4, src.value5, src.value6, src.value7,
-    src.name, src.short_descr, src.description, src.action_descr, src.obj_uid, src.item_condition
-FROM locker_items src
-JOIN lockers char_locker ON src.locker_id = char_locker.id
-JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
-WHERE char_locker.locker_name LIKE '%.locker'
-  AND char_locker.locker_name NOT LIKE 'guild.%'
-  AND char_locker.locker_name NOT LIKE 'account.%'
-  AND src.vnum != 173
-  AND (src.obj_uid IS NULL OR src.obj_uid NOT IN (
-      SELECT obj_uid FROM locker_items WHERE locker_id = acct_locker.id AND obj_uid IS NOT NULL
-  ));
-
--- copy affects
-INSERT INTO locker_item_affects (item_id, location, modifier)
-SELECT new_item.id, lia.location, lia.modifier
-FROM locker_item_affects lia
-JOIN locker_items old_item ON lia.item_id = old_item.id
-JOIN lockers char_locker ON old_item.locker_id = char_locker.id
-JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
-JOIN locker_items new_item ON old_item.obj_uid = new_item.obj_uid AND new_item.locker_id = acct_locker.id
-WHERE char_locker.locker_name LIKE '%.locker'
-  AND char_locker.locker_name NOT LIKE 'guild.%'
-  AND char_locker.locker_name NOT LIKE 'account.%'
-  AND old_item.obj_uid IS NOT NULL
-  AND NOT EXISTS (
-      SELECT 1 FROM locker_item_affects WHERE item_id = new_item.id AND location = lia.location
-  );
-
 
 -- account banks
 
@@ -1658,6 +1660,7 @@ CREATE TABLE IF NOT EXISTS lockers (
 CREATE TABLE IF NOT EXISTS locker_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     locker_id INT UNSIGNED NOT NULL,
+    chest_id INT UNSIGNED DEFAULT NULL,
     vnum INT NOT NULL,
     container_id INT UNSIGNED DEFAULT NULL,
     quantity SMALLINT UNSIGNED DEFAULT 1,
@@ -1665,6 +1668,8 @@ CREATE TABLE IF NOT EXISTS locker_items (
     cost INT DEFAULT 0,
     timer INT DEFAULT -1,
     extra_flags BIGINT UNSIGNED DEFAULT 0,
+    item_type TINYINT DEFAULT NULL,
+    wear_flags INT DEFAULT NULL,
     value0 INT DEFAULT 0,
     value1 INT DEFAULT 0,
     value2 INT DEFAULT 0,
@@ -1677,13 +1682,20 @@ CREATE TABLE IF NOT EXISTS locker_items (
     short_descr VARCHAR(512) DEFAULT NULL,
     description TEXT DEFAULT NULL,
     action_descr TEXT DEFAULT NULL,
-    unique_id INT UNSIGNED DEFAULT NULL,
+    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
+    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
+    item_material TINYINT DEFAULT NULL,
+    obj_uid BIGINT UNSIGNED DEFAULT NULL,
+    item_condition SMALLINT DEFAULT 100,
     FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
     FOREIGN KEY (container_id) REFERENCES locker_items(id) ON DELETE CASCADE,
     INDEX idx_locker_id (locker_id),
-    INDEX idx_vnum (vnum)
+    INDEX idx_vnum (vnum),
+    INDEX idx_obj_uid (obj_uid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS locker_item_affects (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     item_id INT UNSIGNED NOT NULL,
@@ -4099,6 +4111,111 @@ SET @sql = IF(@col_exists = 0,
     'ALTER TABLE account_locker_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
     'SELECT "item_material already exists on account_locker_items"');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+
+
+-- Copy legacy character locker contents into account.<account>.<racewar>.locker
+-- rows after all locker item columns and public chest rows exist. This is
+-- idempotent: rows with matching obj_uid (or a conservative NULL-uid fallback)
+-- are not copied again, and a temp map restores nested container links/metadata.
+DROP TABLE IF EXISTS _locker_item_map;
+CREATE TABLE _locker_item_map (
+    old_id INT UNSIGNED NOT NULL,
+    new_id INT UNSIGNED NOT NULL,
+    old_container_id INT UNSIGNED DEFAULT NULL,
+    PRIMARY KEY (old_id),
+    INDEX idx_new_id (new_id),
+    INDEX idx_old_container (old_container_id)
+);
+
+INSERT INTO locker_items (locker_id, chest_id, vnum, container_id, quantity, weight, cost, timer,
+    extra_flags, item_type, wear_flags, value0, value1, value2, value3, value4, value5, value6, value7,
+    name, short_descr, description, action_descr,
+    bitvector1, bitvector2, bitvector3, bitvector4, bitvector5,
+    item_material, obj_uid, item_condition)
+SELECT
+    acct_locker.id,
+    pc.id,
+    src.vnum,
+    NULL,
+    src.quantity, src.weight, src.cost, src.timer,
+    src.extra_flags, src.item_type, src.wear_flags,
+    src.value0, src.value1, src.value2, src.value3,
+    src.value4, src.value5, src.value6, src.value7,
+    src.name, src.short_descr, src.description, src.action_descr,
+    src.bitvector1, src.bitvector2, src.bitvector3, src.bitvector4, src.bitvector5,
+    src.item_material, src.obj_uid, src.item_condition
+FROM locker_items src
+JOIN lockers char_locker ON src.locker_id = char_locker.id
+JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
+JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'public'
+WHERE char_locker.locker_name LIKE '%.locker'
+  AND char_locker.locker_name NOT LIKE 'guild.%'
+  AND char_locker.locker_name NOT LIKE 'account.%'
+  AND src.vnum != 173
+  AND NOT EXISTS (
+      SELECT 1
+      FROM locker_items existing
+      WHERE existing.locker_id = acct_locker.id
+        AND existing.chest_id = pc.id
+        AND (
+            (src.obj_uid IS NOT NULL AND existing.obj_uid = src.obj_uid)
+            OR (src.obj_uid IS NULL AND existing.obj_uid IS NULL
+                AND existing.vnum = src.vnum
+                AND COALESCE(existing.short_descr, '') = COALESCE(src.short_descr, ''))
+        )
+  );
+
+INSERT INTO _locker_item_map (old_id, new_id, old_container_id)
+SELECT src.id, MIN(new_item.id), src.container_id
+FROM locker_items src
+JOIN lockers char_locker ON src.locker_id = char_locker.id
+JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
+JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
+JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'public'
+JOIN locker_items new_item ON new_item.locker_id = acct_locker.id
+    AND new_item.chest_id = pc.id
+    AND new_item.vnum = src.vnum
+    AND (
+        (src.obj_uid IS NOT NULL AND new_item.obj_uid = src.obj_uid)
+        OR (src.obj_uid IS NULL AND new_item.obj_uid IS NULL
+            AND COALESCE(new_item.short_descr, '') = COALESCE(src.short_descr, ''))
+    )
+WHERE char_locker.locker_name LIKE '%.locker'
+  AND char_locker.locker_name NOT LIKE 'guild.%'
+  AND char_locker.locker_name NOT LIKE 'account.%'
+  AND src.vnum != 173
+GROUP BY src.id, src.container_id
+ON DUPLICATE KEY UPDATE new_id = VALUES(new_id), old_container_id = VALUES(old_container_id);
+
+UPDATE locker_items new_item
+JOIN _locker_item_map m ON m.new_id = new_item.id
+JOIN _locker_item_map container_map ON container_map.old_id = m.old_container_id
+SET new_item.container_id = container_map.new_id
+WHERE m.old_container_id IS NOT NULL;
+
+INSERT INTO locker_item_affects (item_id, location, modifier)
+SELECT m.new_id, lia.location, lia.modifier
+FROM locker_item_affects lia
+JOIN _locker_item_map m ON m.old_id = lia.item_id
+WHERE NOT EXISTS (
+    SELECT 1 FROM locker_item_affects existing
+    WHERE existing.item_id = m.new_id AND existing.location = lia.location
+);
+
+INSERT INTO locker_item_extra_descr (item_id, keyword, description)
+SELECT m.new_id, lied.keyword, lied.description
+FROM locker_item_extra_descr lied
+JOIN _locker_item_map m ON m.old_id = lied.item_id
+WHERE NOT EXISTS (
+    SELECT 1 FROM locker_item_extra_descr existing
+    WHERE existing.item_id = m.new_id
+      AND existing.keyword = lied.keyword
+      AND COALESCE(existing.description, '') = COALESCE(lied.description, '')
+);
+
+DROP TABLE IF EXISTS _locker_item_map;
 
 -- ============================================================================
 -- FILE: schema_migration_v21_player_item_material.sql
