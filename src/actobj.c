@@ -593,7 +593,7 @@ static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_ob
 		}
 	}
 
-	if (!IS_TRUSTED(ch))
+	if (!IS_TRUSTED(ch) && corpse_flag)
 	{
 		CharWait(ch, PULSE_VIOLENCE);
 	}
@@ -824,7 +824,21 @@ static bool do_get_finalize_container_item_or_reject(P_char ch, P_char hood, P_o
 }
 
 
-static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, bool source_is_local, bool &fail, const char *invisible_tag, const char *too_heavy_tag, const char *carry_tag, const char *reject_tag, const char *post_tag)
+static bool do_get_try_container_item(P_char ch,
+                                      P_char hood,
+                                      P_obj  s_obj,
+                                      P_obj  o_obj,
+                                      int   &total,
+                                      bool  &found,
+                                      bool   corpse_flag,
+                                      bool   source_is_local,
+                                      bool  &stop_bulk,
+                                      bool  &fail,
+                                      const char *invisible_tag,
+                                      const char *too_heavy_tag,
+                                      const char *carry_tag,
+                                      const char *reject_tag,
+                                      const char *post_tag)
 {
 	const bool local_container = source_is_local;
 	P_char rider = NULL;
@@ -872,6 +886,7 @@ static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj
 		      local_container ? 1 : 0);
 		send_to_char("You can't carry any more.\r\n", ch);
 		fail = TRUE;
+		stop_bulk = TRUE;
 		return FALSE;
 	}
 
@@ -1006,7 +1021,7 @@ void do_get(P_char ch, char *argument, int cmd)
 {
 	P_char hood = NULL, owner = NULL, rider;
 	P_obj  s_obj = NULL, o_obj = NULL, next_obj;
-	bool   found = FALSE, fail = FALSE, corpse_flag = FALSE, alldot = FALSE, carried;
+	bool   found = FALSE, fail = FALSE, corpse_flag = FALSE, alldot = FALSE, carried, stop_bulk = FALSE;
 	char   Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 	char   Gbuf4[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
 	char   arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
@@ -1409,6 +1424,7 @@ fail = TRUE;
 				      on_front_line(ch) ? 1 : 0,
 				      s_obj->contains ? "yes" : "no");
 
+				bool stop_bulk = FALSE;
 				for (o_obj = s_obj->contains; o_obj; o_obj = next_obj)
 				{
 					if (container_safety-- <= 0)
@@ -1439,24 +1455,20 @@ fail = TRUE;
 						continue;
 					}
 
-					logit(LOG_DEBUG,
-					      "GETDBG[get-all iter]: ch=%s room=%d container=%s [%d] item=%s [%d] uid=%lu wt=%d carry_n=%d carry_w=%d can_n=%d can_w=%d take=%d cansee=%d iscorpse=%d local=%d",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      s_obj->short_description ? s_obj->short_description : "(none)",
-					      OBJ_VNUM(s_obj),
-					      o_obj->short_description ? o_obj->short_description : "(null)",
-					      OBJ_VNUM(o_obj),
-					      o_obj->obj_uid,
-					      GET_OBJ_WEIGHT(o_obj),
-					      IS_CARRYING_N(ch),
-					      IS_CARRYING_W(ch, rider),
-					      CAN_CARRY_N(ch),
-					      CAN_CARRY_W(ch),
-					      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
-					      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
-					      o_obj->type == ITEM_CORPSE ? 1 : 0,
-					      (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj)) ? 1 : 0);
+					if (alldot && Gbuf2[0] && !isname(Gbuf2, o_obj->name))
+					{
+						logit(LOG_DEBUG,
+						      "GETDBG[get-container-skip:filter]: ch=%s room=%d container=%s [%d] item=%s [%d] filter='%s' name='%s'",
+						      GET_NAME(ch),
+						      world[ch->in_room].number,
+						      s_obj->short_description ? s_obj->short_description : "(none)",
+						      OBJ_VNUM(s_obj),
+						      o_obj->short_description ? o_obj->short_description : "(null)",
+						      OBJ_VNUM(o_obj),
+						      Gbuf2,
+						      o_obj->name ? o_obj->name : "(null)");
+						continue;
+					}
 
 					(void)do_get_try_container_item(ch,
 					                              hood,
@@ -1466,12 +1478,15 @@ fail = TRUE;
 					                              found,
 					                              corpse_flag,
 					                              carried,
+					                              stop_bulk,
 					                              fail,
 					                              "GETDBG[get-all reject:invisible]",
 					                              "GETDBG[get-all reject:too-heavy]",
 					                              "GETDBG[get-all reject:carry-limit]",
 					                              "GETDBG[get-all reject:not-takeable]",
 					                              "GETDBG[get-container-post]");
+					if (stop_bulk)
+						break;
 				}
 
 				return;
@@ -1539,6 +1554,7 @@ fail = TRUE;
 					                              found,
 					                              corpse_flag,
 					                              carried,
+					                              stop_bulk,
 					                              fail,
 					                              "GETDBG[get-container-single reject:invisible]",
 					                              "GETDBG[get-container-single reject:too-heavy]",
