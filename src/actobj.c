@@ -838,7 +838,8 @@ static bool do_get_try_container_item(P_char ch,
                                       const char *too_heavy_tag,
                                       const char *carry_tag,
                                       const char *reject_tag,
-                                      const char *post_tag)
+                                      const char *post_tag,
+                                      bool        report_carry_limit)
 {
 	const bool local_container = source_is_local;
 	P_char rider = NULL;
@@ -864,7 +865,7 @@ static bool do_get_try_container_item(P_char ch,
 		return FALSE;
 	}
 
-	if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) >= LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
+	if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch))
 	{
 		if (((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch)) || local_container)
 		{
@@ -884,7 +885,8 @@ static bool do_get_try_container_item(P_char ch,
 		      s_obj->short_description ? s_obj->short_description : "(none)",
 		      OBJ_VNUM(s_obj),
 		      local_container ? 1 : 0);
-		send_to_char("You can't carry any more.\r\n", ch);
+		if (report_carry_limit)
+			send_to_char("You can't carry any more.\r\n", ch);
 		fail = TRUE;
 		stop_bulk = TRUE;
 		return FALSE;
@@ -902,8 +904,10 @@ static bool do_get_try_container_item(P_char ch,
 	      s_obj->short_description ? s_obj->short_description : "(none)",
 	      OBJ_VNUM(s_obj),
 	      local_container ? 1 : 0);
-	send_to_char("You can't carry any more.\r\n", ch);
+	if (report_carry_limit)
+		send_to_char("You can't carry any more.\r\n", ch);
 	fail = TRUE;
+	stop_bulk = TRUE;
 	return FALSE;
 }
 
@@ -1484,10 +1488,19 @@ fail = TRUE;
 					                              "GETDBG[get-all reject:too-heavy]",
 					                              "GETDBG[get-all reject:carry-limit]",
 					                              "GETDBG[get-all reject:not-takeable]",
-					                              "GETDBG[get-container-post]");
+					                              "GETDBG[get-container-post]",
+					                              FALSE);
 					if (stop_bulk)
 						break;
 				}
+
+				if (total > 1)
+				{
+					snprintf(Gbuf3, MAX_STRING_LENGTH, "You got %d items.\r\n", total);
+					send_to_char(Gbuf3, ch);
+				}
+				if (stop_bulk)
+					do_get_reject_carry_limit(ch, fail);
 
 				return;
 			}
@@ -1560,7 +1573,8 @@ fail = TRUE;
 					                              "GETDBG[get-container-single reject:too-heavy]",
 					                              "GETDBG[get-container-single reject:carry-limit]",
 					                              "GETDBG[get-container-single reject:not-takeable]",
-					                              "GETDBG[get-container-single-post]");
+					                              "GETDBG[get-container-single-post]",
+					                              TRUE);
 				}
 				else
 				{
