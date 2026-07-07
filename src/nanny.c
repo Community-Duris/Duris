@@ -3950,8 +3950,8 @@ void select_class(P_desc d, char *arg)
 	GET_ORIG_BIRTHPLACE(d->character) = home;
 
 	/* Krov: didn't get hometown choice either, roll the stats */
-	// STATE(d) = CON_BONUS1;
-	STATE(d) = CON_REROLL;
+	STATE(d) = CON_BONUS1;
+	//STATE(d) = CON_REROLL;
 	roll_basic_attributes(d->character, ROLL_NORMAL);
 	display_characteristics(d);
 
@@ -4064,12 +4064,12 @@ void select_alignment(P_desc d, char *arg)
 	GET_BIRTHPLACE(d->character)      = home;
 	GET_ORIG_BIRTHPLACE(d->character) = home;
 
-	STATE(d) = CON_REROLL;
+	STATE(d) = CON_BONUS1;
 	roll_basic_attributes(d->character, ROLL_NORMAL);
 	display_characteristics(d);
 	display_stats(d);
 	SEND_TO_Q(reroll, d);
-	SEND_TO_Q("Do you want to reroll this char (y/n) [y]:  ", d);
+	SEND_TO_Q("\r\nPress return to continue with adding stat bonuses.\r\n", d);
 }
 
 /* Krov: HOMETOWN connects now to REROLL */
@@ -4119,12 +4119,12 @@ void select_hometown(P_desc d, char *arg)
 	GET_BIRTHPLACE(d->character)      = home;
 	GET_ORIG_BIRTHPLACE(d->character) = home;
 
-	STATE(d) = CON_REROLL;
+	STATE(d) = CON_BONUS1;
 	roll_basic_attributes(d->character, ROLL_NORMAL);
 	display_characteristics(d);
 	display_stats(d);
 	SEND_TO_Q(reroll, d);
-	SEND_TO_Q("Do you want to reroll this char (y/n) [y]:  ", d);
+	SEND_TO_Q("\r\nPress return to continue with adding stat bonuses.\r\n", d);
 }
 
 void select_keepchar(P_desc d, char *arg)
