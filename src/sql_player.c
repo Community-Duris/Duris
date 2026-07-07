@@ -4624,9 +4624,9 @@ bool sql_save_account(struct acct_entry *acc)
 	         sizeof(query),
 	         "insert into accounts (account_name, email, password, confirmation_code, "
 	         "confirmed, confirmation_sent, blocked, last_login, last_good_char, last_evil_char, "
-	         "flags1, flags2, flags3, flags4) values ('%s', '%s', '%s', '%s', %d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)), %lu, %lu, %lu, %lu)"
+	         "flags1, flags2, flags3, flags4) values ('%s', '%s', '%s', '%s', %d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)), FROM_UNIXTIME(NULLIF(%ld,0)), %lu, %lu, %lu, %lu) "
 	         "on duplicate key update email='%s', password='%s', confirmation_code='%s', "
-	         "confirmed=%d, confirmation_sent=%d, blocked=%d, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), last_good_char=FROM_UNIXTIME(NULLIF(%ld,0)), last_evil_char=FROM_UNIXTIME(NULLIF(%ld,0)),"
+	         "confirmed=%d, confirmation_sent=%d, blocked=%d, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), last_good_char=FROM_UNIXTIME(NULLIF(%ld,0)), last_evil_char=FROM_UNIXTIME(NULLIF(%ld,0)), "
 	         "flags1=%lu, flags2=%lu, flags3=%lu, flags4=%lu",
 	         esc_name,
 	         esc_email,
@@ -4845,7 +4845,7 @@ struct acct_entry *sql_load_account(const char *name)
 
 	// load characters
 	sql_account_chars_query_failed = false;
-	acc->acct_character_list       = sql_load_account_characters(name);
+	acc->acct_character_list       = sql_load_account_characters(acc->acct_name ? acc->acct_name : name);
 	if (sql_account_chars_query_failed)
 	{
 		free_acct_ip_list(acc->acct_unique_ips);
@@ -4901,7 +4901,7 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
 	         "pd.level, pd.race, pd.m_class, pd.secondary_class, pd.last_room, pd.last_save "
 	         "from account_characters ac "
 	         "left join player_data pd on ac.pid = pd.pid "
-	         "where ac.account_name='%s' and ac.deleted_at is null",
+	         "where LOWER(ac.account_name)=LOWER('%s') and ac.deleted_at is null",
 	         esc_name);
 	free(esc_name);
 

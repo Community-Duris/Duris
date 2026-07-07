@@ -381,7 +381,7 @@ int load_env_file(void)
 		if (eq)
 		{
 			*eq = '\0';
-			setenv(line, eq + 1, 1);
+			setenv(line, eq + 1, 0);
 			count++;
 		}
 	}
