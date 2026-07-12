@@ -69,3 +69,6 @@ tests/db_write/schema.sql
 
 # Docker build files — not part of production PR
 /Dockerfile
+
+# Hermes analysis/session artifacts — never track in this repository
+.hermes/

@@ -35,6 +35,7 @@
 #include "grapple.h"
 #include "guildhall.h"
 #include "justice.h"
+#include "locker_async.h"
 #include "makeexit.h"
 #include "map.h"
 #include "mm.h"
@@ -1388,6 +1389,19 @@ void command_interpreter(P_char ch, char *argument)
 	/* happy little hack to make all 'say' procs work */
 	if (cmd == CMD_SAY2)
 		cmd = CMD_SAY;
+
+	/* Async locker snapshot: block only this player's object-manipulation
+	 * commands while their locker is DIRTY (pre-snapshot / pre-seal). */
+	if (IS_PC(ch) && locker_async_player_obj_locked(ch))
+	{
+		if (cmd == CMD_GET || cmd == CMD_TAKE || cmd == CMD_DROP || cmd == CMD_PUT ||
+		    cmd == CMD_GIVE || cmd == CMD_WEAR || cmd == CMD_REMOVE || cmd == CMD_EQUIPMENT ||
+		    cmd == CMD_OPEN || cmd == CMD_CLOSE || cmd == CMD_GRANT)
+		{
+			send_to_char("Your belongings are being secured for storage. Please wait a moment.\r\n", ch);
+			return;
+		}
+	}
 
 	if (IS_PC(ch) && IS_SET(ch->specials.act, PLR_AFK))
 	{

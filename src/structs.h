@@ -473,8 +473,9 @@ struct edit_data
 #define INNATE_INFERNAL_FURY         174
 #define INNATE_OPHIDIAN_EYES         175
 #define INNATE_WARDING_FAITH         176
+#define INNATE_ARCANE_RUDIMENTS       177
 
-#define LAST_INNATE INNATE_WARDING_FAITH // LAST means last, not last + 1 or whatever
+#define LAST_INNATE INNATE_ARCANE_RUDIMENTS // LAST means last, not last + 1 or whatever
 
 struct extra_descr_data
 {

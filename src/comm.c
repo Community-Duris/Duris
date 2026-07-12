@@ -70,6 +70,7 @@
 #include "ws_handlers.h"
 #include "latency_trace.h"
 #include "persistence_queue.h"
+#include "locker_async.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
 #endif
@@ -552,6 +553,7 @@ void run_the_game(int port, int sslport)
 		persistence_start_item_event_worker();
 		persistence_start_scalar_event_worker();
 		persistence_start_large_event_worker();
+		locker_async_init();
 	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
@@ -576,9 +578,13 @@ void run_the_game(int port, int sslport)
 #endif
 
 	game_loop(port, sslport);
-	persistence_stop_scalar_event_worker();
-	persistence_stop_large_event_worker();
-	persistence_stop_item_event_worker();
+	if (!_pwipe)
+	{
+		persistence_stop_scalar_event_worker();
+		persistence_stop_large_event_worker();
+		persistence_stop_item_event_worker();
+		locker_async_shutdown();
+	}
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
 	// Look for dropped artis and remove them from the next boot.
@@ -1175,6 +1181,7 @@ void game_loop(int port, int sslport)
 			gmcp_flush_dirty_ship_contacts();
 			gmcp_flush_dirty_ship_info();
 			flush_pending_ship_saves();
+			locker_async_pulse();
 			latency_trace_record("gmcp_flush", (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC), pulse);
 		}
 
@@ -1369,6 +1376,7 @@ void game_loop(int port, int sslport)
 	{
 		save_dirty_shopkeepers();
 		flush_pending_ship_saves();
+		locker_async_drain(2000);
 
 		if (no_ferries == 0)
 		{
@@ -1383,7 +1391,7 @@ void game_loop(int port, int sslport)
 	}
 
 	// skip character extraction during copyover - we need them intact
-	if (!_copyover)
+	if (!_copyover && !_pwipe)
 	{
 		persistence_flush_all_character_saves();
 		for (point = descriptor_list; point; point = point->next)
@@ -2419,6 +2427,9 @@ int find_color_entry(int c)
 	return i;
 }
 
+// LATENT: assumes callers pass a buffer of at least MAX_STRING_LENGTH;
+// no size parameter to enforce. Safe because all callers use prompt_buf
+// which is now MAX_STRING_LENGTH. Would need a size_t param to harden.
 void append_prompt(P_char ch, char *promptbuf)
 {
 	char   t_buf[512];
@@ -3632,6 +3643,33 @@ void act_convert(char *buf, const char *str, P_char ch, P_char to, P_obj obj, vo
  q: obj short description w/o article (a/an/the) ("lime-green totem")
  a: obj article (a/an/the) ("the")
  */
+
+void escape_act_dollars(char *dst, size_t dst_size, const char *src)
+{
+	if (!dst || dst_size == 0)
+		return;
+	if (!src)
+	{
+		dst[0] = '\0';
+		return;
+	}
+	size_t di = 0;
+	for (size_t si = 0; src[si] && di < dst_size - 2; si++)
+	{
+		if (src[si] == '$')
+		{
+			dst[di++] = '$';
+			dst[di++] = '$';
+		}
+		else
+			dst[di++] = src[si];
+	}
+	dst[di] = '\0';
+}
+
+// LATENT: no output buffer bounds checking on 'buf'/'tbuf' — safe only
+// because format strings are code constants, not player-controlled.
+// Would need snprintf-style length tracking to harden.
 void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type)
 {
 	P_char to, vict;

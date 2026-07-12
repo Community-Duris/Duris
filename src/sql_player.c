@@ -222,8 +222,10 @@ bool sql_commit(void)
 	if (!sql_trace_exec("sql_commit", "COMMIT", 6, false, false))
 	{
 		logit(LOG_DEBUG, "sql_commit: failed: %s", mysql_error(DB));
-		in_transaction = false;
-		sql_clear_account_character_cache_sync();
+		/* Keep transaction ownership and pending cache state intact so the
+		 * caller can attempt an explicit rollback.  A failed COMMIT leaves
+		 * server-side durability uncertain; claiming the transaction ended
+		 * here would make that recovery path impossible. */
 		return false;
 	}
 
@@ -5974,17 +5976,10 @@ bool sql_delete_private_chest(int chest_id)
 		return false;
 
 	char query[256];
-	snprintf(query, sizeof(query), "SELECT is_public FROM private_chests WHERE id=%d", chest_id);
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return false;
-
-	MYSQL_ROW row = mysql_fetch_row(result);
-	bool is_private = (row && atoi(row[0]) == 0);
-	mysql_free_result(result);
-	if (!is_private)
-		return false;
-
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row = NULL;
+	bool is_private = false;
+	bool has_items = false;
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
@@ -5993,26 +5988,39 @@ bool sql_delete_private_chest(int chest_id)
 		own_txn = true;
 	}
 
-	snprintf(query, sizeof(query), "DELETE FROM locker_items WHERE chest_id=%d", chest_id);
-	if (!sql_run_query(query))
-	{
-		if (own_txn) sql_rollback();
-		return false;
-	}
+	/* Lock the parent first. InnoDB foreign-key inserts must wait on this
+	 * lock, so the emptiness check and delete cannot race a child insert. */
+	snprintf(query, sizeof(query), "SELECT is_public FROM private_chests WHERE id=%d FOR UPDATE", chest_id);
+	result = db_query("%s", query);
+	if (!result)
+		goto fail;
+	row = mysql_fetch_row(result);
+	is_private = row && atoi(row[0]) == 0;
+	mysql_free_result(result);
+	if (!is_private)
+		goto fail;
+
+	snprintf(query, sizeof(query), "SELECT id FROM locker_items WHERE chest_id=%d FOR UPDATE", chest_id);
+	result = db_query("%s", query);
+	if (!result)
+		goto fail;
+	has_items = mysql_fetch_row(result) != NULL;
+	mysql_free_result(result);
+	if (has_items)
+		goto fail;
 
 	snprintf(query, sizeof(query), "DELETE FROM private_chests WHERE id=%d AND is_public=0", chest_id);
-	if (!sql_run_query(query))
-	{
-		if (own_txn) sql_rollback();
-		return false;
-	}
+	if (!sql_run_query(query) || mysql_affected_rows(DB) != 1)
+		goto fail;
 
-	if (own_txn)
-	{
-		if (!sql_commit()) { sql_rollback(); return false; }
-	}
-
+	if (own_txn && !sql_commit())
+		goto fail;
 	return true;
+
+fail:
+	if (own_txn)
+		sql_rollback();
+	return false;
 }
 
 int sql_get_chest_id(int locker_id, const char *chest_name)
@@ -6054,6 +6062,8 @@ bool sql_verify_chest_password(int chest_id, const char *password)
 	else
 	{
 		char *esc_pass = sql_escape_string(password);
+		if (!esc_pass)
+			return false;
 		snprintf(query, sizeof(query), "SELECT id FROM private_chests WHERE id=%d AND password_hash=SHA2('%s', 256)", chest_id, esc_pass);
 		free(esc_pass);
 	}
@@ -9870,15 +9880,23 @@ bool sql_save_ship(P_ship ship)
 	}
 	memset(batch, 0, batchSize);
 
-	// start transaction
-	if (!sql_begin_transaction())
+	/* Join an existing aggregate transaction when the caller owns one
+	 * (for example shutdown_ships()).  Starting a nested transaction would
+	 * fail and make an otherwise valid ship save look like a persistence
+	 * error.  Only the transaction owner may commit or roll back it. */
+	bool own_transaction = false;
+	if (!sql_in_transaction())
 	{
-		logit(LOG_DEBUG, "sql_save_ship: failed to start transaction");
-		free(batch);
-		free(esc_owner);
-		if (esc_name)
-			free(esc_name);
-		return false;
+		if (!sql_begin_transaction())
+		{
+			logit(LOG_DEBUG, "sql_save_ship: failed to start transaction");
+			free(batch);
+			free(esc_owner);
+			if (esc_name)
+				free(esc_name);
+			return false;
+		}
+		own_transaction = true;
 	}
 
 	if (ship->db_id == -1)
@@ -9906,7 +9924,8 @@ bool sql_save_ship(P_ship ship)
 			free(esc_owner);
 			if (esc_name)
 				free(esc_name);
-			sql_rollback();
+			if (own_transaction)
+				sql_rollback();
 			return false;
 		}
 
@@ -9922,7 +9941,9 @@ bool sql_save_ship(P_ship ship)
 		{
 			sql_player_error("sql_save_ship_2", query);
 			free(batch);
-			sql_rollback();
+			if (own_transaction)
+				sql_rollback();
+			ship->db_id = -1;
 			return false;
 		}
 
@@ -9931,7 +9952,9 @@ bool sql_save_ship(P_ship ship)
 		{
 			free(batch);
 			mysql_free_result(result);
-			sql_rollback();
+			if (own_transaction)
+				sql_rollback();
+			ship->db_id = -1;
 			return false;
 		}
 
@@ -9943,8 +9966,9 @@ bool sql_save_ship(P_ship ship)
 	{
 		pos += snprintf(batch + pos,
 		                batchSize - pos,
-		                "update ships set ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu "
+		                "update ships set owner_name='%s', ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu "
 		                "where id=%d;",
+		                esc_owner,
 		                esc_name,
 		                ship->m_class,
 		                ship->frags,
@@ -9965,7 +9989,9 @@ bool sql_save_ship(P_ship ship)
 	{
 		sql_player_error("sql_save_ship_3", NULL);
 		free(batch);
-		sql_rollback();
+		if (own_transaction)
+			sql_rollback();
+		ship->db_id = -1;
 		return false;
 	}
 	
@@ -9975,7 +10001,9 @@ bool sql_save_ship(P_ship ship)
 		sql_player_error("sql_save_ship_4", batch);
 		free(batch);
 		sql_clear_results();
-		sql_rollback();
+		if (own_transaction)
+			sql_rollback();
+		ship->db_id = -1;
 		logit(LOG_DEBUG, "sql_save_ship: mysql_real_query failed for ship %d", ship->db_id);
 		return false;
 	}
@@ -9987,10 +10015,11 @@ bool sql_save_ship(P_ship ship)
 	}
 	sql_clear_results(); // need to clear all of the batch results
 
-	if (!sql_commit())
+	if (own_transaction && !sql_commit())
 	{
 		logit(LOG_DEBUG, "sql_save_ship: failed to commit for ship %d", ship->db_id);
-		sql_rollback();
+		if (sql_in_transaction())
+			sql_rollback();
 		return false;
 	}
 

@@ -1464,6 +1464,9 @@ void load_obj_to_newbies(P_char ch)
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		char keywords[MAX_STRING_LENGTH];
+		// LATENT: sprintf without bounds — safe because obj->name is bounded
+		// by MAX_INPUT_LENGTH and keywords[] is MAX_STRING_LENGTH. Use
+		// snprintf for defense-in-depth if refactoring.
 		sprintf(keywords, "%s newbie", obj->name);
 		set_keywords(obj, keywords);
 	}

@@ -87,6 +87,10 @@ string wiki_help(string str)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return string();
+	}
 	MYSQL_ROW  row;
 
 	if (mysql_num_rows(res) < 1)
@@ -512,6 +516,10 @@ string wiki_help_single(string str)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return string();
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

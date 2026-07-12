@@ -114,6 +114,10 @@ int load_outposts()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -170,6 +174,10 @@ void show_outposts(P_char ch)
 		}
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return;
+		}
 
 		if (mysql_num_rows(res) < 1)
 		{
@@ -239,6 +247,10 @@ int get_current_outpost_hitpoints(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -263,6 +275,10 @@ P_Guild get_outpost_owner(Building *building)
 		return NULL;
 	}
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return NULL;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -287,6 +303,10 @@ int get_outpost_resources(Building *building, int type)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -314,6 +334,10 @@ int get_outpost_golems(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -339,6 +363,10 @@ int get_outpost_archers(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -364,6 +392,10 @@ int get_outpost_meurtriere(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -402,6 +434,10 @@ int get_guild_resources(int id, int type)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -959,6 +995,10 @@ void outpost_update_resources(P_char ch, int wood, int stone)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

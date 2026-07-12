@@ -973,6 +973,13 @@ void char_from_room(P_char ch)
 		return;
 	}
 
+	/* Give room hooks a chance to veto removal before room state changes. */
+	if (world[ch->in_room].funct)
+	{
+		if ((*world[ch->in_room].funct)(ch->in_room, ch, (-75), NULL))
+			return;
+	}
+
 	/* Mark room as dirty for GMCP updates (before removal) */
 	gmcp_mark_room_dirty(ch->in_room);
 
@@ -1031,12 +1038,6 @@ void char_from_room(P_char ch)
   if (IS_BEING_SHADOWED(ch))
     ch->specials.shadow.room_last_in = ch->in_room;
 #endif
-
-	/* GLD - as well as a callback on entering, also make a callback when exiting... */
-	/* while this doesn't check the return value, it does allow some rooms (such as
-	   storage lockers) to close things out properly */
-	if (world[ch->in_room].funct)
-		(*world[ch->in_room].funct)(ch->in_room, ch, (-75), NULL);
 
 	ch->specials.was_in_room = world[ch->in_room].number;
 	ch->in_room              = NOWHERE;
@@ -1672,6 +1673,11 @@ void obj_to_char(P_obj object, P_char ch)
 
 	if (IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
+		// DEFERRED: use-after-free — extract_obj frees object, but callers in
+		// do_get/give/remove (actobj.c) still dereference the stale pointer.
+		// Setting object=NULL here only clears our local copy; the caller's
+		// pointer is passed by value. Fix requires returning a freed-status
+		// from obj_to_char/obj_to_room, touching hundreds of call sites.
 		if (ch->in_room)
 		{
 			snprintf(Gbuf, MAX_STRING_LENGTH, "&+LThe magic within %s &+Lfades causing it to crumble to dust.\r\n", object->short_description);

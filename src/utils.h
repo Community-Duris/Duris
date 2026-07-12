@@ -59,8 +59,8 @@
 	{                                                                                                                                                                                                  \
 		if (!((result) = (type *)__malloc(sizeof(type) * (num), (tag), __FILE__, __LINE__)))                                                                                                           \
 		{                                                                                                                                                                                              \
-			logit(LOG_EXIT, "__malloc returned null pointer");                                                                                                                                         \
-			raise(SIGSEGV);                                                                                                                                                                            \
+			panic_corruption_int("memory", "CREATE: __malloc returned null for type=%s num=%d tag=%s at %s:%d",                              \
+			                     #type, (int)(num), tag ? tag : "(null)", __FILE__, __LINE__);                                                                                                       \
 		}                                                                                                                                                                                              \
 	}
 //" This is here to clean up the coloring in nano.  Something wrong with the backslash and quotes causes bleeding
@@ -69,8 +69,8 @@
 	{                                                                                                                                                                                                  \
 		if (!((result) = (type *)__realloc((void *)(result), sizeof(type) * (num), __FILE__, __LINE__)))                                                                                               \
 		{                                                                                                                                                                                              \
-			logit(LOG_EXIT, "__realloc returned null pointer");                                                                                                                                        \
-			raise(SIGSEGV);                                                                                                                                                                            \
+			panic_corruption_int("memory", "RECREATE: __realloc returned null for type=%s num=%d at %s:%d",                             \
+			                     #type, (int)(num), __FILE__, __LINE__);                                                                                                                               \
 		}                                                                                                                                                                                              \
 	}
 //" This is here to clean up the coloring in nano.  Something wrong with the backslash and quotes causes bleeding
@@ -279,10 +279,10 @@ bool IS_OUTDOORS(int r);
 
 #define IS_PC(ch) (!IS_NPC((ch)))
 
-#define GET_PID(ch)         (!IS_PC(ch) ? raise(SIGSEGV) : (ch)->only.pc->pid)
-#define GET_RNUM(ch)        (!IS_NPC(ch) ? raise(SIGSEGV) : (ch)->only.npc->R_num)
-#define GET_VNUM(ch)        (!IS_NPC(ch) ? raise(SIGSEGV) : mob_index[(ch)->only.npc->R_num].virtual_number)
-#define NPC_SPEC(ch, index) (!IS_NPC(ch) ? raise(SIGSEGV) : (ch)->only.npc->spec[index])
+#define GET_PID(ch)         (!IS_PC(ch) ? panic_corruption_int("utils", "GET_PID called on NPC '%s' at %s:%d", GET_NAME(ch) ? GET_NAME(ch) : "(null)", __FILE__, __LINE__) : (ch)->only.pc->pid)
+#define GET_RNUM(ch)        (!IS_NPC(ch) ? panic_corruption_int("utils", "GET_RNUM called on PC '%s' at %s:%d", GET_NAME(ch) ? GET_NAME(ch) : "(null)", __FILE__, __LINE__) : (ch)->only.npc->R_num)
+#define GET_VNUM(ch)        (!IS_NPC(ch) ? panic_corruption_int("utils", "GET_VNUM called on PC '%s' at %s:%d", GET_NAME(ch) ? GET_NAME(ch) : "(null)", __FILE__, __LINE__) : mob_index[(ch)->only.npc->R_num].virtual_number)
+#define NPC_SPEC(ch, index) (!IS_NPC(ch) ? panic_corruption_int("utils", "NPC_SPEC called on PC '%s' at %s:%d", GET_NAME(ch) ? GET_NAME(ch) : "(null)", __FILE__, __LINE__) : (ch)->only.npc->spec[index])
 #define GET_ID(ch)          (IS_ALIVE(ch) ? (IS_NPC(ch) ? (mob_index[(ch)->only.npc->R_num].virtual_number) : ((ch)->only.pc->pid)) : -2)
 
 #define GET_IDNUM(ch) (ch->only.npc->idnum)
@@ -472,9 +472,9 @@ int race_size(int race);
 
 #define CAN_WEAR(obj, part) (IS_SET((obj)->wear_flags, part))
 
-#define OBJ_VNUM(obj)     (!obj ? raise(SIGSEGV) : obj_index[obj->R_num].virtual_number)
+#define OBJ_VNUM(obj)     (!obj ? panic_corruption_int("utils", "OBJ_VNUM called with NULL obj at %s:%d", __FILE__, __LINE__) : obj_index[obj->R_num].virtual_number)
 #define OBJ_SHORT(obj)    ((obj)->short_description)
-#define GET_OBJ_PROC(obj) (!obj ? raise(SIGSEGV) : obj_index[obj->R_num].func.obj)
+#define GET_OBJ_PROC(obj) (!obj ? panic_corruption_int("utils", "GET_OBJ_PROC called with NULL obj at %s:%d", __FILE__, __LINE__) : obj_index[obj->R_num].func.obj)
 
 #define OBJ_MAGIC(obj) (IS_SET(obj->extra2_flags, ITEM2_MAGIC))
 

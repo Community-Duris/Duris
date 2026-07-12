@@ -35,6 +35,10 @@ vector<whitelist_data> get_whitelist()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return whitelist;
+	}
 	while (MYSQL_ROW row = mysql_fetch_row(res))
 	{
 		whitelist.push_back(whitelist_data(atoi(row[0]), string(row[1]), string(row[2]), string(row[3]), string(row[4]), string(row[5])));

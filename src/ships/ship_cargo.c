@@ -120,6 +120,8 @@ int read_cargo()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res)
+		return FALSE;
 
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
@@ -227,6 +229,7 @@ int write_cargo()
 	if (own_txn && !sql_commit())
 	{
 		logit(LOG_DEBUG, "write_cargo(): commit failed");
+		sql_rollback();
 		return FALSE;
 	}
 	return TRUE;

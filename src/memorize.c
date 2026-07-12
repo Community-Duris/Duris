@@ -1089,7 +1089,7 @@ void handle_memorize(P_char ch)
 			if (memorized)
 			{
 #if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
-				if (book_class(ch) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
+				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
 				{
 					no_book = true;
 					continue;
@@ -1101,7 +1101,7 @@ void handle_memorize(P_char ch)
 			}
 			else
 #if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
-				if (book_class(ch) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
+				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
 					no_book = TRUE;
 			else
 #endif
@@ -1515,7 +1515,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 					         : (circle == 3) ? "rd"
 					                         : "th",
 					         skills[af->modifier].name,
-					         book_class(ch) ? (SpellInSpellBook(ch, af->modifier, (SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)) ? "" : "  [not in spell book]")
+					         book_class(ch) ? ((!has_innate(ch, INNATE_ARCANE_RUDIMENTS) && !(SpellInSpellBook(ch, af->modifier, (SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))) ? "  [not in spell book]" : "")
 					                        : "");
 				}
 			}
@@ -1639,7 +1639,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 			return;
 		}
 	}
-	else if (!sbook && book_class(ch))
+		else if (!sbook && book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS))
 	{
 		send_to_char("Sorry, but you haven't got that spell in any available spellbooks!\n", ch);
 		return;
@@ -1678,7 +1678,10 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			strcpy(Gbuf1, "$n opens $p and begins studying it intently.");
+			if (sbook)
+				strcpy(Gbuf1, "$n opens $p and begins studying it intently.");
+			else
+				strcpy(Gbuf1, "$n looks down at $s lap and begins studying it intently.");
 		}
 		act(Gbuf1, TRUE, ch, sbook, 0, TO_ROOM);
 		add_event(event_memorize, time / 2, ch, 0, 0, 0, &time, sizeof(time));

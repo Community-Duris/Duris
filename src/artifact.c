@@ -669,6 +669,10 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		return;
 	}
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 	if (mysql_num_rows(res) > 0)
 	{
 		if (!(row = mysql_fetch_row(res)))
@@ -995,6 +999,10 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 		return;
 	}
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 	// Since vnum is unique, num rows should be 0 or 1.
 	if (mysql_num_rows(res) < 1 || (row = mysql_fetch_row(res)) == NULL)
 	{
@@ -1092,6 +1100,10 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 		return;
 	}
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	// Since vnum is unique, num rows should be 0 or 1.
 	if (mysql_num_rows(res) < 1 || (row = mysql_fetch_row(res)) == NULL)
@@ -1154,6 +1166,10 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 		return FALSE;
 	}
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 	if (mysql_num_rows(res) > 0 && !(row = mysql_fetch_row(res)))
 	{
 		logit(LOG_ARTIFACT, "remove_owned_artifact_sql: failed to fetch row?!");
@@ -1284,6 +1300,10 @@ bool get_artifact_data_sql(int vnum, P_arti adata)
 		return FALSE;
 	}
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	// Non-buggy no row for arti.
 	if (mysql_num_rows(res) <= 0)
@@ -3343,6 +3363,10 @@ void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	}
 
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -3482,6 +3506,10 @@ void arti_fixit_sql(P_char ch)
 	}
 
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

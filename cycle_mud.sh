@@ -200,7 +200,14 @@ done
 
 if [ $RESULT == 55 ]; then
   echo "Wiping player data..."
-  ./Players/wipers/wipe_it_all
+  if [ ! -x "./Players/wipers/wipe_it_all" ]; then
+    echo "ERROR: required filesystem wipe artifact is missing or not executable" >&2
+    exit 1
+  fi
+  if ! ./Players/wipers/wipe_it_all; then
+    echo "ERROR: filesystem wipe failed; refusing to report pwipe success" >&2
+    exit 1
+  fi
   echo "Moving player-logs to backup.."
   if [ -d logs/player-log ]; then
     #LOGNAME=`date +%b%d-%H%M`

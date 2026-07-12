@@ -508,6 +508,79 @@ static bool sql_verify_boot_database(void)
 	MYSQL_RES *result = mysql_store_result(DB);
 	if (result)
 		mysql_free_result(result);
+
+	/* The asynchronous persistence workers require these tables and their
+	 * idempotency/index contract.  Fail at boot rather than allowing a worker
+	 * to silently divert every event to an unverified fallback path. */
+	const char *event_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns "
+		"WHERE table_schema=DATABASE() AND "
+		"((table_name='persistence_item_events' AND column_name IN "
+		"('id','ts_usec','event_type','item_uid','vnum','item','actor','actor_id','source','target','note','dedupe_key','created_at')) "
+		"OR (table_name='persistence_scalar_events' AND column_name IN "
+		"('id','event_type','event_key','boot_time','touched_at','zone_number','toucher_pid','group_size','epic_value','alignment_delta','dedupe_key','created_at')))";
+	result = db_query("%s", event_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: persistence event schema metadata query failed at boot: %s", mysql_error(DB));
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(result);
+	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
+	bool event_columns_ok = row && lengths && row[0] && atoi(row[0]) == 25;
+	mysql_free_result(result);
+	if (!event_columns_ok)
+	{
+		logit(LOG_STATUS, "FATAL: persistence event schema is incomplete at boot (expected 25 required columns).");
+		return false;
+	}
+
+	const char *event_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name, index_name "
+		"FROM information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='persistence_item_events' AND index_name IN "
+		"('PRIMARY','idx_item_uid_ts','idx_event_type_created','uq_item_dedupe')) "
+		"OR (table_name='persistence_scalar_events' AND index_name IN "
+		"('PRIMARY','idx_scalar_event_key','idx_scalar_zone_time','uq_scalar_dedupe')))) "
+		"AS required_indexes";
+	result = db_query("%s", event_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: persistence event index metadata query failed at boot: %s", mysql_error(DB));
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	bool event_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 8;
+	mysql_free_result(result);
+	if (!event_indexes_ok)
+	{
+		logit(LOG_STATUS, "FATAL: persistence event schema indexes are incomplete at boot (expected 8 entries).");
+		return false;
+	}
+
+	/* Auction settlement uses explicit transactions and therefore requires
+	 * transactional storage.  A legacy MyISAM table can make rollback appear
+	 * to succeed while leaving pickup/refund state partially committed. */
+	const char *auction_engine_probe =
+		"SELECT COUNT(DISTINCT table_name) FROM information_schema.tables "
+		"WHERE table_schema=DATABASE() AND engine='InnoDB' AND table_name IN "
+		"('auction_bid_history','auction_item_pickups','auction_money_pickups','auctions')";
+	result = db_query("%s", auction_engine_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: auction storage-engine metadata query failed at boot: %s", mysql_error(DB));
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	bool auction_engines_ok = row && lengths && row[0] && atoi(row[0]) == 4;
+	mysql_free_result(result);
+	if (!auction_engines_ok)
+	{
+		logit(LOG_STATUS, "FATAL: transactional auction tables are not all InnoDB at boot (expected 4).");
+		return false;
+	}
 	return true;
 }
 
@@ -2407,11 +2480,192 @@ bool sql_clear_zone_trophy()
 	return TRUE;
 }
 
+/* Verify every runtime table and column referenced by sql_pwipe() before the
+ * first destructive statement.  This must describe final runtime schema, not
+ * migration-only helper tables. */
+bool sql_verify_pwipe_manifest(void)
+{
+	static const char *const tables[] = {
+		"account_characters", "account_locker_access", "account_locker_item_affects",
+		"account_locker_item_extra_descr", "account_locker_items", "account_lockers",
+		"alliances", "artifact_bind", "artifacts", "artifacts_mortal", "associations",
+		"auction_bid_history", "auction_item_pickups", "auction_money_pickups", "auctions",
+		"boons", "boons_progress", "boons_shop", "corpse_item_affects",
+		"corpse_item_extra_descr", "corpse_items", "corpses", "ctf_data", "epic_bonus",
+		"epic_gain", "eq_drop", "frag_leaderboard", "guild_members", "guild_ranks",
+		"guild_transactions", "guildhall_rooms", "guildhalls", "guilds", "ip_info",
+		"level_cap", "locker_access", "locker_activity_log", "locker_chests",
+		"locker_item_affects", "locker_item_extra_descr", "locker_items", "locker_kickouts",
+		"locker_session_state", "lockers", "log_entries", "nexus_stones", "offline_messages",
+		"outposts", "persistence_item_events", "persistence_scalar_events", "pkill_event",
+		"pkill_info", "player_affects", "player_data", "player_forged_items",
+		"player_granted_cmds", "player_intros", "player_item_affects", "player_item_extra_descr",
+		"player_items", "player_languages", "player_pet_item_affects",
+		"player_pet_item_extra_descr", "player_pet_items", "player_pets", "player_recipes",
+		"player_shapechanges", "player_skills", "player_spellbooks", "player_timers",
+		"player_undead_slots", "player_witnesses", "poll_options", "poll_votes", "polls",
+		"private_chest_log", "private_chests", "progress", "racewar_stat_mods",
+		"saved_item_affects", "saved_item_extra_descr", "saved_items", "ship_armor",
+		"ship_cargo_market_mods", "ship_cargo_prices", "ship_crew", "ship_slots", "ships",
+		"shop_trophy", "shopkeeper_affects", "shopkeeper_item_affects",
+		"shopkeeper_item_extra_descr", "shopkeeper_items", "shopkeepers", "siege_item_affects",
+		"siege_item_extra_descr", "siege_items", "statistics", "timers", "world_quest_accomplished",
+		"zone_touches", "zone_trophy", NULL
+	};
+	static const char *const columns[][2] = {
+		{"outposts", "owner_id"}, {"outposts", "level"}, {"outposts", "walls"},
+		{"outposts", "archers"}, {"outposts", "hitpoints"}, {"outposts", "territory"},
+		{"outposts", "portal_room"}, {"outposts", "resources"}, {"outposts", "applied_resources"},
+		{"outposts", "golems"}, {"outposts", "meurtriere"}, {"outposts", "scouts"},
+		{"nexus_stones", "align"}, {"nexus_stones", "last_touched_at"},
+		{"timers", "date"}, {"account_characters", "deleted_at"},
+		{"player_data", "active"}, {"level_cap", "most_frags"}, {"level_cap", "racewar_leader"},
+		{"level_cap", "level"}, {"level_cap", "next_update"}, {NULL, NULL}
+	};
+	char query[8192];
+	int pos = snprintf(query, sizeof(query),
+		"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN (");
+	if (pos < 0 || (size_t)pos >= sizeof(query))
+		return FALSE;
+	int expected_tables = 0;
+	for (int i = 0; tables[i] != NULL; i++)
+	{
+		int written = snprintf(query + pos, sizeof(query) - (size_t)pos,
+			"%s'%s'", i ? "," : "", tables[i]);
+		if (written < 0 || (size_t)written >= sizeof(query) - (size_t)pos)
+			return FALSE;
+		pos += written;
+		expected_tables++;
+	}
+	if (pos + 2 >= (int)sizeof(query))
+		return FALSE;
+	strcat(query, ")");
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return FALSE;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	bool tables_ok = row && row[0] && atoi(row[0]) == expected_tables;
+	mysql_free_result(result);
+	if (!tables_ok)
+		return FALSE;
+
+	pos = snprintf(query, sizeof(query),
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND (");
+	if (pos < 0 || (size_t)pos >= sizeof(query))
+		return FALSE;
+	int expected_columns = 0;
+	for (int i = 0; columns[i][0] != NULL; i++)
+	{
+		int written = snprintf(query + pos, sizeof(query) - (size_t)pos,
+			"%s(table_name='%s' AND column_name='%s')", i ? " OR " : "",
+			columns[i][0], columns[i][1]);
+		if (written < 0 || (size_t)written >= sizeof(query) - (size_t)pos)
+			return FALSE;
+		pos += written;
+		expected_columns++;
+	}
+	if (pos + 2 >= (int)sizeof(query))
+		return FALSE;
+	strcat(query, ")");
+	result = db_query("%s", query);
+	if (!result)
+		return FALSE;
+	row = mysql_fetch_row(result);
+	bool columns_ok = row && row[0] && atoi(row[0]) == expected_columns;
+	mysql_free_result(result);
+	return columns_ok;
+}
+
+/* Season-reset preflight: verify persistence event schema and auction engines.
+ * These are the same checks as sql_verify_boot_database() but are callable
+ * from sql_pwipe() as a preflight gate without requiring a fresh boot. */
+bool sql_verify_persistence_schema(void)
+{
+	if (!DB)
+		return FALSE;
+
+	/* Verify persistence event columns exist. */
+	const char *event_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns "
+		"WHERE table_schema=DATABASE() AND "
+		"((table_name='persistence_item_events' AND column_name IN "
+		"('id','ts_usec','event_type','item_uid','vnum','item','actor','actor_id','source','target','note','dedupe_key','created_at')) "
+		"OR (table_name='persistence_scalar_events' AND column_name IN "
+		"('id','event_type','event_key','boot_time','touched_at','zone_number','toucher_pid','group_size','epic_value','alignment_delta','dedupe_key','created_at')))";
+	MYSQL_RES *result = db_query("%s", event_schema_probe);
+	if (!result)
+		return FALSE;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	bool event_columns_ok = row && row[0] && atoi(row[0]) == 25;
+	mysql_free_result(result);
+	if (!event_columns_ok)
+		return FALSE;
+
+	/* Verify persistence event indexes exist. */
+	const char *event_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name, index_name "
+		"FROM information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='persistence_item_events' AND index_name IN "
+		"('PRIMARY','idx_item_uid_ts','idx_event_type_created','uq_item_dedupe')) "
+		"OR (table_name='persistence_scalar_events' AND index_name IN "
+		"('PRIMARY','idx_scalar_event_key','idx_scalar_zone_time','uq_scalar_dedupe')))) "
+		"AS required_indexes";
+	result = db_query("%s", event_index_probe);
+	if (!result)
+		return FALSE;
+	row = mysql_fetch_row(result);
+	bool event_indexes_ok = row && row[0] && atoi(row[0]) == 8;
+	mysql_free_result(result);
+	return event_indexes_ok;
+}
+
+bool sql_verify_auction_engines(void)
+{
+	if (!DB)
+		return FALSE;
+
+	const char *auction_engine_probe =
+		"SELECT COUNT(DISTINCT table_name) FROM information_schema.tables "
+		"WHERE table_schema=DATABASE() AND engine='InnoDB' AND table_name IN "
+		"('auction_bid_history','auction_item_pickups','auction_money_pickups','auctions')";
+	MYSQL_RES *result = db_query("%s", auction_engine_probe);
+	if (!result)
+		return FALSE;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	bool auction_engines_ok = row && row[0] && atoi(row[0]) == 4;
+	mysql_free_result(result);
+	return auction_engines_ok;
+}
+
 bool sql_pwipe(int code_verify)
 {
 	logit(LOG_DEBUG, "sql_pwipe: STARTED!");
 	if (code_verify == 1723699)
 	{
+		/* ── Preflight: verify critical tables exist and have correct engines ── */
+		logit(LOG_DEBUG, "sql_pwipe: Preflight schema check... .. .");
+		send_to_all("Preflight schema check... .. .");
+		if (!sql_verify_persistence_schema())
+		{
+			logit(LOG_DEBUG, "sql_pwipe: Preflight failed: persistence schema incomplete.");
+			send_to_all("Preflight FAILED: persistence schema incomplete!\n");
+			return FALSE;
+		}
+		if (!sql_verify_pwipe_manifest())
+		{
+			logit(LOG_DEBUG, "sql_pwipe: Preflight failed: reset manifest schema incomplete.");
+			send_to_all("Preflight FAILED: reset manifest schema incomplete!\n");
+			return FALSE;
+		}
+		/* Verify auction tables are InnoDB (transactional) before reset. */
+		if (!sql_verify_auction_engines())
+		{
+			logit(LOG_DEBUG, "sql_pwipe: Preflight failed: auction tables not InnoDB.");
+			send_to_all("Preflight FAILED: auction tables must be InnoDB!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "  success!");
+		send_to_all("  success!\n");
 		logit(LOG_DEBUG, "sql_pwipe: Clearing zone alignments, trophy and touches... .. .");
 		send_to_all("Clearing zone alignments, trophy and touches... .. .");
 		if (sql_clear_zone_trophy() && qry("DELETE FROM zone_trophy") && qry("DELETE FROM zone_touches"))
@@ -2660,9 +2914,311 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
+		/* ── Season-reset manifest: player-owned item graphs ── */
+		/* Child tables (affects, extra_descr) must be cleared before parent item tables. */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing player item subtable data... .. .");
+		send_to_all("Clearing player item subtable data... .. .");
+		if (qry("DELETE FROM player_item_affects") && qry("DELETE FROM player_item_extra_descr"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "sql_pwipe: Clearing player items... .. .");
+		send_to_all("Clearing player items... .. .");
+		if (qry("DELETE FROM player_items"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: player pet graphs ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing player pet subtable data... .. .");
+		send_to_all("Clearing player pet subtable data... .. .");
+		if (qry("DELETE FROM player_pet_item_affects") && qry("DELETE FROM player_pet_item_extra_descr") && qry("DELETE FROM player_pet_items"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "sql_pwipe: Clearing player pets... .. .");
+		send_to_all("Clearing player pets... .. .");
+		if (qry("DELETE FROM player_pets"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: player character state ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing player character state data... .. .");
+		send_to_all("Clearing player character state data... .. .");
+		if (qry("DELETE FROM player_affects") && qry("DELETE FROM player_skills") && qry("DELETE FROM player_spellbooks") &&
+		    qry("DELETE FROM player_languages") && qry("DELETE FROM player_timers") && qry("DELETE FROM player_recipes") &&
+		    qry("DELETE FROM player_shapechanges") && qry("DELETE FROM player_undead_slots") &&
+		    qry("DELETE FROM player_witnesses") && qry("DELETE FROM player_forged_items") &&
+		    qry("DELETE FROM player_granted_cmds") && qry("DELETE FROM player_intros"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: locker/chest graphs ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing locker subtable data... .. .");
+		send_to_all("Clearing locker subtable data... .. .");
+		if (qry("DELETE FROM locker_item_affects") && qry("DELETE FROM locker_item_extra_descr") &&
+		    qry("DELETE FROM locker_items") && qry("DELETE FROM locker_chests") &&
+		    qry("DELETE FROM locker_activity_log") && qry("DELETE FROM locker_kickouts") &&
+		    qry("DELETE FROM locker_session_state"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "sql_pwipe: Clearing locker data... .. .");
+		send_to_all("Clearing locker data... .. .");
+		if (qry("DELETE FROM lockers"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: account locker graphs ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing account locker data... .. .");
+		send_to_all("Clearing account locker data... .. .");
+		if (qry("DELETE FROM account_locker_item_affects") && qry("DELETE FROM account_locker_item_extra_descr") &&
+		    qry("DELETE FROM account_locker_items") && qry("DELETE FROM account_locker_access") &&
+		    qry("DELETE FROM account_lockers"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: private chests ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing private chest data... .. .");
+		send_to_all("Clearing private chest data... .. .");
+		if (qry("DELETE FROM private_chest_log") && qry("DELETE FROM private_chests"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: corpse graphs ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing corpse subtable data... .. .");
+		send_to_all("Clearing corpse subtable data... .. .");
+		if (qry("DELETE FROM corpse_item_affects") && qry("DELETE FROM corpse_item_extra_descr") && qry("DELETE FROM corpse_items"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "sql_pwipe: Clearing corpse data... .. .");
+		send_to_all("Clearing corpse data... .. .");
+		if (qry("DELETE FROM corpses"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: saved item graphs ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing saved item data... .. .");
+		send_to_all("Clearing saved item data... .. .");
+		if (qry("DELETE FROM saved_item_affects") && qry("DELETE FROM saved_item_extra_descr") && qry("DELETE FROM saved_items"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: ship graphs ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing ship subtable data... .. .");
+		send_to_all("Clearing ship subtable data... .. .");
+		if (qry("DELETE FROM ship_armor") && qry("DELETE FROM ship_crew") && qry("DELETE FROM ship_slots"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "sql_pwipe: Clearing ship data... .. .");
+		send_to_all("Clearing ship data... .. .");
+		if (qry("DELETE FROM ships"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: guild membership ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing guild membership data... .. .");
+		send_to_all("Clearing guild membership data... .. .");
+		if (qry("DELETE FROM guild_members") && qry("DELETE FROM guild_ranks") && qry("DELETE FROM guilds"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: world/competitive state ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing artifact data... .. .");
+		send_to_all("Clearing artifact data... .. .");
+		if (qry("DELETE FROM artifacts") && qry("DELETE FROM artifacts_mortal"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "sql_pwipe: Clearing pvp and statistics data... .. .");
+		send_to_all("Clearing pvp and statistics data... .. .");
+		if (qry("DELETE FROM frag_leaderboard") && qry("DELETE FROM pkill_event") && qry("DELETE FROM pkill_info") &&
+		    qry("DELETE FROM statistics") && qry("DELETE FROM eq_drop") && qry("DELETE FROM racewar_stat_mods"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: siege and shopkeeper graphs ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing siege and shopkeeper data... .. .");
+		send_to_all("Clearing siege and shopkeeper data... .. .");
+		if (qry("DELETE FROM siege_item_affects") && qry("DELETE FROM siege_item_extra_descr") && qry("DELETE FROM siege_items") &&
+		    qry("DELETE FROM shopkeeper_affects") && qry("DELETE FROM shopkeeper_item_affects") &&
+		    qry("DELETE FROM shopkeeper_item_extra_descr") && qry("DELETE FROM shopkeeper_items") &&
+		    qry("DELETE FROM shopkeepers"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: polls and boon shop ── */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing poll and boon shop data... .. .");
+		send_to_all("Clearing poll and boon shop data... .. .");
+		if (qry("DELETE FROM poll_votes") && qry("DELETE FROM poll_options") && qry("DELETE FROM polls") &&
+		    qry("DELETE FROM boons_shop"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		/* ── Season-reset manifest: soft-delete account characters ── */
+		logit(LOG_DEBUG, "sql_pwipe: Soft-deleting account characters... .. .");
+		send_to_all("Soft-deleting account characters... .. .");
+		if (qry("UPDATE account_characters SET deleted_at = COALESCE(deleted_at, NOW()) WHERE deleted_at IS NULL"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
 		logit(LOG_DEBUG, "sql_pwipe: Deactivating player_data... .. .");
 		send_to_all("Deactivating player_data... .. .");
 		if (qry("UPDATE player_data SET active = 0"))
+		{
+			logit(LOG_DEBUG, "  success!");
+			send_to_all("  success!\n");
+		}
+		else
+		{
+			logit(LOG_DEBUG, "        failure!");
+			send_to_all("        failure!\n");
+			return FALSE;
+		}
+		logit(LOG_DEBUG, "sql_pwipe: Clearing persistence event data... .. .");
+		send_to_all("Clearing persistence event data... .. .");
+		if (qry("DELETE FROM persistence_item_events") && qry("DELETE FROM persistence_scalar_events"))
 		{
 			logit(LOG_DEBUG, "  success!");
 			send_to_all("  success!\n");
@@ -2687,6 +3243,97 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
+		if (!redis_clear_pwipe_state())
+		{
+			logit(LOG_DEBUG, "sql_pwipe: Redis pwipe invalidation failed.");
+			return FALSE;
+		}
+		/* ── Postflight: verify critical season-scoped tables are empty ── */
+		logit(LOG_DEBUG, "sql_pwipe: Postflight invariant check... .. .");
+		send_to_all("Postflight invariant check... .. .");
+		{
+			/* Verify that player_items, player_pets, lockers, ships, guilds, and
+			 * persistence event tables are all empty after reset. */
+			const char *postflight_tables[] = {
+				"player_items", "player_pets", "player_affects", "player_skills",
+				"player_spellbooks", "player_languages", "player_timers",
+				"lockers", "locker_items", "private_chests",
+				"corpses", "corpse_items", "saved_items",
+				"ships", "ship_slots", "ship_crew", "ship_armor",
+				"guilds", "guild_members", "guild_ranks",
+				"artifacts", "frag_leaderboard", "statistics",
+				"persistence_item_events", "persistence_scalar_events",
+				"polls", "shopkeepers",
+				NULL
+			};
+			bool postflight_ok = TRUE;
+			for (int i = 0; postflight_tables[i] != NULL; i++)
+			{
+				MYSQL_RES *res = db_query("SELECT COUNT(*) FROM %s", postflight_tables[i]);
+				if (res)
+				{
+					MYSQL_ROW row = mysql_fetch_row(res);
+					if (row && row[0] && atoi(row[0]) > 0)
+					{
+						logit(LOG_DEBUG, "sql_pwipe: Postflight FAILED: %s has %s rows.",
+						      postflight_tables[i], row[0]);
+						postflight_ok = FALSE;
+					}
+					mysql_free_result(res);
+				}
+				else
+				{
+					logit(LOG_DEBUG, "sql_pwipe: Postflight FAILED: cannot query %s.",
+					      postflight_tables[i]);
+					postflight_ok = FALSE;
+				}
+			}
+			/* Verify player_data is all inactive. */
+			MYSQL_RES *res = db_query("SELECT COUNT(*) FROM player_data WHERE active = 1");
+			if (res)
+			{
+				MYSQL_ROW row = mysql_fetch_row(res);
+				if (row && row[0] && atoi(row[0]) > 0)
+				{
+					logit(LOG_DEBUG, "sql_pwipe: Postflight FAILED: %d active player_data rows.", atoi(row[0]));
+					postflight_ok = FALSE;
+				}
+				mysql_free_result(res);
+			}
+			else
+			{
+				logit(LOG_DEBUG, "sql_pwipe: Postflight FAILED: cannot query player_data active count.");
+				postflight_ok = FALSE;
+			}
+			/* Verify account_characters are all soft-deleted. */
+			res = db_query("SELECT COUNT(*) FROM account_characters WHERE deleted_at IS NULL");
+			if (res)
+			{
+				MYSQL_ROW row = mysql_fetch_row(res);
+				if (row && row[0] && atoi(row[0]) > 0)
+				{
+					logit(LOG_DEBUG, "sql_pwipe: Postflight FAILED: %d active account_characters rows.", atoi(row[0]));
+					postflight_ok = FALSE;
+				}
+				mysql_free_result(res);
+			}
+			else
+			{
+				logit(LOG_DEBUG, "sql_pwipe: Postflight FAILED: cannot query account_characters.");
+				postflight_ok = FALSE;
+			}
+			if (!postflight_ok)
+			{
+				logit(LOG_DEBUG, "sql_pwipe: Postflight invariants failed.");
+				send_to_all("Postflight FAILED: season-reset invariants not satisfied!\n");
+				return FALSE;
+			}
+		}
+		logit(LOG_DEBUG, "  success!");
+		send_to_all("  success!\n");
+		logit(LOG_DEBUG, "sql_pwipe: COMPLETED!");
+		send_to_all("WIPE COMPLETED!");
+		sleep(1);
 		return TRUE;
 	}
 	else
@@ -2694,9 +3341,6 @@ bool sql_pwipe(int code_verify)
 		logit(LOG_DEBUG, "sql_pwipe: Someone called sql_pwipe with a bad verify code... hrm..");
 		return FALSE;
 	}
-	logit(LOG_DEBUG, "sql_pwipe: COMPLETED!");
-	send_to_all("WIPE COMPLETED!");
-	sleep(1);
 }
 
 void sql_log_player_login(P_char ch, const char *status)
@@ -2803,9 +3447,98 @@ void sql_persistence_release_connection(MYSQL *conn)
 	sql_pool_release(conn);
 }
 
+static bool persistence_decimal_field(const char *value, bool allow_negative)
+{
+	char *end = NULL;
+	if (!value || !*value)
+		return false;
+	errno = 0;
+	if (allow_negative)
+		(void)strtol(value, &end, 10);
+	else
+		(void)strtoull(value, &end, 10);
+	return errno == 0 && end && *end == '\0';
+}
+
 bool sql_persistence_write_item_event_line(const char *line)
 {
-	return sql_persistence_execute_raw(line);
+	const char *item_event_prefix = "PERSISTENCE_ITEM_EVENT|";
+	char record[2048];
+	char *saveptr = NULL;
+	char *field;
+	char *value;
+	char event[128] = "";
+	char ts_usec[32] = "0";
+	char item_uid[32] = "0";
+	char vnum[32] = "-1";
+	char item[256] = "";
+	char actor[128] = "";
+	char actor_id[32] = "-1";
+	char source[256] = "";
+	char target[256] = "";
+	char note[256] = "";
+	char event_q[256], item_q[64], vnum_q[32], item_text_q[512];
+	char actor_q[256], actor_id_q[32], source_q[512], target_q[512], note_q[512];
+	int seen_ts = 0, seen_event = 0, seen_item_uid = 0;
+	int seen_vnum = 0, seen_actor_id = 0;
+	char query[4096];
+	int query_len;
+
+	if (!line || strncmp(line, item_event_prefix,
+	                     strlen(item_event_prefix)))
+		return false;
+	if (strlen(line) >= sizeof(record))
+		return false;
+	strcpy(record, line);
+
+	field = strtok_r(record, "|", &saveptr);
+	while ((field = strtok_r(NULL, "|", &saveptr)) != NULL)
+	{
+		value = strchr(field, '=');
+		if (!value)
+			return false;
+		*value++ = '\0';
+		if (!strcmp(field, "ts")) { seen_ts = 1; snprintf(ts_usec, sizeof(ts_usec), "%s", value); }
+		else if (!strcmp(field, "event")) { seen_event = 1; snprintf(event, sizeof(event), "%s", value); }
+		else if (!strcmp(field, "item_uid")) { seen_item_uid = 1; snprintf(item_uid, sizeof(item_uid), "%s", value); }
+		else if (!strcmp(field, "vnum")) { seen_vnum = 1; snprintf(vnum, sizeof(vnum), "%s", value); }
+		else if (!strcmp(field, "item")) snprintf(item, sizeof(item), "%s", value);
+		else if (!strcmp(field, "actor")) snprintf(actor, sizeof(actor), "%s", value);
+		else if (!strcmp(field, "actor_id")) { seen_actor_id = 1; snprintf(actor_id, sizeof(actor_id), "%s", value); }
+		else if (!strcmp(field, "source")) snprintf(source, sizeof(source), "%s", value);
+		else if (!strcmp(field, "target")) snprintf(target, sizeof(target), "%s", value);
+		else if (!strcmp(field, "note")) snprintf(note, sizeof(note), "%s", value);
+	}
+
+	if (!seen_ts || !seen_event || !seen_item_uid || !seen_vnum || !seen_actor_id ||
+	    !persistence_decimal_field(ts_usec, false) ||
+	    !persistence_decimal_field(item_uid, false) ||
+	    !persistence_decimal_field(vnum, true) ||
+	    !persistence_decimal_field(actor_id, true))
+		return false;
+
+	persistence_sql_escape_field(event, event_q, sizeof(event_q));
+	persistence_sql_escape_field(item, item_text_q, sizeof(item_text_q));
+	persistence_sql_escape_field(actor, actor_q, sizeof(actor_q));
+	persistence_sql_escape_field(source, source_q, sizeof(source_q));
+	persistence_sql_escape_field(target, target_q, sizeof(target_q));
+	persistence_sql_escape_field(note, note_q, sizeof(note_q));
+	snprintf(item_q, sizeof(item_q), "%s", item_uid);
+	snprintf(vnum_q, sizeof(vnum_q), "%s", vnum);
+	snprintf(actor_id_q, sizeof(actor_id_q), "%s", actor_id);
+	query_len = snprintf(query, sizeof(query),
+	         "INSERT INTO persistence_item_events "
+	         "(ts_usec,event_type,item_uid,vnum,item,actor,actor_id,source,target,note,dedupe_key) "
+	         "VALUES (%s,'%s',%s,%s,'%s','%s',%s,'%s','%s','%s',"
+	         "SHA2(CONCAT_WS('|',%s,'%s',%s,%s,'%s','%s',%s,'%s','%s','%s'),256)) "
+	         "ON DUPLICATE KEY UPDATE id=id",
+	         ts_usec, event_q, item_q,
+	         vnum_q, item_text_q, actor_q, actor_id_q, source_q, target_q,
+	         note_q, ts_usec, event_q, item_q, vnum_q, item_text_q, actor_q,
+	         actor_id_q, source_q, target_q, note_q);
+	if (query_len < 0 || query_len >= (int)sizeof(query))
+		return false;
+	return sql_persistence_execute_raw(query);
 }
 
 bool sql_persistence_write_scalar_event_line(const char *line)
@@ -2913,8 +3646,13 @@ void sql_zone_touch_finished(const char *event_key, int boot_time,
 	snprintf(line, sizeof(line),
 	         "INSERT INTO persistence_scalar_events "
 	         "(event_type, event_key, boot_time, touched_at, zone_number, "
-	         "toucher_pid, group_size, epic_value, alignment_delta, created_at) "
-	         "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, NOW())",
+	         "toucher_pid, group_size, epic_value, alignment_delta, dedupe_key, created_at) "
+	         "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, "
+	         "SHA2(CONCAT('zone_touch', '|', '%s', '|', %d, '|', %d, '|', %d, '|', "
+	         "%d, '|', %d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
+	         "ON DUPLICATE KEY UPDATE id=id",
+	         safe_key, boot_time, touched_at, zone_number,
+	         toucher_pid, group_size, epic_value, alignment_delta,
 	         safe_key, boot_time, touched_at, zone_number,
 	         toucher_pid, group_size, epic_value, alignment_delta);
 
@@ -2930,8 +3668,13 @@ void sql_zone_touch_finished(const char *event_key, int boot_time,
 
 	qry("INSERT INTO persistence_scalar_events "
 	    "(event_type, event_key, boot_time, touched_at, zone_number, "
-	    "toucher_pid, group_size, epic_value, alignment_delta, created_at) "
-	    "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, NOW())",
+	    "toucher_pid, group_size, epic_value, alignment_delta, dedupe_key, created_at) "
+	    "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, "
+	    "SHA2(CONCAT('zone_touch', '|', '%s', '|', %d, '|', %d, '|', %d, '|', "
+	    "%d, '|', %d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
+	    "ON DUPLICATE KEY UPDATE id=id",
+	    safe_key, boot_time, touched_at, zone_number,
+	    toucher_pid, group_size, epic_value, alignment_delta,
 	    safe_key, boot_time, touched_at, zone_number,
 	    toucher_pid, group_size, epic_value, alignment_delta);
 }

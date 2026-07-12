@@ -1240,6 +1240,16 @@ void panic_corruption(const char *component, const char *fmt, ...)
 	abort();
 }
 
+[[noreturn]] int panic_corruption_int(const char *component, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fatal_message_v(component, fmt, ap);
+	va_end(ap);
+	abort();
+}
+
 bool require_char(P_char ch, const char *component, const char *fmt, ...)
 {
 	if (ch)

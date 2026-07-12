@@ -734,6 +734,10 @@ void setHeavenTime(P_char victim)
 	// Query the DB for the latest 20 deaths of victim in pvp
 	qry("SELECT event_id FROM pkill_info WHERE pid=%d AND pk_type='VICTIM' ORDER BY id DESC LIMIT 20", GET_PID(victim));
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 	if (res)
 	{
 		counter = 0;
@@ -754,6 +758,10 @@ void setHeavenTime(P_char victim)
 			if (qry("SELECT * from pkill_event WHERE id=%d AND TIMESTAMPDIFF( MINUTE, stamp, NOW() ) < 60", kill_ids[i--]))
 			{
 				MYSQL_RES *event_res = mysql_store_result(DB);
+				if (!event_res) {
+					logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+					return;
+				}
 				if (mysql_num_rows(event_res) > 0)
 				{
 					counter++;

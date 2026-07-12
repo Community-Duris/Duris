@@ -30,11 +30,21 @@ for name in ('mysql_start_transaction', 'mysql_commit', 'mysql_rollback'):
         ok = False
 
 if ok:
-    if not (checks['sql_begin_transaction'] < checks['sql_commit']):
-        print('transaction order is wrong')
+    if 'start transaction failed' not in text:
+        print('missing transaction failure log')
         ok = False
-    if checks['sql_rollback'] > checks['sql_commit']:
-        print('rollback handling should appear before or with commit handling')
+    else:
+        failure_pos = text.find('start transaction failed')
+        visitor_pos = text.find('ShipVisitor svs', failure_pos)
+        return_pos = text.find('return;', failure_pos, visitor_pos)
+        if return_pos == -1:
+            print('ship shutdown continues after transaction start failure')
+            ok = False
+    if text.find('if(!write_ship(ship) && !IS_NPC_SHIP(ship) && SHIP_LOADED(ship))', start) == -1:
+        print('ship shutdown write failure guard missing')
+        ok = False
+    if text.find('panic_corruption("shutdown_ships", "write_ship failed after rollback")', start) == -1:
+        print('ship shutdown failure escalation missing')
         ok = False
 
 sys.exit(0 if ok else 1)

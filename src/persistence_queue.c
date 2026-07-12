@@ -8,6 +8,10 @@
 #include <errno.h>
 #include <time.h>
 
+#ifndef __NO_MYSQL__
+#include <mysql.h>
+#endif
+
 #include "persistence_queue.h"
 #include "latency_trace.h"
 
@@ -18,6 +22,36 @@ extern void wizlog(int level, const char *format, ...);
 extern void logit(const char *filename, const char *format, ...);
 
 #define PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS 2
+
+#ifndef __NO_MYSQL__
+static int persistence_worker_mysql_thread_init(const char *worker_name)
+{
+  if (mysql_thread_init() != 0)
+  {
+    logit("logs/log/status",
+          "%s: mysql_thread_init failed; worker will not start",
+          worker_name);
+    return 0;
+  }
+
+  return 1;
+}
+
+static void persistence_worker_mysql_thread_end(void)
+{
+  mysql_thread_end();
+}
+#else
+static int persistence_worker_mysql_thread_init(const char *worker_name)
+{
+  (void) worker_name;
+  return 1;
+}
+
+static void persistence_worker_mysql_thread_end(void)
+{
+}
+#endif
 
 struct persistence_event_queue_data
 {
@@ -340,6 +374,15 @@ static void *persistence_item_event_worker_main(void *unused)
 
   (void) unused;
 
+  if (!persistence_worker_mysql_thread_init("item persistence worker"))
+  {
+    pthread_mutex_lock(&persistence_item_event_queue_mutex);
+    /* Creation succeeded, so retain ownership until worker_stop() joins. */
+    persistence_item_event_worker_stop_pending_flag = 1;
+    pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+    return NULL;
+  }
+
   while (1)
   {
     should_write = 0;
@@ -414,6 +457,8 @@ static void *persistence_item_event_worker_main(void *unused)
   persistence_item_event_worker_is_running = 0;
   pthread_mutex_unlock(&persistence_item_event_queue_mutex);
 
+  persistence_worker_mysql_thread_end();
+
   return NULL;
 }
 
@@ -431,13 +476,9 @@ int persistence_item_event_worker_start(persistence_item_event_writer writer,
 
   if (persistence_item_event_worker_stop_pending_flag)
   {
-    if (pthread_kill(persistence_item_event_worker_thread, 0) == ESRCH)
-      persistence_item_event_worker_stop_pending_flag = 0;
-    else
-    {
-      pthread_mutex_unlock(&persistence_item_event_queue_mutex);
-      return 0;
-    }
+    /* Quarantine is cleared only by the stop path after a successful join. */
+    pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+    return 0;
   }
 
   persistence_item_event_worker_writer = writer;
@@ -467,7 +508,8 @@ void persistence_item_event_worker_stop(int drain_remaining)
   int stuck;
 
   pthread_mutex_lock(&persistence_item_event_queue_mutex);
-  was_running = persistence_item_event_worker_is_running;
+  was_running = persistence_item_event_worker_is_running ||
+                persistence_item_event_worker_stop_pending_flag;
   stuck = was_running &&
           persistence_item_event_worker_last_heartbeat != 0 &&
           (int)(time(NULL) - persistence_item_event_worker_last_heartbeat) >=
@@ -521,12 +563,7 @@ int persistence_item_event_worker_running(void)
      */
     if (persistence_item_event_worker_stop_pending_flag)
     {
-      kill_rc = pthread_kill(persistence_item_event_worker_thread, 0);
-      if (kill_rc == ESRCH)
-      {
-        persistence_item_event_worker_is_running = 0;
-        persistence_item_event_worker_stop_pending_flag = 0;
-      }
+      /* Only a successful join proves that this generation is reaped. */
       running = 0;
     }
     else if (persistence_item_event_worker_in_write)
@@ -538,7 +575,9 @@ int persistence_item_event_worker_running(void)
       kill_rc = pthread_kill(persistence_item_event_worker_thread, 0);
       if (kill_rc == ESRCH)
       {
-        persistence_item_event_worker_is_running = 0;
+        /* ESRCH is not a safe reap proof. Quarantine so start() will not
+         * create a replacement generation until worker_stop() joins. */
+        persistence_item_event_worker_stop_pending_flag = 1;
         running = 0;
       }
       else
@@ -547,7 +586,12 @@ int persistence_item_event_worker_running(void)
         age = last ? (int)(time(NULL) - last) : -1;
         if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
         {
-          persistence_item_event_worker_is_running = 0;
+          /* Heartbeat staleness is not proof that the pthread exited.  Keep
+           * the generation quarantined so start() cannot create a duplicate
+           * while the old worker may still be writing.  worker_stop() owns
+           * the bounded join and clears this gate only after a successful
+           * join. */
+          persistence_item_event_worker_stop_pending_flag = 1;
           running = 0;
         }
       }
@@ -861,6 +905,14 @@ static void *persistence_scalar_event_worker_main(void *unused)
 
   (void) unused;
 
+  if (!persistence_worker_mysql_thread_init("scalar persistence worker"))
+  {
+    pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
+    persistence_scalar_event_worker_stop_pending_flag = 1;
+    pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+    return NULL;
+  }
+
   while (1)
   {
     should_write = 0;
@@ -930,6 +982,8 @@ static void *persistence_scalar_event_worker_main(void *unused)
   persistence_scalar_event_worker_is_running = 0;
   pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
 
+  persistence_worker_mysql_thread_end();
+
   return NULL;
 }
 
@@ -947,13 +1001,9 @@ int persistence_scalar_event_worker_start(persistence_scalar_event_writer writer
 
   if (persistence_scalar_event_worker_stop_pending_flag)
   {
-    if (pthread_kill(persistence_scalar_event_worker_thread, 0) == ESRCH)
-      persistence_scalar_event_worker_stop_pending_flag = 0;
-    else
-    {
-      pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
-      return 0;
-    }
+    /* Quarantine is cleared only by the stop path after a successful join. */
+    pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+    return 0;
   }
 
   persistence_scalar_event_worker_writer = writer;
@@ -983,7 +1033,8 @@ void persistence_scalar_event_worker_stop(int drain_remaining)
   int stuck;
 
   pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
-  was_running = persistence_scalar_event_worker_is_running;
+  was_running = persistence_scalar_event_worker_is_running ||
+                persistence_scalar_event_worker_stop_pending_flag;
   stuck = was_running &&
           persistence_scalar_event_worker_last_heartbeat != 0 &&
           (int)(time(NULL) - persistence_scalar_event_worker_last_heartbeat) >=
@@ -1037,12 +1088,6 @@ int persistence_scalar_event_worker_running(void)
      */
     if (persistence_scalar_event_worker_stop_pending_flag)
     {
-      kill_rc = pthread_kill(persistence_scalar_event_worker_thread, 0);
-      if (kill_rc == ESRCH)
-      {
-        persistence_scalar_event_worker_is_running = 0;
-        persistence_scalar_event_worker_stop_pending_flag = 0;
-      }
       running = 0;
     }
     else if (persistence_scalar_event_worker_in_write)
@@ -1054,7 +1099,8 @@ int persistence_scalar_event_worker_running(void)
       kill_rc = pthread_kill(persistence_scalar_event_worker_thread, 0);
       if (kill_rc == ESRCH)
       {
-        persistence_scalar_event_worker_is_running = 0;
+        /* ESRCH is not a safe reap proof. Quarantine until join. */
+        persistence_scalar_event_worker_stop_pending_flag = 1;
         running = 0;
       }
       else
@@ -1063,7 +1109,7 @@ int persistence_scalar_event_worker_running(void)
         age = last ? (int)(time(NULL) - last) : -1;
         if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
         {
-          persistence_scalar_event_worker_is_running = 0;
+          persistence_scalar_event_worker_stop_pending_flag = 1;
           running = 0;
         }
       }
@@ -1106,6 +1152,14 @@ static void *persistence_large_event_worker_main(void *unused)
   int write_ok;
 
   (void) unused;
+
+  if (!persistence_worker_mysql_thread_init("large persistence worker"))
+  {
+    pthread_mutex_lock(&persistence_large_event_queue_mutex);
+    persistence_large_event_worker_stop_pending_flag = 1;
+    pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+    return NULL;
+  }
 
   while (1)
   {
@@ -1176,6 +1230,8 @@ static void *persistence_large_event_worker_main(void *unused)
   persistence_large_event_worker_is_running = 0;
   pthread_mutex_unlock(&persistence_large_event_queue_mutex);
 
+  persistence_worker_mysql_thread_end();
+
   return NULL;
 }
 
@@ -1193,13 +1249,9 @@ int persistence_large_event_worker_start(persistence_scalar_event_writer writer,
 
   if (persistence_large_event_worker_stop_pending_flag)
   {
-    if (pthread_kill(persistence_large_event_worker_thread, 0) == ESRCH)
-      persistence_large_event_worker_stop_pending_flag = 0;
-    else
-    {
-      pthread_mutex_unlock(&persistence_large_event_queue_mutex);
-      return 0;
-    }
+    /* Quarantine is cleared only by the stop path after a successful join. */
+    pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+    return 0;
   }
 
   persistence_large_event_worker_writer = writer;
@@ -1229,7 +1281,8 @@ void persistence_large_event_worker_stop(int drain_remaining)
   int stuck;
 
   pthread_mutex_lock(&persistence_large_event_queue_mutex);
-  was_running = persistence_large_event_worker_is_running;
+  was_running = persistence_large_event_worker_is_running ||
+                persistence_large_event_worker_stop_pending_flag;
   stuck = was_running &&
           persistence_large_event_worker_last_heartbeat != 0 &&
           (int)(time(NULL) - persistence_large_event_worker_last_heartbeat) >=
@@ -1283,12 +1336,6 @@ int persistence_large_event_worker_running(void)
      */
     if (persistence_large_event_worker_stop_pending_flag)
     {
-      kill_rc = pthread_kill(persistence_large_event_worker_thread, 0);
-      if (kill_rc == ESRCH)
-      {
-        persistence_large_event_worker_is_running = 0;
-        persistence_large_event_worker_stop_pending_flag = 0;
-      }
       running = 0;
     }
     else if (persistence_large_event_worker_in_write)
@@ -1300,7 +1347,8 @@ int persistence_large_event_worker_running(void)
       kill_rc = pthread_kill(persistence_large_event_worker_thread, 0);
       if (kill_rc == ESRCH)
       {
-        persistence_large_event_worker_is_running = 0;
+        /* ESRCH is not a safe reap proof. Quarantine until join. */
+        persistence_large_event_worker_stop_pending_flag = 1;
         running = 0;
       }
       else
@@ -1309,7 +1357,7 @@ int persistence_large_event_worker_running(void)
         age = last ? (int)(time(NULL) - last) : -1;
         if (age >= PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS)
         {
-          persistence_large_event_worker_is_running = 0;
+          persistence_large_event_worker_stop_pending_flag = 1;
           running = 0;
         }
       }

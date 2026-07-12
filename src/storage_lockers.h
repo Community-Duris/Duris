@@ -14,9 +14,9 @@
 
 #include <string.h>
 
-// Type-specific locker chests only accept matching items; container chests also
-// refuse filled containers so nested contents never have to round-trip through
-// the locker sorter.
+// Type-specific locker chests only accept matching items.  Containers and
+// corpses are rejected by the unsorted chest so they remain visible on the
+// locker room floor rather than being hidden inside a sorting chest.
 bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj);
 
 int  guild_locker_room_hook(int room, P_char ch, int cmd, char *arg);
@@ -93,6 +93,8 @@ public:
 
 	virtual void FillExtraDescBuf(char *GBuf1);
 
+	// LATENT: no destDesc size parameter — safe only because keywords are
+	// fixed non-empty strings. Would need a size_t param to harden.
 	void BeautifyDesc(const char *srcDesc, char *destDesc);
 
 	const char *m_chestKeyword;
@@ -119,7 +121,7 @@ class UnsortedChest : public LockerChest
 	friend class StorageLocker;
 
 public:
-	virtual bool ItemFits(P_obj obj) { return (obj->type == ITEM_CORPSE) ? false : true; };
+	virtual bool ItemFits(P_obj obj) { return ((obj->type == ITEM_CONTAINER) || (obj->type == ITEM_CORPSE)) ? false : true; };
 
 protected:
 	UnsortedChest(void) : LockerChest("unsorted", "that are unsorted") {};
