@@ -132,6 +132,10 @@ bool get_epic_bonus_data(P_char ch, EpicBonusData *ebdata)
 		return false;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return 0;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -172,6 +176,10 @@ float get_epic_bonus(P_char ch, int type)
 		return 0;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return 0;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

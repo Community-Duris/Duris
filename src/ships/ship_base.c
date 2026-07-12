@@ -179,6 +179,8 @@ void shutdown_ships()
 	if (!sql_begin_transaction())
 	{
 		logit(LOG_DEBUG, "shutdown_ships: start transaction failed");
+		free(batch);
+		return;
 	}
 
 	ShipVisitor svs;
@@ -222,7 +224,9 @@ void shutdown_ships()
 		logit(LOG_DEBUG, "shutdown_ships: commit failed");
 		if (sql_rollback())
 			logit(LOG_DEBUG, "shutdown_ships: rolled back after commit failure");
+		panic_corruption("shutdown_ships", "commit failed after rollback");
 	}
+	free(batch);
 }
 
 //--------------------------------------------------------------------
@@ -510,7 +514,7 @@ bool rename_ship_owner(char *old_name, char *new_name)
 	str_free(ship->ownername);
 	ship->ownername = str_dup(new_name);
 	name_ship(SHIP_NAME(ship), ship);
-	
+
 	if (!write_ship(ship))
 	{
 		logit(LOG_DEBUG, "Failed to save re-owned ship %s for %s.",
@@ -2250,6 +2254,28 @@ void flush_pending_ship_saves(void)
 	}
 	if (flushed > 0)
 		logit(LOG_DEBUG, "Flushed %d pending ship save(s).", flushed);
+}
+
+/* Copyover cannot leave retry-delayed saves behind: the old process is about
+ * to disappear. Ignore retry_after and report whether every pending save is
+ * durable so the caller can abort copyover rather than lose ship state. */
+bool drain_pending_ship_saves(void)
+{
+	bool        drained = true;
+	ShipVisitor svs;
+	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
+	{
+		P_ship ship = svs;
+		if (!ship || !ship->save_pending)
+			continue;
+
+		if (!write_ship(ship))
+		{
+			drained = false;
+			logit(LOG_FILE, "Unable to drain pending ship save for %s before copyover.", SHIP_NAME(ship));
+		}
+	}
+	return drained;
 }
 
 

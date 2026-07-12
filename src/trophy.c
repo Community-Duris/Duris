@@ -321,6 +321,10 @@ void load_zone_trophy(P_char ch)
 		return;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -366,6 +370,10 @@ void save_zone_trophy(P_char ch)
 		qry("SELECT exp FROM zone_trophy WHERE pid = %d AND zone_number = %d", GET_PID(ch), it->zone_number);
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return;
+		}
 		bool       has_row = mysql_num_rows(res) > 0;
 		int        old_exp = 0;
 

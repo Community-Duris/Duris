@@ -222,4 +222,10 @@ int io_processFDS(fd_set * rfds, fd_set * wfds, fd_set * efds);
 
 #endif /* 0 */
 
+/* Escapes all '$' characters in player-controlled text to '$$' so that
+ * act() interprets them as literal '$' rather than $-directives ($n, $p,
+ * $O, etc.).  Prevents type-confusion crashes where a player types e.g.
+ * "say $O" and act() casts the vict_obj character pointer to P_obj. */
+void escape_act_dollars(char *dst, size_t dst_size, const char *src);
+
 #endif /* _SOJ_COMM_H_ */

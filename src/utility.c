@@ -9,6 +9,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,6 +99,7 @@ unsigned long                        persistence_large_worker_restart_count = 0;
 int                                  ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg);
 extern struct mm_ds                 *dead_mob_pool;
 extern struct mm_ds                 *dead_pconly_pool;
+extern int                           _pwipe;
 extern const char                   *sector_types[];
 
 char GS_buf1[MAX_STRING_LENGTH];
@@ -917,10 +919,34 @@ int persistence_write_fallback_event_line(const char *line,
   int ok = 1;
   static unsigned long fallback_count = 0;
 
+  if (_pwipe)
+  {
+    persistence_alert(AVATAR,
+                      domain ? domain : "persistence",
+                      owner ? owner : "fallback",
+                      "none",
+                      "none",
+                      "pwipe_rejected",
+                      "fallback event rejected while season reset is active");
+    return 0;
+  }
+
   if (!line || !*line)
     return 0;
 
   pthread_mutex_lock(&persistence_fallback_log_mutex);
+  if (_pwipe)
+  {
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+    persistence_alert(AVATAR,
+                      domain ? domain : "persistence",
+                      owner ? owner : "fallback",
+                      "none",
+                      "none",
+                      "pwipe_rejected",
+                      "fallback event rejected while season reset is active");
+    return 0;
+  }
   log_f = fopen(LOG_EVENT, "a");
   if (!log_f)
   {
@@ -939,6 +965,8 @@ int persistence_write_fallback_event_line(const char *line,
   if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
     ok = 0;
 
+  if (fflush(log_f) || fsync(fileno(log_f)))
+    ok = 0;
   if (fclose(log_f))
     ok = 0;
   { long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
@@ -1034,9 +1062,18 @@ int persistence_flush_item_events(int max_events)
     max_events = pending;
   if (pending > 0)
   {
+    pthread_mutex_lock(&persistence_fallback_log_mutex);
+    if (_pwipe)
+    {
+      pthread_mutex_unlock(&persistence_fallback_log_mutex);
+      return 0;
+    }
     log_f = fopen(LOG_EVENT, "a");
+    if (log_f)
+      setvbuf(log_f, NULL, _IONBF, 0);
     if (!log_f)
     {
+      pthread_mutex_unlock(&persistence_fallback_log_mutex);
       persistence_alert(AVATAR, "item_event", "queue", "none", "none",
                         "flush_open_failed",
                         "could not open %s; %d events remain queued",
@@ -1045,25 +1082,85 @@ int persistence_flush_item_events(int max_events)
     }
   }
 
+  long durability_offset = -1;
+  /* Collect dequeued events so they can be requeued if durability finalization
+   * fails.  Without this, fflush/fsync/fclose failure permanently loses data. */
+  char *dequeued[PERSISTENCE_FLUSH_BATCH_MAX];
+  int dequeued_count = 0;
+  memset(dequeued, 0, sizeof(dequeued));
+
   while (ok && flushed < max_events &&
          persistence_item_event_queue_dequeue(line, sizeof(line)))
   {
+    if (durability_offset < 0)
+      durability_offset = ftell(log_f);
+    long file_offset = ftell(log_f);
     if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+    {
       ok = 0;
+      if (file_offset >= 0 && ftruncate(fileno(log_f), file_offset) == 0)
+        clearerr(log_f);
+      if (persistence_item_event_queue_enqueue(line) <= 0)
+        persistence_alert(AVATAR, "item_event", "queue", "none", "none",
+                          "flush_requeue_failed",
+                          "failed to requeue an item event after fallback write failure");
+    }
     else
+    {
+      if (dequeued_count < (int)(sizeof(dequeued) / sizeof(dequeued[0])))
+      {
+        dequeued[dequeued_count] = str_dup(line);
+        if (dequeued[dequeued_count])
+          dequeued_count++;
+      }
       flushed++;
+    }
   }
 
   if (log_f)
   {
+    if (fflush(log_f) || fsync(fileno(log_f)))
+      ok = 0;
     if (fclose(log_f))
       ok = 0;
+    /* Truncate and requeue while still holding the mutex so another writer
+     * cannot append between unlock and truncation. */
     if (!ok)
     {
+      if (durability_offset >= 0)
+      {
+        int fd = open(LOG_EVENT, O_WRONLY);
+        if (fd >= 0)
+        {
+          ftruncate(fd, durability_offset);
+          close(fd);
+        }
+      }
+      /* Requeue all dequeued events that were counted as flushed. */
+      for (int i = 0; i < dequeued_count; i++)
+      {
+        if (dequeued[i])
+        {
+          if (persistence_item_event_queue_enqueue(dequeued[i]) <= 0)
+            persistence_alert(AVATAR, "item_event", "queue", "none", "none",
+                              "flush_requeue_failed",
+                              "failed to requeue item event %d after durability failure", i);
+          FREE(dequeued[i]);
+        }
+      }
       persistence_alert(AVATAR, "item_event", "queue", "none", "none",
                         "flush_write_failed",
-                        "write failed after flushing %d events", flushed);
+                        "durability failed after flushing %d events; file truncated and events requeued", flushed);
+      flushed = 0;
     }
+    else
+    {
+      /* Durability succeeded; free the dequeued copies. */
+      for (int i = 0; i < dequeued_count; i++)
+        if (dequeued[i])
+          FREE(dequeued[i]);
+    }
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
   }
 
   dropped = persistence_item_event_queue_dropped();
@@ -1098,9 +1195,18 @@ int persistence_flush_scalar_events(int max_events)
     max_events = pending;
   if (pending > 0)
   {
+    pthread_mutex_lock(&persistence_fallback_log_mutex);
+    if (_pwipe)
+    {
+      pthread_mutex_unlock(&persistence_fallback_log_mutex);
+      return 0;
+    }
     log_f = fopen(LOG_EVENT, "a");
+    if (log_f)
+      setvbuf(log_f, NULL, _IONBF, 0);
     if (!log_f)
     {
+      pthread_mutex_unlock(&persistence_fallback_log_mutex);
       persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
                         "flush_open_failed",
                         "could not open %s; %d scalar events remain queued",
@@ -1109,22 +1215,79 @@ int persistence_flush_scalar_events(int max_events)
     }
   }
 
+  long durability_offset = -1;
+  char *dequeued[PERSISTENCE_FLUSH_BATCH_MAX];
+  int dequeued_count = 0;
+  memset(dequeued, 0, sizeof(dequeued));
+
   while (ok && flushed < max_events &&
          persistence_scalar_event_queue_dequeue(line, sizeof(line)))
   {
+    if (durability_offset < 0)
+      durability_offset = ftell(log_f);
+    long file_offset = ftell(log_f);
     if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+    {
       ok = 0;
+      if (file_offset >= 0 && ftruncate(fileno(log_f), file_offset) == 0)
+        clearerr(log_f);
+      if (persistence_scalar_event_queue_enqueue(line) <= 0)
+        persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+                          "flush_requeue_failed",
+                          "failed to requeue a scalar event after fallback write failure");
+    }
     else
+    {
+      if (dequeued_count < (int)(sizeof(dequeued) / sizeof(dequeued[0])))
+      {
+        dequeued[dequeued_count] = str_dup(line);
+        if (dequeued[dequeued_count])
+          dequeued_count++;
+      }
       flushed++;
+    }
   }
 
-  if (log_f && fclose(log_f))
-    ok = 0;
-  if (log_f && !ok)
+  if (log_f)
   {
-    persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                      "flush_write_failed",
-                      "write failed after flushing %d scalar events", flushed);
+    if (fflush(log_f) || fsync(fileno(log_f)))
+      ok = 0;
+    if (fclose(log_f))
+      ok = 0;
+    if (!ok)
+    {
+      if (durability_offset >= 0)
+      {
+        int fd = open(LOG_EVENT, O_WRONLY);
+        if (fd >= 0)
+        {
+          ftruncate(fd, durability_offset);
+          close(fd);
+        }
+      }
+      for (int i = 0; i < dequeued_count; i++)
+      {
+        if (dequeued[i])
+        {
+          if (persistence_scalar_event_queue_enqueue(dequeued[i]) <= 0)
+            persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+                              "flush_requeue_failed",
+                              "failed to requeue scalar event %d after durability failure", i);
+          FREE(dequeued[i]);
+        }
+      }
+      persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+                        "flush_write_failed",
+                        "durability failed after flushing %d scalar events; file truncated and events requeued", flushed);
+      flushed = 0;
+    }
+    else
+    {
+      for (int i = 0; i < dequeued_count; i++)
+        if (dequeued[i])
+          FREE(dequeued[i]);
+    }
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
   }
 
   dropped = persistence_scalar_event_queue_dropped();
@@ -1223,6 +1386,46 @@ static void persistence_trim_record_line(char *line)
   }
 }
 
+int persistence_quarantine_fallback_events(void)
+{
+  char quarantine_path[512];
+
+  pthread_mutex_lock(&persistence_fallback_log_mutex);
+  if (access(LOG_EVENT, F_OK))
+  {
+    if (errno == ENOENT)
+    {
+      pthread_mutex_unlock(&persistence_fallback_log_mutex);
+      return 1;
+    }
+    persistence_alert(AVATAR, "persistence_replay", "pwipe", "none",
+                      "none", "quarantine_stat_failed",
+                      "could not inspect %s before pwipe: errno=%d",
+                      LOG_EVENT, errno);
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+    return 0;
+  }
+
+  snprintf(quarantine_path, sizeof(quarantine_path),
+           "%s.pwipe-quarantine.%ld.%ld", LOG_EVENT, (long)time(NULL),
+           (long)getpid());
+  if (rename(LOG_EVENT, quarantine_path))
+  {
+    persistence_alert(AVATAR, "persistence_replay", "pwipe", "none",
+                      "none", "quarantine_rename_failed",
+                      "could not quarantine %s before pwipe: errno=%d",
+                      LOG_EVENT, errno);
+    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+    return 0;
+  }
+
+  logit(LOG_STATUS,
+        "PERSISTENCE: domain=persistence_replay owner=pwipe action=quarantine detail=renamed %s to %s",
+        LOG_EVENT, quarantine_path);
+  pthread_mutex_unlock(&persistence_fallback_log_mutex);
+  return 1;
+}
+
 int persistence_replay_fallback_events(void)
 {
   FILE *in_f;
@@ -1298,8 +1501,9 @@ int persistence_replay_fallback_events(void)
     else if (persistence_line_has_prefix(event_line,
                                          PERSISTENCE_LARGE_EVENT_PREFIX))
     {
+      const char *large_sql = event_line + strlen(PERSISTENCE_LARGE_EVENT_PREFIX);
       saw_persistence = 1;
-      if (sql_persistence_write_large_event_line(event_line))
+      if (*large_sql && sql_persistence_write_large_event_line(large_sql))
         replayed++;
       else
       {
@@ -1313,6 +1517,8 @@ int persistence_replay_fallback_events(void)
   }
 
   if (fclose(in_f))
+    rewrite_failed = 1;
+  if (fflush(out_f) || fsync(fileno(out_f)))
     rewrite_failed = 1;
   if (fclose(out_f))
     rewrite_failed = 1;
@@ -1333,13 +1539,13 @@ int persistence_replay_fallback_events(void)
     return replayed;
   }
 
-  snprintf(backup_path, sizeof(backup_path), "%s.persistence-replay.%ld",
-           LOG_EVENT, (long)time(NULL));
-  if (rename(LOG_EVENT, backup_path))
+  snprintf(backup_path, sizeof(backup_path), "%s.persistence-replay.%ld.%ld",
+           LOG_EVENT, (long)time(NULL), (long)getpid());
+  if (link(LOG_EVENT, backup_path))
   {
     persistence_alert(AVATAR, "persistence_replay", "boot", "none",
                       "none", "backup_failed",
-                      "could not backup %s to %s after replay; leaving original log for retry",
+                      "could not link %s to %s before replay; leaving original log for retry",
                       LOG_EVENT, backup_path);
     remove(tmp_path);
     return replayed;
@@ -1351,7 +1557,6 @@ int persistence_replay_fallback_events(void)
                       "none", "replace_failed",
                       "could not replace %s after replay; backup retained at %s",
                       LOG_EVENT, backup_path);
-    rename(backup_path, LOG_EVENT);
     remove(tmp_path);
     return replayed;
   }
@@ -1377,8 +1582,6 @@ int persistence_replay_fallback_events(void)
 
 static int persistence_item_event_log_writer(const char *line, void *context)
 {
-  FILE *log_f;
-  int ok = 1;
   static unsigned long fallback_count = 0;
 
   (void) context;
@@ -1400,26 +1603,11 @@ static int persistence_item_event_log_writer(const char *line, void *context)
           fallback_count);
   }
 
-  pthread_mutex_lock(&persistence_fallback_log_mutex);
-  log_f = fopen(LOG_EVENT, "a");
-  if (!log_f)
-  {
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+  if (!persistence_write_fallback_event_line(line, "item_event", "worker",
+                                             "sql_fallback"))
     return 0;
-  }
-
-  clock_t _fb_beg = clock();
-  if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
-    ok = 0;
-
-  if (fclose(log_f))
-    ok = 0;
-  { long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
-    latency_trace_record("fallback_file_write", _fb_us, 0); }
   persistence_item_worker_fallback_count++;
-  pthread_mutex_unlock(&persistence_fallback_log_mutex);
-
-  return ok;
+  return 1;
 }
 
 void utility_latency_dump(void)
@@ -1452,8 +1640,6 @@ int persistence_start_item_event_worker(void)
 
 static int persistence_scalar_event_log_writer(const char *line, void *context)
 {
-  FILE *log_f;
-  int ok = 1;
   static unsigned long fallback_count = 0;
 
   (void) context;
@@ -1475,26 +1661,11 @@ static int persistence_scalar_event_log_writer(const char *line, void *context)
           fallback_count);
   }
 
-  pthread_mutex_lock(&persistence_fallback_log_mutex);
-  log_f = fopen(LOG_EVENT, "a");
-  if (!log_f)
-  {
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
+  if (!persistence_write_fallback_event_line(line, "scalar_event", "worker",
+                                             "sql_fallback"))
     return 0;
-  }
-
-  clock_t _fb_beg = clock();
-  if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
-    ok = 0;
-
-  if (fclose(log_f))
-    ok = 0;
-  { long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
-    latency_trace_record("fallback_file_write", _fb_us, 0); }
   persistence_scalar_fallback_count++;
-  pthread_mutex_unlock(&persistence_fallback_log_mutex);
-
-  return ok;
+  return 1;
 }
 
 int persistence_start_scalar_event_worker(void)
@@ -1509,6 +1680,33 @@ int persistence_start_scalar_event_worker(void)
   }
 
   logit(LOG_STATUS, "Started scalar persistence worker.");
+  return 1;
+}
+
+int persistence_prepare_pwipe(void)
+{
+  persistence_large_event_worker_stop(0);
+  persistence_scalar_event_worker_stop(0);
+  persistence_item_event_worker_stop(0);
+
+  if (persistence_large_event_worker_running() ||
+      persistence_scalar_event_worker_running() ||
+      persistence_item_event_worker_running() ||
+      persistence_large_event_worker_stop_pending() ||
+      persistence_scalar_event_worker_stop_pending() ||
+      persistence_item_event_worker_stop_pending())
+  {
+    logit(LOG_STATUS,
+          "PWipe quiescence failed: persistence worker remains active or pending.");
+    return 0;
+  }
+
+  persistence_large_event_queue_reset();
+  persistence_scalar_event_queue_reset();
+  persistence_item_event_queue_reset();
+
+  logit(LOG_STATUS,
+        "PWipe persistence workers quiesced without flushing queued events.");
   return 1;
 }
 
@@ -7409,6 +7607,10 @@ int yes_no(const char *str)
 
 static int persistence_large_event_log_writer(const char *line, void *context)
 {
+  char *fallback_line;
+  size_t line_len;
+  size_t prefix_len = strlen(PERSISTENCE_LARGE_EVENT_PREFIX);
+
   (void) context;
 
   if (!line || !*line)
@@ -7417,7 +7619,24 @@ static int persistence_large_event_log_writer(const char *line, void *context)
   if (sql_persistence_write_large_event_line(line))
     return 1;
 
-  return 0;
+  line_len = strlen(line);
+  fallback_line = (char *) malloc(prefix_len + line_len + 1);
+  if (!fallback_line)
+  {
+    persistence_alert(AVATAR, "large_event", "worker", "none", "none",
+                      "worker_fallback_alloc_failed",
+                      "could not allocate %zu-byte replay record", prefix_len + line_len + 1);
+    return 0;
+  }
+  memcpy(fallback_line, PERSISTENCE_LARGE_EVENT_PREFIX, prefix_len);
+  memcpy(fallback_line + prefix_len, line, line_len + 1);
+
+  int ok = persistence_write_fallback_event_line(fallback_line,
+                                                 "large_event",
+                                                 "worker",
+                                                 "worker_fallback");
+  free(fallback_line);
+  return ok ? 1 : 0;
 }
 
 int persistence_start_large_event_worker(void)
@@ -7457,4 +7676,3 @@ int persistence_large_event_worker_active(void)
 {
   return persistence_large_event_worker_running();
 }
-

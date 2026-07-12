@@ -1,4533 +1,471 @@
--- Safe consolidated DurisMUD migration for new or existing databases
--- This file is idempotent and non-destructive:
--- it uses information_schema guards and idempotent DDL where supported, and it
--- avoids DROP TABLE, DROP DATABASE, TRUNCATE, and column-drop operations.
-
--- ============================================================================
--- FILE: run_this_one.sql
--- ============================================================================
--- durismud pfile-to-db combined migration
--- safe for production, idempotent, run multiple times safely
-
--- accounts and players
-
-CREATE TABLE IF NOT EXISTS accounts (
-    account_name VARCHAR(50) NOT NULL,
-    email VARCHAR(255) DEFAULT NULL,
-    password VARCHAR(128) NOT NULL,
-    confirmation_code VARCHAR(64) DEFAULT NULL,
-    confirmed TINYINT(1) DEFAULT 0,
-    confirmation_sent TINYINT(1) DEFAULT 0,
-    blocked TINYINT(1) DEFAULT 0,
-    last_login BIGINT DEFAULT 0,
-    last_good_char BIGINT DEFAULT 0,
-    last_evil_char BIGINT DEFAULT 0,
-    flags1 BIGINT UNSIGNED DEFAULT 0,
-    flags2 BIGINT UNSIGNED DEFAULT 0,
-    flags3 BIGINT UNSIGNED DEFAULT 0,
-    flags4 BIGINT UNSIGNED DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (account_name),
-    INDEX idx_email (email)
-);
-
-CREATE TABLE IF NOT EXISTS account_characters (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    account_name VARCHAR(50) NOT NULL,
-    char_name VARCHAR(64) NOT NULL,
-    pid INT UNSIGNED DEFAULT NULL,
-    login_count BIGINT UNSIGNED DEFAULT 0,
-    last_login BIGINT DEFAULT 0,
-    blocked TINYINT DEFAULT 0,
-    racewar TINYINT DEFAULT 0,
-    deleted_at DATETIME DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
-    UNIQUE KEY idx_char_name_unique (char_name),
-    UNIQUE KEY acct_char (account_name, char_name),
-    INDEX idx_account_name (account_name),
-    INDEX idx_char_name (char_name),
-    INDEX account_active (account_name, deleted_at)
-);
-
-CREATE TABLE IF NOT EXISTS player_data (
-    pid INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(64) NOT NULL,
-    account_name VARCHAR(50) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    long_descr TEXT DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    title VARCHAR(512) DEFAULT NULL,
-    m_class INT UNSIGNED DEFAULT 0,
-    secondary_class INT UNSIGNED DEFAULT 0,
-    spec TINYINT UNSIGNED DEFAULT 0,
-    race TINYINT UNSIGNED DEFAULT 0,
-    racewar TINYINT UNSIGNED DEFAULT 0,
-    level TINYINT UNSIGNED DEFAULT 1,
-    sex TINYINT UNSIGNED DEFAULT 0,
-    weight SMALLINT UNSIGNED DEFAULT 0,
-    height SMALLINT UNSIGNED DEFAULT 0,
-    size TINYINT DEFAULT 0,
-    hometown INT DEFAULT 0,
-    birthplace INT DEFAULT 0,
-    orig_birthplace INT DEFAULT 0,
-    last_room INT DEFAULT 0,
-    birth_time BIGINT DEFAULT 0,
-    played_time INT DEFAULT 0,
-    last_save BIGINT DEFAULT 0,
-    perm_aging SMALLINT DEFAULT 0,
-    base_str TINYINT DEFAULT 0,
-    base_dex TINYINT DEFAULT 0,
-    base_agi TINYINT DEFAULT 0,
-    base_con TINYINT DEFAULT 0,
-    base_pow TINYINT DEFAULT 0,
-    base_int TINYINT DEFAULT 0,
-    base_wis TINYINT DEFAULT 0,
-    base_cha TINYINT DEFAULT 0,
-    base_kar TINYINT DEFAULT 0,
-    base_luk TINYINT DEFAULT 0,
-    mana INT DEFAULT 0,
-    base_mana INT DEFAULT 0,
-    hit_diff INT DEFAULT 0,
-    base_hit INT DEFAULT 0,
-    vitality INT DEFAULT 0,
-    base_vitality INT DEFAULT 0,
-    spells_memmed_extra TINYINT DEFAULT 0,
-    copper BIGINT DEFAULT 0,
-    silver BIGINT DEFAULT 0,
-    gold BIGINT DEFAULT 0,
-    platinum BIGINT DEFAULT 0,
-    bank_copper BIGINT DEFAULT 0,
-    bank_silver BIGINT DEFAULT 0,
-    bank_gold BIGINT DEFAULT 0,
-    bank_platinum BIGINT DEFAULT 0,
-    exp BIGINT DEFAULT 0,
-    epics BIGINT DEFAULT 0,
-    epic_skill_points BIGINT DEFAULT 0,
-    skillpoints INT DEFAULT 0,
-    spell_bind_used BIGINT DEFAULT 0,
-    act BIGINT UNSIGNED DEFAULT 0,
-    act2 BIGINT UNSIGNED DEFAULT 0,
-    act3 BIGINT UNSIGNED DEFAULT 0,
-    vote BIGINT UNSIGNED DEFAULT 0,
-    alignment INT DEFAULT 0,
-    prestige SMALLINT DEFAULT 0,
-    assoc_id SMALLINT UNSIGNED DEFAULT 0,
-    guild_status INT UNSIGNED DEFAULT 0,
-    time_left_guild BIGINT DEFAULT 0,
-    nb_left_guild TINYINT DEFAULT 0,
-    time_unspecced BIGINT DEFAULT 0,
-    frags BIGINT DEFAULT 0,
-    oldfrags BIGINT DEFAULT 0,
-    numb_deaths BIGINT UNSIGNED DEFAULT 0,
-    killed_by VARCHAR(64) DEFAULT NULL,
-    condition_0 TINYINT DEFAULT 0,
-    condition_1 TINYINT DEFAULT 0,
-    condition_2 TINYINT DEFAULT 0,
-    condition_3 TINYINT DEFAULT 0,
-    condition_4 TINYINT DEFAULT 0,
-    poof_in VARCHAR(512) DEFAULT NULL,
-    poof_out VARCHAR(512) DEFAULT NULL,
-    poof_in_sound VARCHAR(512) DEFAULT NULL,
-    poof_out_sound VARCHAR(512) DEFAULT NULL,
-    echo_toggle TINYINT UNSIGNED DEFAULT 0,
-    prompt SMALLINT UNSIGNED DEFAULT 0,
-    wiz_invis BIGINT DEFAULT 0,
-    law_flags BIGINT UNSIGNED DEFAULT 0,
-    wimpy SMALLINT DEFAULT 0,
-    aggressive SMALLINT DEFAULT -1,
-    highest_level TINYINT UNSIGNED DEFAULT 0,
-    screen_length TINYINT UNSIGNED DEFAULT 24,
-    quest_active INT DEFAULT 0,
-    quest_mob_vnum INT DEFAULT 0,
-    quest_type INT DEFAULT 0,
-    quest_accomplished INT DEFAULT 0,
-    quest_started INT DEFAULT 0,
-    quest_zone_number INT DEFAULT 0,
-    quest_giver INT DEFAULT 0,
-    quest_level INT DEFAULT 0,
-    quest_receiver INT DEFAULT 0,
-    quest_shares_left INT DEFAULT 0,
-    quest_kill_how_many INT DEFAULT 0,
-    quest_kill_original INT DEFAULT 0,
-    quest_map_room INT DEFAULT 0,
-    quest_map_bought INT DEFAULT 0,
-    last_ip BIGINT UNSIGNED DEFAULT 0,
-    active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (pid),
-    INDEX idx_name (name),
-    INDEX idx_account_name (account_name)
-);
-
-
--- account related
-
-CREATE TABLE IF NOT EXISTS account_ips (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    account_name VARCHAR(50) NOT NULL,
-    hostname VARCHAR(255),
-    ip_address VARCHAR(45),
-    count BIGINT UNSIGNED DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
-    INDEX idx_account_name (account_name),
-    INDEX idx_ip_address (ip_address),
-    UNIQUE KEY uk_account_ip (account_name, ip_address)
-);
-
-CREATE TABLE IF NOT EXISTS towns (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    zone_filename VARCHAR(100) NOT NULL,
-    resources INT DEFAULT 0,
-    defense INT DEFAULT 0,
-    offense INT DEFAULT 0,
-    deploy_guard TINYINT DEFAULT 0,
-    guard_vnum INT DEFAULT 0,
-    guard_max INT DEFAULT 0,
-    guard_load_room INT DEFAULT 0,
-    deploy_cavalry TINYINT DEFAULT 0,
-    cavalry_vnum INT DEFAULT 0,
-    cavalry_max INT DEFAULT 0,
-    cavalry_load_room INT DEFAULT 0,
-    deploy_portals TINYINT DEFAULT 0,
-    portal_vnum INT DEFAULT 0,
-    portal_load_room INT DEFAULT 0,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_zone_filename (zone_filename)
-);
-
-CREATE TABLE IF NOT EXISTS kingdom_land (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    kingdom_id INT NOT NULL,  -- no fk, comes from filesystem
-    start_vnum INT DEFAULT 0,
-    end_vnum INT DEFAULT 0,
-    type CHAR(1) DEFAULT 'r',
-    INDEX idx_kingdom_id (kingdom_id)
-);
-
-CREATE TABLE IF NOT EXISTS player_recipes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    pid INT NOT NULL,
-    recipe_vnum INT NOT NULL,
-    learned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_recipe (pid, recipe_vnum)
-);
-
-CREATE TABLE IF NOT EXISTS player_shapechanges (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    pid INT NOT NULL,
-    mob_vnum INT NOT NULL,
-    times_researched INT DEFAULT 0,
-    last_researched BIGINT DEFAULT 0,
-    last_shapechanged BIGINT DEFAULT 0,
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_mob (pid, mob_vnum)
-);
-
-CREATE TABLE IF NOT EXISTS corpses (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    player_name VARCHAR(50) NOT NULL,
-    save_id BIGINT NOT NULL,
-    room_vnum INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    INDEX idx_player_name (player_name),
-    UNIQUE KEY uk_player_saveid (player_name, save_id)
-);
-
-CREATE TABLE IF NOT EXISTS shopkeepers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    shop_id INT NOT NULL UNIQUE,
-    mob_vnum INT DEFAULT 0,
-    room_vnum INT DEFAULT 0,
-    save_time BIGINT DEFAULT 0,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_shop_id (shop_id)
-);
-
-CREATE TABLE IF NOT EXISTS shopkeeper_affects (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    shopkeeper_id INT NOT NULL,
-    type INT DEFAULT 0,
-    duration INT DEFAULT 0,
-    modifier INT DEFAULT 0,
-    location INT DEFAULT 0,
-    bitvector1 BIGINT UNSIGNED DEFAULT 0,
-    bitvector2 BIGINT UNSIGNED DEFAULT 0,
-    bitvector3 BIGINT UNSIGNED DEFAULT 0,
-    bitvector4 BIGINT UNSIGNED DEFAULT 0,
-    bitvector5 BIGINT UNSIGNED DEFAULT 0,
-    FOREIGN KEY (shopkeeper_id) REFERENCES shopkeepers(id) ON DELETE CASCADE,
-    INDEX idx_shopkeeper_id (shopkeeper_id)
-);
-
-
--- race/class lookups (populated by game server)
-
-CREATE TABLE IF NOT EXISTS races (
-    id INT UNSIGNED PRIMARY KEY,
-    name VARCHAR(64) NOT NULL,
-    short_name VARCHAR(32),
-    ansi_name VARCHAR(128),
-    abbrev VARCHAR(4),
-    racewar TINYINT DEFAULT 0,
-    playable TINYINT DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS classes (
-    id INT UNSIGNED PRIMARY KEY,
-    name VARCHAR(64) NOT NULL,
-    ansi_name VARCHAR(128),
-    short_name VARCHAR(8),
-    menu_char CHAR(1)
-);
-
-CREATE OR REPLACE VIEW players_view AS
-SELECT
-    pd.pid,
-    pd.name,
-    pd.level,
-    pd.race as race_id,
-    r.ansi_name as race,
-    pd.m_class as class_id,
-    c.ansi_name as classname,
-    pd.racewar,
-    pd.assoc_id,
-    pd.exp,
-    pd.epics,
-    pd.played_time as playtime,
-    (pd.copper + pd.silver*10 + pd.gold*100 + pd.platinum*1000) as money,
-    (pd.bank_copper + pd.bank_silver*10 + pd.bank_gold*100 + pd.bank_platinum*1000) as balance
-FROM player_data pd
-LEFT JOIN races r ON pd.race = r.id
-LEFT JOIN classes c ON pd.m_class = c.id;
-
-
--- player arrays
-
-CREATE TABLE IF NOT EXISTS player_skills (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    skill_id SMALLINT UNSIGNED NOT NULL,
-    learned TINYINT UNSIGNED DEFAULT 0,
-    taught TINYINT UNSIGNED DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_skill (pid, skill_id),
-    CONSTRAINT fk_player_skills FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_languages (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    tongue_id TINYINT UNSIGNED NOT NULL,
-    proficiency TINYINT UNSIGNED DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_tongue (pid, tongue_id),
-    CONSTRAINT fk_player_languages FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_intros (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    intro_index TINYINT UNSIGNED NOT NULL,
-    intro_pid INT DEFAULT 0,
-    intro_time BIGINT UNSIGNED DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_intro (pid, intro_index),
-    CONSTRAINT fk_player_intros FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_timers (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    timer_id TINYINT UNSIGNED NOT NULL,
-    timer_value BIGINT DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_timer (pid, timer_id),
-    CONSTRAINT fk_player_timers FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_undead_slots (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    circle TINYINT UNSIGNED NOT NULL,
-    slots TINYINT DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_circle (pid, circle),
-    CONSTRAINT fk_player_undead_slots FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_forged_items (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    forge_index SMALLINT UNSIGNED NOT NULL,
-    item_vnum INT DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_forge (pid, forge_index),
-    CONSTRAINT fk_player_forged_items FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_granted_cmds (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    cmd_num INT NOT NULL,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_cmd (pid, cmd_num),
-    CONSTRAINT fk_player_granted_cmds FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-
--- player affects and items
-
-CREATE TABLE IF NOT EXISTS player_affects (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    type SMALLINT NOT NULL,
-    duration INT DEFAULT 0,
-    flags SMALLINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    location TINYINT UNSIGNED DEFAULT 0,
-    level SMALLINT UNSIGNED DEFAULT 0,
-    bitvector1 BIGINT DEFAULT 0,
-    bitvector2 BIGINT DEFAULT 0,
-    bitvector3 BIGINT DEFAULT 0,
-    bitvector4 BIGINT DEFAULT 0,
-    bitvector5 BIGINT DEFAULT 0,
-    custom_msg_char TEXT DEFAULT NULL,
-    custom_msg_room TEXT DEFAULT NULL,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    CONSTRAINT fk_player_affects FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_items (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    vnum INT NOT NULL,
-    equip_slot TINYINT DEFAULT 0,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    wear_flags INT DEFAULT NULL,
-    item_type TINYINT DEFAULT NULL,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
-    item_material TINYINT DEFAULT NULL,
-    obj_uid BIGINT UNSIGNED DEFAULT NULL,
-    item_condition SMALLINT DEFAULT 100,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    INDEX idx_container_id (container_id),
-    INDEX idx_obj_uid (obj_uid),
-    CONSTRAINT fk_player_items FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE,
-    CONSTRAINT fk_player_items_container FOREIGN KEY (container_id) REFERENCES player_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_item_affects (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_item_id (item_id),
-    CONSTRAINT fk_player_item_affects FOREIGN KEY (item_id) REFERENCES player_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_witnesses (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    crime TINYINT UNSIGNED DEFAULT 0,
-    room_vnum INT DEFAULT 0,
-    attacker_name VARCHAR(64) DEFAULT NULL,
-    victim_name VARCHAR(64) DEFAULT NULL,
-    witness_time BIGINT DEFAULT 0,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    CONSTRAINT fk_player_witnesses FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_spellbooks (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pid INT UNSIGNED NOT NULL,
-    mob_vnum INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    INDEX idx_pid (pid),
-    UNIQUE KEY uk_pid_mob (pid, mob_vnum),
-    CONSTRAINT fk_player_spellbooks FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
-);
-
-
--- item storage
-
-CREATE TABLE IF NOT EXISTS corpse_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    corpse_id INT NOT NULL,
-    vnum INT NOT NULL,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    wear_flags INT DEFAULT NULL,
-    item_type TINYINT DEFAULT NULL,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
-    item_material TINYINT DEFAULT NULL,
-    obj_uid BIGINT UNSIGNED DEFAULT NULL,
-    item_condition SMALLINT DEFAULT 100,
-    FOREIGN KEY (corpse_id) REFERENCES corpses(id) ON DELETE CASCADE,
-    FOREIGN KEY (container_id) REFERENCES corpse_items(id) ON DELETE CASCADE,
-    INDEX idx_corpse_id (corpse_id),
-    INDEX idx_vnum (vnum),
-    INDEX idx_obj_uid (obj_uid)
-);
-
-CREATE TABLE IF NOT EXISTS corpse_item_affects (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    FOREIGN KEY (item_id) REFERENCES corpse_items(id) ON DELETE CASCADE,
-    INDEX idx_item_id (item_id)
-);
-
-CREATE TABLE IF NOT EXISTS shopkeeper_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    shopkeeper_id INT NOT NULL,
-    vnum INT NOT NULL,
-    equip_slot TINYINT DEFAULT 0,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    wear_flags INT DEFAULT NULL,
-    item_type TINYINT DEFAULT NULL,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
-    item_material TINYINT DEFAULT NULL,
-    obj_uid BIGINT UNSIGNED DEFAULT NULL,
-    FOREIGN KEY (shopkeeper_id) REFERENCES shopkeepers(id) ON DELETE CASCADE,
-    FOREIGN KEY (container_id) REFERENCES shopkeeper_items(id) ON DELETE CASCADE,
-    INDEX idx_shopkeeper_id (shopkeeper_id),
-    INDEX idx_vnum (vnum),
-    INDEX idx_obj_uid (obj_uid)
-);
-
-CREATE TABLE IF NOT EXISTS shopkeeper_item_affects (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    FOREIGN KEY (item_id) REFERENCES shopkeeper_items(id) ON DELETE CASCADE,
-    INDEX idx_item_id (item_id)
-);
-
-CREATE TABLE IF NOT EXISTS saved_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_key VARCHAR(100) NOT NULL UNIQUE,
-    room_vnum INT DEFAULT 0,
-    vnum INT NOT NULL,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    item_material TINYINT DEFAULT NULL,
-    unique_id INT UNSIGNED DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (container_id) REFERENCES saved_items(id) ON DELETE CASCADE,
-    INDEX idx_room_vnum (room_vnum),
-    INDEX idx_vnum (vnum)
-);
-
-CREATE TABLE IF NOT EXISTS saved_item_affects (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    FOREIGN KEY (item_id) REFERENCES saved_items(id) ON DELETE CASCADE,
-    INDEX idx_item_id (item_id)
-);
-
-CREATE TABLE IF NOT EXISTS siege_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    room_vnum INT NOT NULL,
-    vnum INT NOT NULL,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    unique_id INT UNSIGNED DEFAULT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (container_id) REFERENCES siege_items(id) ON DELETE CASCADE,
-    INDEX idx_room_vnum (room_vnum),
-    INDEX idx_vnum (vnum)
-);
-
-CREATE TABLE IF NOT EXISTS siege_item_affects (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    FOREIGN KEY (item_id) REFERENCES siege_items(id) ON DELETE CASCADE,
-    INDEX idx_item_id (item_id)
-);
-
-
--- lockers
-
-CREATE TABLE IF NOT EXISTS lockers (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_name VARCHAR(100) NOT NULL UNIQUE,
-    owner_pid INT DEFAULT NULL,
-    owner_assoc_id INT DEFAULT NULL,
-    racewar TINYINT DEFAULT 0,
-    race TINYINT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_owner_pid (owner_pid),
-    INDEX idx_owner_assoc_id (owner_assoc_id)
-);
-
-CREATE TABLE IF NOT EXISTS locker_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    chest_id INT UNSIGNED DEFAULT NULL,
-    vnum INT NOT NULL,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    item_type TINYINT DEFAULT NULL,
-    wear_flags INT DEFAULT NULL,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
-    item_material TINYINT DEFAULT NULL,
-    obj_uid BIGINT UNSIGNED DEFAULT NULL,
-    item_condition SMALLINT DEFAULT 100,
-    FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
-    FOREIGN KEY (container_id) REFERENCES locker_items(id) ON DELETE CASCADE,
-    INDEX idx_locker_id (locker_id),
-    INDEX idx_vnum (vnum),
-    INDEX idx_obj_uid (obj_uid)
-);
-CREATE TABLE IF NOT EXISTS locker_item_affects (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    FOREIGN KEY (item_id) REFERENCES locker_items(id) ON DELETE CASCADE,
-    INDEX idx_item_id (item_id)
-);
-
-
--- account_characters extra columns
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'login_count');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN login_count BIGINT UNSIGNED DEFAULT 0',
-    'SELECT "login_count already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'last_login');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN last_login BIGINT DEFAULT 0',
-    'SELECT "last_login already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'blocked');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN blocked TINYINT DEFAULT 0',
-    'SELECT "blocked already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'racewar');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN racewar TINYINT DEFAULT 0',
-    'SELECT "racewar already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'deleted_at');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN deleted_at DATETIME DEFAULT NULL',
-    'SELECT "deleted_at already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND index_name = 'account_active');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX account_active ON account_characters(account_name, deleted_at)',
-    'SELECT "account_active already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND index_name = 'idx_account_racewar');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX idx_account_racewar ON account_characters(account_name, racewar)',
-    'SELECT "idx_account_racewar already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- ships
-
-CREATE TABLE IF NOT EXISTS ships (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    owner_pid INT UNSIGNED DEFAULT NULL,
-    owner_name VARCHAR(64) NOT NULL UNIQUE,
-    ship_name VARCHAR(128) DEFAULT NULL,
-    ship_class TINYINT UNSIGNED DEFAULT 0,
-    frags INT DEFAULT 0,
-    anchor_room INT DEFAULT 0,
-    time_played INT DEFAULT 0,
-    mainsail INT DEFAULT 0,
-    race TINYINT DEFAULT 0,
-    money INT DEFAULT 0,
-    flags BIGINT UNSIGNED DEFAULT 0,
-    armor_fore INT DEFAULT 0,
-    armor_port INT DEFAULT 0,
-    armor_rear INT DEFAULT 0,
-    armor_star INT DEFAULT 0,
-    internal_fore INT DEFAULT 0,
-    internal_port INT DEFAULT 0,
-    internal_rear INT DEFAULT 0,
-    internal_star INT DEFAULT 0,
-    crew_index INT DEFAULT 0,
-    crew_sail_skill INT DEFAULT 0,
-    crew_guns_skill INT DEFAULT 0,
-    crew_rpar_skill INT DEFAULT 0,
-    crew_sail_chief INT DEFAULT 0,
-    crew_guns_chief INT DEFAULT 0,
-    crew_rpar_chief INT DEFAULT 0,
-    maxspeed_bonus INT DEFAULT 0,
-    capacity_bonus INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- Existing production dumps may have the older ships table; CREATE IF NOT EXISTS
--- does not add columns, so add the runtime columns before indexing them.
-DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
-DELIMITER $$
-CREATE PROCEDURE add_ship_runtime_columns()
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'owner_pid') THEN
-        ALTER TABLE ships ADD COLUMN owner_pid INT UNSIGNED DEFAULT NULL;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_index') THEN
-        ALTER TABLE ships ADD COLUMN crew_index INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_skill') THEN
-        ALTER TABLE ships ADD COLUMN crew_sail_skill INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_skill') THEN
-        ALTER TABLE ships ADD COLUMN crew_guns_skill INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_skill') THEN
-        ALTER TABLE ships ADD COLUMN crew_rpar_skill INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_chief') THEN
-        ALTER TABLE ships ADD COLUMN crew_sail_chief INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_chief') THEN
-        ALTER TABLE ships ADD COLUMN crew_guns_chief INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_chief') THEN
-        ALTER TABLE ships ADD COLUMN crew_rpar_chief INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'maxspeed_bonus') THEN
-        ALTER TABLE ships ADD COLUMN maxspeed_bonus INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'capacity_bonus') THEN
-        ALTER TABLE ships ADD COLUMN capacity_bonus INT DEFAULT 0;
-    END IF;
-END$$
-DELIMITER ;
-CALL add_ship_runtime_columns();
-DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'ships' AND index_name = 'idx_ships_owner_pid');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX idx_ships_owner_pid ON ships(owner_pid)',
-    'SELECT "idx_ships_owner_pid already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-CREATE TABLE IF NOT EXISTS ship_slots (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    ship_id INT UNSIGNED NOT NULL,
-    slot_index TINYINT NOT NULL,
-    slot_type INT NOT NULL DEFAULT 0,
-    item_index INT NOT NULL DEFAULT 0,
-    position INT NOT NULL DEFAULT 0,
-    timer INT NOT NULL DEFAULT 0,
-    val0 INT NOT NULL DEFAULT 0,
-    val1 INT NOT NULL DEFAULT 0,
-    val2 INT NOT NULL DEFAULT 0,
-    val3 INT NOT NULL DEFAULT 0,
-    val4 INT NOT NULL DEFAULT 0,
-    CONSTRAINT fk_ship_slots_ship FOREIGN KEY (ship_id) REFERENCES ships(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_ship_slots_index (ship_id, slot_index)
-);
-
-
--- guilds
-
-CREATE TABLE IF NOT EXISTS guilds (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    guild_id INT UNSIGNED NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL,
-    racewar INT UNSIGNED NOT NULL DEFAULT 0,
-    bits INT UNSIGNED NOT NULL DEFAULT 0,
-    prestige BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    construction BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    platinum INT UNSIGNED NOT NULL DEFAULT 0,
-    gold INT UNSIGNED NOT NULL DEFAULT 0,
-    silver INT UNSIGNED NOT NULL DEFAULT 0,
-    copper INT UNSIGNED NOT NULL DEFAULT 0,
-    total_frags BIGINT NOT NULL DEFAULT 0,
-    top_frags BIGINT NOT NULL DEFAULT 0,
-    top_fragger VARCHAR(50) NOT NULL DEFAULT '',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS guild_ranks (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    guild_id INT UNSIGNED NOT NULL,
-    rank_index TINYINT NOT NULL,
-    title VARCHAR(100) NOT NULL DEFAULT '',
-    CONSTRAINT fk_guild_ranks_guild FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_guild_ranks_index (guild_id, rank_index)
-);
-
-CREATE TABLE IF NOT EXISTS guild_members (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    guild_id INT UNSIGNED NOT NULL,
-    player_name VARCHAR(64) NOT NULL,
-    player_pid INT UNSIGNED DEFAULT NULL,
-    bits INT UNSIGNED NOT NULL DEFAULT 0,
-    debt INT UNSIGNED NOT NULL DEFAULT 0,
-    online_status TINYINT NOT NULL DEFAULT 0,
-    CONSTRAINT fk_guild_members_guild FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_guild_members_name (guild_id, player_name)
-);
-
--- online_status col if missing
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'guild_members' AND column_name = 'online_status');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE guild_members ADD COLUMN online_status TINYINT NOT NULL DEFAULT 0',
-    'SELECT "online_status already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'guild_members' AND index_name = 'idx_guild_members_name');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX idx_guild_members_name ON guild_members(player_name)',
-    'SELECT "idx_guild_members_name already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- player_data fixes
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_data' AND column_name = 'act3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_data ADD COLUMN act3 BIGINT UNSIGNED DEFAULT 0 AFTER act2',
-    'SELECT "act3 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_data' AND column_name = 'last_room');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_data ADD COLUMN last_room INT DEFAULT 0 AFTER orig_birthplace',
-    'SELECT "last_room already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- unique constraints for char names
--- safe version: create the uniqueness constraint only when duplicates are not present
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE()
-    AND table_name = 'account_characters'
-    AND index_name = 'idx_char_name_unique');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE account_characters ADD UNIQUE INDEX idx_char_name_unique (char_name)',
-    'SELECT "idx_char_name_unique already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE()
-    AND table_name = 'player_data'
-    AND index_name = 'idx_player_name_unique');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_data ADD UNIQUE INDEX idx_player_name_unique (name)',
-    'SELECT "idx_player_name_unique already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- hardcore hall of fame
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_data' AND column_name = 'killed_by');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_data ADD COLUMN killed_by VARCHAR(64) DEFAULT NULL AFTER numb_deaths',
-    'SELECT "killed_by already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- unique keys for upsert
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_languages' AND index_name = 'uk_pid_tongue');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_languages ADD UNIQUE KEY uk_pid_tongue (pid, tongue_id)',
-    'SELECT "uk_pid_tongue already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_intros' AND index_name = 'uk_pid_intro');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_intros ADD UNIQUE KEY uk_pid_intro (pid, intro_index)',
-    'SELECT "uk_pid_intro already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_timers' AND index_name = 'uk_pid_timer');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_timers ADD UNIQUE KEY uk_pid_timer (pid, timer_id)',
-    'SELECT "uk_pid_timer already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_undead_slots' AND index_name = 'uk_pid_circle');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_undead_slots ADD UNIQUE KEY uk_pid_circle (pid, circle)',
-    'SELECT "uk_pid_circle already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_forged_items' AND index_name = 'uk_pid_forge');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_forged_items ADD UNIQUE KEY uk_pid_forge (pid, forge_index)',
-    'SELECT "uk_pid_forge already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_granted_cmds' AND index_name = 'uk_pid_cmd');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_granted_cmds ADD UNIQUE KEY uk_pid_cmd (pid, cmd_num)',
-    'SELECT "uk_pid_cmd already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_skills' AND index_name = 'uk_pid_skill');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_skills ADD UNIQUE KEY uk_pid_skill (pid, skill_id)',
-    'SELECT "uk_pid_skill already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- pets
-
-CREATE TABLE IF NOT EXISTS `player_pets` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `owner_pid` INT UNSIGNED NOT NULL,
-  `mob_vnum` INT NOT NULL,
-  `pet_order` TINYINT DEFAULT 0,
-  `hit` INT DEFAULT 0,
-  `max_hit` INT DEFAULT 0,
-  `mana` INT DEFAULT 0,
-  `max_mana` INT DEFAULT 0,
-  `vitality` INT DEFAULT 0,
-  `max_vitality` INT DEFAULT 0,
-  `charm_duration` INT DEFAULT -1,
-  `room_vnum` INT DEFAULT 0,
-  `saved_at` BIGINT DEFAULT 0,
+-- DurisMUD bootstrap schema (authoritative)
+-- This file creates the complete database schema from scratch.
+-- Every CREATE TABLE is the final authoritative definition.
+-- For upgrading an existing database, use migrations/run_migration.sh instead.
+
+SET FOREIGN_KEY_CHECKS = 0;
+SET sql_mode = '';
+
+-- Table: account_banks
+CREATE TABLE `account_banks` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `racewar` tinyint NOT NULL DEFAULT '0',
+  `bank_copper` bigint unsigned DEFAULT '0',
+  `bank_silver` bigint unsigned DEFAULT '0',
+  `bank_gold` bigint unsigned DEFAULT '0',
+  `bank_platinum` bigint unsigned DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_owner_pid` (`owner_pid`),
-  CONSTRAINT `fk_player_pets_owner` FOREIGN KEY (`owner_pid`)
-    REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-);
+  UNIQUE KEY `uk_account_racewar` (`account_name`,`racewar`),
+  KEY `idx_account_name` (`account_name`),
+  CONSTRAINT `account_banks_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `player_pet_items` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pet_id` INT UNSIGNED NOT NULL,
-  `vnum` INT NOT NULL,
-  `equip_slot` TINYINT DEFAULT 0,
-  `container_id` INT UNSIGNED DEFAULT NULL,
-  `weight` INT DEFAULT 0,
-  `cost` INT DEFAULT 0,
-  `timer` INT DEFAULT -1,
-  `extra_flags` BIGINT UNSIGNED DEFAULT 0,
-  `wear_flags` INT DEFAULT NULL,
-  `item_type` TINYINT DEFAULT NULL,
-  `value0` INT DEFAULT 0,
-  `value1` INT DEFAULT 0,
-  `value2` INT DEFAULT 0,
-  `value3` INT DEFAULT 0,
-  `value4` INT DEFAULT 0,
-  `value5` INT DEFAULT 0,
-  `value6` INT DEFAULT 0,
-  `value7` INT DEFAULT 0,
-  `name` VARCHAR(512) DEFAULT NULL,
-  `short_descr` VARCHAR(512) DEFAULT NULL,
-  `description` TEXT DEFAULT NULL,
-  `action_descr` TEXT DEFAULT NULL,
-  `bitvector1` BIGINT UNSIGNED DEFAULT NULL,
-  `bitvector2` BIGINT UNSIGNED DEFAULT NULL,
-  `bitvector3` BIGINT UNSIGNED DEFAULT NULL,
-  `bitvector4` BIGINT UNSIGNED DEFAULT NULL,
-  `bitvector5` BIGINT UNSIGNED DEFAULT NULL,
-  `item_material` TINYINT DEFAULT NULL,
-  `obj_uid` BIGINT UNSIGNED DEFAULT NULL,
-  `item_condition` SMALLINT DEFAULT 100,
+-- Table: account_characters
+CREATE TABLE `account_characters` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `char_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `pid` int unsigned DEFAULT NULL,
+  `login_count` bigint unsigned DEFAULT '0',
+  `last_login` bigint DEFAULT '0',
+  `blocked` tinyint DEFAULT '0',
+  `racewar` tinyint DEFAULT '0',
+  `deleted_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_pet_id` (`pet_id`),
-  KEY `idx_container_id` (`container_id`),
+  UNIQUE KEY `idx_char_name_unique` (`char_name`),
+  UNIQUE KEY `acct_char` (`account_name`,`char_name`),
+  KEY `idx_account_name` (`account_name`),
+  KEY `idx_char_name` (`char_name`),
+  KEY `account_active` (`account_name`,`deleted_at`),
+  KEY `idx_account_racewar` (`account_name`,`racewar`),
+  CONSTRAINT `account_characters_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: account_ips
+CREATE TABLE `account_ips` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `hostname` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `count` bigint unsigned DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_account_ip` (`account_name`,`ip_address`),
+  KEY `idx_account_name` (`account_name`),
+  KEY `idx_ip_address` (`ip_address`),
+  CONSTRAINT `account_ips_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: account_locker_access
+CREATE TABLE `account_locker_access` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `visitor_account` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_locker_visitor` (`locker_id`,`visitor_account`),
+  KEY `idx_visitor` (`visitor_account`),
+  CONSTRAINT `account_locker_access_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: account_locker_item_affects
+CREATE TABLE `account_locker_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `account_locker_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `account_locker_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: account_locker_item_extra_descr
+CREATE TABLE `account_locker_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_account_locker_item_ed` FOREIGN KEY (`item_id`) REFERENCES `account_locker_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: account_locker_items
+CREATE TABLE `account_locker_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `chest_id` int unsigned NOT NULL,
+  `vnum` int NOT NULL,
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `item_type` tinyint DEFAULT NULL,
+  `wear_flags` int DEFAULT NULL,
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
+  PRIMARY KEY (`id`),
+  KEY `container_id` (`container_id`),
+  KEY `idx_chest_id` (`chest_id`),
+  KEY `idx_vnum` (`vnum`),
   KEY `idx_obj_uid` (`obj_uid`),
-  CONSTRAINT `fk_pet_items_pet` FOREIGN KEY (`pet_id`)
-    REFERENCES `player_pets` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_pet_items_container` FOREIGN KEY (`container_id`)
-    REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-);
+  CONSTRAINT `account_locker_items_ibfk_1` FOREIGN KEY (`chest_id`) REFERENCES `locker_chests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `account_locker_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `account_locker_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `player_pet_item_affects` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `item_id` INT UNSIGNED NOT NULL,
-  `location` TINYINT UNSIGNED DEFAULT 0,
-  `modifier` INT DEFAULT 0,
+-- Table: account_lockers
+CREATE TABLE `account_lockers` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `racewar` tinyint DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_item_id` (`item_id`),
-  CONSTRAINT `fk_pet_item_affects` FOREIGN KEY (`item_id`)
-    REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-);
-
-
--- zone payouts (optional, only if zones table exists)
-DROP PROCEDURE IF EXISTS update_zone_payouts;
-
-DELIMITER //
-CREATE PROCEDURE update_zone_payouts()
-BEGIN
-    DECLARE tbl_exists INT DEFAULT 0;
-    SELECT COUNT(*) INTO tbl_exists FROM information_schema.tables
-        WHERE table_schema = DATABASE() AND table_name = 'zones';
-
-    IF tbl_exists > 0 THEN
-        -- disable group size penalty for now
-        UPDATE zones SET suggested_group_size = 100 WHERE epic_type != '0';
-
-        UPDATE zones SET epic_payout = 0 WHERE number = 1389;
-        UPDATE zones SET epic_payout = 80 WHERE number IN (400, 93, 740, 14, 90, 383);
-        UPDATE zones SET epic_payout = 90 WHERE number IN (264, 140, 823, 370, 38, 879, 113, 143);
-        UPDATE zones SET epic_payout = 100 WHERE number IN (191, 342, 285, 67, 381, 27, 429, 805, 133, 183, 130, 666, 1320, 220, 755);
-        UPDATE zones SET epic_payout = 110 WHERE number IN (758, 73, 824, 662, 664);
-        UPDATE zones SET epic_payout = 120 WHERE number IN (430, 773, 490, 710);
-        UPDATE zones SET epic_payout = 130 WHERE number IN (200, 766);
-        UPDATE zones SET epic_payout = 150 WHERE number IN (760, 570, 91);
-        UPDATE zones SET epic_payout = 175 WHERE number IN (318, 50);
-        UPDATE zones SET epic_payout = 200 WHERE number IN (970, 920, 213);
-        UPDATE zones SET epic_payout = 225 WHERE number IN (24, 244, 254, 197);
-        UPDATE zones SET epic_payout = 250 WHERE number IN (151, 780, 412);
-        UPDATE zones SET epic_payout = 260 WHERE number IN (87, 368);
-        UPDATE zones SET epic_payout = 275 WHERE number IN (35, 448, 756, 261);
-        UPDATE zones SET epic_payout = 285 WHERE number IN (419, 162);
-        UPDATE zones SET epic_payout = 300 WHERE number IN (709, 238, 124);
-        UPDATE zones SET epic_payout = 315 WHERE number IN (784, 831);
-        UPDATE zones SET epic_payout = 325 WHERE number IN (386, 229, 289, 960);
-        UPDATE zones SET epic_payout = 335 WHERE number = 441;
-        UPDATE zones SET epic_payout = 345 WHERE number = 215;
-        UPDATE zones SET epic_payout = 350 WHERE number IN (989, 315, 367, 1200, 1398, 232);
-        UPDATE zones SET epic_payout = 400 WHERE number IN (328, 159, 435, 712, 326);
-        UPDATE zones SET epic_payout = 425 WHERE number IN (910, 877, 777);
-        UPDATE zones SET epic_payout = 450 WHERE number IN (883, 1316);
-        UPDATE zones SET epic_payout = 500 WHERE number IN (814, 230, 1390);
-        UPDATE zones SET epic_payout = 550 WHERE number IN (444, 588, 1424);
-        UPDATE zones SET epic_payout = 600 WHERE number IN (1300, 68);
-        UPDATE zones SET epic_payout = 650 WHERE number = 196;
-        UPDATE zones SET epic_payout = 700 WHERE number IN (345, 257);
-        UPDATE zones SET epic_payout = 800 WHERE number IN (266, 324);
-        UPDATE zones SET epic_payout = 850 WHERE number = 4200;
-        UPDATE zones SET epic_payout = 900 WHERE number IN (387, 455);
-        UPDATE zones SET epic_payout = 950 WHERE number = 875;
-        UPDATE zones SET epic_payout = 1000 WHERE number = 583;
-    END IF;
-END //
-DELIMITER ;
-
-CALL update_zone_payouts();
-DROP PROCEDURE IF EXISTS update_zone_payouts;
-
-
--- item extra descriptions (spellbooks etc)
-
-CREATE TABLE IF NOT EXISTS player_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_player_item_ed FOREIGN KEY (item_id)
-    REFERENCES player_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS player_pet_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_pet_item_ed FOREIGN KEY (item_id)
-    REFERENCES player_pet_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS corpse_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_corpse_item_ed FOREIGN KEY (item_id)
-    REFERENCES corpse_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS locker_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_locker_item_ed FOREIGN KEY (item_id)
-    REFERENCES locker_items(id) ON DELETE CASCADE
-);
-
--- obj_uid for item duplication prevention
-DELIMITER //
-
-CREATE PROCEDURE add_obj_uid_columns()
-BEGIN
-    -- player_items
-    IF EXISTS (SELECT 1 FROM information_schema.columns
-               WHERE table_schema = DATABASE()
-               AND table_name = 'player_items'
-               AND column_name = 'unique_id') THEN
-        ALTER TABLE player_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
-    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                       WHERE table_schema = DATABASE()
-                       AND table_name = 'player_items'
-                       AND column_name = 'obj_uid') THEN
-        ALTER TABLE player_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'player_items'
-                   AND column_name = 'item_condition') THEN
-        ALTER TABLE player_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'player_items'
-                   AND index_name = 'idx_obj_uid') THEN
-        ALTER TABLE player_items ADD INDEX idx_obj_uid (obj_uid);
-    END IF;
-
-    -- corpse_items
-    IF EXISTS (SELECT 1 FROM information_schema.columns
-               WHERE table_schema = DATABASE()
-               AND table_name = 'corpse_items'
-               AND column_name = 'unique_id') THEN
-        ALTER TABLE corpse_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
-    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                       WHERE table_schema = DATABASE()
-                       AND table_name = 'corpse_items'
-                       AND column_name = 'obj_uid') THEN
-        ALTER TABLE corpse_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'corpse_items'
-                   AND column_name = 'item_condition') THEN
-        ALTER TABLE corpse_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'corpse_items'
-                   AND index_name = 'idx_obj_uid') THEN
-        ALTER TABLE corpse_items ADD INDEX idx_obj_uid (obj_uid);
-    END IF;
-
-    -- locker_items
-    IF EXISTS (SELECT 1 FROM information_schema.columns
-               WHERE table_schema = DATABASE()
-               AND table_name = 'locker_items'
-               AND column_name = 'unique_id') THEN
-        ALTER TABLE locker_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL;
-    ELSEIF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                       WHERE table_schema = DATABASE()
-                       AND table_name = 'locker_items'
-                       AND column_name = 'obj_uid') THEN
-        ALTER TABLE locker_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'locker_items'
-                   AND column_name = 'item_condition') THEN
-        ALTER TABLE locker_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'locker_items'
-                   AND index_name = 'idx_obj_uid') THEN
-        ALTER TABLE locker_items ADD INDEX idx_obj_uid (obj_uid);
-    END IF;
-
-    -- player_pet_items
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'player_pet_items'
-                   AND column_name = 'obj_uid') THEN
-        ALTER TABLE player_pet_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'player_pet_items'
-                   AND column_name = 'item_condition') THEN
-        ALTER TABLE player_pet_items ADD COLUMN item_condition SMALLINT DEFAULT 100;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
-                   WHERE table_schema = DATABASE()
-                   AND table_name = 'player_pet_items'
-                   AND index_name = 'idx_obj_uid') THEN
-        ALTER TABLE player_pet_items ADD INDEX idx_obj_uid (obj_uid);
-    END IF;
-END //
-
-DELIMITER ;
-
-CALL add_obj_uid_columns();
-DROP PROCEDURE IF EXISTS add_obj_uid_columns;
-
-
--- account lockers
-
-CREATE TABLE IF NOT EXISTS account_lockers (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    account_name VARCHAR(50) NOT NULL,
-    racewar TINYINT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
-    UNIQUE KEY uk_account_racewar (account_name, racewar),
-    INDEX idx_account_name (account_name)
-);
-
--- Existing installs created account_lockers.account_name as UNIQUE, which
--- prevents separate good/evil racewar lockers for one account. Drop that
--- single-column unique key if present, then enforce the intended racewar scope.
-SET @old_account_locker_unique = (
-    SELECT index_name
-    FROM information_schema.statistics
-    WHERE table_schema = DATABASE()
-      AND table_name = 'account_lockers'
-      AND non_unique = 0
-      AND index_name <> 'PRIMARY'
-    GROUP BY index_name
-    HAVING COUNT(*) = 1 AND SUM(column_name = 'account_name') = 1
-    LIMIT 1
-);
-SET @sql = IF(@old_account_locker_unique IS NOT NULL,
-    CONCAT('ALTER TABLE account_lockers DROP INDEX `', @old_account_locker_unique, '`'),
-    'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'account_lockers'
-    AND index_name = 'uk_account_racewar');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE account_lockers ADD UNIQUE KEY uk_account_racewar (account_name, racewar)',
-    'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-CREATE TABLE IF NOT EXISTS locker_chests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    keyword VARCHAR(64) NOT NULL,
-    keyword_hash VARCHAR(64) DEFAULT NULL,
-    is_public TINYINT(1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_locker_keyword (locker_id, keyword),
-    INDEX idx_locker_id (locker_id)
-);
-
-CREATE TABLE IF NOT EXISTS account_locker_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    chest_id INT UNSIGNED NOT NULL,
-    vnum INT NOT NULL,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    item_type TINYINT DEFAULT NULL,
-    wear_flags INT DEFAULT NULL,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
-    item_material TINYINT DEFAULT NULL,
-    obj_uid BIGINT UNSIGNED DEFAULT NULL,
-    item_condition SMALLINT DEFAULT 100,
-    FOREIGN KEY (chest_id) REFERENCES locker_chests(id) ON DELETE CASCADE,
-    FOREIGN KEY (container_id) REFERENCES account_locker_items(id) ON DELETE CASCADE,
-    INDEX idx_chest_id (chest_id),
-    INDEX idx_vnum (vnum),
-    INDEX idx_obj_uid (obj_uid)
-);
-CREATE TABLE IF NOT EXISTS account_locker_item_affects (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    FOREIGN KEY (item_id) REFERENCES account_locker_items(id) ON DELETE CASCADE,
-    INDEX idx_item_id (item_id)
-);
-
-CREATE TABLE IF NOT EXISTS account_locker_access (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    visitor_account VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_locker_visitor (locker_id, visitor_account),
-    INDEX idx_visitor (visitor_account)
-);
-
-CREATE TABLE IF NOT EXISTS locker_activity_log (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    account_name VARCHAR(50) NOT NULL,
-    char_name VARCHAR(64) NOT NULL,
-    action_type ENUM('enter', 'leave', 'chest_open', 'chest_fail', 'kicked', 'chest_create', 'chest_delete', 'item_put', 'item_get') NOT NULL,
-    chest_keyword VARCHAR(64) DEFAULT NULL,
-    details VARCHAR(255) DEFAULT NULL,
-    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
-    INDEX idx_locker_id (locker_id),
-    INDEX idx_logged_at (logged_at)
-);
-
-CREATE TABLE IF NOT EXISTS locker_kickouts (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    account_name VARCHAR(50) NOT NULL,
-    fail_count TINYINT UNSIGNED DEFAULT 0,
-    kicked_until TIMESTAMP NULL DEFAULT NULL,
-    last_fail TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_locker_account (locker_id, account_name)
-);
-
-CREATE TABLE IF NOT EXISTS locker_session_state (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    account_name VARCHAR(50) NOT NULL,
-    chest_id INT UNSIGNED NOT NULL,
-    opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (locker_id) REFERENCES account_lockers(id) ON DELETE CASCADE,
-    FOREIGN KEY (chest_id) REFERENCES locker_chests(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_session (locker_id, account_name, chest_id)
-);
-
-
--- migrate character lockers to racewar-scoped account locker rows (non-destructive)
--- Runtime account lockers are represented in the legacy lockers table as:
---   account.<account_name>.<racewar>.locker
-
--- sync account_name
-UPDATE player_data pd
-JOIN account_characters ac ON pd.pid = ac.pid
-SET pd.account_name = ac.account_name
-WHERE pd.account_name IS NULL OR pd.account_name = '';
-
--- create account locker rows. Item copy happens later, after private_chests,
--- chest_id, bitvectors, and item_material are guaranteed to exist.
-INSERT IGNORE INTO lockers (locker_name, racewar, race)
-SELECT DISTINCT CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker'), ac.racewar, 0
-FROM account_characters ac
-JOIN lockers l ON LOWER(SUBSTRING_INDEX(l.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-WHERE ac.account_name IS NOT NULL AND ac.account_name != ''
-  AND l.locker_name LIKE '%.locker'
-  AND l.locker_name NOT LIKE 'guild.%'
-  AND l.locker_name NOT LIKE 'account.%';
-
--- account banks
-
-CREATE TABLE IF NOT EXISTS account_banks (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    account_name VARCHAR(50) NOT NULL,
-    racewar TINYINT NOT NULL DEFAULT 0,
-    bank_copper BIGINT UNSIGNED DEFAULT 0,
-    bank_silver BIGINT UNSIGNED DEFAULT 0,
-    bank_gold BIGINT UNSIGNED DEFAULT 0,
-    bank_platinum BIGINT UNSIGNED DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE,
-    UNIQUE KEY uk_account_racewar (account_name, racewar),
-    INDEX idx_account_name (account_name)
-);
-
--- migrate player banks to account banks
-REPLACE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
-SELECT
-    ac.account_name,
-    ac.racewar,
-    SUM(pd.bank_copper),
-    SUM(pd.bank_silver),
-    SUM(pd.bank_gold),
-    SUM(pd.bank_platinum)
-FROM account_characters ac
-JOIN player_data pd ON ac.pid = pd.pid
-WHERE pd.bank_copper > 0 OR pd.bank_silver > 0 OR pd.bank_gold > 0 OR pd.bank_platinum > 0
-GROUP BY ac.account_name, ac.racewar;
-
-
--- private chests (links to lockers table)
-
-CREATE TABLE IF NOT EXISTS private_chests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    chest_name VARCHAR(32) NOT NULL,
-    password_hash VARCHAR(64) DEFAULT NULL,
-    is_public TINYINT(1) DEFAULT 0,
-    sort_config TEXT DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_locker_chest (locker_id, chest_name),
-    INDEX idx_locker_id (locker_id)
-);
-
--- add chest_id to locker_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'chest_id');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN chest_id INT UNSIGNED DEFAULT NULL AFTER locker_id',
-    'SELECT "chest_id already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- activity log for locker owner
-CREATE TABLE IF NOT EXISTS private_chest_log (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    chest_id INT UNSIGNED DEFAULT NULL,
-    char_name VARCHAR(64) NOT NULL,
-    action_type ENUM('open', 'close', 'put', 'get', 'fail') NOT NULL,
-    item_short VARCHAR(256) DEFAULT NULL,
-    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
-    INDEX idx_locker_id (locker_id),
-    INDEX idx_logged_at (logged_at)
-);
-
--- create default public chest for existing lockers
-INSERT IGNORE INTO private_chests (locker_id, chest_name, is_public)
-SELECT id, 'public', 1
-FROM lockers
-WHERE locker_name LIKE 'account.%';
-
-
--- kofi donations
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'accounts' AND column_name = 'total_donated');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE accounts ADD COLUMN total_donated DECIMAL(10,2) DEFAULT 0.00',
-    'SELECT "total_donated already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- polls
-
-CREATE TABLE IF NOT EXISTS polls (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    question VARCHAR(512) NOT NULL,
-    created_by VARCHAR(32) NOT NULL,
-    created_at INT NOT NULL DEFAULT 0,
-    expires_at INT NOT NULL DEFAULT 0,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    multi_select TINYINT(1) NOT NULL DEFAULT 0,
-    max_choices INT NOT NULL DEFAULT 1
-);
-
-CREATE TABLE IF NOT EXISTS poll_options (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    poll_id INT UNSIGNED NOT NULL,
-    option_num INT NOT NULL,
-    option_text VARCHAR(256) NOT NULL,
-    INDEX idx_poll_id (poll_id)
-);
-
-CREATE TABLE IF NOT EXISTS poll_votes (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    poll_id INT UNSIGNED NOT NULL,
-    account_name VARCHAR(64) NOT NULL,
-    option_id INT UNSIGNED NOT NULL,
-    voted_at INT NOT NULL DEFAULT 0,
-    char_name VARCHAR(32) NOT NULL,
-    UNIQUE KEY uk_poll_account_option (poll_id, account_name, option_id),
-    INDEX idx_poll_id (poll_id),
-    INDEX idx_account_name (account_name)
-);
-
-
--- done
-
--- ============================================================================
--- FILE: schema_migration_v3_lockers.sql
--- ============================================================================
--- durismud locker tables schema
--- player lockers and guild lockers
-
--- ============================================================================
--- lockers table (replaces .locker pfiles)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS lockers (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_name VARCHAR(100) NOT NULL UNIQUE,
-    owner_pid INT DEFAULT NULL,
-    owner_assoc_id INT DEFAULT NULL,
-    racewar TINYINT DEFAULT 0,
-    race TINYINT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_owner_pid (owner_pid),
-    INDEX idx_owner_assoc_id (owner_assoc_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- ============================================================================
--- locker items (normalized, same pattern as other item tables)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS locker_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    locker_id INT UNSIGNED NOT NULL,
-    chest_id INT UNSIGNED DEFAULT NULL,
-    vnum INT NOT NULL,
-    container_id INT UNSIGNED DEFAULT NULL,
-    quantity SMALLINT UNSIGNED DEFAULT 1,
-    weight INT DEFAULT 0,
-    cost INT DEFAULT 0,
-    timer INT DEFAULT -1,
-    extra_flags BIGINT UNSIGNED DEFAULT 0,
-    item_type TINYINT DEFAULT NULL,
-    wear_flags INT DEFAULT NULL,
-    value0 INT DEFAULT 0,
-    value1 INT DEFAULT 0,
-    value2 INT DEFAULT 0,
-    value3 INT DEFAULT 0,
-    value4 INT DEFAULT 0,
-    value5 INT DEFAULT 0,
-    value6 INT DEFAULT 0,
-    value7 INT DEFAULT 0,
-    name VARCHAR(512) DEFAULT NULL,
-    short_descr VARCHAR(512) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    action_descr TEXT DEFAULT NULL,
-    bitvector1 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector2 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector3 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector4 BIGINT UNSIGNED DEFAULT NULL,
-    bitvector5 BIGINT UNSIGNED DEFAULT NULL,
-    item_material TINYINT DEFAULT NULL,
-    obj_uid BIGINT UNSIGNED DEFAULT NULL,
-    item_condition SMALLINT DEFAULT 100,
-    FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
-    FOREIGN KEY (container_id) REFERENCES locker_items(id) ON DELETE CASCADE,
-    INDEX idx_locker_id (locker_id),
-    INDEX idx_vnum (vnum),
-    INDEX idx_obj_uid (obj_uid)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS locker_item_affects (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_id INT UNSIGNED NOT NULL,
-    location TINYINT UNSIGNED DEFAULT 0,
-    modifier INT DEFAULT 0,
-    FOREIGN KEY (item_id) REFERENCES locker_items(id) ON DELETE CASCADE,
-    INDEX idx_item_id (item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================================================
--- FILE: schema_migration_v4_accounts.sql
--- ============================================================================
--- account_characters pfile columns
---
--- Idempotency: all ALTER TABLEs guarded with information_schema checks.
--- CREATE INDEX wrapped with IF NOT EXISTS equivalent.
-
--- login_count
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'login_count');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN login_count BIGINT UNSIGNED DEFAULT 0',
-    'SELECT "login_count already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- last_login
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'last_login');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN last_login BIGINT DEFAULT 0',
-    'SELECT "last_login already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- blocked
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'blocked');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN blocked TINYINT DEFAULT 0',
-    'SELECT "blocked already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- racewar
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'racewar');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN racewar TINYINT DEFAULT 0',
-    'SELECT "racewar already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- index on (account_name, racewar)
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters'
-    AND index_name = 'idx_account_racewar');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX idx_account_racewar ON account_characters(account_name, racewar)',
-    'SELECT "idx_account_racewar already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: retired_schema_migration_v5_ships.sql
--- ============================================================================
--- ships tables
-
-create table if not exists ships (
-    id int unsigned auto_increment primary key,
-    owner_pid int unsigned default null,
-    owner_name varchar(64) not null unique,
-    ship_name varchar(128) default null,
-    ship_class tinyint unsigned default 0,
-    frags int default 0,
-    anchor_room int default 0,
-    time_played int default 0,
-    mainsail int default 0,
-    race tinyint default 0,
-    money int default 0,
-    flags bigint unsigned default 0,
-    armor_fore int default 0,
-    armor_port int default 0,
-    armor_rear int default 0,
-    armor_star int default 0,
-    internal_fore int default 0,
-    internal_port int default 0,
-    internal_rear int default 0,
-    internal_star int default 0,
-    crew_index int default 0,
-    crew_sail_skill int default 0,
-    crew_guns_skill int default 0,
-    crew_rpar_skill int default 0,
-    crew_sail_chief int default 0,
-    crew_guns_chief int default 0,
-    crew_rpar_chief int default 0,
-    maxspeed_bonus int default 0,
-    capacity_bonus int default 0,
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp on update current_timestamp
-) engine=innodb;
-
--- Existing production dumps may have the older ships table; CREATE IF NOT EXISTS
--- does not add columns, so add the runtime columns before indexing them.
-DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
-DELIMITER $$
-CREATE PROCEDURE add_ship_runtime_columns()
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'owner_pid') THEN
-        ALTER TABLE ships ADD COLUMN owner_pid INT UNSIGNED DEFAULT NULL;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_index') THEN
-        ALTER TABLE ships ADD COLUMN crew_index INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_skill') THEN
-        ALTER TABLE ships ADD COLUMN crew_sail_skill INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_skill') THEN
-        ALTER TABLE ships ADD COLUMN crew_guns_skill INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_skill') THEN
-        ALTER TABLE ships ADD COLUMN crew_rpar_skill INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_sail_chief') THEN
-        ALTER TABLE ships ADD COLUMN crew_sail_chief INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_guns_chief') THEN
-        ALTER TABLE ships ADD COLUMN crew_guns_chief INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'crew_rpar_chief') THEN
-        ALTER TABLE ships ADD COLUMN crew_rpar_chief INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'maxspeed_bonus') THEN
-        ALTER TABLE ships ADD COLUMN maxspeed_bonus INT DEFAULT 0;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ships' AND column_name = 'capacity_bonus') THEN
-        ALTER TABLE ships ADD COLUMN capacity_bonus INT DEFAULT 0;
-    END IF;
-END$$
-DELIMITER ;
-CALL add_ship_runtime_columns();
-DROP PROCEDURE IF EXISTS add_ship_runtime_columns;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'ships' AND index_name = 'idx_ships_owner_pid');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX idx_ships_owner_pid ON ships(owner_pid)',
-    'SELECT "idx_ships_owner_pid already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-create table if not exists ship_slots (
-    id int unsigned auto_increment primary key,
-    ship_id int unsigned not null,
-    slot_index tinyint not null,
-    slot_type int not null default 0,
-    item_index int not null default 0,
-    position int not null default 0,
-    timer int not null default 0,
-    val0 int not null default 0,
-    val1 int not null default 0,
-    val2 int not null default 0,
-    val3 int not null default 0,
-    val4 int not null default 0,
-    constraint fk_ship_slots_ship foreign key (ship_id) references ships(id) on delete cascade,
-    unique key uk_ship_slots_index (ship_id, slot_index)
-) engine=innodb;
-
-create table if not exists ship_armor (
-    id int unsigned auto_increment primary key,
-    ship_id int unsigned not null,
-    side tinyint not null,
-    armor int default 0,
-    internal int default 0,
-    constraint fk_ship_armor_ship foreign key (ship_id) references ships(id) on delete cascade,
-    unique key uk_ship_armor (ship_id, side)
-) engine=innodb;
-
-create table if not exists ship_crew (
-    id int unsigned auto_increment primary key,
-    ship_id int unsigned not null,
-    crew_index int default 0,
-    sail_skill int default 0,
-    guns_skill int default 0,
-    rpar_skill int default 0,
-    sail_chief int default 0,
-    guns_chief int default 0,
-    rpar_chief int default 0,
-    constraint fk_ship_crew_ship foreign key (ship_id) references ships(id) on delete cascade,
-    unique key uk_ship_crew (ship_id)
-) engine=innodb;
-
--- ============================================================================
--- FILE: retired_schema_migration_v6_guilds.sql
--- ============================================================================
--- guilds tables
-
-create table if not exists guilds (
-    id int unsigned auto_increment primary key,
-    guild_id int unsigned not null unique,
-    name varchar(100) not null,
-    racewar int unsigned not null default 0,
-    bits int unsigned not null default 0,
-    prestige bigint unsigned not null default 0,
-    construction bigint unsigned not null default 0,
-    platinum int unsigned not null default 0,
-    gold int unsigned not null default 0,
-    silver int unsigned not null default 0,
-    copper int unsigned not null default 0,
-    total_frags bigint not null default 0,
-    top_frags bigint not null default 0,
-    top_fragger varchar(50) not null default '',
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp on update current_timestamp
-) engine=innodb;
-
-create table if not exists guild_ranks (
-    id int unsigned auto_increment primary key,
-    guild_id int unsigned not null,
-    rank_index tinyint not null,
-    title varchar(100) not null default '',
-    constraint fk_guild_ranks_guild foreign key (guild_id) references guilds(id) on delete cascade,
-    unique key uk_guild_ranks_index (guild_id, rank_index)
-) engine=innodb;
-
-create table if not exists guild_members (
-    id int unsigned auto_increment primary key,
-    guild_id int unsigned not null,
-    player_name varchar(64) not null,
-    player_pid int unsigned default null,
-    bits int unsigned not null default 0,
-    debt int unsigned not null default 0,
-    online_status tinyint not null default 0,
-    constraint fk_guild_members_guild foreign key (guild_id) references guilds(id) on delete cascade,
-    unique key uk_guild_members_name (guild_id, player_name)
-) engine=innodb;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'guild_members' AND index_name = 'idx_guild_members_name');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE INDEX idx_guild_members_name ON guild_members(player_name)',
-    'SELECT "idx_guild_members_name already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
--- ============================================================================
--- FILE: bootstrap_base_boons_outposts.sql
--- ============================================================================
--- boons tables
-
-create table if not exists boons (
-    id int auto_increment primary key,
-    time int not null default 0,
-    duration int not null default 0,
-    racewar int not null default 0,
-    type int not null default 0,
-    opt int not null default 0,
-    criteria decimal(10,2) not null default 0.00,
-    criteria2 decimal(10,2) not null default 0.00,
-    bonus decimal(10,2) not null default 0.00,
-    bonus2 decimal(10,2) not null default 0.00,
-    random int not null default 0,
-    author varchar(20) default null,
-    active int not null default 0,
-    pid int not null default 0,
-    rpt int not null default 0
-) engine=innodb;
-
-create table if not exists boons_progress (
-    id int auto_increment primary key,
-    boonid int not null default 0,
-    pid int not null default 0,
-    counter decimal(10,2) not null default 0.00
-) engine=innodb;
-
-create table if not exists boons_shop (
-    id int auto_increment primary key,
-    pid int not null default 0,
-    points int not null default 0,
-    stats int not null default 0,
-    unique key uk_pid (pid)
-) engine=innodb;
-
--- outposts tables
-
-create table if not exists outposts (
-    id int not null,
-    owner_id int not null default 0,
-    level int not null default 1,
-    walls int not null default 0,
-    archers int not null default 0,
-    resources int not null default 0,
-    applied_resources int not null default 100000,
-    hitpoints int not null default 0,
-    territory int not null default 0,
-    portal_room int not null default 0,
-    golems int not null default 0,
-    meurtriere int not null default 0,
-    scouts int not null default 0,
-    primary key (id)
-) engine=innodb;
-
--- additional runtime tables aligned from run_migration.sh
-
-create table if not exists artifacts (
-    vnum int not null,
-    owned char(1) not null,
-    locType int not null default 1,
-    location int not null,
-    timer datetime default null,
-    type int not null,
-    lastUpdate datetime default null,
-    primary key (vnum)
-) engine=innodb;
-
-create table if not exists artifacts_mortal (
-    vnum int not null,
-    owned char(1) not null,
-    locType int not null,
-    location int not null,
-    timer datetime default null,
-    type int not null,
-    primary key (vnum)
-) engine=innodb;
-
-create table if not exists artifact_bind (
-    vnum int not null primary key,
-    owner_pid int default null,
-    timer int default null
-) engine=innodb;
-
-create table if not exists alliances (
-    id int auto_increment primary key,
-    created_at datetime default null,
-    forging_assoc_id int not null,
-    joining_assoc_id int not null,
-    tribute_owed int not null default 0
-) engine=innodb;
-
-create table if not exists associations (
-    id int not null primary key,
-    name varchar(255) not null default '',
-    prestige int not null default 0,
-    active tinyint(1) not null default 1,
-    wood int not null default 0,
-    stone int not null default 0,
-    construction_points int not null default 0,
-    over_max int not null default 0
-) engine=innodb;
-
-create table if not exists guild_transactions (
-    id int unsigned auto_increment primary key,
-    soc_id int unsigned not null default 0,
-    date int not null default 0,
-    transaction_info varchar(255) not null default '',
-    index idx_soc_id (soc_id)
-) engine=innodb;
-
-create table if not exists guildhall_rooms (
-    id int auto_increment primary key,
-    guildhall_id int not null default 0,
-    vnum int not null default 0,
-    type int not null default 0,
-    value0 int unsigned not null default 0,
-    value1 int unsigned not null default 0,
-    value2 int unsigned not null default 0,
-    value3 int unsigned not null default 0,
-    value4 int unsigned not null default 0,
-    value5 int unsigned not null default 0,
-    value6 int unsigned not null default 0,
-    value7 int unsigned not null default 0,
-    exit0 int not null default 0,
-    exit1 int not null default 0,
-    exit2 int not null default 0,
-    exit3 int not null default 0,
-    exit4 int not null default 0,
-    exit5 int not null default 0,
-    exit6 int not null default 0,
-    exit7 int not null default 0,
-    exit8 int not null default 0,
-    exit9 int not null,
-    name varchar(255) not null,
-    index idx_vnum (vnum),
-    index idx_guildhall_id (guildhall_id)
-) engine=innodb;
-
-create table if not exists guildhalls (
-    id int auto_increment primary key,
-    assoc_id int not null default 0,
-    type int not null default 0,
-    outside_vnum int not null default 0,
-    racewar int not null default 0,
-    index idx_assoc_id (assoc_id)
-) engine=innodb;
-
-create table if not exists ship_cargo_market_mods (
-    type varchar(255) not null default '',
-    port_id int not null default -1,
-    cargo_type int not null default -1,
-    modifier float not null default 0,
-    key type_port_id_cargo_type (type, port_id, cargo_type)
-) engine=innodb;
-
-create table if not exists ship_cargo_prices (
-    type varchar(255) not null default '',
-    port_id int not null default -1,
-    cargo_type int not null default -1,
-    price int not null default 0,
-    key type_port_id_cargo_type (type, port_id, cargo_type)
-) engine=innodb;
-
-create table if not exists shop_trophy (
-    id int auto_increment primary key,
-    item int not null default 0,
-    value int not null default 0,
-    seller int not null default 0,
-    timestamp timestamp not null default current_timestamp on update current_timestamp
-) engine=innodb;
-
-create table if not exists statistics (
-    id int auto_increment primary key,
-    date int not null default 0,
-    goods_count int not null default 0,
-    evils_count int not null default 0,
-    illithids_count int not null default 0,
-    undeads_count int not null default 0,
-    gods_count int not null default 0,
-    in_guildhall_count int not null default 0,
-    sum_goods_levels int not null default 0,
-    sum_evils_levels int not null default 0,
-    sum_illithids_levels int not null default 0,
-    sum_undeads_levels int not null default 0,
-    unique_ips_count int not null default 0
-) engine=innodb;
-
-create table if not exists timers (
-    name varchar(255) not null default '',
-    date int not null default 0,
-    primary key (name)
-) engine=innodb;
-
-create table if not exists world_quest_accomplished (
-    id int unsigned auto_increment primary key,
-    pid varchar(45) not null default '',
-    timestamp timestamp not null default current_timestamp on update current_timestamp,
-    quest_giver int unsigned not null default 0,
-    player_name varchar(45) not null default '',
-    player_level int unsigned not null default 0,
-    quest_target int not null default 0,
-    reward_vnum int not null default 0,
-    reward_desc varchar(255) not null default ''
-) engine=innodb;
-
-create table if not exists zones (
-    id int auto_increment primary key,
-    number int default null,
-    name varchar(100) not null default '',
-    epic_type int not null default 0,
-    frequency_mod float not null default 1,
-    zone_freq_mod float not null default 1,
-    epic_level int not null default 0,
-    task_zone tinyint(1) not null default 0,
-    quest_zone tinyint(1) not null default 0,
-    trophy_zone tinyint(1) not null default 1,
-    suggested_group_size int not null default 1,
-    epic_payout int not null default 0,
-    difficulty int not null default 0,
-    randoms_zone tinyint(1) not null default 1,
-    alignment int not null default 0,
-    last_touch timestamp null default null,
-    reset_perc int default 0,
-    stonecount int not null default 1,
-    index idx_number (number)
-) engine=innodb;
-
-create table if not exists zone_touches (
-    id int auto_increment primary key,
-    boot_time timestamp null default null,
-    zone_number int default null,
-    touched_at timestamp null default null,
-    toucher_pid int default null,
-    group_size int default null,
-    epic_value int default null,
-    alignment_delta int default null,
-    index idx_zone_number (zone_number)
-) engine=innodb;
-
-create table if not exists zone_trophy (
-    pid bigint not null default 0,
-    zone_number int not null default 0,
-    exp int not null default 0,
-    primary key (pid, zone_number),
-    index idx_pid (pid),
-    index idx_zone_number (zone_number),
-    index idx_exp (exp)
-) engine=innodb;
-
-create table if not exists locker_access (
-    owner varchar(255) not null,
-    visitor varchar(255) not null,
-    primary key (owner, visitor)
-) engine=innodb;
-
-create table if not exists ctf_data (
-    id int auto_increment primary key,
-    time timestamp null default null,
-    pid int not null default 0,
-    type int not null default 0,
-    flagtype int not null default 0,
-    racewar int not null default 0
-) engine=innodb;
-
-create table if not exists epic_bonus (
-    pid int not null,
-    type int not null default 0,
-    time datetime default null,
-    unique key uk_pid (pid)
-) engine=innodb;
-
-create table if not exists epic_gain (
-    id int unsigned auto_increment primary key,
-    pid bigint not null default 0,
-    time datetime not null,
-    type int not null default 0,
-    type_id int not null default 0,
-    epics int not null default 0,
-    index idx_pid (pid)
-) engine=innodb;
-
-create table if not exists eq_drop (
-    id int unsigned auto_increment primary key,
-    date timestamp not null default current_timestamp on update current_timestamp,
-    vnum int unsigned not null default 0,
-    pid_looter bigint unsigned not null default 0,
-    room_id int unsigned not null default 0,
-    index idx_vnum (vnum)
-) engine=innodb;
-
-create table if not exists racewar_stat_mods (
-    racewar int not null default 0,
-    Str int not null default 0,
-    Dex int not null default 0,
-    Agi int not null default 0,
-    Con int not null default 0,
-    Pow int not null default 0,
-    Intl int not null default 0,
-    Wis int not null default 0,
-    Cha int not null default 0,
-    Kar int not null default 0,
-    Luc int not null default 0
-) engine=innodb;
-
-create table if not exists categories (
-    id int auto_increment primary key,
-    name varchar(255) default null,
-    `desc` varchar(255) default null
-) engine=innodb;
-
-create table if not exists changes (
-    id int auto_increment primary key,
-    history_id int default null,
-    history_text text,
-    history_title varchar(255) default null,
-    history_category_id int default null,
-    new_text text,
-    new_title varchar(255) default null,
-    new_category_id int default null,
-    timestamp datetime default null,
-    action varchar(255) default null,
-    ip_number varchar(255) default null
-) engine=innodb;
-
-create table if not exists ip_info (
-    pid bigint not null default 0,
-    last_ip varchar(50) not null default 'none',
-    last_connect datetime null default null,
-    last_disconnect datetime null default null,
-    racewar_side int not null default 0,
-    primary key (pid)
-) engine=innodb;
-
-create table if not exists items (
-    vnum int unsigned not null default 0,
-    short_desc varchar(100) not null default '',
-    obj_stat text not null,
-    num_sold int not null default 0,
-    avg_sell_price int not null default 0,
-    primary key (vnum)
-) engine=innodb;
-
-create table if not exists level_cap (
-    id int auto_increment primary key,
-    most_frags float not null default 0,
-    racewar_leader int not null default 0,
-    level int not null default 25,
-    next_update datetime default current_timestamp
-) engine=innodb;
-
-create table if not exists log_entries (
-    id int unsigned auto_increment primary key,
-    date datetime not null,
-    kind varchar(255) not null default '',
-    player_name varchar(255) not null default '',
-    pid int not null default 0,
-    ip_address varchar(15) not null default '',
-    room_vnum int not null default 0,
-    zone_number int not null default 0,
-    message varchar(255) not null default '',
-    index idx_date (date),
-    index idx_kind (kind),
-    index idx_player_name (player_name),
-    index idx_pid (pid),
-    index idx_ip_address (ip_address),
-    index idx_room_vnum (room_vnum),
-    index idx_zone_number (zone_number)
-) engine=innodb;
-
-create table if not exists mud_info (
-    name varchar(255) not null,
-    content text not null,
-    primary key (name)
-) engine=innodb;
-
-create table if not exists multiplay_whitelist (
-    id int auto_increment primary key,
-    pattern varchar(255) not null,
-    admin varchar(255) not null,
-    description varchar(255) not null,
-    created_on date default null,
-    player varchar(255) not null
-) engine=innodb;
-
-create table if not exists nexus_stones (
-    id int auto_increment primary key,
-    name varchar(255) not null default '',
-    room_vnum int not null default 0,
-    align int not null default 0,
-    stat_affect int not null default -1,
-    affect_amount int not null default 0,
-    last_touched_at timestamp null default null,
-    bonus int not null default 0
-) engine=innodb;
-
-create table if not exists offline_messages (
-    id int auto_increment primary key,
-    pid bigint not null default 0,
-    sender varchar(255) not null default '',
-    message text not null,
-    sent_at datetime not null default current_timestamp,
-    read_at datetime default null,
-    index idx_pid (pid)
-) engine=innodb;
-
-create table if not exists pages (
-    id int auto_increment primary key,
-    title varchar(255) default null,
-    text text,
-    last_update datetime default null,
-    last_update_by varchar(255) default null,
-    category_id int default null,
-    ip_number varchar(255) default null
-) engine=innodb;
-
-create table if not exists ping (
-    id bigint auto_increment primary key,
-    timestamp datetime not null,
-    url varchar(100) not null default '',
-    ip varchar(100) not null default '',
-    seq bigint not null default 0,
-    time int not null default 0
-) engine=innodb;
-
-create table if not exists pkill_event (
-    id int unsigned auto_increment primary key,
-    stamp datetime not null,
-    room_vnum int not null default 0,
-    room_name text not null,
-    tweeted tinyint(1) not null default 0
-) engine=innodb;
-
-create table if not exists pkill_info (
-    id bigint unsigned auto_increment primary key,
-    event_id int unsigned not null default 0,
-    pid bigint not null default 0,
-    level int not null default 0,
-    pk_type text not null,
-    equip text not null,
-    log text,
-    inroom int not null default 0,
-    leader int default null,
-    player_description varchar(255),
-    index idx_event_id (event_id),
-    index idx_pid (pid)
-) engine=innodb;
-
-create table if not exists prepstatment_duris_sql (
-    id int unsigned auto_increment primary key,
-    `desc` text not null,
-    `sql` text not null
-) engine=innodb;
-
-create table if not exists progress (
-    id int unsigned auto_increment primary key,
-    pid bigint not null default 0,
-    var_type int not null default 1,
-    stamp datetime not null,
-    delta int not null default 0,
-    index idx_pid (pid),
-    index idx_var_type (var_type)
-) engine=innodb;
-
--- ============================================================================
--- FILE: schema_migration_v7_player_fixes.sql
--- adds missing player fields for existing databases
--- act3: surname/achievement flags
--- last_room: room vnum where player was saved
---
--- note: player_db_schema.sql already has these, this is for existing dbs only
--- note: will error if columns already exist - that's ok, just ignore
-
--- act3 contains player surname bits (serf, commoner, etc) and achievement flags
-set @col_exists = (select count(*) from information_schema.columns
-    where table_schema = database() and table_name = 'player_data' and column_name = 'act3');
-set @sql = if(@col_exists = 0,
-    'alter table player_data add column act3 bigint unsigned default 0 after act2',
-    'select "act3 already exists"');
-prepare stmt from @sql;
-execute stmt;
-deallocate prepare stmt;
-
--- last_room is the room vnum where player was saved
-set @col_exists = (select count(*) from information_schema.columns
-    where table_schema = database() and table_name = 'player_data' and column_name = 'last_room');
-set @sql = if(@col_exists = 0,
-    'alter table player_data add column last_room int default 0 after orig_birthplace',
-    'select "last_room already exists"');
-prepare stmt from @sql;
-execute stmt;
-deallocate prepare stmt;
-
--- ============================================================================
--- FILE: schema_migration_v8_hardcore.sql
--- ============================================================================
--- schema_migration_v8_hardcore.sql
--- adds killed_by column for hardcore hall of fame
---
--- note: player_db_schema.sql will also be updated with this
--- note: will skip if column already exists
-
--- killed_by stores who killed a hardcore character (for hall of fame display)
-set @col_exists = (select count(*) from information_schema.columns
-    where table_schema = database() and table_name = 'player_data' and column_name = 'killed_by');
-set @sql = if(@col_exists = 0,
-    'alter table player_data add column killed_by varchar(64) default null after numb_deaths',
-    'select "killed_by already exists"');
-prepare stmt from @sql;
-execute stmt;
-deallocate prepare stmt;
-
--- ============================================================================
--- FILE: schema_migration_v8_unique.sql
--- ============================================================================
--- schema migration v8: add unique constraints for character names
---
--- Safe version: add the unique index only if it does not already exist.
--- If duplicates exist, the migration will fail rather than deleting data.
---
--- add unique constraint on char_name (character names must be unique)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters'
-    AND index_name = 'idx_char_name_unique');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE account_characters ADD UNIQUE INDEX idx_char_name_unique (char_name)',
-    'SELECT "idx_char_name_unique already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- add unique constraint on player_data.name
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_data'
-    AND index_name = 'idx_player_name_unique');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_data ADD UNIQUE INDEX idx_player_name_unique (name)',
-    'SELECT "idx_player_name_unique already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: schema_migration_v9_dirty_saves.sql
--- ============================================================================
--- dirty saves support: add unique constraints for upsert pattern
--- run this before enabling redis dirty saves
---
--- Idempotency: all ALTER TABLEs are guarded with information_schema checks.
-
--- player_languages: unique on (pid, tongue_id)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_languages'
-    AND index_name = 'uk_pid_tongue');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_languages ADD UNIQUE KEY uk_pid_tongue (pid, tongue_id)',
-    'SELECT "uk_pid_tongue already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_intros: unique on (pid, intro_index)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_intros'
-    AND index_name = 'uk_pid_intro');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_intros ADD UNIQUE KEY uk_pid_intro (pid, intro_index)',
-    'SELECT "uk_pid_intro already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_timers: unique on (pid, timer_id)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_timers'
-    AND index_name = 'uk_pid_timer');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_timers ADD UNIQUE KEY uk_pid_timer (pid, timer_id)',
-    'SELECT "uk_pid_timer already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_undead_slots: unique on (pid, circle)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_undead_slots'
-    AND index_name = 'uk_pid_circle');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_undead_slots ADD UNIQUE KEY uk_pid_circle (pid, circle)',
-    'SELECT "uk_pid_circle already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_forged_items: unique on (pid, forge_index)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_forged_items'
-    AND index_name = 'uk_pid_forge');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_forged_items ADD UNIQUE KEY uk_pid_forge (pid, forge_index)',
-    'SELECT "uk_pid_forge already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_granted_cmds: unique on (pid, cmd_num)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_granted_cmds'
-    AND index_name = 'uk_pid_cmd');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_granted_cmds ADD UNIQUE KEY uk_pid_cmd (pid, cmd_num)',
-    'SELECT "uk_pid_cmd already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_skills: unique on (pid, skill_id)
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_skills'
-    AND index_name = 'uk_pid_skill');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE player_skills ADD UNIQUE KEY uk_pid_skill (pid, skill_id)',
-    'SELECT "uk_pid_skill already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: schema_migration_v10_pets.sql
--- ============================================================================
--- pet persistence: save charmed pets across crashes
--- schema migration v10
-
--- pet data (one row per pet)
-CREATE TABLE IF NOT EXISTS `player_pets` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `owner_pid` INT UNSIGNED NOT NULL,
-  `mob_vnum` INT NOT NULL,
-  `pet_order` TINYINT DEFAULT 0,
-  `hit` INT DEFAULT 0,
-  `max_hit` INT DEFAULT 0,
-  `mana` INT DEFAULT 0,
-  `max_mana` INT DEFAULT 0,
-  `vitality` INT DEFAULT 0,
-  `max_vitality` INT DEFAULT 0,
-  `charm_duration` INT DEFAULT -1,
-  `room_vnum` INT DEFAULT 0,
-  `saved_at` BIGINT DEFAULT 0,
-  PRIMARY KEY (`id`),
-  KEY `idx_owner_pid` (`owner_pid`),
-  CONSTRAINT `fk_player_pets_owner` FOREIGN KEY (`owner_pid`)
-    REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- pet equipment and inventory
-CREATE TABLE IF NOT EXISTS `player_pet_items` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pet_id` INT UNSIGNED NOT NULL,
-  `vnum` INT NOT NULL,
-  `equip_slot` TINYINT DEFAULT 0,
-  `container_id` INT UNSIGNED DEFAULT NULL,
-  `weight` INT DEFAULT 0,
-  `cost` INT DEFAULT 0,
-  `timer` INT DEFAULT -1,
-  `extra_flags` BIGINT UNSIGNED DEFAULT 0,
-  `value0` INT DEFAULT 0,
-  `value1` INT DEFAULT 0,
-  `value2` INT DEFAULT 0,
-  `value3` INT DEFAULT 0,
-  `value4` INT DEFAULT 0,
-  `value5` INT DEFAULT 0,
-  `value6` INT DEFAULT 0,
-  `value7` INT DEFAULT 0,
-  `name` VARCHAR(512) DEFAULT NULL,
-  `short_descr` VARCHAR(512) DEFAULT NULL,
-  `description` TEXT DEFAULT NULL,
-  `action_descr` TEXT DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_pet_id` (`pet_id`),
-  KEY `idx_container_id` (`container_id`),
-  CONSTRAINT `fk_pet_items_pet` FOREIGN KEY (`pet_id`)
-    REFERENCES `player_pets` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_pet_items_container` FOREIGN KEY (`container_id`)
-    REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- pet item affects (stat mods)
-CREATE TABLE IF NOT EXISTS `player_pet_item_affects` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `item_id` INT UNSIGNED NOT NULL,
-  `location` TINYINT UNSIGNED DEFAULT 0,
-  `modifier` INT DEFAULT 0,
-  PRIMARY KEY (`id`),
-  KEY `idx_item_id` (`item_id`),
-  CONSTRAINT `fk_pet_item_affects` FOREIGN KEY (`item_id`)
-    REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================================================
--- FILE: schema_migration_v11_obj_uid.sql
--- ============================================================================
--- obj_uid and item_condition for duplication prevention
--- schema migration v11
---
--- Idempotency: all ALTER TABLEs are guarded with information_schema checks.
-
--- player_items: rename unique_id to obj_uid, change to bigint, add condition
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_items' AND column_name = 'obj_uid');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "obj_uid already exists on player_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_items' AND column_name = 'item_condition');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_items ADD COLUMN item_condition SMALLINT DEFAULT 100 AFTER obj_uid',
-    'SELECT "item_condition already exists on player_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_items' AND index_name = 'idx_obj_uid');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_items ADD INDEX idx_obj_uid (obj_uid)',
-    'SELECT "idx_obj_uid already exists on player_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- corpse_items: same changes
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'obj_uid');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "obj_uid already exists on corpse_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'item_condition');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN item_condition SMALLINT DEFAULT 100 AFTER obj_uid',
-    'SELECT "item_condition already exists on corpse_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND index_name = 'idx_obj_uid');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE corpse_items ADD INDEX idx_obj_uid (obj_uid)',
-    'SELECT "idx_obj_uid already exists on corpse_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- locker_items: same changes
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'obj_uid');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items CHANGE COLUMN unique_id obj_uid BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "obj_uid already exists on locker_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'item_condition');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN item_condition SMALLINT DEFAULT 100 AFTER obj_uid',
-    'SELECT "item_condition already exists on locker_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND index_name = 'idx_obj_uid');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE locker_items ADD INDEX idx_obj_uid (obj_uid)',
-    'SELECT "idx_obj_uid already exists on locker_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_pet_items: add obj_uid and condition (no unique_id existed)
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'obj_uid');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN obj_uid BIGINT UNSIGNED DEFAULT NULL AFTER action_descr',
-    'SELECT "obj_uid already exists on player_pet_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'item_condition');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN item_condition SMALLINT DEFAULT 100 AFTER obj_uid',
-    'SELECT "item_condition already exists on player_pet_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND index_name = 'idx_obj_uid');
-SET @sql = IF(@idx_exists = 0,
-    'ALTER TABLE player_pet_items ADD INDEX idx_obj_uid (obj_uid)',
-    'SELECT "idx_obj_uid already exists on player_pet_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: schema_migration_v11_remove_players_core.sql
--- ============================================================================
--- migration v11: remove players_core, add active column to player_data
--- this migration adds the active column to player_data and removes the players_core table
-
--- step 1: add active column to player_data if it doesn't exist
-set @col_exists = (select count(*) from information_schema.columns
-    where table_schema = database() and table_name = 'player_data' and column_name = 'active');
-
-set @add_col = if(@col_exists = 0,
-    'alter table player_data add column active tinyint(1) not null default 1 after last_ip',
-    'select "active column already exists"');
-
-prepare stmt from @add_col;
-execute stmt;
-deallocate prepare stmt;
-
--- step 2: set all existing players as active
-update player_data set active = 1 where active is null or active = 0;
-
--- step 3: drop players_core table (optional - uncomment when ready)
--- drop table if exists players_core;
-
--- ============================================================================
--- FILE: schema_migration_v13_locker_sort.sql
--- ============================================================================
--- sorted chests are in-memory only, no database changes needed
--- this migration is kept for backwards compatibility
-SELECT 1;
-
--- ============================================================================
--- FILE: schema_migration_v14_locker_bitvectors.sql
--- ============================================================================
--- add bitvector columns to locker_items for encrusted item affects
--- also fixes existing encrusted items that lost their bitvectors during migration
-
--- step 1: add bitvector columns to locker_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector1 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector2 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector3 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector4 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector5 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- same for account_locker_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector1 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector2 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector3 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector4 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "bitvector5 already exists"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- step 2: fix existing encrusted items
--- ITEM_ENCRUSTED = BIT_32 = 2147483648
--- value5 stores the spell type, which determines what bitvector to set
---
--- spell to bitvector mapping (from set_encrust_affect in randomeq.c):
--- SPELL_ACID_BLAST (116)               -> bitvector2 = AFF2_PROT_GAS | AFF2_PROT_ACID = 4096 | 8192 = 12288
--- SPELL_FIREBALL (26)                  -> bitvector1 = AFF_PROT_FIRE = 536870912
--- SPELL_MAGIC_MISSILE (32)             -> bitvector1 = AFF_PROTECT_GOOD = 65536
--- SPELL_CHILL_TOUCH (8)                -> bitvector2 = AFF2_PROT_COLD = 64
--- SPELL_NEGATIVE_CONCUSSION_BLAST (378)-> bitvector1 = AFF_MINOR_GLOBE = 64
--- SPELL_SHOCKING_GRASP (37)            -> bitvector1 = AFF_SLOW_POISON = 32768
--- SPELL_FLAMESTRIKE (21)               -> bitvector1 = AFF_SENSE_LIFE = 32
--- SPELL_BLINDNESS (4)                  -> bitvector2 = AFF2_DETECT_MAGIC = 16
--- SPELL_ENERGY_DRAIN (25)              -> bitvector1 = AFF_HASTE = 16
-
--- fix locker_items encrusted items
-UPDATE locker_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 12288
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 116;
-
-UPDATE locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 536870912
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 26;
-
-UPDATE locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 65536
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 32;
-
-UPDATE locker_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 64
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 8;
-
-UPDATE locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 64
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 378;
-
-UPDATE locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 32768
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 37;
-
-UPDATE locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 32
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 21;
-
-UPDATE locker_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 16
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 4;
-
-UPDATE locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 16
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 25;
-
--- fix account_locker_items encrusted items
-UPDATE account_locker_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 12288
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 116;
-
-UPDATE account_locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 536870912
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 26;
-
-UPDATE account_locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 65536
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 32;
-
-UPDATE account_locker_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 64
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 8;
-
-UPDATE account_locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 64
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 378;
-
-UPDATE account_locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 32768
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 37;
-
-UPDATE account_locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 32
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 21;
-
-UPDATE account_locker_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 16
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 4;
-
-UPDATE account_locker_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 16
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 25;
-
--- fix weightless containers (vnums 32841, 19780, 96443 should have weight -3000)
-UPDATE player_items SET weight = -3000 WHERE vnum IN (32841, 19780, 96443) AND (weight IS NULL OR weight >= 0);
-UPDATE locker_items SET weight = -3000 WHERE vnum IN (32841, 19780, 96443) AND (weight IS NULL OR weight >= 0);
-UPDATE account_locker_items SET weight = -3000 WHERE vnum IN (32841, 19780, 96443) AND (weight IS NULL OR weight >= 0);
-UPDATE corpse_items SET weight = -3000 WHERE vnum IN (32841, 19780, 96443) AND (weight IS NULL OR weight >= 0);
-
--- fix player_items encrusted items (in case any were missed)
-UPDATE player_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 12288
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 116 AND (bitvector2 IS NULL OR (bitvector2 & 12288) = 0);
-
-UPDATE player_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 536870912
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 26 AND (bitvector1 IS NULL OR (bitvector1 & 536870912) = 0);
-
-UPDATE player_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 65536
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 32 AND (bitvector1 IS NULL OR (bitvector1 & 65536) = 0);
-
-UPDATE player_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 64
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 8 AND (bitvector2 IS NULL OR (bitvector2 & 64) = 0);
-
-UPDATE player_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 64
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 378 AND (bitvector1 IS NULL OR (bitvector1 & 64) = 0);
-
-UPDATE player_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 32768
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 37 AND (bitvector1 IS NULL OR (bitvector1 & 32768) = 0);
-
-UPDATE player_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 32
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 21 AND (bitvector1 IS NULL OR (bitvector1 & 32) = 0);
-
-UPDATE player_items
-SET bitvector2 = COALESCE(bitvector2, 0) | 16
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 4 AND (bitvector2 IS NULL OR (bitvector2 & 16) = 0);
-
-UPDATE player_items
-SET bitvector1 = COALESCE(bitvector1, 0) | 16
-WHERE (extra_flags & 2147483648) != 0 AND value5 = 25 AND (bitvector1 IS NULL OR (bitvector1 & 16) = 0);
-
--- show how many items were affected
-SELECT 'weightless containers fixed (player_items):' as info, COUNT(*) as count
-FROM player_items WHERE vnum IN (32841, 19780, 96443) AND weight = -3000;
-
-SELECT 'player_items encrusted count:' as info, COUNT(*) as count
-FROM player_items WHERE (extra_flags & 2147483648) != 0;
-
-SELECT 'locker_items encrusted count:' as info, COUNT(*) as count
-FROM locker_items WHERE (extra_flags & 2147483648) != 0;
-
-SELECT 'account_locker_items encrusted count:' as info, COUNT(*) as count
-FROM account_locker_items WHERE (extra_flags & 2147483648) != 0;
-
--- ============================================================================
--- FILE: schema_migration_v15.sql
--- ============================================================================
--- create corpse_item_extra_descr and locker_item_extra_descr tables and add description columns to corpse table
--- schema migration v15
---
--- Idempotency: CREATE TABLE uses IF NOT EXISTS. ALTER TABLEs guarded with
--- information_schema checks.
-
-CREATE TABLE IF NOT EXISTS corpse_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_corpse_item_ed FOREIGN KEY (item_id)
-    REFERENCES corpse_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS locker_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_locker_item_ed FOREIGN KEY (item_id)
-    REFERENCES locker_items(id) ON DELETE CASCADE
-);
-
--- corpses: short_descr
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpses' AND column_name = 'short_descr');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpses ADD COLUMN short_descr VARCHAR(512) DEFAULT NULL AFTER created_at',
-    'SELECT "short_descr already exists on corpses"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- corpses: description
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpses' AND column_name = 'description');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpses ADD COLUMN description TEXT DEFAULT NULL AFTER short_descr',
-    'SELECT "description already exists on corpses"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_data: CONVERT TO CHARACTER SET (idempotent - no-op if already utf8mb4)
--- Only run if not already utf8mb4_0900_ai_ci
-SET @charset_ok = (SELECT COUNT(*) FROM information_schema.tables
-    WHERE table_schema = DATABASE() AND table_name = 'player_data'
-    AND table_collation = 'utf8mb4_0900_ai_ci');
-SET @sql = IF(@charset_ok = 0,
-    'ALTER TABLE player_data CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci',
-    'SELECT "player_data already utf8mb4_0900_ai_ci"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: schema_migration_v17_schema_fixes.sql
--- ============================================================================
--- schema_migration_v17_schema_fixes.sql
--- Adds missing columns to tables that the wip-async code expects but
--- which were not present in the base schema migration (run_this_one.sql).
---
--- Idempotency: all ALTER TABLEs are guarded with information_schema checks.
-
--- corpse_items: item_type
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "item_type already exists on corpse_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_items: item_type
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "item_type already exists on player_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_items: wear_flags
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "wear_flags already exists on player_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- auction tables (fresh installs and pre-existing databases)
-CREATE TABLE IF NOT EXISTS `auction_bid_history` (
-  `id` int(11) NOT NULL auto_increment,
-  `date` int(11) NOT NULL default '0',
-  `auction_id` int(11) NOT NULL default '0',
-  `bidder_pid` int(11) NOT NULL default '0',
-  `bidder_name` varchar(32) NOT NULL default '',
-  `bid_amount` int(11) NOT NULL default '0',
+  UNIQUE KEY `uk_account_racewar` (`account_name`,`racewar`),
+  KEY `idx_account_name` (`account_name`),
+  CONSTRAINT `account_lockers_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: accounts
+CREATE TABLE `accounts` (
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `password` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
+  `confirmation_code` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `confirmed` tinyint(1) DEFAULT '0',
+  `confirmation_sent` tinyint(1) DEFAULT '0',
+  `blocked` tinyint(1) DEFAULT '0',
+  `last_login` bigint DEFAULT '0',
+  `last_good_char` bigint DEFAULT '0',
+  `last_evil_char` bigint DEFAULT '0',
+  `flags1` bigint unsigned DEFAULT '0',
+  `flags2` bigint unsigned DEFAULT '0',
+  `flags3` bigint unsigned DEFAULT '0',
+  `flags4` bigint unsigned DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `total_donated` decimal(10,2) DEFAULT '0.00',
+  PRIMARY KEY (`account_name`),
+  KEY `idx_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: alliances
+CREATE TABLE `alliances` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `created_at` datetime DEFAULT NULL,
+  `forging_assoc_id` int NOT NULL,
+  `joining_assoc_id` int NOT NULL,
+  `tribute_owed` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: artifact_bind
+CREATE TABLE `artifact_bind` (
+  `vnum` int NOT NULL,
+  `owner_pid` int DEFAULT NULL,
+  `timer` int DEFAULT NULL,
+  PRIMARY KEY (`vnum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: artifacts
+CREATE TABLE `artifacts` (
+  `vnum` int NOT NULL,
+  `owned` char(1) COLLATE utf8mb4_general_ci NOT NULL,
+  `locType` int NOT NULL DEFAULT '1',
+  `location` int NOT NULL,
+  `timer` datetime DEFAULT NULL,
+  `type` int NOT NULL,
+  `lastUpdate` datetime DEFAULT NULL,
+  PRIMARY KEY (`vnum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: artifacts_mortal
+CREATE TABLE `artifacts_mortal` (
+  `vnum` int NOT NULL,
+  `owned` char(1) COLLATE utf8mb4_general_ci NOT NULL,
+  `locType` int NOT NULL,
+  `location` int NOT NULL,
+  `timer` datetime DEFAULT NULL,
+  `type` int NOT NULL,
+  PRIMARY KEY (`vnum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: associations
+CREATE TABLE `associations` (
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `prestige` int NOT NULL DEFAULT '0',
+  `active` tinyint(1) NOT NULL DEFAULT '1',
+  `wood` int NOT NULL DEFAULT '0',
+  `stone` int NOT NULL DEFAULT '0',
+  `construction_points` int NOT NULL DEFAULT '0',
+  `over_max` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: auction_bid_history
+CREATE TABLE `auction_bid_history` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `date` int NOT NULL DEFAULT '0',
+  `auction_id` int NOT NULL DEFAULT '0',
+  `bidder_pid` int NOT NULL DEFAULT '0',
+  `bidder_name` varchar(32) NOT NULL DEFAULT '',
+  `bid_amount` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `auction_id` (`auction_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE IF NOT EXISTS `auction_item_pickups` (
-  `id` int(10) unsigned NOT NULL auto_increment,
-  `pid` int(10) unsigned NOT NULL default '0',
+-- Table: auction_item_pickups
+CREATE TABLE `auction_item_pickups` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL DEFAULT '0',
   `obj_blob_str` blob NOT NULL,
-  `retrieved` tinyint(1) NOT NULL default '0',
-  `quantity` int(11) NOT NULL default '1',
+  `retrieved` tinyint(1) NOT NULL DEFAULT '0',
+  `quantity` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `pid` (`pid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE IF NOT EXISTS `auction_money_pickups` (
-  `pid` int(10) unsigned NOT NULL default '0',
-  `money` int(10) unsigned NOT NULL default '0',
+-- Table: auction_money_pickups
+CREATE TABLE `auction_money_pickups` (
+  `pid` int unsigned NOT NULL DEFAULT '0',
+  `money` int unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`pid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE IF NOT EXISTS `auctions` (
-  `id` int(11) NOT NULL auto_increment,
-  `seller_pid` int(10) unsigned NOT NULL default '0',
-  `seller_name` varchar(32) NOT NULL default '',
-  `start_time` TIMESTAMP NULL DEFAULT NULL,
-  `end_time` TIMESTAMP NULL DEFAULT NULL,
-  `status` int(11) NOT NULL default '1',
-  `winning_bidder_pid` int(11) NOT NULL default '0',
-  `winning_bidder_name` varchar(32) NOT NULL default '',
-  `cur_price` int(10) unsigned NOT NULL default '0',
-  `buy_price` int(11) NOT NULL default '0',
-  `obj_short` varchar(255) NOT NULL default '',
-  `obj_vnum` int(11) NOT NULL default '0',
+-- Table: auctions
+CREATE TABLE `auctions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `seller_pid` int unsigned NOT NULL DEFAULT '0',
+  `seller_name` varchar(32) NOT NULL DEFAULT '',
+  `start_time` timestamp NULL DEFAULT NULL,
+  `end_time` timestamp NULL DEFAULT NULL,
+  `status` int NOT NULL DEFAULT '1',
+  `winning_bidder_pid` int NOT NULL DEFAULT '0',
+  `winning_bidder_name` varchar(32) NOT NULL DEFAULT '',
+  `cur_price` int unsigned NOT NULL DEFAULT '0',
+  `buy_price` int NOT NULL DEFAULT '0',
+  `obj_short` varchar(255) NOT NULL DEFAULT '',
+  `obj_vnum` int NOT NULL DEFAULT '0',
   `obj_blob_str` blob NOT NULL,
-  `id_keywords` varchar(1024) NOT NULL default '',
-  `quantity` int(11) NOT NULL default '1',
+  `id_keywords` varchar(1024) NOT NULL DEFAULT '',
+  `quantity` int NOT NULL DEFAULT '1',
+  `obj_info_text` text,
   PRIMARY KEY (`id`),
   KEY `seller_pid` (`seller_pid`),
   KEY `auction_end` (`end_time`),
   KEY `status` (`status`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
--- auctions: obj_info_text
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'auctions' AND column_name = 'obj_info_text');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE auctions ADD COLUMN obj_info_text TEXT NULL',
-    'SELECT "obj_info_text already exists on auctions"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: schema_migration_v18_item_table_normalization.sql
--- ============================================================================
--- schema_migration_v18_item_table_normalization.sql
--- Consolidates three previously-planned separate migrations into one:
---   (a) Extend v17 item_type + wear_flags to all item tables (§10.6)
---   (b) Add bitvector1-5 to item tables that lack them (§10.7)
---   (c) Create extra_descr tables for item tables that lack them (§10.8)
---
--- All statements are idempotent (use IF NOT EXISTS / information_schema checks).
--- Runs on every boot via cycle_mud.sh, safe for repeated execution.
-
-
--- ============================================================================
--- Part 1: item_type column — present on player_items + corpse_items (v17),
---         missing from locker_items, shopkeeper_items, saved_items,
---         siege_items, account_locker_items, player_pet_items (§10.6)
--- ============================================================================
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "locker_items.item_type already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "shopkeeper_items.item_type already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "saved_items.item_type already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "siege_items.item_type already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "account_locker_items.item_type already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN item_type TINYINT DEFAULT NULL',
-    'SELECT "player_pet_items.item_type already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-
--- ============================================================================
--- Part 2: wear_flags column — present only on player_items (v17),
---         missing from corpse_items, locker_items, shopkeeper_items,
---         saved_items, siege_items, account_locker_items, player_pet_items (§10.6)
--- ============================================================================
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "corpse_items.wear_flags already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "locker_items.wear_flags already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "shopkeeper_items.wear_flags already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "saved_items.wear_flags already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "siege_items.wear_flags already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "account_locker_items.wear_flags already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN wear_flags INT DEFAULT NULL',
-    'SELECT "player_pet_items.wear_flags already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-
--- ============================================================================
--- Part 3: bitvector1-5 columns — present on player_items, locker_items (v14),
---         and account_locker_items (v14).
---         Missing from corpse_items, shopkeeper_items, saved_items,
---         siege_items, player_pet_items (§10.7)
--- ============================================================================
-
--- helper: add a bitvector column to a table if missing
--- Using inline repetition (Mysql 5.7 compatible — no reusable procedures in idempotent migration)
-
--- ---- corpse_items ----
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "corpse_items.bitvector1 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "corpse_items.bitvector2 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "corpse_items.bitvector3 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "corpse_items.bitvector4 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "corpse_items.bitvector5 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ---- shopkeeper_items ----
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "shopkeeper_items.bitvector1 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "shopkeeper_items.bitvector2 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "shopkeeper_items.bitvector3 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "shopkeeper_items.bitvector4 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "shopkeeper_items.bitvector5 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ---- saved_items ----
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "saved_items.bitvector1 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "saved_items.bitvector2 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "saved_items.bitvector3 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "saved_items.bitvector4 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "saved_items.bitvector5 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ---- siege_items ----
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "siege_items.bitvector1 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "siege_items.bitvector2 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "siege_items.bitvector3 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "siege_items.bitvector4 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "siege_items.bitvector5 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ---- player_pet_items ----
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "player_pet_items.bitvector1 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "player_pet_items.bitvector2 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "player_pet_items.bitvector3 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "player_pet_items.bitvector4 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL',
-    'SELECT "player_pet_items.bitvector5 already exists"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-
--- ============================================================================
--- Part 4: extra_descr tables — present for player_items, corpse_items,
---         locker_items, player_pet_items.
---         Missing for shopkeeper_items, saved_items, siege_items,
---         account_locker_items (§10.8)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS shopkeeper_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_shopkeeper_item_ed FOREIGN KEY (item_id)
-    REFERENCES shopkeeper_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS saved_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_saved_item_ed FOREIGN KEY (item_id)
-    REFERENCES saved_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS siege_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_siege_item_ed FOREIGN KEY (item_id)
-    REFERENCES siege_items(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS account_locker_item_extra_descr (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  item_id INT UNSIGNED NOT NULL,
-  keyword VARCHAR(255) NOT NULL,
-  description TEXT,
-  PRIMARY KEY (id),
-  INDEX idx_item_id (item_id),
-  CONSTRAINT fk_account_locker_item_ed FOREIGN KEY (item_id)
-    REFERENCES account_locker_items(id) ON DELETE CASCADE
-);
-
-
--- ============================================================================
--- Summary:
---   item_type added to:      locker_items, shopkeeper_items, saved_items,
---                            siege_items, account_locker_items, player_pet_items
---   wear_flags added to:     corpse_items, locker_items, shopkeeper_items,
---                            saved_items, siege_items, account_locker_items,
---                            player_pet_items
---   bitvector1-5 added to:   corpse_items, shopkeeper_items, saved_items,
---                            siege_items, player_pet_items
---   extra_descr tables for:  shopkeeper_items, saved_items, siege_items,
---                            account_locker_items
---
--- After this migration, ALL 8 item tables have a uniform column set:
---   player_items, corpse_items, locker_items, account_locker_items,
---   shopkeeper_items, saved_items, siege_items, player_pet_items
--- ============================================================================
-
--- ============================================================================
--- FILE: schema_migration_v18_player_affects_unique.sql
--- ============================================================================
--- schema_migration_v18_player_affects_unique.sql
--- Phase 3.4 follow-up: add UNIQUE KEY to player_affects so it can be
--- converted to REPLACE INTO like the other 7 array-save tables.
---
--- IMPORTANT: This migration MUST run before the production code is updated
--- to use REPLACE INTO. The order of operations is:
---   1. Deduplicate existing rows (keep the row with the lowest id per group)
---   2. Add the UNIQUE KEY (will fail if duplicates still exist)
---   3. Source code updated to use REPLACE INTO
---
--- Idempotency: the dedup DELETE is safe to run multiple times (no-op if no
--- duplicates). The ALTER TABLE will fail on second run because the key
--- already exists, but the `|| true` in cycle_mud.sh swallows that error.
---
--- The unique key includes all columns that can distinguish semantically
--- different affects: (pid, type, duration, flags, modifier, location, level).
--- bitvector1-5 are excluded because they are derived from the spell type
--- and are the same for the same spell. Two affects of the same type on the
--- same character with the same duration, flags, modifier, location, and
--- level are semantically identical and can be safely collapsed.
-
--- Step 1: Remove any existing duplicate rows, keeping the lowest id in each
--- duplicate group.
-DELETE p1
-FROM player_affects p1
-INNER JOIN player_affects p2
-        ON p1.pid = p2.pid
-       AND p1.type = p2.type
-       AND p1.duration = p2.duration
-       AND p1.flags = p2.flags
-       AND p1.modifier = p2.modifier
-       AND p1.location = p2.location
-       AND p1.level = p2.level
-       AND p1.id > p2.id;
-
--- Step 2: Add the UNIQUE KEY. Uses the idempotent prepared-statement
--- pattern so the migration is safe to re-run.
--- Note: if duplicates already exist, this step will fail rather than deleting data.
-SET @key_exists := (
-    SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE()
-      AND table_name = 'player_affects'
-      AND index_name = 'uk_pid_type_dur_flags_mod_loc_lvl'
-);
-
-SET @sql := IF(@key_exists = 0,
-    'ALTER TABLE player_affects ADD UNIQUE KEY uk_pid_type_dur_flags_mod_loc_lvl (pid, type, duration, flags, modifier, location, level)',
-    'DO 0'  -- no-op
-);
-
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: schema_migration_v19_item_table_columns.sql
--- ============================================================================
--- ===================================================================
--- schema_migration_v19_item_table_columns.sql
---
--- Phase 3.5 (consolidated schema migration):
--- Adds item_type, wear_flags, bitvector1-5 columns to the 7 item
--- storage tables that were missing them.  These columns exist on
--- player_items (since v17) and are referenced by the production
--- INSERT statements in src/sql_player.c, but the tables below were
--- never updated.  Without this migration, every save to these tables
--- fails with MySQL error 1054 (Unknown column 'item_type' in 'field
--- list') for the two tables that already reference them, and
--- silently loses wear/encrusted-affect data for the rest.
---
--- Column types match player_items exactly:
---   item_type   TINYINT          DEFAULT NULL
---   wear_flags  INT              DEFAULT NULL
---   bitvector1  BIGINT UNSIGNED  DEFAULT NULL
---   bitvector2  BIGINT UNSIGNED  DEFAULT NULL
---   bitvector3  BIGINT UNSIGNED  DEFAULT NULL
---   bitvector4  BIGINT UNSIGNED  DEFAULT NULL
---   bitvector5  BIGINT UNSIGNED  DEFAULT NULL
---
--- The 7 tables covered:
---   corpse_items, locker_items, shopkeeper_items, siege_items,
---   saved_items, player_pet_items, account_locker_items
---
--- Idempotency: each ALTER is wrapped in a prepared statement that
--- checks information_schema.columns first.  If the column already
--- exists, the prepared statement executes `DO 0` as a no-op.  This
--- makes the migration safe to re-run on a database that has already
--- been upgraded (the cycle_mud.sh wrapper also uses `|| true` as a
--- belt-and-suspenders guard).
--- ===================================================================
-
--- -------------------------------------------------------------------
--- corpse_items
--- -------------------------------------------------------------------
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'corpse_items'
-                     AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE corpse_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'corpse_items'
-                     AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE corpse_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'corpse_items'
-                     AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE corpse_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'corpse_items'
-                     AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE corpse_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'corpse_items'
-                     AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE corpse_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'corpse_items'
-                     AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE corpse_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'corpse_items'
-                     AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE corpse_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- -------------------------------------------------------------------
--- locker_items
--- -------------------------------------------------------------------
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'locker_items'
-                     AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE locker_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'locker_items'
-                     AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE locker_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'locker_items'
-                     AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE locker_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'locker_items'
-                     AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE locker_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'locker_items'
-                     AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE locker_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'locker_items'
-                     AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE locker_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'locker_items'
-                     AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE locker_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- -------------------------------------------------------------------
--- shopkeeper_items
--- -------------------------------------------------------------------
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'shopkeeper_items'
-                     AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE shopkeeper_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'shopkeeper_items'
-                     AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE shopkeeper_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'shopkeeper_items'
-                     AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE shopkeeper_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'shopkeeper_items'
-                     AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE shopkeeper_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'shopkeeper_items'
-                     AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE shopkeeper_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'shopkeeper_items'
-                     AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE shopkeeper_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'shopkeeper_items'
-                     AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE shopkeeper_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- -------------------------------------------------------------------
--- siege_items
--- -------------------------------------------------------------------
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'siege_items'
-                     AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE siege_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'siege_items'
-                     AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE siege_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'siege_items'
-                     AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE siege_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'siege_items'
-                     AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE siege_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'siege_items'
-                     AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE siege_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'siege_items'
-                     AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE siege_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'siege_items'
-                     AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE siege_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- -------------------------------------------------------------------
--- saved_items
--- -------------------------------------------------------------------
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'saved_items'
-                     AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE saved_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'saved_items'
-                     AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE saved_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'saved_items'
-                     AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE saved_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'saved_items'
-                     AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE saved_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'saved_items'
-                     AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE saved_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'saved_items'
-                     AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE saved_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'saved_items'
-                     AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE saved_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- -------------------------------------------------------------------
--- player_pet_items
--- -------------------------------------------------------------------
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'player_pet_items'
-                     AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE player_pet_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'player_pet_items'
-                     AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE player_pet_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'player_pet_items'
-                     AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE player_pet_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'player_pet_items'
-                     AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE player_pet_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'player_pet_items'
-                     AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE player_pet_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'player_pet_items'
-                     AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE player_pet_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'player_pet_items'
-                     AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE player_pet_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- -------------------------------------------------------------------
--- account_locker_items
--- -------------------------------------------------------------------
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'account_locker_items'
-                     AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE account_locker_items ADD COLUMN item_type TINYINT DEFAULT NULL AFTER extra_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'account_locker_items'
-                     AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE account_locker_items ADD COLUMN wear_flags INT DEFAULT NULL AFTER item_type',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'account_locker_items'
-                     AND column_name = 'bitvector1');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE account_locker_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL AFTER wear_flags',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'account_locker_items'
-                     AND column_name = 'bitvector2');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE account_locker_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector1',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'account_locker_items'
-                     AND column_name = 'bitvector3');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE account_locker_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector2',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'account_locker_items'
-                     AND column_name = 'bitvector4');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE account_locker_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector3',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE()
-                     AND table_name = 'account_locker_items'
-                     AND column_name = 'bitvector5');
-SET @sql = IF(@col_exists = 0,
-              'ALTER TABLE account_locker_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL AFTER bitvector4',
-              'DO 0');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: schema_migration_v20_item_material.sql
--- ============================================================================
--- Migration: add item_material column to the 7 item tables
--- Phase 3.6: persist obj->material as a diff-from-prototype value
---   NULL = item matches its prototype's material (load code uses proto)
---   non-NULL = item has a custom material override
---
--- The shared helper sql_format_item_diff_fields_and_free_proto() in
--- src/sql_player.c writes "NULL" when the item's material matches its
--- prototype, or the numeric value otherwise.
---
--- This migration adds the column to the same 7 tables that received the
--- v19 diff columns (item_type, wear_flags, bitvector1-5):
---   corpse_items, locker_items, shopkeeper_items, siege_items,
---   saved_items, player_pet_items, account_locker_items
---
--- Idempotency: all ALTER TABLEs are guarded with information_schema checks.
-
--- corpse_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'item_material');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE corpse_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'SELECT "item_material already exists on corpse_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- locker_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'item_material');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE locker_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'SELECT "item_material already exists on locker_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- shopkeeper_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'item_material');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE shopkeeper_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'SELECT "item_material already exists on shopkeeper_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- siege_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'item_material');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE siege_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'SELECT "item_material already exists on siege_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- saved_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'item_material');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE saved_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'SELECT "item_material already exists on saved_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- player_pet_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'item_material');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_pet_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'SELECT "item_material already exists on player_pet_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- account_locker_items
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_locker_items' AND column_name = 'item_material');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_locker_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'SELECT "item_material already exists on account_locker_items"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-
-
--- Copy legacy character locker contents into account.<account>.<racewar>.locker
--- rows after all locker item columns and public chest rows exist. This is
--- idempotent: rows with matching obj_uid (or a conservative NULL-uid fallback)
--- are not copied again, and a temp map restores nested container links/metadata.
-DROP TABLE IF EXISTS _locker_item_map;
-CREATE TABLE _locker_item_map (
-    old_id INT UNSIGNED NOT NULL,
-    new_id INT UNSIGNED NOT NULL,
-    old_container_id INT UNSIGNED DEFAULT NULL,
-    PRIMARY KEY (old_id),
-    INDEX idx_new_id (new_id),
-    INDEX idx_old_container (old_container_id)
-);
-
-INSERT INTO locker_items (locker_id, chest_id, vnum, container_id, quantity, weight, cost, timer,
-    extra_flags, item_type, wear_flags, value0, value1, value2, value3, value4, value5, value6, value7,
-    name, short_descr, description, action_descr,
-    bitvector1, bitvector2, bitvector3, bitvector4, bitvector5,
-    item_material, obj_uid, item_condition)
-SELECT
-    acct_locker.id,
-    pc.id,
-    src.vnum,
-    NULL,
-    src.quantity, src.weight, src.cost, src.timer,
-    src.extra_flags, src.item_type, src.wear_flags,
-    src.value0, src.value1, src.value2, src.value3,
-    src.value4, src.value5, src.value6, src.value7,
-    src.name, src.short_descr, src.description, src.action_descr,
-    src.bitvector1, src.bitvector2, src.bitvector3, src.bitvector4, src.bitvector5,
-    src.item_material, src.obj_uid, src.item_condition
-FROM locker_items src
-JOIN lockers char_locker ON src.locker_id = char_locker.id
-JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
-JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'public'
-WHERE char_locker.locker_name LIKE '%.locker'
-  AND char_locker.locker_name NOT LIKE 'guild.%'
-  AND char_locker.locker_name NOT LIKE 'account.%'
-  AND src.vnum != 173
-  AND NOT EXISTS (
-      SELECT 1
-      FROM locker_items existing
-      WHERE existing.locker_id = acct_locker.id
-        AND existing.chest_id = pc.id
-        AND (
-            (src.obj_uid IS NOT NULL AND existing.obj_uid = src.obj_uid)
-            OR (src.obj_uid IS NULL AND existing.obj_uid IS NULL
-                AND existing.vnum = src.vnum
-                AND COALESCE(existing.short_descr, '') = COALESCE(src.short_descr, ''))
-        )
-  );
-
-INSERT INTO _locker_item_map (old_id, new_id, old_container_id)
-SELECT src.id, MIN(new_item.id), src.container_id
-FROM locker_items src
-JOIN lockers char_locker ON src.locker_id = char_locker.id
-JOIN account_characters ac ON LOWER(SUBSTRING_INDEX(char_locker.locker_name, '.locker', 1)) = LOWER(ac.char_name)
-JOIN lockers acct_locker ON acct_locker.locker_name = CONCAT('account.', LOWER(ac.account_name), '.', ac.racewar, '.locker')
-JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'public'
-JOIN locker_items new_item ON new_item.locker_id = acct_locker.id
-    AND new_item.chest_id = pc.id
-    AND new_item.vnum = src.vnum
-    AND (
-        (src.obj_uid IS NOT NULL AND new_item.obj_uid = src.obj_uid)
-        OR (src.obj_uid IS NULL AND new_item.obj_uid IS NULL
-            AND COALESCE(new_item.short_descr, '') = COALESCE(src.short_descr, ''))
-    )
-WHERE char_locker.locker_name LIKE '%.locker'
-  AND char_locker.locker_name NOT LIKE 'guild.%'
-  AND char_locker.locker_name NOT LIKE 'account.%'
-  AND src.vnum != 173
-GROUP BY src.id, src.container_id
-ON DUPLICATE KEY UPDATE new_id = VALUES(new_id), old_container_id = VALUES(old_container_id);
-
-UPDATE locker_items new_item
-JOIN _locker_item_map m ON m.new_id = new_item.id
-JOIN _locker_item_map container_map ON container_map.old_id = m.old_container_id
-SET new_item.container_id = container_map.new_id
-WHERE m.old_container_id IS NOT NULL;
-
-INSERT INTO locker_item_affects (item_id, location, modifier)
-SELECT m.new_id, lia.location, lia.modifier
-FROM locker_item_affects lia
-JOIN _locker_item_map m ON m.old_id = lia.item_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM locker_item_affects existing
-    WHERE existing.item_id = m.new_id AND existing.location = lia.location
-);
-
-INSERT INTO locker_item_extra_descr (item_id, keyword, description)
-SELECT m.new_id, lied.keyword, lied.description
-FROM locker_item_extra_descr lied
-JOIN _locker_item_map m ON m.old_id = lied.item_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM locker_item_extra_descr existing
-    WHERE existing.item_id = m.new_id
-      AND existing.keyword = lied.keyword
-      AND COALESCE(existing.description, '') = COALESCE(lied.description, '')
-);
-
-DROP TABLE IF EXISTS _locker_item_map;
-
--- ============================================================================
--- FILE: schema_migration_v21_player_item_material.sql
--- ============================================================================
--- Migration: add item_material to player_items
---
--- sql_save_player() and sql_load_player_items() now persist item_material
--- for player equipment/inventory. The base schema created by run_this_one.sql
--- predates that change, so old/new databases need this migration.
---
--- Idempotent: safe to re-run.
-
-SET @col_exists = (
-    SELECT COUNT(*)
-    FROM information_schema.columns
-    WHERE table_schema = DATABASE()
-      AND table_name = 'player_items'
-      AND column_name = 'item_material'
-);
-
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE player_items ADD COLUMN item_material TINYINT DEFAULT NULL AFTER bitvector5',
-    'DO 0');
-
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- ============================================================================
--- FILE: create_polls_tables.sql
--- ============================================================================
--- create polls tables if they don't exist
--- run with: mysql -u duris -p duris < migrations/create_polls_tables.sql
-
-CREATE TABLE IF NOT EXISTS `polls` (
-  `id` int(11) NOT NULL auto_increment,
-  `question` varchar(512) NOT NULL,
-  `created_by` varchar(32) NOT NULL,
-  `created_at` int(11) NOT NULL default '0',
-  `expires_at` int(11) NOT NULL default '0',
-  `is_active` tinyint(1) NOT NULL default '1',
-  `multi_select` tinyint(1) NOT NULL default '0',
-  `max_choices` int(11) NOT NULL default '1',
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- Table: boons
+CREATE TABLE `boons` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `time` int NOT NULL DEFAULT '0',
+  `duration` int NOT NULL DEFAULT '0',
+  `racewar` int NOT NULL DEFAULT '0',
+  `type` int NOT NULL DEFAULT '0',
+  `opt` int NOT NULL DEFAULT '0',
+  `criteria` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `criteria2` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `bonus` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `bonus2` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `random` int NOT NULL DEFAULT '0',
+  `author` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `active` int NOT NULL DEFAULT '0',
+  `pid` int NOT NULL DEFAULT '0',
+  `rpt` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `poll_options` (
-  `id` int(11) NOT NULL auto_increment,
-  `poll_id` int(11) NOT NULL,
-  `option_num` int(11) NOT NULL,
-  `option_text` varchar(256) NOT NULL,
+-- Table: boons_progress
+CREATE TABLE `boons_progress` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `boonid` int NOT NULL DEFAULT '0',
+  `pid` int NOT NULL DEFAULT '0',
+  `counter` decimal(10,2) NOT NULL DEFAULT '0.00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: boons_shop
+CREATE TABLE `boons_shop` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pid` int NOT NULL DEFAULT '0',
+  `points` int NOT NULL DEFAULT '0',
+  `stats` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `poll_id` (`poll_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  UNIQUE KEY `uk_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `poll_votes` (
-  `id` int(11) NOT NULL auto_increment,
-  `poll_id` int(11) NOT NULL,
-  `account_name` varchar(64) NOT NULL,
-  `option_id` int(11) NOT NULL,
-  `voted_at` int(11) NOT NULL default '0',
-  `char_name` varchar(32) NOT NULL,
+-- Table: categories
+CREATE TABLE `categories` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `desc` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: changes
+CREATE TABLE `changes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `history_id` int DEFAULT NULL,
+  `history_text` text COLLATE utf8mb4_general_ci,
+  `history_title` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `history_category_id` int DEFAULT NULL,
+  `new_text` text COLLATE utf8mb4_general_ci,
+  `new_title` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `new_category_id` int DEFAULT NULL,
+  `timestamp` datetime DEFAULT NULL,
+  `action` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ip_number` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: classes
+CREATE TABLE `classes` (
+  `id` int unsigned NOT NULL,
+  `name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `ansi_name` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_name` varchar(8) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `menu_char` char(1) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: corpse_item_affects
+CREATE TABLE `corpse_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_vote` (`poll_id`, `account_name`, `option_id`),
-  KEY `poll_id` (`poll_id`),
-  KEY `account_name` (`account_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `corpse_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `corpse_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================================
--- FILE: epic-zone-payout.sql
--- ============================================================================
--- non-destructive, can be applied like:
--- mysql -uduris -pduris duris_dev <epic-zone-payout.sql
-
--- let's not have group size affect payout until we get the numbers right
-UPDATE zones SET suggested_group_size = 100 WHERE epic_type != '0';
-
--- later on we might want to try something like this:
--- UPDATE zones SET suggested_group_size = 4 WHERE epic_type = '1';
--- UPDATE zones SET suggested_group_size = 8 WHERE epic_type = '2';
--- UPDATE zones SET suggested_group_size = 12 WHERE epic_type = '3';
-
--- adjusted values based on discord feedback, generally raised the low zones and lowered the high
-UPDATE zones SET epic_payout = 0 WHERE number = 1389; -- ironstar (broken)
-UPDATE zones SET epic_payout = 80 WHERE number = 400; -- nizari
-UPDATE zones SET epic_payout = 80 WHERE number = 93; -- tower of high sorcery
-UPDATE zones SET epic_payout = 80 WHERE number = 740; -- bloodstone keep
-UPDATE zones SET epic_payout = 80 WHERE number = 14; -- kobold settlement
-UPDATE zones SET epic_payout = 80 WHERE number = 90; -- orrak
-UPDATE zones SET epic_payout = 80 WHERE number = 383; -- werrun
-UPDATE zones SET epic_payout = 90 WHERE number = 264; -- myrloch vale
-UPDATE zones SET epic_payout = 90 WHERE number = 140; -- faerie realm
-UPDATE zones SET epic_payout = 90 WHERE number = 823; -- swamp lab
-UPDATE zones SET epic_payout = 90 WHERE number = 370; -- crystalspyre
-UPDATE zones SET epic_payout = 90 WHERE number = 38; -- elemental groves
-UPDATE zones SET epic_payout = 90 WHERE number = 879; -- kelek
-UPDATE zones SET epic_payout = 90 WHERE number = 113; -- outcast tower
-UPDATE zones SET epic_payout = 90 WHERE number = 143; -- nakral
-UPDATE zones SET epic_payout = 100 WHERE number = 191; -- high moor
-UPDATE zones SET epic_payout = 100 WHERE number = 342; -- clan stoutdorf (drst)
-UPDATE zones SET epic_payout = 100 WHERE number = 285; -- pharr valley
-UPDATE zones SET epic_payout = 100 WHERE number = 67; -- court of the muse
-UPDATE zones SET epic_payout = 100 WHERE number = 381; -- fort boyard
-UPDATE zones SET epic_payout = 100 WHERE number = 27; -- headless
-UPDATE zones SET epic_payout = 100 WHERE number = 429; -- drustl
-UPDATE zones SET epic_payout = 100 WHERE number = 805; -- skrentherlog (yan-ti)
-UPDATE zones SET epic_payout = 100 WHERE number = 133; -- caverns of armageddon
-UPDATE zones SET epic_payout = 100 WHERE number = 183; -- temple of flames
-UPDATE zones SET epic_payout = 100 WHERE number = 130; -- citadel
-UPDATE zones SET epic_payout = 100 WHERE number = 666; -- torrhan
-UPDATE zones SET epic_payout = 100 WHERE number = 1320; -- githyanki fortress
-UPDATE zones SET epic_payout = 100 WHERE number = 220; -- pits of cerebus
-UPDATE zones SET epic_payout = 100 WHERE number = 755; -- dark stone tower
-UPDATE zones SET epic_payout = 110 WHERE number = 758; -- rogue plains
-UPDATE zones SET epic_payout = 110 WHERE number = 73; -- carthapia
-UPDATE zones SET epic_payout = 110 WHERE number = 824; -- temple of the sun
-UPDATE zones SET epic_payout = 110 WHERE number = 662; -- tharn ruins
-UPDATE zones SET epic_payout = 110 WHERE number = 664; -- battlefield
-UPDATE zones SET epic_payout = 120 WHERE number = 430; -- boyard prison
-UPDATE zones SET epic_payout = 120 WHERE number = 773; -- desolate under fire
-UPDATE zones SET epic_payout = 120 WHERE number = 490; -- venan'trut
-UPDATE zones SET epic_payout = 120 WHERE number = 710; -- fields between
-UPDATE zones SET epic_payout = 130 WHERE number = 200; -- krethik keep
-UPDATE zones SET epic_payout = 130 WHERE number = 766; -- jade empire
-UPDATE zones SET epic_payout = 150 WHERE number = 760; -- ultarium
-UPDATE zones SET epic_payout = 150 WHERE number = 570; -- trakkia
-UPDATE zones SET epic_payout = 150 WHERE number = 91; -- mountain of the banished
-UPDATE zones SET epic_payout = 175 WHERE number = 318; -- ice tower
-UPDATE zones SET epic_payout = 175 WHERE number = 50; -- labyrinth
-UPDATE zones SET epic_payout = 200 WHERE number = 970; -- icecrag castle
-UPDATE zones SET epic_payout = 200 WHERE number = 920; -- undermountain
-UPDATE zones SET epic_payout = 200 WHERE number = 213; -- mazzolin
-UPDATE zones SET epic_payout = 225 WHERE number = 24; -- quintaragon
-UPDATE zones SET epic_payout = 225 WHERE number = 244; -- plane of air
-UPDATE zones SET epic_payout = 225 WHERE number = 254; -- plane of fire
-UPDATE zones SET epic_payout = 225 WHERE number = 197; -- astral plane
-UPDATE zones SET epic_payout = 250 WHERE number = 151; -- new cave city
-UPDATE zones SET epic_payout = 250 WHERE number = 780; -- tribal oasis
-UPDATE zones SET epic_payout = 250 WHERE number = 412; -- shadamehr
-UPDATE zones SET epic_payout = 260 WHERE number = 87; -- gibberling
-UPDATE zones SET epic_payout = 260 WHERE number = 368; -- domain
-UPDATE zones SET epic_payout = 275 WHERE number = 35; -- forgotten mansion
-UPDATE zones SET epic_payout = 275 WHERE number = 448; -- keep of evil
-UPDATE zones SET epic_payout = 275 WHERE number = 756; -- obsidian citadel
-UPDATE zones SET epic_payout = 275 WHERE number = 261; -- swamp troll
-UPDATE zones SET epic_payout = 285 WHERE number = 419; -- forest of mir
-UPDATE zones SET epic_payout = 285 WHERE number = 162; -- transparent tower
-UPDATE zones SET epic_payout = 300 WHERE number = 709; -- hall of knighthood
-UPDATE zones SET epic_payout = 300 WHERE number = 238; -- plane of earth
-UPDATE zones SET epic_payout = 300 WHERE number = 124; -- ethereal plane
-UPDATE zones SET epic_payout = 315 WHERE number = 784; -- tharn rifts
-UPDATE zones SET epic_payout = 315 WHERE number = 831; -- alatorin
-UPDATE zones SET epic_payout = 325 WHERE number = 386; -- sevenoaks
-UPDATE zones SET epic_payout = 325 WHERE number = 229; -- ny'neth
-UPDATE zones SET epic_payout = 325 WHERE number = 289; -- kingdom of torg
-UPDATE zones SET epic_payout = 325 WHERE number = 960; -- jotunheim
-UPDATE zones SET epic_payout = 335 WHERE number = 441; -- tikitzopl (51)
-UPDATE zones SET epic_payout = 345 WHERE number = 215; -- aravne
-UPDATE zones SET epic_payout = 350 WHERE number = 989; -- tezcat
-UPDATE zones SET epic_payout = 350 WHERE number = 315; -- sea kingdom
-UPDATE zones SET epic_payout = 350 WHERE number = 367; -- arachdrathos guilds
-UPDATE zones SET epic_payout = 350 WHERE number = 1200; -- depths
-UPDATE zones SET epic_payout = 350 WHERE number = 1398; -- smoke plane
-UPDATE zones SET epic_payout = 350 WHERE number = 232; -- plane of water
-UPDATE zones SET epic_payout = 400 WHERE number = 328; -- shaboath (51)
-UPDATE zones SET epic_payout = 400 WHERE number = 159; -- pit of dragons
-UPDATE zones SET epic_payout = 400 WHERE number = 435; -- temple of earth (52)
-UPDATE zones SET epic_payout = 400 WHERE number = 712; -- scorched valley
-UPDATE zones SET epic_payout = 400 WHERE number = 326; -- fortress of dreams
-UPDATE zones SET epic_payout = 425 WHERE number = 910; -- barovia
-UPDATE zones SET epic_payout = 425 WHERE number = 877; -- snow ogres
-UPDATE zones SET epic_payout = 425 WHERE number = 777; -- hall of ancients
-UPDATE zones SET epic_payout = 450 WHERE number = 883; -- charcoal palace (51)
-UPDATE zones SET epic_payout = 450 WHERE number = 1316; -- tempest court
-UPDATE zones SET epic_payout = 500 WHERE number = 814; -- ceothia (53)
-UPDATE zones SET epic_payout = 500 WHERE number = 230; -- ny'neth 2
-UPDATE zones SET epic_payout = 500 WHERE number = 1390; -- brass (52)
-UPDATE zones SET epic_payout = 550 WHERE number = 444; -- githzerai stronghold (52)
-UPDATE zones SET epic_payout = 550 WHERE number = 588; -- barovia 2
-UPDATE zones SET epic_payout = 550 WHERE number = 1424; -- mausoleum
-UPDATE zones SET epic_payout = 600 WHERE number = 1300; -- vecna (54)
-UPDATE zones SET epic_payout = 600 WHERE number = 68; -- dragonnia
-UPDATE zones SET epic_payout = 650 WHERE number = 196; -- tiamat (53)
-UPDATE zones SET epic_payout = 700 WHERE number = 345; -- apocalypse castle (54)
-UPDATE zones SET epic_payout = 700 WHERE number = 257; -- bahamut (54)
-UPDATE zones SET epic_payout = 800 WHERE number = 266; -- negative plane (55)
-UPDATE zones SET epic_payout = 800 WHERE number = 324; -- bronze citadel (55)
-UPDATE zones SET epic_payout = 850 WHERE number = 4200; -- dreadnaught
-UPDATE zones SET epic_payout = 900 WHERE number = 387; -- ny'neth 3 (56)
-UPDATE zones SET epic_payout = 900 WHERE number = 455; -- celestia (56)
-UPDATE zones SET epic_payout = 950 WHERE number = 875; -- 222 (56)
-UPDATE zones SET epic_payout = 1000 WHERE number = 583; -- ravenloft (56)
-
-
--- ============================================================================
--- FILE: add_frag_leaderboard_tables.sql
--- ============================================================================
--- Migration: Add Frag Leaderboard Tables for Web Statistics
--- Date: 2025-11-07 - Arih
--- Purpose: Hybrid approach - MUD uses flat files, web uses database
---
--- This migration adds two tables:
--- 1. account_characters: Maps characters to accounts with soft delete
--- 2. frag_leaderboard: Denormalized leaderboard data for fast web queries
---
--- NO foreign keys to avoid cascading delete issues and maintain MUD stability
-
--- ============================================================================
--- Table: account_characters
--- Purpose: Track which characters belong to which accounts
--- ============================================================================
-CREATE TABLE IF NOT EXISTS `account_characters` (
-  `id` int(11) NOT NULL auto_increment,
-  `account_name` varchar(255) NOT NULL COMMENT 'Account name from flat file system',
-  `pid` bigint(20) NOT NULL COMMENT 'Player ID - unique character identifier',
-  `char_name` varchar(255) NOT NULL COMMENT 'Character name',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'When character was created',
-  `deleted_at` datetime NULL DEFAULT NULL COMMENT 'Soft delete - NULL means active',
+-- Table: corpse_item_extra_descr
+CREATE TABLE `corpse_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `pid` (`pid`),
-  KEY `account_name` (`account_name`),
-  KEY `char_name` (`char_name`),
-  KEY `deleted_at` (`deleted_at`),
-  KEY `account_active` (`account_name`, `deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Maps characters to accounts for web statistics';
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_corpse_item_ed` FOREIGN KEY (`item_id`) REFERENCES `corpse_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================================
+-- Table: corpse_items
+CREATE TABLE `corpse_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `corpse_id` int NOT NULL,
+  `vnum` int NOT NULL,
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `wear_flags` int DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
+  PRIMARY KEY (`id`),
+  KEY `container_id` (`container_id`),
+  KEY `idx_corpse_id` (`corpse_id`),
+  KEY `idx_vnum` (`vnum`),
+  KEY `idx_obj_uid` (`obj_uid`),
+  CONSTRAINT `corpse_items_ibfk_1` FOREIGN KEY (`corpse_id`) REFERENCES `corpses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `corpse_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `corpse_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: corpses
+CREATE TABLE `corpses` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `player_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `save_id` bigint NOT NULL,
+  `room_vnum` int DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_player_saveid` (`player_name`,`save_id`),
+  KEY `idx_player_name` (`player_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ctf_data
+CREATE TABLE `ctf_data` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `time` timestamp NULL DEFAULT NULL,
+  `pid` int NOT NULL DEFAULT '0',
+  `type` int NOT NULL DEFAULT '0',
+  `flagtype` int NOT NULL DEFAULT '0',
+  `racewar` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: epic_bonus
+CREATE TABLE `epic_bonus` (
+  `pid` int NOT NULL,
+  `type` int NOT NULL DEFAULT '0',
+  `time` datetime DEFAULT NULL,
+  UNIQUE KEY `uk_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: epic_gain
+CREATE TABLE `epic_gain` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` bigint NOT NULL DEFAULT '0',
+  `time` datetime NOT NULL,
+  `type` int NOT NULL DEFAULT '0',
+  `type_id` int NOT NULL DEFAULT '0',
+  `epics` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Table: frag_leaderboard
--- Purpose: Denormalized frag leaderboard for fast web queries
--- ============================================================================
-CREATE TABLE IF NOT EXISTS `frag_leaderboard` (
-  `id` int(11) NOT NULL auto_increment,
+CREATE TABLE `frag_leaderboard` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `pid` bigint(20) NOT NULL COMMENT 'Player ID - links to character',
   `account_name` varchar(255) NOT NULL COMMENT 'Account name for account-level stats',
   `char_name` varchar(255) NOT NULL COMMENT 'Character name for display',
@@ -4549,180 +487,1467 @@ CREATE TABLE IF NOT EXISTS `frag_leaderboard` (
   KEY `level_range` (`deleted_at`, `level`, `total_frags`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Denormalized frag leaderboard for web statistics';
 
--- ============================================================================
--- Sample Queries for Web Frontend
--- ============================================================================
+-- Table: eq_drop
+CREATE TABLE `eq_drop` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `vnum` int unsigned NOT NULL DEFAULT '0',
+  `pid_looter` bigint unsigned NOT NULL DEFAULT '0',
+  `room_id` int unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_vnum` (`vnum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Top 100 overall (active characters only)
--- SELECT char_name, total_frags / 100.0 AS frags, racewar, race, class, level
--- FROM frag_leaderboard
--- WHERE deleted_at IS NULL
--- ORDER BY total_frags DESC
--- LIMIT 100;
+-- Table: guild_members
+CREATE TABLE `guild_members` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `guild_id` int unsigned NOT NULL,
+  `player_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `player_pid` int unsigned DEFAULT NULL,
+  `bits` int unsigned NOT NULL DEFAULT '0',
+  `debt` int unsigned NOT NULL DEFAULT '0',
+  `online_status` tinyint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_guild_members_name` (`guild_id`,`player_name`),
+  KEY `idx_guild_members_name` (`player_name`),
+  CONSTRAINT `fk_guild_members_guild` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Top 50 by racewar (e.g., good=1, evil=2)
--- SELECT char_name, total_frags / 100.0 AS frags, race, class, level
--- FROM frag_leaderboard
--- WHERE deleted_at IS NULL AND racewar = 1
--- ORDER BY total_frags DESC
--- LIMIT 50;
+-- Table: guild_ranks
+CREATE TABLE `guild_ranks` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `guild_id` int unsigned NOT NULL,
+  `rank_index` tinyint NOT NULL,
+  `title` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_guild_ranks_index` (`guild_id`,`rank_index`),
+  CONSTRAINT `fk_guild_ranks_guild` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Top 50 by race (e.g., 'drow_elf')
--- SELECT char_name, total_frags / 100.0 AS frags, class, level
--- FROM frag_leaderboard
--- WHERE deleted_at IS NULL AND race = 'drow_elf'
--- ORDER BY total_frags DESC
--- LIMIT 50;
+-- Table: guild_transactions
+CREATE TABLE `guild_transactions` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `soc_id` int unsigned NOT NULL DEFAULT '0',
+  `date` int NOT NULL DEFAULT '0',
+  `transaction_info` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `idx_soc_id` (`soc_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Top 50 by class (e.g., 'necromancer')
--- SELECT char_name, total_frags / 100.0 AS frags, race, level
--- FROM frag_leaderboard
--- WHERE deleted_at IS NULL AND class = 'necromancer'
--- ORDER BY total_frags DESC
--- LIMIT 50;
+-- Table: guildhall_rooms
+CREATE TABLE `guildhall_rooms` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `guildhall_id` int NOT NULL DEFAULT '0',
+  `vnum` int NOT NULL DEFAULT '0',
+  `type` int NOT NULL DEFAULT '0',
+  `value0` int unsigned NOT NULL DEFAULT '0',
+  `value1` int unsigned NOT NULL DEFAULT '0',
+  `value2` int unsigned NOT NULL DEFAULT '0',
+  `value3` int unsigned NOT NULL DEFAULT '0',
+  `value4` int unsigned NOT NULL DEFAULT '0',
+  `value5` int unsigned NOT NULL DEFAULT '0',
+  `value6` int unsigned NOT NULL DEFAULT '0',
+  `value7` int unsigned NOT NULL DEFAULT '0',
+  `exit0` int NOT NULL DEFAULT '0',
+  `exit1` int NOT NULL DEFAULT '0',
+  `exit2` int NOT NULL DEFAULT '0',
+  `exit3` int NOT NULL DEFAULT '0',
+  `exit4` int NOT NULL DEFAULT '0',
+  `exit5` int NOT NULL DEFAULT '0',
+  `exit6` int NOT NULL DEFAULT '0',
+  `exit7` int NOT NULL DEFAULT '0',
+  `exit8` int NOT NULL DEFAULT '0',
+  `exit9` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_vnum` (`vnum`),
+  KEY `idx_guildhall_id` (`guildhall_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- All characters for an account (including deleted)
--- SELECT char_name, total_frags / 100.0 AS frags, racewar, race, class, level,
---        deleted_at, last_updated
--- FROM frag_leaderboard
--- WHERE account_name = 'Resakse'
--- ORDER BY total_frags DESC;
+-- Table: guildhalls
+CREATE TABLE `guildhalls` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `assoc_id` int NOT NULL DEFAULT '0',
+  `type` int NOT NULL DEFAULT '0',
+  `outside_vnum` int NOT NULL DEFAULT '0',
+  `racewar` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_assoc_id` (`assoc_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Frag distribution by class
--- SELECT class, AVG(total_frags / 100.0) AS avg_frags,
---        MIN(total_frags / 100.0) AS min_frags,
---        MAX(total_frags / 100.0) AS max_frags,
---        COUNT(*) AS char_count
--- FROM frag_leaderboard
--- WHERE deleted_at IS NULL
--- GROUP BY class
--- ORDER BY avg_frags DESC;
+-- Table: guilds
+CREATE TABLE `guilds` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `guild_id` int unsigned NOT NULL,
+  `name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `racewar` int unsigned NOT NULL DEFAULT '0',
+  `bits` int unsigned NOT NULL DEFAULT '0',
+  `prestige` bigint unsigned NOT NULL DEFAULT '0',
+  `construction` bigint unsigned NOT NULL DEFAULT '0',
+  `platinum` int unsigned NOT NULL DEFAULT '0',
+  `gold` int unsigned NOT NULL DEFAULT '0',
+  `silver` int unsigned NOT NULL DEFAULT '0',
+  `copper` int unsigned NOT NULL DEFAULT '0',
+  `total_frags` bigint NOT NULL DEFAULT '0',
+  `top_frags` bigint NOT NULL DEFAULT '0',
+  `top_fragger` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `guild_id` (`guild_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Players who crossed milestone (e.g., 1000 frags)
--- SELECT char_name, total_frags / 100.0 AS frags, account_name, race, class
--- FROM frag_leaderboard
--- WHERE deleted_at IS NULL AND total_frags >= 100000
--- ORDER BY total_frags DESC;
+-- Table: ip_info
+CREATE TABLE `ip_info` (
+  `pid` bigint NOT NULL DEFAULT '0',
+  `last_ip` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'none',
+  `last_connect` datetime DEFAULT NULL,
+  `last_disconnect` datetime DEFAULT NULL,
+  `racewar_side` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Monthly frag gains (using existing progress table)
--- SELECT p.pid, fl.char_name, SUM(p.delta) / 100.0 AS frags_gained
--- FROM progress p
--- JOIN frag_leaderboard fl ON p.pid = fl.pid
--- WHERE p.var_type = 'FRAGS'
---   AND p.stamp >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
---   AND fl.deleted_at IS NULL
--- GROUP BY p.pid, fl.char_name
--- ORDER BY frags_gained DESC
--- LIMIT 50;
+-- Table: items
+CREATE TABLE `items` (
+  `vnum` int unsigned NOT NULL DEFAULT '0',
+  `short_desc` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `obj_stat` text COLLATE utf8mb4_general_ci NOT NULL,
+  `num_sold` int NOT NULL DEFAULT '0',
+  `avg_sell_price` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`vnum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================================
--- FILE: add_account_characters_columns.sql
--- ============================================================================
--- Migration: Add missing columns and unique key to account_characters
--- Date: 2026-06-14
--- Purpose: Fix account/character lifecycle bugs (ghost characters, PID propagation)
---
--- The account_characters table was missing columns used by sql_save_account_characters
--- (login_count, last_login, blocked, racewar) and was missing a unique key on
--- (account_name, char_name) which is needed for the ON DUPLICATE KEY UPDATE to
--- correctly identify rows when the PID changes (pid=0 -> real PID after save, or
--- new PID after delete-recreate cycle).
+-- Table: kingdom_land
+CREATE TABLE `kingdom_land` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kingdom_id` int NOT NULL,
+  `start_vnum` int DEFAULT '0',
+  `end_vnum` int DEFAULT '0',
+  `type` char(1) COLLATE utf8mb4_general_ci DEFAULT 'r',
+  PRIMARY KEY (`id`),
+  KEY `idx_kingdom_id` (`kingdom_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Add missing columns using information_schema guards so this works on MySQL
--- versions that do not support ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'login_count');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN login_count bigint(20) unsigned DEFAULT 0 AFTER char_name',
-    'SELECT "login_count already exists on account_characters"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- Table: level_cap
+CREATE TABLE `level_cap` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `most_frags` float NOT NULL DEFAULT '0',
+  `racewar_leader` int NOT NULL DEFAULT '0',
+  `level` int NOT NULL DEFAULT '25',
+  `next_update` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'last_login');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN last_login datetime NULL DEFAULT NULL AFTER login_count',
-    'SELECT "last_login already exists on account_characters"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- Table: locker_access
+CREATE TABLE `locker_access` (
+  `owner` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `visitor` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`owner`,`visitor`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'blocked');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN blocked int(11) DEFAULT 0 AFTER last_login',
-    'SELECT "blocked already exists on account_characters"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- Table: locker_activity_log
+CREATE TABLE `locker_activity_log` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `char_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `action_type` enum('enter','leave','chest_open','chest_fail','kicked','chest_create','chest_delete','item_put','item_get') COLLATE utf8mb4_general_ci NOT NULL,
+  `chest_keyword` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `details` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `logged_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_locker_id` (`locker_id`),
+  KEY `idx_logged_at` (`logged_at`),
+  CONSTRAINT `locker_activity_log_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND column_name = 'racewar');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE account_characters ADD COLUMN racewar int(11) DEFAULT 0 AFTER blocked',
-    'SELECT "racewar already exists on account_characters"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- Table: locker_chests
+CREATE TABLE `locker_chests` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `keyword` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `keyword_hash` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `is_public` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_locker_keyword` (`locker_id`,`keyword`),
+  KEY `idx_locker_id` (`locker_id`),
+  CONSTRAINT `locker_chests_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Add unique key on (account_name, char_name) for natural row identification.
--- This is critical: without it, when a character is deleted and re-created
--- (new PID), the ON DUPLICATE KEY UPDATE in sql_save_account_characters won't
--- match the old row and will create a duplicate instead of clearing deleted_at.
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'account_characters' AND index_name = 'acct_char');
-SET @sql = IF(@key_exists = 0,
-    'ALTER TABLE account_characters ADD UNIQUE KEY acct_char (account_name, char_name)',
-    'SELECT "acct_char already exists on account_characters"');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- Table: locker_item_affects
+CREATE TABLE `locker_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `locker_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `locker_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Table: locker_item_extra_descr
+CREATE TABLE `locker_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_locker_item_ed` FOREIGN KEY (`item_id`) REFERENCES `locker_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Ensure item_type and wear_flags columns are DEFAULT NULL (and not NOT NULL)
--- for locker_items, saved_items, and siege_items. This prevents save failures
--- when C code tries to insert NULL (when properties match their prototype).
+-- Table: locker_items
+CREATE TABLE `locker_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `chest_id` int unsigned DEFAULT NULL,
+  `vnum` int NOT NULL,
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `item_type` tinyint DEFAULT NULL,
+  `wear_flags` int DEFAULT NULL,
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
+  PRIMARY KEY (`id`),
+  KEY `container_id` (`container_id`),
+  KEY `idx_locker_id` (`locker_id`),
+  KEY `idx_vnum` (`vnum`),
+  KEY `idx_obj_uid` (`obj_uid`),
+  CONSTRAINT `locker_items_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `lockers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `locker_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `locker_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 1,
-              'ALTER TABLE locker_items MODIFY COLUMN item_type TINYINT DEFAULT NULL',
-              'SELECT "locker_items.item_type not present to modify"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- Table: locker_kickouts
+CREATE TABLE `locker_kickouts` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `fail_count` tinyint unsigned DEFAULT '0',
+  `kicked_until` timestamp NULL DEFAULT NULL,
+  `last_fail` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_locker_account` (`locker_id`,`account_name`),
+  CONSTRAINT `locker_kickouts_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE() AND table_name = 'locker_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 1,
-              'ALTER TABLE locker_items MODIFY COLUMN wear_flags INT DEFAULT NULL',
-              'SELECT "locker_items.wear_flags not present to modify"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- Table: locker_session_state
+CREATE TABLE `locker_session_state` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `chest_id` int unsigned NOT NULL,
+  `opened_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_session` (`locker_id`,`account_name`,`chest_id`),
+  KEY `chest_id` (`chest_id`),
+  CONSTRAINT `locker_session_state_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `locker_session_state_ibfk_2` FOREIGN KEY (`chest_id`) REFERENCES `locker_chests` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 1,
-              'ALTER TABLE saved_items MODIFY COLUMN item_type TINYINT DEFAULT NULL',
-              'SELECT "saved_items.item_type not present to modify"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- Table: lockers
+CREATE TABLE `lockers` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `owner_pid` int DEFAULT NULL,
+  `owner_assoc_id` int DEFAULT NULL,
+  `racewar` tinyint DEFAULT '0',
+  `race` tinyint DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `locker_name` (`locker_name`),
+  KEY `idx_owner_pid` (`owner_pid`),
+  KEY `idx_owner_assoc_id` (`owner_assoc_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 1,
-              'ALTER TABLE saved_items MODIFY COLUMN wear_flags INT DEFAULT NULL',
-              'SELECT "saved_items.wear_flags not present to modify"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- Table: log_entries
+CREATE TABLE `log_entries` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `date` datetime NOT NULL,
+  `kind` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `player_name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `pid` int NOT NULL DEFAULT '0',
+  `ip_address` varchar(15) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `room_vnum` int NOT NULL DEFAULT '0',
+  `zone_number` int NOT NULL DEFAULT '0',
+  `message` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `idx_date` (`date`),
+  KEY `idx_kind` (`kind`),
+  KEY `idx_player_name` (`player_name`),
+  KEY `idx_pid` (`pid`),
+  KEY `idx_ip_address` (`ip_address`),
+  KEY `idx_room_vnum` (`room_vnum`),
+  KEY `idx_zone_number` (`zone_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'item_type');
-SET @sql = IF(@col_exists = 1,
-              'ALTER TABLE siege_items MODIFY COLUMN item_type TINYINT DEFAULT NULL',
-              'SELECT "siege_items.item_type not present to modify"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- Table: mud_info
+CREATE TABLE `mud_info` (
+  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `content` text COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-                   WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'wear_flags');
-SET @sql = IF(@col_exists = 1,
-              'ALTER TABLE siege_items MODIFY COLUMN wear_flags INT DEFAULT NULL',
-              'SELECT "siege_items.wear_flags not present to modify"');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- Table: multiplay_whitelist
+CREATE TABLE `multiplay_whitelist` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pattern` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `admin` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_on` date DEFAULT NULL,
+  `player` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Table: nexus_stones
+CREATE TABLE `nexus_stones` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `room_vnum` int NOT NULL DEFAULT '0',
+  `align` int NOT NULL DEFAULT '0',
+  `stat_affect` int NOT NULL DEFAULT '-1',
+  `affect_amount` int NOT NULL DEFAULT '0',
+  `last_touched_at` timestamp NULL DEFAULT NULL,
+  `bonus` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: offline_messages
+CREATE TABLE `offline_messages` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pid` bigint NOT NULL DEFAULT '0',
+  `sender` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `message` text COLLATE utf8mb4_general_ci NOT NULL,
+  `sent_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `read_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: outposts
+CREATE TABLE `outposts` (
+  `id` int NOT NULL,
+  `owner_id` int NOT NULL DEFAULT '0',
+  `level` int NOT NULL DEFAULT '1',
+  `walls` int NOT NULL DEFAULT '0',
+  `archers` int NOT NULL DEFAULT '0',
+  `resources` int NOT NULL DEFAULT '0',
+  `applied_resources` int NOT NULL DEFAULT '100000',
+  `hitpoints` int NOT NULL DEFAULT '0',
+  `territory` int NOT NULL DEFAULT '0',
+  `portal_room` int NOT NULL DEFAULT '0',
+  `golems` int NOT NULL DEFAULT '0',
+  `meurtriere` int NOT NULL DEFAULT '0',
+  `scouts` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: pages
+CREATE TABLE `pages` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `text` text COLLATE utf8mb4_general_ci,
+  `last_update` datetime DEFAULT NULL,
+  `last_update_by` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `category_id` int DEFAULT NULL,
+  `ip_number` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: persistence_item_events
+CREATE TABLE `persistence_item_events` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `ts_usec` bigint unsigned NOT NULL,
+  `event_type` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `item_uid` bigint unsigned NOT NULL DEFAULT '0',
+  `vnum` int NOT NULL DEFAULT '-1',
+  `item` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `actor` varchar(128) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `actor_id` int NOT NULL DEFAULT '-1',
+  `source` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `target` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `note` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `dedupe_key` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_item_dedupe` (`dedupe_key`),
+  KEY `idx_item_uid_ts` (`item_uid`,`ts_usec`,`id`),
+  KEY `idx_event_type_created` (`event_type`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: persistence_scalar_events
+CREATE TABLE `persistence_scalar_events` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `event_type` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `event_key` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `boot_time` int NOT NULL DEFAULT '0',
+  `touched_at` int NOT NULL DEFAULT '0',
+  `zone_number` int NOT NULL DEFAULT '0',
+  `toucher_pid` int NOT NULL DEFAULT '0',
+  `group_size` int NOT NULL DEFAULT '0',
+  `epic_value` int NOT NULL DEFAULT '0',
+  `alignment_delta` int NOT NULL DEFAULT '0',
+  `dedupe_key` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_scalar_dedupe` (`dedupe_key`),
+  KEY `idx_scalar_event_key` (`event_type`,`event_key`),
+  KEY `idx_scalar_zone_time` (`zone_number`,`touched_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ping
+CREATE TABLE `ping` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `timestamp` datetime NOT NULL,
+  `url` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `ip` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `seq` bigint NOT NULL DEFAULT '0',
+  `time` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: pkill_event
+CREATE TABLE `pkill_event` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `stamp` datetime NOT NULL,
+  `room_vnum` int NOT NULL DEFAULT '0',
+  `room_name` text COLLATE utf8mb4_general_ci NOT NULL,
+  `tweeted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: pkill_info
+CREATE TABLE `pkill_info` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `event_id` int unsigned NOT NULL DEFAULT '0',
+  `pid` bigint NOT NULL DEFAULT '0',
+  `level` int NOT NULL DEFAULT '0',
+  `pk_type` text COLLATE utf8mb4_general_ci NOT NULL,
+  `equip` text COLLATE utf8mb4_general_ci NOT NULL,
+  `log` text COLLATE utf8mb4_general_ci,
+  `inroom` int NOT NULL DEFAULT '0',
+  `leader` int DEFAULT NULL,
+  `player_description` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_event_id` (`event_id`),
+  KEY `idx_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_affects
+CREATE TABLE `player_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `type` smallint NOT NULL,
+  `duration` int DEFAULT '0',
+  `flags` smallint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  `location` tinyint unsigned DEFAULT '0',
+  `level` smallint unsigned DEFAULT '0',
+  `bitvector1` bigint DEFAULT '0',
+  `bitvector2` bigint DEFAULT '0',
+  `bitvector3` bigint DEFAULT '0',
+  `bitvector4` bigint DEFAULT '0',
+  `bitvector5` bigint DEFAULT '0',
+  `custom_msg_char` text COLLATE utf8mb4_general_ci,
+  `custom_msg_room` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_type_dur_flags_mod_loc_lvl` (`pid`,`type`,`duration`,`flags`,`modifier`,`location`,`level`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_affects` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_data
+CREATE TABLE `player_data` (
+  `pid` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL,
+  `account_name` varchar(50) DEFAULT NULL,
+  `short_descr` varchar(512) DEFAULT NULL,
+  `long_descr` text,
+  `description` text,
+  `title` varchar(512) DEFAULT NULL,
+  `m_class` int unsigned DEFAULT '0',
+  `secondary_class` int unsigned DEFAULT '0',
+  `spec` tinyint unsigned DEFAULT '0',
+  `race` tinyint unsigned DEFAULT '0',
+  `racewar` tinyint unsigned DEFAULT '0',
+  `level` tinyint unsigned DEFAULT '1',
+  `sex` tinyint unsigned DEFAULT '0',
+  `weight` smallint unsigned DEFAULT '0',
+  `height` smallint unsigned DEFAULT '0',
+  `size` tinyint DEFAULT '0',
+  `hometown` int DEFAULT '0',
+  `birthplace` int DEFAULT '0',
+  `orig_birthplace` int DEFAULT '0',
+  `last_room` int DEFAULT '0',
+  `birth_time` bigint DEFAULT '0',
+  `played_time` int DEFAULT '0',
+  `last_save` bigint DEFAULT '0',
+  `perm_aging` smallint DEFAULT '0',
+  `base_str` tinyint DEFAULT '0',
+  `base_dex` tinyint DEFAULT '0',
+  `base_agi` tinyint DEFAULT '0',
+  `base_con` tinyint DEFAULT '0',
+  `base_pow` tinyint DEFAULT '0',
+  `base_int` tinyint DEFAULT '0',
+  `base_wis` tinyint DEFAULT '0',
+  `base_cha` tinyint DEFAULT '0',
+  `base_kar` tinyint DEFAULT '0',
+  `base_luk` tinyint DEFAULT '0',
+  `mana` int DEFAULT '0',
+  `base_mana` int DEFAULT '0',
+  `hit_diff` int DEFAULT '0',
+  `base_hit` int DEFAULT '0',
+  `vitality` int DEFAULT '0',
+  `base_vitality` int DEFAULT '0',
+  `spells_memmed_extra` tinyint DEFAULT '0',
+  `copper` bigint DEFAULT '0',
+  `silver` bigint DEFAULT '0',
+  `gold` bigint DEFAULT '0',
+  `platinum` bigint DEFAULT '0',
+  `bank_copper` bigint DEFAULT '0',
+  `bank_silver` bigint DEFAULT '0',
+  `bank_gold` bigint DEFAULT '0',
+  `bank_platinum` bigint DEFAULT '0',
+  `exp` bigint DEFAULT '0',
+  `epics` bigint DEFAULT '0',
+  `epic_skill_points` bigint DEFAULT '0',
+  `skillpoints` int DEFAULT '0',
+  `spell_bind_used` bigint DEFAULT '0',
+  `act` bigint unsigned DEFAULT '0',
+  `act2` bigint unsigned DEFAULT '0',
+  `act3` bigint unsigned DEFAULT '0',
+  `vote` bigint unsigned DEFAULT '0',
+  `alignment` int DEFAULT '0',
+  `prestige` smallint DEFAULT '0',
+  `assoc_id` smallint unsigned DEFAULT '0',
+  `guild_status` int unsigned DEFAULT '0',
+  `time_left_guild` bigint DEFAULT '0',
+  `nb_left_guild` tinyint DEFAULT '0',
+  `time_unspecced` bigint DEFAULT '0',
+  `frags` bigint DEFAULT '0',
+  `oldfrags` bigint DEFAULT '0',
+  `numb_deaths` bigint unsigned DEFAULT '0',
+  `killed_by` varchar(64) DEFAULT NULL,
+  `condition_0` tinyint DEFAULT '0',
+  `condition_1` tinyint DEFAULT '0',
+  `condition_2` tinyint DEFAULT '0',
+  `condition_3` tinyint DEFAULT '0',
+  `condition_4` tinyint DEFAULT '0',
+  `poof_in` varchar(512) DEFAULT NULL,
+  `poof_out` varchar(512) DEFAULT NULL,
+  `poof_in_sound` varchar(512) DEFAULT NULL,
+  `poof_out_sound` varchar(512) DEFAULT NULL,
+  `echo_toggle` tinyint unsigned DEFAULT '0',
+  `prompt` smallint unsigned DEFAULT '0',
+  `wiz_invis` bigint DEFAULT '0',
+  `law_flags` bigint unsigned DEFAULT '0',
+  `wimpy` smallint DEFAULT '0',
+  `aggressive` smallint DEFAULT '-1',
+  `highest_level` tinyint unsigned DEFAULT '0',
+  `screen_length` tinyint unsigned DEFAULT '24',
+  `quest_active` int DEFAULT '0',
+  `quest_mob_vnum` int DEFAULT '0',
+  `quest_type` int DEFAULT '0',
+  `quest_accomplished` int DEFAULT '0',
+  `quest_started` int DEFAULT '0',
+  `quest_zone_number` int DEFAULT '0',
+  `quest_giver` int DEFAULT '0',
+  `quest_level` int DEFAULT '0',
+  `quest_receiver` int DEFAULT '0',
+  `quest_shares_left` int DEFAULT '0',
+  `quest_kill_how_many` int DEFAULT '0',
+  `quest_kill_original` int DEFAULT '0',
+  `quest_map_room` int DEFAULT '0',
+  `quest_map_bought` int DEFAULT '0',
+  `last_ip` bigint unsigned DEFAULT '0',
+  `active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`pid`),
+  UNIQUE KEY `idx_player_name_unique` (`name`),
+  KEY `idx_name` (`name`),
+  KEY `idx_account_name` (`account_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Table: player_forged_items
+CREATE TABLE `player_forged_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `forge_index` smallint unsigned NOT NULL,
+  `item_vnum` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_forge` (`pid`,`forge_index`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_forged_items` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_granted_cmds
+CREATE TABLE `player_granted_cmds` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `cmd_num` int NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_cmd` (`pid`,`cmd_num`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_granted_cmds` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_intros
+CREATE TABLE `player_intros` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `intro_index` tinyint unsigned NOT NULL,
+  `intro_pid` int DEFAULT '0',
+  `intro_time` bigint unsigned DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_intro` (`pid`,`intro_index`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_intros` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_item_affects
+CREATE TABLE `player_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_player_item_affects` FOREIGN KEY (`item_id`) REFERENCES `player_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_item_extra_descr
+CREATE TABLE `player_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_player_item_ed` FOREIGN KEY (`item_id`) REFERENCES `player_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_items
+CREATE TABLE `player_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `vnum` int NOT NULL,
+  `equip_slot` tinyint DEFAULT '0',
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `wear_flags` int DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
+  PRIMARY KEY (`id`),
+  KEY `idx_pid` (`pid`),
+  KEY `idx_container_id` (`container_id`),
+  KEY `idx_obj_uid` (`obj_uid`),
+  CONSTRAINT `fk_player_items` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE,
+  CONSTRAINT `fk_player_items_container` FOREIGN KEY (`container_id`) REFERENCES `player_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_languages
+CREATE TABLE `player_languages` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `tongue_id` tinyint unsigned NOT NULL,
+  `proficiency` tinyint unsigned DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_tongue` (`pid`,`tongue_id`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_languages` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_pet_item_affects
+CREATE TABLE `player_pet_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_pet_item_affects` FOREIGN KEY (`item_id`) REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_pet_item_extra_descr
+CREATE TABLE `player_pet_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_pet_item_ed` FOREIGN KEY (`item_id`) REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_pet_items
+CREATE TABLE `player_pet_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pet_id` int unsigned NOT NULL,
+  `vnum` int NOT NULL,
+  `equip_slot` tinyint DEFAULT '0',
+  `container_id` int unsigned DEFAULT NULL,
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `wear_flags` int DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
+  PRIMARY KEY (`id`),
+  KEY `idx_pet_id` (`pet_id`),
+  KEY `idx_container_id` (`container_id`),
+  KEY `idx_obj_uid` (`obj_uid`),
+  CONSTRAINT `fk_pet_items_container` FOREIGN KEY (`container_id`) REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pet_items_pet` FOREIGN KEY (`pet_id`) REFERENCES `player_pets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_pets
+CREATE TABLE `player_pets` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `owner_pid` int unsigned NOT NULL,
+  `mob_vnum` int NOT NULL,
+  `pet_order` tinyint DEFAULT '0',
+  `hit` int DEFAULT '0',
+  `max_hit` int DEFAULT '0',
+  `mana` int DEFAULT '0',
+  `max_mana` int DEFAULT '0',
+  `vitality` int DEFAULT '0',
+  `max_vitality` int DEFAULT '0',
+  `charm_duration` int DEFAULT '-1',
+  `room_vnum` int DEFAULT '0',
+  `saved_at` bigint DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_owner_pid` (`owner_pid`),
+  CONSTRAINT `fk_player_pets_owner` FOREIGN KEY (`owner_pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_recipes
+CREATE TABLE `player_recipes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pid` int NOT NULL,
+  `recipe_vnum` int NOT NULL,
+  `learned_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_recipe` (`pid`,`recipe_vnum`),
+  KEY `idx_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_shapechanges
+CREATE TABLE `player_shapechanges` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pid` int NOT NULL,
+  `mob_vnum` int NOT NULL,
+  `times_researched` int DEFAULT '0',
+  `last_researched` bigint DEFAULT '0',
+  `last_shapechanged` bigint DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_mob` (`pid`,`mob_vnum`),
+  KEY `idx_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_skills
+CREATE TABLE `player_skills` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `skill_id` smallint unsigned NOT NULL,
+  `learned` tinyint unsigned DEFAULT '0',
+  `taught` tinyint unsigned DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_skill` (`pid`,`skill_id`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_skills` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_spellbooks
+CREATE TABLE `player_spellbooks` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `mob_vnum` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_mob` (`pid`,`mob_vnum`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_spellbooks` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_timers
+CREATE TABLE `player_timers` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `timer_id` tinyint unsigned NOT NULL,
+  `timer_value` bigint DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_timer` (`pid`,`timer_id`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_timers` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_undead_slots
+CREATE TABLE `player_undead_slots` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `circle` tinyint unsigned NOT NULL,
+  `slots` tinyint DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pid_circle` (`pid`,`circle`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_undead_slots` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: player_witnesses
+CREATE TABLE `player_witnesses` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int unsigned NOT NULL,
+  `crime` tinyint unsigned DEFAULT '0',
+  `room_vnum` int DEFAULT '0',
+  `attacker_name` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `victim_name` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `witness_time` bigint DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_pid` (`pid`),
+  CONSTRAINT `fk_player_witnesses` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: poll_options
+CREATE TABLE `poll_options` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `poll_id` int unsigned NOT NULL,
+  `option_num` int NOT NULL,
+  `option_text` varchar(256) COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_poll_id` (`poll_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: poll_votes
+CREATE TABLE `poll_votes` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `poll_id` int unsigned NOT NULL,
+  `account_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `option_id` int unsigned NOT NULL,
+  `voted_at` int NOT NULL DEFAULT '0',
+  `char_name` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_poll_account_option` (`poll_id`,`account_name`,`option_id`),
+  KEY `idx_poll_id` (`poll_id`),
+  KEY `idx_account_name` (`account_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: polls
+CREATE TABLE `polls` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `question` varchar(512) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_by` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` int NOT NULL DEFAULT '0',
+  `expires_at` int NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `multi_select` tinyint(1) NOT NULL DEFAULT '0',
+  `max_choices` int NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: prepstatement_duris_sql
+CREATE TABLE `prepstatement_duris_sql` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `description` text COLLATE utf8mb4_general_ci,
+  `sql_code` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: private_chest_log
+CREATE TABLE `private_chest_log` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `chest_id` int unsigned DEFAULT NULL,
+  `char_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `action_type` enum('open','close','put','get','fail') COLLATE utf8mb4_general_ci NOT NULL,
+  `item_short` varchar(256) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `logged_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_locker_id` (`locker_id`),
+  KEY `idx_logged_at` (`logged_at`),
+  CONSTRAINT `private_chest_log_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `lockers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: private_chests
+CREATE TABLE `private_chests` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `locker_id` int unsigned NOT NULL,
+  `chest_name` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  `password_hash` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `is_public` tinyint(1) DEFAULT '0',
+  `sort_config` text COLLATE utf8mb4_general_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_locker_chest` (`locker_id`,`chest_name`),
+  KEY `idx_locker_id` (`locker_id`),
+  CONSTRAINT `private_chests_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `lockers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: progress
+CREATE TABLE `progress` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` bigint NOT NULL DEFAULT '0',
+  `var_type` int NOT NULL DEFAULT '1',
+  `stamp` datetime NOT NULL,
+  `delta` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_pid` (`pid`),
+  KEY `idx_var_type` (`var_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: quest_trophy
+CREATE TABLE `quest_trophy` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `mob_vnum` int NOT NULL DEFAULT '0',
+  `pid` bigint NOT NULL DEFAULT '0',
+  `type` int NOT NULL DEFAULT '0',
+  `reward_value` int NOT NULL DEFAULT '0',
+  `timestamp` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_mob_vnum` (`mob_vnum`),
+  KEY `idx_pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: races
+CREATE TABLE `races` (
+  `id` int unsigned NOT NULL,
+  `name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `short_name` varchar(32) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ansi_name` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `abbrev` varchar(4) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `racewar` tinyint DEFAULT '0',
+  `playable` tinyint DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: racewar_stat_mods
+CREATE TABLE `racewar_stat_mods` (
+  `racewar` int NOT NULL DEFAULT '0',
+  `Str` int NOT NULL DEFAULT '0',
+  `Dex` int NOT NULL DEFAULT '0',
+  `Agi` int NOT NULL DEFAULT '0',
+  `Con` int NOT NULL DEFAULT '0',
+  `Pow` int NOT NULL DEFAULT '0',
+  `Intl` int NOT NULL DEFAULT '0',
+  `Wis` int NOT NULL DEFAULT '0',
+  `Cha` int NOT NULL DEFAULT '0',
+  `Kar` int NOT NULL DEFAULT '0',
+  `Luc` int NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: saved_item_affects
+CREATE TABLE `saved_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `saved_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `saved_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: saved_item_extra_descr
+CREATE TABLE `saved_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_saved_item_ed` FOREIGN KEY (`item_id`) REFERENCES `saved_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: saved_items
+CREATE TABLE `saved_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_key` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `room_vnum` int DEFAULT '0',
+  `vnum` int NOT NULL,
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `item_material` tinyint DEFAULT NULL,
+  `unique_id` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `item_type` tinyint DEFAULT NULL,
+  `wear_flags` int DEFAULT NULL,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `item_key` (`item_key`),
+  KEY `container_id` (`container_id`),
+  KEY `idx_room_vnum` (`room_vnum`),
+  KEY `idx_vnum` (`vnum`),
+  CONSTRAINT `saved_items_ibfk_1` FOREIGN KEY (`container_id`) REFERENCES `saved_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ship_armor
+CREATE TABLE `ship_armor` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `ship_id` int unsigned NOT NULL,
+  `side` tinyint NOT NULL,
+  `armor` int DEFAULT '0',
+  `internal` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ship_armor` (`ship_id`,`side`),
+  CONSTRAINT `fk_ship_armor_ship` FOREIGN KEY (`ship_id`) REFERENCES `ships` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ship_cargo_market_mods
+CREATE TABLE `ship_cargo_market_mods` (
+  `type` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `port_id` int NOT NULL DEFAULT '-1',
+  `cargo_type` int NOT NULL DEFAULT '-1',
+  `modifier` float NOT NULL DEFAULT '0',
+  KEY `type_port_id_cargo_type` (`type`,`port_id`,`cargo_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ship_cargo_prices
+CREATE TABLE `ship_cargo_prices` (
+  `type` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `port_id` int NOT NULL DEFAULT '-1',
+  `cargo_type` int NOT NULL DEFAULT '-1',
+  `price` int NOT NULL DEFAULT '0',
+  KEY `type_port_id_cargo_type` (`type`,`port_id`,`cargo_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ship_crew
+CREATE TABLE `ship_crew` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `ship_id` int unsigned NOT NULL,
+  `crew_index` int DEFAULT '0',
+  `sail_skill` int DEFAULT '0',
+  `guns_skill` int DEFAULT '0',
+  `rpar_skill` int DEFAULT '0',
+  `sail_chief` int DEFAULT '0',
+  `guns_chief` int DEFAULT '0',
+  `rpar_chief` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ship_crew` (`ship_id`),
+  CONSTRAINT `fk_ship_crew_ship` FOREIGN KEY (`ship_id`) REFERENCES `ships` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ship_slots
+CREATE TABLE `ship_slots` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `ship_id` int unsigned NOT NULL,
+  `slot_index` tinyint NOT NULL,
+  `slot_type` int NOT NULL DEFAULT '0',
+  `item_index` int NOT NULL DEFAULT '0',
+  `position` int NOT NULL DEFAULT '0',
+  `timer` int NOT NULL DEFAULT '0',
+  `val0` int NOT NULL DEFAULT '0',
+  `val1` int NOT NULL DEFAULT '0',
+  `val2` int NOT NULL DEFAULT '0',
+  `val3` int NOT NULL DEFAULT '0',
+  `val4` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ship_slots_index` (`ship_id`,`slot_index`),
+  CONSTRAINT `fk_ship_slots_ship` FOREIGN KEY (`ship_id`) REFERENCES `ships` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: ships
+CREATE TABLE `ships` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `owner_pid` int unsigned DEFAULT NULL,
+  `owner_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `ship_name` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ship_class` tinyint unsigned DEFAULT '0',
+  `frags` int DEFAULT '0',
+  `anchor_room` int DEFAULT '0',
+  `time_played` int DEFAULT '0',
+  `mainsail` int DEFAULT '0',
+  `race` tinyint DEFAULT '0',
+  `money` int DEFAULT '0',
+  `flags` bigint unsigned DEFAULT '0',
+  `armor_fore` int DEFAULT '0',
+  `armor_port` int DEFAULT '0',
+  `armor_rear` int DEFAULT '0',
+  `armor_star` int DEFAULT '0',
+  `internal_fore` int DEFAULT '0',
+  `internal_port` int DEFAULT '0',
+  `internal_rear` int DEFAULT '0',
+  `internal_star` int DEFAULT '0',
+  `crew_index` int DEFAULT '0',
+  `crew_sail_skill` int DEFAULT '0',
+  `crew_guns_skill` int DEFAULT '0',
+  `crew_rpar_skill` int DEFAULT '0',
+  `crew_sail_chief` int DEFAULT '0',
+  `crew_guns_chief` int DEFAULT '0',
+  `crew_rpar_chief` int DEFAULT '0',
+  `maxspeed_bonus` int DEFAULT '0',
+  `capacity_bonus` int DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `owner_name` (`owner_name`),
+  KEY `idx_ships_owner_pid` (`owner_pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: shop_trophy
+CREATE TABLE `shop_trophy` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `item` int NOT NULL DEFAULT '0',
+  `value` int NOT NULL DEFAULT '0',
+  `seller` int NOT NULL DEFAULT '0',
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: shopkeeper_affects
+CREATE TABLE `shopkeeper_affects` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `shopkeeper_id` int NOT NULL,
+  `type` int DEFAULT '0',
+  `duration` int DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  `location` int DEFAULT '0',
+  `bitvector1` bigint unsigned DEFAULT '0',
+  `bitvector2` bigint unsigned DEFAULT '0',
+  `bitvector3` bigint unsigned DEFAULT '0',
+  `bitvector4` bigint unsigned DEFAULT '0',
+  `bitvector5` bigint unsigned DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_shopkeeper_id` (`shopkeeper_id`),
+  CONSTRAINT `shopkeeper_affects_ibfk_1` FOREIGN KEY (`shopkeeper_id`) REFERENCES `shopkeepers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: shopkeeper_item_affects
+CREATE TABLE `shopkeeper_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `shopkeeper_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `shopkeeper_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: shopkeeper_item_extra_descr
+CREATE TABLE `shopkeeper_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_shopkeeper_item_ed` FOREIGN KEY (`item_id`) REFERENCES `shopkeeper_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: shopkeeper_items
+CREATE TABLE `shopkeeper_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `shopkeeper_id` int NOT NULL,
+  `vnum` int NOT NULL,
+  `equip_slot` tinyint DEFAULT '0',
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `wear_flags` int DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `container_id` (`container_id`),
+  KEY `idx_shopkeeper_id` (`shopkeeper_id`),
+  KEY `idx_vnum` (`vnum`),
+  KEY `idx_obj_uid` (`obj_uid`),
+  CONSTRAINT `shopkeeper_items_ibfk_1` FOREIGN KEY (`shopkeeper_id`) REFERENCES `shopkeepers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shopkeeper_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `shopkeeper_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: shopkeepers
+CREATE TABLE `shopkeepers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `shop_id` int NOT NULL,
+  `mob_vnum` int DEFAULT '0',
+  `room_vnum` int DEFAULT '0',
+  `save_time` bigint DEFAULT '0',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `shop_id` (`shop_id`),
+  KEY `idx_shop_id` (`shop_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: siege_item_affects
+CREATE TABLE `siege_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `siege_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `siege_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: siege_item_extra_descr
+CREATE TABLE `siege_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  CONSTRAINT `fk_siege_item_ed` FOREIGN KEY (`item_id`) REFERENCES `siege_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: siege_items
+CREATE TABLE `siege_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `room_vnum` int NOT NULL,
+  `vnum` int NOT NULL,
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `action_descr` text COLLATE utf8mb4_general_ci,
+  `unique_id` int unsigned DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `item_type` tinyint DEFAULT NULL,
+  `wear_flags` int DEFAULT NULL,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `container_id` (`container_id`),
+  KEY `idx_room_vnum` (`room_vnum`),
+  KEY `idx_vnum` (`vnum`),
+  CONSTRAINT `siege_items_ibfk_1` FOREIGN KEY (`container_id`) REFERENCES `siege_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: statistics
+CREATE TABLE `statistics` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `date` int NOT NULL DEFAULT '0',
+  `goods_count` int NOT NULL DEFAULT '0',
+  `evils_count` int NOT NULL DEFAULT '0',
+  `illithids_count` int NOT NULL DEFAULT '0',
+  `undeads_count` int NOT NULL DEFAULT '0',
+  `gods_count` int NOT NULL DEFAULT '0',
+  `in_guildhall_count` int NOT NULL DEFAULT '0',
+  `sum_goods_levels` int NOT NULL DEFAULT '0',
+  `sum_evils_levels` int NOT NULL DEFAULT '0',
+  `sum_illithids_levels` int NOT NULL DEFAULT '0',
+  `sum_undeads_levels` int NOT NULL DEFAULT '0',
+  `unique_ips_count` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: timers
+CREATE TABLE `timers` (
+  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `date` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: towns
+CREATE TABLE `towns` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `zone_filename` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `resources` int DEFAULT '0',
+  `defense` int DEFAULT '0',
+  `offense` int DEFAULT '0',
+  `deploy_guard` tinyint DEFAULT '0',
+  `guard_vnum` int DEFAULT '0',
+  `guard_max` int DEFAULT '0',
+  `guard_load_room` int DEFAULT '0',
+  `deploy_cavalry` tinyint DEFAULT '0',
+  `cavalry_vnum` int DEFAULT '0',
+  `cavalry_max` int DEFAULT '0',
+  `cavalry_load_room` int DEFAULT '0',
+  `deploy_portals` tinyint DEFAULT '0',
+  `portal_vnum` int DEFAULT '0',
+  `portal_load_room` int DEFAULT '0',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_zone_filename` (`zone_filename`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: world_quest_accomplished
+CREATE TABLE `world_quest_accomplished` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pid` varchar(45) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `quest_giver` int unsigned NOT NULL DEFAULT '0',
+  `player_name` varchar(45) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `player_level` int unsigned NOT NULL DEFAULT '0',
+  `quest_target` int NOT NULL DEFAULT '0',
+  `reward_vnum` int NOT NULL DEFAULT '0',
+  `reward_desc` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: zone_touches
+CREATE TABLE `zone_touches` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `boot_time` timestamp NULL DEFAULT NULL,
+  `zone_number` int DEFAULT NULL,
+  `touched_at` timestamp NULL DEFAULT NULL,
+  `toucher_pid` int DEFAULT NULL,
+  `group_size` int DEFAULT NULL,
+  `epic_value` int DEFAULT NULL,
+  `alignment_delta` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_zone_number` (`zone_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: zone_trophy
+CREATE TABLE `zone_trophy` (
+  `pid` bigint NOT NULL DEFAULT '0',
+  `zone_number` int NOT NULL DEFAULT '0',
+  `exp` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`pid`,`zone_number`),
+  KEY `idx_pid` (`pid`),
+  KEY `idx_zone_number` (`zone_number`),
+  KEY `idx_exp` (`exp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table: zones
+CREATE TABLE `zones` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `number` int DEFAULT NULL,
+  `name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `epic_type` int NOT NULL DEFAULT '0',
+  `frequency_mod` float NOT NULL DEFAULT '1',
+  `zone_freq_mod` float NOT NULL DEFAULT '1',
+  `epic_level` int NOT NULL DEFAULT '0',
+  `task_zone` tinyint(1) NOT NULL DEFAULT '0',
+  `quest_zone` tinyint(1) NOT NULL DEFAULT '0',
+  `trophy_zone` tinyint(1) NOT NULL DEFAULT '1',
+  `suggested_group_size` int NOT NULL DEFAULT '1',
+  `epic_payout` int NOT NULL DEFAULT '0',
+  `difficulty` int NOT NULL DEFAULT '0',
+  `randoms_zone` tinyint(1) NOT NULL DEFAULT '1',
+  `alignment` int NOT NULL DEFAULT '0',
+  `last_touch` timestamp NULL DEFAULT NULL,
+  `reset_perc` int DEFAULT '0',
+  `stonecount` int NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `idx_number` (`number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- View: players_view
+CREATE VIEW `players_view` AS select `pd`.`pid` AS `pid`,`pd`.`name` AS `name`,`pd`.`level` AS `level`,`pd`.`race` AS `race_id`,`r`.`ansi_name` AS `race`,`pd`.`m_class` AS `class_id`,`c`.`ansi_name` AS `classname`,`pd`.`racewar` AS `racewar`,`pd`.`assoc_id` AS `assoc_id`,`pd`.`exp` AS `exp`,`pd`.`epics` AS `epics`,`pd`.`played_time` AS `playtime`,(((`pd`.`copper` + (`pd`.`silver` * 10)) + (`pd`.`gold` * 100)) + (`pd`.`platinum` * 1000)) AS `money`,(((`pd`.`bank_copper` + (`pd`.`bank_silver` * 10)) + (`pd`.`bank_gold` * 100)) + (`pd`.`bank_platinum` * 1000)) AS `balance` from ((`player_data` `pd` left join `races` `r` on((`pd`.`race` = `r`.`id`))) left join `classes` `c` on((`pd`.`m_class` = `c`.`id`)));
+
+SET FOREIGN_KEY_CHECKS = 1;

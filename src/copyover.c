@@ -28,6 +28,7 @@
 #include "ships/ships.h"
 #include "ttype.h"
 #include "websocket.h"
+#include "locker_async.h"
 
 extern const int         top_of_world;
 extern int               top_of_zone_table;
@@ -429,6 +430,18 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 	// first pass - save all players, disconnect websocket/ssl
 	flush_pending_ship_saves();
+	if (!drain_pending_ship_saves())
+	{
+		logit(LOG_FILE, "copyover: aborted because pending ship saves could not be made durable");
+		notify_copyover_failure("\r\n*** Copyover cancelled: a pending ship save failed. ***\r\n");
+		return;
+	}
+	if (!locker_async_drain(3000))
+	{
+		logit(LOG_FILE, "copyover: aborted because pending locker async saves could not drain");
+		notify_copyover_failure("\r\n*** Copyover cancelled: a pending locker save failed. ***\r\n");
+		return;
+	}
 	persistence_flush_all_character_saves();
 	for (d = descriptor_list; d; d = d_next)
 	{

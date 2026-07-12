@@ -141,6 +141,10 @@ int epic_random_task_zone(P_char ch)
 		return -1;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) > 0)
 	{
@@ -1481,6 +1485,10 @@ bool epic_zone_done_now(int zone_number)
 	if (qry("SELECT stonecount FROM zones WHERE number = %d", zone_number))
 	{
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return FALSE;
+		}
 		if (mysql_num_rows(res) >= 1)
 		{
 			MYSQL_ROW row = mysql_fetch_row(res);
@@ -1902,6 +1910,10 @@ float get_epic_zone_alignment_mod(int zone_number, ubyte racewar)
 		return mod;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return mod;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -1996,6 +2008,10 @@ float get_epic_zone_frequency_mod(int zone_number)
 		return mod;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return mod;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -2028,6 +2044,10 @@ vector<epic_zone_data> get_epic_zones()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return zones;
+	}
 
 	MYSQL_ROW row;
 

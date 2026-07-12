@@ -4158,9 +4158,26 @@ void timedShutdown(P_char ch, P_char, P_obj, void *data)
 				         "end!!!\033[0m\r\n\033[1;5;44m............\033[0m\r\n\033[1;5;44m........\033[0m\r\n\033[1;5;44m......\033[0m\r\n\033[1;5;44m...\033[0m\r\n\033[1;5;44m.\033[0m\n\r");
 				send_to_all(buf);
 				logit(LOG_STATUS, "Shutdown pwipe called.");
+				shutdownflag = _pwipe = 1;
+				if (!persistence_prepare_pwipe())
+				{
+					send_to_all("&=GlPersistence workers did not quiesce; aborting destructive wipe.&n\n\r");
+					shutdownflag = _pwipe = 0;
+					shutdownData.eShutdownType = TimedShutdownData::NONE;
+					return;
+				}
+				if (!persistence_quarantine_fallback_events())
+				{
+					send_to_all("&=GlFallback persistence log could not be quarantined; aborting destructive wipe.&n\n\r");
+					shutdownflag = _pwipe = 0;
+					shutdownData.eShutdownType = TimedShutdownData::NONE;
+					return;
+				}
 				if (!sql_pwipe(1723699))
 				{
 					send_to_all("&=GlSQL database not wiped clean.. Aborting shutdown wipe.&n\n\r&+WYou're still alive!  Yay!&n\n\r");
+					shutdownflag = _pwipe = 0;
+					shutdownData.eShutdownType = TimedShutdownData::NONE;
 					return;
 				}
 				else
@@ -11253,7 +11270,7 @@ void whois_ip(P_char ch, char *ip_address)
 	MYSQL_ROW  row;
 	P_char     targ;
 
-	if (!(res = db_query("SELECT player_name FROM log_entries WHERE ip_address LIKE '%s' GROUP BY player_name ORDER BY player_name", ip_address)))
+	if (!(res = db_query("SELECT player_name FROM log_entries WHERE ip_address LIKE '%s' GROUP BY player_name ORDER BY player_name", escape_str(ip_address).c_str())))
 	{
 		send_to_char_f(ch, "Could not find ip_address '%s' in database.\n", ip_address);
 		return;

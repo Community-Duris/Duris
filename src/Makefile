@@ -224,6 +224,7 @@ OBJS =  $(SHIP_OBJS) \
 				 ssl.o \
 				 statistics.o \
 				 storage_lockers.o \
+				 locker_async.o \
 				 tether.o \
 				 timers.o \
 				 track.o \

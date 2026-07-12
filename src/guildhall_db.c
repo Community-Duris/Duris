@@ -37,6 +37,10 @@ int next_guildhall_id()
 		}
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return FALSE;
+		}
 		MYSQL_ROW  row = mysql_fetch_row(res);
 
 		if (!row[0])
@@ -67,6 +71,10 @@ int next_guildhall_room_id()
 		}
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return FALSE;
+		}
 		MYSQL_ROW  row = mysql_fetch_row(res);
 
 		if (!row[0])
@@ -118,6 +126,10 @@ void load_guildhalls(vector<Guildhall *> &guildhalls)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
@@ -169,6 +181,10 @@ void load_guildhall(int id, Guildhall *gh)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	MYSQL_ROW row;
 
@@ -214,6 +230,10 @@ void load_guildhall_rooms(Guildhall *guildhall)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))

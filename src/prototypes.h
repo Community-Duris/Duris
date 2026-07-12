@@ -3080,6 +3080,7 @@ void                  persistence_record_item_event(const char *event_type,
                                                     const char *note);
 int                   persistence_flush_item_events(int max_events);
 int                   persistence_replay_fallback_events(void);
+int                   persistence_quarantine_fallback_events(void);
 int                   persistence_pending_item_events(void);
 unsigned long         persistence_dropped_item_events(void);
 int                   persistence_start_item_event_worker(void);
@@ -3088,6 +3089,7 @@ int                   persistence_item_event_worker_active(void);
 int                   persistence_write_fallback_event_line(const char *line, const char *domain, const char *owner, const char *action);
 int                   persistence_start_scalar_event_worker(void);
 void                  persistence_stop_scalar_event_worker(void);
+int                   persistence_prepare_pwipe(void);
 int                   persistence_scalar_event_worker_active(void);
 int                   persistence_start_large_event_worker(void);
 void                  persistence_stop_large_event_worker(void);
@@ -3116,6 +3118,7 @@ void                  logexp(const char *, ...);
 
 void                  fatal_boot_error(const char *component, const char *fmt, ...);
 void                  panic_corruption(const char *component, const char *fmt, ...);
+[[noreturn]] int      panic_corruption_int(const char *component, const char *fmt, ...);
 bool                  require_char(P_char ch, const char *component, const char *fmt, ...);
 bool                  require_data(const void *data, const char *component, const char *fmt, ...);
 void                  request_shutdown(int shutdown_type, const char *issuer, const char *reason);

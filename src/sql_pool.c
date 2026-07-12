@@ -40,6 +40,7 @@ static sql_pool_slot_t *pool       = NULL;
 static int              pool_size  = 0;
 static pthread_mutex_t  pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t   pool_cond  = PTHREAD_COND_INITIALIZER;
+static int              pool_closing = 0;
 
 static MYSQL *sql_pool_create_connection(const char *site, int slot)
 {
@@ -102,6 +103,7 @@ int sql_pool_init(int size)
 	}
 
 	pool_size = size;
+	pool_closing = 0;
 
 	for (int i = 0; i < size; i++)
 	{
@@ -134,8 +136,25 @@ void sql_pool_shutdown(void)
 
 	if (!pool)
 	{
+		pool_closing = 0;
 		pthread_mutex_unlock(&pool_mutex);
 		return;
+	}
+
+	/* Prevent new borrowers and wake any threads waiting in acquire(). */
+	pool_closing = 1;
+	pthread_cond_broadcast(&pool_cond);
+
+	/* Borrowers own the MYSQL handle outside pool_mutex.  Do not close
+	 * anything until every borrower has returned its handle. */
+	while (1)
+	{
+		int borrowed = 0;
+		for (int i = 0; i < pool_size; i++)
+			borrowed += pool[i].in_use;
+		if (borrowed == 0)
+			break;
+		pthread_cond_wait(&pool_cond, &pool_mutex);
 	}
 
 	for (int i = 0; i < pool_size; i++)
@@ -151,6 +170,7 @@ void sql_pool_shutdown(void)
 	free(pool);
 	pool      = NULL;
 	pool_size = 0;
+	pool_closing = 0;
 
 	/* Wake every thread blocked in sql_pool_acquire().  They will see
 	 * pool == NULL and return gracefully. */
@@ -171,7 +191,7 @@ MYSQL *sql_pool_acquire(void)
 
 	pthread_mutex_lock(&pool_mutex);
 
-	if (!pool)
+	if (!pool || pool_closing)
 	{
 		pthread_mutex_unlock(&pool_mutex);
 		return NULL;
@@ -195,7 +215,7 @@ MYSQL *sql_pool_acquire(void)
 		/* All busy — block until someone releases. */
 		pthread_cond_wait(&pool_cond, &pool_mutex);
 
-		if (!pool)
+		if (!pool || pool_closing)
 		{
 			pthread_mutex_unlock(&pool_mutex);
 			return NULL;
@@ -221,7 +241,10 @@ void sql_pool_release(MYSQL *conn)
 		if (pool[i].conn == conn)
 		{
 			pool[i].in_use = 0;
-			pthread_cond_signal(&pool_cond);
+			if (pool_closing)
+				pthread_cond_broadcast(&pool_cond);
+			else
+				pthread_cond_signal(&pool_cond);
 			break;
 		}
 	}
@@ -239,7 +262,7 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 		return NULL;
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool)
+	if (!pool || pool_closing)
 	{
 		pthread_mutex_unlock(&pool_mutex);
 		return NULL;
@@ -275,7 +298,7 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	}
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || slot >= pool_size || pool[slot].conn != old_conn)
+	if (!pool || pool_closing || slot >= pool_size || pool[slot].conn != old_conn)
 	{
 		pthread_mutex_unlock(&pool_mutex);
 		mysql_close(replacement);

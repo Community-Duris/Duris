@@ -234,6 +234,7 @@ void do_gsay(P_char ch, char *arg, int cmd)
 	int               *rm_checked;
 	int                i, j, k, numb, skip;
 	char               Gbuf1[MAX_STRING_LENGTH];
+	char               escaped_text[MAX_STRING_LENGTH];
 
 	if (IS_MORPH(ch))
 	{
@@ -270,7 +271,8 @@ void do_gsay(P_char ch, char *arg, int cmd)
 	}
 	for (gl = ch->group; gl; gl = gl->next)
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+G$n&+G group-says %s'%s'", language_known(ch, gl->ch), language_CRYPT(ch, gl->ch, arg + i));
+		escape_act_dollars(escaped_text, sizeof(escaped_text), language_CRYPT(ch, gl->ch, arg + i));
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+G$n&+G group-says %s'%s'", language_known(ch, gl->ch), escaped_text);
 		if (!is_silent(gl->ch, FALSE))
 		{
 			act(Gbuf1, FALSE, ch, 0, gl->ch, TO_VICT | ACT_SILENCEABLE | ACT_PRIVATE);
@@ -1313,7 +1315,7 @@ void do_subterfuge(P_char ch, char *arg, int cmd)
 void do_disarm(P_char ch, char *arg, int cmd)
 {
 	int    pos, percent, rnd_num, bits;
-	char   obj_name[128], vict_name[128];
+	char   obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
 	P_obj  obj, trap;
 	P_char victim;
 

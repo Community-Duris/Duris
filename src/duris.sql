@@ -89,7 +89,7 @@ CREATE TABLE `auction_bid_history` (
   `bid_amount` int(11) NOT NULL default '0',
   PRIMARY KEY  (`id`),
   KEY `auction_id` (`auction_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -107,7 +107,7 @@ CREATE TABLE `auction_item_pickups` (
   `quantity` int(11) NOT NULL default '1',
   PRIMARY KEY  (`id`),
   KEY `pid` (`pid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -121,7 +121,7 @@ CREATE TABLE `auction_money_pickups` (
   `pid` int(10) unsigned NOT NULL default '0',
   `money` int(10) unsigned NOT NULL default '0',
   PRIMARY KEY  (`pid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -152,7 +152,7 @@ CREATE TABLE `auctions` (
   KEY `seller_pid` (`seller_pid`),
   KEY `auction_end` (`end_time`),
   KEY `status` (`status`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -667,16 +667,16 @@ CREATE TABLE `pkill_info` (
 SET character_set_client = @saved_cs_client;
 
 --
--- Table structure for table `prepstatment_duris_sql`
+-- Table structure for table `prepstatement_duris_sql`
 --
 
-DROP TABLE IF EXISTS `prepstatment_duris_sql`;
+DROP TABLE IF EXISTS `prepstatement_duris_sql`;
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
-CREATE TABLE `prepstatment_duris_sql` (
+CREATE TABLE `prepstatement_duris_sql` (
   `id` int(10) unsigned NOT NULL auto_increment,
-  `desc` text NOT NULL,
-  `sql` text NOT NULL,
+  `description` text,
+  `sql_code` text,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
@@ -961,6 +961,51 @@ CREATE TABLE `locker_access` (
   PRIMARY KEY  (`owner`,`visitor`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
+
+--
+-- Persistence event tables used by asynchronous SQL workers.
+--
+
+DROP TABLE IF EXISTS `persistence_item_events`;
+CREATE TABLE `persistence_item_events` (
+  `id` bigint unsigned NOT NULL auto_increment,
+  `ts_usec` bigint unsigned NOT NULL,
+  `event_type` varchar(64) NOT NULL default '',
+  `item_uid` bigint unsigned NOT NULL default '0',
+  `vnum` int NOT NULL default '-1',
+  `item` varchar(255) NOT NULL default '',
+  `actor` varchar(128) NOT NULL default '',
+  `actor_id` int NOT NULL default '-1',
+  `source` varchar(255) NOT NULL default '',
+  `target` varchar(255) NOT NULL default '',
+  `note` varchar(255) NOT NULL default '',
+  `dedupe_key` varchar(64) default NULL,
+  `created_at` datetime NOT NULL default CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_uid_ts` (`item_uid`,`ts_usec`,`id`),
+  KEY `idx_event_type_created` (`event_type`,`created_at`),
+  UNIQUE KEY `uq_item_dedupe` (`dedupe_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+DROP TABLE IF EXISTS `persistence_scalar_events`;
+CREATE TABLE `persistence_scalar_events` (
+  `id` bigint unsigned NOT NULL auto_increment,
+  `event_type` varchar(64) NOT NULL default '',
+  `event_key` varchar(255) NOT NULL default '',
+  `boot_time` int NOT NULL default '0',
+  `touched_at` int NOT NULL default '0',
+  `zone_number` int NOT NULL default '0',
+  `toucher_pid` int NOT NULL default '0',
+  `group_size` int NOT NULL default '0',
+  `epic_value` int NOT NULL default '0',
+  `alignment_delta` int NOT NULL default '0',
+  `dedupe_key` varchar(64) default NULL,
+  `created_at` datetime NOT NULL default CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_scalar_event_key` (`event_type`,`event_key`),
+  KEY `idx_scalar_zone_time` (`zone_number`,`touched_at`),
+  UNIQUE KEY `uq_scalar_dedupe` (`dedupe_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

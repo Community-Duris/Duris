@@ -196,6 +196,9 @@ void sql_get_sincesunk_frags(char owner, float *frags);
 void sql_add_sincesunk_frags(char owner, float frags);
 
 bool sql_pwipe(int code_verify);
+bool sql_verify_pwipe_manifest(void);
+bool sql_verify_persistence_schema(void);
+bool sql_verify_auction_engines(void);
 bool sql_clear_zone_trophy();
 /* ---- Persistence layer declarations ---- */
 /* (duplicate item/scalar event declarations removed; remaining: */

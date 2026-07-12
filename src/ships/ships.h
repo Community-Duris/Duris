@@ -638,6 +638,7 @@ int read_ships();
 unsigned long long ship_save_signature(const P_ship ship);
 void queue_ship_save(P_ship ship, const char *reason);
 void flush_pending_ship_saves(void);
+bool drain_pending_ship_saves(void);
 
 struct ShipData *new_ship(int m_class, bool npc = false);
 void             name_ship(const char *name, P_ship ship);

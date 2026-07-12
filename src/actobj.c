@@ -412,8 +412,13 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			}
 			send_to_char(Gbuf3, ch);
 			extract_obj(o_obj);
+			// DEFERRED: use-after-free — extract_obj frees o_obj, but callers in
+			// do_get_finalize_container_item and do_get_log_room_artifact_pickup
+			// still dereference the stale pointer (short_description, R_num, obj_uid).
+			// Fix requires obj_to_char/obj_to_room returning a freed-status, or a
+			// zombie flag, touching hundreds of call sites.
 			o_obj = NULL;
-		}
+			}
 
 		// this call to writeCharacter is a Bad Thing.  Whatever is calling
 		// get() should be writing the character.  Calling it here results in
@@ -1853,6 +1858,9 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 			logit(LOG_DEBUG, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch), plat, gold, silv, copp, world[ch->in_room].number);
 		}
 
+		// DEFERRED: use-after-free — obj_to_room may free tmp_object if it
+		// merges with existing money on the floor. Callers below dereference
+		// tmp_object (obj_uid, redis_log_floor_drop) after this call.
 		obj_to_room(tmp_object, ch->in_room);
 
 		if (IS_PC(ch))
@@ -2805,6 +2813,9 @@ void do_give(P_char ch, char *argument, int cmd)
 	act("$n gives $p to $N.", 1, ch, obj, vict, TO_NOTVICT);
 	act("$n gives you $p.", 0, ch, obj, vict, TO_VICT);
 	send_to_char("Ok.\r\n", ch);
+	// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
+	// extraction (handler.c), but callers below dereference obj (IS_ARTIFACT,
+	// short_description, R_num). Fix requires obj_to_char returning freed-status.
 	obj_to_char(obj, vict);
 	if (IS_TRUSTED(ch))
 	{
@@ -4163,6 +4174,10 @@ int remove_item(P_char ch, P_obj obj, int position)
 				strip_holy_sword(ch);
 			}
 
+			// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
+			// extraction (handler.c), but callers below dereference obj (IS_SET,
+			// get_obj_affect, obj_affect_remove). Fix requires obj_to_char
+			// returning freed-status or a zombie flag.
 			obj_to_char(unequip_char(ch, position), ch);
 
 			// Remove Affects
