@@ -373,6 +373,12 @@ static void show_enhance_help(P_char ch, P_obj item)
 	int  cost = (1000 + itemvalue(item) * 100) / 1000;
 
 	act("&+CThe &n$p&+C shimmers in your hands, its latent potential waiting to be unlocked.&n", FALSE, ch, item, 0, TO_CHAR);
+	if (!enhance_stat_enabled)
+	{
+		/* Preserve the pre-stat-enhancement prompt when this lane is off. */
+		act("And which object is the enhancement object?", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
 	strcpy(buf, "&+YSuperior improvements available:\r\n");
 
 	for (i = 0; i < MAX_OBJ_AFFECT; i++)
@@ -459,6 +465,12 @@ void do_enhance(P_char ch, char *argument, int cmd)
 
 	if (!argument || !*argument)
 	{
+		if (!enhance_stat_enabled)
+		{
+			send_to_char("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y? &n\r\n"
+			             "Syntax: enhance <source item you want to upgrade> <upgrade material item>\r\n", ch);
+			return;
+		}
 		send_to_char("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y? &n\r\n"
 		             "Syntax: enhance <source item> <material item>\r\n"
 		             "        enhance <source item> <stat>\r\n", ch);
@@ -481,7 +493,7 @@ void do_enhance(P_char ch, char *argument, int cmd)
 				break;
 			}
 		}
-		if (stat_idx != -1)
+		if (stat_idx != -1 && enhance_stat_enabled)
 		{
 			struct enhance_index_entry *target;
 			P_obj target_obj;
@@ -1103,6 +1115,8 @@ void enhancematload(P_char ch, P_char killer)
 		int enhance_ival_gain_very                   = 3;
 		int enhance_ival_gain_lucky                  = 2;
 		int enhance_ival_gain_normal                 = 1;
+		/* Fail closed: stat enhancement requires an explicit config opt-in. */
+		int enhance_stat_enabled                      = 0;
 
 		/* ---- Bitvector allow masks ---- */
 		unsigned long enhance_allow_mask  = 0;
@@ -1332,6 +1346,8 @@ void enhancematload(P_char ch, P_char killer)
 			section[0]   = '\0';
 			section_idx  = -1;
 			line_num     = 0;
+			/* Reloads must not retain a stale opt-in when the setting is absent. */
+			enhance_stat_enabled = 0;
 
 			while (fgets(line, sizeof(line), fp))
 			{
@@ -1416,6 +1432,12 @@ void enhancematload(P_char ch, P_char killer)
 					else if (!strcmp(key, "enhance.ival.gain.lucky"))               enhance_ival_gain_lucky             = ival;
 					else if (!strcmp(key, "enhance.ival.gain.normal"))              enhance_ival_gain_normal            = ival;
 					/* skip unknown settings silently */
+				}
+				else if (section_idx == 1)
+				{
+					/* [enhance_stat] section: explicit on/off gate for the stat lane. */
+					if (!strcmp(key, "enhance_stat.enabled"))
+						enhance_stat_enabled = atoi(val) ? 1 : 0;
 				}
 				else if (section_idx >= 10 && section_idx <= 14)
 				{
