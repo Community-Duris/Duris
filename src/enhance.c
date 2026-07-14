@@ -277,6 +277,118 @@ static const struct {
 	{NULL,        0,             NULL,  NULL}
 };
 
+/* Return an item's unmodified prototype value for one APPLY location. */
+static int enhance_base_modifier(P_obj item, int apply_loc)
+{
+	P_obj base;
+	int   i;
+	int   modifier = 0;
+
+	if (!item || apply_loc == APPLY_NONE)
+		return 0;
+
+	base = read_object(OBJ_VNUM(item), VIRTUAL);
+	if (!base)
+		return 0;
+
+	for (i = 0; i < MAX_OBJ_AFFECT; i++)
+	{
+		if (base->affected[i].location == apply_loc)
+		{
+			modifier = base->affected[i].modifier;
+			break;
+		}
+	}
+	extract_obj(base);
+	return modifier;
+}
+
+/* Format the top-quality raw-material tribute associated with a donor item. */
+static void enhance_material_name(P_obj donor, char *buf, size_t size)
+{
+	P_obj material;
+	int   vnum = get_matstart(donor) + 4;
+
+	material = read_object(vnum, VIRTUAL);
+	if (material)
+	{
+		snprintf(buf, size, "%s", material->short_description);
+		extract_obj(material);
+	}
+	else
+		snprintf(buf, size, "raw material [%d]", vnum);
+}
+
+/* Apply the game's visible superior marker once, without touching craftsmanship. */
+static void mark_item_superior(P_obj item)
+{
+	char short_desc[MAX_STRING_LENGTH];
+
+	if (!item || !item->short_description || strstr(item->short_description, "[superior]"))
+		return;
+
+	snprintf(short_desc, sizeof(short_desc), "%s [superior]&n", item->short_description);
+	set_short_description(item, short_desc);
+}
+
+/* Show contextual help when player types 'enhance <item>' with no second arg. */
+static void show_enhance_help(P_char ch, P_obj item)
+{
+	char buf[MAX_STRING_LENGTH];
+	char tmp[MAX_STRING_LENGTH];
+	int  i;
+	int  shown = 0;
+	int  cost = (1000 + itemvalue(item) * 100) / 1000;
+
+	act("&+CThe &n$p&+C shimmers in your hands, its latent potential waiting to be unlocked.&n", FALSE, ch, item, 0, TO_CHAR);
+	strcpy(buf, "&+YSuperior improvements available:\r\n");
+
+	for (i = 0; i < MAX_OBJ_AFFECT; i++)
+	{
+		int si;
+		int base;
+		int cap;
+		int remaining;
+
+		if (item->affected[i].location == APPLY_NONE || item->affected[i].modifier <= 0)
+			continue;
+		for (si = 0; enhance_stat_names[si].name; si++)
+			if (enhance_stat_names[si].apply_loc == item->affected[i].location)
+				break;
+		if (!enhance_stat_names[si].name)
+			continue;
+
+		base = enhance_base_modifier(item, item->affected[i].location);
+		if (base <= 0)
+			continue;
+
+		/* Repair pre-marker stat upgrades when the item is next inspected. */
+		if (item->affected[i].modifier > base)
+			mark_item_superior(item);
+
+		cap = base * 2;
+		remaining = MAX(0, cap - item->affected[i].modifier);
+		snprintf(tmp, sizeof(tmp), "  %s%s&n: +%d / +%d; &+W%d&n increase%s remaining\r\n",
+		         enhance_stat_names[si].color, enhance_stat_names[si].display_name,
+		         item->affected[i].modifier, cap, remaining, remaining == 1 ? "" : "s");
+		strcat(buf, tmp);
+		shown++;
+	}
+	if (!shown)
+		strcat(buf, "  &+wNo existing positive stat on this item can be made superior.\r\n");
+
+	snprintf(tmp, sizeof(tmp),
+	         "&+YSuperior tribute:&n the donor item, plus &+W1 highest-quality raw material&n matching the donor's material.\r\n"
+	         "&+YFee:&n &+W%d platinum&n per attempt.  A successful improvement grants &+L[superior]&n.\r\n",
+	         cost);
+	strcat(buf, tmp);
+	strcat(buf, "&+ySyntax:&n enhance <item> <stat> <donor>\r\n");
+	strcat(buf, "&+y        &n enhance <item> <material> &+w(legacy)\r\n");
+	send_to_char(buf, ch);
+}
+
+
+
 void do_enhance(P_char ch, char *argument, int cmd)
 {
 	P_obj source, material, donor;
@@ -339,7 +451,7 @@ void do_enhance(P_char ch, char *argument, int cmd)
 
 			if (!found_stat)
 			{
-				send_to_char("&+yUnknown stat.  Try: str, dex, int, wis, con, agi, pow, cha, hit, ac, hitroll, damroll, or the _max variants.\\r\\n", ch);
+				send_to_char("&+yUnknown stat.  Try: str, dex, int, wis, con, agi, pow, cha, hit, ac, hitroll, damroll, or the _max variants.\r\n", ch);
 				return;
 			}
 
@@ -360,7 +472,7 @@ void do_enhance(P_char ch, char *argument, int cmd)
 			}
 			if (OBJ_VNUM(donor) == OBJ_VNUM(source))
 			{
-				send_to_char("&+yYou cannot use the same item as both source and donor!\\r\\n", ch);
+				send_to_char("&+yYou cannot use the same item as both source and donor!\r\n", ch);
 				return;
 			}
 
@@ -375,11 +487,11 @@ void do_enhance(P_char ch, char *argument, int cmd)
 
 			if (!entry)
 			{
-				send_to_char("&+yThat donor item is not a valid template for this stat.\\r\\n", ch);
+				send_to_char("&+yThat donor item is not a valid template for this stat.\r\n", ch);
 				return;
 			}
 
-			/* Find the stat on the donor */
+			/* The donor must be a real template for the selected stat. */
 			orig_mod = 0;
 			for (i = 0; i < MAX_OBJ_AFFECT; i++)
 			{
@@ -389,14 +501,13 @@ void do_enhance(P_char ch, char *argument, int cmd)
 					break;
 				}
 			}
-
 			if (orig_mod <= 0)
 			{
-				send_to_char("&+yThat donor item does not have the desired stat.\\r\\n", ch);
+				send_to_char("&+yThat donor item does not have the desired stat.\r\n", ch);
 				return;
 			}
 
-			/* Find the existing stat on the source and record its original value */
+			/* The source's prototype—not the donor—defines the legal cap. */
 			new_mod = 0;
 			for (i = 0; i < MAX_OBJ_AFFECT; i++)
 			{
@@ -406,93 +517,80 @@ void do_enhance(P_char ch, char *argument, int cmd)
 					break;
 				}
 			}
-
-			/* Cap at 2x the source's original value for this stat */
 			{
-				int source_orig = new_mod;
-				cap = source_orig > 0 ? source_orig * 2 : orig_mod * 2;
+				int  source_base = enhance_base_modifier(source, apply_loc);
+				int  material_vnum = get_matstart(donor) + 4;
+				char material_name[MAX_STRING_LENGTH];
+
+				if (source_base <= 0 || new_mod <= 0)
+				{
+					send_to_char("&+yThis item does not possess that stat to enhance.  Only an existing positive stat may be improved.\r\n", ch);
+					return;
+				}
+				cap = source_base * 2;
 				if (new_mod >= cap)
 				{
 					char buf[MAX_STRING_LENGTH];
-					snprintf(buf, MAX_STRING_LENGTH, "&+yYour item already has the maximum %s modifier for this stat! (max %d)\\r\\n", enhance_stat_names[stat_idx].display_name, cap);
+					snprintf(buf, sizeof(buf), "&+yYour item already has the maximum %s modifier for this stat! (max %d)\r\n", enhance_stat_names[stat_idx].display_name, cap);
 					send_to_char(buf, ch);
 					return;
 				}
 
-				/* Apply the stat */
-				new_mod += orig_mod;
-				if (new_mod > cap)
-					new_mod = cap;
-			}
-
-			/* Level gate: same as legacy enhance (source ival <= level * 3) */
-			{
-				int sval = itemvalue(source);
-				if (sval > GET_LEVEL(ch) * 3)
-				{
-					send_to_char("&+yThis item is too powerful to be enhanced further.\\r\\n", ch);
-					return;
-				}
-			}
-
-			/* Platinum cost: 1000 base + 100 per point of source ival */
-			{
-				int sval = itemvalue(source);
-				int cost = 1000 + sval * 100;
-				if (GET_MONEY(ch) < cost)
+				/* The donor determines the tribute material, never the stat's cap/value. */
+				if (vnum_in_inv(ch, material_vnum) < 1)
 				{
 					char buf[MAX_STRING_LENGTH];
-					snprintf(buf, MAX_STRING_LENGTH, "&+yIt will require &+W%d platinum&+y to enhance this item.\\r\\n", cost / 1000);
+					enhance_material_name(donor, material_name, sizeof(material_name));
+					snprintf(buf, sizeof(buf), "&+ySuperior enhancement requires &+W1 %s&+y, the highest-quality material matching your donor.\r\n", material_name);
 					send_to_char(buf, ch);
 					return;
 				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("&+yYour pockets feel &+Wlighter&n.\\r\\n", ch);
-			}
 
-			/* Set the affect — find first matching or empty slot */
-			{
-				int slot_found = -1;
-				for (i = 0; i < MAX_OBJ_AFFECT; i++)
+				/* Each use improves the current source stat by exactly one point. */
+				new_mod++;
+
+				/* Level gate: same as legacy enhance (source ival <= level * 3). */
+				if (itemvalue(source) > GET_LEVEL(ch) * 3)
 				{
-					if (source->affected[i].location == 0 || source->affected[i].location == apply_loc)
-					{
-						source->affected[i].location = apply_loc;
-						source->affected[i].modifier = new_mod;
-						slot_found = i;
-						break;
-					}
-				}
-				if (slot_found == -1)
-				{
-					send_to_char("&+yYour item cannot hold any more enchantments.  Remove one first.\\r\\n", ch);
+					send_to_char("&+yThis item is too powerful to be enhanced further.\r\n", ch);
 					return;
 				}
-			}
 
-			/* Update short description and keywords */
-			{
-				P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
-				if (tempobj)
+				/* Verify the item has a slot before charging any platinum. */
+				for (i = 0; i < MAX_OBJ_AFFECT; i++)
+					if (source->affected[i].location == apply_loc)
+						break;
+				if (i == MAX_OBJ_AFFECT)
 				{
-					char keywords[MAX_STRING_LENGTH], tempdesc[MAX_STRING_LENGTH], short_desc[MAX_STRING_LENGTH];
-					snprintf(keywords, MAX_STRING_LENGTH, "%s enhanced", tempobj->name);
-					snprintf(tempdesc, MAX_STRING_LENGTH, "%s", tempobj->short_description);
-					snprintf(short_desc, MAX_STRING_LENGTH, "%s %s%s&n", tempdesc, enhance_stat_names[stat_idx].color, enhance_stat_names[stat_idx].display_name);
-					set_keywords(source, keywords);
-					set_short_description(source, short_desc);
-					extract_obj(tempobj);
+					send_to_char("&+yYour item cannot hold any more enchantments.\r\n", ch);
+					return;
 				}
-			}
 
-			/* Consume the donor */
-			obj_from_char(donor);
-			extract_obj(donor);
+				{
+					int cost = 1000 + itemvalue(source) * 100;
+					if (GET_MONEY(ch) < cost)
+					{
+						char buf[MAX_STRING_LENGTH];
+						snprintf(buf, sizeof(buf), "&+yIt will require &+W%d platinum&+y to enhance this item.\r\n", cost / 1000);
+						send_to_char(buf, ch);
+						return;
+					}
+					SUB_MONEY(ch, cost, 0);
+					send_to_char("&+yYour pockets feel &+Wlighter&n.\r\n", ch);
+				}
+
+				/* Update the existing source affect, then consume both tributes. */
+				source->affected[i].modifier = new_mod;
+				vnum_from_inv(ch, material_vnum, 1);
+				obj_from_char(donor);
+				extract_obj(donor);
+				mark_item_superior(source);
+			}
 
 			{
 				char buf[MAX_STRING_LENGTH];
 				snprintf(buf, MAX_STRING_LENGTH,
-				         "&+BYour &+Wenhancement&+B thrums with %s%s&+B energy!  Your item's %s&+B has grown to &+W%d&n!\\r\\n",
+				         "&+BYour &+Wenhancement&+B thrums with %s%s&+B energy!  Your item's %s&+B has grown to &+W%d&n!\r\n",
 				         enhance_stat_names[stat_idx].color,
 				         enhance_stat_names[stat_idx].display_name,
 				         enhance_stat_names[stat_idx].display_name,
@@ -523,7 +621,7 @@ void do_enhance(P_char ch, char *argument, int cmd)
 
 	if (!(material = get_obj_in_list_vis(ch, second, ch->carrying)))
 	{
-		act("And which object is the enhancement object?", FALSE, ch, 0, 0, TO_CHAR);
+		show_enhance_help(ch, source);
 		return;
 	}
 	if (!strcmp(first, second))
@@ -591,7 +689,7 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 		cost = 1000;
 		if (GET_MONEY(ch) < cost)
 		{
-			send_to_char("It will require &+W1 platinum&n to &+Benhance&n this item.\\r\\n", ch);
+			send_to_char("It will require &+W1 platinum&n to &+Benhance&n this item.\r\n", ch);
 			return;
 		}
 	}
@@ -600,7 +698,7 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 		cost = 10000;
 		if (GET_MONEY(ch) < cost * 2)
 		{
-			send_to_char("It will require &+W20 platinum&n to &+Benhance&n this item.\\r\\n", ch);
+			send_to_char("It will require &+W20 platinum&n to &+Benhance&n this item.\r\n", ch);
 			return;
 		}
 	}
@@ -609,7 +707,7 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 		cost = 50000;
 		if (GET_MONEY(ch) < cost * 2)
 		{
-			send_to_char("It will require &+W100 platinum&n to &+Benhance&n this item.\\r\\n", ch);
+			send_to_char("It will require &+W100 platinum&n to &+Benhance&n this item.\r\n", ch);
 			return;
 		}
 	}
