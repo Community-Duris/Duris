@@ -326,6 +326,12 @@ static int enhance_entry_modifier(const struct enhance_index_entry *entry, int a
 	return 0;
 }
 
+/* A superior stat may reach floor(1.5 * its positive prototype modifier). */
+static int enhance_stat_cap(int base_modifier)
+{
+	return base_modifier > 0 ? base_modifier + base_modifier / 2 : 0;
+}
+
 /* Find the deterministic next template: exact stat value, compatible wear slot, lowest vnum. */
 static struct enhance_index_entry *find_stat_enhance_target(P_obj source, int apply_loc, int desired_mod)
 {
@@ -396,7 +402,7 @@ static void show_enhance_help(P_char ch, P_obj item)
 		if (item->affected[i].modifier > base)
 			mark_item_superior(item);
 
-		cap = base * 2;
+		cap = enhance_stat_cap(base);
 		remaining = MAX(0, cap - item->affected[i].modifier);
 		target = remaining ? find_stat_enhance_target(item, item->affected[i].location, item->affected[i].modifier + 1) : NULL;
 		if (target && (target_obj = read_object(target->vnum, VIRTUAL)))
@@ -527,7 +533,7 @@ void do_enhance(P_char ch, char *argument, int cmd)
 				send_to_char("&+yThis item does not possess that stat to enhance.  Only an existing positive stat may be improved.\r\n", ch);
 				return;
 			}
-			cap = source_base * 2;
+			cap = enhance_stat_cap(source_base);
 			if (new_mod >= cap)
 			{
 				char buf[MAX_STRING_LENGTH];
