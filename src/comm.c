@@ -58,6 +58,7 @@
 #include "ships.h"
 #include "siege.h"
 #include "spells.h"
+#include "enhance.h"
 #include "sql.h"
 #include "sql_player.h"
 #include "telnet.h"
@@ -508,13 +509,18 @@ void run_the_game(int port, int sslport)
 		fprintf(stderr, "-- Loading alliances\r\n");
 		load_alliances();
 
-	#ifdef SIEGE_ENABLED
+		fprintf(stderr, "-- Loading enhance config\r\n");
+		load_enhance_config();
+		fprintf(stderr, "-- Building enhance index\r\n");
+		load_enhance_index();
+
+#ifdef SIEGE_ENABLED
 		fprintf(stderr, "-- Loading town data\r\n");
 		init_towns();
 
 		fprintf(stderr, "-- Loading siege data\r\n");
 		init_siege();
-	#endif
+#endif
 
 		// This guarentees that files exist for reading.
 		fprintf(stderr, "-- Touching leaderboard\r\n");

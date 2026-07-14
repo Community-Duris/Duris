@@ -96,6 +96,7 @@ OBJS =  $(SHIP_OBJS) \
 				 debug.o \
 				 disguise.o \
 				 drannak.o \
+				 enhance.o \
 				 dreadlord.o \
 				 editor.o \
 				 encounters.o \

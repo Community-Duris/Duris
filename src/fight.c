@@ -16,6 +16,7 @@
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "enhance.h"
 #include "utility.h"
 #include "utils.h"
 #include <math.h>
