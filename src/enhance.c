@@ -37,10 +37,21 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	int   cascade_dir, cascade_step, cascade_ival;
 	struct enhance_index_entry *entry;
 
-	if (!ch || !source || !material)
-		return;
+		if (!ch || !source || !material)
+			return;
 
-	chluck      = (GET_C_LUK(ch));
+		if (is_enhance_banned(source))
+		{
+			act("&+RYour $p&+R has too many conflicting enchantments to be enhanced.&n", FALSE, ch, source, 0, TO_CHAR);
+			return;
+		}
+		if (is_enhance_banned(material))
+		{
+			act("&+RYour $p&+R cannot be used as an enhancement material&n.", FALSE, ch, material, 0, TO_CHAR);
+			return;
+		}
+
+		chluck      = (GET_C_LUK(ch));
 	sval        = itemvalue(source);
 	minval      = itemvalue(source) - enhance_material_ival_delta;
 	searchcount = 0;
@@ -293,148 +304,212 @@ void do_enhance(P_char ch, char *argument, int cmd)
 	half_chop(third, third, rest);
 
 	/* Check for stat-enhance syntax: enhance <source> <stat> <donor> (3 args) */
-	if (*third)
-	{
-		/* Look up the stat name */
-		found_stat = FALSE;
-		apply_loc = 0;
-		if (!(source = get_obj_in_list_vis(ch, first, ch->carrying)))
+		if (*third)
 		{
-			act("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y?", FALSE, ch, 0, 0, TO_CHAR);
-			return;
-		}
-		if (!is_salvageable(source))
-		{
-			act("&+yYour $p&+y cannot be used in this way... try something else&n.", FALSE, ch, source, 0, TO_CHAR);
-			return;
-		}
-
-		for (i = 0; enhance_stat_names[i].name; i++)
-		{
-			if (!strcasecmp(second, enhance_stat_names[i].name))
+			/* Look up the stat name */
+			int stat_idx = -1;
+			found_stat = FALSE;
+			apply_loc = 0;
+			if (!(source = get_obj_in_list_vis(ch, first, ch->carrying)))
 			{
-				apply_loc = enhance_stat_names[i].apply_loc;
-				found_stat = TRUE;
-				break;
+				act("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y?", FALSE, ch, 0, 0, TO_CHAR);
+				return;
 			}
-		}
-
-		if (!found_stat)
-		{
-			send_to_char("&+yUnknown stat.  Try: str, dex, int, wis, con, agi, pow, cha, hit, ac, hitroll, damroll, or the _max variants.\r\n", ch);
-			return;
-		}
-
-		if (!(donor = get_obj_in_list_vis(ch, third, ch->carrying)))
-		{
-			act("&+yWhich &+Wdonor item &+ywould you like to draw the &+mstat&+y from?", FALSE, ch, 0, 0, TO_CHAR);
-			return;
-		}
-		if (!is_salvageable(donor))
-		{
-			act("&+yYour $p&+y cannot be used as a donor&n.", FALSE, ch, donor, 0, TO_CHAR);
-			return;
-		}
-		if (OBJ_VNUM(donor) == OBJ_VNUM(source))
-		{
-			send_to_char("&+yYou cannot use the same item as both source and donor!\r\n", ch);
-			return;
-		}
-
-		/* Look up donor in stat hash table */
-		entry = enhance_stat_table[enhance_stat_hash(apply_loc)];
-		while (entry)
-		{
-			if (entry->vnum == OBJ_VNUM(donor))
-				break;
-			entry = entry->next;
-		}
-
-		if (!entry)
-		{
-			send_to_char("&+yThat donor item is not a valid template for this stat.\r\n", ch);
-			return;
-		}
-
-		/* Find the stat on the donor */
-		orig_mod = 0;
-		for (i = 0; i < MAX_OBJ_AFFECT; i++)
-		{
-			if (entry->apply_loc[i] == apply_loc)
+			if (!is_salvageable(source))
 			{
-				orig_mod = entry->apply_mod[i];
-				break;
+				act("&+yYour $p&+y cannot be used in this way... try something else&n.", FALSE, ch, source, 0, TO_CHAR);
+				return;
 			}
-		}
+			if (is_enhance_banned(source))
+			{
+				act("&+yYour $p&+y has too many conflicting enchantments for further enhancement&n.", FALSE, ch, source, 0, TO_CHAR);
+				return;
+			}
 
-		if (orig_mod <= 0)
-		{
-			send_to_char("&+yThat donor item does not have the desired stat.\r\n", ch);
+			for (i = 0; enhance_stat_names[i].name; i++)
+			{
+				if (!strcasecmp(second, enhance_stat_names[i].name))
+				{
+					apply_loc = enhance_stat_names[i].apply_loc;
+					found_stat = TRUE;
+					stat_idx = i;
+					break;
+				}
+			}
+
+			if (!found_stat)
+			{
+				send_to_char("&+yUnknown stat.  Try: str, dex, int, wis, con, agi, pow, cha, hit, ac, hitroll, damroll, or the _max variants.\\r\\n", ch);
+				return;
+			}
+
+			if (!(donor = get_obj_in_list_vis(ch, third, ch->carrying)))
+			{
+				act("&+yWhich &+Wdonor item &+ywould you like to draw the &+mstat&+y from?", FALSE, ch, 0, 0, TO_CHAR);
+				return;
+			}
+			if (!is_salvageable(donor))
+			{
+				act("&+yYour $p&+y cannot be used as a donor&n.", FALSE, ch, donor, 0, TO_CHAR);
+				return;
+			}
+			if (is_enhance_banned(donor))
+			{
+				act("&+yYour donor $p&+y has too many conflicting enchantments&n.", FALSE, ch, donor, 0, TO_CHAR);
+				return;
+			}
+			if (OBJ_VNUM(donor) == OBJ_VNUM(source))
+			{
+				send_to_char("&+yYou cannot use the same item as both source and donor!\\r\\n", ch);
+				return;
+			}
+
+			/* Look up donor in stat hash table */
+			entry = enhance_stat_table[enhance_stat_hash(apply_loc)];
+			while (entry)
+			{
+				if (entry->vnum == OBJ_VNUM(donor))
+					break;
+				entry = entry->next;
+			}
+
+			if (!entry)
+			{
+				send_to_char("&+yThat donor item is not a valid template for this stat.\\r\\n", ch);
+				return;
+			}
+
+			/* Find the stat on the donor */
+			orig_mod = 0;
+			for (i = 0; i < MAX_OBJ_AFFECT; i++)
+			{
+				if (entry->apply_loc[i] == apply_loc)
+				{
+					orig_mod = entry->apply_mod[i];
+					break;
+				}
+			}
+
+			if (orig_mod <= 0)
+			{
+				send_to_char("&+yThat donor item does not have the desired stat.\\r\\n", ch);
+				return;
+			}
+
+			/* Find the existing stat on the source and record its original value */
+			new_mod = 0;
+			for (i = 0; i < MAX_OBJ_AFFECT; i++)
+			{
+				if (source->affected[i].location == apply_loc)
+				{
+					new_mod = source->affected[i].modifier;
+					break;
+				}
+			}
+
+			/* Cap at 2x the source's original value for this stat */
+			{
+				int source_orig = new_mod;
+				cap = source_orig > 0 ? source_orig * 2 : orig_mod * 2;
+				if (new_mod >= cap)
+				{
+					char buf[MAX_STRING_LENGTH];
+					snprintf(buf, MAX_STRING_LENGTH, "&+yYour item already has the maximum %s modifier for this stat! (max %d)\\r\\n", enhance_stat_names[stat_idx].display_name, cap);
+					send_to_char(buf, ch);
+					return;
+				}
+
+				/* Apply the stat */
+				new_mod += orig_mod;
+				if (new_mod > cap)
+					new_mod = cap;
+			}
+
+			/* Level gate: same as legacy enhance (source ival <= level * 3) */
+			{
+				int sval = itemvalue(source);
+				if (sval > GET_LEVEL(ch) * 3)
+				{
+					send_to_char("&+yThis item is too powerful to be enhanced further.\\r\\n", ch);
+					return;
+				}
+			}
+
+			/* Platinum cost: 1000 base + 100 per point of source ival */
+			{
+				int sval = itemvalue(source);
+				int cost = 1000 + sval * 100;
+				if (GET_MONEY(ch) < cost)
+				{
+					char buf[MAX_STRING_LENGTH];
+					snprintf(buf, MAX_STRING_LENGTH, "&+yIt will require &+W%d platinum&+y to enhance this item.\\r\\n", cost / 1000);
+					send_to_char(buf, ch);
+					return;
+				}
+				SUB_MONEY(ch, cost, 0);
+				send_to_char("&+yYour pockets feel &+Wlighter&n.\\r\\n", ch);
+			}
+
+			/* Set the affect — find first matching or empty slot */
+			{
+				int slot_found = -1;
+				for (i = 0; i < MAX_OBJ_AFFECT; i++)
+				{
+					if (source->affected[i].location == 0 || source->affected[i].location == apply_loc)
+					{
+						source->affected[i].location = apply_loc;
+						source->affected[i].modifier = new_mod;
+						slot_found = i;
+						break;
+					}
+				}
+				if (slot_found == -1)
+				{
+					send_to_char("&+yYour item cannot hold any more enchantments.  Remove one first.\\r\\n", ch);
+					return;
+				}
+			}
+
+			/* Update short description and keywords */
+			{
+				P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
+				if (tempobj)
+				{
+					char keywords[MAX_STRING_LENGTH], tempdesc[MAX_STRING_LENGTH], short_desc[MAX_STRING_LENGTH];
+					snprintf(keywords, MAX_STRING_LENGTH, "%s enhanced", tempobj->name);
+					snprintf(tempdesc, MAX_STRING_LENGTH, "%s", tempobj->short_description);
+					snprintf(short_desc, MAX_STRING_LENGTH, "%s %s%s&n", tempdesc, enhance_stat_names[stat_idx].color, enhance_stat_names[stat_idx].display_name);
+					set_keywords(source, keywords);
+					set_short_description(source, short_desc);
+					extract_obj(tempobj);
+				}
+			}
+
+			/* Consume the donor */
+			obj_from_char(donor);
+			extract_obj(donor);
+
+			{
+				char buf[MAX_STRING_LENGTH];
+				snprintf(buf, MAX_STRING_LENGTH,
+				         "&+BYour &+Wenhancement&+B thrums with %s%s&+B energy!  Your item's %s&+B has grown to &+W%d&n!\\r\\n",
+				         enhance_stat_names[stat_idx].color,
+				         enhance_stat_names[stat_idx].display_name,
+				         enhance_stat_names[stat_idx].display_name,
+				         new_mod);
+				send_to_char(buf, ch);
+			}
+
+			statuslog(ch->player.level,
+			          "&+BStat-Enhance&n: %s&n enhanced %s '%s&n' with %s (%d) at [%d]!",
+			          GET_NAME(ch),
+			          enhance_stat_names[stat_idx].color,
+			          source->short_description,
+			          enhance_stat_names[stat_idx].display_name,
+			          new_mod,
+			          (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
 			return;
 		}
-
-		/* Find the existing stat on the source */
-		new_mod = 0;
-		for (i = 0; i < MAX_OBJ_AFFECT; i++)
-		{
-			if (source->affected[i].location == apply_loc)
-			{
-				new_mod = source->affected[i].modifier;
-				break;
-			}
-		}
-
-		/* Cap at 2x original donor value */
-		cap = orig_mod * 2;
-		if (new_mod >= cap)
-		{
-			char buf[MAX_STRING_LENGTH];
-			snprintf(buf, MAX_STRING_LENGTH, "&+yYour item already has the maximum %s modifier for this stat! (max %d)\r\n", enhance_stat_names[i].display_name, cap);
-			send_to_char(buf, ch);
-			return;
-		}
-
-		/* Apply the stat */
-		new_mod += orig_mod;
-		if (new_mod > cap)
-			new_mod = cap;
-
-		/* Set the affect */
-		for (i = 0; i < MAX_OBJ_AFFECT; i++)
-		{
-			if (source->affected[i].location == 0 || source->affected[i].location == apply_loc)
-			{
-				source->affected[i].location = apply_loc;
-				source->affected[i].modifier = new_mod;
-				break;
-			}
-		}
-
-		/* Consume the donor */
-		obj_from_char(donor);
-		extract_obj(donor);
-
-		{
-			char buf[MAX_STRING_LENGTH];
-			snprintf(buf, MAX_STRING_LENGTH,
-			         "&+BYour &+Wenhancement&+B thrums with %s%s&+B energy!  Your item's %s&+B has grown to &+W%d&n!\r\n",
-			         enhance_stat_names[i].color,
-			         enhance_stat_names[i].display_name,
-			         enhance_stat_names[i].display_name,
-			         new_mod);
-			send_to_char(buf, ch);
-		}
-
-		statuslog(ch->player.level,
-		          "&+BStat-Enhance&n: %s&n enhanced %s '%s&n' with %s (%d) at [%d]!",
-		          GET_NAME(ch),
-		          enhance_stat_names[i].color,
-		          source->short_description,
-		          enhance_stat_names[i].display_name,
-		          new_mod,
-		          (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
-		return;
-	}
 
 	/* Original 2-arg enhance */
 	half_chop(argument, first, rest);
@@ -490,11 +565,22 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	if (!ch || !source || !material)
 		return;
 
+	if (is_enhance_banned(source))
+	{
+		act("&+RYour $p&+R has too many conflicting enchantments to be enhanced.&n", FALSE, ch, source, 0, TO_CHAR);
+		return;
+	}
+	if (is_enhance_banned(material))
+	{
+		act("&+RYour $p&+R cannot be used as an enhancement material&n.", FALSE, ch, material, 0, TO_CHAR);
+		return;
+	}
+
 	char  buf[MAX_STRING_LENGTH], modstring[MAX_STRING_LENGTH];
 	P_obj robj;
 	long  robjint;
 	int   mod = 0, loctype = 0;
-	int   validobj, cost, searchcount = 0, tries;
+	int   validobj, cost = 0, searchcount = 0, tries;
 	int   sval = itemvalue(source);
 	validobj   = 0;
 	int val    = itemvalue(material);
@@ -503,27 +589,27 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	if (val <= 20)
 	{
 		cost = 1000;
-		if (GET_MONEY(ch) < 1000)
+		if (GET_MONEY(ch) < cost)
 		{
-			send_to_char("It will require &+W1 platinum&n to &+Benhance&n this item.\r\n", ch);
+			send_to_char("It will require &+W1 platinum&n to &+Benhance&n this item.\\r\\n", ch);
 			return;
 		}
 	}
-	if (val > 20 && val < 30)
+	else if (val <= 30)
 	{
 		cost = 10000;
-		if (GET_MONEY(ch) < 20000)
+		if (GET_MONEY(ch) < cost * 2)
 		{
-			send_to_char("It will require &+W20 platinum&n to &+Benhance&n this item.\r\n", ch);
+			send_to_char("It will require &+W20 platinum&n to &+Benhance&n this item.\\r\\n", ch);
 			return;
 		}
 	}
-	if (val > 30)
+	else
 	{
 		cost = 50000;
-		if (GET_MONEY(ch) < 100000)
+		if (GET_MONEY(ch) < cost * 2)
 		{
-			send_to_char("It will require &+W100 platinum&n to &+Benhance&n this item.\r\n", ch);
+			send_to_char("It will require &+W100 platinum&n to &+Benhance&n this item.\\r\\n", ch);
 			return;
 		}
 	}
