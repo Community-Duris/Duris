@@ -106,7 +106,9 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	// Can enhance up to 3x level, same as forge/craft. --Eikel
 	if (sval > GET_LEVEL(ch) * enhance_level_gate_multiplier)
 	{
-		send_to_char("This item is too powerful to be enhanced further.\n", ch);
+		snprintf(buf, MAX_STRING_LENGTH, "This item has ival %d; at your level you can enhance items up to ival %d.\r\n",
+		         sval, GET_LEVEL(ch) * enhance_level_gate_multiplier);
+		send_to_char(buf, ch);
 		return;
 	}
 
@@ -256,6 +258,8 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	send_to_char("Your pockets feel &+Wlighter&n.\r\n", ch);
 
 	act("&+BYour enhancement is a success! You now have &n$p&+B!\r\n", FALSE, ch, robj, 0, TO_CHAR);
+	snprintf(buf, MAX_STRING_LENGTH, "&+wFinal item value: %d.&n\r\n", itemvalue(robj));
+	send_to_char(buf, ch);
 	obj_to_char(robj, ch);
 	obj_from_char(source);
 	extract_obj(source);
@@ -534,7 +538,8 @@ static void show_superior_requirements(P_char ch, P_obj item, const struct super
 	for (i = 0; i < plan->material_count; i++)
 	{
 		enhance_material_name(plan->materials[i].vnum, name, sizeof(name));
-		snprintf(line, sizeof(line), "  &+W%d&n %s\r\n", plan->materials[i].count, name);
+		snprintf(line, sizeof(line), "  &+W%d&n %s &+w(you have %d)&n\r\n",
+		         plan->materials[i].count, name, vnum_in_inv(ch, plan->materials[i].vnum));
 		strcat(buf, line);
 	}
 	strcat(buf, "&+ySyntax:&n enhance <item>\r\n");
@@ -566,7 +571,8 @@ static bool perform_superior_enhancement(P_char ch, P_obj source,
 		source->affected[plan->slots[i]].modifier++;
 	mark_item_superior(source);
 
-	send_to_char("&+BYour enhancement thrums with superior energy!\r\n", ch);
+	snprintf(buf, sizeof(buf), "&+BYour enhancement thrums with superior energy! &+w%d properties improved.&n\r\n", plan->slot_count);
+	send_to_char(buf, ch);
 	statuslog(ch->player.level,
 	          "&+BStat-Enhance&n: %s&n enhanced '%s&n' across %d properties at [%d]!",
 	          GET_NAME(ch), source->short_description, plan->slot_count,
@@ -625,7 +631,9 @@ void do_enhance(P_char ch, char *argument, int cmd)
 		}
 		if (itemvalue(source) > GET_LEVEL(ch) * enhance_level_gate_multiplier)
 		{
-			send_to_char("&+yThis item is too powerful to be enhanced further.\r\n", ch);
+			snprintf(rest, sizeof(rest), "&+yThis item has ival %d; at your level you can enhance items up to ival %d.\r\n",
+			         itemvalue(source), GET_LEVEL(ch) * enhance_level_gate_multiplier);
+			send_to_char(rest, ch);
 			return;
 		}
 		if (!build_superior_enhancement_plan(source, &plan))
@@ -948,6 +956,8 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	send_to_char("Your pockets feel &+Wlighter&n.\r\n", ch);
 
 	act("&+BYour enhancement is a success! Your &n$p&+B now feels slightly more powerful!\r\n", FALSE, ch, source, 0, TO_CHAR);
+	snprintf(buf, MAX_STRING_LENGTH, "&+wApplied property: %s&+w. Final item value: %d.&n\r\n", modstring, itemvalue(source));
+	send_to_char(buf, ch);
 
 	obj_from_char(material);
 	extract_obj(material);
