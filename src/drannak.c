@@ -35,6 +35,7 @@
 #include "spells.h"
 #include "sql_player.h"
 #include "tradeskill.h"
+#include "crafting.h"
 #include "vnum.obj.h"
 #include "weather.h"
 
@@ -716,7 +717,7 @@ void create_recipe(P_char ch, P_obj temp)
 		}
 	}
 
-	if (!is_salvageable(temp) || IS_OBJ_STAT2(temp, ITEM2_QUESTITEM))
+	if (!crafting_recipe_target_is_available(temp))
 		return;
 
 	objrecipe = read_object(400210, VIRTUAL);
@@ -730,6 +731,7 @@ void create_recipe(P_char ch, P_obj temp)
 	objrecipe->short_description = str_dup(buffer);
 
 	objrecipe->str_mask |= STRUNG_DESC2;
+	crafting_configure_recipe_scroll(objrecipe, temp);
 	debug("create_recipe: %s reward was: %s ival: %d.", J_NAME(ch), objrecipe->short_description, itemvalue(temp));
 	obj_to_char(objrecipe, ch);
 }

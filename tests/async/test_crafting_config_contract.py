@@ -18,6 +18,10 @@ assert "Commands accept either form" in config_text
 assert "i + 1, recipes[i]" in source
 assert "selected = recipes[choice2 - 1]" in source
 assert "objVnum = recipes[objVnum - 1]" in source
+assert "crafting.recipe.max.player.level" in source
+assert "crafting.recipe.examine.materials" in source
+assert "crafting.recipe.max.player.level=56" in config_text
+assert "crafting.recipe.examine.materials=1" in config_text
 assert "int crafting_level_gate_multiplier(void);" in header
 assert "boot_crafting_system();" in comm
 print("crafting config contract passed")

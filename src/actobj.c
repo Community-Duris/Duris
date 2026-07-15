@@ -28,6 +28,7 @@
 #include "spells.h"
 #include "sql.h"
 #include "tradeskill.h"
+#include "crafting.h"
 #include "vnum.obj.h"
 
 /*
@@ -6242,7 +6243,7 @@ void do_salvage(P_char ch, char *argument, int cmd)
 				act("With your tools, you discover that $p can not be manufactured.", FALSE, ch, item, 0, TO_CHAR);
 			}
 		}
-		else
+		else if (crafting_recipe_target_is_available(item))
 		{
 			recipe = read_object(SALVAGE_RECIPE_VNUM, VIRTUAL);
 
@@ -6250,6 +6251,7 @@ void do_salvage(P_char ch, char *argument, int cmd)
 			snprintf(buf1, MAX_STRING_LENGTH, "%s %s", recipe->short_description, item->short_description);
 			recipe->short_description = str_dup(buf1);
 			recipe->str_mask |= STRUNG_DESC2;
+			crafting_configure_recipe_scroll(recipe, item);
 
 			obj_to_char(recipe, ch);
 			if (DEBUG)
@@ -6272,6 +6274,10 @@ void do_salvage(P_char ch, char *argument, int cmd)
 			    TO_CHAR);
 			act("$n has created $p!\r\n", FALSE, ch, recipe, 0, TO_ROOM);
 			act("You have created $p!\r\n", FALSE, ch, recipe, 0, TO_CHAR);
+		}
+		else if (scitools)
+		{
+			act("With your tools, you determine that $p cannot be manufactured under the current crafting limits.", FALSE, ch, item, 0, TO_CHAR);
 		}
 	}
 	/*** END CREATE RECIPE ***/

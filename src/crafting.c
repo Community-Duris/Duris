@@ -6,6 +6,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "comm.h"
+#include "config.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -21,8 +22,10 @@
 #include <string.h>
 
 static int crafting_level_gate = 3;
+static int crafting_recipe_max_player_level = MAXLVLMORTAL;
 static int crafting_experience_per_item_value = 1000;
 static double crafting_material_quantity_multiplier = 1.0;
+static bool crafting_recipe_examine_materials = TRUE;
 static bool crafting_craft_enabled = TRUE;
 static bool crafting_forge_enabled = TRUE;
 static int crafting_craft_essence_vnum = VOBJ_CRAFTING_ESSENCE;
@@ -46,8 +49,10 @@ static void load_crafting_config(void)
 
 	/* A restart/boot always starts from historical defaults. */
 	crafting_level_gate = 3;
+	crafting_recipe_max_player_level = MAXLVLMORTAL;
 	crafting_experience_per_item_value = 1000;
 	crafting_material_quantity_multiplier = 1.0;
+	crafting_recipe_examine_materials = TRUE;
 	crafting_craft_enabled = TRUE;
 	crafting_forge_enabled = TRUE;
 	crafting_craft_essence_vnum = VOBJ_CRAFTING_ESSENCE;
@@ -80,6 +85,10 @@ static void load_crafting_config(void)
 
 		if (!strcmp(key, "crafting.level.gate.multiplier") && atoi(value) > 0)
 			crafting_level_gate = atoi(value);
+		else if (!strcmp(key, "crafting.recipe.max.player.level") && atoi(value) > 0 && atoi(value) <= MAXLVLMORTAL)
+			crafting_recipe_max_player_level = atoi(value);
+		else if (!strcmp(key, "crafting.recipe.examine.materials"))
+			crafting_recipe_examine_materials = atoi(value) ? TRUE : FALSE;
 		else if (!strcmp(key, "crafting.experience.per.ival") && atoi(value) >= 0)
 			crafting_experience_per_item_value = atoi(value);
 		else if (!strcmp(key, "crafting.material.quantity.multiplier") && strtod(value, NULL) > 0.0)
@@ -156,6 +165,47 @@ bool crafting_validate_recipe_target(P_obj item)
 	return item != NULL && !IS_OBJ_STAT2(item, ITEM2_QUESTITEM) && crafting_build_plan(item, &plan);
 }
 
+bool crafting_recipe_target_is_available(P_obj item)
+{
+	struct crafting_plan plan;
+
+	if (!crafting_validate_recipe_target(item) ||
+	    (!crafting_craft_enabled && !crafting_forge_enabled) ||
+	    !crafting_build_plan(item, &plan))
+		return FALSE;
+	return plan.item_value <= crafting_level_gate * crafting_recipe_max_player_level;
+}
+
+void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
+{
+	struct crafting_plan plan;
+	P_obj low, high;
+	char text[MAX_STRING_LENGTH];
+
+	if (!crafting_recipe_examine_materials || recipe == NULL || !crafting_build_plan(target, &plan))
+		return;
+	low = read_object(plan.low_material_vnum, VIRTUAL);
+	high = read_object(plan.high_material_vnum, VIRTUAL);
+	if (!low || !high)
+	{
+		if (low) extract_obj(low);
+		if (high) extract_obj(high);
+		return;
+	}
+	snprintf(text, sizeof(text), "This recipe teaches %s.\r\n\r\nRequired materials:\r\n  %d %s\r\n  %d %s\r\n",
+	         target->short_description, plan.high_material_count, high->short_description,
+	         plan.low_material_count, low->short_description);
+	if (plan.magical)
+		strncat(text, "  1 magical essence (the item has magical properties)\r\n", sizeof(text) - strlen(text) - 1);
+	strncat(text, "\r\nUse the recipe to learn it, then `craft` or `forge` to view and make it.\r\n", sizeof(text) - strlen(text) - 1);
+	if ((recipe->str_mask & STRUNG_DESC3) && recipe->action_description)
+		FREE(recipe->action_description);
+	recipe->action_description = str_dup(text);
+	recipe->str_mask |= STRUNG_DESC3;
+	extract_obj(low);
+	extract_obj(high);
+}
+
 void boot_crafting_system(void)
 {
 	load_crafting_config();
@@ -206,7 +256,19 @@ int *crafting_get_player_recipes(P_char ch, int *count)
 
 	recipes = sql_get_player_recipes(GET_PID(ch), count);
 	if (recipes != NULL || *count != 0)
+	{
+		int i, kept = 0;
+		for (i = 0; i < *count; i++)
+		{
+			P_obj target = read_object(recipes[i], VIRTUAL);
+			if (target && crafting_recipe_target_is_available(target))
+				recipes[kept++] = recipes[i];
+			if (target)
+				extract_obj(target);
+		}
+		*count = kept;
 		return recipes;
+	}
 
 	snprintf(name, sizeof(name), "%s", GET_NAME(ch));
 	for (p = name; *p; p++)
@@ -221,8 +283,16 @@ int *crafting_get_player_recipes(P_char ch, int *count)
 		int *grown;
 		int i;
 		bool duplicate = FALSE;
+		P_obj target;
 		if (recipe_vnum <= 0 || real_object(recipe_vnum) < 0)
 			continue;
+		target = read_object(recipe_vnum, VIRTUAL);
+		if (!target || !crafting_recipe_target_is_available(target))
+		{
+			if (target) extract_obj(target);
+			continue;
+		}
+		extract_obj(target);
 		for (i = 0; i < *count; i++)
 			if (recipes[i] == recipe_vnum)
 				duplicate = TRUE;

@@ -2125,12 +2125,12 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 		logit(LOG_DEBUG, "learn_recipe: %s used a recipe with missing target vnum %d.", GET_NAME(ch), recipenumber);
 		return TRUE;
 	}
-	if (!crafting_validate_recipe_target(tobj))
+	if (!crafting_recipe_target_is_available(tobj))
 	{
 		if (IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
 			send_to_char("This recipe describes a quest item and cannot be learned for player crafting.\r\n", ch);
 		else
-			send_to_char("This recipe has no valid material plan and cannot be learned for player crafting.\r\n", ch);
+			send_to_char("This recipe cannot be learned because no player can make it under the current crafting configuration.\r\n", ch);
 		logit(LOG_DEBUG, "learn_recipe: %s used an uncraftable recipe target %d.", GET_NAME(ch), recipenumber);
 		extract_obj(tobj);
 		return TRUE;

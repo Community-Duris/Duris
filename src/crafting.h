@@ -23,6 +23,10 @@ struct crafting_plan
 bool crafting_build_plan(P_obj item, struct crafting_plan *plan);
 /* Recipe scrolls must not teach targets that modern Craft/Forge can never make. */
 bool crafting_validate_recipe_target(P_obj item);
+/* Includes every permanent all-player gate used when recipes are created or loaded. */
+bool crafting_recipe_target_is_available(P_obj item);
+/* Adds operator-enabled material requirements to a dynamically created recipe scroll. */
+void crafting_configure_recipe_scroll(P_obj recipe, P_obj target);
 int crafting_level_gate_multiplier(void);
 int crafting_experience_per_ival(void);
 bool crafting_mode_enabled(enum crafting_mode mode);
