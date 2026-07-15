@@ -361,10 +361,13 @@ static void mark_item_superior(P_obj item)
 {
 	char short_desc[MAX_STRING_LENGTH];
 
-	if (!item || !item->short_description || strstr(item->short_description, "[superior]"))
+	if (!item || !item->short_description ||
+	    strstr(item->short_description, "&+w[&+Lsu&+wp&+Wer&+wi&+Lor&+w]&n"))
 		return;
 
-	snprintf(short_desc, sizeof(short_desc), "%s [superior]&n", item->short_description);
+	snprintf(short_desc, sizeof(short_desc),
+	         "%s&n &+w[&+Lsu&+wp&+Wer&+wi&+Lor&+w]&n",
+	         item->short_description);
 	set_short_description(item, short_desc);
 }
 

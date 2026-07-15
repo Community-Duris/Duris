@@ -29,6 +29,13 @@ assert "enhance <item> <stat>" not in preview
 assert r"enhance <item>\r\n" in preview
 assert "enhancement" in preview.lower()
 
+# Preserve the original item-spawn multi-color superior marker exactly and do
+# not append a second tag to an already marked item.
+original_superior_tag = "&+w[&+Lsu&+wp&+Wer&+wi&+Lor&+w]&n"
+assert f'"{original_superior_tag}"' in source
+assert f'%s&n {original_superior_tag}' in source
+assert 'strstr(item->short_description, "[superior]")' not in source
+
 assert "enhance <source> <stat>" not in config
 
 print("all-stat enhancement contract passed")
