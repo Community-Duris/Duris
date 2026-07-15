@@ -29,6 +29,14 @@ static int crafting_craft_tool_vnum = VOBJ_CRAFTING_TOOLS;
 static int crafting_forge_essence_vnum = VOBJ_FORGING_ESSENCE;
 static int crafting_forge_tool_vnum = VOBJ_FORGING_FLUX;
 
+static void crafting_validate_content_vnum(int *configured_vnum, int default_vnum, const char *key)
+{
+	if (real_object(*configured_vnum) >= 0)
+		return;
+	logit(LOG_STATUS, "WARNING: %s vnum %d does not exist; using default %d.", key, *configured_vnum, default_vnum);
+	*configured_vnum = default_vnum;
+}
+
 static void load_crafting_config(void)
 {
 	FILE *fp;
@@ -86,6 +94,13 @@ static void load_crafting_config(void)
 			crafting_forge_tool_vnum = atoi(value);
 	}
 	fclose(fp);
+
+	/* Content references are configurable, but invalid entries must not turn a
+	 * recipe into an unfulfillable or silently free transaction. */
+	crafting_validate_content_vnum(&crafting_craft_essence_vnum, VOBJ_CRAFTING_ESSENCE, "crafting.craft.essence.vnum");
+	crafting_validate_content_vnum(&crafting_craft_tool_vnum, VOBJ_CRAFTING_TOOLS, "crafting.craft.tool.vnum");
+	crafting_validate_content_vnum(&crafting_forge_essence_vnum, VOBJ_FORGING_ESSENCE, "crafting.forge.essence.vnum");
+	crafting_validate_content_vnum(&crafting_forge_tool_vnum, VOBJ_FORGING_FLUX, "crafting.forge.tool.vnum");
 }
 
 /* Any fifth-bitvector affect makes a recipe magical. */
