@@ -331,7 +331,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		send_to_char("&+wcraft make <number>      - consume requirements and create it\n&n", ch);
 		send_to_char("&+yYou know the following recipes:\n&n", ch);
 		send_to_char("----------------------------------------------------------------------------\n", ch);
-		send_to_char("&+BRecipe Number		              &+MItem&n\n\r", ch);
+		send_to_char("&+B#     Recipe vnum       &+MItem&n\n\r", ch);
 		// Walk through each recipe and display its number and short description.
 		for (i = 0; i < recipe_count; i++)
 		{
@@ -341,7 +341,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 				logit(LOG_DEBUG, "do_craft: '%s' has bad recipe vnum %d.", J_NAME(ch), recipes[i]);
 				continue;
 			}
-			snprintf(buffer, 256, "   &+W%-22d&n%s&n\n", recipes[i], tobj->short_description);
+			snprintf(buffer, 256, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], tobj->short_description);
 			page_string(ch->desc, buffer, 1);
 			send_to_char("----------------------------------------------------------------------------\n", ch);
 			extract_obj(tobj);
@@ -361,17 +361,17 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	}
 	choice2 = atoi(second);
 
-	// Walk through the list of recipes and look for choice2.
+	// Accept either the stable recipe vnum or the displayed list number.
 	if (choice2)
 	{
 		for (i = 0; i < recipe_count; i++)
-		{
 			if (recipes[i] == choice2)
 			{
 				selected = recipes[i];
 				break;
 			}
-		}
+		if (selected == 0 && choice2 <= recipe_count)
+			selected = recipes[choice2 - 1];
 	}
 	free(recipes);
 
@@ -891,7 +891,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		send_to_char("&+wforge make <number>      - consume requirements and create it\n&n", ch);
 		send_to_char("&+yYou know the following recipes:\n&n", ch);
 		send_to_char("----------------------------------------------------------------------------\n", ch);
-		send_to_char("&+BRecipe Number		              &+MItem&n\n\r", ch);
+		send_to_char("&+B#     Recipe vnum       &+MItem&n\n\r", ch);
 
 		for (int i = 0; i < recipe_count; i++)
 		{
@@ -900,7 +900,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 				logit(LOG_DEBUG, "'%s' has bad recipe vnum %d.", ch ? J_NAME(ch) : "NULL", recipes[i]);
 				continue;
 			}
-			snprintf(recipe, 256, "   &+W%-22d&n%s&n\n", recipes[i], obj->short_description);
+			snprintf(recipe, 256, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], obj->short_description);
 			page_string(ch->desc, recipe, 1);
 			send_to_char("----------------------------------------------------------------------------\n", ch);
 			extract_obj(obj);
@@ -928,7 +928,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	// Find objVnum in the recipe list
+	// Accept either the stable recipe vnum or the displayed list number.
 	bool found = false;
 	for (int i = 0; i < recipe_count; i++)
 	{
@@ -937,6 +937,11 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 			found = true;
 			break;
 		}
+	}
+	if (!found && objVnum <= recipe_count)
+	{
+		objVnum = recipes[objVnum - 1];
+		found = true;
 	}
 	free(recipes);
 
