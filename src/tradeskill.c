@@ -336,7 +336,7 @@ P_obj forge_create(int choice, P_char ch, int material)
 		obj->type     = ITEM_QUIVER;
 	}
 	else
-		obj->type == ITEM_ARMOR;
+		obj->type = ITEM_ARMOR;
 	return obj;
 }
 
@@ -350,6 +350,12 @@ void forge_describe(int choice, P_char ch)
 		snprintf(buffer + strlen(buffer), MAX_STRING_LENGTH - strlen(buffer), "%s\n", obj_index[real_object(forge_item_list[choice].ore_needed[i])].desc2);
 
 	send_to_char(buffer, ch);
+	if (i <= 0 || i > (int)(sizeof(forge_prices) / sizeof(forge_prices[0])))
+	{
+		logit(LOG_DEBUG, "forge_describe: invalid ore count %d for forge item %d.", i, choice);
+		send_to_char("This forge recipe is misconfigured; please notify an Immortal.\n", ch);
+		return;
+	}
 	snprintf(buffer, 1024, "It will cost you %s to forge this.\n", coin_stringv(forge_prices[i - 1]));
 	send_to_char(buffer, ch);
 }
@@ -1813,14 +1819,6 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 	// Convert from list item to forge_item_list entry.
 	choice = sdata->items[choice - 1];
 
-	// If they're too broke,
-	if (GET_MONEY(pl) < forge_prices[i - 1])
-	{
-		// Explain reality.
-		forge_describe(choice, pl);
-		return TRUE;
-	}
-
 	// Nullify all needed_ore entries.
 	for (i = 0; i < 5; i++)
 	{
@@ -1853,6 +1851,22 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 			}
 			return TRUE;
 		}
+	}
+
+	/* Price tiers follow ore count, not this smith's menu length. */
+	if (i <= 0 || i > (int)(sizeof(forge_prices) / sizeof(forge_prices[0])))
+	{
+		logit(LOG_DEBUG, "smith: invalid ore count %d for forge item %d.", i, choice);
+		while (j-- > 0)
+			obj_to_char(needed_ore[j], pl);
+		return TRUE;
+	}
+	if (GET_MONEY(pl) < forge_prices[i - 1])
+	{
+		forge_describe(choice, pl);
+		while (j-- > 0)
+			obj_to_char(needed_ore[j], pl);
+		return TRUE;
 	}
 
 	// Create item 'choice' for 'pl' out of material type 'material'
@@ -3679,7 +3693,8 @@ bool has_affect(P_obj obj)
 
 	if (IS_SET(obj->bitvector, AFF_STONE_SKIN) || IS_SET(obj->bitvector, AFF_HIDE) || IS_SET(obj->bitvector, AFF_SNEAK) || IS_SET(obj->bitvector, AFF_FLY) || IS_SET(obj->bitvector, AFF4_NOFEAR) ||
 	    IS_SET(obj->bitvector2, AFF2_AIR_AURA) || IS_SET(obj->bitvector2, AFF2_EARTH_AURA) || IS_SET(obj->bitvector3, AFF3_INERTIAL_BARRIER) || IS_SET(obj->bitvector3, AFF3_REDUCE) ||
-	    IS_SET(obj->bitvector2, AFF2_GLOBE) || IS_SET(obj->bitvector, AFF_HASTE) || IS_SET(obj->bitvector, AFF_DETECT_INVISIBLE) || IS_SET(obj->bitvector4, AFF4_DETECT_ILLUSION))
+	    IS_SET(obj->bitvector2, AFF2_GLOBE) || IS_SET(obj->bitvector, AFF_HASTE) || IS_SET(obj->bitvector, AFF_DETECT_INVISIBLE) || IS_SET(obj->bitvector4, AFF4_DETECT_ILLUSION) ||
+	    obj->bitvector5)
 	{
 		return TRUE;
 	}

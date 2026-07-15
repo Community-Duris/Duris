@@ -724,7 +724,7 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	int   sval = itemvalue(source);
 	validobj   = 0;
 	int val    = itemvalue(material);
-	int minval = itemvalue(source) - 5;
+	int minval = itemvalue(source) - enhance_material_ival_delta;
 
 	if (val <= 20)
 	{
@@ -737,8 +737,8 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	}
 	else if (val <= 30)
 	{
-		cost = 10000;
-		if (GET_MONEY(ch) < cost * 2)
+		cost = 20000;
+		if (GET_MONEY(ch) < cost)
 		{
 			send_to_char("It will require &+W20 platinum&n to &+Benhance&n this item.\r\n", ch);
 			return;
@@ -746,8 +746,8 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	}
 	else
 	{
-		cost = 50000;
-		if (GET_MONEY(ch) < cost * 2)
+		cost = 100000;
+		if (GET_MONEY(ch) < cost)
 		{
 			send_to_char("It will require &+W100 platinum&n to &+Benhance&n this item.\r\n", ch);
 			return;
@@ -977,6 +977,9 @@ int get_progress(P_char ch, int ach, uint required)
 		if (findaf && findaf->type == ach)
 			prog = findaf->modifier;
 	}
+
+	if (required == 0)
+		return 0;
 
 	if (prog > 0)
 	{
