@@ -130,7 +130,7 @@ int *crafting_get_player_recipes(P_char ch, int *count)
 		int *grown;
 		int i;
 		bool duplicate = FALSE;
-		if (recipe_vnum <= 0)
+		if (recipe_vnum <= 0 || real_object(recipe_vnum) < 0)
 			continue;
 		for (i = 0; i < *count; i++)
 			if (recipes[i] == recipe_vnum)

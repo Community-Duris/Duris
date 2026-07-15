@@ -9,6 +9,7 @@ craft = (root / "src/actnew.c").read_text()
 assert "int *crafting_get_player_recipes(P_char ch, int *count);" in header
 assert "sql_get_player_recipes(GET_PID(ch), count)" in source
 assert "sql_add_player_recipe(GET_PID(ch), recipe_vnum)" in source
+assert "real_object(recipe_vnum) < 0" in source
 assert "crafting_get_player_recipes(ch, &recipe_count)" in craft
 assert '"Players/Tradeskills/%c/%s.crafting"' not in craft
 print("crafting recipe persistence contract passed")
