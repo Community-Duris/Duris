@@ -716,16 +716,19 @@ P_nevent get_next_scheduled_obj(P_nevent e, event_func func)
 	return NULL;
 }
 
+void ne_init_event_pool(void)
+{
+	pulse = 0;
+	memset(ne_schedule, 0, sizeof(ne_schedule));
+	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
+	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data), offsetof(struct nevent_data, next_sched), 11);
+}
+
 void ne_init_events(void)
 {
 	int j = 0, i = 0;
 
-	pulse = 0;
-
-	memset(ne_schedule, 0, sizeof(ne_schedule));
-	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
-
-	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data), offsetof(struct nevent_data, next_sched), 11);
+	ne_init_event_pool();
 
 	logit(LOG_STATUS, "assigning room specials events.");
 	for (j = 0; j < top_of_world; j++)

@@ -59,6 +59,7 @@
 #include "siege.h"
 #include "spells.h"
 #include "enhance.h"
+#include "material_rarity.h"
 #include "sql.h"
 #include "sql_player.h"
 #include "telnet.h"
@@ -148,6 +149,8 @@ int    no_specials       = 0;
 int    override          = 1;
 int    pulse             = 0;
 bool   after_events_call = FALSE;
+const char *material_rarity_report_dir = NULL;
+bool        material_rarity_report_mode = FALSE;
 int    _reboot           = 0;
 int    _copyover         = 0;
 int    _autoboot         = 0;
@@ -236,6 +239,17 @@ int main(int argc, char **argv)
 	// check for --migrate-all before regular arg parsing
 	for (int i = 1; i < argc; i++)
 	{
+		if (!strncmp(argv[i], "--material-rarity-report", strlen("--material-rarity-report")))
+		{
+			const char *value = argv[i] + strlen("--material-rarity-report");
+			if (*value == '=')
+				value++;
+			else if (!*value && i + 1 < argc)
+				value = argv[++i];
+			material_rarity_report_dir = *value ? value : "material-rarity-report";
+			material_rarity_report_mode = TRUE;
+			break;
+		}
 		if (!strcmp(argv[i], "--migrate-all"))
 		{
 			migrate_mode = 1;
@@ -245,6 +259,13 @@ int main(int argc, char **argv)
 
 	while ((pos < argc) && (*(argv[pos]) == '-'))
 	{
+		if (!strncmp(argv[pos], "--material-rarity-report", strlen("--material-rarity-report")))
+		{
+			if (argv[pos][strlen("--material-rarity-report")] == '\0' && pos + 1 < argc)
+				pos++;
+			pos++;
+			continue;
+		}
 		switch (*(argv[pos] + 1))
 		{
 			case 'f':
@@ -334,6 +355,12 @@ int main(int argc, char **argv)
 	if (chdir(dir) < 0)
 	{
 		fatal_boot_error("comm", "chdir failed: %s", strerror(errno));
+	}
+	if (material_rarity_report_mode)
+	{
+		boot_material_rarity_objects(mini_mode);
+		write_material_rarity_report(material_rarity_report_dir);
+		return 0;
 	}
 	logit(LOG_STATUS, "Running game on port %d.", port);
 
