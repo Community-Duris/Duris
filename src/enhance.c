@@ -27,6 +27,11 @@
 static int enhance_hash(int key);
 static int enhance_stat_hash(int key);
 
+/* World tables needed to map an object template vnum back to its origin zone. */
+extern P_room world;
+extern struct zone_data *zone_table;
+extern int top_of_zone_table;
+
 void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char  buf[MAX_STRING_LENGTH];
@@ -1118,6 +1123,13 @@ void enhancematload(P_char ch, P_char killer)
 		/* Fail closed: stat enhancement requires an explicit config opt-in. */
 		int enhance_stat_enabled                      = 0;
 
+		/* Candidate-only exclusions for legacy random enhancement. */
+		#define ENHANCE_MAX_POOL_EXCLUSIONS 256
+		static int enhance_pool_excluded_zones[ENHANCE_MAX_POOL_EXCLUSIONS];
+		static int enhance_pool_excluded_zone_count = 0;
+		static int enhance_pool_excluded_vnums[ENHANCE_MAX_POOL_EXCLUSIONS];
+		static int enhance_pool_excluded_vnum_count = 0;
+
 		/* ---- Bitvector allow masks ---- */
 		unsigned long enhance_allow_mask  = 0;
 		unsigned long enhance_allow_mask2 = 0;
@@ -1346,8 +1358,10 @@ void enhancematload(P_char ch, P_char killer)
 			section[0]   = '\0';
 			section_idx  = -1;
 			line_num     = 0;
-			/* Reloads must not retain a stale opt-in when the setting is absent. */
+			/* Reloads must not retain stale opt-ins or pool exclusions. */
 			enhance_stat_enabled = 0;
+			enhance_pool_excluded_zone_count = 0;
+			enhance_pool_excluded_vnum_count = 0;
 
 			while (fgets(line, sizeof(line), fp))
 			{
@@ -1371,9 +1385,11 @@ void enhancematload(P_char ch, P_char killer)
 						section[i++] = *p++;
 					section[i] = '\0';
 
-					if      (!strcmp(section, "settings"))    section_idx = 0;
-					else if (!strcmp(section, "enhance_stat")) section_idx = 1;
-					else if (!strcmp(section, "bitvector"))    section_idx = 10;
+					if      (!strcmp(section, "settings"))          section_idx = 0;
+					else if (!strcmp(section, "enhance_stat"))      section_idx = 1;
+					else if (!strcmp(section, "pool_exclude_zone")) section_idx = 2;
+					else if (!strcmp(section, "pool_exclude_vnum")) section_idx = 3;
+					else if (!strcmp(section, "bitvector"))         section_idx = 10;
 					else if (!strcmp(section, "bitvector2"))   section_idx = 11;
 					else if (!strcmp(section, "bitvector3"))   section_idx = 12;
 					else if (!strcmp(section, "bitvector4"))   section_idx = 13;
@@ -1438,6 +1454,16 @@ void enhancematload(P_char ch, P_char killer)
 					/* [enhance_stat] section: explicit on/off gate for the stat lane. */
 					if (!strcmp(key, "enhance_stat.enabled"))
 						enhance_stat_enabled = atoi(val) ? 1 : 0;
+				}
+				else if (section_idx == 2 && !strcmp(key, "zone"))
+				{
+					if (enhance_pool_excluded_zone_count < ENHANCE_MAX_POOL_EXCLUSIONS)
+						enhance_pool_excluded_zones[enhance_pool_excluded_zone_count++] = atoi(val);
+				}
+				else if (section_idx == 3 && !strcmp(key, "vnum"))
+				{
+					if (enhance_pool_excluded_vnum_count < ENHANCE_MAX_POOL_EXCLUSIONS)
+						enhance_pool_excluded_vnums[enhance_pool_excluded_vnum_count++] = atoi(val);
 				}
 				else if (section_idx >= 10 && section_idx <= 14)
 				{
@@ -1507,6 +1533,44 @@ void enhancematload(P_char ch, P_char killer)
 			return FALSE;
 		}
 
+		/* Return the zone number owning an object's template vnum. */
+		static int enhance_object_origin_zone(P_obj obj)
+		{
+			int zone;
+			int vnum;
+
+			if (!obj)
+				return -1;
+			vnum = OBJ_VNUM(obj);
+			for (zone = top_of_zone_table; zone >= 0; zone--)
+			{
+				if (zone_table[zone].real_bottom >= 0 &&
+				    world[zone_table[zone].real_bottom].number <= vnum)
+					return zone_table[zone].number;
+			}
+			return -1;
+		}
+
+		/* Candidate-only exclusions; source and material validation stays affect-only. */
+		static bool is_enhance_pool_banned(P_obj item)
+		{
+			int i;
+			int vnum;
+			int zone;
+
+			if (is_enhance_banned(item))
+				return TRUE;
+			vnum = OBJ_VNUM(item);
+			for (i = 0; i < enhance_pool_excluded_vnum_count; i++)
+				if (enhance_pool_excluded_vnums[i] == vnum)
+					return TRUE;
+			zone = enhance_object_origin_zone(item);
+			for (i = 0; i < enhance_pool_excluded_zone_count; i++)
+				if (enhance_pool_excluded_zones[i] == zone)
+					return TRUE;
+			return FALSE;
+		}
+
 		/* =============================================================================
 		 *  load_enhance_index() — Build ival and stat hash tables from vnum range
 		 * =============================================================================
@@ -1551,6 +1615,12 @@ void enhancematload(P_char ch, P_char killer)
 
 				if (obj->type == ITEM_TREASURE || obj->type == ITEM_POTION ||
 				    obj->type == ITEM_MONEY || obj->type == ITEM_KEY || obj->type == ITEM_WAND)
+				{
+					extract_obj(obj);
+					continue;
+				}
+
+				if (is_enhance_pool_banned(obj))
 				{
 					extract_obj(obj);
 					continue;
