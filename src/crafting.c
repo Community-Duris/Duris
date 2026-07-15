@@ -88,6 +88,20 @@ static void load_crafting_config(void)
 	fclose(fp);
 }
 
+/* Any fifth-bitvector affect makes a recipe magical. */
+bool has_affect(P_obj obj)
+{
+
+	if (IS_SET(obj->bitvector, AFF_STONE_SKIN) || IS_SET(obj->bitvector, AFF_HIDE) || IS_SET(obj->bitvector, AFF_SNEAK) || IS_SET(obj->bitvector, AFF_FLY) || IS_SET(obj->bitvector, AFF4_NOFEAR) ||
+	    IS_SET(obj->bitvector2, AFF2_AIR_AURA) || IS_SET(obj->bitvector2, AFF2_EARTH_AURA) || IS_SET(obj->bitvector3, AFF3_INERTIAL_BARRIER) || IS_SET(obj->bitvector3, AFF3_REDUCE) ||
+	    IS_SET(obj->bitvector2, AFF2_GLOBE) || IS_SET(obj->bitvector, AFF_HASTE) || IS_SET(obj->bitvector, AFF_DETECT_INVISIBLE) || IS_SET(obj->bitvector4, AFF4_DETECT_ILLUSION) ||
+	    obj->bitvector5)
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
 bool crafting_build_plan(P_obj item, struct crafting_plan *plan)
 {
 	int item_value;
