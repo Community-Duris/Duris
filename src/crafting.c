@@ -21,6 +21,7 @@
 #include <string.h>
 
 static int crafting_level_gate = 3;
+static int crafting_experience_per_item_value = 1000;
 static double crafting_material_quantity_multiplier = 1.0;
 static bool crafting_craft_enabled = TRUE;
 static bool crafting_forge_enabled = TRUE;
@@ -45,6 +46,7 @@ static void load_crafting_config(void)
 
 	/* A restart/boot always starts from historical defaults. */
 	crafting_level_gate = 3;
+	crafting_experience_per_item_value = 1000;
 	crafting_material_quantity_multiplier = 1.0;
 	crafting_craft_enabled = TRUE;
 	crafting_forge_enabled = TRUE;
@@ -78,6 +80,8 @@ static void load_crafting_config(void)
 
 		if (!strcmp(key, "crafting.level.gate.multiplier") && atoi(value) > 0)
 			crafting_level_gate = atoi(value);
+		else if (!strcmp(key, "crafting.experience.per.ival") && atoi(value) >= 0)
+			crafting_experience_per_item_value = atoi(value);
 		else if (!strcmp(key, "crafting.material.quantity.multiplier") && strtod(value, NULL) > 0.0)
 			crafting_material_quantity_multiplier = strtod(value, NULL);
 		else if (!strcmp(key, "crafting.craft.enabled"))
@@ -153,6 +157,11 @@ void boot_crafting_system(void)
 int crafting_level_gate_multiplier(void)
 {
 	return crafting_level_gate;
+}
+
+int crafting_experience_per_ival(void)
+{
+	return crafting_experience_per_item_value;
 }
 
 bool crafting_mode_enabled(enum crafting_mode mode)
@@ -300,7 +309,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	recipes = crafting_get_player_recipes(ch, &recipe_count);
 	if (recipes == NULL || recipe_count == 0)
 	{
-		send_to_char("You dont know any recipes yet.\r\n", ch);
+		send_to_char("You do not know any Craft recipes yet. Learn a recipe, then type `craft` to list it.\r\n", ch);
 		free(recipes);
 		return;
 	}
@@ -309,9 +318,10 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	if (!argument || !*argument)
 	{
 		send_to_char("&+wcraft Syntax:\n&n", ch);
-		send_to_char("&+w(craft info <number> - list required materials to craft the item.)\n&n", ch);
-		send_to_char("&+w(craft stat <number> - display properties of the item.)\n&n", ch);
-		send_to_char("&+w(craft make <number> - create the item.)\n&n", ch);
+		send_to_char("&+wcraft or craft list       - list your recipes\n&n", ch);
+		send_to_char("&+wcraft info <number>      - show costs and requirements\n&n", ch);
+		send_to_char("&+wcraft stat <number>      - inspect the finished item\n&n", ch);
+		send_to_char("&+wcraft make <number>      - consume requirements and create it\n&n", ch);
 		send_to_char("&+yYou know the following recipes:\n&n", ch);
 		send_to_char("----------------------------------------------------------------------------\n", ch);
 		send_to_char("&+BRecipe Number		              &+MItem&n\n\r", ch);
@@ -336,6 +346,12 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	// If no argument, no sense in chopping it up, so moved this past the !arg check.
 	half_chop(argument, first, rest);
 	half_chop(rest, second, rest);
+	if (is_abbrev(first, "list"))
+	{
+		free(recipes);
+		crafting_handle_craft_command(ch, "", cmd);
+		return;
+	}
 	choice2 = atoi(second);
 
 	// Walk through the list of recipes and look for choice2.
@@ -452,6 +468,8 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		{
 			send_to_char("...as well as &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n", ch);
 		}
+		snprintf(buf1, MAX_STRING_LENGTH, "This recipe also consumes 1 box of gnomish crafting tools (configured item vnum %d).\r\n", crafting_tool_vnum(CRAFTING_MODE_CRAFT));
+		send_to_char(buf1, ch);
 
 		// It's safe to assume tobj exists since we checked after the read_object call.
 		extract_obj(tobj);
@@ -487,7 +505,13 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		int iVal = plan.item_value;
 		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() || IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
 		{
-			act("You look at the recipe for $p&n, but can't seem to discern how to make it.  &+mHow strange.&N", FALSE, ch, tobj, 0, TO_CHAR);
+			if (IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
+				send_to_char("This is a quest item and cannot be crafted from a player recipe.\r\n", ch);
+			else
+			{
+				snprintf(buf1, MAX_STRING_LENGTH, "You need level %d to craft this recipe (you are level %d).\r\n", (iVal + crafting_level_gate_multiplier() - 1) / crafting_level_gate_multiplier(), GET_LEVEL(ch));
+				send_to_char(buf1, ch);
+			}
 			extract_obj(tobj);
 			return;
 		}
@@ -637,12 +661,16 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		    0,
 		    TO_CHAR);
 
-		gain_exp(ch, NULL, iVal * 1000, EXP_BOON);
+		gain_exp(ch, NULL, iVal * crafting_experience_per_ival(), EXP_BOON);
 		extract_obj(matLowest);
 		extract_obj(matHighest);
 		// Save the character! 1 -> in game.
 	if (!do_save_silent(ch, 1))
 		logit(LOG_DEBUG, "Failed to save %s after heroics reward.", GET_NAME(ch));
+	}
+	else
+	{
+		send_to_char("Unknown Craft command. Use `craft` to list recipes and available commands.\r\n", ch);
 	}
 
 	/*
@@ -819,6 +847,10 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 	{
 		commandType = 0;
 	}
+	else if (is_abbrev(first, "list"))
+	{
+		commandType = 0;
+	}
 	else if (is_abbrev(first, "info"))
 	{
 		commandType = 1;
@@ -834,15 +866,22 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 	// The first argument is invalid.
 	else
 	{
-		commandType = 0;
+		commandType = -1;
+	}
+	if (commandType == -1)
+	{
+		send_to_char("Unknown Forge command. Use `forge` to list recipes and available commands.\r\n", ch);
+		free(recipes);
+		return;
 	}
 
 	if (commandType == 0)
 	{
 		send_to_char("&+wForge Syntax:\n&n", ch);
-		send_to_char("&+w(forge info <number> - list required materials to forge the item.)\n&n", ch);
-		send_to_char("&+w(forge stat <number> - display properties of the item.)\n&n", ch);
-		send_to_char("&+w(forge make <number> - create the item.)\n&n", ch);
+		send_to_char("&+wforge or forge list       - list your recipes\n&n", ch);
+		send_to_char("&+wforge info <number>      - show costs and requirements\n&n", ch);
+		send_to_char("&+wforge stat <number>      - inspect the finished item\n&n", ch);
+		send_to_char("&+wforge make <number>      - consume requirements and create it\n&n", ch);
 		send_to_char("&+yYou know the following recipes:\n&n", ch);
 		send_to_char("----------------------------------------------------------------------------\n", ch);
 		send_to_char("&+BRecipe Number		              &+MItem&n\n\r", ch);
@@ -971,6 +1010,8 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		{
 			strcat(recipe, "You must have &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n");
 		}
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "This recipe also consumes 1 blacksmithing flux (configured item vnum %d).\r\n", crafting_tool_vnum(CRAFTING_MODE_FORGE));
+		strncat(recipe, Gbuf1, sizeof(recipe) - strlen(recipe) - 1);
 
 		page_string(ch->desc, recipe, 1);
 		extract_obj(obj);
@@ -1001,7 +1042,13 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		iVal = plan.item_value;
 		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() || IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
 		{
-			act("You look at the recipe for $p&n, but can't seem to discern how to make it.  &+mHow strange.&N", FALSE, ch, obj, 0, TO_CHAR);
+			if (IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
+				send_to_char("This is a quest item and cannot be forged from a player recipe.\r\n", ch);
+			else
+			{
+				snprintf(buf, sizeof(buf), "You need level %d to forge this recipe (you are level %d).\r\n", (iVal + crafting_level_gate_multiplier() - 1) / crafting_level_gate_multiplier(), GET_LEVEL(ch));
+				send_to_char(buf, ch);
+			}
 			extract_obj(obj);
 			return;
 		}
@@ -1118,7 +1165,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		    0,
 		    TO_CHAR);
 
-		gain_exp(ch, NULL, (iVal * 1000), EXP_BOON);
+		gain_exp(ch, NULL, iVal * crafting_experience_per_ival(), EXP_BOON);
 	}
 	else
 	{
