@@ -97,6 +97,7 @@ OBJS =  $(SHIP_OBJS) \
 				 disguise.o \
 				 drannak.o \
 				 enhance.o \
+				 crafting.o \
 				 material_rarity.o \
 				 dreadlord.o \
 				 editor.o \

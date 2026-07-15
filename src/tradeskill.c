@@ -45,6 +45,7 @@
 #include "spells.h"
 #include "sql_player.h"
 #include "vnum.obj.h"
+#include "crafting.h"
 #include "weather.h"
 
 #define SMITH_MAX_ITEMS 20
@@ -503,11 +504,18 @@ void do_forge(P_char ch, char *argument, int cmd)
 	if (commandType == 1)
 	{
 		// Display required materials to make obj - formula below:
-		iVal                    = itemvalue(obj);
-		numHighQuality          = (iVal + 4) / 5;
-		numLowQuality           = (iVal + 4) - numHighQuality * 5;
-		lowQualityMaterialVnum  = get_matstart(obj);
-		highQualityMaterialVnum = lowQualityMaterialVnum + 4;
+		struct crafting_plan plan;
+		if (!crafting_build_plan(obj, &plan))
+		{
+			send_to_char("You couldn't figure out what materials to use.\n\r", ch);
+			extract_obj(obj);
+			return;
+		}
+		iVal                    = plan.item_value;
+		numHighQuality          = plan.high_material_count;
+		numLowQuality           = plan.low_material_count;
+		lowQualityMaterialVnum  = plan.low_material_vnum;
+		highQualityMaterialVnum = plan.high_material_vnum;
 		lowQualityMaterial      = read_object(lowQualityMaterialVnum, VIRTUAL);
 		highQualityMaterial     = read_object(highQualityMaterialVnum, VIRTUAL);
 
@@ -574,18 +582,25 @@ void do_forge(P_char ch, char *argument, int cmd)
 	else if (commandType == 3)
 	{
 		// Attempt to make obj:
-		iVal = itemvalue(obj);
-		if (iVal > GET_LEVEL(ch) * 3 || IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
+		struct crafting_plan plan;
+		if (!crafting_build_plan(obj, &plan))
+		{
+			send_to_char("You couldn't figure out what materials to use.\n\r", ch);
+			extract_obj(obj);
+			return;
+		}
+		iVal = plan.item_value;
+		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() || IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
 		{
 			act("You look at the recipe for $p&n, but can't seem to discern how to make it.  &+mHow strange.&N", FALSE, ch, obj, 0, TO_CHAR);
 			extract_obj(obj);
 			return;
 		}
-		numHighQuality          = (iVal + 4) / 5;
-		numLowQuality           = (iVal + 4) - numHighQuality * 5;
-		lowQualityMaterialVnum  = get_matstart(obj);
-		highQualityMaterialVnum = lowQualityMaterialVnum + 4;
-		hasAffect               = has_affect(obj);
+		numHighQuality          = plan.high_material_count;
+		numLowQuality           = plan.low_material_count;
+		lowQualityMaterialVnum  = plan.low_material_vnum;
+		highQualityMaterialVnum = plan.high_material_vnum;
+		hasAffect               = plan.magical;
 
 		/* Foundry code here (not requiring one atm I guess):
 		if( !check_foundry(ch) )

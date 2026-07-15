@@ -31,6 +31,7 @@
 #include "spells.h"
 #include "sql.h"
 #include "vnum.obj.h"
+#include "crafting.h"
 
 /*
  * external variables
@@ -3764,9 +3765,16 @@ void do_craft(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		// Minimum value is iVal 1 -> 1 Max quality material, 0 Min quality materials to create.
-		int iVal                   = itemvalue(tobj);
-		int lowQualityMaterialVnum = get_matstart(tobj);
+		struct crafting_plan plan;
+		if (!crafting_build_plan(tobj, &plan))
+		{
+			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+			debug("Couldn't build crafting plan for object: '%s' %d.", tobj->short_description, selected);
+			extract_obj(tobj);
+			return;
+		}
+		int iVal                   = plan.item_value;
+		int lowQualityMaterialVnum = plan.low_material_vnum;
 
 		if (lowQualityMaterialVnum <= 0)
 		{
@@ -3776,10 +3784,8 @@ void do_craft(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		// The number of highest quality materials is 1 per 5 itemvalue (with starting point 1@1).
-		int numHighest = (iVal + 4) / 5;
-		// The following gets the remainder.
-		int numLowest = (iVal + 4) - numHighest * 5;
+		int numHighest = plan.high_material_count;
+		int numLowest = plan.low_material_count;
 
 		P_obj matLowest, matHighest;
 
@@ -3847,30 +3853,26 @@ void do_craft(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		// Minimum value is iVal 1 -> 1 Max quality material, 0 Min quality materials to create.
-		int iVal = itemvalue(tobj);
-		if (iVal > GET_LEVEL(ch) * 3 || IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
+		struct crafting_plan plan;
+		if (!crafting_build_plan(tobj, &plan))
+		{
+			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+			debug("Couldn't build crafting plan for object: '%s' %d.", tobj->short_description, selected);
+			extract_obj(tobj);
+			return;
+		}
+		int iVal = plan.item_value;
+		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() || IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
 		{
 			act("You look at the recipe for $p&n, but can't seem to discern how to make it.  &+mHow strange.&N", FALSE, ch, tobj, 0, TO_CHAR);
 			extract_obj(tobj);
 			return;
 		}
 
-		int lowQualityMaterialVnum  = get_matstart(tobj);
-		int highQualityMaterialVnum = lowQualityMaterialVnum + 4;
-
-		if (lowQualityMaterialVnum <= 0)
-		{
-			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
-			debug("Couldn't get start material for object: '%s' %d.", tobj->short_description, selected);
-			extract_obj(tobj);
-			return;
-		}
-
-		// The number of highest quality materials is 1 per 5 itemvalue (with starting point 1@1).
-		int numHighest = (iVal + 4) / 5;
-		// The following gets the remainder.
-		int numLowest = iVal - numHighest * 5;
+		int lowQualityMaterialVnum  = plan.low_material_vnum;
+		int highQualityMaterialVnum = plan.high_material_vnum;
+		int numHighest = plan.high_material_count;
+		int numLowest = plan.low_material_count;
 
 		P_obj matLowest, matHighest;
 
