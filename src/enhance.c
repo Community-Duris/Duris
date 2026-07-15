@@ -26,6 +26,7 @@
 /* Forward declarations for hash functions used in enhance() and do_enhance() */
 static int enhance_hash(int key);
 static int enhance_stat_hash(int key);
+static struct enhance_essence_zone_rule *enhance_find_essence_zone_rule(int zone_number);
 extern double enhance_stat_cap_multiplier;
 extern int enhance_stat_platinum_base;
 extern int enhance_stat_platinum_per_ival;
@@ -38,6 +39,22 @@ static int enhance_essence_drop_enabled           = 1;
 static int enhance_essence_primary_roll_max       = 3000;
 static int enhance_essence_max_roll_max           = 4000;
 static int enhance_essence_elite_level_multiplier = 1;
+/* Level gates: drops only fire when mob level is within [min, max]. Defaults
+ * 1-100 effectively accept all eligible NPCs, preserving existing behavior. */
+static int enhance_essence_minimum_level            = 1;
+static int enhance_essence_maximum_level            = 1000000;
+
+/* Sparse per-zone essence drop override rules.  Any numeric field left at 0
+ * (or omitted) inherits the global [essence_drop] default at apply time. */
+#define ENHANCE_ESSENCE_MAX_ZONE_RULES 256
+struct enhance_essence_zone_rule {
+	int zone_number;
+	int primary_roll_max;       /* 0 → use global default */
+	int max_roll_max;            /* 0 → use global default */
+	int elite_level_multiplier;  /* 0 → use global default */
+};
+static struct enhance_essence_zone_rule enhance_essence_zone_rules[ENHANCE_ESSENCE_MAX_ZONE_RULES];
+static int enhance_essence_zone_rule_count = 0;
 
 /* World tables needed to map an object template vnum back to its origin zone. */
 extern P_room world;
@@ -1000,14 +1017,35 @@ static void enhance_load_essence_drop(P_char ch, P_char killer)
 	if (!enhance_essence_drop_enabled)
 		return;
 
-	if (IS_ELITE(ch))
+	/* Level gate: skip if mob level outside configured range. */
+	if (moblvl < enhance_essence_minimum_level || moblvl > enhance_essence_maximum_level)
+		return;
+
+	/* Zone override: resolve effective roll parameters, falling back to globals. */
 	{
-		moblvl *= enhance_essence_elite_level_multiplier;
-	}
-	if (number(1, enhance_essence_primary_roll_max) < moblvl)
+		struct enhance_essence_zone_rule *rule = enhance_find_essence_zone_rule(ROOM_ZONE_NUMBER(ch->in_room));
+		int primary_roll_max = enhance_essence_primary_roll_max;
+		int max_roll_max     = enhance_essence_max_roll_max;
+		int elite_mult       = enhance_essence_elite_level_multiplier;
+
+		if (rule)
+		{
+			if (rule->primary_roll_max > 0)
+				primary_roll_max = rule->primary_roll_max;
+			if (rule->max_roll_max > 0)
+				max_roll_max = rule->max_roll_max;
+			if (rule->elite_level_multiplier > 0)
+				elite_mult = rule->elite_level_multiplier;
+		}
+
+		if (IS_ELITE(ch))
+		{
+			moblvl *= elite_mult;
+		}
+		if (number(1, primary_roll_max) < moblvl)
 	{
 		debug("enhancematload: mob: '%s' (%d) moblvl %d%s", J_NAME(ch), GET_VNUM(ch), moblvl, IS_ELITE(ch) ? " ELITE." : ".");
-		if (number(1, enhance_essence_max_roll_max) < moblvl)
+		if (number(1, max_roll_max) < moblvl)
 		{
 			switch (number(1, 8))
 			{
@@ -1089,9 +1127,10 @@ static void enhance_load_essence_drop(P_char ch, P_char killer)
 			// Show reward to master if killer is a pet.
 			debug("enhancematload: '%s' (%d) rewarded to %s.", gift->short_description, OBJ_VNUM(gift), IS_PC_PET(killer) ? J_NAME(get_linked_char(killer, LNK_PET)) : J_NAME(killer));
 					obj_to_char(gift, ch);
-				}
-			}
-		}
+								}
+							}
+						}
+					}
 
 		/* =============================================================================
 		 *  ENHANCE SYSTEM — GLOBALS, HASH TABLES, CONFIG PARSER, INDEX BUILDER
@@ -1339,6 +1378,17 @@ double enhance_stat_material_quantity_multiplier = 1.0;
 			return h;
 		}
 
+		/* Deterministic lookup: linear scan over the bounded zone-rules array.
+		 * Returns NULL when no rule exists for the given virtual zone number. */
+		static struct enhance_essence_zone_rule *enhance_find_essence_zone_rule(int zone_number)
+		{
+			int i;
+			for (i = 0; i < enhance_essence_zone_rule_count; i++)
+				if (enhance_essence_zone_rules[i].zone_number == zone_number)
+					return &enhance_essence_zone_rules[i];
+			return NULL;
+		}
+
 		/* =============================================================================
 		 *  load_enhance_config() — Parse lib/enhance.cfg for settings and bitvector masks
 		 * =============================================================================
@@ -1376,6 +1426,9 @@ double enhance_stat_material_quantity_multiplier = 1.0;
 			enhance_essence_primary_roll_max = 3000;
 			enhance_essence_max_roll_max = 4000;
 			enhance_essence_elite_level_multiplier = 1;
+			enhance_essence_minimum_level = 1;
+			enhance_essence_maximum_level = 1000000;
+			enhance_essence_zone_rule_count = 0;
 			enhance_pool_excluded_zone_count = 0;
 			enhance_pool_excluded_vnum_count = 0;
 
@@ -1406,6 +1459,7 @@ double enhance_stat_material_quantity_multiplier = 1.0;
 					else if (!strcmp(section, "pool_exclude_zone")) section_idx = 2;
 					else if (!strcmp(section, "pool_exclude_vnum")) section_idx = 3;
 					else if (!strcmp(section, "essence_drop"))      section_idx = 4;
+					else if (!strcmp(section, "essence_drop_zone")) section_idx = 5;
 					else if (!strcmp(section, "bitvector"))         section_idx = 10;
 					else if (!strcmp(section, "bitvector2"))   section_idx = 11;
 					else if (!strcmp(section, "bitvector3"))   section_idx = 12;
@@ -1491,6 +1545,49 @@ double enhance_stat_material_quantity_multiplier = 1.0;
 						enhance_essence_max_roll_max = atoi(val);
 					else if (!strcmp(key, "enhance.essence_drop.elite_level_multiplier") && atoi(val) > 0)
 						enhance_essence_elite_level_multiplier = atoi(val);
+					else if (!strcmp(key, "enhance.essence_drop.minimum_level") && atoi(val) >= 1 && atoi(val) <= 100)
+						enhance_essence_minimum_level = atoi(val);
+					else if (!strcmp(key, "enhance.essence_drop.maximum_level") && atoi(val) >= 1)
+						enhance_essence_maximum_level = atoi(val);
+				}
+				else if (section_idx == 5 && !strcmp(key, "zone"))
+				{
+					/* [essence_drop_zone] — sparse per-zone essence drop overrides.
+					 * Format: zone=<vzone>[:<primary_roll_max>[:<max_roll_max>[:<elite_mult>]]]
+					 * Any numeric field omitted or 0 inherits the global [essence_drop] default.
+					 * Examples:
+					 *   zone=50              (zone 50, all globals)
+					 *   zone=50:2000         (zone 50, primary=2000, rest global)
+					 *   zone=50:2000:3000    (zone 50, primary=2000, max=3000, rest global)
+					 *   zone=50:2000:3000:2  (zone 50, primary=2000, max=3000, elite_mult=2)
+					 */
+					int vzone, pval, mval, eval;
+					char *colon, *rest;
+					vzone = atoi(val);
+					if (vzone <= 0 || enhance_essence_zone_rule_count >= ENHANCE_ESSENCE_MAX_ZONE_RULES)
+						continue;
+					pval = mval = eval = 0;  /* 0 = inherit global default */
+					rest = val;
+					colon = strchr(rest, ':');
+					if (colon)
+					{
+						pval = atoi(colon + 1);
+						rest = colon + 1;
+						colon = strchr(rest, ':');
+						if (colon)
+						{
+							mval = atoi(colon + 1);
+							rest = colon + 1;
+							colon = strchr(rest, ':');
+							if (colon)
+								eval = atoi(colon + 1);
+						}
+					}
+					enhance_essence_zone_rules[enhance_essence_zone_rule_count].zone_number           = vzone;
+					enhance_essence_zone_rules[enhance_essence_zone_rule_count].primary_roll_max       = pval;
+					enhance_essence_zone_rules[enhance_essence_zone_rule_count].max_roll_max            = mval;
+					enhance_essence_zone_rules[enhance_essence_zone_rule_count].elite_level_multiplier  = eval;
+					enhance_essence_zone_rule_count++;
 				}
 				else if (section_idx == 2 && !strcmp(key, "zone"))
 				{

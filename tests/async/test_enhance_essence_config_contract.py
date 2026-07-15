@@ -28,8 +28,11 @@ assert '"enhance.essence_drop.elite_level_multiplier"' in enhance
 # The drop remains opt-in only through its own master switch and preserves the
 # two-roll design. Defaults must retain current normal-NPC behavior.
 assert "if (!enhance_essence_drop_enabled)" in enhance
-assert "number(1, enhance_essence_primary_roll_max) < moblvl" in enhance
-assert "number(1, enhance_essence_max_roll_max) < moblvl" in enhance
-assert "moblvl *= enhance_essence_elite_level_multiplier;" in enhance
+assert "int primary_roll_max = enhance_essence_primary_roll_max;" in enhance
+assert "int max_roll_max     = enhance_essence_max_roll_max;" in enhance
+assert "number(1, primary_roll_max) < moblvl" in enhance
+assert "number(1, max_roll_max) < moblvl" in enhance
+assert "int elite_mult       = enhance_essence_elite_level_multiplier;" in enhance
+assert "moblvl *= elite_mult;" in enhance
 
 print("enhancement essence-drop config contract passed")
