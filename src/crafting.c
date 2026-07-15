@@ -196,7 +196,20 @@ void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
 	         target->short_description, plan.high_material_count, high->short_description,
 	         plan.low_material_count, low->short_description);
 	if (plan.magical)
-		strncat(text, "  1 magical essence (the item has magical properties)\r\n", sizeof(text) - strlen(text) - 1);
+	{
+		char requirement[160];
+		snprintf(requirement, sizeof(requirement), "  1 magical essence (Craft vnum %d; Forge vnum %d; required for magical items)\r\n", crafting_craft_essence_vnum, crafting_forge_essence_vnum);
+		strncat(text, requirement, sizeof(text) - strlen(text) - 1);
+	}
+	strncat(text, "\r\nDiscipline consumables (in addition to the materials above):\r\n", sizeof(text) - strlen(text) - 1);
+	{
+		char requirement[256];
+		snprintf(requirement, sizeof(requirement),
+		         "  Craft: 1 gnomish crafting tool box (configured item vnum %d)\r\n"
+		         "  Forge: 1 blacksmithing flux (configured item vnum %d)\r\n",
+		         crafting_craft_tool_vnum, crafting_forge_tool_vnum);
+		strncat(text, requirement, sizeof(text) - strlen(text) - 1);
+	}
 	strncat(text, "\r\nUse the recipe to learn it, then `craft` or `forge` to view and make it.\r\n", sizeof(text) - strlen(text) - 1);
 	if ((recipe->str_mask & STRUNG_DESC3) && recipe->action_description)
 		FREE(recipe->action_description);

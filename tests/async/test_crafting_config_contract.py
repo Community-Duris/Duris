@@ -22,6 +22,7 @@ assert "crafting.recipe.max.player.level" in source
 assert "crafting.recipe.examine.materials" in source
 assert "crafting.recipe.max.player.level=56" in config_text
 assert "crafting.recipe.examine.materials=1" in config_text
+assert "Discipline consumables" in source
 assert "int crafting_level_gate_multiplier(void);" in header
 assert "boot_crafting_system();" in comm
 print("crafting config contract passed")
