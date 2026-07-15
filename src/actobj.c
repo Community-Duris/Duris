@@ -5830,7 +5830,7 @@ void do_salvage(P_char ch, char *argument, int cmd)
 	char        debugBuf[MAX_STRING_LENGTH];
 	int         itemvnum, itemval, lowest, matvnum;
 	int         newcost, reciperoll;
-	int         scitools = vnum_in_inv(ch, VOBJ_EPIC_LANTAN_TOOLS);
+	int         scitools = vnum_in_inv(ch, crafting_scientific_tools_vnum());
 	int         playerroll;
 	float       modifier;
 
@@ -5894,9 +5894,18 @@ void do_salvage(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (GET_CHAR_SKILL(ch, SKILL_SALVAGE) < number(1, 105) && scitools < 1)
+	if (scitools < 1)
 	{
-		act("&+LYou attempt to break down your $p&+L, but end up &+Rbreaking &+Lit in the process.", FALSE, ch, item, 0, TO_CHAR);
+		if (crafting_scientific_tools_prevent_breakage())
+			act("&+yTip: Lantan Scientific Tools are consumed during salvage. They prevent failed-skill breakage and improve recipe discovery. You do not have a set.&n", FALSE, ch, item, 0, TO_CHAR);
+		else
+			act("&+yTip: Lantan Scientific Tools are consumed during salvage and improve recipe discovery. You do not have a set.&n", FALSE, ch, item, 0, TO_CHAR);
+	}
+
+	if (GET_CHAR_SKILL(ch, SKILL_SALVAGE) < number(1, 105) &&
+	    (!crafting_scientific_tools_prevent_breakage() || scitools < 1))
+	{
+		act("&+LYou attempt to break down your $p&+L, but end up &+Rbreaking &+Lit in the process. &+yLantan Scientific Tools would prevent this failed-skill breakage.&n", FALSE, ch, item, 0, TO_CHAR);
 		act("$n attempts to salvage their $p, but clumsily destroys it.", TRUE, ch, item, 0, TO_ROOM);
 		extract_obj(item);
 		notch_skill(ch, SKILL_SALVAGE, 10);
@@ -6221,12 +6230,13 @@ void do_salvage(P_char ch, char *argument, int cmd)
 	playerroll = GET_C_LUK(ch) + GET_LEVEL(ch) * 2 + GET_CHAR_SKILL(ch, SKILL_SALVAGE);
 	if (scitools > 0)
 	{
-		send_to_char("&+yYou make sure to utilize your &+cset of &+rLantan &+CScientific &+LTools &+yas you break apart your item...\r\n", ch);
-		// (1-10000)/15 -> 0-667
-		reciperoll /= 15;
-		// (80-100 + 2-112 + 1-100) * 2 -> (83-312)*2 -> 166-624
-		playerroll *= 2;
-		vnum_from_inv(ch, VOBJ_EPIC_LANTAN_TOOLS, 1);
+		if (crafting_scientific_tools_prevent_breakage())
+			send_to_char("&+yYou consume a set of &+cLantan Scientific Tools&+y: they protect against failed-skill breakage and improve your recipe discovery chance.\r\n", ch);
+		else
+			send_to_char("&+yYou consume a set of &+cLantan Scientific Tools&+y to improve your recipe discovery chance.\r\n", ch);
+		reciperoll /= crafting_scientific_tools_recipe_roll_divisor();
+		playerroll *= crafting_scientific_tools_recipe_player_multiplier();
+		vnum_from_inv(ch, crafting_scientific_tools_vnum(), 1);
 	}
 
 	/*** CREATE RECIPE ***/

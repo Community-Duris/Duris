@@ -32,6 +32,10 @@ int crafting_experience_per_ival(void);
 bool crafting_mode_enabled(enum crafting_mode mode);
 int crafting_essence_vnum(enum crafting_mode mode);
 int crafting_tool_vnum(enum crafting_mode mode);
+int crafting_scientific_tools_vnum(void);
+bool crafting_scientific_tools_prevent_breakage(void);
+int crafting_scientific_tools_recipe_roll_divisor(void);
+int crafting_scientific_tools_recipe_player_multiplier(void);
 int *crafting_get_player_recipes(P_char ch, int *count);
 
 /* Reserved public module boundaries for the staged command/config extraction. */

@@ -32,6 +32,10 @@ static int crafting_craft_essence_vnum = VOBJ_CRAFTING_ESSENCE;
 static int crafting_craft_tool_vnum = VOBJ_CRAFTING_TOOLS;
 static int crafting_forge_essence_vnum = VOBJ_FORGING_ESSENCE;
 static int crafting_forge_tool_vnum = VOBJ_FORGING_FLUX;
+static int crafting_scientific_tools_vnum_value = VOBJ_EPIC_LANTAN_TOOLS;
+static bool crafting_scientific_tools_prevent_breakage_value = TRUE;
+static int crafting_scientific_tools_recipe_roll_divisor_value = 15;
+static int crafting_scientific_tools_recipe_player_multiplier_value = 2;
 
 static void crafting_validate_content_vnum(int *configured_vnum, int default_vnum, const char *key)
 {
@@ -59,6 +63,10 @@ static void load_crafting_config(void)
 	crafting_craft_tool_vnum = VOBJ_CRAFTING_TOOLS;
 	crafting_forge_essence_vnum = VOBJ_FORGING_ESSENCE;
 	crafting_forge_tool_vnum = VOBJ_FORGING_FLUX;
+	crafting_scientific_tools_vnum_value = VOBJ_EPIC_LANTAN_TOOLS;
+	crafting_scientific_tools_prevent_breakage_value = TRUE;
+	crafting_scientific_tools_recipe_roll_divisor_value = 15;
+	crafting_scientific_tools_recipe_player_multiplier_value = 2;
 
 	fp = fopen("lib/crafting.cfg", "r");
 	if (fp == NULL)
@@ -105,6 +113,14 @@ static void load_crafting_config(void)
 			crafting_forge_essence_vnum = atoi(value);
 		else if (!strcmp(key, "crafting.forge.tool.vnum") && atoi(value) > 0)
 			crafting_forge_tool_vnum = atoi(value);
+		else if (!strcmp(key, "crafting.salvage.scientific.tools.vnum") && atoi(value) > 0)
+			crafting_scientific_tools_vnum_value = atoi(value);
+		else if (!strcmp(key, "crafting.salvage.scientific.tools.prevent.breakage"))
+			crafting_scientific_tools_prevent_breakage_value = atoi(value) ? TRUE : FALSE;
+		else if (!strcmp(key, "crafting.salvage.scientific.tools.recipe.roll.divisor") && atoi(value) >= 1)
+			crafting_scientific_tools_recipe_roll_divisor_value = atoi(value);
+		else if (!strcmp(key, "crafting.salvage.scientific.tools.recipe.player.multiplier") && atoi(value) >= 1)
+			crafting_scientific_tools_recipe_player_multiplier_value = atoi(value);
 	}
 	fclose(fp);
 
@@ -114,7 +130,13 @@ static void load_crafting_config(void)
 	crafting_validate_content_vnum(&crafting_craft_tool_vnum, VOBJ_CRAFTING_TOOLS, "crafting.craft.tool.vnum");
 	crafting_validate_content_vnum(&crafting_forge_essence_vnum, VOBJ_FORGING_ESSENCE, "crafting.forge.essence.vnum");
 	crafting_validate_content_vnum(&crafting_forge_tool_vnum, VOBJ_FORGING_FLUX, "crafting.forge.tool.vnum");
+	crafting_validate_content_vnum(&crafting_scientific_tools_vnum_value, VOBJ_EPIC_LANTAN_TOOLS, "crafting.salvage.scientific.tools.vnum");
 }
+
+int crafting_scientific_tools_vnum(void) { return crafting_scientific_tools_vnum_value; }
+bool crafting_scientific_tools_prevent_breakage(void) { return crafting_scientific_tools_prevent_breakage_value; }
+int crafting_scientific_tools_recipe_roll_divisor(void) { return crafting_scientific_tools_recipe_roll_divisor_value; }
+int crafting_scientific_tools_recipe_player_multiplier(void) { return crafting_scientific_tools_recipe_player_multiplier_value; }
 
 /* Any fifth-bitvector affect makes a recipe magical. */
 bool has_affect(P_obj obj)
