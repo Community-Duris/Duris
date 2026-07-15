@@ -21,6 +21,8 @@
 #define SALVAGE_RECIPE_VNUM 400210
 #define MAG_ESSENCE_VNUM    400211
 
+void salvage_examine_item(P_char ch, P_obj item);
+
 #define LOWEST_ORE_VNUM  400260
 #define NUMBER_ORE_TYPES 8
 

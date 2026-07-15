@@ -5822,6 +5822,24 @@ bool is_salvageable(P_obj temp)
 	return TRUE;
 }
 
+void salvage_examine_item(P_char ch, P_obj item)
+{
+	int skill;
+	if (!ch || !item || (skill = GET_CHAR_SKILL(ch, SKILL_SALVAGE)) < 1) return;
+	if (!is_salvageable(item))
+	{
+		act("&+ySalvage assessment:&n $p cannot yield usable salvage materials.", FALSE, ch, item, 0, TO_CHAR);
+		return;
+	}
+	act("&+ySalvage assessment:&n $p can be broken down for salvage materials.", FALSE, ch, item, 0, TO_CHAR);
+	if (skill >= 50) send_to_char("  Expect one material piece; careful recovery may yield two.\r\n", ch);
+	if (skill >= 50 && has_affect(item)) send_to_char("  Its magical traits may also yield an essence.\r\n", ch);
+	if (skill >= 75 && crafting_scientific_tools_prevent_breakage() && vnum_in_inv(ch, crafting_scientific_tools_vnum()) < 1)
+		send_to_char("  Warning: without Lantan Scientific Tools, a failed Salvage skill roll can destroy it.\r\n", ch);
+	if (skill >= 100)
+		send_to_char(crafting_recipe_target_is_available(item) ? "  It is eligible for a possible player-recipe discovery.\r\n" : "  It cannot yield a player recipe under the current crafting policy.\r\n", ch);
+}
+
 void do_salvage(P_char ch, char *argument, int cmd)
 {
 	static bool DEBUG = TRUE;
