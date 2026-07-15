@@ -368,90 +368,176 @@ static void mark_item_superior(P_obj item)
 	set_short_description(item, short_desc);
 }
 
-/* Show contextual help when player types 'enhance <item>' with no second arg. */
-static void show_enhance_help(P_char ch, P_obj item)
+#define MAX_SUPERIOR_MATERIALS (MAX_OBJ_AFFECT * 2)
+
+struct superior_material_requirement {
+	int vnum;
+	int count;
+};
+
+struct superior_enhancement_plan {
+	int slots[MAX_OBJ_AFFECT];
+	int slot_count;
+	int remaining_enhancements;
+	struct superior_material_requirement materials[MAX_SUPERIOR_MATERIALS];
+	int material_count;
+};
+
+static bool is_superior_stat_apply(int apply_loc)
 {
-	char buf[MAX_STRING_LENGTH];
-	char tmp[MAX_STRING_LENGTH];
-	int  i;
-	int  shown = 0;
-	int  cost = (1000 + itemvalue(item) * 100) / 1000;
+	int i;
+	for (i = 0; enhance_stat_names[i].name; i++)
+		if (enhance_stat_names[i].apply_loc == apply_loc)
+			return TRUE;
+	return FALSE;
+}
 
-	act("&+CThe &n$p&+C shimmers in your hands, its latent potential waiting to be unlocked.&n", FALSE, ch, item, 0, TO_CHAR);
-	if (!enhance_stat_enabled)
+static bool superior_plan_add_material(struct superior_enhancement_plan *plan, int vnum, int count)
+{
+	int i;
+
+	if (count <= 0)
+		return TRUE;
+	for (i = 0; i < plan->material_count; i++)
 	{
-		/* Preserve the pre-stat-enhancement prompt when this lane is off. */
-		act("And which object is the enhancement object?", FALSE, ch, 0, 0, TO_CHAR);
-		return;
+		if (plan->materials[i].vnum == vnum)
+		{
+			plan->materials[i].count += count;
+			return TRUE;
+		}
 	}
-	strcpy(buf, "&+YSuperior improvements available:\r\n");
+	if (plan->material_count >= MAX_SUPERIOR_MATERIALS)
+		return FALSE;
+	plan->materials[plan->material_count].vnum = vnum;
+	plan->materials[plan->material_count].count = count;
+	plan->material_count++;
+	return TRUE;
+}
 
+/* Count only template-backed future steps, so the preview never promises an unavailable tier. */
+static int superior_stat_remaining_steps(P_obj item, int apply_loc, int current, int cap)
+{
+	int steps = 0;
+	int next;
+
+	for (next = current + 1; next <= cap; next++)
+	{
+		if (!find_stat_enhance_target(item, apply_loc, next))
+			break;
+		steps++;
+	}
+	return steps;
+}
+
+/* Build the next atomic all-stat improvement and aggregate duplicate material vnums. */
+static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancement_plan *plan)
+{
+	int i;
+
+	memset(plan, 0, sizeof(*plan));
 	for (i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
-		int si;
 		int base;
 		int cap;
 		int remaining;
+		int low_vnum;
+		int high_vnum;
+		int high_count;
+		int low_count;
 		struct enhance_index_entry *target;
 		P_obj target_obj;
-		int low_vnum, high_vnum, low_count, high_count;
-		char low_name[MAX_STRING_LENGTH], high_name[MAX_STRING_LENGTH];
 
-		if (item->affected[i].location == APPLY_NONE || item->affected[i].modifier <= 0)
+		if (item->affected[i].location == APPLY_NONE || item->affected[i].modifier <= 0 ||
+		    !is_superior_stat_apply(item->affected[i].location))
 			continue;
-		for (si = 0; enhance_stat_names[si].name; si++)
-			if (enhance_stat_names[si].apply_loc == item->affected[i].location)
-				break;
-		if (!enhance_stat_names[si].name)
-			continue;
-
 		base = enhance_base_modifier(item, item->affected[i].location);
-		if (base <= 0)
+		cap = enhance_stat_cap(base);
+		if (base <= 0 || item->affected[i].modifier >= cap)
+			continue;
+		target = find_stat_enhance_target(item, item->affected[i].location,
+		                                  item->affected[i].modifier + 1);
+		if (!target || !(target_obj = read_object(target->vnum, VIRTUAL)))
 			continue;
 
-		/* Repair pre-marker stat upgrades when the item is next inspected. */
-		if (item->affected[i].modifier > base)
-			mark_item_superior(item);
+		low_vnum = get_matstart(target_obj);
+		extract_obj(target_obj);
+		high_vnum = low_vnum + 4;
+		high_count = (target->ival + 4) / 5;
+		low_count = (target->ival + 4) - high_count * 5;
+		if (!superior_plan_add_material(plan, low_vnum, low_count) ||
+		    !superior_plan_add_material(plan, high_vnum, high_count))
+			return FALSE;
 
-		cap = enhance_stat_cap(base);
-		remaining = MAX(0, cap - item->affected[i].modifier);
-		target = remaining ? find_stat_enhance_target(item, item->affected[i].location, item->affected[i].modifier + 1) : NULL;
-		if (target && (target_obj = read_object(target->vnum, VIRTUAL)))
-		{
-			low_vnum = get_matstart(target_obj);
-			extract_obj(target_obj);
-			high_vnum = low_vnum + 4;
-			high_count = (target->ival + 4) / 5;
-			low_count = (target->ival + 4) - high_count * 5;
-			enhance_material_name(low_vnum, low_name, sizeof(low_name));
-			enhance_material_name(high_vnum, high_name, sizeof(high_name));
-			snprintf(tmp, sizeof(tmp), "  %s%s&n: +%d / +%d; &+W%d&n increase%s remaining\r\n"
-		         "    &+yNext tribute:&n %d %s and %d %s\r\n",
-		         enhance_stat_names[si].color, enhance_stat_names[si].display_name,
-		         item->affected[i].modifier, cap, remaining, remaining == 1 ? "" : "s",
-		         low_count, low_name, high_count, high_name);
-		}
-		else
-		{
-			snprintf(tmp, sizeof(tmp), "  %s%s&n: +%d / +%d; &+W%d&n increase%s remaining%s\r\n",
-		         enhance_stat_names[si].color, enhance_stat_names[si].display_name,
-		         item->affected[i].modifier, cap, remaining, remaining == 1 ? "" : "s",
-		         remaining ? " &+R(no compatible next-tier template)&n" : "");
-		}
-		strcat(buf, tmp);
-		shown++;
+		plan->slots[plan->slot_count++] = i;
+		remaining = superior_stat_remaining_steps(item, item->affected[i].location,
+		                                           item->affected[i].modifier, cap);
+		plan->remaining_enhancements = MAX(plan->remaining_enhancements, remaining);
 	}
-	if (!shown)
-		strcat(buf, "  &+wNo existing positive stat on this item can be made superior.\r\n");
+	return plan->slot_count > 0;
+}
 
-	snprintf(tmp, sizeof(tmp),
-	         "&+YSuperior tribute:&n the raw materials listed for the next-tier lookup template.\r\n"
-	         "&+YFee:&n &+W%d platinum&n per attempt.  A successful improvement grants &+L[superior]&n.\r\n",
-	         cost);
-	strcat(buf, tmp);
-	strcat(buf, "&+ySyntax:&n enhance <item> <stat>\r\n");
-	strcat(buf, "&+y        &n enhance <item> <material> &+w(legacy)\r\n");
+static bool superior_plan_has_materials(P_char ch, const struct superior_enhancement_plan *plan)
+{
+	int i;
+	for (i = 0; i < plan->material_count; i++)
+		if (vnum_in_inv(ch, plan->materials[i].vnum) < plan->materials[i].count)
+			return FALSE;
+	return TRUE;
+}
+
+/* Aggregate-only preview: do not reveal affected stat names, values, or caps. */
+static void show_superior_requirements(P_char ch, P_obj item, const struct superior_enhancement_plan *plan)
+{
+	char buf[MAX_STRING_LENGTH];
+	char name[MAX_STRING_LENGTH];
+	char line[MAX_STRING_LENGTH];
+	int i;
+
+	act("&+CThe &n$p&+C shimmers in your hands, its latent potential waiting to be unlocked.&n", FALSE, ch, item, 0, TO_CHAR);
+	snprintf(buf, sizeof(buf), "&+YSuperior enhancements remaining:&n &+W%d&n\r\n"
+	         "&+YMaterials required for the next enhancement:&n\r\n",
+	         plan->remaining_enhancements);
+	for (i = 0; i < plan->material_count; i++)
+	{
+		enhance_material_name(plan->materials[i].vnum, name, sizeof(name));
+		snprintf(line, sizeof(line), "  &+W%d&n %s\r\n", plan->materials[i].count, name);
+		strcat(buf, line);
+	}
+	strcat(buf, "&+ySyntax:&n enhance <item>\r\n");
 	send_to_char(buf, ch);
+}
+
+/* Validate first, then consume the entire aggregate tribute and upgrade every planned slot. */
+static bool perform_superior_enhancement(P_char ch, P_obj source,
+	                                      const struct superior_enhancement_plan *plan)
+{
+	char buf[MAX_STRING_LENGTH];
+	int i;
+	int cost = 1000 + itemvalue(source) * 100;
+
+	if (!superior_plan_has_materials(ch, plan))
+		return FALSE;
+	if (GET_MONEY(ch) < cost)
+	{
+		snprintf(buf, sizeof(buf), "&+yIt will require &+W%d platinum&+y to enhance this item.\r\n", cost / 1000);
+		send_to_char(buf, ch);
+		return FALSE;
+	}
+
+	/* All availability checks precede every state mutation, preserving atomicity. */
+	SUB_MONEY(ch, cost, 0);
+	for (i = 0; i < plan->material_count; i++)
+		vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count);
+	for (i = 0; i < plan->slot_count; i++)
+		source->affected[plan->slots[i]].modifier++;
+	mark_item_superior(source);
+
+	send_to_char("&+BYour enhancement thrums with superior energy!\r\n", ch);
+	statuslog(ch->player.level,
+	          "&+BStat-Enhance&n: %s&n enhanced '%s&n' across %d properties at [%d]!",
+	          GET_NAME(ch), source->short_description, plan->slot_count,
+	          (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
+	return TRUE;
 }
 
 
@@ -461,9 +547,7 @@ void do_enhance(P_char ch, char *argument, int cmd)
 	P_obj source, material;
 	char  first[MAX_INPUT_LENGTH];
 	char  second[MAX_INPUT_LENGTH];
-	char  third[MAX_INPUT_LENGTH];
 	char  rest[MAX_INPUT_LENGTH];
-	int   i, apply_loc, new_mod, cap;
 
 	if (IS_NPC(ch))
 		return;
@@ -477,165 +561,51 @@ void do_enhance(P_char ch, char *argument, int cmd)
 			return;
 		}
 		send_to_char("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y? &n\r\n"
-		             "Syntax: enhance <source item> <material item>\r\n"
-		             "        enhance <source item> <stat>\r\n", ch);
+		             "Syntax: enhance <source item>\r\n"
+		             "        enhance <source item> <material item> &+w(legacy)\r\n", ch);
 		return;
 	}
 
 	half_chop(argument, first, rest);
-	half_chop(rest, second, third);
-	half_chop(third, third, rest);
+	half_chop(rest, second, rest);
 
-	/* Stat enhancement: enhance <source> <stat>.  The lookup selects its own template. */
+	/* Enabled donor-free enhancement: one command upgrades every eligible stat atomically. */
+	if (!*second && enhance_stat_enabled)
 	{
-		int stat_idx = -1;
-		for (i = 0; enhance_stat_names[i].name; i++)
+		struct superior_enhancement_plan plan;
+
+		if (!(source = get_obj_in_list_vis(ch, first, ch->carrying)))
 		{
-			if (!strcasecmp(second, enhance_stat_names[i].name))
-			{
-				apply_loc = enhance_stat_names[i].apply_loc;
-				stat_idx = i;
-				break;
-			}
-		}
-		if (stat_idx != -1 && enhance_stat_enabled)
-		{
-			struct enhance_index_entry *target;
-			P_obj target_obj;
-			int source_base;
-			int source_slot;
-			int low_material_vnum;
-			int high_material_vnum;
-			int low_material_count;
-			int high_material_count;
-			char low_material_name[MAX_STRING_LENGTH];
-			char high_material_name[MAX_STRING_LENGTH];
-
-			if (*third)
-			{
-				send_to_char("&+ySuperior enhancement uses the lookup template automatically.  Syntax: enhance <item> <stat>\r\n", ch);
-				return;
-			}
-			if (!(source = get_obj_in_list_vis(ch, first, ch->carrying)))
-			{
-				act("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y?", FALSE, ch, 0, 0, TO_CHAR);
-				return;
-			}
-			if (!is_salvageable(source))
-			{
-				act("&+yYour $p&+y cannot be used in this way... try something else&n.", FALSE, ch, source, 0, TO_CHAR);
-				return;
-			}
-			if (is_enhance_banned(source))
-			{
-				act("&+yYour $p&+y has too many conflicting enchantments for further enhancement&n.", FALSE, ch, source, 0, TO_CHAR);
-				return;
-			}
-
-			/* The source's prototype defines the cap; zero/negative stats are ineligible. */
-			new_mod = 0;
-			source_slot = -1;
-			for (i = 0; i < MAX_OBJ_AFFECT; i++)
-			{
-				if (source->affected[i].location == apply_loc)
-				{
-					new_mod = source->affected[i].modifier;
-					source_slot = i;
-					break;
-				}
-			}
-			source_base = enhance_base_modifier(source, apply_loc);
-			if (source_base <= 0 || new_mod <= 0 || source_slot == -1)
-			{
-				send_to_char("&+yThis item does not possess that stat to enhance.  Only an existing positive stat may be improved.\r\n", ch);
-				return;
-			}
-			cap = enhance_stat_cap(source_base);
-			if (new_mod >= cap)
-			{
-				char buf[MAX_STRING_LENGTH];
-				snprintf(buf, sizeof(buf), "&+yYour item already has the maximum %s modifier for this stat! (max %d)\r\n", enhance_stat_names[stat_idx].display_name, cap);
-				send_to_char(buf, ch);
-				return;
-			}
-
-			new_mod++;
-			target = find_stat_enhance_target(source, apply_loc, new_mod);
-			if (!target)
-			{
-				send_to_char("&+yThe enhancement lookup contains no compatible next-tier template for that stat.\r\n", ch);
-				return;
-			}
-			target_obj = read_object(target->vnum, VIRTUAL);
-			if (!target_obj)
-			{
-				send_to_char("&+yThe selected enhancement template is unavailable.  Please notify a god.\r\n", ch);
-				return;
-			}
-			low_material_vnum = get_matstart(target_obj);
-			extract_obj(target_obj);
-			high_material_vnum = low_material_vnum + 4;
-			high_material_count = (target->ival + 4) / 5;
-			low_material_count = (target->ival + 4) - high_material_count * 5;
-			enhance_material_name(low_material_vnum, low_material_name, sizeof(low_material_name));
-			enhance_material_name(high_material_vnum, high_material_name, sizeof(high_material_name));
-			if (vnum_in_inv(ch, low_material_vnum) < low_material_count ||
-			    vnum_in_inv(ch, high_material_vnum) < high_material_count)
-			{
-				char buf[MAX_STRING_LENGTH];
-				snprintf(buf, sizeof(buf), "&+yThe next-tier template requires: &+W%d %s&+y and &+W%d %s&+y.\r\n",
-				         low_material_count, low_material_name, high_material_count, high_material_name);
-				send_to_char(buf, ch);
-				return;
-			}
-
-			/* Level gate: same as legacy enhance (source ival <= level * 3). */
-			if (itemvalue(source) > GET_LEVEL(ch) * 3)
-				{
-					send_to_char("&+yThis item is too powerful to be enhanced further.\r\n", ch);
-					return;
-				}
-
-			{
-				int cost = 1000 + itemvalue(source) * 100;
-				if (GET_MONEY(ch) < cost)
-				{
-					char buf[MAX_STRING_LENGTH];
-					snprintf(buf, sizeof(buf), "&+yIt will require &+W%d platinum&+y to enhance this item.\r\n", cost / 1000);
-					send_to_char(buf, ch);
-					return;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("&+yYour pockets feel &+Wlighter&n.\r\n", ch);
-			}
-
-			/* Consume the lookup template's raw materials; no donor item is involved. */
-			source->affected[source_slot].modifier = new_mod;
-			vnum_from_inv(ch, low_material_vnum, low_material_count);
-			vnum_from_inv(ch, high_material_vnum, high_material_count);
-			mark_item_superior(source);
-
-			{
-				char buf[MAX_STRING_LENGTH];
-				snprintf(buf, MAX_STRING_LENGTH,
-				         "&+BYour &+Wenhancement&+B thrums with %s%s&+B energy!  Your item's %s&+B has grown to &+W%d&n!\r\n",
-				         enhance_stat_names[stat_idx].color,
-				         enhance_stat_names[stat_idx].display_name,
-				         enhance_stat_names[stat_idx].display_name,
-				         new_mod);
-				send_to_char(buf, ch);
-			}
-
-			statuslog(ch->player.level,
-			          "&+BStat-Enhance&n: %s&n enhanced %s '%s&n' with %s (%d) at [%d]!",
-			          GET_NAME(ch),
-			          enhance_stat_names[stat_idx].color,
-			          source->short_description,
-			          enhance_stat_names[stat_idx].display_name,
-			          new_mod,
-			          (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
+			act("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y?", FALSE, ch, 0, 0, TO_CHAR);
 			return;
 		}
+		if (!is_salvageable(source))
+		{
+			act("&+yYour $p&+y cannot be used in this way... try something else&n.", FALSE, ch, source, 0, TO_CHAR);
+			return;
+		}
+		if (is_enhance_banned(source))
+		{
+			act("&+yYour $p&+y has too many conflicting enchantments for further enhancement&n.", FALSE, ch, source, 0, TO_CHAR);
+			return;
+		}
+		if (itemvalue(source) > GET_LEVEL(ch) * 3)
+		{
+			send_to_char("&+yThis item is too powerful to be enhanced further.\r\n", ch);
+			return;
+		}
+		if (!build_superior_enhancement_plan(source, &plan))
+		{
+			send_to_char("&+yThis item has no further superior enhancement available.\r\n", ch);
+			return;
+		}
+		if (!superior_plan_has_materials(ch, &plan))
+		{
+			show_superior_requirements(ch, source, &plan);
+			return;
+		}
+		perform_superior_enhancement(ch, source, &plan);
+		return;
 	}
 
 	/* Original 2-arg enhance */
@@ -650,7 +620,16 @@ void do_enhance(P_char ch, char *argument, int cmd)
 
 	if (!(material = get_obj_in_list_vis(ch, second, ch->carrying)))
 	{
-		show_enhance_help(ch, source);
+		if (enhance_stat_enabled)
+		{
+			struct superior_enhancement_plan plan;
+			if (build_superior_enhancement_plan(source, &plan))
+				show_superior_requirements(ch, source, &plan);
+			else
+				send_to_char("&+yThis item has no further superior enhancement available.\r\n", ch);
+		}
+		else
+			act("And which object is the enhancement object?", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 	if (!strcmp(first, second))
