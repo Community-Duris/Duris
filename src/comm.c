@@ -536,10 +536,8 @@ void run_the_game(int port, int sslport)
 		fprintf(stderr, "-- Loading alliances\r\n");
 		load_alliances();
 
-		fprintf(stderr, "-- Loading enhance config\r\n");
-		load_enhance_config();
-		fprintf(stderr, "-- Building enhance index\r\n");
-		load_enhance_index();
+		fprintf(stderr, "-- Booting enhancement system\r\n");
+		boot_enhancement_system();
 
 #ifdef SIEGE_ENABLED
 		fprintf(stderr, "-- Loading town data\r\n");

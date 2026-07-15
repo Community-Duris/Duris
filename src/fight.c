@@ -2285,8 +2285,7 @@ void die(P_char ch, P_char killer)
 			christmas_proc(ch);
 		}
 		// NPCs that are worth exp and not PC pets may load a random item.
-		if (IS_NPC(ch) && !IS_PC_PET(ch) && GET_EXP(ch) > 0)
-			enhancematload(ch, killer);
+		enhance_on_eligible_npc_death(ch, killer);
 	}
 
 	/* This is where we were saving the newbies from being killed by high lvls.

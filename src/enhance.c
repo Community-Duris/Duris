@@ -26,6 +26,18 @@
 /* Forward declarations for hash functions used in enhance() and do_enhance() */
 static int enhance_hash(int key);
 static int enhance_stat_hash(int key);
+extern double enhance_stat_cap_multiplier;
+extern int enhance_stat_platinum_base;
+extern int enhance_stat_platinum_per_ival;
+extern int enhance_level_gate_multiplier;
+extern int enhance_mod_max_steps;
+extern double enhance_stat_material_quantity_multiplier;
+
+/* NPC death essence-drop tuning defaults; config reload restores these before parsing. */
+static int enhance_essence_drop_enabled           = 1;
+static int enhance_essence_primary_roll_max       = 3000;
+static int enhance_essence_max_roll_max           = 4000;
+static int enhance_essence_elite_level_multiplier = 1;
 
 /* World tables needed to map an object template vnum back to its origin zone. */
 extern P_room world;
@@ -75,7 +87,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	}
 
 	// Can enhance up to 3x level, same as forge/craft. --Eikel
-	if (sval > GET_LEVEL(ch) * 3)
+	if (sval > GET_LEVEL(ch) * enhance_level_gate_multiplier)
 	{
 		send_to_char("This item is too powerful to be enhanced further.\n", ch);
 		return;
@@ -334,7 +346,7 @@ static int enhance_entry_modifier(const struct enhance_index_entry *entry, int a
 /* A superior stat may reach floor(1.5 * its positive prototype modifier). */
 static int enhance_stat_cap(int base_modifier)
 {
-	return base_modifier > 0 ? base_modifier + base_modifier / 2 : 0;
+	return base_modifier > 0 ? (int)(base_modifier * enhance_stat_cap_multiplier) : 0;
 }
 
 /* Find the deterministic next template: exact stat value, compatible wear slot, lowest vnum. */
@@ -467,6 +479,8 @@ static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancem
 		high_vnum = low_vnum + 4;
 		high_count = (target->ival + 4) / 5;
 		low_count = (target->ival + 4) - high_count * 5;
+		low_count = (int)(low_count * enhance_stat_material_quantity_multiplier + 0.999999);
+		high_count = (int)(high_count * enhance_stat_material_quantity_multiplier + 0.999999);
 		if (!superior_plan_add_material(plan, low_vnum, low_count) ||
 		    !superior_plan_add_material(plan, high_vnum, high_count))
 			return FALSE;
@@ -516,7 +530,7 @@ static bool perform_superior_enhancement(P_char ch, P_obj source,
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
-	int cost = 1000 + itemvalue(source) * 100;
+	int cost = enhance_stat_platinum_base + itemvalue(source) * enhance_stat_platinum_per_ival;
 
 	if (!superior_plan_has_materials(ch, plan))
 		return FALSE;
@@ -592,7 +606,7 @@ void do_enhance(P_char ch, char *argument, int cmd)
 			act("&+yYour $p&+y has too many conflicting enchantments for further enhancement&n.", FALSE, ch, source, 0, TO_CHAR);
 			return;
 		}
-		if (itemvalue(source) > GET_LEVEL(ch) * 3)
+		if (itemvalue(source) > GET_LEVEL(ch) * enhance_level_gate_multiplier)
 		{
 			send_to_char("&+yThis item is too powerful to be enhanced further.\r\n", ch);
 			return;
@@ -902,7 +916,7 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	if (loctype == 1)
 	{
 		// IF they've been modified less than 3 times.
-		if (source->affected[2].modifier / mod < 3)
+		if (source->affected[2].modifier / mod < enhance_mod_max_steps)
 			source->affected[2].modifier += mod;
 		else
 		{
@@ -976,19 +990,24 @@ void thanksgiving_proc(P_char ch)
 	char_to_room(mob, ch->in_room, 0);
 }
 
-// This function assumes ch exists and is a mob (Verified in fight.c before call).
-void enhancematload(P_char ch, P_char killer)
+/* Generates at most one enhancement essence after the caller has determined that
+ * this is an eligible NPC-death event. */
+static void enhance_load_essence_drop(P_char ch, P_char killer)
 {
 	int reward;
 	int moblvl = GET_LEVEL(ch);
+
+	if (!enhance_essence_drop_enabled)
+		return;
+
 	if (IS_ELITE(ch))
 	{
-		moblvl * 10;
+		moblvl *= enhance_essence_elite_level_multiplier;
 	}
-	if (number(1, 3000) < moblvl)
+	if (number(1, enhance_essence_primary_roll_max) < moblvl)
 	{
 		debug("enhancematload: mob: '%s' (%d) moblvl %d%s", J_NAME(ch), GET_VNUM(ch), moblvl, IS_ELITE(ch) ? " ELITE." : ".");
-		if (number(1, 4000) < moblvl)
+		if (number(1, enhance_essence_max_roll_max) < moblvl)
 		{
 			switch (number(1, 8))
 			{
@@ -1092,9 +1111,8 @@ void enhancematload(P_char ch, P_char killer)
 		int enhance_wear_skip_mask                   = 15;
 		int enhance_original_max_roll                = 4;
 		int enhance_original_cascade_down_first      = 1;
-		int enhance_level_gate_a                     = 41;
-		int enhance_level_gate_b                     = 3;
-		int enhance_level_gate_c                     = 1;
+		int enhance_level_gate_multiplier            = 3;
+int enhance_mod_max_steps                     = 3;
 		int enhance_luck_extreme_range               = 1200;
 		int enhance_luck_very_range                  = 800;
 		int enhance_luck_lucky_range                 = 400;
@@ -1106,6 +1124,10 @@ void enhancematload(P_char ch, P_char killer)
 		int enhance_stat_enabled                      = 0;
 		/* Also fail closed: NPC reset material fallback is independently opt-in. */
 		int enhance_stat_npc_material_fallback_enabled = 0;
+double enhance_stat_cap_multiplier = 1.5;
+int enhance_stat_platinum_base = 1000;
+int enhance_stat_platinum_per_ival = 100;
+double enhance_stat_material_quantity_multiplier = 1.0;
 
 		/* Candidate-only exclusions for legacy random enhancement. */
 		#define ENHANCE_MAX_POOL_EXCLUSIONS 256
@@ -1343,8 +1365,17 @@ void enhancematload(P_char ch, P_char killer)
 			section_idx  = -1;
 			line_num     = 0;
 			/* Reloads must not retain stale opt-ins or pool exclusions. */
+			enhance_allow_mask = 0;
+			enhance_allow_mask2 = 0;
+			enhance_allow_mask3 = 0;
+			enhance_allow_mask4 = 0;
+			enhance_allow_mask5 = 0;
 			enhance_stat_enabled = 0;
 			enhance_stat_npc_material_fallback_enabled = 0;
+			enhance_essence_drop_enabled = 1;
+			enhance_essence_primary_roll_max = 3000;
+			enhance_essence_max_roll_max = 4000;
+			enhance_essence_elite_level_multiplier = 1;
 			enhance_pool_excluded_zone_count = 0;
 			enhance_pool_excluded_vnum_count = 0;
 
@@ -1374,6 +1405,7 @@ void enhancematload(P_char ch, P_char killer)
 					else if (!strcmp(section, "enhance_stat"))      section_idx = 1;
 					else if (!strcmp(section, "pool_exclude_zone")) section_idx = 2;
 					else if (!strcmp(section, "pool_exclude_vnum")) section_idx = 3;
+					else if (!strcmp(section, "essence_drop"))      section_idx = 4;
 					else if (!strcmp(section, "bitvector"))         section_idx = 10;
 					else if (!strcmp(section, "bitvector2"))   section_idx = 11;
 					else if (!strcmp(section, "bitvector3"))   section_idx = 12;
@@ -1422,9 +1454,8 @@ void enhancematload(P_char ch, P_char killer)
 					else if (!strcmp(key, "enhance.wear.skip.mask"))                enhance_wear_skip_mask              = ival;
 					else if (!strcmp(key, "enhance.original.max.roll"))             enhance_original_max_roll           = ival;
 					else if (!strcmp(key, "enhance.original.cascade.down.first"))  enhance_original_cascade_down_first = ival;
-					else if (!strcmp(key, "enhance.level.gate.a"))                  enhance_level_gate_a                = ival;
-					else if (!strcmp(key, "enhance.level.gate.b"))                  enhance_level_gate_b                = ival;
-					else if (!strcmp(key, "enhance.level.gate.c"))                  enhance_level_gate_c                = ival;
+					else if (!strcmp(key, "enhance.level.gate.multiplier") && ival > 0) enhance_level_gate_multiplier = ival;
+					else if (!strcmp(key, "enhance.mod.max.steps") && ival > 0) enhance_mod_max_steps = ival;
 					else if (!strcmp(key, "enhance.luck.extreme.range"))            enhance_luck_extreme_range          = ival;
 					else if (!strcmp(key, "enhance.luck.very.range"))               enhance_luck_very_range             = ival;
 					else if (!strcmp(key, "enhance.luck.lucky.range"))              enhance_luck_lucky_range            = ival;
@@ -1441,6 +1472,25 @@ void enhancematload(P_char ch, P_char killer)
 						enhance_stat_enabled = atoi(val) ? 1 : 0;
 					else if (!strcmp(key, "enhance_stat.npc_material_fallback.enabled"))
 						enhance_stat_npc_material_fallback_enabled = atoi(val) ? 1 : 0;
+					else if (!strcmp(key, "enhance_stat.cap.multiplier") && strtod(val, NULL) > 0.0)
+						enhance_stat_cap_multiplier = strtod(val, NULL);
+					else if (!strcmp(key, "enhance_stat.platinum.base") && atoi(val) >= 0)
+						enhance_stat_platinum_base = atoi(val);
+					else if (!strcmp(key, "enhance_stat.platinum.per.ival") && atoi(val) >= 0)
+						enhance_stat_platinum_per_ival = atoi(val);
+					else if (!strcmp(key, "enhance_stat.material.quantity.mult") && strtod(val, NULL) > 0.0)
+						enhance_stat_material_quantity_multiplier = strtod(val, NULL);
+				}
+				else if (section_idx == 4)
+				{
+					if (!strcmp(key, "enhance.essence_drop.enabled"))
+						enhance_essence_drop_enabled = atoi(val) ? 1 : 0;
+					else if (!strcmp(key, "enhance.essence_drop.primary_roll_max") && atoi(val) > 0)
+						enhance_essence_primary_roll_max = atoi(val);
+					else if (!strcmp(key, "enhance.essence_drop.max_roll_max") && atoi(val) > 0)
+						enhance_essence_max_roll_max = atoi(val);
+					else if (!strcmp(key, "enhance.essence_drop.elite_level_multiplier") && atoi(val) > 0)
+						enhance_essence_elite_level_multiplier = atoi(val);
 				}
 				else if (section_idx == 2 && !strcmp(key, "zone"))
 				{
@@ -1663,5 +1713,43 @@ void enhancematload(P_char ch, P_char killer)
 
 			fprintf(stderr, "-- Enhance index built: %d entries indexed\r\n", count);
 			logit(LOG_STATUS, "Enhance index built: %d entries indexed", count);
-		}
+			}
+
+			/* Enhancement lifecycle/event boundary. Other gameplay systems call these
+			* hooks, but enhancement configuration and reward-selection policy remains
+			* owned by this module. */
+			void boot_enhancement_system(void)
+			{
+			load_enhance_config();
+			load_enhance_index();
+			}
+
+			void enhance_on_eligible_npc_death(P_char ch, P_char killer)
+			{
+			if (!ch || !IS_NPC(ch) || IS_PC_PET(ch) || GET_EXP(ch) <= 0)
+			return;
+
+			enhance_load_essence_drop(ch, killer);
+			}
+
+			void enhance_on_npc_item_reset_skipped(P_char mob, P_obj missing_item)
+			{
+			P_obj material;
+			int   high_vnum;
+
+			if (!enhance_stat_enabled || !enhance_stat_npc_material_fallback_enabled || !mob || !IS_NPC(mob) || !missing_item)
+			return;
+
+			high_vnum = get_matstart(missing_item) + 4;
+			if (!(material = read_object(high_vnum, VIRTUAL)))
+			{
+			logit(LOG_DEBUG,
+			      "enhance: missing high-quality material %d for skipped NPC item %d.",
+			      high_vnum,
+			      OBJ_VNUM(missing_item));
+			return;
+			}
+
+			obj_to_char(material, mob);
+			}
 

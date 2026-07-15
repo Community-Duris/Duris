@@ -22,12 +22,12 @@ struct enhance_index_result {
 
 /* Prototypes */
 bool          is_enhance_banned(P_obj item);
-void          load_enhance_config(void);
 void          enhance(P_char ch, P_obj source, P_obj material);
 void          do_enhance(P_char ch, char *argument, int cmd);
 void          modenhance(P_char ch, P_obj source, P_obj material);
-void          enhancematload(P_char ch, P_char killer);
-void          load_enhance_index(void);
+void          boot_enhancement_system(void);
+void          enhance_on_eligible_npc_death(P_char ch, P_char killer);
+void          enhance_on_npc_item_reset_skipped(P_char mob, P_obj missing_item);
 
 /* Global index tables (externed for access) */
 #define ENHANCE_IVAL_TABLE_SIZE  4099

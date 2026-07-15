@@ -35,7 +35,6 @@
 #include "spells.h"
 #include "sql.h"
 #include "weather.h"
-#include "tradeskill.h"
 
 /*
  * external variables
@@ -3111,31 +3110,6 @@ void no_reset_zone_reset(int zone_number)
 
 #define ZCMD zone_table[zone].cmd[cmd_no]
 
-/* A configured NPC item may deliberately fail its reset chance.  The optional
- * fallback is deliberately limited to G/E reset commands, uses the missing
- * template's material family, and leaves the material in inventory even when
- * the missing item would have been equipped. */
-static void load_npc_missing_item_material(P_char mob, P_obj missing_item)
-{
-	P_obj material;
-	int   high_vnum;
-
-	if (!enhance_stat_enabled || !enhance_stat_npc_material_fallback_enabled || !mob || !IS_NPC(mob) || !missing_item)
-		return;
-
-	high_vnum = get_matstart(missing_item) + 4;
-	if (!(material = read_object(high_vnum, VIRTUAL)))
-	{
-		logit(LOG_DEBUG,
-		      "reset_zone: missing high-quality material %d for skipped NPC item %d.",
-		      high_vnum,
-		      OBJ_VNUM(missing_item));
-		return;
-	}
-
-	obj_to_char(material, mob);
-}
-
 /* execute the reset command table of a given zone */
 /* force_item_repop : 2 means this is a boot-time initial reset of zone. */
 void reset_zone(int zone, int force_item_repop)
@@ -3562,7 +3536,7 @@ void reset_zone(int zone, int force_item_repop)
 							// Load all shopkeeper eq.
 							if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) && (!mob || !IS_SHOPKEEPER(mob)))
 							{
-								load_npc_missing_item_material(mob, obj);
+								enhance_on_npc_item_reset_skipped(mob, obj);
 								extract_obj(obj);
 								last_cmd = 1;
 								break;
@@ -3629,7 +3603,7 @@ void reset_zone(int zone, int force_item_repop)
 							ival = itemvalue(obj);
 							if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4))
 							{
-								load_npc_missing_item_material(mob, obj);
+								enhance_on_npc_item_reset_skipped(mob, obj);
 								extract_obj(obj);
 								last_cmd = 1;
 								break;
