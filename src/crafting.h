@@ -36,6 +36,8 @@ int crafting_scientific_tools_vnum(void);
 bool crafting_scientific_tools_prevent_breakage(void);
 int crafting_scientific_tools_recipe_roll_divisor(void);
 int crafting_scientific_tools_recipe_player_multiplier(void);
+double crafting_salvage_essence_luck_multiplier(void);
+double crafting_salvage_essence_chance_multiplier(void);
 int *crafting_get_player_recipes(P_char ch, int *count);
 
 /* Reserved public module boundaries for the staged command/config extraction. */

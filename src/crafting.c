@@ -36,6 +36,8 @@ static int crafting_scientific_tools_vnum_value = VOBJ_EPIC_LANTAN_TOOLS;
 static bool crafting_scientific_tools_prevent_breakage_value = TRUE;
 static int crafting_scientific_tools_recipe_roll_divisor_value = 15;
 static int crafting_scientific_tools_recipe_player_multiplier_value = 2;
+static double crafting_salvage_essence_luck_multiplier_value = 1.0;
+static double crafting_salvage_essence_chance_multiplier_value = 1.0;
 
 static void crafting_validate_content_vnum(int *configured_vnum, int default_vnum, const char *key)
 {
@@ -67,6 +69,8 @@ static void load_crafting_config(void)
 	crafting_scientific_tools_prevent_breakage_value = TRUE;
 	crafting_scientific_tools_recipe_roll_divisor_value = 15;
 	crafting_scientific_tools_recipe_player_multiplier_value = 2;
+	crafting_salvage_essence_luck_multiplier_value = 1.0;
+	crafting_salvage_essence_chance_multiplier_value = 1.0;
 
 	fp = fopen("lib/crafting.cfg", "r");
 	if (fp == NULL)
@@ -121,6 +125,10 @@ static void load_crafting_config(void)
 			crafting_scientific_tools_recipe_roll_divisor_value = atoi(value);
 		else if (!strcmp(key, "crafting.salvage.scientific.tools.recipe.player.multiplier") && atoi(value) >= 1)
 			crafting_scientific_tools_recipe_player_multiplier_value = atoi(value);
+		else if (!strcmp(key, "crafting.salvage.essence.luck.multiplier") && strtod(value, NULL) > 0.0)
+			crafting_salvage_essence_luck_multiplier_value = strtod(value, NULL);
+		else if (!strcmp(key, "crafting.salvage.essence.chance.multiplier") && strtod(value, NULL) >= 0.0)
+			crafting_salvage_essence_chance_multiplier_value = strtod(value, NULL);
 	}
 	fclose(fp);
 
@@ -137,6 +145,8 @@ int crafting_scientific_tools_vnum(void) { return crafting_scientific_tools_vnum
 bool crafting_scientific_tools_prevent_breakage(void) { return crafting_scientific_tools_prevent_breakage_value; }
 int crafting_scientific_tools_recipe_roll_divisor(void) { return crafting_scientific_tools_recipe_roll_divisor_value; }
 int crafting_scientific_tools_recipe_player_multiplier(void) { return crafting_scientific_tools_recipe_player_multiplier_value; }
+double crafting_salvage_essence_luck_multiplier(void) { return crafting_salvage_essence_luck_multiplier_value; }
+double crafting_salvage_essence_chance_multiplier(void) { return crafting_salvage_essence_chance_multiplier_value; }
 
 /* Any fifth-bitvector affect makes a recipe magical. */
 bool has_affect(P_obj obj)

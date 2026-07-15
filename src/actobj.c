@@ -5850,6 +5850,7 @@ void do_salvage(P_char ch, char *argument, int cmd)
 	int         newcost, reciperoll;
 	int         scitools = vnum_in_inv(ch, crafting_scientific_tools_vnum());
 	int         playerroll;
+	int         essence_luck;
 	float       modifier;
 
 	one_argument(argument, first_arg);
@@ -6121,25 +6122,18 @@ void do_salvage(P_char ch, char *argument, int cmd)
 		act("&+LUsing your ma&+wst&+Wer&+wfu&+Ll &+Wskill&+L, you delicately break apart your item, salvaging a quite &+Munique &+Lmaterial from it...", FALSE, ch, 0, 0, TO_CHAR);
 	}
 
-	// Moved the creation of essences below the checks for valid material types.
-	// Get lucky: get tier 4 - Someone should do the math and reduce this to a single comparison.
-	if (number(60, 400) < GET_C_LUK(ch))
+	// A rare Luck-based essence; default multipliers preserve the historical rolls.
+	essence_luck = (int)(GET_C_LUK(ch) * crafting_salvage_essence_luck_multiplier());
+	if (number(60, 400) < essence_luck && number(70, 400) < essence_luck &&
+	    number(80, 500) < essence_luck &&
+	    number(1, 1000000) <= (int)(1000000.0 * crafting_salvage_essence_chance_multiplier()))
 	{
-		if (number(70, 400) < GET_C_LUK(ch))
-		{
-			if (number(80, 500) < GET_C_LUK(ch))
-			{
-				obj_to_char(read_object(MAG_ESSENCE_VNUM, VIRTUAL), ch);
-				send_to_char("...as you work, a small &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml&n object gently separates from your item!\r\n", ch);
-			}
-		}
+		obj_to_char(read_object(MAG_ESSENCE_VNUM, VIRTUAL), ch);
+		send_to_char("...as you work, a small &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml&n object gently separates from your item!\r\n", ch);
 	}
 
-	// It seems like this list is very slim compared to what we might want.
-	if (IS_SET(item->bitvector, AFF_STONE_SKIN) || IS_SET(item->bitvector, AFF_HIDE) || IS_SET(item->bitvector, AFF_SNEAK) || IS_SET(item->bitvector, AFF_FLY) ||
-	    IS_SET(item->bitvector, AFF4_NOFEAR) || IS_SET(item->bitvector2, AFF2_AIR_AURA) || IS_SET(item->bitvector2, AFF2_EARTH_AURA) || IS_SET(item->bitvector3, AFF3_INERTIAL_BARRIER) ||
-	    IS_SET(item->bitvector3, AFF3_REDUCE) || IS_SET(item->bitvector2, AFF2_GLOBE) || IS_SET(item->bitvector, AFF_HASTE) || IS_SET(item->bitvector, AFF_DETECT_INVISIBLE) ||
-	    IS_SET(item->bitvector4, AFF4_DETECT_ILLUSION))
+	// Any affect which makes a recipe magical also yields its guaranteed essence.
+	if (has_affect(item))
 	{
 		obj_to_char(read_object(MAG_ESSENCE_VNUM, VIRTUAL), ch);
 		send_to_char("...as you work, a small &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml&n object gently separates from your item!\r\n", ch);
