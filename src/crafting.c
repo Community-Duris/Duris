@@ -149,6 +149,13 @@ bool crafting_build_plan(P_obj item, struct crafting_plan *plan)
 	return TRUE;
 }
 
+bool crafting_validate_recipe_target(P_obj item)
+{
+	struct crafting_plan plan;
+
+	return item != NULL && !IS_OBJ_STAT2(item, ITEM2_QUESTITEM) && crafting_build_plan(item, &plan);
+}
+
 void boot_crafting_system(void)
 {
 	load_crafting_config();

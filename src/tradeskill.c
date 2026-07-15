@@ -2119,6 +2119,22 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	tobj = read_object(recipenumber, VIRTUAL);
+	if (tobj == NULL)
+	{
+		send_to_char("This recipe is damaged: its target item no longer exists. Please report it to an Immortal.\r\n", ch);
+		logit(LOG_DEBUG, "learn_recipe: %s used a recipe with missing target vnum %d.", GET_NAME(ch), recipenumber);
+		return TRUE;
+	}
+	if (!crafting_validate_recipe_target(tobj))
+	{
+		if (IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
+			send_to_char("This recipe describes a quest item and cannot be learned for player crafting.\r\n", ch);
+		else
+			send_to_char("This recipe has no valid material plan and cannot be learned for player crafting.\r\n", ch);
+		logit(LOG_DEBUG, "learn_recipe: %s used an uncraftable recipe target %d.", GET_NAME(ch), recipenumber);
+		extract_obj(tobj);
+		return TRUE;
+	}
 
 	if (IS_SET(tobj->wear_flags, ITEM_WEAR_HEAD) || IS_SET(tobj->wear_flags, ITEM_WEAR_BODY) || IS_SET(tobj->wear_flags, ITEM_WEAR_ARMS) || IS_SET(tobj->wear_flags, ITEM_WEAR_FEET) ||
 	    IS_SET(tobj->wear_flags, ITEM_WEAR_SHIELD) || IS_SET(tobj->wear_flags, ITEM_WIELD) || IS_SET(tobj->wear_flags, ITEM_WEAR_LEGS) || IS_SET(tobj->wear_flags, ITEM_WEAR_HANDS))

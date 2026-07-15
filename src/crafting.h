@@ -21,6 +21,8 @@ struct crafting_plan
 
 /* Loads no player state. Returns FALSE when the item has no salvage family. */
 bool crafting_build_plan(P_obj item, struct crafting_plan *plan);
+/* Recipe scrolls must not teach targets that modern Craft/Forge can never make. */
+bool crafting_validate_recipe_target(P_obj item);
 int crafting_level_gate_multiplier(void);
 int crafting_experience_per_ival(void);
 bool crafting_mode_enabled(enum crafting_mode mode);
