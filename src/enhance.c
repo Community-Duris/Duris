@@ -1104,6 +1104,8 @@ void enhancematload(P_char ch, P_char killer)
 		int enhance_ival_gain_normal                 = 1;
 		/* Fail closed: stat enhancement requires an explicit config opt-in. */
 		int enhance_stat_enabled                      = 0;
+		/* Also fail closed: NPC reset material fallback is independently opt-in. */
+		int enhance_stat_npc_material_fallback_enabled = 0;
 
 		/* Candidate-only exclusions for legacy random enhancement. */
 		#define ENHANCE_MAX_POOL_EXCLUSIONS 256
@@ -1342,6 +1344,7 @@ void enhancematload(P_char ch, P_char killer)
 			line_num     = 0;
 			/* Reloads must not retain stale opt-ins or pool exclusions. */
 			enhance_stat_enabled = 0;
+			enhance_stat_npc_material_fallback_enabled = 0;
 			enhance_pool_excluded_zone_count = 0;
 			enhance_pool_excluded_vnum_count = 0;
 
@@ -1436,6 +1439,8 @@ void enhancematload(P_char ch, P_char killer)
 					/* [enhance_stat] section: explicit on/off gate for the stat lane. */
 					if (!strcmp(key, "enhance_stat.enabled"))
 						enhance_stat_enabled = atoi(val) ? 1 : 0;
+					else if (!strcmp(key, "enhance_stat.npc_material_fallback.enabled"))
+						enhance_stat_npc_material_fallback_enabled = atoi(val) ? 1 : 0;
 				}
 				else if (section_idx == 2 && !strcmp(key, "zone"))
 				{

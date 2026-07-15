@@ -60,6 +60,7 @@ extern int enhance_ival_gain_very;
 extern int enhance_ival_gain_lucky;
 extern int enhance_ival_gain_normal;
 extern int enhance_stat_enabled;
+extern int enhance_stat_npc_material_fallback_enabled;
 
 /* Bitvector allow masks built from config */
 extern unsigned long enhance_allow_mask;
