@@ -162,7 +162,7 @@ bool crafting_validate_recipe_target(P_obj item)
 {
 	struct crafting_plan plan;
 
-	return item != NULL && !IS_OBJ_STAT2(item, ITEM2_QUESTITEM) && crafting_build_plan(item, &plan);
+	return item != NULL && !IS_OBJ_STAT2(item, ITEM2_QUESTITEM) && is_salvageable(item) && crafting_build_plan(item, &plan);
 }
 
 bool crafting_recipe_target_is_available(P_obj item)
