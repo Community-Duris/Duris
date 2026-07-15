@@ -44,6 +44,7 @@ using namespace std;
 #include "sql.h"
 #include "vnum.obj.h"
 #include "tradeskill.h"
+#include "crafting.h"
 #include "weather.h"
 #include "wikihelp.h"
 
@@ -3286,6 +3287,7 @@ void do_examine(P_char ch, char *argument, int cmd)
 		snprintf(buf, MAX_INPUT_LENGTH, "$p &nhas an item value of &+W%d&n.", itemvalue(tmp_object));
 		act(buf, FALSE, ch, tmp_object, 0, TO_CHAR);
 		salvage_examine_item(ch, tmp_object);
+		crafting_examine_support_item(ch, tmp_object);
 
 		if ((GET_ITEM_TYPE(tmp_object) == ITEM_WAND || GET_ITEM_TYPE(tmp_object) == ITEM_STAFF) &&
 		    (IS_AFFECTED2(ch, AFF2_DETECT_MAGIC) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST))))

@@ -26,6 +26,7 @@ static int crafting_recipe_max_player_level = MAXLVLMORTAL;
 static int crafting_experience_per_item_value = 1000;
 static double crafting_material_quantity_multiplier = 1.0;
 static bool crafting_recipe_examine_materials = TRUE;
+static bool crafting_recipe_display_vnums = TRUE;
 static bool crafting_craft_enabled = TRUE;
 static bool crafting_forge_enabled = TRUE;
 static int crafting_craft_essence_vnum = VOBJ_CRAFTING_ESSENCE;
@@ -59,6 +60,7 @@ static void load_crafting_config(void)
 	crafting_experience_per_item_value = 1000;
 	crafting_material_quantity_multiplier = 1.0;
 	crafting_recipe_examine_materials = TRUE;
+	crafting_recipe_display_vnums = TRUE;
 	crafting_craft_enabled = TRUE;
 	crafting_forge_enabled = TRUE;
 	crafting_craft_essence_vnum = VOBJ_CRAFTING_ESSENCE;
@@ -101,6 +103,8 @@ static void load_crafting_config(void)
 			crafting_recipe_max_player_level = atoi(value);
 		else if (!strcmp(key, "crafting.recipe.examine.materials"))
 			crafting_recipe_examine_materials = atoi(value) ? TRUE : FALSE;
+		else if (!strcmp(key, "crafting.recipe.display.vnums"))
+			crafting_recipe_display_vnums = atoi(value) ? TRUE : FALSE;
 		else if (!strcmp(key, "crafting.experience.per.ival") && atoi(value) >= 0)
 			crafting_experience_per_item_value = atoi(value);
 		else if (!strcmp(key, "crafting.material.quantity.multiplier") && strtod(value, NULL) > 0.0)
@@ -230,7 +234,7 @@ void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
 	if (plan.magical)
 	{
 		char requirement[160];
-		snprintf(requirement, sizeof(requirement), "  1 magical essence (Craft vnum %d; Forge vnum %d; required for magical items)\r\n", crafting_craft_essence_vnum, crafting_forge_essence_vnum);
+		snprintf(requirement, sizeof(requirement), "  1 magical essence (required for magical items)\r\n");
 		strncat(text, requirement, sizeof(text) - strlen(text) - 1);
 	}
 	strncat(text, "\r\nDiscipline consumables (in addition to the materials above):\r\n", sizeof(text) - strlen(text) - 1);
@@ -279,6 +283,16 @@ int crafting_essence_vnum(enum crafting_mode mode)
 int crafting_tool_vnum(enum crafting_mode mode)
 {
 	return mode == CRAFTING_MODE_CRAFT ? crafting_craft_tool_vnum : crafting_forge_tool_vnum;
+}
+
+void crafting_examine_support_item(P_char ch, P_obj item)
+{
+	if (!ch || !item)
+		return;
+	if (OBJ_VNUM(item) == crafting_tool_vnum(CRAFTING_MODE_FORGE) && GET_CHAR_SKILL(ch, SKILL_FORGE))
+		send_to_char("&+yForge insight:&n This flux is consumed to bind the materials when you forge a recipe. Use `forge info <number>` to see what else you need.\r\n", ch);
+	else if (OBJ_VNUM(item) == crafting_tool_vnum(CRAFTING_MODE_CRAFT) && GET_CHAR_SKILL(ch, SKILL_CRAFT))
+		send_to_char("&+yCraft insight:&n This tool box is consumed while shaping a recipe. Use `craft info <number>` to see what else you need.\r\n", ch);
 }
 
 /* SQL is canonical. The legacy file is read only when a player has no SQL
@@ -456,7 +470,10 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 				logit(LOG_DEBUG, "do_craft: '%s' has bad recipe vnum %d.", J_NAME(ch), recipes[i]);
 				continue;
 			}
-			snprintf(buffer, 256, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], tobj->short_description);
+			if (crafting_recipe_display_vnums)
+				snprintf(buffer, 256, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], tobj->short_description);
+			else
+				snprintf(buffer, 256, "   &+W%-4d  &n%s&n\n", i + 1, tobj->short_description);
 			page_string(ch->desc, buffer, 1);
 			send_to_char("----------------------------------------------------------------------------\n", ch);
 			extract_obj(tobj);
@@ -590,7 +607,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		{
 			send_to_char("...as well as &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n", ch);
 		}
-		snprintf(buf1, MAX_STRING_LENGTH, "This recipe also consumes 1 box of gnomish crafting tools (configured item vnum %d).\r\n", crafting_tool_vnum(CRAFTING_MODE_CRAFT));
+		snprintf(buf1, MAX_STRING_LENGTH, "You will also need one gnomish crafting tool box; it is consumed as you work.\r\n");
 		send_to_char(buf1, ch);
 
 		// It's safe to assume tobj exists since we checked after the read_object call.
@@ -1015,7 +1032,10 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 				logit(LOG_DEBUG, "'%s' has bad recipe vnum %d.", ch ? J_NAME(ch) : "NULL", recipes[i]);
 				continue;
 			}
-			snprintf(recipe, 256, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], obj->short_description);
+			if (crafting_recipe_display_vnums)
+				snprintf(recipe, 256, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], obj->short_description);
+			else
+				snprintf(recipe, 256, "   &+W%-4d  &n%s&n\n", i + 1, obj->short_description);
 			page_string(ch->desc, recipe, 1);
 			send_to_char("----------------------------------------------------------------------------\n", ch);
 			extract_obj(obj);
@@ -1137,7 +1157,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		{
 			strcat(recipe, "You must have &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n");
 		}
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "This recipe also consumes 1 blacksmithing flux (configured item vnum %d).\r\n", crafting_tool_vnum(CRAFTING_MODE_FORGE));
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "You will also need one blacksmithing flux; it is consumed to bind the work.\r\n");
 		strncat(recipe, Gbuf1, sizeof(recipe) - strlen(recipe) - 1);
 
 		page_string(ch->desc, recipe, 1);

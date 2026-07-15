@@ -27,6 +27,7 @@ bool crafting_validate_recipe_target(P_obj item);
 bool crafting_recipe_target_is_available(P_obj item);
 /* Adds operator-enabled material requirements to a dynamically created recipe scroll. */
 void crafting_configure_recipe_scroll(P_obj recipe, P_obj target);
+void crafting_examine_support_item(P_char ch, P_obj item);
 int crafting_level_gate_multiplier(void);
 int crafting_experience_per_ival(void);
 bool crafting_mode_enabled(enum crafting_mode mode);
