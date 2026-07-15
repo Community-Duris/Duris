@@ -3625,18 +3625,14 @@ void do_craft(P_char ch, char *argument, int cmd)
 	P_obj hammer, foundry;
 
 	/***DISPLAYRECIPES STUFF***/
-	char          buf[256], *buff, buf2[256];
-	char          Gbuf1[MAX_STRING_LENGTH], selectedrecipe[MAX_STRING_LENGTH];
 	char          tempdesc[MAX_INPUT_LENGTH];
 	char          short_desc[MAX_STRING_LENGTH];
 	char          keywords[MAX_INPUT_LENGTH];
 	char          buffer[256];
-	FILE         *f;
-	FILE         *recipelist;
-	int           line, recfind;
-	unsigned long linenum = 0;
-	long          recnum, choice2;
-	long          selected = 0;
+	long          choice2;
+	int           selected = 0;
+	int          *recipes;
+	int           recipe_count;
 	P_obj         tobj;
 
 	/* Dunno the difference between this and above?
@@ -3660,19 +3656,11 @@ void do_craft(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	// Create buffers for name
-	strcpy(buf, GET_NAME(ch));
-	// Name should all be lowercase except first initial, but ok.
-	for (buff = buf; *buff; buff++)
-	{
-		*buff = LOWER(*buff);
-	}
-	// buf[0] snags first letter of name
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "Players/Tradeskills/%c/%s.crafting", buf[0], buf);
-	recipelist = fopen(Gbuf1, "r");
-	if (!recipelist)
+	recipes = crafting_get_player_recipes(ch, &recipe_count);
+	if (recipes == NULL || recipe_count == 0)
 	{
 		send_to_char("You dont know any recipes yet.\r\n", ch);
+		free(recipes);
 		return;
 	}
 
@@ -3686,17 +3674,21 @@ void do_craft(P_char ch, char *argument, int cmd)
 		send_to_char("&+yYou know the following recipes:\n&n", ch);
 		send_to_char("----------------------------------------------------------------------------\n", ch);
 		send_to_char("&+BRecipe Number		              &+MItem&n\n\r", ch);
-		// Walk through each item in recipe book, and display it's number and short description.
-		while ((fscanf(recipelist, "%ld", &recnum)) != EOF)
+		// Walk through each recipe and display its number and short description.
+		for (i = 0; i < recipe_count; i++)
 		{
-			// Load the object so we can get its short description.
-			tobj = read_object(recnum, VIRTUAL);
-			snprintf(buffer, 256, "   &+W%-22ld&n%s&n\n", recnum, tobj->short_description);
+			tobj = read_object(recipes[i], VIRTUAL);
+			if (tobj == NULL)
+			{
+				logit(LOG_DEBUG, "do_craft: '%s' has bad recipe vnum %d.", J_NAME(ch), recipes[i]);
+				continue;
+			}
+			snprintf(buffer, 256, "   &+W%-22d&n%s&n\n", recipes[i], tobj->short_description);
 			page_string(ch->desc, buffer, 1);
 			send_to_char("----------------------------------------------------------------------------\n", ch);
 			extract_obj(tobj);
 		}
-		fclose(recipelist);
+		free(recipes);
 		return;
 	}
 
@@ -3705,29 +3697,19 @@ void do_craft(P_char ch, char *argument, int cmd)
 	half_chop(rest, second, rest);
 	choice2 = atoi(second);
 
-	// Walk through the list of recipes and look for choice2 (if there was a 2nd argument that was a valid number).
+	// Walk through the list of recipes and look for choice2.
 	if (choice2)
 	{
-		while ((fscanf(recipelist, "%ld", &recnum)) != EOF)
+		for (i = 0; i < recipe_count; i++)
 		{
-			// If we find the recipe, mark it and stop looking.
-			if (recnum == choice2)
+			if (recipes[i] == choice2)
 			{
-				selected = choice2;
+				selected = recipes[i];
 				break;
 			}
-			/* debug
-			char bufbug[MAX_STRING_LENGTH];
-			snprintf(bufbug, MAX_STRING_LENGTH, "choice is: %d\r\n", selected);
-			send_to_char(bufbug, ch);
-			if( recnum == choice2 )
-			{
-			  send_to_char("The one below here is selected.\r\n", ch);
-			}
-			*/
 		}
 	}
-	fclose(recipelist);
+	free(recipes);
 
 	// If they picked a recipe that wasn't in their book...
 	if (choice2 != 0 && selected == 0)

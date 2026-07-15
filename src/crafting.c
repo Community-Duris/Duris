@@ -6,6 +6,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "crafting.h"
+#include "utils.h"
+#include "sql_player.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,6 +93,68 @@ void boot_crafting_system(void)
 int crafting_level_gate_multiplier(void)
 {
 	return crafting_level_gate;
+}
+
+/* SQL is canonical. The legacy file is read only when a player has no SQL
+ * recipes, and each valid entry is imported through the idempotent SQL API. */
+int *crafting_get_player_recipes(P_char ch, int *count)
+{
+	int *recipes;
+	int recipe_vnum;
+	int capacity = 0;
+	FILE *fp;
+	char name[256];
+	char path[512];
+	char *p;
+
+	if (count == NULL)
+		return NULL;
+	*count = 0;
+	if (ch == NULL)
+		return NULL;
+
+	recipes = sql_get_player_recipes(GET_PID(ch), count);
+	if (recipes != NULL || *count != 0)
+		return recipes;
+
+	snprintf(name, sizeof(name), "%s", GET_NAME(ch));
+	for (p = name; *p; p++)
+		*p = LOWER(*p);
+	snprintf(path, sizeof(path), "Players/Tradeskills/%c/%s.crafting", name[0], name);
+	fp = fopen(path, "r");
+	if (fp == NULL)
+		return NULL;
+
+	while (fscanf(fp, "%d", &recipe_vnum) == 1)
+	{
+		int *grown;
+		int i;
+		bool duplicate = FALSE;
+		if (recipe_vnum <= 0)
+			continue;
+		for (i = 0; i < *count; i++)
+			if (recipes[i] == recipe_vnum)
+				duplicate = TRUE;
+		if (duplicate)
+			continue;
+		if (*count == capacity)
+		{
+			capacity = capacity ? capacity * 2 : 16;
+			grown = (int *)realloc(recipes, sizeof(*recipes) * capacity);
+			if (grown == NULL)
+			{
+				free(recipes);
+				fclose(fp);
+				*count = 0;
+				return NULL;
+			}
+			recipes = grown;
+		}
+		recipes[(*count)++] = recipe_vnum;
+		sql_add_player_recipe(GET_PID(ch), recipe_vnum);
+	}
+	fclose(fp);
+	return recipes;
 }
 
 void crafting_handle_command(P_char ch, enum crafting_mode mode, char *argument)
