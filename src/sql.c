@@ -34,6 +34,7 @@
 #include "specializations.h"
 #include "spells.h"
 #include "sql_player.h"
+#include "frag_cap_config.h"
 #include "timers.h"
 #include "persistence_queue.h"
 #include "utility.h"
@@ -677,7 +678,7 @@ void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_
 		debug("get_level_cap_info: Database read fail.");
 		*max_frags   = (long)-1;
 		*racewar     = RACEWAR_NONE;
-		*level       = 25;
+		*level       = frag_cap_config_get()->cap_minimum_level;
 		*next_update = 0;
 		return;
 	}
@@ -706,7 +707,7 @@ int sql_level_cap(int racewar_side)
 	if ((db == NULL) || ((row = mysql_fetch_row(db)) == NULL))
 	{
 		debug("sql_level_cap: Database read fail.");
-		return 25;
+		return frag_cap_config_get()->cap_minimum_level;
 	}
 
 	level_cap       = atoi(row[0]);
@@ -719,31 +720,30 @@ int sql_level_cap(int racewar_side)
 	}
 	mysql_free_result(db);
 
-	// Everyone can reach 56 when someone reaches the limit + 40.
-	if (level_cap >= MAXLVLMORTAL)
-		return MAXLVLMORTAL;
-	// 25 is the lower limit.
-	if (level_cap <= 25)
-		return 25;
-	
+	const struct frag_cap_config *config = frag_cap_config_get();
+
+	// Clamp database values to the configured mortal-cap range.
+	if (level_cap >= config->cap_maximum_level)
+		return config->cap_maximum_level;
+	if (level_cap <= config->cap_minimum_level)
+		return config->cap_minimum_level;
+
 	return level_cap;
 }
 
-#define CAP_DELAY(old_level) (time(NULL) + SECS_PER_REAL_DAY * 7)
-
 // Checks the number of frags against the current highest and sets the new highest if applicable.
-// Adjusted the time inbetween notches from a static 1 day to 1 day for levels 26-29, 2 days for 30-39,
-//   3 days for 40-49, and 4 days for 50-56.
+// Timer policy is selected from the configured old-level bands in frag_cap.cfg.
 void sql_check_level_cap(long max_frags, int racewar)
 {
 	long   old_max_frags;
 	int    old_racewar, old_level;
+	const struct frag_cap_config *config = frag_cap_config_get();
 	time_t next_update;
 	char   query[1024];
 
 	get_level_cap_info(&old_max_frags, &old_racewar, &old_level, &next_update);
 	// If we've capped out
-	if (old_level >= MAXLVLMORTAL)
+	if (old_level >= config->cap_maximum_level)
 	{
 		return;
 	}
@@ -751,23 +751,31 @@ void sql_check_level_cap(long max_frags, int racewar)
 	if (next_update <= time(NULL))
 	{
 		// Have enough frags to update level.
-		if (old_level < FRAGS_TO_LEVEL(max_frags / 100.))
+		if (old_level < frag_cap_config_cap_level_from_frags(max_frags / 100.))
 		{
 			// when level cap increases, give a boon to the side that caused it
 			BoonData bdata;
-			bdata.duration  = 2880;        // 48 hours
+			bdata.duration  = frag_cap_config_boon_duration_minutes(); // configurable minutes
 			bdata.racewar   = racewar;
-			bdata.type      = BTYPE_EXPM;  // exp mod
+			bdata.type      = BTYPE_EXPM;
 			bdata.option    = BOPT_MOB;
-			bdata.criteria  = 1;           // 1 kill
-			bdata.criteria2 = -1;          // any mob
-			bdata.bonus     = 2;           // 100% bonus 
+			bdata.criteria  = 1;
+			bdata.criteria2 = -1;
+			bdata.bonus     = frag_cap_config_boon_bonus();
 			bdata.active    = 1;
 			bdata.repeat    = 1;
 			create_boon(&bdata);
 
-			snprintf(
-				query, 1024, "UPDATE level_cap SET most_frags = %f, racewar_leader = %d, level = %d, next_update = FROM_UNIXTIME(%ld)", max_frags / 100., racewar, old_level + 5, CAP_DELAY(old_level));
+			int next_level = old_level + config->cap_level_step;
+			if (next_level > config->cap_maximum_level)
+				next_level = config->cap_maximum_level;
+			snprintf(query,
+			         sizeof(query),
+			         "UPDATE level_cap SET most_frags = %f, racewar_leader = %d, level = %d, next_update = FROM_UNIXTIME(%ld)",
+			         max_frags / 100.,
+			         racewar,
+			         next_level,
+			         (long)(time(NULL) + SECS_PER_REAL_DAY * frag_cap_config_timer_days(old_level)));
 			db_query(query);
 		}
 		else if (max_frags > old_max_frags)
@@ -3231,8 +3239,9 @@ bool sql_pwipe(int code_verify)
 		}
 		logit(LOG_DEBUG, "sql_pwipe: Resetting level_cap data... .. .");
 		send_to_all("Resetting level_cap data... .. .");
-		// needs to get this parameterized
-		if (qry("UPDATE level_cap SET most_frags=0, racewar_leader=0, level=31, next_update=NOW() + INTERVAL 7 DAY"))
+		if (qry("UPDATE level_cap SET most_frags=0, racewar_leader=0, level=%d, next_update=NOW() + INTERVAL %d DAY",
+		         frag_cap_config_reset_level(),
+		         frag_cap_config_first_timer_days()))
 		{
 			logit(LOG_DEBUG, "  success!");
 			send_to_all("  success!\n");

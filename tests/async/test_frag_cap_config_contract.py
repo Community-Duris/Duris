@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Source contract for configurable frag-cap behavior."""
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+LIB = ROOT / "lib"
+
+config = (LIB / "frag_cap.cfg").read_text()
+header = (SRC / "frag_cap_config.h").read_text()
+impl = (SRC / "frag_cap_config.c").read_text()
+sql = (SRC / "sql.c").read_text()
+sql_h = (SRC / "sql.h").read_text()
+comm = (SRC / "comm.c").read_text()
+redis = (SRC / "redis.c").read_text()
+fraglist = (SRC / "fraglist.c").read_text()
+makefile = (SRC / "Makefile").read_text()
+
+assert "frag_cap_config.o" in makefile
+assert "boot_frag_cap_config" in comm
+assert "frag_cap_config.h" in sql
+assert "frag_cap_config_get" in sql
+assert "FRAG_LEVEL_RATIO" not in sql_h
+assert "FRAGS_TO_LEVEL" not in sql_h
+
+for key in (
+    "cap.minimum.level",
+    "cap.reset.level",
+    "cap.maximum.level",
+    "cap.level.step",
+    "cap.frags.per.level",
+    "timer.first.days",
+    "timer.level.26_29.days",
+    "timer.level.30_39.days",
+    "timer.level.40_49.days",
+    "timer.level.50_56.days",
+    "boon.duration.minutes",
+    "boon.bonus",
+):
+    assert key in config, key
+    assert key in impl, key
+
+for token in (
+    "cap_minimum_level",
+    "cap_reset_level",
+    "cap_maximum_level",
+    "cap_level_step",
+    "cap_frags_per_level",
+    "timer_first_days",
+    "timer_level_26_29_days",
+    "timer_level_30_39_days",
+    "timer_level_40_49_days",
+    "timer_level_50_56_days",
+    "boon_duration_minutes",
+    "boon_bonus",
+):
+    assert token in impl, token
+
+assert "frag_cap_config_cap_level_from_frags" in impl
+assert "frag_cap_config_frags_for_level" in fraglist
+assert "frag_cap_config_frags_for_level" in redis
+assert "frag_cap_config_timer_days" in impl
+assert "frag_cap_config_boon_duration_minutes" in impl
+assert "frag_cap_config_boon_bonus" in impl
+assert "FROM_UNIXTIME" in sql
+assert "frag_cap_config_reset_level" in sql
+assert "frag_cap_config_first_timer_days" in sql
+
+print("frag-cap configuration source contract passed")

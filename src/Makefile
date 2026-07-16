@@ -61,6 +61,7 @@ OBJS =  $(SHIP_OBJS) \
 				 achievements.o \
 				 account.o \
 				 account_reward.o \
+				 frag_cap_config.o \
 				 actcomm.o \
 				 actinf.o \
 				 actmove.o \

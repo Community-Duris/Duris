@@ -60,6 +60,7 @@
 #include "spells.h"
 #include "enhance.h"
 #include "crafting.h"
+#include "frag_cap_config.h"
 #include "random_equipment_config.h"
 #include "material_rarity.h"
 #include "sql.h"
@@ -547,6 +548,9 @@ void run_the_game(int port, int sslport)
 
 		fprintf(stderr, "-- Loading random equipment configuration\r\n");
 		boot_random_equipment_config();
+
+		fprintf(stderr, "-- Loading frag-cap configuration\r\n");
+		boot_frag_cap_config();
 
 #ifdef SIEGE_ENABLED
 		fprintf(stderr, "-- Loading town data\r\n");

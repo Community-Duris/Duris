@@ -5,6 +5,7 @@
 #include "db.h"
 #include "utility.h"
 #include "utils.h"
+#include "frag_cap_config.h"
 #include "redis.h"
 #include <ctype.h>
 #include <errno.h>
@@ -2859,7 +2860,7 @@ static char *generate_fraglist_output(void)
 	         hours,
 	         mins,
 	         secs,
-	         LEVEL_TO_FRAGS(cap_level + 1));
+	         frag_cap_config_frags_for_level(cap_level + 1));
 
 	// query top fraggers (no filter)
 	res = db_query("SELECT char_name, total_frags FROM frag_leaderboard "

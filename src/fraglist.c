@@ -6,6 +6,7 @@
 #include <string.h>
 #include "assocs.h"
 #include "config.h"
+#include "frag_cap_config.h"
 #include "redis.h"
 #include "ships.h"
 #include "spells.h"
@@ -555,7 +556,7 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 	         hours,
 	         mins,
 	         secs,
-	         LEVEL_TO_FRAGS(cap_level + 1));
+	         frag_cap_config_frags_for_level(cap_level + 1));
 
 	// query top fraggers
 	res = query_frag_leaders(filter, 0, MAX_FRAG_SIZE);
