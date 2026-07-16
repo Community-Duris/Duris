@@ -2870,6 +2870,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
 
 convert_tables_to_charset "ensure consistent collation on all tables" 1
 
+run_sql_file "apply account-bound reward schema" "$SCRIPT_DIR/account_bound_rewards.sql"
 run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persistence_contract.sql"
 
 # Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS

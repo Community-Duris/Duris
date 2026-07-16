@@ -881,6 +881,7 @@ extern unsigned int game_locked_level;
 #define CMD_JESTROS         851
 #define CMD_REDIS           852
 #define CMD_MIXPOISON       853
+#define CMD_DIVINECLAIM     854 // Account-bound divine reward
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.

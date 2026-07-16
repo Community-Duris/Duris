@@ -2475,6 +2475,9 @@ int  has_soulbind(P_char ch);
 void do_soulbind(P_char ch, char *argument, int cmd);
 void load_soulbind(P_char ch);
 void remove_soulbind(P_char ch);
+void do_divineclaim(P_char ch, char *argument, int cmd);
+void account_bound_reward_on_login(P_char ch);
+bool account_bound_reward_owner(P_char ch, P_obj obj);
 
 void spell_earthen_maul(int, P_char, char *, int, P_char, P_obj);
 void spell_acid_stream(int, P_char, char *, int, P_char, P_obj);

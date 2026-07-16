@@ -60,6 +60,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic.o \
 				 achievements.o \
 				 account.o \
+				 account_reward.o \
 				 actcomm.o \
 				 actinf.o \
 				 actmove.o \

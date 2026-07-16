@@ -110,6 +110,12 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		return;
 	}
 
+	if (account_bound_reward_owner(ch, o_obj) == false && IS_OBJ_STAT2(o_obj, ITEM2_ACCOUNT_BOUND))
+	{
+		send_to_char("You may not take that account-bound reward; it belongs to another account.\r\n", ch);
+		return;
+	}
+
 	if (o_obj->condition <= 0)
 	{
 		logit(LOG_DEBUG,
@@ -1883,7 +1889,8 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 	{
 		next_object = tmp_object->next_content;
 		if (isname(name, tmp_object->name))
-			if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) || IS_TRUSTED(ch))
+			if (!IS_OBJ_STAT2(tmp_object, ITEM2_SOULBIND) &&
+			    (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) || IS_TRUSTED(ch)))
 			{
 				obj_from_char(tmp_object);
 				obj_to_room(tmp_object, ch->in_room);
@@ -2164,7 +2171,11 @@ void do_drop(P_char ch, char *argument, int cmd)
 			tmp_object = get_obj_in_list_vis(ch, Gbuf1, ch->carrying);
 			if (tmp_object)
 			{
-				if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) || IS_TRUSTED(ch))
+				if (IS_OBJ_STAT2(tmp_object, ITEM2_SOULBIND))
+				{
+					send_to_char("You may not relinquish posession of a &+Wsoulbound &nitem!\r\n", ch);
+				}
+				else if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) || IS_TRUSTED(ch))
 				{
 					snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %s.\r\n", tmp_object->short_description);
 					send_to_char(Gbuf3, ch);
