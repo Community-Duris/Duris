@@ -98,6 +98,8 @@ OBJS =  $(SHIP_OBJS) \
 				 drannak.o \
 				 enhance.o \
 				 crafting.o \
+				 mining_config.o \
+				 salvage.o \
 				 material_rarity.o \
 				 dreadlord.o \
 				 editor.o \

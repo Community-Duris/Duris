@@ -19,6 +19,7 @@
 #include "utility.h"
 #include "utils.h"
 #include "tradeskill.h"
+#include "mining_config.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -669,272 +670,8 @@ P_obj get_ore_from_mine(P_char ch, int mine_quality)
 
 P_obj get_gem_from_mine(P_char ch, int mine_quality)
 {
-	P_obj gem;
-	int   gem_type;
-
-	// 1-50 taken by just each item (+ a few). 51-170 are repeats heavier for cheaper.
-	switch (number(1, 170))
-	{
-		case 1:
-		case 9:
-		case 165:
-		case 166:
-		case 167:
-		case 168:
-		case 169:
-		case 170:
-			gem_type = TINY_IMP_TOPAZ;
-			break;
-		case 2:
-		case 10:
-		case 159:
-		case 160:
-		case 161:
-		case 162:
-		case 163:
-		case 164:
-			gem_type = REG_IMP_TOPAZ;
-			break;
-		case 3:
-		case 154:
-		case 155:
-		case 156:
-		case 157:
-		case 158:
-			gem_type = LG_IMP_TOPAZ;
-			break;
-		case 4:
-		case 149:
-		case 150:
-		case 151:
-		case 152:
-		case 153:
-			gem_type = TINY_REG_TOPAZ;
-			break;
-		case 5:
-		case 144:
-		case 145:
-		case 146:
-		case 147:
-		case 148:
-			gem_type = REG_REG_TOPAZ;
-			break;
-		case 6:
-		case 139:
-		case 140:
-		case 141:
-		case 142:
-		case 143:
-			gem_type = LG_REG_TOPAZ;
-			break;
-		case 7:
-		case 134:
-		case 135:
-		case 136:
-		case 137:
-		case 138:
-			gem_type = FLAWLESS_TOPAZ;
-			break;
-		case 8:
-		case 129:
-		case 130:
-		case 131:
-		case 132:
-		case 133:
-			gem_type = LG_FLAWLESS_TOPAZ;
-			break;
-		case 11:
-		case 19:
-		case 125:
-		case 126:
-		case 127:
-		case 128:
-			gem_type = TINY_IMP_SAPPHIRE;
-			break;
-		case 12:
-		case 20:
-		case 121:
-		case 122:
-		case 123:
-		case 124:
-			gem_type = REG_IMP_SAPPHIRE;
-			break;
-		case 13:
-		case 117:
-		case 118:
-		case 119:
-		case 120:
-			gem_type = LG_IMP_SAPPHIRE;
-			break;
-		case 14:
-		case 113:
-		case 114:
-		case 115:
-		case 116:
-			gem_type = TINY_REG_SAPPHIRE;
-			break;
-		case 15:
-		case 109:
-		case 110:
-		case 111:
-		case 112:
-			gem_type = REG_REG_SAPPHIRE;
-			break;
-		case 16:
-		case 105:
-		case 106:
-		case 107:
-		case 108:
-			gem_type = LG_REG_SAPPHIRE;
-			break;
-		case 17:
-		case 101:
-		case 102:
-		case 103:
-		case 104:
-			gem_type = FLAWLESS_SAPPHIRE;
-			break;
-		case 18:
-		case 97:
-		case 98:
-		case 99:
-		case 100:
-			gem_type = LG_FLAWLESS_SAPPHIRE;
-			break;
-		case 21:
-		case 29:
-		case 94:
-		case 95:
-		case 96:
-			gem_type = TINY_IMP_EMERALD;
-			break;
-		case 22:
-		case 30:
-		case 91:
-		case 92:
-		case 93:
-			gem_type = REG_IMP_EMERALD;
-			break;
-		case 23:
-		case 88:
-		case 89:
-		case 90:
-			gem_type = LG_IMP_EMERALD;
-			break;
-		case 24:
-		case 85:
-		case 86:
-		case 87:
-			gem_type = TINY_REG_EMERALD;
-			break;
-		case 25:
-		case 82:
-		case 83:
-		case 84:
-			gem_type = REG_REG_EMERALD;
-			break;
-		case 26:
-		case 79:
-		case 80:
-		case 81:
-			gem_type = LG_REG_EMERALD;
-			break;
-		case 27:
-		case 76:
-		case 77:
-		case 78:
-			gem_type = FLAWLESS_EMERALD;
-			break;
-		case 28:
-		case 73:
-		case 74:
-		case 75:
-			gem_type = LG_FLAWLESS_EMERALD;
-			break;
-		case 31:
-		case 39:
-		case 71:
-		case 72:
-			gem_type = TINY_IMP_DIAMOND;
-			break;
-		case 32:
-		case 40:
-		case 69:
-		case 70:
-			gem_type = REG_IMP_DIAMOND;
-			break;
-		case 33:
-		case 67:
-		case 68:
-			gem_type = LG_IMP_DIAMOND;
-			break;
-		case 34:
-		case 65:
-		case 66:
-			gem_type = TINY_REG_DIAMOND;
-			break;
-		case 35:
-		case 63:
-		case 64:
-			gem_type = REG_REG_DIAMOND;
-			break;
-		case 36:
-		case 61:
-		case 62:
-			gem_type = LG_REG_DIAMOND;
-			break;
-		case 37:
-		case 59:
-		case 60:
-			gem_type = FLAWLESS_DIAMOND;
-			break;
-		case 38:
-		case 57:
-		case 58:
-			gem_type = LG_FLAWLESS_DIAMOND;
-			break;
-		case 41:
-		case 49:
-		case 56:
-			gem_type = TINY_IMP_RUBY;
-			break;
-		case 42:
-		case 50:
-		case 55:
-			gem_type = REG_IMP_RUBY;
-			break;
-		case 43:
-		case 54:
-			gem_type = LG_IMP_RUBY;
-			break;
-		case 44:
-		case 53:
-			gem_type = TINY_REG_RUBY;
-			break;
-		case 45:
-		case 52:
-			gem_type = REG_REG_RUBY;
-			break;
-		case 46:
-		case 51:
-			gem_type = LG_REG_RUBY;
-			break;
-		case 47:
-			gem_type = FLAWLESS_RUBY;
-			break;
-		case 48:
-			gem_type = LG_FLAWLESS_RUBY;
-			break;
-		default:
-			gem_type = TINY_IMP_TOPAZ;
-			break;
-	}
-
-	gem = read_object(gem_type, VIRTUAL);
-	if (!gem)
-	{
-		return NULL;
-	}
+	P_obj gem = read_object(mining_config_gem_vnum(), VIRTUAL);
+	if (!gem) return NULL;
 	gem->value[4] = time(NULL);
 	return gem;
 }
@@ -1577,6 +1314,8 @@ void initialize_tradeskills()
 {
 	int i;
 
+	mining_config_boot();
+
 	obj_index[real_object0(VOBJ_MINE)].func.obj    = mine;
 	obj_index[real_object0(VOBJ_GEMMINE)].func.obj = mine;
 
@@ -1622,8 +1361,8 @@ bool load_one_mine(int map)
 		return FALSE;
 	}
 
-	int start = real_room(mine_data[map].start);
-	int end   = real_room(mine_data[map].end);
+	int start = real_room(mining_config_region_value(map, "start", mine_data[map].start));
+	int end   = real_room(mining_config_region_value(map, "end", mine_data[map].end));
 
 	int tries   = 0;
 	int to_room = -1;
@@ -1647,7 +1386,7 @@ bool load_one_mine(int map)
 
 	int random = number(0, 99);
 
-	mine->value[2] = mine_data[map].mine_duration;
+	mine->value[2] = mining_config_region_value(map, "duration", mine_data[map].mine_duration);
 	if (mine_data[map].type == VOBJ_GEMMINE)
 	{
 		mine->value[0] = number(12, 23);
@@ -1693,12 +1432,12 @@ void load_mines(bool set_event, bool load_all, int map)
 	mine_type = mine_data[map].type;
 	for (P_obj tobj = object_list; tobj; tobj = tobj->next)
 	{
-		if ((OBJ_VNUM(tobj) == mine_type) && IS_SET(tobj->loc_p, LOC_ROOM) && (tobj->loc.room > 0) && (world[tobj->loc.room].number >= mine_data[map].start) && (world[tobj->loc.room].number <= mine_data[map].end))
+		if ((OBJ_VNUM(tobj) == mine_type) && IS_SET(tobj->loc_p, LOC_ROOM) && (tobj->loc.room > 0) && (world[tobj->loc.room].number >= mining_config_region_value(map, "start", mine_data[map].start)) && (world[tobj->loc.room].number <= mining_config_region_value(map, "end", mine_data[map].end)))
 		{
 			num_mines++;
 		}
 	}
-	max_mines = mines_properties(map);
+	max_mines = mining_config_region_value(map, "max", mines_properties(map));
 	max_mines += number(-max_mines / 6, max_mines / 6);
 	// debug("mines currently loaded: %d / %d", num_mines, max_mines );
 
