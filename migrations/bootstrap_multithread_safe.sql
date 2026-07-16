@@ -1,15 +1,12 @@
--- DurisMUD bootstrap schema (authoritative)
--- This file creates the complete database schema from scratch.
--- Every CREATE TABLE is the final authoritative definition.
--- For upgrading an existing database, use migrations/run_migration.sh instead.
+-- DurisMUD MUD-persistence bootstrap schema (authoritative)
+-- Fresh database baseline. Existing databases must use migrations/run_migration.sh.
 
 SET FOREIGN_KEY_CHECKS = 0;
 SET sql_mode = '';
 
--- Table: account_banks
 CREATE TABLE `account_banks` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `account_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `racewar` tinyint NOT NULL DEFAULT '0',
   `bank_copper` bigint unsigned DEFAULT '0',
   `bank_silver` bigint unsigned DEFAULT '0',
@@ -21,36 +18,33 @@ CREATE TABLE `account_banks` (
   UNIQUE KEY `uk_account_racewar` (`account_name`,`racewar`),
   KEY `idx_account_name` (`account_name`),
   CONSTRAINT `account_banks_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: account_characters
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `account_characters` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `char_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `pid` int unsigned DEFAULT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Account name from flat file system',
+  `pid` bigint NOT NULL COMMENT 'Player ID - unique character identifier',
+  `char_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Character name',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'When character was created',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Soft delete - NULL means active',
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `login_count` bigint unsigned DEFAULT '0',
-  `last_login` bigint DEFAULT '0',
+  `last_login` timestamp NULL DEFAULT NULL,
   `blocked` tinyint DEFAULT '0',
   `racewar` tinyint DEFAULT '0',
-  `deleted_at` datetime DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_char_name_unique` (`char_name`),
-  UNIQUE KEY `acct_char` (`account_name`,`char_name`),
-  KEY `idx_account_name` (`account_name`),
-  KEY `idx_char_name` (`char_name`),
+  KEY `account_name` (`account_name`),
+  KEY `char_name` (`char_name`),
+  KEY `deleted_at` (`deleted_at`),
   KEY `account_active` (`account_name`,`deleted_at`),
-  KEY `idx_account_racewar` (`account_name`,`racewar`),
-  CONSTRAINT `account_characters_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: account_ips
+  KEY `idx_account_racewar` (`account_name`,`racewar`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Maps characters to accounts for web statistics';
 CREATE TABLE `account_ips` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `hostname` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `ip_address` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `account_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hostname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `count` bigint unsigned DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -59,21 +53,17 @@ CREATE TABLE `account_ips` (
   KEY `idx_account_name` (`account_name`),
   KEY `idx_ip_address` (`ip_address`),
   CONSTRAINT `account_ips_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: account_locker_access
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `account_locker_access` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
-  `visitor_account` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `visitor_account` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_locker_visitor` (`locker_id`,`visitor_account`),
   KEY `idx_visitor` (`visitor_account`),
   CONSTRAINT `account_locker_access_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: account_locker_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `account_locker_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -82,20 +72,16 @@ CREATE TABLE `account_locker_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `account_locker_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `account_locker_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: account_locker_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `account_locker_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_account_locker_item_ed` FOREIGN KEY (`item_id`) REFERENCES `account_locker_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: account_locker_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `account_locker_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `chest_id` int unsigned NOT NULL,
@@ -106,7 +92,6 @@ CREATE TABLE `account_locker_items` (
   `cost` int DEFAULT '0',
   `timer` int DEFAULT '-1',
   `extra_flags` bigint unsigned DEFAULT '0',
-  `item_type` tinyint DEFAULT NULL,
   `wear_flags` int DEFAULT NULL,
   `value0` int DEFAULT '0',
   `value1` int DEFAULT '0',
@@ -116,18 +101,18 @@ CREATE TABLE `account_locker_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
   `bitvector4` bigint unsigned DEFAULT NULL,
   `bitvector5` bigint unsigned DEFAULT NULL,
   `item_material` tinyint DEFAULT NULL,
-  `obj_uid` bigint unsigned DEFAULT NULL,
-  `item_condition` smallint DEFAULT '100',
   PRIMARY KEY (`id`),
   KEY `container_id` (`container_id`),
   KEY `idx_chest_id` (`chest_id`),
@@ -135,45 +120,38 @@ CREATE TABLE `account_locker_items` (
   KEY `idx_obj_uid` (`obj_uid`),
   CONSTRAINT `account_locker_items_ibfk_1` FOREIGN KEY (`chest_id`) REFERENCES `locker_chests` (`id`) ON DELETE CASCADE,
   CONSTRAINT `account_locker_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `account_locker_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: account_lockers
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `account_lockers` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `account_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `racewar` tinyint DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_account_racewar` (`account_name`,`racewar`),
+  UNIQUE KEY `account_name` (`account_name`),
   KEY `idx_account_name` (`account_name`),
   CONSTRAINT `account_lockers_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: accounts
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `accounts` (
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `password` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
-  `confirmation_code` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `account_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_login` timestamp NULL DEFAULT NULL,
+  `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `confirmation_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `confirmed` tinyint(1) DEFAULT '0',
   `confirmation_sent` tinyint(1) DEFAULT '0',
   `blocked` tinyint(1) DEFAULT '0',
-  `last_login` bigint DEFAULT '0',
-  `last_good_char` bigint DEFAULT '0',
-  `last_evil_char` bigint DEFAULT '0',
+  `last_good_char` timestamp NULL DEFAULT NULL,
+  `last_evil_char` timestamp NULL DEFAULT NULL,
   `flags1` bigint unsigned DEFAULT '0',
   `flags2` bigint unsigned DEFAULT '0',
   `flags3` bigint unsigned DEFAULT '0',
   `flags4` bigint unsigned DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `total_donated` decimal(10,2) DEFAULT '0.00',
   PRIMARY KEY (`account_name`),
-  KEY `idx_email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: alliances
+  KEY `idx_last_login` (`last_login` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `alliances` (
   `id` int NOT NULL AUTO_INCREMENT,
   `created_at` datetime DEFAULT NULL,
@@ -181,43 +159,36 @@ CREATE TABLE `alliances` (
   `joining_assoc_id` int NOT NULL,
   `tribute_owed` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: artifact_bind
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `artifact_bind` (
   `vnum` int NOT NULL,
   `owner_pid` int DEFAULT NULL,
   `timer` int DEFAULT NULL,
   PRIMARY KEY (`vnum`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: artifacts
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `artifacts` (
   `vnum` int NOT NULL,
-  `owned` char(1) COLLATE utf8mb4_general_ci NOT NULL,
-  `locType` int NOT NULL DEFAULT '1',
-  `location` int NOT NULL,
+  `owned` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT 'N',
+  `location` int DEFAULT NULL,
   `timer` datetime DEFAULT NULL,
-  `type` int NOT NULL,
+  `type` int DEFAULT NULL,
   `lastUpdate` datetime DEFAULT NULL,
+  `locType` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`vnum`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: artifacts_mortal
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `artifacts_mortal` (
   `vnum` int NOT NULL,
-  `owned` char(1) COLLATE utf8mb4_general_ci NOT NULL,
-  `locType` int NOT NULL,
-  `location` int NOT NULL,
+  `owned` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT 'N',
+  `location` int DEFAULT NULL,
   `timer` datetime DEFAULT NULL,
-  `type` int NOT NULL,
+  `type` int DEFAULT NULL,
+  `lastUpdate` datetime DEFAULT NULL,
+  `locType` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`vnum`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: associations
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `associations` (
   `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `prestige` int NOT NULL DEFAULT '0',
   `active` tinyint(1) NOT NULL DEFAULT '1',
   `wood` int NOT NULL DEFAULT '0',
@@ -225,21 +196,17 @@ CREATE TABLE `associations` (
   `construction_points` int NOT NULL DEFAULT '0',
   `over_max` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: auction_bid_history
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `auction_bid_history` (
   `id` int NOT NULL AUTO_INCREMENT,
   `date` int NOT NULL DEFAULT '0',
   `auction_id` int NOT NULL DEFAULT '0',
   `bidder_pid` int NOT NULL DEFAULT '0',
-  `bidder_name` varchar(32) NOT NULL DEFAULT '',
+  `bidder_name` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `bid_amount` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `auction_id` (`auction_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- Table: auction_item_pickups
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `auction_item_pickups` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL DEFAULT '0',
@@ -248,40 +215,33 @@ CREATE TABLE `auction_item_pickups` (
   `quantity` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- Table: auction_money_pickups
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `auction_money_pickups` (
   `pid` int unsigned NOT NULL DEFAULT '0',
   `money` int unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- Table: auctions
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `auctions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `seller_pid` int unsigned NOT NULL DEFAULT '0',
-  `seller_name` varchar(32) NOT NULL DEFAULT '',
-  `start_time` timestamp NULL DEFAULT NULL,
-  `end_time` timestamp NULL DEFAULT NULL,
-  `status` int NOT NULL DEFAULT '1',
+  `seller_name` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `status` enum('OPEN','CLOSED','REMOVED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'OPEN',
   `winning_bidder_pid` int NOT NULL DEFAULT '0',
-  `winning_bidder_name` varchar(32) NOT NULL DEFAULT '',
+  `winning_bidder_name` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `cur_price` int unsigned NOT NULL DEFAULT '0',
   `buy_price` int NOT NULL DEFAULT '0',
-  `obj_short` varchar(255) NOT NULL DEFAULT '',
+  `obj_short` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `obj_vnum` int NOT NULL DEFAULT '0',
   `obj_blob_str` blob NOT NULL,
-  `id_keywords` varchar(1024) NOT NULL DEFAULT '',
+  `id_keywords` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `obj_info_text` mediumtext COLLATE utf8mb4_unicode_ci,
   `quantity` int NOT NULL DEFAULT '1',
-  `obj_info_text` text,
+  `start_time` timestamp NULL DEFAULT NULL,
+  `end_time` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `seller_pid` (`seller_pid`),
-  KEY `auction_end` (`end_time`),
   KEY `status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- Table: boons
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `boons` (
   `id` int NOT NULL AUTO_INCREMENT,
   `time` int NOT NULL DEFAULT '0',
@@ -294,67 +254,55 @@ CREATE TABLE `boons` (
   `bonus` decimal(10,2) NOT NULL DEFAULT '0.00',
   `bonus2` decimal(10,2) NOT NULL DEFAULT '0.00',
   `random` int NOT NULL DEFAULT '0',
-  `author` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `author` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` int NOT NULL DEFAULT '0',
   `pid` int NOT NULL DEFAULT '0',
   `rpt` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: boons_progress
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `boons_progress` (
   `id` int NOT NULL AUTO_INCREMENT,
   `boonid` int NOT NULL DEFAULT '0',
   `pid` int NOT NULL DEFAULT '0',
   `counter` decimal(10,2) NOT NULL DEFAULT '0.00',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: boons_shop
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `boons_shop` (
   `id` int NOT NULL AUTO_INCREMENT,
   `pid` int NOT NULL DEFAULT '0',
   `points` int NOT NULL DEFAULT '0',
   `stats` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: categories
+  UNIQUE KEY `pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `categories` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `desc` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `desc` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: changes
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `changes` (
   `id` int NOT NULL AUTO_INCREMENT,
   `history_id` int DEFAULT NULL,
-  `history_text` text COLLATE utf8mb4_general_ci,
-  `history_title` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `history_text` mediumtext COLLATE utf8mb4_unicode_ci,
+  `history_title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `history_category_id` int DEFAULT NULL,
-  `new_text` text COLLATE utf8mb4_general_ci,
-  `new_title` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `new_text` mediumtext COLLATE utf8mb4_unicode_ci,
+  `new_title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `new_category_id` int DEFAULT NULL,
   `timestamp` datetime DEFAULT NULL,
-  `action` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `ip_number` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `action` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: classes
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `classes` (
   `id` int unsigned NOT NULL,
-  `name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `ansi_name` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_name` varchar(8) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `menu_char` char(1) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ansi_name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_name` varchar(8) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `menu_char` char(1) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: corpse_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `corpse_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -363,24 +311,21 @@ CREATE TABLE `corpse_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `corpse_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `corpse_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: corpse_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `corpse_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_corpse_item_ed` FOREIGN KEY (`item_id`) REFERENCES `corpse_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: corpse_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `corpse_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `corpse_id` int NOT NULL,
   `vnum` int NOT NULL,
+  `item_type` tinyint DEFAULT '0',
   `container_id` int unsigned DEFAULT NULL,
   `quantity` smallint unsigned DEFAULT '1',
   `weight` int DEFAULT '0',
@@ -388,7 +333,6 @@ CREATE TABLE `corpse_items` (
   `timer` int DEFAULT '-1',
   `extra_flags` bigint unsigned DEFAULT '0',
   `wear_flags` int DEFAULT NULL,
-  `item_type` tinyint DEFAULT NULL,
   `value0` int DEFAULT '0',
   `value1` int DEFAULT '0',
   `value2` int DEFAULT '0',
@@ -397,18 +341,18 @@ CREATE TABLE `corpse_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
+  `item_material` tinyint DEFAULT NULL,
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
   `bitvector4` bigint unsigned DEFAULT NULL,
   `bitvector5` bigint unsigned DEFAULT NULL,
-  `item_material` tinyint DEFAULT NULL,
-  `obj_uid` bigint unsigned DEFAULT NULL,
-  `item_condition` smallint DEFAULT '100',
   PRIMARY KEY (`id`),
   KEY `container_id` (`container_id`),
   KEY `idx_corpse_id` (`corpse_id`),
@@ -416,23 +360,19 @@ CREATE TABLE `corpse_items` (
   KEY `idx_obj_uid` (`obj_uid`),
   CONSTRAINT `corpse_items_ibfk_1` FOREIGN KEY (`corpse_id`) REFERENCES `corpses` (`id`) ON DELETE CASCADE,
   CONSTRAINT `corpse_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `corpse_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: corpses
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `corpses` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `player_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `player_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `save_id` bigint NOT NULL,
   `room_vnum` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_player_saveid` (`player_name`,`save_id`),
   KEY `idx_player_name` (`player_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ctf_data
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ctf_data` (
   `id` int NOT NULL AUTO_INCREMENT,
   `time` timestamp NULL DEFAULT NULL,
@@ -441,17 +381,13 @@ CREATE TABLE `ctf_data` (
   `flagtype` int NOT NULL DEFAULT '0',
   `racewar` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: epic_bonus
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `epic_bonus` (
   `pid` int NOT NULL,
   `type` int NOT NULL DEFAULT '0',
   `time` datetime DEFAULT NULL,
-  UNIQUE KEY `uk_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: epic_gain
+  UNIQUE KEY `pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `epic_gain` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` bigint NOT NULL DEFAULT '0',
@@ -460,34 +396,8 @@ CREATE TABLE `epic_gain` (
   `type_id` int NOT NULL DEFAULT '0',
   `epics` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `idx_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: frag_leaderboard
-CREATE TABLE `frag_leaderboard` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `pid` bigint(20) NOT NULL COMMENT 'Player ID - links to character',
-  `account_name` varchar(255) NOT NULL COMMENT 'Account name for account-level stats',
-  `char_name` varchar(255) NOT NULL COMMENT 'Character name for display',
-  `total_frags` int(11) NOT NULL DEFAULT 0 COMMENT 'Total frags (stored as int, divide by 100 for display)',
-  `racewar` int(11) NOT NULL COMMENT 'Racewar side (1=good, 2=evil, 3=undead, 4=illithid)',
-  `race` varchar(50) DEFAULT NULL COMMENT 'Character race',
-  `class` varchar(50) DEFAULT NULL COMMENT 'Character class',
-  `level` int(11) DEFAULT NULL COMMENT 'Character level',
-  `deleted_at` datetime NULL DEFAULT NULL COMMENT 'Soft delete - NULL means active',
-  `last_updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last time record was updated',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `pid` (`pid`),
-  KEY `char_name` (`char_name`),
-  KEY `account_name` (`account_name`),
-  KEY `total_frags_active` (`deleted_at`, `total_frags`),
-  KEY `racewar_leaderboard` (`deleted_at`, `racewar`, `total_frags`),
-  KEY `race_leaderboard` (`deleted_at`, `race`, `total_frags`),
-  KEY `class_leaderboard` (`deleted_at`, `class`, `total_frags`),
-  KEY `level_range` (`deleted_at`, `level`, `total_frags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Denormalized frag leaderboard for web statistics';
-
--- Table: eq_drop
+  KEY `pid_index` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `eq_drop` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -495,14 +405,34 @@ CREATE TABLE `eq_drop` (
   `pid_looter` bigint unsigned NOT NULL DEFAULT '0',
   `room_id` int unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `idx_vnum` (`vnum`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: guild_members
+  KEY `Index_2` (`vnum`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `frag_leaderboard` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pid` bigint NOT NULL COMMENT 'Player ID - links to character',
+  `account_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Account name for account-level stats',
+  `char_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Character name for display',
+  `total_frags` int NOT NULL DEFAULT '0' COMMENT 'Total frags (stored as int, divide by 100 for display)',
+  `racewar` int NOT NULL COMMENT 'Racewar side (1=good, 2=evil, 3=undead, 4=illithid)',
+  `race` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Character race',
+  `class` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Character class',
+  `level` int DEFAULT NULL COMMENT 'Character level',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Soft delete - NULL means active',
+  `last_updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last time record was updated',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `pid` (`pid`),
+  KEY `char_name` (`char_name`),
+  KEY `account_name` (`account_name`),
+  KEY `total_frags_active` (`deleted_at`,`total_frags`),
+  KEY `racewar_leaderboard` (`deleted_at`,`racewar`,`total_frags`),
+  KEY `race_leaderboard` (`deleted_at`,`race`,`total_frags`),
+  KEY `class_leaderboard` (`deleted_at`,`class`,`total_frags`),
+  KEY `level_range` (`deleted_at`,`level`,`total_frags`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `guild_members` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `guild_id` int unsigned NOT NULL,
-  `player_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `player_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `player_pid` int unsigned DEFAULT NULL,
   `bits` int unsigned NOT NULL DEFAULT '0',
   `debt` int unsigned NOT NULL DEFAULT '0',
@@ -511,30 +441,24 @@ CREATE TABLE `guild_members` (
   UNIQUE KEY `uk_guild_members_name` (`guild_id`,`player_name`),
   KEY `idx_guild_members_name` (`player_name`),
   CONSTRAINT `fk_guild_members_guild` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: guild_ranks
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `guild_ranks` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `guild_id` int unsigned NOT NULL,
   `rank_index` tinyint NOT NULL,
-  `title` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_guild_ranks_index` (`guild_id`,`rank_index`),
   CONSTRAINT `fk_guild_ranks_guild` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: guild_transactions
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `guild_transactions` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `soc_id` int unsigned NOT NULL DEFAULT '0',
   `date` int NOT NULL DEFAULT '0',
-  `transaction_info` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `transaction_info` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
-  KEY `idx_soc_id` (`soc_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: guildhall_rooms
+  KEY `soc_id` (`soc_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `guildhall_rooms` (
   `id` int NOT NULL AUTO_INCREMENT,
   `guildhall_id` int NOT NULL DEFAULT '0',
@@ -558,13 +482,11 @@ CREATE TABLE `guildhall_rooms` (
   `exit7` int NOT NULL DEFAULT '0',
   `exit8` int NOT NULL DEFAULT '0',
   `exit9` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_vnum` (`vnum`),
-  KEY `idx_guildhall_id` (`guildhall_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: guildhalls
+  KEY `vnum` (`vnum`),
+  KEY `guildhall_id` (`guildhall_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `guildhalls` (
   `id` int NOT NULL AUTO_INCREMENT,
   `assoc_id` int NOT NULL DEFAULT '0',
@@ -572,14 +494,11 @@ CREATE TABLE `guildhalls` (
   `outside_vnum` int NOT NULL DEFAULT '0',
   `racewar` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `idx_assoc_id` (`assoc_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: guilds
+  KEY `assoc_id` (`assoc_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `guilds` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `guild_id` int unsigned NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `id` int unsigned NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `racewar` int unsigned NOT NULL DEFAULT '0',
   `bits` int unsigned NOT NULL DEFAULT '0',
   `prestige` bigint unsigned NOT NULL DEFAULT '0',
@@ -588,94 +507,77 @@ CREATE TABLE `guilds` (
   `gold` int unsigned NOT NULL DEFAULT '0',
   `silver` int unsigned NOT NULL DEFAULT '0',
   `copper` int unsigned NOT NULL DEFAULT '0',
-  `total_frags` bigint NOT NULL DEFAULT '0',
+  `frags` bigint NOT NULL DEFAULT '0',
   `top_frags` bigint NOT NULL DEFAULT '0',
-  `top_fragger` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `topfragger` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `guild_id` (`guild_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ip_info
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ip_info` (
   `pid` bigint NOT NULL DEFAULT '0',
-  `last_ip` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'none',
-  `last_connect` datetime DEFAULT NULL,
-  `last_disconnect` datetime DEFAULT NULL,
+  `last_ip` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'none',
+  `last_connect` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_disconnect` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `racewar_side` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `items` (
   `vnum` int unsigned NOT NULL DEFAULT '0',
-  `short_desc` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `obj_stat` text COLLATE utf8mb4_general_ci NOT NULL,
+  `short_desc` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `obj_stat` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `num_sold` int NOT NULL DEFAULT '0',
   `avg_sell_price` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`vnum`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: kingdom_land
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `kingdom_land` (
   `id` int NOT NULL AUTO_INCREMENT,
   `kingdom_id` int NOT NULL,
   `start_vnum` int DEFAULT '0',
   `end_vnum` int DEFAULT '0',
-  `type` char(1) COLLATE utf8mb4_general_ci DEFAULT 'r',
+  `type` char(1) COLLATE utf8mb4_unicode_ci DEFAULT 'r',
   PRIMARY KEY (`id`),
   KEY `idx_kingdom_id` (`kingdom_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: level_cap
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `level_cap` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `most_frags` float NOT NULL DEFAULT '0',
-  `racewar_leader` int NOT NULL DEFAULT '0',
-  `level` int NOT NULL DEFAULT '25',
-  `next_update` datetime DEFAULT CURRENT_TIMESTAMP,
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `most_frags` float NOT NULL,
+  `racewar_leader` int NOT NULL,
+  `level` int NOT NULL,
+  `next_update` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_access
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_access` (
-  `owner` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `visitor` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `owner` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `visitor` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`owner`,`visitor`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_activity_log
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_activity_log` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `char_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `action_type` enum('enter','leave','chest_open','chest_fail','kicked','chest_create','chest_delete','item_put','item_get') COLLATE utf8mb4_general_ci NOT NULL,
-  `chest_keyword` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `details` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `char_name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action_type` int NOT NULL DEFAULT '1',
+  `chest_keyword` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `details` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `logged_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_locker_id` (`locker_id`),
   KEY `idx_logged_at` (`logged_at`),
   CONSTRAINT `locker_activity_log_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_chests
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_chests` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
-  `keyword` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `keyword_hash` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `keyword` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `keyword_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_public` tinyint(1) DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_locker_keyword` (`locker_id`,`keyword`),
   KEY `idx_locker_id` (`locker_id`),
   CONSTRAINT `locker_chests_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -684,20 +586,16 @@ CREATE TABLE `locker_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `locker_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `locker_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_locker_item_ed` FOREIGN KEY (`item_id`) REFERENCES `locker_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
@@ -709,8 +607,8 @@ CREATE TABLE `locker_items` (
   `cost` int DEFAULT '0',
   `timer` int DEFAULT '-1',
   `extra_flags` bigint unsigned DEFAULT '0',
-  `item_type` tinyint DEFAULT NULL,
   `wear_flags` int DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
   `value0` int DEFAULT '0',
   `value1` int DEFAULT '0',
   `value2` int DEFAULT '0',
@@ -719,18 +617,18 @@ CREATE TABLE `locker_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
   `bitvector4` bigint unsigned DEFAULT NULL,
   `bitvector5` bigint unsigned DEFAULT NULL,
   `item_material` tinyint DEFAULT NULL,
-  `obj_uid` bigint unsigned DEFAULT NULL,
-  `item_condition` smallint DEFAULT '100',
   PRIMARY KEY (`id`),
   KEY `container_id` (`container_id`),
   KEY `idx_locker_id` (`locker_id`),
@@ -738,26 +636,22 @@ CREATE TABLE `locker_items` (
   KEY `idx_obj_uid` (`obj_uid`),
   CONSTRAINT `locker_items_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `lockers` (`id`) ON DELETE CASCADE,
   CONSTRAINT `locker_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `locker_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_kickouts
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_kickouts` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `fail_count` tinyint unsigned DEFAULT '0',
   `kicked_until` timestamp NULL DEFAULT NULL,
   `last_fail` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_locker_account` (`locker_id`,`account_name`),
   CONSTRAINT `locker_kickouts_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: locker_session_state
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `locker_session_state` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
-  `account_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `chest_id` int unsigned NOT NULL,
   `opened_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -765,12 +659,10 @@ CREATE TABLE `locker_session_state` (
   KEY `chest_id` (`chest_id`),
   CONSTRAINT `locker_session_state_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `account_lockers` (`id`) ON DELETE CASCADE,
   CONSTRAINT `locker_session_state_ibfk_2` FOREIGN KEY (`chest_id`) REFERENCES `locker_chests` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: lockers
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `lockers` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `locker_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `locker_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `owner_pid` int DEFAULT NULL,
   `owner_assoc_id` int DEFAULT NULL,
   `racewar` tinyint DEFAULT '0',
@@ -781,51 +673,43 @@ CREATE TABLE `lockers` (
   UNIQUE KEY `locker_name` (`locker_name`),
   KEY `idx_owner_pid` (`owner_pid`),
   KEY `idx_owner_assoc_id` (`owner_assoc_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: log_entries
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `log_entries` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `date` datetime NOT NULL,
-  `kind` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `player_name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `player_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `pid` int NOT NULL DEFAULT '0',
-  `ip_address` varchar(15) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `ip_address` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `room_vnum` int NOT NULL DEFAULT '0',
   `zone_number` int NOT NULL DEFAULT '0',
-  `message` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `message` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
-  KEY `idx_date` (`date`),
-  KEY `idx_kind` (`kind`),
-  KEY `idx_player_name` (`player_name`),
-  KEY `idx_pid` (`pid`),
-  KEY `idx_ip_address` (`ip_address`),
-  KEY `idx_room_vnum` (`room_vnum`),
-  KEY `idx_zone_number` (`zone_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: mud_info
+  KEY `date_index` (`date`),
+  KEY `kind_index` (`kind`),
+  KEY `name_index` (`player_name`),
+  KEY `pid_index` (`pid`),
+  KEY `ip_address_index` (`ip_address`),
+  KEY `room_vnum_index` (`room_vnum`),
+  KEY `zone_id_index` (`zone_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `mud_info` (
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `content` text COLLATE utf8mb4_general_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `content` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: multiplay_whitelist
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `multiplay_whitelist` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `pattern` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `admin` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `pattern` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `admin` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_on` date DEFAULT NULL,
-  `player` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `player` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: nexus_stones
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `nexus_stones` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `room_vnum` int NOT NULL DEFAULT '0',
   `align` int NOT NULL DEFAULT '0',
   `stat_affect` int NOT NULL DEFAULT '-1',
@@ -833,21 +717,14 @@ CREATE TABLE `nexus_stones` (
   `last_touched_at` timestamp NULL DEFAULT NULL,
   `bonus` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: offline_messages
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `offline_messages` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `pid` bigint NOT NULL DEFAULT '0',
-  `sender` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `message` text COLLATE utf8mb4_general_ci NOT NULL,
-  `sent_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `read_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: outposts
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `pid` int NOT NULL DEFAULT '0',
+  `message` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `outposts` (
   `id` int NOT NULL,
   `owner_id` int NOT NULL DEFAULT '0',
@@ -863,46 +740,40 @@ CREATE TABLE `outposts` (
   `meurtriere` int NOT NULL DEFAULT '0',
   `scouts` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: pages
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `pages` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `text` text COLLATE utf8mb4_general_ci,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `text` mediumtext COLLATE utf8mb4_unicode_ci,
   `last_update` datetime DEFAULT NULL,
-  `last_update_by` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `last_update_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `category_id` int DEFAULT NULL,
-  `ip_number` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ip_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: persistence_item_events
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `persistence_item_events` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `ts_usec` bigint unsigned NOT NULL,
-  `event_type` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `event_type` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `item_uid` bigint unsigned NOT NULL DEFAULT '0',
   `vnum` int NOT NULL DEFAULT '-1',
-  `item` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `actor` varchar(128) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `item` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `actor` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `actor_id` int NOT NULL DEFAULT '-1',
-  `source` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `target` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `note` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `dedupe_key` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `source` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `target` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `note` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `dedupe_key` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_item_dedupe` (`dedupe_key`),
   KEY `idx_item_uid_ts` (`item_uid`,`ts_usec`,`id`),
   KEY `idx_event_type_created` (`event_type`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: persistence_scalar_events
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `persistence_scalar_events` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `event_type` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `event_key` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `event_type` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `event_key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `boot_time` int NOT NULL DEFAULT '0',
   `touched_at` int NOT NULL DEFAULT '0',
   `zone_number` int NOT NULL DEFAULT '0',
@@ -910,53 +781,49 @@ CREATE TABLE `persistence_scalar_events` (
   `group_size` int NOT NULL DEFAULT '0',
   `epic_value` int NOT NULL DEFAULT '0',
   `alignment_delta` int NOT NULL DEFAULT '0',
-  `dedupe_key` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `dedupe_key` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_scalar_dedupe` (`dedupe_key`),
   KEY `idx_scalar_event_key` (`event_type`,`event_key`),
   KEY `idx_scalar_zone_time` (`zone_number`,`touched_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ping
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ping` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `timestamp` datetime NOT NULL,
-  `url` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `ip` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `seq` bigint NOT NULL DEFAULT '0',
-  `time` int NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: pkill_event
+  `ID` bigint NOT NULL AUTO_INCREMENT,
+  `TIMESTAMP` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `URL` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `IP` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `SEQ` bigint NOT NULL DEFAULT '0',
+  `TIME` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `pkill_event` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `stamp` datetime NOT NULL,
+  `stamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `room_vnum` int NOT NULL DEFAULT '0',
-  `room_name` text COLLATE utf8mb4_general_ci NOT NULL,
+  `room_name` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `tweeted` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: pkill_info
+  `like_count` int NOT NULL DEFAULT '0',
+  `comment_count` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_event_likes` (`like_count`),
+  KEY `idx_event_comments` (`comment_count`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `pkill_info` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `event_id` int unsigned NOT NULL DEFAULT '0',
   `pid` bigint NOT NULL DEFAULT '0',
   `level` int NOT NULL DEFAULT '0',
-  `pk_type` text COLLATE utf8mb4_general_ci NOT NULL,
-  `equip` text COLLATE utf8mb4_general_ci NOT NULL,
-  `log` text COLLATE utf8mb4_general_ci,
+  `pk_type` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `equip` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `log` mediumtext COLLATE utf8mb4_unicode_ci,
   `inroom` int NOT NULL DEFAULT '0',
   `leader` int DEFAULT NULL,
-  `player_description` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `player_description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_event_id` (`event_id`),
-  KEY `idx_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_affects
+  KEY `part_of_name` (`event_id`),
+  KEY `unique_index` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -966,28 +833,25 @@ CREATE TABLE `player_affects` (
   `modifier` int DEFAULT '0',
   `location` tinyint unsigned DEFAULT '0',
   `level` smallint unsigned DEFAULT '0',
-  `bitvector1` bigint DEFAULT '0',
-  `bitvector2` bigint DEFAULT '0',
-  `bitvector3` bigint DEFAULT '0',
-  `bitvector4` bigint DEFAULT '0',
-  `bitvector5` bigint DEFAULT '0',
-  `custom_msg_char` text COLLATE utf8mb4_general_ci,
-  `custom_msg_room` text COLLATE utf8mb4_general_ci,
+  `bitvector1` bigint unsigned DEFAULT '0',
+  `bitvector2` bigint unsigned DEFAULT '0',
+  `bitvector3` bigint unsigned DEFAULT '0',
+  `bitvector4` bigint unsigned DEFAULT '0',
+  `bitvector5` bigint unsigned DEFAULT '0',
+  `custom_msg_char` text COLLATE utf8mb4_unicode_ci,
+  `custom_msg_room` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pid_type_dur_flags_mod_loc_lvl` (`pid`,`type`,`duration`,`flags`,`modifier`,`location`,`level`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_affects` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_data
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_data` (
   `pid` int unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(64) NOT NULL,
-  `account_name` varchar(50) DEFAULT NULL,
-  `short_descr` varchar(512) DEFAULT NULL,
-  `long_descr` text,
-  `description` text,
-  `title` varchar(512) DEFAULT NULL,
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `long_descr` text COLLATE utf8mb4_unicode_ci,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `title` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `m_class` int unsigned DEFAULT '0',
   `secondary_class` int unsigned DEFAULT '0',
   `spec` tinyint unsigned DEFAULT '0',
@@ -1002,9 +866,9 @@ CREATE TABLE `player_data` (
   `birthplace` int DEFAULT '0',
   `orig_birthplace` int DEFAULT '0',
   `last_room` int DEFAULT '0',
-  `birth_time` bigint DEFAULT '0',
+  `birth_time` timestamp NULL DEFAULT NULL,
   `played_time` int DEFAULT '0',
-  `last_save` bigint DEFAULT '0',
+  `last_save` timestamp NULL DEFAULT NULL,
   `perm_aging` smallint DEFAULT '0',
   `base_str` tinyint DEFAULT '0',
   `base_dex` tinyint DEFAULT '0',
@@ -1044,22 +908,22 @@ CREATE TABLE `player_data` (
   `prestige` smallint DEFAULT '0',
   `assoc_id` smallint unsigned DEFAULT '0',
   `guild_status` int unsigned DEFAULT '0',
-  `time_left_guild` bigint DEFAULT '0',
+  `time_left_guild` timestamp NULL DEFAULT NULL,
   `nb_left_guild` tinyint DEFAULT '0',
-  `time_unspecced` bigint DEFAULT '0',
+  `time_unspecced` timestamp NULL DEFAULT NULL,
   `frags` bigint DEFAULT '0',
   `oldfrags` bigint DEFAULT '0',
   `numb_deaths` bigint unsigned DEFAULT '0',
-  `killed_by` varchar(64) DEFAULT NULL,
+  `killed_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `condition_0` tinyint DEFAULT '0',
   `condition_1` tinyint DEFAULT '0',
   `condition_2` tinyint DEFAULT '0',
   `condition_3` tinyint DEFAULT '0',
   `condition_4` tinyint DEFAULT '0',
-  `poof_in` varchar(512) DEFAULT NULL,
-  `poof_out` varchar(512) DEFAULT NULL,
-  `poof_in_sound` varchar(512) DEFAULT NULL,
-  `poof_out_sound` varchar(512) DEFAULT NULL,
+  `poof_in` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `poof_out` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `poof_in_sound` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `poof_out_sound` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `echo_toggle` tinyint unsigned DEFAULT '0',
   `prompt` smallint unsigned DEFAULT '0',
   `wiz_invis` bigint DEFAULT '0',
@@ -1090,9 +954,7 @@ CREATE TABLE `player_data` (
   UNIQUE KEY `idx_player_name_unique` (`name`),
   KEY `idx_name` (`name`),
   KEY `idx_account_name` (`account_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- Table: player_forged_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_forged_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -1102,9 +964,7 @@ CREATE TABLE `player_forged_items` (
   UNIQUE KEY `uk_pid_forge` (`pid`,`forge_index`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_forged_items` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_granted_cmds
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_granted_cmds` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -1113,22 +973,18 @@ CREATE TABLE `player_granted_cmds` (
   UNIQUE KEY `uk_pid_cmd` (`pid`,`cmd_num`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_granted_cmds` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_intros
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_intros` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
   `intro_index` tinyint unsigned NOT NULL,
   `intro_pid` int DEFAULT '0',
-  `intro_time` bigint unsigned DEFAULT '0',
+  `intro_time` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pid_intro` (`pid`,`intro_index`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_intros` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -1137,20 +993,16 @@ CREATE TABLE `player_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_player_item_affects` FOREIGN KEY (`item_id`) REFERENCES `player_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_player_item_ed` FOREIGN KEY (`item_id`) REFERENCES `player_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -1172,27 +1024,26 @@ CREATE TABLE `player_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
   `bitvector4` bigint unsigned DEFAULT NULL,
   `bitvector5` bigint unsigned DEFAULT NULL,
-  `item_material` tinyint DEFAULT NULL,
   `obj_uid` bigint unsigned DEFAULT NULL,
   `item_condition` smallint DEFAULT '100',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `item_material` tinyint DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_pid` (`pid`),
   KEY `idx_container_id` (`container_id`),
   KEY `idx_obj_uid` (`obj_uid`),
   CONSTRAINT `fk_player_items` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE,
   CONSTRAINT `fk_player_items_container` FOREIGN KEY (`container_id`) REFERENCES `player_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_languages
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_languages` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -1202,9 +1053,7 @@ CREATE TABLE `player_languages` (
   UNIQUE KEY `uk_pid_tongue` (`pid`,`tongue_id`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_languages` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_pet_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_pet_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -1213,20 +1062,16 @@ CREATE TABLE `player_pet_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_pet_item_affects` FOREIGN KEY (`item_id`) REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_pet_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_pet_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_pet_item_ed` FOREIGN KEY (`item_id`) REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_pet_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_pet_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pet_id` int unsigned NOT NULL,
@@ -1238,7 +1083,6 @@ CREATE TABLE `player_pet_items` (
   `timer` int DEFAULT '-1',
   `extra_flags` bigint unsigned DEFAULT '0',
   `wear_flags` int DEFAULT NULL,
-  `item_type` tinyint DEFAULT NULL,
   `value0` int DEFAULT '0',
   `value1` int DEFAULT '0',
   `value2` int DEFAULT '0',
@@ -1247,27 +1091,26 @@ CREATE TABLE `player_pet_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_condition` smallint DEFAULT '100',
+  `item_material` tinyint DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
   `bitvector4` bigint unsigned DEFAULT NULL,
   `bitvector5` bigint unsigned DEFAULT NULL,
-  `item_material` tinyint DEFAULT NULL,
-  `obj_uid` bigint unsigned DEFAULT NULL,
-  `item_condition` smallint DEFAULT '100',
   PRIMARY KEY (`id`),
   KEY `idx_pet_id` (`pet_id`),
   KEY `idx_container_id` (`container_id`),
   KEY `idx_obj_uid` (`obj_uid`),
   CONSTRAINT `fk_pet_items_container` FOREIGN KEY (`container_id`) REFERENCES `player_pet_items` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_pet_items_pet` FOREIGN KEY (`pet_id`) REFERENCES `player_pets` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_pets
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_pets` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `owner_pid` int unsigned NOT NULL,
@@ -1281,13 +1124,11 @@ CREATE TABLE `player_pets` (
   `max_vitality` int DEFAULT '0',
   `charm_duration` int DEFAULT '-1',
   `room_vnum` int DEFAULT '0',
-  `saved_at` bigint DEFAULT '0',
+  `saved_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_owner_pid` (`owner_pid`),
   CONSTRAINT `fk_player_pets_owner` FOREIGN KEY (`owner_pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_recipes
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_recipes` (
   `id` int NOT NULL AUTO_INCREMENT,
   `pid` int NOT NULL,
@@ -1296,22 +1137,18 @@ CREATE TABLE `player_recipes` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pid_recipe` (`pid`,`recipe_vnum`),
   KEY `idx_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_shapechanges
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_shapechanges` (
   `id` int NOT NULL AUTO_INCREMENT,
   `pid` int NOT NULL,
   `mob_vnum` int NOT NULL,
   `times_researched` int DEFAULT '0',
-  `last_researched` bigint DEFAULT '0',
-  `last_shapechanged` bigint DEFAULT '0',
+  `last_researched` timestamp NULL DEFAULT NULL,
+  `last_shapechanged` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pid_mob` (`pid`,`mob_vnum`),
   KEY `idx_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_skills
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_skills` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -1322,9 +1159,7 @@ CREATE TABLE `player_skills` (
   UNIQUE KEY `uk_pid_skill` (`pid`,`skill_id`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_skills` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_spellbooks
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_spellbooks` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -1334,21 +1169,17 @@ CREATE TABLE `player_spellbooks` (
   UNIQUE KEY `uk_pid_mob` (`pid`,`mob_vnum`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_spellbooks` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_timers
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_timers` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
   `timer_id` tinyint unsigned NOT NULL,
-  `timer_value` bigint DEFAULT '0',
+  `timer_value` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pid_timer` (`pid`,`timer_id`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_timers` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_undead_slots
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_undead_slots` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
@@ -1358,110 +1189,92 @@ CREATE TABLE `player_undead_slots` (
   UNIQUE KEY `uk_pid_circle` (`pid`,`circle`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_undead_slots` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: player_witnesses
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `player_witnesses` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` int unsigned NOT NULL,
   `crime` tinyint unsigned DEFAULT '0',
   `room_vnum` int DEFAULT '0',
-  `attacker_name` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `victim_name` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `witness_time` bigint DEFAULT '0',
+  `attacker_name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `victim_name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `witness_time` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_pid` (`pid`),
   CONSTRAINT `fk_player_witnesses` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: poll_options
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `poll_options` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `poll_id` int unsigned NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `poll_id` int NOT NULL,
   `option_num` int NOT NULL,
-  `option_text` varchar(256) COLLATE utf8mb4_general_ci NOT NULL,
+  `option_text` varchar(256) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_poll_id` (`poll_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: poll_votes
+  KEY `poll_id` (`poll_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `poll_votes` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `poll_id` int unsigned NOT NULL,
-  `account_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `option_id` int unsigned NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `poll_id` int NOT NULL,
+  `account_name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `option_id` int NOT NULL,
   `voted_at` int NOT NULL DEFAULT '0',
-  `char_name` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  `char_name` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_poll_account_option` (`poll_id`,`account_name`,`option_id`),
-  KEY `idx_poll_id` (`poll_id`),
-  KEY `idx_account_name` (`account_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: polls
+  UNIQUE KEY `unique_vote` (`poll_id`,`account_name`,`option_id`),
+  KEY `poll_id` (`poll_id`),
+  KEY `account_name` (`account_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `polls` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `question` varchar(512) COLLATE utf8mb4_general_ci NOT NULL,
-  `created_by` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `question` varchar(512) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_by` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` int NOT NULL DEFAULT '0',
   `expires_at` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `multi_select` tinyint(1) NOT NULL DEFAULT '0',
   `max_choices` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: prepstatement_duris_sql
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `prepstatement_duris_sql` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `description` text COLLATE utf8mb4_general_ci,
-  `sql_code` text COLLATE utf8mb4_general_ci,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `sql_code` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: private_chest_log
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `private_chest_log` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
   `chest_id` int unsigned DEFAULT NULL,
-  `char_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `action_type` enum('open','close','put','get','fail') COLLATE utf8mb4_general_ci NOT NULL,
-  `item_short` varchar(256) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `char_name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action_type` int NOT NULL DEFAULT '1',
+  `item_short` varchar(256) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `logged_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_locker_id` (`locker_id`),
   KEY `idx_logged_at` (`logged_at`),
   CONSTRAINT `private_chest_log_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `lockers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: private_chests
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `private_chests` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `locker_id` int unsigned NOT NULL,
-  `chest_name` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
-  `password_hash` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `chest_name` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_public` tinyint(1) DEFAULT '0',
-  `sort_config` text COLLATE utf8mb4_general_ci,
+  `sort_config` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_locker_chest` (`locker_id`,`chest_name`),
   KEY `idx_locker_id` (`locker_id`),
   CONSTRAINT `private_chests_ibfk_1` FOREIGN KEY (`locker_id`) REFERENCES `lockers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: progress
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `progress` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `pid` bigint NOT NULL DEFAULT '0',
-  `var_type` int NOT NULL DEFAULT '1',
-  `stamp` datetime NOT NULL,
+  `var_type` enum('FRAGS','EXP') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'FRAGS',
+  `stamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `delta` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `idx_pid` (`pid`),
-  KEY `idx_var_type` (`var_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: quest_trophy
+  KEY `pid_index` (`pid`),
+  KEY `index_enum` (`var_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `quest_trophy` (
   `id` int NOT NULL AUTO_INCREMENT,
   `mob_vnum` int NOT NULL DEFAULT '0',
@@ -1472,21 +1285,17 @@ CREATE TABLE `quest_trophy` (
   PRIMARY KEY (`id`),
   KEY `idx_mob_vnum` (`mob_vnum`),
   KEY `idx_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: races
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `races` (
   `id` int unsigned NOT NULL,
-  `name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `short_name` varchar(32) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `ansi_name` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `abbrev` varchar(4) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `short_name` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ansi_name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `abbrev` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `racewar` tinyint DEFAULT '0',
   `playable` tinyint DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: racewar_stat_mods
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `racewar_stat_mods` (
   `racewar` int NOT NULL DEFAULT '0',
   `Str` int NOT NULL DEFAULT '0',
@@ -1499,9 +1308,7 @@ CREATE TABLE `racewar_stat_mods` (
   `Cha` int NOT NULL DEFAULT '0',
   `Kar` int NOT NULL DEFAULT '0',
   `Luc` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: saved_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `saved_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -1510,23 +1317,19 @@ CREATE TABLE `saved_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `saved_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `saved_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: saved_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `saved_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_saved_item_ed` FOREIGN KEY (`item_id`) REFERENCES `saved_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: saved_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `saved_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `item_key` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `item_key` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `room_vnum` int DEFAULT '0',
   `vnum` int NOT NULL,
   `container_id` int unsigned DEFAULT NULL,
@@ -1535,6 +1338,8 @@ CREATE TABLE `saved_items` (
   `cost` int DEFAULT '0',
   `timer` int DEFAULT '-1',
   `extra_flags` bigint unsigned DEFAULT '0',
+  `wear_flags` int DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
   `value0` int DEFAULT '0',
   `value1` int DEFAULT '0',
   `value2` int DEFAULT '0',
@@ -1543,16 +1348,14 @@ CREATE TABLE `saved_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
-  `item_material` tinyint DEFAULT NULL,
-  `unique_id` int unsigned DEFAULT NULL,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `item_type` tinyint DEFAULT NULL,
-  `wear_flags` int DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
@@ -1564,9 +1367,7 @@ CREATE TABLE `saved_items` (
   KEY `idx_room_vnum` (`room_vnum`),
   KEY `idx_vnum` (`vnum`),
   CONSTRAINT `saved_items_ibfk_1` FOREIGN KEY (`container_id`) REFERENCES `saved_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ship_armor
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ship_armor` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `ship_id` int unsigned NOT NULL,
@@ -1576,27 +1377,21 @@ CREATE TABLE `ship_armor` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_ship_armor` (`ship_id`,`side`),
   CONSTRAINT `fk_ship_armor_ship` FOREIGN KEY (`ship_id`) REFERENCES `ships` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ship_cargo_market_mods
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ship_cargo_market_mods` (
-  `type` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `port_id` int NOT NULL DEFAULT '-1',
   `cargo_type` int NOT NULL DEFAULT '-1',
   `modifier` float NOT NULL DEFAULT '0',
   KEY `type_port_id_cargo_type` (`type`,`port_id`,`cargo_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ship_cargo_prices
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ship_cargo_prices` (
-  `type` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `port_id` int NOT NULL DEFAULT '-1',
   `cargo_type` int NOT NULL DEFAULT '-1',
   `price` int NOT NULL DEFAULT '0',
   KEY `type_port_id_cargo_type` (`type`,`port_id`,`cargo_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ship_crew
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ship_crew` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `ship_id` int unsigned NOT NULL,
@@ -1610,9 +1405,7 @@ CREATE TABLE `ship_crew` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_ship_crew` (`ship_id`),
   CONSTRAINT `fk_ship_crew_ship` FOREIGN KEY (`ship_id`) REFERENCES `ships` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ship_slots
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ship_slots` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `ship_id` int unsigned NOT NULL,
@@ -1629,14 +1422,11 @@ CREATE TABLE `ship_slots` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_ship_slots_index` (`ship_id`,`slot_index`),
   CONSTRAINT `fk_ship_slots_ship` FOREIGN KEY (`ship_id`) REFERENCES `ships` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: ships
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `ships` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `owner_pid` int unsigned DEFAULT NULL,
-  `owner_name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `ship_name` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `owner_name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ship_name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ship_class` tinyint unsigned DEFAULT '0',
   `frags` int DEFAULT '0',
   `anchor_room` int DEFAULT '0',
@@ -1645,31 +1435,11 @@ CREATE TABLE `ships` (
   `race` tinyint DEFAULT '0',
   `money` int DEFAULT '0',
   `flags` bigint unsigned DEFAULT '0',
-  `armor_fore` int DEFAULT '0',
-  `armor_port` int DEFAULT '0',
-  `armor_rear` int DEFAULT '0',
-  `armor_star` int DEFAULT '0',
-  `internal_fore` int DEFAULT '0',
-  `internal_port` int DEFAULT '0',
-  `internal_rear` int DEFAULT '0',
-  `internal_star` int DEFAULT '0',
-  `crew_index` int DEFAULT '0',
-  `crew_sail_skill` int DEFAULT '0',
-  `crew_guns_skill` int DEFAULT '0',
-  `crew_rpar_skill` int DEFAULT '0',
-  `crew_sail_chief` int DEFAULT '0',
-  `crew_guns_chief` int DEFAULT '0',
-  `crew_rpar_chief` int DEFAULT '0',
-  `maxspeed_bonus` int DEFAULT '0',
-  `capacity_bonus` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `owner_name` (`owner_name`),
-  KEY `idx_ships_owner_pid` (`owner_pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: shop_trophy
+  UNIQUE KEY `owner_name` (`owner_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `shop_trophy` (
   `id` int NOT NULL AUTO_INCREMENT,
   `item` int NOT NULL DEFAULT '0',
@@ -1677,9 +1447,7 @@ CREATE TABLE `shop_trophy` (
   `seller` int NOT NULL DEFAULT '0',
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: shopkeeper_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `shopkeeper_affects` (
   `id` int NOT NULL AUTO_INCREMENT,
   `shopkeeper_id` int NOT NULL,
@@ -1695,9 +1463,7 @@ CREATE TABLE `shopkeeper_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_shopkeeper_id` (`shopkeeper_id`),
   CONSTRAINT `shopkeeper_affects_ibfk_1` FOREIGN KEY (`shopkeeper_id`) REFERENCES `shopkeepers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: shopkeeper_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `shopkeeper_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -1706,20 +1472,16 @@ CREATE TABLE `shopkeeper_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `shopkeeper_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `shopkeeper_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: shopkeeper_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `shopkeeper_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_shopkeeper_item_ed` FOREIGN KEY (`item_id`) REFERENCES `shopkeeper_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: shopkeeper_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `shopkeeper_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `shopkeeper_id` int NOT NULL,
@@ -1741,40 +1503,35 @@ CREATE TABLE `shopkeeper_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `item_material` tinyint DEFAULT NULL,
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
   `bitvector4` bigint unsigned DEFAULT NULL,
   `bitvector5` bigint unsigned DEFAULT NULL,
-  `item_material` tinyint DEFAULT NULL,
-  `obj_uid` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `container_id` (`container_id`),
   KEY `idx_shopkeeper_id` (`shopkeeper_id`),
   KEY `idx_vnum` (`vnum`),
-  KEY `idx_obj_uid` (`obj_uid`),
   CONSTRAINT `shopkeeper_items_ibfk_1` FOREIGN KEY (`shopkeeper_id`) REFERENCES `shopkeepers` (`id`) ON DELETE CASCADE,
   CONSTRAINT `shopkeeper_items_ibfk_2` FOREIGN KEY (`container_id`) REFERENCES `shopkeeper_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: shopkeepers
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `shopkeepers` (
   `id` int NOT NULL AUTO_INCREMENT,
   `shop_id` int NOT NULL,
   `mob_vnum` int DEFAULT '0',
   `room_vnum` int DEFAULT '0',
-  `save_time` bigint DEFAULT '0',
+  `save_time` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `shop_id` (`shop_id`),
   KEY `idx_shop_id` (`shop_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: siege_item_affects
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `siege_item_affects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
@@ -1783,20 +1540,16 @@ CREATE TABLE `siege_item_affects` (
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `siege_item_affects_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `siege_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: siege_item_extra_descr
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `siege_item_extra_descr` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `item_id` int unsigned NOT NULL,
-  `keyword` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `idx_item_id` (`item_id`),
   CONSTRAINT `fk_siege_item_ed` FOREIGN KEY (`item_id`) REFERENCES `siege_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: siege_items
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `siege_items` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `room_vnum` int NOT NULL,
@@ -1807,6 +1560,7 @@ CREATE TABLE `siege_items` (
   `cost` int DEFAULT '0',
   `timer` int DEFAULT '-1',
   `extra_flags` bigint unsigned DEFAULT '0',
+  `wear_flags` int DEFAULT NULL,
   `value0` int DEFAULT '0',
   `value1` int DEFAULT '0',
   `value2` int DEFAULT '0',
@@ -1815,28 +1569,25 @@ CREATE TABLE `siege_items` (
   `value5` int DEFAULT '0',
   `value6` int DEFAULT '0',
   `value7` int DEFAULT '0',
-  `name` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `short_descr` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `action_descr` text COLLATE utf8mb4_general_ci,
-  `unique_id` int unsigned DEFAULT NULL,
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `item_material` tinyint DEFAULT NULL,
   `item_type` tinyint DEFAULT NULL,
-  `wear_flags` int DEFAULT NULL,
   `bitvector1` bigint unsigned DEFAULT NULL,
   `bitvector2` bigint unsigned DEFAULT NULL,
   `bitvector3` bigint unsigned DEFAULT NULL,
   `bitvector4` bigint unsigned DEFAULT NULL,
   `bitvector5` bigint unsigned DEFAULT NULL,
-  `item_material` tinyint DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `container_id` (`container_id`),
   KEY `idx_room_vnum` (`room_vnum`),
   KEY `idx_vnum` (`vnum`),
   CONSTRAINT `siege_items_ibfk_1` FOREIGN KEY (`container_id`) REFERENCES `siege_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: statistics
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `statistics` (
   `id` int NOT NULL AUTO_INCREMENT,
   `date` int NOT NULL DEFAULT '0',
@@ -1852,19 +1603,15 @@ CREATE TABLE `statistics` (
   `sum_undeads_levels` int NOT NULL DEFAULT '0',
   `unique_ips_count` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: timers
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `timers` (
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `date` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: towns
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `towns` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `zone_filename` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `zone_filename` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `resources` int DEFAULT '0',
   `defense` int DEFAULT '0',
   `offense` int DEFAULT '0',
@@ -1882,52 +1629,44 @@ CREATE TABLE `towns` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_zone_filename` (`zone_filename`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: world_quest_accomplished
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `world_quest_accomplished` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `pid` varchar(45) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `pid` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `quest_giver` int unsigned NOT NULL DEFAULT '0',
-  `player_name` varchar(45) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `player_name` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `player_level` int unsigned NOT NULL DEFAULT '0',
   `quest_target` int NOT NULL DEFAULT '0',
   `reward_vnum` int NOT NULL DEFAULT '0',
-  `reward_desc` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `reward_desc` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: zone_touches
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `zone_touches` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `boot_time` timestamp NULL DEFAULT NULL,
   `zone_number` int DEFAULT NULL,
-  `touched_at` timestamp NULL DEFAULT NULL,
   `toucher_pid` int DEFAULT NULL,
   `group_size` int DEFAULT NULL,
   `epic_value` int DEFAULT NULL,
   `alignment_delta` int DEFAULT NULL,
+  `boot_time` timestamp NULL DEFAULT NULL,
+  `touched_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_zone_number` (`zone_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: zone_trophy
+  KEY `zone_number_index` (`zone_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `zone_trophy` (
   `pid` bigint NOT NULL DEFAULT '0',
   `zone_number` int NOT NULL DEFAULT '0',
   `exp` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`pid`,`zone_number`),
-  KEY `idx_pid` (`pid`),
-  KEY `idx_zone_number` (`zone_number`),
-  KEY `idx_exp` (`exp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Table: zones
+  KEY `pid_index` (`pid`),
+  KEY `zone_number` (`zone_number`),
+  KEY `exp_index` (`exp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `zones` (
   `id` int NOT NULL AUTO_INCREMENT,
   `number` int DEFAULT NULL,
-  `name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `epic_type` int NOT NULL DEFAULT '0',
   `frequency_mod` float NOT NULL DEFAULT '1',
   `zone_freq_mod` float NOT NULL DEFAULT '1',
@@ -1940,14 +1679,13 @@ CREATE TABLE `zones` (
   `difficulty` int NOT NULL DEFAULT '0',
   `randoms_zone` tinyint(1) NOT NULL DEFAULT '1',
   `alignment` int NOT NULL DEFAULT '0',
-  `last_touch` timestamp NULL DEFAULT NULL,
   `reset_perc` int DEFAULT '0',
   `stonecount` int NOT NULL DEFAULT '1',
+  `last_touch` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_number` (`number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `number_index` (`number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- View: players_view
-CREATE VIEW `players_view` AS select `pd`.`pid` AS `pid`,`pd`.`name` AS `name`,`pd`.`level` AS `level`,`pd`.`race` AS `race_id`,`r`.`ansi_name` AS `race`,`pd`.`m_class` AS `class_id`,`c`.`ansi_name` AS `classname`,`pd`.`racewar` AS `racewar`,`pd`.`assoc_id` AS `assoc_id`,`pd`.`exp` AS `exp`,`pd`.`epics` AS `epics`,`pd`.`played_time` AS `playtime`,(((`pd`.`copper` + (`pd`.`silver` * 10)) + (`pd`.`gold` * 100)) + (`pd`.`platinum` * 1000)) AS `money`,(((`pd`.`bank_copper` + (`pd`.`bank_silver` * 10)) + (`pd`.`bank_gold` * 100)) + (`pd`.`bank_platinum` * 1000)) AS `balance` from ((`player_data` `pd` left join `races` `r` on((`pd`.`race` = `r`.`id`))) left join `classes` `c` on((`pd`.`m_class` = `c`.`id`)));
+
 
 SET FOREIGN_KEY_CHECKS = 1;
