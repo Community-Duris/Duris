@@ -134,6 +134,7 @@ void              format_to_snoopers(char *from_string, char *to_string);
 extern void       update_breath_weapon_properties();
 extern void       update_regen_properties();
 static void       greet(P_desc newd);
+static void       note_player_input_activity(P_desc t, const char *input);
 static void       process_line(P_desc t, char *in);
 
 /* local globals */
@@ -3048,6 +3049,20 @@ incomplete:
 	return 0;
 }
 
+/*
+ * Count accepted player input as activity when it is queued, not only when the
+ * command loop eventually executes it.  Combat waits and map movement can
+ * legitimately delay get_from_q() across several point_update() ticks.
+ */
+static void note_player_input_activity(P_desc t, const char *input)
+{
+	if (!t || t->connected != CON_PLAYING || !t->character || !IS_PC(t->character) || !*input)
+		return;
+
+	t->character->specials.timer = 0;
+	REMOVE_BIT(t->character->specials.act, PLR_AFK);
+}
+
 static void process_line(P_desc t, char *in)
 {
 	char out[MAX_QUEUE_LENGTH * 3]; // max expansion
@@ -3068,6 +3083,7 @@ static void process_line(P_desc t, char *in)
 		out[0] = '\0';
 	}
 
+	note_player_input_activity(t, out);
 
 	int k = strlen(out);
 	if (k > (MAX_INPUT_LENGTH - 1))
