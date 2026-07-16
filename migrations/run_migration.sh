@@ -7,12 +7,23 @@
 set +e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-source "$SCRIPT_DIR/.env"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+if [[ -f "$SCRIPT_DIR/.env" ]]; then
+    # shellcheck disable=SC1091
+    source "$SCRIPT_DIR/.env"
+elif [[ -f "$PROJECT_ROOT/.env" ]]; then
+    # shellcheck disable=SC1091
+    source "$PROJECT_ROOT/.env"
+else
+    printf 'missing migration configuration: expected %s or %s\n' \
+        "$SCRIPT_DIR/.env" "$PROJECT_ROOT/.env" >&2
+    exit 2
+fi
 
 MYSQL_CMD="mysql -h$DB_HOST -P${DB_PORT:-3306} -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=113
+TOTAL=110
 FAILED=0
 
 run_sql() {
@@ -34,6 +45,24 @@ run_sql() {
     fi
     rm -f "$err_file"
     rm -f "$tmpfile"
+}
+
+run_sql_file() {
+    local desc="$1"
+    local sql_file="$2"
+    STEP=$((STEP + 1))
+    printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "$desc"
+
+    local err_file
+    err_file=$(mktemp)
+    if $MYSQL_CMD < "$sql_file" 2>"$err_file"; then
+        echo "ok"
+    else
+        echo "FAILED"
+        head -20 "$err_file"
+        FAILED=$((FAILED + 1))
+    fi
+    rm -f "$err_file"
 }
 
 convert_tables_to_charset() {
@@ -2841,109 +2870,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
 
 convert_tables_to_charset "ensure consistent collation on all tables" 1
 
-# create persistence event tables required by async ownership and zone-touch paths
-run_sql "create persistence event tables" "
-CREATE TABLE IF NOT EXISTS persistence_item_events (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    ts_usec BIGINT UNSIGNED NOT NULL,
-    event_type VARCHAR(64) NOT NULL DEFAULT '',
-    item_uid BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    vnum INT NOT NULL DEFAULT -1,
-    item VARCHAR(255) NOT NULL DEFAULT '',
-    actor VARCHAR(128) NOT NULL DEFAULT '',
-    actor_id INT NOT NULL DEFAULT -1,
-    source VARCHAR(255) NOT NULL DEFAULT '',
-    target VARCHAR(255) NOT NULL DEFAULT '',
-    note VARCHAR(255) NOT NULL DEFAULT '',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_item_uid_ts (item_uid, ts_usec, id),
-    INDEX idx_event_type_created (event_type, created_at)
-) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS persistence_scalar_events (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    event_type VARCHAR(64) NOT NULL DEFAULT '',
-    event_key VARCHAR(255) NOT NULL DEFAULT '',
-    boot_time INT NOT NULL DEFAULT 0,
-    touched_at INT NOT NULL DEFAULT 0,
-    zone_number INT NOT NULL DEFAULT 0,
-    toucher_pid INT NOT NULL DEFAULT 0,
-    group_size INT NOT NULL DEFAULT 0,
-    epic_value INT NOT NULL DEFAULT 0,
-    alignment_delta INT NOT NULL DEFAULT 0,
-    dedupe_key VARCHAR(64) DEFAULT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_scalar_event_key (event_type, event_key),
-    INDEX idx_scalar_zone_time (zone_number, touched_at),
-    UNIQUE KEY uq_scalar_dedupe (dedupe_key)
-) ENGINE=InnoDB;"
-
-run_sql "add item event dedupe key" "
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'dedupe_key');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE persistence_item_events ADD COLUMN dedupe_key VARCHAR(64) DEFAULT NULL',
-    'SELECT 1 INTO @dummy');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND index_name = 'uq_item_dedupe');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE UNIQUE INDEX uq_item_dedupe ON persistence_item_events(dedupe_key)',
-    'SELECT 1 INTO @dummy');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;"
-
-run_sql "add scalar event dedupe key" "
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'dedupe_key');
-SET @sql = IF(@col_exists = 0,
-    'ALTER TABLE persistence_scalar_events ADD COLUMN dedupe_key VARCHAR(64) DEFAULT NULL',
-    'SELECT 1 INTO @dummy');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND index_name = 'uq_scalar_dedupe');
-SET @sql = IF(@idx_exists = 0,
-    'CREATE UNIQUE INDEX uq_scalar_dedupe ON persistence_scalar_events(dedupe_key)',
-    'SELECT 1 INTO @dummy');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;"
-
-# Repair partially deployed persistence-event tables. CREATE TABLE IF NOT EXISTS
-# does not alter an existing table, so add every runtime-required column/index
-# conditionally before workers issue inserts or ownership queries.
-run_sql "repair persistence event schema drift" "
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'id') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'id') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'ts_usec') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN ts_usec BIGINT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'event_type') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN event_type VARCHAR(64) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'item_uid') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN item_uid BIGINT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'vnum') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN vnum INT NOT NULL DEFAULT -1', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'item') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN item VARCHAR(255) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'actor') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN actor VARCHAR(128) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'actor_id') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN actor_id INT NOT NULL DEFAULT -1', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'source') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN source VARCHAR(255) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'target') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN target VARCHAR(255) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'note') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN note VARCHAR(255) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND column_name = 'created_at') = 0, 'ALTER TABLE persistence_item_events ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'event_type') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN event_type VARCHAR(64) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'event_key') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN event_key VARCHAR(255) NOT NULL DEFAULT \'\'', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'boot_time') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN boot_time INT NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'touched_at') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN touched_at INT NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'zone_number') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN zone_number INT NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'toucher_pid') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN toucher_pid INT NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'group_size') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN group_size INT NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'epic_value') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN epic_value INT NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'alignment_delta') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN alignment_delta INT NOT NULL DEFAULT 0', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND column_name = 'created_at') = 0, 'ALTER TABLE persistence_scalar_events ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND index_name = 'idx_item_uid_ts'); SET @sql = IF(@idx_exists = 0, 'CREATE INDEX idx_item_uid_ts ON persistence_item_events(item_uid, ts_usec, id)', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND index_name = 'idx_event_type_created'); SET @sql = IF(@idx_exists = 0, 'CREATE INDEX idx_event_type_created ON persistence_item_events(event_type, created_at)', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND index_name = 'idx_scalar_event_key'); SET @sql = IF(@idx_exists = 0, 'CREATE INDEX idx_scalar_event_key ON persistence_scalar_events(event_type, event_key)', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND index_name = 'idx_scalar_zone_time'); SET @sql = IF(@idx_exists = 0, 'CREATE INDEX idx_scalar_zone_time ON persistence_scalar_events(zone_number, touched_at)', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
+run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persistence_contract.sql"
 
 # Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS
 # above cannot repair existing tables, but current save/load and pwipe SQL requires
@@ -3017,11 +2944,7 @@ SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schem
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector4') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
 
-run_sql "convert auction tables to InnoDB" "
-ALTER TABLE auction_bid_history ENGINE=InnoDB;
-ALTER TABLE auction_item_pickups ENGINE=InnoDB;
-ALTER TABLE auction_money_pickups ENGINE=InnoDB;
-ALTER TABLE auctions ENGINE=InnoDB;
+run_sql "convert ship cargo tables to InnoDB" "
 ALTER TABLE ship_cargo_prices ENGINE=InnoDB;
 ALTER TABLE ship_cargo_market_mods ENGINE=InnoDB;"
 
