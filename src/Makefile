@@ -99,6 +99,7 @@ OBJS =  $(SHIP_OBJS) \
 				 enhance.o \
 				 crafting.o \
 				 mining_config.o \
+				 random_equipment_config.o \
 				 salvage.o \
 				 material_rarity.o \
 				 dreadlord.o \

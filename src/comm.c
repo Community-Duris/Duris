@@ -60,6 +60,7 @@
 #include "spells.h"
 #include "enhance.h"
 #include "crafting.h"
+#include "random_equipment_config.h"
 #include "material_rarity.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -543,6 +544,9 @@ void run_the_game(int port, int sslport)
 
 		fprintf(stderr, "-- Booting crafting system\r\n");
 		boot_crafting_system();
+
+		fprintf(stderr, "-- Loading random equipment configuration\r\n");
+		boot_random_equipment_config();
 
 #ifdef SIEGE_ENABLED
 		fprintf(stderr, "-- Loading town data\r\n");
