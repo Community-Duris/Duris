@@ -26,6 +26,7 @@
 #include "ctf.h"
 #include "defines.h"
 #include "epic_bonus.h"
+#include "frag_cap_config.h"
 #include "files.h"
 #include "gmcp.h"
 #include "justice.h"
@@ -1101,6 +1102,9 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		return 0;
 	}
+
+	if (IS_HARDCORE(ch))
+		levelcap = frag_cap_config_hardcore_level_cap(levelcap);
 
 	// debug("check 1 exp (%d:%d).", type, value);
 	if (CHAR_IN_ARENA(ch) || IS_ROOM(ch->in_room, ROOM_GUILD | ROOM_SAFE))

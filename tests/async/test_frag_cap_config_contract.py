@@ -14,6 +14,7 @@ sql_h = (SRC / "sql.h").read_text()
 comm = (SRC / "comm.c").read_text()
 redis = (SRC / "redis.c").read_text()
 fraglist = (SRC / "fraglist.c").read_text()
+limits = (SRC / "limits.c").read_text()
 makefile = (SRC / "Makefile").read_text()
 
 assert "frag_cap_config.o" in makefile
@@ -34,7 +35,13 @@ for key in (
     "timer.circle.level.35.days",
     "timer.circle.level.40.days",
     "timer.circle.level.45.days",
-    "timer.circle.level.50.days",
+    "timer.level.50.days",
+    "timer.level.51.days",
+    "timer.level.52.days",
+    "timer.level.53.days",
+    "timer.level.54.days",
+    "timer.level.55.days",
+    "hardcore.levels.beyond.cap",
     "boon.duration.minutes",
     "boon.bonus",
 ):
@@ -52,7 +59,13 @@ for token in (
     "timer_circle_level_35_days",
     "timer_circle_level_40_days",
     "timer_circle_level_45_days",
-    "timer_circle_level_50_days",
+    "timer_level_50_days",
+    "timer_level_51_days",
+    "timer_level_52_days",
+    "timer_level_53_days",
+    "timer_level_54_days",
+    "timer_level_55_days",
+    "hardcore_levels_beyond_cap",
     "boon_duration_minutes",
     "boon_bonus",
 ):
@@ -65,6 +78,12 @@ assert "frag_cap_config_timer_days" in impl
 assert "timer.circle.level.35" in config
 assert "cap.level.step=1" in config
 assert "timer.default.days=5" in config
+assert "hardcore.levels.beyond.cap=2" in config
+assert "timer.level.56.days" not in config
+assert "timer_level_56_days" not in header
+assert "timer_level_56_days" not in impl
+assert "frag_cap_config_hardcore_level_cap" in limits
+assert "IS_HARDCORE(ch)" in limits
 assert "frag_cap_config_boon_duration_minutes" in impl
 assert "frag_cap_config_boon_bonus" in impl
 assert "FROM_UNIXTIME" in sql

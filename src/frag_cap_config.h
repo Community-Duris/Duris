@@ -13,7 +13,13 @@ struct frag_cap_config
     int timer_circle_level_35_days;
     int timer_circle_level_40_days;
     int timer_circle_level_45_days;
-    int timer_circle_level_50_days;
+    int timer_level_50_days;
+    int timer_level_51_days;
+    int timer_level_52_days;
+    int timer_level_53_days;
+    int timer_level_54_days;
+    int timer_level_55_days;
+    int hardcore_levels_beyond_cap;
     int boon_duration_minutes;
     int boon_bonus;
 };
@@ -25,6 +31,7 @@ double frag_cap_config_frags_for_level(int level);
 int frag_cap_config_timer_days(int old_level);
 int frag_cap_config_reset_level(void);
 int frag_cap_config_reset_timer_days(void);
+int frag_cap_config_hardcore_level_cap(int normal_cap);
 int frag_cap_config_boon_duration_minutes(void);
 int frag_cap_config_boon_bonus(void);
 

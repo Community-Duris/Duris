@@ -1862,4 +1862,3 @@ double enhance_stat_material_quantity_multiplier = 1.0;
 
 			obj_to_char(material, mob);
 			}
-

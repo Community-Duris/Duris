@@ -1,4 +1,5 @@
 #include "prototypes.h"
+#include "config.h"
 #include "frag_cap_config.h"
 
 #include <errno.h>
@@ -9,7 +10,10 @@
 
 static const struct frag_cap_config defaults = {
     25, 25, 31, 56, 1, 0.429f,
-    5, 7, 7, 7, 7,
+    5,
+    7, 7, 7,
+    7, 7, 7, 7, 7, 7,
+    2,
     2880, 2};
 
 static struct frag_cap_config active;
@@ -74,17 +78,23 @@ static void apply_value(const char *key, const char *value)
 #define FLOAT_KEY(name, field, low, high) \
     if (!strcmp(key, name)) { set_float(key, value, &active.field, low, high); return; }
 
-    INT_KEY("cap.floor.level", cap_floor_level, 1, 100)
-    INT_KEY("cap.frag.base.level", cap_frag_base_level, 1, 100)
-    INT_KEY("cap.reset.level", cap_reset_level, 1, 100)
-    INT_KEY("cap.maximum.level", cap_maximum_level, 1, 100)
+    INT_KEY("cap.floor.level", cap_floor_level, 1, MAXLVLMORTAL)
+    INT_KEY("cap.frag.base.level", cap_frag_base_level, 1, MAXLVLMORTAL)
+    INT_KEY("cap.reset.level", cap_reset_level, 1, MAXLVLMORTAL)
+    INT_KEY("cap.maximum.level", cap_maximum_level, 1, MAXLVLMORTAL)
     INT_KEY("cap.level.step", cap_level_step, 1, 20)
     FLOAT_KEY("cap.frags.per.level", cap_frags_per_level, 0.001f, 1000.0f)
     INT_KEY("timer.default.days", timer_default_days, 0, 3650)
     INT_KEY("timer.circle.level.35.days", timer_circle_level_35_days, 0, 3650)
     INT_KEY("timer.circle.level.40.days", timer_circle_level_40_days, 0, 3650)
     INT_KEY("timer.circle.level.45.days", timer_circle_level_45_days, 0, 3650)
-    INT_KEY("timer.circle.level.50.days", timer_circle_level_50_days, 0, 3650)
+    INT_KEY("timer.level.50.days", timer_level_50_days, 0, 3650)
+    INT_KEY("timer.level.51.days", timer_level_51_days, 0, 3650)
+    INT_KEY("timer.level.52.days", timer_level_52_days, 0, 3650)
+    INT_KEY("timer.level.53.days", timer_level_53_days, 0, 3650)
+    INT_KEY("timer.level.54.days", timer_level_54_days, 0, 3650)
+    INT_KEY("timer.level.55.days", timer_level_55_days, 0, 3650)
+    INT_KEY("hardcore.levels.beyond.cap", hardcore_levels_beyond_cap, 0, 56)
     INT_KEY("boon.duration.minutes", boon_duration_minutes, 0, 100000)
     INT_KEY("boon.bonus", boon_bonus, 0, 100)
 
@@ -134,7 +144,7 @@ void boot_frag_cap_config(void)
     }
 
     logit(LOG_STATUS,
-          "Loaded frag-cap config: floor %d, frag base %d, reset %d, ceiling %d, step %d, %.3f frags/level, default timer %d days, circle timers %d/%d/%d/%d days.",
+          "Loaded frag-cap config: floor %d, frag base %d, reset %d, ceiling %d, step %d, %.3f frags/level, default timer %d days, circle timers %d/%d/%d days, level 50-55 timers %d/%d/%d/%d/%d/%d, hardcore allowance %d.",
           active.cap_floor_level,
           active.cap_frag_base_level,
           active.cap_reset_level,
@@ -145,7 +155,13 @@ void boot_frag_cap_config(void)
           active.timer_circle_level_35_days,
           active.timer_circle_level_40_days,
           active.timer_circle_level_45_days,
-          active.timer_circle_level_50_days);
+          active.timer_level_50_days,
+          active.timer_level_51_days,
+          active.timer_level_52_days,
+          active.timer_level_53_days,
+          active.timer_level_54_days,
+          active.timer_level_55_days,
+          active.hardcore_levels_beyond_cap);
 }
 
 const struct frag_cap_config *frag_cap_config_get(void)
@@ -186,7 +202,17 @@ int frag_cap_config_timer_days(int old_level)
     case 45:
         return config->timer_circle_level_45_days;
     case 50:
-        return config->timer_circle_level_50_days;
+        return config->timer_level_50_days;
+    case 51:
+        return config->timer_level_51_days;
+    case 52:
+        return config->timer_level_52_days;
+    case 53:
+        return config->timer_level_53_days;
+    case 54:
+        return config->timer_level_54_days;
+    case 55:
+        return config->timer_level_55_days;
     default:
         return config->timer_default_days;
     }
@@ -200,6 +226,12 @@ int frag_cap_config_reset_level(void)
 int frag_cap_config_reset_timer_days(void)
 {
     return frag_cap_config_get()->timer_default_days;
+}
+
+int frag_cap_config_hardcore_level_cap(int normal_cap)
+{
+    int level_cap = normal_cap + frag_cap_config_get()->hardcore_levels_beyond_cap;
+    return (level_cap > MAXLVLMORTAL) ? MAXLVLMORTAL : level_cap;
 }
 
 int frag_cap_config_boon_duration_minutes(void)

@@ -571,4 +571,3 @@ void do_salvage(P_char ch, char *argument, int cmd)
 	char_light(ch);
 	room_light(ch->in_room, REAL);
 }
-
