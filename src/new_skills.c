@@ -742,6 +742,7 @@ void chant_diamond_soul(P_char ch, char *argument, int cmd)
 
 	af.modifier = -(MAX(2, (int)(GET_LEVEL(ch) / 8)));
 	af.location = APPLY_SAVING_PARA;
+	af.wear_off_message_index = 1;
 	affect_to_char(ch, &af);
 
 	send_to_char(buf, ch);

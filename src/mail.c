@@ -334,8 +334,8 @@ void store_mail(char *to, char *from, char *message_pointer)
 	int bytes_written = 0;
 	int total_length  = strlen(message_pointer);
 
-	assert(sizeof(header_block_type) == sizeof(data_block_type));
-	assert(sizeof(header_block_type) == BLOCK_SIZE);
+	static_assert(sizeof(header_block_type) == sizeof(data_block_type));
+	static_assert(sizeof(header_block_type) == BLOCK_SIZE);
 
 	if (!*from || !*to || !*message_pointer)
 	{

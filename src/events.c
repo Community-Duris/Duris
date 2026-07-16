@@ -318,7 +318,6 @@ void clear_char_nevents(P_char ch, int type, void *func)
 				}
 				break;
 			case EVENT_MOB_HUNT:
-				raise(SIGSEGV);
 				break;
 		}
 
@@ -671,7 +670,7 @@ void event_wait(P_char ch, P_char victim, P_obj obj, void *data)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "event_wait called in events.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure.
 	{
@@ -708,7 +707,7 @@ void CharWait(P_char ch, int delay)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "CharWait called in events.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!IS_ALIVE(ch))
@@ -796,7 +795,7 @@ bool RemoveEvent(void)
 	if (!e1 || (e1->element == -1))
 	{
 		logit(LOG_EXIT, "RemoveEvent: no valid event to remove");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	/*
@@ -816,7 +815,6 @@ bool RemoveEvent(void)
 			e1->target.t_spell = NULL;
 			break;
 		case EVENT_MOB_HUNT:
-			raise(SIGSEGV);
 			break;
 	}
 
@@ -827,8 +825,7 @@ bool RemoveEvent(void)
 	switch (e1->type)
 	{
 		case EVENT_MOB_HUNT:
-			raise(SIGSEGV);
-		case EVENT_CHAR_EXECUTE:
+			break;
 		case EVENT_FALLING_CHAR:
 		case EVENT_SPELLCAST:
 		case EVENT_SWIMMING:
@@ -870,7 +867,7 @@ bool RemoveEvent(void)
 				if (!e2)
 				{
 					logit(LOG_EXIT, "event not found in obj->events list");
-					raise(SIGSEGV);
+					break;
 				}
 				e2->next = e1->next;
 			}
@@ -988,7 +985,6 @@ __attribute__((deprecated)) bool Schedule(int type, long pulses, int flag, void 
 				e1->target.t_ch = NULL;
 			break;
 		case EVENT_MOB_HUNT:
-			raise(SIGSEGV);
 			break;
 		case EVENT_CHAR_EXECUTE:
 			e1->actor.a_ch    = (P_char)actor;
@@ -1007,7 +1003,7 @@ __attribute__((deprecated)) bool Schedule(int type, long pulses, int flag, void 
 			if (pulses > 4)
 			{
 				logit(LOG_EXIT, "Schedule: too many pulses for EVENT_SPELLCAST");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			break;
 		case EVENT_FALLING_CHAR:
@@ -1050,7 +1046,7 @@ __attribute__((deprecated)) bool Schedule(int type, long pulses, int flag, void 
 	if (loc < 0)
 	{
 		logit(LOG_EXIT, "Schedule: loc is screwy");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	/*
@@ -1070,7 +1066,7 @@ __attribute__((deprecated)) bool Schedule(int type, long pulses, int flag, void 
 	switch (e1->type)
 	{
 		case EVENT_MOB_HUNT:
-			raise(SIGSEGV);
+			return FALSE;
 		case EVENT_CHAR_EXECUTE:
 		case EVENT_FALLING_CHAR:
 		case EVENT_SPELLCAST:

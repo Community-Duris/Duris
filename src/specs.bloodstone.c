@@ -1151,7 +1151,7 @@ int bs_bear(P_char ch, P_char pl, int cmd, char *arg)
 			if (!bearcrap)
 			{
 				logit(LOG_EXIT, "assert: bs_bear() failed to load object 7150");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			obj_to_room(bearcrap, ch->in_room);
 			act("$n looks around, squats, and takes a huge crap.", TRUE, ch, 0, 0, TO_ROOM);
@@ -3236,8 +3236,7 @@ int bs_undead_die(P_char ch, P_char pl, int cmd, char *arg)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "No ch to bs_undead_die()!");
-		raise(SIGSEGV);
-		return TRUE;
+		return FALSE;
 	}
 	/*
 	   spec die

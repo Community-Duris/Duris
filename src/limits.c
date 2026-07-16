@@ -771,6 +771,10 @@ void advance_level(P_char ch)
 
 	// Send GMCP update for level change
 	gmcp_char_status(ch);
+
+
+  /* Schedule a deferred save to avoid lag from large inventories */
+  persistence_schedule_level_checkpoint(ch, 1, 2, "advance_level");
 }
 
 /*
@@ -1704,6 +1708,7 @@ void point_update(void)
 				if (i->desc)
 					close_socket(i->desc);
 				// writeCharacter(i, 5, reloghere);
+				persistence_flush_character_saves(i);
 				writeCharacter(i, RENT_LINKDEAD, i->in_room);
 				// If it's not an immortal.
 				if (GET_LEVEL(i) < MINLVLIMMORTAL)

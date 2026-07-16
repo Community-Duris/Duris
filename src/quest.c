@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <glob.h>
 #include "spells.h"
 #include "sql.h"
 
@@ -33,7 +34,7 @@ extern int                    mini_mode;
 extern long                   new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
 
 #define QUEST_FILE      "areas/world.qst"
-#define MINI_QUEST_FILE "areas/mini.qst"
+#define MINI_QUEST_FILE "areas_mini/mini.qst"
 
 struct quest_data quest_index[MAX_QUESTS];
 int               number_of_quests = 0;
@@ -574,6 +575,19 @@ void quick_sort_quest_index(int min, int max)
 	qsort(quest_index, number_of_quests, sizeof(struct quest_data), quest_sort_comp);
 }
 
+static FILE *open_quest_stream(const char *filename)
+{
+	FILE *quest_f = fopen(filename, "r");
+	if (quest_f)
+		return quest_f;
+
+	// Do not fall back to globbing areas/qst/*.qst here.
+	// Mini mode is effectively unused, and that fallback silently mixed the
+	// mini mob table with the full quest set, producing a flood of real_mobile()
+	// warnings for questers that do not exist in areas/mini.mob.
+	return NULL;
+}
+
 void boot_the_quests(void)
 {
 	int                         temp;
@@ -593,10 +607,12 @@ void boot_the_quests(void)
 		strcpy(filename, QUEST_FILE);
 	}
 
-	if (!(quest_f = fopen(filename, "r")))
+	if (!(quest_f = open_quest_stream(filename)))
 	{
+		if (mini_mode == 1)
+			return; /* mini mode is unused; skip quests cleanly if the file is absent */
 		perror("Error in boot quest\n");
-		raise(SIGSEGV);
+		return;
 	}
 	quest_index[number_of_quests].quest_message  = 0;
 	quest_index[number_of_quests].quest_complete = 0;
@@ -605,7 +621,8 @@ void boot_the_quests(void)
 	{
 		tbuf = 0;
 		temp = 0;
-		fscanf(quest_f, "%c%d \n", &tbuf, &temp);
+		if (fscanf(quest_f, "%c%d \n", &tbuf, &temp) != 2)
+			break;
 		if (tbuf == '#')
 		{ /* a new quest */
 
@@ -613,7 +630,7 @@ void boot_the_quests(void)
 			if (temp <= 0)
 			{
 				perror("Error in boot quest: mob id must be greater than 0\n");
-				raise(SIGSEGV);
+				exit(1);
 			}
 			if (quest_index[number_of_quests].quester < 0)
 			{
@@ -662,7 +679,7 @@ void boot_the_quests(void)
 						else
 						{
 							logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-							raise(SIGSEGV);
+							exit(1);
 						}
 						break;
 					case 'G':
@@ -684,7 +701,7 @@ void boot_the_quests(void)
 									break;
 								default:
 									logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-									raise(SIGSEGV);
+									exit(1);
 							}
 							gp->number = 0;
 							fscanf(quest_f, " %d \n", &(gp->number));
@@ -694,7 +711,7 @@ void boot_the_quests(void)
 						else
 						{
 							logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-							raise(SIGSEGV);
+							exit(1);
 						}
 						break;
 					case 'R':
@@ -719,7 +736,7 @@ void boot_the_quests(void)
 									break;
 								default:
 									logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-									raise(SIGSEGV);
+									exit(1);
 							}
 							gp->number = 0;
 							fscanf(quest_f, " %d \n", &(gp->number));
@@ -734,17 +751,17 @@ void boot_the_quests(void)
 						else
 						{
 							logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-							raise(SIGSEGV);
+							exit(1);
 						}
 						break;
 					default:
 						logit(LOG_EXIT, "Error in boot quest: quester %d, letterStrn=%s.\n", mob_index[quest_index[number_of_quests].quester].virtual_number, letterStrn);
-						raise(SIGSEGV);
+						exit(1);
 				}
 				if (!fscanf(quest_f, " %s \n", letterStrn))
 				{
 					logit(LOG_EXIT, "Error in boot quest: quester %d.\n", mob_index[quest_index[number_of_quests].quester].virtual_number);
-					raise(SIGSEGV);
+					exit(1);
 				}
 			}
 		}
@@ -755,7 +772,7 @@ void boot_the_quests(void)
 		else
 		{
 			logit(LOG_EXIT, "Error in boot quest: quester #%d.\n", number_of_quests);
-			raise(SIGSEGV);
+			exit(1);
 		}
 	}
 	fclose(quest_f);
@@ -763,7 +780,7 @@ void boot_the_quests(void)
 	if (number_of_quests == MAX_QUESTS)
 	{
 		logit(LOG_EXIT, "\t\tMaximum of %d quests exceeded\n", MAX_QUESTS);
-		raise(SIGSEGV);
+		exit(1);
 	}
 	fprintf(stderr, "\t\t%d quests allocated\n", number_of_quests);
 

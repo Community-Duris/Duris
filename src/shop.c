@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <glob.h>
 #include "damage.h"
 #include "epic_bonus.h"
 #include "justice.h"
@@ -551,7 +552,6 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	}
 	SET_BIT(temp1->extra2_flags, ITEM2_STOREITEM);
 	obj_to_char(temp1, ch);
-	deleteShopKeeper(shop_nr);
 	writeShopKeeper(keeper);
 
 	// Format: buy <object> <container> <amount>
@@ -1464,6 +1464,46 @@ int read_type_list(FILE *shop_f, struct shop_buy_data *list, int max)
  * Boot routine re-written for new options MIAX
  */
 
+static FILE *open_shop_stream(void)
+{
+	FILE *shop_f = fopen(SHOP_FILE, "r");
+	if (shop_f)
+		return shop_f;
+
+	glob_t gl;
+	memset(&gl, 0, sizeof(gl));
+	if (glob("areas/shp/*.shp", 0, NULL, &gl) != 0 || gl.gl_pathc == 0)
+	{
+		globfree(&gl);
+		return NULL;
+	}
+
+	FILE *tmp = tmpfile();
+	if (!tmp)
+	{
+		globfree(&gl);
+		return NULL;
+	}
+
+	char buf[8192];
+	for (size_t i = 0; i < gl.gl_pathc; ++i)
+	{
+		if (strstr(gl.gl_pathv[i], "/end.shp"))
+			continue;
+		FILE *in = fopen(gl.gl_pathv[i], "r");
+		if (!in)
+			continue;
+		size_t n;
+		while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+			fwrite(buf, 1, n, tmp);
+		fclose(in);
+	}
+	fputs("$~\n", tmp);
+	rewind(tmp);
+	globfree(&gl);
+	return tmp;
+}
+
 void boot_the_shops(void)
 {
 	char                 tbuf, *buf;
@@ -1473,12 +1513,13 @@ void boot_the_shops(void)
 	static bool          shop_end = TRUE;
 	struct shop_buy_data list[MAX_SHOP_OBJ + 1];
 
-	if (!(shop_f = fopen(SHOP_FILE, "r")))
-	{
-		perror("boot_the_shops: Error in boot shop - Could not open world.shp!\n");
-		raise(SIGSEGV);
-	}
+	shop_end       = TRUE;
 	number_of_shops = 0;
+	if (!(shop_f = open_shop_stream()))
+	{
+		perror("boot_the_shops: Error in boot shop - Could not open world.shp or any fallback shop files!\n");
+		return;
+	}
 
 	for (;;)
 	{
@@ -1510,7 +1551,7 @@ void boot_the_shops(void)
 			{
 				fprintf(stderr, "boot_the_shops: Old shop: '%s'!\r\n", buf);
 				perror("Old shop exists!");
-				raise(SIGSEGV);
+				fatal_boot_error("shop", "boot_the_shops: old shop format in '%s'", buf);
 			}
 
 			for (count = 0; count < MAX_PROD; count++)
@@ -1542,12 +1583,12 @@ void boot_the_shops(void)
 			if (fscanf(shop_f, "%f \n", &t_buy) != 1)
 			{
 				fprintf(stderr, "boot_the_shops: '%s' has bad t_buy!\r\n", buf);
-				raise(SIGSEGV);
+				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_buy", buf);
 			}
 			if (fscanf(shop_f, "%f \n", &t_sell) != 1)
 			{
 				fprintf(stderr, "boot_the_shops: '%s' has bad t_sell!\r\n", buf);
-				raise(SIGSEGV);
+				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_sell", buf);
 			}
 
 			shop_index[number_of_shops].sell_percent = t_sell;
@@ -1691,7 +1732,7 @@ void boot_the_shops(void)
 	{
 		fprintf(stderr, "WARNING! The shop file has an error in it! (boot stopped)\r\n");
 		logit(LOG_STATUS, "WARNING! The shop file has an error in it! (boot stopped)");
-		raise(SIGSEGV);
+		fatal_boot_error("shop", "boot_the_shops: shop file ended unexpectedly");
 	}
 	fclose(shop_f);
 }
@@ -1768,7 +1809,7 @@ bool transact(P_char from, P_obj merchandise, P_char to, int value)
 				if (OBJ_WORN(merchandise))
 				{
 					logit(LOG_EXIT, "assert: couldn't unequip in transact()");
-					raise(SIGSEGV);
+					return FALSE;
 				}
 			}
 			else

@@ -1279,8 +1279,8 @@ int summon_new_demon(P_char ch, int subtype)
 
 	if (!(tmp = read_mobile(1006, VIRTUAL)))
 	{
-		logit(LOG_EXIT, "assert: error in summon_new_demon()");
-		raise(SIGSEGV);
+		logit(LOG_EXIT, "summon_new_demon: mob #1006 unavailable");
+		return FALSE;
 	}
 	else
 	{

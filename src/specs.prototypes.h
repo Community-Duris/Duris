@@ -1069,6 +1069,7 @@ int tracks(P_obj ch, P_char pl, int cmd, char *arg);
 int ice_shattered_bits(P_obj ch, P_char pl, int cmd, char *arg);
 
 // storag lockers
+int storage_locker(int room, P_char ch, int cmd, char *arg);
 int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg);
 int storage_locker_obj_hook(P_obj obj, P_char ch, int cmd, char *argument);
 

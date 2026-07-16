@@ -510,7 +510,7 @@ void  do_quit(P_char, char *, int);
 void  do_recite(P_char, char *, int);
 void  do_rub(P_char, char *, int);
 void  do_save(P_char, char *, int);
-void  do_save_silent(P_char, int);
+bool  do_save_silent(P_char, int);
 void  do_sneak(P_char, char *, int);
 void  do_split(P_char, char *, int);
 void  do_steal(P_char, char *, int);
@@ -1043,6 +1043,7 @@ int     writePetStatus(char *, P_char);
 int     writeWitnessed(char *, P_char);
 uint    getInt(char **);
 long    getLong(char **);
+unsigned long long getUnsignedLongLong(char **);
 ulong   ObjUniqueFlags(P_obj, P_obj);
 ush_int getShort(char **);
 void    PurgeCorpseFile(P_obj);
@@ -1050,8 +1051,9 @@ void    confiscate_all(P_char);
 // void recalc_base_hits(P_char);
 void restoreCorpses(void);
 void writeCorpse(P_obj);
+void persistence_refresh_restored_corpse(P_obj corpse, const char *source);
 int  writeObject(P_obj, int, ulong, int, int, char *);
-int  write_one_object(P_obj, char *);
+int  write_one_object(P_obj, char *, int include_persistent_uid = TRUE);
 void restoreSavedItems(void);
 void writeSavedItem(P_obj);
 void PurgeSavedItemFile(P_obj);
@@ -1235,6 +1237,8 @@ void                  extract_obj(P_obj obj, int gone_for_good = FALSE); // Only
                                                                          //   and it's going away completely, then use.
 void                   obj_from_char(P_obj);
 void                   obj_from_obj(P_obj);
+bool                   obj_can_nest(P_obj obj, P_obj obj_to);
+bool                   obj_is_in_container(P_obj obj, P_obj container);
 void                   recalc_container_weight(P_obj);
 void                   container_reset_empty_weight(P_obj);
 int                    container_total_weight(P_obj);
@@ -2999,6 +3003,8 @@ void      ereglog(int level, const char *format, ...);
 const int char_in_list(const P_char);
 const int is_char_in_room(const P_char, int);
 bool      racewar(P_char, P_char);
+bool      who_visible_to(P_char, P_char);
+const char *who_display_name(P_char viewer, P_char viewee, char *buf, size_t bufsize);
 P_char    char_in_room(int);
 bool      spell_can_affect_char(P_char, int);
 bool      FightingCheck(P_char, P_char, const char *);
@@ -3057,17 +3063,66 @@ void                  CAP(char *);
 void                  DECAP(char *);
 void                  InitGrantFastLookup(void);
 void                  logit(const char *, const char *, ...);
+void                  persistence_alert(int level, const char *domain,
+                                        const char *owner,
+                                        const char *item_uid,
+                                        const char *event_id,
+                                        const char *action,
+                                        const char *format, ...);
+unsigned long long    persistence_next_item_uid(void);
+void                  persistence_assign_item_uid(P_obj obj, const char *reason);
+const char           *persistence_item_uid_text(P_obj obj, char *buf,
+                                                int buf_size);
+void                  persistence_record_item_event(const char *event_type,
+                                                    P_obj obj, P_char actor,
+                                                    const char *source,
+                                                    const char *target,
+                                                    const char *note);
+int                   persistence_flush_item_events(int max_events);
+int                   persistence_replay_fallback_events(void);
+int                   persistence_quarantine_fallback_events(void);
+int                   persistence_pending_item_events(void);
+unsigned long         persistence_dropped_item_events(void);
+int                   persistence_start_item_event_worker(void);
+void                  persistence_stop_item_event_worker(void);
+int                   persistence_item_event_worker_active(void);
+int                   persistence_write_fallback_event_line(const char *line, const char *domain, const char *owner, const char *action);
+int                   persistence_start_scalar_event_worker(void);
+void                  persistence_stop_scalar_event_worker(void);
+int                   persistence_prepare_pwipe(void);
+int                   persistence_scalar_event_worker_active(void);
+int                   persistence_start_large_event_worker(void);
+void                  persistence_stop_large_event_worker(void);
+int                   persistence_pending_scalar_events(void);
+unsigned long         persistence_dropped_scalar_events(void);
+void                  persistence_schedule_character_save(P_char ch, int type, int delay, const char *reason);
+void                  persistence_schedule_level_checkpoint(P_char ch, int type, int delay, const char *reason);
+void                  persistence_flush_character_saves(P_char ch);
+void                  persistence_flush_all_character_saves(void);
 void                  sprint64bit(ulong *, const char **, char *);
 void                  sprintbit(ulong, const char **, char *);
 void                  sprinttype(int, const char **, char *);
 void                  loginlog(int, const char *, ...);
 void                  statuslog(int, const char *, ...);
 void                  banlog(int, const char *, ...);
+void                  logit(const char *, const char *, ...);
+void                  persistence_alert(int level, const char *domain,
+                                        const char *owner,
+                                        const char *fmt,
+                                        ...);
 void                  epiclog(int, const char *, ...);
 void                  strToLower(char *);
 void                  wizlog(int level, const char *, ...);
 void                  debug(const char *, ...);
 void                  logexp(const char *, ...);
+
+void                  fatal_boot_error(const char *component, const char *fmt, ...);
+void                  panic_corruption(const char *component, const char *fmt, ...);
+[[noreturn]] int      panic_corruption_int(const char *component, const char *fmt, ...);
+bool                  require_char(P_char ch, const char *component, const char *fmt, ...);
+bool                  require_data(const void *data, const char *component, const char *fmt, ...);
+void                  request_shutdown(int shutdown_type, const char *issuer, const char *reason);
+
 int                   distance_from_shore(int);
 int                   dir_from_keyword(char *);
 int                   weight_notches_above_naked(P_char);

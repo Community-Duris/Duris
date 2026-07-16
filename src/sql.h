@@ -93,10 +93,35 @@ int         sql_find_racewar_for_ip(char *ip, int *racewar_side);
 // to log disconnect times...
 void sql_disconnectIP(P_char ch);
 bool qry(const char *format, ...);
+bool sql_persistence_write_item_event_line(const char *line);
+bool sql_persistence_write_scalar_event_line(const char *line);
+bool sql_persistence_write_large_event_line(const char *line);
+bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_before, bool drain_after);
+void sql_trace_panic(void);
+
+/* Resolve which database name to connect to based on the current
+ * running port.  On non-default ports (e.g. dev builds) the live
+ * "duris" database is replaced by the "duris_dev" sandbox so the
+ * boot-time hack can never accidentally clobber production data.
+ * This single helper is used by initialize_mysql(), the legacy
+ * persistenceDB fallback, and every slot in sql_pool_init() so the
+ * sync DB connection and the async/pool connections always target
+ * the same database. */
+const char *sql_persistence_db_name(void);
+
+MYSQL *sql_persistence_connection(void);
+void    sql_persistence_release_connection(MYSQL *conn);
+bool sql_persistence_execute_raw(const char *sql);
+bool sql_persistence_item_owner_matches(unsigned long long item_uid,
+                                        const char *owner_type,
+                                        const char *owner_ref,
+                                        const char *context);
 void sql_world_quest_finished(P_char ch, P_obj obj);
 int  sql_world_quest_done_already(P_char ch, int number);
 int  sql_world_quest_can_do_another(P_char ch);
+void sql_zone_touch_finished(const char *event_key, int boot_time, int touched_at, int zone_number, int toucher_pid, int group_size, int epic_value, int alignment_delta);
 void sql_clear_results();
+bool sql_run_multi_query(const char *query);
 
 void send_to_pid_offline(const char *msg, int pid);
 void send_offline_messages(P_char ch);
@@ -118,12 +143,14 @@ void show_frag_trophy(P_char ch, P_char who);
 void   sql_update_frag_leaderboard(P_char ch);
 void   sql_update_account_character(P_char ch);
 double sql_get_total_donated(const char *account_name);
-void   sql_soft_delete_character(long pid);
+bool   sql_soft_delete_character(long pid);
 
 string get_mud_info(const char *name);
 void   send_mud_info(const char *name, P_char ch);
 
 string escape_str(const char *str);
+
+void sql_clear_results_on(MYSQL *conn);
 
 #include <vector>
 using namespace std;
@@ -169,5 +196,13 @@ void sql_get_sincesunk_frags(char owner, float *frags);
 void sql_add_sincesunk_frags(char owner, float frags);
 
 bool sql_pwipe(int code_verify);
+bool sql_verify_pwipe_manifest(void);
+bool sql_verify_persistence_schema(void);
+bool sql_verify_auction_engines(void);
 bool sql_clear_zone_trophy();
+/* ---- Persistence layer declarations ---- */
+/* (duplicate item/scalar event declarations removed; remaining: */
+void log_epic_gain_event(const char *event_key, int pid, int type,
+                         int type_id, int epics);
+
 #endif

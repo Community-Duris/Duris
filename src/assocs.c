@@ -87,6 +87,10 @@ void sql_update_assoc_table()
 
 			name           = escape_str(guild->get_name().c_str());
 			MYSQL_RES *res = mysql_store_result(DB);
+			if (!res) {
+				logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+				return;
+			}
 			if (mysql_num_rows(res) < 1)
 			{
 				qry("INSERT INTO associations (id, name, active) VALUES (%d, '%s', 1)", i, name.c_str());
@@ -389,7 +393,7 @@ bool found_asc(P_char god, P_char leader, char *bits, char *asc_name)
 
 #ifndef __NO_MYSQL__
 	mysql_real_escape_string(DB, buf, asc_name, strlen(asc_name));
-	qry("REPLACE INTO associations (id, name, active) VALUES (%d, '%s', 1)", i, buf);
+	qry("INSERT INTO associations (id, name, active) VALUES (%d, '%s', 1) ON DUPLICATE KEY UPDATE name = VALUES(name), active = VALUES(active)", i, buf);
 #endif
 
 	send_to_char("Ok, new association is set up.\n", god);
@@ -1518,6 +1522,10 @@ void do_prestige(P_char ch, char *argument, int cmd)
 	}
 
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -2366,6 +2374,10 @@ void Guild::ledger(P_char member, char *args)
 	send_to_char("&+YGuild Ledger:\r\n------------------------------\r\n", member);
 
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

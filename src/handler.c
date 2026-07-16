@@ -57,6 +57,7 @@ extern const char                   *dirs[];
 extern const struct stat_data        stat_factor[];
 extern const int                     rev_dir[];
 extern const int                     top_of_world;
+extern int                            top_of_objt;
 extern struct con_app_type           con_app[];
 extern struct dex_app_type           dex_app[];
 extern struct max_stat               max_stats[];
@@ -972,6 +973,13 @@ void char_from_room(P_char ch)
 		return;
 	}
 
+	/* Give room hooks a chance to veto removal before room state changes. */
+	if (world[ch->in_room].funct)
+	{
+		if ((*world[ch->in_room].funct)(ch->in_room, ch, (-75), NULL))
+			return;
+	}
+
 	/* Mark room as dirty for GMCP updates (before removal) */
 	gmcp_mark_room_dirty(ch->in_room);
 
@@ -1030,12 +1038,6 @@ void char_from_room(P_char ch)
   if (IS_BEING_SHADOWED(ch))
     ch->specials.shadow.room_last_in = ch->in_room;
 #endif
-
-	/* GLD - as well as a callback on entering, also make a callback when exiting... */
-	/* while this doesn't check the return value, it does allow some rooms (such as
-	   storage lockers) to close things out properly */
-	if (world[ch->in_room].funct)
-		(*world[ch->in_room].funct)(ch->in_room, ch, (-75), NULL);
 
 	ch->specials.was_in_room = world[ch->in_room].number;
 	ch->in_room              = NOWHERE;
@@ -1671,6 +1673,11 @@ void obj_to_char(P_obj object, P_char ch)
 
 	if (IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
+		// DEFERRED: use-after-free — extract_obj frees object, but callers in
+		// do_get/give/remove (actobj.c) still dereference the stale pointer.
+		// Setting object=NULL here only clears our local copy; the caller's
+		// pointer is passed by value. Fix requires returning a freed-status
+		// from obj_to_char/obj_to_room, touching hundreds of call sites.
 		if (ch->in_room)
 		{
 			snprintf(Gbuf, MAX_STRING_LENGTH, "&+LThe magic within %s &+Lfades causing it to crumble to dust.\r\n", object->short_description);
@@ -1744,7 +1751,7 @@ void obj_from_char(P_obj object)
 	if (!OBJ_CARRIED(object) || !object->loc.carrying)
 	{
 		logit(LOG_EXIT, "obj not carried in obj_from_char");
-		raise(SIGSEGV);
+		return;
 	}
 	if (object->loc.carrying->carrying == object) /* head of list */
 		object->loc.carrying->carrying = object->next_content;
@@ -1819,7 +1826,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 		      (!obj) ? "NULL" : OBJ_SHORT(obj),
 		      (!obj) ? -1 : OBJ_VNUM(obj),
 		      pos);
-		raise(SIGSEGV);
+		return;
 	}
 	if (!OBJ_NOWHERE(obj))
 	{
@@ -1873,15 +1880,10 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	if (!(ch && (pos >= 0) && (pos < MAX_WEAR) && ch->equipment[pos]))
 	{
 		logit(LOG_EXIT, "assert: unequip_char char called with bad args");
-		raise(SIGSEGV);
+		return NULL;
 	}
 	obj = ch->equipment[pos];
 
-	if (!OBJ_WORN(obj))
-	{
-		logit(LOG_EXIT, "equip: obj is not flagged equipped when in equip.");
-		raise(SIGSEGV);
-	}
 	if (IS_PC(ch) && GET_ITEM_TYPE(ch->equipment[pos]) == ITEM_ARMOR)
 		ch->only.pc->prestige -= obj->value[2];
 
@@ -2329,7 +2331,7 @@ void obj_to_room(P_obj object, int room)
 			object->z_cord = -(distance_from_shore(room));
 		}
 		else if ((object->type >= ITEM_SCROLL && object->type <= ITEM_WORN) || (object->type == ITEM_CONTAINER) || (object->type == ITEM_MONEY) ||
-		         (object->type >= ITEM_QUIVER && object->type <= ITEM_TOTEM) || (object->type = ITEM_SHIELD))
+		         (object->type >= ITEM_QUIVER && object->type <= ITEM_TOTEM) || (object->type == ITEM_SHIELD))
 		// else
 		{
 			for (i = world[room].people; i; i = i->next_in_room)
@@ -2530,6 +2532,37 @@ void clear_player_dirty_container_flags(P_char ch)
 		clear_obj_dirty_flags(obj);
 }
 
+bool obj_can_nest(P_obj obj, P_obj obj_to)
+{
+	int   limit = top_of_objt + 1;
+	P_obj cur;
+
+	if (!obj || !obj_to)
+		return FALSE;
+
+	if (!OBJ_NOWHERE(obj))
+		return FALSE;
+
+	if ((obj_to->type != ITEM_CONTAINER) && (obj_to->type != ITEM_QUIVER) && (obj_to->type != ITEM_STORAGE) && (obj_to->type != ITEM_CORPSE))
+		return FALSE;
+
+	if (obj == obj_to)
+		return FALSE;
+
+	for (cur = obj_to; cur && (limit-- > 0); )
+	{
+		if (cur == obj)
+			return FALSE;
+		if (!OBJ_INSIDE(cur))
+			return TRUE;
+		if (!cur->loc.inside)
+			return FALSE;
+		cur = cur->loc.inside;
+	}
+
+	return FALSE;
+}
+
 /* put an object in an object (quaint) */
 
 void obj_to_obj(P_obj obj, P_obj obj_to)
@@ -2539,18 +2572,17 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 	int    wgt = 0, t_wgt = 0;
 	char   buf[MAX_STRING_LENGTH];
 
-	if (!obj || !obj_to || ((obj_to->type != ITEM_CONTAINER) && (obj_to->type != ITEM_QUIVER) && (obj_to->type != ITEM_STORAGE) && (obj_to->type != ITEM_CORPSE)))
+	if (!obj_can_nest(obj, obj_to))
 	{
-
 		if (obj && obj_to)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Object %d: %s to Object %d: %s error\r\n", obj->R_num, obj->short_description, obj_to->R_num, obj_to->short_description);
+			snprintf(buf, MAX_STRING_LENGTH, "obj_to_obj: invalid nest attempt %d:%s -> %d:%s", OBJ_VNUM(obj), obj->short_description ? obj->short_description : "?", OBJ_VNUM(obj_to), obj_to->short_description ? obj_to->short_description : "?");
 			logit(LOG_EXIT, buf);
 		}
 		else
 			logit(LOG_EXIT, "obj_to_obj: obj or obj_to is somehow invalid");
 
-		raise(SIGSEGV);
+		return;
 	}
 	obj->loc_p      = LOC_INSIDE;
 	obj->loc.inside = obj_to;
@@ -2627,17 +2659,17 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 {
 	char buf[MAX_STRING_LENGTH];
 
-	if (!obj || !obj_to || ((obj_to->type != ITEM_CONTAINER) && (obj_to->type != ITEM_QUIVER) && (obj_to->type != ITEM_STORAGE) && (obj_to->type != ITEM_CORPSE)))
+	if (!obj_can_nest(obj, obj_to))
 	{
 		if (obj && obj_to)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Object %d: %s to Object %d: %s error\r\n", obj->R_num, obj->short_description, obj_to->R_num, obj_to->short_description);
+			snprintf(buf, MAX_STRING_LENGTH, "obj_to_obj_at_end: invalid nest attempt %d:%s -> %d:%s", OBJ_VNUM(obj), obj->short_description ? obj->short_description : "?", OBJ_VNUM(obj_to), obj_to->short_description ? obj_to->short_description : "?");
 			logit(LOG_EXIT, buf);
 		}
 		else
 			logit(LOG_EXIT, "obj_to_obj_at_end: obj or obj_to is somehow invalid");
 
-		raise(SIGSEGV);
+		return;
 	}
 
 	obj->loc_p      = LOC_INSIDE;
@@ -2703,25 +2735,50 @@ void obj_from_obj(P_obj obj)
 	P_obj  tmp, obj_from;
 	int    wgt;
 
-	if (OBJ_INSIDE(obj))
+	if (!obj)
 	{
-		obj_from = obj->loc.inside;
-		if (obj == obj_from->contains) /* head of list */
-			obj_from->contains = obj->next_content;
-		else
+		logit(LOG_EXIT, "obj_from_obj(): called with NULL obj");
+		return;
+	}
+
+	if (!OBJ_INSIDE(obj))
+	{
+		logit(LOG_EXIT, "obj_from_obj(): object %s (%d) is not flagged inside", obj->short_description ? obj->short_description : "?", OBJ_VNUM(obj));
+		return;
+	}
+
+	if (!obj->loc.inside || !obj_is_in_container(obj, obj->loc.inside))
+	{
+		logit(LOG_EXIT,
+		      "obj_from_obj(): object %s (%d) has broken container linkage (inside=%p)",
+		      obj->short_description ? obj->short_description : "?",
+		      OBJ_VNUM(obj),
+		      (void *)obj->loc.inside);
+		return;
+	}
+
+	obj_from = obj->loc.inside;
+	if (obj == obj_from->contains) /* head of list */
+		obj_from->contains = obj->next_content;
+	else
+	{
+		for (tmp = obj_from->contains; tmp && (tmp->next_content != obj); tmp = tmp->next_content)
+			; /* locate previous */
+
+		if (!tmp)
 		{
-			for (tmp = obj_from->contains; tmp && (tmp->next_content != obj); tmp = tmp->next_content)
-				; /* locate previous */
-
-			if (!tmp)
-			{
-				logit(LOG_EXIT, "obj_from_obj(): Fatal error in object structures");
-				raise(SIGSEGV);
-			}
-			tmp->next_content = obj->next_content;
+			logit(LOG_EXIT,
+			      "obj_from_obj(): container list missing %s (%d) from %s (%d)",
+			      obj->short_description ? obj->short_description : "?",
+			      OBJ_VNUM(obj),
+			      obj_from->short_description ? obj_from->short_description : "?",
+			      OBJ_VNUM(obj_from));
+			return;
 		}
+		tmp->next_content = obj->next_content;
+	}
 
-		add_weight(obj_from, -(obj->weight));
+	add_weight(obj_from, -(obj->weight));
 		/*    wgt = GET_OBJ_WEIGHT(obj);
 		    for( tmp = obj->loc.inside; wgt && tmp; tmp = OBJ_INSIDE(tmp) ? tmp->loc.inside : NULL )
 		    {
@@ -2747,16 +2804,10 @@ void obj_from_obj(P_obj obj)
 
 		if (GET_ITEM_TYPE(obj_from) == ITEM_STORAGE)
 			writeSavedItem(obj_from);
-	}
-	else
-	{
-		logit(LOG_EXIT, "obj_from_obj(): call with no object");
-		raise(SIGSEGV);
-	}
-}
+		}
 
-/*
- * Set all loc.carrying to point to new owner
+		/*
+* Set all loc.carrying to point to new owner
  */
 
 void object_list_new_owner(P_obj list, P_char ch)
@@ -2780,7 +2831,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 	if (!obj)
 	{
 		logit(LOG_EXIT, "extract_obj: NULL obj!");
-		raise(SIGSEGV);
+		return;
 	}
 
 	// remove from floor_drops if it was tracked
@@ -2802,7 +2853,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 		if (!temp1)
 		{
 			logit(LOG_EXIT, "obj loc.wearing, but not in equipment list");
-			raise(SIGSEGV);
+			return;
 		}
 		unequip_char(obj->loc.wearing, i);
 	}
@@ -2870,6 +2921,23 @@ void extract_obj(P_obj obj, int gone_for_good)
 		(obj_index[obj->R_num].number)--;
 
 	free_obj(obj);
+}
+
+bool obj_is_in_container(P_obj obj, P_obj container)
+{
+	int   limit = top_of_objt + 1;
+	P_obj cur;
+
+	if (!obj || !container || !OBJ_INSIDE(obj) || (obj->loc.inside != container))
+		return FALSE;
+
+	for (cur = container->contains; cur && (limit-- > 0); cur = cur->next_content)
+	{
+		if (cur == obj)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 /*
@@ -3153,12 +3221,12 @@ void extract_char(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "No ch in extract_char");
-		raise(SIGSEGV);
+		return;
 	}
 	if (!(*ch->player.name))
 	{
 		logit(LOG_EXIT, "No name in extract_char");
-		raise(SIGSEGV);
+		return;
 	}
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	while (affected_by_spell(ch, TAG_CTF))
@@ -3404,7 +3472,6 @@ void extract_char(P_char ch)
 		else
 		{
 			logit(LOG_EXIT, "extract_char(), Char not in character_list. (%s)", GET_NAME(ch));
-			raise(SIGSEGV);
 		}
 	}
 
@@ -3990,7 +4057,7 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	if ((copper < 0) || (silver < 0) || (gold < 0) || (platinum < 0))
 	{
 		logit(LOG_EXIT, "add_coins: trying to add negative coins");
-		raise(SIGSEGV);
+		return;
 	}
 
 	pile->value[0] += copper;
@@ -4001,7 +4068,7 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	if ((pile->value[0] < 0) || (pile->value[1] < 0) || (pile->value[2] < 0) || (pile->value[3] < 0))
 	{
 		logit(LOG_EXIT, "add_coins: pile has negative coins");
-		raise(SIGSEGV);
+		return;
 	}
 
 	num = (pile->value[0] + pile->value[1] + pile->value[2] + pile->value[3]);
@@ -4009,7 +4076,7 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	if (num < 0)
 	{
 		logit(LOG_EXIT, "add_coins: total number of coins in pile is negative");
-		raise(SIGSEGV);
+		return;
 	}
 	else if (num == 0)
 		return;
@@ -4132,7 +4199,7 @@ P_obj create_money(int copper, int silver, int gold, int platinum)
 	if (!obj)
 	{
 		logit(LOG_EXIT, "create_money: cannot load coin pile object");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	add_coins(obj, copper, silver, gold, platinum);

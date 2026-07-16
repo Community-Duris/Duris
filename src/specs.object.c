@@ -14257,7 +14257,7 @@ int toe_chamber_switch(P_obj obj, P_char ch, int cmd, char *arg)
 			if (!summoned)
 			{
 				logit(LOG_EXIT, "assert: error in toe_chamber_switch() proc");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			act("&+yThere is a rumbling sound of movement from overhead.  A hidden trapdoor swings\r\n"
 			    "&+yopen suddenly, releasing $N &+yback into the temple!&n\n"

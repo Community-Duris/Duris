@@ -551,7 +551,7 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 	if (!ch || !(victim || object || IS_SET(skills[spl].targets, TAR_AREA | TAR_OFFAREA)) || spl < FIRST_SPELL || spl > LAST_SPELL)
 	{
 		logit(LOG_EXIT, "MobCastSpell() bogus parms");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	if (!IS_NPC(ch)) /* NPCs only should call this function */
@@ -5699,7 +5699,6 @@ void MobCombat(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "MobCombat called in mobact.c with no ch");
-		raise(SIGSEGV);
 		return;
 	}
 
@@ -6233,7 +6232,6 @@ void MobStartFight(P_char ch, P_char vict)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "MobStartFight called in mobact.c with no ch");
-		raise(SIGSEGV);
 		return;
 	}
 
@@ -7621,8 +7619,7 @@ bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "MobDestroyWall called in mobact.c with null ch");
-		raise(SIGSEGV);
-		;
+		return false;
 	}
 	if ((ch->following) && ((CAN_SEE(ch, ch->following))))
 	{
@@ -8593,8 +8590,7 @@ bool InitNewMobHunt(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "InitNewMobHunt called with null ch");
-		raise(SIGSEGV);
-		;
+		return false;
 	}
 	if (IS_PC(ch))
 		return FALSE;

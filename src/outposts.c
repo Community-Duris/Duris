@@ -97,7 +97,9 @@ int init_outposts()
 	// mob_index[real_mobile(0)].func.mob = ;
 	// obj_index[real_object(0)].func.obj = ;
 
-	load_outposts();
+	if (!load_outposts())
+		fatal_boot_error("outposts", "init_outposts: failed to load outposts from DB");
+
 	// init_outpost_resources();
 	return 0;
 }
@@ -112,16 +114,19 @@ int load_outposts()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
 		mysql_free_result(res);
-		return FALSE;
+		return TRUE;
 	}
 
-	Building *building;
-
 	MYSQL_ROW row;
+	Building *building;
 	while ((row = mysql_fetch_row(res)))
 	{
 		int id     = atoi(row[0]);
@@ -137,6 +142,11 @@ int load_outposts()
 			outpost_generate_walls(building, walls, golems);
 			if (portal)
 				building->generate_portals();
+		}
+		else
+		{
+			mysql_free_result(res);
+			fatal_boot_error("outposts", "load_outposts: failed to instantiate outpost %d for guild %d", id, guild);
 		}
 	}
 
@@ -164,6 +174,10 @@ void show_outposts(P_char ch)
 		}
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return;
+		}
 
 		if (mysql_num_rows(res) < 1)
 		{
@@ -233,6 +247,10 @@ int get_current_outpost_hitpoints(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -257,6 +275,10 @@ P_Guild get_outpost_owner(Building *building)
 		return NULL;
 	}
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return NULL;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -281,6 +303,10 @@ int get_outpost_resources(Building *building, int type)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -308,6 +334,10 @@ int get_outpost_golems(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -333,6 +363,10 @@ int get_outpost_archers(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -358,6 +392,10 @@ int get_outpost_meurtriere(Building *building)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -396,6 +434,10 @@ int get_guild_resources(int id, int type)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -547,7 +589,8 @@ void do_outpost(P_char ch, char *arg, int cmd)
 			if (!building)
 			{
 				wizlog(56, "Failed to get building id from rubble.");
-				raise(SIGSEGV);
+				send_to_char("Can't find building associated with outpost, tell a god.\r\n", ch);
+				return;
 			}
 			op = building->get_mob();
 			if (GET_ASSOC(ch))
@@ -952,6 +995,10 @@ void outpost_update_resources(P_char ch, int wood, int stone)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

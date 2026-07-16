@@ -103,7 +103,7 @@ extern const char                      *sector_types[];
 extern const flagDef                    wear_bits[];
 extern const char                      *zone_bits[];
 extern const char                      *justice_obj_status[];
-extern const char                      *shutdown_message;
+extern char                            *shutdown_message;
 extern const char                      *item_material[];
 extern const char                      *kingdom_type_list[];
 extern const char                      *resource_list[];
@@ -777,7 +777,8 @@ void do_newbie(P_char ch, char *argument, int cmd)
 		REMOVE_BIT(victim->specials.act2, PLR2_NCHAT);
 	}
 
-	do_save_silent(victim, 1);
+	if (!do_save_silent(victim, 1))
+		logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
 	logit(LOG_WIZ, "%s toggled %s's newbie status.", ch->player.name, victim->player.name);
 }
@@ -820,7 +821,8 @@ void do_make_guide(P_char ch, char *argument, int cmd)
 		REMOVE_BIT(victim->specials.act2, PLR2_NCHAT);
 	}
 
-	do_save_silent(victim, 1);
+	if (!do_save_silent(victim, 1))
+		logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
 	logit(LOG_WIZ, "%s toggled %s's newbie helper status.", ch->player.name, victim->player.name);
 }
@@ -4156,9 +4158,26 @@ void timedShutdown(P_char ch, P_char, P_obj, void *data)
 				         "end!!!\033[0m\r\n\033[1;5;44m............\033[0m\r\n\033[1;5;44m........\033[0m\r\n\033[1;5;44m......\033[0m\r\n\033[1;5;44m...\033[0m\r\n\033[1;5;44m.\033[0m\n\r");
 				send_to_all(buf);
 				logit(LOG_STATUS, "Shutdown pwipe called.");
+				shutdownflag = _pwipe = 1;
+				if (!persistence_prepare_pwipe())
+				{
+					send_to_all("&=GlPersistence workers did not quiesce; aborting destructive wipe.&n\n\r");
+					shutdownflag = _pwipe = 0;
+					shutdownData.eShutdownType = TimedShutdownData::NONE;
+					return;
+				}
+				if (!persistence_quarantine_fallback_events())
+				{
+					send_to_all("&=GlFallback persistence log could not be quarantined; aborting destructive wipe.&n\n\r");
+					shutdownflag = _pwipe = 0;
+					shutdownData.eShutdownType = TimedShutdownData::NONE;
+					return;
+				}
 				if (!sql_pwipe(1723699))
 				{
 					send_to_all("&=GlSQL database not wiped clean.. Aborting shutdown wipe.&n\n\r&+WYou're still alive!  Yay!&n\n\r");
+					shutdownflag = _pwipe = 0;
+					shutdownData.eShutdownType = TimedShutdownData::NONE;
 					return;
 				}
 				else
@@ -4172,6 +4191,10 @@ void timedShutdown(P_char ch, P_char, P_obj, void *data)
 			default:
 				wizlog(60, "WARNING:  Unknown shutdown type ABORTED!!");
 				return;
+		}
+		if (shutdown_message)
+		{
+			FREE(shutdown_message);
 		}
 		shutdown_message = str_dup(buf);
 	}
@@ -4447,7 +4470,7 @@ void do_shutdown(P_char ch, char *argument, int cmd)
 	else if (!str_cmp(arg, "segfault"))
 	{
 		sql_log(ch, WIZLOG, "Shutdown - SIGSEGV by %s", GET_NAME(ch));
-		raise(SIGSEGV);
+		panic_corruption("actwiz", "shutdown segfault requested by %s", GET_NAME(ch));
 	}
 	else
 	{
@@ -9020,7 +9043,8 @@ void do_revoketitle(P_char ch, char *args, int cmd)
   else
     act("You revoke your 'title' command.", FALSE, ch, 0, 0, TO_CHAR);
 
-  do_save_silent(victim, 1);
+  if (!do_save_silent(victim, 1))
+    logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
 
   logit(LOG_WIZ, "<REVOKE>: %s revokes %s's 'title' command.",
         GET_NAME(ch), GET_NAME(victim));
@@ -9549,7 +9573,7 @@ int vnum_mobile(char *searchname, struct char_data *ch)
 			else
 			{
 				logit(LOG_EXIT, "GLITCH 1");
-				raise(SIGSEGV);
+				panic_corruption("actwiz", "GLITCH 1 in mobile list rendering");
 			}
 			if ((strlen(buf) + length + 40) < MAX_STRING_LENGTH)
 			{
@@ -11246,7 +11270,7 @@ void whois_ip(P_char ch, char *ip_address)
 	MYSQL_ROW  row;
 	P_char     targ;
 
-	if (!(res = db_query("SELECT player_name FROM log_entries WHERE ip_address LIKE '%s' GROUP BY player_name ORDER BY player_name", ip_address)))
+	if (!(res = db_query("SELECT player_name FROM log_entries WHERE ip_address LIKE '%s' GROUP BY player_name ORDER BY player_name", escape_str(ip_address).c_str())))
 	{
 		send_to_char_f(ch, "Could not find ip_address '%s' in database.\n", ip_address);
 		return;
@@ -12838,7 +12862,30 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			persistence_flush_character_saves(vict);
+			/* Wrap final save in transaction (flush already completed above) */
+			bool saved = false;
+			if (sql_begin_transaction())
+			{
+				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
+				{
+					if (sql_commit())
+						saved = true;
+					else
+						sql_rollback();
+				}
+				else
+					sql_rollback();
+			}
+			else
+			{
+				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			}
+			if (!saved)
+			{
+				send_to_char("Failed to save ghost character before extraction.\r\n", ch);
+				continue;
+			}
 			extract_char(vict);
 			count++;
 		}
@@ -12883,7 +12930,30 @@ void do_extractlink(P_char ch, char *argument, int cmd)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			persistence_flush_character_saves(vict);
+			/* Wrap final save in transaction (flush already completed above) */
+			bool saved = false;
+			if (sql_begin_transaction())
+			{
+				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
+				{
+					if (sql_commit())
+						saved = true;
+					else
+						sql_rollback();
+				}
+				else
+					sql_rollback();
+			}
+			else
+			{
+				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
+			}
+			if (!saved)
+			{
+				send_to_char("Failed to save ghost character before extraction.\r\n", ch);
+				continue;
+			}
 			extract_char(vict);
 			count++;
 		}

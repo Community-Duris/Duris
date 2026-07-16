@@ -147,6 +147,10 @@ int load_nexus_stones()
 		return FALSE;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -182,6 +186,10 @@ bool nexus_stone_info(int stone_id, NexusStoneInfo *info)
 		return FALSE;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -217,6 +225,10 @@ int check_nexus_bonus(P_char ch, int amount, int type)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -276,6 +288,10 @@ void update_nexus_stat_mods()
 		return;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -318,7 +334,7 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
 	P_char i, next;
 
 	if (!stone || !ch)
-		raise(SIGSEGV);
+		return false;
 
 	for (i = world[ch->in_room].people; i; i = next)
 	{
@@ -504,7 +520,7 @@ void event_nexus_stone_hum(P_char __ch, P_char __victim, P_obj stone, void *data
 int nexus_stone(P_obj stone, P_char ch, int cmd, char *arg)
 {
 	if (!stone)
-		raise(SIGSEGV);
+		return FALSE;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1055,7 +1071,8 @@ int nexus_sage_train(P_char ch, P_char pl, char *arg)
 	snprintf(buff, MAX_STRING_LENGTH, "&+WYou feel your %s increasing!\r\n", apply_names[info.stat_affect]);
 	send_to_char(buff, pl);
 
-	do_save_silent(pl, 1);
+	if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after nexus sage training.", GET_NAME(pl));
 
 	act("\nAfter imparting you with $s knowledge, $n&n utters a word and disappears completely.", FALSE, ch, 0, pl, TO_VICT);
 
@@ -1346,6 +1363,10 @@ void nexus_stone_list(P_char ch)
 	send_to_char(buff, ch);
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -1387,6 +1408,10 @@ void nexus_stone_god_list(P_char ch)
 	send_to_char(buff, ch);
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -1498,6 +1523,10 @@ void reload_nexus_stone(P_char ch, int stone_id)
 		return;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -1525,6 +1554,10 @@ bool nexus_stone_expired(int stone_id)
 		return false;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return FALSE;
+	}
 
 	bool expired = (mysql_num_rows(res) > 0);
 
@@ -1575,6 +1608,10 @@ void expire_nexus_stone(int stone_id)
 		return;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -1607,6 +1644,10 @@ P_obj get_random_enemy_nexus(P_char ch)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return NULL;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

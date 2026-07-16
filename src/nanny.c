@@ -1464,6 +1464,9 @@ void load_obj_to_newbies(P_char ch)
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		char keywords[MAX_STRING_LENGTH];
+		// LATENT: sprintf without bounds — safe because obj->name is bounded
+		// by MAX_INPUT_LENGTH and keywords[] is MAX_STRING_LENGTH. Use
+		// snprintf for defense-in-depth if refactoring.
 		sprintf(keywords, "%s newbie", obj->name);
 		set_keywords(obj, keywords);
 	}
@@ -1798,6 +1801,8 @@ void enter_game(P_desc d)
 	P_nevent             evp;
 	P_Guild              guild;
 
+	logit(LOG_FILE, "[enter_game] name=%s level=%d rtype=%d", ch ? GET_NAME(ch) : "(null)", ch ? GET_LEVEL(ch) : -1, d ? d->rtype : -1);
+
 	// Bring them to life!
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
@@ -1945,14 +1950,29 @@ void enter_game(P_desc d)
 		}
 		else if (d->rtype == 0)
 		{
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game rtype=%d -> sql_load_player_items\r\n", d->rtype);
+				logit(LOG_FILE, "%s", trace);
+			}
 			// sql load - items were loaded in restoreCharOnly but reset_char cleared them
 			// reload from sql
 #ifndef __NO_MYSQL__
 			sql_load_player_items(ch);
 #endif
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game after sql_load_player_items rtype=%d\r\n", d->rtype);
+				logit(LOG_FILE, "%s", trace);
+			}
 		}
 		else
 		{
+			{
+				char trace[MAX_STRING_LENGTH];
+				snprintf(trace, sizeof(trace), "&+w[TRACE]&n enter_game rtype=%d -> storage branch\r\n", d->rtype);
+				logit(LOG_FILE, "%s", trace);
+			}
 			send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
 		}
 
@@ -2130,7 +2150,8 @@ void enter_game(P_desc d)
 						}
 						else
 						{
-							raise(SIGSEGV);
+							logit(LOG_EXIT, "enter_game: missing ne_schedule tail link while rescheduling offline affect");
+							break;
 						}
 
 						// If we're not at the beginning.
@@ -2144,7 +2165,8 @@ void enter_game(P_desc d)
 						}
 						else
 						{
-							raise(SIGSEGV);
+							logit(LOG_EXIT, "enter_game: missing ne_schedule head link while rescheduling offline affect");
+							break;
 						}
 
 						// Update the timer.  The +1 is because we want the range from 1..MAX not 0..MAX,
@@ -2395,7 +2417,11 @@ void enter_game(P_desc d)
 #endif
 
 	writeCharacter(ch, 1, NOWHERE);
-	sql_save_player_core(ch);
+	if (!sql_save_player_core(ch))
+	{
+		statuslog(56, "&+RALERT&n: failed to save post-entry core for %s", GET_NAME(ch));
+		persistence_alert(AVATAR, "player", GET_NAME(ch), "none", "none", "sql_save_failed", "post-entry core save failed");
+	}
 	sql_connectIP(ch);
 	displayShutdownMsg(ch);
 
@@ -2528,10 +2554,15 @@ void enter_game(P_desc d)
 	// after the current wipe (as of 4/25/14) this should be removed - Torgal
 	//  clear_racial_skills(ch); - And removed. - Lohrr
 
-	/* Send GMCP data for WebSocket clients */
-	gmcp_char_status(ch);
-	gmcp_char_vitals(ch);
-	gmcp_quest_status(ch);
+	/* Send GMCP data -- telnet: gated by GMCP_ENABLED (IAC DO received).
+	 * WebSocket: must also have completed the WS handshake to avoid
+	 * leaking GMCP frames into the login stream. */
+	if (!d->websocket || d->ws_handshake_done)
+	{
+		gmcp_char_status(ch);
+		gmcp_char_vitals(ch);
+		gmcp_quest_status(ch);
+	}
 
 	redis_player_online(ch);
 	sql_log_player_login(ch, "login");
@@ -2862,7 +2893,7 @@ void select_name(P_desc d, char *arg, int flag)
 	}
 	/* should never get here!!! */
 	logit(LOG_EXIT, "create_name: should never get here!!");
-	raise(SIGSEGV);
+	return;
 }
 
 P_char find_ch_from_same_host(P_desc d)
@@ -3002,12 +3033,16 @@ void reconnect(P_desc d, P_char tmp_ch)
 		    (tmp_ch != tmp_ch->only.pc->switched->only.npc->orig_char))
 		{
 			logit(LOG_EXIT, "Something fucked while trying to reconnect linkless morph");
-			raise(SIGSEGV);
+			REMOVE_BIT(tmp_ch->specials.act, PLR_MORPH);
+			tmp_ch->only.pc->switched = NULL;
 		}
-		d->original        = tmp_ch;
-		d->character       = tmp_ch->only.pc->switched;
-		d->character->desc = d;
-		tmp_ch->desc       = NULL;
+		else
+		{
+			d->original        = tmp_ch;
+			d->character       = tmp_ch->only.pc->switched;
+			d->character->desc = d;
+			tmp_ch->desc       = NULL;
+		}
 	}
 	send_offline_messages(d->character);
 }
@@ -3282,7 +3317,13 @@ void select_pwd(P_desc d, char *arg)
 			          d->host);
 			logit(LOG_PLAYER, "%s deleted %sself (%s@%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->login, d->host);
 			sql_log(d->character, PLAYERLOG, "Deleted self");
-			deleteCharacter(d->character);
+			if (!deleteCharacter(d->character))
+			{
+				SEND_TO_Q("\r\nCharacter deletion failed; please contact an immortal.\r\n", d);
+				logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE for %s", GET_NAME(d->character));
+				close_socket(d);
+				return;
+			}
 			STATE(d) = CON_FLUSH;
 			break;
 	}
@@ -4846,7 +4887,13 @@ void nanny(P_desc d, char *arg)
 			SEND_TO_Q("\r\n\r\nCharacter is deleted!\r\n", d);
 			statuslog(d->character->player.level, "%s forced to delete character.", GET_NAME(d->character));
 			logit(LOG_PLAYER, "%s deleted by a forger.", GET_NAME(d->character));
-			deleteCharacter(d->character);
+			if (!deleteCharacter(d->character))
+			{
+				SEND_TO_Q("\r\nCharacter deletion failed; please contact an immortal.\r\n", d);
+				logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE for %s", GET_NAME(d->character));
+				close_socket(d);
+				return;
+			}
 			STATE(d) = CON_FLUSH;
 			break;
 

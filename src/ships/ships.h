@@ -465,6 +465,9 @@ struct ShipData
 	unsigned long contacts_hash;      /* GMCP: hash of last sent contacts for change detection */
 	int           last_gmcp_location; /* GMCP: last sent location for position change detection */
 	unsigned long ship_info_hash;     /* GMCP: hash of last sent ship info */
+	time_t        save_retry_after;   /* transient retry gate for failed ship saves */
+	bool          save_pending;       /* queued for deferred persistence */
+	unsigned long long save_saved_signature; /* signature of last persisted state */
 };
 
 struct ContactData
@@ -632,6 +635,10 @@ void shutdown_ships();
 int write_ships_index();
 int write_ship(P_ship ship);
 int read_ships();
+unsigned long long ship_save_signature(const P_ship ship);
+void queue_ship_save(P_ship ship, const char *reason);
+void flush_pending_ship_saves(void);
+bool drain_pending_ship_saves(void);
 
 struct ShipData *new_ship(int m_class, bool npc = false);
 void             name_ship(const char *name, P_ship ship);

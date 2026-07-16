@@ -49,3 +49,26 @@ etc/group
 etc/passwd
 etc/resolv.conf
 migrate_pfiles
+
+# Test binary artifacts
+tests/async/test_persistence
+tests/async/*.o
+
+# Throwaway refactor scripts in project root (one-off Python scripts and
+# dumps used during large refactors; keep them out of git status).
+# Leading slash anchors to project root so legitimate files like
+# tests/fixtures/tmp_input.txt are not accidentally ignored.
+/tmp_*.py
+/tmp_*.txt
+# Test suite — not included in production PRs
+tests/db_write/*.c
+tests/db_write/*.h
+tests/db_write/Dockerfile.*
+tests/db_write/Makefile*
+tests/db_write/schema.sql
+
+# Docker build files — not part of production PR
+/Dockerfile
+
+# Hermes analysis/session artifacts — never track in this repository
+.hermes/

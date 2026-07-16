@@ -1149,7 +1149,7 @@ int automaton_trapdoor(int room, P_char ch, int cmd, char *arg)
 		if (!world[real_room(12158)].dir_option[DIR_DOWN])
 		{
 			logit(LOG_EXIT, "Xexos room [%d] does not have down exit! Fix automaton_switch()", world[real_room(12158)].number);
-			raise(SIGSEGV);
+			return FALSE;
 		}
 		else if (IS_SET(world[real_room(12158)].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) || IS_SET(world[real_room(12158)].dir_option[DIR_DOWN]->exit_info, EX_BLOCKED))
 		{

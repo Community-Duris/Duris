@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Always run from the repository root so relative paths resolve correctly.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+
 # Load environment variables from .env if it exists
 if [ -f .env ]; then
   echo "Loading environment from .env"
@@ -54,6 +58,14 @@ if [ -f "src/sql.h" ]; then
       INDEX idx_shutdown_type (shutdown_type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   " 2>/dev/null
+
+  # ---- Incremental migrations ----------------------------------------
+  # Migrations are handled externally now; use one of the explicit mysql
+  # import commands below when you need to bootstrap or patch a database.
+  # echo "Running schema migrations..."
+  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v17_schema_fixes.sql || true)
+  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v18_player_affects_unique.sql || true)
+  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/bootstrap_multithread_safe.sql || true)
 else
   echo "Warning: src/sql.h not found, skipping database operations"
   DB_HOST=""
@@ -83,8 +95,13 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   echo "Backing up pfiles..."
   ./backup_pfiles.sh
 
+  echo "Building area tools if needed..."
+  if [ ! -x "areas/make_mob" ] || [ ! -x "areas/make_obj" ] || [ ! -x "areas/make_qst" ] || [ ! -x "areas/make_shp" ] || [ ! -x "areas/make_wld" ] || [ ! -x "areas/make_zon" ]; then
+    (cd ./areas/src && make -j1) || exit 1
+  fi
+
   echo "Building areas..."
-  (cd ./areas  && ./m_slow)
+  (cd ./areas && ./m_slow)
 
   echo "Generating list of function names.."
   nm --demangle dms | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
@@ -105,8 +122,13 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   # Record boot time (will be used for shutdown record later)
   BOOT_TIME=$(date +%s)
 
-  echo "Starting duris..."
-  ./dms 7777 # > dms.out
+  MUD_PORT=7777
+  if [ $DEV_MODE -eq 1 ]; then
+    MUD_PORT=4000
+  fi
+
+  echo "Starting duris on port ${MUD_PORT}..."
+  ./dms ${MUD_PORT} # > dms.out
 
 	# capture the exit code
   RESULT=${PIPESTATUS[0]}
@@ -178,7 +200,14 @@ done
 
 if [ $RESULT == 55 ]; then
   echo "Wiping player data..."
-  ./Players/wipers/wipe_it_all
+  if [ ! -x "./Players/wipers/wipe_it_all" ]; then
+    echo "ERROR: required filesystem wipe artifact is missing or not executable" >&2
+    exit 1
+  fi
+  if ! ./Players/wipers/wipe_it_all; then
+    echo "ERROR: filesystem wipe failed; refusing to report pwipe success" >&2
+    exit 1
+  fi
   echo "Moving player-logs to backup.."
   if [ -d logs/player-log ]; then
     #LOGNAME=`date +%b%d-%H%M`

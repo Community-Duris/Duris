@@ -12,14 +12,15 @@ LDFLAGS += -L/usr/lib/mysql
 CFLAGS = -g -std=c++20 -D_FORTIFY_SOURCE=0 -Wno-write-strings
 #CFLAGS += -D__NO_MYSQL__
 CFLAGS += -DTEST_MUD
+CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
 
 # to turn on/off chaos mud, change the flag at the top of db.h
 CFLAGS += -DCHAOS_MUD=1
 #CFLAGS += -DCTF_MUD=1
 
-INCLUDES	= -I. -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
+INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lbsd -pthread
 
 ifdef EFENCE
 	LDFLAGS += -L.
@@ -150,6 +151,9 @@ OBJS =  $(SHIP_OBJS) \
 				 objmisc.o \
 				 outposts.o \
 				 period.list.o \
+				 persistence_queue.o \
+				 sql_persistence_raw.o \
+				 sql_pool.o \
 				 poll.o \
 				 prompt.o \
 				 properties.o \
@@ -215,11 +219,12 @@ OBJS =  $(SHIP_OBJS) \
 				 spells.o \
 				 redis.o \
 				 wizredis.o \
-				 sql.o	\
+				 sql.o \
 				 sql_player.o \
 				 ssl.o \
 				 statistics.o \
 				 storage_lockers.o \
+				 locker_async.o \
 				 tether.o \
 				 timers.o \
 				 track.o \
@@ -237,6 +242,7 @@ OBJS =  $(SHIP_OBJS) \
 				 makeexit.o \
 				 racewar_stat_mods.o \
 				 nexus_stones.o \
+				 test_async.o \
 				 testcmd.o \
 				 wikihelp.o \
 				 reavers.o \

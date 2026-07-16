@@ -566,6 +566,31 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 
 // Show ch the map with a distance of n as if the ch is in room from_room
 //   and show_map_regardless
+template <size_t N>
+static inline void append_cstr(char (&dst)[N], const char *src)
+{
+	strlcat(dst, src, N);
+}
+
+template <size_t N, typename... Args>
+static inline void append_fmt(char (&dst)[N], int shift, const char *fmt, Args... args)
+{
+	size_t len = strlen(dst);
+	if (shift < 0)
+	{
+		size_t back = (size_t)(-shift);
+		if (len < back)
+			len = 0;
+		else
+			len -= back;
+	}
+
+	if (len >= N)
+		return;
+
+	snprintf(dst + len, N - len, fmt, args...);
+}
+
 void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, int gmcp_pkg_type)
 {
 	int    x, y, where, what, from_what, prev = -1, temp;
@@ -651,14 +676,14 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 
 			if (hadbg)
 			{
-				strcat(buf, "&n");
+				append_cstr(buf, "&n");
 			}
 
 			whats_in = whats_in_maproom(ch, where_rnum, distance, show_map_regardless);
 
 			if (horizontal_factor * y * y + vertical_factor * x * x > n * n * 0.6)
 			{
-				strcat(buf, " ");
+				append_cstr(buf, " ");
 			}
 			// We want an @ iff we're on land, and a [< | ^ | > | v] if on an undocked ship.
 			// All we need to check here is on undocked ship since @ is done via CONTAINS_CH below.
@@ -668,143 +693,143 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 				// Use an arrow in the direction of the ship.
 				if (heading > 315 || heading <= 45)
 				{
-					strcat(buf, "&+W^&n");
+					append_cstr(buf, "&+W^&n");
 				}
 				else if (heading > 45 && heading <= 135)
 				{
-					strcat(buf, "&+W>&n");
+					append_cstr(buf, "&+W>&n");
 				}
 				else if (heading > 135 && heading <= 225)
 				{
-					strcat(buf, "&+Wv&n");
+					append_cstr(buf, "&+Wv&n");
 				}
 				else
 				{
-					strcat(buf, "&+W<&n");
+					append_cstr(buf, "&+W<&n");
 				}
 			}
 			else if (whats_in == CONTAINS_CH)
 			{
-				strcat(buf, "&+W@&n");
+				append_cstr(buf, "&+W@&n");
 			}
 			else if (whats_in == CONTAINS_MAGIC_DARK)
 			{
-				strcat(buf, "&+LD&n");
+				append_cstr(buf, "&+LD&n");
 			}
 			else if (whats_in == CONTAINS_MAGIC_LIGHT)
 			{
-				strcat(buf, "&+WL&n");
+				append_cstr(buf, "&+WL&n");
 			}
 			else if (whats_in == CONTAINS_GOOD_SHIP)
 			{
-				snprintf(minibuf, MAX_STRING_LENGTH, "&+%cS&n", racewar_color[RACEWAR_GOOD].color);
-				strcat(buf, minibuf);
+				snprintf(minibuf, sizeof(minibuf), "&+%cS&n", racewar_color[RACEWAR_GOOD].color);
+				append_cstr(buf, minibuf);
 			}
 			else if (whats_in == CONTAINS_EVIL_SHIP)
 			{
-				snprintf(minibuf, MAX_STRING_LENGTH, "&+%cS&n", racewar_color[RACEWAR_EVIL].color);
-				strcat(buf, minibuf);
+				snprintf(minibuf, sizeof(minibuf), "&+%cS&n", racewar_color[RACEWAR_EVIL].color);
+				append_cstr(buf, minibuf);
 			}
 			else if (whats_in == CONTAINS_UNDEAD_SHIP)
 			{
-				snprintf(minibuf, MAX_STRING_LENGTH, "&+%cS&n", racewar_color[RACEWAR_UNDEAD].color);
-				strcat(buf, minibuf);
+				snprintf(minibuf, sizeof(minibuf), "&+%cS&n", racewar_color[RACEWAR_UNDEAD].color);
+				append_cstr(buf, minibuf);
 			}
 			else if (whats_in == CONTAINS_NEUTRAL_SHIP)
 			{
-				snprintf(minibuf, MAX_STRING_LENGTH, "&+%cS&n", racewar_color[RACEWAR_NEUTRAL].color);
-				strcat(buf, minibuf);
+				snprintf(minibuf, sizeof(minibuf), "&+%cS&n", racewar_color[RACEWAR_NEUTRAL].color);
+				append_cstr(buf, minibuf);
 			}
 			else if (whats_in == CONTAINS_UNKNOWN_SHIP)
 			{
-				snprintf(minibuf, MAX_STRING_LENGTH, "&+%cS&n", racewar_color[MAX_RACEWAR + 1].color);
-				strcat(buf, minibuf);
+				snprintf(minibuf, sizeof(minibuf), "&+%cS&n", racewar_color[MAX_RACEWAR + 1].color);
+				append_cstr(buf, minibuf);
 			}
 			else if (whats_in == CONTAINS_SHIP)
 			{
-				snprintf(minibuf, MAX_STRING_LENGTH, "&+%cS&n", racewar_color[RACEWAR_NONE].color);
-				strcat(buf, minibuf);
+				snprintf(minibuf, sizeof(minibuf), "&+%cS&n", racewar_color[RACEWAR_NONE].color);
+				append_cstr(buf, minibuf);
 			}
 			else if (whats_in == CONTAINS_FERRY)
 			{
-				strcat(buf, "&+WF&n");
+				append_cstr(buf, "&+WF&n");
 			}
 			else if (whats_in == CONTAINS_DRAGON)
 			{
-				strcat(buf, "&=LRD&n");
+				append_cstr(buf, "&=LRD&n");
 			}
 			else if (whats_in == CONTAINS_WITCH)
 			{
-				strcat(buf, "&=LWW&n");
+				append_cstr(buf, "&=LWW&n");
 			}
 			else if (whats_in == CONTAINS_BUILDING)
 			{
-				strcat(buf, "&+C#&n");
+				append_cstr(buf, "&+C#&n");
 			}
 			else if (whats_in == CONTAINS_GUILDHALL)
 			{
-				strcat(buf, "&+CG&n");
+				append_cstr(buf, "&+CG&n");
 			}
 			else if (whats_in == CONTAINS_CARGO)
 			{
-				strcat(buf, "&=bB&+Lo&n");
+				append_cstr(buf, "&=bB&+Lo&n");
 			}
 			else if (whats_in == CONTAINS_MOB)
 			{
-				strcat(buf, "&=LBM&n");
+				append_cstr(buf, "&=LBM&n");
 			}
 			else if (whats_in == CONTAINS_TRACK)
 			{
-				strcat(buf, "&+Y.");
+				append_cstr(buf, "&+Y.");
 			}
 			else if (whats_in == CONTAINS_OLD_BLOOD)
 			{
-				strcat(buf, "&+r.");
+				append_cstr(buf, "&+r.");
 			}
 			else if (whats_in == CONTAINS_BLOOD)
 			{
-				strcat(buf, "&+R.");
+				append_cstr(buf, "&+R.");
 			}
 			else if ((whats_in == CONTAINS_PORTAL))
 			{
-				strcat(buf, "&+MO");
+				append_cstr(buf, "&+MO");
 			}
 			else if (whats_in == CONTAINS_GROUP)
 			{
-				strcat(buf, "&=LGP&n");
+				append_cstr(buf, "&=LGP&n");
 			}
 			else if (whats_in == CONTAINS_GOOD_PC)
 			{
-				strcat(buf, "&=LYP&n");
+				append_cstr(buf, "&=LYP&n");
 			}
 			else if (whats_in == CONTAINS_EVIL_PC)
 			{
-				strcat(buf, "&=LRP&n");
+				append_cstr(buf, "&=LRP&n");
 			}
 			else if (whats_in == CONTAINS_PC)
 			{
-				strcat(buf, "&=LWP&n");
+				append_cstr(buf, "&=LWP&n");
 			}
 			else if (whats_in == CONTAINS_CORPSE)
 			{
-				strcat(buf, "&+rC");
+				append_cstr(buf, "&+rC");
 			}
 			else if (whats_in == CONTAINS_MINE)
 			{
-				strcat(buf, "&+Ym");
+				append_cstr(buf, "&+Ym");
 			}
 			else if (whats_in == CONTAINS_GEMMINE)
 			{
-				strcat(buf, "&+ym");
+				append_cstr(buf, "&+ym");
 			}
 			else if (ch->specials.z_cord < 0 && what != SECT_OCEAN && what != SECT_WATER_NOSWIM && what != SECT_NO_GROUND)
 			{ /* underwater */
-				strcat(buf, "&+L ");
+				append_cstr(buf, "&+L ");
 			}
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 			else if (whats_in == CONTAINS_CTF_FLAG)
 			{
-				strcat(buf, "&=LYF");
+				append_cstr(buf, "&=LYF");
 			}
 #endif
 			else if ((prev != what || what == SECT_FOREST) || (x == -n))
@@ -816,7 +841,7 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 					shift = -2;
 				}
 
-				snprintf(buf + strlen(buf) + shift, MAX_STRING_LENGTH, "&%s%s", (what == SECT_FOREST && !number(0, 2)) ? "+G" : color_symbol[what].colorStrn, sector_symbol[what]);
+				append_fmt(buf, shift, "&%s%s", (what == SECT_FOREST && !number(0, 2)) ? "+G" : color_symbol[what].colorStrn, sector_symbol[what]);
 				hadbg    = color_symbol[what].hasBg;
 				prev     = what;
 				map_tile = true;
@@ -828,7 +853,7 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 				{
 					shift = -2;
 				}
-				snprintf(buf + strlen(buf) + shift, MAX_STRING_LENGTH, "%s", sector_symbol[what]);
+				append_fmt(buf, shift, "%s", sector_symbol[what]);
 				map_tile = true;
 			}
 
@@ -839,14 +864,14 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 			}
 		}
 
-		strcat(buf, "&n \n"); // removed '&n'
+		append_cstr(buf, "&n \n"); // removed '&n'
 		if (!skip_text_output)
 		{
 			send_to_char(buf, ch);
 		}
 
 		/* Accumulate for GMCP (without leading spaces that terminal uses) */
-		strcat(gmcp_map_buf, buf);
+		append_cstr(gmcp_map_buf, buf);
 	}
 
 	if (!skip_text_output && ch->desc->term_type == TERM_MSP)
@@ -1195,7 +1220,7 @@ void calculate_map_coordinates()
 {
 	sh_int cur_section = 0;
 
-	int *room_stack = (int *)malloc(sizeof(int) * top_of_world);
+	int *room_stack = (int *)malloc(sizeof(int) * (top_of_world + 1));
 
 	unsigned rs_pointer = 0;
 	if (!room_stack)

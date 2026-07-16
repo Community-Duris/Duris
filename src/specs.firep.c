@@ -102,7 +102,7 @@ int kossuth(P_char ch, P_char pl, int cmd, char *arg)
 				if (!minion)
 				{
 					logit(LOG_EXIT, "assert: error in kossuth() proc");
-					raise(SIGSEGV);
+					return FALSE;
 				}
 				act("&+r$n&+r makes a quaint gesture with his hand. &n\r\n"
 				    "&+rSuddenly, reality begins to rend and tear, as &+WKossuth &+rspawns a fire minion from &+Lnothingness!&n\r\n",

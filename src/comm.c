@@ -68,6 +68,12 @@
 #include "websocket.h"
 #include "world_quest.h"
 #include "ws_handlers.h"
+#include "latency_trace.h"
+#include "persistence_queue.h"
+#include "locker_async.h"
+#if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
+#include "test_async.h"
+#endif
 
 /* external variables */
 
@@ -82,15 +88,40 @@ extern struct wizban_t      *wizconnect;
 extern struct time_info_data time_info;
 extern struct zone_data     *zone;
 extern struct zone_data     *zone_table;
-extern const char           *shutdown_message;
+extern char                 *shutdown_message;
 extern const int             max_ingame_good;
 extern const int             max_ingame_evil;
 extern TimedShutdownData     shutdownData;
 extern void                  timedShutdown(P_char ch, P_char, P_obj, void *data);
+extern void                  checkpointing(void);
 
 long sentbytes    = 0;
 long recivedbytes = 0;
 bool game_booted  = FALSE;
+
+void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
+{
+	shutdownData.reboot_time  = time(0);
+	shutdownData.next_warning = -1;
+	snprintf(shutdownData.IssuedBy, sizeof(shutdownData.IssuedBy), "%s", issuer ? issuer : "Launcher");
+	snprintf(shutdownData.Reason, sizeof(shutdownData.Reason), "%s", reason ? reason : "signal from launcher");
+	switch (shutdown_type)
+	{
+		case 1:
+			shutdownData.eShutdownType = TimedShutdownData::OK;
+			break;
+		case 2:
+			shutdownData.eShutdownType = TimedShutdownData::REBOOT;
+			break;
+		case 3:
+			shutdownData.eShutdownType = TimedShutdownData::COPYOVER;
+			break;
+		default:
+			shutdownData.eShutdownType = TimedShutdownData::OK;
+			break;
+	}
+	timedShutdown(NULL, NULL, NULL, NULL);
+}
 
 extern void ne_events();
 
@@ -103,6 +134,7 @@ void              format_to_snoopers(char *from_string, char *to_string);
 extern void       update_breath_weapon_properties();
 extern void       update_regen_properties();
 static void       greet(P_desc newd);
+static void       note_player_input_activity(P_desc t, const char *input);
 static void       process_line(P_desc t, char *in);
 
 /* local globals */
@@ -125,7 +157,7 @@ int    shutdownflag      = 0;
 // signal-initiated shutdown: 0=none, 1=shutdown, 2=reboot, 3=copyover
 volatile sig_atomic_t signal_shutdown_pending = 0;
 int                   slow_death              = 0;
-int                   tics                    = 0;
+volatile sig_atomic_t tics                    = 0;
 long                  boot_time;
 int                   ipc_id    = 0;
 int                   was_upper = FALSE;
@@ -231,8 +263,7 @@ int main(int argc, char **argv)
 					dir = argv[pos];
 				else
 				{
-					logit(LOG_EXIT, "Directory arg expected after option -d.");
-					raise(SIGSEGV);
+					fatal_boot_error("comm", "Directory arg expected after option -d.");
 				}
 				break;
 			case 's':
@@ -271,13 +302,11 @@ int main(int argc, char **argv)
 	if (pos < argc)
 		if (!isdigit(*argv[pos]))
 		{
-			fprintf(stderr, "Usage: %s [-l] [-m] [-s] [-p] [-n] [-f] [-d pathname] [ port # ]\n", argv[0]);
-			raise(SIGSEGV);
+			fatal_boot_error("comm", "Usage: %s [-l] [-m] [-s] [-p] [-n] [-f] [-d pathname] [ port # ]", argv[0]);
 		}
 		else if ((port = atoi(argv[pos])) <= 1024)
 		{
-			printf("Illegal port #\n");
-			raise(SIGSEGV);
+			fatal_boot_error("comm", "Illegal port #");
 		}
 		else
 			sslport = port + 1;
@@ -288,8 +317,7 @@ int main(int argc, char **argv)
 	/*
 	  ipc_id = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0600);
 	  if (ipc_id < 0) {
-	    fprintf(stderr, "Unable to create message queue due to %d!\r\n", ipc_id);
-	    raise(SIGSEGV);;
+	    fatal_boot_error("comm", "Unable to create message queue due to %d!", ipc_id);
 	  }
 	*/
 	/* fork() off a new process to deal with hostname lookups. */
@@ -305,8 +333,7 @@ int main(int argc, char **argv)
 	*/
 	if (chdir(dir) < 0)
 	{
-		perror("chdir");
-		raise(SIGSEGV);
+		fatal_boot_error("comm", "chdir failed: %s", strerror(errno));
 	}
 	logit(LOG_STATUS, "Running game on port %d.", port);
 
@@ -316,8 +343,7 @@ int main(int argc, char **argv)
 
 	if (initialize_mysql() < 0)
 	{
-		fprintf(stderr, "MySQL initialization failed! Dying!");
-		raise(SIGSEGV);
+		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
 
 	redis_init();
@@ -431,64 +457,84 @@ void run_the_game(int port, int sslport)
 	fprintf(stderr, "--  Done calculating maps coordinates.\r\n");
 
 	fprintf(stderr, "-- Calculating avg mob level for each zone.\r\n");
-	calc_zone_mob_level();
+	if (!mini_mode)
+	{
+		calc_zone_mob_level();
+	}
+	else
+	{
+		fprintf(stderr, "--  Skipping mob-level tradeskill load in mini mode.\r\n");
+	}
 	fprintf(stderr, "--  Done calculating mob level.\r\n");
 
-	initialize_tradeskills();
+	if (!mini_mode)
+		initialize_tradeskills();
+	else
+		fprintf(stderr, "--  Skipping tradeskills/mines in mini mode.\r\n");
 	fprintf(stderr, "--  Done loading tradeskills/mines.\r\n");
 
-	load_cmd_attributes();
+	if (!mini_mode)
+		load_cmd_attributes();
+	else
+		fprintf(stderr, "--  Skipping command attributes in mini mode.\r\n");
 	fprintf(stderr, "--  Done loading command attributes.\r\n");
 
-	if (no_ferries == 0)
-		init_ferries();
+	if (!mini_mode)
+	{
+		if (no_ferries == 0)
+			init_ferries();
+		else
+			fprintf(stderr, "Starting without ferries.\r\n");
+
+		initialize_transport();
+
+		update_breath_weapon_properties();
+		update_regen_properties();
+
+		// initialize_buildings();
+
+		Guild::initialize();
+		fprintf(stderr, "-- Done loading guilds\r\n");
+
+		Guildhall::initialize();
+		fprintf(stderr, "-- Done loading guildhalls\r\n");
+
+		init_auction_houses();
+
+		reset_racewar_stat_mods();
+		init_nexus_stones();
+
+		init_outposts();
+
+		fprintf(stderr, "-- Loading alliances\r\n");
+		load_alliances();
+
+	#ifdef SIEGE_ENABLED
+		fprintf(stderr, "-- Loading town data\r\n");
+		init_towns();
+
+		fprintf(stderr, "-- Loading siege data\r\n");
+		init_siege();
+	#endif
+
+		// This guarentees that files exist for reading.
+		fprintf(stderr, "-- Touching leaderboard\r\n");
+		touch(leaderboard_file);
+		newLeaderBoard(NULL, "boot", 0);
+		fprintf(stderr, "-- Touching hall of fame\r\n");
+		touch(halloffamelist_file);
+		newHardcoreBoard(NULL, "boot", 0);
+		init_ctf();
+
+		loadHints();
+		epic_initialization();
+		ssl_read_cert();
+	}
 	else
-		fprintf(stderr, "Starting without ferries.\r\n");
-
-	initialize_transport();
-
-	update_breath_weapon_properties();
-	update_regen_properties();
-
-	// initialize_buildings();
-
-	Guild::initialize();
-	fprintf(stderr, "-- Done loading guilds\r\n");
-
-	Guildhall::initialize();
-	fprintf(stderr, "-- Done loading guildhalls\r\n");
-
-	init_auction_houses();
-
-	reset_racewar_stat_mods();
-	init_nexus_stones();
-
-	init_outposts();
-
-	fprintf(stderr, "-- Loading alliances\r\n");
-	load_alliances();
-
-#ifdef SIEGE_ENABLED
-	fprintf(stderr, "-- Loading town data\r\n");
-	init_towns();
-
-	fprintf(stderr, "-- Loading siege data\r\n");
-	init_siege();
-#endif
-
-	// This guarentees that files exist for reading.
-	fprintf(stderr, "-- Touching leaderboard\r\n");
-	touch(leaderboard_file);
-	newLeaderBoard(NULL, "boot", 0);
-	fprintf(stderr, "-- Touching hall of fame\r\n");
-	touch(halloffamelist_file);
-	newHardcoreBoard(NULL, "boot", 0);
-	init_ctf();
-
-	loadHints();
-	epic_initialization();
-	ssl_read_cert();
-	time_after = clock();
+	{
+		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
+	}
+	 time_after = clock();
 	bfs_reset_marks();
 	fprintf(stderr, "Boot completed in: %d milliseconds\n", (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
 	logit(LOG_STATUS, "Boot completed in:%d milliseconds\n", (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
@@ -497,7 +543,49 @@ void run_the_game(int port, int sslport)
 
 	fprintf(stderr, "Entering game loop.\n\r");
 	logit(LOG_STATUS, "Entering game loop.");
+	if (mini_mode)
+	{
+		persistence_replay_fallback_events();
+		logit(LOG_STATUS, "Skipping persistence worker startup in mini mode.");
+	}
+	else
+	{
+		persistence_replay_fallback_events();
+		persistence_start_item_event_worker();
+		persistence_start_scalar_event_worker();
+		persistence_start_large_event_worker();
+		locker_async_init();
+	}
+
+	/* Boot-time scalar queue flood test: overflows the queue so the
+	 * latency_trace instrumentation can capture scalar_enq_ok/drop
+	 * and fallback_file_write statistics in the next periodic dump.
+	 * Reset all TU-level ring buffers before the test so data is clean. */
+	latency_trace_reset();
+	persistence_queue_latency_reset();
+	utility_latency_reset();
+#ifndef __NO_TESTS__
+	test_persistence_run_one("queue_flood_scalar");
+	test_persistence_run_one("queue_routes_oversize_scalar_to_large");
+	test_persistence_run_one("queue_routes_oversize_item_to_large");
+	test_persistence_run_one("worker_scalar_fallback");
+	test_persistence_run_one("worker_scalar_fifo_after_retry");
+	test_persistence_run_one("worker_item_fifo");
+	test_persistence_run_one("worker_large_roundtrip");
+#endif
+#ifdef TEST_REAL_PERSISTENCE
+	test_real_persistence_run_all();
+	test_real_persistence_print_summary();
+#endif
+
 	game_loop(port, sslport);
+	if (!_pwipe)
+	{
+		persistence_stop_scalar_event_worker();
+		persistence_stop_large_event_worker();
+		persistence_stop_item_event_worker();
+		locker_async_shutdown();
+	}
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
 	// Look for dropped artis and remove them from the next boot.
@@ -628,10 +716,12 @@ void game_loop(int port, int sslport)
 	// copyover recovery - pool must exist first
 	if (copyover_boot)
 	{
-		copyover_recover(&recovered_mother_desc, &recovered_mother_desc_ssl, &recovered_ws_desc);
-		copyover_restore_combat();
-		// recalculate avg mob level now that mobs are restored
-		calc_zone_mob_level();
+		if (copyover_recover(&recovered_mother_desc, &recovered_mother_desc_ssl, &recovered_ws_desc))
+		{
+			copyover_restore_combat();
+			// recalculate avg mob level now that mobs are restored
+			calc_zone_mob_level();
+		}
 	}
 
 	// redis crash recovery - restore world state from redis snapshot
@@ -691,6 +781,8 @@ void game_loop(int port, int sslport)
 	mother_desc     = s;
 	mother_desc_ssl = S;
 	ws_desc         = WS;
+	copyover_boot   = 0;
+	copyover_clear_boot();
 
 	long    last_desc_per_hour_reset = time(0);
 	clock_t loop_time_end;
@@ -704,29 +796,10 @@ void game_loop(int port, int sslport)
 		{
 			int type                = signal_shutdown_pending;
 			signal_shutdown_pending = 0;
-
-			// set to current time so timedShutdown schedules properly
-			shutdownData.reboot_time  = time(0);
-			shutdownData.next_warning = -1;
-			strncpy(shutdownData.IssuedBy, "Launcher", sizeof(shutdownData.IssuedBy) - 1);
-			strncpy(shutdownData.Reason, "signal from launcher", sizeof(shutdownData.Reason) - 1);
-
-			switch (type)
-			{
-				case 1: // shutdown
-					shutdownData.eShutdownType = TimedShutdownData::OK;
-					break;
-				case 2: // reboot
-					shutdownData.eShutdownType = TimedShutdownData::REBOOT;
-					break;
-				case 3: // copyover
-					shutdownData.eShutdownType = TimedShutdownData::COPYOVER;
-					break;
-			}
-			// call timedShutdown - it will schedule event for next tick
-			timedShutdown(NULL, NULL, NULL, NULL);
+			request_shutdown(type, "Launcher", "signal from launcher");
 		}
 		//PROFILE_END(process_signal_shutdown_pending);
+		checkpointing();
 
 		if ((last_desc_per_hour_reset + 3600) <= time(0))
 		{
@@ -890,6 +963,7 @@ void game_loop(int port, int sslport)
 		}
 		PROFILE_END(connections);
 		double connections_time = (double)(connections_profile_end - connections_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("connections", (long)(connections_time * 1000000.0), pulse);
 
 #if 0
     if (debug_mode)
@@ -1058,6 +1132,7 @@ void game_loop(int port, int sslport)
 		}
 		PROFILE_END(commands);
 		double commands_time = (double)(commands_profile_end - commands_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("commands", (long)(commands_time * 1000000.0), pulse);
 
 		PROFILE_START(prompts);
 		for (point = descriptor_list; point; point = next_point)
@@ -1082,6 +1157,7 @@ void game_loop(int port, int sslport)
 
 		PROFILE_END(prompts);
 		double prompts_time = (double)(prompts_profile_end - prompts_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("prompts", (long)(prompts_time * 1000000.0), pulse);
 
 		/* handle heartbeat stuff */
 		/* Note: pulse now changes every 1/4 sec  */
@@ -1096,13 +1172,18 @@ void game_loop(int port, int sslport)
 		ne_events();
 		clock_t ne_events_end = clock();
 		double ne_events_time = (double)(ne_events_end - ne_events_begin) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("ne_events", (long)(ne_events_time * 1000000.0), pulse);
 
 		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
 		if (!(pulse % 2))
 		{
+			clock_t _gmcp = clock();
 			gmcp_flush_dirty_rooms();
 			gmcp_flush_dirty_ship_contacts();
 			gmcp_flush_dirty_ship_info();
+			flush_pending_ship_saves();
+			locker_async_pulse();
+			latency_trace_record("gmcp_flush", (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC), pulse);
 		}
 
 		PROFILE_START(activities);
@@ -1141,11 +1222,12 @@ void game_loop(int port, int sslport)
 			epic_zone_balance();
 		}
 
-		if (!(pulse % WAIT_SEC))
+		if (!(pulse % (WAIT_SEC * 60)))
 			boon_maintenance();
 
 		PROFILE_END(activities);
 		double activities_time = (double)(activities_profile_end - activities_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("activities", (long)(activities_time * 1000000.0), pulse);
 
 		PROFILE_START(combat);
 		perform_violence();
@@ -1214,10 +1296,12 @@ void game_loop(int port, int sslport)
 		//      }
 		PROFILE_END(combat);
 		double combat_time = (double)(combat_profile_end - combat_profile_beg) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("combat", (long)(combat_time * 1000000.0), pulse);
 
 		PROFILE_START(pulse_reset);
 		// tics since last checkpoint signal
-		if (++tics > BIT_30)
+		tics = tics + 1;
+		if (tics > BIT_30)
 		{
 			tics = 1;
 			debug("Huge value for tics, resetting to 1.");
@@ -1235,6 +1319,7 @@ void game_loop(int port, int sslport)
 		}
 		clock_t affect_and_points_end = clock();
 		double affect_and_points_time = (double)(affect_and_points_end - affect_and_points_begin) / (double)CLOCKS_PER_SEC;
+		latency_trace_record("affect_and_points", (long)(affect_and_points_time * 1000000.0), pulse);
 		/* check out the time */
 #if 1
 		loop_time_end = clock();
@@ -1250,6 +1335,8 @@ void game_loop(int port, int sslport)
 			statuslog(56, "  - prompts time - %f", prompts_time);
 			statuslog(56, "  - aff/pts time - %f", affect_and_points_time);
 		}
+		latency_trace_record("total_tick", (long)(loop_time * 1000000.0), pulse);
+		if (!(tics % 300)) { FILE *_ltf = fopen("/durismud/logs/latency_trace.log", "a"); if(_ltf){ latency_trace_dump(_ltf); fclose(_ltf); } latency_trace_dump(stderr); fflush(stderr); persistence_queue_latency_dump(); utility_latency_dump(); }
 		memcpy(&timeout, &opt_time, sizeof(timeout));
 		suseconds_t usec_spent = (suseconds_t)(loop_time * 1000 * 1000);
 		timeout.tv_usec = MAX(0, timeout.tv_usec - usec_spent);
@@ -1289,6 +1376,8 @@ void game_loop(int port, int sslport)
 	if (!_pwipe)
 	{
 		save_dirty_shopkeepers();
+		flush_pending_ship_saves();
+		locker_async_drain(2000);
 
 		if (no_ferries == 0)
 		{
@@ -1303,8 +1392,9 @@ void game_loop(int port, int sslport)
 	}
 
 	// skip character extraction during copyover - we need them intact
-	if (!_copyover)
+	if (!_copyover && !_pwipe)
 	{
+		persistence_flush_all_character_saves();
 		for (point = descriptor_list; point; point = point->next)
 		{
 			if (point->character)
@@ -1331,7 +1421,8 @@ void game_loop(int port, int sslport)
 					if (!_pwipe)
 					{
 						write_to_descriptor(point, "\r\nSaving...\r\n");
-						do_save_silent(point->character, 3);
+				if (!do_save_silent(point->character, 3))
+				logit(LOG_STATUS, "Failed to save %s during shutdown.", GET_NAME(point->character));
 					}
 					// If it's not an immortal.
 					if (GET_LEVEL(point->character) < MINLVLIMMORTAL)
@@ -1858,7 +1949,23 @@ void close_socket(struct descriptor_data *d)
 				loginlog(d->character->player.level, "%s [%s] has lost link @ %s EST.", GET_NAME(GET_PLYR(d->character)), d->host, Gbuf1);
 				sql_log(d->character, CONNECTLOG, "Lost Link");
 			}
-			writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+			persistence_flush_character_saves(d->character);
+
+			// Wrap final save in transaction (flush already completed above)
+			if (sql_begin_transaction())
+			{
+				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+				if (!sql_commit())
+				{
+					logit(LOG_DEBUG, "close_socket: commit failed for %s", GET_NAME(d->character));
+					sql_rollback();
+				}
+			}
+			else
+			{
+				// still try to save even if transaction start fails
+				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+			}
 			d->character->desc = 0;
 		}
 		else
@@ -1869,7 +1976,12 @@ void close_socket(struct descriptor_data *d)
 		}
 	}
 	else
-		logit(LOG_COMM, "Losing descriptor without char.");
+		logit(LOG_COMM,
+		      "Losing descriptor without char [host=%s desc=%d connected=%d ssl=%s].",
+		      d->host ? d->host : "unknown",
+		      d->descriptor,
+		      d->connected,
+		      d->sslses ? "yes" : "no");
 
 	if (next_to_process == d)
 		next_to_process = next_to_process->next;
@@ -2143,7 +2255,7 @@ int new_descriptor(int s, int conn_type)
         /*
          * msgsnd() failed... DAMN!  for now, just segfault
          */
-        raise(SIGSEGV);;
+			panic_corruption("comm", "msgsnd failed");
       }
       /*
        * I'll use yellow to indicate the address is being looked up
@@ -2189,7 +2301,7 @@ int new_descriptor(int s, int conn_type)
       /*
        * msgsnd() failed... DAMN!  for now, just segfault
        */
-      raise(SIGSEGV);;
+			panic_corruption("comm", "msgsnd failed");
     }
 #endif
 		/*
@@ -2316,6 +2428,9 @@ int find_color_entry(int c)
 	return i;
 }
 
+// LATENT: assumes callers pass a buffer of at least MAX_STRING_LENGTH;
+// no size parameter to enforce. Safe because all callers use prompt_buf
+// which is now MAX_STRING_LENGTH. Would need a size_t param to harden.
 void append_prompt(P_char ch, char *promptbuf)
 {
 	char   t_buf[512];
@@ -2823,7 +2938,7 @@ int process_input(P_desc t)
 
 	begin = t->buflen;
 	if (begin < 0 || begin >= MAX_QUEUE_LENGTH)
-		abort(); // likely memory corruption
+		panic_corruption("comm", "process_input: invalid buffer length %d", begin);
 	buf = t->buf;
 
 	/*
@@ -2834,7 +2949,13 @@ int process_input(P_desc t)
 		thisround = gnutls_record_recv(t->sslses, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
 		if (!thisround)
 		{
-			logit(LOG_COMM, "EOF encountered on socket read for %s.", (t->character) ? GET_NAME(t->character) : "NOCHAR");
+			logit(LOG_COMM,
+			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
+			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
+			      t->host ? t->host : "unknown",
+			      t->descriptor,
+			      t->connected,
+			      t->sslses ? "yes" : "no");
 			return (-1);
 		}
 		else if (thisround < 0)
@@ -2852,7 +2973,13 @@ int process_input(P_desc t)
 		thisround = read(t->descriptor, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
 		if (!thisround)
 		{
-			logit(LOG_COMM, "EOF encountered on socket read.");
+			logit(LOG_COMM,
+			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
+			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
+			      t->host ? t->host : "unknown",
+			      t->descriptor,
+			      t->connected,
+			      t->sslses ? "yes" : "no");
 			return (-1);
 		}
 		else if (thisround < 0)
@@ -2890,6 +3017,7 @@ int process_input(P_desc t)
 			if (consumed <= 0)
 				goto incomplete; // partial; need to wait for more
 			i += consumed - 1;
+			break; /* prevent fall-through to backspace handler */
 		}
 
 		case '\b':
@@ -2921,6 +3049,20 @@ incomplete:
 	return 0;
 }
 
+/*
+ * Count accepted player input as activity when it is queued, not only when the
+ * command loop eventually executes it.  Combat waits and map movement can
+ * legitimately delay get_from_q() across several point_update() ticks.
+ */
+static void note_player_input_activity(P_desc t, const char *input)
+{
+	if (!t || t->connected != CON_PLAYING || !t->character || !IS_PC(t->character) || !*input)
+		return;
+
+	t->character->specials.timer = 0;
+	REMOVE_BIT(t->character->specials.act, PLR_AFK);
+}
+
 static void process_line(P_desc t, char *in)
 {
 	char out[MAX_QUEUE_LENGTH * 3]; // max expansion
@@ -2933,7 +3075,15 @@ static void process_line(P_desc t, char *in)
 	if (t->cp437)
 		upgrade_cp437_and_dollars(out, in);
 	else if (validate_utf8_and_dollars(out, in))
-		write_to_descriptor(t, "Bad characters in input, skipped.\r\n");
+	{
+		// During login (non-zero connected), bad bytes come from client negotiation;
+		// silently discard and re-prompt instead of confusing the user.
+		if (!t->connected)
+			write_to_descriptor(t, "Bad characters in input, skipped.\r\n");
+		out[0] = '\0';
+	}
+
+	note_player_input_activity(t, out);
 
 	int k = strlen(out);
 	if (k > (MAX_INPUT_LENGTH - 1))
@@ -3509,6 +3659,33 @@ void act_convert(char *buf, const char *str, P_char ch, P_char to, P_obj obj, vo
  q: obj short description w/o article (a/an/the) ("lime-green totem")
  a: obj article (a/an/the) ("the")
  */
+
+void escape_act_dollars(char *dst, size_t dst_size, const char *src)
+{
+	if (!dst || dst_size == 0)
+		return;
+	if (!src)
+	{
+		dst[0] = '\0';
+		return;
+	}
+	size_t di = 0;
+	for (size_t si = 0; src[si] && di < dst_size - 2; si++)
+	{
+		if (src[si] == '$')
+		{
+			dst[di++] = '$';
+			dst[di++] = '$';
+		}
+		else
+			dst[di++] = src[si];
+	}
+	dst[di] = '\0';
+}
+
+// LATENT: no output buffer bounds checking on 'buf'/'tbuf' — safe only
+// because format strings are code constants, not player-controlled.
+// Would need snprintf-style length tracking to harden.
 void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type)
 {
 	P_char to, vict;

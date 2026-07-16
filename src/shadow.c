@@ -570,43 +570,40 @@ void spell_locate_object(int level, P_char ch, char *arg)
 				continue;
 			if (OBJ_CARRIED(i))
 			{
-				if (!i->short_description)
-					raise(SIGSEGV);
+				const char *obj_desc = (i->short_description) ? i->short_description : ((i->name && *i->name) ? i->name : "something");
 				snprintf(Gbuf1,
 				         MAX_STRING_LENGTH,
 				         "%s carried by %s.\r\n",
-				         i->short_description,
+				         obj_desc,
 				         ((level > MAXLVLMORTAL) || (number((level - 7), (level + 7)) > GET_LEVEL(i->loc.carrying)) ? PERS(i->loc.carrying, ch, FALSE) : "someone"));
 			}
 			else if (OBJ_WORN(i))
 			{
-				if (!i->short_description)
-					raise(SIGSEGV);
+				const char *obj_desc = (i->short_description) ? i->short_description : ((i->name && *i->name) ? i->name : "something");
 				snprintf(Gbuf1,
 				         MAX_STRING_LENGTH,
 				         "%s equipped by %s.\r\n",
-				         i->short_description,
+				         obj_desc,
 				         ((level > MAXLVLMORTAL) || (number((level - 7), (level + 7)) > GET_LEVEL(i->loc.wearing)) ? PERS(i->loc.wearing, ch, FALSE) : "someone"));
 			}
 			else if (OBJ_INSIDE(i))
 			{
-				if (!i->short_description)
-					raise(SIGSEGV);
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "%s in %s.\r\n", i->short_description, (level > MAXLVLMORTAL) ? i->loc.inside->short_description : "some sort of container.");
+				const char *obj_desc       = (i->short_description) ? i->short_description : ((i->name && *i->name) ? i->name : "something");
+				const char *container_desc = (level > MAXLVLMORTAL && i->loc.inside && i->loc.inside->short_description) ? i->loc.inside->short_description : "some sort of container.";
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "%s in %s.\r\n", obj_desc, container_desc);
 			}
 			else
 			{
 				if (OBJ_ROOM(i))
 				{
-					if (!i->short_description)
-						raise(SIGSEGV);
+					const char *obj_desc = (i->short_description) ? i->short_description : ((i->name && *i->name) ? i->name : "something");
 					if (level > MAXLVLMORTAL)
 					{
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "%s in %s [%d].\r\n", i->short_description, world[i->loc.room].name, world[i->loc.room].number);
+						snprintf(Gbuf1, MAX_STRING_LENGTH, "%s in %s [%d].\r\n", obj_desc, world[i->loc.room].name, world[i->loc.room].number);
 					}
 					else
 					{
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "%s in %s.\r\n", i->short_description, world[i->loc.room].name);
+						snprintf(Gbuf1, MAX_STRING_LENGTH, "%s in %s.\r\n", obj_desc, world[i->loc.room].name);
 					}
 				}
 				else

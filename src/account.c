@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -22,6 +23,7 @@
 #include "objmisc.h"
 #include "spells.h"
 #include "sql_player.h"
+#include "player_name.h"
 #include "ws_handlers.h"
 
 // External Stuff
@@ -35,6 +37,18 @@ extern P_desc                descriptor_list;
 extern P_char                character_list;
 extern struct mm_ds         *dead_mob_pool;
 extern struct mm_ds         *dead_pconly_pool;
+
+static void trace_append_file(const char *fmt, ...)
+{
+	FILE *fp = fopen("/tmp/garp-item-trace.log", "a");
+	if (!fp)
+		return;
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fclose(fp);
+}
 
 struct acct_entry *account_list = NULL;
 
@@ -317,7 +331,11 @@ void get_account_password(P_desc d, char *arg)
 			FREE(d->account->acct_password);
 			d->account->acct_password = str_dup(new_hash);
 			FREE(new_hash);
-			write_account(d->account); // Save upgraded password
+			if (-1 == write_account(d->account))
+			{
+				statuslog(56, "&+RALERT&n: failed to write upgraded password for %s", d->account->acct_name);
+				persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "password upgrade save failed");
+			}
 		}
 	}
 
@@ -403,7 +421,11 @@ void display_account_menu(P_desc d, char *arg)
 			}
 			STATE(d) = CON_FLUSH;
 			SEND_TO_Q("\r\n\r\nThank you for playing!\r\n", d);
-			write_account(d->account);
+			if (-1 == write_account(d->account))
+			{
+				statuslog(56, "&+RALERT&n: failed to write account on logout for %s", d->account->acct_name);
+				persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "logout save failed");
+			}
 			break;
 
 		case 1:
@@ -507,12 +529,19 @@ void confirm_account(P_desc d, char *arg)
 		if (-1 == write_account(d->account))
 		{
 			SEND_TO_Q("Oh no, I couldn't write your account information to disk, notify a god!\r\n", d);
+			statuslog(56, "&+RALERT&n: failed to confirm account for %s", d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "confirmation save failed");
 			d->account = free_account(d->account);
 			STATE(d)   = CON_FLUSH;
+			return;
 		}
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
-		write_account(d->account);
+		if (-1 == write_account(d->account))
+		{
+			statuslog(56, "&+RALERT&n: failed to re-write confirmed account for %s", d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "post-confirm menu save failed");
+		}
 	}
 }
 
@@ -602,7 +631,11 @@ void verify_new_account_email(P_desc d, char *arg)
 		{
 			STATE(d) = CON_DISPLAY_ACCT_MENU;
 			display_account_menu(d, NULL);
-			write_account(d->account);
+			if (-1 == write_account(d->account))
+			{
+				statuslog(56, "&+RALERT&n: failed to save existing confirmed account for %s", d->account->acct_name);
+				persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "post-login menu save failed");
+			}
 		}
 		return;
 	}
@@ -697,7 +730,11 @@ void verify_new_account_password(P_desc d, char *arg)
 	{
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
-		write_account(d->account);
+		if (-1 == write_account(d->account))
+		{
+			statuslog(56, "&+RALERT&n: failed to save auto-confirmed account for %s", d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "auto-confirm save failed");
+		}
 	}
 	return;
 }
@@ -715,7 +752,11 @@ void verify_new_account_information(P_desc d, char *arg)
 #ifdef REQUIRE_EMAIL_VERIFICATION
 		SEND_TO_Q("You will receive a confimation code in your email.\r\nYou must confirm your account before using it.\r\n\r\n", d);
 		generate_account_confirmation_code(d, NULL);
-		write_account(d->account);
+		if (-1 == write_account(d->account))
+		{
+			statuslog(56, "&+RALERT&n: failed to save confirmation code for %s", d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "confirmation code save failed");
+		}
 		// Don't disconnect - go straight to confirmation prompt
 		STATE(d) = CON_CONFIRM_ACCT;
 		SEND_TO_Q("Please enter the confirmation code shown above: ", d);
@@ -723,7 +764,11 @@ void verify_new_account_information(P_desc d, char *arg)
 		// Email verification disabled - skip confirmation and go directly to menu
 		SEND_TO_Q("&+GAccount created successfully!&n\r\n\r\n", d);
 		generate_account_confirmation_code(d, NULL); // Still generates code (for display) but auto-confirms
-		write_account(d->account);
+		if (-1 == write_account(d->account))
+		{
+			statuslog(56, "&+RALERT&n: failed to save auto-confirmed account for %s", d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "auto-confirm save failed");
+		}
 		SEND_TO_Q(motd.c_str(), d);
 		SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
 		update_account_iplist(d);
@@ -761,7 +806,11 @@ void update_account_iplist(P_desc d)
 	else
 	{
 		ip->count++;
-		write_account(acct);
+		if (-1 == write_account(acct))
+		{
+			statuslog(56, "&+RALERT&n: failed to update account IP list for %s", acct->acct_name);
+			persistence_alert(AVATAR, "account", acct->acct_name, "none", "none", "write_failed", "ip list update failed");
+		}
 		return;
 	}
 }
@@ -1740,7 +1789,11 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 				    (ch != ch->only.pc->switched->only.npc->orig_char))
 				{
 					logit(LOG_EXIT, "Something fucked while trying to reconnect linkless morph");
-					raise(SIGSEGV);
+					ch->desc = NULL;
+					d->character = NULL;
+					STATE(d) = CON_ACCT_SELECT_CHAR;
+					display_character_list(d);
+					return 1;
 				}
 				d->original        = ch;
 				d->character       = ch->only.pc->switched;
@@ -1772,7 +1825,6 @@ struct acct_chars *find_char_in_list(struct acct_chars *list, char *arg)
 
 P_char load_char_into_game(struct acct_chars *c, P_desc d)
 {
-
 	P_char player = NULL;
 	int    status = 0;
 
@@ -1788,6 +1840,7 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 
 	setCharPhysTypeInfo(player);
 	status = restoreCharOnly(player, c->charname);
+	trace_append_file("load_char_into_game name=%s restoreCharOnly status=%d\n", c->charname, status);
 
 	if (status == -1)
 	{
@@ -1925,8 +1978,8 @@ void account_new_char_name(P_desc d, char *arg)
 
 	strncpy(d->character->only.pc->pwd, d->account->acct_password, sizeof(d->character->only.pc->pwd) - 1);
 	d->character->only.pc->pwd[sizeof(d->character->only.pc->pwd) - 1] = '\0';
-	d->character->player.name                                          = str_dup(arg);
-	*d->character->player.name                                         = toupper(*d->character->player.name);
+	d->character->player.name = str_dup(arg);
+	normalize_player_name_case(d->character->player.name);
 	SEND_TO_Q("You chose the name ", d);
 	SEND_TO_Q(d->character->player.name, d);
 	SEND_TO_Q("  Is this correct?  (Y/N)  ", d);
@@ -1953,7 +2006,11 @@ void add_char_to_account(P_desc d)
 		c->racewar = ACCT_GOOD;
 	c->next                         = d->account->acct_character_list;
 	d->account->acct_character_list = c;
-	write_account(d->account);
+	if (-1 == write_account(d->account))
+	{
+		statuslog(56, "&+RALERT&n: failed to save new character entry for %s", d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "add character save failed");
+	}
 }
 
 void account_delete_char(P_desc d, char *arg)
@@ -2097,7 +2154,11 @@ void remove_char_from_list(P_acct acct, char *ch)
 		FREE(c->charname);
 		FREE(c);
 		acct->num_chars--;
-		write_account(acct);
+		if (-1 == write_account(acct))
+		{
+			statuslog(56, "&+RALERT&n: failed to update account after removing char %s from %s", ch, acct->acct_name);
+			persistence_alert(AVATAR, "account", acct->acct_name, "none", "none", "write_failed", "remove char save failed");
+		}
 		return;
 	}
 
@@ -2111,7 +2172,11 @@ void remove_char_from_list(P_acct acct, char *ch)
 			FREE(c->charname);
 			FREE(c);
 			acct->num_chars--;
-			write_account(acct);
+			if (-1 == write_account(acct))
+			{
+				statuslog(56, "&+RALERT&n: failed to update account after removing char %s from %s", ch, acct->acct_name);
+				persistence_alert(AVATAR, "account", acct->acct_name, "none", "none", "write_failed", "remove char save failed");
+			}
 			return;
 		}
 		prev = c;
@@ -2236,7 +2301,10 @@ void write_unique_ip(P_acct acct, FILE *f)
 	struct acct_ip *c     = NULL;
 
 	if (acct->acct_name)
-		sql_save_account_ips(acct->acct_name, acct->acct_unique_ips);
+	{
+		if (!sql_save_account_ips(acct->acct_name, acct->acct_unique_ips))
+			logit(LOG_DEBUG, "write_unique_ip: failed to save IPs for %s", acct->acct_name);
+	}
 
 	c = acct->acct_unique_ips;
 	if (!c)
@@ -2356,7 +2424,11 @@ void generate_account_confirmation_code(P_desc d, char *arg)
 	snprintf(b, 256, "%s", CRYPT2(a, d->account->acct_name));
 
 	d->account->acct_confirmation = str_dup(b);
-	write_account(d->account);
+	if (-1 == write_account(d->account))
+	{
+		statuslog(56, "&+RALERT&n: failed to save confirmation token for %s", d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "confirmation token save failed");
+	}
 
 	// Display confirmation code on screen
 	char display_buf[1024];
@@ -2406,7 +2478,11 @@ void generate_account_confirmation_code(P_desc d, char *arg)
 	// Email verification disabled - auto-confirm account
 	SEND_TO_Q("&+G(Email verification is disabled - your account is automatically confirmed)&n\r\n", d);
 	d->account->acct_confirmed = 1;
-	write_account(d->account);
+	if (-1 == write_account(d->account))
+	{
+		statuslog(56, "&+RALERT&n: failed to persist auto-confirm for %s", d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "auto-confirm save failed");
+	}
 #endif
 
 	return;
@@ -2508,9 +2584,6 @@ P_acct allocate_account(void)
 	P_acct acct = NULL;
 
 	CREATE(acct, acct_entry, 1, MEM_TAG_OTHER);
-
-	if (!acct)
-		raise(SIGSEGV);
 
 	memset(acct, 0, sizeof(acct_entry));
 	add_account_to_list(acct);

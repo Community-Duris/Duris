@@ -649,7 +649,7 @@ void appear(P_char ch, bool removeHide)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "appear called in fight.c without ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	// If someone is going vis via being ordered to do something, have the person doing the ordering go vis as well.
@@ -734,6 +734,10 @@ void setHeavenTime(P_char victim)
 	// Query the DB for the latest 20 deaths of victim in pvp
 	qry("SELECT event_id FROM pkill_info WHERE pid=%d AND pk_type='VICTIM' ORDER BY id DESC LIMIT 20", GET_PID(victim));
 	res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 	if (res)
 	{
 		counter = 0;
@@ -753,12 +757,16 @@ void setHeavenTime(P_char victim)
 			//   and res should have 0 or 1 rows, depending on whether the event was within the 60 minutes.
 			if (qry("SELECT * from pkill_event WHERE id=%d AND TIMESTAMPDIFF( MINUTE, stamp, NOW() ) < 60", kill_ids[i--]))
 			{
-				res = mysql_store_result(DB);
-				if (mysql_num_rows(res) > 0)
+				MYSQL_RES *event_res = mysql_store_result(DB);
+				if (!event_res) {
+					logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+					return;
+				}
+				if (mysql_num_rows(event_res) > 0)
 				{
 					counter++;
 				}
-				mysql_free_result(res);
+				mysql_free_result(event_res);
 			}
 		}
 
@@ -960,7 +968,7 @@ void update_pos(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "assert: update_pos() - no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if ((IS_NPC(ch) && ch->only.npc == NULL) || (IS_PC(ch) && ch->only.pc == NULL))
 		return;
@@ -1332,7 +1340,7 @@ P_obj make_corpse(P_char ch, int loss)
 	if (!corpse)
 	{
 		logit(LOG_EXIT, "make_corpse: no valid corpse object found");
-		raise(SIGSEGV);
+		return NULL;
 	}
 
 	corpse->str_mask = (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
@@ -1557,8 +1565,16 @@ P_obj make_corpse(P_char ch, int loss)
 	if (corpse && IS_PC(ch))
 	{
 		if (!sql_delete_player_items(GET_PID(ch)))
+		{
 			logit(LOG_DEBUG, "make_corpse: failed to clear items for %s", GET_NAME(ch));
-		writeCorpse(corpse);
+			obj_from_room(corpse);
+			extract_obj(corpse);
+			corpse = NULL;
+		}
+		else
+		{
+			writeCorpse(corpse);
+		}
 	}
 
 	return corpse;
@@ -2165,7 +2181,7 @@ void die(P_char ch, P_char killer)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "die called in fight.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (!killer)
@@ -5826,7 +5842,7 @@ case RACEWAR_NEUTRAL:
 		if (!ch)
 		{
 			logit(LOG_EXIT, "raw_damage in fight.c called without ch");
-			raise(SIGSEGV);
+			return DAM_NONEDEAD;
 		}
 
 		if (!victim)
@@ -7877,12 +7893,12 @@ case RACEWAR_NEUTRAL:
 		if (IS_FIGHTING(ch) || ch->specials.next_fighting)
 		{
 			logit(LOG_EXIT, "assert: set_fighting() when already fighting");
-			raise(SIGSEGV);
+			return;
 		}
 		if (IS_DESTROYING(ch))
 		{
 			logit(LOG_EXIT, "assert: set_fighting() when destroying object");
-			raise(SIGSEGV);
+			return;
 		}
 
 		/*
@@ -8058,12 +8074,12 @@ case RACEWAR_NEUTRAL:
 		if (IS_DESTROYING(ch) || ch->specials.next_destroying)
 		{
 			logit(LOG_EXIT, "assert: set_fighting() when already destroying object");
-			raise(SIGSEGV);
+			return;
 		}
 		if (IS_FIGHTING(ch))
 		{
 			logit(LOG_EXIT, "assert: set_fighting() when fighting");
-			raise(SIGSEGV);
+			return;
 		}
 
 		if (IS_IMMOBILE(ch) || !IS_AWAKE(ch))
@@ -8898,7 +8914,6 @@ case RACEWAR_NEUTRAL:
 			if (!tmp)
 			{
 				logit(LOG_EXIT, "%s not found in combat_list stop_fighting()", GET_NAME(ch));
-				raise(SIGSEGV);
 			}
 			tmp->specials.next_fighting = ch->specials.next_fighting;
 		}
@@ -8942,7 +8957,6 @@ case RACEWAR_NEUTRAL:
 			if (!tmp)
 			{
 				logit(LOG_EXIT, "%s not found in destroying_list stop_destroying()", GET_NAME(ch));
-				raise(SIGSEGV);
 			}
 			tmp->specials.next_destroying = ch->specials.next_destroying;
 		}
@@ -9557,6 +9571,8 @@ case RACEWAR_NEUTRAL:
 			if (IS_PC(ch))
 			{
 				opponent = misfire_check(ch, opponent, DISALLOW_SELF | DISALLOW_BACKRANK);
+				if (!opponent)
+					continue;
 			}
 
 			if (HOLD_CANT_ATTACK(ch))
@@ -10083,7 +10099,7 @@ case RACEWAR_NEUTRAL:
 		if (!(victim))
 		{
 			logit(LOG_EXIT, "destroystuff called in fight.c with no victim");
-			raise(SIGSEGV);
+			return;
 		}
 
 		for (slot = 0; slot < sizeof(proccing_slots) / sizeof(int); slot++)

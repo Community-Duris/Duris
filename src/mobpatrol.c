@@ -136,7 +136,7 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 	// standard mob can act checks..
 	if (!IS_NPC(ch) || IS_IMMOBILE(ch))
 	{ // reset the event and return
-		add_event(event_patrol_move, PULSE_VIOLENCE, ch, vict, obj, 0, huntData, huntData ? sizeof(struct hunt_data) : 0);
+		add_event(event_patrol_move, PULSE_VIOLENCE, ch, vict, obj, 0, huntData, huntData ? sizeof(PatrolData) : 0);
 		return;
 	}
 	if (NULL == huntData)
@@ -224,5 +224,5 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 			}
 		}
 	}
-	add_event(event_patrol_move, huntData->normalSpeed, ch, vict, obj, 0, huntData, sizeof(struct hunt_data));
+	add_event(event_patrol_move, huntData->normalSpeed, ch, vict, obj, 0, huntData, sizeof(PatrolData));
 }

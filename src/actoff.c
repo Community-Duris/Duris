@@ -682,14 +682,14 @@ void do_hit(P_char ch, char *argument, int cmd)
 {
 	P_char victim;
 
+	if (!ch)
+	{
+		logit(LOG_EXIT, "do_hit: bogus params: ch is NULL, cmd = %s %d.", (cmd > 0 && cmd < MAX_CMD) ? command[cmd] : "unknown", cmd);
+		return;
+	}
 	if (!IS_ALIVE(ch))
 	{
-		// This is complex because more info and multiple cmd possibilities (CMD_HIT/CMD_MURDER/etc).
-		logit(LOG_EXIT,
-		      "do_hit: bogus params: ch not alive: %s %d, cmd = %s %d.",
-		      (ch != NULL) ? (J_NAME(ch), IS_NPC(ch) ? mob_index[ch->only.npc->R_num].virtual_number : ch->only.pc->pid) : ("unknown", -1),
-		      (cmd > 0 && cmd < MAX_CMD) ? command[cmd] : "unknown");
-		raise(SIGSEGV);
+		send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
 
@@ -2169,6 +2169,27 @@ bool bad_flee_dir(const P_char ch, const int to_room)
 
 #define DRAGONSLAYER_VNUM 80569
 
+/* Restore only Sneak granted directly by currently worn equipment. This deliberately
+ * does not rebuild skills, innates, spells, protections, or other affect sources. */
+static bool restore_equipment_sneak_after_flee(P_char ch)
+{
+	int i;
+
+	if (!ch || IS_FIGHTING(ch) || IS_DESTROYING(ch) || IS_AFFECTED(ch, AFF_SNEAK))
+		return FALSE;
+
+	for (i = 0; i < MAX_WEAR; i++)
+	{
+		if (ch->equipment[i] && IS_SET(ch->equipment[i]->bitvector, AFF_SNEAK))
+		{
+			SET_BIT(ch->specials.affected_by, AFF_SNEAK);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 void do_flee(P_char ch, char *argument, int cmd)
 {
 	int                  i, attempted_dir, start_room, atts, fight_pc = FALSE, j;
@@ -2442,6 +2463,8 @@ void do_flee(P_char ch, char *argument, int cmd)
 		StopAllAttackers(ch);
 	if (IS_DESTROYING(ch))
 		stop_destroying(ch);
+	if (start_room != ch->in_room && restore_equipment_sneak_after_flee(ch))
+		send_to_char("The moment of panic has passed, and you slip back into a quiet step.\r\n", ch);
 
 	if (was_fighting && IS_NPC(was_fighting))
 	{
@@ -7767,10 +7790,10 @@ void do_shieldpunch(P_char ch, char *argument, int cmd)
 {
 	P_char victim = NULL;
 
-	if (!ch) // Something bad happened.
+	if (!ch)
 	{
 		logit(LOG_EXIT, "do_shieldpunch called in actoff.c with no ch");
-		raise(SIGSEGV);
+		return;
 	}
 	if (ch) // Just making sure...
 	{
@@ -9955,7 +9978,7 @@ void restrain(P_char ch, P_char victim)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "restrain: no ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	if (ch == victim)
@@ -10203,10 +10226,14 @@ void do_shriek(P_char ch, char *argument, int cmd)
 	P_char person      = 0;
 	P_char next_person = 0;
 
+	if (!ch)
+	{
+		logit(LOG_EXIT, "assert: bogus params (do_shriek) - NULL ch");
+		return;
+	}
 	if (!IS_ALIVE(ch))
 	{
-		logit(LOG_EXIT, "assert: bogus params (do_shriek)");
-		raise(SIGSEGV);
+		send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
 

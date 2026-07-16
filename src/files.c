@@ -75,6 +75,13 @@ extern const int                     top_of_world;
 #ifndef _PFILE_
 extern Skill skills[];
 #endif
+
+/*
+ * Crash recovery should not punish a player for reboot time.  Keep this
+ * multiplier easy to tune if production needs a wider or tighter window.
+ */
+#define PERSISTENCE_CORPSE_RESTORE_TIMER_MULTIPLIER 3
+
 #ifdef _PFILE_
 char  buff[SAV_MAXSIZE];
 char *buf = buff;
@@ -553,14 +560,12 @@ int writeAffects(char *buf, struct affected_type *af)
 		}
 
 #ifndef _PFILE_
-		if (af->wear_off_message_index != 0)
+		if (af->wear_off_message_index > 0 && af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES)
 		{
 			if (skills[af->type].wear_off_char[af->wear_off_message_index])
-				;
-			custom_messages = 1;
+				custom_messages = 1;
 			if (skills[af->type].wear_off_room[af->wear_off_message_index])
-				;
-			custom_messages |= 2;
+				custom_messages |= 2;
 		}
 #endif
 
@@ -816,6 +821,10 @@ bool writeObjectlist(P_obj obj, int loc)
 		if (w_obj->affects)
 			o_f_flag |= O_F_AFFECTS;
 
+		persistence_assign_item_uid(w_obj, "writeObjectlist");
+		if (w_obj->obj_uid)
+			o_f_flag |= O_F_UID;
+
 		if ((o_u_flag = ObjUniqueFlags(w_obj, t_obj)))
 			o_f_flag |= O_F_UNIQUE;
 
@@ -966,6 +975,9 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 	ADD_INT(ibuf, obj_index[obj->R_num].virtual_number);
 	ADD_SHORT(ibuf, obj->craftsmanship);
 	ADD_SHORT(ibuf, obj->condition);
+
+	if (o_f_flag & O_F_UID)
+		ADD_ULL(ibuf, obj->obj_uid);
 
 	if (o_f_flag & O_F_WORN)
 		ADD_BYTE(ibuf, loc);
@@ -1132,7 +1144,7 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 
 // This function writes one object to a char buffer, and returns the total number of bytes written.
 // This will *not* write the contents of a container object.
-int write_one_object(P_obj obj, char *dest_buff)
+int write_one_object(P_obj obj, char *dest_buff, int include_persistent_uid)
 {
 	char *start = dest_buff;
 	char *buff  = dest_buff;
@@ -1169,6 +1181,13 @@ int write_one_object(P_obj obj, char *dest_buff)
 
 	if (obj->affects)
 		o_f_flag |= O_F_AFFECTS;
+
+	if (include_persistent_uid)
+	{
+		persistence_assign_item_uid(obj, "write_one_object");
+		if (obj->obj_uid)
+			o_f_flag |= O_F_UID;
+	}
 
 	if ((o_u_flag = ObjUniqueFlags(obj, t_obj)))
 		o_f_flag |= O_F_UNIQUE;
@@ -1212,7 +1231,41 @@ void writeCorpse(P_obj corpse)
 	if (corpse->value[CORPSE_SAVEID] == 0)
 		corpse->value[CORPSE_SAVEID] = time(NULL);
 
-	sql_save_corpse(corpse);
+	if (!sql_save_corpse(corpse))
+	{
+		persistence_alert(AVATAR, "corpse", corpse->action_description,
+		                  "none", "none", "sql_save_failed",
+		                  "save_id=%d", corpse->value[CORPSE_SAVEID]);
+	}
+}
+
+void persistence_refresh_restored_corpse(P_obj corpse, const char *source)
+{
+	char target[128];
+	int base_decay;
+	int restored_decay;
+
+	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return;
+
+	base_decay     = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
+	restored_decay = base_decay * PERSISTENCE_CORPSE_RESTORE_TIMER_MULTIPLIER;
+
+	affect_from_obj(corpse, TAG_OBJ_DECAY);
+	set_obj_affected(corpse, restored_decay, TAG_OBJ_DECAY, 0);
+
+	snprintf(target, sizeof(target), "corpse:%d", corpse->value[CORPSE_SAVEID]);
+	persistence_record_item_event("owner_corpse_restored", corpse, NULL,
+	                              "corpse_file", target,
+	                              "restore_corpse_timer_refreshed");
+	logit(LOG_CORPSE,
+	      "Restored player corpse %s from %s with decay timer refreshed to %d pulses.",
+	      OBJ_SHORT(corpse) ? OBJ_SHORT(corpse) : "unknown corpse",
+	      source ? source : "unknown source",
+	      restored_decay);
+	logit(LOG_WIZ,
+	      "Persistence restored player corpse %s with refreshed crash recovery timer.",
+	      target);
 }
 
 int writeItems(char *buf, P_char ch)
@@ -1290,6 +1343,147 @@ int writeWitness(char *buf, wtns_rec *rec)
 	return (int)(buf - start);
 }
 
+static int persistence_write_character_flat_fallback(P_char ch, int type, int room)
+{
+	FILE        *f;
+	char        *buf, *skill_off, *affect_off, *item_off, *size_off, *witness_off, *tmp;
+	char        Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], dir[MAX_STRING_LENGTH];
+	int         bak;
+	static char fallback_buff[SAV_MAXSIZE * 2];
+	struct stat statbuf;
+
+	if (!ch || !GET_NAME(ch))
+		return 0;
+
+	buf = fallback_buff;
+	ADD_BYTE(buf, (char)SAV_SAVEVERS);
+	ADD_BYTE(buf, (char)(short_size));
+	ADD_BYTE(buf, (char)(int_size));
+	ADD_BYTE(buf, (char)(long_size));
+	ADD_BYTE(buf, (char)type);
+
+	skill_off = buf;
+	ADD_INT(buf, (int)0);
+	witness_off = buf;
+	ADD_INT(buf, (int)0);
+	affect_off = buf;
+	ADD_INT(buf, (int)0);
+	item_off = buf;
+	ADD_INT(buf, (int)0);
+	size_off = buf;
+	ADD_INT(buf, (int)0);
+	ADD_INT(buf, (ch->specials.act3));
+	ADD_INT(buf, room);
+	ADD_LONG(buf, time(0));
+
+	buf += writeStatus(buf, ch, ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI)) ? TRUE : FALSE);
+	ADD_INT(skill_off, (int)(buf - fallback_buff));
+	buf += writeSkills(buf, ch, MAX_SKILLS);
+	ADD_INT(witness_off, (int)(buf - fallback_buff));
+	buf += writeWitness(buf, ch->specials.witnessed);
+	ADD_INT(affect_off, (int)(buf - fallback_buff));
+	updateShortAffects(ch);
+	buf += writeAffects(buf, ch->affected);
+	ADD_INT(item_off, (int)(buf - fallback_buff));
+	buf += writeItems(buf, ch);
+	ADD_INT(size_off, (int)(buf - fallback_buff));
+
+	if ((int)(buf - fallback_buff) > SAV_MAXSIZE)
+	{
+		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
+		                  "none", "fallback_too_large",
+		                  "type=%d room=%d size=%d max=%d",
+		                  type, room, (int)(buf - fallback_buff), SAV_MAXSIZE);
+		return 0;
+	}
+
+	snprintf(dir, sizeof(dir), "%s/%c", SAVE_DIR, LOWER(*ch->player.name));
+	mkdir(dir, 0775);
+	snprintf(Gbuf1, sizeof(Gbuf1), "%s/", dir);
+	tmp = Gbuf1 + strlen(Gbuf1);
+	strncat(Gbuf1, GET_NAME(ch), sizeof(Gbuf1) - strlen(Gbuf1) - 1);
+	for (; *tmp; tmp++)
+		*tmp = LOWER(*tmp);
+	snprintf(Gbuf2, sizeof(Gbuf2), "%s.bak", Gbuf1);
+
+	if (stat(Gbuf1, &statbuf) == 0)
+	{
+		if (rename(Gbuf1, Gbuf2) == -1)
+		{
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
+			                  "none", "none", "backup_failed",
+			                  "path=%s errno=%d", Gbuf1, errno);
+			return 0;
+		}
+		bak = 1;
+	}
+	else
+	{
+		if (errno != ENOENT)
+		{
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
+			                  "none", "none", "stat_failed",
+			                  "path=%s errno=%d", Gbuf1, errno);
+			return 0;
+		}
+		bak = 0;
+	}
+
+	f = fopen(Gbuf1, "wb");
+	if (!f)
+	{
+		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
+		                  "none", "none", "open_failed",
+		                  "path=%s errno=%d", Gbuf1, errno);
+		bak -= 2;
+	}
+	else
+	{
+		if (fwrite(fallback_buff, 1, (unsigned)(buf - fallback_buff), f) != (size_t)(buf - fallback_buff))
+		{
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
+			                  "none", "none", "write_failed",
+			                  "path=%s errno=%d", Gbuf1, errno);
+			fclose(f);
+			bak -= 2;
+		}
+		else if (fclose(f))
+		{
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
+			                  "none", "none", "close_failed",
+			                  "path=%s errno=%d", Gbuf1, errno);
+			bak -= 2;
+		}
+	}
+
+	switch (bak)
+	{
+		case 1:
+			if (unlink(Gbuf2) == -1)
+				logit(LOG_FILE, "Could not delete backup pfile %s after fallback save.", Gbuf2);
+		case 0:
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
+			                  "none", "none", "fallback_saved",
+			                  "type=%d room=%d path=%s size=%d",
+			                  type, room, Gbuf1, (int)(buf - fallback_buff));
+			return 1;
+
+		case -1:
+			if (rename(Gbuf2, Gbuf1) == -1)
+			{
+				persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
+				                  "none", "none", "restore_failed",
+				                  "path=%s backup=%s errno=%d", Gbuf1, Gbuf2, errno);
+			}
+			return 0;
+
+		case -2:
+			return 0;
+	}
+
+	return 0;
+}
+
 void delete_knownShapes(P_char ch)
 {
 	struct char_shapechange_data *curShape = ch->only.pc->knownShapes;
@@ -1307,7 +1501,8 @@ void writeShapechangeData(P_char ch)
 {
 	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
 	{
-		sql_save_player_shapechanges(ch);
+		if (!sql_save_player_shapechanges(ch))
+			logit(LOG_FILE, "writeShapechangeData: failed to save shapechange data for %s", GET_NAME(ch));
 	}
 }
 
@@ -1404,23 +1599,32 @@ int writeCharacter(P_char ch, int type, int room)
 	if (IS_NPC(ch))
 		return 0;
 
+	const bool is_locker_char = (strstr(GET_NAME(ch), ".locker") != NULL);
+
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
 		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
 
-	writeShapechangeData(ch);
-	room = calculate_save_room(ch, type, room);
-
-	// skip locker characters for sql operations
-	if (!strstr(GET_NAME(ch), ".locker"))
+	if (!is_locker_char)
 	{
+		if (!sql_save_player_shapechanges(ch))
+		{
+			logit(LOG_FILE, "sql_save_player_shapechanges failed for %s", GET_NAME(ch));
+			result = 0;
+		}
+		room = calculate_save_room(ch, type, room);
+
+		// skip locker characters for sql operations
 		sql_update_money(ch);
 		if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
 			sql_update_playtime(ch);
 		sql_update_epics(ch);
+		save_zone_trophy(ch);
 	}
-
-	save_zone_trophy(ch);
+	else
+	{
+		room = calculate_save_room(ch, type, room);
+	}
 
 	if (ch->desc)
 		ch->desc->rtype = type;
@@ -1468,6 +1672,17 @@ int writeCharacter(P_char ch, int type, int room)
 		{
 			logit(LOG_FILE, "sql_save_locker failed for %s", GET_NAME(ch));
 			wizlog(AVATAR, "&+RERROR&N sql_save_locker failed for %s", GET_NAME(ch));
+			persistence_alert(AVATAR, "locker", GET_NAME(ch), "none",
+			                  "none", "sql_save_failed",
+			                  "owner_pid=%d owner_assoc_id=%d",
+			                  owner_pid, owner_assoc_id);
+			if (!persistence_write_character_flat_fallback(ch, type, room))
+			{
+				persistence_alert(AVATAR, "locker", GET_NAME(ch), "none",
+				                  "none", "flat_fallback_failed",
+				                  "owner_pid=%d owner_assoc_id=%d",
+				                  owner_pid, owner_assoc_id);
+			}
 			result = 0;
 		}
 	}
@@ -1477,6 +1692,15 @@ int writeCharacter(P_char ch, int type, int room)
 		{
 			logit(LOG_FILE, "sql_save_player failed for %s", GET_NAME(ch));
 			wizlog(AVATAR, "&+RERROR&N sql_save_player failed for %s", GET_NAME(ch));
+			persistence_alert(AVATAR, "player", GET_NAME(ch), "none",
+			                  "none", "sql_save_failed",
+			                  "type=%d room=%d", type, room);
+			if (!persistence_write_character_flat_fallback(ch, type, room))
+			{
+				persistence_alert(AVATAR, "player", GET_NAME(ch), "none",
+				                  "none", "flat_fallback_failed",
+				                  "type=%d room=%d", type, room);
+			}
 			result = 0;
 		}
 	}
@@ -1525,6 +1749,7 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	P_obj obj;
 	FILE *f;
+	bool  ok = TRUE;
 
 	strcpy(name, GET_NAME(ch));
 	for (tmp = name; *tmp; tmp++)
@@ -1534,14 +1759,21 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 
 	// Remove all artis from char.
 	remove_all_artifacts_sql(ch);
-	remove_all_locker_access(ch);
+	if (!remove_all_locker_access(ch))
+	{
+		logit(LOG_DEBUG, "deleteCharacter(): failed to clear locker access for %s", GET_NAME(ch));
+		ok = FALSE;
+	}
 	if (GET_ASSOC(ch) != NULL)
 	{
 		GET_ASSOC(ch)->kick(ch);
 	}
 
-	// Soft delete character from frag leaderboard tables (for web statistics)
-	sql_soft_delete_character(GET_PID(ch));
+	if (!sql_soft_delete_character(GET_PID(ch)))
+	{
+		logit(LOG_DEBUG, "deleteCharacter(): failed to soft-delete pid %d", GET_PID(ch));
+		return FALSE;
+	}
 
 #ifdef USE_ACCOUNT
 	// Only remove from account list if descriptor and account exist
@@ -1551,16 +1783,24 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 
 	if (bDeleteLocker)
 	{
-		sql_delete_locker(GET_PID(ch), 0);
+		if (!sql_delete_locker(GET_PID(ch), 0))
+		{
+			logit(LOG_DEBUG, "deleteCharacter(): failed to delete locker data for pid %d", GET_PID(ch));
+			ok = FALSE;
+		}
 	}
 
 	// delete the player_data
-	sql_delete_player(GET_PID(ch));
+	if (!sql_delete_player(GET_PID(ch)))
+	{
+		logit(LOG_DEBUG, "deleteCharacter(): failed to delete player_data for pid %d", GET_PID(ch));
+		ok = FALSE;
+	}
 
 	// Delete ship.
 	delete_ship(GET_NAME(ch));
 
-	return TRUE;
+	return ok;
 }
 
 void PurgeCorpseFile(P_obj corpse)
@@ -1628,6 +1868,16 @@ long getLong(char **buf)
 
 	l = (l);
 	*buf += long_size;
+
+	return l;
+}
+
+unsigned long long getUnsignedLongLong(char **buf)
+{
+	unsigned long long l;
+
+	bcopy(*buf, &l, sizeof(l));
+	*buf += sizeof(l);
 
 	return l;
 }
@@ -2100,6 +2350,8 @@ int restoreAffects(char *buf, P_char ch)
 			af.bitvector5 = GET_LONG(buf);
 			/*af.bitvector6 = */ GET_LONG(buf);
 			af.wear_off_message_index = 0;
+			if (af.type == SKILL_DIAMOND_SOUL && af.location == APPLY_SAVING_PARA)
+				af.wear_off_message_index = 1;
 
 			if (aff_vers > 7)
 			{
@@ -2584,6 +2836,40 @@ int restoreCharOnly(P_char ch, char *name)
 #else
 	ch->in_room = room;
 #endif
+	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER))
+	{
+		int locker_room = ch->in_room;
+		int exit_room   = NOWHERE;
+
+		if (world[locker_room].dir_option[0] && world[locker_room].dir_option[0]->to_room != NOWHERE)
+			exit_room = world[locker_room].dir_option[0]->to_room;
+		else if (GET_HOME(ch))
+		{
+			int home = real_room(GET_HOME(ch));
+			if (home != NOWHERE)
+				exit_room = home;
+		}
+
+		if (exit_room == NOWHERE && GET_BIRTHPLACE(ch))
+		{
+			int birth = real_room(GET_BIRTHPLACE(ch));
+			if (birth != NOWHERE)
+				exit_room = birth;
+		}
+
+		if (exit_room != NOWHERE)
+		{
+			logit(LOG_DEBUG,
+			      "restoreCharacter: redirecting %s out of locker room %d(%s) to %d(%s)",
+			      name,
+			      locker_room,
+			      (world[locker_room].name) ? world[locker_room].name : "<unnamed>",
+			      exit_room,
+			      (world[exit_room].name) ? world[exit_room].name : "<unnamed>");
+			ch->specials.was_in_room = world[exit_room].number;
+			ch->in_room              = exit_room;
+		}
+	}
 
 	GET_LONG(buf);
 	start                           = (int)(buf - buff);
@@ -2754,6 +3040,14 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 
 		obj->craftsmanship = GET_SHORT(buf);
 		obj->condition     = GET_SHORT(buf);
+		if (obj_vers >= 36 && (o_f_flag & O_F_UID))
+		{
+			unsigned long long saved_uid = GET_ULL(buf);
+
+			obj->obj_uid = (unsigned long)saved_uid;
+			if (obj->obj_uid >= next_obj_uid)
+				next_obj_uid = obj->obj_uid + 1;
+		}
 		if (o_f_flag & O_F_WORN)
 		{
 			loc = GET_BYTE(buf);
@@ -2968,6 +3262,14 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 
 		obj_count += i_count;
 
+		/* Auto-fix corrupted spellbooks: pages consumed but no spell data stored. */
+		if (obj->type == ITEM_SPELLBOOK && obj->value[3] > 0 && !find_spell_description(obj))
+		{
+			logit(LOG_DEBUG, "restoreObjects: auto-fixed corrupted spellbook vnum %d (reset %d used pages)",
+			      obj_index[obj->R_num].virtual_number, obj->value[3]);
+			obj->value[3] = 0;
+		}
+
 		if (!dummy_obj)
 		{
 			do
@@ -3073,6 +3375,15 @@ P_obj read_one_object(char *read_buf)
 	obj->g_key         = 1;
 	obj->craftsmanship = GET_SHORT(buf);
 	obj->condition     = GET_SHORT(buf);
+
+	if (obj_vers >= 36 && (o_f_flag & O_F_UID))
+	{
+		unsigned long long saved_uid = GET_ULL(buf);
+
+		obj->obj_uid = (unsigned long)saved_uid;
+		if (obj->obj_uid >= next_obj_uid)
+			next_obj_uid = obj->obj_uid + 1;
+	}
 
 	if (o_f_flag & O_F_COUNT)
 		i_count = GET_SHORT(buf);
@@ -3849,7 +4160,6 @@ int writePet(P_char ch)
 				logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
 				wizlog(OVERLORD, "&+R&-LPANIC!&N  Error restoring backup petfile for %s!", GET_NAME(ch));
 				logit(LOG_EXIT, "unable to restore backup petfile for %s", GET_NAME(ch));
-				raise(SIGSEGV);
 			}
 			else
 				wizlog(OVERLORD, "        Backup restored.");
@@ -4048,14 +4358,16 @@ void writeSavedItem(P_obj item)
 
 	if (!OBJ_ROOM(item))
 	{
-		sql_delete_saved_item(item_key);
+		if (!sql_delete_saved_item(item_key))
+			logit(LOG_FILE, "sql_delete_saved_item failed for %s", item_key);
 		return;
 	}
 
 	if ((item->loc.room <= NOWHERE) || (item->loc.room > top_of_world))
 		return;
 
-	sql_save_saved_item(item, item_key);
+	if (!sql_save_saved_item(item, item_key))
+		logit(LOG_FILE, "sql_save_saved_item failed for %s", item_key);
 }
 
 void restoreSavedItems(void)

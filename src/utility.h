@@ -45,4 +45,7 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, char *colo
 
 int yes_no(const char *);
 
+void utility_latency_dump(void);
+void utility_latency_reset(void);
+
 #endif // _UTILITY_H_

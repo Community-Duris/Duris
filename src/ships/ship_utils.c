@@ -1609,7 +1609,7 @@ int jettison_cargo(P_char ch, P_ship ship, int left)
 	else
 	{
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "cargo jettison");
 	}
 	return TRUE;
 }
@@ -1652,7 +1652,7 @@ int jettison_contraband(P_char ch, P_ship ship, int left)
 	else
 	{
 		update_ship_status(ship);
-		write_ship(ship);
+		queue_ship_save(ship, "cargo jettison");
 	}
 	return TRUE;
 }

@@ -34,7 +34,7 @@ void make_prompt(P_desc point)
 	char                  promptbuf2[MAX_INPUT_LENGTH], *pPrompt;
 	snoop_by_data        *snoop_by_ptr;
 	int                   percent, t_ch_p = 0;
-	char                  prompt_buf[256];
+	char                  prompt_buf[MAX_STRING_LENGTH];
 	struct affected_type *paf = NULL;
 
 	t_ch = point->character;

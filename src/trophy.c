@@ -321,6 +321,10 @@ void load_zone_trophy(P_char ch)
 		return;
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -342,6 +346,9 @@ void load_zone_trophy(P_char ch)
 
 void zone_trophy_update()
 {
+	if (!get_property("exp.zoneTrophy.enabled", 0))
+		return;
+
 	if (!has_elapsed("zone_trophy_reduction", (int)get_property("exp.zoneTrophy.update.secs", 3600)))
 		return;
 
@@ -363,12 +370,23 @@ void save_zone_trophy(P_char ch)
 		qry("SELECT exp FROM zone_trophy WHERE pid = %d AND zone_number = %d", GET_PID(ch), it->zone_number);
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return;
+		}
+		bool       has_row = mysql_num_rows(res) > 0;
+		int        old_exp = 0;
 
-		if (mysql_num_rows(res) > 0)
+		if (has_row)
 		{
-			MYSQL_ROW row     = mysql_fetch_row(res);
-			int       old_exp = atoi(row[0]);
+			MYSQL_ROW row = mysql_fetch_row(res);
+			old_exp       = atoi(row[0]);
+		}
 
+		mysql_free_result(res);
+
+		if (has_row)
+		{
 			if (it->exp != old_exp)
 			{
 				qry("UPDATE zone_trophy SET exp = %d WHERE pid = %d AND zone_number = %d", it->exp, GET_PID(ch), it->zone_number);
@@ -378,8 +396,6 @@ void save_zone_trophy(P_char ch)
 		{
 			qry("INSERT INTO zone_trophy (pid, zone_number, exp) VALUES ('%d', '%d', '%d')", GET_PID(ch), it->zone_number, it->exp);
 		}
-
-		mysql_free_result(res);
 	}
 }
 #endif

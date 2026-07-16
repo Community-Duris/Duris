@@ -530,7 +530,7 @@ void do_dispator_remove(P_char ch)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "do_dispator_remove called in specs.zion.c without ch");
-		raise(SIGSEGV);
+		return;
 	}
 
 	act("&+yDis&n &+Lstrips you of your augmented powers!&n", TRUE, ch, 0, ch, TO_CHAR);

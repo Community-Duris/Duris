@@ -37,6 +37,7 @@ sudo apt-get install libxml2 libxml2-dev
 sudo apt-get install zlib1g zlib1g-dev
 sudo apt-get install gnutls-dev
 sudo apt-get install libcjson-dev libssl-dev
+sudo apt-get install libhiredis-dev libbsd-dev
 ```
 
 **CentOS/RHEL:**
@@ -110,10 +111,22 @@ mysql -u duris -p duris < src/duris.sql
 
 ### 4. Apply Migrations
 
+This branch does **not** use an in-process automigration feature at boot.
+Run schema changes explicitly with a shell script or direct `mysql` import.
+
 ```bash
-# Apply frag leaderboard tables (if using web statistics):
-mysql -u duris -p duris_dev < sql/migrations/add_frag_leaderboard_tables.sql
+# Fresh database only: create the complete baseline schema.
+mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
+
+# Existing populated database: run the incremental upgrade path.
+./migrations/run_migration.sh
 ```
+
+`migrations/bootstrap_multithread_safe.sql` is the authoritative **fresh-database baseline** for this branch.
+
+For an existing populated database, use `migrations/run_migration.sh` instead. The bootstrap uses `CREATE TABLE` definitions and is useful for schema comparison, but it is not an upgrade runner: `CREATE TABLE IF NOT EXISTS` does not add missing columns to an existing table.
+
+The migration runner contains the additive, guarded upgrade steps and is designed to be re-runnable after clone validation.
 
 **Note:** The frag leaderboard tables will be automatically populated as players log in and save. No manual population is needed.
 
@@ -169,31 +182,44 @@ ln -s /var/lib/dehydrated/certs/testduris.net/privkey.pem duris.key
 
 ```bash
 cd src
-make -f Makefile.linux
+make
 cp dms_new ../dms
 ```
 
 **Note:** The Makefile compiles to `src/dms_new`, which you then copy to `dms` in the root directory.
 
+### Area File Bootstrap
+
+The runtime expects generated `areas/world.*` files. On a fresh clone, the area-generator helpers may need to be rebuilt first:
+
+```bash
+cd areas/src
+make -j1
+cd ..
+./m_slow
+```
+
+This rebuilds the missing `areas/make_*` helper binaries, then generates the combined `world.*` files used at boot.
+
 ### Clean Build
 
 ```bash
 cd src
-make -f Makefile.linux clean
-make -f Makefile.linux
+make clean
+make
 cp dms_new ../dms
 ```
 
 ### Build Configuration
 
-The build is configured in `src/Makefile.linux`:
+The build is configured in `src/Makefile`:
 
 - **MySQL Enabled:** MySQL support is enabled by default
 - **Test Mode:** `TEST_MUD` flag is enabled for development builds
 
 To disable MySQL (not recommended):
 ```bash
-# Edit src/Makefile.linux and uncomment:
+# Edit src/Makefile and uncomment:
 # CFLAGS += -D__NO_MYSQL__
 ```
 
@@ -221,7 +247,7 @@ Database connection settings are **hardcoded** in `src/sql.h` (lines 6-16):
 
 **Important Notes:**
 - These credentials are compiled into the binary
-- Changes require recompilation: `cd src && make -f Makefile.linux clean && make -f Makefile.linux`
+- Changes require recompilation: `cd src && make clean && make`
 - For production: Change `DB_PASSWD` to a secure password before compiling
 - Default credentials: **user:** `duris`, **password:** `duris`
 
@@ -239,6 +265,20 @@ This is configured in `src/sql.c` `initialize_mysql()` function.
 ## Running the MUD
 
 ### Starting the Server
+
+The helper scripts now self-anchor to the repository root, so you can launch them from anywhere as long as the checkout is intact.
+
+**Preferred startup:**
+```bash
+./start_mud.sh
+```
+
+**Direct startup / debugging:**
+```bash
+./cycle_mud.sh
+```
+
+If the area helper binaries are missing, `cycle_mud.sh` will rebuild them automatically before running `areas/m_slow`.
 
 **Development (port 4000):**
 ```bash
@@ -365,8 +405,8 @@ sudo apt-get install libmysqlclient-dev
 ```bash
 # Clean and rebuild:
 cd src
-make -f Makefile.linux clean
-make -f Makefile.linux
+make clean
+make
 ```
 
 ---

@@ -25,6 +25,7 @@
 #include "poll.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "player_name.h"
 #include "websocket.h"
 
 extern struct descriptor_data  *descriptor_list;
@@ -386,9 +387,14 @@ static void ws_send_wholist_to_client(struct descriptor_data *d) {
     for (target = descriptor_list; target; target = target->next) {
         if (target->connected != CON_PLAYING || !target->character)
             continue;
+        if (d->character && !who_visible_to(d->character, target->character))
+            continue;
 
         player = cJSON_CreateObject();
-        cJSON_AddStringToObject(player, "character", GET_NAME(target->character));
+        {
+            char display_name[MAX_STRING_LENGTH];
+            cJSON_AddStringToObject(player, "character", who_display_name(d->character, target->character, display_name, sizeof(display_name)));
+        }
         cJSON_AddStringToObject(player, "account", target->account ? target->account->acct_name : "");
         cJSON_AddStringToObject(player, "ip", target->host);
         cJSON_AddNumberToObject(player, "level", GET_LEVEL(target->character));
@@ -626,7 +632,7 @@ void ws_send_full_game_state(struct descriptor_data *d)
 		return;
 
 	/* trigger gmcp updates to send current state */
-	if (d->character->in_room >= 0)
+	if (d->character->in_room >= 0 && d->ws_handshake_done)
 	{
 		extern void gmcp_room_info(struct char_data * ch);
 		extern void gmcp_room_map(struct char_data * ch);
@@ -635,16 +641,19 @@ void ws_send_full_game_state(struct descriptor_data *d)
 	}
 
 	extern void gmcp_char_vitals(struct char_data * ch);
-	gmcp_char_vitals(d->character);
-
 	extern void gmcp_char_status(struct char_data * ch);
-	gmcp_char_status(d->character);
-
 	extern void gmcp_char_affects(struct char_data * ch);
-	gmcp_char_affects(d->character);
-
 	extern void gmcp_quest_status(struct char_data * ch);
-	gmcp_quest_status(d->character);
+
+	/* Guard GMCP sends behind WS handshake to prevent leaking
+	 * frames into the login stream before handshake completes */
+	if (d->ws_handshake_done)
+	{
+		gmcp_char_vitals(d->character);
+		gmcp_char_status(d->character);
+		gmcp_char_affects(d->character);
+		gmcp_quest_status(d->character);
+	}
 
 	/* send a "look" to show the room */
 	write_to_q("look", &d->input, 0);
@@ -1658,6 +1667,7 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 		str_free(ch->player.name);
 	}
 	ch->player.name = str_dup(capitalized_name);
+	normalize_player_name_case(ch->player.name);
 
 	/* set race, sex, class */
 	GET_RACE(ch)       = race_id;
@@ -2155,7 +2165,13 @@ void ws_cmd_change_email(struct descriptor_data *d, cJSON *data)
 		FREE(d->account->acct_email);
 	}
 	d->account->acct_email = str_dup(new_email);
-	write_account(d->account);
+	if (-1 == write_account(d->account))
+	{
+		ws_send_account_message(d, "error", NULL, "Failed to save email change");
+		statuslog(56, "&+RALERT&n: failed to save email change for %s", d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "email change save failed");
+		return;
+	}
 
 	statuslog(56, "Account %s changed email to %s", d->account->acct_name, new_email);
 
@@ -2224,7 +2240,13 @@ void ws_cmd_change_password(struct descriptor_data *d, cJSON *data)
 	}
 	d->account->acct_password = str_dup(hash);
 	FREE(hash);
-	write_account(d->account);
+	if (-1 == write_account(d->account))
+	{
+		ws_send_account_message(d, "error", NULL, "Failed to save password change");
+		statuslog(56, "&+RALERT&n: failed to save password change for %s", d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "password change save failed");
+		return;
+	}
 
 	statuslog(56, "Account %s changed password", d->account->acct_name);
 
@@ -2319,8 +2341,11 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
 	statuslog(ch->player.level, "%s deleted %s via web client (%s@%s).", d->account->acct_name, char_name, d->login, d->host);
 	logit(LOG_PLAYER, "%s deleted %s via web client (%s@%s).", d->account->acct_name, char_name, d->login, d->host);
 
-	/* delete character file and free temp character */
-	deleteCharacter(ch);
+	if (!deleteCharacter(ch))
+	{
+		ws_send_account_message(d, "error", NULL, "Failed to delete character database records");
+		return;
+	}
 
 	/* free strings allocated by restoreCharOnly */
 	if (ch->player.name)
@@ -2360,7 +2385,11 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
 	FREE(c);
 	d->account->num_chars--;
 
-	write_account(d->account);
+	if (-1 == write_account(d->account))
+	{
+		statuslog(56, "&+RALERT&n: failed to save deleted-character account update for %s", d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "character deletion save failed");
+	}
 
 	/* send success with updated character list */
 	result_data = cJSON_CreateObject();
@@ -2566,7 +2595,11 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 
 		/* soft delete from frag leaderboard tables using the provided PID */
 		ws_send_admin_delete_progress(d, request_id, "Removing from frag leaderboard...", "info");
-		sql_soft_delete_character(char_pid);
+		if (!sql_soft_delete_character(char_pid))
+		{
+			ws_send_admin_delete_progress(d, request_id, "Failed to remove from frag leaderboard", "error");
+			return;
+		}
 		ws_send_admin_delete_progress(d, request_id, "Removed from frag leaderboard", "success");
 
 		/* remove from account character list */
@@ -2584,7 +2617,14 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 		target_acct->num_chars--;
 
 		ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
-		write_account(target_acct);
+		if (-1 == write_account(target_acct))
+		{
+			ws_send_admin_delete_progress(d, request_id, "Failed to update account file", "error");
+			statuslog(56, "&+RALERT&n: failed to update account file for %s after delete", account_name);
+			persistence_alert(AVATAR, "account", account_name, "none", "none", "write_failed", "character delete account update failed");
+			free_account(target_acct);
+			return;
+		}
 		free_account(target_acct);
 		ws_send_admin_delete_progress(d, request_id, "Account file updated", "success");
 
@@ -2645,7 +2685,14 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 	ws_send_admin_delete_progress(d, request_id, "Removed from account", "success");
 
 	ws_send_admin_delete_progress(d, request_id, "Writing account file...", "info");
-	write_account(target_acct);
+	if (-1 == write_account(target_acct))
+	{
+		ws_send_admin_delete_progress(d, request_id, "Failed to update account file", "error");
+		statuslog(56, "&+RALERT&n: failed to update account file for %s after delete", account_name);
+		persistence_alert(AVATAR, "account", account_name, "none", "none", "write_failed", "character delete account update failed");
+		free_account(target_acct);
+		return;
+	}
 	ws_send_admin_delete_progress(d, request_id, "Account file updated", "success");
 	free_account(target_acct);
 

@@ -549,7 +549,7 @@ int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
 			if (!web)
 			{
 				logit(LOG_EXIT, "assert: mir_spider() failed to load object 41900");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			obj_to_room(web, ch->in_room);
 			act("$n &nspins a wonderous web across the thick trees.", 1, ch, 0, 0, TO_ROOM);
@@ -559,7 +559,7 @@ int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
 			if (!web)
 			{
 				logit(LOG_EXIT, "assert: mir_spider() failed to load object 41901");
-				raise(SIGSEGV);
+				return FALSE;
 			}
 			obj_to_room(web, ch->in_room);
 			act("$n &nbegins to spin a web.", 1, ch, 0, 0, TO_ROOM);
@@ -624,7 +624,7 @@ int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
 					if (!smoke)
 					{
 						logit(LOG_EXIT, "assert: mir_fire() failed to load object 41908");
-						raise(SIGSEGV);
+						break;
 					}
 					add_event(event_smoke_to_fire, number(1, 5), NULL, NULL, NULL, 0, &room, sizeof(room));
 					// AddEvent(EVENT_SPECIAL, number(1, 5), TRUE, smoke_to_fire, room);
@@ -645,14 +645,14 @@ void web_to_smoke(P_char ch, P_char victim, P_obj obj, void *data)
 	if (!current_event || (current_event->type != EVENT_SPECIAL))
 	{
 		logit(LOG_EXIT, "Call to web_to_smoke() with invalid event");
-		raise(SIGSEGV);
+		return;
 	}
 	/* fathom our location */
 	room = atoi((char *)current_event->target.t_arg);
 	if (room <= 0)
 	{
 		logit(LOG_EXIT, "web_to_smoke() in invalid room.");
-		raise(SIGSEGV);
+		return;
 	}
 	/* double check for the web, and replace with smoke if its there */
 	for (room_junk = world[room].contents; room_junk; room_junk = room_junk_temp)
@@ -665,7 +665,7 @@ void web_to_smoke(P_char ch, P_char victim, P_obj obj, void *data)
 			if (!smoke)
 			{
 				logit(LOG_EXIT, "assert: web_to_smoke() failed to load object 41908");
-				raise(SIGSEGV);
+				return;
 			}
 			send_to_room("The spider webs begin to smolder, and just might burst into flames at any moment.\r\n", room);
 			obj_from_room(web);
@@ -686,7 +686,7 @@ void event_smoke_to_fire(P_char ch, P_char victim, P_obj obj, void *data)
 	if (room <= 0)
 	{
 		logit(LOG_EXIT, "smoke_to_fire() in invalid room.");
-		raise(SIGSEGV);
+		return;
 	}
 	/* double check for the smoke, and replace with fire if its there */
 	for (room_junk = world[room].contents; room_junk; room_junk = room_junk_temp)
@@ -699,7 +699,7 @@ void event_smoke_to_fire(P_char ch, P_char victim, P_obj obj, void *data)
 			if (!fire)
 			{
 				logit(LOG_EXIT, "assert: smoke_to_fire() failed to load object 41907");
-				raise(SIGSEGV);
+				return;
 			}
 			send_to_room("The smoldering webs burst into flame!\r\n", room);
 			obj_from_room(smoke);

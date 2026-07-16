@@ -17,6 +17,7 @@
 #include "interp.h"
 #include "utils.h"
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -125,7 +126,7 @@ char       *bonus                  = NULL;
 char       *keepchar               = NULL;
 char       *hometown_table         = NULL;
 char       *alignment_table        = NULL;
-const char *shutdown_message       = NULL;
+char *shutdown_message       = NULL;
 char       *artilist_mortal_main   = NULL;
 char       *artilist_mortal_ioun   = NULL;
 char       *artilist_mortal_unique = NULL;
@@ -308,9 +309,7 @@ int fread_string_to_buffer(FILE *fl, char *buf)
 	{
 		if (!fgets(tmp, MAX_STRING_LENGTH - 5, fl))
 		{
-			perror("fread_string:");
-			logit(LOG_DEBUG, "%s", tmp);
-			raise(SIGSEGV);
+			fatal_boot_error("db", "fread_string_to_buffer: unexpected EOF while reading string");
 		}
 		t_length = strlen(tmp);
 
@@ -334,8 +333,7 @@ int fread_string_to_buffer(FILE *fl, char *buf)
 
 		if (length + t_length >= MAX_STRING_LENGTH)
 		{
-			logit(LOG_EXIT, "fread_string: string too large (db.c)");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "fread_string: string too large (db.c)");
 		}
 		else
 		{
@@ -477,28 +475,22 @@ void boot_db(int mini_mode)
 	{
 		if (!(mob_f = fopen(MOB_FILE, "r")))
 		{
-			perror("boot");
-			fprintf(stderr, "ERROR! Trouble opening mobile file world.mob! Exiting.\r\n");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening mobile file world.mob: %s", strerror(errno));
 		}
 		if (!(obj_f = fopen(OBJ_FILE, "r")))
 		{
-			perror("boot");
-			fprintf(stderr, "ERROR! Trouble opening object file world.obj! Exiting.\r\n");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening object file world.obj: %s", strerror(errno));
 		}
 	}
 	else
 	{
-		if (!(mob_f = fopen("areas/mini.mob", "r")))
+		if (!(mob_f = fopen("areas_mini/mini.mob", "r")))
 		{
-			perror("boot");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening mini mobile file areas_mini/mini.mob: %s", strerror(errno));
 		}
-		if (!(obj_f = fopen("areas/mini.obj", "r")))
+		if (!(obj_f = fopen("areas_mini/mini.obj", "r")))
 		{
-			perror("boot");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "Trouble opening mini object file areas_mini/mini.obj: %s", strerror(errno));
 		}
 	}
 	/*
@@ -777,8 +769,7 @@ void weather_setup(void)
 
 	if (!(fl = fopen("areas/world.weather", "r")))
 	{
-		logit(LOG_EXIT, "weather_setup");
-		raise(SIGSEGV);
+		fatal_boot_error("db", "weather_setup: could not open areas/world.weather: %s", strerror(errno));
 	}
 	for (zon = 0; zon <= 99; zon++)
 	{
@@ -955,7 +946,7 @@ void init_rand_tables()
 
 	if (!(tfile = fopen("areas/world.tab", "r")))
 	{
-		raise(SIGSEGV);
+		fatal_boot_error("db", "boot_tables: could not open areas/world.tab: %s", strerror(errno));
 	}
 
 	/* First, count the number of each table. */
@@ -1074,7 +1065,8 @@ P_index generate_indices(FILE *fl, int *top)
 	num = 0;
 	for (;;)
 	{
-		fgets(buf, 511, fl);
+		if (!fgets(buf, 511, fl))
+			break; /* tolerate EOF-terminated legacy files */
 		if (*buf == '$')
 			break;
 		if (*buf == '#')
@@ -1112,8 +1104,7 @@ P_index generate_indices(FILE *fl, int *top)
 		}
 		else
 		{
-			perror("generate indices");
-			raise(SIGSEGV);
+			break; /* EOF-terminated legacy files */
 		}
 	}
 	*top = i - 2;
@@ -1124,13 +1115,14 @@ P_index generate_indices(FILE *fl, int *top)
 void boot_world(int mini_mode)
 {
 	FILE                    *fl;
-	int                      num_rooms, room_nr = 0, zone = 0, virtual_nr, flag;
+	int                      num_rooms, room_nr = 0, zone = 0, virtual_nr;
 	int                      tmp = 0, tmp1 = 0, tmp2 = 0, tmp3 = 0, i, name_length, desc_length;
 	char                     chk[MAX_STRING_LENGTH], tmp_buf[MAX_STRING_LENGTH];
 	char                     buf[MAX_INPUT_LENGTH];
 	char                     name_buf[MAX_STRING_LENGTH] = {0}, desc_buf[MAX_STRING_LENGTH] = {0};
 	struct extra_descr_data *new_descr;
 	bool                     found_name, found_desc;
+	char                     chk_fmt[32];
 
 	world          = 0;
 	character_list = 0;
@@ -1141,37 +1133,51 @@ void boot_world(int mini_mode)
 		if (!(fl = fopen(WORLD_FILE, "r")))
 		{
 			perror("fopen");
-			logit(LOG_FILE, "boot_world: could not open world file.");
-			logit(LOG_SYS, "boot_world: could not open world file.");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_world: could not open world file");
 		}
 	}
 	else if (mini_mode == 1)
 	{
-		if (!(fl = fopen("areas/mini.wld", "r")))
+		if (!(fl = fopen("areas_mini/mini.wld", "r")))
 		{
-			perror("fopen");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_world: fopen failed: %s", strerror(errno));
 		}
 	}
+
+	snprintf(chk_fmt, sizeof(chk_fmt), " %%%zus \n", sizeof(chk) - 1);
 
 	fseek(fl, 0, SEEK_END);
 	size_t fsize = ftell(fl);
 
-	char *memBuf  = (char *)malloc(fsize);
+	char *memBuf  = (char *)malloc(fsize + 1);
 	char *seekPtr = memBuf;
+	if (!memBuf)
+	{
+		fatal_boot_error("db", "boot_world: could not allocate memory for world file");
+	}
 
 	fseek(fl, 0, SEEK_SET);
 	size_t bytesRead = fread(memBuf, sizeof(char), fsize, fl);
+	if (bytesRead != fsize)
+	{
+		free(memBuf);
+		fatal_boot_error("db", "boot_world: short read while loading world file");
+	}
+	memBuf[fsize] = '\0';
 	fclose(fl);
 
 	fl = fmemopen(memBuf, fsize, "r");
+	if (!fl)
+	{
+		fatal_boot_error("db", "boot_world: could not open memory stream for world file");
+	}
 
 	/* Count the number of rooms, to make allocation more efficient!! */
 	num_rooms = 0;
 	for (;;)
 	{
-		fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+		if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+			break;
 		if (tmp_buf[0] == '$')
 			break;
 		if (tmp_buf[0] == '#')
@@ -1195,15 +1201,17 @@ void boot_world(int mini_mode)
 	 * well). JAB
 	 */
 
-	do
+	for (;;)
 	{
-		fscanf(fl, " #%d\n", &virtual_nr);
+		if (fscanf(fl, " #%d\n", &virtual_nr) != 1)
+			break;
 		if (mini_mode == 2)
 			fprintf(stderr, "#%d  ", virtual_nr);
 
 		name_length = fread_string_to_buffer(fl, name_buf);
-		if ((flag = (*name_buf != '$')))
-		{ /* a new record to be read */
+		if (*name_buf == '$')
+			break;
+		/* a new record to be read */
 			world[room_nr].number = virtual_nr;
 			desc_length           = fread_string_to_buffer(fl, desc_buf);
 			found_name            = FALSE;
@@ -1260,13 +1268,13 @@ void boot_world(int mini_mode)
 				if (world[room_nr].number <= (zone ? zone_table[zone - 1].top : -1))
 				{
 					logit(LOG_DEBUG, "Room nr %d (%d) is below zone %d.\n", room_nr, world[room_nr].number, zone);
-					raise(SIGSEGV);
+					fatal_boot_error("db", "boot_world: room %d (%d) is below zone %d", room_nr, world[room_nr].number, zone);
 				}
 				while (world[room_nr].number > zone_table[zone].top)
 					if (++zone > top_of_zone_table)
 					{
 						logit(LOG_DEBUG, "Room %d is outside of any zone.\n", virtual_nr);
-						raise(SIGSEGV);
+						fatal_boot_error("db", "boot_world: room %d is outside of any zone", virtual_nr);
 					}
 				world[room_nr].zone = zone;
 				if (zone_table[zone].real_bottom == -1)
@@ -1309,7 +1317,8 @@ void boot_world(int mini_mode)
 
 			for (;;)
 			{
-				fscanf(fl, " %s \n", chk);
+				if (fscanf(fl, chk_fmt, chk) != 1)
+					break;
 
 				if (*chk == 'D') /* direction field  */
 					setup_dir(fl, room_nr, atoi(chk + 1));
@@ -1350,11 +1359,15 @@ void boot_world(int mini_mode)
 			}
 			if (world[room_nr].room_flags & ROOM_INN)
 				world[room_nr].funct = inn;
+			if ((room_nr >= 65201) && (room_nr <= 65300))
+			{
+				world[room_nr].room_flags |= ROOM_LOCKER;
+				world[room_nr].funct = storage_locker;
+			}
 
 			room_light(room_nr, REAL);
 			room_nr++;
-		}
-	} while (flag);
+	}
 
 	fclose(fl);
 	free(memBuf);
@@ -1451,6 +1464,14 @@ void setup_dir(FILE *fl, int room, int dir)
 
 	general_description = fread_string(fl);
 	keyword             = fread_string(fl);
+	if (dir < 0 || dir >= NUM_EXITS)
+	{
+		if (fscanf(fl, " %d %d %d ", &state, &key, &to_room) != 3 || to_room < 0)
+			return;
+		FREE(general_description);
+		FREE(keyword);
+		return;
+	}
 	if (fscanf(fl, " %d %d %d ", &state, &key, &to_room) != 3 || to_room < 0)
 		return;
 
@@ -1582,15 +1603,31 @@ void recalc_zone_numbers()
 
 void update_zone_difficulties()
 {
-	for (int z = 0; z <= top_of_zone_table; z++)
-	{
-		struct zone_info zinfo;
+	MYSQL_RES *res = db_query("SELECT number, difficulty FROM zones WHERE difficulty <> 0");
 
-		if (get_zone_info(zone_table[z].number, &zinfo) && zinfo.difficulty)
+	if (!res)
+		return;
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(res)))
+	{
+		int number     = atoi(row[0]);
+		int difficulty  = atoi(row[1]);
+
+		if (!difficulty)
+			continue;
+
+		for (int z = 0; z <= top_of_zone_table; z++)
 		{
-			zone_table[z].difficulty = zinfo.difficulty;
+			if (zone_table[z].number == number)
+			{
+				zone_table[z].difficulty = difficulty;
+				break;
+			}
 		}
 	}
+
+	mysql_free_result(res);
 }
 
 #define IS_ZONE_COMMAND(ch) (ch == 'M' || ch == 'O' || ch == 'E' || ch == 'P' || ch == 'D' || ch == 'G' || ch == 'R' || ch == 'F' || ch == 'A' || ch == 'B' || ch == 'C' || ch == 'Y' || ch == 'S')
@@ -1610,23 +1647,22 @@ void boot_zones(int mini_mode)
 	{
 		if (!(fl = fopen(ZONE_FILE, "r")))
 		{
-			perror("boot_zones");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_zones: could not open %s: %s", ZONE_FILE, strerror(errno));
 		}
 	}
 	else
 	{
-		if (!(fl = fopen("areas/mini.zon", "r")))
+		if (!(fl = fopen("areas_mini/mini.zon", "r")))
 		{
-			perror("boot_zones");
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_zones: could not open areas_mini/mini.zon: %s", strerror(errno));
 		}
 	}
 	logit(LOG_STATUS, "Counting zones...");
 	num_zones = 0;
 	for (;;)
 	{
-		fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+		if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+			break;
 		if (tmp_buf[0] == '$')
 			break;
 		if (tmp_buf[0] == '#')
@@ -1646,13 +1682,15 @@ void boot_zones(int mini_mode)
 	num_commands = 0;
 	for (;;)
 	{
-		fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+		if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+			break;
 		if (tmp_buf[0] == '$')
 			break;
 		if (tmp_buf[0] == '#')
 		{
 			/* skip over zone name */
-			fgets(tmp_buf, MAX_STRING_LENGTH, fl);
+			if (!fgets(tmp_buf, MAX_STRING_LENGTH, fl))
+				break;
 		}
 		else if (tmp_buf[0] == 'S')
 		{
@@ -1679,7 +1717,8 @@ void boot_zones(int mini_mode)
 
 	for (;;)
 	{
-		fscanf(fl, " #%d\n", &tmp);
+		if (fscanf(fl, " #%d\n", &tmp) != 1)
+			break; /* accept EOF or a legacy $~ terminator */
 		check = fread_string(fl); /* zone name as specified by builder */
 		if (*check == '$')
 			break; /* * end of file */
@@ -1743,8 +1782,7 @@ void boot_zones(int mini_mode)
 		}
 		else
 		{
-			fprintf(stderr, "zone %d has NO commands!\n", zon);
-			raise(SIGSEGV);
+			fatal_boot_error("db", "boot_zones: zone %d has no commands", zon);
 		}
 
 		/* read the command table */
@@ -2215,8 +2253,7 @@ P_char read_mobile(int nr, int type)
 			}
 			else
 			{
-				logit(LOG_DEBUG, "Bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
-				raise(SIGSEGV);
+				fatal_boot_error("db", "boot_mobiles: bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
 			}
 		}
 	}
@@ -2584,8 +2621,7 @@ P_char read_mobile(int nr, int type)
 			}
 			else
 			{
-				logit(LOG_DEBUG, "Bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
-				raise(SIGSEGV);
+				fatal_boot_error("db", "boot_mobiles: bogus cash and/or exp for mob %d", mob_index[nr].virtual_number);
 			}
 		}
 	}
@@ -2648,7 +2684,7 @@ P_char read_mobile(int nr, int type)
 
 	if (mob->nevents)
 	{
-		raise(SIGSEGV);
+		disarm_char_nevents(mob, NULL);
 	}
 
 	/* init a periodic event for each mob */
@@ -3781,7 +3817,6 @@ char *fread_string(FILE *fl)
 		{
 			perror("fread_string");
 			logit(LOG_DEBUG, "%s", tmp);
-			raise(SIGSEGV);
 			return NULL;
 		}
 		/* If there is a '~', END the string stop; else put an "\r\n" over
@@ -3811,7 +3846,7 @@ char *fread_string(FILE *fl)
 		if (length + templength >= MAX_STRING_LENGTH)
 		{
 			logit(LOG_EXIT, "fread_string: string too large (db.c)");
-			raise(SIGSEGV);
+			return NULL;
 		}
 		else
 		{
@@ -3863,7 +3898,7 @@ void skip_fread(FILE *fl)
 		{
 			perror("skip_fread");
 			logit(LOG_DEBUG, "%s", tmp);
-			raise(SIGSEGV);
+			return;
 		}
 		for (point = tmp + strlen(tmp) - 1; (point >= tmp) && isspace(*point); point--)
 			;

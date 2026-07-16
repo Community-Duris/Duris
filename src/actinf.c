@@ -3803,11 +3803,6 @@ void do_world(P_char ch, char *argument, int cmd)
 							extract_char(t_mob);
 							t_mob = NULL;
 						}
-						else
-						{
-							logit(LOG_EXIT, "GLITCH 1");
-							raise(SIGSEGV);
-						}
 						if ((strlen(buf) + length + 40) < MAX_STRING_LENGTH)
 						{
 							strcat(buff, buf);
@@ -3886,11 +3881,6 @@ void do_world(P_char ch, char *argument, int cmd)
 						{
 							extract_char(t_mob);
 							t_mob = NULL;
-						}
-						else
-						{
-							logit(LOG_EXIT, "GLITCH 1");
-							raise(SIGSEGV);
 						}
 						if ((strlen(buf) + length + 40) < MAX_STRING_LENGTH)
 						{
@@ -6211,7 +6201,7 @@ void do_who(P_char ch, char *argument, int cmd)
 		total_ingame_connections++;
 
 		// Anyone can now see invis people other than gods on who list - Drannak
-		if (racewar(ch, tch) || IS_NPC(tch) || (!CAN_SEE(ch, tch) && IS_TRUSTED(tch)))
+		if (!who_visible_to(ch, tch) || IS_NPC(tch) || (!CAN_SEE(ch, tch) && IS_TRUSTED(tch)))
 			continue;
 
 		// Gods can see all!
@@ -6288,9 +6278,11 @@ void do_who(P_char ch, char *argument, int cmd)
 		{
 			for (j = 0; j < who_list_size; j++)
 			{
+				char who_name[MAX_STRING_LENGTH];
+
 				snprintf(
 					who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), "[&+w%2d&N%-3s&N]", GET_LEVEL(who_list[j]), class_names_table[flag2idx(who_list[j]->player.m_class)].code);
-				snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), " %-15s%s", GET_NAME(who_list[j]), (!(k++ % 3) ? "\n" : ""));
+				snprintf(who_output + strlen(who_output), MAX_STRING_LENGTH - strlen(who_output), " %-15s%s", who_display_name(ch, who_list[j], who_name, sizeof(who_name)), (!(k++ % 3) ? "\n" : ""));
 			}
 		}
 		strcat(who_output, "\n");
@@ -6318,7 +6310,11 @@ void do_who(P_char ch, char *argument, int cmd)
 			else
 				strcat(who_output, "[   &=LCCheater&n   ] ");
 
-			strcat(who_output, GET_NAME(who_gods[j]));
+			{
+				char who_name[MAX_STRING_LENGTH];
+
+				strcat(who_output, who_display_name(ch, who_gods[j], who_name, sizeof(who_name)));
+			}
 			strcat(who_output, " ");
 			if (GET_TITLE(who_gods[j]))
 				strcat(who_output, GET_TITLE(who_gods[j]));
@@ -6369,7 +6365,9 @@ void do_who(P_char ch, char *argument, int cmd)
 				}
 				else
 				{
-					strcat(who_output, GET_NAME(who_list[j]));
+					char who_name[MAX_STRING_LENGTH];
+
+					strcat(who_output, who_display_name(ch, who_list[j], who_name, sizeof(who_name)));
 #ifdef USE_ACCOUNT
 					if (IS_TRUSTED(ch))
 					{

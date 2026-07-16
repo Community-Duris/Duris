@@ -1347,10 +1347,15 @@ void radiate_message_from_room(int room, char *message, int radius, RMFR_FLAGS f
 	// debug("radiate_message_from_room called with params - room %d, radius %d, flags %08x, pcbase %d, message: %s", room, radius, flags, pcbase, message);
 
 	// sanity checking
-	if (!message || radius < 1)
+	if (!message)
 	{
-		logit(LOG_EXIT, "radiate_message_from_room: bad params");
-		raise(SIGSEGV);
+		logit(LOG_DEBUG, "radiate_message_from_room: null message");
+		return;
+	}
+	if (radius < 1)
+	{
+		logit(LOG_DEBUG, "radiate_message_from_room: radius %d too small", radius);
+		return;
 	}
 
 	// more sanity, but easier to have this happen, so just log problem and bail
@@ -1375,11 +1380,6 @@ void radiate_message_from_room(int room, char *message, int radius, RMFR_FLAGS f
 	if (!dead_rmfr_pool)
 	{
 		dead_rmfr_pool = mm_create("RMFR", sizeof(RMFR_QUEUE_ITEM), offsetof(RMFR_QUEUE_ITEM, next), 1);
-		if (!dead_rmfr_pool)
-		{
-			logit(LOG_EXIT, "Cannot create dead_rmfr_pool");
-			raise(SIGSEGV);
-		}
 		// debug("created RMFR pool");
 	}
 

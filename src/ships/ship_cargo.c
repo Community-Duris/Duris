@@ -16,6 +16,7 @@
 #include "ships.h"
 #include "spells.h"
 #include "sql.h"
+#include "sql_player.h"
 #include "timers.h"
 
 float ship_cargo_market_mod[NUM_PORTS][NUM_PORTS];
@@ -119,6 +120,8 @@ int read_cargo()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res)
+		return FALSE;
 
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
@@ -157,12 +160,24 @@ int write_cargo()
 #ifdef __NO_MYSQL__
 	return FALSE;
 #else
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+		{
+			logit(LOG_DEBUG, "write_cargo(): failed to start transaction");
+			return FALSE;
+		}
+		own_txn = true;
+	}
+
 	if (!qry("delete from ship_cargo_market_mods; delete from ship_cargo_prices;"))
 	{
 		logit(LOG_DEBUG, "write_cargo(): cargo query failed!");
+		if (own_txn)
+			sql_rollback();
 		return FALSE;
 	}
-	sql_clear_results();
 
 	char buffer[MAX_STRING_LENGTH]                   = {0};
 	char cargoPrices[MAX_STRING_LENGTH / 4]          = {0};
@@ -206,9 +221,17 @@ int write_cargo()
 	if (!qry(buffer))
 	{
 		logit(LOG_DEBUG, "write_cargo(): insert query failed!");
+		if (own_txn)
+			sql_rollback();
 		return FALSE;
 	}
 	sql_clear_results();
+	if (own_txn && !sql_commit())
+	{
+		logit(LOG_DEBUG, "write_cargo(): commit failed");
+		sql_rollback();
+		return FALSE;
+	}
 	return TRUE;
 #endif
 }

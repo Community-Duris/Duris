@@ -141,10 +141,10 @@ int apply_ac(P_char ch, int eq_pos)
 		      ch ? J_NAME(ch) : "NULL",
 		      eq_pos,
 		      ch ? (ch->equipment[eq_pos] ? ch->equipment[eq_pos]->short_description : "No Eq in Slot") : "NULL");
-		raise(SIGSEGV);
+		return 0;
 	}
 
-	if (!GET_ITEM_TYPE(ch->equipment[eq_pos]) == ITEM_ARMOR && !GET_ITEM_TYPE(ch->equipment[eq_pos]) == ITEM_SHIELD)
+	if ((GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_ARMOR) && (GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_SHIELD))
 	{
 		return 0;
 	}
@@ -630,7 +630,7 @@ void add_racial_stat_bonus(P_char ch, struct hold_data *affs)
 
 	if (!affs || !ch)
 	{
-		raise(SIGSEGV);
+		return;
 	}
 
 	snprintf(buf, 256, "stats.bonus.%s", race_names_table[ch->player.race].no_spaces);
@@ -2008,11 +2008,13 @@ void affect_to_char_with_messages(P_char ch, struct affected_type *af, char *wea
 	if (i == 0 && !skill->wear_off_char[i] && !skill->wear_off_room[i])
 		i = 1;
 
-	if (i == MAX_WEAR_OFF_MESSAGES)
+	if (i >= MAX_WEAR_OFF_MESSAGES)
 	{
 		affected_alloc->wear_off_message_index = 0;
+		return;
 	}
-	else if (skill->wear_off_char[i] == 0 && skill->wear_off_room[i] == 0)
+
+	if (skill->wear_off_char[i] == 0 && skill->wear_off_room[i] == 0)
 	{
 		if (wear_off_char)
 			skill->wear_off_char[i] = str_dup(wear_off_char);
@@ -2095,8 +2097,8 @@ void affect_remove(P_char ch, struct affected_type *af)
 
 	if (!(ch && ch->affected))
 	{
-		logit(LOG_EXIT, "affect_remove(): %s: %s", (ch ? "(NULL)" : J_NAME(ch)), (ch ? "no affects." : "no ch."));
-		raise(SIGSEGV);
+		logit(LOG_EXIT, "affect_remove(): %s: %s", (ch ? J_NAME(ch) : "(NULL)"), (ch ? "no affects." : "no ch."));
+		return;
 	}
 
 	/*
@@ -2121,7 +2123,16 @@ void affect_remove(P_char ch, struct affected_type *af)
 		if (hjp->next != af)
 		{
 			logit(LOG_EXIT, "affect_remove(): could not locate affected_type in ch->affected for %s.", GET_NAME(ch));
-			raise(SIGSEGV);
+			all_affects(ch, TRUE);
+
+			char_light(ch);
+			room_light(ch->in_room, REAL);
+
+			balance_affects(ch);
+
+			/* Update web client affects display */
+			gmcp_char_affects(ch);
+			return;
 		}
 		// Remove af from the list.
 		hjp->next = af->next;
@@ -2310,29 +2321,15 @@ void wear_off_message(P_char ch, struct affected_type *af)
 		af->type = TAG_LAYONHANDS;
 	}
 
-	if (af->wear_off_message_index)
+	int idx = (af->wear_off_message_index > 0 && af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES) ? af->wear_off_message_index : 0;
+	if (skills[af->type].wear_off_char[idx])
 	{
-		if (skills[af->type].wear_off_char[af->wear_off_message_index])
-		{
-			send_to_char(skills[af->type].wear_off_char[af->wear_off_message_index], ch);
-			send_to_char("\n", ch);
-		}
-		if (skills[af->type].wear_off_room[af->wear_off_message_index])
-		{
-			act(skills[af->type].wear_off_room[af->wear_off_message_index], FALSE, ch, 0, 0, TO_ROOM);
-		}
+		send_to_char(skills[af->type].wear_off_char[idx], ch);
+		send_to_char("\n", ch);
 	}
-	else
+	if (skills[af->type].wear_off_room[idx])
 	{
-		if (skills[af->type].wear_off_char[0])
-		{
-			send_to_char(skills[af->type].wear_off_char[0], ch);
-			send_to_char("\n", ch);
-		}
-		if (skills[af->type].wear_off_room[0])
-		{
-			act(skills[af->type].wear_off_room[0], FALSE, ch, 0, 0, TO_ROOM);
-		}
+		act(skills[af->type].wear_off_room[idx], FALSE, ch, 0, 0, TO_ROOM);
 	}
 }
 
@@ -2838,7 +2835,10 @@ struct char_link_data *link_char_with_affect(P_char ch, P_char target, ush_int t
 
 	// attempt to create an undefined link - have a look at initialize_links
 	if (!link_types[type].name)
-		raise(SIGSEGV);
+	{
+		logit(LOG_EXIT, "link_char_with_affect called with undefined link type %u", type);
+		return NULL;
+	}
 
 	if (link_types[type].flags & LNKFLG_EXCLUSIVE)
 		clear_links(ch, type);
@@ -2866,7 +2866,10 @@ struct char_obj_link_data *link_char_obj_with_affect(P_char ch, P_obj obj, ush_i
 
 	// attempt to create an undefined link - have a look at initialize_links
 	if ((type > LNK_MAX) || (type < 0))
-		raise(SIGSEGV);
+	{
+		logit(LOG_EXIT, "link_char_obj_with_affect called with invalid link type %u", type);
+		return NULL;
+	}
 
 	if (link_types[type].flags & LNKFLG_EXCLUSIVE)
 		clear_links(ch, type);
@@ -3122,7 +3125,7 @@ void internal_unlink_char(P_char ch, struct char_link_data *cld, struct char_lin
 			break;
 	}
 	if (!cld2) // link must be found in the linked list of the target as well
-		raise(SIGSEGV);
+		logit(LOG_EXIT, "internal_unlink_char: missing reverse link for type %u", cld->type);
 	else if (prev)
 		prev->next_linked = cld->next_linked;
 	else
@@ -3686,7 +3689,7 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "falling_char with NULL char.");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	if (ch->in_room == NOWHERE)
@@ -4016,7 +4019,7 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 	if (!obj)
 	{
 		logit(LOG_EXIT, "falling_obj: NULL obj.");
-		raise(SIGSEGV);
+		return FALSE;
 	}
 
 	if (!OBJ_ROOM(obj))

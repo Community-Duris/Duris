@@ -11,6 +11,7 @@ using namespace std;
 #include "assocs.h"
 #include "spells.h"
 #include "sql.h"
+#include "sql_player.h"
 
 extern P_desc               descriptor_list;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
@@ -42,6 +43,10 @@ void load_alliances()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	MYSQL_ROW row;
 
@@ -68,15 +73,41 @@ void save_alliances()
 #ifdef __NO_MYSQL__
 	return;
 #else
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+		{
+			logit(LOG_DEBUG, "save_alliances(): failed to start transaction");
+			return;
+		}
+		own_txn = true;
+	}
 
 	if (!qry("DELETE FROM alliances"))
+	{
+		logit(LOG_DEBUG, "save_alliances(): delete query failed");
+		if (own_txn)
+			sql_rollback();
 		return;
+	}
 
 	for (int i = 0; i < alliances.size(); i++)
 	{
-		qry("INSERT INTO alliances (forging_assoc_id, joining_assoc_id) VALUES ('%d', '%d')", alliances[i].forging_assoc->get_id(), alliances[i].joining_assoc->get_id());
+		if (!qry("INSERT INTO alliances (forging_assoc_id, joining_assoc_id) VALUES ('%d', '%d')", alliances[i].forging_assoc->get_id(), alliances[i].joining_assoc->get_id()))
+		{
+			logit(LOG_DEBUG, "save_alliances(): insert failed at index %d", i);
+			if (own_txn)
+				sql_rollback();
+			return;
+		}
 	}
 
+	if (own_txn && !sql_commit())
+	{
+		logit(LOG_DEBUG, "save_alliances(): commit failed");
+		sql_rollback();
+	}
 #endif // __NO_MYSQL__
 }
 

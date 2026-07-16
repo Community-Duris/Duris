@@ -2412,25 +2412,12 @@ int create_boon(BoonData *bdata)
 	        bdata->repeat))
 	{
 
-		// Get the new ID
-		if (qry("SELECT MAX(id) FROM boons"))
+		// Get the new ID from the INSERT we just performed.
+		bdata->id = (int)mysql_insert_id(DB);
+		if (bdata->id <= 0)
 		{
-			MYSQL_RES *res = boon_store_result("create_boon");
-			MYSQL_ROW  row;
-
-			if (!res)
-			{
-				return FALSE;
-			}
-			if (mysql_num_rows(res) < 1)
-			{
-				mysql_free_result(res);
-				return FALSE;
-			}
-
-			row       = mysql_fetch_row(res);
-			bdata->id = (row && row[0]) ? atoi(row[0]) : 0;
-			mysql_free_result(res);
+			debug("create_boon(): mysql_insert_id returned invalid id");
+			return FALSE;
 		}
 
 		boon_notify(bdata->id, NULL, BN_CREATE);
@@ -2451,26 +2438,7 @@ int create_boon_progress(BoonProgress *bpg)
 
 	if (qry("INSERT into boons_progress (boonid, pid, counter) VALUES (%d, %d, %f)", bpg->boonid, bpg->pid, bpg->counter))
 	{
-		if (qry("SELECT MAX(id) FROM boons_progress"))
-		{
-			MYSQL_RES *res = boon_store_result("create_boon_progress");
-			MYSQL_ROW  row;
-
-			if (!res)
-			{
-				return FALSE;
-			}
-			if (mysql_num_rows(res) < 1)
-			{
-				mysql_free_result(res);
-				return FALSE;
-			}
-
-			row     = mysql_fetch_row(res);
-			bpg->id = (row && row[0]) ? atoi(row[0]) : 0;
-			mysql_free_result(res);
-		}
-
+		bpg->id = (int)mysql_insert_id(DB);
 		return TRUE;
 	}
 
@@ -2832,6 +2800,10 @@ void boon_random_maintenance()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{

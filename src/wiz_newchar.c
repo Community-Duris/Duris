@@ -339,7 +339,12 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	setCharPhysTypeInfo(newch);
 
 	// save character to db - this assigns auto-increment pid
-	writeCharacter(newch, RENT_QUIT, NOWHERE);
+	if (!writeCharacter(newch, RENT_QUIT, NOWHERE))
+	{
+		send_to_char("failed to save character to database.\r\n", ch);
+		free_char(newch);
+		return;
+	}
 
 	// now we have a valid pid from db auto-increment
 	if (GET_PID(newch) <= 0)
@@ -351,19 +356,26 @@ void do_newchar(P_char ch, char *argument, int cmd)
 
 	// link to account via direct sql
 	{
-		char account_sql[MAX_STRING_LENGTH];
-		char name_sql[MAX_STRING_LENGTH];
+		char account_sql[MAX_STRING_LENGTH * 2 + 1];
+		char name_sql[MAX_STRING_LENGTH * 2 + 1];
 
 		mysql_str(ch->desc->account->acct_name, account_sql);
 		mysql_str(newch->player.name, name_sql);
 
-		db_query("INSERT INTO account_characters "
+		if (!db_query("INSERT INTO account_characters "
 		         "(account_name, pid, char_name, created_at, deleted_at) "
 		         "VALUES('%s', %ld, '%s', NOW(), NULL) "
 		         "ON DUPLICATE KEY UPDATE char_name = VALUES(char_name), deleted_at = NULL",
 		         account_sql,
 		         GET_PID(newch),
-		         name_sql);
+		         name_sql))
+		{
+			send_to_char("failed to link character to account.\r\n", ch);
+			logit(LOG_DEBUG, "wiz_newchar: failed to link %s to account %s", newch->player.name, ch->desc->account->acct_name);
+			deleteCharacter(newch, FALSE);
+			free_char(newch);
+			return;
+		}
 	}
 
 	// update in-memory account state for immediate visibility

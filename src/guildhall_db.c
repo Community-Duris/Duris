@@ -30,13 +30,17 @@ int next_guildhall_id()
 #ifndef __NO_MYSQL__
 	if (_next_guildhall_id == -1)
 	{
-		if (!qry("select max(id) from guildhalls"))
+		if (!qry("select coalesce(max(id), 0) from guildhalls"))
 		{
 			logit(LOG_GUILDHALLS, "next_guildhall_id(): query failed");
 			return -1;
 		}
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return FALSE;
+		}
 		MYSQL_ROW  row = mysql_fetch_row(res);
 
 		if (!row[0])
@@ -60,13 +64,17 @@ int next_guildhall_room_id()
 #ifndef __NO_MYSQL__
 	if (_next_guildhall_room_id == -1)
 	{
-		if (!qry("select max(id) from guildhall_rooms"))
+		if (!qry("select coalesce(max(id), 0) from guildhall_rooms"))
 		{
 			logit(LOG_GUILDHALLS, "next_guildhall_room_id(): query failed");
 			return -1;
 		}
 
 		MYSQL_RES *res = mysql_store_result(DB);
+		if (!res) {
+			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+			return FALSE;
+		}
 		MYSQL_ROW  row = mysql_fetch_row(res);
 
 		if (!row[0])
@@ -118,6 +126,10 @@ void load_guildhalls(vector<Guildhall *> &guildhalls)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
@@ -169,6 +181,10 @@ void load_guildhall(int id, Guildhall *gh)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	MYSQL_ROW row;
 
@@ -214,6 +230,10 @@ void load_guildhall_rooms(Guildhall *guildhall)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res) {
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
