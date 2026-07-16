@@ -24,16 +24,17 @@ assert "FRAG_LEVEL_RATIO" not in sql_h
 assert "FRAGS_TO_LEVEL" not in sql_h
 
 for key in (
-    "cap.minimum.level",
+    "cap.floor.level",
+    "cap.frag.base.level",
     "cap.reset.level",
     "cap.maximum.level",
     "cap.level.step",
     "cap.frags.per.level",
-    "timer.first.days",
-    "timer.level.26_29.days",
-    "timer.level.30_39.days",
-    "timer.level.40_49.days",
-    "timer.level.50_56.days",
+    "timer.default.days",
+    "timer.circle.level.35.days",
+    "timer.circle.level.40.days",
+    "timer.circle.level.45.days",
+    "timer.circle.level.50.days",
     "boon.duration.minutes",
     "boon.bonus",
 ):
@@ -41,16 +42,17 @@ for key in (
     assert key in impl, key
 
 for token in (
-    "cap_minimum_level",
+    "cap_floor_level",
+    "cap_frag_base_level",
     "cap_reset_level",
     "cap_maximum_level",
     "cap_level_step",
     "cap_frags_per_level",
-    "timer_first_days",
-    "timer_level_26_29_days",
-    "timer_level_30_39_days",
-    "timer_level_40_49_days",
-    "timer_level_50_56_days",
+    "timer_default_days",
+    "timer_circle_level_35_days",
+    "timer_circle_level_40_days",
+    "timer_circle_level_45_days",
+    "timer_circle_level_50_days",
     "boon_duration_minutes",
     "boon_bonus",
 ):
@@ -60,10 +62,13 @@ assert "frag_cap_config_cap_level_from_frags" in impl
 assert "frag_cap_config_frags_for_level" in fraglist
 assert "frag_cap_config_frags_for_level" in redis
 assert "frag_cap_config_timer_days" in impl
+assert "timer.circle.level.35" in config
+assert "cap.level.step=1" in config
+assert "timer.default.days=5" in config
 assert "frag_cap_config_boon_duration_minutes" in impl
 assert "frag_cap_config_boon_bonus" in impl
 assert "FROM_UNIXTIME" in sql
 assert "frag_cap_config_reset_level" in sql
-assert "frag_cap_config_first_timer_days" in sql
+assert "frag_cap_config_reset_timer_days" in sql
 
 print("frag-cap configuration source contract passed")

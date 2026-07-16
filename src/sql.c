@@ -678,7 +678,7 @@ void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_
 		debug("get_level_cap_info: Database read fail.");
 		*max_frags   = (long)-1;
 		*racewar     = RACEWAR_NONE;
-		*level       = frag_cap_config_get()->cap_minimum_level;
+		*level       = frag_cap_config_get()->cap_floor_level;
 		*next_update = 0;
 		return;
 	}
@@ -707,7 +707,7 @@ int sql_level_cap(int racewar_side)
 	if ((db == NULL) || ((row = mysql_fetch_row(db)) == NULL))
 	{
 		debug("sql_level_cap: Database read fail.");
-		return frag_cap_config_get()->cap_minimum_level;
+		return frag_cap_config_get()->cap_floor_level;
 	}
 
 	level_cap       = atoi(row[0]);
@@ -725,8 +725,8 @@ int sql_level_cap(int racewar_side)
 	// Clamp database values to the configured mortal-cap range.
 	if (level_cap >= config->cap_maximum_level)
 		return config->cap_maximum_level;
-	if (level_cap <= config->cap_minimum_level)
-		return config->cap_minimum_level;
+	if (level_cap <= config->cap_floor_level)
+		return config->cap_floor_level;
 
 	return level_cap;
 }
@@ -3241,7 +3241,7 @@ bool sql_pwipe(int code_verify)
 		send_to_all("Resetting level_cap data... .. .");
 		if (qry("UPDATE level_cap SET most_frags=0, racewar_leader=0, level=%d, next_update=NOW() + INTERVAL %d DAY",
 		         frag_cap_config_reset_level(),
-		         frag_cap_config_first_timer_days()))
+		         frag_cap_config_reset_timer_days()))
 		{
 			logit(LOG_DEBUG, "  success!");
 			send_to_all("  success!\n");
