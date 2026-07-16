@@ -98,6 +98,7 @@ OBJS =  $(SHIP_OBJS) \
 				 drannak.o \
 				 enhance.o \
 				 crafting.o \
+				 mining.o \
 				 mining_config.o \
 				 random_equipment_config.o \
 				 salvage.o \
