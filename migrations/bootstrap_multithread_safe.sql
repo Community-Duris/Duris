@@ -1686,6 +1686,11 @@ CREATE TABLE `zones` (
   KEY `number_index` (`number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `mud_schema_migrations` (
+  `migration_name` varchar(128) NOT NULL,
+  `applied_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`migration_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 SET FOREIGN_KEY_CHECKS = 1;

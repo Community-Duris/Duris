@@ -12,7 +12,7 @@ source "$SCRIPT_DIR/.env"
 MYSQL_CMD="mysql -h$DB_HOST -P${DB_PORT:-3306} -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=110
+TOTAL=113
 FAILED=0
 
 run_sql() {
@@ -2006,6 +2006,24 @@ SELECT id, 'public', 1
 FROM lockers
 WHERE locker_name LIKE 'account.%';"
 
+run_sql "create migration markers table" "
+CREATE TABLE IF NOT EXISTS mud_schema_migrations (
+    migration_name VARCHAR(128) NOT NULL PRIMARY KEY,
+    applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;"
+
+# Older deployments may already have account-locker content from an earlier
+# untracked run. Treat that as completed rather than risking a second copy.
+run_sql "seed account locker migration marker" "
+INSERT IGNORE INTO mud_schema_migrations (migration_name)
+SELECT 'account_locker_copy_v1'
+WHERE EXISTS (
+    SELECT 1
+    FROM locker_items li
+    JOIN lockers l ON l.id = li.locker_id
+    WHERE l.locker_name LIKE 'account.%'
+);"
+
 run_sql "create temp mapping table for locker items" "
 DROP TABLE IF EXISTS _locker_item_map;
 CREATE TABLE _locker_item_map (
@@ -2038,7 +2056,11 @@ JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'pub
 WHERE char_locker.locker_name LIKE '%.locker'
   AND char_locker.locker_name NOT LIKE 'guild.%'
   AND char_locker.locker_name NOT LIKE 'account.%'
-  AND src.vnum != 173;"
+  AND src.vnum != 173
+  AND NOT EXISTS (
+      SELECT 1 FROM mud_schema_migrations
+      WHERE migration_name = 'account_locker_copy_v1'
+  );"
 
 run_sql "build locker item id mapping" "
 INSERT INTO _locker_item_map (old_id, new_id, old_container_id)
@@ -2073,6 +2095,10 @@ JOIN _locker_item_map m ON m.old_id = lia.item_id
 WHERE NOT EXISTS (
     SELECT 1 FROM locker_item_affects WHERE item_id = m.new_id AND location = lia.location
 );"
+
+run_sql "mark account locker copy complete" "
+INSERT IGNORE INTO mud_schema_migrations (migration_name)
+VALUES ('account_locker_copy_v1');"
 
 run_sql "cleanup temp mapping table" "
 DROP TABLE IF EXISTS _locker_item_map;"
