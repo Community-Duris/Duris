@@ -12,7 +12,7 @@ source "$SCRIPT_DIR/.env"
 MYSQL_CMD="mysql -h$DB_HOST -P${DB_PORT:-3306} -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=109
+TOTAL=113
 FAILED=0
 
 run_sql() {
@@ -2006,6 +2006,24 @@ SELECT id, 'public', 1
 FROM lockers
 WHERE locker_name LIKE 'account.%';"
 
+run_sql "create migration markers table" "
+CREATE TABLE IF NOT EXISTS mud_schema_migrations (
+    migration_name VARCHAR(128) NOT NULL PRIMARY KEY,
+    applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;"
+
+# Older deployments may already have account-locker content from an earlier
+# untracked run. Treat that as completed rather than risking a second copy.
+run_sql "seed account locker migration marker" "
+INSERT IGNORE INTO mud_schema_migrations (migration_name)
+SELECT 'account_locker_copy_v1'
+WHERE EXISTS (
+    SELECT 1
+    FROM locker_items li
+    JOIN lockers l ON l.id = li.locker_id
+    WHERE l.locker_name LIKE 'account.%'
+);"
+
 run_sql "create temp mapping table for locker items" "
 DROP TABLE IF EXISTS _locker_item_map;
 CREATE TABLE _locker_item_map (
@@ -2038,7 +2056,11 @@ JOIN private_chests pc ON pc.locker_id = acct_locker.id AND pc.chest_name = 'pub
 WHERE char_locker.locker_name LIKE '%.locker'
   AND char_locker.locker_name NOT LIKE 'guild.%'
   AND char_locker.locker_name NOT LIKE 'account.%'
-  AND src.vnum != 173;"
+  AND src.vnum != 173
+  AND NOT EXISTS (
+      SELECT 1 FROM mud_schema_migrations
+      WHERE migration_name = 'account_locker_copy_v1'
+  );"
 
 run_sql "build locker item id mapping" "
 INSERT INTO _locker_item_map (old_id, new_id, old_container_id)
@@ -2073,6 +2095,10 @@ JOIN _locker_item_map m ON m.old_id = lia.item_id
 WHERE NOT EXISTS (
     SELECT 1 FROM locker_item_affects WHERE item_id = m.new_id AND location = lia.location
 );"
+
+run_sql "mark account locker copy complete" "
+INSERT IGNORE INTO mud_schema_migrations (migration_name)
+VALUES ('account_locker_copy_v1');"
 
 run_sql "cleanup temp mapping table" "
 DROP TABLE IF EXISTS _locker_item_map;"
@@ -2918,6 +2944,78 @@ SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE tabl
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'persistence_item_events' AND index_name = 'idx_event_type_created'); SET @sql = IF(@idx_exists = 0, 'CREATE INDEX idx_event_type_created ON persistence_item_events(event_type, created_at)', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND index_name = 'idx_scalar_event_key'); SET @sql = IF(@idx_exists = 0, 'CREATE INDEX idx_scalar_event_key ON persistence_scalar_events(event_type, event_key)', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'persistence_scalar_events' AND index_name = 'idx_scalar_zone_time'); SET @sql = IF(@idx_exists = 0, 'CREATE INDEX idx_scalar_zone_time ON persistence_scalar_events(zone_number, touched_at)', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
+
+# Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS
+# above cannot repair existing tables, but current save/load and pwipe SQL requires
+# these columns and extra-description tables.
+run_sql "repair item persistence schema drift" "
+CREATE TABLE IF NOT EXISTS corpse_item_extra_descr (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_id INT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    PRIMARY KEY (id), INDEX idx_item_id (item_id),
+    CONSTRAINT fk_corpse_item_ed FOREIGN KEY (item_id) REFERENCES corpse_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS account_locker_item_extra_descr (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_id INT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    PRIMARY KEY (id), INDEX idx_item_id (item_id),
+    CONSTRAINT fk_account_locker_item_ed FOREIGN KEY (item_id) REFERENCES account_locker_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS saved_item_extra_descr (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_id INT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    PRIMARY KEY (id), INDEX idx_item_id (item_id),
+    CONSTRAINT fk_saved_item_ed FOREIGN KEY (item_id) REFERENCES saved_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS shopkeeper_item_extra_descr (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_id INT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    PRIMARY KEY (id), INDEX idx_item_id (item_id),
+    CONSTRAINT fk_shopkeeper_item_ed FOREIGN KEY (item_id) REFERENCES shopkeeper_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS siege_item_extra_descr (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_id INT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    PRIMARY KEY (id), INDEX idx_item_id (item_id),
+    CONSTRAINT fk_siege_item_ed FOREIGN KEY (item_id) REFERENCES siege_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector1') = 0, 'ALTER TABLE corpse_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector2') = 0, 'ALTER TABLE corpse_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector3') = 0, 'ALTER TABLE corpse_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector4') = 0, 'ALTER TABLE corpse_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'corpse_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE corpse_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'item_type') = 0, 'ALTER TABLE player_pet_items ADD COLUMN item_type TINYINT DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector1') = 0, 'ALTER TABLE player_pet_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector2') = 0, 'ALTER TABLE player_pet_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector3') = 0, 'ALTER TABLE player_pet_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector4') = 0, 'ALTER TABLE player_pet_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'player_pet_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE player_pet_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector1') = 0, 'ALTER TABLE shopkeeper_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector2') = 0, 'ALTER TABLE shopkeeper_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector3') = 0, 'ALTER TABLE shopkeeper_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector4') = 0, 'ALTER TABLE shopkeeper_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'shopkeeper_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE shopkeeper_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector1') = 0, 'ALTER TABLE saved_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector2') = 0, 'ALTER TABLE saved_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector3') = 0, 'ALTER TABLE saved_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector4') = 0, 'ALTER TABLE saved_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'saved_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE saved_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'item_type') = 0, 'ALTER TABLE siege_items ADD COLUMN item_type TINYINT DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector1') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector1 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector2') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector2 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector3') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector4') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
 
 run_sql "convert auction tables to InnoDB" "
 ALTER TABLE auction_bid_history ENGINE=InnoDB;

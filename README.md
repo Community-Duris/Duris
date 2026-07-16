@@ -115,17 +115,18 @@ This branch does **not** use an in-process automigration feature at boot.
 Run schema changes explicitly with a shell script or direct `mysql` import.
 
 ```bash
-# Safe consolidated bootstrap/migration for new or existing databases
+# Fresh database only: create the complete baseline schema.
 mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
+
+# Existing populated database: run the incremental upgrade path.
+./migrations/run_migration.sh
 ```
 
-`migrations/bootstrap_multithread_safe.sql` is the recommended migration file for this branch.
+`migrations/bootstrap_multithread_safe.sql` is the authoritative **fresh-database baseline** for this branch.
 
-It is safe because:
-- it is **idempotent**: tables and indexes are created with `IF NOT EXISTS` or guarded with `information_schema` checks
-- it is **non-destructive**: it does not use `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, or column-drop operations
-- it is designed to work on both **fresh databases** and **already-migrated databases**
-- it can be run **multiple times** without wiping data or duplicating schema objects
+For an existing populated database, use `migrations/run_migration.sh` instead. The bootstrap uses `CREATE TABLE` definitions and is useful for schema comparison, but it is not an upgrade runner: `CREATE TABLE IF NOT EXISTS` does not add missing columns to an existing table.
+
+The migration runner contains the additive, guarded upgrade steps and is designed to be re-runnable after clone validation.
 
 **Note:** The frag leaderboard tables will be automatically populated as players log in and save. No manual population is needed.
 

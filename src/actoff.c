@@ -2169,6 +2169,27 @@ bool bad_flee_dir(const P_char ch, const int to_room)
 
 #define DRAGONSLAYER_VNUM 80569
 
+/* Restore only Sneak granted directly by currently worn equipment. This deliberately
+ * does not rebuild skills, innates, spells, protections, or other affect sources. */
+static bool restore_equipment_sneak_after_flee(P_char ch)
+{
+	int i;
+
+	if (!ch || IS_FIGHTING(ch) || IS_DESTROYING(ch) || IS_AFFECTED(ch, AFF_SNEAK))
+		return FALSE;
+
+	for (i = 0; i < MAX_WEAR; i++)
+	{
+		if (ch->equipment[i] && IS_SET(ch->equipment[i]->bitvector, AFF_SNEAK))
+		{
+			SET_BIT(ch->specials.affected_by, AFF_SNEAK);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 void do_flee(P_char ch, char *argument, int cmd)
 {
 	int                  i, attempted_dir, start_room, atts, fight_pc = FALSE, j;
@@ -2442,6 +2463,8 @@ void do_flee(P_char ch, char *argument, int cmd)
 		StopAllAttackers(ch);
 	if (IS_DESTROYING(ch))
 		stop_destroying(ch);
+	if (start_room != ch->in_room && restore_equipment_sneak_after_flee(ch))
+		send_to_char("The moment of panic has passed, and you slip back into a quiet step.\r\n", ch);
 
 	if (was_fighting && IS_NPC(was_fighting))
 	{
