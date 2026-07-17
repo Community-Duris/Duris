@@ -23,6 +23,7 @@
 #include <set>
 #include <stdio.h>
 #include <string.h>
+#include "account_reward.h"
 #include "achievements.h"
 #include "arena.h"
 #include "arenadef.h"
@@ -1447,6 +1448,13 @@ P_obj make_corpse(P_char ch, int loss)
 
 		if (IS_HUMANOID(ch))
 			corpse->value[CORPSE_FLAGS] |= HUMANOID_CORPSE; /* for carving */
+	}
+
+	account_bound_reward_prepare_player_corpse(ch, corpse);
+	if (IS_PC(ch))
+	{
+		int contents_weight=corpse->weight-GET_WEIGHT(ch);
+		corpse->value[CORPSE_WEIGHT]=contents_weight>0?contents_weight:0;
 	}
 
 	corpse->value[CORPSE_RACE] = GET_RACE(ch);

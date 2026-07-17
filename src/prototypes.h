@@ -2477,6 +2477,7 @@ void load_soulbind(P_char ch);
 void remove_soulbind(P_char ch);
 void do_divineclaim(P_char ch, char *argument, int cmd);
 void account_bound_reward_on_login(P_char ch);
+void account_bound_reward_prepare_player_corpse(P_char ch, P_obj corpse);
 bool account_bound_reward_owner(P_char ch, P_obj obj);
 
 void spell_earthen_maul(int, P_char, char *, int, P_char, P_obj);

@@ -1979,8 +1979,6 @@ void enter_game(P_desc d)
 			send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
 		}
 
-		account_bound_reward_on_login(ch);
-
 		// only restore pets on crash recovery
 #ifndef __NO_MYSQL__
 		if (d->rtype == RENT_CRASH || d->rtype == RENT_CRASH2)
@@ -2575,6 +2573,7 @@ void enter_game(P_desc d)
 	sql_log_player_login(ch, "login");
 
 	do_look(ch, 0, -4);
+	account_bound_reward_on_login(ch);
 
 	if (has_innate(ch, INNATE_SUMMON_BOOK))
 	{

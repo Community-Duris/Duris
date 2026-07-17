@@ -24,6 +24,7 @@
 #include <time.h>
 #include <pthread.h>
 #include "account.h"
+#include "account_reward.h"
 #include "assocs.h"
 #include "boon.h"
 #include "epic.h"
@@ -2523,7 +2524,8 @@ bool sql_clear_zone_trophy()
 bool sql_verify_pwipe_manifest(void)
 {
 	static const char *const tables[] = {
-		"account_characters", "account_locker_access", "account_locker_item_affects",
+		"account_bound_rewards", "account_bound_reward_summons", "account_bound_reward_pwipe_state", "account_characters",
+		"account_locker_access", "account_locker_item_affects",
 		"account_locker_item_extra_descr", "account_locker_items", "account_lockers",
 		"alliances", "artifact_bind", "artifacts", "artifacts_mortal", "associations",
 		"auction_bid_history", "auction_item_pickups", "auction_money_pickups", "auctions",
@@ -2550,6 +2552,11 @@ bool sql_verify_pwipe_manifest(void)
 		"zone_touches", "zone_trophy", NULL
 	};
 	static const char *const columns[][2] = {
+		{"account_bound_rewards", "id"}, {"account_bound_rewards", "expires_at"},
+		{"account_bound_rewards", "remaining_pwipes"},
+		{"account_bound_reward_summons", "grant_id"}, {"account_bound_reward_summons", "pid"},
+		{"account_bound_reward_summons", "last_summoned_at"},
+		{"account_bound_reward_pwipe_state", "id"}, {"account_bound_reward_pwipe_state", "last_processed_at"},
 		{"outposts", "owner_id"}, {"outposts", "level"}, {"outposts", "walls"},
 		{"outposts", "archers"}, {"outposts", "hitpoints"}, {"outposts", "territory"},
 		{"outposts", "portal_room"}, {"outposts", "resources"}, {"outposts", "applied_resources"},
@@ -3366,6 +3373,11 @@ bool sql_pwipe(int code_verify)
 				send_to_all("Postflight FAILED: season-reset invariants not satisfied!\n");
 				return FALSE;
 			}
+		}
+		if (!account_bound_rewards_on_successful_pwipe())
+		{
+			logit(LOG_DEBUG, "sql_pwipe: account reward pwipe policy failed; preserving rewards for manual review.");
+			send_to_all("Account reward pwipe policy FAILED; rewards are being preserved for manual review.\n");
 		}
 		logit(LOG_DEBUG, "  success!");
 		send_to_all("  success!\n");

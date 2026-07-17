@@ -61,6 +61,7 @@
 #include "spells.h"
 #include "enhance.h"
 #include "crafting.h"
+#include "account_reward_config.h"
 #include "frag_cap_config.h"
 #include "hardcore_config.h"
 #include "random_equipment_config.h"
@@ -554,6 +555,9 @@ void run_the_game(int port, int sslport)
 
 		fprintf(stderr, "-- Loading frag-cap configuration\r\n");
 		boot_frag_cap_config();
+
+		fprintf(stderr, "-- Loading account reward configuration\r\n");
+		boot_account_reward_config();
 
 		fprintf(stderr, "-- Loading Hardcore configuration\r\n");
 		boot_hardcore_config();
