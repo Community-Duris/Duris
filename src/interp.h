@@ -893,6 +893,11 @@ extern unsigned int game_locked_level;
 #define CMD_DEATH        -1
 #define CMD_TOROOM       -2 // Checks NPC procs when someone enters a room.
 #define CMD_LOOKOUT      -5
+#define CMD_FROMROOM     -75 // Room hook notification before character removal.
+
+/* Ordinary TRUE means a legacy room proc handled an event.  Only this
+ * explicit result may veto CMD_FROMROOM removal. */
+#define ROOM_PROC_LEAVE_VETO 0x4c56544f /* "LVTO" */
 #define CMD_GOTHIT       -100
 #define CMD_GOTNUKED     -101
 #define CMD_MOB_COMBAT   -102

@@ -1710,6 +1710,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 	}
 
 	char_from_room(ch);
+	if (ch->in_room != NOWHERE)
+		return FALSE;
 	ch->specials.was_in_room = world[was_in].number;
 	if (!char_to_room(ch, new_room, exitnumb))
 	{
