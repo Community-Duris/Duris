@@ -19,8 +19,10 @@
 #include "sql_pool.h"
 
 #include <pthread.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifndef __NO_MYSQL__
 
@@ -185,9 +187,14 @@ void sql_pool_shutdown(void)
 /*  Acquire / Release                                                  */
 /* ------------------------------------------------------------------ */
 
-MYSQL *sql_pool_acquire(void)
+MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 {
 	MYSQL *conn = NULL;
+	struct timespec deadline;
+	int wait_result;
+
+	if (pool_was_active)
+		*pool_was_active = 0;
 
 	pthread_mutex_lock(&pool_mutex);
 
@@ -195,6 +202,17 @@ MYSQL *sql_pool_acquire(void)
 	{
 		pthread_mutex_unlock(&pool_mutex);
 		return NULL;
+	}
+	if (pool_was_active)
+		*pool_was_active = 1;
+
+	clock_gettime(CLOCK_REALTIME, &deadline);
+	deadline.tv_sec += SQL_POOL_ACQUIRE_TIMEOUT_MS / 1000;
+	deadline.tv_nsec += (long)(SQL_POOL_ACQUIRE_TIMEOUT_MS % 1000) * 1000000L;
+	if (deadline.tv_nsec >= 1000000000L)
+	{
+		deadline.tv_sec++;
+		deadline.tv_nsec -= 1000000000L;
 	}
 
 	while (1)
@@ -212,8 +230,28 @@ MYSQL *sql_pool_acquire(void)
 			}
 		}
 
-		/* All busy — block until someone releases. */
-		pthread_cond_wait(&pool_cond, &pool_mutex);
+		/* All busy — wait only until the fixed acquisition deadline. */
+		wait_result = pthread_cond_timedwait(&pool_cond, &pool_mutex, &deadline);
+		if (wait_result == ETIMEDOUT)
+		{
+			int borrowed = 0;
+			int total = pool_size;
+			for (int i = 0; i < pool_size; i++)
+				borrowed += pool[i].in_use;
+			pthread_mutex_unlock(&pool_mutex);
+			logit(LOG_STATUS,
+			      "SQL pool acquisition timed out after %d ms (%d/%d connections borrowed).",
+			      SQL_POOL_ACQUIRE_TIMEOUT_MS,
+			      borrowed,
+			      total);
+			return NULL;
+		}
+		if (wait_result != 0)
+		{
+			pthread_mutex_unlock(&pool_mutex);
+			logit(LOG_STATUS, "SQL pool acquisition wait failed: %s", strerror(wait_result));
+			return NULL;
+		}
 
 		if (!pool || pool_closing)
 		{
@@ -221,6 +259,11 @@ MYSQL *sql_pool_acquire(void)
 			return NULL;
 		}
 	}
+}
+
+MYSQL *sql_pool_acquire(void)
+{
+	return sql_pool_acquire_with_status(NULL);
 }
 
 void sql_pool_release(MYSQL *conn)
@@ -364,9 +407,16 @@ int sql_pool_init(int size)
 
 void sql_pool_shutdown(void) {}
 
+MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
+{
+	if (pool_was_active)
+		*pool_was_active = 0;
+	return NULL;
+}
+
 MYSQL *sql_pool_acquire(void)
 {
-	return NULL;
+	return sql_pool_acquire_with_status(NULL);
 }
 
 void sql_pool_release(MYSQL *conn)

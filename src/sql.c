@@ -334,15 +334,16 @@ void sql_populate_lookup_tables()
 	logit(LOG_STATUS, "Lookup tables populated.");
 }
 
-/* Single source of truth for database selection.  On non-default
- * ports (typically dev/sandbox builds started by mortals) we
- * deliberately swap the production "duris" database for the
- * "duris_dev" sandbox so a misconfigured boot can never clobber
- * live data.  Sync (DB) and async/pool paths must call this so they
- * agree on the target database. */
+/* Resolve the requested database while retaining the non-default-port
+ * production safety guard.  Explicit disposable/test database names must
+ * remain usable on any port; only an implicit production target is redirected
+ * to the development sandbox. */
 const char *sql_persistence_db_name(void)
 {
-	if (RUNNING_PORT != DFLT_PORT)
+	const bool production_name = !strcmp(DB_NAME, "duris") ||
+	                             !strcmp(DB_NAME, "duris_prod");
+
+	if (RUNNING_PORT != DFLT_PORT && production_name)
 		return "duris_dev";
 	return DB_NAME;
 }
@@ -915,7 +916,7 @@ void sql_update_account_character(P_char ch)
 
 	// Insert or update account_characters mapping
 	// Using INSERT...ON DUPLICATE KEY UPDATE to preserve created_at for existing records
-	if (!db_query("INSERT INTO account_characters "
+	if (!qry("INSERT INTO account_characters "
 	         "(account_name, pid, char_name, created_at, deleted_at) "
 	         "VALUES('%s', %ld, '%s', NOW(), NULL) "
 	         "ON DUPLICATE KEY UPDATE "
@@ -990,7 +991,7 @@ void sql_update_frag_leaderboard(P_char ch)
 	// Insert or update frag_leaderboard
 	// Using INSERT ... ON DUPLICATE KEY UPDATE to preserve the row id while
 	// refreshing the current stats.
-	if (!db_query("INSERT INTO frag_leaderboard "
+	if (!qry("INSERT INTO frag_leaderboard "
 	         "(pid, account_name, char_name, total_frags, racewar, race, class, level, deleted_at) "
 	         "VALUES(%ld, '%s', '%s', %d, %d, '%s', '%s', %d, NULL) "
 	         "ON DUPLICATE KEY UPDATE "
@@ -1339,7 +1340,7 @@ void sql_disconnectIP(P_char ch)
 	if (!ch || !IS_PC(ch))
 		return;
 
-	db_query_nolog("INSERT INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
+	db_query_nolog("INSERT IGNORE INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
 	if (ch->desc)
 	{
 		// Set racewar side if not an immortal.
@@ -1350,7 +1351,7 @@ void sql_disconnectIP(P_char ch)
 void sql_connectIP(P_char ch)
 {
 	// insert will silently fail if the PID is already in the table
-	db_query_nolog("INSERT INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
+	db_query_nolog("INSERT IGNORE INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
 	if (ch->desc)
 	{
 		db_query("UPDATE ip_info SET last_ip = '%s', last_connect = NOW(), racewar_side = %d WHERE pid = %d", ch->desc->host, IS_TRUSTED(ch) ? RACEWAR_NONE : GET_RACEWAR(ch), GET_PID(ch));
@@ -3430,12 +3431,16 @@ void sql_log_player_login(P_char ch, const char *status)
 /* ---- Persistence DB connection ---- */
 MYSQL *sql_persistence_connection(void)
 {
-	/* Prefer the connection pool.  Falls back to the
-	 * legacy persistenceDB singleton if the pool was never initialised
-	 * (sql_pool_acquire returns NULL when pool is NULL). */
-	MYSQL *conn = sql_pool_acquire();
+	/* Prefer the connection pool. Only fall back to the legacy singleton
+	 * when no active pool exists (bootstrap/early-start). If an active pool
+	 * is exhausted, fail closed so callers can alert/retry without blocking
+	 * the main loop or creating an unscheduled fifth connection. */
+	int pool_was_active = 0;
+	MYSQL *conn = sql_pool_acquire_with_status(&pool_was_active);
 	if (conn)
 		return conn;
+	if (pool_was_active)
+		return NULL;
 
 	/* Legacy fallback: lazy-initialise the singleton.
 	 * Kept for bootstrap / early-start paths that run before

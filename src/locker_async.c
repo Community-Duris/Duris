@@ -102,9 +102,19 @@ static pthread_cond_t  g_q_cv = PTHREAD_COND_INITIALIZER;
 static struct locker_async_job g_jobs[LOCKER_ASYNC_JOBS];
 static struct locker_async_result g_results[LOCKER_ASYNC_RESULTS];
 static int g_worker_running = 0;
+static int g_worker_created = 0;
 static int g_worker_stop = 0;
 static pthread_t g_worker_tid;
 static int g_inited = 0;
+
+static int locker_async_worker_available(void)
+{
+	int available;
+	pthread_mutex_lock(&g_q_mu);
+	available = g_worker_created && g_worker_running && !g_worker_stop;
+	pthread_mutex_unlock(&g_q_mu);
+	return available;
+}
 
 /* ---------------- slot helpers (main only) ---------------- */
 
@@ -706,7 +716,9 @@ static void *locker_async_worker_main(void *arg)
 	if (mysql_thread_init() != 0)
 	{
 		logit(LOG_FILE, "locker_async: mysql_thread_init failed");
+		pthread_mutex_lock(&g_q_mu);
 		g_worker_running = 0;
+		pthread_mutex_unlock(&g_q_mu);
 		return NULL;
 	}
 #endif
@@ -758,7 +770,9 @@ static void *locker_async_worker_main(void *arg)
 #ifndef __NO_MYSQL__
 	mysql_thread_end();
 #endif
+	pthread_mutex_lock(&g_q_mu);
 	g_worker_running = 0;
+	pthread_mutex_unlock(&g_q_mu);
 	return NULL;
 }
 
@@ -769,7 +783,7 @@ int locker_async_mark_dirty(P_char chLocker, P_char chUser, int terminal, const 
 	struct locker_async_slot *s;
 	const char *name;
 
-	if (!g_inited)
+	if (!g_inited || !locker_async_worker_available())
 		return 0;
 	if (!chLocker || !GET_NAME(chLocker))
 		return 0;
@@ -1159,37 +1173,56 @@ void locker_async_init(void)
 	memset(g_slots, 0, sizeof(g_slots));
 	memset(g_jobs, 0, sizeof(g_jobs));
 	memset(g_results, 0, sizeof(g_results));
+	pthread_mutex_lock(&g_q_mu);
 	g_worker_stop = 0;
 	g_worker_running = 1;
+	g_worker_created = 0;
+	pthread_mutex_unlock(&g_q_mu);
 	err = pthread_create(&g_worker_tid, NULL, locker_async_worker_main, NULL);
 	if (err != 0)
 	{
+		pthread_mutex_lock(&g_q_mu);
 		g_worker_running = 0;
+		pthread_mutex_unlock(&g_q_mu);
 		logit(LOG_FILE, "locker_async: pthread_create failed: %d", err);
 		persistence_alert(AVATAR, "locker_async", "worker", "none", "none",
 		                  "start_failed", "locker async worker could not start");
 		return;
 	}
+	pthread_mutex_lock(&g_q_mu);
+	/* Creation succeeded, so join ownership persists even if the worker
+	 * exits and clears its separate running/health flag. */
+	g_worker_created = 1;
+	pthread_mutex_unlock(&g_q_mu);
 	g_inited = 1;
 	logit(LOG_STATUS, "Started locker async persistence worker.");
 }
 
 void locker_async_shutdown(void)
 {
-	if (!g_inited && !g_worker_running)
+	int join_created;
+
+	pthread_mutex_lock(&g_q_mu);
+	join_created = g_worker_created;
+	pthread_mutex_unlock(&g_q_mu);
+	if (!g_inited && !join_created)
 		return;
 
-	locker_async_drain(2000);
+	if (locker_async_worker_available())
+		locker_async_drain(2000);
 
 	pthread_mutex_lock(&g_q_mu);
 	g_worker_stop = 1;
 	pthread_cond_broadcast(&g_q_cv);
 	pthread_mutex_unlock(&g_q_mu);
 
-	if (g_worker_running)
+	if (join_created)
 		pthread_join(g_worker_tid, NULL);
 
-	g_inited = 0;
+	pthread_mutex_lock(&g_q_mu);
+	g_worker_created = 0;
 	g_worker_running = 0;
+	pthread_mutex_unlock(&g_q_mu);
+	g_inited = 0;
 	logit(LOG_STATUS, "Stopped locker async persistence worker.");
 }
