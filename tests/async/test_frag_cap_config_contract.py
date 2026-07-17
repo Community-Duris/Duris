@@ -86,6 +86,11 @@ assert "frag_cap_config_hardcore_level_cap" in limits
 assert "IS_HARDCORE(ch)" in limits
 assert "frag_cap_config_boon_duration_minutes" in impl
 assert "frag_cap_config_boon_bonus" in impl
+assert "sql_check_level_cap_periodic" in sql
+assert "sql_check_level_cap_periodic" in sql_h
+assert "sql_check_level_cap_periodic" in comm
+assert "COALESCE(SUM(total_frags), 0)" in sql
+assert "if (gain >= 0)" in sql
 assert "FROM_UNIXTIME" in sql
 assert "frag_cap_config_reset_level" in sql
 assert "frag_cap_config_reset_timer_days" in sql

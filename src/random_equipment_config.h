@@ -6,7 +6,6 @@ struct random_equipment_config
 	float drop_piece_percentage;
 	float drop_equipment_percentage;
 	float drop_luck_divisor;
-	float drop_hardcore_multiplier;
 	float quality_level_multiplier;
 	int drop_max_level_gap;
 	int drop_neutral_roll_max;

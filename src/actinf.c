@@ -32,6 +32,7 @@ using namespace std;
 #include "epic_bonus.h"
 #include "grapple.h"
 #include "guard.h"
+#include "hardcore_config.h"
 #include "helpfile.h"
 #include "justice.h"
 #include "map.h"
@@ -4913,7 +4914,7 @@ void do_score(P_char ch, char *argument, int cmd)
 	if (IS_PC(ch) && IS_HARDCORE(ch))
 	{
 		hardcorepts = getHardCorePts(ch);
-		hardcorepts = (hardcorepts / 100.0);
+		hardcorepts = (hardcorepts / (float)hardcore_config_get()->score_display_divisor);
 		snprintf(buf, MAX_STRING_LENGTH, "&nHardCore pts:   &+R%+6.2f&n\n", hardcorepts);
 		send_to_char(buf, ch);
 	}

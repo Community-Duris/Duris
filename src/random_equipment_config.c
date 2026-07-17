@@ -8,7 +8,7 @@
 #include <string.h>
 
 static const struct random_equipment_config defaults = {
-    15.0f, 8.0f, 4.0f, 1.5f, 1.0f,
+    15.0f, 8.0f, 4.0f, 1.0f,
     10, 9, 50, -5, 5, 26, 10, 5, 15,
     35, 49, 60, 4, 5, 6, 8,
     20, 2, 49, 5, 46, 36, 30, 20,
@@ -72,7 +72,6 @@ static void apply_value(const char *key, const char *value)
 	FLOAT_KEY("drop.piece.percentage", drop_piece_percentage, 0.0f, 100.0f)
 	FLOAT_KEY("drop.equipment.percentage", drop_equipment_percentage, 0.0f, 100.0f)
 	FLOAT_KEY("drop.luck.divisor", drop_luck_divisor, 0.1f, 100.0f)
-	FLOAT_KEY("drop.hardcore.multiplier", drop_hardcore_multiplier, 0.0f, 10.0f)
 	FLOAT_KEY("quality.level.multiplier", quality_level_multiplier, 0.0f, 5.0f)
 	INT_KEY("drop.maximum.level.gap", drop_max_level_gap, 0, 100)
 	INT_KEY("drop.neutral.roll.max", drop_neutral_roll_max, 0, 9999)

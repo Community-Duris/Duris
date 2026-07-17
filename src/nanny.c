@@ -6,6 +6,7 @@
  *****************************************************************************/
 
 #include "prototypes.h"
+#include "creation_availability_config.h"
 #include "structs.h"
 #include "comm.h"
 #include "db.h"
@@ -26,6 +27,7 @@
 #include "files.h"
 #include "gmcp.h"
 #include "guildhall.h"
+#include "hardcore_config.h"
 #include "justice.h"
 #include "mm.h"
 #include "multiplay_whitelist.h"
@@ -71,6 +73,7 @@ extern int                           guild_locations[][CLASS_COUNT + 1];
 extern int                           innate_abilities[];
 extern int                           innate2_abilities[];
 int                                  invitemode;
+static void                         display_available_races(P_desc d);
 extern int                           racial_values[LAST_RACE + 1][2];
 extern int                           top_of_helpt;
 extern int                           top_of_infot;
@@ -2386,8 +2389,9 @@ void enter_game(P_desc d)
 
 	// CTF - level them up, and setbit hardcore off them!
 #if defined(CTF_MUD) && (CTF_MUD == 1)
-	// setbit hardcore  off
-	REMOVE_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
+	// setbit hardcore off according to policy
+	if (hardcore_config_get()->disable_in_ctf)
+		REMOVE_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
 	// if not trusted, make sure they are level 55
 	if (GET_LEVEL(ch) == 53)
 	{
@@ -2403,8 +2407,9 @@ void enter_game(P_desc d)
 
 	// chaos - level them up, and setbit hardcore off them!
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-	// setbit hardcore  off
-	REMOVE_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
+	// setbit hardcore off according to policy
+	if (hardcore_config_get()->disable_in_chaos)
+		REMOVE_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
 	// if not trusted, make sure they are level 55
 	if (GET_LEVEL(ch) == 56)
 	{
@@ -3240,7 +3245,7 @@ void select_pwd(P_desc d, char *arg)
 			SEND_TO_Q("\r\nAnswer the following question honestly, as you will either get help, or not.", d);
 			SEND_TO_Q("\r\nAre you NEW to the World of Duris? (y/n) ", d);
 			STATE(d) = CON_NEWBIE;
-			/*    SEND_TO_Q(racetable, d);
+			/*    display_available_races(d);
 			    STATE(d) = CON_GET_RACE;*/
 			break;
 
@@ -3453,7 +3458,7 @@ void select_newbie(P_desc d, char *arg)
 
 		case 'N':
 		case 'n':
-			SEND_TO_Q(racetable, d);
+			display_available_races(d);
 			STATE(d) = CON_GET_RACE;
 			break;
 
@@ -3482,7 +3487,7 @@ void select_hardcore(P_desc d, char *arg)
 			break;
 		case 'z':
 		case 'Z':
-			SEND_TO_Q(racetable, d);
+			display_available_races(d);
 			STATE(d) = CON_GET_RACE;
 			return;
 
@@ -3496,6 +3501,8 @@ void select_hardcore(P_desc d, char *arg)
 }
 void select_sex(P_desc d, char *arg)
 {
+	char hardcore_message[MAX_STRING_LENGTH];
+
 	/* skip whitespaces */
 	for (; isspace(*arg); arg++)
 		;
@@ -3512,7 +3519,7 @@ void select_sex(P_desc d, char *arg)
 			break;
 		case 'z':
 		case 'Z':
-			SEND_TO_Q(racetable, d);
+			display_available_races(d);
 			STATE(d) = CON_GET_RACE;
 			return;
 
@@ -3522,9 +3529,15 @@ void select_sex(P_desc d, char *arg)
 			return;
 	}
 
-	if (!IS_NEWBIE(d->character))
+	if (hardcore_config_get()->creation_enabled &&
+	    (!hardcore_config_get()->creation_veterans_only || !IS_NEWBIE(d->character)))
 	{
-		SEND_TO_Q("\r\n\r\nDo you want to play hardcore? Hardcore char can only die 5 times, then it's gone for ever.\r\n", d);
+		snprintf(hardcore_message,
+		         sizeof(hardcore_message),
+		         "\r\n\r\nDo you want to play hardcore? Hardcore char can only die %d time%s, then it's gone for ever.\r\n",
+		         hardcore_config_get()->death_max_count,
+		         hardcore_config_get()->death_max_count == 1 ? "" : "s");
+		SEND_TO_Q(hardcore_message, d);
 		SEND_TO_Q("Only recommended for &+Yvery&n experience player who are looking for a new challange.\r\n", d);
 		SEND_TO_Q("Please select either H (for Hardcore), N (for Normal)", d);
 		STATE(d) = CON_HARDCORE;
@@ -3537,6 +3550,26 @@ void select_sex(P_desc d, char *arg)
 	// re-enabling hardcore - drannak
 	/*   display_classtable(d);
 	   STATE(d) = CON_GET_CLASS;*/
+}
+
+static void display_available_races(P_desc d)
+{
+	char buf[MAX_STRING_LENGTH];
+	int i;
+
+	strcpy(buf, "\r\nRace Selection\r\n---------------\r\n");
+	for (i = 0; playable_races[i].race_id != -1; i++)
+	{
+		if (creation_race_enabled(playable_races[i].race_id))
+		{
+			snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "  (%c) %s\r\n",
+			         playable_races[i].select_key,
+			         race_names_table[playable_races[i].race_id].normal);
+		}
+	}
+	strcat(buf, "  (x) General listing of classes by race\r\n");
+	strcat(buf, "  (y) Racewar information\r\n\r\nYour selection: ");
+	SEND_TO_Q(buf, d);
 }
 
 /* Krov: menu choice of race, the letters used for the menu are
@@ -3637,10 +3670,18 @@ void select_race(P_desc d, char *arg)
 		/* If no match found, show race menu */
 		if (!found)
 		{
-			SEND_TO_Q(racetable, d);
+			display_available_races(d);
 			STATE(d) = CON_GET_RACE;
 			return;
 		}
+	}
+
+	if (!creation_race_enabled(GET_RACE(d->character)))
+	{
+		SEND_TO_Q("\r\nThat race is not currently available.\r\n", d);
+		display_available_races(d);
+		STATE(d) = CON_GET_RACE;
+		return;
 	}
 
 	if (*Gbuf)
@@ -3887,7 +3928,8 @@ void select_class(P_desc d, char *arg)
 		SEND_TO_Q("\r\n[Press Return or Enter to return to the Class Menu]", d);
 		return;
 	}
-	if (class_table[GET_RACE(d->character)][flag2idx(d->character->player.m_class)] == 5)
+	if (!creation_class_enabled(flag2idx(d->character->player.m_class)) ||
+	    class_table[GET_RACE(d->character)][flag2idx(d->character->player.m_class)] == 5)
 	{
 		SEND_TO_Q("\r\nThis is not an allowed class for your race!", d);
 		return;
@@ -3981,7 +4023,7 @@ void display_classtable(P_desc d)
 
 	buf[0] = 0;
 	for (cls = 1; cls <= CLASS_COUNT; cls++)
-		if (class_table[GET_RACE(d->character)][cls] != 5)
+		if (creation_class_enabled(cls) && class_table[GET_RACE(d->character)][cls] != 5)
 		{
 			snprintf(template_buf, MAX_STRING_LENGTH, "\r\n%%c) %%-%lds(%%c for help)", strlen(class_names_table[cls].ansi) - ansi_strlen(class_names_table[cls].ansi) + 20);
 			snprintf(buf + strlen(buf),
@@ -5079,7 +5121,7 @@ void nanny(P_desc d, char *arg)
 
 				SEND_TO_Q(racewars, d);
 				STATE(d) = CON_SHOW_RACE_TABLE;
-				/*      SEND_TO_Q(racetable, d);
+				/*      display_available_races(d);
 				      STATE(d) = CON_GET_RACE;*/
 			}
 			else
@@ -5111,7 +5153,7 @@ void nanny(P_desc d, char *arg)
 				echo_off(d);
 #else
 				echo_on(d);
-				SEND_TO_Q(racetable, d);
+				display_available_races(d);
 				STATE(d) = CON_GET_RACE;
 #endif
 				/*     } */
@@ -5203,7 +5245,7 @@ void nanny(P_desc d, char *arg)
 		case CON_SHOW_RACE_TABLE:
 			for (; isspace(*arg); arg++)
 				;
-			SEND_TO_Q(racetable, d);
+			display_available_races(d);
 			STATE(d) = CON_GET_RACE;
 			break;
 

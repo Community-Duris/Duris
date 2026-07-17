@@ -5,6 +5,7 @@
  */
 
 #include "prototypes.h"
+#include "creation_availability_config.h"
 #include "structs.h"
 #include "comm.h"
 #include "db.h"
@@ -20,6 +21,7 @@
 #include "account.h"
 #include "defines.h"
 #include "files.h"
+#include "hardcore_config.h"
 #include "json_utils.h"
 #include "mm.h"
 #include "poll.h"
@@ -461,7 +463,7 @@ static int ws_is_playable_race(int race)
 	for (i = 0; playable_races[i].race_id != -1; i++)
 	{
 		if (playable_races[i].race_id == race)
-			return 1;
+			return creation_race_enabled(race) ? 1 : 0;
 	}
 	return 0;
 }
@@ -1174,6 +1176,8 @@ void ws_cmd_chargen_options(struct descriptor_data *d, cJSON *data)
 	for (i = 0; playable_races[i].race_id != -1; i++)
 	{
 		race_id = playable_races[i].race_id;
+		if (!creation_race_enabled(race_id))
+			continue;
 
 		race_obj = cJSON_CreateObject();
 		cJSON_AddNumberToObject(race_obj, "id", race_id);
@@ -1189,7 +1193,7 @@ void ws_cmd_chargen_options(struct descriptor_data *d, cJSON *data)
 			align_val = class_table[race_id][j];
 
 			/* skip forbidden classes */
-			if (align_val == 5)
+			if (!creation_class_enabled(j) || align_val == 5)
 				continue;
 
 			align_str = ws_get_class_alignment(align_val);
@@ -1502,7 +1506,8 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 	is_newbie   = newbie_item && cJSON_IsBool(newbie_item) ? cJSON_IsTrue(newbie_item) : 1;
 
 	/* veterans only can be hardcore */
-	if (is_newbie && is_hardcore)
+	if (!hardcore_config_get()->creation_enabled ||
+	    (hardcore_config_get()->creation_veterans_only && is_newbie && is_hardcore))
 	{
 		is_hardcore = 0;
 	}
@@ -1529,7 +1534,7 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 	}
 
 	class_align_req = class_table[race_id][class_id];
-	if (class_align_req == 5)
+	if (!creation_class_enabled(class_id) || class_align_req == 5)
 	{
 		ws_send_system(d, "error", "That class is not available for your race");
 		return;

@@ -7,6 +7,33 @@ classes available during character creation. Both telnet and WebSocket clients
 use the same data structures.
 
 ================================================================================
+                    QUICK OPERATOR CONFIGURATION
+================================================================================
+
+For normal enable/disable changes, edit:
+  lib/creation_availability.cfg
+
+The file is loaded at server boot, so restart the server after changing it.
+Use true to show and allow an option; use false to hide it from the creation
+menu and reject it if a client submits the option directly. Missing settings
+retain the historical enabled behavior.
+
+Examples:
+  creation.class.dragoon.enabled=false
+  creation.class.dragoon.enabled=true
+  creation.race.kobold.enabled=false
+  creation.race.kobold.enabled=true
+
+Class names are normalized lowercase names. Race names use hyphens for spaces,
+for example mountain-dwarf and grey-elf. The current default deliberately has
+Dragoon disabled; all other listed classes and races are enabled.
+
+This config only affects new character creation. It does not change existing
+characters, class/race mechanics, race/class alignment rules, or item limits.
+Use the source tables described below only when adding a new class/race or
+changing a race/class alignment combination.
+
+================================================================================
                               PLAYABLE RACES
 ================================================================================
 
@@ -55,18 +82,17 @@ Fields:
    - WebSocket chargen_options response
 
 --------------------------------------------------------------------------------
-                        HOW TO REMOVE A PLAYABLE RACE
+                     HOW TO REMOVE A PLAYABLE RACE
 --------------------------------------------------------------------------------
 
-1. Open src/constant.c
+Preferred method: edit lib/creation_availability.cfg and set the race to false.
+For example:
 
-2. Find the race entry in playable_races[]
+  creation.race.kobold.enabled=false
 
-3. Delete or comment out the line:
-
-   // { RACE_KOBOLD,     '1', "evil" },   /* Disabled */
-
-4. Recompile: cd src && make
+Restart the server. The race is removed from both the telnet and WebSocket
+creation menus and direct submissions are rejected. Do not remove the entry
+from playable_races[] unless permanently deleting the race from the codebase.
 
 --------------------------------------------------------------------------------
                       HOW TO CHANGE A RACE'S FACTION
@@ -105,23 +131,15 @@ Alignment values:
                     HOW TO ALLOW/FORBID A CLASS FOR A RACE
 --------------------------------------------------------------------------------
 
-1. Open src/constant.c
+For global class enable/disable, use lib/creation_availability.cfg:
 
-2. Find class_table[][] (around line 1700)
+  creation.class.dragoon.enabled=false
 
-3. Each row is a race (indexed by RACE_* constant)
-   Each column is a class (indexed 1-30, see class order below)
+This hides the class from every race's creation menu and rejects direct
+selection in both telnet and WebSocket creation. Restart after changes.
 
-4. Change the value:
-   - Set to 5 to FORBID the class
-   - Set to 2 to ALLOW with any alignment
-   - Set to 1 to ALLOW but require good alignment
-   - Set to -1 to ALLOW but require evil alignment
-
-Example - Allow Trolls to be Paladins (require good alignment):
-   Find the Troll row, find column 4 (Paladin), change 5 to 1
-
-5. Recompile: cd src && make
+For a race-specific class restriction or alignment rule, continue using the
+class_table[][] source matrix described below.
 
 --------------------------------------------------------------------------------
                             CLASS INDEX REFERENCE

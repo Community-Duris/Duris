@@ -61,7 +61,9 @@
 #include "enhance.h"
 #include "crafting.h"
 #include "frag_cap_config.h"
+#include "hardcore_config.h"
 #include "random_equipment_config.h"
+#include "creation_availability_config.h"
 #include "material_rarity.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -551,6 +553,12 @@ void run_the_game(int port, int sslport)
 
 		fprintf(stderr, "-- Loading frag-cap configuration\r\n");
 		boot_frag_cap_config();
+
+		fprintf(stderr, "-- Loading Hardcore configuration\r\n");
+		boot_hardcore_config();
+
+		fprintf(stderr, "-- Loading creation availability configuration\r\n");
+		boot_creation_availability_config();
 
 #ifdef SIEGE_ENABLED
 		fprintf(stderr, "-- Loading town data\r\n");
@@ -1264,6 +1272,9 @@ void game_loop(int port, int sslport)
 		{
 			epic_zone_balance();
 		}
+
+		if (!(pulse % (WAIT_SEC * 60)))
+			sql_check_level_cap_periodic();
 
 		if (!(pulse % (WAIT_SEC * 60)))
 			boon_maintenance();

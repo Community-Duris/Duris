@@ -29,7 +29,6 @@ for line in (
     "drop.piece.percentage=15.0",
     "drop.equipment.percentage=8.0",
     "drop.luck.divisor=4.0",
-    "drop.hardcore.multiplier=1.5",
     "quality.level.multiplier=1.0",
     "stat.secondary.roll.max=2",
     "stat.tertiary.roll.max=5",

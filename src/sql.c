@@ -792,6 +792,34 @@ void sql_check_level_cap(long max_frags, int racewar)
 	}
 }
 
+// Re-check the current racewar total even when no new frag was recorded.
+// This allows a qualified cap increase and its boon to become available as
+// soon as the configured timer expires.
+void sql_check_level_cap_periodic(void)
+{
+	long max_frags;
+	int  old_racewar, old_level;
+	time_t next_update;
+	MYSQL_RES *res;
+	MYSQL_ROW  row;
+
+	get_level_cap_info(&max_frags, &old_racewar, &old_level, &next_update);
+	if (old_racewar == RACEWAR_NONE || old_level < 0)
+		return;
+
+	res = db_query("SELECT COALESCE(SUM(total_frags), 0) FROM frag_leaderboard WHERE racewar=%d", old_racewar);
+	if (!res)
+		return;
+
+	row = mysql_fetch_row(res);
+	if (row && row[0])
+	{
+		max_frags = atol(row[0]);
+		sql_check_level_cap(max_frags, old_racewar);
+	}
+	mysql_free_result(res);
+}
+
 // Sets the values of level (actual cap) and racewar (the side that is in the lead).
 void get_level_cap(int *level, int *racewar)
 {
@@ -838,9 +866,9 @@ void sql_modify_frags(P_char ch, int gain)
 		db_query("UPDATE frag_leaderboard SET total_frags = %d, last_updated = NOW() WHERE pid = %ld AND deleted_at IS NULL", ch->only.pc->frags, GET_PID(ch));
 	}
 
-	if (gain > 0)
+	if (gain >= 0)
 	{
-		MYSQL_RES *res = db_query("SELECT SUM(total_frags) FROM frag_leaderboard WHERE racewar=%d", GET_RACEWAR(ch));
+		MYSQL_RES *res = db_query("SELECT COALESCE(SUM(total_frags), 0) FROM frag_leaderboard WHERE racewar=%d", GET_RACEWAR(ch));
 		if (res)
 		{
 			MYSQL_ROW row = mysql_fetch_row(res);

@@ -30,6 +30,7 @@
 #include "disguise.h"
 #include "graph.h"
 #include "grapple.h"
+#include "hardcore_config.h"
 #include "guildhall.h"
 #include "justice.h"
 #include "map.h"
@@ -15754,7 +15755,7 @@ void spell_mass_heal(int level, P_char ch, char *arg, int type, P_char victim, P
 		if (GET_HIT(tch) > GET_MAX_HIT(tch))
 			continue;
 
-		int maxhits = IS_HARDCORE(ch) ? 110 : 100;
+		int maxhits = IS_HARDCORE(ch) ? hardcore_config_get()->bonus_mass_heal_base : 100;
 
 		healed = vamp(tch, (int)maxhits + number(1, level / 3), GET_MAX_HIT(tch) - number(1, 4));
 		if (GET_OPPONENT(tch))

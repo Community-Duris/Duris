@@ -18,6 +18,7 @@
 #include "interp.h"
 #include "utils.h"
 #include "hardcore.h"
+#include "hardcore_config.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -62,10 +63,13 @@ extern struct zone_data      *zone_table;
 
 int getHardCorePts(P_char ch)
 {
-	int hardcorepts = (GET_LEVEL(ch) * 1000) + (ch->points.curr_exp / 10000) + (ch->only.pc->frags * 100);
+	const struct hardcore_config *config = hardcore_config_get();
+	int hardcorepts = (GET_LEVEL(ch) * config->score_level_points) +
+	                  (ch->points.curr_exp / config->score_experience_divisor) +
+	                  (ch->only.pc->frags * config->score_frag_points);
 
-	if (IS_MULTICLASS_NPC(ch))
-		hardcorepts *= 2;
+	if (IS_MULTICLASS_PC(ch))
+		hardcorepts *= config->score_multiclass_multiplier;
 
 	return hardcorepts;
 }
@@ -100,7 +104,7 @@ void writeHallOfFame(P_char ch, char thekiller[1024])
 	if (isname(thekiller, "NotDead"))
 		phalloffames = getHardCorePts(ch);
 	else
-		phalloffames = getHardCorePts(ch) + 100;
+		phalloffames = getHardCorePts(ch) + hardcore_config_get()->score_killer_bonus;
 	*thekiller = toupper(*thekiller);
 
 	// Read in the hall of fame list from file.
@@ -212,21 +216,28 @@ void displayHardCore(P_char ch, char *arg, int cmd)
 	float      pts = 0;
 	MYSQL_RES *res;
 	MYSQL_ROW  row;
+	const struct hardcore_config *config = hardcore_config_get();
 
 	if (!ch)
 		return;
 
-	// query hardcore hall of fame from database
-	// score = (level * 1000) + (exp / 10000) + (frags * 100)
-	// PLR2_HARDCORE_CHAR = bit 14 = 8192
+	// score follows getHardCorePts(); corrupted frags are excluded by policy.
 	res = db_query("SELECT pd.name, "
-	               "  (pd.level * 1000) + (pd.exp / 10000) + "
-	               "  (CASE WHEN pd.frags < 100000 THEN pd.frags ELSE 0 END * 100) as score, "
+	               "  ((pd.level * %d) + (pd.exp / %d) + "
+	               "   (CASE WHEN pd.frags < %d THEN pd.frags ELSE 0 END * %d)) * "
+	               "  (CASE WHEN pd.secondary_class > 0 AND pd.secondary_class <> 2147483648 THEN %d ELSE 1 END) + "
+	               "  (CASE WHEN pd.killed_by IS NOT NULL AND pd.killed_by <> 'Notdead' THEN %d ELSE 0 END) as score, "
 	               "  COALESCE(pd.killed_by, 'Notdead') as killed_by "
 	               "FROM player_data pd "
 	               "WHERE (pd.act2 & 8192) > 0 OR pd.killed_by IS NOT NULL "
 	               "ORDER BY score DESC "
 	               "LIMIT %d",
+	               config->score_level_points,
+	               config->score_experience_divisor,
+	               config->score_invalid_frag_threshold,
+	               config->score_frag_points,
+	               config->score_multiclass_multiplier,
+	               config->score_killer_bonus,
 	               MAX_HALLOFFAME_SIZE);
 
 	if (!res)
@@ -246,7 +257,7 @@ void displayHardCore(P_char ch, char *arg, int cmd)
 			strncpy(name, row[0], sizeof(name) - 1);
 			name[sizeof(name) - 1] = '\0';
 			name[0]                = toupper(name[0]);
-			pts                    = atof(row[1]) / 100.0;
+			pts                    = atof(row[1]) / (float)config->score_display_divisor;
 
 			snprintf(buf2, 2048, "   &+L%-15s          &+r% 6.2f\t      &+W%-15s\r\n", name, pts, row[2] ? row[2] : "unknown");
 			strcat(buf, buf2);
@@ -279,10 +290,16 @@ long getLeaderBoardPts(P_char ch)
 	update_shipfrags();
 	int sf = calculate_shipfrags(ch);
 
-	// debug("ch: %s, shipfrags: %d, levelpoints: %d, exppoints: %d, fragpoints: %d, deathpoints: %d\r\n", GET_NAME(ch), sf, (GET_LEVEL(ch) * 1000), (ch->points.curr_exp / 10000), (ch->only.pc->frags
-	// * 100), (ch->only.pc->numb_deaths * 25));
+	const struct hardcore_config *config = hardcore_config_get();
 
-	long leaderpts = (GET_LEVEL(ch) * 1000) + (ch->points.curr_exp / 10000) + (sf * 100) + (ch->only.pc->frags * 100) - (ch->only.pc->numb_deaths * 25);
+	// debug("ch: %s, shipfrags: %d, levelpoints: %d, exppoints: %d, fragpoints: %d, deathpoints: %d\r\n", GET_NAME(ch), sf, (GET_LEVEL(ch) * config->score_level_points), (ch->points.curr_exp / config->score_experience_divisor), (ch->only.pc->frags
+	// * config->score_frag_points), (ch->only.pc->numb_deaths * config->score_death_penalty_points));
+
+	long leaderpts = (GET_LEVEL(ch) * config->score_level_points) +
+	                 (ch->points.curr_exp / config->score_experience_divisor) +
+	                 (sf * config->score_frag_points) +
+	                 (ch->only.pc->frags * config->score_frag_points) -
+	                 (ch->only.pc->numb_deaths * config->score_death_penalty_points);
 
 	return leaderpts;
 }
@@ -296,23 +313,30 @@ void displayLeader(P_char ch, char *arg, int cmd)
 	float      pts = 0;
 	MYSQL_RES *res;
 	MYSQL_ROW  row;
+	const struct hardcore_config *config = hardcore_config_get();
 
 	if (!ch)
 		return;
 
-	// query leaderboard from database
-	// score = (level * 1000) + (exp / 10000) + (shipfrags * 100) + (frags * 100) - (deaths * 25)
-	// filter out corrupted frags (> 100000 = overflow junk from migration)
+	// score = (level * points) + (exp / divisor) + (shipfrags * frag points) + (frags * frag points) - (deaths * penalty)
+	// filter out corrupted frags (> threshold = overflow junk from migration)
 	res = db_query("SELECT pd.name, "
-	               "  (pd.level * 1000) + (pd.exp / 10000) + "
-	               "  (COALESCE(s.frags, 0) * 100) + "
-	               "  (CASE WHEN pd.frags < 100000 THEN pd.frags ELSE 0 END * 100) - "
-	               "  (pd.numb_deaths * 25) as score "
+	               "  (pd.level * %d) + (pd.exp / %d) + "
+	               "  (COALESCE(s.frags, 0) * %d) + "
+	               "  (CASE WHEN pd.frags < %d THEN pd.frags ELSE 0 END * %d) - "
+	               "  (pd.numb_deaths * %d) as score "
 	               "FROM player_data pd "
 	               "LEFT JOIN ships s ON LOWER(pd.name) = LOWER(s.owner_name) "
-	               "WHERE pd.frags < 100000 "
+	               "WHERE pd.frags < %d "
 	               "ORDER BY score DESC "
 	               "LIMIT %d",
+	               config->score_level_points,
+	               config->score_experience_divisor,
+	               config->score_frag_points,
+	               config->score_invalid_frag_threshold,
+	               config->score_frag_points,
+	               config->score_death_penalty_points,
+	               config->score_invalid_frag_threshold,
 	               MAX_LEADERBOARD_SIZE);
 
 	if (!res)
@@ -334,7 +358,7 @@ void displayLeader(P_char ch, char *arg, int cmd)
 			strncpy(name, row[0], sizeof(name) - 1);
 			name[sizeof(name) - 1] = '\0';
 			name[0]                = toupper(name[0]);
-			pts                    = atof(row[1]) / 100.0;
+			pts                    = atof(row[1]) / (float)config->score_display_divisor;
 
 			snprintf(buf2, 2048, "   &+w%-15s          &+Y%6.2f\t\r\n", name, pts);
 			strcat(buf, buf2);

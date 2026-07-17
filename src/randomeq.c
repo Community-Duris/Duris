@@ -28,6 +28,7 @@
 #include "new_combat_def.h"
 #include "objmisc.h"
 #include "random_equipment_config.h"
+#include "hardcore_config.h"
 #include "sound.h"
 #include "spells.h"
 #include "vnum.obj.h"
@@ -822,7 +823,7 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 
 	if (IS_HARDCORE(ch))
 	{
-		chance *= config->drop_hardcore_multiplier;
+		chance *= hardcore_config_get()->bonus_random_equipment_multiplier;
 	}
 
 	if (piece)

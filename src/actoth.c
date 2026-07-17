@@ -28,6 +28,7 @@
 #include "files.h"
 #include "gmcp.h"
 #include "guard.h"
+#include "hardcore_config.h"
 #include "guildhall.h"
 #include "justice.h"
 #include "map.h"
@@ -1944,7 +1945,7 @@ bool do_save_silent(P_char ch, int type)
 	      GET_NAME(ch), GET_PID(ch), type, ch->in_room, (void *)ch->desc,
 	      ch->desc ? ch->desc->connected : -1);
 
-	if (IS_HARDCORE(ch))
+	if (IS_HARDCORE(ch) && hardcore_config_get()->death_hall_of_fame)
 	{
 		snprintf(tmp_buf, MAX_STRING_LENGTH, "NotDead %lu", ch->only.pc->numb_deaths);
 		checkHallOfFame(ch, tmp_buf);
@@ -2038,7 +2039,7 @@ void do_save(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (IS_HARDCORE(ch))
+	if (IS_HARDCORE(ch) && hardcore_config_get()->death_hall_of_fame)
 	{
 		snprintf(tmp_buf, MAX_STRING_LENGTH, "NotDead %lu", ch->only.pc->numb_deaths);
 		checkHallOfFame(ch, tmp_buf);
