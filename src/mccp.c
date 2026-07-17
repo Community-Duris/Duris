@@ -74,12 +74,16 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 
 	if (buflen < 1 || *p != IAC)
 		return 0;
+	if (buflen < 2)
+		return 0;
 
 	switch (*(p + 1))
 	{
 		case IAC: // ignore escaped 255 byte: illegal in UTF-8, redundant in CP437
 			return 2;
 		case DO:
+			if (buflen < 3)
+				return 0;
 			switch (*(p + 2))
 			{
 				case TELOPT_COMPRESS:
@@ -97,6 +101,8 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 			}
 			return 3;
 		case DONT:
+			if (buflen < 3)
+				return 0;
 			switch (*(p + 2))
 			{
 				case TELOPT_GMCP:
@@ -108,15 +114,21 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 			}
 			return 3;
 		case WILL:
+			if (buflen < 3)
+				return 0;
 			if (*(p + 2) == TELOPT_TTYPE)
 				ttype_handle_negotiation(player, WILL);
 			return 3;
 		case WONT:
+			if (buflen < 3)
+				return 0;
 			if (*(p + 2) == TELOPT_TTYPE)
 				ttype_handle_negotiation(player, WONT);
 			return 3;
 		case SB: /* subnegotiation */
 		{
+			if (buflen < 3)
+				return 0;
 			int len = 3;
 			while (len + 1 < buflen && !(p[len] == IAC && p[len + 1] == SE))
 				len++;

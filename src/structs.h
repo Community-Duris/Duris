@@ -1743,6 +1743,9 @@ struct descriptor_data
 	size_t ws_handshake_len;
 	char  *ws_fragment_buffer;
 	size_t ws_fragment_len;
+	unsigned char *ws_output_buffer;
+	size_t         ws_output_len;
+	size_t         ws_output_offset;
 	int    gmcp_enabled;
 	int    sga_disabled;
 	int    write_failed;

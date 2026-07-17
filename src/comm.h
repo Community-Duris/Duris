@@ -34,6 +34,9 @@ extern const char *COMA_SIGN;
 
 extern long sentbytes;
 
+/* Resolve a client address without blocking the select() game loop. */
+void resolve_descriptor_hostname_async(const char *address, int descriptor);
+
 #if 0
 /*
  * io.h - Auxiliary support structure for file descriptors

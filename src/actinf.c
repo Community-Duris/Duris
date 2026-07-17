@@ -6661,7 +6661,7 @@ void do_users(P_char ch, char *argument, int cmd)
 		{
 			if (!*d->host2)
 			{
-				snprintf(hostbuf, MAX_STRING_LENGTH, "lib/etc/hosts/%d", d->descriptor);
+				snprintf(hostbuf, MAX_STRING_LENGTH, "lib/etc/hosts/%d.%s", d->descriptor, d->host);
 				FILE *f = fopen(hostbuf, "r");
 
 				if (f != NULL)
@@ -6816,7 +6816,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 		{
 			if (!*d->host2)
 			{
-				snprintf(buf2, MAX_INPUT_LENGTH, "lib/etc/hosts/%d", d->descriptor);
+				snprintf(buf2, MAX_INPUT_LENGTH, "lib/etc/hosts/%d.%s", d->descriptor, d->host);
 				f = fopen(buf2, "r");
 
 				if (f != NULL)
@@ -6934,7 +6934,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 			{
 				if (!*d->host2)
 				{
-					snprintf(buf2, MAX_STRING_LENGTH, "lib/etc/hosts/%d", d->descriptor);
+					snprintf(buf2, MAX_STRING_LENGTH, "lib/etc/hosts/%d.%s", d->descriptor, d->host);
 					f = fopen(buf2, "r");
 
 					if (f != NULL)

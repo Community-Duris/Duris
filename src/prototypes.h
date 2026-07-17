@@ -35,7 +35,7 @@ using namespace std;
 extern char GS_buf1[MAX_STRING_LENGTH];
 
 int new_descriptor(int s, int conn_type); /* 0=telnet, 1=SSL, 2=WebSocket */
-int new_connection(int s, bool ssl);
+int new_connection(int s);
 
 /* affects.c */
 void               event_short_affect(P_char, P_char, P_obj, void *);
