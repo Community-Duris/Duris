@@ -158,7 +158,7 @@ CREATE TABLE `account_bound_rewards` (
   `granted_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`account_name`),
+  PRIMARY KEY (`account_name`,`reward_vnum`),
   KEY `idx_account_bound_rewards_vnum` (`reward_vnum`),
   CONSTRAINT `account_bound_rewards_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

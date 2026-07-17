@@ -5,6 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 MIGRATION = ROOT / "migrations/account_bound_rewards.sql"
+VERIFIER = ROOT / "migrations/verify_account_bound_rewards.sh"
+MYSQL_SCHEMA_TEST = ROOT / "tests/async/run_account_bound_reward_schema_mysql.sh"
 BOOTSTRAP = ROOT / "migrations/bootstrap_multithread_safe.sql"
 
 reward = (SRC / "account_reward.c").read_text()
@@ -24,6 +26,13 @@ assert "account_name VARCHAR(50) NOT NULL" in schema
 assert "reward_vnum INT NOT NULL DEFAULT 36419" in schema
 assert "CONSTRAINT account_bound_rewards_ibfk_1 FOREIGN KEY" in schema
 assert "REFERENCES accounts(account_name) ON DELETE CASCADE" in schema
+assert "ALTER TABLE account_bound_rewards MODIFY COLUMN reward_vnum" in schema
+assert "CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" in schema
+assert "DROP INDEX idx_account_bound_rewards_vnum" in schema
+assert VERIFIER.exists(), "account reward exact verifier is missing"
+assert MYSQL_SCHEMA_TEST.exists(), "account reward MySQL convergence test is missing"
+assert "columns_exact" in VERIFIER.read_text()
+assert "schema_signature" in MYSQL_SCHEMA_TEST.read_text()
 assert "account_bound_rewards" in BOOTSTRAP.read_text()
 
 assert "#define DEFAULT_ACCOUNT_REWARD_VNUM 36419" in header
@@ -37,6 +46,8 @@ assert "CMD_N(CMD_DIVINECLAIM" in interp_c
 runner = (ROOT / "migrations/run_migration.sh").read_text()
 assert "account_reward.o" in makefile
 assert "account_bound_rewards.sql" in runner
+assert "verify_account_bound_rewards.sh" in runner
+assert "TOTAL=112" in runner
 assert "CMD_N(CMD_DIVINECLAIM, STAT_DEAD + POS_PRONE, do_divineclaim, 0, TRUE);" in interp_c
 
 assert "mysql_real_escape_string" in reward

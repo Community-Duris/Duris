@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 extern P_obj object_list;
 
@@ -103,22 +104,25 @@ static void detach_reward_item(P_obj obj)
 }
 
 #ifndef __NO_MYSQL__
-static int assigned_reward_vnum(const char *account)
+static std::vector<int> assigned_reward_vnums(const char *account)
 {
     char escaped[ACCOUNT_REWARD_ACCOUNT_MAX * 2 + 1];
     MYSQL_RES *res;
     MYSQL_ROW row;
-    int vnum = 0;
+    std::vector<int> vnums;
 
     mysql_real_escape_string(DB, escaped, account, strlen(account));
-    res = db_query("SELECT reward_vnum FROM account_bound_rewards WHERE account_name = '%s' LIMIT 1", escaped);
+    res = db_query("SELECT reward_vnum FROM account_bound_rewards WHERE account_name = '%s' ORDER BY reward_vnum", escaped);
     if (!res)
-        return 0;
-    row = mysql_fetch_row(res);
-    if (row && row[0])
-        vnum = atoi(row[0]);
+        return vnums;
+    while ((row = mysql_fetch_row(res)) != NULL)
+    {
+        int vnum = row[0] ? atoi(row[0]) : 0;
+        if (vnum > 0)
+            vnums.push_back(vnum);
+    }
     mysql_free_result(res);
-    return vnum;
+    return vnums;
 }
 
 static bool account_exists(const char *account)
@@ -146,54 +150,99 @@ static bool assign_reward(const char *account, const char *granted_by, int vnum)
     mysql_real_escape_string(DB, escaped_account, account, strlen(account));
     mysql_real_escape_string(DB, escaped_granter, granted_by, strlen(granted_by));
     return qry("INSERT INTO account_bound_rewards (account_name, reward_vnum, granted_by) VALUES ('%s', %d, '%s') "
-               "ON DUPLICATE KEY UPDATE reward_vnum = VALUES(reward_vnum), granted_by = VALUES(granted_by), updated_at = CURRENT_TIMESTAMP",
+               "ON DUPLICATE KEY UPDATE granted_by = VALUES(granted_by), updated_at = CURRENT_TIMESTAMP",
                escaped_account,
                vnum,
                escaped_granter);
 }
+
+static int remove_reward_claims(const char *account, int vnum, bool remove_all)
+{
+    char escaped_account[ACCOUNT_REWARD_ACCOUNT_MAX * 2 + 1];
+    bool ok;
+
+    mysql_real_escape_string(DB, escaped_account, account, strlen(account));
+    if (remove_all)
+        ok = qry("DELETE FROM account_bound_rewards WHERE account_name = '%s'", escaped_account);
+    else
+        ok = qry("DELETE FROM account_bound_rewards WHERE account_name = '%s' AND reward_vnum = %d",
+                 escaped_account,
+                 vnum);
+    if (!ok)
+        return -1;
+    return (int)mysql_affected_rows(DB);
+}
+
+static bool list_reward_claims(P_char ch, const char *account)
+{
+    char escaped_account[ACCOUNT_REWARD_ACCOUNT_MAX * 2 + 1];
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+    bool found = false;
+
+    mysql_real_escape_string(DB, escaped_account, account, strlen(account));
+    res = db_query("SELECT reward_vnum, granted_by FROM account_bound_rewards WHERE account_name = '%s' ORDER BY reward_vnum",
+                   escaped_account);
+    if (!res)
+        return false;
+    while ((row = mysql_fetch_row(res)) != NULL)
+    {
+        char line[MAX_STRING_LENGTH];
+        snprintf(line,
+                 sizeof(line),
+                 "Account %s has divine claim vnum %s (granted by %s).\r\n",
+                 account,
+                 row[0] ? row[0] : "0",
+                 row[1] && *row[1] ? row[1] : "unknown");
+        send_to_char(line, ch);
+        found = true;
+    }
+    mysql_free_result(res);
+    return found;
+}
 #endif
 
 #ifndef __NO_MYSQL__
-static void clear_saved_rewards(const char *account)
+static void clear_saved_rewards(const char *account, int vnum)
 {
     char escaped_account[ACCOUNT_REWARD_ACCOUNT_MAX * 2 + 1];
-    char escaped_marker[(sizeof(ACCOUNT_REWARD_MARKER) - 1 + ACCOUNT_REWARD_ACCOUNT_MAX) * 2 + 1];
-    char marker[sizeof(ACCOUNT_REWARD_MARKER) + ACCOUNT_REWARD_ACCOUNT_MAX];
+    char escaped_marker[(sizeof(ACCOUNT_REWARD_MARKER) - 1 + ACCOUNT_REWARD_ACCOUNT_MAX + 2) * 2 + 1];
+    char marker[sizeof(ACCOUNT_REWARD_MARKER) + ACCOUNT_REWARD_ACCOUNT_MAX + 2];
+    bool ok;
 
     mysql_real_escape_string(DB, escaped_account, account, strlen(account));
     snprintf(marker, sizeof(marker), "%s%s %%", ACCOUNT_REWARD_MARKER, account);
     mysql_real_escape_string(DB, escaped_marker, marker, strlen(marker));
-    if (!qry("DELETE pi FROM player_items pi JOIN player_data pd ON pd.pid = pi.pid "
-             "WHERE (pd.account_name = '%s' OR EXISTS (SELECT 1 FROM account_characters ac "
-             "WHERE ac.char_name = pd.name AND ac.account_name = '%s')) AND pi.name LIKE '%s'",
-             escaped_account,
-             escaped_account,
-             escaped_marker))
+    if (vnum > 0)
     {
-        logit(LOG_WIZ, "divineclaim: failed to clear saved duplicate rewards for account %s", account);
+        ok = qry("DELETE pi FROM player_items pi JOIN player_data pd ON pd.pid = pi.pid "
+                 "WHERE (pd.account_name = '%s' OR EXISTS (SELECT 1 FROM account_characters ac "
+                 "WHERE ac.char_name = pd.name AND ac.account_name = '%s')) "
+                 "AND pi.name LIKE '%s' AND pi.vnum = %d",
+                 escaped_account,
+                 escaped_account,
+                 escaped_marker,
+                 vnum);
     }
+    else
+    {
+        ok = qry("DELETE pi FROM player_items pi JOIN player_data pd ON pd.pid = pi.pid "
+                 "WHERE (pd.account_name = '%s' OR EXISTS (SELECT 1 FROM account_characters ac "
+                 "WHERE ac.char_name = pd.name AND ac.account_name = '%s')) AND pi.name LIKE '%s'",
+                 escaped_account,
+                 escaped_account,
+                 escaped_marker);
+    }
+    if (!ok)
+        logit(LOG_WIZ, "divineclaim: failed to clear saved rewards for account %s vnum %d", account, vnum);
 }
 #endif
 
-static bool summon_reward(P_char ch, bool announce)
+static bool summon_reward_vnum(P_char ch, const char *account, int vnum, bool announce)
 {
-    const char *account = reward_account(ch);
     P_obj keep = NULL;
     P_obj next;
     P_char previous_owner;
-    int vnum;
-
-    if (!account)
-        return false;
-
-#ifdef __NO_MYSQL__
-    (void)announce;
-    return false;
-#else
-    vnum = assigned_reward_vnum(account);
-    if (!vnum)
-        return false;
-#endif
 
     for (P_obj obj = object_list; obj; obj = next)
     {
@@ -210,14 +259,10 @@ static bool summon_reward(P_char ch, bool announce)
         return false;
     }
 
-#ifndef __NO_MYSQL__
-    clear_saved_rewards(account);
-#endif
-
     for (P_obj obj = object_list; obj; obj = next)
     {
         next = obj->next;
-        if (obj != keep && reward_marker_matches(obj, account))
+        if (obj != keep && reward_marker_matches(obj, account) && OBJ_VNUM(obj) == vnum)
             extract_obj(obj);
     }
 
@@ -234,9 +279,6 @@ static bool summon_reward(P_char ch, bool announce)
         return false;
     }
 
-    if (IS_PC(ch) && !do_save_silent(ch, 1))
-        logit(LOG_WIZ, "divineclaim: failed to save reward for %s", GET_NAME(ch));
-
     if (announce)
     {
         char message[MAX_STRING_LENGTH];
@@ -249,24 +291,93 @@ static bool summon_reward(P_char ch, bool announce)
     return true;
 }
 
+static bool summon_rewards(P_char ch, bool announce)
+{
+    const char *account = reward_account(ch);
+    bool summoned = false;
+
+    if (!account)
+        return false;
+
+#ifdef __NO_MYSQL__
+    (void)announce;
+    return false;
+#else
+    std::vector<int> vnums = assigned_reward_vnums(account);
+    if (vnums.empty())
+        return false;
+
+    clear_saved_rewards(account, 0);
+    for (int vnum : vnums)
+    {
+        if (summon_reward_vnum(ch, account, vnum, announce))
+            summoned = true;
+    }
+    if (summoned && IS_PC(ch) && !do_save_silent(ch, 1))
+        logit(LOG_WIZ, "divineclaim: failed to save rewards for %s", GET_NAME(ch));
+    return summoned;
+#endif
+}
+
+static void revoke_live_rewards(const char *account, int vnum, bool remove_all)
+{
+    std::vector<P_char> changed_owners;
+    P_obj next;
+
+    for (P_obj obj = object_list; obj; obj = next)
+    {
+        next = obj->next;
+        if (!reward_marker_matches(obj, account) || (!remove_all && OBJ_VNUM(obj) != vnum))
+            continue;
+
+        P_char owner = OBJ_CARRIED(obj) ? obj->loc.carrying : (OBJ_WORN(obj) ? obj->loc.wearing : NULL);
+        extract_obj(obj);
+        if (owner)
+        {
+            bool known = false;
+            for (P_char changed : changed_owners)
+            {
+                if (changed == owner)
+                {
+                    known = true;
+                    break;
+                }
+            }
+            if (!known)
+                changed_owners.push_back(owner);
+        }
+    }
+
+    for (P_char owner : changed_owners)
+    {
+        if (!do_save_silent(owner, 1))
+            logit(LOG_WIZ, "divineclaim: failed to save revoked reward owner %s", GET_NAME(owner));
+    }
+}
+
 void account_bound_reward_on_login(P_char ch)
 {
-    summon_reward(ch, true);
+    summon_rewards(ch, true);
 }
 
 void do_divineclaim(P_char ch, char *argument, int cmd)
 {
-    char account[MAX_INPUT_LENGTH];
-    char vnum_arg[MAX_INPUT_LENGTH];
+    char first[MAX_INPUT_LENGTH];
+    char second[MAX_INPUT_LENGTH];
+    char third[MAX_INPUT_LENGTH];
     char *rest = argument;
 
     if (IS_TRUSTED(ch))
     {
-        rest = one_argument(rest, account);
-        rest = one_argument(rest, vnum_arg);
-        if (!*account)
+        rest = one_argument(rest, first);
+        rest = one_argument(rest, second);
+        one_argument(rest, third);
+        if (!*first)
         {
-            send_to_char("Syntax: divineclaim <account> [reward vnum]\r\n", ch);
+            send_to_char("Syntax: divineclaim <account> [reward vnum]\r\n"
+                         "        divineclaim list <account>\r\n"
+                         "        divineclaim remove <account> <reward vnum|all>\r\n",
+                         ch);
             return;
         }
 
@@ -274,8 +385,71 @@ void do_divineclaim(P_char ch, char *argument, int cmd)
         send_to_char("Account rewards require the database-enabled server.\r\n", ch);
         return;
 #else
-        int vnum = *vnum_arg ? atoi(vnum_arg) : DEFAULT_ACCOUNT_REWARD_VNUM;
-        if (!account_exists(account))
+        if (strcasecmp(first, "list") == 0)
+        {
+            if (!*second)
+            {
+                send_to_char("Syntax: divineclaim list <account>\r\n", ch);
+                return;
+            }
+            if (!account_exists(second))
+            {
+                send_to_char("That account does not exist.\r\n", ch);
+                return;
+            }
+            if (!list_reward_claims(ch, second))
+                send_to_char("That account has no divine claims.\r\n", ch);
+            return;
+        }
+
+        if (strcasecmp(first, "remove") == 0)
+        {
+            bool remove_all;
+            int vnum;
+            int removed;
+
+            if (!*second || !*third)
+            {
+                send_to_char("Syntax: divineclaim remove <account> <reward vnum|all>\r\n", ch);
+                return;
+            }
+            if (!account_exists(second))
+            {
+                send_to_char("That account does not exist.\r\n", ch);
+                return;
+            }
+            remove_all = strcasecmp(third, "all") == 0;
+            vnum = remove_all ? 0 : atoi(third);
+            if (!remove_all && vnum <= 0)
+            {
+                send_to_char("Specify a positive reward vnum or all.\r\n", ch);
+                return;
+            }
+            removed = remove_reward_claims(second, vnum, remove_all);
+            if (removed < 0)
+            {
+                send_to_char("The divine claim could not be removed.\r\n", ch);
+                return;
+            }
+            clear_saved_rewards(second, vnum);
+            revoke_live_rewards(second, vnum, remove_all);
+            if (removed == 0)
+                send_to_char("No matching divine claim was assigned. Stale marked items were still cleared.\r\n", ch);
+            else if (remove_all)
+                send_to_char("All account-bound divine claims have been removed.\r\n", ch);
+            else
+                send_to_char("The account-bound divine claim has been removed.\r\n", ch);
+            logit(LOG_WIZ,
+                  "%s removed %s divineclaim%s from account %s",
+                  J_NAME(ch),
+                  remove_all ? "all" : third,
+                  removed == 1 ? "" : "s",
+                  second);
+            return;
+        }
+
+        int vnum = *second ? atoi(second) : DEFAULT_ACCOUNT_REWARD_VNUM;
+        if (!account_exists(first))
         {
             send_to_char("That account does not exist.\r\n", ch);
             return;
@@ -285,17 +459,17 @@ void do_divineclaim(P_char ch, char *argument, int cmd)
             send_to_char("That reward object vnum does not exist.\r\n", ch);
             return;
         }
-        if (!assign_reward(account, GET_NAME(ch), vnum))
+        if (!assign_reward(first, GET_NAME(ch), vnum))
         {
             send_to_char("The divine claim could not be recorded.\r\n", ch);
             return;
         }
         send_to_char("The account-bound divine claim has been assigned.\r\n", ch);
-        logit(LOG_WIZ, "%s assigned divineclaim vnum %d to account %s", J_NAME(ch), vnum, account);
+        logit(LOG_WIZ, "%s assigned divineclaim vnum %d to account %s", J_NAME(ch), vnum, first);
         return;
 #endif
     }
 
-    if (!summon_reward(ch, true))
+    if (!summon_rewards(ch, true))
         send_to_char("No divine claim has been granted to your account.\r\n", ch);
 }

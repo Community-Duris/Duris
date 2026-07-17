@@ -23,7 +23,7 @@ fi
 MYSQL_CMD="mysql -h$DB_HOST -P${DB_PORT:-3306} -u$DB_USER -p$DB_PASSWD $DB_NAME"
 
 STEP=0
-TOTAL=110
+TOTAL=112
 FAILED=0
 
 run_sql() {
@@ -63,6 +63,26 @@ run_sql_file() {
         FAILED=$((FAILED + 1))
     fi
     rm -f "$err_file"
+}
+
+run_check() {
+    local desc="$1"
+    local check_script="$2"
+    STEP=$((STEP + 1))
+    printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "$desc"
+
+    local output_file
+    output_file=$(mktemp)
+    if DB_HOST="$DB_HOST" DB_PORT="${DB_PORT:-3306}" DB_USER="$DB_USER" \
+       DB_PASSWD="$DB_PASSWD" DB_NAME="$DB_NAME" \
+       "$check_script" >"$output_file" 2>&1; then
+        cat "$output_file"
+    else
+        echo "FAILED"
+        head -20 "$output_file"
+        FAILED=$((FAILED + 1))
+    fi
+    rm -f "$output_file"
 }
 
 convert_tables_to_charset() {
@@ -2871,6 +2891,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
 convert_tables_to_charset "ensure consistent collation on all tables" 1
 
 run_sql_file "apply account-bound reward schema" "$SCRIPT_DIR/account_bound_rewards.sql"
+run_check "verify account-bound reward schema" "$SCRIPT_DIR/verify_account_bound_rewards.sh"
 run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persistence_contract.sql"
 
 # Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS
