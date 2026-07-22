@@ -126,8 +126,8 @@ execute_sql() {
         # SSH mode: execute on remote server
         echo "$sql" | ssh "$REMOTE_USER@$REMOTE_HOST" "mysql -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB"
     else
-        # Local mode: execute directly (use -h127.0.0.1 for containerized MySQL)
-        echo "$sql" | mysql -h127.0.0.1 -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB
+        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
+        echo "$sql" | mysql -hlocalhost -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB
     fi
 }
 
@@ -140,8 +140,8 @@ execute_sql_file() {
         ssh "$REMOTE_USER@$REMOTE_HOST" "mysql -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB < /tmp/import_sql.tmp"
         ssh "$REMOTE_USER@$REMOTE_HOST" "rm /tmp/import_sql.tmp"
     else
-        # Local mode: execute directly (use -h127.0.0.1 for containerized MySQL)
-        mysql -h127.0.0.1 -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB < "$sqlfile"
+        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
+        mysql -hlocalhost -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB < "$sqlfile"
     fi
 }
 
@@ -154,7 +154,7 @@ if [ $USE_SSH -eq 1 ]; then
     echo "Remote Host: $REMOTE_HOST"
 else
     echo "Mode: LOCAL"
-    echo "Host: 127.0.0.1"
+    echo "Host: localhost"
 fi
 echo "Database: $MYSQL_DB"
 echo ""
@@ -496,9 +496,9 @@ VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB',
             capture_output=True, text=True
         )
     else:
-        # Local mode: execute directly (use -h127.0.0.1 for containerized MySQL)
+        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
         mysql_result = subprocess.run(
-            ['mysql', '-h127.0.0.1', f'-u{MYSQL_USER}', f'-p{MYSQL_PASS}', MYSQL_DB],
+            ['mysql', '-hlocalhost', f'-u{MYSQL_USER}', f'-p{MYSQL_PASS}', MYSQL_DB],
             stdin=open('/tmp/import_help_entry.sql', 'r'),
             capture_output=True, text=True
         )
@@ -689,9 +689,9 @@ VALUES ('{safe_title}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
             capture_output=True, text=True
         )
     else:
-        # Local mode: execute directly (use -h127.0.0.1 for containerized MySQL)
+        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
         mysql_result = subprocess.run(
-            ['mysql', '-h127.0.0.1', f'-u{MYSQL_USER}', f'-p{MYSQL_PASS}', MYSQL_DB],
+            ['mysql', '-hlocalhost', f'-u{MYSQL_USER}', f'-p{MYSQL_PASS}', MYSQL_DB],
             stdin=open('/tmp/import_help_entry.sql', 'r'),
             capture_output=True, text=True
         )
