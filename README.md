@@ -58,6 +58,10 @@ sudo yum install gcc make mysql-server mysql-devel
 sudo systemctl start mysql
 sudo systemctl enable mysql
 ```
+or
+```bash
+sudo service restart mysql
+```
 
 ### 2. Create Database and User
 
@@ -358,6 +362,10 @@ MySQL initialization failed! Dying!
    ```bash
    sudo systemctl status mysql
    sudo systemctl start mysql
+   ```
+   or, more universal:
+   ```
+   sudo service mysql restart
    ```
 
 2. **Database doesn't exist:**
