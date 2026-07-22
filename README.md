@@ -248,12 +248,12 @@ Database connection settings are **hardcoded** in `src/sql.h` (lines 6-16):
 
 ```c
 #ifdef TEST_MUD
-  #define DB_HOST "127.0.0.1"
+  #define DB_HOST "localhost"
   #define DB_USER "duris"
   #define DB_PASSWD "duris"
   #define DB_NAME "duris_dev"
 #else
-  #define DB_HOST "127.0.0.1"
+  #define DB_HOST "localhost"
   #define DB_USER "duris"
   #define DB_PASSWD "duris"
   #define DB_NAME "duris"
@@ -381,13 +381,13 @@ MySQL initialization failed! Dying!
 3. **Wrong credentials:**
    ```bash
    # Test connection:
-   mysql -h127.0.0.1 -u duris -p duris_dev
+   mysql -hlocalhost -u duris -p duris_dev
    # Password: duris
    ```
 
 4. **User lacks privileges:**
    ```sql
-   GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'127.0.0.1' IDENTIFIED BY 'duris';
+   GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'localhost' IDENTIFIED BY 'duris';
    FLUSH PRIVILEGES;
    ```
 
