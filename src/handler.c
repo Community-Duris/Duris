@@ -1019,6 +1019,19 @@ void char_from_room(P_char ch)
 	ch->next_in_room         = 0;
 }
 
+// an infinite loop that would hang the MUD.  Even though the hang was prevented,
+// let's warn players that there's badness in that room.
+void recover_from_room_ch_loop(P_char k)
+{
+	char msg[MAX_STRING_LENGTH];
+	P_room room = &world[k->in_room];
+
+	snprintf(msg, sizeof msg, "&=rY>>>>>&n Bugged %s&n in room %s&n &+C(&+c%d&+C)\n",
+		GET_NAME(k), room->name, room->number);
+	send_to_all(msg);
+	k->next_in_room = 0;
+}
+
 /*
  * place a character in a room.
  */
@@ -1471,6 +1484,9 @@ bool char_to_room(P_char ch, int room, int dir)
 		// If you comment out the return, you need to change this loop to handle deaths.
 		for (k = world[room].people; k; k = k->next_in_room)
 		{
+			if (k == k->next_in_room)
+				recover_from_room_ch_loop(k);
+
 			// Skip PCs and NPCs with no proc
 			if (!IS_NPC(k) || mob_index[GET_RNUM(k)].func.mob == NULL)
 			{

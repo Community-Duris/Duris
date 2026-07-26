@@ -1917,6 +1917,9 @@ void list_char_to_char(P_char list, P_char ch, int mode)
 
 	for (i = list; i; i = i->next_in_room)
 	{
+		if (i == i->next_in_room)
+			recover_from_room_ch_loop(i);
+
 		if ((i == ch) || WIZ_INVIS(ch, i))
 		{
 			continue;

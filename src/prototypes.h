@@ -1235,6 +1235,7 @@ struct obj_affect *get_obj_affect(P_obj, int);
 int                obj_affect_time(P_obj, struct obj_affect *);
 void               set_obj_affected(P_obj, int, sh_int, sh_int);
 int                affect_from_obj(P_obj, sh_int);
+void                   recover_from_room_ch_loop(P_char);
 
 int io_agi_defense(P_char);
 int io_con_hitp(P_char);
