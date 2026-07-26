@@ -30,6 +30,7 @@
 #include "player_log.h"
 #include "ansi.h"
 
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <zlib.h>
 
