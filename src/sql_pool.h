@@ -22,6 +22,7 @@ extern "C" {
 /* Pool sizing */
 #define SQL_POOL_DEFAULT_SIZE 4
 #define SQL_POOL_MAX_SIZE     16
+#define SQL_POOL_ACQUIRE_TIMEOUT_MS 2000
 
 /* ---- Lifecycle ---- */
 
@@ -37,10 +38,16 @@ void sql_pool_shutdown(void);
 
 /* ---- Connection borrowing ---- */
 
-/* Acquire a connection from the pool.
- * Blocks (via pthread_cond_wait) when all connections are in use.
- * Returns NULL if the pool has not been initialised. */
+/* Acquire a connection from the pool. Waits up to
+ * SQL_POOL_ACQUIRE_TIMEOUT_MS when all connections are in use.
+ * Returns NULL if the pool has not been initialised, is closing, or
+ * remains exhausted at the deadline. */
 MYSQL *sql_pool_acquire(void);
+
+/* As above, while reporting whether an active pool existed when the
+ * acquisition began. This lets bootstrap callers distinguish "no pool"
+ * (legacy fallback is allowed) from "active pool exhausted" (fail closed). */
+MYSQL *sql_pool_acquire_with_status(int *pool_was_active);
 
 /* Return a connection to the pool so another thread can use it.
  * Signals one waiting acquirer.  No-op when conn is NULL. */

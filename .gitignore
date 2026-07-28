@@ -72,3 +72,6 @@ tests/db_write/schema.sql
 
 # Hermes analysis/session artifacts — never track in this repository
 .hermes/
+
+# Local/manual test helpers and temporary artifacts
+/tmp/

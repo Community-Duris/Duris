@@ -16,12 +16,14 @@
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "enhance.h"
 #include "utility.h"
 #include "utils.h"
 #include <math.h>
 #include <set>
 #include <stdio.h>
 #include <string.h>
+#include "account_reward.h"
 #include "achievements.h"
 #include "arena.h"
 #include "arenadef.h"
@@ -32,6 +34,7 @@
 #include "dreadlord.h"
 #include "epic.h"
 #include "gmcp.h"
+#include "hardcore_config.h"
 #include "grapple.h"
 #include "justice.h"
 #include "map.h"
@@ -538,7 +541,7 @@ void heal(P_char ch, P_char healer, int hits, int cap)
 
 	if (IS_HARDCORE(healer))
 	{
-		hits = (int)(hits * 1.20);
+		hits = (int)(hits * hardcore_config_get()->bonus_healing_multiplier);
 	}
 
 	if (affected_by_spell(ch, SPELL_BMANTLE) || affected_by_spell(ch, SPELL_FLAMESTRIKE))
@@ -1447,6 +1450,13 @@ P_obj make_corpse(P_char ch, int loss)
 			corpse->value[CORPSE_FLAGS] |= HUMANOID_CORPSE; /* for carving */
 	}
 
+	account_bound_reward_prepare_player_corpse(ch, corpse);
+	if (IS_PC(ch))
+	{
+		int contents_weight=corpse->weight-GET_WEIGHT(ch);
+		corpse->value[CORPSE_WEIGHT]=contents_weight>0?contents_weight:0;
+	}
+
 	corpse->value[CORPSE_RACE] = GET_RACE(ch);
 
 	IS_CARRYING_N(ch)  = 0;
@@ -2263,8 +2273,8 @@ void die(P_char ch, P_char killer)
 	if (IS_PC(ch) || !IS_SET(ch->specials.act, ACT_SPEC_DIE))
 	{
 		act("$n is dead! &+RR.I.P.&n", TRUE, ch, 0, 0, TO_ROOM);
-		// Only show death messages for hardcore characters - Arih
-		if (IS_PC(ch) && IS_HARDCORE(ch))
+		// Only show configured death messages for hardcore characters - Arih
+		if (IS_PC(ch) && IS_HARDCORE(ch) && hardcore_config_get()->death_messages_enabled)
 		{
 			act("&-L&+rYou feel yourself falling to the ground.&n", FALSE, ch, 0, 0, TO_CHAR);
 			act("&-L&+rYour soul leaves your body in the cold sleep of death...&n", FALSE, ch, 0, 0, TO_CHAR);
@@ -2284,8 +2294,7 @@ void die(P_char ch, P_char killer)
 			christmas_proc(ch);
 		}
 		// NPCs that are worth exp and not PC pets may load a random item.
-		if (IS_NPC(ch) && !IS_PC_PET(ch) && GET_EXP(ch) > 0)
-			enhancematload(ch, killer);
+		enhance_on_eligible_npc_death(ch, killer);
 	}
 
 	/* This is where we were saving the newbies from being killed by high lvls.
@@ -2606,17 +2615,21 @@ void die(P_char ch, P_char killer)
 
 		if (IS_PC(ch))
 		{
-			if (!CHAR_IN_ARENA(ch))
+			if (!CHAR_IN_ARENA(ch) || hardcore_config_get()->death_count_arena_deaths)
 			{
 				ch->only.pc->numb_deaths++;
 			}
-			// Hardcore chars die after 5 deaths.
-			if ((ch->only.pc->numb_deaths > 0) && IS_HARDCORE(ch))
+			// Hardcore chars are permanently removed at the configured death count.
+			if (IS_HARDCORE(ch) && hardcore_config_death_is_final(ch->only.pc->numb_deaths))
 			{
 				update_pos(ch);
-				checkHallOfFame(ch, GET_NAME(killer));
+				if (hardcore_config_get()->death_hall_of_fame)
+					checkHallOfFame(ch, GET_NAME(killer));
 				// save killer to database for hall of fame
-				db_query("UPDATE player_data SET killed_by = '%s' WHERE pid = %d", GET_NAME(killer), GET_PID(ch));
+				if (hardcore_config_get()->death_record_killer)
+					db_query("UPDATE player_data SET killed_by = '%s' WHERE pid = %d", GET_NAME(killer), GET_PID(ch));
+				if (hardcore_config_get()->death_messages_enabled)
+				{
 				act("&+LThe &+rhand &+Lof &+WGod &+Lgrabs &+R$n &+Lby the &+cthroat&+L.&N", FALSE, ch, 0, 0, TO_ROOM);
 				act("&+LThe &+rhand &+Lof &+WGod &+Ltears &+R$n&+L's &+wsoul &+Lfrom this &+cplane &+Lof existence.&N", FALSE, ch, 0, 0, TO_ROOM);
 				act("&+L$n's &+cbody &+Llands on the ground in a crumpled heap, &+wsoul &+Lgone forever.&N", FALSE, ch, 0, 0, TO_ROOM);
@@ -2625,6 +2638,7 @@ void die(P_char ch, P_char killer)
 				send_to_char("&+LThe &+rhand &+Lof &+WGod &+Ltears &+RYour&+L &+wsoul &+Lfrom this &+cplane &+Lof existence.&N\r\n", ch);
 				send_to_char("&+WGod&+L stands before you and says '&+wYou have died your last death, Your existence shall not continue.&+L'\r\n", ch);
 				send_to_char("&+WGod&+L says '&+wYou have died a miserable soul with a value of &+R&+w.&+L'&N\r\n", ch);
+			}
 
 				statuslog(ch->player.level, "%s's existence on Duris was just ended...by %s!", GET_NAME(ch), GET_NAME(killer));
 
@@ -2640,9 +2654,12 @@ void die(P_char ch, P_char killer)
 				{
 					P_desc d = ch->desc;
 
-					// Send death messages BEFORE showing account menu - Arih
-					send_to_char("&-L&+rYou feel yourself falling to the ground.&n\r\n", ch);
-					send_to_char("&-L&+rYour soul leaves your body in the cold sleep of death...&n\r\n\r\n", ch);
+					if (hardcore_config_get()->death_messages_enabled)
+					{
+						// Send death messages BEFORE showing account menu - Arih
+						send_to_char("&-L&+rYou feel yourself falling to the ground.&n\r\n", ch);
+						send_to_char("&-L&+rYour soul leaves your body in the cold sleep of death...&n\r\n\r\n", ch);
+					}
 
 					// Delete character file
 					deleteCharacter(ch);
@@ -5682,12 +5699,12 @@ case RACEWAR_NEUTRAL:
 	}
 	}
 	}
-	, {MAKE_DAM_MOD_PRED(){if (IS_HARDCORE(caster)){dam_mod->mod += 0.09;
+	, {MAKE_DAM_MOD_PRED(){if (IS_HARDCORE(caster)){dam_mod->mod += hardcore_config_get()->bonus_damage_outgoing_multiplier - 1.0f;
 	dam_mod->type = dam_mod_type::Increased;
 	}
 	if (IS_HARDCORE(victim))
 	{
-		dam_mod->mod += -0.09;
+		dam_mod->mod += hardcore_config_get()->bonus_damage_incoming_multiplier - 1.0f;
 		dam_mod->type = dam_mod_type::Increased;
 	}
 	}

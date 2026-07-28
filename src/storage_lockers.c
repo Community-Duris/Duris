@@ -1964,10 +1964,10 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 	if (!pLocker)
 		return FALSE;
 
-	if (cmd == (-75))
+	if (cmd == CMD_FROMROOM)
 	{ /* they are leaving the locker - say bye-bye! */
 		if (!locker_handle_leave(ch, pLocker, room, troom))
-			return TRUE;
+			return ROOM_PROC_LEAVE_VETO;
 	}
 	if (cmd == (-80))
 	{

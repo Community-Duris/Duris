@@ -26,6 +26,7 @@
 #define WS_CLOSE_PAYLOAD_SIZE   128
 #define WS_CONCAT_BUFFER_SIZE   256
 #define WS_MAX_HANDSHAKE_SIZE   8192
+#define WS_MAX_PENDING_OUTPUT   (1024 * 1024)
 
 /* frame length thresholds (rfc 6455) */
 #define WS_LEN_7BIT_MAX     125
@@ -92,6 +93,7 @@ int websocket_send_json(struct descriptor_data *d, const char *type, const char 
 int websocket_send_close(struct descriptor_data *d, int code, const char *reason);
 int websocket_send_ping(struct descriptor_data *d);
 int websocket_send_pong(struct descriptor_data *d, const char *data, size_t len);
+int websocket_flush_output(struct descriptor_data *d);
 
 /* frame parsing - returns bytes consumed, -1 on error, 0 if need more data */
 int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len, char **payload, size_t *payload_len, int *opcode, int *fin);

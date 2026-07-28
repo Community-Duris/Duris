@@ -5,6 +5,7 @@
 #include "db.h"
 #include "utility.h"
 #include "utils.h"
+#include "frag_cap_config.h"
 #include "redis.h"
 #include <ctype.h>
 #include <errno.h>
@@ -64,6 +65,63 @@ static volatile pid_t world_state_save_pid   = 0;
 static volatile pid_t dirty_flush_pid        = 0;
 static redisContext  *donation_sub_ctx       = NULL;
 static volatile bool  donation_sub_connected = false;
+
+/* Scan-and-delete with MATCH pattern. Fail closed if SCAN/DEL misshape. */
+static bool redis_clear_scan_match(const char *pattern)
+{
+#ifndef __NO_MYSQL__
+	char cursor[64] = "0";
+
+	if (!redis_enabled || !redis_ctx || !pattern)
+		return true;
+
+	do
+	{
+		redisReply *scan = (redisReply *)redisCommand(redis_ctx,
+				"SCAN %s MATCH %s COUNT 256", cursor, pattern);
+		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
+			!scan->element[0] || !scan->element[1] ||
+			!scan->element[0]->str ||
+			scan->element[0]->type != REDIS_REPLY_STRING ||
+			scan->element[1]->type != REDIS_REPLY_ARRAY)
+		{
+			if (scan)
+				freeReplyObject(scan);
+			return false;
+		}
+
+		snprintf(cursor, sizeof(cursor), "%s", scan->element[0]->str);
+		redisReply *keys = scan->element[1];
+		for (size_t i = 0; i < keys->elements; i++)
+		{
+			redisReply *key = keys->element[i];
+			if (!key || key->type != REDIS_REPLY_STRING || !key->str)
+			{
+				freeReplyObject(scan);
+				return false;
+			}
+			redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %b",
+					key->str, key->len);
+			if (!del || (del->type != REDIS_REPLY_INTEGER &&
+					     del->type != REDIS_REPLY_NIL))
+			{
+				if (del)
+					freeReplyObject(del);
+				freeReplyObject(scan);
+				return false;
+			}
+			freeReplyObject(del);
+		}
+		freeReplyObject(scan);
+	}
+	while (strcmp(cursor, "0") != 0);
+
+	return true;
+#else
+	(void)pattern;
+	return true;
+#endif
+}
 
 // rnum to vnum
 static int get_room_vnum(P_char ch)
@@ -207,6 +265,15 @@ bool redis_clear_pwipe_state(void)
 	redis_clear_floor_pickups();
 	redis_clear_dirty_players();
 	redis_clear_online_players();
+	/* Explicit season caches: leave no online-scoreboard / list bleed into new season. */
+	redis_invalidate_fraglist();
+	redis_invalidate_epic_zones();
+	redis_invalidate_artifact_cache();
+	redis_cache_del("mud:cache:named");
+	if (!redis_clear_scan_match("mud:cache:artifact:*"))
+		return false;
+	if (!redis_clear_scan_match("mud:cache:*"))
+		return false;
 	return redis_clear_ship_snapshots();
 }
 
@@ -2793,7 +2860,7 @@ static char *generate_fraglist_output(void)
 	         hours,
 	         mins,
 	         secs,
-	         LEVEL_TO_FRAGS(cap_level + 1));
+	         frag_cap_config_frags_for_level(cap_level + 1));
 
 	// query top fraggers (no filter)
 	res = db_query("SELECT char_name, total_frags FROM frag_leaderboard "

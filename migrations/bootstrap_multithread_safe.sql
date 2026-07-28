@@ -152,6 +152,40 @@ CREATE TABLE `accounts` (
   PRIMARY KEY (`account_name`),
   KEY `idx_last_login` (`last_login` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_bound_rewards` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reward_vnum` int NOT NULL DEFAULT '36419',
+  `template_version` smallint unsigned NOT NULL DEFAULT '0',
+  `template_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `display_name` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `granted_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `expires_at` datetime DEFAULT NULL,
+  `remaining_pwipes` int unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_account_bound_rewards_account` (`account_name`),
+  KEY `idx_account_bound_rewards_vnum` (`reward_vnum`),
+  KEY `idx_account_bound_rewards_expires` (`expires_at`),
+  CONSTRAINT `account_bound_rewards_ibfk_1` FOREIGN KEY (`account_name`) REFERENCES `accounts` (`account_name`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_bound_reward_pwipe_state` (
+  `id` tinyint unsigned NOT NULL,
+  `last_processed_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `account_bound_reward_pwipe_state` (`id`,`last_processed_at`) VALUES (1,NULL);
+CREATE TABLE `account_bound_reward_summons` (
+  `grant_id` bigint unsigned NOT NULL,
+  `pid` int unsigned NOT NULL,
+  `last_summoned_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `recovery_ready` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`grant_id`,`pid`),
+  KEY `idx_account_bound_reward_summons_pid` (`pid`),
+  CONSTRAINT `account_bound_reward_summons_grant_fk` FOREIGN KEY (`grant_id`) REFERENCES `account_bound_rewards` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `account_bound_reward_summons_pid_fk` FOREIGN KEY (`pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `alliances` (
   `id` int NOT NULL AUTO_INCREMENT,
   `created_at` datetime DEFAULT NULL,

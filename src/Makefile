@@ -60,6 +60,12 @@ OBJS =  $(SHIP_OBJS) \
 				 magic.o \
 				 achievements.o \
 				 account.o \
+				 account_reward.o \
+				 account_reward_snapshot.o \
+				 account_reward_config.o \
+				 hardcore_config.o \
+				 creation_availability_config.o \
+				 frag_cap_config.o \
 				 actcomm.o \
 				 actinf.o \
 				 actmove.o \
@@ -96,6 +102,13 @@ OBJS =  $(SHIP_OBJS) \
 				 debug.o \
 				 disguise.o \
 				 drannak.o \
+				 enhance.o \
+				 crafting.o \
+				 mining.o \
+				 mining_config.o \
+				 random_equipment_config.o \
+				 salvage.o \
+				 material_rarity.o \
 				 dreadlord.o \
 				 editor.o \
 				 encounters.o \

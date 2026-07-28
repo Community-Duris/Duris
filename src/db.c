@@ -25,6 +25,7 @@
 #include "assocs.h"
 #include "copyover.h"
 #include "epic.h"
+#include "enhance.h"
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
@@ -71,6 +72,7 @@ extern void                    event_mob_skin_spell(P_char, P_char, P_obj, void 
 extern struct social_messg    *soc_mess_list;
 void                           recalc_zone_numbers();
 void                           ne_init_events();
+void                           ne_init_event_pool();
 extern void                    event_reset_zone(P_char, P_char, P_obj, void *);
 
 /**************************************************************************
@@ -383,6 +385,24 @@ void loadGodProcs()
   fclose(f);
 }
 */
+
+void boot_material_rarity_objects(int mini_mode)
+{
+	if (!mini_mode)
+	{
+		if (!(obj_f = fopen(OBJ_FILE, "r")))
+			fatal_boot_error("db", "Trouble opening object file world.obj: %s", strerror(errno));
+	}
+	else if (!(obj_f = fopen("areas_mini/mini.obj", "r")))
+	{
+		fatal_boot_error("db", "Trouble opening mini object file areas_mini/mini.obj: %s", strerror(errno));
+	}
+
+	obj_index = generate_indices(obj_f, &top_of_objt);
+	dead_obj_pool = mm_create("OBJS", sizeof(struct obj_data), offsetof(struct obj_data, next),
+	                          mm_find_best_chunk(sizeof(struct obj_data), (top_of_objt / 3), (top_of_objt >> 1)));
+	ne_init_event_pool();
+}
 
 /*
  * body of the booting system
@@ -3516,6 +3536,7 @@ void reset_zone(int zone, int force_item_repop)
 							// Load all shopkeeper eq.
 							if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4) && (!mob || !IS_SHOPKEEPER(mob)))
 							{
+								enhance_on_npc_item_reset_skipped(mob, obj);
 								extract_obj(obj);
 								last_cmd = 1;
 								break;
@@ -3582,6 +3603,7 @@ void reset_zone(int zone, int force_item_repop)
 							ival = itemvalue(obj);
 							if (!ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4))
 							{
+								enhance_on_npc_item_reset_skipped(mob, obj);
 								extract_obj(obj);
 								last_cmd = 1;
 								break;

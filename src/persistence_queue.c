@@ -575,7 +575,9 @@ int persistence_item_event_worker_running(void)
       kill_rc = pthread_kill(persistence_item_event_worker_thread, 0);
       if (kill_rc == ESRCH)
       {
-        persistence_item_event_worker_is_running = 0;
+        /* ESRCH is not a safe reap proof. Quarantine so start() will not
+         * create a replacement generation until worker_stop() joins. */
+        persistence_item_event_worker_stop_pending_flag = 1;
         running = 0;
       }
       else
@@ -1097,7 +1099,8 @@ int persistence_scalar_event_worker_running(void)
       kill_rc = pthread_kill(persistence_scalar_event_worker_thread, 0);
       if (kill_rc == ESRCH)
       {
-        persistence_scalar_event_worker_is_running = 0;
+        /* ESRCH is not a safe reap proof. Quarantine until join. */
+        persistence_scalar_event_worker_stop_pending_flag = 1;
         running = 0;
       }
       else
@@ -1344,7 +1347,8 @@ int persistence_large_event_worker_running(void)
       kill_rc = pthread_kill(persistence_large_event_worker_thread, 0);
       if (kill_rc == ESRCH)
       {
-        persistence_large_event_worker_is_running = 0;
+        /* ESRCH is not a safe reap proof. Quarantine until join. */
+        persistence_large_event_worker_stop_pending_flag = 1;
         running = 0;
       }
       else

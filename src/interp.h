@@ -881,6 +881,7 @@ extern unsigned int game_locked_level;
 #define CMD_JESTROS         851
 #define CMD_REDIS           852
 #define CMD_MIXPOISON       853
+#define CMD_DIVINECLAIM     854 // Account-bound divine reward
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.
@@ -892,6 +893,11 @@ extern unsigned int game_locked_level;
 #define CMD_DEATH        -1
 #define CMD_TOROOM       -2 // Checks NPC procs when someone enters a room.
 #define CMD_LOOKOUT      -5
+#define CMD_FROMROOM     -75 // Room hook notification before character removal.
+
+/* Ordinary TRUE means a legacy room proc handled an event.  Only this
+ * explicit result may veto CMD_FROMROOM removal. */
+#define ROOM_PROC_LEAVE_VETO 0x4c56544f /* "LVTO" */
 #define CMD_GOTHIT       -100
 #define CMD_GOTNUKED     -101
 #define CMD_MOB_COMBAT   -102

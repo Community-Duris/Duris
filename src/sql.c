@@ -24,6 +24,7 @@
 #include <time.h>
 #include <pthread.h>
 #include "account.h"
+#include "account_reward.h"
 #include "assocs.h"
 #include "boon.h"
 #include "epic.h"
@@ -34,6 +35,7 @@
 #include "specializations.h"
 #include "spells.h"
 #include "sql_player.h"
+#include "frag_cap_config.h"
 #include "timers.h"
 #include "persistence_queue.h"
 #include "utility.h"
@@ -333,15 +335,16 @@ void sql_populate_lookup_tables()
 	logit(LOG_STATUS, "Lookup tables populated.");
 }
 
-/* Single source of truth for database selection.  On non-default
- * ports (typically dev/sandbox builds started by mortals) we
- * deliberately swap the production "duris" database for the
- * "duris_dev" sandbox so a misconfigured boot can never clobber
- * live data.  Sync (DB) and async/pool paths must call this so they
- * agree on the target database. */
+/* Resolve the requested database while retaining the non-default-port
+ * production safety guard.  Explicit disposable/test database names must
+ * remain usable on any port; only an implicit production target is redirected
+ * to the development sandbox. */
 const char *sql_persistence_db_name(void)
 {
-	if (RUNNING_PORT != DFLT_PORT)
+	const bool production_name = !strcmp(DB_NAME, "duris") ||
+	                             !strcmp(DB_NAME, "duris_prod");
+
+	if (RUNNING_PORT != DFLT_PORT && production_name)
 		return "duris_dev";
 	return DB_NAME;
 }
@@ -677,7 +680,7 @@ void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_
 		debug("get_level_cap_info: Database read fail.");
 		*max_frags   = (long)-1;
 		*racewar     = RACEWAR_NONE;
-		*level       = 25;
+		*level       = frag_cap_config_get()->cap_floor_level;
 		*next_update = 0;
 		return;
 	}
@@ -706,7 +709,7 @@ int sql_level_cap(int racewar_side)
 	if ((db == NULL) || ((row = mysql_fetch_row(db)) == NULL))
 	{
 		debug("sql_level_cap: Database read fail.");
-		return 25;
+		return frag_cap_config_get()->cap_floor_level;
 	}
 
 	level_cap       = atoi(row[0]);
@@ -719,31 +722,30 @@ int sql_level_cap(int racewar_side)
 	}
 	mysql_free_result(db);
 
-	// Everyone can reach 56 when someone reaches the limit + 40.
-	if (level_cap >= MAXLVLMORTAL)
-		return MAXLVLMORTAL;
-	// 25 is the lower limit.
-	if (level_cap <= 25)
-		return 25;
-	
+	const struct frag_cap_config *config = frag_cap_config_get();
+
+	// Clamp database values to the configured mortal-cap range.
+	if (level_cap >= config->cap_maximum_level)
+		return config->cap_maximum_level;
+	if (level_cap <= config->cap_floor_level)
+		return config->cap_floor_level;
+
 	return level_cap;
 }
 
-#define CAP_DELAY(old_level) (time(NULL) + SECS_PER_REAL_DAY * 7)
-
 // Checks the number of frags against the current highest and sets the new highest if applicable.
-// Adjusted the time inbetween notches from a static 1 day to 1 day for levels 26-29, 2 days for 30-39,
-//   3 days for 40-49, and 4 days for 50-56.
+// Timer policy is selected from the configured old-level bands in frag_cap.cfg.
 void sql_check_level_cap(long max_frags, int racewar)
 {
 	long   old_max_frags;
 	int    old_racewar, old_level;
+	const struct frag_cap_config *config = frag_cap_config_get();
 	time_t next_update;
 	char   query[1024];
 
 	get_level_cap_info(&old_max_frags, &old_racewar, &old_level, &next_update);
 	// If we've capped out
-	if (old_level >= MAXLVLMORTAL)
+	if (old_level >= config->cap_maximum_level)
 	{
 		return;
 	}
@@ -751,23 +753,31 @@ void sql_check_level_cap(long max_frags, int racewar)
 	if (next_update <= time(NULL))
 	{
 		// Have enough frags to update level.
-		if (old_level < FRAGS_TO_LEVEL(max_frags / 100.))
+		if (old_level < frag_cap_config_cap_level_from_frags(max_frags / 100.))
 		{
 			// when level cap increases, give a boon to the side that caused it
 			BoonData bdata;
-			bdata.duration  = 2880;        // 48 hours
+			bdata.duration  = frag_cap_config_boon_duration_minutes(); // configurable minutes
 			bdata.racewar   = racewar;
-			bdata.type      = BTYPE_EXPM;  // exp mod
+			bdata.type      = BTYPE_EXPM;
 			bdata.option    = BOPT_MOB;
-			bdata.criteria  = 1;           // 1 kill
-			bdata.criteria2 = -1;          // any mob
-			bdata.bonus     = 2;           // 100% bonus 
+			bdata.criteria  = 1;
+			bdata.criteria2 = -1;
+			bdata.bonus     = frag_cap_config_boon_bonus();
 			bdata.active    = 1;
 			bdata.repeat    = 1;
 			create_boon(&bdata);
 
-			snprintf(
-				query, 1024, "UPDATE level_cap SET most_frags = %f, racewar_leader = %d, level = %d, next_update = FROM_UNIXTIME(%ld)", max_frags / 100., racewar, old_level + 5, CAP_DELAY(old_level));
+			int next_level = old_level + config->cap_level_step;
+			if (next_level > config->cap_maximum_level)
+				next_level = config->cap_maximum_level;
+			snprintf(query,
+			         sizeof(query),
+			         "UPDATE level_cap SET most_frags = %f, racewar_leader = %d, level = %d, next_update = FROM_UNIXTIME(%ld)",
+			         max_frags / 100.,
+			         racewar,
+			         next_level,
+			         (long)(time(NULL) + SECS_PER_REAL_DAY * frag_cap_config_timer_days(old_level)));
 			db_query(query);
 		}
 		else if (max_frags > old_max_frags)
@@ -782,6 +792,34 @@ void sql_check_level_cap(long max_frags, int racewar)
 		snprintf(query, 1024, "UPDATE level_cap SET most_frags = %f, racewar_leader = %d", max_frags / 100., racewar);
 		db_query(query);
 	}
+}
+
+// Re-check the current racewar total even when no new frag was recorded.
+// This allows a qualified cap increase and its boon to become available as
+// soon as the configured timer expires.
+void sql_check_level_cap_periodic(void)
+{
+	long max_frags;
+	int  old_racewar, old_level;
+	time_t next_update;
+	MYSQL_RES *res;
+	MYSQL_ROW  row;
+
+	get_level_cap_info(&max_frags, &old_racewar, &old_level, &next_update);
+	if (old_racewar == RACEWAR_NONE || old_level < 0)
+		return;
+
+	res = db_query("SELECT COALESCE(SUM(total_frags), 0) FROM frag_leaderboard WHERE racewar=%d", old_racewar);
+	if (!res)
+		return;
+
+	row = mysql_fetch_row(res);
+	if (row && row[0])
+	{
+		max_frags = atol(row[0]);
+		sql_check_level_cap(max_frags, old_racewar);
+	}
+	mysql_free_result(res);
 }
 
 // Sets the values of level (actual cap) and racewar (the side that is in the lead).
@@ -830,9 +868,9 @@ void sql_modify_frags(P_char ch, int gain)
 		db_query("UPDATE frag_leaderboard SET total_frags = %d, last_updated = NOW() WHERE pid = %ld AND deleted_at IS NULL", ch->only.pc->frags, GET_PID(ch));
 	}
 
-	if (gain > 0)
+	if (gain >= 0)
 	{
-		MYSQL_RES *res = db_query("SELECT SUM(total_frags) FROM frag_leaderboard WHERE racewar=%d", GET_RACEWAR(ch));
+		MYSQL_RES *res = db_query("SELECT COALESCE(SUM(total_frags), 0) FROM frag_leaderboard WHERE racewar=%d", GET_RACEWAR(ch));
 		if (res)
 		{
 			MYSQL_ROW row = mysql_fetch_row(res);
@@ -879,7 +917,7 @@ void sql_update_account_character(P_char ch)
 
 	// Insert or update account_characters mapping
 	// Using INSERT...ON DUPLICATE KEY UPDATE to preserve created_at for existing records
-	if (!db_query("INSERT INTO account_characters "
+	if (!qry("INSERT INTO account_characters "
 	         "(account_name, pid, char_name, created_at, deleted_at) "
 	         "VALUES('%s', %ld, '%s', NOW(), NULL) "
 	         "ON DUPLICATE KEY UPDATE "
@@ -954,7 +992,7 @@ void sql_update_frag_leaderboard(P_char ch)
 	// Insert or update frag_leaderboard
 	// Using INSERT ... ON DUPLICATE KEY UPDATE to preserve the row id while
 	// refreshing the current stats.
-	if (!db_query("INSERT INTO frag_leaderboard "
+	if (!qry("INSERT INTO frag_leaderboard "
 	         "(pid, account_name, char_name, total_frags, racewar, race, class, level, deleted_at) "
 	         "VALUES(%ld, '%s', '%s', %d, %d, '%s', '%s', %d, NULL) "
 	         "ON DUPLICATE KEY UPDATE "
@@ -1303,7 +1341,7 @@ void sql_disconnectIP(P_char ch)
 	if (!ch || !IS_PC(ch))
 		return;
 
-	db_query_nolog("INSERT INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
+	db_query_nolog("INSERT IGNORE INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
 	if (ch->desc)
 	{
 		// Set racewar side if not an immortal.
@@ -1314,7 +1352,7 @@ void sql_disconnectIP(P_char ch)
 void sql_connectIP(P_char ch)
 {
 	// insert will silently fail if the PID is already in the table
-	db_query_nolog("INSERT INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
+	db_query_nolog("INSERT IGNORE INTO ip_info (pid) VALUES (%d)", GET_PID(ch));
 	if (ch->desc)
 	{
 		db_query("UPDATE ip_info SET last_ip = '%s', last_connect = NOW(), racewar_side = %d WHERE pid = %d", ch->desc->host, IS_TRUSTED(ch) ? RACEWAR_NONE : GET_RACEWAR(ch), GET_PID(ch));
@@ -2486,7 +2524,8 @@ bool sql_clear_zone_trophy()
 bool sql_verify_pwipe_manifest(void)
 {
 	static const char *const tables[] = {
-		"account_characters", "account_locker_access", "account_locker_item_affects",
+		"account_bound_rewards", "account_bound_reward_summons", "account_bound_reward_pwipe_state", "account_characters",
+		"account_locker_access", "account_locker_item_affects",
 		"account_locker_item_extra_descr", "account_locker_items", "account_lockers",
 		"alliances", "artifact_bind", "artifacts", "artifacts_mortal", "associations",
 		"auction_bid_history", "auction_item_pickups", "auction_money_pickups", "auctions",
@@ -2513,6 +2552,11 @@ bool sql_verify_pwipe_manifest(void)
 		"zone_touches", "zone_trophy", NULL
 	};
 	static const char *const columns[][2] = {
+		{"account_bound_rewards", "id"}, {"account_bound_rewards", "expires_at"},
+		{"account_bound_rewards", "remaining_pwipes"},
+		{"account_bound_reward_summons", "grant_id"}, {"account_bound_reward_summons", "pid"},
+		{"account_bound_reward_summons", "last_summoned_at"},
+		{"account_bound_reward_pwipe_state", "id"}, {"account_bound_reward_pwipe_state", "last_processed_at"},
 		{"outposts", "owner_id"}, {"outposts", "level"}, {"outposts", "walls"},
 		{"outposts", "archers"}, {"outposts", "hitpoints"}, {"outposts", "territory"},
 		{"outposts", "portal_room"}, {"outposts", "resources"}, {"outposts", "applied_resources"},
@@ -3231,8 +3275,9 @@ bool sql_pwipe(int code_verify)
 		}
 		logit(LOG_DEBUG, "sql_pwipe: Resetting level_cap data... .. .");
 		send_to_all("Resetting level_cap data... .. .");
-		// needs to get this parameterized
-		if (qry("UPDATE level_cap SET most_frags=0, racewar_leader=0, level=31, next_update=NOW() + INTERVAL 7 DAY"))
+		if (qry("UPDATE level_cap SET most_frags=0, racewar_leader=0, level=%d, next_update=NOW() + INTERVAL %d DAY",
+		         frag_cap_config_reset_level(),
+		         frag_cap_config_reset_timer_days()))
 		{
 			logit(LOG_DEBUG, "  success!");
 			send_to_all("  success!\n");
@@ -3329,6 +3374,11 @@ bool sql_pwipe(int code_verify)
 				return FALSE;
 			}
 		}
+		if (!account_bound_rewards_on_successful_pwipe())
+		{
+			logit(LOG_DEBUG, "sql_pwipe: account reward pwipe policy failed; preserving rewards for manual review.");
+			send_to_all("Account reward pwipe policy FAILED; rewards are being preserved for manual review.\n");
+		}
 		logit(LOG_DEBUG, "  success!");
 		send_to_all("  success!\n");
 		logit(LOG_DEBUG, "sql_pwipe: COMPLETED!");
@@ -3393,12 +3443,16 @@ void sql_log_player_login(P_char ch, const char *status)
 /* ---- Persistence DB connection ---- */
 MYSQL *sql_persistence_connection(void)
 {
-	/* Prefer the connection pool.  Falls back to the
-	 * legacy persistenceDB singleton if the pool was never initialised
-	 * (sql_pool_acquire returns NULL when pool is NULL). */
-	MYSQL *conn = sql_pool_acquire();
+	/* Prefer the connection pool. Only fall back to the legacy singleton
+	 * when no active pool exists (bootstrap/early-start). If an active pool
+	 * is exhausted, fail closed so callers can alert/retry without blocking
+	 * the main loop or creating an unscheduled fifth connection. */
+	int pool_was_active = 0;
+	MYSQL *conn = sql_pool_acquire_with_status(&pool_was_active);
 	if (conn)
 		return conn;
+	if (pool_was_active)
+		return NULL;
 
 	/* Legacy fallback: lazy-initialise the singleton.
 	 * Kept for bootstrap / early-start paths that run before

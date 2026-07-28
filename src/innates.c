@@ -310,6 +310,7 @@ const struct innate_data        innates_data[LAST_INNATE + 1] = {
     {"infernal fury", NULL},
     {"ophidian eyes", NULL},
     {"warding faith", NULL},
+    {"arcane rudiments", NULL},
 };
 
 string list_innates(int race, int cls, int spec)

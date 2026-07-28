@@ -16,6 +16,7 @@
 #include "utility.h"
 #include "utils.h"
 #include "guild.h"
+#include "hardcore_config.h"
 #include <stdio.h>
 #include "epic_skills.h"
 #include "spells.h"
@@ -213,7 +214,7 @@ bool notch_skill(P_char ch, int skill, float chance)
 
 	if (IS_HARDCORE(ch))
 	{
-		chance += (int)(get_property("skill.notch.hardcoreBonus", 0.6) * chance);
+		chance *= hardcore_config_get()->bonus_skill_notch_multiplier;
 	}
 
 	// Instead of simply not allowing notches, we just make it harder - Jexni 1/3/12

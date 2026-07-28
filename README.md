@@ -126,7 +126,20 @@ mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
 
 For an existing populated database, use `migrations/run_migration.sh` instead. The bootstrap uses `CREATE TABLE` definitions and is useful for schema comparison, but it is not an upgrade runner: `CREATE TABLE IF NOT EXISTS` does not add missing columns to an existing table.
 
-The migration runner contains the additive, guarded upgrade steps and is designed to be re-runnable after clone validation.
+The migration runner contains the additive, guarded upgrade steps and is designed to be re-runnable after clone validation. The root-level `./run_migration.sh` is only a compatibility entrypoint and delegates to this authoritative runner, so the two paths cannot drift.
+
+For a scoped persistence/auction repair on an archive-restored clone, use:
+
+```bash
+# Read-only exact-schema check.
+./migrations/verify_persistence_contract.sh
+
+# Apply only the persistence/auction contract; the confirmation must exactly
+# match DB_NAME from the selected clone configuration.
+./migrations/apply_persistence_contract.sh --confirm-db <clone_database_name>
+```
+
+Do not apply either migration path to an active database without first taking a backup, restoring a clone, and validating replay against that clone.
 
 **Note:** The frag leaderboard tables will be automatically populated as players log in and save. No manual population is needed.
 

@@ -7597,8 +7597,9 @@ When you create a character on Duris you have the option of creating it as
 increased damage, have greater resistance to damage and have higher hp than
 non-hardcore characters. Hardcore characters also do not require the
 special "potions" as others do to move past level 50, they are able to
-simply exp right up to level 56. However they have a limited li e-span and
-will cease to exist completely upon the fifth death of the character.
+simply exp right up to level 56. However they have a configured limited
+life-span and will cease to exist completely when that configured death limit
+is reached.
 ===========================================================================
 
 #

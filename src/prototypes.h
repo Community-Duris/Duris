@@ -35,7 +35,7 @@ using namespace std;
 extern char GS_buf1[MAX_STRING_LENGTH];
 
 int new_descriptor(int s, int conn_type); /* 0=telnet, 1=SSL, 2=WebSocket */
-int new_connection(int s, bool ssl);
+int new_connection(int s);
 
 /* affects.c */
 void               event_short_affect(P_char, P_char, P_obj, void *);
@@ -2475,6 +2475,10 @@ int  has_soulbind(P_char ch);
 void do_soulbind(P_char ch, char *argument, int cmd);
 void load_soulbind(P_char ch);
 void remove_soulbind(P_char ch);
+void do_divineclaim(P_char ch, char *argument, int cmd);
+void account_bound_reward_on_login(P_char ch);
+void account_bound_reward_prepare_player_corpse(P_char ch, P_obj corpse);
+bool account_bound_reward_owner(P_char ch, P_obj obj);
 
 void spell_earthen_maul(int, P_char, char *, int, P_char, P_obj);
 void spell_acid_stream(int, P_char, char *, int, P_char, P_obj);

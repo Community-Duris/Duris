@@ -33,8 +33,9 @@ assert_column() {
 }
 
 for table in \
-  corpse_item_extra_descr \
-  account_locker_item_extra_descr \
+    account_bound_rewards \
+    corpse_item_extra_descr \
+    account_locker_item_extra_descr \
     saved_item_extra_descr \
     shopkeeper_item_extra_descr \
     siege_item_extra_descr
@@ -52,5 +53,10 @@ done
 
 assert_column player_pet_items item_type
 assert_column siege_items item_type
+
+for column in account_name reward_vnum granted_by created_at updated_at
+do
+    assert_column account_bound_rewards "$column"
+done
 
 echo "persistence migration schema: ok"

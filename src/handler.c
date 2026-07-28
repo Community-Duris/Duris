@@ -973,10 +973,12 @@ void char_from_room(P_char ch)
 		return;
 	}
 
-	/* Give room hooks a chance to veto removal before room state changes. */
+	/* Notify room hooks before state changes.  Legacy hooks commonly return
+	 * TRUE for handled synthetic events, so only the explicit veto result may
+	 * block removal. */
 	if (world[ch->in_room].funct)
 	{
-		if ((*world[ch->in_room].funct)(ch->in_room, ch, (-75), NULL))
+		if ((*world[ch->in_room].funct)(ch->in_room, ch, CMD_FROMROOM, NULL) == ROOM_PROC_LEAVE_VETO)
 			return;
 	}
 
@@ -1084,15 +1086,13 @@ bool char_to_room(P_char ch, int room, int dir)
 
 	/* this is a serious error, but let's just try and live with it */
 
-	/*
-	  if (ch->in_room != NOWHERE)
-	  {
-	    logit(LOG_DEBUG,
-	          "char_to_room: char is not in NOWHERE (%s, room rnum #%d [vnum %d], trying to move to rnum %d [vnum %d])",
-	          J_NAME(ch), ch->in_room, world[ch->in_room].number, room,
-	          world[room].number);
-	  }
-	*/
+	if (ch->in_room != NOWHERE)
+	{
+		logit(LOG_DEBUG,
+		      "char_to_room: refusing duplicate insertion of %s still linked to rnum %d into rnum %d [vnum %d]",
+		      J_NAME(ch), ch->in_room, room, world[room].number);
+		return FALSE;
+	}
 
 #if 0
   if (IS_BEING_SHADOWED(ch) && (dir > -1))

@@ -50,6 +50,7 @@
 #include "sound.h"
 #include "specs.prototypes.h"
 #include "spells.h"
+#include "enhance.h"
 #include "sql.h"
 #include "testcmd.h"
 #include "tether.h"
@@ -1102,7 +1103,8 @@ const char *command[MAX_CMD] = {
 	"jchat",
 	"redis",
 	"mixpoison",
-	"\n" /* MAX_CMD = 853, MAX_CMD_LIST = 1000 */
+	"divineclaim",
+	"\n" /* MAX_CMD = 855, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = {"in", "from", "with", "the", "on", "at", "to", "\n"};
@@ -2556,6 +2558,7 @@ void assign_command_pointers(void)
 	CMD_N(CMD_HARDCORE, STAT_DEAD + POS_PRONE, displayHardCore, 0, FALSE);
 	CMD_N(CMD_LEADERBOARD, STAT_DEAD + POS_PRONE, displayLeader, 0, FALSE);
 	CMD_N(CMD_SOULBIND, STAT_DEAD + POS_PRONE, do_soulbind, 0, TRUE);
+	CMD_N(CMD_DIVINECLAIM, STAT_DEAD + POS_PRONE, do_divineclaim, 0, TRUE);
 	CMD_N(CMD_REFINE, STAT_DEAD + POS_PRONE, do_refine, 0, TRUE);
 	CMD_N(CMD_RELIC, STAT_DEAD + POS_PRONE, displayRelic, 0, FALSE);
 	CMD_N(CMD_EPIC, STAT_DEAD + POS_PRONE, do_epic, 0, FALSE);

@@ -28,6 +28,7 @@
 #include "files.h"
 #include "gmcp.h"
 #include "guard.h"
+#include "hardcore_config.h"
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
@@ -373,7 +374,7 @@ int calculate_hitpoints(P_char ch)
 
 	if (IS_HARDCORE(ch))
 	{
-		hps += (2 * lvl);
+		hps += (hardcore_config_get()->bonus_hp_per_level * lvl);
 	}
 
 	/* This calculates the HP bonus from the toughness
@@ -600,7 +601,7 @@ int calculate_hitpoints2(P_char ch)
 	newbie = MAX(0, 10 - level);
 
 	// Calculate hardcore bonus.
-	hardcore = IS_HARDCORE(ch) ? (2 * level) : 0;
+	hardcore = IS_HARDCORE(ch) ? (hardcore_config_get()->bonus_hp_per_level * level) : 0;
 
 	/* If you want to redo hps in some way, this is a good way to test what's changing and how much.
 	 * The old_bnus and new_bonus are just the base hps relating to current and racial con.

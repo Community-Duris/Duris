@@ -48,6 +48,13 @@ checks.append(("worker start paths never clear quarantine via pthread_kill ESRCH
 checks.append(("worker stop paths join quarantined generations even after is_running clears",
                all(f"was_running = persistence_{domain}_event_worker_is_running ||" in queue_c
                    for domain in ["item", "scalar", "large"])))
+checks.append(("worker_running ESRCH quarantines instead of clearing is_running",
+               queue_c.count("ESRCH is not a safe reap proof") >= 3 and
+               all(bad not in queue_c for bad in [
+                   "if (kill_rc == ESRCH)\n      {\n        persistence_item_event_worker_is_running = 0;",
+                   "if (kill_rc == ESRCH)\n      {\n        persistence_scalar_event_worker_is_running = 0;",
+                   "if (kill_rc == ESRCH)\n      {\n        persistence_large_event_worker_is_running = 0;",
+               ])))
 
 failed = [name for name, ok in checks if not ok]
 for name, ok in checks:

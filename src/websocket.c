@@ -45,34 +45,72 @@ static const char *skip_header_value(const char *line, size_t header_len)
 	return value;
 }
 
-/* send for non-blocking sockets, fail fast on wouldblock */
-static int websocket_send_all(int fd, const void *buf, size_t len)
+/* Flush queued WebSocket bytes on a non-blocking socket. Temporary
+ * backpressure is not a connection failure; the writable select phase will
+ * call this again. */
+int websocket_flush_output(struct descriptor_data *d)
 {
-	const unsigned char *ptr       = (const unsigned char *)buf;
-	size_t               remaining = len;
+	if (!d || d->descriptor < 0)
+		return -1;
 
-	while (remaining > 0)
+	while (d->ws_output_offset < d->ws_output_len)
 	{
-		ssize_t sent = send(fd, ptr, remaining, MSG_NOSIGNAL);
+		ssize_t sent = send(d->descriptor,
+		                    d->ws_output_buffer + d->ws_output_offset,
+		                    d->ws_output_len - d->ws_output_offset,
+		                    MSG_NOSIGNAL);
 		if (sent > 0)
 		{
-			ptr += sent;
-			remaining -= sent;
+			d->ws_output_offset += (size_t)sent;
+			continue;
 		}
-		else if (sent < 0)
-		{
-			if (errno == EINTR)
-			{
-				continue;
-			}
-			return -1;
-		}
-		else
-		{
-			return -1;
-		}
+		if (sent < 0 && errno == EINTR)
+			continue;
+		if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			return 0;
+		return -1;
 	}
+
+	free(d->ws_output_buffer);
+	d->ws_output_buffer = NULL;
+	d->ws_output_len = 0;
+	d->ws_output_offset = 0;
 	return 0;
+}
+
+static int websocket_queue_output(struct descriptor_data *d, const void *buf, size_t len)
+{
+	unsigned char *resized;
+	size_t pending;
+
+	if (!d || !buf || len == 0 || d->descriptor < 0)
+		return len == 0 ? 0 : -1;
+
+	pending = d->ws_output_len - d->ws_output_offset;
+	if (len > WS_MAX_PENDING_OUTPUT - pending)
+	{
+		statuslog(56,
+		          "WebSocket: closing slow client %s; pending output would exceed %d bytes",
+		          d->host,
+		          WS_MAX_PENDING_OUTPUT);
+		return -1;
+	}
+
+	if (d->ws_output_offset > 0 && pending > 0)
+		memmove(d->ws_output_buffer,
+		        d->ws_output_buffer + d->ws_output_offset,
+		        pending);
+	d->ws_output_len = pending;
+	d->ws_output_offset = 0;
+
+	resized = (unsigned char *)realloc(d->ws_output_buffer, pending + len);
+	if (!resized)
+		return -1;
+	d->ws_output_buffer = resized;
+	memcpy(d->ws_output_buffer + pending, buf, len);
+	d->ws_output_len = pending + len;
+
+	return websocket_flush_output(d);
 }
 
 /* base64 encoding helper */
@@ -354,10 +392,7 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 				{
 					strncpy(d->host, client_ip, sizeof(d->host) - 1);
 					d->host[sizeof(d->host) - 1] = '\0';
-					/* hostname lookup */
-					char cmd[256];
-					snprintf(cmd, sizeof(cmd), "host %s | sed -e 's/.*pointer\\ \\(.*\\)\\./\\1/g;t;d' > lib/etc/hosts/%d &", d->host, d->descriptor);
-					system(cmd);
+					resolve_descriptor_hostname_async(d->host, d->descriptor);
 				}
 			}
 		}
@@ -412,7 +447,7 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 		               accept_key);
 	}
 
-	if (websocket_send_all(d->descriptor, response, len) < 0)
+	if (websocket_queue_output(d, response, len) < 0)
 	{
 		return -1;
 	}
@@ -610,7 +645,7 @@ static int websocket_send_frame(struct descriptor_data *d, int opcode, const voi
 		return -1;
 	}
 
-	result = websocket_send_all(d->descriptor, frame, frame_len);
+	result = websocket_queue_output(d, frame, frame_len);
 
 	if (result == 0 && d->character && d->character->only.pc)
 		d->character->only.pc->send_data += frame_len;
@@ -893,6 +928,14 @@ void websocket_free(struct descriptor_data *d)
 		free(d->ws_fragment_buffer);
 		d->ws_fragment_buffer = NULL;
 		d->ws_fragment_len    = 0;
+	}
+
+	if (d->ws_output_buffer)
+	{
+		free(d->ws_output_buffer);
+		d->ws_output_buffer = NULL;
+		d->ws_output_len = 0;
+		d->ws_output_offset = 0;
 	}
 
 	if (d->ws_message_buffer)

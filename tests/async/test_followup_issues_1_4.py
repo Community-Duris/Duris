@@ -32,9 +32,10 @@ shutdown_end = ship.index("struct ShipData *new_ship", shutdown_start)
 shutdown_body = ship[shutdown_start:shutdown_end]
 assert 'panic_corruption("shutdown_ships", "commit failed after rollback")' in shutdown_body
 
-# Room-exit callbacks can veto removal, and locker save failure uses that contract.
-assert "if ((*world[ch->in_room].funct)(ch->in_room, ch, (-75), NULL))\n\t\t\treturn;" in handler
+# Room-exit callbacks may veto only with the explicit sentinel; ordinary legacy
+# TRUE results must remain notifications rather than removal vetoes.
+assert "CMD_FROMROOM, NULL) == ROOM_PROC_LEAVE_VETO" in handler
 assert "static bool locker_handle_leave" in locker
-assert "if (!locker_handle_leave(ch, pLocker, room, troom))\n\t\t\treturn TRUE;" in locker
+assert "if (!locker_handle_leave(ch, pLocker, room, troom))\n\t\t\treturn ROOM_PROC_LEAVE_VETO;" in locker
 
 print("locker bounds, auction row lock, ship commit failure, and locker exit veto checks passed")

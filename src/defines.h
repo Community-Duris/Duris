@@ -235,6 +235,7 @@ typedef unsigned int uint;
 #define ITEM2_CRAFTED     BIT_15
 #define ITEM2_QUESTITEM   BIT_16
 #define ITEM2_TRANSPARENT BIT_17 /* Item shows contents when looked at */
+#define ITEM2_ACCOUNT_BOUND BIT_18 /* Account-bound divine reward */
 
 /* Bitvector for 'anti_flags' */
 /*

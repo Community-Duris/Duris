@@ -26,6 +26,8 @@
 #include "ctf.h"
 #include "defines.h"
 #include "epic_bonus.h"
+#include "frag_cap_config.h"
+#include "hardcore_config.h"
 #include "files.h"
 #include "gmcp.h"
 #include "justice.h"
@@ -787,7 +789,7 @@ void lose_level(P_char ch)
 
 	if (GET_LEVEL(ch) < 2)
 		return;
-	if (IS_HARDCORE(ch) && (GET_LEVEL(ch) > 49))
+	if (IS_HARDCORE(ch) && !hardcore_config_level_loss_allowed(GET_LEVEL(ch)))
 		return;
 
 	send_to_char("&=LRYou lose a level!&N\r\n", IS_SET(ch->specials.act, PLR_MORPH) ? ch->only.pc->switched : ch);
@@ -1101,6 +1103,9 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		return 0;
 	}
+
+	if (IS_HARDCORE(ch))
+		levelcap = frag_cap_config_hardcore_level_cap(levelcap);
 
 	// debug("check 1 exp (%d:%d).", type, value);
 	if (CHAR_IN_ARENA(ch) || IS_ROOM(ch->in_room, ROOM_GUILD | ROOM_SAFE))
@@ -1469,7 +1474,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		// Hardcores should level via exp only. - Drannak 11/30/12
 		// Liches can lvl exp only too since they are solo on 3rd racewar side (again). 7/7/2015
-		if ((IS_HARDCORE(ch) || GET_RACE(ch) == RACE_LICH) && (GET_LEVEL(ch) < levelcap))
+		if (((IS_HARDCORE(ch) && hardcore_config_get()->level_exp_bypass_property_cap) || GET_RACE(ch) == RACE_LICH) && (GET_LEVEL(ch) < levelcap))
 		{
 			for (int i = GET_LEVEL(ch) + 1; (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
 			{

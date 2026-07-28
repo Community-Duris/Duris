@@ -21,6 +21,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -58,6 +59,14 @@
 #include "ships.h"
 #include "siege.h"
 #include "spells.h"
+#include "enhance.h"
+#include "crafting.h"
+#include "account_reward_config.h"
+#include "frag_cap_config.h"
+#include "hardcore_config.h"
+#include "random_equipment_config.h"
+#include "creation_availability_config.h"
+#include "material_rarity.h"
 #include "sql.h"
 #include "sql_player.h"
 #include "telnet.h"
@@ -148,6 +157,8 @@ int    no_specials       = 0;
 int    override          = 1;
 int    pulse             = 0;
 bool   after_events_call = FALSE;
+const char *material_rarity_report_dir = NULL;
+bool        material_rarity_report_mode = FALSE;
 int    _reboot           = 0;
 int    _copyover         = 0;
 int    _autoboot         = 0;
@@ -236,6 +247,17 @@ int main(int argc, char **argv)
 	// check for --migrate-all before regular arg parsing
 	for (int i = 1; i < argc; i++)
 	{
+		if (!strncmp(argv[i], "--material-rarity-report", strlen("--material-rarity-report")))
+		{
+			const char *value = argv[i] + strlen("--material-rarity-report");
+			if (*value == '=')
+				value++;
+			else if (!*value && i + 1 < argc)
+				value = argv[++i];
+			material_rarity_report_dir = *value ? value : "material-rarity-report";
+			material_rarity_report_mode = TRUE;
+			break;
+		}
 		if (!strcmp(argv[i], "--migrate-all"))
 		{
 			migrate_mode = 1;
@@ -245,6 +267,13 @@ int main(int argc, char **argv)
 
 	while ((pos < argc) && (*(argv[pos]) == '-'))
 	{
+		if (!strncmp(argv[pos], "--material-rarity-report", strlen("--material-rarity-report")))
+		{
+			if (argv[pos][strlen("--material-rarity-report")] == '\0' && pos + 1 < argc)
+				pos++;
+			pos++;
+			continue;
+		}
 		switch (*(argv[pos] + 1))
 		{
 			case 'f':
@@ -334,6 +363,12 @@ int main(int argc, char **argv)
 	if (chdir(dir) < 0)
 	{
 		fatal_boot_error("comm", "chdir failed: %s", strerror(errno));
+	}
+	if (material_rarity_report_mode)
+	{
+		boot_material_rarity_objects(mini_mode);
+		write_material_rarity_report(material_rarity_report_dir);
+		return 0;
 	}
 	logit(LOG_STATUS, "Running game on port %d.", port);
 
@@ -509,13 +544,34 @@ void run_the_game(int port, int sslport)
 		fprintf(stderr, "-- Loading alliances\r\n");
 		load_alliances();
 
-	#ifdef SIEGE_ENABLED
+		fprintf(stderr, "-- Booting enhancement system\r\n");
+		boot_enhancement_system();
+
+		fprintf(stderr, "-- Booting crafting system\r\n");
+		boot_crafting_system();
+
+		fprintf(stderr, "-- Loading random equipment configuration\r\n");
+		boot_random_equipment_config();
+
+		fprintf(stderr, "-- Loading frag-cap configuration\r\n");
+		boot_frag_cap_config();
+
+		fprintf(stderr, "-- Loading account reward configuration\r\n");
+		boot_account_reward_config();
+
+		fprintf(stderr, "-- Loading Hardcore configuration\r\n");
+		boot_hardcore_config();
+
+		fprintf(stderr, "-- Loading creation availability configuration\r\n");
+		boot_creation_availability_config();
+
+#ifdef SIEGE_ENABLED
 		fprintf(stderr, "-- Loading town data\r\n");
 		init_towns();
 
 		fprintf(stderr, "-- Loading siege data\r\n");
 		init_siege();
-	#endif
+#endif
 
 		// This guarentees that files exist for reading.
 		fprintf(stderr, "-- Touching leaderboard\r\n");
@@ -655,6 +711,31 @@ static void check_section_time(struct timespec *start, struct timespec *end, con
     logit(LOG_EXIT, "SLOW SECTION: %s took %ld ms", name, elapsed);
 }
 
+#define MAX_ACCEPTS_PER_PULSE 32
+
+static int drain_new_connections(int listener, int conn_type, const char *label)
+{
+	int accepted_count = 0;
+
+	for (int attempt = 0; attempt < MAX_ACCEPTS_PER_PULSE; attempt++)
+	{
+		if (new_descriptor(listener, conn_type) == 0)
+		{
+			accepted_count++;
+			continue;
+		}
+		if (errno == EINTR)
+		{
+			attempt--;
+			continue;
+		}
+		if (errno != EAGAIN && errno != EWOULDBLOCK)
+			logit(LOG_COMM, "%s accept failed: %s", label, strerror(errno));
+		break;
+	}
+	return accepted_count;
+}
+
 void game_loop(int port, int sslport)
 {
 	P_char                t_ch = NULL;
@@ -670,6 +751,8 @@ void game_loop(int port, int sslport)
 	sigset_t              mask, oldset;
 	int                   s, S;
 	int                   WS; /* WebSocket listener socket */
+	int                   accept_debug = getenv("DURIS_ACCEPT_DEBUG") != NULL;
+	unsigned long         accept_debug_pulse = 0;
 
 	sentbytes         = 0;
 	recivedbytes      = 0;
@@ -892,7 +975,18 @@ void game_loop(int port, int sslport)
 
 		sigprocmask(SIG_SETMASK, &mask, &oldset);
 
-		if (select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time) < 0)
+		int select_result = select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time);
+		if (accept_debug && ((++accept_debug_pulse % 20) == 0 || FD_ISSET(s, &input_set)))
+		{
+			logit(LOG_STATUS,
+			      "ACCEPT DEBUG: pulse=%lu listener=%d select_result=%d listener_ready=%d descriptors=%d",
+			      accept_debug_pulse,
+			      s,
+			      select_result,
+			      FD_ISSET(s, &input_set) ? 1 : 0,
+			      used_descs);
+		}
+		if (select_result < 0)
 		{
 			perror("Select poll");
 			// bad file descriptor - find and nuke it so we dont loop forever
@@ -931,18 +1025,11 @@ void game_loop(int port, int sslport)
 
 		/* Respond to whatever might be happening */
 
-		/* New connection? */
-		if (FD_ISSET(s, &input_set))
-			if (new_descriptor(s, 0) < 0)
-				perror("New connection");
-		/* New secure connection? */
-		if (FD_ISSET(S, &input_set))
-			if (new_descriptor(S, 1) < 0)
-				perror("New connection");
-		/* New WebSocket connection? */
-		if (WS >= 0 && FD_ISSET(WS, &input_set))
-			if (new_descriptor(WS, 2) < 0)
-				perror("New WebSocket connection");
+		/* Nonblocking accept is the authoritative readiness check. */
+		drain_new_connections(s, 0, "Telnet");
+		drain_new_connections(S, 1, "SSL");
+		if (WS >= 0)
+			drain_new_connections(WS, 2, "WebSocket");
 
 		/* kick out the freaky folks */
 		for (point = descriptor_list; point; point = next_point)
@@ -1148,6 +1235,20 @@ void game_loop(int port, int sslport)
 			if (point->connected == CON_SSLNEGO)
 				continue;
 
+			/* Drain WebSocket bytes retained after a partial write/EAGAIN before
+			 * framing additional application output for this descriptor. */
+			if (point->websocket && point->ws_output_offset < point->ws_output_len)
+			{
+				if (websocket_flush_output(point) < 0)
+				{
+					point->write_failed = 1;
+					close_socket(point);
+					continue;
+				}
+				if (point->ws_output_offset < point->ws_output_len)
+					continue;
+			}
+
 			if (process_output(point) < 0)
 			{
 				close_socket(point);
@@ -1221,6 +1322,9 @@ void game_loop(int port, int sslport)
 		{
 			epic_zone_balance();
 		}
+
+		if (!(pulse % (WAIT_SEC * 60)))
+			sql_check_level_cap_periodic();
 
 		if (!(pulse % (WAIT_SEC * 60)))
 			boon_maintenance();
@@ -1771,10 +1875,13 @@ int init_socket(int port)
 		close(s);
 		exit(1);
 	}
-	listen(s, 40); /*
-	                * if new connects still lockup, raise the
-	                * 50.  JAB
-	                */
+	if (listen(s, SOMAXCONN) < 0)
+	{
+		logit(LOG_EXIT, "listen failed");
+		close(s);
+		exit(1);
+	}
+	nonblock(s);
 	return (s);
 }
 
@@ -1788,10 +1895,7 @@ int new_connection(int s)
 	getsockname(s, (struct sockaddr *)&isa, (socklen_t *)&i);
 
 	if ((t = accept(s, (struct sockaddr *)&isa, (socklen_t *)&i)) < 0)
-	{
-		perror("Accept");
 		return (-1);
-	}
 	nonblock(t);
 	i = 1;
 	setsockopt(t, SOL_TCP, TCP_NODELAY, &i, sizeof(i));
@@ -2100,6 +2204,105 @@ static int parse_proxy_protocol(int desc, char *real_ip, size_t ip_len)
 	return 0;
 }
 
+struct hostname_lookup_request
+{
+	char address[INET6_ADDRSTRLEN];
+	int  descriptor;
+};
+
+#define MAX_HOSTNAME_LOOKUP_WORKERS 8
+static pthread_mutex_t hostname_lookup_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int hostname_lookup_workers = 0;
+
+static void *hostname_lookup_worker(void *arg)
+{
+	struct hostname_lookup_request *request = (struct hostname_lookup_request *)arg;
+	struct addrinfo hints, *result = NULL;
+	char hostname[NI_MAXHOST];
+	char temp_path[128], final_path[128];
+	FILE *f;
+
+	bzero(&hints, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_NUMERICHOST;
+
+	if (getaddrinfo(request->address, NULL, &hints, &result) == 0)
+	{
+		if (getnameinfo(result->ai_addr, result->ai_addrlen, hostname, sizeof(hostname), NULL, 0, NI_NAMEREQD) == 0)
+		{
+			snprintf(temp_path,
+			         sizeof(temp_path),
+			         "lib/etc/hosts/.%d.%s.%lu.tmp",
+			         request->descriptor,
+			         request->address,
+			         (unsigned long)pthread_self());
+			snprintf(final_path, sizeof(final_path), "lib/etc/hosts/%d.%s", request->descriptor, request->address);
+			f = fopen(temp_path, "w");
+			if (f != NULL)
+			{
+				int write_ok = fprintf(f, "%s\n", hostname) >= 0;
+				int close_ok = fclose(f) == 0;
+				if (write_ok && close_ok)
+					rename(temp_path, final_path);
+			}
+		}
+		freeaddrinfo(result);
+	}
+
+	pthread_mutex_lock(&hostname_lookup_mutex);
+	hostname_lookup_workers--;
+	pthread_mutex_unlock(&hostname_lookup_mutex);
+	free(request);
+	return NULL;
+}
+
+void resolve_descriptor_hostname_async(const char *address, int descriptor)
+{
+	struct hostname_lookup_request *request;
+	pthread_t thread;
+	pthread_attr_t attr;
+
+	request = (struct hostname_lookup_request *)calloc(1, sizeof(*request));
+	if (request == NULL)
+		return;
+
+	pthread_mutex_lock(&hostname_lookup_mutex);
+	if (hostname_lookup_workers >= MAX_HOSTNAME_LOOKUP_WORKERS)
+	{
+		pthread_mutex_unlock(&hostname_lookup_mutex);
+		free(request);
+		return;
+	}
+	hostname_lookup_workers++;
+	pthread_mutex_unlock(&hostname_lookup_mutex);
+
+	strncpy(request->address, address, sizeof(request->address) - 1);
+	request->descriptor = descriptor;
+	{
+		char stale_path[128];
+		snprintf(stale_path, sizeof(stale_path), "lib/etc/hosts/%d.%s", descriptor, request->address);
+		unlink(stale_path);
+	}
+	if (pthread_attr_init(&attr) != 0)
+	{
+		pthread_mutex_lock(&hostname_lookup_mutex);
+		hostname_lookup_workers--;
+		pthread_mutex_unlock(&hostname_lookup_mutex);
+		free(request);
+		return;
+	}
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (pthread_create(&thread, &attr, hostname_lookup_worker, request) != 0)
+	{
+		pthread_mutex_lock(&hostname_lookup_mutex);
+		hostname_lookup_workers--;
+		pthread_mutex_unlock(&hostname_lookup_mutex);
+		free(request);
+	}
+	pthread_attr_destroy(&attr);
+}
+
 int new_descriptor(int s, int conn_type)
 {
 	P_desc             newd;
@@ -2113,9 +2316,21 @@ int new_descriptor(int s, int conn_type)
 	if ((desc = new_connection(s)) < 0)
 		return (-1);
 
+	if (desc >= FD_SETSIZE)
+	{
+		logit(LOG_COMM, "Accepted descriptor %d exceeds FD_SETSIZE %d; closing connection.", desc, FD_SETSIZE);
+		shutdown(desc, 2);
+		close(desc);
+		return (0);
+	}
+
 	/* SSL connection - initialize TLS */
 	if (conn_type == 1 && !(sslses = ssl_new(desc)))
+	{
+		shutdown(desc, 2);
+		close(desc);
 		return 0; // can legitimately fail if client sends garbage
+	}
 
 	used_descs++;
 
@@ -2319,8 +2534,7 @@ int new_descriptor(int s, int conn_type)
 	// newd->connected = CON_HOST_LOOKUP;
 	newd->wait = 1;
 	strncpy(newd->host, Gbuf1, 50);
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "host %s | sed -e 's/.*pointer\\ \\(.*\\)\\./\\1/g;t;d' > lib/etc/hosts/%d &", strip_ansi(newd->host).c_str(), desc);
-	system(Gbuf1);
+	resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
 	*newd->host2              = '\0';
 	newd->prompt_mode         = FALSE;
 	*newd->buf                = '\0';
@@ -3015,7 +3229,12 @@ int process_input(P_desc t)
 		{
 			int consumed = parse_telnet_options(t, buf + i, len - i);
 			if (consumed <= 0)
-				goto incomplete; // partial; need to wait for more
+			{
+				/* Preserve a fragmented Telnet command for the next socket read. */
+				memmove(bp, buf + i, len - i);
+				bp += len - i;
+				goto incomplete;
+			}
 			i += consumed - 1;
 			break; /* prevent fall-through to backspace handler */
 		}

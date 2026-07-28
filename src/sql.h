@@ -74,6 +74,7 @@ bool sql_load_player_items(P_char ch);
 int  sql_level_cap(int racewar_side);
 // void sql_save_progress( int pid, int delta, const char *type );
 void sql_modify_frags(P_char ch, int gain);
+void sql_check_level_cap_periodic(void);
 void sql_save_pkill(P_char ch, P_char victim);
 void sql_webinfo_toggle(P_char ch);
 void sql_update_level(P_char ch);
@@ -162,10 +163,6 @@ void zone_trophy_update();
 #define QUESTLOG   "quest"
 #define EXPLOG     "exp"
 #define CONNECTLOG "connect"
-
-#define FRAG_LEVEL_RATIO      0.429
-#define FRAGS_TO_LEVEL(frags) ((int)(frags / FRAG_LEVEL_RATIO) + 25)
-#define LEVEL_TO_FRAGS(level) ((level <= 25) ? 0 : ((float)(level - 25) * FRAG_LEVEL_RATIO))
 
 void sql_log(P_char ch, char *kind, char *format, ...);
 void sql_log_player_login(P_char ch, const char *status);

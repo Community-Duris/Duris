@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+#
+# Filesystem half of a season/pwipe for flat player-state directories.
+# Invoked by cycle_mud.sh after sql_pwipe succeeds (RESULT==55).
+#
+# Design:
+#  - Fail closed: article missing or any rm failure exits non-zero.
+#  - Never uses unscoped wild-rm of the whole repo.
+#  - Clears only known season-scoped legacy pfile trees under Players/
+#    and side trees Ships/.
+#  - Preserves Backup/ trees as archives relative to wipe content.
+#
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$ROOT"
+
+echo "wipe_it_all: starting filesystem season wipe from ${ROOT}"
+
+if [ ! -d "Players" ]; then
+  echo "ERROR: Players/ directory missing; refusing filesystem wipe" >&2
+  exit 1
+fi
+
+# Always keep an archive table of post-tournament backups; do not wipe Backup itself.
+# Kill season letter pfile trees (a-z) and known side stores.
+WIPED=0
+
+wipe_tree() {
+  local path="$1"
+  if [ ! -e "$path" ]; then
+    echo "wipe_it_all: skip missing ${path}"
+    return 0
+  fi
+  if [ -d "$path" ]; then
+    # Delete contents but keep the directory when it is a primary bucket.
+    find "$path" -mindepth 1 -maxdepth 1 \( -type f -o -type d -o -type l \) \
+      ! -name '.gitignore' \
+      -print0 | while IFS= read -r -d '' entry; do
+        rm -rf -- "$entry" || {
+          echo "ERROR: failed removing ${entry}" >&2
+          exit 1
+        }
+      done
+  else
+    rm -f -- "$path" || {
+      echo "ERROR: failed removing ${path}" >&2
+      exit 1
+    }
+  fi
+  WIPED=$((WIPED + 1))
+  echo "wipe_it_all: cleared ${path}"
+}
+
+# Per-letter pfile buckets used by legacy tools (Players/a .. Players/z)
+for letter in {a..z}; do
+  if [ -d "Players/${letter}" ]; then
+    wipe_tree "Players/${letter}"
+  fi
+done
+
+# Known season-scoped player rainfall basins under Players/
+for d in Corpses Justice SavedItems Kingdoms ShopKeepers Assocs Shapechange Tradeskills House; do
+  if [ -e "Players/${d}" ]; then
+    wipe_tree "Players/${d}"
+  else
+    mkdir -p "Players/${d}"
+    echo "wipe_it_all: created empty Players/${d}"
+  fi
+done
+
+# Ships flat files live next to the binary in historical layouts.
+if [ -d "Ships" ]; then
+  wipe_tree "Ships"
+else
+  mkdir -p Ships
+  echo "wipe_it_all: created empty Ships/"
+fi
+
+# Optional corpse-adjacent store at repo root if present
+if [ -d "Corpses" ]; then
+  wipe_tree "Corpses"
+fi
+
+# Ensure directory skeletons used by tools stay present after wipe.
+mkdir -p Players/Backup Players/Corpses Players/Justice Players/SavedItems \
+         Players/Kingdoms Players/ShopKeepers Players/Assocs \
+         Players/Shapechange Players/Tradeskills Players/House Ships
+
+echo "wipe_it_all: finished filesystem wipe (sections touched=${WIPED})"
+exit 0

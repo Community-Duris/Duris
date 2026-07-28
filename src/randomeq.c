@@ -27,6 +27,8 @@
 #include "mm.h"
 #include "new_combat_def.h"
 #include "objmisc.h"
+#include "random_equipment_config.h"
+#include "hardcore_config.h"
 #include "sound.h"
 #include "spells.h"
 #include "vnum.obj.h"
@@ -655,6 +657,7 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	int i;
 	// Normally, we'd do char_lvl and mob_lvl as ints, but that would require a lot of casting.
 	float char_lvl, mob_lvl, chance, char_mob_lvl_div, luck_divisor;
+	const struct random_equipment_config *config = random_equipment_config_get();
 
 	// int trophy_mod;
 
@@ -681,13 +684,13 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 		return FALSE;
 	}
 
-	if ((char_lvl - mob_lvl) > 10.)
+	if ((char_lvl - mob_lvl) > config->drop_max_level_gap)
 	{
 		return FALSE;
 	}
 
 	// Neutrals get a 10% bonus chance for drops.
-	if (IS_PC(ch) && (GET_RACEWAR(ch) == RACEWAR_NEUTRAL) && !number(0, 9))
+	if (IS_PC(ch) && (GET_RACEWAR(ch) == RACEWAR_NEUTRAL) && !number(0, config->drop_neutral_roll_max))
 		return TRUE;
 
 	/* Not worth the time to calculate.
@@ -792,7 +795,7 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	{
 		char_mob_lvl_div = .1;
 	}
-	luck_divisor = get_property("random.drop.luck.divisor", 4.);
+	luck_divisor = config->drop_luck_divisor;
 
 	/* Start with a 50% chance for even levels and 100 luck.
 	 * All of below assumes luck_divisor == 4.000:
@@ -804,39 +807,32 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	 *   At lvl 5 ch, mob lvl >= 15... hrm
 	 * Note: To change the 50% base chance, do not change the format of the function below,
 	 *   just change the 50 near the end to whatever base % you want.
-	 * You can change the random.drop.luck.divisor to whatever without changing the base chance
+	 * You can change drop.luck.divisor in lib/random_equipment.cfg without changing the base chance
 	 *   with the equation in this format.
 	 */
-	chance = (GET_C_LUK(ch) / luck_divisor) * char_mob_lvl_div + (50. - 100. / luck_divisor);
-	// Add up to or subtract up to 5 percentage points (rl luck).
-	chance += (float)number(-5, 5);
+	chance = (GET_C_LUK(ch) / luck_divisor) * char_mob_lvl_div + (config->drop_base_chance - 100. / luck_divisor);
+	chance += (float)number(config->drop_jitter_min, config->drop_jitter_max);
 
-	// Add up to 10% for low lvl chars.
-	if (char_lvl < get_property("random.drop.increase.for.below.lvl", 26.))
+	if (char_lvl < config->drop_low_level_threshold)
 	{
-		chance += (float)number(0, get_property("random.drop.increase.for.below.lvl.perc", 10));
+		chance += (float)number(0, config->drop_low_level_bonus_max);
 	}
 
-	// Boost for elite npcs
 	if (IS_ELITE(mob))
-		chance += (float)number(5, 15);
+		chance += (float)number(config->drop_elite_bonus_min, config->drop_elite_bonus_max);
 
-	// Multiplier for hardcore
 	if (IS_HARDCORE(ch))
 	{
-		chance *= get_property("random.drop.modifier.hardcore", 1.500f);
+		chance *= hardcore_config_get()->bonus_random_equipment_multiplier;
 	}
 
-	// chance currently somewhere around 45-80% (% = min for 100 luck equal lvls above 25 non-elite,
-	//   and 80% = max for 100 luck equal lvls below 26 elite mob).
-	// 45-80% * {10|3} / 100 = {4.5-8% for piece|1.35-2.4% for equipment}
 	if (piece)
 	{
-		chance *= get_property("random.drop.piece.percentage", 10.0f) / 100.0;
+		chance *= config->drop_piece_percentage / 100.0;
 	}
 	else
 	{
-		chance *= get_property("random.drop.equip.percentage", 3.0f) / 100.0;
+		chance *= config->drop_equipment_percentage / 100.0;
 	}
 
 	/* Disabled since no trophy atm.
@@ -862,6 +858,7 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	char              o_long[MAX_STRING_LENGTH];
 	char              owner[MAX_STRING_LENGTH];
 	float             weight;
+	const struct random_equipment_config *config = random_equipment_config_get();
 
 	// Load the random item blank
 	if (object_type == -1)
@@ -901,8 +898,8 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	// Make sure you understand this value before ya change it.
 	// howgood runs from 1 to 62 to start.
 	howgood = (int)((GET_LEVEL(killer) + GET_LEVEL(mob)) / 2.0);
-	// howgood is then changed by the property %.
-	howgood = (int)(howgood * (get_property("random.drop.modifier.quality", 80.000) / 100.0));
+	// howgood is then changed by the configured seasonal multiplier.
+	howgood = (int)(howgood * config->quality_level_multiplier);
 
 	if (material_type == -1)
 	{
@@ -1116,7 +1113,7 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	// Weight range = 0 - 242 .. wow 242 for an (unearthly or brutal) adamantium platemail
 	weight = (slot_data[slot].base_weight * prefix_data[prefix].weight_mod * material_data[material].weight_mod);
 	// This brings the crazy platemail down to 107.
-	weight = (weight + 2.0 * slot_data[slot].base_weight) / 3.0;
+	weight = (weight + config->weight_base_multiplier * slot_data[slot].base_weight) / config->weight_divisor;
 	// If it's between .1 and 1, round up.
 	obj->weight = ((weight < 1.0) && (weight > 0.1)) ? 1 : weight;
 
@@ -1124,25 +1121,20 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	// Min: (( 5 * 0.75 * 0.15) + (2 *  5)) / 3 = 10.5625 / 3 = 3
 	// Max: ((11 * 1.21 * 5.00) + (2 * 11)) / 3 = 88.55 / 3 = 29.
 
-	int maxValue = GET_LEVEL(mob) > 60 ? 8 : GET_LEVEL(mob) > 49 ? 6 : GET_LEVEL(mob) > 35 ? 5 : 4;
+	int maxValue = random_equipment_stat_max(GET_LEVEL(mob));
 	// Item Attributes
-	if (!number(0, 5) && (GET_LEVEL(mob) > 49))
+	if (!number(0, config->stat_tertiary_roll_max) && (GET_LEVEL(mob) > config->stat_tertiary_min_level))
 	{
-		// (10 to 65) * (.5 to 1.5) * (.2 to 1.7) + (0 to 20)
-		// (10 * .5 * .2 + 0) to (65 * 1.5 * 1.7 + 20) = 1 to 185
-		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, 20));
-		// 1 to 185. When we divide by 30, we get 0 to 6.
-		obj = setprefix_obj(obj, number(value / 30, maxValue), 2);
+		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, config->stat_random_bonus_max));
+		obj = setprefix_obj(obj, number(MIN(value / config->stat_tertiary_divisor, maxValue), maxValue), 2);
 	}
-	if (!number(0, 2) && (GET_LEVEL(mob) > 20))
+	if (!number(0, config->stat_secondary_roll_max) && (GET_LEVEL(mob) > config->stat_secondary_min_level))
 	{
-		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, 20));
-		// 1 to 185. When we divide by 36, we get 0 to 5.
-		obj = setprefix_obj(obj, number(value / 36, maxValue), 1);
+		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, config->stat_random_bonus_max));
+		obj = setprefix_obj(obj, number(MIN(value / config->stat_secondary_divisor, maxValue), maxValue), 1);
 	}
-	value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, 20));
-	// 1 to 185. When we divide by 46, we get 0 to 4.
-	obj = setprefix_obj(obj, number(value / 46, maxValue), 0);
+	value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, config->stat_random_bonus_max));
+	obj = setprefix_obj(obj, number(MIN(value / config->stat_primary_divisor, maxValue), maxValue), 0);
 
 	obj->material = material_data[material].m_number;
 

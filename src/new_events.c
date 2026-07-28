@@ -9,8 +9,10 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <time.h>
 #ifndef _LINUX_SOURCE
 #include <sys/types.h>
 #endif
@@ -36,6 +38,8 @@
 
 #define MAX_FUNCTIONS       6000
 #define FUNCTION_NAMES_FILE "lib/misc/event_names"
+#define NEVENT_BUDGET_USEC_DEFAULT 25000L
+#define NEVENT_MAX_CALLBACKS_DEFAULT 1000L
 
 /*
  * internal variables
@@ -581,6 +585,89 @@ void nevent_from_char( P_nevent old_nevent )
 }
 */
 
+static long nevent_config_limit(const char *name, long default_value)
+{
+	const char *raw = getenv(name);
+	char *end = NULL;
+	long value;
+
+	if (!raw || !*raw)
+		return default_value;
+	value = strtol(raw, &end, 10);
+	if (!end || *end != '\0' || value < 0)
+	{
+		logit(LOG_STATUS, "Invalid %s='%s'; using %ld", name, raw, default_value);
+		return default_value;
+	}
+	return value;
+}
+
+static long nevent_budget_usec(void)
+{
+	static long configured = -1;
+	if (configured < 0)
+		configured = nevent_config_limit("DURIS_NEVENT_BUDGET_USEC", NEVENT_BUDGET_USEC_DEFAULT);
+	return configured;
+}
+
+static long nevent_max_callbacks(void)
+{
+	static long configured = -1;
+	if (configured < 0)
+		configured = nevent_config_limit("DURIS_NEVENT_MAX_CALLBACKS", NEVENT_MAX_CALLBACKS_DEFAULT);
+	return configured;
+}
+
+static long nevent_elapsed_us(const struct timespec *started, const struct timespec *finished)
+{
+	return (finished->tv_sec - started->tv_sec) * 1000000L + (finished->tv_nsec - started->tv_nsec) / 1000L;
+}
+
+/* Move only the unscanned suffix to the front of the next pulse. Leaving it
+ * in the current ring bucket would delay already-due work for a full cycle. */
+static long nevent_defer_suffix(P_nevent deferred_head)
+{
+	P_nevent event;
+	P_nevent deferred_tail;
+	P_nevent prior;
+	int next_pulse;
+	long deferred = 0;
+
+	if (!deferred_head)
+		return 0;
+
+	next_pulse = (pulse + 1) % PULSES_IN_TICK;
+	deferred_tail = ne_schedule_tail[pulse];
+	prior = deferred_head->prev_sched;
+	if (prior)
+		prior->next_sched = NULL;
+	else
+		ne_schedule[pulse] = NULL;
+	ne_schedule_tail[pulse] = prior;
+	deferred_head->prev_sched = NULL;
+
+	for (event = deferred_head; event; event = event->next_sched)
+	{
+		event->element = next_pulse;
+		deferred++;
+		if (event == deferred_tail)
+			break;
+	}
+
+	if (ne_schedule[next_pulse])
+	{
+		deferred_tail->next_sched = ne_schedule[next_pulse];
+		ne_schedule[next_pulse]->prev_sched = deferred_tail;
+	}
+	else
+	{
+		deferred_tail->next_sched = NULL;
+		ne_schedule_tail[next_pulse] = deferred_tail;
+	}
+	ne_schedule[next_pulse] = deferred_head;
+	return deferred;
+}
+
 // Execute events!
 void ne_events(void)
 {
@@ -588,6 +675,12 @@ void ne_events(void)
 	P_nevent    temp_event, next_event;
 	P_char      ch;
 	P_obj       obj;
+	struct timespec loop_started, callback_started, callback_finished, loop_finished;
+	long scanned = 0, executed = 0, slowest_us = 0, deferred = 0;
+	long budget_usec = nevent_budget_usec();
+	long max_callbacks = nevent_max_callbacks();
+	bool budget_exhausted = FALSE;
+	const char *slowest_name = "none";
 
 	if ((pulse < 0) || (pulse >= PULSES_IN_TICK))
 	{
@@ -599,35 +692,99 @@ void ne_events(void)
 		check_nevents();
 	}
 
+	clock_gettime(CLOCK_MONOTONIC, &loop_started);
 	PROFILE_START(event_loop);
 	for (current_nevent = ne_schedule[pulse]; current_nevent; current_nevent = next_event)
 	{
+		scanned++;
 		next_event = current_nevent->next_sched;
 
 		if (--(current_nevent->timer) > 0)
 		{
+			if (budget_usec > 0 && !(scanned % 64))
+			{
+				clock_gettime(CLOCK_MONOTONIC, &loop_finished);
+				budget_exhausted = nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec;
+			}
+			if (budget_exhausted && next_event)
+			{
+				deferred = nevent_defer_suffix(next_event);
+				break;
+			}
 			continue;
 		}
 
 		// If this event has a function to execute (hasn't been neutered)
 		if (current_nevent->func)
 		{
+			event_func_type callback_func = current_nevent->func;
+			const char *callback_name = get_function_name((void *)callback_func);
+			clock_gettime(CLOCK_MONOTONIC, &callback_started);
 #ifdef DO_PROFILE
-			event_func_type evf = current_nevent->func;
 			PROFILE_START(event_func);
-			(evf)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
+			(callback_func)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
 			PROFILE_END(event_func);
-			PROFILE_REGISTER_CALL(evf, event_func_profile_end - event_func_profile_beg)
+			PROFILE_REGISTER_CALL(callback_func, event_func_profile_end - event_func_profile_beg)
 #else
-			(current_nevent->func)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
+			(callback_func)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
 #endif
+			clock_gettime(CLOCK_MONOTONIC, &callback_finished);
+			executed++;
+			long callback_us = nevent_elapsed_us(&callback_started, &callback_finished);
+			if (callback_us > slowest_us)
+			{
+				slowest_us = callback_us;
+				slowest_name = callback_name;
+			}
 		}
 
 		clear_nevent(current_nevent);
 		mm_release(ne_dead_event_pool, current_nevent);
 		ne_event_counter--;
+
+		if (max_callbacks > 0 && executed >= max_callbacks)
+			budget_exhausted = TRUE;
+		if (budget_usec > 0)
+		{
+			clock_gettime(CLOCK_MONOTONIC, &loop_finished);
+			if (nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec)
+				budget_exhausted = TRUE;
+		}
+		if (budget_exhausted && next_event)
+		{
+			deferred = nevent_defer_suffix(next_event);
+			break;
+		}
 	}
+	current_nevent = NULL;
 	PROFILE_END(event_loop);
+	clock_gettime(CLOCK_MONOTONIC, &loop_finished);
+	long loop_us = nevent_elapsed_us(&loop_started, &loop_finished);
+	if (deferred > 0)
+	{
+		logit(LOG_STATUS,
+		      "NEVENT BUDGET: pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld slowest=%s slowest_us=%ld scheduled=%ld",
+		      pulse,
+		      loop_us,
+		      scanned,
+		      executed,
+		      deferred,
+		      slowest_name ? slowest_name : "unknown",
+		      slowest_us,
+		      ne_event_counter);
+	}
+	if (loop_us >= 50000)
+	{
+		logit(LOG_STATUS,
+		      "NEVENT SLOW: pulse=%d total_us=%ld scanned=%ld executed=%ld slowest=%s slowest_us=%ld scheduled=%ld",
+		      pulse,
+		      loop_us,
+		      scanned,
+		      executed,
+		      slowest_name ? slowest_name : "unknown",
+		      slowest_us,
+		      ne_event_counter);
+	}
 	count++;
 }
 
@@ -716,16 +873,19 @@ P_nevent get_next_scheduled_obj(P_nevent e, event_func func)
 	return NULL;
 }
 
+void ne_init_event_pool(void)
+{
+	pulse = 0;
+	memset(ne_schedule, 0, sizeof(ne_schedule));
+	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
+	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data), offsetof(struct nevent_data, next_sched), 11);
+}
+
 void ne_init_events(void)
 {
 	int j = 0, i = 0;
 
-	pulse = 0;
-
-	memset(ne_schedule, 0, sizeof(ne_schedule));
-	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
-
-	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data), offsetof(struct nevent_data, next_sched), 11);
+	ne_init_event_pool();
 
 	logit(LOG_STATUS, "assigning room specials events.");
 	for (j = 0; j < top_of_world; j++)

@@ -102,9 +102,19 @@ static pthread_cond_t  g_q_cv = PTHREAD_COND_INITIALIZER;
 static struct locker_async_job g_jobs[LOCKER_ASYNC_JOBS];
 static struct locker_async_result g_results[LOCKER_ASYNC_RESULTS];
 static int g_worker_running = 0;
+static int g_worker_created = 0;
 static int g_worker_stop = 0;
 static pthread_t g_worker_tid;
 static int g_inited = 0;
+
+static int locker_async_worker_available(void)
+{
+	int available;
+	pthread_mutex_lock(&g_q_mu);
+	available = g_worker_created && g_worker_running && !g_worker_stop;
+	pthread_mutex_unlock(&g_q_mu);
+	return available;
+}
 
 /* ---------------- slot helpers (main only) ---------------- */
 
@@ -706,7 +716,9 @@ static void *locker_async_worker_main(void *arg)
 	if (mysql_thread_init() != 0)
 	{
 		logit(LOG_FILE, "locker_async: mysql_thread_init failed");
+		pthread_mutex_lock(&g_q_mu);
 		g_worker_running = 0;
+		pthread_mutex_unlock(&g_q_mu);
 		return NULL;
 	}
 #endif
@@ -758,7 +770,9 @@ static void *locker_async_worker_main(void *arg)
 #ifndef __NO_MYSQL__
 	mysql_thread_end();
 #endif
+	pthread_mutex_lock(&g_q_mu);
 	g_worker_running = 0;
+	pthread_mutex_unlock(&g_q_mu);
 	return NULL;
 }
 
@@ -769,7 +783,7 @@ int locker_async_mark_dirty(P_char chLocker, P_char chUser, int terminal, const 
 	struct locker_async_slot *s;
 	const char *name;
 
-	if (!g_inited)
+	if (!g_inited || !locker_async_worker_available())
 		return 0;
 	if (!chLocker || !GET_NAME(chLocker))
 		return 0;
@@ -827,12 +841,28 @@ static P_char find_char_by_pid(int pid)
 static P_char find_locker_char_by_name(const char *name)
 {
 	P_char ch;
+	P_char found = NULL;
+	int matches = 0;
+
 	if (!name)
 		return NULL;
 	for (ch = character_list; ch; ch = ch->next)
-		if (GET_NAME(ch) && !str_cmp(GET_NAME(ch), name))
-			return ch;
-	return NULL;
+	{
+		if (!GET_NAME(ch) || str_cmp(GET_NAME(ch), name))
+			continue;
+		/* Prefer dedicated locker temporary chars (no real PID in play). */
+		matches++;
+		if (!found)
+			found = ch;
+		/* Prefer non-descriptor temporary locker avatars if present. */
+		if (!ch->desc && (!found || found->desc))
+			found = ch;
+	}
+	if (matches > 1)
+		logit(LOG_DEBUG,
+		      "locker_async: name lookup ambiguous name=%s matches=%d; using preferential temp/locker char",
+		      name, matches);
+	return found;
 }
 
 static void apply_result(struct locker_async_result *r)
@@ -840,6 +870,7 @@ static void apply_result(struct locker_async_result *r)
 	struct locker_async_slot *s = slot_find(r->locker_name);
 	P_char chLocker;
 	P_char chUser;
+	int durable_ok;
 
 	if (!s)
 	{
@@ -852,7 +883,7 @@ static void apply_result(struct locker_async_result *r)
 	if (r->gen != s->gen)
 	{
 		logit(LOG_DEBUG, "locker_async: stale result name=%s res_gen=%lu slot_gen=%lu",
-		      r->locker_name, r->gen, s->gen);
+		      s->locker_name, r->gen, s->gen);
 		g_inflight = (g_inflight > 0) ? g_inflight - 1 : 0;
 		if (s->rebuild_objects)
 			s->state = LCHK_DIRTY;
@@ -862,6 +893,7 @@ static void apply_result(struct locker_async_result *r)
 	g_inflight = (g_inflight > 0) ? g_inflight - 1 : 0;
 	chLocker = find_locker_char_by_name(s->locker_name);
 	chUser = find_char_by_pid(s->user_pid);
+	durable_ok = r->ok ? 1 : 0;
 
 	if (!r->ok)
 	{
@@ -874,16 +906,36 @@ static void apply_result(struct locker_async_result *r)
 			int owner_pid = s->owner_pid, owner_assoc = s->owner_assoc_id;
 			if (!owner_pid && !owner_assoc)
 				locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
-			if (!sql_save_locker(chLocker, owner_pid, owner_assoc))
-				writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE);
+			if (sql_save_locker(chLocker, owner_pid, owner_assoc))
+				durable_ok = 1;
+			else if (writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE))
+				durable_ok = 1;
+			else
+				durable_ok = 0;
+		}
+		else
+		{
+			durable_ok = 0;
 		}
 	}
 
-	if (s->terminal && chLocker)
+	if (s->terminal)
 	{
-		chLocker->specials.timer = 0;
-		extract_char(chLocker);
-		s->chLocker = NULL;
+		if (durable_ok && chLocker)
+		{
+			chLocker->specials.timer = 0;
+			extract_char(chLocker);
+			s->chLocker = NULL;
+		}
+		else if (!durable_ok)
+		{
+			/* Fail closed: keep locker char / re-entry fence until staff
+			 * can recover; never extract after both async + sync failed. */
+			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
+			                  "terminal_not_durable",
+			                  "terminal save failed; refusing extract of locker char");
+			s->rebuild_objects = 1;
+		}
 	}
 	else if (!s->terminal && chLocker && chUser)
 	{
@@ -896,15 +948,21 @@ static void apply_result(struct locker_async_result *r)
 		s->state = LCHK_DIRTY;
 		s->gen = g_gen_seq++;
 		s->dirty_at = time(NULL);
-		/* Keep chLocker/user if still present for the next pass. */
 		if (chLocker)
 			s->chLocker = chLocker;
 		if (chUser)
 			s->chUser = chUser;
 	}
-	else
+	else if (durable_ok || !s->terminal)
 	{
 		slot_clear(s);
+	}
+	else
+	{
+		/* Keep terminal-not-durable slot as DIRTY/busy fence. */
+		s->state = LCHK_DIRTY;
+		s->gen = g_gen_seq++;
+		s->dirty_at = time(NULL);
 	}
 }
 
@@ -1115,37 +1173,56 @@ void locker_async_init(void)
 	memset(g_slots, 0, sizeof(g_slots));
 	memset(g_jobs, 0, sizeof(g_jobs));
 	memset(g_results, 0, sizeof(g_results));
+	pthread_mutex_lock(&g_q_mu);
 	g_worker_stop = 0;
 	g_worker_running = 1;
+	g_worker_created = 0;
+	pthread_mutex_unlock(&g_q_mu);
 	err = pthread_create(&g_worker_tid, NULL, locker_async_worker_main, NULL);
 	if (err != 0)
 	{
+		pthread_mutex_lock(&g_q_mu);
 		g_worker_running = 0;
+		pthread_mutex_unlock(&g_q_mu);
 		logit(LOG_FILE, "locker_async: pthread_create failed: %d", err);
 		persistence_alert(AVATAR, "locker_async", "worker", "none", "none",
 		                  "start_failed", "locker async worker could not start");
 		return;
 	}
+	pthread_mutex_lock(&g_q_mu);
+	/* Creation succeeded, so join ownership persists even if the worker
+	 * exits and clears its separate running/health flag. */
+	g_worker_created = 1;
+	pthread_mutex_unlock(&g_q_mu);
 	g_inited = 1;
 	logit(LOG_STATUS, "Started locker async persistence worker.");
 }
 
 void locker_async_shutdown(void)
 {
-	if (!g_inited && !g_worker_running)
+	int join_created;
+
+	pthread_mutex_lock(&g_q_mu);
+	join_created = g_worker_created;
+	pthread_mutex_unlock(&g_q_mu);
+	if (!g_inited && !join_created)
 		return;
 
-	locker_async_drain(2000);
+	if (locker_async_worker_available())
+		locker_async_drain(2000);
 
 	pthread_mutex_lock(&g_q_mu);
 	g_worker_stop = 1;
 	pthread_cond_broadcast(&g_q_cv);
 	pthread_mutex_unlock(&g_q_mu);
 
-	if (g_worker_running)
+	if (join_created)
 		pthread_join(g_worker_tid, NULL);
 
-	g_inited = 0;
+	pthread_mutex_lock(&g_q_mu);
+	g_worker_created = 0;
 	g_worker_running = 0;
+	pthread_mutex_unlock(&g_q_mu);
+	g_inited = 0;
 	logit(LOG_STATUS, "Stopped locker async persistence worker.");
 }
