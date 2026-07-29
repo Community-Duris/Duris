@@ -2990,7 +2990,6 @@ void sound_to_char(const char *, P_char);
 void sound_to_room(const char *, int);
 void sound_to_all(const char *);
 void sound_to_zone(const char *, int);
-void zone_noises(void);
 
 void do_specialize(P_char, char *, int);
 

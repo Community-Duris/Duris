@@ -46,7 +46,6 @@
 #include "reavers.h"
 #include "redis.h"
 #include "siege.h"
-#include "sound.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -1999,7 +1998,6 @@ void death_cry(P_char ch)
 		break;
 	}
 	was_in = ch->in_room;
-	play_sound(SOUND_DEATH_CRY, NULL, was_in, TO_ROOM);
 
 	add_track(ch, NUM_EXITS);
 
@@ -2028,7 +2026,6 @@ void death_cry(P_char ch)
 					break;
 				}
 				send_to_room(buf, room);
-				play_sound(SOUND_DEATH_CRY, NULL, room, TO_ROOM);
 			}
 		}
 }
@@ -2041,7 +2038,6 @@ void death_rattle(P_char ch)
 	act("&+rYou feel a carnal satisfaction as $n&+r's gurgling and choking signals $s demise.&n",
 	    FALSE, ch, 0, 0, TO_ROOM);
 	was_in = ch->in_room;
-	play_sound(SOUND_DEATH_CRY, NULL, was_in, TO_ROOM);
 
 	add_track(ch, NUM_EXITS);
 
@@ -2054,7 +2050,6 @@ void death_rattle(P_char ch)
 				snprintf(buf, MAX_INPUT_LENGTH,
 					 "&+rYou hear a shrill death rattle nearby!\r\n");
 				send_to_room(buf, room);
-				play_sound(SOUND_DEATH_CRY, NULL, room, TO_ROOM);
 			}
 		}
 }
@@ -7306,8 +7301,6 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			return FALSE;
 		}
 	}
-
-	//  play_sound("!!SOUND(battle* P=100)", NULL, ch->in_room, TO_ROOM);
 
 	if (weapon)
 		msg = get_weapon_msg(weapon);
