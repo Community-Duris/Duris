@@ -536,10 +536,12 @@ int strn_cmp(const char *arg1, const char *arg2, uint n)
 
 	for (i = 0; (*(arg1 + i) || *(arg2 + i)) && (n > 0); i++, n--)
 		if ((chk = LOWER(*(arg1 + i)) - LOWER(*(arg2 + i))))
+		{
 			if (chk < 0)
 				return (-1);
 			else
 				return (1);
+		}
 
 	return (0);
 }
@@ -1944,6 +1946,7 @@ void sprintbitde(ulong vektor, const flagDef names[], char *result)
 	for (nr = 0; vektor; vektor >>= 1)
 	{
 		if (IS_SET(1, vektor))
+		{
 			if (names[nr].flagShort != NULL)
 			{
 				strcat(result, names[nr].flagShort);
@@ -1953,6 +1956,7 @@ void sprintbitde(ulong vektor, const flagDef names[], char *result)
 			{
 				strcat(result, "UNDEFINED ");
 			}
+		}
 		if (names[nr].flagShort != NULL)
 			nr++;
 	}

@@ -189,7 +189,6 @@ void do_test_room(P_char ch, char *arg, int cmd)
 void do_test_writemap(P_char ch, char *arg, int cmd)
 {
 	char buff[MAX_STRING_LENGTH];
-	buff[0] = '\0';
 
 	struct zone_data *zone = &zone_table[world[ch->in_room].zone];
 
@@ -213,7 +212,6 @@ void do_test_writemap(P_char ch, char *arg, int cmd)
 
 	for (int y = 0; y < height; y++)
 	{
-		buff[0];
 		AnsiString line;
 		for (int x = 0; x < width; x++)
 		{

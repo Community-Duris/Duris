@@ -1029,12 +1029,14 @@ void spell_detonate2(int level, P_char ch, char *arg, int type, P_char victim, P
 		dam = (dam * 2);
 
 	if (resists_spell(ch, victim))
+	{
 		if (GET_SPEC(ch, CLASS_PSIONICIST, SPEC_PYROKINETIC))
 			dam = (int)(dam * get_property("spell.detonate.shrugModifier", 0.7));
 		else if (GET_CLASS(ch, CLASS_MINDFLAYER) && IS_NPC(victim))
 			dam = (int)(dam * get_property("spell.detonate.shrugModifierMindflayer", 0.9));
 		else
 			return;
+	}
 
 	if (!StatSave(victim, APPLY_POW, (GET_LEVEL(victim) - GET_LEVEL(ch)) / 5) && !IS_ELITE(victim))
 	{

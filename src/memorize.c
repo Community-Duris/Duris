@@ -1953,6 +1953,7 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 					return foo;
 	if (IS_SET(mode, SBOOK_MODE_IN_INV))
 		for (foo = ch->carrying; foo; foo = foo->next_content)
+		{
 			if ((foo->type == ITEM_SPELLBOOK) && CAN_SEE_OBJ(ch, foo))
 			{
 				if (foo->R_num == real_object(31) && isname(wizBookName, foo->name))
@@ -1963,9 +1964,12 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 						return foo2;
 				}
 			}
-			else if ((foo->type == ITEM_SCROLL) && CAN_SEE_OBJ(ch, foo) && !IS_SET(mode, SBOOK_MODE_NO_SCROLL))
-				if ((foo2 = Find_process_entry(ch, foo, spl)))
-					return foo2;
+			else if ((foo->type == ITEM_SCROLL) && CAN_SEE_OBJ(ch, foo) && !IS_SET(mode, SBOOK_MODE_NO_SCROLL)
+				 && (foo2 = Find_process_entry(ch, foo, spl)))
+			{
+				 return foo2;
+			}
+		}
 
 	if (IS_SET(mode, SBOOK_MODE_ON_BELT))
 	{

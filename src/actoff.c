@@ -8700,10 +8700,12 @@ void bodyslam(P_char ch, P_char victim)
 	}
 
 	if (fall)
+	{
 		if (number(0, 1))
 			SET_POS(ch, POS_SITTING + GET_STAT(ch));
 		else
 			SET_POS(ch, POS_KNEELING + GET_STAT(ch));
+	}
 
 	if (!affected_by_spell(victim, SKILL_AWARENESS))
 	{

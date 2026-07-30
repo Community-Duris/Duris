@@ -1125,10 +1125,12 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 						spl = SPELL_RAISE_SPECTRE;
 				}
 				else if (npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) || npc_has_spell_slot(ch, SPELL_CALL_ARCHON))
+				{
 					if (GET_CLASS(ch, CLASS_THEURGIST))
 						spl = SPELL_CALL_ARCHON;
 					else
 						spl = SPELL_ANIMATE_DEAD;
+				}
 
 				if (spl)
 					return (MobCastSpell(ch, 0, best_corpse, spl, lvl));
@@ -4778,8 +4780,6 @@ bool MobAlchemist(P_char ch)
 			CharWait(ch, PULSE_VIOLENCE);
 			return TRUE;
 		}
-		else
-			return FALSE;
 
 	return FALSE;
 }
@@ -6441,6 +6441,7 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 
 	for (a = foo; a < CUR_MAX_WEAR; a++)
 		if (CAN_WEAR(obj, equipment_pos_table[a][0]) && can_char_use_item(ch, obj))
+		{
 			if (ch->equipment[equipment_pos_table[a][2]] != NULL)
 			{
 				l    = equipment_pos_table[a][2];
@@ -6463,9 +6464,9 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 					return 1;
 				}
 			}
-			else if (RateObject(ch, a, obj) >= 0)
-				if (wear(ch, obj, equipment_pos_table[a][1], 1))
-					return 1;
+			else if (RateObject(ch, a, obj) >= 0 && wear(ch, obj, equipment_pos_table[a][1], 1))
+				return 1;
+		}
 	return 0;
 }
 
@@ -7327,6 +7328,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 
 			if (CAN_GET_OBJ(ch, obj, rider) || IS_CONTAINER(obj))
 				if ((CAN_CARRY_W(ch) >= GET_OBJ_WEIGHT(obj)) || IS_CONTAINER(obj))
+				{
 					if (IS_CONTAINER(obj) && ItemsIn(obj) >= 1)
 					{
 						best_obj = obj;
@@ -7337,6 +7339,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 						best_obj = obj;
 						max      = obj->cost;
 					}
+				}
 		}
 
 		if (best_obj)
@@ -9271,6 +9274,7 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		return;
 	}
 	if (IS_CASTING(ch))
+	{
 		if (is_casting_aggr_spell(ch))
 		{
 			/*      wizlog(56,"We've just detected an aggro spell being cast and thus do not break spellcasting upon being ranged.");*/
@@ -9282,6 +9286,7 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		}
 		else
 			StopCasting(ch);
+	}
 
 	if (IS_DESTROYING(ch))
 		stop_destroying(ch);

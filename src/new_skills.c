@@ -495,10 +495,12 @@ int MonkNumberOfAttacks(P_char ch)
 		if (number(1, 100) < skl_lvl)
 			a++;
 	if (GET_LEVEL(ch) >= 51)
+	{
 		if (GET_LEVEL(ch) >= 56)
 			return BOUNDED(1, a + 2, 7);
 		else
 			return BOUNDED(1, a + 1, 6);
+	}
 
 	return BOUNDED(1, a, 5); /* 1 to 4 */
 }

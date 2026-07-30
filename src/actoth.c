@@ -4565,10 +4565,12 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 
 	int res = yes_no(arg);
 	if (res != -1)
+	{
 		if (res ^ reverse)
 			var |= flag;
 		else
 			var &= ~flag;
+	}
 	return res;
 }
 

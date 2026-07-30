@@ -1414,16 +1414,20 @@ void load_obj_to_newbies(P_char ch)
 		LoadNewbyShit(ch, newbie_kits[GET_RACE(ch)][0]);
 
 	if (GET_RACE(ch) == RACE_THRIKREEN)
+	{
 		if (GET_ALIGNMENT(ch) >= 0)
 			LoadNewbyShit(ch, thrikreen_good_eq);
 		else
 			LoadNewbyShit(ch, thrikreen_evil_eq);
+	}
 
 	if (GET_RACE(ch) == RACE_MINOTAUR)
+	{
 		if (GET_ALIGNMENT(ch) >= 0)
 			LoadNewbyShit(ch, minotaur_good_eq);
 		else
 			LoadNewbyShit(ch, minotaur_evil_eq);
+	}
 
 	if (newbie_kits[GET_RACE(ch)][flag2idx(ch->player.m_class)])
 	{
@@ -1844,10 +1848,12 @@ void enter_game(P_desc d)
 			r_room = real_room(GET_BIRTHPLACE(ch));
 
 		if (r_room == NOWHERE)
+		{
 			if (IS_TRUSTED(ch))
 				r_room = real_room0(1200);
 			else
 				r_room = GET_ORIG_BIRTHPLACE(ch);
+		}
 
 		if (r_room == NOWHERE)
 			r_room = real_room0(11);

@@ -1135,10 +1135,12 @@ void bard_protection(int l, P_char ch, P_char victim, int song)
 		spell_minor_globe(l, ch, 0, 0, victim, NULL);
 
 	if (GET_LEVEL(ch) >= 46 && !has_skin_spell(victim))
+	{
 		if (IS_UNDEAD(victim) || IS_ANGEL(ch))
 			spell_prot_undead(l, ch, 0, 0, victim, NULL);
 		else
 			spell_stone_skin(l, ch, 0, 0, victim, NULL);
+	}
 
 	if (!affected_by_spell(victim, song))
 	{

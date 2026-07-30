@@ -38,10 +38,12 @@ int fragWorthy(P_char ch, P_char victim)
 		return FALSE;
 
 	if (IS_NPC(ch))
+	{
 		if (ch->following && IS_PC(ch->following))
 			ch = ch->following;
 		else
 			return FALSE;
+	}
 
 	if ((GET_LEVEL(ch) > 56) || (GET_LEVEL(victim) > 56))
 		return FALSE;

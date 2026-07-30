@@ -1099,6 +1099,7 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 			}
 	}
 	if (o_f_flag & O_F_SPELLBOOK)
+	{
 		if (!(tmp = find_spell_description(obj)))
 		{ /*
 		   * this _SHOULD_
@@ -1116,6 +1117,7 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 				ADD_BYTE(ibuf, tmp->description[i]);
 			}
 		}
+	}
 
 	return (int)(ibuf - start);
 }

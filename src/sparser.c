@@ -1427,14 +1427,12 @@ bool parse_spell_arguments(P_char ch, struct spell_target_data *data, char *argu
 							break;
 
 					if (!dummy)
+					{
 						if ((dummy = read_mobile(46, VIRTUAL)) == NULL)
-						{
 							vict = 0;
-						}
 						else
-						{
 							char_to_room(dummy, real_room0(666), -1);
-						}
+					}
 
 					if (dummy)
 						vict = dummy;
@@ -1617,10 +1615,12 @@ int lookup_spell(const char *name, int len)
 
 	// aliases for renamed spells
 	if (spl == -2)
+	{
 		if (!strncmp(name, "improved invisibility", len))
 			spl = SPELL_INVISIBILITY;
 		else
 			spl = -1;
+	}
 
 	return spl;
 }

@@ -452,12 +452,9 @@ int leave_by_exit(P_char ch, int exitnumb)
 		 */
 
 		for (j = 0; j < NUM_EXITS; j++)
-			if (world[ch->in_room].dir_option[(int)j]) /*
-			                                            * * it's an exit
-			                                            */
-				if (exit1 == -1)                       /*
-				                                        * * found an exit yet?
-				                                        */
+			if (world[ch->in_room].dir_option[(int)j])
+			{                                          // it's an exit
+				if (exit1 == -1)                      // found an exit yet?
 					exit1 = j;
 				else if (exit2 == -1) /*
 				                       * * found second exit yet?
@@ -467,6 +464,7 @@ int leave_by_exit(P_char ch, int exitnumb)
 					exit3 = j; /*
 					            * * this is only here for error checking
 					            */
+			}
 
 		if ((exit1 == -1) || (exit2 == -1))
 		{
@@ -2437,7 +2435,7 @@ void do_close(P_char ch, char *argument, int cmd)
 			act("$n closes $p.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-		/*
+	{	/*
 		 * Or a door
 		 */
 
@@ -2472,6 +2470,7 @@ void do_close(P_char ch, char *argument, int cmd)
 							send_to_room("The door closes quietly.\n", EXIT(ch, door)->to_room);
 					}
 		}
+	}
 }
 
 P_obj has_key(P_char ch, int key)
@@ -2549,7 +2548,7 @@ void do_lock(P_char ch, char *argument, int cmd)
 			act("$n locks $p.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-		/*
+	{	/*
 		 * a door, perhaps
 		 */
 
@@ -2580,6 +2579,7 @@ void do_lock(P_char ch, char *argument, int cmd)
 					if (back->to_room == ch->in_room)
 						SET_BIT(back->exit_info, EX_LOCKED);
 		}
+	}
 }
 
 void do_unlock(P_char ch, char *argument, int cmd)

@@ -2417,10 +2417,12 @@ bool create_walls(int room, int exit, P_char ch, int level, int type, int power,
 	wall_inside->value[3] = type;
 	wall_inside->value[4] = level;
 	if (ch != NULL)
+	{
 		if (IS_PC(ch))
 			wall_inside->value[5] = GET_PID(ch);
 		else
 			wall_inside->value[5] = GET_RNUM(ch);
+	}
 
 	wall_outside->value[0] = world[room].number;
 	wall_outside->value[1] = reverse_exit;
@@ -2428,10 +2430,12 @@ bool create_walls(int room, int exit, P_char ch, int level, int type, int power,
 	wall_outside->value[3] = type;
 	wall_outside->value[4] = level;
 	if (ch != NULL)
+	{
 		if (IS_PC(ch))
 			wall_outside->value[5] = GET_PID(ch);
 		else
 			wall_outside->value[5] = GET_RNUM(ch);
+	}
 
 	SET_BIT(world[room].dir_option[exit]->exit_info, EX_WALLED);
 	SET_BIT(world[dir_room].dir_option[reverse_exit]->exit_info, EX_WALLED);

@@ -294,6 +294,7 @@ int main(int argc, char **argv)
 	}
 
 	if (pos < argc)
+	{
 		if (!isdigit(*argv[pos]))
 		{
 			fatal_boot_error("comm", "Usage: %s [-l] [-m] [-s] [-p] [-f] [-d pathname] [ port # ]", argv[0]);
@@ -304,6 +305,7 @@ int main(int argc, char **argv)
 		}
 		else
 			sslport = port + 1;
+	}
 	// Global variable so can check if mainmud or not!
 	RUNNING_PORT = port;
 

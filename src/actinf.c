@@ -4726,10 +4726,12 @@ void do_score(P_char ch, char *argument, int cmd)
 	if (IS_AFFECTED4(ch, AFF4_NEG_SHIELD))
 		strcat(buf, " &+LNegative Shielded&n");
 	else if (IS_AFFECTED2(ch, AFF2_SOULSHIELD))
+	{
 		if (GET_CLASS(ch, CLASS_THEURGIST))
 			strcat(buf, " &+WHoly Aura");
 		else
 			strcat(buf, " &+WSoulshielded&n");
+	}
 
 	if (IS_AFFECTED5(ch, AFF5_JUDICIUM_FIDEI))
 	{
@@ -5333,10 +5335,12 @@ void do_score(P_char ch, char *argument, int cmd)
 	}
 
 	if (affected_by_spell(ch, TAG_SPAWN))
+	{
 		if (has_innate(ch, INNATE_SPAWN))
 			send_to_char("&+LYou are willing to summon spawns.\n", ch);
 		else if (has_innate(ch, INNATE_ALLY))
 			send_to_char("&+WYou are willing to summon allies.\n", ch);
+	}
 
 	tch = guarding(ch);
 	if (tch)

@@ -1235,23 +1235,23 @@ void event_embrace_death(P_char ch, P_char victim, P_obj obj, void *data)
 	float                 hp_state = ((float)GET_HIT(ch)) / GET_MAX_HIT(ch);
 	struct affected_type *afp;
 
-	afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH);
+	if ((afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH)))
+		return;
 
-	if (afp)
-		if (hp_state > .75)
-		{
-			affect_remove(ch, afp);
-			send_to_char("Something leaves you as death is no longer close.\n", ch);
-		}
-		else
-		{
-			if (hp_state > .45)
-				afp->modifier = 5;
-			else if (hp_state > .25)
-				afp->modifier = 10;
-			balance_affects(ch);
-			add_event(event_embrace_death, 2 * WAIT_SEC, ch, 0, 0, 0, 0, 0);
-		}
+	if (hp_state > .75)
+	{
+		affect_remove(ch, afp);
+		send_to_char("Something leaves you as death is no longer close.\n", ch);
+	}
+	else
+	{
+		if (hp_state > .45)
+			afp->modifier = 5;
+		else if (hp_state > .25)
+			afp->modifier = 10;
+		balance_affects(ch);
+		add_event(event_embrace_death, 2 * WAIT_SEC, ch, 0, 0, 0, 0, 0);
+	}
 }
 
 void do_innate_embrace_death(P_char ch)

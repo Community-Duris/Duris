@@ -592,12 +592,13 @@ void nq_reward_player(struct nq_action *action, struct nq_instance *instance, st
 
 	for (item = action->reward->item; item; item = item->next)
 	{
-		obj = nq_create_item(item);
-		if (obj)
+		if ((obj = nq_create_item(item)))
+		{
 			if (kill)
 				obj_to_char(obj, mob);
 			else
 				obj_to_char(obj, ch);
+		}
 	}
 
 	if (action->reward->skill)
@@ -1534,9 +1535,11 @@ void do_quest2(P_char ch, char *args, int cmd)
 	for (i = 0; interface_map[i].command; i++)
 	{
 		if (!strcmp(command, interface_map[i].command))
+		{
 			if (IS_TRUSTED(ch) && interface_map[i].immo_func)
 				(interface_map[i].immo_func)(ch, arg);
 			else if (!IS_TRUSTED(ch) && interface_map[i].mortal_func)
 				(interface_map[i].mortal_func)(ch, arg);
+		}
 	}
 }

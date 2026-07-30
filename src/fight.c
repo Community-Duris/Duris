@@ -1746,22 +1746,28 @@ void change_alignment(P_char ch, P_char victim)
 			v_al -= 100;
 
 		if (IS_SET(victim->only.npc->aggro_flags, AGGR_GOOD_ALIGN))
+		{
 			if (IS_GOOD(ch))
 				v_al -= 125;
 			else
 				v_al -= 50;
+		}
 
 		if (IS_SET(victim->only.npc->aggro_flags, AGGR_NEUTRAL_ALIGN))
+		{
 			if (IS_NEUTRAL(ch))
 				v_al -= 25;
 			else
 				v_al -= 50;
+		}
 
 		if (IS_SET(victim->only.npc->aggro_flags, AGGR_EVIL_ALIGN))
+		{
 			if (IS_EVIL(ch))
 				v_al += 125;
 			else
 				v_al += 75;
+		}
 
 		if (IS_DEMON(victim))
 			change += 2;

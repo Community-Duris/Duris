@@ -1299,6 +1299,7 @@ int mailed_fist_guardian(P_char ch, P_char vict, int cmd, char *arg)
 		return FALSE;
 
 	if (cmd == CMD_NORTH)
+	{
 		if (vict->equipment[GUILD_ITEM_POS] && (obj_index[vict->equipment[GUILD_ITEM_POS]->R_num].virtual_number >= GUILD_ITEM_START) &&
 		    (obj_index[vict->equipment[GUILD_ITEM_POS]->R_num].virtual_number <= GUILD_ITEM_END))
 		{
@@ -1315,6 +1316,7 @@ int mailed_fist_guardian(P_char ch, P_char vict, int cmd, char *arg)
 			act("You block $N's entrance to the guild.", TRUE, ch, 0, vict, TO_CHAR);
 			return TRUE;
 		}
+	}
 	if (vict)
 		return FALSE;
 

@@ -113,10 +113,12 @@ int DamageOneItem(P_char ch, int dam_type, P_obj obj, bool destroy)
 	act(buf, TRUE, ch, obj, 0, TO_ROOM);
 
 	if (destroy)
+	{
 		if (!force_destroy)
 			MakeScrap(ch, obj);
 		else
 			extract_obj(obj);
+	}
 
 	return destroy;
 }

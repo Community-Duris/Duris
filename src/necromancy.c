@@ -787,34 +787,42 @@ void spawn_raise_undead(P_char ch, P_char vict, P_obj corpse)
 	else if (roll > 22)
 	{
 		if (sum == 0)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_LICH;
 			else
 				type = NECROPET_LICH;
+		}
 	}
 	else if (roll > 20)
 	{
 		if (sum < 6)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_VAMPIRE;
 			else
 				type = NECROPET_VAMPIRE;
+		}
 	}
 	else if (roll > 10)
 	{
 		if (sum < 6)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_WRAITH;
 			else
 				type = NECROPET_WRAITH;
+		}
 	}
 	else if (roll > 6)
 	{
 		if (sum < 7)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_SPECTRE;
 			else
 				type = NECROPET_SPECTRE;
+		}
 	}
 	else if (sum < 8)
 	{

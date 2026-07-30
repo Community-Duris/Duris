@@ -486,6 +486,7 @@ void convertObj(P_obj obj)
 	/* for some items, consider material type */
 	/* armor and worn items weights are affected by locale worn */
 	if (GET_ITEM_TYPE(obj) == ITEM_ARMOR || GET_ITEM_TYPE(obj) == ITEM_WORN)
+	{
 		if (CAN_WEAR(obj, ITEM_WEAR_FINGER) || CAN_WEAR(obj, ITEM_GUILD_INSIGNIA) || CAN_WEAR(obj, ITEM_WEAR_EYES) || CAN_WEAR(obj, ITEM_WEAR_EARRING))
 			weight = 0;
 		else if (CAN_WEAR(obj, ITEM_WEAR_HEAD) || CAN_WEAR(obj, ITEM_WEAR_WAIST) || CAN_WEAR(obj, ITEM_WEAR_WRIST) || CAN_WEAR(obj, ITEM_WEAR_TAIL) || CAN_WEAR(obj, ITEM_WEAR_QUIVER) ||
@@ -510,6 +511,7 @@ void convertObj(P_obj obj)
 			if (isname("small", obj->name) || isname("tiny", obj->name))
 				weight -= 5;
 		}
+	}
 
 	/* check some keywords */
 	if (isname("ornate", obj->name) || isname("gem", obj->name) || isname("gold", obj->name) || isname("platinum", obj->name) || isname("jewel", obj->name))

@@ -424,6 +424,7 @@ int shabo_trap_north(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_NORTH)
 	{
 		if (world[ch->in_room].dir_option[DIR_NORTH])
+		{
 			if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_BLOCKED))
 				return FALSE;
 			else if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
@@ -433,6 +434,7 @@ int shabo_trap_north(P_obj obj, P_char ch, int cmd, char *arg)
 				act("&+LYou hear a soft click.", TRUE, ch, 0, 0, TO_CHAR);
 				spell_wither(60, ch, NULL, 0, ch, 0);
 			}
+		}
 		return FALSE;
 	}
 	return FALSE;
@@ -455,7 +457,7 @@ int shabo_trap_south(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_SOUTH)
 	{
 		if (world[ch->in_room].dir_option[DIR_SOUTH])
-
+		{
 			if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_BLOCKED))
 				return FALSE;
 			else if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
@@ -472,6 +474,7 @@ int shabo_trap_south(P_obj obj, P_char ch, int cmd, char *arg)
 					CharWait(ch, PULSE_VIOLENCE * 1);
 				}
 			}
+		}
 		return FALSE;
 	}
 	return FALSE;
@@ -494,6 +497,7 @@ int shabo_trap_south_two(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_SOUTH)
 	{
 		if (world[ch->in_room].dir_option[DIR_SOUTH])
+		{
 			if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_BLOCKED))
 				return FALSE;
 			else if (IS_SET(world[ch->in_room].dir_option[DIR_SOUTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
@@ -503,6 +507,7 @@ int shabo_trap_south_two(P_obj obj, P_char ch, int cmd, char *arg)
 				act("&+LYou hear a soft click.", TRUE, ch, 0, 0, TO_CHAR);
 				spell_wither(60, ch, NULL, 0, ch, 0);
 			}
+		}
 		return FALSE;
 	}
 	return FALSE;
@@ -525,6 +530,7 @@ int shabo_trap_down(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_DOWN)
 	{
 		if (world[ch->in_room].dir_option[DIR_DOWN])
+		{
 			if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info, EX_BLOCKED))
 				return FALSE;
 			else if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
@@ -534,6 +540,7 @@ int shabo_trap_down(P_obj obj, P_char ch, int cmd, char *arg)
 				act("&+LYou hear a soft click.", TRUE, ch, 0, 0, TO_CHAR);
 				spell_major_paralysis(60, ch, 0, 0, ch, 0);
 			}
+		}
 		return FALSE;
 	}
 	return FALSE;
@@ -556,6 +563,7 @@ int shabo_trap_up(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_UP)
 	{
 		if (world[ch->in_room].dir_option[DIR_UP])
+		{
 			if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_BLOCKED))
 				return FALSE;
 			else if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
@@ -571,6 +579,7 @@ int shabo_trap_up(P_obj obj, P_char ch, int cmd, char *arg)
 					CharWait(ch, PULSE_VIOLENCE * 2);
 				}
 			}
+		}
 		return FALSE;
 	}
 	return FALSE;
@@ -596,6 +605,7 @@ int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_UP)
 	{
 		if (world[ch->in_room].dir_option[DIR_UP])
+		{
 			if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_BLOCKED))
 				return FALSE;
 			else if (IS_SET(world[ch->in_room].dir_option[DIR_UP]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
@@ -614,6 +624,7 @@ int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
 				spell_color_spray(60, trapmob, NULL, SPELL_TYPE_SPELL, ch, 0);
 				extract_char(trapmob); // then get rid of the mob
 			}
+		}
 		return FALSE;
 	}
 	return FALSE;
@@ -638,7 +649,7 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_NORTH)
 	{
 		if (world[ch->in_room].dir_option[DIR_NORTH])
-
+		{
 			if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_BLOCKED))
 				return FALSE;
 			else if (IS_SET(world[ch->in_room].dir_option[DIR_NORTH]->exit_info, EX_CLOSED) && (!IS_AFFECTED4(ch, AFF4_PHANTASMAL_FORM)))
@@ -658,6 +669,7 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
 				spell_wither(60, trapmob, NULL, 0, ch, 0);
 				extract_char(trapmob); // then get rid of the mob
 			}
+		}
 		return FALSE;
 	}
 	return FALSE;

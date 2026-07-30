@@ -521,15 +521,15 @@ void spell_wind_blade(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 
 	if (IS_FIGHTING(ch))
+	{
 		if (has_wind_blade_wielded(ch))
 		{
 			if (P_char vict = GET_OPPONENT(ch))
 				wind_blade_attack_routine(ch, vict);
 		}
 		else
-		{
 			send_to_char("You need to wield the gift of the air if you want to receive even greater aid!\r\n", ch);
-		}
+	}
 }
 
 void spell_windwalk(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
@@ -872,10 +872,12 @@ void spell_conjure_air(int level, P_char ch, char *arg, int type, P_char victim,
 	{
 		victim = k->follower;
 		if (IS_ELEMENTAL(victim))
+		{
 			if (GET_LEVEL(victim) < 50)
 				i++;
 			else
 				j++;
+		}
 	}
 
 	if (i >= 1 || j >= 1)
@@ -2325,10 +2327,12 @@ void spell_conjure_void_elemental(int level, P_char ch, char *arg, int type, P_c
 	{
 		victim = k->follower;
 		if (IS_ELEMENTAL(victim))
+		{
 			if (GET_LEVEL(victim) < 50)
 				i++;
 			else
 				j++;
+		}
 	}
 
 	if (i >= 1 || j >= 1)
@@ -2422,10 +2426,12 @@ void spell_conjure_ice_elemental(int level, P_char ch, char *arg, int type, P_ch
 	{
 		victim = k->follower;
 		if (IS_ELEMENTAL(victim))
+		{
 			if (GET_LEVEL(victim) < 50)
 				i++;
 			else
 				j++;
+		}
 	}
 
 	if (i >= 1 || j >= 1)

@@ -962,10 +962,12 @@ void do_hitall(P_char ch, char *arg, int cmd)
 			continue;
 
 		if (!has_innate(ch, INNATE_EYELESS) && !CAN_SEE(ch, mob))
+		{
 			if (number(1, 101) > (IS_PC(ch) ? GET_CHAR_SKILL(ch, SKILL_BLINDFIGHTING) : 90))
 				continue;
 			else
 				notch_skill(ch, SKILL_BLINDFIGHTING, 5);
+		}
 
 		if (IS_NPC(ch) && (GET_OPPONENT(mob) != ch))
 			continue;
@@ -2902,7 +2904,7 @@ void make_lock(P_char ch, char *arg)
 			act("$n locks $p with a homemade lock.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-		/* a door, perhaps */
+	{	/* a door, perhaps */
 		if (!IS_SET(EXIT(ch, door)->exit_info, EX_ISDOOR))
 			send_to_char("That's absurd.\r\n", ch);
 		else if (!IS_SET(EXIT(ch, door)->exit_info, EX_CLOSED))
@@ -2930,6 +2932,7 @@ void make_lock(P_char ch, char *arg)
 						back->key = 1; /* so its now a lockable, but keyless object */
 					}
 		}
+	}
 }
 
 void make_key(P_char ch, char *arg)

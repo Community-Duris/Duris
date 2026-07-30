@@ -1090,12 +1090,14 @@ bool char_to_room(P_char ch, int room, int dir)
 		// Find the first two valid exits and the last one.
 		for (j = 0; j < NUM_EXITS; j++)
 			if (world[room].dir_option[j])
+			{
 				if (exit1 == -1)
 					exit1 = j;
 				else if (exit2 == -1)
 					exit2 = j;
 				else
 					exit3 = j;
+			}
 
 		if ((exit1 == -1) || (exit2 == -1))
 		{

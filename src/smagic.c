@@ -1698,6 +1698,7 @@ void spell_transfer_wellness(int level, P_char ch, char *arg, int type, P_char v
 	for (victim = world[ch->in_room].people; victim; victim = victim->next_in_room)
 	{
 		if (ch != victim)
+		{
 			if (StatSave(victim, APPLY_AGI, -5))
 				act("&+LYou barely evade getting hit by $S &+Lflying body parts!&n", FALSE, victim, 0, ch, TO_CHAR);
 			else
@@ -1709,6 +1710,7 @@ void spell_transfer_wellness(int level, P_char ch, char *arg, int type, P_char v
 				}
 				damage(ch, victim, from, TYPE_UNDEFINED);
 			}
+		}
 	}
 
 	if (ch->in_room == NOWHERE)

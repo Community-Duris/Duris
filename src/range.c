@@ -1825,30 +1825,30 @@ int number_throw(P_char ch, char *name)
 	tmp = tmpname;
 
 	i = ch->equipment[PRIMARY_WEAPON];
-	if (i)
-		if (isname(tmp, i->name))
-			if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
-					if (IS_OBJ_STAT(i, ITEM_RETURNING))
-					{
-						primary = 1;
-						pri_ret = 1;
-					}
-					else
-						primary = 1;
+	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
+	    && (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
+	 {
+		if (IS_OBJ_STAT(i, ITEM_RETURNING))
+		{
+			primary = 1;
+			pri_ret = 1;
+		}
+		else
+			primary = 1;
+	}
 
 	i = ch->equipment[SECONDARY_WEAPON];
-	if (i)
-		if (isname(tmp, i->name))
-			if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
-					if (IS_OBJ_STAT(i, ITEM_RETURNING))
-					{
-						secondary = 1;
-						sec_ret   = 1;
-					}
-					else
-						secondary = 1;
+	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
+	    && IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+	{
+		if (IS_OBJ_STAT(i, ITEM_RETURNING))
+		{
+			secondary = 1;
+			sec_ret   = 1;
+		}
+		else
+			secondary = 1;
+	}
 
 	i = ch->equipment[THIRD_WEAPON];
 	if (i)

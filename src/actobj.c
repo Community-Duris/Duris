@@ -2442,11 +2442,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	}
 
 	if (o_obj) /* Trap check */
-		/*
-		   if (checkgetput(ch, o_obj))
-		   return FALSE;
-		 */
-
+	{
 		if (s_obj->type == ITEM_QUIVER)
 		{
 			if (!IS_SET(s_obj->value[1], CONT_CLOSED))
@@ -2627,6 +2623,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				send_to_char(Gbuf3, ch);
 			}
 		}
+	}
 	/*
 	 * added by DTS 5/18/95 to solve light bug
 	 */
@@ -4036,10 +4033,12 @@ int get_numb_free_hands(P_char ch)
 		free_hands = 0;
 
 	if (IS_GIANT(ch) && free_hands > 0)
+	{
 		if (GET_RACE(ch) == RACE_MINOTAUR && ch->equipment[WIELD])
 			return free_hands;
 		else
 			return free_hands + 1;
+	}
 
 	return free_hands;
 }
