@@ -830,7 +830,7 @@ bool StorageLocker::MakeChests(P_char ch, char *args)
 	const char *chestKeyword;
 	const char *chestDesc;
 
-#define IF_ISLOCKERTYPE(keyword, desc)                                                                                                                                                                 \
+#define IF_ISLOCKERTYPE(keyword, desc, action)                                                                                                                                                                 \
 	chestKeyword = (keyword);                                                                                                                                                                          \
 	chestDesc    = (desc);                                                                                                                                                                             \
 	if (helpMode == LOCKER_HELP_ALL_LONG)                                                                                                                                                              \
@@ -844,6 +844,7 @@ bool StorageLocker::MakeChests(P_char ch, char *args)
 		snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2), "&+C%s&n, ", keyword);                                                                                                      \
 	}                                                                                                                                                                                                  \
 	else if (!str_cmp(keyword, GBuf1))                                                                                                                                                                 \
+	{																									\
 		if (isname(keyword, args))                                                                                                                                                                     \
 			bFound = true;                                                                                                                                                                             \
 		else if (helpMode == LOCKER_HELP_LONG)                                                                                                                                                         \
@@ -856,7 +857,9 @@ bool StorageLocker::MakeChests(P_char ch, char *args)
 			bFound = true;                                                                                                                                                                             \
 			snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2), "&+C%s&n, ", keyword);                                                                                                  \
 		}                                                                                                                                                                                              \
-		else
+		else																								\
+			action;																							\
+	}
 
 	if (helpMode != LOCKER_HELP_NONE || ('\0' != GBuf1[0]))
 	{
@@ -868,326 +871,326 @@ bool StorageLocker::MakeChests(P_char ch, char *args)
 			p      = NULL;
 
 			// parse 'GBuf1'
-			IF_ISLOCKERTYPE("hold", "that you can hold")
-			bFound = bMakeHoldable = true;
-			IF_ISLOCKERTYPE("attach", "attached to belt")
-			bFound = bMakeAttachable = true;
-			IF_ISLOCKERTYPE("ivalue", "in chest sorted by item value")
-			bFound = m_bIValue = true;
+			IF_ISLOCKERTYPE("hold", "that you can hold",
+				bFound = bMakeHoldable = true);
+			IF_ISLOCKERTYPE("attach", "attached to belt",
+				bFound = bMakeAttachable = true);
+			IF_ISLOCKERTYPE("ivalue", "in chest sorted by item value",
+				bFound = m_bIValue = true);
 
-			IF_ISLOCKERTYPE("horns", "worn on body")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_HORN, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("nose", "worn on nose")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_NOSE, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("tail", "worn on tail")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_TAIL, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("horse", "worn on a horses body")
-			p = AddLockerChest(new EqSlotChest(ITEM_HORSE_BODY, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("spider", "worn on a spider body")
-			p = AddLockerChest(new EqSlotChest(ITEM_SPIDER_BODY, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("back", "worn on back")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_BACK, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("badge", "worn as a badge")
-			p = AddLockerChest(new EqSlotChest(ITEM_GUILD_INSIGNIA, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("quiver", "worn as a quiver")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_QUIVER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("ear", "worn on or in ear")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_EARRING, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("face", "worn on face")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_FACE, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("eyes", "worn on or over eyes")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_EYES, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("wield", "used as a weapon or wielded")
-			p = AddLockerChest(new EqSlotChest(ITEM_WIELD, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("wrist", "worn around wrist")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_WRIST, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("waist", "worn about waist")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_WAIST, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("about", "worn about body")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_ABOUT, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("shield", "worn as a shield")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_SHIELD, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("arms", "worn on arms")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_ARMS, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("hands", "worn on hands")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_HANDS, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("feet", "worn on feet")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_FEET, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("legs", "worn on legs")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_LEGS, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("head", "worn on head")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_HEAD, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("body", "worn on body")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_BODY, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("neck", "worn around neck")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_NECK, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("finger", "worn on finger")
-			p = AddLockerChest(new EqSlotChest(ITEM_WEAR_FINGER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("warrior", "usable by a warrior")
-			p = AddLockerChest(new EqWearChest(CLASS_WARRIOR, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("ranger", "usable by a ranger")
-			p = AddLockerChest(new EqWearChest(CLASS_RANGER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("psionicist", "usable by a psionicist")
-			p = AddLockerChest(new EqWearChest(CLASS_PSIONICIST, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("paladin", "usable by a paladin")
-			p = AddLockerChest(new EqWearChest(CLASS_PALADIN, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("antipaladin", "usable by an antipaladin")
-			p = AddLockerChest(new EqWearChest(CLASS_ANTIPALADIN, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("cleric", "usable by a cleric")
-			p = AddLockerChest(new EqWearChest(CLASS_CLERIC, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("monk", "usable by a monk")
-			p = AddLockerChest(new EqWearChest(CLASS_MONK, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("druid", "usable by a druid")
-			p = AddLockerChest(new EqWearChest(CLASS_DRUID, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("shaman", "usable by a shaman")
-			p = AddLockerChest(new EqWearChest(CLASS_SHAMAN, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("sorcerer", "usable by a sorcerer")
-			p = AddLockerChest(new EqWearChest(CLASS_SORCERER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("necromancer", "usable by a necromancer")
-			p = AddLockerChest(new EqWearChest(CLASS_NECROMANCER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("conjurer", "usable by a conjurer")
-			p = AddLockerChest(new EqWearChest(CLASS_CONJURER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("rogue", "usable by a rogue")
-			p = AddLockerChest(new EqWearChest(CLASS_ROGUE, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("summoner", "usable by a summoner")
-			p = AddLockerChest(new EqWearChest(CLASS_SUMMONER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("assassin", "usable by an assassin")
-			p = AddLockerChest(new EqWearChest(CLASS_ASSASSIN, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mercenary", "usable by a mercenary")
-			p = AddLockerChest(new EqWearChest(CLASS_MERCENARY, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("bard", "usable by a bard")
-			p = AddLockerChest(new EqWearChest(CLASS_BARD, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("thief", "usable by a thief")
-			p = AddLockerChest(new EqWearChest(CLASS_THIEF, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("alchemist", "usable by an alchemist")
-			p = AddLockerChest(new EqWearChest(CLASS_ALCHEMIST, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("berserker", "usable by a berserker")
-			p = AddLockerChest(new EqWearChest(CLASS_BERSERKER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("reaver", "usable by a reaver")
-			p = AddLockerChest(new EqWearChest(CLASS_REAVER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("illusionist", "usable by an illusionist")
-			p = AddLockerChest(new EqWearChest(CLASS_ILLUSIONIST, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("dreadlord", "usable by a dreadlord")
-			p = AddLockerChest(new EqWearChest(CLASS_DREADLORD, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("ethermancer", "usable by an ethermancer")
-			p = AddLockerChest(new EqWearChest(CLASS_ETHERMANCER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("blighter", "usable by a blighter")
-			p = AddLockerChest(new EqWearChest(CLASS_BLIGHTER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("totems", "used as totems")
-			p = AddLockerChest(new EqTypeChest(ITEM_TOTEM, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("instruments", "playable as bard instruments")
-			p = AddLockerChest(new EqTypeChest(ITEM_INSTRUMENT, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("potions", "quaffable or used as potions")
-			p = AddLockerChest(new EqTypeChest(ITEM_POTION, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("spellbooks", "used as spellbooks")
-			p = AddLockerChest(new EqTypeChest(ITEM_SPELLBOOK, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("scrolls", "used as scrolls")
-			p = AddLockerChest(new EqTypeChest(ITEM_SCROLL, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("containers", "that are also containers")
-			p = AddLockerChest(new EqTypeChest(ITEM_CONTAINER, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("hitpoints", "that affect hitpoints")
-			p = AddLockerChest(new EqApplyChest(APPLY_HIT, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mana", "that affect mana")
-			p = AddLockerChest(new EqApplyChest(APPLY_MANA, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("moves", "that affect moves")
-			p = AddLockerChest(new EqApplyChest(APPLY_MOVE, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("hitroll", "that affect hitroll")
-			p = AddLockerChest(new EqApplyChest(APPLY_HITROLL, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("damroll", "that affect damroll")
-			p = AddLockerChest(new EqApplyChest(APPLY_DAMROLL, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("save_para", "that affect save_para")
-			p = AddLockerChest(new EqApplyChest(APPLY_SAVING_PARA, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("save_rod", "that affect save_rod")
-			p = AddLockerChest(new EqApplyChest(APPLY_SAVING_ROD, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("save_fear", "that affect save_fear")
-			p = AddLockerChest(new EqApplyChest(APPLY_SAVING_FEAR, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("save_breath", "that affect save_breath")
-			p = AddLockerChest(new EqApplyChest(APPLY_SAVING_BREATH, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("save_spell", "that affect save_spell")
-			p = AddLockerChest(new EqApplyChest(APPLY_SAVING_SPELL, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("str", "that affect strength")
-			p = AddLockerChest(new EqApplyChest(APPLY_STR, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("dex", "that affect dexterity")
-			p = AddLockerChest(new EqApplyChest(APPLY_DEX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("int", "that affect intelligence")
-			p = AddLockerChest(new EqApplyChest(APPLY_INT, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("wis", "that affect wisdom")
-			p = AddLockerChest(new EqApplyChest(APPLY_WIS, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("con", "that affect constitution")
-			p = AddLockerChest(new EqApplyChest(APPLY_CON, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("agi", "that affect agility")
-			p = AddLockerChest(new EqApplyChest(APPLY_AGI, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("pow", "that affect power")
-			p = AddLockerChest(new EqApplyChest(APPLY_POW, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("cha", "that affect charisma")
-			p = AddLockerChest(new EqApplyChest(APPLY_CHA, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("luck", "that affect luck")
-			p = AddLockerChest(new EqApplyChest(APPLY_LUCK, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("karma", "that affect karma")
-			p = AddLockerChest(new EqApplyChest(APPLY_KARMA, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("str_max", "that affect maximum strength (str_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_STR_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("dex_max", "that affect maximum dexterity (dex_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_DEX_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("int_max", "that affect maximum intelligence (int_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_INT_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("wis_max", "that affect maximum wisdom (wis_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_WIS_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("con_max", "that affect maximum constitution (con_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_CON_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("agi_max", "that affect maximum agility (agi_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_AGI_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("pow_max", "that affect maximum power (pow_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_POW_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("cha_max", "that affect maximum charisma (cha_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_CHA_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("luck_max", "that affect maximum luck (luck_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_LUCK_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("karma_max", "that affect maximum karma (karma_max)")
-			p = AddLockerChest(new EqApplyChest(APPLY_KARMA_MAX, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("ac", "armor class")
-			p = AddLockerChest(new EqApplyChest(APPLY_AC, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mana_reg", "that affect mana regeneration")
-			p = AddLockerChest(new EqApplyChest(APPLY_MANA_REG, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("move_reg", "that affect movement regeneration")
-			p = AddLockerChest(new EqApplyChest(APPLY_MOVE_REG, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("hit_reg", "that affect hitpoint regeneration")
-			p = AddLockerChest(new EqApplyChest(APPLY_HIT_REG, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("spell_pulse", "that affect spell_pulse (negative is better)")
-			p = AddLockerChest(new EqApplyChest(APPLY_SPELL_PULSE, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("combat_pulse", "that affect combat_pulse (negative is better)")
-			p = AddLockerChest(new EqApplyChest(APPLY_COMBAT_PULSE, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("horns", "worn on body",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_HORN, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("nose", "worn on nose",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_NOSE, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("tail", "worn on tail",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_TAIL, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("horse", "worn on a horses body",
+				p = AddLockerChest(new EqSlotChest(ITEM_HORSE_BODY, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("spider", "worn on a spider body",
+				p = AddLockerChest(new EqSlotChest(ITEM_SPIDER_BODY, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("back", "worn on back",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_BACK, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("badge", "worn as a badge",
+				p = AddLockerChest(new EqSlotChest(ITEM_GUILD_INSIGNIA, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("quiver", "worn as a quiver",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_QUIVER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("ear", "worn on or in ear",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_EARRING, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("face", "worn on face",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_FACE, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("eyes", "worn on or over eyes",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_EYES, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("wield", "used as a weapon or wielded",
+				p = AddLockerChest(new EqSlotChest(ITEM_WIELD, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("wrist", "worn around wrist",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_WRIST, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("waist", "worn about waist",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_WAIST, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("about", "worn about body",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_ABOUT, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("shield", "worn as a shield",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_SHIELD, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("arms", "worn on arms",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_ARMS, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("hands", "worn on hands",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_HANDS, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("feet", "worn on feet",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_FEET, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("legs", "worn on legs",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_LEGS, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("head", "worn on head",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_HEAD, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("body", "worn on body",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_BODY, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("neck", "worn around neck",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_NECK, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("finger", "worn on finger",
+				p = AddLockerChest(new EqSlotChest(ITEM_WEAR_FINGER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("warrior", "usable by a warrior",
+				p = AddLockerChest(new EqWearChest(CLASS_WARRIOR, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("ranger", "usable by a ranger",
+				p = AddLockerChest(new EqWearChest(CLASS_RANGER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("psionicist", "usable by a psionicist",
+				p = AddLockerChest(new EqWearChest(CLASS_PSIONICIST, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("paladin", "usable by a paladin",
+				p = AddLockerChest(new EqWearChest(CLASS_PALADIN, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("antipaladin", "usable by an antipaladin",
+				p = AddLockerChest(new EqWearChest(CLASS_ANTIPALADIN, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("cleric", "usable by a cleric",
+				p = AddLockerChest(new EqWearChest(CLASS_CLERIC, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("monk", "usable by a monk",
+				p = AddLockerChest(new EqWearChest(CLASS_MONK, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("druid", "usable by a druid",
+				p = AddLockerChest(new EqWearChest(CLASS_DRUID, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("shaman", "usable by a shaman",
+				p = AddLockerChest(new EqWearChest(CLASS_SHAMAN, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("sorcerer", "usable by a sorcerer",
+				p = AddLockerChest(new EqWearChest(CLASS_SORCERER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("necromancer", "usable by a necromancer",
+				p = AddLockerChest(new EqWearChest(CLASS_NECROMANCER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("conjurer", "usable by a conjurer",
+				p = AddLockerChest(new EqWearChest(CLASS_CONJURER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("rogue", "usable by a rogue",
+				p = AddLockerChest(new EqWearChest(CLASS_ROGUE, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("summoner", "usable by a summoner",
+				p = AddLockerChest(new EqWearChest(CLASS_SUMMONER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("assassin", "usable by an assassin",
+				p = AddLockerChest(new EqWearChest(CLASS_ASSASSIN, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mercenary", "usable by a mercenary",
+				p = AddLockerChest(new EqWearChest(CLASS_MERCENARY, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("bard", "usable by a bard",
+				p = AddLockerChest(new EqWearChest(CLASS_BARD, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("thief", "usable by a thief",
+				p = AddLockerChest(new EqWearChest(CLASS_THIEF, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("alchemist", "usable by an alchemist",
+				p = AddLockerChest(new EqWearChest(CLASS_ALCHEMIST, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("berserker", "usable by a berserker",
+				p = AddLockerChest(new EqWearChest(CLASS_BERSERKER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("reaver", "usable by a reaver",
+				p = AddLockerChest(new EqWearChest(CLASS_REAVER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("illusionist", "usable by an illusionist",
+				p = AddLockerChest(new EqWearChest(CLASS_ILLUSIONIST, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("dreadlord", "usable by a dreadlord",
+				p = AddLockerChest(new EqWearChest(CLASS_DREADLORD, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("ethermancer", "usable by an ethermancer",
+				p = AddLockerChest(new EqWearChest(CLASS_ETHERMANCER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("blighter", "usable by a blighter",
+				p = AddLockerChest(new EqWearChest(CLASS_BLIGHTER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("totems", "used as totems",
+				p = AddLockerChest(new EqTypeChest(ITEM_TOTEM, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("instruments", "playable as bard instruments",
+				p = AddLockerChest(new EqTypeChest(ITEM_INSTRUMENT, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("potions", "quaffable or used as potions",
+				p = AddLockerChest(new EqTypeChest(ITEM_POTION, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("spellbooks", "used as spellbooks",
+				p = AddLockerChest(new EqTypeChest(ITEM_SPELLBOOK, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("scrolls", "used as scrolls",
+				p = AddLockerChest(new EqTypeChest(ITEM_SCROLL, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("containers", "that are also containers",
+				p = AddLockerChest(new EqTypeChest(ITEM_CONTAINER, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("hitpoints", "that affect hitpoints",
+				p = AddLockerChest(new EqApplyChest(APPLY_HIT, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mana", "that affect mana",
+				p = AddLockerChest(new EqApplyChest(APPLY_MANA, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("moves", "that affect moves",
+				p = AddLockerChest(new EqApplyChest(APPLY_MOVE, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("hitroll", "that affect hitroll",
+				p = AddLockerChest(new EqApplyChest(APPLY_HITROLL, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("damroll", "that affect damroll",
+				p = AddLockerChest(new EqApplyChest(APPLY_DAMROLL, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("save_para", "that affect save_para",
+				p = AddLockerChest(new EqApplyChest(APPLY_SAVING_PARA, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("save_rod", "that affect save_rod",
+				p = AddLockerChest(new EqApplyChest(APPLY_SAVING_ROD, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("save_fear", "that affect save_fear",
+				p = AddLockerChest(new EqApplyChest(APPLY_SAVING_FEAR, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("save_breath", "that affect save_breath",
+				p = AddLockerChest(new EqApplyChest(APPLY_SAVING_BREATH, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("save_spell", "that affect save_spell",
+				p = AddLockerChest(new EqApplyChest(APPLY_SAVING_SPELL, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("str", "that affect strength",
+				p = AddLockerChest(new EqApplyChest(APPLY_STR, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("dex", "that affect dexterity",
+				p = AddLockerChest(new EqApplyChest(APPLY_DEX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("int", "that affect intelligence",
+				p = AddLockerChest(new EqApplyChest(APPLY_INT, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("wis", "that affect wisdom",
+				p = AddLockerChest(new EqApplyChest(APPLY_WIS, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("con", "that affect constitution",
+				p = AddLockerChest(new EqApplyChest(APPLY_CON, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("agi", "that affect agility",
+				p = AddLockerChest(new EqApplyChest(APPLY_AGI, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("pow", "that affect power",
+				p = AddLockerChest(new EqApplyChest(APPLY_POW, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("cha", "that affect charisma",
+				p = AddLockerChest(new EqApplyChest(APPLY_CHA, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("luck", "that affect luck",
+				p = AddLockerChest(new EqApplyChest(APPLY_LUCK, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("karma", "that affect karma",
+				p = AddLockerChest(new EqApplyChest(APPLY_KARMA, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("str_max", "that affect maximum strength (str_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_STR_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("dex_max", "that affect maximum dexterity (dex_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_DEX_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("int_max", "that affect maximum intelligence (int_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_INT_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("wis_max", "that affect maximum wisdom (wis_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_WIS_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("con_max", "that affect maximum constitution (con_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_CON_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("agi_max", "that affect maximum agility (agi_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_AGI_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("pow_max", "that affect maximum power (pow_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_POW_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("cha_max", "that affect maximum charisma (cha_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_CHA_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("luck_max", "that affect maximum luck (luck_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_LUCK_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("karma_max", "that affect maximum karma (karma_max)",
+				p = AddLockerChest(new EqApplyChest(APPLY_KARMA_MAX, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("ac", "armor class",
+				p = AddLockerChest(new EqApplyChest(APPLY_AC, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mana_reg", "that affect mana regeneration",
+				p = AddLockerChest(new EqApplyChest(APPLY_MANA_REG, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("move_reg", "that affect movement regeneration",
+				p = AddLockerChest(new EqApplyChest(APPLY_MOVE_REG, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("hit_reg", "that affect hitpoint regeneration",
+				p = AddLockerChest(new EqApplyChest(APPLY_HIT_REG, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("spell_pulse", "that affect spell_pulse (negative is better)",
+				p = AddLockerChest(new EqApplyChest(APPLY_SPELL_PULSE, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("combat_pulse", "that affect combat_pulse (negative is better)",
+				p = AddLockerChest(new EqApplyChest(APPLY_COMBAT_PULSE, chestKeyword, chestDesc)));
 
 			// Mine related.
-			IF_ISLOCKERTYPE("mine", "that are ore from a mine")
-			p = AddLockerChest(new OreChest(NULL, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_adamantium", "that are adamantium ore from a mine (mine_adamantium)")
-			p = AddLockerChest(new OreChest("adamantium", chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_mithril", "that are mithril ore from a mine (mine_mithril)")
-			p = AddLockerChest(new OreChest("mithril", chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_platinum", "that are platinum ore from a mine (mine_platinum)")
-			p = AddLockerChest(new OreChest("platinum", chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_gold", "that are gold ore from a mine (mine_gold)")
-			p = AddLockerChest(new OreChest("gold", chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_silver", "that are silver ore from a mine (mine_silver)")
-			p = AddLockerChest(new OreChest("silver", chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_copper", "that are copper ore from a mine (mine_copper)")
-			p = AddLockerChest(new OreChest("copper", chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_tin", "that are iron ore from a mine (mine_tin)")
-			p = AddLockerChest(new OreChest("tin", chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("mine_iron", "that are iron ore from a mine (mine_iron)")
-			p = AddLockerChest(new OreChest("iron", chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("mine", "that are ore from a mine",
+				p = AddLockerChest(new OreChest(NULL, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_adamantium", "that are adamantium ore from a mine (mine_adamantium)",
+				p = AddLockerChest(new OreChest("adamantium", chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_mithril", "that are mithril ore from a mine (mine_mithril)",
+				p = AddLockerChest(new OreChest("mithril", chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_platinum", "that are platinum ore from a mine (mine_platinum)",
+				p = AddLockerChest(new OreChest("platinum", chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_gold", "that are gold ore from a mine (mine_gold)",
+				p = AddLockerChest(new OreChest("gold", chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_silver", "that are silver ore from a mine (mine_silver)",
+				p = AddLockerChest(new OreChest("silver", chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_copper", "that are copper ore from a mine (mine_copper)",
+				p = AddLockerChest(new OreChest("copper", chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_tin", "that are iron ore from a mine (mine_tin)",
+				p = AddLockerChest(new OreChest("tin", chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("mine_iron", "that are iron ore from a mine (mine_iron)",
+				p = AddLockerChest(new OreChest("iron", chestKeyword, chestDesc)));
 
-			IF_ISLOCKERTYPE("invis", "that provide you with invisibility")
-			p = AddLockerChest(new EqAffectChest(AFF_INVISIBLE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("farsee", "that provide you with farsee")
-			p = AddLockerChest(new EqAffectChest(AFF_FARSEE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("det_invis", "that provide you with detect invisibile")
-			p = AddLockerChest(new EqAffectChest(AFF_DETECT_INVISIBLE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("haste", "that provide you with haste")
-			p = AddLockerChest(new EqAffectChest(AFF_HASTE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("sense_life", "that provide you with sense life")
-			p = AddLockerChest(new EqAffectChest(AFF_SENSE_LIFE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("minor_globe", "that provide you with minor globe of invulnerability")
-			p = AddLockerChest(new EqAffectChest(AFF_MINOR_GLOBE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("stone_skin", "that provide you with stone skin")
-			p = AddLockerChest(new EqAffectChest(AFF_STONE_SKIN, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("waterbreath", "that provide you with waterbreath")
-			p = AddLockerChest(new EqAffectChest(AFF_WATERBREATH, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_evil", "that provide you with protection from evil")
-			p = AddLockerChest(new EqAffectChest(AFF_PROTECT_EVIL, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("slow_poison", "that provide you with slow poison")
-			p = AddLockerChest(new EqAffectChest(AFF_SLOW_POISON, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_good", "that provide you with protection from good")
-			p = AddLockerChest(new EqAffectChest(AFF_PROTECT_GOOD, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("sneak", "that provide you with sneak")
-			p = AddLockerChest(new EqAffectChest(AFF_SNEAK, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("barkskin", "that provide you with barkskin")
-			p = AddLockerChest(new EqAffectChest(AFF_BARKSKIN, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("infravision", "that provide you with infravision")
-			p = AddLockerChest(new EqAffectChest(AFF_INFRAVISION, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("levitate", "that provide you with levitation")
-			p = AddLockerChest(new EqAffectChest(AFF_LEVITATE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("fly", "that provide you with fly")
-			p = AddLockerChest(new EqAffectChest(AFF_FLY, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("aware", "that provide you with awareness")
-			p = AddLockerChest(new EqAffectChest(AFF_AWARE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_fire", "that provide you with protection from fire")
-			p = AddLockerChest(new EqAffectChest(AFF_PROT_FIRE, 1, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("biofeedback", "that provide you with biofeedback")
-			p = AddLockerChest(new EqAffectChest(AFF_BIOFEEDBACK, 1, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("invis", "that provide you with invisibility",
+				p = AddLockerChest(new EqAffectChest(AFF_INVISIBLE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("farsee", "that provide you with farsee",
+				p = AddLockerChest(new EqAffectChest(AFF_FARSEE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("det_invis", "that provide you with detect invisibile",
+				p = AddLockerChest(new EqAffectChest(AFF_DETECT_INVISIBLE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("haste", "that provide you with haste",
+				p = AddLockerChest(new EqAffectChest(AFF_HASTE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("sense_life", "that provide you with sense life",
+				p = AddLockerChest(new EqAffectChest(AFF_SENSE_LIFE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("minor_globe", "that provide you with minor globe of invulnerability",
+				p = AddLockerChest(new EqAffectChest(AFF_MINOR_GLOBE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("stone_skin", "that provide you with stone skin",
+				p = AddLockerChest(new EqAffectChest(AFF_STONE_SKIN, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("waterbreath", "that provide you with waterbreath",
+				p = AddLockerChest(new EqAffectChest(AFF_WATERBREATH, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_evil", "that provide you with protection from evil",
+				p = AddLockerChest(new EqAffectChest(AFF_PROTECT_EVIL, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("slow_poison", "that provide you with slow poison",
+				p = AddLockerChest(new EqAffectChest(AFF_SLOW_POISON, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_good", "that provide you with protection from good",
+				p = AddLockerChest(new EqAffectChest(AFF_PROTECT_GOOD, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("sneak", "that provide you with sneak",
+				p = AddLockerChest(new EqAffectChest(AFF_SNEAK, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("barkskin", "that provide you with barkskin",
+				p = AddLockerChest(new EqAffectChest(AFF_BARKSKIN, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("infravision", "that provide you with infravision",
+				p = AddLockerChest(new EqAffectChest(AFF_INFRAVISION, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("levitate", "that provide you with levitation",
+				p = AddLockerChest(new EqAffectChest(AFF_LEVITATE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("fly", "that provide you with fly",
+				p = AddLockerChest(new EqAffectChest(AFF_FLY, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("aware", "that provide you with awareness",
+				p = AddLockerChest(new EqAffectChest(AFF_AWARE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_fire", "that provide you with protection from fire",
+				p = AddLockerChest(new EqAffectChest(AFF_PROT_FIRE, 1, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("biofeedback", "that provide you with biofeedback",
+				p = AddLockerChest(new EqAffectChest(AFF_BIOFEEDBACK, 1, chestKeyword, chestDesc)));
 
-			IF_ISLOCKERTYPE("fireshield", "that provide you with fireshield")
-			p = AddLockerChest(new EqAffectChest(AFF2_FIRESHIELD, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("ultravision", "that provide you with ultravision")
-			p = AddLockerChest(new EqAffectChest(AFF2_ULTRAVISION, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("det_evil", "that provide you with detect evil")
-			p = AddLockerChest(new EqAffectChest(AFF2_DETECT_EVIL, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("det_good", "that provide you with detect good")
-			p = AddLockerChest(new EqAffectChest(AFF2_DETECT_GOOD, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("det_magic", "that provide you with detect magic")
-			p = AddLockerChest(new EqAffectChest(AFF2_DETECT_MAGIC, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_cold", "that provide you with protection from cold")
-			p = AddLockerChest(new EqAffectChest(AFF2_PROT_COLD, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_light", "that provide you with protection from lightning")
-			p = AddLockerChest(new EqAffectChest(AFF2_PROT_LIGHTNING, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("globe", "that provide you with globe of invulnerability")
-			p = AddLockerChest(new EqAffectChest(AFF2_GLOBE, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_gas", "that provide you with protection from gas")
-			p = AddLockerChest(new EqAffectChest(AFF2_PROT_GAS, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_acid", "that provide you with protection from acid")
-			p = AddLockerChest(new EqAffectChest(AFF2_PROT_ACID, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("soulshield", "that provide you with soulshield")
-			p = AddLockerChest(new EqAffectChest(AFF2_SOULSHIELD, 2, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("fireshield", "that provide you with fireshield",
+				p = AddLockerChest(new EqAffectChest(AFF2_FIRESHIELD, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("ultravision", "that provide you with ultravision",
+				p = AddLockerChest(new EqAffectChest(AFF2_ULTRAVISION, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("det_evil", "that provide you with detect evil",
+				p = AddLockerChest(new EqAffectChest(AFF2_DETECT_EVIL, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("det_good", "that provide you with detect good",
+				p = AddLockerChest(new EqAffectChest(AFF2_DETECT_GOOD, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("det_magic", "that provide you with detect magic",
+				p = AddLockerChest(new EqAffectChest(AFF2_DETECT_MAGIC, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_cold", "that provide you with protection from cold",
+				p = AddLockerChest(new EqAffectChest(AFF2_PROT_COLD, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_light", "that provide you with protection from lightning",
+				p = AddLockerChest(new EqAffectChest(AFF2_PROT_LIGHTNING, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("globe", "that provide you with globe of invulnerability",
+				p = AddLockerChest(new EqAffectChest(AFF2_GLOBE, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_gas", "that provide you with protection from gas",
+				p = AddLockerChest(new EqAffectChest(AFF2_PROT_GAS, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_acid", "that provide you with protection from acid",
+				p = AddLockerChest(new EqAffectChest(AFF2_PROT_ACID, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("soulshield", "that provide you with soulshield",
+				p = AddLockerChest(new EqAffectChest(AFF2_SOULSHIELD, 2, chestKeyword, chestDesc)));
 
-			IF_ISLOCKERTYPE("ecto_form", "that provide you with ectoplasmic form")
-			p = AddLockerChest(new EqAffectChest(AFF3_ECTOPLASMIC_FORM, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_animal", "that provide you with protection from animals")
-			p = AddLockerChest(new EqAffectChest(AFF3_PROT_ANIMAL, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("spirit_ward", "that provide you with spirit ward")
-			p = AddLockerChest(new EqAffectChest(AFF3_SPIRIT_WARD, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("gsw", "that provide you with greater spirit ward")
-			p = AddLockerChest(new EqAffectChest(AFF3_GR_SPIRIT_WARD, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("inert_barrier", "that provide you with inertial barrier")
-			p = AddLockerChest(new EqAffectChest(AFF3_INERTIAL_BARRIER, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("light_shield", "that provide you with lightning shield")
-			p = AddLockerChest(new EqAffectChest(AFF3_LIGHTNINGSHIELD, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("coldshield", "that provide you with coldshield")
-			p = AddLockerChest(new EqAffectChest(AFF3_COLDSHIELD, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("blur", "that provide you with blur")
-			p = AddLockerChest(new EqAffectChest(AFF3_BLUR, 3, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("ecto_form", "that provide you with ectoplasmic form",
+				p = AddLockerChest(new EqAffectChest(AFF3_ECTOPLASMIC_FORM, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_animal", "that provide you with protection from animals",
+				p = AddLockerChest(new EqAffectChest(AFF3_PROT_ANIMAL, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("spirit_ward", "that provide you with spirit ward",
+				p = AddLockerChest(new EqAffectChest(AFF3_SPIRIT_WARD, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("gsw", "that provide you with greater spirit ward",
+				p = AddLockerChest(new EqAffectChest(AFF3_GR_SPIRIT_WARD, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("inert_barrier", "that provide you with inertial barrier",
+				p = AddLockerChest(new EqAffectChest(AFF3_INERTIAL_BARRIER, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("light_shield", "that provide you with lightning shield",
+				p = AddLockerChest(new EqAffectChest(AFF3_LIGHTNINGSHIELD, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("coldshield", "that provide you with coldshield",
+				p = AddLockerChest(new EqAffectChest(AFF3_COLDSHIELD, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("blur", "that provide you with blur",
+				p = AddLockerChest(new EqAffectChest(AFF3_BLUR, 3, chestKeyword, chestDesc)));
 
-			IF_ISLOCKERTYPE("nofear", "that make you fearless")
-			p = AddLockerChest(new EqAffectChest(AFF4_NOFEAR, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("regeneration", "that provide you with regeneration")
-			p = AddLockerChest(new EqAffectChest(AFF4_REGENERATION, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("hawkvision", "that provide you with hawkvision")
-			p = AddLockerChest(new EqAffectChest(AFF4_HAWKVISION, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("sense_holy", "that provide you with sense holyness")
-			p = AddLockerChest(new EqAffectChest(AFF4_SENSE_HOLINESS, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("prot_living", "that provide you with protection from living")
-			p = AddLockerChest(new EqAffectChest(AFF4_PROT_LIVING, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("det_illusion", "that provide you with detect illusion")
-			p = AddLockerChest(new EqAffectChest(AFF4_DETECT_ILLUSION, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("neg_shield", "that provide you with negative shield")
-			p = AddLockerChest(new EqAffectChest(AFF4_NEG_SHIELD, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("wildmagic", "that provide you with wildmagic")
-			p = AddLockerChest(new EqAffectChest(AFF4_WILDMAGIC, 4, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("nofear", "that make you fearless",
+				p = AddLockerChest(new EqAffectChest(AFF4_NOFEAR, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("regeneration", "that provide you with regeneration",
+				p = AddLockerChest(new EqAffectChest(AFF4_REGENERATION, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("hawkvision", "that provide you with hawkvision",
+				p = AddLockerChest(new EqAffectChest(AFF4_HAWKVISION, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("sense_holy", "that provide you with sense holyness",
+				p = AddLockerChest(new EqAffectChest(AFF4_SENSE_HOLINESS, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("prot_living", "that provide you with protection from living",
+				p = AddLockerChest(new EqAffectChest(AFF4_PROT_LIVING, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("det_illusion", "that provide you with detect illusion",
+				p = AddLockerChest(new EqAffectChest(AFF4_DETECT_ILLUSION, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("neg_shield", "that provide you with negative shield",
+				p = AddLockerChest(new EqAffectChest(AFF4_NEG_SHIELD, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("wildmagic", "that provide you with wildmagic",
+				p = AddLockerChest(new EqAffectChest(AFF4_WILDMAGIC, 4, chestKeyword, chestDesc)));
 
-			IF_ISLOCKERTYPE("prot_undead", "that provide you with protection from undead")
-			p = AddLockerChest(new EqAffectChest(AFF5_PROT_UNDEAD, 5, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("prot_undead", "that provide you with protection from undead",
+				p = AddLockerChest(new EqAffectChest(AFF5_PROT_UNDEAD, 5, chestKeyword, chestDesc)));
 			// New locker sorts added by Gellz 29/04/15
-			IF_ISLOCKERTYPE("vamp", "that provide you with vampiric touch")
-			p = AddLockerChest(new EqAffectChest(AFF2_VAMPIRIC_TOUCH, 2, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("toiw", "that provide you with tower of iron will")
-			p = AddLockerChest(new EqAffectChest(AFF3_TOWER_IRON_WILL, 3, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("dark", "that provide you with globe of darkness")
-			p = AddLockerChest(new EqAffectChest(AFF4_GLOBE_OF_DARKNESS, 4, chestKeyword, chestDesc));
-			IF_ISLOCKERTYPE("pwt", "that provide you with pass without trace")
-			p = AddLockerChest(new EqAffectChest(AFF3_PASS_WITHOUT_TRACE, 3, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("vamp", "that provide you with vampiric touch",
+				p = AddLockerChest(new EqAffectChest(AFF2_VAMPIRIC_TOUCH, 2, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("toiw", "that provide you with tower of iron will",
+				p = AddLockerChest(new EqAffectChest(AFF3_TOWER_IRON_WILL, 3, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("dark", "that provide you with globe of darkness",
+				p = AddLockerChest(new EqAffectChest(AFF4_GLOBE_OF_DARKNESS, 4, chestKeyword, chestDesc)));
+			IF_ISLOCKERTYPE("pwt", "that provide you with pass without trace",
+				p = AddLockerChest(new EqAffectChest(AFF3_PASS_WITHOUT_TRACE, 3, chestKeyword, chestDesc)));
 
-			IF_ISLOCKERTYPE("dazzle", "that make you a dazzler")
-			p = AddLockerChest(new EqAffectChest(AFF4_DAZZLER, 4, chestKeyword, chestDesc));
+			IF_ISLOCKERTYPE("dazzle", "that make you a dazzler",
+				p = AddLockerChest(new EqAffectChest(AFF4_DAZZLER, 4, chestKeyword, chestDesc)));
 
 			// New locker sorts added by Gellz 29/04/15
 			// ignore 'unsorted' (or none), but give error if not found, not in
