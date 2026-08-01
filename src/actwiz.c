@@ -2319,7 +2319,7 @@ void do_stat(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			if ((k->player.m_class == 0) || (k->player.m_class > (1 << CLASS_COUNT - 1)) || (GET_LEVEL(k) < 1) || IS_TRUSTED(k))
+			if (k->player.m_class == 0 || k->player.m_class > (1 << CLASS_COUNT) - 1 || GET_LEVEL(k) < 1 || IS_TRUSTED(k))
 				strcpy(buf1, "Unknown");
 			else
 				strcpy(buf1, comma_string((long)(new_exp_table[GET_LEVEL(k) + 1] - GET_EXP(k))));

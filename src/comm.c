@@ -2014,7 +2014,7 @@ void close_socket(struct descriptor_data *d)
 	else
 		logit(LOG_COMM,
 		      "Losing descriptor without char [host=%s desc=%d connected=%d ssl=%s].",
-		      d->host ? d->host : "unknown",
+		      *d->host ? d->host : "unknown",
 		      d->descriptor,
 		      d->connected,
 		      d->sslses ? "yes" : "no");
@@ -2834,7 +2834,7 @@ int process_input(P_desc t)
 			logit(LOG_COMM,
 			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
-			      t->host ? t->host : "unknown",
+			      *t->host ? t->host : "unknown",
 			      t->descriptor,
 			      t->connected,
 			      t->sslses ? "yes" : "no");
@@ -2858,7 +2858,7 @@ int process_input(P_desc t)
 			logit(LOG_COMM,
 			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
-			      t->host ? t->host : "unknown",
+			      *t->host ? t->host : "unknown",
 			      t->descriptor,
 			      t->connected,
 			      t->sslses ? "yes" : "no");

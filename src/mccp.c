@@ -295,7 +295,7 @@ int write_to_descriptor(P_desc player, const char *txt)
 	conv_buf[j] = '\0';
 	txt         = conv_buf;
 	total       = j;
-	char down[j + 1];
+	char down[MAX_STRING_LENGTH * 2];
 
 	if (player->cp437)
 	{

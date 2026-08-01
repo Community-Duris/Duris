@@ -1638,10 +1638,8 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 	loaded = ((weight_notches_above_naked(ch) > 3) || (IS_CARRYING_N(ch) > (int)(0.25 * CAN_CARRY_N(ch))) || !number(0, 299));
 
 	/* Are we loaded past 6% of our capacity? (or sometimes even without it)*/
-	switch (loaded)
+	if (!loaded)
 	{
-		case FALSE:
-
 			/*  No we're not. Let's look if there's anything in adjacent rooms and move there. */
 			if (1 /*!number(0, 5)*/)
 			{
@@ -1663,10 +1661,9 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 						}
 					}
 			}
-			break;
-
-		case TRUE:
-
+	}
+	else
+	{
 			/* Yes we are. Let's get closer to the well */
 
 			if (!number(0, 9) && loaded)
@@ -1690,7 +1687,6 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 				data.path_step = -1;
 				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
 			}
-			break;
 	}
 
 	return FALSE;

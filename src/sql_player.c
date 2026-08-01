@@ -1011,7 +1011,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->only.pc->echo_toggle,
 		                   ch->only.pc->prompt,
 		                   ch->only.pc->wiz_invis,
-		                   0,
+		                   0UL,
 		                   ch->only.pc->wimpy,
 		                   ch->only.pc->aggressive,
 		                   ch->only.pc->highest_level,
@@ -1153,7 +1153,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->only.pc->echo_toggle,
 		                   ch->only.pc->prompt,
 		                   ch->only.pc->wiz_invis,
-		                   0,
+		                   0UL,
 		                   ch->only.pc->wimpy,
 		                   ch->only.pc->aggressive,
 		                   ch->only.pc->highest_level,
@@ -8504,7 +8504,7 @@ static bool sql_load_shopkeeper_affects(P_char ch, int shopkeeper_id)
 	if (!ch || !DB || shopkeeper_id <= 0)
 		return false;
 
-	char query[128];
+	char query[256];
 	snprintf(query,
 	         sizeof(query),
 	         "SELECT type, duration, modifier, location, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
