@@ -1425,6 +1425,18 @@ static int sp_dispatch(struct sp_rec *rec, struct sp_ctx *cx, int cmd, char *arg
 	if (ev == SP_EV_FIGHT && !(r & SP_X_SELFGONE) && (rec->events & (1u << SP_EV_HPBELOW)))
 		r |= sp_run(rec, SP_EV_HPBELOW, cx, NULL, 0);
 
+	/* A block suppresses the command that triggered it. Data must not
+	   be able to do that to a privileged command - otherwise a record
+	   could trigger on 'goto' and wall an immortal out of its own zone.
+	   The same minimum_level/grantable test sp_do_command() already
+	   applies in the other direction. Ordinary blocks still apply to
+	   trusted characters: a maze that transfers and then blocks must
+	   suppress the original move for everyone, or the immortal walks a
+	   broken maze. */
+	if (cx->blocked && cmd >= 0 && cmd < MAX_CMD_LIST &&
+	    (cmd_info[cmd].minimum_level > 0 || cmd_info[cmd].grantable))
+		return FALSE;
+
 	return cx->blocked ? TRUE : FALSE;
 }
 
@@ -1642,6 +1654,25 @@ void studioproc_speech(P_char ch, const char *text)
 					if (!IS_ALIVE(ch) || ch->in_room != room)
 						return;
 				}
+			}
+			/* worn as well - the same set special() walks for object
+			   procs (interp.c:2184), and the same set the proclib tail
+			   below already covers: a ring that answers its wearer
+			   behaves like any other object proc */
+			for (j = 0; j < MAX_WEAR; j++)
+			{
+				o = ch->equipment[j];
+				if (!o || o->R_num < 0)
+					continue;
+				if ((rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)) == NULL)
+					continue;
+				memset(&cx, 0, sizeof(cx));
+				cx.targ     = SP_T_OBJ;
+				cx.self_obj = o;
+				cx.actor    = ch;
+				sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
+				if (!IS_ALIVE(ch) || ch->in_room != room)
+					return;
 			}
 		}
 	}

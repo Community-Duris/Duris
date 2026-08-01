@@ -123,7 +123,13 @@ All of these are enforced in C and none are optional.
   hp and passes `RAWDAM_NOKILL`. Triggers wound; they do not execute.
 - Typed damage goes through `spell_damage()`, so every existing
   resistance, shield and globe check still applies.
-- Trusted characters are never damaged and never blocked.
+- Trusted characters are never damaged. Ordinary `block`s DO apply to
+  them - a maze that transfers and then blocks must suppress the
+  original move for everyone, or an immortal walks a broken maze - but
+  data can never suppress a privileged command: a `block` fired by a
+  trigger on a command with a non-zero `minimum_level` (or the
+  grantable flag) is ignored, the same test `do` applies in the other
+  direction. `goto` always works.
 - Actions on a dead or extracted target are skipped. `purge` must be
   last and is refused outright for DEATH, HPBELOW and DAMAGED.
 - **A vnum that already has a hand-written C proc keeps it.** The C proc

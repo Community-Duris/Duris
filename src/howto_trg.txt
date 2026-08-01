@@ -105,7 +105,10 @@ Safety Rails (enforced in C, not optional):
     flag, and respects the command's minimum position.
   Every damage path caps one firing at 80% of the victim's current hp and
     passes RAWDAM_NOKILL: triggers wound, they do not execute.
-  Trusted characters are never damaged or blocked by a trigger.
+  Trusted characters are never damaged by a trigger. block DOES apply
+  to them for ordinary commands (a maze must work for everyone), but a
+  privileged command (minimum_level > 0, or grantable) can never be
+  blocked by data - goto always works.
   Counters live as AFFTYPE_STORE affects on the instance, so they die
     with the mob and show up in 'stat' for debugging.
 
