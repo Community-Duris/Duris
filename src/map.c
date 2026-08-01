@@ -787,7 +787,8 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 			if (whats_in && whats_in < CONTAINS_MAX)
 				what = whats_in;
 
-			const AnsiString& symb = IS_PC(ch)? ch->only.pc->map_glyphs[what] : sector_symbol[what];
+			const AnsiString& symb = (IS_PC(ch) && ch->only.pc->map_glyphs)?
+				(*ch->only.pc->map_glyphs)[what] : sector_symbol[what];
 			size_t nv = symb.size();
 			if (!nv)
 				line.push_back('!'); // error
@@ -869,7 +870,9 @@ static const char* glyph_preset_names[][2] = {
 
 void set_glyphs_preset(P_char ch, int w)
 {
-	auto& gly = ch->only.pc->map_glyphs;
+	if (!ch->only.pc->map_glyphs)
+		ch->only.pc->map_glyphs = new vector<AnsiString>;
+	auto& gly = *ch->only.pc->map_glyphs;
 	gly.resize(NUM_GLYPHS);
 
 	for (int i = 0; i < NUM_GLYPHS; i++)
@@ -905,22 +908,23 @@ void do_mapglyphs(P_char ch, char *argument, int cmd)
 		return send_to_char("Mobs have to live with the defaults.\n", ch);
 
 	char buf[MAX_STRING_LENGTH], bufgl[MAX_STRING_LENGTH];
-	auto& gly = ch->only.pc->map_glyphs;
+	auto& glyp = ch->only.pc->map_glyphs;
 
 	argument = one_argument(argument, buf);
 	if (isname(buf, "0 basic ascii base baseline"))
 	{
-		set_glyphs_preset(ch, 0);
+		if (glyp)
+			delete glyp;
+		glyp = 0;
 		send_to_char("Loaded preset 0 (ascii).\n", ch);
 		return;
 	}
-	else if (isname(buf, "1"))
-	{
-		set_glyphs_preset(ch, 1);
-		send_to_char("Loaded preset 1 (wip).\n", ch);
-		return;
-	}
-	else if (*buf)
+
+	if (!glyp)
+		set_glyphs_preset(ch, 0);
+	auto& gly = *glyp;
+
+	if (*buf)
 	{
 		// Presets
 		for (int i = 0; i < ARRAY_SIZE(glyph_preset_names); i++)

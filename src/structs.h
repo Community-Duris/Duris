@@ -1305,7 +1305,7 @@ struct pc_only_data
 	int *gcmd_arr;  /* granted arr, stores granted cmd numbs */
 	int  numb_gcmd; /* number of granted cmds */
 
-	vector<AnsiString> map_glyphs;
+	vector<AnsiString> *map_glyphs;
 
 #ifdef OVL
 	sh_int ovl_count;

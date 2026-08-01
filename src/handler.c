@@ -3452,6 +3452,13 @@ void extract_char(P_char ch)
 	}
 	if (IS_PC(ch))
 	{
+		auto& glyp = ch->only.pc->map_glyphs;
+		if (glyp)
+		{
+			delete glyp;
+			glyp = 0;
+		}
+
 		if (ch->desc && ch->desc->connected != CON_DELETE)
 		{
 #ifndef USE_ACCOUNT
