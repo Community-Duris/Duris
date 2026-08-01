@@ -42,6 +42,7 @@
 #include "objmisc.h"
 #include "outposts.h"
 #include "paladins.h"
+#include "plushit.h"
 #include "reavers.h"
 #include "redis.h"
 #include "siege.h"
@@ -6512,6 +6513,9 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 
 	if (weapon && weapon->type != ITEM_WEAPON)
 		weapon = NULL;
+
+	if (plushit_blocks(ch, victim, weapon)) /* AFF3_SILVER / AFF3_PLUS* enforcement; no-op unless enabled in lib/duris.properties */
+		return FALSE;
 
 	if ((IS_PC(ch) || IS_PC_PET(ch)) && IS_PC(victim) && !IS_AFFECTED5(ch, AFF5_NOT_OFFENSIVE))
 	{
