@@ -1,0 +1,126 @@
+This is a help file for coders and builders.  It describes areas/world.trg,
+  the data file that gives mobs, objects and rooms behaviour without new C.
+  The engine side lives in studioproc.c/.h; the design rule there is that
+  the C is primitives only and a proc is data.  If a behaviour seems to
+  need a new C function, compose it from the primitives below instead.
+
+What It Is:
+  At boot, studioproc_boot() reads areas/world.trg and binds one generic
+    proc to every mob, object or room vnum named in it.  From then on the
+    engine's normal dispatch (special(), CMD_TOROOM, CMD_GOTHIT,
+    CMD_MOB_COMBAT, CMD_PERIODIC, CMD_DEATH, ...) drives the triggers.
+  No file, no cost: the engine logs one line and idles.
+  A vnum that already has a hand-written C proc keeps it.  The C proc runs
+    first; if it returns TRUE the data trigger never fires.
+  The file is read, never written.  A parse error logs zone + vnum + line
+    to logs/log/status and SKIPS that record; a bad .trg cannot stop a
+    boot.  Make sure logs/log/ exists or the parse errors go nowhere.
+
+Record Grammar:
+  #<vnum> <M|O|R>            target prototype: Mob / Object / Room
+  T <EVENT> [args]           one trigger; up to 32 T blocks per record
+    [chance <1-100>]         optional percent gate
+    [if [!]<cond> ...]       0..8 condition lines, ALL must hold
+    <action lines>           1..24 actions, one per line
+  ~                          ends the trigger
+  S                          ends the record
+  #~                         ends the file
+  '*' starts a comment.  Blank lines are ignored.
+  In messages $n is the actor, $m is the self, $$ is a literal $.
+
+  Example -- a guard that bars the east door to anyone without a pass:
+    #5100 M
+    T CMD east
+    if !carrying 5101
+    say You do not pass without the sigil.
+    block
+    ~
+    S
+    #~
+
+Events:
+  DEATH                     self died
+  KILL                      self killed someone
+  HIT                       self (a wielded weapon) struck someone
+  DAMAGED [melee|spell|any] self was struck
+  FIGHT                     one combat round
+  HPBELOW <pct>             hp first fell below pct (latched per instance)
+  PULSE <n>                 every n mob pulses (jittered)
+  ENTER                     a char entered self's room
+  LEAVE                     a char is leaving self's room
+  SPEECH <kw ...>           a PC said something containing a keyword
+  GIVE <objvnum|ANY>        self (mob) was handed that object
+  CMD <verb> [kw ...]       a char typed <verb> here.  This covers look,
+                            open, touch, wear, remove, enter, push, pull,
+                            flee, ... every verb the engine has.
+  HOUR <0-23|ANY>           the game hour changed
+  REPOP                     this instance was just created
+  SEARCH                    an object was found by 'search'
+  DECAY                     an object's decay timer expired
+
+  A mob using FIGHT, PULSE or DEATH triggers must carry ACT_SPEC in its
+    .mob record (and ACT_SPEC_DIE as well for DEATH): the engine only asks
+    ACT_SPEC mobs for combat/periodic ticks (mobact.c, fight.c).  Speech,
+    enter, damaged, commands and give work without any act flag.
+
+Conditions:  if [!]<cond>, all must hold, max 8 per trigger
+  carrying <ovnum> / wearing <ovnum> / class <name> / race <code>
+  sex <m|f|n> / level <op> <n> / align <op> <n> / hour <op> <n>
+  hp <op> <pct> / groupsize <op> <n> / pcs <op> <n> / room <vnum>
+  zone <n> / affect <spell|tag> / counter <name> <op> <n>
+  mobs <mvnum> [room|zone|world] <op> <n> / chance <1-100> / ispc /
+  fighting
+  <op> is  = != < <= > >= .  '!' negates.  Any condition takes a trailing
+    'on self|actor' (default actor, falling back to self).  On an object,
+    self resolves to the carrier or wearer -- that is how a cursed item
+    reaches "the holder" from a PULSE trigger where no actor exists.
+
+Actions:
+  say|emote|echo|zecho <text>      messages ($n, $m, $$ expand)
+  oneof <n>                        pick one of the next n action lines;
+                                   repeat a line to weight it
+  attack NdS+B [type <t>] [scope one|room|group|nottank] [save <s> [half]]
+         [cd <secs>] [hit "..."] [miss "..."] [room "..."]
+                                   a named attack owned by the target;
+                                   typed damage runs through spell_damage()
+                                   so resistances apply
+  affect <spell|tag> <ticks> [on self|actor] [save <s>]
+         [apply <APPLY name|n> <mod>] [aff <AFF name>]
+  unaffect <spell|tag> [on self|actor]
+  cast '<spell name>' [self|actor|ally]   ally = lowest-hp NPC in the room
+  do [self|actor] <command line>   run any engine command as a character
+  set <name> <n> / add <name> <n>  per-INSTANCE counters
+  mload <mvnum> / oload <ovnum> / give <ovnum>
+  goto <roomvnum> / transfer <roomvnum>
+  exit <roomvnum> <dir> [to <roomvnum>|none] [state open|closed|locked|secret]
+  damage NdS+B / heal <amount|full>
+  block                            swallow the triggering command
+  purge                            must be last; refused for DEATH,
+                                   HPBELOW and DAMAGED triggers
+
+Safety Rails (enforced in C, not optional):
+  Max 24 actions / 8 conditions per trigger, 32 triggers per record.
+  Per-trigger re-entrancy latch plus a global depth ceiling of 4.
+  'do' refuses commands with a non-zero minimum_level or the grantable
+    flag, and respects the command's minimum position.
+  Every damage path caps one firing at 80% of the victim's current hp and
+    passes RAWDAM_NOKILL: triggers wound, they do not execute.
+  Trusted characters are never damaged or blocked by a trigger.
+  Counters live as AFFTYPE_STORE affects on the instance, so they die
+    with the mob and show up in 'stat' for debugging.
+
+Howto Install a Zone's Triggers:
+  First, install the zone's area files as usual (areas/wld, areas/mob,
+    ..., name in areas/AREA).
+  Second, append the zone's trigger records to areas/world.trg BEFORE the
+    terminating "#~" line.  The file is a plain concatenation; there is
+    no build step.
+  Third, reboot (or copyover) and check the boot line in logs/log/status:
+      STUDIOPROC: 12 records, 47 triggers, 12 bound (31 mob, 6 obj,
+      10 room), 4 counters.
+    "records" must equal the number of "#<vnum>" headers you added.  If it
+    is short, grep logs/log/status for STUDIOPROC: every skipped record
+    names its zone, vnum, line and reason.  A skipped record is silent in
+    game, so the log line is the only warning you get.
+  To turn the whole thing off in a hurry: rename areas/world.trg and
+    reboot.  Everything reverts to stock behaviour.
