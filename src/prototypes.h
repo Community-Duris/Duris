@@ -957,6 +957,7 @@ void   die(P_char, P_char);
 void   do_trophy(P_char, char *, int);
 void   group_gain(P_char, P_char);
 float  group_exp_modifier(P_char ch);
+int    num_group_members_in_room(P_char ch);
 bool hit(P_char, P_char, P_obj, int * = NULL);
 int  chance_to_hit(P_char, P_char, int, P_obj);
 bool weapon_proc(P_obj, P_char, P_char);

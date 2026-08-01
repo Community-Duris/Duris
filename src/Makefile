@@ -90,6 +90,7 @@ OBJS =  $(SHIP_OBJS) \
 				 condition.o \
 				 constant.o \
 				 ctf.o \
+				 dam_mods.o \
 				 db.o \
 				 debug.o \
 				 disguise.o \
