@@ -51,6 +51,7 @@
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "studioproc.h"
 #include "tether.h"
 #include "vnum.obj.h"
 #include "weather.h"
@@ -2562,6 +2563,8 @@ void die(P_char ch, P_char killer)
 				}
 			}
 		}
+
+		studioproc_kill(killer, ch); /* before the ACT_SPEC_DIE block, which can return early */
 
 		if (IS_NPC(ch) && (ch->specials.act & ACT_SPEC_DIE) && (ch->specials.act & ACT_SPEC))
 		{
