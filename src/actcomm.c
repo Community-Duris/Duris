@@ -15,6 +15,7 @@
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "studioproc.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -441,6 +442,8 @@ int say(P_char ch, const char *argument)
 		listen_broadcast(ch, (argument + i), LISTEN_SAY);
 
 		check_magic_doors(ch, argument + i);
+
+		studioproc_speech(ch, argument + i); /* after the say has landed, so a reply reads as a reply */
 	}
 
 	return TRUE;

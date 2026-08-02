@@ -14,6 +14,7 @@
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "studioproc.h"
 #include "utility.h"
 #include "utils.h"
 #include <ctype.h>
@@ -2841,6 +2842,8 @@ void do_give(P_char ch, char *argument, int cmd)
 	char_light(ch);
 	room_light(ch->in_room, REAL);
 	nq_action_check(ch, vict, NULL);
+
+	studioproc_give(vict, obj, ch); /* last: a GIVE trigger may purge vict */
 }
 
 void weight_change_object(P_obj obj, int weight)

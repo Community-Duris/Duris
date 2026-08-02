@@ -192,6 +192,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs.ioun.o \
 				 specs.jot.o \
 				 specs.library.o \
+				 studioproc.o \
 				 specs.lohrr.o \
 				 specs.mobile.o \
 				 specs.morgs.o \

@@ -48,6 +48,8 @@
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "studioproc.h"
+#include "tether.h"
 #include "vnum.obj.h"
 #include "weather.h"
 #include "world_quest.h"
@@ -2618,8 +2620,9 @@ void die(P_char ch, P_char killer)
 			}
 		}
 
-		if (IS_NPC(ch) && (ch->specials.act & ACT_SPEC_DIE) &&
-		    (ch->specials.act & ACT_SPEC))
+		studioproc_kill(killer, ch); /* before the ACT_SPEC_DIE block, which can return early */
+
+		if (IS_NPC(ch) && (ch->specials.act & ACT_SPEC_DIE) && (ch->specials.act & ACT_SPEC))
 		{
 			if (!mob_index[GET_RNUM(ch)].func.mob)
 			{

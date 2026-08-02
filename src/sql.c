@@ -3721,7 +3721,7 @@ void sql_zone_touch_finished(const char *event_key, int boot_time,
 	    "toucher_pid, group_size, epic_value, alignment_delta, dedupe_key, created_at) "
 	    "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, "
 	    "SHA2(CONCAT('zone_touch', '|', '%s', '|', %d, '|', %d, '|', %d, '|', "
-	    "%d, '|', %d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
+	    "%d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
 	    "ON DUPLICATE KEY UPDATE id=id",
 	    safe_key, boot_time, touched_at, zone_number,
 	    toucher_pid, group_size, epic_value, alignment_delta,

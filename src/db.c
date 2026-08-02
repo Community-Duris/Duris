@@ -34,6 +34,7 @@
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "sql.h"
+#include "studioproc.h"
 #include "weather.h"
 
 /*
@@ -593,6 +594,12 @@ void boot_db(int mini_mode)
 	fprintf(stderr, "-- Spells.\n");
 	logit(LOG_STATUS, "   Spells.");
 	assign_spell_pointers();
+
+	/* Load areas/world.trg and bind the generic zone procs.  Must run
+	   after assign_spell_pointers() -- the .trg parser resolves spell
+	   names through spells[] -- and before ne_init_events(), which asks
+	   every bound room proc whether it wants a periodic tick. */
+	studioproc_boot();
 
 	fprintf(stderr, "Initializing...\n");
 

@@ -302,7 +302,7 @@ unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
 	local_y = ((vroom - zone_start_vnum) / zone->mapx) % zone->mapy;
 
 	// how far are we from the western local map edge
-	local_x = (vroom - zone_start_vnum) % zone->mapy;
+	local_x = (vroom - zone_start_vnum) % zone->mapx;
 
 	if (local_x + x < 0)
 		local_x += zone->mapx;

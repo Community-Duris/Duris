@@ -63,7 +63,7 @@ void disproom(P_char ch, int x, int y)
 	local_y = ((vroom - zone_start_vnum) / zone->mapx) % zone->mapy;
 
 	// how far are we from the western local map edge
-	local_x = (vroom - zone_start_vnum) % zone->mapy;
+	local_x = (vroom - zone_start_vnum) % zone->mapx;
 
 	if (local_x + x < 0)
 	{
@@ -165,7 +165,7 @@ void do_test_room(P_char ch, char *arg, int cmd)
 	local_y = ((vroom - zone_start_vnum) / zone->mapx) % zone->mapy;
 
 	// how far are we from the western local map edge
-	local_x = (vroom - zone_start_vnum) % zone->mapy;
+	local_x = (vroom - zone_start_vnum) % zone->mapx;
 
 	char buff[100];
 	snprintf(buff, 100, "&+CZone:&n (%dx%d) [%d,%d] '%s'&n %s\n", zone->mapx, zone->mapy, local_x, local_y, zone->name, zone->filename);
