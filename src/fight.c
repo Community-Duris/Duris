@@ -49,7 +49,6 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "studioproc.h"
-#include "tether.h"
 #include "vnum.obj.h"
 #include "weather.h"
 #include "world_quest.h"
