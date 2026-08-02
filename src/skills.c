@@ -3117,7 +3117,9 @@ void initialize_skills()
 	SKILL_ADD(CLASS_MONK, 1, 100);
 
 	SKILL_CREATE_WITH_MESSAGES("diamond soul", SKILL_DIAMOND_SOUL, TAR_MENTAL, "You no longer feel resistant to magic!", NULL);
+#ifndef _DE_
 	skills[SKILL_DIAMOND_SOUL].wear_off_char[1] = "You no longer feel resistant to paralysis!";
+#endif
 	SKILL_ADD(CLASS_MONK, 1, 100);
 
 	SKILL_CREATE("chant", SKILL_CHANT, TAR_MENTAL);

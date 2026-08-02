@@ -1,0 +1,25 @@
+name: compile test
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: sysinfo
+      run: echo -en '\e[33;1mThread count:\e[0m ' && nproc && free -h
+    - name: build-deps
+      run: sudo apt install equivs dos2unix && equivs-build duris-build-deps.equivs && sudo apt install ./duris-build-deps_1.0_all.deb
+    - name: build DMS
+      run: make -j`nproc` -C src
+    - name: build DE
+      run: make -j`nproc` -C areas/de/src
+    - name: build areas
+      run: make -j`nproc` -C areas/src && cd areas && ./m_slow

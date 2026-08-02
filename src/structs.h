@@ -1917,7 +1917,9 @@ struct s_skill
 };
 
 #ifndef _PFILE_
+# ifndef _DE_
 typedef struct s_skill Skill;
+# endif
 #endif
 
 struct command_info
