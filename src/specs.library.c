@@ -25,6 +25,7 @@
 #include "justice.h"
 #include "specs.prototypes.h"
 #include "spells.h"
+#include "studioproclib.h"
 #include "weather.h"
 
 /*
@@ -293,6 +294,8 @@ struct ObjProcLib
  "          act_room: Actor string sent to room which must contain %p or %q, AND %n.\n"
  "          act_wearer: Actor string sent to room which must contain %p or %q.\n"                                                       },
 	{ proclibobj_hummer, proclibobj_parse_default,  "hummer", "Items 'hums' - similar to some artifact weapons.",                                                             "        No parameters."},
+	{proclibobj_sayresponse, proclibobj_parse_sayresponse, "sayresponse", "Object replies when a player says a keyword.", PROCLIB_SAYRESPONSE_HELP},
+	{proclibobj_transporter, proclibobj_parse_transporter, "transporter", "'enter <keyword>' teleports the actor to a room.", PROCLIB_TRANSPORTER_HELP},
 };
 
 int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
@@ -405,6 +408,17 @@ int proclibObj_add(P_obj obj, char *procName, char *args)
 	if ((NULL == get_scheduled(obj, proclib_obj_event)) && object_proc_libs[libIdx].func(obj, NULL, CMD_SET_PERIODIC, NULL))
 	{
 		add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
+	}
+
+	/* Forward real commands to this vnum's instance proclibs.  A vnum that
+	   already owns a proc keeps it: proclib_chain_install() remembers it and
+	   the bridge calls it FIRST, so the incumbent still wins and a proclib
+	   added at runtime is still reachable. */
+	if ((obj->R_num >= 0) && obj_index[obj->R_num].func.obj != proclib_obj_cmd_bridge)
+	{
+		if (obj_index[obj->R_num].func.obj)
+			proclib_chain_install(obj->R_num, obj_index[obj->R_num].func.obj);
+		obj_index[obj->R_num].func.obj = proclib_obj_cmd_bridge;
 	}
 
 	return 0;
