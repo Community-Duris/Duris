@@ -32,6 +32,11 @@ int   proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument);
    patching interp.c at all. */
 int proclib_obj_cmd_bridge(P_obj obj, P_char ch, int cmd, char *argument);
 
+/* Remember the object proc the bridge displaced on this vnum, so the
+   bridge can call it first instead of the vnum having to choose between
+   its existing proc and its instance proclibs. */
+void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *));
+
 /* Help text for the object_proc_libs[] registry rows in specs.library.c,
    hoisted here so each row stays one line. */
 #define PROCLIB_SAYRESPONSE_HELP                                                    \

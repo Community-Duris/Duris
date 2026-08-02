@@ -410,9 +410,16 @@ int proclibObj_add(P_obj obj, char *procName, char *args)
 		add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
 	}
 
-	/* forward real commands to this vnum's instance proclibs (never clobbers a hand-written proc) */
-	if ((obj->R_num >= 0) && !obj_index[obj->R_num].func.obj)
+	/* Forward real commands to this vnum's instance proclibs.  A vnum that
+	   already owns a proc keeps it: proclib_chain_install() remembers it and
+	   the bridge calls it FIRST, so the incumbent still wins and a proclib
+	   added at runtime is still reachable. */
+	if ((obj->R_num >= 0) && obj_index[obj->R_num].func.obj != proclib_obj_cmd_bridge)
+	{
+		if (obj_index[obj->R_num].func.obj)
+			proclib_chain_install(obj->R_num, obj_index[obj->R_num].func.obj);
 		obj_index[obj->R_num].func.obj = proclib_obj_cmd_bridge;
+	}
 
 	return 0;
 }

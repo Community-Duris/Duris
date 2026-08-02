@@ -165,6 +165,7 @@ int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	struct extra_descr_data *ed;
 	char                     word[MAX_INPUT_LENGTH];
+	int                      was_in;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;                        /* command-driven only */
@@ -215,8 +216,12 @@ int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
 
 		act("$n steps into $p and vanishes.", TRUE, ch, obj, 0, TO_ROOM);
 		act("You step into $p...", FALSE, ch, obj, 0, TO_CHAR);
+		was_in = ch->in_room;
 		char_from_room(ch);
-		if (!char_to_room(ch, rnum, -1))
+		/* char_to_room() is bool and returns TRUE on SUCCESS
+		   (handler.c:1039), so only a successful arrival gets the message
+		   and the look. */
+		if (char_to_room(ch, rnum, -1))
 		{
 			act("$n arrives in a swirl of mist.", TRUE, ch, 0, 0, TO_ROOM);
 			if (IS_PC(ch))
@@ -226,6 +231,16 @@ int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
 				empty[0] = '\0';
 				do_look(ch, empty, CMD_LOOK);
 			}
+		}
+		else if (IS_ALIVE(ch) && ch->in_room == NOWHERE)
+		{
+			/* Refused BEFORE placement: handler.c returns FALSE at three
+			   points above its `ch->in_room = room`, and TRUE/FALSE at many
+			   points below it. A FALSE from below means the character IS in
+			   the destination, so re-inserting would be a duplicate. Testing
+			   the STATE rather than the return covers both. */
+			char_to_room(ch, was_in, -1);
+			send_to_char("Something bars the way, and you step back out.\r\n", ch);
 		}
 		return TRUE;
 	}
@@ -246,9 +261,84 @@ int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
      CMD_SAY    - speech is delivered from studioproc_speech() after the
                   say text has landed, so replies read as replies and the
                   player's say is never swallowed. */
+/* THE DISPLACED-PROC CHAIN.
+
+   A vnum can already own an object proc - a hand-written one, or
+   studioproc_obj from the world.trg engine.  Refusing to install the
+   bridge in that case (the original behaviour) kept the existing proc
+   safe but left every instance proclib on that vnum unreachable: a
+   transporter added at runtime to such a vnum would never see CMD_ENTER,
+   silently.  Refusing is not the only way to be safe, though - we can
+   install the bridge AND keep the displaced proc, calling it first.
+
+   Order is deliberate and matches the rule world.trg already documents:
+   the hand-written C proc runs first and a TRUE return means the data
+   never runs.  So existing content cannot change behaviour; a proclib
+   only sees commands the incumbent declined.
+
+   Sized by distinct vnums that gain a proclib, which is small (boot-time
+   _proclib_ edescs plus whatever an immortal adds), and only ever grown.
+   Main game thread only, like the rest of this file. */
+struct proclib_chain_ent
+{
+	int rnum;
+	int (*prev)(P_obj, P_char, int, char *);
+};
+static struct proclib_chain_ent *proclib_chain     = NULL;
+static int                       proclib_chain_top = 0;
+static int                       proclib_chain_cap = 0;
+
+void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *))
+{
+	int i;
+
+	if (rnum < 0 || !prev || prev == proclib_obj_cmd_bridge)
+		return;
+	for (i = 0; i < proclib_chain_top; i++)
+		if (proclib_chain[i].rnum == rnum)
+			return;                       /* already chained - never double-wrap */
+	if (proclib_chain_top == proclib_chain_cap)
+	{
+		int newcap = proclib_chain_cap ? proclib_chain_cap * 2 : 32;
+		struct proclib_chain_ent *grown =
+		    (struct proclib_chain_ent *)realloc(proclib_chain, newcap * sizeof(*grown));
+
+		if (!grown)
+			return;                       /* out of memory: leave the incumbent alone */
+		proclib_chain     = grown;
+		proclib_chain_cap = newcap;
+	}
+	proclib_chain[proclib_chain_top].rnum = rnum;
+	proclib_chain[proclib_chain_top].prev = prev;
+	proclib_chain_top++;
+}
+
+static int (*proclib_chain_prev(int rnum))(P_obj, P_char, int, char *)
+{
+	int i;
+
+	for (i = 0; i < proclib_chain_top; i++)
+		if (proclib_chain[i].rnum == rnum)
+			return proclib_chain[i].prev;
+	return NULL;
+}
+
 int proclib_obj_cmd_bridge(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	if (!obj || cmd <= 0 || cmd == CMD_SAY)
+	int (*prev)(P_obj, P_char, int, char *);
+
+	if (!obj)
+		return FALSE;
+
+	/* the displaced proc keeps its original semantics, including the cmd
+	   values this bridge itself ignores, so chaining cannot regress it */
+	if (obj->R_num >= 0 && (prev = proclib_chain_prev(obj->R_num)) != NULL)
+	{
+		if (prev(obj, ch, cmd, argument))
+			return TRUE;
+	}
+
+	if (cmd <= 0 || cmd == CMD_SAY)
 		return FALSE;
 	if (!IS_SET(obj->extra_flags, ITEM_PROCLIB))
 		return FALSE;
