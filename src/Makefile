@@ -158,6 +158,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence_queue.o \
 				 sql_persistence_raw.o \
 				 sql_pool.o \
+				 plushit.o \
 				 poll.o \
 				 prompt.o \
 				 properties.o \
