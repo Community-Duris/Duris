@@ -4,7 +4,9 @@
 #ifndef DURIS_ACCOUNT_H
 #define DURIS_ACCOUNT_H
 
-#include "structs.h"
+#ifndef _DE_
+# include "structs.h"
+#endif
 
 #define USE_ACCOUNT
 

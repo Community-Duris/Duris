@@ -1216,7 +1216,9 @@ static void fatal_message_v(const char *component, const char *fmt, va_list ap)
 	const char *site = component ? component : "fatal";
 
 	vsnprintf(msg, sizeof(msg), fmt ? fmt : "", ap);
+#ifndef _DE_
 	logit(LOG_EXIT, "%s: %s", site, msg);
+#endif
 	fprintf(stderr, "%s: %s\n", site, msg);
 }
 
