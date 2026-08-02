@@ -34,7 +34,6 @@
 #include "paladins.h"
 #include "redis.h"
 #include "ships.h"
-#include "sound.h"
 #include "specializations.h"
 #include "spells.h"
 #include "sql.h"
@@ -45,7 +44,6 @@
 /* external variables */
 
 extern const int top_of_world;
-extern P_ereg    email_reg_table;
 extern int       mini_mode;
 // extern FILE *help_fl;		// commented by weebler
 extern FILE                         *info_fl;
@@ -78,7 +76,6 @@ extern int                           racial_values[LAST_RACE + 1][2];
 extern int                           top_of_helpt;
 extern int                           top_of_infot;
 extern int                           used_descs;
-// extern struct help_index_element *help_index;	// Commented by weebler
 extern struct info_index_element *info_index;
 extern struct zone_data          *zone_table;
 extern struct mm_ds              *dead_mob_pool;
@@ -89,8 +86,6 @@ extern char                      *greetinga3;
 extern char                      *greetinga4;
 extern int                        top_of_mobt;
 extern P_index                    mob_index;
-extern void                       assign_racial_skills(P_char ch);
-extern void                       reset_racial_skills(P_char ch);
 extern void                       GetMIA(char *playerName, char *returned);
 extern void                       GetMIA2(char *playerName, char *returned);
 extern int                        pulse;
@@ -108,7 +103,6 @@ extern void dump_email_reg_db(void);
 extern void ereglog(int, const char *, ...);
 extern void whois_ip(P_char ch, char *ip_address);
 
-int               get_name(char return_name[256]);
 void              displayShutdownMsg(P_char ch);
 void              event_hatred_check(P_char, P_char, P_obj, void *);
 void              event_halfling_check(P_char, P_char, P_obj, void *);
@@ -1420,16 +1414,20 @@ void load_obj_to_newbies(P_char ch)
 		LoadNewbyShit(ch, newbie_kits[GET_RACE(ch)][0]);
 
 	if (GET_RACE(ch) == RACE_THRIKREEN)
+	{
 		if (GET_ALIGNMENT(ch) >= 0)
 			LoadNewbyShit(ch, thrikreen_good_eq);
 		else
 			LoadNewbyShit(ch, thrikreen_evil_eq);
+	}
 
 	if (GET_RACE(ch) == RACE_MINOTAUR)
+	{
 		if (GET_ALIGNMENT(ch) >= 0)
 			LoadNewbyShit(ch, minotaur_good_eq);
 		else
 			LoadNewbyShit(ch, minotaur_evil_eq);
+	}
 
 	if (newbie_kits[GET_RACE(ch)][flag2idx(ch->player.m_class)])
 	{
@@ -1791,7 +1789,6 @@ void enter_game(P_desc d)
 {
 	struct zone_data    *zone;
 	struct affected_type af1, *afp1, *afp2;
-	crm_rec             *crec = NULL;
 	int                  cost;
 	int                  r_room    = NOWHERE;
 	long                 time_gone = 0, hit_g, move_g, heal_time, rest;
@@ -1851,10 +1848,12 @@ void enter_game(P_desc d)
 			r_room = real_room(GET_BIRTHPLACE(ch));
 
 		if (r_room == NOWHERE)
+		{
 			if (IS_TRUSTED(ch))
 				r_room = real_room0(1200);
 			else
 				r_room = GET_ORIG_BIRTHPLACE(ch);
+		}
 
 		if (r_room == NOWHERE)
 			r_room = real_room0(11);
@@ -2018,10 +2017,6 @@ void enter_game(P_desc d)
 		// old guildhalls (deprecated)
 		//    clear_sacks(ch);
 
-		/* this may fix the disguise not showing on who bug */
-		if (PLR_FLAGGED(ch, PLR_NOWHO))
-			PLR_TOG_CHK(ch, PLR_NOWHO);
-
 		/* check mail
 		   if (mail_ok && has_mail(GET_NAME(ch)))
 		   send_to_char("&=LWMail awaits you at your local postoffice.&n\r\n", ch);
@@ -2064,9 +2059,6 @@ void enter_game(P_desc d)
 		set_char_size(ch);
 
 		update_skills(ch);
-		// Once racial skills are removed, this will be unnecessary.
-		//  Furthermore, it will wipe any formerly-racial now-epic skills learned. - Lohrr
-		//    reset_racial_skills( ch );
 	}
 	// Don't do any of above for new chars, but do give well-rested bonus.
 	else
@@ -2244,19 +2236,13 @@ void enter_game(P_desc d)
 		STATE(d) = CON_FLUSH;
 	}
 
-	if (!d->host)
+	if (!*d->host)
 	{
 		wizlog(57, "%s had null host.", GET_NAME(ch));
 		snprintf(d->host, MAX_STRING_LENGTH, "UNKNOWN");
 	}
 
 	ch->only.pc->last_ip = ip2ul(d->host);
-
-	if (!d->login)
-	{
-		wizlog(57, "%s had null login.", GET_NAME(ch));
-		snprintf(d->login, MAX_STRING_LENGTH, "UNKNOWN");
-	}
 
 	if (IS_TRUSTED(ch))
 	{
@@ -2275,6 +2261,24 @@ void enter_game(P_desc d)
 	}
 	else
 		act("$n has entered the game.", TRUE, ch, 0, 0, TO_ROOM);
+
+	if (!IS_TRUSTED(ch))
+	{
+		snprintf(Gbuf1, sizeof Gbuf1, "&+G[ %s has just logged on. ]&n\n", GET_NAME(ch));
+		for (i = descriptor_list; i; i = i->next)
+		{
+			if (i->connected)
+				continue;
+
+			if (opposite_racewar(ch, i->character) && !IS_TRUSTED(i->character))
+				continue;
+			if (!IS_SET(i->character->specials.act2, PLR_WHO))
+				continue;
+
+			send_to_char(Gbuf1, i->character, LOG_PRIVATE);
+		}
+	}
+
 
 	// inform gods that a newbie has entered the game
 	if (IS_NEWBIE(ch))
@@ -2438,13 +2442,6 @@ void enter_game(P_desc d)
 
 	schedule_pc_events(ch);
 
-	//  play_sound(SOUND_START_GAME, ch, 0, TO_CHAR);
-
-	if (EVIL_RACE(ch) && PLR_FLAGGED(ch, PLR_NOWHO))
-	{
-		PLR_TOG_CHK(ch, PLR_NOWHO);
-	}
-
 	struct affected_type *af;
 
 	if (IS_AFFECTED5(ch, AFF5_HOLY_DHARMA))
@@ -2479,43 +2476,9 @@ void enter_game(P_desc d)
 		update_ingame_racewar(GET_RACEWAR(ch));
 
 	// make sure existing chars have base stats 80 - Drannak
-	if (d->character->base_stats.Str < 80)
-	{
-		d->character->base_stats.Str = 80;
-	}
-	if (d->character->base_stats.Agi < 80)
-	{
-		d->character->base_stats.Agi = 80;
-	}
-	if (d->character->base_stats.Dex < 80)
-	{
-		d->character->base_stats.Dex = 80;
-	}
-	if (d->character->base_stats.Con < 80)
-	{
-		d->character->base_stats.Con = 80;
-	}
-	if (d->character->base_stats.Luk < 80)
-	{
-		d->character->base_stats.Luk = 80;
-	}
-	if (d->character->base_stats.Pow < 80)
-	{
-		d->character->base_stats.Pow = 80;
-	}
-	if (d->character->base_stats.Int < 80)
-	{
-		d->character->base_stats.Int = 80;
-	}
-	if (d->character->base_stats.Wis < 80)
-	{
-		d->character->base_stats.Wis = 80;
-	}
-
-	if (d->character->base_stats.Cha < 80)
-	{
-		d->character->base_stats.Cha = 80;
-	}
+	for (int i = 0; i < MAX_ATTRIBUTES; i++)
+		if (d->character->base_stats[i] < 80)
+			d->character->base_stats[i] = 80;
 
 	// goodie AP fix
 	if (GET_CLASS(ch, CLASS_ANTIPALADIN) && GET_ALIGNMENT(ch) > -10)
@@ -2555,9 +2518,6 @@ void enter_game(P_desc d)
 			add_event(event_change_yzar_race, time_to_witching_hour, ch, ch, NULL, 0, NULL, sizeof(NULL));
 		}
 	}
-	// This is to remove the racial epic skills set with TAG_RACIAL_SKILLS
-	// after the current wipe (as of 4/25/14) this should be removed - Torgal
-	//  clear_racial_skills(ch); - And removed. - Lohrr
 
 	/* Send GMCP data -- telnet: gated by GMCP_ENABLED (IAC DO received).
 	 * WebSocket: must also have completed the WS handshake to avoid
@@ -2761,8 +2721,6 @@ void select_name(P_desc d, char *arg, int flag)
 
 		d->character->only.pc->aggressive = -1;
 		d->character->desc                = d;
-
-		setCharPhysTypeInfo(d->character);
 	}
 	/* get passwd */
 
@@ -2910,7 +2868,7 @@ P_char find_ch_from_same_host(P_desc d)
 		if (d == k || !k->character)
 			continue;
 
-		if (k->connected == CON_PLAYING && d->character != k->character && !IS_TRUSTED(k->character) && d->host && k->host && !str_cmp(d->host, k->host))
+		if (k->connected == CON_PLAYING && d->character != k->character && !IS_TRUSTED(k->character) && *d->host && *k->host && !str_cmp(d->host, k->host))
 		{
 			// ch connected from same host
 			return k->character;
@@ -3026,8 +2984,8 @@ void reconnect(P_desc d, P_char tmp_ch)
 	tmp_ch->specials.timer   = 0;
 	STATE(d)                 = CON_PLAYING;
 	act("$n has reconnected.", TRUE, tmp_ch, 0, 0, TO_ROOM);
-	logit(LOG_COMM, "%s [%s@%s] has reconnected.", GET_NAME(d->character), d->login, d->host);
-	loginlog(d->character->player.level, "%s [%s@%s] has reconnected.", GET_NAME(d->character), d->login, d->host);
+	logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
+	loginlog(d->character->player.level, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
 	sql_log(d->character, CONNECTLOG, "Reconnected");
 	/* if they were morph'ed when they lost link, put them
 	 back... */
@@ -3077,7 +3035,7 @@ void select_pwd(P_desc d, char *arg)
 					SEND_TO_Q("Invalid password ... disconnecting.\r\n", d);
 					if (!IS_TRUSTED(d->character))
 					{
-						logit(LOG_PLAYER, "Invalid password for %s from %s@%s.", GET_NAME(d->character), d->login, d->host);
+						logit(LOG_PLAYER, "Invalid password for %s from %s.", GET_NAME(d->character), d->host);
 						sql_log(d->character, CONNECTLOG, "Invalid Password");
 					}
 					STATE(d) = CON_FLUSH;
@@ -3177,7 +3135,7 @@ void select_pwd(P_desc d, char *arg)
 					return;
 				}
 
-				logit(LOG_COMM, "%s [%s@%s] has connected.", GET_NAME(d->character), d->login, d->host);
+				logit(LOG_COMM, "%s [%s] has connected.", GET_NAME(d->character),d->host);
 				sql_log(d->character, CONNECTLOG, "Connected");
 
 				if (IS_TRUSTED(d->character))
@@ -3314,14 +3272,13 @@ void select_pwd(P_desc d, char *arg)
 			}
 			SEND_TO_Q("\r\nDeleting character...\r\n\r\n", d);
 			statuslog(d->character->player.level,
-			          "%s deleted %sself (%s@%s).",
+			          "%s deleted %sself (%s).",
 			          GET_NAME(d->character),
 			          GET_SEX(d->character) == SEX_MALE     ? "him"
 			          : GET_SEX(d->character) == SEX_FEMALE ? "her"
 			                                                : "it",
-			          d->login,
 			          d->host);
-			logit(LOG_PLAYER, "%s deleted %sself (%s@%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->login, d->host);
+			logit(LOG_PLAYER, "%s deleted %sself (%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
 			sql_log(d->character, PLAYERLOG, "Deleted self");
 			if (!deleteCharacter(d->character))
 			{
@@ -3644,23 +3601,20 @@ void select_race(P_desc d, char *arg)
 			/* Uppercase = show help (for letter keys) */
 			if (isalpha(key) && *arg == toupper(key))
 			{
-				strncpy(Gbuf, race_names_table[playable_races[i].race_id].normal, sizeof(Gbuf) - 1);
-				Gbuf[sizeof(Gbuf) - 1] = '\0';
+				strlcpy(Gbuf, race_names_table[playable_races[i].race_id].normal, sizeof Gbuf);
 				found                  = TRUE;
 				break;
 			}
 			/* Special: '!' for '1' (Kobold help), '@' for '2' (Drider help) */
 			if (key == '1' && *arg == '!')
 			{
-				strncpy(Gbuf, race_names_table[RACE_KOBOLD].normal, sizeof(Gbuf) - 1);
-				Gbuf[sizeof(Gbuf) - 1] = '\0';
+				strlcpy(Gbuf, race_names_table[RACE_KOBOLD].normal, sizeof Gbuf);
 				found                  = TRUE;
 				break;
 			}
 			if (key == '2' && *arg == '@')
 			{
-				strncpy(Gbuf, race_names_table[RACE_DRIDER].normal, sizeof(Gbuf) - 1);
-				Gbuf[sizeof(Gbuf) - 1] = '\0';
+				strlcpy(Gbuf, race_names_table[RACE_DRIDER].normal, sizeof Gbuf);
 				found                  = TRUE;
 				break;
 			}
@@ -4000,8 +3954,8 @@ void select_class(P_desc d, char *arg)
 	GET_ORIG_BIRTHPLACE(d->character) = home;
 
 	/* Krov: didn't get hometown choice either, roll the stats */
-	// STATE(d) = CON_BONUS1;
-	STATE(d) = CON_REROLL;
+	STATE(d) = CON_BONUS1;
+	//STATE(d) = CON_REROLL;
 	roll_basic_attributes(d->character, ROLL_NORMAL);
 	display_characteristics(d);
 
@@ -4114,12 +4068,12 @@ void select_alignment(P_desc d, char *arg)
 	GET_BIRTHPLACE(d->character)      = home;
 	GET_ORIG_BIRTHPLACE(d->character) = home;
 
-	STATE(d) = CON_REROLL;
+	STATE(d) = CON_BONUS1;
 	roll_basic_attributes(d->character, ROLL_NORMAL);
 	display_characteristics(d);
 	display_stats(d);
 	SEND_TO_Q(reroll, d);
-	SEND_TO_Q("Do you want to reroll this char (y/n) [y]:  ", d);
+	SEND_TO_Q("\r\nPress return to continue with adding stat bonuses.\r\n", d);
 }
 
 /* Krov: HOMETOWN connects now to REROLL */
@@ -4169,12 +4123,12 @@ void select_hometown(P_desc d, char *arg)
 	GET_BIRTHPLACE(d->character)      = home;
 	GET_ORIG_BIRTHPLACE(d->character) = home;
 
-	STATE(d) = CON_REROLL;
+	STATE(d) = CON_BONUS1;
 	roll_basic_attributes(d->character, ROLL_NORMAL);
 	display_characteristics(d);
 	display_stats(d);
 	SEND_TO_Q(reroll, d);
-	SEND_TO_Q("Do you want to reroll this char (y/n) [y]:  ", d);
+	SEND_TO_Q("\r\nPress return to continue with adding stat bonuses.\r\n", d);
 }
 
 void select_keepchar(P_desc d, char *arg)
@@ -4497,15 +4451,6 @@ int find_starting_alignment(int race, int m_class)
 	return (class_table[race][flag2idx(m_class)]);
 }
 
-/* sets initial values for player law_flags, based on race and class */
-
-ulong init_law_flags(P_char ch)
-{
-	ulong flags = 0;
-
-	return flags;
-}
-
 /* set char's height and weight, based mainly on race and sex, but high/low
    CON is a factor, and all variables are bell-curved, so things will tend
    towards the average range.  Not perfect, but beats the snot out of plain
@@ -4739,7 +4684,6 @@ void init_char(P_char ch)
 	ch->only.pc->pid             = getNewPCidNumb();
 	ch->only.pc->screen_length   = 24; /* default */
 	ch->only.pc->wiz_invis       = 0;
-	ch->only.pc->law_flags       = 0;
 	ch->only.pc->highest_level   = 1;
 	ch->player.short_descr       = 0;
 	ch->player.long_descr        = 0;
@@ -4750,7 +4694,6 @@ void init_char(P_char ch)
 	ch->only.pc->prestige        = 0; /* clear this early, so we can use as newby timer */
 	ch->only.pc->nb_left_guild   = 0;
 	ch->only.pc->time_left_guild = 0;
-	ch->player.secondary_level   = 0;
 
 	/* Initialize frags, epics, and deaths to prevent random values */
 	ch->only.pc->frags       = 0;
@@ -4797,7 +4740,6 @@ void init_char(P_char ch)
 	set_char_height_weight(ch); /* height and weight */
 	set_char_size(ch);
 
-	ch->only.pc->law_flags    = init_law_flags(ch); /* starting law flags */
 	ch->specials.affected_by  = 0;
 	ch->specials.affected_by2 = 0;
 	ch->specials.affected_by3 = 0;
@@ -4836,12 +4778,6 @@ void init_char(P_char ch)
 	if (has_innate(ch, INNATE_DAUNTLESS))
 		SET_BIT(ch->specials.affected_by4, AFF4_NOFEAR);
 
-#if 0
-  ch->specials.shadow.shadowing = NULL;
-  ch->specials.shadow.who = NULL;
-  ch->specials.shadow.valid_last_move = FALSE;
-  ch->specials.shadow.shadow_move = FALSE;
-#endif
 	for (i = 0; i < 5; i++)
 		ch->specials.apply_saving_throw[i] = 0;
 
@@ -4862,7 +4798,7 @@ void newby_announce(P_desc d)
 
 	snprintf(Gbuf1,
 	         MAX_STRING_LENGTH,
-	         "&+C*** New char: &n%s (%s %s %s) - Rolled for %ld:%02ld, Socket: %d, Idle: %d:%02d, IP: %s %s.\n",
+	         "&+C*** New char: &n%s (%s %s %s) - Rolled for %ld:%02ld, Socket: %d, Idle: %d:%02d, IP: %s.\n",
 	         GET_NAME(d->character),
 	         GET_SEX(d->character) == SEX_MALE     ? "Male"
 	         : GET_SEX(d->character) == SEX_FEMALE ? "Female"
@@ -4874,8 +4810,7 @@ void newby_announce(P_desc d)
 	         d->descriptor,
 	         (d->wait / WAIT_SEC) / 60,
 	         (d->wait / WAIT_SEC) % 60,
-	         d->login ? d->login : "unknown",
-	         d->host ? d->host : "UNKNOWN");
+	         *d->host ? d->host : "UNKNOWN");
 	for (i = descriptor_list; i; i = i->next)
 	{
 		if (!i->connected && i->character && IS_SET(i->character->specials.act, PLR_NAMES) && IS_TRUSTED(i->character))
@@ -5089,48 +5024,6 @@ void nanny(P_desc d, char *arg)
 				}
 			}
 			break;
-#ifndef USE_ACCOUNT
-
-			/* Player enteres in login */
-		case CON_ENTER_LOGIN:
-			snprintf(d->registered_login, MAX_STRING_LENGTH, "%s", arg);
-			SEND_TO_Q("\n\rNow, the hostname part of your email address: ", d);
-			STATE(d) = CON_ENTER_HOST;
-			break;
-		case CON_ENTER_HOST:
-			snprintf(d->registered_host, MAX_STRING_LENGTH, "%s", arg);
-			if (email_in_use(d->registered_login, d->registered_host))
-			{
-				SEND_TO_Q("That email is in use already.\n\r", d);
-				STATE(d) = CON_EXIT;
-				SEND_TO_Q("\n\rPRESS RETURN.", d);
-				return;
-			}
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "Your email is registered as %s@%s, is this correct? ", d->registered_login, d->registered_host);
-			SEND_TO_Q(Gbuf1, d);
-			STATE(d) = CON_CONFIRM_EMAIL;
-			break;
-		case CON_CONFIRM_EMAIL:
-			for (; isspace(*arg); arg++)
-				;
-			if (*arg == 'y' || *arg == 'Y')
-			{ /* continue */
-				//      snprintf(Gbuf1, MAX_STRING_LENGTH, "Please enter your sex? (M/F) ");
-				//      SEND_TO_Q(Gbuf1, d);
-
-				SEND_TO_Q(racewars, d);
-				STATE(d) = CON_SHOW_RACE_TABLE;
-				/*      display_available_races(d);
-				      STATE(d) = CON_GET_RACE;*/
-			}
-			else
-			{ /* wrong email */
-				SEND_TO_Q("Okay, resetting...\n\r", d);
-				SEND_TO_Q("What is your login or userid portion of your email? ", d);
-				STATE(d) = CON_ENTER_LOGIN;
-			}
-			break;
-#endif
 
 			/* Appropriate name for new player */
 		case CON_APPROPRIATE_NAME:
@@ -5139,12 +5032,6 @@ void nanny(P_desc d, char *arg)
 				;
 			if (*arg == 'y' || *arg == 'Y')
 			{
-/*
-   if (mini_mode) {
-   SEND_TO_Q("We now need an email address for authorization.\n\rPlease type in your login or userid: ",d);
-   STATE(d) = CON_ENTER_LOGIN;
-   } else {
- */
 #ifndef USE_ACCOUNT
 				snprintf(Gbuf1, MAX_STRING_LENGTH, "\r\nPlease enter a password for %s: ", GET_NAME(d->character));
 				SEND_TO_Q(Gbuf1, d);
@@ -5420,26 +5307,6 @@ void nanny(P_desc d, char *arg)
 			break;
 
 		case CON_WELCOME:
-#if 0
-    if (mini_mode)
-    {
-      struct registration_node *x;
-      CREATE(x, struct registration_node, 1);
-
-      snprintf(x->host, MAX_STRING_LENGTH, "%s", d->registered_host);
-      snprintf(x->login, MAX_STRING_LENGTH, "%s", d->registered_login);
-      snprintf(x->name, MAX_STRING_LENGTH, "%s", GET_NAME(d->character));
-      x->name[0] = tolower(x->name[0]);
-      x->next = email_reg_table[(int) x->name[0] - (int) 'a'].next;
-      email_reg_table[(int) x->name[0] - (int) 'a'].next = x;
-      dump_email_reg_db();
-      email_player_info(x->login, x->host, d);
-      SEND_TO_Q
-        ("Your character information will be emailed to you shortly.\n\r", d);
-      STATE(d) = CON_EXIT;
-      return;
-    }
-#endif
 			writeCharacter(d->character, 2, NOWHERE);
 #ifdef USE_ACCOUNT
 			display_account_menu(d, arg);
@@ -5490,59 +5357,10 @@ void nanny(P_desc d, char *arg)
 		default:
 			if (STATE(d) != CON_FLUSH)
 				logit(LOG_EXIT, "Nanny: illegal state of con'ness #1 (%d)", STATE(d));
-			if (d->character && d->character->events)
-				ClearCharEvents(d->character);
 			if (d->output.head == 0)
 				close_socket(d);
 			return;
-#if 0
-    /* better not get here or something is hosed */
-  default:
-    logit(LOG_EXIT, "Nanny: illegal state of con'ness (%d)", STATE(d));
-    raise(SIGSEGV);
-    break;
-
-#endif
 	}
-}
-
-/* EMAIL: takes a char, generate a random password for them, then emails
- * the password data to them.
- */
-
-void email_player_info(char *login, char *host, struct descriptor_data *d)
-{
-
-	char  buf[MAX_STRING_LENGTH];
-	char  password[9];
-	int   counter;
-	FILE *fp;
-
-	for (counter = 0; counter < 6; counter++)
-		password[counter] = (random() % 26) + 97;
-	for (counter = 6; counter < 8; counter++)
-		password[counter] = (random() % 10) + 48;
-	password[8] = '\0';
-	snprintf(buf, MAX_STRING_LENGTH, "/tmp/%s.REG", GET_NAME(d->character));
-	if (!(fp = fopen(buf, "w")))
-	{
-		ereglog(AVATAR, "Could not open emailreg temp file! (%s)", GET_NAME(d->character));
-		return;
-	};
-	fprintf(fp, "  *** Duris Character Registration *** \n\n\n");
-	fprintf(fp, " INSERT POLICY BULLSHIT HERE\n\n\n");
-	fprintf(fp, "Your character name is: %s\n", GET_NAME(d->character));
-	fprintf(fp, "Your password is %s\n", password);
-	fprintf(fp, ".\n");
-	fclose(fp);
-	if (!(fp = fopen("EmailReg.Q", "at")))
-	{
-		ereglog(AVATAR, "Could not open Q file! (%s)", GET_NAME(d->character));
-		return;
-	};
-	fprintf(fp, "mail -s \"%s\" %s@%s < /tmp/%s.REG\n", "Duris Character", login, host, GET_NAME(d->character));
-	ereglog(AVATAR, "Executing Command %s", buf);
-	fclose(fp);
 }
 
 char *hint_array[1000];
@@ -5579,7 +5397,7 @@ int tossHint(P_char ch)
 
 	if (iLOADED < 1)
 		return 0;
-	snprintf(buf2, MAX_STRING_LENGTH, "&+MHint: &+m%s", hint_array[number(0, iLOADED - 1)]);
+	snprintf(buf2, sizeof buf2, "&+MHint: &+m%s", hint_array[number(0, iLOADED - 1)]);
 	send_to_char(buf2, ch);
 	return 0;
 }

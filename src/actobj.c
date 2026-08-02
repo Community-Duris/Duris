@@ -43,7 +43,6 @@ extern P_char                 character_list;
 extern P_room                 world;
 extern const int              top_of_world;
 extern int                    top_of_objt;
-extern P_event                event_list;
 extern bool                   command_confirm;
 extern char                  *coin_names[];
 extern char                  *drinks[];
@@ -95,7 +94,6 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	int     got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
 	char    Gbuf3[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
 	P_obj   corpse = NULL;
-	P_event e1     = NULL;
 	bool    slip   = FALSE;
 	P_char  rider  = NULL;
 
@@ -210,7 +208,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	      GET_ITEM_TYPE(o_obj),
 	      GET_OBJ_WEIGHT(o_obj),
 	      IS_CARRYING_N(ch),
-	      IS_CARRYING_W(ch, rider),
+	      total_carried_weight(ch),
 	      showit ? 1 : 0,
 	      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 	      s_obj ? OBJ_VNUM(s_obj) : -1);
@@ -237,21 +235,17 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) || (o_obj->value[2] > 0) || (o_obj->value[3] > 0)))
 	{
-		GET_PLATINUM(ch) += (got_p = o_obj->value[3]); //(got_p = MAX(0, MIN(o_obj->value[3], CAN_CARRY_COINS(ch))));
-		                                               //    notall += (got_p != o_obj->value[3]);
-		o_obj->value[3] = 0;                           //-= got_p;
+		GET_PLATINUM(ch) += (got_p = o_obj->value[3]);
+		o_obj->value[3] = 0;
 
-		GET_GOLD(ch) += (got_g = o_obj->value[2]); //(got_g = MAX(0, MIN(o_obj->value[2], CAN_CARRY_COINS(ch))));
-		                                           //    notall += (got_g != o_obj->value[2]);
-		o_obj->value[2] = 0;                       //-= got_g;
+		GET_GOLD(ch) += (got_g = o_obj->value[2]);
+		o_obj->value[2] = 0;
 
-		GET_SILVER(ch) += (got_s = o_obj->value[1]); //(got_s = MAX(0, MIN(o_obj->value[1], CAN_CARRY_COINS(ch))));
-		                                             //    notall += (got_s != o_obj->value[1]);
-		o_obj->value[1] = 0;                         //-= got_s;
+		GET_SILVER(ch) += (got_s = o_obj->value[1]);
+		o_obj->value[1] = 0;
 
-		GET_COPPER(ch) += (got_c = o_obj->value[0]); //(got_c = MAX(0, MIN(o_obj->value[0], CAN_CARRY_COINS(ch))));
-		                                             //    notall += (got_c != o_obj->value[0]);
-		o_obj->value[0] = 0;                         //-= got_c;
+		GET_COPPER(ch) += (got_c = o_obj->value[0]);
+		o_obj->value[0] = 0;
 
 		int total_value = (got_p * 1000 + got_g * 100 + got_s * 10 + got_c);
 		logit(LOG_DEBUG,
@@ -880,9 +874,11 @@ static bool do_get_try_container_item(P_char ch,
 
 	if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch))
 	{
-		if (((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch)) || local_container)
+		if (((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch)) || local_container)
 		{
-			return do_get_finalize_container_item_or_reject(ch, hood, s_obj, o_obj, total, found, corpse_flag, local_container ? 1 : 0, IS_CARRYING_W(ch, rider), CAN_CARRY_W(ch), reject_tag, post_tag, fail);
+			return do_get_finalize_container_item_or_reject(ch, hood, s_obj, o_obj,
+				total, found, corpse_flag, local_container ? 1 : 0,
+				total_carried_weight(ch), CAN_CARRY_W(ch), reject_tag, post_tag, fail);
 		}
 
 		logit(LOG_DEBUG,
@@ -893,7 +889,7 @@ static bool do_get_try_container_item(P_char ch,
 		      o_obj->short_description ? o_obj->short_description : "?",
 		      OBJ_VNUM(o_obj),
 		      GET_OBJ_WEIGHT(o_obj),
-		      IS_CARRYING_W(ch, rider),
+		      total_carried_weight(ch),
 		      CAN_CARRY_W(ch),
 		      s_obj->short_description ? s_obj->short_description : "(none)",
 		      OBJ_VNUM(s_obj),
@@ -1036,7 +1032,7 @@ static void do_get_mark_alldot(char *arg1, bool &alldot)
 
 void do_get(P_char ch, char *argument, int cmd)
 {
-	P_char hood = NULL, owner = NULL, rider;
+	P_char hood = NULL, owner = NULL;
 	P_obj  s_obj = NULL, o_obj = NULL, next_obj;
 	bool   found = FALSE, fail = FALSE, corpse_flag = FALSE, alldot = FALSE, carried, stop_bulk = FALSE;
 	char   Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
@@ -1096,7 +1092,7 @@ void do_get(P_char ch, char *argument, int cmd)
 	      fight_in_room(ch) ? 1 : 0,
 	      on_front_line(ch) ? 1 : 0,
 	      IS_CARRYING_N(ch),
-	      IS_CARRYING_W(ch, rider));
+	      total_carried_weight(ch));
 
 	if (IS_NPC(ch) && ch->following && (ch->in_room == ch->following->in_room))
 	{
@@ -1189,7 +1185,7 @@ void do_get(P_char ch, char *argument, int cmd)
 			      GET_ITEM_TYPE(o_obj),
 			      GET_OBJ_WEIGHT(o_obj),
 			      IS_CARRYING_N(ch),
-			      IS_CARRYING_W(ch, rider),
+			      total_carried_weight(ch),
 			      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
 			      ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)) ? 1 : 0,
 			      alldot ? 1 : 0,
@@ -1216,7 +1212,7 @@ void do_get(P_char ch, char *argument, int cmd)
 
 				if ((IS_CARRYING_N(ch) + 1) <= CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) > LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
 				{
-					if ((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
+					if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
 					{
 						if (do_get_obj_is_takeable(ch, o_obj))
 						{
@@ -1232,7 +1228,7 @@ void do_get(P_char ch, char *argument, int cmd)
 							      OBJ_VNUM(o_obj),
 							      IS_CARRYING_N(ch),
 							      CAN_CARRY_N(ch),
-							      IS_CARRYING_W(ch, rider),
+							      total_carried_weight(ch),
 							      CAN_CARRY_W(ch));
 							do_get_reject_not_takeable(ch, o_obj, fail);
 						}
@@ -1288,7 +1284,7 @@ fail = TRUE;
 			      o_obj->obj_uid,
 			      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
 			      IS_CARRYING_N(ch),
-			      IS_CARRYING_W(ch, rider));
+			      total_carried_weight(ch));
 			/*
 			 * was object disarmed?  did PC still manage to get it? if so,
 			 * get object --TAM
@@ -1298,7 +1294,7 @@ fail = TRUE;
 
 			if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) > LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
 			{
-				if ((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
+				if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
 				{
 					if (do_get_obj_is_takeable(ch, o_obj))
 					{
@@ -1383,7 +1379,7 @@ fail = TRUE;
 			      arg1,
 			      arg2,
 			      IS_CARRYING_N(ch),
-			      IS_CARRYING_W(ch, rider),
+			      total_carried_weight(ch),
 			      IS_TRUSTED(ch) ? 1 : 0);
 			send_to_char(Gbuf3, ch);
 			fail = TRUE;
@@ -2447,11 +2443,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	}
 
 	if (o_obj) /* Trap check */
-		/*
-		   if (checkgetput(ch, o_obj))
-		   return FALSE;
-		 */
-
+	{
 		if (s_obj->type == ITEM_QUIVER)
 		{
 			if (!IS_SET(s_obj->value[1], CONT_CLOSED))
@@ -2632,6 +2624,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				send_to_char(Gbuf3, ch);
 			}
 		}
+	}
 	/*
 	 * added by DTS 5/18/95 to solve light bug
 	 */
@@ -2646,7 +2639,7 @@ void do_give(P_char ch, char *argument, int cmd)
 	char   arg[MAX_INPUT_LENGTH];
 	char   Gbuf1[MAX_STRING_LENGTH];
 	int    amount, ctype;
-	P_char vict, rider;
+	P_char vict;
 	P_obj  obj;
 
 	/*  struct affected_type af;*/
@@ -2712,11 +2705,6 @@ void do_give(P_char ch, char *argument, int cmd)
 
 		send_to_char("Ok.\r\n", ch);
 
-		if (((CAN_CARRY_COINS(vict, rider) < amount) || (amount > 1000)) && !is_linked_to(ch, vict, LNK_CONSENT) && (!IS_TRUSTED(vict)) && (cmd != -4) && !IS_TRUSTED(ch))
-		{
-			act("$E must consent to you before you can overload $M.", 0, ch, 0, vict, TO_CHAR);
-			return;
-		}
 		if (((ctype == 3) && (amount > 999)) || ((ctype == 2) && (amount > 99)))
 		{
 			wizlog(56, "%s gives %s %d %s in [%d]", J_NAME(ch), J_NAME(vict), amount, (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
@@ -2811,7 +2799,7 @@ void do_give(P_char ch, char *argument, int cmd)
 		act("$N seems to have $S hands full.", 0, ch, 0, vict, TO_CHAR);
 		return;
 	}
-	if (((((GET_OBJ_WEIGHT(obj) + IS_CARRYING_W(vict, rider)) > CAN_CARRY_W(vict)) || (GET_OBJ_WEIGHT(obj) > 25)) && !is_linked_to(ch, vict, LNK_CONSENT)) && (cmd != -4) && (!IS_TRUSTED(ch)))
+	if (((((GET_OBJ_WEIGHT(obj) + total_carried_weight(vict)) > CAN_CARRY_W(vict)) || (GET_OBJ_WEIGHT(obj) > 25)) && !is_linked_to(ch, vict, LNK_CONSENT)) && (cmd != -4) && (!IS_TRUSTED(ch)))
 	{
 		act("$E must consent to you before you can overload $M.", 0, ch, 0, vict, TO_CHAR);
 		return;
@@ -3159,7 +3147,6 @@ void do_drink(P_char ch, char *argument, int cmd)
 
 				send_to_char("You feel &+Wt&+wou&+Wc&+wh&+Wed&n by a higher power!\r\n", ch);
 				GET_HIT(ch) += healamt;
-				healCondition(ch, healamt);
 				CharWait(ch, WAIT_SEC);
 			}
 			else if ((temp->value[2] == LIQ_UNHOLYWAT && IS_GOOD(ch)) || (temp->value[2] == LIQ_HOLYWATER && IS_EVIL(ch)))
@@ -3327,7 +3314,7 @@ void do_eat(P_char ch, char *argument, int cmd)
 			bzero(&af, sizeof(af));
 			af.type     = TAG_EATEN;
 			af.flags    = AFFTYPE_NOSHOW;
-			af.duration = 1 + (temp->value[0] > 0) ? temp->value[0] : 1;
+			af.duration = MAX(temp->value[0], 1);
 
 			int hit_reg;
 			int mov_reg;
@@ -4049,10 +4036,12 @@ int get_numb_free_hands(P_char ch)
 		free_hands = 0;
 
 	if (IS_GIANT(ch) && free_hands > 0)
+	{
 		if (GET_RACE(ch) == RACE_MINOTAUR && ch->equipment[WIELD])
 			return free_hands;
 		else
 			return free_hands + 1;
+	}
 
 	return free_hands;
 }
@@ -4358,21 +4347,11 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		else
 			return FALSE;
 	}
-#if 1
 	/*
 	 * monk weight restriction
 	 */
 	if (IS_PC(ch) && GET_CLASS(ch, CLASS_MONK) && keyword != 20)
 	{
-		/*
-		if (GET_LEVEL(ch) < 40 &&
-		   (GET_OBJ_WEIGHT(obj_object) > (27 - (GET_LEVEL(ch) / 2))))
-		{
-		  if (showit)
-		    act("$p is far too heavy and cumbersome, your skills would be useless!", FALSE, ch, obj_object, 0, TO_CHAR);
-		  return FALSE;
-		}
-		*/
 		int monkweight = get_property("monk.weight.str.modifier.denominator", 10);
 
 		if (GET_OBJ_WEIGHT(obj_object) > (int)(GET_C_STR(ch) / monkweight))
@@ -4382,7 +4361,6 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			return FALSE;
 		}
 	}
-#endif
 	/* let's check for artis here */
 	/*
 	#if 0
@@ -5460,7 +5438,7 @@ void do_wear(P_char ch, char *argument, int cmd)
 			send_to_char(Gbuf3, ch);
 		}
 	}
-	else if (!Gbuf1 || str_cmp(Gbuf1, "all")) // No Item Designated
+	else if (!*Gbuf1 || str_cmp(Gbuf1, "all")) // No Item Designated
 	{
 		send_to_char("Wear what?\r\n", ch);
 	}

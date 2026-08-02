@@ -22,7 +22,6 @@
 
 extern P_char                 character_list;
 extern P_desc                 descriptor_list;
-extern P_event                current_event;
 extern P_index                obj_index;
 extern P_room                 world;
 extern char                  *coin_names[];
@@ -204,7 +203,7 @@ int ioun_warp(P_obj obj, P_char ch, int cmd, char *argument)
 
 			if (obj->value[5] > 10)
 			{
-				obj->value[5] == 10;
+				obj->value[5] = 10;
 			}
 
 			/*

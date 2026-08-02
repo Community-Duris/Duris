@@ -71,46 +71,6 @@ long  global_exp_limit;
 float exp_mods[EXPMOD_MAX + 1];
 
 void checkPeriodOfFame(P_char ch, char killer[1024]);
-void advance_skillpoints(P_char ch);
-void demote_skillpoints(P_char ch);
-
-#if 0
-#define READ_TITLE(ch) (GET_SEX(ch) == SEX_MALE ? titles[GET_CLASS(ch) - 1][GET_LEVEL(ch)].title_m : titles[GET_CLASS(ch) - 1][GET_LEVEL(ch)].title_f)
-#endif
-
-/* * When age < base_age, return the value p0 */
-/* * When age < 2 * base calculate the line between p1 & p2 */
-/* * When age < 3 * base calculate the line between p2 & p3 */
-/* * When age < 4 * base calculate the line between p3 & p4 */
-/* * When age < 5 * base calculate the line between p4 & p5 */
-/* * When age >= 80 return the value p6 */
-
-int graf(P_char ch, int t_age, int p0, int p1, int p2, int p3, int p4, int p5, int p6)
-{
-	return p2;
-
-	int a = 17;
-
-	if (!t_age)
-		t_age = p0; /* Somehow, we are occasionally passed an age of 0,
-		               which crashes us. This _might_ fix. */
-
-	if (IS_PC(ch))
-		a = racial_data[(int)GET_RACE(ch)].base_age;
-
-	if (t_age < a)
-		return (p0); /* * < base_age   */
-	else if (t_age <= 2 * a)
-		return (int)(p1 + (((t_age - a) * (p2 - p1)) / a)); /* * <2x */
-	else if (t_age <= 3 * a)
-		return (int)(p2 + (((t_age - 2 * a) * (p3 - p2)) / a)); /* * <3x */
-	else if (t_age <= 4 * a)
-		return (int)(p3 + (((t_age - 3 * a) * (p4 - p3)) / a)); /* * <4x */
-	else if (t_age <= 5 * a)
-		return (int)(p4 + (((t_age - 4 * a) * (p5 - p4)) / a)); /* * <5x */
-	else
-		return (p6); /* * >= 5x */
-}
 
 int vitality_limit(P_char ch)
 {
@@ -123,9 +83,9 @@ int vitality_limit(P_char ch)
 		endurance = 100;
 	}
 
-	if (IS_PC(ch) && (GET_AGE(ch) <= racial_data[GET_RACE(ch)].max_age))
+	if (IS_PC(ch))
 	{
-		max = racial_data[(int)GET_RACE(ch)].base_vitality + ch->points.base_vitality + graf(ch, age(ch).year, 10, 20, 30, 40, 50, 60, 70);
+		max = racial_data[(int)GET_RACE(ch)].base_vitality + ch->points.base_vitality + 30;
 	}
 	else
 	{
@@ -174,7 +134,7 @@ int mana_regen(P_char ch, bool display_only)
 	}
 	else if (!IS_PUNDEAD(ch))
 	{
-		gain = graf(ch, age(ch).year, 10, 12, 14, 14, 10, 10, 6);
+		gain = 14;
 	}
 	else
 		gain = 20;
@@ -250,14 +210,7 @@ int hit_regen(P_char ch, bool display_only)
 		return MIN(-1, gain);
 	}
 
-	if (IS_NPC(ch))
-	{
-		gain = 14;
-	}
-	else
-	{
-		gain = graf(ch, age(ch).year, 16, 15, 14, 13, 11, 9, 6);
-	}
+	gain = 14;
 
 	/* * Position calculations    */
 	switch (GET_STAT(ch))
@@ -429,7 +382,7 @@ int move_regen(P_char ch, bool display_only)
 	}
 	else
 	{
-		gain = graf(ch, age(ch).year, 14, 20, 20, 16, 14, 12, 11);
+		gain = 20;
 	}
 
 	if (GET_COND(ch, FULL) == 0)
@@ -544,54 +497,6 @@ int ward_regen(P_char ch, bool display_only)
 	}
 
 	return (gain);
-}
-
-void gain_practices(P_char ch)
-{
-#if 0
-  if (IS_NPC(ch))
-    return;
-
-  switch (GET_CLASS(ch))
-  {
-  case CLASS_SORCERER:
-  case CLASS_NECROMANCER:
-  case CLASS_CONJURER:
-  case CLASS_SUMMONER:
-  case CLASS_SHAMAN:
-  case CLASS_CLERIC:
-  case CLASS_DRUID:
-    ch->only.pc->spells_to_learn += MAX(2, wis_app[STAT_INDEX(GET_C_WIS(ch))].bonus + 2) + number(0, 1);
-    break;
-  default:
-    ch->only.pc->spells_to_learn += MAX(1, wis_app[STAT_INDEX(GET_C_WIS(ch))].bonus + 1) + number(0, 1);
-    break;
-  }
-#endif
-}
-
-void lose_practices(P_char ch)
-{
-#if 0
-  if (IS_NPC(ch))
-    return;
-
-  switch (GET_CLASS(ch))
-  {
-  case CLASS_SORCERER:
-  case CLASS_NECROMANCER:
-  case CLASS_CONJURER:
-  case CLASS_SUMMONER:
-  case CLASS_SHAMAN:
-  case CLASS_CLERIC:
-  case CLASS_DRUID:
-    ch->only.pc->spells_to_learn -= MAX(2, wis_app[STAT_INDEX(GET_C_WIS(ch))].bonus + 2) + 1;
-    break;
-  default:
-    ch->only.pc->spells_to_learn += MAX(1, wis_app[STAT_INDEX(GET_C_WIS(ch))].bonus + 1) + 1;
-    break;
-  }
-#endif
 }
 
 /* give a gith his sword/staff of death if he's hit 50th for the first
@@ -735,7 +640,7 @@ void advance_level(P_char ch)
 	if (IS_PC(ch) && (ch->only.pc->highest_level < GET_LEVEL(ch)))
 		ch->only.pc->highest_level = GET_LEVEL(ch);
 
-	if ((GET_LEVEL(ch) == get_property("exp.maxExpLevel", 45)) && !IS_HARDCORE(ch) && (!GET_RACE(ch) == RACE_LICH))
+	if ((GET_LEVEL(ch) == get_property("exp.maxExpLevel", 45)) && !IS_HARDCORE(ch) && (GET_RACE(ch) != RACE_LICH))
 	{
 		char buf[512];
 		snprintf(buf,
@@ -887,8 +792,6 @@ void update_exp_table()
 
 float gain_exp_modifiers_race_only(P_char ch, P_char victim, float XP)
 {
-	char prop_buf[128];
-
 	// debug("Gain exp race (%d) Start.", (int)XP);
 
 	if (ch && GET_RACE(ch) >= 1 && GET_RACE(ch) <= LAST_RACE)
@@ -901,7 +804,6 @@ float gain_exp_modifiers_race_only(P_char ch, P_char victim, float XP)
 		XP *= racial_exp_mod_victims[GET_RACE(victim)];
 	}
 	// debug("Gain exp victim (%d) Start.", (int)XP);
-	prop_buf[0];
 	// debug("Gain exp race End (%d).", (int)XP);
 	return XP;
 }

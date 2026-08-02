@@ -32,13 +32,15 @@ DurisMUD forked from Xanadinn's repo.
 **Ubuntu/Debian:**
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential mysql-server libmysqlclient-dev
+sudo apt-get install build-essential
 sudo apt-get install libxml2 libxml2-dev
 sudo apt-get install zlib1g zlib1g-dev
 sudo apt-get install gnutls-dev
 sudo apt-get install libcjson-dev libssl-dev
 sudo apt-get install libhiredis-dev libbsd-dev
+sudo apt-get install default-libmysqlclient-dev default-mysql-server
 ```
+(MySQL has been replaced by MariaDB)
 
 **CentOS/RHEL:**
 ```bash
@@ -55,6 +57,10 @@ sudo yum install gcc make mysql-server mysql-devel
 # Start MySQL service
 sudo systemctl start mysql
 sudo systemctl enable mysql
+```
+or
+```bash
+sudo service restart mysql
 ```
 
 ### 2. Create Database and User
@@ -246,12 +252,12 @@ Database connection settings are **hardcoded** in `src/sql.h` (lines 6-16):
 
 ```c
 #ifdef TEST_MUD
-  #define DB_HOST "127.0.0.1"
+  #define DB_HOST "localhost"
   #define DB_USER "duris"
   #define DB_PASSWD "duris"
   #define DB_NAME "duris_dev"
 #else
-  #define DB_HOST "127.0.0.1"
+  #define DB_HOST "localhost"
   #define DB_USER "duris"
   #define DB_PASSWD "duris"
   #define DB_NAME "duris"
@@ -370,6 +376,10 @@ MySQL initialization failed! Dying!
    sudo systemctl status mysql
    sudo systemctl start mysql
    ```
+   or, more universal:
+   ```
+   sudo service mysql restart
+   ```
 
 2. **Database doesn't exist:**
    ```bash
@@ -379,13 +389,13 @@ MySQL initialization failed! Dying!
 3. **Wrong credentials:**
    ```bash
    # Test connection:
-   mysql -h127.0.0.1 -u duris -p duris_dev
+   mysql -hlocalhost -u duris -p duris_dev
    # Password: duris
    ```
 
 4. **User lacks privileges:**
    ```sql
-   GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'127.0.0.1' IDENTIFIED BY 'duris';
+   GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'localhost' IDENTIFIED BY 'duris';
    FLUSH PRIVILEGES;
    ```
 

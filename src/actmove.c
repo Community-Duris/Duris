@@ -86,7 +86,7 @@ int load_modifier(P_char ch)
 	if (CAN_CARRY_W(ch) <= 0)
 		return 300;
 
-	p = 100 - MAX(0, ((CAN_CARRY_W(ch) - IS_CARRYING_W(ch, rider)) * 100) / CAN_CARRY_W(ch));
+	p = 100 - MAX(0, ((CAN_CARRY_W(ch) - total_carried_weight(ch)) * 100) / CAN_CARRY_W(ch));
 
 	if (p < 10)
 		return 75;
@@ -408,13 +408,6 @@ int leave_by_exit(P_char ch, int exitnumb)
 	/*
 	 * to keep them from riding into buildings, while in caves, etc
 	 */
-#if 0
-  if( IS_RIDING(ch) && !IS_TRUSTED(ch) && IS_ROOM(room_to, INDOORS) )
-  {
-    send_to_char("While mounted? I don't think so...\n", ch);
-    return (0);
-  }
-#endif
 	t_ch = NULL; /*
 	              * reinit it to prevent later problems.
 	              */
@@ -459,12 +452,9 @@ int leave_by_exit(P_char ch, int exitnumb)
 		 */
 
 		for (j = 0; j < NUM_EXITS; j++)
-			if (world[ch->in_room].dir_option[(int)j]) /*
-			                                            * * it's an exit
-			                                            */
-				if (exit1 == -1)                       /*
-				                                        * * found an exit yet?
-				                                        */
+			if (world[ch->in_room].dir_option[(int)j])
+			{                                          // it's an exit
+				if (exit1 == -1)                      // found an exit yet?
 					exit1 = j;
 				else if (exit2 == -1) /*
 				                       * * found second exit yet?
@@ -474,6 +464,7 @@ int leave_by_exit(P_char ch, int exitnumb)
 					exit3 = j; /*
 					            * * this is only here for error checking
 					            */
+			}
 
 		if ((exit1 == -1) || (exit2 == -1))
 		{
@@ -798,7 +789,6 @@ int can_enter_room(P_char ch, int room, int show_msg)
 	/*
 	 * cant move around on ocean unless in a ship --TAM 04/16/94
 	 */
-#if 1
 	if (world[room].sector_type == SECT_OCEAN && !IS_TRUSTED(ch) && // !IS_ROOM(ch->in_room, ROOM_DOCKABLE) &&
 	    world[ch->in_room].sector_type != SECT_OCEAN && !IS_ROOM(room, ROOM_UNDERWATER))
 	{
@@ -814,7 +804,6 @@ int can_enter_room(P_char ch, int room, int show_msg)
 			return (0);
 		}
 	}
-#endif
 	if (world[room].sector_type == SECT_WATER_NOSWIM)
 	{
 		has_boat = FALSE;
@@ -858,15 +847,9 @@ int can_enter_room(P_char ch, int room, int show_msg)
 
 		if (!has_boat && !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_WRAITHFORM) && ch->specials.z_cord < 1)
 		{
-#if 1
 			if (show_msg)
 				send_to_char("You need a boat to go there.\n", ch);
 			return (0);
-#else
-			if (show_msg)
-				SET_BIT(ch->specials.affected_by3, AFF3_SWIMMING);
-			return 1;
-#endif
 		}
 	}
 	if (world[room].sector_type == SECT_NO_GROUND)
@@ -981,7 +964,7 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 		}
 		/* amsg's only %s is placeholder for verb, which is now in tmp2 */
 
-		snprintf(tmp, MAX_STRING_LENGTH, amsg, tmp2);
+		snprintf(tmp, sizeof tmp, amsg, tmp2);
 
 		strcpy(amsg, tmp);
 	}
@@ -990,8 +973,7 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 
 		/* amsg's only %s is placeholder for verb .. */
 
-		snprintf(tmp,
-		         MAX_STRING_LENGTH,
+		snprintf(tmp, sizeof tmp,
 		         amsg,
 		         IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims in"
 		         : ch->specials.z_cord < 0             ? "swims in"
@@ -1279,7 +1261,7 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 		affect_from_char(ch, SPELL_CONCEALMENT);
 	}
 
-	if (IS_CARRYING_W(ch, rider) > CAN_CARRY_W(ch) && IS_PC(ch))
+	if (total_carried_weight(ch) > CAN_CARRY_W(ch) && IS_PC(ch))
 	{
 		send_to_char("You collapse under your carried load!\n", ch);
 		act("$n collapses under the weight of $s inventory!", TRUE, ch, 0, 0, TO_ROOM);
@@ -1514,31 +1496,9 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 		}
 	}
 
-#if 0
-  if( IS_SHADOWING(ch) && !IS_SHADOW_MOVE(ch))
-  {
-    act("You stop shadowing $N.",
-      FALSE, ch, 0, GET_CHAR_SHADOWED(ch), TO_CHAR);
-    FreeShadowedData(ch, GET_CHAR_SHADOWED(ch));
-  }
-
-  if( IS_BEING_SHADOWED(ch))
-  {
-    ch->specials.shadow.valid_last_move = TRUE;
-  }
-#endif
-
 	was_in   = ch->in_room;
 	new_room = world[was_in].dir_option[exitnumb]->to_room;
 	zone     = &zone_table[world[new_room].zone];
-	if (IS_ROOM(was_in, ROOM_LOCKER))
-	{
-		if (zone->status > ZONE_NORMAL)
-		{
-			// this functionality has been disabled
-			new_room = alt_hometown_check(ch, new_room, 0);
-		}
-	}
 
 	if (new_room == NOWHERE)
 	{
@@ -2475,7 +2435,7 @@ void do_close(P_char ch, char *argument, int cmd)
 			act("$n closes $p.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-		/*
+	{	/*
 		 * Or a door
 		 */
 
@@ -2510,6 +2470,7 @@ void do_close(P_char ch, char *argument, int cmd)
 							send_to_room("The door closes quietly.\n", EXIT(ch, door)->to_room);
 					}
 		}
+	}
 }
 
 P_obj has_key(P_char ch, int key)
@@ -2587,7 +2548,7 @@ void do_lock(P_char ch, char *argument, int cmd)
 			act("$n locks $p.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-		/*
+	{	/*
 		 * a door, perhaps
 		 */
 
@@ -2618,6 +2579,7 @@ void do_lock(P_char ch, char *argument, int cmd)
 					if (back->to_room == ch->in_room)
 						SET_BIT(back->exit_info, EX_LOCKED);
 		}
+	}
 }
 
 void do_unlock(P_char ch, char *argument, int cmd)
@@ -3078,41 +3040,6 @@ void do_enter(P_char ch, char *argument, int cmd)
 	}
 }
 
-#if 0 /*                                                                                                                                                                                               \
-       * * boggle                                                                                                                                                                                      \
-       */
-void do_leave(P_char ch, char *argument, int cmd)
-{
-  int      door;
-  char     Gbuf1[MAX_STRING_LENGTH];
-
-  if( !IS_ALIVE(ch) )
-  {
-    return;
-  }
-
-  if( !IS_ROOM(ch->in_room, INDOORS))
-    send_to_char("You are outside.. where do you want to go?\n", ch);
-  else
-  {
-    for (door = 0; door <= (NUM_EXITS - 1); door++)
-      if( EXIT(ch, door) &&
-          !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) &&
-          !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
-        if( EXIT(ch, door)->to_room != NOWHERE)
-          if( !IS_SET(EXIT(ch, door)->exit_info, EX_CLOSED) &&
-              !IS_ROOM(EXIT(ch, door)->to_room, INDOORS) &&
-              dirs[door])
-          {
-            strcpy(Gbuf1, dirs[door]);
-            command_interpreter(ch, Gbuf1);
-            return;
-          }
-    send_to_char("I see no obvious exits to the outside.\n", ch);
-  }
-}
-#endif
-
 void do_follow(P_char ch, char *argument, int cmd)
 {
 	char                name[MAX_INPUT_LENGTH];
@@ -3223,7 +3150,7 @@ void do_follow(P_char ch, char *argument, int cmd)
 void do_drag(P_char ch, char *argument, int cmd)
 {
 	P_obj  obj;
-	P_char tch, owner = NULL, rider;
+	P_char tch, owner = NULL;
 	char   Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char   Gbuf4[MAX_STRING_LENGTH];
 	int    dragCommand;
@@ -3321,17 +3248,13 @@ void do_drag(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		if((GET_STAT(tch) != STAT_INCAP) && (GET_STAT(tch) != STAT_DYING)
-       /* && !(is_linked_to(ch, tch, LNK_CONSENT) &&
-          (GET_STAT(tch) == STAT_SLEEPING)) && */
-        /*!IS_AFFECTED(tch, AFF_KNOCKED_OUT) 
-         &&  !IS_AFFECTED(tch, AFF_BOUND)) */ )
+		if((GET_STAT(tch) != STAT_INCAP) && (GET_STAT(tch) != STAT_DYING))
 		{
 			send_to_char("They may not appreciate that.\n", ch);
 			return;
 		}
 
-		if ((IS_NPC(tch) || (GET_WEIGHT(tch) + IS_CARRYING_W(tch, rider)) > (MAX_DRAG * CAN_CARRY_W(ch) - IS_CARRYING_W(ch, rider))) && !IS_TRUSTED(ch))
+		if ((IS_NPC(tch) || (GET_WEIGHT(tch) + total_carried_weight(tch)) > (MAX_DRAG * CAN_CARRY_W(ch) - total_carried_weight(ch))) && !IS_TRUSTED(ch))
 		{
 			act("$E's too heavy for you to drag!", FALSE, ch, 0, tch, TO_CHAR);
 			act("$n tries to drag $N out, but after a series of grunts, gives up.", TRUE, ch, 0, tch, TO_ROOM);
@@ -3420,7 +3343,7 @@ void do_drag(P_char ch, char *argument, int cmd)
 			return;
 		}
 		/* Let players drag an object up to 150 % of their max_carry */
-		if ((GET_OBJ_WEIGHT(obj) > (MAX_DRAG * CAN_CARRY_W(ch) - IS_CARRYING_W(ch, rider))) && !IS_TRUSTED(ch))
+		if ((GET_OBJ_WEIGHT(obj) > (MAX_DRAG * CAN_CARRY_W(ch) - total_carried_weight(ch))) && !IS_TRUSTED(ch))
 		{
 			act("It's too heavy for you to drag!", FALSE, ch, 0, 0, TO_CHAR);
 			act("$n tries to drag out $p, but after a series of grunts, gives up.", TRUE, ch, obj, 0, TO_ROOM);

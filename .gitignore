@@ -49,6 +49,7 @@ etc/group
 etc/passwd
 etc/resolv.conf
 migrate_pfiles
+duris-build-deps_1.0_*
 
 # Test binary artifacts
 tests/async/test_persistence

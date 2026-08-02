@@ -45,7 +45,6 @@ extern P_char                        character_list;
 extern P_char                        combat_list;
 extern P_char                        dead_guys;
 extern P_desc                        descriptor_list;
-extern P_event                       current_event;
 extern P_index                       mob_index;
 extern P_index                       obj_index;
 extern P_obj                         object_list;
@@ -65,7 +64,6 @@ extern const struct racial_data_type racial_data[];
 extern struct zone_data             *zone_table;
 extern struct time_info_data         time_info;
 extern struct arena_data             arena;
-extern P_event                       event_list;
 extern const int                     dam_cap_data[];
 extern const char                   *connected_types[];
 
@@ -576,26 +574,6 @@ int room_light(int room_nr, int flag)
 
 	world[rroom].light = BOUNDED(-1, amt, 127);
 
-#if 0
-  if (world[rroom].people && !ALONE(world[rroom].people))
-  {
-    /*
-     * room just lit up, let's give the mobs a chance to jump things,
-     * this will mostly negate the gra torch/look/rem torch strategy,
-     * as mobs will tend to jump you when you light things up.
-     * MuHAHAHAHAHA!  JAB
-     */
-
-    LOOP_THRU_PEOPLE(t_ch, world[rroom].people)
-    {
-      if (IS_NPC(t_ch) && AWAKE(t_ch) && !IS_DESTROYING(t_ch) && !IS_FIGHTING(t_ch) &&
-          MIN_POS(t_ch, POS_STANDING + STAT_NORMAL) &&
-          (victim = PickTarget(t_ch)) && is_aggr_to(t_ch, victim))
-        AddEvent(EVENT_AGG_ATTACK, number(1, 5), TRUE, t_ch, victim);
-    }
-  }
-#endif
-
 	return world[rroom].light;
 }
 
@@ -1036,14 +1014,22 @@ void char_from_room(P_char ch)
 		i->next_in_room = ch->next_in_room;
 	}
 
-#if 0
-  if (IS_BEING_SHADOWED(ch))
-    ch->specials.shadow.room_last_in = ch->in_room;
-#endif
-
 	ch->specials.was_in_room = world[ch->in_room].number;
 	ch->in_room              = NOWHERE;
 	ch->next_in_room         = 0;
+}
+
+// an infinite loop that would hang the MUD.  Even though the hang was prevented,
+// let's warn players that there's badness in that room.
+void recover_from_room_ch_loop(P_char k)
+{
+	char msg[MAX_STRING_LENGTH];
+	P_room room = &world[k->in_room];
+
+	snprintf(msg, sizeof msg, "&=rY>>>>>&n Bugged %s&n in room %s&n &+C(&+c%d&+C)\n",
+		GET_NAME(k), room->name, room->number);
+	send_to_all(msg);
+	k->next_in_room = 0;
 }
 
 /*
@@ -1094,13 +1080,6 @@ bool char_to_room(P_char ch, int room, int dir)
 		return FALSE;
 	}
 
-#if 0
-  if (IS_BEING_SHADOWED(ch) && (dir > -1))
-  {
-    MoveShadower(ch, room);
-  }
-#endif
-
 	if (!IS_ROOM(room, ROOM_SINGLE_FILE))
 	{
 		ch->next_in_room   = world[room].people;
@@ -1111,12 +1090,14 @@ bool char_to_room(P_char ch, int room, int dir)
 		// Find the first two valid exits and the last one.
 		for (j = 0; j < NUM_EXITS; j++)
 			if (world[room].dir_option[j])
+			{
 				if (exit1 == -1)
 					exit1 = j;
 				else if (exit2 == -1)
 					exit2 = j;
 				else
 					exit3 = j;
+			}
 
 		if ((exit1 == -1) || (exit2 == -1))
 		{
@@ -1156,13 +1137,13 @@ bool char_to_room(P_char ch, int room, int dir)
 	{
 		if (was_in_arena && IS_SET(arena.flags, FLAG_SEENAME))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "%s has left the arena.\r\n", GET_NAME(ch));
+			snprintf(buf, sizeof buf, "%s has left the arena.\r\n", GET_NAME(ch));
 			send_to_arena(buf, -1);
 			//      broadcast_to_arena("%s has left the arena.\r\n", ch, 0, was_in);
 		}
 		else if (IS_SET(arena.flags, FLAG_SEENAME))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "%s has entered the arena.\r\n", GET_NAME(ch));
+			snprintf(buf, sizeof buf, "%s has entered the arena.\r\n", GET_NAME(ch));
 			send_to_arena(buf, -1);
 			//      broadcast_to_arena("%s has entered the arena.\r\n", ch, 0, room);
 		}
@@ -1346,7 +1327,7 @@ bool char_to_room(P_char ch, int room, int dir)
 			return FALSE;
 		}
 	}
-	if ((world[room].sector_type == SECT_NEG_PLANE))
+	if (world[room].sector_type == SECT_NEG_PLANE)
 	{
 		negsector(ch);
 		if (!IS_ALIVE(ch))
@@ -1505,6 +1486,9 @@ bool char_to_room(P_char ch, int room, int dir)
 		// If you comment out the return, you need to change this loop to handle deaths.
 		for (k = world[room].people; k; k = k->next_in_room)
 		{
+			if (k == k->next_in_room)
+				recover_from_room_ch_loop(k);
+
 			// Skip PCs and NPCs with no proc
 			if (!IS_NPC(k) || mob_index[GET_RNUM(k)].func.mob == NULL)
 			{
@@ -2947,7 +2931,7 @@ bool obj_is_in_container(P_obj obj, P_obj container)
  */
 void Decay(P_obj obj)
 {
-	P_char carrier = NULL, rider;
+	P_char carrier = NULL;
 	P_obj  t_obj = NULL, t_obj2 = NULL;
 	int    pos, dest            = 0, old_load;
 	bool   corpselog    = FALSE;
@@ -3027,7 +3011,7 @@ void Decay(P_obj obj)
 		if (OBJ_CARRIED(t_obj))
 		{
 			carrier  = t_obj->loc.carrying;
-			old_load = IS_CARRYING_W(carrier, rider);
+			old_load = total_carried_weight(carrier);
 
 			if (IS_SET(obj->value[1], PC_CORPSE))
 			{
@@ -3042,7 +3026,7 @@ void Decay(P_obj obj)
 		else if (OBJ_WORN(t_obj))
 		{
 			carrier  = t_obj->loc.wearing;
-			old_load = IS_CARRYING_W(carrier, rider);
+			old_load = total_carried_weight(carrier);
 
 			if (IS_SET(obj->value[1], PC_CORPSE))
 			{
@@ -3157,9 +3141,9 @@ void Decay(P_obj obj)
 
 	if (carrier)
 	{
-		if (old_load > IS_CARRYING_W(carrier, rider))
+		if (old_load > total_carried_weight(carrier))
 			send_to_char("Your load suddenly feels lighter!\r\n", carrier);
-		if (old_load < IS_CARRYING_W(carrier, rider))
+		if (old_load < total_carried_weight(carrier))
 			send_to_char("Your load suddenly feels heavier!\r\n", carrier);
 	}
 }
@@ -3212,8 +3196,6 @@ void extract_char(P_char ch)
 	P_char                k;
 	P_desc                t_desc;
 	int                   l, i;
-	P_event               ev_save;
-	P_event               ev;
 	char                  buf[MAX_STRING_LENGTH];
 	snoop_by_data        *snoop_by_ptr, *next;
 	struct affected_type *af, *nextaf;
@@ -3277,21 +3259,6 @@ void extract_char(P_char ch)
 	clear_all_links(ch);
 	if (IS_PC(ch))
 		clear_logs(ch);
-
-#if 0
-  if (IS_SHADOWING(ch))
-  {
-    act("You stop shadowing $N.", TRUE, ch, 0, GET_CHAR_SHADOWED(ch), TO_CHAR);
-    FreeShadowedData(ch, GET_CHAR_SHADOWED(ch));
-  }
-  else
-  {
-    if (IS_BEING_SHADOWED(ch))
-    {
-      StopShadowers(ch);
-    }
-  }
-#endif
 
 	/* empty vehicle slot */
 	remove_all_linked_objects(ch);
@@ -3485,6 +3452,13 @@ void extract_char(P_char ch)
 	}
 	if (IS_PC(ch))
 	{
+		auto& glyp = ch->only.pc->map_glyphs;
+		if (glyp)
+		{
+			delete glyp;
+			glyp = 0;
+		}
+
 		if (ch->desc && ch->desc->connected != CON_DELETE)
 		{
 #ifndef USE_ACCOUNT
@@ -3570,7 +3544,7 @@ P_char get_char_ranged_vis(P_char ch, char *arg, int range)
 	 */
 	half_chop(arg, target, direction);
 
-	if (!direction || !*direction)
+	if (!*direction)
 		return NULL;
 
 	dir = dir_from_keyword(direction);

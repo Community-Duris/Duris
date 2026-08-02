@@ -47,7 +47,6 @@ float regen_factor[REG_MAX + 1];
 
 extern Skill       skills[];
 extern P_room      world;
-extern P_event     current_event;
 extern P_index     mob_index;
 extern const char *dirs[];
 // extern int rev_dir[];
@@ -1236,23 +1235,23 @@ void event_embrace_death(P_char ch, P_char victim, P_obj obj, void *data)
 	float                 hp_state = ((float)GET_HIT(ch)) / GET_MAX_HIT(ch);
 	struct affected_type *afp;
 
-	afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH);
+	if ((afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH)))
+		return;
 
-	if (afp)
-		if (hp_state > .75)
-		{
-			affect_remove(ch, afp);
-			send_to_char("Something leaves you as death is no longer close.\n", ch);
-		}
-		else
-		{
-			if (hp_state > .45)
-				afp->modifier = 5;
-			else if (hp_state > .25)
-				afp->modifier = 10;
-			balance_affects(ch);
-			add_event(event_embrace_death, 2 * WAIT_SEC, ch, 0, 0, 0, 0, 0);
-		}
+	if (hp_state > .75)
+	{
+		affect_remove(ch, afp);
+		send_to_char("Something leaves you as death is no longer close.\n", ch);
+	}
+	else
+	{
+		if (hp_state > .45)
+			afp->modifier = 5;
+		else if (hp_state > .25)
+			afp->modifier = 10;
+		balance_affects(ch);
+		add_event(event_embrace_death, 2 * WAIT_SEC, ch, 0, 0, 0, 0, 0);
+	}
 }
 
 void do_innate_embrace_death(P_char ch)
@@ -3096,155 +3095,6 @@ static int steal_chance[][21] = {
 	{0}
 };
 
-/*
-void halfling_stealaction(P_char ch, char *arg, int cmd)
-{
-  char buf[MAX_INPUT_LENGTH];
-  P_char vict;
-  P_obj obj = NULL;
-  int percent, roll, loc, a, b;
-  bool failed, caught, victout = FALSE;
-
-  if (!HAS_INNATE(ch, INNATE_SOCIAL_STEAL)) {
-    return;
-  }
-  if (!CAN_SEE(ch, ch))
-    return;
-
-  if (!number(0, 1))
-    return;
-
-  one_argument(arg, buf);
-  if (!*buf) {
-    return;
-  }
-  if (!(vict = get_char_room_vis(ch, buf))) {
-    return;
-  }
-  if (vict == ch) {
-    return;
-  }
-  if (IS_PC(vict) && !vict->desc && GET_LEVEL(ch) <= MAXLVLMORTAL) {
-    send_to_char("Not while they're link-dead, you don't...\n", ch);
-    return;
-  }
-  a = 0;
-  for (b = 0; (steal_chance[b][0] && !a); b++)
-    if (steal_chance[b][0] == cmd)
-      a = b + 1;
-  if (!a)
-    return;
-  if ((IS_RIDING(ch)) ||
-      ((GET_LEVEL(vict) > MAXLVLMORTAL) && IS_PC(vict)) ||
-      ((IS_CARRYING_N(ch) + 1) > CAN_CARRY_N(ch)) ||
-      (IS_CARRYING_W(ch) >= CAN_CARRY_W(ch)) ||
-      (CHAR_IN_SAFE_ZONE(ch)) || IS_TRUSTED(ch) ||
-      (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) &&
-    !AdjacentInRoom(ch, vict)) || IS_FIGHTING(ch) || IS_FIGHTING(vict) ||
-      (!IS_NPC(vict) && !vict->desc && (GET_LEVEL(ch) <= MAXLVLMORTAL)))
-    return;
-  percent = (GET_LEVEL(ch) * 100 / (GET_LEVEL(ch) + GET_LEVEL(vict)));
-  percent += dex_app[STAT_INDEX(GET_C_DEX(ch))].p_pocket;
-  percent -= (STAT_INDEX(GET_C_WIS(vict)) + STAT_INDEX(GET_C_INT(vict))) - 19;
-  if (IS_AFFECTED(vict, AFF_AWARE) ||
-      affected_by_spell(vict, SKILL_AWARENESS))
-    percent -= 100;
-  if (!CAN_SEE(vict, ch))
-    percent += 40;
-  if ((GET_STAT(vict) < STAT_SLEEPING) || IS_AFFECTED(vict, AFF_SLEEP) ||
-      IS_AFFECTED(vict, AFF_BOUND) ||
-      IS_AFFECTED(vict, AFF_KNOCKED_OUT) ||
-      IS_AFFECTED2(vict, AFF2_MINOR_PARALYSIS) ||
-      IS_AFFECTED2(vict, AFF2_MAJOR_PARALYSIS))
-    percent += 200;
-  else if (IS_AFFECTED2(vict, AFF2_STUNNED))
-    percent += 20;
-  else if (GET_STAT(vict) == STAT_SLEEPING)
-    percent += 40;
-  if (GET_LEVEL(vict) > MAXLVLMORTAL)
-    percent = 0;
-  if (!GET_CLASS(ch, CLASS_THIEF))
-    percent = percent / 2;
-
-  roll = number(1, 100);
-  caught = FALSE;
-  failed = FALSE;
-  loc = 0;
-  for (b = 1; steal_chance[a - 1][b * 2] < roll; b++);
-  loc = steal_chance[a - 1][b * 2 - 1] + 1;
-  if (loc < 1)
-    return;
-  if (loc == 1)
-    loc = number(2, WEAR_QUIVER + 1);
-  loc--;
-  if (!vict->equipment[loc]) {
-    send_to_char("You cannot resist searching for items, yet you find nothing of interest!\n", ch);
-    failed = TRUE;
-    percent += 50;
-  } else {
-    obj = vict->equipment[loc];
-    if ((IS_CARRYING_W(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch))
-      failed = TRUE;
-    if (!failed && (percent > 175)) {
-      act("You suddenly feel like relieving $N of $S spare equipment.. ",
-          FALSE, ch, obj, vict, TO_CHAR);
-      act("You unequip $p and steal it.", FALSE, ch, obj, 0, TO_CHAR);
-      obj_to_char(unequip_char(vict, loc), ch);
-      percent -= GET_OBJ_WEIGHT(obj);
-      notch_skill(ch, SKILL_STEAL, 5);
-    } else {
-      send_to_char("Uh huh.. You think your instincts got better of you!\n", ch);
-      failed = TRUE;
-      caught = TRUE;
-    }
-  }
-  CharWait(ch, 24);
-
-  if ((percent < 0) || MIN(100, percent) < number(-60, 100))
-    caught = TRUE;
-  if (!caught) {
-    if (!failed)
-      send_to_char("Heh heh, got away clean too!\n", ch);
-    else
-      send_to_char("Well, at least nobody saw that!\n", ch);
-    return;
-  }
-  if (!IS_NPC(ch)) {
-  }
-
-  if ((GET_STAT(vict) < STAT_SLEEPING) || IS_AFFECTED(vict, AFF_SLEEP) ||
-      IS_AFFECTED(vict, AFF_KNOCKED_OUT) ||
-      IS_AFFECTED2(vict, AFF2_MINOR_PARALYSIS) ||
-      IS_AFFECTED2(vict, AFF2_MAJOR_PARALYSIS)) {
-    send_to_char("Good thing your victim is in no shape to catch you!\n", ch);
-    victout = TRUE;
-//    return;
-  } else if (IS_AFFECTED2(vict, AFF2_STUNNED)) {
-    send_to_char("Damn!  Hard to believe they let you into the guild!\n", ch);
-  } else if (GET_STAT(vict) == STAT_SLEEPING) {
-    send_to_char("Groping fingers disturb your rest!\n", vict);
-    send_to_char("Uh oh, looks like you weren't quite as careful as you should have been!\n", ch);
-    do_wake(vict, 0, 0);
-  } else {
-    send_to_char("Ooops, better be more careful next time (assuming you survive...)\n", ch);
-  }
-  if (!failed) {
-    if (!victout) act("&+WHey! $n just stole your $q!&n", FALSE, ch, obj, vict, TO_VICT);
-    act("$n just stole $p from $N!", TRUE, ch, obj, vict, TO_NOTVICT);
-  } else if (obj) {
-    act("&+WHey! $n just tried to steal your $q!&n", FALSE, ch, obj, vict, TO_VICT);
-    act("$n just tried to steal something from $N!",
-        TRUE, ch, obj, vict, TO_NOTVICT);
-  }
-  if (!CAN_SEE(vict, ch) || IS_PC(vict) ||
-      IS_SET(vict->specials.act, ACT_NICE_THIEF))
-    return;
-  remember(vict, ch);
-  if( !IS_FIGHTING(vict) && !IS_DESTROYING(vict) )
-    MobStartFight(vict, ch);
-}
-*/
-
 void do_tupor(P_char ch, char *arg, int cmd)
 {
 	if (!IS_ALIVE(ch))
@@ -3437,7 +3287,7 @@ void do_innate(P_char ch, char *arg, int cmd)
 	}
 
 	argument_interpreter(arg, innate_name + strlen(innate_name), innate_args);
-	if (!innate_name || *innate_name == '\0')
+	if (*innate_name == '\0')
 	{
 		/*
 		 * List available racial abilities
@@ -3980,7 +3830,7 @@ void do_summon_imp(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (world[ch->in_room].sector_type == SECT_PLANE_OF_AVERNUS | SECT_FIREPLANE)
+	if (world[ch->in_room].sector_type == SECT_PLANE_OF_AVERNUS || world[ch->in_room].sector_type == SECT_FIREPLANE)
 	{
 		imp->player.level = (int)(GET_LEVEL(ch) * 0.9);
 	}
@@ -4472,8 +4322,6 @@ void do_layhand(P_char ch, char *argument, int cmd)
 	//  send_to_char("&+WYou feel better!&n\r\n", vict);
 
 	heal(vict, ch, healpoints, GET_MAX_HIT(vict));
-
-	healCondition(vict, healamt);
 
 	update_pos(vict);
 

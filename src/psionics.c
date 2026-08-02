@@ -18,7 +18,6 @@
 #include "damage.h"
 #include "graph.h"
 #include "map.h"
-#include "sound.h"
 #include "spells.h"
 #include "vnum.obj.h"
 
@@ -970,9 +969,9 @@ void spell_psychic_crush(int level, P_char ch, char *arg, int type, P_char victi
 void spell_single_death_field(int level, P_char ch, char *args, int type, P_char victim, P_obj obj)
 {
 	int                    dam;
-	struct damage_messages messages = {"",
-	                                   "",
-	                                   "",
+	struct damage_messages messages = {"$N's body shivers and $E turns pale as a wave of death reaches $M.",
+	                                   "Your mind blacks out for a moment as a wave of death runs through you.",
+	                                   "$N's body shivers and $E turns pale as a wave of death reaches $M.",
 	                                   "$N's body shivers and falls lifeless as a wave of death reaches $M.",
 	                                   "Your mind collapses as a wave of death runs through your body.",
 	                                   "$N's body shivers and falls lifeless as a wave of death reaches $M.",
@@ -1030,12 +1029,14 @@ void spell_detonate2(int level, P_char ch, char *arg, int type, P_char victim, P
 		dam = (dam * 2);
 
 	if (resists_spell(ch, victim))
+	{
 		if (GET_SPEC(ch, CLASS_PSIONICIST, SPEC_PYROKINETIC))
 			dam = (int)(dam * get_property("spell.detonate.shrugModifier", 0.7));
 		else if (GET_CLASS(ch, CLASS_MINDFLAYER) && IS_NPC(victim))
 			dam = (int)(dam * get_property("spell.detonate.shrugModifierMindflayer", 0.9));
 		else
 			return;
+	}
 
 	if (!StatSave(victim, APPLY_POW, (GET_LEVEL(victim) - GET_LEVEL(ch)) / 5) && !IS_ELITE(victim))
 	{
@@ -2395,9 +2396,7 @@ void spell_innate_blast(int level, P_char ch, char *arg, int type, P_char victim
 
 		if (!IS_AFFECTED2(victim, AFF2_MAJOR_PARALYSIS) && !IS_AFFECTED2(victim, AFF2_MINOR_PARALYSIS))
 		{
-			af.duration = (lev >> 5 + 1);
-			if (af.duration < 1)
-				af.duration = 1;
+			af.duration = (lev >> 5) + 1;
 
 			affect_to_char(victim, &af);
 
@@ -2445,12 +2444,12 @@ void spell_radial_navigation(int level, P_char ch, char *arg, int type, P_char v
 	 * }
 	 */
 
-	if (!arg1)
+	if (!*arg1)
 	{
 		send_to_char("You must specify a direction of travel: n,s,e,w\r\n", ch);
 		return;
 	}
-	if (!arg2)
+	if (!*arg2)
 	{
 		send_to_char("You must specify the distance you wish to travel.\r\n", ch);
 		return;
@@ -2864,13 +2863,6 @@ void spell_wormhole(int level, P_char ch, char *arg, int type, P_char victim, P_
 			}
 		}
 
-#if 0
-     if(!OUTSIDE(ch))
-     {
-        send_to_char("You must be outside to cast this spell!\r\n", ch);
-        return;
-     }
-#endif
 		// Stopping the wayward Illithid griefing. Nov08 -Lucrot
 		if (victim && !IS_TRUSTED(ch) && IS_PC(victim) && IS_ILLITHID(ch) && !IS_ILLITHID(victim) && GET_LEVEL(victim) < 51)
 		{

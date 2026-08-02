@@ -524,18 +524,18 @@ PL 0 544 0 2
 0.0.0.0 0
 8 8 1
 #45833
-skaven moneylender banker~
-&+ra skaven moneylender&n~
-&+rA skaven moneylender squints at you from behind a counter.&n
+ratty moneylender banker~
+&+ra ratty moneylender&n~
+&+rA ratty moneylender squints at you from behind a counter.&n
 ~
-&+r   This skaven, often confused for a ratman, peers at you balefully from behind
-&+ra wooden counter.  The skaven are a mysterious and rare race to find, even in
-&+rthe &+LUnderdark&+r.  This one apparently has found his calling, taking care
-&+rof the Orog's funds.  His twitchy movements and squinty eyes can only be the
-&+rsigns of someone with something to hide.&n
+&+r    This runt of an orog looks more like a rat than others of his race.  He
+&+rpeers at you balefully from behind a wooden counter.  You wouldn't trust him
+&+rwith a broken stick, much less your hard-earned &+Wplatinum&+r, but apparently the
+&+rorogs are less cautious.  His twitchy movements and squinty eyes can only be
+&+rthe signs of someone with something to hide.&n
 ~
 1073743946 64 0 0 268435480 0 0 0 -1000 S
-H 0 8192 0 2
+or 0 8192 0 2
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 1

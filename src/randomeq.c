@@ -25,11 +25,9 @@
 #include "defines.h"
 #include "justice.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
 #include "random_equipment_config.h"
 #include "hardcore_config.h"
-#include "sound.h"
 #include "spells.h"
 #include "vnum.obj.h"
 #include "weather.h"
@@ -41,7 +39,6 @@ extern struct zone_data *zone_table;
 extern const char       *material_names[];
 extern P_char            character_list;
 extern P_desc            descriptor_list;
-extern P_event           event_type_list[];
 extern P_index           mob_index;
 extern P_index           obj_index;
 extern P_obj             object_list;
@@ -135,7 +132,7 @@ const int highdrop_mobs[NUM_HIGHDROP_MOBS + 1] = {
 	70941, // 19 Kithron
 	88316, // 20 Kossuth
 	87561, // 21 Zuggtmoy
-	87544, // 22 Jubilex
+	87544, // 22 Juiblex
 	87613, // 23 Graz'zt
 	87612, // 24 Lolth
 	32637, // 25 Aramus
@@ -617,38 +614,7 @@ P_obj create_material(P_char killer, P_char mob)
 
 P_obj create_stones(P_char ch)
 {
-	P_obj obj;
-	char  buf1[MAX_STRING_LENGTH];
-	int   i = number(1, 9); // stones_list # of elements
-
-	obj = read_object(RANDOM_OBJ_VNUM, VIRTUAL);
-	snprintf(buf1, MAX_STRING_LENGTH, "random strange %s _strange_", strip_ansi(stone_list[i]).c_str());
-
-	if ((obj->str_mask & STRUNG_KEYS) && obj->name)
-		FREE(obj->short_description);
-	obj->short_description = NULL;
-	obj->str_mask |= STRUNG_KEYS;
-	obj->name = str_dup(buf1);
-
-	snprintf(buf1, MAX_STRING_LENGTH, "&+La strange %s", stone_list[i]);
-
-	if ((obj->str_mask & STRUNG_DESC2) && obj->short_description)
-		FREE(obj->short_description);
-	obj->short_description = NULL;
-	obj->str_mask |= STRUNG_DESC2;
-	obj->short_description = str_dup(buf1);
-
-	snprintf(buf1, MAX_STRING_LENGTH, "&+La strange %s lies here.", stone_list[i]);
-	if ((obj->str_mask & STRUNG_DESC1) && obj->description)
-		FREE(obj->description);
-	obj->description = NULL;
-	obj->str_mask |= STRUNG_DESC1;
-	obj->description = str_dup(buf1);
-
-	SET_BIT(obj->wear_flags, BIT_1);
-	obj->value[6] = stone_spell_list[i];
-
-	return obj;
+	return read_object(number(ENCRUST_VNUM_BEGIN, ENCRUST_VNUM_END), VIRTUAL);
 }
 
 // Returns TRUE iff a random item should be created from ch killing the mob.
@@ -1752,7 +1718,7 @@ bool identify_random(P_obj obj)
 	for (i = 0; i < 62 && spells_data[i].spell != obj->value[5]; i++)
 		;
 
-	if (i == 62 || !spells_data[i].name)
+	if (i == 62 || !*spells_data[i].name)
 		return false;
 
 	strcpy(old_name, obj->short_description);

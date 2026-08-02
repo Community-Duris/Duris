@@ -42,7 +42,6 @@
  */
 
 extern P_desc                  descriptor_list;
-extern P_event                 current_event;
 extern const char             *equipment_types[];
 extern const char             *town_name_list[];
 extern const int               min_stats_for_class[][8];
@@ -114,8 +113,6 @@ char  *greetinga2   = NULL;
 char  *greetinga3   = NULL;
 char  *greetinga4   = NULL;
 char  *greetings    = NULL; /* * greeting for ascii viewers * */
-char  *worldmap     = NULL;
-char  *worldmapa    = NULL;
 char  *disclaimer   = NULL; /* * disclaimer message * */
 char  *bugfile      = NULL;
 char  *generaltable = NULL; /* * race/class comparison charts * */
@@ -144,10 +141,8 @@ P_index obj_index; /* * index table for object file     */
 P_table obj_tables; /* for random obj tables */
 P_table mob_tables; /* for random mob tables */
 
-P_ereg email_reg_table;
 int    num_mob_tables, num_obj_tables = 0;
 
-// struct help_index_element *help_index = 0;			// commented by weebler
 struct info_index_element *info_index = 0;
 
 int           top_of_mobt  = 0; /* * top of mobile index table * */
@@ -170,7 +165,6 @@ void assign_continents();
 void init_rand_tables(void);
 void init_email_reg_db(void);
 void dump_email_reg_db(void);
-void check_registered_email(struct descriptor_data *);
 int  email_in_use(char *, char *);
 
 void release_obj_mem(P_obj obj);
@@ -451,10 +445,6 @@ void boot_db(int mini_mode)
 	greetinga4 = file_to_string(GREETINGA4_FILE);
 	logit(LOG_STATUS, "Reading ASCII login screen.");
 	greetings = file_to_string("lib/information/greeting");
-	logit(LOG_STATUS, "Reading ASCII worldmap.");
-	worldmap = file_to_string("lib/information/worldmap");
-	logit(LOG_STATUS, "Reading ANSI worldmap.");
-	worldmapa = file_to_string("lib/information/worldmapa");
 	logit(LOG_STATUS, "Reading Ansi wizlist.");
 	wizlista = file_to_string(WIZLISTA_FILE);
 	logit(LOG_STATUS, "Reading disclaimer.");
@@ -514,16 +504,6 @@ void boot_db(int mini_mode)
 			fatal_boot_error("db", "Trouble opening mini object file areas_mini/mini.obj: %s", strerror(errno));
 		}
 	}
-	/*
-	  // This part commented out by Weebler
-	if (!(help_fl = fopen(HELP_KWRD_FILE, "r")))
-	{
-	  logit(LOG_FILE, "   Could not open help file.");
-	  fprintf(stderr, "ERROR! Could not open help file! Exiting.");
-	  raise(SIGSEGV);
-	}
-	else
-	  help_index = build_help_index(help_fl, &top_of_helpt);*/
 
 	fprintf(stderr, "Loading zone table.\r\n");
 	logit(LOG_STATUS, "Loading zone table.");
@@ -646,7 +626,6 @@ void boot_db(int mini_mode)
 	fprintf(stderr, "-- Events\n");
 	logit(LOG_STATUS, "Initializing event driver.");
 	ne_init_events();
-	// init_events();
 
 	/*
 	 * can't do the dynamic proc lib loading until AFTER the event driver
@@ -662,11 +641,6 @@ void boot_db(int mini_mode)
 		load_all_proc_libs();
 	}
 #endif
-
-	/*
-	 * have to do ships after events, since zone resets (loading ships)
-	 * are done in init_events now.
-	 */
 
 	fprintf(stderr, "-- Ships\n");
 	logit(LOG_STATUS, "Initializing ships.");
@@ -706,14 +680,6 @@ void boot_db(int mini_mode)
 		logit(LOG_STATUS, "Loading patrol Justice area.");
 		load_justice_area();
 	}
-
-	// old guildhalls (deprecated)
-	//  logit(LOG_STATUS, "Loading house.");
-	//  restore_houses();
-
-	// old guildhalls (deprecated)
-	//  logit(LOG_STATUS, " ... loading house construction Q");
-	//  loadConstructionQ();
 
 	logit(LOG_STATUS, "Setting up player-side artifact list.");
 	setupMortArtiList_sql();
@@ -846,112 +812,6 @@ void weather_setup(void)
 	}
 	fclose(fl);
 }
-
-/* EMAIL Registration setup */
-int email_in_use(char *login, char *host)
-{
-	int                       temp, flag;
-	struct registration_node *x;
-
-	flag = 0;
-	for (temp = 0; temp < 26; temp++)
-	{
-		x = email_reg_table[temp].next;
-		while (x)
-		{
-			if (strstr(login, x->login) && strstr(host, x->host))
-				flag = 1;
-			x = x->next;
-		}
-	}
-	return flag;
-}
-
-void check_registered_email(struct descriptor_data *d)
-{
-
-	struct registration_node *x;
-	int                       temp;
-	char                     *tname;
-
-	tname    = str_dup(GET_NAME(d->character));
-	tname[0] = tolower(tname[0]); /* lowercase first letter */
-	for (temp = 0; temp < 26; temp++)
-	{
-		x = email_reg_table[temp].next;
-		while (x)
-		{
-			if (strstr(tname, x->name) && (!(strstr(d->host, x->host) && strstr(d->login, x->login))))
-			{
-				/* we have same name but not same registered host/login */
-			}
-			if (!strstr(tname, x->name) && ((strstr(d->host, x->host) && strstr(d->login, x->login))))
-			{
-				/* we have same host/login as someone ELSES character */
-			}
-			x = x->next;
-		}
-	}
-	FREE(tname);
-}
-
-void dump_email_reg_db()
-{
-	int                       temp;
-	struct registration_node *x;
-	FILE                     *rfile;
-
-	if (!(rfile = fopen(EMAIL_FILE, "w")))
-	{
-		fprintf(stderr, "Cant open email file for writing.\n\r");
-		return;
-	}
-	for (temp = 0; temp < 26; temp++)
-	{
-		x = email_reg_table[temp].next;
-		while (x)
-		{
-			fprintf(rfile, "%s %s %s\n", x->name, x->login, x->host);
-			x = x->next;
-		}
-	}
-	fprintf(rfile, "$\n");
-	fclose(rfile);
-}
-
-void init_email_reg_db()
-{
-	int                       temp;
-	struct registration_node *x;
-	FILE                     *rfile;
-	char                      buf[MAX_STRING_LENGTH];
-
-	CREATE(email_reg_table, registration_node, 26, MEM_TAG_REGNODE); /* 26 alphabets */
-																	 //  email_reg_table = (struct registration_node *) calloc(26, sizeof(struct registration_node));  /* 26 alphabets */
-
-	for (temp = 0; temp < 26; temp++)
-	{
-		email_reg_table[temp].next = 0;
-	}
-	if (!(rfile = fopen(EMAIL_FILE, "r")))
-	{
-		fprintf(stderr, "Cant open email file.\n\r");
-		return;
-	}
-	for (;;)
-	{ /* read in file */
-		fgets(buf, 100, rfile);
-		if (buf[0] == '$')
-			break; /* eof */
-		CREATE(x, registration_node, 1, MEM_TAG_REGNODE);
-		// x = (struct registration_node *) malloc(sizeof(struct registration_node));
-		sscanf(buf, "%s %s %s\n", x->name, x->login, x->host);
-		temp                       = (int)buf[0] - (int)'a'; /* couldn't remember function */
-		x->next                    = email_reg_table[temp].next;
-		email_reg_table[temp].next = x;
-	}
-	fclose(rfile);
-};
 
 /* generate random mob and obj tables */
 void init_rand_tables()
@@ -2707,8 +2567,6 @@ P_char read_mobile(int nr, int type)
 		SET_BIT(mob->specials.act, ACT_SPEC);
 	}
 
-	setCharPhysTypeInfo(mob);
-
 	if (mob->nevents)
 	{
 		disarm_char_nevents(mob, NULL);
@@ -3061,10 +2919,6 @@ P_obj read_object(int nr, int type)
 	}
 	*/
 
-	/* init justice flag */
-	//  obj->justice_status = 0;
-	//  obj->justice_name = NULL;
-
 	convertObj(obj);
 
 	return (obj);
@@ -3126,7 +2980,6 @@ void reset_zone(int zone, int force_item_repop)
 	int       temp, room, ival;
 	P_char    mob = NULL, last_mob = NULL, tmp_mob = NULL, last_mob_followable = NULL;
 	P_obj     obj, obj_to;
-	P_event   e1 = NULL;
 	arti_data artidata;
 	char      buf[MAX_STRING_LENGTH];
 
@@ -3990,18 +3843,6 @@ void free_char(P_char ch)
 	/* remove all events associated with this ch  */
 	// ClearCharEvents(ch);
 
-#ifdef NEW_COMBAT
-	if (ch->points.location_hit)
-	{
-		FREE((char *)ch->points.location_hit);
-		ch->points.location_hit = NULL;
-	}
-	else
-	{
-		logit(LOG_DEBUG, "char (%s) had NULL location_hit", GET_NAME(ch));
-	}
-#endif
-
 	if (IS_NPC(ch))
 	{
 
@@ -4257,9 +4098,7 @@ void clear_char(P_char ch)
 	ch->in_room              = NOWHERE;
 	ch->specials.was_in_room = NOWHERE;
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
-#if 1
 	ch->points.base_armor = 0; /* Basic Armor */
-#endif
 
 	/*
 	 * Zero out our other flags -- this should have been done when

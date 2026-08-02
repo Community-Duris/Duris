@@ -715,7 +715,7 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 			}
 			else
 			{
-				world[location].number;
+				location = world[location].number;
 			}
 			qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
 			    vnum,
@@ -1454,7 +1454,6 @@ P_char load_dummy_char(char *name)
 	restoreItemsOnly(owner, -1);
 	owner->next    = character_list;
 	character_list = owner;
-	setCharPhysTypeInfo(owner);
 	updateArtis = TRUE;
 
 	return owner;
@@ -3895,7 +3894,7 @@ void arti_player_sql(P_char ch, char *arg)
 		totalTime /= 60;
 		hours = totalTime % 24;
 
-		snprintf(timeBuf, MAX_STRING_LENGTH, "%c%2ld:%02d:%02d", negTime ? '-' : ' ', totalTime / 24, hours, minutes);
+		snprintf(timeBuf, sizeof timeBuf, "%c%2ld:%02d:%02d", negTime ? '-' : ' ', totalTime / 24, hours, minutes);
 
 		snprintf(buf, MAX_STRING_LENGTH, "%s&n%-11s %-22s%s (#%d)\r\n", locationBuf, timeBuf, row[5], OBJ_SHORT(arti), vnum);
 		send_to_char(buf, ch);

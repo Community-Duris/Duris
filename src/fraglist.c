@@ -33,19 +33,17 @@ int fragWorthy(P_char ch, P_char victim)
 {
 	int    racew;
 	P_char tch;
-#if 0
-  if (!IS_PC(ch) || !IS_PC(victim))
-    return FALSE;
-#endif
 
 	if (IS_NPC(victim))
 		return FALSE;
 
 	if (IS_NPC(ch))
+	{
 		if (ch->following && IS_PC(ch->following))
 			ch = ch->following;
 		else
 			return FALSE;
+	}
 
 	if ((GET_LEVEL(ch) > 56) || (GET_LEVEL(victim) > 56))
 		return FALSE;
@@ -571,12 +569,11 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 	{
 		if (row[0] && row[1])
 		{
-			strncpy(name, row[0], sizeof(name) - 1);
-			name[sizeof(name) - 1] = '\0';
+			strlcpy(name, row[0], sizeof name);
 			name[0]                = toupper(name[0]);
 			frags                  = atoi(row[1]);
 			fragnum                = frags / 100.0;
-			snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+			snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
 			strcat(buf, buf2);
 			count++;
 		}
@@ -586,7 +583,7 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 	// pad with "nobody" if less than 10 results
 	while (count < MAX_FRAG_SIZE)
 	{
-		snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
+		snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
 		strcat(buf, buf2);
 		count++;
 	}
@@ -606,12 +603,11 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 	{
 		if (row[0] && row[1])
 		{
-			strncpy(name, row[0], sizeof(name) - 1);
-			name[sizeof(name) - 1] = '\0';
+			strlcpy(name, row[0], sizeof name);
 			name[0]                = toupper(name[0]);
 			frags                  = atoi(row[1]);
 			fragnum                = frags / 100.0;
-			snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+			snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
 			strcat(buf, buf2);
 			count++;
 		}
@@ -621,7 +617,7 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 	// pad with "nobody" if less than 10 results
 	while (count < MAX_FRAG_SIZE)
 	{
-		snprintf(buf2, MAX_STRING_LENGTH, "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
+		snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", "Nobody", 0.0);
 		strcat(buf, buf2);
 		count++;
 	}

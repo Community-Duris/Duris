@@ -41,13 +41,11 @@
 /*
    external variables
  */
-extern P_event     event_type_list[];
 extern P_char      character_list;
 extern P_desc      descriptor_list;
 extern P_index     mob_index;
 extern P_index     obj_index;
 extern P_room      world;
-extern P_event     current_event;
 extern char       *coin_names[];
 extern char       *command[];
 extern const char *dirs[];
@@ -1242,25 +1240,6 @@ int trustee_artifact(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int check_trap_trigger(P_char ch, int when) { return FALSE; }
-
-int trap_timer(P_obj obj, P_char ch, int cmd, char *arg)
-{
-	P_obj trap;
-
-	if (cmd == CMD_SET_PERIODIC)
-		return TRUE;
-	if (!current_event || !ch)
-		return FALSE;
-	else if ((trap = read_object(obj->value[2], VIRTUAL)))
-	{
-		obj_to_room(trap, ch->in_room);
-		return TRUE;
-	}
-	return FALSE; /*
-	                 hope we didnt get here, but oh well
-	               */
-}
 int creeping_doom(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char t;
@@ -1453,10 +1432,7 @@ int item_switch(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	else
 	{
-		if (back == in_room)
-		{
-			REMOVE_BIT(world[back].dir_option[(int)rev_dir[door]]->exit_info, EX_BLOCKED);
-		}
+		REMOVE_BIT(world[back].dir_option[(int)rev_dir[door]]->exit_info, EX_BLOCKED);
 
 		if (obj->value[3] == 1)
 		{
@@ -1666,7 +1642,7 @@ int slot_machine(P_obj obj, P_char ch, int cmd, char *arg)
 	arg = one_argument(arg, Gbuf2); // multicoin
 	arg = one_argument(arg, Gbuf3); // multicoin
 	//  argument_interpreter(arg, Gbuf1, Gbuf2);
-	if (!Gbuf1 || !Gbuf2 || !Gbuf3)
+	if (!*Gbuf1 || !*Gbuf2 || !*Gbuf3)
 		return FALSE;
 
 	type    = coin_type(Gbuf2);
@@ -2198,7 +2174,7 @@ void event_revenant_crown(P_char ch, P_char victim, P_obj obj, void *data)
 	{
 		act("Your skin blisters and boils start to form!&n", FALSE, ch, obj, 0, TO_CHAR);
 		wizlog(57, " Reverant crown worn by %s begins to melt due race check conflict!", GET_NAME(ch));
-		GET_HIT(ch) >> 1;
+		GET_HIT(ch) >>= 1;
 		CharWait(ch, 2 * WAIT_SEC);
 	}
 	else if ((af = get_spell_from_char(ch, TAG_RACE_CHANGE)) == NULL)
@@ -2332,7 +2308,7 @@ void event_dragonlord_check(P_char ch, P_char victim, P_obj obj, void *data)
 	{
 		act("Your scales smoke and burn as they &+Rdisintegrate!&n", FALSE, ch, obj, 0, TO_CHAR);
 		wizlog(57, "Dragonlord armor worn by %s begins to melt due race check conflict!", GET_NAME(ch));
-		GET_HIT(ch) >> 1;
+		GET_HIT(ch) >>= 1;
 		CharWait(ch, 2 * WAIT_SEC);
 	}
 	if ((af = get_spell_from_char(ch, TAG_RACE_CHANGE)) == NULL)
@@ -2945,18 +2921,20 @@ int vapor(P_obj obj, P_char ch, int cmd, char *arg)
 			obj_from_char(obj);
 			equip_char(ch, obj, slot, FALSE);
 
-			act("&+LSuddenly the &+ggreen vapor &+Lon the ground starts to sw&+wi&+Wrl &+Las if coming&n&L&+Lalive."
-			    "  You gasp in horror when you feel it caressing your legs as&n&L&+Lit coils itself around you."
-			    "  &+WWr&+wi&+Wthing tentacles &+Lstart to probe you&n&L&+Llike the arms of a hungry octopus."
-			    "  Within seconds your whole being&n&L&+Lis encased in a &+bchilling cloud&n &+Lof &+ggreen vapor&+L.&n",
+			act("&+LSuddenly the &+ggreen vapor &+Lon the ground starts to sw&+wi&+Wrl &+Las if coming&n\n"
+			    "&+Lalive.  You gasp in horror when you feel it caressing your legs as&n\n"
+			    "&+Lit coils itself around you.  &+WWr&+wi&+Wthing tentacles &+Lstart to probe you&n\n"
+			    "&+Llike the arms of a hungry octopus.  Within seconds your whole being&n\n"
+			    "&+Lis encased in a &+bchilling cloud&n &+Lof &+ggreen vapor&+L.&n",
 			    FALSE,
 			    ch,
 			    obj,
 			    0,
 			    TO_CHAR);
-			act("&+LSuddenly the &+ggreen vapor &+Lby&n $n's &+Lfeet starts to sw&+wi&+Wrl &+Las if&n&L&+Lcoming alive."
-			    "  Staring wide-eyed, as if trying to deny reality, he&n&L&+Lwatches as the &+wvapor &+Lslowly coils itself around his legs."
-			    "  &+WWr&+wi&+Wthing&n&L&+Wtentacles &+Lstart to probe $s body like the arms of a hungry octopus&n&L"
+			act("&+LSuddenly the &+ggreen vapor &+Lby&n $n's &+Lfeet starts to sw&+wi&+Wrl &+Las if&n\n"
+			    "&+Lcoming alive.  Staring wide-eyed, as if trying to deny reality, he&n\n"
+			    "&+Lwatches as the &+wvapor &+Lslowly coils itself around his legs.  &+WWr&+wi&+Wthing&n\n"
+			    "&+Wtentacles &+Lstart to probe $s body like the arms of a hungry octopus&n\n"
 			    "&+Land within seconds $e is encased in a &+bchilling &+Lcloud of vapor.&n",
 			    FALSE,
 			    ch,
@@ -3722,7 +3700,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (isname(arg, obj->name) && OBJ_WORN(obj))
 		{
-			snprintf(tmp_buf, MAX_STRING_LENGTH, "&+LHealth remaining:&+r %d&N\n", -(obj->value[7]));
+			snprintf(tmp_buf, sizeof tmp_buf, "&+LHealth remaining:&+r %d&N\n", -(obj->value[7]));
 			send_to_char(tmp_buf, ch);
 			return TRUE;
 		}
@@ -3755,7 +3733,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		// 1/30 chance.
 		if (!number(0, 29))
 		{
-			snprintf(curWhisper, MAX_STRING_LENGTH, "$p whispers into your mind '%s&n'", whisperings[number(0, SWORD_WHISPERINGS - 1)]);
+			snprintf(curWhisper, sizeof curWhisper, "$p whispers into your mind '%s&n'", whisperings[number(0, SWORD_WHISPERINGS - 1)]);
 			act(curWhisper, FALSE, ch, obj, 0, TO_CHAR);
 		}
 		good_evil_stoneOrSoulshield(obj);
@@ -4140,30 +4118,42 @@ int kvasir_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 	switch (number(0, 3))
 	{
 		case 0:
-			act("&+WFrost runs down the blade of a&n $q&L&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
-			act("&+WFrost runs down the blade of a&n $q&L&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
-			act("&+WFrost runs down the blade of a&n $q&L&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
+			act("&+WFrost runs down the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
+			act("&+WFrost runs down the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
+			act("&+WFrost runs down the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
 			spell_cone_of_cold(60, ch, NULL, SPELL_TYPE_SPELL, victim, obj);
 			break;
 
 		case 1:
-			act("&+WFrost runs down the blade of a&n $q&L&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
-			act("&+WFrost runs down the blade of a&n $q&L&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
-			act("&+WFrost runs down the blade of a&n $q&L&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
+			act("&+WFrost runs down the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
+			act("&+WFrost runs down the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
+			act("&+WFrost runs down the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Cice dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
 			spell_ice_storm(60, ch, NULL, 0, victim, obj);
 			break;
 
 		case 2:
-			act("&+RFlames &+Wcrackle along the blade of a&n $q&L&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
-			act("&+RFlames &+Wcrackle along the blade of a&n $q&L&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
-			act("&+RFlames &+Wcrackle along the blade of a&n $q&L&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
+			act("&+RFlames &+Wcrackle along the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
+			act("&+RFlames &+Wcrackle along the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
+			act("&+RFlames &+Wcrackle along the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
 			spell_immolate(60, ch, NULL, 0, victim, obj);
 			break;
 
 		case 3:
-			act("&+RFlames &+Wcrackle along the blade of a&n $q&L&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
-			act("&+RFlames &+Wcrackle along the blade of a&n $q&L&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
-			act("&+RFlames &+Wcrackle along the blade of a&n $q&L&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
+			act("&+RFlames &+Wcrackle along the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_NOTVICT);
+			act("&+RFlames &+Wcrackle along the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_CHAR);
+			act("&+RFlames &+Wcrackle along the blade of a&n $q\n"
+			    "&+Was the spirit of the &+Rfire dragon &+Wstirs in its eternal prison...&n", TRUE, ch, obj, victim, TO_VICT);
 			spell_firestorm(60, ch, NULL, 0, victim, obj);
 			break;
 	}
@@ -5116,270 +5106,6 @@ int die_roller(P_obj obj, P_char ch, int cmd, char *arg)
 	return (FALSE);
 }
 
-#if 0
-
-int skeleton_key(P_obj obj, P_char ch, int cmd, char *arg)
-{
-  int      door, other_room, rand, i, pos = -1, break_percent;
-  char     type[MAX_INPUT_LENGTH], dir[MAX_INPUT_LENGTH];
-  struct room_direction_data *back;
-  P_obj    target_o;
-  P_char   victim;
-
-  // Check for periodic event calls
-  if (cmd == CMD_SET_PERIODIC)
-    return FALSE;
-
-  /*
-     no object? no character? not "unlock"? not awake? -- do nothing
-   */
-  if ((!obj) || (!ch) || (cmd != CMD_UNLOCK) || !IS_AWAKE(ch))
-    return (FALSE);
-
-  // Must be equipped
-  if (!OBJ_WORN(obj))
-    return (FALSE);
-
-  /*
-     must be equipped by ch
-   */
-  if (obj->loc.wearing != ch)
-  {
-    logit(LOG_DEBUG, "Buggy equip in skel_key(): obj->loc.wearing != ch.");
-    return (FALSE);
-  }
-  /*
-     must be held to work -- can modify
-   */
-  for (i = 0; i < MAX_WEAR; i++)
-    if (obj->loc.wearing->equipment[i] == obj)
-      pos = i;
-
-  if (pos != HOLD)
-    return (FALSE);
-
-  argument_interpreter(arg, type, dir);
-  if (!*type)
-    return (FALSE);
-  // Don't include tracks.
-  else if (generic_find(arg, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &target_o))
-  {
-
-    /*
-       target is an object
-     */
-
-    if (((target_o->type != ITEM_CONTAINER) &&
-         (target_o->type != ITEM_QUIVER)) ||
-        (!IS_SET(target_o->value[1], CONT_CLOSED)) || (target_o->value[2] < 0)
-        || (has_key(ch, target_o->value[2])) ||
-        (!IS_SET(target_o->value[1], CONT_LOCKED)))
-    {
-
-      /*
-         let do_unlock deal with these cases
-       */
-      return (FALSE);
-
-    }
-    else if (IS_SET(target_o->value[1], CONT_PICKPROOF))
-    {
-
-      /*
-         broke key
-       */
-      act("Your clumsiness caused $p to break into several pieces!", TRUE, ch,
-          obj, 0, TO_CHAR);
-      act("$n's clumsiness caused $p to break into several pieces!", TRUE, ch,
-          obj, 0, TO_ROOM);
-
-      /*
-         remove key
-       */
-      unequip_char(obj->loc.wearing, pos);
-      extract_obj(obj, TRUE); // Not an arti, but 'in game.'
-
-      return (TRUE);
-
-    }
-    else
-    {
-
-      break_percent = 50 - dex_app[STAT_INDEX(GET_C_DEX(ch))].p_locks;
-
-      /*
-         random chance of breaking key
-       */
-      if ((rand = number(1, 100)) <= break_percent)
-      {
-
-        /*
-           broke key
-         */
-        act("Your clumsiness caused $p to break into several pieces!", TRUE,
-            ch, obj, 0, TO_CHAR);
-        act("$n's clumsiness caused $p to break into several pieces!", TRUE,
-            ch, obj, 0, TO_ROOM);
-
-        /*
-           remove key
-         */
-        unequip_char(obj->loc.wearing, pos);
-        extract_obj(obj, TRUE); // Not an arti, but 'in game.'
-
-        return (TRUE);
-
-      }
-      else
-      {
-
-        /*
-           successful use
-         */
-        act("You successfully use $p to unlock $P!", TRUE, ch, obj, target_o,
-            TO_CHAR);
-        act("$n successfully use $p to unlock $P!", TRUE, ch, obj, target_o,
-            TO_ROOM);
-
-        /*
-           unlock
-         */
-        REMOVE_BIT(target_o->value[1], CONT_LOCKED);
-
-        /*
-           remove key
-         */
-        act("$p breaks into several pieces as it unlocks the lock.",
-            TRUE, ch, obj, 0, TO_CHAR);
-        act("$p breaks into several pieces as it unlocks the lock.",
-            TRUE, ch, obj, 0, TO_ROOM);
-
-        unequip_char(obj->loc.wearing, pos);
-        extract_obj(obj, TRUE); // Not an arti, but 'in game.'
-
-        return (TRUE);
-      }
-    }
-  }
-  else if ((door = find_door(ch, type, dir)) >= 0)
-  {
-
-    /*
-       target is a door
-     */
-
-    if ((!IS_SET(EXIT(ch, door)->exit_info, EX_ISDOOR)) ||
-        (!IS_SET(EXIT(ch, door)->exit_info, EX_CLOSED)) ||
-        (EXIT(ch, door)->key < 0) ||
-        (has_key(ch, EXIT(ch, door)->key)) ||
-        (!IS_SET(EXIT(ch, door)->exit_info, EX_LOCKED)))
-    {
-
-      /*
-         let do_unlock deal with these cases
-       */
-      return (FALSE);
-
-    }
-    else if (IS_SET(EXIT(ch, door)->exit_info, EX_PICKPROOF))
-    {
-
-      /*
-         broke key
-       */
-      act("Your clumsiness causes $p to break into several pieces!", TRUE, ch,
-          obj, 0, TO_CHAR);
-      act("$n's clumsiness causes $p to break into several pieces!", TRUE, ch,
-          obj, 0, TO_ROOM);
-
-      /*
-         remove key
-       */
-      unequip_char(obj->loc.wearing, pos);
-      extract_obj(obj, TRUE); // Not an arti, but 'in game.'
-
-      return (TRUE);
-
-    }
-    else
-    {
-
-      /*
-         random chance of breaking key
-       */
-      if ((rand = number(1, 100)) <= break_percent)
-      {
-
-        /*
-           broke key
-         */
-        act("Your clumsiness causes $p to break into several pieces!", TRUE,
-            ch, obj, 0, TO_CHAR);
-        act("$n's clumsiness causes $p to break into several pieces!", TRUE,
-            ch, obj, 0, TO_ROOM);
-
-        /*
-           remove key
-         */
-        unequip_char(obj->loc.wearing, pos);
-        extract_obj(obj, TRUE); // Not an arti, but 'in game.'
-
-        return (TRUE);
-
-      }
-      else
-      {
-
-        /*
-           successful use
-         */
-        if (EXIT(ch, door)->keyword)
-        {
-          act("You successfully use $p to unlock the $F!", TRUE, ch, obj,
-              EXIT(ch, door)->keyword, TO_CHAR);
-          act("$n successfully uses $p to unlock the $F!", TRUE, ch, obj,
-              EXIT(ch, door)->keyword, TO_ROOM);
-        }
-        else
-        {
-          act("You successfully use $p to unlock the door!", TRUE, ch, obj, 0,
-              TO_CHAR);
-          act("$n successfully uses $p to unlock the door!", TRUE, ch, obj, 0,
-              TO_ROOM);
-        }
-
-        /*
-           unlock ch's side
-         */
-        REMOVE_BIT(EXIT(ch, door)->exit_info, EX_LOCKED);
-
-        /*
-           unlock the other side
-         */
-        if ((other_room = EXIT(ch, door)->to_room) != NOWHERE)
-          if ((back = world[other_room].dir_option[(int) rev_dir[door]]))
-            if (back->to_room == ch->in_room)
-              REMOVE_BIT(back->exit_info, EX_LOCKED);
-
-        /*
-           remove key
-         */
-        act("$p breaks into several pieces as it unlocks the lock.", TRUE, ch,
-            obj, 0, TO_CHAR);
-        act("$p breaks into several pieces as it unlocks the lock.", TRUE, ch,
-            obj, 0, TO_ROOM);
-
-        unequip_char(obj->loc.wearing, pos);
-        extract_obj(obj, TRUE); // Not an arti, but 'in game.'
-
-        return (TRUE);
-      }
-    }
-  }
-  return FALSE;
-}
-
-#endif
 /*
    Pooks/Erevan, added because Erevan is the God of Mischief. Sep 7 1994
  */
@@ -9036,7 +8762,6 @@ int fumblegaunts(P_obj obj, P_char ch, int cmd, char *arg)
 			act("&+L$n's $q blurs as it strikes you.", FALSE, ch, obj, vict, TO_VICT);
 			act("&+L$n's $q blurs as it strikes&N $N.", FALSE, ch, obj, vict, TO_NOTVICT);
 #endif
-#ifndef NEW_COMBAT
 			if (GET_OPPONENT(ch))
 				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
 			if (GET_OPPONENT(ch))
@@ -9047,7 +8772,6 @@ int fumblegaunts(P_obj obj, P_char ch, int cmd, char *arg)
 				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
 			if (GET_OPPONENT(ch))
 				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
-#endif
 		}
 		else
 		{
@@ -10694,7 +10418,7 @@ int god_bp(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	arg = one_argument(arg, Gbuf1); // multicoin
-	if (!Gbuf1)
+	if (!*Gbuf1)
 		return FALSE;
 
 	if (!IS_TRUSTED(ch))
@@ -10753,7 +10477,7 @@ int out_of_god_bp(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	arg = one_argument(arg, Gbuf1);
-	if (!Gbuf1)
+	if (!*Gbuf1)
 		return FALSE;
 
 	// check if gbuf1 is flap
@@ -12518,28 +12242,25 @@ int skill_beacon(P_obj obj, P_char ch, int cmd, char *argument)
 	{
 		if (IS_TRUSTED(ch))
 		{
-			snprintf(buf,
-			         MAX_STRING_LENGTH,
+			snprintf(buf, sizeof buf,
 			         "This is a skill beacon object. The following values are used to configure it:\n"
 			         "  &+Wval0&n   skill number\n"
 			         "  &+Wval1&n   minimal skill level to use the beacon\n"
 			         "  &+Wval2&n   maximal skill level beacon will grant");
 			if (skill)
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "\n$p is %sactive and grants skill &+W%s&n.", active ? "" : "in", skills[skill].name);
+				snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "\n$p is %sactive and grants skill &+W%s&n.", active ? "" : "in", skills[skill].name);
 			if (requirement)
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "\nrequired skill level is &+W%d&n", requirement);
+				snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "\nrequired skill level is &+W%d&n", requirement);
 			if (cap)
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "\nit will not raise skill above &+W%d&n", cap);
+				snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "\nit will not raise skill above &+W%d&n", cap);
 		}
 		else if (GET_C_INT(ch) > number(50, 150))
-			snprintf(buf,
-			         MAX_STRING_LENGTH,
+			snprintf(buf, sizeof buf,
 			         "$p is a monolithic block of an unidentified metal. There are some runes drawn on"
 			         " it which you decipher as referring to the art of &+W%s&n.",
 			         skills[skill].name);
 		else
-			snprintf(buf,
-			         MAX_STRING_LENGTH,
+			snprintf(buf, sizeof buf,
 			         "$p is a monolithic block of an unidentified metal. There are some runes drawn on"
 			         " it which you can not decipher at all.");
 		act(buf, FALSE, ch, obj, 0, TO_CHAR);
@@ -13758,19 +13479,6 @@ int portal_general_internal(P_obj obj, P_char ch, int cmd, char *arg, struct por
 	if (obj->value[6] > 0)
 		// value is set in seconds, convert into pulses
 		CharWait(ch, obj->value[6] * WAIT_SEC);
-
-#if 0
-  if (IS_ROOM(to_room, ROOM_DEATH) && !IS_TRUSTED(ch))
-  {
-    death_cry(ch);
-    // If it's not an immortal.
-    if( IS_PC(ch) && (GET_LEVEL( ch ) < MINLVLIMMORTAL) )
-    {
-      update_ingame_racewar( -GET_RACEWAR(ch) );
-    }
-    extract_char(ch);
-  }
-#endif
 
 	/* if obj->value[2] > 0, don't drop below 1, or else portal won't disappear properly */
 	// decay when limit enters

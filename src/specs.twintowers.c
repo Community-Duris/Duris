@@ -24,7 +24,6 @@
 
 extern P_char      character_list;
 extern P_desc      descriptor_list;
-extern P_event     current_event;
 extern P_index     mob_index;
 extern P_index     obj_index;
 extern P_room      world;
@@ -159,16 +158,10 @@ int gardener_block(int room, P_char ch, int cmd, char *args)
 			return FALSE;
 	}
 
-	if (block)
-		if (ch->equipment[WEAR_WAIST] && (obj_index[ch->equipment[WEAR_WAIST]->R_num].virtual_number == 13521))
-		{
-			return FALSE;
-		}
-		else
-		{
-			act("A magical force prevents you from entering the garden", TRUE, ch, NULL, NULL, TO_CHAR);
-			act("$n seems to walk into an invisible wall.", TRUE, ch, NULL, NULL, TO_ROOM);
-			return TRUE;
-		}
-	return FALSE;
+	if (!block || ch->equipment[WEAR_WAIST] && obj_index[ch->equipment[WEAR_WAIST]->R_num].virtual_number == 13521)
+		return FALSE;
+
+	act("A magical force prevents you from entering the garden", TRUE, ch, NULL, NULL, TO_CHAR);
+	act("$n seems to walk into an invisible wall.", TRUE, ch, NULL, NULL, TO_ROOM);
+	return TRUE;
 }

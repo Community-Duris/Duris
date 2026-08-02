@@ -18,7 +18,6 @@
 #include <string.h>
 #include "damage.h"
 #include "justice.h"
-#include "sound.h"
 #include "spells.h"
 
 /*
@@ -1136,10 +1135,12 @@ void bard_protection(int l, P_char ch, P_char victim, int song)
 		spell_minor_globe(l, ch, 0, 0, victim, NULL);
 
 	if (GET_LEVEL(ch) >= 46 && !has_skin_spell(victim))
+	{
 		if (IS_UNDEAD(victim) || IS_ANGEL(ch))
 			spell_prot_undead(l, ch, 0, 0, victim, NULL);
 		else
 			spell_stone_skin(l, ch, 0, 0, victim, NULL);
+	}
 
 	if (!affected_by_spell(victim, song))
 	{
@@ -2007,7 +2008,6 @@ void do_play(P_char ch, char *arg, int cmd)
 		{
 			act("&+rYou start playing your $q&+r, but this instrument won't work for this song.", FALSE, ch, instrument, 0, TO_CHAR);
 			act("$n starts playing $p and singing aloud.", FALSE, ch, instrument, 0, TO_ROOM);
-			//        play_sound(SOUND_HARP, NULL, ch->in_room, TO_ROOM);
 			return;
 		}
 		else
@@ -2015,7 +2015,6 @@ void do_play(P_char ch, char *arg, int cmd)
 			act("&+WYou start playing your $q &+Wand singing aloud.", FALSE, ch, instrument, 0, TO_CHAR);
 			act("&+W$n starts playing $p &+Wand singing aloud.", FALSE, ch, instrument, 0, TO_ROOM);
 			verses = NUM_VERSES(ch, s);
-			//        play_sound(SOUND_HARP, NULL, ch->in_room, TO_ROOM);
 		}
 	}
 	// Min 50% chance to fail the first chords when first learning the song.

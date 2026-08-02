@@ -26,9 +26,7 @@
 #include "arenadef.h"
 #include "justice.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
-#include "sound.h"
 #include "spells.h"
 #include "weather.h"
 /****************************************************************************/
@@ -40,15 +38,9 @@
 #define NAME_LENGTH           20
 
 /****************************************************************************/
-/* prototypes                                                               */
-/****************************************************************************/
-
-int get_name(char return_name[256]);
-
-/****************************************************************************/
 /* main                                                                     */
 /****************************************************************************/
-int get_name(char return_namn[256])
+int get_name(char return_namn[256], int SEX, uint64_t id)
 {
 	time_t t;
 	int    loop;
@@ -64,7 +56,6 @@ int get_name(char return_namn[256])
 	char  namn[NAME_LENGTH];                             /* name                         */
 	FILE *infil;
 	int   cgi = 0;
-	int   SEX = -1;
 
 	memset(start, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
 	memset(mitt, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
@@ -138,7 +129,7 @@ int get_name(char return_namn[256])
 			tempstring[len - 1] = '\0'; /* remove linefeed          */
 		if ((tempstring[0] != '/') && (tempstring[0] != '['))
 		{
-			strncpy(start[antal_start], tempstring, strlen(tempstring));
+			strlcpy(start[antal_start], tempstring, sizeof start[antal_start]);
 			antal_start++;
 		}
 	}
@@ -155,7 +146,7 @@ int get_name(char return_namn[256])
 			tempstring[len - 1] = '\0'; /* remove linefeed          */
 		if ((tempstring[0] != '/') && (tempstring[0] != '['))
 		{
-			strncpy(mitt[antal_mitt], tempstring, strlen(tempstring));
+			strlcpy(mitt[antal_mitt], tempstring, sizeof mitt[antal_mitt]);
 			antal_mitt++;
 		}
 	}
@@ -172,7 +163,7 @@ int get_name(char return_namn[256])
 			tempstring[len - 1] = '\0'; /* remove linefeed          */
 		if ((tempstring[0] != '/') && (tempstring[0] != '['))
 		{
-			strncpy(slut[antal_slut], tempstring, strlen(tempstring));
+			strlcpy(slut[antal_slut], tempstring, sizeof slut[antal_slut]);
 			antal_slut++;
 		}
 	}
@@ -184,13 +175,13 @@ int get_name(char return_namn[256])
 	antal_mitt--;
 	antal_slut--;
 
-	for (loop = 0; loop < number(1, 15); loop++) /* loop through nr of names   */
-	{
-		strcpy(namn, start[number(0, antal_start - 1)]); /* get a start                  */
-		strcat(namn, mitt[number(0, antal_mitt - 1)]);   /* get a middle                 */
-		strcat(namn, slut[number(0, antal_slut - 1)]);   /* get an ending                */
-		snprintf(return_namn, MAX_STRING_LENGTH, "%s", namn);
-	}
+	if (!id)
+		id = number(0, 2147483647);
+
+	strcpy(namn, start[id % antal_start]); /* get a start                  */
+	strcat(namn, mitt[id % antal_mitt]);   /* get a middle                 */
+	strcat(namn, slut[id % antal_slut]);   /* get an ending                */
+	snprintf(return_namn, MAX_STRING_LENGTH, "%s", namn);
 
 	return (SEX);
 }

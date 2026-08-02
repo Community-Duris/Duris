@@ -242,7 +242,7 @@ extern unsigned int game_locked_level;
 #define CMD_CREDITS         212
 #define CMD_DISBAND         213
 #define CMD_VIS             214
-#define CMD_LFLAGS          215
+//#define CMD_LFLAGS          215
 #define CMD_POOFIN          216
 #define CMD_WIZLIST         217
 #define CMD_DISPLAY         218
@@ -472,7 +472,7 @@ extern unsigned int game_locked_level;
 #define CMD_DRAGONPUNCH     442
 #define CMD_REVOKE          443
 #define CMD_GRANT           444
-#define CMD_OLC             445 // removed
+#define CMD_CHAOS           445
 #define CMD_MOTD            446
 #define CMD_ZRESET          447
 #define CMD_FULL            448
@@ -526,7 +526,7 @@ extern unsigned int game_locked_level;
 #define CMD_OGRE_ROAR       496
 #define CMD_BEARHUG         497
 #define CMD_DIG             498
-#define CMD_JUSTICE         499
+#define CMD_MAPGLYPHS       499
 #define CMD_SUPERVISE       500
 #define CMD_SOCIETY         501
 #define CMD_TRAPSET         502
@@ -727,7 +727,7 @@ extern unsigned int game_locked_level;
 #define CMD_DISGUST         697
 #define CMD_VOTE            698
 #define CMD_HIRE            699
-#define CMD_RELOADHELP      700
+// #define CMD_RELOADHELP      700
 #define CMD_TESTCOLOR       701
 #define CMD_MULTICLASS      702
 #define CMD_RESETARTI       703 // Resets timer on an arti.
@@ -833,7 +833,7 @@ extern unsigned int game_locked_level;
 #define CMD_FOCUS           803 // Assimilate for ShadowBeast
 #define CMD_BOON            804
 #define CMD_CTF             805 // Capture the flag
-#define CMD_TETHER          806 // Tether, for Cabalists (abandoned)
+//#define CMD_TETHER          806 // Tether, for Cabalists (abandoned)
 #define CMD_QUESTWHERE      807 // Searches for items received from quests
 #define CMD_NEWBSA          808 // Newbie buff all.
 #define CMD_SALVAGE         809
@@ -882,6 +882,7 @@ extern unsigned int game_locked_level;
 #define CMD_REDIS           852
 #define CMD_MIXPOISON       853
 #define CMD_DIVINECLAIM     854 // Account-bound divine reward
+
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.

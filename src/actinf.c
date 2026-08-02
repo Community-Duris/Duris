@@ -33,7 +33,6 @@ using namespace std;
 #include "grapple.h"
 #include "guard.h"
 #include "hardcore_config.h"
-#include "helpfile.h"
 #include "justice.h"
 #include "map.h"
 #include "nexus_stones.h"
@@ -75,7 +74,6 @@ extern const char                *fullness[];
 extern struct material_data       materials[];
 extern const char                *month_name[];
 extern const char                *player_bits[];
-extern const char                *player_law_flags[];
 extern const char                *player_prompt[];
 extern flagDef                    weapon_types[];
 extern const char                *weekdays[];
@@ -118,7 +116,7 @@ extern uint                       event_counter[];
 extern char                      *specdata[][MAX_SPEC];
 extern const char                *sector_types[];
 extern long                       sentbytes;
-extern long                       recivedbytes;
+extern long                       receivedbytes;
 extern const struct race_names    race_names_table[];
 extern Skill                      skills[];
 extern long                       new_exp_table[]; // Arih: Fixed type mismatch bug - was const int, should be long
@@ -139,8 +137,6 @@ extern const surname_struct       feudal_surnames[7];
 extern int                        get_power_level(P_char);
 
 void display_map(P_char ch, int n, int show_map_regardless);
-
-extern HelpFilesCPPClass help_index;
 
 extern struct TimedShutdownData shutdownData;
 
@@ -555,13 +551,12 @@ string save_to_string(P_char ch, int save_type)
 
 const char *load_to_string(P_char ch)
 {
-	P_char rider;
 	int    percent = CAN_CARRY_W(ch);
 
 	if (percent <= 0)
 		percent = 1;
 
-	percent = (int)((IS_CARRYING_W(ch, rider) * 100) / percent);
+	percent = (int)((total_carried_weight(ch) * 100) / percent);
 
 	if (percent <= 0)
 		return (load_names[0]);
@@ -755,7 +750,7 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 			strcat(buf, "Ye roll up yer sleeves, and examine the dead...");
 			ageCorpse(ch, object, buf);
 		}
-		else if ((object->type == ITEM_DRINKCON))
+		else if (object->type == ITEM_DRINKCON)
 		{
 			strcat(buf, "It looks like a drink container.");
 		}
@@ -1195,14 +1190,14 @@ void show_visual_status(P_char ch, P_char tar_char)
 	if (IS_NPC(tar_char) && (GET_CLASS(ch, CLASS_RANGER) || GET_CLASS(ch, CLASS_SUMMONER)))
 	{
 		get_class_string(tar_char, buf2);
-		snprintf(buf, MAX_STRING_LENGTH, "Through your advanced training, you glean they are a level &+Y%d &N%s&n.", GET_LEVEL(tar_char), buf2);
+		snprintf(buf, sizeof buf, "Through your advanced training, you glean they are a level &+Y%d &N%s&n.", GET_LEVEL(tar_char), buf2);
 		SVS(buf);
 	}
 
 	if (IS_TRUSTED(ch))
 	{
 		get_class_string(tar_char, buf2);
-		snprintf(buf, MAX_STRING_LENGTH, "&+YLevel: &N%d &+YClass(es): &N%s &+YHitpoints: %d/%d", GET_LEVEL(tar_char), buf2, GET_HIT(tar_char), GET_MAX_HIT(tar_char));
+		snprintf(buf, sizeof buf, "&+YLevel: &N%d &+YClass(es): &N%s &+YHitpoints: %d/%d", GET_LEVEL(tar_char), buf2, GET_HIT(tar_char), GET_MAX_HIT(tar_char));
 		SVS(buf);
 	}
 	send_to_char("\n", ch);
@@ -1922,6 +1917,9 @@ void list_char_to_char(P_char list, P_char ch, int mode)
 
 	for (i = list; i; i = i->next_in_room)
 	{
+		if (i == i->next_in_room)
+			recover_from_room_ch_loop(i);
+
 		if ((i == ch) || WIZ_INVIS(ch, i))
 		{
 			continue;
@@ -3300,22 +3298,22 @@ void do_examine(P_char ch, char *argument, int cmd)
 			int ratio = (int)(100 * curr / max);
 
 			if (curr < 0 | max < 0)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be bugged - please notify a god-type fellow, and report the item via the BUG command!");
+				snprintf(buf, sizeof buf, "$p seems to be bugged - please notify a god-type fellow, and report the item via the BUG command!");
 
 			if (ratio >= 100)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be unused.");
+				snprintf(buf, sizeof buf, "$p seems to be unused.");
 			else if (ratio > 90)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be slightly used.");
+				snprintf(buf, sizeof buf, "$p seems to be slightly used.");
 			else if (ratio > 55)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be somehow depleted of its magic.");
+				snprintf(buf, sizeof buf, "$p seems to be somehow depleted of its magic.");
 			else if (ratio > 45)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be about halfway full.");
+				snprintf(buf, sizeof buf, "$p seems to be about halfway full.");
 			else if (ratio > 10)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be worn out.");
+				snprintf(buf, sizeof buf, "$p seems to be worn out.");
 			else if (ratio > 0)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be almost dried up.");
+				snprintf(buf, sizeof buf, "$p seems to be almost dried up.");
 			else if (ratio == 0)
-				snprintf(buf, MAX_STRING_LENGTH, "$p seems to be completely drained of its magic.");
+				snprintf(buf, sizeof buf, "$p seems to be completely drained of its magic.");
 
 			act(buf, FALSE, ch, tmp_object, 0, TO_CHAR);
 		}
@@ -3330,7 +3328,7 @@ void do_examine(P_char ch, char *argument, int cmd)
 			else
 				wtype = tmp_object->value[0];
 
-			snprintf(buf, MAX_STRING_LENGTH, "$p is a %s.", weapon_types[wtype].flagLong);
+			snprintf(buf, sizeof buf, "$p is a %s.", weapon_types[wtype].flagLong);
 
 			act(buf, FALSE, ch, tmp_object, 0, TO_CHAR);
 		}
@@ -3374,43 +3372,42 @@ void do_examine(P_char ch, char *argument, int cmd)
 					percent = BOUNDED(1, (int)percent, 100);
 
 					if (percent > 99)
-						snprintf(buf2, MAX_STRING_LENGTH, "&nis full!");
+						snprintf(buf2, sizeof buf2, "&nis full!");
 					else if (percent > 80)
-						snprintf(buf2, MAX_STRING_LENGTH, "&nis stuffed with items.");
+						snprintf(buf2, sizeof buf2, "&nis stuffed with items.");
 					else if (percent > 60)
-						snprintf(buf2, MAX_STRING_LENGTH, "&nis about three-quarters full.");
+						snprintf(buf2, sizeof buf2, "&nis about three-quarters full.");
 					else if (percent > 40)
-						snprintf(buf2, MAX_STRING_LENGTH, "&nis about halfway full.");
+						snprintf(buf2, sizeof buf2, "&nis about halfway full.");
 					else if (percent > 30)
-						snprintf(buf2, MAX_STRING_LENGTH, "&nis partially filled.");
+						snprintf(buf2, sizeof buf2, "&nis partially filled.");
 					else if (percent > 10)
-						snprintf(buf2, MAX_STRING_LENGTH, "&ncan hold a lot more.");
+						snprintf(buf2, sizeof buf2, "&ncan hold a lot more.");
 					else
-						snprintf(buf2, MAX_STRING_LENGTH, "&nis as good as empty.");
+						snprintf(buf2, sizeof buf2, "&nis as good as empty.");
 
-					snprintf(buf,
-					         MAX_STRING_LENGTH,
+					snprintf(buf, sizeof buf,
 					         "%s&n can hold around %d pounds, and %s\n",
 					         tmp_object->short_description,
 					         tmp_object->value[0] + number(-(tmp_object->value[0] >> 1), tmp_object->value[0] >> 1),
 					         buf2);
 					send_to_char(buf, ch);
 
-					snprintf(buf, MAX_STRING_LENGTH, "%s &ncurrently contains:\n", tmp_object->short_description);
+					snprintf(buf, sizeof buf, "%s &ncurrently contains:\n", tmp_object->short_description);
 					send_to_char(buf, ch);
 				}
 				else
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "%s&n currently contains:\n", tmp_object->short_description);
+					snprintf(buf, sizeof buf, "%s&n currently contains:\n", tmp_object->short_description);
 					send_to_char(buf, ch);
 				}
 			}
-			snprintf(buf, MAX_STRING_LENGTH, "in %s", argument);
+			snprintf(buf, sizeof buf, "in %s", argument);
 			do_look(ch, buf, -4);
 		}
 		else if (GET_ITEM_TYPE(tmp_object) == ITEM_CORPSE)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "in %s", argument);
+			snprintf(buf, sizeof buf, "in %s", argument);
 			do_look(ch, buf, -4);
 		}
 	}
@@ -3637,7 +3634,7 @@ void do_world(P_char ch, char *argument, int cmd)
 			snprintf(buf, MAX_STRING_LENGTH, "Total MB sent since boot:                %5.4f\n", (float)sentbytes / 1048576.00);
 			send_to_char(buf, ch);
 
-			snprintf(buf, MAX_STRING_LENGTH, "Total MB received since boot:             %5.4f\n", (float)recivedbytes / 1048576.00);
+			snprintf(buf, MAX_STRING_LENGTH, "Total MB received since boot:             %5.4f\n", (float)receivedbytes / 1048576.00);
 			send_to_char(buf, ch);
 
 			break;
@@ -3946,7 +3943,6 @@ void do_attributes(P_char ch, char *argument, int cmd)
 	char   buf[MAX_STRING_LENGTH];
 	char   buffer[MAX_STRING_LENGTH];
 	int    t_val, h, w;
-	P_char rider;
 
 	if (ch == NULL)
 	{
@@ -3992,102 +3988,6 @@ void do_attributes(P_char ch, char *argument, int cmd)
 	{
 		if (IS_TRUSTED(ch) || GET_LEVEL(ch) >= MIN_LEVEL_FOR_ATTRIBUTES)
 		{
-			/* this is ugly, because of new racial stat mods.  JAB */
-#if 0
-      if (GET_C_STR(ch) > stat_factor[(int) GET_RACE(ch)].Str)
-        snprintf(buf, MAX_STRING_LENGTH, "&+cSTR: &+Y***&n");
-      else
-        snprintf(buf, MAX_STRING_LENGTH, "&+cSTR: &+Y%3d&n",
-                MAX(1, (int) ((GET_C_STR(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Str) + .55)));
-
-      if (GET_C_AGI(ch) > stat_factor[(int) GET_RACE(ch)].Agi)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cAGI: &+Y***&n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cAGI: &+Y%3d&n",
-                MAX(1, (int) ((GET_C_AGI(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Agi) + .55)));
-
-      if (GET_C_DEX(ch) > stat_factor[(int) GET_RACE(ch)].Dex)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cDEX: &+Y***&n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cDEX: &+Y%3d&n",
-                MAX(1, (int) ((GET_C_DEX(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Dex) + .55)));
-
-      if (GET_C_CON(ch) > stat_factor[(int) GET_RACE(ch)].Con)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cCON: &+Y***&n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cCON: &+Y%3d&n",
-                MAX(1, (int) ((GET_C_CON(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Con) + .55)));
-
-      if (GET_C_LUK(ch) > stat_factor[(int) GET_RACE(ch)].Luk)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cLUCK: &+Y***&n\n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cLUCK: &+Y%3d&n\n",
-                MAX(1, (int) ((GET_C_LUK(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Luk) + .55)));
-
-      if (GET_C_POW(ch) > stat_factor[(int) GET_RACE(ch)].Pow)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+cPOW: &+Y***&n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+cPOW: &+Y%3d&n",
-                MAX(1, (int) ((GET_C_POW(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Pow) + .55)));
-
-      if (GET_C_INT(ch) > stat_factor[(int) GET_RACE(ch)].Int)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cINT: &+Y***&n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cINT: &+Y%3d&n",
-                MAX(1, (int) ((GET_C_INT(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Int) + .55)));
-
-      if (GET_C_WIS(ch) > stat_factor[(int) GET_RACE(ch)].Wis)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cWIS: &+Y***&n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cWIS: &+Y%3d&n",
-                MAX(1, (int) ((GET_C_WIS(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Wis) + .55)));
-
-      if (GET_C_CHA(ch) > stat_factor[(int) GET_RACE(ch)].Cha)
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cCHA: &+Y***&n\n\n");
-      else
-        snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cCHA: &+Y%3d&n\n\n",
-                MAX(1, (int) ((GET_C_CHA(ch) * 100 / stat_factor[(int) GET_RACE(ch)].Cha) + .55)));
-#endif
-			/*
-
-			      snprintf(buf, MAX_STRING_LENGTH, "&+cSTR: &+Y%3d&n",
-			              MAX(1,
-			                  (int) ((GET_C_STR(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Str) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cAGI: &+Y%3d&n",
-			              MAX(1,
-			                  (int) ((GET_C_AGI(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Agi) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cDEX: &+Y%3d&n",
-			              MAX(1,
-			                  (int) ((GET_C_DEX(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Dex) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cCON: &+Y%3d&n",
-			              MAX(1,
-			                  (int) ((GET_C_CON(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Con) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cLUCK: &+Y%3d&n\n",
-			              MAX(1,
-			                  (int) ((GET_C_LUK(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Luk) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+cPOW: &+Y%3d&n",
-			              MAX(1,
-			                  (int) ((GET_C_POW(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Pow) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cINT: &+Y%3d&n",
-			              MAX(1,
-			                  (int) ((GET_C_INT(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Int) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cWIS: &+Y%3d&n",
-			              MAX(1,
-			                  (int) ((GET_C_WIS(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Wis) + .55)));
-			      snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+cCHA: &+Y%3d&n\n\n",
-			              MAX(1,
-			                  (int) ((GET_C_CHA(ch) * 100 /
-			                          stat_factor[(int) GET_RACE(ch)].Cha) + .55)));
-			*/
-
 			// drannak new way
 			char o_buf[MAX_STRING_LENGTH] = "", buf2[MAX_STRING_LENGTH] = "";
 			strcat(o_buf, "  &+GActual &n(&+gBase&n)     &+GActual &n(&+gBase&n)\n");
@@ -4095,15 +3995,8 @@ void do_attributes(P_char ch, char *argument, int cmd)
 			struct stat_data racial_stats;
 
 			i                = GET_RACE(ch);
-			racial_stats.Str = stat_factor[i].Str;
-			racial_stats.Pow = stat_factor[i].Pow;
-			racial_stats.Dex = stat_factor[i].Dex;
-			racial_stats.Int = stat_factor[i].Int;
-			racial_stats.Agi = stat_factor[i].Agi;
-			racial_stats.Wis = stat_factor[i].Wis;
-			racial_stats.Con = stat_factor[i].Con;
-			racial_stats.Cha = stat_factor[i].Cha;
-			racial_stats.Luk = stat_factor[i].Luk;
+			for (int j = 0; j < MAX_ATTRIBUTES; j++)
+				racial_stats[j] = stat_factor[i][j];
 
 			for (i = i3 = 0; i < MAX_WEAR; i++)
 			{
@@ -4196,7 +4089,7 @@ void do_attributes(P_char ch, char *argument, int cmd)
 			         GET_C_LUK(ch),
 			         (int)(GET_C_LUK(ch) * 100. / racial_stats.Luk + .55),
 			         i3,
-			         IS_CARRYING_W(ch, rider));
+			         total_carried_weight(ch));
 			strcat(o_buf, buf);
 
 			/* snprintf(buf, MAX_STRING_LENGTH,
@@ -4462,15 +4355,6 @@ void do_score(P_char ch, char *argument, int cmd)
 	snprintf(buf, MAX_STRING_LENGTH, "Level: %d   Race: %s   Class: %s &nSex: %s\n&n", GET_LEVEL(ch), race_to_string(ch), get_class_string(ch, buffer), buf2);
 	send_to_char(buf, ch);
 
-	/* description */
-#if 0
-  if (ch->player.short_descr)
-  {
-    snprintf(buf, MAX_STRING_LENGTH, "Quick Description: %s\n", ch->player.short_descr);
-    send_to_char(buf, ch);
-  }
-#endif
-
 	/* hit pts, mana, moves */
 	if (GET_CLASS(ch, CLASS_PSIONICIST) || GET_CLASS(ch, CLASS_MINDFLAYER))
 	{
@@ -4553,7 +4437,7 @@ void do_score(P_char ch, char *argument, int cmd)
 		snprintf(buf, MAX_STRING_LENGTH, "&+wReceived data:&+y %5.4f &+wMB this session.\n", (float)(ch->only.pc->send_data / 1048576.0000));
 		send_to_char(buf, ch);
 
-		snprintf(buf, MAX_STRING_LENGTH, "&+wSend data:    &+y %5.4f &+wMB this session.\n", (float)(ch->only.pc->recived_data / 1048576.0000));
+		snprintf(buf, MAX_STRING_LENGTH, "&+wSend data:    &+y %5.4f &+wMB this session.\n", (float)(ch->only.pc->received_data / 1048576.0000));
 		send_to_char(buf, ch);
 
 		/* compression */
@@ -4598,16 +4482,6 @@ void do_score(P_char ch, char *argument, int cmd)
 				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "PoofOut: None\n");
 			else
 				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "PoofOut: %s\n", ch->only.pc->poofOut);
-
-			if (ch->only.pc->poofInSound == NULL)
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "PoofInSound:  None\n");
-			else
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "PoofInSound:  %s\n", ch->only.pc->poofInSound);
-
-			if (ch->only.pc->poofOutSound == NULL)
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "PoofOutSound: None\n");
-			else
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "PoofOutSound: %s\n", ch->only.pc->poofOutSound);
 		}
 	}
 	/* group leader */
@@ -4852,10 +4726,12 @@ void do_score(P_char ch, char *argument, int cmd)
 	if (IS_AFFECTED4(ch, AFF4_NEG_SHIELD))
 		strcat(buf, " &+LNegative Shielded&n");
 	else if (IS_AFFECTED2(ch, AFF2_SOULSHIELD))
+	{
 		if (GET_CLASS(ch, CLASS_THEURGIST))
 			strcat(buf, " &+WHoly Aura");
 		else
 			strcat(buf, " &+WSoulshielded&n");
+	}
 
 	if (IS_AFFECTED5(ch, AFF5_JUDICIUM_FIDEI))
 	{
@@ -5459,10 +5335,12 @@ void do_score(P_char ch, char *argument, int cmd)
 	}
 
 	if (affected_by_spell(ch, TAG_SPAWN))
+	{
 		if (has_innate(ch, INNATE_SPAWN))
 			send_to_char("&+LYou are willing to summon spawns.\n", ch);
 		else if (has_innate(ch, INNATE_ALLY))
 			send_to_char("&+WYou are willing to summon allies.\n", ch);
+	}
 
 	tch = guarding(ch);
 	if (tch)
@@ -5660,11 +5538,6 @@ void do_time(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-#if 0
-  if (IS_TRUSTED(ch))
-    snprintf(Gbuf1, MAX_STRING_LENGTH, ":%s%d", ((pulse / 5) > 9) ? "" : "0", pulse / 5);
-  else
-#endif
 	Gbuf1[0] = 0;
 
 	snprintf(Gbuf2, MAX_STRING_LENGTH, "It is %d%s%s, on ", (time_info.hour % 12) ? (time_info.hour % 12) : 12, Gbuf1, (time_info.hour > 11) ? "pm" : "am");
@@ -6212,12 +6085,8 @@ void do_who(P_char ch, char *argument, int cmd)
 		// Gods can see all!
 		if (!IS_TRUSTED(ch))
 		{
-			if (IS_SET(tch->specials.act, PLR_NOWHO))
-			// Anon removed atm.
-			//        || (sort && IS_SET(tch->specials.act, PLR_ANONYMOUS)) )
-			{
+			if (sort && IS_SET(tch->specials.act, PLR_ANONYMOUS))
 				continue;
-			}
 		}
 
 		if (GET_LEVEL(tch) < min_level || GET_LEVEL(tch) > max_level)
@@ -6353,11 +6222,10 @@ void do_who(P_char ch, char *argument, int cmd)
 				{
 					snprintf(who_output + strlen(who_output),
 					         MAX_STRING_LENGTH - strlen(who_output),
-					         "&n[&+w%2d&n%s%s&n]%s",
+					         "&n[&+w%2d&n%s%s&n] ",
 					         GET_LEVEL(who_list[j]),
 					         (IS_TRUSTED(ch) && (IS_SET(who_list[j]->specials.act, PLR_ANONYMOUS)) ? "*" : " "),
-					         pad_ansi(get_class_name(who_list[j], ch), 16, TRUE).c_str(),
-					         (IS_TRUSTED(ch) && (IS_SET(who_list[j]->specials.act, PLR_NOWHO)) ? "&+r%&n" : " "));
+					         pad_ansi(get_class_name(who_list[j], ch), 16, TRUE).c_str());
 				}
 				else
 				{
@@ -6519,7 +6387,7 @@ void do_who(P_char ch, char *argument, int cmd)
 		         (tchReal->in_room > NOWHERE) ? world[tchReal->in_room].number : -1,
 		         tchReal->only.pc->wiz_invis,
 		         buf5,
-		         (tch->desc->host) ? tch->desc->host : "UNKNOWN");
+		         (*tch->desc->host) ? tch->desc->host : "UNKNOWN");
 
 		strcat(who_output, buf4);
 		send_to_char(who_output, ch);
@@ -6598,7 +6466,7 @@ int got_dupe_host(P_desc orig)
 
 	while (d)
 	{
-		if ((d != orig) && d->host && !strcasecmp(orig->host, d->host))
+		if ((d != orig) && *d->host && !strcasecmp(orig->host, d->host))
 		{
 			return TRUE;
 		}
@@ -6625,11 +6493,11 @@ void do_users(P_char ch, char *argument, int cmd)
 		do_users_DEPRECATED(ch, connbuf, cmd);
 		return;
 	}
-	else if (linebuf && *linebuf && is_abbrev(linebuf, "nonplaying"))
+	else if (*linebuf && is_abbrev(linebuf, "nonplaying"))
 	{
 		nonplaying = TRUE;
 	}
-	else if (linebuf && *linebuf && is_abbrev(linebuf, "get_name"))
+	else if (*linebuf && is_abbrev(linebuf, "get_name"))
 	{
 		getname = TRUE;
 	}
@@ -6657,7 +6525,7 @@ void do_users(P_char ch, char *argument, int cmd)
 
 		sprinttype(d->connected, connected_types, connbuf);
 
-		if (d->host)
+		if (*d->host)
 		{
 			if (!*d->host2)
 			{
@@ -6667,13 +6535,9 @@ void do_users(P_char ch, char *argument, int cmd)
 				if (f != NULL)
 				{
 					if (fscanf(f, "%s\n", hostbuf) == 1)
-					{
-						strncpy(d->host2, hostbuf, 128);
-					}
+						strlcpy(d->host2, hostbuf, sizeof d->host2);
 					else
-					{
-						strncpy(d->host2, d->host, 128);
-					}
+						strlcpy(d->host2, d->host, sizeof d->host2);
 
 					fclose(f);
 				}
@@ -6776,7 +6640,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 			           */
 
 		if (*name)
-			if ((!t_ch || !t_ch->player.name || !isname(t_ch->player.name, name)) && (!d->host || !strstr(d->host, name)))
+			if ((!t_ch || !*t_ch->player.name || !isname(t_ch->player.name, name)) && (!*d->host || !strstr(d->host, name)))
 				continue;
 
 		num_non_play++;
@@ -6812,7 +6676,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 		/*
 		 * Get IP Address
 		 */
-		if (d->host)
+		if (*d->host)
 		{
 			if (!*d->host2)
 			{
@@ -6822,22 +6686,13 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 				if (f != NULL)
 				{
 					if (fscanf(f, "%s\n", buf) == 1)
-					{
-						strncpy(d->host2, buf, 128);
-					}
+						strlcpy(d->host2, buf, sizeof d->host2);
 					else
-						strncpy(d->host2, d->host, 128);
+						strlcpy(d->host2, d->host, sizeof d->host2);
 					fclose(f);
 				}
 			}
-			if (d->login)
-			{
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), " %8s %s%s&n", d->login, got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
-			}
-			else
-			{
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
-			}
+			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
 		}
 		else
 		{
@@ -6894,7 +6749,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 			continue;
 
 		if (*name)
-			if ((!t_ch->player.name || !isname(t_ch->player.name, name)) && (!d || !d->host || !strstr(d->host, name)))
+			if ((!*t_ch->player.name || !isname(t_ch->player.name, name)) && (!d || !*d->host || !strstr(d->host, name)))
 				continue;
 
 		if (d && d->original)
@@ -6930,32 +6785,23 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 			/*
 			 * Get IP Address
 			 */
-			if (d->host)
+			if (*d->host)
 			{
 				if (!*d->host2)
 				{
-					snprintf(buf2, MAX_STRING_LENGTH, "lib/etc/hosts/%d.%s", d->descriptor, d->host);
+					snprintf(buf2, sizeof buf2, "lib/etc/hosts/%d.%s", d->descriptor, d->host);
 					f = fopen(buf2, "r");
 
 					if (f != NULL)
 					{
 						if (fscanf(f, "%s\n", buf) == 1)
-						{
-							strncpy(d->host2, buf, 128);
-						}
+							strlcpy(d->host2, buf, sizeof d->host2);
 						else
-							strncpy(d->host2, d->host, 128);
+							strlcpy(d->host2, d->host, sizeof d->host2);
 						fclose(f);
 					}
 				}
-				if (d->login)
-				{
-					snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), " %8s %s%s&n", d->login, got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
-				}
-				else
-				{
-					snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
-				}
+				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
 			}
 			else
 			{
@@ -7020,8 +6866,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 		strcat(biglist, buf);
 	}
 
-	snprintf(line,
-	         MAX_STRING_LENGTH,
+	snprintf(line, sizeof line,
 	         "\nNon-playing: %d  In game: %d  Using Client: %d Linkdeads: %d  Sockets: %d  Using compression: %d\n",
 	         num_non_play,
 	         num_in_game,

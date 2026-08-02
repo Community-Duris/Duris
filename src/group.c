@@ -794,7 +794,7 @@ void do_group(P_char ch, char *argument, int cmd)
 
 	if (ch->group && (victim->group == ch->group))
 	{
-		if (rank && (isname(rank, "back") || isname(rank, "front")))
+		if (*rank && (isname(rank, "back") || isname(rank, "front")))
 		{
 			return;
 			if (isname(rank, "front"))
@@ -873,7 +873,7 @@ static bool do_group_add(P_char ch, P_char victim)
 		old_group = next;
 	}
 
-	update_groupies(ch);
+	update_groupies(ch, true);
 	return true;
 }
 
@@ -1149,20 +1149,11 @@ bool group_add_member(P_char leader, P_char member)
 		return FALSE;
 	}
 
-#if 1
 	if (IS_PC(member) && IS_PC(leader) && member != leader && !is_linked_to(leader, member, LNK_CONSENT))
 	{
 		send_to_char("But ye haven't their permission to do that!\n", leader);
 		return FALSE;
 	}
-#endif
-#if 0
-  if( GET_RACE(ch) == RACE_ILLITHID(leader) && IS_PC(member) )
-  {
-    send_to_char("You can't stand being near them!\n", leader);
-    return FALSE;
-  }
-#endif
 
 	// Check if the leader is a member of a group, but not the leader of it
 	if (leader->group && (leader->group->ch != leader))

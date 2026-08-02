@@ -69,7 +69,6 @@ bool sql_save_player_skills(P_char ch) { return false; }
 bool sql_save_player_affects(P_char ch) { return false; }
 bool sql_save_player_items(P_char ch) { return false; }
 bool sql_delete_player_items(int pid) { return false; }
-bool sql_save_player_witnesses(P_char ch) { return false; }
 bool sql_save_player_shapechanges(P_char ch) { return false; }
 bool sql_save_player_recipes(P_char ch) { return false; }
 bool sql_add_player_recipe(int pid, int recipe_vnum) { return false; }
@@ -89,7 +88,6 @@ bool   sql_load_player_status(P_char ch, int pid) { return false; }
 bool   sql_load_player_skills(P_char ch) { return false; }
 bool   sql_load_player_affects(P_char ch) { return false; }
 bool   sql_load_player_items(P_char ch) { return false; }
-bool   sql_load_player_witnesses(P_char ch) { return false; }
 bool   sql_load_player_shapechanges(P_char ch) { return false; }
 bool   sql_save_player_pets(P_char ch, int save_type) { return false; }
 bool   sql_load_player_pets(P_char ch) { return false; }
@@ -486,8 +484,7 @@ void sql_player_error(const char *context, const char *query)
 	{
 		// log first 200 chars of query for debugging
 		//char truncated[201];
-		//strncpy(truncated, query, 200);
-		//truncated[200] = '\0';
+		//strlcpy(truncated, query, sizeof truncated);
 		logit(LOG_DEBUG, "sql_player: query: %s...", query);
 	}
 }
@@ -637,8 +634,7 @@ bool sql_player_rename(P_char ch, const char *new_name)
 		return false;
 
 	char normalized_name[MAX_STRING_LENGTH];
-	strncpy(normalized_name, new_name, sizeof(normalized_name) - 1);
-	normalized_name[sizeof(normalized_name) - 1] = '\0';
+	strlcpy(normalized_name, new_name, sizeof(normalized_name));
 	normalize_player_name_case(normalized_name);
 
 	char *escaped_name = sql_escape_string(normalized_name);
@@ -798,13 +794,6 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
-	if (!sql_save_player_witnesses(ch))
-	{
-		logit(LOG_DEBUG, "sql_save_player: failed to save witnesses for %s", GET_NAME(ch));
-		sql_rollback();
-		return false;
-	}
-
 	if (!sql_save_player_shapechanges(ch))
 	{
 		logit(LOG_DEBUG, "sql_save_player: failed to save shapechanges for %s", GET_NAME(ch));
@@ -892,8 +881,8 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	char *esc_title      = sql_escape_string(GET_TITLE(ch) ? GET_TITLE(ch) : "");
 	char *esc_poofin     = sql_escape_string(ch->only.pc->poofIn ? ch->only.pc->poofIn : "");
 	char *esc_poofout    = sql_escape_string(ch->only.pc->poofOut ? ch->only.pc->poofOut : "");
-	char *esc_poofinsnd  = sql_escape_string(ch->only.pc->poofInSound ? ch->only.pc->poofInSound : "");
-	char *esc_poofoutsnd = sql_escape_string(ch->only.pc->poofOutSound ? ch->only.pc->poofOutSound : "");
+	char *esc_poofinsnd  = sql_escape_string("");
+	char *esc_poofoutsnd = sql_escape_string("");
 
 	// Start own transaction only after all preflight lookups and string escaping succeed.
 	bool own_txn = false;
@@ -969,7 +958,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->player.time.birth,
 		                   ch->player.time.played,
 		                   (long)time(0),
-		                   ch->player.time.perm_aging,
+		                   0, //!!! perm_aging
 		                   ch->base_stats.Str,
 		                   ch->base_stats.Dex,
 		                   ch->base_stats.Agi,
@@ -1022,7 +1011,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->only.pc->echo_toggle,
 		                   ch->only.pc->prompt,
 		                   ch->only.pc->wiz_invis,
-		                   ch->only.pc->law_flags,
+		                   0UL,
 		                   ch->only.pc->wimpy,
 		                   ch->only.pc->aggressive,
 		                   ch->only.pc->highest_level,
@@ -1111,7 +1100,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->player.time.birth,
 		                   ch->player.time.played,
 		                   (long)time(0),
-		                   ch->player.time.perm_aging,
+		                   0, //!!! perm_aging
 		                   ch->base_stats.Str,
 		                   ch->base_stats.Dex,
 		                   ch->base_stats.Agi,
@@ -1164,7 +1153,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		                   ch->only.pc->echo_toggle,
 		                   ch->only.pc->prompt,
 		                   ch->only.pc->wiz_invis,
-		                   ch->only.pc->law_flags,
+		                   0UL,
 		                   ch->only.pc->wimpy,
 		                   ch->only.pc->aggressive,
 		                   ch->only.pc->highest_level,
@@ -3340,91 +3329,6 @@ bool sql_load_player_pets(P_char ch)
 	return true;
 }
 
-// witnesses save
-
-bool sql_save_player_witnesses(P_char ch)
-{
-	if (!ch || !IS_PC(ch) || !DB)
-		return false;
-
-	// Start own transaction if not already in one
-	bool own_txn = false;
-	if (!sql_in_transaction())
-	{
-		if (!sql_begin_transaction())
-			return false;
-		own_txn = true;
-	}
-
-	int pid = GET_PID(ch);
-	if (pid <= 0)
-	{
-		if (own_txn) sql_rollback();
-		return false;
-	}
-
-	// DELETE + INSERT batch in one multi-statement round-trip.
-	char batch[16384];
-	int  bpos = snprintf(batch, sizeof(batch),
-	                     "DELETE FROM player_witnesses WHERE pid=%d", pid);
-
-	// insert current witnesses, flushing as needed
-	for (wtns_rec *w = ch->specials.witnessed; w; w = w->next)
-	{
-		char *esc_attacker = sql_escape_string(w->attacker ? w->attacker : "");
-		char *esc_victim   = sql_escape_string(w->victim ? w->victim : "");
-		int new_pos = batch_append(batch, bpos, sizeof(batch),
-		                           ";INSERT INTO player_witnesses (pid, crime, room_vnum, attacker_name, victim_name, witness_time) "
-		                           "VALUES (%d, %d, %d, '%s', '%s', FROM_UNIXTIME(NULLIF(%ld,0)))",
-		                           pid,
-		                           w->crime,
-		                           w->room,
-		                           esc_attacker ? esc_attacker : "",
-		                           esc_victim ? esc_victim : "",
-		                           (long)w->time);
-		free(esc_attacker);
-		free(esc_victim);
-		if (new_pos < 0)
-		{
-			if (bpos > 0 && !sql_run_multi_query(batch))
-			{
-				if (own_txn) sql_rollback();
-				return false;
-			}
-			batch[0] = '\0';
-			bpos = 0;
-			new_pos = batch_append(batch, bpos, sizeof(batch),
-			                       "INSERT INTO player_witnesses (pid, crime, room_vnum, attacker_name, victim_name, witness_time) "
-			                       "VALUES (%d, %d, %d, '%s', '%s', FROM_UNIXTIME(NULLIF(%ld,0)))",
-			                       pid,
-			                       w->crime,
-			                       w->room,
-			                       esc_attacker ? esc_attacker : "",
-			                       esc_victim ? esc_victim : "",
-			                       (long)w->time);
-			if (new_pos < 0)
-			{
-				if (own_txn) sql_rollback();
-				return false;
-			}
-		}
-		bpos = new_pos;
-	}
-
-	if (bpos > 0 && !sql_run_multi_query(batch))
-	{
-		if (own_txn)
-			sql_rollback();
-		return false;
-	}
-
-	if (own_txn)
-	{
-		if (!sql_commit()) { sql_rollback(); return false; }
-	}
-	return true;
-}
-
 // shapechange save/load
 
 bool sql_save_player_shapechanges(P_char ch)
@@ -3781,7 +3685,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	ch->player.time.played     = sql_row_int(row, col++, 0);
 	ch->player.time.saved      = sql_row_long(row, col++, 0);
 	ch->player.time.logon      = time(0);
-	ch->player.time.perm_aging = sql_row_int(row, col++, 0);
+	col++; //!!! perm_aging
 
 	// base stats
 	ch->base_stats.Str = sql_row_int(row, col++, 0);
@@ -3852,12 +3756,12 @@ bool sql_load_player_status(P_char ch, int pid)
 	// immortal stuff
 	ch->only.pc->poofIn        = sql_row_str(row, col++);
 	ch->only.pc->poofOut       = sql_row_str(row, col++);
-	ch->only.pc->poofInSound   = sql_row_str(row, col++);
-	ch->only.pc->poofOutSound  = sql_row_str(row, col++);
+	col++;
+	col++;
 	ch->only.pc->echo_toggle   = sql_row_int(row, col++, 0);
 	ch->only.pc->prompt        = sql_row_int(row, col++, 0);
 	ch->only.pc->wiz_invis     = sql_row_long(row, col++, 0);
-	ch->only.pc->law_flags     = sql_row_ulong(row, col++, 0);
+	col++;
 	ch->only.pc->wimpy         = sql_row_int(row, col++, 0);
 	ch->only.pc->aggressive    = sql_row_int(row, col++, -1);
 	ch->only.pc->highest_level = sql_row_int(row, col++, 0);
@@ -4473,49 +4377,6 @@ bool sql_load_player_items(P_char ch)
 	return true;
 }
 
-bool sql_load_player_witnesses(P_char ch)
-{
-	if (!ch || !IS_PC(ch) || !DB)
-		return false;
-
-	int pid = GET_PID(ch);
-	if (pid <= 0)
-		return false;
-
-	char query[256];
-	snprintf(query,
-	         sizeof(query),
-	         "SELECT crime, room_vnum, attacker_name, victim_name, UNIX_TIMESTAMP(witness_time) "
-	         "FROM player_witnesses WHERE pid=%d",
-	         pid);
-
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return false;
-
-	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(result)))
-	{
-		wtns_rec *w = (wtns_rec *)malloc(sizeof(wtns_rec));
-		if (!w)
-			continue;
-
-		memset(w, 0, sizeof(wtns_rec));
-		w->crime    = sql_row_int(row, 0, 0);
-		w->room     = sql_row_int(row, 1, 0);
-		w->attacker = sql_row_str(row, 2);
-		w->victim   = sql_row_str(row, 3);
-		w->time     = sql_row_long(row, 4, 0);
-
-		// prepend to list
-		w->next                = ch->specials.witnessed;
-		ch->specials.witnessed = w;
-	}
-	mysql_free_result(result);
-
-	return true;
-}
-
 P_char sql_load_player(const char *name)
 {
 	if (!name || !DB)
@@ -4571,12 +4432,6 @@ P_char sql_load_player(const char *name)
 	if (!sql_load_player_items(ch))
 	{
 		logit(LOG_DEBUG, "sql_load_player: failed to load items for %s", name);
-		// continue anyway
-	}
-
-	if (!sql_load_player_witnesses(ch))
-	{
-		logit(LOG_DEBUG, "sql_load_player: failed to load witnesses for %s", name);
 		// continue anyway
 	}
 
@@ -6558,8 +6413,7 @@ int sql_migrate_all_players(void)
 
 		while ((pf_entry = readdir(pf_dir)) != NULL)
 		{
-			strncpy(fname, pf_entry->d_name, sizeof(fname) - 1);
-			fname[sizeof(fname) - 1] = '\0';
+			strlcpy(fname, pf_entry->d_name, sizeof(fname));
 
 			// skip . and ..
 			if (fname[0] == '.')
@@ -8650,7 +8504,7 @@ static bool sql_load_shopkeeper_affects(P_char ch, int shopkeeper_id)
 	if (!ch || !DB || shopkeeper_id <= 0)
 		return false;
 
-	char query[128];
+	char query[256];
 	snprintf(query,
 	         sizeof(query),
 	         "SELECT type, duration, modifier, location, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
@@ -10216,8 +10070,7 @@ bool sql_load_all_ships()
 	{
 		if (!row[0])
 			continue;
-		strncpy(owner_names[num_ships], row[0], 63);
-		owner_names[num_ships][63] = '\0';
+		strlcpy(owner_names[num_ships], row[0], sizeof owner_names[num_ships]);
 		num_ships++;
 	}
 	mysql_free_result(result);
@@ -10430,7 +10283,7 @@ Guild *sql_load_guild(unsigned int guild_id)
 
 	Guild *guild     = new Guild();
 	guild->id_number = atoi(row[0]);
-	strncpy(guild->name, row[1] ? row[1] : "", ASC_MAX_STR - 1);
+	strlcpy(guild->name, row[1] ? row[1] : "", sizeof guild->name);
 	guild->racewar         = row[2] ? atoi(row[2]) : 0;
 	guild->bits            = row[3] ? atoi(row[3]) : 0;
 	guild->prestige        = row[4] ? strtoul(row[4], NULL, 10) : 0;
@@ -10441,7 +10294,7 @@ Guild *sql_load_guild(unsigned int guild_id)
 	guild->copper          = row[9] ? atoi(row[9]) : 0;
 	guild->frags.frags     = row[10] ? atol(row[10]) : 0;
 	guild->frags.top_frags = row[11] ? atol(row[11]) : 0;
-	strncpy(guild->frags.topfragger, row[12] ? row[12] : "", MAX_NAME_LENGTH);
+	strlcpy(guild->frags.topfragger, row[12] ? row[12] : "", sizeof guild->frags.topfragger);
 	mysql_free_result(result);
 
 	// load ranks
@@ -10457,7 +10310,7 @@ Guild *sql_load_guild(unsigned int guild_id)
 	{
 		int idx = atoi(row[0]);
 		if (idx >= 0 && idx < ASC_NUM_RANKS)
-			strncpy(guild->titles[idx], row[1] ? row[1] : "", ASC_MAX_STR_RANK - 1);
+			strlcpy(guild->titles[idx], row[1] ? row[1] : "", ASC_MAX_STR_RANK);
 	}
 	mysql_free_result(result);
 
@@ -10474,7 +10327,7 @@ Guild *sql_load_guild(unsigned int guild_id)
 	while ((row = mysql_fetch_row(result)))
 	{
 		P_member mem = new guild_member();
-		strncpy(mem->name, row[0] ? row[0] : "", MAX_NAME_LENGTH);
+		strlcpy(mem->name, row[0] ? row[0] : "", sizeof mem->name);
 		mem->bits          = row[1] ? atoi(row[1]) : 0;
 		mem->debt          = row[2] ? atoi(row[2]) : 0;
 		mem->online_status = GSTAT_OFFLINE;

@@ -27,11 +27,8 @@
 #include "guildhall.h"
 #include "justice.h"
 #include "mm.h"
-#include "new_combat.h"
-#include "new_combat_def.h"
 #include "profile.h"
 #include "ships.h"
-#include "sound.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "sql.h"
@@ -43,8 +40,6 @@
 
 extern P_char                        character_list;
 extern P_desc                        descriptor_list;
-extern P_event                       current_event;
-extern P_event                       event_type_list[];
 extern P_index                       mob_index;
 extern P_index                       obj_index;
 extern P_room                        world;
@@ -1432,14 +1427,12 @@ bool parse_spell_arguments(P_char ch, struct spell_target_data *data, char *argu
 							break;
 
 					if (!dummy)
+					{
 						if ((dummy = read_mobile(46, VIRTUAL)) == NULL)
-						{
 							vict = 0;
-						}
 						else
-						{
 							char_to_room(dummy, real_room0(666), -1);
-						}
+					}
 
 					if (dummy)
 						vict = dummy;
@@ -1622,10 +1615,12 @@ int lookup_spell(const char *name, int len)
 
 	// aliases for renamed spells
 	if (spl == -2)
+	{
 		if (!strncmp(name, "improved invisibility", len))
 			spl = SPELL_INVISIBILITY;
 		else
 			spl = -1;
+	}
 
 	return spl;
 }
@@ -1862,11 +1857,7 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 			}
 			else
 			{
-#ifndef NEW_COMBAT
 				hit(tch, ch, tch->equipment[PRIMARY_WEAPON]);
-#else
-				hit(tch, ch, tch->equipment[WIELD], TYPE_UNDEFINED, getBodyTarget(tch), TRUE, FALSE);
-#endif
 			}
 			if (!IS_ALIVE(ch) || !char_in_list(ch))
 			{
@@ -2573,7 +2564,7 @@ void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
 			// if (GET_CLASS(ch, CLASS_PSIONICIST | CLASS_DRUID | CLASS_ETHERMANCER) ||
 			if (GET_CLASS(ch, CLASS_PSIONICIST | CLASS_MINDFLAYER | CLASS_DRUID | CLASS_BLIGHTER) || number(1, 100) <= GET_CHAR_SKILL(ch, skl))
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "Casting: %s ", skills[arg->spell].name);
+				snprintf(buf, sizeof buf, "Casting: %s ", skills[arg->spell].name);
 				for (i = 0; i < (arg->timeleft / 4); i++)
 				{
 					strcat(buf, "*");
@@ -2665,8 +2656,7 @@ void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
 	// We don't want IS_TRUSTED(ch) because that can be turned off with toggle fog.
 	if (GET_LEVEL(ch) > MAXLVLMORTAL && IS_PC(ch))
 	{
-		snprintf(buf,
-		         MAX_STRING_LENGTH,
+		snprintf(buf, sizeof buf,
 		         "%s cast '%s' at %s in room %d",
 		         GET_NAME(ch),
 		         skills[arg->spell].name,

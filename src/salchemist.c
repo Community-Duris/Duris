@@ -26,9 +26,7 @@
 #include "epic.h"
 #include "justice.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
-#include "sound.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "sql.h"
@@ -976,7 +974,7 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	    item->type != ITEM_SHIELD && item->type != ITEM_WORN &&
 	    item->type != ITEM_LIGHT && item->type != ITEM_INSTRUMENT)
 	{
-		act("You can only encrust weapons, armor, shields, and worn equipment.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can only encrust weapons, armor, shields, instruments, and worn equipment.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 
@@ -1001,12 +999,13 @@ void do_encrust(P_char ch, char *argument, int cmd)
 		act("What item do you wish to encrust?", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	if ((jewel->type != ITEM_TREASURE && jewel->type != ITEM_OTHER) ||
-	    (jewel->value[6] == 0 && obj_index[jewel->R_num].virtual_number != RANDOM_OBJ_VNUM))
+	if (!IS_ENCRUSTABLE(jewel))
 	{
 		act("Is THAT a jewel?!?!?", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
+	if (jewel->value[6] == 0)
+		return send_to_char("This jewel no workie, go tell a god.\n", ch);
 
 	if (jewel == item)
 	{
@@ -1055,15 +1054,15 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	SET_BIT(new_item->wear_flags, ITEM_TAKE);
 	SET_BIT(new_item->wear_flags, item->wear_flags);
 
-	SET_BIT(new_item->bitvector, item->bitvector);
-	SET_BIT(new_item->bitvector2, item->bitvector2);
-	SET_BIT(new_item->bitvector3, item->bitvector3);
-	SET_BIT(new_item->bitvector4, item->bitvector4);
-	SET_BIT(new_item->bitvector5, item->bitvector5);
+	SET_BIT(new_item->bitvector, item->bitvector | jewel->bitvector);
+	SET_BIT(new_item->bitvector2, item->bitvector2 | jewel->bitvector2);
+	SET_BIT(new_item->bitvector3, item->bitvector3 | jewel->bitvector3);
+	SET_BIT(new_item->bitvector4, item->bitvector4 | jewel->bitvector4);
+	SET_BIT(new_item->bitvector5, item->bitvector5 | jewel->bitvector5);
 	new_item->anti_flags |= item->anti_flags;
 	new_item->anti2_flags |= item->anti2_flags;
-	SET_BIT(new_item->extra_flags, item->extra_flags);
-	SET_BIT(new_item->extra2_flags, item->extra2_flags);
+	SET_BIT(new_item->extra_flags, item->extra_flags | jewel->extra_flags);
+	SET_BIT(new_item->extra2_flags, item->extra2_flags | item->extra2_flags);
 
 	new_item->craftsmanship = MIN(craftsmanship + 1, OBJCRAFT_HIGHEST);
 
@@ -1097,7 +1096,10 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	snprintf(buf1, MAX_STRING_LENGTH, "%s %s", item->name, "encrust");
 	set_keywords(new_item, buf1);
 
-	set_encrust_affect(new_item, jewel->value[6]);
+	if (OBJ_VNUM(jewel) == RANDOM_OBJ_VNUM) // old encrustables
+		set_encrust_affect(new_item, jewel->value[6]);
+	if (IS_SET(new_item->extra2_flags, ITEM2_ENHANCED))
+		describe_encrusted_enhanced(new_item);
 	extract_obj(item);
 	extract_obj(jewel);
 	obj_to_char(new_item, ch);
@@ -1747,8 +1749,10 @@ void do_enchant(P_char ch, char *argument, int cmd)
 	GET_PLATINUM(ch) = GET_PLATINUM(ch) - (circle * 10);
 	// notch_skill(ch, SKILL_ENCHANT, 7.7);
 
-	act("&+L$n melts some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n &L&+Lproceeds to carefully pour it over $s $q.&n", TRUE, ch, item, 0, TO_ROOM);
-	act("&+LYou melt some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n&L&+Lproceed to carefully pour it over your $q.&n", TRUE, ch, item, 0, TO_CHAR);
+	act("&+L$n melts some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n\n"
+	    "&+Lproceeds to carefully pour it over $s $q.&n", TRUE, ch, item, 0, TO_ROOM);
+	act("&+LYou melt some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n\n"
+	    "&+Lproceed to carefully pour it over your $q.&n", TRUE, ch, item, 0, TO_CHAR);
 
 	// cant add_event with both ch and item so item/spell has to be passed in data
 	// add_event(event_enchant, 1 * PULSE_VIOLENCE, ch, 0, item, 0, &spl, sizeof(spl));
@@ -1793,8 +1797,10 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 	skill = GET_CHAR_SKILL(ch, SKILL_ENCHANT);
 	if (!number(0, skill - 10))
 	{
-		act("$n utters a foul curse as $e pours too much acid on $q.&L$n's $q was damaged as the acid eats into it!", FALSE, ch, item, 0, TO_ROOM);
-		act("You utter a foul curse as you pour too much acid on the $q.&LYour $q was damaged as the acid eats into it!", FALSE, ch, item, 0, TO_CHAR);
+		act("$n utters a foul curse as $e pours too much acid on $q.\n"
+		    "$n's $q was damaged as the acid eats into it!", FALSE, ch, item, 0, TO_ROOM);
+		act("You utter a foul curse as you pour too much acid on the $q.\n"
+		    "Your $q was damaged as the acid eats into it!", FALSE, ch, item, 0, TO_CHAR);
 		item->condition = item->condition - number(5, 10);
 
 		if (item->condition < 1)
@@ -1814,8 +1820,10 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 		}
 		return;
 	}
-	act("$n's $q starts to heat up and then turns &+Wwhite hot before&n&Lslowly &+bcooling down&n and turning back to normal.&n", FALSE, ch, item, 0, TO_ROOM);
-	act("Your $q starts to heat up and then turns &+Wwhite hot&n before&n&Lslowly &+bcooling down&n and turning back to normal.", TRUE, ch, item, 0, TO_CHAR);
+	act("$n's $q starts to heat up and then turns &+Wwhite hot before&n\n"
+	    "slowly &+bcooling down&n and turning back to normal.&n", FALSE, ch, item, 0, TO_ROOM);
+	act("Your $q starts to heat up and then turns &+Wwhite hot&n before&n\n"
+	    "slowly &+bcooling down&n and turning back to normal.", TRUE, ch, item, 0, TO_CHAR);
 
 	logit(LOG_DEBUG, "%s enchanted %s with %s.", GET_NAME(ch), item->short_description, skills[spll].name);
 

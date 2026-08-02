@@ -23,7 +23,6 @@
 #include "damage.h"
 #include "justice.h"
 #include "objmisc.h"
-#include "sound.h"
 #include "spells.h"
 #include "weather.h"
 
@@ -32,7 +31,6 @@
  */
 
 extern P_desc      descriptor_list;
-extern P_event     current_event;
 extern P_room      world;
 extern P_index     mob_index;
 extern P_index     obj_index;
@@ -470,14 +468,14 @@ void do_fire(P_char ch, char *argument, int cmd)
 		dir = dir_from_keyword(dirarg);
 		if (dir == -1)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "'%s' is not a valid direction.\n", dirarg);
+			snprintf(buf, sizeof buf, "'%s' is not a valid direction.\n", dirarg);
 			send_to_char(buf, ch);
 			return;
 		}
 
 		if (!(victim = get_char_ranged(tararg, ch, 10, dir)))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Could not find target '%s' to the %s.\n", tararg, dirs[dir]);
+			snprintf(buf, sizeof buf, "Could not find target '%s' to the %s.\n", tararg, dirs[dir]);
 			send_to_char(buf, ch);
 			return;
 		}
@@ -720,10 +718,7 @@ void do_fire(P_char ch, char *argument, int cmd)
 				startPvP(victim, GET_RACEWAR(ch) != GET_RACEWAR(victim));
 			}
 			if (!affected_by_spell(ch, TAG_FIRING))
-			{
 				set_short_affected_by(ch, TAG_FIRING, 5 * WAIT_SEC);
-				// play_sound(SOUND_ARROW3, NULL, ch->in_room, TO_ROOM);
-			}
 
 			// Check for shield block.
 			shield = victim->equipment[WEAR_SHIELD];
@@ -746,14 +741,14 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 					if (ch->in_room != victim->in_room)
 					{
-						snprintf(vict_msg, MAX_STRING_LENGTH, "$p fired from %s%%s, but hits your shield!", dirs[rev_dir[dir]]);
-						snprintf(vict_death_msg, MAX_STRING_LENGTH, "$p fired from %s goes through your throat killing you instantly.", dirs[rev_dir[dir]]);
+						snprintf(vict_msg, sizeof vict_msg, "$p fired from %s%%s, but hits your shield!", dirs[rev_dir[dir]]);
+						snprintf(vict_death_msg, sizeof vict_death_msg, "$p fired from %s goes through your throat killing you instantly.", dirs[rev_dir[dir]]);
 
-						snprintf(room_msg, MAX_STRING_LENGTH, "$n fires $p %s!", dirs[dir]);
+						snprintf(room_msg, sizeof room_msg, "$n fires $p %s!", dirs[dir]);
 						act(room_msg, FALSE, ch, missile, ch, TO_NOTVICT | ACT_NOTTERSE);
 
-						snprintf(room_msg, MAX_STRING_LENGTH, "$p fired from %s%%s, but hits $N's shield!", dirs[rev_dir[dir]]);
-						snprintf(room_death_msg, MAX_STRING_LENGTH, "$p fired from %s went right through $N's throat killing $M instantly.", dirs[rev_dir[dir]]);
+						snprintf(room_msg, sizeof room_msg, "$p fired from %s%%s, but hits $N's shield!", dirs[rev_dir[dir]]);
+						snprintf(room_death_msg, sizeof room_death_msg, "$p fired from %s went right through $N's throat killing $M instantly.", dirs[rev_dir[dir]]);
 
 						messages = &range_messages;
 					}
@@ -767,14 +762,13 @@ void do_fire(P_char ch, char *argument, int cmd)
 			// Ranged hit, no shield.
 			if (ch->in_room != victim->in_room && !shield_blocked)
 			{
-				// play_sound(SOUND_ARROW3, NULL, victim->in_room, TO_ROOM);
-				snprintf(room_msg, MAX_STRING_LENGTH, "$n fires $p %s!", dirs[dir]);
+				snprintf(room_msg, sizeof room_msg, "$n fires $p %s!", dirs[dir]);
 				act(room_msg, FALSE, ch, missile, ch, TO_NOTVICT | ACT_NOTTERSE);
 
-				snprintf(vict_msg, MAX_STRING_LENGTH, "$p fired from %s%%s hits you!", dirs[rev_dir[dir]]);
-				snprintf(vict_death_msg, MAX_STRING_LENGTH, "$p fired from %s goes through your throat killing you instantly.", dirs[rev_dir[dir]]);
-				snprintf(room_msg, MAX_STRING_LENGTH, "$p fired from %s%%s hits $N!", dirs[rev_dir[dir]]);
-				snprintf(room_death_msg, MAX_STRING_LENGTH, "$p fired from %s went right through $N's throat killing $M instantly.", dirs[rev_dir[dir]]);
+				snprintf(vict_msg, sizeof vict_msg, "$p fired from %s%%s hits you!", dirs[rev_dir[dir]]);
+				snprintf(vict_death_msg, sizeof vict_death_msg, "$p fired from %s goes through your throat killing you instantly.", dirs[rev_dir[dir]]);
+				snprintf(room_msg, sizeof room_msg, "$p fired from %s%%s hits $N!", dirs[rev_dir[dir]]);
+				snprintf(room_death_msg, sizeof room_death_msg, "$p fired from %s went right through $N's throat killing $M instantly.", dirs[rev_dir[dir]]);
 
 				messages = &range_messages;
 			}
@@ -915,21 +909,19 @@ void do_fire(P_char ch, char *argument, int cmd)
 		// So we missed, let them all enjoy nice miss messages
 		else
 		{
-			//      play_sound(SOUND_ARROW1, NULL, ch->in_room, TO_ROOM);
 			act("You fire $p at $N and miss!", FALSE, ch, missile, victim, TO_CHAR | ACT_NOTTERSE);
 
 			// Start with an arrow that was fired at an out of range target.
 			if ((ch->in_room != victim->in_room) && (room != victim->in_room))
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "$n lets $p fly %sward, but it falls far short of a target!", dirs[dir]);
+				snprintf(buf, sizeof buf, "$n lets $p fly %sward, but it falls far short of a target!", dirs[dir]);
 				act(buf, FALSE, ch, missile, 0, TO_ROOM | ACT_NOTTERSE);
 
 				if (world[room].people)
 				{
-					//          play_sound(SOUND_ARROW1, NULL, room, TO_ROOM);
 					if (room != ch->in_room)
 					{
-						snprintf(buf, MAX_STRING_LENGTH, "$p fired from %s drops to the ground.\n", dirs2[rev_dir[dir]]);
+						snprintf(buf, sizeof buf, "$p fired from %s drops to the ground.\n", dirs2[rev_dir[dir]]);
 						act(buf, FALSE, world[room].people, missile, ch, TO_ROOM | ACT_NOTTERSE);
 					}
 				}
@@ -937,15 +929,13 @@ void do_fire(P_char ch, char *argument, int cmd)
 			// Missing a ranged shot at a target that's in range.
 			else if (ch->in_room != victim->in_room)
 			{
-				//        play_sound(SOUND_ARROW1, NULL, victim->in_room, TO_ROOM);
-
-				snprintf(buf, MAX_STRING_LENGTH, "$n fires $p %sward!", dirs[dir]);
+				snprintf(buf, sizeof buf, "$n fires $p %sward!", dirs[dir]);
 				act(buf, FALSE, ch, missile, 0, TO_ROOM | ACT_NOTTERSE);
 
-				snprintf(buf, MAX_STRING_LENGTH, "$p fired from %s misses you!", dirs2[rev_dir[dir]]);
+				snprintf(buf, sizeof buf, "$p fired from %s misses you!", dirs2[rev_dir[dir]]);
 				act(buf, FALSE, 0, missile, victim, TO_VICT | ACT_NOTTERSE);
 
-				snprintf(buf, MAX_STRING_LENGTH, "$p fired from %s misses $N!", dirs2[rev_dir[dir]]);
+				snprintf(buf, sizeof buf, "$p fired from %s misses $N!", dirs2[rev_dir[dir]]);
 				act(buf, FALSE, ch, missile, victim, TO_NOTVICTROOM | ACT_NOTTERSE);
 			}
 			// Missing with a shot at target in same room.
@@ -967,23 +957,21 @@ void do_fire(P_char ch, char *argument, int cmd)
 		}
 	} // End of for loop: shots in this one fire action
 
-	snprintf(buf,
-	         MAX_STRING_LENGTH,
+	snprintf(buf, sizeof buf,
 	         "%sYou fire at $N.%s [&+R%d&n hits]",
 	         (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G-=[&n" : "",
 	         (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G]=-&n" : "",
 	         actual);
 	act(buf, FALSE, ch, 0, victim, TO_CHAR | ACT_TERSE);
 
-	snprintf(buf,
-	         MAX_STRING_LENGTH,
+	snprintf(buf, sizeof buf,
 	         "%s$n fires at you.%s [&+R%d&n hits]",
 	         (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R-=[&n" : "",
 	         (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R]=-&n" : "",
 	         actual);
 	act(buf, FALSE, ch, 0, victim, TO_VICT | ACT_TERSE);
 
-	snprintf(buf, MAX_STRING_LENGTH, "$n fires at $N. [&+R%d&n hits]", actual);
+	snprintf(buf, sizeof buf, "$n fires at $N. [&+R%d&n hits]", actual);
 
 	if (victim->in_room != NOWHERE)
 	{
@@ -1837,30 +1825,30 @@ int number_throw(P_char ch, char *name)
 	tmp = tmpname;
 
 	i = ch->equipment[PRIMARY_WEAPON];
-	if (i)
-		if (isname(tmp, i->name))
-			if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
-					if (IS_OBJ_STAT(i, ITEM_RETURNING))
-					{
-						primary = 1;
-						pri_ret = 1;
-					}
-					else
-						primary = 1;
+	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
+	    && (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
+	 {
+		if (IS_OBJ_STAT(i, ITEM_RETURNING))
+		{
+			primary = 1;
+			pri_ret = 1;
+		}
+		else
+			primary = 1;
+	}
 
 	i = ch->equipment[SECONDARY_WEAPON];
-	if (i)
-		if (isname(tmp, i->name))
-			if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
-					if (IS_OBJ_STAT(i, ITEM_RETURNING))
-					{
-						secondary = 1;
-						sec_ret   = 1;
-					}
-					else
-						secondary = 1;
+	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
+	    && IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+	{
+		if (IS_OBJ_STAT(i, ITEM_RETURNING))
+		{
+			secondary = 1;
+			sec_ret   = 1;
+		}
+		else
+			secondary = 1;
+	}
 
 	i = ch->equipment[THIRD_WEAPON];
 	if (i)

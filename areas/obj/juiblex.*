@@ -44,7 +44,7 @@ prison master key~
 0 0 100
 E
 prison master key~
-&+LThis &+Wkey&+L is the master key for opening all cells in the prison of Jubilex.&n
+&+LThis &+Wkey&+L is the master key for opening all cells in the prison of Juiblex.&n
 ~
 #87504
 neck clamp dark-mithril dark mithril~
@@ -251,14 +251,14 @@ cleansed clean lake slime~
 #87519
 hastily created wormhole worm hole gate portal~
 &+Ga hastily created &+Lwormhole&N~
-&+GCreated suddenly, this &+Lwormhole&+G was used for escape by &+GJ&+gu&+Wb&+ri&+Wl&+ge&+Gx.&N~
+&+GCreated suddenly, this &+Lwormhole&+G was used for escape by &+GJ&+gu&+Wi&+rb&+Wl&+ge&+Gx.&N~
 ~
 25 1 3 0 7 0 1 0 0 1 0
 87598 7 -1 0 0 0 0 0
 0 0 100
 E
 hastily created wormhole worm hole gate portal~
-&+LThis wormhole was created by &+GJ&+gu&+Wb&+ri&+Wl&+ge&+Gx&+L for escape.&N
+&+LThis wormhole was created by &+GJ&+gu&+Wi&+rb&+Wl&+ge&+Gx&+L for escape.&N
 ~
 #87520
 circular circle seal pattern key~
@@ -270,7 +270,7 @@ circular circle seal pattern key~
 0 0 100
 E
 circular circle seal pattern key~
-&+LThis seal opens the vault of the demon prince Jubilex.&N
+&+LThis seal opens the vault of the demon prince Juiblex.&N
 ~
 #87521
 heart spitting spit acid~
@@ -299,7 +299,7 @@ prison door key jail~
 0 0 100
 E
 prison door key jail~
-&+LThis key opens the main doors of the prison of Jubilex.&N
+&+LThis key opens the main doors of the prison of Juiblex.&N
 ~
 #87523
 bloody eyes eye eyeballs sinew string circle mess~
@@ -359,7 +359,7 @@ slightly digested body arianna~
 0 0 100
 E
 slightly digested body arianna~
-&+yThis body of the once beautiful Arianna has been fed to the mighty Jubilex.&N
+&+yThis body of the once beautiful Arianna has been fed to the mighty Juiblex.&N
 &+yHe absorbed her and was in the process of digesting her when vanquished.&N
 &+yPerhaps there is someone who knows of a proper burial for the pitiful woman.&N
 ~
@@ -582,7 +582,7 @@ slippers slipper rot decay~
 0 0 100 536911872 12288 32 0
 E
 slippers slipper rot decay~
-&+gThese &+Yslippers&+g are made from the essence of Jubilex.  They spread poison and&N
+&+gThese &+Yslippers&+g are made from the essence of Juiblex.  They spread poison and&N
 &+grot as they touch the ground.  The only thing that seems protected from it&N
 &+gis the feet that sit inside of them.  They hum softly as they do so, and they&N
 &+gdruids cringe at them as if they are fire.&N
@@ -1637,8 +1637,8 @@ ferret leash marvin~
 ~
 #87611
 generator~
-the jubilex grid mob generator~
-The jubilex grid mob generator hums here quietly.~
+the juiblex grid mob generator~
+The juiblex grid mob generator hums here quietly.~
 ~
 13 15 3 0 7 0 2 0 0 0 0
 0 0 0 0 0 0 0 0

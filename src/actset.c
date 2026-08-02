@@ -50,7 +50,6 @@ extern const char              *item_material[];
 extern const char              *item_types[];
 extern const char              *player_bits[];
 extern const char              *player2_bits[];
-extern const char              *player_law_flags[];
 extern const char              *position_types[];
 extern const flagDef            room_bits[];
 extern const char              *sector_types[];
@@ -64,7 +63,6 @@ extern const int                top_of_world;
 extern const int                rev_dir[];
 extern int                      top_of_zone_table;
 extern struct zone_data        *zone_table;
-extern void                     reset_racial_skills(P_char ch);
 
 char bad_on_off[MAX_INPUT_LENGTH];
 
@@ -330,11 +328,11 @@ static int setbit_parse(char *arg, int *type, char *name, char *flag, char *val,
 	{
 		if (*on_off_str)
 		{
-			snprintf(bad_on_off, MAX_STRING_LENGTH, "%s", on_off_str);
+			snprintf(bad_on_off, sizeof bad_on_off, "%s", on_off_str);
 		}
 		else
 		{
-			snprintf(bad_on_off, MAX_STRING_LENGTH, " ");
+			snprintf(bad_on_off, sizeof bad_on_off, " ");
 		}
 	}
 
@@ -564,7 +562,6 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{"prompt", PCOFFSET(prompt), NULL, ac_shortCopy},
 		{"screensize", PCOFFSET(screen_length), NULL, ac_ubyteCopy},
 		{"winvis", PCOFFSET(wiz_invis), NULL, ac_sbyteCopy},
-		{"law_flags", PCOFFSET(law_flags), player_law_flags, ac_longCopy, sizeof(char *)},
 		{"wimpy", PCOFFSET(wimpy), NULL, ac_shortCopy},
 		{"aggr", PCOFFSET(aggressive), NULL, ac_shortCopy},
 		{"balc", PCOFFSET(spare1), NULL, ac_intCopy},
@@ -593,14 +590,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		}
 		if (SAME_STRING(flag, "race"))
 		{
-#ifdef NEW_COMBAT
-			FREE((char *)ppl->points.location_hit);
-			ppl->points.location_hit = NULL;
-#endif
-
 			setbit_parseTable(ch, (void *)ppl, table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_CHAR);
-
-			setCharPhysTypeInfo(ppl);
 
 			do_restore(ch, GET_NAME(ppl), 0);
 
@@ -611,7 +601,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		}
 		if (ppl)
 		{
-			if (SAME_STRING(flag, "level") || SAME_STRING(flag, "secondary_level"))
+			if (SAME_STRING(flag, "level"))
 			{
 				if (IS_PC(ppl) && GET_LEVEL(ch) < OVERLORD && atoi(val) >= MINLVLIMMORTAL)
 				{
@@ -654,7 +644,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 				return;
 			}
 		}
-		else if (SAME_STRING(flag, "echo") || SAME_STRING(flag, "screensize") || SAME_STRING(flag, "prompt") || SAME_STRING(flag, "law_flags") || SAME_STRING(flag, "winvis") ||
+		else if (SAME_STRING(flag, "echo") || SAME_STRING(flag, "screensize") || SAME_STRING(flag, "prompt") || SAME_STRING(flag, "winvis") ||
 		         SAME_STRING(flag, "wimpy") || SAME_STRING(flag, "aggr") || SAME_STRING(flag, "balp") || SAME_STRING(flag, "balg") || SAME_STRING(flag, "bals") || SAME_STRING(flag, "balc") ||
 		         SAME_STRING(flag, "lesson") || SAME_STRING(flag, "frags") || SAME_STRING(flag, "epics") || SAME_STRING(flag, "epic_skill_points") || SAME_STRING(flag, "prestige") ||
 		         SAME_STRING(flag, "time_left_guild") || SAME_STRING(flag, "nb_left_guild") || SAME_STRING(flag, "deaths") || SAME_STRING(flag, "heaven"))
@@ -894,13 +884,6 @@ static void setbit_obj(P_char ch, char *name, char *flag, char *val, int on_off)
 			return;
 		}
 	}
-#if 0
-  if ((obj = get_obj_vis(ch, name)) == NULL)
-  {
-    send_to_char("No object by that name here\r\n", ch);
-    return;
-  }
-#endif
 
 	setbit_parseTable(ch, (void *)obj, table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_OBJ);
 
@@ -1620,7 +1603,7 @@ static void ac_hitmanaCopy(void *where, int offset, char *value, int bit, int on
 	sh_int val;
 
 	if (IS_PC(ch))
-		val = (sh_int)bit - graf(ch, age(ch).year, 2, 4, 17, 14, 8, 4, 3);
+		val = (sh_int)bit - 17;
 	else
 		val = (sh_int)bit;
 

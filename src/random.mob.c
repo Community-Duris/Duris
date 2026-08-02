@@ -27,11 +27,9 @@
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
 #include "profile.h"
 #include "redis.h"
-#include "sound.h"
 #include "spells.h"
 #include "weather.h"
 
@@ -70,8 +68,6 @@ extern struct mm_ds          *dead_mob_pool;
 extern struct mm_ds          *dead_pconly_pool;
 extern const int              class_table[LAST_RACE + 1][CLASS_COUNT + 1];
 
-int find_a_zone();
-int get_name(char return_name[256]);
 int find_mob_map_room(P_char random_mob);
 
 const char *prefix_name_theme[8][2] = {
@@ -878,12 +874,4 @@ int find_mob_map_room(P_char random_mob)
 	}
 	else
 		return 0;
-}
-
-int find_a_zone()
-{
-	int zone = 0;
-
-	zone = number(1, top_of_zone_table);
-	return zone;
 }

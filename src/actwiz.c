@@ -64,8 +64,6 @@ extern int                              top_of_helpt;
 extern FILE                            *help_fl;
 extern const char                      *weapons[];
 extern const char                      *justice_flags[];
-extern const char                      *justice_status[];
-extern const char                      *crime_list[];
 extern const flagDef                    action_bits[];
 extern const flagDef                    action2_bits[];
 extern const flagDef                    aggro_bits[];
@@ -111,7 +109,6 @@ extern const int                        shot_damage[];
 extern const struct stat_data           stat_factor[];
 extern const char                      *size_types[];
 extern const char                      *item_size_types[];
-extern int                              bounce_null_sites;
 extern int                              number_of_shops;
 extern int                              invitemode;
 extern int                              pulse;
@@ -144,7 +141,6 @@ extern flagDef                          missile_types[];
 extern float                            combat_by_class[][2];
 extern float                            combat_by_race[][3];
 extern long                             new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
-extern const char                      *get_event_name(P_event);
 extern const char                      *get_function_name(void *);
 extern const char                      *spldam_types[];
 extern const char                      *craftsmanship_names[];
@@ -348,35 +344,6 @@ void sa_ageCopy(P_char ch, unsigned long offset, int value)
 	ch->player.time.birth = curr_time - secs;
 }
 
-void do_reload_help(P_char ch, char *arg, int cmd)
-{
-	send_to_char("This does not work.\n", ch);
-	send_to_char("It is not really neccessary either, but\n", ch);
-	send_to_char("if you want to try to make it work, see\n", ch);
-	send_to_char("actwiz.c, the function is do_reload_help.\n", ch);
-	send_to_char("I tried for several hours, and now I am done trying.\n\n", ch);
-	/*
-	  To make this work, SOMEHOW, you have to reference helpfile.c
-	  and make it compile.  Anytime I try, it gives me stupid errors.
-	  I can't make it work.
-	  Below is the code you need, if you can ever get it referenced.
-
-	  send_to_char("Clearing old help data..\n", ch);
-
-	  help_index.clear();
-
-	  send_to_char("Loading new help data..\n", ch);
-
-	  if(help_index.reload()){
-	    send_to_char("Help data rebuilt.\n", ch);
-	  }else{
-	    logit(LOG_FILE, "   Could not open help file.");
-	    fprintf(stderr, "ERROR! Could not open help file! Exiting.");
-	    raise(SIGSEGV);
-	  }
-	*/
-}
-
 void do_reboot_restore(P_char ch, P_char victim)
 {
 
@@ -499,31 +466,12 @@ void do_read_player(P_char ch, char *arg, int cmd)
 		send_to_char("Syntax: load char <name> or load <m|c|o|i> <vnum>\n", ch);
 		return;
 	}
-#if 0
-  send_to_char("Temp disabled, so I can test a mem leak potential.\n", ch);
-  return;
-#endif
 
 	vict = (P_char)mm_get(dead_mob_pool);
 	clear_char(vict);
-#if 0
-  dead_pconly_pool = mm_create("PC_ONLY", sizeof(struct pc_only_data),
-                               offsetof(struct pc_only_data, switched),
-                               mm_find_best_chunk(sizeof(struct pc_only_data),
-                                                  10, 25));
-#endif
 	vict->only.pc             = (struct pc_only_data *)mm_get(dead_pconly_pool);
 	vict->only.pc->aggressive = -1;
 	vict->desc                = NULL;
-#if 0
-  if((tmp = restorePasswdOnly(vict, arg)) < 0)
-  {
-    send_to_char
-      ("&=RlDanger Will Robinson! Bad pfile!!&n (Or maybe you just fucked up typing the name.)\n",
-       ch);
-    return;
-  }
-#endif
 	if ((tmp = restoreCharOnly(vict, arg)) < 0)
 	{
 		send_to_char("&=RlDanger Will Robinson! Bad pfile!!&n\n", ch);
@@ -547,8 +495,6 @@ void do_read_player(P_char ch, char *arg, int cmd)
 	/* insert in list */
 	vict->next     = character_list;
 	character_list = vict;
-
-	setCharPhysTypeInfo(vict);
 
 	/* saving info for teleport return command */
 	vict->specials.was_in_room = vict->in_room;
@@ -575,7 +521,7 @@ void do_release(P_char ch, char *argument, int cmd)
 
 	one_argument(argument, arg);
 	sdesc = atoi(arg);
-	if ((sdesc == 0) && arg)
+	if ((sdesc == 0) && *arg)
 	{
 		P_char t_ch = NULL;
 
@@ -1118,17 +1064,6 @@ void do_goto(P_char ch, char *argument, int cmd)
 		send_to_char("You try, but you can't seem to get there.\n\r", ch);
 		return;
 	}
-
-	if (ch->only.pc->poofOutSound)
-	{
-		snprintf(output, MAX_STRING_LENGTH, "!!SOUND(%s F=1 P=10)\n", ch->only.pc->poofOutSound);
-
-		for (pers = world[ch->in_room].people; pers; pers = pers->next_in_room)
-		{
-			if ((pers == ch) || CAN_SEE(pers, ch))
-				sound_to_char(output, pers);
-		}
-	}
 	if (ch->only.pc->poofOut == NULL)
 	{
 		strcpy(output, "$n disappears in a puff of smoke.");
@@ -1170,16 +1105,6 @@ void do_goto(P_char ch, char *argument, int cmd)
 		}
 	}
 
-	if (ch->only.pc->poofInSound)
-	{
-		snprintf(output, MAX_STRING_LENGTH, "!!SOUND(%s F=1 P=30)\n", ch->only.pc->poofInSound);
-
-		for (pers = world[ch->in_room].people; pers; pers = pers->next_in_room)
-		{
-			if ((pers == ch) || CAN_SEE(pers, ch))
-				sound_to_char(output, pers);
-		}
-	}
 	if (ch->only.pc->poofIn == NULL)
 	{
 		strcpy(output, "$n appears with an ear-splitting bang.");
@@ -1599,8 +1524,7 @@ void stat_game(P_char ch)
 // CMD = 555 is used for storing stat o string in db.
 void do_stat(P_char ch, char *argument, int cmd)
 {
-	P_char                   k = 0, t_mob = 0, shopkeeper, mob, rider;
-	P_event                  e1 = NULL;
+	P_char                   k = 0, t_mob = 0, shopkeeper, mob;
 	P_obj                    j = 0, t_obj = 0;
 	P_room                   rm = 0;
 	char                     arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH], *rest;
@@ -2100,9 +2024,6 @@ void do_stat(P_char ch, char *argument, int cmd)
 				break;
 			case ITEM_ARMOR:
 				snprintf(buf, MAX_STRING_LENGTH, "&+YAC-apply: &N%d  &+rWarmth: &N%d  &+YPrestige: &N%d", j->value[0], j->value[1], j->value[2]);
-
-				/*      snprintf(buf, MAX_STRING_LENGTH, "&+YDefl: &n%.2f  &+YAbs: &n%.2f",
-				              getArmorDeflection(j, NULL), getArmorAbsorbtion(j, NULL));*/
 				break;
 			case ITEM_SHIELD:
 				snprintf(buf, MAX_STRING_LENGTH, "&+YAC-apply: &N%d", j->value[3]);
@@ -2228,18 +2149,10 @@ void do_stat(P_char ch, char *argument, int cmd)
 				strcat(o_buf, "\n");
 			}
 		}
-		if (j->events || j->nevents)
+		if (j->nevents)
 		{
 			P_nevent ne;
 			strcat(o_buf, "&+YEvents:\n&+Y-------\n");
-
-			for (e1 = j->events; e1; e1 = e1->next)
-				snprintf(o_buf + strlen(o_buf),
-				         MAX_STRING_LENGTH - strlen(o_buf),
-				         "%6d&+Y seconds,&n %s%s&+Y.\n",
-				         event_time(e1, T_SECS),
-				         event_names[(int)e1->type],
-				         (e1->one_shot) ? "" : "&+Y(&N&+RR&+Y)");
 
 			LOOP_EVENTS_OBJ(ne, j->nevents)
 			{
@@ -2276,14 +2189,6 @@ void do_stat(P_char ch, char *argument, int cmd)
 			}
 			strcat(o_buf, buf);
 		}
-
-		/*
-		   if(j->justice_status > 0) {
-		   strcat(o_buf, "\n&+RJustice:\n");
-		   sprinttype(j->justice_status, justice_obj_status, buf2);
-		   snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf), " &+RStatus: %s Belongs to: %s&N\n",
-		   buf2, j->justice_name);
-		   } */
 
 		// Insert item into db
 		if (cmd == 555)
@@ -2414,7 +2319,7 @@ void do_stat(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			if ((k->player.m_class == 0) || (k->player.m_class > (1 << CLASS_COUNT - 1)) || (GET_LEVEL(k) < 1) || IS_TRUSTED(k))
+			if (k->player.m_class == 0 || k->player.m_class > (1 << CLASS_COUNT) - 1 || GET_LEVEL(k) < 1 || IS_TRUSTED(k))
 				strcpy(buf1, "Unknown");
 			else
 				strcpy(buf1, comma_string((long)(new_exp_table[GET_LEVEL(k) + 1] - GET_EXP(k))));
@@ -2543,7 +2448,7 @@ void do_stat(P_char ch, char *argument, int cmd)
 		         GET_C_CHA(k),
 		         k->base_stats.Cha,
 		         i3,
-		         IS_CARRYING_W(k, rider));
+		         total_carried_weight(k));
 		strcat(o_buf, buf);
 
 		snprintf(buf,
@@ -2745,9 +2650,6 @@ void do_stat(P_char ch, char *argument, int cmd)
 			sprintbit(k->specials.act3, player3_bits, buf2);
 			snprintf(buf, MAX_STRING_LENGTH, "&+YAct3: &N%s\n", buf2);
 			strcat(o_buf, buf);
-			/* sprintbit(k->only.pc->law_flags, player_law_flags, buf2); */
-			/* snprintf(buf, MAX_STRING_LENGTH, "&+YFlags (Player Flags): &N%s\n", buf2); */
-			/* strcat(o_buf, buf); */
 		}
 		if (k->specials.affected_by)
 		{
@@ -2914,15 +2816,11 @@ void do_stat(P_char ch, char *argument, int cmd)
 				}
 			}
 		}
-		if (k->events || k->nevents)
+		if (k->nevents)
 		{
 			P_nevent ne;
 			strcat(o_buf, "&+YEvents:\n&+Y-------\n");
 
-			for (e1 = k->events; e1; e1 = e1->next)
-			{
-				snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf), "%6d&+Y seconds,&n %s&+Y.\n", event_time(e1, T_SECS), get_event_name(e1));
-			}
 			LOOP_EVENTS_CH(ne, k->nevents)
 			{
 				snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf), "%6d&+Y seconds,&n %s", ne_event_time(ne) / WAIT_SEC, get_function_name((void *)ne->func));
@@ -4264,10 +4162,9 @@ void timedShutdown(P_char ch, P_char, P_obj, void *data)
 				type = "SHUTDOWN";
 			}
 			if (secs > 60)
-				//        snprintf(buf, MAX_STRING_LENGTH, "&+R*** Scheduled %s in %d minutes ***&n\n", type, secs/60, shutdownData.IssuedBy);
-				snprintf(buf, MAX_STRING_LENGTH, "&+R*** Scheduled %s in %ld minutes ***&n\n", type, secs / 60);
+				snprintf(buf, sizeof buf, "&+R*** Scheduled %s in %ld minutes ***&n\n", type, secs / 60);
 			else
-				snprintf(buf, MAX_STRING_LENGTH, "&+R*** Scheduled &-L%s&n&+R in %ld seconds ***&n\n", type, secs);
+				snprintf(buf, sizeof buf, "&+R*** Scheduled &-L%s&n&+R in %ld seconds ***&n\n", type, secs);
 			send_to_all(buf);
 			// and set when the next warning should occur..
 
@@ -4311,9 +4208,9 @@ void displayShutdownMsg(P_char ch)
 	}
 
 	if (secs > 60)
-		snprintf(buf, 200, "&+R*** Scheduled %s in %ld minute%s***&n\n", type, secs / 60, (secs >= 120) ? "s " : " ");
+		snprintf(buf, sizeof buf, "&+R*** Scheduled %s in %ld minute%s***&n\n", type, secs / 60, (secs >= 120) ? "s " : " ");
 	else
-		snprintf(buf, 200, "&+R*** Scheduled &-L%s&n&+R in %ld seconds ***&n\n", type, secs);
+		snprintf(buf, sizeof buf, "&+R*** Scheduled &-L%s&n&+R in %ld seconds ***&n\n", type, secs);
 	send_to_char(buf, ch);
 }
 
@@ -4355,17 +4252,11 @@ void do_shutdown(P_char ch, char *argument, int cmd)
 
 			// If there's text after minutes, that's the reason
 			if (reason_start && *reason_start)
-			{
-				strncpy(reason, reason_start, MAX_STRING_LENGTH - 1);
-				reason[MAX_STRING_LENGTH - 1] = '\0';
-			}
+				strlcpy(reason, reason_start, sizeof reason);
 		}
 		// If temp_arg is NOT numeric, entire argument is the reason
 		else
-		{
-			strncpy(reason, argument, MAX_STRING_LENGTH - 1);
-			reason[MAX_STRING_LENGTH - 1] = '\0';
-		}
+			strlcpy(reason, argument, sizeof reason);
 	}
 
 	if (shutdownData.eShutdownType == TimedShutdownData::AUTOREBOOT)
@@ -4482,11 +4373,10 @@ void do_shutdown(P_char ch, char *argument, int cmd)
 		type = "shutdown";
 	}
 	strcpy(shutdownData.IssuedBy, GET_NAME(ch));
-	strncpy(shutdownData.Reason, reason, 255);
-	shutdownData.Reason[255]  = '\0';
+	strlcpy(shutdownData.Reason, reason, sizeof shutdownData.Reason);
 	shutdownData.next_warning = -1;
 	shutdownData.reboot_time  = (time(0) + (mins_to_reboot * 60));
-	snprintf(buf, MAX_STRING_LENGTH, "Scheduled %s initiated by %s in %d minutes.", type, GET_NAME(ch), mins_to_reboot);
+	snprintf(buf, sizeof buf, "Scheduled %s initiated by %s in %d minutes.", type, GET_NAME(ch), mins_to_reboot);
 	wizlog(60, buf);
 	sql_log(ch, WIZLOG, "%s initiated by %s in %d minutes.", type, GET_NAME(ch), mins_to_reboot);
 	// calling the event will start the event
@@ -4804,7 +4694,7 @@ void do_force(P_char ch, char *argument, int cmd)
 				send_to_char("Ok.\n", ch);
 			else
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "$n has forced you to '%s'.", to_force);
+				snprintf(buf, sizeof buf, "$n has forced you to '%s'.", to_force);
 				act(buf, FALSE, ch, 0, vict, TO_VICT);
 				if (level < 62)
 					wizlog(GET_LEVEL(ch), "%s has forced %s to '%s' [%d/%d]", GET_NAME(ch), GET_NAME(vict), to_force, world[ch->in_room].number, world[vict->in_room].number);
@@ -4828,7 +4718,7 @@ void do_force(P_char ch, char *argument, int cmd)
 				vict = i->character;
 				if ((level > GET_LEVEL(vict)))
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "$n has forced you to '%s'.", to_force);
+					snprintf(buf, sizeof buf, "$n has forced you to '%s'.", to_force);
 					act(buf, FALSE, ch, 0, vict, TO_VICT);
 					forced_command = 1;
 					command_interpreter(vict, to_force);
@@ -5036,7 +4926,7 @@ void do_purge(P_char ch, char *argument, int cmd)
 			}
 			while (fscanf(flist, " %s \n", buf) != EOF)
 			{
-				snprintf(buf2, MAX_STRING_LENGTH, "Players/%c/%s", LOWER(*buf), buf);
+				snprintf(buf2, sizeof buf2, "Players/%c/%s", LOWER(*buf), buf);
 				f    = fopen(buf2, "r");
 				vict = (struct char_data *)mm_get(dead_mob_pool);
 				ensure_pconly_pool();
@@ -5215,10 +5105,10 @@ void roll_basic_attributes(P_char ch, int type)
 	// Normal rolls - 80 to 95.
 	else if (type == ROLL_NORMAL)
 	{
-		// Used to be 5 8 53.
-		rolls = 3;
-		faces = 6;
-		base  = 77;
+		// Used to be 5 8 53, then 3 6 77.
+		rolls = 1;
+		faces = 4;
+		base  = 86;
 	}
 	// Normal mob rolls - 68 - 98.
 	else if (type == ROLL_MOB_NORMAL)
@@ -5253,40 +5143,15 @@ void roll_basic_attributes(P_char ch, int type)
 
 	if (type != ROLL_MOB_NORMAL && type != ROLL_MOB_GOOD && type != ROLL_MOB_ELITE)
 	{
-		ch->base_stats.Str = ch->curr_stats.Str = dice(rolls, faces) + base;
-		ch->base_stats.Dex = ch->curr_stats.Dex = dice(rolls, faces) + base;
-		ch->base_stats.Agi = ch->curr_stats.Agi = dice(rolls, faces) + base;
-		ch->base_stats.Con = ch->curr_stats.Con = dice(rolls, faces) + base;
-		ch->base_stats.Pow = ch->curr_stats.Pow = dice(rolls, faces) + base;
-		ch->base_stats.Int = ch->curr_stats.Int = dice(rolls, faces) + base;
-		ch->base_stats.Wis = ch->curr_stats.Wis = dice(rolls, faces) + base;
-		ch->base_stats.Cha = ch->curr_stats.Cha = dice(rolls, faces) + base;
-		ch->base_stats.Kar = ch->curr_stats.Kar = dice(rolls, faces) + base;
-		ch->base_stats.Luk = ch->curr_stats.Luk = dice(rolls, faces) + base;
+		for (int i = 0; i < MAX_ATTRIBUTES; i++)
+			ch->base_stats[i] = ch->curr_stats[i] = dice(rolls, faces) + base;
 	}
 	// Mobs may have a 'lower limit' already entered in base_stats.
 	else
 	{
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Str)
-			ch->base_stats.Str = ch->curr_stats.Str = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Dex)
-			ch->base_stats.Dex = ch->curr_stats.Dex = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Agi)
-			ch->base_stats.Agi = ch->curr_stats.Agi = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Con)
-			ch->base_stats.Con = ch->curr_stats.Con = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Pow)
-			ch->base_stats.Pow = ch->curr_stats.Pow = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Int)
-			ch->base_stats.Int = ch->curr_stats.Int = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Wis)
-			ch->base_stats.Wis = ch->curr_stats.Wis = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Cha)
-			ch->base_stats.Cha = ch->curr_stats.Cha = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Kar)
-			ch->base_stats.Kar = ch->curr_stats.Kar = value;
-		if ((value = dice(rolls, faces) + base) > ch->base_stats.Luk)
-			ch->base_stats.Luk = ch->curr_stats.Luk = value;
+		for (int i = 0; i < MAX_ATTRIBUTES; i++)
+			if ((value = dice(rolls, faces) + base) > ch->base_stats[i])
+				ch->base_stats[i] = ch->curr_stats[i] = value;
 	}
 }
 
@@ -5389,8 +5254,6 @@ void do_start(P_char ch, int nomsg)
 	}
 
 	NewbySkillSet(ch, (nomsg != CMD_MULTICLASS) ? TRUE : FALSE);
-
-	setCharPhysTypeInfo(ch);
 
 	GET_EXP(ch) = 1;
 
@@ -5722,13 +5585,8 @@ void do_restore(P_char ch, char *argument, int cmd)
 				if (GET_STAT(victim) < STAT_SLEEPING)
 					SET_POS(victim, GET_POS(victim) + STAT_NORMAL);
 
-#ifdef NEW_COMBAT
-				j = getNumbBodyLocsbyPhysType(GET_PHYS_TYPE(victim));
-				for (i = 0; i < j; i++)
-					victim->points.location_hit[i] = 0;
-#endif
-
-				send_to_char("&+BA haze of magical energies fall from the heavens, engulfing all that you see.&LAs they subside, you feel refreshed...&n\n", victim);
+				send_to_char("&+BA haze of magical energies fall from the heavens, engulfing all that you see.\n"
+					     "&+BAs they subside, you feel refreshed...&n\n", victim);
 				if (ch != victim)
 					do_reboot_restore(ch, victim);
 
@@ -5767,8 +5625,9 @@ void do_restore(P_char ch, char *argument, int cmd)
 						victim->equipment[i]->condition = 100; // victim->equipment[i]->max_condition; wipe2011
 				for (obj = victim->carrying; obj; obj = obj->next_content)
 					obj->condition = 100; // obj->max_condition; wipe2011
-				send_to_char("&+gFrom out of nowhere, little gremlin-like creatures about 6 inches tall pop up.&LThey grab all of your equipment, and fiddle with it before returning to you.&LThey "
-				             "then vanish as quickly as they came.\n",
+				send_to_char("&+gFrom out of nowhere, little gremlin-like creatures about 6 inches tall pop up.\n"
+					     "&+gThey grab all of your equipment, and fiddle with it before returning to you.\n"
+					     "&+gThey then vanish as quickly as they came.\n",
 				             victim);
 			}
 		}
@@ -5818,12 +5677,6 @@ void do_restore(P_char ch, char *argument, int cmd)
 			GET_COND(victim, THIRST) = IS_TRUSTED(victim) ? -1 : 24;
 			GET_COND(victim, DRUNK)  = 0;
 		}
-
-		/*
-		    j = getNumbBodyLocsbyPhysType(GET_PHYS_TYPE(victim));
-		    for (i = 0; i < j; i++)
-		      victim->points.location_hit[i] = 0;
-		*/
 
 		if ((cmd != -4) && !IS_TRUSTED(victim))
 		{
@@ -6216,7 +6069,7 @@ void do_setattr(P_char ch, char *arg, int cmd)
 	/* Note that following macro will only work on non-Cray   */
 	/* architectures. */
 
-#define OFFSET_OF(Type, Field) ((int)(((char *)(&(((Type)NULL)->Field))) - ((char *)NULL)))
+#define OFFSET_OF(Type, Field) ((size_t)(((char *)(&(((Type)NULL)->Field))) - ((char *)NULL)))
 
 	/* Declaration */
 
@@ -6478,72 +6331,6 @@ void do_poofOut(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_poofInSound(P_char ch, char *argument, int cmd)
-{
-	char arg[MAX_INPUT_LENGTH];
-
-	if (!IS_TRUSTED(ch))
-		return;
-
-	one_argument(argument, arg);
-
-	if (!*arg)
-	{
-		if (ch->only.pc->poofInSound != NULL)
-			str_free(ch->only.pc->poofInSound);
-		ch->only.pc->poofInSound = NULL;
-	}
-	else if (strstr(arg, "!!SOUND") || strstr(arg, "!!sound"))
-	{
-		send_to_char("To set your poofin sound, just specify the filename (with extension).\n", ch);
-		return;
-	}
-	else
-	{
-		if (ch->only.pc->poofInSound != NULL)
-			str_free(ch->only.pc->poofInSound);
-
-		if (*argument == ' ')
-			argument++;
-		if (strlen(argument) > 39)
-			*(argument + 38) = '\0';
-		ch->only.pc->poofInSound = str_dup(argument);
-	}
-}
-
-void do_poofOutSound(P_char ch, char *argument, int cmd)
-{
-	char arg[MAX_INPUT_LENGTH];
-
-	if (!IS_TRUSTED(ch))
-		return;
-
-	one_argument(argument, arg);
-
-	if (!*arg)
-	{
-		if (ch->only.pc->poofOutSound != NULL)
-			str_free(ch->only.pc->poofOutSound);
-		ch->only.pc->poofOutSound = NULL;
-	}
-	else if (strstr(arg, "!!SOUND") || strstr(arg, "!!sound"))
-	{
-		send_to_char("To set your poofout sound, just specify the filename (with extension).\n", ch);
-		return;
-	}
-	else
-	{
-		if (ch->only.pc->poofOutSound != NULL)
-			str_free(ch->only.pc->poofOutSound);
-
-		if (*argument == ' ')
-			argument++;
-		if (strlen(argument) > 39)
-			*(argument + 38) = '\0';
-		ch->only.pc->poofOutSound = str_dup(argument);
-	}
-}
-
 void do_teleport(P_char ch, char *argument, int cmd)
 {
 	P_char victim, target_mob;
@@ -6701,8 +6488,6 @@ void do_ban(P_char ch, char *argument, int cmd)
 	{
 		/* list the sites  */
 		send_to_char("Lvl By:              Banned substrings\n--------------------------------------\n", ch);
-		if (bounce_null_sites)
-			send_to_char("                    [Null sites being bounced]\n", ch);
 		if (ban_list == (struct ban_t *)NULL)
 		{
 			send_to_char("Empty list!\n", ch);
@@ -6725,12 +6510,6 @@ void do_ban(P_char ch, char *argument, int cmd)
 		return;
 	}
 	logit(LOG_WIZ, "(%s) ban %s", ch->player.name, argument);
-	if (!str_cmp(name, "null"))
-	{
-		bounce_null_sites = 1;
-		send_to_char("Null sites will now be bounced.\n", ch);
-		return;
-	}
 	for (tmp = ban_list; tmp; tmp = tmp->next)
 	{
 		if (!str_cmp(name, tmp->name))
@@ -6772,12 +6551,6 @@ void do_allow(P_char ch, char *argument, int cmd)
 	if (!*name)
 	{
 		send_to_char("Remove which string from the ban list?\n", ch);
-		return;
-	}
-	if (!str_cmp(name, "null"))
-	{
-		bounce_null_sites = 0;
-		send_to_char("Null sites will now not be bounced.\n", ch);
 		return;
 	}
 	if (ban_list == NULL)
@@ -7547,7 +7320,7 @@ void do_decline(P_char ch, char *arg, int cmd)
 				SEND_TO_Q("\n\nPlease enter another, more suitable fantasy name:", d);
 			}
 			d->character->only.pc->prestige = 0;
-			logit(LOG_NEWCHAR, "%s declined new char %s (%s): %s.", GET_NAME(ch), GET_NAME(d->character), (d->host ? d->host : "UNKNOWN"), (arg ? arg : "NO REASON GIVEN"));
+			logit(LOG_NEWCHAR, "%s declined new char %s (%s): %s.", GET_NAME(ch), GET_NAME(d->character), (*d->host ? d->host : "UNKNOWN"), (arg ? arg : "NO REASON GIVEN"));
 			snprintf(Gbuf1, MAX_STRING_LENGTH, "&+c*** STATUS: %s declined new player %s. (%s)\n", GET_NAME(ch), GET_NAME(d->character), arg);
 			snprintf(Gbuf2, MAX_STRING_LENGTH, "&+c*** STATUS: Someone declined new player %s. (%s)\n", GET_NAME(d->character), arg);
 			for (i = descriptor_list; i; i = i->next)
@@ -7599,7 +7372,7 @@ void do_approve(P_char ch, char *arg, int cmd)
 					         GET_NAME(d1->character),
 					         get_class_string(d1->character, Gbuf2),
 					         race_names_table[(int)GET_RACE(d1->character)].ansi,
-					         d1->host ? d1->host : "UNKNOWN",
+					         *d1->host ? d1->host : "UNKNOWN",
 					         d1->character->only.pc->pc_timer[PC_TIMER_HEAVEN] / 60,
 					         d1->character->only.pc->pc_timer[PC_TIMER_HEAVEN] % 60,
 					         d1->descriptor,
@@ -7668,9 +7441,9 @@ void do_approve(P_char ch, char *arg, int cmd)
 			{
 				if (STATE(d1) == CON_ACCEPTWAIT && d1->character && !str_cmp(GET_NAME(d1->character), arg))
 				{
-					logit(LOG_NEWCHAR, "%s approved new char %s from %s.", GET_NAME(ch), GET_NAME(d1->character), (d1->host ? d1->host : "UNKNOWN"));
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "&+c*** STATUS: %s approved new player %s from %s.\n", GET_NAME(ch), GET_NAME(d1->character), d1->host ? d1->host : "&+WUNKNOWN&n");
-					snprintf(Gbuf2, MAX_STRING_LENGTH, "&+c*** STATUS: Someone approved new player %s from %s.\n", GET_NAME(d1->character), d1->host ? d1->host : "&+WUNKNOWN&n");
+					logit(LOG_NEWCHAR, "%s approved new char %s from %s.", GET_NAME(ch), GET_NAME(d1->character), (*d1->host ? d1->host : "UNKNOWN"));
+					snprintf(Gbuf1, MAX_STRING_LENGTH, "&+c*** STATUS: %s approved new player %s from %s.\n", GET_NAME(ch), GET_NAME(d1->character), *d1->host ? d1->host : "&+WUNKNOWN&n");
+					snprintf(Gbuf2, MAX_STRING_LENGTH, "&+c*** STATUS: Someone approved new player %s from %s.\n", GET_NAME(d1->character), *d1->host ? d1->host : "&+WUNKNOWN&n");
 
 					for (d2 = descriptor_list; d2; d2 = d2->next)
 					{
@@ -7960,20 +7733,19 @@ void do_clone(P_char ch, char *argument, int cmd)
 				}
 			}
 			/* clone EQ equiped  */
-			if (mob->equipment)
-				for (j = 0; j < MAX_WEAR; j++)
+			for (j = 0; j < MAX_WEAR; j++)
+			{
+				if (mob->equipment[j])
 				{
-					if (mob->equipment[j])
+					/* clone mob->equipment[j]  */
+					ocopy = clone_obj(mob->equipment[j]);
+					if (mob->equipment[j]->contains)
 					{
-						/* clone mob->equipment[j]  */
-						ocopy = clone_obj(mob->equipment[j]);
-						if (mob->equipment[j]->contains)
-						{
-							clone_container_obj(ocopy, mob->equipment[j]);
-						}
-						equip_char(mcopy, ocopy, j, 0);
+						clone_container_obj(ocopy, mob->equipment[j]);
 					}
+					equip_char(mcopy, ocopy, j, 0);
 				}
+			}
 			/* clone EQ carried  */
 			if (mob->carrying)
 				for (obj = mob->carrying; obj; obj = obj->next_content)
@@ -8129,7 +7901,7 @@ void do_ingame(P_char ch, char *args, int cmd)
 		// Not self, in game, visible and lower lvl.
 		if ((desc->character != ch) && (desc->connected == CON_PLAYING) && CAN_SEE(ch, desc->character) && (GET_LEVEL(desc->character) < GET_LEVEL(ch)))
 		{
-			snprintf(name, MAX_STRING_LENGTH, "%s", GET_TRUE_NAME(desc->character));
+			snprintf(name, sizeof name, "%s", GET_TRUE_NAME(desc->character));
 			// We know there's at least one %s in the string that needs substituting.
 			snprintf(buf2, MAX_STRING_LENGTH, buf1, name);
 			i = 1;
@@ -8968,92 +8740,6 @@ void do_revoke(P_char ch, char *args, int cmd)
 
 	send_to_char("That character does not have that command granted.\n", ch);
 }
-
-#if 0
-#define REVOKETITLE_SYNTAX "Syntax:\n revoketitle <char name>\n"
-
-/*
- * Guild-God Command.
- *
- * This command allows guild god(s) to revoke from any player the ability
- * to 'title.'  It is made a separate command to restrict gods from
- * revoking just any command--since revoke is reserved for gods level 59
- * and up..
- *
- * Some of this code was borrowed from do_revoke() [naturally..]
- */
-
-void do_revoketitle(P_char ch, char *args, int cmd)
-{
-  char     name[MAX_INPUT_LENGTH];
-  int      loopvar = 0, bitpos = -1;
-  P_char   victim;
-  char     buf[MAX_STRING_LENGTH];
-
-  buf[0] = 0;
-
-  if(!args || !*args)
-  {
-    send_to_char(REVOKETITLE_SYNTAX, ch);
-    return;
-  }
-  (void) one_argument(args, name);
-  victim = get_char_vis(ch, name);
-
-  if(!victim)
-  {
-    send_to_char("Who?", ch);
-    return;
-  }
-  if(GET_LEVEL(ch) < GET_LEVEL(victim))
-  {
-    send_to_char("Not so fast wise-guy.\n", ch);
-    return;
-  }
-  if(ch == victim)
-    send_to_char("Revoking your own powers?  Well, ok, I guess!\n", ch);
-
-  /*
-   * just in case the title command moves, or is taken out (?!?)
-   */
-
-  for (loopvar = 0; *grantable_bits[loopvar] != '\n'; loopvar++)
-    if(is_abbrev("title", grantable_bits[loopvar]))
-    {
-      bitpos = loopvar;
-      break;
-    }
-  if(bitpos < 0)
-  {
-    send_to_char("This 'title' command does not exist anymore!\n", ch);
-    return;
-  }
-  if(ch != victim)
-    strcpy(buf, "They don't have the 'title' command.\n.");
-  else
-    strcpy(buf, "You don't have the 'title' command.\n");
-  send_to_char(buf, ch);
-  return;
-
-  if(ch != victim)
-  {
-    act("You revoke $S 'title' command.", FALSE, ch, 0, victim, TO_CHAR);
-    act("$n revokes your 'title' command!", FALSE, ch, 0, victim, TO_VICT);
-  }
-  else
-    act("You revoke your 'title' command.", FALSE, ch, 0, 0, TO_CHAR);
-
-  if (!do_save_silent(victim, 1))
-    logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));
-
-  logit(LOG_WIZ, "<REVOKE>: %s revokes %s's 'title' command.",
-        GET_NAME(ch), GET_NAME(victim));
-  wizlog(GET_LEVEL(ch), "%s revokes %s's 'title' command.",
-         GET_NAME(ch), GET_NAME(victim));
-}
-
-#undef SYNTAX_REVOKETITLE
-#endif
 
 /*
  * Guild-God command.
@@ -10057,7 +9743,7 @@ void do_givepet(P_char ch, char *arg, int cmd)
 			mob->only.npc->aggro_flags = 0;
 			char_to_room(mob, victim->in_room, 0);
 			setup_pet(mob, victim, -1, PET_NOCASH | PET_NOAGGRO);
-			if (msg)
+			if (*msg)
 				act(msg, TRUE, victim, 0, mob, TO_CHAR);
 			add_follower(mob, victim);
 		}
@@ -10750,7 +10436,7 @@ void do_offlinemsg(P_char ch, char *arg, int cmd)
 
 	pid = get_player_pid_from_name(name);
 
-	if (!name || !*name || *name == '?')
+	if (!*name || *name == '?')
 	{
 		snprintf(buf, MAX_STRING_LENGTH, "&+YSyntax:&N offlinemsg <player's name> <message to send>\n\r");
 		send_to_char(buf, ch);
@@ -12530,7 +12216,7 @@ void which_armor(P_char ch, char *argument)
 		// Load a copy of object.
 		obj = read_object(r_num, REAL);
 
-		if ((obj->type == ITEM_ARMOR))
+		if (obj->type == ITEM_ARMOR)
 		{
 			if ((op == OP_EQUAL && obj->value[0] == acValue) || (op == OP_LESS_THAN && obj->value[0] < acValue) || (op == OP_GREATER_THAN && obj->value[0] > acValue))
 			{

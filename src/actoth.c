@@ -54,7 +54,6 @@ extern const struct class_names class_names_table[];
 
 extern const char            *target_locs[];
 extern P_desc                 descriptor_list;
-extern P_event                current_event;
 extern P_room                 world;
 extern const int              top_of_world;
 extern P_index                mob_index;
@@ -210,41 +209,6 @@ void do_target(P_char ch, char *arg, int cmd)
 	send_to_char("You change your combat tactics slightly.\n\r", ch);
 	return;
 }
-
-#if 0
-/* for ordering followers to target */
-void do_order_target(P_char ch, P_char vict, char *arg, int cmd)
-{
-  int      loc;
-  char     buf[256];
-
-  if (!ch || !vict)
-    return;
-
-  if (*arg == '\0')
-  {                             /* no arg */
-    send_to_char("Valid target areas are:\n\r", ch);
-    loc = 0;
-    while (target_locs[loc][0] != '\n')
-    {
-      snprintf(buf, 256, "    %s\n\r", target_locs[loc]);
-      send_to_char(buf, ch);
-      loc++;
-    }
-    return;
-  }
-  loc = search_block(arg, target_locs, FALSE);
-  if (loc == -1)
-  {
-    send_to_char("Type &+Wtarget&N to see valid options.", ch);
-    return;
-  }
-  vict->player.combat_target_loc = loc;
-  snprintf(buf, 256, "%s changes their combat tactics slightly.\r\n", J_NAME(vict));
-  send_to_char(buf, ch);
-  return;
-}
-#endif
 
 void do_camp(P_char ch, char *arg, int cmd)
 {
@@ -1547,7 +1511,7 @@ void do_forage(P_char ch, char *arg, int cmd)
 			}
 			treeobj = read_object(20, VIRTUAL);
 			obj_to_room(treeobj, ch->in_room);
-			snprintf(buf, MAX_STRING_LENGTH, "Searching %s, you manage to unroot $p.", sectmessage);
+			snprintf(buf, sizeof buf, "Searching %s, you manage to unroot $p.", sectmessage);
 			act(buf, FALSE, ch, treeobj, 0, TO_CHAR);
 			act("Foraging around, $n unroots $p.", TRUE, ch, treeobj, 0, TO_ROOM);
 			CharWait(ch, PULSE_VIOLENCE * 1);
@@ -1977,7 +1941,7 @@ bool do_save_silent(P_char ch, int type)
 					if (tmp_buf[0] == 'N')
 					{
 						sscanf(tmp_buf, "Name:    %s\n", tmp_buf2);
-						strncpy(ch->desc->host2, tmp_buf2, 128);
+						strlcpy(ch->desc->host2, tmp_buf2, sizeof ch->desc->host2);
 						snprintf(tmp_buf, sizeof tmp_buf, "../hosts/%d", ch->desc->descriptor);
 						unlink(tmp_buf);
 					}
@@ -2122,35 +2086,6 @@ void do_balance(P_char ch, char *argument, int cmd)
 
 	if (test_atm_present(ch))
 	{
-#if 0
-    /* Thieving bankers */
-    if (!number(0, 5))
-    {
-      switch (number(1, 4))
-      {
-      case 1:
-        if (GET_BALANCE_PLATINUM(ch))
-          GET_BALANCE_PLATINUM(ch) -=
-            (GET_BALANCE_PLATINUM(ch) / 100) * number(1, 10);
-        break;
-      case 2:
-        if (GET_BALANCE_GOLD(ch))
-          GET_BALANCE_GOLD(ch) -=
-            (GET_BALANCE_GOLD(ch) / 100) * number(5, 15);
-        break;
-      case 3:
-        if (GET_BALANCE_SILVER(ch))
-          GET_BALANCE_SILVER(ch) -=
-            (GET_BALANCE_SILVER(ch) / 100) * number(10, 20);
-        break;
-      case 4:
-        if (GET_BALANCE_COPPER(ch))
-          GET_BALANCE_COPPER(ch) -=
-            (GET_BALANCE_COPPER(ch) / 100) * number(15, 25);
-        break;
-      }
-    }
-#endif
 		snprintf(Gbuf1,
 		         MAX_STRING_LENGTH,
 		         "Your account contains:\r\n    %d &+Wplatinum&N, %d &+Ygold&N, %d silver, %d &+ycopper&N coins.\r\n",
@@ -2882,7 +2817,7 @@ void do_steal(P_char ch, char *argument, int cmd)
 	int    skl;
 	char   victim_name[MAX_INPUT_LENGTH];
 	char   obj_name[MAX_INPUT_LENGTH];
-	P_char victim, rider;
+	P_char victim;
 
 	P_obj obj = NULL;
 	int   percent, roll, i, type = 0;
@@ -2943,7 +2878,7 @@ void do_steal(P_char ch, char *argument, int cmd)
 		send_to_char("My! Aren't we the greedy one!  You couldn't carry anything more if it was just\r\nlaying around on the ground!\r\n", ch);
 		return;
 	}
-	if (IS_CARRYING_W(ch, rider) >= CAN_CARRY_W(ch))
+	if (total_carried_weight(ch) >= CAN_CARRY_W(ch))
 	{
 		send_to_char("Sheesh!  With that load it's a wonder you can walk!\r\n", ch);
 		return;
@@ -3127,7 +3062,7 @@ void do_steal(P_char ch, char *argument, int cmd)
 			break;
 		case 1:
 			/* redoing this so each location has a flag mod */
-			if ((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch))
+			if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch))
 			{
 				send_to_char("Oooof!  Damn that's heavy!\r\n", ch);
 				failed = TRUE;
@@ -3195,7 +3130,7 @@ void do_steal(P_char ch, char *argument, int cmd)
 			else
 			{
 				/* Steal the item */
-				if (!failed && ((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch)))
+				if (!failed && ((total_carried_weight(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch)))
 				{
 					send_to_char("Oooof!  Damn that's heavy!\r\n", ch);
 					failed = TRUE;
@@ -3340,12 +3275,6 @@ void do_steal(P_char ch, char *argument, int cmd)
 	if (!number(0, 1))
 		caught = TRUE;
 
-	/*i
-	   if (!failed && caught && (type == 2 || type == 3) && obj) {
-	   obj->justice_status = J_OBJ_STEAL;
-	   obj->justice_name = str_dup(J_NAME(ch));
-	   }
-	 */
 	if (!caught)
 	{
 		if (!failed)
@@ -3461,139 +3390,6 @@ void do_steal(P_char ch, char *argument, int cmd)
 	if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
 		MobStartFight(victim, ch);
 }
-
-#if 0  // Io's new steal code - not done yet
-bool newsteal_CheckIfValid(P_char ch, const char *victim_name, const char *args)
-{
-  if (!ch || !victim)
-    return false;
-
-  if (IS_RIDING(ch))
-  {
-    send_to_char("While mounted? I don't think so...\r\n", ch);
-    return false;
-  }
-  if (!CAN_SEE(ch, ch))
-  {
-    send_to_char("You can't even see your own hand. How do you plan on stealing?\r\n", ch);
-    return false;
-  }
-  if ((IS_CARRYING_N(ch) + 1) > CAN_CARRY_N(ch))
-  {
-    send_to_char("My! Aren't we the greedy one!  You couldn't carry anything more if it was just\r\nlaying around on the ground!\r\n",
-                 ch);
-    return false;
-  }
-  if (IS_CARRYING_W(ch, rider) >= CAN_CARRY_W(ch))
-  {
-    send_to_char("Sheesh!  With that load it's a wonder you can walk!\r\n", ch);
-    return false;
-  }
-  if (CHAR_IN_SAFE_ROOM(ch))
-  {
-    send_to_char("Your conscience prevents you from stealing in such a peaceful place.\r\n",ch);
-    return false;
-  }
-  if( IS_DESTROYING(ch) )
-  {
-    send_to_char( "You can't focus enough right now.\n", ch );
-    return FALSE;
-  }
-
-  P_char victim = get_char_room_vis(ch, victim_name);
-  if (!victim)
-  {
-    send_to_char("Steal what from who?\r\n", ch);
-    return false;
-  }
-  if (victim == ch)
-  {
-    send_to_char("You want to steal from yourself?  That's silly!\r\n", ch);
-    return false;
-  }
-  if ((IS_ROOM( ch->in_room, SINGLE_FILE) &&
-      !AdjacentInRoom(ch, victim))
-  {
-    act("$N seems to be just a BIT out of reach.", FALSE, ch, 0, victim, TO_CHAR);
-    return false;
-  }
-  if (ch->group && !on_front_line(ch))
-  {
-    send_to_char("You can't quite reach...\r\n", ch);
-    return false;
-  }
-  if (victim->group && !on_front_line(victim))
-    if (GET_SPEC(ch, CLASS_THIEF, SPEC_CUTPURSE))
-    {
-      if (number(0, GET_C_DEX(ch)) < (75 + STAT_INDEX(GET_C_DEX(victim))))
-      {
-        send_to_char("You can't quite reach...\r\n", ch);
-        return false;
-      }
-    }
-    else
-    {
-      send_to_char("You can't quite reach...\r\n", ch);
-      return false;
-    }
-  if (IS_FIGHTING(victim))
-  {
-    send_to_char("Yah, right, good way to lose a hand, or a head!\r\n", ch);
-    return false;
-  }
-
-  return true;
-}
-
-void do_newsteal(P_char ch, char *argument, int cmd)
-{
-  char     victim_name[MAX_INPUT_LENGTH];
-  char     obj_name[MAX_INPUT_LENGTH];
-  // initial sanity checks
-  if (IS_NPC(ch))
-    return;
-  if (GET_LEVEL(ch) < 10)
-  {
-    send_to_char("You're too inexperienced.. get some levels.\r\n", ch);
-    return;
-  }
-  if (!GET_CHAR_SKILL(ch, SKILL_STEAL))
-  {
-    send_to_char("You better leave the art of stealing to the thieves.\r\n",
-                 ch);
-    return;
-  }
-  if (CHAR_IN_ARENA(ch))
-  {
-    send_to_char("Steal in the arena? Yeah right.\r\n", ch);
-    return;
-  }
-  /*if (GET_ALIGNMENT(ch) > 349 && !IS_TRUSTED(ch)) {
-     send_to_char("Your conscience gets the better of you. You must be getting soft in your old age.\r\n", ch);
-     return;
-     } */
-  argument = one_argument(argument, obj_name);
-  one_argument(argument, victim_name);
-
-  P_char victim = get_char_room_vis(ch, victim_name);
-
-  if (!victim)
-  {
-    send_to_char("Steal what from who?\r\n", ch);
-    return;
-  }
-  if (IS_PC(victim) && (GET_LEVEL(ch) < 35) &&
-      !GET_SPEC(ch, CLASS_THIEF, SPEC_CUTPURSE))
-  {
-    send_to_char("Maybe you should practice more...\r\n", ch);
-    return;
-  }
-  if (!newsteal_CheckIfValid(ch, victim_name, obj_name))
-    return;
-
-
-}
-#endif // Io's new steal code - not done yet
 
 void do_explist(P_char ch, char *argument, int cmd)
 {
@@ -3995,7 +3791,6 @@ void do_quaff(P_char ch, char *argument, int cmd)
 	char                  Gbuf1[MAX_STRING_LENGTH];
 	int                   secs;
 	int                   potiontimeleft;
-	P_event               ne;
 	struct affected_type *af2;
 	struct affected_type *next;
 
@@ -4106,26 +3901,6 @@ void do_quaff(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	struct affected_type af, *afp;
-	memset(&af, 0, sizeof(af));
-	af.type     = TAG_POTION_TIMER;
-	af.duration = 3;
-	af.flags    = AFFTYPE_NODISPEL;
-	affect_to_char(ch, &af);
-
-	/* value[5] specifies special functions for epic potions */
-	/*
-	  //make sure to add default spell to potion.
-	  if(bottle->value[5] > 0)
-	  {
-	    if(bottle->value[5] == 1337)
-	    {
-	      advance_level(ch);
-	      extract_obj(bottle);
-	      return;
-	    }
-	  }
-	*/
 	// value[4] specifies damage player takes from potion - considered non-magical
 	if (bottle->value[4] > 0)
 	{
@@ -4142,6 +3917,13 @@ void do_quaff(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
+		struct affected_type af, *afp;
+		memset(&af, 0, sizeof(af));
+		af.type     = TAG_POTION_TIMER;
+		af.duration = 3;
+		af.flags    = AFFTYPE_NODISPEL;
+		affect_to_char(ch, &af);
+
 		for (i = 1; i < 4; i++)
 		{
 			if (bottle->value[i] >= 1)
@@ -4248,7 +4030,7 @@ void do_recite(P_char ch, char *argument, int cmd)
 						}
 					}
 					in_room = ch->in_room;
-					((*skills[j].spell_pointer)((int)scroll->value[0], ch, 0, SPELL_TYPE_SPELL, victim, obj));
+					((*skills[j].spell_pointer)((int)scroll->value[0], ch, argument, SPELL_TYPE_SPELL, victim, obj));
 
 					/* best thing to do if victim dies is just extract the obj and quit out, since many
 					   spells kill the mud w/o a victim
@@ -4442,6 +4224,16 @@ void do_use(P_char ch, char *argument, int cmd)
 	}
 }
 
+static const char* term_name(P_char ch)
+{
+	switch (ch->desc->term_type)
+	{
+	case 2:  return "ANSI";
+	case 3:  return "MSP";
+	default: return "GEN";
+	}
+}
+
 #define ONOFF(a) ((a) ? "ON" : "OFF")
 #define TOG_OFF  0
 #define TOG_ON   1
@@ -4501,7 +4293,7 @@ void show_toggles(P_char ch)
 	         "&+r   Petition    :&+g %-3s    &+y|&N"
 	         "&+r     Paging      :&+g %-3s    &+y|&N"
 	         "&+r     Save Notify :&+g %-3s    &+y|&N\r\n"
-	         "&+r   Who List    :&+g %-3s    &+y|&N"
+	         "&+r   Who Notices :&+g %-3s    &+y|&N"
 	         "&+r     Screen Size :&+g %-3s    &+y|&N"
 	         "&+r     Terminal    :&+g %-4s   &+y|&N\r\n"
 	         "&+r   Map         :&+g %-3s    &+y|&N"
@@ -4548,9 +4340,9 @@ void show_toggles(P_char ch)
 	         ONOFF(PLR_FLAGGED(ch, PLR_PETITION)),
 	         ONOFF(PLR_FLAGGED(ch, PLR_PAGING_ON)),
 	         ONOFF(PLR_FLAGGED(ch, PLR_SNOTIFY)),
-	         ONOFF(PLR_FLAGGED(ch, PLR_NOWHO)),
+	         ONOFF(PLR_FLAGGED(ch, PLR_WHO)),
 	         Gbuf3,
-	         (send_ch->desc->term_type == 1 ? "GEN " : (send_ch->desc->term_type == 2 ? "ANSI" : "MSP ")),
+	         term_name(send_ch),
 	         ONOFF(PLR_FLAGGED(ch, PLR_MAP)),
 	         ONOFF(PLR_FLAGGED(ch, PLR_OLDSMARTP)),
 	         ONOFF(!PLR2_FLAGGED(ch, PLR2_NOTITLE)),
@@ -4688,7 +4480,7 @@ static const char *tog_messages[][2] = {
 	{																			"Help.",																		 "Help!"},
 	{														 "&+WBrief&N mode off.\r\n",													   "&+WBrief&N mode on.\r\n"},
 	{													   "&+WCompact&N mode off.\r\n",													 "&+WCompact&N mode on.\r\n"},
-	{								 "Others can now see you on the &+WWho&n list.\r\n",                          "You will no longer show up on the &+WWho&n list.\r\n"},
+	{								 "You will no longer see &+WWho&N logs on.\r\n",                          "You will now see &+WWho&n logs on.\r\n"},
 	{								"You feel nice and turn &+WVicious&N mode off.\r\n",          "You are now &+WVicious&N and will kill mortally wounded victims.\r\n"},
 	{												 "You can now hear &+WTells&N.\r\n",										   "You are now deaf to &+WTells&N.\r\n"},
 	{											 "You are now blind to &+WNames&N.\r\n",                                        "You are now spammed by &+WNames&N.\r\n"},
@@ -4773,10 +4565,12 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 
 	int res = yes_no(arg);
 	if (res != -1)
+	{
 		if (res ^ reverse)
 			var |= flag;
 		else
 			var &= ~flag;
+	}
 	return res;
 }
 
@@ -4856,17 +4650,14 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			result = PLR_TOG(PLR_COMPACT);
 			break;
 		case 3: /*
-		         * no who
+		         * who
 		         */
-				// Enabled by Gellz - 22042015
-			//    send_to_char("Sorry, we'll have none of that here!\r\n", send_ch);
-			//    return;
-			if (GET_LEVEL(ch) <= 29 && !IS_SET(ch->specials.act, PLR_NOWHO))
+			if (GET_LEVEL(ch) <= 29 && !IS_SET(ch->specials.act, PLR_WHO))
 			{
 				send_to_char("Sorry, you must be at least level 30 to toggle who!\r\n", send_ch);
 				return;
 			}
-			result = PLR_TOG(PLR_NOWHO);
+			result = PLR_TOG(PLR_WHO);
 			break;
 		case 4: /*
 		         * vicious
@@ -4914,15 +4705,8 @@ void do_toggle(P_char ch, char *arg, int cmd)
 				             * in case some slipped through
 				             */
 			}
-
-			// Players can no longer be anonymous.
-			else if (IS_PC(ch))
-			{
-				send_to_char("Nobody can be anonymous on Duris.\r\n", send_ch);
-				return;
-			}
-			// else
-			// result = PLR_TOG(PLR_ANONYMOUS);
+			else
+				result = PLR_TOG(PLR_ANONYMOUS);
 			break;
 		case 10: /*
 		          * petition
@@ -4976,26 +4760,28 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		case 15: /*
 		          * term
 		          */
-			if (send_ch->desc->term_type == 1 || is_abbrev(arg, "ansi"))
-			{
+		        while (*arg == ' ')
+		        	arg++;
+		        if (!*arg)
+		        {
+		        	if (send_ch->desc->term_type == 2)
+		        		send_ch->desc->term_type = 3;
+				else
+					send_ch->desc->term_type = 2;
+				// no need for GEN
+		        }
+			else if (is_abbrev(arg, "ansi"))
 				send_ch->desc->term_type = 2;
-				strcpy(Gbuf3, "ANSI");
-			}
-			else if (send_ch->desc->term_type == 2 || is_abbrev(arg, "msp"))
-			{
+			else if (is_abbrev(arg, "msp"))
 				send_ch->desc->term_type = 3;
-				strcpy(Gbuf3, "MSP ");
-			}
-			else if (send_ch->desc->term_type == 3 || is_abbrev(arg, "gen"))
-			{
+			else if (is_abbrev(arg, "gen"))
 				send_ch->desc->term_type = 1;
-				strcpy(Gbuf3, "GEN ");
-			}
 			else
 			{
 				send_to_char("USAGE: TOGGLE terminal [ansi|msp]\r\n", send_ch);
 				return;
 			}
+			strcpy(Gbuf3, term_name(send_ch));
 			result = TRUE;
 			break;
 		case 16: /*
@@ -5521,49 +5307,6 @@ void do_split(P_char ch, char *argument, int cmd)
 	return;
 }
 
-#if 0
-void do_reboot(P_char ch, char *argument, int cmd)
-{
-  char    *timestr;
-  char     rbtime[MAX_STRING_LENGTH];
-  char     nwtime[MAX_STRING_LENGTH];
-  long     timenow;
-  long     uptime;
-  long     updays = 0;
-  long     uphours = 0;
-  long     upmins = 0;
-
-  timestr = asctime(localtime(&reboot_time));
-  strcpy(rbtime, timestr);
-
-  timenow = time(0);
-  timestr = asctime(localtime(&timenow));
-  strcpy(nwtime, timestr);
-
-  snprintf(Gbuf4, MAX_STRING_LENGTH, "System last rebooted at %s\r\n", rbtime);
-  send_to_char(Gbuf4, ch);
-  snprintf(Gbuf4, MAX_STRING_LENGTH, "It is now %s\r\n", nwtime);
-  send_to_char(Gbuf4, ch);
-
-  /*
-   * now figure out how long it has been up
-   */
-  uptime = timenow - reboot_time;
-
-  updays = uptime / SECS_PER_REAL_DAY;
-  uptime %= SECS_PER_REAL_DAY;
-  uphours = uptime / SECS_PER_REAL_HOUR;
-  uptime %= SECS_PER_REAL_HOUR;
-  upmins = uptime / SECS_PER_REAL_MIN;
-
-  snprintf(Gbuf4, MAX_STRING_LENGTH,
-          "The system has been up for %d days, %d hours, %d mins.\r\n",
-          updays, uphours, upmins);
-  send_to_char(Gbuf4, ch);
-}
-
-#endif
-
 void do_bury(P_char ch, char *argument, int cmd)
 {
 	bool  tried = FALSE;
@@ -5940,7 +5683,7 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 		 * If there's already an item in the well, increment dupes_in_well
 		 * Unless it is a random drop - Jexni
 		 */
-		if ((obj_object->R_num == obj_to_put->R_num) && (!obj_index[obj_to_put->R_num].virtual_number == RANDOM_OBJ_VNUM))
+		if ((obj_object->R_num == obj_to_put->R_num) && (obj_index[obj_to_put->R_num].virtual_number != RANDOM_OBJ_VNUM))
 		{
 			dupes_in_well++;
 		}
@@ -5998,7 +5741,7 @@ void do_fly(P_char ch, char *argument, int cmd)
 		ch    = mount; /* simply change who were dealing with */
 		rider = ch;
 	}
-	if (!buf)
+	if (!*buf)
 	{
 		send_to_char("Fly what, where why or who?!?\r\n", ch);
 		return;
@@ -6089,21 +5832,6 @@ void do_fly(P_char ch, char *argument, int cmd)
 				act("You fly up higher.", FALSE, ch, 0, rider, TO_VICT);
 			}
 			act("$n flies up from below.", TRUE, ch, 0, 0, TO_ROOM);
-			/*
-			      if (!IS_MAP_ROOM(ch->in_room) && ch->specials.z_cord > 2 && OUTSIDE(ch))
-			        if (real_room0(maproom_of_zone(world[zone->real_bottom].zone))) {
-			          char_from_room(ch);
-			          char_to_room(ch,
-			              real_room0(maproom_of_zone(world[zone->real_bottom].zone)), -4);
-
-			          saw_map = 1;
-			          if (rider) {
-			            char_from_room(rider);
-			            char_to_room(rider, ch->in_room, -4);
-			            saw_map = 1;
-			          }
-			        }
-			*/
 		}
 	}
 	else if (!str_cmp(buf, "down"))
@@ -6150,13 +5878,6 @@ void do_fly(P_char ch, char *argument, int cmd)
 	/* flying mounts, et al */
 	if (rider)
 		rider->specials.z_cord = ch->specials.z_cord;
-	/*
-	  if (!saw_map) {
-	    if (rider)
-	      do_look(rider, 0, -4);
-	    do_look(ch, 0, -4);
-	  }
-	*/
 	/* Followers */
 	if (ch->followers)
 	{
@@ -6174,7 +5895,7 @@ void do_fly(P_char ch, char *argument, int cmd)
 				//        act("$N follows you.", TRUE, ch, 0, k->follower, TO_CHAR);
 				//        act("$N follows $n.", TRUE, ch, 0, k->follower, TO_NOTVICT);
 				act("You follow $n.", TRUE, ch, 0, k->follower, TO_VICT);
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "fly %s", argument);
+				snprintf(Gbuf1, sizeof Gbuf1, "fly %s", argument);
 				command_interpreter(k->follower, Gbuf1);
 			}
 		}
@@ -6198,7 +5919,7 @@ void do_swim(P_char ch, char *argument, int cmd)
 		ch    = mount;
 		rider = ch;
 	}
-	if (!buf)
+	if (!*buf)
 	{
 		send_to_char("Swim what, where why or who?!?\r\n", ch);
 		return;
@@ -6705,8 +6426,7 @@ void do_ascend(P_char ch, char *arg, int cmd)
 		             "the holy army, from this day on you will be an "
 		             "&+WAvenger&n of divine law.\n\n",
 		             ch);
-		snprintf(buffer,
-		         MAX_STRING_LENGTH,
+		snprintf(buffer, sizeof buffer,
 		         "You hear a loud voice exclaiming, '&+WWelcome my child, you shall\n"
 		         "&+Wnow be the avenging hand of %s,\n"
 		         "&+Wthe %s &+Wfor his enemies!'",

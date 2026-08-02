@@ -48,7 +48,6 @@ bool sql_save_player_skills(P_char ch);
 bool sql_save_player_affects(P_char ch);
 bool sql_save_player_items(P_char ch);
 bool sql_delete_player_items(int pid);
-bool sql_save_player_witnesses(P_char ch);
 bool sql_save_player_shapechanges(P_char ch);
 bool sql_save_player_recipes(P_char ch);
 bool sql_add_player_recipe(int pid, int recipe_vnum);
@@ -79,7 +78,6 @@ bool sql_load_player_status(P_char ch, int pid);
 bool sql_load_player_skills(P_char ch);
 bool sql_load_player_affects(P_char ch);
 bool sql_load_player_items(P_char ch);
-bool sql_load_player_witnesses(P_char ch);
 bool sql_load_player_shapechanges(P_char ch);
 
 // pet save/load for crash recovery

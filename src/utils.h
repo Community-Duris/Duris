@@ -27,15 +27,10 @@
 /* Functions in utility.c                     */
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#if 0
-#define BOUNDED(a, b, c) (MIN(MAX(a, b), c))
-#endif
 
 #define ISNEWL(ch) ((ch) == '\n' || (ch) == '\r')
 
 #define IF_STR(st) ((st) ? (st) : "\0")
-
-#define GET_TIME_JUDGE(ch) ((ch)->specials.time_judge)
 
 /*
 #define CAP(st)  (*(st) = UPPER(*(st)), st)
@@ -103,11 +98,6 @@
 #define CAN_CMD_PARALYSIS(cmd)                                                                                                                                                                         \
 	(((cmd) == CMD_LOOK) || ((cmd) == CMD_SCORE) || ((cmd) == CMD_QUI) || ((cmd) == CMD_TIME) || ((cmd) == CMD_IDEA) || ((cmd) == CMD_TYPO) || ((cmd) == CMD_BUG) || ((cmd) == CMD_CREDITS) ||         \
 	 ((cmd) == CMD_GLANCE) || ((cmd) == CMD_RULES) || ((cmd) == CMD_WILL) || ((cmd) == CMD_PETITION))
-
-#define IS_BEING_SHADOWED(ch) ((ch)->specials.shadow.who != NULL)
-#define IS_SHADOWING(ch)      ((ch)->specials.shadow.shadowing != NULL)
-#define IS_SHADOW_MOVE(ch)    ((ch)->specials.shadow.shadow_move == TRUE)
-#define GET_CHAR_SHADOWED(ch) ((ch)->specials.shadow.shadowing)
 
 #define IS_GLOBED(target) (IS_AFFECTED2(target, AFF2_GLOBE) || IS_AFFECTED3(target, AFF3_GR_SPIRIT_WARD))
 #define IS_MINGLOBED(ch)  (IS_AFFECTED3(target, AFF3_SPIRIT_WARD) || IS_AFFECTED(target, AFF_MINOR_GLOBE))
@@ -238,11 +228,11 @@ bool IS_OUTDOORS(int r);
 
 #define IS_ROOM(room, flag) (IS_SET(world[room].room_flags, (flag)))
 
-#define SET_BIT(var, bit) ((var) = (var) | ((unsigned long)bit))
+#define SET_BIT(var, bit) ((var) = (var) | ((unsigned long)(bit)))
 
-#define REMOVE_BIT(var, bit) ((var) = (var) & ~((unsigned long)bit))
+#define REMOVE_BIT(var, bit) ((var) = (var) & ~((unsigned long)(bit)))
 
-#define TOGGLE_BIT(var, bit)   ((var) = (var) ^ ((unsigned long)bit))
+#define TOGGLE_BIT(var, bit)   ((var) = (var) ^ ((unsigned long)(bit)))
 #define PLR_FLAGS(ch)          ((ch)->specials.act)
 #define PLR2_FLAGS(ch)         ((ch)->specials.act2)
 #define PLR3_FLAGS(ch)         ((ch)->specials.act3)
@@ -313,7 +303,6 @@ bool IS_OUTDOORS(int r);
 #define GET_TITLE(ch)          ((ch)->player.title)
 #define GET_DISGUISE_TITLE(ch) ((ch)->disguise.title)
 
-#define GET_SECONDARY_LEVEL(ch) ((int)(ch)->player.secondary_level)
 #define GET_DISGUISE_LEVEL(ch)  ((int)(ch)->disguise.level)
 
 // #define GET_CLASS(ch)   ((ch)->player.m_class)
@@ -328,8 +317,6 @@ bool IS_OUTDOORS(int r);
 #define GET_RACEWAR(ch)       ((ch)->player.racewar)
 
 int race_size(int race);
-
-#define GET_PHYS_TYPE(ch) ((ch)->player.phys_type)
 
 #define GET_HOME(ch)            ((ch)->player.hometown)
 #define GET_BIRTHPLACE(ch)      ((ch)->player.birthplace)
@@ -418,8 +405,6 @@ int race_size(int race);
 
 #define GET_WIZINVIS(ch) ((ch)->only.pc->wiz_invis)
 
-#define GET_LFLAGS(ch) ((ch)->only.pc->law_flags)
-
 #define GET_PLAYER_LOG(ch) ((ch)->only.pc->log)
 
 #define IS_AWAKE(ch) ((GET_STAT(ch) > STAT_SLEEPING) && !IS_AFFECTED((ch), AFF_KNOCKED_OUT))
@@ -486,26 +471,17 @@ int race_size(int race);
 #define GET_OBJ_SIZE(obj)  (((obj)->size > 0) ? (obj)->size : 0)
 #define GET_OBJ_SPACE(obj) (((obj)->space > 0) ? (obj)->space : 0)
 
-#define COIN_WEIGHT(c, s, g, p) (0)
-// #define COIN_WEIGHT(c, s, g, p) (((c) + (s) + (g) + (p)) / 50)
-
 #define CAN_CARRY_W(ch) (str_app[STAT_INDEX(GET_C_STR(ch))].carry_w + (IS_TRUSTED(ch) ? 20000 : 0))
 
 #define CAN_CARRY_N(ch) (IS_TRUSTED(ch) ? 3000 : (STAT_INDEX(GET_C_DEX(ch)) / 3) + (IS_NPC(ch) ? 12 : 6))
-
-#define IS_CARRYING_W(ch, rider)                                                                                                                                                                       \
-	((ch)->specials.carry_weight + COIN_WEIGHT(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch)) +                                                                                       \
-	 (((rider = GET_RIDER(ch)) == NULL) ? 0 : (rider->player.weight + rider->specials.carry_weight)) + COIN_WEIGHT(GET_COPPER(rider), GET_SILVER(rider), GET_GOLD(rider), GET_PLATINUM(rider)))
 
 #define GET_CARRYING_W(ch) ((ch)->specials.carry_weight)
 
 #define IS_CARRYING_N(ch) ((ch)->specials.carry_items)
 
-#define CAN_CARRY_COINS(ch, rider) ((CAN_CARRY_W(ch) - IS_CARRYING_W(ch, rider)) * 25)
+#define CAN_CARRY_OBJ(ch, obj) (((total_carried_weight(ch) + GET_OBJ_WEIGHT(obj)) <= CAN_CARRY_W(ch)) && ((IS_CARRYING_N(ch) + 1) <= CAN_CARRY_N(ch)))
 
-#define CAN_CARRY_OBJ(ch, obj, rider) (((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(obj)) <= CAN_CARRY_W(ch)) && ((IS_CARRYING_N(ch) + 1) <= CAN_CARRY_N(ch)))
-
-#define CAN_GET_OBJ(ch, obj, rider) (CAN_WEAR(obj, ITEM_TAKE) && CAN_CARRY_OBJ(ch, obj, rider) && CAN_SEE_OBJ(ch, obj))
+#define CAN_GET_OBJ(ch, obj, rider) (CAN_WEAR(obj, ITEM_TAKE) && CAN_CARRY_OBJ(ch, obj) && CAN_SEE_OBJ(ch, obj))
 
 #define IS_OBJ_STAT(obj, stat)  (IS_SET((obj)->extra_flags, stat))
 #define IS_OBJ_STAT2(obj, stat) (IS_SET((obj)->extra2_flags, stat)) /* TASFALEN */
@@ -581,29 +557,15 @@ int race_size(int race);
 #define RANDOM_OBJ_VNUM   1250
 #define IS_RANDOM_MOB(a)  (IS_NPC(a) && GET_VNUM(a) > RANDOM_VNUM_BEGIN && GET_VNUM(a) < RANDOM_VNUM_END)
 
+#define ENCRUST_VNUM_BEGIN 400291
+#define ENCRUST_VNUM_END   400299
+// old encrustables use RANDOM_OBJ_VNUM, can be deleted after wipe
+#define IS_ENCRUSTABLE(o) (OBJ_VNUM(o) >= ENCRUST_VNUM_BEGIN && OBJ_VNUM(o) <= ENCRUST_VNUM_END \
+		|| OBJ_VNUM(o) == RANDOM_OBJ_VNUM && isname("_strange_", (o)->name))
+
 #define IS_PATROL(CH) (IS_NPC(CH) && IS_SET((CH)->specials.act, ACT_PATROL))
 
-/*
-#define IS_AGGRESSIVE(MOB) (IS_NPC(MOB) && \
-  ((IS_SET((MOB)->specials.act, ACT_AGGRESSIVE)) || \
-  (IS_SET((MOB)->specials.act, ACT_AGGRESSIVE_EVIL)) || \
-  (IS_SET((MOB)->specials.act, ACT_AGGRESSIVE_GOOD)) || \
-  (IS_SET((MOB)->specials.act, ACT_AGGRESSIVE_NEUTRAL)) || \
-  (IS_SET((MOB)->specials.act, ACT_AGG_RACEEVIL)) || \
-  (IS_SET((MOB)->specials.act, ACT_AGG_RACEGOOD)) || \
-  (IS_SET((MOB)->specials.act, ACT_AGG_OUTCAST))))
-*/
-
 #define IS_AGGRESSIVE(m) (IS_NPC(m) && ((m)->only.npc->aggro_flags || (m)->only.npc->aggro2_flags || (m)->only.npc->aggro3_flags))
-
-#define CHAR_IS_FLAGGED(CH) (0)
-/* have to redo this macro for new law flags JAB
-(IS_NPC(CH)? (IS_SET((CH)->specials.act, NPC_OUTLAW)? 2: 0):  \
- IS_SET((CH)->only.pc->law_flags, PLR_OUTCAST)? 4:  \
- IS_SET((CH)->only.pc->law_flags, PLR_KILLER)?  3:  \
- IS_SET((CH)->only.pc->law_flags, PLR_OUTLAW)?  2:  \
- IS_SET((CH)->only.pc->law_flags, PLR_THIEF)?   1: 0)
-*/
 
 #define GET_LEVEL(character) ((character == NULL) ? -1 : (int)character->player.level)
 
@@ -627,8 +589,6 @@ int race_size(int race);
 #define OBJ_FALLING(o)                                                                                                                                                                                 \
 	((o) && !IS_SET((o)->extra_flags, ITEM_LEVITATES) && OBJ_ROOM(o) &&                                                                                                                                \
 	 ((world[(o)->loc.room].sector_type == SECT_NO_GROUND) || (world[(o)->loc.room].sector_type == SECT_UNDRWLD_NOGROUND) || (world[(o)->loc.room].chance_fall >= number(1, 100)) || (o->z_cord > 0)))
-
-#define IS_OUTLAW(ch) ((IS_NPC(ch) && IS_SET(ch->specials.act, NPC_OUTLAW)) || (IS_PC(ch) && IS_SET(ch->only.pc->law_flags, PLR_OUTLAW)))
 
 #define IS_GUARD(ch) (IS_NPC(ch) && (IS_SET((ch)->only.npc->aggro_flags, AGGR_OUTCASTS) || isname("guard", GET_NAME(ch))))
 
@@ -708,8 +668,6 @@ int race_size(int race);
 #define IS_HARDCORE(ch) (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_HARDCORE_CHAR))
 
 #define IS_MULTICLASS_PC(ch) (IS_PC(ch) && ((ch)->player.secondary_class > 0) && ((ch)->player.secondary_class != BIT_32))
-
-#define IS_FULL_MULTICLASS_PC(ch) (IS_PC(ch) && ((ch)->player.secondary_level == 56))
 
 #define IS_NEWBIE(ch)       (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_NEWBIE))
 #define IS_NEWBIE_GUIDE(ch) (IS_PC(ch) && IS_SET(ch->specials.act2, PLR2_NEWBIE_GUIDE))
@@ -984,12 +942,11 @@ int race_size(int race);
 #define VT_REMAP                                                                                                                                                                                       \
 	"\033[0;%d;%s:13p" /* used exclusively for f-xx                                                                                                                                                    \
 	      keys here. int = key,                                                                                                                                                                        \
-string = command */
-#if 0
+string = command
 
          Other function key codes       F1=59,F2=60,F3=61,F4=62,F5=63
                                         F6=64,F7=65,F8=66,F9=67,F10=68
-#endif
+*/
 
 /* Combat related */
 
@@ -1063,7 +1020,7 @@ char *CRYPT2(char *passwd, char *name);
 
 #define EARTH_REAVER_WEAPONS(wpn) ((getWeaponDamType(wpn->value[0]) == WEAPONTYPE_BLUDGEON) && !IS_SET(wpn->extra_flags, ITEM_TWOHANDS))
 
-#define FLAME_REAVER_WEAPONS(wpn) (IS_SWORD(wpn) || (wpn)->value[0] == WEAPON_FLAIL | WEAPON_WHIP)
+#define FLAME_REAVER_WEAPONS(wpn) (IS_SWORD(wpn) || (wpn)->value[0] == WEAPON_FLAIL || (wpn)->value[0] == WEAPON_WHIP)
 
 #define FROST_REAVER_WEAPONS(wpn) (IS_BLUDGEON(wpn))
 

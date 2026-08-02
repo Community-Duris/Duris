@@ -28,7 +28,9 @@
 #include "defines.h"
 #include "map.h"
 #include "player_log.h"
+#include "ansi.h"
 
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <zlib.h>
 
@@ -38,11 +40,6 @@
 #include <time.h>
 #endif
 #include "account.h"
-
-#ifdef EFENCE
-#include <stdlib.h>
-#include "efence.h"
-#endif
 
 #ifdef _OSX_
 typedef unsigned long int ulong;
@@ -62,7 +59,6 @@ typedef struct char_data         *P_char;
 typedef struct Guild             *P_Guild;
 typedef struct Alliance          *P_Alliance;
 typedef struct descriptor_data   *P_desc;
-typedef struct event_data        *P_event;
 typedef struct nevent_data       *P_nevent;
 typedef struct obj_data          *P_obj;
 typedef struct room_data         *P_room;
@@ -72,12 +68,6 @@ typedef struct mob_prog_act_list *P_mprog_list;
 typedef struct arti_data         *P_arti;
 typedef unsigned char             ubyte;
 typedef unsigned short int        ush_int;
-typedef struct witness_data       wtns_rec;
-typedef struct crime_info         crime_rec;
-typedef struct crime_data         crm_rec;
-// old guildhalls (deprecated)
-// typedef struct house_control_rec *P_house;
-// typedef struct house_upgrade_rec *P_house_upgrade;
 typedef struct acct_entry *P_acct;
 typedef void (*event_func_type)(P_char, P_char, P_obj, void *);
 
@@ -275,7 +265,7 @@ struct edit_data
 #define LNK_PALADIN_AURA    16
 #define LNK_GRAPPLED        17
 #define LNK_CIRCLING        18
-#define LNK_TETHER          19
+//#define LNK_TETHER          19
 #define LNK_SNG_HEALING     20
 #define LNK_CEGILUNE        21
 #define LNK_ILESH           22
@@ -566,7 +556,6 @@ struct obj_data
 	} loc;
 
 	P_char   hitched_to; /* Who are we hitched to?           */
-	P_event  events;     /* events attached to this obj      */
 	P_nevent nevents;
 	P_obj    contains;     /* Contains objects                 */
 	P_obj    next_content; /* For 'contains' lists             */
@@ -691,7 +680,7 @@ struct zone_data
 	int               real_top, real_bottom;
 	int               reset_mode; /* conditions for reset (see below)   */
 	struct reset_com *cmd;        /* command table for reset              */
-	int               status;
+	time_t            last_raid;  /* timestamp of last invader spotted */
 	/*
 	 *  Reset mode:                              *
 	 *  0: Don't reset, and don't update age.    *
@@ -817,29 +806,11 @@ struct reset_q_type
 	struct reset_q_element *tail;
 };
 
-/* commented out by Weebler
-struct help_index_element {
-  char *keyword;
-  long pos;
-};
-*/
-
 struct info_index_element
 {
 	char *keyword;
 	long  pos;
 };
-
-/* EMAIL registration defs */
-struct registration_node
-{
-	char                      host[80];
-	char                      login[20];
-	char                      name[20];
-	struct registration_node *next;
-};
-
-typedef struct registration_node *P_ereg;
 
 struct trackrecordtype
 {
@@ -903,6 +874,7 @@ struct room_data
 	::byte chance_fall;
 	::byte current_speed;
 	::byte current_direction;
+	ubyte altglyph;                                    /* Map glyph variation                */
 	/* special procedure */
 	room_proc_type funct;
 
@@ -939,7 +911,7 @@ struct room_data
 #define PLR_ANONYMOUS   BIT_16
 #define PLR_AGGIMMUNE   BIT_17
 #define PLR_WIZMUFFED   BIT_18
-#define PLR_NOWHO       BIT_19 /* player doesn't show up on who */
+#define PLR_WHO         BIT_19 /* login announcements */
 #define PLR_PAGING_ON   BIT_20
 #define PLR_VNUM        BIT_21
 #define PLR_OLDSMARTP   BIT_22 /* old-style smartprompt */
@@ -1090,8 +1062,6 @@ struct time_data
 	time_t birth;      /* This represents the characters age    */
 	time_t logon;      /* Time of the last logon                */
 	time_t saved;      /* Time of the last save                 */
-	sh_int perm_aging; /* permanent 'unnatural' aging */
-	sh_int age_mod;    /* temporary 'unnatural' aging */
 	uint   played;     /* accumulated time played in secs       */
 };
 
@@ -1107,9 +1077,7 @@ struct char_player_data
 	ubyte            spec;
 	ubyte            race;            /* race                                 */
 	ubyte            racewar;         /* race                                 */
-	ubyte            phys_type;       /* physiology type                      */
 	ubyte            level;           /* level                                */
-	ubyte            secondary_level; /* level                                */
 	unsigned int     secondary_class; /* class                                */
 	int              hometown;        /* PCs Hometown (last saved room)       */
 	int              birthplace;      /* birth room                           */
@@ -1150,6 +1118,42 @@ struct stat_data
 
 	sh_int Kar; /* 2 'special' stats */
 	sh_int Luk;
+
+	sh_int& operator[](int i)
+	{
+		switch (i)
+		{
+		case 0: return Str;
+		case 1: return Dex;
+		case 2: return Agi;
+		case 3: return Con;
+		case 4: return Pow;
+		case 5: return Int;
+		case 6: return Wis;
+		case 7: return Cha;
+		case 8: return Kar;
+		case 9: return Luk;
+		default: return Kar;
+		}
+	}
+
+	const sh_int& operator[](int i) const
+	{
+		switch (i)
+		{
+		case 0: return Str;
+		case 1: return Dex;
+		case 2: return Agi;
+		case 3: return Con;
+		case 4: return Pow;
+		case 5: return Int;
+		case 6: return Wis;
+		case 7: return Cha;
+		case 8: return Kar;
+		case 9: return Luk;
+		default: return Kar;
+		}
+	}
 };
 
 struct char_point_data
@@ -1172,20 +1176,9 @@ struct char_point_data
 	sh_int max_vitality;
 	sh_int max_ward;
 
-	/* values for storing damage done to each body part - maximums are
-	   determined by max hp of player - body location stuff is currently
-	   in new_combat.h */
-
-#ifdef NEW_COMBAT
-	sh_int *location_hit; /* dynamically allocated based on race - no need to
-	                         store numb of elements since it's static for race type */
-#endif
-
 	sh_int delay_move; /* for out of breath stuff */
-#if 1
 	sh_int base_armor; /* Mainly for mobs, PC is always 100  */
 	sh_int curr_armor; /* current armor class  */
-#endif
 	int cash[4];  /* Money carried  */
 	int curr_exp; /* The current experience of the player       */
 
@@ -1280,8 +1273,6 @@ struct pc_only_data
 
 	char *poofIn;
 	char *poofOut;
-	char *poofInSound;
-	char *poofOutSound;
 	/*  char *title;*/
 
 	P_char switched;
@@ -1314,7 +1305,8 @@ struct pc_only_data
 	int *gcmd_arr;  /* granted arr, stores granted cmd numbs */
 	int  numb_gcmd; /* number of granted cmds */
 
-	ulong law_flags; /* KNOWN, WANTED, OUTCAST in hometowns */
+	vector<AnsiString> *map_glyphs;
+
 #ifdef OVL
 	sh_int ovl_count;
 	sh_int ovl_timer;
@@ -1339,7 +1331,7 @@ struct pc_only_data
 
 	// Traffic messure.
 	long     send_data;
-	long     recived_data;
+	long     received_data;
 	int      master_set;
 	long int learned_forged_list[MAX_FORGE_ITEMS];
 
@@ -1380,7 +1372,6 @@ struct npc_only_data
 	sh_int  attack_type; /* barehand attack                        */
 	Memory *memory;      /* Used for memory system */
 	int     home;
-	ush_int law_flags; /* extensions to specials.act rel. to pkill */
 	P_char  orig_char; /* used instead of memory ptr to keep
 	                      track of who is controlling the mob */
 	int lowest_hit;    /* lowest hitpoints this mob ever reached */
@@ -1430,9 +1421,7 @@ struct char_special_data
 	P_obj  destroying_obj;  /* For destroying objects                  */
 
 	sh_int    timer;
-	wtns_rec *witnessed;
 	P_char    arrest_by;
-	sh_int    time_judge;
 	char      undead_spell_slots[MAX_CIRCLE + 1];
 
 	// copyover temp - stash fighting info til mobs load
@@ -1510,7 +1499,6 @@ struct char_data
 	P_char next_in_room; /* For room->people - list       */
 	P_char next;         /* For either mobile | p-list    */
 
-	P_event  events; /* events attached to this char      */
 	P_nevent nevents;
 
 	struct char_player_data     player; /* Normal data               */
@@ -1689,10 +1677,7 @@ struct descriptor_data
 {
 	sh_int            descriptor; /* file descriptor for socket */
 	char              host[50];   /* hostname                   */
-	char              host2[128];
-	char              login[9]; /* userid from host           */
-	char              registered_host[50];
-	char              registered_login[9];
+	char              host2[254];
 	::byte            rtype;                        /* character restore status   */
 	::byte            connected;                    /* mode of 'connectedness'    */
 	int               wait;                         /* wait for how many loops    */
@@ -1981,53 +1966,6 @@ struct hunt_data
 	ubyte       path_step;
 };
 
-struct event_data
-{
-	ubyte   type;     /* type of event triggered:  EVENT_*        */
-	short   element;  /* element of events[] this is a member of  */
-	bool    one_shot; /* if TRUE, event is deleted once triggered */
-	ush_int timer;    /* number of cycles (minutes) before event,
-	                     if we want to schedule an event longer
-	                     than 45 (real) days in advance we'll
-	                     have to change this to u_int which will
-	                     let us schedule up to 4000 (real) years
-	                     in advance.                              */
-	union
-	{
-		P_char                  a_ch;   /* one of these will point to the initiator */
-		P_obj                   a_obj;  /* (actor) of this event.  type determines  */
-		P_room                  a_room; /* which is valid.                          */
-		struct trackrecordtype *a_track;
-		void (*a_func)(void);
-	} actor;
-
-	union
-	{
-		P_char                     t_ch;   /* one of these will point at the target of */
-		P_obj                      t_obj;  /* this event (or none, it's optional in    */
-		P_room                     t_room; /* some cases).  Or if this is a delayed    */
-		struct zone_data          *t_zone; /* command of some sort, t_arg will get     */
-		char                      *t_arg;  /* sent to command_interpreter.             */
-		int                        t_num;
-		struct scribing_data_type *t_scribe;
-		struct spellcast_datatype *t_spell;
-		void (*t_func)(P_char);
-		struct hunt_data               *t_hunt;
-		struct generic_event_arguments *t_generic;
-		P_event                         t_event; /* just to confuse everyone (actually used by EVENT_PEER - Tharkun) */
-	} target;
-
-	P_event prev_sched; /* pointer to prev event in schedule[]       */
-						//  P_event prev_type;            /* pointer to prev event in event_sub_list[] */
-	P_event prev_event; /* pointer to prev event in event_list or
-	                       avail_events */
-	P_event next_sched; /* pointer to next event in schedule[]       */
-						//  P_event next_type;            /* pointer to next event in event_sub_list[] */
-	P_event next_event; /* pointer to next event in event_list or
-	                       avail_events */
-	P_event next;       /* pointer to next event on obj or char      */
-};
-
 struct nevent_data
 {
 	P_obj                  obj;
@@ -2044,47 +1982,10 @@ struct nevent_data
 	P_nevent               next_sched;
 };
 
-/* data structure for justice witness record as held in memory.  This
-   struct ends up being a linked list.. */
-
-struct witness_data
-{
-	time_t    time;     /* When did it happen? */
-	char     *attacker; /* who did it? */
-	char     *victim;   /* who did they do it to? */
-	ubyte     crime;    /* what did they do? */
-	int       room;     /* Where did they do it?  (VIRTUAL!) */
-	wtns_rec *next;     /* next record (or NULL if none) */
-};
-
-struct crime_data
-{
-	time_t   time;
-	char    *attacker;
-	char    *victim;
-	ubyte    crime;
-	int      room;
-	int      money;
-	ubyte    status;
-	crm_rec *next;
-};
-
-struct group_formations
-{
-	int   formation_id;
-	char *formation_name;
-	int   total_slots;
-	int   offensive_slots;
-	int   defensive_slots;
-	int   free_slots;
-	int   protected_slots;
-};
 /* structure used for grouping.. */
 struct group_list
 {
 	P_char             ch;
-	int                formation_id;
-	int                formation_valid;
 	struct group_list *next;
 };
 

@@ -28,7 +28,6 @@
 #include "map.h"
 #include "mm.h"
 #include "necromancy.h"
-#include "new_combat_def.h"
 #include "nexus_stones.h"
 #include "objmisc.h"
 #include "paladins.h"
@@ -45,7 +44,6 @@
 extern Skill   skills[];
 extern P_char  character_list;
 extern P_desc  descriptor_list;
-extern P_event event_list;
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_room  world;
@@ -675,11 +673,7 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 					MobStartFight(tch, ch);
 				else if (tch->only.pc->aggressive >= 0 && tch->only.pc->aggressive < GET_HIT(tch))
 				{
-#ifndef NEW_COMBAT
 					hit(tch, ch, tch->equipment[PRIMARY_WEAPON]);
-#else
-					hit(tch, ch, tch->equipment[WIELD], TYPE_UNDEFINED, getBodyTarget(tch), TRUE, FALSE);
-#endif
 				}
 
 				if (!char_in_list(ch) || !char_in_list(tch))
@@ -978,7 +972,6 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 {
 	P_char  target = NULL, tmp = NULL;
 	P_obj   obj = NULL, best_corpse = NULL;
-	P_event e1 = NULL;
 
 	int                 dam = 0, lvl = 0, spl = 0, high_corpse = 0, pets;
 	int                 att_num_adjust[] = {100, 50, 15, 0};
@@ -1132,10 +1125,12 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 						spl = SPELL_RAISE_SPECTRE;
 				}
 				else if (npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) || npc_has_spell_slot(ch, SPELL_CALL_ARCHON))
+				{
 					if (GET_CLASS(ch, CLASS_THEURGIST))
 						spl = SPELL_CALL_ARCHON;
 					else
 						spl = SPELL_ANIMATE_DEAD;
+				}
 
 				if (spl)
 					return (MobCastSpell(ch, 0, best_corpse, spl, lvl));
@@ -4151,11 +4146,7 @@ bool WillPsionicistSpell(P_char ch, P_char victim)
 #define BREATH_AZURE      BIT_12
 #define BREATH_JASPER     BIT_13
 #define BREATH_BASALT     BIT_14
-#define BREATH_CRIMSON_2  BIT_15
-#define BREATH_AZURE_2    BIT_16
-#define BREATH_JASPER_2   BIT_17
-#define BREATH_BASALT_2   BIT_18
-#define NUM_BREATHS       18
+#define NUM_BREATHS       14
 void BreathWeapon(P_char ch, int dir)
 {
 	int    breath_possibilities, breath_type, attempts, room, orig_room, i, distance;
@@ -4237,44 +4228,21 @@ void BreathWeapon(P_char ch, int dir)
 	{
 		breath_possibilities += BREATH_GAS_BLIND;
 	}
-	if (isname("crimson", GET_NAME(ch)))
+	if (isname("crimson", GET_NAME(ch)) || GET_VNUM(ch) == 83) // Avatar of Judgement
 	{
 		breath_possibilities += BREATH_CRIMSON;
 	}
-	if (isname("azure", GET_NAME(ch)))
+	if (isname("azure", GET_NAME(ch)) || GET_VNUM(ch) == 85) // Avatar of Justice
 	{
 		breath_possibilities += BREATH_AZURE;
 	}
-	if (isname("jasper", GET_NAME(ch)))
+	if (isname("jasper", GET_NAME(ch)) || GET_VNUM(ch) == 82) // Avatar of War
 	{
 		breath_possibilities += BREATH_JASPER;
 	}
-	if (isname("basalt", GET_NAME(ch)))
+	if (isname("basalt", GET_NAME(ch)) || GET_VNUM(ch) == 84) // Avatar of Vengeance
 	{
 		breath_possibilities += BREATH_BASALT;
-	}
-	// Avatar of Judgement - Mob vnum 83.  Why aren't we just checking the vnum?
-	if (isname("judgement", GET_NAME(ch)))
-	{
-		breath_possibilities += BREATH_CRIMSON_2;
-	}
-	// Avatar of Justice - Mob vnum 85.  Why aren't we just checking the vnum?
-	// Includes others tho.... but should it?
-	if (isname("justice", GET_NAME(ch)))
-	{
-		breath_possibilities += BREATH_AZURE_2;
-	}
-	// Avatar of War - Mob vnum 82.  Why aren't we just checking the vnum?
-	// Includes others tho.... but should it?
-	if (isname("war", GET_NAME(ch)))
-	{
-		breath_possibilities += BREATH_JASPER_2;
-	}
-	// Avatar of Vengeance - Mob vnum 84.  Why aren't we just checking the vnum?
-	// Includes others tho.... but should it?
-	if (isname("vengeance", GET_NAME(ch)))
-	{
-		breath_possibilities += BREATH_BASALT_2;
 	}
 	// If we failed to find any possibilities for breath type, pick one of the first 5.
 	if (breath_possibilities == 0)
@@ -4405,34 +4373,6 @@ void BreathWeapon(P_char ch, int dir)
 			if (dir != -1)
 				snprintf(buf, MAX_STRING_LENGTH, "A &+Lshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
 			funct = breath_weapon_basalt;
-			break;
-		case BREATH_CRIMSON_2:
-			act("$n spreads $s wings and emits a &+Rshimmering &+rlight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Rshimmering &+rlight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Rshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_crimson_2;
-			break;
-		case BREATH_AZURE_2:
-			act("$n spreads $s wings and emits a &+Bshimmering &+blight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Bshimmering &+blight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Bshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_azure_2;
-			break;
-		case BREATH_JASPER_2:
-			act("$n spreads $s wings and emits a &+Gshimmering &+glight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Gshimmering &+glight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Gshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_jasper_2;
-			break;
-		case BREATH_BASALT_2:
-			act("$n spreads $s wings and emits a &+Lshimmering &+wlight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Lshimmering &+wlight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Lshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_basalt_2;
 			break;
 	}
 
@@ -4840,8 +4780,6 @@ bool MobAlchemist(P_char ch)
 			CharWait(ch, PULSE_VIOLENCE);
 			return TRUE;
 		}
-		else
-			return FALSE;
 
 	return FALSE;
 }
@@ -5288,11 +5226,7 @@ bool MobWarrior(P_char ch)
 			if ((tch != ch) && IS_FIGHTING(tch) && ((GET_OPPONENT(tch) == ch) || (GET_OPPONENT(ch) == tch)))
 			{
 				if (number(0, 135) > MAX(99, ((GET_LEVEL(ch) - 10) * 9)))
-#ifndef NEW_COMBAT
 					hit(ch, tch, ch->equipment[PRIMARY_WEAPON]);
-#else
-					hit(ch, tch, ch->equipment[WIELD], TYPE_UNDEFINED, getBodyTarget(ch), TRUE, FALSE);
-#endif
 			}
 		}
 		if (char_in_list(ch))
@@ -6438,12 +6372,10 @@ int RateObject(P_char ch, int a, P_obj obj)
 			if (CAN_SEE(ch, ch))
 				value += 100;
 			break;
-#if 1
 		case ITEM_ARMOR:
 			if (GET_AC(ch) > -100)
 				value += 5 * obj->value[0];
 			break;
-#endif
 		case ITEM_WORN:
 		case ITEM_WEAPON:
 			value += (obj->value[1] * obj->value[2]) * damp / 10;
@@ -6464,12 +6396,10 @@ int RateObject(P_char ch, int a, P_obj obj)
 			case APPLY_MANA:
 				value += obj->affected[tmp].modifier * manap / 3;
 				break;
-#if 1
 			case APPLY_ARMOR:
 				if (GET_AC(ch) > -100)
 					value += (0 - obj->affected[tmp].modifier * 5);
 				break;
-#endif
 			case APPLY_STR:
 			case APPLY_DEX:
 			case APPLY_INT:
@@ -6511,6 +6441,7 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 
 	for (a = foo; a < CUR_MAX_WEAR; a++)
 		if (CAN_WEAR(obj, equipment_pos_table[a][0]) && can_char_use_item(ch, obj))
+		{
 			if (ch->equipment[equipment_pos_table[a][2]] != NULL)
 			{
 				l    = equipment_pos_table[a][2];
@@ -6533,9 +6464,9 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 					return 1;
 				}
 			}
-			else if (RateObject(ch, a, obj) >= 0)
-				if (wear(ch, obj, equipment_pos_table[a][1], 1))
-					return 1;
+			else if (RateObject(ch, a, obj) >= 0 && wear(ch, obj, equipment_pos_table[a][1], 1))
+				return 1;
+		}
 	return 0;
 }
 
@@ -6552,22 +6483,6 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 	if (obj_index[obj->R_num].virtual_number == 101) /* Dont wear the helm of ooc! */
 		return;
 
-#if 0
-  if(IS_SET(obj->extra_flags, ITEM_NODROP))
-  {
-    /*
-     * If a cleric, let's just simulate remove curse here - nothing as
-     * complicated the real thing, just remove the flag + continue,
-     * reducing the mana as we go.
-     */
-    if(IS_CLERIC(ch) && (GET_MANA(ch) >= 20))
-    {
-      GET_MANA(ch) -= 20;
-      REMOVE_BIT(obj->extra_flags, ITEM_NODROP);
-    }
-    return;
-  }
-#endif
 	/*
 	 * Keep containers around, for our mobs 'collections'..
 	 * muhahahahahaaa!
@@ -6609,15 +6524,6 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 				         * problem solved, item in bag.
 				         */
 	}
-
-	/* horrible, horrible way to handle this..  if you really want the mob
-	   to use such behavior, flag the item as 'mobs won't take' and have
-	   the mob drop it */
-
-#if 0
-  if(RateObject(ch, 0, obj) <= 200)
-    extract_obj(obj, TRUE); // Didn't bag, not worth much, get rid of
-#endif
 }
 
 int ItemsIn(P_obj obj)
@@ -7278,40 +7184,6 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 		}
 	}
 	PROFILE_END(mundane_wallbreak);
-#if 0
-  if(IS_ROOM(ch->in_room, MAGIC_DARK))
-  {
-    /* ok, we're in a magically dark room, escape whatever way we can! */
-    if(!IS_FIGHTING(ch))
-    {
-      if(knows_spell(ch, SPELL_CONTINUAL_LIGHT) &&
-          npc_has_spell_slot(ch, SPELL_CONTINUAL_LIGHT))
-      {
-        MobCastSpell(ch, ch, 0, SPELL_CONTINUAL_LIGHT, GET_LEVEL(ch));
-        goto normal;
-      }
-      if(!IS_SET(ch->specials.act, ACT_SENTINEL) &&
-          !IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) &&
-          knows_spell(ch, SPELL_TELEPORT) &&
-          npc_has_spell_slot(ch, SPELL_TELEPORT))
-      {
-        MobCastSpell(ch, ch, 0, SPELL_TELEPORT, GET_LEVEL(ch));
-        goto normal;
-      }
-    }
-    else
-    {
-      if(!IS_SET(ch->specials.act, ACT_SENTINEL))
-      {
-        if(room_has_valid_exit(ch->in_room))
-        {
-          do_flee(ch, 0, 0);
-          goto normal;
-        }
-      }
-    }
-  }
-#endif
 	/*
 	 * check for agg mobs attacking, this should only happen under a few
 	 * circumstances: mob woke up after target entered room. mob just
@@ -7456,6 +7328,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 
 			if (CAN_GET_OBJ(ch, obj, rider) || IS_CONTAINER(obj))
 				if ((CAN_CARRY_W(ch) >= GET_OBJ_WEIGHT(obj)) || IS_CONTAINER(obj))
+				{
 					if (IS_CONTAINER(obj) && ItemsIn(obj) >= 1)
 					{
 						best_obj = obj;
@@ -7466,6 +7339,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 						best_obj = obj;
 						max      = obj->cost;
 					}
+				}
 		}
 
 		if (best_obj)
@@ -7717,11 +7591,7 @@ void mobact_rescueHandle(P_char mob, P_char attacker)
 			else
 				snprintf(buf, MAX_STRING_LENGTH, "Hey! That's my pal you're messing with!\r\n");
 			mobsay(pl, buf);
-#ifndef NEW_COMBAT
 			hit(pl, attacker, pl->equipment[PRIMARY_WEAPON]);
-#else
-			hit(pl, attacker, pl->equipment[WIELD], TYPE_UNDEFINED, getBodyTarget(pl), TRUE, FALSE);
-#endif
 
 			if (!char_in_list(attacker) || (attacker->in_room != pl->in_room))
 				return;
@@ -8945,7 +8815,7 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		data->path_step = -1;
 		debug("event_mob_hunt: %s finished hunting %s", J_NAME(ch), data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) : world[targ_room].name);
 	}
-	else if (data->path_step != -1 && data->path_step >= 0 && data->path_step < data->path.size())
+	else if (data->path_step >= 0 && data->path_step < data->path.size())
 	{
 		next_step = data->path[data->path_step];
 		dummy     = data->path.size() - data->path_step;
@@ -9353,7 +9223,7 @@ P_char find_protector_target(P_char ch)
 				cur_val |= BIT_4;
 			else if ((GET_RACE(ch) != GET_RACE(vict)) || (GET_RACE(ch) == GET_RACE(t_ch)))
 				cur_val |= BIT_5;
-			else if ((t_ch->following == ch))
+			else if (t_ch->following == ch)
 				cur_val |= BIT_4;
 		}
 		else if (IS_NPC(t_ch) && IS_AFFECTED(vict, AFF_CHARM))
@@ -9404,6 +9274,7 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		return;
 	}
 	if (IS_CASTING(ch))
+	{
 		if (is_casting_aggr_spell(ch))
 		{
 			/*      wizlog(56,"We've just detected an aggro spell being cast and thus do not break spellcasting upon being ranged.");*/
@@ -9415,6 +9286,7 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		}
 		else
 			StopCasting(ch);
+	}
 
 	if (IS_DESTROYING(ch))
 		stop_destroying(ch);
@@ -9436,19 +9308,6 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		}
 	}
 	/* A few guaranteed calls */
-#if 0
-  if( /*IS_DRAGON(ch) */ CAN_BREATHE(ch))
-  {
-
-    /* if there's an error..  exit the function */
-
-    result = find_first_step(ch->in_room, vict->in_room, BFS_CAN_FLY, 0, 0, &dummy);
-    if(result >= 0)
-      BreathWeapon(ch, result);
-    else
-      return;
-  }
-#endif // no range breath anymore, circling that really sucks
 	/* Higher wimpy set, as they know its tough to charge into an arrow */
 
 	if (IS_AWAKE(ch) && CAN_ACT(ch) && !IS_STUNNED(ch))

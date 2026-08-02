@@ -2417,10 +2417,12 @@ bool create_walls(int room, int exit, P_char ch, int level, int type, int power,
 	wall_inside->value[3] = type;
 	wall_inside->value[4] = level;
 	if (ch != NULL)
+	{
 		if (IS_PC(ch))
 			wall_inside->value[5] = GET_PID(ch);
 		else
 			wall_inside->value[5] = GET_RNUM(ch);
+	}
 
 	wall_outside->value[0] = world[room].number;
 	wall_outside->value[1] = reverse_exit;
@@ -2428,10 +2430,12 @@ bool create_walls(int room, int exit, P_char ch, int level, int type, int power,
 	wall_outside->value[3] = type;
 	wall_outside->value[4] = level;
 	if (ch != NULL)
+	{
 		if (IS_PC(ch))
 			wall_outside->value[5] = GET_PID(ch);
 		else
 			wall_outside->value[5] = GET_RNUM(ch);
+	}
 
 	SET_BIT(world[room].dir_option[exit]->exit_info, EX_WALLED);
 	SET_BIT(world[dir_room].dir_option[reverse_exit]->exit_info, EX_WALLED);
@@ -2539,9 +2543,11 @@ void spell_mirage(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 		}
 	}
 
-	act("&+LAs $n spreads $s hands out wide, bright &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L of &+ma&+Mr&+Lca&+Mn&+me&L&+Lpower appear before $m in mid air.  The &+wm&+Wote&+ws&+L "
-	    "pul&+wse a&+Wnd be&+wgin t&+Lo abs&+worb al&+Wl&L&+wra&+Wys of li&+wght&+L into i&+wtself g&+Wrowing b&+wright&+Ler and m&+wore num&+Werous m&+woment b&+Ly mome&+wnt.&L&+LWith another "
-	    "&+ma&+Mr&+Lca&+Mn&+me&+L gesture $n scatters the &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L accross&L&+La great wide arc before $s companions.&n\r\n",
+	act("&+LAs $n spreads $s hands out wide, bright &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L of &+ma&+Mr&+Lca&+Mn&+me\n"
+	    "&+Lpower appear before $m in mid air.  The &+wm&+Wote&+ws&+L pul&+wse a&+Wnd be&+wgin t&+Lo abs&+worb al&+Wl\n"
+	    "&+wra&+Wys of li&+wght&+L into i&+wtself g&+Wrowing b&+wright&+Ler and m&+wore num&+Werous m&+woment b&+Ly mome&+wnt.\n"
+	    "&+LWith another &+ma&+Mr&+Lca&+Mn&+me&+L gesture $n scatters the &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L across\n"
+	    "&+La great wide arc before $s companions.&n\r\n",
 	    TRUE,
 	    ch,
 	    0,
@@ -2549,9 +2555,11 @@ void spell_mirage(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	    TO_ROOM);
 	act("&+LAs a &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wot&+we&+L settles before you $n speaks an &+ma&+Mr&+Lca&+Mn&+me&+L word of &+Wpower&+L!&n", TRUE, ch, 0, 0, TO_ROOM);
 
-	act("&+LAs you spread your hands out wide, bright &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L of &+ma&+Mr&+Lca&+Mn&+me&L&+Lpower appear before you in mid air.  The &+wm&+Wote&+ws&+L "
-	    "pul&+wse a&+Wnd be&+wgin t&+Lo abs&+worb al&+Wl&L&+wra&+Wys of li&+wght&+L into i&+wtself g&+Wrowing b&+wright&+Ler and m&+wore num&+Werous m&+woment b&+Ly mome&+wnt.&L&+LWith another "
-	    "&+ma&+Mr&+Lca&+Mn&+me&+L gesture you scatter the &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L accross&L&+La great wide arc before your companions.&n\r\n",
+	act("&+LAs you spread your hands out wide, bright &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L of &+ma&+Mr&+Lca&+Mn&+me\n"
+	    "&+Lpower appear before you in mid air.  The &+wm&+Wote&+ws&+L pul&+wse a&+Wnd be&+wgin t&+Lo abs&+worb al&+Wl\n"
+	    "&+wra&+Wys of li&+wght&+L into i&+wtself g&+Wrowing b&+wright&+Ler and m&+wore num&+Werous m&+woment b&+Ly mome&+wnt.\n"
+	    "&+LWith another &+ma&+Mr&+Lca&+Mn&+me&+L gesture you scatter the &+rp&+Rr&+Yi&+Gs&+ym&+Ca&+ct&+Bi&+bc &+wm&+Wote&+ws&+L across\n"
+	    "&+La great wide arc before your companions.&n\r\n",
 	    TRUE,
 	    ch,
 	    0,
@@ -2625,7 +2633,6 @@ void spell_mirage(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 			gm->disguise.racewar     = GET_RACEWAR(gm);
 			if (GET_TITLE(gm))
 				gm->disguise.title = str_dup(GET_TITLE(gm));
-			SET_BIT(gm->specials.act, PLR_NOWHO);
 
 			affect_to_char(gm, &af);
 			add_event(event_mirage, 0, gm, NULL, NULL, 0, 0, 0);

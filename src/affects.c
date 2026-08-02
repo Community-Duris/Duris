@@ -49,7 +49,6 @@ extern P_char                        character_list;
 extern P_char                        combat_list;
 extern P_char                        dead_guys;
 extern P_desc                        descriptor_list;
-extern P_event                       current_event;
 extern P_index                       mob_index;
 extern P_index                       obj_index;
 extern P_obj                         object_list;
@@ -70,7 +69,6 @@ extern const struct racial_data_type racial_data[];
 extern struct zone_data             *zone_table;
 extern struct time_info_data         time_info;
 extern struct arena_data             arena;
-extern P_event                       event_list;
 static char                          buf[MAX_INPUT_LENGTH];
 extern Skill                         skills[];
 extern bool                          innate_two_daggers(P_char);
@@ -100,7 +98,6 @@ extern void essence_broken(struct char_link_data *);
 extern void event_broken(struct char_link_data *);
 extern void charm_broken(struct char_link_data *);
 extern void casting_broken(struct char_link_data *);
-extern void tether_broken(struct char_link_data *);
 
 extern void cegilunes_broken(struct char_obj_link_data *);
 extern void ileshs_broken(struct char_obj_link_data *);
@@ -145,7 +142,7 @@ int apply_ac(P_char ch, int eq_pos)
 		return 0;
 	}
 
-	if ((GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_ARMOR) && (GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_SHIELD))
+	if (GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_ARMOR && GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_SHIELD)
 	{
 		return 0;
 	}
@@ -312,173 +309,7 @@ int calculate_mana(P_char ch)
 
 	mana = (int)(((float)GET_LEVEL(ch)) / 50 * GET_C_POW(ch) * GET_C_INT(ch) * get_property("mana.powMultiplier", 0.025));
 
-	if (IS_PC(ch) && (GET_AGE(ch) <= racial_data[GET_RACE(ch)].max_age))
-	{
-		mana += (graf(ch, age(ch).year, 2, 4, 6, 8, 10, 12, 14));
-	}
-
-	return mana;
-}
-
-// This is now old code.  The current one in use is calculate_hitpoints2(ch).
-int calculate_hitpoints(P_char ch)
-{
-	char  buf[128];
-	int   hps, i, lvl, old_bonus, hitpoint_bonus, j, mod, toughness, racial_con;
-	P_obj obj;
-	bool  apply_maxconbonus_hitpoints = FALSE;
-
-	lvl = GET_LEVEL(ch);
-
-	// Apply racial con modifiers.
-	racial_con = stat_factor[GET_RACE(ch)].Con;
-	for (i = 0; i < MAX_WEAR; i++)
-	{
-		if ((obj = ch->equipment[i]))
-		{
-			for (j = 0; j < MAX_OBJ_AFFECT; j++)
-			{
-				if (obj->affected[j].location == APPLY_CON_RACE)
-				{
-					racial_con = MAX(racial_con, stat_factor[obj->affected[j].modifier].Con);
-				}
-			}
-		}
-	}
-
-	i         = MAX(-390, 390 - MIN(GET_C_CON(ch), racial_con));
-	old_bonus = (int)(lvl * ((152100.0 - i * i) / 10864.285 - 4.0));
-	hps       = old_bonus;
-	hps += (int)(((float)lvl) / 50 * racial_con * racial_con * get_property("hitpoints.conMultiplier", 0.035));
-
-	if (IS_MULTICLASS_PC(ch))
-	{
-		hps = (int)(hps * MAX(class_hitpoints[flag2idx(ch->player.m_class)], class_hitpoints[flag2idx(ch->player.secondary_class)]));
-	}
-	else
-	{
-		hps = (int)(hps * class_hitpoints[flag2idx(ch->player.m_class)]);
-	}
-
-	if (GET_AGE(ch) <= racial_data[GET_RACE(ch)].max_age)
-	{
-		hps += graf(ch, age(ch).year, 2, 4, 17, 14, 8, 4, 3);
-	}
-
-	// Small bonus for the first 10 levels heh.
-	hps += MAX(0, 10 - lvl);
-
-	// Should be made simpler some time, we add old con_bonus part from maxcon outside class multiplier
-	i = MAX(-390, 390 - GET_C_CON(ch));
-	hps += (int)(lvl * ((152100.0 - i * i) / 10864.285 - 4.0)) - old_bonus;
-
-	if (IS_HARDCORE(ch))
-	{
-		hps += (hardcore_config_get()->bonus_hp_per_level * lvl);
-	}
-
-	/* This calculates the HP bonus from the toughness
-	 * epic skill. Remove or comment it out if for some
-	 * reason in the future this skill ceases to exist.
-	 * -Zion 10/31/07 (happy halloween!)
-	 */
-	/*
-	  if(IS_AFFECTED3(ch, AFF3_PALADIN_AURA) && (GET_RACEWAR(ch) == 1))
-	   {
-	    if(ch->group)
-	    {
-	         if(ch->in_room == ch->group->ch->in_room)
-	         hps = (hps + BOUNDED(1, (GET_LEVEL(ch) * 2), 110));
-	    }
-	   }
-	*/
-
-	if (IS_ILLITHID(ch))
-	{
-		// 10 hps at level 1, 1 points in max con = 1 hp, gains 1 hp per level.
-		hps = GET_LEVEL(ch) + 10 + MAX(GET_C_CON(ch), 100) - 100;
-	}
-
-	toughness = GET_CHAR_SKILL(ch, SKILL_TOUGHNESS);
-
-	if (toughness > 0 && !GET_CLASS(ch, CLASS_MONK))
-	{
-		hps += (int)(toughness * get_property("epic.skill.toughness", 0.500) * (GET_CLASS(ch, CLASS_WARRIOR | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_MERCENARY) ? 2 : 1));
-	}
-	else
-	{
-		if (toughness < 50)
-		{
-			hps += (int)(toughness * get_property("epic.skill.toughness.monk.low", 0.800));
-		}
-		else if (toughness >= 50 && toughness <= 90)
-		{
-			hps += (int)(toughness * get_property("epic.skill.toughness.monk.medium", 1.000));
-		}
-		else
-		{
-			hps += (int)(toughness * get_property("epic.skill.toughness.monk.high", 1.250));
-		}
-	}
-	if (hps < 0)
-	{
-		logit(LOG_DEBUG, "%s has negative hitpoints bonus: %d (%d, %d)", GET_NAME(ch), hps, old_bonus, i);
-		return 0;
-	}
-	// Casters get hitpoint bonus with con_max eq. Dec08 -Lucrot
-
-	// Never liked this and it grew from making hitters far too powerful
-	// downing this and finding a better solution - Jexni 2/6/11
-
-	if (ch && GET_PRIME_CLASS(ch, MAX_CON_BONUS_CLASSES) && !IS_MULTICLASS_PC(ch))
-	{
-		apply_maxconbonus_hitpoints = TRUE;
-	}
-
-	if (ch && IS_MULTICLASS_PC(ch) &&
-	    GET_PRIME_CLASS(ch,
-	                    CLASS_ETHERMANCER | CLASS_DRUID | CLASS_CLERIC | CLASS_SORCERER | CLASS_NECROMANCER | CLASS_SHAMAN | CLASS_PSIONICIST | CLASS_ILLUSIONIST | CLASS_CONJURER | CLASS_BARD |
-	                        CLASS_SUMMONER | CLASS_BLIGHTER) &&
-	    GET_SECONDARY_CLASS(ch,
-	                        CLASS_ETHERMANCER | CLASS_DRUID | CLASS_CLERIC | CLASS_SORCERER | CLASS_NECROMANCER | CLASS_SHAMAN | CLASS_PSIONICIST | CLASS_ILLUSIONIST | CLASS_CONJURER | CLASS_BARD |
-	                            CLASS_SUMMONER | CLASS_BLIGHTER))
-	{
-		apply_maxconbonus_hitpoints = TRUE;
-	}
-
-	if (ch && IS_PC(ch) && apply_maxconbonus_hitpoints)
-	{
-		hitpoint_bonus = 0;
-		for (i = 0; i < MAX_WEAR; i++)
-		{
-			if (i == WEAR_ATTACH_BELT_1 || // Non max con bonuses for belted items.
-			    i == WEAR_ATTACH_BELT_2 || i == WEAR_ATTACH_BELT_3)
-			{
-				continue;
-			}
-			if (ch->equipment[i])
-			{
-				obj = ch->equipment[i];
-
-				for (j = 0; j < MAX_OBJ_AFFECT; j++)
-				{
-					if (obj->affected[j].location == APPLY_CON_MAX && obj->affected[j].modifier > 0)
-					{
-						hitpoint_bonus += obj->affected[j].modifier;
-					}
-				}
-			}
-		}
-		// Max con hitpoint bonus now uses a racial constitution ratio. May2010 -Lucrot
-		if (IS_PC(ch) && hitpoint_bonus)
-		{
-			snprintf(buf, MAX_STRING_LENGTH, "stats.con.%s", race_names_table[GET_RACE(ch)].no_spaces);
-			mod = (int)get_property(buf, 100.);
-			hps += (int)(hitpoint_bonus * get_property("hitpoints.spellcaster.maxConBonus", 2.5) * mod / 100);
-		}
-	}
-
-	return hps;
+	return mana + 6;
 }
 
 // This is a rewrite of calculate_hitpoints(ch).  It's a little faster for Illithid hps.
@@ -541,11 +372,7 @@ int calculate_hitpoints2(P_char ch)
 	i = curr_con;
 	new_bonus += level * ((-14. / 152100.) * i * i + (28. / 390.) * i - 4.);
 
-	// Calculate age mod
-	if (GET_AGE(ch) <= racial_data[GET_RACE(ch)].max_age)
-	{
-		age_mod = graf(ch, age(ch).year, 2, 4, 17, 14, 8, 4, 3);
-	}
+	age_mod = 17;
 
 	// Calculate maxcon bonus (rewrote this a little to make it easier to read).
 	maxconbonus = 0;
@@ -1073,8 +900,6 @@ void apply_affs(P_char ch, int mode)
 	GET_MAX_WARD(ch) = ch->points.base_ward + ((mode) ? TmpAffs.Ward : 0);
 	GET_WARD(ch)     = GET_MAX_WARD(ch) - t1;
 
-	ch->player.time.age_mod = (mode) ? TmpAffs.Age : 0;
-
 	ch->points.hit_reg  = TmpAffs.hit_reg;
 	ch->points.move_reg = TmpAffs.move_reg;
 	ch->points.mana_reg = TmpAffs.mana_reg;
@@ -1409,11 +1234,9 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 			SET_BIT(TmpAffs.BV_1, AFF_PROT_FIRE);
 			break;
 
-#if 1
 		case APPLY_ARMOR:
 			TmpAffs.AC += mod;
 			break;
-#endif
 		case APPLY_AGE:
 			TmpAffs.Age += mod;
 			break;
@@ -2650,16 +2473,6 @@ int obj_affect_time(P_obj obj, struct obj_affect *af)
 			return ne_event_time(e);
 	}
 	return -1;
-	/*
-	  P_event  e;
-
-	  for (e = obj->events; e; e = e->next)
-	    if (e->type == EVENT_OBJ_AFFECT &&
-	        (struct obj_affect *) e->target.t_ch == af)
-	      return event_time(e, T_PULSES);
-
-	  return -1;
-	*/
 }
 
 int affect_from_obj(P_obj obj, sh_int spell)
@@ -2820,7 +2633,6 @@ void initialize_links()
 	define_link(LNK_PALADIN_AURA, "PALADIN_AURA", aura_broken, LNKFLG_AFFECT | LNKFLG_ROOM);
 	define_link(LNK_GRAPPLED, "GRAPPLED", NULL, LNKFLG_ROOM);
 	define_link(LNK_CIRCLING, "CIRCLING", NULL, LNKFLG_ROOM | LNKFLG_EXCLUSIVE);
-	define_link(LNK_TETHER, "TETHERING", tether_broken, LNKFLG_ROOM);
 	define_link(LNK_SNG_HEALING, "SONG_HEALING", song_broken, LNKFLG_AFFECT | LNKFLG_ROOM);
 	define_link(LNK_DRAGOON_MOUNT, "DRAGOON_MOUNT", charm_broken, LNKFLG_AFFECT | LNKFLG_EXCLUSIVE);
 

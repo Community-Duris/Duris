@@ -15,7 +15,6 @@
 #include <time.h>
 #include "graph.h"
 #include "mm.h"
-#include "sound.h"
 #include "spells.h"
 
 extern P_room                world;
@@ -25,9 +24,7 @@ extern int                   top_of_zone_table;
 extern int                   mini_mode;
 extern const char           *race_types[];
 extern P_char                character_list;
-extern P_event               current_event;
 extern P_index               mob_index;
-extern P_event               event_type_list[LAST_EVENT];
 extern P_desc                descriptor_list;
 extern const char           *town_name_list[];
 // extern int rev_dir[];
@@ -106,8 +103,6 @@ struct hometown_data hometowns[LAST_HOME] = {
 };
 
 struct mm_ds              *dead_justice_guard_pool = NULL;
-struct mm_ds              *dead_witness_pool       = NULL;
-struct mm_ds              *dead_crime_pool         = NULL;
 struct justice_guard_list *guard_list              = NULL;
 
 const char *justice_flags[] = {"Evil",    /* JUSTICE_EVILHOME */
@@ -270,8 +265,6 @@ P_char justice_make_guard(int rroom)
 			equip_char(ch, obj, HOLD, 0);
 	}
 	/* justice guards should always be aggro to outcasts! */
-	/*  if (!IS_SET(ch->specials.act, ACT_AGG_OUTCAST))
-	    SET_BIT(ch->specials.act, ACT_AGG_OUTCAST);*/
 	if (!IS_AGGROFLAG(ch, AGGR_OUTCASTS))
 		SET_BIT(ch->only.npc->aggro_flags, AGGR_OUTCASTS);
 
@@ -425,13 +418,6 @@ void justice_action_invader(P_char ch)
 	if (!IS_INVADER(ch))
 		return;
 
-	/*Original Justice
-	if (!justice_send_guards(NOWHERE, ch, MOB_SPEC_J_OUTCAST, (MAX(11, GET_LEVEL(ch)) / 11) + 1))
-	 {
-	  return;
-	 }
-	*/
-
 	zone_struct = &zone_table[world[ch->in_room].zone];
 	room        = ch->in_room;
 
@@ -446,15 +432,14 @@ void justice_action_invader(P_char ch)
 	//  squad issued from another hometown that will 'encourage' the invaders to
 	//  leave.  Hopefully this works out better than justice ever has...  - Jexni 3/4/11
 
-	if (IS_INVADER(ch) && IS_PC(ch) && get_scheduled(ch, event_justice_raiding))
+	if (IS_INVADER(ch) && IS_PC(ch) && IS_TOWN_RAIDED(ch))
 	{
 		if (!number(0, 1))
 			return;
 	}
 	else
 	{
-		zone_struct->status = ZONE_RAID;
-		add_event(event_justice_raiding, WAIT_SEC * 200, ch, 0, 0, 0, &room, sizeof(room));
+		zone_struct->last_raid = time(0);
 	}
 
 	if (IS_INVADER(ch))
@@ -483,17 +468,6 @@ void justice_action_invader(P_char ch)
 			return;
 		}
 	}
-}
-
-void event_justice_raiding(P_char ch, P_char victim, P_obj obj, void *data)
-{
-
-	struct zone_data *zone;
-	int               room = *((int *)data);
-
-	zone         = &zone_table[world[room].zone];
-	zone->status = ZONE_NORMAL;
-	return;
 }
 
 /*

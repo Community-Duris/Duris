@@ -160,8 +160,8 @@ int replace_str(char **string, char *pattern, char *replacement, int rep_all, in
 			flow += strlen(pattern);
 			len = ((char *)flow - (char *)*string) - strlen(pattern);
 
-			strncpy(replace_buffer, *string, len);
-			strcat(replace_buffer, replacement);
+			memcpy(replace_buffer, *string, len);
+			strcpy(replace_buffer + len, replacement);
 			strcat(replace_buffer, flow);
 		}
 	}
@@ -1343,7 +1343,7 @@ void do_rename(P_char ch, char *arg, int cmd)
 	bool has_wrong_arg = FALSE;
 
 	arg = one_argument(arg, type);
-	if (!type || !*type || !arg || !*arg || !(is_abbrev(type, "char") || is_abbrev(type, "ship")))
+	if (!*type || !arg || !*arg || !(is_abbrev(type, "char") || is_abbrev(type, "ship")))
 	{
 		has_wrong_arg = TRUE;
 	}
@@ -1352,7 +1352,7 @@ void do_rename(P_char ch, char *arg, int cmd)
 	{
 		// get name of char whos name/ship will be renamed
 		arg = one_argument(arg, who_to_rename);
-		if (!who_to_rename || !*who_to_rename || !*arg || !arg)
+		if (!*who_to_rename || !*arg || !arg)
 		{
 			has_wrong_arg = TRUE;
 		}
@@ -1364,7 +1364,7 @@ void do_rename(P_char ch, char *arg, int cmd)
 		{
 			// get new name, drop anything after the new name since names only accept one word.
 			half_chop(arg, new_name, rest);
-			if (!new_name || !*new_name)
+			if (!*new_name)
 			{
 				has_wrong_arg = TRUE;
 			}
@@ -1430,7 +1430,7 @@ int mob_do_rename_hook(P_char npc, P_char ch, int cmd, char *arg)
 	if (!str_cmp(askFor, "rename"))
 	{
 		arg = one_argument(arg, new_name);
-		if (!*new_name || !new_name)
+		if (!*new_name)
 		{
 			snprintf(buffer, MAX_STRING_LENGTH, "Syntax: ask %s rename <newname>\r\n", npc->player.short_descr);
 			send_to_char(buffer, ch);
@@ -1698,144 +1698,6 @@ char *one_word(char *argument, char *first_arg)
 	return (argument + begin);
 }
 
-/*
-Commented out by Weebler
-void clear_help_index(struct help_index_element **list_head,
-                      const int help_size)
-{
-  int      i;
-
-  if (!*list_head)
-    return;
-
-  for (i = 0; i < help_size; i++)
-  {
-    FREE((*list_head)[i].keyword);
-  }
-
-  FREE(*list_head);
-
-  *list_head = NULL;
-}
-*/
-
-/*struct help_index_element *build_help_index(FILE * fl, int *num)
-{
-  // Commented out by Weebler
-  int      nr = -1, issorted, i, j;
-  struct help_index_element *list = 0, mem;
-  char     buf[MAX_STRING_LENGTH], tmp[MAX_STRING_LENGTH], *scan;
-  char    *pbuf;
-  long     pos;
-
-  for (;;)
-  {
-    pos = ftell(fl);
-    fgets(buf, MAX_STRING_LENGTH, fl);
-    *(buf + strlen(buf) - 1) = '\0';
-    scan = buf;
-    for (;;)
-    {
-      /* extract the keywords * /
-      scan = one_word(scan, tmp);
-      stripansi_2(tmp, pbuf);
-      if (!*tmp)
-        break;
-      if (!list)
-      {
-        CREATE(list, struct help_index_element, 1);
-
-        nr = 0;
-      }
-      else
-        RECREATE(list, struct help_index_element, ++nr + 1);
-
-      list[nr].pos = pos;
-//      CREATE(list[nr].keyword, char, strlen(tmp) + 1);
-
-//      strcpy(list[nr].keyword, tmp);
-      list[nr].keyword = pbuf;
-      if (!list[nr].keyword)
-      {
-        list[nr].keyword = str_dup("\0");
-      }
-    }
-    /* skip the text * /
-    do
-      fgets(buf, MAX_STRING_LENGTH, fl);
-    while (*buf != '#');
-    if (*(buf + 1) == '~')
-      break;
-  }
-  /* we might as well sort the stuff * /
-  do
-  {
-    issorted = 1;
-    for (i = 0; i < nr; i++)
-      if (str_cmp(list[i].keyword, list[i + 1].keyword) > 0)
-      {
-        mem = list[i];
-        list[i] = list[i + 1];
-        list[i + 1] = mem;
-        issorted = 0;
-      }
-  }
-  while (!issorted);
-
-  /*
-     ok, new step, once list is sorted, scan down it, and make note of the list
-     location of the first element that starts with each letter.  Save this in
-     a global array.  Then do_help will reference that array, and use the
-     indicated element for the start of a linear search.  Doing it this way so
-     that partial matches will always match the first element they fit, not the
-     one it happens to land on (as previous binary method did, all too often).
-     JAB
-   */
-
-/* init the lookup array * /
-for (i = 0; i < 27; i++)
-{
-  help_array[i][0] = -1;
-  help_array[i][1] = nr + 1;
-}
-
-/*
-   ok, help_array works like this: 0 - non-alpha entries 1 - [Aa] . . 26 -
-   [Zz] Help is case_insensitive, and things are lowercased as SOP, so
-   basically all non-lapha entries will sort out lower in the list[] than the
-   alpha entries (shouldn't be many non-alpha anyway).
-   help_array[0] will either be 0 or -1, always, depending on whether or not
-   there are any non-alpha entries, so set that up outside the loop, if no
-   entires start with a given letter, then it's entry will be -1, and do_help
-   will automatically report 'no help avail'.
- * /
-
-if (LOWER(list[0].keyword[0]) < 'a')
-  help_array[0][0] = 0;
-
-i = 0;
-j = 0;
-while (LOWER(list[i].keyword[0]) < 'a')
-  i++;
-
-for (; i <= nr; i++)
-{
-  if (LOWER(list[i].keyword[0]) == ('a' + j - 1))
-    continue;
-  if (LOWER(list[i].keyword[0]) > 'z')
-    break;                    /* not gonna deal with non-alpha above 'z', meaningless * /
-
-  help_array[(int) j][1] = (int) i;   /* end of previous entry * /
-
-  j = (LOWER(list[i].keyword[0]) - 'a' + 1);
-
-  help_array[(int) j][0] = (int) i;   /* start of new entry * /
-}
-
-*num = nr;
-return (list);
-}*/
-
 /*********************************************************************
  * New Pagination Code
  * Michael Buselli submitted the following code for an enhanced pager
@@ -2010,8 +1872,7 @@ void show_string(struct descriptor_data *d, const char *input)
 	/* Or if we have more to show.... */
 	else
 	{
-		strncpy(buffer, d->showstr_vector[d->showstr_page], (unsigned)(diff = ((intptr_t)d->showstr_vector[d->showstr_page + 1]) - ((intptr_t)d->showstr_vector[d->showstr_page])));
-		buffer[diff] = '\0';
+		strlcpy(buffer, d->showstr_vector[d->showstr_page], sizeof buffer);
 		send_to_char(buffer, d->character);
 		send_to_char("&N", d->character);
 		d->showstr_page++;

@@ -65,12 +65,12 @@ bool is_npc_ship_name(const char *name)
 {
 	for (unsigned n = 0; n < sizeof(pirateShipNames) / sizeof(char *); n++)
 	{
-		if (!strcmp(strip_ansi(name).c_str(), strip_ansi(pirateShipNames[n]).c_str()))
+		if (!strcmp(name, strip_ansi(pirateShipNames[n]).c_str()))
 			return true;
 	}
-	if (!strcmp(strip_ansi(name).c_str(), strip_ansi(CYRICS_REVENGE_NAME).c_str()))
+	if (!strcmp(name, strip_ansi(CYRICS_REVENGE_NAME).c_str()))
 		return true;
-	if (!strcmp(strip_ansi(name).c_str(), strip_ansi(ZONE_SHIP_NAME).c_str()))
+	if (!strcmp(name, strip_ansi(ZONE_SHIP_NAME).c_str()))
 		return true;
 	return false;
 }
@@ -1295,13 +1295,13 @@ bool load_cyrics_revenge_crew(P_ship ship)
 
 	int r_num = real_object(AUTOMATONS_MOONSTONE_CORE);
 	if (r_num < 0)
-		return NULL;
+		return false;
 	P_obj fragment = read_object(r_num, REAL);
 	obj_to_obj(fragment, chest);
 
 	r_num = real_object(40225);
 	if (r_num < 0)
-		return NULL;
+		return false;
 	P_obj nexus_key = read_object(r_num, REAL);
 	obj_to_obj(nexus_key, chest);
 	return true;

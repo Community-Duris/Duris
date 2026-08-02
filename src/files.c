@@ -33,12 +33,10 @@
 using namespace std;
 
 extern P_char            character_list;
-extern P_event           event_list;
 extern int               mini_mode;
 extern P_index           mob_index;
 extern P_desc            descriptor_list;
 extern int               spl_table[TOTALLVLS][MAX_CIRCLE];
-static P_event           save_event;
 char                    *ibuf;
 static int               corpse_room;
 static int               int_size  = sizeof(int);
@@ -52,12 +50,8 @@ extern struct shop_data *shop_index;
 int                     skip_corpse_save = 0;
 extern struct hold_data TmpAffs;
 extern struct mm_ds    *dead_mob_pool;
-// extern struct mm_ds *dead_construction_pool;
 extern struct mm_ds *dead_trophy_pool;
-extern struct mm_ds *dead_witness_pool;
-extern struct mm_ds *dead_crime_pool;
 extern struct mm_ds *dead_house_pool;
-// extern P_house first_house;
 extern int LOADED_RANDOM_ZONES;
 
 extern P_index                       obj_index;
@@ -92,7 +86,6 @@ int   skill_off, affect_off, item_off;
 P_obj save_equip[MAX_WEAR];
 
 int      anchor_room(int room);
-int      calculate_hitpoints(P_char ch);
 int      calculate_mana(P_char ch);
 P_nevent get_scheduled(P_obj obj, event_func func);
 void     proclib_obj_event(P_char, P_char, P_obj obj, void *);
@@ -109,7 +102,6 @@ struct ship_reg_node *ship_reg_db = NULL;
  * found below after the #if 0. -JAB
  */
 
-#if 0
 /*
  * save file structure, if you change it, change this as well, so we know
  * what the hell it's doing.
@@ -267,7 +259,6 @@ struct ship_reg_node *ship_reg_db = NULL;
  * that containers now restore with contents intact.)
  *
  */
-#endif
 
 // bv6 would be in here, but there's no unique flag for it yet
 
@@ -352,7 +343,7 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 		ADD_INT(buf, ch->player.time.played);
 		ADD_LONG(buf, ch->player.time.saved);
 	}
-	ADD_SHORT(buf, ch->player.time.perm_aging);
+	ADD_SHORT(buf, 0); //!!! perm_aging
 
 	for (i = 0; i < MAX_CIRCLE + 1; i++)
 		ADD_BYTE(buf, ch->specials.undead_spell_slots[i]);
@@ -457,12 +448,12 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 		ADD_BYTE(buf, ch->specials.conditions[tmp]);
 	ADD_STRING(buf, ch->only.pc->poofIn);
 	ADD_STRING(buf, ch->only.pc->poofOut);
-	ADD_STRING(buf, ch->only.pc->poofInSound);
-	ADD_STRING(buf, ch->only.pc->poofOutSound);
+	ADD_STRING(buf, "");
+	ADD_STRING(buf, "");
 	ADD_BYTE(buf, ch->only.pc->echo_toggle);
 	ADD_SHORT(buf, ch->only.pc->prompt);
 	ADD_LONG(buf, ch->only.pc->wiz_invis);
-	ADD_LONG(buf, ch->only.pc->law_flags);
+	ADD_LONG(buf, 0);
 	ADD_SHORT(buf, ch->only.pc->wimpy);
 	ADD_SHORT(buf, ch->only.pc->aggressive);
 	ADD_BYTE(buf, ch->only.pc->highest_level);
@@ -534,7 +525,6 @@ void updateShortAffects(P_char ch)
 int writeAffects(char *buf, struct affected_type *af)
 {
 	struct affected_type *first = af;
-	P_event               tmp;
 	char                 *start = buf;
 	signed short          count = 0;
 
@@ -581,20 +571,8 @@ int writeAffects(char *buf, struct affected_type *af)
 		ADD_SHORT(buf, af->type);
 		if (IS_SET(af->flags, AFFTYPE_SHORT))
 		{
-
-#ifndef _PFILE_
-			for (tmp = event_list; tmp; tmp = tmp->next_event)
-				if ((struct affected_type *)tmp->target.t_arg == af)
-					break;
-
-			if (tmp != NULL)
-			{
-				ADD_INT(buf, event_time(tmp, T_PULSES));
-			}
-			else
-#endif
-				// af->duration updated with updateShortAffects(ch), but we want secs to save not pulses.
-				ADD_INT(buf, af->duration / WAIT_SEC);
+			// af->duration updated with updateShortAffects(ch), but we want secs to save not pulses.
+			ADD_INT(buf, af->duration / WAIT_SEC);
 		}
 		else
 		{
@@ -1121,6 +1099,7 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 			}
 	}
 	if (o_f_flag & O_F_SPELLBOOK)
+	{
 		if (!(tmp = find_spell_description(obj)))
 		{ /*
 		   * this _SHOULD_
@@ -1138,6 +1117,7 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 				ADD_BYTE(ibuf, tmp->description[i]);
 			}
 		}
+	}
 
 	return (int)(ibuf - start);
 }
@@ -1311,38 +1291,6 @@ int writeItems(char *buf, P_char ch)
 	return (int)(ibuf - start);
 }
 
-/* write witness record (TASFALEN) */
-
-int writeWitness(char *buf, wtns_rec *rec)
-{
-	wtns_rec *first = rec;
-	char     *start = buf;
-	int       count = 0;
-
-	while (rec)
-	{
-		count++;
-		rec = rec->next;
-	}
-	ADD_BYTE(buf, (char)SAV_WTNSVERS);
-
-	rec = first;
-	ADD_INT(buf, count);
-
-	while (rec)
-	{
-		ADD_STRING(buf, rec->attacker);
-		ADD_STRING(buf, rec->victim);
-		ADD_LONG(buf, rec->time);
-		ADD_INT(buf, rec->crime);
-		ADD_INT(buf, rec->room);
-
-		rec = rec->next;
-	}
-
-	return (int)(buf - start);
-}
-
 static int persistence_write_character_flat_fallback(P_char ch, int type, int room)
 {
 	FILE        *f;
@@ -1379,8 +1327,13 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	buf += writeStatus(buf, ch, ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI)) ? TRUE : FALSE);
 	ADD_INT(skill_off, (int)(buf - fallback_buff));
 	buf += writeSkills(buf, ch, MAX_SKILLS);
+#if 1
+	// remove on wipe
 	ADD_INT(witness_off, (int)(buf - fallback_buff));
-	buf += writeWitness(buf, ch->specials.witnessed);
+	ADD_BYTE(buf, (char)SAV_WTNSVERS);
+        ADD_INT(buf, 0);
+	buf += 1 + sizeof(int);
+#endif
 	ADD_INT(affect_off, (int)(buf - fallback_buff));
 	updateShortAffects(ch);
 	buf += writeAffects(buf, ch->affected);
@@ -1660,8 +1613,7 @@ int writeCharacter(P_char ch, int type, int room)
 		{
 			// player locker: playername.locker - get player's pid
 			char pname[MAX_NAME_LENGTH + 1];
-			strncpy(pname, GET_NAME(ch), sizeof(pname) - 1);
-			pname[sizeof(pname) - 1] = '\0';
+			strlcpy(pname, GET_NAME(ch), sizeof pname);
 			char *dot                = strstr(pname, ".locker");
 			if (dot)
 				*dot = '\0';
@@ -1894,8 +1846,7 @@ char *getString(char **buf)
 	{
 		CREATE(s, char, (unsigned)(len + 1), MEM_TAG_STRING);
 
-		strncpy(s, *buf, (unsigned)len);
-		s[len] = 0;
+		strcpy(s, *buf);
 		*buf += len;
 	}
 	return s;
@@ -1976,7 +1927,6 @@ int restoreStatus(char *buf, P_char ch)
 	GET_SIZE(ch)      = GET_BYTE(buf);
 
 	GET_HOME(ch)            = GET_INTE(buf);
-	GET_BIRTHPLACE(ch)      = 0;
 	GET_BIRTHPLACE(ch)      = GET_INTE(buf);
 	GET_ORIG_BIRTHPLACE(ch) = GET_INTE(buf);
 
@@ -1984,7 +1934,7 @@ int restoreStatus(char *buf, P_char ch)
 	ch->player.time.played     = GET_INTE(buf);
 	ch->player.time.saved      = GET_LONG(buf); /* last save time */
 	ch->player.time.logon      = time(0);       /* set it */
-	ch->player.time.perm_aging = GET_SHORT(buf);
+	GET_SHORT(buf); //!!! oerm_aging
 	for (i = 0; i < MAX_CIRCLE + 1; i++)
 		ch->specials.undead_spell_slots[i] = GET_BYTE(buf);
 	GET_INTE(buf); //!!! last_level
@@ -2244,10 +2194,8 @@ int restoreStatus(char *buf, P_char ch)
 	}
 
 // -Foo Remove hunger/thirst
-#if 1
 	GET_COND(ch, FULL)   = -1;
 	GET_COND(ch, THIRST) = -1;
-#endif
 	if (stat_vers < 35)
 		for (tmp = 0; tmp < MAX_PETS; tmp++)
 			GET_INTE(buf);
@@ -2255,13 +2203,13 @@ int restoreStatus(char *buf, P_char ch)
 	ch->only.pc->poofOut = GET_STRING(buf);
 	if (stat_vers > 10)
 	{
-		ch->only.pc->poofInSound  = GET_STRING(buf);
-		ch->only.pc->poofOutSound = GET_STRING(buf);
+		free(GET_STRING(buf));
+		free(GET_STRING(buf));
 	}
 	ch->only.pc->echo_toggle = GET_BYTE(buf);
 	ch->only.pc->prompt      = GET_SHORT(buf);
 	ch->only.pc->wiz_invis   = GET_LONG(buf);
-	ch->only.pc->law_flags   = (ulong)GET_LONG(buf);
+	GET_LONG(buf);
 	ch->only.pc->wimpy       = GET_SHORT(buf);
 	ch->only.pc->aggressive  = GET_SHORT(buf);
 
@@ -2277,7 +2225,7 @@ int restoreStatus(char *buf, P_char ch)
 	ch->specials.carry_weight = 0;
 	ch->specials.carry_items  = 0;
 
-	ch->points.max_hit      = 0; // ch->points.base_hit + calculate_hitpoints(ch);
+	ch->points.max_hit      = 0;
 	ch->points.max_mana     = ch->points.base_mana + calculate_mana(ch);
 	ch->points.max_vitality = vitality_limit(ch);
 
@@ -2525,7 +2473,6 @@ int restoreSkills(char *buf, P_char ch, int maxnum)
 #ifndef _PFILE_
 int restoreWitness(char *buf, P_char ch)
 {
-	wtns_rec *rec;
 	char     *start = buf;
 	int       count;
 
@@ -2721,7 +2668,6 @@ int restoreCharOnly(P_char ch, char *name)
 			sql_load_player_skills(ch);
 			sql_load_player_affects(ch);
 			//sql_load_player_items(ch);
-			sql_load_player_witnesses(ch);
 			sql_load_player_shapechanges(ch);
 			return 0;
 		}
@@ -4208,8 +4154,6 @@ int restorePetStatus(char *buf, P_char ch)
 	//  GET_CLASS(ch) = GET_BYTE(buf);
 	ch->player.m_class = GET_BYTE(buf); // should be updated, must be 16 bits or mroe
 	GET_RACE(ch)       = GET_BYTE(buf);
-
-	setCharPhysTypeInfo(ch); /* probably necessary..  or maybe not.  shrug */
 
 	//  GET_LEVEL(ch) = GET_BYTE(buf);
 	ch->player.level                       = GET_BYTE(buf);

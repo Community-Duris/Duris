@@ -50,7 +50,6 @@ extern void nonblock(int s);
 
 extern int  restoreCharOnly(P_char ch, char *name);
 extern void clear_char(P_char ch);
-extern void setCharPhysTypeInfo(P_char ch);
 
 static int copyover_in_progress = 0;
 
@@ -96,8 +95,7 @@ static int write_desc_entry(FILE *fp, P_desc d)
 
 	if (ch && GET_NAME(ch))
 	{
-		strncpy(entry.player_name, GET_NAME(ch), sizeof(entry.player_name) - 1);
-		entry.player_name[sizeof(entry.player_name) - 1] = '\0';
+		strlcpy(entry.player_name, GET_NAME(ch), sizeof(entry.player_name));
 		entry.room                                       = ch->in_room;
 
 		// save combat state
@@ -113,10 +111,7 @@ static int write_desc_entry(FILE *fp, P_desc d)
 			{
 				entry.fighting_type = 2;
 				if (GET_NAME(target))
-				{
-					strncpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name) - 1);
-					entry.fighting_name[sizeof(entry.fighting_name) - 1] = '\0';
-				}
+					strlcpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name));
 			}
 		}
 
@@ -133,17 +128,14 @@ static int write_desc_entry(FILE *fp, P_desc d)
 			}
 		}
 	}
-	strncpy(entry.host, d->host, sizeof(entry.host) - 1);
-	entry.host[sizeof(entry.host) - 1] = '\0';
-	strncpy(entry.host2, d->host2, sizeof(entry.host2) - 1);
-	entry.host2[sizeof(entry.host2) - 1] = '\0';
+	strlcpy(entry.host, d->host, sizeof(entry.host));
+	strlcpy(entry.host2, d->host2, sizeof(entry.host2));
 	entry.term_type                      = d->term_type;
 	entry.gmcp_enabled                   = d->gmcp_enabled;
 	entry.out_compress                   = d->out_compress;
 	entry.mtts_flags                     = d->mtts_flags;
 	entry.charset_detected               = 0; // removed
-	strncpy(entry.ttype_client, d->client_name, sizeof(entry.ttype_client) - 1);
-	entry.ttype_client[sizeof(entry.ttype_client) - 1] = '\0';
+	strlcpy(entry.ttype_client, d->client_name, sizeof(entry.ttype_client));
 	entry.ttype_terminal[0] = '\0'; // removed
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
@@ -181,10 +173,7 @@ static int write_mob_entry(FILE *fp, P_char mob)
 		{
 			entry.fighting_type = 1;
 			if (GET_NAME(target))
-			{
-				strncpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name) - 1);
-				entry.fighting_name[sizeof(entry.fighting_name) - 1] = '\0';
-			}
+				strlcpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name));
 		}
 	}
 
@@ -286,20 +275,11 @@ static int write_obj_entry(FILE *fp, P_obj obj)
 	memcpy(entry.timer, obj->timer, sizeof(entry.timer));
 
 	if (obj->name)
-	{
-		strncpy(entry.name, obj->name, sizeof(entry.name) - 1);
-		entry.name[sizeof(entry.name) - 1] = '\0';
-	}
+		strlcpy(entry.name, obj->name, sizeof(entry.name));
 	if (obj->short_description)
-	{
-		strncpy(entry.short_desc, obj->short_description, sizeof(entry.short_desc) - 1);
-		entry.short_desc[sizeof(entry.short_desc) - 1] = '\0';
-	}
+		strlcpy(entry.short_desc, obj->short_description, sizeof(entry.short_desc));
 	if (obj->description)
-	{
-		strncpy(entry.description, obj->description, sizeof(entry.description) - 1);
-		entry.description[sizeof(entry.description) - 1] = '\0';
-	}
+		strlcpy(entry.description, obj->description, sizeof(entry.description));
 
 	// count contents
 	entry.num_contents = 0;
@@ -704,7 +684,6 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
 
 	player->desc = d;
-	setCharPhysTypeInfo(player);
 
 	status = restoreCharOnly(player, (char *)name);
 	if (status < 0)
@@ -795,10 +774,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		int opt = 1;
 		setsockopt(d->descriptor, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 
-		strncpy(d->host, desc_entry.host, sizeof(d->host) - 1);
-		d->host[sizeof(d->host) - 1] = '\0';
-		strncpy(d->host2, desc_entry.host2, sizeof(d->host2) - 1);
-		d->host2[sizeof(d->host2) - 1] = '\0';
+		strlcpy(d->host, desc_entry.host, sizeof(d->host));
+		strlcpy(d->host2, desc_entry.host2, sizeof(d->host2));
 		d->term_type                   = desc_entry.term_type;
 		d->gmcp_enabled                = desc_entry.gmcp_enabled;
 		d->mtts_flags                  = desc_entry.mtts_flags;
@@ -881,10 +858,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				ch->specials.copyover_fighting_type = desc_entry.fighting_type;
 				ch->specials.copyover_fighting_id   = desc_entry.fighting_id;
 				if (desc_entry.fighting_name[0])
-				{
-					strncpy(ch->specials.copyover_fighting_name, desc_entry.fighting_name, sizeof(ch->specials.copyover_fighting_name) - 1);
-					ch->specials.copyover_fighting_name[sizeof(ch->specials.copyover_fighting_name) - 1] = '\0';
-				}
+					strlcpy(ch->specials.copyover_fighting_name, desc_entry.fighting_name, sizeof(ch->specials.copyover_fighting_name));
 
 				raw_write_to_fd(d->descriptor, "\r\n*** Copyover complete! ***\r\n");
 
@@ -1036,10 +1010,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			mob->specials.copyover_fighting_type = mob_entry.fighting_type;
 			mob->specials.copyover_fighting_id   = mob_entry.fighting_id;
 			if (mob_entry.fighting_name[0])
-			{
-				strncpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name, sizeof(mob->specials.copyover_fighting_name) - 1);
-				mob->specials.copyover_fighting_name[sizeof(mob->specials.copyover_fighting_name) - 1] = '\0';
-			}
+				strlcpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name, sizeof(mob->specials.copyover_fighting_name));
 		}
 	}
 
@@ -1316,10 +1287,7 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 		{
 			entry.fighting_type = 1;
 			if (GET_NAME(target))
-			{
-				strncpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name) - 1);
-				entry.fighting_name[sizeof(entry.fighting_name) - 1] = '\0';
-			}
+				strlcpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name));
 		}
 	}
 
@@ -1404,20 +1372,11 @@ int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
 	memcpy(entry.timer, obj->timer, sizeof(entry.timer));
 
 	if (obj->name)
-	{
-		strncpy(entry.name, obj->name, sizeof(entry.name) - 1);
-		entry.name[sizeof(entry.name) - 1] = '\0';
-	}
+		strlcpy(entry.name, obj->name, sizeof(entry.name));
 	if (obj->short_description)
-	{
-		strncpy(entry.short_desc, obj->short_description, sizeof(entry.short_desc) - 1);
-		entry.short_desc[sizeof(entry.short_desc) - 1] = '\0';
-	}
+		strlcpy(entry.short_desc, obj->short_description, sizeof(entry.short_desc));
 	if (obj->description)
-	{
-		strncpy(entry.description, obj->description, sizeof(entry.description) - 1);
-		entry.description[sizeof(entry.description) - 1] = '\0';
-	}
+		strlcpy(entry.description, obj->description, sizeof(entry.description));
 
 	entry.num_contents = 0;
 	for (content = obj->contains; content; content = content->next_content)
@@ -1599,10 +1558,7 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 		mob->specials.copyover_fighting_type = mob_entry.fighting_type;
 		mob->specials.copyover_fighting_id   = mob_entry.fighting_id;
 		if (mob_entry.fighting_name[0])
-		{
-			strncpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name, sizeof(mob->specials.copyover_fighting_name) - 1);
-			mob->specials.copyover_fighting_name[sizeof(mob->specials.copyover_fighting_name) - 1] = '\0';
-		}
+			strlcpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name, sizeof(mob->specials.copyover_fighting_name));
 	}
 
 	*bytes_read = offset;

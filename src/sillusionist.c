@@ -28,9 +28,7 @@
 #include "disguise.h"
 #include "justice.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
-#include "sound.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "sql.h"
@@ -151,8 +149,8 @@ void spell_shadow_monster(int level, P_char ch, char *arg, int type, P_char vict
 		}
 	}
 
-	// So, no shadow monster potions or scrolls then (save ones used by illusionists)?
-	if (summoned >= MAX(1, GET_LEVEL(ch) / 14) || !GET_CLASS(ch, CLASS_ILLUSIONIST))
+	// Non-illusionists get a limit of 1 (for weapon procs etc).
+	if (summoned >= MAX(1, GET_LEVEL(ch) / 14) || summoned && !GET_CLASS(ch, CLASS_ILLUSIONIST))
 	{
 		send_to_char("You cannot summon any more shadows!\r\n", ch);
 		return;
@@ -183,7 +181,6 @@ void spell_shadow_monster(int level, P_char ch, char *arg, int type, P_char vict
 	mob->points.base_damroll = mob->points.damroll = GET_LEVEL(ch) / 2;
 	mob->points.damnodice                          = (int)GET_LEVEL(ch) / 5;
 	mob->points.damsizedice                        = (int)GET_LEVEL(ch) / 6;
-	// play_sound(SOUND_ELEMENTAL, NULL, ch->in_room, TO_ROOM);
 
 	group_add_member(ch, mob);
 	MobStartFight(mob, victim);
@@ -829,7 +826,6 @@ void spell_mask(int level, P_char ch, char *arg, int type, P_char victim, P_obj 
 				send_to_char(tbuf, ch);
 				snprintf(tbuf, MAX_STRING_LENGTH, "&+LThe image of %s &+Lshifts and &+bb&+Blur&+bs&+L into %s&+L!&N\r\n", GET_NAME(ch), GET_NAME(target));
 				act(tbuf, FALSE, ch, 0, NULL, TO_ROOM);
-				SET_BIT(ch->specials.act, PLR_NOWHO);
 			}
 		}
 	}
@@ -1442,7 +1438,6 @@ void spell_clone_form(int level, P_char ch, char *arg, int type, P_char victim, 
 			send_to_char(tbuf, ch);
 			snprintf(tbuf, MAX_STRING_LENGTH, " &+LThe image of %s &Ndisappears&+L, and is replaced by %s!\r\n", GET_NAME(ch), t_ch->player.short_descr);
 			act(tbuf, FALSE, ch, 0, NULL, TO_ROOM);
-			SET_BIT(ch->specials.act, PLR_NOWHO);
 		}
 	}
 	else
@@ -1490,7 +1485,6 @@ void spell_clone_form(int level, P_char ch, char *arg, int type, P_char victim, 
 					send_to_char(tbuf, ch);
 					snprintf(tbuf, MAX_STRING_LENGTH, "&+LThe image of %s &+Lshifts and &+bb&+Blur&+bs&+L into %s&+L!&N\r\n", GET_NAME(ch), GET_NAME(target));
 					act(tbuf, FALSE, ch, 0, NULL, TO_ROOM);
-					SET_BIT(ch->specials.act, PLR_NOWHO);
 					return;
 				}
 			}
@@ -1720,8 +1714,6 @@ void spell_dragon(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 
 	balance_affects(mob);
 
-	// play_sound(SOUND_ELEMENTAL, NULL, ch->in_room, TO_ROOM);
-
 	setup_pet(mob, ch, 1, PET_NOORDER | PET_NOCASH);
 	if (ch->group)
 	{
@@ -1823,8 +1815,6 @@ void spell_titan(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 
 	char_to_room(mob, ch->in_room, 0);
 	act("$n &+Lappears from nowhere!", TRUE, mob, 0, 0, TO_ROOM);
-
-	// play_sound(SOUND_ELEMENTAL, NULL, ch->in_room, TO_ROOM);
 
 	setup_pet(mob, ch, 1, PET_NOORDER | PET_NOCASH);
 	group_add_member(ch, mob);

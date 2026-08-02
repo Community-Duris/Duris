@@ -51,8 +51,6 @@ extern struct str_app_type    str_app[];
 extern struct time_info_data  time_info;
 extern struct zone_data      *zone;
 extern struct zone_data      *zone_table;
-extern const char            *crime_list[];
-extern const char            *crime_rep[];
 extern const char            *specdata[][MAX_SPEC];
 extern struct class_names     class_names_table[];
 extern P_obj                  object_list;
@@ -1530,7 +1528,7 @@ int welfare_well(int room, P_char ch, int cmd, char *arg)
 		}
 
 		one_argument(arg, buf);
-		if (!buf)
+		if (!*buf)
 			return FALSE;
 		// We're looking for a well, so skip tracks.
 		bits = generic_find("well", FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &well);
@@ -1547,7 +1545,6 @@ int welfare_well(int room, P_char ch, int cmd, char *arg)
 int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_obj     o, next_obj, o_1, well;
-	P_char    rider;
 	P_nevent  ev = NULL;
 	hunt_data data;
 	bool      found_well, dumped;
@@ -1562,7 +1559,7 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 	/* Is there anything in the room that we can pick up? Do it! */
 	for (o = world[ch->in_room].contents; o; o = o->next_content)
 	{
-		if (o->type == (ITEM_SWITCH || ITEM_KEY || ITEM_TRASH))
+		if (o->type == ITEM_SWITCH || o->type == ITEM_KEY || o->type == ITEM_TRASH)
 			continue;
 
 		if (!CAN_GET_OBJ(ch, o, rider))
@@ -1641,10 +1638,8 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 	loaded = ((weight_notches_above_naked(ch) > 3) || (IS_CARRYING_N(ch) > (int)(0.25 * CAN_CARRY_N(ch))) || !number(0, 299));
 
 	/* Are we loaded past 6% of our capacity? (or sometimes even without it)*/
-	switch (loaded)
+	if (!loaded)
 	{
-		case FALSE:
-
 			/*  No we're not. Let's look if there's anything in adjacent rooms and move there. */
 			if (1 /*!number(0, 5)*/)
 			{
@@ -1656,7 +1651,7 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 					{
 						for (o = world[EXIT(ch, a)->to_room].contents; o; o = o->next_content)
 						{
-							if (CAN_WEAR(o, ITEM_TAKE) && CAN_CARRY_OBJ(ch, o, rider))
+							if (CAN_WEAR(o, ITEM_TAKE) && CAN_CARRY_OBJ(ch, o))
 							{
 								act("$n notices some garbage nearby.", FALSE, ch, 0, 0, TO_ROOM);
 								move_to_loot = exitnumb_to_cmd(a);
@@ -1666,10 +1661,9 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 						}
 					}
 			}
-			break;
-
-		case TRUE:
-
+	}
+	else
+	{
 			/* Yes we are. Let's get closer to the well */
 
 			if (!number(0, 9) && loaded)
@@ -1693,7 +1687,6 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 				data.path_step = -1;
 				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
 			}
-			break;
 	}
 
 	return FALSE;
@@ -1924,22 +1917,22 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 				return TRUE;
 			}
 		}
-		else if (isname(arg, "jubilex"))
+		else if (isname(arg, "juiblex") || isname(arg, "jubilex"))
 		{
 			curr_time = time(NULL);
 			vict      = ParseTarget(ch, arg);
 			// 450 sec == 7 min 30 sec & 10 min timers.
 			if (obj->timer[0] + 450 <= curr_time && obj->timer[1] + 600 <= curr_time)
 			{
-				act("&+WYou say '&+rJubilex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&+WYou say '&+rJuiblex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_CHAR);
 				act("&+WYou thrust $q &+Winto the ground!&n", TRUE, ch, obj, vict, TO_CHAR);
 				act("&+LA thin line of &+ggreen &+Glight &+Lcuts into the &+Cair&+L, revealing a &+gportal &+Lto another &+Gdimension&+L.", TRUE, ch, obj, vict, TO_CHAR);
-				act("&+LSuddenly, &+rJubilex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&+LSuddenly, &+rJuiblex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_CHAR);
 
-				act("$n says '&+rJubilex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_ROOM);
+				act("$n says '&+rJuiblex&+L! Grant me strength!&+W'&n", TRUE, ch, obj, vict, TO_ROOM);
 				act("$n &+Lthrusts $q &+Winto the ground!&n", TRUE, ch, obj, vict, TO_ROOM);
 				act("&+LA thin line of &+ggreen &+Glight &+Lcuts into the &+Cair&+L, revealing a &+gportal &+Lto another &+Gdimension&+L.&n", TRUE, ch, obj, vict, TO_ROOM);
-				act("&+LSuddenly, &+rJubilex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_ROOM);
+				act("&+LSuddenly, &+rJuiblex &+Lleaps into this reality and conjures up a &+rgreen &+Gmist&+L.&n", TRUE, ch, obj, vict, TO_ROOM);
 
 				rand = number(0, 100);
 				if (rand >= 76)
@@ -1971,8 +1964,8 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 					spell_invigorate(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 				}
 
-				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJubilex &+Lflashes you a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_CHAR);
-				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJubilex &+Lflashes $n a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_ROOM);
+				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJuiblex &+Lflashes you a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&+LAs the &+ggreen &+Gmist &+Lsubsides, &+rJuiblex &+Lflashes $n a wicked grin, steps into the portal, and vanishes.&n", TRUE, ch, obj, vict, TO_ROOM);
 
 				CharWait(ch, PULSE_VIOLENCE * 2);
 
@@ -2010,9 +2003,9 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 					/* spell_bigbys_crushing_hand(50, ch, 0, SPELL_TYPE_SPELL, vict, 0);*/
 					break;
 				case 2:
-					act("&+LYour $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon your foe!&n", TRUE, ch, obj, vict, TO_CHAR);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
+					act("&+LYour $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon your foe!&n", TRUE, ch, obj, vict, TO_CHAR);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
 					spell_full_heal(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 					break;
 			}
@@ -2038,8 +2031,8 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 					break;
 				case 2:
 					act("&+LYour $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubliex &+Lupon your foe!&n", TRUE, ch, obj, vict, TO_CHAR);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
-					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJubilex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon you!&n", TRUE, ch, obj, vict, TO_VICT);
+					act("&+L$n's $q &+ggl&+Go&+gws &+Las it channels the powers of &+rJuiblex &+Lupon $N!&n", TRUE, ch, obj, vict, TO_NOTVICT);
 
 					spell_heal(56, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 					break;

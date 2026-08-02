@@ -22,7 +22,6 @@
 #include <string>
 #include "account.h"
 #include "mail.h"
-#include "new_combat_def.h"
 using namespace std;
 
 // The below line will abuse player times in game, and use it to eq-wipe every player in the game.
@@ -196,6 +195,7 @@ void        do_look(P_char, char *, int);
 void        do_motd(P_char, char *, int);
 void        do_news(P_char, char *, int);
 void        do_cheaters(P_char, char *, int);
+void        do_mapglyphs(P_char, char *, int);
 void        do_ok(P_char, char *, int);
 void        do_read(P_char, char *, int);
 void        do_report(P_char, char *, int);
@@ -358,7 +358,6 @@ bool is_stat_max(sbyte);
 
 /* tradeskill.c */
 void do_salvation(P_char ch, char *arg, int cmd);
-void do_drandebug(P_char ch, char *arg, int cmd);
 int  get_matstart(P_obj obj);
 bool has_affect(P_obj obj);
 void do_refine(P_char ch, char *arg, int cmd);
@@ -597,7 +596,6 @@ void             do_ingame(P_char, char *, int);
 void             do_invite(P_char, char *, int);
 void             do_knock(P_char, char *, int);
 void             do_lag(P_char, char *, int);
-void             do_law_flags(P_char, char *, int);
 void             do_list_witness(P_char, char *, int);
 void             do_load(P_char, char *, int);
 void             do_lookup(P_char, char *, int);
@@ -605,8 +603,6 @@ void             do_make_guide(P_char ch, char *argument, int cmd);
 void             do_newbie(P_char ch, char *argument, int cmd);
 void             do_poofIn(P_char, char *, int);
 void             do_poofOut(P_char, char *, int);
-void             do_poofInSound(P_char, char *, int);
-void             do_poofOutSound(P_char, char *, int);
 void             do_ptell(P_char, char *, int);
 void             do_purge(P_char, char *, int);
 void             do_questwhere(P_char, char *, int);
@@ -736,6 +732,10 @@ void board_reset_board(char **, char **, int *);
 void board_save_board(const char *, char **, char **, int *);
 void initialize_boards(void);
 
+/* chaos.c */
+
+void do_chaos(P_char ch, char *arg, int cmd);
+
 /* chess.c */
 
 int  ChessPushSuccessful(P_char, P_obj, char *);
@@ -749,7 +749,6 @@ void NukeChessBoard(P_obj);
 /* comm.c */
 void        append_prompt(P_char, char *);
 int         wizconnectsite(char *, char *, int);
-int         find_color_entry(int);
 int         get_from_q(struct txt_q *, char *);
 int         init_socket(int);
 int         process_input(P_desc);
@@ -761,7 +760,6 @@ void        act(const char *, int, P_char, P_obj, void *, int);
 void        close_socket(P_desc);
 void        close_sockets(int);
 int         is_desc_valid(P_desc);
-void        coma(int);
 void        flush_queues(P_desc);
 void        nonblock(int);
 void        parse_name(P_desc, char *);
@@ -784,7 +782,7 @@ void        send_to_zone_outdoor(int, const char *);
 void        send_to_weather_sector(int, const char *);
 void        send_to_nearby_rooms(int, const char *);
 void        write_to_q(const char *, struct txt_q *, const int);
-const char *delete_doubledollar(const char *);
+void        delete_doubledollar(char *);
 
 /* condition.c */
 
@@ -871,7 +869,6 @@ bool  minotaur_race_proc(P_char, P_char);
 void  do_dismiss(P_char ch, char *argument, int cmd);
 bool  valid_conjure(P_char, P_char);
 int   calculate_shipfrags(P_char);
-void  randomizeitem(P_char, P_obj);
 bool  calmcheck(P_char ch);
 void  modenhance(P_char, P_obj, P_obj);
 void  enhance(P_char, P_obj, P_obj);
@@ -892,20 +889,13 @@ void edit_start(P_desc desc, char *old_text, int max_lines, void (*callback)(P_d
 
 void                             clear_char_nevents(P_char, int, void *);
 void                             load_event_names();
-bool                             RemoveEvent(void);
-__attribute__((deprecated)) bool Schedule(int, long, int, void *, void *);
-void                             set_event_time(P_event e1, int secs);
-int                              event_time(P_event, int);
 int                              Berserk(P_char, int);
 void                             CharWait(P_char, int);
 void                             ClearCharEvents(P_char);
 void                             ClearObjEvents(P_obj);
 void                             clear_events_type(P_char, int);
-void                             Events(void);
-void                             ReSchedule(void);
 void                             StartRegen(P_char, int);
 void                             Stun(P_char, P_char, int, bool);
-void                             init_events(void);
 typedef void (*event_func)(P_char ch, P_char victim, P_obj obj, void *data);
 void add_event(event_func, int, P_char, P_char, P_obj, int, void *, int);
 
@@ -936,10 +926,6 @@ void displayLeader(P_char ch, char *arg, int cmd);
 void displayRelic(P_char ch, char *arg, int cmd);
 int  leapSucceed(P_char, P_char);
 int  damage_modifier(P_char, P_char, int);
-#if 0
-int get_char_dodge_skill(P_char);
-int get_char_parry_skill(P_char);
-#endif
 #ifdef REALTIME_COMBAT
 int  CharNumberOfAttacks(P_char);
 int  Combat_Tick_Maint(P_char);
@@ -971,18 +957,15 @@ void   die(P_char, P_char);
 void   do_trophy(P_char, char *, int);
 void   group_gain(P_char, P_char);
 float  group_exp_modifier(P_char ch);
-#ifndef NEW_COMBAT
+int    num_group_members_in_room(P_char ch);
 bool hit(P_char, P_char, P_obj, int * = NULL);
 int  chance_to_hit(P_char, P_char, int, P_obj);
 bool weapon_proc(P_obj, P_char, P_char);
 int  calculate_ac(P_char);
-#endif
 void  load_messages(void);
 P_obj make_corpse(P_char, int);
 void  make_bloodstain(P_char);
-#ifndef NEW_COMBAT
 void perform_violence(void);
-#endif
 void                  set_fighting(P_char, P_char);
 bool                  set_fighting(P_char, P_char, bool);
 void                  set_destroying(P_char, P_obj);
@@ -1009,10 +992,8 @@ void    moveToBackup(char *name);
 int     writeCharacter(P_char, int, int);
 void    restore_houses();
 void    writeShapechangeData(P_char ch);
-int     writeWitness(char *, wtns_rec *);
 int     register_ship(int);
 int     ship_registered(int);
-int     restoreWitness(char *, P_char);
 bool    writeObjectlist(P_obj, int);
 char   *getString(char **);
 int     confiscate_item(P_char, int);
@@ -1040,7 +1021,6 @@ int     writeItems(char *, P_char);
 int     writeSkills(char *, P_char, int);
 int     writeStatus(char *, P_char, bool);
 int     writePetStatus(char *, P_char);
-int     writeWitnessed(char *, P_char);
 uint    getInt(char **);
 long    getLong(char **);
 unsigned long long getUnsignedLongLong(char **);
@@ -1106,15 +1086,6 @@ void writeHallOfFame(P_char ch, char thekiller[1024]);
 void checkLeaderBoard(P_char ch);
 long getLeaderBoardPts(P_char ch);
 
-/* period.list.c */
-void  place_period_books();
-void  display_book(P_char ch);
-float getTomeTropy(int id);
-void  deletePeriodEntry(char names[15][MAX_STRING_LENGTH], int frags[15], int pos, char killer[10][MAX_STRING_LENGTH]);
-void  insertPeriodEntry(char names[15][MAX_STRING_LENGTH], int frags[15], char *name, int newFrags, int pos, char killer[10][MAX_STRING_LENGTH], char *killername);
-void  checkPEriodOfFame(P_char ch, char thekiller[1024]);
-void  writePeriodOfFame(P_char ch, char thekiller[1024]);
-void  displayPERIODCore(P_char ch, char *arg, int cmd);
 /* graph.c */
 
 signed char find_first_step(int src, int target, long hunt_flags, int is_ship, int wagon_type, int *ttl_steps);
@@ -1133,12 +1104,8 @@ void update_groupies(P_char, bool only_in_room = false);
 bool group_remove_member(P_char);
 bool group_add_member(P_char, P_char);
 void fix_group_ranks(P_char);
-int  verify_group_formation(P_char, int);
 /* guild.c */
 char  *replace(char *g_string, char *replace_from, char *replace_to);
-char  *replace_it(char *g_string, char *replace_from, char *replace_to);
-int    readGuildFile(P_char ch, int zonenum);
-int    sackGuild(int oldguild, int guildnumber, int newguild);
 bool   CharHasSpec(P_char);
 char  *how_good(int, int);
 int    CharMaxSkill(P_char, int);
@@ -1269,6 +1236,7 @@ struct obj_affect *get_obj_affect(P_obj, int);
 int                obj_affect_time(P_obj, struct obj_affect *);
 void               set_obj_affected(P_obj, int, sh_int, sh_int);
 int                affect_from_obj(P_obj, sh_int);
+void                   recover_from_room_ch_loop(P_char);
 
 int io_agi_defense(P_char);
 int io_con_hitp(P_char);
@@ -1310,11 +1278,6 @@ char *lohrr_chop(char *, char *);
 /* justice.c */
 
 void      check_item(P_char);
-void      crime_add(int, char *, const char *, int, int, time_t, int, int);
-crm_rec  *crime_find(crm_rec *, char *, const char *, int, int, int, crm_rec *);
-int       crime_remove(int, crm_rec *);
-void      witness_add(P_char, P_char, P_char, int, int);
-wtns_rec *witness_find(wtns_rec *, char *, char *, int, int, wtns_rec *);
 P_char    justice_make_guard(int);
 void      justice_delete_guard(P_char);
 int       justice_send_guards(int, P_char, int, int);
@@ -1324,12 +1287,9 @@ void      do_justice(P_char, char *, int);
 void      JusticeGuardMove(P_char, char *, int);
 void      JusticeGuardHunt(P_char);
 void      justice_set_outcast(P_char ch, int town);
-int       witness_remove(P_char, wtns_rec *);
-void      do_report_crime(P_char, char *, int);
 int       justice_is_criminal(P_char);
 void      PC_SET_TOWN_JUSTICE_FLAGS(P_char ch, int flag, int town);
 void      justice_action_invader(P_char ch);
-void      event_justice_raiding(P_char, P_char, P_obj, void *);
 void      justice_action_wanted(P_char ch);
 void      justice_action_arrest(P_char, P_char);
 void      justice_guard_remove(P_char ch);
@@ -1353,7 +1313,6 @@ int can_understand_language(P_char speaker, P_char victim);
 /* limits.c */
 
 int  frags_lvl_adjustment(P_char ch, int howmuch);
-int  graf(P_char, int, int, int, int, int, int, int, int);
 int  hit_limit(P_char);
 int  hit_regen(P_char, bool);
 int  mana_limit(P_char);
@@ -1369,9 +1328,7 @@ int  adjust_lvl_from_frags_period(P_char, int mod);
 int  frag_lvl_adjustment(P_char, int mod);
 int  tick_location_lvl_adjustment(P_char);
 int  gain_exp(P_char, P_char, int, int);
-void gain_practices(P_char);
 void lose_level(P_char);
-void lose_practices(P_char);
 void point_update(void);
 void clear_title(P_char);
 
@@ -1391,10 +1348,6 @@ void breath_weapon_crimson(int, P_char, char *, int, P_char, P_obj);
 void breath_weapon_jasper(int, P_char, char *, int, P_char, P_obj);
 void breath_weapon_azure(int, P_char, char *, int, P_char, P_obj);
 void breath_weapon_basalt(int, P_char, char *, int, P_char, P_obj);
-void breath_weapon_crimson_2(int, P_char, char *, int, P_char, P_obj);
-void breath_weapon_azure_2(int, P_char, char *, int, P_char, P_obj);
-void breath_weapon_jasper_2(int, P_char, char *, int, P_char, P_obj);
-void breath_weapon_basalt_2(int, P_char, char *, int, P_char, P_obj);
 
 /* magic.c */
 
@@ -1700,10 +1653,14 @@ void         display_map(P_char, int, int);
 bool         is_in_line_of_sight_dir(P_char, P_char, int);
 int          calculate_map_distance(int, int);
 unsigned int calculate_relative_room(unsigned int, int, int);
+bool         calculate_map_coords(int room1, int room2, int &x, int &y);
 void         random_encounters(P_char);
 int          randobjs_to_mob(P_char);
 P_obj        ran_magical(P_char);
 P_obj        ran_obj(P_char, ulong);
+void         set_glyphs_preset(P_char, int);
+void         do_mapglyphs(P_char, char *, int);
+void         init_map_glyphs(void);
 
 /* memorize.c */
 int IS_PART_NOT_CASTER(P_char ch);
@@ -1899,8 +1856,6 @@ void  quad_arg(char *, int *, char *, int *, char *);
 void  do_string(P_char, char *, int);
 void  do_rename(P_char, char *, int);
 char *one_word(char *, char *);
-// void clear_help_index(struct help_index_element **list_head, const int help_size);
-// struct help_index_element *build_help_index(FILE *, int *);
 void  night_watchman(void);
 void  check_reboot(void);
 char *next_page(char *, struct descriptor_data *);
@@ -1931,6 +1886,10 @@ int  num_char_in_vehicle(P_obj);
 int  stable_master(P_char, P_char, int, char *);
 bool is_natural_mount(P_char ch, P_char mount);
 
+/* name_gen.c */
+
+int get_name(char return_namn[256], int SEX = -1, uint64_t id = 0);
+
 /* nanny.c */
 
 int                                    tossHint(P_char ch);
@@ -1949,7 +1908,6 @@ int                                    display_avail_classes(P_desc, int);
 int                                    find_hometown(int, bool);
 int                                    find_starting_alignment(int, int);
 int                                    number_of_players(void);
-ulong                                  init_law_flags(P_char);
 void                                   add_stat_bonus(P_char, int, int);
 void                                   deny_name(char *);
 void                                   display_characteristics(P_desc);
@@ -1987,37 +1945,6 @@ bool                                   pfile_exists(const char *, char *);
 void                                   event_autosave(P_char, P_char, P_obj, void *);
 void                                   update_ingame_racewar(int racewar);
 
-/* new_combat.c */
-/*
-int pick_a_arm(P_char);
-int pick_a_head(P_char);
-int pick_a_limb(P_char);
-int pick_a_body(P_char);
-int pick_a_any(P_char);
-int pick_a_leg(P_char);
-*/
-int calcChDamagetoVictwithInnateArmor(
-	P_char ch, P_char victim, P_obj weap, const int dam, const int loc, const int specific_body_loc, int *damDefl, int *damAbsorb, int *innateArmorBlocks, int *weapDamage);
-int calcChDamagetoVictwithArmor(
-	P_char ch, P_char victim, P_obj weap, const int dam, const int body_loc, const int specific_body_loc, P_obj *armor_damaged, int *damDefl, int *damAbsorb, int *armorBlocks, int *weapDamage);
-void displayWeaponDamage(const int weap_type, const P_char ch, const P_obj object);
-int  applyDamagetoObject(P_char ch, P_obj object, const unsigned int dam);
-void victParry(const P_char ch, const P_char victim, P_obj weapon, const int body_loc_target, const int parryrand, const int chance);
-void victDodge(const P_char ch, const P_char victim, const int weaptype, const int body_loc_target, const int dodgerand, const int chance);
-int  getBodypartWeight(const P_char vict, const int loc);
-void createBodypartinRoom(const int room, const int loc, const char *bodypart, const P_char vict);
-/*int victLostLowerArm(P_char victim, const int loc);*/
-int  checkEffectsofLocDamage(P_char ch, P_char victim, const int loc, const int dam);
-int  victDamage(P_char ch, P_char victim, const int barehanded, const int weaptype, const int dam, const int loc);
-void victMiss(const P_char ch, const P_char victim, const int weaptype, const int loc, const int barehanded);
-int  getBodyTarget(const P_char ch);
-void displayArmorAbsorbedAllDamageMessage(const P_char ch, const P_char victim, const int barehanded, const int weaptype, const int body_loc_target, const P_obj armor_hit);
-
-#ifdef NEW_COMBAT
-int  hit(P_char, P_char, P_obj, const int, const int, const int, const int);
-void perform_violence(void);
-#endif
-
 int stat_shops(int, P_char, int, char *);
 
 /* necromancy.c */
@@ -2028,129 +1955,6 @@ void spell_corpseform(int, P_char, char *, int, P_char, P_obj);
 void event_corpseform_wearoff(P_char, P_char, P_obj, void *);
 void spell_undead_to_death(int, P_char, char *, int, P_char, P_obj);
 
-/* new_combat_bpdam.c */
-
-int victDamagedHead(P_char ch, P_char vict, const int loc, const int dam);
-int victLostHead(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedEye(P_char ch, P_char vict, const int loc, const int dam);
-int victLostEye(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedEar(P_char ch, P_char vict, const int loc, const int dam);
-int victLostEar(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedNeck(P_char ch, P_char vict, const int loc, const int dam);
-int victLostNeck(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedUpperTorso(P_char ch, P_char vict, const int loc, const int dam);
-int victLostUpperTorso(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedLowerTorso(P_char ch, P_char vict, const int loc, const int dam);
-int victLostLowerTorso(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedUpperArm(P_char ch, P_char vict, const int loc, const int dam);
-int victLostUpperArm(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedLowerArm(P_char ch, P_char vict, const int loc, const int dam);
-int victLostLowerArm(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedElbow(P_char ch, P_char vict, const int loc, const int dam);
-int victLostElbow(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedWrist(P_char ch, P_char vict, const int loc, const int dam);
-int victLostWrist(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedHand(P_char ch, P_char vict, const int loc, const int dam);
-int victLostHand(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedUpperLeg(P_char ch, P_char vict, const int loc, const int dam);
-int victLostUpperLeg(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedLowerLeg(P_char ch, P_char vict, const int loc, const int dam);
-int victLostLowerLeg(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedKnee(P_char ch, P_char vict, const int loc, const int dam);
-int victLostKnee(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedFoot(P_char ch, P_char vict, const int loc, const int dam);
-int victLostFoot(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedAnkle(P_char ch, P_char vict, const int loc, const int dam);
-int victLostAnkle(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedChin(P_char ch, P_char vict, const int loc, const int dam);
-int victLostChin(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedShoulder(P_char ch, P_char vict, const int loc, const int dam);
-int victLostShoulder(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedBody(P_char ch, P_char vict, const int loc, const int dam);
-int victLostBody(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedWing(P_char ch, P_char vict, const int loc, const int dam);
-int victLostWing(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedBeak(P_char ch, P_char vict, const int loc, const int dam);
-int victLostBeak(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedJoint(P_char ch, P_char vict, const int loc, const int dam);
-int victLostJoint(P_char ch, P_char vict, const int loc, const int dam);
-int victDamagedEyestalk(P_char ch, P_char vict, const int loc, const int dam);
-int victLostEyestalk(P_char ch, P_char vict, const int loc, const int dam);
-
-/* new_combat_user.c */
-
-const char *getBodyLocColorPercent(const int percent);
-void        display_condition_body_loc(const P_char ch, const P_char vict, const int loc);
-void        display_condition_paired_body_loc(const P_char ch, const P_char vict, const int loc, const int loc2);
-void        do_condition(P_char ch, char *argument, int cmd);
-
-/* new_combat_util.c */
-
-/*int getTopLoc(int);*/
-void healCondition(P_char, int);
-void regenCondition(P_char, int);
-int  racePhysHumanoid(const int race);
-int  racePhysFourArmedHumanoid(const int race);
-int  racePhysQuadruped(const int race);
-int  racePhysCentaur(const int race);
-int  racePhysBird(const int race);
-int  racePhysWingedHumanoid(const int race);
-int  racePhysWingedQuadruped(const int race);
-int  racePhysNoExtremities(const int race);
-int  racePhysInsectoid(const int race);
-int  racePhysArachnid(const int race);
-int  racePhysBeholder(const int race);
-int  getNumbBodyLocsbyRace(const int race);
-int  getNumbBodyLocsbyPhysType(const int physType);
-int  getPhysTypebyRace(const int race);
-int  bodyLocisUpperArms(const int physType, const int loc);
-int  bodyLocisUpperWrists(const int physType, const int loc);
-int  bodyLocisUpperHands(const int physType, const int loc);
-int  bodyLocisHead(const int physType, const int loc);
-int  bodyLocisChin(const int physType, const int loc);
-int  bodyLocisLeftEye(const int physType, const int loc);
-int  bodyLocisRightEye(const int physType, const int loc);
-int  bodyLocisEar(const int physType, const int loc);
-int  bodyLocisNeck(const int physType, const int loc);
-int  bodyLocisUpperTorso(const int physType, const int loc);
-int  bodyLocisLowerTorso(const int physType, const int loc);
-int  bodyLocisUpperShoulders(const int physType, const int loc);
-int  bodyLocisLegs(const int physType, const int loc);
-int  bodyLocisFeet(const int physType, const int loc);
-int  bodyLocisLowerArms(const int physType, const int loc);
-int  bodyLocisLowerWrists(const int physType, const int loc);
-int  bodyLocisLowerHands(const int physType, const int loc);
-int  bodyLocisHorseBody(const int physType, const int loc);
-int  bodyLocisRearLegs(const int physType, const int loc);
-int  bodyLocisRearFeet(const int physType, const int loc);
-
-const char *getBodyLocStrn(const int loc, const P_char ch);
-const int   getBodyLocMaxHP(const P_char ch, const int loc);
-int         getBodyLocCurrHP(const P_char ch, const int loc);
-int         getCharToHitValClassandLevel(const P_char ch);
-int         getChartoHitSkillMod(const int wpn_skl_lvl);
-int         getVictimtoHitMod(const P_char ch, const P_char victim);
-int         bodyLocisLow(const int body_loc_target);
-int         bodyLocisMiddle(const int body_loc_target);
-int         bodyLocisHigh(const int body_loc_target);
-int         getBodyLocTargettingtoHitMod(const P_char ch, const P_char victim, const int body_loc_target, const int weaptype);
-const char *getWeaponUseString(const int weaptype);
-const char *getWeaponHitVerb(const int weaptype, const int tochar);
-int         getWeaponSkillNumb(const P_obj weapon);
-int         getCharWeaponSkillLevel(const P_char, const P_obj);
-/*
-int WeaponSkill_num(const P_char ch);
-*/
-int         getNPCweaponSkillLevel(const P_char ch, const int wpn_skill);
-int         canCharDodgeParry(const P_char vict, const P_char attacker);
-char        targetisArms(const int body_loc);
-char        targetisHands(const int body_loc);
-int         calcChDamagetoVict(P_char ch, P_char victim, P_obj weap, const int body_loc, const int wpn_skl, const int wpn_skl_lvl, const int hit_type, const int crit_hit);
-int         getCharParryVal(const P_char vict, const P_char attacker, const int body_loc_target, const P_obj weapon);
-const char *getParryEaseString(const int passedby, const int tochar);
-int         getCharDodgeVal(const P_char vict, const P_char attacker, const int body_loc_target, const P_obj weapon);
-const char *getDodgeEaseString(const int passedby, const int tochar);
-
 /* new_skills.c */
 
 void grapple_event(P_char, P_char);
@@ -2158,15 +1962,11 @@ bool check_skill_usage(P_char, int);
 int  CanDoFightMove(P_char, P_char);
 int  GetConditionModifier(P_char);
 int  CountNumFollowers(P_char);
-int  CountNumShadowers(P_char);
 int  MonkAcBonus(P_char);
 int  MonkDamage(P_char);
 int  MonkNumberOfAttacks(P_char);
 int  wornweight(P_char);
-void FreeShadowedData(P_char, P_char);
 void MonkSetSpecialDie(P_char);
-void MoveShadower(P_char, int);
-void StopShadowers(P_char);
 void chant_buddha_palm(P_char, char *, int);
 void chant_calm(P_char, char *, int);
 void chant_diamond_soul(P_char, char *, int);
@@ -2208,20 +2008,12 @@ int  CountNumGreaterElementalFollowersInSameRoom(P_char);
 
 int  GetCircle(int spl);
 void convertObj(P_obj obj);
-void randomizeObj(P_obj, int);
 
 /* objmisc.c */
 
 int   get_weapon_msg(P_obj weapon);
 int   getWeaponDamType(const int weaptype);
-float getMaterialDeflection(const int, const P_obj weap);
-float getArmorDeflection(const P_obj armor, const P_obj weap);
-float getMaterialAbsorbtion(const int, const P_obj weap);
-float getArmorAbsorbtion(const P_obj armor, const P_obj weap);
-int   getMaterialMaxSP(const int material);
-int   getItemMaxSP(const P_obj item);
-void  setItemMaxSP(P_obj item);
-int   getItemCurrentSP(const P_obj item);
+void  describe_encrusted_enhanced(P_obj obj);
 
 /* prompt.c */
 
@@ -2328,6 +2120,7 @@ P_obj createRandomItem(P_char, P_char, int, int, int);
 
 /* random.c */
 
+uint64_t hash64(uint64_t x);
 void randomize(uint64_t seed);
 
 /*  arena.c */
@@ -2456,7 +2249,6 @@ void  return_from_poly_obj(P_char);
 P_obj find_key(P_char, int);
 bool  check_get_disarmed_obj(P_char, P_char, P_obj);
 bool  transact(P_char, P_obj, P_char, int);
-int   OutlawAggro(P_char, const char *);
 long  pow10(long);
 void  exec_social(P_char, char *, int, int *, void **);
 void  firesector(P_char);
@@ -2937,7 +2729,6 @@ int   MaxTrackDist(P_char);
 void  track_move(P_char);
 void  add_track(P_char, int);
 void  do_track(P_char, char *, int);
-void  nuke_track(struct trackrecordtype *);
 void  show_tracks(P_char ch, int room);
 void  show_tracking_map(P_char);
 
@@ -2992,7 +2783,6 @@ int       GET_CHAR_SKILL_P(P_char, int);
 char     *get_class_string(P_char, char *);
 void      broadcast_to_arena(const char *, P_char, P_char, int);
 void      remove_plushit_bits(P_char mob);
-void      setCharPhysTypeInfo(P_char);
 int       is_introd(P_char, P_char);
 void      add_intro(P_char, P_char);
 void      purge_old_intros(P_char);
@@ -3054,7 +2844,6 @@ int  move_cost(P_char, int);
 int  number(int, int);
 int  maproom_of_zone(int);
 /* int str_cmp(const char *, const char *); */
-int                   str_n_cmp(const char *, const char *);
 int                   strn_cmp(const char *, const char *, uint);
 int                   exitnumb_to_cmd(int);
 int                   cmd_to_exitnumb(int);
@@ -3129,6 +2918,7 @@ void                  request_shutdown(int shutdown_type, const char *issuer, co
 
 int                   distance_from_shore(int);
 int                   dir_from_keyword(char *);
+int                   total_carried_weight(P_char);
 int                   weight_notches_above_naked(P_char);
 char                  char_in_snoopby_list(snoop_by_data *, P_char);
 void                  rem_char_from_snoopby_list(snoop_by_data **, P_char);
@@ -3199,7 +2989,6 @@ void sound_to_char(const char *, P_char);
 void sound_to_room(const char *, int);
 void sound_to_all(const char *);
 void sound_to_zone(const char *, int);
-void zone_noises(void);
 
 void do_specialize(P_char, char *, int);
 

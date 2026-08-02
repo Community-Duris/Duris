@@ -20591,7 +20591,7 @@ Combat on the ship system works on the principle of firing arcs,
 single target, and damage points.
 ==Firing Arcs==
 Firing arcs are the direction your weapons are pointing on your ship. For
-example, a ballistae mounted on your Port(Left) side is pointing to the
+example, a ballista mounted on your Port(Left) side is pointing to the
 ship"s left, so if the target is on the right side, it is out of that
 particular weapon"s arc, so if weapons are mounted only on the forward arc,
 that means the ship only has a limited arc of fire in the front. If a ship
@@ -20790,9 +20790,9 @@ ship you wish to place the weapon.
     Name               Weight  Range   Damage  Ammo Disper  Sail  Hull  Sail Reload  Cost
                                                       sion   Hit   Dam   Dam   Time
 --------------------------------------------------------------------------------------------------
- 1) Small Ballistae         3    0-8      2-4    60     10   12%  100%   50%     30  50 platinum
+ 1) Small Ballista          3    0-8      2-4    60     10   12%  100%   50%     30  50 platinum
  4) Small Catapult         10   4-15  4 x 2-3    30    160   20%  100%  100%     30  500 platinum
- 7) Heavy Ballistae        15    0-4    15-22     6     10    0%  100%    0%     30  1000 platinum
+ 7) Heavy Ballista         15    0-4    15-22     6     10    0%  100%    0%     30  1000 platinum
 * Weight of weapon determine how much this weapon will affect the speed of your ship. Also, every hull has
 certain weight restriction for the weapons put on a single side.
 * Range determines the maximum reach for this weapon. Some weapons also can not shoot at targets closer

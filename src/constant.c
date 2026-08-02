@@ -536,41 +536,8 @@ const struct minor_create_struct        minor_create_name_list[] = {
     {						"\0",				   0}
 };
 
-#if 0
-const int material_absorbtion[TOTALATTACK_TYPES][TOTALMATERIALS] = {
-/* pierce, slash                                */
-  {},                           /* MAT_UNDEFINED  0        */
-  {},                           /* MAT_N_SUBSTANT 1        */
-  {},                           /* MAT_MAG_METAL  2        */
-  {},                           /* MAT_WOOD       3        */
-  {},                           /* MAT_CLOTH      4        */
-  {},                           /* MAT_HIDE       5        */
-  {},                           /* MAT_SILICON    6        */
-  {},                           /* MAT_CRYSTAL    7        */
-  {},                           /* MAT_MAGICAL    8        */
-  {},                           /* MAT_BONE       9        */
-  {},                           /* MAT_STONE     10        */
-  {},                           /* MAT_LEATHER   11        */
-  {},                           /* MAT_S_LEATHER 12        */
-  {},                           /* MAT_SCALE     13        */
-  {},                           /* MAT_CHAIN     14        */
-  {},                           /* MAT_PLATE     15        */
-  {},                           /* MAT_MITHRIL   16        */
-  {},                           /* MAT_ADAMANTIUM 17       */
-  {},                           /* MAT_BRONZE    18        */
-  {},                           /* MAT_COPPER    19        */
-  {},                           /* MAT_SILVER    20        */
-  {},                           /* MAT_ELECTRUM  21        */
-  {},                           /* MAT_GOLD      22        */
-  {},                           /* MAT_PLATINUM  23        */
-  {}                            /* MAT_GEM       24        */
-
-
-};
-#endif
-
 extern const int movement_loss[];
-const int        movement_loss[] = {
+const int        movement_loss[NUM_SECT_TYPES] = {
     1,  /* * Inside     */
     1,  /* * City       */
     3,  /* * Field      */
@@ -607,11 +574,14 @@ const int        movement_loss[] = {
     2,  /* Castle Gate */
     2,  /* Castle Main */
     4,  /* negative plane */
-    4   /* plane of avernus */
+    4,  /* plane of avernus */
+    1,  /* road */
+    7,  /* snowy forest */
+    10, /* magma */
 };
 
 extern const int track_limit[];
-const int        track_limit[] = {
+const int        track_limit[NUM_SECT_TYPES] = {
     1, /* * Inside     */
     2, /* * City       */
     4, /* * Field      */
@@ -649,7 +619,9 @@ const int        track_limit[] = {
     0, /* Castle Main */
     0, /* negative plane */
     0, /* plane of avernus */
-    4  /* road */
+    4, /* road */
+    5, /* snowy forest */
+    0, /* magma */
 };
 
 const char *weekdays[7] = {
@@ -722,10 +694,6 @@ const char *player3_bits[] = {"FRAGLEADER",
                               "\n"};
 
 const char *player_prompt[] = {"NONE", "HITS", "MAX-HITS", "MANA", "MAX-MANA", "MOVES", "MAX-MOVES", "TANK-COND", "TANK-NAME", "ENEMY-NAME", "ENEMY-COND", "VIS", "TWOLINE", "STATUS", "\n"};
-
-const char *player_law_flags[] = {"KN_ASH", "KN_BS",  "KN_CAL", "KN_EM",  "KN_LUI", "KN_MH", "KN_TT",      "KN_VE",      "KN_UNUSED1", "KN_UNUSED2", "OC_ASH",
-                                  "OC_BS",  "OC_CAL", "OC_EM",  "OC_LUI", "OC_MH",  "OC_TT", "OC_VE",      "OC_UNUSED1", "OC_UNUSED2", "WT_ASH",     "WT_BS",
-                                  "WT_CAL", "WT_EM",  "WT_LUI", "WT_MH",  "WT_TT",  "WT_VE", "WT_UNUSED1", "WT_UNUSED2", "KN_EVIL",    "OC_EVIL",    "\n"};
 
 const char *position_types[] = {"Prone", "Kneeling", "Sitting", "Standing", "Dead", "Dying", "Incapacitated", "Sleeping", "Resting", "Normal", "\n"};
 
@@ -1645,7 +1613,7 @@ const int hometown[] = {
 
 extern const int avail_hometowns[][LAST_RACE + 1];
 const int        avail_hometowns[][LAST_RACE + 1] = {
-    /* N  Hu Ba Dr Gr Mo Du Ha Gn Og Tr H2 Il Or Th Ce Gi Mi Ae Su Gb Li Va Dk Sb Sg Wg Ph Hr Oo Gt Dr Ko Pi Ku Wo Fi Tf*/
+  /* N  Hu Ba Dr Gr Mo Du Ha Gn Og Tr H2 Il Or Th Ce Gi Mi Ae Su Gb Li Va Dk Sb Sg Wg Ph Hr Oo Gt Dr Ko Pi Ku Wo Fi Tf*/
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* * None */
     {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0}, /* * Tharnadia */
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0}, /* * Ixarkon */
@@ -1661,7 +1629,7 @@ const int        avail_hometowns[][LAST_RACE + 1] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* * Bloodstone */
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* * Shady */
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* NaxVaran */
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* Fort Marigot */
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* Fort Marigot */
     {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* * Charing */
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* City Ruins */
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* thri town */

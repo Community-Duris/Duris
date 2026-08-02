@@ -37,7 +37,7 @@ jailkeeper imp~
 &+LA jailkeeper imp wanders the prison halls here, keeping an eye out for trouble.&N
 ~
 &+L  Walking the halls of this prison, this imp is charged with a lowly duty.&N
-&+LAfter having been captured by Jubilex's host, its been tortured and forced&N
+&+LAfter having been captured by Juiblex's host, its been tortured and forced&N
 &+Lto work here.  The demon's puddings, and ooze, wish solitude and quiet, so&N
 &+Lwhen invaders or outside come to their plane they must be dealt with.  Any&N
 &+Lthat survive are forced here where the imp's keep the prison loosely working.&N
@@ -58,7 +58,7 @@ large jailkeeper demon~
 &+wpart of the prison for the demon prince.  Although one might ask why the demon&N
 &+wdoes not leave on his own, the answer becomes apparent.  Clasped on both&N
 &+wwrists are silver bracers inscribed with runes of servitude.  Besides that&N
-&+wfact, demons respect force.  Jubilex the demon prince, can exert an impressive&N
+&+wfact, demons respect force.  Juiblex the demon prince, can exert an impressive&N
 &+ramount of that, even though he wishes no contact with others.&N
 ~
 33961994 1 0 0 436208060 31 0 0 -1000 S
@@ -107,7 +107,7 @@ mass purple slime~
 &+mwithout much capacity to communicate, it uses its magical arts to destroy&N
 &+mits prey, so they then can become part of the slime so it can grow ever&N
 &+mstronger.  The purple color is odd as slimes usually tend to be green, however&N
-&+min the realm of Jubilex, nothing can be taken for granted.&N
+&+min the realm of Juiblex, nothing can be taken for granted.&N
 ~
 1074034764 1 0 0 302025016 274462 2097152 0 -1000 S
 x 0 1024 0 5
@@ -153,10 +153,10 @@ gargantuan worm formed acid~
 ~
 &+r  This gargantuan worm made of acid has bored a deep hole into the abyss as it&N
 &+reats away at everything.  Once a part of the collective sea of evil, this&N
-&+Rworm was formed by Jubilex himself as a deterrent to those who would encroach&N
+&+Rworm was formed by Juiblex himself as a deterrent to those who would encroach&N
 &+Rupon his solitude.  Forged of evil incarnate, this worm's liquid form is&N
 &+rprotection in itself, and it is feared throughout this plane for its&N
-&+rpropensity to dissolve even the servants of Jubilex.&N
+&+rpropensity to dissolve even the servants of Juiblex.&N
 ~
 291934 1 0 0 2583726396 14367 0 8192 -1000 S
 D 0 65 0 7
@@ -200,7 +200,7 @@ traxllopor demon demonic warden~
 ~
 &+L  Traxllopor the demon at one point was a mighty demon in his own right.  One&N
 &+Lwrong turn while traveling between the planes however pitted the might demon&N
-&+rdirectly against Jubilex.  When faced with the prince himself, Traxllopor&N
+&+rdirectly against Juiblex.  When faced with the prince himself, Traxllopor&N
 &+rbent to his will.  Now however, as an unexpected benefit he gets to torture&N
 &+rpowerful beings of all sort for his own benefit.  Some of the most powerful&N
 &+rinterplanar beings of all time reside in this prison, so that is quite a&N
@@ -239,7 +239,7 @@ uncaptured free imp~
 &+Labout trying to avoid capture.  Little does it  know that capture is one of&N
 &+Lthe lesser things that could happen to it in this realm.  If he finds no&N
 &+Lescape soon, this imp will end up working in one of the prisons or become&N
-&+Llunch for one of Jubilex's minions.&N
+&+Llunch for one of Juiblex's minions.&N
 ~
 1107703816 1 0 0 436207916 30 0 0 -1000 S
 X 0 16384 0 2
@@ -254,7 +254,7 @@ pool puddle pink slime~
 &+M  A pool of pink goop, this slime seems to absorb and use magical energies for&N
 &+Mits survival.  Potent in the extreme with spells, this slime almost sparkles&N
 &+Mwith its movement.  How it is that a puddle of pink slime can gain such&N
-&+Mpowers is a mystery in itself.  Jubilex must infuse his minions with whatever&N
+&+Mpowers is a mystery in itself.  Juiblex must infuse his minions with whatever&N
 &+Mhe chooses so that they may serve him.&N
 ~
 1074034764 1 0 0 302025016 274462 0 0 -1000 S
@@ -580,7 +580,7 @@ captured gadolinium dragon drag draco~
 &+LThe &+Wgadolinium &+gdragon&+L is &+wchained&+L to the floor here.&N
 ~
 &+W  Somehow, this extremely powerful dragon was captured by the multitude of&N
-&+Wdemons now under Jubilex's control.  Chained to the ground here, its vile&N
+&+Wdemons now under Juiblex's control.  Chained to the ground here, its vile&N
 &+Wtemper is relied upon to prevent any further entrance into the fortress of&N
 &+Wslime by potential intruders.  Only a platinum dragon is equal in power to&N
 &+Wthis beast amongst normal dragons, and the claw markings in the ground seem&N
@@ -672,7 +672,7 @@ massive balor demon~
 &+La massive &+rbalor&N~
 &+LChained here is a titanic &+rbalor&+L ready to rip limbs apart.&N
 ~
-&+L  Captured somehow by the slimes and followers of Jubilex, this balor is&N
+&+L  Captured somehow by the slimes and followers of Juiblex, this balor is&N
 &+rguarding a switch.  Its gigantic form and massive muscled body are perfectly&N
 &+rsuited for killing all creatures.  From its dark fangs saliva constantly&N
 &+rdribbles and the chains which bind it to this spot just barely seem to hold&N
@@ -714,9 +714,9 @@ x 0 385 0 7
 0.0.0.0 0
 8 8 1
 #87543
-jubilex demon prince eyeballs eye~
-&+GJ&+gu&+Wb&+ri&+Wl&+ge&+Gx&+L, the &+rdemon&+L prince&N~
-&+GJ&+gu&+Wb&+ri&+Wl&+ge&+Gx&+L the &+rdemon&+L prince rages against being disturbed in his solitude.&N
+juiblex jubilex demon prince eyeballs eye~
+&+GJ&+gu&+Wi&+rb&+Wl&+ge&+Gx&+L, the &+rdemon&+L prince&N~
+&+GJ&+gu&+Wi&+rb&+Wl&+ge&+Gx&+L the &+rdemon&+L prince rages against being disturbed in his solitude.&N
 ~
 &+G  This demon prince is the definition of disgusting.  He's a massive congealed&N
 &+Gmass of parts from thousands upon thousands of his victims.  Eyeballs seem to&N
@@ -735,9 +735,9 @@ Y 0 596 0 7
 0.0.0.0 0
 8 8 0
 #87544
-jubilex demon prince eyeballs eye~
-&+GJ&+gu&+Wb&+ri&+Wl&+ge&+Gx&+L, the &+rdemon&+L prince&N~
-&+LTrying to escape into the &+Yseal,&+G J&+gu&+Wb&+ri&+Wl&+ge&+Gx&+L tries to remove the key from his body.&N
+juiblex jubilex demon prince eyeballs eye~
+&+GJ&+gu&+Wi&+rb&+Wl&+ge&+Gx&+L, the &+rdemon&+L prince&N~
+&+LTrying to escape into the &+Yseal,&+G J&+gu&+Wi&+rb&+Wl&+ge&+Gx&+L tries to remove the key from his body.&N
 ~
 &+G  This demon prince is the definition of disgusting.  He's a massive congealed&N
 &+Gmass of parts from thousands upon thousands of his victims.  Eyeballs seem to&N
@@ -758,10 +758,10 @@ BH 0 4194884 0 7
 #87545
 massive slime bubble~
 &+La massive &+Gslime&+r bubble&N~
-&+LBoiling from &+GJ&+gu&+Wb&+ri&+Wl&+ge&+Gx&+L this &+rbubble&+L is ready to burst.&N
+&+LBoiling from &+GJ&+gu&+Wi&+rb&+Wl&+ge&+Gx&+L this &+rbubble&+L is ready to burst.&N
 ~
 &+G  This massive slime bubble has boiled out of the now angry massive demon&N
-&+rJubilex.  Completely unstable, it is ready to send boiling slime shooting out&N
+&+rJuiblex.  Completely unstable, it is ready to send boiling slime shooting out&N
 &+Gthrough everything in sight.&N
 ~
 1082421322 1 0 0 839420216 30 524296 8192 -1000 S
@@ -919,7 +919,7 @@ observing pit fiend pitfiend agronon~
 &+Lstare steadily.  His &+mmind&+L is obviously occupied with what is going on and he&N
 &+Lvery likely has some deep &+wconcerns&+L on the subject.  If that were not the truth&N
 &+Lwhy would a devil be intruding on one of the layers of the demon prince&N
-&+L&+GJ&+gu&+Wb&+ri&+Wl&+ge&+gx&+L in the midst of the &+Rblood war&+L.  None of it seems to make sense, and&N
+&+L&+GJ&+gu&+Wi&+rb&+Wl&+ge&+gx&+L in the midst of the &+Rblood war&+L.  None of it seems to make sense, and&N
 &+Lthe pit-fiend must be reporting back to somebody on this.  Such creatures are&N
 &+Lso structured that their movements are governed by the top echelon of the&N
 &+Lpower structure of devils.  Nothing is unplanned, and the fact that yugoloths&N
@@ -970,7 +970,7 @@ bahamut's bahamut children child dragon draco~
 &+wone of &+WBahamut's&+w children&N~
 &+wOne of &+WBahamut's &+wdaughters is captured here, wishing revenge upon her captors.&N
 ~
-&+W  Suddenly transported to the realm of Jubilex, one of Bahamut's children has&N
+&+W  Suddenly transported to the realm of Juiblex, one of Bahamut's children has&N
 &+Wbeen captured.  Many demons and oozes were laid waste to by this dragon before&N
 &+Wany of them laid hands on her.  One unfortunate thing however is that there&N
 &+Wis such an abundance of demons in the abyss it is difficult not to be&N
@@ -1017,13 +1017,13 @@ zuggtmoy lady fungus demon~
 &+gZu&+Gggt&+gmo&+Gy, &+gth&+Ge L&+Gad&+gy o&+Gf F&+gun&+Ggu&+gs&N~
 &+gZu&+Gggt&+gmo&+Gy, &+gth&+Ge Lad&+gy o&+Gf F&+gun&+Ggu&+gs is&+G h&+ger&+Ge sp&+gre&+Gad&+gin&+Gg r&+got&+g t&+Ghro&+gug&+Gho&+gut&+G th&+ge w&+Gor&+gl&+Gd.&N
 ~
-&+g  Zuggtmoy is Jubilex's family member spawned from the same stuff.  She is&N
+&+g  Zuggtmoy is Juiblex's family member spawned from the same stuff.  She is&N
 &+Gan enormous mushroom with all manner of nastiness sprouting from her in every&N
-&+gdirection.  Her massive form is strange, and although Jubilex is more slime,&N
+&+gdirection.  Her massive form is strange, and although Juiblex is more slime,&N
 &+Gshe is much more rot and fungus.  Her power in itself is equal in some circles&N
-&+gto Jubilex or even exceeds the prince.  Both however are outcasts from the&N
+&+gto Juiblex or even exceeds the prince.  Both however are outcasts from the&N
 &+Grest of the demons however generally, so they rely on each other for expanding&N
-&+gtheir power base.  While Jubilex believes in his solitude, Zuggtmoy is more&N
+&+gtheir power base.  While Juiblex believes in his solitude, Zuggtmoy is more&N
 &+Gpublic in her demonstrations of power.&N
 ~
 118388746 1 0 0 2601028028 276510 16777216 8192 -1000 S
@@ -1037,7 +1037,7 @@ rival demon lord demonlord~
 &+LSnarling at his capture, this rival &+rdemon&+L lord hates being in prison.&N
 ~
 &N&+L  This rival demon lord once almost controlled parts of this plane.&N
-&N&+LJubilex however made mince meat of his followers, and subsequently imprisoned&N
+&N&+LJuiblex however made mince meat of his followers, and subsequently imprisoned&N
 &N&+rthis demon for eternity.  An eternity of torture has not been kind to it,&N
 &N&+Land now this once powerful demon simply fumes in his cell in an almost&N
 &N&+Lanimalistic fashion.&N
@@ -1212,7 +1212,7 @@ nonorga pit fiend pitfiend~
 &+rNonorga, &+Lthe pit fiend&N~
 &+rStraining against her capture, &+LNonorga&+r wishes to harm demons.&n
 ~
-&+r  Nonorga the pit fiend has been captured by Jubilex's demons during the blood&N
+&+r  Nonorga the pit fiend has been captured by Juiblex's demons during the blood&N
 &+rwar.  Her mate Agronon was a massive fiend of large amounts of power, and&N
 &+rtogether they wanted to bring this plane under the control of Asmodeus.  This&N
 &+rhowever was not the case, and she can't even find the freedom of death on this&N
@@ -1373,12 +1373,12 @@ PE 0 516 0 3
 #87583
 dark-skinned hezrou demon~
 &+La dark-skinned &+Rhezrou&N~
-&+LWandering the depths, this &+rhezrou&+L serves Jubilex.&N
+&+LWandering the depths, this &+rhezrou&+L serves Juiblex.&N
 ~
 &+L  This hezrou is here following his prince's orders.  While most demons are&N
-&+Lnot orderly, they do have a measure of respect for force.  Jubilex is very&N
+&+Lnot orderly, they do have a measure of respect for force.  Juiblex is very&N
 &+Lgood at using that to get his minions to do as he wishes.  It is a well known&N
-&+Lfact that to upset Jubilex, is to be digested by him for a thousand years at&N
+&+Lfact that to upset Juiblex, is to be digested by him for a thousand years at&N
 &+Lhis leisure.  Very few of these hezrou would ever risk such a fate by&N
 &+Ldisappointing him.&N
 ~
@@ -1392,9 +1392,9 @@ demon hezrou overseer seer~
 &+Lan overseer &+Rhezrou&N~
 &+LThis &+Rhezrou&+L oversees the other demons to make sure they follow orders.&N
 ~
-&+R  Overseeing the masses of demons in the depths of Jubilex's fortress can be&N
+&+R  Overseeing the masses of demons in the depths of Juiblex's fortress can be&N
 &+Rtime consuming, but this demon performs the duties.  Demons are a chaotic lot&N
-&+Rto begin with, but Jubilex demands that they follow his orders.  The sense of&N
+&+Rto begin with, but Juiblex demands that they follow his orders.  The sense of&N
 &+Rfear is passed on down from demon to demon.&N
 ~
 1107720200 1 0 0 436208060 30 67108864 0 -1000 S
@@ -1621,7 +1621,7 @@ demonic demon ghost ruler~
 &+Ltortured and killed.  In life he was feared by all his enemies, and even some&N
 &+Lof the demon princes wondered about his intentions.  Since his capture however&N
 &+Lthe story has been much different.  His ghost remains imprisoned here as he&N
-&+Lseems to seethe.  Something must have happened to allow Jubilex to take over&N
+&+Lseems to seethe.  Something must have happened to allow Juiblex to take over&N
 &+Lthis plane with Zuggtmoy.  What that might have been however may not be&N
 &+Lcommon knowledge.  This once mighty ruler may talk however to the right&N
 &+Lperson because he awaits &+Wsomething&+L.&N
@@ -1636,7 +1636,7 @@ small demon~
 &+La small &+Rdemon&N~
 &+LWalking the abyss, this &+Rdemon&+L looks to capture outsiders.&N
 ~
-&+R  This demon serves Jubilex for the same reason he serves any master, fear.&N
+&+R  This demon serves Juiblex for the same reason he serves any master, fear.&N
 &+RHis loyalty to that cause is driven by that fear, and he regularly brings&N
 &+Rintruders back to the prisons for interrogation.  It is no big secret that&N
 &+Rthese demons are fiercely loyal partly because of greed, and partly due to&N
@@ -1655,7 +1655,7 @@ blaxor demon run~
 ~
 &+R  Blaxor, a once powerful demon of the abyss is now pitifully here in these&N
 &+Rfields.  He has fled to the prime material plane to escape the certain&N
-&+Rdestruction he would have faced at Jubilex's hands.  Being a coward lessens&N
+&+Rdestruction he would have faced at Juiblex's hands.  Being a coward lessens&N
 &+Ra demon, and no amount of being evil will ever restore him to his once lofty&N
 &+Rplace in the abyss.&N
 ~
@@ -1702,7 +1702,7 @@ galnor demon run~
 &+wThis &+Rdemon &+wnamed&+L Galnor&+w is trying to avoid everything.&N
 ~
 &+R  Galnor has had probably the worst luck of the four who fled the abyss away&N
-&+Rfrom Jubilex.  Wandering into the middle of a battle between the forces of&N
+&+Rfrom Juiblex.  Wandering into the middle of a battle between the forces of&N
 &+Rheaven and Tallin is not what this demon wanted when he aimed for a low key&N
 &+Rexistance.  Being kicked out of the abyss is bad enough, but if he dies in&N
 &+Rthis mess it'll be worse.&N
@@ -1718,7 +1718,7 @@ cyan pudding~
 &+LQuivering with evil, this &+ccyan&+L pudding scours the abyss.&N
 ~
 &+c  This cyan pudding has been scouring the abyss for eons.  Its dark powers&N
-&+chave become great and its devotion to evil even more great.  Jubilex has&N
+&+chave become great and its devotion to evil even more great.  Juiblex has&N
 &+cno greater supporters than these puddings as they are the spiritual generation&N
 &+cof power for the demon.&N
 ~
@@ -1780,7 +1780,7 @@ succubus guardian demon alu-demon~
 ~
 &+R  This succubus is here guarding the prisoner from any intruders.  While the&N
 &+Rother prisoners are guarded in the prisons, this area is very special.  Only&N
-&+RJubilex owns the key to this area as these succubus are deriving power from&N
+&+RJuiblex owns the key to this area as these succubus are deriving power from&N
 &+Rthe prisoner.  Their charms keep intruders at bay and allow power to be sucked&N
 &+Rfrom the prisoner to supply the lake of slime with extra energy.&N
 ~
@@ -1795,7 +1795,7 @@ neptune lord god seas sea~
 &+bChained here is Lord &+BN&+be&+Bp&+bt&+Bu&+bn&+Be&+b, god of the &+gs&+be&+ga&+bs.&n
 ~
 &+b  Chained here is the god Neptune who has for far too long been a prisoner of&N
-&+bJubilex's realm.  His powers have been perverted and used to help Jubilex&N
+&+bJuiblex's realm.  His powers have been perverted and used to help Juiblex&N
 &+bcreate ever more slimes.  He stares off blankly and only through virtue of his&N
 &+bsuperior powers is he still even alive at this point.  He is a much drained&N
 &+bgod, devoid of much of his color.  One wonders how he could fully receive&N
@@ -1813,7 +1813,7 @@ heavily armored yugoloth fiend~
 &+LA &+Wheavily&+L armored &+Ryugoloth&+L is in shackles here.&n
 ~
 &+W  Heavily&+L armored, this &+Ryugoloth&+L has been captured while snooping&N
-&+Laround in Jubilex's affairs.  Although he is irritated at having been captured&N
+&+Laround in Juiblex's affairs.  Although he is irritated at having been captured&N
 &+Lhe will not be long held here.  He's already plotting some sort of deal with&N
 &+Lone of the imps or other planars running around the prison to free him.  As&N
 &+Lto what that plot is, a &+Ryugoloth&+L never tells.&N
@@ -1843,7 +1843,7 @@ A 0 2560 0 7
 #87612
 lolth spider demon queen~
 &+man a&+Mc&+mo&+Ml&+my&+Mt&+me of the Spider &+rDemon &+mQueen, L&+Mo&+ml&+Mt&+mh&n~
-&+mL&+Mo&+ml&+Mt&+mh&+L, the enormous &+mSpider &+rDemon&+L Queen looks irritated that she must speak to &+GJ&+gu&+Wb&+ri&+Wl&+ge&+Gx&+L.&n
+&+mL&+Mo&+ml&+Mt&+mh&+L, the enormous &+mSpider &+rDemon&+L Queen looks irritated that she must speak to &+GJ&+gu&+Wi&+rb&+Wl&+ge&+Gx&+L.&n
 ~
 &+m  Standing here is Lolth the Demon Queen.  Her many legs move independently with deadly strokes as they move across the ground.  Two human arms wield blades as her beautiful head sits atop a fully spider body.  Her enormous size is impressive, but the red of her eyes as they peer at you is even more so. It is easy to understand how the Drow can be so afeared and enamoured of the demoness all at once.  &N
 ~
@@ -1855,7 +1855,7 @@ x 0 5125 0 7
 #87613
 graz'zt dark prince demon graz~
 &+rGr&+Laz'&+rzt&+L, the &nD&+Lar&Nk&+L Prince~
-&+rG&+Lr&+baz'&+rz&+Lt, the &ND&+Lar&Nk&+L Prince is here disgusted at having to speak to &+GJ&+gu&+Wb&+ri&+Wl&+ge&+gx&+L.&N
+&+rG&+Lr&+baz'&+rz&+Lt, the &ND&+Lar&Nk&+L Prince is here disgusted at having to speak to &+GJ&+gu&+Wi&+rb&+Wl&+ge&+gx&+L.&N
 ~
 &+r  Graz'zt has been dropped here preening as usual.  The difference however&N
 &+Lis that it looks as though he is taking out his revenge for having been&N

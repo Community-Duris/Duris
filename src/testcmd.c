@@ -22,8 +22,7 @@ extern P_index                  obj_index;
 extern int                      top_of_objt;
 extern const flagDef            room_bits[];
 extern const char              *sector_types[];
-extern const char              *sector_symbol[];
-extern mapSymbolInfo            color_symbol[];
+extern const AnsiString		sector_symbol[];
 extern P_index                  mob_index;
 extern int                      top_of_mobt;
 extern P_desc                   descriptor_list;
@@ -190,7 +189,6 @@ void do_test_room(P_char ch, char *arg, int cmd)
 void do_test_writemap(P_char ch, char *arg, int cmd)
 {
 	char buff[MAX_STRING_LENGTH];
-	buff[0] = '\0';
 
 	struct zone_data *zone = &zone_table[world[ch->in_room].zone];
 
@@ -214,50 +212,20 @@ void do_test_writemap(P_char ch, char *arg, int cmd)
 
 	for (int y = 0; y < height; y++)
 	{
-		buff[0] = '\0';
+		AnsiString line;
 		for (int x = 0; x < width; x++)
 		{
 			where_rnum = calculate_relative_room(rroom, x, y);
 
 			if (!where_rnum)
-			{
 				what = 21; // rock
-			}
 			else
-			{
 				what = world[where_rnum].sector_type;
-			}
-			/*
-			if (hadbg)
-			  strcat(buf, "&n");
-			if ((prev != what) || (x == 0))
-			{
-			  int shift = 0;
-			  if (hadbg && color_symbol[what].hasBg)
-			    shift = -2;
-			  snprintf(buff + strlen(buff) + shift, MAX_STRING_LENGTH, "&%s%s",
-			          color_symbol[what].colorStrn, sector_symbol[what]);
-
-			  hadbg = color_symbol[what].hasBg;
-			  prev = what;
-			}
-			else
-			{
-			  int shift = 0;
-			  if (hadbg)
-			    shift = -2;
-			  snprintf(buff + strlen(buff) + shift, MAX_STRING_LENGTH, "%s", sector_symbol[what]);
-			}*/
-			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "&%s%s", color_symbol[what].colorStrn, sector_symbol[what]);
-			//      if( color_symbol[what].hasBg )
-			//        strcat(buff, "&n");
-
-			// strcat(buff, sector_symbol[what]);
+			line.push_back(sector_symbol[what][0]);
 		}
-
-		strcat(buff, "\n"); // removed '&n'
+		line.push_back('\n');
+		line.ansi(buff);
 		output_file << buff;
-		// send_to_char(buff, ch);
 	}
 }
 
@@ -996,22 +964,6 @@ void do_test(P_char ch, char *arg, int cmd)
 		}
 		snprintf(buf, MAX_STRING_LENGTH, "The mincircle for spell '%s' (%d), is %d.\n\r", spells[num], num, get_mincircle(num));
 		send_to_char(buf, ch);
-	}
-	else if (isname("randomize", buff))
-	{
-		P_obj obj;
-
-		arg = one_argument(arg, buff);
-		if ((obj = get_obj_in_list(buff, ch->carrying)) != NULL)
-		{
-			randomizeitem(ch, obj);
-		}
-		else
-		{
-			send_to_char("Could not find object '", ch);
-			send_to_char(buff, ch);
-			send_to_char("' in your inventory to randomize.\n\r", ch);
-		}
 	}
 	else if (isname("randomzones", buff))
 	{

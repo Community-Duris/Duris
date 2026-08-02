@@ -1,13 +1,10 @@
 # Makefile for Project Duris!
 
 SHELL = /bin/sh
-#EFENCE = 1
 
 CC	= g++
 DEBUG	= -ggdb3
 #LDFLAGS	= -ggdb3
-
-LDFLAGS += -L/usr/lib/mysql
 
 CFLAGS = -g -std=c++20 -D_FORTIFY_SOURCE=0 -Wno-write-strings
 #CFLAGS += -D__NO_MYSQL__
@@ -21,12 +18,6 @@ CFLAGS += -DCHAOS_MUD=1
 INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
 
 GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lbsd -pthread
-
-ifdef EFENCE
-	LDFLAGS += -L.
-	LIBS += -lefence -lrt
-	CFLAGS += -DEFENCE
-endif
 
 # GENERAL_LIBS += -lcygipc
 LIBS += $(GENERAL_LIBS)
@@ -75,7 +66,7 @@ OBJS =  $(SHIP_OBJS) \
 				 actoth.o \
 				 actset.o \
 				 actwiz.o \
-				 ai_mobs.o \
+				 ansi.o \
 				 specs.ailvio.o \
 				 alliances.o \
 				 automatic_rules.o \
@@ -92,12 +83,14 @@ OBJS =  $(SHIP_OBJS) \
 				 breath_weapons.o \
 				 buildings.o \
          cardgames.o \
+         chaos.o \
 				 comm.o \
 				 copyover.o \
 				 common.o \
 				 condition.o \
 				 constant.o \
 				 ctf.o \
+				 dam_mods.o \
 				 db.o \
 				 debug.o \
 				 disguise.o \
@@ -157,13 +150,11 @@ OBJS =  $(SHIP_OBJS) \
 				 name_gen.o \
 				 nanny.o \
 				 necromancy.o \
-				 new_combat_util.o \
 				 new_skills.o \
 				 nq.o \
 				 objconv.o \
 				 objmisc.o \
 				 outposts.o \
-				 period.list.o \
 				 persistence_queue.o \
 				 sql_persistence_raw.o \
 				 sql_pool.o \
@@ -187,7 +178,6 @@ OBJS =  $(SHIP_OBJS) \
 				 salchemist.o \
 				 sillusionist.o \
 				 siege.o \
-				 sound.o \
 				 sparser.o \
 				 specials.o \
 				 specializations.o \
@@ -224,7 +214,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs.zalrix.o \
 				 specs.set.o \
 				 specs.shabo.o \
-				 specs.jubilex.o \
+				 specs.juiblex.o \
 				 specs.keleks.o \
 				 specs.caertannad.o \
 				 specs.firep.o \
@@ -239,7 +229,6 @@ OBJS =  $(SHIP_OBJS) \
 				 statistics.o \
 				 storage_lockers.o \
 				 locker_async.o \
-				 tether.o \
 				 timers.o \
 				 track.o \
 				 tradeskill.o \
@@ -272,6 +261,7 @@ OBJS =  $(SHIP_OBJS) \
 				 gmcp.o \
 				 ttype.o \
 				 wiz_newchar.o
+
 
 # Name lists (no paths) for pfile-related objs
 SHARED_PFILE_OBJS_NAMES = pf-skills.o pf-files.o

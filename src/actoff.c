@@ -48,7 +48,6 @@
 #include "guard.h"
 #include "guildhall.h"
 #include "justice.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
 #include "paladins.h"
 #include "siege.h"
@@ -61,14 +60,12 @@
 extern P_index                mob_index;
 extern P_index                obj_index;
 extern P_desc                 descriptor_list;
-extern P_event                current_event;
 extern P_room                 world;
 extern const char            *command[];
 extern const char            *dirs[];
 extern const struct stat_data stat_factor[];
 extern struct str_app_type    str_app[];
 extern struct zone_data      *zone_table;
-extern P_event                event_list;
 extern int                    innate_abilities[];
 extern int                    class_innates[][5];
 extern const int              rev_dir[];
@@ -669,8 +666,6 @@ void do_stance(P_char ch, char *argument, int cmd)
 		send_to_char("You enter a defensive stance..\n", ch);
 	}
 
-	if (ch->group)
-		verify_group_formation(ch, 0);
 	CharWait(ch, PULSE_VIOLENCE * 1);
 
 #else
@@ -909,11 +904,11 @@ void lance_charge(P_char ch, char *argument)
 	}
 	else
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "$n rears up on $N and charges %s.", dirs[dir]);
+		snprintf(buf, sizeof buf, "$n rears up on $N and charges %s.", dirs[dir]);
 		act(buf, TRUE, ch, weapon, mount, TO_NOTVICT);
-		snprintf(buf, MAX_STRING_LENGTH, "You rear up on $N and charge %s.", dirs[dir]);
+		snprintf(buf, sizeof buf, "You rear up on $N and charge %s.", dirs[dir]);
 		act(buf, TRUE, ch, weapon, mount, TO_CHAR);
-		snprintf(buf, MAX_STRING_LENGTH, "$n rears up on you and orders you to charge %s.", dirs[dir]);
+		snprintf(buf, sizeof buf, "$n rears up on you and orders you to charge %s.", dirs[dir]);
 		act(buf, TRUE, ch, weapon, mount, TO_VICT);
 		do_simple_move(ch, dir, 0);
 	}
@@ -1009,9 +1004,9 @@ void lance_charge(P_char ch, char *argument)
 		else if (effect < 5 && continue_dir != -1)
 		{
 			act("Your aim is off and your $q misses $N.\nUnable to halt your mount you charge onward!", TRUE, ch, weapon, victim, TO_CHAR);
-			snprintf(buf, MAX_STRING_LENGTH, "As $n fails to impale $N upon $s $q $e is unable to halt $s charge and disappears %s.", dirs[continue_dir]);
+			snprintf(buf, sizeof buf, "As $n fails to impale $N upon $s $q $e is unable to halt $s charge and disappears %s.", dirs[continue_dir]);
 			act(buf, TRUE, ch, weapon, victim, TO_NOTVICT);
-			snprintf(buf, MAX_STRING_LENGTH, "As $n fails to impale you upon $s $q $e is unable to halt $s charge and disappears %s.", dirs[continue_dir]);
+			snprintf(buf, sizeof buf, "As $n fails to impale you upon $s $q $e is unable to halt $s charge and disappears %s.", dirs[continue_dir]);
 			act(buf, TRUE, ch, weapon, victim, TO_VICT);
 			do_simple_move(ch, continue_dir, 0);
 			return;
@@ -1063,18 +1058,18 @@ void lance_charge(P_char ch, char *argument)
 			{
 				int target_room = world[ch->in_room].dir_option[continue_dir]->to_room;
 				dam             = dam + dice(20, 6);
-				snprintf(buf, MAX_STRING_LENGTH, "You ram your $q through $N sending both veering out %s.", dirs[continue_dir]);
+				snprintf(buf, sizeof buf, "You ram your $q through $N sending both veering out %s.", dirs[continue_dir]);
 				act(buf, FALSE, ch, weapon, victim, TO_CHAR);
-				snprintf(buf, MAX_STRING_LENGTH, "$n rams $s $q through $N sending both veering out %s.", dirs[continue_dir]);
+				snprintf(buf, sizeof buf, "$n rams $s $q through $N sending both veering out %s.", dirs[continue_dir]);
 				act(buf, FALSE, ch, weapon, victim, TO_NOTVICT);
-				snprintf(buf, MAX_STRING_LENGTH, "$n rams $s $q through you sending both veering out %s.", dirs[continue_dir]);
+				snprintf(buf, sizeof buf, "$n rams $s $q through you sending both veering out %s.", dirs[continue_dir]);
 				act(buf, FALSE, ch, weapon, victim, TO_VICT);
 				char_from_room(victim);
 				char_to_room(victim, target_room, -1);
 				char_from_room(ch);
 				char_to_room(ch, target_room, -1);
 				set_fighting(ch, victim);
-				snprintf(buf, MAX_STRING_LENGTH, "$N is flung to the ground as $n charges in from the %s, with $M impaled on the tip of the $q.", dirs[rev_dir[continue_dir]]);
+				snprintf(buf, sizeof buf, "$N is flung to the ground as $n charges in from the %s, with $M impaled on the tip of the $q.", dirs[rev_dir[continue_dir]]);
 				if (!number(0, 100))
 					DamageOneItem(ch, SPLDAM_GENERIC, weapon, FALSE);
 				act(buf, FALSE, ch, weapon, victim, TO_NOTVICT);
@@ -2069,7 +2064,6 @@ void do_order(P_char ch, char *argument, int comd)
 				}
 			}
 		}
-#if 1
 		else
 		{ /* This is order "followers" */
 			act("$n gives an order to $s followers.", FALSE, ch, 0, 0, TO_ROOM);
@@ -2137,10 +2131,6 @@ void do_order(P_char ch, char *argument, int comd)
 				}
 			}
 
-			/*
-			      if(char_in_list(ch))
-			      {
-			*/
 			if (!found)
 				send_to_char("None here are loyal subjects of yours!\n", ch);
 			else
@@ -2150,9 +2140,7 @@ void do_order(P_char ch, char *argument, int comd)
 				else
 					CharWait(ch, 2);
 			}
-			/*      }*/
 		}
-#endif
 	}
 }
 
@@ -2195,7 +2183,6 @@ void do_flee(P_char ch, char *argument, int cmd)
 	int                  i, attempted_dir, start_room, atts, fight_pc = FALSE, j;
 	char                 buf[MAX_INPUT_LENGTH];
 	P_char               tch, was_fighting = NULL;
-	P_event              e1, e2;
 	struct affected_type af;
 	char                *arg1;
 	char                 arg[512];
@@ -2433,7 +2420,7 @@ void do_flee(P_char ch, char *argument, int cmd)
 		else if (rider && mount && GET_VITALITY(mount) > 0)
 			GET_VITALITY(mount) = MAX(0, (GET_VITALITY(mount) - (number(30, 40))));
 
-		snprintf(buf, MAX_STRING_LENGTH, "You flee %sward!\n", dirs[attempted_dir]);
+		snprintf(buf, sizeof buf, "You flee %sward!\n", dirs[attempted_dir]);
 		send_to_char(buf, ch);
 
 		if (!affected_by_spell(ch, SKILL_AWARENESS))
@@ -2866,7 +2853,7 @@ void do_consume(P_char ch, char *argument, int cmd)
 			act("...another chunk of &+R$N&n's &+grotten &+yflesh&n falls to the ground...&n", FALSE, ch, 0, victim, TO_NOTVICT);
 			act("...another chunk of your &+grotten &+yflesh&n falls to the ground...&n", FALSE, ch, 0, victim, TO_VICT);
 			act("...another chunk of &+R$N&n's &+grotten &+yflesh&n falls to the ground, and you feel your &+gprayer &nflow back into your mind...&n", FALSE, ch, 0, victim, TO_CHAR);
-			spell == memorize_last_spell(ch);
+			memorize_last_spell(ch);
 			char buf[256];
 			send_to_char(buf, ch);
 			/*if(!NewSaves(victim, SAVING_FEAR, 0))
@@ -2874,7 +2861,7 @@ void do_consume(P_char ch, char *argument, int cmd)
 			vamp(ch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
 			spell_damage(ch, victim, 3 * GET_LEVEL(ch), SPLDAM_GENERIC, RAWDAM_NOKILL, 0);
 		}
-		spell == memorize_last_spell(ch);
+		memorize_last_spell(ch);
 		char buf[256];
 		send_to_char(buf, ch);
 		--af->modifier;
@@ -3395,9 +3382,9 @@ void kick(P_char ch, P_char victim)
 
 		if (CAN_GO(victim, door) && (!check_wall(victim->in_room, door)))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Your mighty kick sends $N flying out of the room to the %s!&n", dirs[door]);
+			snprintf(buf, sizeof buf, "Your mighty kick sends $N flying out of the room to the %s!&n", dirs[door]);
 			act(buf, FALSE, ch, 0, victim, TO_CHAR);
-			snprintf(buf, MAX_STRING_LENGTH, "$n's mighty kick sends $N flying out of the room to the %s!&n", dirs[door]);
+			snprintf(buf, sizeof buf, "$n's mighty kick sends $N flying out of the room to the %s!&n", dirs[door]);
 			act(buf, FALSE, ch, 0, victim, TO_NOTVICT);
 			act("$n's mighty kick sends you flying out of the room!", FALSE, ch, 0, victim, TO_VICT);
 			target_room = world[victim->in_room].dir_option[door]->to_room;
@@ -4588,11 +4575,7 @@ void do_assist_core(P_char ch, P_char victim)
 	if (IS_NPC(ch))
 		MobStartFight(ch, GET_OPPONENT(victim));
 	else
-#ifndef NEW_COMBAT
 		hit(ch, GET_OPPONENT(victim), ch->equipment[PRIMARY_WEAPON]);
-#else
-		hit(ch, GET_OPPONENT(victim), ch->equipment[WIELD], TYPE_UNDEFINED, getBodyTarget(ch), TRUE, FALSE);
-#endif
 
 	if (char_in_list(ch))
 		CharWait(ch, (int)(PULSE_VIOLENCE * 0.5));
@@ -5984,14 +5967,10 @@ void attack(P_char ch, P_char victim)
 			victim->specials.combat_tics = (int)victim->specials.base_combat_round;
 		}
 
-#ifndef NEW_COMBAT
 		if (IS_ALIVE(victim) && !surprise(ch, victim))
 		{
 			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
 		}
-#else
-		hit(ch, victim, ch->equipment[WIELD], TYPE_UNDEFINED, getBodyTarget(ch), TRUE, FALSE);
-#endif
 		if (char_in_list(ch) && (IS_PC(ch) || (ch->following && IS_PC(ch->following))))
 		{
 			CharWait(ch, PULSE_VIOLENCE + 2);
@@ -8165,9 +8144,9 @@ void do_rearkick(P_char ch, char *argument, int cmd)
 
 		if ((CAN_GO(victim, door)) && (!check_wall(victim->in_room, door)))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+LYour mighty rearkick sends&n $N &+Lflying out of the room to the %s!&n", dirs[door]);
+			snprintf(buf, sizeof buf, "&+LYour mighty rearkick sends&n $N &+Lflying out of the room to the %s!&n", dirs[door]);
 			act(buf, FALSE, ch, 0, victim, TO_CHAR);
-			snprintf(buf, MAX_STRING_LENGTH, "$n's &+Lmighty rearkick sends&n $N &+Lflying out of the room to the %s!&n", dirs[door]);
+			snprintf(buf, sizeof buf, "$n's &+Lmighty rearkick sends&n $N &+Lflying out of the room to the %s!&n", dirs[door]);
 			act(buf, FALSE, ch, 0, victim, TO_NOTVICT);
 			act("$n's &+Lmighty rearkick sends you flying out of the room!&n", FALSE, ch, 0, victim, TO_VICT);
 			target_room = world[victim->in_room].dir_option[door]->to_room;
@@ -8721,10 +8700,12 @@ void bodyslam(P_char ch, P_char victim)
 	}
 
 	if (fall)
+	{
 		if (number(0, 1))
 			SET_POS(ch, POS_SITTING + GET_STAT(ch));
 		else
 			SET_POS(ch, POS_KNEELING + GET_STAT(ch));
+	}
 
 	if (!affected_by_spell(victim, SKILL_AWARENESS))
 	{
@@ -10113,25 +10094,6 @@ void restrain(P_char ch, P_char victim)
 		// If hps are low.. like under 100 or so low, we insta-kill?  WTF?
 		if (GET_HIT(victim) < (number(0, 100) + anatomy_skill) / 2)
 		{
-			/*
-			      if(GET_CLASS(ch, CLASS_CABALIST))
-			      {
-			        act("Your powerful will easily dominates the inferior creature before you.\n"
-			            "You draw $S soul into your essence sentencing $M to judgement.\n"
-			            "The guilt is obvious for there are so few true of heart. You strip\n"
-			            "the body of the soul and let the dead husk topple to the ground.",
-			            FALSE, ch, 0, victim, TO_CHAR);
-			        act("As you stare into&n $N's bottomless eyes you loose yourself\n"
-			            "in the endless void. Powers beyond your understanding probe your soul\n"
-			            "judging your deeds. The verdict is one - guilty. Your soul is ripped\n"
-			            "from your body and the now dead husk topples to the ground.",
-			            FALSE, ch, 0, victim, TO_VICT);
-			        act("$N shudders as $E tries, and fails, to break free of the will of $n.\n"
-			            "A second of silence passes before simply utters a silent sigh and topples over dead.",
-			            FALSE, ch, 0, victim, TO_NOTVICT);
-			      }
-			      else
-			*/
 			{
 				act("&+LYou turn to &n$N &+Land make an un&+who&+Wly &+Lgesture.\n"
 				    "&+LA &nsmoking &+Ldark pit opens beneath &n$S feet, the smell of death\n"

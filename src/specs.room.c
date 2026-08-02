@@ -36,7 +36,6 @@
 
 extern P_char      character_list;
 extern P_desc      descriptor_list;
-extern P_event     current_event;
 extern P_index     mob_index;
 extern P_index     obj_index;
 extern P_room      world;
@@ -330,14 +329,13 @@ int inn(int room, P_char ch, int cmd, char *arg)
 		}
 
 		zone = &zone_table[world[ch->in_room].zone];
-		if (zone->status > ZONE_NORMAL && (GET_LEVEL(ch) > 25) && (zone_table[world[ch->in_room].zone].number != WINTERHAVEN))
+		if (IS_TOWN_RAIDED(ch) && (GET_LEVEL(ch) > 25) && (zone_table[world[ch->in_room].zone].number != WINTERHAVEN))
 		{
 			send_to_char("The receptionist turns and says, '&+RThe town is under attack!&n'\n", ch);
 			send_to_char("  '&+WTry to get a portal out of here, or run to another exit!&n'\n", ch);
 			send_to_char("  '&+WPlease hurry great adventurer, the town needs you.&n'\n", ch);
 			send_to_char("The receptionist wishes you good luck. \n", ch);
 
-			add_event(event_justice_raiding, 200, ch, 0, 0, 0, &room, sizeof(room));
 			return FALSE;
 		}
 
@@ -949,7 +947,7 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 		val = mount_rent_cost(mount);
-		snprintf(buf, MAX_STRING_LENGTH, "A stable-hand says, 'That pet will cost ye %s to rent.'", coin_stringv(val));
+		snprintf(buf, sizeof buf, "A stable-hand says, 'That pet will cost ye %s to rent.'", coin_stringv(val));
 		act(buf, FALSE, ch, 0, 0, TO_CHAR);
 		return TRUE;
 	}
@@ -978,7 +976,7 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
 		{
 			return FALSE;
 		}
-		snprintf(buf, MAX_STRING_LENGTH, "%s%d", GET_NAME(ch), ticket->value[1]);
+		snprintf(buf, sizeof buf, "%s%d", GET_NAME(ch), ticket->value[1]);
 		//    petrestore(ch, buf);
 		SUB_MONEY(ch, val, 0);
 		obj_from_char(ticket);

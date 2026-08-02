@@ -156,21 +156,6 @@ X 0 512 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
-#18
-random zone mob prototype~
-Super raider~
-Super raider stands here in mid-air.
-~
-&+LThis strange and interesting creature appears to be from some distant land.
-&+LThe age of this individual is nearly impossible to calculate, as it is shrouded
-&+Lin a massive cloak that is heavily stained and soiled. This cloak also disguises
-&+Lwhat &+rbattlefield&+L capabilities or &+bmagical&+L prowess he possesses if any.
-~
-1107298377 0 0 0 65588 0 0 0 0 S
-PH 12 1 0 -1
-51 11 19 25d47+250 3d5+3
-6.2.6.1 22275
-8 8 1
 #19
 fearsome warg~
 &+ya fearsome warg&n~
@@ -1091,7 +1076,7 @@ corpse gatherer~
 &+LCorpse &+Gga&+gth&+Ger&+gers &+Lare mobile &+wcemetaries &+Lwhich came to
 &+Llife because of all the &+revil &+Lpeople who were buried there. They then go and
 &+Land seek to grow by consuming any living creature in their path. This creature is made
-&+Lup of &+yearth&L, &+whe&+Wad&+Lsto&+wne&+Ws &+Land &+Gco&+grps&+Ges&+L.
+&+Lup of &+yearth&+L, &+whe&+Wad&+Lsto&+wne&+Ws &+Land &+Gco&+grps&+Ges&+L.
 ~
 1075972104 1 0 0 402759704 4108 17039360 67112960 -1000 S
 CN 0 16777216 0 5

@@ -11273,7 +11273,7 @@ S
 &+LA Perimeter Corridor of the &+CFort&N~
    &+LThis large perimeter fort encircles the top level of &+WKhor&N&+calator &+CFort,
 &+Lthe &+Ymountain dwarf &+Lmilitary outpost within the peaks of &n&+yShan&+La&N&+yt&+La&N&+yr&+L.
-&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballistae
+&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballista
 &+Lslit, from which dwarven archers may ain their ranged defense.  The floor is
 &+Lcovered with a thick layer of &nsilt&+L, with hundreds of scattered
 &+Lfootprints across.  This wide, stone corridor has been widened in the
@@ -11298,7 +11298,7 @@ S
 &+LA Perimeter Corridor of the &+CFort&N~
    &+LThis large perimeter fort encircles the top level of &+WKhor&N&+calator &+CFort,
 &+Lthe &+Ymountain dwarf &+Lmilitary outpost within the peaks of &n&+yShan&+La&N&+yt&+La&N&+yr&+L.
-&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballistae
+&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballista
 &+Lslit, from which dwarven archers may ain their ranged defense.  The floor is
 &+Lcovered with a thick layer of &nsilt&+L, with hundreds of scattered
 &+Lfootprints across.  This wide, stone corridor has been widened in the
@@ -11322,7 +11322,7 @@ S
 &+LA Perimeter Corridor of the &+CFort&N~
    &+LThis large perimeter fort encircles the top level of &+WKhor&N&+calator &+CFort,
 &+Lthe &+Ymountain dwarf &+Lmilitary outpost within the peaks of &n&+yShan&+La&N&+yt&+La&N&+yr&+L.
-&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballistae
+&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballista
 &+Lslit, from which dwarven archers may ain their ranged defense.  The floor is
 &+Lcovered with a thick layer of &nsilt&+L, with hundreds of scattered
 &+Lfootprints across.  This wide, stone corridor has been widened in the
@@ -11347,7 +11347,7 @@ S
 &+LA Perimeter Corridor of the &+CFort&N~
    &+LThis large perimeter fort encircles the top level of &+WKhor&N&+calator &+CFort,
 &+Lthe &+Ymountain dwarf &+Lmilitary outpost within the peaks of &n&+yShan&+La&N&+yt&+La&N&+yr&+L.
-&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballistae
+&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballista
 &+Lslit, from which dwarven archers may ain their ranged defense.  The floor is
 &+Lcovered with a thick layer of &nsilt&+L, with hundreds of scattered
 &+Lfootprints across.  This wide, stone corridor has been widened in the
@@ -11384,7 +11384,7 @@ S
 &+LA Perimeter Corridor of the &+CFort&N~
    &+LThis large perimeter fort encircles the top level of &+WKhor&N&+calator &+CFort,
 &+Lthe &+Ymountain dwarf &+Lmilitary outpost within the peaks of &n&+yShan&+La&N&+yt&+La&N&+yr&+L.
-&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballistae
+&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballista
 &+Lslit, from which dwarven archers may ain their ranged defense.  The floor is
 &+Lcovered with a thick layer of &nsilt&+L, with hundreds of scattered
 &+Lfootprints across.  This wide, stone corridor has been widened in the
@@ -11404,7 +11404,7 @@ S
 &+LA Perimeter Corridor of the &+CFort&N~
    &+LThis large perimeter fort encircles the top level of &+WKhor&N&+calator &+CFort,
 &+Lthe &+Ymountain dwarf &+Lmilitary outpost within the peaks of &n&+yShan&+La&N&+yt&+La&N&+yr&+L.
-&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballistae
+&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballista
 &+Lslit, from which dwarven archers may ain their ranged defense.  The floor is
 &+Lcovered with a thick layer of &nsilt&+L, with hundreds of scattered
 &+Lfootprints across.  This wide, stone corridor has been widened in the
@@ -11446,7 +11446,7 @@ S
 &+LA Perimeter Corridor of the &+CFort&N~
    &+LThis large perimeter fort encircles the top level of &+WKhor&N&+calator &+CFort,
 &+Lthe &+Ymountain dwarf &+Lmilitary outpost within the peaks of &n&+yShan&+La&N&+yt&+La&N&+yr&+L.
-&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballistae
+&+LAbout seven-to-ten paces apart on the outter wall sits a large arrow or ballista
 &+Lslit, from which dwarven archers may ain their ranged defense.  The floor is
 &+Lcovered with a thick layer of &nsilt&+L, with hundreds of scattered
 &+Lfootprints across.  This wide, stone corridor has been widened in the
@@ -14857,7 +14857,7 @@ S
 ~
 831 33554432 5
 D0
-&+LThe rusty &&+ygates &+Lof the tower of &N&+cXamora&+L.
+&+LThe rusty &+ygates &+Lof the tower of &N&+cXamora&+L.
 ~
 gates~
 2 83431 83826
@@ -15725,7 +15725,7 @@ S
 ~
 831 33554432 13
 D0
-&+LA &N&+yrag&+mge&+rdy &N&&+bold curtain&+L.
+&+LA &N&+yrag&+mge&+rdy &N&+bold curtain&+L.
 ~
 curtain~
 1 0 83549

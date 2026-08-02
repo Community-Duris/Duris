@@ -1516,7 +1516,7 @@ fiercesome drakenhorse horse draken _hireling_~
 &+LA &+Rf&+rie&+Rrc&+re&+Rs&+ro&+Rm&+re &+Ldr&+Rak&+Len&+Rho&+Lrs&+Re &+Lsnarls at you with empty eyesockets.&n
 ~
 ~
-134217736 0 0 0 134217728 0 0 512 0 S
+134217736 0 0 0 671088728 64 134217728 8401408 0 S
 ae 0 1 0 -1
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -2064,7 +2064,7 @@ po 0 1 0 -1
 #55142
 githyanki~
 &na &+GGith&+Wyanki&n~
-&nA &+GGith&+Wyanki &n(medium) &+LDr&+wea&+WdL&+wo&+LrD &+L*-& &+rClan BloodLust &+L*-*&n stands in mid-air here.&n
+&nA &+GGith&+Wyanki &n(medium) &+LDr&+wea&+WdL&+wo&+LrD &+L*-* &+rClan BloodLust &+L*-*&n stands in mid-air here.&n
 ~
 ~
 1074137098 1 0 0 0 0 0 262144 0 S

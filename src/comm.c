@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <gnutls/gnutls.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -43,7 +44,6 @@
 #include "graph.h"
 #include "guildhall.h"
 #include "hardcore.h"
-#include "helpfile.h"
 #include "json_utils.h"
 #include "lookup_process.h"
 #include "map.h"
@@ -86,7 +86,6 @@
 
 /* external variables */
 
-extern P_event               schedule[];
 extern P_index               mob_index;
 extern P_room                world;
 extern char                  debug_mode;
@@ -105,7 +104,7 @@ extern void                  timedShutdown(P_char ch, P_char, P_obj, void *data)
 extern void                  checkpointing(void);
 
 long sentbytes    = 0;
-long recivedbytes = 0;
+long receivedbytes = 0;
 bool game_booted  = FALSE;
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
@@ -137,7 +136,6 @@ extern void ne_events();
 long unsigned int ip2ul(const char *ip);
 void              load_alliances();
 void              initialize_transport();
-bool              newLeaderBoard(P_char ch, char *arg, int cmd);
 bool              newHardcoreBoard(P_char ch, char *arg, int cmd);
 void              format_to_snoopers(char *from_string, char *to_string);
 extern void       update_breath_weapon_properties();
@@ -150,7 +148,6 @@ static void       process_line(P_desc t, char *in);
 
 P_desc descriptor_list, next_to_process, next_save = 0;
 fd_set input_set, output_set, exc_set; /* for socket handling */
-int    bounce_null_sites = 0;
 int    mini_mode         = 0;
 int    lawful            = 0;
 int    no_specials       = 0;
@@ -171,9 +168,7 @@ int                   slow_death              = 0;
 volatile sig_atomic_t tics                    = 0;
 long                  boot_time;
 int                   ipc_id    = 0;
-int                   was_upper = FALSE;
 pid_t                 lookup_host_process;
-pid_t                 lookup_ident_process;
 int                   max_users_playing = 0;
 int                   used_descs = 0, avail_descs = 0, max_descs = 0, max_descs_this_hour = 0;
 struct mm_ds         *dead_desc_pool = NULL;
@@ -197,33 +192,7 @@ P_char     executing_ch;
 char   command_output[MAX_COMMAND_OUTPUT + PAD_COMMAND_OUTPUT + 1];
 size_t output_length;
 
-/* ============= Ansi color table and data structure  ============== */
-
-struct ansi_color
-{
-	const char *symbol;  /* Symbol used in the game. eg &+symbol */
-	const char *fg_code; /* ^[[fg_codem; = foreground color code */
-	const char *bg_code; /* Same except it's the background color */
-} color_table[] = {
-
-	{ "L", "30", "40"}, /* * Black            */
-	{ "R", "31", "41"}, /* * Red              */
-	{ "G", "32", "42"}, /* * Green            */
-	{ "Y", "33", "43"}, /* * Yellow           */
-	{ "B", "34", "44"}, /* * Blue             */
-	{ "M", "35", "45"}, /* * Magenta          */
-	{ "C", "36", "46"}, /* * Cyan             */
-	{ "W", "37", "47"}, /* * White            */
-	{NULL, NULL, NULL}  /* * End of the table */
-};
-
 #define MIN_SOCKET_BUFFER_SIZE 20480
-
-const char *COMA_SIGN = "\r\n\
-DurisMUD is currently inactive due to excessive load on the host machine.\r\n\
-Please try again later.\r\n\r\n\
-Sadly, \r\n\r\n\
-the DurisMUD system operators\r\n\r\n";
 
 /*
  * ********************************************************************* *
@@ -303,10 +272,6 @@ int main(int argc, char **argv)
 				req_passwd = 0;
 				logit(LOG_STATUS, "Allowing changing of password without old one.");
 				break;
-			case 'n':
-				bounce_null_sites = 1;
-				logit(LOG_STATUS, "Bouncing null sites");
-				break;
 			case 'm':
 				mini_mode  = 1;
 				no_ferries = 1;
@@ -329,9 +294,10 @@ int main(int argc, char **argv)
 	}
 
 	if (pos < argc)
+	{
 		if (!isdigit(*argv[pos]))
 		{
-			fatal_boot_error("comm", "Usage: %s [-l] [-m] [-s] [-p] [-n] [-f] [-d pathname] [ port # ]", argv[0]);
+			fatal_boot_error("comm", "Usage: %s [-l] [-m] [-s] [-p] [-f] [-d pathname] [ port # ]", argv[0]);
 		}
 		else if ((port = atoi(argv[pos])) <= 1024)
 		{
@@ -339,6 +305,7 @@ int main(int argc, char **argv)
 		}
 		else
 			sslport = port + 1;
+	}
 	// Global variable so can check if mainmud or not!
 	RUNNING_PORT = port;
 
@@ -355,10 +322,6 @@ int main(int argc, char **argv)
 	/*
 	  if (!(lookup_host_process = fork()))
 	    exit(run_lookup_host_process(ipc_id));
-	*/
-	/*
-	  if (!(lookup_ident_process = fork()))
-	    exit(run_lookup_ident_process(ipc_id));
 	*/
 	if (chdir(dir) < 0)
 	{
@@ -573,10 +536,6 @@ void run_the_game(int port, int sslport)
 		init_siege();
 #endif
 
-		// This guarentees that files exist for reading.
-		fprintf(stderr, "-- Touching leaderboard\r\n");
-		touch(leaderboard_file);
-		newLeaderBoard(NULL, "boot", 0);
 		fprintf(stderr, "-- Touching hall of fame\r\n");
 		touch(halloffamelist_file);
 		newHardcoreBoard(NULL, "boot", 0);
@@ -590,7 +549,11 @@ void run_the_game(int port, int sslport)
 	{
 		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
 	}
-	 time_after = clock();
+
+	fprintf(stderr, "Assigning map glyph variations.\r\n");
+        init_map_glyphs();
+
+	time_after = clock();
 	bfs_reset_marks();
 	fprintf(stderr, "Boot completed in: %d milliseconds\n", (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
 	logit(LOG_STATUS, "Boot completed in:%d milliseconds\n", (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
@@ -747,7 +710,6 @@ void game_loop(int port, int sslport)
 	static struct timeval opt_time;
 	struct timeval        last_time, now, timespent, timeout, null_time;
 	struct host_answer    host_ans_buf;
-	struct ident_answer   ident_ans_buf;
 	sigset_t              mask, oldset;
 	int                   s, S;
 	int                   WS; /* WebSocket listener socket */
@@ -755,26 +717,16 @@ void game_loop(int port, int sslport)
 	unsigned long         accept_debug_pulse = 0;
 
 	sentbytes         = 0;
-	recivedbytes      = 0;
+	receivedbytes     = 0;
 	null_time.tv_sec  = 0;
 	null_time.tv_usec = 0;
 
 	opt_time.tv_usec = OPT_USEC; /* Init time values */
 	opt_time.tv_sec  = 0;
-#if 1
 	gettimeofday(&last_time, (struct timezone *)0);
-#endif
 	pulse = 0;
 
-#ifdef DO_SET_DTABLE_SIZE
-	(void)setdtablesize(128);
-#endif
-
-#if 1
 	avail_descs = MAX_CONNECTIONS;
-#else
-	avail_descs = getdtablesize() - 10;
-#endif
 
 	snprintf(buf, MAX_STRING_LENGTH, "avail_descs set to: %d", avail_descs);
 	logit(LOG_STATUS, buf);
@@ -891,10 +843,8 @@ void game_loop(int port, int sslport)
 		}
 		/*
 		    struct host_answer host_ans_buf;
-		    struct ident_answer ident_ans_buf;
 		*/
 		bzero(&host_ans_buf, sizeof(host_ans_buf));
-		bzero(&ident_ans_buf, sizeof(ident_ans_buf));
 		/* Check for answers to hostname queuries */
 		/* just ignore errors (hope they are all "no message" errors) */
 #if 0
@@ -903,12 +853,6 @@ void game_loop(int port, int sslport)
                MSG_HOST_ANS, IPC_NOWAIT) == -1)
       host_ans_buf.desc = s;    /* so nothing happens  */
 #endif
-		/*
-		    if (msgrcv(ipc_id, (struct msgbuf *) &ident_ans_buf,
-		               sizeof(struct ident_answer) - sizeof(long),
-		               MSG_IDENT_ANS, IPC_NOWAIT) == -1)
-		           ident_ans_buf.desc = s;
-		*/
 		/* Check what's happening out there */
 		FD_ZERO(&input_set);
 		FD_ZERO(&output_set);
@@ -936,14 +880,10 @@ void game_loop(int port, int sslport)
 			 * before matches
 			 */
 
-			if ((point->descriptor == ident_ans_buf.desc) && (*((time_t *)(point->login + 4)) == ident_ans_buf.stamp))
-				strcpy(point->login, ident_ans_buf.name);
-
 			if ((point->descriptor == host_ans_buf.desc) && !strncmp(host_ans_buf.addr, point->host /*+ 3 */, strlen(host_ans_buf.addr)))
 			{
 				/* we have a match! */
-				strncpy(point->host, host_ans_buf.name, 49);
-				point->host[49] = 0;
+				strlcpy(point->host, host_ans_buf.name, sizeof point->host);
 
 				/* site ban code, skip if address is junk */
 				snprintf(buf, MAX_STRING_LENGTH, "%s\r\n", point->host);
@@ -998,7 +938,7 @@ void game_loop(int port, int sslport)
 					next_d = d->next;
 					if (fcntl(d->descriptor, F_GETFD) == -1 && errno == EBADF)
 					{
-						logit(LOG_STATUS, "ebadf: closing bad descriptor %d, host=%s, ws=%d, state=%d", d->descriptor, d->host ? d->host : "null", d->websocket, d->connected);
+						logit(LOG_STATUS, "ebadf: closing bad descriptor %d, host=%s, ws=%d, state=%d", d->descriptor, *d->host ? d->host : "null", d->websocket, d->connected);
 						close_socket(d);
 					}
 				}
@@ -1263,12 +1203,6 @@ void game_loop(int port, int sslport)
 		/* handle heartbeat stuff */
 		/* Note: pulse now changes every 1/4 sec  */
 		after_events_call = TRUE;
-		/* Not using old events anymore.
-		if (schedule[pulse])
-		{
-		  Events();
-		}
-		*/
 		clock_t ne_events_begin = clock();
 		ne_events();
 		clock_t ne_events_end = clock();
@@ -1425,7 +1359,6 @@ void game_loop(int port, int sslport)
 		double affect_and_points_time = (double)(affect_and_points_end - affect_and_points_begin) / (double)CLOCKS_PER_SEC;
 		latency_trace_record("affect_and_points", (long)(affect_and_points_time * 1000000.0), pulse);
 		/* check out the time */
-#if 1
 		loop_time_end = clock();
 		double loop_time = (double)(loop_time_end - loop_time_begin) / (double)CLOCKS_PER_SEC;
 		if (loop_time >= 0.250) // 4 ticks a sec
@@ -1467,7 +1400,6 @@ void game_loop(int port, int sslport)
 			sigprocmask(SIG_SETMASK, &oldset, 0);
 		}
 		gettimeofday(&last_time, (struct timezone *)0); /* end of pulse reset */
-#endif
 		PROFILE_END(pulse_reset);
 	}
 
@@ -1798,7 +1730,7 @@ int init_socket(int port)
 	int                s, bind_error;
 	char              *opt;
 	char               hostname[MAX_HOSTNAME + 1];
-	struct sockaddr_in sa;
+	sockaddr_in6       sa;
 	struct hostent    *hp;
 	int                value = 1;
 	struct linger      linger_values;
@@ -1811,7 +1743,7 @@ int init_socket(int port)
 	linger_values.l_onoff  = 0;
 	linger_values.l_linger = 0;
 
-	bzero(&sa, sizeof(struct sockaddr_in));
+	bzero(&sa, sizeof sa);
 	/*
 	  gethostname(hostname, MAX_HOSTNAME);
 	  hp = gethostbyname(hostname);
@@ -1821,8 +1753,8 @@ int init_socket(int port)
 	  }
 	*/
 	/*  sa.sin_family = hp->h_addrtype; */
-	sa.sin_family = AF_INET;
-	sa.sin_port   = htons((unsigned short int)port);
+	sa.sin6_family = AF_INET6;
+	sa.sin6_port = htons((unsigned short int)port);
 #ifdef IPPROTO_MPTCP
 	/*
 	 * Multipath TCP: if there are multiple routes available and enabled, they
@@ -1834,10 +1766,10 @@ int init_socket(int port)
 	 * doesn't require a retry from us.  Thus, the only concerns are platforms
 	 * that don't support MPTCP (Windows, old BSDs) or have CONFIG_MPTCP=n.
 	 */
-	s             = socket(PF_INET, SOCK_STREAM, IPPROTO_MPTCP);
+	s             = socket(AF_INET6, SOCK_STREAM, IPPROTO_MPTCP);
 	if (s < 0)
 #endif
-	s             = socket(PF_INET, SOCK_STREAM, 0);
+	s             = socket(AF_INET6, SOCK_STREAM, 0);
 	if (s < 0)
 	{
 		logit(LOG_EXIT, "Init-socket");
@@ -1887,14 +1819,14 @@ int init_socket(int port)
 
 int new_connection(int s)
 {
-	struct sockaddr_in isa;
-	int                i;
+	sockaddr_in6       isa;
+	socklen_t          i;
 	int                t;
 
 	i = sizeof(isa);
-	getsockname(s, (struct sockaddr *)&isa, (socklen_t *)&i);
+	getsockname(s, (struct sockaddr *)&isa, &i);
 
-	if ((t = accept(s, (struct sockaddr *)&isa, (socklen_t *)&i)) < 0)
+	if ((t = accept(s, (struct sockaddr *)&isa, &i)) < 0)
 		return (-1);
 	nonblock(t);
 	i = 1;
@@ -2082,7 +2014,7 @@ void close_socket(struct descriptor_data *d)
 	else
 		logit(LOG_COMM,
 		      "Losing descriptor without char [host=%s desc=%d connected=%d ssl=%s].",
-		      d->host ? d->host : "unknown",
+		      *d->host ? d->host : "unknown",
 		      d->descriptor,
 		      d->connected,
 		      d->sslses ? "yes" : "no");
@@ -2196,8 +2128,7 @@ static int parse_proxy_protocol(int desc, char *real_ip, size_t ip_len)
 
 	if (sscanf(buf, "PROXY %7s %45s %45s %d %d", proto, src_ip, dst_ip, &src_port, &dst_port) == 5)
 	{
-		strncpy(real_ip, src_ip, ip_len - 1);
-		real_ip[ip_len - 1] = '\0';
+		strlcpy(real_ip, src_ip, ip_len);
 		return 1;
 	}
 
@@ -2307,9 +2238,10 @@ int new_descriptor(int s, int conn_type)
 {
 	P_desc             newd;
 	bool               flag = FALSE, found = FALSE, looking_up = FALSE;
-	char               Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
-	int                desc, size;
-	struct sockaddr_in sock;
+	char               Gbuf3[MAX_STRING_LENGTH];
+	int                desc;
+	socklen_t          size;
+	sockaddr_in6       sock;
 	FILE              *f;
 	gnutls_session_t   sslses = 0;
 
@@ -2363,61 +2295,26 @@ int new_descriptor(int s, int conn_type)
 	 */
 	size = sizeof(sock);
 
-	if (getpeername(desc, (struct sockaddr *)&sock, (socklen_t *)&size) < 0)
+	if (getpeername(desc, (struct sockaddr *)&sock, &size) < 0)
 	{
 		perror("getpeername");
-		strcpy(Gbuf1, "&+RUNTRACEABLE&n");
+		strcpy(newd->host, "&+RUNTRACEABLE&n");
 		flag = TRUE;
 	}
 	else
 	{
-
-		snprintf(Gbuf1,
-		         MAX_STRING_LENGTH,
-		         "%d.%d.%d.%d",
-		         ((unsigned char *)&(sock.sin_addr))[0],
-		         ((unsigned char *)&(sock.sin_addr))[1],
-		         ((unsigned char *)&(sock.sin_addr))[2],
-		         ((unsigned char *)&(sock.sin_addr))[3]);
+		inet_ntop(AF_INET6, &sock.sin6_addr, newd->host, sizeof newd->host);
+		if (!strncmp(newd->host, "::ffff:", 7)) // mapped IPv4
+			strcpy(newd->host, newd->host + 7);
 
 		/* check for proxy protocol on websocket connections */
 		if (conn_type == 2)
 		{
 			char proxy_ip[46];
 			if (parse_proxy_protocol(desc, proxy_ip, sizeof(proxy_ip)))
-				strncpy(Gbuf1, proxy_ip, MAX_STRING_LENGTH - 1);
+				strlcpy(newd->host, proxy_ip, sizeof newd->host);
 		}
 
-#if 0
-    if (strlen(Gbuf1) < 8)
-    {
-      /*
-       * address is garbage, bounce em
-       */
-      if (bounce_null_sites)
-      {
-        // WTF?  This is a set of valid addresses!
-        write(desc, "Your site name is unparseable!\r\n");
-        logit(LOG_COMM, "Null site name bounced.");
-        shutdown(desc, 2);
-        used_descs--;
-        close(desc);
-#if 0
-#ifdef MEM_DEBUG
-        mem_use[MEM_DESC] -= sizeof(struct descriptor_data);
-#endif
-        FREE((char *) newd);
-#endif
-        mm_release(dead_desc_pool, newd);
-        return (0);
-      }
-      else
-      {
-        strcpy(Gbuf1, "&+RUNTRACEABLE&n");
-        flag = TRUE;
-      }
-    }
-#endif
 		/*
 		 * things got ugly, 20k+ sites, so, split it into 2 files, a
 		 * sorted historical one and an unsorted 'recent' one.  Rather
@@ -2440,91 +2337,8 @@ int new_descriptor(int s, int conn_type)
 		      }
 		    }
 		*/
-		if (!flag && !found)
-		{
-			/*
-			 * well didn't have it on file, so have to bite the bullet and
-			 * look it up.  Fortunately, only have to do this once per
-			 * site, ever.
-			 */
-
-			/*
-			 * okay.. need to look this up...
-			 */
-			struct host_request buf;
-
-			buf.mtype = MSG_HOST_REQ;
-			buf.desc  = desc;
-			snprintf(buf.addr,
-			         MAX_STRING_LENGTH,
-			         "%d.%d.%d.%d",
-			         ((unsigned char *)&(sock.sin_addr))[0],
-			         ((unsigned char *)&(sock.sin_addr))[1],
-			         ((unsigned char *)&(sock.sin_addr))[2],
-			         ((unsigned char *)&(sock.sin_addr))[3]);
-
-#if 0
-      if (msgsnd(ipc_id, (struct msgbuf *) &buf,
-                 sizeof(struct host_request) - sizeof(long), 0) == -1)
-      {
-        /*
-         * msgsnd() failed... DAMN!  for now, just segfault
-         */
-			panic_corruption("comm", "msgsnd failed");
-      }
-      /*
-       * I'll use yellow to indicate the address is being looked up
-       */
-#endif
-
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s", buf.addr);
-			looking_up = TRUE;
-		}
-		if (found)
-			strcpy(Gbuf1, Gbuf3);
 	}
 
-	/*
-	 * okay.. we simulate it looking up even if doesn't need to.  This
-	 * way, all the bansite code, etc, can be put in the same place.
-	 */
-
-	if (!looking_up)
-	{ /* simulate it anyway */
-		struct host_answer buf;
-
-		buf.mtype = MSG_HOST_ANS;
-		buf.desc  = desc;
-		/*
-		 * note that I put in a "." in the front of the addr field. That
-		 * will signal the "reciver" that this name already occurs in the
-		 * lookup list.
-		 */
-		snprintf(buf.addr,
-		         MAX_STRING_LENGTH,
-		         ".%d.%d.%d.%d",
-		         ((unsigned char *)&(sock.sin_addr))[0],
-		         ((unsigned char *)&(sock.sin_addr))[1],
-		         ((unsigned char *)&(sock.sin_addr))[2],
-		         ((unsigned char *)&(sock.sin_addr))[3]);
-
-		strcpy(buf.name, Gbuf1);
-#if 0
-    if (msgsnd(ipc_id, (struct msgbuf *) &buf,
-               sizeof(struct host_answer) - sizeof(long), 0) == -1)
-    {
-      /*
-       * msgsnd() failed... DAMN!  for now, just segfault
-       */
-			panic_corruption("comm", "msgsnd failed");
-    }
-#endif
-		/*
-		 * I'll use yellow to indicate the address is being looked up
-		 */
-
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s", buf.addr);
-	}
 	//  if (!found)
 	//    write_to_descriptor(desc, "Looking up your hostname...\r\n");
 	/*
@@ -2533,7 +2347,6 @@ int new_descriptor(int s, int conn_type)
 	newd->descriptor = desc;
 	// newd->connected = CON_HOST_LOOKUP;
 	newd->wait = 1;
-	strncpy(newd->host, Gbuf1, 50);
 	resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
 	*newd->host2              = '\0';
 	newd->prompt_mode         = FALSE;
@@ -2556,7 +2369,6 @@ int new_descriptor(int s, int conn_type)
 	newd->confirm_state = 0;       /*
 	                                * SAM 7-94
 	                                */
-	strcpy(newd->login, " ? ");
 	newd->editor       = NULL;
 	newd->out_compress = MCCP_NONE;
 	newd->z_str        = NULL;
@@ -2624,27 +2436,6 @@ static void greet(P_desc newd)
 	/* sga_negotiate(newd); */
 }
 
-/*
- * Return index into color_table. (Ithor) **  Did not use toupper,
- * because it tends to screw up on some machines. (mine)
- */
-
-int find_color_entry(int c)
-{
-	int  i = 0;
-	char s;
-
-	s = UPPER(c);
-
-	while ((color_table[i].symbol != NULL) && (*color_table[i].symbol != s))
-		i++;
-
-	return i;
-}
-
-// LATENT: assumes callers pass a buffer of at least MAX_STRING_LENGTH;
-// no size parameter to enforce. Safe because all callers use prompt_buf
-// which is now MAX_STRING_LENGTH. Would need a size_t param to harden.
 void append_prompt(P_char ch, char *promptbuf)
 {
 	char   t_buf[512];
@@ -2936,11 +2727,8 @@ void clear_logs(P_char ch)
 
 int process_output(P_desc t)
 {
-	char           buf[MAX_STRING_LENGTH + 1], buffer[MAX_STRING_LENGTH + 1];
+	char           buf[MAX_STRING_LENGTH];
 	char           buf2[MAX_STRING_LENGTH];
-	bool           bold = FALSE, blink = FALSE;
-	int            ibuf = 0;
-	int            i, j, k, bg = 0;
 	snoop_by_data *snoop_by_ptr;
 	P_char         realChar = t->original ? t->original : t->character;
 	string         descbuf;
@@ -2988,138 +2776,18 @@ int process_output(P_desc t)
 			format_to_snoopers(buf, buf2);
 		}
 		while (snoop_by_ptr)
-		/*    if (t->snoop.snoop_by) {*/
 		{
-
-			/* desc check makes snoop go wacky?  one never knows.. */
-			//      if (snoop_by_ptr->snoop_by->desc)
-			//      {
 			write_to_q(buf2, &snoop_by_ptr->snoop_by->desc->output, 1);
-			//      }
 
 			snoop_by_ptr = snoop_by_ptr->next;
 		}
 
-		ibuf = strlen(buf);
-		/* Go through and convert/strip color symbols -Ithor */
-		for (i = 0, j = 0; (i < ibuf) && (j < (sizeof(buffer))); i++)
-		{
-			if (buf[i] == '&')
-			{
-				i++;
-				if (i >= ibuf)
-					continue;
+		AnsiString abuf(buf);
+		abuf.term(buf, t->character && PLR3_FLAGGED(t->character, PLR3_UNDERLINE) ?
+			TL_UNDERLINE : TL_BLINK);
+		delete_doubledollar(buf);
 
-				switch (buf[i])
-				{
-					case '&':
-						buffer[j++] = '&';
-						break;
-					case 'N':
-					case 'n':
-						snprintf(&buffer[j], MAX_STRING_LENGTH, "\033[0m");
-						j += 4;
-						was_upper = FALSE;
-						break;
-					case 'L':
-						snprintf(&buffer[j], MAX_STRING_LENGTH, "\r\n");
-						j += 2;
-						break;
-					case '+':
-					case '-':
-						bg = (buf[i] == '-');
-						i++;
-						if (i >= ibuf)
-							continue;
-
-						bold  = bg ? 0 : (isupper(buf[i])) ? 1 : 0;
-						blink = !bg ? 0 : (isupper(buf[i])) ? 1 : 0;
-						k     = find_color_entry(buf[i]);
-						if (color_table[k].symbol != NULL)
-						{
-							if (isupper(buf[i]))
-								was_upper = TRUE;
-							else if (was_upper)
-							{
-								snprintf(&buffer[j], MAX_STRING_LENGTH, "\033[0m");
-								j += 4;
-								was_upper = FALSE;
-							}
-							snprintf(&buffer[j],
-							         MAX_STRING_LENGTH,
-							         "\033[%s%s%sm",
-							         bold ? "1;" : "",
-							         blink ? (t->character && (PLR3_FLAGGED(t->character, PLR3_UNDERLINE)) ? "4;" : "5;") : "",
-							         (bg ? color_table[k].bg_code : color_table[k].fg_code));
-							j += (5 + (bold ? 2 : 0) + (blink ? 2 : 0));
-						}
-						else
-						{
-							snprintf(&buffer[j], MAX_STRING_LENGTH, "&%c%c", (bg ? '-' : '+'), buf[i]);
-							j += 3;
-						}
-						break;
-
-					case '=':
-						i++;
-						if (i >= ibuf)
-							continue;
-
-						blink = (isupper(buf[i]) ? 1 : 0);
-						bg    = find_color_entry(buf[i]);
-						i++;
-						if (i >= ibuf)
-							continue;
-
-						bold = (isupper(buf[i]) ? 1 : 0);
-						k    = find_color_entry(buf[i]);
-						if ((color_table[k].symbol != NULL) && (color_table[bg].symbol != NULL))
-						{
-							if (isupper(buf[i]))
-								was_upper = TRUE;
-							else if (was_upper)
-							{
-								snprintf(&buffer[j], MAX_STRING_LENGTH, "\033[0m");
-								j += 4;
-								was_upper = FALSE;
-							}
-							snprintf(&buffer[j],
-							         MAX_STRING_LENGTH,
-							         "\033[%s%s%s;%sm",
-							         bold ? "1;" : "",
-							         blink ? (t->character && (PLR3_FLAGGED(t->character, PLR3_UNDERLINE)) ? "4;" : "5;") : "",
-							         color_table[bg].bg_code,
-							         color_table[k].fg_code);
-							j += (8 + (bold ? 2 : 0) + (blink ? 2 : 0));
-						}
-						else
-						{
-							snprintf(&buffer[j], MAX_STRING_LENGTH, "&=%c%c", buf[i - 1], buf[i]);
-							j += 4;
-						}
-						break;
-
-					default:
-						snprintf(&buffer[j], MAX_STRING_LENGTH, "&%c", buf[i]);
-						j += 2;
-						break;
-				}
-			}
-			else if (buf[i] == '\n')
-			{
-				/* Want normal color at EoLN */
-				snprintf(&buffer[j], MAX_STRING_LENGTH, "\033[0m\n");
-				j += 5;
-			}
-			else
-			{
-				buffer[j++] = buf[i];
-			}
-		}
-
-		buffer[j] = '\0';
-
-		descbuf += buffer;
+		descbuf += buf;
 	}
 
 	if (write_to_descriptor(t, descbuf.c_str()) < 0)
@@ -3166,7 +2834,7 @@ int process_input(P_desc t)
 			logit(LOG_COMM,
 			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
-			      t->host ? t->host : "unknown",
+			      *t->host ? t->host : "unknown",
 			      t->descriptor,
 			      t->connected,
 			      t->sslses ? "yes" : "no");
@@ -3190,7 +2858,7 @@ int process_input(P_desc t)
 			logit(LOG_COMM,
 			      "EOF encountered on socket read for %s [host=%s desc=%d connected=%d ssl=%s].",
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
-			      t->host ? t->host : "unknown",
+			      *t->host ? t->host : "unknown",
 			      t->descriptor,
 			      t->connected,
 			      t->sslses ? "yes" : "no");
@@ -3326,8 +2994,8 @@ static void process_line(P_desc t, char *in)
 
 	if (t && t->character && IS_PC(t->character))
 	{
-		t->character->only.pc->recived_data += k;
-		recivedbytes                        += k;
+		t->character->only.pc->received_data += k;
+		receivedbytes                        += k;
 	}
 	write_to_q(out, &t->input, 0);
 
@@ -4306,7 +3974,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 							break;
 
 						case '$':
-							i = "$";
+							i = "$$"; // will be squashed later
 							break;
 
 						default:
@@ -4484,25 +4152,22 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 	}
 }
 
-// This function will have to be fixed if sound re-enabled. - Lohrr
-// Right now, we're overwriting a const string.
-const char *delete_doubledollar(const char *string)
+void delete_doubledollar(char *string)
 {
-	char *read1, *write1;
+	char *out = string;
 
-	//  if ((write1 = strchr(string, '$')) == NULL)
-	return string;
-
-	read1 = write1;
-
-	while (*read1)
-		if ((*(write1++) = *(read1++)) == '$')
-			if (*read1 == '$')
-				read1++;
-
-	*write1 = '\0';
-
-	return string;
+	for (;;)
+	{
+		switch (*out++ = *string++)
+		{
+		case '$':
+			if (*string == '$')
+				string++;
+			break;
+		case 0:
+			return;
+		}
+	}
 }
 
 // Puts a Cyan % in front of each line.

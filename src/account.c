@@ -988,8 +988,7 @@ void account_select_char(P_desc d, char *arg)
 
 	// Capitalize character name for display
 	char name_cap[32];
-	strncpy(name_cap, c->charname, 31);
-	name_cap[31] = '\0';
+	strlcpy(name_cap, c->charname, sizeof name_cap);
 	if (name_cap[0])
 		name_cap[0] = toupper(name_cap[0]);
 
@@ -1173,7 +1172,6 @@ struct char_display_info
 {
 	char         charname[32];
 	int          level;
-	int          secondary_level;
 	int          race;
 	unsigned int m_class;
 	unsigned int secondary_class;
@@ -1183,7 +1181,7 @@ struct char_display_info
 };
 
 // cleanup temp char loaded via restoreCharOnly before freeing
-// handles items, affects, events, strings, and witnesses
+// handles items, affects, events, strings
 // NOTE: does NOT free the char struct itself or pc_only_data - caller must do that
 void cleanup_temp_char(P_char ch)
 {
@@ -1241,24 +1239,8 @@ void cleanup_temp_char(P_char ch)
 			str_free(ch->only.pc->poofIn);
 		if (ch->only.pc->poofOut)
 			str_free(ch->only.pc->poofOut);
-		if (ch->only.pc->poofInSound)
-			str_free(ch->only.pc->poofInSound);
-		if (ch->only.pc->poofOutSound)
-			str_free(ch->only.pc->poofOutSound);
 		if (ch->only.pc->gcmd_arr)
 			FREE(ch->only.pc->gcmd_arr);
-	}
-
-	// free witnesses linked list
-	while (ch->specials.witnessed)
-	{
-		wtns_rec *w            = ch->specials.witnessed;
-		ch->specials.witnessed = w->next;
-		if (w->attacker)
-			str_free(w->attacker);
-		if (w->victim)
-			str_free(w->victim);
-		free(w);
 	}
 }
 
@@ -1296,10 +1278,8 @@ int load_char_display_data(char *charname, struct char_display_info *info)
 	}
 
 	// Extract display data
-	strncpy(info->charname, GET_NAME(temp_ch), 31);
-	info->charname[31]    = '\0';
+	strlcpy(info->charname, GET_NAME(temp_ch), sizeof info->charname);
 	info->level           = GET_LEVEL(temp_ch);
-	info->secondary_level = GET_SECONDARY_LEVEL(temp_ch);
 	info->race            = GET_RACE(temp_ch);
 	info->m_class         = temp_ch->player.m_class;
 	info->secondary_class = temp_ch->player.secondary_class;
@@ -1346,15 +1326,9 @@ void get_race_name_from_info(struct char_display_info *info, char *race_str, int
 {
 	extern const struct race_names race_names_table[];
 	if (info->race >= 0 && info->race < LAST_RACE)
-	{
-		strncpy(race_str, race_names_table[info->race].normal, max_len - 1);
-		race_str[max_len - 1] = '\0';
-	}
+		strlcpy(race_str, race_names_table[info->race].normal, max_len);
 	else
-	{
-		strncpy(race_str, "Unknown", max_len - 1);
-		race_str[max_len - 1] = '\0';
-	}
+		strlcpy(race_str, "Unknown", max_len);
 }
 
 void check_rested_bonus(P_desc d)
@@ -1373,8 +1347,7 @@ void check_rested_bonus(P_desc d)
 		{
 			// Capitalize character name
 			char name_cap[32];
-			strncpy(name_cap, info.charname, 31);
-			name_cap[31] = '\0';
+			strlcpy(name_cap, info.charname, sizeof name_cap);
 			if (name_cap[0])
 				name_cap[0] = toupper(name_cap[0]);
 
@@ -1488,8 +1461,7 @@ void display_delete_character_list(P_desc d)
 		}
 
 		// Capitalize character name
-		strncpy(name_capitalized, info.charname, 31);
-		name_capitalized[31] = '\0';
+		strlcpy(name_capitalized, info.charname, sizeof name_capitalized);
 		if (name_capitalized[0])
 			name_capitalized[0] = toupper(name_capitalized[0]);
 
@@ -1501,18 +1473,16 @@ void display_delete_character_list(P_desc d)
 		int                             primary_idx   = flag2idx(info.m_class);
 		int                             secondary_idx = info.secondary_class ? flag2idx(info.secondary_class) : 0;
 
+		snprintf(level_str, 16, "%d", info.level);
 		if (info.secondary_class && secondary_idx > 0)
 		{
 			// Multiclass
-			snprintf(level_str, 16, "%d/%d", info.level, info.secondary_level);
-			snprintf(class_str, 64, "%s/%s", class_names_table[primary_idx].normal, class_names_table[secondary_idx].normal);
+			snprintf(class_str, sizeof class_str, "%s/%s", class_names_table[primary_idx].normal, class_names_table[secondary_idx].normal);
 		}
 		else
 		{
 			// Single class
-			snprintf(level_str, 16, "%d", info.level);
-			strncpy(class_str, class_names_table[primary_idx].normal, 63);
-			class_str[63] = '\0';
+			strlcpy(class_str, class_names_table[primary_idx].normal, sizeof class_str);
 		}
 
 		// Truncate strings if too long
@@ -1615,22 +1585,16 @@ void display_character_list(P_desc d, P_acct account)
 		char               line_buf[512];
 
 		// capitalize character name
-		strncpy(name_capitalized, ch->charname, 31);
-		name_capitalized[31] = '\0';
+		strlcpy(name_capitalized, ch->charname, sizeof name_capitalized);
 		if (name_capitalized[0])
 			name_capitalized[0] = toupper(name_capitalized[0]);
 
 		// get race name
 		extern const struct race_names race_names_table[];
 		if (ch->race >= 0 && ch->race < LAST_RACE)
-		{
-			strncpy(race_str, race_names_table[ch->race].normal, 31);
-			race_str[31] = '\0';
-		}
+			strlcpy(race_str, race_names_table[ch->race].normal, sizeof race_str);
 		else
-		{
-			strncpy(race_str, "Unknown", 31);
-		}
+			strlcpy(race_str, "Unknown", sizeof race_str);
 
 		// get class name(s)
 		extern const struct class_names class_names_table[];
@@ -1640,13 +1604,12 @@ void display_character_list(P_desc d, P_acct account)
 		if (ch->secondary_class && secondary_idx > 0)
 		{
 			snprintf(level_str, 16, "%d", ch->level);
-			snprintf(class_str, 64, "%s/%s", class_names_table[primary_idx].normal, class_names_table[secondary_idx].normal);
+			snprintf(class_str, sizeof class_str, "%s/%s", class_names_table[primary_idx].normal, class_names_table[secondary_idx].normal);
 		}
 		else
 		{
 			snprintf(level_str, 16, "%d", ch->level);
-			strncpy(class_str, class_names_table[primary_idx].normal, 63);
-			class_str[63] = '\0';
+			strlcpy(class_str, class_names_table[primary_idx].normal, sizeof class_str);
 		}
 
 		// truncate strings if too long for table
@@ -1716,7 +1679,7 @@ int can_connect(struct acct_chars *c, P_desc d)
 	if (c->blocked)
 		return 0;
 
-	if ((c->racewar == ACCT_IMMORTAL))
+	if (c->racewar == ACCT_IMMORTAL)
 		return 1;
 
 	if ((c->racewar == ACCT_GOOD) && (current_time < (d->account->acct_evil + racewarSwitchTimer)))
@@ -1760,27 +1723,9 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 			ch->specials.timer = 0;
 			STATE(d)           = CON_PLAYING;
 
-			logit(LOG_COMM, "%s [%s@%s] has reconnected.", GET_NAME(d->character), d->login, d->host);
-			loginlog(d->character->player.level, "%s [%s@%s] has reconnected.", GET_NAME(d->character), d->login, d->host);
+			logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
+			loginlog(d->character->player.level, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
 
-#if 0
-      /* panic, lets check for spellcast events and nuke them, hopefully allowing a release from
-         spellcast bug */
-      if (IS_AFFECTED2(d->character, AFF2_CASTING))
-      {
-        P_event  ev;
-
-        LOOP_EVENTS(ev, (d->character)->events)
-          if (ev->type == EVENT_SPELLCAST)
-        {
-          statuslog(AVATAR, "Spellcast bug on %s aborted",
-                    GET_NAME(d->character));
-          StopCasting(d->character);
-        }
-      }
-      /* if they were morph'ed when they lost link, put them
-         back... */
-#endif
 			if (IS_SET(ch->specials.act, PLR_MORPH))
 			{
 				if (!ch->only.pc->switched || !IS_MORPH(ch->only.pc->switched) ||
@@ -1838,7 +1783,6 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
 	player->desc    = d;
 
-	setCharPhysTypeInfo(player);
 	status = restoreCharOnly(player, c->charname);
 	trace_append_file("load_char_into_game name=%s restoreCharOnly status=%d\n", c->charname, status);
 
@@ -1971,13 +1915,10 @@ void account_new_char_name(P_desc d, char *arg)
 		player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
 		player->desc    = d;
 
-		setCharPhysTypeInfo(player);
-
 		d->character = player;
 	}
 
-	strncpy(d->character->only.pc->pwd, d->account->acct_password, sizeof(d->character->only.pc->pwd) - 1);
-	d->character->only.pc->pwd[sizeof(d->character->only.pc->pwd) - 1] = '\0';
+	strlcpy(d->character->only.pc->pwd, d->account->acct_password, sizeof(d->character->only.pc->pwd));
 	d->character->player.name = str_dup(arg);
 	normalize_player_name_case(d->character->player.name);
 	SEND_TO_Q("You chose the name ", d);
@@ -2040,8 +1981,8 @@ void account_delete_char(P_desc d, char *arg)
 			return;
 		}
 		SEND_TO_Q("\r\n&+RDeleting character...&n\r\n\r\n", d);
-		statuslog(d->character->player.level, "%s deleted %sself (%s@%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->login, d->host);
-		logit(LOG_PLAYER, "%s deleted %sself (%s@%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->login, d->host);
+		statuslog(d->character->player.level, "%s deleted %sself (%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
+		logit(LOG_PLAYER, "%s deleted %sself (%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
 		deleteCharacter(d->character);
 		d->character = NULL;      // Clear dangling pointer
 		d->term_type = TERM_ANSI; // Preserve ANSI terminal mode
@@ -2120,8 +2061,7 @@ void account_delete_char(P_desc d, char *arg)
 
 	// Capitalize character name for display
 	char name_cap[128];
-	strncpy(name_cap, c->charname, 127);
-	name_cap[127] = '\0';
+	strlcpy(name_cap, c->charname, sizeof name_cap);
 	if (name_cap[0])
 		name_cap[0] = toupper(name_cap[0]);
 
@@ -2204,8 +2144,7 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 #ifndef __NO_MYSQL__
 
 	char name_backup[256];
-	strncpy(name_backup, acct->acct_name, sizeof(name_backup) - 1);
-	name_backup[sizeof(name_backup) - 1] = '\0';
+	strlcpy(name_backup, acct->acct_name, sizeof(name_backup));
 
 	struct acct_entry *loaded = sql_load_account(name_backup);
 	if (!loaded)

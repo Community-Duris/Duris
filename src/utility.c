@@ -40,7 +40,6 @@ using namespace std;
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
-#include "new_combat.h"
 #include "persistence_queue.h"
 #include "redis.h"
 #include "latency_trace.h"
@@ -457,25 +456,6 @@ char *striplinefeed(char *mesg)
 	return str_dup(tmp_buf);
 }
 
-/* yes, we're not using C++, so use macros..  bleh */
-/* macros are pass-by-name, and that screws everything up */
-#if 0
-int MIN(int a, int b)
-{
-  if (a < b)
-    return a;
-  else
-    return b;
-}
-
-int MAX(int a, int b)
-{
-  if (a > b)
-    return a;
-  else
-    return b;
-}
-#endif
 int BOUNDED(int a, int b, int c) { return (MIN(MAX(a, b), c)); }
 
 float BOUNDEDF(float a, float b, float c)
@@ -544,36 +524,6 @@ void str_free(char *source)
  * returns: 0 if equal, 1 if arg1 > arg2, -1 if arg1 < arg2
  */
 /*
- * scan 'till found different or end of both
- */
-#if 0
-int str_cmp(const char *arg1, const char *arg2)
-{
-  int      chk, i;
-
-  /*
-   * NULL ptr checks added, SAM 7-94
-   */
-  if ((arg1 == NULL) && (arg2 == NULL))
-    return (0);
-  else if (arg1 == NULL)
-    return (-1);
-  else if (arg2 == NULL)
-    return (1);
-
-  for (i = 0; *(arg1 + i) || *(arg2 + i); i++)
-    if ((chk = LOWER(*(arg1 + i)) - LOWER(*(arg2 + i))))
-      if (chk < 0)
-        return (-1);
-      else
-        return (1);
-  return (0);
-}
-#endif
-/*
- * returns: 0 if equal, 1 if arg1 > arg2, -1 if arg1 < arg2
- */
-/*
  * scan 'till found different, end of both, or n reached
  */
 /*
@@ -586,20 +536,14 @@ int strn_cmp(const char *arg1, const char *arg2, uint n)
 
 	for (i = 0; (*(arg1 + i) || *(arg2 + i)) && (n > 0); i++, n--)
 		if ((chk = LOWER(*(arg1 + i)) - LOWER(*(arg2 + i))))
+		{
 			if (chk < 0)
 				return (-1);
 			else
 				return (1);
+		}
 
 	return (0);
-}
-
-int str_n_cmp(const char *argv1, const char *argv2)
-{
-	char name[MAX_INPUT_LENGTH];
-
-	strncpy(name, argv1, strlen(argv2));
-	return str_cmp(name, argv2);
 }
 
 /* returns TRUE if char is in global list, FALSE if not */
@@ -2002,6 +1946,7 @@ void sprintbitde(ulong vektor, const flagDef names[], char *result)
 	for (nr = 0; vektor; vektor >>= 1)
 	{
 		if (IS_SET(1, vektor))
+		{
 			if (names[nr].flagShort != NULL)
 			{
 				strcat(result, names[nr].flagShort);
@@ -2011,6 +1956,7 @@ void sprintbitde(ulong vektor, const flagDef names[], char *result)
 			{
 				strcat(result, "UNDEFINED ");
 			}
+		}
 		if (names[nr].flagShort != NULL)
 			nr++;
 	}
@@ -2176,13 +2122,6 @@ struct time_info_data age(P_char ch)
 	 * aging
 	 */
 	player_age.year += 5;
-	/*  player_age.year += ch->player.time.perm_aging;        *
-	 * permanent
-	 * 'unnatural' aging
-	 */
-	player_age.year += ch->player.time.age_mod; /*
-	                                             * temporary 'unnatural' aging
-	                                             */
 	player_age.year = MAX(0, player_age.year);  /*
 	                                             * since I don't want to deal
 	                                             * with 'infants'
@@ -3895,11 +3834,7 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 	}
 
 	// If it's across racewar sides.
-#if 0
-  if( (racewar(vict, ch) /* && !IS_ILLITHID(vict)) */  || !is_introd(ch, vict) )
-#else
 	if (racewar(vict, ch) /* && !IS_ILLITHID(vict) */)
-#endif
 	{
 		if (IS_DISGUISE_PC(ch))
 		{
@@ -3983,7 +3918,7 @@ void ansi_comp(char *str)
 				np_len += 4;
 				continue;
 			}
-			if ((*(str + 1) == '='))
+			if (*(str + 1) == '=')
 			{
 				if (isupper(*(str + 1)))
 					np_len += 2;
@@ -4599,59 +4534,13 @@ bool racewar(P_char viewer, P_char viewee)
 		return TRUE;
 
 	return FALSE;
-/*
-  if (IS_RACEWAR_EVIL(viewer) && !IS_RACEWAR_EVIL(viewee))
-	return TRUE;
-
-  if (IS_RACEWAR_UNDEAD(viewer) && !IS_RACEWAR_UNDEAD(viewee))
-	return TRUE;
-
-  if (IS_RACEWAR_GOOD(viewer) && !IS_RACEWAR_GOOD(viewee))
-	return TRUE;
-
-  if ((IS_HARPY(viewer) && GET_RACEWAR(viewer) == RACEWAR_NEUTRAL) &&
-	  !(IS_HARPY(viewee) && GET_RACEWAR(viewee) == RACEWAR_NEUTRAL))
-	return TRUE;
-*/
-#if 0
-  if (IS_RACEWAR_UNDEAD(viewer) && IS_RACEWAR_UNDEAD(viewee))
-    return FALSE;
-
-  if (IS_RACEWAR_UNDEAD(viewee) && IS_RACEWAR_UNDEAD(viewer))
-    return FALSE;
-
-  if (IS_RACEWAR_EVIL(viewer) && IS_RACEWAR_UNDEAD(viewee) && !IS_RACEWAR_UNDEAD(viewer))
-    return TRUE;
-
-  if (IS_RACEWAR_UNDEAD(viewer) && IS_RACEWAR_EVIL(viewee))
-    return TRUE;
-
-  if ((IS_RACEWAR_UNDEAD(viewer) && IS_RACEWAR_GOOD(viewee)) ||
-      (IS_RACEWAR_UNDEAD(viewee) && IS_RACEWAR_GOOD(viewer)))
-  {
-    return TRUE;
-  }
-
-  /* no one sees an illithid's true name except illithids themselves,
-     handled above */
-
-/*  if (IS_ILLITHID(viewer) != IS_ILLITHID(viewee))
-    return TRUE;*/
-
-#endif
-	/*  if (IS_ILLITHID(viewee)) return TRUE; */
 
 	/* charmed followers act as their masters */
 	if (IS_NPC(viewer) && GET_MASTER(viewer) && viewer->in_room == GET_MASTER(viewer)->in_room)
 	{
-		//    if (IS_RACEWAR_EVIL(viewer->following) != IS_RACEWAR_EVIL(viewee))
 		if (opposite_racewar(viewer->following, viewee))
 			return TRUE;
 	}
-	/*
-	  if (!(IS_PC(viewer) && IS_PC(viewee)) &&
-	      (GET_VNUM(viewee) != 250)) return FALSE;
-	*/
 	return FALSE;
 }
 
@@ -4720,10 +4609,6 @@ int IS_MORPH(P_char ch)
 	if (!ch || !IS_NPC(ch))
 		return FALSE;
 
-#if 0
-  if (ch->only.npc->memory && !IS_SET(ch->specials.act, ACT_MEMORY))
-    return TRUE;
-#endif
 	if (ch->only.npc && ch->only.npc->orig_char)
 		return TRUE;
 
@@ -4789,16 +4674,24 @@ int dir_from_keyword(char *keyword)
 	return dir;
 }
 
+int total_carried_weight(P_char ch)
+{
+	int weight = ch->specials.carry_weight;
+	P_char rider = GET_RIDER(ch);
+	if (rider)
+		weight += rider->player.weight + rider->specials.carry_weight;
+	return weight;
+}
+
 /* self-explanatory :) 0 would be naked, 14 overloaded */
 int weight_notches_above_naked(P_char ch)
 {
-	P_char rider;
 	int    percent = CAN_CARRY_W(ch);
 
 	if (percent <= 0)
 		percent = 1;
 
-	percent = (int)((IS_CARRYING_W(ch, rider) * 100) / percent);
+	percent = (int)((total_carried_weight(ch) * 100) / percent);
 
 	if (percent <= 0)
 		return 0;
@@ -5123,26 +5016,26 @@ void generate_desc(P_char ch)
 			snprintf(buf, 80, "%s %s with %s", prep, race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
 			break;
 		case 2: /* just appearance */
-			snprintf(buf2, MAX_STRING_LENGTH, "%s", generate_appear(ch));
+			snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
 			snprintf(buf, 80, "%s %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2, race_names_table[GET_RACE(ch)].ansi);
 			break;
 		case 3:
 		case 4: /* s+m */
-			snprintf(buf2, MAX_STRING_LENGTH, "%s", generate_shape(ch));
+			snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
 			snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2, race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
 			break;
 		case 5:
 		case 6: /*s+a */
-			snprintf(buf2, MAX_STRING_LENGTH, "%s", generate_shape(ch));
+			snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
 			snprintf(buf, 80, "%s %s, %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2, generate_appear(ch), race_names_table[GET_RACE(ch)].ansi);
 			break;
 		case 7:
 		case 8: /*m+a */
-			snprintf(buf2, MAX_STRING_LENGTH, "%s", generate_appear(ch));
+			snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
 			snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2, race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
 			break;
 		case 9: /*m+a+s */
-			snprintf(buf2, MAX_STRING_LENGTH, "%s", generate_shape(ch));
+			snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
 			snprintf(buf, 80, "%s %s, %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2, generate_appear(ch), race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
 			break;
 	} /* case */
@@ -5302,31 +5195,6 @@ void purge_old_intros(P_char ch)
 			}
 		}
 	}
-}
-
-void setCharPhysTypeInfo(P_char ch)
-{
-	int size;
-
-#ifndef NEW_COMBAT
-	return;
-#else
-
-#if 0
-  GET_PHYS_TYPE(ch) = getPhysTypebyRace(GET_RACE(ch));
-#endif
-#if 1
-	GET_PHYS_TYPE(ch) = PHYS_TYPE_HUMANOID; /* temporary .. */
-#endif
-	size = getNumbBodyLocsbyPhysType(GET_PHYS_TYPE(ch));
-
-	if (!(ch->points.location_hit = (sh_int *)__malloc(sizeof(sh_int) * size, MEM_TAG_ARRAY, __FILE__, __LINE__)))
-	{
-		panic_corruption("utility", "setCharPhysTypeInfo(): couldn't alloc phys info for %s (size %d)", GET_NAME(ch), size);
-	}
-
-	bzero(ch->points.location_hit, sizeof(sh_int) * size);
-#endif
 }
 
 /* broadcasts message to whatever arena rm is part of */
@@ -6941,13 +6809,11 @@ char *CRYPT2(char *passwd, char *name)
 	// If it's not already encrypted.
 	if (*name != '$')
 	{
-		snprintf(buf, 40, "$1$");
-		strncpy(buf + 3, name, 8);
-		strcat(buf, "$");
+		snprintf(buf, sizeof buf, "$1$%.8s$", name);
 	}
 	else
 	{
-		snprintf(buf, 40, "%s", name);
+		snprintf(buf, sizeof buf, "%s", name);
 	}
 
 	return crypt(passwd, buf);
@@ -7675,4 +7541,34 @@ void persistence_stop_large_event_worker(void)
 int persistence_large_event_worker_active(void)
 {
   return persistence_large_event_worker_running();
+}
+
+unsigned int popcnt(unsigned int x)
+{
+#ifdef __POPCNT__
+	return __builtin_popcount(x);
+#else
+	unsigned res = 0;
+	while (x)
+	{
+		x &= x - 1;
+		res++;
+	}
+	return res;
+#endif
+}
+
+unsigned int popcnt(unsigned long long x)
+{
+#ifdef __POPCNT__
+	return __builtin_popcountll(x);
+#else
+	unsigned res = 0;
+	while (x)
+	{
+		x &= x - 1;
+		res++;
+	}
+	return res;
+#endif
 }

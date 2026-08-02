@@ -27,9 +27,7 @@
 #include "arenadef.h"
 #include "justice.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "ships.h"
-#include "sound.h"
 #include "spells.h"
 #include "sql.h"
 #include "weather.h"
@@ -40,7 +38,6 @@
 
 extern P_char      character_list;
 extern P_desc      descriptor_list;
-extern P_event     event_type_list[];
 extern P_index     mob_index;
 extern P_index     obj_index;
 extern P_obj       object_list;
@@ -254,8 +251,7 @@ void displayHardCore(P_char ch, char *arg, int cmd)
 	{
 		if (row[0] && row[1])
 		{
-			strncpy(name, row[0], sizeof(name) - 1);
-			name[sizeof(name) - 1] = '\0';
+			strlcpy(name, row[0], sizeof name);
 			name[0]                = toupper(name[0]);
 			pts                    = atof(row[1]) / (float)config->score_display_divisor;
 
@@ -303,9 +299,6 @@ long getLeaderBoardPts(P_char ch)
 
 	return leaderpts;
 }
-
-// leaderboard is now computed from database, no file sync needed
-bool newLeaderBoard(P_char ch, char *arg, int cmd) { return TRUE; }
 
 void displayLeader(P_char ch, char *arg, int cmd)
 {
@@ -355,8 +348,7 @@ void displayLeader(P_char ch, char *arg, int cmd)
 	{
 		if (row[0] && row[1])
 		{
-			strncpy(name, row[0], sizeof(name) - 1);
-			name[sizeof(name) - 1] = '\0';
+			strlcpy(name, row[0], sizeof name);
 			name[0]                = toupper(name[0]);
 			pts                    = atof(row[1]) / (float)config->score_display_divisor;
 

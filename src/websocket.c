@@ -180,10 +180,10 @@ void websocket_generate_accept_key(const char *client_key, char *accept_key)
 /* initialize websocket subsystem */
 int websocket_init(int port)
 {
-	struct sockaddr_in sa;
+	sockaddr_in6       sa;
 	int                opt = 1;
 
-	ws_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	ws_listen_fd = socket(AF_INET6, SOCK_STREAM, 0);
 	if (ws_listen_fd < 0)
 	{
 		perror("websocket_init: socket");
@@ -200,9 +200,8 @@ int websocket_init(int port)
 
 	/* set up address */
 	memset(&sa, 0, sizeof(sa));
-	sa.sin_family      = AF_INET;
-	sa.sin_port        = htons(port);
-	sa.sin_addr.s_addr = INADDR_ANY;
+	sa.sin6_family      = AF_INET6;
+	sa.sin6_port        = htons(port);
 
 	/* bind */
 	if (bind(ws_listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)
@@ -245,7 +244,7 @@ void websocket_shutdown(void)
 /* accept new websocket connection */
 int websocket_accept(int listen_fd, struct descriptor_data *d)
 {
-	struct sockaddr_in peer;
+	sockaddr_in6       peer;
 	socklen_t          peer_len = sizeof(peer);
 	int                new_fd;
 	int                opt = 1;
@@ -281,7 +280,10 @@ int websocket_accept(int listen_fd, struct descriptor_data *d)
 	d->ws_pong_received  = 0;
 
 	/* get peer address */
-	strncpy(d->host, inet_ntoa(peer.sin_addr), sizeof(d->host) - 1);
+	inet_ntop(AF_INET6, &peer.sin6_addr, d->host, sizeof d->host);
+        if (!strncmp(d->host, "::ffff:", 7)) // mapped IPv4
+	        strcpy(d->host, d->host + 7);
+
 
 	statuslog(56, "WebSocket connection from %s", d->host);
 
@@ -330,7 +332,7 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 		else if (strncasecmp(line, "Sec-WebSocket-Key:", 18) == 0)
 		{
 			const char *value = skip_header_value(line, 18);
-			strncpy(ws_key, value, sizeof(ws_key) - 1);
+			strlcpy(ws_key, value, sizeof(ws_key));
 		}
 		else if (strncasecmp(line, "Sec-WebSocket-Version:", 22) == 0)
 		{
@@ -343,8 +345,7 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 		else if (strncasecmp(line, "User-Agent:", 11) == 0)
 		{
 			const char *value = skip_header_value(line, 11);
-			strncpy(d->client_name, value, sizeof(d->client_name) - 1);
-			d->client_name[sizeof(d->client_name) - 1] = '\0';
+			strlcpy(d->client_name, value, sizeof d->client_name);
 			if (strstr(value, "Firefox"))
 			{
 				snprintf(d->client_name, sizeof(d->client_name), "Firefox");
@@ -390,8 +391,7 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 				struct in6_addr ipv6;
 				if (inet_pton(AF_INET, client_ip, &ipv4) == 1 || inet_pton(AF_INET6, client_ip, &ipv6) == 1)
 				{
-					strncpy(d->host, client_ip, sizeof(d->host) - 1);
-					d->host[sizeof(d->host) - 1] = '\0';
+					strlcpy(d->host, client_ip, sizeof(d->host));
 					resolve_descriptor_hostname_async(d->host, d->descriptor);
 				}
 			}
@@ -1074,7 +1074,7 @@ int websocket_process_input(struct descriptor_data *d)
 	}
 
 	if (d->character && d->character->only.pc)
-		d->character->only.pc->recived_data += bytes_read;
+		d->character->only.pc->received_data += bytes_read;
 
 	/* buffer http handshake until complete */
 	if (!d->ws_handshake_done)

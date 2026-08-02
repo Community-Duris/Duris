@@ -63,7 +63,8 @@ int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
 			if (obj->value[0])
 			{
 				act("&+yA live round is still loaded.  You spin the chamber and lock it.&n", FALSE, ch, obj, 0, TO_CHAR);
-				act("&+y$n opens the chamber and notices a live round already chambered.&L$e spins the chamber and locks it back.&n", FALSE, ch, obj, 0, TO_ROOM);
+				act("&+y$n opens the chamber and notices a live round already chambered.\n"
+				    "&+y$e spins the chamber and locks it back.&n", FALSE, ch, obj, 0, TO_ROOM);
 			}
 
 			// If no live round is found in the pistol...
@@ -519,8 +520,10 @@ void halloween_mine_proc(P_char ch)
 {
 	char buff[MAX_STRING_LENGTH];
 	snprintf(buff, MAX_STRING_LENGTH, " %s 86", GET_NAME(ch));
-	act("Your dig hits a burried &+ypumpkin&n.&LSuddenly it begins to move and digs itself out of the mine!", TRUE, ch, 0, 0, TO_CHAR);
-	act("$n dig hits a burried &+ypumpkin&n.&LSuddenly it begins to move and digs itself out of the mine!", TRUE, ch, 0, 0, TO_ROOM);
+	act("Your dig hits a burried &+ypumpkin&n.\n"
+	    "Suddenly it begins to move and digs itself out of the mine!", TRUE, ch, 0, 0, TO_CHAR);
+	act("$n dig hits a burried &+ypumpkin&n.\n"
+	    "Suddenly it begins to move and digs itself out of the mine!", TRUE, ch, 0, 0, TO_ROOM);
 	do_givepet(ch, buff, CMD_GIVEPET);
 }
 
@@ -715,7 +718,7 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_HELP && arg && strstr(arg, "zombies") && IS_TRUSTED(ch))
 	{
 		half_chop(arg, arg1, arg2);
-		if (arg2 && isname(arg2, "begin"))
+		if (isname(arg2, "begin"))
 		{
 			// set game to standby mode to setup the next round
 			obj->value[ZOMBIES_STATUS] = 2;
@@ -723,7 +726,7 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 			send_to_zone(zone, "&+WThe game has started.&n\r\n");
 			return TRUE;
 		}
-		else if (arg2 && isname(arg2, "end"))
+		else if (isname(arg2, "end"))
 		{
 			obj->value[ZOMBIES_STATUS] = 0;
 			obj->timer[ZTIMER_STANDBY] = 0;
@@ -732,7 +735,7 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 			zgame_clear_zombies(obj);
 			return TRUE;
 		}
-		else if (arg2 && isname(arg2, "status"))
+		else if (isname(arg2, "status"))
 		{
 			snprintf(buff, MAX_STRING_LENGTH, "&+WZombies Game Status&n\r\n");
 			snprintf(buff2, MAX_STRING_LENGTH, "&+L           Status&+W: &+c%s&n\r\n", (obj->value[ZOMBIES_STATUS] == 1 ? "On" : obj->value[ZOMBIES_STATUS] == 0 ? "Off" : "Standby"));
@@ -748,7 +751,7 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 			send_to_char(buff, ch);
 			return TRUE;
 		}
-		else if (arg2 && strstr(arg2, "level"))
+		else if (strstr(arg2, "level"))
 		{
 			argument_interpreter(arg2, arg3, arg4);
 			if (isdigit(*arg4))

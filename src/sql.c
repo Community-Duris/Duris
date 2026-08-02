@@ -415,10 +415,9 @@ int initialize_mysql()
   	mysql_options(DB, MYSQL_OPT_READ_TIMEOUT, &timeout);
   	mysql_options(DB, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
 
-	DB = mysql_real_connect(DB, DB_HOST, DB_USER, DB_PASSWD, db_name, DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
-	if (DB == NULL)
+	if (!mysql_real_connect(DB, DB_HOST, DB_USER, DB_PASSWD, db_name, DB_PORT, NULL, CLIENT_MULTI_STATEMENTS))
 	{
-		logit(LOG_STATUS, "Error connecting to database.");
+		logit(LOG_STATUS, "Error connecting to database: %s", mysql_error(DB));
 		return -1;
 	}
 
@@ -1409,8 +1408,6 @@ int sql_world_quest_can_do_another(P_char ch)
 		{
 			returning_value = returning_value - atoi(row[0]);
 		}
-		else
-			returning_value;
 
 		while ((row = mysql_fetch_row(db)))
 			;
@@ -1455,8 +1452,7 @@ const char *sql_select_IP_info(P_char ch, char *buf, size_t bufSize, time_t *las
 
 		if (NULL != row)
 		{
-			strncpy(buf, row[0] ? row[0] : "", bufSize - 2);
-			buf[bufSize - 1] = '\0';
+			strlcpy(buf, row[0] ? row[0] : "", bufSize);
 			now              = strtoul(row[3], NULL, 10);
 			if (lastConnect)
 			{
@@ -2363,9 +2359,9 @@ void sql_log(P_char ch, char *kind, char *format, ...)
 	static char ip_buff[15];
 	ip_buff[0] = '\0';
 
-	if (ch->desc && ch->desc->host)
+	if (ch->desc && *ch->desc->host)
 	{
-		snprintf(ip_buff, 50, "%s", ch->desc->host);
+		snprintf(ip_buff, sizeof ip_buff, "%s", ch->desc->host);
 	}
 
 	snprintf(buff,

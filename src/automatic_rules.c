@@ -25,8 +25,6 @@
 #include "arenadef.h"
 #include "justice.h"
 #include "mm.h"
-#include "new_combat_def.h"
-#include "sound.h"
 #include "spells.h"
 #include "weather.h"
 
@@ -36,7 +34,6 @@
 
 extern P_char      character_list;
 extern P_desc      descriptor_list;
-extern P_event     event_type_list[];
 extern P_index     mob_index;
 extern P_index     obj_index;
 extern P_obj       object_list;

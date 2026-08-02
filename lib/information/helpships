@@ -39,7 +39,7 @@ SHIP2
   Combat on the ship system works on the priciple of firing arcs, range,
 targets, and damage.  You might be asking what are firing arcs, but it's 
 simple, firing arcs are the direction your weapons are pointing on your ship.  
-For example, a ballistae mounted on your Port(Left) side is pointing to the 
+For example, a ballista mounted on your Port(Left) side is pointing to the 
 ship's left, so if the target is on the right side, it is out of that particular weapon's
 arc.  The fore and rear arcs are both 45 degree arcs and the port(left) and
 starboard(right) are 120 degree arcs, so if weapons are mounted only on
@@ -48,7 +48,7 @@ the front.  If a ship has weapons on all four parts of the ship it can
 basically shoot in any direction.
 
   Each weapon has a Short, Medium, and Long range to them.  What this means
-is that a Large Ballistae which might have a Short range of 5, Medium of 10,
+is that a Large Ballista which might have a Short range of 5, Medium of 10,
 and long of 15 can shoot targets as far as 15 squares away, as the ship gets
 closer to the targat and gets within 10 squares, the ship will have a better
 chance of hitting the target, if the gargets gets within 5 squares, it will
@@ -89,7 +89,7 @@ sink known as the ship shops.  Here you will find people who will build you
 a better, bigger, stronger, faster ship. They have the parts, they have the 
 technology, they have the power.  The first think to do if you do not already 
 own a ship, is to buy a hull.  Hulls are the basic foundation of a ship, it's 
-where you will mount your one peashooter small ballistae on your sloop, it's 
+where you will mount your one peashooter small ballista on your sloop, it's 
 where you will place a sail on the ship, and it's where you'll have great fun 
 becoming a full fledged pirate.  To say the least, the larger the hull, the more
 things you can put on it, but one thing to be warned of is, the larger the

@@ -6,12 +6,12 @@
 
 /* default database credentials (fallback if env vars not set) */
 #ifdef TEST_MUD
-#define DB_HOST_DEFAULT   "127.0.0.1"
+#define DB_HOST_DEFAULT   "localhost"
 #define DB_USER_DEFAULT   "duris"
 #define DB_PASSWD_DEFAULT "duris"
 #define DB_NAME_DEFAULT   "duris_dev"
 #else
-#define DB_HOST_DEFAULT   "127.0.0.1"
+#define DB_HOST_DEFAULT   "localhost"
 #define DB_USER_DEFAULT   "duris"
 #define DB_PASSWD_DEFAULT "duris"
 #define DB_NAME_DEFAULT   "duris"
@@ -19,7 +19,7 @@
 
 #ifdef __CYGWIN_BUILD__
 #undef DB_HOST_DEFAULT
-#define DB_HOST_DEFAULT "127.0.0.1"
+#define DB_HOST_DEFAULT "localhost"
 #endif
 
 /* get database credentials from env vars with fallback */

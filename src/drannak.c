@@ -27,10 +27,8 @@
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
 #include "ships.h"
-#include "sound.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "sql_player.h"
@@ -47,7 +45,6 @@ extern struct zone_data *zone_table;
 extern const char       *material_names[];
 extern P_char            character_list;
 extern P_desc            descriptor_list;
-extern P_event           event_type_list[];
 extern P_index           mob_index;
 extern P_index           obj_index;
 extern P_obj             object_list;
@@ -776,422 +773,6 @@ void random_recipe(P_char ch, P_char victim)
 	return;
 }
 
-void randomizeitem(P_char ch, P_obj obj)
-{
-	int   i, good = 0, workingvalue, range, value, limit, luckroll, rchance;
-	P_obj t_obj, nextobj;
-	bool  modified;
-	char  tempdesc[MAX_INPUT_LENGTH];
-	char  short_desc[MAX_STRING_LENGTH], emsg[MAX_STRING_LENGTH];
-
-	// Changed 2 to 1, don't need uber randomization.
-	for (i = 0, modified = FALSE; (i < MAX_OBJ_AFFECT) && !modified; i++)
-	{
-		// No randomization of combat/spell pulse
-		if (obj->affected[i].location == APPLY_COMBAT_PULSE || obj->affected[i].location == APPLY_SPELL_PULSE)
-		{
-			continue;
-		}
-
-		// Get current a[i] value
-		if (obj->affected[i].location != APPLY_NONE)
-		{
-			// debug("obj->affected[i].location: %d\r\n", obj->affected[i].location);
-			luckroll = (number(1, 110));
-
-			// Initialize workingvalue
-			workingvalue = obj->affected[i].modifier; // base value
-			// send_to_char("Item has been randomized\r\n", ch);
-
-			// This prevents objects from breaking the over 10 difference report-to-Imms.
-			if (workingvalue > 10)
-				range = 3;
-			else if (workingvalue == 10)
-				range = 0;
-			else if (workingvalue == 9 || workingvalue == 8)
-				range = 1;
-			else if (workingvalue >= 5)
-				range = 2;
-			else if (workingvalue >= 1)
-				range = 1;
-			else if (workingvalue < -10)
-				range = -3;
-			else if (workingvalue == -10)
-				range = 0;
-			else if (workingvalue == -9 || workingvalue == -8)
-				range = -1;
-			else if (workingvalue <= -5)
-				range = -2;
-			else if (workingvalue <= -1)
-				range = -1;
-			// Otherwise, workingvalue is 0.
-			else
-				range = 1;
-
-			limit = range * -1;
-			// Check for negative values
-			if (range < 0)
-			{
-				// Assuming a negative stat is good here, although not always.
-				if (luckroll > 90 && range < -1)
-				{
-					range--;
-					limit--;
-				}
-				value = (number(range, limit));
-				if (value != 0)
-				{
-					if (value < 0)
-					{
-						good++;
-					}
-					else
-					{
-						good--;
-					}
-
-					// Something happened, but might zero out.
-					modified = TRUE;
-					value += workingvalue;
-					obj->affected[i].modifier = value;
-				}
-			}
-			else if (range == 0)
-			{
-				;
-			}
-			else
-			{
-				if (luckroll > 90 && range > 1)
-				{
-					range++;
-					limit++;
-				}
-				value = (number(limit, range));
-				if (value != 0)
-				{
-					if (value > 0)
-					{
-						good++;
-					}
-					else
-					{
-						good--;
-					}
-
-					// Something happened, but might zero out.
-					modified = TRUE;
-					value += workingvalue;
-					obj->affected[i].modifier = value;
-				}
-			}
-		}
-	}
-
-	emsg[0] = '\0';
-
-	/* Commenting this out until I can go over it.
-	  for( t_obj = ch->carrying; t_obj; t_obj = nextobj )
-	  {
-	    nextobj = t_obj->next_content;
-
-	    if( OBJ_VNUM(t_obj) == 1250 )
-	    {
-	      rchance = (number(1, 100));
-	      if( isname("cross", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_SNEAK);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the Ass&+rass&+Rin&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector3, AFF3_COLDSHIELD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Bc&+Chi&+Wll&+Cin&+Bg&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_FARSEE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Rsight&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_PROT_COLD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Ccold &+Wprotection&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("bloodstone", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector4, AFF4_DAZZLER);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+bd&+Baz&+Wzl&+Bin&+bg&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_HASTE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+rs&+Rp&+re&+Re&+rd&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_PROTECT_EVIL);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof evil &+Wprotection&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector, AFF_PROT_FIRE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+rfire &+Wprotection&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("black", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector4, AFF4_NOFEAR);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the Se&+yn&+Yti&+yn&+Lel&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector4, AFF4_GLOBE_OF_DARKNESS);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Wda&+wrk&+Lness&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_PROTECT_GOOD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Ygood &+Wprotection&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector, AFF_MINOR_GLOBE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+ylesser &+Yde&+yfen&+Lse&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("pink", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector4, AFF4_REGENERATION);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+gTroll&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_FLY);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+WAn&+Cge&+cls&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_FIRESHIELD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+rbu&+Rrn&+Ying&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector, AFF_MINOR_GLOBE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+ylesser &+Yde&+yfen&+Lse&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("rubin", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector4, AFF4_DETECT_ILLUSION);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+CIl&+clu&+Wsi&+con&+Cist&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_DETECT_INVISIBLE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Cvi&+csi&+Won&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_SENSE_LIFE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+rlife &+Lsensing&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector, AFF2_DETECT_EVIL);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+revil &+Ldetection&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("green", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector4, AFF4_REGENERATION);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+gTroll&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_INVISIBLE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof Invi&+Wsibi&+Llity&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_PROT_GAS);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+ggas &+Ldefense&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector, AFF2_DETECT_GOOD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Wgood &+Ldetection&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("red", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector3, AFF3_TOWER_IRON_WILL);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+MIllithid&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_VAMPIRIC_TOUCH);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+rVa&+Rmp&+Lire&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_PROT_ACID);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Gacid &+Ldefense&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_DETECT_MAGIC);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+mmagic &+Ldetection&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("yellow", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector3, AFF3_GR_SPIRIT_WARD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+CShaman&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_SOULSHIELD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+Wsoul&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_UD_VISION);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof the &+munderdark&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_DETECT_MAGIC);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+mmagic &+Ldetection&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	      else if( isname("blue", t_obj->name) )
-	      {
-	        if( rchance < 5 )
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_GLOBE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+mmag&+Mic&+mal pro&+Mtec&+mtion&n");
-	        }
-	        else if( rchance < 25 )
-	        {
-	          SET_BIT(obj->bitvector, AFF_AWARE);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+WAwa&+wrene&+Lss&n");
-	        }
-	        else if( rchance < 76 )
-	        {
-	          SET_BIT(obj->bitvector4, AFF4_NEG_SHIELD);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+Lne&+mga&+Lti&+mvi&+Lty&n");
-	        }
-	        else
-	        {
-	          SET_BIT(obj->bitvector2, AFF2_DETECT_MAGIC);
-	          send_to_char("&+LYou infuse the &+Mmagical&+L properties of your stone into your creation...\r\n", ch);
-	          snprintf(emsg, MAX_STRING_LENGTH, " &+Lof &+mmagic &+Ldetection&n");
-	        }
-	        obj_from_char(t_obj);
-	        extract_obj(t_obj);
-	        break;
-	      }
-	    }
-	  }
-	*/
-
-	if (good > 0)
-	{
-		snprintf(tempdesc, MAX_STRING_LENGTH, "%s", obj->short_description);
-		snprintf(short_desc, MAX_STRING_LENGTH, "%s&n%s &+w[&+Lsu&+wp&+Wer&+wi&+Lor&+w]&n", tempdesc, emsg);
-		set_short_description(obj, short_desc);
-	}
-	else if (good < 0)
-	{
-		snprintf(tempdesc, MAX_STRING_LENGTH, "%s", obj->short_description);
-		snprintf(short_desc, MAX_STRING_LENGTH, "%s&n%s &+w[&+ypoor&+w]&n", tempdesc, emsg);
-		set_short_description(obj, short_desc);
-	}
-	else if (modified)
-	{
-		snprintf(tempdesc, MAX_STRING_LENGTH, "%s", obj->short_description);
-		snprintf(short_desc, MAX_STRING_LENGTH, "%s&n%s &+w[&+Gmodified&+w]&n", tempdesc, emsg);
-		set_short_description(obj, short_desc);
-	}
-}
-
 P_obj random_zone_item(P_char ch)
 {
 	P_obj reward;
@@ -1885,9 +1466,7 @@ int calculate_shipfrags(P_char ch)
 		// debug("ownername: %s frags: %d getname: %s\r\n", shipfrags[i].ship->ownername, shipfrags[i].ship->frags, GET_NAME(ch));
 		if (!strcmp(shipfrags[i].ship->ownername, GET_NAME(ch)))
 		{
-			int shipfr = shipfrags[i].ship->frags;
-			// debug("shipfr: %d\r\n", shipfr);
-			return shipfr;
+			return shipfrags[i].ship->frags;
 		}
 
 		if (shipfrags[i].ship->frags == 0)
@@ -1923,6 +1502,7 @@ bool calmcheck(P_char ch)
 /* =========================================================================
  *  ENHANCE FUNCTIONS - extracted to enhance.c
  * ========================================================================= */
+
 void christmas_proc(P_char ch)
 {
 	P_char mob;
@@ -2044,7 +1624,7 @@ bool add_epiccount(P_char ch, int gain)
 		af.modifier = gain;
 		af.duration = -1;
 		af.location = 0;
-		af.flags    = AFFTYPE_NODISPEL, AFFTYPE_PERM;
+		af.flags    = AFFTYPE_NODISPEL | AFFTYPE_PERM;
 		affect_to_char(ch, &af);
 		return FALSE;
 	}

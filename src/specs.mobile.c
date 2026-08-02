@@ -27,7 +27,6 @@
 #include "justice.h"
 #include "map.h"
 #include "necromancy.h"
-#include "new_combat_def.h"
 #include "nexus_stones.h"
 #include "range.h"
 #include "specs.prototypes.h"
@@ -63,8 +62,6 @@ extern struct str_app_type    str_app[];
 extern struct time_info_data  time_info;
 extern struct zone_data      *zone;
 extern struct zone_data      *zone_table;
-extern const char            *crime_list[];
-extern const char            *crime_rep[];
 extern const char            *specdata[][MAX_SPEC];
 extern struct class_names     class_names_table[];
 int                           range_scan_track(P_char ch, int distance, int type_scan);
@@ -616,7 +613,7 @@ void fetid_breath(P_char ch, P_char victim)
 	dam = dice(level, 8) + level;
 
 	if (StatSave(victim, APPLY_CON, 0))
-		dam >> 1;
+		dam >>= 1;
 
 	if (!StatSave(victim, APPLY_AGI, 0))
 		knock = TRUE;
@@ -1302,6 +1299,7 @@ int mailed_fist_guardian(P_char ch, P_char vict, int cmd, char *arg)
 		return FALSE;
 
 	if (cmd == CMD_NORTH)
+	{
 		if (vict->equipment[GUILD_ITEM_POS] && (obj_index[vict->equipment[GUILD_ITEM_POS]->R_num].virtual_number >= GUILD_ITEM_START) &&
 		    (obj_index[vict->equipment[GUILD_ITEM_POS]->R_num].virtual_number <= GUILD_ITEM_END))
 		{
@@ -1318,6 +1316,7 @@ int mailed_fist_guardian(P_char ch, P_char vict, int cmd, char *arg)
 			act("You block $N's entrance to the guild.", TRUE, ch, 0, vict, TO_CHAR);
 			return TRUE;
 		}
+	}
 	if (vict)
 		return FALSE;
 
@@ -1421,7 +1420,7 @@ int seas_coral_golem(P_char ch, P_char pl, int cmd, char *arg)
 int money_changer(P_char me, P_char ch, int cmd, char *arg)
 {
 	P_char rider;
-	long   amount, from, to, n, ok, rate = 0;
+	long   amount, from, to, n, rate = 0;
 	char   Gbuf1[MAX_STRING_LENGTH];
 
 	/*
@@ -1497,13 +1496,6 @@ int money_changer(P_char me, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 		n  = (amount * (100 - RATE_TO_LOWER) / 100) / pow10(to);
-		ok = (CAN_CARRY_COINS(ch, rider) >= n);
-
-		if (!ok)
-		{
-			send_to_char("You can't carry the coins resulting from that exchange.\r\n", ch);
-			return TRUE;
-		}
 		ch->points.cash[from] -= (amount / pow10(from));
 		ch->points.cash[to] += n;
 		act("$n exchanges some coins with $N.", TRUE, ch, 0, me, TO_ROOM);
@@ -2434,11 +2426,6 @@ int charon(P_char ch, P_char pl, int cmd, char *arg)
 
 int shadow_demon_of_torm(P_char ch, P_char pl, int cmd, char *arg)
 {
-#if 0
-  int      dam = cmd / 1000;
-
-#endif
-
 	/*
 	 * check for periodic event calls
 	 */
@@ -2543,11 +2530,7 @@ int dryad(P_char ch, P_char pl, int cmd, char *arg)
 							snprintf(Gbuf4, MAX_STRING_LENGTH, "You dive inbetween your dryad and %s, taking up the fight!\r\n", (IS_NPC(vict) ? vict->player.short_descr : GET_NAME(vict)));
 							send_to_char(Gbuf4, tmp_ch);
 							stop_fighting(vict);
-#ifndef NEW_COMBAT
 							hit(tmp_ch, vict, tmp_ch->equipment[PRIMARY_WEAPON]);
-#else
-							hit(tmp_ch, vict, tmp_ch->equipment[WIELD], TYPE_UNDEFINED, getBodyTarget(tmp_ch), TRUE, FALSE);
-#endif
 							return (TRUE);
 						}
 					}
@@ -3797,7 +3780,7 @@ int cityguard(P_char ch, P_char pl, int cmd, char *arg)
 		MobStartFight(ch, tar_ch);
 		return (TRUE);
 	}
-	return OutlawAggro(ch, "$n screams '%s! Fresh blood! Kill!'");
+	return false;
 }
 
 /*
@@ -4905,13 +4888,11 @@ int phalanx(P_char ch, P_char pl, int cmd, char *arg)
 				}
 			}
 		}
-#if 1
 		else if (ch->points.base_armor == -50)
 		{
 			act("$n forms a new configuration.", TRUE, ch, 0, 0, TO_ROOM);
 			ch->points.base_armor = -100;
 		}
-#endif
 		else
 		{
 			switch (dice(3, 7))
@@ -10491,7 +10472,7 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 
 			temp = 10 * GET_LEVEL(pl);
 
-			snprintf(money_string, MAX_STRING_LENGTH, "Hmmmm, yeah, I might have a additional information for you, but I'm not giving it away for free! It'll cost you %s.", coin_stringv(temp));
+			snprintf(money_string, sizeof money_string, "Hmmmm, yeah, I might have a additional information for you, but I'm not giving it away for free! It'll cost you %s.", coin_stringv(temp));
 
 			mobsay(ch, money_string);
 			if (GET_MONEY(pl) < temp)
@@ -10548,7 +10529,7 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 
 		temp = 20 * GET_LEVEL(pl);
 
-		snprintf(money_string, MAX_STRING_LENGTH, "Hmmmm, yeah, I might have a tip for you, but I'm not giving it away for free! It'll cost you %s.", coin_stringv(temp));
+		snprintf(money_string, sizeof money_string, "Hmmmm, yeah, I might have a tip for you, but I'm not giving it away for free! It'll cost you %s.", coin_stringv(temp));
 
 		mobsay(ch, money_string);
 
@@ -12479,7 +12460,6 @@ int conj_specpet_golem(P_char ch, P_char pl, int cmd, char *arg)
 				healpoints = (number(1, 30));
 				CharWait(vict, PULSE_VIOLENCE * 1);
 				GET_HIT(vict) -= healpoints;
-				healCondition(vict, healpoints);
 				update_pos(vict);
 			}
 		}
@@ -12645,7 +12625,6 @@ int conj_specpet_triton(P_char ch, P_char pl, int cmd, char *arg)
 			if ((healpoints + GET_HIT(ch)) >= GET_MAX_HIT(ch))
 				healpoints = MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch) - dice(1, 4));
 			GET_HIT(ch) += healpoints;
-			healCondition(ch, healpoints);
 			update_pos(ch);
 			act("$n&+B stretches &+bout and lets loose a &+Btriumphant &+Whowl&+b!", FALSE, ch, 0, vict, TO_ROOM);
 			act("&+bAbsorbing &+Bmoisture &+bfrom its surroundings $n &+brebuilds its &+Bbody.&+b!", FALSE, ch, 0, vict, TO_ROOM);
@@ -12673,7 +12652,6 @@ int conj_specpet_undine(P_char ch, P_char pl, int cmd, char *arg)
 		if ((GET_HIT(vict) - healpoints) <= 0)
 			healpoints = (GET_HIT(vict) - dice(1, 4));
 		GET_HIT(vict) -= healpoints;
-		healCondition(vict, healpoints);
 		update_pos(vict);
 		act("&+bWith &=LBlightning&N&+B speed $n&+b flows forward, choking &+B$N&+b!", FALSE, ch, 0, vict, TO_NOTVICT);
 		act("&+bWith &=LBlightning&N&+B speed $n&+b flows forward, choking &+BYOU&+b!", FALSE, ch, 0, vict, TO_VICT);
@@ -14815,7 +14793,7 @@ int llyren(P_char ch, P_char pl, int cmd, char *arg)
 		if (IS_PC(owner))
 			continue;
 
-		snprintf(buffer, MAX_STRING_LENGTH, "You see %s in posession of %s.\n", t_obj->short_description, owner->player.short_descr);
+		snprintf(buffer, sizeof buffer, "You see %s in posession of %s.\n", t_obj->short_description, owner->player.short_descr);
 		send_to_char(buffer, pl);
 	}
 
@@ -15581,31 +15559,31 @@ void finish_smelt(P_char ch, P_char pl, int vnum)
 	switch ((OBJ_VNUM(ore) - LOWEST_ORE_VNUM) / 3)
 	{
 		case 0:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+ciron&n");
+			snprintf(oreType, sizeof oreType, "&+ciron&n");
 			break;
 		case 1:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+Ctin&n");
+			snprintf(oreType, sizeof oreType, "&+Ctin&n");
 			break;
 		case 2:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+ycopper&n");
+			snprintf(oreType, sizeof oreType, "&+ycopper&n");
 			break;
 		case 3:
-			snprintf(oreType, MAX_STRING_LENGTH, "&nsilver");
+			snprintf(oreType, sizeof oreType, "&nsilver");
 			break;
 		case 4:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+Ygold&n");
+			snprintf(oreType, sizeof oreType, "&+Ygold&n");
 			break;
 		case 5:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+Wplatinum&n");
+			snprintf(oreType, sizeof oreType, "&+Wplatinum&n");
 			break;
 		case 6:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+mmithril&n");
+			snprintf(oreType, sizeof oreType, "&+mmithril&n");
 			break;
 		case 7:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+Madamantium&n");
+			snprintf(oreType, sizeof oreType, "&+Madamantium&n");
 			break;
 		default:
-			snprintf(oreType, MAX_STRING_LENGTH, "&+Lmetal&n");
+			snprintf(oreType, sizeof oreType, "&+Lmetal&n");
 			break;
 	}
 	snprintf(buf, MAX_STRING_LENGTH, "$n &+RSMELTS&n some %s!", oreType);

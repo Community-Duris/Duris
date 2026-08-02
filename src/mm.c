@@ -13,27 +13,7 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-static inline void *__constant_c_memset(void *, unsigned long, size_t);
-
 struct mm_ds_list *mmds_list = NULL;
-
-// This code is kind of deprecated.  CRT should be at least as good as this
-static inline void *__constant_c_memset(void *s, unsigned long c, size_t count)
-{
-	__asm__ __volatile__("cld\n\t"
-	                     "rep ; stosl\n\t"
-	                     "testb $2,%b1\n\t"
-	                     "je 1f\n\t"
-	                     "stosw\n"
-	                     "1:\ttestb $1,%b1\n\t"
-	                     "je 2f\n\t"
-	                     "stosb\n"
-	                     "2:"
-	                     : /* no output registers */
-	                     : "a"(c), "q"(count), "c"(count / 4), "D"((long)s)
-	                     : "cx", "di", "memory");
-	return (s);
-}
 
 struct mm_ds *mm_create(const char *name, size_t size, size_t next_off, unsigned pages)
 {
@@ -41,8 +21,7 @@ struct mm_ds *mm_create(const char *name, size_t size, size_t next_off, unsigned
 	struct mm_ds_list *list_entry;
 
 	CREATE(mmds, mm_ds, 1, MEM_TAG_MEMMAN);
-	strncpy(mmds->name, name, 7);
-	mmds->name[7] = '\0';
+	strlcpy(mmds->name, name, sizeof mmds->name);
 
 	mmds->head = mmds->tail = NULL;
 	mmds->size              = size;

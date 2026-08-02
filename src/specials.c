@@ -221,33 +221,6 @@ void swimming_char(P_char ch)
 	  AddEvent(EVENT_SWIMMING, swim_timer, TRUE, ch, 0);*/
 }
 
-int OutlawAggro(struct char_data *ch, const char *foo)
-{
-#if 0
-  struct char_data *tch;
-  char     Gbuf4[MAX_STRING_LENGTH];
-  int      flag_lvl;
-
-  /*
-     Heh, just for fun added this to proc.. (have a fun, people. :) 
-   */
-  for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
-    if (CAN_SEE(ch, tch))
-      if ((CHAR_IS_FLAGGED(tch) == 4) || (CHAR_IS_FLAGGED(tch) == 3))
-      {
-        flag_lvl = CHAR_IS_FLAGGED(tch);
-        snprintf(Gbuf4, MAX_STRING_LENGTH, foo,
-                (flag_lvl == 4) ? "Outcast" :
-                (flag_lvl == 2) ? "Outlaw" :
-                (flag_lvl == 3) ? "Killer" : "Thief");
-        act(Gbuf4, FALSE, ch, 0, 0, TO_ROOM);
-        MobStartFight(ch, tch);
-        return TRUE;
-      }
-#endif
-	return FALSE;
-}
-
 long pow10(long x)
 {
 	int y = 1;
@@ -261,7 +234,6 @@ long pow10(long x)
 void npc_steal(P_char ch, P_char vict)
 {
 	P_obj  obj = NULL, next_obj = NULL;
-	P_char rider;
 	int    percent, roll, loc, gold, chance;
 	bool   failed, caught;
 
@@ -359,7 +331,7 @@ void npc_steal(P_char ch, P_char vict)
 			else
 				obj = vict->equipment[loc];
 			// No stealing artifacts.
-			if ((IS_CARRYING_W(ch, rider) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch) || IS_ARTIFACT(obj))
+			if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch) || IS_ARTIFACT(obj))
 				failed = TRUE;
 			if (!failed && (percent > 175))
 			{
@@ -459,25 +431,6 @@ void npc_steal(P_char ch, P_char vict)
 		}
 	}
 }
-
-#if 0
-/*
-   A special for each tower roof in Anapest (room-based)
-
-   int tower(int room, P_char ch, int cmd, char *arg)
-   {
-   if (!cmd) {
-   if....
-   act("There is activity along the valley rim.\r\n", ....);
-   } else if (cmd==...look...) {
-   if (*arg) {
-   number = search_block(arg, t_skills, FALSE);
-   if (number == -1) {
-
-   ..nasty...may need to change call with self reference like w/mobs 
- */
-
-#endif
 
 /* Pi's room proc */
 

@@ -13,7 +13,6 @@
 #include "graph.h"
 #include "justice.h"
 #include "map.h"
-#include "sound.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "vnum.obj.h"
@@ -23,8 +22,6 @@ extern P_index                 obj_index;
 extern P_char                  character_list;
 extern P_desc                  descriptor_list;
 extern P_char                  combat_list;
-extern P_event                 current_event;
-extern P_event                 event_type_list[];
 extern P_obj                   object_list;
 extern P_room                  world;
 extern P_index                 mob_index;
@@ -524,15 +521,15 @@ void spell_wind_blade(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 
 	if (IS_FIGHTING(ch))
+	{
 		if (has_wind_blade_wielded(ch))
 		{
 			if (P_char vict = GET_OPPONENT(ch))
 				wind_blade_attack_routine(ch, vict);
 		}
 		else
-		{
 			send_to_char("You need to wield the gift of the air if you want to receive even greater aid!\r\n", ch);
-		}
+	}
 }
 
 void spell_windwalk(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
@@ -875,10 +872,12 @@ void spell_conjure_air(int level, P_char ch, char *arg, int type, P_char victim,
 	{
 		victim = k->follower;
 		if (IS_ELEMENTAL(victim))
+		{
 			if (GET_LEVEL(victim) < 50)
 				i++;
 			else
 				j++;
+		}
 	}
 
 	if (i >= 1 || j >= 1)
@@ -995,8 +994,6 @@ void spell_greater_ethereal_recharge(int level, P_char ch, char *arg, int type, 
 	healpoints = number(150, (GET_LEVEL(ch) * 5));
 	heal(victim, ch, healpoints, GET_MAX_HIT(victim));
 
-	healCondition(victim, healpoints);
-
 	if (victim != ch)
 	{
 		act("$n reaches out at $N, touching $M. ", FALSE, ch, 0, victim, TO_NOTVICT);
@@ -1029,8 +1026,6 @@ void spell_ethereal_recharge(int level, P_char ch, char *arg, int type, P_char v
 
 	healpoints = MIN(150, dice(5, level));
 	heal(victim, ch, healpoints, GET_MAX_HIT(victim));
-
-	healCondition(victim, healpoints);
 
 	if (victim != ch)
 	{
@@ -2006,12 +2001,8 @@ void spell_ethereal_travel(int level, P_char ch, char *arg, int type, P_char vic
 	// if the teleporter is grouped
 	if (ch->group)
 	{
-
-		// get the character's group list
-		gl = ch->group;
-
 		// teleport the group members in the character's room
-		for (gl; gl; gl = gl->next)
+		for (gl = ch->group; gl; gl = gl->next)
 		{
 			if (gl->ch->in_room == from_room)
 			{
@@ -2146,8 +2137,6 @@ void static_discharge(P_char ch, P_char victim, int level, int intensity)
 
 	if (IS_AFFECTED5(victim, AFF5_WET))
 		dam = (int)(dam * 1.5);
-
-	play_sound(SOUND_SHOCKWAVE, NULL, victim->in_room, TO_ROOM);
 
 	uint flags = SPLDAM_NODEFLECT | SPLDAM_GLOBE | SPLDAM_GRSPIRIT;
 
@@ -2338,10 +2327,12 @@ void spell_conjure_void_elemental(int level, P_char ch, char *arg, int type, P_c
 	{
 		victim = k->follower;
 		if (IS_ELEMENTAL(victim))
+		{
 			if (GET_LEVEL(victim) < 50)
 				i++;
 			else
 				j++;
+		}
 	}
 
 	if (i >= 1 || j >= 1)
@@ -2435,10 +2426,12 @@ void spell_conjure_ice_elemental(int level, P_char ch, char *arg, int type, P_ch
 	{
 		victim = k->follower;
 		if (IS_ELEMENTAL(victim))
+		{
 			if (GET_LEVEL(victim) < 50)
 				i++;
 			else
 				j++;
+		}
 	}
 
 	if (i >= 1 || j >= 1)

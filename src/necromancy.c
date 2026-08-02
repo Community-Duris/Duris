@@ -555,7 +555,7 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	undead->base_stats.Con = BOUNDED(74, undead->base_stats.Con, 100);
 	undead->base_stats.Dex = BOUNDED(74, undead->base_stats.Dex, 100);
 	undead->base_stats.Int = BOUNDED(84, undead->base_stats.Int, 100);
-	undead->base_stats.Wis = BOUNDED(84, undead->base_stats.Int, 100);
+	undead->base_stats.Wis = BOUNDED(84, undead->base_stats.Wis, 100);
 	// Spectres get good stats for backstab (necromancers get str spell, so 90 str).
 	if (which_type == NECROPET_SPECTRE)
 	{
@@ -787,34 +787,42 @@ void spawn_raise_undead(P_char ch, P_char vict, P_obj corpse)
 	else if (roll > 22)
 	{
 		if (sum == 0)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_LICH;
 			else
 				type = NECROPET_LICH;
+		}
 	}
 	else if (roll > 20)
 	{
 		if (sum < 6)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_VAMPIRE;
 			else
 				type = NECROPET_VAMPIRE;
+		}
 	}
 	else if (roll > 10)
 	{
 		if (sum < 6)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_WRAITH;
 			else
 				type = NECROPET_WRAITH;
+		}
 	}
 	else if (roll > 6)
 	{
 		if (sum < 7)
+		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				type = THEURPET_SPECTRE;
 			else
 				type = NECROPET_SPECTRE;
+		}
 	}
 	else if (sum < 8)
 	{
@@ -2539,11 +2547,6 @@ void spell_taint(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 	}
 
 	dam = 9 * MIN(level, 56) + number(-40, 40);
-
-	if (IS_AFFECTED2(victim, AFF2_SOULSHIELD))
-	{
-		dam *= (int).5;
-	}
 
 	if (saves_spell(victim, SAVING_SPELL))
 	{

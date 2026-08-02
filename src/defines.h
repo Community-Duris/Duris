@@ -236,6 +236,7 @@ typedef unsigned int uint;
 #define ITEM2_QUESTITEM   BIT_16
 #define ITEM2_TRANSPARENT BIT_17 /* Item shows contents when looked at */
 #define ITEM2_ACCOUNT_BOUND BIT_18 /* Account-bound divine reward */
+#define ITEM2_ENHANCED    BIT_19
 
 /* Bitvector for 'anti_flags' */
 /*
@@ -1288,12 +1289,6 @@ struct surname_struct
 #define HUNT_JUSTICE_SPECROOM 128 /* special justice purpose */
 #define HUNT_ROOM             129 /* just run to that room */
 #define HUNT_JUSTICE_HELP     130 /* call for help from that room */
-
-#define ZONE_NORMAL    1 /* zone not being raided or anything */
-#define ZONE_REPAIR    2
-#define ZONE_RAID      3
-#define ZONE_SACK      4
-#define ZONE_DESTROYED 5
 
 #define KVARK_IMPROVED_FIGHTS 0
 

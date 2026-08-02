@@ -30,12 +30,10 @@
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
-#include "sound.h"
 #include "specs.barovia.h"
 #include "specs.eth2.h"
-#include "specs.jubilex.h"
+#include "specs.juiblex.h"
 #include "specs.keleks.h"
 #include "specs.prototypes.h"
 #include "specs.ravenloft.h"
@@ -58,7 +56,6 @@ extern struct zone_data *zone_table;
 extern const char       *material_names[];
 extern P_char            character_list;
 extern P_desc            descriptor_list;
-extern P_event           event_type_list[];
 extern P_index           mob_index;
 extern P_index           obj_index;
 extern P_obj             object_list;
@@ -768,7 +765,7 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 	}
 
 	// Take their money.
-	snprintf(buffer, MAX_STRING_LENGTH, "You hand $N %s.", coin_stringv(forge_prices[i - 1]));
+	snprintf(buffer, sizeof buffer, "You hand $N %s.", coin_stringv(forge_prices[i - 1]));
 	act(buffer, FALSE, pl, 0, ch, TO_CHAR);
 	SUB_MONEY(pl, forge_prices[i - 1], 0);
 
@@ -2123,16 +2120,6 @@ void do_salvation(P_char ch, char *arg, int cmd)
 	    0,
 	    TO_ROOM);
 	vamp(ch, number(100, 200), GET_MAX_HIT(ch));
-}
-
-void do_drandebug(P_char ch, char *arg, int cmd)
-{
-	return;
-	/*
-	P_obj obj;
-	int value = itemvalue(ch, obj);
-	debug("Item's value is: %d\r\n&n", value);
-	*/
 }
 
 // Returns the lowest material vnum (lowest quality) for material with the same type as obj->material.
@@ -3806,16 +3793,16 @@ int get_ival_from_proc(obj_proc_type proc)
 	    proc == vecna_deathportal || proc == portal_door || proc == portal_wormhole || proc == verzanan_portal || proc == newbie_portal || proc == no_kill_priest_obj || proc == magic_pool ||
 	    proc == moonstone_fragment || proc == treasure_chest || proc == cards_object || proc == artifact_monolith || proc == burbul_map_obj || proc == chyron_search_obj || proc == blood_stains ||
 	    proc == ice_shattered_bits || proc == tracks || proc == frost_beacon || proc == ice_block || proc == charon_ship || proc == moonstone || proc == nexus || proc == pesky_imp_chest ||
-	    proc == tower_summoning || proc == shabo_trap_north || proc == shabo_trap_north_two || proc == shabo_trap_south || shabo_trap_south_two || proc == shabo_trap_up || proc == shabo_trap_down ||
+	    proc == tower_summoning || proc == shabo_trap_north || proc == shabo_trap_north_two || proc == shabo_trap_south || proc == shabo_trap_south_two || proc == shabo_trap_up || proc == shabo_trap_down ||
 	    proc == shabo_trap_up_two || proc == slot_machine || proc == unspec_altar || proc == epic_stone || proc == stat_pool_str || proc == stat_pool_dex || proc == stat_pool_agi ||
 	    proc == stat_pool_con || proc == stat_pool_pow || proc == stat_pool_int || proc == stat_pool_wis || proc == stat_pool_cha || proc == stat_pool_luc || proc == spell_pool ||
 	    proc == druid_spring || proc == blighter_pond || proc == flying_citadel || proc == trap_razor_hooks || proc == trap_tower1_para || proc == trap_tower2_sleep || proc == hoa_plat ||
 	    proc == vecna_deathportal || proc == vecna_deathaltar || proc == vecna_stonemist || proc == vecna_ghosthands || proc == vecna_torturerroom || proc == vecna_gorge || proc == mob_vecna_procs ||
 	    proc == arenaobj_proc || proc == burn_touch_obj || proc == drowcrusher || proc == hewards_mystical_organ || proc == mir_fire || proc == board || proc == random_tomb || proc == random_glass ||
 	    proc == random_slab || proc == refreshing_fountain || proc == magical_fountain || proc == changelog || proc == wall_generic || proc == huntsman_ward || proc == item_switch ||
-	    proc == clock_tower || proc == verzanan_portal || proc == die_roller || proc == elfgate || proc == guildwindow || proc == guildhome || proc == automaton_lever ||
+	    proc == verzanan_portal || proc == die_roller || proc == elfgate || proc == guildwindow || proc == guildhome || proc == automaton_lever ||
 	    proc == illithid_teleport_veil || proc == teleporting_pool || proc == llyms_altar || proc == newbie_sign1 || proc == newbie_sign2 || proc == vareena_statue || proc == wh_corpse_decay ||
-	    proc == dragon_heart_decay || proc == ravenloft_bell || proc == toe_chamber_switch || proc == flesh_golem_repop || proc == unmulti_altar || proc == jubilex_grid_mob_generator ||
+	    proc == dragon_heart_decay || proc == ravenloft_bell || proc == toe_chamber_switch || proc == flesh_golem_repop || proc == unmulti_altar || proc == juiblex_grid_mob_generator ||
 	    proc == eth2_tree_obj || proc == magic_deck || proc == blackjack_table || proc == toe_chamber_switch || proc == drowcrusher)
 	{
 		return -100000;

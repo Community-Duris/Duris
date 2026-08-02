@@ -40,21 +40,19 @@
 #include "map.h"
 #include "mm.h"
 #include "multiplay_whitelist.h"
-#include "new_combat_def.h"
 #include "nexus_stones.h"
 #include "outposts.h"
 #include "poll.h"
 #include "redis.h"
 #include "rogues.h"
 #include "siege.h"
-#include "sound.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "enhance.h"
 #include "sql.h"
 #include "testcmd.h"
-#include "tether.h"
 #include "tradeskill.h"
+#include "unicode.h"
 #include "vnum.room.h"
 #include "weather.h"
 
@@ -676,7 +674,7 @@ const char *command[MAX_CMD] = {
 	"dragonpunch",
 	"revoke",
 	"grant",
-	"olc",
+	"chaos",
 	"motd", /*
              * 445
              */
@@ -746,7 +744,7 @@ const char *command[MAX_CMD] = {
 	"ogreroar",
 	"bearhug",
 	"dig",
-	"justice",
+	"mapglyphs",
 	"supervise",
 	"society", /* 500 */
 
@@ -949,7 +947,7 @@ const char *command[MAX_CMD] = {
 	"disgust",
 	"vote",
 	"hire",
-	"reloadhelp",
+	"reloadhelp", // removed
 	"testcolor", /* 700 */
 	"multiclass",
 	"resetarti",
@@ -1055,7 +1053,7 @@ const char *command[MAX_CMD] = {
 	"focus",
 	"boon",
 	"ctf",
-	"tether",
+	"tether", // removed
 	"questwhere",
 	"newbsa",
 	"salvage",
@@ -1290,7 +1288,7 @@ void command_interpreter(P_char ch, char *argument)
 {
 	uint   look_at, begin, old_room;
 	int    cmd, i, j, k, current;
-	char  *ch_ptr;
+	const char  *ch_ptr;
 	P_char target, master, exec_char = ch;
 
 	if (debug_mode)
@@ -1330,7 +1328,7 @@ void command_interpreter(P_char ch, char *argument)
 	}
 
 	/* Find first non blank */
-	for (begin = 0; (*(argument + begin) == ' '); begin++)
+	for (begin = 0; *(argument + begin) == ' '; begin++)
 		;
 
 	/* Find length of first word */
@@ -1358,35 +1356,6 @@ void command_interpreter(P_char ch, char *argument)
 
 	if (!cmd)
 		return;
-#if 0
-  if ((cmd != CMD_PETITION) && IS_PC(ch) && IS_ILLITHID(ch) &&
-      (GET_LEVEL(ch) < 52))
-  {
-    send_to_char("Don't you know, the Elder Brain wants you home!\r\n", ch);
-    return;
-  }
-#endif
-
-#if 0
-  if( cmd != CMD_LOOK && cmd != CMD_GET && cmd != CMD_RENT &&
-      cmd != CMD_TELL && cmd != CMD_PETITION && cmd != CMD_SAY &&
-      cmd != CMD_GIVE && cmd != CMD_STAND && cmd != CMD_INVENTORY &&
-      cmd != CMD_SCORE && cmd != CMD_WHO && cmd != CMD_EQUIPMENT &&
-      cmd != CMD_REPLY && cmd != CMD_WEAR && cmd != CMD_REMOVE &&
-      cmd != CMD_PUT && cmd != CMD_HELP && cmd != CMD_CAMP && 
-      cmd != CMD_QUIT )
-  {
-    for( P_desc d = descriptor_list; d; d = d->next )
-    {
-      if( ch->desc && d->character && ch != d->character && !IS_TRUSTED(ch)
-        && !IS_TRUSTED(d->character) && ch->only.pc->last_ip == d->character->only.pc->last_ip )
-      {
-        send_to_char("With your soul split into pieces, you can't do that!\n", ch);
-        return;
-      }
-    }
-  }
-#endif
 
 	/* happy little hack to make all 'say' procs work */
 	if (cmd == CMD_SAY2)
@@ -1439,23 +1408,6 @@ void command_interpreter(P_char ch, char *argument)
 	}
 	if (IS_AFFECTED2(ch, AFF2_CASTING))
 	{
-		/* This is all using the old event data stuff, ch->events is no longer used.
-		 *   It has been replaced by P_nevent, ch->nevents, LOOP_EVENTS_CH, ev->func == event_spellcast
-		 * Since we haven't seen it in a while, and ch->events is always NULL, no point in updating this.
-		// check for spellcast loop bug!!!!!
-		P_event  ev;
-
-		// This is POSSIBLY a spellcast event in the wrong place.  Instead of
-		//   just nuking it, see how long it has.  If more then 5 pulses, then nuke it.
-		LOOP_EVENTS( ev, ch->events )
-		{
-		  if( IS_PC(ch) && (ev->type == EVENT_SPELLCAST) && (event_time(ev, T_PULSES) > 5) )
-		  {
-		    statuslog(AVATAR, "Spellcast bug on %s: spell aborted.", J_NAME(ch));
-		    StopCasting(ch);
-		  }
-		}
-		*/
 		if (cmd != CMD_PETITION && cmd != CMD_RETURN)
 		{
 			send_to_char("You're busy spellcasting!\r\n", ch);
@@ -1484,16 +1436,13 @@ void command_interpreter(P_char ch, char *argument)
 	// mortals may never use the magical newline
 	if (!IS_TRUSTED(ch))
 	{
-		for (ch_ptr = argument; *ch_ptr != '\0'; ch_ptr++)
-		{
-			if (*ch_ptr == '&' && *(ch_ptr + 1) == 'L')
-			{
-				send_to_char("No mortal may posess the newline!\r\n", ch);
-				return;
-			}
-		}
-
-		if (!((cmd == CMD_SOCIETY) || (cmd == CMD_CONSTRUCT) || (cmd == CMD_BUY) || (cmd == CMD_RENAME) || (cmd == CMD_TESTCOLOR)))
+		if (!(cmd == CMD_SOCIETY
+		   || cmd == CMD_CONSTRUCT
+		   || cmd == CMD_BUY
+		   || cmd == CMD_RENAME
+		   || cmd == CMD_TESTCOLOR
+		   || cmd == CMD_MAPGLYPHS
+		   ))
 		{
 			for (ch_ptr = argument; *ch_ptr != '\0'; ch_ptr++)
 			{
@@ -1514,6 +1463,22 @@ void command_interpreter(P_char ch, char *argument)
 							break;
 					}
 				}
+			}
+		}
+
+		static unimap u_none("");
+		const unimap *um = 0;
+		if (cmd == CMD_BUY || cmd == CMD_CONSTRUCT || cmd == CMD_RENAME)
+			um = &u_none;
+		else if (cmd != CMD_MAPGLYPHS)
+			um = &u_ascii;
+		if (um)
+		{
+			for (ch_ptr = argument; *ch_ptr; )
+			{
+				int c = get_utf8(ch_ptr);
+				if (c >= 127 && !(*um)[c])
+					return send_to_char("Pardon? No fancy characters allowed as input.\n", ch);
 			}
 		}
 
@@ -1631,7 +1596,7 @@ void command_interpreter(P_char ch, char *argument)
 
 				if (IS_ANIMAL(ch) && GET_SPEC(ch->following, CLASS_SHAMAN, SPEC_ANIMALIST))
 				{
-					i >> 1;
+					i >>= 1;
 				}
 
 				if (ch->following && GET_CLASS(ch->following, CLASS_MINDFLAYER))
@@ -2381,15 +2346,12 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_PLEASANT, STAT_DEAD + POS_PRONE, do_pleasantry, LESSER_G);
 	CMD_GRT(CMD_POOFIN, STAT_DEAD + POS_PRONE, do_poofIn, AVATAR);
 	CMD_GRT(CMD_POOFOUT, STAT_DEAD + POS_PRONE, do_poofOut, AVATAR);
-	CMD_GRT(CMD_POOFINSND, STAT_DEAD + POS_PRONE, do_poofInSound, AVATAR);
-	CMD_GRT(CMD_POOFOUTSND, STAT_DEAD + POS_PRONE, do_poofOutSound, AVATAR);
 	CMD_GRT(CMD_PTELL, STAT_DEAD + POS_PRONE, do_ptell, AVATAR);
 	CMD_GRT(CMD_PURGE, STAT_DEAD + POS_PRONE, do_purge, LESSER_G);
 	CMD_GRT(CMD_RANDOBJ, STAT_DEAD + POS_PRONE, do_randobj, FORGER);
 	CMD_GRT(CMD_REINITPHYS, STAT_DEAD + POS_PRONE, do_reinitphys, GREATER_G);
 	CMD_GRT(CMD_RELEASE, STAT_DEAD + POS_PRONE, do_release, AVATAR);
 	CMD_GRT(CMD_EXTRACTLINK, STAT_DEAD + POS_PRONE, do_extractlink, GREATER_G);
-	CMD_GRT(CMD_RELOADHELP, STAT_DEAD + POS_PRONE, do_reload_help, GREATER_G);
 	CMD_GRT(CMD_RENAME, STAT_DEAD + POS_PRONE, do_rename, IMMORTAL);
 	CMD_GRT(CMD_REROLL, STAT_DEAD + POS_PRONE, do_reroll, GREATER_G);
 	CMD_GRT(CMD_RESTORE, STAT_DEAD + POS_PRONE, do_restore, GREATER_G);
@@ -2573,12 +2535,14 @@ void assign_command_pointers(void)
 	CMD_N(CMD_LOCK, STAT_RESTING + POS_SITTING, do_lock, 0, TRUE);
 	CMD_N(CMD_MAIL, STAT_RESTING + POS_SITTING, do_mail, 0, FALSE);
 	CMD_N(CMD_MAP, STAT_SLEEPING + POS_PRONE, do_map, MINLVLIMMORTAL, FALSE);
+	CMD_N(CMD_MAPGLYPHS, STAT_DEAD + POS_PRONE, do_mapglyphs, 0, FALSE);
 	CMD_N(CMD_LOTUS, STAT_RESTING + POS_SITTING, do_lotus, 0, TRUE);
 	CMD_N(CMD_MEDITATE, STAT_RESTING + POS_SITTING, do_meditate, 0, TRUE);
 	CMD_N(CMD_MORE, STAT_DEAD + POS_PRONE, do_more, 0, FALSE);
 	CMD_Y(CMD_RECALL, STAT_DEAD + POS_PRONE, do_recall, 0, FALSE);
 	CMD_N(CMD_MOTD, STAT_SLEEPING + POS_PRONE, do_motd, 0, FALSE);
 	CMD_N(CMD_GMOTD, STAT_SLEEPING + POS_PRONE, do_gmotd, 0, FALSE);
+	CMD_Y(CMD_CHAOS, STAT_DEAD + POS_PRONE, do_chaos, 0, FALSE);
 	CMD_Y(CMD_MOUNT, STAT_NORMAL + POS_STANDING, do_mount, 0, TRUE);
 	CMD_N(CMD_NE, STAT_NORMAL + POS_PRONE, do_move, 0, TRUE);
 	CMD_Y(CMD_NEWS, STAT_DEAD + POS_PRONE, do_news, 0, FALSE);
@@ -2836,7 +2800,6 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_FOCUS, STAT_RESTING + POS_SITTING, do_assimilate, 0, TRUE);
 	CMD_Y(CMD_BOON, STAT_SLEEPING + POS_PRONE, do_boon, 0, FALSE);
 	CMD_Y(CMD_CTF, STAT_NORMAL + POS_STANDING, do_ctf, 0, FALSE);
-	CMD_Y(CMD_TETHER, STAT_NORMAL + POS_STANDING, do_tether, 0, FALSE);
 	CMD_Y(CMD_AUCTION, STAT_NORMAL + POS_STANDING, new_ah_call, 0, FALSE);
 
 	CMD_Y(CMD_ZLIST, STAT_DEAD + POS_PRONE, do_zlist, IMMORTAL, FALSE);
@@ -3341,7 +3304,7 @@ void check_aggro_from_command(P_char exec_char)
 				if (IS_ALIVE(exec_master) && exec_master->in_room == room)
 				{
 					exec_char      = exec_master;
-					calming_chance = CALMCHANCE(exec_char) + (has_innate(exec_char, INNATE_CALMING)) ? 10 : 0;
+					calming_chance = CALMCHANCE(exec_char) + (has_innate(exec_char, INNATE_CALMING) ? 10 : 0);
 					exec_master    = NULL;
 				}
 				else

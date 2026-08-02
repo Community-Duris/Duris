@@ -183,7 +183,7 @@ R I 59037
 R E 1000000
 G I 59037
 D
-&+y'...just as me.&' he says before bursting through his &+Lshackles&N, which fall
+&+y'...just as me.&N' he says before bursting through his &+Lshackles&N, which fall
 into &+Lmetal scraps.
 &+y'Beware.'&N' he warns, before galloping down the dungeon into darkness.
 ~
@@ -472,7 +472,7 @@ Three &+cmoon&+Cbeam&+L drops &Nare all that remain.
 ~
 QA
 &N$n grins with an uncharacteristic greed and snatches the &+Ycoin&N from $N.
-&+c'Well done! Well done, indeed!&' he praises.
+&+c'Well done! Well done, indeed!&N' he praises.
 ~
 R I 59248
 R I 59248
@@ -608,7 +608,7 @@ death~
 &NAfter taking a moment to collect herself and adjust her garish jewelry,
 &+gEzmerelda &Nclears her throat and returns to her origins:
 &+G'I am Ezmerelda D'avenir - monster-hunter, wanderer and reader of the hidden.
-&+GWould you seek your &+Yfortune&G?' &Nshe asks, nonchalantly fanning her &+ycards&N.
+&+GWould you seek your &+Yfortune&+G?' &Nshe asks, nonchalantly fanning her &+ycards&N.
 ~
 MA
 cards fortune~
@@ -1112,7 +1112,7 @@ and meets your gaze.
 &+Gnot the dawn.'
 
 &N$n gets &+Ya small key&n from her &+ysatchel.&N.
-&+G'Meet me at the private chamber of my wagon, giorgio.&+G' &$n says with a wink.
+&+G'Meet me at the private chamber of my wagon, giorgio.&+G' &N$n says with a wink.
 ~
 R I 59223
 R I 59253
@@ -1618,7 +1618,7 @@ Without speaking, the items float freely from $n's hands, towards &+mRahadin&N.
 
 &+LIn a flash of darkness, the &+Ytreasures&+L and &+Wscroll&+L vanish!
 
-&+r'&+WThe Eye has watched this place since before memory&R' &Nhe says.
+&+r'&+WThe Eye has watched this place since before memory&+R' &Nhe says.
 For you a moment, you feel &+rRavenloft&N seeing -through- you, as a &+Ccrystal
 &+Ctalisman &Nslowly fades into visibility, floating directly before you.
 
@@ -1766,7 +1766,7 @@ izek strazni~
 
 &+BGadof Blinsky &Nsizes you up and says &+B'They're no match for the mighty $N!'
 &+B'Me?' &Nhe chuckles &+B'Not without Mister Ric would I ever leave town, let
-&+Balone go to..' &Nhe gulps for a moment &"B..Castle Ravenloft!'
+&+Balone go to..' &Nhe gulps for a moment &+B..Castle Ravenloft!'
 ~
 MA
 castle ravenloft~
@@ -1951,7 +1951,7 @@ castle ravenloft~
 ~
 MA
 strahd zarovich~
-Before &+CRictavio &Ncan respond, a &+yBarovian &Nr&+ya&nb&+yb&n&l&+ye&Nr&N who overheard $N interrupts..
+Before &+CRictavio &Ncan respond, a &+yBarovian &Nr&+ya&nb&+yb&nl&+ye&Nr&N who overheard $N interrupts..
 &+y'Death to Strahd!' &Nthe man roars, raising his clenched-fist in salute.
 
 &+CRictavio&N's posture suddenly springs upright and he raises his fist as well.

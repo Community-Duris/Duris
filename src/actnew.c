@@ -26,7 +26,6 @@
 #include "justice.h"
 #include "listen.h"
 #include "mm.h"
-#include "new_combat_def.h"
 #include "objmisc.h"
 #include "spells.h"
 #include "sql.h"
@@ -154,19 +153,6 @@ void do_aggr(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-#if 0 /*                                                                                                                                                                                               \
-       * disabled at forger request                                                                                                                                                                    \
-       */
-  /*
-   * paladins are good, therefore can't be aggro --TAM
-   */
-  if (GET_CLASS(ch, CLASS_PALADIN))
-  {
-    send_to_char("Be an aggressive paladin?!  Not in this lifetime!\r\n", ch);
-    send_to_char("You'll have to use better judgement than that.\r\n", ch);
-    return;
-  }
-#endif
 	if (*Gbuf2 == '\0')
 	{ /*
 	   * Check Aggressivity
@@ -899,18 +885,7 @@ void do_flurry_of_blows(P_char ch, char *arg)
 		for (int i = 1; i <= num_hits_per_target && count <= max_num_attacks; i++, count++)
 		{
 			if (!should_not_kill(ch, tch) && (GET_STAT(tch) != STAT_DEAD))
-#ifndef NEW_COMBAT
 				hit(ch, tch, NULL);
-
-#else
-				hit(ch,
-				    tch,
-				    NULL,
-				    TYPE_UNDEFINED,
-				    number(0, 10), /* fix up for real later.. */
-				    TRUE,
-				    FALSE);
-#endif
 		}
 	}
 	CharWait(ch, PULSE_VIOLENCE * 3);
@@ -987,10 +962,12 @@ void do_hitall(P_char ch, char *arg, int cmd)
 			continue;
 
 		if (!has_innate(ch, INNATE_EYELESS) && !CAN_SEE(ch, mob))
+		{
 			if (number(1, 101) > (IS_PC(ch) ? GET_CHAR_SKILL(ch, SKILL_BLINDFIGHTING) : 90))
 				continue;
 			else
 				notch_skill(ch, SKILL_BLINDFIGHTING, 5);
+		}
 
 		if (IS_NPC(ch) && (GET_OPPONENT(mob) != ch))
 			continue;
@@ -1002,7 +979,6 @@ void do_hitall(P_char ch, char *arg, int cmd)
 
 		if (GET_CHAR_SKILL(ch, SKILL_HITALL) >= percent)
 			if (!should_not_kill(ch, mob))
-#ifndef NEW_COMBAT
 				hit(ch, mob, ch->equipment[PRIMARY_WEAPON]);
 		if (GET_CLASS(ch, CLASS_BERSERKER) && GET_STAT(mob) != STAT_DEAD)
 		{
@@ -1011,23 +987,6 @@ void do_hitall(P_char ch, char *arg, int cmd)
 				hit(ch, mob, ch->equipment[PRIMARY_WEAPON]);
 			}
 		} // new zerker stuff
-#else
-				hit(ch,
-				    mob,
-				    ch->equipment[WIELD],
-				    TYPE_UNDEFINED,
-				    number(0, 10), /* fix up for real later.. */
-				    TRUE,
-				    FALSE);
-		if (GET_CLASS(ch, CLASS_BERSERKER))
-		{
-			if (affected_by_spell(ch, SKILL_BERSERK))
-			{
-				hit(ch, mob, ch->equipment[WIELD], TYPE_UNDEFINED, number(0, 10), TRUE, FALSE);
-			}
-
-		} // same as above
-#endif
 
 		// riposte, damage shield, etc can kill the character
 		// and it appears we've had a crash due to this, so adding this
@@ -1231,7 +1190,7 @@ void do_commands(P_char ch, char *arg, int cmd)
 						continue;
 					break;
 				case 3:
-					if ((cmd_info[i + 1].command_pointer == do_action))
+					if (cmd_info[i + 1].command_pointer == do_action)
 						continue;
 					break;
 			}
@@ -1610,7 +1569,7 @@ P_char morph(P_char ch, int rnum, int mode)
 	 * "fix" their npcact flags so we don't get any "unwanted"
 	 * behaivors... These are the only allowable NPC acts
 	 */
-	mob->specials.act &= ACT_ISNPC | ACT_NICE_THIEF | /*NPC_OUTLAW | */
+	mob->specials.act &= ACT_ISNPC | ACT_NICE_THIEF |
 	                     ACT_CANSWIM | ACT_CANFLY | ACT_BREAK_CHARM | ACT_MOUNT;
 
 	/*
@@ -1628,7 +1587,6 @@ P_char morph(P_char ch, int rnum, int mode)
 	 * But high level druids will be able to make tanks with 4000+ hps atm
 	 * maybe hps /= 2, 3 or 4 would be better
 	 */
-#if 1
 	/*
 	 * the new forms BASE hitpoints will be the same as the player.  Note
 	 * that con mobs, eq, etc, will made the new hps look different
@@ -1650,7 +1608,6 @@ P_char morph(P_char ch, int rnum, int mode)
 
 		/* if the mob dies as a result of its affects, we're screwed */
 	}
-#endif
 
 	if (affect_total(mob, TRUE))
 		return NULL;
@@ -1695,18 +1652,8 @@ P_char morph(P_char ch, int rnum, int mode)
 	}
 	ch->only.pc->switched = mob;
 	SET_BIT(ch->specials.act, PLR_MORPH);
-#if 0
-  mob->only.npc->memory = ch;   /*
-                                 * hackish way to keep track of who is the
-                                 * original player if they drop link
-                                 */
-#else
-
-	/* too hackish for me.  let's make a new var and put orig char in
-	   there instead */
 
 	mob->only.npc->orig_char = ch;
-#endif
 	/*
 	 * Void is probably a safe place to PC for time being... assuming no
 	 * idiot gods don't fuck off in there
@@ -1746,11 +1693,7 @@ P_char un_morph(P_char mob)
 	if (virt == EVIL_AVATAR_MOB || virt == GOOD_AVATAR_MOB)
 		is_avatar = TRUE;
 
-#if 1
 	ch = mob->only.npc->orig_char;
-#else
-	ch = (P_char)mob->only.npc->memory;
-#endif
 	/* the "owning" player. We use this instead of desc->original just in
 	 * case they are linkless */
 	if (!ch)
@@ -2376,11 +2319,11 @@ void do_shapechange(P_char ch, char *arg, int cmd)
 	IS_DISGUISE_SHAPE(ch)    = TRUE;
 	if (GET_CLASS(ch, CLASS_BLIGHTER))
 	{
-		snprintf(mobname, MAX_STRING_LENGTH, "skeleton %s", GET_NAME(mob));
+		snprintf(mobname, sizeof mobname, "skeleton %s", GET_NAME(mob));
 		ch->disguise.title = str_dup(mobname);
-		snprintf(mobname, MAX_STRING_LENGTH, "a skeleton of %s&n", mob->player.short_descr);
+		snprintf(mobname, sizeof mobname, "a skeleton of %s&n", mob->player.short_descr);
 		ch->disguise.name = str_dup(mobname);
-		snprintf(mobname, MAX_STRING_LENGTH, "A skeleton of %s&n stands here.", mob->player.short_descr);
+		snprintf(mobname, sizeof mobname, "A skeleton of %s&n stands here.", mob->player.short_descr);
 		ch->disguise.longname = str_dup(mobname);
 		ch->disguise.race     = RACE_SKELETON;
 	}
@@ -2394,11 +2337,10 @@ void do_shapechange(P_char ch, char *arg, int cmd)
 	ch->disguise.m_class = mob->player.m_class;
 	ch->disguise.racewar = GET_RACEWAR(mob);
 	ch->disguise.hit     = GET_LEVEL(ch) * 2;
-	snprintf(mobname, MAX_STRING_LENGTH, "&+WYou shift into the form of %s!\r\n", ch->disguise.name);
+	snprintf(mobname, sizeof mobname, "&+WYou shift into the form of %s!\r\n", ch->disguise.name);
 	send_to_char(mobname, ch);
-	snprintf(mobname, MAX_STRING_LENGTH, "&+WThe image of %s &Nshifts&+W into the form of %s!\r\n", GET_NAME(ch), ch->disguise.name);
+	snprintf(mobname, sizeof mobname, "&+WThe image of %s &Nshifts&+W into the form of %s!\r\n", GET_NAME(ch), ch->disguise.name);
 	act(mobname, FALSE, ch, 0, NULL, TO_ROOM);
-	SET_BIT(ch->specials.act, PLR_NOWHO);
 
 	balance_affects(ch);
 
@@ -2962,7 +2904,7 @@ void make_lock(P_char ch, char *arg)
 			act("$n locks $p with a homemade lock.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-		/* a door, perhaps */
+	{	/* a door, perhaps */
 		if (!IS_SET(EXIT(ch, door)->exit_info, EX_ISDOOR))
 			send_to_char("That's absurd.\r\n", ch);
 		else if (!IS_SET(EXIT(ch, door)->exit_info, EX_CLOSED))
@@ -2990,6 +2932,7 @@ void make_lock(P_char ch, char *arg)
 						back->key = 1; /* so its now a lockable, but keyless object */
 					}
 		}
+	}
 }
 
 void make_key(P_char ch, char *arg)

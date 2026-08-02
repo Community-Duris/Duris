@@ -13204,7 +13204,7 @@ targets, and damage.
 Firing Arcs
 ---------------------------------------------------------------------------
 Firing arcs are the direction your weapons are pointing on your ship. For 
-example, a ballistae mounted on your Port(Left) side is pointing to the 
+example, a ballista mounted on your Port(Left) side is pointing to the 
 ship's left, so if the target is on the right side, it is out of that 
 particular weapon's arc, so if weapons are mounted only on the forward arc, 
 that means the ship only has a limited arc of fire in the front. If a ship 
@@ -13213,7 +13213,7 @@ has weapons on all four parts of the ship it can shoot in any direction.
 Range
 ---------------------------------------------------------------------------
 Each weapon has a Short, Medium, and Long range to them. What this means 
-is that a Large Ballistae which might have a Short range of 4, Medium of 
+is that a Large Ballista which might have a Short range of 4, Medium of 
 8, and long of 12 can shoot targets as far as 12 squares away, as the ship 
 gets closer to the target and gets within 8 squares, the ship will have a 
 better chance of hitting the target, if the target gets within 4 squares, 

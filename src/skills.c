@@ -21,7 +21,6 @@
 #include "rogues.h"
 
 int  numSkills;
-void update_racial_skills(P_char ch);
 #else
 #include "misc/misc.h"
 int currentSkill = 0;
@@ -526,7 +525,6 @@ void initialize_skills()
 	SPELL_CREATE("negative concussion blast", SPELL_NEGATIVE_CONCUSSION_BLAST, PULSE_SPELLCAST * 3 / 2, TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO, spell_negative_concussion_blast);
 	SPELL_ADD(CLASS_NECROMANCER, 8);
 	SPELL_ADD(CLASS_THEURGIST, 8);
-	//  SPELL_ADD(CLASS_CABALIST, 8);
 
 	SPELL_CREATE("create greater dracolich", SPELL_CREATE_GREATER_DRACOLICH, PULSE_SPELLCAST * 10, TAR_OBJ_ROOM | TAR_NOCOMBAT, spell_create_greater_dracolich);
 	SPELL_ADD(CLASS_NECROMANCER, 12);
@@ -897,7 +895,6 @@ void initialize_skills()
 	SPELL_CREATE_MSG("cone of cold", SPELL_CONE_OF_COLD, PULSE_SPELLCAST * 4 / 3, TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_CHAR_RANGE | TAR_AGGRO, spell_cone_of_cold, "You feel less &+Bcold&n.");
 	SPELL_ADD(CLASS_SORCERER, 5);
 	SPELL_ADD(CLASS_NECROMANCER, 6);
-	//  SPELL_ADD(CLASS_CABALIST, 6);
 	SPELL_ADD(CLASS_CONJURER, 7);
 	SPELL_ADD(CLASS_SUMMONER, 7);
 	SPELL_ADD(CLASS_ETHERMANCER, 4);
@@ -1563,7 +1560,6 @@ void initialize_skills()
 
 	SPELL_CREATE("slashing darkness", SPELL_SLASHING_DARKNESS, PULSE_SPELLCAST * 2 / 3, TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_CHAR_RANGE | TAR_RANGE2 | TAR_AGGRO, spell_slashing_darkness);
 	SPELL_ADD(CLASS_NECROMANCER, 1);
-	//  SPELL_ADD(CLASS_CABALIST, 1);
 
 	SPELL_CREATE("raise spectre", SPELL_RAISE_SPECTRE, PULSE_SPELLCAST * 3, TAR_OBJ_ROOM | TAR_NOCOMBAT, spell_raise_spectre);
 	SPELL_ADD(CLASS_NECROMANCER, 5);
@@ -2049,7 +2045,6 @@ void initialize_skills()
 	SPELL_CREATE("power word kill", SPELL_PWORD_KILL, PULSE_SPELLCAST * 2, TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO, spell_pword_kill);
 	SPELL_ADD(CLASS_SORCERER, 8);
 	SPELL_ADD(CLASS_NECROMANCER, 11);
-	//  SPELL_ADD(CLASS_CABALIST, 11);
 	SPELL_ADD(CLASS_THEURGIST, 11);
 
 	SPELL_CREATE("power word blind", SPELL_PWORD_BLIND, PULSE_SPELLCAST / 2, TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_INSTACAST | TAR_AGGRO, spell_pword_blind);
@@ -2810,11 +2805,9 @@ void initialize_skills()
 	SPELL_CREATE_MSG("chaos shield", SPELL_CHAOS_SHIELD, PULSE_SPELLCAST * 5, TAR_SELF_ONLY | TAR_NOCOMBAT, spell_chaos_shield, "&+LThe chaotic aura about you fades and dissapates.&n");
 	SPEC_SPELL_ADD(CLASS_SORCERER, 11, SPEC_WILDMAGE);
 
-#if 1
 	SKILL_CREATE("aerial combat", SKILL_AERIAL_COMBAT, TAR_PHYS);
 
 	SKILL_CREATE("aerial casting", SKILL_AERIAL_CASTING, TAR_MENTAL);
-#endif
 
 	SKILL_CREATE("dirt toss", SKILL_DIRTTOSS, TAR_PHYS);
 	SKILL_ADD(CLASS_THIEF, 1, 90);
@@ -2845,7 +2838,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_SORCERER, 1, 40);
 	SKILL_ADD(CLASS_WARLOCK, 1, 40);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 40);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 40);
 	SKILL_ADD(CLASS_THEURGIST, 1, 40);
 	SKILL_ADD(CLASS_SHAMAN, 1, 45);
 	SKILL_ADD(CLASS_ETHERMANCER, 1, 45);
@@ -2949,7 +2941,6 @@ void initialize_skills()
 	  SKILL_ADD(CLASS_SORCERER, 1, 100);
 	  SKILL_ADD(CLASS_WARLOCK, 1, 100);
 	  SKILL_ADD(CLASS_NECROMANCER, 1, 100);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	  SKILL_ADD(CLASS_ROGUE, 1, 100);
 	  SKILL_ADD(CLASS_THIEF, 1, 100);
 	  SKILL_ADD(CLASS_WARRIOR, 1, 100);
@@ -2980,7 +2971,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_SORCERER, 1, 70);
 	SKILL_ADD(CLASS_WARLOCK, 1, 70);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 70);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 70);
 	SKILL_ADD(CLASS_THEURGIST, 1, 70);
 	SKILL_ADD(CLASS_ROGUE, 1, 100);
 	SKILL_ADD(CLASS_THIEF, 1, 100);
@@ -3251,7 +3241,6 @@ void initialize_skills()
 	SKILL_CREATE("scribe", SKILL_SCRIBE, TAR_MENTAL);
 	SKILL_ADD(CLASS_SORCERER, 1, 100);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 100);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SKILL_ADD(CLASS_THEURGIST, 1, 100);
 	SKILL_ADD(CLASS_CONJURER, 1, 100);
 	SKILL_ADD(CLASS_SUMMONER, 1, 100);
@@ -3266,7 +3255,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_SORCERER, 1, 100);
 	SKILL_ADD(CLASS_WARLOCK, 1, 100);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 100);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SKILL_ADD(CLASS_THEURGIST, 1, 100);
 	SKILL_ADD(CLASS_CONJURER, 1, 100);
 	SKILL_ADD(CLASS_SUMMONER, 1, 100);
@@ -3298,7 +3286,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_SORCERER, 1, 100);
 	SKILL_ADD(CLASS_WARLOCK, 1, 100);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 100);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SKILL_ADD(CLASS_THEURGIST, 1, 100);
 	SKILL_ADD(CLASS_CONJURER, 1, 100);
 	SKILL_ADD(CLASS_SUMMONER, 1, 100);
@@ -3327,7 +3314,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_MERCENARY, 1, 90);
 	SKILL_ADD(CLASS_SORCERER, 1, 60);
 	SKILL_ADD(CLASS_WARLOCK, 1, 70);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SKILL_ADD(CLASS_BLIGHTER, 1, 100);
 	// SKILL_ADD(CLASS_ROGUE, 1, 100);
 	SKILL_ADD(CLASS_THIEF, 1, 90);
@@ -3339,7 +3325,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_WARRIOR, 1, 100);
 	SKILL_ADD(CLASS_REAVER, 1, 70);
 	SPEC_SKILL_ADD(CLASS_DRAGOON, 1, 70, SPEC_DRAGON_PRIEST);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SPEC_SKILL_ADD(CLASS_WARRIOR, 0, 0, SPEC_SWASHBUCKLER);
 	SPEC_SKILL_ADD(CLASS_CLERIC, 30, 100, SPEC_ZEALOT);
 	SPEC_SKILL_ADD(CLASS_NECROMANCER, 30, 100, SPEC_NECROLYTE);
@@ -3381,7 +3366,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_SUMMONER, 1, 80);
 	SKILL_ADD(CLASS_MERCENARY, 1, 95);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 80);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SKILL_ADD(CLASS_RANGER, 1, 95);
 	SKILL_ADD(CLASS_SORCERER, 1, 80);
 	SKILL_ADD(CLASS_ETHERMANCER, 1, 100);
@@ -3415,7 +3399,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_SHAMAN, 1, 80);
 	SKILL_ADD(CLASS_SORCERER, 1, 60);
 	SKILL_ADD(CLASS_WARLOCK, 1, 100);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SKILL_ADD(CLASS_CONJURER, 1, 60);
 	SKILL_ADD(CLASS_SUMMONER, 1, 60);
 	SKILL_ADD(CLASS_PSIONICIST, 1, 60);
@@ -3688,7 +3671,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_ROGUE, 1, 40);
 	SKILL_ADD(CLASS_ILLUSIONIST, 1, 40);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 40);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 40);
 	SKILL_ADD(CLASS_THEURGIST, 1, 40);
 	SKILL_ADD(CLASS_DRUID, 1, 40);
 	SKILL_ADD(CLASS_BLIGHTER, 1, 40);
@@ -3936,7 +3918,6 @@ void initialize_skills()
 	SKILL_ADD(CLASS_RANGER, 1, 80);
 	SKILL_ADD(CLASS_SORCERER, 1, 100);
 	SKILL_ADD(CLASS_NECROMANCER, 1, 100);
-	//  SKILL_ADD(CLASS_CABALIST, 1, 100);
 	SKILL_ADD(CLASS_THEURGIST, 1, 100);
 	SKILL_ADD(CLASS_SHAMAN, 1, 95);
 	SKILL_ADD(CLASS_PSIONICIST, 1, 100);
@@ -4387,7 +4368,6 @@ void create_tags()
 	TAG_CREATE("alt_extra2", TAG_ALTERED_EXTRA2);
 	TAG_CREATE("no misfire", TAG_NOMISFIRE);
 	TAG_CREATE_WITH_MESSAGES("witch spell", TAG_WITCHSPELL, "&+GYou feel somehow weaker.&n", "");
-	TAG_CREATE("racial skills (deprecated)", TAG_RACIAL_SKILLS);
 	TAG_CREATE("soulbind", TAG_SOULBIND);
 
 	/*  ACHIEVEMENT TAGS - FORMAT: ACH_XXXX (completed), AIP_XXXX (Achievement In Progress) */
@@ -4534,226 +4514,7 @@ void create_tags()
 	TAG_CREATE("suppress elite perm bits", TAG_SUPPRESS_PERM_BITS);
 }
 
-#ifndef _DE_
-void assign_racial_skills(P_char ch)
-{
-	struct affected_type af;
-	// if(!IS_SET(PLR3_FLAGS(ch), PLR3_RACIAL_SKILLS))
-
-	// if ((af = get_spell_from_char(ch, TAG_RACIAL_SKILLS)) == NULL)
-	if (!affected_by_spell(ch, TAG_RACIAL_SKILLS))
-	{
-		do_epic_reset(ch, 0, 1); // player has never had their new racial skills set clear out ALL EPIC SKILLS
-
-		memset(&af, 0, sizeof(struct affected_type));
-		af.type     = TAG_RACIAL_SKILLS;
-		af.flags    = AFFTYPE_NOSHOW | AFFTYPE_PERM | AFFTYPE_NODISPEL;
-		af.duration = -1;
-		affect_to_char(ch, &af);
-	}
-	update_racial_skills(ch);
-}
-
-void assign_racial_skills_norefund(P_char ch)
-{
-	struct affected_type af;
-	if (!affected_by_spell(ch, TAG_RACIAL_SKILLS))
-	{
-		do_epic_reset_norefund(ch, 0, 1); // player doesnt need a refund
-
-		memset(&af, 0, sizeof(struct affected_type));
-		af.type     = TAG_RACIAL_SKILLS;
-		af.flags    = AFFTYPE_NOSHOW | AFFTYPE_PERM | AFFTYPE_NODISPEL;
-		af.duration = -1;
-		affect_to_char(ch, &af);
-	}
-	update_racial_skills(ch);
-}
-
-void update_racial_skills(P_char ch)
-{
-	int currrace;
-	currrace = GET_RACE(ch);
-	/*
-	  if(GET_SPEC(ch, CLASS_SORCERER, SPEC_WIZARD))
-	  {
-	    ch->only.pc->skills[SKILL_SPELL_PENETRATION].taught = BOUNDED(10, GET_LEVEL(ch) *2, 100);
-	    ch->only.pc->skills[SKILL_SPELL_PENETRATION].learned = BOUNDED(10, GET_LEVEL(ch) *2, 100);
-	    do_save_silent(ch, 1); // racial skills require a save.
-	  }
-	*/
-	switch (currrace)
-	{
-		case RACE_GNOME:
-			// assign gnome racial epic skills
-			ch->only.pc->skills[SKILL_FIX].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_FIX].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_HALFLING:
-			ch->only.pc->skills[SKILL_EXPERT_PARRY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_EXPERT_PARRY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_GOBLIN:
-			ch->only.pc->skills[SKILL_EXPERT_PARRY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_EXPERT_PARRY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_FIX].taught           = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_FIX].learned          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_GITHYANKI:
-		case RACE_GITHZERAI:
-			ch->only.pc->skills[SKILL_ADVANCED_MEDITATION].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_ADVANCED_MEDITATION].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_HUMAN:
-			ch->only.pc->skills[SKILL_SHIELD_COMBAT].taught           = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_SHIELD_COMBAT].learned          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_SCRIBE_MASTERY].taught          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_SCRIBE_MASTERY].learned         = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_DEVOTION].taught                = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_DEVOTION].learned               = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught      = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned     = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_ORC:
-			ch->only.pc->skills[SKILL_SHIELD_COMBAT].taught           = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_SHIELD_COMBAT].learned          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_SCRIBE_MASTERY].taught          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_SCRIBE_MASTERY].learned         = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_DEVOTION].taught                = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_DEVOTION].learned               = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught      = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned     = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_CENTAUR:
-			ch->only.pc->skills[SKILL_EXPERT_RIPOSTE].taught      = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_EXPERT_RIPOSTE].learned     = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_TWOWEAPON].taught           = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_TWOWEAPON].learned          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_TWOWEAPON].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_TWOWEAPON].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_BARBARIAN:
-			ch->only.pc->skills[SKILL_ANATOMY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_ANATOMY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_TROLL:
-			ch->only.pc->skills[SKILL_ANATOMY].taught          = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_ANATOMY].learned         = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_TOTEMIC_MASTERY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_TOTEMIC_MASTERY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_OGRE:
-			ch->only.pc->skills[SKILL_DEVASTATING_CRITICAL].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_DEVASTATING_CRITICAL].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_FIRBOLG:
-			ch->only.pc->skills[SKILL_NATURES_SANCTITY].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_NATURES_SANCTITY].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		case RACE_THRIKREEN:
-			// assign thri-kreen racial epic skills
-			// ch->only.pc->skills[SKILL_SHIELDLESS_BASH].taught = BOUNDED(10, GET_LEVEL(ch) *2, 100);
-			// ch->only.pc->skills[SKILL_SHIELDLESS_BASH].learned = BOUNDED(10, GET_LEVEL(ch) *2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught  = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned = BOUNDED(10, GET_LEVEL(ch) * 2, 100);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_WIZ, "Failed to save %s after racial skill grant.", GET_NAME(ch)); // racial skills require a save.
-			break;
-		default:
-			// do nothing - not a race that has skills
-			return;
-			break;
-	}
-}
-
-void reset_racial_skills(P_char ch)
-{
-	/*
-	  ch->only.pc->skills[SKILL_SPELL_PENETRATION].taught = 0;
-	  ch->only.pc->skills[SKILL_SPELL_PENETRATION].learned = 0;
-	*/
-	ch->only.pc->skills[SKILL_FIX].taught                     = 0;
-	ch->only.pc->skills[SKILL_FIX].learned                    = 0;
-	ch->only.pc->skills[SKILL_EXPERT_PARRY].taught            = 0;
-	ch->only.pc->skills[SKILL_EXPERT_PARRY].learned           = 0;
-	ch->only.pc->skills[SKILL_EXPERT_PARRY].taught            = 0;
-	ch->only.pc->skills[SKILL_EXPERT_PARRY].learned           = 0;
-	ch->only.pc->skills[SKILL_FIX].taught                     = 0;
-	ch->only.pc->skills[SKILL_FIX].learned                    = 0;
-	ch->only.pc->skills[SKILL_ADVANCED_MEDITATION].taught     = 0;
-	ch->only.pc->skills[SKILL_ADVANCED_MEDITATION].learned    = 0;
-	ch->only.pc->skills[SKILL_SHIELD_COMBAT].taught           = 0;
-	ch->only.pc->skills[SKILL_SHIELD_COMBAT].learned          = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].taught  = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].learned = 0;
-	ch->only.pc->skills[SKILL_SCRIBE_MASTERY].taught          = 0;
-	ch->only.pc->skills[SKILL_SCRIBE_MASTERY].learned         = 0;
-	ch->only.pc->skills[SKILL_DEVOTION].taught                = 0;
-	ch->only.pc->skills[SKILL_DEVOTION].learned               = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught      = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned     = 0;
-	ch->only.pc->skills[SKILL_SHIELD_COMBAT].taught           = 0;
-	ch->only.pc->skills[SKILL_SHIELD_COMBAT].learned          = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].taught  = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_SHIELD_COMBAT].learned = 0;
-	ch->only.pc->skills[SKILL_SCRIBE_MASTERY].taught          = 0;
-	ch->only.pc->skills[SKILL_SCRIBE_MASTERY].learned         = 0;
-	ch->only.pc->skills[SKILL_DEVOTION].taught                = 0;
-	ch->only.pc->skills[SKILL_DEVOTION].learned               = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught      = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned     = 0;
-	ch->only.pc->skills[SKILL_EXPERT_RIPOSTE].taught          = 0;
-	ch->only.pc->skills[SKILL_EXPERT_RIPOSTE].learned         = 0;
-	ch->only.pc->skills[SKILL_TWOWEAPON].taught               = 0;
-	ch->only.pc->skills[SKILL_TWOWEAPON].learned              = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_TWOWEAPON].taught      = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_TWOWEAPON].learned     = 0;
-	ch->only.pc->skills[SKILL_ANATOMY].taught                 = 0;
-	ch->only.pc->skills[SKILL_ANATOMY].learned                = 0;
-	ch->only.pc->skills[SKILL_ANATOMY].taught                 = 0;
-	ch->only.pc->skills[SKILL_ANATOMY].learned                = 0;
-	ch->only.pc->skills[SKILL_TOTEMIC_MASTERY].taught         = 0;
-	ch->only.pc->skills[SKILL_TOTEMIC_MASTERY].learned        = 0;
-	ch->only.pc->skills[SKILL_DEVASTATING_CRITICAL].taught    = 0;
-	ch->only.pc->skills[SKILL_DEVASTATING_CRITICAL].learned   = 0;
-	ch->only.pc->skills[SKILL_NATURES_SANCTITY].taught        = 0;
-	ch->only.pc->skills[SKILL_NATURES_SANCTITY].learned       = 0;
-	ch->only.pc->skills[SKILL_SHIELDLESS_BASH].taught         = 0;
-	ch->only.pc->skills[SKILL_SHIELDLESS_BASH].learned        = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].taught      = 0;
-	ch->only.pc->skills[SKILL_IMPROVED_ENDURANCE].learned     = 0;
-
-	update_racial_skills(ch);
-}
-
-#else
+#ifdef _DE_
 // Defined in utility.c on mud.
 int flag2idx(int flag)
 {

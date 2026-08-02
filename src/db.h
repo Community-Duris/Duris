@@ -45,7 +45,6 @@ void boot_material_rarity_objects(int mini_mode);
 #define GREETINGA3_FILE "lib/information/greetinga.3"
 #define GREETINGA4_FILE "lib/information/greetinga.4"
 
-// #define HELP_KWRD_FILE    "lib/information/help_index"  /* for HELP <keywrd> */			// commented by weebler
 #define HELP_PAGE_FILE "lib/information/help" /* for HELP <CR>             */
 #define MOTD_FILE      "lib/information/motd" /* messages of today         */
 
@@ -140,8 +139,6 @@ struct reboot_data
 
 /* global variables */
 extern unsigned long next_obj_uid;
-extern char         *worldmap;
-extern char         *worldmapa;
 extern string        news;
 extern char         *projects;
 extern string        motd;
