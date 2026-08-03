@@ -245,9 +245,24 @@ char *mysql_str(const char *str, char *buf)
 
 string escape_str(const char *str)
 {
-	static char buff[MAX_STRING_LENGTH];
-	mysql_real_escape_string(DB, buff, str, strlen(str));
-	return string(buff);
+	size_t len;
+	string escaped;
+	unsigned long escaped_len;
+
+	if (!str || !DB)
+		return string();
+
+	len = strlen(str);
+	if (len > (string().max_size() - 1) / 2)
+		return string();
+
+	/* mysql_real_escape_string() can expand every input byte and needs
+	 * one additional byte for the terminator.  Keep the storage owned by
+	 * this call so concurrent persistence workers cannot overwrite it. */
+	escaped.assign(len * 2 + 1, '\0');
+	escaped_len = mysql_real_escape_string(DB, &escaped[0], str, len);
+	escaped.resize(escaped_len);
+	return escaped;
 }
 
 /* populate races and classes lookup tables on boot */

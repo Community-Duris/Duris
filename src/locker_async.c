@@ -629,82 +629,72 @@ fail:
 
 /* ---------------- worker ---------------- */
 
-static int apply_sql_script(MYSQL *conn, const char *sql)
+static int repair_failed_connection(MYSQL **conn_io)
 {
-	const char *p;
-	const char *q;
-	char *stmt;
-	size_t n;
-	int status;
+	MYSQL *conn;
+	MYSQL *replacement;
 
-	if (!conn || !sql)
+	if (!conn_io || !*conn_io)
 		return 0;
 
-	p = sql;
-	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')
-		p++;
-	if (!*p)
+	conn = *conn_io;
+
+	/* A failed multi-statement may leave result packets pending.  Drain
+	 * before issuing ROLLBACK; otherwise the connection can remain out of
+	 * sync and cannot be safely reused. */
+	sql_clear_results_on(conn);
+	if (mysql_rollback(conn) != 0)
+		logit(LOG_FILE, "locker_async: rollback after failed snapshot failed: %s", mysql_error(conn));
+
+	/* The connection may still have an unknown server-side state (for
+	 * example, a dropped socket or a failed statement in a batch).  Discard
+	 * it rather than returning it to the shared worker pool. */
+	replacement = sql_pool_replace_connection(conn);
+	if (replacement)
+		*conn_io = replacement;
+	else
+		logit(LOG_FILE, "locker_async: failed to replace poisoned persistence connection");
+	return 0;
+}
+
+static int apply_sql_script(MYSQL **conn_io, const char *sql)
+{
+	MYSQL *conn;
+	int status;
+
+	if (!conn_io || !*conn_io || !sql)
+		return 0;
+
+	conn = *conn_io;
+	while (*sql == ' ' || *sql == '\n' || *sql == '\r' || *sql == '	')
+		sql++;
+	if (!*sql)
 		return 1;
-	if (p[0] == '/' && p[1] == '*')
+	if (sql[0] == '/' && sql[1] == '*')
 		return 1;
 
-	/* Prefer multi-statement when connection supports it. */
-	if (mysql_real_query(conn, sql, (unsigned long)strlen(sql)) == 0)
+	/* Every persistence-pool connection is created with
+	 * CLIENT_MULTI_STATEMENTS. Do not retry a partially executed batch by
+	 * splitting it: that can duplicate successful statements and leaves the
+	 * transaction boundary ambiguous. */
+	if (mysql_real_query(conn, sql, (unsigned long)strlen(sql)) != 0)
 	{
-		do
-		{
-			MYSQL_RES *res = mysql_store_result(conn);
-			if (res)
-				mysql_free_result(res);
-			status = mysql_next_result(conn);
-			if (status > 0)
-			{
-				logit(LOG_FILE, "locker_async: multi result error: %s", mysql_error(conn));
-				return 0;
-			}
-		} while (status == 0);
-		return 1;
+		logit(LOG_FILE, "locker_async: multi-statement snapshot failed: %s", mysql_error(conn));
+		return repair_failed_connection(conn_io);
 	}
 
-	/* Fallback: split on ";\n". */
-	p = sql;
-	while (*p)
+	do
 	{
-		while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')
-			p++;
-		if (!*p)
-			break;
-		q = strstr(p, ";\n");
-		if (!q)
-			q = p + strlen(p);
-		n = (size_t)(q - p);
-		while (n > 0 && (p[n - 1] == ' ' || p[n - 1] == '\n' || p[n - 1] == '\r' ||
-		                 p[n - 1] == '\t' || p[n - 1] == ';'))
-			n--;
-		if (n > 0)
+		MYSQL_RES *res = mysql_store_result(conn);
+		if (res)
+			mysql_free_result(res);
+		status = mysql_next_result(conn);
+		if (status > 0)
 		{
-			stmt = (char *)malloc(n + 1);
-			if (!stmt)
-				return 0;
-			memcpy(stmt, p, n);
-			stmt[n] = '\0';
-			if (mysql_real_query(conn, stmt, (unsigned long)n) != 0)
-			{
-				logit(LOG_FILE, "locker_async: stmt failed: %s | sqlerr=%s", stmt, mysql_error(conn));
-				free(stmt);
-				return 0;
-			}
-			{
-				MYSQL_RES *res = mysql_store_result(conn);
-				if (res)
-					mysql_free_result(res);
-			}
-			free(stmt);
+			logit(LOG_FILE, "locker_async: multi result error: %s", mysql_error(conn));
+			return repair_failed_connection(conn_io);
 		}
-		if (!*q)
-			break;
-		p = q + 2;
-	}
+	} while (status == 0);
 	return 1;
 }
 
@@ -749,7 +739,7 @@ static void *locker_async_worker_main(void *arg)
 #ifndef __NO_MYSQL__
 		conn = sql_persistence_connection();
 		if (conn && job.sql)
-			res.ok = apply_sql_script(conn, job.sql) ? 1 : 0;
+			res.ok = apply_sql_script(&conn, job.sql) ? 1 : 0;
 		else if (job.sql && job.sql[0] == '/' && job.sql[1] == '*')
 			res.ok = 1;
 		if (conn)
