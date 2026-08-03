@@ -1,4 +1,5 @@
 #include <math.h>
+#include <strings.h>
 #include "prototypes.h"
 #include "structs.h"
 #include "comm.h"
