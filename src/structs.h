@@ -1977,6 +1977,10 @@ struct nevent_data
 	void                  *data;    // Data argument to func
 	unsigned int           timer;   // How much time in the row.
 	unsigned int           element; // Which row of ne_schedule array
+	unsigned int           priority;
+	unsigned int           deferral_count;
+	unsigned long long     scheduled_tick;
+	unsigned long long     sequence;
 	struct char_link_data *cld;
 	P_nevent               next_char_nev;
 	P_nevent               next_obj_nev;

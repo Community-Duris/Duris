@@ -36,17 +36,22 @@
 #include "spells.h"
 #include "vnum.obj.h"
 
-#define MAX_FUNCTIONS       6000
-#define FUNCTION_NAMES_FILE "lib/misc/event_names"
+#define MAX_FUNCTIONS             6000
+#define FUNCTION_NAMES_FILE       "lib/misc/event_names"
 #define NEVENT_BUDGET_USEC_DEFAULT 25000L
 #define NEVENT_MAX_CALLBACKS_DEFAULT 1000L
+#define NEVENT_PRIORITY_NORMAL    0U
+#define NEVENT_PRIORITY_PLAYER    1U
+#define NEVENT_MAX_DEFERRALS      0U
 
 /*
  * internal variables
  */
-bool     debug_event_list = FALSE;
-P_nevent current_nevent   = NULL;
-long     ne_event_counter = 0;
+bool                    debug_event_list = FALSE;
+P_nevent                current_nevent   = NULL;
+long                    ne_event_counter = 0;
+unsigned long long      ne_event_tick = 0;
+static unsigned long long ne_event_sequence = 0;
 
 struct nevent_funcs_name_data
 {
@@ -96,6 +101,124 @@ const char                          *get_function_name(void *func);
 void                                 release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
 extern void                          event_mob_mundane(P_char, P_char, P_obj, void *);
 extern void                          event_spellcast(P_char, P_char, P_obj, void *);
+extern void                          event_memorize(P_char, P_char, P_obj, void *);
+extern void                          event_mana_regen(P_char, P_char, P_obj, void *);
+extern void                          event_move_regen(P_char, P_char, P_obj, void *);
+extern void                          event_hit_regen(P_char, P_char, P_obj, void *);
+static long                           nevent_config_limit(const char *name, long fallback);
+
+static bool nevent_is_player_timed(event_func_type func, P_char ch)
+{
+	if (func == event_spellcast || func == event_memorize)
+		return ch != NULL;
+	return ch && IS_PC(ch) && (func == event_mana_regen || func == event_move_regen || func == event_hit_regen);
+}
+
+static unsigned int nevent_priority(event_func_type func, P_char ch)
+{
+	static long player_priority = -1;
+	if (player_priority < 0)
+		player_priority = nevent_config_limit("DURIS_NEVENT_PLAYER_PRIORITY", 1);
+	if (player_priority > 0 && nevent_is_player_timed(func, ch))
+		return NEVENT_PRIORITY_PLAYER;
+	return NEVENT_PRIORITY_NORMAL;
+}
+
+static void nevent_link_schedule(P_nevent event, int loc)
+{
+	P_nevent cursor;
+	P_nevent last_player = NULL;
+
+	if (!ne_schedule[loc])
+	{
+		ne_schedule[loc] = event;
+		ne_schedule_tail[loc] = event;
+		return;
+	}
+
+	if (!nevent_is_player_timed(event->func, event->ch))
+	{
+		event->prev_sched = ne_schedule_tail[loc];
+		ne_schedule_tail[loc]->next_sched = event;
+		ne_schedule_tail[loc] = event;
+		return;
+	}
+
+	for (cursor = ne_schedule[loc]; cursor && nevent_is_player_timed(cursor->func, cursor->ch); cursor = cursor->next_sched)
+		last_player = cursor;
+
+	if (!last_player)
+	{
+		event->next_sched = ne_schedule[loc];
+		ne_schedule[loc]->prev_sched = event;
+		ne_schedule[loc] = event;
+		return;
+	}
+
+	event->prev_sched = last_player;
+	event->next_sched = last_player->next_sched;
+	last_player->next_sched = event;
+	if (event->next_sched)
+		event->next_sched->prev_sched = event;
+	else
+		ne_schedule_tail[loc] = event;
+}
+
+static bool nevent_overdue_player(P_nevent event)
+{
+	return event && event->deferral_count >= NEVENT_MAX_DEFERRALS && nevent_is_player_timed(event->func, event->ch);
+}
+
+/* Keep the budget as the default, but move a repeatedly deferred player event
+ * ahead of normal work so a busy bucket cannot starve player-visible actions. */
+static bool nevent_promote_overdue_player(P_nevent *next_event, P_nevent anchor)
+{
+	P_nevent candidate;
+	P_nevent prior;
+	P_nevent following;
+
+	if (!next_event || !*next_event)
+		return FALSE;
+
+	for (candidate = *next_event; candidate; candidate = candidate->next_sched)
+	{
+		if (!nevent_overdue_player(candidate))
+			continue;
+		if (candidate == *next_event)
+			return TRUE;
+
+		prior = candidate->prev_sched;
+		following = candidate->next_sched;
+		prior->next_sched = following;
+		if (following)
+			following->prev_sched = prior;
+		else
+			ne_schedule_tail[pulse] = prior;
+
+		candidate->prev_sched = anchor;
+		if (anchor)
+		{
+			candidate->next_sched = anchor->next_sched;
+			if (anchor->next_sched)
+				anchor->next_sched->prev_sched = candidate;
+			else
+				ne_schedule_tail[pulse] = candidate;
+			anchor->next_sched = candidate;
+		}
+		else
+		{
+			candidate->next_sched = ne_schedule[pulse];
+			if (ne_schedule[pulse])
+				ne_schedule[pulse]->prev_sched = candidate;
+			else
+				ne_schedule_tail[pulse] = candidate;
+			ne_schedule[pulse] = candidate;
+		}
+		*next_event = candidate;
+		return TRUE;
+	}
+	return FALSE;
+}
 
 // This function clears up everything in e and gets it ready for mm_release.
 // This includes removing it from the obj's list, ch's list, and ne_schedule[] list.
@@ -452,6 +575,9 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	event->victim                              = victim;
 	event->obj                                 = obj;
 	event->func                                = func;
+	event->priority                            = nevent_priority(func, ch);
+	event->scheduled_tick                      = ne_event_tick + (unsigned long long)delay;
+	event->sequence                            = ++ne_event_sequence;
 
 	if (ch && victim && ch != victim)
 		event->cld = link_char(ch, victim, LNK_EVENT);
@@ -496,19 +622,7 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 		obj->nevents        = event;
 	}
 
-	// If empty list, set event to head of list.
-	if (!ne_schedule[loc])
-	{
-		ne_schedule[loc] = event;
-	}
-	// Otherwise, add event to tail of list.
-	else
-	{
-		ne_schedule_tail[loc]->next_sched = event;
-		event->prev_sched                 = ne_schedule_tail[loc];
-	}
-	// Set tail to event
-	ne_schedule_tail[loc] = event;
+	nevent_link_schedule(event, loc);
 	ne_event_counter++;
 
 	if (debug_event_list)
@@ -618,6 +732,11 @@ static long nevent_max_callbacks(void)
 	return configured;
 }
 
+static bool nevent_trace_player(void)
+{
+	return nevent_config_limit("DURIS_NEVENT_TRACE_PLAYER", 0) > 0;
+}
+
 static long nevent_elapsed_us(const struct timespec *started, const struct timespec *finished)
 {
 	return (finished->tv_sec - started->tv_sec) * 1000000L + (finished->tv_nsec - started->tv_nsec) / 1000L;
@@ -649,6 +768,7 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 	for (event = deferred_head; event; event = event->next_sched)
 	{
 		event->element = next_pulse;
+		event->deferral_count++;
 		deferred++;
 		if (event == deferred_tail)
 			break;
@@ -706,7 +826,7 @@ void ne_events(void)
 				clock_gettime(CLOCK_MONOTONIC, &loop_finished);
 				budget_exhausted = nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec;
 			}
-			if (budget_exhausted && next_event)
+			if (budget_exhausted && next_event && !nevent_promote_overdue_player(&next_event, current_nevent))
 			{
 				deferred = nevent_defer_suffix(next_event);
 				break;
@@ -738,6 +858,20 @@ void ne_events(void)
 			}
 		}
 
+		if (nevent_is_player_timed(current_nevent->func, current_nevent->ch) && nevent_trace_player())
+		{
+			long long late_pulses = (ne_event_tick > current_nevent->scheduled_tick) ? (long long)(ne_event_tick - current_nevent->scheduled_tick) : 0;
+			logit(LOG_STATUS,
+			      "PLAYER EVENT TIMING: func=%s sequence=%llu ch_pid=%ld due_tick=%llu actual_tick=%llu late_pulses=%lld scheduled=%ld",
+			      get_function_name((void *)current_nevent->func),
+			      current_nevent->sequence,
+			      current_nevent->ch ? (long)GET_ID(current_nevent->ch) : -1L,
+			      current_nevent->scheduled_tick,
+			      ne_event_tick,
+			      late_pulses,
+			      ne_event_counter);
+		}
+
 		clear_nevent(current_nevent);
 		mm_release(ne_dead_event_pool, current_nevent);
 		ne_event_counter--;
@@ -750,7 +884,7 @@ void ne_events(void)
 			if (nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec)
 				budget_exhausted = TRUE;
 		}
-		if (budget_exhausted && next_event)
+		if (budget_exhausted && next_event && !nevent_promote_overdue_player(&next_event, NULL))
 		{
 			deferred = nevent_defer_suffix(next_event);
 			break;
@@ -786,6 +920,7 @@ void ne_events(void)
 		      ne_event_counter);
 	}
 	count++;
+	ne_event_tick++;
 }
 
 // Returns the first instance of an event with func as the event function.
@@ -876,6 +1011,8 @@ P_nevent get_next_scheduled_obj(P_nevent e, event_func func)
 void ne_init_event_pool(void)
 {
 	pulse = 0;
+	ne_event_tick = 0;
+	ne_event_sequence = 0;
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
 	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data), offsetof(struct nevent_data, next_sched), 11);
