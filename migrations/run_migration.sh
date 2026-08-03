@@ -20,7 +20,9 @@ else
     exit 2
 fi
 
-MYSQL_CMD="mysql -h$DB_HOST -P${DB_PORT:-3306} -u$DB_USER -p$DB_PASSWD $DB_NAME"
+MYSQL_PWD="$DB_PASSWD"
+export MYSQL_PWD
+MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
 TOTAL=112
@@ -36,7 +38,7 @@ run_sql() {
     echo "$sql" > "$tmpfile"
 
     local err_file=$(mktemp)
-    if $MYSQL_CMD < "$tmpfile" 2>"$err_file"; then
+    if "${MYSQL[@]}" < "$tmpfile" 2>"$err_file"; then
         echo "ok"
     else
         echo "FAILED"
@@ -55,7 +57,7 @@ run_sql_file() {
 
     local err_file
     err_file=$(mktemp)
-    if $MYSQL_CMD < "$sql_file" 2>"$err_file"; then
+    if "${MYSQL[@]}" < "$sql_file" 2>"$err_file"; then
         echo "ok"
     else
         echo "FAILED"
@@ -96,21 +98,21 @@ convert_tables_to_charset() {
     local tables=""
     local table_failed=0
 
-    if ! db_charset=$($MYSQL_CMD -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
+    if ! db_charset=$("${MYSQL[@]}" -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
         echo "FAILED"
         FAILED=$((FAILED + 1))
         return 1
     fi
 
     if [ "$with_collation" = "1" ]; then
-        if ! db_collation=$($MYSQL_CMD -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
+        if ! db_collation=$("${MYSQL[@]}" -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
             echo "FAILED"
             FAILED=$((FAILED + 1))
             return 1
         fi
     fi
 
-    if ! tables=$($MYSQL_CMD -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null); then
+    if ! tables=$("${MYSQL[@]}" -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null); then
         echo "FAILED"
         FAILED=$((FAILED + 1))
         return 1
@@ -122,7 +124,7 @@ convert_tables_to_charset() {
             local err_file
             err_file=$(mktemp)
             if [ "$with_collation" = "1" ]; then
-                if $MYSQL_CMD -e "SET sql_mode=''; SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $db_charset COLLATE $db_collation; SET FOREIGN_KEY_CHECKS=1;" >/dev/null 2>"$err_file"; then
+                if "${MYSQL[@]}" -e "SET sql_mode=''; SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $db_charset COLLATE $db_collation; SET FOREIGN_KEY_CHECKS=1;" >/dev/null 2>"$err_file"; then
                     :
                 else
                     if [ "$table_failed" -eq 0 ]; then
@@ -132,7 +134,7 @@ convert_tables_to_charset() {
                     head -20 "$err_file"
                 fi
             else
-                if $MYSQL_CMD -e "SET sql_mode=''; SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $db_charset; SET FOREIGN_KEY_CHECKS=1;" >/dev/null 2>"$err_file"; then
+                if "${MYSQL[@]}" -e "SET sql_mode=''; SET FOREIGN_KEY_CHECKS=0; ALTER TABLE \`$t\` CONVERT TO CHARACTER SET $db_charset; SET FOREIGN_KEY_CHECKS=1;" >/dev/null 2>"$err_file"; then
                     :
                 else
                     if [ "$table_failed" -eq 0 ]; then
