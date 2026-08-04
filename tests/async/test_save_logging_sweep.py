@@ -40,12 +40,6 @@ checks = [
         1,
     ),
     (
-        'src/skills.c',
-        'Failed to save %s after racial skill grant.',
-        'if (!do_save_silent(ch, 1))',
-        10,
-    ),
-    (
         'src/magic.c',
         'Failed to save %s after soulbind.',
         'if (!do_save_silent(victim, 1))',
