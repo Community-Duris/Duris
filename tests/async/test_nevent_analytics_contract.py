@@ -14,6 +14,13 @@ required = [
     "peak_total_us",
     "budget_exhausted_pulses",
     "PULSES_IN_TICK",
+    "NEVENT_ANALYTICS_CALLBACK_SLOTS",
+    "nevent_analytics_record_callback",
+    "nevent_analytics_record_deferred",
+    "NEVENT ANALYTICS CALLBACK:",
+    "func=%p",
+    "avg_us=%.2f",
+    "callback_overflow",
 ]
 
 missing = [snippet for snippet in required if snippet not in source]

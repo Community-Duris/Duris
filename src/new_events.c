@@ -43,6 +43,8 @@
 #define NEVENT_PRIORITY_NORMAL    0U
 #define NEVENT_PRIORITY_PLAYER    1U
 #define NEVENT_MAX_DEFERRALS      0U
+#define NEVENT_ANALYTICS_CALLBACK_SLOTS 128
+#define NEVENT_ANALYTICS_CALLBACK_NAME 96
 
 /*
  * internal variables
@@ -52,6 +54,16 @@ P_nevent                current_nevent   = NULL;
 long                    ne_event_counter = 0;
 unsigned long long      ne_event_tick = 0;
 static unsigned long long ne_event_sequence = 0;
+
+struct nevent_callback_analytics
+{
+	void              *func;
+	char               name[NEVENT_ANALYTICS_CALLBACK_NAME];
+	long long          calls;
+	long long          total_us;
+	long               max_us;
+	long long          deferred;
+};
 
 struct nevent_analytics_data
 {
@@ -69,6 +81,8 @@ struct nevent_analytics_data
 	unsigned long long peak_executed_tick;
 	unsigned long long peak_total_us_tick;
 	long               budget_exhausted_pulses;
+	long               callback_overflow;
+	struct nevent_callback_analytics callbacks[NEVENT_ANALYTICS_CALLBACK_SLOTS];
 };
 
 static struct nevent_analytics_data nevent_analytics;
@@ -778,6 +792,95 @@ static void nevent_analytics_reset(unsigned long long start_tick)
 	nevent_analytics.window_start_tick = start_tick;
 }
 
+static struct nevent_callback_analytics *nevent_analytics_callback_slot(void *func, const char *name)
+{
+	int free_slot = -1;
+	int i;
+
+	if (!func)
+		return NULL;
+	for (i = 0; i < NEVENT_ANALYTICS_CALLBACK_SLOTS; i++)
+	{
+		if (nevent_analytics.callbacks[i].func == func)
+		{
+			if (name && !nevent_analytics.callbacks[i].name[0])
+				snprintf(nevent_analytics.callbacks[i].name,
+				         sizeof(nevent_analytics.callbacks[i].name),
+				         "%s", name);
+			return &nevent_analytics.callbacks[i];
+		}
+		if ((free_slot < 0) && !nevent_analytics.callbacks[i].func)
+			free_slot = i;
+	}
+	if (free_slot < 0)
+	{
+		nevent_analytics.callback_overflow++;
+		return NULL;
+	}
+	nevent_analytics.callbacks[free_slot].func = func;
+	if (name)
+		snprintf(nevent_analytics.callbacks[free_slot].name,
+		         sizeof(nevent_analytics.callbacks[free_slot].name),
+		         "%s", name);
+	return &nevent_analytics.callbacks[free_slot];
+}
+
+static void nevent_analytics_record_callback(event_func_type func, const char *name, long callback_us)
+{
+	struct nevent_callback_analytics *callback;
+
+	if (!nevent_analytics_enabled())
+		return;
+	callback = nevent_analytics_callback_slot((void *)func, name);
+	if (!callback)
+		return;
+	callback->calls++;
+	callback->total_us += callback_us;
+	if (callback_us > callback->max_us)
+		callback->max_us = callback_us;
+}
+
+static void nevent_analytics_record_deferred(P_nevent event)
+{
+	struct nevent_callback_analytics *callback;
+
+	if (!nevent_analytics_enabled() || !event || !event->func)
+		return;
+	callback = nevent_analytics_callback_slot((void *)event->func, NULL);
+	if (callback)
+		callback->deferred++;
+}
+
+static void nevent_analytics_emit_callbacks(void)
+{
+	int i;
+
+	for (i = 0; i < NEVENT_ANALYTICS_CALLBACK_SLOTS; i++)
+	{
+		struct nevent_callback_analytics *callback = &nevent_analytics.callbacks[i];
+		const char *callback_name;
+		if (!callback->func)
+			continue;
+		callback_name = callback->name[0] ? callback->name : get_function_name(callback->func);
+		logit(LOG_STATUS,
+		      "NEVENT ANALYTICS CALLBACK: window_start_tick=%llu func=%p name=%s calls=%lld total_us=%lld avg_us=%.2f max_us=%ld deferred=%lld",
+		      nevent_analytics.window_start_tick,
+		      callback->func,
+		      callback_name ? callback_name : "unknown",
+		      callback->calls,
+		      callback->total_us,
+		      callback->calls ? (double)callback->total_us / (double)callback->calls : 0.0,
+		      callback->max_us,
+		      callback->deferred);
+	}
+	if (nevent_analytics.callback_overflow > 0)
+		logit(LOG_STATUS,
+		      "NEVENT ANALYTICS CALLBACK OVERFLOW: window_start_tick=%llu dropped=%ld slots=%d",
+		      nevent_analytics.window_start_tick,
+		      nevent_analytics.callback_overflow,
+		      NEVENT_ANALYTICS_CALLBACK_SLOTS);
+}
+
 static void nevent_analytics_record(long scanned, long executed, long deferred, long loop_us, bool budget_exhausted)
 {
 	if (!nevent_analytics_enabled())
@@ -841,6 +944,7 @@ static void nevent_analytics_record(long scanned, long executed, long deferred, 
 		      nevent_analytics.peak_total_us_tick,
 		      nevent_analytics.peak_pending,
 		      nevent_analytics.budget_exhausted_pulses);
+		nevent_analytics_emit_callbacks();
 		nevent_analytics_reset(ne_event_tick + 1);
 	}
 }
@@ -877,6 +981,7 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 	{
 		event->element = next_pulse;
 		event->deferral_count++;
+		nevent_analytics_record_deferred(event);
 		deferred++;
 		if (event == deferred_tail)
 			break;
@@ -970,6 +1075,7 @@ void ne_events(void)
 				slowest_us = callback_us;
 				slowest_name = callback_name;
 			}
+			nevent_analytics_record_callback(callback_func, callback_name, callback_us);
 		}
 
 		if (nevent_is_player_timed(current_nevent->func, current_nevent->ch) && nevent_trace_player())
