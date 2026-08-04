@@ -53,6 +53,26 @@ long                    ne_event_counter = 0;
 unsigned long long      ne_event_tick = 0;
 static unsigned long long ne_event_sequence = 0;
 
+struct nevent_analytics_data
+{
+	unsigned long long window_start_tick;
+	long               pulses;
+	long long          total_scanned;
+	long long          total_executed;
+	long long          total_deferred;
+	long long          total_us;
+	long               peak_scanned;
+	long               peak_executed;
+	long               peak_deferred;
+	long               peak_total_us;
+	long               peak_pending;
+	unsigned long long peak_executed_tick;
+	unsigned long long peak_total_us_tick;
+	long               budget_exhausted_pulses;
+};
+
+static struct nevent_analytics_data nevent_analytics;
+
 struct nevent_funcs_name_data
 {
 	void *func;
@@ -117,7 +137,7 @@ static bool nevent_is_player_timed(event_func_type func, P_char ch)
 	 * misses its deadline, the player remains unable to issue commands after
 	 * the visible action (cast/flee/combat action) has completed. */
 	if (func == event_wait)
-		return ch != NULL && IS_PC(ch);
+		return ch != NULL && (IS_PC(ch) || (IS_NPC(ch) && GET_MASTER(ch) && IS_AFFECTED5(GET_MASTER(ch), AFF5_ORDERING)));
 	return ch && IS_PC(ch) && (func == event_mana_regen || func == event_move_regen || func == event_hit_regen);
 }
 
@@ -744,6 +764,87 @@ static bool nevent_trace_player(void)
 	return nevent_config_limit("DURIS_NEVENT_TRACE_PLAYER", 0) > 0;
 }
 
+static bool nevent_analytics_enabled(void)
+{
+	static long enabled = -1;
+	if (enabled < 0)
+		enabled = nevent_config_limit("DURIS_NEVENT_ANALYTICS", 0) > 0;
+	return enabled > 0;
+}
+
+static void nevent_analytics_reset(unsigned long long start_tick)
+{
+	memset(&nevent_analytics, 0, sizeof(nevent_analytics));
+	nevent_analytics.window_start_tick = start_tick;
+}
+
+static void nevent_analytics_record(long scanned, long executed, long deferred, long loop_us, bool budget_exhausted)
+{
+	if (!nevent_analytics_enabled())
+		return;
+
+	if (nevent_analytics.pulses == 0)
+		nevent_analytics.window_start_tick = ne_event_tick;
+
+	nevent_analytics.pulses++;
+	nevent_analytics.total_scanned += scanned;
+	nevent_analytics.total_executed += executed;
+	nevent_analytics.total_deferred += deferred;
+	nevent_analytics.total_us += loop_us;
+	if (budget_exhausted)
+		nevent_analytics.budget_exhausted_pulses++;
+
+	if (scanned > nevent_analytics.peak_scanned)
+		nevent_analytics.peak_scanned = scanned;
+	if (executed > nevent_analytics.peak_executed)
+	{
+		nevent_analytics.peak_executed = executed;
+		nevent_analytics.peak_executed_tick = ne_event_tick;
+	}
+	if (deferred > nevent_analytics.peak_deferred)
+		nevent_analytics.peak_deferred = deferred;
+	if (loop_us > nevent_analytics.peak_total_us)
+	{
+		nevent_analytics.peak_total_us = loop_us;
+		nevent_analytics.peak_total_us_tick = ne_event_tick;
+	}
+	if (ne_event_counter > nevent_analytics.peak_pending)
+		nevent_analytics.peak_pending = ne_event_counter;
+
+	logit(LOG_STATUS,
+	      "NEVENT ANALYTICS PULSE: tick=%llu scanned=%ld executed=%ld deferred=%ld total_us=%ld pending=%ld budget_exhausted=%d",
+	      ne_event_tick,
+	      scanned,
+	      executed,
+	      deferred,
+	      loop_us,
+	      ne_event_counter,
+	      budget_exhausted ? 1 : 0);
+
+	if (nevent_analytics.pulses >= PULSES_IN_TICK)
+	{
+		double pulses = (double)nevent_analytics.pulses;
+		logit(LOG_STATUS,
+		      "NEVENT ANALYTICS MINUTE: start_tick=%llu end_tick=%llu pulses=%ld avg_scanned=%.2f avg_executed=%.2f avg_deferred=%.2f avg_total_us=%.2f peak_scanned=%ld peak_executed=%ld peak_executed_tick=%llu peak_deferred=%ld peak_total_us=%ld peak_total_us_tick=%llu peak_pending=%ld budget_exhausted_pulses=%ld",
+		      nevent_analytics.window_start_tick,
+		      ne_event_tick,
+		      nevent_analytics.pulses,
+		      nevent_analytics.total_scanned / pulses,
+		      nevent_analytics.total_executed / pulses,
+		      nevent_analytics.total_deferred / pulses,
+		      nevent_analytics.total_us / pulses,
+		      nevent_analytics.peak_scanned,
+		      nevent_analytics.peak_executed,
+		      nevent_analytics.peak_executed_tick,
+		      nevent_analytics.peak_deferred,
+		      nevent_analytics.peak_total_us,
+		      nevent_analytics.peak_total_us_tick,
+		      nevent_analytics.peak_pending,
+		      nevent_analytics.budget_exhausted_pulses);
+		nevent_analytics_reset(ne_event_tick + 1);
+	}
+}
+
 static long nevent_elapsed_us(const struct timespec *started, const struct timespec *finished)
 {
 	return (finished->tv_sec - started->tv_sec) * 1000000L + (finished->tv_nsec - started->tv_nsec) / 1000L;
@@ -926,6 +1027,7 @@ void ne_events(void)
 		      slowest_us,
 		      ne_event_counter);
 	}
+	nevent_analytics_record(scanned, executed, deferred, loop_us, budget_exhausted);
 	count++;
 	ne_event_tick++;
 }
