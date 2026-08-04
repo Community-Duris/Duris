@@ -14,4 +14,6 @@ assert "last_player" in source
 assert "deferral_count" in structs
 assert "NEVENT_MAX_DEFERRALS      0U" in source
 assert "nevent_promote_overdue_player" in source
+assert "event_wait" in source
+assert "func == event_wait" in source
 print("player event timing priority contract passed")

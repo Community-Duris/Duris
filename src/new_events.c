@@ -102,6 +102,7 @@ void                                 release_mob_mem(P_char ch, P_char victim, P
 extern void                          event_mob_mundane(P_char, P_char, P_obj, void *);
 extern void                          event_spellcast(P_char, P_char, P_obj, void *);
 extern void                          event_memorize(P_char, P_char, P_obj, void *);
+extern void                          event_wait(P_char, P_char, P_obj, void *);
 extern void                          event_mana_regen(P_char, P_char, P_obj, void *);
 extern void                          event_move_regen(P_char, P_char, P_obj, void *);
 extern void                          event_hit_regen(P_char, P_char, P_obj, void *);
@@ -111,6 +112,11 @@ static bool nevent_is_player_timed(event_func_type func, P_char ch)
 {
 	if (func == event_spellcast || func == event_memorize)
 		return ch != NULL;
+	/* event_wait clears the player's command gate set by CharWait().  If it
+	 * misses its deadline, the player remains unable to issue commands after
+	 * the visible action (cast/flee/combat action) has completed. */
+	if (func == event_wait)
+		return ch != NULL && IS_PC(ch);
 	return ch && IS_PC(ch) && (func == event_mana_regen || func == event_move_regen || func == event_hit_regen);
 }
 

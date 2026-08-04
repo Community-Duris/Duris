@@ -5794,11 +5794,10 @@ void do_weather(P_char ch, char *argument, int cmd)
 void do_help(P_char ch, char *argument, int cmd)
 {
 	char *attribs;
-	int   help_cooldown, help_lag;
+	int   help_cooldown;
 
 	// Get configurable rate limit values
 	help_cooldown = (int)get_property("help.cooldown.secs", 2);
-	help_lag      = (int)get_property("help.lag.pulses", WAIT_SEC);
 
 	// Check cooldown timer (prevent rapid spam)
 	if (!affect_timer(ch, help_cooldown, TAG_HELP_COOLDOWN))
@@ -5815,8 +5814,6 @@ void do_help(P_char ch, char *argument, int cmd)
 	if (attribs)
 		send_to_char(attribs, ch);
 
-	// Impose command lag (prevent queuing)
-	CharWait(ch, help_lag);
 }
 
 void do_wizhelp(P_char ch, char *argument, int cmd)
