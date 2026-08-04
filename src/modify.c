@@ -1872,7 +1872,14 @@ void show_string(struct descriptor_data *d, const char *input)
 	/* Or if we have more to show.... */
 	else
 	{
-		strlcpy(buffer, d->showstr_vector[d->showstr_page], sizeof buffer);
+		const char *page_start = d->showstr_vector[d->showstr_page];
+		const char *next_page_start = d->showstr_vector[d->showstr_page + 1];
+		size_t page_length = (size_t)(next_page_start - page_start);
+
+		if (page_length >= sizeof buffer)
+			page_length = sizeof buffer - 1;
+		memcpy(buffer, page_start, page_length);
+		buffer[page_length] = '\0';
 		send_to_char(buffer, d->character);
 		send_to_char("&N", d->character);
 		d->showstr_page++;

@@ -9061,8 +9061,8 @@ will crumble and items flagged no rent will disappear. Anyone who is on
 your grant list will be able to access your locker as well. Please see 
 "help grant" for information on giving others access to your locker!
 
-To help with sorting and finding eq stored in a locker the command "quit 
-sort" can be used. Typing that while in the locker will show a long list 
+To help with sorting and finding eq stored in a locker the command "equip
+sort" can be used. Typing that while in the locker will show a long list
 of options to sort eq by. If the player proceeds to sort eq by one of 
 those stats it will place all items that have this stat in another chest 
 inside the locker, 2.chest.
@@ -9071,8 +9071,36 @@ Example:
 syntax: equip sort wis_max
 
 This will place all items that have the max_wis stat in 2.chest.
+
+If you need the complete list of sort types, use "equip sort help" while
+inside the locker. The same information is available with "help equip sort".
 ===========================================================================
 See also: BANKS, GRANT
+
+#
+EQUIP SORT (Locker Command)
+===========================================================================
+Syntax: equip sort help
+        equip sort short
+        equip sort long
+        equip sort all
+        equip sort <type1> [type2] [type3] ...
+        equip sort custom <type1> [type2] [type3] ...
+        equip sort none
+
+This command is available inside a storage locker. It creates sorting
+chests and moves matching equipment into them. The command may take longer
+when the locker contains a large number of items because the locker must be
+rebuilt and saved.
+
+Use "equip sort help" for the available short sort names. Use "help equip sort"
+for the same instructions. Use "short" for a compact list, "long" for
+descriptions, and "all" for every available sort type. "custom" combines
+several criteria into one chest. "none" removes generated sorting chests and
+returns items to the unsorted chest.
+
+See also: LOCKER STORAGE, STAT
+===========================================================================
 
 #
 LOOK (General Information)

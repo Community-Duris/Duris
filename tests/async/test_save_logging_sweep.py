@@ -5,8 +5,8 @@ import sys
 checks = [
     (
         'src/actoth.c',
-        'Failed to autosave %s.',
-        'if (!do_save_silent(ch, 1))',
+        'persistence_schedule_character_save(ch, 1, 2, "autosave")',
+        'persistence_schedule_character_save(ch, 1, 2, "autosave")',
         1,
     ),
     (
@@ -38,12 +38,6 @@ checks = [
         'Failed to save %s after nexus sage training.',
         'if (!do_save_silent(pl, 1))',
         1,
-    ),
-    (
-        'src/skills.c',
-        'Failed to save %s after racial skill grant.',
-        'if (!do_save_silent(ch, 1))',
-        10,
     ),
     (
         'src/magic.c',

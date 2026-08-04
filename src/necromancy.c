@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "necromancy.h"
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include "damage.h"
 #include "defines.h"
@@ -28,6 +29,17 @@ extern bool create_walls(int room, int exit, P_char ch, int level, int type, int
 P_obj       get_object_from_char(P_char owner, int vnum);
 
 bool isCarved(P_obj corpse);
+
+static bool corpse_trace_enabled(void)
+{
+	static int enabled = -1;
+	if (enabled < 0)
+	{
+		const char *value = getenv("DURIS_CORPSE_TRACE");
+		enabled            = value && *value && strcmp(value, "0") != 0;
+	}
+	return enabled != 0;
+}
 
 int   CheckFor_remember(P_char ch, P_char victim);
 P_obj get_globe(P_char ch);
@@ -1303,6 +1315,9 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		// WAIT_SEC pulses in a sec, 60 secs in a minute.
 		timeToDecay = obj_affect_time(obj, afDecay) / (60 * WAIT_SEC);
 	}
+	if (corpse_trace_enabled())
+		logit(LOG_DEBUG, "corpse_trace dracolich_prepare corpse_vnum=%d corpse_level=%d remaining_minutes=%d caster_level=%d",
+		      OBJ_VNUM(obj), obj->value[CORPSE_LEVEL], timeToDecay, level);
 
 	extract_obj(obj);
 	remove_plushit_bits(mob);
@@ -1329,6 +1344,9 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 
 		GET_AC(mob) -= (GET_LEVEL(ch) * 7);
 		int duration = setup_pet(mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
+		if (corpse_trace_enabled())
+			logit(LOG_DEBUG, "corpse_trace dracolich_created mob_vnum=%d charm_minutes=%d corpse_remaining_minutes=%d",
+			      GET_VNUM(mob), duration, timeToDecay);
 		add_follower(mob, ch);
 
 		// if the undead will stop being charmed after a bit, also make it suicide 1 minute later.

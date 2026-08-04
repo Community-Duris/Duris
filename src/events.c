@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #ifndef _LINUX_SOURCE
 #include <sys/types.h>
@@ -44,6 +45,16 @@ extern int pulse;
 
 /* if true, we have called Events() from the main loop this pulse already */
 extern bool after_events_call;
+extern unsigned long long ne_event_tick;
+extern P_nevent current_nevent;
+
+static bool zone_reset_trace_enabled(void)
+{
+	static int enabled = -1;
+	if (enabled < 0)
+		enabled = getenv("DURIS_ZONE_RESET_TRACE") && atoi(getenv("DURIS_ZONE_RESET_TRACE")) > 0;
+	return enabled > 0;
+}
 
 /*
  * event_loading holds the number of pending events for each pulse, used
@@ -621,9 +632,31 @@ void CharWait(P_char ch, int delay)
 void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	int zone = *((int *)data);
+	int age_before = zone_table[zone].age;
+	bool will_reset = age_before + 1 >= zone_table[zone].lifespan && (zone_table[zone].reset_mode == 2 || ::is_empty(zone));
+
+	if (zone_reset_trace_enabled())
+		logit(LOG_STATUS,
+		      "ZONE RESET TRACE: zone_rnum=%d zone_vnum=%d name=%s fired_tick=%llu scheduled_tick=%llu lateness_ticks=%lld event_element=%d event_timer=%d sequence=%llu age_before=%d lifespan=%d age_after=%d will_reset=%d reset_mode=%d pulse=%d",
+		      zone,
+		      zone_table[zone].number,
+		      zone_table[zone].name,
+		      ne_event_tick,
+		      current_nevent ? current_nevent->scheduled_tick : 0,
+		      current_nevent ? (long long)ne_event_tick - (long long)current_nevent->scheduled_tick : 0,
+		      current_nevent ? current_nevent->element : -1,
+		      current_nevent ? current_nevent->timer : -1,
+		      current_nevent ? current_nevent->sequence : 0,
+		      age_before,
+		      zone_table[zone].lifespan,
+		      age_before + 1,
+		      will_reset ? 1 : 0,
+		      zone_table[zone].reset_mode,
+		      pulse);
+
 	zone_table[zone].age++;
 
-	if (zone_table[zone].age >= zone_table[zone].lifespan && (zone_table[zone].reset_mode == 2 || ::is_empty(zone)))
+	if (will_reset)
 	{
 		reset_zone(zone, 0);
 	}

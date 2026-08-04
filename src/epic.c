@@ -395,7 +395,10 @@ void gain_epic(P_char ch, int type, int data, int amount)
 	snprintf(buffer, 256, "You have gained %d epic point%s.\n", amount, amount == 1 ? "" : "s");
 	send_to_char(buffer, ch);
 	ch->only.pc->epics += amount;
-	log_epic_gain(GET_PID(ch), type, data, amount);
+	if (type == EPIC_BOTTLE)
+		log_epic_gain_event("epic_bottle", GET_PID(ch), type, data, amount);
+	else
+		log_epic_gain(GET_PID(ch), type, data, amount);
 	char type_str[20];
 
 	switch (type)
