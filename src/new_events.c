@@ -908,6 +908,7 @@ void ne_events(void)
 	long budget_usec = nevent_budget_usec();
 	long max_callbacks = nevent_max_callbacks();
 	bool budget_exhausted = FALSE;
+	bool priority_promotion_used = FALSE;
 	const char *slowest_name = "none";
 
 	if ((pulse < 0) || (pulse >= PULSES_IN_TICK))
@@ -934,7 +935,12 @@ void ne_events(void)
 				clock_gettime(CLOCK_MONOTONIC, &loop_finished);
 				budget_exhausted = nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec;
 			}
-			if (budget_exhausted && next_event && !nevent_promote_overdue_player(&next_event, current_nevent))
+			if (budget_exhausted && next_event && (max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used && nevent_promote_overdue_player(&next_event, current_nevent))
+			{
+				priority_promotion_used = TRUE;
+				continue;
+			}
+			if (budget_exhausted && next_event)
 			{
 				deferred = nevent_defer_suffix(next_event);
 				break;
@@ -992,7 +998,12 @@ void ne_events(void)
 			if (nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec)
 				budget_exhausted = TRUE;
 		}
-		if (budget_exhausted && next_event && !nevent_promote_overdue_player(&next_event, NULL))
+		if (budget_exhausted && next_event && (max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used && nevent_promote_overdue_player(&next_event, NULL))
+		{
+			priority_promotion_used = TRUE;
+			continue;
+		}
+		if (budget_exhausted && next_event)
 		{
 			deferred = nevent_defer_suffix(next_event);
 			break;

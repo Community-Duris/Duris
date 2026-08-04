@@ -11,5 +11,8 @@ assert 'event->element = next_pulse' in src
 assert 'ne_schedule[next_pulse] = deferred_head' in src
 assert 'NEVENT BUDGET:' in src
 assert 'budget_exhausted' in src
+assert 'priority_promotion_used' in src
+assert '(max_callbacks <= 0 || executed < max_callbacks)' in src
+assert 'priority_promotion_used = TRUE' in src
 assert 'CLOCK_MONOTONIC' in src
 assert 'gettimeofday(&loop_' not in src
