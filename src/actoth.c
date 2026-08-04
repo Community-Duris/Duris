@@ -1664,8 +1664,7 @@ void event_autosave(P_char ch, P_char victim, P_obj obj, void *data)
 		return;
 	}
 	persistence_flush_item_events(64);
-	if (!do_save_silent(ch, 1))
-		logit(LOG_DEBUG, "Failed to autosave %s.", GET_NAME(ch));
+	persistence_schedule_character_save(ch, 1, 2, "autosave");
 	add_event(event_autosave, 1200, ch, 0, 0, 0, 0, 0);
 }
 
@@ -2030,21 +2029,10 @@ void do_save(P_char ch, char *argument, int cmd)
 		else
 			wizlog(OVERLORD, "Pet %s saved to file %ld!", GET_NAME(ch), GET_IDNUM(ch));
 	}
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "Saving %s.\r\n", GET_NAME(GET_PLYR(ch)));
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "Save queued for %s.\r\n", GET_NAME(GET_PLYR(ch)));
 	send_to_char(Gbuf1, ch);
 	update_pos(ch);
-
-	logit(LOG_FILE, "[TRACE] do_save manual begin name=%s pid=%d room=%d", GET_NAME(ch), GET_PID(ch), ch->in_room);
-	if (!writeCharacter(ch, 1, ch->in_room))
-	{
-		send_to_char("Danger -- cannot save your character!\r\n", ch);
-		send_to_char("Better contact an Implementator ASAP.\r\n", ch);
-		logit(LOG_FILE, "[TRACE] do_save manual FAILED name=%s pid=%d room=%d", GET_NAME(ch), GET_PID(ch), ch->in_room);
-	}
-	else
-	{
-		logit(LOG_FILE, "[TRACE] do_save manual OK name=%s pid=%d room=%d", GET_NAME(ch), GET_PID(ch), ch->in_room);
-	}
+	persistence_schedule_character_save(ch, 1, 2, "manual_save");
 }
 
 void do_not_here(P_char ch, char *argument, int cmd) { send_to_char("Sorry, but you cannot do that here!\r\n", ch); }

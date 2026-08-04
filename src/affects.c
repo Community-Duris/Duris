@@ -18,6 +18,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "account.h"
@@ -2403,7 +2404,12 @@ void event_obj_affect(P_char, P_char, P_obj obj, void *data)
 	obj_affect_remove(obj, af);
 
 	if (af->type == TAG_OBJ_DECAY)
+	{
+		const char *trace = getenv("DURIS_CORPSE_TRACE");
+		if (trace && *trace && strcmp(trace, "0") != 0 && obj && obj->type == ITEM_CORPSE)
+			logit(LOG_DEBUG, "corpse_trace corpse_decay obj_vnum=%d corpse_level=%d room=%d", OBJ_VNUM(obj), obj->value[2], obj->loc.room);
 		Decay(obj);
+	}
 }
 
 /*

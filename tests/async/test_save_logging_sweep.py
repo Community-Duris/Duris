@@ -5,8 +5,8 @@ import sys
 checks = [
     (
         'src/actoth.c',
-        'Failed to autosave %s.',
-        'if (!do_save_silent(ch, 1))',
+        'persistence_schedule_character_save(ch, 1, 2, "autosave")',
+        'persistence_schedule_character_save(ch, 1, 2, "autosave")',
         1,
     ),
     (

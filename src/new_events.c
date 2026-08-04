@@ -106,11 +106,12 @@ extern void                          event_wait(P_char, P_char, P_obj, void *);
 extern void                          event_mana_regen(P_char, P_char, P_obj, void *);
 extern void                          event_move_regen(P_char, P_char, P_obj, void *);
 extern void                          event_hit_regen(P_char, P_char, P_obj, void *);
+extern void                          event_balance_affects(P_char, P_char, P_obj, void *);
 static long                           nevent_config_limit(const char *name, long fallback);
 
 static bool nevent_is_player_timed(event_func_type func, P_char ch)
 {
-	if (func == event_spellcast || func == event_memorize)
+	if (func == event_spellcast || func == event_memorize || func == event_balance_affects)
 		return ch != NULL;
 	/* event_wait clears the player's command gate set by CharWait().  If it
 	 * misses its deadline, the player remains unable to issue commands after

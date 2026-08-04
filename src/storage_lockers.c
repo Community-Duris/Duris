@@ -21,6 +21,7 @@
 #include "storage_lockers.h"
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <vector>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -55,6 +56,14 @@ static int      save_locker_char(P_char chInLocker, int bTerminal);
 static void     free_locker(int roomNum);
 static bool     check_for_artisInRoom(P_char ch, int rroom);
 static void event_deferredTerminalSave(P_char chLocker, P_char ch, P_obj obj, void *data);
+
+static long locker_elapsed_ms(const struct timespec *start, const struct timespec *end)
+{
+	long seconds     = (long)(end->tv_sec - start->tv_sec);
+	long nanoseconds = (long)(end->tv_nsec - start->tv_nsec);
+
+	return (seconds * 1000L) + (nanoseconds / 1000000L);
+}
 
 #define LOCKERS_START 65201
 #define LOCKERS_MAX   99
@@ -2012,6 +2021,12 @@ void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj obj, vo
 	}
 
 	int nOldCount = pLocker->m_itemCount;
+	bool explicit_sort = (data != NULL);
+	struct timespec sort_started;
+	struct timespec after_locker_to_pfile;
+	struct timespec after_pfile_to_locker;
+	if (explicit_sort)
+		clock_gettime(CLOCK_MONOTONIC, &sort_started);
 
 	// usually, everything will already be on pfile, but just make sure
 	if (!pLocker->LockerToPFile())
@@ -2019,9 +2034,24 @@ void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj obj, vo
 		send_to_char("&+RLocker save failed; please try again or contact staff.\r\n", ch);
 		return;
 	}
+	if (explicit_sort)
+		clock_gettime(CLOCK_MONOTONIC, &after_locker_to_pfile);
 
 	// move everything from the pfile to the locker - this also sorts it
 	pLocker->PFileToLocker();
+	if (explicit_sort)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &after_pfile_to_locker);
+		logit(LOG_DEBUG,
+		      "locker equip sort timing: user=%s locker=%s items_before=%d items_after=%d locker_to_pfile_ms=%ld pfile_to_locker_ms=%ld total_ms=%ld",
+		      ch ? GET_NAME(ch) : "<null>",
+		      chLocker ? GET_NAME(chLocker) : "<null>",
+		      nOldCount,
+		      pLocker->m_itemCount,
+		      locker_elapsed_ms(&sort_started, &after_locker_to_pfile),
+		      locker_elapsed_ms(&after_locker_to_pfile, &after_pfile_to_locker),
+		      locker_elapsed_ms(&sort_started, &after_pfile_to_locker));
+	}
 
 	if (NULL != data)
 	{
@@ -2148,11 +2178,10 @@ static int locker_equipcmd(P_char ch, char *arg)
 
 	if (pLocker->MakeChests(ch, arg))
 	{
-		if (!pLocker->LockerToPFile())
-		{
-			send_to_char("&+RLocker save failed; could not sort chests.\r\n", ch);
-			return TRUE;
-		}
+		/* event_resortLocker owns the room-to-locker transition.  Do not
+		 * serialize here as well: that would walk the entire locker twice
+		 * and can repeat synchronous private-chest SQL before rebuilding
+		 * the visible chest contents. */
 		StorageLocker::event_resortLocker(chLocker, ch, NULL, (void *)-1);
 		/* resort event will move everything back into the room */
 	}
