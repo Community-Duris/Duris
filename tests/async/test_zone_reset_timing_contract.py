@@ -15,5 +15,9 @@ assert "zone_table[zon].lifespan_max = tmp5;" in db
 assert "#define WAIT_SEC           4" in config
 assert "#define WAIT_MIN           60 * WAIT_SEC" in config
 assert "#define PULSES_IN_TICK     300" in config
+assert "DURIS_ZONE_RESET_TRACE" in events
+assert "scheduled_tick" in events
+assert "lateness_ticks" in events
+assert "event_timer" in events
 
 print("zone reset timing contract passed")

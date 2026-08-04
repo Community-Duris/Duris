@@ -960,6 +960,7 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 {
 	P_nevent event;
 	P_nevent deferred_tail;
+	P_nevent future_head = NULL;
 	P_nevent prior;
 	int next_pulse;
 	long deferred = 0;
@@ -967,19 +968,48 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 	if (!deferred_head)
 		return 0;
 
-	next_pulse = (pulse + 1) % PULSES_IN_TICK;
-	deferred_tail = ne_schedule_tail[pulse];
-	prior = deferred_head->prev_sched;
-	if (prior)
-		prior->next_sched = NULL;
-	else
-		ne_schedule[pulse] = NULL;
-	ne_schedule_tail[pulse] = prior;
-	deferred_head->prev_sched = NULL;
-
+	/* Only move events that are due in this bucket.  A timer greater than one
+	 * means the event is scheduled for a later ring traversal; moving it to the
+	 * next pulse would make it fire early and would also corrupt its intended
+	 * delay. */
 	for (event = deferred_head; event; event = event->next_sched)
 	{
+		if (event->timer > 1)
+		{
+			future_head = event;
+			break;
+		}
+		deferred_tail = event;
+	}
+	if (!deferred_tail)
+		return 0;
+
+	next_pulse = (pulse + 1) % PULSES_IN_TICK;
+	prior = deferred_head->prev_sched;
+	if (future_head)
+	{
+		deferred_tail->next_sched = NULL;
+		future_head->prev_sched = prior;
+		if (prior)
+			prior->next_sched = future_head;
+		else
+			ne_schedule[pulse] = future_head;
+	}
+	else
+	{
+		if (prior)
+			prior->next_sched = NULL;
+		else
+			ne_schedule[pulse] = NULL;
+		ne_schedule_tail[pulse] = prior;
+	}
+	deferred_head->prev_sched = NULL;
+	deferred_tail->next_sched = NULL;
+
+	for (event = deferred_head;; event = event->next_sched)
+	{
 		event->element = next_pulse;
+		event->timer = 1;
 		event->deferral_count++;
 		nevent_analytics_record_deferred(event);
 		deferred++;
