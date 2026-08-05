@@ -32,7 +32,7 @@ void persistence_item_event_queue_reset(void);
 
 int persistence_item_event_worker_start(persistence_item_event_writer writer,
                                         void *context);
-void persistence_item_event_worker_stop(int drain_remaining);
+int persistence_item_event_worker_stop(int drain_remaining);
 int persistence_item_event_worker_running(void);
 int persistence_item_event_worker_stop_pending(void);
 unsigned long persistence_item_event_worker_written(void);
@@ -47,7 +47,7 @@ void persistence_scalar_event_queue_reset(void);
 
 int persistence_scalar_event_worker_start(persistence_scalar_event_writer writer,
                                           void *context);
-void persistence_scalar_event_worker_stop(int drain_remaining);
+int persistence_scalar_event_worker_stop(int drain_remaining);
 int persistence_scalar_event_worker_running(void);
 int persistence_scalar_event_worker_stop_pending(void);
 unsigned long persistence_scalar_event_worker_written(void);
@@ -63,7 +63,7 @@ void persistence_large_event_queue_reset(void);
 
 int persistence_large_event_worker_start(persistence_scalar_event_writer writer,
                                           void *context);
-void persistence_large_event_worker_stop(int drain_remaining);
+int persistence_large_event_worker_stop(int drain_remaining);
 int persistence_large_event_worker_running(void);
 int persistence_large_event_worker_stop_pending(void);
 unsigned long persistence_large_event_worker_written(void);

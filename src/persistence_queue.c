@@ -543,7 +543,7 @@ int persistence_item_event_worker_start(persistence_item_event_writer writer,
   return 1;
 }
 
-void persistence_item_event_worker_stop(int drain_remaining)
+int persistence_item_event_worker_stop(int drain_remaining)
 {
   int was_running;
   int stuck;
@@ -570,13 +570,14 @@ void persistence_item_event_worker_stop(int drain_remaining)
       logit("logs/log/debug",
             "PERSISTENCE: domain=item_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
             PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
-      return;
+      return 0;
     }
 
     pthread_mutex_lock(&persistence_item_event_queue_mutex);
     persistence_item_event_worker_stop_pending_flag = 0;
     pthread_mutex_unlock(&persistence_item_event_queue_mutex);
   }
+  return 1;
 }
 
 int persistence_item_event_worker_running(void)
@@ -1073,7 +1074,7 @@ int persistence_scalar_event_worker_start(persistence_scalar_event_writer writer
   return 1;
 }
 
-void persistence_scalar_event_worker_stop(int drain_remaining)
+int persistence_scalar_event_worker_stop(int drain_remaining)
 {
   int was_running;
   int stuck;
@@ -1100,13 +1101,14 @@ void persistence_scalar_event_worker_stop(int drain_remaining)
       logit("logs/log/debug",
             "PERSISTENCE: domain=scalar_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
             PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
-      return;
+      return 0;
     }
 
     pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
     persistence_scalar_event_worker_stop_pending_flag = 0;
     pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
   }
+  return 1;
 }
 
 int persistence_scalar_event_worker_running(void)
@@ -1324,7 +1326,7 @@ int persistence_large_event_worker_start(persistence_scalar_event_writer writer,
   return 1;
 }
 
-void persistence_large_event_worker_stop(int drain_remaining)
+int persistence_large_event_worker_stop(int drain_remaining)
 {
   int was_running;
   int stuck;
@@ -1351,13 +1353,14 @@ void persistence_large_event_worker_stop(int drain_remaining)
       logit("logs/log/debug",
             "PERSISTENCE: domain=large_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
             PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
-      return;
+      return 0;
     }
 
     pthread_mutex_lock(&persistence_large_event_queue_mutex);
     persistence_large_event_worker_stop_pending_flag = 0;
     pthread_mutex_unlock(&persistence_large_event_queue_mutex);
   }
+  return 1;
 }
 
 int persistence_large_event_worker_running(void)

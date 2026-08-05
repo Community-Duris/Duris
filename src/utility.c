@@ -854,6 +854,25 @@ const char *persistence_item_uid_text(P_obj obj, char *buf, int buf_size)
   return buf;
 }
 
+static const char *persistence_fallback_record_line(const char *line,
+                                                      const char *domain,
+                                                      char *buf,
+                                                      int buf_size)
+{
+  if (!line || !*line)
+    return NULL;
+
+  if (!domain || strcmp(domain, "scalar_event") != 0 ||
+      !strncmp(line, PERSISTENCE_SCALAR_EVENT_PREFIX,
+               strlen(PERSISTENCE_SCALAR_EVENT_PREFIX)))
+    return line;
+
+  if (!buf || buf_size <= 0 ||
+      snprintf(buf, buf_size, "%s%s", PERSISTENCE_SCALAR_EVENT_PREFIX, line) >= buf_size)
+    return NULL;
+  return buf;
+}
+
 int persistence_write_fallback_event_line(const char *line,
                                           const char *domain,
                                           const char *owner,
@@ -861,6 +880,8 @@ int persistence_write_fallback_event_line(const char *line,
 {
   FILE *log_f;
   int ok = 1;
+  char scalar_record[PERSISTENCE_EVENT_MAX_LEN + 64];
+  const char *record_line;
   static unsigned long fallback_count = 0;
 
   if (_pwipe)
@@ -876,6 +897,12 @@ int persistence_write_fallback_event_line(const char *line,
   }
 
   if (!line || !*line)
+    return 0;
+
+  record_line = persistence_fallback_record_line(line, domain,
+                                                   scalar_record,
+                                                   sizeof(scalar_record));
+  if (!record_line)
     return 0;
 
   pthread_mutex_lock(&persistence_fallback_log_mutex);
@@ -906,7 +933,7 @@ int persistence_write_fallback_event_line(const char *line,
   }
 
   clock_t _fb_beg = clock();
-  if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+  if (fputs(record_line, log_f) < 0 || fputs("\n", log_f) < 0)
     ok = 0;
 
   if (fflush(log_f) || fsync(fileno(log_f)))
@@ -1002,8 +1029,8 @@ int persistence_flush_item_events(int max_events)
     return 0;
 
   pending = persistence_item_event_queue_pending();
-  if (max_events <= 0)
-    max_events = pending;
+  if (max_events <= 0 || max_events > PERSISTENCE_FLUSH_BATCH_MAX)
+    max_events = pending < PERSISTENCE_FLUSH_BATCH_MAX ? pending : PERSISTENCE_FLUSH_BATCH_MAX;
   if (pending > 0)
   {
     pthread_mutex_lock(&persistence_fallback_log_mutex);
@@ -1125,6 +1152,8 @@ int persistence_flush_item_events(int max_events)
 int persistence_flush_scalar_events(int max_events)
 {
   char line[PERSISTENCE_EVENT_MAX_LEN];
+  char fallback_line[PERSISTENCE_EVENT_MAX_LEN + 64];
+  const char *record_line;
   unsigned long dropped;
   FILE *log_f = NULL;
   int flushed = 0;
@@ -1135,8 +1164,8 @@ int persistence_flush_scalar_events(int max_events)
     return 0;
 
   pending = persistence_scalar_event_queue_pending();
-  if (max_events <= 0)
-    max_events = pending;
+  if (max_events <= 0 || max_events > PERSISTENCE_FLUSH_BATCH_MAX)
+    max_events = pending < PERSISTENCE_FLUSH_BATCH_MAX ? pending : PERSISTENCE_FLUSH_BATCH_MAX;
   if (pending > 0)
   {
     pthread_mutex_lock(&persistence_fallback_log_mutex);
@@ -1167,10 +1196,18 @@ int persistence_flush_scalar_events(int max_events)
   while (ok && flushed < max_events &&
          persistence_scalar_event_queue_dequeue(line, sizeof(line)))
   {
+    record_line = persistence_fallback_record_line(line, "scalar_event",
+                                                     fallback_line,
+                                                     sizeof(fallback_line));
+    if (!record_line)
+    {
+      ok = 0;
+      break;
+    }
     if (durability_offset < 0)
       durability_offset = ftell(log_f);
     long file_offset = ftell(log_f);
-    if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+    if (fputs(record_line, log_f) < 0 || fputs("\n", log_f) < 0)
     {
       ok = 0;
       if (file_offset >= 0 && ftruncate(fileno(log_f), file_offset) == 0)
@@ -1432,8 +1469,9 @@ int persistence_replay_fallback_events(void)
     else if (persistence_line_has_prefix(event_line,
                                          PERSISTENCE_SCALAR_EVENT_PREFIX))
     {
+      const char *scalar_sql = event_line + strlen(PERSISTENCE_SCALAR_EVENT_PREFIX);
       saw_persistence = 1;
-      if (sql_persistence_write_scalar_event_line(event_line))
+      if (*scalar_sql && sql_persistence_write_scalar_event_line(scalar_sql))
         replayed++;
       else
       {
@@ -1657,9 +1695,30 @@ int persistence_prepare_pwipe(void)
 void persistence_stop_scalar_event_worker(void)
 {
   unsigned long failures;
+  int stop_ok;
 
-  persistence_scalar_event_worker_stop(0);
-  persistence_flush_scalar_events(0);
+  stop_ok = persistence_scalar_event_worker_stop(0);
+  if (!stop_ok)
+  {
+    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+                      "stop_incomplete",
+                      "worker join timed out; refusing concurrent fallback drain");
+    return;
+  }
+
+  while (persistence_scalar_event_queue_pending() > 0)
+  {
+    int before = persistence_scalar_event_queue_pending();
+    int flushed = persistence_flush_scalar_events(PERSISTENCE_FLUSH_BATCH_MAX);
+    if (flushed <= 0 || persistence_scalar_event_queue_pending() >= before)
+      break;
+  }
+
+  if (persistence_scalar_event_queue_pending() > 0)
+    persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+                      "flush_incomplete",
+                      "%d scalar events remain queued after worker stop",
+                      persistence_scalar_event_queue_pending());
 
   failures = persistence_scalar_event_worker_write_failures();
   if (failures)
@@ -1691,9 +1750,30 @@ unsigned long persistence_dropped_scalar_events(void)
 void persistence_stop_item_event_worker(void)
 {
   unsigned long failures;
+  int stop_ok;
 
-  persistence_item_event_worker_stop(0);
-  persistence_flush_item_events(0);
+  stop_ok = persistence_item_event_worker_stop(0);
+  if (!stop_ok)
+  {
+    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
+                      "stop_incomplete",
+                      "worker join timed out; refusing concurrent fallback drain");
+    return;
+  }
+
+  while (persistence_item_event_queue_pending() > 0)
+  {
+    int before = persistence_item_event_queue_pending();
+    int flushed = persistence_flush_item_events(PERSISTENCE_FLUSH_BATCH_MAX);
+    if (flushed <= 0 || persistence_item_event_queue_pending() >= before)
+      break;
+  }
+
+  if (persistence_item_event_queue_pending() > 0)
+    persistence_alert(AVATAR, "item_event", "queue", "none", "none",
+                      "flush_incomplete",
+                      "%d item events remain queued after worker stop",
+                      persistence_item_event_queue_pending());
 
   failures = persistence_item_event_worker_write_failures();
   if (failures)
