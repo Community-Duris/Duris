@@ -982,6 +982,26 @@ static void drain_results(void)
 	}
 }
 
+static int locker_sync_fallback_durable(struct locker_async_slot *s, P_char chLocker)
+{
+	int owner_pid;
+	int owner_assoc;
+
+	if (!s || !chLocker)
+		return 0;
+
+	owner_pid = s->owner_pid;
+	owner_assoc = s->owner_assoc_id;
+	if (!owner_pid && !owner_assoc)
+		locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
+
+	if (sql_save_locker(chLocker, owner_pid, owner_assoc))
+		return 1;
+	if (writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE))
+		return 1;
+	return 0;
+}
+
 static int start_one_snapshot(struct locker_async_slot *s)
 {
 	struct locker_async_job job;
@@ -1026,20 +1046,31 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	sql = build_locker_snapshot_sql(s);
 	if (!sql)
 	{
+		int durable_ok;
+
 		persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
 		                  "snapshot_failed",
-		                  "could not build snapshot; falling back to sync sql_save_locker");
+		                  "could not build snapshot; falling back to synchronous persistence");
+		durable_ok = locker_sync_fallback_durable(s, chLocker);
+		if (s->terminal && durable_ok)
 		{
-			int owner_pid = s->owner_pid, owner_assoc = s->owner_assoc_id;
-			if (!owner_pid && !owner_assoc)
-				locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
-			if (!sql_save_locker(chLocker, owner_pid, owner_assoc))
-				writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE);
-			if (s->terminal)
-			{
-				chLocker->specials.timer = 0;
-				extract_char(chLocker);
-			}
+			chLocker->specials.timer = 0;
+			extract_char(chLocker);
+			s->chLocker = NULL;
+			slot_clear(s);
+		}
+		else if (s->terminal)
+		{
+			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
+			                  "terminal_not_durable",
+			                  "snapshot and synchronous fallbacks failed; refusing extract of locker char");
+			s->state = LCHK_DIRTY;
+			s->dirty_at = time(NULL);
+		}
+		else
+		{
+			if (chUser)
+				locker_async_restore_snapshot_view(chUser);
 			slot_clear(s);
 		}
 		return 0;
@@ -1054,20 +1085,32 @@ static int start_one_snapshot(struct locker_async_slot *s)
 
 	if (!job_push(&job))
 	{
+		int durable_ok;
+
 		free(sql);
 		persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
 		                  "job_queue_full",
-		                  "falling back to sync save");
+		                  "falling back to synchronous persistence");
+		durable_ok = locker_sync_fallback_durable(s, chLocker);
+		if (s->terminal && durable_ok)
 		{
-			int owner_pid = s->owner_pid, owner_assoc = s->owner_assoc_id;
-			if (!owner_pid && !owner_assoc)
-				locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
-			sql_save_locker(chLocker, owner_pid, owner_assoc);
-			if (s->terminal)
-			{
-				chLocker->specials.timer = 0;
-				extract_char(chLocker);
-			}
+			chLocker->specials.timer = 0;
+			extract_char(chLocker);
+			s->chLocker = NULL;
+			slot_clear(s);
+		}
+		else if (s->terminal)
+		{
+			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
+			                  "terminal_not_durable",
+			                  "job queue and synchronous fallbacks failed; refusing extract of locker char");
+			s->state = LCHK_DIRTY;
+			s->dirty_at = time(NULL);
+		}
+		else
+		{
+			if (chUser)
+				locker_async_restore_snapshot_view(chUser);
 			slot_clear(s);
 		}
 		return 0;
