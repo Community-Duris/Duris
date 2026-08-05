@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# Don't use set -e: the charset conversion functions can fail on legacy
-# tables (MyISAM, latin1, invalid datetime defaults) without affecting
-# the rest of the migration.  Individual run_sql calls track failures
-# and report them at the end.
-set +e
+# Migration is fail-closed: a failed step may leave a partially changed schema,
+# so continuing would make the remaining steps unsafe to reason about.
+set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -25,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=112
+TOTAL=111
 FAILED=0
 
 run_sql() {
@@ -44,6 +42,7 @@ run_sql() {
         echo "FAILED"
         head -20 "$err_file"
         FAILED=$((FAILED + 1))
+        exit 1
     fi
     rm -f "$err_file"
     rm -f "$tmpfile"
@@ -63,6 +62,7 @@ run_sql_file() {
         echo "FAILED"
         head -20 "$err_file"
         FAILED=$((FAILED + 1))
+        exit 1
     fi
     rm -f "$err_file"
 }
@@ -83,6 +83,7 @@ run_check() {
         echo "FAILED"
         head -20 "$output_file"
         FAILED=$((FAILED + 1))
+        exit 1
     fi
     rm -f "$output_file"
 }
@@ -101,21 +102,21 @@ convert_tables_to_charset() {
     if ! db_charset=$("${MYSQL[@]}" -N -e "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
         echo "FAILED"
         FAILED=$((FAILED + 1))
-        return 1
+        exit 1
     fi
 
     if [ "$with_collation" = "1" ]; then
         if ! db_collation=$("${MYSQL[@]}" -N -e "SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=DATABASE();" 2>/dev/null); then
             echo "FAILED"
             FAILED=$((FAILED + 1))
-            return 1
+            exit 1
         fi
     fi
 
     if ! tables=$("${MYSQL[@]}" -N -e "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';" 2>/dev/null); then
         echo "FAILED"
         FAILED=$((FAILED + 1))
-        return 1
+        exit 1
     fi
 
     if [ -n "$tables" ] && [ -n "$db_charset" ] && { [ "$with_collation" != "1" ] || [ -n "$db_collation" ]; }; then
@@ -152,7 +153,7 @@ EOF
 
     if [ "$table_failed" -ne 0 ]; then
         FAILED=$((FAILED + 1))
-        return 1
+        exit 1
     fi
 
     echo "ok"

@@ -34,6 +34,15 @@ leave_start = lockers.index("if (cmd == CMD_FROMROOM)")
 leave = lockers[leave_start:leave_start + 220]
 assert "return ROOM_PROC_LEAVE_VETO;" in leave
 
+leave_handler_start = lockers.index("static bool locker_handle_leave")
+leave_handler_end = lockers.index("\n}\n", leave_handler_start) + 3
+leave_handler = lockers[leave_handler_start:leave_handler_end]
+assert "P_char nextChar = NULL;" in leave_handler
+assert "nextChar = tmpChar->next_in_room;" in leave_handler
+assert "if (tmpChar != ch)" in leave_handler
+assert "tmpChar = nextChar;" in leave_handler
+assert "tmpChar = world[ch->in_room].people;" not in leave_handler[leave_handler.index("tmpChar = world[ch->in_room].people;") + 1:]
+
 # The ordinary movement path must not insert after a vetoed/failed unlink.
 move_start = actmove.index("int do_simple_move_skipping_procs")
 move_end = actmove.index("int do_simple_move(", move_start)
