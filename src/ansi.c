@@ -88,6 +88,7 @@ static void put_term(char *&out, int attr, int lastbit)
 
 	*out++='\e';
 	*out++='[';
+	*out++='0';
 
 	if (f)
 	{
