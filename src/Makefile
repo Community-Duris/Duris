@@ -156,6 +156,7 @@ OBJS =  $(SHIP_OBJS) \
 				 objmisc.o \
 				 outposts.o \
 				 persistence_queue.o \
+				 latency_trace.o \
 				 sql_persistence_raw.o \
 				 sql_pool.o \
 				 plushit.o \
