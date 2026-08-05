@@ -6,6 +6,8 @@ src = (ROOT / "src" / "new_events.c").read_text()
 assert 'DURIS_NEVENT_BUDGET_USEC' in src
 assert 'DURIS_NEVENT_MAX_CALLBACKS' in src
 assert 'nevent_defer_suffix' in src
+assert 'P_nevent deferred_tail = NULL;' in src
+assert 'for (event = deferred_head; event; event = event->next_sched)' in src
 assert 'deferred_head->prev_sched = NULL' in src
 assert 'event->element = next_pulse' in src
 assert 'event->timer > 1' in src

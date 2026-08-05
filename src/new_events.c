@@ -959,7 +959,7 @@ static long nevent_elapsed_us(const struct timespec *started, const struct times
 static long nevent_defer_suffix(P_nevent deferred_head)
 {
 	P_nevent event;
-	P_nevent deferred_tail;
+	P_nevent deferred_tail = NULL;
 	P_nevent future_head = NULL;
 	P_nevent prior;
 	int next_pulse;
@@ -1006,7 +1006,7 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 	deferred_head->prev_sched = NULL;
 	deferred_tail->next_sched = NULL;
 
-	for (event = deferred_head;; event = event->next_sched)
+	for (event = deferred_head; event; event = event->next_sched)
 	{
 		event->element = next_pulse;
 		event->timer = 1;
