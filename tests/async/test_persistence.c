@@ -40,6 +40,26 @@ static int capture_writer(const char *line, void *context)
 	return 1;
 }
 
+struct identity_race_state
+{
+	int calls = 0;
+};
+
+static int identity_race_writer(const char *line, void *context)
+{
+	auto *state = static_cast<identity_race_state *>(context);
+	state->calls++;
+	if (state->calls == 1)
+	{
+		char removed[PERSISTENCE_EVENT_MAX_LEN];
+		if (!persistence_scalar_event_queue_dequeue(removed, sizeof(removed)))
+			return 0;
+		if (!persistence_scalar_event_queue_enqueue(line))
+			return 0;
+	}
+	return 1;
+}
+
 static bool wait_for_scalar_queue_empty(int timeout_ms)
 {
 	for (int i = 0; i < timeout_ms; ++i)
@@ -417,6 +437,35 @@ static bool test_queue_rejects_oversize_item_impl()
 	       expect(persistence_large_event_queue_dropped() == 0, "oversize item payload should not be dropped from large queue");
 }
 
+static bool test_worker_generation_identity_impl()
+{
+	persistence_scalar_event_worker_stop(0);
+	persistence_scalar_event_queue_reset();
+
+	identity_race_state state;
+	if (!expect(persistence_scalar_event_worker_start(identity_race_writer, &state),
+	            "failed to start scalar worker for generation identity test"))
+		return false;
+	if (!expect(persistence_scalar_event_queue_enqueue("identical-event"),
+	            "failed to enqueue generation identity event"))
+	{
+		persistence_scalar_event_worker_stop(0);
+		return false;
+	}
+	if (!expect(wait_for_scalar_queue_empty(8000),
+	            "generation identity queue did not drain"))
+	{
+		persistence_scalar_event_worker_stop(0);
+		return false;
+	}
+	persistence_scalar_event_worker_stop(1);
+
+	return expect(state.calls == 2,
+	              "replacement event with identical text must be written separately") &&
+	       expect(persistence_scalar_event_queue_pending() == 0,
+	              "generation identity test should leave no queued events");
+}
+
 static bool test_worker_large_roundtrip_impl()
 {
 	persistence_large_event_worker_stop(0);
@@ -462,6 +511,7 @@ static const suite_case kCases[] =
 	{"queue_routes_oversize_item_to_large", test_queue_rejects_oversize_item_impl},
 	{"worker_scalar_fallback", test_worker_scalar_fallback_impl},
 	{"worker_scalar_fifo_after_retry", test_worker_scalar_fifo_after_retry_impl},
+	{"worker_generation_identity", test_worker_generation_identity_impl},
 	{"worker_scalar_stale_heartbeat_shutdown_fallback", test_worker_scalar_stale_heartbeat_shutdown_fallback_impl},
 	{"worker_item_fifo", test_worker_item_fifo_impl},
 	{"worker_large_roundtrip", test_worker_large_roundtrip_impl},
