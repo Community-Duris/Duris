@@ -1202,6 +1202,13 @@ void locker_async_init(void)
 	int err;
 	if (g_inited)
 		return;
+	if (!sql_pool_is_active())
+	{
+		logit(LOG_STATUS, "locker_async: connection pool unavailable; async worker disabled");
+		persistence_alert(AVATAR, "locker_async", "worker", "none", "none",
+		                  "pool_unavailable", "locker async worker disabled");
+		return;
+	}
 	memset(g_slots, 0, sizeof(g_slots));
 	memset(g_jobs, 0, sizeof(g_jobs));
 	memset(g_results, 0, sizeof(g_results));

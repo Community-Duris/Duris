@@ -46,6 +46,7 @@ using namespace std;
 #include "specializations.h"
 #include "spells.h"
 #include "sql.h"
+#include "sql_pool.h"
 #include "sql_player.h"
 #include "weather.h"
 
@@ -1607,6 +1608,12 @@ void utility_latency_reset(void)
 
 int persistence_start_item_event_worker(void)
 {
+  if (!sql_pool_is_active())
+  {
+    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
+                      "pool_unavailable", "item worker disabled; using durable flat-log fallback");
+    return 0;
+  }
   if (!persistence_item_event_worker_start(persistence_item_event_log_writer,
                                            NULL))
   {
@@ -1652,6 +1659,12 @@ static int persistence_scalar_event_log_writer(const char *line, void *context)
 
 int persistence_start_scalar_event_worker(void)
 {
+  if (!sql_pool_is_active())
+  {
+    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+                      "pool_unavailable", "scalar worker disabled; using sync fallback");
+    return 0;
+  }
   if (!persistence_scalar_event_worker_start(persistence_scalar_event_log_writer,
                                              NULL))
   {
@@ -1842,12 +1855,14 @@ void persistence_record_item_event(const char *event_type, P_obj obj,
            persistence_clean_field(target, target_buf, sizeof(target_buf)),
            persistence_clean_field(note, note_buf, sizeof(note_buf)));
 
-  if (!persistence_item_event_queue_enqueue(line))
+  if (!persistence_item_event_worker_running() ||
+      !persistence_item_event_queue_enqueue(line))
   {
-    persistence_write_fallback_event_line(line,
-                                          "item_event",
-                                          actor ? J_NAME(actor) : "system",
-                                          "queue_full_flat_fallback");
+    persistence_write_fallback_event_line(
+        line, "item_event", actor ? J_NAME(actor) : "system",
+        persistence_item_event_worker_running()
+            ? "queue_full_flat_fallback"
+            : "worker_unavailable_flat_fallback");
   }
 
   persistence_worker_heartbeat_check(0);

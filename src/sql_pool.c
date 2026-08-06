@@ -354,9 +354,16 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	return replacement;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Stats                                                              */
-/* ------------------------------------------------------------------ */
+/* ---- Stats (debug / monitoring) ---- */
+
+int sql_pool_is_active(void)
+{
+	int active;
+	pthread_mutex_lock(&pool_mutex);
+	active = pool != NULL;
+	pthread_mutex_unlock(&pool_mutex);
+	return active;
+}
 
 int sql_pool_available(void)
 {
@@ -365,7 +372,7 @@ int sql_pool_available(void)
 	if (pool)
 	{
 		for (int i = 0; i < pool_size; i++)
-			if (!pool[i].in_use)
+			if (!pool[i].in_use && pool[i].conn)
 				avail++;
 	}
 	pthread_mutex_unlock(&pool_mutex);
@@ -430,8 +437,9 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	return NULL;
 }
 
-int sql_pool_available(void) { return 0; }
-int sql_pool_in_use(void)    { return 0; }
-int sql_pool_total(void)     { return 0; }
+int sql_pool_is_active(void)    { return 0; }
+int sql_pool_available(void)   { return 0; }
+int sql_pool_in_use(void)      { return 0; }
+int sql_pool_total(void)       { return 0; }
 
 #endif /* __NO_MYSQL__ */

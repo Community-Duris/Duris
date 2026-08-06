@@ -60,7 +60,8 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn);
 
 /* ---- Stats (debug / monitoring) ---- */
 
-int sql_pool_available(void);   /* how many connections are free */
+int sql_pool_is_active(void);    /* whether a usable pool was initialised */
+int sql_pool_available(void);
 int sql_pool_in_use(void);      /* how many are currently borrowed */
 int sql_pool_total(void);       /* total pool size (0 before init) */
 
