@@ -38,10 +38,10 @@ typedef struct {
     long         tick;        /* game pulse when recorded */
 } latency_entry;
 
-static latency_entry _latency_buf[LATENCY_TRACE_MAX_SAMPLES];
-static int           _latency_head  = 0;
-static int           _latency_count = 0;
-static pthread_mutex_t _latency_mutex = PTHREAD_MUTEX_INITIALIZER;
+extern latency_entry _latency_buf[LATENCY_TRACE_MAX_SAMPLES];
+extern int           _latency_head;
+extern int           _latency_count;
+extern pthread_mutex_t _latency_mutex;
 
 /* per-section accumulators for summary */
 typedef struct {
@@ -53,8 +53,8 @@ typedef struct {
 } _latency_section;
 
 #define _LATENCY_MAX_SECTIONS 32
-static _latency_section _latency_sections[_LATENCY_MAX_SECTIONS];
-static int              _latency_nsections = 0;
+extern _latency_section _latency_sections[_LATENCY_MAX_SECTIONS];
+extern int              _latency_nsections;
 
 /* ======================== Internal helpers ======================== */
 

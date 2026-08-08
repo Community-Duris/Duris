@@ -320,27 +320,25 @@ static void locker_eject_to_exit(P_char ch, int room)
 static bool locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int troom)
 {
 	P_char tmpChar = NULL;
+	P_char nextChar = NULL;
 
 	if (!ch || !pLocker || (ch != pLocker->GetLockerUser()))
 		return true;
 
-	// DEFERRED: infinite loop — iterates world[ch->in_room].people but the
-	// loop body compares against world[ch->in_room].people (the list head)
-	// instead of tmpChar, so it never advances when ch is the head. Pre-existing
-	// from master. Fix requires rewriting to iterate tmpChar->next_in_room.
+	/* Eject every other occupant while preserving the next pointer before
+	 * char_from_room()/char_to_room() mutate the current room list. */
 	tmpChar = world[ch->in_room].people;
 	while (tmpChar)
 	{
-		if (ch == world[ch->in_room].people)
+		nextChar = tmpChar->next_in_room;
+		if (tmpChar != ch)
 		{
-			tmpChar = ch->next_in_room;
-			continue;
+			/* this person isn't the proper occupant, so kick them the hell out */
+			send_to_char("You feel yourself being (ungracefully) ejected from the locker.\r\n", tmpChar);
+			char_from_room(tmpChar);
+			char_to_room(tmpChar, locker_exit_room(ch, room), 0);
 		}
-		/* this person isn't the proper occupant, so kick them the hell out */
-		send_to_char("You feel yourself being (ungracefully) ejected from the locker.\r\n", tmpChar);
-		char_from_room(tmpChar);
-		char_to_room(tmpChar, locker_exit_room(ch, room), 0);
-		tmpChar = world[ch->in_room].people;
+		tmpChar = nextChar;
 	} /* while */
 
 	/* Move items from room/chests to the locker character for saving. */

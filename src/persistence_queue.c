@@ -58,6 +58,8 @@ static void persistence_worker_mysql_thread_end(void)
 struct persistence_event_queue_data
 {
   char **events;       /* dynamically allocated: events[i] = malloc(MAX_LEN) */
+  unsigned long long *generations; /* stable identity for each occupied slot */
+  unsigned long long next_generation;
   int slot_size;       /* bytes allocated for each events[i] slot */
   int head;
   int tail;
@@ -133,16 +135,26 @@ static int persistence_worker_timed_join(pthread_t thread)
 static int persistence_queue_alloc(persistence_event_queue_data *q, int capacity, int slot_size)
 {
   char **new_events = (char **)calloc(capacity, sizeof(char *));
+  unsigned long long *new_generations;
+
   if (!new_events) return 0;
+  new_generations = (unsigned long long *)calloc(capacity, sizeof(*new_generations));
+  if (!new_generations) {
+    free(new_events);
+    return 0;
+  }
   for (int i = 0; i < capacity; i++) {
     new_events[i] = (char *)malloc(slot_size);
     if (!new_events[i]) {
       for (int j = 0; j < i; j++) free(new_events[j]);
+      free(new_generations);
       free(new_events);
       return 0;
     }
   }
   q->events = new_events;
+  q->generations = new_generations;
+  q->next_generation = 1;
   q->slot_size = slot_size;
   q->capacity = capacity;
   return 1;
@@ -153,30 +165,41 @@ static int persistence_queue_alloc(persistence_event_queue_data *q, int capacity
 static int persistence_queue_grow(persistence_event_queue_data *q, int new_capacity)
 {
   char **new_events = (char **)calloc(new_capacity, sizeof(char *));
+  unsigned long long *new_generations;
+
   if (!new_events) return 0;
+  new_generations = (unsigned long long *)calloc(new_capacity, sizeof(*new_generations));
+  if (!new_generations) {
+    free(new_events);
+    return 0;
+  }
   for (int i = 0; i < new_capacity; i++) {
     new_events[i] = (char *)malloc(q->slot_size);
     if (!new_events[i]) {
       for (int j = 0; j < i; j++) free(new_events[j]);
+      free(new_generations);
       free(new_events);
       return 0;
     }
   }
 
-  /* Copy existing events preserving ring order */
+  /* Copy existing events preserving ring order and stable identity. */
   int old_count = q->count;
   for (int i = 0; i < old_count; i++) {
     int old_idx = (q->head + i) % q->capacity;
     memcpy(new_events[i], q->events[old_idx], q->slot_size);
+    new_generations[i] = q->generations[old_idx];
   }
 
   /* Free old storage */
   for (int i = 0; i < q->capacity; i++) free(q->events[i]);
   free(q->events);
+  free(q->generations);
 
   /* Swap in new */
   int old_capacity = q->capacity;
   q->events = new_events;
+  q->generations = new_generations;
   q->head = 0;
   q->tail = old_count;
   q->capacity = new_capacity;
@@ -203,6 +226,9 @@ static void persistence_queue_free(persistence_event_queue_data *q)
     free(q->events);
     q->events = NULL;
   }
+  free(q->generations);
+  q->generations = NULL;
+  q->next_generation = 1;
   q->head = 0;
   q->tail = 0;
   q->count = 0;
@@ -228,6 +254,15 @@ static int persistence_queue_line_too_long(const persistence_event_queue_data *q
     return 1;
 
   return (int)strlen(line) >= q->slot_size;
+}
+
+static unsigned long long persistence_queue_next_generation(persistence_event_queue_data *q)
+{
+  unsigned long long generation = q->next_generation++;
+
+  if (generation == 0)
+    generation = q->next_generation++;
+  return generation;
 }
 
 static void persistence_item_event_queue_pop_head(void)
@@ -300,6 +335,7 @@ int persistence_item_event_queue_enqueue(const char *line)
   else
   {
     snprintf(q->events[q->tail], q->slot_size, "%s", line);
+    q->generations[q->tail] = persistence_queue_next_generation(q);
     q->tail = (q->tail + 1) % q->capacity;
     q->count++;
     pthread_cond_signal(&persistence_item_event_queue_cond);
@@ -371,6 +407,7 @@ void persistence_item_event_queue_reset(void)
 static void *persistence_item_event_worker_main(void *unused)
 {
   char line[PERSISTENCE_EVENT_MAX_LEN];
+  unsigned long long persistence_item_event_worker_generation = 0;
   int should_write;
   int write_ok;
 
@@ -417,6 +454,8 @@ static void *persistence_item_event_worker_main(void *unused)
     {
       snprintf(line, sizeof(line), "%s",
                persistence_item_event_queue.events[persistence_item_event_queue.head]);
+      persistence_item_event_worker_generation =
+          persistence_item_event_queue.generations[persistence_item_event_queue.head];
       should_write = 1;
     }
     pthread_mutex_unlock(&persistence_item_event_queue_mutex);
@@ -437,9 +476,9 @@ static void *persistence_item_event_worker_main(void *unused)
     if (write_ok)
     {
       if (persistence_item_event_queue.count > 0 &&
-          !strncmp(line,
-                   persistence_item_event_queue.events[persistence_item_event_queue.head],
-                   PERSISTENCE_EVENT_MAX_LEN))
+          persistence_item_event_queue.generations[
+              persistence_item_event_queue.head] ==
+              persistence_item_event_worker_generation)
       {
         persistence_item_event_queue_pop_head();
       }
@@ -504,7 +543,7 @@ int persistence_item_event_worker_start(persistence_item_event_writer writer,
   return 1;
 }
 
-void persistence_item_event_worker_stop(int drain_remaining)
+int persistence_item_event_worker_stop(int drain_remaining)
 {
   int was_running;
   int stuck;
@@ -531,13 +570,14 @@ void persistence_item_event_worker_stop(int drain_remaining)
       logit("logs/log/debug",
             "PERSISTENCE: domain=item_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
             PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
-      return;
+      return 0;
     }
 
     pthread_mutex_lock(&persistence_item_event_queue_mutex);
     persistence_item_event_worker_stop_pending_flag = 0;
     pthread_mutex_unlock(&persistence_item_event_queue_mutex);
   }
+  return 1;
 }
 
 int persistence_item_event_worker_running(void)
@@ -711,6 +751,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
   else
   {
     snprintf(q->events[q->tail], q->slot_size, "%s", line);
+    q->generations[q->tail] = persistence_queue_next_generation(q);
     q->tail = (q->tail + 1) % q->capacity;
     q->count++;
     pthread_cond_signal(&persistence_scalar_event_queue_cond);
@@ -804,6 +845,7 @@ int persistence_large_event_queue_enqueue(const char *line)
   else
   {
     snprintf(q->events[q->tail], q->slot_size, "%s", line);
+    q->generations[q->tail] = persistence_queue_next_generation(q);
     q->tail = (q->tail + 1) % q->capacity;
     q->count++;
     pthread_cond_signal(&persistence_large_event_queue_cond);
@@ -902,6 +944,7 @@ void persistence_scalar_event_queue_reset(void)
 static void *persistence_scalar_event_worker_main(void *unused)
 {
   char line[PERSISTENCE_EVENT_MAX_LEN];
+  unsigned long long persistence_scalar_event_worker_generation = 0;
   int should_write;
   int write_ok;
 
@@ -942,6 +985,8 @@ static void *persistence_scalar_event_worker_main(void *unused)
     {
       snprintf(line, sizeof(line), "%s",
                persistence_scalar_event_queue.events[persistence_scalar_event_queue.head]);
+      persistence_scalar_event_worker_generation =
+          persistence_scalar_event_queue.generations[persistence_scalar_event_queue.head];
       should_write = 1;
     }
     pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
@@ -962,9 +1007,9 @@ static void *persistence_scalar_event_worker_main(void *unused)
     if (write_ok)
     {
       if (persistence_scalar_event_queue.count > 0 &&
-          !strncmp(line,
-                   persistence_scalar_event_queue.events[persistence_scalar_event_queue.head],
-                   PERSISTENCE_EVENT_MAX_LEN))
+          persistence_scalar_event_queue.generations[
+              persistence_scalar_event_queue.head] ==
+              persistence_scalar_event_worker_generation)
       {
         persistence_scalar_event_queue_pop_head();
       }
@@ -1029,7 +1074,7 @@ int persistence_scalar_event_worker_start(persistence_scalar_event_writer writer
   return 1;
 }
 
-void persistence_scalar_event_worker_stop(int drain_remaining)
+int persistence_scalar_event_worker_stop(int drain_remaining)
 {
   int was_running;
   int stuck;
@@ -1056,13 +1101,14 @@ void persistence_scalar_event_worker_stop(int drain_remaining)
       logit("logs/log/debug",
             "PERSISTENCE: domain=scalar_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
             PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
-      return;
+      return 0;
     }
 
     pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
     persistence_scalar_event_worker_stop_pending_flag = 0;
     pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
   }
+  return 1;
 }
 
 int persistence_scalar_event_worker_running(void)
@@ -1150,6 +1196,7 @@ unsigned long persistence_scalar_event_worker_write_failures(void)
 static void *persistence_large_event_worker_main(void *unused)
 {
   char line[PERSISTENCE_LARGE_EVENT_MAX_LEN];
+  unsigned long long persistence_large_event_worker_generation = 0;
   int should_write;
   int write_ok;
 
@@ -1190,6 +1237,8 @@ static void *persistence_large_event_worker_main(void *unused)
     {
       snprintf(line, sizeof(line), "%s",
                persistence_large_event_queue.events[persistence_large_event_queue.head]);
+      persistence_large_event_worker_generation =
+          persistence_large_event_queue.generations[persistence_large_event_queue.head];
       should_write = 1;
     }
     pthread_mutex_unlock(&persistence_large_event_queue_mutex);
@@ -1210,9 +1259,9 @@ static void *persistence_large_event_worker_main(void *unused)
     if (write_ok)
     {
       if (persistence_large_event_queue.count > 0 &&
-          !strncmp(line,
-                   persistence_large_event_queue.events[persistence_large_event_queue.head],
-                   PERSISTENCE_LARGE_EVENT_MAX_LEN))
+          persistence_large_event_queue.generations[
+              persistence_large_event_queue.head] ==
+              persistence_large_event_worker_generation)
       {
         persistence_large_event_queue_pop_head();
       }
@@ -1277,7 +1326,7 @@ int persistence_large_event_worker_start(persistence_scalar_event_writer writer,
   return 1;
 }
 
-void persistence_large_event_worker_stop(int drain_remaining)
+int persistence_large_event_worker_stop(int drain_remaining)
 {
   int was_running;
   int stuck;
@@ -1304,13 +1353,14 @@ void persistence_large_event_worker_stop(int drain_remaining)
       logit("logs/log/debug",
             "PERSISTENCE: domain=large_event owner=worker action=stop_timeout detail=worker stop did not complete within %d sec; keeping stop gate set",
             PERSISTENCE_WORKER_STOP_JOIN_TIMEOUT_SECS);
-      return;
+      return 0;
     }
 
     pthread_mutex_lock(&persistence_large_event_queue_mutex);
     persistence_large_event_worker_stop_pending_flag = 0;
     pthread_mutex_unlock(&persistence_large_event_queue_mutex);
   }
+  return 1;
 }
 
 int persistence_large_event_worker_running(void)
