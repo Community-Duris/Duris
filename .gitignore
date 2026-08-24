@@ -28,12 +28,15 @@ arih/
 Accounts/email.db
 Accounts/*/*
 !Accounts/*/.gitkeep
+/Accounts/mail
+/Players/pc_idnumb
 duris.crt
 duris.key
 
 # environment files (may contain secrets)
 .env
 logs/shutdown_info.txt
+/logs/duris-console.log
 .c*
 
 # log files
