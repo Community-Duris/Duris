@@ -2,7 +2,7 @@
 
 ## Repository guide
 
-- Never add co-authors, never add attributions, never add signed-off-by lines
+- NEVER add co-authors, NEVER add attributions, NEVER add `Claude-Session`, NEVER add signed-off-by lines
 - `src/` contains the server. Its `.c` files are compiled as C++20 with `g++`.
 - `tests/async/` contains focused regression and source-contract tests.
 - `areas/` holds world data and generators; `migrations/` is the authoritative schema-change location.
