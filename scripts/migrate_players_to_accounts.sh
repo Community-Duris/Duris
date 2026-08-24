@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# migrate_players_to_accounts.sh
+# scripts/migrate_players_to_accounts.sh
 #
 # This script adds an existing character to an account.
 #
-# Usage: ./migrate_players_to_accounts.sh <character_name> <account_name>
+# Usage: ./scripts/migrate_players_to_accounts.sh <character_name> <account_name>
 #
-# Example: ./migrate_players_to_accounts.sh ubak resakse
+# Example: ./scripts/migrate_players_to_accounts.sh ubak resakse
 #
 
 set -e  # Exit on error

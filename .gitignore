@@ -1,4 +1,4 @@
-__py_cache__/
+__pycache__/
 /dms
 /dms_new
 /dms.*
@@ -28,12 +28,15 @@ arih/
 Accounts/email.db
 Accounts/*/*
 !Accounts/*/.gitkeep
+/Accounts/mail
+/Players/pc_idnumb
 duris.crt
 duris.key
 
 # environment files (may contain secrets)
 .env
 logs/shutdown_info.txt
+/logs/duris-console.log
 .c*
 
 # log files
@@ -43,7 +46,9 @@ durismud-launcher
 Accounts.old.*
 Players.old.*
 backup/
-docs/
+docs/*
+!docs/STUDIOPROC.md
+!docs/classes_and_races.txt
 .bash_history
 etc/group
 etc/passwd

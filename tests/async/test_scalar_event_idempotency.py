@@ -9,10 +9,8 @@ for path in paths:
     text = path.read_text()
     assert "persistence_scalar_events" in text
     assert "dedupe_key" in text
-root_entrypoint = (ROOT / "run_migration.sh").read_text()
 authoritative = (ROOT / "migrations/run_migration.sh").read_text()
 assert '"$SCRIPT_DIR/persistence_contract.sql"' in authoritative
-assert 'exec "$SCRIPT_DIR/migrations/run_migration.sh" "$@"' in root_entrypoint
 sql = (ROOT / "src/sql.c").read_text()
 assert "ON DUPLICATE KEY UPDATE id=id" in sql
 assert "dedupe_key" in sql

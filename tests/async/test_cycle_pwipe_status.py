@@ -1,6 +1,6 @@
 from pathlib import Path
 
-text = (Path(__file__).resolve().parents[2] / "cycle_mud.sh").read_text()
+text = (Path(__file__).resolve().parents[2] / "scripts" / "cycle_mud.sh").read_text()
 root = Path(__file__).resolve().parents[2]
 start = text.index('if [ $RESULT == 55 ]')
 end = text.index('fi\n\nif [ -f /usr/bin/sendemail', start)

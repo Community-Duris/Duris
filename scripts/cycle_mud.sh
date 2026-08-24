@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Always run from the repository root so relative paths resolve correctly.
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
 # Load environment variables from .env if it exists
@@ -93,7 +93,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   fi
 
   echo "Backing up pfiles..."
-  ./backup_pfiles.sh
+  ./scripts/backup_pfiles.sh
 
   echo "Building area tools if needed..."
   if [ ! -x "areas/make_mob" ] || [ ! -x "areas/make_obj" ] || [ ! -x "areas/make_qst" ] || [ ! -x "areas/make_shp" ] || [ ! -x "areas/make_wld" ] || [ ! -x "areas/make_zon" ]; then

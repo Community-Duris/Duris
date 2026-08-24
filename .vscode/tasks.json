@@ -51,7 +51,7 @@
         {
             "label": "Run Duris",
             "type": "shell",
-            "command": "./gdbdms",
+            "command": "./scripts/gdbdms",
             "presentation": {
                 "reveal": "always",
                 "panel": "dedicated"

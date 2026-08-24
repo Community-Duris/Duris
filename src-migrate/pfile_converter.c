@@ -11,7 +11,7 @@
  * which expands the status section by 40 bytes.
  *
  * Usage:
- *   pfile_converter [OPTIONS] <input_file> [output_file]
+ *   src-migrate/pfile_converter [OPTIONS] <input_file> [output_file]
  *
  * Options:
  *   -v, --verbose    Verbose diagnostic output

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This script is for me to import the help to my duris server in my home lab. make sure to be in duris root folder (the one with startmud.sh)
+# This script is for me to import the help to my duris server in my home lab. run it from anywhere; it cds to the repository root itself
 # DurisMUD Help Import Script.
 # Imports all help content to production server:
 #   1. Individual help files -> mud_info + pages tables
@@ -8,7 +8,7 @@
 #   3. Parsed help file entries -> pages table
 #
 # Usage:
-#   ./import_help_to_prod.sh [OPTIONS]
+#   ./scripts/import_help_to_prod.sh [OPTIONS]
 #
 # Options:
 #   --local              Import to localhost MySQL directly (default)
@@ -18,28 +18,43 @@
 #   --dry-run            Show what would be imported without making changes
 #
 # Examples:
-#   ./import_help_to_prod.sh --dry-run
-#   ./import_help_to_prod.sh --local
-#   ./import_help_to_prod.sh --clean --dry-run
-#   ./import_help_to_prod.sh --clean
-#   ./import_help_to_prod.sh --remote 192.168.1.100
-#   ./import_help_to_prod.sh --remote myserver.com --user admin
-#   ./import_help_to_prod.sh --remote 10.0.0.5 --user duris --dry-run
+#   ./scripts/import_help_to_prod.sh --dry-run
+#   ./scripts/import_help_to_prod.sh --local
+#   ./scripts/import_help_to_prod.sh --clean --dry-run
+#   ./scripts/import_help_to_prod.sh --clean
+#   ./scripts/import_help_to_prod.sh --remote 192.168.1.100
+#   ./scripts/import_help_to_prod.sh --remote myserver.com --user admin
+#   ./scripts/import_help_to_prod.sh --remote 10.0.0.5 --user duris --dry-run
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$SCRIPT_DIR"
+
+# Use the same local connection settings as the game and migration tools.
+# Keep credentials out of command-line arguments and process listings.
+if [ -f .env ]; then
+    set -a
+    # shellcheck disable=SC1091
+    source .env
+    set +a
+fi
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
 REMOTE_HOST=""          # Will be set by --remote argument
 REMOTE_USER="$USER"     # Default to current user
-MYSQL_USER="duris"      # MySQL username
-MYSQL_PASS="duris"      # MySQL password
-MYSQL_DB="duris_dev"    # Database name
+MYSQL_HOST="${DB_HOST:-localhost}"
+MYSQL_PORT="${DB_PORT:-3306}"
+MYSQL_USER="${DB_USER:-duris}"
+MYSQL_PASS="${DB_PASSWD:-duris}"
+MYSQL_DB="${DB_NAME:-duris_dev}"
+export MYSQL_PWD="$MYSQL_PASS"
 
 HELP_DIR="lib/information"
 HELP_INDEX_FILE="lib/information/help_index"
-PARSED_HELP_FILE="duris_help_parsed.hlp"
+PARSED_HELP_FILE="help/duris_help_parsed.hlp"
 
 # ============================================================================
 # PARSE ARGUMENTS
@@ -126,8 +141,8 @@ execute_sql() {
         # SSH mode: execute on remote server
         echo "$sql" | ssh "$REMOTE_USER@$REMOTE_HOST" "mysql -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB"
     else
-        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
-        echo "$sql" | mysql -hlocalhost -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB
+        # Local mode: execute directly using MYSQL_PWD from the environment.
+        echo "$sql" | mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" "$MYSQL_DB"
     fi
 }
 
@@ -140,8 +155,8 @@ execute_sql_file() {
         ssh "$REMOTE_USER@$REMOTE_HOST" "mysql -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB < /tmp/import_sql.tmp"
         ssh "$REMOTE_USER@$REMOTE_HOST" "rm /tmp/import_sql.tmp"
     else
-        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
-        mysql -hlocalhost -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB < "$sqlfile"
+        # Local mode: execute directly using MYSQL_PWD from the environment.
+        mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
     fi
 }
 
@@ -154,7 +169,7 @@ if [ $USE_SSH -eq 1 ]; then
     echo "Remote Host: $REMOTE_HOST"
 else
     echo "Mode: LOCAL"
-    echo "Host: localhost"
+    echo "Host: $MYSQL_HOST:$MYSQL_PORT"
 fi
 echo "Database: $MYSQL_DB"
 echo ""
@@ -419,6 +434,8 @@ REMOTE_USER = "$REMOTE_USER"
 MYSQL_USER = "$MYSQL_USER"
 MYSQL_PASS = "$MYSQL_PASS"
 MYSQL_DB = "$MYSQL_DB"
+MYSQL_HOST = "$MYSQL_HOST"
+MYSQL_PORT = "$MYSQL_PORT"
 
 def parse_help_index(filename):
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
@@ -496,9 +513,9 @@ VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB',
             capture_output=True, text=True
         )
     else:
-        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
+        # Local mode inherits MYSQL_PWD from the parent environment.
         mysql_result = subprocess.run(
-            ['mysql', '-hlocalhost', f'-u{MYSQL_USER}', f'-p{MYSQL_PASS}', MYSQL_DB],
+            ['mysql', f'-h{MYSQL_HOST}', f'-P{MYSQL_PORT}', f'-u{MYSQL_USER}', MYSQL_DB],
             stdin=open('/tmp/import_help_entry.sql', 'r'),
             capture_output=True, text=True
         )
@@ -604,6 +621,8 @@ REMOTE_USER = "$REMOTE_USER"
 MYSQL_USER = "$MYSQL_USER"
 MYSQL_PASS = "$MYSQL_PASS"
 MYSQL_DB = "$MYSQL_DB"
+MYSQL_HOST = "$MYSQL_HOST"
+MYSQL_PORT = "$MYSQL_PORT"
 HELP_FILE = "$PARSED_HELP_FILE"
 
 def parse_parsed_help(filename):
@@ -689,9 +708,9 @@ VALUES ('{safe_title}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
             capture_output=True, text=True
         )
     else:
-        # Local mode: execute directly (use -hlocalhost for containerized MySQL)
+        # Local mode inherits MYSQL_PWD from the parent environment.
         mysql_result = subprocess.run(
-            ['mysql', '-hlocalhost', f'-u{MYSQL_USER}', f'-p{MYSQL_PASS}', MYSQL_DB],
+            ['mysql', f'-h{MYSQL_HOST}', f'-P{MYSQL_PORT}', f'-u{MYSQL_USER}', MYSQL_DB],
             stdin=open('/tmp/import_help_entry.sql', 'r'),
             capture_output=True, text=True
         )

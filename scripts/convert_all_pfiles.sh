@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# Always run from the repository root so relative paths resolve correctly.
+cd "$(dirname "$0")/.." || exit 1
 ################################################################################
 # DurisMUD Player File Batch Converter
 #
@@ -6,7 +9,7 @@
 # Creates backups before conversion and provides rollback capability.
 #
 # Usage:
-#   ./convert_all_pfiles.sh [OPTIONS]
+#   ./scripts/convert_all_pfiles.sh [OPTIONS]
 #
 # Options:
 #   --dry-run       Test mode, no files modified
@@ -25,7 +28,7 @@
 set -e  # Exit on error
 
 # Configuration
-CONVERTER="./pfile_converter"
+CONVERTER="./src-migrate/pfile_converter"
 PLAYERS_DIR="Players"
 LOG_FILE="logs/conversion.log"
 BACKUP_SUFFIX=".preconvert"
@@ -98,7 +101,7 @@ check_prerequisites() {
 
     if [ ! -x "$CONVERTER" ]; then
         error "Converter not found or not executable: $CONVERTER"
-        error "Please compile it first: gcc -o pfile_converter arih/pfile_converter.c -Wall -O2"
+        error "Please compile it first: gcc -o src-migrate/pfile_converter src-migrate/pfile_converter.c -Wall -O2"
         exit 1
     fi
 

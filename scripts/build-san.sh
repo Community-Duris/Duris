@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# Always run from the repository root so relative paths resolve correctly.
+cd "$(dirname "$0")/.." || exit 1
 # build with address sanitizer and undefined behavior sanitizer
 
 # Handle --clean flag

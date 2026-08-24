@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Always run from the repository root so relative paths resolve correctly.
+cd "$(dirname "$0")/.." || exit 1
+
 ulimit -c unlimited
 
 if [ "$1" ]; then

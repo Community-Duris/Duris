@@ -28,9 +28,7 @@ for required_name in ("id", "idx_item_uid_ts", "idx_event_type_created", "idx_sc
     assert required_name in contract, f"{required_name} drift repair missing from canonical contract"
 
 authoritative = (ROOT / "migrations/run_migration.sh").read_text()
-root_entrypoint = (ROOT / "run_migration.sh").read_text()
 assert "run_sql_file()" in authoritative
 assert '"$SCRIPT_DIR/persistence_contract.sql"' in authoritative
-assert 'exec "$SCRIPT_DIR/migrations/run_migration.sh" "$@"' in root_entrypoint
 
 print("persistence event schema coverage checks passed")

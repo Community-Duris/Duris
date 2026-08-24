@@ -6,6 +6,10 @@ Format: Each entry starts with # on its own line, followed by "TITLE" line, then
 
 import re
 import sys
+from pathlib import Path
+
+# Repository root, so the script works regardless of the caller's directory.
+ROOT = Path(__file__).resolve().parents[1]
 
 def parse_help_index(filename):
     """Parse help_index file into individual help entries."""
@@ -50,7 +54,7 @@ def parse_help_index(filename):
     return help_entries
 
 if __name__ == '__main__':
-    entries = parse_help_index('lib/information/help_index')
+    entries = parse_help_index(ROOT / 'lib/information/help_index')
 
     print(f"Parsed {len(entries)} help entries")
     print("\nFirst 5 titles:")
