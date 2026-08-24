@@ -68,7 +68,7 @@ promote_to_god.py
 
 # Development databases/configs
 devmysql.md
-duris_help*.hlp
+help/duris_help*.hlp
 fix_mysql_schema.sql
 
 # SQL reports and analysis

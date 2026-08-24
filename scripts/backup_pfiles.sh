@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Always run from the repository root so relative paths resolve correctly.
+cd "$(dirname "$0")/.." || exit 1
+
 # backup script - uses mysqldump for db mode, pfile copy for legacy mode
 
 # load .env if exists

@@ -40,10 +40,10 @@ void ssl_read_cert(void)
 	{
 		struct stat fallback_cert;
 		struct stat fallback_key;
-		if (!stat("localhost.crt", &fallback_cert) && !stat("localhost.key", &fallback_key))
+		if (!stat("certs/localhost.crt", &fallback_cert) && !stat("certs/localhost.key", &fallback_key))
 		{
-			certfile = "localhost.crt";
-			keyfile  = "localhost.key";
+			certfile = "certs/localhost.crt";
+			keyfile  = "certs/localhost.key";
 			st       = fallback_cert;
 		}
 		else

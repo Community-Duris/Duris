@@ -346,7 +346,7 @@ clean:
 	rm -rf $(OBJDIR)
 
 debug: $(PROGS)
-	cd ..; ./gdbdms
+	cd ..; ./scripts/gdbdms
 
 # Auto-generated dependency files alongside objects
 DEPFILES := $(DMS_OBJS:.o=.d) $(PFILE_OBJS:.o=.d) $(SHARED_PFILE_OBJS:.o=.d)

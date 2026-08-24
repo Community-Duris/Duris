@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd "$(dirname "$0")" || exit 1
+cd "$(dirname "$0")/.." || exit 1
 
 # Prefer the supervised local-development service when it is installed.
 # This makes repeated invocations idempotent and keeps console output in
@@ -13,5 +13,5 @@ if command -v systemctl >/dev/null 2>&1 &&
   exit 0
 fi
 
-nohup ./cycle_mud.sh > logs/duris-console.log 2>&1 &
+nohup ./scripts/cycle_mud.sh > logs/duris-console.log 2>&1 &
 echo "DurisMUD started; console output is in logs/duris-console.log."

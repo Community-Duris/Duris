@@ -1,4 +1,4 @@
-__py_cache__/
+__pycache__/
 /dms
 /dms_new
 /dms.*
@@ -46,7 +46,9 @@ durismud-launcher
 Accounts.old.*
 Players.old.*
 backup/
-docs/
+docs/*
+!docs/STUDIOPROC.md
+!docs/classes_and_races.txt
 .bash_history
 etc/group
 etc/passwd

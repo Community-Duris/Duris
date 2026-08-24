@@ -13,9 +13,7 @@ contract = contract_path.read_text()
 verifier = verify_path.read_text()
 apply_runner = apply_path.read_text()
 runner_path = ROOT / "migrations/run_migration.sh"
-root_runner_path = ROOT / "run_migration.sh"
 runner = runner_path.read_text()
-root_runner = root_runner_path.read_text()
 
 item_columns = (
     "id", "ts_usec", "event_type", "item_uid", "vnum", "item", "actor",
@@ -73,8 +71,6 @@ assert '"$SCRIPT_DIR/persistence_contract.sql"' in runner
 assert "CREATE TABLE IF NOT EXISTS mud_schema_migrations" in runner
 assert "account_locker_copy_v1" in runner
 assert 'run_sql "repair item persistence schema drift"' in runner
-assert 'exec "$SCRIPT_DIR/migrations/run_migration.sh" "$@"' in root_runner
-assert "run_sql" not in root_runner, "root entrypoint must delegate instead of duplicating migration SQL"
 assert 'PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"' in runner
 assert 'source "$PROJECT_ROOT/.env"' in runner
 

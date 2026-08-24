@@ -132,7 +132,7 @@ mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
 
 For an existing populated database, use `migrations/run_migration.sh` instead. The bootstrap uses `CREATE TABLE` definitions and is useful for schema comparison, but it is not an upgrade runner: `CREATE TABLE IF NOT EXISTS` does not add missing columns to an existing table.
 
-The migration runner contains the additive, guarded upgrade steps and is designed to be re-runnable after clone validation. The root-level `./run_migration.sh` is only a compatibility entrypoint and delegates to this authoritative runner, so the two paths cannot drift.
+The migration runner contains the additive, guarded upgrade steps and is designed to be re-runnable after clone validation. `migrations/run_migration.sh` is the single entrypoint; there is no root-level wrapper.
 
 For a scoped persistence/auction repair on an archive-restored clone, use:
 
@@ -155,14 +155,14 @@ Help files, news, credits, etc, you can import them to the database:
 
 ```bash
 # Edit the script to configure your database settings:
-nano import_help_to_prod.sh
+nano scripts/import_help_to_prod.sh
 # Update: REMOTE_HOST, REMOTE_USER, MYSQL_USER, MYSQL_PASS, MYSQL_DB
 
 # Dry run to see what would be imported:
-./import_help_to_prod.sh --dry-run
+./scripts/import_help_to_prod.sh --dry-run
 
 # Import to database:
-./import_help_to_prod.sh
+./scripts/import_help_to_prod.sh
 ```
 
 This imports:
@@ -180,8 +180,8 @@ symlinks for managing them.
 
 For testing, you can use a self-signed certificate.  You can link it via:
 ```
-ln -s localhost.crt duris.crt
-ln -s localhost.key duris.key
+ln -s certs/localhost.crt duris.crt
+ln -s certs/localhost.key duris.key
 ```
 
 For a server reachable from the network, though, you should use a real
@@ -289,15 +289,15 @@ The helper scripts now self-anchor to the repository root, so you can launch the
 
 **Preferred startup:**
 ```bash
-./start_mud.sh
+./scripts/start_mud.sh
 ```
 
 **Direct startup / debugging:**
 ```bash
-./cycle_mud.sh
+./scripts/cycle_mud.sh
 ```
 
-If the area helper binaries are missing, `cycle_mud.sh` will rebuild them automatically before running `areas/m_slow`.
+If the area helper binaries are missing, `scripts/cycle_mud.sh` will rebuild them automatically before running `areas/m_slow`.
 
 **Development (port 4000):**
 ```bash
@@ -515,6 +515,7 @@ DurisMUD/
 │   ├── comm.c         # Network communication
 │   ├── nanny.c        # Login handler
 │   └── ...
+├── src-migrate/       # Standalone migration/conversion tools (pfile_converter, ...)
 ├── lib/               # Game data files
 │   ├── information/   # Help files
 │   ├── etc/           # Configuration files
@@ -529,15 +530,25 @@ DurisMUD/
 │       ├── status     # MySQL and system status
 │       ├── syslog     # Game events
 │       └── cmdlog     # Player commands
-├── sql/               # SQL scripts
-│   └── migrations/    # Database migrations
+├── migrations/        # Database migrations (authoritative runner lives here)
+├── scripts/           # Operational scripts (start_mud.sh, cycle_mud.sh, gdbdms, ...)
+├── help/              # Help source files (*.hlp) and the help style guide
+├── certs/             # Self-signed/testing certificates
+├── packaging/         # Build-dependency packaging (equivs)
+├── archives/          # Seed/backup tarballs
+├── attic/             # Retired areas, lib data and old_code/
 ├── docs/              # Documentation
-└── duris              # Compiled binary
+├── tests/             # Test suites
+└── dms                # Compiled binary
 ```
+
+Scripts under `scripts/` cd to the repository root themselves, so they can be
+run from anywhere (`./scripts/start_mud.sh`).
+
 
 ### Important Files
 
-- **duris** - Compiled MUD executable
+- **dms** - Compiled MUD executable
 - **src/sql.h** - Database credentials and configuration
 - **src/config.h** - MUD configuration (port, directories, etc.)
 - **src/duris.sql** - Main database schema

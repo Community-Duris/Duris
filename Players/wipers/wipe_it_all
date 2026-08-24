@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Filesystem half of a season/pwipe for flat player-state directories.
-# Invoked by cycle_mud.sh after sql_pwipe succeeds (RESULT==55).
+# Invoked by scripts/cycle_mud.sh after sql_pwipe succeeds (RESULT==55).
 #
 # Design:
 #  - Fail closed: article missing or any rm failure exits non-zero.

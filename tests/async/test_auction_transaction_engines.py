@@ -20,8 +20,6 @@ for table in tables:
     assert f"ALTER TABLE {table} ENGINE=InnoDB" in contract, f"{table} conversion missing from canonical contract"
 
 authoritative = (ROOT / "migrations/run_migration.sh").read_text()
-root_entrypoint = (ROOT / "run_migration.sh").read_text()
 assert '"$SCRIPT_DIR/persistence_contract.sql"' in authoritative
-assert 'exec "$SCRIPT_DIR/migrations/run_migration.sh" "$@"' in root_entrypoint
 
 print("auction transaction-engine checks passed")

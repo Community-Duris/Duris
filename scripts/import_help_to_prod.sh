@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This script is for me to import the help to my duris server in my home lab. make sure to be in duris root folder (the one with startmud.sh)
+# This script is for me to import the help to my duris server in my home lab. run it from anywhere; it cds to the repository root itself
 # DurisMUD Help Import Script.
 # Imports all help content to production server:
 #   1. Individual help files -> mud_info + pages tables
@@ -8,7 +8,7 @@
 #   3. Parsed help file entries -> pages table
 #
 # Usage:
-#   ./import_help_to_prod.sh [OPTIONS]
+#   ./scripts/import_help_to_prod.sh [OPTIONS]
 #
 # Options:
 #   --local              Import to localhost MySQL directly (default)
@@ -18,17 +18,17 @@
 #   --dry-run            Show what would be imported without making changes
 #
 # Examples:
-#   ./import_help_to_prod.sh --dry-run
-#   ./import_help_to_prod.sh --local
-#   ./import_help_to_prod.sh --clean --dry-run
-#   ./import_help_to_prod.sh --clean
-#   ./import_help_to_prod.sh --remote 192.168.1.100
-#   ./import_help_to_prod.sh --remote myserver.com --user admin
-#   ./import_help_to_prod.sh --remote 10.0.0.5 --user duris --dry-run
+#   ./scripts/import_help_to_prod.sh --dry-run
+#   ./scripts/import_help_to_prod.sh --local
+#   ./scripts/import_help_to_prod.sh --clean --dry-run
+#   ./scripts/import_help_to_prod.sh --clean
+#   ./scripts/import_help_to_prod.sh --remote 192.168.1.100
+#   ./scripts/import_help_to_prod.sh --remote myserver.com --user admin
+#   ./scripts/import_help_to_prod.sh --remote 10.0.0.5 --user duris --dry-run
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
 # Use the same local connection settings as the game and migration tools.
@@ -54,7 +54,7 @@ export MYSQL_PWD="$MYSQL_PASS"
 
 HELP_DIR="lib/information"
 HELP_INDEX_FILE="lib/information/help_index"
-PARSED_HELP_FILE="duris_help_parsed.hlp"
+PARSED_HELP_FILE="help/duris_help_parsed.hlp"
 
 # ============================================================================
 # PARSE ARGUMENTS
