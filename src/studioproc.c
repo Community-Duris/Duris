@@ -82,10 +82,13 @@
    *          -- with neither apply nor aff the affect is an inert MARKER:
    *             'if affect <name>' reads it and 'affects' shows it, but it
    *             changes no number.  'apply AC -20' / 'aff BLIND' make it real.
-   *   unaffect <spell|tag> [on self|actor]
-   *   do [self|actor] <command line>
-   *   set <counter> <n>     add <counter> <n>
-   *   oneof <n>             -- the next n actions become a pool; one runs
+	*   unaffect <spell|tag> [on self|actor]
+	*   do [self|actor] <command line>
+	*   set <counter> <n>     add <counter> <n>
+	*   rset <vnum> <counter> <n>    radd <vnum> <counter> <n>
+	*          -- write the counter on the first live instance of the named
+	*             mob prototype, or object prototype when no mob vnum matches
+	*   oneof <n>             -- the next n actions become a pool; one runs
    *   exit <roomvnum> <dir> [to <roomvnum>|none] [state open|closed|locked|secret]
    *   block                 -- swallow the command that triggered this
    *
@@ -135,6 +138,8 @@ extern P_room world;
 extern int top_of_world;
 extern P_index mob_index;
 extern P_index obj_index;
+extern P_char character_list;
+extern P_obj object_list;
 extern const char *spells[];
 extern Skill skills[];
 extern struct command_info cmd_info[MAX_CMD_LIST];
@@ -180,7 +185,7 @@ struct sp_action
 	char *text2; /* attack: miss message                */
 	char *text3; /* attack: room message                */
 	int num; /* vnum / spell / heal / counter value */
-	int num2; /* exit: destination vnum, -1 = leave  */
+	int num2; /* exit: destination vnum; remote counter: target vnum */
 	int dnum, dsize, dbonus; /* NdS+B                               */
 	int who; /* SP_WHO_xxx                          */
 	int scope; /* SP_SCOPE_xxx                        */
@@ -191,7 +196,7 @@ struct sp_action
 	int slot; /* counter slot / exit direction       */
 	int count; /* oneof: pool size                    */
 	int dur; /* affect duration, ticks              */
-	int state; /* exit state                          */
+	int state; /* exit state; remote counter target kind */
 	int apply; /* affect: APPLY_xxx, 0 = APPLY_NONE   */
 	int amod; /* affect: the modifier for that apply */
 	int affword; /* affect: AFF word 1..5, 0 = no bit   */
@@ -384,6 +389,26 @@ static void sp_obj_set(P_obj obj, int type, int slot, int value)
 	ed->next = obj->ex_description;
 	obj->ex_description = ed;
 	obj->str_mask |= STRUNG_EDESC;
+}
+
+static P_char sp_mob_instance(int vnum)
+{
+	P_char ch;
+
+	for (ch = character_list; ch; ch = ch->next)
+		if (IS_NPC(ch) && IS_ALIVE(ch) && GET_VNUM(ch) == vnum)
+			return ch;
+	return NULL;
+}
+
+static P_obj sp_obj_instance(int vnum)
+{
+	P_obj obj;
+
+	for (obj = object_list; obj; obj = obj->next)
+		if (obj->R_num >= 0 && obj_index[obj->R_num].virtual_number == vnum)
+			return obj;
+	return NULL;
 }
 
 /* ------------------------------------------------------------------ */
@@ -900,7 +925,7 @@ static int sp_do_command(P_char ch, const char *line)
 	/* never let data reach a trusted command */
 	if (cmd_info[cmd].minimum_level > 0 || cmd_info[cmd].grantable)
 		return FALSE;
-	if (GET_POS(ch) < cmd_info[cmd].minimum_position)
+	if (!MIN_POS(ch, cmd_info[cmd].minimum_position))
 		return FALSE;
 
 	(*cmd_info[cmd].command_pointer)(ch, rest, cmd);
@@ -1067,7 +1092,7 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 			{
 				act("$n vanishes in a swirl of mist.", TRUE, actor, 0, 0, TO_ROOM);
 				char_from_room(actor);
-				if (!char_to_room(actor, rr, -1))
+				if (char_to_room(actor, rr, -1))
 				{
 					act("$n arrives in a swirl of mist.", TRUE, actor, 0, 0,
 					    TO_ROOM);
@@ -1078,7 +1103,8 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 					}
 				}
 				else
-					cx->actor = NULL; /* extraction path: never touch again */
+					cx->actor =
+						NULL; /* freed or displaced: never touch again */
 			}
 			break;
 
@@ -1088,7 +1114,7 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 			{
 				act("$n departs in a swirl of mist.", TRUE, self, 0, 0, TO_ROOM);
 				char_from_room(self);
-				if (!char_to_room(self, rr, -1))
+				if (char_to_room(self, rr, -1))
 					act("$n arrives in a swirl of mist.", TRUE, self, 0, 0,
 					    TO_ROOM);
 				else
@@ -1181,6 +1207,28 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 		case SP_A_ADD:
 			sp_state_set(cx, SP_TAG_COUNTER, a->slot,
 				     sp_state_get(cx, SP_TAG_COUNTER, a->slot) + a->num);
+			break;
+
+		case SP_A_RSET:
+		case SP_A_RADD:
+			if (a->state == SP_T_MOB)
+			{
+				if ((m = sp_mob_instance(a->num2)) != NULL)
+				{
+					n = (a->op == SP_A_RADD) ?
+						    sp_char_get(m, SP_TAG_COUNTER, a->slot) +
+							    a->num :
+						    a->num;
+					sp_char_set(m, SP_TAG_COUNTER, a->slot, n);
+				}
+			}
+			else if ((o = sp_obj_instance(a->num2)) != NULL)
+			{
+				n = (a->op == SP_A_RADD) ?
+					    sp_obj_get(o, SP_TAG_COUNTER, a->slot) + a->num :
+					    a->num;
+				sp_obj_set(o, SP_TAG_COUNTER, a->slot, n);
+			}
 			break;
 
 		case SP_A_EXIT:
@@ -2869,6 +2917,34 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 		   "to" or "the" would otherwise vanish and the NEXT token would be
 		   interned as the counter name.  See the comment on sp_word(). */
 		a->op = !strcmp(word, "set") ? SP_A_SET : SP_A_ADD;
+		p = sp_word(p, name, sizeof(name));
+		a->slot = sp_intern_counter(name);
+		if (a->slot < 0)
+		{
+			sp_err(vnum, "counter name table full or empty name", line);
+			return FALSE;
+		}
+		sp_word(p, word, sizeof(word));
+		a->num = atoi(word);
+	}
+	else if (!strcmp(word, "rset") || !strcmp(word, "radd"))
+	{
+		/* Keep remote writes on distinct keywords. A numeric counter name is
+		   valid in the original set/add grammar, so overloading by argument
+		   count would reinterpret existing trigger records. */
+		a->op = !strcmp(word, "rset") ? SP_A_RSET : SP_A_RADD;
+		p = sp_word(p, word, sizeof(word));
+		n = atoi(word);
+		if (n > 0 && real_mobile(n) >= 0)
+			a->state = SP_T_MOB;
+		else if (n > 0 && real_object(n) >= 0)
+			a->state = SP_T_OBJ;
+		else
+		{
+			sp_err(vnum, "rset/radd: no such mob or obj vnum", line);
+			return FALSE;
+		}
+		a->num2 = n;
 		p = sp_word(p, name, sizeof(name));
 		a->slot = sp_intern_counter(name);
 		if (a->slot < 0)

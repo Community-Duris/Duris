@@ -2857,6 +2857,18 @@ P_obj read_object(int nr, int type)
 			}
 		}
 	}
+	if (fscanf(obj_f, " %s \n", chk) != 1)
+		*chk = '\0';
+	if (!strcmp(chk, "B5"))
+	{
+		if (fscanf(obj_f, " %lu \n", &utmp) == 1)
+			obj->bitvector5 = utmp;
+		else
+			logit(LOG_STATUS, "Object %d has an invalid B5 affect mask.",
+			      obj_index[nr].virtual_number);
+		if (fscanf(obj_f, " %s \n", chk) != 1)
+			*chk = '\0';
+	}
 
 	//  if(obj->craftsmanship > ((OBJCRAFT_HIGHEST - 1) / 2))
 	//  {
@@ -2869,7 +2881,7 @@ P_obj read_object(int nr, int type)
 	REMOVE_BIT(obj->extra_flags, ITEM_PROCLIB);
 	/* *** extra descriptions *** */
 
-	while (fscanf(obj_f, " %s \n", chk), *chk == 'E')
+	while (*chk == 'E')
 	{
 		CREATE(new_descr, extra_descr_data, 1, MEM_TAG_EXDESCD);
 
@@ -2894,6 +2906,8 @@ P_obj read_object(int nr, int type)
 			new_descr->next = obj->ex_description;
 			obj->ex_description = new_descr;
 		}
+		if (fscanf(obj_f, " %s \n", chk) != 1)
+			*chk = '\0';
 	}
 
 	for (i = 0; (i < MAX_OBJ_AFFECT) && (*chk == 'A'); i++)

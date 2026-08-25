@@ -21,12 +21,15 @@ From the default build line:
 |------|---------|
 | `-std=c++20` | All `.c` files are compiled as C++20 with g++. |
 | `-DTEST_MUD` | Development build: selects the `duris_dev` database credentials in `src/sql.h` and enables test commands. |
-| `-DCHAOS_MUD=1` | Branch-specific gameplay configuration. |
 | `-D__NO_TESTS__` | Excludes built-in test hooks. |
 | `-D__NO_MYSQL__` | Optional; removes MySQL support (stubs live in `sql.c`). Not recommended — help and persistence depend on it. |
 
 Link libraries: `mysqlclient`, `gnutls`, `ssl`, `crypto`, `cjson`, `hiredis`,
 `bsd`, `xml2`, `z`, `crypt`, `pthread`.
+
+Chaos gameplay mode is selected at runtime with `CHAOS_MUD=TRUE` or
+`CHAOS_MUD=FALSE` in `.env`. The default example disables it. The value must
+use uppercase `TRUE` or `FALSE`; numeric values are not supported.
 
 Dependency install lines are in [README.md](../README.md#prerequisites);
 the `packaging/` directory contains equivs packaging for build dependencies.

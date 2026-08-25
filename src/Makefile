@@ -11,8 +11,6 @@ CFLAGS = -g -std=c++20 -D_FORTIFY_SOURCE=0 -Wno-write-strings
 CFLAGS += -DTEST_MUD
 CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
 
-# to turn on/off chaos mud, change the flag at the top of db.h
-CFLAGS += -DCHAOS_MUD=1
 #CFLAGS += -DCTF_MUD=1
 
 INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
@@ -84,6 +82,7 @@ OBJS =  $(SHIP_OBJS) \
 				 buildings.o \
          cardgames.o \
          chaos.o \
+				 chaos_config.o \
 				 comm.o \
 				 copyover.o \
 				 common.o \
@@ -263,7 +262,8 @@ OBJS =  $(SHIP_OBJS) \
 				 json_utils.o \
 				 gmcp.o \
 				 ttype.o \
-				 wiz_newchar.o
+				 wiz_newchar.o \
+				 zcheck.o
 
 
 # Name lists (no paths) for pfile-related objs

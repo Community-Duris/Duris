@@ -7,6 +7,7 @@
 
 #include "prototypes.h"
 #include "creation_availability_config.h"
+#include "chaos_config.h"
 #include "structs.h"
 #include "comm.h"
 #include "db.h"
@@ -2948,22 +2949,22 @@ void enter_game(P_desc d)
 #endif
 
 	// chaos - level them up, and setbit hardcore off them!
-#if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-	// setbit hardcore off according to policy
-	if (hardcore_config_get()->disable_in_chaos)
-		REMOVE_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
-	// if not trusted, make sure they are level 55
-	if (GET_LEVEL(ch) == 56)
+	if (chaos_mud_enabled())
 	{
-		ch->player.level = 54; // so they are raised one level, which will fix skills
+		// setbit hardcore off according to policy
+		if (hardcore_config_get()->disable_in_chaos)
+			REMOVE_BIT(ch->specials.act2, PLR2_HARDCORE_CHAR);
+		// Rebuild every chaos character at the mortal level cap.
+		if (GET_LEVEL(ch) == 56)
+		{
+			ch->player.level =
+				54; // so they are raised one level, which will fix skills
+		}
+		while (GET_LEVEL(ch) < 56)
+		{
+			advance_level(ch);
+		}
 	}
-	// while ((GET_LEVEL(ch) < 56 && !IS_MULTICLASS_PC(ch)) || GET_LEVEL(ch) < 51)
-	//  changing this to conform with Kitsero's version of chaos
-	while (GET_LEVEL(ch) < 56)
-	{
-		advance_level(ch);
-	}
-#endif
 
 	writeCharacter(ch, 1, NOWHERE);
 	if (!sql_save_player_core(ch))
