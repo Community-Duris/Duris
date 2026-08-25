@@ -1904,6 +1904,8 @@ bool                                   has_avail_class(P_desc);
 void                                   display_classtable(P_desc);
 extern int                             invitemode;
 extern const struct playable_race_info playable_races[];
+extern const struct restricted_race_info restricted_races[];
+extern const struct restricted_class_row restricted_class_rows[];
 int                                    display_avail_classes(P_desc, int);
 int                                    find_hometown(int, bool);
 int                                    find_starting_alignment(int, int);

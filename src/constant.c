@@ -1529,6 +1529,75 @@ const struct playable_race_info        playable_races[] = {
     {			-1,   0,      NULL}  /* Sentinel */
 };
 
+/*
+ * Player races (RACE_NONE < id <= RACE_PLAYER_MAX) that are deliberately absent
+ * from playable_races[].  Most are the undead forms reached in-game with
+ * 'descend'; the rest are legacy or lore-restricted races.  These are offered
+ * at creation only when CREATION_ALL_RACES=TRUE is set in .env, and are picked
+ * by typing the race name -- there are not enough free menu keys for them.
+ *
+ * Keep this out of playable_races[]: that table also drives races.playable and
+ * the racewar column written to the database for the website.
+ */
+extern const struct restricted_race_info restricted_races[];
+const struct restricted_race_info        restricted_races[] = {
+    /* Undead forms normally reached with 'descend' */
+    {   RACE_LICH,          "descend: necromancer"},
+    {RACE_PVAMPIRE,   "descend: sorcerer/dreadlord"},
+    {RACE_PDKNIGHT,           "descend: anti-paladin"},
+    {  RACE_WIGHT,               "descend: warrior"},
+    {RACE_REVENANT,             "descend: mercenary"},
+    { RACE_PSBEAST,              "descend: assassin"},
+    { RACE_PHANTOM,              "descend: conjurer"},
+    {   RACE_SHADE,       "descend: thief/illusionist"},
+
+    /* Other non-roster player races */
+    { RACE_HALFELF,                  "legacy race"},
+    { RACE_WOODELF,                  "legacy race"},
+    {  RACE_KUOTOA,                  "legacy race"},
+    {    RACE_OROG,                  "legacy race"},
+    {   RACE_HARPY,             "lore-restricted"},
+    {RACE_ILLITHID,   "lore-restricted, no racewar side"},
+    {RACE_PILLITHID, "lore-restricted, no racewar side"},
+    {  RACE_SGIANT,   "lore-restricted, no racewar side"},
+
+    {          -1,                           NULL}  /* Sentinel */
+};
+
+/*
+ * Creation-time class rows for the restricted races whose class_table[] row is
+ * entirely 5, i.e. no legal race/class combination at all.  Without these the
+ * class menu would come up empty and creation would dead-end.
+ *
+ * These are consulted ONLY while CREATION_ALL_RACES is on, and deliberately do
+ * not touch class_table[] itself, which also drives random mob generation in
+ * random.mob.c.  Encoding matches class_table[]: index = class id, value =
+ * alignment code (-1 evil, 0 neutral, 1 good, 2/3/4 choice, 5 illegal).
+ *
+ * Each row is copied from the closest existing race rather than invented, so
+ * the lists stay in step with the game's own data; Lich instead gets the class
+ * its 'descend' path comes from.  Adjust to taste -- nothing else reads them.
+ */
+extern const struct restricted_class_row restricted_class_rows[];
+const struct restricted_class_row        restricted_class_rows[] = {
+    /* Half-Elf mirrors Human */
+    {RACE_HALFELF, { 5,  2,  1,  5,  1,  5,  2,  1,  0,  2,  2, -1,  2,  4,  5,  2,  1,  5,  5,  5,  5,  0,  5,  2,  5,  5,  0,  5,  5,  2,  2}},
+    /* Wood Elf mirrors Grey Elf */
+    {RACE_WOODELF, { 5,  2,  1,  5,  5,  5,  2,  5,  0,  2,  2,  5,  2,  0,  5,  2,  1,  5,  5,  5,  5,  5,  5,  2,  5,  5,  0,  5,  5,  2,  2}},
+    /* Orog mirrors Orc */
+    {   RACE_OROG, { 5, -1,  5,  5,  5, -1, -1, -1,  5, -1, -1, -1, -1, -1,  5, -1, -1,  5,  5,  5,  5, -1, -1, -1, -1,  5,  0,  5,  5, -1,  4}},
+    /* Kuo Toa mirrors Duergar Dwarf */
+    { RACE_KUOTOA, { 5, -1,  5,  5,  5,  5, -1,  5,  5,  5,  5,  5,  5, -1,  5, -1,  5,  5,  5,  5,  5, -1, -1,  5,  5,  5,  5,  5,  5,  5,  5}},
+    /* Storm Giant mirrors Ogre */
+    { RACE_SGIANT, { 5, -1,  5,  5,  5,  5,  5,  5,  5, -1,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5}},
+    /* Harpy mirrors Minotaur */
+    {  RACE_HARPY, { 5,  2,  5,  5,  5,  5,  5,  5,  5,  2,  2,  5,  5,  5,  5,  2,  5,  5,  5,  5,  5,  2,  5,  5,  5,  5,  5,  5,  5,  5,  5}},
+    /* Lich: the class its 'descend' path comes from */
+    {   RACE_LICH, { 5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5, -1,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5}},
+
+    {          -1, {0}}  /* Sentinel */
+};
+
 /* arena 'pre-entry' room, start of arena, end of arena */
 /* start to end should be nothing but arena (inclusive), pre-entry can be anywhere */
 

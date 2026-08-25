@@ -442,6 +442,18 @@ struct ws_char_info
 
 static cJSON *ws_build_character_list(struct descriptor_data *d);
 
+/* find a race in restricted_races[], or NULL when it is not one */
+static const struct restricted_race_info *ws_find_restricted_race(int race)
+{
+	int i;
+	for (i = 0; restricted_races[i].race_id != -1; i++)
+	{
+		if (restricted_races[i].race_id == race)
+			return &restricted_races[i];
+	}
+	return NULL;
+}
+
 /* get race faction from playable_races[] array */
 static const char *ws_get_race_faction(int race)
 {
@@ -452,6 +464,19 @@ static const char *ws_get_race_faction(int race)
 		{
 			return playable_races[i].faction;
 		}
+	}
+	/* Restricted races carry no faction of their own; derive the side the
+	   creation code would give them from the race itself. */
+	if (ws_find_restricted_race(race))
+	{
+		if (OLD_RACE_PUNDEAD(race))
+			return "undead";
+		if (race == RACE_HARPY)
+			return "neutral";
+		if (OLD_RACE_GOOD(race, 0))
+			return "good";
+		if (OLD_RACE_EVIL(race, 0))
+			return "evil";
 	}
 	return "unknown";
 }
@@ -465,6 +490,10 @@ static int ws_is_playable_race(int race)
 		if (playable_races[i].race_id == race)
 			return creation_race_enabled(race) ? 1 : 0;
 	}
+	/* CREATION_ALL_RACES=TRUE also opens the restricted races here, so the
+	   WebSocket path stays in step with the telnet race menu. */
+	if (creation_all_races_enabled() && ws_find_restricted_race(race))
+		return creation_race_enabled(race) ? 1 : 0;
 	return 0;
 }
 
@@ -1151,13 +1180,57 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 	ws_send_auth_success(d, "registered");
 }
 
+/* adds one race, with its available classes, to a chargen_options race array.
+   restricted is NULL for the standard roster, or the restricted_races[] entry
+   when the race is only offered because CREATION_ALL_RACES is on. */
+static void ws_add_chargen_race(cJSON *races_array, int race_id, const char *faction, const struct restricted_race_info *restricted)
+{
+	cJSON      *race_obj, *classes_array, *class_obj;
+	const char *align_str;
+	int         j, align_val;
+
+	race_obj = cJSON_CreateObject();
+	cJSON_AddNumberToObject(race_obj, "id", race_id);
+	cJSON_AddStringToObject(race_obj, "name", race_names_table[race_id].normal);
+	cJSON_AddStringToObject(race_obj, "ansi", race_names_table[race_id].ansi);
+	cJSON_AddStringToObject(race_obj, "faction", faction);
+	cJSON_AddBoolToObject(race_obj, "restricted", restricted ? 1 : 0);
+	if (restricted)
+		cJSON_AddStringToObject(race_obj, "restricted_note", restricted->note);
+
+	/* build array of available classes for this race */
+	classes_array = cJSON_AddArrayToObject(race_obj, "classes");
+
+	for (j = 1; j <= CLASS_COUNT; j++)
+	{
+		align_val = creation_class_align(race_id, j);
+
+		/* skip forbidden classes */
+		if (!creation_class_enabled(j) || align_val == 5)
+			continue;
+
+		align_str = ws_get_class_alignment(align_val);
+		if (!align_str)
+			continue;
+
+		class_obj = cJSON_CreateObject();
+		cJSON_AddNumberToObject(class_obj, "id", j);
+		cJSON_AddStringToObject(class_obj, "name", class_names_table[j].normal);
+		cJSON_AddStringToObject(class_obj, "ansi", class_names_table[j].ansi);
+		cJSON_AddStringToObject(class_obj, "alignment", align_str);
+
+		cJSON_AddItemToArray(classes_array, class_obj);
+	}
+
+	cJSON_AddItemToArray(races_array, race_obj);
+}
+
 /* handle chargen options request */
 void ws_cmd_chargen_options(struct descriptor_data *d, cJSON *data)
 {
-	cJSON      *response, *races_array, *race_obj, *classes_array, *class_obj;
-	int         i, j, race_id, align_val;
-	const char *align_str;
-	char       *json_str;
+	cJSON *response, *races_array;
+	int    i, race_id;
+	char  *json_str;
 
 	response = cJSON_CreateObject();
 	if (!response)
@@ -1176,37 +1249,21 @@ void ws_cmd_chargen_options(struct descriptor_data *d, cJSON *data)
 		if (!creation_race_enabled(race_id))
 			continue;
 
-		race_obj = cJSON_CreateObject();
-		cJSON_AddNumberToObject(race_obj, "id", race_id);
-		cJSON_AddStringToObject(race_obj, "name", race_names_table[race_id].normal);
-		cJSON_AddStringToObject(race_obj, "ansi", race_names_table[race_id].ansi);
-		cJSON_AddStringToObject(race_obj, "faction", playable_races[i].faction);
+		ws_add_chargen_race(races_array, race_id, playable_races[i].faction, NULL);
+	}
 
-		/* build array of available classes for this race */
-		classes_array = cJSON_AddArrayToObject(race_obj, "classes");
-
-		for (j = 1; j <= CLASS_COUNT; j++)
+	/* CREATION_ALL_RACES=TRUE appends the normally unavailable races, flagged
+	   so a client can present them apart from the standard roster. */
+	if (creation_all_races_enabled())
+	{
+		for (i = 0; restricted_races[i].race_id != -1; i++)
 		{
-			align_val = class_table[race_id][j];
-
-			/* skip forbidden classes */
-			if (!creation_class_enabled(j) || align_val == 5)
+			race_id = restricted_races[i].race_id;
+			if (!creation_race_enabled(race_id))
 				continue;
 
-			align_str = ws_get_class_alignment(align_val);
-			if (!align_str)
-				continue;
-
-			class_obj = cJSON_CreateObject();
-			cJSON_AddNumberToObject(class_obj, "id", j);
-			cJSON_AddStringToObject(class_obj, "name", class_names_table[j].normal);
-			cJSON_AddStringToObject(class_obj, "ansi", class_names_table[j].ansi);
-			cJSON_AddStringToObject(class_obj, "alignment", align_str);
-
-			cJSON_AddItemToArray(classes_array, class_obj);
+			ws_add_chargen_race(races_array, race_id, ws_get_race_faction(race_id), &restricted_races[i]);
 		}
-
-		cJSON_AddItemToArray(races_array, race_obj);
 	}
 
 	json_str = cJSON_PrintUnformatted(response);
@@ -1530,7 +1587,7 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 		return;
 	}
 
-	class_align_req = class_table[race_id][class_id];
+	class_align_req = creation_class_align(race_id, class_id);
 	if (!creation_class_enabled(class_id) || class_align_req == 5)
 	{
 		ws_send_system(d, "error", "That class is not available for your race");

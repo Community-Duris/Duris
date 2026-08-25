@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 struct named_id
 {
@@ -41,7 +42,18 @@ static const struct named_id race_names[] = {
     {"githyanki", RACE_GITHYANKI},   {"goblin", RACE_GOBLIN},
     {"kobold", RACE_KOBOLD},         {"drider", RACE_DRIDER},
     {"thri-kreen", RACE_THRIKREEN},  {"minotaur", RACE_MINOTAUR},
-    {"tiefling", RACE_TIEFLING},     {NULL, 0}};
+    {"tiefling", RACE_TIEFLING},
+    /* Restricted races: only offered when CREATION_ALL_RACES=TRUE, but still
+       individually switchable here once it is on. */
+    {"lich", RACE_LICH},             {"vampire", RACE_PVAMPIRE},
+    {"death-knight", RACE_PDKNIGHT}, {"wight", RACE_WIGHT},
+    {"revenant", RACE_REVENANT},     {"shadow-beast", RACE_PSBEAST},
+    {"phantom", RACE_PHANTOM},       {"shade", RACE_SHADE},
+    {"half-elf", RACE_HALFELF},      {"wood-elf", RACE_WOODELF},
+    {"kuo-toa", RACE_KUOTOA},        {"orog", RACE_OROG},
+    {"harpy", RACE_HARPY},           {"illithid", RACE_ILLITHID},
+    {"planetbound-illithid", RACE_PILLITHID},
+    {"storm-giant", RACE_SGIANT},    {NULL, 0}};
 
 static bool class_enabled[CLASS_COUNT + 1];
 static bool race_enabled[LAST_RACE + 1];
@@ -168,4 +180,42 @@ bool creation_race_enabled(int race_id)
     if (!initialized)
         boot_creation_availability_config();
     return race_id >= 0 && race_id <= LAST_RACE && race_enabled[race_id];
+}
+
+/*
+ * CREATION_ALL_RACES=TRUE (.env) opens the normally unavailable player races
+ * -- the descend-only undead forms and the other non-roster races -- to
+ * character creation.  Intended for local testing; off unless set.
+ */
+bool creation_all_races_enabled(void)
+{
+    const char *value = getenv("CREATION_ALL_RACES");
+
+    return value && strcasecmp(value, "TRUE") == 0;
+}
+
+/*
+ * Alignment code for a race/class pair as character creation should see it:
+ * class_table[] normally, but a restricted race whose class_table row is empty
+ * uses its restricted_class_rows[] stand-in while CREATION_ALL_RACES is on.
+ * Creation paths only -- random mob generation keeps reading class_table[].
+ */
+int creation_class_align(int race_id, int class_id)
+{
+    extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
+    int        i;
+
+    if (race_id < 0 || race_id > LAST_RACE || class_id < 0 || class_id > CLASS_COUNT)
+        return 5;
+
+    if (creation_all_races_enabled())
+    {
+        for (i = 0; restricted_class_rows[i].race_id != -1; i++)
+        {
+            if (restricted_class_rows[i].race_id == race_id)
+                return restricted_class_rows[i].align[class_id];
+        }
+    }
+
+    return class_table[race_id][class_id];
 }

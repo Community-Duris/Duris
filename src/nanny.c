@@ -3523,9 +3523,56 @@ static void display_available_races(P_desc d)
 			         race_names_table[playable_races[i].race_id].normal);
 		}
 	}
+
+	/* CREATION_ALL_RACES=TRUE opens the races that are normally off-limits.
+	   They get their own block so they are never mistaken for the standard
+	   roster, and are chosen by name because no menu keys are left. */
+	if (creation_all_races_enabled())
+	{
+		int shown = 0;
+
+		strcat(buf, "\r\n  --- NORMALLY UNAVAILABLE RACES (testing toggle) ---\r\n");
+		strcat(buf, "  These races cannot normally be chosen at creation.\r\n");
+		strcat(buf, "  Type the race name to select one.\r\n\r\n");
+
+		for (i = 0; restricted_races[i].race_id != -1; i++)
+		{
+			if (!creation_race_enabled(restricted_races[i].race_id))
+				continue;
+
+			snprintf(buf + strlen(buf),
+			         sizeof(buf) - strlen(buf),
+			         "      %-22s %s\r\n",
+			         race_names_table[restricted_races[i].race_id].normal,
+			         restricted_races[i].note);
+			shown++;
+		}
+
+		if (!shown)
+			strcat(buf, "      (none currently enabled)\r\n");
+		strcat(buf, "\r\n");
+	}
+
 	strcat(buf, "  (x) General listing of classes by race\r\n");
 	strcat(buf, "  (y) Racewar information\r\n\r\nYour selection: ");
 	SEND_TO_Q(buf, d);
+}
+
+/* Normalizes a race name or menu entry to lowercase letters and digits only,
+   so "Storm Giant", "storm giant" and "stormgiant" all compare equal. */
+static void normalize_race_token(const char *src, char *dst, size_t dst_size)
+{
+	size_t out = 0;
+
+	if (!dst || !dst_size)
+		return;
+
+	for (; src && *src && out + 1 < dst_size; src++)
+	{
+		if (isalnum((unsigned char)*src))
+			dst[out++] = LOWER(*src);
+	}
+	dst[out] = '\0';
 }
 
 /* Krov: menu choice of race, the letters used for the menu are
@@ -3582,7 +3629,35 @@ void select_race(P_desc d, char *arg)
 		return;
 	}
 
+	/* With CREATION_ALL_RACES on, a full race name selects one of the
+	   normally unavailable races.  Checked before the single-key search so a
+	   name like "Shade" is not swallowed by the 'S' help key for Minotaur.
+	   Only an exact name match is taken, so key handling is unchanged. */
+	if (creation_all_races_enabled())
+	{
+		char typed[MAX_INPUT_LENGTH];
+		char race_name[MAX_INPUT_LENGTH];
+		int  i;
+
+		normalize_race_token(arg, typed, sizeof typed);
+
+		if (*typed)
+		{
+			for (i = 0; restricted_races[i].race_id != -1; i++)
+			{
+				normalize_race_token(race_names_table[restricted_races[i].race_id].normal, race_name, sizeof race_name);
+
+				if (!strcmp(typed, race_name))
+				{
+					GET_RACE(d->character) = restricted_races[i].race_id;
+					break;
+				}
+			}
+		}
+	}
+
 	/* Search playable_races[] array for matching key */
+	if (GET_RACE(d->character) == RACE_NONE)
 	{
 		int  i;
 		bool found = FALSE;
@@ -3882,7 +3957,7 @@ void select_class(P_desc d, char *arg)
 		return;
 	}
 	if (!creation_class_enabled(flag2idx(d->character->player.m_class)) ||
-	    class_table[GET_RACE(d->character)][flag2idx(d->character->player.m_class)] == 5)
+	    creation_class_align(GET_RACE(d->character), flag2idx(d->character->player.m_class)) == 5)
 	{
 		SEND_TO_Q("\r\nThis is not an allowed class for your race!", d);
 		return;
@@ -3914,12 +3989,12 @@ void select_class(P_desc d, char *arg)
 			STATE(d) = CON_ALIGN;
 			SEND_TO_Q("\r\n\r\n", d);
 			SEND_TO_Q(alignment_table, d);
-			if (class_table[(int)GET_RACE(d->character)][flag2idx(d->character->player.m_class)] != 4)
+			if (creation_class_align(GET_RACE(d->character), flag2idx(d->character->player.m_class)) != 4)
 				SEND_TO_Q("&+YG)ood&n\r\n", d);
 			SEND_TO_Q("&+LN)eutral&n\r\n", d);
 			/*    if (!invitemode && (class_table[(int) GET_RACE(d->character)][flag2idx(d->character->player.m_class)] != 3) &&
 			        (!RACE_NEUTRAL(d->character) || is_invited(GET_NAME(d->character))))*/
-			if (class_table[(int)GET_RACE(d->character)][flag2idx(d->character->player.m_class)] != 3)
+			if (creation_class_align(GET_RACE(d->character), flag2idx(d->character->player.m_class)) != 3)
 				SEND_TO_Q("&+rE)vil&n\r\n", d);
 			SEND_TO_Q("Alignment only affects your character's alignment and not the chosen racewar side.\n", d);
 			SEND_TO_Q("\r\nYour selection: ", d);
@@ -3976,7 +4051,7 @@ void display_classtable(P_desc d)
 
 	buf[0] = 0;
 	for (cls = 1; cls <= CLASS_COUNT; cls++)
-		if (creation_class_enabled(cls) && class_table[GET_RACE(d->character)][cls] != 5)
+		if (creation_class_enabled(cls) && creation_class_align(GET_RACE(d->character), cls) != 5)
 		{
 			snprintf(template_buf, MAX_STRING_LENGTH, "\r\n%%c) %%-%lds(%%c for help)", strlen(class_names_table[cls].ansi) - ansi_strlen(class_names_table[cls].ansi) + 20);
 			snprintf(buf + strlen(buf),
@@ -4014,7 +4089,7 @@ void select_alignment(P_desc d, char *arg)
 	{
 		case 'G':
 		case 'g':
-			if (class_table[(int)GET_RACE(d->character)][flag2idx(d->character->player.m_class)] == 4)
+			if (creation_class_align(GET_RACE(d->character), flag2idx(d->character->player.m_class)) == 4)
 				err = 1;
 			else
 				align = 1000; /* good */
@@ -4025,7 +4100,7 @@ void select_alignment(P_desc d, char *arg)
 			break;
 		case 'E':
 		case 'e':
-			if (class_table[(int)GET_RACE(d->character)][flag2idx(d->character->player.m_class)] == 3)
+			if (creation_class_align(GET_RACE(d->character), flag2idx(d->character->player.m_class)) == 3)
 				err = 1;
 			else
 				align = -1000;
@@ -4448,7 +4523,7 @@ int find_starting_alignment(int race, int m_class)
 		logit(LOG_STATUS, Gbuf1);
 		return (0); /* default */
 	}
-	return (class_table[race][flag2idx(m_class)]);
+	return (creation_class_align(race, flag2idx(m_class)));
 }
 
 /* set char's height and weight, based mainly on race and sex, but high/low

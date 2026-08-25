@@ -1328,6 +1328,25 @@ struct playable_race_info
 	const char *faction;    /* "good", "evil", or "neutral" (can choose) */
 };
 
+/* Player races that are NOT part of the normal creation roster.  They are only
+   offered when the CREATION_ALL_RACES .env toggle is on, and are chosen by
+   typing the race name rather than a menu key. */
+struct restricted_race_info
+{
+	int         race_id; /* RACE_SHADE, RACE_LICH, etc. */
+	const char *note;    /* short reason it is normally unavailable */
+};
+
+/* A creation-time class row for a restricted race whose class_table[] row is
+   entirely 5 (no legal class), which would otherwise leave the class menu
+   empty.  Same encoding as class_table[]: index is the class id, value is the
+   alignment code, 5 meaning "not a legal combination". */
+struct restricted_class_row
+{
+	int race_id;
+	int align[CLASS_COUNT + 1];
+};
+
 struct material_data
 {
 	const char *name;
