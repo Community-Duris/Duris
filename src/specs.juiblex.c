@@ -18,31 +18,31 @@
  * external variables
  */
 
-extern P_char      character_list;
-extern P_desc      descriptor_list;
-extern P_index     mob_index;
-extern P_index     obj_index;
-extern P_room      world;
-extern P_obj       justice_items_list;
-extern char       *coin_names[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern P_obj justice_items_list;
+extern char *coin_names[];
 extern const char *command[];
 extern const char *dirs[];
 // extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
-extern int                    planes_room_num[];
-extern int                    racial_base[];
-extern int                    top_of_zone_table;
-extern struct command_info    cmd_info[MAX_CMD_LIST];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
-extern const char            *specdata[][MAX_SPEC];
-extern struct class_names     class_names_table[];
-int                           range_scan_track(P_char ch, int distance, int type_scan);
-extern P_obj                  object_list;
-extern Skill                  skills[];
-extern char                  *spells[];
+extern int planes_room_num[];
+extern int racial_base[];
+extern int top_of_zone_table;
+extern struct command_info cmd_info[MAX_CMD_LIST];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern const char *specdata[][MAX_SPEC];
+extern struct class_names class_names_table[];
+int range_scan_track(P_char ch, int distance, int type_scan);
+extern P_obj object_list;
+extern Skill skills[];
+extern char *spells[];
 
 int slime_lake(P_char ch, P_char pl, int cmd, char *arg)
 {
@@ -66,11 +66,7 @@ int slime_lake(P_char ch, P_char pl, int cmd, char *arg)
 
 		act("&+gWith a huge torrent of &+rvile &+genergies, the putrid &+Levil "
 		    "&+ginfesting the lake exits the room in a deafening explosion!&n",
-		    FALSE,
-		    ch,
-		    0,
-		    0,
-		    TO_ROOM);
+		    FALSE, ch, 0, 0, TO_ROOM);
 
 		obj_to_room(obj1, ch->in_room);
 		obj_to_room(obj2, ch->in_room);
@@ -96,13 +92,10 @@ int juiblex_one(P_char ch, P_char pl, int cmd, char *arg)
 
 		act("&+gThe faceless lord seems to reel in &+Lterror&+g, and "
 		    "makes a hasty retreat for reinforcements!&n",
-		    FALSE,
-		    ch,
-		    obj,
-		    0,
-		    TO_ROOM);
+		    FALSE, ch, obj, 0, TO_ROOM);
 
-		act("$p &nsuddenly glows brightly!\n $n &nslowly fades out of existence.", FALSE, ch, obj, 0, TO_ROOM);
+		act("$p &nsuddenly glows brightly!\n $n &nslowly fades out of existence.", FALSE,
+		    ch, obj, 0, TO_ROOM);
 
 		P_char tch, temp;
 		for (tch = world[real_room0(JUIBLEX_DEATH_FROM_ROOM)].people; tch; tch = temp)
@@ -144,18 +137,24 @@ int mask_of_wildmagic(P_obj obj, P_char ch, int cmd, char *arg)
 			int msg = number(0, 2);
 			switch (msg)
 			{
-				case 0:
-					act("&+LYou are momentarily blinded as powerful &+Bsparks &+Lof &+bma&+Wgi&+bc &+Lleap forth from your mask.&n", FALSE, ch, obj, 0, TO_CHAR);
-					act("&+LPowerful &+Bsparks &+Lof &+bma&+Wgi&+bc &+Lseem to flow out from $n's mask.&n", FALSE, ch, obj, 0, TO_ROOM);
-					break;
-				case 1:
-					act("&+LYou suddenly feel a rush of &+wsup&+Wern&+watural &+rheat &+Lsurround your body.&n", FALSE, ch, obj, 0, TO_CHAR);
-					act("&+L$n &+Lis suddenly surrounded by a &+rred &+Geldritch &+Laura, which quickly dissipates.&n", FALSE, ch, obj, 0, TO_ROOM);
-					break;
-				case 2:
-					act("&+LYour eyes seem to be playing tricks on you as you see strange &+Mripples &+Lin &+Wreality&+L.&n", FALSE, ch, obj, 0, TO_CHAR);
-					act("&+L$n's &+Mmask &+Wsparkles &+Lfor a moment, and reality seems to twist and bend.&n", FALSE, ch, obj, 0, TO_ROOM);
-					break;
+			case 0:
+				act("&+LYou are momentarily blinded as powerful &+Bsparks &+Lof &+bma&+Wgi&+bc &+Lleap forth from your mask.&n",
+				    FALSE, ch, obj, 0, TO_CHAR);
+				act("&+LPowerful &+Bsparks &+Lof &+bma&+Wgi&+bc &+Lseem to flow out from $n's mask.&n",
+				    FALSE, ch, obj, 0, TO_ROOM);
+				break;
+			case 1:
+				act("&+LYou suddenly feel a rush of &+wsup&+Wern&+watural &+rheat &+Lsurround your body.&n",
+				    FALSE, ch, obj, 0, TO_CHAR);
+				act("&+L$n &+Lis suddenly surrounded by a &+rred &+Geldritch &+Laura, which quickly dissipates.&n",
+				    FALSE, ch, obj, 0, TO_ROOM);
+				break;
+			case 2:
+				act("&+LYour eyes seem to be playing tricks on you as you see strange &+Mripples &+Lin &+Wreality&+L.&n",
+				    FALSE, ch, obj, 0, TO_CHAR);
+				act("&+L$n's &+Mmask &+Wsparkles &+Lfor a moment, and reality seems to twist and bend.&n",
+				    FALSE, ch, obj, 0, TO_ROOM);
+				break;
 			}
 		}
 		return TRUE;
@@ -198,10 +197,10 @@ int ebb_vambraces(P_obj obj, P_char ch, int cmd, char *arg)
 
 				struct affected_type af;
 				bzero(&af, sizeof(af));
-				af.type       = SPELL_INERTIAL_BARRIER;
+				af.type = SPELL_INERTIAL_BARRIER;
 				af.bitvector3 = AFF3_INERTIAL_BARRIER;
-				af.modifier   = 0;
-				af.duration   = 5;
+				af.modifier = 0;
+				af.duration = 5;
 				affect_to_char(ch, &af);
 
 				obj->timer[0] = curr_time;
@@ -233,9 +232,9 @@ void event_flow_amulet_vibrate(P_char ch, P_char victim, P_obj obj, void *data)
 
 int flow_amulet(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int  circle;
+	int circle;
 	char buf[256];
-	int  curr_time;
+	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -265,10 +264,21 @@ int flow_amulet(P_obj obj, P_char ch, int cmd, char *arg)
 				{
 					for (circle = get_max_circle(ch); circle >= 1; circle--)
 					{
-						if (ch->specials.undead_spell_slots[circle] < max_spells_in_circle(ch, circle))
+						if (ch->specials.undead_spell_slots[circle] <
+						    max_spells_in_circle(ch, circle))
 						{
 							// debug("circle slot: %d", circle); some zion debug nonsense, can re-enable it if you wish.
-							snprintf(buf, 256, "&+LPowerful magic flows into your %d%s circle of knowledge.\n", circle, circle == 1 ? "st" : (circle == 2 ? "nd" : (circle == 3 ? "rd" : "th")));
+							snprintf(
+								buf, 256,
+								"&+LPowerful magic flows into your %d%s circle of knowledge.\n",
+								circle,
+								circle == 1 ?
+									"st" :
+									(circle == 2 ?
+										 "nd" :
+										 (circle == 3 ?
+											  "rd" :
+											  "th")));
 							send_to_char(buf, ch);
 							ch->specials.undead_spell_slots[circle]++;
 							break;
@@ -281,14 +291,18 @@ int flow_amulet(P_obj obj, P_char ch, int cmd, char *arg)
 
 					if (spell)
 					{
-						snprintf(buf, 256, "&+BPowerful magic flows forth from the amulet, and your power of %s &+Breturns to you!&n\n", skills[spell].name);
+						snprintf(
+							buf, 256,
+							"&+BPowerful magic flows forth from the amulet, and your power of %s &+Breturns to you!&n\n",
+							skills[spell].name);
 						send_to_char(buf, ch);
 					}
 				}
 				obj->timer[0] = curr_time;
 				REMOVE_BIT(obj->extra_flags, ITEM_HUM);
 				disarm_obj_nevents(obj, event_flow_amulet_vibrate);
-				add_event(event_flow_amulet_vibrate, 350 * WAIT_SEC, 0, 0, obj, 0, 0, 0);
+				add_event(event_flow_amulet_vibrate, 350 * WAIT_SEC, 0, 0, obj, 0,
+					  0, 0);
 				return TRUE;
 			}
 			else
@@ -302,7 +316,9 @@ int flow_amulet(P_obj obj, P_char ch, int cmd, char *arg)
 
 int juiblex_grid_mob_generator(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int mob_vnums[] = {87507, 87505, 87508, 87604, 87599, 87504, 87506, 87515, 87552, 87514, 0};
+	int mob_vnums[] = {
+		87507, 87505, 87508, 87604, 87599, 87504, 87506, 87515, 87552, 87514, 0
+	};
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -325,7 +341,8 @@ int juiblex_grid_mob_generator(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				P_char mob = read_mobile(rnum, REAL);
 				char_to_room(mob, obj->loc.room, -1);
-				act("&+cA vortex in the space-time continuum appears and $n&+c stumbles out.", FALSE, mob, obj, 0, TO_ROOM);
+				act("&+cA vortex in the space-time continuum appears and $n&+c stumbles out.",
+				    FALSE, mob, obj, 0, TO_ROOM);
 				obj->timer[0] = curr_time;
 				break;
 			}

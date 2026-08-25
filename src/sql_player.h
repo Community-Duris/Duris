@@ -133,30 +133,33 @@ bool sql_delete_locker(int owner_pid, int owner_assoc_id);
 bool sql_delete_locker_by_name(const char *locker_name);
 
 // private chest functions
-int  sql_get_locker_id_by_name(const char *locker_name);
-int  sql_get_or_create_public_chest(int locker_id);
-int  sql_create_private_chest(int locker_id, const char *chest_name, const char *password);
+int sql_get_locker_id_by_name(const char *locker_name);
+int sql_get_or_create_public_chest(int locker_id);
+int sql_create_private_chest(int locker_id, const char *chest_name, const char *password);
 bool sql_delete_private_chest(int chest_id);
-int  sql_get_chest_id(int locker_id, const char *chest_name);
+int sql_get_chest_id(int locker_id, const char *chest_name);
 bool sql_verify_chest_password(int chest_id, const char *password);
-int  sql_count_private_chests(int locker_id);
+int sql_count_private_chests(int locker_id);
 // private_chest_log action_type values
-#define CHEST_ACTION_OPEN  1
+#define CHEST_ACTION_OPEN 1
 #define CHEST_ACTION_CLOSE 2
-#define CHEST_ACTION_PUT   3
-#define CHEST_ACTION_GET   4
-#define CHEST_ACTION_FAIL  5
+#define CHEST_ACTION_PUT 3
+#define CHEST_ACTION_GET 4
+#define CHEST_ACTION_FAIL 5
 
-bool  sql_log_chest_activity(int locker_id, int chest_id, const char *char_name, int action_type, const char *item_short);
-bool  sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
-void  sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
+bool sql_log_chest_activity(int locker_id, int chest_id, const char *char_name, int action_type,
+			    const char *item_short);
+bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
+void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
 
 // account bank
-bool      sql_load_account_bank(const char *account_name, int racewar, P_char ch);
-bool      sql_save_account_bank(const char *account_name, int racewar, P_char ch);
-long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type, int amount);
-long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type, int amount);
-bool      sql_ensure_account_bank(const char *account_name, int racewar);
+bool sql_load_account_bank(const char *account_name, int racewar, P_char ch);
+bool sql_save_account_bank(const char *account_name, int racewar, P_char ch);
+long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type,
+				   int amount);
+long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type,
+				    int amount);
+bool sql_ensure_account_bank(const char *account_name, int racewar);
 
 // ============================================================================
 // migration helpers
@@ -190,9 +193,9 @@ bool sql_load_towns(void);
 
 // account ips
 struct acct_ip;
-bool            sql_save_account_ips(const char *account_name, struct acct_ip *ips);
+bool sql_save_account_ips(const char *account_name, struct acct_ip *ips);
 struct acct_ip *sql_load_account_ips(const char *account_name);
-bool            sql_delete_account_ips(const char *account_name);
+bool sql_delete_account_ips(const char *account_name);
 
 // kingdom land
 bool sql_save_kingdom_land(void);
@@ -203,11 +206,11 @@ bool sql_delete_corpse(const char *player_name, int save_id);
 bool sql_load_all_corpses(void);
 
 // shopkeepers
-bool   sql_save_shopkeeper(P_char ch, int shop_nr);
-bool   sql_delete_shopkeeper(int shop_nr);
+bool sql_save_shopkeeper(P_char ch, int shop_nr);
+bool sql_delete_shopkeeper(int shop_nr);
 P_char sql_restore_shopkeeper(int shop_nr);
-void   sql_restore_shopkeepers(void);
-void   sql_save_dirty_shopkeepers(void);
+void sql_restore_shopkeepers(void);
+void sql_save_dirty_shopkeepers(void);
 
 // saved items
 bool sql_save_saved_item(P_obj item, const char *item_key);
@@ -222,17 +225,17 @@ void sql_load_siege_list(void);
 
 // ships
 struct ShipData;
-bool             sql_save_ship(struct ShipData *ship);
+bool sql_save_ship(struct ShipData *ship);
 struct ShipData *sql_load_ship(const char *owner_name);
-bool             sql_load_all_ships(void);
-bool             sql_delete_ship(const char *owner_name);
+bool sql_load_all_ships(void);
+bool sql_delete_ship(const char *owner_name);
 
 // guilds
 class Guild;
-bool   sql_save_guild(Guild *guild);
+bool sql_save_guild(Guild *guild);
 Guild *sql_load_guild(unsigned int guild_id);
-bool   sql_load_all_guilds(void);
-bool   sql_delete_guild(unsigned int guild_id);
+bool sql_load_all_guilds(void);
+bool sql_delete_guild(unsigned int guild_id);
 
 // spellbooks (conjurable mobs)
 bool sql_add_spellbook_mob(int pid, int mob_vnum);

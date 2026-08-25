@@ -45,29 +45,29 @@
  * external variables
  */
 
-extern P_char                        character_list;
-extern P_desc                        descriptor_list;
-extern P_obj                         object_list;
-extern P_room                        world;
-extern const int                     top_of_world;
-extern const struct stat_data        stat_factor[];
-extern const struct max_stat         max_stats[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_obj object_list;
+extern P_room world;
+extern const int top_of_world;
+extern const struct stat_data stat_factor[];
+extern const struct max_stat max_stats[];
 extern const struct racial_data_type racial_data[];
-extern struct con_app_type           con_app[];
-extern struct wis_app_type           wis_app[];
-extern struct zone_data             *zone_table;
-extern struct time_info_data         time_info;
-extern P_index                       obj_index;
-extern int                           last_update;
-extern int                           get_innate_regeneration(P_char);
-extern P_index                       mob_index;
-struct mm_ds                        *dead_trophy_pool = NULL;
-extern struct race_names             race_names_table[];
-extern float                         racial_exp_mods[LAST_RACE + 1];
-extern float                         racial_exp_mod_victims[LAST_RACE + 1];
+extern struct con_app_type con_app[];
+extern struct wis_app_type wis_app[];
+extern struct zone_data *zone_table;
+extern struct time_info_data time_info;
+extern P_index obj_index;
+extern int last_update;
+extern int get_innate_regeneration(P_char);
+extern P_index mob_index;
+struct mm_ds *dead_trophy_pool = NULL;
+extern struct race_names race_names_table[];
+extern float racial_exp_mods[LAST_RACE + 1];
+extern float racial_exp_mod_victims[LAST_RACE + 1];
 
-long  new_exp_table[TOTALLVLS];
-long  global_exp_limit;
+long new_exp_table[TOTALLVLS];
+long global_exp_limit;
 float exp_mods[EXPMOD_MAX + 1];
 
 void checkPeriodOfFame(P_char ch, char killer[1024]);
@@ -92,7 +92,8 @@ int vitality_limit(P_char ch)
 		// this is a hack.  remort'd undead will hit this condition almost always... they should use the
 		// racial mod, but many undead had their base vit setbit... also some mobs might be using
 		// the base vit (and not have a valid racial entry).  this will hopefully be a happy medium.
-		max = ch->points.base_vitality ? ch->points.base_vitality : racial_data[(int)GET_RACE(ch)].base_vitality;
+		max = ch->points.base_vitality ? ch->points.base_vitality :
+						 racial_data[(int)GET_RACE(ch)].base_vitality;
 	}
 
 	/* This is another pretty hack to increase movement points
@@ -144,17 +145,17 @@ int mana_regen(P_char ch, bool display_only)
 
 	switch (GET_POS(ch))
 	{
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			gain = 0;
-			break;
-		case STAT_SLEEPING:
-			gain <<= 1;
-			break;
-		case STAT_RESTING:
-			gain += (gain >> 1);
-			break;
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		gain = 0;
+		break;
+	case STAT_SLEEPING:
+		gain <<= 1;
+		break;
+	case STAT_RESTING:
+		gain += (gain >> 1);
+		break;
 	}
 
 	if (IS_AFFECTED(ch, AFF_MEDITATE))
@@ -181,7 +182,8 @@ int mana_regen(P_char ch, bool display_only)
 	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 		gain = 0;
 
-	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) && !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
+	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) &&
+	    !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
 		gain = 0;
 
 	return gain * gain / 8;
@@ -191,7 +193,7 @@ int mana_regen(P_char ch, bool display_only)
 
 int hit_regen(P_char ch, bool display_only)
 {
-	int                   gain;
+	int gain;
 	struct affected_type *af;
 
 	if (affected_by_spell(ch, TAG_BUILDING))
@@ -215,34 +217,34 @@ int hit_regen(P_char ch, bool display_only)
 	/* * Position calculations    */
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-			gain = 0; /* * overrides normal gains */
-			break;
-		case STAT_DYING:
-			gain = -2; /* * overrides normal gains */
-			break;
-		case STAT_INCAP:
-			gain = -1; /* * overrides normal gains */
-			break;
-		case STAT_SLEEPING:
-			gain += (gain < 0) ? (-(gain >> 1)) : (gain >> 1); /* * 150% */
-			break;
-		case STAT_RESTING:
-			gain += (gain < 0) ? (-(gain >> 2)) : (gain >> 2); /* * 125% */
-			break;
+	case STAT_DEAD:
+		gain = 0; /* * overrides normal gains */
+		break;
+	case STAT_DYING:
+		gain = -2; /* * overrides normal gains */
+		break;
+	case STAT_INCAP:
+		gain = -1; /* * overrides normal gains */
+		break;
+	case STAT_SLEEPING:
+		gain += (gain < 0) ? (-(gain >> 1)) : (gain >> 1); /* * 150% */
+		break;
+	case STAT_RESTING:
+		gain += (gain < 0) ? (-(gain >> 2)) : (gain >> 2); /* * 125% */
+		break;
 	}
 
 	switch (GET_POS(ch))
 	{
-		case POS_PRONE:
-			gain += (gain < 0) ? (-(gain >> 2)) : (gain >> 2); /* * 125% */
-			break;
-		case POS_KNEELING:
-			gain += (gain < 0) ? (-(gain >> 4)) : (gain >> 4); /* * 106% */
-			break;
-		case POS_SITTING:
-			gain += (gain < 0) ? (-(gain >> 3)) : (gain >> 3); /* * 113% */
-			break;
+	case POS_PRONE:
+		gain += (gain < 0) ? (-(gain >> 2)) : (gain >> 2); /* * 125% */
+		break;
+	case POS_KNEELING:
+		gain += (gain < 0) ? (-(gain >> 4)) : (gain >> 4); /* * 106% */
+		break;
+	case POS_SITTING:
+		gain += (gain < 0) ? (-(gain >> 3)) : (gain >> 3); /* * 113% */
+		break;
 	}
 
 	if (GET_COND(ch, FULL) == 0)
@@ -266,20 +268,22 @@ int hit_regen(P_char ch, bool display_only)
 
 	gain += EPIC_HEALTH_REGEN_MOD * get_epic_bonus(ch, EPIC_BONUS_HEALTH_REG);
 
-	if (IS_AFFECTED4(ch, AFF4_REGENERATION) || has_innate(ch, INNATE_REGENERATION) || (has_innate(ch, INNATE_WOODLAND_RENEWAL) && (world[ch->in_room].sector_type == SECT_FOREST)) ||
+	if (IS_AFFECTED4(ch, AFF4_REGENERATION) || has_innate(ch, INNATE_REGENERATION) ||
+	    (has_innate(ch, INNATE_WOODLAND_RENEWAL) &&
+	     (world[ch->in_room].sector_type == SECT_FOREST)) ||
 	    has_innate(ch, INNATE_ELEMENTAL_BODY))
 	{
 		switch (GET_STAT(ch))
 		{
-			case STAT_SLEEPING:
-				gain += 3 * get_innate_regeneration(ch);
-				break;
-			case STAT_RESTING:
-				gain += 2 * get_innate_regeneration(ch);
-				break;
-			default:
-				gain += get_innate_regeneration(ch);
-				break;
+		case STAT_SLEEPING:
+			gain += 3 * get_innate_regeneration(ch);
+			break;
+		case STAT_RESTING:
+			gain += 2 * get_innate_regeneration(ch);
+			break;
+		default:
+			gain += get_innate_regeneration(ch);
+			break;
 		}
 	}
 
@@ -315,7 +319,9 @@ int hit_regen(P_char ch, bool display_only)
 		{
 			gain >>= 1;
 		}
-		else if (has_innate(ch, INNATE_WOODLAND_RENEWAL) && (world[ch->in_room].sector_type == SECT_FOREST)) // can regen in battle in forest - Drannak
+		else if (has_innate(ch, INNATE_WOODLAND_RENEWAL) &&
+			 (world[ch->in_room].sector_type ==
+			  SECT_FOREST)) // can regen in battle in forest - Drannak
 		{
 			gain >>= 1;
 		}
@@ -325,12 +331,15 @@ int hit_regen(P_char ch, bool display_only)
 		}
 	}
 
-	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) && !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS) && !IS_MAGIC_DARK(ch->in_room))
+	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) &&
+	    !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS) &&
+	    !IS_MAGIC_DARK(ch->in_room))
 	{
 		gain = 0;
 	}
 
-	if (IS_AFFECTED3(ch, AFF3_SWIMMING) || IS_AFFECTED2(ch, AFF2_HOLDING_BREATH) || IS_AFFECTED2(ch, AFF2_IS_DROWNING))
+	if (IS_AFFECTED3(ch, AFF3_SWIMMING) || IS_AFFECTED2(ch, AFF2_HOLDING_BREATH) ||
+	    IS_AFFECTED2(ch, AFF2_IS_DROWNING))
 	{
 		gain = 0;
 	}
@@ -345,7 +354,7 @@ int hit_regen(P_char ch, bool display_only)
 int move_regen(P_char ch, bool display_only)
 {
 	float gain;
-	int   endurance;
+	int endurance;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -365,7 +374,9 @@ int move_regen(P_char ch, bool display_only)
 		return 0;
 	}
 
-	if (IS_AFFECTED3(ch, AFF3_SWIMMING) || IS_AFFECTED2(ch, AFF2_HOLDING_BREATH) || IS_AFFECTED2(ch, AFF2_IS_DROWNING) || IS_FIGHTING(ch) || IS_DESTROYING(ch) || IS_STUNNED(ch))
+	if (IS_AFFECTED3(ch, AFF3_SWIMMING) || IS_AFFECTED2(ch, AFF2_HOLDING_BREATH) ||
+	    IS_AFFECTED2(ch, AFF2_IS_DROWNING) || IS_FIGHTING(ch) || IS_DESTROYING(ch) ||
+	    IS_STUNNED(ch))
 	{
 		return 0;
 	}
@@ -395,32 +406,32 @@ int move_regen(P_char ch, bool display_only)
 	 */
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			gain = 0;
-			break;
-		case STAT_SLEEPING:
-			gain *= get_property("move.regen.sleeping", 1.75);
-			break;
-		case STAT_RESTING:
-			gain *= get_property("move.regen.resting", 1.33);
-			break;
-		default:
-			break;
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		gain = 0;
+		break;
+	case STAT_SLEEPING:
+		gain *= get_property("move.regen.sleeping", 1.75);
+		break;
+	case STAT_RESTING:
+		gain *= get_property("move.regen.resting", 1.33);
+		break;
+	default:
+		break;
 	}
 
 	switch (GET_POS(ch))
 	{
-		case POS_PRONE:
-			gain *= get_property("move.regen.prone", 1.25);
-			break;
-		case POS_KNEELING:
-		case POS_SITTING:
-			gain *= get_property("move.regen.sitting", 1.13);
-			break;
-		default:
-			break;
+	case POS_PRONE:
+		gain *= get_property("move.regen.prone", 1.25);
+		break;
+	case POS_KNEELING:
+	case POS_SITTING:
+		gain *= get_property("move.regen.sitting", 1.13);
+		break;
+	default:
+		break;
 	}
 
 	if (gain || ch->points.move_reg < 0)
@@ -452,7 +463,7 @@ int move_regen(P_char ch, bool display_only)
 
 int ward_regen(P_char ch, bool display_only)
 {
-	int                   gain;
+	int gain;
 	struct affected_type *af;
 
 	if (affected_by_spell(ch, TAG_BUILDING))
@@ -476,9 +487,9 @@ int ward_regen(P_char ch, bool display_only)
 	/* * Position calculations    */
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-			gain = 0; /* * overrides normal gains */
-			break;
+	case STAT_DEAD:
+		gain = 0; /* * overrides normal gains */
+		break;
 	}
 
 	if (CHAR_IN_HEAL_ROOM(ch))
@@ -504,21 +515,25 @@ int ward_regen(P_char ch, bool display_only)
 void githyanki_weapon(P_char ch)
 {
 	P_obj sword;
-	char  strn[256];
+	char strn[256];
 
-	if (GET_CLASS(ch, CLASS_NECROMANCER) || GET_CLASS(ch, CLASS_SORCERER) || GET_CLASS(ch, CLASS_PSIONICIST) || GET_CLASS(ch, CLASS_CONJURER) || GET_CLASS(ch, CLASS_ILLUSIONIST) ||
-	    GET_CLASS(ch, CLASS_SUMMONER))
+	if (GET_CLASS(ch, CLASS_NECROMANCER) || GET_CLASS(ch, CLASS_SORCERER) ||
+	    GET_CLASS(ch, CLASS_PSIONICIST) || GET_CLASS(ch, CLASS_CONJURER) ||
+	    GET_CLASS(ch, CLASS_ILLUSIONIST) || GET_CLASS(ch, CLASS_SUMMONER))
 	{
 		sword = read_object(19, VIRTUAL);
 		if (sword)
 		{
 			snprintf(strn, 256, "staff silverish silver %sz", GET_NAME(ch));
 			sword->str_mask = STRUNG_KEYS;
-			sword->name     = str_dup(strn);
+			sword->name = str_dup(strn);
 
 			obj_to_char(sword, ch);
-			send_to_char("&+CWith a blinding flash of light, a staff suddenly appears in your hands!\r\n", ch);
-			act("&+CIn a blinding flash of light, a staff suddenly appears in $n's hands!", FALSE, ch, 0, 0, TO_ROOM);
+			send_to_char(
+				"&+CWith a blinding flash of light, a staff suddenly appears in your hands!\r\n",
+				ch);
+			act("&+CIn a blinding flash of light, a staff suddenly appears in $n's hands!",
+			    FALSE, ch, 0, 0, TO_ROOM);
 		}
 	}
 	else if (GET_CLASS(ch, CLASS_WARRIOR) || GET_CLASS(ch, CLASS_REAVER))
@@ -528,11 +543,14 @@ void githyanki_weapon(P_char ch)
 		{
 			snprintf(strn, 256, "warhammer hammer silverish silver %sz", GET_NAME(ch));
 			sword->str_mask = STRUNG_KEYS;
-			sword->name     = str_dup(strn);
+			sword->name = str_dup(strn);
 
 			obj_to_char(sword, ch);
-			send_to_char("&+CWith a blinding flash of light, a warhammer suddenly appears in your hands!\r\n", ch);
-			act("&+CIn a blinding flash of light, a warhammer suddenly appears in $n's hands!", FALSE, ch, 0, 0, TO_ROOM);
+			send_to_char(
+				"&+CWith a blinding flash of light, a warhammer suddenly appears in your hands!\r\n",
+				ch);
+			act("&+CIn a blinding flash of light, a warhammer suddenly appears in $n's hands!",
+			    FALSE, ch, 0, 0, TO_ROOM);
 		}
 	}
 	else if (GET_CLASS(ch, CLASS_ANTIPALADIN))
@@ -540,13 +558,17 @@ void githyanki_weapon(P_char ch)
 		sword = read_object(18, VIRTUAL);
 		if (sword)
 		{
-			snprintf(strn, 256, "longsword sword long silverish silver %sz", GET_NAME(ch));
+			snprintf(strn, 256, "longsword sword long silverish silver %sz",
+				 GET_NAME(ch));
 			sword->str_mask = STRUNG_KEYS;
-			sword->name     = str_dup(strn);
+			sword->name = str_dup(strn);
 
 			obj_to_char(sword, ch);
-			send_to_char("&+CWith a blinding flash of light, a sword suddenly appears in your hands!\r\n", ch);
-			act("&+CIn a blinding flash of light, a sword suddenly appears in $n's hands!", FALSE, ch, 0, 0, TO_ROOM);
+			send_to_char(
+				"&+CWith a blinding flash of light, a sword suddenly appears in your hands!\r\n",
+				ch);
+			act("&+CIn a blinding flash of light, a sword suddenly appears in $n's hands!",
+			    FALSE, ch, 0, 0, TO_ROOM);
 		}
 	}
 	else
@@ -597,7 +619,8 @@ void advance_level(P_char ch)
 		ch->specials.undead_spell_slots[(GET_LEVEL(ch) + 4) / 5] = 0;
 	}
 
-	send_to_char("&+WYou raise a level!&N\r\n", IS_SET(ch->specials.act, PLR_MORPH) ? ch->only.pc->switched : ch);
+	send_to_char("&+WYou raise a level!&N\r\n",
+		     IS_SET(ch->specials.act, PLR_MORPH) ? ch->only.pc->switched : ch);
 	logit(LOG_LEVEL, "Level %2d: %s", GET_LEVEL(ch), GET_NAME(ch));
 	ch->only.pc->prestige++;
 
@@ -606,7 +629,8 @@ void advance_level(P_char ch)
 		int group_size = 1;
 		for (struct group_list *gl = ch->group; gl; gl = gl->next)
 		{
-			if (IS_PC(gl->ch) && gl->ch != ch && (GET_ASSOC(gl->ch) == GET_ASSOC(ch)) && gl->ch->in_room == ch->in_room)
+			if (IS_PC(gl->ch) && gl->ch != ch && (GET_ASSOC(gl->ch) == GET_ASSOC(ch)) &&
+			    gl->ch->in_room == ch->in_room)
 				group_size++;
 		}
 
@@ -634,21 +658,23 @@ void advance_level(P_char ch)
 		//   REMOVE_BIT(ch->specials.act2, PLR2_NCHAT);
 	}
 
-	if (IS_PC(ch) && IS_GITHYANKI(ch) && (GET_LEVEL(ch) == 50) && (ch->only.pc->highest_level < 50))
+	if (IS_PC(ch) && IS_GITHYANKI(ch) && (GET_LEVEL(ch) == 50) &&
+	    (ch->only.pc->highest_level < 50))
 		githyanki_weapon(ch);
 
 	if (IS_PC(ch) && (ch->only.pc->highest_level < GET_LEVEL(ch)))
 		ch->only.pc->highest_level = GET_LEVEL(ch);
 
-	if ((GET_LEVEL(ch) == get_property("exp.maxExpLevel", 45)) && !IS_HARDCORE(ch) && (GET_RACE(ch) != RACE_LICH))
+	if ((GET_LEVEL(ch) == get_property("exp.maxExpLevel", 45)) && !IS_HARDCORE(ch) &&
+	    (GET_RACE(ch) != RACE_LICH))
 	{
 		char buf[512];
-		snprintf(buf,
-		         512,
-		         "You are now level %d and are considered among the high level adventurers\n"
-		         "of Duris!  The path now set before you is a difficult one, as you must now\n"
-		         "battle the higher forces of the realms to further your conquest!\n",
-		         get_property("exp.maxExpLevel", 45));
+		snprintf(
+			buf, 512,
+			"You are now level %d and are considered among the high level adventurers\n"
+			"of Duris!  The path now set before you is a difficult one, as you must now\n"
+			"battle the higher forces of the realms to further your conquest!\n",
+			get_property("exp.maxExpLevel", 45));
 		send_to_char(buf, ch);
 	}
 
@@ -679,9 +705,8 @@ void advance_level(P_char ch)
 	// Send GMCP update for level change
 	gmcp_char_status(ch);
 
-
-  /* Schedule a deferred save to avoid lag from large inventories */
-  persistence_schedule_level_checkpoint(ch, 1, 2, "advance_level");
+	/* Schedule a deferred save to avoid lag from large inventories */
+	persistence_schedule_level_checkpoint(ch, 1, 2, "advance_level");
 }
 
 /*
@@ -697,7 +722,8 @@ void lose_level(P_char ch)
 	if (IS_HARDCORE(ch) && !hardcore_config_level_loss_allowed(GET_LEVEL(ch)))
 		return;
 
-	send_to_char("&=LRYou lose a level!&N\r\n", IS_SET(ch->specials.act, PLR_MORPH) ? ch->only.pc->switched : ch);
+	send_to_char("&=LRYou lose a level!&N\r\n",
+		     IS_SET(ch->specials.act, PLR_MORPH) ? ch->only.pc->switched : ch);
 	logit(LOG_LEVEL, "%s lost a level! (%d)", GET_NAME(ch), GET_LEVEL(ch));
 
 	forget_spells(ch, -1);
@@ -707,7 +733,7 @@ void lose_level(P_char ch)
 	 */
 	if (GET_LEVEL(ch) < 26)
 	{
-		ch->points.base_hit  = MAX(1, (ch->points.base_hit - 3));
+		ch->points.base_hit = MAX(1, (ch->points.base_hit - 3));
 		ch->points.base_mana = MAX(0, (ch->points.base_mana - 3));
 	}
 
@@ -737,7 +763,7 @@ void clear_title(P_char ch)
 
 void display_gain(P_char ch, int gain, int type)
 {
-	char   buffer[MAX_STRING_LENGTH];
+	char buffer[MAX_STRING_LENGTH];
 	P_char tch;
 
 	// only display PC's
@@ -752,7 +778,8 @@ void display_gain(P_char ch, int gain, int type)
 	}
 	else
 	{
-		logexp("%s gained %d (%d) experience. points.curr_exp = %d, needed for level = %d\n", GET_NAME(ch), gain, type, GET_EXP(ch), new_exp_table[GET_LEVEL(ch) + 1]);
+		logexp("%s gained %d (%d) experience. points.curr_exp = %d, needed for level = %d\n",
+		       GET_NAME(ch), gain, type, GET_EXP(ch), new_exp_table[GET_LEVEL(ch) + 1]);
 	}
 	if (IS_SET(ch->specials.act2, PLR2_EXP) && type == EXP_KILL)
 	{
@@ -764,7 +791,7 @@ void display_gain(P_char ch, int gain, int type)
 void update_exp_table()
 {
 	char buf[128];
-	int  i;
+	int i;
 
 	new_exp_table[0] = 0;
 	global_exp_limit = 0;
@@ -814,11 +841,14 @@ float gain_exp_modifiers(P_char ch, P_char victim, float XP)
 
 	if (victim)
 	{
-		if (CHAR_IN_TOWN(ch) && (GET_LEVEL(victim) > HOMETOWN_EXP_LEVEL_LIMIT) && !IS_PC(victim))
+		if (CHAR_IN_TOWN(ch) && (GET_LEVEL(victim) > HOMETOWN_EXP_LEVEL_LIMIT) &&
+		    !IS_PC(victim))
 		{
 			XP *= exp_mods[EXPMOD_VICT_HOMETOWN];
 			if (!number(0, 49)) // Limit the spam
-				send_to_char("&+gThis being a hometown, you receive fewer exps...&n\r\n", ch);
+				send_to_char(
+					"&+gThis being a hometown, you receive fewer exps...&n\r\n",
+					ch);
 		}
 
 		if (GET_LEVEL(victim) > 20)
@@ -990,11 +1020,11 @@ int exp_level_percent_modifier(P_char killer, P_char victim)
 
 int gain_exp(P_char ch, P_char victim, const int value, int type)
 {
-	int    goodcap  = get_property("exp.level.cap.good", 15);
-	int    evilcap  = get_property("exp.level.cap.evil", 15);
-	int    levelcap = sql_level_cap(GET_RACEWAR(ch));
-	bool   pvp      = FALSE;
-	float  XP       = MAX(1, value);
+	int goodcap = get_property("exp.level.cap.good", 15);
+	int evilcap = get_property("exp.level.cap.evil", 15);
+	int levelcap = sql_level_cap(GET_RACEWAR(ch));
+	bool pvp = FALSE;
+	float XP = MAX(1, value);
 	P_char master;
 
 	if (ch && IS_PC(ch))
@@ -1017,12 +1047,14 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 
 	if (victim && type != EXP_RESURRECT)
 	{
-		if ((IS_PC_PET(victim) && type != EXP_HEALING) || IS_SHOPKEEPER(victim) || IS_ROOM(victim->in_room, ROOM_GUILD | ROOM_SAFE))
+		if ((IS_PC_PET(victim) && type != EXP_HEALING) || IS_SHOPKEEPER(victim) ||
+		    IS_ROOM(victim->in_room, ROOM_GUILD | ROOM_SAFE))
 		{
 			return 0;
 		}
 		// If they're ready to level and capped by the levelcap, then only give 2/3 exp.
-		if ((levelcap < 56) && (GET_LEVEL(ch) >= levelcap) && (new_exp_table[GET_LEVEL(ch) + 1] <= GET_EXP(ch)))
+		if ((levelcap < 56) && (GET_LEVEL(ch) >= levelcap) &&
+		    (new_exp_table[GET_LEVEL(ch) + 1] <= GET_EXP(ch)))
 			XP *= exp_mods[EXPMOD_OVER_LEVEL_CAP];
 	}
 
@@ -1080,7 +1112,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		if (tank && tank != ch && IS_PC(tank) && grouped(tank, ch))
 		{
 			// Powerleveling stopgap
-			if (GET_LEVEL(tank) >= GET_LEVEL(ch) - (IS_RACEWAR_GOOD(ch) ? goodcap : evilcap))
+			if (GET_LEVEL(tank) >=
+			    GET_LEVEL(ch) - (IS_RACEWAR_GOOD(ch) ? goodcap : evilcap))
 			{
 				gain_exp(tank, victim, XP, EXP_TANKING);
 			}
@@ -1114,7 +1147,9 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		if (!attacker) // only for healing in fight
 			return 0;
 
-		if ((GET_LEVEL(victim) <= GET_LEVEL(ch) - (GOOD_RACE(ch) ? goodcap : evilcap)) || (GET_LEVEL(victim) >= GET_LEVEL(ch) + (GOOD_RACE(ch) ? goodcap : evilcap))) // powerleveling stopgap
+		if ((GET_LEVEL(victim) <= GET_LEVEL(ch) - (GOOD_RACE(ch) ? goodcap : evilcap)) ||
+		    (GET_LEVEL(victim) >=
+		     GET_LEVEL(ch) + (GOOD_RACE(ch) ? goodcap : evilcap))) // powerleveling stopgap
 		{
 			return 0;
 		}
@@ -1158,7 +1193,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		{
 			for (struct group_list *gl = ch->group; gl; gl = gl->next)
 			{
-				if (gl->ch != ch && IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) && ch->in_room == gl->ch->in_room)
+				if (gl->ch != ch && IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) &&
+				    ch->in_room == gl->ch->in_room)
 				{
 					group_size = group_size + 1;
 				}
@@ -1218,12 +1254,14 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	else if (type == EXP_DEATH)
 	{
 		// Goods don't lose exp on death untill over the threshold.
-		if (IS_RACEWAR_GOOD(ch) && GET_LEVEL(ch) < (int)get_property("exp.goodieDeathExpLossLevelThreshold", 20))
+		if (IS_RACEWAR_GOOD(ch) &&
+		    GET_LEVEL(ch) < (int)get_property("exp.goodieDeathExpLossLevelThreshold", 20))
 		{
 			return 0;
 		}
 
-		XP = -1 * (new_exp_table[GET_LEVEL(ch) + 1] * get_property("exp.death.level.loss", 0.10));
+		XP = -1 * (new_exp_table[GET_LEVEL(ch) + 1] *
+			   get_property("exp.death.level.loss", 0.10));
 		// We reduce the exp loss from death by 2x of the global modifier if the global modifier is less than 1/2.
 		// So, .4 -> 80% modifier, .3 -> 60% modifier, .15 -> 30% modifier, etc.
 		if (exp_mods[EXPMOD_GLOBAL] < .5)
@@ -1305,13 +1343,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		{
 			logit(LOG_EXP,
 			      "KILL EXP: %s (%d) killed by %s (%d): old exp: %d, new exp: %d, +exp: %d",
-			      GET_NAME(victim),
-			      GET_LEVEL(victim),
-			      GET_NAME(ch),
-			      GET_LEVEL(ch),
-			      GET_EXP(ch),
-			      GET_EXP(ch) + (int)XP,
-			      (int)XP);
+			      GET_NAME(victim), GET_LEVEL(victim), GET_NAME(ch), GET_LEVEL(ch),
+			      GET_EXP(ch), GET_EXP(ch) + (int)XP, (int)XP);
 		}
 
 		if (pvp)
@@ -1329,7 +1362,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		XP = gain_exp_modifiers_race_only(ch, NULL, XP);
 		if (GET_LEVEL(ch) < MINLVLIMMORTAL)
 		{
-			logit(LOG_EXP, "W-QUEST EXP: %s - level %d: old exp: %d, new exp: %d, +exp: %d", GET_NAME(ch), GET_LEVEL(ch), GET_EXP(ch), GET_EXP(ch) + (int)XP, (int)XP);
+			logit(LOG_EXP,
+			      "W-QUEST EXP: %s - level %d: old exp: %d, new exp: %d, +exp: %d",
+			      GET_NAME(ch), GET_LEVEL(ch), GET_EXP(ch), GET_EXP(ch) + (int)XP,
+			      (int)XP);
 		}
 		// debug("world quest 1 (%d)", (int)XP);
 	}
@@ -1338,7 +1374,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		XP = gain_exp_modifiers_race_only(ch, NULL, XP);
 		if (GET_LEVEL(ch) < MINLVLIMMORTAL)
 		{
-			logit(LOG_EXP, "QUEST EXP: %s - level %d: old exp: %d, new exp: %d, +exp: %d", GET_NAME(ch), GET_LEVEL(ch), GET_EXP(ch), GET_EXP(ch) + (int)XP, (int)XP);
+			logit(LOG_EXP,
+			      "QUEST EXP: %s - level %d: old exp: %d, new exp: %d, +exp: %d",
+			      GET_NAME(ch), GET_LEVEL(ch), GET_EXP(ch), GET_EXP(ch) + (int)XP,
+			      (int)XP);
 		}
 		// debug("quest 1 (%d)", (int)XP);
 	}
@@ -1361,7 +1400,9 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	// }
 
 	// increase exp only to some limit (cumulative exp for mortals)
-	if (GET_LEVEL(ch) < MINLVLIMMORTAL && (XP_final < 0 || (GET_EXP(ch) < global_exp_limit) && GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1])))
+	if (GET_LEVEL(ch) < MINLVLIMMORTAL &&
+	    (XP_final < 0 || (GET_EXP(ch) < global_exp_limit) &&
+				     GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1])))
 	{
 		GET_EXP(ch) += (int)XP_final;
 		mark_player_dirty(GET_PID(ch));
@@ -1376,11 +1417,15 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		// Hardcores should level via exp only. - Drannak 11/30/12
 		// Liches can lvl exp only too since they are solo on 3rd racewar side (again). 7/7/2015
-		if (((IS_HARDCORE(ch) && hardcore_config_get()->level_exp_bypass_property_cap) || GET_RACE(ch) == RACE_LICH) && (GET_LEVEL(ch) < levelcap))
+		if (((IS_HARDCORE(ch) && hardcore_config_get()->level_exp_bypass_property_cap) ||
+		     GET_RACE(ch) == RACE_LICH) &&
+		    (GET_LEVEL(ch) < levelcap))
 		{
-			for (int i = GET_LEVEL(ch) + 1; (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
+			for (int i = GET_LEVEL(ch) + 1;
+			     (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
 			{
-				logexp("player %s advancing level, p.exp = %d, newlevelexp = %d, levelcap = %d (a)", GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
+				logexp("player %s advancing level, p.exp = %d, newlevelexp = %d, levelcap = %d (a)",
+				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
 				advance_level(ch);
 			}
@@ -1389,9 +1434,11 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		{
 			// Level cap capped by exp.maxExpLevel too.
 			levelcap = MIN(levelcap, get_property("exp.maxExpLevel", 46));
-			for (int i = GET_LEVEL(ch) + 1; (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
+			for (int i = GET_LEVEL(ch) + 1;
+			     (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
 			{
-				logexp("player %s advancing level, p.exp = %d, newlevelexp = %d, levelcap = %d (b)", GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
+				logexp("player %s advancing level, p.exp = %d, newlevelexp = %d, levelcap = %d (b)",
+				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
 				advance_level(ch);
 			}
@@ -1401,7 +1448,9 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		while (GET_EXP(ch) < 0)
 		{
-			logexp("LOSING LEVEL: %s - old exp: %d, new exp %d, difference: %d", J_NAME(ch), GET_EXP(ch), GET_EXP(ch) + new_exp_table[GET_LEVEL(ch)], new_exp_table[GET_LEVEL(ch)]);
+			logexp("LOSING LEVEL: %s - old exp: %d, new exp %d, difference: %d",
+			       J_NAME(ch), GET_EXP(ch), GET_EXP(ch) + new_exp_table[GET_LEVEL(ch)],
+			       new_exp_table[GET_LEVEL(ch)]);
 			GET_EXP(ch) += new_exp_table[GET_LEVEL(ch)];
 			lose_level(ch);
 		}
@@ -1425,7 +1474,7 @@ int gain_condition(P_char ch, int condition, int value)
 {
 	int intoxicated = 0, i, num;
 
-	GET_COND(ch, FULL)   = -1;
+	GET_COND(ch, FULL) = -1;
 	GET_COND(ch, THIRST) = -1;
 
 	for (i = 0; i < 3; i++)
@@ -1453,48 +1502,50 @@ int gain_condition(P_char ch, int condition, int value)
 
 			switch (i)
 			{
-				case FULL:
-					if (GET_COND(ch, i) >= 0)
-					{
-						if (!GET_COND(ch, i))
-							//          send_to_char("&+RYou feel yourself weakening from intense hunger..\r\n", ch);
-							send_to_char("&+RYou are hungry.\r\n", ch);
-						else if (GET_COND(ch, i) < 3 && !IS_SET(ch->specials.act, PLR_WRITE))
-							send_to_char("&+mYou are getting hungry.\r\n", ch);
-						if (IS_AFFECTED3(ch, AFF3_FAMINE))
-							GET_COND(ch, i) = 0;
-						/*        if (!GET_COND(ch,i))
+			case FULL:
+				if (GET_COND(ch, i) >= 0)
+				{
+					if (!GET_COND(ch, i))
+						//          send_to_char("&+RYou feel yourself weakening from intense hunger..\r\n", ch);
+						send_to_char("&+RYou are hungry.\r\n", ch);
+					else if (GET_COND(ch, i) < 3 &&
+						 !IS_SET(ch->specials.act, PLR_WRITE))
+						send_to_char("&+mYou are getting hungry.\r\n", ch);
+					if (IS_AFFECTED3(ch, AFF3_FAMINE))
+						GET_COND(ch, i) = 0;
+					/*        if (!GET_COND(ch,i))
 						          {
 						            num = (GET_MAX_HIT(ch) / 48) + 4;
 						            if ((GET_HIT(ch) - num) < 1) num = GET_HIT(ch) - 1;
 
 						            if (damage(ch,ch,num,TYPE_UNDEFINED)) return TRUE;
 						          }*/
-					}
-					break;
-				case THIRST:
-					if (GET_COND(ch, i) >= 0)
+				}
+				break;
+			case THIRST:
+				if (GET_COND(ch, i) >= 0)
+				{
+					if (!GET_COND(ch, i))
 					{
-						if (!GET_COND(ch, i))
-						{
-							//          send_to_char("&+RYou feel yourself weakening from intense thirst..\r\n", ch);
-							send_to_char("&+RYou are thirsty.\r\n", ch);
+						//          send_to_char("&+RYou feel yourself weakening from intense thirst..\r\n", ch);
+						send_to_char("&+RYou are thirsty.\r\n", ch);
 
-							/*            num = (GET_MAX_HIT(ch) / 24) + 8;
+						/*            num = (GET_MAX_HIT(ch) / 24) + 8;
 							            if ((GET_HIT(ch) - num) < 1) num = GET_HIT(ch) - 1;
 
 							            if (damage(ch, ch, num, TYPE_UNDEFINED)) return TRUE;*/
-						}
-						else if (GET_COND(ch, i) < 3 && !IS_SET(ch->specials.act, PLR_WRITE))
-							send_to_char("&+mYou are getting thirsty.\r\n", ch);
 					}
-					break;
-				case DRUNK:
-					if (intoxicated && !GET_COND(ch, i))
-						send_to_char("&+mYou are now sober.\r\n", ch);
-					break;
-				default:
-					break;
+					else if (GET_COND(ch, i) < 3 &&
+						 !IS_SET(ch->specials.act, PLR_WRITE))
+						send_to_char("&+mYou are getting thirsty.\r\n", ch);
+				}
+				break;
+			case DRUNK:
+				if (intoxicated && !GET_COND(ch, i))
+					send_to_char("&+mYou are now sober.\r\n", ch);
+				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -1506,7 +1557,7 @@ int gain_condition(P_char ch, int condition, int value)
 void point_update(void)
 {
 	P_char i, i_next;
-	char   Gbuf1[MAX_STRING_LENGTH], timestr[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], timestr[MAX_STRING_LENGTH];
 	time_t ct;
 
 	*Gbuf1 = '\0';
@@ -1561,7 +1612,9 @@ void point_update(void)
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 				if (affected_by_spell(i, TAG_CTF))
 				{
-					send_to_char("You're idling has caused you to drop the flag.\r\n", i);
+					send_to_char(
+						"You're idling has caused you to drop the flag.\r\n",
+						i);
 					while (affected_by_spell(i, TAG_CTF))
 					{
 						drop_ctf_flag(i);
@@ -1574,11 +1627,14 @@ void point_update(void)
 			if ((i->specials.timer > 15) && (GET_LEVEL(i) < MINLVLIMMORTAL || !i->desc))
 			{
 				act("$n disappears into the void.", TRUE, i, 0, 0, TO_ROOM);
-				send_to_char("You have been idle, and are pulled into a void.\r\n", i);
+				send_to_char("You have been idle, and are pulled into a void.\r\n",
+					     i);
 
-				logit(LOG_COMM, "idle rent for %s in %d.", GET_NAME(i), world[i->in_room].number);
+				logit(LOG_COMM, "idle rent for %s in %d.", GET_NAME(i),
+				      world[i->in_room].number);
 
-				loginlog(i->player.level, "%s has voided in [%d] @ %s.", GET_NAME(i), world[i->in_room].number, timestr);
+				loginlog(i->player.level, "%s has voided in [%d] @ %s.",
+					 GET_NAME(i), world[i->in_room].number, timestr);
 				sql_log(i, CONNECTLOG, "Idle Rent");
 
 				// How could this ever be TRUE?  Won't ch->player.name always exist for an in-game char?
@@ -1586,11 +1642,13 @@ void point_update(void)
 				{
 					if (i->only.pc != NULL)
 					{
-						debug("Char pid %d (%s) has no name!", GET_PID(i), get_player_name_from_pid(GET_PID(i)));
+						debug("Char pid %d (%s) has no name!", GET_PID(i),
+						      get_player_name_from_pid(GET_PID(i)));
 					}
 					else
 					{
-						logit(LOG_DEBUG, "Messed up PC on char list has no name, is a pc, but no pc data, attempting to remove.");
+						logit(LOG_DEBUG,
+						      "Messed up PC on char list has no name, is a pc, but no pc data, attempting to remove.");
 						if (i->desc)
 							close_socket(i->desc);
 						extract_char(i);
@@ -1641,68 +1699,70 @@ void update_exp_mods()
 {
 	exp_mods[EXPMOD_NONE] = 0;
 	// gain.exp.mod.*
-	exp_mods[EXPMOD_RES_EVIL]   = get_property("gain.exp.mod.res.evil", 0.750);
+	exp_mods[EXPMOD_RES_EVIL] = get_property("gain.exp.mod.res.evil", 0.750);
 	exp_mods[EXPMOD_RES_NORMAL] = get_property("gain.exp.mod.res.normal", 0.800);
 
-	exp_mods[EXPMOD_CLS_WARRIOR]     = get_property("gain.exp.mod.warrior", 1.000);
-	exp_mods[EXPMOD_CLS_RANGER]      = get_property("gain.exp.mod.ranger", 1.000);
-	exp_mods[EXPMOD_CLS_PSIONICIST]  = get_property("gain.exp.mod.psionicist", 1.000);
-	exp_mods[EXPMOD_CLS_PALADIN]     = get_property("gain.exp.mod.paladin", 1.000);
+	exp_mods[EXPMOD_CLS_WARRIOR] = get_property("gain.exp.mod.warrior", 1.000);
+	exp_mods[EXPMOD_CLS_RANGER] = get_property("gain.exp.mod.ranger", 1.000);
+	exp_mods[EXPMOD_CLS_PSIONICIST] = get_property("gain.exp.mod.psionicist", 1.000);
+	exp_mods[EXPMOD_CLS_PALADIN] = get_property("gain.exp.mod.paladin", 1.000);
 	exp_mods[EXPMOD_CLS_ANTIPALADIN] = get_property("gain.exp.mod.antipaladin", 1.000);
-	exp_mods[EXPMOD_CLS_CLERIC]      = get_property("gain.exp.mod.cleric", 2.000);
-	exp_mods[EXPMOD_CLS_MONK]        = get_property("gain.exp.mod.monk", 1.000);
-	exp_mods[EXPMOD_CLS_DRUID]       = get_property("gain.exp.mod.druid", 1.000);
-	exp_mods[EXPMOD_CLS_SHAMAN]      = get_property("gain.exp.mod.shaman", 1.000);
-	exp_mods[EXPMOD_CLS_SORCERER]    = get_property("gain.exp.mod.sorcerer", 1.000);
+	exp_mods[EXPMOD_CLS_CLERIC] = get_property("gain.exp.mod.cleric", 2.000);
+	exp_mods[EXPMOD_CLS_MONK] = get_property("gain.exp.mod.monk", 1.000);
+	exp_mods[EXPMOD_CLS_DRUID] = get_property("gain.exp.mod.druid", 1.000);
+	exp_mods[EXPMOD_CLS_SHAMAN] = get_property("gain.exp.mod.shaman", 1.000);
+	exp_mods[EXPMOD_CLS_SORCERER] = get_property("gain.exp.mod.sorcerer", 1.000);
 	exp_mods[EXPMOD_CLS_NECROMANCER] = get_property("gain.exp.mod.necromancer", 0.638);
-	exp_mods[EXPMOD_CLS_CONJURER]    = get_property("gain.exp.mod.conjurer", 1.000);
-	exp_mods[EXPMOD_CLS_ROGUE]       = get_property("gain.exp.mod.rogue", 1.000);
-	exp_mods[EXPMOD_CLS_ASSASSIN]    = get_property("gain.exp.mod.assassin", 1.000);
-	exp_mods[EXPMOD_CLS_MERCENARY]   = get_property("gain.exp.mod.mercenary", 0.638);
-	exp_mods[EXPMOD_CLS_BARD]        = get_property("gain.exp.mod.bard", 1.000);
-	exp_mods[EXPMOD_CLS_THIEF]       = get_property("gain.exp.mod.thief", 1.000);
-	exp_mods[EXPMOD_CLS_WARLOCK]     = get_property("gain.exp.mod.warlock", 1.000);
-	exp_mods[EXPMOD_CLS_MINDFLAYER]  = get_property("gain.exp.mod.mindflayer", 1.000);
-	exp_mods[EXPMOD_CLS_ALCHEMIST]   = get_property("gain.exp.mod.alchemist", 1.000);
-	exp_mods[EXPMOD_CLS_BERSERKER]   = get_property("gain.exp.mod.berserker", 1.000);
-	exp_mods[EXPMOD_CLS_REAVER]      = get_property("gain.exp.mod.reaver", 1.000);
+	exp_mods[EXPMOD_CLS_CONJURER] = get_property("gain.exp.mod.conjurer", 1.000);
+	exp_mods[EXPMOD_CLS_ROGUE] = get_property("gain.exp.mod.rogue", 1.000);
+	exp_mods[EXPMOD_CLS_ASSASSIN] = get_property("gain.exp.mod.assassin", 1.000);
+	exp_mods[EXPMOD_CLS_MERCENARY] = get_property("gain.exp.mod.mercenary", 0.638);
+	exp_mods[EXPMOD_CLS_BARD] = get_property("gain.exp.mod.bard", 1.000);
+	exp_mods[EXPMOD_CLS_THIEF] = get_property("gain.exp.mod.thief", 1.000);
+	exp_mods[EXPMOD_CLS_WARLOCK] = get_property("gain.exp.mod.warlock", 1.000);
+	exp_mods[EXPMOD_CLS_MINDFLAYER] = get_property("gain.exp.mod.mindflayer", 1.000);
+	exp_mods[EXPMOD_CLS_ALCHEMIST] = get_property("gain.exp.mod.alchemist", 1.000);
+	exp_mods[EXPMOD_CLS_BERSERKER] = get_property("gain.exp.mod.berserker", 1.000);
+	exp_mods[EXPMOD_CLS_REAVER] = get_property("gain.exp.mod.reaver", 1.000);
 	exp_mods[EXPMOD_CLS_ILLUSIONIST] = get_property("gain.exp.mod.illusionist", 1.000);
-	exp_mods[EXPMOD_CLS_BLIGHTER]    = get_property("gain.exp.mod.blighter", 1.000);
-	exp_mods[EXPMOD_CLS_DREADLORD]   = get_property("gain.exp.mod.dreadlord", 1.000);
+	exp_mods[EXPMOD_CLS_BLIGHTER] = get_property("gain.exp.mod.blighter", 1.000);
+	exp_mods[EXPMOD_CLS_DREADLORD] = get_property("gain.exp.mod.dreadlord", 1.000);
 	exp_mods[EXPMOD_CLS_ETHERMANCER] = get_property("gain.exp.mod.ethermancer", 1.000);
-	exp_mods[EXPMOD_CLS_AVENGER]     = get_property("gain.exp.mod.avenger", 1.000);
-	exp_mods[EXPMOD_CLS_THEURGIST]   = get_property("gain.exp.mod.theurgist", 1.000);
-	exp_mods[EXPMOD_CLS_SUMMONER]    = get_property("gain.exp.mod.summoner", 1.000);
-	exp_mods[EXPMOD_CLS_NEWCLASS1]   = get_property("gain.exp.mod.newclass1", 1.000);
-	exp_mods[EXPMOD_CLS_NEWCLASS2]   = get_property("gain.exp.mod.newclass2", 1.000);
-	exp_mods[EXPMOD_CLS_NEWCLASS3]   = get_property("gain.exp.mod.newclass3", 1.000);
+	exp_mods[EXPMOD_CLS_AVENGER] = get_property("gain.exp.mod.avenger", 1.000);
+	exp_mods[EXPMOD_CLS_THEURGIST] = get_property("gain.exp.mod.theurgist", 1.000);
+	exp_mods[EXPMOD_CLS_SUMMONER] = get_property("gain.exp.mod.summoner", 1.000);
+	exp_mods[EXPMOD_CLS_NEWCLASS1] = get_property("gain.exp.mod.newclass1", 1.000);
+	exp_mods[EXPMOD_CLS_NEWCLASS2] = get_property("gain.exp.mod.newclass2", 1.000);
+	exp_mods[EXPMOD_CLS_NEWCLASS3] = get_property("gain.exp.mod.newclass3", 1.000);
 	exp_mods[EXPMOD_VICT_ACT_HUNTER] = get_property("gain.exp.mod.victim.act.hunter", 1.200);
-	exp_mods[EXPMOD_VICT_ELITE]      = get_property("gain.exp.mod.victim.elite", 1.250);
-	exp_mods[EXPMOD_VICT_NOMEMORY]   = get_property("gain.exp.mod.victim.act.nomemory", 0.250);
-	exp_mods[EXPMOD_VICT_HOMETOWN]   = get_property("gain.exp.mod.victim.location.hometown", 0.100);
-	exp_mods[EXPMOD_LVL_31_UP]       = get_property("gain.exp.mod.player.level.thirtyone", 1.000);
-	exp_mods[EXPMOD_LVL_41_UP]       = get_property("gain.exp.mod.player.level.fortyone", 1.000);
-	exp_mods[EXPMOD_LVL_51_UP]       = get_property("gain.exp.mod.player.level.fiftyone", 1.000);
-	exp_mods[EXPMOD_LVL_55_UP]       = get_property("gain.exp.mod.player.level.fiftyfive", 1.000);
-	exp_mods[EXPMOD_VICT_BREATHES]   = get_property("gain.exp.mod.victim.ability.breath.weapon", 1.000);
-	exp_mods[EXPMOD_VICT_ACT_AGGRO]  = get_property("gain.exp.mod.victim.act.aggro", 1.000);
-	exp_mods[EXPMOD_PVP]             = get_property("gain.exp.mod.pvp", 3.000);
+	exp_mods[EXPMOD_VICT_ELITE] = get_property("gain.exp.mod.victim.elite", 1.250);
+	exp_mods[EXPMOD_VICT_NOMEMORY] = get_property("gain.exp.mod.victim.act.nomemory", 0.250);
+	exp_mods[EXPMOD_VICT_HOMETOWN] =
+		get_property("gain.exp.mod.victim.location.hometown", 0.100);
+	exp_mods[EXPMOD_LVL_31_UP] = get_property("gain.exp.mod.player.level.thirtyone", 1.000);
+	exp_mods[EXPMOD_LVL_41_UP] = get_property("gain.exp.mod.player.level.fortyone", 1.000);
+	exp_mods[EXPMOD_LVL_51_UP] = get_property("gain.exp.mod.player.level.fiftyone", 1.000);
+	exp_mods[EXPMOD_LVL_55_UP] = get_property("gain.exp.mod.player.level.fiftyfive", 1.000);
+	exp_mods[EXPMOD_VICT_BREATHES] =
+		get_property("gain.exp.mod.victim.ability.breath.weapon", 1.000);
+	exp_mods[EXPMOD_VICT_ACT_AGGRO] = get_property("gain.exp.mod.victim.act.aggro", 1.000);
+	exp_mods[EXPMOD_PVP] = get_property("gain.exp.mod.pvp", 3.000);
 
 	// exp.factor.*
-	exp_mods[EXPMOD_GLOBAL]              = get_property("exp.factor.global", 1.000);
-	exp_mods[EXPMOD_GOOD]                = get_property("exp.factor.racewar.good", 1.000);
-	exp_mods[EXPMOD_EVIL]                = get_property("exp.factor.racewar.evil", 1.000);
-	exp_mods[EXPMOD_UNDEAD]              = get_property("exp.factor.racewar.undead", 1.000);
-	exp_mods[EXPMOD_NEUTRAL]             = get_property("exp.factor.racewar.neutral", 1.000);
-	exp_mods[EXPMOD_DAMAGE]              = get_property("exp.factor.damage", 1.000);
-	exp_mods[EXPMOD_HEAL_NONHEALER]      = get_property("exp.factor.healing.class.penalty", 0.500);
-	exp_mods[EXPMOD_HEAL_PETS]           = get_property("exp.factor.healing.pets", 0.100);
-	exp_mods[EXPMOD_HEALING]             = get_property("exp.factor.healing", 1.000);
-	exp_mods[EXPMOD_MELEE]               = get_property("exp.factor.melee", 1.000);
-	exp_mods[EXPMOD_TANK]                = get_property("exp.factor.tanking", 1.000);
-	exp_mods[EXPMOD_KILL]                = get_property("exp.factor.kill", 1.000);
-	exp_mods[EXPMOD_PALADIN_VS_GOOD]     = get_property("exp.factor.paladin.vsGood", 0.200);
-	exp_mods[EXPMOD_PALADIN_VS_EVIL]     = get_property("exp.factor.paladin.vsEvil", 1.100);
+	exp_mods[EXPMOD_GLOBAL] = get_property("exp.factor.global", 1.000);
+	exp_mods[EXPMOD_GOOD] = get_property("exp.factor.racewar.good", 1.000);
+	exp_mods[EXPMOD_EVIL] = get_property("exp.factor.racewar.evil", 1.000);
+	exp_mods[EXPMOD_UNDEAD] = get_property("exp.factor.racewar.undead", 1.000);
+	exp_mods[EXPMOD_NEUTRAL] = get_property("exp.factor.racewar.neutral", 1.000);
+	exp_mods[EXPMOD_DAMAGE] = get_property("exp.factor.damage", 1.000);
+	exp_mods[EXPMOD_HEAL_NONHEALER] = get_property("exp.factor.healing.class.penalty", 0.500);
+	exp_mods[EXPMOD_HEAL_PETS] = get_property("exp.factor.healing.pets", 0.100);
+	exp_mods[EXPMOD_HEALING] = get_property("exp.factor.healing", 1.000);
+	exp_mods[EXPMOD_MELEE] = get_property("exp.factor.melee", 1.000);
+	exp_mods[EXPMOD_TANK] = get_property("exp.factor.tanking", 1.000);
+	exp_mods[EXPMOD_KILL] = get_property("exp.factor.kill", 1.000);
+	exp_mods[EXPMOD_PALADIN_VS_GOOD] = get_property("exp.factor.paladin.vsGood", 0.200);
+	exp_mods[EXPMOD_PALADIN_VS_EVIL] = get_property("exp.factor.paladin.vsEvil", 1.100);
 	exp_mods[EXPMOD_ANTIPALADIN_VS_GOOD] = get_property("exp.factor.antipaladin.vsGood", 1.050);
-	exp_mods[EXPMOD_OVER_LEVEL_CAP]      = get_property("exp.factor.overCap", 0.550);
+	exp_mods[EXPMOD_OVER_LEVEL_CAP] = get_property("exp.factor.overCap", 0.550);
 }

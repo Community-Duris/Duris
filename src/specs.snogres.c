@@ -24,37 +24,38 @@
 #include "spells.h"
 #include "weather.h"
 
-extern P_char      character_list;
-extern P_desc      descriptor_list;
-extern P_index     mob_index;
-extern P_index     obj_index;
-extern P_room      world;
-extern P_obj       justice_items_list;
-extern char       *coin_names[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern P_obj justice_items_list;
+extern char *coin_names[];
 extern const char *command[];
 extern const char *dirs[];
 // extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
-extern int                    planes_room_num[];
-extern int                    racial_base[];
-extern int                    top_of_zone_table;
-extern struct command_info    cmd_info[MAX_CMD_LIST];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
-extern const char            *specdata[][MAX_SPEC];
-extern struct class_names     class_names_table[];
-int                           range_scan_track(P_char ch, int distance, int type_scan);
-extern P_obj                  object_list;
+extern int planes_room_num[];
+extern int racial_base[];
+extern int top_of_zone_table;
+extern struct command_info cmd_info[MAX_CMD_LIST];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern const char *specdata[][MAX_SPEC];
+extern struct class_names class_names_table[];
+int range_scan_track(P_char ch, int distance, int type_scan);
+extern P_obj object_list;
 
 int snogres_lich_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
-	int helpers[] = {87734, 87743, 0};
+	int helpers[] = { 87734, 87743, 0 };
 	if (cmd == -10)
 		return TRUE;
 	if (!tch && !number(0, 4))
-		return shout_and_hunt(ch, 100, "&+WCome, my pet! Destroy %s&+L!", NULL, helpers, 0, 0);
+		return shout_and_hunt(ch, 100, "&+WCome, my pet! Destroy %s&+L!", NULL, helpers, 0,
+				      0);
 
 	return FALSE;
 }
@@ -64,8 +65,8 @@ int snogres_lich_shout(P_char ch, P_char tch, int cmd, char *arg)
 int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char i;
-	P_char          golem, lich;
-	int             count = 0;
+	P_char golem, lich;
+	int count = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -106,19 +107,17 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 				golem = read_mobile(87734, VIRTUAL);
 				if (!golem)
 				{
-					logit(LOG_EXIT, "assert: error in snogres_flesh_golem() proc");
+					logit(LOG_EXIT,
+					      "assert: error in snogres_flesh_golem() proc");
 					return FALSE;
 				}
 				act("$n &+rsuddenly &+Rshambles &+rfor a moment, and a piece of living &+rflesh&n drops to the ground.&n\r\n"
 				    "&+rThe piece of flesh suddenly sprouts four arms and two legs, and begins shambling towards &-L&+RYOU&+R!&n&n\r\n",
-				    FALSE,
-				    ch,
-				    0,
-				    golem,
-				    TO_ROOM);
+				    FALSE, ch, 0, golem, TO_ROOM);
 				char_to_room(golem, ch->in_room, 0);
 				MobStartFight(golem, pl);
-				add_event(event_snogres_golem_helper, number(100, 500), golem, NULL, NULL, 0, NULL, 0);
+				add_event(event_snogres_golem_helper, number(100, 500), golem, NULL,
+					  NULL, 0, NULL, 0);
 				return TRUE;
 			}
 		}
@@ -128,7 +127,8 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		if (!IS_FIGHTING(ch))
 		{
-			act("$n &+rlooks blankly about the area, and then sulks back to its room.&n", FALSE, ch, 0, 0, TO_ROOM);
+			act("$n &+rlooks blankly about the area, and then sulks back to its room.&n",
+			    FALSE, ch, 0, 0, TO_ROOM);
 			char_from_room(ch);
 			char_to_room(ch, real_room(87799), 0);
 			act("$n &+rsulks in from the west.&n", FALSE, ch, 0, 0, TO_ROOM);
@@ -137,7 +137,8 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch) && (GET_HIT(ch) < 2000))
 	{
-		act("&+rSensing danger, $n &+rmelts into a puddle and scurries away.&n", FALSE, ch, 0, 0, TO_ROOM);
+		act("&+rSensing danger, $n &+rmelts into a puddle and scurries away.&n", FALSE, ch,
+		    0, 0, TO_ROOM);
 		extract_char(ch);
 		golem = read_mobile(87734, VIRTUAL);
 		if (!golem)
@@ -147,7 +148,8 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 		}
 		char_to_room(golem, 87798, 0);
 		add_follower(golem, lich);
-		act("$n &+rbubbles and boils as it enters from the west, its wounds healing quickly.&n", FALSE, golem, 0, 0, TO_ROOM);
+		act("$n &+rbubbles and boils as it enters from the west, its wounds healing quickly.&n",
+		    FALSE, golem, 0, 0, TO_ROOM);
 	}
 
 	return FALSE;
@@ -157,7 +159,8 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 
 void event_snogres_golem_helper(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	act("$n &+rdisappears as the magic holding it is too weak to support it's existence.&n", TRUE, ch, 0, 0, TO_ROOM);
+	act("$n &+rdisappears as the magic holding it is too weak to support it's existence.&n",
+	    TRUE, ch, 0, 0, TO_ROOM);
 	extract_char(ch);
 }
 
@@ -171,9 +174,14 @@ void event_hellfire(P_char ch, P_char victim, P_obj obj, void *data)
 	if ((GET_HIT(ch) - dam) > 0)
 	{
 		GET_HIT(ch) -= dam;
-		send_to_char("&+mHellish &N&+Mflames &+Lflicker and dance across your &N&+mwounds!&N\n", ch);
-		send_to_char("&+mThe anguish is unbearable as &+Rfresh &N&+rblood &+merupts from your body.&n\n", ch);
-		act("$n's &+mwounds &+Mburn &+Lwith &+mhe&+Mllfi&N&+mre&+L!&N", TRUE, ch, NULL, NULL, TO_NOTVICT);
+		send_to_char(
+			"&+mHellish &N&+Mflames &+Lflicker and dance across your &N&+mwounds!&N\n",
+			ch);
+		send_to_char(
+			"&+mThe anguish is unbearable as &+Rfresh &N&+rblood &+merupts from your body.&n\n",
+			ch);
+		act("$n's &+mwounds &+Mburn &+Lwith &+mhe&+Mllfi&N&+mre&+L!&N", TRUE, ch, NULL,
+		    NULL, TO_NOTVICT);
 		make_bloodstain(ch);
 	}
 
@@ -184,23 +192,27 @@ void event_hellfire(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 	else
 	{
-		send_to_char("&+mThe flames vanish from whence they came, and your wounds stop bleeding.&N\n", ch);
+		send_to_char(
+			"&+mThe flames vanish from whence they came, and your wounds stop bleeding.&N\n",
+			ch);
 	}
 }
 
 int hellfire_axe(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char                 vict = NULL;
-	struct proc_data      *data = NULL;
-	struct affected_type   af;
-	int                    dam      = cmd / 1000;
-	struct damage_messages messages = {"&+mYour &+Maxe &N&+mvibrates as it strikes $N&N&+m, causing a &+rsevere &+Rgash &N&+mand great &+Rblood &N&+rloss.&n",
-	                                   "&+mA wicked cut from $n&N&+m's &+Maxe &n&+mcauses you to &+Rbleed &N&+rprofusely.&n",
-	                                   "&+mA wicked cut from $n&N&+m's &+Maxe &n&+mcauses $N &+mto &+Rbleed &N&+rprofusely.&n",
-	                                   "&+mYour axe &+mbecomes lodged in $N&n&+m's chest.\n&+mAs you &+rrip &+myour weapon free, &+Rblood &N&+rgushes freely &+mfrom your vanquished foe.&n",
-	                                   "&+m$n&n&+m's axe &+Wshatters bone &N&+mand &+reviscerates organs\n&+mas it impacts with your chest.&n",
-	                                   "&+m$n&n&+m's axe &+mbecomes lodged in $N&n&+m's chest.\n&+mAs $e &+rrips &+mthe weapon free, &+Rblood &N&+rgushes freely &+mfrom $s vanquished foe.&n",
-	                                   0};
+	P_char vict = NULL;
+	struct proc_data *data = NULL;
+	struct affected_type af;
+	int dam = cmd / 1000;
+	struct damage_messages messages = {
+		"&+mYour &+Maxe &N&+mvibrates as it strikes $N&N&+m, causing a &+rsevere &+Rgash &N&+mand great &+Rblood &N&+rloss.&n",
+		"&+mA wicked cut from $n&N&+m's &+Maxe &n&+mcauses you to &+Rbleed &N&+rprofusely.&n",
+		"&+mA wicked cut from $n&N&+m's &+Maxe &n&+mcauses $N &+mto &+Rbleed &N&+rprofusely.&n",
+		"&+mYour axe &+mbecomes lodged in $N&n&+m's chest.\n&+mAs you &+rrip &+myour weapon free, &+Rblood &N&+rgushes freely &+mfrom your vanquished foe.&n",
+		"&+m$n&n&+m's axe &+Wshatters bone &N&+mand &+reviscerates organs\n&+mas it impacts with your chest.&n",
+		"&+m$n&n&+m's axe &+mbecomes lodged in $N&n&+m's chest.\n&+mAs $e &+rrips &+mthe weapon free, &+Rblood &N&+rgushes freely &+mfrom $s vanquished foe.&n",
+		0
+	};
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -216,7 +228,8 @@ int hellfire_axe(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		vict = (P_char)arg;
 
-		if (obj->loc.wearing->equipment[WIELD] != obj || !dam || !IS_ALIVE(vict) || !IS_HUMANOID(vict))
+		if (obj->loc.wearing->equipment[WIELD] != obj || !dam || !IS_ALIVE(vict) ||
+		    !IS_HUMANOID(vict))
 		{
 			return FALSE;
 		}
@@ -233,8 +246,8 @@ int hellfire_axe(P_obj obj, P_char ch, int cmd, char *arg)
 int berserker_toss(P_char ch, P_char vict, int cmd, char *arg)
 {
 	P_char tch, victtwo = NULL;
-	P_obj  obj;
-	int    numbPCs = 0, luckyPC = 0, currPC = 0, numb;
+	P_obj obj;
+	int numbPCs = 0, luckyPC = 0, currPC = 0, numb;
 
 	/*
 	 * check for periodic event calls
@@ -307,9 +320,12 @@ int berserker_toss(P_char ch, P_char vict, int cmd, char *arg)
 
 	if (!number(0, 2))
 	{
-		act("&+rFilled with &+RRAGE&n $n &+rhammers his fist into &+R$N&n&+r, sending $m flying!&n", FALSE, ch, 0, vict, TO_NOTVICT);
-		act("&+rFilled with &+RRAGE&n $n &+rhammers his fist into &+RYOU&n&+r, sending you &+RFLYING&N&+r!&n", FALSE, ch, 0, vict, TO_VICT);
-		act("&+rFilled with &+RRAGE&n&+r, you hammer your fist into &+R$N&n&+r sending $m flying!&n", FALSE, ch, 0, vict, TO_CHAR);
+		act("&+rFilled with &+RRAGE&n $n &+rhammers his fist into &+R$N&n&+r, sending $m flying!&n",
+		    FALSE, ch, 0, vict, TO_NOTVICT);
+		act("&+rFilled with &+RRAGE&n $n &+rhammers his fist into &+RYOU&n&+r, sending you &+RFLYING&N&+r!&n",
+		    FALSE, ch, 0, vict, TO_VICT);
+		act("&+rFilled with &+RRAGE&n&+r, you hammer your fist into &+R$N&n&+r sending $m flying!&n",
+		    FALSE, ch, 0, vict, TO_CHAR);
 		damage(ch, vict, (70 + number(0, 150)), TYPE_UNDEFINED);
 
 		int i = 0;
@@ -327,9 +343,12 @@ int berserker_toss(P_char ch, P_char vict, int cmd, char *arg)
 			i++;
 		} while (i < MAX_WEAR);
 
-		act("&+rHurtling through the air, &+R$n&N &+rslams into &+RYOU&N&+r!&n", FALSE, vict, 0, victtwo, TO_VICT);
-		act("&+rYour path through the air sends you &+Rcareening violently &N&+rinto &+R$N&n&+r!&n", FALSE, vict, 0, victtwo, TO_CHAR);
-		act("&+R$n&n&+r's path through the air sends $m &+Rcareening violently &N&+rinto &+R$N&n&+r!&n", FALSE, vict, 0, victtwo, TO_NOTVICTROOM);
+		act("&+rHurtling through the air, &+R$n&N &+rslams into &+RYOU&N&+r!&n", FALSE,
+		    vict, 0, victtwo, TO_VICT);
+		act("&+rYour path through the air sends you &+Rcareening violently &N&+rinto &+R$N&n&+r!&n",
+		    FALSE, vict, 0, victtwo, TO_CHAR);
+		act("&+R$n&n&+r's path through the air sends $m &+Rcareening violently &N&+rinto &+R$N&n&+r!&n",
+		    FALSE, vict, 0, victtwo, TO_NOTVICTROOM);
 		damage(victtwo, vict, (GET_WEIGHT(victtwo) / 2), TYPE_UNDEFINED);
 		Stun(vict, ch, 2 * PULSE_VIOLENCE, TRUE);
 		Stun(victtwo, ch, 2 * PULSE_VIOLENCE, TRUE);
@@ -352,8 +371,10 @@ int remo_burn(P_char vict, P_char ch, int cmd, char *arg)
 	if (cmd != CMD_GOTHIT)
 		return FALSE;
 
-	act("&+W$N&+W's tough hide &+rburns &+L$n &+Was $e gets too close!&n", TRUE, ch, 0, vict, TO_NOTVICTROOM | ACT_NOTTERSE);
-	act("&+W$N&+W's tough hide &N&+rburns &+Lyou &+Was you get too close!&n", TRUE, ch, 0, vict, TO_CHAR | ACT_NOTTERSE);
+	act("&+W$N&+W's tough hide &+rburns &+L$n &+Was $e gets too close!&n", TRUE, ch, 0, vict,
+	    TO_NOTVICTROOM | ACT_NOTTERSE);
+	act("&+W$N&+W's tough hide &N&+rburns &+Lyou &+Was you get too close!&n", TRUE, ch, 0, vict,
+	    TO_CHAR | ACT_NOTTERSE);
 
 	damage(ch, vict, (20 + dice(20, 4)), SPLDAM_NEGATIVE);
 
@@ -363,9 +384,9 @@ int remo_burn(P_char vict, P_char ch, int cmd, char *arg)
 
 int illithid_whip(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char            vict = NULL;
+	P_char vict = NULL;
 	struct proc_data *data = NULL;
-	int               dam  = cmd / 1000;
+	int dam = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -380,14 +401,18 @@ int illithid_whip(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		vict = (P_char)arg;
 
-		if (obj->loc.wearing->equipment[WIELD] != obj || !dam || !IS_ALIVE(vict) || !IS_HUMANOID(vict) || GET_POS(vict) < POS_STANDING)
+		if (obj->loc.wearing->equipment[WIELD] != obj || !dam || !IS_ALIVE(vict) ||
+		    !IS_HUMANOID(vict) || GET_POS(vict) < POS_STANDING)
 		{
 			return FALSE;
 		}
 
-		act("&+mYour $p &+mwraps about $N&+m's legs, tripping $M up!\n&N", FALSE, ch, obj, vict, TO_CHAR);
-		act("&+m$n&+m's $p &+mwraps about $N&+m's legs, tripping $M up!\n&N", FALSE, ch, obj, vict, TO_ROOM);
-		act("&+m$n&+m's $p wraps about your legs, tripping you up!\n&N", FALSE, ch, obj, vict, TO_VICT);
+		act("&+mYour $p &+mwraps about $N&+m's legs, tripping $M up!\n&N", FALSE, ch, obj,
+		    vict, TO_CHAR);
+		act("&+m$n&+m's $p &+mwraps about $N&+m's legs, tripping $M up!\n&N", FALSE, ch,
+		    obj, vict, TO_ROOM);
+		act("&+m$n&+m's $p wraps about your legs, tripping you up!\n&N", FALSE, ch, obj,
+		    vict, TO_VICT);
 		Stun(vict, ch, PULSE_VIOLENCE * 1, TRUE);
 		CharWait(vict, PULSE_VIOLENCE * 1);
 		SET_POS(vict, POS_PRONE + GET_STAT(vict));
@@ -397,7 +422,6 @@ int illithid_whip(P_obj obj, P_char ch, int cmd, char *arg)
 
 int skull_leggings(P_obj leggings, P_char ch, int cmd, char *arg)
 {
-
 	if (cmd == CMD_SET_PERIODIC)
 	{
 		return TRUE;
@@ -411,14 +435,17 @@ int skull_leggings(P_obj leggings, P_char ch, int cmd, char *arg)
 		}
 		if (OBJ_CARRIED_BY(leggings, ch))
 		{
-			if (GET_RACE(ch) == RACE_SNOW_OGRE || GET_RACE(ch) == RACE_OGRE || GET_RACE(ch) == RACE_MINOTAUR || GET_RACE(ch) == RACE_FIRBOLG)
+			if (GET_RACE(ch) == RACE_SNOW_OGRE || GET_RACE(ch) == RACE_OGRE ||
+			    GET_RACE(ch) == RACE_MINOTAUR || GET_RACE(ch) == RACE_FIRBOLG)
 			{
 				int slot = WEAR_LEGS;
 				if (ch->equipment[slot])
 				{
 					if (obj_index[ch->equipment[slot]->R_num].func.obj != NULL)
 					{
-						(*obj_index[ch->equipment[slot]->R_num].func.obj)(ch->equipment[slot], ch, CMD_REMOVE, (char *)"all");
+						(*obj_index[ch->equipment[slot]->R_num].func.obj)(
+							ch->equipment[slot], ch, CMD_REMOVE,
+							(char *)"all");
 					}
 					obj_to_char(unequip_char(ch, slot), ch);
 				}
@@ -427,12 +454,9 @@ int skull_leggings(P_obj leggings, P_char ch, int cmd, char *arg)
 				act("&+LA longing for &+rblood &+Lbegins to &+Rburn &+Lin your &+rheart&+L, and you feel a strange\n"
 				    "&+Lforce overcome you, compelling you to don the &+Wskull leggings&+L.  They quickly\n"
 				    "&+Lform to your shins, almost as if they were made for &+Ryou&+L.&n\n",
-				    FALSE,
-				    ch,
-				    0,
-				    0,
-				    TO_CHAR);
-				act("$n &+Lstraps the &+Wskull leggings &+Lto $s legs and &+Rroars &+Lwith renewed &+rvigor&+L.&n\n", FALSE, ch, 0, 0, TO_ROOM);
+				    FALSE, ch, 0, 0, TO_CHAR);
+				act("$n &+Lstraps the &+Wskull leggings &+Lto $s legs and &+Rroars &+Lwith renewed &+rvigor&+L.&n\n",
+				    FALSE, ch, 0, 0, TO_ROOM);
 				return TRUE;
 			}
 		}

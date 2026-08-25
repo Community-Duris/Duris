@@ -31,27 +31,27 @@
 #include "justice.h"
 #include "mm.h"
 
-extern struct zone_data  *zone_table;
-extern struct room_data  *world;
+extern struct zone_data *zone_table;
+extern struct room_data *world;
 extern struct index_data *mob_index;
 extern struct index_data *obj_index;
-extern struct obj_data   *object_list;
-extern int                no_mail;
-extern int                top_of_mobt;
+extern struct obj_data *object_list;
+extern int no_mail;
+extern int top_of_mobt;
 
 #define MAIL_MAX_CHAIN_BLOCKS ((MAX_MAIL_SIZE / DATA_BLOCK_DATASIZE) + 4)
 
 static const char *mail_active_path = MAIL_FILE;
 
-struct mm_ds       *dead_mail_pool  = NULL;
-struct mm_ds       *dead_mail2_pool = NULL;
-mail_index_type    *mail_index      = 0; /* list of recs in the mail file  */
-position_list_type *free_list       = 0; /* list of free positions in file */
-long                file_end_pos    = 0; /* length of file */
+struct mm_ds *dead_mail_pool = NULL;
+struct mm_ds *dead_mail2_pool = NULL;
+mail_index_type *mail_index = 0; /* list of recs in the mail file  */
+position_list_type *free_list = 0; /* list of free positions in file */
+long file_end_pos = 0; /* length of file */
 
 static void mail_ensure_dir(const char *path)
 {
-	char  dir[256];
+	char dir[256];
 	char *slash;
 	struct stat st;
 
@@ -83,7 +83,8 @@ static void mail_pick_path(void)
 	if (stat(MAIL_FILE_LEGACY, &st) == 0)
 	{
 		mail_active_path = MAIL_FILE_LEGACY;
-		logit(LOG_STATUS, "Mail: using legacy %s — copy to %s when convenient.", MAIL_FILE_LEGACY, MAIL_FILE);
+		logit(LOG_STATUS, "Mail: using legacy %s — copy to %s when convenient.",
+		      MAIL_FILE_LEGACY, MAIL_FILE);
 		return;
 	}
 
@@ -95,11 +96,13 @@ static void mail_ensure_pools(void)
 {
 	if (!dead_mail_pool)
 	{
-		dead_mail_pool = mm_create("M_BODY", sizeof(position_list_type), offsetof(position_list_type, next), 1);
+		dead_mail_pool = mm_create("M_BODY", sizeof(position_list_type),
+					   offsetof(position_list_type, next), 1);
 	}
 	if (!dead_mail2_pool)
 	{
-		dead_mail2_pool = mm_create("M_INDEX", sizeof(mail_index_type), offsetof(mail_index_type, next), 1);
+		dead_mail2_pool = mm_create("M_INDEX", sizeof(mail_index_type),
+					    offsetof(mail_index_type, next), 1);
 	}
 }
 
@@ -122,40 +125,35 @@ static int mail_open_rw(FILE **mail_file, long filepos, int err_code)
 	return 1;
 }
 
-
-
 /* mail isn't done by hometown, so just make a list of valid postman vnums */
 
 int postmaster[/*LAST_HOME */] = {
 	/*
         6097, 0, 36439, 0, 95552, 0, 16701, 0, 0, 0, 0, 0, 0,0
     */
-	6097,
-	16695,
-	97583,
-	73,
-	-1};
+	6097, 16695, 97583, 73, -1
+};
 
 void push_free_list(long pos)
 {
 	position_list_type *new_pos;
 
 	mail_ensure_pools();
-	new_pos           = (position_list_type *)mm_get(dead_mail_pool);
+	new_pos = (position_list_type *)mm_get(dead_mail_pool);
 	new_pos->position = pos;
-	new_pos->next     = free_list;
-	free_list         = new_pos;
+	new_pos->next = free_list;
+	free_list = new_pos;
 }
 
 long pop_free_list(void)
 {
 	position_list_type *old_pos;
-	long                return_value;
+	long return_value;
 
 	if ((old_pos = free_list) != 0)
 	{
 		return_value = free_list->position;
-		free_list    = old_pos->next;
+		free_list = old_pos->next;
 		mail_ensure_pools();
 		mm_release(dead_mail_pool, old_pos);
 		return return_value;
@@ -215,11 +213,11 @@ void read_from_file(void *buf, unsigned int size, long filepos)
 
 void index_mail(char *raw_name_to_index, long pos)
 {
-	mail_index_type    *new_index;
+	mail_index_type *new_index;
 	position_list_type *new_position;
-	char                name_to_index[100]; /* I'm paranoid.  so sue me. */
-	char               *src;
-	int                 i;
+	char name_to_index[100]; /* I'm paranoid.  so sue me. */
+	char *src;
+	int i;
 
 	if (!raw_name_to_index || !*raw_name_to_index)
 	{
@@ -238,17 +236,17 @@ void index_mail(char *raw_name_to_index, long pos)
 		/* name not already in index.. add it */
 		new_index = (mail_index_type *)mm_get(dead_mail2_pool);
 		strlcpy(new_index->recipient, name_to_index, sizeof new_index->recipient);
-		new_index->list_start                       = 0;
+		new_index->list_start = 0;
 
 		/* add to front of list */
 		new_index->next = mail_index;
-		mail_index      = new_index;
+		mail_index = new_index;
 	}
 	/* now, add this position to front of position list */
-	new_position           = (position_list_type *)mm_get(dead_mail_pool);
+	new_position = (position_list_type *)mm_get(dead_mail_pool);
 	new_position->position = pos;
-	new_position->next     = new_index->list_start;
-	new_index->list_start  = new_position;
+	new_position->next = new_index->list_start;
+	new_index->list_start = new_position;
 }
 
 /* SCAN_FILE */
@@ -256,17 +254,18 @@ void index_mail(char *raw_name_to_index, long pos)
    and indexes all entries currently in the mail file. */
 int scan_mail_file(void)
 {
-	FILE             *mail_file;
+	FILE *mail_file;
 	header_block_type next_block;
-	int               total_messages = 0, block_num = 0;
-	char              buf[100];
+	int total_messages = 0, block_num = 0;
+	char buf[100];
 
 	mail_pick_path();
 	mail_ensure_pools();
 
 	if (!(mail_file = fopen(mail_active_path, "r")))
 	{
-		logit(LOG_DEBUG, "Mail file non-existant... creating new file at %s.", mail_active_path);
+		logit(LOG_DEBUG, "Mail file non-existant... creating new file at %s.",
+		      mail_active_path);
 		mail_ensure_dir(mail_active_path);
 		mail_file = fopen(mail_active_path, "w");
 		if (mail_file)
@@ -275,7 +274,8 @@ int scan_mail_file(void)
 		}
 		else
 		{
-			logit(LOG_DEBUG, "SYSERR: Mail system -- cannot create %s", mail_active_path);
+			logit(LOG_DEBUG, "SYSERR: Mail system -- cannot create %s",
+			      mail_active_path);
 			no_mail = 1;
 		}
 		return 1;
@@ -324,13 +324,13 @@ int has_mail(char *recipient)
 void store_mail(char *to, char *from, char *message_pointer)
 {
 	header_block_type header;
-	data_block_type   data;
-	long              last_address, target_address;
-	char             *msg_txt = message_pointer;
+	data_block_type data;
+	long last_address, target_address;
+	char *msg_txt = message_pointer;
 
 	//  char *tmp;
 	int bytes_written = 0;
-	int total_length  = strlen(message_pointer);
+	int total_length = strlen(message_pointer);
 
 	static_assert(sizeof(header_block_type) == sizeof(data_block_type));
 	static_assert(sizeof(header_block_type) == BLOCK_SIZE);
@@ -348,11 +348,11 @@ void store_mail(char *to, char *from, char *message_pointer)
 	strlcpy(header.to, to, sizeof header.to);
 	/*  tmp = str_dup(header.to);
 	 *tmp = LOWER(*tmp);*/
-	header.mail_time                  = time(0);
+	header.mail_time = time(0);
 	header.txt[HEADER_BLOCK_DATASIZE] = header.from[NAME_SIZE] = header.to[NAME_SIZE] = '\0';
 
 	target_address = pop_free_list(); /* find next free block */
-	index_mail(to, target_address);   /* add it to mail index in memory */
+	index_mail(to, target_address); /* add it to mail index in memory */
 	write_to_file(&header, BLOCK_SIZE, target_address);
 
 	if (strlen(msg_txt) <= HEADER_BLOCK_DATASIZE)
@@ -363,8 +363,8 @@ void store_mail(char *to, char *from, char *message_pointer)
 
 	/* find the next block address, then rewrite the header
 	   to reflect where the next block is.       */
-	last_address      = target_address;
-	target_address    = pop_free_list();
+	last_address = target_address;
+	target_address = pop_free_list();
 	header.next_block = target_address;
 	write_to_file(&header, BLOCK_SIZE, last_address);
 
@@ -392,7 +392,7 @@ void store_mail(char *to, char *from, char *message_pointer)
 
 	while (bytes_written < total_length)
 	{
-		last_address   = target_address;
+		last_address = target_address;
 		target_address = pop_free_list();
 
 		/* rewrite the previous block to link it to the next */
@@ -419,13 +419,13 @@ char *read_delete(char *recipient, char *recipient_formatted)
    recipient_formatted is the name as it should appear on the mail
    header (i.e. the text handed to the player) */
 {
-	header_block_type   header;
-	data_block_type     data;
-	mail_index_type    *mail_pointer, *prev_mail;
+	header_block_type header;
+	data_block_type data;
+	mail_index_type *mail_pointer, *prev_mail;
 	position_list_type *position_pointer;
-	long                mail_address, following_block;
-	char               *message, *tmstr, buf[200];
-	size_t              string_size;
+	long mail_address, following_block;
+	char *message, *tmstr, buf[200];
+	size_t string_size;
 
 	if (!*recipient || !*recipient_formatted)
 	{
@@ -458,11 +458,13 @@ char *read_delete(char *recipient, char *recipient_formatted)
 		else
 		{
 			prev_mail = NULL;
-			for (prev_mail = mail_index; prev_mail && prev_mail->next != mail_pointer; prev_mail = prev_mail->next)
+			for (prev_mail = mail_index; prev_mail && prev_mail->next != mail_pointer;
+			     prev_mail = prev_mail->next)
 				;
 			if (!prev_mail)
 			{
-				logit(LOG_DEBUG, "SYSERR: Mail system -- index corrupt (recipient not in list).");
+				logit(LOG_DEBUG,
+				      "SYSERR: Mail system -- index corrupt (recipient not in list).");
 				return 0;
 			}
 			prev_mail->next = mail_pointer->next;
@@ -490,18 +492,15 @@ char *read_delete(char *recipient, char *recipient_formatted)
 		logit(LOG_DEBUG, "SYSERR: Mail system disabled!  -- Error #9.");
 		return 0;
 	}
-	tmstr                        = asctime(localtime(&header.mail_time));
+	tmstr = asctime(localtime(&header.mail_time));
 	*(tmstr + strlen(tmstr) - 1) = '\0';
 
-	snprintf(buf,
-	         200,
-	         " &+r* * * * &+RBloodlust Mail System&n&+r * * * *&n\r\n"
-	         "Date: %s\r\n"
-	         "  To: %s\r\n"
-	         "From: %s\r\n\r\n",
-	         tmstr,
-	         recipient_formatted,
-	         header.from);
+	snprintf(buf, 200,
+		 " &+r* * * * &+RBloodlust Mail System&n&+r * * * *&n\r\n"
+		 "Date: %s\r\n"
+		 "  To: %s\r\n"
+		 "From: %s\r\n\r\n",
+		 tmstr, recipient_formatted, header.from);
 
 	string_size = (CHAR_SIZE * (strlen(buf) + strlen(header.txt) + 1));
 	CREATE(message, char, string_size, MEM_TAG_STRING);
@@ -509,7 +508,7 @@ char *read_delete(char *recipient, char *recipient_formatted)
 	message[strlen(buf)] = '\0';
 	strcat(message, header.txt);
 	message[string_size - 1] = '\0';
-	following_block          = header.next_block;
+	following_block = header.next_block;
 
 	/* mark the block as deleted */
 	header.block_type = DELETED_BLOCK;
@@ -525,7 +524,9 @@ char *read_delete(char *recipient, char *recipient_formatted)
 
 			if (following_block < 0 || following_block % BLOCK_SIZE)
 			{
-				logit(LOG_DEBUG, "SYSERR: Mail system -- corrupt mail chain at %ld.", following_block);
+				logit(LOG_DEBUG,
+				      "SYSERR: Mail system -- corrupt mail chain at %ld.",
+				      following_block);
 				break;
 			}
 
@@ -535,16 +536,17 @@ char *read_delete(char *recipient, char *recipient_formatted)
 			RECREATE(message, char, string_size);
 			strcat(message, data.txt);
 			message[string_size - 1] = '\0';
-			mail_address             = following_block;
-			following_block          = data.block_type;
-			data.block_type          = DELETED_BLOCK;
+			mail_address = following_block;
+			following_block = data.block_type;
+			data.block_type = DELETED_BLOCK;
 			write_to_file(&data, BLOCK_SIZE, mail_address);
 			push_free_list(mail_address);
 		}
 
 		if (following_block != LAST_BLOCK)
 		{
-			logit(LOG_DEBUG, "SYSERR: Mail system -- mail chain truncated (too long or corrupt).");
+			logit(LOG_DEBUG,
+			      "SYSERR: Mail system -- mail chain truncated (too long or corrupt).");
 		}
 	}
 
@@ -633,7 +635,9 @@ void do_mail(P_char ch, char *arg, int cmd)
 		}
 		send_to_char("Oh yes, i see there is a present for you here!\r\n", ch);
 		new_obj = read_object(666, VIRTUAL); // Alloy
-		send_to_char("The mail man gives you a &+Rred cap&n, a strange cap, an xmas cap!!!\r\n", ch);
+		send_to_char(
+			"The mail man gives you a &+Rred cap&n, a strange cap, an xmas cap!!!\r\n",
+			ch);
 		obj_to_char(new_obj, ch);
 		new_obj->value[6] = GET_PID(ch);
 		CharWait(ch, (int)(PULSE_VIOLENCE * 5));
@@ -676,17 +680,17 @@ void postmaster_send_mail(P_char ch, P_char mailman, char *arg)
 
 	if (GET_LEVEL(ch) < MIN_MAIL_LEVEL)
 	{
-		snprintf(buf, 200, "Sorry, you have to be level %d to send mail!\r\n", MIN_MAIL_LEVEL);
+		snprintf(buf, 200, "Sorry, you have to be level %d to send mail!\r\n",
+			 MIN_MAIL_LEVEL);
 		send_to_char(buf, ch);
 		return;
 	}
 	if (GET_MONEY(ch) < STAMP_PRICE)
 	{
-		snprintf(buf,
-		         200,
-		         "It will cost %s to deliever this.\r\n"
-		         "...which I see you can't afford.\r\n",
-		         coin_stringv(STAMP_PRICE));
+		snprintf(buf, 200,
+			 "It will cost %s to deliever this.\r\n"
+			 "...which I see you can't afford.\r\n",
+			 coin_stringv(STAMP_PRICE));
 		send_to_char(buf, ch);
 
 		if (IS_TRUSTED(ch))
@@ -699,11 +703,10 @@ void postmaster_send_mail(P_char ch, P_char mailman, char *arg)
 	/*  tmp = str_dup(arg);
 	 *tmp = LOWER(*tmp); */
 	act("$n starts to write a note.", TRUE, ch, 0, 0, TO_ROOM);
-	snprintf(buf,
-	         200,
-	         "I'll take %s for the delivery.\r\n"
-	         "Write your message, use /s to save, /h for help.\r\n",
-	         coin_stringv(STAMP_PRICE));
+	snprintf(buf, 200,
+		 "I'll take %s for the delivery.\r\n"
+		 "Write your message, use /s to save, /h for help.\r\n",
+		 coin_stringv(STAMP_PRICE));
 	send_to_char(buf, ch);
 	SUB_MONEY(ch, STAMP_PRICE, 0);
 	SET_BIT(ch->specials.act, PLR_MAIL);
@@ -713,7 +716,7 @@ void postmaster_send_mail(P_char ch, P_char mailman, char *arg)
 	}
 	ch->desc->name = (char *)str_dup(arg);
 	CREATE(ch->desc->str, char *, 1, MEM_TAG_BUFFER);
-	*(ch->desc->str)  = 0;
+	*(ch->desc->str) = 0;
 	ch->desc->max_str = MAX_MAIL_SIZE;
 }
 
@@ -721,7 +724,7 @@ int postmaster_check_mail(P_char ch, P_char mailman)
 {
 	char *tmp;
 
-	tmp  = str_dup(GET_NAME(ch));
+	tmp = str_dup(GET_NAME(ch));
 	*tmp = LOWER(*tmp);
 	if (has_mail(tmp))
 	{
@@ -742,25 +745,29 @@ void postmaster_receive_mail(P_char ch, P_char mailman)
 	char *tmp;
 	P_obj tmp_obj;
 
-	tmp  = str_dup(GET_NAME(ch));
+	tmp = str_dup(GET_NAME(ch));
 	*tmp = LOWER(*tmp);
 	while (has_mail(tmp))
 	{
 		tmp_obj = read_object(5, VIRTUAL);
 		if (!tmp_obj)
 		{
-			logit(LOG_DEBUG, "postmaster_receive_mail: couldn't create mail object (vnum 5)");
-			send_to_char("The postmaster is unable to produce your mail right now. Please report this.\r\n", ch);
+			logit(LOG_DEBUG,
+			      "postmaster_receive_mail: couldn't create mail object (vnum 5)");
+			send_to_char(
+				"The postmaster is unable to produce your mail right now. Please report this.\r\n",
+				ch);
 			break;
 		}
 
-		tmp_obj->str_mask           = (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
-		tmp_obj->name               = str_dup("mail paper letter");
-		tmp_obj->short_description  = str_dup("a piece of mail");
-		tmp_obj->description        = str_dup("Someone has left a piece of mail here.");
+		tmp_obj->str_mask = (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
+		tmp_obj->name = str_dup("mail paper letter");
+		tmp_obj->short_description = str_dup("a piece of mail");
+		tmp_obj->description = str_dup("Someone has left a piece of mail here.");
 		tmp_obj->action_description = read_delete(tmp, GET_NAME(ch));
 		if (!tmp_obj->action_description)
-			tmp_obj->action_description = str_dup("Mail system error - please report.  Error #11.\r\n");
+			tmp_obj->action_description =
+				str_dup("Mail system error - please report.  Error #11.\r\n");
 		obj_to_char(tmp_obj, ch);
 
 		act("$n gives you a piece of mail.", FALSE, mailman, 0, ch, TO_VICT);

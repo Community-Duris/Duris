@@ -52,11 +52,13 @@ static uint64_t rnd64(void)
 
 void randomize(uint64_t seed)
 {
-	if (!seed) {
+	if (!seed)
+	{
 #if _WIN32
 #pragma comment(lib, "Bcrypt.lib")
 		if (BCryptGenRandom(NULL, (PUCHAR)rng_state, sizeof rng_state,
-			BCRYPT_USE_SYSTEM_PREFERRED_RNG)) {
+				    BCRYPT_USE_SYSTEM_PREFERRED_RNG))
+		{
 			return;
 		}
 #else

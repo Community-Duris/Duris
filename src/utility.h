@@ -11,7 +11,7 @@
 
 #include "structs.h"
 
-int  GET_LVL_FOR_SKILL(P_char ch, int skill);
+int GET_LVL_FOR_SKILL(P_char ch, int skill);
 bool is_ansi_char(char collor_char);
 
 void connect_rooms(int, int, int, int);
@@ -30,11 +30,11 @@ int direction_tag(P_char ch);
 const char *condition_str(P_char ch);
 
 string pad_ansi(const char *str, int length, bool trim_to_length = FALSE);
-void   trim_and_end_colorless(char *orig, char *good, int length);
+void trim_and_end_colorless(char *orig, char *good, int length);
 
 P_char get_player_from_name(char *name);
-int    get_player_pid_from_name(char *name);
-char  *get_player_name_from_pid(int pid);
+int get_player_pid_from_name(char *name);
+char *get_player_name_from_pid(int pid);
 
 bool sub_string(const char *, const char *);
 bool sub_string_cs(const char *, const char *);

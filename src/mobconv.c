@@ -10,14 +10,14 @@
 #include "specializations.h"
 #include "spells.h"
 
-extern P_index           mob_index; /* for IS_SHOPKEEPER() macro */
-extern struct stat_data  stat_factor[];
-extern float             class_hitpoints[];
-float                    hp_mob_con_factor;
-float                    hp_mob_npc_pc_ratio;
-extern P_room            world;
+extern P_index mob_index; /* for IS_SHOPKEEPER() macro */
+extern struct stat_data stat_factor[];
+extern float class_hitpoints[];
+float hp_mob_con_factor;
+float hp_mob_npc_pc_ratio;
+extern P_room world;
 extern struct zone_data *zone_table;
-extern char             *specdata[][MAX_SPEC];
+extern char *specdata[][MAX_SPEC];
 
 void set_npc_multi(P_char ch)
 {
@@ -43,7 +43,7 @@ void set_npc_multi(P_char ch)
 void convertMob(P_char ch)
 {
 	float xp, copp, silv, gold, plat;
-	int   damN, damS, damA, hits, level, x, xhigh;
+	int damN, damS, damA, hits, level, x, xhigh;
 
 	if (!ch || IS_PC(ch))
 		return;
@@ -122,7 +122,8 @@ void convertMob(P_char ch)
 	/* some mobs, we do NOT convert! */
 	if (IS_SET(ch->specials.act, ACT_IGNORE) || strstr(ch->player.name, "_ignore_"))
 	{
-		ch->points.hit = ch->points.max_hit = ch->points.base_hit = MAX(1, ch->points.base_hit / 4);
+		ch->points.hit = ch->points.max_hit = ch->points.base_hit =
+			MAX(1, ch->points.base_hit / 4);
 		affect_total(ch, FALSE);
 		return;
 	}
@@ -144,7 +145,7 @@ void convertMob(P_char ch)
 	if (GET_LEVEL(ch) > 50)
 	{
 		//    GET_EXP(ch) = (int) (GET_LEVEL(ch) * 2500);
-		xp   = 4000;
+		xp = 4000;
 		copp = 0;
 		silv = 0;
 		gold = .4292;
@@ -152,7 +153,7 @@ void convertMob(P_char ch)
 	}
 	else if (GET_LEVEL(ch) > 40)
 	{
-		xp   = 1500;
+		xp = 1500;
 		copp = 0;
 		silv = 0;
 		gold = .3637;
@@ -160,7 +161,7 @@ void convertMob(P_char ch)
 	}
 	else if (GET_LEVEL(ch) > 30)
 	{
-		xp   = 800;
+		xp = 800;
 		copp = 0;
 		silv = 0;
 		gold = .2857;
@@ -168,7 +169,7 @@ void convertMob(P_char ch)
 	}
 	else if (GET_LEVEL(ch) > 20)
 	{
-		xp   = 550;
+		xp = 550;
 		copp = .6667;
 		silv = .4546;
 		gold = .2223;
@@ -176,7 +177,7 @@ void convertMob(P_char ch)
 	}
 	else if (GET_LEVEL(ch) > 10)
 	{
-		xp   = 300;
+		xp = 300;
 		copp = .5000;
 		silv = .4000;
 		gold = .1667;
@@ -184,24 +185,26 @@ void convertMob(P_char ch)
 	}
 	else
 	{
-		xp   = 80;
+		xp = 80;
 		copp = .4000;
 		silv = .3334;
 		gold = 0.0;
 		plat = 0.0;
 	}
 
-	if (IS_ACT(ch, ACT_BREATHES_FIRE | ACT_BREATHES_LIGHTNING | ACT_BREATHES_FROST | ACT_BREATHES_ACID | ACT_BREATHES_GAS | ACT_BREATHES_SHADOW | ACT_BREATHES_BLIND_GAS))
+	if (IS_ACT(ch, ACT_BREATHES_FIRE | ACT_BREATHES_LIGHTNING | ACT_BREATHES_FROST |
+			       ACT_BREATHES_ACID | ACT_BREATHES_GAS | ACT_BREATHES_SHADOW |
+			       ACT_BREATHES_BLIND_GAS))
 	{
 		xp *= 2;
 	}
 
 	/* apply multipliers */
-	GET_EXP(ch)      = (int)(level * xp);
+	GET_EXP(ch) = (int)(level * xp);
 	GET_PLATINUM(ch) = (int)(level * plat * number(75, 125) / 100);
-	GET_GOLD(ch)     = (int)(level * gold * number(75, 125) / 100);
-	GET_SILVER(ch)   = (int)(level * silv * number(75, 125) / 100);
-	GET_COPPER(ch)   = (int)(level * copp * number(75, 125) / 100);
+	GET_GOLD(ch) = (int)(level * gold * number(75, 125) / 100);
+	GET_SILVER(ch) = (int)(level * silv * number(75, 125) / 100);
+	GET_COPPER(ch) = (int)(level * copp * number(75, 125) / 100);
 
 	// EXP modifiers are found in limits.c in gain_exp().
 
@@ -216,10 +219,16 @@ void convertMob(P_char ch)
 	if (!GET_MONEY(ch))
 		GET_COPPER(ch) = 1;
 
-	if ((GET_RACE(ch) == RACE_F_ELEMENTAL) || (GET_RACE(ch) == RACE_A_ELEMENTAL) || (GET_RACE(ch) == RACE_W_ELEMENTAL) || (GET_RACE(ch) == RACE_E_ELEMENTAL) || (GET_RACE(ch) == RACE_V_ELEMENTAL) ||
-	    (GET_RACE(ch) == RACE_I_ELEMENTAL) || IS_UNDEADRACE(ch) || (GET_RACE(ch) == RACE_INSECT) || (GET_RACE(ch) == RACE_REPTILE) || (GET_RACE(ch) == RACE_SNAKE) || (GET_RACE(ch) == RACE_ARACHNID) ||
-	    (GET_RACE(ch) == RACE_AQUATIC_ANIMAL) || (GET_RACE(ch) == RACE_FLYING_ANIMAL) || (GET_RACE(ch) == RACE_QUADRUPED) || (GET_RACE(ch) == RACE_ANIMAL) || (GET_RACE(ch) == RACE_PLANT) ||
-	    (GET_RACE(ch) == RACE_HERBIVORE) || (GET_RACE(ch) == RACE_CARNIVORE) || (GET_RACE(ch) == RACE_PARASITE) || (GET_RACE(ch) == RACE_SLIME) || (GET_RACE(ch) == RACE_CONSTRUCT) ||
+	if ((GET_RACE(ch) == RACE_F_ELEMENTAL) || (GET_RACE(ch) == RACE_A_ELEMENTAL) ||
+	    (GET_RACE(ch) == RACE_W_ELEMENTAL) || (GET_RACE(ch) == RACE_E_ELEMENTAL) ||
+	    (GET_RACE(ch) == RACE_V_ELEMENTAL) || (GET_RACE(ch) == RACE_I_ELEMENTAL) ||
+	    IS_UNDEADRACE(ch) || (GET_RACE(ch) == RACE_INSECT) || (GET_RACE(ch) == RACE_REPTILE) ||
+	    (GET_RACE(ch) == RACE_SNAKE) || (GET_RACE(ch) == RACE_ARACHNID) ||
+	    (GET_RACE(ch) == RACE_AQUATIC_ANIMAL) || (GET_RACE(ch) == RACE_FLYING_ANIMAL) ||
+	    (GET_RACE(ch) == RACE_QUADRUPED) || (GET_RACE(ch) == RACE_ANIMAL) ||
+	    (GET_RACE(ch) == RACE_PLANT) || (GET_RACE(ch) == RACE_HERBIVORE) ||
+	    (GET_RACE(ch) == RACE_CARNIVORE) || (GET_RACE(ch) == RACE_PARASITE) ||
+	    (GET_RACE(ch) == RACE_SLIME) || (GET_RACE(ch) == RACE_CONSTRUCT) ||
 	    (GET_RACE(ch) == RACE_GOLEM) || (isname("_nomoney_", GET_NAME(ch))))
 		GET_PLATINUM(ch) = GET_GOLD(ch) = GET_SILVER(ch) = GET_COPPER(ch) = 0;
 
@@ -227,11 +236,13 @@ void convertMob(P_char ch)
 	if (GET_CLASS(ch, CLASS_PSIONICIST))
 	{
 		// 30 : double, 45 : triple, 60 : quadruple mana. - This helps with cannibalize spell.
-		ch->points.mana = ch->points.base_mana = ch->points.max_mana = level * 25 * (level > 29 ? level / 15 : 1);
+		ch->points.mana = ch->points.base_mana = ch->points.max_mana =
+			level * 25 * (level > 29 ? level / 15 : 1);
 	}
 	else
 	{
-		ch->points.mana = ch->points.base_mana = ch->points.max_mana = level * 10 * (level > 29 ? level / 15 : 1);
+		ch->points.mana = ch->points.base_mana = ch->points.max_mana =
+			level * 10 * (level > 29 ? level / 15 : 1);
 	}
 
 	/* thac0 */
@@ -256,26 +267,26 @@ void convertMob(P_char ch)
 	/* racial conditions to AC */
 	switch (GET_RACE(ch))
 	{
-		case RACE_F_ELEMENTAL:
-		case RACE_W_ELEMENTAL:
-		case RACE_A_ELEMENTAL:
-		case RACE_E_ELEMENTAL:
-		case RACE_V_ELEMENTAL:
-		case RACE_GHOST:
-		case RACE_DRAGONKIN:
-			ch->points.base_armor -= 50;
-			break;
-		case RACE_GIANT:
-			ch->points.base_armor += 10;
-			break;
-		case RACE_DEMON:
-		case RACE_DEVIL:
-			ch->points.base_armor -= 100;
-			break;
-		case RACE_DRAGON:
-		case RACE_I_ELEMENTAL:
-			ch->points.base_armor -= 150;
-			break;
+	case RACE_F_ELEMENTAL:
+	case RACE_W_ELEMENTAL:
+	case RACE_A_ELEMENTAL:
+	case RACE_E_ELEMENTAL:
+	case RACE_V_ELEMENTAL:
+	case RACE_GHOST:
+	case RACE_DRAGONKIN:
+		ch->points.base_armor -= 50;
+		break;
+	case RACE_GIANT:
+		ch->points.base_armor += 10;
+		break;
+	case RACE_DEMON:
+	case RACE_DEVIL:
+		ch->points.base_armor -= 100;
+		break;
+	case RACE_DRAGON:
+	case RACE_I_ELEMENTAL:
+		ch->points.base_armor -= 150;
+		break;
 	}
 	ch->points.base_armor = BOUNDED(-750, ch->points.base_armor, 100);
 
@@ -368,8 +379,8 @@ void convertMob(P_char ch)
 	}
 
 	ch->points.base_damroll = ch->points.damroll = damA + GET_LEVEL(ch) / 2;
-	ch->points.damnodice                         = damN;
-	ch->points.damsizedice                       = damS;
+	ch->points.damnodice = damN;
+	ch->points.damsizedice = damS;
 
 	/* this formula calculates mob hitpoints with an assumption
 	 * hp_mob_npc_pc_ratio provided in property hitpoints.mob.NpcPcRatio
@@ -382,8 +393,13 @@ void convertMob(P_char ch)
 	 * hitpoints etc. the goal was to make it intuitively adjustable via
 	 * two provided properties. /tharkun
 	 */
-	hits = (int)((0.00000045 * (stat_factor[GET_RACE(ch)].Con * stat_factor[GET_RACE(ch)].Con * hp_mob_con_factor + 100 * 100 * (1 - hp_mob_con_factor)) * level * level + 2) * level *
-	             hp_mob_npc_pc_ratio);
+	hits = (int)((0.00000045 *
+			      (stat_factor[GET_RACE(ch)].Con * stat_factor[GET_RACE(ch)].Con *
+				       hp_mob_con_factor +
+			       100 * 100 * (1 - hp_mob_con_factor)) *
+			      level * level +
+		      2) *
+		     level * hp_mob_npc_pc_ratio);
 
 	hits -= (int)(0.5 * hits * (1.0 - class_hitpoints[flag2idx(ch->player.m_class)]));
 
@@ -394,8 +410,8 @@ void convertMob(P_char ch)
 
 	ch->points.base_hit = hits;
 	ch->points.hit = ch->points.max_hit = ch->points.base_hit;
-	ch->only.npc->lowest_hit            = INT_MAX;
-	ch->points.base_vitality            = dice(5, 10) + 80;
+	ch->only.npc->lowest_hit = INT_MAX;
+	ch->points.base_vitality = dice(5, 10) + 80;
 	ch->points.vitality = ch->points.base_vitality = ch->points.max_vitality;
 
 	damA += damN * (1 + damS) / 2;
@@ -404,24 +420,26 @@ void convertMob(P_char ch)
 
 	if (damA > damN)
 	{
-		damA                    = damN;
+		damA = damN;
 		ch->points.base_damroll = ch->points.damroll = damA / 3 + GET_LEVEL(ch) / 2;
 		damA -= ch->points.base_damroll;
 		ch->points.damsizedice = 7;
-		ch->points.damnodice   = MAX(1, damA / 4);
+		ch->points.damnodice = MAX(1, damA / 4);
 	}
 
 	ch->curr_stats = ch->base_stats;
 
 	/* if they don't have memory, and we thing they should, give it to
 	   them */
-	if (!IS_SET(ch->specials.act, ACT_MEMORY) && !IS_ANIMAL(ch) && !IS_INSECT(ch) && (GET_RACE(ch) != RACE_PLANT))
+	if (!IS_SET(ch->specials.act, ACT_MEMORY) && !IS_ANIMAL(ch) && !IS_INSECT(ch) &&
+	    (GET_RACE(ch) != RACE_PLANT))
 	{
 		SET_BIT(ch->specials.act, ACT_MEMORY);
 	}
 
 	/* druids are neutral aligned... */
-	if (GET_CLASS(ch, CLASS_DRUID) || (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID)))
+	if (GET_CLASS(ch, CLASS_DRUID) ||
+	    (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID)))
 		GET_ALIGNMENT(ch) = BOUNDED(-349, GET_ALIGNMENT(ch), 349);
 
 	/* paladins and rangers are good aligned */
@@ -442,8 +460,9 @@ void convertMob(P_char ch)
 		GET_ALIGNMENT(ch) = -1000;
 
 	/* horses get ridden.. */
-	if (((GET_RACE(ch) == RACE_QUADRUPED) || isname("horse", GET_NAME(ch))) && (GET_RACE(ch) != RACE_UNDEAD) && !IS_SET(ch->specials.act, ACT_MOUNT) && !IS_SET(ch->only.npc->aggro_flags, AGGR_ALL) &&
-	    GET_LEVEL(ch) < 26)
+	if (((GET_RACE(ch) == RACE_QUADRUPED) || isname("horse", GET_NAME(ch))) &&
+	    (GET_RACE(ch) != RACE_UNDEAD) && !IS_SET(ch->specials.act, ACT_MOUNT) &&
+	    !IS_SET(ch->only.npc->aggro_flags, AGGR_ALL) && GET_LEVEL(ch) < 26)
 		SET_BIT(ch->specials.act, ACT_MOUNT);
 
 	if (IS_SET(ch->specials.act, ACT_MOUNT))
@@ -458,7 +477,9 @@ void convertMob(P_char ch)
 		REMOVE_BIT(ch->specials.act, ACT_SCAVENGER);
 	}
 	/* thieves and neutral folks pick up stuff laying around... */
-	else if ((GET_ALIGNMENT(ch) == 0 || isname("thief", GET_NAME(ch)) || GET_CLASS(ch, CLASS_ROGUE | CLASS_THIEF)) && IS_HUMANOID(ch))
+	else if ((GET_ALIGNMENT(ch) == 0 || isname("thief", GET_NAME(ch)) ||
+		  GET_CLASS(ch, CLASS_ROGUE | CLASS_THIEF)) &&
+		 IS_HUMANOID(ch))
 	{
 		SET_BIT(ch->specials.act, ACT_SCAVENGER);
 	}
@@ -471,7 +492,9 @@ void convertMob(P_char ch)
 	   being cast, need to make sure area builders didn't use it
 	   improperly... so... */
 	if (IS_AFFECTED(ch, AFF_STONE_SKIN) &&
-	    !((GET_LEVEL(ch) > 39) && ((GET_RACE(ch) == RACE_GOLEM) || (GET_RACE(ch) == RACE_CONSTRUCT) || isname("iron", GET_NAME(ch)) || isname("stone", GET_NAME(ch)))))
+	    !((GET_LEVEL(ch) > 39) &&
+	      ((GET_RACE(ch) == RACE_GOLEM) || (GET_RACE(ch) == RACE_CONSTRUCT) ||
+	       isname("iron", GET_NAME(ch)) || isname("stone", GET_NAME(ch)))))
 	{
 		REMOVE_BIT(ch->specials.affected_by, AFF_STONE_SKIN);
 	}
@@ -484,12 +507,14 @@ void convertMob(P_char ch)
 
 	/* remove ALL affects that don't belong! */
 	REMOVE_BIT(ch->specials.affected_by,
-	           /*           AFF_BLIND |*/
-	           AFF_KNOCKED_OUT | AFF_BOUND | AFF_CHARM | AFF_FEAR | AFF_MEDITATE | AFF_CAMPING | AFF_SLEEP);
+		   /*           AFF_BLIND |*/
+		   AFF_KNOCKED_OUT | AFF_BOUND | AFF_CHARM | AFF_FEAR | AFF_MEDITATE | AFF_CAMPING |
+			   AFF_SLEEP);
 
 	REMOVE_BIT(ch->specials.affected_by2,
-	           AFF2_MINOR_PARALYSIS | AFF2_MAJOR_PARALYSIS | AFF2_POISONED | AFF2_SILENCED | AFF2_STUNNED | AFF2_HOLDING_BREATH | AFF2_MEMORIZING | AFF2_IS_DROWNING | AFF2_CASTING | AFF2_SCRIBING |
-	               AFF2_HUNTER);
+		   AFF2_MINOR_PARALYSIS | AFF2_MAJOR_PARALYSIS | AFF2_POISONED | AFF2_SILENCED |
+			   AFF2_STUNNED | AFF2_HOLDING_BREATH | AFF2_MEMORIZING | AFF2_IS_DROWNING |
+			   AFF2_CASTING | AFF2_SCRIBING | AFF2_HUNTER);
 
 	REMOVE_BIT(ch->specials.affected_by3, AFF3_TRACKING | AFF3_FAMINE | AFF3_SWIMMING);
 	REMOVE_BIT(ch->specials.affected_by4, AFF4_SACKING);
@@ -498,9 +523,12 @@ void convertMob(P_char ch)
 	if (IS_SET(ch->specials.act, ACT_ELITE))
 	{
 		give_proper_stat(ch);
-		ch->points.hit = ch->points.max_hit = ch->points.base_hit = (int)(ch->points.hit * get_property("hitpoints.mob.eliteBonus", 2.5));
-		ch->points.damnodice                                      = (int)(get_property("damage.eliteBonus", 1.2) * ch->points.damnodice);
-		GET_EXP(ch)                                               = (int)(GET_EXP(ch) * get_property("hitpoints.mob.eliteBonus", 2.5) * get_property("damage.eliteBonus", 1.2));
+		ch->points.hit = ch->points.max_hit = ch->points.base_hit =
+			(int)(ch->points.hit * get_property("hitpoints.mob.eliteBonus", 2.5));
+		ch->points.damnodice =
+			(int)(get_property("damage.eliteBonus", 1.2) * ch->points.damnodice);
+		GET_EXP(ch) = (int)(GET_EXP(ch) * get_property("hitpoints.mob.eliteBonus", 2.5) *
+				    get_property("damage.eliteBonus", 1.2));
 	}
 
 	affect_total(ch, FALSE);
@@ -510,18 +538,22 @@ void convertMob(P_char ch)
 // intended to be called only once, right after mob is loaded and has birthplace set
 void apply_zone_modifier(P_char ch)
 {
-	int difficulty = BOUNDED(1, zone_table[world[real_room0(GET_BIRTHPLACE(ch))].zone].difficulty, 10);
+	int difficulty =
+		BOUNDED(1, zone_table[world[real_room0(GET_BIRTHPLACE(ch))].zone].difficulty, 10);
 
 	if (difficulty == 1)
 		return;
 
-	float hit_mod   = 1.0 + ((float)get_property("hitpoints.zoneDifficulty.factor", 0.500) * difficulty);
+	float hit_mod =
+		1.0 + ((float)get_property("hitpoints.zoneDifficulty.factor", 0.500) * difficulty);
 	GET_MAX_HIT(ch) = GET_HIT(ch) = ch->points.base_hit = (int)(ch->points.base_hit * hit_mod);
 
-	float exp_mod = 1.0 + ((float)get_property("exp.zoneDifficulty.factor", 0.500) * difficulty);
-	GET_EXP(ch)   = (int)(GET_EXP(ch) * exp_mod);
+	float exp_mod =
+		1.0 + ((float)get_property("exp.zoneDifficulty.factor", 0.500) * difficulty);
+	GET_EXP(ch) = (int)(GET_EXP(ch) * exp_mod);
 
-	float damage_mod_mod    = 1.0 + ((float)get_property("damage.zoneDifficulty.mod.factor", 0.200) * difficulty);
+	float damage_mod_mod =
+		1.0 + ((float)get_property("damage.zoneDifficulty.mod.factor", 0.200) * difficulty);
 	ch->specials.damage_mod = (float)(ch->specials.damage_mod * damage_mod_mod);
 }
 
@@ -529,89 +561,89 @@ int GetFormType(P_char ch)
 {
 	switch (GET_RACE(ch))
 	{
-		case RACE_HUMAN:
-		case RACE_BARBARIAN:
-		case RACE_DROW:
-		case RACE_GREY:
-		case RACE_MOUNTAIN:
-		case RACE_DUERGAR:
-		case RACE_HALFLING:
-		case RACE_GNOME:
-		case RACE_ORC:
-		case RACE_THRIKREEN:
-		case RACE_CENTAUR:
-		case RACE_GITHYANKI:
-		case RACE_SHADE:
-		case RACE_MINOTAUR:
-		case RACE_HALFELF:
-		case RACE_GOBLIN:
-		case RACE_HALFORC:
-		case RACE_ELADRIN:
-		case RACE_FAERIE:
-		case RACE_UNDEAD:
-		case RACE_LICH:
-		case RACE_PVAMPIRE:
-		case RACE_PSBEAST:
-		case RACE_PDKNIGHT:
-		case RACE_VAMPIRE:
-		case RACE_GHOST:
-		case RACE_AQUATIC_ANIMAL:
-		case RACE_FLYING_ANIMAL:
-		case RACE_HUMANOID:
-		case RACE_HERBIVORE:
-			return MSG_HIT;
-			break;
-		case RACE_ILLITHID:
-			return MSG_WHIP;
-			break;
-		case RACE_OGRE:
-		case RACE_TROLL:
-		case RACE_GOLEM:
-		case RACE_PRIMATE:
-		case RACE_SGIANT:
-		case RACE_FIRBOLG:
-		case RACE_SNOW_OGRE:
-			return MSG_MAUL;
-			break;
-		case RACE_F_ELEMENTAL:
-		case RACE_A_ELEMENTAL:
-		case RACE_W_ELEMENTAL:
-		case RACE_E_ELEMENTAL:
-		case RACE_EFREET:
-		case RACE_DEMON:
-		case RACE_GIANT:
-		case RACE_DEVIL:
-		case RACE_PLANT:
-		case RACE_CONSTRUCT:
-			return MSG_CRUSH;
-			break;
-		case RACE_LYCANTH:
-		case RACE_DRAGON:
-		case RACE_DRACOLICH:
-		case RACE_DRAGONKIN:
-		case RACE_REPTILE:
-		case RACE_SKELETON:
-		case RACE_ZOMBIE:
-		case RACE_REVENANT:
-		case RACE_SPECTRE:
-			return MSG_CLAW;
-			break;
-		case RACE_QUADRUPED:
-			return MSG_THRASH;
-			break;
-		case RACE_SNAKE:
-		case RACE_CARNIVORE:
-		case RACE_PARASITE:
-		case RACE_ANIMAL:
-		case RACE_BEHOLDER:
-		case RACE_PWORM:
-			return MSG_BITE;
-			break;
-		case RACE_INSECT:
-		case RACE_ARACHNID:
-			return MSG_STING;
-			break;
-		default:
-			return MSG_HIT;
+	case RACE_HUMAN:
+	case RACE_BARBARIAN:
+	case RACE_DROW:
+	case RACE_GREY:
+	case RACE_MOUNTAIN:
+	case RACE_DUERGAR:
+	case RACE_HALFLING:
+	case RACE_GNOME:
+	case RACE_ORC:
+	case RACE_THRIKREEN:
+	case RACE_CENTAUR:
+	case RACE_GITHYANKI:
+	case RACE_SHADE:
+	case RACE_MINOTAUR:
+	case RACE_HALFELF:
+	case RACE_GOBLIN:
+	case RACE_HALFORC:
+	case RACE_ELADRIN:
+	case RACE_FAERIE:
+	case RACE_UNDEAD:
+	case RACE_LICH:
+	case RACE_PVAMPIRE:
+	case RACE_PSBEAST:
+	case RACE_PDKNIGHT:
+	case RACE_VAMPIRE:
+	case RACE_GHOST:
+	case RACE_AQUATIC_ANIMAL:
+	case RACE_FLYING_ANIMAL:
+	case RACE_HUMANOID:
+	case RACE_HERBIVORE:
+		return MSG_HIT;
+		break;
+	case RACE_ILLITHID:
+		return MSG_WHIP;
+		break;
+	case RACE_OGRE:
+	case RACE_TROLL:
+	case RACE_GOLEM:
+	case RACE_PRIMATE:
+	case RACE_SGIANT:
+	case RACE_FIRBOLG:
+	case RACE_SNOW_OGRE:
+		return MSG_MAUL;
+		break;
+	case RACE_F_ELEMENTAL:
+	case RACE_A_ELEMENTAL:
+	case RACE_W_ELEMENTAL:
+	case RACE_E_ELEMENTAL:
+	case RACE_EFREET:
+	case RACE_DEMON:
+	case RACE_GIANT:
+	case RACE_DEVIL:
+	case RACE_PLANT:
+	case RACE_CONSTRUCT:
+		return MSG_CRUSH;
+		break;
+	case RACE_LYCANTH:
+	case RACE_DRAGON:
+	case RACE_DRACOLICH:
+	case RACE_DRAGONKIN:
+	case RACE_REPTILE:
+	case RACE_SKELETON:
+	case RACE_ZOMBIE:
+	case RACE_REVENANT:
+	case RACE_SPECTRE:
+		return MSG_CLAW;
+		break;
+	case RACE_QUADRUPED:
+		return MSG_THRASH;
+		break;
+	case RACE_SNAKE:
+	case RACE_CARNIVORE:
+	case RACE_PARASITE:
+	case RACE_ANIMAL:
+	case RACE_BEHOLDER:
+	case RACE_PWORM:
+		return MSG_BITE;
+		break;
+	case RACE_INSECT:
+	case RACE_ARACHNID:
+		return MSG_STING;
+		break;
+	default:
+		return MSG_HIT;
 	}
 }

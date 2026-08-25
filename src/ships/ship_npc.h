@@ -33,29 +33,30 @@ struct NPCShipCrewData
 P_ship try_load_pirate_ship(P_ship target);
 P_ship try_load_npc_ship(P_ship target, NPC_AI_Type type, int level, P_char dbg_ch);
 P_ship try_load_npc_ship(P_ship target, NPC_AI_Type type, int level, int location, P_char dgb_ch);
-P_ship load_npc_ship(int level, NPC_AI_Type type, int min_speed, int m_class, int room, P_char dgb_ch);
-bool   try_unload_npc_ship(P_ship ship);
+P_ship load_npc_ship(int level, NPC_AI_Type type, int min_speed, int m_class, int room,
+		     P_char dgb_ch);
+bool try_unload_npc_ship(P_ship ship);
 
 extern NPCShipCrewData npcShipCrewData[];
-P_char                 load_npc_ship_crew_member(P_ship ship, int room_no, int vnum, int load_eq);
-bool                   load_npc_ship_crew(P_ship ship, int crew_size, int ship_level);
-P_obj                  load_treasure_chest(P_ship ship, P_char captain, NPCShipCrewData *crew_data);
+P_char load_npc_ship_crew_member(P_ship ship, int room_no, int vnum, int load_eq);
+bool load_npc_ship_crew(P_ship ship, int crew_size, int ship_level);
+P_obj load_treasure_chest(P_ship ship, P_char captain, NPCShipCrewData *crew_data);
 
 int npc_ship_crew_member_func(P_char ch, P_char player, int cmd, char *arg);
 int npc_ship_crew_captain_func(P_char ch, P_char player, int cmd, char *arg);
 int npc_ship_crew_board_func(P_char ch, P_char player, int cmd, char *arg);
 
-#define CYRICS_REVENGE_CREW        4
-#define CYRICS_REVENGE_NAME        "&+RCy&+rri&+Lc's Rev&+ren&+Rge"
-#define ZONE_SHIP_NAME             "&+LTh&+we &+LBl&+wack &+LPe&+warl"
+#define CYRICS_REVENGE_CREW 4
+#define CYRICS_REVENGE_NAME "&+RCy&+rri&+Lc's Rev&+ren&+Rge"
+#define ZONE_SHIP_NAME "&+LTh&+we &+LBl&+wack &+LPe&+warl"
 #define CYRICS_REVENGE_NEXUS_STONE NEXUS_STONE_ENLIL
-#define ZONE_SHIP_ZONE_ENTRANCE    142201
-bool          load_cyrics_revenge();
-bool          load_zone_ship();
-bool          load_cyrics_revenge_crew(P_ship ship);
-int           get_cyrics_revenge_nexus_rvnum(P_ship cyrics_revenge);
+#define ZONE_SHIP_ZONE_ENTRANCE 142201
+bool load_cyrics_revenge();
+bool load_zone_ship();
+bool load_cyrics_revenge_crew(P_ship ship);
+int get_cyrics_revenge_nexus_rvnum(P_ship cyrics_revenge);
 extern P_ship cyrics_revenge;
 extern P_ship zone_ship;
-extern bool   nexus_to_cyrics_revenge;
+extern bool nexus_to_cyrics_revenge;
 
 #endif // _SHIP_NPC_H_

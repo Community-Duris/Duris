@@ -17,16 +17,16 @@
 #include "mm.h"
 #include "spells.h"
 
-extern P_room                world;
+extern P_room world;
 extern struct time_info_data time_info;
-extern struct zone_data     *zone_table;
-extern int                   top_of_zone_table;
-extern int                   mini_mode;
-extern const char           *race_types[];
-extern P_char                character_list;
-extern P_index               mob_index;
-extern P_desc                descriptor_list;
-extern const char           *town_name_list[];
+extern struct zone_data *zone_table;
+extern int top_of_zone_table;
+extern int mini_mode;
+extern const char *race_types[];
+extern P_char character_list;
+extern P_index mob_index;
+extern P_desc descriptor_list;
+extern const char *town_name_list[];
 // extern int rev_dir[];
 
 void check_item(P_char);
@@ -39,89 +39,87 @@ struct hometown_data hometowns[LAST_HOME] = {
      */
 
 	/* 1. Tharnadia */
-	{   JUSTICE_GOODHOME, 132618, {133050, 132628, 133057, 133065, 132504}, 132546, 132619},
+	{ JUSTICE_GOODHOME, 132618, { 133050, 132628, 133057, 133065, 132504 }, 132546, 132619 },
 
 	/* 2. iliithid  town */
-	{JUSTICE_NEUTRALHOME,      0,                      {96421, 0, 0, 0, 0},  96421,      0},
+	{ JUSTICE_NEUTRALHOME, 0, { 96421, 0, 0, 0, 0 }, 96421, 0 },
 
 	/* 3. drow town */
-	{   JUSTICE_EVILHOME,      0,              {36572, 36563, 36544, 0, 0},  36436,      0},
+	{ JUSTICE_EVILHOME, 0, { 36572, 36563, 36544, 0, 0 }, 36436, 0 },
 
 	/* 4. elftown */
-	{   JUSTICE_GOODHOME,   8096,                 {8096, 8087, 8214, 0, 0},   8025,   8097},
+	{ JUSTICE_GOODHOME, 8096, { 8096, 8087, 8214, 0, 0 }, 8025, 8097 },
 
 	/* 5. dwarf town */
-	{   JUSTICE_GOODHOME,  95643,              {95540, 95522, 95650, 0, 0},  95532,  95644},
+	{ JUSTICE_GOODHOME, 95643, { 95540, 95522, 95650, 0, 0 }, 95532, 95644 },
 
 	/* 6. duergar */
-	{   JUSTICE_EVILHOME,      0,                      {17173, 0, 0, 0, 0},  17173,      0},
+	{ JUSTICE_EVILHOME, 0, { 17173, 0, 0, 0, 0 }, 17173, 0 },
 
 	/* 7. halfling */
-	{   JUSTICE_GOODHOME,  16512,      {16506, 16522, 16526, 16653, 16551},  16705,  16513},
+	{ JUSTICE_GOODHOME, 16512, { 16506, 16522, 16526, 16653, 16551 }, 16705, 16513 },
 
 	/* 8. gnome town */
-	{   JUSTICE_GOODHOME,  66069,                      {66091, 0, 0, 0, 0},  66001,  66074},
+	{ JUSTICE_GOODHOME, 66069, { 66091, 0, 0, 0, 0 }, 66001, 66074 },
 
 	/* 9. faange (ogres) */
-	{   JUSTICE_EVILHOME,      0,                      {15231, 0, 0, 0, 0},  15231,      0},
+	{ JUSTICE_EVILHOME, 0, { 15231, 0, 0, 0, 0 }, 15231, 0 },
 
 	/* 10. ghore (trolls) */
-	{   JUSTICE_EVILHOME,      0,                      {11503, 0, 0, 0, 0},  11503,      0},
+	{ JUSTICE_EVILHOME, 0, { 11503, 0, 0, 0, 0 }, 11503, 0 },
 
 	/* 11. "ugta"  (barb) */
-	{   JUSTICE_GOODHOME,  39310,          {39100, 39109, 39166, 39310, 0},  39105,  39341},
+	{ JUSTICE_GOODHOME, 39310, { 39100, 39109, 39166, 39310, 0 }, 39105, 39341 },
 
 	/* 12. bloodstone... */
-	{JUSTICE_LEVEL_CHAOS,      0,                          {0, 0, 0, 0, 0},      0,      0},
+	{ JUSTICE_LEVEL_CHAOS, 0, { 0, 0, 0, 0, 0 }, 0, 0 },
 
 	/* 13. "shady"... orc town */
-	{   JUSTICE_EVILHOME,      0,      {97682, 97569, 97682, 97607, 97612},  97562,      0},
+	{ JUSTICE_EVILHOME, 0, { 97682, 97569, 97682, 97607, 97612 }, 97562, 0 },
 
 	/* 14 "nax" - mino hometown */
-	{JUSTICE_LEVEL_CHAOS,      0,                      {37701, 0, 0, 0, 0},  37701,      0},
+	{ JUSTICE_LEVEL_CHAOS, 0, { 37701, 0, 0, 0, 0 }, 37701, 0 },
 
 	/* 15 "fort marigot" (centaur) */
-	{   JUSTICE_GOODHOME,   5307,                 {5319, 5306, 5371, 0, 0},   5340,   5308},
+	{ JUSTICE_GOODHOME, 5307, { 5319, 5306, 5371, 0, 0 }, 5340, 5308 },
 
 	/* 16  new elftown */
-	{   JUSTICE_GOODHOME,  45006,      {45189, 45205, 45152, 45153, 45036},  45030,  45036},
+	{ JUSTICE_GOODHOME, 45006, { 45189, 45205, 45152, 45153, 45036 }, 45030, 45036 },
 
 	//  17 "Ancient City Ruins" (good undead)
-	{JUSTICE_LEVEL_CHAOS,      0,                      {66201, 0, 0, 0, 0},  66201,      0},
+	{ JUSTICE_LEVEL_CHAOS, 0, { 66201, 0, 0, 0, 0 }, 66201, 0 },
 
 	//  18 "payang" (evil undead)
-	{JUSTICE_LEVEL_CHAOS,      0,                      {90341, 0, 0, 0, 0},  90313,      0},
+	{ JUSTICE_LEVEL_CHAOS, 0, { 90341, 0, 0, 0, 0 }, 90313, 0 },
 
 	//  19 "Githyanki Fortress",
-	{   JUSTICE_EVILHOME,      0,                      {19400, 0, 0, 0, 0},  19400,      0},
+	{ JUSTICE_EVILHOME, 0, { 19400, 0, 0, 0, 0 }, 19400, 0 },
 
 	//  20 "Moregeeth",
-	{   JUSTICE_EVILHOME,      0,                      {70187, 0, 0, 0, 0},  70044,      0},
+	{ JUSTICE_EVILHOME, 0, { 70187, 0, 0, 0, 0 }, 70044, 0 },
 
 	//  "Harpy",
-	{JUSTICE_LEVEL_CHAOS,      0,                          {0, 0, 0, 0, 0},      0,      0},
+	{ JUSTICE_LEVEL_CHAOS, 0, { 0, 0, 0, 0, 0 }, 0, 0 },
 };
 
-struct mm_ds              *dead_justice_guard_pool = NULL;
-struct justice_guard_list *guard_list              = NULL;
+struct mm_ds *dead_justice_guard_pool = NULL;
+struct justice_guard_list *guard_list = NULL;
 
-const char *justice_flags[] = {"Evil",    /* JUSTICE_EVILHOME */
-                               "Good",    /* JUSTICE_GOODHOME */
-                               "Harsh",   /* JUSTICE_LEVEL_HARSH */
-                               "Chaotic", /* JUSTICE_LEVEL_CHAOS */
-                               "Undead",
-                               "Neutral",
-                               "\n"};
+const char *justice_flags[] = { "Evil", /* JUSTICE_EVILHOME */
+				"Good", /* JUSTICE_GOODHOME */
+				"Harsh", /* JUSTICE_LEVEL_HARSH */
+				"Chaotic", /* JUSTICE_LEVEL_CHAOS */
+				"Undead",  "Neutral", "\n" };
 
 int justice_send_guards(int to_rroom, P_char victim, int how_many)
 {
 	struct justice_guard_list *gl;
-	int                        best_dist = 9999;
-	int                        best_room = NOWHERE;
-	int                        i, town;
-	int                        hunt_type;
-	hunt_data                  data;
-	int                        ht = CHAR_IN_TOWN(victim);
+	int best_dist = 9999;
+	int best_room = NOWHERE;
+	int i, town;
+	int hunt_type;
+	hunt_data data;
+	int ht = CHAR_IN_TOWN(victim);
 
 	// WIPE2013 - Drannak
 	return FALSE; // disabling
@@ -129,7 +127,8 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 	// Only good hts get guards atm.
 	if (ht <= 0 || ht > LAST_HOME || !IS_SET(hometowns[ht - 1].flags, JUSTICE_GOODHOME))
 	{
-		wizlog(56, "Justice: %s not in good ht %d; no guards dispensed.", GET_NAME(victim), ht);
+		wizlog(56, "Justice: %s not in good ht %d; no guards dispensed.", GET_NAME(victim),
+		       ht);
 		return FALSE;
 	}
 
@@ -140,10 +139,11 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 	   it) */
 	for (gl = guard_list; gl; gl = gl->next)
 	{
-
 		/* justice guards that have the same victim as we'd set, and the
 		   same type flag that we'd set are counted as part of how_many */
-		if (/*gl->ch->only.npc && */ (GET_STAT(gl->ch) != STAT_DEAD) && IS_NPC(gl->ch) && IS_SET(gl->ch->only.npc->spec[2], MOB_SPEC_JUSTICE) && (gl->ch->specials.arrest_by == victim))
+		if (/*gl->ch->only.npc && */ (GET_STAT(gl->ch) != STAT_DEAD) && IS_NPC(gl->ch) &&
+		    IS_SET(gl->ch->only.npc->spec[2], MOB_SPEC_JUSTICE) &&
+		    (gl->ch->specials.arrest_by == victim))
 			how_many--;
 	}
 
@@ -169,7 +169,8 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 		rr = real_room(hometowns[town - 1].guard_room[i]);
 		if (rr == NOWHERE)
 			continue;
-		dir = find_first_step(rr, to_rroom, BFS_CAN_FLY | BFS_CAN_DISPEL | BFS_AVOID_NOMOB, 0, 0, &dist);
+		dir = find_first_step(rr, to_rroom, BFS_CAN_FLY | BFS_CAN_DISPEL | BFS_AVOID_NOMOB,
+				      0, 0, &dist);
 		if (dir == BFS_ALREADY_THERE)
 			dist = 0;
 		else if (dir < 0)
@@ -183,7 +184,8 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 
 	if (best_room == NOWHERE)
 	{
-		wizlog(56, "Justice: No guards able to get to room %d. Tracking %s in room %d.", world[to_rroom].number, GET_NAME(victim), world[victim->in_room].number);
+		wizlog(56, "Justice: No guards able to get to room %d. Tracking %s in room %d.",
+		       world[to_rroom].number, GET_NAME(victim), world[victim->in_room].number);
 		return FALSE;
 	}
 	/* This sets up the type of hunter event, based on the 'type' mob
@@ -202,7 +204,9 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 		tch = justice_make_guard(best_room);
 		if (!tch)
 		{
-			wizlog(56, "Justice: Unable to load mob vnum %d. Tracking: %s in room %d.", hometowns[town - 1].guard_mob, GET_NAME(victim), world[victim->in_room].number);
+			wizlog(56, "Justice: Unable to load mob vnum %d. Tracking: %s in room %d.",
+			       hometowns[town - 1].guard_mob, GET_NAME(victim),
+			       world[victim->in_room].number);
 			return FALSE;
 		}
 
@@ -217,11 +221,12 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 		data.huntFlags = BFS_CAN_FLY | BFS_BREAK_WALLS;
 		if (npc_has_spell_slot(tch, SPELL_DISPEL_MAGIC))
 			data.huntFlags |= BFS_CAN_DISPEL;
-		data.retry     = 0;
+		data.retry = 0;
 		data.retry_dir = 0;
 		data.path_step = -1;
 
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, tch, NULL, NULL, 0, &data, sizeof(hunt_data));
+		add_event(event_mob_hunt, PULSE_MOB_HUNT, tch, NULL, NULL, 0, &data,
+			  sizeof(hunt_data));
 		// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, tch, data);
 		how_many--;
 
@@ -232,9 +237,9 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 P_char justice_make_guard(int rroom)
 {
 	/* assumes rroom is a valid real room number */
-	int                        vnum, town;
-	P_char                     ch;
-	P_obj                      obj = NULL;
+	int vnum, town;
+	P_char ch;
+	P_obj obj = NULL;
 	struct justice_guard_list *gl;
 
 	vnum = hometowns[zone_table[world[rroom].zone].hometown - 1].guard_mob;
@@ -299,7 +304,7 @@ P_char justice_make_guard(int rroom)
 	// dispelling walls, and just neat that a group of 5 should have a cleric
 	if (!npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && !number(0, 3))
 	{
-		ch->player.level   = 61;
+		ch->player.level = 61;
 		ch->player.m_class = CLASS_CLERIC;
 	}
 
@@ -312,10 +317,11 @@ P_char justice_make_guard(int rroom)
 	   provides a nice monitoring system via the mm_* debugging code. */
 
 	if (!dead_justice_guard_pool)
-		dead_justice_guard_pool = mm_create("JUSTICE", sizeof(struct justice_guard_list), offsetof(struct justice_guard_list, next), 1);
-	gl         = (struct justice_guard_list *)mm_get(dead_justice_guard_pool);
-	gl->ch     = ch;
-	gl->next   = guard_list;
+		dead_justice_guard_pool = mm_create("JUSTICE", sizeof(struct justice_guard_list),
+						    offsetof(struct justice_guard_list, next), 1);
+	gl = (struct justice_guard_list *)mm_get(dead_justice_guard_pool);
+	gl->ch = ch;
+	gl->next = guard_list;
 	guard_list = gl;
 
 	return ch;
@@ -341,7 +347,7 @@ void justice_guard_remove(P_char ch)
 
 	if (ch == guard_list->ch)
 	{
-		gl         = guard_list;
+		gl = guard_list;
 		guard_list = gl->next;
 		mm_release(dead_justice_guard_pool, gl);
 	}
@@ -360,7 +366,7 @@ void justice_guard_remove(P_char ch)
 
 void justice_delete_guard(P_char ch)
 {
-	int   i;
+	int i;
 	P_obj obj;
 
 	if (IS_PC(ch) || (!IS_SET(ch->only.npc->spec[2], MOB_SPEC_JUSTICE)))
@@ -402,7 +408,7 @@ void justice_delete_guard(P_char ch)
 void justice_action_invader(P_char ch)
 {
 	struct zone_data *zone_struct;
-	int               room;
+	int room;
 
 	if (IS_TRUSTED(ch))
 		return;
@@ -419,7 +425,7 @@ void justice_action_invader(P_char ch)
 		return;
 
 	zone_struct = &zone_table[world[ch->in_room].zone];
-	room        = ch->in_room;
+	room = ch->in_room;
 
 	//  Re-doing justice here.  Major idea is to get rid of the overkill response
 	//  which doesn't allow for any hometown raiding, but still not make it far
@@ -449,22 +455,34 @@ void justice_action_invader(P_char ch)
 			justice_send_guards(NOWHERE, ch, 1);
 		}
 
-		if (IS_SET(hometowns[CHAR_IN_TOWN(ch) - 1].flags, JUSTICE_GOODHOME) && !(number(0, 15)) && get_property("justice.alarms.good", 1))
+		if (IS_SET(hometowns[CHAR_IN_TOWN(ch) - 1].flags, JUSTICE_GOODHOME) &&
+		    !(number(0, 15)) && get_property("justice.alarms.good", 1))
 		{
 			int rnum = number(1, 4);
 			if (rnum == 1)
-				justice_hometown_echo(CHAR_IN_TOWN(ch), "&+RAlarm bells sound, &+rsignalling an invasion!&n");
+				justice_hometown_echo(
+					CHAR_IN_TOWN(ch),
+					"&+RAlarm bells sound, &+rsignalling an invasion!&n");
 			if (rnum == 2)
-				justice_hometown_echo(CHAR_IN_TOWN(ch), "&+LMilitia forces muster to bolster the town's defenses against the &=Lrinvaders!!!&n");
+				justice_hometown_echo(
+					CHAR_IN_TOWN(ch),
+					"&+LMilitia forces muster to bolster the town's defenses against the &=Lrinvaders!!!&n");
 			if (rnum == 3)
-				justice_hometown_echo(CHAR_IN_TOWN(ch), "&+LMilitia forces muster to bolster the town's defenses against the &=Lrinvaders!!!&n");
+				justice_hometown_echo(
+					CHAR_IN_TOWN(ch),
+					"&+LMilitia forces muster to bolster the town's defenses against the &=Lrinvaders!!!&n");
 			if (rnum == 4)
-				justice_hometown_echo(CHAR_IN_TOWN(ch), "&+RAlarm bells sound, &+rsignalling an invasion!&n");
+				justice_hometown_echo(
+					CHAR_IN_TOWN(ch),
+					"&+RAlarm bells sound, &+rsignalling an invasion!&n");
 			return;
 		}
-		else if (IS_SET(hometowns[CHAR_IN_TOWN(ch) - 1].flags, JUSTICE_EVILHOME) && !number(0, 15) && get_property("justice.alarms.evil", 1))
+		else if (IS_SET(hometowns[CHAR_IN_TOWN(ch) - 1].flags, JUSTICE_EVILHOME) &&
+			 !number(0, 15) && get_property("justice.alarms.evil", 1))
 		{
-			justice_hometown_echo(CHAR_IN_TOWN(ch), "&+yHorns begin to &+Ybellow &+yand drums &+cthunder&n &+yto the &+Rcall to arms!&n");
+			justice_hometown_echo(
+				CHAR_IN_TOWN(ch),
+				"&+yHorns begin to &+Ybellow &+yand drums &+cthunder&n &+yto the &+Rcall to arms!&n");
 			return;
 		}
 	}
@@ -499,16 +517,18 @@ void justice_action_invader(P_char ch)
  * will segfault and blame you if you do it.
  */
 
-int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*locator_proc)(P_char, P_char, int, char *), int vnums[], ulong act_mask, ulong no_act_mask)
+int shout_and_hunt(P_char ch, int max_distance, const char *shout_str,
+		   int (*locator_proc)(P_char, P_char, int, char *), int vnums[], ulong act_mask,
+		   ulong no_act_mask)
 {
-	P_char    target;
-	P_nevent  ev;
-	char      buffer[MAX_STRING_LENGTH], buffer2[MAX_STRING_LENGTH];
+	P_char target;
+	P_nevent ev;
+	char buffer[MAX_STRING_LENGTH], buffer2[MAX_STRING_LENGTH];
 	hunt_data data;
-	int       dummy;
-	int       i;
-	bool      has_help   = FALSE;
-	bool      found_help = FALSE;
+	int dummy;
+	int i;
+	bool has_help = FALSE;
+	bool found_help = FALSE;
 
 	if (!ch || !max_distance || (act_mask & no_act_mask))
 	{
@@ -545,7 +565,8 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 	 */
 
 	// Attack the master and shout for the master not the pet.
-	if (IS_NPC(GET_OPPONENT(ch)) && IS_PC_PET(GET_OPPONENT(ch)) && GET_OPPONENT(ch)->in_room == (GET_MASTER(GET_OPPONENT(ch)))->in_room)
+	if (IS_NPC(GET_OPPONENT(ch)) && IS_PC_PET(GET_OPPONENT(ch)) &&
+	    GET_OPPONENT(ch)->in_room == (GET_MASTER(GET_OPPONENT(ch)))->in_room)
 	{
 		GET_OPPONENT(ch) = GET_MASTER(GET_OPPONENT(ch));
 	}
@@ -559,7 +580,8 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 	 * scream for help
 	 */
 	snprintf(buffer, MAX_STRING_LENGTH, "%s shouts '", ch->player.short_descr);
-	snprintf(buffer2, MAX_STRING_LENGTH, shout_str, CAN_SEE(ch, GET_OPPONENT(ch)) ? J_NAME(GET_OPPONENT(ch)) : "Someone");
+	snprintf(buffer2, MAX_STRING_LENGTH, shout_str,
+		 CAN_SEE(ch, GET_OPPONENT(ch)) ? J_NAME(GET_OPPONENT(ch)) : "Someone");
 	strcat(buffer, buffer2);
 	strcat(buffer, "&n'\n");
 
@@ -576,14 +598,16 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 		// REMOVE_BIT on a non-existant room?!
 		//    REMOVE_BIT(world[ch->in_room].room_flags, SINGLE_FILE);
 		logit(LOG_DEBUG, "Problem in shout_and_run() for %s - bogus room", GET_NAME(ch));
-		wizlog(MINLVLIMMORTAL, "Problem in shout_and_run() for %s - bogus room", GET_NAME(ch));
+		wizlog(MINLVLIMMORTAL, "Problem in shout_and_run() for %s - bogus room",
+		       GET_NAME(ch));
 		return FALSE;
 	}
 	/*
 	 * Decided to let it be heard only inside the same zone, as it is now.
 	 */
 	act(buffer, TRUE, ch, 0, 0, TO_ROOM);
-	radiate_message_from_room(ch->in_room, buffer, shout_distance, (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL), 0);
+	radiate_message_from_room(ch->in_room, buffer, shout_distance,
+				  (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL), 0);
 
 	/*
 	 * need to find all the mobs which 'locator proc' as their special
@@ -594,9 +618,11 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 
 	for (target = character_list; target; target = target->next)
 	{
-		if (IS_NPC(target) && (!locator_proc || (mob_index[GET_RNUM(target)].func.mob == locator_proc)) && !((act_mask & target->specials.act) ^ act_mask) && !(no_act_mask & target->specials.act))
+		if (IS_NPC(target) &&
+		    (!locator_proc || (mob_index[GET_RNUM(target)].func.mob == locator_proc)) &&
+		    !((act_mask & target->specials.act) ^ act_mask) &&
+		    !(no_act_mask & target->specials.act))
 		{
-
 			i = 0;
 
 			/*
@@ -619,7 +645,8 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 
 			if (vnums)
 			{
-				while ((vnums[i] != mob_index[GET_RNUM(target)].virtual_number) && vnums[++i])
+				while ((vnums[i] != mob_index[GET_RNUM(target)].virtual_number) &&
+				       vnums[++i])
 					;
 				if (!vnums[i])
 					continue;
@@ -652,12 +679,13 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 			 */
 
 			//       debug("Okay boss mob is shouting at this point and we calling for find_first_step in justice.c 2421");
-			if (find_first_step(target->in_room,
-			                    ch->in_room,
-			                    (IS_MAGE(target) ? BFS_CAN_FLY : 0) | (npc_has_spell_slot(target, SPELL_DISPEL_MAGIC) ? BFS_CAN_DISPEL : 0) | BFS_BREAK_WALLS | BFS_AVOID_NOMOB,
-			                    0,
-			                    0,
-			                    &dummy) < 0)
+			if (find_first_step(target->in_room, ch->in_room,
+					    (IS_MAGE(target) ? BFS_CAN_FLY : 0) |
+						    (npc_has_spell_slot(target, SPELL_DISPEL_MAGIC) ?
+							     BFS_CAN_DISPEL :
+							     0) |
+						    BFS_BREAK_WALLS | BFS_AVOID_NOMOB,
+					    0, 0, &dummy) < 0)
 			{
 				//        debug( "shout_and_hunt: mob (%s) no first step to room (%d).", J_NAME(target), ch->in_room);
 				continue;
@@ -671,7 +699,7 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 
 			if (CAN_SEE(ch, GET_OPPONENT(ch)))
 			{
-				data.hunt_type   = HUNT_JUSTICE_INVADER;
+				data.hunt_type = HUNT_JUSTICE_INVADER;
 				data.targ.victim = GET_OPPONENT(ch);
 			}
 			else
@@ -680,12 +708,13 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 				data.targ.room = ch->in_room;
 			}
 			data.huntFlags = 0;
-			data.retry     = 0;
+			data.retry = 0;
 			data.retry_dir = 0;
 			data.path_step = -1;
-			found_help     = TRUE;
+			found_help = TRUE;
 			//    debug( "shout_and_hunt: adding hunt event mob (%s) to room (%d).", J_NAME(target), ch->in_room);
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, target, NULL, NULL, 0, &data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, target, NULL, NULL, 0, &data,
+				  sizeof(hunt_data));
 			// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, target, data);
 		}
 	}
@@ -708,7 +737,7 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str, int (*loc
 void do_sorta_yell(P_char ch, char *str)
 {
 	P_desc i;
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (IS_PC(ch))
 	{
@@ -720,10 +749,13 @@ void do_sorta_yell(P_char ch, char *str)
 
 	for (i = descriptor_list; i; i = i->next)
 	{
-		if (i->character && (i->character != ch) && !is_silent(i->character, FALSE) && !IS_SET(i->character->specials.act, PLR_NOSHOUT) && !i->connected)
+		if (i->character && (i->character != ch) && !is_silent(i->character, FALSE) &&
+		    !IS_SET(i->character->specials.act, PLR_NOSHOUT) && !i->connected)
 			if (world[i->character->in_room].zone == world[ch->in_room].zone)
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "$n shouts %s'%s'", language_known(ch, i->character), language_CRYPT(ch, i->character, str));
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "$n shouts %s'%s'",
+					 language_known(ch, i->character),
+					 language_CRYPT(ch, i->character, str));
 				act(Gbuf1, 0, ch, 0, i->character, TO_VICT);
 			}
 	}
@@ -742,7 +774,8 @@ void justice_hometown_echo(int town, const char *str)
 		return;
 
 	for (d = descriptor_list; d; d = d->next)
-		if ((d->connected == CON_PLAYING) && (CHAR_IN_TOWN(d->character) == town) && (IS_AWAKE(d->character)))
+		if ((d->connected == CON_PLAYING) && (CHAR_IN_TOWN(d->character) == town) &&
+		    (IS_AWAKE(d->character)))
 		{
 			send_to_char(str, d->character);
 			send_to_char("\r\n", d->character);
@@ -753,9 +786,9 @@ void justice_hometown_echo(int town, const char *str)
 void load_justice_area(void)
 {
 	FILE *fl;
-	int   the_end = TRUE, i;
-	int   town_number, room_number, room_number1;
-	char  type_rec;
+	int the_end = TRUE, i;
+	int town_number, room_number, room_number1;
+	char type_rec;
 
 	if (!(fl = fopen(JUSTICE_FILE, "r")))
 	{
@@ -767,7 +800,6 @@ void load_justice_area(void)
 
 	do
 	{
-
 		fscanf(fl, " %c ", &type_rec);
 		if (type_rec == 'H')
 			fscanf(fl, " %d\n", &town_number);

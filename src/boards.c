@@ -36,13 +36,13 @@ TO ADD A NEW BOARD, simply follow our easy 3-step program:
 #include <sys/time.h>
 #include <unistd.h>
 
-extern P_room  world;
-extern P_desc  descriptor_list;
+extern P_room world;
+extern P_desc descriptor_list;
 extern P_index obj_index;
 
-int  Board_display_msg(int board_type, struct char_data *ch, char *arg);
-int  Board_show_board(int board_type, struct char_data *ch, char *arg);
-int  Board_remove_msg(int board_type, struct char_data *ch, char *arg);
+int Board_display_msg(int board_type, struct char_data *ch, char *arg);
+int Board_show_board(int board_type, struct char_data *ch, char *arg);
+int Board_remove_msg(int board_type, struct char_data *ch, char *arg);
 void Board_save_board(int board_type);
 void Board_load_board(int board_type);
 void Board_reset_board(int board_num);
@@ -52,55 +52,55 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg);
 
 /* vnum, read lvl, write lvl, remove lvl, filename, 0 */
 struct board_info_type board_info[NUM_OF_BOARDS] = {
-	{   89, AVATAR, AVATAR, AVATAR,          "lib/boards/holy", 0},
-	{   90,      0,     25, AVATAR,        "lib/boards/mortal", 0},
-	{48101,     25,     25,     30,        "lib/boards/guild1", 0},
-	{48102,     25,     25,     30,        "lib/boards/guild2", 0},
-	{48103,     25,     25,     30,        "lib/boards/guild3", 0},
-	{48104,     25,     25,     30,        "lib/boards/guild4", 0},
-	{48105,     25,     25,     30,        "lib/boards/guild5", 0},
-	{48106,     25,     25,     30,        "lib/boards/guild6", 0},
-	{48107,     25,     25,     30,        "lib/boards/guild7", 0},
-	{48108,     25,     25,     30,        "lib/boards/guild8", 0},
-	{48109,     25,     25,     30,        "lib/boards/guild9", 0},
-	{48110,     25,     25,     30,       "lib/boards/guild10", 0},
-	{48111,     25,     25,     30,       "lib/boards/guild11", 0},
-	{48112,     25,     25,     30,       "lib/boards/guild12", 0},
-	{48113,     25,     25,     30,       "lib/boards/guild13", 0},
-	{48114,     25,     25,     30,       "lib/boards/guild14", 0},
-	{48115,     25,     25,     30,       "lib/boards/guild15", 0},
-	{48116,     25,     25,     30,       "lib/boards/guild16", 0},
-	{48117,     25,     25,     30,       "lib/boards/guild17", 0},
-	{48118,     25,     25,     30,       "lib/boards/guild18", 0},
-	{48119,     25,     25,     30,       "lib/boards/guild19", 0},
-	{48120,     25,     25,     30,       "lib/boards/guild20", 0},
-	{48121,     25,     25,     30,       "lib/boards/guild21", 0},
-	{48122,     25,     25,     30,       "lib/boards/guild22", 0},
-	{48123,     25,     25,     30,       "lib/boards/guild23", 0},
-	{48124,     25,     25,     30,       "lib/boards/guild24", 0},
-	{48125,     25,     25,     30,       "lib/boards/guild25", 0},
-	{48126,     25,     25,     30,       "lib/boards/guild26", 0},
-	{48127,     25,     25,     30,       "lib/boards/guild27", 0},
-	{48128,     25,     25,     30,       "lib/boards/guild28", 0},
-	{48129,     25,     25,     30,       "lib/boards/guild29", 0},
-	{11130,     50,     50, AVATAR,       "lib/boards/council", 0},
-	{   92,     20,     20, AVATAR,         "lib/boards/flame", 0},
-	{   75, AVATAR, AVATAR, AVATAR,         "lib/boards/areas", 0},
-	{   84, AVATAR, AVATAR, AVATAR,           "lib/boards/bug", 0},
-	{   78, AVATAR, AVATAR, AVATAR,      "lib/boards/namesA-F", 0},
-	{   79, AVATAR, AVATAR, AVATAR,      "lib/boards/namesG-L", 0},
-	{   80, AVATAR, AVATAR, AVATAR,      "lib/boards/namesM-R", 0},
-	{   81, AVATAR, AVATAR, AVATAR,      "lib/boards/namesS-Z", 0},
-	{   85, AVATAR, AVATAR, AVATAR, "lib/boards/troubleplayer", 0},
-	{   88, AVATAR, AVATAR, AVATAR, "lib/boards/reimbursement", 0},
-	{   91, AVATAR, AVATAR, AVATAR,       "lib/boards/meeting", 0},
-	{   29, AVATAR, AVATAR, AVATAR,          "lib/boards/code", 0},
-	{ 1204, AVATAR, AVATAR, AVATAR,    "lib/boards/gellzboard", 0}
+	{ 89, AVATAR, AVATAR, AVATAR, "lib/boards/holy", 0 },
+	{ 90, 0, 25, AVATAR, "lib/boards/mortal", 0 },
+	{ 48101, 25, 25, 30, "lib/boards/guild1", 0 },
+	{ 48102, 25, 25, 30, "lib/boards/guild2", 0 },
+	{ 48103, 25, 25, 30, "lib/boards/guild3", 0 },
+	{ 48104, 25, 25, 30, "lib/boards/guild4", 0 },
+	{ 48105, 25, 25, 30, "lib/boards/guild5", 0 },
+	{ 48106, 25, 25, 30, "lib/boards/guild6", 0 },
+	{ 48107, 25, 25, 30, "lib/boards/guild7", 0 },
+	{ 48108, 25, 25, 30, "lib/boards/guild8", 0 },
+	{ 48109, 25, 25, 30, "lib/boards/guild9", 0 },
+	{ 48110, 25, 25, 30, "lib/boards/guild10", 0 },
+	{ 48111, 25, 25, 30, "lib/boards/guild11", 0 },
+	{ 48112, 25, 25, 30, "lib/boards/guild12", 0 },
+	{ 48113, 25, 25, 30, "lib/boards/guild13", 0 },
+	{ 48114, 25, 25, 30, "lib/boards/guild14", 0 },
+	{ 48115, 25, 25, 30, "lib/boards/guild15", 0 },
+	{ 48116, 25, 25, 30, "lib/boards/guild16", 0 },
+	{ 48117, 25, 25, 30, "lib/boards/guild17", 0 },
+	{ 48118, 25, 25, 30, "lib/boards/guild18", 0 },
+	{ 48119, 25, 25, 30, "lib/boards/guild19", 0 },
+	{ 48120, 25, 25, 30, "lib/boards/guild20", 0 },
+	{ 48121, 25, 25, 30, "lib/boards/guild21", 0 },
+	{ 48122, 25, 25, 30, "lib/boards/guild22", 0 },
+	{ 48123, 25, 25, 30, "lib/boards/guild23", 0 },
+	{ 48124, 25, 25, 30, "lib/boards/guild24", 0 },
+	{ 48125, 25, 25, 30, "lib/boards/guild25", 0 },
+	{ 48126, 25, 25, 30, "lib/boards/guild26", 0 },
+	{ 48127, 25, 25, 30, "lib/boards/guild27", 0 },
+	{ 48128, 25, 25, 30, "lib/boards/guild28", 0 },
+	{ 48129, 25, 25, 30, "lib/boards/guild29", 0 },
+	{ 11130, 50, 50, AVATAR, "lib/boards/council", 0 },
+	{ 92, 20, 20, AVATAR, "lib/boards/flame", 0 },
+	{ 75, AVATAR, AVATAR, AVATAR, "lib/boards/areas", 0 },
+	{ 84, AVATAR, AVATAR, AVATAR, "lib/boards/bug", 0 },
+	{ 78, AVATAR, AVATAR, AVATAR, "lib/boards/namesA-F", 0 },
+	{ 79, AVATAR, AVATAR, AVATAR, "lib/boards/namesG-L", 0 },
+	{ 80, AVATAR, AVATAR, AVATAR, "lib/boards/namesM-R", 0 },
+	{ 81, AVATAR, AVATAR, AVATAR, "lib/boards/namesS-Z", 0 },
+	{ 85, AVATAR, AVATAR, AVATAR, "lib/boards/troubleplayer", 0 },
+	{ 88, AVATAR, AVATAR, AVATAR, "lib/boards/reimbursement", 0 },
+	{ 91, AVATAR, AVATAR, AVATAR, "lib/boards/meeting", 0 },
+	{ 29, AVATAR, AVATAR, AVATAR, "lib/boards/code", 0 },
+	{ 1204, AVATAR, AVATAR, AVATAR, "lib/boards/gellzboard", 0 }
 };
 
-char                *msg_storage[INDEX_SIZE];
-int                  msg_storage_taken[INDEX_SIZE];
-int                  num_of_msgs[NUM_OF_BOARDS];
+char *msg_storage[INDEX_SIZE];
+int msg_storage_taken[INDEX_SIZE];
+int num_of_msgs[NUM_OF_BOARDS];
 struct board_msginfo msg_index[NUM_OF_BOARDS][MAX_BOARD_MESSAGES];
 
 int find_slot(void)
@@ -120,23 +120,24 @@ int find_slot(void)
 int find_board(struct char_data *ch)
 {
 	P_obj obj;
-	int   i;
+	int i;
 
 	for (obj = world[ch->in_room].contents; obj; obj = obj->next_content)
 		for (i = 0; i < NUM_OF_BOARDS; i++)
-			if (obj_index[BOARD_RNUM(i)].virtual_number == obj_index[obj->R_num].virtual_number)
+			if (obj_index[BOARD_RNUM(i)].virtual_number ==
+			    obj_index[obj->R_num].virtual_number)
 				return i;
 	return -1;
 }
 
 void initialize_boards(void)
 {
-	int  i, j, fatal_error = 0;
+	int i, j, fatal_error = 0;
 	char buf[256];
 
 	for (i = 0; i < INDEX_SIZE; i++)
 	{
-		msg_storage[i]       = 0;
+		msg_storage[i] = 0;
 		msg_storage_taken[i] = 0;
 	}
 
@@ -144,7 +145,8 @@ void initialize_boards(void)
 	{
 		if ((BOARD_RNUM(i) = real_object(BOARD_VNUM(i))) == -1)
 		{
-			snprintf(buf, 256, " Fatal board error: board vnum %d does not exist!", BOARD_VNUM(i));
+			snprintf(buf, 256, " Fatal board error: board vnum %d does not exist!",
+				 BOARD_VNUM(i));
 			logit(LOG_BOARD, buf);
 			continue;
 		}
@@ -165,7 +167,7 @@ void initialize_boards(void)
 
 int board(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	int         board_type;
+	int board_type;
 	static bool loaded = FALSE;
 
 	/* check for periodic event calls  */
@@ -185,7 +187,8 @@ int board(P_obj obj, P_char ch, int cmd, char *argument)
 		return FALSE;
 	}
 
-	if (cmd != CMD_WRITE && cmd != CMD_LOOK && cmd != CMD_EXAMINE && cmd != CMD_READ && cmd != CMD_REMOVE)
+	if (cmd != CMD_WRITE && cmd != CMD_LOOK && cmd != CMD_EXAMINE && cmd != CMD_READ &&
+	    cmd != CMD_REMOVE)
 	{
 		return FALSE;
 	}
@@ -221,10 +224,10 @@ int board(P_obj obj, P_char ch, int cmd, char *argument)
 
 void Board_write_message(int board_type, struct char_data *ch, char *arg)
 {
-	char  *tmstr;
-	int    len;
+	char *tmstr;
+	int len;
 	time_t ct;
-	char   buf[MAX_INPUT_LENGTH];
+	char buf[MAX_INPUT_LENGTH];
 
 	if (GET_LEVEL(ch) < WRITE_LVL(board_type))
 	{
@@ -254,8 +257,8 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg)
 		return;
 	}
 
-	ct                           = time(0);
-	tmstr                        = (char *)asctime(localtime(&ct));
+	ct = time(0);
+	tmstr = (char *)asctime(localtime(&ct));
 	*(tmstr + strlen(tmstr) - 9) = '\0'; /* kill seconds and year */
 
 	snprintf(buf, MAX_INPUT_LENGTH, "[%s (%s)] %s", tmstr, GET_NAME(ch), arg);
@@ -269,7 +272,7 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg)
 	}
 	strcpy(NEW_MSG_INDEX(board_type).heading, buf);
 	NEW_MSG_INDEX(board_type).heading[len - 1] = '\0';
-	NEW_MSG_INDEX(board_type).level            = GET_LEVEL(ch);
+	NEW_MSG_INDEX(board_type).level = GET_LEVEL(ch);
 
 	act("$n starts to write a message.", TRUE, ch, 0, 0, TO_ROOM);
 	send_to_char("Write your message.  (/s saves /h for help)\r\n\r\n", ch);
@@ -277,15 +280,15 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg)
 	if (!IS_NPC(ch))
 		SET_BIT(ch->specials.act, PLR_WRITE);
 
-	ch->desc->str     = NULL;
-	ch->desc->str     = &(msg_storage[NEW_MSG_INDEX(board_type).slot_num]);
+	ch->desc->str = NULL;
+	ch->desc->str = &(msg_storage[NEW_MSG_INDEX(board_type).slot_num]);
 	ch->desc->max_str = MAX_MESSAGE_LENGTH;
 	num_of_msgs[board_type]++;
 }
 
 int Board_show_board(int board_type, struct char_data *ch, char *arg)
 {
-	int  i;
+	int i;
 	char tmp[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
 
 	if (!ch->desc)
@@ -304,19 +307,20 @@ int Board_show_board(int board_type, struct char_data *ch, char *arg)
 	act("$n studies the board.", TRUE, ch, 0, 0, TO_ROOM);
 	Board_save_board(board_type);
 
-	strcpy(buf,
-	       "This is a bulletin board.  Usage: READ/REMOVE <messg #>, WRITE <header>.\r\n"
-	       "You will need to look at the board to save your message.\r\n");
+	strcpy(buf, "This is a bulletin board.  Usage: READ/REMOVE <messg #>, WRITE <header>.\r\n"
+		    "You will need to look at the board to save your message.\r\n");
 	if (!num_of_msgs[board_type])
 		strcat(buf, "The board is empty.\r\n");
 	else
 	{
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "There are %d messages on the board.\r\n", num_of_msgs[board_type]);
+		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "There are %d messages on the board.\r\n", num_of_msgs[board_type]);
 		/*   for (i = 0; i < num_of_msgs[board_type]; i++) {  */
 		for (i = num_of_msgs[board_type] - 1; i >= 0; i--)
 		{
 			if (MSG_HEADING(board_type, i))
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "%-2d : %s\r\n", i + 1, MSG_HEADING(board_type, i));
+				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "%-2d : %s\r\n", i + 1, MSG_HEADING(board_type, i));
 			else
 			{
 				logit(LOG_BOARD, " The board is fubar'd.");
@@ -333,7 +337,7 @@ int Board_show_board(int board_type, struct char_data *ch, char *arg)
 int Board_display_msg(int board_type, struct char_data *ch, char *arg)
 {
 	char which[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
-	int  msg, ind;
+	int msg, ind;
 
 	one_argument(arg, which);
 	if (!*which)
@@ -375,7 +379,8 @@ int Board_display_msg(int board_type, struct char_data *ch, char *arg)
 		send_to_char("That message seems to be empty.\r\n", ch);
 		return 1;
 	}
-	snprintf(buffer, MAX_STRING_LENGTH, "Message %d : %s\r\n\r\n%s\r\n", msg, MSG_HEADING(board_type, ind), msg_storage[MSG_SLOTNUM(board_type, ind)]);
+	snprintf(buffer, MAX_STRING_LENGTH, "Message %d : %s\r\n\r\n%s\r\n", msg,
+		 MSG_HEADING(board_type, ind), msg_storage[MSG_SLOTNUM(board_type, ind)]);
 
 	page_string(ch->desc, buffer, 1);
 
@@ -384,8 +389,8 @@ int Board_display_msg(int board_type, struct char_data *ch, char *arg)
 
 int Board_remove_msg(int board_type, struct char_data *ch, char *arg)
 {
-	int                     ind, msg, slot_num;
-	char                    which[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH];
+	int ind, msg, slot_num;
+	char which[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH];
 	struct descriptor_data *d;
 
 	one_argument(arg, which);
@@ -435,12 +440,14 @@ int Board_remove_msg(int board_type, struct char_data *ch, char *arg)
 	for (d = descriptor_list; d; d = d->next)
 		if (!d->connected && d->str == &(msg_storage[slot_num]))
 		{
-			send_to_char("At least wait until the author is finished before removing it!\r\n", ch);
+			send_to_char(
+				"At least wait until the author is finished before removing it!\r\n",
+				ch);
 			return 1;
 		}
 	if (msg_storage[slot_num])
 		FREE(msg_storage[slot_num]);
-	msg_storage[slot_num]       = 0;
+	msg_storage[slot_num] = 0;
 	msg_storage_taken[slot_num] = 0;
 	if (MSG_HEADING(board_type, ind))
 		FREE(MSG_HEADING(board_type, ind));
@@ -449,7 +456,7 @@ int Board_remove_msg(int board_type, struct char_data *ch, char *arg)
 	{
 		MSG_HEADING(board_type, ind) = MSG_HEADING(board_type, ind + 1);
 		MSG_SLOTNUM(board_type, ind) = MSG_SLOTNUM(board_type, ind + 1);
-		MSG_LEVEL(board_type, ind)   = MSG_LEVEL(board_type, ind + 1);
+		MSG_LEVEL(board_type, ind) = MSG_LEVEL(board_type, ind + 1);
 	}
 	num_of_msgs[board_type]--;
 	send_to_char("Message removed.\r\n", ch);
@@ -463,7 +470,7 @@ int Board_remove_msg(int board_type, struct char_data *ch, char *arg)
 void Board_save_board(int board_type)
 {
 	FILE *fl;
-	int   i;
+	int i;
 	char *tmp1 = 0, *tmp2 = 0;
 
 	if (!num_of_msgs[board_type])
@@ -486,16 +493,19 @@ void Board_save_board(int board_type)
 		else
 			msg_index[board_type][i].heading_len = 0;
 
-		if (MSG_SLOTNUM(board_type, i) < 0 || MSG_SLOTNUM(board_type, i) >= INDEX_SIZE || (!(tmp2 = msg_storage[MSG_SLOTNUM(board_type, i)])))
+		if (MSG_SLOTNUM(board_type, i) < 0 || MSG_SLOTNUM(board_type, i) >= INDEX_SIZE ||
+		    (!(tmp2 = msg_storage[MSG_SLOTNUM(board_type, i)])))
 			msg_index[board_type][i].message_len = 0;
 		else
 			msg_index[board_type][i].message_len = strlen(tmp2) + 1;
 
 		fwrite(&(msg_index[board_type][i]), sizeof(struct board_msginfo), 1, fl);
 		if (tmp1)
-			fwrite(tmp1, sizeof(char), (unsigned)msg_index[board_type][i].heading_len, fl);
+			fwrite(tmp1, sizeof(char), (unsigned)msg_index[board_type][i].heading_len,
+			       fl);
 		if (tmp2)
-			fwrite(tmp2, sizeof(char), (unsigned)msg_index[board_type][i].message_len, fl);
+			fwrite(tmp2, sizeof(char), (unsigned)msg_index[board_type][i].message_len,
+			       fl);
 	}
 
 	fclose(fl);
@@ -504,7 +514,7 @@ void Board_save_board(int board_type)
 void Board_load_board(int board_type)
 {
 	FILE *fl;
-	int   i, len1 = 0, len2 = 0;
+	int i, len1 = 0, len2 = 0;
 	char *tmp1 = NULL, *tmp2 = NULL;
 
 	if (!(fl = fopen(FILENAME(board_type), "rb")))

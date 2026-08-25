@@ -21,7 +21,7 @@ struct cmd_attrib_data
 	char *attributes;
 };
 
-void  load_cmd_attributes();
+void load_cmd_attributes();
 char *attrib_help(char *);
 
 #define ATT_STR 0
@@ -36,8 +36,8 @@ char *attrib_help(char *);
 #define ATT_LUK 9
 #define ATT_MAX 10
 
-#define WIKI_RACE  1
+#define WIKI_RACE 1
 #define WIKI_CLASS 2
-#define WIKI_SPEC  3
+#define WIKI_SPEC 3
 
 #endif // __WIKIHELP_H__

@@ -4,7 +4,7 @@
 #include <string.h>
 
 extern const int rev_dir[];
-extern P_room    world;
+extern P_room world;
 
 void do_makeexit(P_char ch, char *arg, int cmd)
 {
@@ -19,7 +19,9 @@ void do_makeexit(P_char ch, char *arg, int cmd)
 
 	if (buf[0] == '?' || !strcmp(buf, "help"))
 	{
-		send_to_char("Syntax:\r\nmakeexit <direction> <destination room vnum> ['none' for no reverse exit]\r\n", ch);
+		send_to_char(
+			"Syntax:\r\nmakeexit <direction> <destination room vnum> ['none' for no reverse exit]\r\n",
+			ch);
 		return;
 	}
 
@@ -36,7 +38,7 @@ void do_makeexit(P_char ch, char *arg, int cmd)
 	int to_room_vnum = atoi(buf);
 
 	int from_room = ch->in_room;
-	int to_room   = real_room(to_room_vnum);
+	int to_room = real_room(to_room_vnum);
 
 	arg = one_argument(arg, buf);
 
@@ -75,8 +77,10 @@ void do_makeexit(P_char ch, char *arg, int cmd)
 		link_room(to_room, from_room, rev_dir[dir]);
 	}
 
-	wizlog(56, "%s made exit from %d to %d", ch->player.name, world[from_room].number, world[to_room].number);
-	logit(LOG_WIZ, "%s made exit from %d to %d", ch->player.name, world[from_room].number, world[to_room].number);
+	wizlog(56, "%s made exit from %d to %d", ch->player.name, world[from_room].number,
+	       world[to_room].number);
+	logit(LOG_WIZ, "%s made exit from %d to %d", ch->player.name, world[from_room].number,
+	      world[to_room].number);
 
 	send_to_char("Exit created.\r\n", ch);
 
@@ -94,10 +98,10 @@ int link_room(int from_r, int to_r, int dir)
 	}
 
 	dir_data->general_description = str_dup("An otherworldy door stands here.");
-	dir_data->keyword             = str_dup("door");
-	dir_data->exit_info           = EX_ISDOOR | EX_CLOSED | EX_LOCKED | EX_SECRET | EX_PICKPROOF;
-	dir_data->key                 = 0;
-	dir_data->to_room             = to_r;
+	dir_data->keyword = str_dup("door");
+	dir_data->exit_info = EX_ISDOOR | EX_CLOSED | EX_LOCKED | EX_SECRET | EX_PICKPROOF;
+	dir_data->key = 0;
+	dir_data->to_room = to_r;
 
 	world[from_r].dir_option[dir] = dir_data;
 

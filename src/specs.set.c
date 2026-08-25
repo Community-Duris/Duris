@@ -25,26 +25,26 @@
    external variables
  */
 
-extern P_char      character_list;
-extern P_desc      descriptor_list;
-extern P_index     mob_index;
-extern P_index     obj_index;
-extern P_room      world;
-extern char       *coin_names[];
-extern char       *command[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern char *coin_names[];
+extern char *command[];
 extern const char *dirs[];
 // extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
-extern int                    innate_abilities[];
-extern int                    planes_room_num[];
-extern int                    top_of_zone_table;
-extern struct command_info    cmd_info[MAX_CMD_LIST];
-extern struct dex_app_type    dex_app[52];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
+extern int innate_abilities[];
+extern int planes_room_num[];
+extern int top_of_zone_table;
+extern struct command_info cmd_info[MAX_CMD_LIST];
+extern struct dex_app_type dex_app[52];
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
 
-const int   set_master_vnum[] = {22063, 22237, 22621, 45530, 45531, 82545, 75857, 0
+const int set_master_vnum[] = { 22063, 22237, 22621, 45530, 45531, 82545, 75857, 0
 
 };
 const char *set_master_text[] = {
@@ -62,13 +62,15 @@ const char *set_master_text[] = {
 int master_set(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	struct affected_type af;
-	int                  numb_items     = 0;
-	int                  old_numb_items = 0;
-	int                  i              = 0;
-	int                  j              = 0;
-	int                  k              = 0;
-	P_obj                t_obj;
-	int                  wear_order[] = {41, 24, 40, 6, 19, 21, 22, 20, 39, 3, 4, 5, 35, 37, 12, 23, 13, 10, 31, 11, 14, 15, 33, 34, 9, 32, 1, 2, 16, 17, 25, 26, 7, 36, 8, 38, -1};
+	int numb_items = 0;
+	int old_numb_items = 0;
+	int i = 0;
+	int j = 0;
+	int k = 0;
+	P_obj t_obj;
+	int wear_order[] = { 41, 24, 40, 6,  19, 21, 22, 20, 39, 3,  4,	 5, 35,
+			     37, 12, 23, 13, 10, 31, 11, 14, 15, 33, 34, 9, 32,
+			     1,	 2,  16, 17, 25, 26, 7,	 36, 8,	 38, -1 };
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -91,7 +93,7 @@ int master_set(P_obj obj, P_char ch, int cmd, char *arg)
 		if (ch->equipment[wear_order[j]])
 		{
 			t_obj = ch->equipment[wear_order[j]];
-			k     = 0;
+			k = 0;
 			// for each vnum in masters set..
 			while (set_master_vnum[k] > 0)
 			{
@@ -133,8 +135,8 @@ int master_set(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	if (numb_items > 4)
 	{
-		af.modifier  = 0;
-		af.location  = 0;
+		af.modifier = 0;
+		af.location = 0;
 		af.bitvector = AFF_DETECT_INVISIBLE;
 		affect_to_char(ch, &af);
 	}

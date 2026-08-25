@@ -37,7 +37,9 @@ int GetCircle(int spl)
 	return circle;
 }
 
-#define ALL_MAGES (CLASS_SORCERER | CLASS_NECROMANCER | CLASS_SUMMONER | CLASS_CONJURER | CLASS_ILLUSIONIST | CLASS_PSIONICIST)
+#define ALL_MAGES                                                               \
+	(CLASS_SORCERER | CLASS_NECROMANCER | CLASS_SUMMONER | CLASS_CONJURER | \
+	 CLASS_ILLUSIONIST | CLASS_PSIONICIST)
 
 #define ALL_ROGUES (CLASS_THIEF | CLASS_ASSASSIN | CLASS_BARD | CLASS_ROGUE)
 
@@ -45,7 +47,7 @@ int GetCircle(int spl)
 void material_restrictions(P_obj obj)
 {
 	ulong anti, anti2;
-	int   mat;
+	int mat;
 	// Since it's referenced so much.
 	char *name = obj->name;
 
@@ -55,11 +57,14 @@ void material_restrictions(P_obj obj)
 	}
 
 	anti = anti2 = 0;
-	mat          = obj->material;
+	mat = obj->material;
 
-	if (isname("quiver", name) || isname("badge", name) || isname("robe", name) || isname("tunic", name) || isname("cloak", name) || isname("pants", name) || isname("belt", name) ||
-	    isname("earring", name) || isname("moccasins", name) || isname("ring", name) || isname("band", name) || isname("signet", name) || isname("hat", name) || isname("cap", name) ||
-	    isname("bracelet", name) || isname("stud", name) || isname("amulet", name) || isname("bodycloak", name))
+	if (isname("quiver", name) || isname("badge", name) || isname("robe", name) ||
+	    isname("tunic", name) || isname("cloak", name) || isname("pants", name) ||
+	    isname("belt", name) || isname("earring", name) || isname("moccasins", name) ||
+	    isname("ring", name) || isname("band", name) || isname("signet", name) ||
+	    isname("hat", name) || isname("cap", name) || isname("bracelet", name) ||
+	    isname("stud", name) || isname("amulet", name) || isname("bodycloak", name))
 	{
 		return;
 	}
@@ -69,12 +74,14 @@ void material_restrictions(P_obj obj)
 		anti = ALL_MAGES | ALL_ROGUES | CLASS_MONK;
 	}
 
-	if (IS_RIGID(mat) && (obj->wear_flags & (ITEM_WEAR_FACE | ITEM_WEAR_ARMS | ITEM_WEAR_HEAD | ITEM_WEAR_LEGS)))
+	if (IS_RIGID(mat) &&
+	    (obj->wear_flags & (ITEM_WEAR_FACE | ITEM_WEAR_ARMS | ITEM_WEAR_HEAD | ITEM_WEAR_LEGS)))
 	{
 		anti |= CLASS_MONK;
 	}
 
-	if (IS_METAL(mat) && (mat != MAT_MITHRIL) && (obj->wear_flags & (ITEM_WEAR_FACE | ITEM_WEAR_ARMS | ITEM_WEAR_HEAD | ITEM_WEAR_LEGS)))
+	if (IS_METAL(mat) && (mat != MAT_MITHRIL) &&
+	    (obj->wear_flags & (ITEM_WEAR_FACE | ITEM_WEAR_ARMS | ITEM_WEAR_HEAD | ITEM_WEAR_LEGS)))
 	{
 		anti |= ALL_MAGES;
 	}
@@ -87,7 +94,7 @@ void material_restrictions(P_obj obj)
 
 void convertObj(P_obj obj)
 {
-	int  i, val0, val1, val2, val3, type;
+	int i, val0, val1, val2, val3, type;
 	long weight = 0, cost = 0;
 	char buf2[MAX_STRING_LENGTH];
 
@@ -106,148 +113,148 @@ void convertObj(P_obj obj)
 
 	switch (type)
 	{
-		case ITEM_TELEPORT:
-			weight = 10000;
-			break;
-		case ITEM_SCROLL:
-		case ITEM_POTION:
-			weight = 2;
-			break;
-		case ITEM_WAND:
-		case ITEM_STAFF:
-			weight = (type == ITEM_WAND) ? 2 : 5;
-			break;
-		case ITEM_WEAPON:
-			/* 1 g * max damage */
+	case ITEM_TELEPORT:
+		weight = 10000;
+		break;
+	case ITEM_SCROLL:
+	case ITEM_POTION:
+		weight = 2;
+		break;
+	case ITEM_WAND:
+	case ITEM_STAFF:
+		weight = (type == ITEM_WAND) ? 2 : 5;
+		break;
+	case ITEM_WEAPON:
+		/* 1 g * max damage */
 
-			/* number of dice more important than size.. */
-			if (val1 < 1)
-				val1 = obj->value[1] = 1;
-			if (val2 < 1)
-				val2 = obj->value[2] = 1;
-			cost = 100 * (val1 * 2) * val2;
-			if (IS_BACKSTABBER(obj))
-			{
-				cost += 1000 * (val1 * val1 * val1 * 2);
-				cost += 1000 * (val2 * val2 / 2);
-			}
-			break;
-		case ITEM_FIREWEAPON:
-			/* 1 s * missle type * rate of fire */
+		/* number of dice more important than size.. */
+		if (val1 < 1)
+			val1 = obj->value[1] = 1;
+		if (val2 < 1)
+			val2 = obj->value[2] = 1;
+		cost = 100 * (val1 * 2) * val2;
+		if (IS_BACKSTABBER(obj))
+		{
+			cost += 1000 * (val1 * val1 * val1 * 2);
+			cost += 1000 * (val2 * val2 / 2);
+		}
+		break;
+	case ITEM_FIREWEAPON:
+		/* 1 s * missle type * rate of fire */
 
-			cost = (val0 ? 1 : 0) * (val1 ? 1 : 0) * 10;
-			break;
-		case ITEM_MISSILE:
-			/* 1 s * missle type */
-			//    cost = val3 * (val1 * 2) * val2 * (val0 / 2) * 10;
-			// Start with average damage * 10.
-			cost = (obj->value[1] * (obj->value[2] + 1)) * 5;
-			// cost = (10 * avgdam) squared * maxdamage cubed / 125
-			cost        = (cost * cost * val1 * val1 * val1 * val2 * val2 * val2) / 125;
-			obj->cost   = BOUNDED(1, cost, 5000000);
-			weight      = obj->weight;
-			obj->weight = BOUNDED(0, weight, 10);
-			return;
-			break;
-		case ITEM_TREASURE:
-		case ITEM_TRASH:
-		case ITEM_OTHER:
-			/* hmm */
-			break;
-		case ITEM_ARMOR:
-			/* 1 g * ac */
-			if (val0 < 10)
-				cost = 150 * val0;
-			else if (val0 < 20)
-				cost = 300 * val0;
-			else if (val0 < 30)
-				cost = 625 * val0;
-			else if (val0 < 40)
-				cost = 1250 * val0;
-			else
-				cost = 2500 * val0;
-			break;
-		case ITEM_WORN:
-			cost = 100;
-			break;
-		case ITEM_CONTAINER:
-			/* 1 silver per pound */
-			cost = 25 * val0;
-			if (obj->weight <= 0)
-			{
-				weight = obj->weight;
-				cost += (weight * -500);
-			}
-			if (weight >= 0)
-				weight = (val0 > 50) ? 3 : 1;
-			if (IS_SET(obj->wear_flags, ITEM_ATTACH_BELT) && weight > 9)
-				REMOVE_BIT(obj->wear_flags, ITEM_ATTACH_BELT);
-			if (obj->R_num == real_object(96443))
-				cost = 1000;
-			break;
-		case ITEM_DRINKCON:
-		case ITEM_QUIVER:
-			/* 1 silver per drink/arrows held */
-			cost   = 20 * val0;
+		cost = (val0 ? 1 : 0) * (val1 ? 1 : 0) * 10;
+		break;
+	case ITEM_MISSILE:
+		/* 1 s * missle type */
+		//    cost = val3 * (val1 * 2) * val2 * (val0 / 2) * 10;
+		// Start with average damage * 10.
+		cost = (obj->value[1] * (obj->value[2] + 1)) * 5;
+		// cost = (10 * avgdam) squared * maxdamage cubed / 125
+		cost = (cost * cost * val1 * val1 * val1 * val2 * val2 * val2) / 125;
+		obj->cost = BOUNDED(1, cost, 5000000);
+		weight = obj->weight;
+		obj->weight = BOUNDED(0, weight, 10);
+		return;
+		break;
+	case ITEM_TREASURE:
+	case ITEM_TRASH:
+	case ITEM_OTHER:
+		/* hmm */
+		break;
+	case ITEM_ARMOR:
+		/* 1 g * ac */
+		if (val0 < 10)
+			cost = 150 * val0;
+		else if (val0 < 20)
+			cost = 300 * val0;
+		else if (val0 < 30)
+			cost = 625 * val0;
+		else if (val0 < 40)
+			cost = 1250 * val0;
+		else
+			cost = 2500 * val0;
+		break;
+	case ITEM_WORN:
+		cost = 100;
+		break;
+	case ITEM_CONTAINER:
+		/* 1 silver per pound */
+		cost = 25 * val0;
+		if (obj->weight <= 0)
+		{
+			weight = obj->weight;
+			cost += (weight * -500);
+		}
+		if (weight >= 0)
 			weight = (val0 > 50) ? 3 : 1;
-			if (IS_SET(obj->wear_flags, ITEM_ATTACH_BELT) && weight > 9)
-				REMOVE_BIT(obj->wear_flags, ITEM_ATTACH_BELT);
-			break;
-		case ITEM_FOOD:
-			if (isname("rations", obj->name))
-				cost = 20;
-			break;
-		case ITEM_NOTE:
-		case ITEM_PEN:
-		case ITEM_BOOK:
-		case ITEM_PICK:
-			/* simple base values */
-			cost = 5;
-			if (type == ITEM_BOOK)
-				weight = 3;
-			else
-				weight = 0;
-			break;
-		case ITEM_KEY:
-			cost = 5;
-			if (type == ITEM_BOOK)
-				weight = 3;
-			else
-				weight = 0;
-			SET_BIT(obj->extra_flags, ITEM_NORENT);
-			break;
-		case ITEM_SPELLBOOK:
-			/* 15 c per page in book */
-			break;
-		case ITEM_INSTRUMENT:
-			if (!strstr(obj->name, "instrument"))
-			{
-				snprintf(buf2, MAX_STRING_LENGTH, "%s %s", obj->name, "instrument");
-				obj->name = str_dup(buf2);
-			}
-			break;
-		case ITEM_TOTEM:
-			/* ? */
-			if (!strstr(obj->name, "totem"))
-			{
-				snprintf(buf2, MAX_STRING_LENGTH, "%s %s", obj->name, "totem");
-				obj->name = str_dup(buf2);
-			}
-			/*    weight = (GET_ITEM_TYPE(obj) == ITEM_TOTEM) ? 2 : 3;
+		if (IS_SET(obj->wear_flags, ITEM_ATTACH_BELT) && weight > 9)
+			REMOVE_BIT(obj->wear_flags, ITEM_ATTACH_BELT);
+		if (obj->R_num == real_object(96443))
+			cost = 1000;
+		break;
+	case ITEM_DRINKCON:
+	case ITEM_QUIVER:
+		/* 1 silver per drink/arrows held */
+		cost = 20 * val0;
+		weight = (val0 > 50) ? 3 : 1;
+		if (IS_SET(obj->wear_flags, ITEM_ATTACH_BELT) && weight > 9)
+			REMOVE_BIT(obj->wear_flags, ITEM_ATTACH_BELT);
+		break;
+	case ITEM_FOOD:
+		if (isname("rations", obj->name))
+			cost = 20;
+		break;
+	case ITEM_NOTE:
+	case ITEM_PEN:
+	case ITEM_BOOK:
+	case ITEM_PICK:
+		/* simple base values */
+		cost = 5;
+		if (type == ITEM_BOOK)
+			weight = 3;
+		else
+			weight = 0;
+		break;
+	case ITEM_KEY:
+		cost = 5;
+		if (type == ITEM_BOOK)
+			weight = 3;
+		else
+			weight = 0;
+		SET_BIT(obj->extra_flags, ITEM_NORENT);
+		break;
+	case ITEM_SPELLBOOK:
+		/* 15 c per page in book */
+		break;
+	case ITEM_INSTRUMENT:
+		if (!strstr(obj->name, "instrument"))
+		{
+			snprintf(buf2, MAX_STRING_LENGTH, "%s %s", obj->name, "instrument");
+			obj->name = str_dup(buf2);
+		}
+		break;
+	case ITEM_TOTEM:
+		/* ? */
+		if (!strstr(obj->name, "totem"))
+		{
+			snprintf(buf2, MAX_STRING_LENGTH, "%s %s", obj->name, "totem");
+			obj->name = str_dup(buf2);
+		}
+		/*    weight = (GET_ITEM_TYPE(obj) == ITEM_TOTEM) ? 2 : 3;
 			    cost = 1;*/
-			break;
-		case ITEM_STORAGE:
-			/* 5 p per pound held */
-			cost = 5000 * val0;
-			/*    weight = (val0 > 100) ? 250 : 100; */
-			break;
+		break;
+	case ITEM_STORAGE:
+		/* 5 p per pound held */
+		cost = 5000 * val0;
+		/*    weight = (val0 > 100) ? 250 : 100; */
+		break;
 	}
 	if (!cost)
 		cost = obj->cost;
 	/*  if (!weight)
 	    weight = obj->weight;*/
 
-	cost   = BOUNDED(0, cost, 1000000);
+	cost = BOUNDED(0, cost, 1000000);
 	weight = BOUNDED(0, weight, 1000);
 
 	/* at this point, we either have made cost/weight, or we're still using
@@ -310,90 +317,91 @@ void convertObj(P_obj obj)
 	{
 		switch (obj->affected[i].location)
 		{
-			case APPLY_NONE:
-				break;
-			case APPLY_STR:
-			case APPLY_DEX:
-			case APPLY_INT:
-			case APPLY_WIS:
-			case APPLY_CON:
-			case APPLY_AGI:
-			case APPLY_POW:
-			case APPLY_CHA:
-			case APPLY_KARMA:
-			case APPLY_LUCK:
-				if (obj->affected[i].modifier > 0)
-					cost += obj->affected[i].modifier * 150;
-				else
-					cost += obj->affected[i].modifier * 100;
-				break;
-			case APPLY_STR_MAX:
-			case APPLY_DEX_MAX:
-			case APPLY_INT_MAX:
-			case APPLY_WIS_MAX:
-			case APPLY_CON_MAX:
-			case APPLY_AGI_MAX:
-			case APPLY_POW_MAX:
-			case APPLY_CHA_MAX:
-			case APPLY_KARMA_MAX:
-			case APPLY_LUCK_MAX:
-			case APPLY_STR_RACE:
-			case APPLY_DEX_RACE:
-			case APPLY_INT_RACE:
-			case APPLY_WIS_RACE:
-			case APPLY_CON_RACE:
-			case APPLY_AGI_RACE:
-			case APPLY_POW_RACE:
-			case APPLY_CHA_RACE:
-			case APPLY_KARMA_RACE:
-			case APPLY_LUCK_RACE:
-				cost += obj->affected[i].modifier * 2500;
-				break;
-			case APPLY_SEX:
-			case APPLY_CLASS:
-			case APPLY_LEVEL:
-			case APPLY_CHAR_WEIGHT:
-			case APPLY_CHAR_HEIGHT:
-			case APPLY_GOLD:
-			case APPLY_EXP:
-				cost += 5000;
-				break;
-			case APPLY_HIT:
-				cost += obj->affected[i].modifier * 1000;
-				break;
-			case APPLY_MANA:
-				cost += obj->affected[i].modifier * 500;
-				break;
-			case APPLY_MOVE:
-				cost += obj->affected[i].modifier * 50;
-				break;
-			case APPLY_AGE:
-				cost -= obj->affected[i].modifier * 1500; /* minus cause younger is better */
-				break;
-			case APPLY_ARMOR:
-				if (obj->affected[i].modifier > -10)
-					cost -= 500 * val0;
-				else if (obj->affected[i].modifier > -20)
-					cost -= 1000 * val0;
-				else if (obj->affected[i].modifier > -30)
-					cost -= 2000 * val0;
-				else if (obj->affected[i].modifier > -40)
-					cost -= 3500 * val0;
-				else
-					cost -= 6000 * val0;
-				/* minus cause armor is a neg value */
-				break;
-			case APPLY_HITROLL:
-			case APPLY_DAMROLL:
-				cost += obj->affected[i].modifier * 1300;
-				break;
-			case APPLY_SAVING_PARA:
-			case APPLY_SAVING_ROD:
-			case APPLY_SAVING_FEAR:
-			case APPLY_SAVING_BREATH:
-			case APPLY_SAVING_SPELL:
-				cost -= obj->affected[i].modifier * 2500; /* negative is better */
-				break;
+		case APPLY_NONE:
+			break;
+		case APPLY_STR:
+		case APPLY_DEX:
+		case APPLY_INT:
+		case APPLY_WIS:
+		case APPLY_CON:
+		case APPLY_AGI:
+		case APPLY_POW:
+		case APPLY_CHA:
+		case APPLY_KARMA:
+		case APPLY_LUCK:
+			if (obj->affected[i].modifier > 0)
+				cost += obj->affected[i].modifier * 150;
+			else
+				cost += obj->affected[i].modifier * 100;
+			break;
+		case APPLY_STR_MAX:
+		case APPLY_DEX_MAX:
+		case APPLY_INT_MAX:
+		case APPLY_WIS_MAX:
+		case APPLY_CON_MAX:
+		case APPLY_AGI_MAX:
+		case APPLY_POW_MAX:
+		case APPLY_CHA_MAX:
+		case APPLY_KARMA_MAX:
+		case APPLY_LUCK_MAX:
+		case APPLY_STR_RACE:
+		case APPLY_DEX_RACE:
+		case APPLY_INT_RACE:
+		case APPLY_WIS_RACE:
+		case APPLY_CON_RACE:
+		case APPLY_AGI_RACE:
+		case APPLY_POW_RACE:
+		case APPLY_CHA_RACE:
+		case APPLY_KARMA_RACE:
+		case APPLY_LUCK_RACE:
+			cost += obj->affected[i].modifier * 2500;
+			break;
+		case APPLY_SEX:
+		case APPLY_CLASS:
+		case APPLY_LEVEL:
+		case APPLY_CHAR_WEIGHT:
+		case APPLY_CHAR_HEIGHT:
+		case APPLY_GOLD:
+		case APPLY_EXP:
+			cost += 5000;
+			break;
+		case APPLY_HIT:
+			cost += obj->affected[i].modifier * 1000;
+			break;
+		case APPLY_MANA:
+			cost += obj->affected[i].modifier * 500;
+			break;
+		case APPLY_MOVE:
+			cost += obj->affected[i].modifier * 50;
+			break;
+		case APPLY_AGE:
+			cost -= obj->affected[i].modifier *
+				1500; /* minus cause younger is better */
+			break;
+		case APPLY_ARMOR:
+			if (obj->affected[i].modifier > -10)
+				cost -= 500 * val0;
+			else if (obj->affected[i].modifier > -20)
+				cost -= 1000 * val0;
+			else if (obj->affected[i].modifier > -30)
+				cost -= 2000 * val0;
+			else if (obj->affected[i].modifier > -40)
+				cost -= 3500 * val0;
+			else
+				cost -= 6000 * val0;
+			/* minus cause armor is a neg value */
+			break;
+		case APPLY_HITROLL:
+		case APPLY_DAMROLL:
+			cost += obj->affected[i].modifier * 1300;
+			break;
+		case APPLY_SAVING_PARA:
+		case APPLY_SAVING_ROD:
+		case APPLY_SAVING_FEAR:
+		case APPLY_SAVING_BREATH:
+		case APPLY_SAVING_SPELL:
+			cost -= obj->affected[i].modifier * 2500; /* negative is better */
+			break;
 		}
 	}
 
@@ -487,14 +495,19 @@ void convertObj(P_obj obj)
 	/* armor and worn items weights are affected by locale worn */
 	if (GET_ITEM_TYPE(obj) == ITEM_ARMOR || GET_ITEM_TYPE(obj) == ITEM_WORN)
 	{
-		if (CAN_WEAR(obj, ITEM_WEAR_FINGER) || CAN_WEAR(obj, ITEM_GUILD_INSIGNIA) || CAN_WEAR(obj, ITEM_WEAR_EYES) || CAN_WEAR(obj, ITEM_WEAR_EARRING))
+		if (CAN_WEAR(obj, ITEM_WEAR_FINGER) || CAN_WEAR(obj, ITEM_GUILD_INSIGNIA) ||
+		    CAN_WEAR(obj, ITEM_WEAR_EYES) || CAN_WEAR(obj, ITEM_WEAR_EARRING))
 			weight = 0;
-		else if (CAN_WEAR(obj, ITEM_WEAR_HEAD) || CAN_WEAR(obj, ITEM_WEAR_WAIST) || CAN_WEAR(obj, ITEM_WEAR_WRIST) || CAN_WEAR(obj, ITEM_WEAR_TAIL) || CAN_WEAR(obj, ITEM_WEAR_QUIVER) ||
-		         CAN_WEAR(obj, ITEM_WEAR_NOSE) || CAN_WEAR(obj, ITEM_WEAR_HORN))
+		else if (CAN_WEAR(obj, ITEM_WEAR_HEAD) || CAN_WEAR(obj, ITEM_WEAR_WAIST) ||
+			 CAN_WEAR(obj, ITEM_WEAR_WRIST) || CAN_WEAR(obj, ITEM_WEAR_TAIL) ||
+			 CAN_WEAR(obj, ITEM_WEAR_QUIVER) || CAN_WEAR(obj, ITEM_WEAR_NOSE) ||
+			 CAN_WEAR(obj, ITEM_WEAR_HORN))
 			weight -= 10;
-		else if (CAN_WEAR(obj, ITEM_WEAR_NECK) || CAN_WEAR(obj, ITEM_WEAR_FACE) || CAN_WEAR(obj, ITEM_WEAR_FEET) || CAN_WEAR(obj, ITEM_WEAR_HANDS))
+		else if (CAN_WEAR(obj, ITEM_WEAR_NECK) || CAN_WEAR(obj, ITEM_WEAR_FACE) ||
+			 CAN_WEAR(obj, ITEM_WEAR_FEET) || CAN_WEAR(obj, ITEM_WEAR_HANDS))
 			weight -= 5;
-		else if (CAN_WEAR(obj, ITEM_WEAR_BODY) || CAN_WEAR(obj, ITEM_HORSE_BODY) || CAN_WEAR(obj, ITEM_SPIDER_BODY))
+		else if (CAN_WEAR(obj, ITEM_WEAR_BODY) || CAN_WEAR(obj, ITEM_HORSE_BODY) ||
+			 CAN_WEAR(obj, ITEM_SPIDER_BODY))
 			weight += 10;
 		else if (CAN_WEAR(obj, ITEM_WEAR_SHIELD))
 		{
@@ -514,12 +527,13 @@ void convertObj(P_obj obj)
 	}
 
 	/* check some keywords */
-	if (isname("ornate", obj->name) || isname("gem", obj->name) || isname("gold", obj->name) || isname("platinum", obj->name) || isname("jewel", obj->name))
+	if (isname("ornate", obj->name) || isname("gem", obj->name) || isname("gold", obj->name) ||
+	    isname("platinum", obj->name) || isname("jewel", obj->name))
 		cost *= 2;
 	if (isname("worn", obj->name) || isname("broken", obj->name) || isname("ruined", obj->name))
 		cost /= 2;
 
-	cost   = BOUNDED(1, cost, 5000000);
+	cost = BOUNDED(1, cost, 5000000);
 	weight = BOUNDED(0, weight, 10000);
 
 	/* slight randomizing */

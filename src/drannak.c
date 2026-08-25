@@ -40,35 +40,35 @@
 /*
  * external variables
  */
-extern Skill             skills[];
+extern Skill skills[];
 extern struct zone_data *zone_table;
-extern const char       *material_names[];
-extern P_char            character_list;
-extern P_desc            descriptor_list;
-extern P_index           mob_index;
-extern P_index           obj_index;
-extern P_obj             object_list;
-extern P_room            world;
-extern const int         top_of_world;
-extern char              debug_mode;
-extern const char       *race_types[];
+extern const char *material_names[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern const int top_of_world;
+extern char debug_mode;
+extern const char *race_types[];
 
 extern const struct stat_data stat_factor[];
-extern float                  fake_sqrt_table[];
-extern int                    pulse;
-extern int                    arena_hometown_location[];
-extern struct arena_data      arena;
-extern struct agi_app_type    agi_app[];
-extern struct dex_app_type    dex_app[];
-extern struct message_list    fight_messages[];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone_table;
-extern P_obj                  quest_item_reward(P_char ch);
-extern int                    find_map_place();
-extern int                    getItemFromZone(int zone);
-extern const surname_struct   surnames[MAX_SURNAME + 1];
-extern const surname_struct   feudal_surnames[7];
+extern float fake_sqrt_table[];
+extern int pulse;
+extern int arena_hometown_location[];
+extern struct arena_data arena;
+extern struct agi_app_type agi_app[];
+extern struct dex_app_type dex_app[];
+extern struct message_list fight_messages[];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
+extern P_obj quest_item_reward(P_char ch);
+extern int find_map_place();
+extern int getItemFromZone(int zone);
+extern const surname_struct surnames[MAX_SURNAME + 1];
+extern const surname_struct feudal_surnames[7];
 
 /* Surname List
  *   0 - Update
@@ -94,10 +94,12 @@ void set_surname(P_char ch, int num)
 		curr_surname = GET_SURNAME(ch) / SURNAME_SERF;
 		// Do not update a feudal surname past 6 (6 is King and is not updatable since it's the highest possible).
 		points = getLeaderBoardPts(ch) / 100;
-		while ((curr_surname < 6) && (points > feudal_surnames[curr_surname + 1].achievement_number))
+		while ((curr_surname < 6) &&
+		       (points > feudal_surnames[curr_surname + 1].achievement_number))
 		{
 			curr_surname++;
-			send_to_char_f(ch, "You have ranked up to %s.\n", feudal_surnames[curr_surname].color_name);
+			send_to_char_f(ch, "You have ranked up to %s.\n",
+				       feudal_surnames[curr_surname].color_name);
 			CLEAR_SURNAME(ch);
 			// Multiply by SURNAME_SERF to convert from index to flag.
 			SET_SURNAME(ch, curr_surname * SURNAME_SERF);
@@ -157,20 +159,25 @@ void set_surname(P_char ch, int num)
 void display_surnames(P_char ch)
 {
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	int  i;
+	int i;
 
-	snprintf(buf, MAX_STRING_LENGTH, "\r\n&+L=-=-=-=-=-=-=-=-=-=--= &+rTitles &+Lfor &+r%s &+L=-=-=-=-=-=-=-=-=-=-=-&n\r\n", GET_NAME(ch));
+	snprintf(
+		buf, MAX_STRING_LENGTH,
+		"\r\n&+L=-=-=-=-=-=-=-=-=-=--= &+rTitles &+Lfor &+r%s &+L=-=-=-=-=-=-=-=-=-=-=-&n\r\n",
+		GET_NAME(ch));
 
 	for (i = 1; i <= MAX_SURNAME; i++)
 	{
 		if (HAS_SURNAME(ch, i))
 		{
-			snprintf(buf2, MAX_STRING_LENGTH, "   &+L%d) %s\n", i, surnames[i].color_name);
+			snprintf(buf2, MAX_STRING_LENGTH, "   &+L%d) %s\n", i,
+				 surnames[i].color_name);
 			strcat(buf, buf2);
 		}
 	}
 
-	snprintf(buf2, MAX_STRING_LENGTH, "\n&+WNote: &nSome &+cachievements&n grant access to additional surnames.\n");
+	snprintf(buf2, MAX_STRING_LENGTH,
+		 "\n&+WNote: &nSome &+cachievements&n grant access to additional surnames.\n");
 	strcat(buf, buf2);
 
 	page_string(ch->desc, buf, 1);
@@ -192,7 +199,7 @@ int lookup_surname(char *name)
 void do_surname(P_char ch, char *argument, int cmd)
 {
 	char arg1[MAX_STRING_LENGTH];
-	int  surname_index;
+	int surname_index;
 
 	one_argument(argument, arg1);
 
@@ -211,7 +218,9 @@ void do_surname(P_char ch, char *argument, int cmd)
 
 	if ((surname_index < 1) || (surname_index > MAX_SURNAME))
 	{
-		send_to_char_f(ch, "'%s' is not a valid surname.\n&+YSyntax: &+wsurname <number|name>&n\n", arg1);
+		send_to_char_f(
+			ch, "'%s' is not a valid surname.\n&+YSyntax: &+wsurname <number|name>&n\n",
+			arg1);
 
 		display_surnames(ch);
 		return;
@@ -240,7 +249,6 @@ void event_update_surnames(P_char ch, P_char victim, P_obj, void *data)
 
 bool quested_spell(P_char ch, int spl)
 {
-
 	// debug("spell: %d\r\n");
 	if (IS_NPC(ch))
 		return FALSE;
@@ -253,7 +261,7 @@ bool quested_spell(P_char ch, int spl)
 
 void vnum_from_inv(P_char ch, int item, int count)
 {
-	int   i = count;
+	int i = count;
 	P_obj t_obj, nextobj;
 
 	int checkit = vnum_in_inv(ch, item);
@@ -272,7 +280,9 @@ void vnum_from_inv(P_char ch, int item, int count)
 			obj_from_char(t_obj);
 			if (IS_ARTIFACT(t_obj))
 			{
-				logit(LOG_ARTIFACT, "vnum_from_inv: Extracting artifact '%s' %d from '%s' %d.  Not changing arti list!", OBJ_SHORT(t_obj), OBJ_VNUM(t_obj), J_NAME(ch), GET_ID(ch));
+				logit(LOG_ARTIFACT,
+				      "vnum_from_inv: Extracting artifact '%s' %d from '%s' %d.  Not changing arti list!",
+				      OBJ_SHORT(t_obj), OBJ_VNUM(t_obj), J_NAME(ch), GET_ID(ch));
 			}
 			extract_obj(t_obj);
 			i--;
@@ -283,7 +293,7 @@ void vnum_from_inv(P_char ch, int item, int count)
 int vnum_in_inv(P_char ch, int vnum)
 {
 	P_obj t_obj;
-	int   count;
+	int count;
 
 	for (count = 0, t_obj = ch->carrying; t_obj; t_obj = t_obj->next_content)
 	{
@@ -296,9 +306,9 @@ int vnum_in_inv(P_char ch, int vnum)
 #define SHARDS_FOR_ORB 3
 int pvp_store(P_char ch, P_char pl, int cmd, char *arg)
 {
-	char  buffer[MAX_STRING_LENGTH];
-	char  buf[256], *buff;
-	char  Gbuf1[MAX_STRING_LENGTH], *c;
+	char buffer[MAX_STRING_LENGTH];
+	char buf[256], *buff;
+	char Gbuf1[MAX_STRING_LENGTH], *c;
 	P_obj orb;
 
 	if (cmd == CMD_LIST)
@@ -306,23 +316,20 @@ int pvp_store(P_char ch, P_char pl, int cmd, char *arg)
 		if (!arg || !*arg)
 		{
 			orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "&+LThe Harvester&+L fills your mind with words...\n"
-			         "&+L'Welcome combatant. I offer exotic items to those who have &+rproven &+Lthemselves in the arts of mortal &+rcombat&+L."
-			         "&+L  Only those who have collected the necessary amount frags of may purchase these items.."
-			         "&+L  Additionally, I offer a reward for &+R%d &+we&+Wt&+Lh&+rer&+Le&+Wa&+wl &+Wsoul &+rshards&+L from beings who have fallen in battle."
-			         "&+L  Simply have them in your &+Winventory&+L and buy the item from the list below..&n'\n"
-			         "&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
-			         "&+y|&+c    %-40s     %-15s     &+y|\n"
-			         "&+y|&+W 1) %s&+C     %15d     &+y|\n"
-			         "&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
-			         "\n",
-			         SHARDS_FOR_ORB,
-			         "Item Name",
-			         " Frags Required",
-			         pad_ansi(orb ? OBJ_SHORT(orb) : "NULL", 40, TRUE).c_str(),
-			         0);
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"&+LThe Harvester&+L fills your mind with words...\n"
+				"&+L'Welcome combatant. I offer exotic items to those who have &+rproven &+Lthemselves in the arts of mortal &+rcombat&+L."
+				"&+L  Only those who have collected the necessary amount frags of may purchase these items.."
+				"&+L  Additionally, I offer a reward for &+R%d &+we&+Wt&+Lh&+rer&+Le&+Wa&+wl &+Wsoul &+rshards&+L from beings who have fallen in battle."
+				"&+L  Simply have them in your &+Winventory&+L and buy the item from the list below..&n'\n"
+				"&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+				"&+y|&+c    %-40s     %-15s     &+y|\n"
+				"&+y|&+W 1) %s&+C     %15d     &+y|\n"
+				"&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+				"\n",
+				SHARDS_FOR_ORB, "Item Name", " Frags Required",
+				pad_ansi(orb ? OBJ_SHORT(orb) : "NULL", 40, TRUE).c_str(), 0);
 			send_to_char(buffer, pl);
 			extract_obj(orb);
 			return TRUE;
@@ -333,7 +340,9 @@ int pvp_store(P_char ch, P_char pl, int cmd, char *arg)
 		if (!arg || !*arg)
 		{ // ifnoarg
 			// practice called with no arguments
-			snprintf(buffer, MAX_STRING_LENGTH, "&+LThe Harvester&+L &+wsays 'What item would you like to buy?'\n");
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"&+LThe Harvester&+L &+wsays 'What item would you like to buy?'\n");
 			send_to_char(buffer, pl);
 			return TRUE;
 		} // endifnoarg
@@ -343,15 +352,21 @@ int pvp_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for SHARDS_FOR_ORB soul shards
 			if (vnum_in_inv(pl, VOBJ_SOUL_SHARD) < SHARDS_FOR_ORB)
 			{
-				send_to_char("&+LThe Harvester&+L &+wsays '&nI'm sorry, but you do not seem to have the 3 e&+Wt&+Lh&+rer&+Le&+Wa&+wl &+Wsoul &+rshards&n required to purchase that item.\r\n&n", pl);
+				send_to_char(
+					"&+LThe Harvester&+L &+wsays '&nI'm sorry, but you do not seem to have the 3 e&+Wt&+Lh&+rer&+Le&+Wa&+wl &+Wsoul &+rshards&n required to purchase that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			// Subtract SHARDS_FOR_ORB soul shards
 			orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);
 			vnum_from_inv(pl, VOBJ_SOUL_SHARD, SHARDS_FOR_ORB);
 			send_to_char("&+LThe Harvester&+L &+wsays '&nExcellent, mortal.'\n", pl);
-			send_to_char("&+LThe Harvester &ntakes the &+rshards&n from you and tightly grasps them with his hands. After a moment, a large grin appears across it's face.\r\n&n", pl);
-			send_to_char("Moments later, &+LThe Harvester &nmakes a strange gesture about your body.\r\n&n", pl);
+			send_to_char(
+				"&+LThe Harvester &ntakes the &+rshards&n from you and tightly grasps them with his hands. After a moment, a large grin appears across it's face.\r\n&n",
+				pl);
+			send_to_char(
+				"Moments later, &+LThe Harvester &nmakes a strange gesture about your body.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, orb, 0, TO_CHAR);
 			obj_to_char(orb, pl);
 			return TRUE;
@@ -366,10 +381,12 @@ bool lightbringer_proc(P_char ch, P_char victim, bool phys)
 {
 	int room = ch->in_room;
 
-	spell_func spells[5] = {spell_bigbys_crushing_hand, spell_bigbys_clenched_fist, spell_disintegrate, spell_destroy_undead, spell_flamestrike};
+	spell_func spells[5] = { spell_bigbys_crushing_hand, spell_bigbys_clenched_fist,
+				 spell_disintegrate, spell_destroy_undead, spell_flamestrike };
 
 	// If not both are alive and ready to proc..
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || room < 0 || room > top_of_world || room != victim->in_room)
+	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || room < 0 || room > top_of_world ||
+	    room != victim->in_room)
 	{
 		return TRUE;
 	}
@@ -387,13 +404,17 @@ bool lightbringer_proc(P_char ch, P_char victim, bool phys)
 
 	if (phys)
 	{
-		act("&+LAs you strike your &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill you with &+wundead &+Lpurging &+Ymight&+L!&n", TRUE, ch, NULL, victim, TO_CHAR);
-		act("&+LAs $n strikes their &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill them with &+wundead &+Lpurging &+Ymight&+L!&n", TRUE, ch, NULL, victim, TO_NOTVICT);
+		act("&+LAs you strike your &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill you with &+wundead &+Lpurging &+Ymight&+L!&n",
+		    TRUE, ch, NULL, victim, TO_CHAR);
+		act("&+LAs $n strikes their &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill them with &+wundead &+Lpurging &+Ymight&+L!&n",
+		    TRUE, ch, NULL, victim, TO_NOTVICT);
 	}
 	else
 	{
-		act("&+LAs your spell contacts your &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill you with &+wundead &+Lpurging &+Ymight&+L!&n", TRUE, ch, NULL, victim, TO_CHAR);
-		act("&+LAs $n's spell contacts their &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill them with &+wundead &+Lpurging &+Ymight&+L!&n", TRUE, ch, NULL, victim, TO_NOTVICT);
+		act("&+LAs your spell contacts your &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill you with &+wundead &+Lpurging &+Ymight&+L!&n",
+		    TRUE, ch, NULL, victim, TO_CHAR);
+		act("&+LAs $n's spell contacts their &+rfoe&+L, the power of the &+WLight&+wbri&+Lngers fill them with &+wundead &+Lpurging &+Ymight&+L!&n",
+		    TRUE, ch, NULL, victim, TO_NOTVICT);
 	}
 
 	// Nuke with a random nuke.
@@ -413,7 +434,8 @@ bool intercept_defensiveproc(P_char merc, P_char hitter)
 	int num, room, save, pos;
 
 	// If !( both are alive and hitter hitting merc )
-	if (!IS_ALIVE(hitter) || !IS_FIGHTING(hitter) || !(merc == GET_OPPONENT(hitter)) || !IS_ALIVE(merc) || !(room = hitter->in_room) || !has_innate(merc, INNATE_INTERCEPT))
+	if (!IS_ALIVE(hitter) || !IS_FIGHTING(hitter) || !(merc == GET_OPPONENT(hitter)) ||
+	    !IS_ALIVE(merc) || !(room = hitter->in_room) || !has_innate(merc, INNATE_INTERCEPT))
 	{
 		return FALSE;
 	}
@@ -443,14 +465,17 @@ bool intercept_defensiveproc(P_char merc, P_char hitter)
 
 	struct affected_type af;
 
-	act("&+LAs $n&+L attempts to attack you, you &+Cintercept&+L the attack with your &+yhands&+L and &+ytwist&n $n's arm!&n", TRUE, hitter, 0, merc, TO_VICT);
-	act("&+LAs $n&+L attempts to attack $N, $N &+Cintercepts&+L the attack with $S &+yhands&+L and &+ytwist&n $n's arm!&n", TRUE, hitter, 0, merc, TO_NOTVICT);
-	act("&+LAs you attempt to attack $N, $N quickly reaches out, &+Cintercepting&+L the attack with $S &+yhands&+L and quickly &+ytwist&n your arm!&n", TRUE, hitter, 0, merc, TO_CHAR);
+	act("&+LAs $n&+L attempts to attack you, you &+Cintercept&+L the attack with your &+yhands&+L and &+ytwist&n $n's arm!&n",
+	    TRUE, hitter, 0, merc, TO_VICT);
+	act("&+LAs $n&+L attempts to attack $N, $N &+Cintercepts&+L the attack with $S &+yhands&+L and &+ytwist&n $n's arm!&n",
+	    TRUE, hitter, 0, merc, TO_NOTVICT);
+	act("&+LAs you attempt to attack $N, $N quickly reaches out, &+Cintercepting&+L the attack with $S &+yhands&+L and quickly &+ytwist&n your arm!&n",
+	    TRUE, hitter, 0, merc, TO_CHAR);
 
 	memset(&af, 0, sizeof(af));
-	af.type     = TAG_INTERCEPT;
+	af.type = TAG_INTERCEPT;
 	af.duration = 100;
-	af.flags    = AFFTYPE_SHORT;
+	af.flags = AFFTYPE_SHORT;
 	affect_to_char(hitter, &af);
 
 	return TRUE;
@@ -459,33 +484,34 @@ bool intercept_defensiveproc(P_char merc, P_char hitter)
 // Modified this so it doesn't stack and lasts PULSE_VIOLENCE * 2.
 bool minotaur_race_proc(P_char ch, P_char victim)
 {
-	int                  num, room = ch->in_room, save, pos, cmd;
-	int                  class_chance = 0;
+	int num, room = ch->in_room, save, pos, cmd;
+	int class_chance = 0;
 	struct affected_type af;
 
 	switch (ch->player.m_class)
 	{
-		case CLASS_REAVER:
-		case CLASS_RANGER:
-			class_chance = 30;
-			break;
-		case CLASS_MONK:
-			class_chance = 20;
-			break;
-		case CLASS_SORCERER:
-		case CLASS_CONJURER:
-		case CLASS_SUMMONER:
-			class_chance = 6;
-			break;
-		case CLASS_WARRIOR:
-			class_chance = 10;
-			break;
-		default:
-			class_chance = 15;
-			break;
+	case CLASS_REAVER:
+	case CLASS_RANGER:
+		class_chance = 30;
+		break;
+	case CLASS_MONK:
+		class_chance = 20;
+		break;
+	case CLASS_SORCERER:
+	case CLASS_CONJURER:
+	case CLASS_SUMMONER:
+		class_chance = 6;
+		break;
+	case CLASS_WARRIOR:
+		class_chance = 10;
+		break;
+	default:
+		class_chance = 15;
+		break;
 	}
 
-	if (!(victim = GET_OPPONENT(ch)) || !IS_ALIVE(victim) || !(room) || number(0, class_chance)) // 3% for default (15)
+	if (!(victim = GET_OPPONENT(ch)) || !IS_ALIVE(victim) || !(room) ||
+	    number(0, class_chance)) // 3% for default (15)
 	{
 		return FALSE;
 	}
@@ -496,12 +522,14 @@ bool minotaur_race_proc(P_char ch, P_char victim)
 		return FALSE;
 	}
 
-	act("&+LAs you strike $N&+L, the power of your &+rance&+Lstor&+rs&+L fill you with &+rR&+RAG&+RE&+L!&n", TRUE, ch, 0, victim, TO_CHAR);
-	act("&+LAs $n strikes $N&+L, the power of $n's &+rance&+Lstor&+rs&+L fill them with &+rR&+RAG&+RE&+L!&n", TRUE, ch, 0, victim, TO_NOTVICT);
+	act("&+LAs you strike $N&+L, the power of your &+rance&+Lstor&+rs&+L fill you with &+rR&+RAG&+RE&+L!&n",
+	    TRUE, ch, 0, victim, TO_CHAR);
+	act("&+LAs $n strikes $N&+L, the power of $n's &+rance&+Lstor&+rs&+L fill them with &+rR&+RAG&+RE&+L!&n",
+	    TRUE, ch, 0, victim, TO_NOTVICT);
 
 	memset(&af, 0, sizeof(af));
-	af.type     = TAG_MINOTAUR_RAGE;
-	af.flags    = AFFTYPE_SHORT;
+	af.type = TAG_MINOTAUR_RAGE;
+	af.flags = AFFTYPE_SHORT;
 	af.duration = 2 * PULSE_VIOLENCE;
 	af.modifier = -1 - GET_LEVEL(ch) / 28;
 
@@ -518,9 +546,8 @@ static FILE *aliaslist;
 
 char get_alias(P_char ch, char *argument)
 {
-
-	char  buf[256], aliasword[MAX_STRING_LENGTH], rbuf[MAX_STRING_LENGTH], *bufx;
-	char  gbuf1[MAX_STRING_LENGTH], charalias[MAX_STRING_LENGTH], bufbug[256];
+	char buf[256], aliasword[MAX_STRING_LENGTH], rbuf[MAX_STRING_LENGTH], *bufx;
+	char gbuf1[MAX_STRING_LENGTH], charalias[MAX_STRING_LENGTH], bufbug[256];
 	FILE *aliaslist;
 
 	if (!str_cmp(argument, ""))
@@ -552,7 +579,7 @@ char get_alias(P_char ch, char *argument)
 	{
 		int i = 0;
 		snprintf(bufbug, 256, "%s", charalias);
-		int  times                     = 0;
+		int times = 0;
 		char buffer[MAX_STRING_LENGTH] = "";
 
 		while (times < 1)
@@ -572,8 +599,8 @@ char get_alias(P_char ch, char *argument)
 			char bfbug[256];
 			char bfr[MAX_STRING_LENGTH] = "";
 			char ruf[MAX_STRING_LENGTH];
-			int  i     = 0;
-			int  times = 0;
+			int i = 0;
+			int times = 0;
 
 			snprintf(bfbug, 256, "%s", charalias);
 
@@ -605,8 +632,8 @@ char get_alias(P_char ch, char *argument)
 
 void create_alias_file(const char *dir, char *name)
 {
-	char  buf[256], *buff;
-	char  Gbuf1[MAX_STRING_LENGTH];
+	char buf[256], *buff;
+	char Gbuf1[MAX_STRING_LENGTH];
 	FILE *f;
 
 	strcpy(buf, name);
@@ -618,7 +645,10 @@ void create_alias_file(const char *dir, char *name)
 	fclose(f);
 }
 
-void create_alias_name(char *name) { create_alias_file("Players", name); }
+void create_alias_name(char *name)
+{
+	create_alias_file("Players", name);
+}
 
 void newbie_reincarnate(P_char ch)
 {
@@ -654,24 +684,22 @@ void newbie_reincarnate(P_char ch)
 	CharWait(ch, dice(2, 2) * 4);
 	update_pos(ch);
 
-	act("&+CAs $n's body succumbs to the overwhelming &+rpain&+C, &+M$n &+Cis quickly &+cwhisked &+Caway by a &+Ldark, sh&+wad&+Wowy &+Lfigure&+C!&N", TRUE, ch, 0, 0, TO_ROOM);
+	act("&+CAs $n's body succumbs to the overwhelming &+rpain&+C, &+M$n &+Cis quickly &+cwhisked &+Caway by a &+Ldark, sh&+wad&+Wowy &+Lfigure&+C!&N",
+	    TRUE, ch, 0, 0, TO_ROOM);
 	act("&+cAs your &+Cbody&+c succumbs to the overwhelming &+rpain&+c, a &+Ldark, sh&+wad&+Wowy &+Lfigure&+c appears from no where and quickly whisks you from the &+rviolence&+c. After opening your "
 	    "eyes you discover that the worst of your wounds are &+Whealed&+c, and you are once again in &+Cfamiliar &+clands!&N",
-	    FALSE,
-	    ch,
-	    0,
-	    0,
-	    TO_CHAR);
-	send_to_char("&+cA voice whispers to you: &+L'Beware, this time you have been spared death due to the supreme &+rpowers&+L of your adversary, but the battle lines draw ever closer each day...'&n",
-	             ch);
+	    FALSE, ch, 0, 0, TO_CHAR);
+	send_to_char(
+		"&+cA voice whispers to you: &+L'Beware, this time you have been spared death due to the supreme &+rpowers&+L of your adversary, but the battle lines draw ever closer each day...'&n",
+		ch);
 }
 
 int equipped_value(P_char ch)
 {
-	P_obj                obj_object, temp_obj;
-	int                  total, k, ret_type;
-	bool                 was_invis, naked;
-	char                 Gbuf1[MAX_STRING_LENGTH];
+	P_obj obj_object, temp_obj;
+	int total, k, ret_type;
+	bool was_invis, naked;
+	char Gbuf1[MAX_STRING_LENGTH];
 	struct affected_type af;
 
 	total = 0;
@@ -689,9 +717,9 @@ void create_recipe(P_char ch, P_obj temp)
 {
 	/***RECIPE CREATE***/
 	P_obj objrecipe;
-	char  buffer[256], old_name[256];
+	char buffer[256], old_name[256];
 	char *c;
-	int   recipenumber = obj_index[temp->R_num].virtual_number;
+	int recipenumber = obj_index[temp->R_num].virtual_number;
 
 	if ((temp->type == ITEM_CONTAINER || temp->type == ITEM_STORAGE) && temp->contains)
 	{
@@ -700,15 +728,20 @@ void create_recipe(P_char ch, P_obj temp)
 
 	// No recipes for high end equipment.
 	if (IS_SET(temp->bitvector, (AFF_STONE_SKIN | AFF_BIOFEEDBACK | AFF_SNEAK | AFF_HIDE)) ||
-	    IS_SET(temp->bitvector2, (AFF2_EARTH_AURA | AFF2_WATER_AURA | AFF2_FIRE_AURA | AFF2_AIR_AURA | AFF2_FLURRY)) ||
-	    IS_SET(temp->bitvector3, (AFF3_ENLARGE | AFF3_REDUCE | AFF3_INERTIAL_BARRIER | AFF3_BLUR)) ||
-	    IS_SET(temp->bitvector4, (AFF4_VAMPIRE_FORM | AFF4_HOLY_SACRIFICE | AFF4_BATTLE_ECSTASY | AFF4_SANCTUARY | AFF4_HELLFIRE | AFF4_ICE_AURA | AFF4_WILDMAGIC)))
+	    IS_SET(temp->bitvector2, (AFF2_EARTH_AURA | AFF2_WATER_AURA | AFF2_FIRE_AURA |
+				      AFF2_AIR_AURA | AFF2_FLURRY)) ||
+	    IS_SET(temp->bitvector3,
+		   (AFF3_ENLARGE | AFF3_REDUCE | AFF3_INERTIAL_BARRIER | AFF3_BLUR)) ||
+	    IS_SET(temp->bitvector4,
+		   (AFF4_VAMPIRE_FORM | AFF4_HOLY_SACRIFICE | AFF4_BATTLE_ECSTASY | AFF4_SANCTUARY |
+		    AFF4_HELLFIRE | AFF4_ICE_AURA | AFF4_WILDMAGIC)))
 	{
 		return;
 	}
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
-		if ((temp->affected[i].location == APPLY_COMBAT_PULSE) || (temp->affected[i].location == APPLY_SPELL_PULSE))
+		if ((temp->affected[i].location == APPLY_COMBAT_PULSE) ||
+		    (temp->affected[i].location == APPLY_SPELL_PULSE))
 		{
 			return;
 		}
@@ -729,7 +762,8 @@ void create_recipe(P_char ch, P_obj temp)
 
 	objrecipe->str_mask |= STRUNG_DESC2;
 	crafting_configure_recipe_scroll(objrecipe, temp);
-	debug("create_recipe: %s reward was: %s ival: %d.", J_NAME(ch), objrecipe->short_description, itemvalue(temp));
+	debug("create_recipe: %s reward was: %s ival: %d.", J_NAME(ch),
+	      objrecipe->short_description, itemvalue(temp));
 	obj_to_char(objrecipe, ch);
 }
 
@@ -760,7 +794,8 @@ void random_recipe(P_char ch, P_char victim)
 			return;
 		}
 
-		if (obj_index[reward->R_num].virtual_number == VOBJ_RANDOM_ARMOR || obj_index[reward->R_num].virtual_number == VOBJ_RANDOM_THRUSTED ||
+		if (obj_index[reward->R_num].virtual_number == VOBJ_RANDOM_ARMOR ||
+		    obj_index[reward->R_num].virtual_number == VOBJ_RANDOM_THRUSTED ||
 		    obj_index[reward->R_num].virtual_number == VOBJ_RANDOM_WEAPON)
 		{
 			extract_obj(reward);
@@ -790,7 +825,8 @@ P_obj random_zone_item(P_char ch)
 
 	if (reward)
 	{
-		debug("random_zone_item: %s reward was: %s (%d)", J_NAME(ch), reward->short_description, OBJ_VNUM(reward));
+		debug("random_zone_item: %s reward was: %s (%d)", J_NAME(ch),
+		      reward->short_description, OBJ_VNUM(reward));
 
 		REMOVE_BIT(reward->extra_flags, ITEM_SECRET);
 		REMOVE_BIT(reward->extra_flags, ITEM_INVISIBLE);
@@ -800,22 +836,22 @@ P_obj random_zone_item(P_char ch)
 	return reward;
 }
 
-#define CONJURE_SYNTAX                                                                                                                                                                                 \
-	"&+WThese are the &+mmys&+Mtic&+Wal commands for &+Yconjuring&+W:\n&n"                                                                                                                             \
-	"&+W(&+wconjure stat <number> &+m- &+mreveal statistical properties about this &+Mminion&n.)\n&n"                                                                                                  \
-	"&+W(&+wconjure summon <number> &+m- &+mcall the &+Mminion&+m into existence&n.)\n&n"                                                                                                              \
+#define CONJURE_SYNTAX                                                                                    \
+	"&+WThese are the &+mmys&+Mtic&+Wal commands for &+Yconjuring&+W:\n&n"                            \
+	"&+W(&+wconjure stat <number> &+m- &+mreveal statistical properties about this &+Mminion&n.)\n&n" \
+	"&+W(&+wconjure summon <number> &+m- &+mcall the &+Mminion&+m into existence&n.)\n&n"             \
 	"&+W(&+wconjure remove <number> &+m- &+Mpermanently&+m remove the &+Mminion&+m from your book&n.)\n&n"
 
 void do_conjure(P_char ch, char *argument, int cmd)
 {
-	char                 Gbuf1[MAX_STRING_LENGTH];
-	char                 arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], rest[MAX_INPUT_LENGTH];
-	char                 filename[256], *buff, short_buf[256];
-	P_char               t_ch;
-	FILE                *f;
-	FILE                *recipefile;
-	int                  duration, choice2, chance, counter;
-	long                 selected = 0, recnum;
+	char Gbuf1[MAX_STRING_LENGTH];
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], rest[MAX_INPUT_LENGTH];
+	char filename[256], *buff, short_buf[256];
+	P_char t_ch;
+	FILE *f;
+	FILE *recipefile;
+	int duration, choice2, chance, counter;
+	long selected = 0, recnum;
 	struct affected_type af;
 
 	if (!IS_ALIVE(ch) || IS_NPC(ch))
@@ -830,7 +866,8 @@ void do_conjure(P_char ch, char *argument, int cmd)
 	}
 	if (!GET_CLASS(ch, CLASS_SUMMONER))
 	{
-		act("&+YConjuring advanced beings &nis a &+Mmagic &nbeyond your abilities&n.", FALSE, ch, 0, 0, TO_CHAR);
+		act("&+YConjuring advanced beings &nis a &+Mmagic &nbeyond your abilities&n.",
+		    FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 
@@ -850,8 +887,8 @@ void do_conjure(P_char ch, char *argument, int cmd)
 	}
 
 	// load spellbook from database
-	int  pid            = GET_PID(ch);
-	int  mob_count      = 0;
+	int pid = GET_PID(ch);
+	int mob_count = 0;
 	int *spellbook_mobs = sql_get_spellbook_mobs(pid, &mob_count);
 
 	if (!spellbook_mobs || mob_count == 0)
@@ -869,16 +906,22 @@ void do_conjure(P_char ch, char *argument, int cmd)
 	{
 		send_to_char(CONJURE_SYNTAX, ch);
 		send_to_char("&+MYou have learned the following &+mMobs&+M:\n&n", ch);
-		send_to_char("----------------------------------------------------------------------------\n", ch);
-		send_to_char("&+M Mob Number		          &+mMob Name		&n\n\r", ch);
+		send_to_char(
+			"----------------------------------------------------------------------------\n",
+			ch);
+		send_to_char("&+M Mob Number		          &+mMob Name		&n\n\r",
+			     ch);
 
 		for (int i = 0; i < mob_count; i++)
 		{
 			if ((t_ch = read_mobile(spellbook_mobs[i], VIRTUAL)) != NULL)
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "   &+W%-22d&n%-41s&n\n", spellbook_mobs[i], t_ch->player.short_descr);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "   &+W%-22d&n%-41s&n\n",
+					 spellbook_mobs[i], t_ch->player.short_descr);
 				page_string(ch->desc, Gbuf1, 1);
-				send_to_char("----------------------------------------------------------------------------\n", ch);
+				send_to_char(
+					"----------------------------------------------------------------------------\n",
+					ch);
 				extract_char(t_ch);
 			}
 		}
@@ -904,34 +947,39 @@ void do_conjure(P_char ch, char *argument, int cmd)
 	{
 		if (choice2 == 0)
 		{
-			send_to_char("&+mWhich &+Mminion&n would you like &+Wstatistics&+m about?\n", ch);
+			send_to_char(
+				"&+mWhich &+Mminion&n would you like &+Wstatistics&+m about?\n",
+				ch);
 			return;
 		}
 		if (selected == 0)
 		{
-			send_to_char("&+mIt appears you have not yet &+Mlearned&+m how to conjure that &+Mminion&+m.&n\n", ch);
+			send_to_char(
+				"&+mIt appears you have not yet &+Mlearned&+m how to conjure that &+Mminion&+m.&n\n",
+				ch);
 			return;
 		}
 		t_ch = read_mobile(selected, VIRTUAL);
-		send_to_char("&+rYou open your &+RSummoners &+Lt&+mo&+Mm&+We &+rwhich &+Rreveals&+r the following information...&n.\n", ch);
+		send_to_char(
+			"&+rYou open your &+RSummoners &+Lt&+mo&+Mm&+We &+rwhich &+Rreveals&+r the following information...&n.\n",
+			ch);
 		// Initialize bufer.
 		short_buf[0] = '\0';
-		snprintf(Gbuf1,
-		         MAX_STRING_LENGTH,
-		         "You glean they are: \r\n&+YLevel &+W%d \r\n&+YClass:&n %s \r\n&+YBase Hitpoints:&n %d\r\n",
-		         GET_LEVEL(t_ch),
-		         get_class_string(t_ch, short_buf),
-		         GET_MAX_HIT(t_ch));
+		snprintf(
+			Gbuf1, MAX_STRING_LENGTH,
+			"You glean they are: \r\n&+YLevel &+W%d \r\n&+YClass:&n %s \r\n&+YBase Hitpoints:&n %d\r\n",
+			GET_LEVEL(t_ch), get_class_string(t_ch, short_buf), GET_MAX_HIT(t_ch));
 		send_to_char(Gbuf1, ch);
 		extract_char(t_ch);
 		return;
 	}
 	else if (is_abbrev(arg1, "summon"))
 	{
-
 		if (selected == 0)
 		{
-			send_to_char("&+mIt appears you have not yet &+Mlearned&+m how to conjure that &+Mminion&+m.&n\n", ch);
+			send_to_char(
+				"&+mIt appears you have not yet &+Mlearned&+m how to conjure that &+Mminion&+m.&n\n",
+				ch);
 			return;
 		}
 
@@ -941,12 +989,17 @@ void do_conjure(P_char ch, char *argument, int cmd)
 		{
 			if (t_ch)
 			{
-				send_to_char("Your character does not have &+Ldominion&n over this race of &+Lmonster&n, either because its level is too high, or it is not a valid race for you to summon.\r\n", ch);
+				send_to_char(
+					"Your character does not have &+Ldominion&n over this race of &+Lmonster&n, either because its level is too high, or it is not a valid race for you to summon.\r\n",
+					ch);
 				extract_char(t_ch);
 			}
 			else
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "Failed load on mob %ld.  Sorry, try again or tell a God.\n\r", selected);
+				snprintf(
+					Gbuf1, MAX_STRING_LENGTH,
+					"Failed load on mob %ld.  Sorry, try again or tell a God.\n\r",
+					selected);
 				send_to_char(Gbuf1, ch);
 			}
 			return;
@@ -960,7 +1013,9 @@ void do_conjure(P_char ch, char *argument, int cmd)
 
 		if (affected_by_spell(ch, SPELL_CONJURE_ELEMENTAL) && !IS_TRUSTED(ch))
 		{
-			send_to_char("You must wait a short time before calling another &+Yminion&n into existence.\r\n", ch);
+			send_to_char(
+				"You must wait a short time before calling another &+Yminion&n into existence.\r\n",
+				ch);
 			extract_char(t_ch);
 			return;
 		}
@@ -970,20 +1025,27 @@ void do_conjure(P_char ch, char *argument, int cmd)
 			if (!IS_TRUSTED(ch))
 			{
 				memset(&af, 0, sizeof(af));
-				af.type  = SPELL_CONJURE_ELEMENTAL;
+				af.type = SPELL_CONJURE_ELEMENTAL;
 				af.flags = AFFTYPE_SHORT;
 				// At level 21: 70-75 sec, at 56, 88-93 sec (assuming 100 cha).
-				af.duration = (WAIT_SEC * (60 + number(0, 5) + GET_LEVEL(ch) / 2) * 100) / GET_C_CHA(ch);
+				af.duration =
+					(WAIT_SEC * (60 + number(0, 5) + GET_LEVEL(ch) / 2) * 100) /
+					GET_C_CHA(ch);
 				affect_to_char(ch, &af);
 			}
 			extract_char(t_ch);
-			send_to_char("You feel a brief &+mtinge&n of &+Mmagical power&n engulf you as you &+rfail&n to call forth your &+Lminion&n.\r\n", ch);
+			send_to_char(
+				"You feel a brief &+mtinge&n of &+Mmagical power&n engulf you as you &+rfail&n to call forth your &+Lminion&n.\r\n",
+				ch);
 			return;
 		}
 
-		if ((GET_LEVEL(t_ch) > CONJURE_MAXLVL_NO_ORB) && !vnum_in_inv(ch, VOBJ_GREATER_ORB_MAGIC) && !IS_TRUSTED(ch))
+		if ((GET_LEVEL(t_ch) > CONJURE_MAXLVL_NO_ORB) &&
+		    !vnum_in_inv(ch, VOBJ_GREATER_ORB_MAGIC) && !IS_TRUSTED(ch))
 		{
-			send_to_char("You must have a &+Ya &+Mgreater&+Y o&+Mr&+Bb &+Yof &+mM&+Ma&+Wg&+Mi&+mc&n in your &+Winventory&n in order to &+Ysummon&n a being of such &+Mgreat&+M power&n.\r\n", ch);
+			send_to_char(
+				"You must have a &+Ya &+Mgreater&+Y o&+Mr&+Bb &+Yof &+mM&+Ma&+Wg&+Mi&+mc&n in your &+Winventory&n in order to &+Ysummon&n a being of such &+Mgreat&+M power&n.\r\n",
+				ch);
 			extract_char(t_ch);
 			return;
 		}
@@ -994,22 +1056,31 @@ void do_conjure(P_char ch, char *argument, int cmd)
 
 		if (chance > 70)
 		{
-			act("$n's &+mcha&+Mris&+Mma&n &+Cradiates&n as they call forth their minion!", TRUE, ch, 0, t_ch, TO_ROOM);
-			act("Your &+mcha&+Mris&+Mma&n &+Cradiates&n as you call forth your minion!", TRUE, ch, 0, t_ch, TO_CHAR);
-			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit = (t_ch->points.base_hit * (1 + (number(1, 4) * .1)));
+			act("$n's &+mcha&+Mris&+Mma&n &+Cradiates&n as they call forth their minion!",
+			    TRUE, ch, 0, t_ch, TO_ROOM);
+			act("Your &+mcha&+Mris&+Mma&n &+Cradiates&n as you call forth your minion!",
+			    TRUE, ch, 0, t_ch, TO_CHAR);
+			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit =
+				(t_ch->points.base_hit * (1 + (number(1, 4) * .1)));
 		}
 		else if (chance < 30)
 		{
-			act("An &+Lug&+yli&+Ler &nside of $n seems to eminate as they call forth their minion.", TRUE, ch, 0, t_ch, TO_ROOM);
-			act("Your &+Lug&+yli&+Ler &nside seems to eminate as you call forth your minion.", TRUE, ch, 0, t_ch, TO_CHAR);
-			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit = (t_ch->points.base_hit * (number(6, 9) * .1));
+			act("An &+Lug&+yli&+Ler &nside of $n seems to eminate as they call forth their minion.",
+			    TRUE, ch, 0, t_ch, TO_ROOM);
+			act("Your &+Lug&+yli&+Ler &nside seems to eminate as you call forth your minion.",
+			    TRUE, ch, 0, t_ch, TO_CHAR);
+			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit =
+				(t_ch->points.base_hit * (number(6, 9) * .1));
 		}
 
 		// 20% bonus hps for max skill, 2% for each skill notch.
 		if (GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE))
 		{
-			act("You channel extra &+Wlifeforce&n as you call forth your minion.", TRUE, ch, 0, t_ch, TO_CHAR);
-			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit = GET_HIT(t_ch) * ((500.0 + GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE)) / 500.0);
+			act("You channel extra &+Wlifeforce&n as you call forth your minion.", TRUE,
+			    ch, 0, t_ch, TO_CHAR);
+			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit =
+				GET_HIT(t_ch) *
+				((500.0 + GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE)) / 500.0);
 		}
 
 		// Max hps for any minion is 8k.
@@ -1044,39 +1115,34 @@ void do_conjure(P_char ch, char *argument, int cmd)
 		{
 			vnum_from_inv(ch, VOBJ_GREATER_ORB_MAGIC, 1);
 			act("$n &+Ltosses their &+Ya &+Mgreater&+Y o&+Mr&+Bb &+Yof &+mM&+Ma&+Wg&+Mi&+mc&n &+Linto the &+Cair&+L, which quickly forms an &+Rextra-dimensional &+Lpocket&n!",
-			    TRUE,
-			    ch,
-			    0,
-			    t_ch,
-			    TO_ROOM);
+			    TRUE, ch, 0, t_ch, TO_ROOM);
 			act("You &+Ltoss your &+Ya &+Mgreater&+Y o&+Mr&+Bb &+Yof &+mM&+Ma&+Wg&+Mi&+mc&n &+Linto the &+Cair&+L, which quickly forms an &+Rextra-dimensional &+Lpocket&n!",
-			    TRUE,
-			    ch,
-			    0,
-			    t_ch,
-			    TO_CHAR);
+			    TRUE, ch, 0, t_ch, TO_CHAR);
 		}
 
 		t_ch->only.npc->aggro_flags = 0;
-		duration                    = setup_pet(t_ch, ch, 400 / STAT_INDEX(GET_C_INT(t_ch)), PET_NOCASH);
+		duration = setup_pet(t_ch, ch, 400 / STAT_INDEX(GET_C_INT(t_ch)), PET_NOCASH);
 		SET_POS(t_ch, POS_STANDING + STAT_NORMAL);
 		char_to_room(t_ch, ch->in_room, 0);
 
-		act("$n utters a quick &+mincantation&n, calling forth $N who softly says 'Your wish is my command, $n!'", TRUE, ch, 0, t_ch, TO_ROOM);
-		act("You utter a quick &+mincantation&n, calling forth $N who softly says 'Your wish is my command, master!'", TRUE, ch, 0, t_ch, TO_CHAR);
+		act("$n utters a quick &+mincantation&n, calling forth $N who softly says 'Your wish is my command, $n!'",
+		    TRUE, ch, 0, t_ch, TO_ROOM);
+		act("You utter a quick &+mincantation&n, calling forth $N who softly says 'Your wish is my command, master!'",
+		    TRUE, ch, 0, t_ch, TO_CHAR);
 
 		add_follower(t_ch, ch);
 		if (duration >= 0)
 		{
 			duration += number(1, 10);
-			add_event(event_pet_death, (duration + 1) * 60 * 4, t_ch, NULL, NULL, 0, NULL, 0);
+			add_event(event_pet_death, (duration + 1) * 60 * 4, t_ch, NULL, NULL, 0,
+				  NULL, 0);
 		}
 
 		if (!IS_TRUSTED(ch))
 		{
 			memset(&af, 0, sizeof(af));
-			af.type     = SPELL_CONJURE_ELEMENTAL;
-			af.flags    = AFFTYPE_NODISPEL;
+			af.type = SPELL_CONJURE_ELEMENTAL;
+			af.flags = AFFTYPE_NODISPEL;
 			af.duration = 1;
 			affect_to_char(ch, &af);
 		}
@@ -1085,17 +1151,23 @@ void do_conjure(P_char ch, char *argument, int cmd)
 	{
 		if (choice2 == 0)
 		{
-			send_to_char("&+mWhich &+Mminion&+m would you like to &+Mpermanently&+m remove from your list?&n\n", ch);
+			send_to_char(
+				"&+mWhich &+Mminion&+m would you like to &+Mpermanently&+m remove from your list?&n\n",
+				ch);
 			return;
 		}
 		if (selected == 0)
 		{
-			send_to_char("&+mIt appears you have not yet &+Mlearned&+m how to conjure that &+Mminion&+m.&n\n", ch);
+			send_to_char(
+				"&+mIt appears you have not yet &+Mlearned&+m how to conjure that &+Mminion&+m.&n\n",
+				ch);
 			return;
 		}
 		if (selected == 400003)
 		{
-			send_to_char("&+mYou can &+Mnot&+m remove that &+Mminion&+m from your list.&n\n", ch);
+			send_to_char(
+				"&+mYou can &+Mnot&+m remove that &+Mminion&+m from your list.&n\n",
+				ch);
 			return;
 		}
 		recipefile = fopen(filename, "rt");
@@ -1104,7 +1176,7 @@ void do_conjure(P_char ch, char *argument, int cmd)
 			send_to_char("Fatal error opening spellbook, notify a god.\r\n", ch);
 			return;
 		}
-		counter  = 0;
+		counter = 0;
 		Gbuf1[0] = '\0';
 		// Read all the recipes into Gbuf1.
 		while ((fscanf(recipefile, "%ld", &recnum)) != EOF)
@@ -1122,13 +1194,16 @@ void do_conjure(P_char ch, char *argument, int cmd)
 		recipefile = fopen(filename, "wt");
 		if (!recipefile)
 		{
-			send_to_char("Fatal error opening spellbook for writing, notify a god.\r\n", ch);
+			send_to_char("Fatal error opening spellbook for writing, notify a god.\r\n",
+				     ch);
 			return;
 		}
 		fprintf(recipefile, "%s", Gbuf1);
 		fclose(recipefile);
 
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+mRemoved &+Mminion&+m vnum &+M%ld&+m from your spellbook.&n\n\r", selected);
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "&+mRemoved &+Mminion&+m vnum &+M%ld&+m from your spellbook.&n\n\r",
+			 selected);
 		send_to_char(Gbuf1, ch);
 	}
 	else
@@ -1202,7 +1277,8 @@ bool valid_conjure(P_char ch, P_char victim)
 			return FALSE;
 		}
 
-		if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_NATURALIST) && !(IS_ANIMAL(victim) || IS_PLANT(victim)))
+		if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_NATURALIST) &&
+		    !(IS_ANIMAL(victim) || IS_PLANT(victim)))
 		{
 			return FALSE;
 		}
@@ -1224,8 +1300,8 @@ bool valid_conjure(P_char ch, P_char victim)
 bool new_summon_check(P_char ch, P_char selected)
 {
 	struct follow_type *k;
-	P_char              victim;
-	int                 i, j, count = 0, desired = 0, greater = 0;
+	P_char victim;
+	int i, j, count = 0, desired = 0, greater = 0;
 
 	desired = GET_LEVEL(selected);
 
@@ -1275,9 +1351,8 @@ bool new_summon_check(P_char ch, P_char selected)
 
 void learn_conjure_recipe(P_char ch, P_char victim)
 {
-
-	char  buf[256], *buff;
-	char  Gbuf1[MAX_STRING_LENGTH], *c;
+	char buf[256], *buff;
+	char Gbuf1[MAX_STRING_LENGTH], *c;
 	FILE *f;
 	FILE *recipelist;
 
@@ -1294,37 +1369,49 @@ void learn_conjure_recipe(P_char ch, P_char victim)
 
 	if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_CONTROLLER) && !IS_HUMANOID(victim))
 	{
-		send_to_char("You cannot learn to summon a being outside of your area of expertise.\r\n", ch);
+		send_to_char(
+			"You cannot learn to summon a being outside of your area of expertise.\r\n",
+			ch);
 		extract_char(victim);
 		return;
 	}
 
 	if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_MENTALIST) && !IS_ELEMENTAL(victim))
 	{
-		send_to_char("You cannot learn to summon a being outside of your area of expertise.\r\n", ch);
+		send_to_char(
+			"You cannot learn to summon a being outside of your area of expertise.\r\n",
+			ch);
 		extract_char(victim);
 		return;
 	}
 
-	if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_NATURALIST) && !(IS_ANIMAL(victim) || IS_PLANT(victim)))
+	if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_NATURALIST) &&
+	    !(IS_ANIMAL(victim) || IS_PLANT(victim)))
 	{
-		send_to_char("You cannot learn to summon a being outside of your area of expertise.\r\n", ch);
+		send_to_char(
+			"You cannot learn to summon a being outside of your area of expertise.\r\n",
+			ch);
 		extract_char(victim);
 		return;
 	}
 
-	if (mob_index[GET_RNUM(victim)].func.mob == shop_keeper || (mob_index[GET_RNUM(victim)].qst_func == shop_keeper))
+	if (mob_index[GET_RNUM(victim)].func.mob == shop_keeper ||
+	    (mob_index[GET_RNUM(victim)].qst_func == shop_keeper))
 	{
-		act("$n &+Ltries to charm their listeners &+Lbut suddenly &+rDrannak&+L appears from the skies!", TRUE, ch, NULL, 0, TO_ROOM);
-		act("You attempt to charm your listeners, but suddenly &+rDrannak&n appears from the skies!", FALSE, ch, NULL, 0, TO_CHAR);
-		act("&+rDrannak&n makes a strange gesture, causing a large brick of &+Ycheese&n the size of a whale to suddenly fall on $n, crushing them completely!", TRUE, ch, NULL, 0, TO_ROOM);
-		act("&+rDrannak&n makes a strange gesture, causing a large brick of &+Ycheese&n the size of a whale to suddenly fall on you, crushing you completely!", FALSE, ch, NULL, 0, TO_CHAR);
+		act("$n &+Ltries to charm their listeners &+Lbut suddenly &+rDrannak&+L appears from the skies!",
+		    TRUE, ch, NULL, 0, TO_ROOM);
+		act("You attempt to charm your listeners, but suddenly &+rDrannak&n appears from the skies!",
+		    FALSE, ch, NULL, 0, TO_CHAR);
+		act("&+rDrannak&n makes a strange gesture, causing a large brick of &+Ycheese&n the size of a whale to suddenly fall on $n, crushing them completely!",
+		    TRUE, ch, NULL, 0, TO_ROOM);
+		act("&+rDrannak&n makes a strange gesture, causing a large brick of &+Ycheese&n the size of a whale to suddenly fall on you, crushing you completely!",
+		    FALSE, ch, NULL, 0, TO_CHAR);
 		die(ch, ch);
 		return;
 	}
 
 	int recipenumber = GET_VNUM(victim);
-	int pid          = GET_PID(ch);
+	int pid = GET_PID(ch);
 
 	// check if already known
 	if (sql_has_spellbook_mob(pid, recipenumber))
@@ -1338,19 +1425,11 @@ void learn_conjure_recipe(P_char ch, P_char victim)
 	act("$n &+gsuddenly &+Greaches &+gout and makes a &+Mmagical &+mgesture &+gabout &n$N&+g...\n"
 	    "&+gsh&+Gar&+Wds&+g of &+mcry&+Mstallized &+Wmagic&+g begin to form a square dome around &n$N&+g.\n"
 	    "&+gWith a &+Gfinal&+g &+mgesture&+g, &n$n &+gpoints at &n$N &+gwho is &+Gconsumed&+g by the &+mmagical &+Mdome&+g, and disappears from sight.\r\n",
-	    FALSE,
-	    ch,
-	    0,
-	    victim,
-	    TO_ROOM);
+	    FALSE, ch, 0, victim, TO_ROOM);
 	act("&+gYou &+gsuddenly &+Greach &+gout and make a &+Mmagical &+mgesture &+gabout &n$N&+g...\n"
 	    "&+gsh&+Gar&+Wds&+g of &+mcry&+Mstallized &+Wmagic&+g begin to form a square dome around &n$N&+g.\n"
 	    "&+gWith a &+Gfinal&+g &+mgesture&+g, you &+gpoint at &n$N &+gwho is &+Gconsumed&+g by the &+mmagical &+Mdome&+g, and disappears from sight.\r\n",
-	    FALSE,
-	    ch,
-	    0,
-	    victim,
-	    TO_CHAR);
+	    FALSE, ch, 0, victim, TO_CHAR);
 	send_to_char("&+gYou have learned a new minion to &+Gconjure&+g!\r\n", ch);
 	return;
 }
@@ -1359,8 +1438,8 @@ void do_dismiss(P_char ch, char *argument, int cmd)
 {
 	struct follow_type *k;
 	struct follow_type *x;
-	P_char              victim, next_vict;
-	int                 i, j, count = 0, desired = 0;
+	P_char victim, next_vict;
+	int i, j, count = 0, desired = 0;
 
 	if (cmd != CMD_DEATH)
 	{
@@ -1384,8 +1463,10 @@ void do_dismiss(P_char ch, char *argument, int cmd)
 			// Dismiss mirror images
 			if (IS_NPC(k->follower) && GET_VNUM(k->follower) == 250)
 			{
-				act("$n makes a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.", TRUE, ch, 0, k->follower, TO_ROOM);
-				act("You make a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.", TRUE, ch, 0, k->follower, TO_CHAR);
+				act("$n makes a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.",
+				    TRUE, ch, 0, k->follower, TO_ROOM);
+				act("You make a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.",
+				    TRUE, ch, 0, k->follower, TO_CHAR);
 				extract_char(k->follower);
 				count++;
 			}
@@ -1406,12 +1487,15 @@ void do_dismiss(P_char ch, char *argument, int cmd)
 			{
 				if (cmd != CMD_DEATH)
 				{
-					act("$n makes a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.", TRUE, ch, 0, k->follower, TO_ROOM);
-					act("You make a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.", TRUE, ch, 0, k->follower, TO_CHAR);
+					act("$n makes a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.",
+					    TRUE, ch, 0, k->follower, TO_ROOM);
+					act("You make a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.",
+					    TRUE, ch, 0, k->follower, TO_CHAR);
 				}
 				else
 				{
-					act("&+mThe magic surrounding $N&+m disperses.&n", TRUE, NULL, 0, k->follower, TO_ROOM);
+					act("&+mThe magic surrounding $N&+m disperses.&n", TRUE,
+					    NULL, 0, k->follower, TO_ROOM);
 				}
 				extract_char(k->follower);
 				count++;
@@ -1435,8 +1519,10 @@ void do_dismiss(P_char ch, char *argument, int cmd)
 	}
 	if (get_linked_char(victim, LNK_PET) == ch)
 	{
-		act("$n makes a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.", TRUE, ch, 0, victim, TO_ROOM);
-		act("You make a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.", TRUE, ch, 0, victim, TO_CHAR);
+		act("$n makes a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.",
+		    TRUE, ch, 0, victim, TO_ROOM);
+		act("You make a &+Mmagical &+mgesture&n, sending $N back to the &+Lnether plane&n.",
+		    TRUE, ch, 0, victim, TO_CHAR);
 		extract_char(victim);
 	}
 }
@@ -1449,7 +1535,7 @@ int calculate_shipfrags(P_char ch)
 		{
 			break;
 		}
-		int         found = 0;
+		int found = 0;
 		ShipVisitor svs;
 		for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
 		{
@@ -1513,19 +1599,11 @@ void christmas_proc(P_char ch)
 	act("&+WAs the last bit of &+rblood&+W drips onto the ground, a &+Gf&+We&+Rs&+Gt&+Wi&+Rv&+Ge&+Wl&+Ry &+rdressed &+Gelf &+Wsuddenly appears in a &+Lpuff &+Wof smoke....&n\r\n"
 	    "&n'Ah ha! Being quite &+RNaughty&n this year aren't we $n? Wait until &+rSanta Claws&n hears about this!' &+Whe cackles as he reaches beneath his &+Gc&+Ro&+Wa&+Gt&+W and pulls out a small "
 	    "parchment and quill.\r\n",
-	    TRUE,
-	    ch,
-	    0,
-	    0,
-	    TO_CHAR);
+	    TRUE, ch, 0, 0, TO_CHAR);
 	act("&+WAs the last bit of &+rblood&+W drips onto the ground, a &+Gf&+We&+Rs&+Gt&+Wi&+Rv&+Ge&+Wl&+Ry &+rdressed &+Gelf &+Wsuddenly appears in a &+Lpuff &+Wof smoke....&n\r\n"
 	    "&n'Ah ha! Being quite &+RNaughty&n this year aren't we $n? Wait until &+rSanta Claws&n hears about this!' &+Whe cackles as he reaches beneath his &+Gc&+Ro&+Wa&+Gt&+W and pulls out a small "
 	    "parchment and quill.\r\n",
-	    TRUE,
-	    ch,
-	    0,
-	    0,
-	    TO_ROOM);
+	    TRUE, ch, 0, 0, TO_ROOM);
 	// do_givepet(ch, buff, CMD_GIVEPET);
 	mob = read_mobile(400006, VIRTUAL);
 	if (!mob)
@@ -1563,27 +1641,30 @@ void add_bloodlust(P_char ch, P_char victim)
 		dur = 5;
 	}
 
-	send_to_char("&+rThe smell of fresh &+Rblood &+renters your body, &+Rinfusing&+r you with &+Rpower&+r!\r\n", ch);
+	send_to_char(
+		"&+rThe smell of fresh &+Rblood &+renters your body, &+Rinfusing&+r you with &+Rpower&+r!\r\n",
+		ch);
 	struct affected_type af;
 	if (!affected_by_spell(ch, TAG_BLOODLUST))
 	{
 		memset(&af, 0, sizeof(struct affected_type));
-		af.type     = TAG_BLOODLUST;
+		af.type = TAG_BLOODLUST;
 		af.modifier = 1;
 		af.duration = dur;
 		af.location = 0;
-		af.flags    = AFFTYPE_NODISPEL;
+		af.flags = AFFTYPE_NODISPEL;
 		affect_to_char(ch, &af);
 	}
 	else
 	{
 		struct affected_type *findaf, *next_af; // initialize affects
-		int                   lvl = MIN(50, GET_LEVEL(ch));
+		int lvl = MIN(50, GET_LEVEL(ch));
 		for (findaf = ch->affected; findaf; findaf = next_af)
 		{
 			next_af = findaf->next;
 			// Lvls 1-40 get 100% bloodlust
-			if (findaf && findaf->type == TAG_BLOODLUST && findaf->modifier < 10 && lvl <= 40)
+			if (findaf && findaf->type == TAG_BLOODLUST && findaf->modifier < 10 &&
+			    lvl <= 40)
 			{
 				findaf->modifier += 1;
 				findaf->duration = dur;
@@ -1593,7 +1674,9 @@ void add_bloodlust(P_char ch, P_char victim)
 			{
 				// Lose 10% for ever level over 40.
 				// 10 == max_modifier @ 40, 18 = max_modifier @ 41, ... 1 = max_modifier @ 49.
-				findaf->modifier = (findaf->modifier < 50 - lvl) ? findaf->modifier + 1 : 50 - lvl;
+				findaf->modifier = (findaf->modifier < 50 - lvl) ?
+							   findaf->modifier + 1 :
+							   50 - lvl;
 				findaf->duration = dur;
 			}
 			// We are at maxxed bloodlust, so just reset timer.
@@ -1620,11 +1703,11 @@ bool add_epiccount(P_char ch, int gain)
 	if (!affected_by_spell(ch, TAG_EPICS))
 	{
 		memset(&af, 0, sizeof(struct affected_type));
-		af.type     = TAG_EPICS;
+		af.type = TAG_EPICS;
 		af.modifier = gain;
 		af.duration = -1;
 		af.location = 0;
-		af.flags    = AFFTYPE_NODISPEL | AFFTYPE_PERM;
+		af.flags = AFFTYPE_NODISPEL | AFFTYPE_PERM;
 		affect_to_char(ch, &af);
 		return FALSE;
 	}

@@ -19,14 +19,14 @@
 #include <string.h>
 
 #define FLG_SUMMARY 1
-#define FLG_STOP    2
+#define FLG_STOP 2
 #define FLG_VERBOSE 4
 
-extern int                      restoreCharOnly(P_char, char *);
-extern int                      restoreItemsOnly(P_char, int);
-extern const struct race_names  race_names_table[];
+extern int restoreCharOnly(P_char, char *);
+extern int restoreItemsOnly(P_char, int);
+extern const struct race_names race_names_table[];
 extern const struct class_names class_names_table[];
-extern int                      flag2idx(int);
+extern int flag2idx(int);
 
 void print_help(char *msg)
 {
@@ -44,18 +44,19 @@ void print_help(char *msg)
 }
 
 /* what in the hell is this shit? */
-void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item, char *ipattern, unsigned int flags)
+void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item, char *ipattern,
+	      unsigned int flags)
 {
-	P_char         ch;
-	P_obj          obj;
-	DIR           *pf_dir;
+	P_char ch;
+	P_obj obj;
+	DIR *pf_dir;
 	struct dirent *pf_entry;
-	char           dname[256];
-	char           fname[256];
-	char           letter;
-	int            item_count, total_items, total;
-	char          *dot_index;
-	ch          = (struct char_data *)malloc(sizeof(struct char_data));
+	char dname[256];
+	char fname[256];
+	char letter;
+	int item_count, total_items, total;
+	char *dot_index;
+	ch = (struct char_data *)malloc(sizeof(struct char_data));
 	ch->only.pc = (struct pc_only_data *)malloc(sizeof(struct pc_only_data));
 	total_items = total = 0;
 	for (letter = 'a'; letter <= 'z'; letter++)
@@ -97,10 +98,13 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 						if (!ipattern)
 							item_count++;
 
-						else if (obj->short_description && !fnmatch(ipattern, obj->short_description, 0))
+						else if (obj->short_description &&
+							 !fnmatch(ipattern, obj->short_description,
+								  0))
 						{
 							if (flags & FLG_VERBOSE)
-								printf("%s\n", obj->short_description);
+								printf("%s\n",
+								       obj->short_description);
 							item_count++;
 						}
 				if (!item_count)
@@ -109,11 +113,15 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 			}
 			total++;
 			if (item)
-				printf(
-					"%s is a level %d %s %s [%d]\n", ch->player.name, ch->player.level, race_names_table[ch->player.race].normal, class_names_table[flag2idx(ch->player.m_class)].normal, item_count);
+				printf("%s is a level %d %s %s [%d]\n", ch->player.name,
+				       ch->player.level, race_names_table[ch->player.race].normal,
+				       class_names_table[flag2idx(ch->player.m_class)].normal,
+				       item_count);
 
 			else
-				printf("%s is a level %d %s %s\n", ch->player.name, ch->player.level, race_names_table[ch->player.race].normal, class_names_table[flag2idx(ch->player.m_class)].normal);
+				printf("%s is a level %d %s %s\n", ch->player.name,
+				       ch->player.level, race_names_table[ch->player.race].normal,
+				       class_names_table[flag2idx(ch->player.m_class)].normal);
 			if (flags & FLG_STOP)
 				break;
 		}
@@ -129,8 +137,8 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 int main(int argc, char *argv[])
 {
 	unsigned int race = 0, pc_class = 0, item = 0;
-	char        *pattern  = "*";
-	char        *ipattern = NULL;
+	char *pattern = "*";
+	char *ipattern = NULL;
 	unsigned int i, j, flags = 0;
 
 	if (argc == 1)

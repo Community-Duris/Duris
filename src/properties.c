@@ -19,29 +19,29 @@
 #include "sql.h"
 
 #define PROPERTIES_FILE "lib/duris.properties"
-#define MAX_PROPERTIES  3000
+#define MAX_PROPERTIES 3000
 #ifndef FNM_CASEFOLD
 #define FNM_CASEFOLD 1 << 4
 #endif
-int          properties_count;
-extern void  update_damage_data();
-extern void  update_spellpulse_data();
-extern void  update_racial_shrug_data();
-extern void  update_racial_exp_mods();
-extern void  update_racial_exp_mod_victims();
-extern void  update_exp_mods();
-extern void  update_stat_data();
-extern void  update_dam_factors();
-extern void  update_racial_dam_factors();
-extern void  update_saving_throws();
-extern void  update_breath_weapon_properties();
-extern void  update_regen_properties();
-extern void  update_misfire_properties();
+int properties_count;
+extern void update_damage_data();
+extern void update_spellpulse_data();
+extern void update_racial_shrug_data();
+extern void update_racial_exp_mods();
+extern void update_racial_exp_mod_victims();
+extern void update_exp_mods();
+extern void update_stat_data();
+extern void update_dam_factors();
+extern void update_racial_dam_factors();
+extern void update_saving_throws();
+extern void update_breath_weapon_properties();
+extern void update_regen_properties();
+extern void update_misfire_properties();
 extern float hp_mob_con_factor;
 extern float hp_mob_npc_pc_ratio;
-extern int   damroll_cap;
-extern int   hitroll_cap;
-extern int   errand_notch;
+extern int damroll_cap;
+extern int hitroll_cap;
+extern int errand_notch;
 
 void update_exp_table();
 
@@ -52,15 +52,22 @@ struct property
 	float old_value;
 } duris_properties[MAX_PROPERTIES];
 
-int key_property_comp(const void *key, const void *property) { return strcmp((char *)key, ((struct property *)property)->key); }
+int key_property_comp(const void *key, const void *property)
+{
+	return strcmp((char *)key, ((struct property *)property)->key);
+}
 
-int property_comp(const void *property1, const void *property2) { return strcmp(((struct property *)property1)->key, ((struct property *)property2)->key); }
+int property_comp(const void *property1, const void *property2)
+{
+	return strcmp(((struct property *)property1)->key, ((struct property *)property2)->key);
+}
 
 float get_property(const char *key, double default_value, bool fussy)
 {
 	struct property *result;
 
-	result = (struct property *)bsearch(key, duris_properties, properties_count, sizeof(struct property), key_property_comp);
+	result = (struct property *)bsearch(key, duris_properties, properties_count,
+					    sizeof(struct property), key_property_comp);
 	if (result)
 		return result->value;
 	else
@@ -71,9 +78,15 @@ float get_property(const char *key, double default_value, bool fussy)
 	}
 }
 
-float get_property(const char *key, double default_value) { return get_property(key, default_value, true); }
+float get_property(const char *key, double default_value)
+{
+	return get_property(key, default_value, true);
+}
 
-int get_property(const char *key, int default_value) { return get_property(key, default_value, true); }
+int get_property(const char *key, int default_value)
+{
+	return get_property(key, default_value, true);
+}
 
 int get_property(const char *key, int default_value, bool fuss)
 {
@@ -82,7 +95,9 @@ int get_property(const char *key, int default_value, bool fuss)
 	if (float_prop != ((float)((int)float_prop)))
 	{
 		char buf[500];
-		snprintf(buf, 500, "(int)get_property() called for \"%s\" which has a float value of %f.", key, float_prop);
+		snprintf(buf, 500,
+			 "(int)get_property() called for \"%s\" which has a float value of %f.",
+			 key, float_prop);
 		wizlog(58, buf);
 	}
 
@@ -104,17 +119,17 @@ void apply_properties()
 	update_saving_throws();
 	update_breath_weapon_properties();
 	update_regen_properties();
-	hp_mob_con_factor   = get_property("hitpoints.mob.conFactor", 0.4);
+	hp_mob_con_factor = get_property("hitpoints.mob.conFactor", 0.4);
 	hp_mob_npc_pc_ratio = get_property("hitpoints.mob.NpcPcRatio", 2.0);
-	damroll_cap         = get_property("damage.damrollCap", 64);
-	hitroll_cap         = get_property("damage.hitrollCap", 75);
-	errand_notch        = get_property("epic.errandStep", 500);
+	damroll_cap = get_property("damage.damrollCap", 64);
+	hitroll_cap = get_property("damage.hitrollCap", 75);
+	errand_notch = get_property("epic.errandStep", 500);
 	update_misfire_properties();
 }
 
 int parse_property(struct property *property, char *buf)
 {
-	char  key[128];
+	char key[128];
 	float value;
 	char *separator;
 
@@ -127,9 +142,9 @@ int parse_property(struct property *property, char *buf)
 		*separator = '=';
 		return 0;
 	}
-	*separator          = '=';
-	property->key       = (char *)str_dup(key);
-	property->value     = value;
+	*separator = '=';
+	property->key = (char *)str_dup(key);
+	property->value = value;
 	property->old_value = value;
 	return 1;
 }
@@ -137,11 +152,11 @@ int parse_property(struct property *property, char *buf)
 int load_properties(struct property *properties)
 {
 	FILE *f;
-	char  buf[1024];
-	int   count;
+	char buf[1024];
+	int count;
 
 	count = 0;
-	f     = fopen(PROPERTIES_FILE, "r");
+	f = fopen(PROPERTIES_FILE, "r");
 	if (f == NULL)
 	{
 		fprintf(stderr, "Cannot open properties file: %s.\n", PROPERTIES_FILE);
@@ -155,7 +170,9 @@ int load_properties(struct property *properties)
 			count++;
 			if (count == MAX_PROPERTIES)
 			{
-				fprintf(stderr, "Too many properties in file %s, increase MAX_PROPERTIES value!\n", PROPERTIES_FILE);
+				fprintf(stderr,
+					"Too many properties in file %s, increase MAX_PROPERTIES value!\n",
+					PROPERTIES_FILE);
 				exit(1);
 			}
 		}
@@ -167,26 +184,32 @@ int load_properties(struct property *properties)
 
 void save_properties(P_char ch)
 {
-	FILE           *f_old, *f_new;
+	FILE *f_old, *f_new;
 	struct property property, *result;
-	char            buf[4096];
-	char            changes[4096];
-	float           old_value, new_value;
+	char buf[4096];
+	char changes[4096];
+	float old_value, new_value;
 
-	f_old      = fopen(PROPERTIES_FILE, "r");
-	f_new      = fopen(PROPERTIES_FILE ".new", "w");
+	f_old = fopen(PROPERTIES_FILE, "r");
+	f_new = fopen(PROPERTIES_FILE ".new", "w");
 	changes[0] = '\0';
 
 	while (fgets(buf, 1024, f_old) != NULL)
 	{
 		if (parse_property(&property, buf))
 		{
-			result = (struct property *)bsearch(property.key, duris_properties, properties_count, sizeof(struct property), key_property_comp);
+			result = (struct property *)bsearch(property.key, duris_properties,
+							    properties_count,
+							    sizeof(struct property),
+							    key_property_comp);
 			if (result)
 			{
 				if (property.value != result->value)
 				{
-					snprintf(changes + strlen(changes), MAX_STRING_LENGTH - strlen(changes), "%s from %.3f to %.3f, ", property.key, property.value, result->value);
+					snprintf(changes + strlen(changes),
+						 MAX_STRING_LENGTH - strlen(changes),
+						 "%s from %.3f to %.3f, ", property.key,
+						 property.value, result->value);
 					result->old_value = result->value;
 				}
 				snprintf(buf, 4096, "%s=%.3f\n", property.key, result->value);
@@ -221,13 +244,13 @@ void do_properties(P_char ch, char *args, int cmd)
 	char *command;
 	char *pattern;
 	char *val_string;
-	char  buf[256];
+	char buf[256];
 	float new_value;
-	int   show_help = 0;
-	int   i;
+	int show_help = 0;
+	int i;
 
-	command    = (char *)strtok(args, " ");
-	pattern    = (char *)strtok(NULL, " ");
+	command = (char *)strtok(args, " ");
+	pattern = (char *)strtok(NULL, " ");
 	val_string = (char *)strtok(NULL, " ");
 
 	if (command != NULL)
@@ -239,10 +262,16 @@ void do_properties(P_char ch, char *args, int cmd)
 			{
 				if (fnmatch(pattern, duris_properties[i].key, FNM_CASEFOLD) == 0)
 				{
-					if (duris_properties[i].value != duris_properties[i].old_value)
-						snprintf(buf, 256, "*%s: %.3f(%.3f)\r\n", duris_properties[i].key, duris_properties[i].value, duris_properties[i].old_value);
+					if (duris_properties[i].value !=
+					    duris_properties[i].old_value)
+						snprintf(buf, 256, "*%s: %.3f(%.3f)\r\n",
+							 duris_properties[i].key,
+							 duris_properties[i].value,
+							 duris_properties[i].old_value);
 					else
-						snprintf(buf, 256, "%s: %.3f\r\n", duris_properties[i].key, duris_properties[i].value);
+						snprintf(buf, 256, "%s: %.3f\r\n",
+							 duris_properties[i].key,
+							 duris_properties[i].value);
 					send_to_char(buf, ch);
 				}
 			}
@@ -252,7 +281,9 @@ void do_properties(P_char ch, char *args, int cmd)
 			for (i = 0; i < properties_count; i++)
 				if (duris_properties[i].value != duris_properties[i].old_value)
 				{
-					snprintf(buf, 256, "%s=%.3f(%.3f)\r\n", duris_properties[i].key, duris_properties[i].value, duris_properties[i].old_value);
+					snprintf(buf, 256, "%s=%.3f(%.3f)\r\n",
+						 duris_properties[i].key, duris_properties[i].value,
+						 duris_properties[i].old_value);
 					send_to_char(buf, ch);
 				}
 		}
@@ -263,13 +294,17 @@ void do_properties(P_char ch, char *args, int cmd)
 				bool success = FALSE;
 				for (i = 0; i < properties_count; i++)
 				{
-					if (fnmatch(pattern, duris_properties[i].key, FNM_CASEFOLD) == 0)
+					if (fnmatch(pattern, duris_properties[i].key,
+						    FNM_CASEFOLD) == 0)
 					{
 						duris_properties[i].value = new_value;
-						snprintf(buf, 256, "%s set %s to %.3f", ch->player.name, duris_properties[i].key, new_value);
+						snprintf(buf, 256, "%s set %s to %.3f",
+							 ch->player.name, duris_properties[i].key,
+							 new_value);
 						wizlog(57, buf);
 						logit(LOG_WIZ, buf);
-						sql_log(ch, WIZLOG, "Set %s to %.3f", duris_properties[i].key, new_value);
+						sql_log(ch, WIZLOG, "Set %s to %.3f",
+							duris_properties[i].key, new_value);
 						success = TRUE;
 					}
 				}
@@ -300,7 +335,10 @@ void do_properties(P_char ch, char *args, int cmd)
 			{
 				if (duris_properties[i].value != duris_properties[i].old_value)
 				{
-					snprintf(buf, 256, "%s reverted to %.3f from %.3f\r\n", duris_properties[i].key, duris_properties[i].old_value, duris_properties[i].value);
+					snprintf(buf, 256, "%s reverted to %.3f from %.3f\r\n",
+						 duris_properties[i].key,
+						 duris_properties[i].old_value,
+						 duris_properties[i].value);
 					send_to_char(buf, ch);
 					duris_properties[i].value = duris_properties[i].old_value;
 				}
@@ -320,13 +358,13 @@ void do_properties(P_char ch, char *args, int cmd)
 	if (show_help)
 	{
 		send_to_char("Use:\r\n"
-		             "  &+Wproperties show <pattern>\r\n"
-		             "  &+Wproperties set <pattern> <value>\r\n"
-		             "  &+Wproperties save\r\n"
-		             "  &+Wproperties revert\r\n"
-		             "  &+Wproperties reload\r\n"
-		             "  &+Wproperties diff\r\n",
-		             ch);
+			     "  &+Wproperties show <pattern>\r\n"
+			     "  &+Wproperties set <pattern> <value>\r\n"
+			     "  &+Wproperties save\r\n"
+			     "  &+Wproperties revert\r\n"
+			     "  &+Wproperties reload\r\n"
+			     "  &+Wproperties diff\r\n",
+			     ch);
 		return;
 	}
 }

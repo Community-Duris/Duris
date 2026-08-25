@@ -22,7 +22,7 @@
    extern variables
  */
 
-extern P_room            world;
+extern P_room world;
 extern struct zone_data *zone_table;
 
 /*
@@ -61,7 +61,7 @@ int halfcut_defenders(P_char ch, P_char player, int cmd, char *arg)
 
 int crossbow_ambusher(P_char ch, P_char player, int cmd, char *arg)
 {
-	int targ_rooms[] = {27139, 27137, 27136, 0};
+	int targ_rooms[] = { 27139, 27137, 27136, 0 };
 	int x, y;
 
 	if (cmd != CMD_SET_PERIODIC)
@@ -71,14 +71,17 @@ int crossbow_ambusher(P_char ch, P_char player, int cmd, char *arg)
 	x = 0;
 	for (x = 0; real_room0(targ_rooms[x]) != 0; x++)
 	{
-		for (player = world[real_room0(targ_rooms[x])].people; player; player = player->next_in_room)
+		for (player = world[real_room0(targ_rooms[x])].people; player;
+		     player = player->next_in_room)
 		{
 			if (IS_PC(player))
 			{ /* Wohoo, got a target */
 				for (y = 0; y <= 3; y++)
 				{ /* shoot bolts */
-					act("A crossbow bolt flies in from the north, striking $N!", 0, player, 0, player, TO_ROOM);
-					act("A crossbow bolt flies in from the north striking you!", 0, player, 0, player, TO_VICT);
+					act("A crossbow bolt flies in from the north, striking $N!",
+					    0, player, 0, player, TO_ROOM);
+					act("A crossbow bolt flies in from the north striking you!",
+					    0, player, 0, player, TO_VICT);
 					damage(ch, player, dice(2, 4) + 10, TYPE_UNDEFINED);
 				}
 			}
@@ -88,8 +91,7 @@ int crossbow_ambusher(P_char ch, P_char player, int cmd, char *arg)
 }
 int blowgunner(P_char ch, P_char player, int cmd, char *arg)
 {
-
-	int targ_rooms[] = {27146, 27144, 27131, 0};
+	int targ_rooms[] = { 27146, 27144, 27131, 0 };
 	int x, y;
 
 	if (cmd != CMD_SET_PERIODIC)
@@ -97,14 +99,17 @@ int blowgunner(P_char ch, P_char player, int cmd, char *arg)
 	/*  x = 0;*/
 	for (x = 0; real_room0(targ_rooms[x]) != 0; x++)
 	{
-		for (player = world[real_room0(targ_rooms[x])].people; player; player = player->next_in_room)
+		for (player = world[real_room0(targ_rooms[x])].people; player;
+		     player = player->next_in_room)
 		{
 			if (IS_PC(player))
 			{
 				for (y = 0; y <= 3; y++)
 				{
-					act("A small dart flies in from the west, striking $N!", 0, player, 0, player, TO_ROOM);
-					act("A small dart flies in from the west striking you!", 0, player, 0, player, TO_VICT);
+					act("A small dart flies in from the west, striking $N!", 0,
+					    player, 0, player, TO_ROOM);
+					act("A small dart flies in from the west striking you!", 0,
+					    player, 0, player, TO_VICT);
 					damage(ch, player, dice(1, 5) + 5, TYPE_UNDEFINED);
 				}
 			}

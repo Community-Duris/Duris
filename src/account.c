@@ -27,16 +27,16 @@
 #include "ws_handlers.h"
 
 // External Stuff
-extern P_index               obj_index;
-extern P_obj                 object_list;
-extern P_room                world;
-extern const int             top_of_world;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern const int top_of_world;
 extern struct time_info_data time_info;
-extern const char           *dirs[];
-extern P_desc                descriptor_list;
-extern P_char                character_list;
-extern struct mm_ds         *dead_mob_pool;
-extern struct mm_ds         *dead_pconly_pool;
+extern const char *dirs[];
+extern P_desc descriptor_list;
+extern P_char character_list;
+extern struct mm_ds *dead_mob_pool;
+extern struct mm_ds *dead_pconly_pool;
 
 static void trace_append_file(const char *fmt, ...)
 {
@@ -52,7 +52,7 @@ static void trace_append_file(const char *fmt, ...)
 
 struct acct_entry *account_list = NULL;
 
-#define ACCT_SERIAL      1
+#define ACCT_SERIAL 1
 #define ACCOUNT_EMAIL_DB "Accounts/email.db"
 
 bool account_exists(const char *, char *);
@@ -84,7 +84,8 @@ int bcrypt_verify_password(const char *password, const char *hash)
 int is_bcrypt_hash(const char *hash)
 {
 	// Bcrypt hashes start with $2a$, $2b$, or $2y$
-	return (hash && strlen(hash) > 4 && hash[0] == '$' && hash[1] == '2' && (hash[2] == 'a' || hash[2] == 'b' || hash[2] == 'y') && hash[3] == '$');
+	return (hash && strlen(hash) > 4 && hash[0] == '$' && hash[1] == '2' &&
+		(hash[2] == 'a' || hash[2] == 'b' || hash[2] == 'y') && hash[3] == '$');
 }
 
 // Email validation function with strict RFC compliance
@@ -92,9 +93,9 @@ int is_bcrypt_hash(const char *hash)
 int is_valid_email(const char *email)
 {
 	const char *p;
-	int         at_count = 0, dot_after_at = 0;
-	int         local_len = 0, domain_len = 0;
-	char        prev_char = '\0';
+	int at_count = 0, dot_after_at = 0;
+	int local_len = 0, domain_len = 0;
+	char prev_char = '\0';
 
 	if (!email || !*email)
 		return 0;
@@ -128,7 +129,7 @@ int is_valid_email(const char *email)
 		return 0;
 
 	p++; // Skip the @
-	at_count  = 0;
+	at_count = 0;
 	prev_char = '\0';
 
 	// Validate domain part
@@ -156,7 +157,8 @@ int is_valid_email(const char *email)
 	}
 
 	// Domain must exist, have at least one dot, and can't end with dot or hyphen
-	if (domain_len == 0 || domain_len > 253 || !dot_after_at || prev_char == '.' || prev_char == '-')
+	if (domain_len == 0 || domain_len > 253 || !dot_after_at || prev_char == '.' ||
+	    prev_char == '-')
 		return 0;
 
 	// Check for second @ symbol (invalid)
@@ -177,7 +179,7 @@ bool is_email_taken(const char *email)
 {
 #ifdef REQUIRE_EMAIL_VERIFICATION
 	FILE *f = NULL;
-	char  db_name[MAX_INPUT_LENGTH];
+	char db_name[MAX_INPUT_LENGTH];
 
 	f = fopen(ACCOUNT_EMAIL_DB, "r");
 	if (!f)
@@ -200,10 +202,10 @@ bool is_email_taken(const char *email)
 
 void select_accountname(P_desc d, char *arg)
 {
-	char   tmp_name[MAX_INPUT_LENGTH];
-	char   Gbuf1[MAX_STRING_LENGTH];
-	P_desc t_d          = NULL;
-	char   acct_in_game = 0;
+	char tmp_name[MAX_INPUT_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
+	P_desc t_d = NULL;
+	char acct_in_game = 0;
 
 	for (; isspace(*arg); arg++)
 		;
@@ -227,7 +229,9 @@ void select_accountname(P_desc d, char *arg)
 		d->account = allocate_account();
 		if (!d->account)
 		{
-			SEND_TO_Q("ERROR:  Could not allocate a new account, notify an immortal!\r\n", d);
+			SEND_TO_Q(
+				"ERROR:  Could not allocate a new account, notify an immortal!\r\n",
+				d);
 			statuslog(56, "&+RALERT&n:  Could not allocate memory for a new account!");
 			STATE(d) = CON_FLUSH;
 			return;
@@ -240,10 +244,12 @@ void select_accountname(P_desc d, char *arg)
 	{
 		if (read_account(d->account) == -1)
 		{
-			SEND_TO_Q("There is an error with your account, please notify an immortal!\r\n", d);
+			SEND_TO_Q(
+				"There is an error with your account, please notify an immortal!\r\n",
+				d);
 			statuslog(56, "&+RALERT&n:  Account corrupt: %s", tmp_name);
 			d->account = free_account(d->account);
-			STATE(d)   = CON_FLUSH;
+			STATE(d) = CON_FLUSH;
 			return;
 		}
 
@@ -299,7 +305,7 @@ void get_account_password(P_desc d, char *arg)
 
 	// Check password - support both bcrypt (new) and MD5 (legacy)
 	int password_valid = 0;
-	int needs_upgrade  = 0;
+	int needs_upgrade = 0;
 
 	if (is_bcrypt_hash(d->account->acct_password))
 	{
@@ -309,7 +315,8 @@ void get_account_password(P_desc d, char *arg)
 	else
 	{
 		// Legacy MD5 hash - verify with CRYPT2
-		password_valid = (strcmp(CRYPT2(arg, d->account->acct_password), d->account->acct_password) == 0);
+		password_valid = (strcmp(CRYPT2(arg, d->account->acct_password),
+					 d->account->acct_password) == 0);
 		if (password_valid)
 			needs_upgrade = 1; // Upgrade to bcrypt after successful login
 	}
@@ -318,7 +325,7 @@ void get_account_password(P_desc d, char *arg)
 	{
 		SEND_TO_Q("Invalid Password ... disconnecting\r\n", d);
 		d->account = free_account(d->account);
-		STATE(d)   = CON_FLUSH;
+		STATE(d) = CON_FLUSH;
 		return;
 	}
 
@@ -333,8 +340,12 @@ void get_account_password(P_desc d, char *arg)
 			FREE(new_hash);
 			if (-1 == write_account(d->account))
 			{
-				statuslog(56, "&+RALERT&n: failed to write upgraded password for %s", d->account->acct_name);
-				persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "password upgrade save failed");
+				statuslog(56,
+					  "&+RALERT&n: failed to write upgraded password for %s",
+					  d->account->acct_name);
+				persistence_alert(AVATAR, "account", d->account->acct_name, "none",
+						  "none", "write_failed",
+						  "password upgrade save failed");
 			}
 		}
 	}
@@ -343,10 +354,13 @@ void get_account_password(P_desc d, char *arg)
 	P_desc k;
 	for (k = descriptor_list; k; k = k->next)
 	{
-		if ((k != d) && k->account && k->account->acct_name && !strcasecmp(k->account->acct_name, d->account->acct_name))
+		if ((k != d) && k->account && k->account->acct_name &&
+		    !strcasecmp(k->account->acct_name, d->account->acct_name))
 		{
 			// Same account already logged in - disconnect the old connection
-			SEND_TO_Q("\r\n\r\nYour account has been logged in from another location.\r\n", k);
+			SEND_TO_Q(
+				"\r\n\r\nYour account has been logged in from another location.\r\n",
+				k);
 			SEND_TO_Q("Disconnecting...\r\n\r\n", k);
 			close_socket(k);
 			SEND_TO_Q("Overriding old connection...\r\n", d);
@@ -389,7 +403,8 @@ void display_account_menu(P_desc d, char *arg)
 
 		SEND_TO_Q("\r\n", d);
 		SEND_TO_Q("&+y/===========================================\\&n\r\n", d);
-		snprintf(buf, 256, "&+y|&n         &+W%s&n's &+CACCOUNT MENU&n          &+y|&n\r\n", d->account->acct_name);
+		snprintf(buf, 256, "&+y|&n         &+W%s&n's &+CACCOUNT MENU&n          &+y|&n\r\n",
+			 d->account->acct_name);
 		SEND_TO_Q(buf, d);
 		SEND_TO_Q("&+y\\===========================================/&n\r\n", d);
 		SEND_TO_Q("\r\n", d);
@@ -411,66 +426,68 @@ void display_account_menu(P_desc d, char *arg)
 	}
 	switch (atoi(arg))
 	{
-		case 0:
-			/* Only disconnect if user actually typed '0', not invalid text */
-			if (*arg != '0')
-			{
-				SEND_TO_Q("Invalid Selection, please try again.\r\n", d);
-				display_account_menu(d, NULL);
-				break;
-			}
-			STATE(d) = CON_FLUSH;
-			SEND_TO_Q("\r\n\r\nThank you for playing!\r\n", d);
-			if (-1 == write_account(d->account))
-			{
-				statuslog(56, "&+RALERT&n: failed to write account on logout for %s", d->account->acct_name);
-				persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "logout save failed");
-			}
-			break;
-
-		case 1:
-			STATE(d) = CON_ACCT_SELECT_CHAR;
-			account_select_char(d, NULL);
-			break;
-
-		case 2:
-			SEND_TO_Q("Enter your new name:  ", d);
-			STATE(d) = CON_ACCT_NEW_CHAR_NAME;
-			break;
-
-		case 3:
-			STATE(d) = CON_ACCT_DELETE_CHAR;
-			account_delete_char(d, NULL);
-			break;
-
-		case 4:
-			STATE(d) = CON_ACCT_DISPLAY_INFO;
-			account_display_info(d, NULL);
-			break;
-
-		case 5:
-			STATE(d) = CON_ACCT_CHANGE_EMAIL;
-			get_new_account_email(d, NULL);
-			break;
-
-		case 6:
-			STATE(d) = CON_ACCT_CHANGE_PASSWD;
-			get_new_account_password(d, NULL);
-			break;
-
-		case 7:
-			STATE(d) = CON_ACCT_DELETE_ACCT;
-			delete_account(d, NULL);
-			break;
-
-		case 8:
-			check_rested_bonus(d);
-			break;
-
-		default:
+	case 0:
+		/* Only disconnect if user actually typed '0', not invalid text */
+		if (*arg != '0')
+		{
 			SEND_TO_Q("Invalid Selection, please try again.\r\n", d);
 			display_account_menu(d, NULL);
 			break;
+		}
+		STATE(d) = CON_FLUSH;
+		SEND_TO_Q("\r\n\r\nThank you for playing!\r\n", d);
+		if (-1 == write_account(d->account))
+		{
+			statuslog(56, "&+RALERT&n: failed to write account on logout for %s",
+				  d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+					  "write_failed", "logout save failed");
+		}
+		break;
+
+	case 1:
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		account_select_char(d, NULL);
+		break;
+
+	case 2:
+		SEND_TO_Q("Enter your new name:  ", d);
+		STATE(d) = CON_ACCT_NEW_CHAR_NAME;
+		break;
+
+	case 3:
+		STATE(d) = CON_ACCT_DELETE_CHAR;
+		account_delete_char(d, NULL);
+		break;
+
+	case 4:
+		STATE(d) = CON_ACCT_DISPLAY_INFO;
+		account_display_info(d, NULL);
+		break;
+
+	case 5:
+		STATE(d) = CON_ACCT_CHANGE_EMAIL;
+		get_new_account_email(d, NULL);
+		break;
+
+	case 6:
+		STATE(d) = CON_ACCT_CHANGE_PASSWD;
+		get_new_account_password(d, NULL);
+		break;
+
+	case 7:
+		STATE(d) = CON_ACCT_DELETE_ACCT;
+		delete_account(d, NULL);
+		break;
+
+	case 8:
+		check_rested_bonus(d);
+		break;
+
+	default:
+		SEND_TO_Q("Invalid Selection, please try again.\r\n", d);
+		display_account_menu(d, NULL);
+		break;
 	}
 }
 
@@ -490,7 +507,7 @@ void confirm_account(P_desc d, char *arg)
 
 	// Fix doubled $ characters (MUD color code escaping)
 	// When user types $, it comes through as $$
-	char  fixed_input[512];
+	char fixed_input[512];
 	char *src = arg;
 	char *dst = fixed_input;
 	while (*src && (dst - fixed_input) < 511)
@@ -504,15 +521,12 @@ void confirm_account(P_desc d, char *arg)
 	*dst = '\0';
 
 	// Debug output
-	snprintf(debug_buf,
-	         512,
-	         "\r\n&+YDEBUG: Entered='%s' (len=%d)&n\r\n&+YDEBUG: Fixed='%s' (len=%d)&n\r\n&+YDEBUG: Stored='%s' (len=%d)&n\r\n",
-	         arg,
-	         (int)strlen(arg),
-	         fixed_input,
-	         (int)strlen(fixed_input),
-	         d->account->acct_confirmation ? d->account->acct_confirmation : "NULL",
-	         d->account->acct_confirmation ? (int)strlen(d->account->acct_confirmation) : 0);
+	snprintf(
+		debug_buf, 512,
+		"\r\n&+YDEBUG: Entered='%s' (len=%d)&n\r\n&+YDEBUG: Fixed='%s' (len=%d)&n\r\n&+YDEBUG: Stored='%s' (len=%d)&n\r\n",
+		arg, (int)strlen(arg), fixed_input, (int)strlen(fixed_input),
+		d->account->acct_confirmation ? d->account->acct_confirmation : "NULL",
+		d->account->acct_confirmation ? (int)strlen(d->account->acct_confirmation) : 0);
 	SEND_TO_Q(debug_buf, d);
 
 	if (str_cmp(fixed_input, d->account->acct_confirmation))
@@ -528,19 +542,25 @@ void confirm_account(P_desc d, char *arg)
 		d->account->acct_confirmed = 1;
 		if (-1 == write_account(d->account))
 		{
-			SEND_TO_Q("Oh no, I couldn't write your account information to disk, notify a god!\r\n", d);
-			statuslog(56, "&+RALERT&n: failed to confirm account for %s", d->account->acct_name);
-			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "confirmation save failed");
+			SEND_TO_Q(
+				"Oh no, I couldn't write your account information to disk, notify a god!\r\n",
+				d);
+			statuslog(56, "&+RALERT&n: failed to confirm account for %s",
+				  d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+					  "write_failed", "confirmation save failed");
 			d->account = free_account(d->account);
-			STATE(d)   = CON_FLUSH;
+			STATE(d) = CON_FLUSH;
 			return;
 		}
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
 		if (-1 == write_account(d->account))
 		{
-			statuslog(56, "&+RALERT&n: failed to re-write confirmed account for %s", d->account->acct_name);
-			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "post-confirm menu save failed");
+			statuslog(56, "&+RALERT&n: failed to re-write confirmed account for %s",
+				  d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+					  "write_failed", "post-confirm menu save failed");
 		}
 	}
 }
@@ -552,7 +572,8 @@ void verify_account_name(P_desc d, char *arg)
 	if (!arg)
 	{
 		*d->account->acct_name = toupper(*d->account->acct_name);
-		snprintf(buf, 1024, "You chose the name %s, is this correct? (Y/N)  ", d->account->acct_name);
+		snprintf(buf, 1024, "You chose the name %s, is this correct? (Y/N)  ",
+			 d->account->acct_name);
 		SEND_TO_Q(buf, d);
 		return;
 	}
@@ -568,7 +589,7 @@ void verify_account_name(P_desc d, char *arg)
 	{
 		SEND_TO_Q("Ok, what then?\r\n", d);
 		d->account = free_account(d->account);
-		STATE(d)   = CON_GET_ACCT_NAME;
+		STATE(d) = CON_GET_ACCT_NAME;
 		return;
 	}
 	else
@@ -591,20 +612,23 @@ void get_new_account_email(P_desc d, char *arg)
 	// Validate email format
 	if (!is_valid_email(arg))
 	{
-		SEND_TO_Q("\r\n&+RInvalid email format.&n Please enter a valid email address.\r\n", d);
+		SEND_TO_Q("\r\n&+RInvalid email format.&n Please enter a valid email address.\r\n",
+			  d);
 		SEND_TO_Q("Email address:  ", d);
 		return;
 	}
 
 	if (is_email_taken(arg))
 	{
-		SEND_TO_Q("\r\n&+REmail already in use. &+WOnly one account per user please.&n If you are a new user please try a different email.\r\n", d);
+		SEND_TO_Q(
+			"\r\n&+REmail already in use. &+WOnly one account per user please.&n If you are a new user please try a different email.\r\n",
+			d);
 		SEND_TO_Q("Email address:  ", d);
 		return;
 	}
 
 	d->account->acct_email = str_dup(arg);
-	STATE(d)               = CON_VERIFY_NEW_ACCT_EMAIL;
+	STATE(d) = CON_VERIFY_NEW_ACCT_EMAIL;
 	verify_new_account_email(d, NULL);
 	return;
 }
@@ -615,7 +639,8 @@ void verify_new_account_email(P_desc d, char *arg)
 
 	if (!arg)
 	{
-		snprintf(buf, 1024, "\r\nYou entered %s, is this correct?  (Y/N)", d->account->acct_email);
+		snprintf(buf, 1024, "\r\nYou entered %s, is this correct?  (Y/N)",
+			 d->account->acct_email);
 		SEND_TO_Q(buf, d);
 		return;
 	}
@@ -633,8 +658,13 @@ void verify_new_account_email(P_desc d, char *arg)
 			display_account_menu(d, NULL);
 			if (-1 == write_account(d->account))
 			{
-				statuslog(56, "&+RALERT&n: failed to save existing confirmed account for %s", d->account->acct_name);
-				persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "post-login menu save failed");
+				statuslog(
+					56,
+					"&+RALERT&n: failed to save existing confirmed account for %s",
+					d->account->acct_name);
+				persistence_alert(AVATAR, "account", d->account->acct_name, "none",
+						  "none", "write_failed",
+						  "post-login menu save failed");
 			}
 		}
 		return;
@@ -644,7 +674,7 @@ void verify_new_account_email(P_desc d, char *arg)
 		SEND_TO_Q("Ok, what then?\r\n", d);
 		FREE(d->account->acct_email);
 		d->account->acct_email = NULL;
-		STATE(d)               = CON_GET_NEW_ACCT_EMAIL;
+		STATE(d) = CON_GET_NEW_ACCT_EMAIL;
 		return;
 	}
 	else
@@ -717,7 +747,7 @@ void verify_new_account_password(P_desc d, char *arg)
 		get_new_account_password(d, NULL);
 		FREE(d->account->acct_password);
 		d->account->acct_password = NULL;
-		STATE(d)                  = CON_GET_NEW_ACCT_PASSWD;
+		STATE(d) = CON_GET_NEW_ACCT_PASSWD;
 		return;
 	}
 
@@ -732,8 +762,10 @@ void verify_new_account_password(P_desc d, char *arg)
 		display_account_menu(d, NULL);
 		if (-1 == write_account(d->account))
 		{
-			statuslog(56, "&+RALERT&n: failed to save auto-confirmed account for %s", d->account->acct_name);
-			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "auto-confirm save failed");
+			statuslog(56, "&+RALERT&n: failed to save auto-confirmed account for %s",
+				  d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+					  "write_failed", "auto-confirm save failed");
 		}
 	}
 	return;
@@ -750,12 +782,16 @@ void verify_new_account_information(P_desc d, char *arg)
 	if ((arg[0] == 'y') || (arg[0] == 'Y'))
 	{
 #ifdef REQUIRE_EMAIL_VERIFICATION
-		SEND_TO_Q("You will receive a confimation code in your email.\r\nYou must confirm your account before using it.\r\n\r\n", d);
+		SEND_TO_Q(
+			"You will receive a confimation code in your email.\r\nYou must confirm your account before using it.\r\n\r\n",
+			d);
 		generate_account_confirmation_code(d, NULL);
 		if (-1 == write_account(d->account))
 		{
-			statuslog(56, "&+RALERT&n: failed to save confirmation code for %s", d->account->acct_name);
-			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "confirmation code save failed");
+			statuslog(56, "&+RALERT&n: failed to save confirmation code for %s",
+				  d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+					  "write_failed", "confirmation code save failed");
 		}
 		// Don't disconnect - go straight to confirmation prompt
 		STATE(d) = CON_CONFIRM_ACCT;
@@ -763,11 +799,14 @@ void verify_new_account_information(P_desc d, char *arg)
 #else
 		// Email verification disabled - skip confirmation and go directly to menu
 		SEND_TO_Q("&+GAccount created successfully!&n\r\n\r\n", d);
-		generate_account_confirmation_code(d, NULL); // Still generates code (for display) but auto-confirms
+		generate_account_confirmation_code(
+			d, NULL); // Still generates code (for display) but auto-confirms
 		if (-1 == write_account(d->account))
 		{
-			statuslog(56, "&+RALERT&n: failed to save auto-confirmed account for %s", d->account->acct_name);
-			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "auto-confirm save failed");
+			statuslog(56, "&+RALERT&n: failed to save auto-confirmed account for %s",
+				  d->account->acct_name);
+			persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+					  "write_failed", "auto-confirm save failed");
 		}
 		SEND_TO_Q(motd.c_str(), d);
 		SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
@@ -780,7 +819,7 @@ void verify_new_account_information(P_desc d, char *arg)
 	{
 		SEND_TO_Q("Ok, starting over!\r\n", d);
 		d->account = free_account(d->account);
-		STATE(d)   = CON_GET_ACCT_NAME;
+		STATE(d) = CON_GET_ACCT_NAME;
 		SEND_TO_Q("Please enter your account name: ", d);
 		return;
 	}
@@ -793,8 +832,8 @@ void verify_new_account_information(P_desc d, char *arg)
 
 void update_account_iplist(P_desc d)
 {
-	P_acct          acct = d->account;
-	struct acct_ip *ip   = NULL;
+	P_acct acct = d->account;
+	struct acct_ip *ip = NULL;
 
 	ip = find_ip_entry(acct, d);
 
@@ -808,8 +847,10 @@ void update_account_iplist(P_desc d)
 		ip->count++;
 		if (-1 == write_account(acct))
 		{
-			statuslog(56, "&+RALERT&n: failed to update account IP list for %s", acct->acct_name);
-			persistence_alert(AVATAR, "account", acct->acct_name, "none", "none", "write_failed", "ip list update failed");
+			statuslog(56, "&+RALERT&n: failed to update account IP list for %s",
+				  acct->acct_name);
+			persistence_alert(AVATAR, "account", acct->acct_name, "none", "none",
+					  "write_failed", "ip list update failed");
 		}
 		return;
 	}
@@ -835,7 +876,7 @@ struct acct_ip *find_ip_entry(P_acct acct, P_desc d)
 
 void add_ip_entry(P_acct acct, P_desc d)
 {
-	char            host[512];
+	char host[512];
 	struct acct_ip *a = NULL;
 	struct acct_ip *b = NULL;
 
@@ -845,11 +886,11 @@ void add_ip_entry(P_acct acct, P_desc d)
 	if (!a)
 		return;
 
-	a->hostname   = str_dup(host);
-	a->count      = 1;
+	a->hostname = str_dup(host);
+	a->count = 1;
 	a->ip_address = str_dup(host);
 	acct->num_ips++;
-	a->next               = acct->acct_unique_ips;
+	a->next = acct->acct_unique_ips;
 	acct->acct_unique_ips = a;
 	return;
 }
@@ -859,9 +900,9 @@ void account_select_char(P_desc d, char *arg)
 	struct acct_chars *c = NULL;
 	struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
 	struct acct_chars *temp;
-	P_char             ch        = NULL;
-	int                selection = -1;
-	int                count     = 0, i, j;
+	P_char ch = NULL;
+	int selection = -1;
+	int count = 0, i, j;
 
 	if (!arg)
 	{
@@ -887,7 +928,7 @@ void account_select_char(P_desc d, char *arg)
 		while (temp && count < MAX_CHARS_PER_ACCOUNT)
 		{
 			sorted_chars[count++] = temp;
-			temp                  = temp->next;
+			temp = temp->next;
 		}
 
 		// Sort by last login time (most recent first)
@@ -898,8 +939,8 @@ void account_select_char(P_desc d, char *arg)
 				if (sorted_chars[j]->last < sorted_chars[j + 1]->last)
 				{
 					struct acct_chars *swap = sorted_chars[j];
-					sorted_chars[j]         = sorted_chars[j + 1];
-					sorted_chars[j + 1]     = swap;
+					sorted_chars[j] = sorted_chars[j + 1];
+					sorted_chars[j + 1] = swap;
 				}
 			}
 		}
@@ -931,41 +972,43 @@ void account_select_char(P_desc d, char *arg)
 	if (!can_connect(c, d))
 	{
 		char buf[512];
-		int  current_time       = time(NULL);
-		int  time_remaining     = 0;
-		int  minutes_remaining  = 0;
-		int  racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
+		int current_time = time(NULL);
+		int time_remaining = 0;
+		int minutes_remaining = 0;
+		int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
 
 		// Calculate time remaining for racewar timer
-		if (c->racewar == ACCT_GOOD && current_time < (d->account->acct_evil + racewarSwitchTimer))
+		if (c->racewar == ACCT_GOOD &&
+		    current_time < (d->account->acct_evil + racewarSwitchTimer))
 		{
-			time_remaining    = (d->account->acct_evil + 3600) - current_time;
+			time_remaining = (d->account->acct_evil + 3600) - current_time;
 			minutes_remaining = (time_remaining + 59) / 60; // Round up
-			snprintf(buf,
-			         512,
-			         "\r\n&+RSorry, you cannot play this Good-aligned character yet!&n\r\n"
-			         "You must wait &+Y%d&n more minute%s before playing a Good character.\r\n"
-			         "(You recently played an Evil character)\r\n\r\n",
-			         minutes_remaining,
-			         minutes_remaining == 1 ? "" : "s");
+			snprintf(
+				buf, 512,
+				"\r\n&+RSorry, you cannot play this Good-aligned character yet!&n\r\n"
+				"You must wait &+Y%d&n more minute%s before playing a Good character.\r\n"
+				"(You recently played an Evil character)\r\n\r\n",
+				minutes_remaining, minutes_remaining == 1 ? "" : "s");
 			SEND_TO_Q(buf, d);
 		}
-		else if (c->racewar == ACCT_EVIL && current_time < (d->account->acct_good + racewarSwitchTimer))
+		else if (c->racewar == ACCT_EVIL &&
+			 current_time < (d->account->acct_good + racewarSwitchTimer))
 		{
-			time_remaining    = (d->account->acct_good + 3600) - current_time;
+			time_remaining = (d->account->acct_good + 3600) - current_time;
 			minutes_remaining = (time_remaining + 59) / 60; // Round up
-			snprintf(buf,
-			         512,
-			         "\r\n&+RSorry, you cannot play this Evil-aligned character yet!&n\r\n"
-			         "You must wait &+Y%d&n more minute%s before playing an Evil character.\r\n"
-			         "(You recently played a Good character)\r\n\r\n",
-			         minutes_remaining,
-			         minutes_remaining == 1 ? "" : "s");
+			snprintf(
+				buf, 512,
+				"\r\n&+RSorry, you cannot play this Evil-aligned character yet!&n\r\n"
+				"You must wait &+Y%d&n more minute%s before playing an Evil character.\r\n"
+				"(You recently played a Good character)\r\n\r\n",
+				minutes_remaining, minutes_remaining == 1 ? "" : "s");
 			SEND_TO_Q(buf, d);
 		}
 		else if (c->blocked)
 		{
-			SEND_TO_Q("\r\n&+RThis character has been blocked and cannot be played.&n\r\n\r\n", d);
+			SEND_TO_Q(
+				"\r\n&+RThis character has been blocked and cannot be played.&n\r\n\r\n",
+				d);
 		}
 		else
 		{
@@ -1005,8 +1048,8 @@ void account_select_char(P_desc d, char *arg)
 
 void account_confirm_char(P_desc d, char *arg)
 {
-	struct acct_chars *c  = NULL;
-	P_char             ch = NULL;
+	struct acct_chars *c = NULL;
+	P_char ch = NULL;
 
 	if (!arg || !*arg)
 	{
@@ -1059,38 +1102,40 @@ void account_confirm_char(P_desc d, char *arg)
 		if (!can_connect(c, d))
 		{
 			char buf[512];
-			int  current_time       = time(NULL);
-			int  time_remaining     = 0;
-			int  minutes_remaining  = 0;
-			int  racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
+			int current_time = time(NULL);
+			int time_remaining = 0;
+			int minutes_remaining = 0;
+			int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
 
-			if (c->racewar == ACCT_GOOD && current_time < (d->account->acct_evil + racewarSwitchTimer))
+			if (c->racewar == ACCT_GOOD &&
+			    current_time < (d->account->acct_evil + racewarSwitchTimer))
 			{
-				time_remaining    = (d->account->acct_evil + 3600) - current_time;
+				time_remaining = (d->account->acct_evil + 3600) - current_time;
 				minutes_remaining = (time_remaining + 59) / 60;
-				snprintf(buf,
-				         512,
-				         "\r\n&+RSorry, you cannot play this Good-aligned character yet!&n\r\n"
-				         "You must wait &+Y%d&n more minute%s before playing a Good character.\r\n",
-				         minutes_remaining,
-				         minutes_remaining == 1 ? "" : "s");
+				snprintf(
+					buf, 512,
+					"\r\n&+RSorry, you cannot play this Good-aligned character yet!&n\r\n"
+					"You must wait &+Y%d&n more minute%s before playing a Good character.\r\n",
+					minutes_remaining, minutes_remaining == 1 ? "" : "s");
 				SEND_TO_Q(buf, d);
 			}
-			else if (c->racewar == ACCT_EVIL && current_time < (d->account->acct_good + racewarSwitchTimer))
+			else if (c->racewar == ACCT_EVIL &&
+				 current_time < (d->account->acct_good + racewarSwitchTimer))
 			{
-				time_remaining    = (d->account->acct_good + 3600) - current_time;
+				time_remaining = (d->account->acct_good + 3600) - current_time;
 				minutes_remaining = (time_remaining + 59) / 60;
-				snprintf(buf,
-				         512,
-				         "\r\n&+RSorry, you cannot play this Evil-aligned character yet!&n\r\n"
-				         "You must wait &+Y%d&n more minute%s before playing an Evil character.\r\n",
-				         minutes_remaining,
-				         minutes_remaining == 1 ? "" : "s");
+				snprintf(
+					buf, 512,
+					"\r\n&+RSorry, you cannot play this Evil-aligned character yet!&n\r\n"
+					"You must wait &+Y%d&n more minute%s before playing an Evil character.\r\n",
+					minutes_remaining, minutes_remaining == 1 ? "" : "s");
 				SEND_TO_Q(buf, d);
 			}
 			else if (c->blocked)
 			{
-				SEND_TO_Q("\r\n&+RThis character has been blocked and cannot be played.&n\r\n", d);
+				SEND_TO_Q(
+					"\r\n&+RThis character has been blocked and cannot be played.&n\r\n",
+					d);
 			}
 
 			if (d->selected_char_name)
@@ -1144,19 +1189,19 @@ void account_confirm_char(P_desc d, char *arg)
 			SEND_TO_Q(motd.c_str(), d);
 
 		echo_on(d);
-		STATE(d)     = CON_PLAYING;
+		STATE(d) = CON_PLAYING;
 		d->character = ch;
 		enter_game(d);
 		d->prompt_mode = TRUE;
 
 		switch (GET_RACEWAR(ch))
 		{
-			case RACEWAR_GOOD:
-				d->account->acct_good = time(NULL);
-				break;
-			case RACEWAR_EVIL:
-				d->account->acct_evil = time(NULL);
-				break;
+		case RACEWAR_GOOD:
+			d->account->acct_good = time(NULL);
+			break;
+		case RACEWAR_EVIL:
+			d->account->acct_evil = time(NULL);
+			break;
 		}
 
 		return;
@@ -1170,14 +1215,14 @@ void account_confirm_char(P_desc d, char *arg)
 // Helper structure for character display data
 struct char_display_info
 {
-	char         charname[32];
-	int          level;
-	int          race;
+	char charname[32];
+	int level;
+	int race;
 	unsigned int m_class;
 	unsigned int secondary_class;
-	char        *rested_status; // "Well-Rested", "Rested", or "None"
-	int          hometown;      // Last room character was in
-	long         last_login;
+	char *rested_status; // "Well-Rested", "Rested", or "None"
+	int hometown; // Last room character was in
+	long last_login;
 };
 
 // cleanup temp char loaded via restoreCharOnly before freeing
@@ -1212,7 +1257,7 @@ void cleanup_temp_char(P_char ch)
 	while (ch->affected)
 	{
 		struct affected_type *af = ch->affected;
-		ch->affected             = af->next;
+		ch->affected = af->next;
 		if (dead_affect_pool)
 			mm_release(dead_affect_pool, af);
 	}
@@ -1249,7 +1294,7 @@ void cleanup_temp_char(P_char ch)
 int load_char_display_data(char *charname, struct char_display_info *info)
 {
 	P_char temp_ch;
-	int    result;
+	int result;
 
 	// Create temporary character structure using malloc (like pfile.c does)
 	temp_ch = (struct char_data *)malloc(sizeof(struct char_data));
@@ -1279,35 +1324,38 @@ int load_char_display_data(char *charname, struct char_display_info *info)
 
 	// Extract display data
 	strlcpy(info->charname, GET_NAME(temp_ch), sizeof info->charname);
-	info->level           = GET_LEVEL(temp_ch);
-	info->race            = GET_RACE(temp_ch);
-	info->m_class         = temp_ch->player.m_class;
+	info->level = GET_LEVEL(temp_ch);
+	info->race = GET_RACE(temp_ch);
+	info->m_class = temp_ch->player.m_class;
 	info->secondary_class = temp_ch->player.secondary_class;
-	info->hometown        = GET_HOME(temp_ch);
+	info->hometown = GET_HOME(temp_ch);
 
 	// Calculate rested status based on offline time (same logic as nanny.c)
-	time_t current_time    = time(0);
+	time_t current_time = time(0);
 	time_t offline_seconds = current_time - temp_ch->player.time.saved;
-	int    offline_hours   = offline_seconds / 3600;
-	char   rested_buf[128];
+	int offline_hours = offline_seconds / 3600;
+	char rested_buf[128];
 
 	if (offline_hours >= 20)
 	{
 		// Well-rested bonus
-		snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)", offline_hours);
+		snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)",
+			 offline_hours);
 		info->rested_status = str_dup(rested_buf);
 	}
 	else if (offline_hours >= 9)
 	{
 		// Rested bonus
-		snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)", offline_hours);
+		snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)",
+			 offline_hours);
 		info->rested_status = str_dup(rested_buf);
 	}
 	else
 	{
 		// No bonus yet - show how many more hours needed
 		int hours_needed = 9 - offline_hours;
-		snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)", hours_needed, hours_needed == 1 ? "" : "s");
+		snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)", hours_needed,
+			 hours_needed == 1 ? "" : "s");
 		info->rested_status = str_dup(rested_buf);
 	}
 
@@ -1334,8 +1382,8 @@ void get_race_name_from_info(struct char_display_info *info, char *race_str, int
 void check_rested_bonus(P_desc d)
 {
 	struct acct_chars *c = d->account->acct_character_list;
-	char               buf[512];
-	int                count = 0;
+	char buf[512];
+	int count = 0;
 
 	SEND_TO_Q("\r\n&+y===== &+WRESTED BONUS STATUS&+y =====&n\r\n\r\n", d);
 
@@ -1351,7 +1399,8 @@ void check_rested_bonus(P_desc d)
 			if (name_cap[0])
 				name_cap[0] = toupper(name_cap[0]);
 
-			snprintf(buf, 512, "&+C%-12s&n: %s\r\n", name_cap, info.rested_status ? info.rested_status : "&+LNone&n");
+			snprintf(buf, 512, "&+C%-12s&n: %s\r\n", name_cap,
+				 info.rested_status ? info.rested_status : "&+LNone&n");
 			SEND_TO_Q(buf, d);
 
 			if (info.rested_status)
@@ -1375,8 +1424,8 @@ void display_delete_character_list(P_desc d)
 {
 	struct acct_chars *c = d->account->acct_character_list;
 	struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
-	char               buf[256];
-	int                count = 0, i, j;
+	char buf[256];
+	int count = 0, i, j;
 	struct acct_chars *temp;
 
 	// Enable ANSI terminal mode for color display
@@ -1396,7 +1445,7 @@ void display_delete_character_list(P_desc d)
 	while (temp && count < MAX_CHARS_PER_ACCOUNT)
 	{
 		sorted_chars[count++] = temp;
-		temp                  = temp->next;
+		temp = temp->next;
 	}
 
 	// Sort by last login time (most recent first) - simple bubble sort
@@ -1407,23 +1456,41 @@ void display_delete_character_list(P_desc d)
 			if (sorted_chars[j]->last < sorted_chars[j + 1]->last)
 			{
 				struct acct_chars *swap = sorted_chars[j];
-				sorted_chars[j]         = sorted_chars[j + 1];
-				sorted_chars[j + 1]     = swap;
+				sorted_chars[j] = sorted_chars[j + 1];
+				sorted_chars[j + 1] = swap;
 			}
 		}
 	}
 
 	// Display large warning banner in bright red
 	SEND_TO_Q("\r\n", d);
-	SEND_TO_Q("&+R/===========================================================================\\&n\r\n", d);
-	SEND_TO_Q("&+R|                                                                           |&n\r\n", d);
-	SEND_TO_Q("&+R|                         !!!  W A R N I N G  !!!                          |&n\r\n", d);
-	SEND_TO_Q("&+R|                                                                           |&n\r\n", d);
-	SEND_TO_Q("&+R|                  CHARACTER DELETION IS PERMANENT!                        |&n\r\n", d);
-	SEND_TO_Q("&+R|                                                                           |&n\r\n", d);
-	SEND_TO_Q("&+R|       Once deleted, your character CANNOT be recovered or restored!      |&n\r\n", d);
-	SEND_TO_Q("&+R|                                                                           |&n\r\n", d);
-	SEND_TO_Q("&+R\\===========================================================================/&n\r\n", d);
+	SEND_TO_Q(
+		"&+R/===========================================================================\\&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R|                                                                           |&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R|                         !!!  W A R N I N G  !!!                          |&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R|                                                                           |&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R|                  CHARACTER DELETION IS PERMANENT!                        |&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R|                                                                           |&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R|       Once deleted, your character CANNOT be recovered or restored!      |&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R|                                                                           |&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+R\\===========================================================================/&n\r\n",
+		d);
 	SEND_TO_Q("\r\n", d);
 
 	// Display table header
@@ -1432,30 +1499,35 @@ void display_delete_character_list(P_desc d)
 	char title_buf[256];
 	snprintf(title_buf, 256, "DELETE CHARACTER (%d character%s)", count, count == 1 ? "" : "s");
 	int title_len = strlen(title_buf);
-	int left_pad  = (57 - title_len) / 2;
+	int left_pad = (57 - title_len) / 2;
 	int right_pad = 57 - title_len - left_pad - 2;
 
 	snprintf(buf, 256, "&+R|%*s&+W%s%*s&+R|&n\r\n", left_pad, "", title_buf, right_pad, "");
 	SEND_TO_Q(buf, d);
 
 	SEND_TO_Q("&+R|=======================================================|&n\r\n", d);
-	SEND_TO_Q("&+R|&n # &+R|&n &+RCharacter    &+R|&n &+RLevel &+R|&n &+RRace         &+R|&n &+RClass&n        &+R|&n\r\n", d);
+	SEND_TO_Q(
+		"&+R|&n # &+R|&n &+RCharacter    &+R|&n &+RLevel &+R|&n &+RRace         &+R|&n &+RClass&n        &+R|&n\r\n",
+		d);
 	SEND_TO_Q("&+R|-------------------------------------------------------|&n\r\n", d);
 
 	// Display sorted characters in red
 	for (i = 0; i < count; i++)
 	{
 		struct char_display_info info;
-		char                     name_capitalized[32];
-		char                     race_str[32];
-		char                     class_str[64];
-		char                     level_str[16];
-		char                     line_buf[512];
+		char name_capitalized[32];
+		char race_str[32];
+		char class_str[64];
+		char level_str[16];
+		char line_buf[512];
 
 		// Load character display data
 		if (!load_char_display_data(sorted_chars[i]->charname, &info))
 		{
-			snprintf(line_buf, 512, "&+R|&n &+R%d&n &+R|&n &+R%-12s&n &+R|&n &+R%-5s&n &+R|&n &+R%-12s&n &+R|&n &+R%-12s&n &+R|&n\r\n", i + 1, sorted_chars[i]->charname, "?", "?", "?");
+			snprintf(
+				line_buf, 512,
+				"&+R|&n &+R%d&n &+R|&n &+R%-12s&n &+R|&n &+R%-5s&n &+R|&n &+R%-12s&n &+R|&n &+R%-12s&n &+R|&n\r\n",
+				i + 1, sorted_chars[i]->charname, "?", "?", "?");
 			SEND_TO_Q(line_buf, d);
 			continue;
 		}
@@ -1470,14 +1542,16 @@ void display_delete_character_list(P_desc d)
 
 		// Get class name(s)
 		extern const struct class_names class_names_table[];
-		int                             primary_idx   = flag2idx(info.m_class);
-		int                             secondary_idx = info.secondary_class ? flag2idx(info.secondary_class) : 0;
+		int primary_idx = flag2idx(info.m_class);
+		int secondary_idx = info.secondary_class ? flag2idx(info.secondary_class) : 0;
 
 		snprintf(level_str, 16, "%d", info.level);
 		if (info.secondary_class && secondary_idx > 0)
 		{
 			// Multiclass
-			snprintf(class_str, sizeof class_str, "%s/%s", class_names_table[primary_idx].normal, class_names_table[secondary_idx].normal);
+			snprintf(class_str, sizeof class_str, "%s/%s",
+				 class_names_table[primary_idx].normal,
+				 class_names_table[secondary_idx].normal);
 		}
 		else
 		{
@@ -1494,7 +1568,10 @@ void display_delete_character_list(P_desc d)
 			class_str[12] = '\0';
 
 		// Display character row in bright red
-		snprintf(line_buf, 512, "&+R|&n %d &+R|&n &+R%-12s&n &+R|&n &+R%-5s&n &+R|&n &+R%-12s&n &+R|&n &+R%-12s&n &+R|&n\r\n", i + 1, name_capitalized, level_str, race_str, class_str);
+		snprintf(
+			line_buf, 512,
+			"&+R|&n %d &+R|&n &+R%-12s&n &+R|&n &+R%-5s&n &+R|&n &+R%-12s&n &+R|&n &+R%-12s&n &+R|&n\r\n",
+			i + 1, name_capitalized, level_str, race_str, class_str);
 		SEND_TO_Q(line_buf, d);
 
 		// Free rested status string
@@ -1508,15 +1585,18 @@ void display_delete_character_list(P_desc d)
 	SEND_TO_Q("Which character do you want to &+RDELETE&n? (Enter number or 0 to cancel): ", d);
 }
 
-void display_character_list_to_char(P_char ch, P_acct account) { display_character_list(ch->desc, account); }
+void display_character_list_to_char(P_char ch, P_acct account)
+{
+	display_character_list(ch->desc, account);
+}
 
 void display_character_list(P_desc d, P_acct account)
 {
-
-	struct acct_chars *c = account ? account->acct_character_list : d->account->acct_character_list;
+	struct acct_chars *c = account ? account->acct_character_list :
+					 d->account->acct_character_list;
 	struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
-	char               buf[256];
-	int                count = 0, i, j;
+	char buf[256];
+	int count = 0, i, j;
 	struct acct_chars *temp;
 
 	// Enable ANSI terminal mode for color display
@@ -1524,7 +1604,8 @@ void display_character_list(P_desc d, P_acct account)
 
 	if (!c)
 	{
-		snprintf(buf, 256, "Account currently doesn't have any characters (0/%d).\r\n", MAX_CHARS_PER_ACCOUNT);
+		snprintf(buf, 256, "Account currently doesn't have any characters (0/%d).\r\n",
+			 MAX_CHARS_PER_ACCOUNT);
 		SEND_TO_Q(buf, d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
@@ -1536,7 +1617,7 @@ void display_character_list(P_desc d, P_acct account)
 	while (temp && count < MAX_CHARS_PER_ACCOUNT)
 	{
 		sorted_chars[count++] = temp;
-		temp                  = temp->next;
+		temp = temp->next;
 	}
 
 	// Sort by last login time (most recent first) - simple bubble sort
@@ -1547,42 +1628,50 @@ void display_character_list(P_desc d, P_acct account)
 			if (sorted_chars[j]->last < sorted_chars[j + 1]->last)
 			{
 				struct acct_chars *swap = sorted_chars[j];
-				sorted_chars[j]         = sorted_chars[j + 1];
-				sorted_chars[j + 1]     = swap;
+				sorted_chars[j] = sorted_chars[j + 1];
+				sorted_chars[j + 1] = swap;
 			}
 		}
 	}
 
 	// Display table header
 	SEND_TO_Q("\r\n", d);
-	SEND_TO_Q("&+y/---------------------------------------------------------------------------\\&n\r\n", d);
+	SEND_TO_Q(
+		"&+y/---------------------------------------------------------------------------\\&n\r\n",
+		d);
 
 	// Build CHARACTER SELECTION line with proper padding
 	char title_buf[256];
-	int  title_len;
+	int title_len;
 
 	snprintf(title_buf, 256, "CHARACTER SELECTION (%d/%d)", count, MAX_CHARS_PER_ACCOUNT);
 
-	title_len     = strlen(title_buf);
-	int left_pad  = (77 - title_len) / 2;
+	title_len = strlen(title_buf);
+	int left_pad = (77 - title_len) / 2;
 	int right_pad = 77 - title_len - left_pad - 2;
 
 	snprintf(buf, 256, "&+y|%*s&+W%s%*s&+y|&n\r\n", left_pad, "", title_buf, right_pad, "");
 	SEND_TO_Q(buf, d);
 
-	SEND_TO_Q("&+y|===========================================================================|&n\r\n", d);
-	SEND_TO_Q("&+y|&n # &+y|&n Character    &+y|&n Level &+y|&n Race         &+y|&n Class        &+y|&n Last Room        &+y|&n\r\n", d);
-	SEND_TO_Q("&+y|---------------------------------------------------------------------------|&n\r\n", d);
+	SEND_TO_Q(
+		"&+y|===========================================================================|&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+y|&n # &+y|&n Character    &+y|&n Level &+y|&n Race         &+y|&n Class        &+y|&n Last Room        &+y|&n\r\n",
+		d);
+	SEND_TO_Q(
+		"&+y|---------------------------------------------------------------------------|&n\r\n",
+		d);
 
 	// Display sorted characters
 	for (i = 0; i < count; i++)
 	{
 		struct acct_chars *ch = sorted_chars[i];
-		char               name_capitalized[32];
-		char               race_str[32];
-		char               class_str[64];
-		char               level_str[16];
-		char               line_buf[512];
+		char name_capitalized[32];
+		char race_str[32];
+		char class_str[64];
+		char level_str[16];
+		char line_buf[512];
 
 		// capitalize character name
 		strlcpy(name_capitalized, ch->charname, sizeof name_capitalized);
@@ -1598,13 +1687,15 @@ void display_character_list(P_desc d, P_acct account)
 
 		// get class name(s)
 		extern const struct class_names class_names_table[];
-		int                             primary_idx   = flag2idx(ch->m_class);
-		int                             secondary_idx = ch->secondary_class ? flag2idx(ch->secondary_class) : 0;
+		int primary_idx = flag2idx(ch->m_class);
+		int secondary_idx = ch->secondary_class ? flag2idx(ch->secondary_class) : 0;
 
 		if (ch->secondary_class && secondary_idx > 0)
 		{
 			snprintf(level_str, 16, "%d", ch->level);
-			snprintf(class_str, sizeof class_str, "%s/%s", class_names_table[primary_idx].normal, class_names_table[secondary_idx].normal);
+			snprintf(class_str, sizeof class_str, "%s/%s",
+				 class_names_table[primary_idx].normal,
+				 class_names_table[secondary_idx].normal);
 		}
 		else
 		{
@@ -1622,8 +1713,8 @@ void display_character_list(P_desc d, P_acct account)
 
 		// get room name (last_room is vnum, need to convert to rnum)
 		const char *room_name_src;
-		char        room_display[128];
-		int         room_rnum = real_room(ch->last_room);
+		char room_display[128];
+		int room_rnum = real_room(ch->last_room);
 		if (room_rnum >= 0 && room_rnum < top_of_world && world[room_rnum].name)
 		{
 			room_name_src = world[room_rnum].name;
@@ -1642,7 +1733,8 @@ void display_character_list(P_desc d, P_acct account)
 			{
 				room_display[dst_idx++] = room_name_src[src_idx++];
 				room_display[dst_idx++] = room_name_src[src_idx++];
-				if (room_name_src[src_idx - 1] == '+' || room_name_src[src_idx - 1] == '-')
+				if (room_name_src[src_idx - 1] == '+' ||
+				    room_name_src[src_idx - 1] == '-')
 				{
 					if (room_name_src[src_idx])
 						room_display[dst_idx++] = room_name_src[src_idx++];
@@ -1658,12 +1750,17 @@ void display_character_list(P_desc d, P_acct account)
 		}
 		room_display[dst_idx] = '\0';
 
-		snprintf(line_buf, 512, "&+y|&n %d &+y|&n %-12s &+y|&n %-5s &+y|&n %-12s &+y|&n %-12s &+y|&n %s &+y|&n\r\n", i + 1, name_capitalized, level_str, race_str, class_str, room_display);
+		snprintf(
+			line_buf, 512,
+			"&+y|&n %d &+y|&n %-12s &+y|&n %-5s &+y|&n %-12s &+y|&n %-12s &+y|&n %s &+y|&n\r\n",
+			i + 1, name_capitalized, level_str, race_str, class_str, room_display);
 		SEND_TO_Q(line_buf, d);
 	}
 
 	// Display table footer
-	SEND_TO_Q("&+y\\---------------------------------------------------------------------------/&n\r\n", d);
+	SEND_TO_Q(
+		"&+y\\---------------------------------------------------------------------------/&n\r\n",
+		d);
 	if (d->character == NULL)
 	{
 		SEND_TO_Q("\r\n&+W0&n) &+LBack to Account Menu&n\r\n\r\n", d);
@@ -1673,7 +1770,7 @@ void display_character_list(P_desc d, P_acct account)
 
 int can_connect(struct acct_chars *c, P_desc d)
 {
-	int current_time       = time(NULL);
+	int current_time = time(NULL);
 	int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
 
 	if (c->blocked)
@@ -1682,10 +1779,12 @@ int can_connect(struct acct_chars *c, P_desc d)
 	if (c->racewar == ACCT_IMMORTAL)
 		return 1;
 
-	if ((c->racewar == ACCT_GOOD) && (current_time < (d->account->acct_evil + racewarSwitchTimer)))
+	if ((c->racewar == ACCT_GOOD) &&
+	    (current_time < (d->account->acct_evil + racewarSwitchTimer)))
 		return 0;
 
-	if ((c->racewar == ACCT_EVIL) && (current_time < (d->account->acct_good + racewarSwitchTimer)))
+	if ((c->racewar == ACCT_EVIL) &&
+	    (current_time < (d->account->acct_good + racewarSwitchTimer)))
 		return 0;
 
 	return 1;
@@ -1693,17 +1792,18 @@ int can_connect(struct acct_chars *c, P_desc d)
 
 int is_char_in_game(struct acct_chars *c, P_desc d)
 {
-	P_desc k                  = descriptor_list;
-	P_desc x                  = NULL;
-	P_char ch                 = character_list;
-	int    racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
+	P_desc k = descriptor_list;
+	P_desc x = NULL;
+	P_char ch = character_list;
+	int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
 
 	for (; k; k = k->next)
 	{
-		if ((k != d) && k->character && GET_NAME(k->character) && !strcasecmp(GET_NAME(k->character), c->charname))
+		if ((k != d) && k->character && GET_NAME(k->character) &&
+		    !strcasecmp(GET_NAME(k->character), c->charname))
 		{
 			// ok, same character, take over the descriptor
-			d->character       = k->character;
+			d->character = k->character;
 			d->character->desc = d;
 			close_socket(k);
 			SEND_TO_Q("Overriding old connection...\r\n", d);
@@ -1712,19 +1812,22 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 
 	for (; ch; ch = ch->next)
 	{
-		if (IS_PC(ch) && !ch->desc && GET_NAME(ch) && !strcasecmp(GET_NAME(ch), c->charname))
+		if (IS_PC(ch) && !ch->desc && GET_NAME(ch) &&
+		    !strcasecmp(GET_NAME(ch), c->charname))
 		{
 			echo_on(d);
 			SEND_TO_Q("Reconnecting...\r\n", d);
 			act("$n has reconnected.", TRUE, ch, 0, 0, TO_ROOM);
 			d->character = ch;
-			ch->desc     = d;
+			ch->desc = d;
 			// sql_update_playerIP(ch);  // Deprecated function
 			ch->specials.timer = 0;
-			STATE(d)           = CON_PLAYING;
+			STATE(d) = CON_PLAYING;
 
-			logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
-			loginlog(d->character->player.level, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
+			logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character),
+			      d->host);
+			loginlog(d->character->player.level, "%s [%s] has reconnected.",
+				 GET_NAME(d->character), d->host);
 
 			if (IS_SET(ch->specials.act, PLR_MORPH))
 			{
@@ -1733,17 +1836,18 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 				       ch->only.pc->switched->only.npc->memory))) */
 				    (ch != ch->only.pc->switched->only.npc->orig_char))
 				{
-					logit(LOG_EXIT, "Something fucked while trying to reconnect linkless morph");
+					logit(LOG_EXIT,
+					      "Something fucked while trying to reconnect linkless morph");
 					ch->desc = NULL;
 					d->character = NULL;
 					STATE(d) = CON_ACCT_SELECT_CHAR;
 					display_character_list(d);
 					return 1;
 				}
-				d->original        = ch;
-				d->character       = ch->only.pc->switched;
+				d->original = ch;
+				d->character = ch->only.pc->switched;
 				d->character->desc = d;
-				ch->desc           = NULL;
+				ch->desc = NULL;
 			}
 			return 1;
 		}
@@ -1771,20 +1875,24 @@ struct acct_chars *find_char_in_list(struct acct_chars *list, char *arg)
 P_char load_char_into_game(struct acct_chars *c, P_desc d)
 {
 	P_char player = NULL;
-	int    status = 0;
+	int status = 0;
 
 	player = (P_char)mm_get(dead_mob_pool);
 
 	clear_char(player);
 
 	if (!dead_pconly_pool)
-		dead_pconly_pool = mm_create("PC_ONLY", sizeof(struct pc_only_data), offsetof(struct pc_only_data, switched), mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
+		dead_pconly_pool =
+			mm_create("PC_ONLY", sizeof(struct pc_only_data),
+				  offsetof(struct pc_only_data, switched),
+				  mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
 
 	player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
-	player->desc    = d;
+	player->desc = d;
 
 	status = restoreCharOnly(player, c->charname);
-	trace_append_file("load_char_into_game name=%s restoreCharOnly status=%d\n", c->charname, status);
+	trace_append_file("load_char_into_game name=%s restoreCharOnly status=%d\n", c->charname,
+			  status);
 
 	if (status == -1)
 	{
@@ -1808,7 +1916,7 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	{
 		// fixing racewar assignment on character list
 		c->racewar = GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL : ACCT_GOOD;
-		d->rtype   = status;
+		d->rtype = status;
 		return player;
 	}
 }
@@ -1823,7 +1931,7 @@ void account_new_char(P_desc d, char *arg)
 void account_new_char_name(P_desc d, char *arg)
 {
 	P_char player = NULL;
-	char   tmp_name[1024];
+	char tmp_name[1024];
 
 	if (!arg)
 	{
@@ -1835,7 +1943,9 @@ void account_new_char_name(P_desc d, char *arg)
 	// Check if account has reached character limit
 	if (d->account->num_chars >= MAX_CHARS_PER_ACCOUNT)
 	{
-		SEND_TO_Q("\r\n&+RYou already have the maximum number of characters allowed per account.&n\r\n", d);
+		SEND_TO_Q(
+			"\r\n&+RYou already have the maximum number of characters allowed per account.&n\r\n",
+			d);
 		SEND_TO_Q("Please delete a character before creating a new one.\r\n\r\n", d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
@@ -1872,25 +1982,28 @@ void account_new_char_name(P_desc d, char *arg)
 	if (IS_SET(game_locked, LOCK_CREATION))
 	{
 		SEND_TO_Q("Game is currently not allowing creation of new characters.\r\n"
-		          "Please use an existing character, or try again later.\r\n\r\n",
-		          d);
+			  "Please use an existing character, or try again later.\r\n\r\n",
+			  d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
 		return;
 	}
 	else if (bannedsite(d->host, 1))
 	{
-		SEND_TO_Q("New characters have been banned from your site. If you want the ban lifted\r\n"
-		          "mail duris@duris.org with a _LENGTHY_ explanation about\r\n"
-		          "why, or who could have forced us to ban the site in the first place.\r\n"
-		          "          - The Management \r\n\r\n",
-		          d);
+		SEND_TO_Q(
+			"New characters have been banned from your site. If you want the ban lifted\r\n"
+			"mail duris@duris.org with a _LENGTHY_ explanation about\r\n"
+			"why, or who could have forced us to ban the site in the first place.\r\n"
+			"          - The Management \r\n\r\n",
+			d);
 		banlog(AVATAR, "&+yNew Character reject from %s, banned.", d->host);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
 		return;
 	}
-	else if ((game_locked & LOCK_CONNECTIONS) || ((game_locked & LOCK_MAX_PLAYERS) && (number_of_players() >= MAX_PLAYERS_BEFORE_LOCK)))
+	else if ((game_locked & LOCK_CONNECTIONS) ||
+		 ((game_locked & LOCK_MAX_PLAYERS) &&
+		  (number_of_players() >= MAX_PLAYERS_BEFORE_LOCK)))
 	{
 		SEND_TO_Q("Game is temporarily full.  Please try again later.\r\n", d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
@@ -1910,15 +2023,19 @@ void account_new_char_name(P_desc d, char *arg)
 		clear_char(player);
 
 		if (!dead_pconly_pool)
-			dead_pconly_pool = mm_create("PC_ONLY", sizeof(struct pc_only_data), offsetof(struct pc_only_data, switched), mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
+			dead_pconly_pool =
+				mm_create("PC_ONLY", sizeof(struct pc_only_data),
+					  offsetof(struct pc_only_data, switched),
+					  mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
 
 		player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
-		player->desc    = d;
+		player->desc = d;
 
 		d->character = player;
 	}
 
-	strlcpy(d->character->only.pc->pwd, d->account->acct_password, sizeof(d->character->only.pc->pwd));
+	strlcpy(d->character->only.pc->pwd, d->account->acct_password,
+		sizeof(d->character->only.pc->pwd));
 	d->character->player.name = str_dup(arg);
 	normalize_player_name_case(d->character->player.name);
 	SEND_TO_Q("You chose the name ", d);
@@ -1930,38 +2047,40 @@ void account_new_char_name(P_desc d, char *arg)
 
 void add_char_to_account(P_desc d)
 {
-	P_char             player = d->character;
-	struct acct_chars *c      = NULL;
+	P_char player = d->character;
+	struct acct_chars *c = NULL;
 
 	CREATE(c, struct acct_chars, 1, MEM_TAG_OTHER);
 	if (!c)
 		return;
 
 	c->charname = str_dup(player->player.name);
-	c->count    = 1;
-	c->last     = time(NULL);
-	c->blocked  = 0;
+	c->count = 1;
+	c->last = time(NULL);
+	c->blocked = 0;
 	if (GET_RACEWAR(player) == RACEWAR_EVIL)
 		c->racewar = ACCT_EVIL;
 	else
 		c->racewar = ACCT_GOOD;
-	c->next                         = d->account->acct_character_list;
+	c->next = d->account->acct_character_list;
 	d->account->acct_character_list = c;
 	if (-1 == write_account(d->account))
 	{
-		statuslog(56, "&+RALERT&n: failed to save new character entry for %s", d->account->acct_name);
-		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "add character save failed");
+		statuslog(56, "&+RALERT&n: failed to save new character entry for %s",
+			  d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+				  "write_failed", "add character save failed");
 	}
 }
 
 void account_delete_char(P_desc d, char *arg)
 {
-	P_char             ch = NULL;
-	struct acct_chars *c  = NULL;
+	P_char ch = NULL;
+	struct acct_chars *c = NULL;
 	struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
 	struct acct_chars *temp;
-	char               buf[256];
-	int                selection, count = 0, i, j;
+	char buf[256];
+	int selection, count = 0, i, j;
 
 	if (!arg)
 	{
@@ -1981,10 +2100,13 @@ void account_delete_char(P_desc d, char *arg)
 			return;
 		}
 		SEND_TO_Q("\r\n&+RDeleting character...&n\r\n\r\n", d);
-		statuslog(d->character->player.level, "%s deleted %sself (%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
-		logit(LOG_PLAYER, "%s deleted %sself (%s).", GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
+		statuslog(d->character->player.level, "%s deleted %sself (%s).",
+			  GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her",
+			  d->host);
+		logit(LOG_PLAYER, "%s deleted %sself (%s).", GET_NAME(d->character),
+		      GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
 		deleteCharacter(d->character);
-		d->character = NULL;      // Clear dangling pointer
+		d->character = NULL; // Clear dangling pointer
 		d->term_type = TERM_ANSI; // Preserve ANSI terminal mode
 		SEND_TO_Q("&+GCharacter deleted successfully.&n\r\n\r\n", d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
@@ -2012,7 +2134,8 @@ void account_delete_char(P_desc d, char *arg)
 
 	if (selection <= 0)
 	{
-		SEND_TO_Q("\r\n&+RInvalid selection.&n Please enter a number or 0 to cancel.\r\n", d);
+		SEND_TO_Q("\r\n&+RInvalid selection.&n Please enter a number or 0 to cancel.\r\n",
+			  d);
 		display_delete_character_list(d);
 		return;
 	}
@@ -2022,7 +2145,7 @@ void account_delete_char(P_desc d, char *arg)
 	while (temp && count < MAX_CHARS_PER_ACCOUNT)
 	{
 		sorted_chars[count++] = temp;
-		temp                  = temp->next;
+		temp = temp->next;
 	}
 
 	// Sort by last login time (most recent first)
@@ -2033,8 +2156,8 @@ void account_delete_char(P_desc d, char *arg)
 			if (sorted_chars[j]->last < sorted_chars[j + 1]->last)
 			{
 				struct acct_chars *swap = sorted_chars[j];
-				sorted_chars[j]         = sorted_chars[j + 1];
-				sorted_chars[j + 1]     = swap;
+				sorted_chars[j] = sorted_chars[j + 1];
+				sorted_chars[j + 1] = swap;
 			}
 		}
 	}
@@ -2042,13 +2165,14 @@ void account_delete_char(P_desc d, char *arg)
 	// Validate selection range
 	if (selection > count)
 	{
-		SEND_TO_Q("\r\n&+RInvalid selection.&n Please choose a number from the list.\r\n", d);
+		SEND_TO_Q("\r\n&+RInvalid selection.&n Please choose a number from the list.\r\n",
+			  d);
 		display_delete_character_list(d);
 		return;
 	}
 
 	// Get the selected character (adjust for 0-based indexing)
-	c  = sorted_chars[selection - 1];
+	c = sorted_chars[selection - 1];
 	ch = load_char_into_game(c, d);
 
 	if (!ch)
@@ -2066,13 +2190,12 @@ void account_delete_char(P_desc d, char *arg)
 		name_cap[0] = toupper(name_cap[0]);
 
 	// Confirm deletion
-	snprintf(buf,
-	         256,
-	         "\r\n&+R!!! FINAL WARNING !!!&n\r\n"
-	         "Are you &+RABSOLUTELY SURE&n you want to &+RPERMANENTLY DELETE&n &+W%s&n?\r\n"
-	         "This action &+RCANNOT BE UNDONE!&n\r\n\r\n"
-	         "Type &+WYES&n to confirm deletion, or &+WNO&n to cancel: ",
-	         name_cap);
+	snprintf(buf, 256,
+		 "\r\n&+R!!! FINAL WARNING !!!&n\r\n"
+		 "Are you &+RABSOLUTELY SURE&n you want to &+RPERMANENTLY DELETE&n &+W%s&n?\r\n"
+		 "This action &+RCANNOT BE UNDONE!&n\r\n\r\n"
+		 "Type &+WYES&n to confirm deletion, or &+WNO&n to cancel: ",
+		 name_cap);
 	SEND_TO_Q(buf, d);
 	d->character = ch;
 	return;
@@ -2080,7 +2203,7 @@ void account_delete_char(P_desc d, char *arg)
 
 void remove_char_from_list(P_acct acct, char *ch)
 {
-	struct acct_chars *c    = NULL;
+	struct acct_chars *c = NULL;
 	struct acct_chars *prev = NULL;
 
 	if (!acct || !ch || !acct->acct_character_list)
@@ -2096,14 +2219,18 @@ void remove_char_from_list(P_acct acct, char *ch)
 		acct->num_chars--;
 		if (-1 == write_account(acct))
 		{
-			statuslog(56, "&+RALERT&n: failed to update account after removing char %s from %s", ch, acct->acct_name);
-			persistence_alert(AVATAR, "account", acct->acct_name, "none", "none", "write_failed", "remove char save failed");
+			statuslog(
+				56,
+				"&+RALERT&n: failed to update account after removing char %s from %s",
+				ch, acct->acct_name);
+			persistence_alert(AVATAR, "account", acct->acct_name, "none", "none",
+					  "write_failed", "remove char save failed");
 		}
 		return;
 	}
 
 	prev = c;
-	c    = c->next;
+	c = c->next;
 	while (c)
 	{
 		if (!strcasecmp(ch, c->charname))
@@ -2114,13 +2241,18 @@ void remove_char_from_list(P_acct acct, char *ch)
 			acct->num_chars--;
 			if (-1 == write_account(acct))
 			{
-				statuslog(56, "&+RALERT&n: failed to update account after removing char %s from %s", ch, acct->acct_name);
-				persistence_alert(AVATAR, "account", acct->acct_name, "none", "none", "write_failed", "remove char save failed");
+				statuslog(
+					56,
+					"&+RALERT&n: failed to update account after removing char %s from %s",
+					ch, acct->acct_name);
+				persistence_alert(AVATAR, "account", acct->acct_name, "none",
+						  "none", "write_failed",
+						  "remove char save failed");
 			}
 			return;
 		}
 		prev = c;
-		c    = c->next;
+		c = c->next;
 	}
 }
 
@@ -2154,9 +2286,9 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 	}
 
 	// free old data
-	acct->acct_name         = check_and_clear(acct->acct_name);
-	acct->acct_email        = check_and_clear(acct->acct_email);
-	acct->acct_password     = check_and_clear(acct->acct_password);
+	acct->acct_name = check_and_clear(acct->acct_name);
+	acct->acct_email = check_and_clear(acct->acct_email);
+	acct->acct_password = check_and_clear(acct->acct_password);
 	acct->acct_confirmation = check_and_clear(acct->acct_confirmation);
 
 	if (acct->acct_unique_ips)
@@ -2164,9 +2296,9 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 		struct acct_ip *curr_ip, *next_ip;
 		for (curr_ip = acct->acct_unique_ips; curr_ip; curr_ip = next_ip)
 		{
-			curr_ip->hostname   = check_and_clear(curr_ip->hostname);
+			curr_ip->hostname = check_and_clear(curr_ip->hostname);
 			curr_ip->ip_address = check_and_clear(curr_ip->ip_address);
-			next_ip             = curr_ip->next;
+			next_ip = curr_ip->next;
 			FREE(curr_ip);
 		}
 		acct->acct_unique_ips = NULL;
@@ -2177,31 +2309,31 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 		for (curr_char = acct->acct_character_list; curr_char; curr_char = next_char)
 		{
 			curr_char->charname = check_and_clear(curr_char->charname);
-			next_char           = curr_char->next;
+			next_char = curr_char->next;
 			FREE(curr_char);
 		}
 		acct->acct_character_list = NULL;
 	}
 
 	// copy loaded data (transfer ownership of pointers)
-	acct->acct_name              = loaded->acct_name;
-	acct->acct_email             = loaded->acct_email;
-	acct->acct_password          = loaded->acct_password;
-	acct->acct_confirmation      = loaded->acct_confirmation;
-	acct->num_ips                = loaded->num_ips;
-	acct->num_chars              = loaded->num_chars;
-	acct->acct_unique_ips        = loaded->acct_unique_ips;
-	acct->acct_character_list    = loaded->acct_character_list;
-	acct->acct_blocked           = loaded->acct_blocked;
-	acct->acct_confirmed         = loaded->acct_confirmed;
+	acct->acct_name = loaded->acct_name;
+	acct->acct_email = loaded->acct_email;
+	acct->acct_password = loaded->acct_password;
+	acct->acct_confirmation = loaded->acct_confirmation;
+	acct->num_ips = loaded->num_ips;
+	acct->num_chars = loaded->num_chars;
+	acct->acct_unique_ips = loaded->acct_unique_ips;
+	acct->acct_character_list = loaded->acct_character_list;
+	acct->acct_blocked = loaded->acct_blocked;
+	acct->acct_confirmed = loaded->acct_confirmed;
 	acct->acct_confirmation_sent = loaded->acct_confirmation_sent;
-	acct->acct_last              = loaded->acct_last;
-	acct->acct_good              = loaded->acct_good;
-	acct->acct_evil              = loaded->acct_evil;
-	acct->acct_flags1            = loaded->acct_flags1;
-	acct->acct_flags2            = loaded->acct_flags2;
-	acct->acct_flags3            = loaded->acct_flags3;
-	acct->acct_flags4            = loaded->acct_flags4;
+	acct->acct_last = loaded->acct_last;
+	acct->acct_good = loaded->acct_good;
+	acct->acct_evil = loaded->acct_evil;
+	acct->acct_flags1 = loaded->acct_flags1;
+	acct->acct_flags2 = loaded->acct_flags2;
+	acct->acct_flags3 = loaded->acct_flags3;
+	acct->acct_flags4 = loaded->acct_flags4;
 
 	// free the container (but not the contents we transferred)
 	free(loaded);
@@ -2228,7 +2360,8 @@ int write_account(P_acct acct) // returns -1 if error, 1 if no errors
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->account && acct->acct_name && d->account->acct_name && !strcasecmp(acct->acct_name, d->account->acct_name))
+		if (d->account && acct->acct_name && d->account->acct_name &&
+		    !strcasecmp(acct->acct_name, d->account->acct_name))
 			read_account(d->account);
 	}
 	return 1;
@@ -2236,13 +2369,14 @@ int write_account(P_acct acct) // returns -1 if error, 1 if no errors
 
 void write_unique_ip(P_acct acct, FILE *f)
 {
-	int             count = 0;
-	struct acct_ip *c     = NULL;
+	int count = 0;
+	struct acct_ip *c = NULL;
 
 	if (acct->acct_name)
 	{
 		if (!sql_save_account_ips(acct->acct_name, acct->acct_unique_ips))
-			logit(LOG_DEBUG, "write_unique_ip: failed to save IPs for %s", acct->acct_name);
+			logit(LOG_DEBUG, "write_unique_ip: failed to save IPs for %s",
+			      acct->acct_name);
 	}
 
 	c = acct->acct_unique_ips;
@@ -2269,11 +2403,11 @@ void write_unique_ip(P_acct acct, FILE *f)
 
 void read_unique_ip(P_acct acct, FILE *f)
 {
-	int             count = 0;
-	int             i;
+	int count = 0;
+	int i;
 	struct acct_ip *c = NULL;
 	struct acct_ip *d = NULL;
-	char            buf[256];
+	char buf[256];
 
 	fscanf(f, "%d\n", &count);
 	if (count == 0)
@@ -2300,8 +2434,8 @@ void read_unique_ip(P_acct acct, FILE *f)
 
 void write_character_list(P_acct acct, FILE *f)
 {
-	int                count = 0;
-	struct acct_chars *c     = NULL;
+	int count = 0;
+	struct acct_chars *c = NULL;
 
 	c = acct->acct_character_list;
 	if (!c)
@@ -2320,18 +2454,19 @@ void write_character_list(P_acct acct, FILE *f)
 	c = acct->acct_character_list;
 	while (c)
 	{
-		fprintf(f, "%s\n%li %li %d %d\n", c->charname, c->count, c->last, c->blocked, c->racewar);
+		fprintf(f, "%s\n%li %li %d %d\n", c->charname, c->count, c->last, c->blocked,
+			c->racewar);
 		c = c->next;
 	}
 }
 
 void read_character_list(P_acct acct, FILE *f)
 {
-	int                count = 0;
-	int                i;
+	int count = 0;
+	int i;
 	struct acct_chars *c = NULL;
 	struct acct_chars *d = NULL;
-	char               buf[256];
+	char buf[256];
 
 	fscanf(f, "%d\n", &count);
 	if (count == 0)
@@ -2356,7 +2491,7 @@ void read_character_list(P_acct acct, FILE *f)
 
 void generate_account_confirmation_code(P_desc d, char *arg)
 {
-	char  a[256], b[256];
+	char a[256], b[256];
 	FILE *f = NULL;
 
 	snprintf(a, 256, "%d%d", number(0, 32767), number(0, 2147483647));
@@ -2365,21 +2500,22 @@ void generate_account_confirmation_code(P_desc d, char *arg)
 	d->account->acct_confirmation = str_dup(b);
 	if (-1 == write_account(d->account))
 	{
-		statuslog(56, "&+RALERT&n: failed to save confirmation token for %s", d->account->acct_name);
-		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "confirmation token save failed");
+		statuslog(56, "&+RALERT&n: failed to save confirmation token for %s",
+			  d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+				  "write_failed", "confirmation token save failed");
 	}
 
 	// Display confirmation code on screen
 	char display_buf[1024];
-	snprintf(display_buf,
-	         1024,
-	         "\r\n&+Y========================================&n\r\n"
-	         "&+W*** Account Confirmation Code ***&n\r\n"
-	         "&+Y========================================&n\r\n\r\n"
-	         "Your confirmation code is: &+C%s&n\r\n\r\n"
-	         "&+YPLEASE WRITE THIS DOWN!&n\r\n"
-	         "&+Y========================================&n\r\n\r\n",
-	         d->account->acct_confirmation);
+	snprintf(display_buf, 1024,
+		 "\r\n&+Y========================================&n\r\n"
+		 "&+W*** Account Confirmation Code ***&n\r\n"
+		 "&+Y========================================&n\r\n\r\n"
+		 "Your confirmation code is: &+C%s&n\r\n\r\n"
+		 "&+YPLEASE WRITE THIS DOWN!&n\r\n"
+		 "&+Y========================================&n\r\n\r\n",
+		 d->account->acct_confirmation);
 	SEND_TO_Q(display_buf, d);
 
 #ifdef REQUIRE_EMAIL_VERIFICATION
@@ -2389,7 +2525,9 @@ void generate_account_confirmation_code(P_desc d, char *arg)
 	if (!f)
 	{
 		ereglog(AVATAR, "Couldn't open account confirmation temp file!");
-		SEND_TO_Q("&+YWarning: Could not send confirmation email, but you can still use the code displayed above.&n\r\n", d);
+		SEND_TO_Q(
+			"&+YWarning: Could not send confirmation email, but you can still use the code displayed above.&n\r\n",
+			d);
 		return;
 	}
 
@@ -2397,7 +2535,8 @@ void generate_account_confirmation_code(P_desc d, char *arg)
 	fprintf(f, "Your account confirmation code is:  %s\n", d->account->acct_confirmation);
 	fclose(f);
 
-	snprintf(b, 256, "mail -s \"%s\" %s < %s", "Duris Account Confirmation", d->account->acct_email, a);
+	snprintf(b, 256, "mail -s \"%s\" %s < %s", "Duris Account Confirmation",
+		 d->account->acct_email, a);
 	system(b);
 	unlink(a);
 
@@ -2412,22 +2551,31 @@ void generate_account_confirmation_code(P_desc d, char *arg)
 		fclose(f);
 	}
 
-	SEND_TO_Q("&+GAn email with your confirmation code has also been sent to your email address.&n\r\n", d);
+	SEND_TO_Q(
+		"&+GAn email with your confirmation code has also been sent to your email address.&n\r\n",
+		d);
 #else
 	// Email verification disabled - auto-confirm account
-	SEND_TO_Q("&+G(Email verification is disabled - your account is automatically confirmed)&n\r\n", d);
+	SEND_TO_Q(
+		"&+G(Email verification is disabled - your account is automatically confirmed)&n\r\n",
+		d);
 	d->account->acct_confirmed = 1;
 	if (-1 == write_account(d->account))
 	{
-		statuslog(56, "&+RALERT&n: failed to persist auto-confirm for %s", d->account->acct_name);
-		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none", "write_failed", "auto-confirm save failed");
+		statuslog(56, "&+RALERT&n: failed to persist auto-confirm for %s",
+			  d->account->acct_name);
+		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
+				  "write_failed", "auto-confirm save failed");
 	}
 #endif
 
 	return;
 }
 
-void display_account_information_to_char(P_char ch, P_acct account) { display_account_information(ch->desc, account); }
+void display_account_information_to_char(P_char ch, P_acct account)
+{
+	display_account_information(ch->desc, account);
+}
 
 void display_account_information(P_desc d, P_acct account)
 {
@@ -2451,23 +2599,23 @@ char is_account_confirmed(P_desc d)
 
 void clear_account(P_acct acct)
 {
-	struct acct_ip    *curr_ip   = NULL;
-	struct acct_ip    *next_ip   = NULL;
+	struct acct_ip *curr_ip = NULL;
+	struct acct_ip *next_ip = NULL;
 	struct acct_chars *curr_char = NULL;
 	struct acct_chars *next_char = NULL;
 
-	acct->acct_name         = check_and_clear(acct->acct_name);
-	acct->acct_email        = check_and_clear(acct->acct_email);
-	acct->acct_password     = check_and_clear(acct->acct_password);
+	acct->acct_name = check_and_clear(acct->acct_name);
+	acct->acct_email = check_and_clear(acct->acct_email);
+	acct->acct_password = check_and_clear(acct->acct_password);
 	acct->acct_confirmation = check_and_clear(acct->acct_confirmation);
 
 	if (acct->acct_unique_ips)
 	{
 		for (curr_ip = acct->acct_unique_ips; curr_ip; curr_ip = next_ip)
 		{
-			curr_ip->hostname   = check_and_clear(curr_ip->hostname);
+			curr_ip->hostname = check_and_clear(curr_ip->hostname);
 			curr_ip->ip_address = check_and_clear(curr_ip->ip_address);
-			next_ip             = curr_ip->next;
+			next_ip = curr_ip->next;
 			FREE(curr_ip);
 		}
 		acct->acct_unique_ips = NULL;
@@ -2478,14 +2626,14 @@ void clear_account(P_acct acct)
 		for (curr_char = acct->acct_character_list; curr_char; curr_char = next_char)
 		{
 			curr_char->charname = check_and_clear(curr_char->charname);
-			next_char           = curr_char->next;
+			next_char = curr_char->next;
 			FREE(curr_char);
 		}
 		acct->acct_character_list = NULL;
 	}
 
-	acct->acct_blocked           = 0;
-	acct->acct_confirmed         = 0;
+	acct->acct_blocked = 0;
+	acct->acct_confirmed = 0;
 	acct->acct_confirmation_sent = 0;
 
 	acct->acct_last = 0;
@@ -2544,7 +2692,7 @@ void add_account_to_list(P_acct acct)
 	}
 	else
 	{
-		acct->next   = account_list;
+		acct->next = account_list;
 		account_list = acct;
 	}
 }
@@ -2583,9 +2731,9 @@ bool account_exists(const char *dir, char *name)
 #endif
 
 	// fallback to file check
-	char        buf[256], *buff;
+	char buf[256], *buff;
 	struct stat statbuf;
-	char        Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	strcpy(buf, name);
 	buff = buf;

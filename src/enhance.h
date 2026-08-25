@@ -4,34 +4,36 @@
 #include "structs.h"
 
 /* Boot-time index entry */
-struct enhance_index_entry {
-  int                    vnum;
-  int                    ival;
-  unsigned int           wear_flags;
-  int                    material;
-  int                    apply_loc[4];
-  int                    apply_mod[4];
-  struct enhance_index_entry *next;
+struct enhance_index_entry
+{
+	int vnum;
+	int ival;
+	unsigned int wear_flags;
+	int material;
+	int apply_loc[4];
+	int apply_mod[4];
+	struct enhance_index_entry *next;
 };
 
 /* Hash table lookup result */
-struct enhance_index_result {
-  struct enhance_index_entry *entry;
-  int                         ival;
+struct enhance_index_result
+{
+	struct enhance_index_entry *entry;
+	int ival;
 };
 
 /* Prototypes */
-bool          is_enhance_banned(P_obj item);
-void          enhance(P_char ch, P_obj source, P_obj material);
-void          do_enhance(P_char ch, char *argument, int cmd);
-void          modenhance(P_char ch, P_obj source, P_obj material);
-void          boot_enhancement_system(void);
-void          enhance_on_eligible_npc_death(P_char ch, P_char killer);
-void          enhance_on_npc_item_reset_skipped(P_char mob, P_obj missing_item);
+bool is_enhance_banned(P_obj item);
+void enhance(P_char ch, P_obj source, P_obj material);
+void do_enhance(P_char ch, char *argument, int cmd);
+void modenhance(P_char ch, P_obj source, P_obj material);
+void boot_enhancement_system(void);
+void enhance_on_eligible_npc_death(P_char ch, P_char killer);
+void enhance_on_npc_item_reset_skipped(P_char mob, P_obj missing_item);
 
 /* Global index tables (externed for access) */
-#define ENHANCE_IVAL_TABLE_SIZE  4099
-#define ENHANCE_STAT_TABLE_SIZE  4099
+#define ENHANCE_IVAL_TABLE_SIZE 4099
+#define ENHANCE_STAT_TABLE_SIZE 4099
 
 extern struct enhance_index_entry *enhance_ival_table[ENHANCE_IVAL_TABLE_SIZE];
 extern struct enhance_index_entry *enhance_stat_table[ENHANCE_STAT_TABLE_SIZE];

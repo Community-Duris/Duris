@@ -58,67 +58,67 @@
  * external variables //
  */
 
-extern P_char		       character_list;
-extern P_desc		       descriptor_list;
-extern P_index		       mob_index;
-extern P_index		       obj_index;
-extern P_obj		       object_list;
-extern P_room		       world;
-extern char		       debug_mode;
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern char debug_mode;
 extern const struct race_names race_names_table[];
-extern void		       event_wait(P_char ch, P_char victim, P_obj obj, void *data);
-void			       release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
+extern void event_wait(P_char ch, P_char victim, P_obj obj, void *data);
+void release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
 
 // extern const int material_absorbtion[][];
 extern const struct stat_data stat_factor[];
-extern float		      fake_sqrt_table[];
-extern int		      pulse;
-extern int		      arena_hometown_location[];
-extern struct arena_data      arena;
-extern struct agi_app_type    agi_app[];
-extern struct dex_app_type    dex_app[];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data	     *zone_table;
-extern const int	      class_tohit_mod[];
-extern Skill		      skills[];
+extern float fake_sqrt_table[];
+extern int pulse;
+extern int arena_hometown_location[];
+extern struct arena_data arena;
+extern struct agi_app_type agi_app[];
+extern struct dex_app_type dex_app[];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
+extern const int class_tohit_mod[];
+extern Skill skills[];
 extern long new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
 extern struct wis_app_type wis_app[];
 
-int	      pv_common(P_char, P_char, const P_obj, int *);
-bool	      monk_superhit(P_char, P_char, int *);
-extern char  *arena_death_msg(P_obj p_weapon);
-extern void   send_to_arena(char *msg, int race);
-extern int    get_numb_chars_in_group(struct group_list *group);
-extern int    get_number_allies_in_room(P_char ch, int room_index);
+int pv_common(P_char, P_char, const P_obj, int *);
+bool monk_superhit(P_char, P_char, int *);
+extern char *arena_death_msg(P_obj p_weapon);
+extern void send_to_arena(char *msg, int race);
+extern int get_numb_chars_in_group(struct group_list *group);
+extern int get_number_allies_in_room(P_char ch, int room_index);
 extern P_char misfire_check(P_char ch, P_char spell_target, int flag);
-extern bool   check_reincarnate(P_char ch);
-bool	      handle_imprison_damage(P_char, P_char, int);
-extern bool   innate_two_daggers(P_char);
-extern bool   divine_blessing_parry(P_char, P_char);
-extern int    get_honing(P_obj);
-extern void   apply_honing(P_obj, int);
-extern void   holy_crusade_check(P_char, P_char);
-extern int    is_wearing_necroplasm(P_char);
-extern int    top_of_zone_table;
-extern int    wearing_invis(P_char ch);
+extern bool check_reincarnate(P_char ch);
+bool handle_imprison_damage(P_char, P_char, int);
+extern bool innate_two_daggers(P_char);
+extern bool divine_blessing_parry(P_char, P_char);
+extern int get_honing(P_obj);
+extern void apply_honing(P_obj, int);
+extern void holy_crusade_check(P_char, P_char);
+extern int is_wearing_necroplasm(P_char);
+extern int top_of_zone_table;
+extern int wearing_invis(P_char ch);
 
-extern bool   has_dragoon_mount(P_char ch);
-extern bool   is_dragoon_mounted(P_char ch);
-extern bool   is_dragoon_mount(P_char mount);
-extern bool   is_in_dragoon_group(P_char ch, P_char vict);
-extern int    get_next_dragoon_circle(P_char ch);
+extern bool has_dragoon_mount(P_char ch);
+extern bool is_dragoon_mounted(P_char ch);
+extern bool is_dragoon_mount(P_char mount);
+extern bool is_in_dragoon_group(P_char ch, P_char vict);
+extern int get_next_dragoon_circle(P_char ch);
 extern P_char get_dragoon_mount(P_char ch);
 
 /* Structures */
 
 // extern struct mm_ds *wdead_trophy_pool;
-P_char combat_list     = 0; /* head of l-list of fighting chars  */
+P_char combat_list = 0; /* head of l-list of fighting chars  */
 P_char destroying_list = 0; /* head of l-list of destroying chars  */
-P_char combat_next_ch  = 0; /* Next in combat global trick    */
-float  dam_factor[LAST_DF + 1];
-float  racial_spldam_offensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
-float  racial_spldam_defensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
+P_char combat_next_ch = 0; /* Next in combat global trick    */
+float dam_factor[LAST_DF + 1];
+float racial_spldam_offensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
+float racial_spldam_defensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
 
 extern dam_mod_predicate spell_damage_modifiers[NUM_SPELL_PREDICATES];
 extern dam_mod_predicate raw_damage_modifiers[NUM_RAW_PREDICATES];
@@ -258,7 +258,7 @@ const char *spldam_types[LAST_SPLDAM_TYPE] = { "generic", "fire",      "cold",	 
 void update_racial_dam_factors()
 {
 	char buf[256];
-	int  race, type;
+	int race, type;
 
 	// Skip RACE_NONE.
 	for (race = 1; race <= LAST_RACE; race++)
@@ -281,78 +281,78 @@ void update_dam_factors()
 {
 	dam_factor[DF_SWASHBUCKLER_DEFENSE] = get_property("damage.reduction.swashbuckler", 0.800);
 	dam_factor[DF_SWASHBUCKLER_OFFENSE] = get_property("damage.increase.swashbuckler", 1.25);
-	dam_factor[DF_SANC]		    = get_property("damage.reduction.sanctuary", 0.8);
-	dam_factor[DF_TROLLSKIN]	    = get_property("damage.reduction.trollskin", 0.8);
-	dam_factor[DF_BARKSKIN]		    = get_property("damage.reduction.barkskin", 0.90);
-	dam_factor[DF_BERSERKMELEE]	    = get_property("damage.reduction.berserk", 0.10);
-	dam_factor[DF_SOULMELEE]	= get_property("damage.reduction.soulshield.melee", 0.8);
-	dam_factor[DF_SOULSPELL]	= get_property("damage.reduction.soulshield.spell", 0.8);
+	dam_factor[DF_SANC] = get_property("damage.reduction.sanctuary", 0.8);
+	dam_factor[DF_TROLLSKIN] = get_property("damage.reduction.trollskin", 0.8);
+	dam_factor[DF_BARKSKIN] = get_property("damage.reduction.barkskin", 0.90);
+	dam_factor[DF_BERSERKMELEE] = get_property("damage.reduction.berserk", 0.10);
+	dam_factor[DF_SOULMELEE] = get_property("damage.reduction.soulshield.melee", 0.8);
+	dam_factor[DF_SOULSPELL] = get_property("damage.reduction.soulshield.spell", 0.8);
 	dam_factor[DF_NEG_SHIELD_SPELL] = get_property("damage.reduction.negshield.spell", 0.8);
-	dam_factor[DF_PROTLIVING]	= get_property("damage.reduction.protLiving", 0.95);
-	dam_factor[DF_PROTANIMAL]	= get_property("damage.reduction.protAnimal", 0.8);
-	dam_factor[DF_PROTECTION]	= get_property("damage.reduction.protElement", 0.75);
+	dam_factor[DF_PROTLIVING] = get_property("damage.reduction.protLiving", 0.95);
+	dam_factor[DF_PROTANIMAL] = get_property("damage.reduction.protAnimal", 0.8);
+	dam_factor[DF_PROTECTION] = get_property("damage.reduction.protElement", 0.75);
 	dam_factor[DF_PROTECTION_TROLL] = get_property("damage.reduction.protFire.Troll", 0.90);
 	dam_factor[DF_ELSHIELDRED_TROLL] =
 		get_property("damage.reduction.fireColdShield.Troll", 0.80);
-	dam_factor[DF_ELSHIELDRED]	= get_property("damage.reduction.fireColdShield", 0.55);
-	dam_factor[DF_IRONWILL]		= get_property("damage.reduction.towerOfIronWill", 0.5);
-	dam_factor[DF_TIGERPALM]	= get_property("damage.reduction.tigerpalm", 0.65);
-	dam_factor[DF_ELAFFINITY]	= get_property("damage.reduction.elementalAffinity", 0.25);
-	dam_factor[DF_COLDWRITHE]	= get_property("damage.increase.coldWrithe", 2.0);
-	dam_factor[DF_BARKFIRE]		= get_property("damage.increase.barkskin", 1.15);
-	dam_factor[DF_IRONWOOD]		= get_property("damage.increase.ironwood", 1.80);
-	dam_factor[DF_BERSERKSPELL]	= get_property("damage.increase.berserk", 1.100);
-	dam_factor[DF_BERSERKEREXTRA]	= get_property("damage.increase.berserk.Berserkers", 1.100);
-	dam_factor[DF_ELEMENTALIST]	= get_property("damage.increase.elementalist", 1.15);
-	dam_factor[DF_ELSHIELDINC]	= get_property("damage.increase.fireColdShield", 2.0);
-	dam_factor[DF_PHANTFORM]	= get_property("damage.increase.phantasmalForm", 1.100);
-	dam_factor[DF_VULNCOLD]		= get_property("damage.increase.vulnCold", 2.0);
-	dam_factor[DF_VULNFIRE]		= get_property("damage.increase.vulnFire", 1.15);
-	dam_factor[DF_ELSHIELDDAM]	= get_property("damage.shield.fireCold", 0.5);
-	dam_factor[DF_NEGSHIELD]	= get_property("damage.shield.neg", 0.25);
-	dam_factor[DF_SOULSHIELDDAM]	= get_property("damage.shield.soul", 0.2);
-	dam_factor[DF_MONKVAMP]		= get_property("vamping.vampiricTouch.monk", 0.05);
-	dam_factor[DF_TOUCHVAMP]	= get_property("vamping.vampiricTouch", 0.4);
-	dam_factor[DF_TRANCEVAMP]	= get_property("vamping.vampiricTrance", 0.2);
-	dam_factor[DF_HFIREVAMP]	= get_property("vamping.hellfire", 0.14);
-	dam_factor[DF_UNDEADVAMP]	= get_property("vamping.innateUndead", 0.03);
-	dam_factor[DF_NPCVAMP]		= get_property("vamping.undeadNpc", 0.1);
-	dam_factor[DF_NPCTOPC]		= get_property("damage.modifier.npcToPc", 1.0);
-	dam_factor[DF_WEAPON_DICE]	= get_property("damage.modifier.weaponDice", 1.0);
-	dam_factor[DF_WETFIRE]		= get_property("damage.reduction.wet", 0.8);
-	dam_factor[DF_BATTLETIDEVAMP]	= get_property("vamping.battletide", 0.125);
+	dam_factor[DF_ELSHIELDRED] = get_property("damage.reduction.fireColdShield", 0.55);
+	dam_factor[DF_IRONWILL] = get_property("damage.reduction.towerOfIronWill", 0.5);
+	dam_factor[DF_TIGERPALM] = get_property("damage.reduction.tigerpalm", 0.65);
+	dam_factor[DF_ELAFFINITY] = get_property("damage.reduction.elementalAffinity", 0.25);
+	dam_factor[DF_COLDWRITHE] = get_property("damage.increase.coldWrithe", 2.0);
+	dam_factor[DF_BARKFIRE] = get_property("damage.increase.barkskin", 1.15);
+	dam_factor[DF_IRONWOOD] = get_property("damage.increase.ironwood", 1.80);
+	dam_factor[DF_BERSERKSPELL] = get_property("damage.increase.berserk", 1.100);
+	dam_factor[DF_BERSERKEREXTRA] = get_property("damage.increase.berserk.Berserkers", 1.100);
+	dam_factor[DF_ELEMENTALIST] = get_property("damage.increase.elementalist", 1.15);
+	dam_factor[DF_ELSHIELDINC] = get_property("damage.increase.fireColdShield", 2.0);
+	dam_factor[DF_PHANTFORM] = get_property("damage.increase.phantasmalForm", 1.100);
+	dam_factor[DF_VULNCOLD] = get_property("damage.increase.vulnCold", 2.0);
+	dam_factor[DF_VULNFIRE] = get_property("damage.increase.vulnFire", 1.15);
+	dam_factor[DF_ELSHIELDDAM] = get_property("damage.shield.fireCold", 0.5);
+	dam_factor[DF_NEGSHIELD] = get_property("damage.shield.neg", 0.25);
+	dam_factor[DF_SOULSHIELDDAM] = get_property("damage.shield.soul", 0.2);
+	dam_factor[DF_MONKVAMP] = get_property("vamping.vampiricTouch.monk", 0.05);
+	dam_factor[DF_TOUCHVAMP] = get_property("vamping.vampiricTouch", 0.4);
+	dam_factor[DF_TRANCEVAMP] = get_property("vamping.vampiricTrance", 0.2);
+	dam_factor[DF_HFIREVAMP] = get_property("vamping.hellfire", 0.14);
+	dam_factor[DF_UNDEADVAMP] = get_property("vamping.innateUndead", 0.03);
+	dam_factor[DF_NPCVAMP] = get_property("vamping.undeadNpc", 0.1);
+	dam_factor[DF_NPCTOPC] = get_property("damage.modifier.npcToPc", 1.0);
+	dam_factor[DF_WEAPON_DICE] = get_property("damage.modifier.weaponDice", 1.0);
+	dam_factor[DF_WETFIRE] = get_property("damage.reduction.wet", 0.8);
+	dam_factor[DF_BATTLETIDEVAMP] = get_property("vamping.battletide", 0.125);
 	dam_factor[DF_SLSHIELDINCREASE] = get_property("damage.soulnegshield.increase", 1.5);
-	dam_factor[DF_CHAOSSHIELD]	= get_property("damage.reduction.chaosshield.mod", 0.90);
-	dam_factor[DF_BERSERKRAGE]	= get_property("damage.increase.berserk.rage", 1.350);
-	dam_factor[DF_RAGED]		= get_property("damage.increase.rage", 2.000);
+	dam_factor[DF_CHAOSSHIELD] = get_property("damage.reduction.chaosshield.mod", 0.90);
+	dam_factor[DF_BERSERKRAGE] = get_property("damage.increase.berserk.rage", 1.350);
+	dam_factor[DF_RAGED] = get_property("damage.increase.rage", 2.000);
 	dam_factor[DF_ENERGY_CONTAINMENT] =
 		get_property("damage.reduction.EnergyContainment", 0.750);
 	dam_factor[DF_GUARDIANS_BULWARK] =
 		get_property("damage.reduction.guardians.bulwark", 0.850);
-	dam_factor[DF_DAMROLL_MOD]	  = get_property("damroll.mod", 1.0);
-	dam_factor[DF_MELEEMASTERY]	  = get_property("damage.modifier.meleemastery", 1.100);
-	dam_factor[DF_DRACOLICHVAMP]	  = get_property("vamping.dracolich", 0.500);
-	dam_factor[DF_NEG_AC_MULT]	  = get_property("damage.neg.armorclass.multiplier", 0.500);
+	dam_factor[DF_DAMROLL_MOD] = get_property("damroll.mod", 1.0);
+	dam_factor[DF_MELEEMASTERY] = get_property("damage.modifier.meleemastery", 1.100);
+	dam_factor[DF_DRACOLICHVAMP] = get_property("vamping.dracolich", 0.500);
+	dam_factor[DF_NEG_AC_MULT] = get_property("damage.neg.armorclass.multiplier", 0.500);
 	dam_factor[DF_DODGE_AGI_MODIFIER] = get_property("damage.dodge.agi.multiplier", 1.500);
-	dam_factor[DF_ARROWVAMP]	  = get_property("vamping.vampiricTouch.arrow", 0.05);
-	dam_factor[DF_ANTIPALADINVAMP]	  = get_property("vamping.vampiricTouch.antipaladin", 0.05);
-	dam_factor[DF_MERCENARYVAMP]	  = get_property("vamping.vampiricTouch.mercenary", 0.100);
-	dam_factor[DF_WARRIORVAMP]	  = get_property("vamping.vampiricTouch.warrior", 0.100);
-	dam_factor[DF_BERSERKERVAMP]	  = get_property("vamping.vampiricTouch.berserker", 0.100);
-	dam_factor[DF_ROGUEVAMP]	  = get_property("vamping.vampiricTouch.rogue", 0.100);
-	dam_factor[DF_PALADINVAMP]	  = get_property("vamping.vampiricTouch.paladin", 0.100);
-	dam_factor[DF_RANGERVAMP]	  = get_property("vamping.vampiricTouch.ranger", 0.100);
+	dam_factor[DF_ARROWVAMP] = get_property("vamping.vampiricTouch.arrow", 0.05);
+	dam_factor[DF_ANTIPALADINVAMP] = get_property("vamping.vampiricTouch.antipaladin", 0.05);
+	dam_factor[DF_MERCENARYVAMP] = get_property("vamping.vampiricTouch.mercenary", 0.100);
+	dam_factor[DF_WARRIORVAMP] = get_property("vamping.vampiricTouch.warrior", 0.100);
+	dam_factor[DF_BERSERKERVAMP] = get_property("vamping.vampiricTouch.berserker", 0.100);
+	dam_factor[DF_ROGUEVAMP] = get_property("vamping.vampiricTouch.rogue", 0.100);
+	dam_factor[DF_PALADINVAMP] = get_property("vamping.vampiricTouch.paladin", 0.100);
+	dam_factor[DF_RANGERVAMP] = get_property("vamping.vampiricTouch.ranger", 0.100);
 	dam_factor[DF_DLORDAVGRVAMP] =
 		get_property("vamping.vampiricTouch.dreadlord.or.avenger", 0.100);
-	dam_factor[DF_GOOD_MODIFIER]	  = get_property("damage.modifier.good", 1.000);
-	dam_factor[DF_EVIL_MODIFIER]	  = get_property("damage.modifier.evil", 1.000);
-	dam_factor[DF_UNDEAD_MODIFIER]	  = get_property("damage.modifier.undead", 1.000);
-	dam_factor[DF_NEUTRAL_MODIFIER]	  = get_property("damage.modifier.neutral", 1.000);
+	dam_factor[DF_GOOD_MODIFIER] = get_property("damage.modifier.good", 1.000);
+	dam_factor[DF_EVIL_MODIFIER] = get_property("damage.modifier.evil", 1.000);
+	dam_factor[DF_UNDEAD_MODIFIER] = get_property("damage.modifier.undead", 1.000);
+	dam_factor[DF_NEUTRAL_MODIFIER] = get_property("damage.modifier.neutral", 1.000);
 	dam_factor[DF_TWOHANDED_MODIFIER] = get_property("damage.modifier.twohanded", 1.500);
-	dam_factor[DF_KNEELING]		  = get_property("damage.modifier.kneeling", 1.150);
-	dam_factor[DF_SITTING]		  = get_property("damage.modifier.sitting", 1.300);
-	dam_factor[DF_PRONE]		  = get_property("damage.modifier.prone", 1.500);
-	dam_factor[DF_JUDICIUM_FIDEI]	  = get_property("damage.modifier.judicium", 1.500);
+	dam_factor[DF_KNEELING] = get_property("damage.modifier.kneeling", 1.150);
+	dam_factor[DF_SITTING] = get_property("damage.modifier.sitting", 1.300);
+	dam_factor[DF_PRONE] = get_property("damage.modifier.prone", 1.500);
+	dam_factor[DF_JUDICIUM_FIDEI] = get_property("damage.modifier.judicium", 1.500);
 }
 
 struct affected_type *get_ward_from_char(P_char ch)
@@ -362,10 +362,10 @@ struct affected_type *get_ward_from_char(P_char ch)
 
 int check_damage_ward(P_char attacker, P_char ch, int dam)
 {
-	struct affected_type *paf	     = get_ward_from_char(ch);
-	int		      absorbed	     = 0;
-	float		      wardMitigation = get_property("ward.mitigation", 0.80);
-	dam				     = (int)ceil(dam * wardMitigation);
+	struct affected_type *paf = get_ward_from_char(ch);
+	int absorbed = 0;
+	float wardMitigation = get_property("ward.mitigation", 0.80);
+	dam = (int)ceil(dam * wardMitigation);
 
 	// loop through all wards
 	while (paf && absorbed < dam)
@@ -504,9 +504,9 @@ bool opposite_racewar(P_char ch, P_char victim)
 int vamp(P_char ch, double fhits, double fcap)
 {
 	struct affected_type *af;
-	static char	      buf[100];
-	P_char		      tch;
-	int		      hits = (int)fhits, cap = (int)fcap, blocked;
+	static char buf[100];
+	P_char tch;
+	int hits = (int)fhits, cap = (int)fcap, blocked;
 
 	if (!IS_ALIVE(ch))
 		return 0;
@@ -566,7 +566,7 @@ int vamp(P_char ch, double fhits, double fcap)
 		}
 	}
 
-	hits	    = MAX(0, MIN(hits, cap - GET_HIT(ch)));
+	hits = MAX(0, MIN(hits, cap - GET_HIT(ch)));
 	GET_HIT(ch) = GET_HIT(ch) + hits;
 
 	if (hits > 1 && IS_SET(ch->specials.act2, PLR2_HEAL))
@@ -583,7 +583,7 @@ int vamp(P_char ch, double fhits, double fcap)
 void heal(P_char ch, P_char healer, int hits, int cap)
 {
 	P_char victim;
-	int    exp;
+	int exp;
 
 	if (!IS_ALIVE(ch))
 		return;
@@ -634,8 +634,8 @@ void heal(P_char ch, P_char healer, int hits, int cap)
 
 bool soul_trap(P_char ch, P_char victim)
 {
-	int		   hps = GET_LEVEL(victim) * 2 * GET_CHAR_SKILL(ch, SKILL_SOUL_TRAP) / 100;
-	bool		   himself = false;
+	int hps = GET_LEVEL(victim) * 2 * GET_CHAR_SKILL(ch, SKILL_SOUL_TRAP) / 100;
+	bool himself = false;
 	struct group_list *gl;
 
 	if (GET_CHAR_SKILL(ch, SKILL_SOUL_TRAP))
@@ -772,10 +772,10 @@ void appear(P_char ch, bool removeHide)
 // Right now it has a base of level+20 sec + 3 minutes for every PvP death within the hour.
 void setHeavenTime(P_char victim)
 {
-	int	   time_in_heaven, counter, i;
-	int	   kill_ids[20];
+	int time_in_heaven, counter, i;
+	int kill_ids[20];
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	// Victim must be a real PC, but doesn't have to be alive.
 	if (!victim || IS_NPC(victim))
@@ -798,7 +798,7 @@ void setHeavenTime(P_char victim)
 	if (res)
 	{
 		counter = 0;
-		i	= -1;
+		i = -1;
 		// Walk through and record each pkill id battle number.
 		while ((row = mysql_fetch_row(res)))
 			kill_ids[++i] = atoi(row[0]);
@@ -842,9 +842,9 @@ void setHeavenTime(P_char victim)
 
 void AddFrags(P_char ch, P_char victim)
 {
-	P_char		     tch;
-	int		     allies, recfrag, frag_gain; //, loss;
-	char		     buffer[1024];
+	P_char tch;
+	int allies, recfrag, frag_gain; //, loss;
+	char buffer[1024];
 	struct affected_type af, *afp, *next_af;
 
 	float gain, real_gain, loss;
@@ -913,8 +913,8 @@ void AddFrags(P_char ch, P_char victim)
 				redis_invalidate_fraglist();
 
 				memset(&af, 0, sizeof(af));
-				af.type	    = TAG_PLR_RECENT_FRAG;
-				af.flags    = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
+				af.type = TAG_PLR_RECENT_FRAG;
+				af.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
 				af.modifier = recfrag + (int)real_gain;
 				af.duration =
 					get_property("epic.frag.thrill.duration", 45) * WAIT_SEC;
@@ -990,8 +990,8 @@ void AddFrags(P_char ch, P_char victim)
 	if (IS_PC(victim))
 	{
 		memset(&af, 0, sizeof(af));
-		af.type	    = TAG_RECENTLY_FRAGGED;
-		af.flags    = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
+		af.type = TAG_RECENTLY_FRAGGED;
+		af.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
 		af.duration = 60 * WAIT_SEC;
 		affect_to_char(victim, &af);
 	}
@@ -1034,7 +1034,7 @@ unsigned int calculate_ch_state(P_char ch)
 
 void update_pos(P_char ch)
 {
-	int    pos, stat, tmp;
+	int pos, stat, tmp;
 	P_char mount;
 
 	if (!ch)
@@ -1057,7 +1057,7 @@ void update_pos(P_char ch)
 		stop_riding(ch);
 
 	stat = calculate_ch_state(ch);
-	pos  = GET_POS(ch);
+	pos = GET_POS(ch);
 
 	/*
 	 * quadrupeds are much more stable than bipeds, so they skip this
@@ -1404,9 +1404,9 @@ bool AdjacentInRoom(P_char ch, P_char ch2)
 P_obj make_corpse(P_char ch, int loss)
 {
 	P_obj corpse, o, money;
-	char  buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	int   i, e_time;
-	int   random_zone_map_room = 0;
+	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	int i, e_time;
+	int random_zone_map_room = 0;
 
 	corpse = read_object(2, VIRTUAL);
 	if (!corpse)
@@ -1467,11 +1467,11 @@ P_obj make_corpse(P_char ch, int loss)
 	 */
 	unequip_all(ch);
 	corpse->contains = ch->carrying;
-	ch->carrying	 = NULL;
+	ch->carrying = NULL;
 
 	for (o = corpse->contains; o; o = o->next_content)
 	{
-		o->loc_p      = LOC_INSIDE;
+		o->loc_p = LOC_INSIDE;
 		o->loc.inside = corpse;
 		if (IS_ARTIFACT(o) && IS_PC(ch))
 			if (!remove_owned_artifact_sql(o, GET_PID(ch)))
@@ -1480,10 +1480,10 @@ P_obj make_corpse(P_char ch, int loss)
 
 	if (IS_NPC(ch))
 	{
-		e_time	       = get_property("timer.decay.corpse.npc", 120) * WAIT_MIN;
+		e_time = get_property("timer.decay.corpse.npc", 120) * WAIT_MIN;
 		corpse->weight = total_carried_weight(ch) * 2;
 		corpse->value[CORPSE_WEIGHT] = total_carried_weight(ch);
-		corpse->value[CORPSE_FLAGS]  = NPC_CORPSE;
+		corpse->value[CORPSE_FLAGS] = NPC_CORPSE;
 		if (ch->only.npc)
 			corpse->value[CORPSE_VNUM] = mob_index[GET_RNUM(ch)].virtual_number;
 		else
@@ -1492,11 +1492,11 @@ P_obj make_corpse(P_char ch, int loss)
 	}
 	else
 	{
-		e_time	       = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
+		e_time = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
 		corpse->weight = GET_WEIGHT(ch) + total_carried_weight(ch);
 		corpse->value[CORPSE_WEIGHT] = total_carried_weight(ch); /* contains */
-		corpse->value[CORPSE_FLAGS]  = PC_CORPSE;
-		corpse->value[CORPSE_PID]    = GET_PID(ch);
+		corpse->value[CORPSE_FLAGS] = PC_CORPSE;
+		corpse->value[CORPSE_PID] = GET_PID(ch);
 
 		if (IS_RACEWAR_UNDEAD(ch))
 			corpse->value[CORPSE_RACEWAR] = 3;
@@ -1515,13 +1515,13 @@ P_obj make_corpse(P_char ch, int loss)
 	account_bound_reward_prepare_player_corpse(ch, corpse);
 	if (IS_PC(ch))
 	{
-		int contents_weight=corpse->weight-GET_WEIGHT(ch);
-		corpse->value[CORPSE_WEIGHT]=contents_weight>0?contents_weight:0;
+		int contents_weight = corpse->weight - GET_WEIGHT(ch);
+		corpse->value[CORPSE_WEIGHT] = contents_weight > 0 ? contents_weight : 0;
 	}
 
 	corpse->value[CORPSE_RACE] = GET_RACE(ch);
 
-	IS_CARRYING_N(ch)  = 0;
+	IS_CARRYING_N(ch) = 0;
 	GET_CARRYING_W(ch) = 0;
 
 	set_obj_affected(corpse, e_time, TAG_OBJ_DECAY, 0);
@@ -1664,8 +1664,8 @@ P_obj make_corpse(P_char ch, int loss)
 void make_bloodstain(P_char ch)
 {
 	P_obj blood, obj, next_obj;
-	char  buf[MAX_STRING_LENGTH];
-	int   msgnum;
+	char buf[MAX_STRING_LENGTH];
+	int msgnum;
 	const char *long_desc[] = { "&+rFresh blood splatters cover the area.&n",
 				    "&+rA few drops of fresh blood are scattered around the area.&n",
 				    "&+rPuddles of fresh blood cover the ground.&n",
@@ -1699,7 +1699,7 @@ void make_bloodstain(P_char ch)
 
 	blood->str_mask = (STRUNG_DESC1);
 
-	msgnum		= number(0, 3);
+	msgnum = number(0, 3);
 	blood->value[0] = msgnum;
 	blood->value[1] = BLOOD_FRESH;
 	snprintf(buf, MAX_STRING_LENGTH, "%s", long_desc[msgnum]);
@@ -1730,7 +1730,7 @@ void make_bloodstain(P_char ch)
  */
 void change_alignment(P_char ch, P_char victim)
 {
-	int   i, a_al, v_al, change = 0;
+	int i, a_al, v_al, change = 0;
 	P_obj obj;
 
 	if (CHAR_IN_ARENA(ch) || CHAR_IN_ARENA(victim) || IS_NPC(ch))
@@ -1980,7 +1980,7 @@ void change_alignment(P_char ch, P_char victim)
 
 void death_cry(P_char ch)
 {
-	int  door, was_in, room;
+	int door, was_in, room;
 	char buf[MAX_INPUT_LENGTH];
 
 	switch (number(1, 5))
@@ -2041,7 +2041,7 @@ void death_cry(P_char ch)
 
 void death_rattle(P_char ch)
 {
-	int  door, was_in, room;
+	int door, was_in, room;
 	char buf[MAX_INPUT_LENGTH];
 
 	act("&+rYou feel a carnal satisfaction as $n&+r's gurgling and choking signals $s demise.&n",
@@ -2070,7 +2070,7 @@ void death_rattle(P_char ch)
 P_char ForceReturn(P_char ch)
 {
 	P_char true_id, t_ch = ch;
-	int    is_avatar = FALSE, virt;
+	int is_avatar = FALSE, virt;
 
 	if (!t_ch)
 		return NULL;
@@ -2258,12 +2258,12 @@ bool in_their_zone(P_char mob)
 void kill_gain(P_char ch, P_char victim);
 void die(P_char ch, P_char killer)
 {
-	char		      buf[MAX_STRING_LENGTH], abuf[10], buf2[MAX_STRING_LENGTH];
-	P_char		      tmp_ch, eth_ch;
-	P_obj		      tempobj;
+	char buf[MAX_STRING_LENGTH], abuf[10], buf2[MAX_STRING_LENGTH];
+	P_char tmp_ch, eth_ch;
+	P_obj tempobj;
 	struct affected_type *af, *next_af;
-	P_obj		      corpse = NULL;
-	int		      loss   = 0, diff, x, i, j;
+	P_obj corpse = NULL;
+	int loss = 0, diff, x, i, j;
 
 	if (!ch)
 	{
@@ -2465,12 +2465,12 @@ void die(P_char ch, P_char killer)
 	{
 		if (IS_PC(ch) && (GET_RACE(ch) == RACE_LICH))
 		{
-			long  tmp = loss = GET_EXP(ch);
+			long tmp = loss = GET_EXP(ch);
 			float percentage =
 				new_exp_table[GET_LEVEL(ch)] / new_exp_table[GET_LEVEL(ch) + 1];
 			lose_level(ch);
 			// This is complicated because 10M exp at 51 is not the same as 10M exp at 50/52/etc.
-			tmp	    = tmp * percentage;
+			tmp = tmp * percentage;
 			GET_EXP(ch) = MAX(1, tmp);
 			// Amount of exp lost is all exp to lose level + the portion lost into the level below.
 			loss += new_exp_table[GET_LEVEL(ch)] - GET_EXP(ch);
@@ -2620,9 +2620,11 @@ void die(P_char ch, P_char killer)
 			}
 		}
 
-		studioproc_kill(killer, ch); /* before the ACT_SPEC_DIE block, which can return early */
+		studioproc_kill(killer,
+				ch); /* before the ACT_SPEC_DIE block, which can return early */
 
-		if (IS_NPC(ch) && (ch->specials.act & ACT_SPEC_DIE) && (ch->specials.act & ACT_SPEC))
+		if (IS_NPC(ch) && (ch->specials.act & ACT_SPEC_DIE) &&
+		    (ch->specials.act & ACT_SPEC))
 		{
 			if (!mob_index[GET_RNUM(ch)].func.mob)
 			{
@@ -2686,24 +2688,38 @@ void die(P_char ch, P_char killer)
 				ch->only.pc->numb_deaths++;
 			}
 			// Hardcore chars are permanently removed at the configured death count.
-			if (IS_HARDCORE(ch) && hardcore_config_death_is_final(ch->only.pc->numb_deaths))
+			if (IS_HARDCORE(ch) &&
+			    hardcore_config_death_is_final(ch->only.pc->numb_deaths))
 			{
 				update_pos(ch);
 				if (hardcore_config_get()->death_hall_of_fame)
 					checkHallOfFame(ch, GET_NAME(killer));
 				// save killer to database for hall of fame
 				if (hardcore_config_get()->death_record_killer)
-					db_query("UPDATE player_data SET killed_by = '%s' WHERE pid = %d", GET_NAME(killer), GET_PID(ch));
+					db_query(
+						"UPDATE player_data SET killed_by = '%s' WHERE pid = %d",
+						GET_NAME(killer), GET_PID(ch));
 				if (hardcore_config_get()->death_messages_enabled)
 				{
-					act("&+LThe &+rhand &+Lof &+WGod &+Lgrabs &+R$n &+Lby the &+cthroat&+L.&N", FALSE, ch, 0, 0, TO_ROOM);
-					act("&+LThe &+rhand &+Lof &+WGod &+Ltears &+R$n&+L's &+wsoul &+Lfrom this &+cplane &+Lof existence.&N", FALSE, ch, 0, 0, TO_ROOM);
-					act("&+L$n's &+cbody &+Llands on the ground in a crumpled heap, &+wsoul &+Lgone forever.&N", FALSE, ch, 0, 0, TO_ROOM);
+					act("&+LThe &+rhand &+Lof &+WGod &+Lgrabs &+R$n &+Lby the &+cthroat&+L.&N",
+					    FALSE, ch, 0, 0, TO_ROOM);
+					act("&+LThe &+rhand &+Lof &+WGod &+Ltears &+R$n&+L's &+wsoul &+Lfrom this &+cplane &+Lof existence.&N",
+					    FALSE, ch, 0, 0, TO_ROOM);
+					act("&+L$n's &+cbody &+Llands on the ground in a crumpled heap, &+wsoul &+Lgone forever.&N",
+					    FALSE, ch, 0, 0, TO_ROOM);
 
-					send_to_char("&+LThe &+rhand &+Lof &+WGod &+Lgrabs &+RYou &+Lby the &+cthroat&+L.&N\r\n", ch);
-					send_to_char("&+LThe &+rhand &+Lof &+WGod &+Ltears &+RYour&+L &+wsoul &+Lfrom this &+cplane &+Lof existence.&N\r\n", ch);
-					send_to_char("&+WGod&+L stands before you and says '&+wYou have died your last death, Your existence shall not continue.&+L'\r\n", ch);
-					send_to_char("&+WGod&+L says '&+wYou have died a miserable soul with a value of &+R&+w.&+L'&N\r\n", ch);
+					send_to_char(
+						"&+LThe &+rhand &+Lof &+WGod &+Lgrabs &+RYou &+Lby the &+cthroat&+L.&N\r\n",
+						ch);
+					send_to_char(
+						"&+LThe &+rhand &+Lof &+WGod &+Ltears &+RYour&+L &+wsoul &+Lfrom this &+cplane &+Lof existence.&N\r\n",
+						ch);
+					send_to_char(
+						"&+WGod&+L stands before you and says '&+wYou have died your last death, Your existence shall not continue.&+L'\r\n",
+						ch);
+					send_to_char(
+						"&+WGod&+L says '&+wYou have died a miserable soul with a value of &+R&+w.&+L'&N\r\n",
+						ch);
 				}
 
 				statuslog(ch->player.level,
@@ -2723,8 +2739,12 @@ void die(P_char ch, P_char killer)
 					if (hardcore_config_get()->death_messages_enabled)
 					{
 						// Send death messages BEFORE showing account menu - Arih
-						send_to_char("&-L&+rYou feel yourself falling to the ground.&n\r\n", ch);
-						send_to_char("&-L&+rYour soul leaves your body in the cold sleep of death...&n\r\n\r\n", ch);
+						send_to_char(
+							"&-L&+rYou feel yourself falling to the ground.&n\r\n",
+							ch);
+						send_to_char(
+							"&-L&+rYour soul leaves your body in the cold sleep of death...&n\r\n\r\n",
+							ch);
 					}
 
 					// Delete character file
@@ -2780,7 +2800,7 @@ void die(P_char ch, P_char killer)
 
 			ClearCharEvents(ch);
 			ch->specials.conditions[DISEASE_TYPE] = 0;
-			ch->specials.conditions[POISON_TYPE]  = 0;
+			ch->specials.conditions[POISON_TYPE] = 0;
 
 			/* remove all undead/druid/harpy spells */
 			for (i = 1; i <= MAX_CIRCLE; i++)
@@ -2839,7 +2859,7 @@ void die(P_char ch, P_char killer)
 	}
 	else
 	{
-		int  i, nr;
+		int i, nr;
 		char strn[MAX_STRING_LENGTH];
 
 		if (ch == killer)
@@ -2965,10 +2985,10 @@ void die(P_char ch, P_char killer)
 
 void kill_gain(P_char ch, P_char victim)
 {
-	int		      gain, XP;
-	struct group_list    *gl;
-	int		      group_size    = 0;
-	int		      highest_level = 0;
+	int gain, XP;
+	struct group_list *gl;
+	int group_size = 0;
+	int highest_level = 0;
 	struct affected_type *afp;
 
 	if (IS_PC(victim))
@@ -3142,13 +3162,13 @@ void kill_gain(P_char ch, P_char victim)
 
 void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *messages)
 {
-	int	    dam = (int)fdam;
-	P_obj	    wield;
-	P_obj	    wpn;
-	char	   *buf, buf_char[160], buf_vict[160], buf_notvict[160];
-	int	    w_percent, h_percent, max_dam = 0, w_loop, h_loop, dam2;
-	int	    msg_flags	    = messages->type;
-	static int  dam_ref[]	    = { 0, 2, 7, 10, 15, 25, 40, 55, 70, 85, 9999 };
+	int dam = (int)fdam;
+	P_obj wield;
+	P_obj wpn;
+	char *buf, buf_char[160], buf_vict[160], buf_notvict[160];
+	int w_percent, h_percent, max_dam = 0, w_loop, h_loop, dam2;
+	int msg_flags = messages->type;
+	static int dam_ref[] = { 0, 2, 7, 10, 15, 25, 40, 55, 70, 85, 9999 };
 	const char *weapon_damage[] = {
 		"",	     " feeble", " weak",    " crude",	" decent", " fine", " impressive",
 		" powerful", " mighty", " awesome", " amazing",
@@ -3183,7 +3203,7 @@ void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *
 
 	if (ch->equipment[WIELD])
 	{
-		wield	= ch->equipment[WIELD];
+		wield = ch->equipment[WIELD];
 		max_dam = ch->equipment[WIELD]->value[1] * ch->equipment[WIELD]->value[2];
 	}
 	// else if(messages->obj)
@@ -3316,8 +3336,8 @@ bool decrease_skin_counter(P_char ch, unsigned int skin)
 //   to have it this way for the help files to be correct.
 bool mangleSucceed(P_char ch, P_char victim, P_obj weap)
 {
-	bool		       skill_notch = FALSE;
-	int		       skl, wloc;
+	bool skill_notch = FALSE;
+	int skl, wloc;
 	struct damage_messages messages = { "You &+rmangle&n $S forearm with $q.",
 					    "$n &+rmangles&n you with $q.",
 					    "$n &+rmangles&n $N with $q.",
@@ -3426,10 +3446,10 @@ bool mangleSucceed(P_char ch, P_char victim, P_obj weap)
 
 int try_riposte(P_char ch, P_char victim, P_obj wpn)
 {
-	int    expertriposte = 0, victim_dead;
-	int    randomnumber  = number(1, 1000);
+	int expertriposte = 0, victim_dead;
+	int randomnumber = number(1, 1000);
 	double skl;
-	bool   npcepicriposte = FALSE;
+	bool npcepicriposte = FALSE;
 
 	if (!IS_ALIVE(victim) || !IS_ALIVE(ch))
 		return FALSE;
@@ -3676,9 +3696,9 @@ bool can_hit_target(P_char ch, P_char vict)
 	int table_2[] = { 8, 16, 32, 64, 128, 256, 512, 1024 };
 
 	P_char opponent, next_ch;
-	int    size_total    = 0;
-	int    size_max	     = 0;
-	int    num_opponents = 0;
+	int size_total = 0;
+	int size_max = 0;
+	int num_opponents = 0;
 
 	if (IS_NPC(ch) || IS_NPC(vict))
 		return TRUE;
@@ -3713,7 +3733,7 @@ bool can_hit_target(P_char ch, P_char vict)
 bool damage(P_char ch, P_char victim, double dam, int attacktype)
 {
 	struct damage_messages tmsg;
-	int		       spelltype, type, i, flags, circle;
+	int spelltype, type, i, flags, circle;
 
 	memset(&tmsg, 0, sizeof(struct damage_messages));
 
@@ -3788,12 +3808,12 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 		 struct damage_messages *messages, int *damAccumulator)
 {
 	struct damage_messages dummy_messages;
-	struct affected_type  *af;
-	struct proc_data       data;
-	P_char		       vict_group_member, next, eth_ch;
-	P_obj		       vict_weapon, item;
-	int		       result, circle, awe, i;
-	double		       levelmod = 1.0;
+	struct affected_type *af;
+	struct proc_data data;
+	P_char vict_group_member, next, eth_ch;
+	P_obj vict_weapon, item;
+	int result, circle, awe, i;
+	double levelmod = 1.0;
 
 	// Just making sure.
 	if (!ch || !victim)
@@ -3949,11 +3969,11 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 			if (obj_index[item->R_num].func.obj != NULL)
 			{
-				data.victim	= ch;
-				data.dam	= (int)dam;
+				data.victim = ch;
+				data.dam = (int)dam;
 				data.attacktype = type;
-				data.flags	= flags;
-				data.messages	= messages;
+				data.flags = flags;
+				data.messages = messages;
 
 				if ((*obj_index[item->R_num].func.obj)(item, victim, CMD_GOTNUKED,
 								       (char *)&data))
@@ -3972,11 +3992,11 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 		if (victim && IS_NPC(victim) && mob_index[GET_RNUM(victim)].func.mob &&
 		    !affected_by_spell(victim, TAG_CONJURED_PET))
 		{
-			data.victim	= ch;
-			data.dam	= (int)dam;
+			data.victim = ch;
+			data.dam = (int)dam;
 			data.attacktype = type;
-			data.flags	= flags;
-			data.messages	= messages;
+			data.flags = flags;
+			data.messages = messages;
 
 			if ((*mob_index[GET_RNUM(victim)].func.mob)(victim, ch, CMD_GOTNUKED,
 								    (char *)&data))
@@ -4168,10 +4188,10 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	///////
 
 	damage_profile damProf;
-	damProf.baseDamage   = dam;
-	damProf.addedMod     = 0.0;
+	damProf.baseDamage = dam;
+	damProf.addedMod = 0.0;
 	damProf.increasedMod = 1.0;
-	damProf.moreMod	     = 1.0;
+	damProf.moreMod = 1.0;
 
 	// accumulate modifiers into damProf
 	for (int i = 0; i < ARRAY_SIZE(spell_damage_modifiers); i++)
@@ -4235,8 +4255,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 			act("The &+Celectricity&n surges through your wet clothes paralyzing you in a shock!",
 			    FALSE, victim, 0, 0, TO_CHAR);
 			memset(&shock_af, 0, sizeof(shock_af));
-			shock_af.type	  = SPELL_LIGHTNING_BOLT;
-			shock_af.flags	  = AFFTYPE_SHORT;
+			shock_af.type = SPELL_LIGHTNING_BOLT;
+			shock_af.flags = AFFTYPE_SHORT;
 			shock_af.duration = (int)(get_property("shock.duration", 2.000 * WAIT_SEC));
 			affect_to_char(victim, &shock_af);
 		}
@@ -4248,13 +4268,13 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 int check_shields(P_char ch, P_char victim, int dam, int flags)
 {
-	int    result	     = DAM_NONEDEAD;
+	int result = DAM_NONEDEAD;
 	double soulshielddam = get_property("damage.shield.soulshield", 0.400);
-	double negshielddam  = get_property("damage.shield.negativeshield", 0.450);
-	double fshield	     = get_property("damage.shield.fireshield", 0.750);
-	double cshield	     = get_property("damage.shield.coldshield", 0.750);
-	double lshield	     = get_property("damage.shield.lightningshield", 0.750);
-	double ifshield	     = get_property("damage.shield.infernalfuryshield", 0.90);
+	double negshielddam = get_property("damage.shield.negativeshield", 0.450);
+	double fshield = get_property("damage.shield.fireshield", 0.750);
+	double cshield = get_property("damage.shield.coldshield", 0.750);
+	double lshield = get_property("damage.shield.lightningshield", 0.750);
+	double ifshield = get_property("damage.shield.infernalfuryshield", 0.90);
 
 	uint sflags = SPLDAM_GLOBE | SPLDAM_NODEFLECT | RAWDAM_TRANCEVAMP;
 
@@ -4391,9 +4411,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 					{
 						if (!check_freedom_of_movement(victim, false))
 						{
-							af.type	      = SPELL_MINOR_PARALYSIS;
+							af.type = SPELL_MINOR_PARALYSIS;
 							af.bitvector2 = AFF2_MINOR_PARALYSIS;
-							af.duration   = PULSE_VIOLENCE;
+							af.duration = PULSE_VIOLENCE;
 							affect_to_char(ch, &af);
 							act("&+wYour entire body freezes upon contact with the &+Wholy aura&n &+wsurrounding&n $N!",
 							    FALSE, ch, 0, victim, TO_CHAR);
@@ -4429,7 +4449,7 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 				case 3:
 					if (!affected_by_spell(ch, SPELL_CURSE))
 					{
-						af.type	    = SPELL_CURSE;
+						af.type = SPELL_CURSE;
 						af.location = APPLY_SAVING_SPELL;
 						af.modifier = 10;
 						af.duration = 7 * PULSE_VIOLENCE;
@@ -4546,7 +4566,7 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 		}
 		else
 		{
-			dam    = MAX(1, (int)(dam * soulshielddam));
+			dam = MAX(1, (int)(dam * soulshielddam));
 			result = spell_damage(victim, ch, dam, SPLDAM_HOLY,
 					      sflags | SPLDAM_GRSPIRIT, &soulshield);
 		}
@@ -4579,7 +4599,7 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 	if (result == DAM_NONEDEAD && IS_AFFECTED5(victim, AFF5_THORNSKIN))
 	{
 		struct affected_type *afp = get_spell_from_char(victim, SPELL_THORNSKIN);
-		double		      thornDamage =
+		double thornDamage =
 			afp == NULL ?
 				2 :
 				dice(MAX(2, afp->level / 10),
@@ -4629,11 +4649,11 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 		 int *damAccumulator)
 {
 	struct damage_messages dummy_messages;
-	unsigned int	       skin;
-	int		       vamp_dam, i, result, shld_result, ac;
-	float		       reduction;
-	char		       buffer[MAX_STRING_LENGTH];
-	bool		       dragonfist;
+	unsigned int skin;
+	int vamp_dam, i, result, shld_result, ac;
+	float reduction;
+	char buffer[MAX_STRING_LENGTH];
+	bool dragonfist;
 
 	// float    f_cur_hit, f_max_hit, f_skill = 0;  <-- ill use those for max_str later
 
@@ -4798,37 +4818,37 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 	if (affected_by_spell(victim, SPELL_STONE_SKIN) && !(flags & PHSDAM_NOREDUCE))
 	{
 		reduction = 1. - get_property("damage.reduction.stoneSkin", 0.75);
-		skin	  = SPELL_STONE_SKIN;
+		skin = SPELL_STONE_SKIN;
 	}
 	else if (affected_by_spell(victim, SPELL_BIOFEEDBACK) && !(flags & PHSDAM_NOREDUCE))
 	{
 		reduction = 1. - get_property("damage.reduction.biofeedback", 0.65);
-		skin	  = SPELL_BIOFEEDBACK;
+		skin = SPELL_BIOFEEDBACK;
 	}
 	else if (affected_by_spell(victim, SPELL_SHADOW_SHIELD) && !(flags & PHSDAM_NOREDUCE))
 	{
 		reduction = 1. - get_property("damage.reduction.stoneSkin", 0.75);
-		skin	  = SPELL_SHADOW_SHIELD;
+		skin = SPELL_SHADOW_SHIELD;
 	}
 	else if (affected_by_spell(victim, SPELL_IRONWOOD) && !(flags & PHSDAM_NOREDUCE))
 	{
 		reduction = 1. - get_property("damage.reduction.ironwood", 0.80);
-		skin	  = SPELL_IRONWOOD;
+		skin = SPELL_IRONWOOD;
 	}
 	else if (affected_by_spell(victim, SPELL_ICE_ARMOR) && !(flags & PHSDAM_NOREDUCE))
 	{
 		reduction = 1. - get_property("damage.reduction.icearmor", .75);
-		skin	  = SPELL_ICE_ARMOR;
+		skin = SPELL_ICE_ARMOR;
 	}
 	else if (affected_by_spell(victim, SPELL_NEG_ARMOR) && !(flags & PHSDAM_NOREDUCE))
 	{
 		reduction = 1. - get_property("damage.reduction.negarmor", .75);
-		skin	  = SPELL_NEG_ARMOR;
+		skin = SPELL_NEG_ARMOR;
 	}
 	else if (affected_by_spell(victim, SPELL_DRAKESCALE_AEGIS) && !(flags & PHSDAM_NOREDUCE))
 	{
 		reduction = 1. - get_property("damage.reduction.drakescaleAegis", 0.75);
-		skin	  = SPELL_DRAKESCALE_AEGIS;
+		skin = SPELL_DRAKESCALE_AEGIS;
 	}
 	else
 	{
@@ -4944,9 +4964,9 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 
 void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 {
-	int		   dam = (int)fdam, vamped = 0, wdam;
+	int dam = (int)fdam, vamped = 0, wdam;
 	struct group_list *group;
-	P_char		   tch;
+	P_char tch;
 	double temp_dam = 0, bt_gain = 0, fcap = 0, fhits = 0, sac_gain = 0, can_mana = 0;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || (dam < 1))
@@ -5162,7 +5182,7 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if (!vamped && (flags & PHSDAM_HELLFIRE) && IS_AFFECTED4(ch, AFF4_HELLFIRE))
 	{
 		P_obj weapon = ch->equipment[PRIMARY_WEAPON];
-		wdam	     = 1;
+		wdam = 1;
 
 		if (IS_NPC(ch))
 			wdam = MIN(dam, dice(ch->points.damnodice, MAX(1, ch->points.damsizedice)));
@@ -5195,19 +5215,19 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	{
 		if (IS_DRACOLICH(ch))
 		{
-			fhits  = dam * dam_factor[DF_DRACOLICHVAMP];
+			fhits = dam * dam_factor[DF_DRACOLICHVAMP];
 			vamped = vamp(ch, fhits, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
 		}
 		if (IS_NPC(ch))
 		{
-			fhits  = dam * dam_factor[DF_NPCVAMP];
+			fhits = dam * dam_factor[DF_NPCVAMP];
 			vamped = vamp(ch, fhits, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
 		}
 		// 10 dam * .3 = 3 points of vamp minimum. 'cause I said so.
 		else if (dam >= 12 && IS_PC(ch))
 		{
 			fhits = dam * dam_factor[DF_UNDEADVAMP];
-			fcap  = GET_MAX_HIT(ch);
+			fcap = GET_MAX_HIT(ch);
 			// Liches vamp from spells.
 			if (flags & SPLDAM_SPELL && GET_RACE(ch) == RACE_LICH)
 				fcap *= VAMPPERCENT(ch);
@@ -5279,12 +5299,12 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 	       int *damAccumulator)
 {
 	struct affected_type *af, *next_af;
-	struct group_list    *gl;
-	char		      buffer[MAX_STRING_LENGTH];
-	P_char		      tch, orig;
-	int		      i, nr, max_hit, diff, room, new_stat, act_flag, soulWasTrapped = 0;
-	int		      group_size = num_group_members_in_room(victim);
-	float		      mod, hpperc, zerkmod;
+	struct group_list *gl;
+	char buffer[MAX_STRING_LENGTH];
+	P_char tch, orig;
+	int i, nr, max_hit, diff, room, new_stat, act_flag, soulWasTrapped = 0;
+	int group_size = num_group_members_in_room(victim);
+	float mod, hpperc, zerkmod;
 
 	if (!ch)
 	{
@@ -5337,10 +5357,10 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		///////
 
 		damage_profile damProf;
-		damProf.baseDamage   = dam;
-		damProf.addedMod     = 0.0;
+		damProf.baseDamage = dam;
+		damProf.addedMod = 0.0;
 		damProf.increasedMod = 1.0;
-		damProf.moreMod	     = 1.0;
+		damProf.moreMod = 1.0;
 
 		// accumulate modifiers into damProf
 		for (int i = 0; i < ARRAY_SIZE(raw_damage_modifiers); i++)
@@ -5666,7 +5686,7 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 
 				// send_to_char("no pvp here! die and make portal\r\n", victim);
 				P_obj portal;
-				portal		 = read_object(400220, VIRTUAL);
+				portal = read_object(400220, VIRTUAL);
 				portal->value[0] = world[victim->in_room].number;
 				snprintf(bufpc, MAX_STRING_LENGTH, "%s %s", GET_NAME(victim),
 					 "corpseportal portal");
@@ -5945,7 +5965,7 @@ int calculate_thac_zero(P_char ch, int skill)
 
 int chance_to_hit(P_char ch, P_char victim, int skill, P_obj weapon)
 {
-	int		      to_hit, victim_ac;
+	int to_hit, victim_ac;
 	struct affected_type *af;
 
 	if (!IS_ALIVE(ch))
@@ -6023,7 +6043,7 @@ int chance_to_hit(P_char ch, P_char victim, int skill, P_obj weapon)
 
 bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
 {
-	struct affected_type   aff, *af;
+	struct affected_type aff, *af;
 	struct damage_messages messages = {
 		"$N screams as you sink five fingers into soft spots in $S shoulder.",
 		"You feel on fire as $n's hard fingers strike a nerve in your shoulder.",
@@ -6045,9 +6065,9 @@ bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
 		if (!af)
 		{
 			memset(&aff, 0, sizeof(aff));
-			aff.type     = TAG_PRESSURE_POINTS;
-			aff.flags    = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL |
-				       AFFTYPE_NOAPPLY;
+			aff.type = TAG_PRESSURE_POINTS;
+			aff.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL |
+				    AFFTYPE_NOAPPLY;
 			aff.modifier = 1;
 			aff.duration = (10 * WAIT_SEC);
 			affect_to_char(victim, &aff);
@@ -6061,9 +6081,9 @@ bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
 			if (!IS_AFFECTED2(victim, AFF2_SLOW))
 			{
 				memset(&aff, 0, sizeof(aff));
-				aff.type       = SPELL_SLOW;
-				aff.flags      = AFFTYPE_SHORT | AFFTYPE_NODISPEL;
-				aff.duration   = (4 * WAIT_SEC);
+				aff.type = SPELL_SLOW;
+				aff.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL;
+				aff.duration = (4 * WAIT_SEC);
 				aff.bitvector2 = AFF2_SLOW;
 				affect_to_char(victim, &aff);
 
@@ -6105,7 +6125,7 @@ bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
 void event_tainted_blade(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	int blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
-	struct affected_type  *af;
+	struct affected_type *af;
 	struct damage_messages tainted_messages = {
 		"$N &+Lstruggles against the &+wtaint &+Lcoursing through $S body.&n",
 		"Beads of sweat form on your forehead as you battle the taint.",
@@ -6150,7 +6170,7 @@ void event_tainted_blade(P_char ch, P_char victim, P_obj obj, void *data)
 bool tainted_blade(P_char ch, P_char victim)
 {
 	int blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
-	struct affected_type   af, *old_af;
+	struct affected_type af, *old_af;
 	struct damage_messages tainted_messages = {
 		"$N &+wpales &+Las your &+wtainted &+Lweapon strikes&n $M.",
 		"&+LYou &+rscream &+Las&n $n's&+L $q slams into your body.&n",
@@ -6185,7 +6205,7 @@ bool tainted_blade(P_char ch, P_char victim)
 			return FALSE;
 		}
 		memset(&af, 0, sizeof(af));
-		af.type	    = blade_skill;
+		af.type = blade_skill;
 		af.duration = 1;
 		af.modifier = 1 + GET_CHAR_SKILL(ch, blade_skill) / 33;
 		affect_to_char(victim, &af);
@@ -6229,11 +6249,11 @@ int battle_frenzy(P_char, P_char);
 
 int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *messages, int dam)
 {
-	int		     skl = GET_CHAR_SKILL(ch, SKILL_ANATOMY);
+	int skl = GET_CHAR_SKILL(ch, SKILL_ANATOMY);
 	struct affected_type af;
 
 	memset(&af, 0, sizeof(af));
-	af.type	 = SKILL_ANATOMY;
+	af.type = SKILL_ANATOMY;
 	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_SHORT;
 
 	if (IS_CONSTRUCT(victim))
@@ -6294,9 +6314,9 @@ int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *me
 				 "$n's%%s %s reached $N's arm severing tendons and muscles.",
 				 attack_hit_text[msg].singular);
 			messages->type = DAMMSG_HIT_EFFECT;
-			af.duration    = victim->specials.combat_tics + 1;
-			af.modifier    = -10 - skl / 10;
-			af.location    = APPLY_DAMROLL;
+			af.duration = victim->specials.combat_tics + 1;
+			af.modifier = -10 - skl / 10;
+			af.location = APPLY_DAMROLL;
 			affect_to_char(victim, &af);
 		}
 		return dam;
@@ -6340,8 +6360,8 @@ int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *me
 				 "$n's%%s %s reached $N's ear causing a gush of blood.",
 				 attack_hit_text[msg].singular);
 			messages->type = DAMMSG_HIT_EFFECT;
-			af.duration    = 10 * PULSE_VIOLENCE;
-			af.bitvector4  = AFF4_DEAF;
+			af.duration = 10 * PULSE_VIOLENCE;
+			af.bitvector4 = AFF4_DEAF;
 			affect_to_char(victim, &af);
 		}
 		goto regular;
@@ -6439,21 +6459,21 @@ int required_weapon_skill(P_obj wpn)
 	 */
 bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 {
-	P_char		       tch, mount, gvict;
-	int		       msg, victim_ac, to_hit, diceroll, wpn_skill, sic, tmp, wpn_skill_num;
-	double		       dam;
-	int		       room, pos;
-	int		       vs_skill = GET_CHAR_SKILL(ch, SKILL_VICIOUS_STRIKE);
-	struct affected_type   aff, ir;
-	struct affected_type  *af;
-	char		       attacker_msg[512];
-	char		       victim_msg[512];
-	char		       room_msg[512];
+	P_char tch, mount, gvict;
+	int msg, victim_ac, to_hit, diceroll, wpn_skill, sic, tmp, wpn_skill_num;
+	double dam;
+	int room, pos;
+	int vs_skill = GET_CHAR_SKILL(ch, SKILL_VICIOUS_STRIKE);
+	struct affected_type aff, ir;
+	struct affected_type *af;
+	char attacker_msg[512];
+	char victim_msg[512];
+	char room_msg[512];
 	struct damage_messages messages;
-	struct obj_affect     *o_af;
-	int		       i, blade_skill, chance;
-	static bool	       vicious_hit = false;
-	int		       devcrit	   = number(1, 100);
+	struct obj_affect *o_af;
+	int i, blade_skill, chance;
+	static bool vicious_hit = false;
+	int devcrit = number(1, 100);
 
 #ifdef FIGHT_DEBUG
 	char buf[512];
@@ -6487,7 +6507,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		return FALSE;
 	}
 
-	room  = ch->in_room;
+	room = ch->in_room;
 	mount = get_linked_char(victim, LNK_RIDING);
 
 	if (mount)
@@ -6514,7 +6534,9 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	if (weapon && weapon->type != ITEM_WEAPON)
 		weapon = NULL;
 
-	if (plushit_blocks(ch, victim, weapon)) /* AFF3_SILVER / AFF3_PLUS* enforcement; no-op unless enabled in lib/duris.properties */
+	if (plushit_blocks(
+		    ch, victim,
+		    weapon)) /* AFF3_SILVER / AFF3_PLUS* enforcement; no-op unless enabled in lib/duris.properties */
 		return FALSE;
 
 	if ((IS_PC(ch) || IS_PC_PET(ch)) && IS_PC(victim) && !IS_AFFECTED5(ch, AFF5_NOT_OFFENSIVE))
@@ -6647,7 +6669,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			{
 				// need to know this, as quick-step crit misses won't fumble to ground
 				bIsQuickStepMiss = TRUE;
-				sic		 = 1;
+				sic = 1;
 			}
 			else
 				sic = 0;
@@ -6764,10 +6786,10 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		act("You watch in glee as $N looks dazzled.", FALSE, victim, 0, ch, TO_CHAR);
 
 		memset(&af, 0, sizeof(af));
-		af.type	      = SPELL_DAZZLE;
+		af.type = SPELL_DAZZLE;
 		af.bitvector5 = AFF5_DAZZLEE;
-		af.duration   = PULSE_VIOLENCE * 3;
-		af.flags      = AFFTYPE_SHORT;
+		af.duration = PULSE_VIOLENCE * 3;
+		af.flags = AFFTYPE_SHORT;
 		affect_to_char_with_messages(ch, &af, "You no longer see spots.", NULL);
 	}
 
@@ -6775,7 +6797,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	if (IS_NPC(ch) && GET_VNUM(ch) == 250)
 	{
 		to_hit = 0;
-		sic    = 0;
+		sic = 0;
 	}
 
 	if (diceroll >= to_hit && sic != -1)
@@ -6835,9 +6857,9 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			sic = 0;
 
 			bzero(&ir, sizeof(ir));
-			ir.type	    = SKILL_INDOMITABLE_RAGE;
+			ir.type = SKILL_INDOMITABLE_RAGE;
 			ir.duration = 5;
-			ir.flags    = AFFTYPE_SHORT;
+			ir.flags = AFFTYPE_SHORT;
 			// hitroll
 			ir.modifier = 5;
 			ir.location = APPLY_HITROLL;
@@ -7051,9 +7073,9 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 
 	memset(&messages, 0, sizeof(struct damage_messages));
 	messages.attacker = attacker_msg;
-	messages.victim	  = victim_msg;
-	messages.room	  = room_msg;
-	messages.obj	  = weapon;
+	messages.victim = victim_msg;
+	messages.room = room_msg;
+	messages.obj = weapon;
 
 	if (vs_skill > 0)
 	{
@@ -7199,8 +7221,8 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 
 	tmp = melee_death_messages_table[2 * msg + 1].attacker ? number(0, 1) : 0;
 	messages.death_attacker = melee_death_messages_table[2 * msg + tmp].attacker;
-	messages.death_victim	= melee_death_messages_table[2 * msg + tmp].victim;
-	messages.death_room	= melee_death_messages_table[2 * msg + tmp].room;
+	messages.death_victim = melee_death_messages_table[2 * msg + tmp].victim;
+	messages.death_room = melee_death_messages_table[2 * msg + tmp].room;
 
 	//!!!
 	// | RAWDAM_NOEXP,   // hitting yields normal exp -Odorf &messages)
@@ -7264,9 +7286,9 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 {
 	struct extra_descr_data *ex;
-	int			 spells[3];
-	int			 room;
-	int			 count;
+	int spells[3];
+	int room;
+	int count;
 
 	if (!obj->value[5] || obj->value[7] <= 0)
 	{
@@ -7295,7 +7317,7 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 			act(ex->description, FALSE, ch, obj, victim, TO_NOTVICT | ACT_NOEOL);
 
 	count = 0;
-	room  = ch->in_room;
+	room = ch->in_room;
 	if ((spells[0] = obj->value[5] % 1000))
 		count++;
 	if ((spells[1] = obj->value[5] % 1000000 / 1000))
@@ -7391,7 +7413,7 @@ void set_fighting(P_char ch, P_char vict)
 {
 	P_char victim = vict;
 	P_char tch;
-	char   Gbuf[10];
+	char Gbuf[10];
 
 	if ((ch == victim) || !SanityCheck(ch, "set_fighting - ch") ||
 	    !SanityCheck(victim, "set_fighting - victim"))
@@ -7484,7 +7506,7 @@ void set_fighting(P_char ch, P_char vict)
 	if (affected_by_spell(ch, SPELL_CEGILUNE_BLADE))
 	{
 		struct affected_type *afp = get_spell_from_char(ch, SPELL_CEGILUNE_BLADE);
-		afp->modifier		  = 0;
+		afp->modifier = 0;
 	}
 
 	/*
@@ -7496,9 +7518,9 @@ void set_fighting(P_char ch, P_char vict)
 		strcpy(Gbuf, "q\n");
 		show_string(victim->desc, Gbuf);
 	}
-	GET_OPPONENT(ch)	   = victim;
+	GET_OPPONENT(ch) = victim;
 	ch->specials.next_fighting = combat_list;
-	combat_list		   = ch;
+	combat_list = ch;
 
 	if (ch->in_room >= 0)
 		gmcp_mark_room_dirty(ch->in_room);
@@ -7574,7 +7596,7 @@ void set_fighting(P_char ch, P_char vict)
 void set_destroying(P_char ch, P_obj obj)
 {
 	P_char tch;
-	char   Gbuf[10];
+	char Gbuf[10];
 
 	if (!SanityCheck(ch, "set_destroying - ch"))
 		return;
@@ -7623,12 +7645,12 @@ void set_destroying(P_char ch, P_obj obj)
 	if (affected_by_spell(ch, SPELL_CEGILUNE_BLADE))
 	{
 		struct affected_type *afp = get_spell_from_char(ch, SPELL_CEGILUNE_BLADE);
-		afp->modifier		  = 0;
+		afp->modifier = 0;
 	}
 
-	ch->specials.destroying_obj  = obj;
+	ch->specials.destroying_obj = obj;
 	ch->specials.next_destroying = destroying_list;
-	destroying_list		     = ch;
+	destroying_list = ch;
 
 	if (!IS_DRAGOON(ch))
 		stop_memorizing(ch);
@@ -7675,7 +7697,7 @@ void MoveAllAttackers(P_char ch, P_char v)
 void retarget_event(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	P_char target;
-	char   buf[255];
+	char buf[255];
 
 	if (!ch)
 		return;
@@ -7757,7 +7779,7 @@ int leapSucceed(P_char victim, P_char attacker)
 int dodgeSucceed(P_char char_dodger, P_char attacker, P_obj wpn)
 {
 	P_char mount;
-	int    percent = 0, learned = 0, minimum = 0;
+	int percent = 0, learned = 0, minimum = 0;
 
 	if (!(char_dodger) || !(attacker) || IS_IMMOBILE(char_dodger))
 		return 0;
@@ -7942,8 +7964,8 @@ int dodgeSucceed(P_char char_dodger, P_char attacker, P_obj wpn)
 
 int blockSucceed(P_char victim, P_char attacker, P_obj wpn)
 {
-	int   learned, attackerweaponskill, percent;
-	int   room = victim->in_room;
+	int learned, attackerweaponskill, percent;
+	int room = victim->in_room;
 	P_obj shield;
 
 	if (!(attacker) || !(victim) || !IS_ALIVE(victim) || !IS_ALIVE(attacker))
@@ -8081,8 +8103,8 @@ int MonkRiposte(P_char victim, P_char attacker, P_obj wpn)
 {
 	// int percent = 0, learned = 0; // learned was never set, broke minimum floor for riposte
 	int percent = 0, learned;
-	int skl	    = GET_CHAR_SKILL(victim, SKILL_MARTIAL_ARTS);
-	learned	    = skl; // this sets min riposte chance based on martial arts skill
+	int skl = GET_CHAR_SKILL(victim, SKILL_MARTIAL_ARTS);
+	learned = skl; // this sets min riposte chance based on martial arts skill
 
 	if (!(attacker) || !(victim) || !GET_CLASS(victim, CLASS_MONK) || !IS_ALIVE(victim) ||
 	    !(skl) || !IS_ALIVE(attacker) || IS_IMMOBILE(victim) || IS_BLIND(victim) ||
@@ -8171,11 +8193,11 @@ int MonkRiposte(P_char victim, P_char attacker, P_obj wpn)
 
 int parrySucceed(P_char victim, P_char attacker, P_obj wpn)
 {
-	int  learnedvictim = GET_CHAR_SKILL(victim, SKILL_PARRY);
-	int  learnedattacker;
-	int  blindfightskl = GET_CHAR_SKILL(victim, SKILL_BLINDFIGHTING);
-	bool npcepicparry  = false;
-	int  expertparry   = 0;
+	int learnedvictim = GET_CHAR_SKILL(victim, SKILL_PARRY);
+	int learnedattacker;
+	int blindfightskl = GET_CHAR_SKILL(victim, SKILL_BLINDFIGHTING);
+	bool npcepicparry = false;
+	int expertparry = 0;
 
 	if (!IS_ALIVE(victim) || !IS_ALIVE(attacker))
 		return FALSE;
@@ -8265,7 +8287,7 @@ int parrySucceed(P_char victim, P_char attacker, P_obj wpn)
 		    GET_CLASS(victim, CLASS_RANGER))
 		{
 			learnedvictim = (int)(learnedvictim * 1.25);
-			npcepicparry  = TRUE;
+			npcepicparry = TRUE;
 		}
 	}
 
@@ -8481,12 +8503,12 @@ void stop_fighting(P_char ch)
 	}
 
 	ch->specials.next_fighting = NULL;
-	GET_OPPONENT(ch)	   = NULL;
+	GET_OPPONENT(ch) = NULL;
 
 	if (affected_by_spell(ch, SPELL_CEGILUNE_BLADE))
 	{
 		struct affected_type *afp = get_spell_from_char(ch, SPELL_CEGILUNE_BLADE);
-		afp->modifier		  = 0;
+		afp->modifier = 0;
 	}
 
 	if (GET_CHAR_SKILL(ch, SKILL_LANCE_CHARGE) != 0)
@@ -8527,12 +8549,12 @@ void stop_destroying(P_char ch)
 	}
 
 	ch->specials.next_destroying = NULL;
-	ch->specials.destroying_obj  = NULL;
+	ch->specials.destroying_obj = NULL;
 }
 
 void event_windstrom(P_char ch, P_char vict, char *args)
 {
-	int		       hits;
+	int hits;
 	struct damage_messages messages = {
 		"$N &+RSCR&+rEA&+RMS &nin pain as their body is filled with a sudden rush of &+rWa&+yrm&+rth!",
 		"You howl in pain as the intense &+rWa&+yrm&+rth fills your body with intense &+MPAIN!",
@@ -8553,7 +8575,7 @@ void event_windstrom(P_char ch, P_char vict, char *args)
 
 int calculate_attacks(P_char ch, int attacks[])
 {
-	int   number_attacks = 0;
+	int number_attacks = 0;
 	P_obj weapon;
 
 	if (IS_AFFECTED5(ch, AFF5_NOT_OFFENSIVE) || !IS_ALIVE(GET_OPPONENT(ch)))
@@ -8561,9 +8583,9 @@ int calculate_attacks(P_char ch, int attacks[])
 
 	if (GET_CLASS(ch, CLASS_MONK))
 	{
-		bool fighting_pc      = GET_OPPONENT(ch) ? IS_PC(GET_OPPONENT(ch)) : FALSE;
-		int  num_atts	      = MonkNumberOfAttacks(ch);
-		int  weight_threshold = GET_C_STR(ch) / 2;
+		bool fighting_pc = GET_OPPONENT(ch) ? IS_PC(GET_OPPONENT(ch)) : FALSE;
+		int num_atts = MonkNumberOfAttacks(ch);
+		int weight_threshold = GET_C_STR(ch) / 2;
 
 		if (!IS_TRUSTED(ch) && (total_carried_weight(ch) >= weight_threshold) && IS_PC(ch))
 		{
@@ -8677,7 +8699,7 @@ int calculate_attacks(P_char ch, int attacks[])
 
 		if (GET_SPEC(ch, CLASS_CLERIC, SPEC_ZEALOT))
 		{
-			int		     zealproc;
+			int zealproc;
 			struct affected_type af;
 			if (GET_C_STR(ch) > number(1, 340))
 			{
@@ -8694,7 +8716,7 @@ int calculate_attacks(P_char ch, int attacks[])
 					af.duration = 50;
 					af.location = APPLY_STR_MAX;
 					af.modifier = bonus;
-					af.flags    = AFFTYPE_SHORT;
+					af.flags = AFFTYPE_SHORT;
 					affect_to_char(ch, &af);
 
 					act("&nThe power of your &+Wgod&n suddenly fills your body and you feel &+BMUCH&n stronger!&n",
@@ -8723,7 +8745,7 @@ int calculate_attacks(P_char ch, int attacks[])
 					af.duration = 50;
 					af.location = APPLY_STR_MAX;
 					af.modifier = bonus;
-					af.flags    = AFFTYPE_SHORT;
+					af.flags = AFFTYPE_SHORT;
 					affect_to_char(ch, &af);
 
 					act("&nThe power of your &+Wgod&n suddenly fills your body and you feel &+BMUCH&n stronger!&n",
@@ -9072,23 +9094,23 @@ int calculate_attacks(P_char ch, int attacks[])
 #define MAX_ATTACKS 256
 void perform_violence(void)
 {
-	P_char			ch, opponent;
-	char			GBuf1[MAX_STRING_LENGTH];
-	struct affected_type   *af, *next_af;
-	struct affected_type	aff;
-	int			attacks[MAX_ATTACKS];
-	int			number_attacks, real_attacks, div_attacks;
-	int			num_hits, damAccumulator;
-	long			time_now;
-	int			i, room, skill;
-	std::set<int>		room_rnums;
+	P_char ch, opponent;
+	char GBuf1[MAX_STRING_LENGTH];
+	struct affected_type *af, *next_af;
+	struct affected_type aff;
+	int attacks[MAX_ATTACKS];
+	int number_attacks, real_attacks, div_attacks;
+	int num_hits, damAccumulator;
+	long time_now;
+	int i, room, skill;
+	std::set<int> room_rnums;
 	std::set<int>::iterator it;
-	int			door, nearby_room;
-	P_char			tmp_ch;
-	bool			melee_exp_pulse;
+	int door, nearby_room;
+	P_char tmp_ch;
+	bool melee_exp_pulse;
 	// loop through everyone fighting
 
-	time_now	= time(0);
+	time_now = time(0);
 	melee_exp_pulse = ((pulse % PULSE_VIOLENCE) == 0);
 
 	for (ch = destroying_list; ch; ch = ch->specials.next_destroying)
@@ -9250,7 +9272,7 @@ void perform_violence(void)
 
 		// we ceil to not round off attacks
 		real_attacks = (int)ceil(number_attacks * attacksMultiplier);
-		div_attacks  = (int)(1 / attacksMultiplier);
+		div_attacks = (int)(1 / attacksMultiplier);
 
 		if (!affected_by_spell(opponent, SKILL_BATTLE_SENSES) &&
 		    GET_CHAR_SKILL(opponent, SKILL_BATTLE_SENSES) &&
@@ -9349,7 +9371,7 @@ void perform_violence(void)
 			      GET_NAME(opponent));
 		}
 
-		num_hits       = 0;
+		num_hits = 0;
 		damAccumulator = 0;
 
 		for (i = 0; i < real_attacks; i++)
@@ -9428,8 +9450,8 @@ void perform_violence(void)
 void double_strike(P_char ch, P_char victim, P_obj wpn)
 {
 	P_char tch;
-	int    count;
-	int    chosen;
+	int count;
+	int chosen;
 
 	if (!wpn)
 		return;
@@ -9486,7 +9508,7 @@ bool monk_superhit(P_char ch, P_char victim, int *damAccumulator)
 		"As $n reaches inside $N, $N collapses."
 	};
 	double dam;
-	int    mindam;
+	int mindam;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return FALSE;
@@ -9552,8 +9574,8 @@ bool monk_superhit(P_char ch, P_char victim, int *damAccumulator)
 
 int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 {
-	int		 i, room, success = FALSE, wpn_skill, spell;
-	P_obj		 item;
+	int i, room, success = FALSE, wpn_skill, spell;
+	P_obj item;
 	struct proc_data data;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(opponent))
@@ -9677,7 +9699,7 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 
 int battle_frenzy(P_char ch, P_char victim)
 {
-	int		       dam;
+	int dam;
 	struct damage_messages messages1 = {
 		"You slam your knee into $N's stomach, winding $M.&N",
 		"$n knee's you right in the stomach, knocking the wind out of you.&N",
@@ -9731,9 +9753,9 @@ bool is_nopoof(P_obj obj)
 
 void DestroyStuff(P_char victim, int type)
 {
-	int   slot, poofed = 0, worn = 0;
+	int slot, poofed = 0, worn = 0;
 	P_obj item;
-	int   poof_chance = get_property("pvp.eq.poof.chance", 10);
+	int poof_chance = get_property("pvp.eq.poof.chance", 10);
 	//  int poof_chance_niceq_multiplier = (int)(get_property("pvp.eq.poof.niceeq.chance.multiplier", 2));
 
 	if (!(victim))
@@ -9874,7 +9896,7 @@ bool critical_attack(P_char ch, P_char victim, int msg)
 	char attacker_msg[MAX_STRING_LENGTH];
 	char victim_msg[MAX_STRING_LENGTH];
 	char room_msg[MAX_STRING_LENGTH];
-	int  random;
+	int random;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || GET_RACE(victim) == RACE_CONSTRUCT)
 		return FALSE;
@@ -10016,9 +10038,9 @@ bool critical_disarm(P_char ch, P_char victim)
 	if (!ch || !victim)
 		return FALSE;
 
-	P_obj obj		 = NULL;
-	int   pos		 = 0;
-	int   weapon_positions[] = { WIELD, WIELD2, WIELD3, WIELD4, -1 };
+	P_obj obj = NULL;
+	int pos = 0;
+	int weapon_positions[] = { WIELD, WIELD2, WIELD3, WIELD4, -1 };
 
 	for (int i = 0; weapon_positions[i] >= 0; i++)
 	{
@@ -10050,7 +10072,7 @@ bool critical_disarm(P_char ch, P_char victim)
 double orc_horde_dam_modifier(P_char ch, double dam, int attacking)
 {
 	P_char horde, next;
-	float  c = 0.00;
+	float c = 0.00;
 
 	if (!ch)
 		return dam;

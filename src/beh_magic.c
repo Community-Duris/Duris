@@ -12,10 +12,10 @@
 #include "specs.prototypes.h"
 #include "spells.h"
 
-extern const int   rev_dir[];
+extern const int rev_dir[];
 extern const char *dirs[];
 extern const char *dirs2[];
-extern P_room      world;
+extern P_room world;
 
 /*
  * mostly based on AD&D beholders - get sleep, telekinesis, flesh to
@@ -26,8 +26,8 @@ extern P_room      world;
 void spell_beholder_sleep(int level, P_char ch, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	int                  save = 2, i;
-	bool                 NOSLEEP;
+	int save = 2, i;
+	bool NOSLEEP;
 
 	if (!(victim && ch))
 	{
@@ -64,20 +64,22 @@ void spell_beholder_sleep(int level, P_char ch, P_char victim, P_obj obj)
 		save = (int)(GET_LEVEL(ch) / 10);
 	}
 
-	if (!NewSaves(victim, SAVING_SPELL, save) && !IS_GREATER_RACE(victim) && !IS_ELITE(victim) && !IS_UNDEAD(victim) && !IS_ANGEL(ch) && !IS_ELEMENTAL(victim) && !IS_AFFECTED(victim, AFF_SLEEP) &&
-	    GET_STAT(victim) != STAT_SLEEPING)
+	if (!NewSaves(victim, SAVING_SPELL, save) && !IS_GREATER_RACE(victim) &&
+	    !IS_ELITE(victim) && !IS_UNDEAD(victim) && !IS_ANGEL(ch) && !IS_ELEMENTAL(victim) &&
+	    !IS_AFFECTED(victim, AFF_SLEEP) && GET_STAT(victim) != STAT_SLEEPING)
 	{
 		bzero(&af, sizeof(af));
-		af.type     = SPELL_SLEEP;
+		af.type = SPELL_SLEEP;
 		af.duration = 4 + (level < 0 ? -level : level);
 		af.duration /= 10;
 		af.duration += 2;
 		af.bitvector = AFF_SLEEP;
 
-		send_to_char("&+LYou suddenly begin to get very drowsy!  Keeping the eyes open is becoming\r\n"
-		             "&+Lall but impossible! The world becomes a faint memory as you slip into\r\n"
-		             "&+Lla-la land.\r\n",
-		             victim);
+		send_to_char(
+			"&+LYou suddenly begin to get very drowsy!  Keeping the eyes open is becoming\r\n"
+			"&+Lall but impossible! The world becomes a faint memory as you slip into\r\n"
+			"&+Lla-la land.\r\n",
+			victim);
 
 		if (GET_OPPONENT(victim))
 			stop_fighting(victim);
@@ -117,9 +119,9 @@ void spell_beholder_sleep(int level, P_char ch, P_char victim, P_obj obj)
 
 void spell_beholder_telekinesis(int level, P_char ch, P_char victim, P_obj obj)
 {
-	char                        Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 	struct room_direction_data *back;
-	int                         door, other_room;
+	int door, other_room;
 
 	if (!ch)
 	{
@@ -165,12 +167,17 @@ void spell_beholder_telekinesis(int level, P_char ch, P_char victim, P_obj obj)
 				{
 					if (EXIT(ch, door)->keyword)
 					{
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "The $F to %s closes suddenly!", dirs2[door]);
-						act(Gbuf1, FALSE, ch, 0, EXIT(ch, door)->keyword, TO_ROOM);
+						snprintf(Gbuf1, MAX_STRING_LENGTH,
+							 "The $F to %s closes suddenly!",
+							 dirs2[door]);
+						act(Gbuf1, FALSE, ch, 0, EXIT(ch, door)->keyword,
+						    TO_ROOM);
 					}
 					else
 					{
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "The door to %s closes suddenly!", dirs2[door]);
+						snprintf(Gbuf1, MAX_STRING_LENGTH,
+							 "The door to %s closes suddenly!",
+							 dirs2[door]);
 						act(Gbuf1, FALSE, ch, 0, 0, TO_ROOM);
 					}
 				}
@@ -178,12 +185,16 @@ void spell_beholder_telekinesis(int level, P_char ch, P_char victim, P_obj obj)
 				{
 					if (EXIT(ch, door)->keyword)
 					{
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "The $F %s closes suddenly!", dirs2[door]);
-						act(Gbuf1, FALSE, ch, 0, EXIT(ch, door)->keyword, TO_ROOM);
+						snprintf(Gbuf1, MAX_STRING_LENGTH,
+							 "The $F %s closes suddenly!", dirs2[door]);
+						act(Gbuf1, FALSE, ch, 0, EXIT(ch, door)->keyword,
+						    TO_ROOM);
 					}
 					else
 					{
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "The door %s closes suddenly!", dirs2[door]);
+						snprintf(Gbuf1, MAX_STRING_LENGTH,
+							 "The door %s closes suddenly!",
+							 dirs2[door]);
 						act(Gbuf1, FALSE, ch, 0, 0, TO_ROOM);
 					}
 				}
@@ -200,11 +211,18 @@ void spell_beholder_telekinesis(int level, P_char ch, P_char victim, P_obj obj)
 						{
 							if (back->keyword)
 							{
-								snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s is closed from the other side.\r\n", FirstWord(back->keyword));
-								send_to_room(Gbuf1, EXIT(ch, door)->to_room);
+								snprintf(
+									Gbuf1, MAX_STRING_LENGTH,
+									"The %s is closed from the other side.\r\n",
+									FirstWord(back->keyword));
+								send_to_room(
+									Gbuf1,
+									EXIT(ch, door)->to_room);
 							}
 							else
-								send_to_room("The door is closed from the other side.\r\n", EXIT(ch, door)->to_room);
+								send_to_room(
+									"The door is closed from the other side.\r\n",
+									EXIT(ch, door)->to_room);
 						}
 					}
 				}
@@ -216,7 +234,7 @@ void spell_beholder_telekinesis(int level, P_char ch, P_char victim, P_obj obj)
 void spell_beholder_paralyze(int level, P_char ch, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	int                  lev = level, save = 2;
+	int lev = level, save = 2;
 
 	if (!ch)
 	{
@@ -229,7 +247,8 @@ void spell_beholder_paralyze(int level, P_char ch, P_char victim, P_obj obj)
 		return;
 	}
 
-	if (resists_spell(ch, victim) || IS_TRUSTED(victim) || (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA)))
+	if (resists_spell(ch, victim) || IS_TRUSTED(victim) ||
+	    (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA)))
 	{
 		act("The beam seems to have no effect on $n&n.", FALSE, victim, 0, 0, TO_ROOM);
 		send_to_char("You feel no ill effects.\r\n", victim);
@@ -252,21 +271,25 @@ void spell_beholder_paralyze(int level, P_char ch, P_char victim, P_obj obj)
 			lev = -lev;
 		}
 
-		if (IS_AFFECTED2(victim, AFF2_MAJOR_PARALYSIS) || !check_freedom_of_movement(victim, GET_LEVEL(ch) > 50))
+		if (IS_AFFECTED2(victim, AFF2_MAJOR_PARALYSIS) ||
+		    !check_freedom_of_movement(victim, GET_LEVEL(ch) > 50))
 		{
 			return;
 		}
 
 		bzero(&af, sizeof(af));
-		af.flags      = AFFTYPE_SHORT;
-		af.type       = SPELL_MAJOR_PARALYSIS;
-		af.duration   = WAIT_SEC * 30;
+		af.flags = AFFTYPE_SHORT;
+		af.type = SPELL_MAJOR_PARALYSIS;
+		af.duration = WAIT_SEC * 30;
 		af.bitvector2 = AFF2_MAJOR_PARALYSIS;
 
 		affect_to_char(victim, &af);
 
-		act("&+L$n&+L screams out in surprise as $s flesh turns into stone!", FALSE, victim, 0, 0, TO_ROOM);
-		send_to_char("&+LA short gasp escapes your lips as your flesh turns into stone.\r\n", victim);
+		act("&+L$n&+L screams out in surprise as $s flesh turns into stone!", FALSE, victim,
+		    0, 0, TO_ROOM);
+		send_to_char(
+			"&+LA short gasp escapes your lips as your flesh turns into stone.\r\n",
+			victim);
 		if (IS_FIGHTING(victim))
 			stop_fighting(victim);
 		if (IS_DESTROYING(victim))
@@ -295,14 +318,16 @@ void spell_beholder_paralyze(int level, P_char ch, P_char victim, P_obj obj)
 
 void spell_beholder_disintegrate(int level, P_char ch, P_char victim, P_obj obj)
 {
-	int                    i, dam, gotone = FALSE, save = 2;
-	P_obj                  x;
-	struct damage_messages messages = {"$N&n reels in pain as $S flesh is disintegrated into ions by your beam.",
-	                                   "You reel in pain as a large chunk of your flesh is disintegrated.",
-	                                   "$N&n reels in pain as $S flesh is disintegrated into mere ions.",
-	                                   "The force of the blast destroys $N&n, causing an early death.",
-	                                   "The force of the blast destroys you, causing an early death.",
-	                                   "The force of the blast destroys $N&n, leading to $S early death."};
+	int i, dam, gotone = FALSE, save = 2;
+	P_obj x;
+	struct damage_messages messages = {
+		"$N&n reels in pain as $S flesh is disintegrated into ions by your beam.",
+		"You reel in pain as a large chunk of your flesh is disintegrated.",
+		"$N&n reels in pain as $S flesh is disintegrated into mere ions.",
+		"The force of the blast destroys $N&n, causing an early death.",
+		"The force of the blast destroys you, causing an early death.",
+		"The force of the blast destroys $N&n, leading to $S early death."
+	};
 
 	if (!ch)
 	{
@@ -354,9 +379,11 @@ void spell_beholder_disintegrate(int level, P_char ch, P_char victim, P_obj obj)
 
 						obj = victim->equipment[i];
 
-						if (!IS_ARTIFACT(obj) && ((obj->condition -= number(1, 10)) < 1))
+						if (!IS_ARTIFACT(obj) &&
+						    ((obj->condition -= number(1, 10)) < 1))
 						{
-							act("$N&n's $q&n turns red hot, disappearing in a puff of smoke!", TRUE, ch, obj, victim, TO_VICT);
+							act("$N&n's $q&n turns red hot, disappearing in a puff of smoke!",
+							    TRUE, ch, obj, victim, TO_VICT);
 
 							if (OBJ_CARRIED(obj))
 							{ /* remove the obj */
@@ -388,7 +415,8 @@ void spell_beholder_disintegrate(int level, P_char ch, P_char victim, P_obj obj)
 						}
 						else
 						{
-							act("$N&n's $q&n turns red hot, only to cool down a second later.", TRUE, ch, obj, victim, TO_VICT);
+							act("$N&n's $q&n turns red hot, only to cool down a second later.",
+							    TRUE, ch, obj, victim, TO_VICT);
 						}
 					}
 				} while (!gotone);
@@ -406,7 +434,7 @@ void spell_beholder_disintegrate(int level, P_char ch, P_char victim, P_obj obj)
 void spell_beholder_fear(int level, P_char ch, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	int                  save = 2;
+	int save = 2;
 
 	if (!(victim && ch))
 	{
@@ -428,7 +456,8 @@ void spell_beholder_fear(int level, P_char ch, P_char victim, P_obj obj)
 		return;
 	}
 
-	if (IS_GREATER_RACE(victim) || IS_ELITE(victim) || IS_UNDEAD(victim) || IS_ANGEL(victim) || IS_TRUSTED(victim))
+	if (IS_GREATER_RACE(victim) || IS_ELITE(victim) || IS_UNDEAD(victim) || IS_ANGEL(victim) ||
+	    IS_TRUSTED(victim))
 	{
 		act("The beam seems to have no effect on $n&n.", FALSE, victim, 0, 0, TO_ROOM);
 		send_to_char("You feel no ill effects.\r\n", victim);
@@ -447,21 +476,26 @@ void spell_beholder_fear(int level, P_char ch, P_char victim, P_obj obj)
 		if (affected_by_spell(victim, SKILL_BERSERK))
 		{
 			act("The beam slams into $n!", FALSE, victim, 0, 0, TO_ROOM);
-			act("You feel a strange sensation overcome you...", TRUE, ch, obj, victim, TO_VICT);
+			act("You feel a strange sensation overcome you...", TRUE, ch, obj, victim,
+			    TO_VICT);
 			CharWait(victim, PULSE_VIOLENCE);
 			affect_from_char(victim, SKILL_BERSERK);
-			send_to_char("Your blood cools, and you no longer see targets everywhere.\r\n", victim);
-			act("$n seems to have overcome $s battle madness.", TRUE, victim, 0, 0, TO_ROOM);
+			send_to_char(
+				"Your blood cools, and you no longer see targets everywhere.\r\n",
+				victim);
+			act("$n seems to have overcome $s battle madness.", TRUE, victim, 0, 0,
+			    TO_ROOM);
 			return;
 		}
 
 		if (fear_check(victim))
 		{
-			act("The beam seems to have no effect on $n&n.", FALSE, victim, 0, 0, TO_ROOM);
+			act("The beam seems to have no effect on $n&n.", FALSE, victim, 0, 0,
+			    TO_ROOM);
 			return;
 		}
 
-		af.type     = SPELL_FEAR;
+		af.type = SPELL_FEAR;
 		af.location = APPLY_DAMROLL;
 		af.modifier = -2 - (level / 10);
 		if (-af.modifier > GET_DAMROLL(victim))
@@ -504,7 +538,7 @@ void spell_beholder_fear(int level, P_char ch, P_char victim, P_obj obj)
 void spell_beholder_slowness(int level, P_char ch, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	int                  save = 2;
+	int save = 2;
 
 	if (!(victim && ch))
 	{
@@ -534,9 +568,9 @@ void spell_beholder_slowness(int level, P_char ch, P_char victim, P_obj obj)
 	if (!NewSaves(victim, SAVING_SPELL, save))
 	{
 		bzero(&af, sizeof(af));
-		af.type       = SPELL_SLOW;
-		af.duration   = (level / 10) + 2;
-		af.modifier   = 2;
+		af.type = SPELL_SLOW;
+		af.duration = (level / 10) + 2;
+		af.modifier = 2;
 		af.bitvector2 = AFF2_SLOW;
 
 		affect_to_char(victim, &af);
@@ -564,12 +598,14 @@ void spell_beholder_damage(int level, P_char ch, P_char victim, P_obj obj)
 {
 	int dam;
 
-	struct damage_messages messages = {"$N&n nearly stumbles after being slammed by your beam.",
-	                                   "You nearly stumble as you're hit by the intense force of $n&n's beam.",
-	                                   "$N&n's body is knocked back by the intense force of $n&n's beam.",
-	                                   "The brute force of the blast reduces $N&n to a mere shadow of $S former self.",
-	                                   "The brute force of the blast reduces you into a mere shadow of your formerself.",
-	                                   "The brute force of the blast reduces $N&n into a mere shadow of $S former self."};
+	struct damage_messages messages = {
+		"$N&n nearly stumbles after being slammed by your beam.",
+		"You nearly stumble as you're hit by the intense force of $n&n's beam.",
+		"$N&n's body is knocked back by the intense force of $n&n's beam.",
+		"The brute force of the blast reduces $N&n to a mere shadow of $S former self.",
+		"The brute force of the blast reduces you into a mere shadow of your formerself.",
+		"The brute force of the blast reduces $N&n into a mere shadow of $S former self."
+	};
 
 	if (!(victim && ch))
 	{
@@ -594,12 +630,14 @@ void spell_beholder_damage(int level, P_char ch, P_char victim, P_obj obj)
 
 void spell_beholder_dispelmagic(int level, P_char ch, P_char victim, P_obj obj)
 {
-	struct damage_messages messages = {"$N&n &+Wshimmers &+wafter being slammed by your beam.",
-	                                   "&+wYou &+Wshimmer &+was you're hit by&n $n's&n &+wbeam.",
-	                                   "$N's &+wentire body &+Wshimmers &+wupon&n $n's&n &+wbeam's collision!",
-	                                   "",
-	                                   "",
-	                                   ""};
+	struct damage_messages messages = {
+		"$N&n &+Wshimmers &+wafter being slammed by your beam.",
+		"&+wYou &+Wshimmer &+was you're hit by&n $n's&n &+wbeam.",
+		"$N's &+wentire body &+Wshimmers &+wupon&n $n's&n &+wbeam's collision!",
+		"",
+		"",
+		""
+	};
 
 	if (!(victim && ch))
 	{

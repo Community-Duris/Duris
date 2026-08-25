@@ -33,10 +33,10 @@
 #include "vnum.obj.h"
 
 extern const int top_of_world;
-extern P_index   mob_index;
-extern P_index   obj_index;
-extern P_obj     object_list;
-extern P_room    world;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
 
 // Added gellz Procs
 int gellz_test_obj_procs(P_obj obj, P_char ch, int cmd, char *argument);
@@ -47,7 +47,7 @@ int unmulti_altar(P_obj obj, P_char ch, int cmd, char *arg);
 int harpy_gate(P_obj obj, P_char ch, int cmd, char *arg);
 int block_dir(P_char ch, P_char pl, int cmd, char *arg);
 
-int  ship_shop_proc(int room, P_char ch, int cmd, char *arg);
+int ship_shop_proc(int room, P_char ch, int cmd, char *arg);
 void assign_ship_crew_funcs();
 
 int cards_object(P_obj obj, P_char ch, int cmd, char *argument);
@@ -60,11 +60,9 @@ int cards_object(P_obj obj, P_char ch, int cmd, char *argument);
    should have a NULL name (so I can find the end of the list)
  */
 
-dynamic_procs dynam_proc_list[] = {
-	{   "specs.myranth", NULL},
-    {"specs.bloodstone", NULL},
-    {              NULL, NULL}
-};
+dynamic_procs dynam_proc_list[] = { { "specs.myranth", NULL },
+				    { "specs.bloodstone", NULL },
+				    { NULL, NULL } };
 
 /*
    I'm gonna be ultra-paranoid here and do redundant sanity checks on
@@ -73,8 +71,8 @@ dynamic_procs dynam_proc_list[] = {
 
 int load_proc_lib(char *name)
 {
-	int   i;
-	char  buf[180];
+	int i;
+	char buf[180];
 	void *handle;
 
 	for (i = 0; dynam_proc_list[i].name; i++)
@@ -97,8 +95,8 @@ int load_proc_lib(char *name)
 
 int unload_proc_lib(char *name)
 {
-	int         i;
-	char        buf[180];
+	int i;
+	char buf[180];
 	const char *error;
 
 	for (i = 0; dynam_proc_list[i].name; i++)
@@ -121,8 +119,8 @@ int unload_proc_lib(char *name)
 
 void load_all_proc_libs(void)
 {
-	int   i;
-	char  name[180];
+	int i;
+	char name[180];
 	void *handle;
 
 	for (i = 0; dynam_proc_list[i].name; i++)
@@ -155,7 +153,10 @@ int obj_proc_stub(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int room_proc_stub(int room, P_char ch, int cmd, char *arg) { return FALSE; }
+int room_proc_stub(int room, P_char ch, int cmd, char *arg)
+{
+	return FALSE;
+}
 
 #endif /*                                                                                                                                                                                              \
           SHLIB                                                                                                                                                                                        \
@@ -201,11 +202,11 @@ void assign_mobiles(void)
 
 	/* Ailvio */
 	mob_index[real_mobile0(VMOB_AILVIO_INCAPACITATED)].func.mob = bandage_mob;
-	mob_index[real_mobile0(VMOB_AILVIO_WIFE)].func.mob          = bandage_reward_mob;
-	mob_index[real_mobile0(29236)].func.mob                     = newbie_spellup_mob;
-	mob_index[real_mobile0(29238)].func.mob                     = newbie_spellup_mob;
-	mob_index[real_mobile0(29232)].func.mob                     = newbie_spellup_mob;
-	mob_index[real_mobile0(29265)].func.mob                     = newbie_spellup_mob;
+	mob_index[real_mobile0(VMOB_AILVIO_WIFE)].func.mob = bandage_reward_mob;
+	mob_index[real_mobile0(29236)].func.mob = newbie_spellup_mob;
+	mob_index[real_mobile0(29238)].func.mob = newbie_spellup_mob;
+	mob_index[real_mobile0(29232)].func.mob = newbie_spellup_mob;
+	mob_index[real_mobile0(29265)].func.mob = newbie_spellup_mob;
 
 	/* Ako */
 	mob_index[real_mobile0(3715)].func.mob = ako_hypersquirrel;
@@ -223,9 +224,9 @@ void assign_mobiles(void)
 
 	/* WinterHaven */
 
-	world[real_room0(55201)].funct          = pet_shops; /* WH Mercenaries */
-	world[real_room0(55203)].funct          = pet_shops; /* WH Mounts */
-	world[real_room0(55126)].funct          = welfare_well;
+	world[real_room0(55201)].funct = pet_shops; /* WH Mercenaries */
+	world[real_room0(55203)].funct = pet_shops; /* WH Mounts */
+	world[real_room0(55126)].funct = welfare_well;
 	mob_index[real_mobile0(55128)].func.mob = world_quest; /* WH Questmaster */
 	// mob_index[real_mobile0(55021)].func.mob = winterhaven_shout_one;
 	// mob_index[real_mobile0(55022)].func.mob = winterhaven_shout_two;
@@ -238,44 +239,44 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(55022)].func.mob = wh_guard;
 	mob_index[real_mobile0(55003)].func.mob = wh_guard;
 	//  mob_index[real_mobile0(55184)].func.mob = wh_guard;
-	mob_index[real_mobile0(55057)].func.mob  = wh_guard;
-	mob_index[real_mobile0(55126)].func.mob  = rentacleric;
-	mob_index[real_mobile0(55500)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55246)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55501)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55502)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55503)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55504)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55505)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55506)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55507)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55508)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55509)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55510)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55511)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55512)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55513)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55514)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55515)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55516)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55517)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55518)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55519)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55520)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55521)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55550)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55551)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55552)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55553)].func.mob  = wh_corpse_to_object;
-	mob_index[real_mobile0(55554)].func.mob  = wh_corpse_to_object;
+	mob_index[real_mobile0(55057)].func.mob = wh_guard;
+	mob_index[real_mobile0(55126)].func.mob = rentacleric;
+	mob_index[real_mobile0(55500)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55246)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55501)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55502)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55503)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55504)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55505)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55506)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55507)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55508)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55509)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55510)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55511)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55512)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55513)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55514)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55515)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55516)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55517)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55518)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55519)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55520)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55521)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55550)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55551)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55552)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55553)].func.mob = wh_corpse_to_object;
+	mob_index[real_mobile0(55554)].func.mob = wh_corpse_to_object;
 	mob_index[real_mobile0(500102)].func.mob = wh_corpse_to_object;
 	mob_index[real_mobile0(500103)].func.mob = wh_corpse_to_object;
-	mob_index[real_mobile0(55184)].func.mob  = newbie_spellup_mob; // Priest of WH
-	mob_index[real_mobile0(55124)].func.mob  = money_changer;
+	mob_index[real_mobile0(55184)].func.mob = newbie_spellup_mob; // Priest of WH
+	mob_index[real_mobile0(55124)].func.mob = money_changer;
 	//  mob_index[real_mobile0(55026)].func.mob = volo_teleport;
 	//  mob_index[real_mobile0()].func.mob = mob_death_proc;
 	mob_index[real_mobile0(19617)].func.mob = tiamat_human_to_rareloads;
-	mob_index[real_mobile0(6816)].func.mob  = dragonnia_heart;
+	mob_index[real_mobile0(6816)].func.mob = dragonnia_heart;
 	mob_index[real_mobile0(29025)].func.mob = lanella_heart;
 	mob_index[real_mobile0(22024)].func.mob = cerberus_load;
 	mob_index[real_mobile0(55264)].func.mob = leviathan;
@@ -377,22 +378,22 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(16205)].func.mob = transp_tow_acerlade;
 
 	/* necro dracoliches */
-	mob_index[real_mobile0(3)].func.mob    = necro_dracolich;
-	mob_index[real_mobile0(4)].func.mob    = necro_dracolich;
-	mob_index[real_mobile0(5)].func.mob    = necro_dracolich;
-	mob_index[real_mobile0(6)].func.mob    = necro_dracolich;
-	mob_index[real_mobile0(7)].func.mob    = necro_dracolich;
-	mob_index[real_mobile0(8)].func.mob    = necro_dracolich;
-	mob_index[real_mobile0(9)].func.mob    = necro_dracolich;
-	mob_index[real_mobile0(10)].func.mob   = necro_dracolich;
+	mob_index[real_mobile0(3)].func.mob = necro_dracolich;
+	mob_index[real_mobile0(4)].func.mob = necro_dracolich;
+	mob_index[real_mobile0(5)].func.mob = necro_dracolich;
+	mob_index[real_mobile0(6)].func.mob = necro_dracolich;
+	mob_index[real_mobile0(7)].func.mob = necro_dracolich;
+	mob_index[real_mobile0(8)].func.mob = necro_dracolich;
+	mob_index[real_mobile0(9)].func.mob = necro_dracolich;
+	mob_index[real_mobile0(10)].func.mob = necro_dracolich;
 	mob_index[real_mobile0(1201)].func.mob = necro_dracolich;
 
 	/* Illusionist */
 
 	mob_index[real_mobile0(1106)].func.mob = shadow_monster; // shadow monster proc
-	mob_index[real_mobile0(1108)].func.mob = illus_dragon;   // dragon proc
-	mob_index[real_mobile0(1107)].func.mob = insects;        // spell_insect so they poison
-	mob_index[real_mobile0(650)].func.mob  = illus_titan;    // titan disappears when not fighting
+	mob_index[real_mobile0(1108)].func.mob = illus_dragon; // dragon proc
+	mob_index[real_mobile0(1107)].func.mob = insects; // spell_insect so they poison
+	mob_index[real_mobile0(650)].func.mob = illus_titan; // titan disappears when not fighting
 
 	/* Lower God Rooms */
 	mob_index[real_mobile0(200)].func.mob = shadow_demon_of_torm;
@@ -413,61 +414,62 @@ void assign_mobiles(void)
 	/* Troll Hills */
 	mob_index[real_mobile0(1919)].func.mob = bridge_troll;
 
-	mob_index[real_mobile0(36203)].func.mob = mob_index[real_mobile0(132599)].func.mob = rentacleric;
+	mob_index[real_mobile0(36203)].func.mob = mob_index[real_mobile0(132599)].func.mob =
+		rentacleric;
 
 	/* Evil Spec teachers */
-	mob_index[real_mobile0(1520)].func.mob  = 0; // sorc
+	mob_index[real_mobile0(1520)].func.mob = 0; // sorc
 	mob_index[real_mobile0(22467)].func.mob = 0; // zerker
 	mob_index[real_mobile0(36440)].func.mob = 0; // assassin
-	mob_index[real_mobile0(4401)].func.mob  = 0; // cleric
-	mob_index[real_mobile0(1518)].func.mob  = 0; // conj
-	mob_index[real_mobile0(1519)].func.mob  = 0; // necro
+	mob_index[real_mobile0(4401)].func.mob = 0; // cleric
+	mob_index[real_mobile0(1518)].func.mob = 0; // conj
+	mob_index[real_mobile0(1519)].func.mob = 0; // necro
 	mob_index[real_mobile0(97585)].func.mob = 0; // illus
 	mob_index[real_mobile0(36441)].func.mob = 0; // reaver
 	mob_index[real_mobile0(36442)].func.mob = 0; // bard
 	mob_index[real_mobile0(22434)].func.mob = 0; // warrior
 
 	/* Undead Spec teachers */
-	mob_index[real_mobile0(66238)].func.mob  = 0; // reaver
+	mob_index[real_mobile0(66238)].func.mob = 0; // reaver
 	mob_index[real_mobile0(200011)].func.mob = 0; // sorc
 	mob_index[real_mobile0(210006)].func.mob = 0; // warrior
-	mob_index[real_mobile0(22415)].func.mob  = 0; // AP
+	mob_index[real_mobile0(22415)].func.mob = 0; // AP
 	mob_index[real_mobile0(200012)].func.mob = 0; // Conj
-	mob_index[real_mobile0(22435)].func.mob  = 0; // Mercenary
-	mob_index[real_mobile0(90306)].func.mob  = 0; // piper
-	mob_index[real_mobile0(90328)].func.mob  = 0; // dreadlord
+	mob_index[real_mobile0(22435)].func.mob = 0; // Mercenary
+	mob_index[real_mobile0(90306)].func.mob = 0; // piper
+	mob_index[real_mobile0(90328)].func.mob = 0; // dreadlord
 
 	/* Goodie Spec teachers */
-	mob_index[real_mobile0(1510)].func.mob  = 0; // shaman
-	mob_index[real_mobile0(1500)].func.mob  = 0; // sorc
-	mob_index[real_mobile0(1512)].func.mob  = 0; // conj
+	mob_index[real_mobile0(1510)].func.mob = 0; // shaman
+	mob_index[real_mobile0(1500)].func.mob = 0; // sorc
+	mob_index[real_mobile0(1512)].func.mob = 0; // conj
 	mob_index[real_mobile0(82507)].func.mob = 0; // conj
-	mob_index[real_mobile0(1501)].func.mob  = 0; // warrior
-	mob_index[real_mobile0(1503)].func.mob  = 0; // paladin
-	mob_index[real_mobile0(1514)].func.mob  = 0; // assassin
-	mob_index[real_mobile0(1509)].func.mob  = 0; // druid
-	mob_index[real_mobile0(1507)].func.mob  = 0; // cleric
-	mob_index[real_mobile0(1515)].func.mob  = 0; // mercenary
-	mob_index[real_mobile0(1502)].func.mob  = 0; // ranger
+	mob_index[real_mobile0(1501)].func.mob = 0; // warrior
+	mob_index[real_mobile0(1503)].func.mob = 0; // paladin
+	mob_index[real_mobile0(1514)].func.mob = 0; // assassin
+	mob_index[real_mobile0(1509)].func.mob = 0; // druid
+	mob_index[real_mobile0(1507)].func.mob = 0; // cleric
+	mob_index[real_mobile0(1515)].func.mob = 0; // mercenary
+	mob_index[real_mobile0(1502)].func.mob = 0; // ranger
 	mob_index[real_mobile0(82500)].func.mob = 0; // ranger
-	mob_index[real_mobile0(1511)].func.mob  = 0; // necro
-	mob_index[real_mobile0(1516)].func.mob  = 0; // bard
-	mob_index[real_mobile0(1513)].func.mob  = 0; // thief
+	mob_index[real_mobile0(1511)].func.mob = 0; // necro
+	mob_index[real_mobile0(1516)].func.mob = 0; // bard
+	mob_index[real_mobile0(1513)].func.mob = 0; // thief
 
 	/* All side spec teachers */
 	mob_index[real_mobile0(66736)].func.mob = 0; // shaman
 	mob_index[real_mobile0(22420)].func.mob = 0; // shaman
-	mob_index[real_mobile0(1510)].func.mob  = 0; // shaman
+	mob_index[real_mobile0(1510)].func.mob = 0; // shaman
 	mob_index[real_mobile0(22441)].func.mob = 0; // thief
-	mob_index[real_mobile0(9420)].func.mob  = 0; // thief
+	mob_index[real_mobile0(9420)].func.mob = 0; // thief
 	mob_index[real_mobile0(22440)].func.mob = 0; // assassin
 
-	mob_index[real_mobile0(66732)].func.mob  = 0; // AP
+	mob_index[real_mobile0(66732)].func.mob = 0; // AP
 	mob_index[real_mobile0(200321)].func.mob = 0; // Ethermancer
-	mob_index[real_mobile0(9432)].func.mob   = 0; // Warrior
-	mob_index[real_mobile0(66731)].func.mob  = 0; // Mercenary
-	mob_index[real_mobile0(66631)].func.mob  = 0; // Bard
-	mob_index[real_mobile0(9454)].func.mob   = 0; // Alch
+	mob_index[real_mobile0(9432)].func.mob = 0; // Warrior
+	mob_index[real_mobile0(66731)].func.mob = 0; // Mercenary
+	mob_index[real_mobile0(66631)].func.mob = 0; // Bard
+	mob_index[real_mobile0(9454)].func.mob = 0; // Alch
 
 	/* Bahamut */
 	mob_index[real_mobile0(25700)].func.mob = bahamut;
@@ -566,20 +568,20 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(4070)].func.mob = piercer;
 	mob_index[real_mobile0(4120)].func.mob = guild_guard;
 
-	mob_index[real_mobile0(15)].func.mob    = witch_doctor;
+	mob_index[real_mobile0(15)].func.mob = witch_doctor;
 	mob_index[real_mobile0(21549)].func.mob = llyren;
 
 	/*
 	   The Underworld
 	 */
-	mob_index[real_mobile0(4480)].func.mob   = purple_worm;
+	mob_index[real_mobile0(4480)].func.mob = purple_worm;
 	mob_index[real_mobile0(700004)].func.mob = purple_worm;
 	mob_index[real_mobile0(131232)].func.mob = purple_worm;
-	mob_index[real_mobile0(4530)].func.mob   = piercer;
-	mob_index[real_mobile0(4520)].func.mob   = underdark_track;
-	mob_index[real_mobile0(4510)].func.mob   = underdark_track;
-	mob_index[real_mobile0(550)].func.mob    = underdark_track;
-	mob_index[real_mobile0(551)].func.mob    = underdark_track;
+	mob_index[real_mobile0(4530)].func.mob = piercer;
+	mob_index[real_mobile0(4520)].func.mob = underdark_track;
+	mob_index[real_mobile0(4510)].func.mob = underdark_track;
+	mob_index[real_mobile0(550)].func.mob = underdark_track;
+	mob_index[real_mobile0(551)].func.mob = underdark_track;
 
 	mob_index[real_mobile0(210004)].func.mob = undeadcont_track;
 	mob_index[real_mobile0(210005)].func.mob = undeadcont_track;
@@ -590,11 +592,11 @@ void assign_mobiles(void)
 #endif
 
 	// Newbie guards! - Kvark
-	mob_index[real_mobile0(910)].func.mob  = newbie_guard_north;
-	mob_index[real_mobile0(912)].func.mob  = newbie_guard_east;
-	mob_index[real_mobile0(911)].func.mob  = newbie_guard_south;
+	mob_index[real_mobile0(910)].func.mob = newbie_guard_north;
+	mob_index[real_mobile0(912)].func.mob = newbie_guard_east;
+	mob_index[real_mobile0(911)].func.mob = newbie_guard_south;
 	mob_index[real_mobile0(4800)].func.mob = newbie_guard_east;
-	mob_index[real_mobile0(913)].func.mob  = newbie_guard_west;
+	mob_index[real_mobile0(913)].func.mob = newbie_guard_west;
 
 	// living earth proc!
 	mob_index[real_mobile0(1104)].func.mob = living_stone;
@@ -680,7 +682,7 @@ void assign_mobiles(void)
 
 	/* Human HT - Tharnadia */
 
-	world[real_room0(132507)].funct          = welfare_well;
+	world[real_room0(132507)].funct = welfare_well;
 	mob_index[real_mobile0(150115)].func.mob = outpost_captain;
 	mob_index[real_mobile0(150116)].func.mob = outpost_captain;
 	mob_index[real_mobile0(150117)].func.mob = outpost_captain;
@@ -710,8 +712,8 @@ void assign_mobiles(void)
 
 	mob_index[real_mobile0(132593)].func.mob = janitor;
 	mob_index[real_mobile0(132519)].func.mob = money_changer;
-	mob_index[real_mobile0(98718)].func.mob  = money_changer;
-	mob_index[real_mobile0(82224)].func.mob  = money_changer;
+	mob_index[real_mobile0(98718)].func.mob = money_changer;
+	mob_index[real_mobile0(82224)].func.mob = money_changer;
 	mob_index[real_mobile0(132501)].func.mob = tharn_tall_merchant;
 	mob_index[real_mobile0(132509)].func.mob = tharn_beach_guard;
 	mob_index[real_mobile0(132510)].func.mob = tharn_male_commoner;
@@ -722,10 +724,10 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(132514)].func.mob = tharn_lighthouse_attendent;
 	mob_index[real_mobile0(132531)].func.mob = tharn_crier_one;
 
-	mob_index[real_mobile0(36420)].func.mob  = world_quest; // Drow HT
-	mob_index[real_mobile0(97540)].func.mob  = world_quest; // Ixie
+	mob_index[real_mobile0(36420)].func.mob = world_quest; // Drow HT
+	mob_index[real_mobile0(97540)].func.mob = world_quest; // Ixie
 	mob_index[real_mobile0(132555)].func.mob = world_quest; // Tharn
-	mob_index[real_mobile0(16553)].func.mob  = world_quest; // Woodseer
+	mob_index[real_mobile0(16553)].func.mob = world_quest; // Woodseer
 
 	mob_index[real_mobile0(53670)].func.mob = world_quest; // Sunwell
 
@@ -766,27 +768,27 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(18707)].func.mob = world_quest;
 	mob_index[real_mobile0(17022)].func.mob = world_quest;
 	mob_index[real_mobile0(11601)].func.mob = world_quest;
-	mob_index[real_mobile0(8003)].func.mob  = world_quest;
-	mob_index[real_mobile0(5755)].func.mob  = world_quest;
-	mob_index[real_mobile0(1603)].func.mob  = world_quest;
+	mob_index[real_mobile0(8003)].func.mob = world_quest;
+	mob_index[real_mobile0(5755)].func.mob = world_quest;
+	mob_index[real_mobile0(1603)].func.mob = world_quest;
 
 	mob_index[real_mobile0(36420)].func.mob = world_quest;
 	mob_index[real_mobile0(82229)].func.mob = world_quest;
 	mob_index[real_mobile0(82208)].func.mob = world_quest;
-	mob_index[real_mobile0(8309)].func.mob  = world_quest;
+	mob_index[real_mobile0(8309)].func.mob = world_quest;
 
 	mob_index[real_mobile0(16553)].func.mob = world_quest;
 	mob_index[real_mobile0(16553)].func.mob = world_quest;
 	mob_index[real_mobile0(16553)].func.mob = world_quest;
 	mob_index[real_mobile0(16553)].func.mob = world_quest;
 
-	mob_index[real_mobile0(5347)].func.mob  = world_quest;
+	mob_index[real_mobile0(5347)].func.mob = world_quest;
 	mob_index[real_mobile0(37718)].func.mob = world_quest;
 	mob_index[real_mobile0(74060)].func.mob = world_quest;
 
 	mob_index[real_mobile0(132551)].func.mob = world_quest;
-	mob_index[real_mobile0(38309)].func.mob  = world_quest;
-	mob_index[real_mobile0(49064)].func.mob  = world_quest;
+	mob_index[real_mobile0(38309)].func.mob = world_quest;
+	mob_index[real_mobile0(49064)].func.mob = world_quest;
 
 	mob_index[real_mobile0(132542)].func.mob = tharn_shady_mercenary;
 	mob_index[real_mobile0(132543)].func.mob = tharn_shady_youth;
@@ -833,7 +835,7 @@ void assign_mobiles(void)
 
 	/* Ixarkon */
 	mob_index[real_mobile0(96449)].func.mob = money_changer;
-	world[real_room0(96549)].funct          = pet_shops;
+	world[real_room0(96549)].funct = pet_shops;
 
 	/* Bloodstone */
 	mob_index[real_mobile0(74073)].func.mob = bs_boss;
@@ -961,9 +963,14 @@ void assign_mobiles(void)
 	/*
 	   Twin Towers - Forest
 	 */
-	mob_index[real_mobile0(13505)].func.mob = mob_index[real_mobile0(13508)].func.mob = mob_index[real_mobile0(13511)].func.mob = mob_index[real_mobile0(13513)].func.mob =
-		mob_index[real_mobile0(13515)].func.mob = mob_index[real_mobile0(13516)].func.mob = mob_index[real_mobile0(13517)].func.mob = mob_index[real_mobile0(13518)].func.mob =
-			mob_index[real_mobile0(13519)].func.mob                                                                                 = forest_animals;
+	mob_index[real_mobile0(13505)].func.mob = mob_index[real_mobile0(13508)].func.mob =
+		mob_index[real_mobile0(13511)].func.mob = mob_index[real_mobile0(13513)].func.mob =
+			mob_index[real_mobile0(13515)].func.mob =
+				mob_index[real_mobile0(13516)].func.mob =
+					mob_index[real_mobile0(13517)].func.mob =
+						mob_index[real_mobile0(13518)].func.mob =
+							mob_index[real_mobile0(13519)].func.mob =
+								forest_animals;
 
 	/*
 	   Faerie Realm
@@ -979,7 +986,7 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(14202)].func.mob = bridge_troll; /*
 	                                                           north bridge
 	                                                         */
-															/* Temple Zone */
+	/* Temple Zone */
 	mob_index[real_mobile0(18302)].func.mob = temple_illyn;
 
 	/*
@@ -992,15 +999,16 @@ void assign_mobiles(void)
 
 	/* Duergar HT - Khildarak */
 	mob_index[real_mobile0(17012)].func.mob = archer;
-	mob_index[real_mobile0(17132)].func.mob = mob_index[real_mobile0(17134)].func.mob = mob_index[real_mobile0(17092)].func.mob = mob_index[real_mobile0(17049)].func.mob =
-		mob_index[real_mobile0(17199)].func.mob =
-			/*      mob_index[real_mobile0(17247)].func.mob =*/
+	mob_index[real_mobile0(17132)].func.mob = mob_index[real_mobile0(17134)].func.mob =
+		mob_index[real_mobile0(17092)].func.mob = mob_index[real_mobile0(17049)].func.mob =
+			mob_index[real_mobile0(17199)].func.mob =
+				/*      mob_index[real_mobile0(17247)].func.mob =*/
 		mob_index[real_mobile0(17202)].func.mob = devour;
-	mob_index[real_mobile0(17247)].func.mob     = guild_guard;
-	mob_index[real_mobile0(17193)].func.mob     = devour;
-	mob_index[real_mobile0(17194)].func.mob     = devour;
-	mob_index[real_mobile0(17195)].func.mob     = devour;
-	mob_index[real_mobile0(17261)].func.mob     = poison;
+	mob_index[real_mobile0(17247)].func.mob = guild_guard;
+	mob_index[real_mobile0(17193)].func.mob = devour;
+	mob_index[real_mobile0(17194)].func.mob = devour;
+	mob_index[real_mobile0(17195)].func.mob = devour;
+	mob_index[real_mobile0(17261)].func.mob = poison;
 
 	/* Ogre HT - Faang */
 	mob_index[real_mobile0(15200)].func.mob = boulder_pusher;
@@ -1117,7 +1125,7 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(97003)].func.mob = ice_malice;
 
 	// Outposts
-	mob_index[real_mobile0(OUTPOST_BUILDING_MOB)].func.mob  = building_mob_proc;
+	mob_index[real_mobile0(OUTPOST_BUILDING_MOB)].func.mob = building_mob_proc;
 	mob_index[real_mobile0(OUTPOST_GATEGUARD_WAR)].func.mob = outpost_gateguard_proc;
 
 	/*
@@ -1264,24 +1272,23 @@ void assign_mobiles(void)
 
 void assign_objects(void)
 {
-
 	obj_index[real_object0(500055)].func.obj = tharnrifts_portal;
-	obj_index[real_object0(55007)].func.obj  = no_kill_priest_obj;
-	obj_index[real_object0(1372)].func.obj   = jet_black_maul;
-	obj_index[real_object0(35102)].func.obj  = magic_pool;
-	obj_index[real_object0(35103)].func.obj  = magic_pool;
-	obj_index[real_object0(12028)].func.obj  = moonstone_fragment;
-	obj_index[real_object0(96073)].func.obj  = faith;
-	obj_index[real_object0(96012)].func.obj  = mistweave;
-	obj_index[real_object0(96027)].func.obj  = leather_vest;
-	obj_index[real_object0(96042)].func.obj  = deva_cloak;
-	obj_index[real_object0(96059)].func.obj  = icicle_cloak;
-	obj_index[real_object0(8406)].func.obj   = ogrebane;
-	obj_index[real_object0(96066)].func.obj  = giantbane;
-	obj_index[real_object0(20000)].func.obj  = mindbreaker;
-	obj_index[real_object0(1270)].func.obj   = treasure_chest;
-	obj_index[real_object0(453)].func.obj    = cards_object;
-	obj_index[real_object0(34226)].func.obj  = dwarfslayer;
+	obj_index[real_object0(55007)].func.obj = no_kill_priest_obj;
+	obj_index[real_object0(1372)].func.obj = jet_black_maul;
+	obj_index[real_object0(35102)].func.obj = magic_pool;
+	obj_index[real_object0(35103)].func.obj = magic_pool;
+	obj_index[real_object0(12028)].func.obj = moonstone_fragment;
+	obj_index[real_object0(96073)].func.obj = faith;
+	obj_index[real_object0(96012)].func.obj = mistweave;
+	obj_index[real_object0(96027)].func.obj = leather_vest;
+	obj_index[real_object0(96042)].func.obj = deva_cloak;
+	obj_index[real_object0(96059)].func.obj = icicle_cloak;
+	obj_index[real_object0(8406)].func.obj = ogrebane;
+	obj_index[real_object0(96066)].func.obj = giantbane;
+	obj_index[real_object0(20000)].func.obj = mindbreaker;
+	obj_index[real_object0(1270)].func.obj = treasure_chest;
+	obj_index[real_object0(453)].func.obj = cards_object;
+	obj_index[real_object0(34226)].func.obj = dwarfslayer;
 
 	obj_index[real_object0(354)].func.obj = artifact_monolith;
 
@@ -1296,23 +1303,23 @@ void assign_objects(void)
 
 	/* banks - add proc for storage lockers */
 	obj_index[real_object0(132581)].func.obj = storage_locker_obj_hook;
-	obj_index[real_object0(3097)].func.obj   = storage_locker_obj_hook;
+	obj_index[real_object0(3097)].func.obj = storage_locker_obj_hook;
 
 	/* Mossi Mods:  General Items  */
-	obj_index[real_object0(4)].func.obj           = blood_stains;
-	obj_index[real_object0(50)].func.obj          = ice_shattered_bits;
+	obj_index[real_object0(4)].func.obj = blood_stains;
+	obj_index[real_object0(50)].func.obj = ice_shattered_bits;
 	obj_index[real_object0(VNUM_TRACKS)].func.obj = tracks;
-	obj_index[real_object0(99)].func.obj          = frost_beacon;
-	obj_index[real_object0(110)].func.obj         = ice_block;
+	obj_index[real_object0(99)].func.obj = frost_beacon;
+	obj_index[real_object0(110)].func.obj = ice_block;
 
 	/* somewhere */
 
-	obj_index[real_object0(3833)].func.obj  = glades_dagger;
+	obj_index[real_object0(3833)].func.obj = glades_dagger;
 	obj_index[real_object0(44499)].func.obj = lucky_weapon;
 	obj_index[real_object0(15907)].func.obj = mace_dragondeath;
 	obj_index[real_object0(17021)].func.obj = khildarak_warhammer;
 	obj_index[real_object0(80830)].func.obj = ogre_warlords_sword;
-	obj_index[real_object0(7365)].func.obj  = flaming_axe_of_azer;
+	obj_index[real_object0(7365)].func.obj = flaming_axe_of_azer;
 
 	/* bahamut */
 	obj_index[real_object0(25711)].func.obj = mrinlor_whip;
@@ -1325,7 +1332,7 @@ void assign_objects(void)
 	/* Forgot what zone it is from  */
 
 	obj_index[real_object0(38772)].func.obj = platemail_of_defense;
-	obj_index[real_object0(414)].func.obj   = platemail_of_defense;
+	obj_index[real_object0(414)].func.obj = platemail_of_defense;
 
 	obj_index[real_object0(22063)].func.obj = master_set;
 	obj_index[real_object0(22237)].func.obj = master_set;
@@ -1347,7 +1354,7 @@ void assign_objects(void)
 	obj_index[real_object0(926)].func.obj = ioun_testicle;
 	obj_index[real_object0(920)].func.obj = ioun_warp;
 
-	obj_index[real_object0(1210)].func.obj  = tendrils;
+	obj_index[real_object0(1210)].func.obj = tendrils;
 	obj_index[real_object0(26665)].func.obj = elvenkind_cloak;
 
 	/* Undead zone */
@@ -1361,34 +1368,42 @@ void assign_objects(void)
   obj_index[real_object0(99807)].func.obj = olympus_portal;
 #endif
 
-	obj_index[real_object0(67280)].func.obj = obj_index[real_object0(16263)].func.obj = obj_index[real_object0(16268)].func.obj = obj_index[real_object0(26653)].func.obj =
-		obj_index[real_object0(25719)].func.obj = obj_index[real_object0(911)].func.obj = obj_index[real_object0(23808)].func.obj = artifact_stone;
-	obj_index[real_object0(67244)].func.obj                                                                                       = artifact_stone;
-	obj_index[real_object0(17)].func.obj                                                                                          = artifact_stone;
-	obj_index[real_object0(23806)].func.obj                                                                                       = earthquake_gauntlet;
+	obj_index[real_object0(67280)].func.obj = obj_index[real_object0(16263)].func.obj =
+		obj_index[real_object0(16268)].func.obj = obj_index[real_object0(26653)].func.obj =
+			obj_index[real_object0(25719)].func.obj =
+				obj_index[real_object0(911)].func.obj =
+					obj_index[real_object0(23808)].func.obj = artifact_stone;
+	obj_index[real_object0(67244)].func.obj = artifact_stone;
+	obj_index[real_object0(17)].func.obj = artifact_stone;
+	obj_index[real_object0(23806)].func.obj = earthquake_gauntlet;
 
-	obj_index[real_object0(910)].func.obj   = artifact_biofeedback;
+	obj_index[real_object0(910)].func.obj = artifact_biofeedback;
 	obj_index[real_object0(67215)].func.obj = artifact_biofeedback;
 	obj_index[real_object0(23807)].func.obj = blind_boots;
 
 	obj_index[real_object0(400237)].func.obj = thanksgiving_wings;
-	obj_index[real_object0(55320)].func.obj  = artifact_stone;
+	obj_index[real_object0(55320)].func.obj = artifact_stone;
 
 	obj_index[real_object0(419)].func.obj = moonstone;
 	obj_index[real_object0(433)].func.obj = moonstone;
 
-	obj_index[real_object0(139138)].func.obj = obj_index[real_object0(12410)].func.obj = obj_index[real_object0(19916)].func.obj = obj_index[real_object0(23809)].func.obj =
-		obj_index[real_object0(17)].func.obj                                                                                     = artifact_hide;
-	obj_index[real_object0(97118)].func.obj                                                                                      = artifact_hide;
-	obj_index[real_object0(44170)].func.obj                                                                                      = artifact_hide;
+	obj_index[real_object0(139138)].func.obj = obj_index[real_object0(12410)].func.obj =
+		obj_index[real_object0(19916)].func.obj = obj_index[real_object0(23809)].func.obj =
+			obj_index[real_object0(17)].func.obj = artifact_hide;
+	obj_index[real_object0(97118)].func.obj = artifact_hide;
+	obj_index[real_object0(44170)].func.obj = artifact_hide;
 
 	// old guildhalls (deprecated)
 	//  obj_index[real_object0(115)].func.obj = guild_chest;
 	// obj_index[real_object0(96443)].func.obj = illithid_sack;
 
 	obj_index[real_object0(70963)].func.obj = pathfinder;
-	obj_index[real_object0(16904)].func.obj = obj_index[real_object0(23202)].func.obj = obj_index[real_object0(23203)].func.obj = obj_index[real_object0(32861)].func.obj =
-		obj_index[real_object0(32428)].func.obj = obj_index[real_object0(71231)].func.obj = obj_index[real_object0(41204)].func.obj = artifact_invisible;
+	obj_index[real_object0(16904)].func.obj = obj_index[real_object0(23202)].func.obj =
+		obj_index[real_object0(23203)].func.obj = obj_index[real_object0(32861)].func.obj =
+			obj_index[real_object0(32428)].func.obj =
+				obj_index[real_object0(71231)].func.obj =
+					obj_index[real_object0(41204)].func.obj =
+						artifact_invisible;
 	/* Prison */
 	obj_index[real_object0(7371)].func.obj = nexus;
 
@@ -1417,14 +1432,14 @@ void assign_objects(void)
 	/* misc */
 	obj_index[real_object0(1230)].func.obj = totem_of_mastery;
 	//  obj_index[real_object0(41208)].func.obj = mithril_dagger;
-	obj_index[real_object0(48)].func.obj    = god_bp;
-	obj_index[real_object0(49)].func.obj    = out_of_god_bp;
+	obj_index[real_object0(48)].func.obj = god_bp;
+	obj_index[real_object0(49)].func.obj = out_of_god_bp;
 	obj_index[real_object0(38763)].func.obj = ring_of_regeneration;
 	obj_index[real_object0(31549)].func.obj = glowing_necklace;
 	obj_index[real_object0(32008)].func.obj = staff_shadow_summoning;
 	obj_index[real_object0(67245)].func.obj = rod_of_magic;
 	obj_index[real_object0(76032)].func.obj = proc_whirlwinds;
-	obj_index[real_object0(1220)].func.obj  = lyrical_instrument_of_time;
+	obj_index[real_object0(1220)].func.obj = lyrical_instrument_of_time;
 
 	/* avernus procs */
 	obj_index[real_object0(32001)].func.obj = sinister_tactics_staff;
@@ -1457,9 +1472,9 @@ void assign_objects(void)
 	obj_index[real_object0(32826)].func.obj = shabo_trap_up_two;
 
 	mob_index[real_mobile0(1000)].func.mob = annoying_mob;
-	mob_index[real_mobile0(320)].func.mob  = cow_talk;
-	obj_index[real_object0(46)].func.obj   = lightning_armor;
-	obj_index[real_object0(47)].func.obj   = imprison_armor;
+	mob_index[real_mobile0(320)].func.mob = cow_talk;
+	obj_index[real_object0(46)].func.obj = lightning_armor;
+	obj_index[real_object0(47)].func.obj = imprison_armor;
 
 	// re-enabled old procs
 	obj_index[real_object0(45)].func.obj = slot_machine;
@@ -1470,10 +1485,10 @@ void assign_objects(void)
 	/* objs */
 	obj_index[real_object0(1191)].func.obj = fun_dagger;
 
-	obj_index[real_object0(2203)].func.obj  = unspec_altar;
+	obj_index[real_object0(2203)].func.obj = unspec_altar;
 	obj_index[real_object0(12016)].func.obj = unspec_altar;
-	obj_index[real_object0(1190)].func.obj  = rax_red_dagger;
-	obj_index[real_object0(2204)].func.obj  = cutting_dagger;
+	obj_index[real_object0(1190)].func.obj = rax_red_dagger;
+	obj_index[real_object0(2204)].func.obj = cutting_dagger;
 	obj_index[real_object0(70549)].func.obj = circlet_of_light;
 	obj_index[real_object0(70554)].func.obj = ljs_sword;
 	obj_index[real_object0(70556)].func.obj = wuss_sword;
@@ -1533,7 +1548,7 @@ void assign_objects(void)
 	obj_index[real_object0(44172)].func.obj = madman_shield;
 	obj_index[real_object0(44188)].func.obj = mentality_mace;
 
-	obj_index[real_object0(25)].func.obj    = artifact_biofeedback;
+	obj_index[real_object0(25)].func.obj = artifact_biofeedback;
 	obj_index[real_object0(67203)].func.obj = vapor;
 
 	/* 56 Zone - Kvark */
@@ -1552,10 +1567,10 @@ void assign_objects(void)
 
 	/* random eq proc  */
 	obj_index[real_object0(VOBJ_RANDOM_THRUSTED)].func.obj = thrusted_eq_proc;
-	obj_index[real_object0(VOBJ_RANDOM_ARMOR)].func.obj    = set_proc;
-	obj_index[real_object0(1251)].func.obj                 = encrusted_eq_proc;
-	obj_index[real_object0(251)].func.obj                  = parchment_forge;
-	obj_index[real_object0(400210)].func.obj               = learn_recipe;
+	obj_index[real_object0(VOBJ_RANDOM_ARMOR)].func.obj = set_proc;
+	obj_index[real_object0(1251)].func.obj = encrusted_eq_proc;
+	obj_index[real_object0(251)].func.obj = parchment_forge;
+	obj_index[real_object0(400210)].func.obj = learn_recipe;
 
 	obj_index[real_object0(58)].func.obj = relic_proc;
 	obj_index[real_object0(59)].func.obj = relic_proc;
@@ -1579,24 +1594,24 @@ void assign_objects(void)
 	obj_index[real_object0(67206)].func.obj = demo_scimitar;
 	obj_index[real_object0(67272)].func.obj = dranum_mask;
 	obj_index[real_object0(67220)].func.obj = golem_chunk;
-	obj_index[real_object0(21)].func.obj    = good_evil_sword;
-	obj_index[real_object0(22)].func.obj    = good_evil_sword;
+	obj_index[real_object0(21)].func.obj = good_evil_sword;
+	obj_index[real_object0(22)].func.obj = good_evil_sword;
 
 	obj_index[real_object0(1234)].func.obj = banana;
-	obj_index[real_object0(358)].func.obj  = epic_stone;
-	obj_index[real_object0(359)].func.obj  = epic_stone;
-	obj_index[real_object0(360)].func.obj  = epic_stone;
+	obj_index[real_object0(358)].func.obj = epic_stone;
+	obj_index[real_object0(359)].func.obj = epic_stone;
+	obj_index[real_object0(360)].func.obj = epic_stone;
 
 	/* stat pools */
 
-	obj_index[real_object0(60)].func.obj  = stat_pool_str;
-	obj_index[real_object0(61)].func.obj  = stat_pool_dex;
-	obj_index[real_object0(62)].func.obj  = stat_pool_agi;
-	obj_index[real_object0(63)].func.obj  = stat_pool_con;
-	obj_index[real_object0(64)].func.obj  = stat_pool_pow;
-	obj_index[real_object0(65)].func.obj  = stat_pool_int;
-	obj_index[real_object0(66)].func.obj  = stat_pool_wis;
-	obj_index[real_object0(67)].func.obj  = stat_pool_cha;
+	obj_index[real_object0(60)].func.obj = stat_pool_str;
+	obj_index[real_object0(61)].func.obj = stat_pool_dex;
+	obj_index[real_object0(62)].func.obj = stat_pool_agi;
+	obj_index[real_object0(63)].func.obj = stat_pool_con;
+	obj_index[real_object0(64)].func.obj = stat_pool_pow;
+	obj_index[real_object0(65)].func.obj = stat_pool_int;
+	obj_index[real_object0(66)].func.obj = stat_pool_wis;
+	obj_index[real_object0(67)].func.obj = stat_pool_cha;
 	obj_index[real_object0(930)].func.obj = stat_pool_luc;
 
 	/* random spell pool */
@@ -1606,14 +1621,28 @@ void assign_objects(void)
 
 	/* player castles */
 
-	obj_index[real_object0(11002)].func.obj = obj_index[real_object0(11051)].func.obj = obj_index[real_object0(11052)].func.obj = obj_index[real_object0(11053)].func.obj =
-		obj_index[real_object0(11054)].func.obj = obj_index[real_object0(11055)].func.obj = obj_index[real_object0(11056)].func.obj = obj_index[real_object0(11057)].func.obj =
-			obj_index[real_object0(11058)].func.obj = obj_index[real_object0(11059)].func.obj = obj_index[real_object0(11060)].func.obj = obj_index[real_object0(11061)].func.obj =
-				obj_index[real_object0(11062)].func.obj = obj_index[real_object0(11063)].func.obj = obj_index[real_object0(11064)].func.obj = obj_index[real_object0(11065)].func.obj = magic_mouth;
+	obj_index[real_object0(11002)].func.obj = obj_index[real_object0(11051)].func.obj =
+		obj_index[real_object0(11052)]
+			.func.obj = obj_index[real_object0(11053)]
+					    .func.obj = obj_index[real_object0(11054)].func.obj =
+			obj_index[real_object0(11055)]
+				.func.obj = obj_index[real_object0(11056)]
+						    .func
+						    .obj = obj_index[real_object0(11057)].func.obj =
+				obj_index[real_object0(11058)]
+					.func.obj = obj_index[real_object0(11059)].func.obj =
+					obj_index[real_object0(11060)]
+						.func.obj = obj_index[real_object0(11061)].func.obj =
+						obj_index[real_object0(11062)]
+							.func.obj = obj_index[real_object0(11063)]
+									    .func.obj =
+							obj_index[real_object0(11064)].func.obj =
+								obj_index[real_object0(11065)]
+									.func.obj = magic_mouth;
 
 	/* heavens */
-	obj_index[real_object0(56)].func.obj  = dragoon_blade;
-	obj_index[real_object0(93)].func.obj  = dragoon_lance;
+	obj_index[real_object0(56)].func.obj = dragoon_blade;
+	obj_index[real_object0(93)].func.obj = dragoon_lance;
 	obj_index[real_object0(171)].func.obj = dragoon_totem;
 	obj_index[real_object0(465)].func.obj = gc_portal;
 	obj_index[real_object0(466)].func.obj = ec_portal;
@@ -1629,8 +1658,8 @@ void assign_objects(void)
 
 	obj_index[real_object0(67279)].func.obj = roulette_pistol;
 	obj_index[real_object0(67282)].func.obj = orb_of_deception;
-	obj_index[real_object0(427)].func.obj   = super_cannon;
-	obj_index[real_object0(428)].func.obj   = zombies_game;
+	obj_index[real_object0(427)].func.obj = super_cannon;
+	obj_index[real_object0(428)].func.obj = zombies_game;
 
 	obj_index[real_object0(435)].func.obj = proc_soldon_hat;
 	obj_index[real_object0(499)].func.obj = proc_lohrr;
@@ -1669,7 +1698,7 @@ void assign_objects(void)
 
 	/*specs.object.c */
 	obj_index[real_object0(23056)].func.obj = lifereaver;
-	obj_index[real_object0(366)].func.obj   = flame_blade;
+	obj_index[real_object0(366)].func.obj = flame_blade;
 	/* sea kingdom */
 
 	obj_index[real_object0(31514)].func.obj = SeaKingdom_Tsunami;
@@ -1717,25 +1746,25 @@ void assign_objects(void)
 	obj_index[real_object0(41907)].func.obj = mir_fire;
 
 	/* Lower God Rooms */
-	obj_index[real_object0(18)].func.obj  = githpc_special_weap;
-	obj_index[real_object0(19)].func.obj  = githpc_special_weap;
+	obj_index[real_object0(18)].func.obj = githpc_special_weap;
+	obj_index[real_object0(19)].func.obj = githpc_special_weap;
 	obj_index[real_object0(418)].func.obj = githpc_special_weap;
-	obj_index[real_object0(89)].func.obj  = board;
-	obj_index[real_object0(92)].func.obj  = board;
-	obj_index[real_object0(90)].func.obj  = board;
-	obj_index[real_object0(76)].func.obj  = board;
-	obj_index[real_object0(84)].func.obj  = board;
-	obj_index[real_object0(85)].func.obj  = board;
-	obj_index[real_object0(86)].func.obj  = board;
-	obj_index[real_object0(87)].func.obj  = board;
-	obj_index[real_object0(88)].func.obj  = board;
-	obj_index[real_object0(75)].func.obj  = board;
-	obj_index[real_object0(78)].func.obj  = board;
-	obj_index[real_object0(79)].func.obj  = board;
-	obj_index[real_object0(80)].func.obj  = board;
-	obj_index[real_object0(81)].func.obj  = board;
-	obj_index[real_object0(29)].func.obj  = board;
-	obj_index[real_object0(42)].func.obj  = board;
+	obj_index[real_object0(89)].func.obj = board;
+	obj_index[real_object0(92)].func.obj = board;
+	obj_index[real_object0(90)].func.obj = board;
+	obj_index[real_object0(76)].func.obj = board;
+	obj_index[real_object0(84)].func.obj = board;
+	obj_index[real_object0(85)].func.obj = board;
+	obj_index[real_object0(86)].func.obj = board;
+	obj_index[real_object0(87)].func.obj = board;
+	obj_index[real_object0(88)].func.obj = board;
+	obj_index[real_object0(75)].func.obj = board;
+	obj_index[real_object0(78)].func.obj = board;
+	obj_index[real_object0(79)].func.obj = board;
+	obj_index[real_object0(80)].func.obj = board;
+	obj_index[real_object0(81)].func.obj = board;
+	obj_index[real_object0(29)].func.obj = board;
+	obj_index[real_object0(42)].func.obj = board;
 
 	/* random zone stuff here please ! */
 	obj_index[real_object0(19507)].func.obj = random_tomb;
@@ -1752,16 +1781,16 @@ void assign_objects(void)
 	obj_index[real_object0(770)].func.obj = portal_wormhole;
 	obj_index[real_object0(780)].func.obj = portal_etherportal;
 	obj_index[real_object0(782)].func.obj = portal_door;
-	obj_index[real_object0(55)].func.obj  = trustee_artifact;
+	obj_index[real_object0(55)].func.obj = trustee_artifact;
 
 	/* Main God Rooms */
 	obj_index[real_object0(1227)].func.obj = orcus_wand;
-	obj_index[real_object0(30)].func.obj   = varon;
-	obj_index[real_object0(752)].func.obj  = portal_door;
-	obj_index[real_object0(781)].func.obj  = portal_door;
+	obj_index[real_object0(30)].func.obj = varon;
+	obj_index[real_object0(752)].func.obj = portal_door;
+	obj_index[real_object0(781)].func.obj = portal_door;
 	//  obj_index[real_object0(363)].func.obj = thought_beacon;
-	obj_index[real_object0(14)].func.obj   = banana;
-	obj_index[real_object0(15)].func.obj   = banana;
+	obj_index[real_object0(14)].func.obj = banana;
+	obj_index[real_object0(15)].func.obj = banana;
 	obj_index[real_object0(1278)].func.obj = changelog;
 	obj_index[real_object0(1300)].func.obj = obj_imprison;
 
@@ -1769,9 +1798,9 @@ void assign_objects(void)
 	obj_index[real_object0(VOBJ_WALLS)].func.obj = wall_generic; /* Wall of stone */
 
 	/* Traps */
-	obj_index[real_object0(54)].func.obj     = huntsman_ward;
-	obj_index[real_object0(73)].func.obj     = huntsman_ward;
-	obj_index[real_object0(77)].func.obj     = huntsman_ward;
+	obj_index[real_object0(54)].func.obj = huntsman_ward;
+	obj_index[real_object0(73)].func.obj = huntsman_ward;
+	obj_index[real_object0(77)].func.obj = huntsman_ward;
 	obj_index[real_object0(400229)].func.obj = huntsman_ward;
 
 	/* Kobold Settlement */
@@ -1783,7 +1812,7 @@ void assign_objects(void)
 	obj_index[real_object0(4505)].func.obj = hammer;
 	obj_index[real_object0(4403)].func.obj = magic_pool;
 	obj_index[real_object0(4404)].func.obj = magic_pool;
-	obj_index[real_object0(17)].func.obj   = barb;
+	obj_index[real_object0(17)].func.obj = barb;
 
 	/* Alterian Wilderness */
 	obj_index[real_object0(4801)].func.obj = magic_pool;
@@ -1843,9 +1872,14 @@ void assign_objects(void)
 	obj_index[real_object0(96402)].func.obj = illithid_teleport_veil;
 
 	/* Twin Towers - Forest */
-	obj_index[real_object0(13505)].func.obj = obj_index[real_object0(13508)].func.obj = obj_index[real_object0(13511)].func.obj = obj_index[real_object0(13513)].func.obj =
-		obj_index[real_object0(13515)].func.obj = obj_index[real_object0(13516)].func.obj = obj_index[real_object0(13517)].func.obj = obj_index[real_object0(13518)].func.obj =
-			obj_index[real_object0(13519)].func.obj                                                                                 = forest_corpse;
+	obj_index[real_object0(13505)].func.obj = obj_index[real_object0(13508)].func.obj =
+		obj_index[real_object0(13511)].func.obj = obj_index[real_object0(13513)].func.obj =
+			obj_index[real_object0(13515)].func.obj =
+				obj_index[real_object0(13516)].func.obj =
+					obj_index[real_object0(13517)].func.obj =
+						obj_index[real_object0(13518)].func.obj =
+							obj_index[real_object0(13519)].func.obj =
+								forest_corpse;
 
 	/*
 	   New Cavecity
@@ -1918,16 +1952,16 @@ void assign_objects(void)
 	 */
 	obj_index[real_object0(87612)].func.obj = doombringer;
 	// obj_index[real_object0(25030)].func.obj = flamberge;
-	obj_index[real_object0(430)].func.obj   = flamberge;
+	obj_index[real_object0(430)].func.obj = flamberge;
 	obj_index[real_object0(25080)].func.obj = ring_elemental_control;
 
 	/*
 	   Plane of Fire Two
 	 */
 	obj_index[real_object0(139004)].func.obj = holy_mace;
-	obj_index[real_object0(25103)].func.obj  = staff_of_blue_flames;
-	obj_index[real_object0(30)].func.obj     = staff_of_power;
-	obj_index[real_object0(40409)].func.obj  = reliance_pegasus;
+	obj_index[real_object0(25103)].func.obj = staff_of_blue_flames;
+	obj_index[real_object0(30)].func.obj = staff_of_power;
+	obj_index[real_object0(40409)].func.obj = reliance_pegasus;
 
 	/*
 	   Plane of Fire Three
@@ -2080,22 +2114,49 @@ void assign_objects(void)
 	obj_index[real_object0(55361)].func.obj = earring_powers;
 	obj_index[real_object0(83698)].func.obj = earring_powers;
 	obj_index[real_object0(55363)].func.obj = lorekeeper_scroll;
-	obj_index[real_object0(55500)].func.obj = obj_index[real_object0(55501)].func.obj = obj_index[real_object0(55502)].func.obj = obj_index[real_object0(55503)].func.obj =
-		obj_index[real_object0(55504)].func.obj = obj_index[real_object0(55505)].func.obj = obj_index[real_object0(55506)].func.obj = obj_index[real_object0(55507)].func.obj =
-			obj_index[real_object0(55508)].func.obj = obj_index[real_object0(55509)].func.obj = obj_index[real_object0(55510)].func.obj = obj_index[real_object0(55511)].func.obj =
-				obj_index[real_object0(55512)].func.obj = obj_index[real_object0(55513)].func.obj = obj_index[real_object0(55514)].func.obj = obj_index[real_object0(55515)].func.obj =
-					obj_index[real_object0(55516)].func.obj = obj_index[real_object0(55517)].func.obj = obj_index[real_object0(55518)].func.obj = obj_index[real_object0(55519)].func.obj =
-						obj_index[real_object0(55520)].func.obj                                                                                 = wh_corpse_decay;
-	obj_index[real_object0(53661)].func.obj                                                                                                     = damnation_staff;
-	obj_index[real_object0(53662)].func.obj                                                                                                     = nuke_damnation;
-	obj_index[real_object0(53663)].func.obj                                                                                                     = nuke_damnation;
-	obj_index[real_object0(97932)].func.obj                                                                                                     = collar_frost;
-	obj_index[real_object0(97931)].func.obj                                                                                                     = collar_flames;
-	obj_index[real_object0(VOBJ_WH_DRAGONHEART_TIAMAT)].func.obj                                                                                = dragon_heart_decay;
-	obj_index[real_object0(VOBJ_WH_DRAGONHEART_BAHAMUT)].func.obj                                                                               = dragon_heart_decay;
-	obj_index[real_object0(VOBJ_WH_DRAGONHEART_DRAGONNIA)].func.obj                                                                             = dragon_heart_decay;
-	obj_index[real_object0(55420)].func.obj                                                                                                     = lancer_gift;
-	obj_index[real_object0(55077)].func.obj                                                                                                     = splinter;
+	obj_index[real_object0(55500)]
+		.func.obj = obj_index[real_object0(55501)]
+				    .func.obj = obj_index[real_object0(55502)]
+							.func.obj = obj_index[real_object0(55503)]
+									    .func.obj =
+		obj_index[real_object0(55504)]
+			.func.obj = obj_index[real_object0(55505)]
+					    .func.obj = obj_index[real_object0(55506)]
+								.func
+								.obj = obj_index[real_object0(55507)]
+									       .func.obj =
+			obj_index[real_object0(55508)]
+				.func.obj = obj_index[real_object0(55509)]
+						    .func
+						    .obj = obj_index[real_object0(55510)].func.obj =
+				obj_index[real_object0(55511)]
+					.func.obj = obj_index[real_object0(55512)]
+							    .func.obj =
+					obj_index[real_object0(55513)]
+						.func.obj = obj_index[real_object0(55514)].func.obj =
+						obj_index[real_object0(55515)]
+							.func.obj = obj_index[real_object0(55516)]
+									    .func.obj =
+							obj_index[real_object0(55517)]
+								.func.obj = obj_index[real_object0(
+											      55518)]
+										    .func.obj =
+								obj_index[real_object0(55519)]
+									.func.obj =
+									obj_index[real_object0(
+											  55520)]
+										.func.obj =
+										wh_corpse_decay;
+	obj_index[real_object0(53661)].func.obj = damnation_staff;
+	obj_index[real_object0(53662)].func.obj = nuke_damnation;
+	obj_index[real_object0(53663)].func.obj = nuke_damnation;
+	obj_index[real_object0(97932)].func.obj = collar_frost;
+	obj_index[real_object0(97931)].func.obj = collar_flames;
+	obj_index[real_object0(VOBJ_WH_DRAGONHEART_TIAMAT)].func.obj = dragon_heart_decay;
+	obj_index[real_object0(VOBJ_WH_DRAGONHEART_BAHAMUT)].func.obj = dragon_heart_decay;
+	obj_index[real_object0(VOBJ_WH_DRAGONHEART_DRAGONNIA)].func.obj = dragon_heart_decay;
+	obj_index[real_object0(55420)].func.obj = lancer_gift;
+	obj_index[real_object0(55077)].func.obj = splinter;
 
 	/* Same problem as with the func.mob, no dice! */
 
@@ -2160,7 +2221,7 @@ void assign_objects(void)
 
 	/* Quietus Quay */
 	mob_index[real_mobile0(1709)].func.mob = world_quest;
-	world[real_room0(1719)].funct          = ship_shop_proc;
+	world[real_room0(1719)].funct = ship_shop_proc;
 
 	/* Charcoal Palace */
 	mob_index[real_mobile0(88316)].func.mob = kossuth;
@@ -2185,7 +2246,6 @@ void assign_objects(void)
 
 void assign_rooms(void)
 {
-
 	int x;
 
 	for (x = 32907; x <= 32909; x++)
@@ -2204,7 +2264,7 @@ void assign_rooms(void)
 	}
 
 	world[real_room0(1134)].funct = cage_room1;
-	world[real_room0(42)].funct   = cage_room2;
+	world[real_room0(42)].funct = cage_room2;
 	world[real_room0(1201)].funct = player_council_room;
 
 	// testing for multiclass
@@ -2226,28 +2286,28 @@ void assign_rooms(void)
 	// world[real_room0(VROOM_TIAMAT_HOME)].funct = TiamatThrone;
 
 	/* inns */
-	world[real_room0(18729)].funct  = inn;
-	world[real_room0(35264)].funct  = inn;
-	world[real_room0(37715)].funct  = inn;
-	world[real_room0(37313)].funct  = inn;
-	world[real_room0(40454)].funct  = inn;
-	world[real_room0(37434)].funct  = inn;
-	world[real_room0(21611)].funct  = inn;
-	world[real_room0(67493)].funct  = inn;
-	world[real_room0(18729)].funct  = inn;
-	world[real_room0(67503)].funct  = inn;
-	world[real_room0(81070)].funct  = inn;
-	world[real_room0(81028)].funct  = inn;
-	world[real_room0(81019)].funct  = inn;
-	world[real_room0(81078)].funct  = inn;
-	world[real_room0(81003)].funct  = inn;
-	world[real_room0(77442)].funct  = inn;
-	world[real_room0(82217)].funct  = inn;
-	world[real_room0(82574)].funct  = inn;
-	world[real_room0(99715)].funct  = inn;
-	world[real_room0(10857)].funct  = inn;
-	world[real_room0(3398)].funct   = inn;
-	world[real_room0(1736)].funct   = inn;
+	world[real_room0(18729)].funct = inn;
+	world[real_room0(35264)].funct = inn;
+	world[real_room0(37715)].funct = inn;
+	world[real_room0(37313)].funct = inn;
+	world[real_room0(40454)].funct = inn;
+	world[real_room0(37434)].funct = inn;
+	world[real_room0(21611)].funct = inn;
+	world[real_room0(67493)].funct = inn;
+	world[real_room0(18729)].funct = inn;
+	world[real_room0(67503)].funct = inn;
+	world[real_room0(81070)].funct = inn;
+	world[real_room0(81028)].funct = inn;
+	world[real_room0(81019)].funct = inn;
+	world[real_room0(81078)].funct = inn;
+	world[real_room0(81003)].funct = inn;
+	world[real_room0(77442)].funct = inn;
+	world[real_room0(82217)].funct = inn;
+	world[real_room0(82574)].funct = inn;
+	world[real_room0(99715)].funct = inn;
+	world[real_room0(10857)].funct = inn;
+	world[real_room0(3398)].funct = inn;
+	world[real_room0(1736)].funct = inn;
 	world[real_room0(139078)].funct = inn;
 
 	/* Aracdrathos */
@@ -2258,7 +2318,7 @@ void assign_rooms(void)
 	world[real_room0(28281)].funct = stat_shops;
 
 	/* minizones */
-	world[real_room0(5783)].funct          = pet_shops;
+	world[real_room0(5783)].funct = pet_shops;
 	obj_index[real_object0(5805)].func.obj = sword_named_magik;
 	/*
 	  mob_index[real_mobile0(5808)].func.mob = plant_attacks_poison;
@@ -2268,11 +2328,11 @@ void assign_rooms(void)
 	world[real_room0(66355)].funct = undead_inn;
 	world[real_room0(14362)].funct = inn;
 
-	world[real_room0(43341)].funct          = patrol_shops;
-	world[real_room0(45006)].funct          = inn;
-	world[real_room0(45036)].funct          = pet_shops;
-	world[real_room0(29280)].funct          = pet_shops;
-	world[real_room0(29282)].funct          = pet_shops;
+	world[real_room0(43341)].funct = patrol_shops;
+	world[real_room0(45006)].funct = inn;
+	world[real_room0(45036)].funct = pet_shops;
+	world[real_room0(29280)].funct = pet_shops;
+	world[real_room0(29282)].funct = pet_shops;
 	obj_index[real_object0(29236)].func.obj = newbie_portal;
 	/* centaur fort */
 	world[real_room0(5300)].funct = inn;
@@ -2312,38 +2372,38 @@ void assign_rooms(void)
 	world[real_room0(132868)].funct = pet_shops;
 	world[real_room0(132743)].funct = pet_shops;
 	// world[real_room0(6683)].funct = ship_shop_proc;
-	world[real_room0(83786)].funct  = ship_shop_proc;
-	world[real_room0(88846)].funct  = ship_shop_proc;
-	world[real_room0(43198)].funct  = ship_shop_proc;
-	world[real_room0(43158)].funct  = ship_shop_proc;
+	world[real_room0(83786)].funct = ship_shop_proc;
+	world[real_room0(88846)].funct = ship_shop_proc;
+	world[real_room0(43198)].funct = ship_shop_proc;
+	world[real_room0(43158)].funct = ship_shop_proc;
 	world[real_room0(140854)].funct = ship_shop_proc;
 	world[real_room0(258421)].funct = ship_shop_proc;
-	world[real_room0(22441)].funct  = ship_shop_proc;
-	world[real_room0(70501)].funct  = ship_shop_proc; /* rax's quest zone */
+	world[real_room0(22441)].funct = ship_shop_proc;
+	world[real_room0(70501)].funct = ship_shop_proc; /* rax's quest zone */
 	world[real_room0(258421)].funct = ship_shop_proc;
-	world[real_room0(43118)].funct  = ship_shop_proc;
+	world[real_room0(43118)].funct = ship_shop_proc;
 	world[real_room0(635260)].funct = ship_shop_proc;
 	world[real_room0(584171)].funct = ship_shop_proc;
-	world[real_room0(55410)].funct  = ship_shop_proc;
+	world[real_room0(55410)].funct = ship_shop_proc;
 	world[real_room0(133051)].funct = ship_shop_proc;
 
-	world[real_room0(77)].funct     = crew_shop_proc; // whole-list room
-	world[real_room0(1734)].funct   = crew_shop_proc; // Quietus
-	world[real_room0(9704)].funct   = crew_shop_proc; // Sarmiz
-	world[real_room0(43220)].funct  = crew_shop_proc; // WH Harbor
-	world[real_room0(43221)].funct  = crew_shop_proc; // Thur'Gurdax
-	world[real_room0(43222)].funct  = crew_shop_proc; // Fenaline
-	world[real_room0(28197)].funct  = crew_shop_proc; // Vesprin
-	world[real_room0(22481)].funct  = crew_shop_proc; // Stormport
-	world[real_room0(66735)].funct  = crew_shop_proc; // Torrhan
-	world[real_room0(82641)].funct  = crew_shop_proc; // Myrabolus
-	world[real_room0(54240)].funct  = crew_shop_proc; // tent at Fiord
-	world[real_room0(38107)].funct  = crew_shop_proc; // Boyard
-	world[real_room0(49051)].funct  = crew_shop_proc; // Venan'Trut (market inn)
-	world[real_room0(81021)].funct  = crew_shop_proc; // Ceothia
-	world[real_room0(76859)].funct  = crew_shop_proc; // Jade shipguild
+	world[real_room0(77)].funct = crew_shop_proc; // whole-list room
+	world[real_room0(1734)].funct = crew_shop_proc; // Quietus
+	world[real_room0(9704)].funct = crew_shop_proc; // Sarmiz
+	world[real_room0(43220)].funct = crew_shop_proc; // WH Harbor
+	world[real_room0(43221)].funct = crew_shop_proc; // Thur'Gurdax
+	world[real_room0(43222)].funct = crew_shop_proc; // Fenaline
+	world[real_room0(28197)].funct = crew_shop_proc; // Vesprin
+	world[real_room0(22481)].funct = crew_shop_proc; // Stormport
+	world[real_room0(66735)].funct = crew_shop_proc; // Torrhan
+	world[real_room0(82641)].funct = crew_shop_proc; // Myrabolus
+	world[real_room0(54240)].funct = crew_shop_proc; // tent at Fiord
+	world[real_room0(38107)].funct = crew_shop_proc; // Boyard
+	world[real_room0(49051)].funct = crew_shop_proc; // Venan'Trut (market inn)
+	world[real_room0(81021)].funct = crew_shop_proc; // Ceothia
+	world[real_room0(76859)].funct = crew_shop_proc; // Jade shipguild
 	world[real_room0(133075)].funct = crew_shop_proc; // Tharnadia
-	world[real_room0(55418)].funct  = crew_shop_proc; // Winterhaven
+	world[real_room0(55418)].funct = crew_shop_proc; // Winterhaven
 	// world[real_room0()].funct = crew_shop_proc;  // TODO: Stronghold
 	world[real_room0(22648)].funct = crew_shop_proc; // Stronghold -temporary room
 
@@ -2446,8 +2506,8 @@ void assign_rooms(void)
 	   misc
 	 */
 	world[real_room0(36334)].funct = inn;
-	world[real_room0(6535)].funct  = inn;
-	world[real_room0(1444)].funct  = inn;
+	world[real_room0(6535)].funct = inn;
+	world[real_room0(1444)].funct = inn;
 	world[real_room0(26566)].funct = inn;
 	world[real_room0(15264)].funct = inn;
 	world[real_room0(95569)].funct = inn;
@@ -2461,9 +2521,15 @@ void assign_rooms(void)
 	/*
 	   Twin Towers - Forest
 	 */
-	world[real_room0(13553)].funct = world[real_room0(13555)].funct = world[real_room0(13556)].funct = world[real_room0(13557)].funct = world[real_room0(13558)].funct =
-		world[real_room0(13564)].funct = world[real_room0(13565)].funct = world[real_room0(13567)].funct = world[real_room0(13568)].funct = world[real_room0(13569)].funct =
-			world[real_room0(13570)].funct = world[real_room0(13571)].funct = gardener_block;
+	world[real_room0(13553)].funct = world[real_room0(13555)].funct =
+		world[real_room0(13556)].funct = world[real_room0(13557)].funct =
+			world[real_room0(13558)].funct = world[real_room0(13564)].funct =
+				world[real_room0(13565)].funct = world[real_room0(13567)].funct =
+					world[real_room0(13568)].funct =
+						world[real_room0(13569)].funct =
+							world[real_room0(13570)].funct =
+								world[real_room0(13571)].funct =
+									gardener_block;
 
 	/* Halfling HT - Woodseer */
 	world[real_room0(16558)].funct = inn;
@@ -2491,24 +2557,24 @@ void assign_rooms(void)
 
 	/* ADD THIS FOR HEAVEN */
 	world[real_room0(NEUTRAL_HEAVEN_ROOM)].funct = mortal_heaven;
-	world[real_room0(EVIL_HEAVEN_ROOM)].funct    = mortal_heaven;
-	world[real_room0(GOOD_HEAVEN_ROOM)].funct    = mortal_heaven;
-	world[real_room0(UNDEAD_HEAVEN_ROOM)].funct  = mortal_heaven;
-	mob_index[real_mobile0(46)].func.mob         = epic_teacher;
-	mob_index[real_mobile0(54)].func.mob         = epic_familiar;
-	mob_index[real_mobile0(55)].func.mob         = epic_familiar;
-	mob_index[real_mobile0(56)].func.mob         = epic_familiar;
-	mob_index[real_mobile0(57)].func.mob         = epic_familiar;
-	mob_index[real_mobile0(58)].func.mob         = epic_familiar;
-	mob_index[real_mobile0(59)].func.mob         = epic_familiar;
+	world[real_room0(EVIL_HEAVEN_ROOM)].funct = mortal_heaven;
+	world[real_room0(GOOD_HEAVEN_ROOM)].funct = mortal_heaven;
+	world[real_room0(UNDEAD_HEAVEN_ROOM)].funct = mortal_heaven;
+	mob_index[real_mobile0(46)].func.mob = epic_teacher;
+	mob_index[real_mobile0(54)].func.mob = epic_familiar;
+	mob_index[real_mobile0(55)].func.mob = epic_familiar;
+	mob_index[real_mobile0(56)].func.mob = epic_familiar;
+	mob_index[real_mobile0(57)].func.mob = epic_familiar;
+	mob_index[real_mobile0(58)].func.mob = epic_familiar;
+	mob_index[real_mobile0(59)].func.mob = epic_familiar;
 
 	/* Tradeskills */
 	mob_index[real_mobile0(132674)].func.mob = learn_tradeskill;
-	mob_index[real_mobile0(17264)].func.mob  = learn_tradeskill;
+	mob_index[real_mobile0(17264)].func.mob = learn_tradeskill;
 	mob_index[real_mobile0(400000)].func.mob = epic_store;
 	mob_index[real_mobile0(400001)].func.mob = pvp_store;
 	mob_index[real_mobile0(132675)].func.mob = assoc_founder;
-	mob_index[real_mobile0(17265)].func.mob  = assoc_founder;
+	mob_index[real_mobile0(17265)].func.mob = assoc_founder;
 
 	/* Bronze Citadel */
 	obj_index[real_object0(32486)].func.obj = bel_sword;
@@ -2556,14 +2622,14 @@ void assign_rooms(void)
 	obj_index[real_object0(424)].func.obj = lucrot_mindstone;
 
 	// Alatorin
-	mob_index[real_mobile0(83414)].func.mob                   = rentacleric;
-	obj_index[real_object0(120051)].func.obj                  = wh_corpse_decay;
-	mob_index[real_mobile0(120051)].func.mob                  = wh_corpse_to_object;
+	mob_index[real_mobile0(83414)].func.mob = rentacleric;
+	obj_index[real_object0(120051)].func.obj = wh_corpse_decay;
+	mob_index[real_mobile0(120051)].func.mob = wh_corpse_to_object;
 	mob_index[real_mobile0(VMOB_ALATORIN_STEELGRIP)].func.mob = smelter;
 
 	// Gellz Special Procs added 2015 (gellz)
 	obj_index[real_object0(55433)].func.obj = magic_deck;
-	obj_index[real_object0(1203)].func.obj  = gellz_test_obj_procs;
+	obj_index[real_object0(1203)].func.obj = gellz_test_obj_procs;
 
 	// NPC Ship Crews
 	assign_ship_crew_funcs();

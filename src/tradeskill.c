@@ -51,72 +51,71 @@
 /*
  * external variables
  */
-extern Skill             skills[];
+extern Skill skills[];
 extern struct zone_data *zone_table;
-extern const char       *material_names[];
-extern P_char            character_list;
-extern P_desc            descriptor_list;
-extern P_index           mob_index;
-extern P_index           obj_index;
-extern P_obj             object_list;
-extern P_room            world;
-extern const int         top_of_world;
-extern char              debug_mode;
-extern const char       *race_types[];
-extern const char       *rude_ass[];
+extern const char *material_names[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern const int top_of_world;
+extern char debug_mode;
+extern const char *race_types[];
+extern const char *rude_ass[];
 
 // extern const int material_absorbtion[][];
 extern const struct stat_data stat_factor[];
-extern float                  fake_sqrt_table[];
-extern int                    pulse;
-extern int                    arena_hometown_location[];
-extern struct arena_data      arena;
-extern struct agi_app_type    agi_app[];
-extern struct dex_app_type    dex_app[];
-extern struct message_list    fight_messages[];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone_table;
-extern void                   material_restrictions(P_obj);
-extern int                    find_map_place();
-extern struct forge_item      forge_item_list[];
+extern float fake_sqrt_table[];
+extern int pulse;
+extern int arena_hometown_location[];
+extern struct arena_data arena;
+extern struct agi_app_type agi_app[];
+extern struct dex_app_type dex_app[];
+extern struct message_list fight_messages[];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
+extern void material_restrictions(P_obj);
+extern int find_map_place();
+extern struct forge_item forge_item_list[];
 
 int cards_object(P_obj obj, P_char ch, int cmd, char *argument);
 int magic_deck(P_obj obj, P_char ch, int cmd, char *argument);
 int unmulti_altar(P_obj obj, P_char ch, int cmd, char *arg);
 int blackjack_table(P_obj obj, P_char ch, int cmd, char *argument);
 
-int  get_ival_from_proc(obj_proc_type);
-int  get_mincircle(int spell);
-int  calc_ore_cost(P_char ch, P_obj ore);
-int  calc_gem_cost(P_char ch, P_obj gem, bool randommob);
+int get_ival_from_proc(obj_proc_type);
+int get_mincircle(int spell);
+int calc_ore_cost(P_char ch, P_obj ore);
+int calc_gem_cost(P_char ch, P_obj gem, bool randommob);
 
-int forge_prices[] = {2000, 5000, 15000, 30000, 50000};
+int forge_prices[] = { 2000, 5000, 15000, 30000, 50000 };
 
 struct smith_data
 {
-	int       vnum;
+	int vnum;
 	short int items[SMITH_MAX_ITEMS + 1];
-} smith_array[] = {
-	{76010,								{131, 132, 53, 54, 55, 56, -1}},
-	{82518,						   {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1}},
-	{22269,									  {92, 93, 94, 95, 96, -1}},
-	{76691,										 {88, 89, 91, 103, -1}},
-	{20240,          {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, -1}},
-	{40712,							  {41, 42, 43, 44, 45, 46, 47, -1}},
-	{99716,      {62, 63, 64, 65, 66, 67, 68, 69, 76, 77, 78, 79, 80, -1}},
-	{ 9412,				  {60, 61, 49, 50, 70, 71, 72, 73, 73, 75, -1}},
-	{96058,   {103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 119, -1}},
-	{ 6002, {6, 7, 8, 9, 10, 23, 24, 25, 26, 30, 37, 38, 39, 40, 113, -1}},
-	{66410,					  {127, 128, 129, 130, 88, 89, 90, 91, -1}},
-	{ 1420,				  {70, 57, 58, 59, 48, 36, 38, 37, 39, 40, -1}}, // kobolds
-	{96916,         {57, 58, 59, 27, 29, 97, 101, 102, 107, 109, 112, -1}}, // troll caves
-	{75628,				  {12, 13, 14, 66, 67, 67, 64, 65, 77, 76, -1}}, // citadel
-	{76502,			  {60, 61, 34, 31, 32, 33, 74, 75, 88, 89, 92, -1}},
-	{28917,				  {46, 47, 49, 45, 35, 78, 77, 86, 87, 85, -1}}, // torg
-	{37755,      {30, 26, 22, 23, 24, 25, 21, 11, 12, 13, 14, 15, 16, -1}}, // nax
-	{    0,														  {-1}}
-};
+} smith_array[] = { { 76010, { 131, 132, 53, 54, 55, 56, -1 } },
+		    { 82518, { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1 } },
+		    { 22269, { 92, 93, 94, 95, 96, -1 } },
+		    { 76691, { 88, 89, 91, 103, -1 } },
+		    { 20240, { 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, -1 } },
+		    { 40712, { 41, 42, 43, 44, 45, 46, 47, -1 } },
+		    { 99716, { 62, 63, 64, 65, 66, 67, 68, 69, 76, 77, 78, 79, 80, -1 } },
+		    { 9412, { 60, 61, 49, 50, 70, 71, 72, 73, 73, 75, -1 } },
+		    { 96058, { 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 119, -1 } },
+		    { 6002, { 6, 7, 8, 9, 10, 23, 24, 25, 26, 30, 37, 38, 39, 40, 113, -1 } },
+		    { 66410, { 127, 128, 129, 130, 88, 89, 90, 91, -1 } },
+		    { 1420, { 70, 57, 58, 59, 48, 36, 38, 37, 39, 40, -1 } }, // kobolds
+		    { 96916,
+		      { 57, 58, 59, 27, 29, 97, 101, 102, 107, 109, 112, -1 } }, // troll caves
+		    { 75628, { 12, 13, 14, 66, 67, 67, 64, 65, 77, 76, -1 } }, // citadel
+		    { 76502, { 60, 61, 34, 31, 32, 33, 74, 75, 88, 89, 92, -1 } },
+		    { 28917, { 46, 47, 49, 45, 35, 78, 77, 86, 87, 85, -1 } }, // torg
+		    { 37755, { 30, 26, 22, 23, 24, 25, 21, 11, 12, 13, 14, 15, 16, -1 } }, // nax
+		    { 0, { -1 } } };
 
 P_obj get_hammer(P_char ch)
 {
@@ -165,9 +164,11 @@ int parchment_forge(P_obj obj, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 
-		if (forge_item_list[ch->only.pc->learned_forged_list[obj->value[0]]].skill_min > GET_CHAR_SKILL(ch, SKILL_FORGE))
+		if (forge_item_list[ch->only.pc->learned_forged_list[obj->value[0]]].skill_min >
+		    GET_CHAR_SKILL(ch, SKILL_FORGE))
 		{
-			send_to_char("This parchment contains smithing too advanced for you.\r\n", ch);
+			send_to_char("This parchment contains smithing too advanced for you.\r\n",
+				     ch);
 			return TRUE;
 		}
 		if (ch->only.pc->learned_forged_list[tmp] == 0)
@@ -197,7 +198,8 @@ void create_parchment(P_char ch)
 	obj->value[0] = number(1, howmany);
 
 	// If it's not rare dont load it!
-	if (forge_item_list[ch->only.pc->learned_forged_list[obj->value[0]]].how_rare < number(1, 100))
+	if (forge_item_list[ch->only.pc->learned_forged_list[obj->value[0]]].how_rare <
+	    number(1, 100))
 		return;
 
 	obj_to_room(obj, ch->in_room);
@@ -207,10 +209,10 @@ void create_parchment(P_char ch)
 
 P_obj forge_create(int choice, P_char ch, int material)
 {
-	char  dummy[MAX_INPUT_LENGTH];
-	char  short_desc[MAX_STRING_LENGTH];
-	char  long_desc[MAX_INPUT_LENGTH];
-	char  keywords[MAX_INPUT_LENGTH];
+	char dummy[MAX_INPUT_LENGTH];
+	char short_desc[MAX_STRING_LENGTH];
+	char long_desc[MAX_INPUT_LENGTH];
+	char keywords[MAX_INPUT_LENGTH];
 	P_obj obj;
 
 	if (!(obj = read_object(1255, VIRTUAL)))
@@ -229,11 +231,13 @@ P_obj forge_create(int choice, P_char ch, int material)
 	set_long_description(obj, long_desc);
 	set_keywords(obj, keywords);
 
-	obj->material             = material;
+	obj->material = material;
 	obj->affected[0].location = forge_item_list[choice].loc0;
-	obj->affected[0].modifier = number(forge_item_list[choice].min0, forge_item_list[choice].max0);
+	obj->affected[0].modifier =
+		number(forge_item_list[choice].min0, forge_item_list[choice].max0);
 	obj->affected[1].location = forge_item_list[choice].loc1;
-	obj->affected[1].modifier = number(forge_item_list[choice].min1, forge_item_list[choice].max1);
+	obj->affected[1].modifier =
+		number(forge_item_list[choice].min1, forge_item_list[choice].max1);
 
 	SET_BIT(obj->wear_flags, ITEM_TAKE);
 	SET_BIT(obj->wear_flags, forge_item_list[choice].wear_flags);
@@ -254,7 +258,7 @@ P_obj forge_create(int choice, P_char ch, int material)
 		obj->value[1] = number(0, 1);
 		obj->value[2] = 1;
 		obj->value[3] = 0;
-		obj->type     = ITEM_QUIVER;
+		obj->type = ITEM_QUIVER;
 	}
 	else
 		obj->type = ITEM_ARMOR;
@@ -264,20 +268,24 @@ P_obj forge_create(int choice, P_char ch, int material)
 void forge_describe(int choice, P_char ch)
 {
 	char buffer[1024];
-	int  i;
+	int i;
 
 	snprintf(buffer, 1024, "To create %s you need:\n", forge_item_list[choice].short_desc);
 	for (i = 0; i < 5 && forge_item_list[choice].ore_needed[i]; i++)
-		snprintf(buffer + strlen(buffer), MAX_STRING_LENGTH - strlen(buffer), "%s\n", obj_index[real_object(forge_item_list[choice].ore_needed[i])].desc2);
+		snprintf(buffer + strlen(buffer), MAX_STRING_LENGTH - strlen(buffer), "%s\n",
+			 obj_index[real_object(forge_item_list[choice].ore_needed[i])].desc2);
 
 	send_to_char(buffer, ch);
 	if (i <= 0 || i > (int)(sizeof(forge_prices) / sizeof(forge_prices[0])))
 	{
-		logit(LOG_DEBUG, "forge_describe: invalid ore count %d for forge item %d.", i, choice);
-		send_to_char("This forge recipe is misconfigured; please notify an Immortal.\n", ch);
+		logit(LOG_DEBUG, "forge_describe: invalid ore count %d for forge item %d.", i,
+		      choice);
+		send_to_char("This forge recipe is misconfigured; please notify an Immortal.\n",
+			     ch);
 		return;
 	}
-	snprintf(buffer, 1024, "It will cost you %s to forge this.\n", coin_stringv(forge_prices[i - 1]));
+	snprintf(buffer, 1024, "It will cost you %s to forge this.\n",
+		 coin_stringv(forge_prices[i - 1]));
 	send_to_char(buffer, ch);
 }
 
@@ -300,7 +308,6 @@ void do_forge(P_char ch, char *argument, int cmd)
 {
 	crafting_handle_command(ch, CRAFTING_MODE_FORGE, argument);
 }
-
 
 /* OLD FORGE CODE:
   if (GET_CHAR_SKILL(ch, SKILL_FORGE) == 0){
@@ -452,15 +459,20 @@ void do_forge(P_char ch, char *argument, int cmd)
 
 P_obj get_pole(P_char ch)
 {
-
 	P_obj t_obj, next_obj;
 
 	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
 	{
 		next_obj = t_obj->next_content;
-		if (obj_index[t_obj->R_num].virtual_number == POLE_VNUM || obj_index[t_obj->R_num].virtual_number == 6025 || obj_index[t_obj->R_num].virtual_number == 26200 ||
-		    obj_index[t_obj->R_num].virtual_number == 43120 || obj_index[t_obj->R_num].virtual_number == 66709 || obj_index[t_obj->R_num].virtual_number == 93913 ||
-		    obj_index[t_obj->R_num].virtual_number == 29439 || obj_index[t_obj->R_num].virtual_number == 35234 || obj_index[t_obj->R_num].virtual_number == 88903)
+		if (obj_index[t_obj->R_num].virtual_number == POLE_VNUM ||
+		    obj_index[t_obj->R_num].virtual_number == 6025 ||
+		    obj_index[t_obj->R_num].virtual_number == 26200 ||
+		    obj_index[t_obj->R_num].virtual_number == 43120 ||
+		    obj_index[t_obj->R_num].virtual_number == 66709 ||
+		    obj_index[t_obj->R_num].virtual_number == 93913 ||
+		    obj_index[t_obj->R_num].virtual_number == 29439 ||
+		    obj_index[t_obj->R_num].virtual_number == 35234 ||
+		    obj_index[t_obj->R_num].virtual_number == 88903)
 		{
 			return t_obj;
 		}
@@ -470,7 +482,7 @@ P_obj get_pole(P_char ch)
 
 void do_fish(P_char ch, char *, int cmd)
 {
-	P_obj               pole;
+	P_obj pole;
 	struct fishing_data data;
 
 	if (!IS_ALIVE(ch))
@@ -498,13 +510,16 @@ void do_fish(P_char ch, char *, int cmd)
 
 	if (!(pole = get_pole(ch)))
 	{
-		send_to_char("How are you supposed to fish when you don't have anything ready to fish with?\n", ch);
+		send_to_char(
+			"How are you supposed to fish when you don't have anything ready to fish with?\n",
+			ch);
 		return;
 	}
 
 	if (!IS_WATER_ROOM(ch->in_room))
 	{
-		send_to_char("Well you DO have a fishing pole, but where do you plan to fish???\n", ch);
+		send_to_char("Well you DO have a fishing pole, but where do you plan to fish???\n",
+			     ch);
 		return;
 	}
 
@@ -521,21 +536,24 @@ void do_fish(P_char ch, char *, int cmd)
 	// Two ticks for Immortals.. for testing
 	data.counter = IS_TRUSTED(ch) ? 2 : (140 - GET_CHAR_SKILL(ch, SKILL_FISHING)) / 4;
 
-	add_event(event_fish_check, PULSE_VIOLENCE, ch, 0, 0, 0, &data, sizeof(struct fishing_data));
+	add_event(event_fish_check, PULSE_VIOLENCE, ch, 0, 0, 0, &data,
+		  sizeof(struct fishing_data));
 }
 
 void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct fishing_data *fdata = (struct fishing_data *)data;
-	P_obj                pole, fish;
-	char                 buf[MAX_STRING_LENGTH], dbug[MAX_STRING_LENGTH];
-	const int            fishes[12] = {293, 294, 295, 318, 319, 330, 332, 333, 334, 335, 355, 356};
-	int                  random     = number(0, 11);
-	pole                            = get_pole(ch);
+	P_obj pole, fish;
+	char buf[MAX_STRING_LENGTH], dbug[MAX_STRING_LENGTH];
+	const int fishes[12] = { 293, 294, 295, 318, 319, 330, 332, 333, 334, 335, 355, 356 };
+	int random = number(0, 11);
+	pole = get_pole(ch);
 	struct affected_type *afp, af;
 
-	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != fdata->room) || !MIN_POS(ch, POS_STANDING + STAT_NORMAL) || IS_SET(ch->specials.affected_by, AFF_HIDE) ||
-	    IS_IMMOBILE(ch) || !IS_AWAKE(ch) || IS_STUNNED(ch) || IS_CASTING(ch))
+	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != fdata->room) ||
+	    !MIN_POS(ch, POS_STANDING + STAT_NORMAL) ||
+	    IS_SET(ch->specials.affected_by, AFF_HIDE) || IS_IMMOBILE(ch) || !IS_AWAKE(ch) ||
+	    IS_STUNNED(ch) || IS_CASTING(ch))
 	{
 		send_to_char("You stop fishing.\n", ch);
 		return;
@@ -555,13 +573,14 @@ void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 
 	if (!pole)
 	{
-		send_to_char("How are you supposed to fish when you don't have anything ready to fish with?\n", ch);
+		send_to_char(
+			"How are you supposed to fish when you don't have anything ready to fish with?\n",
+			ch);
 		return;
 	}
 
 	if (fdata->counter == 0)
 	{
-
 		if (GET_CHAR_SKILL(ch, SKILL_FISHING) < number(1, 125))
 		{
 			send_to_char("You didn't catch a thing..\n", ch);
@@ -586,11 +605,12 @@ void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 		if (!(afp = get_spell_from_char(ch, SKILL_FISHING)))
 		{
 			bzero(&af, sizeof(af));
-			af.type     = SKILL_FISHING;
+			af.type = SKILL_FISHING;
 			af.modifier = 500;
 			af.duration = 10;
-			af.flags    = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOMSG | AFFTYPE_OFFLINE;
-			afp         = affect_to_char(ch, &af);
+			af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOMSG |
+				   AFFTYPE_OFFLINE;
+			afp = affect_to_char(ch, &af);
 		}
 		else
 		{
@@ -599,7 +619,8 @@ void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 			afp->duration = 10;
 		}
 
-		gain_exp(ch, NULL, (GET_CHAR_SKILL(ch, SKILL_FISHING) * afp->modifier) / 100, EXP_BOON);
+		gain_exp(ch, NULL, (GET_CHAR_SKILL(ch, SKILL_FISHING) * afp->modifier) / 100,
+			 EXP_BOON);
 
 		// fish->timer[0] = time(NULL); Fish no longer decay - drannak 5/13/13
 		obj_to_char(fish, ch);
@@ -617,13 +638,18 @@ void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 	GET_VITALITY(ch) -= (number(0, 100) > GET_CHAR_SKILL(ch, SKILL_FISHING)) ? 3 : 2;
 
 	fdata->counter--;
-	add_event(event_fish_check, PULSE_VIOLENCE, ch, 0, 0, 0, fdata, sizeof(struct fishing_data));
+	add_event(event_fish_check, PULSE_VIOLENCE, ch, 0, 0, 0, fdata,
+		  sizeof(struct fishing_data));
 
 	// noise distance calc
 	for (P_desc i = descriptor_list; i; i = i->next)
 	{
-		if (i->connected != CON_PLAYING || ch == i->character || i->character->following == ch || world[i->character->in_room].zone != world[ch->in_room].zone ||
-		    ch->in_room == i->character->in_room || ch->in_room == real_room(i->character->specials.was_in_room) || real_room(ch->specials.was_in_room) == i->character->in_room)
+		if (i->connected != CON_PLAYING || ch == i->character ||
+		    i->character->following == ch ||
+		    world[i->character->in_room].zone != world[ch->in_room].zone ||
+		    ch->in_room == i->character->in_room ||
+		    ch->in_room == real_room(i->character->specials.was_in_room) ||
+		    real_room(ch->specials.was_in_room) == i->character->in_room)
 		{
 			continue;
 		}
@@ -632,10 +658,10 @@ void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 
 		if (dist <= 225 && (number(1, 12) < 3))
 		{
-			zone_spellmessage(ch->in_room,
-			                  TRUE,
-			                  "&+cThe &+Csoft &+csound of &+Cwater&+c splashing can be heard in the distance...&n\r\n",
-			                  "&+cThe &+Csoft &+csound of &+Cwater&+c splashing can be heard to the %s...&n\r\n");
+			zone_spellmessage(
+				ch->in_room, TRUE,
+				"&+cThe &+Csoft &+csound of &+Cwater&+c splashing can be heard in the distance...&n\r\n",
+				"&+cThe &+Csoft &+csound of &+Cwater&+c splashing can be heard to the %s...&n\r\n");
 		}
 	}
 }
@@ -643,9 +669,9 @@ void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 int smith(P_char ch, P_char pl, int cmd, char *arg)
 {
 	struct smith_data *sdata;
-	char               buffer[256];
-	P_obj              tobj, needed_ore[5];
-	int                i, j, choice;
+	char buffer[256];
+	P_obj tobj, needed_ore[5];
+	int i, j, choice;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -654,7 +680,8 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (cmd == CMD_PERIODIC && !number(0, 6))
 	{
-		act("$n hums a soft melody as $e forges another piece of armor.", FALSE, ch, 0, 0, TO_ROOM);
+		act("$n hums a soft melody as $e forges another piece of armor.", FALSE, ch, 0, 0,
+		    TO_ROOM);
 		return TRUE;
 	}
 
@@ -686,7 +713,8 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 		act("$n tells you, 'I can forge the following items:'", FALSE, ch, 0, pl, TO_VICT);
 		for (i = 0; i < SMITH_MAX_ITEMS && sdata->items[i] != -1; i++)
 		{
-			snprintf(buffer, 256, "%d) %s\n", i + 1, forge_item_list[sdata->items[i]].short_desc);
+			snprintf(buffer, 256, "%d) %s\n", i + 1,
+				 forge_item_list[sdata->items[i]].short_desc);
 			send_to_char(buffer, pl);
 		}
 		return TRUE;
@@ -755,7 +783,9 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 	if (!(tobj = forge_create(choice, pl, needed_ore[0]->material)))
 	{
 		// Send an error message if we failed to create item.
-		send_to_char("&+YFailed to create the item.  Please tell an Immortal if you continue to have problems.\n\r", pl);
+		send_to_char(
+			"&+YFailed to create the item.  Please tell an Immortal if you continue to have problems.\n\r",
+			pl);
 		// And give back the ores we pulled.
 		while (j-- > 0)
 		{
@@ -780,21 +810,13 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 	    "shape of $p.\n"
 	    "$n puts it in water which explodes in a cloud of &+Csteam&n hissing loudly.\n"
 	    "'&+WThere you go!&n', $n gives you $p.",
-	    FALSE,
-	    ch,
-	    tobj,
-	    pl,
-	    TO_VICT);
+	    FALSE, ch, tobj, pl, TO_VICT);
 	act("$n takes the pieces of ore and starts to work on them.\n"
 	    "With powerful hammer strikes, the material starts to quickly take\n"
 	    "shape of $p.\n"
 	    "$n puts it in water which explodes in a cloud of &+Csteam&n hissing loudly.\n"
 	    "'&+WThere you go!&n', $n gives $N $p.",
-	    FALSE,
-	    ch,
-	    tobj,
-	    pl,
-	    TO_NOTVICT);
+	    FALSE, ch, tobj, pl, TO_NOTVICT);
 
 	obj_to_char(tobj, pl);
 	return TRUE;
@@ -840,23 +862,27 @@ struct bandage_data
 void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct bandage_data *mdata = (struct bandage_data *)data;
-	P_obj                bandage;
-	char                 buf[MAX_STRING_LENGTH];
-	int                  healed = 0;
+	P_obj bandage;
+	char buf[MAX_STRING_LENGTH];
+	int healed = 0;
 
 	if (!ch || !victim)
 		return;
 
 	if (mdata->healed >= mdata->maxheal)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "You can't &+Wbandage&n any more with this bandage.\n");
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "You can't &+Wbandage&n any more with this bandage.\n");
 		send_to_char(buf, ch);
 		return;
 	}
 
-	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != mdata->room) || (GET_STAT(ch) < STAT_SLEEPING) || IS_SET(ch->specials.affected_by, AFF_HIDE) || IS_FIGHTING(victim) ||
-	    IS_DESTROYING(victim) || (victim->in_room != mdata->room) || IS_SET(victim->specials.affected_by, AFF_HIDE) || affected_by_spell(ch, TAG_FIRING) || affected_by_spell(victim, TAG_FIRING) ||
-	    IS_AFFECTED2(ch, AFF2_MEMORIZING) || IS_AFFECTED2(victim, AFF2_MEMORIZING) || IS_IMMOBILE(ch))
+	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != mdata->room) ||
+	    (GET_STAT(ch) < STAT_SLEEPING) || IS_SET(ch->specials.affected_by, AFF_HIDE) ||
+	    IS_FIGHTING(victim) || IS_DESTROYING(victim) || (victim->in_room != mdata->room) ||
+	    IS_SET(victim->specials.affected_by, AFF_HIDE) || affected_by_spell(ch, TAG_FIRING) ||
+	    affected_by_spell(victim, TAG_FIRING) || IS_AFFECTED2(ch, AFF2_MEMORIZING) ||
+	    IS_AFFECTED2(victim, AFF2_MEMORIZING) || IS_IMMOBILE(ch))
 	{
 		send_to_char("You are no longer bandaging...\n", ch);
 		send_to_char("You are no longer being &+Wbandaged&n.\n", victim);
@@ -870,7 +896,8 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 		return;
 	}
 
-	if (!notch_skill(ch, SKILL_BANDAGE, get_property("skill.notch.bandage", 3)) && !number(number(0, 3), (GET_CHAR_SKILL(ch, SKILL_BANDAGE))))
+	if (!notch_skill(ch, SKILL_BANDAGE, get_property("skill.notch.bandage", 3)) &&
+	    !number(number(0, 3), (GET_CHAR_SKILL(ch, SKILL_BANDAGE))))
 	{
 		send_to_char("You are not focused enough, you destroy the &+Wbandage&n.\n", ch);
 		send_to_char("You are no longer being &+Wbandaged&n.\n", victim);
@@ -885,13 +912,14 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 	act("$n continues to &+Wbandage&n you.", FALSE, ch, 0, victim, TO_VICT);
 	act("$n continues to &+Wbandage&n $N", FALSE, ch, 0, victim, TO_NOTVICT);
 
-	healed        = (mdata->maxheal / 20 + GET_CHAR_SKILL(ch, SKILL_BANDAGE) / 7);
-	healed        = MIN(healed, mdata->maxheal - mdata->healed);
+	healed = (mdata->maxheal / 20 + GET_CHAR_SKILL(ch, SKILL_BANDAGE) / 7);
+	healed = MIN(healed, mdata->maxheal - mdata->healed);
 	mdata->healed = mdata->healed + healed;
-	healed        = vamp(victim, healed, GET_MAX_HIT(victim) * 0.875);
+	healed = vamp(victim, healed, GET_MAX_HIT(victim) * 0.875);
 	update_pos(victim);
 
-	if (IS_AFFECTED2(victim, AFF2_POISONED) && !number(0, 4) && (number(0, 100) < GET_CHAR_SKILL(ch, SKILL_BANDAGE)))
+	if (IS_AFFECTED2(victim, AFF2_POISONED) && !number(0, 4) &&
+	    (number(0, 100) < GET_CHAR_SKILL(ch, SKILL_BANDAGE)))
 	{
 		send_to_char("&+WThe poison in your bloodstream is neutralized!\n", victim);
 		poison_common_remove(victim);
@@ -905,17 +933,18 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 	}
 
 	GET_VITALITY(ch) -= (number(0, 100) > GET_CHAR_SKILL(ch, SKILL_BANDAGE)) ? 3 : 2;
-	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, mdata, sizeof(struct bandage_data));
+	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, mdata,
+		  sizeof(struct bandage_data));
 }
 
 void do_bandage(P_char ch, char *arg, int cmd)
 {
 	struct affected_type af;
-	char                 name[MAX_INPUT_LENGTH];
-	struct bandage_data  data;
-	char                 buf1[MAX_STRING_LENGTH];
-	P_char               victim = NULL;
-	P_obj                bandage;
+	char name[MAX_INPUT_LENGTH];
+	struct bandage_data data;
+	char buf1[MAX_STRING_LENGTH];
+	P_char victim = NULL;
+	P_obj bandage;
 
 	P_char t_char = NULL;
 
@@ -949,7 +978,9 @@ void do_bandage(P_char ch, char *arg, int cmd)
 
 	if (IS_PC(ch) && GET_CHAR_SKILL(ch, SKILL_BANDAGE) == 0)
 	{
-		send_to_char("Maybe you should leave that to someone skilled in battlefield first aid.\r\n", ch);
+		send_to_char(
+			"Maybe you should leave that to someone skilled in battlefield first aid.\r\n",
+			ch);
 		return;
 	}
 
@@ -994,15 +1025,16 @@ void do_bandage(P_char ch, char *arg, int cmd)
 	act("$n attempts to &+Wbandage&n you.", FALSE, ch, 0, victim, TO_VICT);
 	act("$n attempts to &+Wbandage&n $N", FALSE, ch, 0, victim, TO_NOTVICT);
 
-	data.room   = ch->in_room;
+	data.room = ch->in_room;
 	data.healed = 0;
 
-	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, &data, sizeof(struct bandage_data));
+	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, &data,
+		  sizeof(struct bandage_data));
 
 	bzero(&af, sizeof(af));
 	af.duration = 3;
-	af.type     = SKILL_BANDAGE;
-	af.flags    = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+	af.type = SKILL_BANDAGE;
+	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
 	affect_to_char(victim, &af);
 
 	CharWait(ch, 2 * PULSE_VIOLENCE);
@@ -1014,8 +1046,8 @@ static FILE *recipefile;
 
 void create_recipes_file(const char *dir, char *name)
 {
-	char  buf[256], *buff;
-	char  Gbuf1[MAX_STRING_LENGTH];
+	char buf[256], *buff;
+	char Gbuf1[MAX_STRING_LENGTH];
 	FILE *f;
 
 	strcpy(buf, name);
@@ -1027,30 +1059,34 @@ void create_recipes_file(const char *dir, char *name)
 	fclose(f);
 }
 
-void create_recipes_name(char *name) { create_recipes_file("Players/Tradeskills", name); }
+void create_recipes_name(char *name)
+{
+	create_recipes_file("Players/Tradeskills", name);
+}
 
 int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 {
-
-	P_obj  tobj;
-	char   buf[256], *buff;
-	char   Gbuf1[MAX_STRING_LENGTH], *c;
-	FILE  *f;
-	FILE  *recipelist;
-	int    recipenumber = obj->value[6];
-	int    recnum;
-	bool   forge = FALSE;
-	bool   craft = FALSE;
+	P_obj tobj;
+	char buf[256], *buff;
+	char Gbuf1[MAX_STRING_LENGTH], *c;
+	FILE *f;
+	FILE *recipelist;
+	int recipenumber = obj->value[6];
+	int recnum;
+	bool forge = FALSE;
+	bool craft = FALSE;
 	P_char temp_ch;
 
 	// If not reciting, bad char, or char doesn't have obj.
-	if (cmd != CMD_RECITE || !IS_ALIVE(ch) || !(OBJ_WORN_BY(obj, ch) || OBJ_CARRIED_BY(obj, ch)) || !arg)
+	if (cmd != CMD_RECITE || !IS_ALIVE(ch) ||
+	    !(OBJ_WORN_BY(obj, ch) || OBJ_CARRIED_BY(obj, ch)) || !arg)
 	{
 		return FALSE;
 	}
 
 	// Trying to recite a different object.
-	if (obj != get_obj_in_list_vis(ch, skip_spaces(arg), ch->carrying) && obj != get_object_in_equip_vis(ch, arg, &recnum))
+	if (obj != get_obj_in_list_vis(ch, skip_spaces(arg), ch->carrying) &&
+	    obj != get_object_in_equip_vis(ch, arg, &recnum))
 	{
 		return FALSE;
 	}
@@ -1064,29 +1100,45 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 	tobj = read_object(recipenumber, VIRTUAL);
 	if (tobj == NULL)
 	{
-		send_to_char("This recipe is damaged: its target item no longer exists. Please report it to an Immortal.\r\n", ch);
-		logit(LOG_DEBUG, "learn_recipe: %s used a recipe with missing target vnum %d.", GET_NAME(ch), recipenumber);
+		send_to_char(
+			"This recipe is damaged: its target item no longer exists. Please report it to an Immortal.\r\n",
+			ch);
+		logit(LOG_DEBUG, "learn_recipe: %s used a recipe with missing target vnum %d.",
+		      GET_NAME(ch), recipenumber);
 		return TRUE;
 	}
 	if (!crafting_recipe_target_is_available(tobj))
 	{
 		if (IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
-			send_to_char("This recipe describes a quest item and cannot be learned for player crafting.\r\n", ch);
+			send_to_char(
+				"This recipe describes a quest item and cannot be learned for player crafting.\r\n",
+				ch);
 		else
-			send_to_char("This recipe cannot be learned because no player can make it under the current crafting configuration.\r\n", ch);
-		logit(LOG_DEBUG, "learn_recipe: %s used an uncraftable recipe target %d.", GET_NAME(ch), recipenumber);
+			send_to_char(
+				"This recipe cannot be learned because no player can make it under the current crafting configuration.\r\n",
+				ch);
+		logit(LOG_DEBUG, "learn_recipe: %s used an uncraftable recipe target %d.",
+		      GET_NAME(ch), recipenumber);
 		extract_obj(tobj);
 		return TRUE;
 	}
 
-	if (IS_SET(tobj->wear_flags, ITEM_WEAR_HEAD) || IS_SET(tobj->wear_flags, ITEM_WEAR_BODY) || IS_SET(tobj->wear_flags, ITEM_WEAR_ARMS) || IS_SET(tobj->wear_flags, ITEM_WEAR_FEET) ||
-	    IS_SET(tobj->wear_flags, ITEM_WEAR_SHIELD) || IS_SET(tobj->wear_flags, ITEM_WIELD) || IS_SET(tobj->wear_flags, ITEM_WEAR_LEGS) || IS_SET(tobj->wear_flags, ITEM_WEAR_HANDS))
+	if (IS_SET(tobj->wear_flags, ITEM_WEAR_HEAD) || IS_SET(tobj->wear_flags, ITEM_WEAR_BODY) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_ARMS) || IS_SET(tobj->wear_flags, ITEM_WEAR_FEET) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_SHIELD) || IS_SET(tobj->wear_flags, ITEM_WIELD) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_LEGS) || IS_SET(tobj->wear_flags, ITEM_WEAR_HANDS))
 	{
 		forge = TRUE;
 	}
-	if (IS_SET(tobj->wear_flags, ITEM_WEAR_ABOUT) || IS_SET(tobj->wear_flags, ITEM_WEAR_WAIST) || IS_SET(tobj->wear_flags, ITEM_WEAR_EARRING) || IS_SET(tobj->wear_flags, ITEM_WEAR_NECK) ||
-	    IS_SET(tobj->wear_flags, ITEM_WEAR_WRIST) || IS_SET(tobj->wear_flags, ITEM_WEAR_FINGER) || IS_SET(tobj->wear_flags, ITEM_WEAR_EYES) || IS_SET(tobj->wear_flags, ITEM_WEAR_QUIVER) ||
-	    IS_SET(tobj->wear_flags, ITEM_WEAR_TAIL) || IS_SET(tobj->wear_flags, ITEM_WEAR_NOSE) || IS_SET(tobj->wear_flags, ITEM_WEAR_HORN) || IS_SET(tobj->wear_flags, ITEM_WEAR_FACE))
+	if (IS_SET(tobj->wear_flags, ITEM_WEAR_ABOUT) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_WAIST) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_EARRING) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_NECK) || IS_SET(tobj->wear_flags, ITEM_WEAR_WRIST) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_FINGER) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_EYES) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_QUIVER) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_TAIL) || IS_SET(tobj->wear_flags, ITEM_WEAR_NOSE) ||
+	    IS_SET(tobj->wear_flags, ITEM_WEAR_HORN) || IS_SET(tobj->wear_flags, ITEM_WEAR_FACE))
 	{
 		craft = TRUE;
 	}
@@ -1100,13 +1152,17 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				if (GET_CHAR_SKILL(ch, SKILL_CRAFT) < 1)
 				{
-					send_to_char("This recipe can only be used by someone with the &+rCraft&n or &+LForge&n skill.\r\n", ch);
+					send_to_char(
+						"This recipe can only be used by someone with the &+rCraft&n or &+LForge&n skill.\r\n",
+						ch);
 					return TRUE;
 				}
 			}
 			else
 			{
-				send_to_char("This recipe can only be used by someone with the &+LForge&n skill.\r\n", ch);
+				send_to_char(
+					"This recipe can only be used by someone with the &+LForge&n skill.\r\n",
+					ch);
 				return TRUE;
 			}
 		}
@@ -1115,7 +1171,9 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (GET_CHAR_SKILL(ch, SKILL_CRAFT) < 1)
 		{
-			send_to_char("This recipe can only be used by someone with the &+rCraft&n skill.\r\n", ch);
+			send_to_char(
+				"This recipe can only be used by someone with the &+rCraft&n skill.\r\n",
+				ch);
 			return TRUE;
 		}
 	}
@@ -1132,26 +1190,19 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 	if (!sql_add_player_recipe(GET_PID(ch), recipenumber))
 	{
 		send_to_char("Your recipe could not be recorded. Please try again later.\r\n", ch);
-		logit(LOG_DEBUG, "learn_recipe: failed to save recipe %d for %s", recipenumber, GET_NAME(ch));
+		logit(LOG_DEBUG, "learn_recipe: failed to save recipe %d for %s", recipenumber,
+		      GET_NAME(ch));
 		extract_obj(tobj);
 		return TRUE;
 	}
 	act("$n opens their &+Ltome &+yof &+Ycraf&+ytsman&+Lship&n and begins scribing the &+yrecipe&n...\n"
 	    "As they finish the last entry of the &+yrecipe&n, a &+Mbri&+mgh&+Wt &nflash of &+Clight&n appears,\n"
 	    "quickly consuming $p, which vanishes from sight.\r\n",
-	    FALSE,
-	    ch,
-	    obj,
-	    0,
-	    TO_ROOM);
+	    FALSE, ch, obj, 0, TO_ROOM);
 	act("You open your &+Ltome &+yof &+Ycraf&+ytsman&+Lship&n and begin scribing the recipe...\n"
 	    "As you finish the last entry of the &+yrecipe&n, a &+Mbri&+mgh&+Wt &nflash of &+Clight&n appears,\n"
 	    "quickly consuming $p, which vanishes from sight.\r\n",
-	    FALSE,
-	    ch,
-	    obj,
-	    0,
-	    TO_CHAR);
+	    FALSE, ch, obj, 0, TO_CHAR);
 
 	extract_obj(obj, TRUE); // Not an arti, but 'in game.'
 
@@ -1166,8 +1217,10 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 	else
 	{
 		// This should never happen.
-		debug("learn_recipe: %s learned %s (%d) without craft or forge!?", J_NAME(ch), tobj->short_description, recipenumber);
-		logit(LOG_DEBUG, "learn_recipe: %s learned %s (%d) without craft or forge!?", J_NAME(ch), tobj->short_description, recipenumber);
+		debug("learn_recipe: %s learned %s (%d) without craft or forge!?", J_NAME(ch),
+		      tobj->short_description, recipenumber);
+		logit(LOG_DEBUG, "learn_recipe: %s learned %s (%d) without craft or forge!?",
+		      J_NAME(ch), tobj->short_description, recipenumber);
 	}
 	extract_obj(tobj);
 	return TRUE;
@@ -1181,20 +1234,20 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
  *   load item via var, message char "You bought $p", subtract epics,
  *   send item to char, and save char.
  */
-#define COST_EPIC_MUSHROOM        225
-#define COST_EPIC_FIX_SCROLL      105
-#define COST_EPIC_FAERIE_BAG      100
-#define COST_EPIC_BATTLEROBE      7500
+#define COST_EPIC_MUSHROOM 225
+#define COST_EPIC_FIX_SCROLL 105
+#define COST_EPIC_FAERIE_BAG 100
+#define COST_EPIC_BATTLEROBE 7500
 #define COST_EPIC_TOCORPSE_POTION 500
-#define COST_EPIC_LANTAN_TOOLS    500
-#define COST_EPIC_FOREST_EYES     4500
-#define COST_EPIC_BOTTLE_EPICS    100
+#define COST_EPIC_LANTAN_TOOLS 500
+#define COST_EPIC_FOREST_EYES 4500
+#define COST_EPIC_BOTTLE_EPICS 100
 
 int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 {
-	char  buffer[MAX_STRING_LENGTH];
-	char  buf[256], *buff;
-	char  Gbuf1[MAX_STRING_LENGTH], *c;
+	char buffer[MAX_STRING_LENGTH];
+	char buf[256], *buff;
+	char Gbuf1[MAX_STRING_LENGTH], *c;
 	P_obj obj;
 
 	if (cmd == CMD_LIST)
@@ -1202,32 +1255,28 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 		if (!arg || !*arg)
 		{
 			// list called with no arguments
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "&+WKannard&+L slowly lifts his hood and smiles.'\n"
-			         "&+WKannard&+L &+wsays 'Welcome adventurer. I offer exotic items from the far reaches beyond our own realm in exchange for &+cepic points&n.'\n"
-			         "&+WKannard&+L &+wsays 'Please &+Yrefer to my &-L&+ysign&n&-l for an explanation of each of these items and their affects.'\n"
-			         "&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
-			         "&+y|		&+cItem Name					           Epic Cost            &+y|\n"
-			         "&+y|&+W 1) &+ga M&+Ga&+Wg&+Gi&+gc&+Ga&+Wl &+GGreen &+gMu&+Gshro&+gom from the &+GSylvan &+yWoods&n&+C%30d&n		&+y|\n"
-			         "&+y|&+W 2) &+ya tightly wrapped vellum scroll named '&+LFix&+y'&n   &+C%30d&n		&+y|\n"
-			         "&+y|&+W 3) &+Wa &+mm&+My&+Ys&+Bt&+Gc&+Ra&+Gl &+MFaerie &+Wbag of &+Lstolen loot&n           &+C%30d&n               &+y|\n"
-			         "&+y|&+W 4) &+Ya r&+ro&+Yb&+re &+Yof a &+mN&+We&+Mt&+Wh&+me&+Wr&+Mi&+Wl &+rBa&+Ytt&+rle&+Y M&+rag&+Ye&n              &+C%30d&n               &+y|\n"
-			         "&+y|&+W 5) &+La &+Gbottle &+Lof &+GT&+go&+GR&+gM&+Ge&+gN&+GT&+ge&+GD &+gS&+Goul&+gs     &n              &+C%30d&n               &+y|\n"
-			         "&+y|&+W 6) &+ca &+Cbr&+Will&+Bia&+Wnt &+cset of &+rLantan &+CScientific&+L Tools&n    &n&+C%30d&n               &+y|\n"
-			         "&+y|&+W 7) &+Lthe &+ge&+Gy&+ge&+Gs &+Lof the &+gHi&+Ggh For&+gest&n     &n              &+C%30d&n&+y               |\n"
-			         "&+y|&+W 8) &+Ca &+Wbottle &+Cof &+GPa&+gs&+Lt Exp&+gerien&+Gces&n     &n             &+C%30d&n&+y               |\n"
-			         "&+y|&+R Notice: You can not buy multiple items at once here!                                          &+y|&n\n"
-			         "&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
-			         "\n",
-			         COST_EPIC_MUSHROOM,
-			         COST_EPIC_FIX_SCROLL,
-			         COST_EPIC_FAERIE_BAG,
-			         COST_EPIC_BATTLEROBE,
-			         COST_EPIC_TOCORPSE_POTION,
-			         COST_EPIC_LANTAN_TOOLS,
-			         COST_EPIC_FOREST_EYES,
-			         COST_EPIC_BOTTLE_EPICS);
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"&+WKannard&+L slowly lifts his hood and smiles.'\n"
+				"&+WKannard&+L &+wsays 'Welcome adventurer. I offer exotic items from the far reaches beyond our own realm in exchange for &+cepic points&n.'\n"
+				"&+WKannard&+L &+wsays 'Please &+Yrefer to my &-L&+ysign&n&-l for an explanation of each of these items and their affects.'\n"
+				"&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+				"&+y|		&+cItem Name					           Epic Cost            &+y|\n"
+				"&+y|&+W 1) &+ga M&+Ga&+Wg&+Gi&+gc&+Ga&+Wl &+GGreen &+gMu&+Gshro&+gom from the &+GSylvan &+yWoods&n&+C%30d&n		&+y|\n"
+				"&+y|&+W 2) &+ya tightly wrapped vellum scroll named '&+LFix&+y'&n   &+C%30d&n		&+y|\n"
+				"&+y|&+W 3) &+Wa &+mm&+My&+Ys&+Bt&+Gc&+Ra&+Gl &+MFaerie &+Wbag of &+Lstolen loot&n           &+C%30d&n               &+y|\n"
+				"&+y|&+W 4) &+Ya r&+ro&+Yb&+re &+Yof a &+mN&+We&+Mt&+Wh&+me&+Wr&+Mi&+Wl &+rBa&+Ytt&+rle&+Y M&+rag&+Ye&n              &+C%30d&n               &+y|\n"
+				"&+y|&+W 5) &+La &+Gbottle &+Lof &+GT&+go&+GR&+gM&+Ge&+gN&+GT&+ge&+GD &+gS&+Goul&+gs     &n              &+C%30d&n               &+y|\n"
+				"&+y|&+W 6) &+ca &+Cbr&+Will&+Bia&+Wnt &+cset of &+rLantan &+CScientific&+L Tools&n    &n&+C%30d&n               &+y|\n"
+				"&+y|&+W 7) &+Lthe &+ge&+Gy&+ge&+Gs &+Lof the &+gHi&+Ggh For&+gest&n     &n              &+C%30d&n&+y               |\n"
+				"&+y|&+W 8) &+Ca &+Wbottle &+Cof &+GPa&+gs&+Lt Exp&+gerien&+Gces&n     &n             &+C%30d&n&+y               |\n"
+				"&+y|&+R Notice: You can not buy multiple items at once here!                                          &+y|&n\n"
+				"&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+				"\n",
+				COST_EPIC_MUSHROOM, COST_EPIC_FIX_SCROLL, COST_EPIC_FAERIE_BAG,
+				COST_EPIC_BATTLEROBE, COST_EPIC_TOCORPSE_POTION,
+				COST_EPIC_LANTAN_TOOLS, COST_EPIC_FOREST_EYES,
+				COST_EPIC_BOTTLE_EPICS);
 
 			send_to_char(buffer, pl);
 			return TRUE;
@@ -1238,17 +1287,18 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 		// Prevent NPCs/pets from using the epic store
 		if (IS_NPC(pl))
 		{
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "&+WKannard&+L &+wshouts 'Hey everyone! %s just tried to make their pet buy epic items! How embarrassing!'&n\n",
-			         GET_MASTER(pl) ? GET_NAME(GET_MASTER(pl)) : "Someone");
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"&+WKannard&+L &+wshouts 'Hey everyone! %s just tried to make their pet buy epic items! How embarrassing!'&n\n",
+				GET_MASTER(pl) ? GET_NAME(GET_MASTER(pl)) : "Someone");
 			send_to_all(buffer);
 			return TRUE;
 		}
 
 		if (!arg || !*arg)
 		{
-			snprintf(buffer, MAX_STRING_LENGTH, "&+WKannard&+L &+wsays 'What item would you like to buy?'\n");
+			snprintf(buffer, MAX_STRING_LENGTH,
+				 "&+WKannard&+L &+wsays 'What item would you like to buy?'\n");
 			send_to_char(buffer, pl);
 			return TRUE;
 		}
@@ -1258,25 +1308,36 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for level requirement.
 			if (GET_LEVEL(pl) < 51)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have enough &+Wexperience&n to buy that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have enough &+Wexperience&n to buy that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			// Check for the epics required to purchase mushroom..
 			if (pl->only.pc->epics < COST_EPIC_MUSHROOM)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			pl->only.pc->epics -= COST_EPIC_MUSHROOM;
 			obj = read_object(VOBJ_EPIC_MUSHROOM, VIRTUAL);
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_MUSHROOM, COST_EPIC_MUSHROOM);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_MUSHROOM,
+				COST_EPIC_MUSHROOM);
 			return TRUE;
 		}
 		// 2 - fix scroll
@@ -1285,19 +1346,28 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for the epics required for scroll..
 			if (pl->only.pc->epics < COST_EPIC_FIX_SCROLL)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			pl->only.pc->epics -= COST_EPIC_FIX_SCROLL;
 			obj = read_object(VOBJ_EPIC_FIX_SCROLL, VIRTUAL);
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_FIX_SCROLL, COST_EPIC_FIX_SCROLL);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_FIX_SCROLL,
+				COST_EPIC_FIX_SCROLL);
 			return TRUE;
 		}
 		// 3 - faerie bag
@@ -1306,19 +1376,28 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for the epics required for bag..
 			if (pl->only.pc->epics < COST_EPIC_FAERIE_BAG)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			pl->only.pc->epics -= COST_EPIC_FAERIE_BAG;
 			obj = read_object(VOBJ_EPIC_FAERIE_BAG, VIRTUAL);
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_FAERIE_BAG, COST_EPIC_FAERIE_BAG);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_FAERIE_BAG,
+				COST_EPIC_FAERIE_BAG);
 			return TRUE;
 		}
 		// 4 - netheril robe
@@ -1327,19 +1406,28 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for the epics required for robe..
 			if (pl->only.pc->epics < COST_EPIC_BATTLEROBE)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			pl->only.pc->epics -= COST_EPIC_BATTLEROBE;
 			obj = read_object(VOBJ_EPIC_BATTLEROBE, VIRTUAL);
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_BATTLEROBE, COST_EPIC_BATTLEROBE);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_BATTLEROBE,
+				COST_EPIC_BATTLEROBE);
 			return TRUE;
 		}
 		// 5 - corpse portal potion
@@ -1348,19 +1436,28 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for the epics required for potion..
 			if (pl->only.pc->epics < COST_EPIC_TOCORPSE_POTION)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			obj = read_object(VOBJ_EPIC_TOCORPSE_POTION, VIRTUAL);
 			pl->only.pc->epics -= COST_EPIC_TOCORPSE_POTION;
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_TOCORPSE_POTION, COST_EPIC_TOCORPSE_POTION);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_TOCORPSE_POTION,
+				COST_EPIC_TOCORPSE_POTION);
 			return TRUE;
 		}
 		// 6 - lantan tools
@@ -1369,19 +1466,28 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for the epics required for lantans..
 			if (pl->only.pc->epics < COST_EPIC_LANTAN_TOOLS)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			obj = read_object(VOBJ_EPIC_LANTAN_TOOLS, VIRTUAL);
 			pl->only.pc->epics -= COST_EPIC_LANTAN_TOOLS;
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_LANTAN_TOOLS, COST_EPIC_LANTAN_TOOLS);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_LANTAN_TOOLS,
+				COST_EPIC_LANTAN_TOOLS);
 			return TRUE;
 		}
 		// 7 - forest sight
@@ -1390,21 +1496,30 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for the epics required for forest goggles..
 			if (pl->only.pc->epics < COST_EPIC_FOREST_EYES)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			obj = read_object(VOBJ_EPIC_FOREST_EYES, VIRTUAL);
 			pl->only.pc->epics -= COST_EPIC_FOREST_EYES;
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			// Why isn't this set in the zone files?  How peculiar.
 			SET_BIT(obj->bitvector5, AFF5_FOREST_SIGHT);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_FOREST_EYES, COST_EPIC_FOREST_EYES);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_FOREST_EYES,
+				COST_EPIC_FOREST_EYES);
 			return TRUE;
 		}
 		else if (strstr(arg, "8"))
@@ -1412,19 +1527,28 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 			// Check for the epics required for forest goggles..
 			if (pl->only.pc->epics < COST_EPIC_BOTTLE_EPICS)
 			{
-				send_to_char("&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n", pl);
+				send_to_char(
+					"&+WKannard&+L &+wsays '&nI'm sorry, but you do not seem to have the &+Wepics&n available for that item.\r\n&n",
+					pl);
 				return TRUE;
 			}
 			obj = read_object(VOBJ_EPIC_BOTTLE_EPICS, VIRTUAL);
 			pl->only.pc->epics -= COST_EPIC_BOTTLE_EPICS;
-			send_to_char("&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n", pl);
-			send_to_char("&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n", pl);
+			send_to_char(
+				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
+				pl);
+			send_to_char(
+				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
+				pl);
 			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
 			obj_to_char(obj, pl);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl));
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl));
 			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl), obj->short_description, VOBJ_EPIC_BOTTLE_EPICS, COST_EPIC_BOTTLE_EPICS);
+			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
+				J_NAME(pl), obj->short_description, VOBJ_EPIC_BOTTLE_EPICS,
+				COST_EPIC_BOTTLE_EPICS);
 			return TRUE;
 		}
 	}
@@ -1433,37 +1557,39 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 
 int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 {
-	char  buffer[MAX_STRING_LENGTH];
-	char  buf[256], *buff;
-	char  Gbuf1[MAX_STRING_LENGTH], *c;
+	char buffer[MAX_STRING_LENGTH];
+	char buf[256], *buff;
+	char Gbuf1[MAX_STRING_LENGTH], *c;
 	FILE *f;
 	FILE *recipelist;
 
 	if (cmd == CMD_PRACTICE)
 	{
-
 		if (!arg || !*arg)
 		{
 			// practice called with no arguments
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "'Greetings Adventurer!'\n"
-			         "'The choice of a &+Wtradeskill&n is an important one, as only &+Yone&n can be made.'\n"
-			         "'Of the abilities which I can train you are &+Lm&+wi&+Wn&+wi&+Lng&n, &+Lforging&n, or &+rcrafting&n.'\n"
-			         "'&+LM&+wi&+Wn&+wi&+Lng&n&n will allow you to gather raw &+mvaluable&n &+Lore&n from &+ymines&n scattered throughout the realm.'\n"
-			         "'&+LForging&n allows one to create amazing &+Larmor&n and &+Wweapons&n from &+yrecipes&n found through the &+ysalvage&n skill.'\n"
-			         "'&+rCrafting&n is the meticulous skill allowing one to craft &+Mjewelry&n, &+maccessories&n, and &+ccloak&n items from &+ysalvaged&n recipes.'\n"
-			         "'Please think long and hard about your decision, and then &+RPractice &neither &+Lforge&n, &+ymine&n, or &+Rcraft&n.\n"
-			         "'\n"
-			         "'If you are unhappy with your current &+ytradeskill&n, you can &+Rpractice reset&n and I will unlearn any &+ytradeskill&n you'\n"
-			         "'might know for the low price of &+c200 &+Cepic points&n. &+rBEWARE&n: this will wipe any learned &+Yrecipes&n!\n");
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"'Greetings Adventurer!'\n"
+				"'The choice of a &+Wtradeskill&n is an important one, as only &+Yone&n can be made.'\n"
+				"'Of the abilities which I can train you are &+Lm&+wi&+Wn&+wi&+Lng&n, &+Lforging&n, or &+rcrafting&n.'\n"
+				"'&+LM&+wi&+Wn&+wi&+Lng&n&n will allow you to gather raw &+mvaluable&n &+Lore&n from &+ymines&n scattered throughout the realm.'\n"
+				"'&+LForging&n allows one to create amazing &+Larmor&n and &+Wweapons&n from &+yrecipes&n found through the &+ysalvage&n skill.'\n"
+				"'&+rCrafting&n is the meticulous skill allowing one to craft &+Mjewelry&n, &+maccessories&n, and &+ccloak&n items from &+ysalvaged&n recipes.'\n"
+				"'Please think long and hard about your decision, and then &+RPractice &neither &+Lforge&n, &+ymine&n, or &+Rcraft&n.\n"
+				"'\n"
+				"'If you are unhappy with your current &+ytradeskill&n, you can &+Rpractice reset&n and I will unlearn any &+ytradeskill&n you'\n"
+				"'might know for the low price of &+c200 &+Cepic points&n. &+rBEWARE&n: this will wipe any learned &+Yrecipes&n!\n");
 			send_to_char(buffer, pl);
 
-			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 || GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 || GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
+			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
 			{
-				send_to_char("\n"
-				             "'Unfortunately, I cannot teach you anything more, as you have already learned a tradeskill!'\n",
-				             pl);
+				send_to_char(
+					"\n"
+					"'Unfortunately, I cannot teach you anything more, as you have already learned a tradeskill!'\n",
+					pl);
 				return TRUE;
 			}
 
@@ -1479,31 +1605,42 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 			if (availepics < 200)
 			{
 				if (pl->in_room == real_room(133071))
-					send_to_char("&nJodnan says '&+GI'm sorry, but you do not seem to have the &+Wepics&+G available for me to reset your &+gtradeskill&+G.\r\n&n", pl);
+					send_to_char(
+						"&nJodnan says '&+GI'm sorry, but you do not seem to have the &+Wepics&+G available for me to reset your &+gtradeskill&+G.\r\n&n",
+						pl);
 				else
-					send_to_char("&nGixnif says '&+GI'm sorry, but you do not seem to have the &+Wepics&+G available for me to reset your &+gtradeskill&+G.\r\n&n", pl);
+					send_to_char(
+						"&nGixnif says '&+GI'm sorry, but you do not seem to have the &+Wepics&+G available for me to reset your &+gtradeskill&+G.\r\n&n",
+						pl);
 				return TRUE;
 			}
 			// wipe their learned recipes from database
 			if (!sql_delete_player_recipes(GET_PID(pl)))
 			{
-				send_to_char("Your tradeskill reset could not be recorded. Please try again later.\r\n", pl);
-				logit(LOG_WIZ, "Failed to delete learned recipes for %s during tradeskill reset.", GET_NAME(pl));
+				send_to_char(
+					"Your tradeskill reset could not be recorded. Please try again later.\r\n",
+					pl);
+				logit(LOG_WIZ,
+				      "Failed to delete learned recipes for %s during tradeskill reset.",
+				      GET_NAME(pl));
 				return TRUE;
 			}
 
 			pl->only.pc->epics -= 200;
-			snprintf(buffer, MAX_STRING_LENGTH, "Your teacher takes you aside, and performs a cleansing geasture about your body&n. Your mind feels &+Wrenewed&n!\n");
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"Your teacher takes you aside, and performs a cleansing geasture about your body&n. Your mind feels &+Wrenewed&n!\n");
 			act(buffer, FALSE, ch, 0, pl, TO_VICT);
-			pl->only.pc->skills[SKILL_FORGE].taught  = 0;
+			pl->only.pc->skills[SKILL_FORGE].taught = 0;
 			pl->only.pc->skills[SKILL_FORGE].learned = 0;
-			pl->only.pc->skills[SKILL_MINE].taught   = 0;
-			pl->only.pc->skills[SKILL_MINE].learned  = 0;
-			pl->only.pc->skills[SKILL_CRAFT].taught  = 0;
+			pl->only.pc->skills[SKILL_MINE].taught = 0;
+			pl->only.pc->skills[SKILL_MINE].learned = 0;
+			pl->only.pc->skills[SKILL_CRAFT].taught = 0;
 			pl->only.pc->skills[SKILL_CRAFT].learned = 0;
 
 			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 
 			return TRUE;
@@ -1512,70 +1649,82 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 		else if (strstr(arg, "forge"))
 		{
 			// called with skill name
-			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 || GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 || GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
+			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
 			{
-				send_to_char("Unfortunately, I cannot teach you anything more, as you have already learned a tradeskill!\n", pl);
+				send_to_char(
+					"Unfortunately, I cannot teach you anything more, as you have already learned a tradeskill!\n",
+					pl);
 				return TRUE;
 			}
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "Your teacher takes you aside and teaches you the finer points of &+W%s&n.\n"
-			         "&+cYou feel your skill in %s improving.&n\n",
-			         skills[SKILL_FORGE].name,
-			         skills[SKILL_FORGE].name);
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"Your teacher takes you aside and teaches you the finer points of &+W%s&n.\n"
+				"&+cYou feel your skill in %s improving.&n\n",
+				skills[SKILL_FORGE].name, skills[SKILL_FORGE].name);
 			act(buffer, FALSE, ch, 0, pl, TO_VICT);
 			pl->only.pc->skills[SKILL_FORGE].learned = 10;
-			pl->only.pc->skills[SKILL_FORGE].taught  = 100;
+			pl->only.pc->skills[SKILL_FORGE].taught = 100;
 			pl->only.pc->skills[SKILL_FORGE].learned = 10;
 			// MIN(100, pl->only.pc->skills[SKILL_FORGE].learned + 10);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 			return TRUE;
 		}
 		else if (strstr(arg, skills[SKILL_MINE].name))
 		{
 			// called with skill name
-			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 || GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 || GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
+			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
 			{
-				send_to_char("Unfortunately, I cannot teach you anything more, you have already learned a tradeskill!\n", pl);
+				send_to_char(
+					"Unfortunately, I cannot teach you anything more, you have already learned a tradeskill!\n",
+					pl);
 				return TRUE;
 			}
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "Your teacher takes you aside and teaches you the finer points of &+W%s&n.\n"
-			         "&+cYou feel your skill in %s improving.&n\n",
-			         skills[SKILL_MINE].name,
-			         skills[SKILL_MINE].name);
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"Your teacher takes you aside and teaches you the finer points of &+W%s&n.\n"
+				"&+cYou feel your skill in %s improving.&n\n",
+				skills[SKILL_MINE].name, skills[SKILL_MINE].name);
 			act(buffer, FALSE, ch, 0, pl, TO_VICT);
-			pl->only.pc->skills[SKILL_MINE].taught  = 100;
+			pl->only.pc->skills[SKILL_MINE].taught = 100;
 			pl->only.pc->skills[SKILL_MINE].learned = 10;
 			// MIN(100, pl->only.pc->skills[SKILL_MINE].learned + 10);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 			return TRUE;
 		}
 		else if (strstr(arg, skills[SKILL_CRAFT].name))
 		{
 			// called with skill name
-			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 || GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 || GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
+			if (GET_CHAR_SKILL(pl, SKILL_FORGE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_MINE) >= 1 ||
+			    GET_CHAR_SKILL(pl, SKILL_CRAFT) >= 1)
 			{
-				send_to_char("Unfortunately, I cannot teach you anything more, you have already learned a tradeskill!\n", pl);
+				send_to_char(
+					"Unfortunately, I cannot teach you anything more, you have already learned a tradeskill!\n",
+					pl);
 				return TRUE;
 			}
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "Your teacher takes you aside and teaches you the finer points of &+W%s&n.\n"
-			         "&+cYou feel your skill in %s improving.&n\n",
-			         skills[SKILL_CRAFT].name,
-			         skills[SKILL_CRAFT].name);
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"Your teacher takes you aside and teaches you the finer points of &+W%s&n.\n"
+				"&+cYou feel your skill in %s improving.&n\n",
+				skills[SKILL_CRAFT].name, skills[SKILL_CRAFT].name);
 			act(buffer, FALSE, ch, 0, pl, TO_VICT);
-			pl->only.pc->skills[SKILL_CRAFT].taught  = 100;
+			pl->only.pc->skills[SKILL_CRAFT].taught = 100;
 			pl->only.pc->skills[SKILL_CRAFT].learned = 10;
 			// MIN(100, pl->only.pc->skills[SKILL_CRAFT].learned + 10);
 			if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after tradeskill change.", GET_NAME(pl)); // tradeskills require a save.
+				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
+				      GET_NAME(pl)); // tradeskills require a save.
 			CharWait(pl, PULSE_VIOLENCE);
 			return TRUE;
 		}
@@ -1586,7 +1735,7 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 int itemvalue(P_obj obj)
 {
 	double workingvalue = 0;
-	double multiplier   = 1;
+	double multiplier = 1;
 	double mod;
 
 	if (!obj)
@@ -1856,7 +2005,8 @@ int itemvalue(P_obj obj)
 		if (obj->value[5] / 1000000000)
 		{
 			// Add up number of spells
-			numspells = ((spells[0]) ? 1 : 0) + ((spells[1]) ? 1 : 0) + ((spells[2]) ? 1 : 0);
+			numspells = ((spells[0]) ? 1 : 0) + ((spells[1]) ? 1 : 0) +
+				    ((spells[2]) ? 1 : 0);
 			// If there are none?!, set to 1 anyway.
 			numspells = numspells ? numspells : 1;
 			// Compute average circle.
@@ -1882,7 +2032,8 @@ int itemvalue(P_obj obj)
 	{
 		mod = obj->affected[i].modifier;
 		// dam/hitroll are normal values
-		if ((obj->affected[i].location == APPLY_DAMROLL) || (obj->affected[i].location == APPLY_HITROLL))
+		if ((obj->affected[i].location == APPLY_DAMROLL) ||
+		    (obj->affected[i].location == APPLY_HITROLL))
 		{
 			if (obj->type == ITEM_WEAPON)
 			{
@@ -1902,15 +2053,21 @@ int itemvalue(P_obj obj)
 		}
 
 		// Regular stats can be high numbers - half them
-		if ((obj->affected[i].location == APPLY_STR) || (obj->affected[i].location == APPLY_DEX) || (obj->affected[i].location == APPLY_INT) || (obj->affected[i].location == APPLY_WIS) ||
-		    (obj->affected[i].location == APPLY_CON) || (obj->affected[i].location == APPLY_AGI))
+		if ((obj->affected[i].location == APPLY_STR) ||
+		    (obj->affected[i].location == APPLY_DEX) ||
+		    (obj->affected[i].location == APPLY_INT) ||
+		    (obj->affected[i].location == APPLY_WIS) ||
+		    (obj->affected[i].location == APPLY_CON) ||
+		    (obj->affected[i].location == APPLY_AGI))
 		{
 			// 1:2, 2:4, 3:6, 4:9, 5:16, 6:25, 7:36, 8:49, 9:64, 10:81, 11:100
 			workingvalue += (mod <= 3) ? 2 * mod : (mod - 1) * (mod - 1);
 		}
 
 		// These are used a little less
-		if ((obj->affected[i].location == APPLY_POW) || (obj->affected[i].location == APPLY_CHA) || (obj->affected[i].location == APPLY_LUCK))
+		if ((obj->affected[i].location == APPLY_POW) ||
+		    (obj->affected[i].location == APPLY_CHA) ||
+		    (obj->affected[i].location == APPLY_LUCK))
 		{
 			// 1:2, 2:4, 3:6, 4:8, 5:10, 6:12, 7:15, 8:26, 9:39, 10:54, 11:71, 12:90, 13: 111
 			workingvalue += (mod <= 6) ? 2 * mod : (mod - 2) * (mod - 2) - 10;
@@ -1924,14 +2081,17 @@ int itemvalue(P_obj obj)
 		}
 
 		// Moves and mana are generally large #'s
-		if ((obj->affected[i].location == APPLY_MOVE) || (obj->affected[i].location == APPLY_MANA))
+		if ((obj->affected[i].location == APPLY_MOVE) ||
+		    (obj->affected[i].location == APPLY_MANA))
 		{
 			// Right now, 25 : 25, 35 : 65, 44 : 101, 45 : 105 - not enhanceable.
 			workingvalue += (mod <= 25) ? mod : 4 * mod - 75;
 		}
 
 		// Hit, move, mana, regen are generally large #'s, but we don't want above 9.
-		if ((obj->affected[i].location == APPLY_HIT_REG) || (obj->affected[i].location == APPLY_MOVE_REG) || (obj->affected[i].location == APPLY_MANA_REG))
+		if ((obj->affected[i].location == APPLY_HIT_REG) ||
+		    (obj->affected[i].location == APPLY_MOVE_REG) ||
+		    (obj->affected[i].location == APPLY_MANA_REG))
 		{
 			// 1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:21, 9:27, 10:33
 			// 11:40, 12:48, 13:56, 14:65, 15:75, 16:85, 17:96, 18:108
@@ -1939,46 +2099,54 @@ int itemvalue(P_obj obj)
 		}
 
 		// Racial attributes #'s - Do we still have these?
-		if ((obj->affected[i].location == APPLY_AGI_RACE) || (obj->affected[i].location == APPLY_STR_RACE) || (obj->affected[i].location == APPLY_CON_RACE) ||
-		    (obj->affected[i].location == APPLY_INT_RACE) || (obj->affected[i].location == APPLY_WIS_RACE) || (obj->affected[i].location == APPLY_CHA_RACE) ||
+		if ((obj->affected[i].location == APPLY_AGI_RACE) ||
+		    (obj->affected[i].location == APPLY_STR_RACE) ||
+		    (obj->affected[i].location == APPLY_CON_RACE) ||
+		    (obj->affected[i].location == APPLY_INT_RACE) ||
+		    (obj->affected[i].location == APPLY_WIS_RACE) ||
+		    (obj->affected[i].location == APPLY_CHA_RACE) ||
 		    (obj->affected[i].location == APPLY_DEX_RACE))
 		{
 			if (mod < 1 || mod > LAST_RACE)
 			{
-				debug("itemvalue: obj '%s' %d has APPLY_..._RACE %d and bad modifier %d.", obj->short_description, OBJ_VNUM(obj), obj->affected[i].location, mod);
+				debug("itemvalue: obj '%s' %d has APPLY_..._RACE %d and bad modifier %d.",
+				      obj->short_description, OBJ_VNUM(obj),
+				      obj->affected[i].location, mod);
 				workingvalue += 100;
 			}
 			else
 			{
 				switch (obj->affected[i].location)
 				{
-					// We're looking for the stat vs 100. 75->0pts, 100->50pts, 150->150pts, 200->250pts
-					case APPLY_AGI_RACE:
-						workingvalue += 2 * stat_factor[(int)mod].Agi - 150;
-						break;
-					case APPLY_STR_RACE:
-						workingvalue += 2 * stat_factor[(int)mod].Str - 150;
-						break;
-					case APPLY_CON_RACE:
-						workingvalue += 2 * stat_factor[(int)mod].Con - 150;
-						break;
-					case APPLY_INT_RACE:
-						workingvalue += 2 * stat_factor[(int)mod].Int - 150;
-						break;
-					case APPLY_WIS_RACE:
-						workingvalue += 2 * stat_factor[(int)mod].Wis - 150;
-						break;
-					case APPLY_CHA_RACE:
-						workingvalue += 2 * stat_factor[(int)mod].Cha - 150;
-						break;
-					case APPLY_DEX_RACE:
-						workingvalue += 2 * stat_factor[(int)mod].Dex - 150;
-						break;
-					// Should never be the case but..
-					default:
-						debug("itemvalue: obj '%s' %d has 'bad' APPLY_..._RACE %d, modifier %d.", obj->short_description, OBJ_VNUM(obj), obj->affected[i].location, mod);
-						workingvalue += 100;
-						break;
+				// We're looking for the stat vs 100. 75->0pts, 100->50pts, 150->150pts, 200->250pts
+				case APPLY_AGI_RACE:
+					workingvalue += 2 * stat_factor[(int)mod].Agi - 150;
+					break;
+				case APPLY_STR_RACE:
+					workingvalue += 2 * stat_factor[(int)mod].Str - 150;
+					break;
+				case APPLY_CON_RACE:
+					workingvalue += 2 * stat_factor[(int)mod].Con - 150;
+					break;
+				case APPLY_INT_RACE:
+					workingvalue += 2 * stat_factor[(int)mod].Int - 150;
+					break;
+				case APPLY_WIS_RACE:
+					workingvalue += 2 * stat_factor[(int)mod].Wis - 150;
+					break;
+				case APPLY_CHA_RACE:
+					workingvalue += 2 * stat_factor[(int)mod].Cha - 150;
+					break;
+				case APPLY_DEX_RACE:
+					workingvalue += 2 * stat_factor[(int)mod].Dex - 150;
+					break;
+				// Should never be the case but..
+				default:
+					debug("itemvalue: obj '%s' %d has 'bad' APPLY_..._RACE %d, modifier %d.",
+					      obj->short_description, OBJ_VNUM(obj),
+					      obj->affected[i].location, mod);
+					workingvalue += 100;
+					break;
 				}
 			}
 		}
@@ -1998,24 +2166,34 @@ int itemvalue(P_obj obj)
 		}
 
 		// saving throw values (good) are negative
-		if ((obj->affected[i].location == APPLY_SAVING_PARA) || (obj->affected[i].location == APPLY_SAVING_ROD) || (obj->affected[i].location == APPLY_SAVING_FEAR) ||
-		    (obj->affected[i].location == APPLY_SAVING_BREATH) || (obj->affected[i].location == APPLY_SAVING_SPELL))
+		if ((obj->affected[i].location == APPLY_SAVING_PARA) ||
+		    (obj->affected[i].location == APPLY_SAVING_ROD) ||
+		    (obj->affected[i].location == APPLY_SAVING_FEAR) ||
+		    (obj->affected[i].location == APPLY_SAVING_BREATH) ||
+		    (obj->affected[i].location == APPLY_SAVING_SPELL))
 		{
 			// -1:2, -2:8, -3:18, -4:32, -5:50, -6:72, -7:98, -8:128
 			workingvalue += mod * mod * ((mod <= 0) ? 2 : -2);
 		}
 
 		// pulse is quite valuable and negative is good
-		if ((obj->affected[i].location == APPLY_COMBAT_PULSE) || (obj->affected[i].location == APPLY_SPELL_PULSE))
+		if ((obj->affected[i].location == APPLY_COMBAT_PULSE) ||
+		    (obj->affected[i].location == APPLY_SPELL_PULSE))
 		{
 			multiplier *= 2;
 			workingvalue += mod * -75;
 		}
 
 		// Max_stats double points
-		if ((obj->affected[i].location == APPLY_STR_MAX) || (obj->affected[i].location == APPLY_DEX_MAX) || (obj->affected[i].location == APPLY_INT_MAX) ||
-		    (obj->affected[i].location == APPLY_WIS_MAX) || (obj->affected[i].location == APPLY_CON_MAX) || (obj->affected[i].location == APPLY_CHA_MAX) ||
-		    (obj->affected[i].location == APPLY_AGI_MAX) || (obj->affected[i].location == APPLY_POW_MAX) || (obj->affected[i].location == APPLY_LUCK_MAX))
+		if ((obj->affected[i].location == APPLY_STR_MAX) ||
+		    (obj->affected[i].location == APPLY_DEX_MAX) ||
+		    (obj->affected[i].location == APPLY_INT_MAX) ||
+		    (obj->affected[i].location == APPLY_WIS_MAX) ||
+		    (obj->affected[i].location == APPLY_CON_MAX) ||
+		    (obj->affected[i].location == APPLY_CHA_MAX) ||
+		    (obj->affected[i].location == APPLY_AGI_MAX) ||
+		    (obj->affected[i].location == APPLY_POW_MAX) ||
+		    (obj->affected[i].location == APPLY_LUCK_MAX))
 		{
 			// 1:3, 2:13, 3:24, 4:36, 5:51, 6:66, 7:83, 8:100
 			workingvalue += (mod < 2) ? 3.0 * mod : 3.52 * mod * sqrt(mod) + mod;
@@ -2038,7 +2216,8 @@ int itemvalue(P_obj obj)
 			// For number of dice: 1:1, 2:1.15, 3:1.4, 4:1.75, 5:2.2, 6:2.75, 7:3.4, 8:4.15, 9:5, 10:5.95
 			// For number of die sides: 1:0, 2:1, 3:5, 4:12, 5:25, 6:43, 7: 68, 8:102, 9:145, 10: 200
 			// So, 1d8 / 3d7 stabber is !forge and !enhance (115 ival when combined with above).
-			workingvalue += ((obj->value[1] * obj->value[1] + 19.) / 20.) * (mod * mod * mod) / 5.;
+			workingvalue += ((obj->value[1] * obj->value[1] + 19.) / 20.) *
+					(mod * mod * mod) / 5.;
 		}
 	}
 	if (obj->type == ITEM_ARMOR)
@@ -2067,12 +2246,14 @@ int itemvalue(P_obj obj)
 		workingvalue = 1;
 	}
 
-	if ((!CAN_WEAR(obj, ITEM_TAKE) && obj->type == ITEM_TELEPORT) || obj->type == ITEM_KEY || obj->type == ITEM_SWITCH || obj->type == ITEM_VEHICLE || obj->type == ITEM_SHIP ||
+	if ((!CAN_WEAR(obj, ITEM_TAKE) && obj->type == ITEM_TELEPORT) || obj->type == ITEM_KEY ||
+	    obj->type == ITEM_SWITCH || obj->type == ITEM_VEHICLE || obj->type == ITEM_SHIP ||
 	    obj->type == ITEM_STORAGE)
 	{
 		if (workingvalue != 1)
 		{
-			debug("Always load obj '%s' %d has stats giving ival %.3lf.", OBJ_SHORT(obj), OBJ_VNUM(obj), workingvalue);
+			debug("Always load obj '%s' %d has stats giving ival %.3lf.",
+			      OBJ_SHORT(obj), OBJ_VNUM(obj), workingvalue);
 		}
 		return 1;
 	}
@@ -2099,26 +2280,18 @@ void do_salvation(P_char ch, char *arg, int cmd)
 	if (!ch)
 		return;
 	memset(&af, 0, sizeof(struct affected_type));
-	af.type     = TAG_SALVATION;
+	af.type = TAG_SALVATION;
 	af.modifier = 0;
 	af.duration = 24;
 	af.location = 0;
-	af.flags    = AFFTYPE_NODISPEL;
+	af.flags = AFFTYPE_NODISPEL;
 	affect_to_char(ch, &af);
 	act("&+YYou raise your eyes &+Cskyward&+Y in a plea for assistance...\n"
 	    "&+Y..after a brief moment, your body &+Ctingles&+Y with warmth, and you feel &+Crenewed&+Y.",
-	    FALSE,
-	    ch,
-	    0,
-	    ch,
-	    TO_CHAR);
+	    FALSE, ch, 0, ch, TO_CHAR);
 	act("&+Y$n raises their eyes &+Cskyward&+Y in a plea for assistance...\n"
 	    "&+Y..after a brief moment, $n's body &+Ctingles&+Y with warmth, and they feel &+Crenewed&+Y.",
-	    FALSE,
-	    ch,
-	    0,
-	    0,
-	    TO_ROOM);
+	    FALSE, ch, 0, 0, TO_ROOM);
 	vamp(ch, number(100, 200), GET_MAX_HIT(ch));
 }
 
@@ -2127,7 +2300,7 @@ void do_salvation(P_char ch, char *arg, int cmd)
 //   Material range for FEATHER is 400000 (lowest quality) - 400004 (highest quality).
 int get_matstart(P_obj obj)
 {
-	int    matstart;
+	int matstart;
 	::byte objmat;
 
 	if (!obj)
@@ -2139,169 +2312,168 @@ int get_matstart(P_obj obj)
 
 	switch (objmat)
 	{
-		case MAT_NONSUBSTANTIAL:
-			matstart = 400205;
-			break;
-		case MAT_FLESH:
-			matstart = 400005;
-			break;
-		case MAT_CLOTH:
-			matstart = 400015;
-			break;
-		case MAT_BARK:
-			matstart = 400035;
-			break;
-		case MAT_SOFTWOOD:
-			matstart = 400040;
-			break;
-		case MAT_HARDWOOD:
-			matstart = 400050;
-			break;
-			/*
+	case MAT_NONSUBSTANTIAL:
+		matstart = 400205;
+		break;
+	case MAT_FLESH:
+		matstart = 400005;
+		break;
+	case MAT_CLOTH:
+		matstart = 400015;
+		break;
+	case MAT_BARK:
+		matstart = 400035;
+		break;
+	case MAT_SOFTWOOD:
+		matstart = 400040;
+		break;
+	case MAT_HARDWOOD:
+		matstart = 400050;
+		break;
+		/*
 			    case MAT_SILICON:
 			      matstart = 67283;
 			      break;
 			*/
-		case MAT_CRYSTAL:
-			matstart = 400090;
-			break;
-			/*
+	case MAT_CRYSTAL:
+		matstart = 400090;
+		break;
+		/*
 			    case MAT_CERAMIC:
 			      matstart = 67283;
 			      break;
 			*/
-		case MAT_BONE:
-			matstart = 400065;
-			break;
-		case MAT_STONE:
-			matstart = 400095;
-			break;
-		case MAT_HIDE:
-			matstart = 400030;
-			break;
-		case MAT_LEATHER:
-			matstart = 400045;
-			break;
-		case MAT_CURED_LEATHER:
-			matstart = 400060;
-			break;
-		case MAT_IRON:
-			matstart = 400110;
-			break;
-		case MAT_STEEL:
-			matstart = 400120;
-			break;
-		case MAT_BRASS:
-			matstart = 400125;
-			break;
-		case MAT_MITHRIL:
-			matstart = 400185;
-			break;
-		case MAT_ADAMANTIUM:
-			matstart = 400195;
-			break;
-		case MAT_BRONZE:
-			matstart = 400130;
-			break;
-		case MAT_COPPER:
-			matstart = 400135;
-			break;
-		case MAT_SILVER:
-			matstart = 400140;
-			break;
-		case MAT_ELECTRUM:
-			matstart = 400145;
-			break;
-		case MAT_GOLD:
-			matstart = 400150;
-			break;
-		case MAT_PLATINUM:
-			matstart = 400180;
-			break;
-		case MAT_GEM:
-			matstart = 400155;
-			break;
-		case MAT_DIAMOND:
-			matstart = 400190;
-			break;
-			/*
+	case MAT_BONE:
+		matstart = 400065;
+		break;
+	case MAT_STONE:
+		matstart = 400095;
+		break;
+	case MAT_HIDE:
+		matstart = 400030;
+		break;
+	case MAT_LEATHER:
+		matstart = 400045;
+		break;
+	case MAT_CURED_LEATHER:
+		matstart = 400060;
+		break;
+	case MAT_IRON:
+		matstart = 400110;
+		break;
+	case MAT_STEEL:
+		matstart = 400120;
+		break;
+	case MAT_BRASS:
+		matstart = 400125;
+		break;
+	case MAT_MITHRIL:
+		matstart = 400185;
+		break;
+	case MAT_ADAMANTIUM:
+		matstart = 400195;
+		break;
+	case MAT_BRONZE:
+		matstart = 400130;
+		break;
+	case MAT_COPPER:
+		matstart = 400135;
+		break;
+	case MAT_SILVER:
+		matstart = 400140;
+		break;
+	case MAT_ELECTRUM:
+		matstart = 400145;
+		break;
+	case MAT_GOLD:
+		matstart = 400150;
+		break;
+	case MAT_PLATINUM:
+		matstart = 400180;
+		break;
+	case MAT_GEM:
+		matstart = 400155;
+		break;
+	case MAT_DIAMOND:
+		matstart = 400190;
+		break;
+		/*
 			    case MAT_LEAVES:
 			      matstart = 67283;
 			      break;
 			*/
-		case MAT_RUBY:
-			matstart = 400165;
-			break;
-		case MAT_EMERALD:
-			matstart = 400160;
-			break;
-		case MAT_SAPPHIRE:
-			matstart = 400170;
-			break;
-		case MAT_IVORY:
-			matstart = 400070;
-			break;
-		case MAT_DRAGONSCALE:
-			matstart = 400200;
-			break;
-		case MAT_OBSIDIAN:
-			matstart = 400175;
-			break;
-		case MAT_GRANITE:
-			matstart = 400100;
-			break;
-		case MAT_MARBLE:
-			matstart = 400105;
-			break;
-			/*
+	case MAT_RUBY:
+		matstart = 400165;
+		break;
+	case MAT_EMERALD:
+		matstart = 400160;
+		break;
+	case MAT_SAPPHIRE:
+		matstart = 400170;
+		break;
+	case MAT_IVORY:
+		matstart = 400070;
+		break;
+	case MAT_DRAGONSCALE:
+		matstart = 400200;
+		break;
+	case MAT_OBSIDIAN:
+		matstart = 400175;
+		break;
+	case MAT_GRANITE:
+		matstart = 400100;
+		break;
+	case MAT_MARBLE:
+		matstart = 400105;
+		break;
+		/*
 			    case MAT_LIMESTONE:
 			      matstart = 67283;
 			      break;
 			*/
-		case MAT_BAMBOO:
-			matstart = 400055;
-			break;
-		case MAT_REEDS:
-			matstart = 400010;
-			break;
-		case MAT_HEMP:
-			matstart = 400020;
-			break;
-		case MAT_GLASSTEEL:
-			matstart = 400115;
-			break;
-		case MAT_CHITINOUS:
-			matstart = 400080;
-			break;
-		case MAT_REPTILESCALE:
-			matstart = 400085;
-			break;
-		case MAT_RUBBER:
-			matstart = 400025;
-			break;
-		case MAT_FEATHER:
-			matstart = 400000;
-			break;
-		case MAT_PEARL:
-			matstart = 400075;
-			break;
-		default:
-			matstart = 400205;
-			break;
+	case MAT_BAMBOO:
+		matstart = 400055;
+		break;
+	case MAT_REEDS:
+		matstart = 400010;
+		break;
+	case MAT_HEMP:
+		matstart = 400020;
+		break;
+	case MAT_GLASSTEEL:
+		matstart = 400115;
+		break;
+	case MAT_CHITINOUS:
+		matstart = 400080;
+		break;
+	case MAT_REPTILESCALE:
+		matstart = 400085;
+		break;
+	case MAT_RUBBER:
+		matstart = 400025;
+		break;
+	case MAT_FEATHER:
+		matstart = 400000;
+		break;
+	case MAT_PEARL:
+		matstart = 400075;
+		break;
+	default:
+		matstart = 400205;
+		break;
 	}
 	return matstart;
 }
-
-
 
 void do_refine(P_char ch, char *arg, int cmd)
 {
 	P_obj obj;
 	P_obj t_obj, nextobj;
-	int   i = 0, o = 0, vnum;
-	int   orechance;
-	bool  plat = FALSE;
-	char  gbuf1[MAX_STRING_LENGTH], gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH], gbuf3[MAX_STRING_LENGTH];
+	int i = 0, o = 0, vnum;
+	int orechance;
+	bool plat = FALSE;
+	char gbuf1[MAX_STRING_LENGTH], gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH],
+		gbuf3[MAX_STRING_LENGTH];
 
 	argument_interpreter(arg, gbuf1, gbuf3);
 
@@ -2311,7 +2483,9 @@ void do_refine(P_char ch, char *arg, int cmd)
 		obj = get_obj_in_list(gbuf1, ch->carrying);
 		if (!obj)
 		{
-			send_to_char("&nYou must have the item you wish to &+yre&+Yfi&+yne &nin your inventory.&n\r\n", ch);
+			send_to_char(
+				"&nYou must have the item you wish to &+yre&+Yfi&+yne &nin your inventory.&n\r\n",
+				ch);
 			return;
 		}
 
@@ -2324,13 +2498,16 @@ void do_refine(P_char ch, char *arg, int cmd)
 		}
 		if (vnum == (get_matstart(obj) + 4))
 		{
-			send_to_char("That &+bmaterial&n is already of the &+Bhighest&n quality.\n", ch);
+			send_to_char("That &+bmaterial&n is already of the &+Bhighest&n quality.\n",
+				     ch);
 			return;
 		}
 	}
 	else
 	{
-		send_to_char("What &+ysalvaged &+Ymaterial &nwould you like to &+yre&+Yfi&+yne?\r\n", ch);
+		send_to_char(
+			"What &+ysalvaged &+Ymaterial &nwould you like to &+yre&+Yfi&+yne?\r\n",
+			ch);
 		return;
 	}
 
@@ -2348,7 +2525,9 @@ void do_refine(P_char ch, char *arg, int cmd)
 	}
 	if (i < 2)
 	{
-		send_to_char("You need at least &+Y2 &nof the &+ymaterials&n in your inventory in order to &+yre&+Yfi&+yne&n it.\r\n", ch);
+		send_to_char(
+			"You need at least &+Y2 &nof the &+ymaterials&n in your inventory in order to &+yre&+Yfi&+yne&n it.\r\n",
+			ch);
 		return;
 	}
 	// If no ore, check for 50 plat..
@@ -2356,7 +2535,9 @@ void do_refine(P_char ch, char *arg, int cmd)
 	{
 		if (SUB_MONEY(ch, 50000, 0) != 0)
 		{
-			send_to_char("You must have &+Wexactly &+Rone&n &+Lm&+yi&+Ln&+ye&+Ld ore &nin your inventory or 50 &+Wplatinum&n in order to &+yre&+Yfi&+yne&n it.\r\n", ch);
+			send_to_char(
+				"You must have &+Wexactly &+Rone&n &+Lm&+yi&+Ln&+ye&+Ld ore &nin your inventory or 50 &+Wplatinum&n in order to &+yre&+Yfi&+yne&n it.\r\n",
+				ch);
 			return;
 		}
 		else
@@ -2374,7 +2555,9 @@ void do_refine(P_char ch, char *arg, int cmd)
 		{
 			obj_from_char(t_obj);
 			extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'
-			send_to_char("You take the item and gently pour the melted ore over the item...\n", ch);
+			send_to_char(
+				"You take the item and gently pour the melted ore over the item...\n",
+				ch);
 			i--;
 		}
 		if (o && (OBJ_VNUM(t_obj) > 193) && (OBJ_VNUM(t_obj) < 234))
@@ -2395,35 +2578,19 @@ void do_refine(P_char ch, char *arg, int cmd)
 		{
 			act("&+W$n &+Ltakes their &+Wcoins&+L and begins to &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
 			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land starts to spread it about their $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    TRUE,
-			    ch,
-			    obj,
-			    0,
-			    TO_ROOM);
+			    TRUE, ch, obj, 0, TO_ROOM);
 			act("&+LYou &+Ltake your &+Wcoins&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
 			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land start to spread it about your $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    FALSE,
-			    ch,
-			    obj,
-			    0,
-			    TO_CHAR);
+			    FALSE, ch, obj, 0, TO_CHAR);
 		}
 		else
 		{
 			act("&+W$n &+Ltakes their &+yore&+L and begins to &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
 			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land starts to spread it about their $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    TRUE,
-			    ch,
-			    obj,
-			    0,
-			    TO_ROOM);
+			    TRUE, ch, obj, 0, TO_ROOM);
 			act("&+LYou &+Ltake your &+yore&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
 			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land start to spread it about your $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    FALSE,
-			    ch,
-			    obj,
-			    0,
-			    TO_CHAR);
+			    FALSE, ch, obj, 0, TO_CHAR);
 		}
 		return;
 	}
@@ -2436,18 +2603,10 @@ void do_refine(P_char ch, char *arg, int cmd)
 	obj = read_object(vnum, VIRTUAL);
 	act("&+W$n &+Ltakes their &+yore&+L and begins to &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
 	    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land starts to spread it about their $ps&+L, which &+ycrack &+Land &+yreform&+L under the intense &+rheat&+L.&N",
-	    TRUE,
-	    ch,
-	    obj,
-	    0,
-	    TO_ROOM);
+	    TRUE, ch, obj, 0, TO_ROOM);
 	act("&+LYou &+Ltake your &+yore&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
 	    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land start to spread it about your $ps&+L, which &+ycrack &+Land &+yreform&+L under the intense &+rheat&+L.&N",
-	    FALSE,
-	    ch,
-	    obj,
-	    0,
-	    TO_CHAR);
+	    FALSE, ch, obj, 0, TO_CHAR);
 	// Then remove it from game.
 	extract_obj(obj);
 }
@@ -2456,7 +2615,7 @@ void do_dice(P_char ch, char *arg, int cmd)
 {
 	char first_arg[MAX_INPUT_LENGTH], second_arg[MAX_INPUT_LENGTH], gbuf[MAX_STRING_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
-	int  numdice, dice;
+	int numdice, dice;
 
 	arg = one_argument(arg, first_arg);
 
@@ -2493,7 +2652,10 @@ void do_dice(P_char ch, char *arg, int cmd)
 		{
 			result = number(1, dice);
 			i++;
-			snprintf(gbuf, MAX_STRING_LENGTH, "&+yResult for &+W%s's&+y roll &+L#&+W%d&+y of a &+r%d&+y sided die: &+W%d&+y.", GET_NAME(ch), i, dice, result);
+			snprintf(
+				gbuf, MAX_STRING_LENGTH,
+				"&+yResult for &+W%s's&+y roll &+L#&+W%d&+y of a &+r%d&+y sided die: &+W%d&+y.",
+				GET_NAME(ch), i, dice, result);
 			act(gbuf, FALSE, ch, 0, 0, TO_CHAR);
 			act(gbuf, FALSE, ch, 0, 0, TO_ROOM);
 
@@ -2507,34 +2669,31 @@ void do_dice(P_char ch, char *arg, int cmd)
 int assoc_founder(P_char mob, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH], buffer2[MAX_STRING_LENGTH], guild_name[MAX_INPUT_LENGTH];
-	int  qend;
+	int qend;
 
 	if (cmd == CMD_LIST)
 	{
 		if (!arg || !*arg)
 		{
 			snprintf(buffer2, MAX_STRING_LENGTH, "%s", PERS(mob, pl, FALSE));
-			snprintf(buffer,
-			         MAX_STRING_LENGTH,
-			         "%s&+L looks you over briefly and then chuckles.'\n"
-			         "%s &+wsays 'Welcome adventurer.  If it is a guild ye are wishing to found, then ye have come to the right place&n.'\n"
-			         "%s &+wsays 'Ye will find the command to create a guild listed here, as well as the cost.'\n"
-			         "&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=+\n"
-			         "&+y|&+WFounding a guild will cost &+R%s &+Wplatinum coins.                                       &+y|\n"
-			         "&+y|&+WTo found the guild, type the following command and have the coins on your character:      &+y|\n"
-			         "&+y|&+Wbuy '<name of guild>'                                                                     &+y|\n"
-			         "&+y|                                                                                             &+y|\n"
-			         "&+y|&+Wexample: buy '&&+Lthe &&+MNetheril &&+mMages&&n'                                          &+y|\n"
-			         "&+y|&+WThis will create a guild named: '&+Lthe &+MNetheril &+mMages&n'                           &+y|\n"
-			         "&+y|&nSee help &+cansi &nand help &+ctestcolor&n for help in creatnig your guild colors.         &+y|\n"
-			         "&+y|&+WBe warned! Once you create the guild, there is no way to rename it, for now.              &+y|\n"
-			         "&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=+\n"
-			         "&+RNO racist, hate speech, or curse words will be tolerated in guild names. Violations will be met with a ban.\n"
-			         "\n",
-			         buffer2,
-			         buffer2,
-			         buffer2,
-			         comma_string(GUILD_COST / 1000));
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"%s&+L looks you over briefly and then chuckles.'\n"
+				"%s &+wsays 'Welcome adventurer.  If it is a guild ye are wishing to found, then ye have come to the right place&n.'\n"
+				"%s &+wsays 'Ye will find the command to create a guild listed here, as well as the cost.'\n"
+				"&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=+\n"
+				"&+y|&+WFounding a guild will cost &+R%s &+Wplatinum coins.                                       &+y|\n"
+				"&+y|&+WTo found the guild, type the following command and have the coins on your character:      &+y|\n"
+				"&+y|&+Wbuy '<name of guild>'                                                                     &+y|\n"
+				"&+y|                                                                                             &+y|\n"
+				"&+y|&+Wexample: buy '&&+Lthe &&+MNetheril &&+mMages&&n'                                          &+y|\n"
+				"&+y|&+WThis will create a guild named: '&+Lthe &+MNetheril &+mMages&n'                           &+y|\n"
+				"&+y|&nSee help &+cansi &nand help &+ctestcolor&n for help in creatnig your guild colors.         &+y|\n"
+				"&+y|&+WBe warned! Once you create the guild, there is no way to rename it, for now.              &+y|\n"
+				"&+y=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=+\n"
+				"&+RNO racist, hate speech, or curse words will be tolerated in guild names. Violations will be met with a ban.\n"
+				"\n",
+				buffer2, buffer2, buffer2, comma_string(GUILD_COST / 1000));
 			send_to_char(buffer, pl);
 			return TRUE;
 		} // endifnoarg
@@ -2542,10 +2701,11 @@ int assoc_founder(P_char mob, P_char pl, int cmd, char *arg)
 
 	if (cmd == CMD_BUY)
 	{
-
 		if (GET_ASSOC(pl) != NULL)
 		{
-			send_to_char("You cannot form a guild if you are currently a member of a guild.\r\n", pl);
+			send_to_char(
+				"You cannot form a guild if you are currently a member of a guild.\r\n",
+				pl);
 			return TRUE;
 		}
 
@@ -2563,18 +2723,23 @@ int assoc_founder(P_char mob, P_char pl, int cmd, char *arg)
 
 		if (sub_string_cs(guild_name, "&-") || sub_string_cs(guild_name, "&="))
 		{
-			send_to_char("You may not have blinking ansi or background colors in a guild name.\r\n", pl);
+			send_to_char(
+				"You may not have blinking ansi or background colors in a guild name.\r\n",
+				pl);
 			return TRUE;
 		}
 
 		if (sub_string_set(guild_name, rude_ass))
 		{
 			send_to_char("No curse words. Violations will be met with ban.\r\n", pl);
-			debug("Player '%s' %d is tryiing to make a rude-named guild: '%s'", J_NAME(pl), GET_ID(pl), guild_name);
+			debug("Player '%s' %d is tryiing to make a rude-named guild: '%s'",
+			      J_NAME(pl), GET_ID(pl), guild_name);
 			return TRUE;
 		}
 
-		snprintf(buffer2, MAX_STRING_LENGTH, "You have selected: %s for your guild name, is this correct? (y/n)\n", guild_name);
+		snprintf(buffer2, MAX_STRING_LENGTH,
+			 "You have selected: %s for your guild name, is this correct? (y/n)\n",
+			 guild_name);
 		send_to_char(buffer2, pl);
 
 		strcpy(pl->desc->last_command, guild_name);
@@ -2602,7 +2767,8 @@ int get_mincircle(int spell)
 	{
 		for (j = 0; j < MAX_SPEC; j++)
 		{
-			if ((skills[spell].m_class[i].rlevel[j] > 0) && (skills[spell].m_class[i].rlevel[j] <= lowest))
+			if ((skills[spell].m_class[i].rlevel[j] > 0) &&
+			    (skills[spell].m_class[i].rlevel[j] <= lowest))
 			{
 				lowest = skills[spell].m_class[i].rlevel[j];
 			}
@@ -2615,7 +2781,6 @@ int get_mincircle(int spell)
 // New object proc?  Add it here with a value associated with it.
 int get_ival_from_proc(obj_proc_type proc)
 {
-
 	// Procs stoneskin on 1 min timer.
 	if (proc == artifact_stone)
 	{
@@ -3789,21 +3954,40 @@ int get_ival_from_proc(obj_proc_type proc)
 
 	// Will make itemvalue(P_obj) return 1 (hopefully).
 	// This is important since we want these items to always load. (load % based on itemvalue for 2015-6 wipe).
-	if (proc == teleporting_map_pool || proc == storage_locker_obj_hook || proc == guildhall_door || proc == guildhall_heartstone || proc == tharnrifts_portal || proc == olympus_portal ||
-	    proc == vecna_deathportal || proc == portal_door || proc == portal_wormhole || proc == verzanan_portal || proc == newbie_portal || proc == no_kill_priest_obj || proc == magic_pool ||
-	    proc == moonstone_fragment || proc == treasure_chest || proc == cards_object || proc == artifact_monolith || proc == burbul_map_obj || proc == chyron_search_obj || proc == blood_stains ||
-	    proc == ice_shattered_bits || proc == tracks || proc == frost_beacon || proc == ice_block || proc == charon_ship || proc == moonstone || proc == nexus || proc == pesky_imp_chest ||
-	    proc == tower_summoning || proc == shabo_trap_north || proc == shabo_trap_north_two || proc == shabo_trap_south || proc == shabo_trap_south_two || proc == shabo_trap_up || proc == shabo_trap_down ||
-	    proc == shabo_trap_up_two || proc == slot_machine || proc == unspec_altar || proc == epic_stone || proc == stat_pool_str || proc == stat_pool_dex || proc == stat_pool_agi ||
-	    proc == stat_pool_con || proc == stat_pool_pow || proc == stat_pool_int || proc == stat_pool_wis || proc == stat_pool_cha || proc == stat_pool_luc || proc == spell_pool ||
-	    proc == druid_spring || proc == blighter_pond || proc == flying_citadel || proc == trap_razor_hooks || proc == trap_tower1_para || proc == trap_tower2_sleep || proc == hoa_plat ||
-	    proc == vecna_deathportal || proc == vecna_deathaltar || proc == vecna_stonemist || proc == vecna_ghosthands || proc == vecna_torturerroom || proc == vecna_gorge || proc == mob_vecna_procs ||
-	    proc == arenaobj_proc || proc == burn_touch_obj || proc == drowcrusher || proc == hewards_mystical_organ || proc == mir_fire || proc == board || proc == random_tomb || proc == random_glass ||
-	    proc == random_slab || proc == refreshing_fountain || proc == magical_fountain || proc == changelog || proc == wall_generic || proc == huntsman_ward || proc == item_switch ||
-	    proc == verzanan_portal || proc == die_roller || proc == elfgate || proc == guildwindow || proc == guildhome || proc == automaton_lever ||
-	    proc == illithid_teleport_veil || proc == teleporting_pool || proc == llyms_altar || proc == newbie_sign1 || proc == newbie_sign2 || proc == vareena_statue || proc == wh_corpse_decay ||
-	    proc == dragon_heart_decay || proc == ravenloft_bell || proc == toe_chamber_switch || proc == flesh_golem_repop || proc == unmulti_altar || proc == juiblex_grid_mob_generator ||
-	    proc == eth2_tree_obj || proc == magic_deck || proc == blackjack_table || proc == toe_chamber_switch || proc == drowcrusher)
+	if (proc == teleporting_map_pool || proc == storage_locker_obj_hook ||
+	    proc == guildhall_door || proc == guildhall_heartstone || proc == tharnrifts_portal ||
+	    proc == olympus_portal || proc == vecna_deathportal || proc == portal_door ||
+	    proc == portal_wormhole || proc == verzanan_portal || proc == newbie_portal ||
+	    proc == no_kill_priest_obj || proc == magic_pool || proc == moonstone_fragment ||
+	    proc == treasure_chest || proc == cards_object || proc == artifact_monolith ||
+	    proc == burbul_map_obj || proc == chyron_search_obj || proc == blood_stains ||
+	    proc == ice_shattered_bits || proc == tracks || proc == frost_beacon ||
+	    proc == ice_block || proc == charon_ship || proc == moonstone || proc == nexus ||
+	    proc == pesky_imp_chest || proc == tower_summoning || proc == shabo_trap_north ||
+	    proc == shabo_trap_north_two || proc == shabo_trap_south ||
+	    proc == shabo_trap_south_two || proc == shabo_trap_up || proc == shabo_trap_down ||
+	    proc == shabo_trap_up_two || proc == slot_machine || proc == unspec_altar ||
+	    proc == epic_stone || proc == stat_pool_str || proc == stat_pool_dex ||
+	    proc == stat_pool_agi || proc == stat_pool_con || proc == stat_pool_pow ||
+	    proc == stat_pool_int || proc == stat_pool_wis || proc == stat_pool_cha ||
+	    proc == stat_pool_luc || proc == spell_pool || proc == druid_spring ||
+	    proc == blighter_pond || proc == flying_citadel || proc == trap_razor_hooks ||
+	    proc == trap_tower1_para || proc == trap_tower2_sleep || proc == hoa_plat ||
+	    proc == vecna_deathportal || proc == vecna_deathaltar || proc == vecna_stonemist ||
+	    proc == vecna_ghosthands || proc == vecna_torturerroom || proc == vecna_gorge ||
+	    proc == mob_vecna_procs || proc == arenaobj_proc || proc == burn_touch_obj ||
+	    proc == drowcrusher || proc == hewards_mystical_organ || proc == mir_fire ||
+	    proc == board || proc == random_tomb || proc == random_glass || proc == random_slab ||
+	    proc == refreshing_fountain || proc == magical_fountain || proc == changelog ||
+	    proc == wall_generic || proc == huntsman_ward || proc == item_switch ||
+	    proc == verzanan_portal || proc == die_roller || proc == elfgate ||
+	    proc == guildwindow || proc == guildhome || proc == automaton_lever ||
+	    proc == illithid_teleport_veil || proc == teleporting_pool || proc == llyms_altar ||
+	    proc == newbie_sign1 || proc == newbie_sign2 || proc == vareena_statue ||
+	    proc == wh_corpse_decay || proc == dragon_heart_decay || proc == ravenloft_bell ||
+	    proc == toe_chamber_switch || proc == flesh_golem_repop || proc == unmulti_altar ||
+	    proc == juiblex_grid_mob_generator || proc == eth2_tree_obj || proc == magic_deck ||
+	    proc == blackjack_table || proc == toe_chamber_switch || proc == drowcrusher)
 	{
 		return -100000;
 	}
@@ -3817,59 +4001,59 @@ int calc_ore_cost(P_char ch, P_obj ore)
 {
 	// Cost in copper.
 	float newcost;
-	int   vnum = OBJ_VNUM(ore);
+	int vnum = OBJ_VNUM(ore);
 
 	// Type of metal: 0=iron, 1=steel, 2=copper, 3=silver, 4=gold, 5=platinum, 6=mithril, 7=adamantium.
 	switch ((vnum - LOWEST_ORE_VNUM) / 3)
 	{
-		case 0: // Iron
-			newcost = 20000.0;
-			break;
-		case 1: // Tin
-			newcost = 35000.0;
-			break;
-		case 2: // Copper
-			newcost = 50000.0;
-			break;
-		case 3: // Silver
-			newcost = 60000.0;
-			break;
-		case 4: // Gold
-			newcost = 80000.0;
-			break;
-		case 5: // Platinum
-			newcost = 100000.0;
-			break;
-		case 6: // Mithril
-			newcost = 135000.0;
-			break;
-		case 7: // Adamantium
-			newcost = 175000.0;
-			break;
-		default:
-			// Base for unknown is 1 copper.
-			newcost = 1.0;
-			break;
+	case 0: // Iron
+		newcost = 20000.0;
+		break;
+	case 1: // Tin
+		newcost = 35000.0;
+		break;
+	case 2: // Copper
+		newcost = 50000.0;
+		break;
+	case 3: // Silver
+		newcost = 60000.0;
+		break;
+	case 4: // Gold
+		newcost = 80000.0;
+		break;
+	case 5: // Platinum
+		newcost = 100000.0;
+		break;
+	case 6: // Mithril
+		newcost = 135000.0;
+		break;
+	case 7: // Adamantium
+		newcost = 175000.0;
+		break;
+	default:
+		// Base for unknown is 1 copper.
+		newcost = 1.0;
+		break;
 	}
 
 	// Size of metal: 0=small, 1=medium, 2=large
 	switch ((vnum - LOWEST_ORE_VNUM) % 3)
 	{
-		case 0:
-			// 75% cost for small.
-			newcost *= .75;
-			break;
-		case 1:
-			// 100% cost for meduim.
-			newcost *= 1.0;
-			break;
-		case 2:
-			// 150% cost for large.
-			newcost *= 1.50;
-			break;
-		default:
-			// Leave if unknown size.
-			break;
+	case 0:
+		// 75% cost for small.
+		newcost *= .75;
+		break;
+	case 1:
+		// 100% cost for meduim.
+		newcost *= 1.0;
+		break;
+	case 2:
+		// 150% cost for large.
+		newcost *= 1.50;
+		break;
+	default:
+		// Leave if unknown size.
+		break;
 	}
 
 	// Add a little randomness for shape +/- 3%.
@@ -3883,7 +4067,9 @@ int calc_ore_cost(P_char ch, P_obj ore)
 	if (affected_by_spell(ch, ACH_DO_YOU_MINE))
 		newcost *= 1.15;
 
-	debug("New ore: '%s' (lvl: %d, skill: %d) value: %d,%d.", ore->short_description, GET_LEVEL(ch), GET_CHAR_SKILL(ch, SKILL_MINE), (int)newcost / 1000, (int)newcost % 1000);
+	debug("New ore: '%s' (lvl: %d, skill: %d) value: %d,%d.", ore->short_description,
+	      GET_LEVEL(ch), GET_CHAR_SKILL(ch, SKILL_MINE), (int)newcost / 1000,
+	      (int)newcost % 1000);
 
 	return (int)newcost;
 }
@@ -3891,115 +4077,115 @@ int calc_ore_cost(P_char ch, P_obj ore)
 // Calculates the base cost of a gem (metal and size variables & level and skill of ch).
 int calc_gem_cost(P_char ch, P_obj gem, bool randommob)
 {
-	int    newcost;
-	int    type = OBJ_VNUM(gem) - 504;
+	int newcost;
+	int type = OBJ_VNUM(gem) - 504;
 	P_char mob;
 
 	// Base price based on gem type.
 	switch (type / 8)
 	{
-		// Topaz
-		case 0:
-			newcost = 200000;
-			if (randommob)
-			{
-				// A hideous zombie (#92)
-				// a corpse gatherer (#89)
-				mob = read_mobile(number(0, 1) ? 89 : 92, VIRTUAL);
-				// Enters from below.
-				char_to_room(mob, ch->in_room, 4);
-			}
-			break;
-		// Sapphire
-		case 1:
-			newcost = 250000;
-			if (randommob)
-			{
-				// An antlion (#94)
-				// A purple worm (#95)
-				mob = read_mobile(number(94, 95), VIRTUAL);
-				// Enters from below.
-				char_to_room(mob, ch->in_room, 4);
-			}
-			break;
-		// Emerald
-		case 2:
-			newcost = 300000;
-			if (randommob)
-			{
-				// a swarm of earth beetles (#97)
-				// A skeletal warrior (#93)
-				mob = read_mobile(number(0, 1) ? 93 : 97, VIRTUAL);
-				// Enters from below.
-				char_to_room(mob, ch->in_room, 4);
-			}
-			break;
-		// Diamond
-		case 3:
-			newcost = 250000;
-			if (randommob)
-			{
-				// A mohrg (#91)
-				// a sleeping earth elemental (#96)
-				mob = read_mobile(number(0, 1) ? 91 : 96, VIRTUAL);
-				// Enters from below.
-				char_to_room(mob, ch->in_room, 4);
-			}
-			break;
-		// Ruby
-		case 4:
-			newcost = 300000;
-			if (randommob)
-			{
-				// a GIANT purple worm (#90)
-				// a burrow wraith (#98)
-				mob = read_mobile(number(0, 1) ? 90 : 98, VIRTUAL);
-				// Enters from below.
-				char_to_room(mob, ch->in_room, 4);
-			}
-			break;
-		// Buggy gemstones are 1 plat base.
-		default:
-			newcost = 1000;
-			break;
+	// Topaz
+	case 0:
+		newcost = 200000;
+		if (randommob)
+		{
+			// A hideous zombie (#92)
+			// a corpse gatherer (#89)
+			mob = read_mobile(number(0, 1) ? 89 : 92, VIRTUAL);
+			// Enters from below.
+			char_to_room(mob, ch->in_room, 4);
+		}
+		break;
+	// Sapphire
+	case 1:
+		newcost = 250000;
+		if (randommob)
+		{
+			// An antlion (#94)
+			// A purple worm (#95)
+			mob = read_mobile(number(94, 95), VIRTUAL);
+			// Enters from below.
+			char_to_room(mob, ch->in_room, 4);
+		}
+		break;
+	// Emerald
+	case 2:
+		newcost = 300000;
+		if (randommob)
+		{
+			// a swarm of earth beetles (#97)
+			// A skeletal warrior (#93)
+			mob = read_mobile(number(0, 1) ? 93 : 97, VIRTUAL);
+			// Enters from below.
+			char_to_room(mob, ch->in_room, 4);
+		}
+		break;
+	// Diamond
+	case 3:
+		newcost = 250000;
+		if (randommob)
+		{
+			// A mohrg (#91)
+			// a sleeping earth elemental (#96)
+			mob = read_mobile(number(0, 1) ? 91 : 96, VIRTUAL);
+			// Enters from below.
+			char_to_room(mob, ch->in_room, 4);
+		}
+		break;
+	// Ruby
+	case 4:
+		newcost = 300000;
+		if (randommob)
+		{
+			// a GIANT purple worm (#90)
+			// a burrow wraith (#98)
+			mob = read_mobile(number(0, 1) ? 90 : 98, VIRTUAL);
+			// Enters from below.
+			char_to_room(mob, ch->in_room, 4);
+		}
+		break;
+	// Buggy gemstones are 1 plat base.
+	default:
+		newcost = 1000;
+		break;
 	}
 	newcost *= (float)GET_LEVEL(ch) / 56.0;
 	newcost *= (GET_CHAR_SKILL(ch, SKILL_MINE)) / 100.0;
 	switch (type % 8)
 	{
-		// Tiny imperfect.
-		case 0:
-			break;
-		// Reg Imperfect.
-		case 1:
-			newcost *= 1.05;
-			break;
-		// Large Imperfect.
-		case 2:
-			newcost *= 1.15;
-			break;
-		// Tiny Reg.
-		case 3:
-			newcost *= 1.20;
-			break;
-		// Reg Reg.
-		case 4:
-			newcost *= 1.25;
-			break;
-		// Large Reg.
-		case 5:
-			newcost *= 1.35;
-			break;
-		// Reg Flawless.
-		case 6:
-			newcost *= 1.65;
-			break;
-		// Large Flawless.
-		case 7:
-			newcost *= 1.85;
-			break;
-		default:
-			break;
+	// Tiny imperfect.
+	case 0:
+		break;
+	// Reg Imperfect.
+	case 1:
+		newcost *= 1.05;
+		break;
+	// Large Imperfect.
+	case 2:
+		newcost *= 1.15;
+		break;
+	// Tiny Reg.
+	case 3:
+		newcost *= 1.20;
+		break;
+	// Reg Reg.
+	case 4:
+		newcost *= 1.25;
+		break;
+	// Large Reg.
+	case 5:
+		newcost *= 1.35;
+		break;
+	// Reg Flawless.
+	case 6:
+		newcost *= 1.65;
+		break;
+	// Large Flawless.
+	case 7:
+		newcost *= 1.85;
+		break;
+	default:
+		break;
 	}
 	return newcost;
 }

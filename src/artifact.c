@@ -31,40 +31,40 @@
 #endif
 
 // Artifact types.
-#define ARTIFACT_MAJOR  1
+#define ARTIFACT_MAJOR 1
 #define ARTIFACT_UNIQUE 2
-#define ARTIFACT_IOUN   3
+#define ARTIFACT_IOUN 3
 
 // Artifact locations.  These values match the DB locType INT column.
 #define ARTIFACT_NOTINGAME 1
-#define ARTIFACT_ON_NPC    2
-#define ARTIFACT_ON_PC     3
-#define ARTIFACT_ONGROUND  4
-#define ARTIFACT_ONCORPSE  5 // PC corpse is implied here.
+#define ARTIFACT_ON_NPC 2
+#define ARTIFACT_ON_PC 3
+#define ARTIFACT_ONGROUND 4
+#define ARTIFACT_ONCORPSE 5 // PC corpse is implied here.
 
 // Externals
-extern P_room        world;
-extern const int     top_of_world;
-extern P_index       obj_index;
-extern P_index       mob_index;
-extern P_char        character_list;
-extern P_desc        descriptor_list;
-extern P_obj         object_list;
+extern P_room world;
+extern const int top_of_world;
+extern P_index obj_index;
+extern P_index mob_index;
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_obj object_list;
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 
 struct arti_list
 {
-	int        pid;
+	int pid;
 	arti_data *artis;
 	arti_list *next;
 };
 
 struct bind_data
 {
-	int        vnum;
-	int        owner_pid;
-	long       timer;
+	int vnum;
+	int owner_pid;
+	long timer;
 	bind_data *next;
 };
 
@@ -73,11 +73,14 @@ bool updateArtis = TRUE;
 
 // forward declarations for redis cache
 P_char load_dummy_char(char *name);
-void   nuke_eq(P_char ch);
-void   arti_redis_cache(int type, bool Godlist);
+void nuke_eq(P_char ch);
+void arti_redis_cache(int type, bool Godlist);
 
 // invalidate redis cache
-static void arti_cache_invalidate(void) { redis_invalidate_artifact_cache(); }
+static void arti_cache_invalidate(void)
+{
+	redis_invalidate_artifact_cache();
+}
 
 // populate redis cache at boot
 void arti_cache_init(void)
@@ -99,36 +102,38 @@ void arti_cache_init(void)
 static char *arti_generate_json(int type, bool Godlist)
 {
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
-	P_obj      obj;
-	P_char     owner;
-	char      *locName;
-	int        racewar;
-	cJSON     *root, *arr, *item;
+	MYSQL_ROW row;
+	P_obj obj;
+	P_char owner;
+	char *locName;
+	int racewar;
+	cJSON *root, *arr, *item;
 
 	if (Godlist)
-		qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE type=%d", type);
+		qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE type=%d",
+		    type);
 	else
-		qry("SELECT vnum, locType, location, owned FROM artifacts_mortal WHERE type=%d", type);
+		qry("SELECT vnum, locType, location, owned FROM artifacts_mortal WHERE type=%d",
+		    type);
 
 	res = mysql_store_result(DB);
 	if (!res)
 		return NULL;
 
 	root = cJSON_CreateObject();
-	arr  = cJSON_CreateArray();
+	arr = cJSON_CreateArray();
 	cJSON_AddItemToObject(root, "artifacts", arr);
 	cJSON_AddNumberToObject(root, "type", type);
 	cJSON_AddBoolToObject(root, "godlist", Godlist);
 
-	int articount[5] = {0};
+	int articount[5] = { 0 };
 
 	while ((row = mysql_fetch_row(res)))
 	{
-		int  vnum     = atoi(row[0]);
-		int  locType  = atoi(row[1]);
-		int  location = atoi(row[2]);
-		bool owned    = (row[3][0] == 'Y');
+		int vnum = atoi(row[0]);
+		int locType = atoi(row[1]);
+		int location = atoi(row[2]);
+		bool owned = (row[3][0] == 'Y');
 
 		obj = read_object(vnum, VIRTUAL);
 		if (!obj || !IS_ARTIFACT(obj))
@@ -212,19 +217,19 @@ void arti_redis_cache(int type, bool Godlist) {}
 #endif
 
 // forward declarations
-void   list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis);
-void   arti_clear_sql(P_char ch, char *arg);
-void   arti_files_to_sql(P_char ch, char *arg);
-void   arti_hunt_sql(P_char ch, char *arg);
-void   arti_player_sql(P_char ch, char *arg);
-void   arti_poof_sql(P_char ch, char *arg);
-void   arti_remove_sql(int vnum, bool mortalToo);
-void   arti_reset_sql(P_char ch, char *arg);
-void   arti_swap_sql(P_char ch, char *arg);
-void   arti_syncdb_sql(P_char ch);
-void   arti_timer_sql(P_char ch, char *arg);
+void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis);
+void arti_clear_sql(P_char ch, char *arg);
+void arti_files_to_sql(P_char ch, char *arg);
+void arti_hunt_sql(P_char ch, char *arg);
+void arti_player_sql(P_char ch, char *arg);
+void arti_poof_sql(P_char ch, char *arg);
+void arti_remove_sql(int vnum, bool mortalToo);
+void arti_reset_sql(P_char ch, char *arg);
+void arti_swap_sql(P_char ch, char *arg);
+void arti_syncdb_sql(P_char ch);
+void arti_timer_sql(P_char ch, char *arg);
 P_char load_dummy_char(char *name);
-void   nuke_eq(P_char ch);
+void nuke_eq(P_char ch);
 
 /* This is an example of what the current artifacts table looks like. - 2/23/2015
 +------+-------+-----------+----------+---------------------+------+---------------------+
@@ -251,22 +256,23 @@ void   nuke_eq(P_char ch);
 //   Just sends a list of possible arguments to ch if arg is not valid input.
 void do_artifact_sql(P_char ch, char *arg, int cmd)
 {
-	char  arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
 	char *rest;
-	bool  allArtis, Godlist;
+	bool allArtis, Godlist;
 
 	if (!IS_ALIVE(ch))
 	{
 		return;
 	}
 
-	arg  = one_argument(arg, arg1);
+	arg = one_argument(arg, arg1);
 	rest = one_argument(arg, arg2);
 	rest = one_argument(rest, arg3);
-	arg  = skip_spaces(arg);
+	arg = skip_spaces(arg);
 
 	// all -> show even the artis not in game.
-	if (IS_TRUSTED(ch) && ((*arg3 && is_abbrev(arg3, "all")) || (*arg2 && is_abbrev(arg2, "all"))))
+	if (IS_TRUSTED(ch) &&
+	    ((*arg3 && is_abbrev(arg3, "all")) || (*arg2 && is_abbrev(arg2, "all"))))
 	{
 		allArtis = TRUE;
 	}
@@ -275,7 +281,8 @@ void do_artifact_sql(P_char ch, char *arg, int cmd)
 		allArtis = FALSE;
 	}
 
-	if (!IS_TRUSTED(ch) || ((*arg3 && is_abbrev(arg3, "mortal")) || (*arg2 && is_abbrev(arg2, "mortal"))))
+	if (!IS_TRUSTED(ch) ||
+	    ((*arg3 && is_abbrev(arg3, "mortal")) || (*arg2 && is_abbrev(arg2, "mortal"))))
 	{
 		Godlist = FALSE;
 	}
@@ -357,19 +364,23 @@ void do_artifact_sql(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	send_to_char("Valid arguments are major, unique, ioun, swap, poof, timer, hunt, clear, or files.\n\r", ch);
-	send_to_char("Valid sub-arguments for list, unique, ioun are [mortal] - shows mortal list and [all] shows un-owned artis.\n\r", ch);
+	send_to_char(
+		"Valid arguments are major, unique, ioun, swap, poof, timer, hunt, clear, or files.\n\r",
+		ch);
+	send_to_char(
+		"Valid sub-arguments for list, unique, ioun are [mortal] - shows mortal list and [all] shows un-owned artis.\n\r",
+		ch);
 }
 
 // display artifact list from redis cache
 void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 {
 #ifndef __NO_MYSQL__
-	char   buf[MAX_STRING_LENGTH];
-	char  *json;
+	char buf[MAX_STRING_LENGTH];
+	char *json;
 	cJSON *root, *artifacts, *item;
-	int    articount[5] = {0};
-	bool   shownData    = FALSE;
+	int articount[5] = { 0 };
+	bool shownData = FALSE;
 
 	if (type != ARTIFACT_MAJOR && type != ARTIFACT_UNIQUE && type != ARTIFACT_IOUN)
 	{
@@ -419,19 +430,26 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 
 	// header
 	if (Godlist)
-		snprintf(buf, MAX_STRING_LENGTH, "&+YOwner                  Time      Last Update           %s\r\n\r\n", type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+YOwner                  Time      Last Update           %s\r\n\r\n",
+			 type == ARTIFACT_MAJOR	 ? "Artifact" :
+			 type == ARTIFACT_UNIQUE ? "Unique" :
+						   "Ioun");
 	else
-		snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n", type == ARTIFACT_MAJOR ? "Artifact" : type == ARTIFACT_UNIQUE ? "Unique" : "Ioun");
+		snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n",
+			 type == ARTIFACT_MAJOR	 ? "Artifact" :
+			 type == ARTIFACT_UNIQUE ? "Unique" :
+						   "Ioun");
 	send_to_char(buf, ch);
 
 	cJSON_ArrayForEach(item, artifacts)
 	{
-		int         vnum      = cJSON_GetObjectItem(item, "vnum")->valueint;
-		int         locType   = cJSON_GetObjectItem(item, "locType")->valueint;
-		int         location  = cJSON_GetObjectItem(item, "location")->valueint;
-		bool        owned     = cJSON_IsTrue(cJSON_GetObjectItem(item, "owned"));
+		int vnum = cJSON_GetObjectItem(item, "vnum")->valueint;
+		int locType = cJSON_GetObjectItem(item, "locType")->valueint;
+		int location = cJSON_GetObjectItem(item, "location")->valueint;
+		bool owned = cJSON_IsTrue(cJSON_GetObjectItem(item, "owned"));
 		const char *shortDesc = cJSON_GetObjectItem(item, "shortDesc")->valuestring;
-		int         racewar   = cJSON_GetObjectItem(item, "racewar")->valueint;
+		int racewar = cJSON_GetObjectItem(item, "racewar")->valueint;
 
 		if (!allArtis && !owned)
 			continue;
@@ -441,38 +459,40 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 			continue;
 
 		// get owner name from json
-		char  *locName = NULL;
-		char   locNameBuf[MAX_STRING_LENGTH];
+		char *locName = NULL;
+		char locNameBuf[MAX_STRING_LENGTH];
 		cJSON *ownerNameItem = cJSON_GetObjectItem(item, "ownerName");
 
 		switch (locType)
 		{
-			case ARTIFACT_NOTINGAME:
-				locName = (char *)"&+RNotInGame&n";
-				break;
-			case ARTIFACT_ON_NPC:
-				locName = (char *)"&+YOnMob&n";
-				break;
-			case ARTIFACT_ON_PC:
-				if (ownerNameItem && ownerNameItem->valuestring)
-					locName = ownerNameItem->valuestring;
-				break;
-			case ARTIFACT_ONGROUND:
-				snprintf(locNameBuf, MAX_STRING_LENGTH, "Room #%d", location);
+		case ARTIFACT_NOTINGAME:
+			locName = (char *)"&+RNotInGame&n";
+			break;
+		case ARTIFACT_ON_NPC:
+			locName = (char *)"&+YOnMob&n";
+			break;
+		case ARTIFACT_ON_PC:
+			if (ownerNameItem && ownerNameItem->valuestring)
+				locName = ownerNameItem->valuestring;
+			break;
+		case ARTIFACT_ONGROUND:
+			snprintf(locNameBuf, MAX_STRING_LENGTH, "Room #%d", location);
+			locName = locNameBuf;
+			break;
+		case ARTIFACT_ONCORPSE:
+			if (ownerNameItem && ownerNameItem->valuestring)
+			{
+				if (Godlist)
+					snprintf(locNameBuf, MAX_STRING_LENGTH, "%s's corpse",
+						 ownerNameItem->valuestring);
+				else
+					snprintf(locNameBuf, MAX_STRING_LENGTH, "%s",
+						 ownerNameItem->valuestring);
 				locName = locNameBuf;
-				break;
-			case ARTIFACT_ONCORPSE:
-				if (ownerNameItem && ownerNameItem->valuestring)
-				{
-					if (Godlist)
-						snprintf(locNameBuf, MAX_STRING_LENGTH, "%s's corpse", ownerNameItem->valuestring);
-					else
-						snprintf(locNameBuf, MAX_STRING_LENGTH, "%s", ownerNameItem->valuestring);
-					locName = locNameBuf;
-				}
-				break;
-			default:
-				continue;
+			}
+			break;
+		default:
+			continue;
 		}
 
 		if (!locName)
@@ -496,9 +516,9 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 
 		// calc TIME fresh from raw timestamp
 		cJSON *timerItem = cJSON_GetObjectItem(item, "timer");
-		long   timer     = timerItem ? (long)timerItem->valuedouble : 0;
-		long   totalTime = timer - time(NULL);
-		bool   negTime   = FALSE;
+		long timer = timerItem ? (long)timerItem->valuedouble : 0;
+		long totalTime = timer - time(NULL);
+		bool negTime = FALSE;
 		if (totalTime < 0)
 		{
 			negTime = TRUE;
@@ -508,19 +528,22 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 		int minutes = totalTime % 60;
 		totalTime /= 60;
 		int hours = totalTime % 24;
-		int days  = totalTime / 24;
+		int days = totalTime / 24;
 		if (timer == 0)
 			days = hours = minutes = 0;
 
 		char timerBuf[32];
-		snprintf(timerBuf, 32, "%c%2d:%02d:%02d", negTime ? '-' : ' ', days, hours, minutes);
+		snprintf(timerBuf, 32, "%c%2d:%02d:%02d", negTime ? '-' : ' ', days, hours,
+			 minutes);
 
-		cJSON      *lastUpdateItem = cJSON_GetObjectItem(item, "lastUpdate");
-		const char *lastUpdate     = lastUpdateItem ? lastUpdateItem->valuestring : "";
+		cJSON *lastUpdateItem = cJSON_GetObjectItem(item, "lastUpdate");
+		const char *lastUpdate = lastUpdateItem ? lastUpdateItem->valuestring : "";
 
 		char locPadded[MAX_STRING_LENGTH];
-		snprintf(locPadded, MAX_STRING_LENGTH, "%s", pad_ansi(locName, MAX_NAME_LENGTH + 9, TRUE).c_str());
-		snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n", locPadded, timerBuf, lastUpdate, shortDesc, vnum);
+		snprintf(locPadded, MAX_STRING_LENGTH, "%s",
+			 pad_ansi(locName, MAX_NAME_LENGTH + 9, TRUE).c_str());
+		snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n", locPadded,
+			 timerBuf, lastUpdate, shortDesc, vnum);
 		send_to_char(buf, ch);
 		shownData = TRUE;
 	}
@@ -535,13 +558,18 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 
 	// summary
 	snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
 	if (articount[RACEWAR_UNDEAD])
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
+		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
 	if (articount[RACEWAR_NEUTRAL])
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
+		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
 	send_to_char(buf, ch);
 #endif
 }
@@ -575,8 +603,7 @@ void setupMortArtiList_sql()
 	// artifacts_mortal doesn't have 'lastUpdate' column but artifacts does, so SELECT * fails.
 	// Repopulate it: Only select columns that exist in both tables (excluding lastUpdate)
 	qry("INSERT INTO artifacts_mortal (vnum, owned, locType, location, timer, type) SELECT vnum, owned, locType, location, timer, type FROM artifacts WHERE locType=%d OR locType=%d",
-	    ARTIFACT_ON_PC,
-	    ARTIFACT_ONCORPSE);
+	    ARTIFACT_ON_PC, ARTIFACT_ONCORPSE);
 
 	arti_cache_init();
 }
@@ -584,20 +611,22 @@ void setupMortArtiList_sql()
 // Loads the artis that were on the ground and owned back into the boot.
 void addOnGroundArtis_sql()
 {
-	P_obj      arti;
-	int        room;
+	P_obj arti;
+	int room;
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Beginning.");
 
-	qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d", ARTIFACT_ONGROUND);
+	qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d",
+	    ARTIFACT_ONGROUND);
 
 	if ((res = mysql_store_result(DB)) != NULL)
 	{
 		if (mysql_num_rows(res) < 1)
 		{
-			logit(LOG_ARTIFACT, "addOnGroundArtis_sql: No owned artifacts found on ground.");
+			logit(LOG_ARTIFACT,
+			      "addOnGroundArtis_sql: No owned artifacts found on ground.");
 		}
 		else
 		{
@@ -605,12 +634,16 @@ void addOnGroundArtis_sql()
 			{
 				if (!(arti = read_object(atoi(row[0]), VIRTUAL)))
 				{
-					logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not load object vnum %d.", atoi(row[0]));
+					logit(LOG_ARTIFACT,
+					      "addOnGroundArtis_sql: Could not load object vnum %d.",
+					      atoi(row[0]));
 					continue;
 				}
 				if ((room = real_room(atoi(row[1]))) < 0 || room > top_of_world)
 				{
-					logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not find room %d.", atoi(row[1]));
+					logit(LOG_ARTIFACT,
+					      "addOnGroundArtis_sql: Could not find room %d.",
+					      atoi(row[1]));
 					extract_obj(arti, FALSE);
 					continue;
 				}
@@ -632,12 +665,12 @@ void addOnGroundArtis_sql()
 //   the new time to poof.
 void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 {
-	int           vnum = OBJ_VNUM(arti), location;
+	int vnum = OBJ_VNUM(arti), location;
 	long unsigned oldtime, to_time;
-	P_char        owner;
-	P_obj         cont;
-	MYSQL_RES    *res;
-	MYSQL_ROW     row;
+	P_char owner;
+	P_obj cont;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
 
 	if (!updateArtis)
 	{
@@ -659,8 +692,11 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 	// Ensure to_time is never 0 or in the past (MySQL will reject FROM_UNIXTIME(0))
 	if (to_time <= 0)
 	{
-		to_time = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
-		logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: WARNING: to_time was %ld, resetting to current time + 10 days for vnum %d", (long)(time(NULL) + min_minutes * 60), vnum);
+		to_time = time(NULL) +
+			  ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: WARNING: to_time was %ld, resetting to current time + 10 days for vnum %d",
+		      (long)(time(NULL) + min_minutes * 60), vnum);
 	}
 
 	if (!qry("select owned, UNIX_TIMESTAMP(timer) from artifacts where vnum = %d", vnum))
@@ -669,7 +705,8 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		return;
 	}
 	res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -683,13 +720,16 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		}
 		if (strcmp(row[0], "Y"))
 		{
-			logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: WARNING: Updating time on non-owned (%s) artifact %d.", row[0], vnum);
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: WARNING: Updating time on non-owned (%s) artifact %d.",
+			      row[0], vnum);
 		}
 		oldtime = atoi(row[1]);
 		// Keep the bigger one, since we're feeding to at least min_minutes.
 		to_time = (oldtime >= to_time) ? oldtime : to_time;
 
-		qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d", to_time, vnum);
+		qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d",
+		    to_time, vnum);
 		arti_cache_invalidate();
 	}
 	else
@@ -697,7 +737,9 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		cont = arti;
 		if (OBJ_INSIDE(cont))
 		{
-			logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: arti vnum %d is inside a container?!", vnum);
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: arti vnum %d is inside a container?!",
+			      vnum);
 			while (OBJ_INSIDE(cont) && cont->loc.inside)
 			{
 				cont = cont->loc.inside;
@@ -718,13 +760,10 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 				location = world[location].number;
 			}
 			qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
-			    vnum,
-			    ARTIFACT_ONGROUND,
-			    location,
-			    to_time,
-			    IS_IOUN(arti)     ? ARTIFACT_IOUN
-			    : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE
-			                      : ARTIFACT_MAJOR);
+			    vnum, ARTIFACT_ONGROUND, location, to_time,
+			    IS_IOUN(arti)   ? ARTIFACT_IOUN :
+			    IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+					      ARTIFACT_MAJOR);
 			arti_cache_invalidate();
 		}
 		else if (OBJ_WORN(cont) || OBJ_CARRIED(cont))
@@ -733,7 +772,9 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 			// We don't care if they're alive.
 			if (!owner)
 			{
-				logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: arti vnum %d worn or carried, but no owner?!", vnum);
+				logit(LOG_ARTIFACT,
+				      "artifact_feed_to_min_sql: arti vnum %d worn or carried, but no owner?!",
+				      vnum);
 			}
 			else
 			{
@@ -742,13 +783,10 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 				{
 					location = GET_VNUM(owner);
 					qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'N', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
-					    vnum,
-					    ARTIFACT_ON_NPC,
-					    location,
-					    to_time,
-					    IS_IOUN(arti)     ? ARTIFACT_IOUN
-					    : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE
-					                      : ARTIFACT_MAJOR);
+					    vnum, ARTIFACT_ON_NPC, location, to_time,
+					    IS_IOUN(arti)   ? ARTIFACT_IOUN :
+					    IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+							      ARTIFACT_MAJOR);
 					arti_cache_invalidate();
 				}
 				// Adding a PC owner to arti -> owned = 'Y', location = PID.
@@ -756,28 +794,31 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 				{
 					location = GET_PID(owner);
 					qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE() )",
-					    vnum,
-					    ARTIFACT_ON_PC,
-					    location,
-					    to_time,
-					    IS_IOUN(arti)     ? ARTIFACT_IOUN
-					    : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE
-					                      : ARTIFACT_MAJOR);
+					    vnum, ARTIFACT_ON_PC, location, to_time,
+					    IS_IOUN(arti)   ? ARTIFACT_IOUN :
+					    IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+							      ARTIFACT_MAJOR);
 					arti_cache_invalidate();
 				}
 			}
 		}
 		else if (OBJ_INSIDE(cont))
 		{
-			logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: arti vnum %d is inside a non-existent container?!", vnum);
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: arti vnum %d is inside a non-existent container?!",
+			      vnum);
 		}
 		else if (OBJ_NOWHERE(cont))
 		{
-			logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: arti vnum %d is in location NOWHERE?!", vnum);
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: arti vnum %d is in location NOWHERE?!",
+			      vnum);
 		}
 		else
 		{
-			logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: arti vnum %d is in an UNKNOWN location?!", vnum);
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: arti vnum %d is in an UNKNOWN location?!",
+			      vnum);
 		}
 	}
 	mysql_free_result(res);
@@ -786,7 +827,7 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 // This function handles the 'soul' of the artifact.
 void artifact_switch_check(P_char ch, P_obj arti)
 {
-	int  owner_pid, timer, vnum;
+	int owner_pid, timer, vnum;
 	bool update = FALSE;
 
 	if (!updateArtis)
@@ -811,10 +852,12 @@ void artifact_switch_check(P_char ch, P_obj arti)
 	sql_get_bind_data(vnum, &owner_pid, &timer);
 
 	// If a pvp loot happened, and timeframe has passed, set to 0 for binding
-	if ((owner_pid == -1) && (timer + (60 * (int)get_property("artifact.feeding.switch.lootallowance.min", 30)) < time(NULL)))
+	if ((owner_pid == -1) &&
+	    (timer + (60 * (int)get_property("artifact.feeding.switch.lootallowance.min", 30)) <
+	     time(NULL)))
 	{
 		owner_pid = 0;
-		update    = TRUE;
+		update = TRUE;
 	}
 
 	// If we are ready to bind (from above, or because we picked arti up from it's load spot)
@@ -831,28 +874,31 @@ void artifact_switch_check(P_char ch, P_obj arti)
 		// If by some chance, the timer wasn't set set it
 		if (!timer)
 		{
-			logit(LOG_ARTIFACT, "artifact_switch_check: Timer on arti vnum %d was not set.", vnum);
-			timer  = time(NULL);
+			logit(LOG_ARTIFACT,
+			      "artifact_switch_check: Timer on arti vnum %d was not set.", vnum);
+			timer = time(NULL);
 			update = TRUE;
 		}
 		// Otherwise if the timer is due, set it to the new player
-		else if ((timer + (60 * (int)get_property("artifact.feeding.switch.timer.min", 30))) < time(NULL))
+		else if ((timer + (60 * (int)get_property("artifact.feeding.switch.timer.min",
+							  30))) < time(NULL))
 		{
 			act("&+L$p &+Lmerges with your &+wsoul&+L.", FALSE, ch, arti, 0, TO_CHAR);
 			owner_pid = GET_PID(ch);
-			timer     = 0;
-			update    = TRUE;
+			timer = 0;
+			update = TRUE;
 		}
 		// 1% chance to complain.
 		else if (!number(0, 99))
 		{
-			act("&+m$p&+m whimpers softly inside your head.&n", FALSE, ch, arti, 0, TO_CHAR);
+			act("&+m$p&+m whimpers softly inside your head.&n", FALSE, ch, arti, 0,
+			    TO_CHAR);
 		}
 	}
 	// Or if object is bound by the currently carried player, make sure the timer is reset
 	else if (IS_PC(ch) && (owner_pid == GET_PID(ch)))
 	{
-		timer  = 0;
+		timer = 0;
 		update = TRUE;
 	}
 
@@ -871,12 +917,12 @@ void artifact_switch_check(P_char ch, P_obj arti)
 //   ascertain the true location of the arti (on a char / in a room / etc).
 void artifact_update_sql(P_obj arti, char owned, time_t timer)
 {
-	int        type, locType, location, vnum = arti ? OBJ_VNUM(arti) : -1;
-	bool       new_owned, update_existing = FALSE;
-	P_char     owner;
-	P_obj      obj1;
+	int type, locType, location, vnum = arti ? OBJ_VNUM(arti) : -1;
+	bool new_owned, update_existing = FALSE;
+	P_char owner;
+	P_obj obj1;
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	if (!updateArtis)
 	{
@@ -899,7 +945,9 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 		// Bug handling
 		if (!(obj1 = arti->loc.inside))
 		{
-			logit(LOG_ARTIFACT, "arti_update_sql: OBJ_INSIDE but no container, sending to Limbo, arti vnum %d.", vnum);
+			logit(LOG_ARTIFACT,
+			      "arti_update_sql: OBJ_INSIDE but no container, sending to Limbo, arti vnum %d.",
+			      vnum);
 			arti->loc_p = LOC_NOWHERE;
 			obj_to_room(arti, real_room0(ROOM_LIMBO_VNUM));
 		}
@@ -913,7 +961,9 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 			// Bug handling.. inside but NULL container.
 			if (OBJ_INSIDE(obj1))
 			{
-				logit(LOG_ARTIFACT, "arti_update_sql: OBJ_INSIDE but container not anywhere, sending to Limbo, arti vnum %d.", vnum);
+				logit(LOG_ARTIFACT,
+				      "arti_update_sql: OBJ_INSIDE but container not anywhere, sending to Limbo, arti vnum %d.",
+				      vnum);
 				obj1->loc_p = LOC_NOWHERE;
 				obj_to_room(obj1, real_room0(ROOM_LIMBO_VNUM));
 			}
@@ -932,11 +982,15 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 		{
 			if (OBJ_WORN(obj1))
 			{
-				logit(LOG_ARTIFACT, "arti_update_sql: OBJ_WORN but no loc.wearing, arti vnum %d/container vnum %d.", vnum, OBJ_VNUM(obj1));
+				logit(LOG_ARTIFACT,
+				      "arti_update_sql: OBJ_WORN but no loc.wearing, arti vnum %d/container vnum %d.",
+				      vnum, OBJ_VNUM(obj1));
 			}
 			else
 			{
-				logit(LOG_ARTIFACT, "arti_update_sql: OBJ_CARRIED but no loc.carrying, arti vnum %d.", vnum, OBJ_VNUM(obj1));
+				logit(LOG_ARTIFACT,
+				      "arti_update_sql: OBJ_CARRIED but no loc.carrying, arti vnum %d.",
+				      vnum, OBJ_VNUM(obj1));
 			}
 			return;
 		}
@@ -951,18 +1005,22 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 	}
 	else if (OBJ_ROOM(obj1))
 	{
-		locType  = ARTIFACT_ONGROUND;
+		locType = ARTIFACT_ONGROUND;
 		location = obj1->loc.room;
 		if (location < 0 || location > top_of_world)
 		{
 			if (location == NOWHERE)
 			{
-				logit(LOG_ARTIFACT, "arti_update_sql: OBJ_ROOM but room num NOWHERE, listing as not in game, arti vnum %d.", vnum);
+				logit(LOG_ARTIFACT,
+				      "arti_update_sql: OBJ_ROOM but room num NOWHERE, listing as not in game, arti vnum %d.",
+				      vnum);
 				locType = ARTIFACT_NOTINGAME;
 			}
 			else
 			{
-				logit(LOG_ARTIFACT, "arti_update_sql: OBJ_ROOM but room out of bounds, sending to Limbo, arti vnum %d.", vnum);
+				logit(LOG_ARTIFACT,
+				      "arti_update_sql: OBJ_ROOM but room out of bounds, sending to Limbo, arti vnum %d.",
+				      vnum);
 				obj1->loc_p = LOC_NOWHERE;
 				obj_to_room(obj1, real_room0(ROOM_LIMBO_VNUM));
 				location = world[obj1->loc.room].number;
@@ -979,27 +1037,34 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 	{
 		// If it's on a PC corpse (when corpses are created, they have eq added before being sent to a room,
 		//   so they should come up under OBJ_NOWHERE.
-		locType  = ((obj1->type == ITEM_CORPSE) && IS_SET(obj1->value[CORPSE_FLAGS], PC_CORPSE)) ? ARTIFACT_ONCORPSE : ARTIFACT_NOTINGAME;
+		locType = ((obj1->type == ITEM_CORPSE) &&
+			   IS_SET(obj1->value[CORPSE_FLAGS], PC_CORPSE)) ?
+				  ARTIFACT_ONCORPSE :
+				  ARTIFACT_NOTINGAME;
 		location = NOWHERE;
 	}
 	else
 	{
-		logit(LOG_ARTIFACT, "arti_update_sql: Trying to salvage arti vnum %d (unknown loc_p) to Limbo.", vnum);
+		logit(LOG_ARTIFACT,
+		      "arti_update_sql: Trying to salvage arti vnum %d (unknown loc_p) to Limbo.",
+		      vnum);
 		obj1->loc_p = LOC_NOWHERE;
 		obj_to_room(obj1, real_room0(ROOM_LIMBO_VNUM));
-		locType  = ARTIFACT_ONGROUND;
+		locType = ARTIFACT_ONGROUND;
 		location = world[obj1->loc.room].number;
 	}
 	// At this point, type, locType, location, and vnum should be correct.
 
 	// If we can't query the DB, we have a big issue (only values we care about are time difference and owned value).
-	if (!qry("SELECT owned, location, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d", vnum))
+	if (!qry("SELECT owned, location, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d",
+		 vnum))
 	{
 		logit(LOG_ARTIFACT, "arti_update_sql: failed to read from database.");
 		return;
 	}
 	res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -1050,37 +1115,41 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 		// FROM_UNIXTIME(0) causes MySQL to reject the datetime.
 		if (timer <= 0)
 		{
-			timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
+			timer = time(NULL) +
+				ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
 			// An unowned artifact has no ticking timer, so 0 is its normal
 			// state; only an owned one with no timer is worth flagging.
 			if (new_owned)
-				logit(LOG_ARTIFACT, "arti_update_sql (UPDATE): WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
+				logit(LOG_ARTIFACT,
+				      "arti_update_sql (UPDATE): WARNING: timer was %ld, resetting to 10 days for vnum %d",
+				      (long)0, vnum);
 		}
 
 		qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
-		    new_owned ? 'Y' : 'N',
-		    locType,
-		    location,
-		    timer,
-		    type,
-		    vnum);
+		    new_owned ? 'Y' : 'N', locType, location, timer, type, vnum);
 		arti_cache_invalidate();
 	}
 	// Otherwise, create one.
 	else
 	{
-		logit(LOG_ARTIFACT, "arti_update_sql: Creating entry: vnum: %d, new_owned: %c, locType: %d, location; %d, timer: %lu, type: %d.", vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
+		logit(LOG_ARTIFACT,
+		      "arti_update_sql: Creating entry: vnum: %d, new_owned: %c, locType: %d, location; %d, timer: %lu, type: %d.",
+		      vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
 
 		// Arih : Validate timer to prevent MySQL error "Incorrect datetime value: '1970-01-01 00:00:00'".
 		// FROM_UNIXTIME(0) causes MySQL to reject the datetime.
 		if (timer <= 0)
 		{
-			timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
+			timer = time(NULL) +
+				ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
 			if (new_owned)
-				logit(LOG_ARTIFACT, "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
+				logit(LOG_ARTIFACT,
+				      "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d",
+				      (long)0, vnum);
 		}
 
-		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES( %d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())", vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
+		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES( %d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
+		    vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
 		arti_cache_invalidate();
 	}
 }
@@ -1088,9 +1157,9 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 // This function just updates/creates a new entry for the arti with vnum vnum.
 void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t timer, int type)
 {
-	bool       update_existing;
+	bool update_existing;
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	if (!updateArtis)
 	{
@@ -1098,13 +1167,15 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 	}
 
 	// If we can't query the DB, we have a big issue (only values we care about are time difference and owned value).
-	if (!qry("SELECT owned, location, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d", vnum))
+	if (!qry("SELECT owned, location, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d",
+		 vnum))
 	{
 		logit(LOG_ARTIFACT, "arti_update_sql: failed to read from database.");
 		return;
 	}
 	res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -1124,20 +1195,25 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 	// FROM_UNIXTIME(0) causes MySQL to reject the datetime.
 	if (timer <= 0)
 	{
-		timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
+		timer = time(NULL) +
+			ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
 		// Only an owned artifact has a ticking timer, so 0 is normal otherwise.
 		if (owned)
-			logit(LOG_ARTIFACT, "artifact_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
+			logit(LOG_ARTIFACT,
+			      "artifact_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d",
+			      (long)0, vnum);
 	}
 
 	if (update_existing)
 	{
-		qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d", owned ? 'Y' : 'N', locType, location, timer, type, vnum);
+		qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
+		    owned ? 'Y' : 'N', locType, location, timer, type, vnum);
 		arti_cache_invalidate();
 	}
 	else
 	{
-		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())", vnum, owned ? 'Y' : 'N', locType, location, timer, type);
+		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
+		    vnum, owned ? 'Y' : 'N', locType, location, timer, type);
 		arti_cache_invalidate();
 	}
 }
@@ -1148,10 +1224,10 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 // Returns true if successfully removed.
 bool remove_owned_artifact_sql(P_obj arti, int pid)
 {
-	int        vnum            = arti ? OBJ_VNUM(arti) : -1;
-	bool       update_existing = FALSE;
+	int vnum = arti ? OBJ_VNUM(arti) : -1;
+	bool update_existing = FALSE;
 	MYSQL_RES *res;
-	MYSQL_ROW  row = NULL;
+	MYSQL_ROW row = NULL;
 
 	if (!updateArtis)
 	{
@@ -1161,18 +1237,21 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 	// Bad arguments...
 	if (!arti || !IS_ARTIFACT(arti))
 	{
-		logit(LOG_ARTIFACT, "remove_owned_artifact_sql: called with non-artifact '%s' %d.", arti ? arti->short_description : "NULL", arti ? OBJ_VNUM(arti) : -1);
+		logit(LOG_ARTIFACT, "remove_owned_artifact_sql: called with non-artifact '%s' %d.",
+		      arti ? arti->short_description : "NULL", arti ? OBJ_VNUM(arti) : -1);
 		return FALSE;
 	}
 
 	// If we can't query the DB, we have a big issue (only values we care about are time difference and owned value).
-	if (!qry("SELECT owned, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d", vnum))
+	if (!qry("SELECT owned, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d",
+		 vnum))
 	{
 		logit(LOG_ARTIFACT, "remove_owned_artifact_sql: failed to read from database.");
 		return FALSE;
 	}
 	res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return FALSE;
 	}
@@ -1194,14 +1273,16 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 		// Non-positive pid -> remove arti from game.
 		if (pid <= 0)
 		{
-			qry("UPDATE artifacts SET owned='N', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d", ARTIFACT_NOTINGAME, NOWHERE, vnum);
+			qry("UPDATE artifacts SET owned='N', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
+			    ARTIFACT_NOTINGAME, NOWHERE, vnum);
 			arti_cache_invalidate();
 		}
 		// Otherwise, we're moving to a corpse of char who's PID is pid.
 		else
 		{
 			// On a PC corpse -> owned == Yes, and location == pid.
-			qry("UPDATE artifacts SET owned='Y', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d", ARTIFACT_ONCORPSE, pid, vnum);
+			qry("UPDATE artifacts SET owned='Y', locType=%d, location=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
+			    ARTIFACT_ONCORPSE, pid, vnum);
 			arti_cache_invalidate();
 		}
 	}
@@ -1209,7 +1290,12 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 	else if (pid > 0)
 	{
 		// On a PC corpse -> owned == 'Y', locType == 'OnCorpse', and location == pid.
-		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, 0, %d, SYSDATE())", vnum, ARTIFACT_ONCORPSE, pid, IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR);		arti_cache_invalidate();
+		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, 0, %d, SYSDATE())",
+		    vnum, ARTIFACT_ONCORPSE, pid,
+		    IS_IOUN(arti)   ? ARTIFACT_IOUN :
+		    IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+				      ARTIFACT_MAJOR);
+		arti_cache_invalidate();
 	}
 
 	// Safe to assume that a poofed arti has an entry in artifact_bind.  We don't really care either way though,
@@ -1238,7 +1324,8 @@ void remove_all_artifacts_sql(P_char ch)
 	pid = GET_PID(ch);
 
 	// Nullify arti timers on all ch's equipment.
-	qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d", pid, ARTIFACT_ON_PC);
+	qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d",
+	    pid, ARTIFACT_ON_PC);
 	arti_cache_invalidate();
 }
 
@@ -1246,10 +1333,10 @@ void remove_all_artifacts_sql(P_char ch)
 // It merely calculates the timer and location, then calls the above with appropriate owned/timer info.
 void artifact_update_location_sql(P_obj arti)
 {
-	bool      timerStarted;
+	bool timerStarted;
 	arti_data artidata;
-	P_obj     cont = arti;
-	P_char    owner;
+	P_obj cont = arti;
+	P_char owner;
 
 	if (!arti || !IS_ARTIFACT(arti) || !updateArtis)
 	{
@@ -1280,7 +1367,8 @@ void artifact_update_location_sql(P_obj arti)
 			if (!timerStarted)
 			{
 				// Set the timer to the max for a newly acquired arti.
-				artidata.timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+				artidata.timer =
+					time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
 			}
 			// PC owner forces a start to timer.
 			artifact_update_sql(arti, 'Y', artidata.timer);
@@ -1296,17 +1384,19 @@ void artifact_update_location_sql(P_obj arti)
 // Returns TRUE iff arti vnum has timer ticking already.
 bool get_artifact_data_sql(int vnum, P_arti adata)
 {
-	bool       owned;
+	bool owned;
 	MYSQL_RES *res;
-	MYSQL_ROW  row = NULL;
+	MYSQL_ROW row = NULL;
 
-	if (!qry("SELECT owned, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE vnum = %d", vnum))
+	if (!qry("SELECT owned, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE vnum = %d",
+		 vnum))
 	{
 		logit(LOG_ARTIFACT, "get_artifact_data_sql: failed to read from database.");
 		return FALSE;
 	}
 	res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return FALSE;
 	}
@@ -1327,13 +1417,13 @@ bool get_artifact_data_sql(int vnum, P_arti adata)
 	owned = (!strcmp(row[0], "Y")) ? TRUE : FALSE;
 	if (adata != NULL)
 	{
-		adata->vnum     = vnum;
-		adata->owned    = owned;
-		adata->locType  = atoi(row[1]);
+		adata->vnum = vnum;
+		adata->owned = owned;
+		adata->locType = atoi(row[1]);
 		adata->location = atoi(row[2]);
-		adata->timer    = row[3] ? atol(row[3]) : 0;
-		adata->type     = atoi(row[4]);
-		adata->next     = NULL;
+		adata->timer = row[3] ? atol(row[3]) : 0;
+		adata->type = atoi(row[4]);
+		adata->next = NULL;
 	}
 	mysql_free_result(res);
 	return owned;
@@ -1341,10 +1431,10 @@ bool get_artifact_data_sql(int vnum, P_arti adata)
 
 void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulCheck)
 {
-	int       vnum, owner_pid, timer;
+	int vnum, owner_pid, timer;
 	arti_data artidata;
-	time_t    poof_time;
-	bool      negFeed = FALSE;
+	time_t poof_time;
+	bool negFeed = FALSE;
 
 	if (!updateArtis)
 	{
@@ -1353,8 +1443,11 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 
 	if (!owner || !arti || IS_NPC(owner))
 	{
-		statuslog(MINLVLIMMORTAL, "artifact_feed_sql: called with null / NPC owner or NULL arti.");
-		debug("artifact_feed_sql: called with owner (%s) and arti (%s) %d.", owner ? J_NAME(owner) : "NULL", arti ? arti->short_description : "NULL", arti ? OBJ_VNUM(arti) : -1);
+		statuslog(MINLVLIMMORTAL,
+			  "artifact_feed_sql: called with null / NPC owner or NULL arti.");
+		debug("artifact_feed_sql: called with owner (%s) and arti (%s) %d.",
+		      owner ? J_NAME(owner) : "NULL", arti ? arti->short_description : "NULL",
+		      arti ? OBJ_VNUM(arti) : -1);
 		return;
 	}
 	if (IS_TRUSTED(owner))
@@ -1379,20 +1472,22 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 	// FROM_UNIXTIME(0) causes MySQL to reject the datetime.
 	if (poof_time <= 0)
 	{
-		poof_time = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
-		logit(LOG_ARTIFACT, "artifact_feed_sql: WARNING: poof_time was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
+		poof_time = time(NULL) +
+			    ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_sql: WARNING: poof_time was %ld, resetting to 10 days for vnum %d",
+		      (long)0, vnum);
 	}
 
 	if (!get_artifact_data_sql(vnum, &artidata))
 	{
 		statuslog(MINLVLIMMORTAL, "artifact_feed_sql: called without an entry in DB?!");
-		send_to_char("&+RYou feel a deep sense of satisfaction from somewhere...\r\n", owner);
+		send_to_char("&+RYou feel a deep sense of satisfaction from somewhere...\r\n",
+			     owner);
 		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
-		    vnum,
-		    ARTIFACT_ON_PC,
-		    GET_PID(owner),
-		    poof_time,
-		    IS_IOUN(arti) ? ARTIFACT_IOUN : (IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR));
+		    vnum, ARTIFACT_ON_PC, GET_PID(owner), poof_time,
+		    IS_IOUN(arti) ? ARTIFACT_IOUN :
+				    (IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR));
 		arti_cache_invalidate();
 		return;
 	}
@@ -1406,7 +1501,8 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 
 	if (feed_seconds > (12 * 3600))
 	{
-		send_to_char("&+RYou feel a deep sense of satisfaction from somewhere...&n\r\n", owner);
+		send_to_char("&+RYou feel a deep sense of satisfaction from somewhere...&n\r\n",
+			     owner);
 	}
 	else if (feed_seconds < 0)
 	{
@@ -1416,22 +1512,23 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 	}
 	else
 	{
-		send_to_char("&+RYou feel a light sense of satisfaction from somewhere...&n\r\n", owner);
+		send_to_char("&+RYou feel a light sense of satisfaction from somewhere...&n\r\n",
+			     owner);
 	}
 
 	statuslog(MINLVLIMMORTAL,
-	          "Artifact: %s [%d] on %s fed [&+G%c%ld&+Lh &+G%ld&+Lm &+G%ld&+Ls&n]",
-	          arti->short_description,
-	          OBJ_VNUM(arti),
-	          GET_NAME(owner),
-	          negFeed ? '-' : ' ',
-	          feed_seconds / 3600,
-	          (feed_seconds / 60) % 60,
-	          feed_seconds % 60);
+		  "Artifact: %s [%d] on %s fed [&+G%c%ld&+Lh &+G%ld&+Lm &+G%ld&+Ls&n]",
+		  arti->short_description, OBJ_VNUM(arti), GET_NAME(owner), negFeed ? '-' : ' ',
+		  feed_seconds / 3600, (feed_seconds / 60) % 60, feed_seconds % 60);
 
-	if (artidata.owned && (artidata.locType == ARTIFACT_ON_PC || artidata.locType == ARTIFACT_ONCORPSE) && artidata.location != GET_PID(owner))
+	if (artidata.owned &&
+	    (artidata.locType == ARTIFACT_ON_PC || artidata.locType == ARTIFACT_ONCORPSE) &&
+	    artidata.location != GET_PID(owner))
 	{
-		statuslog(MINLVLIMMORTAL, "artifact_feed_sql: tried to track arti vnum %d on %s when already tracked on %s.", vnum, GET_NAME(owner), get_player_name_from_pid(artidata.location));
+		statuslog(
+			MINLVLIMMORTAL,
+			"artifact_feed_sql: tried to track arti vnum %d on %s when already tracked on %s.",
+			vnum, GET_NAME(owner), get_player_name_from_pid(artidata.location));
 		return;
 	}
 	artifact_update_sql(arti, 'Y', artidata.timer + feed_seconds);
@@ -1447,7 +1544,7 @@ P_char load_dummy_char(char *name)
 	clear_char(owner);
 	ensure_pconly_pool();
 	owner->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
-	owner->desc    = NULL;
+	owner->desc = NULL;
 
 	if (restoreCharOnly(owner, name) < 0)
 	{
@@ -1458,7 +1555,7 @@ P_char load_dummy_char(char *name)
 
 	updateArtis = FALSE;
 	restoreItemsOnly(owner, -1);
-	owner->next    = character_list;
+	owner->next = character_list;
 	character_list = owner;
 	updateArtis = TRUE;
 
@@ -1471,7 +1568,7 @@ P_char load_dummy_char(char *name)
 // Does not remove the object (this would ruin poof_artifact)!
 P_obj get_object_from_char(P_char owner, int vnum)
 {
-	int   i;
+	int i;
 	P_obj obj;
 
 	// Check eq'd stuff first.
@@ -1494,9 +1591,9 @@ P_obj get_object_from_char(P_char owner, int vnum)
 
 void poof_artifact(P_obj arti)
 {
-	int    room;
+	int room;
 	P_char owner;
-	P_obj  cont;
+	P_obj cont;
 
 	if (!updateArtis)
 	{
@@ -1519,41 +1616,47 @@ void poof_artifact(P_obj arti)
 	// Pull artifact from wherever it is.
 	switch (cont->loc_p)
 	{
-		case LOC_ROOM:
-			if (cont != arti)
-			{
-				obj_from_obj(arti);
-				obj_to_room(arti, cont->loc.room);
-			}
-			act("$p suddenly vanishes in a bright flash of light!", FALSE, NULL, arti, 0, TO_ROOM);
-			break;
-		case LOC_CARRIED:
-			owner = cont->loc.carrying;
-			if (cont != arti)
-			{
-				obj_from_obj(arti);
-				obj_to_char(arti, owner);
-			}
-			act("Your $p vanishes with a bright flash of light!", FALSE, owner, arti, 0, TO_CHAR);
-			act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0, TO_ROOM);
-			do_shout(owner, "Ouch!", 0);
-			break;
-		case LOC_WORN:
-			owner = cont->loc.wearing;
-			if (cont != arti)
-			{
-				obj_from_obj(arti);
-				obj_to_char(arti, owner);
-			}
-			act("Your $p vanishes with a bright flash of light!", FALSE, owner, arti, 0, TO_CHAR);
-			act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0, TO_ROOM);
-			do_shout(owner, "Ouch!", 0);
-			break;
-		case LOC_INSIDE:
-			logit(LOG_ARTIFACT, "poof_artifact: Bad loc arti(%d)-container(%d) inside nothing.", OBJ_VNUM(arti), OBJ_VNUM(cont));
-		case LOC_NOWHERE:
-		default:
-			break;
+	case LOC_ROOM:
+		if (cont != arti)
+		{
+			obj_from_obj(arti);
+			obj_to_room(arti, cont->loc.room);
+		}
+		act("$p suddenly vanishes in a bright flash of light!", FALSE, NULL, arti, 0,
+		    TO_ROOM);
+		break;
+	case LOC_CARRIED:
+		owner = cont->loc.carrying;
+		if (cont != arti)
+		{
+			obj_from_obj(arti);
+			obj_to_char(arti, owner);
+		}
+		act("Your $p vanishes with a bright flash of light!", FALSE, owner, arti, 0,
+		    TO_CHAR);
+		act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0,
+		    TO_ROOM);
+		do_shout(owner, "Ouch!", 0);
+		break;
+	case LOC_WORN:
+		owner = cont->loc.wearing;
+		if (cont != arti)
+		{
+			obj_from_obj(arti);
+			obj_to_char(arti, owner);
+		}
+		act("Your $p vanishes with a bright flash of light!", FALSE, owner, arti, 0,
+		    TO_CHAR);
+		act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0,
+		    TO_ROOM);
+		do_shout(owner, "Ouch!", 0);
+		break;
+	case LOC_INSIDE:
+		logit(LOG_ARTIFACT, "poof_artifact: Bad loc arti(%d)-container(%d) inside nothing.",
+		      OBJ_VNUM(arti), OBJ_VNUM(cont));
+	case LOC_NOWHERE:
+	default:
+		break;
 	}
 	if (cont == arti)
 	{
@@ -1561,7 +1664,11 @@ void poof_artifact(P_obj arti)
 	}
 
 	// Logit.
-	logit(LOG_ARTIFACT, "poof_artifact: Poofing '%s' %d from %s!", OBJ_SHORT(arti), OBJ_VNUM(arti), owner ? J_NAME(owner) : OBJ_ROOM(arti) ? world[arti->loc.room].name : "unknown location");
+	logit(LOG_ARTIFACT, "poof_artifact: Poofing '%s' %d from %s!", OBJ_SHORT(arti),
+	      OBJ_VNUM(arti),
+	      owner	     ? J_NAME(owner) :
+	      OBJ_ROOM(arti) ? world[arti->loc.room].name :
+			       "unknown location");
 
 	// And get rid of it.
 	extract_obj(arti, TRUE);
@@ -1572,7 +1679,8 @@ void poof_artifact(P_obj arti)
 	{
 		writeCharacter(owner, RENT_CRASH, owner->in_room);
 	}
-	if (cont != NULL && OBJ_VNUM(cont) == VOBJ_CORPSE && IS_SET(cont->value[CORPSE_FLAGS], PC_CORPSE))
+	if (cont != NULL && OBJ_VNUM(cont) == VOBJ_CORPSE &&
+	    IS_SET(cont->value[CORPSE_FLAGS], PC_CORPSE))
 	{
 		writeCorpse(cont);
 	}
@@ -1581,7 +1689,7 @@ void poof_artifact(P_obj arti)
 // Removes an unsaved char's equipment from game without disturbing arti list.
 void nuke_eq(P_char ch)
 {
-	int   i;
+	int i;
 	P_obj item;
 
 	for (i = 0; i < MAX_WEAR; i++)
@@ -1607,7 +1715,7 @@ void nuke_eq(P_char ch)
 void artifact_timer_sql(int vnum, char *buffer)
 {
 	arti_data artidata;
-	time_t    timer;
+	time_t timer;
 
 	if (!updateArtis)
 	{
@@ -1627,19 +1735,23 @@ void artifact_timer_sql(int vnum, char *buffer)
 		if (timer < 0)
 		{
 			timer *= -1;
-			snprintf(buffer, MAX_STRING_LENGTH, "[&+R-%ld&+Lh &+R%ld&+Lm &+R%ld&+Ls&n]", timer / 3600, (timer / 60) % 60, timer % 60);
+			snprintf(buffer, MAX_STRING_LENGTH, "[&+R-%ld&+Lh &+R%ld&+Lm &+R%ld&+Ls&n]",
+				 timer / 3600, (timer / 60) % 60, timer % 60);
 		}
 		else if (timer <= (ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY) / 16)
 		{
-			snprintf(buffer, MAX_STRING_LENGTH, "[&+R%ld&+Lh &+R%ld&+Lm &+R%ld&+Ls&n]", timer / 3600, (timer / 60) % 60, timer % 60);
+			snprintf(buffer, MAX_STRING_LENGTH, "[&+R%ld&+Lh &+R%ld&+Lm &+R%ld&+Ls&n]",
+				 timer / 3600, (timer / 60) % 60, timer % 60);
 		}
 		else if (timer <= (ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY) / 5)
 		{
-			snprintf(buffer, MAX_STRING_LENGTH, "[&+Y%ld&+Lh &+Y%ld&+Lm &+Y%ld&+Ls&n]", timer / 3600, (timer / 60) % 60, timer % 60);
+			snprintf(buffer, MAX_STRING_LENGTH, "[&+Y%ld&+Lh &+Y%ld&+Lm &+Y%ld&+Ls&n]",
+				 timer / 3600, (timer / 60) % 60, timer % 60);
 		}
 		else
 		{
-			snprintf(buffer, MAX_STRING_LENGTH, "[&+G%ld&+Lh &+G%ld&+Lm &+G%ld&+Ls&n]", timer / 3600, (timer / 60) % 60, timer % 60);
+			snprintf(buffer, MAX_STRING_LENGTH, "[&+G%ld&+Lh &+G%ld&+Lm &+G%ld&+Ls&n]",
+				 timer / 3600, (timer / 60) % 60, timer % 60);
 		}
 	}
 	else
@@ -1681,7 +1793,7 @@ P_obj artifact_in_bag_search(P_obj contents, int vnum)
 P_obj artifact_find(int vnum)
 {
 	P_char owner;
-	P_obj  obj, cont;
+	P_obj obj, cont;
 
 	for (obj = object_list; obj; obj = obj->next)
 	{
@@ -1694,25 +1806,27 @@ P_obj artifact_find(int vnum)
 			}
 			switch (cont->loc_p)
 			{
-				// Score!
-				case LOC_ROOM:
+			// Score!
+			case LOC_ROOM:
+				return obj;
+				break;
+			case LOC_CARRIED:
+			case LOC_WORN:
+				owner = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
+				if (IS_NPC(owner))
+				{
 					return obj;
-					break;
-				case LOC_CARRIED:
-				case LOC_WORN:
-					owner = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
-					if (IS_NPC(owner))
-					{
-						return obj;
-					}
-					break;
-				case LOC_INSIDE:
-					logit(LOG_ARTIFACT, "artifact_find: Bad loc arti(%d)-container(%d) inside nothing.", vnum, OBJ_VNUM(cont));
-					break;
-				// Lost artis. :(
-				case LOC_NOWHERE:
-				default:
-					break;
+				}
+				break;
+			case LOC_INSIDE:
+				logit(LOG_ARTIFACT,
+				      "artifact_find: Bad loc arti(%d)-container(%d) inside nothing.",
+				      vnum, OBJ_VNUM(cont));
+				break;
+			// Lost artis. :(
+			case LOC_NOWHERE:
+			default:
+				break;
 			}
 		}
 	}
@@ -1725,125 +1839,130 @@ P_obj artifact_find(int vnum)
 // It also just searches in game.  If you want to search pfiles.  Do it after.
 P_obj artifact_find(arti_data artidata)
 {
-	int    rroom, pid;
-	int    vnum = artidata.vnum;
-	int    i;
-	char  *name;
-	P_obj  obj, inside;
+	int rroom, pid;
+	int vnum = artidata.vnum;
+	int i;
+	char *name;
+	P_obj obj, inside;
 	P_char ch;
 
 	switch (artidata.locType)
 	{
-		case ARTIFACT_ON_NPC:
-			pid = artidata.location;
-			for (ch = character_list; ch; ch = ch->next)
+	case ARTIFACT_ON_NPC:
+		pid = artidata.location;
+		for (ch = character_list; ch; ch = ch->next)
+		{
+			if (IS_NPC(ch) && GET_VNUM(ch) == pid)
 			{
-				if (IS_NPC(ch) && GET_VNUM(ch) == pid)
+				// Check eq worn first, since they will probably be wearing it.
+				for (i = 0; i < MAX_WEAR; i++)
 				{
-					// Check eq worn first, since they will probably be wearing it.
-					for (i = 0; i < MAX_WEAR; i++)
+					if ((obj = ch->equipment[i]))
 					{
-						if ((obj = ch->equipment[i]))
+						if (OBJ_VNUM(obj) == vnum)
 						{
-							if (OBJ_VNUM(obj) == vnum)
-							{
-								return obj;
-							}
-							// If they're wearing a container.
-							if (obj->contains && (inside = artifact_in_bag_search(obj->contains, vnum)))
-							{
-								return inside;
-							}
+							return obj;
+						}
+						// If they're wearing a container.
+						if (obj->contains &&
+						    (inside = artifact_in_bag_search(obj->contains,
+										     vnum)))
+						{
+							return inside;
 						}
 					}
-					// If they're not wearing it, then check inventory.  We do have to keep looking since
-					//   there can be multiple NPCs with the same vnum.
-					if ((inside = artifact_in_bag_search(ch->carrying, vnum)))
-					{
-						return inside;
-					}
+				}
+				// If they're not wearing it, then check inventory.  We do have to keep looking since
+				//   there can be multiple NPCs with the same vnum.
+				if ((inside = artifact_in_bag_search(ch->carrying, vnum)))
+				{
+					return inside;
 				}
 			}
-			break;
-		// Since they may be LD, we have to check all chars, not just descriptors. :(
-		case ARTIFACT_ON_PC:
-			pid = artidata.location;
-			for (ch = character_list; ch; ch = ch->next)
+		}
+		break;
+	// Since they may be LD, we have to check all chars, not just descriptors. :(
+	case ARTIFACT_ON_PC:
+		pid = artidata.location;
+		for (ch = character_list; ch; ch = ch->next)
+		{
+			// Yay, we found them in game!
+			if (IS_PC(ch) && GET_PID(ch) == pid)
 			{
-				// Yay, we found them in game!
-				if (IS_PC(ch) && GET_PID(ch) == pid)
+				// Check eq worn first, since they will probably be wearing it.
+				for (i = 0; i < MAX_WEAR; i++)
 				{
-					// Check eq worn first, since they will probably be wearing it.
-					for (i = 0; i < MAX_WEAR; i++)
+					if ((obj = ch->equipment[i]))
 					{
-						if ((obj = ch->equipment[i]))
+						if (OBJ_VNUM(obj) == vnum)
 						{
-							if (OBJ_VNUM(obj) == vnum)
-							{
-								return obj;
-							}
-							// If they're wearing a container.
-							if (obj->contains && (inside = artifact_in_bag_search(obj->contains, vnum)))
-							{
-								return inside;
-							}
+							return obj;
+						}
+						// If they're wearing a container.
+						if (obj->contains &&
+						    (inside = artifact_in_bag_search(obj->contains,
+										     vnum)))
+						{
+							return inside;
 						}
 					}
-					// If they're not wearing it, then check inventory.  We don't have to keep looking since
-					//   each PC is unique in game.
-					return artifact_in_bag_search(ch->carrying, vnum);
 				}
+				// If they're not wearing it, then check inventory.  We don't have to keep looking since
+				//   each PC is unique in game.
+				return artifact_in_bag_search(ch->carrying, vnum);
 			}
-			// Here it gets hard: do we check the pfile or not?  I say no, since we don't have a way
-			//   to dispose of the loaded char after the arti is handled.  If you want to check a pfile,
-			//   you'll just have to do it after this function returns NULL.
-			return NULL;
-			break;
-		// Since we don't have the room the corpse is in, we have to go through the whole object list.
-		case ARTIFACT_ONCORPSE:
-			name = get_player_name_from_pid(artidata.location);
-			for (obj = object_list; obj; obj = obj->next)
+		}
+		// Here it gets hard: do we check the pfile or not?  I say no, since we don't have a way
+		//   to dispose of the loaded char after the arti is handled.  If you want to check a pfile,
+		//   you'll just have to do it after this function returns NULL.
+		return NULL;
+		break;
+	// Since we don't have the room the corpse is in, we have to go through the whole object list.
+	case ARTIFACT_ONCORPSE:
+		name = get_player_name_from_pid(artidata.location);
+		for (obj = object_list; obj; obj = obj->next)
+		{
+			// If we found a PC corpse with the correct name.  I would so like to start using pids
+			//   instead of names for corpses.
+			if (obj->type == ITEM_CORPSE &&
+			    IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE) && isname(name, obj->name))
 			{
-				// If we found a PC corpse with the correct name.  I would so like to start using pids
-				//   instead of names for corpses.
-				if (obj->type == ITEM_CORPSE && IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE) && isname(name, obj->name))
+				if ((inside = artifact_in_bag_search(obj->contains, vnum)))
 				{
-					if ((inside = artifact_in_bag_search(obj->contains, vnum)))
-					{
-						return inside;
-					}
+					return inside;
 				}
 			}
+		}
+		return NULL;
+		break;
+	case ARTIFACT_ONGROUND:
+		// Bad room vnum on ground data.
+		if ((rroom = real_room(artidata.location)) < 0 || rroom > top_of_world)
+		{
 			return NULL;
-			break;
-		case ARTIFACT_ONGROUND:
-			// Bad room vnum on ground data.
-			if ((rroom = real_room(artidata.location)) < 0 || rroom > top_of_world)
+		}
+		// Search the room's contents.
+		for (obj = world[rroom].contents; obj; obj = obj->next_content)
+		{
+			if (OBJ_VNUM(obj) == vnum)
 			{
-				return NULL;
+				return obj;
 			}
-			// Search the room's contents.
-			for (obj = world[rroom].contents; obj; obj = obj->next_content)
+			// If we've found a container.
+			if (obj->contains)
 			{
-				if (OBJ_VNUM(obj) == vnum)
+				// Look for the object inside the container.
+				if ((inside = artifact_in_bag_search(obj->contains, vnum)))
 				{
-					return obj;
-				}
-				// If we've found a container.
-				if (obj->contains)
-				{
-					// Look for the object inside the container.
-					if ((inside = artifact_in_bag_search(obj->contains, vnum)))
-					{
-						return inside;
-					}
+					return inside;
 				}
 			}
-			return NULL;
-		case ARTIFACT_NOTINGAME:
-		default:
-			return NULL;
-			break;
+		}
+		return NULL;
+	case ARTIFACT_NOTINGAME:
+	default:
+		return NULL;
+		break;
 	}
 	// Should never get here, but just in case.
 	return NULL;
@@ -1852,22 +1971,25 @@ P_obj artifact_find(arti_data artidata)
 // This function transfers the data from the old file-based system into the DB.
 void arti_files_to_sql(P_char ch, char *arg)
 {
-	char           buf[MAX_STRING_LENGTH];
-	char           pname[256], fname[256];
-	int            vnum, pid, temp, type;
-	time_t         lastUpdate, timer;
-	DIR           *dir;
+	char buf[MAX_STRING_LENGTH];
+	char pname[256], fname[256];
+	int vnum, pid, temp, type;
+	time_t lastUpdate, timer;
+	DIR *dir;
 	struct dirent *dire;
-	FILE          *f;
-	P_obj          arti, obj, obj2;
-	P_char         tmpch, owner;
-	arti_data      artidata;
-	bool           super;
+	FILE *f;
+	P_obj arti, obj, obj2;
+	P_char tmpch, owner;
+	arti_data artidata;
+	bool super;
 
 	if (!*arg || !strcmp(arg, "?") || !strcmp(arg, "help"))
 	{
-		send_to_char("This command transfers the data from the old file-based system into the DB.\n\r", ch);
-		send_to_char("Please note: This command may pull artifacts from mobs in game.\n\r", ch);
+		send_to_char(
+			"This command transfers the data from the old file-based system into the DB.\n\r",
+			ch);
+		send_to_char("Please note: This command may pull artifacts from mobs in game.\n\r",
+			     ch);
 		send_to_char("&=LRThis command should only be used once!&n\n\r", ch);
 		return;
 	}
@@ -1878,9 +2000,10 @@ void arti_files_to_sql(P_char ch, char *arg)
 	}
 	if (strcmp(arg, "confirm") && strcmp(arg, "super"))
 	{
-		send_to_char("This command is requires &+wconfirmation&n.  Please do not use if you don't know"
-		             " what you're doing, as it can corrupt the current artifact data.\n\r",
-		             ch);
+		send_to_char(
+			"This command is requires &+wconfirmation&n.  Please do not use if you don't know"
+			" what you're doing, as it can corrupt the current artifact data.\n\r",
+			ch);
 		return;
 	}
 	if (!strcmp(arg, "super"))
@@ -1904,7 +2027,6 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 	while ((dire = readdir(dir)))
 	{
-
 		vnum = atoi(dire->d_name);
 		if (!vnum)
 		{
@@ -1931,27 +2053,38 @@ void arti_files_to_sql(P_char ch, char *arg)
 		fclose(f);
 
 		timer += ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
-		snprintf(buf, MAX_STRING_LENGTH, "  Char '%s' %d, has arti %d (%s) with timer %s", pname, pid, vnum, (temp == 0) ? "on char" : ((temp == 1) ? "on corpse" : "unknown location"), ctime(&timer));
+		snprintf(buf, MAX_STRING_LENGTH, "  Char '%s' %d, has arti %d (%s) with timer %s",
+			 pname, pid, vnum,
+			 (temp == 0) ? "on char" : ((temp == 1) ? "on corpse" : "unknown location"),
+			 ctime(&timer));
 		send_to_char(buf, ch);
 
 		if (get_artifact_data_sql(vnum, &artidata))
 		{
 			// If it's owned by some other PC.
-			if (artidata.owned && (artidata.locType == ARTIFACT_ON_PC || artidata.locType == ARTIFACT_ONCORPSE))
+			if (artidata.owned && (artidata.locType == ARTIFACT_ON_PC ||
+					       artidata.locType == ARTIFACT_ONCORPSE))
 			{
-				snprintf(buf,
-				         MAX_STRING_LENGTH,
-				         "  &+rConflicts with data already in DB: Char '%s' %d (%s).. skipping...&n\n\r",
-				         get_player_name_from_pid(artidata.location),
-				         artidata.location,
-				         (artidata.locType == ARTIFACT_ON_PC) ? "on char" : ((artidata.locType == ARTIFACT_ONCORPSE) ? "on corpse" : "unknown location"));
+				snprintf(
+					buf, MAX_STRING_LENGTH,
+					"  &+rConflicts with data already in DB: Char '%s' %d (%s).. skipping...&n\n\r",
+					get_player_name_from_pid(artidata.location),
+					artidata.location,
+					(artidata.locType == ARTIFACT_ON_PC) ?
+						"on char" :
+						((artidata.locType == ARTIFACT_ONCORPSE) ?
+							 "on corpse" :
+							 "unknown location"));
 				send_to_char(buf, ch);
 				continue;
 			}
 			// Otherwise, pull it from ground/NPC/etc.
 			else if ((arti = artifact_find(artidata)))
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "Found another copy of arti %s (%d) in game, pulling it.\n\r", OBJ_SHORT(arti), OBJ_VNUM(arti));
+				snprintf(
+					buf, MAX_STRING_LENGTH,
+					"Found another copy of arti %s (%d) in game, pulling it.\n\r",
+					OBJ_SHORT(arti), OBJ_VNUM(arti));
 				send_to_char(buf, ch);
 				extract_obj(arti, FALSE);
 			}
@@ -1959,7 +2092,9 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 		if ((arti = read_object(vnum, VIRTUAL)))
 		{
-			type = IS_IOUN(arti) ? ARTIFACT_IOUN : IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR;
+			type = IS_IOUN(arti)   ? ARTIFACT_IOUN :
+			       IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+						 ARTIFACT_MAJOR;
 
 			// If there's another in the game (maybe on a mob / treasure room / chest / etc).
 			if (obj_index[arti->R_num].number > 1)
@@ -1974,32 +2109,40 @@ void arti_files_to_sql(P_char ch, char *arg)
 					{
 						if (OBJ_WORN(obj) || OBJ_CARRIED(obj))
 						{
-							tmpch = OBJ_WORN(obj) ? obj->loc.wearing : obj->loc.carrying;
+							tmpch = OBJ_WORN(obj) ? obj->loc.wearing :
+										obj->loc.carrying;
 							if (tmpch && IS_NPC(tmpch))
 							{
-								snprintf(buf,
-								         MAX_STRING_LENGTH,
-								         "  &+YFound another copy of arti '&n%s&+Y' &+w%d&+Y on '&n%s&+Y' &+w%d&+Y, pulling it.&n\n\r",
-								         OBJ_SHORT(arti),
-								         OBJ_VNUM(arti),
-								         J_NAME(tmpch),
-								         GET_VNUM(tmpch));
+								snprintf(
+									buf, MAX_STRING_LENGTH,
+									"  &+YFound another copy of arti '&n%s&+Y' &+w%d&+Y on '&n%s&+Y' &+w%d&+Y, pulling it.&n\n\r",
+									OBJ_SHORT(arti),
+									OBJ_VNUM(arti),
+									J_NAME(tmpch),
+									GET_VNUM(tmpch));
 								send_to_char(buf, ch);
 								extract_obj(obj, FALSE);
 							}
 						}
 						else
 						{
-							snprintf(buf, MAX_STRING_LENGTH, "  &+YFound another copy of arti '&n%s&+Y' &+w%d&+Y in game not on a char, pulling it.&n\n\r", OBJ_SHORT(arti), OBJ_VNUM(arti));
+							snprintf(
+								buf, MAX_STRING_LENGTH,
+								"  &+YFound another copy of arti '&n%s&+Y' &+w%d&+Y in game not on a char, pulling it.&n\n\r",
+								OBJ_SHORT(arti), OBJ_VNUM(arti));
 							send_to_char(buf, ch);
-							extract_obj(obj, TRUE); // Yes, we want to remove the arti data here.
+							extract_obj(
+								obj,
+								TRUE); // Yes, we want to remove the arti data here.
 						}
 					}
 				}
 			}
 
 			// If we can read everything, update the entry for it.
-			artifact_update_sql(vnum, TRUE, (temp == 0) ? ARTIFACT_ON_PC : ARTIFACT_ONCORPSE, pid, timer, type);
+			artifact_update_sql(vnum, TRUE,
+					    (temp == 0) ? ARTIFACT_ON_PC : ARTIFACT_ONCORPSE, pid,
+					    timer, type);
 
 			if (super)
 			{
@@ -2029,15 +2172,15 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 {
-	P_obj      arti, cont, content, corpse;
-	P_char     owner;
-	P_desc     desc;
-	int        vnum, locType, location;
-	bool       found;
-	bool       expired = FALSE;
-	char      *name;
+	P_obj arti, cont, content, corpse;
+	P_char owner;
+	P_desc desc;
+	int vnum, locType, location;
+	bool found;
+	bool expired = FALSE;
+	char *name;
 	MYSQL_RES *res;
-	MYSQL_ROW  row = NULL;
+	MYSQL_ROW row = NULL;
 
 	if (!updateArtis)
 	{
@@ -2057,8 +2200,8 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 		expired = TRUE;
 		while ((row = mysql_fetch_row(res)))
 		{
-			vnum     = atoi(row[0]);
-			locType  = atoi(row[1]);
+			vnum = atoi(row[0]);
+			locType = atoi(row[1]);
 			location = atoi(row[2]);
 
 			// Not in game: nothing to find or poof, the UPDATE below clears the row.
@@ -2073,7 +2216,8 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 				location = real_room(location);
 				if (location >= 0 && location <= top_of_world)
 				{
-					for (arti = world[location].contents; arti; arti = arti->next_content)
+					for (arti = world[location].contents; arti;
+					     arti = arti->next_content)
 					{
 						if (OBJ_VNUM(arti) == vnum)
 						{
@@ -2100,28 +2244,42 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 							}
 							switch (cont->loc_p)
 							{
-								// Score!
-								case LOC_ROOM:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad location on 'OnGround' arti(%d) - actual room v%d.", vnum, ROOM_VNUM(cont->loc.room));
+							// Score!
+							case LOC_ROOM:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad location on 'OnGround' arti(%d) - actual room v%d.",
+								      vnum,
+								      ROOM_VNUM(cont->loc.room));
+								found = TRUE;
+								break;
+							case LOC_CARRIED:
+							case LOC_WORN:
+								owner = OBJ_WORN(cont) ?
+										cont->loc.wearing :
+										cont->loc.carrying;
+								if (IS_NPC(owner))
+								{
+									logit(LOG_ARTIFACT,
+									      "event_artifact_check_poof_sql: Bad location on 'OnGround' arti(%d) - on mob v%d.",
+									      vnum,
+									      GET_VNUM(owner));
 									found = TRUE;
-									break;
-								case LOC_CARRIED:
-								case LOC_WORN:
-									owner = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
-									if (IS_NPC(owner))
-									{
-										logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad location on 'OnGround' arti(%d) - on mob v%d.", vnum, GET_VNUM(owner));
-										found = TRUE;
-									}
-									break;
-								case LOC_INSIDE:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad loc on 'OnGround' arti(%d)-container vnum %d inside nothing.", cont->loc_p, vnum, OBJ_VNUM(cont));
-									break;
-								// Lost artis. :(
-								case LOC_NOWHERE:
-								default:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnGround' arti(%d)-container vnum %d.", cont->loc_p, vnum, OBJ_VNUM(cont));
-									break;
+								}
+								break;
+							case LOC_INSIDE:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad loc on 'OnGround' arti(%d)-container vnum %d inside nothing.",
+								      cont->loc_p, vnum,
+								      OBJ_VNUM(cont));
+								break;
+							// Lost artis. :(
+							case LOC_NOWHERE:
+							default:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnGround' arti(%d)-container vnum %d.",
+								      cont->loc_p, vnum,
+								      OBJ_VNUM(cont));
+								break;
 							}
 						}
 					}
@@ -2133,7 +2291,9 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 				}
 				if (!arti || OBJ_VNUM(arti) != vnum)
 				{
-					logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not find 'OnGround' artifact vnum %d anywhere.", vnum);
+					logit(LOG_ARTIFACT,
+					      "event_artifact_check_poof_sql: Could not find 'OnGround' artifact vnum %d anywhere.",
+					      vnum);
 					continue;
 				}
 				// If we found arti in game.
@@ -2148,7 +2308,9 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 				// Try to load the pfile if it's on a PC that isn't online.
 				if (!is_pid_online(location, TRUE))
 				{
-					logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: poofing vnum=%d on offline pid=%d ('%s')", vnum, location, get_player_name_from_pid(location));
+					logit(LOG_ARTIFACT,
+					      "event_artifact_check_poof_sql: poofing vnum=%d on offline pid=%d ('%s')",
+					      vnum, location, get_player_name_from_pid(location));
 
 					owner = load_dummy_char(get_player_name_from_pid(location));
 
@@ -2158,14 +2320,21 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					}
 					else
 					{
-						logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not load pfile of '%s' %d, to poof arti vnum %d.", get_player_name_from_pid(location), location, vnum);
+						logit(LOG_ARTIFACT,
+						      "event_artifact_check_poof_sql: Could not load pfile of '%s' %d, to poof arti vnum %d.",
+						      get_player_name_from_pid(location), location,
+						      vnum);
 						arti = NULL;
 					}
 					if (arti)
 					{
 						poof_artifact(arti);
-						writeCharacter(owner, RENT_POOFARTI, owner->in_room);
-						logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: poofed vnum=%d for offline pid=%d ('%s')", vnum, location, get_player_name_from_pid(location));
+						writeCharacter(owner, RENT_POOFARTI,
+							       owner->in_room);
+						logit(LOG_ARTIFACT,
+						      "event_artifact_check_poof_sql: poofed vnum=%d for offline pid=%d ('%s')",
+						      vnum, location,
+						      get_player_name_from_pid(location));
 					}
 					else
 					{
@@ -2174,7 +2343,10 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 							// Nuke the eq off dummy char so it doesn't fall to the ground and get duped.
 							nuke_eq(owner);
 						}
-						logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not find artifact vnum %d on pfile of '%s' %d.", vnum, get_player_name_from_pid(location), location);
+						logit(LOG_ARTIFACT,
+						      "event_artifact_check_poof_sql: Could not find artifact vnum %d on pfile of '%s' %d.",
+						      vnum, get_player_name_from_pid(location),
+						      location);
 					}
 					if (owner)
 					{
@@ -2189,7 +2361,8 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					for (desc = descriptor_list; desc; desc = desc->next)
 					{
 						// Char must be in game and exist.
-						if (desc->connected != CON_PLAYING || !(owner = GET_TRUE_CHAR_D(desc)))
+						if (desc->connected != CON_PLAYING ||
+						    !(owner = GET_TRUE_CHAR_D(desc)))
 						{
 							continue;
 						}
@@ -2206,12 +2379,15 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					// If we didn't find it on descriptor list, gotta check character list for ld chars :(
 					if (arti == NULL)
 					{
-						for (owner = character_list; owner; owner = owner->next)
+						for (owner = character_list; owner;
+						     owner = owner->next)
 						{
 							// Found them ld! Hopefully, there's only one of them.
-							if (IS_PC(owner) && GET_PID(owner) == location)
+							if (IS_PC(owner) &&
+							    GET_PID(owner) == location)
 							{
-								arti = get_object_from_char(owner, vnum);
+								arti = get_object_from_char(owner,
+											    vnum);
 								break;
 							}
 						}
@@ -2222,7 +2398,10 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					}
 					else
 					{
-						logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not find artifact vnum %d on char '%s' %d.", vnum, get_player_name_from_pid(location), location);
+						logit(LOG_ARTIFACT,
+						      "event_artifact_check_poof_sql: Could not find artifact vnum %d on char '%s' %d.",
+						      vnum, get_player_name_from_pid(location),
+						      location);
 					}
 				}
 			}
@@ -2244,13 +2423,15 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 				}
 				else
 				{
-					logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not find artifact vnum %d on mob %d.", vnum, location);
+					logit(LOG_ARTIFACT,
+					      "event_artifact_check_poof_sql: Could not find artifact vnum %d on mob %d.",
+					      vnum, location);
 				}
 			}
 			else if (locType == ARTIFACT_ONCORPSE)
 			{
-				name   = get_player_name_from_pid(location);
-				found  = FALSE;
+				name = get_player_name_from_pid(location);
+				found = FALSE;
 				corpse = NULL;
 				for (arti = object_list; arti; arti = arti->next)
 				{
@@ -2262,7 +2443,10 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 						{
 							cont = cont->loc.inside;
 
-							if (OBJ_VNUM(cont) == VOBJ_CORPSE && IS_SET(cont->value[CORPSE_FLAGS], PC_CORPSE) && isname(name, cont->name))
+							if (OBJ_VNUM(cont) == VOBJ_CORPSE &&
+							    IS_SET(cont->value[CORPSE_FLAGS],
+								   PC_CORPSE) &&
+							    isname(name, cont->name))
 							{
 								corpse = cont;
 								// It's on a corpse of the right char (don't stop moving outward though).
@@ -2274,7 +2458,8 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 							obj_from_obj(arti);
 							if (corpse != cont)
 							{
-								logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Poofing arti from corpse inside a container. ugh.");
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Poofing arti from corpse inside a container. ugh.");
 							}
 							else
 							{
@@ -2282,22 +2467,30 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 							}
 							switch (cont->loc_p)
 							{
-								case LOC_ROOM:
-									obj_to_room(arti, cont->loc.room);
-									break;
-								case LOC_CARRIED:
-								case LOC_WORN:
-									owner = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
-									obj_to_room(arti, owner->in_room);
-									break;
-								case LOC_INSIDE:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad loc on 'OnCorpse' arti(%d)-container vnum %d inside nothing.", cont->loc_p, vnum, OBJ_VNUM(cont));
-									break;
-								// Lost artis. :(
-								case LOC_NOWHERE:
-								default:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnCorpse' arti(%d)-container vnum %d.", cont->loc_p, vnum, OBJ_VNUM(cont));
-									break;
+							case LOC_ROOM:
+								obj_to_room(arti, cont->loc.room);
+								break;
+							case LOC_CARRIED:
+							case LOC_WORN:
+								owner = OBJ_WORN(cont) ?
+										cont->loc.wearing :
+										cont->loc.carrying;
+								obj_to_room(arti, owner->in_room);
+								break;
+							case LOC_INSIDE:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad loc on 'OnCorpse' arti(%d)-container vnum %d inside nothing.",
+								      cont->loc_p, vnum,
+								      OBJ_VNUM(cont));
+								break;
+							// Lost artis. :(
+							case LOC_NOWHERE:
+							default:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnCorpse' arti(%d)-container vnum %d.",
+								      cont->loc_p, vnum,
+								      OBJ_VNUM(cont));
+								break;
 							}
 							break;
 						}
@@ -2323,27 +2516,41 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 							}
 							switch (cont->loc_p)
 							{
-								case LOC_ROOM:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad location on 'OnCorpse' arti(%d) - in room v%d.", vnum, ROOM_VNUM(cont->loc.room));
+							case LOC_ROOM:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad location on 'OnCorpse' arti(%d) - in room v%d.",
+								      vnum,
+								      ROOM_VNUM(cont->loc.room));
+								found = TRUE;
+								break;
+							case LOC_CARRIED:
+							case LOC_WORN:
+								owner = OBJ_WORN(cont) ?
+										cont->loc.wearing :
+										cont->loc.carrying;
+								if (IS_NPC(owner))
+								{
+									logit(LOG_ARTIFACT,
+									      "event_artifact_check_poof_sql: Bad location on 'OnCorpse' arti(%d) - on mob v%d.",
+									      vnum,
+									      GET_VNUM(owner));
 									found = TRUE;
-									break;
-								case LOC_CARRIED:
-								case LOC_WORN:
-									owner = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
-									if (IS_NPC(owner))
-									{
-										logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad location on 'OnCorpse' arti(%d) - on mob v%d.", vnum, GET_VNUM(owner));
-										found = TRUE;
-									}
-									break;
-								case LOC_INSIDE:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad loc on 'OnCorpse' arti(%d)-container vnum %d inside nothing.", cont->loc_p, vnum, OBJ_VNUM(cont));
-									break;
-								// Lost artis. :(
-								case LOC_NOWHERE:
-								default:
-									logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnCorpse' arti(%d)-container vnum %d.", cont->loc_p, vnum, OBJ_VNUM(cont));
-									break;
+								}
+								break;
+							case LOC_INSIDE:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad loc on 'OnCorpse' arti(%d)-container vnum %d inside nothing.",
+								      cont->loc_p, vnum,
+								      OBJ_VNUM(cont));
+								break;
+							// Lost artis. :(
+							case LOC_NOWHERE:
+							default:
+								logit(LOG_ARTIFACT,
+								      "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnCorpse' arti(%d)-container vnum %d.",
+								      cont->loc_p, vnum,
+								      OBJ_VNUM(cont));
+								break;
 							}
 						}
 					}
@@ -2353,13 +2560,17 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					}
 					else
 					{
-						logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not find artifact vnum %d on PC corpse %s (%d).", vnum, name, location);
+						logit(LOG_ARTIFACT,
+						      "event_artifact_check_poof_sql: Could not find artifact vnum %d on PC corpse %s (%d).",
+						      vnum, name, location);
 					}
 				}
 			}
 			else
 			{
-				logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: Could not find artifact vnum %d: bad locType: %d.", vnum, locType);
+				logit(LOG_ARTIFACT,
+				      "event_artifact_check_poof_sql: Could not find artifact vnum %d: bad locType: %d.",
+				      vnum, locType);
 			}
 		}
 	}
@@ -2369,7 +2580,8 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	// Clear the artis from the list.  Note: doing it after the loop intentionally.
 	if (expired)
 	{
-		qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()", ARTIFACT_NOTINGAME);
+		qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()",
+		    ARTIFACT_NOTINGAME);
 		arti_cache_invalidate();
 	}
 
@@ -2378,9 +2590,9 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 
 // Looks through list, and adds entry to the end of list.
 // Assumes list is not NULL (has at least one entry).
-void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, int location, time_t timer, int type)
+void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, int location,
+			  time_t timer, int type)
 {
-
 	if (!updateArtis)
 	{
 		return;
@@ -2389,7 +2601,9 @@ void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, i
 	// This is bad.. vnum is already on list.
 	if (list->vnum == vnum)
 	{
-		logit(LOG_ARTIFACT, "add_artidata_to_list: vnum %d already on list!? (at head location: %d).", list->location);
+		logit(LOG_ARTIFACT,
+		      "add_artidata_to_list: vnum %d already on list!? (at head location: %d).",
+		      list->location);
 		return;
 	}
 	// Go to the last node.
@@ -2399,33 +2613,35 @@ void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, i
 		// This is bad.. vnum is already on list.
 		if (list->vnum == vnum)
 		{
-			logit(LOG_ARTIFACT, "add_artidata_to_list: vnum %d already on list!? (location: %d).", list->location);
+			logit(LOG_ARTIFACT,
+			      "add_artidata_to_list: vnum %d already on list!? (location: %d).",
+			      list->location);
 			return;
 		}
 	}
 	// And create a new one.
-	list->next     = new arti_data;
-	list           = list->next;
-	list->vnum     = vnum;
-	list->owned    = owned;
-	list->locType  = locType;
+	list->next = new arti_data;
+	list = list->next;
+	list->vnum = vnum;
+	list->owned = owned;
+	list->locType = locType;
 	list->location = location;
-	list->timer    = timer;
-	list->type     = type;
-	list->next     = NULL;
+	list->timer = timer;
+	list->type = type;
+	list->next = NULL;
 }
 
 void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 {
 	arti_list *artilist, *nextlist;
 	arti_data *node, *next_node;
-	P_obj      arti;
-	P_char     owner;
-	int        pid, vnum, punish_level;
-	float      punishment, modifier;
-	int        count[4];
+	P_obj arti;
+	P_char owner;
+	int pid, vnum, punish_level;
+	float punishment, modifier;
+	int count[4];
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	debug("event_artifact_wars: beginning...");
 
@@ -2434,7 +2650,8 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	// we only care about artis on a PC (online players only).
 	// corpse/npc/ground artifacts don't trigger the penalty.
 	debug("event_artifact_wars_sql: querying artifacts on pc...");
-	qry("SELECT vnum, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType=%d", ARTIFACT_ON_PC);
+	qry("SELECT vnum, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType=%d",
+	    ARTIFACT_ON_PC);
 	res = mysql_store_result(DB);
 
 	if (!res || mysql_num_rows(res) < 1)
@@ -2451,23 +2668,24 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	while ((row = mysql_fetch_row(res)))
 	{
 		// Since locType is on PC or on PC corpse, location will always be the PID of the PC.
-		pid  = atoi(row[2]);
+		pid = atoi(row[2]);
 		vnum = atoi(row[0]);
-		debug("event_artifact_wars_sql: Processing artifact vnum=%d, locType=%s, pid=%d, timer=%s, type=%s", vnum, row[1], pid, row[3], row[4]);
+		debug("event_artifact_wars_sql: Processing artifact vnum=%d, locType=%s, pid=%d, timer=%s, type=%s",
+		      vnum, row[1], pid, row[3], row[4]);
 		if (artilist == NULL)
 		{
-			artilist        = new arti_list;
-			artilist->pid   = pid;
-			artilist->next  = NULL;
+			artilist = new arti_list;
+			artilist->pid = pid;
+			artilist->next = NULL;
 			artilist->artis = new arti_data;
-			node            = artilist->artis;
-			node->vnum      = vnum;
-			node->owned     = TRUE;
-			node->locType   = atoi(row[1]);
-			node->location  = pid;
-			node->timer     = row[3] ? atol(row[3]) : 0;
-			node->type      = atoi(row[4]);
-			node->next      = NULL;
+			node = artilist->artis;
+			node->vnum = vnum;
+			node->owned = TRUE;
+			node->locType = atoi(row[1]);
+			node->location = pid;
+			node->timer = row[3] ? atol(row[3]) : 0;
+			node->type = atoi(row[4]);
+			node->next = NULL;
 		}
 		else
 		{
@@ -2478,23 +2696,24 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 			}
 			if (nextlist->pid == pid)
 			{
-				add_artidata_to_list(nextlist->artis, vnum, TRUE, atoi(row[1]), pid, row[3] ? atol(row[3]) : 0, atoi(row[4]));
+				add_artidata_to_list(nextlist->artis, vnum, TRUE, atoi(row[1]), pid,
+						     row[3] ? atol(row[3]) : 0, atoi(row[4]));
 			}
 			else
 			{
-				nextlist->next  = new arti_list;
-				nextlist        = nextlist->next;
-				nextlist->pid   = pid;
-				nextlist->next  = NULL;
+				nextlist->next = new arti_list;
+				nextlist = nextlist->next;
+				nextlist->pid = pid;
+				nextlist->next = NULL;
 				nextlist->artis = new arti_data;
-				node            = nextlist->artis;
-				node->vnum      = vnum;
-				node->owned     = TRUE;
-				node->locType   = atoi(row[1]);
-				node->location  = pid;
-				node->timer     = row[3] ? atol(row[3]) : 0;
-				node->type      = atoi(row[4]);
-				node->next      = NULL;
+				node = nextlist->artis;
+				node->vnum = vnum;
+				node->owned = TRUE;
+				node->locType = atoi(row[1]);
+				node->location = pid;
+				node->timer = row[3] ? atol(row[3]) : 0;
+				node->type = atoi(row[4]);
+				node->next = NULL;
 			}
 		}
 	}
@@ -2505,8 +2724,9 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	while (nextlist)
 	{
 		// Count up the artis.
-		count[0] = count[ARTIFACT_MAJOR] = count[ARTIFACT_UNIQUE] = count[ARTIFACT_IOUN] = 0;
-		node                                                                             = nextlist->artis;
+		count[0] = count[ARTIFACT_MAJOR] = count[ARTIFACT_UNIQUE] = count[ARTIFACT_IOUN] =
+			0;
+		node = nextlist->artis;
 		while (node)
 		{
 			// Count[0] holds total number of artis.. to punish those who go 1 over with 4 artis.
@@ -2526,23 +2746,28 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 			if (owner && owner->in_room != NOWHERE)
 			{
 				P_obj obj, next_obj;
-				bool  first = TRUE;
+				bool first = TRUE;
 
 				for (int pos = 0; pos < MAX_WEAR; pos++)
 				{
-					if (owner->equipment[pos] && IS_ARTIFACT(owner->equipment[pos]))
+					if (owner->equipment[pos] &&
+					    IS_ARTIFACT(owner->equipment[pos]))
 					{
 						obj = unequip_char(owner, pos, FALSE);
 						if (first)
 						{
-							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
-							act("&+R$n screams as $p burns $m and falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
+							    FALSE, owner, obj, 0, TO_CHAR);
+							act("&+R$n screams as $p burns $m and falls to the ground!&n",
+							    FALSE, owner, obj, 0, TO_ROOM);
 							first = FALSE;
 						}
 						else
 						{
-							act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
-							act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+							act("&+R$p falls to the ground!&n", FALSE,
+							    owner, obj, 0, TO_CHAR);
+							act("&+R$p falls to the ground!&n", FALSE,
+							    owner, obj, 0, TO_ROOM);
 						}
 						obj_to_room(obj, owner->in_room);
 					}
@@ -2555,21 +2780,26 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					{
 						if (first)
 						{
-							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
-							act("&+R$n screams as $p burns $m and falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
+							    FALSE, owner, obj, 0, TO_CHAR);
+							act("&+R$n screams as $p burns $m and falls to the ground!&n",
+							    FALSE, owner, obj, 0, TO_ROOM);
 							first = FALSE;
 						}
 						else
 						{
-							act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_CHAR);
-							act("&+R$p falls to the ground!&n", FALSE, owner, obj, 0, TO_ROOM);
+							act("&+R$p falls to the ground!&n", FALSE,
+							    owner, obj, 0, TO_CHAR);
+							act("&+R$p falls to the ground!&n", FALSE,
+							    owner, obj, 0, TO_ROOM);
 						}
 						obj_from_char(obj);
 						obj_to_room(obj, owner->in_room);
 					}
 				}
 
-				debug("artifact_wars: %s had %d artifacts forcibly dropped (punish_level=%d)", GET_NAME(owner), count[0], punish_level);
+				debug("artifact_wars: %s had %d artifacts forcibly dropped (punish_level=%d)",
+				      GET_NAME(owner), count[0], punish_level);
 			}
 		}
 		nextlist = nextlist->next;
@@ -2579,7 +2809,7 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	while (artilist)
 	{
 		nextlist = artilist->next;
-		node     = artilist->artis;
+		node = artilist->artis;
 		while (node)
 		{
 			next_node = node->next;
@@ -2599,8 +2829,10 @@ void event_arti_hunt_sql(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	if (!IS_ALIVE(ch) || !data)
 	{
-		statuslog(56, "event_arti_hunt_sql: bad arg: ch '%s', data '%s'", ch ? J_NAME(ch) : "NULL", data != NULL ? (char *)data : "NULL");
-		debug("event_arti_hunt_sql: bad arg: ch '%s', data '%s'", ch ? J_NAME(ch) : "NULL", data != NULL ? (char *)data : "NULL");
+		statuslog(56, "event_arti_hunt_sql: bad arg: ch '%s', data '%s'",
+			  ch ? J_NAME(ch) : "NULL", data != NULL ? (char *)data : "NULL");
+		debug("event_arti_hunt_sql: bad arg: ch '%s', data '%s'", ch ? J_NAME(ch) : "NULL",
+		      data != NULL ? (char *)data : "NULL");
 		return;
 	}
 
@@ -2610,15 +2842,15 @@ void event_arti_hunt_sql(P_char ch, P_char victim, P_obj obj, void *data)
 // Searches through all pfiles with initial *arg for artis.
 void arti_hunt_sql(P_char ch, char *arg)
 {
-	char           buf[MAX_STRING_LENGTH];
-	char           dname[256];
-	char           initial;
-	int            count, wearloc;
-	arti_data      artidata;
+	char buf[MAX_STRING_LENGTH];
+	char dname[256];
+	char initial;
+	int count, wearloc;
+	arti_data artidata;
 	struct dirent *dire;
-	DIR           *dir;
-	P_char         owner, mob;
-	P_obj          arti, arti2;
+	DIR *dir;
+	P_char owner, mob;
+	P_obj arti, arti2;
 
 	if (atoi(arg) == 1)
 	{
@@ -2634,8 +2866,12 @@ void arti_hunt_sql(P_char ch, char *arg)
 	}
 	if (!*arg || !isalpha(*arg))
 	{
-		send_to_char("Arti hunt needs a letter for which initial to hunt for, or 1 to search all pfiles.\n", ch);
-		send_to_char("Arti hunt will then search all pfiles with said initial for artifacts, and add them to the arti list if necessary.\n", ch);
+		send_to_char(
+			"Arti hunt needs a letter for which initial to hunt for, or 1 to search all pfiles.\n",
+			ch);
+		send_to_char(
+			"Arti hunt will then search all pfiles with said initial for artifacts, and add them to the arti list if necessary.\n",
+			ch);
 		return;
 	}
 	if (*arg >= 'A' && *arg <= 'Z')
@@ -2663,7 +2899,8 @@ void arti_hunt_sql(P_char ch, char *arg)
 
 		if ((owner = load_dummy_char(dire->d_name)) == NULL)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "hunt_for_artis: %s has bad pfile.\n\r", dire->d_name);
+			snprintf(buf, MAX_STRING_LENGTH, "hunt_for_artis: %s has bad pfile.\n\r",
+				 dire->d_name);
 			send_to_char(buf, ch);
 			continue;
 		}
@@ -2689,7 +2926,9 @@ void arti_hunt_sql(P_char ch, char *arg)
 				continue;
 			}
 
-			snprintf(buf, MAX_STRING_LENGTH, "%-12s has %s&n (%6d) : ", J_NAME(owner), pad_ansi(arti->short_description, 35, TRUE).c_str(), OBJ_VNUM(arti));
+			snprintf(buf, MAX_STRING_LENGTH, "%-12s has %s&n (%6d) : ", J_NAME(owner),
+				 pad_ansi(arti->short_description, 35, TRUE).c_str(),
+				 OBJ_VNUM(arti));
 			send_to_char(buf, ch);
 
 			if (!get_artifact_data_sql(OBJ_VNUM(arti), &artidata))
@@ -2702,9 +2941,12 @@ void arti_hunt_sql(P_char ch, char *arg)
 					extract_obj(arti2);
 				}
 				// If they managed to get it on pfile and not in DB, give them full timer.
-				artifact_update_sql(arti, 'Y', time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY);
+				artifact_update_sql(arti, 'Y',
+						    time(NULL) + ARTIFACT_BLOOD_DAYS *
+									 SECS_PER_REAL_DAY);
 			}
-			else if (artidata.locType == ARTIFACT_ON_PC || artidata.locType == ARTIFACT_ONCORPSE)
+			else if (artidata.locType == ARTIFACT_ON_PC ||
+				 artidata.locType == ARTIFACT_ONCORPSE)
 			{
 				if (artidata.location == GET_PID(owner))
 				{
@@ -2712,14 +2954,17 @@ void arti_hunt_sql(P_char ch, char *arg)
 				}
 				else
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "&+ROn another char:&N %s\n", get_player_name_from_pid(artidata.location));
+					snprintf(buf, MAX_STRING_LENGTH,
+						 "&+ROn another char:&N %s\n",
+						 get_player_name_from_pid(artidata.location));
 					send_to_char(buf, ch);
 				}
 			}
 			else if (artidata.locType == ARTIFACT_ON_NPC)
 			{
 				mob = read_mobile(artidata.location, VIRTUAL);
-				snprintf(buf, MAX_STRING_LENGTH, "&+ROn a mob:&N '%s' %d.\n", J_NAME(mob), artidata.location);
+				snprintf(buf, MAX_STRING_LENGTH, "&+ROn a mob:&N '%s' %d.\n",
+					 J_NAME(mob), artidata.location);
 				extract_char(mob);
 				send_to_char(buf, ch);
 				// If there's one in zone, pull it.
@@ -2732,7 +2977,9 @@ void arti_hunt_sql(P_char ch, char *arg)
 			}
 			else if (artidata.locType == ARTIFACT_ONGROUND)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "&+ROn ground:&N '%s' %d.\n", world[real_room0(artidata.location)].name, artidata.location);
+				snprintf(buf, MAX_STRING_LENGTH, "&+ROn ground:&N '%s' %d.\n",
+					 world[real_room0(artidata.location)].name,
+					 artidata.location);
 				send_to_char(buf, ch);
 				// If there's one in zone, pull it.
 				if ((arti2 = artifact_find(OBJ_VNUM(arti))))
@@ -2757,21 +3004,28 @@ void arti_hunt_sql(P_char ch, char *arg)
 		{
 			if (IS_ARTIFACT(arti))
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "%-12s has %s&n (%6d) : ", J_NAME(owner), pad_ansi(arti->short_description, 35, TRUE).c_str(), obj_index[arti->R_num].virtual_number);
+				snprintf(buf, MAX_STRING_LENGTH,
+					 "%-12s has %s&n (%6d) : ", J_NAME(owner),
+					 pad_ansi(arti->short_description, 35, TRUE).c_str(),
+					 obj_index[arti->R_num].virtual_number);
 				send_to_char(buf, ch);
 				if (!get_artifact_data_sql(OBJ_VNUM(arti), &artidata))
 				{
 					send_to_char("&+WNot yet tracked - adding.&n\n", ch);
 					// If they managed to get it on pfile and not in DB, give them full timer.
-					artifact_update_sql(arti, 'Y', time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY);
+					artifact_update_sql(arti, 'Y',
+							    time(NULL) + ARTIFACT_BLOOD_DAYS *
+										 SECS_PER_REAL_DAY);
 					// If there's one in zone, pull it.
 					if ((arti2 = artifact_find(OBJ_VNUM(arti))))
 					{
-						send_to_char("&+WPulled artifact from zone.\n\r", ch);
+						send_to_char("&+WPulled artifact from zone.\n\r",
+							     ch);
 						extract_obj(arti2);
 					}
 				}
-				else if (artidata.locType == ARTIFACT_ON_PC || artidata.locType == ARTIFACT_ONCORPSE)
+				else if (artidata.locType == ARTIFACT_ON_PC ||
+					 artidata.locType == ARTIFACT_ONCORPSE)
 				{
 					if (artidata.location == GET_PID(owner))
 					{
@@ -2779,20 +3033,28 @@ void arti_hunt_sql(P_char ch, char *arg)
 					}
 					else
 					{
-						snprintf(buf, MAX_STRING_LENGTH, "&+ROn another char:&N %s\n", get_player_name_from_pid(artidata.location));
+						snprintf(buf, MAX_STRING_LENGTH,
+							 "&+ROn another char:&N %s\n",
+							 get_player_name_from_pid(
+								 artidata.location));
 						send_to_char(buf, ch);
 					}
 				}
 				else if (artidata.locType == ARTIFACT_ON_NPC)
 				{
 					mob = read_mobile(artidata.location, VIRTUAL);
-					snprintf(buf, MAX_STRING_LENGTH, "&+ROn a mob:&N '%s' %d.\n", J_NAME(mob), artidata.location);
+					snprintf(buf, MAX_STRING_LENGTH,
+						 "&+ROn a mob:&N '%s' %d.\n", J_NAME(mob),
+						 artidata.location);
 					extract_char(mob);
 					send_to_char(buf, ch);
 				}
 				else if (artidata.locType == ARTIFACT_ONGROUND)
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "&+ROn ground:&N '%s' %d.\n", world[real_room0(artidata.location)].name, artidata.location);
+					snprintf(buf, MAX_STRING_LENGTH,
+						 "&+ROn ground:&N '%s' %d.\n",
+						 world[real_room0(artidata.location)].name,
+						 artidata.location);
 					send_to_char(buf, ch);
 				}
 				else if (artidata.locType == ARTIFACT_NOTINGAME)
@@ -2817,15 +3079,18 @@ void arti_hunt_sql(P_char ch, char *arg)
 
 void arti_clear_sql(P_char ch, char *arg)
 {
-	char  buf[MAX_STRING_LENGTH];
-	int   vnum;
+	char buf[MAX_STRING_LENGTH];
+	int vnum;
 	P_obj arti;
 
 	if (!*arg || !strcmp(arg, "?") || !strcmp(arg, "help"))
 	{
 		send_to_char("This command clears the arti data for a specific arti vnum.\n\r", ch);
-		send_to_char("It should only be used by those who know what they're doing.\n\r", ch);
-		send_to_char("This will delete the entire entry from the Mortal and Immortal DB, be forewarned.\n\r", ch);
+		send_to_char("It should only be used by those who know what they're doing.\n\r",
+			     ch);
+		send_to_char(
+			"This will delete the entire entry from the Mortal and Immortal DB, be forewarned.\n\r",
+			ch);
 		return;
 	}
 	if (GET_LEVEL(ch) < FORGER)
@@ -2836,7 +3101,9 @@ void arti_clear_sql(P_char ch, char *arg)
 
 	if ((vnum = atoi(arg)) <= 0)
 	{
-		send_to_char("The proper argument for this is the vnum of the arti for which you want the data cleared.\n\r", ch);
+		send_to_char(
+			"The proper argument for this is the vnum of the arti for which you want the data cleared.\n\r",
+			ch);
 		return;
 	}
 
@@ -2854,10 +3121,12 @@ void arti_clear_sql(P_char ch, char *arg)
 	if (qry("DELETE FROM artifacts WHERE vnum = '%d'", vnum))
 	{
 		arti_cache_invalidate();
-		act("&+WThe artifact data for $p&+W has been cleared from the Immortal list.  You fool!", FALSE, ch, arti, 0, TO_CHAR);
+		act("&+WThe artifact data for $p&+W has been cleared from the Immortal list.  You fool!",
+		    FALSE, ch, arti, 0, TO_CHAR);
 		if (qry("DELETE FROM artifacts_mortal WHERE vnum = '%d'", vnum))
 		{
-			act("&+WThe artifact data for $p&+W has been cleared from the Mortal list.  You fool!", FALSE, ch, arti, 0, TO_CHAR);
+			act("&+WThe artifact data for $p&+W has been cleared from the Mortal list.  You fool!",
+			    FALSE, ch, arti, 0, TO_CHAR);
 		}
 		else
 		{
@@ -2875,17 +3144,20 @@ void arti_clear_sql(P_char ch, char *arg)
 // If the timer isn't ticking, this function won't do anything.
 void arti_poof_sql(P_char ch, char *arg)
 {
-	char      buf[MAX_STRING_LENGTH], artishort[MAX_STRING_LENGTH];
-	int       vnum;
-	P_obj     arti;
-	P_char    owner;
+	char buf[MAX_STRING_LENGTH], artishort[MAX_STRING_LENGTH];
+	int vnum;
+	P_obj arti;
+	P_char owner;
 	arti_data artidata;
 
 	if (!*arg || !strcmp(arg, "?") || !strcmp(arg, "help"))
 	{
-		send_to_char("This command poofs the artifact specified by the vnum argument.\n\r", ch);
-		send_to_char("It should only be used by those who know what they're doing.\n\r", ch);
-		send_to_char("This will poof the artifact and reset the timer, be forewarned.\n\r", ch);
+		send_to_char("This command poofs the artifact specified by the vnum argument.\n\r",
+			     ch);
+		send_to_char("It should only be used by those who know what they're doing.\n\r",
+			     ch);
+		send_to_char("This will poof the artifact and reset the timer, be forewarned.\n\r",
+			     ch);
 		return;
 	}
 	if (GET_LEVEL(ch) < FORGER)
@@ -2896,7 +3168,9 @@ void arti_poof_sql(P_char ch, char *arg)
 
 	if ((vnum = atoi(arg)) <= 0)
 	{
-		send_to_char("The proper argument for this is the vnum of the arti for which you want the data cleared.\n\r", ch);
+		send_to_char(
+			"The proper argument for this is the vnum of the arti for which you want the data cleared.\n\r",
+			ch);
 		return;
 	}
 
@@ -2916,7 +3190,9 @@ void arti_poof_sql(P_char ch, char *arg)
 
 	if (!get_artifact_data_sql(vnum, &artidata))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+WThere is no data for %s atm; It shouldn't be in the game.&n\n\r", artishort);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+WThere is no data for %s atm; It shouldn't be in the game.&n\n\r",
+			 artishort);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -2927,19 +3203,23 @@ void arti_poof_sql(P_char ch, char *arg)
 		// If it isn't on a char, or the char is online.
 		if (artidata.locType != ARTIFACT_ON_PC || is_pid_online(artidata.location, TRUE))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Could not find %s in game.\n\r", artishort);
+			snprintf(buf, MAX_STRING_LENGTH, "Could not find %s in game.\n\r",
+				 artishort);
 			send_to_char(buf, ch);
 			return;
 		}
 		if (!(owner = load_dummy_char(get_player_name_from_pid(artidata.location))))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Could not load pfile of %s.\n\r", get_player_name_from_pid(artidata.location));
+			snprintf(buf, MAX_STRING_LENGTH, "Could not load pfile of %s.\n\r",
+				 get_player_name_from_pid(artidata.location));
 			send_to_char(buf, ch);
 			return;
 		}
 		if ((arti = get_object_from_char(owner, vnum)) == NULL)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Strange, arti '%s' %d was not on %s's pfile!\n\r", artishort, vnum, get_player_name_from_pid(artidata.location));
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "Strange, arti '%s' %d was not on %s's pfile!\n\r", artishort,
+				 vnum, get_player_name_from_pid(artidata.location));
 			nuke_eq(owner);
 			extract_char(owner);
 			return;
@@ -2960,11 +3240,11 @@ void arti_poof_sql(P_char ch, char *arg)
 // Changes the timer on an artifact.
 void arti_timer_sql(P_char ch, char *arg)
 {
-	char      buf[MAX_STRING_LENGTH], artishort[256];
-	char      arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
-	int       minutes, cmd, vnum;
-	time_t    new_time;
-	P_obj     arti;
+	char buf[MAX_STRING_LENGTH], artishort[256];
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
+	int minutes, cmd, vnum;
+	time_t new_time;
+	P_obj arti;
 	arti_data artidata;
 
 	arg = one_argument(arg, arg1);
@@ -2974,10 +3254,18 @@ void arti_timer_sql(P_char ch, char *arg)
 	// If they don't have 3 args, then we can't do anything, so show the help.
 	if (!*arg3)
 	{
-		send_to_char("&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r", ch);
-		send_to_char("This command changes the timer on the artifact specified by the vnum argument.\n\r", ch);
-		send_to_char("&+WIt should only be used by those who know what they're doing.&n\n\r", ch);
-		send_to_char("This will only work on artifacts who's timers are already ticking.\n\r", ch);
+		send_to_char(
+			"&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r",
+			ch);
+		send_to_char(
+			"This command changes the timer on the artifact specified by the vnum argument.\n\r",
+			ch);
+		send_to_char(
+			"&+WIt should only be used by those who know what they're doing.&n\n\r",
+			ch);
+		send_to_char(
+			"This will only work on artifacts who's timers are already ticking.\n\r",
+			ch);
 		return;
 	}
 
@@ -3002,8 +3290,13 @@ void arti_timer_sql(P_char ch, char *arg)
 	}
 	else
 	{
-		send_to_char("&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r", ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' is not a valid subcommand. Please choose set, add or subtract.&n\n\r", arg1);
+		send_to_char(
+			"&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r",
+			ch);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'&+w%s&+W' is not a valid subcommand. Please choose set, add or subtract.&n\n\r",
+			arg1);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3011,21 +3304,32 @@ void arti_timer_sql(P_char ch, char *arg)
 	// Handle arg2: the vnum.
 	if ((vnum = atoi(arg2)) <= 0)
 	{
-		send_to_char("&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r", ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' is not a valid vnum.  Please use a positive number for the vnum.&n\n\r", arg2);
+		send_to_char(
+			"&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r",
+			ch);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'&+w%s&+W' is not a valid vnum.  Please use a positive number for the vnum.&n\n\r",
+			arg2);
 		send_to_char(buf, ch);
 		return;
 	}
 	if ((arti = read_object(vnum, VIRTUAL)) == NULL)
 	{
-		send_to_char("&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r", ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' is not the vnum of any object in the game.&n\n\r", arg2);
+		send_to_char(
+			"&+WFormat: &+wartifact timer <set|add|subtract> <vnum> <time in minutes>&+W.&n\n\r",
+			ch);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+W'&+w%s&+W' is not the vnum of any object in the game.&n\n\r", arg2);
 		send_to_char(buf, ch);
 		return;
 	}
 	if (!IS_ARTIFACT(arti))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' &+w%d&+W is not an artifact.  This command only works with artifacts.&n\n\r", OBJ_SHORT(arti), vnum);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'&+w%s&+W' &+w%d&+W is not an artifact.  This command only works with artifacts.&n\n\r",
+			OBJ_SHORT(arti), vnum);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3035,7 +3339,10 @@ void arti_timer_sql(P_char ch, char *arg)
 	// Handle arg3: the time in minutes.
 	if ((minutes = atoi(arg3)) == 0)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'%s' is not a positive number.  Please supply a positive number of minutes.&n\n\r", arg3);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'%s' is not a positive number.  Please supply a positive number of minutes.&n\n\r",
+			arg3);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3043,12 +3350,17 @@ void arti_timer_sql(P_char ch, char *arg)
 	{
 		if (!strcmp(arg1, "add"))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+WMaybe you should try '&+wartifact timer subtract %d %d&+W'.&n\n\r", vnum, minutes * -1);
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"&+WMaybe you should try '&+wartifact timer subtract %d %d&+W'.&n\n\r",
+				vnum, minutes * -1);
 			send_to_char(buf, ch);
 		}
 		else if (!strcmp(arg1, "subtract"))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+WMaybe you should try '&+wartifact timer add %d %d&+W'.&n\n\r", vnum, minutes * -1);
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "&+WMaybe you should try '&+wartifact timer add %d %d&+W'.&n\n\r",
+				 vnum, minutes * -1);
 			send_to_char(buf, ch);
 		}
 		else
@@ -3061,7 +3373,9 @@ void arti_timer_sql(P_char ch, char *arg)
 	// Now we have a valid command, the vnum of an arti, and a postitive number of minutes to change.
 	if (!get_artifact_data_sql(vnum, &artidata))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+WHmm.. There's no timer ticking on '&+w%s&+W' &+w%d&+W.&n\n\r", artishort, vnum);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+WHmm.. There's no timer ticking on '&+w%s&+W' &+w%d&+W.&n\n\r",
+			 artishort, vnum);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3081,14 +3395,17 @@ void arti_timer_sql(P_char ch, char *arg)
 	}
 	else
 	{
-		send_to_char("&+WSomeone messed with this and created a faulty command. sorry.\n\r", ch);
+		send_to_char("&+WSomeone messed with this and created a faulty command. sorry.\n\r",
+			     ch);
 		return;
 	}
 
 	// Minimum of 1 minute.
 	if (new_time < time(NULL))
 	{
-		send_to_char("&+WNew time is less than &+w0&+W minutes, setting to &+w1&+W minute.&n\n\r", ch);
+		send_to_char(
+			"&+WNew time is less than &+w0&+W minutes, setting to &+w1&+W minute.&n\n\r",
+			ch);
 		new_time = time(NULL) + 60;
 	}
 	// And max.
@@ -3098,12 +3415,15 @@ void arti_timer_sql(P_char ch, char *arg)
 		new_time = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
 	}
 
-	snprintf(buf, MAX_STRING_LENGTH, "&+WArtifact '&+w%s&+W' &+w%d&+W has had it's timer changed from &n", artishort, vnum);
+	snprintf(buf, MAX_STRING_LENGTH,
+		 "&+WArtifact '&+w%s&+W' &+w%d&+W has had it's timer changed from &n", artishort,
+		 vnum);
 	artifact_timer_sql(vnum, buf + strlen(buf));
 	strcat(buf, "&+W to &n");
 
 	// Use the uber-generic update.
-	artifact_update_sql(vnum, artidata.owned, artidata.locType, artidata.location, new_time, artidata.type);
+	artifact_update_sql(vnum, artidata.owned, artidata.locType, artidata.location, new_time,
+			    artidata.type);
 
 	artifact_timer_sql(vnum, buf + strlen(buf));
 	strcat(buf, "&+W.&n\n\r");
@@ -3114,13 +3434,13 @@ void arti_timer_sql(P_char ch, char *arg)
 // This function is designed to swap out one arti for another.
 void arti_swap_sql(P_char ch, char *arg)
 {
-	char      buf[MAX_STRING_LENGTH];
-	char      arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
-	char      artishort1[256];
-	int       vnum1, vnum2, wearloc;
-	bool      found;
-	P_obj     arti1, arti2, cont;
-	P_char    owner1, dummy;
+	char buf[MAX_STRING_LENGTH];
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+	char artishort1[256];
+	int vnum1, vnum2, wearloc;
+	bool found;
+	P_obj arti1, arti2, cont;
+	P_char owner1, dummy;
 	arti_data artidata;
 
 	arg = one_argument(arg, arg1);
@@ -3131,8 +3451,12 @@ void arti_swap_sql(P_char ch, char *arg)
 	{
 		send_to_char("&+WFormat: &+wartifact swap <vnum1> <vnum2>&+W.&n\n\r", ch);
 		send_to_char("This command changes one artifact for another.\n\r", ch);
-		send_to_char("&+WIt should only be used by those who know what they're doing.&n\n\r", ch);
-		send_to_char("This will only work if arti1 has a ticking timer and arti2 doesn't.\n\r", ch);
+		send_to_char(
+			"&+WIt should only be used by those who know what they're doing.&n\n\r",
+			ch);
+		send_to_char(
+			"This will only work if arti1 has a ticking timer and arti2 doesn't.\n\r",
+			ch);
 		return;
 	}
 
@@ -3140,20 +3464,27 @@ void arti_swap_sql(P_char ch, char *arg)
 	if ((vnum1 = atoi(arg1)) <= 0)
 	{
 		send_to_char("&+WFormat: &+wartifact swap <vnum1> <vnum2>&+W.&n\n\r", ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' is not a valid vnum.  Please use a positive number for the vnum.&n\n\r", arg1);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'&+w%s&+W' is not a valid vnum.  Please use a positive number for the vnum.&n\n\r",
+			arg1);
 		send_to_char(buf, ch);
 		return;
 	}
 	if ((arti1 = read_object(vnum1, VIRTUAL)) == NULL)
 	{
 		send_to_char("&+WFormat: &+wartifact swap <vnum1> <vnum2>&+W.&n\n\r", ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' is not the vnum of any object in the game.&n\n\r", arg1);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+W'&+w%s&+W' is not the vnum of any object in the game.&n\n\r", arg1);
 		send_to_char(buf, ch);
 		return;
 	}
 	if (!IS_ARTIFACT(arti1))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' &+w%d&+W is not an artifact.  This command only works with artifacts.&n\n\r", OBJ_SHORT(arti1), vnum1);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'&+w%s&+W' &+w%d&+W is not an artifact.  This command only works with artifacts.&n\n\r",
+			OBJ_SHORT(arti1), vnum1);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3164,20 +3495,27 @@ void arti_swap_sql(P_char ch, char *arg)
 	if ((vnum2 = atoi(arg2)) <= 0)
 	{
 		send_to_char("&+WFormat: &+wartifact swap <vnum1> <vnum2>&+W.&n\n\r", ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' is not a valid vnum.  Please use a positive number for the vnum.&n\n\r", arg2);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'&+w%s&+W' is not a valid vnum.  Please use a positive number for the vnum.&n\n\r",
+			arg2);
 		send_to_char(buf, ch);
 		return;
 	}
 	if ((arti2 = read_object(vnum2, VIRTUAL)) == NULL)
 	{
 		send_to_char("&+WFormat: &+wartifact swap <vnum1> <vnum2>&+W.&n\n\r", ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' is not the vnum of any object in the game.&n\n\r", arg2);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+W'&+w%s&+W' is not the vnum of any object in the game.&n\n\r", arg2);
 		send_to_char(buf, ch);
 		return;
 	}
 	if (!IS_ARTIFACT(arti2))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+W'&+w%s&+W' &+w%d&+W is not an artifact.  This command only works with artifacts.&n\n\r", OBJ_SHORT(arti2), vnum2);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+W'&+w%s&+W' &+w%d&+W is not an artifact.  This command only works with artifacts.&n\n\r",
+			OBJ_SHORT(arti2), vnum2);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3186,14 +3524,20 @@ void arti_swap_sql(P_char ch, char *arg)
 	// Now we have 2 valid vnums and their corresponding short descriptions.
 	if (!get_artifact_data_sql(vnum1, &artidata))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+WThere's no timer ticking on '&+w%s&+W' &+w%d&+W. That won't work.&n\n\r", artishort1, vnum1);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+WThere's no timer ticking on '&+w%s&+W' &+w%d&+W. That won't work.&n\n\r",
+			artishort1, vnum1);
 		send_to_char(buf, ch);
 		return;
 	}
 	// We just want to make sure it's not ticking.
 	if (get_artifact_data_sql(vnum2, NULL))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+WThere's a timer ticking on '&+w%s&+W' &+w%d&+W.  That won't work.&n\n\r", OBJ_SHORT(arti2), vnum2);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+WThere's a timer ticking on '&+w%s&+W' &+w%d&+W.  That won't work.&n\n\r",
+			OBJ_SHORT(arti2), vnum2);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3201,7 +3545,9 @@ void arti_swap_sql(P_char ch, char *arg)
 	if ((arti1 = artifact_find(vnum2)) != NULL)
 	{
 		extract_obj(arti1);
-		snprintf(buf, MAX_STRING_LENGTH, "&+WPulled artifact '&+w%s&+W' &+w%d&+W from zone.&n\n\r", OBJ_SHORT(arti2), vnum2);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+WPulled artifact '&+w%s&+W' &+w%d&+W from zone.&n\n\r",
+			 OBJ_SHORT(arti2), vnum2);
 		send_to_char(buf, ch);
 	}
 
@@ -3220,22 +3566,22 @@ void arti_swap_sql(P_char ch, char *arg)
 			// Just make sure it's in a valid location.
 			switch (cont->loc_p)
 			{
-				case LOC_CARRIED:
-				case LOC_WORN:
-					owner1 = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
-					// Skip artis on Immortals.
-					if (!IS_TRUSTED(owner1))
-					{
-						found = TRUE;
-					}
-					break;
-				case LOC_ROOM:
+			case LOC_CARRIED:
+			case LOC_WORN:
+				owner1 = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
+				// Skip artis on Immortals.
+				if (!IS_TRUSTED(owner1))
+				{
 					found = TRUE;
-					break;
-				// Not in a valid location, so skip it.
-				case LOC_INSIDE:
-				case LOC_NOWHERE:
-					break;
+				}
+				break;
+			case LOC_ROOM:
+				found = TRUE;
+				break;
+			// Not in a valid location, so skip it.
+			case LOC_INSIDE:
+			case LOC_NOWHERE:
+				break;
 			}
 			if (found)
 			{
@@ -3251,7 +3597,9 @@ void arti_swap_sql(P_char ch, char *arg)
 		dummy = load_dummy_char(get_player_name_from_pid(artidata.location));
 		if ((arti1 = get_object_from_char(dummy, vnum1)) == NULL)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+WCould not find '&+w%s&+W' &+w%d&+W on &+w%s&+W's pfile.&n\n\r", artishort1, vnum1, get_player_name_from_pid(artidata.location));
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "&+WCould not find '&+w%s&+W' &+w%d&+W on &+w%s&+W's pfile.&n\n\r",
+				 artishort1, vnum1, get_player_name_from_pid(artidata.location));
 			nuke_eq(dummy);
 			extract_char(dummy);
 			return;
@@ -3259,7 +3607,10 @@ void arti_swap_sql(P_char ch, char *arg)
 	}
 	if (!arti1)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+WStrange, could not find artifact '&+w%s&+W' &+w%d&+W anywhere?!?&n\n\r", artishort1, vnum1);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+WStrange, could not find artifact '&+w%s&+W' &+w%d&+W anywhere?!?&n\n\r",
+			artishort1, vnum1);
 		send_to_char(buf, ch);
 		if (dummy)
 		{
@@ -3272,48 +3623,52 @@ void arti_swap_sql(P_char ch, char *arg)
 	// Put arti2 in the right spot.
 	switch (arti1->loc_p)
 	{
-		case LOC_CARRIED:
-			owner1 = arti1->loc.carrying;
-			obj_to_char(arti2, arti1->loc.carrying);
-			break;
-		case LOC_WORN:
-			owner1 = cont->loc.wearing;
-			// Find it on their body.
-			for (wearloc = 0; wearloc < MAX_WEAR; wearloc++)
+	case LOC_CARRIED:
+		owner1 = arti1->loc.carrying;
+		obj_to_char(arti2, arti1->loc.carrying);
+		break;
+	case LOC_WORN:
+		owner1 = cont->loc.wearing;
+		// Find it on their body.
+		for (wearloc = 0; wearloc < MAX_WEAR; wearloc++)
+		{
+			// And move it to their inventory (Also replace with arti2).
+			if (owner1->equipment[wearloc] == arti1)
 			{
-				// And move it to their inventory (Also replace with arti2).
-				if (owner1->equipment[wearloc] == arti1)
-				{
-					obj_to_char(unequip_char(owner1, wearloc), owner1);
-					equip_char(owner1, arti2, wearloc, TRUE);
-				}
+				obj_to_char(unequip_char(owner1, wearloc), owner1);
+				equip_char(owner1, arti2, wearloc, TRUE);
 			}
-			break;
-		case LOC_ROOM:
-			obj_to_room(arti2, arti1->loc.room);
-			break;
-		case LOC_INSIDE:
-			obj_to_obj(arti2, arti1->loc.inside);
-			break;
-		// Not in a valid location, so skip it.
-		case LOC_NOWHERE:
-			snprintf(buf, MAX_STRING_LENGTH, "&+WStrange, artifact '&+w%s&+W' &+w%d&+W has a bad location?!?&n\n\r", artishort1, vnum1);
-			send_to_char(buf, ch);
-			if (dummy)
-			{
-				nuke_eq(dummy);
-				extract_char(dummy);
-			}
-			return;
-			break;
+		}
+		break;
+	case LOC_ROOM:
+		obj_to_room(arti2, arti1->loc.room);
+		break;
+	case LOC_INSIDE:
+		obj_to_obj(arti2, arti1->loc.inside);
+		break;
+	// Not in a valid location, so skip it.
+	case LOC_NOWHERE:
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+WStrange, artifact '&+w%s&+W' &+w%d&+W has a bad location?!?&n\n\r",
+			 artishort1, vnum1);
+		send_to_char(buf, ch);
+		if (dummy)
+		{
+			nuke_eq(dummy);
+			extract_char(dummy);
+		}
+		return;
+		break;
 	}
 	// Since arti2 is in position, can pull arti1.
 	extract_obj(arti1, TRUE); // Yes, we want to remove arti1 from owned artis.
 	// Updata artidata type with arti2 stats.
 	// The timer and owned don't change.  Nor does the locType / location since we put it in the same spot arti1 was in.
-	artidata.type = IS_IOUN(arti2) ? ARTIFACT_IOUN : (IS_UNIQUE(arti2) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR);
+	artidata.type = IS_IOUN(arti2) ? ARTIFACT_IOUN :
+					 (IS_UNIQUE(arti2) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR);
 	// Use the uber-generic update.
-	artifact_update_sql(vnum2, artidata.owned, artidata.locType, artidata.location, artidata.timer, artidata.type);
+	artifact_update_sql(vnum2, artidata.owned, artidata.locType, artidata.location,
+			    artidata.timer, artidata.type);
 	if (owner1 == dummy)
 	{
 		owner1 = NULL;
@@ -3328,9 +3683,11 @@ void arti_swap_sql(P_char ch, char *arg)
 	// Save in-game owner if applies.
 	if (owner1)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+WYour %s&+W suddenly changes into %s&+W!&n\n\r", artishort1, OBJ_SHORT(arti2));
+		snprintf(buf, MAX_STRING_LENGTH, "&+WYour %s&+W suddenly changes into %s&+W!&n\n\r",
+			 artishort1, OBJ_SHORT(arti2));
 		send_to_char(buf, owner1);
-		snprintf(buf, MAX_STRING_LENGTH, "&+W$n's %s&+W suddenly changes into %s&+W!&n\n\r", artishort1, OBJ_SHORT(arti2));
+		snprintf(buf, MAX_STRING_LENGTH, "&+W$n's %s&+W suddenly changes into %s&+W!&n\n\r",
+			 artishort1, OBJ_SHORT(arti2));
 		act(buf, FALSE, owner1, NULL, 0, TO_ROOM);
 		writeCharacter(owner1, RENT_CRASH, owner1->in_room);
 	}
@@ -3341,7 +3698,8 @@ void arti_swap_sql(P_char ch, char *arg)
 		while (OBJ_INSIDE(cont) && cont->loc.inside)
 		{
 			cont = cont->loc.inside;
-			if (cont->type == ITEM_CORPSE && IS_SET(cont->value[CORPSE_FLAGS], PC_CORPSE))
+			if (cont->type == ITEM_CORPSE &&
+			    IS_SET(cont->value[CORPSE_FLAGS], PC_CORPSE))
 			{
 				writeCorpse(cont);
 				break;
@@ -3350,11 +3708,14 @@ void arti_swap_sql(P_char ch, char *arg)
 	}
 	if (OBJ_ROOM(arti2))
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "&+W%s&+W suddenly changes into %s&+W!&n\n\r", artishort1, OBJ_SHORT(arti2));
+		snprintf(buf, MAX_STRING_LENGTH, "&+W%s&+W suddenly changes into %s&+W!&n\n\r",
+			 artishort1, OBJ_SHORT(arti2));
 		act(buf, FALSE, NULL, arti2, 0, TO_ROOM);
 	}
 
-	snprintf(buf, MAX_STRING_LENGTH, "&+WArtifact '&+w%s&+W' &+w%d&+W swapped with artifact '&+w%s&+W' &+w%d&+W.&n\n\r", artishort1, vnum1, OBJ_SHORT(arti2), vnum2);
+	snprintf(buf, MAX_STRING_LENGTH,
+		 "&+WArtifact '&+w%s&+W' &+w%d&+W swapped with artifact '&+w%s&+W' &+w%d&+W.&n\n\r",
+		 artishort1, vnum1, OBJ_SHORT(arti2), vnum2);
 	send_to_char(buf, ch);
 }
 
@@ -3364,25 +3725,27 @@ void arti_swap_sql(P_char ch, char *arg)
 void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 {
 	bind_data *bindData, *list;
-	arti_data  artidata;
-	P_char     owner;
-	P_obj      arti;
-	int        timer_length, counter;
-	long       curr_time;
+	arti_data artidata;
+	P_char owner;
+	P_obj arti;
+	int timer_length, counter;
+	long curr_time;
 	MYSQL_RES *res;
-	MYSQL_ROW  row = NULL;
+	MYSQL_ROW row = NULL;
 
 	debug("event_artifact_check_bind_sql(): beginning...");
 
 	if (!qry("select vnum, owner_pid, timer from artifact_bind"))
 	{
 		debug("event_artifact_check_bind_sql(): Failed initial query.");
-		logit(LOG_ARTIFACT, "event_artifact_check_bind_sql(): failed to read from database.");
+		logit(LOG_ARTIFACT,
+		      "event_artifact_check_bind_sql(): failed to read from database.");
 		return;
 	}
 
 	res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -3396,19 +3759,19 @@ void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	}
 
 	timer_length = 60 * get_property("artifact.feeding.switch.lootallowance.min", 15);
-	curr_time    = time(NULL);
+	curr_time = time(NULL);
 
 	bindData = list = NULL;
 	while ((row = mysql_fetch_row(res)))
 	{
-		bindData            = new bind_data;
-		bindData->vnum      = atoi(row[0]);
+		bindData = new bind_data;
+		bindData->vnum = atoi(row[0]);
 		bindData->owner_pid = atoi(row[1]);
-		bindData->timer     = row[2] ? atol(row[2]) : 0;
+		bindData->timer = row[2] ? atol(row[2]) : 0;
 
 		bindData->next = list;
-		list           = bindData;
-		bindData       = NULL;
+		list = bindData;
+		bindData = NULL;
 	}
 
 	mysql_free_result(res);
@@ -3430,25 +3793,40 @@ void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					if (list->timer + timer_length < curr_time)
 					{
 						// If the owner isn't online, the soul can not merge.
-						if ((owner = get_char_online(get_player_name_from_pid(artidata.location))))
+						if ((owner = get_char_online(
+							     get_player_name_from_pid(
+								     artidata.location))))
 						{
-							act("&+L$p &+Lmerges with your &+wsoul&+L.", FALSE, owner, arti, 0, TO_CHAR);
-							qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d", artidata.location, curr_time, list->vnum);
+							act("&+L$p &+Lmerges with your &+wsoul&+L.",
+							    FALSE, owner, arti, 0, TO_CHAR);
+							qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
+							    artidata.location, curr_time,
+							    list->vnum);
 							logit(LOG_ARTIFACT,
 							      "event_artifact_check_bind_sql(): artifact '%s' %d merged with '%s' %d's soul.",
 							      arti ? OBJ_SHORT(arti) : "NULL",
-							      list->vnum,
-							      J_NAME(owner),
+							      list->vnum, J_NAME(owner),
 							      artidata.location);
-							debug("%3d: '%s&n'%6d merged with '%s' %d's soul.", ++counter, pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(), list->vnum, J_NAME(owner), artidata.location);
+							debug("%3d: '%s&n'%6d merged with '%s' %d's soul.",
+							      ++counter,
+							      pad_ansi(arti ? OBJ_SHORT(arti) :
+									      "NULL",
+								       35, TRUE)
+								      .c_str(),
+							      list->vnum, J_NAME(owner),
+							      artidata.location);
 						}
 						else
 						{
 							debug("%3d: '%s&n'%6d is ready, but '%s' %d not online.",
 							      ++counter,
-							      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
+							      pad_ansi(arti ? OBJ_SHORT(arti) :
+									      "NULL",
+								       35, TRUE)
+								      .c_str(),
 							      list->vnum,
-							      get_player_name_from_pid(artidata.location),
+							      get_player_name_from_pid(
+								      artidata.location),
 							      artidata.location);
 						}
 					}
@@ -3456,22 +3834,22 @@ void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					{
 						debug("%3d: artifact '%s&n'%6d's timer is later than curr_time.",
 						      ++counter,
-						      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
-						      list->vnum,
-						      J_NAME(owner),
-						      artidata.location);
-						qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d", artidata.location, curr_time, list->vnum);
+						      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35,
+							       TRUE)
+							      .c_str(),
+						      list->vnum, J_NAME(owner), artidata.location);
+						qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
+						    artidata.location, curr_time, list->vnum);
 					}
 				}
 			}
 			// Display artis that are on the corpse of new owner.
-			else if (artidata.locType == ARTIFACT_ONCORPSE && artidata.location != list->owner_pid)
+			else if (artidata.locType == ARTIFACT_ONCORPSE &&
+				 artidata.location != list->owner_pid)
 			{
-				debug("%3d: artifact '%s&n'%6d on corpse of '%s' %d.",
-				      ++counter,
+				debug("%3d: artifact '%s&n'%6d on corpse of '%s' %d.", ++counter,
 				      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
-				      list->vnum,
-				      get_player_name_from_pid(artidata.location),
+				      list->vnum, get_player_name_from_pid(artidata.location),
 				      artidata.location);
 			}
 		}
@@ -3479,12 +3857,14 @@ void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 		{
 			logit(LOG_ARTIFACT,
 			      "event_artifact_check_bind_sql(): artifact '%s' %d is unowned, but bound to '%s' %d.",
-			      arti ? OBJ_SHORT(arti) : "NULL",
-			      list->vnum,
-			      get_player_name_from_pid(list->owner_pid),
-			      list->owner_pid);
-			debug("%3d: artifact '%s&n' %d is unowned, but bound.  Setting owner_pid = -1 and timer = 0.", ++counter, pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(), list->vnum);
-			qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0 WHERE vnum = %d", list->vnum);
+			      arti ? OBJ_SHORT(arti) : "NULL", list->vnum,
+			      get_player_name_from_pid(list->owner_pid), list->owner_pid);
+			debug("%3d: artifact '%s&n' %d is unowned, but bound.  Setting owner_pid = -1 and timer = 0.",
+			      ++counter,
+			      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
+			      list->vnum);
+			qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0 WHERE vnum = %d",
+			    list->vnum);
 		}
 		if (arti)
 		{
@@ -3505,12 +3885,12 @@ void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 // Resets the timers on artifacts that weren't properly bound.
 void arti_fixit_sql(P_char ch)
 {
-	int        pid, timer, curr_time;
-	int        vnum, location, counter;
-	time_t     new_time;
-	P_obj      arti;
+	int pid, timer, curr_time;
+	int vnum, location, counter;
+	time_t new_time;
+	P_obj arti;
 	MYSQL_RES *res;
-	MYSQL_ROW  row = NULL;
+	MYSQL_ROW row = NULL;
 	struct arti_fix_row
 	{
 		int vnum;
@@ -3525,7 +3905,8 @@ void arti_fixit_sql(P_char ch)
 	}
 
 	res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -3539,36 +3920,35 @@ void arti_fixit_sql(P_char ch)
 
 	while ((row = mysql_fetch_row(res)))
 	{
-		rows.push_back({atoi(row[0]), atoi(row[1])});
+		rows.push_back({ atoi(row[0]), atoi(row[1]) });
 	}
 	mysql_free_result(res);
 
-	new_time  = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+	new_time = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
 	curr_time = (int)time(NULL);
 
 	counter = 0;
 	// Walk through each arti that's on a PC.
 	for (const auto &entry : rows)
 	{
-		vnum     = entry.vnum;
+		vnum = entry.vnum;
 		location = entry.location;
 		sql_get_bind_data(vnum, &pid, &timer);
 		timer = curr_time;
-		arti  = read_object(vnum, VIRTUAL);
+		arti = read_object(vnum, VIRTUAL);
 		// If the arti is on a different PC, we want to update artifact_bind AND increase the timer to max in artifacts.
 		if (location != pid)
 		{
 			extract_obj(arti);
 			sql_update_bind_data(vnum, &location, &timer);
-			qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d", new_time, vnum);
+			qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d",
+			    new_time, vnum);
 			arti_cache_invalidate();
 			send_to_char_f(ch,
-			               "%3d) '%s&n'%6d - timer reset and now owned by '%s' %d.\n\r",
-			               ++counter,
-			               pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
-			               vnum,
-			               get_player_name_from_pid(location),
-			               location);
+				       "%3d) '%s&n'%6d - timer reset and now owned by '%s' %d.\n\r",
+				       ++counter,
+				       pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
+				       vnum, get_player_name_from_pid(location), location);
 		}
 		extract_obj(arti);
 	}
@@ -3581,9 +3961,9 @@ void arti_fixit_sql(P_char ch)
 // syncs all in-game artifact locations to the database
 void arti_sync_sql(P_char ch)
 {
-	P_obj  obj;
+	P_obj obj;
 	P_char owner;
-	int    counter = 0;
+	int counter = 0;
 
 	send_to_char("Syncing all in-game artifacts to database...\n\r", ch);
 
@@ -3615,9 +3995,11 @@ void arti_syncdb_sql(P_char ch)
 	send_to_char("Syncing artifact ownership from player saves...\n\r", ch);
 
 	// clear artifacts table (main table used by god view)
-	const char *clear_artifacts_sql = "UPDATE artifacts SET location = 0, owned = 'N', locType = 1, lastUpdate = SYSDATE() "
-									  "WHERE locType = 3 OR locType = 5";
-	if (!sql_trace_exec("arti_fixit/clear_artifacts", clear_artifacts_sql, strlen(clear_artifacts_sql), true, false))
+	const char *clear_artifacts_sql =
+		"UPDATE artifacts SET location = 0, owned = 'N', locType = 1, lastUpdate = SYSDATE() "
+		"WHERE locType = 3 OR locType = 5";
+	if (!sql_trace_exec("arti_fixit/clear_artifacts", clear_artifacts_sql,
+			    strlen(clear_artifacts_sql), true, false))
 	{
 		send_to_char_f(ch, "Error clearing artifacts: %s\n\r", mysql_error(DB));
 		return;
@@ -3625,19 +4007,24 @@ void arti_syncdb_sql(P_char ch)
 	int cleared = mysql_affected_rows(DB);
 
 	// clear artifacts_mortal table
-	const char *clear_mortal_sql = "UPDATE artifacts_mortal SET location = 0, owned = 'N', locType = 1";
-	sql_trace_exec("arti_fixit/clear_mortal", clear_mortal_sql, strlen(clear_mortal_sql), true, false);
+	const char *clear_mortal_sql =
+		"UPDATE artifacts_mortal SET location = 0, owned = 'N', locType = 1";
+	sql_trace_exec("arti_fixit/clear_mortal", clear_mortal_sql, strlen(clear_mortal_sql), true,
+		       false);
 
 	// clear artifact_bind owner_pid for pc-held artifacts
 	const char *clear_bind_sql = "UPDATE artifact_bind SET owner_pid = -1, timer = 0";
-	sql_trace_exec("arti_fixit/clear_bind", clear_bind_sql, strlen(clear_bind_sql), true, false);
+	sql_trace_exec("arti_fixit/clear_bind", clear_bind_sql, strlen(clear_bind_sql), true,
+		       false);
 
 	// update artifacts table from player_items
-	const char *sync_artifacts_sql = "UPDATE artifacts a "
-									 "JOIN player_items pi ON pi.vnum = a.vnum "
-									 "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
-									 "SET a.location = pi.pid, a.owned = 'Y', a.locType = 3, a.lastUpdate = SYSDATE()";
-	if (!sql_trace_exec("arti_fixit/sync_artifacts", sync_artifacts_sql, strlen(sync_artifacts_sql), true, false))
+	const char *sync_artifacts_sql =
+		"UPDATE artifacts a "
+		"JOIN player_items pi ON pi.vnum = a.vnum "
+		"JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
+		"SET a.location = pi.pid, a.owned = 'Y', a.locType = 3, a.lastUpdate = SYSDATE()";
+	if (!sql_trace_exec("arti_fixit/sync_artifacts", sync_artifacts_sql,
+			    strlen(sync_artifacts_sql), true, false))
 	{
 		send_to_char_f(ch, "Error syncing artifacts: %s\n\r", mysql_error(DB));
 		return;
@@ -3646,20 +4033,22 @@ void arti_syncdb_sql(P_char ch)
 
 	// update artifacts_mortal table from player_items
 	const char *sync_mortal_sql = "UPDATE artifacts_mortal am "
-								  "JOIN player_items pi ON pi.vnum = am.vnum "
-								  "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
-								  "SET am.location = pi.pid, am.owned = 'Y', am.locType = 3";
-	sql_trace_exec("arti_fixit/sync_mortal", sync_mortal_sql, strlen(sync_mortal_sql), true, false);
+				      "JOIN player_items pi ON pi.vnum = am.vnum "
+				      "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
+				      "SET am.location = pi.pid, am.owned = 'Y', am.locType = 3";
+	sql_trace_exec("arti_fixit/sync_mortal", sync_mortal_sql, strlen(sync_mortal_sql), true,
+		       false);
 
 	// update artifact_bind with owner_pid from player_items
 	const char *sync_bind_sql = "UPDATE artifact_bind ab "
-								"JOIN player_items pi ON pi.vnum = ab.vnum "
-								"JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
-								"SET ab.owner_pid = pi.pid, ab.timer = UNIX_TIMESTAMP()";
+				    "JOIN player_items pi ON pi.vnum = ab.vnum "
+				    "JOIN player_data pd ON pd.pid = pi.pid AND pd.active = 1 "
+				    "SET ab.owner_pid = pi.pid, ab.timer = UNIX_TIMESTAMP()";
 	sql_trace_exec("arti_fixit/sync_bind", sync_bind_sql, strlen(sync_bind_sql), true, false);
 
 	arti_cache_invalidate();
-	send_to_char_f(ch, "Cleared %d, updated %d artifact ownerships from player saves.\n\r", cleared, updated);
+	send_to_char_f(ch, "Cleared %d, updated %d artifact ownerships from player saves.\n\r",
+		       cleared, updated);
 }
 
 // Resets the 'soul' of the artifact of vnum == arg.
@@ -3670,10 +4059,17 @@ void arti_reset_sql(P_char ch, char *arg)
 
 	if (!*arg || !strcmp(arg, "?") || !strcmp(arg, "help"))
 	{
-		send_to_char("This command resets artifact bind data (The &+Lsoul&n of the artifact).\n\r", ch);
-		send_to_char("It should only be used by those who know what they're doing.\n\r", ch);
-		send_to_char("This will unmerge the soul from the owner of the artifact, but set the timer to 0,\n\r", ch);
-		send_to_char("  so it will merge as soon as the owner triggers artifact_switch_check.\n\r", ch);
+		send_to_char(
+			"This command resets artifact bind data (The &+Lsoul&n of the artifact).\n\r",
+			ch);
+		send_to_char("It should only be used by those who know what they're doing.\n\r",
+			     ch);
+		send_to_char(
+			"This will unmerge the soul from the owner of the artifact, but set the timer to 0,\n\r",
+			ch);
+		send_to_char(
+			"  so it will merge as soon as the owner triggers artifact_switch_check.\n\r",
+			ch);
 		return;
 	}
 	if (GET_LEVEL(ch) < FORGER)
@@ -3704,12 +4100,15 @@ void arti_reset_sql(P_char ch, char *arg)
 	{
 		if (GET_LEVEL(ch) < OVERLORD)
 		{
-			send_to_char("Maybe you could ask someone of higher level to do this.\n\r", ch);
+			send_to_char("Maybe you could ask someone of higher level to do this.\n\r",
+				     ch);
 			return;
 		}
 		if (!isname("confirm", arg))
 		{
-			send_to_char("&+RThis will reset all the artifacts' souls!  If you want to do this, it requires &+wconfirmation&+R.&n\n\r", ch);
+			send_to_char(
+				"&+RThis will reset all the artifacts' souls!  If you want to do this, it requires &+wconfirmation&+R.&n\n\r",
+				ch);
 			send_to_char("&=LRThis is probably a really bad idea!&n\n\r", ch);
 			return;
 		}
@@ -3763,10 +4162,10 @@ P_char find_mob_in_game(int vnum)
 // Loads the artis that were on a random mob and owned back into the boot.
 void addOnMobArtis_sql()
 {
-	P_obj      arti;
-	P_char     mob;
+	P_obj arti;
+	P_char mob;
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	logit(LOG_ARTIFACT, "addOnMobArtis_sql: Beginning.");
 
@@ -3784,12 +4183,16 @@ void addOnMobArtis_sql()
 			{
 				if (!(arti = read_object(atoi(row[0]), VIRTUAL)))
 				{
-					logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not load object vnum %d.", atoi(row[0]));
+					logit(LOG_ARTIFACT,
+					      "addOnMobArtis_sql: Could not load object vnum %d.",
+					      atoi(row[0]));
 					continue;
 				}
 				if (!(mob = find_mob_in_game(atoi(row[1]))))
 				{
-					logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not find mob vnum %d.", atoi(row[1]));
+					logit(LOG_ARTIFACT,
+					      "addOnMobArtis_sql: Could not find mob vnum %d.",
+					      atoi(row[1]));
 					extract_obj(arti);
 					continue;
 				}
@@ -3809,33 +4212,38 @@ void addOnMobArtis_sql()
 void arti_player_sql(P_char ch, char *arg)
 {
 #ifndef __NO_MYSQL__
-	char       buf[MAX_STRING_LENGTH], locationBuf[MAX_STRING_LENGTH], timeBuf[128], *name;
-	int        pid, vnum, locType, minutes, hours;
-	long       totalTime;
-	bool       shownData, negTime;
-	P_obj      arti;
+	char buf[MAX_STRING_LENGTH], locationBuf[MAX_STRING_LENGTH], timeBuf[128], *name;
+	int pid, vnum, locType, minutes, hours;
+	long totalTime;
+	bool shownData, negTime;
+	P_obj arti;
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	if ((pid = atoi(arg)) < 1)
 	{
 		if ((pid = get_player_pid_from_name(arg)) < 1)
 		{
-			send_to_char("The '&+wartifact player&n' command requires a valid player name or pid.\n\r", ch);
+			send_to_char(
+				"The '&+wartifact player&n' command requires a valid player name or pid.\n\r",
+				ch);
 			return;
 		}
 	}
 	if ((name = get_player_name_from_pid(pid)) == NULL)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "'%s' was not found to be a valid player name or pid.\n", arg);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "'%s' was not found to be a valid player name or pid.\n", arg);
 		send_to_char(buf, ch);
 		return;
 	}
 
-	snprintf(buf, MAX_STRING_LENGTH, "&+YOwner                  Time      Last Update           Artifact\r\n\r\n");
+	snprintf(buf, MAX_STRING_LENGTH,
+		 "&+YOwner                  Time      Last Update           Artifact\r\n\r\n");
 	send_to_char(buf, ch);
 
-	if (!qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE location=%d", pid))
+	if (!qry("SELECT vnum, locType, location, owned, UNIX_TIMESTAMP(timer), lastUpdate FROM artifacts WHERE location=%d",
+		 pid))
 	{
 		send_to_char("&+RError with query attempt.  Aborting...\n", ch);
 		return;
@@ -3857,7 +4265,7 @@ void arti_player_sql(P_char ch, char *arg)
 	shownData = FALSE;
 	while ((row = mysql_fetch_row(res)))
 	{
-		vnum    = atoi(row[0]);
+		vnum = atoi(row[0]);
 		locType = atoi(row[1]);
 
 		// In case there's on in the room with vnum == pid or such.
@@ -3870,7 +4278,8 @@ void arti_player_sql(P_char ch, char *arg)
 		arti = read_object(vnum, VIRTUAL);
 		if (!arti || !IS_ARTIFACT(arti))
 		{
-			debug("list_artifacts_sql: Non artifact on arti list: '%s' %d.", (arti == NULL) ? "NULL" : arti->short_description, vnum);
+			debug("list_artifacts_sql: Non artifact on arti list: '%s' %d.",
+			      (arti == NULL) ? "NULL" : arti->short_description, vnum);
 			// Pull arti if it loaded.
 			if (arti)
 			{
@@ -3890,7 +4299,9 @@ void arti_player_sql(P_char ch, char *arg)
 		}
 		else
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+RError reading query result.  Skipping... '%s' %d.\n", OBJ_SHORT(arti), OBJ_VNUM(arti));
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "&+RError reading query result.  Skipping... '%s' %d.\n",
+				 OBJ_SHORT(arti), OBJ_VNUM(arti));
 			send_to_char(buf, ch);
 			extract_obj(arti);
 			continue;
@@ -3914,9 +4325,11 @@ void arti_player_sql(P_char ch, char *arg)
 		totalTime /= 60;
 		hours = totalTime % 24;
 
-		snprintf(timeBuf, sizeof timeBuf, "%c%2ld:%02d:%02d", negTime ? '-' : ' ', totalTime / 24, hours, minutes);
+		snprintf(timeBuf, sizeof timeBuf, "%c%2ld:%02d:%02d", negTime ? '-' : ' ',
+			 totalTime / 24, hours, minutes);
 
-		snprintf(buf, MAX_STRING_LENGTH, "%s&n%-11s %-22s%s (#%d)\r\n", locationBuf, timeBuf, row[5], OBJ_SHORT(arti), vnum);
+		snprintf(buf, MAX_STRING_LENGTH, "%s&n%-11s %-22s%s (#%d)\r\n", locationBuf,
+			 timeBuf, row[5], OBJ_SHORT(arti), vnum);
 		send_to_char(buf, ch);
 		shownData = TRUE;
 		extract_obj(arti, FALSE);

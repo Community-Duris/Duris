@@ -26,11 +26,13 @@
 
 int caertannad_summon(P_char ch, P_char tch, int cmd, char *arg)
 {
-	int helpers[] = {78478, 78480, 0};
+	int helpers[] = { 78478, 78480, 0 };
 	if (cmd == -10)
 		return TRUE;
 	if (!tch && !number(0, 4))
-		return shout_and_hunt(ch, 100, "&+CMages! Soldiers! To arms! &+CAnnihilate &=LC%s&n&+C!&n", NULL, helpers, 0, 0);
+		return shout_and_hunt(ch, 100,
+				      "&+CMages! Soldiers! To arms! &+CAnnihilate &=LC%s&n&+C!&n",
+				      NULL, helpers, 0, 0);
 
 	return FALSE;
 }

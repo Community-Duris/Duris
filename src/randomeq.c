@@ -34,50 +34,50 @@
 /*
  * external variables
  */
-extern Skill             skills[];
+extern Skill skills[];
 extern struct zone_data *zone_table;
-extern const char       *material_names[];
-extern P_char            character_list;
-extern P_desc            descriptor_list;
-extern P_index           mob_index;
-extern P_index           obj_index;
-extern P_obj             object_list;
-extern P_room            world;
-extern char              debug_mode;
-extern const char       *race_types[];
+extern const char *material_names[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern char debug_mode;
+extern const char *race_types[];
 
 // extern const int material_absorbtion[][];
 extern const struct stat_data stat_factor[];
-extern float                  fake_sqrt_table[];
-extern int                    pulse;
-extern int                    arena_hometown_location[];
-extern struct arena_data      arena;
-extern struct agi_app_type    agi_app[];
-extern struct dex_app_type    dex_app[];
-extern struct message_list    fight_messages[];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone_table;
-extern void                   material_restrictions(P_obj);
+extern float fake_sqrt_table[];
+extern int pulse;
+extern int arena_hometown_location[];
+extern struct arena_data arena;
+extern struct agi_app_type agi_app[];
+extern struct dex_app_type dex_app[];
+extern struct message_list fight_messages[];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
+extern void material_restrictions(P_obj);
 
-int  find_map_place();
+int find_map_place();
 void create_zone(int theme, int map_room1, int map_room2, int level_range, int rooms);
 
 struct randomeq_weapon_data
 {
 	char *base_name;
-	int   weapon_type;
-	bool  one_handed;
-	bool  two_handed;
-	bool  throwable;
-	bool  force_return;
-	bool  allowed_materials[MAT_HIGHEST];
+	int weapon_type;
+	bool one_handed;
+	bool two_handed;
+	bool throwable;
+	bool force_return;
+	bool allowed_materials[MAT_HIGHEST];
 	ulong weight;
 };
 
 struct randomeq_material_weapon_data
 {
-	int    material_type;
+	int material_type;
 	ushort one_handed_min_dice;
 	ushort one_handed_max_dice;
 	ushort one_handed_min_size;
@@ -86,12 +86,12 @@ struct randomeq_material_weapon_data
 	ushort two_handed_max_dice;
 	ushort two_handed_min_size;
 	ushort two_handed_max_size;
-	ulong  weight;
+	ulong weight;
 };
 
 struct randomeq_prefix_data
 {
-	int   apply_loc;
+	int apply_loc;
 	ulong weight;
 };
 
@@ -100,7 +100,7 @@ struct randomeq_prefix_data
 
 struct randomeq_prefix
 {
-	int   m_number;
+	int m_number;
 	char *m_name;
 	float m_stat;
 	float m_ac;
@@ -118,7 +118,7 @@ const int highdrop_mobs[NUM_HIGHDROP_MOBS + 1] = {
 	38317, //  5 Lady Death
 	44172, //  6 King Arkan'non
 	26642, //  7 the Dark
-	3524,  //  8 Tyrlos
+	3524, //  8 Tyrlos
 	45565, //  9 Malevolence
 	36856, // 10 Kyeril
 	25110, // 11 Brass Padashaw
@@ -144,288 +144,297 @@ const int highdrop_mobs[NUM_HIGHDROP_MOBS + 1] = {
 	78439, // 31 Kyzastaxkasis
 	58379, // 32 Obox-ob
 	58383, // 33 Strahd
-	2435,  // 34 Llamanby
+	2435, // 34 Llamanby
 	15113, // 35 Dranum
 	91031, // 36 Doru
 	80538, // 37 Skrentherlog
-	8746,  // 38 Crymson
-	-1     // 39 == NUM_HIGHDROP_MOBS + 1
+	8746, // 38 Crymson
+	-1 // 39 == NUM_HIGHDROP_MOBS + 1
 };
 
-const char *stone_list[] = {"",
-                            "&+Ggreen&+L stone&n",
-                            "&+Rred&+L stone&n",
-                            "&+Yyellow&+L stone&n",
-                            "&+Bblue&+L stone&n",
-                            "&+Lblack&+L stone&n",
-                            "&+Mpink&+L stone&n",
-                            "&+Wsharp &+rrubin&n",
-                            "&+Yyellow &+Wand &+bblue&+w cross&n",
-                            "&+rdark bl&+Roo&+rds&+Rto&+rne&n",
-                            " "};
+const char *stone_list[] = { "",
+			     "&+Ggreen&+L stone&n",
+			     "&+Rred&+L stone&n",
+			     "&+Yyellow&+L stone&n",
+			     "&+Bblue&+L stone&n",
+			     "&+Lblack&+L stone&n",
+			     "&+Mpink&+L stone&n",
+			     "&+Wsharp &+rrubin&n",
+			     "&+Yyellow &+Wand &+bblue&+w cross&n",
+			     "&+rdark bl&+Roo&+rds&+Rto&+rne&n",
+			     " " };
 
-int stone_spell_list[] = {
-	0, SPELL_ACID_BLAST, SPELL_FIREBALL, SPELL_MAGIC_MISSILE, SPELL_CHILL_TOUCH, SPELL_NEGATIVE_CONCUSSION_BLAST, SPELL_SHOCKING_GRASP, SPELL_FLAMESTRIKE, SPELL_BLINDNESS, SPELL_ENERGY_DRAIN, 0};
+int stone_spell_list[] = { 0,
+			   SPELL_ACID_BLAST,
+			   SPELL_FIREBALL,
+			   SPELL_MAGIC_MISSILE,
+			   SPELL_CHILL_TOUCH,
+			   SPELL_NEGATIVE_CONCUSSION_BLAST,
+			   SPELL_SHOCKING_GRASP,
+			   SPELL_FLAMESTRIKE,
+			   SPELL_BLINDNESS,
+			   SPELL_ENERGY_DRAIN,
+			   0 };
 
 // Number, Name, Stat (material quality), AC - ac mod.
 // Weight mods were pulled from http://www.aqua-calc.com/calculate/volume-to-weight .. using the kilogram.
 struct randomeq_material material_data[MAXMATERIAL + 1] = {
 	// m_number                                       m_stat  weight_mod
 	//                    m_name                           m_ac
-	{MAT_CLOTH, "cloth", 12, 1, 0.15}, // 0
-	{MAT_SOFTWOOD, "&+ysoftwood&n", 12, 3, 0.30},
-	{MAT_HARDWOOD, "&+yhardwood&n", 14, 4, 0.35},
-	{MAT_BAMBOO, "&+ybamboo&n", 13, 3, 0.25},
-	{MAT_REEDS, "&+yreed&n", 13, 3, 0.27},
-	{MAT_BARK, "&+ybark&n", 15, 6, 0.29}, // 5
-	{MAT_SILICON, "&+Wglass&n", 16, 2, 0.38},
-	{MAT_RUBBER, "&+Lrubber&n", 10, 3, 0.22},
-	{MAT_CERAMIC, "&+Lclay&n", 17, 4, 0.57},
-	{MAT_HIDE, "&+yhide&n", 18, 5, 0.30},
-	{MAT_LIMESTONE, "&+glimestone&n", 19, 3, 0.56}, // 10
-	{MAT_COPPER, "&+ycopper&n", 20, 6, 2.12},
-	{MAT_LEATHER, "&+yleather", 21, 5, 0.32},
-	{MAT_CURED_LEATHER, "&+ycured leather&n", 25, 6, 0.35},
-	{MAT_HEMP, "&+ghemp&n", 21, 5, 0.29},
-	{MAT_BRONZE, "&+ybronze&n", 21, 6, 2.06}, // 15
-	{MAT_BONE, "&+wbone&n", 22, 7, 0.35},
-	{MAT_BRASS, "&+ybrass&n", 23, 7, 1.99},
-	{MAT_IVORY, "&+Wivory&n", 24, 5, 0.60},
-	{MAT_GRANITE, "&+wgranite&n", 25, 9, 0.39},
-	{MAT_MARBLE, "&+Wma&+wr&+Lb&+wl&+We&n", 25, 7, 0.64}, // 20
-	{MAT_STEEL, "&nsteel", 30, 12, 1.89},
-	{MAT_IRON, "&+ciron&n", 30, 8, 1.22},
-	{MAT_OBSIDIAN, "&+Lobsidian&n", 30, 10, 0.42},
-	{MAT_EMERALD, "&+Gemerald&n", 34, 7, 0.72},
-	{MAT_CRYSTAL, "&+Ccrystal&n", 36, 7, 0.70}, // 25
-	{MAT_GEM, "&+Rgem&n", 36, 7, 0.70},
-	{MAT_STONE, "&+Lstone&n", 38, 12, 0.75},
-	{MAT_FLESH, "&+rflesh&n", 38, 5, 0.30},
-	{MAT_GOLD, "&+Ygold&n", 38, 9, 4.57},
-	{MAT_SAPPHIRE, "&+bsapphire&n", 38, 7, 1.07}, // 30
-	{MAT_SILVER, "&+Wsilver&n", 40, 10, 2.21},
-	{MAT_TIN, "&+Ctin&n", 25, 15, 1.72},
-	{MAT_RUBY, "&+rruby&n", 42, 9, 1.08},
-	{MAT_DIAMOND, "&+Wdiamond&n", 43, 14, 0.95},
-	{MAT_ELECTRUM, "&+Welectrum&n", 44, 12, 2.23}, // 35
-	{MAT_ADAMANTIUM, "&+madamantium&n", 50, 32, 5.00},
-	{MAT_MITHRIL, "&+Cmithril&n", 46, 15, 0.65},
-	{MAT_PLATINUM, "&+Wplatinum&n", 46, 13, 1.26},
-	{MAT_GLASSTEEL, "&+cglassteel&n", 40, 18, 1.14},
-	{MAT_REPTILESCALE, "&+greptile scale&n", 30, 15, 0.55}, // 40
-	{MAT_CHITINOUS, "&+ychitin&n", 25, 20, 0.65},
-	{MAT_DRAGONSCALE, "&+rdragon&+Lscale&n", 65, 25, 0.85}, // 42
+	{ MAT_CLOTH, "cloth", 12, 1, 0.15 }, // 0
+	{ MAT_SOFTWOOD, "&+ysoftwood&n", 12, 3, 0.30 },
+	{ MAT_HARDWOOD, "&+yhardwood&n", 14, 4, 0.35 },
+	{ MAT_BAMBOO, "&+ybamboo&n", 13, 3, 0.25 },
+	{ MAT_REEDS, "&+yreed&n", 13, 3, 0.27 },
+	{ MAT_BARK, "&+ybark&n", 15, 6, 0.29 }, // 5
+	{ MAT_SILICON, "&+Wglass&n", 16, 2, 0.38 },
+	{ MAT_RUBBER, "&+Lrubber&n", 10, 3, 0.22 },
+	{ MAT_CERAMIC, "&+Lclay&n", 17, 4, 0.57 },
+	{ MAT_HIDE, "&+yhide&n", 18, 5, 0.30 },
+	{ MAT_LIMESTONE, "&+glimestone&n", 19, 3, 0.56 }, // 10
+	{ MAT_COPPER, "&+ycopper&n", 20, 6, 2.12 },
+	{ MAT_LEATHER, "&+yleather", 21, 5, 0.32 },
+	{ MAT_CURED_LEATHER, "&+ycured leather&n", 25, 6, 0.35 },
+	{ MAT_HEMP, "&+ghemp&n", 21, 5, 0.29 },
+	{ MAT_BRONZE, "&+ybronze&n", 21, 6, 2.06 }, // 15
+	{ MAT_BONE, "&+wbone&n", 22, 7, 0.35 },
+	{ MAT_BRASS, "&+ybrass&n", 23, 7, 1.99 },
+	{ MAT_IVORY, "&+Wivory&n", 24, 5, 0.60 },
+	{ MAT_GRANITE, "&+wgranite&n", 25, 9, 0.39 },
+	{ MAT_MARBLE, "&+Wma&+wr&+Lb&+wl&+We&n", 25, 7, 0.64 }, // 20
+	{ MAT_STEEL, "&nsteel", 30, 12, 1.89 },
+	{ MAT_IRON, "&+ciron&n", 30, 8, 1.22 },
+	{ MAT_OBSIDIAN, "&+Lobsidian&n", 30, 10, 0.42 },
+	{ MAT_EMERALD, "&+Gemerald&n", 34, 7, 0.72 },
+	{ MAT_CRYSTAL, "&+Ccrystal&n", 36, 7, 0.70 }, // 25
+	{ MAT_GEM, "&+Rgem&n", 36, 7, 0.70 },
+	{ MAT_STONE, "&+Lstone&n", 38, 12, 0.75 },
+	{ MAT_FLESH, "&+rflesh&n", 38, 5, 0.30 },
+	{ MAT_GOLD, "&+Ygold&n", 38, 9, 4.57 },
+	{ MAT_SAPPHIRE, "&+bsapphire&n", 38, 7, 1.07 }, // 30
+	{ MAT_SILVER, "&+Wsilver&n", 40, 10, 2.21 },
+	{ MAT_TIN, "&+Ctin&n", 25, 15, 1.72 },
+	{ MAT_RUBY, "&+rruby&n", 42, 9, 1.08 },
+	{ MAT_DIAMOND, "&+Wdiamond&n", 43, 14, 0.95 },
+	{ MAT_ELECTRUM, "&+Welectrum&n", 44, 12, 2.23 }, // 35
+	{ MAT_ADAMANTIUM, "&+madamantium&n", 50, 32, 5.00 },
+	{ MAT_MITHRIL, "&+Cmithril&n", 46, 15, 0.65 },
+	{ MAT_PLATINUM, "&+Wplatinum&n", 46, 13, 1.26 },
+	{ MAT_GLASSTEEL, "&+cglassteel&n", 40, 18, 1.14 },
+	{ MAT_REPTILESCALE, "&+greptile scale&n", 30, 15, 0.55 }, // 40
+	{ MAT_CHITINOUS, "&+ychitin&n", 25, 20, 0.65 },
+	{ MAT_DRAGONSCALE, "&+rdragon&+Lscale&n", 65, 25, 0.85 }, // 42
 	{}
 };
 
 // m_number                                 m_stat      weight_mod
 //    m_name                                      m_ac
 struct randomeq_prefix prefix_data[MAXPREFIX + 1] = {
-	{ 1,		  "&+Wm&+Ya&+Wg&+Yic&+Wal&n", 1.50, 1.50,  0.80},
-	{ 2,       "&+Lmaste&+brly-craf&+Lted&n", 1.47, 1.45,  0.85},
-	{ 3,					 "&+Lsuperior&n", 1.41, 1.25,  0.95},
-	{ 4,				 "&+Yun&+Liq&+Yue&n", 1.40, 1.10,  0.75},
-	{ 5,					"&+Cbeautiful&n", 1.35, 1.00,  1.15},
-	{ 6,       "&+Lwell-cr&+ga&+Gf&+gt&+Led", 1.31, 1.40,  0.95},
-	{ 7,			"&+Cfro&+Wst-rim&+Ced&n", 1.26, 0.90,  1.15},
-	{ 8,			"&+Rfl&+Ya&+Wm&+Yi&+Rng", 1.25, 0.85,  0.95},
-	{ 9,					  "&+Mhumming&n", 1.23, 1.50,  1.05},
-	{10,						  "&+Bicy&n", 1.18, 0.82,  1.10},
-	{11,					   "&+Cfrozen&n", 1.16, 0.94,  1.12},
-	{12,						 "&+Wfine&n", 1.15, 1.20,  0.97},
-	{13,				"&+wgl&+Wowi&+wng&n", 1.14, 1.00,  1.02},
-	{14,				 "&+gde&+Gc&+gent&n", 1.00, 1.00,  0.99},
-	{15,					"&+wtarnished&n", 1.09, 1.00,  1.02},
-	{16, "&+Yg&+Wl&+Yitt&+We&+Yri&+Wn&+Yg&n", 1.05, 1.40,  1.05},
-	{17,					   "&+ytwined&n", 0.75, 0.80,  1.10},
-	{18,					   "&+cdented&n", 0.68, 0.90,  0.85},
-	{19,					   "&+gpitted&n", 0.62, 0.62,  0.80},
-	{20,						"&+wcrude&n", 0.55, 0.70,  1.15},
-	{21,					  "&+ycracked&n", 0.50, 0.50,  1.00},
-	{22,					"&+Wexquisite&n", 1.39, 1.40,  0.88},
-	{23,						"&+rrusty&n", 0.70, 0.70,  1.05},
-	{24,					   "&+Lspiked&n", 1.20, 1.00,  1.15},
-	{25,					   "&+Cfanged&n", 1.30, 1.00,  1.10},
-	{26,					  "&+cstylish&n", 1.15, 1.05,  1.12},
-	{27,				   "&+Ldiabolical&n", 1.40, 1.40,  1.20},
-	{28,					"&+Rsparkling&n", 1.40, 1.35,  1.15},
-	{29,					  "&+Ytwisted&n", 1.30, 1.20,  1.08},
-	{30,			 "&+Yshi&+Wmme&+Yring&n", 1.30, 1.40,  0.95},
-	{31,					 "&+whardened&n", 1.24, 1.23,  1.03},
-	{32,				 "&+Lgha&n&+wstly&n", 0.95, 1.00,  0.95},
-	{33,			  "&+Wan&+Cgel&n&+cic&n", 1.45, 1.35, 0.777},
-	{34,				 "&+mdrow&+L-made&n", 1.25, 1.00,  0.86},
-	{35,				"&+Chuman&+L-made&n", 0.90, 1.15,  1.00},
-	{36,			  "&+Ydwarven&+L-made&n", 0.70, 0.90,  1.12},
-	{37,				 "&+run&+Learthly&n", 1.33, 1.30,  1.21},
-	{38,				"&+yskin&+L-wrapped", 0.60, 0.70,  1.02},
-	{39,				"&+Wje&+Cw&+Weled&n", 1.40, 1.30,  1.05},
-	{40,					 "&+Lsinister&n", 1.20, 1.20,  1.16},
-	{41,				  "&+Wsta&n&+wtic&n", 1.10, 1.20,  1.10},
-	{42,			 "&+Cgle&n&+cam&+Wing&n", 1.22, 0.90,  1.02},
-	{43,					"&+wwell-used&n", 0.60, 0.50,  0.98},
-	{44,			"&+Wleg&n&+wend&+Lary&n", 1.50, 1.40,  0.78},
-	{45,					 "&+Wknight's&n", 1.00, 1.11,  1.10},
-	{46,			   "&+Lsold&n&+wier's&n", 0.80, 0.90,  1.12},
-	{47,					   "&+Rbrutal&n", 0.80, 1.40,  1.21},
-	{48,					"&+Cbor&+Weal&n", 0.80, 0.80,  0.80},
-	{49,				 "&+rbl&+Roo&+rdy&n", 0.90, 1.20,  1.03},
-	{50,				"&+rblood-stained&n", 0.50, 0.60,  1.02},
-	{51,						"&+Wlight&n", 0.80, 0.90,  0.90},
-	{52,						 "&+Ldark&n", 0.80, 0.90,  1.01},
-	{53,				"&+cfr&+Cagi&+cle&n", 1.00, 1.00,  0.89},
-	{54,				  "&+rb&+yurn&+rt&n", 1.20, 0.90,  0.98},
-	{55,					  "&+mpatched&n", 1.23, 1.20,  1.01},
-	{56,					"&+Rmisshaped&n", 1.03, 1.00,  1.02},
-	{57,			"&+La&+ws&+Lh&+we&+Ln&n", 1.11, 1.20,  1.01}
+	{ 1, "&+Wm&+Ya&+Wg&+Yic&+Wal&n", 1.50, 1.50, 0.80 },
+	{ 2, "&+Lmaste&+brly-craf&+Lted&n", 1.47, 1.45, 0.85 },
+	{ 3, "&+Lsuperior&n", 1.41, 1.25, 0.95 },
+	{ 4, "&+Yun&+Liq&+Yue&n", 1.40, 1.10, 0.75 },
+	{ 5, "&+Cbeautiful&n", 1.35, 1.00, 1.15 },
+	{ 6, "&+Lwell-cr&+ga&+Gf&+gt&+Led", 1.31, 1.40, 0.95 },
+	{ 7, "&+Cfro&+Wst-rim&+Ced&n", 1.26, 0.90, 1.15 },
+	{ 8, "&+Rfl&+Ya&+Wm&+Yi&+Rng", 1.25, 0.85, 0.95 },
+	{ 9, "&+Mhumming&n", 1.23, 1.50, 1.05 },
+	{ 10, "&+Bicy&n", 1.18, 0.82, 1.10 },
+	{ 11, "&+Cfrozen&n", 1.16, 0.94, 1.12 },
+	{ 12, "&+Wfine&n", 1.15, 1.20, 0.97 },
+	{ 13, "&+wgl&+Wowi&+wng&n", 1.14, 1.00, 1.02 },
+	{ 14, "&+gde&+Gc&+gent&n", 1.00, 1.00, 0.99 },
+	{ 15, "&+wtarnished&n", 1.09, 1.00, 1.02 },
+	{ 16, "&+Yg&+Wl&+Yitt&+We&+Yri&+Wn&+Yg&n", 1.05, 1.40, 1.05 },
+	{ 17, "&+ytwined&n", 0.75, 0.80, 1.10 },
+	{ 18, "&+cdented&n", 0.68, 0.90, 0.85 },
+	{ 19, "&+gpitted&n", 0.62, 0.62, 0.80 },
+	{ 20, "&+wcrude&n", 0.55, 0.70, 1.15 },
+	{ 21, "&+ycracked&n", 0.50, 0.50, 1.00 },
+	{ 22, "&+Wexquisite&n", 1.39, 1.40, 0.88 },
+	{ 23, "&+rrusty&n", 0.70, 0.70, 1.05 },
+	{ 24, "&+Lspiked&n", 1.20, 1.00, 1.15 },
+	{ 25, "&+Cfanged&n", 1.30, 1.00, 1.10 },
+	{ 26, "&+cstylish&n", 1.15, 1.05, 1.12 },
+	{ 27, "&+Ldiabolical&n", 1.40, 1.40, 1.20 },
+	{ 28, "&+Rsparkling&n", 1.40, 1.35, 1.15 },
+	{ 29, "&+Ytwisted&n", 1.30, 1.20, 1.08 },
+	{ 30, "&+Yshi&+Wmme&+Yring&n", 1.30, 1.40, 0.95 },
+	{ 31, "&+whardened&n", 1.24, 1.23, 1.03 },
+	{ 32, "&+Lgha&n&+wstly&n", 0.95, 1.00, 0.95 },
+	{ 33, "&+Wan&+Cgel&n&+cic&n", 1.45, 1.35, 0.777 },
+	{ 34, "&+mdrow&+L-made&n", 1.25, 1.00, 0.86 },
+	{ 35, "&+Chuman&+L-made&n", 0.90, 1.15, 1.00 },
+	{ 36, "&+Ydwarven&+L-made&n", 0.70, 0.90, 1.12 },
+	{ 37, "&+run&+Learthly&n", 1.33, 1.30, 1.21 },
+	{ 38, "&+yskin&+L-wrapped", 0.60, 0.70, 1.02 },
+	{ 39, "&+Wje&+Cw&+Weled&n", 1.40, 1.30, 1.05 },
+	{ 40, "&+Lsinister&n", 1.20, 1.20, 1.16 },
+	{ 41, "&+Wsta&n&+wtic&n", 1.10, 1.20, 1.10 },
+	{ 42, "&+Cgle&n&+cam&+Wing&n", 1.22, 0.90, 1.02 },
+	{ 43, "&+wwell-used&n", 0.60, 0.50, 0.98 },
+	{ 44, "&+Wleg&n&+wend&+Lary&n", 1.50, 1.40, 0.78 },
+	{ 45, "&+Wknight's&n", 1.00, 1.11, 1.10 },
+	{ 46, "&+Lsold&n&+wier's&n", 0.80, 0.90, 1.12 },
+	{ 47, "&+Rbrutal&n", 0.80, 1.40, 1.21 },
+	{ 48, "&+Cbor&+Weal&n", 0.80, 0.80, 0.80 },
+	{ 49, "&+rbl&+Roo&+rdy&n", 0.90, 1.20, 1.03 },
+	{ 50, "&+rblood-stained&n", 0.50, 0.60, 1.02 },
+	{ 51, "&+Wlight&n", 0.80, 0.90, 0.90 },
+	{ 52, "&+Ldark&n", 0.80, 0.90, 1.01 },
+	{ 53, "&+cfr&+Cagi&+cle&n", 1.00, 1.00, 0.89 },
+	{ 54, "&+rb&+yurn&+rt&n", 1.20, 0.90, 0.98 },
+	{ 55, "&+mpatched&n", 1.23, 1.20, 1.01 },
+	{ 56, "&+Rmisshaped&n", 1.03, 1.00, 1.02 },
+	{ 57, "&+La&+ws&+Lh&+we&+Ln&n", 1.11, 1.20, 1.01 }
 };
 
 struct random_spells spells_data[61] = {
 	//  s_number                      self_only
 	//     spell                         name
-	{0, SPELL_ICE_MISSILE, FALSE, "&+Cice missiles"},
-	{1, SPELL_CURE_LIGHT, TRUE},
-	{2, SPELL_CURE_BLIND, TRUE},
-	{3, SPELL_MAGIC_MISSILE, FALSE, "&+Ymagic missiles"},
-	{4, SPELL_SHOCKING_GRASP, FALSE, "&+Bshocking"},
-	{5, SPELL_SLOW, FALSE, "slowness"},
-	{6, SPELL_ARMOR, TRUE},
-	{7, SPELL_CONTINUAL_LIGHT, TRUE},
-	{8, SPELL_DISPEL_EVIL, FALSE, "&+Wthe holy"},
-	{9, SPELL_BLESS, TRUE},
-	{10, SPELL_SLEEP, FALSE, "&+Lsleep"},
-	{11, SPELL_MINOR_GLOBE, TRUE},
-	{12, SPELL_DISPEL_GOOD, FALSE, "the unholy"},
-	{13, SPELL_FAERIE_FOG, FALSE, "the faeries"},
-	{14, SPELL_EGO_WHIP, FALSE, "mindwhipping"},
-	{15, SPELL_FLESH_ARMOR, TRUE},
-	{16, SPELL_WOLFSPEED, TRUE},
-	{17, SPELL_HAWKVISION, TRUE},
-	{18, SPELL_PYTHONSTING, FALSE, "&+gthe snake"},
-	{19, SPELL_FLAMEBURST, FALSE, "&+Rflameburst"},
-	{20, SPELL_SCORCHING_TOUCH, FALSE, "&+Rscorching"},
-	{21, SPELL_CURE_SERIOUS, TRUE},
-	{22, SPELL_MINOR_GLOBE, TRUE},
-	{23, SPELL_RAY_OF_ENFEEBLEMENT, FALSE, "feebleness"},
-	{24, SPELL_DARKNESS, TRUE},
-	{25, SPELL_PWORD_STUN, FALSE, "&+Wstunning"},
-	{26, SPELL_BARKSKIN, TRUE},
-	{27, SPELL_ADRENALINE_CONTROL, TRUE},
-	{28, SPELL_BALLISTIC_ATTACK, FALSE, "stones"},
-	{29, SPELL_SOUL_DISTURBANCE, FALSE, "&+Lsoul crushing"},
-	{30, SPELL_MENDING, TRUE},
-	{31, SPELL_BEARSTRENGTH, TRUE},
-	{32, SPELL_SHADOW_MONSTER, FALSE, "&+Lshadows"},
-	{33, SPELL_COLD_WARD, TRUE},
-	{34, SPELL_MOLTEN_SPRAY, FALSE, "molten rocks"},
-	{35, SPELL_FLAMEBURST, FALSE, "&+rflamebursts"},
-	{36, SPELL_WITHER, FALSE, "&+Lwithering"},
-	{37, SPELL_MASS_INVIS, TRUE},
-	{38, SPELL_ICE_STORM, FALSE, "&+cblizzards"},
-	{39, SPELL_COLDSHIELD, TRUE},
-	{40, SPELL_FEEBLEMIND, FALSE, "&+Lmindbreaking"},
-	{41, SPELL_COLOR_SPRAY, FALSE, "magespray"},
-	{42, SPELL_FIRESHIELD, TRUE},
-	{43, SPELL_CHILL_TOUCH, FALSE, "&+bchilling"},
-	{44, SPELL_FIREBALL, FALSE, "&+Rfireballs"},
-	{45, SPELL_HEAL, TRUE},
-	{46, SPELL_POISON, FALSE, "&+gvenom"},
-	{47, SPELL_FEAR, FALSE, "&+Lfear"},
-	{48, SPELL_FLY, TRUE},
-	{49, SPELL_COLOR_SPRAY, FALSE, "magespray"},
-	{50, SPELL_GLOBE, TRUE},
-	{51, SPELL_HARM, FALSE, "harming"},
-	{52, SPELL_ENLARGE, TRUE},
-	{53, SPELL_REDUCE, TRUE},
-	{54, SPELL_ELEPHANTSTRENGTH, TRUE},
-	{55, SPELL_DETONATE, FALSE, "detonating"},
-	{56, SPELL_CURSE, FALSE, "&+ycurse"},
-	{57, SPELL_STONE_SKIN, TRUE},
-	{58, SPELL_BIOFEEDBACK, TRUE},
-	{59, SPELL_IMMOLATE, FALSE, "&+Rimmolating"},
-	{60, SPELL_BLUR, TRUE}
+	{ 0, SPELL_ICE_MISSILE, FALSE, "&+Cice missiles" },
+	{ 1, SPELL_CURE_LIGHT, TRUE },
+	{ 2, SPELL_CURE_BLIND, TRUE },
+	{ 3, SPELL_MAGIC_MISSILE, FALSE, "&+Ymagic missiles" },
+	{ 4, SPELL_SHOCKING_GRASP, FALSE, "&+Bshocking" },
+	{ 5, SPELL_SLOW, FALSE, "slowness" },
+	{ 6, SPELL_ARMOR, TRUE },
+	{ 7, SPELL_CONTINUAL_LIGHT, TRUE },
+	{ 8, SPELL_DISPEL_EVIL, FALSE, "&+Wthe holy" },
+	{ 9, SPELL_BLESS, TRUE },
+	{ 10, SPELL_SLEEP, FALSE, "&+Lsleep" },
+	{ 11, SPELL_MINOR_GLOBE, TRUE },
+	{ 12, SPELL_DISPEL_GOOD, FALSE, "the unholy" },
+	{ 13, SPELL_FAERIE_FOG, FALSE, "the faeries" },
+	{ 14, SPELL_EGO_WHIP, FALSE, "mindwhipping" },
+	{ 15, SPELL_FLESH_ARMOR, TRUE },
+	{ 16, SPELL_WOLFSPEED, TRUE },
+	{ 17, SPELL_HAWKVISION, TRUE },
+	{ 18, SPELL_PYTHONSTING, FALSE, "&+gthe snake" },
+	{ 19, SPELL_FLAMEBURST, FALSE, "&+Rflameburst" },
+	{ 20, SPELL_SCORCHING_TOUCH, FALSE, "&+Rscorching" },
+	{ 21, SPELL_CURE_SERIOUS, TRUE },
+	{ 22, SPELL_MINOR_GLOBE, TRUE },
+	{ 23, SPELL_RAY_OF_ENFEEBLEMENT, FALSE, "feebleness" },
+	{ 24, SPELL_DARKNESS, TRUE },
+	{ 25, SPELL_PWORD_STUN, FALSE, "&+Wstunning" },
+	{ 26, SPELL_BARKSKIN, TRUE },
+	{ 27, SPELL_ADRENALINE_CONTROL, TRUE },
+	{ 28, SPELL_BALLISTIC_ATTACK, FALSE, "stones" },
+	{ 29, SPELL_SOUL_DISTURBANCE, FALSE, "&+Lsoul crushing" },
+	{ 30, SPELL_MENDING, TRUE },
+	{ 31, SPELL_BEARSTRENGTH, TRUE },
+	{ 32, SPELL_SHADOW_MONSTER, FALSE, "&+Lshadows" },
+	{ 33, SPELL_COLD_WARD, TRUE },
+	{ 34, SPELL_MOLTEN_SPRAY, FALSE, "molten rocks" },
+	{ 35, SPELL_FLAMEBURST, FALSE, "&+rflamebursts" },
+	{ 36, SPELL_WITHER, FALSE, "&+Lwithering" },
+	{ 37, SPELL_MASS_INVIS, TRUE },
+	{ 38, SPELL_ICE_STORM, FALSE, "&+cblizzards" },
+	{ 39, SPELL_COLDSHIELD, TRUE },
+	{ 40, SPELL_FEEBLEMIND, FALSE, "&+Lmindbreaking" },
+	{ 41, SPELL_COLOR_SPRAY, FALSE, "magespray" },
+	{ 42, SPELL_FIRESHIELD, TRUE },
+	{ 43, SPELL_CHILL_TOUCH, FALSE, "&+bchilling" },
+	{ 44, SPELL_FIREBALL, FALSE, "&+Rfireballs" },
+	{ 45, SPELL_HEAL, TRUE },
+	{ 46, SPELL_POISON, FALSE, "&+gvenom" },
+	{ 47, SPELL_FEAR, FALSE, "&+Lfear" },
+	{ 48, SPELL_FLY, TRUE },
+	{ 49, SPELL_COLOR_SPRAY, FALSE, "magespray" },
+	{ 50, SPELL_GLOBE, TRUE },
+	{ 51, SPELL_HARM, FALSE, "harming" },
+	{ 52, SPELL_ENLARGE, TRUE },
+	{ 53, SPELL_REDUCE, TRUE },
+	{ 54, SPELL_ELEPHANTSTRENGTH, TRUE },
+	{ 55, SPELL_DETONATE, FALSE, "detonating" },
+	{ 56, SPELL_CURSE, FALSE, "&+ycurse" },
+	{ 57, SPELL_STONE_SKIN, TRUE },
+	{ 58, SPELL_BIOFEEDBACK, TRUE },
+	{ 59, SPELL_IMMOLATE, FALSE, "&+Rimmolating" },
+	{ 60, SPELL_BLUR, TRUE }
 };
 
 // MAX_SLOT found in config.h
 extern const struct randomeq_slots slot_data[MAX_SLOT + 1];
-const struct randomeq_slots        slot_data[MAX_SLOT + 1] = {
-    //   m_number                  m_stat      wear_bit                 damage_type - for weapons
-    //      m_name                       m_ac                        numb_material .. base_weight
-    {  1,           "&+Lring&N", 1.00, 0.00,    ITEM_WEAR_FINGER, 1,                 0,   1},
-    {  2,           "&+Lband&N", 1.10, 0.00,    ITEM_WEAR_FINGER, 1,                 0,   1},
-    {  3,         "&+Lsignet&n", 1.25, 0.00,    ITEM_WEAR_FINGER, 1,                 0,   1},
-    {  4,       "&+Lnecklace&N", 1.10, 0.00,      ITEM_WEAR_NECK, 2,                 0,   3},
-    {  5,         "&+Lcollar&N", 1.05, 1.00,      ITEM_WEAR_NECK, 2,                 0,   3},
-    {  6,         "&+Lchoker&N", 1.08, 0.50,      ITEM_WEAR_NECK, 2,                 0,   2},
-    {  7,     "&+Lchestplate&N", 1.30, 1.30,      ITEM_WEAR_BODY, 3,                 0,  25},
-    {  8,      "&+Lplatemail&N", 1.70, 1.70,      ITEM_WEAR_BODY, 3,                 0,  40},
-    {  9,       "&+Lringmail&N", 1.50, 1.45,      ITEM_WEAR_BODY, 3,                 0,  30},
-    { 10,           "&+Lrobe&N", 1.50, 0.70,      ITEM_WEAR_BODY, 2,                 0,  10},
-    { 11,          "&+Ltunic&n", 0.80, 0.50,      ITEM_WEAR_BODY, 1,                 0,   8},
-    { 12,         "&+Lhelmet&N", 1.05, 1.00,      ITEM_WEAR_HEAD, 2,                 0,   6},
-    { 13,           "&+Lhelm&N", 1.00, 1.00,      ITEM_WEAR_HEAD, 2,                 0,   5},
-    { 14,          "&+Lcrown&N", 1.06, 0.60,      ITEM_WEAR_HEAD, 2,                 0,   5},
-    { 15,            "&+Lhat&N", 1.00, 0.40,      ITEM_WEAR_HEAD, 2,                 0,   4},
-    { 16,       "&+Lskullcap&n", 1.20, 0.30,      ITEM_WEAR_HEAD, 2,                 0,   3},
-    { 17,       "&+Lleggings&N", 1.20, 1.00,      ITEM_WEAR_LEGS, 2,                 0,   8},
-    { 18,     "&+Lleg plates&N", 1.15, 1.10,      ITEM_WEAR_LEGS, 2,                 0,  10},
-    { 19,          "&+Lpants&N", 1.05, 0.80,      ITEM_WEAR_LEGS, 2,                 0,   7},
-    { 20,        "&+Lgreaves&n", 1.25, 1.50,      ITEM_WEAR_LEGS, 3,                 0,   6},
-    { 21,          "&+Lshoes&N", 1.00, 0.70,      ITEM_WEAR_FEET, 2,                 0,   3},
-    { 22,          "&+Lboots&N", 1.10, 1.00,      ITEM_WEAR_FEET, 2,                 0,   4},
-    { 23,      "&+Lmoccasins&n", 1.20, 0.70,      ITEM_WEAR_FEET, 2,                 0,   2},
-    { 24,      "&+Lgauntlets&N", 1.35, 1.00,     ITEM_WEAR_HANDS, 2,                 0,   6},
-    { 25,         "&+Ltalons&N", 1.20, 1.00,     ITEM_WEAR_HANDS, 2,                 0,   4},
-    { 26,         "&+Lgloves&N", 1.25, 1.10,     ITEM_WEAR_HANDS, 2,                 0,   3},
-    { 27,          "&+Lmitts&n", 0.90, 0.90,     ITEM_WEAR_HANDS, 2,                 0,   2},
-    { 28,        "&+Lsleeves&N", 1.30, 0.80,      ITEM_WEAR_ARMS, 2,                 0,   7},
-    { 29,     "&+Larm plates&N", 1.20, 1.20,      ITEM_WEAR_ARMS, 2,                 0,   9},
-    { 30,      "&+Lvambraces&n", 1.40, 1.40,      ITEM_WEAR_ARMS, 3,                 0,   9},
-    { 31,         "&+Lshield&N", 1.40, 1.30,    ITEM_WEAR_SHIELD, 3,                 0,   7},
-    { 32,  "&+Lheater shield&N", 1.30, 1.80,    ITEM_WEAR_SHIELD, 3,                 0,   6},
-    { 33,      "&+Lbodycloak&N", 1.42, 1.00,     ITEM_WEAR_ABOUT, 3,                 0,   8},
-    { 34,          "&+Lcloak&N", 1.37, 1.00,     ITEM_WEAR_ABOUT, 3,                 0,   6},
-    { 35,         "&+Lmantle&N", 1.40, 1.00,     ITEM_WEAR_ABOUT, 3,                 0,   7},
-    { 36,           "&+Lbelt&N", 1.23, 0.50,     ITEM_WEAR_WAIST, 2,                 0,   3},
-    { 37,          "&+Lgirth&N", 1.00, 1.00,     ITEM_WEAR_WAIST, 2,                 0,   4},
-    { 38,         "&+Lbracer&N", 1.00, 0.70,     ITEM_WEAR_WRIST, 2,                 0,   5},
-    { 39,       "&+Lbracelet&N", 1.10, 0.50,     ITEM_WEAR_WRIST, 2,                 0,   3},
-    { 40,     "&+Lwristguard&N", 1.00, 0.50,     ITEM_WEAR_WRIST, 2,                 0,   4},
-    { 41,       "&+Leyepatch&N", 1.10, 0.60,      ITEM_WEAR_EYES, 2,                 0,   1},
-    { 42,          "&+Lvisor&N", 1.10, 0.60,      ITEM_WEAR_EYES, 2,                 0,   3},
-    { 43,           "&+Lmask&N", 1.00, 1.00,      ITEM_WEAR_FACE, 2,                 0,   5},
-    { 44,           "&+Lveil&N", 1.05, 0.50,      ITEM_WEAR_FACE, 2,                 0,   2},
-    { 45,        "&+Learring&N", 1.00, 0.00,   ITEM_WEAR_EARRING, 1,                 0,   1},
-    { 46,           "&+Lstud&N", 0.70, 0.00,   ITEM_WEAR_EARRING, 1,                 0,   1},
-    { 47,         "&+Lquiver&N", 0.50, 0.00,    ITEM_WEAR_QUIVER, 2,                 0,   6},
-    { 48,          "&+Lbadge&N", 0.50, 0.00, ITEM_GUILD_INSIGNIA, 1,                 0,   1},
-    { 49,         "&+Lsaddle&N", 0.70, 0.80,     ITEM_HORSE_BODY, 1,                 0,   8},
-    { 50, "&+Ltail protector&N", 0.80, 0.20,      ITEM_WEAR_TAIL, 1,                 0,   3},
-    { 51,      "&+Lnose ring&N", 0.80, 0.00,      ITEM_WEAR_NOSE, 1,                 0,   1},
-    { 52,    "&+Lbelt buckle&N", 0.20, 0.10,    ITEM_ATTACH_BELT, 1,                 0,   2},
-    { 53,          "&+Lskull&N", 1.40, 0.50,      ITEM_WEAR_HEAD, 2,                 0,   3},
-    { 54,           "&+Lhorn&N", 1.00, 0.00,      ITEM_WEAR_HORN, 1,                 0,   2},
-    { 55,      "&+Lchainmail&N", 1.50, 1.30,      ITEM_WEAR_BODY, 3,                 0,  35},
-    { 56,        "&+Lcuirass&N", 1.30, 1.20,      ITEM_WEAR_BODY, 2,                 0,  20},
-    { 57,    "&+Lbreastplate&N", 1.40, 1.50,      ITEM_WEAR_BODY, 2,                 0,  25},
-    { 58,         "&+Lamulet&N", 1.10, 0.00,      ITEM_WEAR_NECK, 2,                 0,   2},
-    { 59,      "&+Lmedallion&N", 1.20, 0.00,      ITEM_WEAR_NECK, 2,                 0,   2},
-    { 60,          "&+Lcharm&N", 1.00, 0.00,      ITEM_WEAR_NECK, 2,                 0,   2},
-    { 61,        "&+Lpendant&N", 1.20, 0.00,      ITEM_WEAR_NECK, 2,                 0,   2},
-    { 62,         "&+Ltorque&N", 1.20, 1.00,      ITEM_WEAR_NECK, 2,                 0,   2},
-    { 63,         "&+Lgorget&n", 1.30, 1.50,      ITEM_WEAR_NECK, 3,                 0,   2},
-    { 64,            "&+Lcap&N", 1.10, 0.30,      ITEM_WEAR_HEAD, 2,                 0,   3},
-    { 65,           "&+Lcoif&N", 1.00, 1.10,      ITEM_WEAR_HEAD, 2,                 0,   5},
-    { 66,        "&+Lcirclet&N", 1.40, 0.60,      ITEM_WEAR_HEAD, 2,                 0,   4},
-    { 67,          "&+Ltiara&N", 1.30, 0.30,      ITEM_WEAR_HEAD, 2,                 0,   4},
-    { 68,           "&+Lhood&N", 1.20, 0.80,      ITEM_WEAR_HEAD, 2,                 0,   4},
-    { 69,          "&+Lclaws&N", 1.20, 1.00,     ITEM_WEAR_HANDS, 2,                 0,   4},
-    { 70,        "&+Lbuckler&N", 1.00, 1.00,    ITEM_WEAR_SHIELD, 3,                 0,   3},
-    { 71,   "&+Ltower shield&N", 1.10, 2.00,    ITEM_WEAR_SHIELD, 3,                 0,  11},
-    { 72,           "&+Lcord&n", 0.90, 0.10,      ITEM_WEAR_TAIL, 2,                 0,   2},
-    { 73,   "&+Lspider armor&N", 0.70, 1.20,    ITEM_SPIDER_BODY, 1,                 0,   6},
+const struct randomeq_slots slot_data[MAX_SLOT + 1] = {
+	//   m_number                  m_stat      wear_bit                 damage_type - for weapons
+	//      m_name                       m_ac                        numb_material .. base_weight
+	{ 1, "&+Lring&N", 1.00, 0.00, ITEM_WEAR_FINGER, 1, 0, 1 },
+	{ 2, "&+Lband&N", 1.10, 0.00, ITEM_WEAR_FINGER, 1, 0, 1 },
+	{ 3, "&+Lsignet&n", 1.25, 0.00, ITEM_WEAR_FINGER, 1, 0, 1 },
+	{ 4, "&+Lnecklace&N", 1.10, 0.00, ITEM_WEAR_NECK, 2, 0, 3 },
+	{ 5, "&+Lcollar&N", 1.05, 1.00, ITEM_WEAR_NECK, 2, 0, 3 },
+	{ 6, "&+Lchoker&N", 1.08, 0.50, ITEM_WEAR_NECK, 2, 0, 2 },
+	{ 7, "&+Lchestplate&N", 1.30, 1.30, ITEM_WEAR_BODY, 3, 0, 25 },
+	{ 8, "&+Lplatemail&N", 1.70, 1.70, ITEM_WEAR_BODY, 3, 0, 40 },
+	{ 9, "&+Lringmail&N", 1.50, 1.45, ITEM_WEAR_BODY, 3, 0, 30 },
+	{ 10, "&+Lrobe&N", 1.50, 0.70, ITEM_WEAR_BODY, 2, 0, 10 },
+	{ 11, "&+Ltunic&n", 0.80, 0.50, ITEM_WEAR_BODY, 1, 0, 8 },
+	{ 12, "&+Lhelmet&N", 1.05, 1.00, ITEM_WEAR_HEAD, 2, 0, 6 },
+	{ 13, "&+Lhelm&N", 1.00, 1.00, ITEM_WEAR_HEAD, 2, 0, 5 },
+	{ 14, "&+Lcrown&N", 1.06, 0.60, ITEM_WEAR_HEAD, 2, 0, 5 },
+	{ 15, "&+Lhat&N", 1.00, 0.40, ITEM_WEAR_HEAD, 2, 0, 4 },
+	{ 16, "&+Lskullcap&n", 1.20, 0.30, ITEM_WEAR_HEAD, 2, 0, 3 },
+	{ 17, "&+Lleggings&N", 1.20, 1.00, ITEM_WEAR_LEGS, 2, 0, 8 },
+	{ 18, "&+Lleg plates&N", 1.15, 1.10, ITEM_WEAR_LEGS, 2, 0, 10 },
+	{ 19, "&+Lpants&N", 1.05, 0.80, ITEM_WEAR_LEGS, 2, 0, 7 },
+	{ 20, "&+Lgreaves&n", 1.25, 1.50, ITEM_WEAR_LEGS, 3, 0, 6 },
+	{ 21, "&+Lshoes&N", 1.00, 0.70, ITEM_WEAR_FEET, 2, 0, 3 },
+	{ 22, "&+Lboots&N", 1.10, 1.00, ITEM_WEAR_FEET, 2, 0, 4 },
+	{ 23, "&+Lmoccasins&n", 1.20, 0.70, ITEM_WEAR_FEET, 2, 0, 2 },
+	{ 24, "&+Lgauntlets&N", 1.35, 1.00, ITEM_WEAR_HANDS, 2, 0, 6 },
+	{ 25, "&+Ltalons&N", 1.20, 1.00, ITEM_WEAR_HANDS, 2, 0, 4 },
+	{ 26, "&+Lgloves&N", 1.25, 1.10, ITEM_WEAR_HANDS, 2, 0, 3 },
+	{ 27, "&+Lmitts&n", 0.90, 0.90, ITEM_WEAR_HANDS, 2, 0, 2 },
+	{ 28, "&+Lsleeves&N", 1.30, 0.80, ITEM_WEAR_ARMS, 2, 0, 7 },
+	{ 29, "&+Larm plates&N", 1.20, 1.20, ITEM_WEAR_ARMS, 2, 0, 9 },
+	{ 30, "&+Lvambraces&n", 1.40, 1.40, ITEM_WEAR_ARMS, 3, 0, 9 },
+	{ 31, "&+Lshield&N", 1.40, 1.30, ITEM_WEAR_SHIELD, 3, 0, 7 },
+	{ 32, "&+Lheater shield&N", 1.30, 1.80, ITEM_WEAR_SHIELD, 3, 0, 6 },
+	{ 33, "&+Lbodycloak&N", 1.42, 1.00, ITEM_WEAR_ABOUT, 3, 0, 8 },
+	{ 34, "&+Lcloak&N", 1.37, 1.00, ITEM_WEAR_ABOUT, 3, 0, 6 },
+	{ 35, "&+Lmantle&N", 1.40, 1.00, ITEM_WEAR_ABOUT, 3, 0, 7 },
+	{ 36, "&+Lbelt&N", 1.23, 0.50, ITEM_WEAR_WAIST, 2, 0, 3 },
+	{ 37, "&+Lgirth&N", 1.00, 1.00, ITEM_WEAR_WAIST, 2, 0, 4 },
+	{ 38, "&+Lbracer&N", 1.00, 0.70, ITEM_WEAR_WRIST, 2, 0, 5 },
+	{ 39, "&+Lbracelet&N", 1.10, 0.50, ITEM_WEAR_WRIST, 2, 0, 3 },
+	{ 40, "&+Lwristguard&N", 1.00, 0.50, ITEM_WEAR_WRIST, 2, 0, 4 },
+	{ 41, "&+Leyepatch&N", 1.10, 0.60, ITEM_WEAR_EYES, 2, 0, 1 },
+	{ 42, "&+Lvisor&N", 1.10, 0.60, ITEM_WEAR_EYES, 2, 0, 3 },
+	{ 43, "&+Lmask&N", 1.00, 1.00, ITEM_WEAR_FACE, 2, 0, 5 },
+	{ 44, "&+Lveil&N", 1.05, 0.50, ITEM_WEAR_FACE, 2, 0, 2 },
+	{ 45, "&+Learring&N", 1.00, 0.00, ITEM_WEAR_EARRING, 1, 0, 1 },
+	{ 46, "&+Lstud&N", 0.70, 0.00, ITEM_WEAR_EARRING, 1, 0, 1 },
+	{ 47, "&+Lquiver&N", 0.50, 0.00, ITEM_WEAR_QUIVER, 2, 0, 6 },
+	{ 48, "&+Lbadge&N", 0.50, 0.00, ITEM_GUILD_INSIGNIA, 1, 0, 1 },
+	{ 49, "&+Lsaddle&N", 0.70, 0.80, ITEM_HORSE_BODY, 1, 0, 8 },
+	{ 50, "&+Ltail protector&N", 0.80, 0.20, ITEM_WEAR_TAIL, 1, 0, 3 },
+	{ 51, "&+Lnose ring&N", 0.80, 0.00, ITEM_WEAR_NOSE, 1, 0, 1 },
+	{ 52, "&+Lbelt buckle&N", 0.20, 0.10, ITEM_ATTACH_BELT, 1, 0, 2 },
+	{ 53, "&+Lskull&N", 1.40, 0.50, ITEM_WEAR_HEAD, 2, 0, 3 },
+	{ 54, "&+Lhorn&N", 1.00, 0.00, ITEM_WEAR_HORN, 1, 0, 2 },
+	{ 55, "&+Lchainmail&N", 1.50, 1.30, ITEM_WEAR_BODY, 3, 0, 35 },
+	{ 56, "&+Lcuirass&N", 1.30, 1.20, ITEM_WEAR_BODY, 2, 0, 20 },
+	{ 57, "&+Lbreastplate&N", 1.40, 1.50, ITEM_WEAR_BODY, 2, 0, 25 },
+	{ 58, "&+Lamulet&N", 1.10, 0.00, ITEM_WEAR_NECK, 2, 0, 2 },
+	{ 59, "&+Lmedallion&N", 1.20, 0.00, ITEM_WEAR_NECK, 2, 0, 2 },
+	{ 60, "&+Lcharm&N", 1.00, 0.00, ITEM_WEAR_NECK, 2, 0, 2 },
+	{ 61, "&+Lpendant&N", 1.20, 0.00, ITEM_WEAR_NECK, 2, 0, 2 },
+	{ 62, "&+Ltorque&N", 1.20, 1.00, ITEM_WEAR_NECK, 2, 0, 2 },
+	{ 63, "&+Lgorget&n", 1.30, 1.50, ITEM_WEAR_NECK, 3, 0, 2 },
+	{ 64, "&+Lcap&N", 1.10, 0.30, ITEM_WEAR_HEAD, 2, 0, 3 },
+	{ 65, "&+Lcoif&N", 1.00, 1.10, ITEM_WEAR_HEAD, 2, 0, 5 },
+	{ 66, "&+Lcirclet&N", 1.40, 0.60, ITEM_WEAR_HEAD, 2, 0, 4 },
+	{ 67, "&+Ltiara&N", 1.30, 0.30, ITEM_WEAR_HEAD, 2, 0, 4 },
+	{ 68, "&+Lhood&N", 1.20, 0.80, ITEM_WEAR_HEAD, 2, 0, 4 },
+	{ 69, "&+Lclaws&N", 1.20, 1.00, ITEM_WEAR_HANDS, 2, 0, 4 },
+	{ 70, "&+Lbuckler&N", 1.00, 1.00, ITEM_WEAR_SHIELD, 3, 0, 3 },
+	{ 71, "&+Ltower shield&N", 1.10, 2.00, ITEM_WEAR_SHIELD, 3, 0, 11 },
+	{ 72, "&+Lcord&n", 0.90, 0.10, ITEM_WEAR_TAIL, 2, 0, 2 },
+	{ 73, "&+Lspider armor&N", 0.70, 1.20, ITEM_SPIDER_BODY, 1, 0, 6 },
 
-    /*
+	/*
     How to setting stats to random weapons works - Astansus's school for the inexperienced
 
     #1, The first number is just the serial number - MUST update value in config.h if you add weapons
@@ -441,60 +450,60 @@ const struct randomeq_slots        slot_data[MAX_SLOT + 1] = {
     #7, type of damage the weapon has - slash, bludgeon, pierce...
 
     */
-    { 74,     "&+Llong sword&n", 1.00, 1.00,          ITEM_WIELD, 2,  WEAPON_LONGSWORD,   4},
-    { 75,     "&+Ybattle axe&n", 1.10, 1.20,          ITEM_WIELD, 3,        WEAPON_AXE,   6},
-    { 76,         "&+Ldagger&n", 0.80, 0.80,          ITEM_WIELD, 2,     WEAPON_DAGGER,   1},
-    { 77,      "&+rwarhammer&n", 1.00, 1.00,          ITEM_WIELD, 2,     WEAPON_HAMMER,   5},
-    { 78,          "&+Lsword&n", 1.00, 1.00,          ITEM_WIELD, 2,  WEAPON_LONGSWORD,   3},
-    { 79,    "&+Lshort sword&n", 0.80, 0.90,          ITEM_WIELD, 2, WEAPON_SHORTSWORD,   2},
-    { 80,          "&+Glance&n", 1.20, 1.20,          ITEM_WIELD, 2,      WEAPON_LANCE,  10},
-    { 81,         "&+Ldrusus&n", 0.80, 0.80,          ITEM_WIELD, 2, WEAPON_SHORTSWORD,   3},
-    { 82,         "&+Yghurka&n", 0.80, 0.90,          ITEM_WIELD, 2, WEAPON_SHORTSWORD,   2},
-    { 83,          "&+Lflail&n", 1.20, 1.10,          ITEM_WIELD, 3,      WEAPON_FLAIL,   5},
-    { 84,       "&+rfalchion&n", 1.00, 1.00,          ITEM_WIELD, 2,  WEAPON_LONGSWORD,   8},
-    { 85,           "&+Rmaul&n", 0.90, 1.40,          ITEM_WIELD, 3,     WEAPON_HAMMER,   8},
-    { 86,    "&+Lbroad sword&n", 1.10, 1.20,          ITEM_WIELD, 2,  WEAPON_LONGSWORD,   7},
-    { 87,    "&+Lgreat sword&n", 1.10, 1.20,          ITEM_WIELD, 3, WEAPON_2HANDSWORD,  10},
-    { 88,    "&+Lmorningstar&n", 1.00, 1.00,          ITEM_WIELD, 2,       WEAPON_MACE,   6},
-    { 89,         "&+ycudgel&n", 1.00, 1.00,          ITEM_WIELD, 2,       WEAPON_CLUB,   3},
-    { 90,         "&+Lscythe&n", 1.00, 1.00,          ITEM_WIELD, 2,     WEAPON_SICKLE,  10},
-    { 91,       "&+Wscimitar&n", 1.10, 0.90,          ITEM_WIELD, 2,  WEAPON_LONGSWORD,   4},
-    { 92,        "&+Btrident&n", 1.00, 1.00,          ITEM_WIELD, 2,    WEAPON_TRIDENT,   4},
-    { 93,           "&+Lmace&n", 1.00, 1.00,          ITEM_WIELD, 2,       WEAPON_MACE,   6},
-    { 94,   "&+Lpronged fork&n", 1.00, 1.00,          ITEM_WIELD, 2,    WEAPON_TRIDENT,   4},
-    { 95,           "&+Lwhip&n", 1.10, 0.90,          ITEM_WIELD, 2,       WEAPON_WHIP,   2},
-    { 96,          "&+Lknife&n", 0.80, 0.80,          ITEM_WIELD, 2,     WEAPON_DAGGER,   1},
-    { 97,     "&+Lshillelagh&n", 1.20, 1.20,          ITEM_WIELD, 3,       WEAPON_CLUB,   3},
-    { 98,            "&+Lrod&n", 1.00, 1.00,          ITEM_WIELD, 2,       WEAPON_CLUB,   2},
-    { 99,        "&+Llongbow&n", 1.00, 1.00,          ITEM_WIELD, 3,                 0,   3},
-    {100,       "&+Lstiletto&n", 1.00, 0.60,          ITEM_WIELD, 2,     WEAPON_DAGGER,   2},
-    {101,  "&+Lbastard sword&n", 1.10, 1.20,          ITEM_WIELD, 3, WEAPON_2HANDSWORD,   6},
-    {102,       "&+Whand axe&n", 0.90, 1.10,          ITEM_WIELD, 2,        WEAPON_AXE,   3},
-    {103,   "&+yquarterstaff&n", 1.40, 0.90,          ITEM_WIELD, 2,       WEAPON_CLUB,   4},
-    {104,        "&+Lleister&n", 1.10, 1.20,          ITEM_WIELD, 3,    WEAPON_TRIDENT,   3},
-    {105,         "&+Lsickle&n", 1.00, 1.00,          ITEM_WIELD, 2,     WEAPON_SICKLE,   2},
-    {106,           "&+Ldirk&n", 1.00, 0.70,          ITEM_WIELD, 2,     WEAPON_DAGGER,   2},
-    {107,    "&+Rswitchblade&n", 0.80, 0.80,          ITEM_WIELD, 2,     WEAPON_DAGGER,   1},
-    {108,         "&+rmallet&n", 1.00, 1.00,          ITEM_WIELD, 2,     WEAPON_HAMMER,   6},
-    {109,      "&+mtruncheon&n", 1.10, 1.20,          ITEM_WIELD, 3,       WEAPON_CLUB,   4},
-    {110,         "&+LBUGGED&n", 0.10, 0.10,          ITEM_WIELD, 2,     WEAPON_DAGGER, 999}
+	{ 74, "&+Llong sword&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_LONGSWORD, 4 },
+	{ 75, "&+Ybattle axe&n", 1.10, 1.20, ITEM_WIELD, 3, WEAPON_AXE, 6 },
+	{ 76, "&+Ldagger&n", 0.80, 0.80, ITEM_WIELD, 2, WEAPON_DAGGER, 1 },
+	{ 77, "&+rwarhammer&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_HAMMER, 5 },
+	{ 78, "&+Lsword&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_LONGSWORD, 3 },
+	{ 79, "&+Lshort sword&n", 0.80, 0.90, ITEM_WIELD, 2, WEAPON_SHORTSWORD, 2 },
+	{ 80, "&+Glance&n", 1.20, 1.20, ITEM_WIELD, 2, WEAPON_LANCE, 10 },
+	{ 81, "&+Ldrusus&n", 0.80, 0.80, ITEM_WIELD, 2, WEAPON_SHORTSWORD, 3 },
+	{ 82, "&+Yghurka&n", 0.80, 0.90, ITEM_WIELD, 2, WEAPON_SHORTSWORD, 2 },
+	{ 83, "&+Lflail&n", 1.20, 1.10, ITEM_WIELD, 3, WEAPON_FLAIL, 5 },
+	{ 84, "&+rfalchion&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_LONGSWORD, 8 },
+	{ 85, "&+Rmaul&n", 0.90, 1.40, ITEM_WIELD, 3, WEAPON_HAMMER, 8 },
+	{ 86, "&+Lbroad sword&n", 1.10, 1.20, ITEM_WIELD, 2, WEAPON_LONGSWORD, 7 },
+	{ 87, "&+Lgreat sword&n", 1.10, 1.20, ITEM_WIELD, 3, WEAPON_2HANDSWORD, 10 },
+	{ 88, "&+Lmorningstar&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_MACE, 6 },
+	{ 89, "&+ycudgel&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_CLUB, 3 },
+	{ 90, "&+Lscythe&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_SICKLE, 10 },
+	{ 91, "&+Wscimitar&n", 1.10, 0.90, ITEM_WIELD, 2, WEAPON_LONGSWORD, 4 },
+	{ 92, "&+Btrident&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_TRIDENT, 4 },
+	{ 93, "&+Lmace&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_MACE, 6 },
+	{ 94, "&+Lpronged fork&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_TRIDENT, 4 },
+	{ 95, "&+Lwhip&n", 1.10, 0.90, ITEM_WIELD, 2, WEAPON_WHIP, 2 },
+	{ 96, "&+Lknife&n", 0.80, 0.80, ITEM_WIELD, 2, WEAPON_DAGGER, 1 },
+	{ 97, "&+Lshillelagh&n", 1.20, 1.20, ITEM_WIELD, 3, WEAPON_CLUB, 3 },
+	{ 98, "&+Lrod&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_CLUB, 2 },
+	{ 99, "&+Llongbow&n", 1.00, 1.00, ITEM_WIELD, 3, 0, 3 },
+	{ 100, "&+Lstiletto&n", 1.00, 0.60, ITEM_WIELD, 2, WEAPON_DAGGER, 2 },
+	{ 101, "&+Lbastard sword&n", 1.10, 1.20, ITEM_WIELD, 3, WEAPON_2HANDSWORD, 6 },
+	{ 102, "&+Whand axe&n", 0.90, 1.10, ITEM_WIELD, 2, WEAPON_AXE, 3 },
+	{ 103, "&+yquarterstaff&n", 1.40, 0.90, ITEM_WIELD, 2, WEAPON_CLUB, 4 },
+	{ 104, "&+Lleister&n", 1.10, 1.20, ITEM_WIELD, 3, WEAPON_TRIDENT, 3 },
+	{ 105, "&+Lsickle&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_SICKLE, 2 },
+	{ 106, "&+Ldirk&n", 1.00, 0.70, ITEM_WIELD, 2, WEAPON_DAGGER, 2 },
+	{ 107, "&+Rswitchblade&n", 0.80, 0.80, ITEM_WIELD, 2, WEAPON_DAGGER, 1 },
+	{ 108, "&+rmallet&n", 1.00, 1.00, ITEM_WIELD, 2, WEAPON_HAMMER, 6 },
+	{ 109, "&+mtruncheon&n", 1.10, 1.20, ITEM_WIELD, 3, WEAPON_CLUB, 4 },
+	{ 110, "&+LBUGGED&n", 0.10, 0.10, ITEM_WIELD, 2, WEAPON_DAGGER, 999 }
 };
 
 void create_randoms()
 {
-	int   theme       = 0;
-	int   map_room1   = 0;
-	int   map_room2   = 0;
-	int   level_range = 0;
-	int   rooms       = 0;
-	int   map_room    = 0;
-	int   x           = 0;
-	int   tries       = 0;
-	long  time_before = 0;
-	long  time_after  = 0;
-	int   i           = 0;
-	char  fname[256];
-	char  buf2[MAX_STRING_LENGTH];
+	int theme = 0;
+	int map_room1 = 0;
+	int map_room2 = 0;
+	int level_range = 0;
+	int rooms = 0;
+	int map_room = 0;
+	int x = 0;
+	int tries = 0;
+	long time_before = 0;
+	long time_after = 0;
+	int i = 0;
+	char fname[256];
+	char buf2[MAX_STRING_LENGTH];
 	FILE *f;
 	P_obj fountain;
 
@@ -548,22 +557,24 @@ void create_randoms()
 	f = fopen(fname, "r");
 	if (!f)
 	{
-		wizlog(56, "Missing file areas/RANDOM_AREA unable to load specified random zones...");
+		wizlog(56,
+		       "Missing file areas/RANDOM_AREA unable to load specified random zones...");
 		return;
 	}
 	while (!(feof(f)))
 	{
 		if (fgets(buf2, sizeof(buf2) - 1, f))
 		{
-
-			if (sscanf(buf2, "%d %d %d %d %d", &theme, &map_room1, &map_room2, &level_range, &rooms) == 5)
+			if (sscanf(buf2, "%d %d %d %d %d", &theme, &map_room1, &map_room2,
+				   &level_range, &rooms) == 5)
 				create_zone(theme, map_room1, map_room2, level_range, rooms);
 		}
 	}
 	fclose(f);
 
 	time_after = clock();
-	fprintf(stderr, "Boot random zones -- DONE in: %d milliseconds\n", (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
+	fprintf(stderr, "Boot random zones -- DONE in: %d milliseconds\n",
+		(int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
 #endif
 }
 
@@ -606,7 +617,8 @@ P_obj create_material(P_char killer, P_char mob)
 			send_to_char("&+YYou feel your power increase some...&n\n", killer);
 		}
 	}
-	int howgood        = (int)((GET_LEVEL(killer) + GET_LEVEL(mob)) / 2.8); /* make sure you understand this value before ya change it. */
+	int howgood = (int)((GET_LEVEL(killer) + GET_LEVEL(mob)) /
+			    2.8); /* make sure you understand this value before ya change it. */
 	int material_index = number(0, BOUNDED(1, howgood, MAXMATERIAL));
 
 	return create_material(material_index);
@@ -643,7 +655,7 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	}
 
 	char_lvl = (float)GET_LEVEL(ch);
-	mob_lvl  = (float)GET_LEVEL(mob);
+	mob_lvl = (float)GET_LEVEL(mob);
 
 	if (CHAR_IN_TOWN(ch) && (mob_lvl > 25))
 	{
@@ -656,7 +668,8 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	}
 
 	// Neutrals get a 10% bonus chance for drops.
-	if (IS_PC(ch) && (GET_RACEWAR(ch) == RACEWAR_NEUTRAL) && !number(0, config->drop_neutral_roll_max))
+	if (IS_PC(ch) && (GET_RACEWAR(ch) == RACEWAR_NEUTRAL) &&
+	    !number(0, config->drop_neutral_roll_max))
 		return TRUE;
 
 	/* Not worth the time to calculate.
@@ -694,67 +707,67 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	// Note: 1x = base 50% chance, 2x = base 75% chance, 3x = base 100% chance.
 	switch ((int)char_lvl)
 	{
-		case 1:
-			// Requires lvl 5 mob for 1x multiplier, 8 for 2x, 11 for 3x
-			char_mob_lvl_div = (mob_lvl - 2.) / 3.;
-			break;
-		case 2:
-			// Requires lvl 7 mob for 1x multiplier, 11 for 2x, 15 for 3x
-			char_mob_lvl_div = (mob_lvl - 3.) / 4.;
-			break;
-		case 3:
-			// Requires lvl 9 mob for 1x multiplier, 14 for 2x, 19 for 3x
-			char_mob_lvl_div = (mob_lvl - 4.) / 5.;
-			break;
-		case 4:
-			// Requires lvl 10 mob for 1x multiplier, 16 for 2x and 22 for 3x
-			char_mob_lvl_div = (mob_lvl - 4.) / 6.;
-			break;
-		case 5:
-			// Requires lvl 11 mob for 1x multiplier, 17 for 2x and 23 for 3x
-			char_mob_lvl_div = (mob_lvl - 5.) / 6.;
-			break;
-		case 6:
-			// Requires lvl 12 mob for 1x multiplier, 19 for 2x, 26 for 3x
-			char_mob_lvl_div = (mob_lvl - 5.) / 7.;
-			break;
-		case 7:
-			// Requires lvl 12 mob for 1x multiplier, 20 for 2x, 28 for 3x
-			char_mob_lvl_div = (mob_lvl - 4.) / 8.;
-			break;
-		case 8:
-			// Requires lvl 13 mob for 1x multiplier, 22 for 2x, 31 for 3x
-			char_mob_lvl_div = (mob_lvl - 4.) / 9.;
-			break;
-		case 9:
-			// Requires lvl 13 mob for 1x multiplier, 23 for 2x, 33 for 3x
-			char_mob_lvl_div = (mob_lvl - 3.) / 10.;
-			break;
-		case 10:
-			// Requires lvl 13 mob for 1x multiplier, 24 for 2x, 35 for 3x
-			char_mob_lvl_div = (mob_lvl - 2.) / 11.;
-			break;
-		case 11:
-			// Requires lvl 14 mob for 1x multiplier, 26 for 2x, 38 for 3x
-			char_mob_lvl_div = (mob_lvl - 2.) / 12.;
-			break;
-		case 12:
-			// Requires lvl 14 mob for 1x multiplier, 27 for 2x, 40 for 3x
-			char_mob_lvl_div = (mob_lvl - 1.) / 13.;
-			break;
-		case 13:
-			// Requires lvl 14 mob for 1x multiplier, 28 for 2x, 42 for 3x
-			char_mob_lvl_div = mob_lvl / 14.;
-			break;
-		case 14:
-			// Requires lvl 14 mob for 1x multiplier, 29 for 2x, 44 for 3x
-			char_mob_lvl_div = (mob_lvl + 1.) / 15.;
-			break;
-		default:
-			// Note: Since MAXLVL = 62, and 3 ~~ 62 / 20, the highest level you can score 100% base via level
-			//   is ch at level 20 vs a level 60 or higher mob.  Highest likely is level 16 ch vs level 48 mob.
-			char_mob_lvl_div = mob_lvl / char_lvl;
-			break;
+	case 1:
+		// Requires lvl 5 mob for 1x multiplier, 8 for 2x, 11 for 3x
+		char_mob_lvl_div = (mob_lvl - 2.) / 3.;
+		break;
+	case 2:
+		// Requires lvl 7 mob for 1x multiplier, 11 for 2x, 15 for 3x
+		char_mob_lvl_div = (mob_lvl - 3.) / 4.;
+		break;
+	case 3:
+		// Requires lvl 9 mob for 1x multiplier, 14 for 2x, 19 for 3x
+		char_mob_lvl_div = (mob_lvl - 4.) / 5.;
+		break;
+	case 4:
+		// Requires lvl 10 mob for 1x multiplier, 16 for 2x and 22 for 3x
+		char_mob_lvl_div = (mob_lvl - 4.) / 6.;
+		break;
+	case 5:
+		// Requires lvl 11 mob for 1x multiplier, 17 for 2x and 23 for 3x
+		char_mob_lvl_div = (mob_lvl - 5.) / 6.;
+		break;
+	case 6:
+		// Requires lvl 12 mob for 1x multiplier, 19 for 2x, 26 for 3x
+		char_mob_lvl_div = (mob_lvl - 5.) / 7.;
+		break;
+	case 7:
+		// Requires lvl 12 mob for 1x multiplier, 20 for 2x, 28 for 3x
+		char_mob_lvl_div = (mob_lvl - 4.) / 8.;
+		break;
+	case 8:
+		// Requires lvl 13 mob for 1x multiplier, 22 for 2x, 31 for 3x
+		char_mob_lvl_div = (mob_lvl - 4.) / 9.;
+		break;
+	case 9:
+		// Requires lvl 13 mob for 1x multiplier, 23 for 2x, 33 for 3x
+		char_mob_lvl_div = (mob_lvl - 3.) / 10.;
+		break;
+	case 10:
+		// Requires lvl 13 mob for 1x multiplier, 24 for 2x, 35 for 3x
+		char_mob_lvl_div = (mob_lvl - 2.) / 11.;
+		break;
+	case 11:
+		// Requires lvl 14 mob for 1x multiplier, 26 for 2x, 38 for 3x
+		char_mob_lvl_div = (mob_lvl - 2.) / 12.;
+		break;
+	case 12:
+		// Requires lvl 14 mob for 1x multiplier, 27 for 2x, 40 for 3x
+		char_mob_lvl_div = (mob_lvl - 1.) / 13.;
+		break;
+	case 13:
+		// Requires lvl 14 mob for 1x multiplier, 28 for 2x, 42 for 3x
+		char_mob_lvl_div = mob_lvl / 14.;
+		break;
+	case 14:
+		// Requires lvl 14 mob for 1x multiplier, 29 for 2x, 44 for 3x
+		char_mob_lvl_div = (mob_lvl + 1.) / 15.;
+		break;
+	default:
+		// Note: Since MAXLVL = 62, and 3 ~~ 62 / 20, the highest level you can score 100% base via level
+		//   is ch at level 20 vs a level 60 or higher mob.  Highest likely is level 16 ch vs level 48 mob.
+		char_mob_lvl_div = mob_lvl / char_lvl;
+		break;
 	}
 	// Minimum of 1/10th - equivalent of a lvl 50 fighting a lvl 5 mob.
 	if (char_mob_lvl_div < .1)
@@ -776,7 +789,8 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	 * You can change drop.luck.divisor in lib/random_equipment.cfg without changing the base chance
 	 *   with the equation in this format.
 	 */
-	chance = (GET_C_LUK(ch) / luck_divisor) * char_mob_lvl_div + (config->drop_base_chance - 100. / luck_divisor);
+	chance = (GET_C_LUK(ch) / luck_divisor) * char_mob_lvl_div +
+		 (config->drop_base_chance - 100. / luck_divisor);
 	chance += (float)number(config->drop_jitter_min, config->drop_jitter_max);
 
 	if (char_lvl < config->drop_low_level_threshold)
@@ -813,17 +827,17 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 
 P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int material_type)
 {
-	P_obj             obj;
-	int               ansi_n = 0;
-	int               howgood, material, prefix, slot, value, bonus, count, chance;
-	int               splnum, tries;
-	bool              should_have_weapon_proc = FALSE;
-	struct zone_data *zone                    = NULL;
-	char              o_name[MAX_STRING_LENGTH];
-	char              o_short[MAX_STRING_LENGTH];
-	char              o_long[MAX_STRING_LENGTH];
-	char              owner[MAX_STRING_LENGTH];
-	float             weight;
+	P_obj obj;
+	int ansi_n = 0;
+	int howgood, material, prefix, slot, value, bonus, count, chance;
+	int splnum, tries;
+	bool should_have_weapon_proc = FALSE;
+	struct zone_data *zone = NULL;
+	char o_name[MAX_STRING_LENGTH];
+	char o_short[MAX_STRING_LENGTH];
+	char o_long[MAX_STRING_LENGTH];
+	char owner[MAX_STRING_LENGTH];
+	float weight;
 	const struct random_equipment_config *config = random_equipment_config_get();
 
 	// Load the random item blank
@@ -904,49 +918,49 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	// At level 11 killer, 160 luck, 20 mob: 1 * 25 *  58 =  1450  ->  1.16% chance
 	// At level 56 killer, 100 luck, 62 mob: 5 * 10 * 100 =  5000  ->  4.0 % chance
 	// At level 56 killer, 160 luck, 62 mob: 5 * 25 * 100 = 12500  -> 10.0 % chance
-	chance = 8 * (GET_LEVEL(killer) / 11) * ((GET_C_LUK(killer) - 60) / 4) * (GET_LEVEL(mob) + 38);
+	chance = 8 * (GET_LEVEL(killer) / 11) * ((GET_C_LUK(killer) - 60) / 4) *
+		 (GET_LEVEL(mob) + 38);
 	// debug( "Chance: %5d, or %.04f%%.", chance, chance / 1000. );
 	//  Set the items name / short / long descriptions!
 	//  For PCs and non-shop-keeper mobs.
-	if ((number(1, 100000) < chance) && (material_type == -1) && ansi_n && (IS_PC(killer) || mob_index[GET_RNUM(killer)].func.mob != shop_keeper))
+	if ((number(1, 100000) < chance) && (material_type == -1) && ansi_n &&
+	    (IS_PC(killer) || mob_index[GET_RNUM(killer)].func.mob != shop_keeper))
 	{
 		if (IS_NEWBIE(killer))
 		{
-			send_to_char("You got a named random item!  Use 'help named equipment' for a list of what named eq can do for you!\n\r", killer);
+			send_to_char(
+				"You got a named random item!  Use 'help named equipment' for a list of what named eq can do for you!\n\r",
+				killer);
 		}
-		snprintf(o_name,
-		         MAX_STRING_LENGTH,
-		         "random _noquest_ %s %s %s %s",
-		         strip_ansi(prefix_data[prefix].m_name).c_str(),
-		         strip_ansi(material_data[material].m_name).c_str(),
-		         strip_ansi(slot_data[slot].m_name).c_str(),
-		         strip_ansi(zone->name).c_str());
+		snprintf(o_name, MAX_STRING_LENGTH, "random _noquest_ %s %s %s %s",
+			 strip_ansi(prefix_data[prefix].m_name).c_str(),
+			 strip_ansi(material_data[material].m_name).c_str(),
+			 strip_ansi(slot_data[slot].m_name).c_str(),
+			 strip_ansi(zone->name).c_str());
 
 		// If it's a plural noun (ie shoes / boots / leggings / etc).
 		// Note: Some plural nouns don't end in s, but ok.
 		if (slot_data[slot].m_name[strlen(slot_data[slot].m_name) - 3] == 's')
 		{
-			snprintf(o_short, MAX_STRING_LENGTH, "some %s %s %s &+rfrom %s&n", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name, zone->name);
-			snprintf(o_long, MAX_STRING_LENGTH, "Some %s %s %s &+rfrom %s&n lie here on the ground.", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name, zone->name);
+			snprintf(o_short, MAX_STRING_LENGTH, "some %s %s %s &+rfrom %s&n",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name, zone->name);
+			snprintf(o_long, MAX_STRING_LENGTH,
+				 "Some %s %s %s &+rfrom %s&n lie here on the ground.",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name, zone->name);
 		}
 		else
 		{
-			snprintf(o_short,
-			         MAX_STRING_LENGTH,
-			         "%s %s %s %s &+rfrom %s&n",
-			         VOWEL(prefix_data[prefix].m_name[3]) ? "an" : "a",
-			         prefix_data[prefix].m_name,
-			         material_data[material].m_name,
-			         slot_data[slot].m_name,
-			         zone->name);
-			snprintf(o_long,
-			         MAX_STRING_LENGTH,
-			         "%s %s %s %s &+rfrom %s&n lies here on the ground.",
-			         VOWEL(prefix_data[prefix].m_name[3]) ? "An" : "A",
-			         prefix_data[prefix].m_name,
-			         material_data[material].m_name,
-			         slot_data[slot].m_name,
-			         zone->name);
+			snprintf(o_short, MAX_STRING_LENGTH, "%s %s %s %s &+rfrom %s&n",
+				 VOWEL(prefix_data[prefix].m_name[3]) ? "an" : "a",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name, zone->name);
+			snprintf(o_long, MAX_STRING_LENGTH,
+				 "%s %s %s %s &+rfrom %s&n lies here on the ground.",
+				 VOWEL(prefix_data[prefix].m_name[3]) ? "An" : "A",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name, zone->name);
 		}
 
 		//  Zone named items get a higher chance to get multiple affects set.
@@ -965,29 +979,31 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	}
 	else if (!number(0, 9) && (material_type == -1) && (GET_LEVEL(mob) > 45))
 	{
-		snprintf(o_name,
-		         MAX_STRING_LENGTH,
-		         "random _noquest_ %s %s %s %s",
-		         strip_ansi(prefix_data[prefix].m_name).c_str(),
-		         strip_ansi(material_data[material].m_name).c_str(),
-		         strip_ansi(slot_data[slot].m_name).c_str(),
-		         owner);
+		snprintf(o_name, MAX_STRING_LENGTH, "random _noquest_ %s %s %s %s",
+			 strip_ansi(prefix_data[prefix].m_name).c_str(),
+			 strip_ansi(material_data[material].m_name).c_str(),
+			 strip_ansi(slot_data[slot].m_name).c_str(), owner);
 		if (slot_data[slot].m_name[strlen(slot_data[slot].m_name) - 3] == 's')
 		{
-			snprintf(o_short, MAX_STRING_LENGTH, "some %s %s %s&n", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name);
-			snprintf(o_long, MAX_STRING_LENGTH, "Some %s %s %s&n lie here on the ground.", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name);
+			snprintf(o_short, MAX_STRING_LENGTH, "some %s %s %s&n",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
+			snprintf(o_long, MAX_STRING_LENGTH,
+				 "Some %s %s %s&n lie here on the ground.",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
 		}
 		else
 		{
-			snprintf(
-				o_short, MAX_STRING_LENGTH, "%s %s %s %s&n", VOWEL(prefix_data[prefix].m_name[3]) ? "an" : "a", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name);
-			snprintf(o_long,
-			         MAX_STRING_LENGTH,
-			         "%s %s %s %s&n lies here on the ground.",
-			         VOWEL(prefix_data[prefix].m_name[3]) ? "An" : "A",
-			         prefix_data[prefix].m_name,
-			         material_data[material].m_name,
-			         slot_data[slot].m_name);
+			snprintf(o_short, MAX_STRING_LENGTH, "%s %s %s %s&n",
+				 VOWEL(prefix_data[prefix].m_name[3]) ? "an" : "a",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
+			snprintf(o_long, MAX_STRING_LENGTH,
+				 "%s %s %s %s&n lies here on the ground.",
+				 VOWEL(prefix_data[prefix].m_name[3]) ? "An" : "A",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
 		}
 
 		if (!number(0, 9))
@@ -1042,28 +1058,31 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	*/
 	else
 	{
-		snprintf(o_name,
-		         MAX_STRING_LENGTH,
-		         "random _noquest_ %s %s %s",
-		         strip_ansi(prefix_data[prefix].m_name).c_str(),
-		         strip_ansi(material_data[material].m_name).c_str(),
-		         strip_ansi(slot_data[slot].m_name).c_str());
+		snprintf(o_name, MAX_STRING_LENGTH, "random _noquest_ %s %s %s",
+			 strip_ansi(prefix_data[prefix].m_name).c_str(),
+			 strip_ansi(material_data[material].m_name).c_str(),
+			 strip_ansi(slot_data[slot].m_name).c_str());
 		if (slot_data[slot].m_name[strlen(slot_data[slot].m_name) - 3] == 's')
 		{
-			snprintf(o_short, MAX_STRING_LENGTH, "some %s %s %s&n", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name);
-			snprintf(o_long, MAX_STRING_LENGTH, "Some %s %s %s&n lie here on the ground.", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name);
+			snprintf(o_short, MAX_STRING_LENGTH, "some %s %s %s&n",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
+			snprintf(o_long, MAX_STRING_LENGTH,
+				 "Some %s %s %s&n lie here on the ground.",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
 		}
 		else
 		{
-			snprintf(
-				o_short, MAX_STRING_LENGTH, "%s %s %s %s&n", VOWEL(prefix_data[prefix].m_name[3]) ? "an" : "a", prefix_data[prefix].m_name, material_data[material].m_name, slot_data[slot].m_name);
-			snprintf(o_long,
-			         MAX_STRING_LENGTH,
-			         "%s %s %s %s&n lies here on the ground.",
-			         VOWEL(prefix_data[prefix].m_name[3]) ? "An" : "A",
-			         prefix_data[prefix].m_name,
-			         material_data[material].m_name,
-			         slot_data[slot].m_name);
+			snprintf(o_short, MAX_STRING_LENGTH, "%s %s %s %s&n",
+				 VOWEL(prefix_data[prefix].m_name[3]) ? "an" : "a",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
+			snprintf(o_long, MAX_STRING_LENGTH,
+				 "%s %s %s %s&n lies here on the ground.",
+				 VOWEL(prefix_data[prefix].m_name[3]) ? "An" : "A",
+				 prefix_data[prefix].m_name, material_data[material].m_name,
+				 slot_data[slot].m_name);
 		}
 	}
 
@@ -1077,9 +1096,11 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 
 	// base_weight ( 1 - 40 ) * weight_mod ( 0.75 - 1.21 ) * weight_mod( 0.15 - 5.00 )
 	// Weight range = 0 - 242 .. wow 242 for an (unearthly or brutal) adamantium platemail
-	weight = (slot_data[slot].base_weight * prefix_data[prefix].weight_mod * material_data[material].weight_mod);
+	weight = (slot_data[slot].base_weight * prefix_data[prefix].weight_mod *
+		  material_data[material].weight_mod);
 	// This brings the crazy platemail down to 107.
-	weight = (weight + config->weight_base_multiplier * slot_data[slot].base_weight) / config->weight_divisor;
+	weight = (weight + config->weight_base_multiplier * slot_data[slot].base_weight) /
+		 config->weight_divisor;
 	// If it's between .1 and 1, round up.
 	obj->weight = ((weight < 1.0) && (weight > 0.1)) ? 1 : weight;
 
@@ -1089,18 +1110,31 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 
 	int maxValue = random_equipment_stat_max(GET_LEVEL(mob));
 	// Item Attributes
-	if (!number(0, config->stat_tertiary_roll_max) && (GET_LEVEL(mob) > config->stat_tertiary_min_level))
+	if (!number(0, config->stat_tertiary_roll_max) &&
+	    (GET_LEVEL(mob) > config->stat_tertiary_min_level))
 	{
-		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, config->stat_random_bonus_max));
-		obj = setprefix_obj(obj, number(MIN(value / config->stat_tertiary_divisor, maxValue), maxValue), 2);
+		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat *
+				      slot_data[slot].m_stat +
+			      number(0, config->stat_random_bonus_max));
+		obj = setprefix_obj(
+			obj, number(MIN(value / config->stat_tertiary_divisor, maxValue), maxValue),
+			2);
 	}
-	if (!number(0, config->stat_secondary_roll_max) && (GET_LEVEL(mob) > config->stat_secondary_min_level))
+	if (!number(0, config->stat_secondary_roll_max) &&
+	    (GET_LEVEL(mob) > config->stat_secondary_min_level))
 	{
-		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, config->stat_random_bonus_max));
-		obj = setprefix_obj(obj, number(MIN(value / config->stat_secondary_divisor, maxValue), maxValue), 1);
+		value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat *
+				      slot_data[slot].m_stat +
+			      number(0, config->stat_random_bonus_max));
+		obj = setprefix_obj(
+			obj,
+			number(MIN(value / config->stat_secondary_divisor, maxValue), maxValue), 1);
 	}
-	value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat + number(0, config->stat_random_bonus_max));
-	obj = setprefix_obj(obj, number(MIN(value / config->stat_primary_divisor, maxValue), maxValue), 0);
+	value = (int)(material_data[material].m_stat * prefix_data[prefix].m_stat *
+			      slot_data[slot].m_stat +
+		      number(0, config->stat_random_bonus_max));
+	obj = setprefix_obj(
+		obj, number(MIN(value / config->stat_primary_divisor, maxValue), maxValue), 0);
 
 	obj->material = material_data[material].m_number;
 
@@ -1117,17 +1151,17 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	if (IS_SET(obj->wear_flags, ITEM_WEAR_QUIVER))
 	{
 		GET_ITEM_TYPE(obj) = ITEM_QUIVER;
-		obj->value[0]      = (int)(material_data[material].m_stat * number(80, 120));
-		obj->value[1]      = number(0, 1);
-		obj->value[2]      = 1;
-		obj->value[3]      = 0;
+		obj->value[0] = (int)(material_data[material].m_stat * number(80, 120));
+		obj->value[1] = number(0, 1);
+		obj->value[2] = 1;
+		obj->value[3] = 0;
 	}
 	else if (IS_SET(obj->wear_flags, ITEM_WEAR_SHIELD))
 	{
 		GET_ITEM_TYPE(obj) = ITEM_SHIELD;
-		obj->value[0]      = number(1, 2);
-		obj->value[1]      = number(1, 8);
-		obj->value[2]      = number(1, 5);
+		obj->value[0] = number(1, 2);
+		obj->value[1] = number(1, 8);
+		obj->value[2] = number(1, 5);
 		// m_stat ranges from 12 - 50,  12-50 + 75 = 87-125 = ac bonus
 		obj->value[3] = (int)(material_data[material].m_stat + 75);
 		if (isname("heater", obj->name) || isname("buckler", obj->name))
@@ -1146,26 +1180,37 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	else if (isname("robe", obj->name))
 	{
 		GET_ITEM_TYPE(obj) = ITEM_WORN;
-		obj->value[0]      = (int)(material_data[material].m_stat * number(90, 120));
-		obj->value[1]      = 0;
-		obj->value[2]      = 0;
-		obj->value[3]      = 1;
+		obj->value[0] = (int)(material_data[material].m_stat * number(90, 120));
+		obj->value[1] = 0;
+		obj->value[2] = 0;
+		obj->value[3] = 1;
 	}
 	else if (IS_SET(obj->wear_flags, ITEM_WIELD) && !isname("longbow", obj->name))
 	{
 		obj->value[0] = slot_data[slot].damage_type;
-		obj->type     = ITEM_WEAPON;
+		obj->type = ITEM_WEAPON;
 
 		if (slot_data[slot].numb_material > 2)
 			obj->extra_flags |= ITEM_TWOHANDS;
 
-		obj->value[1] = (int)(1 + (material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_ac + number(0, 20)) / 20);
+		obj->value[1] =
+			(int)(1 + (material_data[material].m_stat * prefix_data[prefix].m_stat *
+					   slot_data[slot].m_ac +
+				   number(0, 20)) /
+					  20);
 
 		obj->value[2] =
-			MIN((1 + (material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_ac + number(0, 20)) / 20), ((obj->extra_flags & ITEM_TWOHANDS) ? 32 : 24) / obj->value[1]);
+			MIN((1 + (material_data[material].m_stat * prefix_data[prefix].m_stat *
+					  slot_data[slot].m_ac +
+				  number(0, 20)) /
+					 20),
+			    ((obj->extra_flags & ITEM_TWOHANDS) ? 32 : 24) / obj->value[1]);
 		obj->value[2] = BOUNDED(4, obj->value[2], 10);
 
-		bonus = (int)((material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat) / 18 + 1);
+		bonus = (int)((material_data[material].m_stat * prefix_data[prefix].m_stat *
+			       slot_data[slot].m_stat) /
+				      18 +
+			      1);
 
 		// Move 2 and 1 up to 3 and 2 so 1 doesn't get overwritten.
 		obj->affected[3].location = obj->affected[2].location;
@@ -1187,13 +1232,15 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 		if (IS_BACKSTABBER(obj))
 		{
 			obj->value[1] = BOUNDED(1, (int)(obj->value[1] / 1.5), 3);
-			obj->value[2] = BOUNDED(4, (int)(obj->value[2] * 1.6) + number(0, 2), obj->value[1] == 1 ? 8 : 6);
+			obj->value[2] = BOUNDED(4, (int)(obj->value[2] * 1.6) + number(0, 2),
+						obj->value[1] == 1 ? 8 : 6);
 		}
 
 		if (isname("lance", obj->name))
 		{
 			obj->value[1] = 1;
-			obj->value[2] = BOUNDED(6, (int)(obj->value[2] * 1.6) + number(2, 4), obj->value[1] == 1 ? 13 : 9);
+			obj->value[2] = BOUNDED(6, (int)(obj->value[2] * 1.6) + number(2, 4),
+						obj->value[1] == 1 ? 13 : 9);
 		}
 
 		if (should_have_weapon_proc)
@@ -1221,14 +1268,15 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 			}
 		}
 
-		if ((obj->affected[3].location != APPLY_NONE) || (obj->affected[2].location != APPLY_NONE))
+		if ((obj->affected[3].location != APPLY_NONE) ||
+		    (obj->affected[2].location != APPLY_NONE))
 		{
 			SET_BIT(obj->extra2_flags, ITEM2_MAGIC);
 		}
 	}
 	else if (isname("longbow", obj->name))
 	{
-		obj->type     = ITEM_FIREWEAPON;
+		obj->type = ITEM_FIREWEAPON;
 		obj->value[3] = 1;
 
 		if (slot_data[slot].numb_material > 2)
@@ -1236,10 +1284,19 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 			obj->extra_flags |= ITEM_TWOHANDS;
 		}
 
-		obj->value[0] = (int)(1 + (material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_ac + number(0, 40)));
-		obj->value[1] = (int)(1 + (material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_ac + number(0, 40)));
+		obj->value[0] =
+			(int)(1 + (material_data[material].m_stat * prefix_data[prefix].m_stat *
+					   slot_data[slot].m_ac +
+				   number(0, 40)));
+		obj->value[1] =
+			(int)(1 + (material_data[material].m_stat * prefix_data[prefix].m_stat *
+					   slot_data[slot].m_ac +
+				   number(0, 40)));
 
-		bonus = (int)((material_data[material].m_stat * prefix_data[prefix].m_stat * slot_data[slot].m_stat) / 20 + 1);
+		bonus = (int)((material_data[material].m_stat * prefix_data[prefix].m_stat *
+			       slot_data[slot].m_stat) /
+				      20 +
+			      1);
 
 		// Move 2 and 1 up to 3 and 2 so 1 doesn't get overwritten.
 		obj->affected[3].location = obj->affected[2].location;
@@ -1255,7 +1312,8 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	else
 	{
 		GET_ITEM_TYPE(obj) = ITEM_ARMOR;
-		obj->value[0]      = (int)(material_data[material].m_ac * prefix_data[prefix].m_ac * slot_data[slot].m_ac);
+		obj->value[0] = (int)(material_data[material].m_ac * prefix_data[prefix].m_ac *
+				      slot_data[slot].m_ac);
 	}
 
 	/*  if object has 2 identical locations for mod0 and mod1,
@@ -1290,77 +1348,77 @@ P_obj setsuffix_obj_new(P_obj obj)
 {
 	switch (dice(5, 6))
 	{
-		case 5:
-			SET_BIT(obj->bitvector, AFF_DETECT_INVISIBLE);
-			break;
-		case 6:
-			SET_BIT(obj->bitvector2, AFF2_ULTRAVISION);
-			break;
-		case 7:
-			SET_BIT(obj->bitvector2, AFF2_FIRESHIELD);
-			break;
-		case 8:
-			SET_BIT(obj->bitvector, AFF_SLOW_POISON);
-			break;
-		case 9:
-			SET_BIT(obj->bitvector, AFF_WATERBREATH);
-			break;
-		case 10:
-			SET_BIT(obj->bitvector, AFF_INFRAVISION);
-			break;
-		case 11:
-			SET_BIT(obj->bitvector, AFF_PROTECT_GOOD);
-			break;
-		case 12:
-			SET_BIT(obj->bitvector, AFF_PROTECT_EVIL);
-			break;
-		case 13:
-			SET_BIT(obj->bitvector2, AFF2_PROT_COLD);
-			break;
-		case 14:
-			SET_BIT(obj->bitvector, AFF_LEVITATE);
-			break;
-		case 15:
-			SET_BIT(obj->bitvector2, AFF2_DETECT_EVIL);
-			break;
-		case 16:
-			SET_BIT(obj->bitvector2, AFF2_DETECT_GOOD);
-			break;
-		case 17:
-			SET_BIT(obj->bitvector2, AFF2_DETECT_MAGIC);
-			break;
-		case 18:
-			SET_BIT(obj->bitvector, AFF_PROT_FIRE);
-			break;
-		case 19:
-			SET_BIT(obj->bitvector5, AFF5_PROT_UNDEAD);
-			break;
-		case 20:
-			SET_BIT(obj->bitvector2, AFF2_PROT_ACID);
-			break;
-		case 21:
-			SET_BIT(obj->bitvector, AFF_SENSE_LIFE);
-			break;
-		case 22:
-			SET_BIT(obj->bitvector, AFF_MINOR_GLOBE);
-			break;
-		case 23:
-			SET_BIT(obj->bitvector, AFF_FARSEE);
-			break;
-		case 24:
-			SET_BIT(obj->bitvector3, AFF3_COLDSHIELD);
-			break;
-		case 25:
-			SET_BIT(obj->bitvector2, AFF2_SOULSHIELD);
-			break;
-		case 26:
-			SET_BIT(obj->bitvector, AFF_BARKSKIN);
-			break;
-		case 27:
-			SET_BIT(obj->bitvector, AFF_HASTE);
-			break;
-		default:
-			break;
+	case 5:
+		SET_BIT(obj->bitvector, AFF_DETECT_INVISIBLE);
+		break;
+	case 6:
+		SET_BIT(obj->bitvector2, AFF2_ULTRAVISION);
+		break;
+	case 7:
+		SET_BIT(obj->bitvector2, AFF2_FIRESHIELD);
+		break;
+	case 8:
+		SET_BIT(obj->bitvector, AFF_SLOW_POISON);
+		break;
+	case 9:
+		SET_BIT(obj->bitvector, AFF_WATERBREATH);
+		break;
+	case 10:
+		SET_BIT(obj->bitvector, AFF_INFRAVISION);
+		break;
+	case 11:
+		SET_BIT(obj->bitvector, AFF_PROTECT_GOOD);
+		break;
+	case 12:
+		SET_BIT(obj->bitvector, AFF_PROTECT_EVIL);
+		break;
+	case 13:
+		SET_BIT(obj->bitvector2, AFF2_PROT_COLD);
+		break;
+	case 14:
+		SET_BIT(obj->bitvector, AFF_LEVITATE);
+		break;
+	case 15:
+		SET_BIT(obj->bitvector2, AFF2_DETECT_EVIL);
+		break;
+	case 16:
+		SET_BIT(obj->bitvector2, AFF2_DETECT_GOOD);
+		break;
+	case 17:
+		SET_BIT(obj->bitvector2, AFF2_DETECT_MAGIC);
+		break;
+	case 18:
+		SET_BIT(obj->bitvector, AFF_PROT_FIRE);
+		break;
+	case 19:
+		SET_BIT(obj->bitvector5, AFF5_PROT_UNDEAD);
+		break;
+	case 20:
+		SET_BIT(obj->bitvector2, AFF2_PROT_ACID);
+		break;
+	case 21:
+		SET_BIT(obj->bitvector, AFF_SENSE_LIFE);
+		break;
+	case 22:
+		SET_BIT(obj->bitvector, AFF_MINOR_GLOBE);
+		break;
+	case 23:
+		SET_BIT(obj->bitvector, AFF_FARSEE);
+		break;
+	case 24:
+		SET_BIT(obj->bitvector3, AFF3_COLDSHIELD);
+		break;
+	case 25:
+		SET_BIT(obj->bitvector2, AFF2_SOULSHIELD);
+		break;
+	case 26:
+		SET_BIT(obj->bitvector, AFF_BARKSKIN);
+		break;
+	case 27:
+		SET_BIT(obj->bitvector, AFF_HASTE);
+		break;
+	default:
+		break;
 	}
 	return obj;
 }
@@ -1373,9 +1431,9 @@ P_obj setprefix_obj(P_obj obj, float modifier, int affectnumber)
 	}
 	else
 	{
-		int   inUse[ARRAY_SIZE(obj->affected)];
-		int   i;
-		bool  reroll      = true;
+		int inUse[ARRAY_SIZE(obj->affected)];
+		int i;
+		bool reroll = true;
 		float modOriginal = modifier;
 
 		for (i = 0; i < ARRAY_SIZE(inUse); i++)
@@ -1387,123 +1445,123 @@ P_obj setprefix_obj(P_obj obj, float modifier, int affectnumber)
 		{
 			switch (number(0, 30))
 			{
-				case 0:
-					obj->affected[affectnumber].location = APPLY_HITROLL;
-					modifier                             = (int)(modifier * 1);
-					break;
-				case 1:
-					obj->affected[affectnumber].location = APPLY_STR;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 2:
-					obj->affected[affectnumber].location = APPLY_DEX;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 3:
-					obj->affected[affectnumber].location = APPLY_INT;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 4:
-					obj->affected[affectnumber].location = APPLY_WIS;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 5:
-					obj->affected[affectnumber].location = APPLY_CON;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 6:
-					obj->affected[affectnumber].location = APPLY_MANA;
-					modifier                             = (8 * modifier);
-					break;
-				case 7:
-					obj->affected[affectnumber].location = APPLY_HIT;
-					modifier                             = (8 * modifier);
-					break;
-				case 8:
-					obj->affected[affectnumber].location = APPLY_MOVE;
-					modifier                             = (8 * modifier);
-					break;
-				case 9:
-					obj->affected[affectnumber].location = APPLY_DAMROLL;
-					break;
-				case 10:
-					obj->affected[affectnumber].location = APPLY_HITROLL;
-					break;
-				case 11:
-					obj->affected[affectnumber].location = APPLY_DAMROLL;
-					break;
-				case 12:
-					obj->affected[affectnumber].location = APPLY_SAVING_PARA;
-					modifier                             = (0 - modifier);
-					break;
-				case 13:
-					obj->affected[affectnumber].location = APPLY_SAVING_FEAR;
-					modifier                             = (0 - modifier);
-					break;
-				case 14:
-					obj->affected[affectnumber].location = APPLY_SAVING_BREATH;
-					modifier                             = (0 - modifier);
-					break;
-				case 15:
-					obj->affected[affectnumber].location = APPLY_SAVING_SPELL;
-					modifier                             = (0 - modifier);
-					break;
-				case 16:
-					obj->affected[affectnumber].location = APPLY_AGI;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 17:
-					obj->affected[affectnumber].location = APPLY_POW;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 18:
-					obj->affected[affectnumber].location = APPLY_LUCK;
-					modifier                             = (int)(modifier * 1.5);
-					break;
-				case 19:
-					obj->affected[affectnumber].location = APPLY_STR_MAX;
-					break;
-				case 20:
-					obj->affected[affectnumber].location = APPLY_DEX_MAX;
-					break;
-				case 21:
-					obj->affected[affectnumber].location = APPLY_INT_MAX;
-					break;
-				case 22:
-					obj->affected[affectnumber].location = APPLY_WIS_MAX;
-					break;
-				case 23:
-					obj->affected[affectnumber].location = APPLY_CON_MAX;
-					break;
-				case 24:
-					obj->affected[affectnumber].location = APPLY_AGI_MAX;
-					break;
-				case 25:
-					obj->affected[affectnumber].location = APPLY_POW_MAX;
-					break;
-				case 26:
-					obj->affected[affectnumber].location = APPLY_LUCK_MAX;
-					break;
-				case 27:
-					obj->affected[affectnumber].location = APPLY_HIT;
-					modifier                             = (7 * modifier);
-					break;
-				case 28:
-					obj->affected[affectnumber].location = APPLY_HIT;
-					modifier                             = (6 * modifier);
-					break;
-				case 29:
-					obj->affected[affectnumber].location = APPLY_HIT;
-					modifier                             = (5 * modifier);
-					break;
-				case 30:
-					obj->affected[affectnumber].location = APPLY_HIT;
-					modifier                             = (4 * modifier);
-					break;
-				default:
-					obj->affected[affectnumber].location = APPLY_HIT;
-					modifier                             = (3 * modifier);
-					break;
+			case 0:
+				obj->affected[affectnumber].location = APPLY_HITROLL;
+				modifier = (int)(modifier * 1);
+				break;
+			case 1:
+				obj->affected[affectnumber].location = APPLY_STR;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 2:
+				obj->affected[affectnumber].location = APPLY_DEX;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 3:
+				obj->affected[affectnumber].location = APPLY_INT;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 4:
+				obj->affected[affectnumber].location = APPLY_WIS;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 5:
+				obj->affected[affectnumber].location = APPLY_CON;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 6:
+				obj->affected[affectnumber].location = APPLY_MANA;
+				modifier = (8 * modifier);
+				break;
+			case 7:
+				obj->affected[affectnumber].location = APPLY_HIT;
+				modifier = (8 * modifier);
+				break;
+			case 8:
+				obj->affected[affectnumber].location = APPLY_MOVE;
+				modifier = (8 * modifier);
+				break;
+			case 9:
+				obj->affected[affectnumber].location = APPLY_DAMROLL;
+				break;
+			case 10:
+				obj->affected[affectnumber].location = APPLY_HITROLL;
+				break;
+			case 11:
+				obj->affected[affectnumber].location = APPLY_DAMROLL;
+				break;
+			case 12:
+				obj->affected[affectnumber].location = APPLY_SAVING_PARA;
+				modifier = (0 - modifier);
+				break;
+			case 13:
+				obj->affected[affectnumber].location = APPLY_SAVING_FEAR;
+				modifier = (0 - modifier);
+				break;
+			case 14:
+				obj->affected[affectnumber].location = APPLY_SAVING_BREATH;
+				modifier = (0 - modifier);
+				break;
+			case 15:
+				obj->affected[affectnumber].location = APPLY_SAVING_SPELL;
+				modifier = (0 - modifier);
+				break;
+			case 16:
+				obj->affected[affectnumber].location = APPLY_AGI;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 17:
+				obj->affected[affectnumber].location = APPLY_POW;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 18:
+				obj->affected[affectnumber].location = APPLY_LUCK;
+				modifier = (int)(modifier * 1.5);
+				break;
+			case 19:
+				obj->affected[affectnumber].location = APPLY_STR_MAX;
+				break;
+			case 20:
+				obj->affected[affectnumber].location = APPLY_DEX_MAX;
+				break;
+			case 21:
+				obj->affected[affectnumber].location = APPLY_INT_MAX;
+				break;
+			case 22:
+				obj->affected[affectnumber].location = APPLY_WIS_MAX;
+				break;
+			case 23:
+				obj->affected[affectnumber].location = APPLY_CON_MAX;
+				break;
+			case 24:
+				obj->affected[affectnumber].location = APPLY_AGI_MAX;
+				break;
+			case 25:
+				obj->affected[affectnumber].location = APPLY_POW_MAX;
+				break;
+			case 26:
+				obj->affected[affectnumber].location = APPLY_LUCK_MAX;
+				break;
+			case 27:
+				obj->affected[affectnumber].location = APPLY_HIT;
+				modifier = (7 * modifier);
+				break;
+			case 28:
+				obj->affected[affectnumber].location = APPLY_HIT;
+				modifier = (6 * modifier);
+				break;
+			case 29:
+				obj->affected[affectnumber].location = APPLY_HIT;
+				modifier = (5 * modifier);
+				break;
+			case 30:
+				obj->affected[affectnumber].location = APPLY_HIT;
+				modifier = (4 * modifier);
+				break;
+			default:
+				obj->affected[affectnumber].location = APPLY_HIT;
+				modifier = (3 * modifier);
+				break;
 			}
 
 			for (i = 0; i < ARRAY_SIZE(inUse); i++)
@@ -1513,7 +1571,8 @@ P_obj setprefix_obj(P_obj obj, float modifier, int affectnumber)
 					continue;
 				}
 
-				if (obj->affected[affectnumber].location == obj->affected[i].location)
+				if (obj->affected[affectnumber].location ==
+				    obj->affected[i].location)
 				{
 					// collision on an existing affect slot
 					modifier = modOriginal;
@@ -1530,23 +1589,25 @@ P_obj setprefix_obj(P_obj obj, float modifier, int affectnumber)
 
 int random_eq_proc(P_obj obj, P_char ch, int cmd, char *argument)
 {
-
 	P_char kala;
-	int    j;
-	int    dam = cmd / 1000;
-	P_obj  t_obj;
-	char  *arg;
-	long   curr_time;
-	int    numNamed     = 0;
-	int    wear_order[] = {41, 24, 40, 6, 19, 21, 22, 20, 39, 3, 4, 5, 35, 37, 12, 27, 23, 13, 28, 29, 30, 10, 31, 11, 14, 15, 33, 34, 9, 32, 1, 2, 16, 17, 25, 26, 7, 36, 8, 38, -1};
-	int    chance       = 0;
+	int j;
+	int dam = cmd / 1000;
+	P_obj t_obj;
+	char *arg;
+	long curr_time;
+	int numNamed = 0;
+	int wear_order[] = { 41, 24, 40, 6,  19, 21, 22, 20, 39, 3,  4,	 5,  35, 37,
+			     12, 27, 23, 13, 28, 29, 30, 10, 31, 11, 14, 15, 33, 34,
+			     9,	 32, 1,	 2,  16, 17, 25, 26, 7,	 36, 8,	 38, -1 };
+	int chance = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
 		return FALSE;
 	}
 
-	if (!IS_ALIVE(ch) || !OBJ_WORN_BY(obj, ch) || (cmd != CMD_MELEE_HIT && cmd != CMD_GOTHIT && cmd != CMD_GOTNUKED))
+	if (!IS_ALIVE(ch) || !OBJ_WORN_BY(obj, ch) ||
+	    (cmd != CMD_MELEE_HIT && cmd != CMD_GOTHIT && cmd != CMD_GOTNUKED))
 	{
 		return FALSE;
 	}
@@ -1594,13 +1655,18 @@ int random_eq_proc(P_obj obj, P_char ch, int cmd, char *argument)
 			}
 		}
 
-		if (IS_FIGHTING(ch) && ((numNamed > 2 && !number(0, chance)) || (cmd == CMD_MELEE_HIT && obj->value[6] == 999 && IS_SET(obj->wear_flags, ITEM_WIELD) && !number(0, 10))))
+		if (IS_FIGHTING(ch) && ((numNamed > 2 && !number(0, chance)) ||
+					(cmd == CMD_MELEE_HIT && obj->value[6] == 999 &&
+					 IS_SET(obj->wear_flags, ITEM_WIELD) && !number(0, 10))))
 		{
 			kala = GET_OPPONENT(ch);
 			;
-			act("&+B$n's $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N", TRUE, ch, obj, kala, TO_NOTVICT);
-			act("&+BYour $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N", TRUE, ch, obj, kala, TO_CHAR);
-			act("&+B$n's $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N", TRUE, ch, obj, kala, TO_VICT);
+			act("&+B$n's $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N",
+			    TRUE, ch, obj, kala, TO_NOTVICT);
+			act("&+BYour $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N",
+			    TRUE, ch, obj, kala, TO_CHAR);
+			act("&+B$n's $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N",
+			    TRUE, ch, obj, kala, TO_VICT);
 			numNamed = obj->value[7];
 			if (spells_data[numNamed].self_only)
 			{
@@ -1609,7 +1675,8 @@ int random_eq_proc(P_obj obj, P_char ch, int cmd, char *argument)
 
 			if (numNamed > 0)
 			{
-				((*skills[spells_data[numNamed].spell].spell_pointer)((int)50, ch, 0, SPELL_TYPE_SPELL, kala, obj));
+				((*skills[spells_data[numNamed].spell].spell_pointer)(
+					(int)50, ch, 0, SPELL_TYPE_SPELL, kala, obj));
 				// wizlog(56, "%d", numNamed);
 				// wizlog(56, "Spell number:%d", spells_data[numNamed].spell);
 				// wizlog(56, "List number:%d", spells_data[numNamed].s_number);
@@ -1627,79 +1694,78 @@ P_obj set_enchant_affect(P_obj obj, int proc)
 {
 	switch (proc)
 	{
-		case SPELL_ACID_BLAST:
-			SET_BIT(obj->bitvector2, AFF2_PROT_GAS);
-			SET_BIT(obj->bitvector2, AFF2_PROT_ACID);
-			obj->value[6] = 1;
-			break;
-		case SPELL_FIREBALL:
-			obj->value[6] = 2;
-			SET_BIT(obj->bitvector, AFF_PROT_FIRE);
-			break;
-		case SPELL_MAGIC_MISSILE:
-			obj->value[6] = 3;
-			SET_BIT(obj->bitvector, AFF_PROTECT_GOOD);
-			break;
-		case SPELL_CHILL_TOUCH:
-			obj->value[6] = 4;
-			SET_BIT(obj->bitvector2, AFF2_PROT_COLD);
-			break;
-		case SPELL_NEGATIVE_CONCUSSION_BLAST:
-			obj->value[6] = 5;
-			SET_BIT(obj->bitvector, AFF_FARSEE);
-			break;
-		case SPELL_SHOCKING_GRASP:
-			obj->value[6] = 6;
-			SET_BIT(obj->bitvector, AFF_FLY);
-			break;
-		case SPELL_FLAMESTRIKE:
-			obj->value[6] = 7;
-			SET_BIT(obj->bitvector, AFF_SENSE_LIFE);
-			break;
-		case SPELL_BLINDNESS:
-			obj->value[6] = 8;
-			SET_BIT(obj->bitvector, AFF_DETECT_INVISIBLE);
-			break;
-		case SPELL_ENERGY_DRAIN:
-			obj->value[6] = 9;
-			SET_BIT(obj->bitvector, AFF2_VAMPIRIC_TOUCH);
-			break;
+	case SPELL_ACID_BLAST:
+		SET_BIT(obj->bitvector2, AFF2_PROT_GAS);
+		SET_BIT(obj->bitvector2, AFF2_PROT_ACID);
+		obj->value[6] = 1;
+		break;
+	case SPELL_FIREBALL:
+		obj->value[6] = 2;
+		SET_BIT(obj->bitvector, AFF_PROT_FIRE);
+		break;
+	case SPELL_MAGIC_MISSILE:
+		obj->value[6] = 3;
+		SET_BIT(obj->bitvector, AFF_PROTECT_GOOD);
+		break;
+	case SPELL_CHILL_TOUCH:
+		obj->value[6] = 4;
+		SET_BIT(obj->bitvector2, AFF2_PROT_COLD);
+		break;
+	case SPELL_NEGATIVE_CONCUSSION_BLAST:
+		obj->value[6] = 5;
+		SET_BIT(obj->bitvector, AFF_FARSEE);
+		break;
+	case SPELL_SHOCKING_GRASP:
+		obj->value[6] = 6;
+		SET_BIT(obj->bitvector, AFF_FLY);
+		break;
+	case SPELL_FLAMESTRIKE:
+		obj->value[6] = 7;
+		SET_BIT(obj->bitvector, AFF_SENSE_LIFE);
+		break;
+	case SPELL_BLINDNESS:
+		obj->value[6] = 8;
+		SET_BIT(obj->bitvector, AFF_DETECT_INVISIBLE);
+		break;
+	case SPELL_ENERGY_DRAIN:
+		obj->value[6] = 9;
+		SET_BIT(obj->bitvector, AFF2_VAMPIRIC_TOUCH);
+		break;
 	}
 	return obj;
 }
 P_obj set_encrust_affect(P_obj obj, int proc)
 {
-
 	switch (proc)
 	{
-		case SPELL_ACID_BLAST:
-			SET_BIT(obj->bitvector2, AFF2_PROT_GAS);
-			SET_BIT(obj->bitvector2, AFF2_PROT_ACID);
-			break;
-		case SPELL_FIREBALL:
-			SET_BIT(obj->bitvector, AFF_PROT_FIRE);
-			break;
-		case SPELL_MAGIC_MISSILE:
-			SET_BIT(obj->bitvector, AFF_PROTECT_GOOD);
-			break;
-		case SPELL_CHILL_TOUCH:
-			SET_BIT(obj->bitvector2, AFF2_PROT_COLD);
-			break;
-		case SPELL_NEGATIVE_CONCUSSION_BLAST:
-			SET_BIT(obj->bitvector, AFF_MINOR_GLOBE);
-			break;
-		case SPELL_SHOCKING_GRASP:
-			SET_BIT(obj->bitvector, AFF_SLOW_POISON);
-			break;
-		case SPELL_FLAMESTRIKE:
-			SET_BIT(obj->bitvector, AFF_SENSE_LIFE);
-			break;
-		case SPELL_BLINDNESS:
-			SET_BIT(obj->bitvector2, AFF2_DETECT_MAGIC);
-			break;
-		case SPELL_ENERGY_DRAIN:
-			SET_BIT(obj->bitvector, AFF_HASTE);
-			break;
+	case SPELL_ACID_BLAST:
+		SET_BIT(obj->bitvector2, AFF2_PROT_GAS);
+		SET_BIT(obj->bitvector2, AFF2_PROT_ACID);
+		break;
+	case SPELL_FIREBALL:
+		SET_BIT(obj->bitvector, AFF_PROT_FIRE);
+		break;
+	case SPELL_MAGIC_MISSILE:
+		SET_BIT(obj->bitvector, AFF_PROTECT_GOOD);
+		break;
+	case SPELL_CHILL_TOUCH:
+		SET_BIT(obj->bitvector2, AFF2_PROT_COLD);
+		break;
+	case SPELL_NEGATIVE_CONCUSSION_BLAST:
+		SET_BIT(obj->bitvector, AFF_MINOR_GLOBE);
+		break;
+	case SPELL_SHOCKING_GRASP:
+		SET_BIT(obj->bitvector, AFF_SLOW_POISON);
+		break;
+	case SPELL_FLAMESTRIKE:
+		SET_BIT(obj->bitvector, AFF_SENSE_LIFE);
+		break;
+	case SPELL_BLINDNESS:
+		SET_BIT(obj->bitvector2, AFF2_DETECT_MAGIC);
+		break;
+	case SPELL_ENERGY_DRAIN:
+		SET_BIT(obj->bitvector, AFF_HASTE);
+		break;
 	}
 
 	return 0;
@@ -1707,10 +1773,10 @@ P_obj set_encrust_affect(P_obj obj, int proc)
 
 bool identify_random(P_obj obj)
 {
-	char  buffer[256];
-	char  old_name[256];
+	char buffer[256];
+	char old_name[256];
 	char *c;
-	int   i;
+	int i;
 
 	if (!obj->value[5])
 		return false;

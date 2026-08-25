@@ -36,32 +36,33 @@
  * external variables
  */
 
-extern P_desc                 descriptor_list;
-extern P_index                obj_index;
-extern P_obj                  object_list;
-extern P_char                 character_list;
-extern P_room                 world;
-extern const int              top_of_world;
-extern int                    top_of_objt;
-extern bool                   command_confirm;
-extern char                  *coin_names[];
-extern char                  *drinks[];
-extern const int              drink_aff[][3];
-extern const char            *resource_list[];
-extern const char            *apply_types[];
+extern P_desc descriptor_list;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_char character_list;
+extern P_room world;
+extern const int top_of_world;
+extern int top_of_objt;
+extern bool command_confirm;
+extern char *coin_names[];
+extern char *drinks[];
+extern const int drink_aff[][3];
+extern const char *resource_list[];
+extern const char *apply_types[];
 extern const struct stat_data stat_factor[];
-extern struct str_app_type    str_app[];
-extern struct zone_data      *zone_table;
-extern int                    top_of_zone_table;
-extern P_index                mob_index;
-extern long                   new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
+extern struct str_app_type str_app[];
+extern struct zone_data *zone_table;
+extern int top_of_zone_table;
+extern P_index mob_index;
+extern long new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
 
 extern void obj_affect_remove(P_obj, struct obj_affect *);
 extern bool has_eq_slot(P_char ch, int wear_slot);
 extern void arti_clear_sql(P_char ch, char *arg);
 
-#define USE_SPACE       0
-#define IN_WELL_ROOM(x) ((world[(x)->in_room].number == 55126) || (world[(x)->in_room].number == 8003))
+#define USE_SPACE 0
+#define IN_WELL_ROOM(x) \
+	((world[(x)->in_room].number == 55126) || (world[(x)->in_room].number == 8003))
 
 bool is_stat_max(sbyte location)
 {
@@ -77,7 +78,9 @@ bool is_stat_max(sbyte location)
 
 int wield_item_size(P_char ch, P_obj obj)
 {
-	if (!(IS_SET(obj->extra_flags, ITEM_TWOHANDS) || (obj->type == ITEM_WEAPON && obj->value[0] == WEAPON_2HANDSWORD)) || (IS_GIANT(ch) && obj->type == ITEM_WEAPON))
+	if (!(IS_SET(obj->extra_flags, ITEM_TWOHANDS) ||
+	      (obj->type == ITEM_WEAPON && obj->value[0] == WEAPON_2HANDSWORD)) ||
+	    (IS_GIANT(ch) && obj->type == ITEM_WEAPON))
 	{
 		return 1;
 	}
@@ -102,65 +105,64 @@ static bool get_trace_enabled(void)
 	{
 		const char *env = getenv("GET_TRACE");
 
-		cached = (env && *env && str_cmp(env, "0") && str_cmp(env, "false") && str_cmp(env, "off")) ? 1 : 0;
+		cached = (env && *env && str_cmp(env, "0") && str_cmp(env, "false") &&
+			  str_cmp(env, "off")) ?
+				 1 :
+				 0;
 	}
 
 	return cached != 0;
 }
 
-#define GETDBG_LOG(...)                                                                                                                                                                                \
-	do                                                                                                                                                                                                 \
-	{                                                                                                                                                                                                  \
-		if (get_trace_enabled())                                                                                                                                                                       \
-			logit(LOG_DEBUG, __VA_ARGS__);                                                                                                                                                             \
+#define GETDBG_LOG(...)                                \
+	do                                             \
+	{                                              \
+		if (get_trace_enabled())               \
+			logit(LOG_DEBUG, __VA_ARGS__); \
 	} while (0)
 
 void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {
-	int     got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
-	char    Gbuf3[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
-	P_obj   corpse = NULL;
-	bool    slip   = FALSE;
-	P_char  rider  = NULL;
+	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
+	char Gbuf3[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
+	P_obj corpse = NULL;
+	bool slip = FALSE;
+	P_char rider = NULL;
 
 	if (!o_obj || !ch)
 	{
 		logit(LOG_EXIT, "call to get with NULL obj or ch");
-		GETDBG_LOG(
-		      "GETDBG[get-null-args]: ch=%p obj=%p container=%p showit=%d",
-		      (void *)ch,
-		      (void *)o_obj,
-		      (void *)s_obj,
-		      showit ? 1 : 0);
+		GETDBG_LOG("GETDBG[get-null-args]: ch=%p obj=%p container=%p showit=%d", (void *)ch,
+			   (void *)o_obj, (void *)s_obj, showit ? 1 : 0);
 		return;
 	}
 
-	if (account_bound_reward_owner(ch, o_obj) == false && IS_OBJ_STAT2(o_obj, ITEM2_ACCOUNT_BOUND))
+	if (account_bound_reward_owner(ch, o_obj) == false &&
+	    IS_OBJ_STAT2(o_obj, ITEM2_ACCOUNT_BOUND))
 	{
-		send_to_char("You may not take that account-bound reward; it belongs to another account.\r\n", ch);
+		send_to_char(
+			"You may not take that account-bound reward; it belongs to another account.\r\n",
+			ch);
 		return;
 	}
 
 	if (o_obj->condition <= 0)
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-scrap]: ch=%s room=%d obj=%s [%d] uid=%lu cond=%d showit=%d container=%s [%d]",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "(null)",
-		      OBJ_VNUM(o_obj),
-		      o_obj->obj_uid,
-		      o_obj->condition,
-		      showit ? 1 : 0,
-		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-		      s_obj ? OBJ_VNUM(s_obj) : -1);
+			"GETDBG[get-scrap]: ch=%s room=%d obj=%s [%d] uid=%lu cond=%d showit=%d container=%s [%d]",
+			GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "(null)",
+			OBJ_VNUM(o_obj), o_obj->obj_uid, o_obj->condition, showit ? 1 : 0,
+			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+			s_obj ? OBJ_VNUM(s_obj) : -1);
 		MakeScrap(ch, o_obj);
 		return;
 	}
 
 	if (GET_CHAR_SKILL(ch, SKILL_SLIP))
 	{
-		if (number(0, 100) < BOUNDED(5, (GET_CHAR_SKILL(ch, SKILL_SLIP) + (GET_C_DEX(ch) / 10)), 95))
+		if (number(0, 100) <
+		    BOUNDED(5, (GET_CHAR_SKILL(ch, SKILL_SLIP) + (GET_C_DEX(ch) / 10)), 95))
 		{
 			slip = TRUE;
 		}
@@ -169,26 +171,24 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (IS_NPC(ch) && IN_WELL_ROOM(ch))
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-deny:well-room]: ch=%s room=%d obj=%s [%d] container=%s [%d]",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "(null)",
-		      OBJ_VNUM(o_obj),
-		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-		      s_obj ? OBJ_VNUM(s_obj) : -1);
+			"GETDBG[get-deny:well-room]: ch=%s room=%d obj=%s [%d] container=%s [%d]",
+			GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "(null)",
+			OBJ_VNUM(o_obj),
+			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+			s_obj ? OBJ_VNUM(s_obj) : -1);
 		send_to_char("No mobs taking things from the well!\r\n", ch);
 		return;
 	}
 	if (IS_NPC(ch) && (GET_RNUM(ch) == real_mobile(250)))
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-deny:mirror-image]: ch=%s room=%d obj=%s [%d] container=%s [%d]",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "(null)",
-		      OBJ_VNUM(o_obj),
-		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-		      s_obj ? OBJ_VNUM(s_obj) : -1);
+			"GETDBG[get-deny:mirror-image]: ch=%s room=%d obj=%s [%d] container=%s [%d]",
+			GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "(null)",
+			OBJ_VNUM(o_obj),
+			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+			s_obj ? OBJ_VNUM(s_obj) : -1);
 		send_to_char("Too bad you're a mirror image and can't, eh?\r\n", ch);
 		return;
 	}
@@ -197,14 +197,12 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (checkgetput(ch, o_obj))
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-deny:trap]: ch=%s room=%d obj=%s [%d] uid=%lu container=%s [%d]",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "(null)",
-		      OBJ_VNUM(o_obj),
-		      o_obj->obj_uid,
-		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-		      s_obj ? OBJ_VNUM(s_obj) : -1);
+			"GETDBG[get-deny:trap]: ch=%s room=%d obj=%s [%d] uid=%lu container=%s [%d]",
+			GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "(null)",
+			OBJ_VNUM(o_obj), o_obj->obj_uid,
+			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+			s_obj ? OBJ_VNUM(s_obj) : -1);
 		return;
 	}
 
@@ -212,46 +210,33 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (o_obj->hitched_to)
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-deny:hitched]: ch=%s room=%d obj=%s [%d] uid=%lu hitched_to=%s container=%s [%d]",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "(null)",
-		      OBJ_VNUM(o_obj),
-		      o_obj->obj_uid,
-		      o_obj->hitched_to ? GET_NAME(o_obj->hitched_to) : "(none)",
-		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-		      s_obj ? OBJ_VNUM(s_obj) : -1);
-		act("You can't, $p is hitched to $N.", FALSE, ch, o_obj, o_obj->hitched_to, TO_CHAR);
+			"GETDBG[get-deny:hitched]: ch=%s room=%d obj=%s [%d] uid=%lu hitched_to=%s container=%s [%d]",
+			GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "(null)",
+			OBJ_VNUM(o_obj), o_obj->obj_uid,
+			o_obj->hitched_to ? GET_NAME(o_obj->hitched_to) : "(none)",
+			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+			s_obj ? OBJ_VNUM(s_obj) : -1);
+		act("You can't, $p is hitched to $N.", FALSE, ch, o_obj, o_obj->hitched_to,
+		    TO_CHAR);
 		return;
 	}
 
 	GETDBG_LOG(
-	      "GETDBG[get-enter]: ch=%s room=%d obj=%s [%d] type=%d wt=%d carry_n=%d carry_w=%d showit=%d from_container=%s [%d]",
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      o_obj->short_description ? o_obj->short_description : "(null)",
-	      OBJ_VNUM(o_obj),
-	      GET_ITEM_TYPE(o_obj),
-	      GET_OBJ_WEIGHT(o_obj),
-	      IS_CARRYING_N(ch),
-	      total_carried_weight(ch),
-	      showit ? 1 : 0,
-	      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-	      s_obj ? OBJ_VNUM(s_obj) : -1);
+		"GETDBG[get-enter]: ch=%s room=%d obj=%s [%d] type=%d wt=%d carry_n=%d carry_w=%d showit=%d from_container=%s [%d]",
+		GET_NAME(ch), world[ch->in_room].number,
+		o_obj->short_description ? o_obj->short_description : "(null)", OBJ_VNUM(o_obj),
+		GET_ITEM_TYPE(o_obj), GET_OBJ_WEIGHT(o_obj), IS_CARRYING_N(ch),
+		total_carried_weight(ch), showit ? 1 : 0,
+		s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+		s_obj ? OBJ_VNUM(s_obj) : -1);
 	GETDBG_LOG(
-	      "GETDBG[get-state]: ch=%s room=%d obj_uid=%lu cond=%d wear=0x%x extra=0x%x carried=%d worn=%d inside=%d room=%d container=%s [%d]",
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      o_obj->obj_uid,
-	      o_obj->condition,
-	      o_obj->wear_flags,
-	      o_obj->extra_flags,
-	      OBJ_CARRIED(o_obj) ? 1 : 0,
-	      OBJ_WORN(o_obj) ? 1 : 0,
-	      OBJ_INSIDE(o_obj) ? 1 : 0,
-	      OBJ_ROOM(o_obj) ? 1 : 0,
-	      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-	      s_obj ? OBJ_VNUM(s_obj) : -1);
+		"GETDBG[get-state]: ch=%s room=%d obj_uid=%lu cond=%d wear=0x%x extra=0x%x carried=%d worn=%d inside=%d room=%d container=%s [%d]",
+		GET_NAME(ch), world[ch->in_room].number, o_obj->obj_uid, o_obj->condition,
+		o_obj->wear_flags, o_obj->extra_flags, OBJ_CARRIED(o_obj) ? 1 : 0,
+		OBJ_WORN(o_obj) ? 1 : 0, OBJ_INSIDE(o_obj) ? 1 : 0, OBJ_ROOM(o_obj) ? 1 : 0,
+		s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+		s_obj ? OBJ_VNUM(s_obj) : -1);
 
 	if (s_obj && (s_obj->type == ITEM_CORPSE) && IS_SET(s_obj->value[1], PC_CORPSE))
 		corpse = s_obj;
@@ -259,7 +244,8 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (s_obj && IS_OBJ_STAT(s_obj, ITEM_NOSHOW))
 		showit = TRUE;
 
-	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) || (o_obj->value[2] > 0) || (o_obj->value[3] > 0)))
+	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) ||
+					    (o_obj->value[2] > 0) || (o_obj->value[3] > 0)))
 	{
 		GET_PLATINUM(ch) += (got_p = o_obj->value[3]);
 		o_obj->value[3] = 0;
@@ -275,99 +261,80 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 		int total_value = (got_p * 1000 + got_g * 100 + got_s * 10 + got_c);
 		GETDBG_LOG(
-		      "GETDBG[get-coins-start]: ch=%s room=%d obj=%s [%d] uid=%lu got_p=%d got_g=%d got_s=%d got_c=%d total=%d showit=%d slip=%d from_container=%s [%d]",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "(null)",
-		      OBJ_VNUM(o_obj),
-		      o_obj->obj_uid,
-		      got_p,
-		      got_g,
-		      got_s,
-		      got_c,
-		      total_value,
-		      showit ? 1 : 0,
-		      slip ? 1 : 0,
-		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-		      s_obj ? OBJ_VNUM(s_obj) : -1);
+			"GETDBG[get-coins-start]: ch=%s room=%d obj=%s [%d] uid=%lu got_p=%d got_g=%d got_s=%d got_c=%d total=%d showit=%d slip=%d from_container=%s [%d]",
+			GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "(null)",
+			OBJ_VNUM(o_obj), o_obj->obj_uid, got_p, got_g, got_s, got_c, total_value,
+			showit ? 1 : 0, slip ? 1 : 0,
+			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+			s_obj ? OBJ_VNUM(s_obj) : -1);
 
 		if (total_value <= 0)
 		{
 			GETDBG_LOG(
-			      "GETDBG[get-coins-empty]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
-			      GET_NAME(ch),
-			      world[ch->in_room].number,
-			      o_obj->short_description ? o_obj->short_description : "(null)",
-			      OBJ_VNUM(o_obj),
-			      o_obj->obj_uid,
-			      total_value,
-			      showit ? 1 : 0,
-			      slip ? 1 : 0,
-			      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-			      s_obj ? OBJ_VNUM(s_obj) : -1);
+				"GETDBG[get-coins-empty]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
+				GET_NAME(ch), world[ch->in_room].number,
+				o_obj->short_description ? o_obj->short_description : "(null)",
+				OBJ_VNUM(o_obj), o_obj->obj_uid, total_value, showit ? 1 : 0,
+				slip ? 1 : 0,
+				s_obj && s_obj->short_description ? s_obj->short_description :
+								    "(none)",
+				s_obj ? OBJ_VNUM(s_obj) : -1);
 			send_to_char("You can't carry any of the coins.\r\n", ch);
 			return;
 		}
 		else if (total_value > 999999)
 		{
 			GETDBG_LOG(
-			      "GETDBG[get-coins-partial]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
-			      GET_NAME(ch),
-			      world[ch->in_room].number,
-			      o_obj->short_description ? o_obj->short_description : "(null)",
-			      OBJ_VNUM(o_obj),
-			      o_obj->obj_uid,
-			      total_value,
-			      showit ? 1 : 0,
-			      slip ? 1 : 0,
-			      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-			      s_obj ? OBJ_VNUM(s_obj) : -1);
-			logit(LOG_DEBUG,
-			      "%s (%d) got %s from %s.",
-			      J_NAME(ch),
-			      world[ch->in_room].number,
-			      coin_stringv(total_value),
-			      OBJ_NOWHERE(o_obj)   ? "NOWHERE!!"
-			      : OBJ_ROOM(o_obj)    ? "room"
-			      : OBJ_INSIDE(o_obj)  ? o_obj->loc.inside->name
-			      : OBJ_CARRIED(o_obj) ? GET_NAME(o_obj->loc.carrying)
-			                           : GET_NAME(o_obj->loc.wearing));
+				"GETDBG[get-coins-partial]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
+				GET_NAME(ch), world[ch->in_room].number,
+				o_obj->short_description ? o_obj->short_description : "(null)",
+				OBJ_VNUM(o_obj), o_obj->obj_uid, total_value, showit ? 1 : 0,
+				slip ? 1 : 0,
+				s_obj && s_obj->short_description ? s_obj->short_description :
+								    "(none)",
+				s_obj ? OBJ_VNUM(s_obj) : -1);
+			logit(LOG_DEBUG, "%s (%d) got %s from %s.", J_NAME(ch),
+			      world[ch->in_room].number, coin_stringv(total_value),
+			      OBJ_NOWHERE(o_obj) ? "NOWHERE!!" :
+			      OBJ_ROOM(o_obj)	 ? "room" :
+			      OBJ_INSIDE(o_obj)	 ? o_obj->loc.inside->name :
+			      OBJ_CARRIED(o_obj) ? GET_NAME(o_obj->loc.carrying) :
+						   GET_NAME(o_obj->loc.wearing));
 			if (IS_PC(ch))
 			{
-				sql_log(ch,
-				        PLAYERLOG,
-				        "Got %s from %s.",
-				        coin_stringv(total_value),
-				        OBJ_NOWHERE(o_obj)   ? "NOWHERE!!"
-				        : OBJ_ROOM(o_obj)    ? "room"
-				        : OBJ_INSIDE(o_obj)  ? o_obj->loc.inside->name
-				        : OBJ_CARRIED(o_obj) ? GET_NAME(o_obj->loc.carrying)
-				                             : GET_NAME(o_obj->loc.wearing));
+				sql_log(ch, PLAYERLOG, "Got %s from %s.", coin_stringv(total_value),
+					OBJ_NOWHERE(o_obj) ? "NOWHERE!!" :
+					OBJ_ROOM(o_obj)	   ? "room" :
+					OBJ_INSIDE(o_obj)  ? o_obj->loc.inside->name :
+					OBJ_CARRIED(o_obj) ? GET_NAME(o_obj->loc.carrying) :
+							     GET_NAME(o_obj->loc.wearing));
 			}
 
-			wizlog(MINLVLIMMORTAL,
-			       "%s (%d) got %s from %s.",
-			       J_NAME(ch),
-			       world[ch->in_room].number,
-			       coin_stringv(total_value),
-			       OBJ_NOWHERE(o_obj)   ? "NOWHERE!!"
-			       : OBJ_ROOM(o_obj)    ? "room"
-			       : OBJ_INSIDE(o_obj)  ? o_obj->loc.inside->name
-			       : OBJ_CARRIED(o_obj) ? GET_NAME(o_obj->loc.carrying)
-			                            : GET_NAME(o_obj->loc.wearing));
+			wizlog(MINLVLIMMORTAL, "%s (%d) got %s from %s.", J_NAME(ch),
+			       world[ch->in_room].number, coin_stringv(total_value),
+			       OBJ_NOWHERE(o_obj) ? "NOWHERE!!" :
+			       OBJ_ROOM(o_obj)	  ? "room" :
+			       OBJ_INSIDE(o_obj)  ? o_obj->loc.inside->name :
+			       OBJ_CARRIED(o_obj) ? GET_NAME(o_obj->loc.carrying) :
+						    GET_NAME(o_obj->loc.wearing));
 		}
 		if (notall)
 			snprintf(Gbuf3, MAX_STRING_LENGTH, "You got: ");
 		else
 			snprintf(Gbuf3, MAX_STRING_LENGTH, "There were: ");
 		if (got_p)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3), "%d &+Wplatinum&N coin%s, ", got_p, ((got_p > 1) ? "s" : ""));
+			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+				 "%d &+Wplatinum&N coin%s, ", got_p, ((got_p > 1) ? "s" : ""));
 		if (got_g)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3), "%d &+Ygold&N coin%s, ", got_g, ((got_g > 1) ? "s" : ""));
+			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+				 "%d &+Ygold&N coin%s, ", got_g, ((got_g > 1) ? "s" : ""));
 		if (got_s)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3), "%d &+wsilver&n coin%s, ", got_s, ((got_s > 1) ? "s" : ""));
+			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+				 "%d &+wsilver&n coin%s, ", got_s, ((got_s > 1) ? "s" : ""));
 		if (got_c)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3), "%d &+ycopper&N coin%s, ", got_c, ((got_c > 1) ? "s" : ""));
+			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+				 "%d &+ycopper&N coin%s, ", got_c, ((got_c > 1) ? "s" : ""));
 		Gbuf3[strlen(Gbuf3) - 2] = '.';
 		strcat(Gbuf3, "\r\n");
 
@@ -377,15 +344,19 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			{
 				if (OBJ_CARRIED_BY(s_obj, ch))
 				{
-					act("You get some coins from your $Q.", 1, ch, o_obj, s_obj, TO_CHAR);
+					act("You get some coins from your $Q.", 1, ch, o_obj, s_obj,
+					    TO_CHAR);
 					if (showit && !slip)
-						act("$n gets some coins from $s $Q.", 1, ch, o_obj, s_obj, TO_ROOM);
+						act("$n gets some coins from $s $Q.", 1, ch, o_obj,
+						    s_obj, TO_ROOM);
 				}
 				else
 				{
-					act("You get some coins from $P.", 0, ch, o_obj, s_obj, TO_CHAR);
+					act("You get some coins from $P.", 0, ch, o_obj, s_obj,
+					    TO_CHAR);
 					if (showit && !slip)
-						act("$n gets some coins from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
+						act("$n gets some coins from $P.", 1, ch, o_obj,
+						    s_obj, TO_ROOM);
 				}
 			}
 			else
@@ -404,31 +375,31 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		else
 		{
 			GETDBG_LOG(
-			      "GETDBG[get-coins-exact]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
-			      GET_NAME(ch),
-			      world[ch->in_room].number,
-			      o_obj->short_description ? o_obj->short_description : "(null)",
-			      OBJ_VNUM(o_obj),
-			      o_obj->obj_uid,
-			      total_value,
-			      showit ? 1 : 0,
-			      slip ? 1 : 0,
-			      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-			      s_obj ? OBJ_VNUM(s_obj) : -1);
+				"GETDBG[get-coins-exact]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
+				GET_NAME(ch), world[ch->in_room].number,
+				o_obj->short_description ? o_obj->short_description : "(null)",
+				OBJ_VNUM(o_obj), o_obj->obj_uid, total_value, showit ? 1 : 0,
+				slip ? 1 : 0,
+				s_obj && s_obj->short_description ? s_obj->short_description :
+								    "(none)",
+				s_obj ? OBJ_VNUM(s_obj) : -1);
 			if (s_obj)
 			{
 				obj_from_obj(o_obj);
 				if (OBJ_CARRIED_BY(s_obj, ch))
 				{
-					act("You get $p from your $Q.", 0, ch, o_obj, s_obj, TO_CHAR);
+					act("You get $p from your $Q.", 0, ch, o_obj, s_obj,
+					    TO_CHAR);
 					if (showit && !slip)
-						act("$n gets $p from $s $Q.", 1, ch, o_obj, s_obj, TO_ROOM);
+						act("$n gets $p from $s $Q.", 1, ch, o_obj, s_obj,
+						    TO_ROOM);
 				}
 				else
 				{
 					act("You get $p from $P.", 0, ch, o_obj, s_obj, TO_CHAR);
 					if (showit && !slip)
-						act("$n gets $p from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
+						act("$n gets $p from $P.", 1, ch, o_obj, s_obj,
+						    TO_ROOM);
 				}
 			}
 			else
@@ -446,7 +417,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			// Fix requires obj_to_char/obj_to_room returning a freed-status, or a
 			// zombie flag, touching hundreds of call sites.
 			o_obj = NULL;
-			}
+		}
 
 		// this call to writeCharacter is a Bad Thing.  Whatever is calling
 		// get() should be writing the character.  Calling it here results in
@@ -542,7 +513,8 @@ static void do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool 
 	get(ch, o_obj, s_obj, TRUE);
 }
 
-static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found, int &total)
+static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
+					int &total)
 {
 	do_get_commit_pickup_core(ch, s_obj, o_obj, found);
 	total++;
@@ -551,48 +523,42 @@ static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, boo
 			s_obj->value[3]--;
 }
 
-static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total, bool &found, const char *post_tag)
+static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
+					   bool &found, const char *post_tag)
 {
 	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total);
 	GETDBG_LOG(
-	      "%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
-	      post_tag,
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      o_obj->short_description ? o_obj->short_description : "?",
-	      OBJ_VNUM(o_obj),
-	      o_obj->obj_uid,
-	      OBJ_CARRIED_BY(o_obj, ch) ? 1 : 0,
-	      s_obj->short_description ? s_obj->short_description : "(none)",
-	      OBJ_VNUM(s_obj),
-	      s_obj->obj_uid,
-	      total);
+		"%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
+		post_tag, GET_NAME(ch), world[ch->in_room].number,
+		o_obj->short_description ? o_obj->short_description : "?", OBJ_VNUM(o_obj),
+		o_obj->obj_uid, OBJ_CARRIED_BY(o_obj, ch) ? 1 : 0,
+		s_obj->short_description ? s_obj->short_description : "(none)", OBJ_VNUM(s_obj),
+		s_obj->obj_uid, total);
 }
 
 static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj);
 static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail);
 static void do_get_reject_closed(P_char ch, bool &fail);
 static void do_get_reject_fighting_bags(P_char ch, bool &fail);
-static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj, const char *tag, int carried, int carry_w, int cap_w, bool &fail);
-static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, const char *post_tag)
+static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
+						 const char *tag, int carried, int carry_w,
+						 int cap_w, bool &fail);
+static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj,
+					      int &total, bool &found, bool corpse_flag,
+					      const char *post_tag)
 {
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
 	{
-		logit(LOG_CORPSE, "%s%s: corpse of %s from %s", GET_NAME(ch), (hood == ch) ? "" : GET_NAME(hood), o_obj->action_description, s_obj->name);
+		logit(LOG_CORPSE, "%s%s: corpse of %s from %s", GET_NAME(ch),
+		      (hood == ch) ? "" : GET_NAME(hood), o_obj->action_description, s_obj->name);
 	}
 	else if (corpse_flag && o_obj)
 	{
 		if (o_obj->type == ITEM_MONEY)
 		{
-			logit(LOG_CORPSE,
-			      "%s%s: %dp, %dg, %ds, %dc from %s",
-			      GET_NAME(ch),
-			      (hood == ch) ? "" : GET_NAME(hood),
-			      o_obj->value[3],
-			      o_obj->value[2],
-			      o_obj->value[1],
-			      o_obj->value[0],
-			      s_obj->action_description);
+			logit(LOG_CORPSE, "%s%s: %dp, %dg, %ds, %dc from %s", GET_NAME(ch),
+			      (hood == ch) ? "" : GET_NAME(hood), o_obj->value[3], o_obj->value[2],
+			      o_obj->value[1], o_obj->value[0], s_obj->action_description);
 		}
 		else
 		{
@@ -600,11 +566,12 @@ static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_ob
 			{
 				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
 				// If the artifact was picked up across racewar lines.
-				if ((s_obj->value[5] != RACEWAR_NONE) && (GET_RACEWAR(ch) != s_obj->value[5]))
+				if ((s_obj->value[5] != RACEWAR_NONE) &&
+				    (GET_RACEWAR(ch) != s_obj->value[5]))
 				{
-					int vnum      = OBJ_VNUM(o_obj);
+					int vnum = OBJ_VNUM(o_obj);
 					int owner_pid = -1;
-					int timer     = time(NULL);
+					int timer = time(NULL);
 					// This sets the 'soul' of the artifact to the new owner.
 					sql_update_bind_data(vnum, &owner_pid, &timer);
 					// Feed artifact to at least the minimum for across racewar sides.
@@ -613,11 +580,8 @@ static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_ob
 			}
 			else
 			{
-				logit(LOG_CORPSE,
-				      "%s%s: %s [%d] from %s",
-				      GET_NAME(ch),
-				      (hood == ch) ? "" : GET_NAME(hood),
-				      o_obj->name,
+				logit(LOG_CORPSE, "%s%s: %s [%d] from %s", GET_NAME(ch),
+				      (hood == ch) ? "" : GET_NAME(hood), o_obj->name,
 				      obj_index[o_obj->R_num].virtual_number,
 				      s_obj->action_description);
 
@@ -640,19 +604,20 @@ static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
 {
 	if (IS_ARTIFACT(o_obj))
 	{
-		wizlog(56, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
-		logit(LOG_OBJ, "%s getting artifact %s (%d) from room %d.", J_NAME(ch), o_obj->short_description, obj_index[o_obj->R_num].virtual_number, world[ch->in_room].number);
+		wizlog(56, "%s getting artifact %s (%d) from room %d.", J_NAME(ch),
+		       o_obj->short_description, obj_index[o_obj->R_num].virtual_number,
+		       world[ch->in_room].number);
+		logit(LOG_OBJ, "%s getting artifact %s (%d) from room %d.", J_NAME(ch),
+		      o_obj->short_description, obj_index[o_obj->R_num].virtual_number,
+		      world[ch->in_room].number);
 	}
 }
 
 static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj)
 {
-	logit(LOG_CORPSE, "%s %s: %s [%d] (ARTIFACT) from %s",
-	      GET_NAME(ch),
-	      (hood == ch) ? "" : GET_NAME(hood),
-	      o_obj->name,
-	      obj_index[o_obj->R_num].virtual_number,
-	      s_obj->action_description);
+	logit(LOG_CORPSE, "%s %s: %s [%d] (ARTIFACT) from %s", GET_NAME(ch),
+	      (hood == ch) ? "" : GET_NAME(hood), o_obj->name,
+	      obj_index[o_obj->R_num].virtual_number, s_obj->action_description);
 	act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 }
 
@@ -684,8 +649,8 @@ static P_obj do_get_obj_in_equipment_vis(P_char ch, char *name)
 static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carried)
 {
 	P_obj carried_obj = get_obj_in_list_vis(ch, arg2, ch->carrying);
-	P_obj worn_obj    = do_get_obj_in_equipment_vis(ch, arg2);
-	P_obj room_obj    = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
+	P_obj worn_obj = do_get_obj_in_equipment_vis(ch, arg2);
+	P_obj room_obj = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
 
 	if (carried_obj && do_get_container_target_is_valid(carried_obj))
 	{
@@ -729,10 +694,8 @@ static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carrie
 
 static bool do_get_container_target_is_valid(P_obj s_obj)
 {
-	return (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) ||
-	       (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) ||
-	       (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER) ||
-	       (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE);
+	return (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) || (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) ||
+	       (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER) || (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE);
 }
 
 static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
@@ -740,60 +703,50 @@ static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
 	return CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch));
 }
 
-static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj, bool source_is_local)
+static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
+					      bool source_is_local)
 {
-	const bool carried      = source_is_local;
-	const bool worn         = s_obj && OBJ_WORN(s_obj);
+	const bool carried = source_is_local;
+	const bool worn = s_obj && OBJ_WORN(s_obj);
 	const bool actual_local = s_obj && (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj));
-	const bool takeable     = source_is_local ? TRUE : do_get_obj_is_takeable(ch, o_obj);
+	const bool takeable = source_is_local ? TRUE : do_get_obj_is_takeable(ch, o_obj);
 
 	GETDBG_LOG(
-	      "GETDBG[container-item-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d worn=%d source_local=%d actual_local=%d takeable=%d",
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      o_obj && o_obj->short_description ? o_obj->short_description : "?",
-	      o_obj ? OBJ_VNUM(o_obj) : -1,
-	      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-	      s_obj ? OBJ_VNUM(s_obj) : -1,
-	      carried ? 1 : 0,
-	      worn ? 1 : 0,
-	      source_is_local ? 1 : 0,
-	      actual_local ? 1 : 0,
-	      takeable ? 1 : 0);
+		"GETDBG[container-item-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d worn=%d source_local=%d actual_local=%d takeable=%d",
+		GET_NAME(ch), world[ch->in_room].number,
+		o_obj && o_obj->short_description ? o_obj->short_description : "?",
+		o_obj ? OBJ_VNUM(o_obj) : -1,
+		s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+		s_obj ? OBJ_VNUM(s_obj) : -1, carried ? 1 : 0, worn ? 1 : 0,
+		source_is_local ? 1 : 0, actual_local ? 1 : 0, takeable ? 1 : 0);
 
 	if (source_is_local != actual_local)
 	{
 		GETDBG_LOG(
-		      "GETDBG[container-item-local-mismatch]: ch=%s room=%d obj=%s [%d] container=%s [%d] source_local=%d actual_local=%d carried=%d worn=%d inside=%d",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj && o_obj->short_description ? o_obj->short_description : "?",
-		      o_obj ? OBJ_VNUM(o_obj) : -1,
-		      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-		      s_obj ? OBJ_VNUM(s_obj) : -1,
-		      source_is_local ? 1 : 0,
-		      actual_local ? 1 : 0,
-		      s_obj && OBJ_CARRIED(s_obj) ? 1 : 0,
-		      worn ? 1 : 0,
-		      s_obj && OBJ_INSIDE(s_obj) ? 1 : 0);
+			"GETDBG[container-item-local-mismatch]: ch=%s room=%d obj=%s [%d] container=%s [%d] source_local=%d actual_local=%d carried=%d worn=%d inside=%d",
+			GET_NAME(ch), world[ch->in_room].number,
+			o_obj && o_obj->short_description ? o_obj->short_description : "?",
+			o_obj ? OBJ_VNUM(o_obj) : -1,
+			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
+			s_obj ? OBJ_VNUM(s_obj) : -1, source_is_local ? 1 : 0, actual_local ? 1 : 0,
+			s_obj && OBJ_CARRIED(s_obj) ? 1 : 0, worn ? 1 : 0,
+			s_obj && OBJ_INSIDE(s_obj) ? 1 : 0);
 	}
 
 	return takeable;
 }
 
-static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag, bool check_front_line, const char *arg1, const char *arg2, bool &fail)
+static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag,
+				       bool check_front_line, const char *arg1, const char *arg2,
+				       bool &fail)
 {
 	if ((GET_ITEM_TYPE(s_obj) != ITEM_CORPSE) && IS_SET(s_obj->value[1], CONT_CLOSED))
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-container-closed]: ch=%s room=%d container=%s [%d] uid=%lu arg1='%s' arg2='%s'",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      s_obj->short_description ? s_obj->short_description : "(none)",
-		      OBJ_VNUM(s_obj),
-		      s_obj->obj_uid,
-		      arg1,
-		      arg2);
+			"GETDBG[get-container-closed]: ch=%s room=%d container=%s [%d] uid=%lu arg1='%s' arg2='%s'",
+			GET_NAME(ch), world[ch->in_room].number,
+			s_obj->short_description ? s_obj->short_description : "(none)",
+			OBJ_VNUM(s_obj), s_obj->obj_uid, arg1, arg2);
 		do_get_reject_closed(ch, fail);
 		return FALSE;
 	}
@@ -806,14 +759,11 @@ static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag
 	if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d destroying=%d corpse_flag=%d",
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      s_obj->short_description ? s_obj->short_description : "(none)",
-		      OBJ_VNUM(s_obj),
-		      IS_FIGHTING(ch) ? 1 : 0,
-		      IS_DESTROYING(ch) ? 1 : 0,
-		      corpse_flag ? 1 : 0);
+			"GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d destroying=%d corpse_flag=%d",
+			GET_NAME(ch), world[ch->in_room].number,
+			s_obj->short_description ? s_obj->short_description : "(none)",
+			OBJ_VNUM(s_obj), IS_FIGHTING(ch) ? 1 : 0, IS_DESTROYING(ch) ? 1 : 0,
+			corpse_flag ? 1 : 0);
 		do_get_reject_fighting_bags(ch, fail);
 		return FALSE;
 	}
@@ -821,15 +771,14 @@ static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag
 	if (check_front_line && corpse_flag && fight_in_room(ch) && !on_front_line(ch))
 	{
 		GETDBG_LOG(
-		      "GETDBG[get-all front-line-gate]: ch=%s room=%d corpse_flag=%d fighting=%d front_line=%d container=%s [%d]",
-		      GET_NAME(ch),
-	      world[ch->in_room].number,
-		      corpse_flag ? 1 : 0,
-		      fight_in_room(ch) ? 1 : 0,
-		      on_front_line(ch) ? 1 : 0,
-		      s_obj->short_description ? s_obj->short_description : "(none)",
-		      OBJ_VNUM(s_obj));
-		send_to_char("There's too much &+Rb&+rl&+Ro&+ro&+Rd&n flying around for you to do that!\r\n", ch);
+			"GETDBG[get-all front-line-gate]: ch=%s room=%d corpse_flag=%d fighting=%d front_line=%d container=%s [%d]",
+			GET_NAME(ch), world[ch->in_room].number, corpse_flag ? 1 : 0,
+			fight_in_room(ch) ? 1 : 0, on_front_line(ch) ? 1 : 0,
+			s_obj->short_description ? s_obj->short_description : "(none)",
+			OBJ_VNUM(s_obj));
+		send_to_char(
+			"There's too much &+Rb&+rl&+Ro&+ro&+Rd&n flying around for you to do that!\r\n",
+			ch);
 		return FALSE;
 	}
 
@@ -844,35 +793,30 @@ static P_obj do_get_container_resolve_item(P_char ch, P_obj s_obj, char *arg1, b
 	return get_obj_in_list_vis(ch, arg1, s_obj->contains);
 }
 
-static bool do_get_finalize_container_item_or_reject(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total, bool &found, bool corpse_flag, int carried, int carry_w, int cap_w, const char *reject_tag, const char *post_tag, bool &fail)
+static bool do_get_finalize_container_item_or_reject(P_char ch, P_char hood, P_obj s_obj,
+						     P_obj o_obj, int &total, bool &found,
+						     bool corpse_flag, int carried, int carry_w,
+						     int cap_w, const char *reject_tag,
+						     const char *post_tag, bool &fail)
 {
 	if (!do_get_container_item_is_takeable(ch, s_obj, o_obj, carried))
 	{
-		do_get_reject_container_not_takeable(ch, s_obj, o_obj, reject_tag, carried, carry_w, cap_w, fail);
+		do_get_reject_container_not_takeable(ch, s_obj, o_obj, reject_tag, carried, carry_w,
+						     cap_w, fail);
 		return FALSE;
 	}
 
-	do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag, post_tag);
+	do_get_finalize_container_success(ch, hood, s_obj, o_obj, total, found, corpse_flag,
+					  post_tag);
 	return TRUE;
 }
 
-
-static bool do_get_try_container_item(P_char ch,
-                                      P_char hood,
-                                      P_obj  s_obj,
-                                      P_obj  o_obj,
-                                      int   &total,
-                                      bool  &found,
-                                      bool   corpse_flag,
-                                      bool   source_is_local,
-                                      bool  &stop_bulk,
-                                      bool  &fail,
-                                      const char *invisible_tag,
-                                      const char *too_heavy_tag,
-                                      const char *carry_tag,
-                                      const char *reject_tag,
-                                      const char *post_tag,
-                                      bool        report_carry_limit)
+static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total,
+				      bool &found, bool corpse_flag, bool source_is_local,
+				      bool &stop_bulk, bool &fail, const char *invisible_tag,
+				      const char *too_heavy_tag, const char *carry_tag,
+				      const char *reject_tag, const char *post_tag,
+				      bool report_carry_limit)
 {
 	const bool local_container = source_is_local;
 	P_char rider = NULL;
@@ -880,46 +824,38 @@ static bool do_get_try_container_item(P_char ch,
 
 	if (!CAN_SEE_OBJ(ch, o_obj) && !local_container)
 	{
-		snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n", o_obj->short_description);
+		snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n",
+			 o_obj->short_description);
 		send_to_char(Gbuf3, ch);
 		fail = TRUE;
 		GETDBG_LOG(
-		      "%s: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d cansee=%d local=%d",
-		      invisible_tag,
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "?",
-		      OBJ_VNUM(o_obj),
-		      s_obj->short_description ? s_obj->short_description : "(none)",
-		      OBJ_VNUM(s_obj),
-		      corpse_flag ? 1 : 0,
-		      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
-		      local_container ? 1 : 0);
+			"%s: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d cansee=%d local=%d",
+			invisible_tag, GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "?", OBJ_VNUM(o_obj),
+			s_obj->short_description ? s_obj->short_description : "(none)",
+			OBJ_VNUM(s_obj), corpse_flag ? 1 : 0, CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
+			local_container ? 1 : 0);
 		return FALSE;
 	}
 
 	if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch))
 	{
-		if (((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch)) || local_container)
+		if (((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch)) ||
+		    local_container)
 		{
-			return do_get_finalize_container_item_or_reject(ch, hood, s_obj, o_obj,
-				total, found, corpse_flag, local_container ? 1 : 0,
-				total_carried_weight(ch), CAN_CARRY_W(ch), reject_tag, post_tag, fail);
+			return do_get_finalize_container_item_or_reject(
+				ch, hood, s_obj, o_obj, total, found, corpse_flag,
+				local_container ? 1 : 0, total_carried_weight(ch), CAN_CARRY_W(ch),
+				reject_tag, post_tag, fail);
 		}
 
 		GETDBG_LOG(
-		      "%s: ch=%s room=%d obj=%s [%d] wt=%d carry_w=%d cap=%d container=%s [%d] local=%d",
-		      too_heavy_tag,
-		      GET_NAME(ch),
-		      world[ch->in_room].number,
-		      o_obj->short_description ? o_obj->short_description : "?",
-		      OBJ_VNUM(o_obj),
-		      GET_OBJ_WEIGHT(o_obj),
-		      total_carried_weight(ch),
-		      CAN_CARRY_W(ch),
-		      s_obj->short_description ? s_obj->short_description : "(none)",
-		      OBJ_VNUM(s_obj),
-		      local_container ? 1 : 0);
+			"%s: ch=%s room=%d obj=%s [%d] wt=%d carry_w=%d cap=%d container=%s [%d] local=%d",
+			too_heavy_tag, GET_NAME(ch), world[ch->in_room].number,
+			o_obj->short_description ? o_obj->short_description : "?", OBJ_VNUM(o_obj),
+			GET_OBJ_WEIGHT(o_obj), total_carried_weight(ch), CAN_CARRY_W(ch),
+			s_obj->short_description ? s_obj->short_description : "(none)",
+			OBJ_VNUM(s_obj), local_container ? 1 : 0);
 		if (report_carry_limit)
 			send_to_char("You can't carry any more.\r\n", ch);
 		fail = TRUE;
@@ -927,18 +863,12 @@ static bool do_get_try_container_item(P_char ch,
 		return FALSE;
 	}
 
-	GETDBG_LOG(
-	      "%s: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d container=%s [%d] local=%d",
-	      carry_tag,
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      o_obj->short_description ? o_obj->short_description : "?",
-	      OBJ_VNUM(o_obj),
-	      IS_CARRYING_N(ch),
-	      CAN_CARRY_N(ch),
-	      s_obj->short_description ? s_obj->short_description : "(none)",
-	      OBJ_VNUM(s_obj),
-	      local_container ? 1 : 0);
+	GETDBG_LOG("%s: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d container=%s [%d] local=%d",
+		   carry_tag, GET_NAME(ch), world[ch->in_room].number,
+		   o_obj->short_description ? o_obj->short_description : "?", OBJ_VNUM(o_obj),
+		   IS_CARRYING_N(ch), CAN_CARRY_N(ch),
+		   s_obj->short_description ? s_obj->short_description : "(none)", OBJ_VNUM(s_obj),
+		   local_container ? 1 : 0);
 	if (report_carry_limit)
 		send_to_char("You can't carry any more.\r\n", ch);
 	fail = TRUE;
@@ -1009,7 +939,8 @@ static void do_get_reject_out_of_sight(P_char ch, P_obj o_obj, bool &fail)
 
 static void do_get_reject_fighting_bags(P_char ch, bool &fail)
 {
-	do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n", fail);
+	do_get_reject_text(ch, "You're too busy fighting to be pulling things out of bags!\r\n",
+			   fail);
 }
 
 static void do_get_reject_carry_limit(P_char ch, bool &fail)
@@ -1022,20 +953,15 @@ static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail)
 	do_get_reject_object(ch, o_obj, "isn't takeable.", fail);
 }
 
-static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj, const char *tag, int carried, int carry_w, int cap_w, bool &fail)
+static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
+						 const char *tag, int carried, int carry_w,
+						 int cap_w, bool &fail)
 {
-	GETDBG_LOG(
-	      "%s: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d carry_w=%d cap=%d",
-	      tag,
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      o_obj->short_description ? o_obj->short_description : "?",
-	      OBJ_VNUM(o_obj),
-	      s_obj->short_description ? s_obj->short_description : "(none)",
-	      OBJ_VNUM(s_obj),
-	      carried,
-	      carry_w,
-	      cap_w);
+	GETDBG_LOG("%s: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d carry_w=%d cap=%d",
+		   tag, GET_NAME(ch), world[ch->in_room].number,
+		   o_obj->short_description ? o_obj->short_description : "?", OBJ_VNUM(o_obj),
+		   s_obj->short_description ? s_obj->short_description : "(none)", OBJ_VNUM(s_obj),
+		   carried, carry_w, cap_w);
 	do_get_reject_not_takeable(ch, o_obj, fail);
 }
 
@@ -1059,17 +985,20 @@ static void do_get_mark_alldot(char *arg1, bool &alldot)
 void do_get(P_char ch, char *argument, int cmd)
 {
 	P_char hood = NULL, owner = NULL;
-	P_obj  s_obj = NULL, o_obj = NULL, next_obj;
-	bool   found = FALSE, fail = FALSE, corpse_flag = FALSE, alldot = FALSE, carried, stop_bulk = FALSE;
-	char   Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
-	char   Gbuf4[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
-	char   arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
-	int    type = 0, total = 0;
-	int    looting = FALSE;
-	int    wfound  = FALSE;
-	int    i, j;
-	P_obj  t_obj;
-	int    wear_order[] = {41, 24, 40, 6, 19, 21, 22, 20, 39, 3, 4, 5, 35, 37, 12, 27, 23, 13, 28, 29, 30, 10, 31, 11, 14, 15, 33, 34, 9, 32, 1, 2, 16, 17, 25, 26, 18, 7, 36, 8, 38, -1};
+	P_obj s_obj = NULL, o_obj = NULL, next_obj;
+	bool found = FALSE, fail = FALSE, corpse_flag = FALSE, alldot = FALSE, carried,
+	     stop_bulk = FALSE;
+	char Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	char Gbuf4[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+	int type = 0, total = 0;
+	int looting = FALSE;
+	int wfound = FALSE;
+	int i, j;
+	P_obj t_obj;
+	int wear_order[] = { 41, 24, 40, 6,  19, 21, 22, 20, 39, 3,  4,	 5,  35, 37,
+			     12, 27, 23, 13, 28, 29, 30, 10, 31, 11, 14, 15, 33, 34,
+			     9,	 32, 1,	 2,  16, 17, 25, 26, 18, 7,  36, 8,  38, -1 };
 
 	if (!IS_ALIVE(ch))
 	{
@@ -1089,7 +1018,7 @@ void do_get(P_char ch, char *argument, int cmd)
 	{
 		if (ch->equipment[wear_order[j]])
 		{
-			t_obj  = ch->equipment[wear_order[j]];
+			t_obj = ch->equipment[wear_order[j]];
 			wfound = TRUE;
 		}
 	}
@@ -1108,17 +1037,10 @@ void do_get(P_char ch, char *argument, int cmd)
 
 	argument_interpreter(argument, arg1, arg2);
 	GETDBG_LOG(
-	      "GETDBG[do_get parse]: ch=%s room=%d raw='%s' arg1='%s' arg2='%s' cmd=%d fighting=%d front_line=%d carry_n=%d carry_w=%d",
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      argument ? argument : "(null)",
-	      arg1,
-	      arg2,
-	      cmd,
-	      fight_in_room(ch) ? 1 : 0,
-	      on_front_line(ch) ? 1 : 0,
-	      IS_CARRYING_N(ch),
-	      total_carried_weight(ch));
+		"GETDBG[do_get parse]: ch=%s room=%d raw='%s' arg1='%s' arg2='%s' cmd=%d fighting=%d front_line=%d carry_n=%d carry_w=%d",
+		GET_NAME(ch), world[ch->in_room].number, argument ? argument : "(null)", arg1, arg2,
+		cmd, fight_in_room(ch) ? 1 : 0, on_front_line(ch) ? 1 : 0, IS_CARRYING_N(ch),
+		total_carried_weight(ch));
 
 	if (IS_NPC(ch) && ch->following && (ch->in_room == ch->following->in_room))
 	{
@@ -1135,7 +1057,7 @@ void do_get(P_char ch, char *argument, int cmd)
 
 	if (*arg1 && !*arg2)
 	{ /* only 1 arg, so assumes (from room) */
-		alldot   = FALSE;
+		alldot = FALSE;
 		Gbuf2[0] = '\0';
 		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
 		{
@@ -1152,7 +1074,7 @@ void do_get(P_char ch, char *argument, int cmd)
 	}
 	else if (*arg1 && *arg2)
 	{ /* 2 args, get something(s) from a container */
-		alldot   = FALSE;
+		alldot = FALSE;
 		Gbuf2[0] = '\0';
 		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
 		{
@@ -1175,15 +1097,9 @@ void do_get(P_char ch, char *argument, int cmd)
 	}
 
 	GETDBG_LOG(
-	      "GETDBG[do_get type]: ch=%s room=%d arg1='%s' arg2='%s' type=%d alldot=%d corpse_flag=%d hood=%s",
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      arg1,
-	      arg2,
-	      type,
-	      alldot ? 1 : 0,
-	      corpse_flag ? 1 : 0,
-	      hood ? GET_NAME(hood) : "(none)");
+		"GETDBG[do_get type]: ch=%s room=%d arg1='%s' arg2='%s' type=%d alldot=%d corpse_flag=%d hood=%s",
+		GET_NAME(ch), world[ch->in_room].number, arg1, arg2, type, alldot ? 1 : 0,
+		corpse_flag ? 1 : 0, hood ? GET_NAME(hood) : "(none)");
 
 	// Removing buggy switch.
 
@@ -1198,35 +1114,29 @@ void do_get(P_char ch, char *argument, int cmd)
 	{
 		s_obj = 0;
 		found = FALSE;
-		fail  = FALSE;
+		fail = FALSE;
 		for (o_obj = world[ch->in_room].contents; o_obj; o_obj = next_obj)
 		{
 			next_obj = o_obj->next_content;
 			GETDBG_LOG(
-			      "GETDBG[get-room-item]: ch=%s room=%d obj=%s [%d] type=%d wt=%d carry_n=%d carry_w=%d take=%d allowed=%d alldot=%d filter='%s'",
-			      GET_NAME(ch),
-			      world[ch->in_room].number,
-			      o_obj->short_description ? o_obj->short_description : "(null)",
-			      OBJ_VNUM(o_obj),
-			      GET_ITEM_TYPE(o_obj),
-			      GET_OBJ_WEIGHT(o_obj),
-			      IS_CARRYING_N(ch),
-			      total_carried_weight(ch),
-			      do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
-			      ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)) ? 1 : 0,
-			      alldot ? 1 : 0,
-			      Gbuf2);
+				"GETDBG[get-room-item]: ch=%s room=%d obj=%s [%d] type=%d wt=%d carry_n=%d carry_w=%d take=%d allowed=%d alldot=%d filter='%s'",
+				GET_NAME(ch), world[ch->in_room].number,
+				o_obj->short_description ? o_obj->short_description : "(null)",
+				OBJ_VNUM(o_obj), GET_ITEM_TYPE(o_obj), GET_OBJ_WEIGHT(o_obj),
+				IS_CARRYING_N(ch), total_carried_weight(ch),
+				do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
+				((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)) ? 1 : 0, alldot ? 1 : 0,
+				Gbuf2);
 
 			if (alldot && !isname(Gbuf2, o_obj->name))
 			{
 				GETDBG_LOG(
-				      "GETDBG[get-room-skip:filter]: ch=%s room=%d obj=%s [%d] filter='%s' name='%s'",
-				      GET_NAME(ch),
-				      world[ch->in_room].number,
-				      o_obj->short_description ? o_obj->short_description : "(null)",
-				      OBJ_VNUM(o_obj),
-				      Gbuf2,
-				      o_obj->name ? o_obj->name : "(null)");
+					"GETDBG[get-room-skip:filter]: ch=%s room=%d obj=%s [%d] filter='%s' name='%s'",
+					GET_NAME(ch), world[ch->in_room].number,
+					o_obj->short_description ? o_obj->short_description :
+								   "(null)",
+					OBJ_VNUM(o_obj), Gbuf2,
+					o_obj->name ? o_obj->name : "(null)");
 				continue;
 			}
 
@@ -1236,46 +1146,52 @@ void do_get(P_char ch, char *argument, int cmd)
 				   if (check_get_disarmed_obj(ch, o_obj->last_to_hold, o_obj))
 				   continue; */
 
-				if ((IS_CARRYING_N(ch) + 1) <= CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) > LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
+				if ((IS_CARRYING_N(ch) + 1) <= CAN_CARRY_N(ch) ||
+				    ((OBJ_VNUM(o_obj) > LOWEST_MAT_VNUM) &&
+				     (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
 				{
-					if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
+					if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <=
+					    CAN_CARRY_W(ch))
 					{
 						if (do_get_obj_is_takeable(ch, o_obj))
 						{
-							do_get_finalize_room_item(ch, o_obj, found, total);
+							do_get_finalize_room_item(ch, o_obj, found,
+										  total);
 						}
 						else
 						{
 							GETDBG_LOG(
-							      "GETDBG[get-room-reject:not-takeable]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d carry_w=%d cap_w=%d",
-							      GET_NAME(ch),
-							      world[ch->in_room].number,
-							      o_obj->short_description ? o_obj->short_description : "(null)",
-							      OBJ_VNUM(o_obj),
-							      IS_CARRYING_N(ch),
-							      CAN_CARRY_N(ch),
-							      total_carried_weight(ch),
-							      CAN_CARRY_W(ch));
+								"GETDBG[get-room-reject:not-takeable]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d carry_w=%d cap_w=%d",
+								GET_NAME(ch),
+								world[ch->in_room].number,
+								o_obj->short_description ?
+									o_obj->short_description :
+									"(null)",
+								OBJ_VNUM(o_obj), IS_CARRYING_N(ch),
+								CAN_CARRY_N(ch),
+								total_carried_weight(ch),
+								CAN_CARRY_W(ch));
 							do_get_reject_not_takeable(ch, o_obj, fail);
 						}
 					}
 					else
 					{
-						do_get_reject_object(ch, o_obj, "is too heavy to lift.", fail);
+						do_get_reject_object(ch, o_obj,
+								     "is too heavy to lift.", fail);
 					}
 				}
 				else
 				{
 					GETDBG_LOG(
-					      "GETDBG[get-room-reject:carry-limit]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d",
-					      GET_NAME(ch),
-					      world[ch->in_room].number,
-					      o_obj->short_description ? o_obj->short_description : "(null)",
-					      OBJ_VNUM(o_obj),
-					      IS_CARRYING_N(ch),
-					      CAN_CARRY_N(ch));
+						"GETDBG[get-room-reject:carry-limit]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d",
+						GET_NAME(ch), world[ch->in_room].number,
+						o_obj->short_description ?
+							o_obj->short_description :
+							"(null)",
+						OBJ_VNUM(o_obj), IS_CARRYING_N(ch),
+						CAN_CARRY_N(ch));
 					send_to_char("You can't carry anything more.\r\n", ch);
-fail = TRUE;
+					fail = TRUE;
 					break;
 				}
 			}
@@ -1296,21 +1212,17 @@ fail = TRUE;
 	if (type == 2)
 	{
 		found = FALSE;
-		fail  = FALSE;
+		fail = FALSE;
 
-		if ((o_obj = get_obj_in_list_vis(ch, arg1, world[ch->in_room].contents, !IS_TRUSTED(ch))))
+		if ((o_obj = get_obj_in_list_vis(ch, arg1, world[ch->in_room].contents,
+						 !IS_TRUSTED(ch))))
 		{
 			GETDBG_LOG(
-			      "GETDBG[get-single-selected]: ch=%s room=%d arg1='%s' obj=%s [%d] uid=%lu visible=%d carry_n=%d carry_w=%d",
-			      GET_NAME(ch),
-			      world[ch->in_room].number,
-			      arg1,
-			      o_obj->short_description ? o_obj->short_description : "(null)",
-			      OBJ_VNUM(o_obj),
-			      o_obj->obj_uid,
-			      CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
-			      IS_CARRYING_N(ch),
-			      total_carried_weight(ch));
+				"GETDBG[get-single-selected]: ch=%s room=%d arg1='%s' obj=%s [%d] uid=%lu visible=%d carry_n=%d carry_w=%d",
+				GET_NAME(ch), world[ch->in_room].number, arg1,
+				o_obj->short_description ? o_obj->short_description : "(null)",
+				OBJ_VNUM(o_obj), o_obj->obj_uid, CAN_SEE_OBJ(ch, o_obj) ? 1 : 0,
+				IS_CARRYING_N(ch), total_carried_weight(ch));
 			/*
 			 * was object disarmed?  did PC still manage to get it? if so,
 			 * get object --TAM
@@ -1318,33 +1230,55 @@ fail = TRUE;
 			 return;
 			 */
 
-			if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) || ((OBJ_VNUM(o_obj) > LOWEST_MAT_VNUM) && (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
+			if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch) ||
+			    ((OBJ_VNUM(o_obj) > LOWEST_MAT_VNUM) &&
+			     (OBJ_VNUM(o_obj) <= HIGHEST_MAT_VNUM)))
 			{
-				if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch))
+				if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <=
+				    CAN_CARRY_W(ch))
 				{
 					if (do_get_obj_is_takeable(ch, o_obj))
 					{
-						if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
+						if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) &&
+						    IS_SET(o_obj->value[1], PC_CORPSE))
 						{
 							owner = get_char(o_obj->action_description);
-							if ((ch == owner) || (owner && is_linked_to(ch, owner, LNK_CONSENT)) || (IS_TRUSTED(ch)))
+							if ((ch == owner) ||
+							    (owner && is_linked_to(ch, owner,
+										   LNK_CONSENT)) ||
+							    (IS_TRUSTED(ch)))
 							{
-								logit(LOG_CORPSE, "%s%s: corpse of %s", GET_NAME(ch), (hood == ch) ? "" : GET_NAME(hood), o_obj->action_description);
+								logit(LOG_CORPSE,
+								      "%s%s: corpse of %s",
+								      GET_NAME(ch),
+								      (hood == ch) ? "" :
+										     GET_NAME(hood),
+								      o_obj->action_description);
 								if (!wfound)
-									logit(LOG_CORPSE, "%s %s", GET_NAME(ch), argument);
+									logit(LOG_CORPSE, "%s %s",
+									      GET_NAME(ch),
+									      argument);
 							}
 							else
 							{
 								GETDBG_LOG(
-								      "GETDBG[get-deny:corpse-consent]: ch=%s room=%d obj=%s [%d] owner=%s container=%s [%d]",
-								      GET_NAME(ch),
-								      world[ch->in_room].number,
-								      o_obj->short_description ? o_obj->short_description : "(null)",
-								      OBJ_VNUM(o_obj),
-								      owner ? owner->player.name : "(none)",
-								      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
-								      s_obj ? OBJ_VNUM(s_obj) : -1);
-								send_to_char("Looting of player corpses requires consent.\r\n", ch);
+									"GETDBG[get-deny:corpse-consent]: ch=%s room=%d obj=%s [%d] owner=%s container=%s [%d]",
+									GET_NAME(ch),
+									world[ch->in_room].number,
+									o_obj->short_description ?
+										o_obj->short_description :
+										"(null)",
+									OBJ_VNUM(o_obj),
+									owner ? owner->player.name :
+										"(none)",
+									s_obj && s_obj->short_description ?
+										s_obj->short_description :
+										"(none)",
+									s_obj ? OBJ_VNUM(s_obj) :
+										-1);
+								send_to_char(
+									"Looting of player corpses requires consent.\r\n",
+									ch);
 								return;
 							}
 						}
@@ -1362,7 +1296,7 @@ fail = TRUE;
 			}
 			else
 			{
-			do_get_reject_carry_limit(ch, fail);
+				do_get_reject_carry_limit(ch, fail);
 			}
 		}
 		else
@@ -1370,20 +1304,25 @@ fail = TRUE;
 			if (IS_TRUSTED(ch) && !strcmp(arg1, "nowhere"))
 			{
 				send_to_char("Collecting Items from Nowhere:\n", ch);
-				next_obj       = object_list;
+				next_obj = object_list;
 				Gbuf2[(i = 0)] = '\0';
 				while (next_obj)
 				{
-					s_obj    = next_obj;
+					s_obj = next_obj;
 					next_obj = next_obj->next;
 					// If the object is in the void, or a bad room, or worn on or carried by a bad person, or inside a bad object
-					if (OBJ_NOWHERE(s_obj) || (OBJ_ROOM(s_obj) && (ROOM_VNUM(s_obj->loc.room) == NOWHERE)) || (OBJ_WORN(s_obj) && (s_obj->loc.wearing == NULL)) ||
-					    (OBJ_CARRIED(s_obj) && (s_obj->loc.carrying == NULL)) || (OBJ_INSIDE(s_obj) && (s_obj->loc.inside == NULL)))
+					if (OBJ_NOWHERE(s_obj) ||
+					    (OBJ_ROOM(s_obj) &&
+					     (ROOM_VNUM(s_obj->loc.room) == NOWHERE)) ||
+					    (OBJ_WORN(s_obj) && (s_obj->loc.wearing == NULL)) ||
+					    (OBJ_CARRIED(s_obj) && (s_obj->loc.carrying == NULL)) ||
+					    (OBJ_INSIDE(s_obj) && (s_obj->loc.inside == NULL)))
 					{
 						// Set object to LOC_NOWHERE so we can give it to the char without errors: Applies to NULL location objects.
 						s_obj->loc_p = LOC_NOWHERE;
 						obj_to_char(s_obj, ch);
-						i += snprintf(Gbuf2 + i, MAX_STRING_LENGTH, "%s, ", OBJ_SHORT(s_obj));
+						i += snprintf(Gbuf2 + i, MAX_STRING_LENGTH, "%s, ",
+							      OBJ_SHORT(s_obj));
 					}
 				}
 				if (i > 0)
@@ -1392,21 +1331,18 @@ fail = TRUE;
 				}
 				else
 				{
-					snprintf(Gbuf2, MAX_STRING_LENGTH, "No items found in nowhere.\n");
+					snprintf(Gbuf2, MAX_STRING_LENGTH,
+						 "No items found in nowhere.\n");
 				}
 				send_to_char(Gbuf2, ch);
 				return;
 			}
 			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not see a %s here.\r\n", arg1);
 			GETDBG_LOG(
-			      "GETDBG[get-single-not-found]: ch=%s room=%d arg1='%s' arg2='%s' carry_n=%d carry_w=%d trusted=%d",
-			      GET_NAME(ch),
-			      world[ch->in_room].number,
-			      arg1,
-			      arg2,
-			      IS_CARRYING_N(ch),
-			      total_carried_weight(ch),
-			      IS_TRUSTED(ch) ? 1 : 0);
+				"GETDBG[get-single-not-found]: ch=%s room=%d arg1='%s' arg2='%s' carry_n=%d carry_w=%d trusted=%d",
+				GET_NAME(ch), world[ch->in_room].number, arg1, arg2,
+				IS_CARRYING_N(ch), total_carried_weight(ch),
+				IS_TRUSTED(ch) ? 1 : 0);
 			send_to_char(Gbuf3, ch);
 			fail = TRUE;
 		}
@@ -1422,7 +1358,7 @@ fail = TRUE;
 	if (type == 4)
 	{
 		found = FALSE;
-		fail  = FALSE;
+		fail = FALSE;
 
 		s_obj = do_get_resolve_container_target(ch, arg2, carried);
 
@@ -1431,50 +1367,45 @@ fail = TRUE;
 			if (do_get_container_target_is_valid(s_obj))
 			{
 				GETDBG_LOG(
-				      "GETDBG[get-container-start]: ch=%s room=%d container=%s [%d] uid=%lu type=%d wear=0x%x extra=0x%x corpse_flag=%d arg1='%s' arg2='%s'",
-				      GET_NAME(ch),
-				      world[ch->in_room].number,
-				      s_obj->short_description ? s_obj->short_description : "(none)",
-				      OBJ_VNUM(s_obj),
-				      s_obj->obj_uid,
-				      GET_ITEM_TYPE(s_obj),
-				      s_obj->wear_flags,
-				      s_obj->extra_flags,
-				      corpse_flag ? 1 : 0,
-				      arg1,
-				      arg2);
+					"GETDBG[get-container-start]: ch=%s room=%d container=%s [%d] uid=%lu type=%d wear=0x%x extra=0x%x corpse_flag=%d arg1='%s' arg2='%s'",
+					GET_NAME(ch), world[ch->in_room].number,
+					s_obj->short_description ? s_obj->short_description :
+								   "(none)",
+					OBJ_VNUM(s_obj), s_obj->obj_uid, GET_ITEM_TYPE(s_obj),
+					s_obj->wear_flags, s_obj->extra_flags, corpse_flag ? 1 : 0,
+					arg1, arg2);
 
-				if (!do_get_container_preflight(ch, s_obj, corpse_flag, TRUE, arg1, arg2, fail))
+				if (!do_get_container_preflight(ch, s_obj, corpse_flag, TRUE, arg1,
+								arg2, fail))
 					return;
 
 				int container_safety = top_of_objt + 1;
 
 				GETDBG_LOG(
-				      "GETDBG[get-all start]: ch=%s room=%d container=%s [%d] ctype=%d cwear=0x%x cextra=0x%x corpse_flag=%d fighting=%d front_line=%d contains=%s",
-				      GET_NAME(ch),
-				      world[ch->in_room].number,
-				      s_obj->short_description ? s_obj->short_description : "(none)",
-				      OBJ_VNUM(s_obj),
-				      GET_ITEM_TYPE(s_obj),
-				      s_obj->wear_flags,
-				      s_obj->extra_flags,
-				      corpse_flag ? 1 : 0,
-				      fight_in_room(ch) ? 1 : 0,
-				      on_front_line(ch) ? 1 : 0,
-				      s_obj->contains ? "yes" : "no");
+					"GETDBG[get-all start]: ch=%s room=%d container=%s [%d] ctype=%d cwear=0x%x cextra=0x%x corpse_flag=%d fighting=%d front_line=%d contains=%s",
+					GET_NAME(ch), world[ch->in_room].number,
+					s_obj->short_description ? s_obj->short_description :
+								   "(none)",
+					OBJ_VNUM(s_obj), GET_ITEM_TYPE(s_obj), s_obj->wear_flags,
+					s_obj->extra_flags, corpse_flag ? 1 : 0,
+					fight_in_room(ch) ? 1 : 0, on_front_line(ch) ? 1 : 0,
+					s_obj->contains ? "yes" : "no");
 
 				bool stop_bulk = FALSE;
 				for (o_obj = s_obj->contains; o_obj; o_obj = next_obj)
 				{
 					if (container_safety-- <= 0)
 					{
-						send_to_char("That container has a malformed item. Tell a god.\r\n", ch);
+						send_to_char(
+							"That container has a malformed item. Tell a god.\r\n",
+							ch);
 						wizlog(56,
 						       "container traversal aborted: ch=%s container=%s [%d] room=%d",
 						       GET_NAME(ch),
-						       s_obj->short_description ? s_obj->short_description : "?",
-						       OBJ_VNUM(s_obj),
-						       world[ch->in_room].number);
+						       s_obj->short_description ?
+							       s_obj->short_description :
+							       "?",
+						       OBJ_VNUM(s_obj), world[ch->in_room].number);
 						break;
 					}
 
@@ -1482,56 +1413,56 @@ fail = TRUE;
 
 					if (!obj_is_in_container(o_obj, s_obj))
 					{
-						send_to_char("That container has a malformed item. Tell a god.\r\n", ch);
+						send_to_char(
+							"That container has a malformed item. Tell a god.\r\n",
+							ch);
 						wizlog(56,
 						       "malformed container item skipped: ch=%s container=%s [%d] item=%s [%d] room=%d",
 						       GET_NAME(ch),
-						       s_obj->short_description ? s_obj->short_description : "?",
+						       s_obj->short_description ?
+							       s_obj->short_description :
+							       "?",
 						       OBJ_VNUM(s_obj),
-						       o_obj->short_description ? o_obj->short_description : "?",
-						       OBJ_VNUM(o_obj),
-						       world[ch->in_room].number);
+						       o_obj->short_description ?
+							       o_obj->short_description :
+							       "?",
+						       OBJ_VNUM(o_obj), world[ch->in_room].number);
 						continue;
 					}
 
 					if (alldot && Gbuf2[0] && !isname(Gbuf2, o_obj->name))
 					{
 						GETDBG_LOG(
-						      "GETDBG[get-container-skip:filter]: ch=%s room=%d container=%s [%d] item=%s [%d] filter='%s' name='%s'",
-						      GET_NAME(ch),
-						      world[ch->in_room].number,
-						      s_obj->short_description ? s_obj->short_description : "(none)",
-						      OBJ_VNUM(s_obj),
-						      o_obj->short_description ? o_obj->short_description : "(null)",
-						      OBJ_VNUM(o_obj),
-						      Gbuf2,
-						      o_obj->name ? o_obj->name : "(null)");
+							"GETDBG[get-container-skip:filter]: ch=%s room=%d container=%s [%d] item=%s [%d] filter='%s' name='%s'",
+							GET_NAME(ch), world[ch->in_room].number,
+							s_obj->short_description ?
+								s_obj->short_description :
+								"(none)",
+							OBJ_VNUM(s_obj),
+							o_obj->short_description ?
+								o_obj->short_description :
+								"(null)",
+							OBJ_VNUM(o_obj), Gbuf2,
+							o_obj->name ? o_obj->name : "(null)");
 						continue;
 					}
 
-					(void)do_get_try_container_item(ch,
-					                              hood,
-					                              s_obj,
-					                              o_obj,
-					                              total,
-					                              found,
-					                              corpse_flag,
-					                              carried,
-					                              stop_bulk,
-					                              fail,
-					                              "GETDBG[get-all reject:invisible]",
-					                              "GETDBG[get-all reject:too-heavy]",
-					                              "GETDBG[get-all reject:carry-limit]",
-					                              "GETDBG[get-all reject:not-takeable]",
-					                              "GETDBG[get-container-post]",
-					                              FALSE);
+					(void)do_get_try_container_item(
+						ch, hood, s_obj, o_obj, total, found, corpse_flag,
+						carried, stop_bulk, fail,
+						"GETDBG[get-all reject:invisible]",
+						"GETDBG[get-all reject:too-heavy]",
+						"GETDBG[get-all reject:carry-limit]",
+						"GETDBG[get-all reject:not-takeable]",
+						"GETDBG[get-container-post]", FALSE);
 					if (stop_bulk)
 						break;
 				}
 
 				if (total > 1)
 				{
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "You got %d items.\r\n", total);
+					snprintf(Gbuf3, MAX_STRING_LENGTH, "You got %d items.\r\n",
+						 total);
 					send_to_char(Gbuf3, ch);
 				}
 				if (stop_bulk)
@@ -1541,14 +1472,10 @@ fail = TRUE;
 			}
 
 			GETDBG_LOG(
-			      "GETDBG[get-container-not-container]: ch=%s room=%d container=%s [%d] type=%d arg1='%s' arg2='%s'",
-			      GET_NAME(ch),
-			      world[ch->in_room].number,
-			      s_obj->short_description ? s_obj->short_description : "(none)",
-			      OBJ_VNUM(s_obj),
-			      GET_ITEM_TYPE(s_obj),
-			      arg1,
-			      arg2);
+				"GETDBG[get-container-not-container]: ch=%s room=%d container=%s [%d] type=%d arg1='%s' arg2='%s'",
+				GET_NAME(ch), world[ch->in_room].number,
+				s_obj->short_description ? s_obj->short_description : "(none)",
+				OBJ_VNUM(s_obj), GET_ITEM_TYPE(s_obj), arg1, arg2);
 			do_get_reject_not_container(ch, s_obj, fail);
 			return;
 		}
@@ -1556,25 +1483,26 @@ fail = TRUE;
 		do_get_reject_missing_container(ch, arg2, fail);
 	}
 
-
-/* get ??? all */
+	/* get ??? all */
 	if (type == 5)
 	{
-		do_get_reject_text(ch, "You can't take things from two or more containers.\r\n", fail);
+		do_get_reject_text(ch, "You can't take things from two or more containers.\r\n",
+				   fail);
 	}
 
 	/* get ??? ??? */
 	if (type == 6)
 	{
-		found   = FALSE;
-		fail    = FALSE;
+		found = FALSE;
+		fail = FALSE;
 		carried = TRUE;
-		s_obj   = do_get_resolve_container_target(ch, arg2, carried);
+		s_obj = do_get_resolve_container_target(ch, arg2, carried);
 		if (s_obj)
 		{
 			if (do_get_container_target_is_valid(s_obj))
 			{
-				if (!do_get_container_preflight(ch, s_obj, corpse_flag, FALSE, arg1, arg2, fail))
+				if (!do_get_container_preflight(ch, s_obj, corpse_flag, FALSE, arg1,
+								arg2, fail))
 					return;
 
 				o_obj = do_get_container_resolve_item(ch, s_obj, arg1, carried);
@@ -1582,38 +1510,37 @@ fail = TRUE;
 				{
 					if (!obj_is_in_container(o_obj, s_obj))
 					{
-						send_to_char("That container has a malformed item. Tell a god.\r\n", ch);
+						send_to_char(
+							"That container has a malformed item. Tell a god.\r\n",
+							ch);
 						wizlog(56,
 						       "malformed container item skipped in get: ch=%s container=%s [%d] item=%s [%d] room=%d",
 						       GET_NAME(ch),
-						       s_obj->short_description ? s_obj->short_description : "?",
+						       s_obj->short_description ?
+							       s_obj->short_description :
+							       "?",
 						       OBJ_VNUM(s_obj),
-						       o_obj->short_description ? o_obj->short_description : "?",
-						       OBJ_VNUM(o_obj),
-						       world[ch->in_room].number);
+						       o_obj->short_description ?
+							       o_obj->short_description :
+							       "?",
+						       OBJ_VNUM(o_obj), world[ch->in_room].number);
 						return;
 					}
 
-					(void)do_get_try_container_item(ch,
-					                              hood,
-					                              s_obj,
-					                              o_obj,
-					                              total,
-					                              found,
-					                              corpse_flag,
-					                              carried,
-					                              stop_bulk,
-					                              fail,
-					                              "GETDBG[get-container-single reject:invisible]",
-					                              "GETDBG[get-container-single reject:too-heavy]",
-					                              "GETDBG[get-container-single reject:carry-limit]",
-					                              "GETDBG[get-container-single reject:not-takeable]",
-					                              "GETDBG[get-container-single-post]",
-					                              TRUE);
+					(void)do_get_try_container_item(
+						ch, hood, s_obj, o_obj, total, found, corpse_flag,
+						carried, stop_bulk, fail,
+						"GETDBG[get-container-single reject:invisible]",
+						"GETDBG[get-container-single reject:too-heavy]",
+						"GETDBG[get-container-single reject:carry-limit]",
+						"GETDBG[get-container-single reject:not-takeable]",
+						"GETDBG[get-container-single-post]", TRUE);
 				}
 				else
 				{
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s does not contain the %s.\r\n", s_obj->short_description, arg1);
+					snprintf(Gbuf3, MAX_STRING_LENGTH,
+						 "%s does not contain the %s.\r\n",
+						 s_obj->short_description, arg1);
 					send_to_char(Gbuf3, ch);
 					fail = TRUE;
 				}
@@ -1633,15 +1560,9 @@ fail = TRUE;
 		mark_player_dirty(GET_PID(ch));
 
 	GETDBG_LOG(
-	      "GETDBG[do_get end]: ch=%s room=%d type=%d found=%d fail=%d total=%d corpse_flag=%d looting=%d",
-	      GET_NAME(ch),
-	      world[ch->in_room].number,
-	      type,
-	      found ? 1 : 0,
-	      fail ? 1 : 0,
-	      total,
-	      corpse_flag ? 1 : 0,
-	      looting);
+		"GETDBG[do_get end]: ch=%s room=%d type=%d found=%d fail=%d total=%d corpse_flag=%d looting=%d",
+		GET_NAME(ch), world[ch->in_room].number, type, found ? 1 : 0, fail ? 1 : 0, total,
+		corpse_flag ? 1 : 0, looting);
 
 	char_light(ch);
 	room_light(ch->in_room, REAL);
@@ -1652,10 +1573,10 @@ fail = TRUE;
 
 void do_junk(P_char ch, char *argument, int cmd)
 {
-	P_obj  tmp_object, next_obj;
+	P_obj tmp_object, next_obj;
 	P_char t_ch;
-	bool   test = FALSE;
-	char   Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	bool test = FALSE;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
 	argument = one_argument(argument, Gbuf1);
 
@@ -1669,7 +1590,6 @@ void do_junk(P_char ch, char *argument, int cmd)
 	 */
 	if (!command_confirm)
 	{
-
 		/*
 		 * check if its a reasonable argument to junk
 		 */
@@ -1699,11 +1619,10 @@ void do_junk(P_char ch, char *argument, int cmd)
 		 */
 		else if (ch->desc && !IS_TRUSTED(ch))
 		{
-			snprintf(Gbuf3,
-			         MAX_STRING_LENGTH,
-			         "WARNING: JUNK permanently destroys the specified object(s).\r\n"
-			         "Please confirm that you wish to JUNK %s (Yes/No) [No]:\r\n",
-			         Gbuf1);
+			snprintf(Gbuf3, MAX_STRING_LENGTH,
+				 "WARNING: JUNK permanently destroys the specified object(s).\r\n"
+				 "Please confirm that you wish to JUNK %s (Yes/No) [No]:\r\n",
+				 Gbuf1);
 			send_to_char(Gbuf3, ch);
 			return;
 		}
@@ -1738,10 +1657,14 @@ void do_junk(P_char ch, char *argument, int cmd)
 					{
 						if (CAN_SEE_OBJ(ch, tmp_object))
 						{
-							snprintf(Gbuf3, MAX_STRING_LENGTH, "You junk %s&n.\r\n", OBJ_SHORT(tmp_object));
+							snprintf(Gbuf3, MAX_STRING_LENGTH,
+								 "You junk %s&n.\r\n",
+								 OBJ_SHORT(tmp_object));
 							send_to_char(Gbuf3, ch);
-							act("You are awarded for outstanding performance in recycling.", FALSE, ch, 0, 0, TO_CHAR);
-							act("$n has been awarded for being a good citizen.", TRUE, ch, 0, 0, TO_ROOM);
+							act("You are awarded for outstanding performance in recycling.",
+							    FALSE, ch, 0, 0, TO_CHAR);
+							act("$n has been awarded for being a good citizen.",
+							    TRUE, ch, 0, 0, TO_ROOM);
 							GET_SILVER(ch) += 1;
 						}
 						else
@@ -1751,23 +1674,30 @@ void do_junk(P_char ch, char *argument, int cmd)
 					}
 					else
 					{
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s dissolves with a blinding light.\r\n", OBJ_SHORT(tmp_object));
+						snprintf(Gbuf3, MAX_STRING_LENGTH,
+							 "%s dissolves with a blinding light.\r\n",
+							 OBJ_SHORT(tmp_object));
 						// Capitalize the first non-ansi char.
 						CAP(Gbuf3);
 
-						for (t_ch = world[ch->in_room].people; t_ch; t_ch = t_ch->next_in_room)
+						for (t_ch = world[ch->in_room].people; t_ch;
+						     t_ch = t_ch->next_in_room)
 						{
 							if (CAN_SEE_OBJ(t_ch, tmp_object))
 								send_to_char(Gbuf3, t_ch);
 						}
-						extract_obj(tmp_object, TRUE); // Just in case someone enables junking artis.
+						extract_obj(
+							tmp_object,
+							TRUE); // Just in case someone enables junking artis.
 						tmp_object = NULL;
-						test       = TRUE;
+						test = TRUE;
 						continue;
 					}
 					act("$n junks $p.", 1, ch, tmp_object, 0, TO_ROOM);
 					obj_from_char(tmp_object);
-					extract_obj(tmp_object, TRUE); // Just in case someone enables junking artis.
+					extract_obj(
+						tmp_object,
+						TRUE); // Just in case someone enables junking artis.
 					tmp_object = NULL;
 					GET_SILVER(ch) += 1;
 					test = TRUE;
@@ -1776,7 +1706,10 @@ void do_junk(P_char ch, char *argument, int cmd)
 				{
 					if (CAN_SEE_OBJ(ch, tmp_object))
 					{
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "You can't junk the %s, it must be CURSED!\r\n", FirstWord(tmp_object->name));
+						snprintf(
+							Gbuf3, MAX_STRING_LENGTH,
+							"You can't junk the %s, it must be CURSED!\r\n",
+							FirstWord(tmp_object->name));
 						send_to_char(Gbuf3, ch);
 						test = TRUE;
 					}
@@ -1802,23 +1735,31 @@ void do_junk(P_char ch, char *argument, int cmd)
 				{
 					if (!IS_SET(tmp_object->extra_flags, ITEM_TRANSIENT))
 					{
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "You junk %s.\r\n", OBJ_SHORT(tmp_object));
+						snprintf(Gbuf3, MAX_STRING_LENGTH,
+							 "You junk %s.\r\n", OBJ_SHORT(tmp_object));
 						send_to_char(Gbuf3, ch);
 						act("$n junks $p.", 1, ch, tmp_object, 0, TO_ROOM);
-						extract_obj(tmp_object, TRUE); // Just in case someone enables junking artis.
+						extract_obj(
+							tmp_object,
+							TRUE); // Just in case someone enables junking artis.
 						tmp_object = NULL;
 						GET_SILVER(ch) += 1;
 					}
 					else
 					{
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s dissolves with a blinding light.\r\n", OBJ_SHORT(tmp_object));
+						snprintf(Gbuf3, MAX_STRING_LENGTH,
+							 "%s dissolves with a blinding light.\r\n",
+							 OBJ_SHORT(tmp_object));
 						CAP(Gbuf3);
-						for (t_ch = world[ch->in_room].people; t_ch; t_ch = t_ch->next_in_room)
+						for (t_ch = world[ch->in_room].people; t_ch;
+						     t_ch = t_ch->next_in_room)
 						{
 							if (CAN_SEE_OBJ(t_ch, tmp_object))
 								send_to_char(Gbuf3, t_ch);
 						}
-						extract_obj(tmp_object, TRUE); // Just in case someone enables junking artis.
+						extract_obj(
+							tmp_object,
+							TRUE); // Just in case someone enables junking artis.
 						/*
 						 * added by DTS 5/18/95 to solve light bug
 						 */
@@ -1828,7 +1769,8 @@ void do_junk(P_char ch, char *argument, int cmd)
 					}
 				}
 				else
-					send_to_char("You can't junk it, it must be CURSED!\r\n", ch);
+					send_to_char("You can't junk it, it must be CURSED!\r\n",
+						     ch);
 			}
 			else
 			{
@@ -1844,12 +1786,12 @@ void do_junk(P_char ch, char *argument, int cmd)
 
 void do_dropalldot(P_char ch, char *name, int cmd)
 {
-	P_obj  tmp_object, next_object, remember = NULL;
+	P_obj tmp_object, next_object, remember = NULL;
 	P_char tmp_ch;
-	int    total = 0;
-	int    plat, silv, gold, copp;
-	char   Gbuf1[MAX_STRING_LENGTH];
-	char   Gbuf3[MAX_STRING_LENGTH];
+	int total = 0;
+	int plat, silv, gold, copp;
+	char Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH];
 
 	if (!strcmp(name, "coins"))
 	{
@@ -1871,7 +1813,10 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 			return;
 		}
 
-		snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coin%s.\n\r", copp, silv, gold, plat, ((plat + gold + silv + copp) > 1) ? "s" : "");
+		snprintf(
+			Gbuf3, MAX_STRING_LENGTH,
+			"You drop %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coin%s.\n\r",
+			copp, silv, gold, plat, ((plat + gold + silv + copp) > 1) ? "s" : "");
 		act(Gbuf3, TRUE, ch, 0, 0, TO_CHAR);
 		act("$n drops some coins.", TRUE, ch, 0, 0, TO_ROOM);
 
@@ -1884,8 +1829,10 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 
 		if ((plat * 1000 + gold * 100 + silv * 10 + copp) > 99000)
 		{
-			wizlog(MINLVLIMMORTAL, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch), plat, gold, silv, copp, world[ch->in_room].number);
-			logit(LOG_DEBUG, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch), plat, gold, silv, copp, world[ch->in_room].number);
+			wizlog(MINLVLIMMORTAL, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch),
+			       plat, gold, silv, copp, world[ch->in_room].number);
+			logit(LOG_DEBUG, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch), plat,
+			      gold, silv, copp, world[ch->in_room].number);
 		}
 
 		// DEFERRED: use-after-free — obj_to_room may free tmp_object if it
@@ -1922,14 +1869,26 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 				total++;
 				if (IS_TRUSTED(ch))
 				{
-					wizlog(GET_LEVEL(ch), "%s drops %s [%d].", J_NAME(ch), tmp_object->short_description, world[ch->in_room].number);
-					logit(LOG_WIZ, "%s drops %s [%d].", J_NAME(ch), tmp_object->short_description, world[ch->in_room].number);
-					sql_log(ch, WIZLOG, "Drops %s &n[%d]", tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number);
+					wizlog(GET_LEVEL(ch), "%s drops %s [%d].", J_NAME(ch),
+					       tmp_object->short_description,
+					       world[ch->in_room].number);
+					logit(LOG_WIZ, "%s drops %s [%d].", J_NAME(ch),
+					      tmp_object->short_description,
+					      world[ch->in_room].number);
+					sql_log(ch, WIZLOG, "Drops %s &n[%d]",
+						tmp_object->short_description,
+						obj_index[tmp_object->R_num].virtual_number);
 				}
 				else if (IS_ARTIFACT(tmp_object))
 				{
-					wizlog(56, "%s dropping artifact %s (%d) in room %d.", J_NAME(ch), tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, world[ch->in_room].number);
-					logit(LOG_OBJ, "%s dropping artifact %s (%d) in room %d.", J_NAME(ch), tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, world[ch->in_room].number);
+					wizlog(56, "%s dropping artifact %s (%d) in room %d.",
+					       J_NAME(ch), tmp_object->short_description,
+					       obj_index[tmp_object->R_num].virtual_number,
+					       world[ch->in_room].number);
+					logit(LOG_OBJ, "%s dropping artifact %s (%d) in room %d.",
+					      J_NAME(ch), tmp_object->short_description,
+					      obj_index[tmp_object->R_num].virtual_number,
+					      world[ch->in_room].number);
 				}
 			}
 	}
@@ -1969,10 +1928,10 @@ void do_dropalldot(P_char ch, char *name, int cmd)
 
 void do_drop(P_char ch, char *argument, int cmd)
 {
-	int   amount, ctype;
+	int amount, ctype;
 	P_obj tmp_object = NULL, next_obj;
-	bool  test       = FALSE;
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	bool test = FALSE;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
 	if (IS_ANIMAL(ch) && IS_NPC(ch))
 		return;
@@ -1997,47 +1956,55 @@ void do_drop(P_char ch, char *argument, int cmd)
 		}
 		if ((amount = atoi(Gbuf1)) <= 0)
 		{
-			send_to_char_f(ch, "Eh? What kind of magic is this.. dropping %d coins.\r\n", amount);
+			send_to_char_f(ch,
+				       "Eh? What kind of magic is this.. dropping %d coins.\r\n",
+				       amount);
 			return;
 		}
 
 		argument = one_argument(argument, Gbuf1);
 		if ((ctype = coin_type(Gbuf1)) == -1)
 		{
-			send_to_char_f(ch, "Drop %d what?  What kind of coins did you want to drop?!\n'%s' is not a valid coin type.\n", amount, Gbuf1);
+			send_to_char_f(
+				ch,
+				"Drop %d what?  What kind of coins did you want to drop?!\n'%s' is not a valid coin type.\n",
+				amount, Gbuf1);
 			return;
 		}
 
 		switch (ctype)
 		{
-			case 0:
-				if (GET_COPPER(ch) < amount)
-				{
-					send_to_char("You do not have that many &+ycopper&N coins!\r\n", ch);
-					return;
-				}
-				break;
-			case 1:
-				if (GET_SILVER(ch) < amount)
-				{
-					send_to_char("You do not have that many &+wsilver&n coins!\r\n", ch);
-					return;
-				}
-				break;
-			case 2:
-				if (GET_GOLD(ch) < amount)
-				{
-					send_to_char("You do not have that many &+Ygold&N coins!\r\n", ch);
-					return;
-				}
-				break;
-			case 3:
-				if (GET_PLATINUM(ch) < amount)
-				{
-					send_to_char("You do not have that many &+Wplatinum&N coins!\r\n", ch);
-					return;
-				}
-				break;
+		case 0:
+			if (GET_COPPER(ch) < amount)
+			{
+				send_to_char("You do not have that many &+ycopper&N coins!\r\n",
+					     ch);
+				return;
+			}
+			break;
+		case 1:
+			if (GET_SILVER(ch) < amount)
+			{
+				send_to_char("You do not have that many &+wsilver&n coins!\r\n",
+					     ch);
+				return;
+			}
+			break;
+		case 2:
+			if (GET_GOLD(ch) < amount)
+			{
+				send_to_char("You do not have that many &+Ygold&N coins!\r\n", ch);
+				return;
+			}
+			break;
+		case 3:
+			if (GET_PLATINUM(ch) < amount)
+			{
+				send_to_char("You do not have that many &+Wplatinum&N coins!\r\n",
+					     ch);
+				return;
+			}
+			break;
 		}
 
 		if (ch->in_room == NOWHERE)
@@ -2047,7 +2014,9 @@ void do_drop(P_char ch, char *argument, int cmd)
 		}
 
 		if (cmd == 1 && IS_PC(ch))
-			send_to_char("Oops, trying to juggle too many loose coins, you drop a few.\r\n", ch);
+			send_to_char(
+				"Oops, trying to juggle too many loose coins, you drop a few.\r\n",
+				ch);
 		else
 			send_to_char("OK.\r\n", ch);
 
@@ -2055,52 +2024,59 @@ void do_drop(P_char ch, char *argument, int cmd)
 		{
 			if (((ctype == 3) && (amount > 999)) || ((ctype == 2) && (amount > 99)))
 			{
-				wizlog(MINLVLIMMORTAL, "%s drops %d %s in [%d]", J_NAME(ch), amount, (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
-				logit(LOG_DEBUG, "%s drops %d %s in [%d]", J_NAME(ch), amount, (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
-				sql_log(ch, WIZLOG, "Dropped %d %s", amount, (ctype == 3) ? "plat" : "gold");
+				wizlog(MINLVLIMMORTAL, "%s drops %d %s in [%d]", J_NAME(ch), amount,
+				       (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
+				logit(LOG_DEBUG, "%s drops %d %s in [%d]", J_NAME(ch), amount,
+				      (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
+				sql_log(ch, WIZLOG, "Dropped %d %s", amount,
+					(ctype == 3) ? "plat" : "gold");
 			}
 			switch (ctype)
 			{
-				case 0:
-					if (IS_TRUSTED(ch))
-					{
-						logit(LOG_WIZ, "%s drops %d copper coins [%d]", GET_NAME(ch), amount, world[ch->in_room].number);
-						sql_log(ch, WIZLOG, "Dropped %d copper coins", amount);
-					}
-					act("$n drops some &+ycopper&N coins.", FALSE, ch, 0, 0, TO_ROOM);
-					tmp_object = create_money(amount, 0, 0, 0);
-					GET_COPPER(ch) -= amount;
-					break;
-				case 1:
-					if (IS_TRUSTED(ch))
-					{
-						logit(LOG_WIZ, "%s drops %d silver coins [%d]", GET_NAME(ch), amount, world[ch->in_room].number);
-						sql_log(ch, WIZLOG, "Dropped %d silver coins", amount);
-					}
-					act("$n drops some &+wsilver&n coins.", FALSE, ch, 0, 0, TO_ROOM);
-					tmp_object = create_money(0, amount, 0, 0);
-					GET_SILVER(ch) -= amount;
-					break;
-				case 2:
-					if (IS_TRUSTED(ch))
-					{
-						logit(LOG_WIZ, "%s drops %d gold coins [%d]", GET_NAME(ch), amount, world[ch->in_room].number);
-						sql_log(ch, WIZLOG, "Dropped %d gold coins", amount);
-					}
-					act("$n drops some &+Ygold&N coins.", FALSE, ch, 0, 0, TO_ROOM);
-					tmp_object = create_money(0, 0, amount, 0);
-					GET_GOLD(ch) -= amount;
-					break;
-				case 3:
-					if (IS_TRUSTED(ch))
-					{
-						logit(LOG_WIZ, "%s drops %d platinum coins [%d]", GET_NAME(ch), amount, world[ch->in_room].number);
-						sql_log(ch, WIZLOG, "Dropped %d platinum coins", amount);
-					}
-					act("$n drops some &+Wplatinum&N coins.", FALSE, ch, 0, 0, TO_ROOM);
-					tmp_object = create_money(0, 0, 0, amount);
-					GET_PLATINUM(ch) -= amount;
-					break;
+			case 0:
+				if (IS_TRUSTED(ch))
+				{
+					logit(LOG_WIZ, "%s drops %d copper coins [%d]",
+					      GET_NAME(ch), amount, world[ch->in_room].number);
+					sql_log(ch, WIZLOG, "Dropped %d copper coins", amount);
+				}
+				act("$n drops some &+ycopper&N coins.", FALSE, ch, 0, 0, TO_ROOM);
+				tmp_object = create_money(amount, 0, 0, 0);
+				GET_COPPER(ch) -= amount;
+				break;
+			case 1:
+				if (IS_TRUSTED(ch))
+				{
+					logit(LOG_WIZ, "%s drops %d silver coins [%d]",
+					      GET_NAME(ch), amount, world[ch->in_room].number);
+					sql_log(ch, WIZLOG, "Dropped %d silver coins", amount);
+				}
+				act("$n drops some &+wsilver&n coins.", FALSE, ch, 0, 0, TO_ROOM);
+				tmp_object = create_money(0, amount, 0, 0);
+				GET_SILVER(ch) -= amount;
+				break;
+			case 2:
+				if (IS_TRUSTED(ch))
+				{
+					logit(LOG_WIZ, "%s drops %d gold coins [%d]", GET_NAME(ch),
+					      amount, world[ch->in_room].number);
+					sql_log(ch, WIZLOG, "Dropped %d gold coins", amount);
+				}
+				act("$n drops some &+Ygold&N coins.", FALSE, ch, 0, 0, TO_ROOM);
+				tmp_object = create_money(0, 0, amount, 0);
+				GET_GOLD(ch) -= amount;
+				break;
+			case 3:
+				if (IS_TRUSTED(ch))
+				{
+					logit(LOG_WIZ, "%s drops %d platinum coins [%d]",
+					      GET_NAME(ch), amount, world[ch->in_room].number);
+					sql_log(ch, WIZLOG, "Dropped %d platinum coins", amount);
+				}
+				act("$n drops some &+Wplatinum&N coins.", FALSE, ch, 0, 0, TO_ROOM);
+				tmp_object = create_money(0, 0, 0, amount);
+				GET_PLATINUM(ch) -= amount;
+				break;
 			}
 
 			if (tmp_object && (ch->in_room != NOWHERE))
@@ -2121,7 +2097,6 @@ void do_drop(P_char ch, char *argument, int cmd)
 	}
 	if (*Gbuf1)
 	{
-
 		if (sscanf(Gbuf1, "all.%s", Gbuf2) == 1)
 		{
 			do_dropalldot(ch, Gbuf2, cmd);
@@ -2138,7 +2113,9 @@ void do_drop(P_char ch, char *argument, int cmd)
 				{
 					if (CAN_SEE_OBJ(ch, tmp_object))
 					{
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %s.\r\n", tmp_object->short_description);
+						snprintf(Gbuf3, MAX_STRING_LENGTH,
+							 "You drop %s.\r\n",
+							 tmp_object->short_description);
 						send_to_char(Gbuf3, ch);
 					}
 					else
@@ -2149,18 +2126,32 @@ void do_drop(P_char ch, char *argument, int cmd)
 					obj_from_char(tmp_object);
 					if (IS_TRUSTED(ch))
 					{
-						wizlog(GET_LEVEL(ch), "%s drops %s [%d].", J_NAME(ch), tmp_object->short_description, world[ch->in_room].number);
-						logit(LOG_WIZ, "%s drops %s [%d].", J_NAME(ch), tmp_object->short_description, world[ch->in_room].number);
-						sql_log(ch, WIZLOG, "Dropped %s", tmp_object->short_description);
+						wizlog(GET_LEVEL(ch), "%s drops %s [%d].",
+						       J_NAME(ch), tmp_object->short_description,
+						       world[ch->in_room].number);
+						logit(LOG_WIZ, "%s drops %s [%d].", J_NAME(ch),
+						      tmp_object->short_description,
+						      world[ch->in_room].number);
+						sql_log(ch, WIZLOG, "Dropped %s",
+							tmp_object->short_description);
 					}
 					else if (IS_ARTIFACT(tmp_object))
 					{
-						wizlog(56, "%s dropping artifact %s (%d) in room %d.", J_NAME(ch), tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, world[ch->in_room].number);
-						logit(LOG_OBJ, "%s dropping artifact %s (%d) in room %d.", J_NAME(ch), tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, world[ch->in_room].number);
+						wizlog(56,
+						       "%s dropping artifact %s (%d) in room %d.",
+						       J_NAME(ch), tmp_object->short_description,
+						       obj_index[tmp_object->R_num].virtual_number,
+						       world[ch->in_room].number);
+						logit(LOG_OBJ,
+						      "%s dropping artifact %s (%d) in room %d.",
+						      J_NAME(ch), tmp_object->short_description,
+						      obj_index[tmp_object->R_num].virtual_number,
+						      world[ch->in_room].number);
 					}
 					obj_to_room(tmp_object, ch->in_room);
 					if (IS_PC(ch) && tmp_object->obj_uid > 0)
-						redis_log_floor_drop(tmp_object, world[ch->in_room].number);
+						redis_log_floor_drop(tmp_object,
+								     world[ch->in_room].number);
 					dropped_any = true;
 
 					test = TRUE;
@@ -2169,7 +2160,10 @@ void do_drop(P_char ch, char *argument, int cmd)
 				{
 					if (CAN_SEE_OBJ(ch, tmp_object))
 					{
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "You can't drop %s, it must be CURSED!\r\n", tmp_object->short_description);
+						snprintf(
+							Gbuf3, MAX_STRING_LENGTH,
+							"You can't drop %s, it must be CURSED!\r\n",
+							tmp_object->short_description);
 						send_to_char(Gbuf3, ch);
 						test = TRUE;
 					}
@@ -2177,7 +2171,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				/*
 				 * update player corpse file (if needed)
 				 */
-				if (tmp_object && (tmp_object->type == ITEM_CORPSE) && IS_SET(tmp_object->value[1], PC_CORPSE))
+				if (tmp_object && (tmp_object->type == ITEM_CORPSE) &&
+				    IS_SET(tmp_object->value[1], PC_CORPSE))
 					writeCorpse(tmp_object);
 			}
 
@@ -2196,43 +2191,64 @@ void do_drop(P_char ch, char *argument, int cmd)
 			{
 				if (IS_OBJ_STAT2(tmp_object, ITEM2_SOULBIND))
 				{
-					send_to_char("You may not relinquish posession of a &+Wsoulbound &nitem!\r\n", ch);
+					send_to_char(
+						"You may not relinquish posession of a &+Wsoulbound &nitem!\r\n",
+						ch);
 				}
-				else if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) || IS_TRUSTED(ch))
+				else if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) ||
+					 IS_TRUSTED(ch))
 				{
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %s.\r\n", tmp_object->short_description);
+					snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %s.\r\n",
+						 tmp_object->short_description);
 					send_to_char(Gbuf3, ch);
 					act("$n drops $p.", 0, ch, tmp_object, 0, TO_ROOM);
 					obj_from_char(tmp_object);
 					if (IS_TRUSTED(ch))
 					{
-						wizlog(GET_LEVEL(ch), "%s drops %s [%d]", J_NAME(ch), tmp_object->short_description, world[ch->in_room].number);
-						logit(LOG_WIZ, "%s drops %s [%d]", J_NAME(ch), tmp_object->short_description, world[ch->in_room].number);
-						sql_log(ch, WIZLOG, "Dropped %s", tmp_object->short_description);
+						wizlog(GET_LEVEL(ch), "%s drops %s [%d]",
+						       J_NAME(ch), tmp_object->short_description,
+						       world[ch->in_room].number);
+						logit(LOG_WIZ, "%s drops %s [%d]", J_NAME(ch),
+						      tmp_object->short_description,
+						      world[ch->in_room].number);
+						sql_log(ch, WIZLOG, "Dropped %s",
+							tmp_object->short_description);
 					}
 					else if (IS_ARTIFACT(tmp_object))
 					{
-						wizlog(56, "%s dropping artifact %s (%d) in room %d.", J_NAME(ch), tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, world[ch->in_room].number);
-						logit(LOG_OBJ, "%s dropping artifact %s (%d) in room %d.", J_NAME(ch), tmp_object->short_description, obj_index[tmp_object->R_num].virtual_number, world[ch->in_room].number);
+						wizlog(56,
+						       "%s dropping artifact %s (%d) in room %d.",
+						       J_NAME(ch), tmp_object->short_description,
+						       obj_index[tmp_object->R_num].virtual_number,
+						       world[ch->in_room].number);
+						logit(LOG_OBJ,
+						      "%s dropping artifact %s (%d) in room %d.",
+						      J_NAME(ch), tmp_object->short_description,
+						      obj_index[tmp_object->R_num].virtual_number,
+						      world[ch->in_room].number);
 					}
 					obj_to_room(tmp_object, ch->in_room);
 
 					if (IS_PC(ch))
 					{
 						if (tmp_object->obj_uid > 0)
-							redis_log_floor_drop(tmp_object, world[ch->in_room].number);
+							redis_log_floor_drop(
+								tmp_object,
+								world[ch->in_room].number);
 						mark_player_dirty(GET_PID(ch));
 					}
 
 					/*
 					 * update player corpse file  (if needed)
 					 */
-					if (tmp_object && (tmp_object->type == ITEM_CORPSE) && IS_SET(tmp_object->value[1], PC_CORPSE))
+					if (tmp_object && (tmp_object->type == ITEM_CORPSE) &&
+					    IS_SET(tmp_object->value[1], PC_CORPSE))
 						writeCorpse(tmp_object);
 				}
 				else
 				{
-					send_to_char("You can't drop it, it must be CURSED!\r\n", ch);
+					send_to_char("You can't drop it, it must be CURSED!\r\n",
+						     ch);
 				}
 			}
 			else
@@ -2247,21 +2263,21 @@ void do_drop(P_char ch, char *argument, int cmd)
 	}
 }
 
-#define PUT_COINS  1
-#define PUT_ALL    2
+#define PUT_COINS 1
+#define PUT_ALL 2
 #define PUT_ALLDOT 3
-#define PUT_ITEM   4
+#define PUT_ITEM 4
 
 void do_put(P_char ch, char *argument, int cmd)
 {
-	P_obj  o_obj = NULL, s_obj = NULL, tmp_obj, next_obj;
+	P_obj o_obj = NULL, s_obj = NULL, tmp_obj, next_obj;
 	P_char t_ch;
-	int    bits, amount, ctype, count = 0, attempted = 0;
-	int    plat = 0, gold = 0, silv = 0, copp = 0;
-	int    p, g, s, c, type = 0;
-	char   buf[MAX_STRING_LENGTH];
-	char   obj_name[MAX_STRING_LENGTH];
-	char   cont_name[MAX_STRING_LENGTH];
+	int bits, amount, ctype, count = 0, attempted = 0;
+	int plat = 0, gold = 0, silv = 0, copp = 0;
+	int p, g, s, c, type = 0;
+	char buf[MAX_STRING_LENGTH];
+	char obj_name[MAX_STRING_LENGTH];
+	char cont_name[MAX_STRING_LENGTH];
 
 	if (IS_ANIMAL(ch) && IS_NPC(ch))
 	{
@@ -2284,13 +2300,14 @@ void do_put(P_char ch, char *argument, int cmd)
 			send_to_char("Number field too large.\r\n", ch);
 			return;
 		}
-		amount   = atoi(obj_name);
+		amount = atoi(obj_name);
 		argument = one_argument(argument, obj_name);
-		ctype    = coin_type(obj_name);
+		ctype = coin_type(obj_name);
 
 		if (ctype >= 0 && ch->points.cash[ctype] < amount)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You do not have that many %s coins!\r\n", coin_names[ctype]);
+			snprintf(buf, MAX_STRING_LENGTH, "You do not have that many %s coins!\r\n",
+				 coin_names[ctype]);
 			send_to_char(buf, ch);
 			return;
 		}
@@ -2338,7 +2355,8 @@ void do_put(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		bits = generic_find(cont_name, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &t_ch, &s_obj);
+		bits = generic_find(cont_name, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+				    &t_ch, &s_obj);
 	}
 
 	if (!s_obj)
@@ -2368,7 +2386,10 @@ void do_put(P_char ch, char *argument, int cmd)
 		obj_to_char(o_obj, ch);
 		if ((count = put(ch, o_obj, s_obj, TRUE)))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You put %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coins into $P.", plat, gold, silv, copp);
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"You put %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coins into $P.",
+				plat, gold, silv, copp);
 			act(buf, TRUE, ch, 0, s_obj, TO_CHAR);
 			ch->points.cash[3] -= plat;
 			ch->points.cash[2] -= gold;
@@ -2430,16 +2451,20 @@ void do_put(P_char ch, char *argument, int cmd)
 			if (count < 6)
 				act("$n puts some stuff into $p.", TRUE, ch, s_obj, 0, TO_ROOM);
 			else
-				act("$n puts a bunch of stuff into $p.", TRUE, ch, s_obj, 0, TO_ROOM);
+				act("$n puts a bunch of stuff into $p.", TRUE, ch, s_obj, 0,
+				    TO_ROOM);
 		}
 		else if (type == PUT_ALLDOT)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You put %d %s(s) into $p.", count, obj_name);
+			snprintf(buf, MAX_STRING_LENGTH, "You put %d %s(s) into $p.", count,
+				 obj_name);
 			act(buf, FALSE, ch, s_obj, 0, TO_CHAR);
 			if (count < 6)
-				snprintf(buf, MAX_STRING_LENGTH, "$n puts some %s(s) into $p.", obj_name);
+				snprintf(buf, MAX_STRING_LENGTH, "$n puts some %s(s) into $p.",
+					 obj_name);
 			else
-				snprintf(buf, MAX_STRING_LENGTH, "$n puts a bunch of %s(s) into $p.", obj_name);
+				snprintf(buf, MAX_STRING_LENGTH,
+					 "$n puts a bunch of %s(s) into $p.", obj_name);
 			act(buf, TRUE, ch, s_obj, 0, TO_ROOM);
 		}
 		char_light(ch);
@@ -2463,7 +2488,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (IS_ARTIFACT(o_obj) && !IS_TRUSTED(ch))
 	{
 		if (showit)
-			act("$p does not wish to be confined in such a manner!", TRUE, ch, o_obj, 0, TO_CHAR);
+			act("$p does not wish to be confined in such a manner!", TRUE, ch, o_obj, 0,
+			    TO_CHAR);
 
 		return FALSE;
 	}
@@ -2477,19 +2503,27 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				if (o_obj == s_obj)
 				{
 					if (showit)
-						send_to_char("You can't put one quiver inside another.\r\n", ch);
+						send_to_char(
+							"You can't put one quiver inside another.\r\n",
+							ch);
 					return (FALSE);
 				}
 				if (IS_SET(o_obj->extra_flags, ITEM_NODROP) && !IS_TRUSTED(ch))
 				{
 					if (showit)
-						send_to_char("You can't do that. Perhaps that item is cursed?\r\n", ch);
+						send_to_char(
+							"You can't do that. Perhaps that item is cursed?\r\n",
+							ch);
 					return (FALSE);
 				}
-				if ((o_obj->type != ITEM_MISSILE) || ((o_obj->type == ITEM_MISSILE) && (s_obj->value[2] != o_obj->value[3])))
+				if ((o_obj->type != ITEM_MISSILE) ||
+				    ((o_obj->type == ITEM_MISSILE) &&
+				     (s_obj->value[2] != o_obj->value[3])))
 				{
 					if (showit)
-						send_to_char("You cannot put that in a quiver, only arrows and quarrels.\r\n", ch);
+						send_to_char(
+							"You cannot put that in a quiver, only arrows and quarrels.\r\n",
+							ch);
 					return (FALSE);
 				}
 				if (s_obj->value[0] > s_obj->value[3])
@@ -2526,9 +2560,17 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					}
 					if (IS_TRUSTED(ch))
 					{
-						wizlog(GET_LEVEL(ch), "%s puts %s in %s [%d]", J_NAME(ch), o_obj->short_description, s_obj->short_description, world[ch->in_room].number);
-						logit(LOG_WIZ, "%s puts %s in %s [%d]", J_NAME(ch), o_obj->short_description, s_obj->short_description, world[ch->in_room].number);
-						sql_log(ch, WIZLOG, "Put %s in %s", o_obj->short_description, s_obj->short_description);
+						wizlog(GET_LEVEL(ch), "%s puts %s in %s [%d]",
+						       J_NAME(ch), o_obj->short_description,
+						       s_obj->short_description,
+						       world[ch->in_room].number);
+						logit(LOG_WIZ, "%s puts %s in %s [%d]", J_NAME(ch),
+						      o_obj->short_description,
+						      s_obj->short_description,
+						      world[ch->in_room].number);
+						sql_log(ch, WIZLOG, "Put %s in %s",
+							o_obj->short_description,
+							s_obj->short_description);
 					}
 
 					if (IS_PC(ch))
@@ -2537,7 +2579,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					if (GET_ITEM_TYPE(o_obj) == ITEM_STORAGE)
 						writeSavedItem(o_obj);
 					if (showit)
-						act("$n puts $p into $P.", TRUE, ch, o_obj, s_obj, TO_ROOM);
+						act("$n puts $p into $P.", TRUE, ch, o_obj, s_obj,
+						    TO_ROOM);
 					char_light(ch);
 					room_light(ch->in_room, REAL);
 					return (TRUE);
@@ -2551,30 +2594,40 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			else if (showit)
 				do_get_reject_text(ch, "It seems to be closed.\r\n");
 		}
-		else if (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER || GET_ITEM_TYPE(s_obj) == ITEM_STORAGE || GET_ITEM_TYPE(s_obj) == ITEM_CORPSE)
+		else if (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER ||
+			 GET_ITEM_TYPE(s_obj) == ITEM_STORAGE ||
+			 GET_ITEM_TYPE(s_obj) == ITEM_CORPSE)
 		{
 			if (!IS_SET(s_obj->value[1], CONT_CLOSED))
 			{
 				if (o_obj == s_obj)
 				{
 					if (showit)
-						send_to_char("You try to fold it up, but fail.\r\n", ch);
+						send_to_char("You try to fold it up, but fail.\r\n",
+							     ch);
 					return (FALSE);
 				}
 				if (IS_SET(o_obj->extra_flags, ITEM_NODROP) && !IS_TRUSTED(ch))
 				{
 					if (showit)
-						send_to_char("You can't do that. Perhaps that item is cursed?\r\n", ch);
+						send_to_char(
+							"You can't do that. Perhaps that item is cursed?\r\n",
+							ch);
 					return (FALSE);
 				}
 
-				if (((container_total_weight(s_obj) + GET_OBJ_WEIGHT(o_obj)) <= (s_obj->value[0])) ||
-				    ((s_obj->value[0] == -1) && (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE || GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
+				if (((container_total_weight(s_obj) + GET_OBJ_WEIGHT(o_obj)) <=
+				     (s_obj->value[0])) ||
+				    ((s_obj->value[0] == -1) &&
+				     (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE ||
+				      GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
 				{
-
 #if USE_SPACE
-					if (((GET_OBJ_SPACE(s_obj) + GET_OBJ_SPACE(o_obj)) <= (s_obj->value[3])) ||
-					    ((s_obj->space == -1) && (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE || GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
+					if (((GET_OBJ_SPACE(s_obj) + GET_OBJ_SPACE(o_obj)) <=
+					     (s_obj->value[3])) ||
+					    ((s_obj->space == -1) &&
+					     (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE ||
+					      GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
 					{
 #endif
 						if (showit)
@@ -2610,12 +2663,22 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 						if (IS_TRUSTED(ch))
 						{
-							wizlog(GET_LEVEL(ch), "%s puts %s in %s [%d]", J_NAME(ch), o_obj->short_description, s_obj->short_description, world[ch->in_room].number);
-							logit(LOG_WIZ, "%s puts %s in %s [%d]", J_NAME(ch), o_obj->short_description, s_obj->short_description, world[ch->in_room].number);
-							sql_log(ch, WIZLOG, "Put %s in %s", o_obj->short_description, s_obj->short_description);
+							wizlog(GET_LEVEL(ch),
+							       "%s puts %s in %s [%d]", J_NAME(ch),
+							       o_obj->short_description,
+							       s_obj->short_description,
+							       world[ch->in_room].number);
+							logit(LOG_WIZ, "%s puts %s in %s [%d]",
+							      J_NAME(ch), o_obj->short_description,
+							      s_obj->short_description,
+							      world[ch->in_room].number);
+							sql_log(ch, WIZLOG, "Put %s in %s",
+								o_obj->short_description,
+								s_obj->short_description);
 						}
 						if (showit)
-							act("$n puts $p into $P.", TRUE, ch, o_obj, s_obj, TO_ROOM);
+							act("$n puts $p into $P.", TRUE, ch, o_obj,
+							    s_obj, TO_ROOM);
 						char_light(ch);
 						room_light(ch->in_room, REAL);
 
@@ -2629,7 +2692,9 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					else
 					{
 						if (showit)
-							send_to_char("Not enough place left to fit in.\r\n", ch);
+							send_to_char(
+								"Not enough place left to fit in.\r\n",
+								ch);
 					}
 #endif
 				}
@@ -2646,7 +2711,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		{
 			if (showit)
 			{
-				snprintf(Gbuf3, MAX_STRING_LENGTH, "The %s is not a container.\r\n", FirstWord(s_obj->name));
+				snprintf(Gbuf3, MAX_STRING_LENGTH, "The %s is not a container.\r\n",
+					 FirstWord(s_obj->name));
 				send_to_char(Gbuf3, ch);
 			}
 		}
@@ -2661,12 +2727,12 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 void do_give(P_char ch, char *argument, int cmd)
 {
-	char   obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
-	char   arg[MAX_INPUT_LENGTH];
-	char   Gbuf1[MAX_STRING_LENGTH];
-	int    amount, ctype;
+	char obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
+	char arg[MAX_INPUT_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
+	int amount, ctype;
 	P_char vict;
-	P_obj  obj;
+	P_obj obj;
 
 	/*  struct affected_type af;*/
 
@@ -2679,7 +2745,7 @@ void do_give(P_char ch, char *argument, int cmd)
 			send_to_char("Number field too large.\r\n", ch);
 			return;
 		}
-		amount   = atoi(obj_name);
+		amount = atoi(obj_name);
 		argument = one_argument(argument, arg);
 
 		ctype = coin_type(arg);
@@ -2688,20 +2754,19 @@ void do_give(P_char ch, char *argument, int cmd)
 		{
 			send_to_char("Sorry, you can't do that!\r\n", ch);
 			if (amount <= 0)
-				wizlog(57,
-				       "&-L&+R%s just tried to give %d %s in room %d!",
-				       GET_NAME(ch),
-				       amount,
-				       (ctype == 3)   ? "plat"
-				       : (ctype == 2) ? "gold"
-				       : (ctype == 1) ? "silver"
-				                      : "copper",
+				wizlog(57, "&-L&+R%s just tried to give %d %s in room %d!",
+				       GET_NAME(ch), amount,
+				       (ctype == 3) ? "plat" :
+				       (ctype == 2) ? "gold" :
+				       (ctype == 1) ? "silver" :
+						      "copper",
 				       world[ch->in_room].number);
 			return;
 		}
 		if ((ch->points.cash[ctype] < amount) && (IS_NPC(ch) || (GET_LEVEL(ch) < MAXLVL)))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You do not have that many %s coins!\r\n", coin_names[ctype]);
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "You do not have that many %s coins!\r\n", coin_names[ctype]);
 			send_to_char(Gbuf1, ch);
 			return;
 		}
@@ -2723,7 +2788,9 @@ void do_give(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		if ((IS_NPC(vict) && ((GET_RNUM(vict) == real_mobile(250)) || (GET_RNUM(vict) == real_mobile(650)))) || IS_AFFECTED(vict, AFF_WRAITHFORM))
+		if ((IS_NPC(vict) && ((GET_RNUM(vict) == real_mobile(250)) ||
+				      (GET_RNUM(vict) == real_mobile(650)))) ||
+		    IS_AFFECTED(vict, AFF_WRAITHFORM))
 		{
 			send_to_char("They couldn't carry that if they tried.\r\n", ch);
 			return;
@@ -2733,16 +2800,22 @@ void do_give(P_char ch, char *argument, int cmd)
 
 		if (((ctype == 3) && (amount > 999)) || ((ctype == 2) && (amount > 99)))
 		{
-			wizlog(56, "%s gives %s %d %s in [%d]", J_NAME(ch), J_NAME(vict), amount, (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
-			logit(LOG_DEBUG, "%s gives %s %d %s in [%d]", J_NAME(ch), J_NAME(vict), amount, (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
+			wizlog(56, "%s gives %s %d %s in [%d]", J_NAME(ch), J_NAME(vict), amount,
+			       (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
+			logit(LOG_DEBUG, "%s gives %s %d %s in [%d]", J_NAME(ch), J_NAME(vict),
+			      amount, (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
 		}
 		if (IS_TRUSTED(ch))
 		{
-			wizlog(GET_LEVEL(ch), "%s gives %s %d %s coins.", J_NAME(ch), J_NAME(vict), amount, coin_names[ctype]);
-			logit(LOG_WIZ, "%s gives %s %d %s coins.", J_NAME(ch), J_NAME(vict), amount, coin_names[ctype]);
-			sql_log(ch, WIZLOG, "Gave %s %d %s coins.", J_NAME(vict), amount, coin_names[ctype]);
+			wizlog(GET_LEVEL(ch), "%s gives %s %d %s coins.", J_NAME(ch), J_NAME(vict),
+			       amount, coin_names[ctype]);
+			logit(LOG_WIZ, "%s gives %s %d %s coins.", J_NAME(ch), J_NAME(vict), amount,
+			      coin_names[ctype]);
+			sql_log(ch, WIZLOG, "Gave %s %d %s coins.", J_NAME(vict), amount,
+				coin_names[ctype]);
 		}
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s gives you %d %s coins.\r\n", PERS(ch, vict, FALSE), amount, coin_names[ctype]);
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s gives you %d %s coins.\r\n",
+			 PERS(ch, vict, FALSE), amount, coin_names[ctype]);
 		send_to_char(Gbuf1, vict);
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n gives some %s to $N", coin_names[ctype]);
 		act(Gbuf1, TRUE, ch, 0, vict, TO_NOTVICT);
@@ -2815,17 +2888,22 @@ void do_give(P_char ch, char *argument, int cmd)
 		send_to_char("You may not give crafted/forged items to mobs.\r\n", ch);
 		return;
 	}
-	if ((IS_NPC(vict) && (GET_RNUM(vict) == real_mobile(250))) || IS_AFFECTED(vict, AFF_WRAITHFORM))
+	if ((IS_NPC(vict) && (GET_RNUM(vict) == real_mobile(250))) ||
+	    IS_AFFECTED(vict, AFF_WRAITHFORM))
 	{
 		send_to_char("They couldn't carry that if they tried.\r\n", ch);
 		return;
 	}
-	if (!IS_TRUSTED(ch) && IS_CARRYING_N(vict) >= CAN_CARRY_N(vict) && !(IS_NPC(vict) && mob_index[GET_RNUM(vict)].qst_func))
+	if (!IS_TRUSTED(ch) && IS_CARRYING_N(vict) >= CAN_CARRY_N(vict) &&
+	    !(IS_NPC(vict) && mob_index[GET_RNUM(vict)].qst_func))
 	{
 		act("$N seems to have $S hands full.", 0, ch, 0, vict, TO_CHAR);
 		return;
 	}
-	if (((((GET_OBJ_WEIGHT(obj) + total_carried_weight(vict)) > CAN_CARRY_W(vict)) || (GET_OBJ_WEIGHT(obj) > 25)) && !is_linked_to(ch, vict, LNK_CONSENT)) && (cmd != -4) && (!IS_TRUSTED(ch)))
+	if (((((GET_OBJ_WEIGHT(obj) + total_carried_weight(vict)) > CAN_CARRY_W(vict)) ||
+	      (GET_OBJ_WEIGHT(obj) > 25)) &&
+	     !is_linked_to(ch, vict, LNK_CONSENT)) &&
+	    (cmd != -4) && (!IS_TRUSTED(ch)))
 	{
 		act("$E must consent to you before you can overload $M.", 0, ch, 0, vict, TO_CHAR);
 		return;
@@ -2833,7 +2911,8 @@ void do_give(P_char ch, char *argument, int cmd)
 	if (IS_ARTIFACT(obj) && racewar(ch, vict))
 	{
 		send_to_char("That would just be unethical now wouldn't it?\r\n", ch);
-		wizlog(56, "%s tried to give %s to %s.", ch->player.name, obj->short_description, vict->player.name);
+		wizlog(56, "%s tried to give %s to %s.", ch->player.name, obj->short_description,
+		       vict->player.name);
 		return;
 	}
 	obj_from_char(obj);
@@ -2847,9 +2926,13 @@ void do_give(P_char ch, char *argument, int cmd)
 	if (IS_TRUSTED(ch))
 	{
 		if (IS_ARTIFACT(obj))
-			logit(LOG_OBJ, "%s gives artifact %s (%d) to %s.", J_NAME(ch), obj->short_description, obj_index[obj->R_num].virtual_number, J_NAME(vict));
-		wizlog(GET_LEVEL(ch), "%s gives %s to %s.", J_NAME(ch), obj->short_description, J_NAME(vict));
-		logit(LOG_WIZ, "%s gives %s to %s.", J_NAME(ch), obj->short_description, J_NAME(vict));
+			logit(LOG_OBJ, "%s gives artifact %s (%d) to %s.", J_NAME(ch),
+			      obj->short_description, obj_index[obj->R_num].virtual_number,
+			      J_NAME(vict));
+		wizlog(GET_LEVEL(ch), "%s gives %s to %s.", J_NAME(ch), obj->short_description,
+		       J_NAME(vict));
+		logit(LOG_WIZ, "%s gives %s to %s.", J_NAME(ch), obj->short_description,
+		      J_NAME(vict));
 		sql_log(ch, WIZLOG, "Gave %s to %s.", obj->short_description, J_NAME(vict));
 	}
 	if (ch != vict)
@@ -2874,9 +2957,9 @@ void do_give(P_char ch, char *argument, int cmd)
 
 void weight_change_object(P_obj obj, int weight)
 {
-	P_obj  tmp_obj;
+	P_obj tmp_obj;
 	P_char tmp_ch;
-	int    pos;
+	int pos;
 
 	if (OBJ_ROOM(obj))
 	{
@@ -2892,12 +2975,13 @@ void weight_change_object(P_obj obj, int weight)
 	else if (OBJ_WORN(obj))
 	{
 		P_char found = NULL;
-		int    found_pos = -1;
+		int found_pos = -1;
 
 		tmp_ch = obj->loc.wearing;
 		if (tmp_ch && !char_in_list(tmp_ch))
 		{
-			logit(LOG_DEBUG, "weight_change_object: stale wearer pointer, obj=%s", obj->short_description ? obj->short_description : "unknown");
+			logit(LOG_DEBUG, "weight_change_object: stale wearer pointer, obj=%s",
+			      obj->short_description ? obj->short_description : "unknown");
 			tmp_ch = NULL;
 		}
 
@@ -2909,23 +2993,24 @@ void weight_change_object(P_obj obj, int weight)
 					if (found->equipment[pos] == obj)
 						break;
 				if (pos < MAX_WEAR)
-					{
-						found_pos = pos;
-						break;
-					}
+				{
+					found_pos = pos;
+					break;
+				}
 			}
 
 			if (found_pos < 0)
 			{
-				logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
+				logit(LOG_EXIT,
+				      "weight_change_object, can't find worn object in equip");
 				obj->weight += weight;
-				obj->loc_p       = LOC_NOWHERE;
+				obj->loc_p = LOC_NOWHERE;
 				obj->loc.wearing = NULL;
 				return;
 			}
 
 			tmp_ch = found;
-			pos    = found_pos;
+			pos = found_pos;
 		}
 		else
 		{
@@ -2934,7 +3019,8 @@ void weight_change_object(P_obj obj, int weight)
 					break;
 			if (pos >= MAX_WEAR)
 			{
-				logit(LOG_EXIT, "weight_change_object, can't find worn object in equip");
+				logit(LOG_EXIT,
+				      "weight_change_object, can't find worn object in equip");
 				for (found = character_list; found; found = found->next)
 				{
 					for (found_pos = 0; found_pos < MAX_WEAR; found_pos++)
@@ -2946,12 +3032,12 @@ void weight_change_object(P_obj obj, int weight)
 				if (found && found_pos < MAX_WEAR)
 				{
 					tmp_ch = found;
-					pos    = found_pos;
+					pos = found_pos;
 				}
 				else
 				{
 					obj->weight += weight;
-					obj->loc_p       = LOC_NOWHERE;
+					obj->loc_p = LOC_NOWHERE;
 					obj->loc.wearing = NULL;
 					return;
 				}
@@ -2976,7 +3062,7 @@ void weight_change_object(P_obj obj, int weight)
 
 void name_from_drinkcon(P_obj obj)
 {
-	int   i;
+	int i;
 	char *new_name;
 
 	/*
@@ -3043,15 +3129,17 @@ void name_to_drinkcon(P_obj obj, int type)
 void do_drink(P_char ch, char *argument, int cmd)
 {
 	P_obj temp;
-	int   amount, healamt;
-	char  Gbuf4[MAX_STRING_LENGTH];
-	int   own_object; /*
+	int amount, healamt;
+	char Gbuf4[MAX_STRING_LENGTH];
+	int own_object; /*
 	                   * Boolean flag used to determine
 	                   * whether to drop transient obj
 	                   */
 	if (GET_RACE(ch) == RACE_ILLITHID && GET_LEVEL(ch) < AVATAR)
 	{
-		send_to_char("Ugh. Even if you had the means to drink, the thought revolts you.\r\n", ch);
+		send_to_char(
+			"Ugh. Even if you had the means to drink, the thought revolts you.\r\n",
+			ch);
 		return;
 	}
 
@@ -3078,7 +3166,6 @@ void do_drink(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-
 			/* Need to set boolean value own_object to 0 so that we will not   */
 			/* attempt to drop TRANSIENT object when it is not in the player's */
 			/* inventory.     */
@@ -3104,12 +3191,13 @@ void do_drink(P_char ch, char *argument, int cmd)
 		return;
 	}
 	if (GET_COND(ch, THIRST) > 23)
-	{                                   /*
+	{ /*
 		                                 * Stomach full
 		                                 */
 		if (GET_COND(ch, THIRST) == -1) // -Foo Disable thirst
 		{
-			act("You feel like your bladder will burst soon!", FALSE, ch, 0, 0, TO_CHAR);
+			act("You feel like your bladder will burst soon!", FALSE, ch, 0, 0,
+			    TO_CHAR);
 			return;
 		}
 	}
@@ -3132,9 +3220,11 @@ void do_drink(P_char ch, char *argument, int cmd)
 	{
 		if (temp->value[1])
 		{ /* Not empty */
-			snprintf(Gbuf4, MAX_STRING_LENGTH, "$n drinks %s from $p.", drinks[temp->value[2]]);
+			snprintf(Gbuf4, MAX_STRING_LENGTH, "$n drinks %s from $p.",
+				 drinks[temp->value[2]]);
 			act(Gbuf4, TRUE, ch, temp, 0, TO_ROOM);
-			snprintf(Gbuf4, MAX_STRING_LENGTH, "You drink the %s from $p.", drinks[temp->value[2]]);
+			snprintf(Gbuf4, MAX_STRING_LENGTH, "You drink the %s from $p.",
+				 drinks[temp->value[2]]);
 			act(Gbuf4, TRUE, ch, temp, 0, TO_CHAR);
 
 			amount = 1;
@@ -3150,34 +3240,44 @@ void do_drink(P_char ch, char *argument, int cmd)
 			if (temp->value[1] > 0)
 				weight_change_object(temp, -amount); /* Subtract amount */
 
-			if (gain_condition(ch, DRUNK, (int)(drink_aff[temp->value[2]][DRUNK] * amount)))
+			if (gain_condition(ch, DRUNK,
+					   (int)(drink_aff[temp->value[2]][DRUNK] * amount)))
 				return;
-			if (gain_condition(ch, FULL, (int)(drink_aff[temp->value[2]][FULL] * amount)))
+			if (gain_condition(ch, FULL,
+					   (int)(drink_aff[temp->value[2]][FULL] * amount)))
 				return;
-			if (gain_condition(ch, THIRST, (int)(drink_aff[temp->value[2]][THIRST] * amount)))
+			if (gain_condition(ch, THIRST,
+					   (int)(drink_aff[temp->value[2]][THIRST] * amount)))
 				return;
 
 			if (GET_COND(ch, DRUNK) > 10)
 				act("You feel drunk.", FALSE, ch, 0, 0, TO_CHAR);
 
 			if (GET_COND(ch, THIRST) > 20)
-				act("You do not feel &+cth&+Ci&+cr&+Cst&+cy&n.", FALSE, ch, 0, 0, TO_CHAR);
+				act("You do not feel &+cth&+Ci&+cr&+Cst&+cy&n.", FALSE, ch, 0, 0,
+				    TO_CHAR);
 
 			if (GET_COND(ch, FULL) > 20)
 				act("You are full.", FALSE, ch, 0, 0, TO_CHAR);
 
 			/* Condensed from 30 Lines to 12 by refactoring the logic. - Sniktiorg (Nov.9.12) */
-			if ((temp->value[2] == LIQ_HOLYWATER && IS_GOOD(ch)) || (temp->value[2] == LIQ_UNHOLYWAT && IS_EVIL(ch)))
+			if ((temp->value[2] == LIQ_HOLYWATER && IS_GOOD(ch)) ||
+			    (temp->value[2] == LIQ_UNHOLYWAT && IS_EVIL(ch)))
 			{
 				healamt = MIN(GET_MAX_HIT(ch) - GET_HIT(ch), dice(3, 3));
 
-				send_to_char("You feel &+Wt&+wou&+Wc&+wh&+Wed&n by a higher power!\r\n", ch);
+				send_to_char(
+					"You feel &+Wt&+wou&+Wc&+wh&+Wed&n by a higher power!\r\n",
+					ch);
 				GET_HIT(ch) += healamt;
 				CharWait(ch, WAIT_SEC);
 			}
-			else if ((temp->value[2] == LIQ_UNHOLYWAT && IS_GOOD(ch)) || (temp->value[2] == LIQ_HOLYWATER && IS_EVIL(ch)))
+			else if ((temp->value[2] == LIQ_UNHOLYWAT && IS_GOOD(ch)) ||
+				 (temp->value[2] == LIQ_HOLYWATER && IS_EVIL(ch)))
 			{
-				send_to_char("You are &+rbl&+Ra&+rs&+Rte&+rd&n by a higher power!\r\n", ch);
+				send_to_char(
+					"You are &+rbl&+Ra&+rs&+Rte&+rd&n by a higher power!\r\n",
+					ch);
 				GET_HIT(ch) = MAX(0, GET_HIT(ch) - dice(3, 3));
 			}
 			else if (temp->value[3])
@@ -3185,7 +3285,8 @@ void do_drink(P_char ch, char *argument, int cmd)
 			   * The shit was poisoned !
 			   */
 				act("Oops, it tasted rather strange?!!?", FALSE, ch, 0, 0, TO_CHAR);
-				act("$n chokes and utters some strange sounds.", TRUE, ch, 0, 0, TO_ROOM);
+				act("$n chokes and utters some strange sounds.", TRUE, ch, 0, 0,
+				    TO_ROOM);
 				poison_lifeleak(10, ch, 0, 0, ch, 0);
 			}
 			if (temp->value[1] < 0)
@@ -3204,12 +3305,14 @@ void do_drink(P_char ch, char *argument, int cmd)
 			/* If it is .. it needs to vanish.  The way to do that is */
 			/* to force player to drop object */
 
-			if (temp->value[1] <= 0 && IS_SET(temp->extra_flags, ITEM_TRANSIENT) && own_object)
+			if (temp->value[1] <= 0 && IS_SET(temp->extra_flags, ITEM_TRANSIENT) &&
+			    own_object)
 			{
-
-				act("The empty $q vanishes into thin air.\r\n", TRUE, ch, temp, 0, TO_CHAR);
+				act("The empty $q vanishes into thin air.\r\n", TRUE, ch, temp, 0,
+				    TO_CHAR);
 				obj_from_char(temp);
-				extract_obj(temp, TRUE); // Hmm, a transient drink container artifact?
+				extract_obj(temp,
+					    TRUE); // Hmm, a transient drink container artifact?
 			}
 			return;
 		}
@@ -3224,14 +3327,15 @@ void do_drink(P_char ch, char *argument, int cmd)
 void do_eat(P_char ch, char *argument, int cmd)
 {
 	P_obj temp;
-	char  Gbuf1[MAX_STRING_LENGTH];
-	bool  updateArtiList;
+	char Gbuf1[MAX_STRING_LENGTH];
+	bool updateArtiList;
 
 	argument = one_argument(argument, Gbuf1);
 
 	if (GET_RACE(ch) == RACE_ILLITHID && !IS_TRUSTED(ch))
 	{
-		send_to_char("Ugh. Even if you had the means to eat, the thought revolts you.\r\n", ch);
+		send_to_char("Ugh. Even if you had the means to eat, the thought revolts you.\r\n",
+			     ch);
 		return;
 	}
 
@@ -3258,14 +3362,15 @@ void do_eat(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			send_to_char_f(ch,
-			               "&+YWhen eating an artifact, you must specify '&+weat <arti> update&+Y' if you"
-			               " want to update the artifact list.  If you don't know whether to update, you're better off"
-			               " handing it to another Immortal who knows or can figure it out.  The reason for this is to"
-			               " figure out if the artifact is duplicated or if it's being pulled from a char for some"
-			               " reason, etc.  However, since your hungry, we just won't update it this time.  You can use"
-			               " '&+wartifact clear %d&+Y' to clear the DB entry if need be.&n\n\r",
-			               OBJ_VNUM(temp));
+			send_to_char_f(
+				ch,
+				"&+YWhen eating an artifact, you must specify '&+weat <arti> update&+Y' if you"
+				" want to update the artifact list.  If you don't know whether to update, you're better off"
+				" handing it to another Immortal who knows or can figure it out.  The reason for this is to"
+				" figure out if the artifact is duplicated or if it's being pulled from a char for some"
+				" reason, etc.  However, since your hungry, we just won't update it this time.  You can use"
+				" '&+wartifact clear %d&+Y' to clear the DB entry if need be.&n\n\r",
+				OBJ_VNUM(temp));
 		}
 	}
 
@@ -3298,7 +3403,9 @@ void do_eat(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if ((temp->value[1] < 0 || (temp->timer[0] && (time(NULL) - temp->timer[0] > 1 * 60 * 10))) && !IS_TRUSTED(ch))
+	if ((temp->value[1] < 0 ||
+	     (temp->timer[0] && (time(NULL) - temp->timer[0] > 1 * 60 * 10))) &&
+	    !IS_TRUSTED(ch))
 	{
 		act("That stinks, find some fresh food instead.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
@@ -3314,15 +3421,23 @@ void do_eat(P_char ch, char *argument, int cmd)
 		{
 			if ((GET_LEVEL(ch) > 45) || (GET_RACE(ch) == RACE_LICH))
 			{
-				send_to_char("&+GYou are much too powerful for the magic of this item&n.\r\n", ch);
+				send_to_char(
+					"&+GYou are much too powerful for the magic of this item&n.\r\n",
+					ch);
 				return;
 			}
-			send_to_char("&+gAs you eat the &+GMushroom&+g, a &+Mmagical&+g essence surrounds you and you suddenly feel more &+Gexperienced!&n\r\n", ch);
+			send_to_char(
+				"&+gAs you eat the &+GMushroom&+g, a &+Mmagical&+g essence surrounds you and you suddenly feel more &+Gexperienced!&n\r\n",
+				ch);
 			// GET_EXP(ch) = new_exp_table[GET_LEVEL(ch)];
-			statuslog(ch->player.level, "&+CLevel:&n (%s&n) just ate level mushroom at [%d]!", GET_NAME(ch), (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
+			statuslog(ch->player.level,
+				  "&+CLevel:&n (%s&n) just ate level mushroom at [%d]!",
+				  GET_NAME(ch),
+				  (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
 			advance_level(ch);
 			if (!do_save_silent(ch, 1))
-				logit(LOG_DEBUG, "Failed to save %s after level mushroom.", GET_NAME(ch));
+				logit(LOG_DEBUG, "Failed to save %s after level mushroom.",
+				      GET_NAME(ch));
 			extract_obj(temp);
 			return;
 		}
@@ -3338,8 +3453,8 @@ void do_eat(P_char ch, char *argument, int cmd)
 		if (!affected_by_spell(ch, TAG_EATEN))
 		{
 			bzero(&af, sizeof(af));
-			af.type     = TAG_EATEN;
-			af.flags    = AFFTYPE_NOSHOW;
+			af.type = TAG_EATEN;
+			af.flags = AFFTYPE_NOSHOW;
 			af.duration = MAX(temp->value[0], 1);
 
 			int hit_reg;
@@ -3441,12 +3556,12 @@ void do_eat(P_char ch, char *argument, int cmd)
 
 void do_pour(P_char ch, char *argument, int cmd)
 {
-	P_obj  from_obj;
-	P_obj  to_obj;
+	P_obj from_obj;
+	P_obj to_obj;
 	P_char to_char;
-	int    amount;
-	char   Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char   Gbuf4[MAX_STRING_LENGTH];
+	int amount;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf4[MAX_STRING_LENGTH];
 
 	argument_interpreter(argument, Gbuf1, Gbuf2);
 
@@ -3472,7 +3587,8 @@ void do_pour(P_char ch, char *argument, int cmd)
 	}
 	if (from_obj->value[1] < 0)
 	{
-		act("You can't seem to pour $p out completely!  There's still more there!", FALSE, ch, from_obj, 0, TO_CHAR);
+		act("You can't seem to pour $p out completely!  There's still more there!", FALSE,
+		    ch, from_obj, 0, TO_CHAR);
 		return;
 	}
 	if (!*Gbuf2)
@@ -3502,7 +3618,8 @@ void do_pour(P_char ch, char *argument, int cmd)
 	else if ((to_char = get_char_vis(ch, Gbuf2)))
 	{
 		act("$n splashes $N with contents of $p.", TRUE, ch, from_obj, to_char, TO_NOTVICT);
-		act("$n splashes you with contents of $p.", TRUE, ch, from_obj, to_char, TO_NOTVICT);
+		act("$n splashes you with contents of $p.", TRUE, ch, from_obj, to_char,
+		    TO_NOTVICT);
 		act("You splash $N with contents of $p.", FALSE, ch, from_obj, to_char, TO_CHAR);
 		weight_change_object(from_obj, -from_obj->value[1]); /* Empty */
 		from_obj->value[1] = 0;
@@ -3536,7 +3653,8 @@ void do_pour(P_char ch, char *argument, int cmd)
 		act("There is no room for more.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	snprintf(Gbuf4, MAX_STRING_LENGTH, "You pour the %s into the %s.", drinks[from_obj->value[2]], Gbuf2);
+	snprintf(Gbuf4, MAX_STRING_LENGTH, "You pour the %s into the %s.",
+		 drinks[from_obj->value[2]], Gbuf2);
 	send_to_char(Gbuf4, ch);
 
 	/*
@@ -3588,9 +3706,9 @@ void do_fill(P_char ch, char *argument, int cmd)
 {
 	P_obj from_obj;
 	P_obj to_obj;
-	int   amount;
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char  Gbuf4[MAX_STRING_LENGTH];
+	int amount;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf4[MAX_STRING_LENGTH];
 
 	argument_interpreter(argument, Gbuf1, Gbuf2);
 
@@ -3655,7 +3773,8 @@ void do_fill(P_char ch, char *argument, int cmd)
 		act("There is no room for more.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	snprintf(Gbuf4, MAX_STRING_LENGTH, "You fill the %s with the %s.", Gbuf1, drinks[from_obj->value[2]]);
+	snprintf(Gbuf4, MAX_STRING_LENGTH, "You fill the %s with the %s.", Gbuf1,
+		 drinks[from_obj->value[2]]);
 	act(Gbuf4, FALSE, ch, 0, 0, TO_CHAR);
 
 	/*
@@ -3716,13 +3835,15 @@ void do_fill(P_char ch, char *argument, int cmd)
 
 void do_sip(P_char ch, char *argument, int cmd)
 {
-	char  arg[MAX_INPUT_LENGTH];
-	char  Gbuf4[MAX_STRING_LENGTH];
+	char arg[MAX_INPUT_LENGTH];
+	char Gbuf4[MAX_STRING_LENGTH];
 	P_obj temp;
 
 	if (GET_RACE(ch) == RACE_ILLITHID && GET_LEVEL(ch) < AVATAR)
 	{
-		send_to_char("Ugh. Even if you had the means to drink, the thought revolts you.\r\n", ch);
+		send_to_char(
+			"Ugh. Even if you had the means to drink, the thought revolts you.\r\n",
+			ch);
 		return;
 	}
 	/*
@@ -3774,12 +3895,13 @@ void do_sip(P_char ch, char *argument, int cmd)
 
 void do_taste(P_char ch, char *argument, int cmd)
 {
-	char  arg[MAX_INPUT_LENGTH];
+	char arg[MAX_INPUT_LENGTH];
 	P_obj temp;
 
 	if (GET_RACE(ch) == RACE_ILLITHID && GET_LEVEL(ch) < AVATAR)
 	{
-		send_to_char("Ugh. Even if you had the means to eat, the thought revolts you.\r\n", ch);
+		send_to_char("Ugh. Even if you had the means to eat, the thought revolts you.\r\n",
+			     ch);
 		return;
 	}
 	one_argument(argument, arg);
@@ -3796,7 +3918,8 @@ void do_taste(P_char ch, char *argument, int cmd)
 	}
 	if (!(temp->type == ITEM_FOOD))
 	{
-		act("It tastes inedible, aren't you glad it wasn't coated with poison?", FALSE, ch, 0, 0, TO_CHAR);
+		act("It tastes inedible, aren't you glad it wasn't coated with poison?", FALSE, ch,
+		    0, 0, TO_CHAR);
 		return;
 	}
 	act("$n tastes the $q.", TRUE, ch, temp, 0, TO_ROOM);
@@ -3827,145 +3950,151 @@ void perform_wear(P_char ch, P_obj obj_object, int keyword)
 	struct affected_type af;
 	switch (keyword)
 	{
-		case 0:
-			// Technically, this shouldn't be called.
-			act("$n lights $p and holds it.", FALSE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 1:
-			// Place on proper finger. -Sniktiorg (Nov.14.12)
-			if (ch->equipment[WEAR_FINGER_L])
-			{
-				act("You place $p on your right ring finger.", 0, ch, obj_object, 0, TO_CHAR);
-			}
-			else
-			{
-				act("You place $p on your left ring finger.", 0, ch, obj_object, 0, TO_CHAR);
-			}
-			act("$n slips $s finger into $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 2:
-			act("You duck your head and place $p around your neck.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n places $p around $s neck.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 3:
-			act("You shrug into $p.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n shrugs into $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 4:
-			act("You don $p on your head.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n dons $p on $s head.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 5:
-			act("You slide your legs into $p.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n slides $s legs into $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 6:
-			act("You place $p on your feet.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n places $p on $s feet.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 7:
-			act("You pull $p onto your hands.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n pulls $p onto $s hands.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 8:
-			act("You cover your arms with $p.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n covers $s arms with $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 9:
-			act("You wear $p about your body.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n wears $p about $s body.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 10:
-			act("You clasp $p around your waist.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n clasps $p around $s waist.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 11:
-			// To_CHAR is in WEAR() because of complexity and laziness. -Sniktiorg (Nov.12.12)
-			act("$n places $p around $s wrist.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 12:
-			act("You wield $p.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n wields $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 13:
-			if ((GET_ITEM_TYPE(obj_object) == ITEM_LIGHT) && obj_object->value[2])
-			{
-				act("You light $p and hold it.", 0, ch, obj_object, 0, TO_CHAR);
-				act("$n lights $p and holds it.", TRUE, ch, obj_object, 0, TO_ROOM);
-				if (obj_object->value[2] > 0)
-					CharWait(ch, 2);
-			}
-			else
-			{
-				act("You hold $p.", 0, ch, obj_object, 0, TO_CHAR);
-				act("$n grabs $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			}
-			break;
-		case 14:
-			act("You strap $p to your arm.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n straps $p to $s arm.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 15:
-			act("You slide $p over your eyes.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n slides $p over $s eyes.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 16:
-			act("You cover your face with $p.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n covers $s face with $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 17:
-			// Place in proper ear. -Sniktiorg (Nov.14.12)
-			if (ch->equipment[WEAR_EARRING_L])
-			{
-				act("You wear $p on your right ear.", 0, ch, obj_object, 0, TO_CHAR);
-			}
-			else
-			{
-				act("You wear $p on your left ear.", 0, ch, obj_object, 0, TO_CHAR);
-			}
-			act("$n wears $p on $s ear.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 18:
-			act("You strap $p onto your back.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n straps $p to $s back.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 19:
-		case 28:
-			act("You don the guild insignia of $p.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n dons $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 20:
-			act("You strap $p on your back.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n straps $p to $s back.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 21:
-			act("You attach $p to your belt.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n attaches $p to $s belt.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 22:
-			act("You throw $p about your &+yhindquarters&n.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n wears $p about $s &+yhindquarters&n.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 23:
-			act("You wear $p on your &+Ltail&n.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n wears $p on $s &+Ltail&n.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 24:
-			act("You wear $p on your nose.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n wears $p on $s nose.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 25:
-			act("You wear $p on your &+Lhorns&n.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n wears $p on $s &+Lhorns&n.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 26:
-			act("You toss $p in the air and it begins orbiting your head.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n throws $p in the air and it begins circling $s head.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
-		case 27:
-			act("You shrug your &+Lspider's&n abdomen into $p.", 0, ch, obj_object, 0, TO_CHAR);
-			act("$n shrugs $s &+Lspider's&n abdomen into $p.", TRUE, ch, obj_object, 0, TO_ROOM);
-			break;
+	case 0:
+		// Technically, this shouldn't be called.
+		act("$n lights $p and holds it.", FALSE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 1:
+		// Place on proper finger. -Sniktiorg (Nov.14.12)
+		if (ch->equipment[WEAR_FINGER_L])
+		{
+			act("You place $p on your right ring finger.", 0, ch, obj_object, 0,
+			    TO_CHAR);
+		}
+		else
+		{
+			act("You place $p on your left ring finger.", 0, ch, obj_object, 0,
+			    TO_CHAR);
+		}
+		act("$n slips $s finger into $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 2:
+		act("You duck your head and place $p around your neck.", 0, ch, obj_object, 0,
+		    TO_CHAR);
+		act("$n places $p around $s neck.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 3:
+		act("You shrug into $p.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n shrugs into $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 4:
+		act("You don $p on your head.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n dons $p on $s head.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 5:
+		act("You slide your legs into $p.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n slides $s legs into $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 6:
+		act("You place $p on your feet.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n places $p on $s feet.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 7:
+		act("You pull $p onto your hands.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n pulls $p onto $s hands.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 8:
+		act("You cover your arms with $p.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n covers $s arms with $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 9:
+		act("You wear $p about your body.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n wears $p about $s body.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 10:
+		act("You clasp $p around your waist.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n clasps $p around $s waist.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 11:
+		// To_CHAR is in WEAR() because of complexity and laziness. -Sniktiorg (Nov.12.12)
+		act("$n places $p around $s wrist.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 12:
+		act("You wield $p.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n wields $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 13:
+		if ((GET_ITEM_TYPE(obj_object) == ITEM_LIGHT) && obj_object->value[2])
+		{
+			act("You light $p and hold it.", 0, ch, obj_object, 0, TO_CHAR);
+			act("$n lights $p and holds it.", TRUE, ch, obj_object, 0, TO_ROOM);
+			if (obj_object->value[2] > 0)
+				CharWait(ch, 2);
+		}
+		else
+		{
+			act("You hold $p.", 0, ch, obj_object, 0, TO_CHAR);
+			act("$n grabs $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		}
+		break;
+	case 14:
+		act("You strap $p to your arm.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n straps $p to $s arm.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 15:
+		act("You slide $p over your eyes.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n slides $p over $s eyes.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 16:
+		act("You cover your face with $p.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n covers $s face with $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 17:
+		// Place in proper ear. -Sniktiorg (Nov.14.12)
+		if (ch->equipment[WEAR_EARRING_L])
+		{
+			act("You wear $p on your right ear.", 0, ch, obj_object, 0, TO_CHAR);
+		}
+		else
+		{
+			act("You wear $p on your left ear.", 0, ch, obj_object, 0, TO_CHAR);
+		}
+		act("$n wears $p on $s ear.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 18:
+		act("You strap $p onto your back.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n straps $p to $s back.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 19:
+	case 28:
+		act("You don the guild insignia of $p.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n dons $p.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 20:
+		act("You strap $p on your back.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n straps $p to $s back.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 21:
+		act("You attach $p to your belt.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n attaches $p to $s belt.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 22:
+		act("You throw $p about your &+yhindquarters&n.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n wears $p about $s &+yhindquarters&n.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 23:
+		act("You wear $p on your &+Ltail&n.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n wears $p on $s &+Ltail&n.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 24:
+		act("You wear $p on your nose.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n wears $p on $s nose.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 25:
+		act("You wear $p on your &+Lhorns&n.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n wears $p on $s &+Lhorns&n.", TRUE, ch, obj_object, 0, TO_ROOM);
+		break;
+	case 26:
+		act("You toss $p in the air and it begins orbiting your head.", 0, ch, obj_object,
+		    0, TO_CHAR);
+		act("$n throws $p in the air and it begins circling $s head.", TRUE, ch, obj_object,
+		    0, TO_ROOM);
+		break;
+	case 27:
+		act("You shrug your &+Lspider's&n abdomen into $p.", 0, ch, obj_object, 0, TO_CHAR);
+		act("$n shrugs $s &+Lspider's&n abdomen into $p.", TRUE, ch, obj_object, 0,
+		    TO_ROOM);
+		break;
 	}
 
 	// Set-Show Affects
@@ -3976,12 +4105,16 @@ void perform_wear(P_char ch, P_obj obj_object, int keyword)
 	}
 
 	// Battlemage Coat
-	if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch) && !affected_by_spell(ch, SPELL_BATTLEMAGE))
+	if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 &&
+	    !IS_MULTICLASS_PC(ch) && !affected_by_spell(ch, SPELL_BATTLEMAGE))
 	{
-		send_to_char("&+rAs you cover yourself with your &+Ymaje&+rst&+Yic &+Yrobe&+r,\r\n&+ryou suddenly feel an enhanced &+mpower&+r rise up within your &+Ybody&+r!&n\r\n", ch);
-		act("&+L$n's &+Yeyes&+r suddenly glow &+yg&+Yo&+yl&+Yd&+ye&+Yn&+r with po&+Rwe&+rr!&n", TRUE, ch, 0, 0, TO_ROOM);
+		send_to_char(
+			"&+rAs you cover yourself with your &+Ymaje&+rst&+Yic &+Yrobe&+r,\r\n&+ryou suddenly feel an enhanced &+mpower&+r rise up within your &+Ybody&+r!&n\r\n",
+			ch);
+		act("&+L$n's &+Yeyes&+r suddenly glow &+yg&+Yo&+yl&+Yd&+ye&+Yn&+r with po&+Rwe&+rr!&n",
+		    TRUE, ch, 0, 0, TO_ROOM);
 		bzero(&af, sizeof(af));
-		af.type     = SPELL_BATTLEMAGE;
+		af.type = SPELL_BATTLEMAGE;
 		af.duration = -1;
 		affect_to_char(ch, &af);
 	}
@@ -3989,8 +4122,8 @@ void perform_wear(P_char ch, P_obj obj_object, int keyword)
 	if (IS_SET(obj_object->bitvector, AFF_INVISIBLE) && !affected_by_spell(ch, TAG_PERMINVIS))
 	{
 		bzero(&af, sizeof(af));
-		af.type      = TAG_PERMINVIS;
-		af.duration  = -1;
+		af.type = TAG_PERMINVIS;
+		af.duration = -1;
 		af.bitvector = AFF_INVISIBLE;
 		affect_to_char(ch, &af);
 		/*
@@ -4023,8 +4156,10 @@ int numb_artis_using(P_char ch)
 	int i, n = 0;
 
 	for (i = 0; i < MAX_WEAR; i++)
-		if (ch->equipment[i] && IS_ARTIFACT(ch->equipment[i]) && !CAN_WEAR(ch->equipment[i], WEAR_IOUN) &&
-		    (obj_index[ch->equipment[i]->R_num].virtual_number < 67200 || obj_index[ch->equipment[i]->R_num].virtual_number > 67299))
+		if (ch->equipment[i] && IS_ARTIFACT(ch->equipment[i]) &&
+		    !CAN_WEAR(ch->equipment[i], WEAR_IOUN) &&
+		    (obj_index[ch->equipment[i]->R_num].virtual_number < 67200 ||
+		     obj_index[ch->equipment[i]->R_num].virtual_number > 67299))
 			n++;
 
 	return n;
@@ -4094,7 +4229,8 @@ bool check_single_artifact(P_char ch, P_obj obj)
 
 		for (int i = 0; i < MAX_WEAR; i++)
 		{
-			if (ch->equipment[i] && IS_ARTIFACT(ch->equipment[i]) && !isname("unique", ch->equipment[i]->name))
+			if (ch->equipment[i] && IS_ARTIFACT(ch->equipment[i]) &&
+			    !isname("unique", ch->equipment[i]->name))
 			{
 				return true;
 			}
@@ -4126,7 +4262,8 @@ void execute_wear(P_char ch, P_obj obj_object, int position, int keyword, bool s
  * own convoluted logic as I was again too lazy to figure out how to make them more
  * concise. -Sniktiorg (Dec.12.12)
  */
-int stop_or_wear(const char denied[], P_char ch, P_obj obj_object, int position, int keyword, bool showit)
+int stop_or_wear(const char denied[], P_char ch, P_obj obj_object, int position, int keyword,
+		 bool showit)
 {
 	// Already Wearing the Item
 	if (ch->equipment[position])
@@ -4165,11 +4302,11 @@ int wearing_invis(P_char ch)
  * auto-replace wear code.  The procedure returns an int representing
  * the following:
  */
-#define REMOVE_SUCCESS       0
-#define REMOVE_CURSED        1
+#define REMOVE_SUCCESS 0
+#define REMOVE_CURSED 1
 #define REMOVE_BREAK_ENCHANT 2
-#define REMOVE_CANT_CARRY    3
-#define REMOVE_NOT_USING     4
+#define REMOVE_CANT_CARRY 3
+#define REMOVE_NOT_USING 4
 int remove_item(P_char ch, P_obj obj, int position)
 {
 	struct obj_affect *o_af;
@@ -4211,7 +4348,8 @@ int remove_item(P_char ch, P_obj obj, int position)
 			obj_to_char(unequip_char(ch, position), ch);
 
 			// Remove Affects
-			if (IS_SET(obj->bitvector, AFF_INVISIBLE) && affected_by_spell(ch, TAG_PERMINVIS) && !wearing_invis(ch))
+			if (IS_SET(obj->bitvector, AFF_INVISIBLE) &&
+			    affected_by_spell(ch, TAG_PERMINVIS) && !wearing_invis(ch))
 				affect_from_char(ch, TAG_PERMINVIS);
 
 			if (obj && (o_af = get_obj_affect(obj, SKILL_ENCHANT)))
@@ -4241,7 +4379,7 @@ int remove_item(P_char ch, P_obj obj, int position)
 int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, int comnd, bool showit)
 {
 	P_obj temp = ch->equipment[position];
-	int   removed;
+	int removed;
 	// Remove Item Already in Place
 	// send_to_char(snprintf("%1", MAX_STRING_LENGTH, ch->equipment[position]), ch);
 	if (temp)
@@ -4254,7 +4392,8 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, int 
 				act("You stop using $p.", FALSE, ch, temp, 0, TO_CHAR);
 				if (removed == REMOVE_BREAK_ENCHANT)
 				{
-					act("&+cSome of your &+Cmagic&+c dissipates...&n", FALSE, ch, 0, 0, TO_CHAR);
+					act("&+cSome of your &+Cmagic&+c dissipates...&n", FALSE,
+					    ch, 0, 0, TO_CHAR);
 				}
 			}
 			// Wear Item
@@ -4265,7 +4404,8 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, int 
 		{
 			if (showit)
 			{
-				act("$p won't budge!  Perhaps it's cursed?!?", TRUE, ch, temp, 0, TO_CHAR);
+				act("$p won't budge!  Perhaps it's cursed?!?", TRUE, ch, temp, 0,
+				    TO_CHAR);
 			}
 		}
 		else if (removed == REMOVE_CANT_CARRY)
@@ -4309,7 +4449,7 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, int 
 int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 {
 	char Gbuf3[MAX_STRING_LENGTH];
-	int  free_hands, wield_to_where, o_size, hands_needed, comnd;
+	int free_hands, wield_to_where, o_size, hands_needed, comnd;
 
 	// Kill on !Object or !Character or dead char.
 	if (!obj_object || !IS_ALIVE(ch))
@@ -4320,7 +4460,8 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 	// Scrap it. Might cause crash. Dec08 -Lucrot
 	if (obj_object->condition <= 0)
 	{
-		wizlog(56, "%s wore %s that's condition 0 or less : attempting to scrap.", GET_NAME(ch), obj_object->short_description);
+		wizlog(56, "%s wore %s that's condition 0 or less : attempting to scrap.",
+		       GET_NAME(ch), obj_object->short_description);
 		MakeScrap(ch, obj_object);
 		return FALSE;
 	}
@@ -4329,36 +4470,50 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 	// Can write to player log if these checks are sufficient.
 	for (int i = 0; i < 3; i++)
 	{ // Hunting a bad apply ...
-		if (obj_object->affected[i].location > APPLY_LAST && obj_object->affected[i].modifier == 2)
+		if (obj_object->affected[i].location > APPLY_LAST &&
+		    obj_object->affected[i].modifier == 2)
 		{
-			wizlog(56, "%s has buggy item with a bad apply : %s", GET_NAME(ch), obj_object->short_description);
+			wizlog(56, "%s has buggy item with a bad apply : %s", GET_NAME(ch),
+			       obj_object->short_description);
 		}
 		// Hunting Max_Race Equipment
-		if (obj_object->affected[i].location >= APPLY_STR_RACE && obj_object->affected[i].location <= APPLY_LUCK_RACE && !IS_ARTIFACT(obj_object))
+		if (obj_object->affected[i].location >= APPLY_STR_RACE &&
+		    obj_object->affected[i].location <= APPLY_LUCK_RACE && !IS_ARTIFACT(obj_object))
 		{
-			wizlog(56, "%s has MAX_RACE item : %s", GET_NAME(ch), obj_object->short_description);
+			wizlog(56, "%s has MAX_RACE item : %s", GET_NAME(ch),
+			       obj_object->short_description);
 		}
 		// Hunting APPLY_DAMROLL >= 20
-		if (obj_object->affected[i].location == APPLY_DAMROLL && obj_object->affected[i].modifier >= 20)
+		if (obj_object->affected[i].location == APPLY_DAMROLL &&
+		    obj_object->affected[i].modifier >= 20)
 		{
-			wizlog(56, "%s has item with >= 20 damroll : %s", GET_NAME(ch), obj_object->short_description);
+			wizlog(56, "%s has item with >= 20 damroll : %s", GET_NAME(ch),
+			       obj_object->short_description);
 		}
 		// Hunting APPLY_HITROLL >= 20
-		if (obj_object->affected[i].location == APPLY_HITROLL && obj_object->affected[i].modifier >= 20)
+		if (obj_object->affected[i].location == APPLY_HITROLL &&
+		    obj_object->affected[i].modifier >= 20)
 		{
-			wizlog(56, "%s has item with >= 20 hitroll : %s", GET_NAME(ch), obj_object->short_description);
+			wizlog(56, "%s has item with >= 20 hitroll : %s", GET_NAME(ch),
+			       obj_object->short_description);
 		}
 
 		if (is_stat_max(obj_object->affected[i].location) && !IS_ARTIFACT(obj_object))
 		{
 			// CHA and LUCK are less important.
-			if ((obj_object->affected[i].location == APPLY_LUCK_MAX && obj_object->affected[i].modifier > 15) ||
-			    (obj_object->affected[i].location == APPLY_CHA_MAX && obj_object->affected[i].modifier > 15) ||
-			    (obj_object->affected[i].location != APPLY_LUCK_MAX && obj_object->affected[i].location != APPLY_CHA_MAX && obj_object->affected[i].modifier > 10))
+			if ((obj_object->affected[i].location == APPLY_LUCK_MAX &&
+			     obj_object->affected[i].modifier > 15) ||
+			    (obj_object->affected[i].location == APPLY_CHA_MAX &&
+			     obj_object->affected[i].modifier > 15) ||
+			    (obj_object->affected[i].location != APPLY_LUCK_MAX &&
+			     obj_object->affected[i].location != APPLY_CHA_MAX &&
+			     obj_object->affected[i].modifier > 10))
 			{
 				char buf[128];
 				sprinttype(obj_object->affected[i].location, apply_types, buf);
-				wizlog(56, "%s has %s with %d %s.", GET_NAME(ch), obj_object->short_description, obj_object->affected[i].modifier, buf);
+				wizlog(56, "%s has %s with %d %s.", GET_NAME(ch),
+				       obj_object->short_description,
+				       obj_object->affected[i].modifier, buf);
 			}
 		}
 	}
@@ -4383,7 +4538,8 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		if (GET_OBJ_WEIGHT(obj_object) > (int)(GET_C_STR(ch) / monkweight))
 		{
 			if (showit)
-				act("$p is far too heavy and cumbersome, your skills would be useless!", FALSE, ch, obj_object, 0, TO_CHAR);
+				act("$p is far too heavy and cumbersome, your skills would be useless!",
+				    FALSE, ch, obj_object, 0, TO_CHAR);
 			return FALSE;
 		}
 	}
@@ -4413,900 +4569,1018 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 
 	switch (keyword)
 	{
-		case 0: /* None */
-			logit(LOG_OBJ, "wear(): object worn in invalid location (%s, '%s' %d)", J_NAME(ch), obj_object->short_description, OBJ_VNUM(obj_object));
-			break;
+	case 0: /* None */
+		logit(LOG_OBJ, "wear(): object worn in invalid location (%s, '%s' %d)", J_NAME(ch),
+		      obj_object->short_description, OBJ_VNUM(obj_object));
+		break;
 
-		case 1: /* Finger */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_FINGER) && !IS_THRIKREEN(ch))
+	case 1: /* Finger */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_FINGER) && !IS_THRIKREEN(ch))
+		{
+			// Already Wearing the Item
+			if ((ch->equipment[WEAR_FINGER_L]) && (ch->equipment[WEAR_FINGER_R]))
 			{
-				// Already Wearing the Item
-				if ((ch->equipment[WEAR_FINGER_L]) && (ch->equipment[WEAR_FINGER_R]))
+				if (showit)
 				{
-					if (showit)
-					{
-						send_to_char("Your fingers are already well adorned.\r\n", ch);
-					}
-				}
-				else
-				{
-					// Wear Item
-					execute_wear(ch, obj_object, ((ch->equipment[WEAR_FINGER_L]) ? WEAR_FINGER_R : WEAR_FINGER_L), keyword, showit);
-					return TRUE;
+					send_to_char("Your fingers are already well adorned.\r\n",
+						     ch);
 				}
 			}
 			else
 			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your fingers.\r\n", ch);
-				}
+				// Wear Item
+				execute_wear(ch, obj_object,
+					     ((ch->equipment[WEAR_FINGER_L]) ? WEAR_FINGER_R :
+									       WEAR_FINGER_L),
+					     keyword, showit);
+				return TRUE;
 			}
-			break;
-
-		case 2: /* Neck */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_NECK))
-			{
-				// Already Wearing the Item
-				if ((ch->equipment[WEAR_NECK_1]) && (ch->equipment[WEAR_NECK_2]))
-				{
-					if (showit)
-					{
-						send_to_char("You can't wear any more around your neck.\r\n", ch);
-					}
-				}
-				else
-				{
-					// Wear Item
-					execute_wear(ch, obj_object, ((ch->equipment[WEAR_NECK_1]) ? WEAR_NECK_2 : WEAR_NECK_1), keyword, showit);
-					return TRUE;
-				}
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that around your neck.\r\n", ch);
-				}
-			}
-			break;
-
-		case 3: /* Body */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_BODY) && has_eq_slot(ch, WEAR_BODY))
-			{
-				if (IS_SET(obj_object->extra_flags, ITEM_WHOLE_BODY))
-				{
-					if (IS_CENTAUR(ch) || IS_MINOTAUR(ch) || IS_OGRE(ch) || IS_SGIANT(ch) || GET_RACE(ch) == RACE_WIGHT || GET_RACE(ch) == RACE_SNOW_OGRE)
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear full body armor.\r\n", ch);
-						}
-						break;
-					}
-					else if ((ch->equipment[WEAR_ARMS]) && (ch->equipment[WEAR_LEGS]))
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear something on your arms and legs and wear that.\r\n", ch);
-						}
-						break;
-					}
-					else if (ch->equipment[WEAR_ARMS])
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear something on your arms and wear that.\r\n", ch);
-						}
-						break;
-					}
-					else if (ch->equipment[WEAR_LEGS])
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear something on your legs and wear that.\r\n", ch);
-						}
-						break;
-					}
-				}
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_BODY, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your body.\r\n", ch);
-				}
-			}
-			break;
-
-		case 4:                                                                                                    /* Head */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_HEAD) && !IS_MINOTAUR(ch) && !IS_ILLITHID(ch) && !IS_PILLITHID(ch)) /* Should be a Macro */
-			{
-				if (IS_SET(obj_object->extra_flags, ITEM_WHOLE_HEAD))
-				{
-					if ((ch->equipment[WEAR_EYES]) && (ch->equipment[WEAR_FACE]))
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear something on your eyes and face and wear that.\r\n", ch);
-						}
-						break;
-					}
-					else if (ch->equipment[WEAR_EYES])
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear something on your eyes and wear that.\r\n", ch);
-						}
-						break;
-					}
-					else if (ch->equipment[WEAR_FACE])
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear something on your face and wear that.\r\n", ch);
-						}
-						break;
-					}
-				}
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_HEAD, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
-					{
-						send_to_char("Sorry, you can't wear anything on your head.\r\n", ch);
-					}
-					else
-					{
-						send_to_char("You can't wear that on your head.\r\n", ch);
-					}
-				}
-			}
-			break;
-
-		case 5: /* Legs */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_LEGS) && !IS_DRIDER(ch) && !IS_CENTAUR(ch) && !IS_HARPY(ch) && !IS_OGRE(ch) && !IS_FIRBOLG(ch))
-			{
-				if (ch->equipment[WEAR_BODY] && IS_SET(ch->equipment[WEAR_BODY]->extra_flags, ITEM_WHOLE_BODY))
-				{
-					if (showit)
-						send_to_char("You can't wear something on your legs and wear that on your body.\r\n", ch);
-					break;
-				}
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_LEGS, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					if (IS_EFREET(ch))
-					{
-						send_to_char("What legs?!  You have none!\r\n", ch);
-					}
-					else
-					{
-						send_to_char("You can't wear that on your legs.\r\n", ch);
-					}
-				}
-			}
-			break;
-
-		case 6: /* Feet */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_FEET))
-			{
-				if (isname("horseshoes", obj_object->name))
-				{
-					if (IS_CENTAUR(ch) || IS_MINOTAUR(ch))
-					{
-						// Replace if Wearing Something or Wear New Item
-						return remove_and_wear(ch, obj_object, WEAR_FEET, keyword, comnd, showit);
-					}
-				}
-				else if (!IS_DRIDER(ch) && !IS_THRIKREEN(ch) && !IS_HARPY(ch) && !IS_MINOTAUR(ch) && !IS_CENTAUR(ch))
-				{
-					// Replace if Wearing Something or Wear New Item
-					return remove_and_wear(ch, obj_object, WEAR_FEET, keyword, comnd, showit);
-				}
-			}
+		}
+		else
+		{
 			if (showit)
 			{
-				send_to_char("You can't wear that on your feet.\r\n", ch);
+				send_to_char("You can't wear that on your fingers.\r\n", ch);
 			}
-			break;
+		}
+		break;
 
-		case 7: /* Hands */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_HANDS))
-			{
-				/* Didn't condense the following because it differentiates enough and a compound
-				 * ternary expression is too much to read. - Sniktiorg (Nov.12.12)
-				 */
-				if (HAS_FOUR_HANDS(ch))
-				{
-					if ((ch->equipment[WEAR_HANDS]) && (ch->equipment[WEAR_HANDS_2]))
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear any more on your hands.\r\n", ch);
-						}
-					}
-					else
-					{
-						// Wear Item
-						execute_wear(ch, obj_object, ((ch->equipment[WEAR_HANDS]) ? WEAR_HANDS_2 : WEAR_HANDS), keyword, showit);
-						return TRUE;
-					}
-				} // End Four_Hands
-				else
-				{
-					// Check if Wearing Something or Wear New Item (Technically, Could Auto-replace)
-					if (stop_or_wear("You already wear $p on your hands.", ch, obj_object, WEAR_HANDS, keyword, showit))
-					{
-						return TRUE;
-					}
-				} // End Two_Hands
-			}
-			else
+	case 2: /* Neck */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_NECK))
+		{
+			// Already Wearing the Item
+			if ((ch->equipment[WEAR_NECK_1]) && (ch->equipment[WEAR_NECK_2]))
 			{
 				if (showit)
 				{
-					send_to_char("You can't wear that on your hands.\r\n", ch);
-				}
-			}
-			break;
-
-		case 8: /* Arms */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_ARMS) && !IS_OGRE(ch) && !IS_FIRBOLG(ch) && !IS_SGIANT(ch) && !(GET_RACE(ch) == RACE_SNOW_OGRE))
-			{
-				/* Didn't condense the following because it differentiates enough and a compound
-				 * ternary expression is too much to read. - Sniktiorg (Nov.12.12)
-				 */
-				if (HAS_FOUR_HANDS(ch))
-				{
-					// Already Wearing Items on Both Arms
-					if ((ch->equipment[WEAR_ARMS]) && (ch->equipment[WEAR_ARMS_2]))
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear any more on your arms.\r\n", ch);
-						}
-					}
-					else
-					{
-						// Wear Item
-						execute_wear(ch, obj_object, ((ch->equipment[WEAR_ARMS]) ? WEAR_ARMS_2 : WEAR_ARMS), keyword, showit);
-						return TRUE;
-					}
-				}
-				else
-				{
-					if (ch->equipment[WEAR_BODY] && IS_SET(ch->equipment[WEAR_BODY]->extra_flags, ITEM_WHOLE_BODY))
-					{
-						if (showit)
-						{
-							send_to_char("You can't wear something on your arms and wear that on your body.\r\n", ch);
-						}
-						break;
-					}
-					// Check if Wearing Something or Wear New Item (Technically, Could Auto-replace)
-					if (stop_or_wear("You already wear $p on your arms.", ch, obj_object, WEAR_ARMS, keyword, showit))
-					{
-						return TRUE;
-					}
+					send_to_char(
+						"You can't wear any more around your neck.\r\n",
+						ch);
 				}
 			}
 			else
 			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your arms.\r\n", ch);
-				}
+				// Wear Item
+				execute_wear(ch, obj_object,
+					     ((ch->equipment[WEAR_NECK_1]) ? WEAR_NECK_2 :
+									     WEAR_NECK_1),
+					     keyword, showit);
+				return TRUE;
 			}
-			break;
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that around your neck.\r\n", ch);
+			}
+		}
+		break;
 
-		case 9: /* About */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_ABOUT))
+	case 3: /* Body */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_BODY) && has_eq_slot(ch, WEAR_BODY))
+		{
+			if (IS_SET(obj_object->extra_flags, ITEM_WHOLE_BODY))
 			{
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_ABOUT, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that about your body.\r\n", ch);
-				}
-			}
-			break;
-
-		case 10: /* Waist */
-			if ((CAN_WEAR(obj_object, ITEM_WEAR_WAIST)))
-			{
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_WAIST, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that about your waist.\r\n", ch);
-				}
-			}
-			break;
-
-		case 11: /* Wrist */
-			// Can be Refactored a Bit, but I am too lazy at the moment.  -Sniktiorg (Nov.12.12)
-			if (CAN_WEAR(obj_object, ITEM_WEAR_WRIST))
-			{
-				if ((!HAS_FOUR_HANDS(ch) && ch->equipment[WEAR_WRIST_L] && ch->equipment[WEAR_WRIST_R]) ||
-				    (HAS_FOUR_HANDS(ch) && ch->equipment[WEAR_WRIST_L] && ch->equipment[WEAR_WRIST_R] && ch->equipment[WEAR_WRIST_LL] && ch->equipment[WEAR_WRIST_LR]))
+				if (IS_CENTAUR(ch) || IS_MINOTAUR(ch) || IS_OGRE(ch) ||
+				    IS_SGIANT(ch) || GET_RACE(ch) == RACE_WIGHT ||
+				    GET_RACE(ch) == RACE_SNOW_OGRE)
 				{
 					if (showit)
 					{
-						send_to_char("You already wear something around all your wrists.\r\n", ch);
+						send_to_char("You can't wear full body armor.\r\n",
+							     ch);
+					}
+					break;
+				}
+				else if ((ch->equipment[WEAR_ARMS]) && (ch->equipment[WEAR_LEGS]))
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You can't wear something on your arms and legs and wear that.\r\n",
+							ch);
+					}
+					break;
+				}
+				else if (ch->equipment[WEAR_ARMS])
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You can't wear something on your arms and wear that.\r\n",
+							ch);
+					}
+					break;
+				}
+				else if (ch->equipment[WEAR_LEGS])
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You can't wear something on your legs and wear that.\r\n",
+							ch);
+					}
+					break;
+				}
+			}
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_BODY, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your body.\r\n", ch);
+			}
+		}
+		break;
+
+	case 4: /* Head */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_HEAD) && !IS_MINOTAUR(ch) && !IS_ILLITHID(ch) &&
+		    !IS_PILLITHID(ch)) /* Should be a Macro */
+		{
+			if (IS_SET(obj_object->extra_flags, ITEM_WHOLE_HEAD))
+			{
+				if ((ch->equipment[WEAR_EYES]) && (ch->equipment[WEAR_FACE]))
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You can't wear something on your eyes and face and wear that.\r\n",
+							ch);
+					}
+					break;
+				}
+				else if (ch->equipment[WEAR_EYES])
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You can't wear something on your eyes and wear that.\r\n",
+							ch);
+					}
+					break;
+				}
+				else if (ch->equipment[WEAR_FACE])
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You can't wear something on your face and wear that.\r\n",
+							ch);
+					}
+					break;
+				}
+			}
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_HEAD, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
+				{
+					send_to_char(
+						"Sorry, you can't wear anything on your head.\r\n",
+						ch);
+				}
+				else
+				{
+					send_to_char("You can't wear that on your head.\r\n", ch);
+				}
+			}
+		}
+		break;
+
+	case 5: /* Legs */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_LEGS) && !IS_DRIDER(ch) && !IS_CENTAUR(ch) &&
+		    !IS_HARPY(ch) && !IS_OGRE(ch) && !IS_FIRBOLG(ch))
+		{
+			if (ch->equipment[WEAR_BODY] &&
+			    IS_SET(ch->equipment[WEAR_BODY]->extra_flags, ITEM_WHOLE_BODY))
+			{
+				if (showit)
+					send_to_char(
+						"You can't wear something on your legs and wear that on your body.\r\n",
+						ch);
+				break;
+			}
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_LEGS, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				if (IS_EFREET(ch))
+				{
+					send_to_char("What legs?!  You have none!\r\n", ch);
+				}
+				else
+				{
+					send_to_char("You can't wear that on your legs.\r\n", ch);
+				}
+			}
+		}
+		break;
+
+	case 6: /* Feet */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_FEET))
+		{
+			if (isname("horseshoes", obj_object->name))
+			{
+				if (IS_CENTAUR(ch) || IS_MINOTAUR(ch))
+				{
+					// Replace if Wearing Something or Wear New Item
+					return remove_and_wear(ch, obj_object, WEAR_FEET, keyword,
+							       comnd, showit);
+				}
+			}
+			else if (!IS_DRIDER(ch) && !IS_THRIKREEN(ch) && !IS_HARPY(ch) &&
+				 !IS_MINOTAUR(ch) && !IS_CENTAUR(ch))
+			{
+				// Replace if Wearing Something or Wear New Item
+				return remove_and_wear(ch, obj_object, WEAR_FEET, keyword, comnd,
+						       showit);
+			}
+		}
+		if (showit)
+		{
+			send_to_char("You can't wear that on your feet.\r\n", ch);
+		}
+		break;
+
+	case 7: /* Hands */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_HANDS))
+		{
+			/* Didn't condense the following because it differentiates enough and a compound
+				 * ternary expression is too much to read. - Sniktiorg (Nov.12.12)
+				 */
+			if (HAS_FOUR_HANDS(ch))
+			{
+				if ((ch->equipment[WEAR_HANDS]) && (ch->equipment[WEAR_HANDS_2]))
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You can't wear any more on your hands.\r\n",
+							ch);
 					}
 				}
 				else
 				{
+					// Wear Item
+					execute_wear(ch, obj_object,
+						     ((ch->equipment[WEAR_HANDS]) ? WEAR_HANDS_2 :
+										    WEAR_HANDS),
+						     keyword, showit);
+					return TRUE;
+				}
+			} // End Four_Hands
+			else
+			{
+				// Check if Wearing Something or Wear New Item (Technically, Could Auto-replace)
+				if (stop_or_wear("You already wear $p on your hands.", ch,
+						 obj_object, WEAR_HANDS, keyword, showit))
+				{
+					return TRUE;
+				}
+			} // End Two_Hands
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your hands.\r\n", ch);
+			}
+		}
+		break;
+
+	case 8: /* Arms */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_ARMS) && !IS_OGRE(ch) && !IS_FIRBOLG(ch) &&
+		    !IS_SGIANT(ch) && !(GET_RACE(ch) == RACE_SNOW_OGRE))
+		{
+			/* Didn't condense the following because it differentiates enough and a compound
+				 * ternary expression is too much to read. - Sniktiorg (Nov.12.12)
+				 */
+			if (HAS_FOUR_HANDS(ch))
+			{
+				// Already Wearing Items on Both Arms
+				if ((ch->equipment[WEAR_ARMS]) && (ch->equipment[WEAR_ARMS_2]))
+				{
 					if (showit)
 					{
-						perform_wear(ch, obj_object, keyword);
+						send_to_char(
+							"You can't wear any more on your arms.\r\n",
+							ch);
 					}
-					obj_from_char(obj_object);
-					if (!ch->equipment[WEAR_WRIST_L])
+				}
+				else
+				{
+					// Wear Item
+					execute_wear(ch, obj_object,
+						     ((ch->equipment[WEAR_ARMS]) ? WEAR_ARMS_2 :
+										   WEAR_ARMS),
+						     keyword, showit);
+					return TRUE;
+				}
+			}
+			else
+			{
+				if (ch->equipment[WEAR_BODY] &&
+				    IS_SET(ch->equipment[WEAR_BODY]->extra_flags, ITEM_WHOLE_BODY))
+				{
+					if (showit)
 					{
-						if (showit)
-						{
-							act("You place $p around your left wrist.", 0, ch, obj_object, 0, TO_CHAR);
-						}
-						equip_char(ch, obj_object, WEAR_WRIST_L, !showit);
-						return TRUE;
+						send_to_char(
+							"You can't wear something on your arms and wear that on your body.\r\n",
+							ch);
 					}
-					else if (!ch->equipment[WEAR_WRIST_R])
-					{
-						if (showit)
-						{
-							act("You place $p around your right wrist.", 0, ch, obj_object, 0, TO_CHAR);
-						}
-						equip_char(ch, obj_object, WEAR_WRIST_R, !showit);
-						return TRUE;
-					}
-					else if (!ch->equipment[WEAR_WRIST_LL])
-					{
-						if (showit)
-						{
-							act("You place $p around your lower left wrist.", 0, ch, obj_object, 0, TO_CHAR);
-						}
-						equip_char(ch, obj_object, WEAR_WRIST_LL, !showit);
-						return TRUE;
-					}
-					else
-					{
-						if (showit)
-						{
-							act("You place $p around your lower right wrist.", 0, ch, obj_object, 0, TO_CHAR);
-						}
-						equip_char(ch, obj_object, WEAR_WRIST_LR, !showit);
-						return TRUE;
-					}
+					break;
+				}
+				// Check if Wearing Something or Wear New Item (Technically, Could Auto-replace)
+				if (stop_or_wear("You already wear $p on your arms.", ch,
+						 obj_object, WEAR_ARMS, keyword, showit))
+				{
+					return TRUE;
+				}
+			}
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your arms.\r\n", ch);
+			}
+		}
+		break;
+
+	case 9: /* About */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_ABOUT))
+		{
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_ABOUT, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that about your body.\r\n", ch);
+			}
+		}
+		break;
+
+	case 10: /* Waist */
+		if ((CAN_WEAR(obj_object, ITEM_WEAR_WAIST)))
+		{
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_WAIST, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that about your waist.\r\n", ch);
+			}
+		}
+		break;
+
+	case 11: /* Wrist */
+		// Can be Refactored a Bit, but I am too lazy at the moment.  -Sniktiorg (Nov.12.12)
+		if (CAN_WEAR(obj_object, ITEM_WEAR_WRIST))
+		{
+			if ((!HAS_FOUR_HANDS(ch) && ch->equipment[WEAR_WRIST_L] &&
+			     ch->equipment[WEAR_WRIST_R]) ||
+			    (HAS_FOUR_HANDS(ch) && ch->equipment[WEAR_WRIST_L] &&
+			     ch->equipment[WEAR_WRIST_R] && ch->equipment[WEAR_WRIST_LL] &&
+			     ch->equipment[WEAR_WRIST_LR]))
+			{
+				if (showit)
+				{
+					send_to_char(
+						"You already wear something around all your wrists.\r\n",
+						ch);
 				}
 			}
 			else
 			{
 				if (showit)
 				{
-					send_to_char("You can't wear that around your wrist.\r\n", ch);
+					perform_wear(ch, obj_object, keyword);
 				}
+				obj_from_char(obj_object);
+				if (!ch->equipment[WEAR_WRIST_L])
+				{
+					if (showit)
+					{
+						act("You place $p around your left wrist.", 0, ch,
+						    obj_object, 0, TO_CHAR);
+					}
+					equip_char(ch, obj_object, WEAR_WRIST_L, !showit);
+					return TRUE;
+				}
+				else if (!ch->equipment[WEAR_WRIST_R])
+				{
+					if (showit)
+					{
+						act("You place $p around your right wrist.", 0, ch,
+						    obj_object, 0, TO_CHAR);
+					}
+					equip_char(ch, obj_object, WEAR_WRIST_R, !showit);
+					return TRUE;
+				}
+				else if (!ch->equipment[WEAR_WRIST_LL])
+				{
+					if (showit)
+					{
+						act("You place $p around your lower left wrist.", 0,
+						    ch, obj_object, 0, TO_CHAR);
+					}
+					equip_char(ch, obj_object, WEAR_WRIST_LL, !showit);
+					return TRUE;
+				}
+				else
+				{
+					if (showit)
+					{
+						act("You place $p around your lower right wrist.",
+						    0, ch, obj_object, 0, TO_CHAR);
+					}
+					equip_char(ch, obj_object, WEAR_WRIST_LR, !showit);
+					return TRUE;
+				}
+			}
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that around your wrist.\r\n", ch);
+			}
+		}
+		break;
+
+	case 12: /* Wield */
+		if (!CAN_WEAR(obj_object, ITEM_WIELD))
+		{
+			if (showit)
+			{
+				send_to_char("You can't wield that.\r\n", ch);
 			}
 			break;
-
-		case 12: /* Wield */
-			if (!CAN_WEAR(obj_object, ITEM_WIELD))
+		}
+		if (!free_hands)
+		{
+			if (showit)
 			{
-				if (showit)
-				{
-					send_to_char("You can't wield that.\r\n", ch);
-				}
-				break;
+				send_to_char(
+					"You need at least one free hand to wield anything.\r\n",
+					ch);
 			}
-			if (!free_hands)
-			{
-				if (showit)
-				{
-					send_to_char("You need at least one free hand to wield anything.\r\n", ch);
-				}
-				break;
-			}
+			break;
+		}
 
-			hands_needed = (IS_SET(obj_object->extra_flags, ITEM_TWOHANDS) || obj_object->value[0] == WEAPON_2HANDSWORD) ? 2 : 1;
+		hands_needed = (IS_SET(obj_object->extra_flags, ITEM_TWOHANDS) ||
+				obj_object->value[0] == WEAPON_2HANDSWORD) ?
+				       2 :
+				       1;
 
-			if (hands_needed == 2 && free_hands < 2)
+		if (hands_needed == 2 && free_hands < 2)
+		{
+			if (showit)
 			{
-				if (showit)
-				{
-					send_to_char("You need two free hands to wield that.\r\n", ch);
-				}
-				break;
+				send_to_char("You need two free hands to wield that.\r\n", ch);
 			}
+			break;
+		}
 
-			if (GET_OBJ_WEIGHT(obj_object) > (str_app[STAT_INDEX(GET_C_STR(ch))].wield_w))
+		if (GET_OBJ_WEIGHT(obj_object) > (str_app[STAT_INDEX(GET_C_STR(ch))].wield_w))
+		{
+			if (showit)
 			{
-				if (showit)
-				{
-					send_to_char("It is too heavy for you to use.\r\n", ch);
-				}
-				break;
+				send_to_char("It is too heavy for you to use.\r\n", ch);
 			}
-			/*
+			break;
+		}
+		/*
 			 * Check wield to where .. if primary is occupied, wield to
 			 * secondary, and vice versa.  Four-handed guys aren't quite so simple.
 			 */
-			if (HAS_FOUR_HANDS(ch))
+		if (HAS_FOUR_HANDS(ch))
+		{
+			if (hands_needed == 1)
 			{
-				if (hands_needed == 1)
-				{
-					if (!ch->equipment[PRIMARY_WEAPON])
-					{
-						wield_to_where = PRIMARY_WEAPON;
-					}
-					else if (!ch->equipment[SECONDARY_WEAPON] &&
-					         (!ch->equipment[PRIMARY_WEAPON] || !(IS_SET(ch->equipment[PRIMARY_WEAPON]->extra_flags, ITEM_TWOHANDS) || ch->equipment[PRIMARY_WEAPON]->value[0] == WEAPON_2HANDSWORD) ||
-					          IS_TRUSTED(ch)))
-					{
-						wield_to_where = SECONDARY_WEAPON;
-					}
-					else if (!ch->equipment[THIRD_WEAPON])
-					{
-						wield_to_where = THIRD_WEAPON;
-					}
-					else if (!ch->equipment[FOURTH_WEAPON] &&
-					         (!(IS_SET(ch->equipment[THIRD_WEAPON]->extra_flags, ITEM_TWOHANDS) || ch->equipment[THIRD_WEAPON]->value[0] == WEAPON_2HANDSWORD) || IS_TRUSTED(ch)))
-					{
-						wield_to_where = FOURTH_WEAPON;
-					}
-					else
-					{
-						if (showit)
-						{
-							send_to_char("You are already wielding as many weapons as you can.\r\n", ch);
-						}
-						break;
-					}
-				}
-				// Let's assume everything takes one or two hands, so here we are doing
-				// the case where the weapon takes two hands
-				else
-				{
-					if (!ch->equipment[PRIMARY_WEAPON] && !ch->equipment[SECONDARY_WEAPON])
-					{
-						wield_to_where = PRIMARY_WEAPON;
-					}
-					else if (!ch->equipment[THIRD_WEAPON])
-					{
-						if (ch->equipment[FOURTH_WEAPON])
-						{
-							if (showit)
-							{
-								send_to_char("You do not have enough hands free to use that.\r\n", ch);
-							}
-							break;
-						}
-						wield_to_where = THIRD_WEAPON;
-					}
-					else
-					{
-						if (showit)
-						{
-							send_to_char("You do not have enough hands free to use that.\r\n", ch);
-						}
-						break;
-					}
-				}
-			}
-			else
-			{
-				if (ch->equipment[PRIMARY_WEAPON])
-				{
-					if (ch->equipment[SECONDARY_WEAPON])
-					{
-						if (showit)
-						{
-							send_to_char("You are already wielding two weapons.\r\n", ch);
-						}
-						break;
-					}
-					wield_to_where = SECONDARY_WEAPON;
-				}
-				else
+				if (!ch->equipment[PRIMARY_WEAPON])
 				{
 					wield_to_where = PRIMARY_WEAPON;
 				}
-				if (wield_to_where == SECONDARY_WEAPON)
+				else if (!ch->equipment[SECONDARY_WEAPON] &&
+					 (!ch->equipment[PRIMARY_WEAPON] ||
+					  !(IS_SET(ch->equipment[PRIMARY_WEAPON]->extra_flags,
+						   ITEM_TWOHANDS) ||
+					    ch->equipment[PRIMARY_WEAPON]->value[0] ==
+						    WEAPON_2HANDSWORD) ||
+					  IS_TRUSTED(ch)))
 				{
-					if ((IS_PC(ch) && !GET_CHAR_SKILL(ch, SKILL_DUAL_WIELD)) || (IS_NPC(ch) && (!IS_WARRIOR(ch) || (GET_LEVEL(ch) < 15)) && (!IS_THIEF(ch) || (GET_LEVEL(ch) < 20))))
+					wield_to_where = SECONDARY_WEAPON;
+				}
+				else if (!ch->equipment[THIRD_WEAPON])
+				{
+					wield_to_where = THIRD_WEAPON;
+				}
+				else if (!ch->equipment[FOURTH_WEAPON] &&
+					 (!(IS_SET(ch->equipment[THIRD_WEAPON]->extra_flags,
+						   ITEM_TWOHANDS) ||
+					    ch->equipment[THIRD_WEAPON]->value[0] ==
+						    WEAPON_2HANDSWORD) ||
+					  IS_TRUSTED(ch)))
+				{
+					wield_to_where = FOURTH_WEAPON;
+				}
+				else
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You are already wielding as many weapons as you can.\r\n",
+							ch);
+					}
+					break;
+				}
+			}
+			// Let's assume everything takes one or two hands, so here we are doing
+			// the case where the weapon takes two hands
+			else
+			{
+				if (!ch->equipment[PRIMARY_WEAPON] &&
+				    !ch->equipment[SECONDARY_WEAPON])
+				{
+					wield_to_where = PRIMARY_WEAPON;
+				}
+				else if (!ch->equipment[THIRD_WEAPON])
+				{
+					if (ch->equipment[FOURTH_WEAPON])
 					{
 						if (showit)
 						{
-							send_to_char("You lack the training to use two weapons.\r\n", ch);
+							send_to_char(
+								"You do not have enough hands free to use that.\r\n",
+								ch);
 						}
 						break;
 					}
-				}
-
-				if ((wield_to_where == SECONDARY_WEAPON) && (IS_REACH_WEAPON(obj_object) || (!GET_CLASS(ch, CLASS_RANGER) && (GET_OBJ_WEIGHT(obj_object) * ((IS_OGRE(ch) || IS_SNOWOGRE(ch)) ? 2 : 3) >
-				                                                                                                              (str_app[STAT_INDEX(GET_C_STR(ch))].wield_w)))))
-				{
-					if (showit)
-					{
-						send_to_char("It is too heavy to wield in your secondary hand.\r\n", ch);
-					}
-					break;
-				}
-			}
-
-			// Wear Item
-			execute_wear(ch, obj_object, wield_to_where, keyword, showit);
-			return TRUE;
-			break;
-
-		case 13: /* Hold */
-			if (!CAN_WEAR(obj_object, ITEM_HOLD) && (GET_ITEM_TYPE(obj_object) != ITEM_LIGHT))
-			{
-				if (showit)
-				{
-					send_to_char("You can't hold this.\r\n", ch);
-				}
-				break;
-			}
-			if (!free_hands)
-			{
-				if (showit)
-				{
-					send_to_char("Your hands are full.\r\n", ch);
-				}
-				break;
-			}
-			if ((IS_SET(obj_object->extra_flags, ITEM_TWOHANDS) || (obj_object->type == ITEM_WEAPON && obj_object->value[0] == WEAPON_2HANDSWORD)) && (free_hands < 2))
-			{
-				if (showit)
-				{
-					send_to_char("You need two free hands to hold that.\r\n", ch);
-				}
-				break;
-			}
-			if (ch->equipment[HOLD])
-			{
-				if (showit)
-				{
-					act("You are already holding $p.", 0, ch, ch->equipment[HOLD], 0, TO_CHAR);
-				}
-				break;
-			}
-			execute_wear(ch, obj_object, HOLD, keyword, showit);
-			return TRUE;
-			break;
-
-		case 14: /* Shield */
-			if (!CAN_WEAR(obj_object, ITEM_WEAR_SHIELD))
-			{
-				if (showit)
-				{
-					send_to_char("You can't use that as a shield.\r\n", ch);
-				}
-				break;
-			}
-			if (!free_hands)
-			{
-				if (showit)
-				{
-					send_to_char("Your hands are full.\r\n", ch);
-				}
-				break;
-			}
-			// Already Wearing the Item
-			if (ch->equipment[WEAR_SHIELD])
-			{
-				if (showit)
-				{
-					act("You are already using $p.", 0, ch, ch->equipment[WEAR_SHIELD], 0, TO_CHAR);
-				}
-				break;
-			}
-			// Wear Item
-			execute_wear(ch, obj_object, WEAR_SHIELD, keyword, showit);
-			return TRUE;
-			break;
-
-		case 15: /* Eyes */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_EYES))
-			{
-				// Already Wearing an ITEM_WHOLE_HEAD
-				if (ch->equipment[WEAR_HEAD] && IS_SET(ch->equipment[WEAR_HEAD]->extra_flags, ITEM_WHOLE_HEAD))
-				{
-					if (showit)
-					{
-						act("You can't wear something on your eyes and wear $p on your head.", 0, ch, ch->equipment[WEAR_HEAD], 0, TO_CHAR);
-					}
-					break;
-				}
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_EYES, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your eyes.\r\n", ch);
-				}
-			}
-			break;
-
-		case 16: /* Face */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_FACE))
-			{
-				// Already Wearing an ITEM_WHOLE_HEAD
-				if (ch->equipment[WEAR_HEAD] && IS_SET(ch->equipment[WEAR_HEAD]->extra_flags, ITEM_WHOLE_HEAD))
-				{
-					if (showit)
-					{
-						act("You can't wear something on your face and wear $p on your head.", 0, ch, ch->equipment[WEAR_HEAD], 0, TO_CHAR);
-					}
-					break;
-				}
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_FACE, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your face.\r\n", ch);
-				}
-			}
-			break;
-
-		case 17: /* Earring */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_EARRING) && !IS_THRIKREEN(ch))
-			{
-				// Already Wearing Two Earrings
-				if ((ch->equipment[WEAR_EARRING_L]) && (ch->equipment[WEAR_EARRING_R]))
-				{
-					if (showit)
-					{
-						send_to_char("You already wear an earring in each ear.\r\n", ch);
-					}
-				}
-				else
-				{
-					// Wear Item
-					execute_wear(ch, obj_object, ((ch->equipment[WEAR_EARRING_L]) ? WEAR_EARRING_R : WEAR_EARRING_L), keyword, showit);
-					return TRUE;
-				}
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that in your ear.\r\n", ch);
-				}
-			}
-			break;
-
-		case 18: /* Quiver */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_QUIVER))
-			{
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_QUIVER, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't use that as your quiver.\r\n", ch);
-				}
-			}
-			break;
-
-		case 19: /* Guild Insignia */
-		case 28: // Badge
-			if (CAN_WEAR(obj_object, ITEM_GUILD_INSIGNIA))
-			{
-				// Replace if Wearing Something or Wear New Item
-				// Using hardcoded 19, 'cause 28 is just a duplicate.
-				return remove_and_wear(ch, obj_object, GUILD_INSIGNIA, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't use that as an insignia.\r\n", ch);
-				}
-			}
-			break;
-
-		case 20: /* Back */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_BACK))
-			{
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_BACK, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your back.\r\n", ch);
-				}
-			}
-			break;
-		case 21: /* Attach Belt */
-			if (CAN_WEAR(obj_object, ITEM_ATTACH_BELT))
-			{
-				if (!ch->equipment[WEAR_WAIST])
-				{
-					if (showit)
-					{
-						act("You need a belt to attach $p to it.", 0, ch, obj_object, 0, TO_CHAR);
-					}
-				}
-				else if ((ch->equipment[WEAR_ATTACH_BELT_1]) && (ch->equipment[WEAR_ATTACH_BELT_2]) && (ch->equipment[WEAR_ATTACH_BELT_3]))
-				{
-					if (showit)
-					{
-						send_to_char("Your belt is full.\r\n", ch);
-					}
+					wield_to_where = THIRD_WEAPON;
 				}
 				else
 				{
 					if (showit)
 					{
-						perform_wear(ch, obj_object, keyword);
-					}
-					obj_from_char(obj_object);
-					// Left the following an If-Then-Else instead of a ?: for ease of read.  -Sniktiorg (Nov.12.12)
-					if (!ch->equipment[WEAR_ATTACH_BELT_1])
-					{
-						equip_char(ch, obj_object, WEAR_ATTACH_BELT_1, !showit);
-					}
-					else if (!ch->equipment[WEAR_ATTACH_BELT_2])
-					{
-						equip_char(ch, obj_object, WEAR_ATTACH_BELT_2, !showit);
-					}
-					else
-					{
-						equip_char(ch, obj_object, WEAR_ATTACH_BELT_3, !showit);
-					}
-					return TRUE;
-				}
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't attach that to your belt.\r\n", ch);
-				}
-			}
-			break;
-
-		case 22: /* Horse Body */
-			if (CAN_WEAR(obj_object, ITEM_HORSE_BODY) && (IS_CENTAUR(ch)))
-			{
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_HORSE_BODY, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that.\r\n", ch);
-				}
-			}
-			break;
-
-		case 23: /* Tail */
-			if (HAS_TAIL(ch))
-			{
-				if (CAN_WEAR(obj_object, ITEM_WEAR_TAIL))
-				{
-					// Replace if Wearing Something or Wear New Item
-					return remove_and_wear(ch, obj_object, WEAR_TAIL, keyword, comnd, showit);
-				}
-				else
-				{
-					if (showit)
-					{
-						send_to_char("You can't wear that on your &+Ltail&n.\r\n", ch);
-					}
-				}
-			}
-			else
-			{
-				send_to_char("You don't have a &+Ltail&n to wear that on.\r\n", ch);
-			}
-			break;
-
-		case 24: /* Nose */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_NOSE) && IS_MINOTAUR(ch))
-			{
-				return remove_and_wear(ch, obj_object, WEAR_NOSE, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your nose.\r\n", ch);
-				}
-			}
-			break;
-
-		case 25: /* Horns */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_HORN) && (IS_MINOTAUR(ch) || IS_HARPY(ch) || IS_PSBEAST(ch) || IS_TIEFLING(ch)))
-			{
-				return remove_and_wear(ch, obj_object, WEAR_HORN, keyword, comnd, showit);
-			}
-			else
-			{
-				if (showit)
-				{
-					send_to_char("You can't wear that on your &+Lhorns&n.\r\n", ch);
-				}
-			}
-			break;
-
-		case 26: /* Ioun Stone */
-			if (CAN_WEAR(obj_object, ITEM_WEAR_IOUN))
-			{
-				return remove_and_wear(ch, obj_object, WEAR_IOUN, keyword, comnd, showit);
-			}
-			break;
-
-		case 27: /* Spider Body */
-			if (CAN_WEAR(obj_object, ITEM_SPIDER_BODY))
-			{
-				if (!has_innate(ch, INNATE_SPIDER_BODY))
-				{
-					if (showit)
-					{
-						send_to_char("You can't wear &+Lspider's&n abdomen armor.\r\n", ch);
+						send_to_char(
+							"You do not have enough hands free to use that.\r\n",
+							ch);
 					}
 					break;
 				}
-				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_SPIDER_BODY, keyword, comnd, showit);
+			}
+		}
+		else
+		{
+			if (ch->equipment[PRIMARY_WEAPON])
+			{
+				if (ch->equipment[SECONDARY_WEAPON])
+				{
+					if (showit)
+					{
+						send_to_char(
+							"You are already wielding two weapons.\r\n",
+							ch);
+					}
+					break;
+				}
+				wield_to_where = SECONDARY_WEAPON;
 			}
 			else
 			{
-				if (showit)
+				wield_to_where = PRIMARY_WEAPON;
+			}
+			if (wield_to_where == SECONDARY_WEAPON)
+			{
+				if ((IS_PC(ch) && !GET_CHAR_SKILL(ch, SKILL_DUAL_WIELD)) ||
+				    (IS_NPC(ch) && (!IS_WARRIOR(ch) || (GET_LEVEL(ch) < 15)) &&
+				     (!IS_THIEF(ch) || (GET_LEVEL(ch) < 20))))
 				{
-					send_to_char("You can't wear that.\r\n", ch);
+					if (showit)
+					{
+						send_to_char(
+							"You lack the training to use two weapons.\r\n",
+							ch);
+					}
+					break;
 				}
 			}
-			break;
 
-		case -1:
+			if ((wield_to_where == SECONDARY_WEAPON) &&
+			    (IS_REACH_WEAPON(obj_object) ||
+			     (!GET_CLASS(ch, CLASS_RANGER) &&
+			      (GET_OBJ_WEIGHT(obj_object) *
+				       ((IS_OGRE(ch) || IS_SNOWOGRE(ch)) ? 2 : 3) >
+			       (str_app[STAT_INDEX(GET_C_STR(ch))].wield_w)))))
+			{
+				if (showit)
+				{
+					send_to_char(
+						"It is too heavy to wield in your secondary hand.\r\n",
+						ch);
+				}
+				break;
+			}
+		}
+
+		// Wear Item
+		execute_wear(ch, obj_object, wield_to_where, keyword, showit);
+		return TRUE;
+		break;
+
+	case 13: /* Hold */
+		if (!CAN_WEAR(obj_object, ITEM_HOLD) && (GET_ITEM_TYPE(obj_object) != ITEM_LIGHT))
+		{
 			if (showit)
 			{
-				snprintf(Gbuf3, MAX_STRING_LENGTH, "Wear %s where?\r\n", FirstWord(obj_object->name));
-				send_to_char(Gbuf3, ch);
+				send_to_char("You can't hold this.\r\n", ch);
 			}
 			break;
-
-		case -2:
+		}
+		if (!free_hands)
+		{
 			if (showit)
 			{
-				snprintf(Gbuf3, MAX_STRING_LENGTH, "You can't wear the %s.\r\n", FirstWord(obj_object->name));
-				send_to_char(Gbuf3, ch);
+				send_to_char("Your hands are full.\r\n", ch);
 			}
 			break;
-
-		default:
-			logit(LOG_OBJ, "Unknown type called in wear (%d).", keyword);
+		}
+		if ((IS_SET(obj_object->extra_flags, ITEM_TWOHANDS) ||
+		     (obj_object->type == ITEM_WEAPON &&
+		      obj_object->value[0] == WEAPON_2HANDSWORD)) &&
+		    (free_hands < 2))
+		{
+			if (showit)
+			{
+				send_to_char("You need two free hands to hold that.\r\n", ch);
+			}
 			break;
+		}
+		if (ch->equipment[HOLD])
+		{
+			if (showit)
+			{
+				act("You are already holding $p.", 0, ch, ch->equipment[HOLD], 0,
+				    TO_CHAR);
+			}
+			break;
+		}
+		execute_wear(ch, obj_object, HOLD, keyword, showit);
+		return TRUE;
+		break;
+
+	case 14: /* Shield */
+		if (!CAN_WEAR(obj_object, ITEM_WEAR_SHIELD))
+		{
+			if (showit)
+			{
+				send_to_char("You can't use that as a shield.\r\n", ch);
+			}
+			break;
+		}
+		if (!free_hands)
+		{
+			if (showit)
+			{
+				send_to_char("Your hands are full.\r\n", ch);
+			}
+			break;
+		}
+		// Already Wearing the Item
+		if (ch->equipment[WEAR_SHIELD])
+		{
+			if (showit)
+			{
+				act("You are already using $p.", 0, ch, ch->equipment[WEAR_SHIELD],
+				    0, TO_CHAR);
+			}
+			break;
+		}
+		// Wear Item
+		execute_wear(ch, obj_object, WEAR_SHIELD, keyword, showit);
+		return TRUE;
+		break;
+
+	case 15: /* Eyes */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_EYES))
+		{
+			// Already Wearing an ITEM_WHOLE_HEAD
+			if (ch->equipment[WEAR_HEAD] &&
+			    IS_SET(ch->equipment[WEAR_HEAD]->extra_flags, ITEM_WHOLE_HEAD))
+			{
+				if (showit)
+				{
+					act("You can't wear something on your eyes and wear $p on your head.",
+					    0, ch, ch->equipment[WEAR_HEAD], 0, TO_CHAR);
+				}
+				break;
+			}
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_EYES, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your eyes.\r\n", ch);
+			}
+		}
+		break;
+
+	case 16: /* Face */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_FACE))
+		{
+			// Already Wearing an ITEM_WHOLE_HEAD
+			if (ch->equipment[WEAR_HEAD] &&
+			    IS_SET(ch->equipment[WEAR_HEAD]->extra_flags, ITEM_WHOLE_HEAD))
+			{
+				if (showit)
+				{
+					act("You can't wear something on your face and wear $p on your head.",
+					    0, ch, ch->equipment[WEAR_HEAD], 0, TO_CHAR);
+				}
+				break;
+			}
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_FACE, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your face.\r\n", ch);
+			}
+		}
+		break;
+
+	case 17: /* Earring */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_EARRING) && !IS_THRIKREEN(ch))
+		{
+			// Already Wearing Two Earrings
+			if ((ch->equipment[WEAR_EARRING_L]) && (ch->equipment[WEAR_EARRING_R]))
+			{
+				if (showit)
+				{
+					send_to_char("You already wear an earring in each ear.\r\n",
+						     ch);
+				}
+			}
+			else
+			{
+				// Wear Item
+				execute_wear(ch, obj_object,
+					     ((ch->equipment[WEAR_EARRING_L]) ? WEAR_EARRING_R :
+										WEAR_EARRING_L),
+					     keyword, showit);
+				return TRUE;
+			}
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that in your ear.\r\n", ch);
+			}
+		}
+		break;
+
+	case 18: /* Quiver */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_QUIVER))
+		{
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_QUIVER, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't use that as your quiver.\r\n", ch);
+			}
+		}
+		break;
+
+	case 19: /* Guild Insignia */
+	case 28: // Badge
+		if (CAN_WEAR(obj_object, ITEM_GUILD_INSIGNIA))
+		{
+			// Replace if Wearing Something or Wear New Item
+			// Using hardcoded 19, 'cause 28 is just a duplicate.
+			return remove_and_wear(ch, obj_object, GUILD_INSIGNIA, keyword, comnd,
+					       showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't use that as an insignia.\r\n", ch);
+			}
+		}
+		break;
+
+	case 20: /* Back */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_BACK))
+		{
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_BACK, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your back.\r\n", ch);
+			}
+		}
+		break;
+	case 21: /* Attach Belt */
+		if (CAN_WEAR(obj_object, ITEM_ATTACH_BELT))
+		{
+			if (!ch->equipment[WEAR_WAIST])
+			{
+				if (showit)
+				{
+					act("You need a belt to attach $p to it.", 0, ch,
+					    obj_object, 0, TO_CHAR);
+				}
+			}
+			else if ((ch->equipment[WEAR_ATTACH_BELT_1]) &&
+				 (ch->equipment[WEAR_ATTACH_BELT_2]) &&
+				 (ch->equipment[WEAR_ATTACH_BELT_3]))
+			{
+				if (showit)
+				{
+					send_to_char("Your belt is full.\r\n", ch);
+				}
+			}
+			else
+			{
+				if (showit)
+				{
+					perform_wear(ch, obj_object, keyword);
+				}
+				obj_from_char(obj_object);
+				// Left the following an If-Then-Else instead of a ?: for ease of read.  -Sniktiorg (Nov.12.12)
+				if (!ch->equipment[WEAR_ATTACH_BELT_1])
+				{
+					equip_char(ch, obj_object, WEAR_ATTACH_BELT_1, !showit);
+				}
+				else if (!ch->equipment[WEAR_ATTACH_BELT_2])
+				{
+					equip_char(ch, obj_object, WEAR_ATTACH_BELT_2, !showit);
+				}
+				else
+				{
+					equip_char(ch, obj_object, WEAR_ATTACH_BELT_3, !showit);
+				}
+				return TRUE;
+			}
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't attach that to your belt.\r\n", ch);
+			}
+		}
+		break;
+
+	case 22: /* Horse Body */
+		if (CAN_WEAR(obj_object, ITEM_HORSE_BODY) && (IS_CENTAUR(ch)))
+		{
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_HORSE_BODY, keyword, comnd,
+					       showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that.\r\n", ch);
+			}
+		}
+		break;
+
+	case 23: /* Tail */
+		if (HAS_TAIL(ch))
+		{
+			if (CAN_WEAR(obj_object, ITEM_WEAR_TAIL))
+			{
+				// Replace if Wearing Something or Wear New Item
+				return remove_and_wear(ch, obj_object, WEAR_TAIL, keyword, comnd,
+						       showit);
+			}
+			else
+			{
+				if (showit)
+				{
+					send_to_char("You can't wear that on your &+Ltail&n.\r\n",
+						     ch);
+				}
+			}
+		}
+		else
+		{
+			send_to_char("You don't have a &+Ltail&n to wear that on.\r\n", ch);
+		}
+		break;
+
+	case 24: /* Nose */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_NOSE) && IS_MINOTAUR(ch))
+		{
+			return remove_and_wear(ch, obj_object, WEAR_NOSE, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your nose.\r\n", ch);
+			}
+		}
+		break;
+
+	case 25: /* Horns */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_HORN) &&
+		    (IS_MINOTAUR(ch) || IS_HARPY(ch) || IS_PSBEAST(ch) || IS_TIEFLING(ch)))
+		{
+			return remove_and_wear(ch, obj_object, WEAR_HORN, keyword, comnd, showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that on your &+Lhorns&n.\r\n", ch);
+			}
+		}
+		break;
+
+	case 26: /* Ioun Stone */
+		if (CAN_WEAR(obj_object, ITEM_WEAR_IOUN))
+		{
+			return remove_and_wear(ch, obj_object, WEAR_IOUN, keyword, comnd, showit);
+		}
+		break;
+
+	case 27: /* Spider Body */
+		if (CAN_WEAR(obj_object, ITEM_SPIDER_BODY))
+		{
+			if (!has_innate(ch, INNATE_SPIDER_BODY))
+			{
+				if (showit)
+				{
+					send_to_char(
+						"You can't wear &+Lspider's&n abdomen armor.\r\n",
+						ch);
+				}
+				break;
+			}
+			// Replace if Wearing Something or Wear New Item
+			return remove_and_wear(ch, obj_object, WEAR_SPIDER_BODY, keyword, comnd,
+					       showit);
+		}
+		else
+		{
+			if (showit)
+			{
+				send_to_char("You can't wear that.\r\n", ch);
+			}
+		}
+		break;
+
+	case -1:
+		if (showit)
+		{
+			snprintf(Gbuf3, MAX_STRING_LENGTH, "Wear %s where?\r\n",
+				 FirstWord(obj_object->name));
+			send_to_char(Gbuf3, ch);
+		}
+		break;
+
+	case -2:
+		if (showit)
+		{
+			snprintf(Gbuf3, MAX_STRING_LENGTH, "You can't wear the %s.\r\n",
+				 FirstWord(obj_object->name));
+			send_to_char(Gbuf3, ch);
+		}
+		break;
+
+	default:
+		logit(LOG_OBJ, "Unknown type called in wear (%d).", keyword);
+		break;
 	}
 	return FALSE;
 }
@@ -5316,48 +5590,30 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
  * [0] wearflag, [1] keyword[] number, [2] eq slot position (Do Not Duplicate Numbers)
  */
 int equipment_pos_table[CUR_MAX_WEAR][3] = {
-	{	 ITEM_WEAR_BODY,  3,  5},
-    {     ITEM_WEAR_LEGS,  5,  7},
-    {     ITEM_WEAR_ARMS,  8, 10},
-    {    ITEM_WEAR_WAIST, 10, 13},
-    {    ITEM_WEAR_HANDS,  7,  9},
-    {     ITEM_WEAR_FEET,  6,  8},
-	{	 ITEM_WEAR_HEAD,  4,  6},
-    {   ITEM_WEAR_SHIELD, 14, 11},
-    {   ITEM_WEAR_FINGER,  1,  2},
-    {   ITEM_WEAR_FINGER,  1,  1},
-    {  ITEM_WEAR_EARRING, 17, 22},
-    {  ITEM_WEAR_EARRING, 17, 21},
-	{    ITEM_WEAR_WRIST, 11, 15},
-    {    ITEM_WEAR_WRIST, 11, 14},
-    {     ITEM_WEAR_NECK,  2,  3},
-    {     ITEM_WEAR_NECK,  2,  4},
-    {     ITEM_WEAR_FACE, 16, 20},
-    {ITEM_GUILD_INSIGNIA, 19, 24}, // Badge
-	{	 ITEM_WEAR_EYES, 15, 19},
-    {    ITEM_WEAR_ABOUT,  9, 12},
-    {   ITEM_WEAR_QUIVER, 18, 23},
-    {     ITEM_WEAR_IOUN, 26, 41},
-    {         ITEM_WIELD, 12, 16}, // Primary weapon
-	{		 ITEM_WIELD, 12, 17}, // Secondary weapons, same slot as HOLD
-	{		 ITEM_WIELD, 12, 25}, // Tertiary weapon
-	{		 ITEM_WIELD, 12, 26}, // Quarternary weapon
-	{	 ITEM_WEAR_BACK, 20, 27},
-    {   ITEM_ATTACH_BELT, 21, 30}, // Primary spot
-	{   ITEM_ATTACH_BELT, 21, 29}, // Secondary spot
-	{   ITEM_ATTACH_BELT, 21, 28}, // Tertiary spot
-	{	 ITEM_WEAR_ARMS,  8, 31},
-    {    ITEM_WEAR_HANDS,  7, 32},
-    {    ITEM_WEAR_WRIST, 11, 33},
-    {    ITEM_WEAR_WRIST, 11, 34},
-    {    ITEM_HORSE_BODY, 22, 35},
-    {     ITEM_WEAR_LEGS,  5, 36},
-	{	 ITEM_WEAR_TAIL, 23, 37},
-    {     ITEM_WEAR_FEET,  6, 38},
-    {     ITEM_WEAR_NOSE, 24, 39},
-    {     ITEM_WEAR_HORN, 25, 40},
-    {   ITEM_SPIDER_BODY, 27, 42},
-    {          ITEM_HOLD, 13, 18}  // HELD gets checked last of all
+	{ ITEM_WEAR_BODY, 3, 5 },      { ITEM_WEAR_LEGS, 5, 7 },
+	{ ITEM_WEAR_ARMS, 8, 10 },     { ITEM_WEAR_WAIST, 10, 13 },
+	{ ITEM_WEAR_HANDS, 7, 9 },     { ITEM_WEAR_FEET, 6, 8 },
+	{ ITEM_WEAR_HEAD, 4, 6 },      { ITEM_WEAR_SHIELD, 14, 11 },
+	{ ITEM_WEAR_FINGER, 1, 2 },    { ITEM_WEAR_FINGER, 1, 1 },
+	{ ITEM_WEAR_EARRING, 17, 22 }, { ITEM_WEAR_EARRING, 17, 21 },
+	{ ITEM_WEAR_WRIST, 11, 15 },   { ITEM_WEAR_WRIST, 11, 14 },
+	{ ITEM_WEAR_NECK, 2, 3 },      { ITEM_WEAR_NECK, 2, 4 },
+	{ ITEM_WEAR_FACE, 16, 20 },    { ITEM_GUILD_INSIGNIA, 19, 24 }, // Badge
+	{ ITEM_WEAR_EYES, 15, 19 },    { ITEM_WEAR_ABOUT, 9, 12 },
+	{ ITEM_WEAR_QUIVER, 18, 23 },  { ITEM_WEAR_IOUN, 26, 41 },
+	{ ITEM_WIELD, 12, 16 }, // Primary weapon
+	{ ITEM_WIELD, 12, 17 }, // Secondary weapons, same slot as HOLD
+	{ ITEM_WIELD, 12, 25 }, // Tertiary weapon
+	{ ITEM_WIELD, 12, 26 }, // Quarternary weapon
+	{ ITEM_WEAR_BACK, 20, 27 },    { ITEM_ATTACH_BELT, 21, 30 }, // Primary spot
+	{ ITEM_ATTACH_BELT, 21, 29 }, // Secondary spot
+	{ ITEM_ATTACH_BELT, 21, 28 }, // Tertiary spot
+	{ ITEM_WEAR_ARMS, 8, 31 },     { ITEM_WEAR_HANDS, 7, 32 },
+	{ ITEM_WEAR_WRIST, 11, 33 },   { ITEM_WEAR_WRIST, 11, 34 },
+	{ ITEM_HORSE_BODY, 22, 35 },   { ITEM_WEAR_LEGS, 5, 36 },
+	{ ITEM_WEAR_TAIL, 23, 37 },    { ITEM_WEAR_FEET, 6, 38 },
+	{ ITEM_WEAR_NOSE, 24, 39 },    { ITEM_WEAR_HORN, 25, 40 },
+	{ ITEM_SPIDER_BODY, 27, 42 },  { ITEM_HOLD, 13, 18 } // HELD gets checked last of all
 };
 
 /*
@@ -5368,17 +5624,17 @@ int equipment_pos_table[CUR_MAX_WEAR][3] = {
 void do_wear(P_char ch, char *argument, int cmd)
 {
 	struct obj_affect *o_af;
-	char               Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char               Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
-	P_obj              obj_object, next_obj = NULL;
-	int                keyword;
-	const char        *keywords[] = {"finger", "neck",        "body",   "head",     "legs",  /* 4 */
-	                                 "feet",   "hands",       "arms",   "about",    "waist", /* 9 */
-	                                 "wrist",  "xxx",         "xxx",    "shield",   "eyes",  /* 14 */
-	                                 "face",   "earring",     "quiver", "insignia", "back",  /* 19 */
-	                                 "attach", "horse_body",  "tail",   "nose",     "horns", /* 24 */
-	                                 "ioun",   "spider_body", "badge",  "\n"};
-	int                loop       = 0;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
+	P_obj obj_object, next_obj = NULL;
+	int keyword;
+	const char *keywords[] = { "finger", "neck",	    "body",   "head",	  "legs", /* 4 */
+				   "feet",   "hands",	    "arms",   "about",	  "waist", /* 9 */
+				   "wrist",  "xxx",	    "xxx",    "shield",	  "eyes", /* 14 */
+				   "face",   "earring",	    "quiver", "insignia", "back", /* 19 */
+				   "attach", "horse_body",  "tail",   "nose",	  "horns", /* 24 */
+				   "ioun",   "spider_body", "badge",  "\n" };
+	int loop = 0;
 
 	// Letting dragons wear eq
 	if (IS_ANIMAL(ch) && IS_NPC(ch))
@@ -5400,12 +5656,14 @@ void do_wear(P_char ch, char *argument, int cmd)
 				keyword = search_block(Gbuf2, keywords, FALSE); // Partial Match
 				if (keyword == -1)
 				{
-					snprintf(Gbuf4, MAX_STRING_LENGTH, "%s is an unknown body location.\r\n", Gbuf2);
+					snprintf(Gbuf4, MAX_STRING_LENGTH,
+						 "%s is an unknown body location.\r\n", Gbuf2);
 					send_to_char(Gbuf4, ch);
 				}
 				else
 				{
-					wear(ch, obj_object, keyword + 1, 1); // UGH!  Passing through a +1 is nasty. But, aligns array with reality.
+					wear(ch, obj_object, keyword + 1,
+					     1); // UGH!  Passing through a +1 is nasty. But, aligns array with reality.
 				}
 			}
 			else
@@ -5417,9 +5675,13 @@ void do_wear(P_char ch, char *argument, int cmd)
 				 */
 				for (loop = 0; loop < CUR_MAX_WEAR; loop++)
 				{
-					if (CAN_WEAR(obj_object, equipment_pos_table[loop][0])) // Checks if Item can be Worn in this Spot
+					if (CAN_WEAR(obj_object,
+						     equipment_pos_table
+							     [loop]
+							     [0])) // Checks if Item can be Worn in this Spot
 					{
-						keyword = equipment_pos_table[loop][1]; // Assigns appropriate Keyword
+						keyword = equipment_pos_table
+							[loop][1]; // Assigns appropriate Keyword
 						break;
 					}
 				}
@@ -5431,14 +5693,21 @@ void do_wear(P_char ch, char *argument, int cmd)
 					return;
 				}
 				// Wear the Object
-				if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
+				if (obj_object->R_num >= 0 &&
+				    obj_index[obj_object->R_num].virtual_number == 400218 &&
+				    IS_MULTICLASS_PC(ch))
 				{
-					send_to_char("&nThe power of this item is too great for a multiclassed character!&n\r\n", ch);
+					send_to_char(
+						"&nThe power of this item is too great for a multiclassed character!&n\r\n",
+						ch);
 					return;
 				}
-				if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) && !isname(GET_NAME(ch), obj_object->name))
+				if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) &&
+				    !isname(GET_NAME(ch), obj_object->name))
 				{
-					send_to_char("&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n", ch);
+					send_to_char(
+						"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
+						ch);
 					return;
 				}
 				wear(ch, obj_object, keyword, TRUE);
@@ -5446,7 +5715,8 @@ void do_wear(P_char ch, char *argument, int cmd)
 		}
 		else // Object Doesn't Exist
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n", Gbuf1);
+			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n",
+				 Gbuf1);
 			send_to_char(Gbuf3, ch);
 		}
 	}
@@ -5473,25 +5743,35 @@ void do_wear(P_char ch, char *argument, int cmd)
 					next_obj = obj_object->next_content;
 					// can't wear if you can't see, although mobs can wear !show items
 					// unless they are PC pets
-					if (!CAN_SEE_OBJ(ch, obj_object) || (IS_NOSHOW(obj_object) && IS_NPC(ch) && IS_PC_PET(ch)))
+					if (!CAN_SEE_OBJ(ch, obj_object) ||
+					    (IS_NOSHOW(obj_object) && IS_NPC(ch) && IS_PC_PET(ch)))
 					{
 						continue;
 					}
-					if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
+					if (obj_object->R_num >= 0 &&
+					    obj_index[obj_object->R_num].virtual_number == 400218 &&
+					    IS_MULTICLASS_PC(ch))
 					{
-						send_to_char("&nThe power of this item is too great for a multiclassed character!&n\r\n", ch);
+						send_to_char(
+							"&nThe power of this item is too great for a multiclassed character!&n\r\n",
+							ch);
 						continue;
 					}
-					if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) && !isname(GET_NAME(ch), obj_object->name))
+					if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) &&
+					    !isname(GET_NAME(ch), obj_object->name))
 					{
-						send_to_char("&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n", ch);
+						send_to_char(
+							"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
+							ch);
 						continue;
 					}
 					if (obj_object->type != ITEM_SPELLBOOK)
 					{
-						if (CAN_WEAR(obj_object, equipment_pos_table[loop][0]))
+						if (CAN_WEAR(obj_object,
+							     equipment_pos_table[loop][0]))
 						{
-							wear(ch, obj_object, equipment_pos_table[loop][1], TRUE);
+							wear(ch, obj_object,
+							     equipment_pos_table[loop][1], TRUE);
 							break;
 						}
 					}
@@ -5514,9 +5794,9 @@ void do_wear(P_char ch, char *argument, int cmd)
 void do_wield(P_char ch, char *argument, int cmd)
 {
 	P_obj obj_object;
-	int   keyword = 12;
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char  Gbuf3[MAX_STRING_LENGTH];
+	int keyword = 12;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH];
 
 	if (IS_ANIMAL(ch))
 	{
@@ -5540,7 +5820,8 @@ void do_wield(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n", Gbuf1);
+			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n",
+				 Gbuf1);
 			send_to_char(Gbuf3, ch);
 		}
 	}
@@ -5558,8 +5839,8 @@ void do_wield(P_char ch, char *argument, int cmd)
 void do_grab(P_char ch, char *argument, int cmd)
 {
 	P_obj obj_object;
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char  Gbuf3[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH];
 
 	argument_interpreter(argument, Gbuf1, Gbuf2);
 
@@ -5568,21 +5849,29 @@ void do_grab(P_char ch, char *argument, int cmd)
 		obj_object = get_obj_in_list(Gbuf1, ch->carrying);
 		if (obj_object)
 		{
-			if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
+			if (obj_object->R_num >= 0 &&
+			    obj_index[obj_object->R_num].virtual_number == 400218 &&
+			    IS_MULTICLASS_PC(ch))
 			{
-				send_to_char("&nThe power of this item is too great for a multiclassed character!&n\r\n", ch);
+				send_to_char(
+					"&nThe power of this item is too great for a multiclassed character!&n\r\n",
+					ch);
 				return;
 			}
-			if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) && !isname(GET_NAME(ch), obj_object->name))
+			if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) &&
+			    !isname(GET_NAME(ch), obj_object->name))
 			{
-				send_to_char("&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n", ch);
+				send_to_char(
+					"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
+					ch);
 				return;
 			}
 			wear(ch, obj_object, 13, 1);
 		}
 		else
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n", Gbuf1);
+			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n",
+				 Gbuf1);
 			send_to_char(Gbuf3, ch);
 			return;
 		}
@@ -5604,17 +5893,18 @@ void do_grab(P_char ch, char *argument, int cmd)
  */
 void do_remove(P_char ch, char *argument, int cmd)
 {
-	P_obj                obj_object, temp_obj;
-	int                  j, k, ret_type;
-	bool                 was_invis, naked;
-	char                 Gbuf1[MAX_STRING_LENGTH];
+	P_obj obj_object, temp_obj;
+	int j, k, ret_type;
+	bool was_invis, naked;
+	char Gbuf1[MAX_STRING_LENGTH];
 	struct affected_type af;
 
 	// Determine Argument
 	one_argument(argument, Gbuf1);
 
 	// Determine Current Visibility
-	was_invis = IS_SET(ch->specials.affected_by, AFF_INVISIBLE) || IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT);
+	was_invis = IS_SET(ch->specials.affected_by, AFF_INVISIBLE) ||
+		    IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT);
 
 	if (*Gbuf1) // If Argument Exists
 	{
@@ -5622,8 +5912,10 @@ void do_remove(P_char ch, char *argument, int cmd)
 		{
 			if (IS_PC(ch) && affected_by_spell(ch, TAG_PVPDELAY))
 			{
-				act("$n frantically attempts to remove all of $s clothes and equipment!", FALSE, ch, 0, 0, TO_ROOM);
-				act("&+rYou are too high on &+Radrenaline&+R to perform a remove all.&n", FALSE, ch, 0, 0, TO_CHAR);
+				act("$n frantically attempts to remove all of $s clothes and equipment!",
+				    FALSE, ch, 0, 0, TO_ROOM);
+				act("&+rYou are too high on &+Radrenaline&+R to perform a remove all.&n",
+				    FALSE, ch, 0, 0, TO_CHAR);
 				CharWait(ch, PULSE_VIOLENCE * 1);
 				return;
 			}
@@ -5640,16 +5932,20 @@ void do_remove(P_char ch, char *argument, int cmd)
 					// Drannak - set affect noauction to prevent selling off equip prior to being fragged
 					affect_from_char(ch, SPELL_NOAUCTION);
 					bzero(&af, sizeof(af));
-					af.type     = SPELL_NOAUCTION;
+					af.type = SPELL_NOAUCTION;
 					af.duration = 2;
 					af.modifier = 4000;
 					affect_to_char(ch, &af);
 
 					// Battlemage robe
-					if (temp_obj->R_num >= 0 && obj_index[temp_obj->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch))
+					if (temp_obj->R_num >= 0 &&
+					    obj_index[temp_obj->R_num].virtual_number == 400218 &&
+					    !IS_MULTICLASS_PC(ch))
 					{
 						affect_from_char(ch, SPELL_BATTLEMAGE);
-						send_to_char("&+rAs you remove the &+Ymaje&+rst&+Yic &+Yrobe&+r, you feel your enhanced &+mpower&+r fade.&n\r\n", ch);
+						send_to_char(
+							"&+rAs you remove the &+Ymaje&+rst&+Yic &+Yrobe&+r, you feel your enhanced &+mpower&+r fade.&n\r\n",
+							ch);
 					}
 
 					if (naked == TRUE)
@@ -5658,16 +5954,18 @@ void do_remove(P_char ch, char *argument, int cmd)
 				// Parse Remaining Messages
 				switch (ret_type)
 				{
-					case REMOVE_CURSED:
-						act("$p won't budge!  Perhaps it's cursed?!?", TRUE, ch, ch->equipment[k], 0, TO_CHAR);
-						naked = FALSE;
-						break;
-					case REMOVE_BREAK_ENCHANT:
-						act("&+cSome of your &+Cmagic&+c dissipates...&n", FALSE, ch, 0, 0, TO_CHAR);
-						break;
-					case REMOVE_CANT_CARRY:
-						send_to_char("You can't carry that many items.\r\n", ch);
-						break;
+				case REMOVE_CURSED:
+					act("$p won't budge!  Perhaps it's cursed?!?", TRUE, ch,
+					    ch->equipment[k], 0, TO_CHAR);
+					naked = FALSE;
+					break;
+				case REMOVE_BREAK_ENCHANT:
+					act("&+cSome of your &+Cmagic&+c dissipates...&n", FALSE,
+					    ch, 0, 0, TO_CHAR);
+					break;
+				case REMOVE_CANT_CARRY:
+					send_to_char("You can't carry that many items.\r\n", ch);
+					break;
 				} // End Switch
 
 				// Break Out of Loop on Full Inventory
@@ -5689,7 +5987,7 @@ void do_remove(P_char ch, char *argument, int cmd)
 		{
 			// Single Object Remove
 			obj_object = get_object_in_equip(ch, Gbuf1, &j);
-			ret_type   = remove_item(ch, obj_object, j);
+			ret_type = remove_item(ch, obj_object, j);
 			// Acknowledge Removal
 			if (ret_type == REMOVE_SUCCESS || ret_type == REMOVE_BREAK_ENCHANT)
 			{
@@ -5698,34 +5996,40 @@ void do_remove(P_char ch, char *argument, int cmd)
 
 				affect_from_char(ch, SPELL_NOAUCTION);
 				bzero(&af, sizeof(af));
-				af.type     = SPELL_NOAUCTION;
+				af.type = SPELL_NOAUCTION;
 				af.duration = 2;
 				af.modifier = 4000;
 				affect_to_char(ch, &af);
 
 				// Battlemage robe
-				if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch))
+				if (obj_object->R_num >= 0 &&
+				    obj_index[obj_object->R_num].virtual_number == 400218 &&
+				    !IS_MULTICLASS_PC(ch))
 				{
 					affect_from_char(ch, SPELL_BATTLEMAGE);
-					send_to_char("&+rAs you remove the &+Ymaje&+rst&+Yic &+Yrobe&+r, you feel your enhanced &+mpower&+r fade.&n\r\n", ch);
+					send_to_char(
+						"&+rAs you remove the &+Ymaje&+rst&+Yic &+Yrobe&+r, you feel your enhanced &+mpower&+r fade.&n\r\n",
+						ch);
 				}
 			}
 
 			// Parse Remaining Messages
 			switch (ret_type)
 			{
-				case REMOVE_CURSED:
-					act("$p won't budge!  Perhaps it's cursed?!?", TRUE, ch, obj_object, 0, TO_CHAR);
-					break;
-				case REMOVE_BREAK_ENCHANT:
-					act("&+cAs you remove the item, the &+Cenchantment &+cis broken...&n", FALSE, ch, obj_object, 0, TO_CHAR);
-					break;
-				case REMOVE_CANT_CARRY:
-					send_to_char("You can't carry that many items.\r\n", ch);
-					break;
-				case REMOVE_NOT_USING:
-					send_to_char("You are not using it.\r\n", ch);
-					break;
+			case REMOVE_CURSED:
+				act("$p won't budge!  Perhaps it's cursed?!?", TRUE, ch, obj_object,
+				    0, TO_CHAR);
+				break;
+			case REMOVE_BREAK_ENCHANT:
+				act("&+cAs you remove the item, the &+Cenchantment &+cis broken...&n",
+				    FALSE, ch, obj_object, 0, TO_CHAR);
+				break;
+			case REMOVE_CANT_CARRY:
+				send_to_char("You can't carry that many items.\r\n", ch);
+				break;
+			case REMOVE_NOT_USING:
+				send_to_char("You are not using it.\r\n", ch);
+				break;
 			} // End Switch
 		} // End Single Object REmove
 	}
@@ -5736,7 +6040,8 @@ void do_remove(P_char ch, char *argument, int cmd)
 
 	// Make Proper Adjustments for Changed Affects
 	balance_affects(ch);
-	if (was_invis && !IS_SET(ch->specials.affected_by, AFF_INVISIBLE) && !IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT))
+	if (was_invis && !IS_SET(ch->specials.affected_by, AFF_INVISIBLE) &&
+	    !IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT))
 	{
 		act("$n snaps into visibility.", FALSE, ch, 0, 0, TO_ROOM);
 		act("You snap into visibility.", FALSE, ch, 0, 0, TO_CHAR);
@@ -5764,11 +6069,11 @@ bool find_chance(P_char ch)
 void do_search(P_char ch, char *argument, int cmd)
 {
 	P_char dummy;
-	P_obj  k;
-	bool   found_something = FALSE;
-	char   name[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	int    door;
-	bool   proc_handled = FALSE;
+	P_obj k;
+	bool found_something = FALSE;
+	char name[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	int door;
+	bool proc_handled = FALSE;
 
 	one_argument(argument, name);
 
@@ -5791,7 +6096,8 @@ void do_search(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			generic_find(name, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &dummy, &k);
+			generic_find(name, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+				     &dummy, &k);
 		}
 
 		if (!k)
@@ -5799,12 +6105,15 @@ void do_search(P_char ch, char *argument, int cmd)
 			send_to_char("You don't find anything you didn't see before.\r\n", ch);
 			return;
 		}
-		else if (k->trap_charge && ((GET_CLASS(ch, CLASS_ROGUE) && find_chance(ch)) || IS_TRUSTED(ch)))
+		else if (k->trap_charge &&
+			 ((GET_CLASS(ch, CLASS_ROGUE) && find_chance(ch)) || IS_TRUSTED(ch)))
 		{
-			act("Something about $p makes you leery to continue.", TRUE, ch, k, 0, TO_CHAR);
+			act("Something about $p makes you leery to continue.", TRUE, ch, k, 0,
+			    TO_CHAR);
 			return;
 		}
-		else if ((k->type != ITEM_CONTAINER) && (k->type != ITEM_STORAGE) && (k->type != ITEM_CORPSE) && (k->type != ITEM_QUIVER))
+		else if ((k->type != ITEM_CONTAINER) && (k->type != ITEM_STORAGE) &&
+			 (k->type != ITEM_CORPSE) && (k->type != ITEM_QUIVER))
 		{
 			send_to_char("You don't find anything you didn't see before.\r\n", ch);
 			return;
@@ -5819,9 +6128,12 @@ void do_search(P_char ch, char *argument, int cmd)
 
 	for (; k && (!found_something || IS_TRUSTED(ch)); k = k->next_content)
 	{
-		if (k->trap_charge && (IS_TRUSTED(ch) || (GET_CLASS(ch, CLASS_ROGUE) && find_chance(ch))) && k->trap_eff && IS_SET(k->trap_eff, 1))
+		if (k->trap_charge &&
+		    (IS_TRUSTED(ch) || (GET_CLASS(ch, CLASS_ROGUE) && find_chance(ch))) &&
+		    k->trap_eff && IS_SET(k->trap_eff, 1))
 		{
-			send_to_char("A small trip wire along the ground catches your eye.\r\n", ch);
+			send_to_char("A small trip wire along the ground catches your eye.\r\n",
+				     ch);
 			found_something = TRUE;
 		}
 		else if (IS_SET(k->extra_flags, ITEM_SECRET) && find_chance(ch))
@@ -5833,7 +6145,8 @@ void do_search(P_char ch, char *argument, int cmd)
 			   */
 				if (k->R_num >= 0 && obj_index[k->R_num].func.obj)
 				{
-					proc_handled = (*obj_index[k->R_num].func.obj)(k, ch, CMD_FOUND, NULL);
+					proc_handled = (*obj_index[k->R_num].func.obj)(
+						k, ch, CMD_FOUND, NULL);
 				}
 				if (!proc_handled)
 				{
@@ -5858,12 +6171,15 @@ void do_search(P_char ch, char *argument, int cmd)
 	{
 		for (door = 0; (door < NUM_EXITS) && (!found_something || IS_TRUSTED(ch)); door++)
 		{
-			if (EXIT(ch, door) && IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) && !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
+			if (EXIT(ch, door) && IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) &&
+			    !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
 			{
 				if (find_chance(ch))
 				{
-					act("You find a secret entrance!", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n finds a secret entrance!", FALSE, ch, 0, 0, TO_ROOM);
+					act("You find a secret entrance!", FALSE, ch, 0, 0,
+					    TO_CHAR);
+					act("$n finds a secret entrance!", FALSE, ch, 0, 0,
+					    TO_ROOM);
 					found_something = TRUE;
 					REMOVE_BIT(EXIT(ch, door)->exit_info, EX_SECRET);
 				}
@@ -5872,18 +6188,22 @@ void do_search(P_char ch, char *argument, int cmd)
 		/*
 		 * new bit, give them chance to find hiding thieves/mobs
 		 */
-		for (dummy = world[ch->in_room].people; dummy && (!found_something || IS_TRUSTED(ch)); dummy = dummy->next_in_room)
+		for (dummy = world[ch->in_room].people;
+		     dummy && (!found_something || IS_TRUSTED(ch)); dummy = dummy->next_in_room)
 		{
 			if (IS_AFFECTED(dummy, AFF_HIDE) && find_chance(ch) && !number(0, 3))
 			{
 				REMOVE_BIT(dummy->specials.affected_by, AFF_HIDE);
 				if (CAN_SEE(ch, dummy))
 				{
-					act("You find $N lurking here!", FALSE, ch, 0, dummy, TO_CHAR);
-					act("$n points out $N lurking here!", FALSE, ch, 0, dummy, TO_NOTVICT);
+					act("You find $N lurking here!", FALSE, ch, 0, dummy,
+					    TO_CHAR);
+					act("$n points out $N lurking here!", FALSE, ch, 0, dummy,
+					    TO_NOTVICT);
 					if (find_chance(dummy) && !number(0, 3))
 					{
-						act("You think $n has spotted you!", TRUE, ch, 0, dummy, TO_VICT);
+						act("You think $n has spotted you!", TRUE, ch, 0,
+						    dummy, TO_VICT);
 					}
 					found_something = TRUE;
 				}
@@ -5906,7 +6226,7 @@ void do_search(P_char ch, char *argument, int cmd)
 
 void do_apply_poison(P_char ch, char *argument, int cmd)
 {
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	P_obj weapon, poison;
 
 	if (!GET_CHAR_SKILL(ch, SKILL_APPLY_POISON))
@@ -5922,16 +6242,29 @@ void do_apply_poison(P_char ch, char *argument, int cmd)
 		return;
 	}
 	if (!(weapon = get_obj_in_list_vis(ch, Gbuf2, ch->carrying)) &&
-		!(weapon = ch->equipment[WIELD] && isname(Gbuf2, ch->equipment[WIELD]->name) ? ch->equipment[WIELD] : NULL) && 
-	    !(weapon = ch->equipment[WIELD2] && isname(Gbuf2, ch->equipment[WIELD2]->name) ? ch->equipment[WIELD2] : NULL) )
+	    !(weapon = ch->equipment[WIELD] && isname(Gbuf2, ch->equipment[WIELD]->name) ?
+			       ch->equipment[WIELD] :
+			       NULL) &&
+	    !(weapon = ch->equipment[WIELD2] && isname(Gbuf2, ch->equipment[WIELD2]->name) ?
+			       ch->equipment[WIELD2] :
+			       NULL))
 	{
 		act("You don't have any such weapon!", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 	if (!(poison = get_obj_in_list_vis(ch, Gbuf1, ch->carrying)) &&
-		!(poison = ch->equipment[WEAR_ATTACH_BELT_1] && isname(Gbuf1, ch->equipment[WEAR_ATTACH_BELT_1]->name) ? ch->equipment[WEAR_ATTACH_BELT_1] : NULL) &&
-	    !(poison = ch->equipment[WEAR_ATTACH_BELT_2] && isname(Gbuf1, ch->equipment[WEAR_ATTACH_BELT_2]->name) ? ch->equipment[WEAR_ATTACH_BELT_2] : NULL) &&
-	    !(poison = ch->equipment[WEAR_ATTACH_BELT_3] && isname(Gbuf1, ch->equipment[WEAR_ATTACH_BELT_3]->name) ? ch->equipment[WEAR_ATTACH_BELT_3] : NULL) )
+	    !(poison = ch->equipment[WEAR_ATTACH_BELT_1] &&
+				       isname(Gbuf1, ch->equipment[WEAR_ATTACH_BELT_1]->name) ?
+			       ch->equipment[WEAR_ATTACH_BELT_1] :
+			       NULL) &&
+	    !(poison = ch->equipment[WEAR_ATTACH_BELT_2] &&
+				       isname(Gbuf1, ch->equipment[WEAR_ATTACH_BELT_2]->name) ?
+			       ch->equipment[WEAR_ATTACH_BELT_2] :
+			       NULL) &&
+	    !(poison = ch->equipment[WEAR_ATTACH_BELT_3] &&
+				       isname(Gbuf1, ch->equipment[WEAR_ATTACH_BELT_3]->name) ?
+			       ch->equipment[WEAR_ATTACH_BELT_3] :
+			       NULL))
 	{
 		act("You don't have any such container!", FALSE, ch, 0, 0, TO_CHAR);
 		return;
@@ -5943,7 +6276,8 @@ void do_apply_poison(P_char ch, char *argument, int cmd)
 	}
 	if (poison->value[2] != LIQ_POISON || !poison->value[3])
 	{
-		act("Alas, your $q does not contain any &+gpo&+Gi&+gs&+Gon&n!", FALSE, ch, poison, 0, TO_CHAR);
+		act("Alas, your $q does not contain any &+gpo&+Gi&+gs&+Gon&n!", FALSE, ch, poison,
+		    0, TO_CHAR);
 		return;
 	}
 	if (weapon->type != ITEM_WEAPON && !IS_DART(weapon))
@@ -5995,7 +6329,9 @@ void list_foods()
 			if (GET_ITEM_TYPE(obj) == ITEM_FOOD)
 			{
 				char mark1 = ' ', mark2 = ' ', mark3 = ' ';
-				if (obj->value[1] != 0 || obj->value[2] != 0 || obj->value[4] != 0 || obj->value[5] != 0 || obj->value[6] != 0 || obj->value[7] != 0)
+				if (obj->value[1] != 0 || obj->value[2] != 0 ||
+				    obj->value[4] != 0 || obj->value[5] != 0 ||
+				    obj->value[6] != 0 || obj->value[7] != 0)
 				{
 					mark1 = '*';
 				}
@@ -6015,20 +6351,12 @@ void list_foods()
 
 				logit(LOG_SHIP,
 				      "%c%c%c %8d: time=%-3d hit=%-2d mov=%-2d poi=%-2d strcon=%-2d agidex=%-2d intwis=%-2d hitdam=%-2d cost=%-6d  : %s",
-				      mark1,
-				      mark2,
-				      mark3,
-				      i,
-				      obj->value[0],
-				      obj->value[1],
-				      obj->value[2],
-				      obj->value[3],
-				      obj->value[4],
-				      obj->value[5],
-				      obj->value[6],
-				      obj->value[7],
-				      obj->cost,
-				      strip_ansi(obj->short_description ? obj->short_description : "None").c_str());
+				      mark1, mark2, mark3, i, obj->value[0], obj->value[1],
+				      obj->value[2], obj->value[3], obj->value[4], obj->value[5],
+				      obj->value[6], obj->value[7], obj->cost,
+				      strip_ansi(obj->short_description ? obj->short_description :
+									  "None")
+					      .c_str());
 			}
 		}
 	}
@@ -6037,15 +6365,16 @@ void list_foods()
 void do_empty(P_char ch, char *argument, int cmd)
 {
 	P_char unused_ch;
-	P_obj  obj1, obj2, content;
-	char   objname[MAX_STRING_LENGTH];
-	int    count;
+	P_obj obj1, obj2, content;
+	char objname[MAX_STRING_LENGTH];
+	int count;
 
 	argument = one_argument(argument, objname);
 	if (objname[0] == '\0' || !strcmp(objname, "?"))
 	{
 		send_to_char("&+YSyntax: &+wempty <container1> <container2>&n\n", ch);
-		send_to_char("Empties the contents of &+w<container1>&n into &+w<container2>&n.\n", ch);
+		send_to_char("Empties the contents of &+w<container1>&n into &+w<container2>&n.\n",
+			     ch);
 		return;
 	}
 
@@ -6096,19 +6425,22 @@ void do_empty(P_char ch, char *argument, int cmd)
 	count = 0;
 	while ((content = obj1->contains) != NULL)
 	{
-
-		if (((container_total_weight(obj2) + GET_OBJ_WEIGHT(content)) > obj2->value[0]) && (obj2->value[0] != -1))
+		if (((container_total_weight(obj2) + GET_OBJ_WEIGHT(content)) > obj2->value[0]) &&
+		    (obj2->value[0] != -1))
 		{
 			act("$P will not fit in $p.", FALSE, ch, obj2, (void *)content, TO_CHAR);
-			send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count, count == 1 ? "" : "s", OBJ_SHORT(obj1), OBJ_SHORT(obj2));
+			send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count,
+				       count == 1 ? "" : "s", OBJ_SHORT(obj1), OBJ_SHORT(obj2));
 			return;
 		}
 
 #if USE_SPACE
-		if (((GET_OBJ_SPACE(obj2) + GET_OBJ_SPACE(content)) > obj1->value[3]) && (obj1->value[3] != -1))
+		if (((GET_OBJ_SPACE(obj2) + GET_OBJ_SPACE(content)) > obj1->value[3]) &&
+		    (obj1->value[3] != -1))
 		{
 			act("$P will not fit in $p.", FALSE, ch, obj2, (void *)content, TO_CHAR);
-			send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count, count == 1 ? "" : "s", OBJ_SHORT(obj1), OBJ_SHORT(obj2));
+			send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count,
+				       count == 1 ? "" : "s", OBJ_SHORT(obj1), OBJ_SHORT(obj2));
 			return;
 		}
 #endif
@@ -6117,5 +6449,6 @@ void do_empty(P_char ch, char *argument, int cmd)
 		obj_to_obj(content, obj2);
 		count++;
 	}
-	send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count, count == 1 ? "" : "s", OBJ_SHORT(obj1), OBJ_SHORT(obj2));
+	send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count, count == 1 ? "" : "s",
+		       OBJ_SHORT(obj1), OBJ_SHORT(obj2));
 }

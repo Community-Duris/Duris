@@ -13,17 +13,22 @@ class Alliance
 	friend void load_alliances();
 	friend void save_alliances();
 
-public:
+    public:
 	Alliance(P_Guild forgers, P_Guild joiners, int tribute_owed);
-	Alliance() : forging_assoc(NULL), joining_assoc(NULL), tribute_owed(0) {}
+	Alliance()
+		: forging_assoc(NULL)
+		, joining_assoc(NULL)
+		, tribute_owed(0)
+	{
+	}
 	P_Guild get_forgers() { return forging_assoc; }
 	P_Guild get_joiners() { return joining_assoc; }
-	bool    is_allied_with(P_Guild ally);
+	bool is_allied_with(P_Guild ally);
 
-protected:
+    protected:
 	P_Guild forging_assoc;
 	P_Guild joining_assoc;
-	int     tribute_owed;
+	int tribute_owed;
 };
 
 #define IS_FORGING_ASSOC(alliance, assoc_id) (alliance && alliance->forging_assoc_id == assoc_id)

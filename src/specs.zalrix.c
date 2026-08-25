@@ -26,25 +26,25 @@
    external variables
  */
 
-extern P_char      character_list;
-extern P_desc      descriptor_list;
-extern P_index     mob_index;
-extern P_index     obj_index;
-extern P_room      world;
-extern const int   top_of_world;
-extern char       *coin_names[];
-extern char       *command[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern const int top_of_world;
+extern char *coin_names[];
+extern char *command[];
 extern const char *dirs[];
 // extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
-extern int                    innate_abilities[];
-extern int                    planes_room_num[];
-extern int                    top_of_zone_table;
-extern struct command_info    cmd_info[MAX_CMD_LIST];
-extern struct dex_app_type    dex_app[52];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
+extern int innate_abilities[];
+extern int planes_room_num[];
+extern int top_of_zone_table;
+extern struct command_info cmd_info[MAX_CMD_LIST];
+extern struct dex_app_type dex_app[52];
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
 
 /***********************************************************************
  * Begin: Special Procedures for Yuan-Ti zone                          *
@@ -56,8 +56,8 @@ int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 	//  P_char   ch2, victim, next;
 	//  struct group_list *gl = NULL;
 	P_char ch2;
-	P_obj  obj2;
-	int    i, from_room, to_room;
+	P_obj obj2;
+	int i, from_room, to_room;
 
 	if (cmd != CMD_HIT)
 		return FALSE;
@@ -83,7 +83,8 @@ int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 	act("Your $q&n hums loudly as you strike the stone!", TRUE, ch, obj, NULL, TO_CHAR);
 	act("$n's $q&n hums loudly as it strikes the stone!", TRUE, ch, obj, NULL, TO_ROOM);
 	act("$p&n explodes, covering the room in a fine dust.", TRUE, NULL, obj2, NULL, TO_NOTVICT);
-	act("The $q in your hands crumbles into small, unusable pieces.", TRUE, ch, obj, NULL, TO_CHAR);
+	act("The $q in your hands crumbles into small, unusable pieces.", TRUE, ch, obj, NULL,
+	    TO_CHAR);
 
 	act("  A deep rumbling can be heard from within the temple, and rocks and other\n"
 	    "debris start to fall on you. All of a sudden a sphere of force surrounds\n"
@@ -92,15 +93,11 @@ int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 	    "then magicly transported to a different location, or perhaps a different\r\n"
 	    "time, it is hard to tell, but a thick layer of dust covers the room, and a\r\n"
 	    "dank smell overpowers your senses.\r\n",
-	    TRUE,
-	    NULL,
-	    obj2,
-	    NULL,
-	    TO_ROOM);
+	    TRUE, NULL, obj2, NULL, TO_ROOM);
 
 	/* remove stone from room, and hammer from user */
 	unequip_char(ch, WIELD);
-	extract_obj(obj, TRUE);  // Not an arti, but 'in game.'
+	extract_obj(obj, TRUE); // Not an arti, but 'in game.'
 	extract_obj(obj2, TRUE); // Not an arti, but 'in game.'
 
 	/* No.. just moving group members that were in the room with the stone.
@@ -153,7 +150,7 @@ int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 	  }
 	*/
 	from_room = ch->in_room;
-	to_room   = real_room(VROOM_YUANTI_RUBBLEFILLED);
+	to_room = real_room(VROOM_YUANTI_RUBBLEFILLED);
 	while ((ch2 = world[from_room].people) != NULL)
 	{
 		char_from_room(ch2);
@@ -179,7 +176,8 @@ int dragonarmor(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch) && (cmd == CMD_REMOVE))
 	{
-		act("Argh! Too hard to remove $p&n when you're fighting!", TRUE, ch, obj, 0, TO_CHAR);
+		act("Argh! Too hard to remove $p&n when you're fighting!", TRUE, ch, obj, 0,
+		    TO_CHAR);
 		return TRUE;
 	}
 	/*
@@ -194,18 +192,22 @@ int dragonarmor(P_obj obj, P_char ch, int cmd, char *arg)
 	*/
 	if (cmd == CMD_GOTNUKED)
 	{
-		struct proc_data *data  = (struct proc_data *)arg;
-		P_char            nuker = data->victim;
+		struct proc_data *data = (struct proc_data *)arg;
+		P_char nuker = data->victim;
 
-		if ((GET_RACE(nuker) != RACE_DRAGON && GET_RACE(nuker) != RACE_DRAGONKIN) || number(0, 2))
+		if ((GET_RACE(nuker) != RACE_DRAGON && GET_RACE(nuker) != RACE_DRAGONKIN) ||
+		    number(0, 2))
 		{
 			return FALSE;
 		}
 		if (data->flags & SPLDAM_BREATH)
 		{
-			act("$n's $p flares brightly as it absorbs $N's breath.", FALSE, ch, obj, nuker, TO_NOTVICT);
-			act("Your $p flares brightly as it absorbs $N's breath.", FALSE, ch, obj, nuker, TO_CHAR);
-			act("$n's $p flares brightly as it absorbs your breath.", FALSE, ch, obj, nuker, TO_VICT);
+			act("$n's $p flares brightly as it absorbs $N's breath.", FALSE, ch, obj,
+			    nuker, TO_NOTVICT);
+			act("Your $p flares brightly as it absorbs $N's breath.", FALSE, ch, obj,
+			    nuker, TO_CHAR);
+			act("$n's $p flares brightly as it absorbs your breath.", FALSE, ch, obj,
+			    nuker, TO_VICT);
 			return TRUE;
 		}
 		else
@@ -218,12 +220,17 @@ int dragonarmor(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	/* attack the first dragon mob that's in the room...wheeee */
-	for (Dragon_Mob = world[ch->in_room].people; Dragon_Mob; Dragon_Mob = Dragon_Mob->next_in_room)
+	for (Dragon_Mob = world[ch->in_room].people; Dragon_Mob;
+	     Dragon_Mob = Dragon_Mob->next_in_room)
 	{
-		if (((GET_RACE(Dragon_Mob) == RACE_DRAGON) || (GET_RACE(Dragon_Mob) == RACE_DRAGONKIN)) && CAN_SEE(ch, Dragon_Mob))
+		if (((GET_RACE(Dragon_Mob) == RACE_DRAGON) ||
+		     (GET_RACE(Dragon_Mob) == RACE_DRAGONKIN)) &&
+		    CAN_SEE(ch, Dragon_Mob))
 		{
-			act("You notice $N&n, and charge to attack! Banzai!", FALSE, ch, 0, Dragon_Mob, TO_CHAR);
-			act("$n gets an _angry_ look on his face when he sees $N&n and charges into battle!", FALSE, ch, 0, Dragon_Mob, TO_NOTVICT);
+			act("You notice $N&n, and charge to attack! Banzai!", FALSE, ch, 0,
+			    Dragon_Mob, TO_CHAR);
+			act("$n gets an _angry_ look on his face when he sees $N&n and charges into battle!",
+			    FALSE, ch, 0, Dragon_Mob, TO_NOTVICT);
 			set_fighting(ch, Dragon_Mob);
 			return TRUE;
 		}
@@ -234,7 +241,7 @@ int dragonarmor(P_obj obj, P_char ch, int cmd, char *arg)
 /* proc for a hammer named 'squelcher' */
 int squelcher(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int    dam = cmd / 1000;
+	int dam = cmd / 1000;
 	P_char vict;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -266,8 +273,10 @@ int squelcher(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	if ((IS_FIGHTING(ch) && (number(1, 100) < 6)))
 	{
-		act("$n's $q &+Cglows &+Wbrightly&+C, and sends out a wave of energy!", TRUE, ch, obj, 0, TO_ROOM);
-		act("Your $q &+Cglows &+Wbrightly&+C, and sends out a wave of energy!", TRUE, ch, obj, 0, TO_CHAR);
+		act("$n's $q &+Cglows &+Wbrightly&+C, and sends out a wave of energy!", TRUE, ch,
+		    obj, 0, TO_ROOM);
+		act("Your $q &+Cglows &+Wbrightly&+C, and sends out a wave of energy!", TRUE, ch,
+		    obj, 0, TO_CHAR);
 		spell_silence(50, ch, NULL, 0, vict, obj);
 		return TRUE;
 	}

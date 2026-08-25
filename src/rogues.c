@@ -18,17 +18,17 @@
 #include "weather.h"
 
 extern struct str_app_type str_app[];
-extern P_room              world;
+extern P_room world;
 
 void do_slip(P_char ch, char *argument, int cmd)
 {
-	char   obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
-	char   arg[MAX_INPUT_LENGTH];
+	char obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
+	char arg[MAX_INPUT_LENGTH];
 	P_char vict;
-	P_obj  obj, container;
+	P_obj obj, container;
 	P_char t_ch = NULL;
-	int    success, percent, check, bits, bits2;
-	bool   putsuc = FALSE;
+	int success, percent, check, bits, bits2;
+	bool putsuc = FALSE;
 
 	argument = one_argument(argument, obj_name);
 
@@ -42,21 +42,25 @@ void do_slip(P_char ch, char *argument, int cmd)
 	}
 
 	// Are we targeting a person or object?
-	bits  = generic_find(vict_name, FIND_OBJ_INV, ch, &t_ch, &container);
+	bits = generic_find(vict_name, FIND_OBJ_INV, ch, &t_ch, &container);
 	bits2 = generic_find(obj_name, FIND_OBJ_INV, ch, &t_ch, &obj);
 	if ((container = get_obj_in_list_vis(ch, vict_name, ch->carrying)))
 	{
 		if (bits && bits2 && (container->type == ITEM_CONTAINER))
 		{
 			// Will it fit?
-			if (((GET_OBJ_WEIGHT(obj) + container_total_weight(container)) <= container->value[0]) || ((container->value[0] == -1)))
+			if (((GET_OBJ_WEIGHT(obj) + container_total_weight(container)) <=
+			     container->value[0]) ||
+			    ((container->value[0] == -1)))
 			{
 				putsuc = put(ch, obj, container, FALSE);
 				act("You slip $p into $P...", TRUE, ch, obj, container, TO_CHAR);
-				if ((GET_CHAR_SKILL(ch, SKILL_SLIP) - GET_OBJ_WEIGHT(obj)) < number(1, 100))
+				if ((GET_CHAR_SKILL(ch, SKILL_SLIP) - GET_OBJ_WEIGHT(obj)) <
+				    number(1, 100))
 				{
 					send_to_char("But others notice.\r\n", ch);
-					act("You notice $n trying to sneak $p into $s $P.", TRUE, ch, obj, container, TO_NOTVICT);
+					act("You notice $n trying to sneak $p into $s $P.", TRUE,
+					    ch, obj, container, TO_NOTVICT);
 				}
 				else
 				{
@@ -80,7 +84,6 @@ void do_slip(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-
 		/* Check if character can see obj/victim, or if obj is cursed, etc... */
 		if (!*obj_name || !*vict_name)
 		{
@@ -102,7 +105,8 @@ void do_slip(P_char ch, char *argument, int cmd)
 			send_to_char("No one by that name around here.\r\n", ch);
 			return;
 		}
-		if ((IS_NPC(vict) && (GET_RNUM(vict) == real_mobile(20))) || IS_AFFECTED(vict, AFF_WRAITHFORM))
+		if ((IS_NPC(vict) && (GET_RNUM(vict) == real_mobile(20))) ||
+		    IS_AFFECTED(vict, AFF_WRAITHFORM))
 		{
 			send_to_char("They couldn't carry that if they tried.\r\n", ch);
 			return;
@@ -118,7 +122,7 @@ void do_slip(P_char ch, char *argument, int cmd)
 		/* skill check & success check */
 		{
 			percent = (GET_CHAR_SKILL(ch, SKILL_SLIP) - GET_OBJ_WEIGHT(obj));
-			check   = number(1, 100);
+			check = number(1, 100);
 
 			if (IS_FIGHTING(ch))
 			{
@@ -145,14 +149,18 @@ void do_slip(P_char ch, char *argument, int cmd)
 			obj_to_char(obj, vict);
 			// If this is not suppost to be a secretive hand off, uncomment below.
 			// act("$n slips $p to $N.", 1, ch, obj, vict, TO_NOTVICT);
-			act("You successfuly slip $p into $N's pockets!", 0, ch, obj, vict, TO_CHAR);
+			act("You successfuly slip $p into $N's pockets!", 0, ch, obj, vict,
+			    TO_CHAR);
 
 			/* for now repor it anytime */
 			if (IS_TRUSTED(ch) && GET_LEVEL(ch) < OVERLORD)
 			{
-				statuslog(GET_LEVEL(ch), "%s slips %s to %s.", J_NAME(ch), obj->short_description, J_NAME(vict));
-				logit(LOG_WIZ, "%s slips %s to %s.", J_NAME(ch), obj->short_description, J_NAME(vict));
-				sql_log(ch, WIZLOG, "Slips %s to %s", obj->short_description, J_NAME(vict));
+				statuslog(GET_LEVEL(ch), "%s slips %s to %s.", J_NAME(ch),
+					  obj->short_description, J_NAME(vict));
+				logit(LOG_WIZ, "%s slips %s to %s.", J_NAME(ch),
+				      obj->short_description, J_NAME(vict));
+				sql_log(ch, WIZLOG, "Slips %s to %s", obj->short_description,
+					J_NAME(vict));
 			}
 			if (ch != vict)
 			{
@@ -169,8 +177,10 @@ void do_slip(P_char ch, char *argument, int cmd)
 		{
 			// act("The weight of %p proves too much for your slyness.", 0, ch, obj, 0, TO_CHAR);
 			/* an idea: if you want a fail to place the object in the room (a penalty for poor skill) uncomment below */
-			act("You fumble $p as its weight proves too much for your slyness.", 0, ch, obj, 0, TO_CHAR);
-			act("$p falls to the ground as $n slyly looks the other way.", 0, ch, obj, 0, TO_NOTVICT);
+			act("You fumble $p as its weight proves too much for your slyness.", 0, ch,
+			    obj, 0, TO_CHAR);
+			act("$p falls to the ground as $n slyly looks the other way.", 0, ch, obj,
+			    0, TO_NOTVICT);
 			obj_from_char(obj);
 			obj_to_room(obj, ch->in_room);
 

@@ -11,9 +11,15 @@ void set_timer(const char *name) {}
 
 void set_timer(const char *name, int date) {}
 
-int get_timer(const char *name) { return 0; }
+int get_timer(const char *name)
+{
+	return 0;
+}
 #else
-void set_timer(const char *name) { set_timer(name, time(NULL)); }
+void set_timer(const char *name)
+{
+	set_timer(name, time(NULL));
+}
 
 void set_timer(const char *name, int date)
 {
@@ -29,7 +35,8 @@ int get_timer(const char *name)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return FALSE;
 	}

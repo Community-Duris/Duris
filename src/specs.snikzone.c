@@ -11,9 +11,9 @@
 
 int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int    incombat;
-	int    is_charged;
-	char   can_use, *arg2;
+	int incombat;
+	int is_charged;
+	char can_use, *arg2;
 	P_char victim;
 
 	incombat = (cmd / 1000);
@@ -23,7 +23,9 @@ int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	if (!OBJ_WORN(obj))
 		return FALSE;
-	can_use = ((obj->loc.wearing->equipment[WIELD] == obj) ? WIELD : (obj->loc.wearing->equipment[SECONDARY_WEAPON] == obj) ? SECONDARY_WEAPON : 0);
+	can_use = ((obj->loc.wearing->equipment[WIELD] == obj)		  ? WIELD :
+		   (obj->loc.wearing->equipment[SECONDARY_WEAPON] == obj) ? SECONDARY_WEAPON :
+									    0);
 	if (!can_use)
 		return FALSE;
 	is_charged = IS_OBJ_STAT(obj, ITEM_LIT);
@@ -34,8 +36,10 @@ int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			act("$n says something to $p&n.", TRUE, ch, obj, 0, TO_ROOM);
 			act("You say 'frost' to $p&n.", TRUE, ch, obj, 0, TO_CHAR);
-			act("$n's $q &+Lhums loudly, and becomes &+Bbitterly &+Ccold&+W!&n", TRUE, ch, obj, 0, TO_ROOM);
-			act("Your $q &+Lhums loudly, and becomes &+Bbitterly &+Ccold&+W!&n", TRUE, ch, obj, 0, TO_CHAR);
+			act("$n's $q &+Lhums loudly, and becomes &+Bbitterly &+Ccold&+W!&n", TRUE,
+			    ch, obj, 0, TO_ROOM);
+			act("Your $q &+Lhums loudly, and becomes &+Bbitterly &+Ccold&+W!&n", TRUE,
+			    ch, obj, 0, TO_CHAR);
 			spell_coldshield(50, ch, NULL, 0, ch, obj);
 			REMOVE_BIT(obj->extra_flags, ITEM_LIT);
 			return TRUE;
@@ -46,8 +50,10 @@ int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				act("$n says something to $p&n.", TRUE, ch, obj, 0, TO_ROOM);
 				act("You say 'eld' to $p&n.", TRUE, ch, obj, 0, TO_CHAR);
-				act("$n's $q &+Lhums loudly, and becomes &+Rscorching &+Yhot&+W!&n", TRUE, ch, obj, 0, TO_ROOM);
-				act("Your $q &+Lhums loudly, and becomes &+Rscorching &+Yhot&+W!&n", TRUE, ch, obj, 0, TO_CHAR);
+				act("$n's $q &+Lhums loudly, and becomes &+Rscorching &+Yhot&+W!&n",
+				    TRUE, ch, obj, 0, TO_ROOM);
+				act("Your $q &+Lhums loudly, and becomes &+Rscorching &+Yhot&+W!&n",
+				    TRUE, ch, obj, 0, TO_CHAR);
 				spell_fireshield(50, ch, NULL, 0, ch, obj);
 				REMOVE_BIT(obj->extra_flags, ITEM_LIT);
 				return TRUE;
@@ -63,8 +69,10 @@ int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (number(1, 100) == 1)
 		{
-			act("$p &+Lhums softly as it strikes &+W$N&n", TRUE, 0, obj, victim, TO_ROOM);
-			act("$p &+Lhums softly as it strikes &+W_YOU_&n", TRUE, victim, obj, 0, TO_CHAR);
+			act("$p &+Lhums softly as it strikes &+W$N&n", TRUE, 0, obj, victim,
+			    TO_ROOM);
+			act("$p &+Lhums softly as it strikes &+W_YOU_&n", TRUE, victim, obj, 0,
+			    TO_CHAR);
 			SET_BIT(obj->extra_flags, ITEM_LIT);
 			return TRUE;
 		}
@@ -78,11 +86,14 @@ int demon_chick(P_char ch, P_char pl, int cmd, char *arg)
 		return FALSE;
 	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch))
 		return FALSE;
-	if ((cmd == CMD_GET) && pl && (pl != ch) && (isname("statue", arg) || isname("golden", arg) || isname("totem", arg) || isname("all", arg)))
+	if ((cmd == CMD_GET) && pl && (pl != ch) &&
+	    (isname("statue", arg) || isname("golden", arg) || isname("totem", arg) ||
+	     isname("all", arg)))
 	{
 		do_action(ch, 0, CMD_CACKLE);
 		mobsay(ch, "I'm free! And now you puny mortals will pay with your lives!");
-		act("&+LGouts of &+Wwhite hot&+L gases pour out from &n$n&n", TRUE, ch, 0, 0, TO_ROOM);
+		act("&+LGouts of &+Wwhite hot&+L gases pour out from &n$n&n", TRUE, ch, 0, 0,
+		    TO_ROOM);
 		spell_incendiary_cloud(31, ch, NULL, 0, ch, 0);
 		return TRUE;
 	}
@@ -92,8 +103,8 @@ int demon_chick(P_char ch, P_char pl, int cmd, char *arg)
 int dagger_submission(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char victim;
-	P_obj  junk_obj;
-	char   can_use;
+	P_obj junk_obj;
+	char can_use;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -101,7 +112,9 @@ int dagger_submission(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	if (!OBJ_WORN(obj))
 		return FALSE;
-	can_use = ((obj->loc.wearing->equipment[WIELD] == obj) ? WIELD : (obj->loc.wearing->equipment[SECONDARY_WEAPON] == obj) ? SECONDARY_WEAPON : 0);
+	can_use = ((obj->loc.wearing->equipment[WIELD] == obj)		  ? WIELD :
+		   (obj->loc.wearing->equipment[SECONDARY_WEAPON] == obj) ? SECONDARY_WEAPON :
+									    0);
 	if (!can_use)
 		return FALSE;
 	if (cmd == CMD_BACKSTAB)
@@ -126,33 +139,33 @@ int wristthrow_and_gore(P_char ch, P_char pl, int cmd, char *arg)
 		return FALSE;
 	switch (number(1, 2))
 	{
-		case 1:
+	case 1:
+	{
+		if (!number(0, 20))
 		{
-			if (!number(0, 20))
-			{
-				act("<to the victim>", TRUE, pl, 0, ch, TO_CHAR);
-				act("<to the thrower>", TRUE, ch, 0, pl, TO_CHAR);
-				act("<to the room>", TRUE, ch, 0, pl, TO_ROOM);
-				damage(ch, pl, dice(3, 10), 0);
-				CharWait(ch, PULSE_VIOLENCE * 3);
-				CharWait(pl, PULSE_VIOLENCE * 2);
-				SET_POS(pl, GET_STAT(pl) + POS_PRONE);
-				return TRUE;
-			}
+			act("<to the victim>", TRUE, pl, 0, ch, TO_CHAR);
+			act("<to the thrower>", TRUE, ch, 0, pl, TO_CHAR);
+			act("<to the room>", TRUE, ch, 0, pl, TO_ROOM);
+			damage(ch, pl, dice(3, 10), 0);
+			CharWait(ch, PULSE_VIOLENCE * 3);
+			CharWait(pl, PULSE_VIOLENCE * 2);
+			SET_POS(pl, GET_STAT(pl) + POS_PRONE);
+			return TRUE;
 		}
-		break;
-		case 2:
+	}
+	break;
+	case 2:
+	{
+		if (!number(0, 20))
 		{
-			if (!number(0, 20))
-			{
-				act("to vict", TRUE, pl, 0, ch, TO_CHAR);
-				act("to char", TRUE, ch, 0, pl, TO_CHAR);
-				act("to room", TRUE, ch, 0, pl, TO_ROOM);
-				CharWait(ch, PULSE_VIOLENCE * 2);
-				damage(ch, pl, dice(5, 20), 0);
-				return TRUE;
-			}
+			act("to vict", TRUE, pl, 0, ch, TO_CHAR);
+			act("to char", TRUE, ch, 0, pl, TO_CHAR);
+			act("to room", TRUE, ch, 0, pl, TO_ROOM);
+			CharWait(ch, PULSE_VIOLENCE * 2);
+			damage(ch, pl, dice(5, 20), 0);
+			return TRUE;
 		}
+	}
 	}
 	return FALSE;
 }

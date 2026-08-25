@@ -36,64 +36,62 @@
 /*
  * external variables
  */
-extern Skill             skills[];
+extern Skill skills[];
 extern struct zone_data *zone_table;
-extern P_char            character_list;
-extern P_desc            descriptor_list;
-extern P_index           mob_index;
-extern P_index           obj_index;
-extern P_obj             object_list;
-extern P_room            world;
-extern char              debug_mode;
-extern const char       *class_names[];
-extern const char       *race_types[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern char debug_mode;
+extern const char *class_names[];
+extern const char *race_types[];
 
 // extern const int material_absorbtion[][];
 extern const struct stat_data stat_factor[];
-extern float                  fake_sqrt_table[];
-extern int                    pulse;
-extern int                    arena_hometown_location[];
-extern struct arena_data      arena;
-extern struct agi_app_type    agi_app[];
-extern struct dex_app_type    dex_app[];
-extern struct message_list    fight_messages[];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone_table;
-extern int                    top_of_zone_table;
-extern struct zone_data      *zone_table;
-extern struct mm_ds          *dead_mob_pool;
-extern struct mm_ds          *dead_pconly_pool;
-extern char                  *random_zone;
-extern struct random_spells   spells_data[];
-extern const int              rev_dir[];
+extern float fake_sqrt_table[];
+extern int pulse;
+extern int arena_hometown_location[];
+extern struct arena_data arena;
+extern struct agi_app_type agi_app[];
+extern struct dex_app_type dex_app[];
+extern struct message_list fight_messages[];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
+extern int top_of_zone_table;
+extern struct zone_data *zone_table;
+extern struct mm_ds *dead_mob_pool;
+extern struct mm_ds *dead_pconly_pool;
+extern char *random_zone;
+extern struct random_spells spells_data[];
+extern const int rev_dir[];
 
-int  find_map_place();
+int find_map_place();
 void writeCorpseNumbs(int start, int end, int map);
-int  find_a_zone();
-int  connect_lab(int room, int dir);
-int  connect_other(int room);
-int  dir_to_num(int dir);
+int find_a_zone();
+int connect_lab(int room, int dir);
+int connect_other(int room);
+int dir_to_num(int dir);
 
 int loaded_potion = 0;
 
 const int theme_rooms[6][10] = {
-	{19500, 19501, 19502, 19503, 19504, 19505,     0,     0,     0,     0}, // grave theme
-	{19506, 19507, 19508, 19509, 19510, 19511, 19512, 19513, 19514, 19515}, // glass theme
-	{19516, 19517, 19518, 19519, 19520, 19521, 19522,     0,     0,     0}, // glass theme
-	{19523, 19524,     0,     0,     0,     0,     0,     0,     0,     0}, // tunnel
-	{    0,     0,     0,     0,     0,     0,     0,     0,     0,     0},
+	{ 19500, 19501, 19502, 19503, 19504, 19505, 0, 0, 0, 0 }, // grave theme
+	{ 19506, 19507, 19508, 19509, 19510, 19511, 19512, 19513, 19514, 19515 }, // glass theme
+	{ 19516, 19517, 19518, 19519, 19520, 19521, 19522, 0, 0, 0 }, // glass theme
+	{ 19523, 19524, 0, 0, 0, 0, 0, 0, 0, 0 }, // tunnel
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
-const int theme_obj[6][6] = {
-	{19500, 19501, 19502, 19503, 19504, 19505}, // grave theme
-	{19500, 19501, 19502, 19503, 19504, 19505}, // glass theme
-	{19500, 19501, 19502, 19503, 19504, 19505}, // glass theme
-	{    0,     0,     0,     0,     0,     0},
-	{    0,     0,     0,     0,     0,     0},
-	{    0,     0,     0,     0,     0,     0}
-};
-const int theme_entrance_obj[10] = {19507, 19511, 19515, 0, 0, 0, 0, 0, 0, 0};
+const int theme_obj[6][6] = { { 19500, 19501, 19502, 19503, 19504, 19505 }, // grave theme
+			      { 19500, 19501, 19502, 19503, 19504, 19505 }, // glass theme
+			      { 19500, 19501, 19502, 19503, 19504, 19505 }, // glass theme
+			      { 0, 0, 0, 0, 0, 0 },
+			      { 0, 0, 0, 0, 0, 0 },
+			      { 0, 0, 0, 0, 0, 0 } };
+const int theme_entrance_obj[10] = { 19507, 19511, 19515, 0, 0, 0, 0, 0, 0, 0 };
 
 // int      generic_room_start = 100000;
 // int      generic_room_stop = 105000;
@@ -101,7 +99,7 @@ int random_room_current = RANDOM_START_ROOM;
 // int      MAX_GENERIC_ROOM = 50;
 int LOADED_RANDOM_ZONES = 0;
 
-struct random_zone  random_zone_data[MAX_RANDOM_ZONES + 1];
+struct random_zone random_zone_data[MAX_RANDOM_ZONES + 1];
 struct random_quest random_quest_data[80];
 
 int random_entrance_vnum(int rroom)
@@ -114,7 +112,8 @@ int random_entrance_vnum(int rroom)
 
 	for (int i = 0; i <= LOADED_RANDOM_ZONES; i++)
 	{
-		if (world[rroom].number >= random_zone_data[i].first_room && world[rroom].number <= random_zone_data[i].last_room)
+		if (world[rroom].number >= random_zone_data[i].first_room &&
+		    world[rroom].number <= random_zone_data[i].last_room)
 			return random_zone_data[i].map_room;
 	}
 
@@ -133,25 +132,25 @@ void add_quest_data(char *map)
 
 void create_zone(int theme, int map_room1, int map_room2, int level_range, int rooms)
 {
-	int    room_nr = 0, room2_nr = 0;
-	int    temp_room     = 0;
-	int    i             = 0;
-	int    zz            = 0;
-	int    map_room      = 0;
-	int    direction     = 0;
-	int    valid_to_room = 0;
-	int    parent_room   = 0;
-	int    number_mobs   = 0;
-	int    chest_mob     = 0;
-	int    tries         = 0;
-	P_obj  chest_obj;
-	P_obj  key_obj;
+	int room_nr = 0, room2_nr = 0;
+	int temp_room = 0;
+	int i = 0;
+	int zz = 0;
+	int map_room = 0;
+	int direction = 0;
+	int valid_to_room = 0;
+	int parent_room = 0;
+	int number_mobs = 0;
+	int chest_mob = 0;
+	int tries = 0;
+	P_obj chest_obj;
+	P_obj key_obj;
 	P_char mob;
-	P_obj  tomb;
-	P_obj  random_zone_obj;
-	P_obj  sign;
-	char   buf1[MAX_STRING_LENGTH];
-	bool   has_epic = false;
+	P_obj tomb;
+	P_obj random_zone_obj;
+	P_obj sign;
+	char buf1[MAX_STRING_LENGTH];
+	bool has_epic = false;
 
 	// Let's try to find a map room
 	if (map_room1 == 999)
@@ -179,7 +178,7 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 	}
 
 	random_zone_data[LOADED_RANDOM_ZONES].map_room = map_room;
-	random_zone_data[LOADED_RANDOM_ZONES].theme    = theme;
+	random_zone_data[LOADED_RANDOM_ZONES].theme = theme;
 
 	// Create max MAX_GENERIC_ROOMS rooms, but somewhat random numbers.
 	if (random_room_current + MAX_RANDOM_ROOMS > RANDOM_END_ROOM)
@@ -210,14 +209,14 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 			else
 				temp_room = real_room(theme_rooms[theme][1]);
 
-		world[room_nr]        = world[temp_room];
+		world[room_nr] = world[temp_room];
 		world[room_nr].number = random_room_current;
 
 		if (!random_zone_data[LOADED_RANDOM_ZONES].first_room)
 			random_zone_data[LOADED_RANDOM_ZONES].first_room = random_room_current;
 
 		random_zone_data[LOADED_RANDOM_ZONES].last_room = random_room_current;
-		room_nr                                         = real_room(random_room_current);
+		room_nr = real_room(random_room_current);
 
 		// Make connect the first room to map!
 		if (map_room)
@@ -233,14 +232,25 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 			{
 				if (world[map_room].dir_option[DIR_DOWN])
 				{
-					world[map_room].dir_option[DIR_DOWN]->exit_info |= EX_SECRET;
+					world[map_room].dir_option[DIR_DOWN]->exit_info |=
+						EX_SECRET;
 
-					SET_BIT(world[map_room].dir_option[DIR_DOWN]->exit_info, EX_ISDOOR);
-					world[map_room].dir_option[DIR_DOWN]->keyword = str_dup("trapdoor");
-					SET_BIT(world[map_room].dir_option[DIR_DOWN]->exit_info, EX_CLOSED);
-					SET_BIT(world[room_nr].dir_option[rev_dir[DIR_DOWN]]->exit_info, EX_ISDOOR);
-					world[room_nr].dir_option[rev_dir[DIR_DOWN]]->keyword = str_dup("trapdoor");
-					SET_BIT(world[room_nr].dir_option[rev_dir[DIR_DOWN]]->exit_info, EX_CLOSED);
+					SET_BIT(world[map_room].dir_option[DIR_DOWN]->exit_info,
+						EX_ISDOOR);
+					world[map_room].dir_option[DIR_DOWN]->keyword =
+						str_dup("trapdoor");
+					SET_BIT(world[map_room].dir_option[DIR_DOWN]->exit_info,
+						EX_CLOSED);
+					SET_BIT(world[room_nr]
+							.dir_option[rev_dir[DIR_DOWN]]
+							->exit_info,
+						EX_ISDOOR);
+					world[room_nr].dir_option[rev_dir[DIR_DOWN]]->keyword =
+						str_dup("trapdoor");
+					SET_BIT(world[room_nr]
+							.dir_option[rev_dir[DIR_DOWN]]
+							->exit_info,
+						EX_CLOSED);
 				}
 				tomb = read_object(real_object(theme_entrance_obj[theme]), REAL);
 				if (!tomb)
@@ -294,13 +304,19 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 			if (!number(0, 9) && i > 1)
 			{
 				world[parent_room].dir_option[direction]->exit_info |= EX_SECRET;
-				SET_BIT(world[parent_room].dir_option[direction]->exit_info, EX_ISDOOR);
-				world[parent_room].dir_option[direction]->keyword = str_dup("secret");
-				SET_BIT(world[parent_room].dir_option[direction]->exit_info, EX_CLOSED);
+				SET_BIT(world[parent_room].dir_option[direction]->exit_info,
+					EX_ISDOOR);
+				world[parent_room].dir_option[direction]->keyword =
+					str_dup("secret");
+				SET_BIT(world[parent_room].dir_option[direction]->exit_info,
+					EX_CLOSED);
 
-				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info, EX_ISDOOR);
-				world[room_nr].dir_option[rev_dir[direction]]->keyword = str_dup("secret");
-				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info, EX_CLOSED);
+				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info,
+					EX_ISDOOR);
+				world[room_nr].dir_option[rev_dir[direction]]->keyword =
+					str_dup("secret");
+				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info,
+					EX_CLOSED);
 
 				world[parent_room].dir_option[direction]->exit_info |= EX_SECRET;
 
@@ -312,21 +328,29 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 			}
 			else if (!number(0, 9) && i > 1)
 			{ // Adding some doors to zone!
-				SET_BIT(world[parent_room].dir_option[direction]->exit_info, EX_ISDOOR);
+				SET_BIT(world[parent_room].dir_option[direction]->exit_info,
+					EX_ISDOOR);
 				if (direction == 4 || direction == 5)
-					world[parent_room].dir_option[direction]->keyword = str_dup("trapdoor");
+					world[parent_room].dir_option[direction]->keyword =
+						str_dup("trapdoor");
 				else
-					world[parent_room].dir_option[direction]->keyword = str_dup("door");
+					world[parent_room].dir_option[direction]->keyword =
+						str_dup("door");
 
-				SET_BIT(world[parent_room].dir_option[direction]->exit_info, EX_CLOSED);
+				SET_BIT(world[parent_room].dir_option[direction]->exit_info,
+					EX_CLOSED);
 
-				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info, EX_ISDOOR);
+				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info,
+					EX_ISDOOR);
 
 				if (direction == 4 || direction == 5)
-					world[room_nr].dir_option[rev_dir[direction]]->keyword = str_dup("trapdoor");
+					world[room_nr].dir_option[rev_dir[direction]]->keyword =
+						str_dup("trapdoor");
 				else
-					world[room_nr].dir_option[rev_dir[direction]]->keyword = str_dup("door");
-				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info, EX_CLOSED);
+					world[room_nr].dir_option[rev_dir[direction]]->keyword =
+						str_dup("door");
+				SET_BIT(world[room_nr].dir_option[rev_dir[direction]]->exit_info,
+					EX_CLOSED);
 			}
 
 			zz = 0;
@@ -335,17 +359,20 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 			{
 				if (level_range == 999)
 				{
-					mob = (P_char)create_random_mob(theme, (int)(i * 2 + number(1, 7)));
+					mob = (P_char)create_random_mob(
+						theme, (int)(i * 2 + number(1, 7)));
 				}
 				else
 				{
-					mob = (P_char)create_random_mob(theme, (int)(level_range + number(1, 2)));
+					mob = (P_char)create_random_mob(
+						theme, (int)(level_range + number(1, 2)));
 				}
 				if (mob)
 				{
 					char_from_room(mob);
 					char_to_room(mob, parent_room, 0);
-					GET_HOME(mob) = GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(mob) = world[parent_room].number;
+					GET_HOME(mob) = GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(
+						mob) = world[parent_room].number;
 					number_mobs++;
 				}
 			}
@@ -358,7 +385,8 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 	// Let's add a chest with stuff at the last room, once in a while!
 	if (map_room2 != 999)
 	{
-		connect_rooms(world[map_room2].number, random_zone_data[LOADED_RANDOM_ZONES].last_room, DIR_DOWN);
+		connect_rooms(world[map_room2].number,
+			      random_zone_data[LOADED_RANDOM_ZONES].last_room, DIR_DOWN);
 		world[map_room2].sector_type = 34;
 	}
 
@@ -372,7 +400,8 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 		}
 		else
 		{
-			obj_to_room(chest_obj, real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room));
+			obj_to_room(chest_obj,
+				    real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room));
 			random_zone_data[LOADED_RANDOM_ZONES].chest = 1;
 
 			key_obj = read_object(real_object(19509), REAL);
@@ -383,12 +412,15 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 			}
 			else
 			{
-				obj_to_room(key_obj, real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room - number(0, i - 1)));
+				obj_to_room(
+					key_obj,
+					real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room -
+						  number(0, i - 1)));
 
-				key_obj->value[1]   = 99;
+				key_obj->value[1] = 99;
 				chest_obj->value[2] = obj_index[key_obj->R_num].virtual_number;
 				// fill chest with stuff!
-				random_zone_obj           = read_object(real_object(3), REAL);
+				random_zone_obj = read_object(real_object(3), REAL);
 				random_zone_obj->value[3] = number(1, 5) * i * 5;
 				SET_BIT(chest_obj->extra_flags, ITEM_SECRET);
 				SET_BIT(key_obj->extra_flags, ITEM_SECRET);
@@ -396,7 +428,8 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 
 				while (!number(0, 1))
 				{
-					random_zone_obj = read_object(real_object(theme_obj[theme][number(0, 5)]), REAL);
+					random_zone_obj = read_object(
+						real_object(theme_obj[theme][number(0, 5)]), REAL);
 					SET_BIT(random_zone_obj->extra_flags, ITEM_SECRET);
 					obj_to_obj(random_zone_obj, chest_obj);
 				}
@@ -407,35 +440,41 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 					wizlog(56, "Loaded a potion in chest");
 					switch (number(0, 10))
 					{
-						case 0:
-						case 1:
-						case 2:
-						case 3:
-						case 4:
-							random_zone_obj                                  = read_object(51004, VIRTUAL);
-							random_zone_data[LOADED_RANDOM_ZONES].lvl_potion = 51;
-							break;
-						case 5:
-						case 6:
-							random_zone_obj                                  = read_object(25106, VIRTUAL);
-							random_zone_data[LOADED_RANDOM_ZONES].lvl_potion = 52;
-							break;
-						case 7:
-							random_zone_obj                                  = read_object(80831, VIRTUAL);
-							random_zone_data[LOADED_RANDOM_ZONES].lvl_potion = 53;
-							break;
-						case 8:
-							random_zone_obj                                  = read_object(26661, VIRTUAL);
-							random_zone_data[LOADED_RANDOM_ZONES].lvl_potion = 54;
-							break;
-						case 9:
-							random_zone_obj                                  = read_object(25759, VIRTUAL);
-							random_zone_data[LOADED_RANDOM_ZONES].lvl_potion = 55;
-							break;
-						case 10:
-							random_zone_obj                                  = read_object(45534, VIRTUAL);
-							random_zone_data[LOADED_RANDOM_ZONES].lvl_potion = 56;
-							break;
+					case 0:
+					case 1:
+					case 2:
+					case 3:
+					case 4:
+						random_zone_obj = read_object(51004, VIRTUAL);
+						random_zone_data[LOADED_RANDOM_ZONES].lvl_potion =
+							51;
+						break;
+					case 5:
+					case 6:
+						random_zone_obj = read_object(25106, VIRTUAL);
+						random_zone_data[LOADED_RANDOM_ZONES].lvl_potion =
+							52;
+						break;
+					case 7:
+						random_zone_obj = read_object(80831, VIRTUAL);
+						random_zone_data[LOADED_RANDOM_ZONES].lvl_potion =
+							53;
+						break;
+					case 8:
+						random_zone_obj = read_object(26661, VIRTUAL);
+						random_zone_data[LOADED_RANDOM_ZONES].lvl_potion =
+							54;
+						break;
+					case 9:
+						random_zone_obj = read_object(25759, VIRTUAL);
+						random_zone_data[LOADED_RANDOM_ZONES].lvl_potion =
+							55;
+						break;
+					case 10:
+						random_zone_obj = read_object(45534, VIRTUAL);
+						random_zone_data[LOADED_RANDOM_ZONES].lvl_potion =
+							56;
+						break;
 					}
 
 					SET_BIT(random_zone_obj->extra_flags, ITEM_SECRET);
@@ -445,12 +484,18 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 
 				while (chest_mob < 1)
 				{
-					mob = (P_char)create_random_mob(theme, (int)(i * 2 + number(1, 7)));
+					mob = (P_char)create_random_mob(
+						theme, (int)(i * 2 + number(1, 7)));
 					if (mob)
 					{
 						// wizlog(56, "extra mob named: %s", GET_NAME(mob));
 						char_from_room(mob);
-						char_to_room(mob, real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room), 0);
+						char_to_room(
+							mob,
+							real_room(
+								random_zone_data[LOADED_RANDOM_ZONES]
+									.last_room),
+							0);
 						SET_BIT(mob->specials.act, ACT_SENTINEL);
 						REMOVE_BIT(mob->specials.act, ACT_HUNTER);
 
@@ -464,17 +509,29 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 						if (!has_epic && i > 19)
 						{
 							// add epic stone to last mob
-							P_obj epic_stone_obj = read_object(EPIC_SMALL_STONE, VIRTUAL);
+							P_obj epic_stone_obj = read_object(
+								EPIC_SMALL_STONE, VIRTUAL);
 							// should payout at least 1 epic, max of 5
-							epic_stone_obj->value[0] = BOUNDED(1, (int)((i - 25) / 2), 3) + number(0, 1);
+							epic_stone_obj->value[0] =
+								BOUNDED(1, (int)((i - 25) / 2), 3) +
+								number(0, 1);
 							// intended group size from 3-6 based on size of zone
-							epic_stone_obj->value[1] = BOUNDED(3, (int)((i - 25) / 2), 6);
-							epic_stone_obj->value[2] = zone_table[world[real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room)].zone].number;
+							epic_stone_obj->value[1] =
+								BOUNDED(3, (int)((i - 25) / 2), 6);
+							epic_stone_obj->value[2] =
+								zone_table
+									[world[real_room(
+										       random_zone_data[LOADED_RANDOM_ZONES]
+											       .last_room)]
+										 .zone]
+										.number;
 							obj_to_char(epic_stone_obj, mob);
 							has_epic = true;
 						}
 
-						GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(mob) = random_zone_data[LOADED_RANDOM_ZONES].last_room;
+						GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(mob) =
+							random_zone_data[LOADED_RANDOM_ZONES]
+								.last_room;
 						number_mobs++;
 					}
 					if (number(0, 1))
@@ -486,7 +543,6 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 
 	if (map_room2 == 999)
 	{
-
 		// Ok let's give the people a clue how hard this will be!
 		sign = read_object(real_object(19510), REAL);
 		if (!sign)
@@ -497,16 +553,25 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 		else
 		{
 			if (i > 1 && i < 10)
-				snprintf(buf1, MAX_STRING_LENGTH, "&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for lowbie groups&+W'&n ");
+				snprintf(
+					buf1, MAX_STRING_LENGTH,
+					"&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for lowbie groups&+W'&n ");
 			else if (i > 9 && i < 20)
-				snprintf(buf1, MAX_STRING_LENGTH, "&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for mid leveled groups&+W'&n ");
+				snprintf(
+					buf1, MAX_STRING_LENGTH,
+					"&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for mid leveled groups&+W'&n ");
 			else if (i > 19 && i < 30)
-				snprintf(buf1, MAX_STRING_LENGTH, "&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for &+rsmall&+L high leveled groups towards the end&+W'&n ");
+				snprintf(
+					buf1, MAX_STRING_LENGTH,
+					"&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for &+rsmall&+L high leveled groups towards the end&+W'&n ");
 			else
-				snprintf(buf1, MAX_STRING_LENGTH, "&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for &+RBIG&+L high leveled groups towards the end&+W'&n ");
+				snprintf(
+					buf1, MAX_STRING_LENGTH,
+					"&+WA huge sign with the engraving '&+RWarning, &+Lthis zone should be a challenge for &+RBIG&+L high leveled groups towards the end&+W'&n ");
 
 			set_long_description(sign, buf1);
-			obj_to_room(sign, real_room(random_zone_data[LOADED_RANDOM_ZONES].first_room));
+			obj_to_room(sign,
+				    real_room(random_zone_data[LOADED_RANDOM_ZONES].first_room));
 		}
 		// Yay another zone loaded!
 
@@ -516,7 +581,8 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 		obj_to_room(chest_obj, real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room));
 	}
 
-	wizlog(56, "Random zone created at %d with %d rooms and %d mobs", random_zone_data[LOADED_RANDOM_ZONES].map_room, i, number_mobs);
+	wizlog(56, "Random zone created at %d with %d rooms and %d mobs",
+	       random_zone_data[LOADED_RANDOM_ZONES].map_room, i, number_mobs);
 
 	LOADED_RANDOM_ZONES++;
 }
@@ -543,26 +609,26 @@ int find_random_zone_map_room(int room_number)
 
 void display_random_zones(P_char ch)
 {
-
-	int    i = 0;
-	char   buf[20000];
-	char   temp_buf[20000];
-	char   color_buf[20];
-	int    start_room = 0;
-	int    end_room   = 0;
-	int    j          = 0;
-	int    mob        = 0;
-	int    player     = 0;
-	int    unknown    = 0;
+	int i = 0;
+	char buf[20000];
+	char temp_buf[20000];
+	char color_buf[20];
+	int start_room = 0;
+	int end_room = 0;
+	int j = 0;
+	int mob = 0;
+	int player = 0;
+	int unknown = 0;
 	P_char temp_ch, next;
 
 	snprintf(buf, 20000, "\t\t\t\t&+L-=&+WInitialized &+Lrandom&+W zones&+L=-&n\r\n\r\n");
 
 	while (i < LOADED_RANDOM_ZONES)
 	{
-		mob    = 0;
+		mob = 0;
 		player = 0;
-		if (random_zone_data[i].first_room && random_zone_data[i].last_room && random_zone_data[i].map_room)
+		if (random_zone_data[i].first_room && random_zone_data[i].last_room &&
+		    random_zone_data[i].map_room)
 		{
 			j = random_zone_data[i].first_room;
 			while (j <= random_zone_data[i].last_room)
@@ -589,54 +655,32 @@ void display_random_zones(P_char ch)
 
 			if (god_check(GET_NAME(ch)))
 			{
-				snprintf(temp_buf,
-				         20000,
-				         "&+W%2d %sTheme:&+W%2d %sRoom range:(&+W%d%s->&+W%d%s) Total:&+W%2d%s Map room:&+W%7d %sPlayers:%s%2d %sMobs:&+W%2d %sChest:&+W%d %sPotion:&+W%d\r\n",
-				         i + 1,
-				         color_buf,
-				         random_zone_data[i].theme,
-				         color_buf,
-				         random_zone_data[i].first_room,
-				         color_buf,
-				         random_zone_data[i].last_room,
-				         color_buf,
-				         random_zone_data[i].last_room - random_zone_data[i].first_room,
-				         color_buf,
-				         random_zone_data[i].map_room,
-				         color_buf,
-				         player > 0 ? "&+G" : "&+W",
-				         player,
-				         color_buf,
-				         mob,
-				         color_buf,
-				         random_zone_data[i].chest,
-				         color_buf,
-				         random_zone_data[i].lvl_potion);
+				snprintf(
+					temp_buf, 20000,
+					"&+W%2d %sTheme:&+W%2d %sRoom range:(&+W%d%s->&+W%d%s) Total:&+W%2d%s Map room:&+W%7d %sPlayers:%s%2d %sMobs:&+W%2d %sChest:&+W%d %sPotion:&+W%d\r\n",
+					i + 1, color_buf, random_zone_data[i].theme, color_buf,
+					random_zone_data[i].first_room, color_buf,
+					random_zone_data[i].last_room, color_buf,
+					random_zone_data[i].last_room -
+						random_zone_data[i].first_room,
+					color_buf, random_zone_data[i].map_room, color_buf,
+					player > 0 ? "&+G" : "&+W", player, color_buf, mob,
+					color_buf, random_zone_data[i].chest, color_buf,
+					random_zone_data[i].lvl_potion);
 			}
 			else
 			{
-				snprintf(temp_buf,
-				         20000,
-				         "&+W%2d %sTheme:&+W%2d %sRoom range:(&+W%d%s->&+W%d%s) Total:&+W%2d%s Map room:&+W%7d %sPlayers:%s%2d %sMobs:&+W%2d %sChest:&+W%d %sPotion:&+W??\r\n",
-				         i + 1,
-				         color_buf,
-				         random_zone_data[i].theme,
-				         color_buf,
-				         random_zone_data[i].first_room,
-				         color_buf,
-				         random_zone_data[i].last_room,
-				         color_buf,
-				         random_zone_data[i].last_room - random_zone_data[i].first_room,
-				         color_buf,
-				         random_zone_data[i].map_room,
-				         color_buf,
-				         player > 0 ? "&+G" : "&+W",
-				         player,
-				         color_buf,
-				         mob,
-				         color_buf,
-				         random_zone_data[i].chest,
-				         color_buf);
+				snprintf(
+					temp_buf, 20000,
+					"&+W%2d %sTheme:&+W%2d %sRoom range:(&+W%d%s->&+W%d%s) Total:&+W%2d%s Map room:&+W%7d %sPlayers:%s%2d %sMobs:&+W%2d %sChest:&+W%d %sPotion:&+W??\r\n",
+					i + 1, color_buf, random_zone_data[i].theme, color_buf,
+					random_zone_data[i].first_room, color_buf,
+					random_zone_data[i].last_room, color_buf,
+					random_zone_data[i].last_room -
+						random_zone_data[i].first_room,
+					color_buf, random_zone_data[i].map_room, color_buf,
+					player > 0 ? "&+G" : "&+W", player, color_buf, mob,
+					color_buf, random_zone_data[i].chest, color_buf);
 			}
 			strcat(buf, temp_buf);
 		}
@@ -645,7 +689,9 @@ void display_random_zones(P_char ch)
 	}
 
 	send_to_char(buf, ch);
-	send_to_char("\r\n   &+yNo mobs left in zone(done)&n, &+LMobs left in zone(not done)&n, &+YCharacter(s) in zone(beeing done)&n\r\n", ch);
+	send_to_char(
+		"\r\n   &+yNo mobs left in zone(done)&n, &+LMobs left in zone(not done)&n, &+YCharacter(s) in zone(beeing done)&n\r\n",
+		ch);
 }
 
 int find_map_place()
@@ -655,14 +701,17 @@ int find_map_place()
 	int tries = 0;
 
 	start = real_room(SURFACE_MAP_START);
-	end   = real_room(SURFACE_MAP_END);
+	end = real_room(SURFACE_MAP_END);
 
 	do
 	{
 		to_room = number(start, end);
-	} while ((IS_ROOM(to_room, ROOM_PRIVATE | ROOM_NO_TELEPORT) || PRIVATE_ZONE(to_room) || world[to_room].dir_option[DIR_DOWN] || IS_WATER_ROOM(to_room) ||
-	          world[to_room].sector_type == SECT_MOUNTAIN || world[to_room].sector_type == SECT_UNDRWLD_MOUNTAIN || world[to_room].sector_type == SECT_OCEAN) &&
-	         tries++ < 1000);
+	} while ((IS_ROOM(to_room, ROOM_PRIVATE | ROOM_NO_TELEPORT) || PRIVATE_ZONE(to_room) ||
+		  world[to_room].dir_option[DIR_DOWN] || IS_WATER_ROOM(to_room) ||
+		  world[to_room].sector_type == SECT_MOUNTAIN ||
+		  world[to_room].sector_type == SECT_UNDRWLD_MOUNTAIN ||
+		  world[to_room].sector_type == SECT_OCEAN) &&
+		 tries++ < 1000);
 
 	if (tries >= 1000)
 	{
@@ -674,12 +723,11 @@ int find_map_place()
 struct relic_struct relic_struct_data[3];
 
 int GOODIE_RELIC_POINTS = 0;
-int EVIL_RELIC_POINTS   = 0;
+int EVIL_RELIC_POINTS = 0;
 int UNDEAD_RELIC_POINTS = 0;
 
 int read_relic_highscore()
 {
-
 	FILE *f;
 
 	f = fopen("lib/relic_highscore", "r+");
@@ -696,7 +744,6 @@ int read_relic_highscore()
 
 int write_relic_highscore()
 {
-
 	FILE *f;
 
 	f = fopen("lib/relic_highscore", "w+");
@@ -718,7 +765,6 @@ int update_relic(P_char ch, P_obj obj)
 
 	if (IS_GOOD(ch))
 	{
-
 		if (obj_index[obj->R_num].virtual_number == 59)
 		{
 			if (relic_struct_data[0].undead_relic == 0)
@@ -739,7 +785,6 @@ int update_relic(P_char ch, P_obj obj)
 
 	if (IS_EVIL(ch) && !IS_PUNDEAD(ch))
 	{
-
 		if (obj_index[obj->R_num].virtual_number == 58)
 		{
 			if (relic_struct_data[1].good_relic == 0)
@@ -760,7 +805,6 @@ int update_relic(P_char ch, P_obj obj)
 
 	if (IS_PUNDEAD(ch))
 	{
-
 		if (obj_index[obj->R_num].virtual_number == 58)
 		{
 			if (relic_struct_data[2].good_relic == 0)
@@ -805,7 +849,6 @@ int update_relic(P_char ch, P_obj obj)
 
 int get_relic_num(P_char ch)
 {
-
 	if (GOOD_RACE(ch))
 		return relic_struct_data[0].evil_relic + relic_struct_data[0].undead_relic;
 
@@ -837,28 +880,30 @@ void displayRelic(P_char ch, char *arg, int cmd)
 
 	send_to_char("\t  &+L-= This boot &+WRELIC&+L points =-&n\r\n\r\n", ch);
 
-	snprintf(buf, 512, "\t         &+WGoodies:&+W %d&n\r\n", relic_struct_data[0].evil_relic + relic_struct_data[0].undead_relic);
+	snprintf(buf, 512, "\t         &+WGoodies:&+W %d&n\r\n",
+		 relic_struct_data[0].evil_relic + relic_struct_data[0].undead_relic);
 	send_to_char(buf, ch);
-	snprintf(buf, 512, "\t         &+rEvils:&+W   %d&n\r\n", relic_struct_data[1].good_relic + relic_struct_data[1].undead_relic);
+	snprintf(buf, 512, "\t         &+rEvils:&+W   %d&n\r\n",
+		 relic_struct_data[1].good_relic + relic_struct_data[1].undead_relic);
 	send_to_char(buf, ch);
-	snprintf(buf, 512, "\t         &+LUndeads:&+W %d&n\r\n", relic_struct_data[2].evil_relic + relic_struct_data[2].good_relic);
+	snprintf(buf, 512, "\t         &+LUndeads:&+W %d&n\r\n",
+		 relic_struct_data[2].evil_relic + relic_struct_data[2].good_relic);
 	send_to_char(buf, ch);
 }
 
 int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
-
-	P_char                   kala;
-	int                      dicea           = 0;
-	int                      diceb           = 0;
-	int                      proc            = 0;
-	int                      somone_fighting = 0;
-	int                      j               = 0;
-	char                     Gbuf2[256];
+	P_char kala;
+	int dicea = 0;
+	int diceb = 0;
+	int proc = 0;
+	int somone_fighting = 0;
+	int j = 0;
+	char Gbuf2[256];
 	struct spell_target_data target_data;
-	P_char                   t_char = NULL;
-	P_desc                   d;
-	P_obj                    potion;
+	P_char t_char = NULL;
+	P_desc d;
+	P_obj potion;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -887,7 +932,9 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				if (d->connected == CON_PLAYING)
 				{
-					send_to_char("&+LA scream&+L of &+WFREEDOM&+L echos in your ear!&n\r\n", d->character);
+					send_to_char(
+						"&+LA scream&+L of &+WFREEDOM&+L echos in your ear!&n\r\n",
+						d->character);
 				}
 			}
 			update_relic(ch, obj);
@@ -897,32 +944,33 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 				wizlog(56, "relic_proc: Loaded a LEVEL potion.");
 				switch (number(0, 10))
 				{
-					case 0:
-					case 1:
-					case 2:
-					case 3:
-					case 4:
-						potion = read_object(51004, VIRTUAL);
-						break;
-					case 5:
-					case 6:
-						potion = read_object(25106, VIRTUAL);
-						break;
-					case 7:
-						potion = read_object(80831, VIRTUAL);
-						break;
-					case 8:
-						potion = read_object(26661, VIRTUAL);
-						break;
-					case 9:
-						potion = read_object(25759, VIRTUAL);
-						break;
-					case 10:
-						potion = read_object(45534, VIRTUAL);
-						break;
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+					potion = read_object(51004, VIRTUAL);
+					break;
+				case 5:
+				case 6:
+					potion = read_object(25106, VIRTUAL);
+					break;
+				case 7:
+					potion = read_object(80831, VIRTUAL);
+					break;
+				case 8:
+					potion = read_object(26661, VIRTUAL);
+					break;
+				case 9:
+					potion = read_object(25759, VIRTUAL);
+					break;
+				case 10:
+					potion = read_object(45534, VIRTUAL);
+					break;
 				}
 				obj_to_char(potion, ch);
-				act("Your $q &+Mhums&+W briefly.", FALSE, ch, potion, potion, TO_CHAR);
+				act("Your $q &+Mhums&+W briefly.", FALSE, ch, potion, potion,
+				    TO_CHAR);
 				act("$n's $q &+Mhums&+W briefly.", TRUE, ch, potion, NULL, TO_ROOM);
 			}
 		}
@@ -943,13 +991,19 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 				return FALSE;
 			}
 
-			if (isname(Gbuf2, "relic") || isname(Gbuf2, "true") || isname(Gbuf2, "holy") || isname(Gbuf2, "divine") || isname(Gbuf2, "undead") || isname(Gbuf2, "kings") || isname(Gbuf2, "blood") ||
-			    isname(Gbuf2, "evil") || isname(Gbuf2, "ancient") || isname(Gbuf2, "spider") || isname(Gbuf2, "lloth"))
+			if (isname(Gbuf2, "relic") || isname(Gbuf2, "true") ||
+			    isname(Gbuf2, "holy") || isname(Gbuf2, "divine") ||
+			    isname(Gbuf2, "undead") || isname(Gbuf2, "kings") ||
+			    isname(Gbuf2, "blood") || isname(Gbuf2, "evil") ||
+			    isname(Gbuf2, "ancient") || isname(Gbuf2, "spider") ||
+			    isname(Gbuf2, "lloth"))
 			{
 				act("$p &+rfl&+Rares&+L up...&N", FALSE, ch, obj, 0, TO_CHAR);
 				act("$p &+rfl&+Rares&+L up...&N", FALSE, ch, obj, 0, TO_ROOM);
 
-				if (GET_RACE(ch) == RACE_OGRE || GET_RACE(ch) == RACE_MINOTAUR || GET_RACE(ch) == RACE_WIGHT || GET_RACE(ch) == RACE_SGIANT || GET_CLASS(ch, CLASS_PALADIN) ||
+				if (GET_RACE(ch) == RACE_OGRE || GET_RACE(ch) == RACE_MINOTAUR ||
+				    GET_RACE(ch) == RACE_WIGHT || GET_RACE(ch) == RACE_SGIANT ||
+				    GET_CLASS(ch, CLASS_PALADIN) ||
 				    GET_CLASS(ch, CLASS_ANTIPALADIN))
 				{
 					SET_BIT(obj->extra_flags, ITEM_TWOHANDS);
@@ -966,7 +1020,8 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 				obj->value[1] = dicea;
 				obj->value[2] = diceb;
 
-				if (GET_CLASS(ch, CLASS_THIEF) || GET_CLASS(ch, CLASS_ASSASSIN) || GET_CLASS(ch, CLASS_MERCENARY) || GET_CLASS(ch, CLASS_ROGUE))
+				if (GET_CLASS(ch, CLASS_THIEF) || GET_CLASS(ch, CLASS_ASSASSIN) ||
+				    GET_CLASS(ch, CLASS_MERCENARY) || GET_CLASS(ch, CLASS_ROGUE))
 				{
 					obj->value[0] = WEAPON_DAGGER;
 				}
@@ -974,8 +1029,8 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 				{
 					obj->value[0] = WEAPON_LONGSWORD;
 				}
-				obj->value[3]             = 3;
-				obj->type                 = ITEM_WEAPON;
+				obj->value[3] = 3;
+				obj->type = ITEM_WEAPON;
 				obj->affected[1].location = APPLY_DAMROLL;
 				obj->affected[1].modifier = 5;
 				obj->affected[2].location = APPLY_HITROLL;
@@ -991,17 +1046,21 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 				return FALSE;
 			}
 
-			if (isname(Gbuf2, "relic") || isname(Gbuf2, "true") || isname(Gbuf2, "holy") || isname(Gbuf2, "divine") || isname(Gbuf2, "undead") || isname(Gbuf2, "kings") || isname(Gbuf2, "blood") ||
-			    isname(Gbuf2, "evil") || isname(Gbuf2, "ancient") || isname(Gbuf2, "spider") || isname(Gbuf2, "lloth"))
+			if (isname(Gbuf2, "relic") || isname(Gbuf2, "true") ||
+			    isname(Gbuf2, "holy") || isname(Gbuf2, "divine") ||
+			    isname(Gbuf2, "undead") || isname(Gbuf2, "kings") ||
+			    isname(Gbuf2, "blood") || isname(Gbuf2, "evil") ||
+			    isname(Gbuf2, "ancient") || isname(Gbuf2, "spider") ||
+			    isname(Gbuf2, "lloth"))
 			{
 				act("$p &+rfl&+Rares&+L up...&N", FALSE, ch, obj, 0, TO_CHAR);
 				act("$p &+rfl&+Rares&+L up...&N", FALSE, ch, obj, 0, TO_ROOM);
 
-				obj->value[1]             = 0;
-				obj->value[2]             = 0;
-				obj->value[0]             = 0;
-				obj->value[3]             = 3;
-				obj->type                 = ITEM_ARMOR;
+				obj->value[1] = 0;
+				obj->value[2] = 0;
+				obj->value[0] = 0;
+				obj->value[3] = 3;
+				obj->type = ITEM_ARMOR;
 				obj->affected[1].location = APPLY_WIS_MAX;
 				obj->affected[1].modifier = 15;
 				obj->affected[2].location = APPLY_INT_MAX;
@@ -1032,19 +1091,23 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	// And hit kala with it.
 	if (IS_ALIVE(kala))
 	{
-		act("$p&+L carried by $n sends a ray of &+Wlight&+L towards $N!&N", TRUE, ch, obj, kala, TO_NOTVICT);
-		act("$p&+L carried by you sends a ray of &+Wlight&+L towards $N!&N", TRUE, ch, obj, kala, TO_CHAR);
-		act("$p&+L carried by $n sends a ray of &+Wlight&+L towards you!&N", TRUE, ch, obj, kala, TO_VICT);
-		((*skills[j].spell_pointer)((int)GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, kala, NULL));
+		act("$p&+L carried by $n sends a ray of &+Wlight&+L towards $N!&N", TRUE, ch, obj,
+		    kala, TO_NOTVICT);
+		act("$p&+L carried by you sends a ray of &+Wlight&+L towards $N!&N", TRUE, ch, obj,
+		    kala, TO_CHAR);
+		act("$p&+L carried by $n sends a ray of &+Wlight&+L towards you!&N", TRUE, ch, obj,
+		    kala, TO_VICT);
+		((*skills[j].spell_pointer)((int)GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, kala,
+					    NULL));
 	}
 	return FALSE;
 }
 
 int random_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char                   kala;
-	int                      proc = 0;
-	int                      j    = 0;
+	P_char kala;
+	int proc = 0;
+	int j = 0;
 	struct spell_target_data target_data;
 
 	if (cmd == CMD_MELEE_HIT)
@@ -1071,10 +1134,14 @@ int random_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (kala)
 	{
-		act("&+LA&n $n &+Lgrowls in fury and unleashes his &+rANGER&+L at&n $N", TRUE, ch, 0, kala, TO_NOTVICT);
-		act("&+LAll of your &+rRAGE&+L is unleashed at& $N!", TRUE, ch, NULL, kala, TO_CHAR);
-		act("&+LA&n $n &+Lsuddenly becomes &+rENRAGED&+L and unleashes his fury at YOU!", TRUE, ch, 0, kala, TO_VICT);
-		((*skills[j].spell_pointer)((int)GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, kala, NULL));
+		act("&+LA&n $n &+Lgrowls in fury and unleashes his &+rANGER&+L at&n $N", TRUE, ch,
+		    0, kala, TO_NOTVICT);
+		act("&+LAll of your &+rRAGE&+L is unleashed at& $N!", TRUE, ch, NULL, kala,
+		    TO_CHAR);
+		act("&+LA&n $n &+Lsuddenly becomes &+rENRAGED&+L and unleashes his fury at YOU!",
+		    TRUE, ch, 0, kala, TO_VICT);
+		((*skills[j].spell_pointer)((int)GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, kala,
+					    NULL));
 	}
 
 	return 0;
@@ -1082,15 +1149,15 @@ int random_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_obj              obj;
-	int                x         = 0;
-	int                y         = 0;
-	int                valuediff = 0;
-	char               Gbuf2[MAX_STRING_LENGTH];
-	char               obj_name[MAX_INPUT_LENGTH], *argument;
-	int                group_fact = 1, fragdiff = 0;
-	int                value_pts = 0;
-	char               buffer[1024];
+	P_obj obj;
+	int x = 0;
+	int y = 0;
+	int valuediff = 0;
+	char Gbuf2[MAX_STRING_LENGTH];
+	char obj_name[MAX_INPUT_LENGTH], *argument;
+	int group_fact = 1, fragdiff = 0;
+	int value_pts = 0;
+	char buffer[1024];
 	struct group_list *gl;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1099,7 +1166,7 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 		return FALSE;
 
 	argument = arg;
-	arg      = one_argument(arg, Gbuf2);
+	arg = one_argument(arg, Gbuf2);
 
 	x = GET_HOME(ch) % 10;
 	y = (GET_HOME(ch) / 10) % 10;
@@ -1133,11 +1200,11 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 			mobsay(ch, "Take this...!");
 
 			// PEriod value award!
-			value_pts = 2500 * (random_zone_data[x].last_room - random_zone_data[x].first_room);
+			value_pts = 2500 * (random_zone_data[x].last_room -
+					    random_zone_data[x].first_room);
 
 			if (pl->group)
 			{
-
 				for (gl = pl->group; gl; gl = gl->next)
 					if ((pl->in_room == gl->ch->in_room) && (gl->ch != pl))
 						group_fact++;
@@ -1147,9 +1214,11 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 				value_pts = BOUNDED(1, value_pts, 10000 + number(100, 1500));
 
 				for (gl = pl->group; gl; gl = gl->next)
-					if ((pl->in_room == gl->ch->in_room) && (gl->ch != pl) && IS_PC(gl->ch))
+					if ((pl->in_room == gl->ch->in_room) && (gl->ch != pl) &&
+					    IS_PC(gl->ch))
 					{
-						gain_epic(gl->ch, EPIC_RANDOM_ZONE, 0, value_pts / 100);
+						gain_epic(gl->ch, EPIC_RANDOM_ZONE, 0,
+							  value_pts / 100);
 					}
 			}
 
@@ -1165,7 +1234,6 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 			while (1)
 			{
-
 				obj = create_material(ch, ch);
 				obj_to_char(obj, pl);
 				act("$n gives $q to $N!", TRUE, ch, obj, pl, TO_NOTVICT);
@@ -1186,7 +1254,6 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (arg && cmd == CMD_ASK)
 	{
-
 		if (!CAN_SPEAK(ch))
 		{
 			return 0;
@@ -1207,37 +1274,43 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (LOADED_RANDOM_ZONES <= x)
 		{
-
-			mobsay(ch, "I heard a traveling friends of mine had a quest, but I can't help you any futher.&n");
+			mobsay(ch,
+			       "I heard a traveling friends of mine had a quest, but I can't help you any futher.&n");
 			return 1;
 		}
 
 		if (isname(arg, "quest"))
 		{
-			mobsay(ch, "Hmm, you are looking for a quest? My friends recently got killed, perhaps you can help me recover our sigil!?!&n");
+			mobsay(ch,
+			       "Hmm, you are looking for a quest? My friends recently got killed, perhaps you can help me recover our sigil!?!&n");
 			return 1;
 		}
 
 		if (isname(arg, "friends"))
 		{
-			mobsay(ch, "Hmm, you are looking for a quest? I have this map, but are you strong enough!?!&n");
+			mobsay(ch,
+			       "Hmm, you are looking for a quest? I have this map, but are you strong enough!?!&n");
 			return 1;
 		}
 
 		if (isname(arg, "sigil"))
 		{
-			mobsay(ch, "Bring me the sigil carried by my friend, and rewarded you shall be!&n");
+			mobsay(ch,
+			       "Bring me the sigil carried by my friend, and rewarded you shall be!&n");
 			return 1;
 		}
 
 		if (!isname(arg, "map"))
 			return FALSE;
 
-		mobsay(ch, "I was out exploring the wilderness with my fellow adventurers when we came across a pathway leading into the ground.");
-		mobsay(ch, "We lit our torches and decended into the depths, only to be attacked by a horde of hostile creatures!");
+		mobsay(ch,
+		       "I was out exploring the wilderness with my fellow adventurers when we came across a pathway leading into the ground.");
+		mobsay(ch,
+		       "We lit our torches and decended into the depths, only to be attacked by a horde of hostile creatures!");
 		mobsay(ch, "They slaughtered us without mercy and only I managed to escape");
 		mobsay(ch, "I beg you, avenge my friends");
-		mobsay(ch, "I managed to draw a map of this hidden tomb, but alas, I cannot do more than just show it to thee.");
+		mobsay(ch,
+		       "I managed to draw a map of this hidden tomb, but alas, I cannot do more than just show it to thee.");
 
 		send_to_room("&+yAn old piece of paper with a detailed map.\r\n", ch->in_room);
 		send_to_room(random_quest_data[x].z_mapdesc, ch->in_room);
@@ -1252,14 +1325,13 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 P_obj create_sigil(int zone_number)
 {
-
-	P_obj             obj;
-	char              buf1[MAX_STRING_LENGTH];
-	char              buf2[MAX_STRING_LENGTH];
-	char              buf3[MAX_STRING_LENGTH];
+	P_obj obj;
+	char buf1[MAX_STRING_LENGTH];
+	char buf2[MAX_STRING_LENGTH];
+	char buf3[MAX_STRING_LENGTH];
 	struct zone_data *zone = 0;
 
-	obj  = read_object(VOBJ_RANDOM_ARMOR, VIRTUAL);
+	obj = read_object(VOBJ_RANDOM_ARMOR, VIRTUAL);
 	zone = &zone_table[number(1, top_of_zone_table)];
 
 	snprintf(buf1, MAX_STRING_LENGTH, "sigil %s", zone->name);
@@ -1281,30 +1353,30 @@ P_obj create_sigil(int zone_number)
 
 int reset_lab(int type)
 {
-	int    start_room = 0, entrance_room = 0, entrance_rnum;
-	int    i           = 0;
-	int    room_rnum   = 0;
-	int    sector_type = 0;
+	int start_room = 0, entrance_room = 0, entrance_rnum;
+	int i = 0;
+	int room_rnum = 0;
+	int sector_type = 0;
 	P_char vict, next_v;
-	P_obj  obj, next_o;
+	P_obj obj, next_o;
 
 	if (type == 0)
 	{
-		start_room    = 700000;
+		start_room = 700000;
 		entrance_room = 154938;
-		sector_type   = 3;
+		sector_type = 3;
 	}
 	else if (type == 1)
 	{
-		start_room    = 900000;
-		sector_type   = 3;
+		start_room = 900000;
+		sector_type = 3;
 		entrance_room = 145443;
 	}
 	else if (type == 2)
 	{
-		start_room    = 800000;
+		start_room = 800000;
 		entrance_room = 211827;
-		sector_type   = 3;
+		sector_type = 3;
 	}
 	else
 	{
@@ -1349,12 +1421,14 @@ int reset_lab(int type)
 			if (obj->R_num == real_object(VOBJ_WALLS))
 				continue;
 
-			if ((obj->wear_flags & ITEM_TAKE && !IS_ARTIFACT(obj)) || (obj->type == ITEM_CORPSE && !obj->contains))
+			if ((obj->wear_flags & ITEM_TAKE && !IS_ARTIFACT(obj)) ||
+			    (obj->type == ITEM_CORPSE && !obj->contains))
 			{
 				extract_obj(obj);
 				obj = NULL;
 			}
-			if (obj && (obj->type == ITEM_CORPSE || IS_ARTIFACT(obj)) && entrance_rnum != NOWHERE)
+			if (obj && (obj->type == ITEM_CORPSE || IS_ARTIFACT(obj)) &&
+			    entrance_rnum != NOWHERE)
 			{
 				obj_from_room(obj);
 				obj_to_room(obj, entrance_rnum);
@@ -1372,26 +1446,26 @@ int reset_lab(int type)
 }
 int create_lab(int type)
 {
-	int    start_room    = 0;
-	int    current_room  = start_room;
-	int    parent_room   = 0;
-	int    direction     = 0;
-	int    rooms         = 800;
-	int    parent_dir    = -1;
-	int    relic_in_game = 0;
+	int start_room = 0;
+	int current_room = start_room;
+	int parent_room = 0;
+	int direction = 0;
+	int rooms = 800;
+	int parent_dir = -1;
+	int relic_in_game = 0;
 	P_char mob;
-	P_obj  obj;
-	int    i            = 0;
-	int    j            = 0;
-	int    N            = -100;
-	int    E            = 1;
-	int    S            = 100;
-	int    W            = -1;
-	int    theme_to_use = 0;
-	int    RELIC        = 0;
-	int    ENDMOBS      = 5;
-	int    map_room     = 0;
-	int    vnum         = 0;
+	P_obj obj;
+	int i = 0;
+	int j = 0;
+	int N = -100;
+	int E = 1;
+	int S = 100;
+	int W = -1;
+	int theme_to_use = 0;
+	int RELIC = 0;
+	int ENDMOBS = 5;
+	int map_room = 0;
+	int vnum = 0;
 
 	memset(relic_struct_data, 0, sizeof(relic_struct_data));
 	read_relic_highscore();
@@ -1400,27 +1474,27 @@ int create_lab(int type)
 
 	if (type == 0)
 	{
-		start_room   = 705050;
+		start_room = 705050;
 		theme_to_use = 4;
-		RELIC        = 58;
-		map_room     = 154938;
+		RELIC = 58;
+		map_room = 154938;
 	}
 	if (type == 1)
 	{
-		start_room   = 905050;
+		start_room = 905050;
 		theme_to_use = 5;
-		RELIC        = 68;
-		map_room     = 145443;
+		RELIC = 68;
+		map_room = 145443;
 	}
 	if (type == 2)
 	{
-		start_room   = 805050;
+		start_room = 805050;
 		theme_to_use = 6;
-		RELIC        = 59;
-		map_room     = 211827;
+		RELIC = 59;
+		map_room = 211827;
 	}
 
-	obj  = read_object(RELIC, VIRTUAL);
+	obj = read_object(RELIC, VIRTUAL);
 	vnum = obj_index[obj->R_num].virtual_number;
 
 	if (get_artifact_data_sql(vnum, NULL))
@@ -1449,17 +1523,16 @@ int create_lab(int type)
 	if (world[real_room(start_room)].sector_type != 1)
 	{
 		world[real_room(start_room)].dir_option[DIR_NORTH] = 0;
-		world[real_room(start_room)].dir_option[DIR_EAST]  = 0;
+		world[real_room(start_room)].dir_option[DIR_EAST] = 0;
 		world[real_room(start_room)].dir_option[DIR_SOUTH] = 0;
-		world[real_room(start_room)].dir_option[DIR_WEST]  = 0;
+		world[real_room(start_room)].dir_option[DIR_WEST] = 0;
 	}
 
 	while (rooms - i > 0)
 	{
-
 		if (!number(0, 2) || parent_dir == -1)
 		{
-			direction  = number(0, 3);
+			direction = number(0, 3);
 			parent_dir = direction;
 		}
 		else
@@ -1485,7 +1558,8 @@ int create_lab(int type)
 			{
 				char_from_room(mob);
 				char_to_room(mob, real_room(current_room), 0);
-				GET_HOME(mob) = GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(mob) = current_room;
+				GET_HOME(mob) = GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(mob) =
+					current_room;
 				if (!number(0, 5))
 					SET_BIT(mob->specials.act, ACT_SENTINEL);
 			}
@@ -1496,18 +1570,18 @@ int create_lab(int type)
 		{
 			while (ENDMOBS - j > 0)
 			{
-
 				mob = (P_char)create_random_mob(7, (int)(60 + number(0, 2)));
 				if (mob)
 				{
 					char_from_room(mob);
 					char_to_room(mob, real_room(current_room), 0);
-					GET_HOME(mob) = GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(mob) = current_room;
+					GET_HOME(mob) = GET_BIRTHPLACE(mob) =
+						GET_ORIG_BIRTHPLACE(mob) = current_room;
 
 					SET_BIT(mob->specials.act, ACT_SENTINEL);
 					if (!relic_in_game)
 					{
-						obj  = read_object(RELIC, VIRTUAL);
+						obj = read_object(RELIC, VIRTUAL);
 						vnum = obj_index[obj->R_num].virtual_number;
 
 						if (get_artifact_data_sql(vnum, NULL))
@@ -1532,7 +1606,8 @@ int create_lab(int type)
 		i++;
 	}
 
-	connect_rooms(world[real_room(map_room)].number, world[real_room(start_room)].number, DIR_DOWN);
+	connect_rooms(world[real_room(map_room)].number, world[real_room(start_room)].number,
+		      DIR_DOWN);
 	world[real_room(map_room)].sector_type = 0;
 
 	return 0;
@@ -1540,21 +1615,21 @@ int create_lab(int type)
 
 int connect_lab(int room, int dir)
 {
-	int here  = real_room(room);
+	int here = real_room(room);
 	int there = real_room(room + dir_to_num(dir));
 
 	// Remove all exit if the room havent been used yet...
 	if (there != NOWHERE && world[there].sector_type != 1)
 	{
 		world[there].dir_option[DIR_NORTH] = 0;
-		world[there].dir_option[DIR_EAST]  = 0;
+		world[there].dir_option[DIR_EAST] = 0;
 		world[there].dir_option[DIR_SOUTH] = 0;
-		world[there].dir_option[DIR_WEST]  = 0;
+		world[there].dir_option[DIR_WEST] = 0;
 	}
 
 	if (there == NOWHERE)
 	{
-		dir   = rev_dir[dir];
+		dir = rev_dir[dir];
 		there = real_room(room + dir_to_num(dir));
 	}
 
@@ -1573,15 +1648,16 @@ int connect_lab(int room, int dir)
 int connect_other(int room)
 {
 	int dir = 0;
-	int i   = 0;
+	int i = 0;
 
 	while (dir < 4)
 	{
-
-		if (real_room(room) != NOWHERE && real_room(room + dir_to_num(dir)) != NOWHERE && world[real_room(room + dir_to_num(dir))].sector_type == 1 &&
+		if (real_room(room) != NOWHERE && real_room(room + dir_to_num(dir)) != NOWHERE &&
+		    world[real_room(room + dir_to_num(dir))].sector_type == 1 &&
 		    !(world[real_room(room + dir_to_num(dir))].number == -1))
 		{
-			connect_rooms(world[real_room(room)].number, world[real_room(room + dir_to_num(dir))].number, dir);
+			connect_rooms(world[real_room(room)].number,
+				      world[real_room(room + dir_to_num(dir))].number, dir);
 			// wizlog(56, "Connecting others %d to %d -- dir=%d", room , room + dir_to_num(dir)), dir;
 		}
 
@@ -1593,7 +1669,6 @@ int connect_other(int room)
 
 int dir_to_num(int dir)
 {
-
 	int N = -100;
 	int E = 1;
 	int S = 100;

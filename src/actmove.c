@@ -33,29 +33,29 @@
  * external variables
  */
 
-extern P_desc                 descriptor_list;
-extern P_index                obj_index;
-extern P_index                mob_index;
-extern P_room                 world;
-extern struct time_info_data  time_info;
-extern const char            *command[];
-extern const char            *dirs[];
-extern const char            *short_dirs[];
-extern const char            *dirs2[];
+extern P_desc descriptor_list;
+extern P_index obj_index;
+extern P_index mob_index;
+extern P_room world;
+extern struct time_info_data time_info;
+extern const char *command[];
+extern const char *dirs[];
+extern const char *short_dirs[];
+extern const char *dirs2[];
 extern const struct stat_data stat_factor[];
-extern const int              innate_abilities[];
-extern const int              class_innates[][5];
-extern const int              movement_loss[];
-extern const int              rev_dir[];
-extern struct dex_app_type    dex_app[];
-extern struct str_app_type    str_app[];
-extern struct zone_data      *zone_table;
-extern struct sector_data    *sector_table;
-extern void                   check_room_links(P_char, int, int);
-extern bool                   grease_check(P_char);
-extern int                    get_number_allies_in_room(P_char ch, int room_index);
-extern int                    get_weight_allies_in_room(P_char ch, int room_index);
-void                          send_movement_noise(P_char ch, int num);
+extern const int innate_abilities[];
+extern const int class_innates[][5];
+extern const int movement_loss[];
+extern const int rev_dir[];
+extern struct dex_app_type dex_app[];
+extern struct str_app_type str_app[];
+extern struct zone_data *zone_table;
+extern struct sector_data *sector_table;
+extern void check_room_links(P_char, int, int);
+extern bool grease_check(P_char);
+extern int get_number_allies_in_room(P_char ch, int room_index);
+extern int get_weight_allies_in_room(P_char ch, int room_index);
+void send_movement_noise(P_char ch, int num);
 
 int is_ice(P_char ch, int room)
 {
@@ -78,7 +78,7 @@ int is_ice(P_char ch, int room)
 
 int load_modifier(P_char ch)
 {
-	int    p;
+	int p;
 	P_char rider;
 
 	if (IS_TRUSTED(ch))
@@ -179,7 +179,7 @@ void SwapCharsInList(P_char ch1, P_char ch2)
 	 * ->next_in_room pointers (caveats again).
 	 */
 
-	tmp                 = t_ch1->next_in_room;
+	tmp = t_ch1->next_in_room;
 	t_ch1->next_in_room = t_ch2->next_in_room;
 	if (tmp != t_ch2)
 		t_ch2->next_in_room = tmp;
@@ -215,10 +215,10 @@ void SwapCharsInList(P_char ch1, P_char ch2)
 int leave_by_exit(P_char ch, int exitnumb)
 {
 	P_char k = NULL, block1 = NULL, block2 = NULL, t_ch = NULL;
-	char   j, exit1 = -1, exit2 = -1, exit3 = -1;
-	int    room_to;
+	char j, exit1 = -1, exit2 = -1, exit3 = -1;
+	int room_to;
 	P_char target_head = NULL;
-	int    num_in_room = 0, room_limit = 0;
+	int num_in_room = 0, room_limit = 0;
 	P_char rider = NULL;
 
 	/*
@@ -272,7 +272,9 @@ int leave_by_exit(P_char ch, int exitnumb)
 	if (IS_PC(ch) && IS_RIDING(ch))
 	{
 		t_ch = get_linked_char(ch, LNK_RIDING);
-		if (IS_AFFECTED2(t_ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(t_ch, AFF2_MAJOR_PARALYSIS) || IS_AFFECTED(t_ch, AFF_KNOCKED_OUT) || GET_STAT(t_ch) == STAT_SLEEPING ||
+		if (IS_AFFECTED2(t_ch, AFF2_MINOR_PARALYSIS) ||
+		    IS_AFFECTED2(t_ch, AFF2_MAJOR_PARALYSIS) ||
+		    IS_AFFECTED(t_ch, AFF_KNOCKED_OUT) || GET_STAT(t_ch) == STAT_SLEEPING ||
 		    GET_STAT(t_ch) == STAT_DYING || GET_STAT(t_ch) == STAT_INCAP)
 		{
 			send_to_char("Alas, your mount is not quite in the shape for that.\n", ch);
@@ -303,7 +305,9 @@ int leave_by_exit(P_char ch, int exitnumb)
 
 	if (!IS_TRUSTED(t_ch) && (world[t_ch->in_room].sector_type == SECT_AIR_PLANE))
 	{
-		if (!(IS_AFFECTED(t_ch, AFF_FLY) || (((exitnumb == DIR_UP) || (exitnumb == DIR_DOWN)) && IS_AFFECTED(t_ch, AFF_LEVITATE))))
+		if (!(IS_AFFECTED(t_ch, AFF_FLY) ||
+		      (((exitnumb == DIR_UP) || (exitnumb == DIR_DOWN)) &&
+		       IS_AFFECTED(t_ch, AFF_LEVITATE))))
 		{
 			if (ch == t_ch)
 			{
@@ -340,7 +344,9 @@ int leave_by_exit(P_char ch, int exitnumb)
 	}
 	if (!IS_TRUSTED(t_ch) && (world[t_ch->in_room].sector_type == SECT_NO_GROUND))
 	{
-		if (!(IS_AFFECTED(t_ch, AFF_FLY) || (((exitnumb == DIR_UP) || (exitnumb == DIR_DOWN)) && IS_AFFECTED(t_ch, AFF_LEVITATE))))
+		if (!(IS_AFFECTED(t_ch, AFF_FLY) ||
+		      (((exitnumb == DIR_UP) || (exitnumb == DIR_DOWN)) &&
+		       IS_AFFECTED(t_ch, AFF_LEVITATE))))
 		{
 			if (ch == t_ch)
 			{
@@ -372,7 +378,8 @@ int leave_by_exit(P_char ch, int exitnumb)
 				}
 				else
 				{
-					send_to_char("Your mount would need wings to go there!\n", ch);
+					send_to_char("Your mount would need wings to go there!\n",
+						     ch);
 					return FALSE;
 				}
 			}
@@ -383,18 +390,22 @@ int leave_by_exit(P_char ch, int exitnumb)
 			 * trying to move into a NO_GROUND from any direction but up
 			 */
 
-			if (!IS_TRUSTED(t_ch) && !IS_AFFECTED(t_ch, AFF_FLY) && !IS_AFFECTED(t_ch, AFF_LEVITATE) &&
-			    ((world[room_to].light > 0) || ((world[room_to].light == 0) && IS_AFFECTED2(ch, AFF2_ULTRAVISION))) && !IS_SET(world[room_to].dir_option[DIR_DOWN]->exit_info, EX_SECRET))
+			if (!IS_TRUSTED(t_ch) && !IS_AFFECTED(t_ch, AFF_FLY) &&
+			    !IS_AFFECTED(t_ch, AFF_LEVITATE) &&
+			    ((world[room_to].light > 0) ||
+			     ((world[room_to].light == 0) && IS_AFFECTED2(ch, AFF2_ULTRAVISION))) &&
+			    !IS_SET(world[room_to].dir_option[DIR_DOWN]->exit_info, EX_SECRET))
 			{
-
 				/*
 				 * ok, can see it coming
 				 */
 
 				if (t_ch != ch)
 				{
-					act("$N balks, and refuses to move in that direction.", FALSE, ch, 0, t_ch, TO_CHAR);
-					act("$N shakes $S head, and refuses to move.", TRUE, ch, 0, t_ch, TO_NOTVICT);
+					act("$N balks, and refuses to move in that direction.",
+					    FALSE, ch, 0, t_ch, TO_CHAR);
+					act("$N shakes $S head, and refuses to move.", TRUE, ch, 0,
+					    t_ch, TO_NOTVICT);
 					return FALSE;
 				}
 				else
@@ -423,16 +434,22 @@ int leave_by_exit(P_char ch, int exitnumb)
 		return FALSE;
 	}
 
-	if (((rider = get_linking_char(ch, LNK_RIDING)) != NULL) && IS_ROOM(room_to, ROOM_SINGLE_FILE))
+	if (((rider = get_linking_char(ch, LNK_RIDING)) != NULL) &&
+	    IS_ROOM(room_to, ROOM_SINGLE_FILE))
 	{
-		send_to_char("You are almost knocked off your mount trying to head into such a cramped space.\n", rider);
-		send_to_char("You almost knock off your rider trying to head into such a cramped space.\n", ch);
+		send_to_char(
+			"You are almost knocked off your mount trying to head into such a cramped space.\n",
+			rider);
+		send_to_char(
+			"You almost knock off your rider trying to head into such a cramped space.\n",
+			ch);
 		return FALSE;
 	}
 
-	if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_WRAITHFORM) && ((world[ch->in_room].people != ch) || (ch->next_in_room)))
+	if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !IS_TRUSTED(ch) &&
+	    !IS_AFFECTED(ch, AFF_WRAITHFORM) &&
+	    ((world[ch->in_room].people != ch) || (ch->next_in_room)))
 	{
-
 		/*
 		 * SINGLE_FILE rooms are limited to 2 directions (ONLY, no more,
 		 * no less) Rather than keeping 2 lists of the people in the room,
@@ -453,8 +470,8 @@ int leave_by_exit(P_char ch, int exitnumb)
 
 		for (j = 0; j < NUM_EXITS; j++)
 			if (world[ch->in_room].dir_option[(int)j])
-			{                                          // it's an exit
-				if (exit1 == -1)                      // found an exit yet?
+			{ // it's an exit
+				if (exit1 == -1) // found an exit yet?
 					exit1 = j;
 				else if (exit2 == -1) /*
 				                       * * found second exit yet?
@@ -469,7 +486,8 @@ int leave_by_exit(P_char ch, int exitnumb)
 		if ((exit1 == -1) || (exit2 == -1))
 		{
 			REMOVE_BIT(world[ch->in_room].room_flags, ROOM_SINGLE_FILE);
-			logit(LOG_DEBUG, "Room %d set SINGLE_FILE with < 2 exits", world[ch->in_room].number);
+			logit(LOG_DEBUG, "Room %d set SINGLE_FILE with < 2 exits",
+			      world[ch->in_room].number);
 			exit1 = -1; /*
 			             * * will cause normal behavior
 			             */
@@ -477,7 +495,8 @@ int leave_by_exit(P_char ch, int exitnumb)
 		if (exit3 != -1)
 		{
 			REMOVE_BIT(world[ch->in_room].room_flags, ROOM_SINGLE_FILE);
-			logit(LOG_DEBUG, "Room %d set SINGLE_FILE with > 2 exits", world[ch->in_room].number);
+			logit(LOG_DEBUG, "Room %d set SINGLE_FILE with > 2 exits",
+			      world[ch->in_room].number);
 			exit1 = -1; /*
 			             * * will cause normal behavior
 			             */
@@ -527,7 +546,6 @@ int leave_by_exit(P_char ch, int exitnumb)
 
 			if (t_ch)
 			{
-
 				/*
 				 * ok, here, we have a character (t_ch) who is in the way,
 				 * in a SINGLE FILE room, of another character (ch) who is
@@ -538,16 +556,20 @@ int leave_by_exit(P_char ch, int exitnumb)
 				 * can't move in that direction, move aborts. JAB
 				 */
 
-				if ((GET_POS(t_ch) == POS_PRONE) && !IS_FIGHTING(t_ch) && (GET_POS(ch) > POS_PRONE) && (!IS_FIGHTING(ch) || (GET_OPPONENT(ch) != t_ch)))
+				if ((GET_POS(t_ch) == POS_PRONE) && !IS_FIGHTING(t_ch) &&
+				    (GET_POS(ch) > POS_PRONE) &&
+				    (!IS_FIGHTING(ch) || (GET_OPPONENT(ch) != t_ch)))
 				{
-
 					/*
 					 * case 1:  t_ch is prone, we can clamber over them.
 					 */
 
-					act("Grunt!  You clamber over $N's supine form.", FALSE, ch, 0, t_ch, TO_CHAR);
-					act("$n clambers over $N's prone body.", TRUE, ch, 0, t_ch, TO_NOTVICT);
-					act("Ooof!  $n just WALKED over you!", FALSE, ch, 0, t_ch, TO_VICT);
+					act("Grunt!  You clamber over $N's supine form.", FALSE, ch,
+					    0, t_ch, TO_CHAR);
+					act("$n clambers over $N's prone body.", TRUE, ch, 0, t_ch,
+					    TO_NOTVICT);
+					act("Ooof!  $n just WALKED over you!", FALSE, ch, 0, t_ch,
+					    TO_VICT);
 
 					CharWait(ch, 6);
 
@@ -557,26 +579,35 @@ int leave_by_exit(P_char ch, int exitnumb)
 					 * chars just have to take it.
 					 */
 
-					if ((GET_STAT(t_ch) == STAT_SLEEPING) && (!affected_by_spell(t_ch, SPELL_SLEEP) || NewSaves(t_ch, SAVING_SPELL, 2)) && !IS_AFFECTED2(t_ch, AFF2_MINOR_PARALYSIS) &&
+					if ((GET_STAT(t_ch) == STAT_SLEEPING) &&
+					    (!affected_by_spell(t_ch, SPELL_SLEEP) ||
+					     NewSaves(t_ch, SAVING_SPELL, 2)) &&
+					    !IS_AFFECTED2(t_ch, AFF2_MINOR_PARALYSIS) &&
 					    !IS_AFFECTED2(t_ch, AFF2_MAJOR_PARALYSIS))
 					{
-						send_to_char("Nobody could sleep through THAT!\n", t_ch);
-						act("$n snorts and comes awake!", TRUE, t_ch, 0, 0, TO_ROOM);
+						send_to_char("Nobody could sleep through THAT!\n",
+							     t_ch);
+						act("$n snorts and comes awake!", TRUE, t_ch, 0, 0,
+						    TO_ROOM);
 						if (affected_by_spell(t_ch, SPELL_SLEEP))
 							affect_from_char(t_ch, SPELL_SLEEP);
 						SET_POS(t_ch, GET_POS(t_ch) + STAT_NORMAL);
 					}
 				}
-				else if ((GET_POS(t_ch) > POS_PRONE) && !IS_FIGHTING(t_ch) && (GET_POS(ch) == POS_PRONE) && (!IS_FIGHTING(ch) || (GET_OPPONENT(ch) != t_ch)))
+				else if ((GET_POS(t_ch) > POS_PRONE) && !IS_FIGHTING(t_ch) &&
+					 (GET_POS(ch) == POS_PRONE) &&
+					 (!IS_FIGHTING(ch) || (GET_OPPONENT(ch) != t_ch)))
 				{
-
 					/*
 					 * case 2:  ch is prone, and can slither by t_ch.
 					 */
 
-					act("Ummph! You slither passed $N.", FALSE, ch, 0, t_ch, TO_CHAR);
-					act("$n slithers passed $N.", FALSE, ch, 0, t_ch, TO_NOTVICT);
-					act("Damn! $n just slithered passed you!", FALSE, ch, 0, t_ch, TO_VICT);
+					act("Ummph! You slither passed $N.", FALSE, ch, 0, t_ch,
+					    TO_CHAR);
+					act("$n slithers passed $N.", FALSE, ch, 0, t_ch,
+					    TO_NOTVICT);
+					act("Damn! $n just slithered passed you!", FALSE, ch, 0,
+					    t_ch, TO_VICT);
 
 					CharWait(ch, 8);
 
@@ -586,10 +617,14 @@ int leave_by_exit(P_char ch, int exitnumb)
 					 * chars just have to take it.
 					 */
 
-					if ((GET_STAT(t_ch) == STAT_SLEEPING) && !number(0, 2) && (!affected_by_spell(t_ch, SPELL_SLEEP) || NewSaves(t_ch, SAVING_SPELL, 2)) && !IS_AFFECTED2(t_ch, AFF2_MINOR_PARALYSIS) &&
+					if ((GET_STAT(t_ch) == STAT_SLEEPING) && !number(0, 2) &&
+					    (!affected_by_spell(t_ch, SPELL_SLEEP) ||
+					     NewSaves(t_ch, SAVING_SPELL, 2)) &&
+					    !IS_AFFECTED2(t_ch, AFF2_MINOR_PARALYSIS) &&
 					    !IS_AFFECTED2(t_ch, AFF2_MAJOR_PARALYSIS))
 					{
-						act("$n snorts and comes awake!", TRUE, t_ch, 0, 0, TO_ROOM);
+						act("$n snorts and comes awake!", TRUE, t_ch, 0, 0,
+						    TO_ROOM);
 						if (affected_by_spell(t_ch, SPELL_SLEEP))
 							affect_from_char(t_ch, SPELL_SLEEP);
 						SET_POS(t_ch, GET_POS(t_ch) + STAT_NORMAL);
@@ -597,14 +632,15 @@ int leave_by_exit(P_char ch, int exitnumb)
 				}
 				else
 				{
-
 					/*
 					 * default case, either t_ch is fighting, or the
 					 * positions are not compatible.
 					 */
 
-					act("Oof!  It seems that $N is in your way.", FALSE, ch, 0, t_ch, TO_CHAR);
-					act("Oof!  $n bumps into you.", FALSE, ch, 0, t_ch, TO_VICT);
+					act("Oof!  It seems that $N is in your way.", FALSE, ch, 0,
+					    t_ch, TO_CHAR);
+					act("Oof!  $n bumps into you.", FALSE, ch, 0, t_ch,
+					    TO_VICT);
 					act("$n bumps into $N.", TRUE, ch, 0, t_ch, TO_NOTVICT);
 
 					/*
@@ -616,9 +652,12 @@ int leave_by_exit(P_char ch, int exitnumb)
 					if (IS_AFFECTED(t_ch, AFF_HIDE))
 					{
 						REMOVE_BIT(t_ch->specials.affected_by, AFF_HIDE);
-						act("Hey!  $N was hiding here!", FALSE, ch, 0, t_ch, TO_CHAR);
-						act("Damn!  $n almost tripped over you!  Lousy hiding place.", FALSE, ch, 0, t_ch, TO_VICT);
-						act("$n almost tripped over $N's hiding place!", TRUE, ch, 0, t_ch, TO_NOTVICT);
+						act("Hey!  $N was hiding here!", FALSE, ch, 0, t_ch,
+						    TO_CHAR);
+						act("Damn!  $n almost tripped over you!  Lousy hiding place.",
+						    FALSE, ch, 0, t_ch, TO_VICT);
+						act("$n almost tripped over $N's hiding place!",
+						    TRUE, ch, 0, t_ch, TO_NOTVICT);
 					}
 					return FALSE;
 				}
@@ -631,7 +670,8 @@ int leave_by_exit(P_char ch, int exitnumb)
 
 				if (IS_FIGHTING(ch))
 				{
-					if (IS_FIGHTING(GET_OPPONENT(ch)) && (GET_OPPONENT(GET_OPPONENT(ch)) == ch))
+					if (IS_FIGHTING(GET_OPPONENT(ch)) &&
+					    (GET_OPPONENT(GET_OPPONENT(ch)) == ch))
 						stop_fighting(GET_OPPONENT(ch));
 					stop_fighting(ch);
 				}
@@ -663,9 +703,9 @@ int leave_by_exit(P_char ch, int exitnumb)
  */
 int can_enter_room(P_char ch, int room, int show_msg)
 {
-	int    i;
-	bool   has_boat;
-	P_obj  obj;
+	int i;
+	bool has_boat;
+	P_obj obj;
 	P_char pers;
 
 	if (!ch)
@@ -674,7 +714,9 @@ int can_enter_room(P_char ch, int room, int show_msg)
 		return FALSE;
 	}
 
-	if (IS_NPC(ch) && ((mob_index[GET_RNUM(ch)].number == 11002) || (mob_index[GET_RNUM(ch)].number == 11003) || (mob_index[GET_RNUM(ch)].number == 11004)))
+	if (IS_NPC(ch) && ((mob_index[GET_RNUM(ch)].number == 11002) ||
+			   (mob_index[GET_RNUM(ch)].number == 11003) ||
+			   (mob_index[GET_RNUM(ch)].number == 11004)))
 		return FALSE;
 
 	if (check_castle_walls(ch->in_room, room) && !IS_TRUSTED(ch))
@@ -698,7 +740,8 @@ int can_enter_room(P_char ch, int room, int show_msg)
 	}
 #endif
 
-	if (world[room].sector_type == SECT_UNDRWLD_MOUNTAIN && IS_MAP_ROOM(ch->in_room) && IS_MAP_ROOM(room))
+	if (world[room].sector_type == SECT_UNDRWLD_MOUNTAIN && IS_MAP_ROOM(ch->in_room) &&
+	    IS_MAP_ROOM(room))
 	{
 		if (!IS_TRUSTED(ch))
 		{
@@ -709,12 +752,15 @@ int can_enter_room(P_char ch, int room, int show_msg)
 		}
 	}
 
-	if (world[room].sector_type == SECT_MOUNTAIN && IS_MAP_ROOM(ch->in_room) && IS_MAP_ROOM(room))
+	if (world[room].sector_type == SECT_MOUNTAIN && IS_MAP_ROOM(ch->in_room) &&
+	    IS_MAP_ROOM(room))
 	{
 		if (!IS_TRUSTED(ch))
 		{
 			if (show_msg)
-				send_to_char("The mountains are too treacherous to be scaled.  Find another way to pass them.\n", ch);
+				send_to_char(
+					"The mountains are too treacherous to be scaled.  Find another way to pass them.\n",
+					ch);
 			return FALSE;
 		}
 	}
@@ -726,7 +772,9 @@ int can_enter_room(P_char ch, int room, int show_msg)
 		if (i > 1 && GET_LEVEL(ch) < 59)
 		{
 			if (show_msg)
-				send_to_char("There's a private conversation going on over there.\n", ch);
+				send_to_char(
+					"There's a private conversation going on over there.\n",
+					ch);
 			return (0);
 		}
 	}
@@ -738,7 +786,8 @@ int can_enter_room(P_char ch, int room, int show_msg)
 		if (!IS_TRUSTED(ch))
 		{
 			if (show_msg)
-				send_to_char("You would bash your brains out, better land first.\n", ch);
+				send_to_char("You would bash your brains out, better land first.\n",
+					     ch);
 			return (0);
 		}
 		else
@@ -763,12 +812,15 @@ int can_enter_room(P_char ch, int room, int show_msg)
 			}
 		}
 	/* low ceilings require crawling */
-	if (world[room].sector_type == SECT_UNDRWLD_LOWCEIL && GET_POS(ch) > POS_KNEELING && !IS_MAP_ROOM(ch->in_room) && !IS_MAP_ROOM(room))
+	if (world[room].sector_type == SECT_UNDRWLD_LOWCEIL && GET_POS(ch) > POS_KNEELING &&
+	    !IS_MAP_ROOM(ch->in_room) && !IS_MAP_ROOM(room))
 	{
 		if (!IS_TRUSTED(ch))
 		{
 			if (show_msg)
-				send_to_char("The ceiling is to low for standing. Try crawling in.\n", ch);
+				send_to_char(
+					"The ceiling is to low for standing. Try crawling in.\n",
+					ch);
 			return (0);
 		}
 		else
@@ -781,15 +833,21 @@ int can_enter_room(P_char ch, int room, int show_msg)
 	 * can't ride into a narrow hallway (RIDING) -DCL
 	 */
 	if (GET_RACE(ch) == RACE_AQUATIC_ANIMAL) /* fish can only go into water */
-		if ((world[room].sector_type != SECT_OCEAN) && (world[room].sector_type != SECT_UNDERWATER) && (world[room].sector_type != SECT_UNDERWATER_GR) &&
-		    (world[room].sector_type != SECT_WATER_SWIM) && (world[room].sector_type != SECT_WATER_NOSWIM) && (world[room].sector_type != SECT_UNDRWLD_WATER) &&
-		    (world[room].sector_type != SECT_UNDRWLD_NOSWIM) && (world[room].sector_type != SECT_WATER_PLANE))
+		if ((world[room].sector_type != SECT_OCEAN) &&
+		    (world[room].sector_type != SECT_UNDERWATER) &&
+		    (world[room].sector_type != SECT_UNDERWATER_GR) &&
+		    (world[room].sector_type != SECT_WATER_SWIM) &&
+		    (world[room].sector_type != SECT_WATER_NOSWIM) &&
+		    (world[room].sector_type != SECT_UNDRWLD_WATER) &&
+		    (world[room].sector_type != SECT_UNDRWLD_NOSWIM) &&
+		    (world[room].sector_type != SECT_WATER_PLANE))
 			return FALSE;
 
 	/*
 	 * cant move around on ocean unless in a ship --TAM 04/16/94
 	 */
-	if (world[room].sector_type == SECT_OCEAN && !IS_TRUSTED(ch) && // !IS_ROOM(ch->in_room, ROOM_DOCKABLE) &&
+	if (world[room].sector_type == SECT_OCEAN &&
+	    !IS_TRUSTED(ch) && // !IS_ROOM(ch->in_room, ROOM_DOCKABLE) &&
 	    world[ch->in_room].sector_type != SECT_OCEAN && !IS_ROOM(room, ROOM_UNDERWATER))
 	{
 		if (!is_ice(ch, room))
@@ -799,7 +857,9 @@ int can_enter_room(P_char ch, int room, int show_msg)
 			else
 			{
 				if (show_msg && IS_AFFECTED(ch, AFF_FLY))
-					send_to_char("The headwinds would prove much too great. Ye best find a dock to start from!\n", ch);
+					send_to_char(
+						"The headwinds would prove much too great. Ye best find a dock to start from!\n",
+						ch);
 			}
 			return (0);
 		}
@@ -832,7 +892,8 @@ int can_enter_room(P_char ch, int room, int show_msg)
 		P_char mount;
 		if ((mount = get_linked_char(ch, LNK_RIDING)))
 		{
-			if (IS_AFFECTED(mount, AFF_FLY) || IS_AFFECTED(mount, AFF_LEVITATE) || IS_SET(mount->specials.act, ACT_CANSWIM))
+			if (IS_AFFECTED(mount, AFF_FLY) || IS_AFFECTED(mount, AFF_LEVITATE) ||
+			    IS_SET(mount->specials.act, ACT_CANSWIM))
 				has_boat = TRUE;
 		}
 
@@ -845,7 +906,8 @@ int can_enter_room(P_char ch, int room, int show_msg)
 		if (has_innate(ch, INNATE_SWAMP_SNEAK))
 			has_boat = TRUE;
 
-		if (!has_boat && !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_WRAITHFORM) && ch->specials.z_cord < 1)
+		if (!has_boat && !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_WRAITHFORM) &&
+		    ch->specials.z_cord < 1)
 		{
 			if (show_msg)
 				send_to_char("You need a boat to go there.\n", ch);
@@ -854,7 +916,9 @@ int can_enter_room(P_char ch, int room, int show_msg)
 	}
 	if (world[room].sector_type == SECT_NO_GROUND)
 	{
-		if ((!IS_TRUSTED(ch)) && (!IS_AFFECTED(ch, AFF_FLY)) && (!IS_AFFECTED(ch, AFF_LEVITATE)) && !IS_AFFECTED(ch, AFF_WRAITHFORM) && (IS_PC(ch)))
+		if ((!IS_TRUSTED(ch)) && (!IS_AFFECTED(ch, AFF_FLY)) &&
+		    (!IS_AFFECTED(ch, AFF_LEVITATE)) && !IS_AFFECTED(ch, AFF_WRAITHFORM) &&
+		    (IS_PC(ch)))
 		{
 			if (show_msg)
 				send_to_char("Oops. Forget something?", ch);
@@ -867,8 +931,8 @@ int can_enter_room(P_char ch, int room, int show_msg)
 
 char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_in, int foo)
 {
-	char   tmp[512], tmp2[512];
-	int    rev;
+	char tmp[512], tmp2[512];
+	int rev;
 	P_char mount;
 
 	if (!ch || !people)
@@ -906,9 +970,11 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 		{
 			rev = rev_dir[exitnumb];
 
-			if (world[foo].dir_option[rev] && (world[foo].dir_option[rev]->to_room == was_in))
+			if (world[foo].dir_option[rev] &&
+			    (world[foo].dir_option[rev]->to_room == was_in))
 			{
-				snprintf(amsg + strlen(amsg), MAX_STRING_LENGTH - strlen(amsg), "%%s from %s", dirs2[rev]);
+				snprintf(amsg + strlen(amsg), MAX_STRING_LENGTH - strlen(amsg),
+					 "%%s from %s", dirs2[rev]);
 			}
 			else
 			{
@@ -973,28 +1039,32 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 
 		/* amsg's only %s is placeholder for verb .. */
 
-		snprintf(tmp, sizeof tmp,
-		         amsg,
-		         IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims in"
-		         : ch->specials.z_cord < 0             ? "swims in"
-		         : ch->specials.z_cord > 0             ? "flies in"
-		         : LEVITATE(ch, exitnumb)              ? "floats in"
-		         : IS_SLIME(ch)                        ? "oozes in"
-		         : GET_RACE(ch) == RACE_DRAGON         ? "lumbers in"
-		         : load_modifier(ch) > 199             ? "staggers in"
-		         : (SNEAK(ch) && !mount)               ? "sneaks in"
-		         : GET_POS(ch) == POS_PRONE            ? "slithers in"
-		         : GET_POS(ch) == POS_KNEELING         ? "crawls in"
-		         : has_innate(ch, INNATE_HORSE_BODY)   ? "trots in"
-		         : has_innate(ch, INNATE_SPIDER_BODY)  ? "skitters in"
-		                                               : "enters");
+		snprintf(tmp, sizeof tmp, amsg,
+			 IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims in" :
+			 ch->specials.z_cord < 0	       ? "swims in" :
+			 ch->specials.z_cord > 0	       ? "flies in" :
+			 LEVITATE(ch, exitnumb)		       ? "floats in" :
+			 IS_SLIME(ch)			       ? "oozes in" :
+			 GET_RACE(ch) == RACE_DRAGON	       ? "lumbers in" :
+			 load_modifier(ch) > 199	       ? "staggers in" :
+			 (SNEAK(ch) && !mount)		       ? "sneaks in" :
+			 GET_POS(ch) == POS_PRONE	       ? "slithers in" :
+			 GET_POS(ch) == POS_KNEELING	       ? "crawls in" :
+			 has_innate(ch, INNATE_HORSE_BODY)     ? "trots in" :
+			 has_innate(ch, INNATE_SPIDER_BODY)    ? "skitters in" :
+								 "enters");
 
 		if (SNEAK(ch) && (!ch->lobj || (ch->lobj && !ch->lobj->Visible_Type())))
 		{
 			if (IS_TRUSTED(people) ||
-			    (((IS_AFFECTED(people, AFF_SENSE_LIFE) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER))) || IS_AFFECTED(people, AFF_SKILL_AWARE)) &&
+			    (((IS_AFFECTED(people, AFF_SENSE_LIFE) ||
+			       (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+				GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER))) ||
+			      IS_AFFECTED(people, AFF_SKILL_AWARE)) &&
 			     StatSave(people, APPLY_INT, -4)) ||
-			    (GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF) && affected_by_spell(ch, SKILL_SNEAK) && (number(0, 100) > GET_CHAR_SKILL(ch, SKILL_SNEAK))))
+			    (GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF) &&
+			     affected_by_spell(ch, SKILL_SNEAK) &&
+			     (number(0, 100) > GET_CHAR_SKILL(ch, SKILL_SNEAK))))
 				strcpy(amsg, tmp);
 			else
 				amsg[0] = '\0'; /* they ain't seeing jack */
@@ -1008,7 +1078,7 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 
 char *leave_message(P_char ch, P_char people, int exitnumb, char *amsg)
 {
-	char   tmp[512];
+	char tmp[512];
 	P_char mount;
 
 	if (!ch || !people)
@@ -1021,21 +1091,19 @@ char *leave_message(P_char ch, P_char people, int exitnumb, char *amsg)
 	strcat(amsg, " ");
 
 	/* add verb and direction */
-	snprintf(amsg + strlen(amsg),
-	         MAX_STRING_LENGTH - strlen(amsg),
-	         "%s %s",
-	         IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims"
-	         : ch->specials.z_cord < 0             ? "swims"
-	         : ch->specials.z_cord > 0             ? "flies"
-	         : LEVITATE(ch, exitnumb)              ? "floats"
-	         : IS_SLIME(ch)                        ? "oozes"
-	         : load_modifier(ch) > 199             ? "staggers"
-	         : SNEAK(ch)                           ? "sneaks"
-	         : GET_POS(ch) == POS_PRONE            ? "slithers"
-	         : GET_POS(ch) == POS_KNEELING         ? "crawls"
-	         : IS_CENTAUR(ch)                      ? "trots"
-	                                               : "leaves",
-	         dirs[exitnumb]);
+	snprintf(amsg + strlen(amsg), MAX_STRING_LENGTH - strlen(amsg), "%s %s",
+		 IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims" :
+		 ch->specials.z_cord < 0	       ? "swims" :
+		 ch->specials.z_cord > 0	       ? "flies" :
+		 LEVITATE(ch, exitnumb)		       ? "floats" :
+		 IS_SLIME(ch)			       ? "oozes" :
+		 load_modifier(ch) > 199	       ? "staggers" :
+		 SNEAK(ch)			       ? "sneaks" :
+		 GET_POS(ch) == POS_PRONE	       ? "slithers" :
+		 GET_POS(ch) == POS_KNEELING	       ? "crawls" :
+		 IS_CENTAUR(ch)			       ? "trots" :
+							 "leaves",
+		 dirs[exitnumb]);
 
 	/* add goodies */
 	if (ch->specials.z_cord != people->specials.z_cord)
@@ -1056,7 +1124,8 @@ char *leave_message(P_char ch, P_char people, int exitnumb, char *amsg)
 
 	if (mount)
 	{
-		snprintf(tmp, 512, "%s riding on %s", amsg, CAN_SEE(people, mount) ? mount->player.short_descr : "something");
+		snprintf(tmp, 512, "%s riding on %s", amsg,
+			 CAN_SEE(people, mount) ? mount->player.short_descr : "something");
 		strcpy(amsg, tmp);
 	}
 
@@ -1076,46 +1145,46 @@ char *leave_message(P_char ch, P_char people, int exitnumb, char *amsg)
 /* Used for high winds blowing flying chars */
 void blow_char_somewhere_else(P_char ch, int dir)
 {
-	P_char               t_ch = NULL;
-	int                  to_room, distance, zone_num, rroom;
+	P_char t_ch = NULL;
+	int to_room, distance, zone_num, rroom;
 	struct weather_data *cond;
 
 	if (!IS_MAP_ROOM(ch->in_room) || IS_TRUSTED(ch))
 		return;
 
 	zone_num = world[ch->in_room].zone;
-	cond     = &sector_table[in_weather_sector(ch->in_room)].conditions;
+	cond = &sector_table[in_weather_sector(ch->in_room)].conditions;
 	distance = BOUNDED(0, (cond->windspeed - 45) / 2, 20);
 
 	switch (dir)
 	{
-		case DIR_NORTH:
-			to_room = world[ch->in_room].number - (100 * distance);
-			break;
-		case DIR_EAST:
-			to_room = world[ch->in_room].number + (1 * distance);
-			break;
-		case DIR_SOUTH:
-			to_room = world[ch->in_room].number + (100 * distance);
-			break;
-		case DIR_WEST:
-			to_room = world[ch->in_room].number - (1 * distance);
-			break;
-		case DIR_NORTHWEST:
-			to_room = world[ch->in_room].number - ((100 * distance) / 2) - ((1 * distance) / 2);
-			break;
-		case DIR_NORTHEAST:
-			to_room = world[ch->in_room].number - ((100 * distance) / 2) + ((1 * distance) / 2);
-			break;
-		case DIR_SOUTHWEST:
-			to_room = world[ch->in_room].number + ((100 * distance) / 2) - ((1 * distance) / 2);
-			break;
-		case DIR_SOUTHEAST:
-			to_room = world[ch->in_room].number + ((100 * distance) / 2) + ((1 * distance) / 2);
-			break;
-		default:
-			to_room = world[ch->in_room].number;
-			break;
+	case DIR_NORTH:
+		to_room = world[ch->in_room].number - (100 * distance);
+		break;
+	case DIR_EAST:
+		to_room = world[ch->in_room].number + (1 * distance);
+		break;
+	case DIR_SOUTH:
+		to_room = world[ch->in_room].number + (100 * distance);
+		break;
+	case DIR_WEST:
+		to_room = world[ch->in_room].number - (1 * distance);
+		break;
+	case DIR_NORTHWEST:
+		to_room = world[ch->in_room].number - ((100 * distance) / 2) - ((1 * distance) / 2);
+		break;
+	case DIR_NORTHEAST:
+		to_room = world[ch->in_room].number - ((100 * distance) / 2) + ((1 * distance) / 2);
+		break;
+	case DIR_SOUTHWEST:
+		to_room = world[ch->in_room].number + ((100 * distance) / 2) - ((1 * distance) / 2);
+		break;
+	case DIR_SOUTHEAST:
+		to_room = world[ch->in_room].number + ((100 * distance) / 2) + ((1 * distance) / 2);
+		break;
+	default:
+		to_room = world[ch->in_room].number;
+		break;
 	}
 
 	rroom = real_room0(to_room);
@@ -1145,14 +1214,14 @@ void blow_char_somewhere_else(P_char ch, int dir)
  */
 int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 {
-	P_char               tch, t_ch;
-	char                 amsg[MAX_STRING_LENGTH];
-	int                  need_movement, was_in, new_room, count, i, cmd, cmd2, current, following;
-	int                  deceptnum, noise_var, calming;
+	P_char tch, t_ch;
+	char amsg[MAX_STRING_LENGTH];
+	int need_movement, was_in, new_room, count, i, cmd, cmd2, current, following;
+	int deceptnum, noise_var, calming;
 	struct weather_data *cond;
-	struct follow_type  *k, *next_dude;
-	P_char               mount, rider, moving;
-	struct zone_data    *zone;
+	struct follow_type *k, *next_dude;
+	P_char mount, rider, moving;
+	struct zone_data *zone;
 
 	if (IS_IMMOBILE(ch))
 	{
@@ -1170,7 +1239,9 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 	}
 
 	if (!EXIT(ch, exitnumb) || (EXIT(ch, exitnumb)->to_room == NOWHERE) ||
-	    ((IS_NPC(ch) && IS_SET(ch->specials.act, ACT_STAY_ZONE) && (world[ch->in_room].zone != world[EXIT(ch, exitnumb)->to_room].zone) && !GET_MASTER(ch))))
+	    ((IS_NPC(ch) && IS_SET(ch->specials.act, ACT_STAY_ZONE) &&
+	      (world[ch->in_room].zone != world[EXIT(ch, exitnumb)->to_room].zone) &&
+	      !GET_MASTER(ch))))
 	{
 		send_to_char("Alas, you cannot go that way. . . .\n", ch);
 		return FALSE;
@@ -1178,11 +1249,14 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 	if (affected_by_spell(ch, SKILL_DREADNAUGHT))
 	{
-		send_to_char("&+RYou are too busy concentrating on defensive manouvers to move!\r\n", ch);
+		send_to_char(
+			"&+RYou are too busy concentrating on defensive manouvers to move!\r\n",
+			ch);
 		return FALSE;
 	}
 
-	if (!IS_TRUSTED(ch) && (IS_SET(EXIT(ch, exitnumb)->exit_info, EX_SECRET) || IS_SET(EXIT(ch, exitnumb)->exit_info, EX_BLOCKED)))
+	if (!IS_TRUSTED(ch) && (IS_SET(EXIT(ch, exitnumb)->exit_info, EX_SECRET) ||
+				IS_SET(EXIT(ch, exitnumb)->exit_info, EX_BLOCKED)))
 	{
 		send_to_char("Alas, you cannot go that way. . . .\n", ch);
 		return FALSE;
@@ -1203,9 +1277,13 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 	{
 		if (IS_TRUSTED(ch))
 		{
-			send_to_char("You go with your godly self, ignoring physical barriers and all...\n", ch);
+			send_to_char(
+				"You go with your godly self, ignoring physical barriers and all...\n",
+				ch);
 		}
-		else if (IS_AFFECTED2(ch, AFF2_PASSDOOR) && (!IS_SET(EXIT(ch, exitnumb)->exit_info, EX_LOCKED) || !IS_SET(EXIT(ch, exitnumb)->exit_info, EX_PICKPROOF)))
+		else if (IS_AFFECTED2(ch, AFF2_PASSDOOR) &&
+			 (!IS_SET(EXIT(ch, exitnumb)->exit_info, EX_LOCKED) ||
+			  !IS_SET(EXIT(ch, exitnumb)->exit_info, EX_PICKPROOF)))
 		{
 			send_to_char("Your body vibrates as you fan out your molecules.\n", ch);
 		}
@@ -1213,7 +1291,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 		{
 			if (EXIT(ch, exitnumb)->keyword)
 			{
-				snprintf(amsg, MAX_STRING_LENGTH, "The %s seems to be closed.\n", FirstWord(EXIT(ch, exitnumb)->keyword));
+				snprintf(amsg, MAX_STRING_LENGTH, "The %s seems to be closed.\n",
+					 FirstWord(EXIT(ch, exitnumb)->keyword));
 				send_to_char(amsg, ch);
 			}
 			else
@@ -1230,11 +1309,15 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 		if (exitnumb == rev_dir[current])
 		{
-			if (number(1, 101) < (world[ch->in_room].current_speed - (GET_C_STR(ch) / 3)))
+			if (number(1, 101) <
+			    (world[ch->in_room].current_speed - (GET_C_STR(ch) / 3)))
 			{
-				if (IS_WATER_ROOM(ch->in_room) && (ch->specials.z_cord < 1) && !IS_AFFECTED(ch, AFF_LEVITATE) && !IS_AFFECTED(ch, AFF_FLY))
+				if (IS_WATER_ROOM(ch->in_room) && (ch->specials.z_cord < 1) &&
+				    !IS_AFFECTED(ch, AFF_LEVITATE) && !IS_AFFECTED(ch, AFF_FLY))
 				{
-					send_to_char("The force of the current prevents your movements against them.\n", ch);
+					send_to_char(
+						"The force of the current prevents your movements against them.\n",
+						ch);
 					return FALSE;
 				}
 			}
@@ -1289,7 +1372,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 	if (mount && GET_OPPONENT(mount))
 	{
-		send_to_char("&+WYour mount is in combat, maybe you should stay and fight!&n\n", ch);
+		send_to_char("&+WYour mount is in combat, maybe you should stay and fight!&n\n",
+			     ch);
 		return FALSE;
 	}
 
@@ -1300,11 +1384,14 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 		return FALSE;
 	}
 
-	if ((mount || rider) && world[world[ch->in_room].dir_option[exitnumb]->to_room].sector_type == SECT_OCEAN)
+	if ((mount || rider) &&
+	    world[world[ch->in_room].dir_option[exitnumb]->to_room].sector_type == SECT_OCEAN)
 	{
 		if (mount)
 		{
-			send_to_char("It is too difficult to move there with someone on your back!\n", mount);
+			send_to_char(
+				"It is too difficult to move there with someone on your back!\n",
+				mount);
 		}
 		send_to_char("It is too difficult to direct your mount in the ocean!\n", ch);
 
@@ -1344,7 +1431,9 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 #endif
 
 	// check for guild golems moving..
-	if (IS_NPC(ch) && ((mob_index[GET_RNUM(ch)].number == 11002) || (mob_index[GET_RNUM(ch)].number == 11003) || (mob_index[GET_RNUM(ch)].number == 11004)))
+	if (IS_NPC(ch) && ((mob_index[GET_RNUM(ch)].number == 11002) ||
+			   (mob_index[GET_RNUM(ch)].number == 11003) ||
+			   (mob_index[GET_RNUM(ch)].number == 11004)))
 	{
 		return 0;
 	}
@@ -1359,7 +1448,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 		need_movement += 5;
 	}
 
-	if (IS_PC(ch) && GET_CHAR_SKILL(ch, SKILL_SNEAK) > 0 && affected_by_spell(ch, SKILL_SNEAK) && !mount && GET_VITALITY(ch) > need_movement)
+	if (IS_PC(ch) && GET_CHAR_SKILL(ch, SKILL_SNEAK) > 0 &&
+	    affected_by_spell(ch, SKILL_SNEAK) && !mount && GET_VITALITY(ch) > need_movement)
 	{
 		notch_skill(ch, SKILL_SNEAK, 5);
 	}
@@ -1415,7 +1505,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 	if (IS_AFFECTED5(ch, AFF5_VINES))
 	{
-		send_to_char("The &+Gvines&n surrounding you crumble and fall to the ground.\n", ch);
+		send_to_char("The &+Gvines&n surrounding you crumble and fall to the ground.\n",
+			     ch);
 		affect_from_char(ch, SPELL_VINES);
 	}
 
@@ -1462,7 +1553,11 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 			}
 			amsg[0] = '\0';
 
-			for (flags &MVFLG_FLEE ? (has_innate(ch, INNATE_DECEPTIVE_FLEE) ? deceptnum = 9 : deceptnum = 0) : deceptnum = 0; deceptnum >= 0; deceptnum--)
+			for (flags &MVFLG_FLEE ?
+				     (has_innate(ch, INNATE_DECEPTIVE_FLEE) ? deceptnum = 9 :
+									      deceptnum = 0) :
+				     deceptnum = 0;
+			     deceptnum >= 0; deceptnum--)
 			{
 				if (has_innate(ch, INNATE_DECEPTIVE_FLEE))
 				{
@@ -1471,34 +1566,50 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 						continue;
 					}
 				}
-				leave_message(ch, tch, flags & MVFLG_FLEE ? (has_innate(ch, INNATE_DECEPTIVE_FLEE) ? deceptnum : exitnumb) : exitnumb, amsg);
+				leave_message(ch, tch,
+					      flags & MVFLG_FLEE ?
+						      (has_innate(ch, INNATE_DECEPTIVE_FLEE) ?
+							       deceptnum :
+							       exitnumb) :
+						      exitnumb,
+					      amsg);
 
 				if (mount)
 				{
-					act(amsg, TRUE, ch, mount->lobj ? mount->lobj->Visible_Object() : 0, tch, TO_VICT | ACT_IGNORE_ZCOORD);
+					act(amsg, TRUE, ch,
+					    mount->lobj ? mount->lobj->Visible_Object() : 0, tch,
+					    TO_VICT | ACT_IGNORE_ZCOORD);
 				}
 				else if (!SNEAK(ch))
 				{
-					act(amsg, TRUE, ch, ch->lobj ? ch->lobj->Visible_Object() : NULL, tch, TO_VICT | ACT_IGNORE_ZCOORD);
+					act(amsg, TRUE, ch,
+					    ch->lobj ? ch->lobj->Visible_Object() : NULL, tch,
+					    TO_VICT | ACT_IGNORE_ZCOORD);
 				}
 				else
 				{
 					/* sneaking, gods see it, and certain others may detect it as well. */
 					// TODO: MWD is logic for ophid correct here?
-					if (IS_TRUSTED(tch) || (((IS_AFFECTED(tch, AFF_SENSE_LIFE) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER))) ||
-					                         (ch->lobj && ch->lobj->Visible_Type()) || IS_AFFECTED(tch, AFF_SKILL_AWARE)) &&
-					                        StatSave(tch, APPLY_INT, -4)))
+					if (IS_TRUSTED(tch) ||
+					    (((IS_AFFECTED(tch, AFF_SENSE_LIFE) ||
+					       (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+						GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER))) ||
+					      (ch->lobj && ch->lobj->Visible_Type()) ||
+					      IS_AFFECTED(tch, AFF_SKILL_AWARE)) &&
+					     StatSave(tch, APPLY_INT, -4)))
 					{
-						act(amsg, TRUE, ch, ch->lobj ? ch->lobj->Visible_Object() : 0, tch, TO_VICT | ACT_IGNORE_ZCOORD);
+						act(amsg, TRUE, ch,
+						    ch->lobj ? ch->lobj->Visible_Object() : 0, tch,
+						    TO_VICT | ACT_IGNORE_ZCOORD);
 					}
 				}
 			}
 		}
 	}
 
-	was_in   = ch->in_room;
+	was_in = ch->in_room;
 	new_room = world[was_in].dir_option[exitnumb]->to_room;
-	zone     = &zone_table[world[new_room].zone];
+	zone = &zone_table[world[new_room].zone];
 
 	if (new_room == NOWHERE)
 	{
@@ -1530,7 +1641,9 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 	/* hack for the exping outside the zone exploit */
 
-	if (IS_NPC(moving) && (zone != &zone_table[world[was_in].zone]) && (world[was_in].number != GET_BIRTHPLACE(moving)) && !affected_by_spell(moving, TAG_REDUCED_EXP) && !IS_MORPH(moving))
+	if (IS_NPC(moving) && (zone != &zone_table[world[was_in].zone]) &&
+	    (world[was_in].number != GET_BIRTHPLACE(moving)) &&
+	    !affected_by_spell(moving, TAG_REDUCED_EXP) && !IS_MORPH(moving))
 	{
 		int duration = WAIT_SEC * SECS_PER_REAL_HOUR * GET_LEVEL(moving) / 60;
 		set_short_affected_by(moving, TAG_REDUCED_EXP, duration);
@@ -1561,7 +1674,9 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 			enter_message(ch, tch, exitnumb, amsg, was_in, new_room);
 
 			calming = 0;
-			if (!IS_ELITE(tch) && !IS_INVADER(ch) && (((GET_LEVEL(tch) - GET_LEVEL(ch)) <= 5) || !number(0, 3)) && has_innate(ch, INNATE_CALMING))
+			if (!IS_ELITE(tch) && !IS_INVADER(ch) &&
+			    (((GET_LEVEL(tch) - GET_LEVEL(ch)) <= 5) || !number(0, 3)) &&
+			    has_innate(ch, INNATE_CALMING))
 			{
 				calming = (int)get_property("innate.calming.delay", 10);
 			}
@@ -1578,27 +1693,44 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 			if (mount)
 			{
-				act(amsg, TRUE, ch, mount->lobj ? mount->lobj->Visible_Object() : 0, tch, TO_VICT | ACT_IGNORE_ZCOORD);
+				act(amsg, TRUE, ch, mount->lobj ? mount->lobj->Visible_Object() : 0,
+				    tch, TO_VICT | ACT_IGNORE_ZCOORD);
 				if (is_aggr_to(tch, ch))
 				{
-					add_event(event_agg_attack, number(1, MAX(1, (19 - STAT_INDEX(GET_C_AGI(tch))) / 2)) + calming, tch, ch, 0, 0, 0, 0);
+					add_event(event_agg_attack,
+						  number(1,
+							 MAX(1, (19 - STAT_INDEX(GET_C_AGI(tch))) /
+									2)) +
+							  calming,
+						  tch, ch, 0, 0, 0, 0);
 				}
 				// cackle
 				else if (is_aggr_to(tch, mount))
 				{
-					add_event(event_agg_attack, number(1, MAX(1, (19 - STAT_INDEX(GET_C_AGI(tch))) / 2)), tch, mount, 0, 0, 0, 0);
+					add_event(event_agg_attack,
+						  number(1,
+							 MAX(1, (19 - STAT_INDEX(GET_C_AGI(tch))) /
+									2)),
+						  tch, mount, 0, 0, 0, 0);
 				}
 			}
 			else if (!SNEAK(ch))
 			{
 				if (!(flags & MVFLG_NOMSG))
 				{
-					act(amsg, TRUE, ch, ch->lobj ? ch->lobj->Visible_Object() : 0, tch, TO_VICT | ACT_IGNORE_ZCOORD);
+					act(amsg, TRUE, ch,
+					    ch->lobj ? ch->lobj->Visible_Object() : 0, tch,
+					    TO_VICT | ACT_IGNORE_ZCOORD);
 				}
 
 				if (is_aggr_to(tch, ch))
 				{
-					add_event(event_agg_attack, number(0, MAX(1, (22 - STAT_INDEX(GET_C_AGI(tch))) / 2)) + calming, tch, ch, 0, 0, 0, 0);
+					add_event(event_agg_attack,
+						  number(0,
+							 MAX(1, (22 - STAT_INDEX(GET_C_AGI(tch))) /
+									2)) +
+							  calming,
+						  tch, ch, 0, 0, 0, 0);
 				}
 			}
 			else
@@ -1607,29 +1739,50 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 				 * sneaking of some sort, gods see it, and certain others
 				 * may detect it as well.  JAB
 				 */
-				if (IS_NPC(tch) && isname("_nosneak_", GET_NAME(tch)) && is_aggr_to(tch, ch))
+				if (IS_NPC(tch) && isname("_nosneak_", GET_NAME(tch)) &&
+				    is_aggr_to(tch, ch))
 				{
-					add_event(event_agg_attack, 1 + (calming / 3), tch, ch, 0, 0, 0, 0);
+					add_event(event_agg_attack, 1 + (calming / 3), tch, ch, 0,
+						  0, 0, 0);
 				}
 				// TODO: MWD is logic correct for ophid?
 				else if (IS_TRUSTED(tch) ||
-				         (((IS_AFFECTED(tch, AFF_SENSE_LIFE) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER))) || IS_AFFECTED(tch, AFF_SKILL_AWARE)) &&
-				          StatSave(tch, APPLY_INT, -4)))
+					 (((IS_AFFECTED(tch, AFF_SENSE_LIFE) ||
+					    (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+					     GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER))) ||
+					   IS_AFFECTED(tch, AFF_SKILL_AWARE)) &&
+					  StatSave(tch, APPLY_INT, -4)))
 				{
 					if (!(flags & MVFLG_NOMSG))
 					{
-						act(amsg, TRUE, ch, ch->lobj ? ch->lobj->Visible_Object() : 0, tch, TO_VICT | ACT_IGNORE_ZCOORD);
+						act(amsg, TRUE, ch,
+						    ch->lobj ? ch->lobj->Visible_Object() : 0, tch,
+						    TO_VICT | ACT_IGNORE_ZCOORD);
 					}
 					if (is_aggr_to(tch, ch))
 					{
-						add_event(event_agg_attack, number(1, MAX(1, (25 - STAT_INDEX(GET_C_AGI(tch))) / 2)) + calming, tch, ch, 0, 0, 0, 0);
+						add_event(event_agg_attack,
+							  number(1,
+								 MAX(1, (25 - STAT_INDEX(GET_C_AGI(
+										      tch))) /
+										2)) +
+								  calming,
+							  tch, ch, 0, 0, 0, 0);
 					}
 				}
 				else
 				{
 					if (is_aggr_to(tch, ch))
 					{
-						add_event(event_agg_attack, number(PULSE_VIOLENCE, MAX(PULSE_VIOLENCE, (PULSE_VIOLENCE + 10 - dex_app[STAT_INDEX(GET_C_DEX(tch))].reaction))) + calming, tch, ch, 0, 0, 0, 0);
+						add_event(event_agg_attack,
+							  number(PULSE_VIOLENCE,
+								 MAX(PULSE_VIOLENCE,
+								     (PULSE_VIOLENCE + 10 -
+								      dex_app[STAT_INDEX(GET_C_DEX(
+										      tch))]
+									      .reaction))) +
+								  calming,
+							  tch, ch, 0, 0, 0, 0);
 					}
 				}
 			}
@@ -1726,23 +1879,25 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 	{
 		struct room_affect raf, *praf = NULL;
 
-		if (IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS) && IS_PC(ch) && !CAN_NIGHTPEOPLE_SEE(was_in))
+		if (IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS) && IS_PC(ch) &&
+		    !CAN_NIGHTPEOPLE_SEE(was_in))
 		{
 			memset(&raf, 0, sizeof(struct room_affect));
-			raf.type       = SPELL_GLOBE_OF_DARKNESS;
-			raf.duration   = 1;
+			raf.type = SPELL_GLOBE_OF_DARKNESS;
+			raf.duration = 1;
 			raf.room_flags = ROOM_MAGIC_DARK;
-			raf.ch         = ch;
-			praf           = affect_to_room(was_in, &raf);
+			raf.ch = ch;
+			praf = affect_to_room(was_in, &raf);
 		}
-		else if (IS_AFFECTED4(ch, AFF4_MAGE_FLAME) && IS_PC(ch) && !CAN_DAYPEOPLE_SEE(was_in))
+		else if (IS_AFFECTED4(ch, AFF4_MAGE_FLAME) && IS_PC(ch) &&
+			 !CAN_DAYPEOPLE_SEE(was_in))
 		{
 			memset(&raf, 0, sizeof(struct room_affect));
-			raf.type       = SPELL_MAGE_FLAME;
-			raf.duration   = 1;
+			raf.type = SPELL_MAGE_FLAME;
+			raf.duration = 1;
 			raf.room_flags = ROOM_MAGIC_LIGHT;
-			raf.ch         = ch;
-			praf           = affect_to_room(was_in, &raf);
+			raf.ch = ch;
+			praf = affect_to_room(was_in, &raf);
 		}
 
 		/*  this is a little lag when you have many tch following you
@@ -1760,7 +1915,9 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 		for (k = ch->followers; k; k = next_dude)
 		{
 			next_dude = k->next;
-			if ((was_in == k->follower->in_room) && CAN_ACT(k->follower) && MIN_POS(k->follower, POS_STANDING + STAT_RESTING) && !IS_FIGHTING(k->follower) && !IS_DESTROYING(k->follower) &&
+			if ((was_in == k->follower->in_room) && CAN_ACT(k->follower) &&
+			    MIN_POS(k->follower, POS_STANDING + STAT_RESTING) &&
+			    !IS_FIGHTING(k->follower) && !IS_DESTROYING(k->follower) &&
 			    !NumAttackers(k->follower) && CAN_SEE(k->follower, ch))
 			{
 				/* if((IS_NPC(k->follower) &&
@@ -1780,31 +1937,43 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 					if (i < 9)
 					{
-						send_to_char("&+WYou are &+Gconfused&+W and unable to follow, watch out!&n\n", ch);
-						snprintf(amsg, MAX_STRING_LENGTH, "%s %s", command[cmd2], dirs[cmd_to_exitnumb(cmd2)]);
+						send_to_char(
+							"&+WYou are &+Gconfused&+W and unable to follow, watch out!&n\n",
+							ch);
+						snprintf(amsg, MAX_STRING_LENGTH, "%s %s",
+							 command[cmd2],
+							 dirs[cmd_to_exitnumb(cmd2)]);
 						command_interpreter(k->follower, amsg);
 					}
 					else
 					{
-						send_to_char("&+WYou are &+Gconfused&+W and unable to follow, watch out!&n\n", ch);
+						send_to_char(
+							"&+WYou are &+Gconfused&+W and unable to follow, watch out!&n\n",
+							ch);
 					}
 				}
-				else if (world[ch->in_room].sector_type == SECT_FOREST && IS_MAP_ROOM(ch->in_room) && get_property("terrain.forest.lostChance", 5.) > number(0, 99))
+				else if (world[ch->in_room].sector_type == SECT_FOREST &&
+					 IS_MAP_ROOM(ch->in_room) &&
+					 get_property("terrain.forest.lostChance", 5.) >
+						 number(0, 99))
 				{
-					send_to_char("Oh no! You got lost in these woods!\n", k->follower);
+					send_to_char("Oh no! You got lost in these woods!\n",
+						     k->follower);
 				}
 				else
 				{
 					act("You follow $N.", FALSE, k->follower, 0, ch, TO_CHAR);
 					send_to_char("\n", k->follower);
-					snprintf(amsg, MAX_STRING_LENGTH, "%s %s", command[cmd], dirs[exitnumb]);
+					snprintf(amsg, MAX_STRING_LENGTH, "%s %s", command[cmd],
+						 dirs[exitnumb]);
 					SET_BIT(k->follower->specials.affected_by5, AFF5_FOLLOWING);
 					// We need to use tch here, because if he dies, then the memory for followers will be gone.
 					//   tch won't be following anymore so k->follower points to free memory.
 					tch = k->follower;
 					command_interpreter(k->follower, amsg);
 					if (IS_ALIVE(tch))
-						REMOVE_BIT(tch->specials.affected_by5, AFF5_FOLLOWING);
+						REMOVE_BIT(tch->specials.affected_by5,
+							   AFF5_FOLLOWING);
 					num_followed++;
 				}
 			}
@@ -1854,8 +2023,12 @@ void send_movement_noise(P_char ch, int num)
 	{
 		for (P_desc i = descriptor_list; i; i = i->next)
 		{
-			if (i->connected != CON_PLAYING || ch == i->character || i->character->following == ch || world[i->character->in_room].zone != world[ch->in_room].zone ||
-			    ch->in_room == i->character->in_room || ch->in_room == real_room(i->character->specials.was_in_room) || real_room(ch->specials.was_in_room) == i->character->in_room)
+			if (i->connected != CON_PLAYING || ch == i->character ||
+			    i->character->following == ch ||
+			    world[i->character->in_room].zone != world[ch->in_room].zone ||
+			    ch->in_room == i->character->in_room ||
+			    ch->in_room == real_room(i->character->specials.was_in_room) ||
+			    real_room(ch->specials.was_in_room) == i->character->in_room)
 			{
 				continue;
 			}
@@ -1864,19 +2037,27 @@ void send_movement_noise(P_char ch, int num)
 
 			if (num >= 20 && dist <= 400)
 			{
-				send_to_char("&+LA &+Rl&+re&+Rg&+ri&+Ro&+rn &+Lmaneuvers nearby creating a massive plume of &+Wd&+wu&+Ws&+wt.&n\r\n", i->character);
+				send_to_char(
+					"&+LA &+Rl&+re&+Rg&+ri&+Ro&+rn &+Lmaneuvers nearby creating a massive plume of &+Wd&+wu&+Ws&+wt.&n\r\n",
+					i->character);
 			}
 			else if (num >= 13 && num <= 19 && dist <= 300)
 			{
-				send_to_char("&+rThe ground &+Rb&+ru&+Rc&+rk&+Rl&+re&+Rs&n &+rto the tune of a marching &+Lhorde.&n\r\n", i->character);
+				send_to_char(
+					"&+rThe ground &+Rb&+ru&+Rc&+rk&+Rl&+re&+Rs&n &+rto the tune of a marching &+Lhorde.&n\r\n",
+					i->character);
 			}
 			else if (num >= 9 && num <= 12 && dist <= 150)
 			{
-				send_to_char("&+yThe earth &+Ytrembles &+yfrom the marching of a nearby army.&n\r\n", i->character);
+				send_to_char(
+					"&+yThe earth &+Ytrembles &+yfrom the marching of a nearby army.&n\r\n",
+					i->character);
 			}
 			else if (num >= 5 && num <= 8 && dist <= 64 && number(0, 4))
 			{
-				send_to_char("&+cYou hear the sounds of movement in the distance.&n\r\n", i->character);
+				send_to_char(
+					"&+cYou hear the sounds of movement in the distance.&n\r\n",
+					i->character);
 			}
 			/*
 			      if(num >= 30 &&
@@ -1995,12 +2176,16 @@ void do_move(P_char ch, char *argument, int cmd)
 		}
 	}
 
-	if (!IS_TRUSTED(ch) && !(GET_CLASS(ch, CLASS_DRUID) || (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID))) && get_spell_from_room(&world[ch->in_room], SPELL_WANDERING_WOODS))
+	if (!IS_TRUSTED(ch) &&
+	    !(GET_CLASS(ch, CLASS_DRUID) ||
+	      (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID))) &&
+	    get_spell_from_room(&world[ch->in_room], SPELL_WANDERING_WOODS))
 	{
 		if (number(1, (int)((GET_C_INT(ch) - 100) / 20) + 100) < 61)
 		{
 			send_to_char("You try to leave, but just end up going in circles!\n", ch);
-			act("$n leaves one direction and enters from another!", FALSE, ch, 0, 0, TO_ROOM);
+			act("$n leaves one direction and enters from another!", FALSE, ch, 0, 0,
+			    TO_ROOM);
 			return;
 		}
 	}
@@ -2025,10 +2210,12 @@ void do_move(P_char ch, char *argument, int cmd)
 
 			if (to_room != NOWHERE && to_room != ch->in_room)
 			{
-				act("$n's outline blurs and then streaks into the distance.", TRUE, ch, 0, 0, TO_ROOM);
+				act("$n's outline blurs and then streaks into the distance.", TRUE,
+				    ch, 0, 0, TO_ROOM);
 				char_from_room(ch);
 				char_to_room(ch, to_room, -1);
-				act("A blur streaks into the room, coalescing into $n.", TRUE, ch, 0, 0, TO_ROOM);
+				act("A blur streaks into the room, coalescing into $n.", TRUE, ch,
+				    0, 0, TO_ROOM);
 			}
 			return;
 		}
@@ -2049,7 +2236,7 @@ void do_move(P_char ch, char *argument, int cmd)
 
 int find_door(P_char ch, char *type, char *dir)
 {
-	int  door;
+	int door;
 	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (ch->specials.z_cord > 0)
@@ -2067,14 +2254,16 @@ int find_door(P_char ch, char *type, char *dir)
 			send_to_char("That's not a direction.\n", ch);
 			return (-1);
 		}
-		if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) && !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
+		if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) &&
+		    !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
 			if (EXIT(ch, door)->keyword)
 				if (isname(type, EXIT(ch, door)->keyword))
 					return (door);
 
 				else
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "I see no %s there.\n", type);
+					snprintf(Gbuf1, MAX_STRING_LENGTH, "I see no %s there.\n",
+						 type);
 					send_to_char(Gbuf1, ch);
 					return (-1);
 				}
@@ -2090,7 +2279,8 @@ int find_door(P_char ch, char *type, char *dir)
 	{
 		/* try to locate the keyword */
 		for (door = 0; door <= (NUM_EXITS - 1); door++)
-			if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) && !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
+			if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) &&
+			    !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
 				if (EXIT(ch, door)->keyword)
 					if (isname(type, EXIT(ch, door)->keyword))
 						return (door);
@@ -2106,7 +2296,8 @@ int find_door(P_char ch, char *type, char *dir)
 
 	if (door != -1)
 	{
-		if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) && !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
+		if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) &&
+		    !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
 			return (door);
 		else
 		{
@@ -2124,11 +2315,11 @@ int find_door(P_char ch, char *type, char *dir)
 
 void do_open(P_char ch, char *argument, int cmd)
 {
-	int                         door, other_room, retval;
+	int door, other_room, retval;
 	struct room_direction_data *back;
-	P_obj                       obj;
-	P_char                      victim;
-	char                        Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	P_obj obj;
+	P_char victim;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2137,13 +2328,15 @@ void do_open(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	if (IS_BLIND(ch))
 	{
-		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -2167,13 +2360,15 @@ void do_open(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &obj);
+		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+				      &victim, &obj);
 	}
 
 	// This is an object
 	if (retval != 0)
 	{
-		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) && (obj->type != ITEM_QUIVER))
+		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) &&
+		    (obj->type != ITEM_QUIVER))
 		{
 			send_to_char("That's not a container.\n", ch);
 			return;
@@ -2198,39 +2393,54 @@ void do_open(P_char ch, char *argument, int cmd)
 			// Yeah, misusing the door variable.. so sue me.
 			door = obj_index[obj->R_num].virtual_number;
 			// Special proc for bag of random goodness - drannak 4/3/2013 400232= turkey gut
-			if (door == REG_FAERIE_BAG_VNUM || door == RARE_FAERIE_BAG_VNUM || door == EXCEPT_FAERIE_BAG_VNUM || door == TURKEY_INNARDS_VNUM)
+			if (door == REG_FAERIE_BAG_VNUM || door == RARE_FAERIE_BAG_VNUM ||
+			    door == EXCEPT_FAERIE_BAG_VNUM || door == TURKEY_INNARDS_VNUM)
 			{
-				if ((IS_CARRYING_N(ch) + 1) > CAN_CARRY_N(ch)) // check their inventory
+				if ((IS_CARRYING_N(ch) + 1) >
+				    CAN_CARRY_N(ch)) // check their inventory
 				{
-					send_to_char("You currently have too many items in your inventory to open a bag,\r\nput some items in a container then try again!\r\n", ch);
+					send_to_char(
+						"You currently have too many items in your inventory to open a bag,\r\nput some items in a container then try again!\r\n",
+						ch);
 					return;
 				}
 
 				if (!OBJ_CARRIED(obj))
 				{
-					send_to_char("You must have the &+Witem&n in your &+Yinventory&n to open it!\r\n", ch);
+					send_to_char(
+						"You must have the &+Witem&n in your &+Yinventory&n to open it!\r\n",
+						ch);
 					return;
 				}
 				if (door == REG_FAERIE_BAG_VNUM || door == RARE_FAERIE_BAG_VNUM)
 				{
-					send_to_char("&+mAs you open the &+Mbag&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!\r\n", ch);
-					act("&+mAs $n opens the &+Mbag&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!", FALSE, ch, obj, 0, TO_ROOM);
+					send_to_char(
+						"&+mAs you open the &+Mbag&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!\r\n",
+						ch);
+					act("&+mAs $n opens the &+Mbag&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!",
+					    FALSE, ch, obj, 0, TO_ROOM);
 				}
 				else if (door == EXCEPT_FAERIE_BAG_VNUM)
 				{
-					send_to_char("&+mAs you open the &+Ychest&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!\r\n", ch);
-					act("&+mAs $n opens the &+Ychest&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!", FALSE, ch, obj, 0, TO_ROOM);
+					send_to_char(
+						"&+mAs you open the &+Ychest&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!\r\n",
+						ch);
+					act("&+mAs $n opens the &+Ychest&+m, a magical mist &+rex&+Rpl&+Mod&+Wes&+m covering everything!",
+					    FALSE, ch, obj, 0, TO_ROOM);
 				}
 				else // turkey gut
 				{
-					send_to_char("&+rYou thrust your &+yhand &+rdeep into the slimy &+Lgut&+r, covering everything in &+Rblood&+r!\r\n", ch);
-					act("&+r$n&+r thrusts their &+yhand &+rdeep into the slimy &+Lgut&+r, covering everything in &+Rblood&+r!", FALSE, ch, obj, 0, TO_ROOM);
+					send_to_char(
+						"&+rYou thrust your &+yhand &+rdeep into the slimy &+Lgut&+r, covering everything in &+Rblood&+r!\r\n",
+						ch);
+					act("&+r$n&+r thrusts their &+yhand &+rdeep into the slimy &+Lgut&+r, covering everything in &+Rblood&+r!",
+					    FALSE, ch, obj, 0, TO_ROOM);
 				}
 
-				char  buf[MAX_STRING_LENGTH];
+				char buf[MAX_STRING_LENGTH];
 				P_obj robj;
-				long  robjint;
-				bool  validobj;
+				long robjint;
+				bool validobj;
 				validobj = FALSE;
 				/*
 				debug snprintf(buf, MAX_STRING_LENGTH, "validobj value: %d\n\r", validobj);
@@ -2256,30 +2466,39 @@ void do_open(P_char ch, char *argument, int cmd)
 				{
 					while (validobj == FALSE)
 					{
-						robjint  = number(1300, 134000);
-						robj     = read_object(robjint, VIRTUAL);
+						robjint = number(1300, 134000);
+						robj = read_object(robjint, VIRTUAL);
 						validobj = TRUE;
 						if (!robj)
 						{
 							validobj = FALSE;
 						}
-						else if (!IS_SET(robj->wear_flags, ITEM_TAKE) || robj->type == ITEM_KEY || IS_ARTIFACT(robj) || IS_SET(robj->extra_flags, ITEM_NORENT) ||
-						         IS_SET(robj->extra_flags, ITEM_NOSHOW) || IS_SET(robj->extra_flags, ITEM_TRANSIENT) || isname("_noquest_", robj->name))
+						else if (!IS_SET(robj->wear_flags, ITEM_TAKE) ||
+							 robj->type == ITEM_KEY ||
+							 IS_ARTIFACT(robj) ||
+							 IS_SET(robj->extra_flags, ITEM_NORENT) ||
+							 IS_SET(robj->extra_flags, ITEM_NOSHOW) ||
+							 IS_SET(robj->extra_flags,
+								ITEM_TRANSIENT) ||
+							 isname("_noquest_", robj->name))
 						{
 							validobj = FALSE;
 							extract_obj(robj, FALSE);
 						}
-						else if (door == REG_FAERIE_BAG_VNUM && itemvalue(robj) > 125)
+						else if (door == REG_FAERIE_BAG_VNUM &&
+							 itemvalue(robj) > 125)
 						{
 							validobj = FALSE;
 							extract_obj(robj, FALSE);
 						}
-						else if (door == RARE_FAERIE_BAG_VNUM && itemvalue(robj) < 25)
+						else if (door == RARE_FAERIE_BAG_VNUM &&
+							 itemvalue(robj) < 25)
 						{
 							validobj = FALSE;
 							extract_obj(robj, FALSE);
 						}
-						else if (door == EXCEPT_FAERIE_BAG_VNUM && itemvalue(robj) < 50)
+						else if (door == EXCEPT_FAERIE_BAG_VNUM &&
+							 itemvalue(robj) < 50)
 						{
 							validobj = FALSE;
 							extract_obj(robj, FALSE);
@@ -2293,13 +2512,17 @@ void do_open(P_char ch, char *argument, int cmd)
 
 				if (door == TURKEY_INNARDS_VNUM)
 				{
-					act("&+rAfter some &+Rmessy &+rsearching, you finally find &n$p&+m!\r\n", FALSE, ch, robj, 0, TO_CHAR);
-					act("&+rAfter some &+Rmessy &+rsearching, $n finally finds &n$p&+m!\r\n", FALSE, ch, robj, 0, TO_ROOM);
+					act("&+rAfter some &+Rmessy &+rsearching, you finally find &n$p&+m!\r\n",
+					    FALSE, ch, robj, 0, TO_CHAR);
+					act("&+rAfter some &+Rmessy &+rsearching, $n finally finds &n$p&+m!\r\n",
+					    FALSE, ch, robj, 0, TO_ROOM);
 				}
 				else
 				{
-					act("&+mWhen at last it clears the &+Mbag&+m is gone, and all that remains is &n$p&+m!\r\n", FALSE, ch, robj, 0, TO_CHAR);
-					act("&+mWhen at last it clears the &+Mbag&+m is gone, and all that remains is &n$p&+m!\r\n", FALSE, ch, robj, 0, TO_ROOM);
+					act("&+mWhen at last it clears the &+Mbag&+m is gone, and all that remains is &n$p&+m!\r\n",
+					    FALSE, ch, robj, 0, TO_CHAR);
+					act("&+mWhen at last it clears the &+Mbag&+m is gone, and all that remains is &n$p&+m!\r\n",
+					    FALSE, ch, robj, 0, TO_ROOM);
 				}
 
 				obj_to_char(robj, ch);
@@ -2307,17 +2530,18 @@ void do_open(P_char ch, char *argument, int cmd)
 				extract_obj(obj, FALSE);
 				if (itemvalue(robj) > 100)
 				{
-					statuslog(ch->player.level,
-					          "&+MFaerie Bag(%c):&n (%s&n) just got [%d] (%s&n) ival %d at [%d]!",
-					          (door == REG_FAERIE_BAG_VNUM)      ? 'N'
-					          : (door == RARE_FAERIE_BAG_VNUM)   ? 'R'
-					          : (door == EXCEPT_FAERIE_BAG_VNUM) ? 'E'
-					                                             : '?',
-					          GET_NAME(ch),
-					          obj_index[robj->R_num].virtual_number,
-					          robj->short_description,
-					          itemvalue(robj),
-					          (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
+					statuslog(
+						ch->player.level,
+						"&+MFaerie Bag(%c):&n (%s&n) just got [%d] (%s&n) ival %d at [%d]!",
+						(door == REG_FAERIE_BAG_VNUM)	 ? 'N' :
+						(door == RARE_FAERIE_BAG_VNUM)	 ? 'R' :
+						(door == EXCEPT_FAERIE_BAG_VNUM) ? 'E' :
+										   '?',
+						GET_NAME(ch), obj_index[robj->R_num].virtual_number,
+						robj->short_description, itemvalue(robj),
+						(ch->in_room == NOWHERE) ?
+							-1 :
+							world[ch->in_room].number);
 				}
 				return;
 			}
@@ -2353,7 +2577,8 @@ void do_open(P_char ch, char *argument, int cmd)
 			REMOVE_BIT(EXIT(ch, door)->exit_info, EX_CLOSED);
 			REMOVE_BIT(EXIT(ch, door)->exit_info, EX_SECRET);
 			if (EXIT(ch, door)->keyword)
-				act("$n opens the $F.", FALSE, ch, 0, EXIT(ch, door)->keyword, TO_ROOM);
+				act("$n opens the $F.", FALSE, ch, 0, EXIT(ch, door)->keyword,
+				    TO_ROOM);
 			else
 				act("$n opens the door.", FALSE, ch, 0, 0, TO_ROOM);
 			send_to_char("Ok.\n", ch);
@@ -2368,11 +2593,17 @@ void do_open(P_char ch, char *argument, int cmd)
 						REMOVE_BIT(back->exit_info, EX_SECRET);
 						if (back->keyword)
 						{
-							snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s is opened from the other side.\n", FirstWord(back->keyword));
-							send_to_room(Gbuf1, EXIT(ch, door)->to_room);
+							snprintf(
+								Gbuf1, MAX_STRING_LENGTH,
+								"The %s is opened from the other side.\n",
+								FirstWord(back->keyword));
+							send_to_room(Gbuf1,
+								     EXIT(ch, door)->to_room);
 						}
 						else
-							send_to_room("The door is opened from the other side.\n", EXIT(ch, door)->to_room);
+							send_to_room(
+								"The door is opened from the other side.\n",
+								EXIT(ch, door)->to_room);
 					}
 		}
 	}
@@ -2380,12 +2611,12 @@ void do_open(P_char ch, char *argument, int cmd)
 
 void do_close(P_char ch, char *argument, int cmd)
 {
-	int                         door, other_room, retval;
+	int door, other_room, retval;
 	struct room_direction_data *back;
-	P_obj                       obj;
-	P_char                      victim;
-	char                        Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char                        Gbuf3[MAX_STRING_LENGTH];
+	P_obj obj;
+	P_char victim;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2394,13 +2625,15 @@ void do_close(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	if (IS_BLIND(ch))
 	{
-		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -2417,12 +2650,14 @@ void do_close(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &obj);
+		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+				      &victim, &obj);
 	}
 
 	// This is an object
 	if (retval != 0)
-		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) && (obj->type != ITEM_QUIVER))
+		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) &&
+		    (obj->type != ITEM_QUIVER))
 			send_to_char("That's not a container.\n", ch);
 		else if (IS_SET(obj->value[1], CONT_CLOSED))
 			send_to_char("But it's already closed!\n", ch);
@@ -2435,7 +2670,7 @@ void do_close(P_char ch, char *argument, int cmd)
 			act("$n closes $p.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-	{	/*
+	{ /*
 		 * Or a door
 		 */
 
@@ -2449,7 +2684,8 @@ void do_close(P_char ch, char *argument, int cmd)
 		{
 			SET_BIT(EXIT(ch, door)->exit_info, EX_CLOSED);
 			if (EXIT(ch, door)->keyword)
-				act("$n closes the $F.", 0, ch, 0, EXIT(ch, door)->keyword, TO_ROOM);
+				act("$n closes the $F.", 0, ch, 0, EXIT(ch, door)->keyword,
+				    TO_ROOM);
 			else
 				act("$n closes the door.", FALSE, ch, 0, 0, TO_ROOM);
 			send_to_char("Ok.\n", ch);
@@ -2463,11 +2699,15 @@ void do_close(P_char ch, char *argument, int cmd)
 						SET_BIT(back->exit_info, EX_CLOSED);
 						if (back->keyword)
 						{
-							snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s closes quietly.\n", FirstWord(back->keyword));
-							send_to_room(Gbuf1, EXIT(ch, door)->to_room);
+							snprintf(Gbuf1, MAX_STRING_LENGTH,
+								 "The %s closes quietly.\n",
+								 FirstWord(back->keyword));
+							send_to_room(Gbuf1,
+								     EXIT(ch, door)->to_room);
 						}
 						else
-							send_to_room("The door closes quietly.\n", EXIT(ch, door)->to_room);
+							send_to_room("The door closes quietly.\n",
+								     EXIT(ch, door)->to_room);
 					}
 		}
 	}
@@ -2489,11 +2729,11 @@ P_obj has_key(P_char ch, int key)
 }
 void do_lock(P_char ch, char *argument, int cmd)
 {
-	int                         door, other_room, retval;
+	int door, other_room, retval;
 	struct room_direction_data *back;
-	P_obj                       obj, key_obj;
-	P_char                      victim;
-	char                        Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	P_obj obj, key_obj;
+	P_char victim;
+	char Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2502,13 +2742,15 @@ void do_lock(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	if (IS_BLIND(ch))
 	{
-		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -2526,12 +2768,14 @@ void do_lock(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &obj);
+		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+				      &victim, &obj);
 	}
 
 	// This is an object
 	if (retval != 0)
-		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) && (obj->type != ITEM_QUIVER))
+		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) &&
+		    (obj->type != ITEM_QUIVER))
 			send_to_char("That's not a container.\n", ch);
 		else if (!IS_SET(obj->value[1], CONT_CLOSED))
 			send_to_char("Maybe you should close it first...\n", ch);
@@ -2548,7 +2792,7 @@ void do_lock(P_char ch, char *argument, int cmd)
 			act("$n locks $p.", FALSE, ch, obj, 0, TO_ROOM);
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
-	{	/*
+	{ /*
 		 * a door, perhaps
 		 */
 
@@ -2584,11 +2828,11 @@ void do_lock(P_char ch, char *argument, int cmd)
 
 void do_unlock(P_char ch, char *argument, int cmd)
 {
-	int                         door, other_room, retval;
+	int door, other_room, retval;
 	struct room_direction_data *back;
-	P_obj                       obj, key_obj = NULL;
-	P_char                      victim;
-	char                        Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	P_obj obj, key_obj = NULL;
+	P_char victim;
+	char Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2597,13 +2841,15 @@ void do_unlock(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	if (IS_BLIND(ch))
 	{
-		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -2621,12 +2867,14 @@ void do_unlock(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &obj);
+		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+				      &victim, &obj);
 	}
 
 	// This is an object
 	if (retval != 0)
-		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) && (obj->type != ITEM_QUIVER))
+		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) &&
+		    (obj->type != ITEM_QUIVER))
 			send_to_char("That's not a container.\n", ch);
 		else if (!IS_SET(obj->value[1], CONT_CLOSED))
 			send_to_char("Silly - it ain't even closed!\n", ch);
@@ -2639,7 +2887,8 @@ void do_unlock(P_char ch, char *argument, int cmd)
 			send_to_char("...but you unlock it anyway!\n", ch);
 			act("$n unlocks $p.", FALSE, ch, obj, 0, TO_ROOM);
 		}
-		else if ((key_obj = has_key(ch, VOBJ_TEMPLATE_KEY)) && (key_obj->value[7] == obj_index[obj->R_num].virtual_number))
+		else if ((key_obj = has_key(ch, VOBJ_TEMPLATE_KEY)) &&
+			 (key_obj->value[7] == obj_index[obj->R_num].virtual_number))
 		{
 			REMOVE_BIT(obj->value[1], CONT_LOCKED);
 			send_to_char("*Click*\n", ch);
@@ -2669,16 +2918,18 @@ void do_unlock(P_char ch, char *argument, int cmd)
 				if (number(0, 99) < key_obj->value[1])
 				{
 					act("Damn!  You broke your key!", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n's key breaks off in the lock!", FALSE, ch, 0, 0, TO_ROOM);
+					act("$n's key breaks off in the lock!", FALSE, ch, 0, 0,
+					    TO_ROOM);
 					if (ch->equipment[HOLD] && (ch->equipment[HOLD] == key_obj))
 						unequip_char(ch, HOLD);
-					extract_obj(key_obj, TRUE); // Not that there are any artifact keys but ok.
+					extract_obj(
+						key_obj,
+						TRUE); // Not that there are any artifact keys but ok.
 					key_obj = NULL;
 				}
 		}
 	else if ((door = find_door(ch, Gbuf2, Gbuf3)) >= 0)
 	{
-
 		/*
 		 * it is a door
 		 */
@@ -2688,7 +2939,8 @@ void do_unlock(P_char ch, char *argument, int cmd)
 			send_to_char("Unlock what?\n", ch);
 			return;
 		}
-		else if (!IS_TRUSTED(ch) && (IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) || IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED)))
+		else if (!IS_TRUSTED(ch) && (IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) ||
+					     IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED)))
 		{
 			send_to_char("Unlock what?\n", ch);
 			return;
@@ -2712,7 +2964,6 @@ void do_unlock(P_char ch, char *argument, int cmd)
 		}
 		else if (!(key_obj = has_key(ch, EXIT(ch, door)->key)))
 		{
-
 			send_to_char("You do not have the proper key for that.\n", ch);
 			if (GET_LEVEL(ch) < MINLVLIMMORTAL || IS_NPC(ch))
 				return;
@@ -2743,7 +2994,8 @@ void do_unlock(P_char ch, char *argument, int cmd)
 				act("$n's key breaks off in the lock!", FALSE, ch, 0, 0, TO_ROOM);
 				if (ch->equipment[HOLD] && (ch->equipment[HOLD] == key_obj))
 					unequip_char(ch, HOLD);
-				extract_obj(key_obj, TRUE); // Not that there are any artifact keys but ok.
+				extract_obj(key_obj,
+					    TRUE); // Not that there are any artifact keys but ok.
 				key_obj = NULL;
 			}
 		/*
@@ -2762,11 +3014,11 @@ void do_unlock(P_char ch, char *argument, int cmd)
 
 void do_pick(P_char ch, char *argument, int cmd)
 {
-	int                         percent, door, other_room, chance, retval;
+	int percent, door, other_room, chance, retval;
 	struct room_direction_data *back;
-	P_obj                       obj, pick;
-	P_char                      victim;
-	char                        Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	P_obj obj, pick;
+	P_char victim;
+	char Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2775,13 +3027,15 @@ void do_pick(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	if (IS_BLIND(ch))
 	{
-		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can't see a thing let alone a door or whatever.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -2792,7 +3046,8 @@ void do_pick(P_char ch, char *argument, int cmd)
 	}
 	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 	{
-		send_to_char("Uh huh, while fighting eh?  That would be a REALLY nice trick!\n", ch);
+		send_to_char("Uh huh, while fighting eh?  That would be a REALLY nice trick!\n",
+			     ch);
 		return;
 	}
 	pick = ch->equipment[HOLD];
@@ -2804,12 +3059,13 @@ void do_pick(P_char ch, char *argument, int cmd)
 	}
 	if (!affect_timer(ch, get_property("timer.secs.pickLock", 5), SKILL_PICK_LOCK))
 	{
-		send_to_char("Your hands are still shaking from that last attempt, rest a bit.\n", ch);
+		send_to_char("Your hands are still shaking from that last attempt, rest a bit.\n",
+			     ch);
 		return;
 	}
 	argument_interpreter(argument, Gbuf2, Gbuf3);
 
-	chance  = GET_CHAR_SKILL(ch, SKILL_PICK_LOCK) + pick->value[0];
+	chance = GET_CHAR_SKILL(ch, SKILL_PICK_LOCK) + pick->value[0];
 	percent = number(1, 100);
 
 	if (!*Gbuf2)
@@ -2824,12 +3080,14 @@ void do_pick(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &victim, &obj);
+		retval = generic_find(argument, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+				      &victim, &obj);
 	}
 
 	// This is an object
 	if (retval != 0)
-		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) && (obj->type != ITEM_QUIVER))
+		if ((obj->type != ITEM_CONTAINER) && (obj->type != ITEM_STORAGE) &&
+		    (obj->type != ITEM_QUIVER))
 			send_to_char("That's not a container.\n", ch);
 		else if (!IS_SET(obj->value[1], CONT_CLOSED))
 			send_to_char("Silly - it ain't even closed!\n", ch);
@@ -2846,7 +3104,10 @@ void do_pick(P_char ch, char *argument, int cmd)
 			send_to_char("You failed to pick the lock.\n", ch);
 			notch_skill(ch, SKILL_PICK_LOCK, 25);
 			CharWait(ch, 8);
-			percent = percent - chance + pick->value[1] - IS_SET(obj->value[1], CONT_HARDPICK) ? 15 : 0;
+			percent = percent - chance + pick->value[1] -
+						  IS_SET(obj->value[1], CONT_HARDPICK) ?
+					  15 :
+					  0;
 			if (IS_SET(obj->value[1], CONT_PICKPROOF))
 				percent -= 20; /*
 				                * higher chance to break picks
@@ -2854,10 +3115,13 @@ void do_pick(P_char ch, char *argument, int cmd)
 			if ((percent > -1) && (number(-1, percent) > 0))
 			{
 				act("Damn!  You broke your $p too!", FALSE, ch, pick, 0, TO_CHAR);
-				act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch, pick, 0, TO_ROOM);
+				act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch,
+				    pick, 0, TO_ROOM);
 				if (ch->equipment[HOLD] && (ch->equipment[HOLD] == pick))
 					unequip_char(ch, HOLD);
-				extract_obj(pick, TRUE); // Not that there are any artifact lockpicks, but ok.
+				extract_obj(
+					pick,
+					TRUE); // Not that there are any artifact lockpicks, but ok.
 			}
 			return;
 		}
@@ -2878,7 +3142,8 @@ void do_pick(P_char ch, char *argument, int cmd)
 		{
 			send_to_char("That's absurd.\n", ch);
 		}
-		else if (!IS_TRUSTED(ch) && (IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) || IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED)))
+		else if (!IS_TRUSTED(ch) && (IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) ||
+					     IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED)))
 		{
 			send_to_char("Unlock what?\n", ch);
 			return;
@@ -2889,7 +3154,8 @@ void do_pick(P_char ch, char *argument, int cmd)
 			send_to_char("You can't seem to spot any lock to pick.\n", ch);
 		else if (!IS_SET(EXIT(ch, door)->exit_info, EX_LOCKED))
 			send_to_char("Oh.. it wasn't locked at all.\n", ch);
-		else if ((percent > BOUNDED(0, chance, 100)) || IS_SET(EXIT(ch, door)->exit_info, EX_PICKPROOF))
+		else if ((percent > BOUNDED(0, chance, 100)) ||
+			 IS_SET(EXIT(ch, door)->exit_info, EX_PICKPROOF))
 		{
 			send_to_char("You failed to pick the lock.\n", ch);
 			notch_skill(ch, SKILL_PICK_LOCK, 25);
@@ -2902,10 +3168,13 @@ void do_pick(P_char ch, char *argument, int cmd)
 			if ((percent > -1) && (number(-1, percent) > 0))
 			{
 				act("Damn!  You broke your $p too!", FALSE, ch, pick, 0, TO_CHAR);
-				act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch, pick, 0, TO_ROOM);
+				act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch,
+				    pick, 0, TO_ROOM);
 				if (ch->equipment[HOLD] && (ch->equipment[HOLD] == pick))
 					unequip_char(ch, HOLD);
-				extract_obj(pick, TRUE); // Not that there are any artifact lockpicks, but ok.
+				extract_obj(
+					pick,
+					TRUE); // Not that there are any artifact lockpicks, but ok.
 			}
 			return;
 		}
@@ -2921,7 +3190,8 @@ void do_pick(P_char ch, char *argument, int cmd)
 				act("$n reveals a secret door!", 0, ch, 0, 0, TO_ROOM);
 			}
 			if (EXIT(ch, door)->keyword)
-				act("$n skillfully picks the lock of the $F.", 0, ch, 0, EXIT(ch, door)->keyword, TO_ROOM);
+				act("$n skillfully picks the lock of the $F.", 0, ch, 0,
+				    EXIT(ch, door)->keyword, TO_ROOM);
 			else
 				act("$n picks the lock of the door.", TRUE, ch, 0, 0, TO_ROOM);
 			send_to_char("The lock quickly yields to your skills.\n", ch);
@@ -2949,7 +3219,8 @@ void do_pick(P_char ch, char *argument, int cmd)
 	if (pick->value[1] > number(0, 99))
 	{
 		act("Damn!  But you broke your $p!", FALSE, ch, pick, 0, TO_CHAR);
-		act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch, pick, 0, TO_ROOM);
+		act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch, pick, 0,
+		    TO_ROOM);
 		if (ch->equipment[HOLD] && (ch->equipment[HOLD] == pick))
 			unequip_char(ch, HOLD);
 		extract_obj(pick, TRUE); // Not that there are any artifact lockpicks, but ok.
@@ -2958,7 +3229,7 @@ void do_pick(P_char ch, char *argument, int cmd)
 
 void do_enter(P_char ch, char *argument, int cmd)
 {
-	int  door;
+	int door;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
@@ -2968,13 +3239,15 @@ void do_enter(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	if (IS_BLIND(ch))
 	{
-		act("You can't see a thing let alone a gateway or whatever.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can't see a thing let alone a gateway or whatever.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -2991,7 +3264,8 @@ void do_enter(P_char ch, char *argument, int cmd)
 	   * door keyword
 	   */
 		for (door = 0; door <= (NUM_EXITS - 1); door++)
-			if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) && !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
+			if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) &&
+			    !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
 				if (EXIT(ch, door)->keyword)
 					if (!str_cmp(EXIT(ch, door)->keyword, Gbuf1) && dirs[door])
 					{
@@ -3019,9 +3293,12 @@ void do_enter(P_char ch, char *argument, int cmd)
 		 * try to locate an entrance
 		 */
 		for (door = 0; door <= (NUM_EXITS - 1); door++)
-			if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) && !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
+			if (EXIT(ch, door) && !IS_SET(EXIT(ch, door)->exit_info, EX_SECRET) &&
+			    !IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED))
 				if (EXIT(ch, door)->to_room != NOWHERE)
-					if (!IS_SET(EXIT(ch, door)->exit_info, EX_CLOSED) && IS_ROOM(EXIT(ch, door)->to_room, ROOM_INDOORS) && dirs[door])
+					if (!IS_SET(EXIT(ch, door)->exit_info, EX_CLOSED) &&
+					    IS_ROOM(EXIT(ch, door)->to_room, ROOM_INDOORS) &&
+					    dirs[door])
 					{
 						// old guildhalls (deprecated
 						//            if( IS_ROOM(ch->in_room, ROOM_ATRIUM))
@@ -3042,8 +3319,8 @@ void do_enter(P_char ch, char *argument, int cmd)
 
 void do_follow(P_char ch, char *argument, int cmd)
 {
-	char                name[MAX_INPUT_LENGTH];
-	P_char              leader = NULL;
+	char name[MAX_INPUT_LENGTH];
+	P_char leader = NULL;
 	struct follow_type *j, *k;
 
 	one_argument(argument, name);
@@ -3055,7 +3332,8 @@ void do_follow(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -3070,15 +3348,18 @@ void do_follow(P_char ch, char *argument, int cmd)
 	// someone to stop the following players in the same room.
 	if (!strcmp("stop", name))
 	{
-		act("You look around and quickly decide nobody is worthy enough to follow your greatness.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You look around and quickly decide nobody is worthy enough to follow your greatness.",
+		    FALSE, ch, 0, 0, TO_CHAR);
 
 		for (k = ch->followers; k; k = j)
 		{
 			j = k->next;
 
-			if (IS_PC(k->follower) && !IS_TRUSTED(k->follower) && ch->in_room == k->follower->in_room)
+			if (IS_PC(k->follower) && !IS_TRUSTED(k->follower) &&
+			    ch->in_room == k->follower->in_room)
 			{
-				act("$n no longer wants you to follow.", TRUE, ch, 0, k->follower, TO_VICT);
+				act("$n no longer wants you to follow.", TRUE, ch, 0, k->follower,
+				    TO_VICT);
 				stop_follower(k->follower);
 			}
 		}
@@ -3100,7 +3381,8 @@ void do_follow(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (IS_NPC(leader) && !IS_TRUSTED(ch) && (IS_PC(ch) || IS_MORPH(ch) || (ch->following && IS_PC(ch->following))))
+	if (IS_NPC(leader) && !IS_TRUSTED(ch) &&
+	    (IS_PC(ch) || IS_MORPH(ch) || (ch->following && IS_PC(ch->following))))
 	{
 		send_to_char("Why would you follow a stupid mob?\n", ch);
 		return;
@@ -3135,7 +3417,8 @@ void do_follow(P_char ch, char *argument, int cmd)
 		{
 			if (circle_follow(ch, leader))
 			{
-				act("Sorry, but following in 'loops' is not allowed", FALSE, ch, 0, 0, TO_CHAR);
+				act("Sorry, but following in 'loops' is not allowed", FALSE, ch, 0,
+				    0, TO_CHAR);
 				return;
 			}
 			if (ch->following)
@@ -3149,11 +3432,11 @@ void do_follow(P_char ch, char *argument, int cmd)
 
 void do_drag(P_char ch, char *argument, int cmd)
 {
-	P_obj  obj;
+	P_obj obj;
 	P_char tch, owner = NULL;
-	char   Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char   Gbuf4[MAX_STRING_LENGTH];
-	int    dragCommand;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf4[MAX_STRING_LENGTH];
+	int dragCommand;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -3162,13 +3445,15 @@ void do_drag(P_char ch, char *argument, int cmd)
 
 	if (IS_IMMOBILE(ch))
 	{
-		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0, TO_CHAR);
+		act("In your present state just relax and make the best of it.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	if (IS_BLIND(ch))
 	{
-		act("You can't see a thing let alone a corpse or whatever.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can't see a thing let alone a corpse or whatever.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -3196,7 +3481,9 @@ void do_drag(P_char ch, char *argument, int cmd)
 
 	if (!on_front_line(ch))
 	{
-		send_to_char("Sorry, you're not close enough .. try moving to the front battle line.\n", ch);
+		send_to_char(
+			"Sorry, you're not close enough .. try moving to the front battle line.\n",
+			ch);
 		return;
 	}
 
@@ -3207,31 +3494,31 @@ void do_drag(P_char ch, char *argument, int cmd)
 	{
 		switch (dragCommand)
 		{
-			case CMD_DRAG:
-				send_to_char("You can only grip one at a time!\n", ch);
-				return;
-			case CMD_NORTH:
-			case CMD_EAST:
-			case CMD_SOUTH:
-			case CMD_WEST:
-			case CMD_UP:
-			case CMD_DOWN:
-			case CMD_NORTHWEST:
-			case CMD_SOUTHWEST:
-			case CMD_NORTHEAST:
-			case CMD_SOUTHEAST:
-			case CMD_NW:
-			case CMD_SW:
-			case CMD_NE:
-			case CMD_SE:
-			case CMD_ENTER:
-			case CMD_DISEMBARK:
-			case CMD_STARE:
-			case CMD_STOMP:
-				break;
-			default:
-				send_to_char("You cannot drag anything that way.\n", ch);
-				return;
+		case CMD_DRAG:
+			send_to_char("You can only grip one at a time!\n", ch);
+			return;
+		case CMD_NORTH:
+		case CMD_EAST:
+		case CMD_SOUTH:
+		case CMD_WEST:
+		case CMD_UP:
+		case CMD_DOWN:
+		case CMD_NORTHWEST:
+		case CMD_SOUTHWEST:
+		case CMD_NORTHEAST:
+		case CMD_SOUTHEAST:
+		case CMD_NW:
+		case CMD_SW:
+		case CMD_NE:
+		case CMD_SE:
+		case CMD_ENTER:
+		case CMD_DISEMBARK:
+		case CMD_STARE:
+		case CMD_STOMP:
+			break;
+		default:
+			send_to_char("You cannot drag anything that way.\n", ch);
+			return;
 		}
 	}
 
@@ -3241,30 +3528,35 @@ void do_drag(P_char ch, char *argument, int cmd)
 
 	if ((tch = get_char_room_vis(ch, Gbuf1)))
 	{
-
 		if (ch == tch)
 		{
 			send_to_char("That would be quite a feat, my friend.\n", ch);
 			return;
 		}
 
-		if((GET_STAT(tch) != STAT_INCAP) && (GET_STAT(tch) != STAT_DYING))
+		if ((GET_STAT(tch) != STAT_INCAP) && (GET_STAT(tch) != STAT_DYING))
 		{
 			send_to_char("They may not appreciate that.\n", ch);
 			return;
 		}
 
-		if ((IS_NPC(tch) || (GET_WEIGHT(tch) + total_carried_weight(tch)) > (MAX_DRAG * CAN_CARRY_W(ch) - total_carried_weight(ch))) && !IS_TRUSTED(ch))
+		if ((IS_NPC(tch) ||
+		     (GET_WEIGHT(tch) + total_carried_weight(tch)) >
+			     (MAX_DRAG * CAN_CARRY_W(ch) - total_carried_weight(ch))) &&
+		    !IS_TRUSTED(ch))
 		{
 			act("$E's too heavy for you to drag!", FALSE, ch, 0, tch, TO_CHAR);
-			act("$n tries to drag $N out, but after a series of grunts, gives up.", TRUE, ch, 0, tch, TO_ROOM);
+			act("$n tries to drag $N out, but after a series of grunts, gives up.",
+			    TRUE, ch, 0, tch, TO_ROOM);
 			return;
 		}
 		/*    if( ch->points.delay_move + move_cost(ch, cmd) > 10) */
 		if (((GET_VITALITY(ch) - DRAG_COST) < 0) && !IS_TRUSTED(ch))
 		{
-			act("$n tries to drag $N out of the room, but is too tired!", TRUE, ch, 0, tch, TO_ROOM);
-			act("You try to drag $N out of the room, but you are too tired!", FALSE, ch, 0, tch, TO_CHAR);
+			act("$n tries to drag $N out of the room, but is too tired!", TRUE, ch, 0,
+			    tch, TO_ROOM);
+			act("You try to drag $N out of the room, but you are too tired!", FALSE, ch,
+			    0, tch, TO_CHAR);
 			return;
 		}
 		act("$n tries to drag $N out of the room.", TRUE, ch, 0, tch, TO_ROOM);
@@ -3278,23 +3570,31 @@ void do_drag(P_char ch, char *argument, int cmd)
 		{
 			if (CHAR_IN_ARENA(ch) != CHAR_IN_ARENA(tch))
 			{
-				act("As you drag $N, the arena holds $S body back!", TRUE, ch, 0, tch, TO_CHAR);
-				act("$n attempts to drag $N, but the arena holds $S body back!", TRUE, ch, 0, tch, TO_ROOM);
-				act("$n attempts to drag you, but the arena holds your body back!", TRUE, ch, 0, tch, TO_VICT);
+				act("As you drag $N, the arena holds $S body back!", TRUE, ch, 0,
+				    tch, TO_CHAR);
+				act("$n attempts to drag $N, but the arena holds $S body back!",
+				    TRUE, ch, 0, tch, TO_ROOM);
+				act("$n attempts to drag you, but the arena holds your body back!",
+				    TRUE, ch, 0, tch, TO_VICT);
 
 				return;
 			}
 			if (IS_ROOM(ch->in_room, ROOM_LOCKER))
 			{
-				act("The locker door slams shut before you can drag $N behind you.", TRUE, ch, 0, tch, TO_CHAR);
-				act("A locker door slams shut before $N can be dragged in.", TRUE, ch, 0, tch, TO_ROOM);
-				act("$n attempts to drag you, but the locker door slams shut too soon.", TRUE, ch, 0, tch, TO_VICT);
-				act("&+MOUCH!&n  That really did &+MHURT!&n", TRUE, ch, 0, tch, TO_VICT);
+				act("The locker door slams shut before you can drag $N behind you.",
+				    TRUE, ch, 0, tch, TO_CHAR);
+				act("A locker door slams shut before $N can be dragged in.", TRUE,
+				    ch, 0, tch, TO_ROOM);
+				act("$n attempts to drag you, but the locker door slams shut too soon.",
+				    TRUE, ch, 0, tch, TO_VICT);
+				act("&+MOUCH!&n  That really did &+MHURT!&n", TRUE, ch, 0, tch,
+				    TO_VICT);
 				return;
 			}
 
 			if ((GET_LEVEL(ch) > 55) && IS_PC(ch))
-				logit(LOG_WIZ, "%s dragged %s from [%d]", GET_NAME(ch), GET_NAME(tch), world[ch->in_room].number);
+				logit(LOG_WIZ, "%s dragged %s from [%d]", GET_NAME(ch),
+				      GET_NAME(tch), world[ch->in_room].number);
 
 			char_from_room(tch); /* move dragee */
 
@@ -3316,7 +3616,6 @@ void do_drag(P_char ch, char *argument, int cmd)
 	}
 	else if ((obj = get_obj_in_list_vis(ch, Gbuf1, world[ch->in_room].contents)))
 	{
-
 		if (!str_cmp(Gbuf1, "all") || strstr(Gbuf1, "all."))
 		{
 			send_to_char("You can only grip one at a time!\n", ch);
@@ -3339,21 +3638,27 @@ void do_drag(P_char ch, char *argument, int cmd)
 		}
 		if (obj->type == ITEM_MONEY)
 		{
-			send_to_char("Dragging a pile of coins is quite stupid. Try using a bag.\n", ch);
+			send_to_char("Dragging a pile of coins is quite stupid. Try using a bag.\n",
+				     ch);
 			return;
 		}
 		/* Let players drag an object up to 150 % of their max_carry */
-		if ((GET_OBJ_WEIGHT(obj) > (MAX_DRAG * CAN_CARRY_W(ch) - total_carried_weight(ch))) && !IS_TRUSTED(ch))
+		if ((GET_OBJ_WEIGHT(obj) >
+		     (MAX_DRAG * CAN_CARRY_W(ch) - total_carried_weight(ch))) &&
+		    !IS_TRUSTED(ch))
 		{
 			act("It's too heavy for you to drag!", FALSE, ch, 0, 0, TO_CHAR);
-			act("$n tries to drag out $p, but after a series of grunts, gives up.", TRUE, ch, obj, 0, TO_ROOM);
+			act("$n tries to drag out $p, but after a series of grunts, gives up.",
+			    TRUE, ch, obj, 0, TO_ROOM);
 			return;
 		}
 		/*    if( ch->points.delay_move + move_cost(ch, cmd) > 10)  */
 		if (((GET_VITALITY(ch) - DRAG_COST) < 0) && !IS_TRUSTED(ch))
 		{
-			act("$n tries to drag $p out of the room, but is too tired!", TRUE, ch, obj, 0, TO_ROOM);
-			act("You try to drag $p out of the room, but you are too tired!", FALSE, ch, obj, 0, TO_CHAR);
+			act("$n tries to drag $p out of the room, but is too tired!", TRUE, ch, obj,
+			    0, TO_ROOM);
+			act("You try to drag $p out of the room, but you are too tired!", FALSE, ch,
+			    obj, 0, TO_CHAR);
 			return;
 		}
 		act("$n tries to drag $p out of the room.", TRUE, ch, obj, 0, TO_ROOM);
@@ -3373,11 +3678,12 @@ void do_drag(P_char ch, char *argument, int cmd)
 
 		if (ch->in_room != NOWHERE)
 		{
-
 			if (IS_ROOM(ch->in_room, ROOM_LOCKER))
 			{
-				act("The locker door slams shut on your hand before you can pull $p in.", TRUE, ch, obj, 0, TO_CHAR);
-				act("A locker door slams shut on $N's hand.", TRUE, ch, obj, 0, TO_ROOM);
+				act("The locker door slams shut on your hand before you can pull $p in.",
+				    TRUE, ch, obj, 0, TO_CHAR);
+				act("A locker door slams shut on $N's hand.", TRUE, ch, obj, 0,
+				    TO_ROOM);
 				return;
 			}
 		}
@@ -3393,7 +3699,6 @@ void do_drag(P_char ch, char *argument, int cmd)
 
 		if ((ch->in_room != NOWHERE) && (ch->in_room != obj->loc.room))
 		{
-
 			/*
 			 * Assume that the player was able to move, and therefore,
 			 * object should be dragged.
@@ -3405,11 +3710,15 @@ void do_drag(P_char ch, char *argument, int cmd)
 			act("You drag $p along behind you.", TRUE, ch, obj, 0, TO_CHAR);
 
 			if ((GET_LEVEL(ch) > 55) && IS_PC(ch))
-				logit(LOG_WIZ, "%s dragged by %s into [%d]", obj->short_description, GET_NAME(ch), world[ch->in_room].number);
+				logit(LOG_WIZ, "%s dragged by %s into [%d]", obj->short_description,
+				      GET_NAME(ch), world[ch->in_room].number);
 
 			if ((obj->type == ITEM_CORPSE) && IS_SET(obj->value[1], PC_CORPSE))
 			{
-				logit(LOG_CORPSE, "%s dragged by %s into [%d].", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
+				logit(LOG_CORPSE, "%s dragged by %s into [%d].",
+				      obj->short_description,
+				      (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+				      world[ch->in_room].number);
 			}
 			return;
 		}
@@ -3426,13 +3735,14 @@ void do_drag(P_char ch, char *argument, int cmd)
 
 void do_stand(P_char ch, char *argument, int cmd)
 {
-
 	if (!ch)
 		return;
 
 	if (!IS_ALIVE(ch))
 	{
-		send_to_char("&+rYou attempt to stand, but you are dead so your body doesn't respond.\n\r", ch);
+		send_to_char(
+			"&+rYou attempt to stand, but you are dead so your body doesn't respond.\n\r",
+			ch);
 		return;
 	}
 
@@ -3450,79 +3760,85 @@ void do_stand(P_char ch, char *argument, int cmd)
 
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+	{
+		send_to_char(
+			"Posture would seem to be far down on your list of problems right now!\n",
+			ch);
+		return;
+	}
+	case STAT_SLEEPING:
+	{
+		send_to_char("You dream of sleepwalking.\n", ch);
+		return;
+	}
+	case STAT_RESTING:
+	case STAT_NORMAL:
+		if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
 		{
-			send_to_char("Posture would seem to be far down on your list of problems right now!\n", ch);
+			send_to_char(
+				"You should probably worry more about becoming conscious again.\n",
+				ch);
 			return;
 		}
-		case STAT_SLEEPING:
+		if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+		    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 		{
-			send_to_char("You dream of sleepwalking.\n", ch);
+			send_to_char("You can't even twitch, much less stand up!\n", ch);
 			return;
 		}
-		case STAT_RESTING:
-		case STAT_NORMAL:
-			if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		if (IS_AFFECTED(ch, AFF_BOUND))
+		{
+			send_to_char("Try to unbind yourself first!\n", ch);
+			return;
+		}
+		if (IS_AFFECTED2(ch, AFF2_STUNNED))
+		{
+			// Maaaybeee
+			if (number(1, (GET_C_AGI(ch) + GET_C_DEX(ch))) < number(70, 140))
 			{
-				send_to_char("You should probably worry more about becoming conscious again.\n", ch);
+				send_to_char("You stagger about, then fall to your knees!\n", ch);
+				SET_POS(ch, GET_STAT(ch) + POS_PRONE);
 				return;
 			}
-			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
+			else if (number(1, (GET_C_AGI(ch) + GET_C_DEX(ch))) < number(70, 201))
 			{
-				send_to_char("You can't even twitch, much less stand up!\n", ch);
+				send_to_char("You stagger about, then fall to your knees!\n", ch);
+				SET_POS(ch, GET_STAT(ch) + POS_KNEELING);
 				return;
-			}
-			if (IS_AFFECTED(ch, AFF_BOUND))
-			{
-				send_to_char("Try to unbind yourself first!\n", ch);
-				return;
-			}
-			if (IS_AFFECTED2(ch, AFF2_STUNNED))
-			{
-				// Maaaybeee
-				if (number(1, (GET_C_AGI(ch) + GET_C_DEX(ch))) < number(70, 140))
-				{
-					send_to_char("You stagger about, then fall to your knees!\n", ch);
-					SET_POS(ch, GET_STAT(ch) + POS_PRONE);
-					return;
-				}
-				else if (number(1, (GET_C_AGI(ch) + GET_C_DEX(ch))) < number(70, 201))
-				{
-					send_to_char("You stagger about, then fall to your knees!\n", ch);
-					SET_POS(ch, GET_STAT(ch) + POS_KNEELING);
-					return;
-				}
-				else
-				{
-					send_to_char("You manage to unsteadily get to your feet.\n", ch);
-					act("$n staggers about, but manages to get to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
-				}
 			}
 			else
 			{
-				switch (GET_POS(ch))
-				{
-					case POS_PRONE:
-						act("You clamber to your feet.", FALSE, ch, 0, 0, TO_CHAR);
-						act("$n clambers to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
-						break;
-					case POS_KNEELING:
-						act("You rise to your feet.", FALSE, ch, 0, 0, TO_CHAR);
-						act("$n rises to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
-						break;
-					case POS_SITTING:
-						act("You clamber to your feet.", FALSE, ch, 0, 0, TO_CHAR);
-						act("$n clambers to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
-						break;
-					case POS_STANDING:
-						act("You are already standing.", FALSE, ch, 0, 0, TO_CHAR);
-						return;
-				}
+				send_to_char("You manage to unsteadily get to your feet.\n", ch);
+				act("$n staggers about, but manages to get to $s feet.", TRUE, ch,
+				    0, 0, TO_ROOM);
+			}
+		}
+		else
+		{
+			switch (GET_POS(ch))
+			{
+			case POS_PRONE:
+				act("You clamber to your feet.", FALSE, ch, 0, 0, TO_CHAR);
+				act("$n clambers to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
 				break;
+			case POS_KNEELING:
+				act("You rise to your feet.", FALSE, ch, 0, 0, TO_CHAR);
+				act("$n rises to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
+				break;
+			case POS_SITTING:
+				act("You clamber to your feet.", FALSE, ch, 0, 0, TO_CHAR);
+				act("$n clambers to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
+				break;
+			case POS_STANDING:
+				act("You are already standing.", FALSE, ch, 0, 0, TO_CHAR);
+				return;
 			}
 			break;
+		}
+		break;
 	}
 
 	// Returns TRUE if ch dies in the process.
@@ -3540,73 +3856,83 @@ void do_sit(P_char ch, char *argument, int cmd)
 {
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			send_to_char("Posture would seem to be far down on your list of problems right now!\n", ch);
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		send_to_char(
+			"Posture would seem to be far down on your list of problems right now!\n",
+			ch);
+		return;
+		break;
+	case STAT_SLEEPING:
+		send_to_char("You dream of sitting up.\n", ch);
+		return;
+		break;
+	case STAT_RESTING:
+	case STAT_NORMAL:
+		if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		{
+			send_to_char(
+				"You should probably worry more about becoming conscious again.\n",
+				ch);
 			return;
-			break;
-		case STAT_SLEEPING:
-			send_to_char("You dream of sitting up.\n", ch);
-			return;
-			break;
-		case STAT_RESTING:
-		case STAT_NORMAL:
-			if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		}
+		switch (GET_POS(ch))
+		{
+		case POS_PRONE:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 			{
-				send_to_char("You should probably worry more about becoming conscious again.\n", ch);
+				send_to_char("You can't even twitch, much less sit up!\n", ch);
 				return;
 			}
-			switch (GET_POS(ch))
+			act("You sit up.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n sits up.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_KNEELING:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 			{
-				case POS_PRONE:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less sit up!\n", ch);
-						return;
-					}
-					act("You sit up.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n sits up.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_KNEELING:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less sit!\n", ch);
-						return;
-					}
-					act("You get off your knees and sit.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n drops back off $s knees and sits.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_SITTING:
-					send_to_char("You are sitting already.\n", ch);
-					return;
-					break;
-				case POS_STANDING:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less sit down!\n", ch);
-						return;
-					}
-					act("You sit down.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n sits down.", TRUE, ch, 0, 0, TO_ROOM);
+				send_to_char("You can't even twitch, much less sit!\n", ch);
+				return;
+			}
+			act("You get off your knees and sit.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n drops back off $s knees and sits.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_SITTING:
+			send_to_char("You are sitting already.\n", ch);
+			return;
+			break;
+		case POS_STANDING:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
+			{
+				send_to_char("You can't even twitch, much less sit down!\n", ch);
+				return;
+			}
+			act("You sit down.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n sits down.", TRUE, ch, 0, 0, TO_ROOM);
 
-					if (IS_FIGHTING(ch))
-					{
-						/*
+			if (IS_FIGHTING(ch))
+			{
+				/*
 						 * they can, if they want, but...  JAB
 						 */
-						if (GET_OPPONENT(GET_OPPONENT(ch)) && (GET_OPPONENT(GET_OPPONENT(ch)) != ch) && IS_NPC(GET_OPPONENT(ch)) && CAN_ACT(GET_OPPONENT(ch)) && CAN_SEE(GET_OPPONENT(ch), ch))
-						{
-							SET_POS(ch, GET_STAT(ch) + POS_SITTING);
-							attack(GET_OPPONENT(ch), ch); /*
+				if (GET_OPPONENT(GET_OPPONENT(ch)) &&
+				    (GET_OPPONENT(GET_OPPONENT(ch)) != ch) &&
+				    IS_NPC(GET_OPPONENT(ch)) && CAN_ACT(GET_OPPONENT(ch)) &&
+				    CAN_SEE(GET_OPPONENT(ch), ch))
+				{
+					SET_POS(ch, GET_STAT(ch) + POS_SITTING);
+					attack(GET_OPPONENT(ch), ch); /*
 							                               * ie: switch
 							                               */
-							return;
-						}
-					}
-					break;
+					return;
+				}
 			}
 			break;
+		}
+		break;
 	}
 	SET_POS(ch, GET_STAT(ch) + POS_SITTING);
 	gmcp_char_vitals(ch);
@@ -3621,73 +3947,87 @@ void do_kneel(P_char ch, char *argument, int cmd)
 	}
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			send_to_char("Posture would seem to be far down on your list of problems right now!\n", ch);
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		send_to_char(
+			"Posture would seem to be far down on your list of problems right now!\n",
+			ch);
+		return;
+		break;
+	case STAT_SLEEPING:
+		send_to_char("You seem to be having a dream of infancy.\n", ch);
+		return;
+		break;
+	case STAT_RESTING:
+	case STAT_NORMAL:
+		if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		{
+			send_to_char(
+				"You should probably worry more about becoming conscious again.\n",
+				ch);
 			return;
-			break;
-		case STAT_SLEEPING:
-			send_to_char("You seem to be having a dream of infancy.\n", ch);
-			return;
-			break;
-		case STAT_RESTING:
-		case STAT_NORMAL:
-			if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		}
+		switch (GET_POS(ch))
+		{
+		case POS_PRONE:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 			{
-				send_to_char("You should probably worry more about becoming conscious again.\n", ch);
+				send_to_char(
+					"You can't even twitch, much less get to your knees!\n",
+					ch);
 				return;
 			}
-			switch (GET_POS(ch))
+			act("You swing up onto your knees.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n levers up onto $s knees.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_KNEELING:
+			send_to_char("You are kneeling already.\n", ch);
+			return;
+			break;
+		case POS_SITTING:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 			{
-				case POS_PRONE:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less get to your knees!\n", ch);
-						return;
-					}
-					act("You swing up onto your knees.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n levers up onto $s knees.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_KNEELING:
-					send_to_char("You are kneeling already.\n", ch);
-					return;
-					break;
-				case POS_SITTING:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less change position!\n", ch);
-						return;
-					}
-					act("You move from your butt to your knees.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n stops sitting around and gets to $s knees.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_STANDING:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less kneel!\n", ch);
-						return;
-					}
-					act("You kneel.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n settles to $s knees.", TRUE, ch, 0, 0, TO_ROOM);
+				send_to_char("You can't even twitch, much less change position!\n",
+					     ch);
+				return;
+			}
+			act("You move from your butt to your knees.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n stops sitting around and gets to $s knees.", TRUE, ch, 0, 0,
+			    TO_ROOM);
+			break;
+		case POS_STANDING:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
+			{
+				send_to_char("You can't even twitch, much less kneel!\n", ch);
+				return;
+			}
+			act("You kneel.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n settles to $s knees.", TRUE, ch, 0, 0, TO_ROOM);
 
-					if (IS_FIGHTING(ch))
-					{
-						/*
+			if (IS_FIGHTING(ch))
+			{
+				/*
 						 * they can, if they want, but...  JAB
 						 */
-						if (GET_OPPONENT(GET_OPPONENT(ch)) && (GET_OPPONENT(GET_OPPONENT(ch)) != ch) && IS_NPC(GET_OPPONENT(ch)) && CAN_ACT(GET_OPPONENT(ch)) && CAN_SEE(GET_OPPONENT(ch), ch))
-						{
-							SET_POS(ch, GET_STAT(ch) + POS_KNEELING);
-							attack(GET_OPPONENT(ch), ch); /*
+				if (GET_OPPONENT(GET_OPPONENT(ch)) &&
+				    (GET_OPPONENT(GET_OPPONENT(ch)) != ch) &&
+				    IS_NPC(GET_OPPONENT(ch)) && CAN_ACT(GET_OPPONENT(ch)) &&
+				    CAN_SEE(GET_OPPONENT(ch), ch))
+				{
+					SET_POS(ch, GET_STAT(ch) + POS_KNEELING);
+					attack(GET_OPPONENT(ch), ch); /*
 							                               * ie: switch
 							                               */
-							return;
-						}
-					}
-					break;
+					return;
+				}
 			}
 			break;
+		}
+		break;
 	}
 	SET_POS(ch, GET_STAT(ch) + POS_KNEELING);
 	gmcp_char_vitals(ch);
@@ -3702,74 +4042,86 @@ void do_recline(P_char ch, char *argument, int cmd)
 	}
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			send_to_char("Posture would seem to be far down on your list of problems right now!\n", ch);
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		send_to_char(
+			"Posture would seem to be far down on your list of problems right now!\n",
+			ch);
+		return;
+		break;
+	case STAT_SLEEPING:
+		send_to_char("You dream of laying down.\n", ch);
+		return;
+		break;
+	case STAT_RESTING:
+	case STAT_NORMAL:
+		if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		{
+			send_to_char(
+				"You should probably worry more about becoming conscious again.\n",
+				ch);
+			return;
+		}
+		switch (GET_POS(ch))
+		{
+		case POS_PRONE:
+			send_to_char("You are already laying down.\n", ch);
 			return;
 			break;
-		case STAT_SLEEPING:
-			send_to_char("You dream of laying down.\n", ch);
-			return;
-			break;
-		case STAT_RESTING:
-		case STAT_NORMAL:
-			if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		case POS_KNEELING:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 			{
-				send_to_char("You should probably worry more about becoming conscious again.\n", ch);
+				send_to_char("You can't even twitch, much less lay down!\n", ch);
 				return;
 			}
-			switch (GET_POS(ch))
+			act("You recline.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n eases off $s knees and lays down.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_SITTING:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 			{
-				case POS_PRONE:
-					send_to_char("You are already laying down.\n", ch);
-					return;
-					break;
-				case POS_KNEELING:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less lay down!\n", ch);
-						return;
-					}
-					act("You recline.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n eases off $s knees and lays down.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_SITTING:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less change position!\n", ch);
-						return;
-					}
-					act("You stop sitting around and lay down.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n stops sitting around and lays down.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_STANDING:
-					if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-					{
-						send_to_char("You can't even twitch, much less change position!\n", ch);
-						return;
-					}
-					act("You drop to your belly.", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n drops flat to the ground.", TRUE, ch, 0, 0, TO_ROOM);
+				send_to_char("You can't even twitch, much less change position!\n",
+					     ch);
+				return;
+			}
+			act("You stop sitting around and lay down.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n stops sitting around and lays down.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_STANDING:
+			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
+			{
+				send_to_char("You can't even twitch, much less change position!\n",
+					     ch);
+				return;
+			}
+			act("You drop to your belly.", FALSE, ch, 0, 0, TO_CHAR);
+			act("$n drops flat to the ground.", TRUE, ch, 0, 0, TO_ROOM);
 
-					if (IS_FIGHTING(ch))
-					{
-						/*
+			if (IS_FIGHTING(ch))
+			{
+				/*
 						 * they can, if they want, but...  JAB
 						 */
-						if (GET_OPPONENT(GET_OPPONENT(ch)) && (GET_OPPONENT(GET_OPPONENT(ch)) != ch) && IS_NPC(GET_OPPONENT(ch)) && CAN_ACT(GET_OPPONENT(ch)) && CAN_SEE(GET_OPPONENT(ch), ch))
-						{
-							SET_POS(ch, GET_STAT(ch) + POS_PRONE);
-							stop_memorizing(ch);
-							attack(GET_OPPONENT(ch), ch); /*
+				if (GET_OPPONENT(GET_OPPONENT(ch)) &&
+				    (GET_OPPONENT(GET_OPPONENT(ch)) != ch) &&
+				    IS_NPC(GET_OPPONENT(ch)) && CAN_ACT(GET_OPPONENT(ch)) &&
+				    CAN_SEE(GET_OPPONENT(ch), ch))
+				{
+					SET_POS(ch, GET_STAT(ch) + POS_PRONE);
+					stop_memorizing(ch);
+					attack(GET_OPPONENT(ch), ch); /*
 							                               * ie: switch
 							                               */
-							return;
-						}
-					}
-					break;
+					return;
+				}
 			}
 			break;
+		}
+		break;
 	}
 	SET_POS(ch, GET_STAT(ch) + POS_PRONE);
 	gmcp_char_vitals(ch);
@@ -3788,66 +4140,71 @@ void do_rest(P_char ch, char *argument, int cmd)
 
 	switch (GET_STAT(ch))
 	{
-		case STAT_RESTING:
-			send_to_char("You are already resting.\n", ch);
+	case STAT_RESTING:
+		send_to_char("You are already resting.\n", ch);
+		return;
+		break;
+	case STAT_SLEEPING:
+		send_to_char("You dream of relaxing.\n", ch);
+		return;
+		break;
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		send_to_char("Just wait a bit, you'll soon be VERY relaxed.\n", ch);
+		return;
+		break;
+	case STAT_NORMAL:
+		if (IS_FIGHTING(ch) || NumAttackers(ch))
+		{
+			send_to_char("Resting now will most likely lead to your final rest!\n", ch);
 			return;
-			break;
-		case STAT_SLEEPING:
-			send_to_char("You dream of relaxing.\n", ch);
+		}
+		if (IS_DESTROYING(ch))
+		{
+			send_to_char("You try, but you can't focus while destroying.\n", ch);
 			return;
-			break;
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			send_to_char("Just wait a bit, you'll soon be VERY relaxed.\n", ch);
+		}
+		if (IS_AFFECTED(ch, AFF_BOUND))
+		{
+			send_to_char("Your bonds prevent you from really getting comfortable.\n",
+				     ch);
 			return;
+		}
+		if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		{
+			send_to_char(
+				"You should probably worry more about becoming conscious again.\n",
+				ch);
+			return;
+		}
+		if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+		    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
+		{
+			send_to_char("You can't even twitch, much less relax!\n", ch);
+			return;
+		}
+		switch (GET_POS(ch))
+		{
+		case POS_PRONE:
+			send_to_char("You close your eyes and relax.\n", ch);
+			act("You see some of the tension leave $n's body.", TRUE, ch, 0, 0,
+			    TO_ROOM);
 			break;
-		case STAT_NORMAL:
-			if (IS_FIGHTING(ch) || NumAttackers(ch))
-			{
-				send_to_char("Resting now will most likely lead to your final rest!\n", ch);
-				return;
-			}
-			if (IS_DESTROYING(ch))
-			{
-				send_to_char("You try, but you can't focus while destroying.\n", ch);
-				return;
-			}
-			if (IS_AFFECTED(ch, AFF_BOUND))
-			{
-				send_to_char("Your bonds prevent you from really getting comfortable.\n", ch);
-				return;
-			}
-			if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
-			{
-				send_to_char("You should probably worry more about becoming conscious again.\n", ch);
-				return;
-			}
-			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-			{
-				send_to_char("You can't even twitch, much less relax!\n", ch);
-				return;
-			}
-			switch (GET_POS(ch))
-			{
-				case POS_PRONE:
-					send_to_char("You close your eyes and relax.\n", ch);
-					act("You see some of the tension leave $n's body.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_KNEELING:
-					send_to_char("You slump and relax your posture.\n", ch);
-					act("$n relaxes a bit.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_SITTING:
-					send_to_char("You wiggle to find the most comfortable position.\n", ch);
-					act("$n relaxes a bit.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_STANDING:
-					send_to_char("You sit down and relax.\n", ch);
-					act("$n sits down in a comfortable spot.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-			}
+		case POS_KNEELING:
+			send_to_char("You slump and relax your posture.\n", ch);
+			act("$n relaxes a bit.", TRUE, ch, 0, 0, TO_ROOM);
 			break;
+		case POS_SITTING:
+			send_to_char("You wiggle to find the most comfortable position.\n", ch);
+			act("$n relaxes a bit.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_STANDING:
+			send_to_char("You sit down and relax.\n", ch);
+			act("$n sits down in a comfortable spot.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		}
+		break;
 	}
 	SET_POS(ch, MIN(POS_SITTING, GET_POS(ch)) + STAT_RESTING);
 	gmcp_char_vitals(ch);
@@ -3867,52 +4224,56 @@ void do_alert(P_char ch, char *argument, int cmd)
 {
 	switch (GET_STAT(ch))
 	{
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			send_to_char("Just wait a bit, you'll soon be VERY relaxed.\n", ch);
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		send_to_char("Just wait a bit, you'll soon be VERY relaxed.\n", ch);
+		return;
+		break;
+	case STAT_SLEEPING:
+		send_to_char("You dream of being alert.\n", ch);
+		return;
+		break;
+	case STAT_NORMAL:
+		send_to_char("You are already about as tense as you can get.\n", ch);
+		return;
+		break;
+	case STAT_RESTING:
+		if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		{
+			send_to_char("Your brain is on strike, please try again later.\n", ch);
 			return;
-			break;
-		case STAT_SLEEPING:
-			send_to_char("You dream of being alert.\n", ch);
+		}
+		if (IS_STUNNED(ch))
+		{
+			send_to_char(
+				"Your head is spinning, you can barely tell which way is up!\n",
+				ch);
 			return;
-			break;
-		case STAT_NORMAL:
-			send_to_char("You are already about as tense as you can get.\n", ch);
-			return;
-			break;
-		case STAT_RESTING:
-			if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
-			{
-				send_to_char("Your brain is on strike, please try again later.\n", ch);
-				return;
-			}
-			if (IS_STUNNED(ch))
-			{
-				send_to_char("Your head is spinning, you can barely tell which way is up!\n", ch);
-				return;
-			}
-			if (IS_FIGHTING(ch) || NumAttackers(ch))
-				send_to_char("Excellent Idea!  You might actually survive!\n", ch);
+		}
+		if (IS_FIGHTING(ch) || NumAttackers(ch))
+			send_to_char("Excellent Idea!  You might actually survive!\n", ch);
 
-			switch (GET_POS(ch))
-			{
-				case POS_PRONE:
-					send_to_char("You stop relaxing and try to become more aware of your surroundings.\n", ch);
-					break;
-				case POS_KNEELING:
-					send_to_char("You straighten up a bit.\n", ch);
-					act("$n straightens up a bit.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_SITTING:
-					send_to_char("You sit up straight and start to pay attention.\n", ch);
-					act("$n sits at attention.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_STANDING:
-					send_to_char("You tense up and become more alert.\n", ch);
-					break;
-			}
+		switch (GET_POS(ch))
+		{
+		case POS_PRONE:
+			send_to_char(
+				"You stop relaxing and try to become more aware of your surroundings.\n",
+				ch);
 			break;
+		case POS_KNEELING:
+			send_to_char("You straighten up a bit.\n", ch);
+			act("$n straightens up a bit.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_SITTING:
+			send_to_char("You sit up straight and start to pay attention.\n", ch);
+			act("$n sits at attention.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_STANDING:
+			send_to_char("You tense up and become more alert.\n", ch);
+			break;
+		}
+		break;
 	}
 	SET_POS(ch, GET_POS(ch) + STAT_NORMAL);
 	stop_memorizing(ch);
@@ -3935,59 +4296,66 @@ void do_sleep(P_char ch, char *argument, int cmd)
 		send_to_char("Sleep while destroying an object?\n", ch);
 		return;
 	}
-	if (world[ch->in_room].sector_type >= SECT_WATER_SWIM && world[ch->in_room].sector_type >= SECT_UNDRWLD_WATER && world[ch->in_room].sector_type <= SECT_OCEAN)
+	if (world[ch->in_room].sector_type >= SECT_WATER_SWIM &&
+	    world[ch->in_room].sector_type >= SECT_UNDRWLD_WATER &&
+	    world[ch->in_room].sector_type <= SECT_OCEAN)
 	{
 		act("Here? That's not too wise.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 	switch (GET_STAT(ch))
 	{
-		case STAT_SLEEPING:
-			send_to_char("You are already fast asleep.\n", ch);
+	case STAT_SLEEPING:
+		send_to_char("You are already fast asleep.\n", ch);
+		return;
+		break;
+	case STAT_DEAD:
+	case STAT_DYING:
+	case STAT_INCAP:
+		send_to_char("Just wait a bit, you're about to start a LONG sleep.\n", ch);
+		return;
+		break;
+	case STAT_RESTING:
+	case STAT_NORMAL:
+		if (IS_AFFECTED(ch, AFF_BOUND))
+		{
+			send_to_char("Your bonds prevent you from really getting comfortable.\n",
+				     ch);
 			return;
-			break;
-		case STAT_DEAD:
-		case STAT_DYING:
-		case STAT_INCAP:
-			send_to_char("Just wait a bit, you're about to start a LONG sleep.\n", ch);
+		}
+		if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+		{
+			send_to_char(
+				"You should probably worry more about becoming conscious again.\n",
+				ch);
 			return;
+		}
+		if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+		    IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
+		{
+			send_to_char("You can't even twitch, much less relax!\n", ch);
+			return;
+		}
+		switch (GET_POS(ch))
+		{
+		case POS_PRONE:
+			send_to_char("You drift off to sleep.\n", ch);
 			break;
-		case STAT_RESTING:
-		case STAT_NORMAL:
-			if (IS_AFFECTED(ch, AFF_BOUND))
-			{
-				send_to_char("Your bonds prevent you from really getting comfortable.\n", ch);
-				return;
-			}
-			if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
-			{
-				send_to_char("You should probably worry more about becoming conscious again.\n", ch);
-				return;
-			}
-			if (IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
-			{
-				send_to_char("You can't even twitch, much less relax!\n", ch);
-				return;
-			}
-			switch (GET_POS(ch))
-			{
-				case POS_PRONE:
-					send_to_char("You drift off to sleep.\n", ch);
-					break;
-				case POS_KNEELING:
-					send_to_char("You slump and relax your posture.\n", ch);
-					act("$n seems to have fallen asleep.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_SITTING:
-					send_to_char("You nod off.\n", ch);
-					act("$n seems to have fallen asleep.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case POS_STANDING:
-					send_to_char("You fall asleep.\n", ch);
-					act("$n has fallen asleep on $s feet, this should be fun.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-			}
+		case POS_KNEELING:
+			send_to_char("You slump and relax your posture.\n", ch);
+			act("$n seems to have fallen asleep.", TRUE, ch, 0, 0, TO_ROOM);
 			break;
+		case POS_SITTING:
+			send_to_char("You nod off.\n", ch);
+			act("$n seems to have fallen asleep.", TRUE, ch, 0, 0, TO_ROOM);
+			break;
+		case POS_STANDING:
+			send_to_char("You fall asleep.\n", ch);
+			act("$n has fallen asleep on $s feet, this should be fun.", TRUE, ch, 0, 0,
+			    TO_ROOM);
+			break;
+		}
+		break;
 	}
 
 	SET_POS(ch, GET_POS(ch) + STAT_SLEEPING);
@@ -3998,7 +4366,7 @@ void do_sleep(P_char ch, char *argument, int cmd)
 void do_wake(P_char ch, char *argument, int cmd)
 {
 	P_char tmp_char;
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	one_argument(argument, Gbuf1);
 
@@ -4021,7 +4389,8 @@ void do_wake(P_char ch, char *argument, int cmd)
 	{
 		if (GET_STAT(ch) == STAT_SLEEPING)
 		{
-			act("You can't wake people up if you are asleep yourself!", FALSE, ch, 0, 0, TO_CHAR);
+			act("You can't wake people up if you are asleep yourself!", FALSE, ch, 0, 0,
+			    TO_CHAR);
 		}
 		else
 		{
@@ -4030,16 +4399,20 @@ void do_wake(P_char ch, char *argument, int cmd)
 			{
 				if (tmp_char == ch)
 				{
-					act("If you want to wake yourself up, just type 'wake'", FALSE, ch, 0, 0, TO_CHAR);
+					act("If you want to wake yourself up, just type 'wake'",
+					    FALSE, ch, 0, 0, TO_CHAR);
 				}
 				else
 				{
 					if (GET_STAT(tmp_char) == STAT_SLEEPING)
 					{
-						if (!IS_TRUSTED(ch) && IS_AFFECTED4(tmp_char, AFF4_TUPOR))
+						if (!IS_TRUSTED(ch) &&
+						    IS_AFFECTED4(tmp_char, AFF4_TUPOR))
 						{
-							act("You try to wake $M up, but $E is too deep into the trance!", FALSE, ch, 0, tmp_char, TO_CHAR);
-							act("$n tries to awaken $N, but $E is too deep into the trance.", FALSE, ch, 0, tmp_char, TO_NOTVICT);
+							act("You try to wake $M up, but $E is too deep into the trance!",
+							    FALSE, ch, 0, tmp_char, TO_CHAR);
+							act("$n tries to awaken $N, but $E is too deep into the trance.",
+							    FALSE, ch, 0, tmp_char, TO_NOTVICT);
 							return;
 						}
 						/*
@@ -4051,20 +4424,27 @@ void do_wake(P_char ch, char *argument, int cmd)
 						   return;
 						   }
 						 */
-						if (!IS_TRUSTED(ch) && IS_AFFECTED(tmp_char, AFF_SLEEP) || IS_AFFECTED(tmp_char, AFF_KNOCKED_OUT))
+						if (!IS_TRUSTED(ch) &&
+							    IS_AFFECTED(tmp_char, AFF_SLEEP) ||
+						    IS_AFFECTED(tmp_char, AFF_KNOCKED_OUT))
 						{
-							act("You try to wake $M up, but $E does not respond!", FALSE, ch, 0, tmp_char, TO_CHAR);
-							act("$n tries to awaken $N, but $E continues sawing logs.", FALSE, ch, 0, tmp_char, TO_NOTVICT);
+							act("You try to wake $M up, but $E does not respond!",
+							    FALSE, ch, 0, tmp_char, TO_CHAR);
+							act("$n tries to awaken $N, but $E continues sawing logs.",
+							    FALSE, ch, 0, tmp_char, TO_NOTVICT);
 							return;
 						}
-						act("You wake $M up.", FALSE, ch, 0, tmp_char, TO_CHAR);
+						act("You wake $M up.", FALSE, ch, 0, tmp_char,
+						    TO_CHAR);
 						SET_POS(tmp_char, GET_POS(tmp_char) + STAT_RESTING);
 						gmcp_char_vitals(tmp_char);
-						act("You are awakened by $n.", FALSE, ch, 0, tmp_char, TO_VICT);
+						act("You are awakened by $n.", FALSE, ch, 0,
+						    tmp_char, TO_VICT);
 					}
 					else
 					{
-						act("$N is already awake.", FALSE, ch, 0, tmp_char, TO_CHAR);
+						act("$N is already awake.", FALSE, ch, 0, tmp_char,
+						    TO_CHAR);
 					}
 				}
 			}

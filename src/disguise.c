@@ -21,49 +21,88 @@
  * external variables
  */
 extern struct shapechange_struct shapechange_name_list[];
-extern struct mm_ds             *dead_mob_pool;
-extern struct mm_ds             *dead_pconly_pool;
+extern struct mm_ds *dead_mob_pool;
+extern struct mm_ds *dead_pconly_pool;
 
-const char *disguise_list[] = {
-	"halfling", "gnome", "dwarf", "elf", "half-elf", "human", "duergar", "drow", "orc", "goblin", "barbarian", "githyanki", "vampire", "lich", "rakshasa", "githzerai", "orog", "\n"};
+const char *disguise_list[] = { "halfling",  "gnome",	  "dwarf",   "elf",  "half-elf",
+				"human",     "duergar",	  "drow",    "orc",  "goblin",
+				"barbarian", "githyanki", "vampire", "lich", "rakshasa",
+				"githzerai", "orog",	  "\n" };
 
 struct disguise_list_data_struct
 {
-	int         size;
-	int         race;
+	int size;
+	int race;
 	const char *name[3];
 };
 
 struct disguise_list_data_struct disguise_list_data[] = {
-	{ SIZE_SMALL,  RACE_HALFLING,            {"&+ca halfling traveler&N", "&+ga halfling scout&N", "&+ya halfling merchant&N"}},
-	{ SIZE_SMALL,     RACE_GNOME,                        {"&+La gnome merchant&N", "a gnome inventor", "&+Ra gnome peasant&N"}},
-	{SIZE_MEDIUM,  RACE_MOUNTAIN,                             {"a dwarf miner", "&+ra dwarf guard&N", "&+Ya dwarf merchant&N"}},
-	{SIZE_MEDIUM,      RACE_GREY,                           {"an elf archer", "&+Gan elven merchant&N", "&+gan elven scout&N"}},
-	{SIZE_MEDIUM,   RACE_HALFELF,                     {"a half-elf bard", "&+Ga half-elf merchant&N", "&+La half-elf guard&N"}},
-	{SIZE_MEDIUM,     RACE_HUMAN,                 {"a human street sweeper", "&+Ca human merchant&N", "&+Ga human traveler&N"}},
-	{ SIZE_SMALL,   RACE_DUERGAR,                        {"a duergar brigand", "&+ra clansdwarf&N", "&+La duergar merchant&N"}},
-	{SIZE_MEDIUM,      RACE_DROW,                            {"a drow bladesman", "&+ma drow guard&N", "&+La drow merchant&N"}},
-	{SIZE_MEDIUM,       RACE_ORC,							{"an orc shaman", "&+man orc guard&N", "&+Lan orcish merchant&N"}},
-	{ SIZE_SMALL,    RACE_GOBLIN,                       {"a goblin magician", "&+ya goblin merchant&N", "&+ga goblin guard&N"}},
-	{ SIZE_LARGE, RACE_BARBARIAN,      {"&+ya barbarian tribesman&N", "&+ya barbarian shaman&N", "&+ga barbarian fisherman&N"}},
-	{SIZE_MEDIUM, RACE_GITHYANKI, {"&+ga githyanki antipaladin&N", "&+ga githyanki traveler&N", "&+La githyanki psionicist&N"}},
-	{SIZE_MEDIUM,  RACE_PVAMPIRE,       {"&+ra vampire antipaladin&N", "&+ra vampire necromancer&N", "&+ra vampire warlock&N"}},
-	{SIZE_MEDIUM,      RACE_LICH,                     {"&+La lich wizard&N", "&+La lich necromancer&N", "&+La lich warlock&N"}},
-	{SIZE_MEDIUM,  RACE_RAKSHASA,                 {"a rakshasa tribesman", "&+ya rakshasa warrior&N", "&+ya rakshasa guard&N"}},
-	{SIZE_MEDIUM, RACE_GITHZERAI,                       {"a githzerai slave", "a githzerai warrior", "a githzerai psionicist"}},
-	{ SIZE_LARGE,      RACE_OROG,                 {"&+Lan orog warrior&n", "&+ran orog berserker&n", "&+yan orog warpriest&n"}}
+	{ SIZE_SMALL,
+	  RACE_HALFLING,
+	  { "&+ca halfling traveler&N", "&+ga halfling scout&N", "&+ya halfling merchant&N" } },
+	{ SIZE_SMALL,
+	  RACE_GNOME,
+	  { "&+La gnome merchant&N", "a gnome inventor", "&+Ra gnome peasant&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_MOUNTAIN,
+	  { "a dwarf miner", "&+ra dwarf guard&N", "&+Ya dwarf merchant&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_GREY,
+	  { "an elf archer", "&+Gan elven merchant&N", "&+gan elven scout&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_HALFELF,
+	  { "a half-elf bard", "&+Ga half-elf merchant&N", "&+La half-elf guard&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_HUMAN,
+	  { "a human street sweeper", "&+Ca human merchant&N", "&+Ga human traveler&N" } },
+	{ SIZE_SMALL,
+	  RACE_DUERGAR,
+	  { "a duergar brigand", "&+ra clansdwarf&N", "&+La duergar merchant&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_DROW,
+	  { "a drow bladesman", "&+ma drow guard&N", "&+La drow merchant&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_ORC,
+	  { "an orc shaman", "&+man orc guard&N", "&+Lan orcish merchant&N" } },
+	{ SIZE_SMALL,
+	  RACE_GOBLIN,
+	  { "a goblin magician", "&+ya goblin merchant&N", "&+ga goblin guard&N" } },
+	{ SIZE_LARGE,
+	  RACE_BARBARIAN,
+	  { "&+ya barbarian tribesman&N", "&+ya barbarian shaman&N",
+	    "&+ga barbarian fisherman&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_GITHYANKI,
+	  { "&+ga githyanki antipaladin&N", "&+ga githyanki traveler&N",
+	    "&+La githyanki psionicist&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_PVAMPIRE,
+	  { "&+ra vampire antipaladin&N", "&+ra vampire necromancer&N",
+	    "&+ra vampire warlock&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_LICH,
+	  { "&+La lich wizard&N", "&+La lich necromancer&N", "&+La lich warlock&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_RAKSHASA,
+	  { "a rakshasa tribesman", "&+ya rakshasa warrior&N", "&+ya rakshasa guard&N" } },
+	{ SIZE_MEDIUM,
+	  RACE_GITHZERAI,
+	  { "a githzerai slave", "a githzerai warrior", "a githzerai psionicist" } },
+	{ SIZE_LARGE,
+	  RACE_OROG,
+	  { "&+Lan orog warrior&n", "&+ran orog berserker&n", "&+yan orog warpriest&n" } }
 };
 
 void do_disguise(P_char ch, char *arg, int cmd)
 {
-	int    skl_lvl = 0;
-	int    percent = 0;
-	int    i, the_size;
-	char   Gbuf1[MAX_STRING_LENGTH];
-	char   name[MAX_STRING_LENGTH];
+	int skl_lvl = 0;
+	int percent = 0;
+	int i, the_size;
+	char Gbuf1[MAX_STRING_LENGTH];
+	char name[MAX_STRING_LENGTH];
 	P_char target = NULL;
-	P_obj  temp;
-	bool   equipped;
+	P_obj temp;
+	bool equipped;
 
 	bool /*disguise_pc = FALSE, */ disguise_npc = FALSE;
 
@@ -116,7 +155,9 @@ void do_disguise(P_char ch, char *arg, int cmd)
 	// Disguising when already disgusied? I think not!
 	if (IS_DISGUISE(ch))
 	{
-		send_to_char("You need to remove your disguise (just 'disguise') before trying to disguise again!\r\n", ch);
+		send_to_char(
+			"You need to remove your disguise (just 'disguise') before trying to disguise again!\r\n",
+			ch);
 		return;
 	}
 
@@ -158,7 +199,8 @@ void do_disguise(P_char ch, char *arg, int cmd)
 		// No disguising as immortals
 		if (!IS_TRUSTED(ch) && GET_LEVEL(target) > 56)
 		{
-			send_to_char("You really don't want to disguise yourself as a God!\r\n", ch);
+			send_to_char("You really don't want to disguise yourself as a God!\r\n",
+				     ch);
 			free_char(target);
 			return;
 		}
@@ -177,9 +219,13 @@ void do_disguise(P_char ch, char *arg, int cmd)
 		// If it's a mortal disguising
 		if (!IS_TRUSTED(ch))
 		{
-			if (GET_RACE(target) == RACE_ILLITHID || GET_RACE(target) == RACE_CENTAUR || GET_RACE(target) == RACE_THRIKREEN || GET_RACE(target) == RACE_MINOTAUR || GET_RACE(target) == RACE_TROLL)
+			if (GET_RACE(target) == RACE_ILLITHID || GET_RACE(target) == RACE_CENTAUR ||
+			    GET_RACE(target) == RACE_THRIKREEN ||
+			    GET_RACE(target) == RACE_MINOTAUR || GET_RACE(target) == RACE_TROLL)
 			{
-				send_to_char("Disguising into that is just short of impossible.\r\n", ch);
+				send_to_char(
+					"Disguising into that is just short of impossible.\r\n",
+					ch);
 				free_char(target);
 				return;
 			}
@@ -193,7 +239,7 @@ void do_disguise(P_char ch, char *arg, int cmd)
 	{
 		if (!(temp = get_obj_in_list_vis(ch, "_disguise_kit_", ch->carrying)))
 		{
-			temp     = ch->equipment[HOLD];
+			temp = ch->equipment[HOLD];
 			equipped = TRUE;
 			if ((temp == 0) || !isname("_disguise_kit_", temp->name))
 			{
@@ -239,7 +285,8 @@ void do_disguise(P_char ch, char *arg, int cmd)
 			extract_obj(temp, TRUE); // An artifact disguise kit?
 		}
 		else
-			send_to_char(", but manage to salvage the rest of the kit's supplies.\r\n", ch);
+			send_to_char(", but manage to salvage the rest of the kit's supplies.\r\n",
+				     ch);
 		if (target)
 			free_char(target);
 
@@ -268,46 +315,51 @@ void do_disguise(P_char ch, char *arg, int cmd)
 		update_achievements(ch, 0, 1, 3);
 		if (target)
 		{
-			IS_DISGUISE_PC(ch)       = TRUE;
-			IS_DISGUISE_NPC(ch)      = FALSE;
+			IS_DISGUISE_PC(ch) = TRUE;
+			IS_DISGUISE_NPC(ch) = FALSE;
 			IS_DISGUISE_ILLUSION(ch) = FALSE;
-			IS_DISGUISE_SHAPE(ch)    = FALSE;
-			ch->disguise.name        = str_dup(GET_NAME(target));
-			ch->disguise.m_class     = target->player.m_class;
-			ch->disguise.race        = GET_RACE(target);
-			ch->disguise.level       = GET_LEVEL(target);
-			ch->disguise.hit         = GET_LEVEL(ch) * 4;
-			ch->disguise.racewar     = GET_RACEWAR(target);
+			IS_DISGUISE_SHAPE(ch) = FALSE;
+			ch->disguise.name = str_dup(GET_NAME(target));
+			ch->disguise.m_class = target->player.m_class;
+			ch->disguise.race = GET_RACE(target);
+			ch->disguise.level = GET_LEVEL(target);
+			ch->disguise.hit = GET_LEVEL(ch) * 4;
+			ch->disguise.racewar = GET_RACEWAR(target);
 			if (GET_TITLE(target))
 				ch->disguise.title = str_dup(GET_TITLE(target));
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You disguise yourself into %s.\r\n", GET_NAME(target));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "You disguise yourself into %s.\r\n",
+				 GET_NAME(target));
 			send_to_char(Gbuf1, ch);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s starts disguising into %s.", GET_NAME(ch), GET_NAME(target));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s starts disguising into %s.",
+				 GET_NAME(ch), GET_NAME(target));
 		}
 		else
 		{
-
 			int k = number(0, 2);
 
-			IS_DISGUISE_NPC(ch)      = TRUE;
-			IS_DISGUISE_PC(ch)       = FALSE;
+			IS_DISGUISE_NPC(ch) = TRUE;
+			IS_DISGUISE_PC(ch) = FALSE;
 			IS_DISGUISE_ILLUSION(ch) = FALSE;
-			IS_DISGUISE_SHAPE(ch)    = FALSE;
+			IS_DISGUISE_SHAPE(ch) = FALSE;
 
 			stripansi_2(disguise_list_data[i].name[k], Gbuf1);
 			GET_DISGUISE_TITLE(ch) = str_dup(Gbuf1 + 2);
 
 			ch->disguise.name = str_dup(disguise_list_data[i].name[k]);
 
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s is standing here, busy with his own matters.", disguise_list_data[i].name[k]);
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "%s is standing here, busy with his own matters.",
+				 disguise_list_data[i].name[k]);
 
 			ch->disguise.longname = str_dup(Gbuf1);
 			// GET_DISGUISE_TITLE(ch) = ch->disguise.name = ch->disguise.longname = str_dup(disguise_list_data[i].name[number(0, 2)]);
 			ch->disguise.race = disguise_list_data[i].race;
-			ch->disguise.hit  = GET_LEVEL(ch) * 4;
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You disguise yourself into a %s.\r\n", disguise_list[i]);
+			ch->disguise.hit = GET_LEVEL(ch) * 4;
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "You disguise yourself into a %s.\r\n",
+				 disguise_list[i]);
 			send_to_char(Gbuf1, ch);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s starts disguising into a %s.", GET_NAME(ch), disguise_list[i]);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s starts disguising into a %s.",
+				 GET_NAME(ch), disguise_list[i]);
 		}
 		act(Gbuf1, TRUE, ch, NULL, NULL, TO_ROOM);
 		if (!IS_TRUSTED(ch) && !affected_by_spell(ch, ACH_DECEPTICON))
@@ -326,23 +378,23 @@ void do_disguise(P_char ch, char *arg, int cmd)
 
 void remove_disguise(P_char ch, bool show_messages)
 {
-	bool wasIllu  = IS_DISGUISE_ILLUSION(ch);
+	bool wasIllu = IS_DISGUISE_ILLUSION(ch);
 	bool wasShape = IS_DISGUISE_SHAPE(ch);
 
-	IS_DISGUISE_PC(ch)       = FALSE;
-	IS_DISGUISE_NPC(ch)      = FALSE;
+	IS_DISGUISE_PC(ch) = FALSE;
+	IS_DISGUISE_NPC(ch) = FALSE;
 	IS_DISGUISE_ILLUSION(ch) = FALSE;
-	IS_DISGUISE_SHAPE(ch)    = FALSE;
+	IS_DISGUISE_SHAPE(ch) = FALSE;
 	str_free(ch->disguise.name);
 	ch->disguise.name = NULL;
 	str_free(ch->disguise.longname);
 	ch->disguise.longname = NULL;
-	ch->disguise.m_class  = 0;
-	ch->disguise.race     = 0;
-	ch->disguise.level    = 0;
+	ch->disguise.m_class = 0;
+	ch->disguise.race = 0;
+	ch->disguise.level = 0;
 	str_free(ch->disguise.title);
 	ch->disguise.title = NULL;
-	ch->disguise.hit   = 0;
+	ch->disguise.hit = 0;
 	if (show_messages)
 	{
 		if (wasIllu)

@@ -21,10 +21,10 @@
 #include "structs.h"
 
 char *proclibobj_parse_sayresponse(char *argument);
-int   proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument);
+int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument);
 
 char *proclibobj_parse_transporter(char *argument);
-int   proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument);
+int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument);
 
 /* Prototype-level bridge that lets special() reach INSTANCE proclibs.
    Installed by proclibObj_add() on the vnum of any object that gains a
@@ -39,16 +39,16 @@ void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *));
 
 /* Help text for the object_proc_libs[] registry rows in specs.library.c,
    hoisted here so each row stays one line. */
-#define PROCLIB_SAYRESPONSE_HELP                                                    \
-	"        Params: 'keywords' 'reply text'\n"                                     \
-	"          keywords: quoted, space separated; replies when a player's say\n"    \
-	"                    contains any of them (object in room or held).\n"          \
+#define PROCLIB_SAYRESPONSE_HELP                                                     \
+	"        Params: 'keywords' 'reply text'\n"                                  \
+	"          keywords: quoted, space separated; replies when a player's say\n" \
+	"                    contains any of them (object in room or held).\n"       \
 	"          reply text: quoted; sent to the room as: <object> replies, '...'\n"
 
-#define PROCLIB_TRANSPORTER_HELP                                                    \
-	"        Params: keyword roomvnum\n"                                            \
-	"          keyword: what the player must type after 'enter'.\n"                 \
-	"          roomvnum: destination room (validated when fired).  The object\n"    \
+#define PROCLIB_TRANSPORTER_HELP                                                     \
+	"        Params: keyword roomvnum\n"                                         \
+	"          keyword: what the player must type after 'enter'.\n"              \
+	"          roomvnum: destination room (validated when fired).  The object\n" \
 	"                    must be on the ground in the actor's room.\n"
 
 #endif /* _STUDIOPROCLIB_H_ */

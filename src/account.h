@@ -5,38 +5,38 @@
 #define DURIS_ACCOUNT_H
 
 #ifndef _DE_
-# include "structs.h"
+#include "structs.h"
 #endif
 
 #define USE_ACCOUNT
 
 #define ACCT_IMMORTAL 0
-#define ACCT_GOOD     1
-#define ACCT_EVIL     2
+#define ACCT_GOOD 1
+#define ACCT_EVIL 2
 
 #define MAX_CHARS_PER_ACCOUNT 16
 
 struct acct_ip
 { // Account IP Information
-	char             *hostname;
-	char             *ip_address;
+	char *hostname;
+	char *ip_address;
 	unsigned long int count;
-	struct acct_ip   *next;
+	struct acct_ip *next;
 };
 
 struct acct_chars
 { // Account Character Entry
-	char              *charname;
-	unsigned long int  count;
-	long int           last;
-	char               blocked;
-	char               racewar;
-	int                level;
-	int                race;
-	unsigned int       m_class;
-	unsigned int       secondary_class;
-	int                last_room;
-	long               last_save;
+	char *charname;
+	unsigned long int count;
+	long int last;
+	char blocked;
+	char racewar;
+	int level;
+	int race;
+	unsigned int m_class;
+	unsigned int secondary_class;
+	int last_room;
+	long last_save;
 	struct acct_chars *next;
 };
 
@@ -50,7 +50,7 @@ struct acct_entry
 	int num_ips;
 	int num_chars;
 
-	struct acct_ip    *acct_unique_ips;
+	struct acct_ip *acct_unique_ips;
 	struct acct_chars *acct_character_list;
 
 	char acct_blocked;
@@ -71,7 +71,7 @@ struct acct_entry
 
 struct acct_list_entry
 { // List of loaded accounts
-	struct acct_entry      *account;
+	struct acct_entry *account;
 	struct acct_list_entry *next;
 };
 

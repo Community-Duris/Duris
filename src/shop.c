@@ -28,26 +28,29 @@
  * external variables
  */
 
-extern P_index                mob_index;
-extern P_index                obj_index;
-extern P_room                 world;
-extern const int              top_of_world;
-extern char                  *drinks[];
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern const int top_of_world;
+extern char *drinks[];
 extern const struct stat_data stat_factor[];
-extern const char            *item_types[];
-extern const flagDef          extra_bits[];
-extern struct str_app_type    str_app[];
-extern struct cha_app_type    cha_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone_table;
+extern const char *item_types[];
+extern const flagDef extra_bits[];
+extern struct str_app_type str_app[];
+extern struct cha_app_type cha_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
 
 struct shop_data *shop_index;
-int               number_of_shops = 0;
-const char       *operator_str[]  = {"[({", "])}", "|+", "&*", "^'"};
+int number_of_shops = 0;
+const char *operator_str[] = { "[({", "])}", "|+", "&*", "^'" };
 
 void lore_item(P_char ch, P_obj obj);
 
-void push(struct stack_data *stack, int pushval) { S_DATA(stack, S_LEN(stack)++) = pushval; }
+void push(struct stack_data *stack, int pushval)
+{
+	S_DATA(stack, S_LEN(stack)++) = pushval;
+}
 
 int topp(struct stack_data *stack)
 {
@@ -93,14 +96,14 @@ int find_oper_num(char token)
 int evaluate_expression(P_obj obj, char *expr)
 {
 	struct stack_data ops, vals;
-	char             *ptr, *end, name[200];
-	int               temp, i;
+	char *ptr, *end, name[200];
+	int temp, i;
 
 	if (!expr)
 		return (TRUE);
 
 	ops.len = vals.len = 0;
-	ptr                = expr;
+	ptr = expr;
 	while (*ptr)
 	{
 		if (isspace(*ptr))
@@ -133,7 +136,8 @@ int evaluate_expression(P_obj obj, char *expr)
 				{
 					if ((temp = pop(&ops)) != OPER_OPEN_PAREN)
 					{
-						logit(LOG_DEBUG, "Illegal parenthesis in shop keyword expression");
+						logit(LOG_DEBUG,
+						      "Illegal parenthesis in shop keyword expression");
 						return (FALSE);
 					}
 				}
@@ -183,20 +187,23 @@ int is_ok(P_char keeper, P_char ch, int shop_nr)
 	{
 		if (shop_index[shop_nr].shopkeeper_race != (unsigned)GET_RACE(ch))
 		{
-
 			/*
 			 * old version gave namelist of keeper, not short descr. - DTS
 			 * snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to %s, '%s'", GET_NAME(keeper), GET_NAME(ch),
 			 * shop_index[shop_nr].racist_message);
 			 */
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to %s, '%s'", keeper->player.short_descr, ((IS_PC(ch)) ? GET_NAME(ch) : ch->player.short_descr), shop_index[shop_nr].racist_message);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to %s, '%s'",
+				 keeper->player.short_descr,
+				 ((IS_PC(ch)) ? GET_NAME(ch) : ch->player.short_descr),
+				 shop_index[shop_nr].racist_message);
 			act(Gbuf1, FALSE, ch, 0, 0, TO_ROOM);
 			/*
 			 * old version gave namelist of keeper, not short descr. - DTS
 			 * snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to you, '%s'", GET_NAME(keeper),
 			 * shop_index[shop_nr].racist_message);
 			 */
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to you, '%s'", keeper->player.short_descr, shop_index[shop_nr].racist_message);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to you, '%s'",
+				 keeper->player.short_descr, shop_index[shop_nr].racist_message);
 			act(Gbuf1, FALSE, ch, 0, 0, TO_CHAR);
 			return (FALSE);
 		}
@@ -209,12 +216,12 @@ int is_ok(P_char keeper, P_char ch, int shop_nr)
 
 	switch (shop_index[shop_nr].with_who)
 	{
-		case 0:
-			return (TRUE);
-		case 1:
-			return (TRUE);
-		default:
-			return (TRUE);
+	case 0:
+		return (TRUE);
+	case 1:
+		return (TRUE);
+	default:
+		return (TRUE);
 	};
 }
 
@@ -235,7 +242,8 @@ int same_obj(P_obj obj1, P_obj obj2)
 		return (FALSE);
 
 	for (i = 0; i < MAX_OBJ_AFFECT; i++)
-		if ((obj1->affected[i].location != obj2->affected[i].location) || (obj1->affected[i].modifier != obj2->affected[i].modifier))
+		if ((obj1->affected[i].location != obj2->affected[i].location) ||
+		    (obj1->affected[i].modifier != obj2->affected[i].modifier))
 			return (FALSE);
 
 	return (TRUE);
@@ -244,7 +252,7 @@ int same_obj(P_obj obj1, P_obj obj2)
 char *times_message(P_obj obj, char *name, int num)
 {
 	static char buf[256];
-	char       *ptr;
+	char *ptr;
 
 	if (obj)
 		strcpy(buf, obj->short_description);
@@ -265,8 +273,8 @@ char *times_message(P_obj obj, char *name, int num)
 P_obj get_slide_obj_vis(P_char ch, char *name, P_obj list)
 {
 	P_obj i, last_match = NULL;
-	int   j, num;
-	char  tmpname[MAX_INPUT_LENGTH];
+	int j, num;
+	char tmpname[MAX_INPUT_LENGTH];
 	char *tmp;
 
 	strcpy(tmpname, name);
@@ -289,7 +297,7 @@ P_obj get_slide_obj_vis(P_char ch, char *name, P_obj list)
 P_obj get_hash_obj_vis(P_char ch, char *name, P_obj list)
 {
 	P_obj loop, last_obj = NULL;
-	int   i;
+	int i;
 
 	if ((is_number(name + 1)))
 		i = atoi(name + 1);
@@ -309,7 +317,7 @@ P_obj get_hash_obj_vis(P_char ch, char *name, P_obj list)
 
 P_obj get_purchase_obj(P_char ch, char *arg, P_char keeper, int shop_nr, int msg)
 {
-	char  buf[MAX_STRING_LENGTH], name[MAX_INPUT_LENGTH];
+	char buf[MAX_STRING_LENGTH], name[MAX_INPUT_LENGTH];
 	P_obj obj;
 
 	one_argument(arg, name);
@@ -323,7 +331,8 @@ P_obj get_purchase_obj(P_char ch, char *arg, P_char keeper, int shop_nr, int msg
 		{
 			if (msg)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+				snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
+					 GET_NAME(ch));
 			}
 			return NULL;
 		}
@@ -350,7 +359,9 @@ int trade_with(P_obj item, int shop_nr, char repairing)
 	{
 		if (SHOP_BUYTYPE(shop_nr, counter) == (item)->type)
 		{
-			if (((item->value[2] == 0) && (((item)->type == ITEM_WAND) || ((item)->type == ITEM_STAFF)))) /*         (item->condition < 10))*/
+			if (((item->value[2] == 0) &&
+			     (((item)->type == ITEM_WAND) ||
+			      ((item)->type == ITEM_STAFF)))) /*         (item->condition < 10))*/
 				return (OBJECT_DEAD);
 			else if (evaluate_expression(item, SHOP_BUYWORD(shop_nr, counter)))
 				return (OBJECT_OK);
@@ -379,15 +390,16 @@ int shop_producing(P_obj item, int shop_nr)
 
 P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg, char repairing)
 {
-	char  buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	P_obj obj;
-	int   result;
+	int result;
 
 	if (!(obj = get_obj_in_list_vis(ch, name, ch->carrying)))
 	{
 		if (msg)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item2, GET_NAME(ch));
+			snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item2,
+				 GET_NAME(ch));
 			mobsay(keeper, buf);
 		}
 		return (0);
@@ -397,17 +409,18 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 
 	switch (result)
 	{
-		case OBJECT_NOTOK:
-			snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].do_not_buy, GET_NAME(ch));
-			break;
-		case OBJECT_DEAD:
-			snprintf(buf, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), MSG_NO_USED_WANDSTAFF);
-			break;
-		default:
-			snprintf(buf, MAX_STRING_LENGTH, "Illegal return value of %d from trade_with() (shop.c)", result);
-			logit(LOG_DEBUG, buf);
-			snprintf(buf, MAX_STRING_LENGTH, "%s An error has occurred.", GET_NAME(ch));
-			break;
+	case OBJECT_NOTOK:
+		snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].do_not_buy, GET_NAME(ch));
+		break;
+	case OBJECT_DEAD:
+		snprintf(buf, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), MSG_NO_USED_WANDSTAFF);
+		break;
+	default:
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "Illegal return value of %d from trade_with() (shop.c)", result);
+		logit(LOG_DEBUG, buf);
+		snprintf(buf, MAX_STRING_LENGTH, "%s An error has occurred.", GET_NAME(ch));
+		break;
 	}
 	if (msg)
 		mobsay(keeper, buf);
@@ -416,11 +429,11 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 
 void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
-	char  argm[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
+	char argm[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
 	P_obj temp1, gem = NULL, container;
-	int   i = 0, sale;
+	int i = 0, sale;
 	float cost_factor;
-	char  Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 	{
@@ -446,7 +459,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 			{
 				if (IS_ARTIFACT(temp1) || isname("encrust", temp1->name))
 				{
-					wizlog(56, "(%s) shopkeeper just destroyed (%s).", GET_NAME(keeper), (temp1->short_description));
+					wizlog(56, "(%s) shopkeeper just destroyed (%s).",
+					       GET_NAME(keeper), (temp1->short_description));
 					extract_obj(temp1, TRUE); // Bye arti.
 					continue;
 				}
@@ -462,7 +476,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		if (!temp1)
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
+				 GET_NAME(ch));
 			do_tell(keeper, Gbuf1, 0);
 			return;
 		}
@@ -515,7 +530,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if ((IS_CARRYING_N(ch) + 1 > CAN_CARRY_N(ch)))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s : You can't carry that many items.\r\n", FirstWord(temp1->name));
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s : You can't carry that many items.\r\n",
+			 FirstWord(temp1->name));
 		send_to_char(Gbuf1, ch);
 		return;
 	}
@@ -523,13 +539,15 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		if (!transact(ch, gem, keeper, sale))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash2, GET_NAME(ch));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash2,
+				 GET_NAME(ch));
 			mobsay(keeper, Gbuf1);
 			return;
 		}
 	}
 	act("$n buys $p.", FALSE, ch, temp1, 0, TO_ROOM);
-	snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_buy, GET_NAME(ch), coin_stringv(sale));
+	snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_buy, GET_NAME(ch),
+		 coin_stringv(sale));
 	do_tell(keeper, Gbuf1, 0);
 	// SET_BIT(temp1->type, ITEM_TREASURE);
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "You now have %s.\r\n", temp1->short_description);
@@ -565,13 +583,15 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		if (!(container = get_obj_in_list(arg2, ch->carrying)))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You don't seem to have a '%s'.\r\n", arg2);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "You don't seem to have a '%s'.\r\n",
+				 arg2);
 			send_to_char(Gbuf1, ch);
 			return;
 		}
 		if (container->type != ITEM_CONTAINER)
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s&n isn't a container.\r\n", container->short_description);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s&n isn't a container.\r\n",
+				 container->short_description);
 			send_to_char(Gbuf1, ch);
 			return;
 		}
@@ -595,10 +615,10 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
 	P_obj temp1;
-	char  Gbuf1[MAX_STRING_LENGTH];
-	char  argm[MAX_INPUT_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
+	char argm[MAX_INPUT_LENGTH];
 	float cost_factor;
-	int   sale;
+	int sale;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
@@ -615,7 +635,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	if (!temp1)
 		return;
 
-	if (obj_index[temp1->R_num].virtual_number > (FIRST_POTION_VIRTUAL - 1) && (obj_index[temp1->R_num].virtual_number < (FIRST_POTION_VIRTUAL + 25)))
+	if (obj_index[temp1->R_num].virtual_number > (FIRST_POTION_VIRTUAL - 1) &&
+	    (obj_index[temp1->R_num].virtual_number < (FIRST_POTION_VIRTUAL + 25)))
 	{
 		mobsay(keeper, "I do not want to buy that.");
 		return;
@@ -623,14 +644,16 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (IS_ARTIFACT(temp1))
 	{
-		wizlog(56, "ARTIFACT: (%s) just tried to sell (%s).", GET_NAME(ch), temp1->short_description);
+		wizlog(56, "ARTIFACT: (%s) just tried to sell (%s).", GET_NAME(ch),
+		       temp1->short_description);
 		mobsay(keeper, "For fear of my life, I won't buy that.");
 		return;
 	}
 
 	if (isname("encrust", temp1->name))
 	{
-		wizlog(56, "ENCRUST: (%s) just tried to sell (%s).", GET_NAME(ch), temp1->short_description);
+		wizlog(56, "ENCRUST: (%s) just tried to sell (%s).", GET_NAME(ch),
+		       temp1->short_description);
 		mobsay(keeper, "I do not need encrusted items.");
 		return;
 	}
@@ -638,7 +661,9 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	/* patch to avoid selling containers full of stuff.  JAB */
 	if ((temp1->type == ITEM_CONTAINER || temp1->type == ITEM_STORAGE) && temp1->contains)
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s HA!  I'm not buying that, who knows what might be in there!", GET_NAME(ch));
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "%s HA!  I'm not buying that, who knows what might be in there!",
+			 GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
@@ -666,20 +691,22 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	if ((GET_VNUM(keeper) != 11005) && /* guild shops don't lose cash */
 	    ((shop_index[shop_nr].shop_is_roaming == 1) && (GET_MONEY(keeper) < sale)))
 	{
-
 		snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash1, GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
 	if (IS_SET(temp1->extra_flags, ITEM_NODROP))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s That looks wonderful, but I don't feel comfortable buying that.", GET_NAME(ch));
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "%s That looks wonderful, but I don't feel comfortable buying that.",
+			 GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
 	act("$n sells $p.", FALSE, ch, temp1, 0, TO_ROOM);
 
-	snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell, GET_NAME(ch), coin_stringv(sale));
+	snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell, GET_NAME(ch),
+		 coin_stringv(sale));
 
 	int temp = 0;
 
@@ -693,7 +720,9 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 		if (sale < 1)
 			sale = 1;
 
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "The shopkeeper says 'This item is rather common, you won't get as much for it.'\r\n");
+		snprintf(
+			Gbuf1, MAX_STRING_LENGTH,
+			"The shopkeeper says 'This item is rather common, you won't get as much for it.'\r\n");
 		send_to_char(Gbuf1, ch);
 	}
 
@@ -701,7 +730,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	sql_shop_sell(ch, temp1, sale);
 
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "The shopkeeper now has %s.\r\n", temp1->short_description);
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "The shopkeeper now has %s.\r\n",
+		 temp1->short_description);
 	send_to_char(Gbuf1, ch);
 
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "The shopkeeper gives you %s.\r\n", coin_stringv(sale));
@@ -709,12 +739,10 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (sale && sale >= get_property("stats.sell.log", 500000))
 		statuslog(ch->player.level,
-		          "&+LSALE:&n (%s&n) just sold [%d] (%s&n) for (%s&n) at [%d]!",
-		          GET_NAME(ch),
-		          OBJ_VNUM(temp1),
-		          temp1->short_description,
-		          coin_stringv(sale),
-		          (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
+			  "&+LSALE:&n (%s&n) just sold [%d] (%s&n) for (%s&n) at [%d]!",
+			  GET_NAME(ch), OBJ_VNUM(temp1), temp1->short_description,
+			  coin_stringv(sale),
+			  (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
 
 	ADD_MONEY(ch, sale);
 	/*  if (shop_index[shop_nr].shop_is_roaming == 1) */
@@ -742,11 +770,11 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
-	char  argm[MAX_INPUT_LENGTH];
+	char argm[MAX_INPUT_LENGTH];
 	P_obj temp1;
-	char  Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 	float cost_factor;
-	int   sale;
+	int sale;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
@@ -755,7 +783,8 @@ void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (!(*argm))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s What do you want me to valuate??", GET_NAME(ch));
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s What do you want me to valuate??",
+			 GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
@@ -763,14 +792,17 @@ void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 	if (!temp1)
 		return;
 
-	if (IS_SET(temp1->extra_flags, ITEM_NODROP) || IS_ARTIFACT(temp1) || isname("encrust", temp1->name))
+	if (IS_SET(temp1->extra_flags, ITEM_NODROP) || IS_ARTIFACT(temp1) ||
+	    isname("encrust", temp1->name))
 
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s I wouldn't feel comfortable buying that!", GET_NAME(ch));
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s I wouldn't feel comfortable buying that!",
+			 GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 
 		if (IS_ARTIFACT(temp1))
-			wizlog(56, "ARTIFACT: (%s) tried to value (%s) at (%s).", GET_NAME(ch), (temp1->short_description), GET_NAME(keeper));
+			wizlog(56, "ARTIFACT: (%s) tried to value (%s) at (%s).", GET_NAME(ch),
+			       (temp1->short_description), GET_NAME(keeper));
 
 		return;
 	}
@@ -819,11 +851,14 @@ void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 		if (sale < 1)
 			sale = 1;
 
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "The shopkeeper says 'This item is rather common, it's not worth that much.'\r\n");
+		snprintf(
+			Gbuf1, MAX_STRING_LENGTH,
+			"The shopkeeper says 'This item is rather common, it's not worth that much.'\r\n");
 		send_to_char(Gbuf1, ch);
 	}
 
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "The shopkeeper says 'I'll give you %s for that!'\r\n", coin_stringv(sale));
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "The shopkeeper says 'I'll give you %s for that!'\r\n",
+		 coin_stringv(sale));
 	send_to_char(Gbuf1, ch);
 
 	return;
@@ -831,10 +866,10 @@ void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
-	char  argm[MAX_INPUT_LENGTH];
-	char  Gbuf1[MAX_STRING_LENGTH];
+	char argm[MAX_INPUT_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 	P_obj temp1, gem = NULL;
-	int   found_obj, sale, i = 0;
+	int found_obj, sale, i = 0;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
@@ -862,7 +897,8 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		if (!temp1)
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
+				 GET_NAME(ch));
 			do_tell(keeper, Gbuf1, 0);
 			return;
 		}
@@ -881,7 +917,8 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		if (!transact(ch, gem, keeper, sale))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash2, GET_NAME(ch));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash2,
+				 GET_NAME(ch));
 			mobsay(keeper, Gbuf1);
 			return;
 		}
@@ -898,12 +935,12 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 void shopping_list(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
 	P_obj obj1;
-	int   found_obj, temp;
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char  Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
+	int found_obj, temp;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	float cost_factor;
-	int   sale;
-	char  descbuf[MAX_STRING_LENGTH];
+	int sale;
+	char descbuf[MAX_STRING_LENGTH];
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
@@ -968,12 +1005,14 @@ void shopping_list(char *arg, P_char ch, P_char keeper, int shop_nr)
 		{
 			if (IS_ARTIFACT(obj1) || isname("encrust", obj1->name))
 			{
-				wizlog(56, "(%s) shopkeeper just destroyed (%s %d).", GET_NAME(keeper), obj1->short_description, OBJ_VNUM(obj1));
+				wizlog(56, "(%s) shopkeeper just destroyed (%s %d).",
+				       GET_NAME(keeper), obj1->short_description, OBJ_VNUM(obj1));
 				extract_obj(obj1, TRUE); // Bye arti.
 				continue;
 			}
 
-			snprintf(descbuf, MAX_STRING_LENGTH, "%s%s", obj1->short_description, item_condition(obj1));
+			snprintf(descbuf, MAX_STRING_LENGTH, "%s%s", obj1->short_description,
+				 item_condition(obj1));
 
 			if (CAN_SEE_OBJ(ch, obj1) && (obj1->cost > 0))
 			{
@@ -989,16 +1028,19 @@ void shopping_list(char *arg, P_char ch, P_char keeper, int shop_nr)
 					sale = 1;
 				if (obj1->type != ITEM_DRINKCON)
 				{
-					snprintf(Gbuf2, MAX_STRING_LENGTH, "%s for %s.\r\n", pad_ansi(descbuf, 45).c_str(), coin_stringv(sale));
+					snprintf(Gbuf2, MAX_STRING_LENGTH, "%s for %s.\r\n",
+						 pad_ansi(descbuf, 45).c_str(), coin_stringv(sale));
 				}
 				else
 				{
 					if (obj1->value[1])
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s of %s", descbuf, drinks[obj1->value[2]]);
+						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s of %s",
+							 descbuf, drinks[obj1->value[2]]);
 					else
 						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", descbuf);
 
-					snprintf(Gbuf2, MAX_STRING_LENGTH, "%s for %s.\r\n", pad_ansi(Gbuf3, 45).c_str(), coin_stringv(sale));
+					snprintf(Gbuf2, MAX_STRING_LENGTH, "%s for %s.\r\n",
+						 pad_ansi(Gbuf3, 45).c_str(), coin_stringv(sale));
 				}
 
 				snprintf(Gbuf4, MAX_STRING_LENGTH, "%2d) ", temp);
@@ -1022,24 +1064,25 @@ void shopping_kill(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	switch (shop_index[shop_nr].temper2)
 	{
-		case 0:
-			if (IS_PC(ch))
-			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "Don't ever try that again %s!", GET_NAME(ch));
-				do_say(keeper, Gbuf1, -4);
-			}
-			return;
+	case 0:
+		if (IS_PC(ch))
+		{
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "Don't ever try that again %s!",
+				 GET_NAME(ch));
+			do_say(keeper, Gbuf1, -4);
+		}
+		return;
 
-		case 1:
-			if (IS_PC(ch))
-			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "Scram - %s, you midget!", GET_NAME(ch));
-				do_say(keeper, Gbuf1, -4);
-			}
-			return;
+	case 1:
+		if (IS_PC(ch))
+		{
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "Scram - %s, you midget!", GET_NAME(ch));
+			do_say(keeper, Gbuf1, -4);
+		}
+		return;
 
-		default:
-			return;
+	default:
+		return;
 	}
 
 	return;
@@ -1047,8 +1090,8 @@ void shopping_kill(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
-	char  buf[MAX_INPUT_LENGTH], argm[MAX_INPUT_LENGTH];
-	int   cond, cost, ave;
+	char buf[MAX_INPUT_LENGTH], argm[MAX_INPUT_LENGTH];
+	int cond, cost, ave;
 	P_obj obj, gem = NULL, wpn = NULL;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
@@ -1117,7 +1160,8 @@ void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 			if (!transact(ch, gem, keeper, cost))
 			{
-				snprintf(buf, MAX_INPUT_LENGTH, shop_index[shop_nr].missing_cash2, GET_NAME(ch));
+				snprintf(buf, MAX_INPUT_LENGTH, shop_index[shop_nr].missing_cash2,
+					 GET_NAME(ch));
 				mobsay(keeper, buf);
 				return;
 			}
@@ -1128,10 +1172,14 @@ void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 				act("$N fiddles with $p.", TRUE, ch, obj, keeper, TO_CHAR);
 				if (GET_LEVEL(keeper) > 35)
 				{
-					ave = BOUNDED(0, (100 + number(-9, 10) + (GET_LEVEL(keeper) - 35)), 125);
+					ave = BOUNDED(
+						0,
+						(100 + number(-9, 10) + (GET_LEVEL(keeper) - 35)),
+						125);
 				}
 				else
-					ave = BOUNDED(0, MAX(obj->condition, 50 + obj->condition), 100);
+					ave = BOUNDED(0, MAX(obj->condition, 50 + obj->condition),
+						      100);
 				obj->condition = number(ave, 100);
 				if (obj->condition < 100)
 					obj->condition = 100;
@@ -1154,8 +1202,8 @@ void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 }
 int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg)
 {
-	char  argm[MAX_INPUT_LENGTH], victim_name[MAX_STRING_LENGTH];
-	int   shop_nr, room;
+	char argm[MAX_INPUT_LENGTH], victim_name[MAX_STRING_LENGTH];
+	int shop_nr, room;
 	P_obj item, next_item;
 
 	if (!cmd)
@@ -1166,7 +1214,8 @@ int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_DEATH)
 	{
-		room = (keeper->in_room >= 0 && keeper->in_room <= top_of_world) ? keeper->in_room : NOWHERE;
+		room = (keeper->in_room >= 0 && keeper->in_room <= top_of_world) ? keeper->in_room :
+										   NOWHERE;
 		if (room == NOWHERE)
 		{
 			room = real_room(keeper->specials.was_in_room);
@@ -1226,7 +1275,9 @@ int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg)
 		one_argument(arg, victim_name);
 		if (keeper == get_char_room(victim_name, ch->in_room))
 		{
-			snprintf(argm, MAX_INPUT_LENGTH, "shout Guards! Come arrest %s for being a thief!", CAN_SEE(keeper, ch) ? J_NAME(ch) : "Someone");
+			snprintf(argm, MAX_INPUT_LENGTH,
+				 "shout Guards! Come arrest %s for being a thief!",
+				 CAN_SEE(keeper, ch) ? J_NAME(ch) : "Someone");
 			command_interpreter(keeper, argm);
 			act(MSG_NO_STEAL_HERE, FALSE, ch, 0, keeper, TO_CHAR);
 			return (TRUE);
@@ -1235,49 +1286,59 @@ int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg)
 	// Prevent NPCs/pets from buying, selling, or valuing items at shops
 	if (ch && IS_NPC(ch) && (cmd == CMD_BUY || cmd == CMD_SELL || cmd == CMD_VALUE))
 	{
-		act("$N says 'I don't do business with pets or minions.'", FALSE, ch, 0, keeper, TO_ROOM);
-		act("$N says 'I don't do business with pets or minions.'", FALSE, ch, 0, keeper, TO_CHAR);
+		act("$N says 'I don't do business with pets or minions.'", FALSE, ch, 0, keeper,
+		    TO_ROOM);
+		act("$N says 'I don't do business with pets or minions.'", FALSE, ch, 0, keeper,
+		    TO_CHAR);
 		return (TRUE);
 	}
 
 	if (cmd == CMD_BUY)
-		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) || (shop_index[shop_nr].shop_is_roaming == 1))
+		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) ||
+		    (shop_index[shop_nr].shop_is_roaming == 1))
 		{
 			shopping_buy(arg, ch, keeper, shop_nr);
 			return (TRUE);
 		}
 	if (cmd == CMD_SELL)
-		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) || (shop_index[shop_nr].shop_is_roaming == 1))
+		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) ||
+		    (shop_index[shop_nr].shop_is_roaming == 1))
 		{
 			shopping_sell(arg, ch, keeper, shop_nr);
 			return (TRUE);
 		}
 	if (cmd == CMD_VALUE)
-		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) || (shop_index[shop_nr].shop_is_roaming == 1))
+		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) ||
+		    (shop_index[shop_nr].shop_is_roaming == 1))
 		{
 			shopping_value(arg, ch, keeper, shop_nr);
 			return (TRUE);
 		}
 	if (cmd == CMD_PERUSE)
-		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) || (shop_index[shop_nr].shop_is_roaming == 1))
+		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) ||
+		    (shop_index[shop_nr].shop_is_roaming == 1))
 		{
 			shopping_peruse(arg, ch, keeper, shop_nr);
 			return (TRUE);
 		}
 	if (cmd == CMD_LIST)
-		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) || (shop_index[shop_nr].shop_is_roaming == 1))
+		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) ||
+		    (shop_index[shop_nr].shop_is_roaming == 1))
 		{
 			shopping_list(arg, ch, keeper, shop_nr);
 			return (TRUE);
 		}
 	if (cmd == CMD_REPAIR)
-		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) || (shop_index[shop_nr].shop_is_roaming == 1))
+		if ((ch->in_room == real_room(shop_index[shop_nr].in_room)) ||
+		    (shop_index[shop_nr].shop_is_roaming == 1))
 		{
 			shopping_repair(arg, ch, keeper, shop_nr);
 			return (TRUE);
 		}
 	if (((cmd == CMD_CAST) || (cmd == CMD_RECITE) || (cmd == CMD_USE) || (cmd == CMD_WILL)) &&
-	    (!shop_index[shop_nr].magic_allowed && (shop_index[number_of_shops].shop_is_roaming || (keeper->in_room == real_room(GET_HOME(keeper))))))
+	    (!shop_index[shop_nr].magic_allowed &&
+	     (shop_index[number_of_shops].shop_is_roaming ||
+	      (keeper->in_room == real_room(GET_HOME(keeper))))))
 	{
 		/*
 		 * Cast, recite, use
@@ -1291,7 +1352,8 @@ int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg)
 		 * Kill or Hit
 		 */
 		one_argument(arg, argm);
-		if ((keeper == get_char_room(argm, ch->in_room)) || ((cmd == CMD_HITALL) && isname("all", argm)))
+		if ((keeper == get_char_room(argm, ch->in_room)) ||
+		    ((cmd == CMD_HITALL) && isname("all", argm)))
 		{
 			shopping_kill(arg, ch, keeper, shop_nr);
 			return (TRUE);
@@ -1313,7 +1375,7 @@ int add_to_list(struct shop_buy_data *list, int type, int *len, int *val)
 			}
 			if (*val >= 0)
 			{
-				BUY_TYPE(list[*len])     = *val;
+				BUY_TYPE(list[*len]) = *val;
 				BUY_WORD(list[(*len)++]) = 0;
 			}
 			else
@@ -1332,7 +1394,7 @@ int add_to_list(struct shop_buy_data *list, int type, int *len, int *val)
 
 int read_type_list(FILE *shop_f, struct shop_buy_data *list, int max)
 {
-	int   i, num, len = 0, error = 0;
+	int i, num, len = 0, error = 0;
 	char *ptr, buf[MAX_STRING_LENGTH];
 
 	bzero(buf, MAX_STRING_LENGTH);
@@ -1393,11 +1455,12 @@ int read_type_list(FILE *shop_f, struct shop_buy_data *list, int max)
 
 	if (error)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "Raise MAX_TRADE constant in config.h to %d", len + error);
+		snprintf(buf, MAX_STRING_LENGTH, "Raise MAX_TRADE constant in config.h to %d",
+			 len + error);
 		logit(LOG_DEBUG, buf);
 	}
 
-	BUY_WORD(list[len])   = 0;
+	BUY_WORD(list[len]) = 0;
 	BUY_TYPE(list[len++]) = 0;
 	return len;
 }
@@ -1448,14 +1511,14 @@ static FILE *open_shop_stream(void)
 
 void boot_the_shops(void)
 {
-	char                 tbuf, *buf;
-	int                  temp, tmp, count;
-	float                t_buy, t_sell;
-	FILE                *shop_f;
-	static bool          shop_end = TRUE;
+	char tbuf, *buf;
+	int temp, tmp, count;
+	float t_buy, t_sell;
+	FILE *shop_f;
+	static bool shop_end = TRUE;
 	struct shop_buy_data list[MAX_SHOP_OBJ + 1];
 
-	shop_end       = TRUE;
+	shop_end = TRUE;
 	number_of_shops = 0;
 	if (!(shop_f = open_shop_stream()))
 	{
@@ -1493,7 +1556,8 @@ void boot_the_shops(void)
 			{
 				fprintf(stderr, "boot_the_shops: Old shop: '%s'!\r\n", buf);
 				perror("Old shop exists!");
-				fatal_boot_error("shop", "boot_the_shops: old shop format in '%s'", buf);
+				fatal_boot_error("shop", "boot_the_shops: old shop format in '%s'",
+						 buf);
 			}
 
 			for (count = 0; count < MAX_PROD; count++)
@@ -1501,7 +1565,8 @@ void boot_the_shops(void)
 				fscanf(shop_f, "%d \n", &temp);
 				if (temp > 0)
 				{
-					shop_index[number_of_shops].producing[count] = real_object(temp);
+					shop_index[number_of_shops].producing[count] =
+						real_object(temp);
 				}
 				else
 				{
@@ -1516,7 +1581,9 @@ void boot_the_shops(void)
 				fscanf(shop_f, "%d \n", &temp);
 				while (temp > 0)
 				{
-					fprintf(stderr, "boot_the_shops: Shop '%s' has too many items: Item %d.\n\r", buf, temp);
+					fprintf(stderr,
+						"boot_the_shops: Shop '%s' has too many items: Item %d.\n\r",
+						buf, temp);
 					fscanf(shop_f, "%d \n", &temp);
 				}
 			}
@@ -1530,11 +1597,12 @@ void boot_the_shops(void)
 			if (fscanf(shop_f, "%f \n", &t_sell) != 1)
 			{
 				fprintf(stderr, "boot_the_shops: '%s' has bad t_sell!\r\n", buf);
-				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_sell", buf);
+				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_sell",
+						 buf);
 			}
 
 			shop_index[number_of_shops].sell_percent = t_sell;
-			shop_index[number_of_shops].buy_percent  = t_buy;
+			shop_index[number_of_shops].buy_percent = t_buy;
 
 			/*
 			 * boundary conditions, shops will buy for < 80%, and sell for < 1000%
@@ -1556,49 +1624,58 @@ void boot_the_shops(void)
 			if (shop_index[number_of_shops].buy_percent < 0.05)
 				shop_index[number_of_shops].buy_percent = .05;
 
-			if (shop_index[number_of_shops].sell_percent <= shop_index[number_of_shops].buy_percent)
+			if (shop_index[number_of_shops].sell_percent <=
+			    shop_index[number_of_shops].buy_percent)
 			{
 				if (shop_index[number_of_shops].sell_percent > 7.0)
-					shop_index[number_of_shops].buy_percent = shop_index[number_of_shops].sell_percent - 1.0;
+					shop_index[number_of_shops].buy_percent =
+						shop_index[number_of_shops].sell_percent - 1.0;
 				else
-					shop_index[number_of_shops].sell_percent = shop_index[number_of_shops].buy_percent + .25;
+					shop_index[number_of_shops].sell_percent =
+						shop_index[number_of_shops].buy_percent + .25;
 			}
 			/*
 			 * now, the reason for t_buy and t_sell, if we had to 'adjust' the
 			 * buy/sell %, then we yell about it
 			 */
-			if ((shop_index[number_of_shops].sell_percent != t_sell) || (shop_index[number_of_shops].buy_percent != t_buy))
+			if ((shop_index[number_of_shops].sell_percent != t_sell) ||
+			    (shop_index[number_of_shops].buy_percent != t_buy))
 			{
-				logit(LOG_DEBUG, "Shop %s: Old buy/sell: %f/%f, New: %f/%f.", buf, t_buy, t_sell, shop_index[number_of_shops].buy_percent, shop_index[number_of_shops].sell_percent);
+				logit(LOG_DEBUG, "Shop %s: Old buy/sell: %f/%f, New: %f/%f.", buf,
+				      t_buy, t_sell, shop_index[number_of_shops].buy_percent,
+				      shop_index[number_of_shops].sell_percent);
 			}
 			/*
 			 * Load in the types that this shop trades in
 			 */
 			temp = read_type_list(shop_f, list, MAX_TRADE);
-			CREATE(shop_index[number_of_shops].type, shop_buy_data, (unsigned)temp, MEM_TAG_SHOPBUY);
+			CREATE(shop_index[number_of_shops].type, shop_buy_data, (unsigned)temp,
+			       MEM_TAG_SHOPBUY);
 			for (count = 0; count < temp; count++)
 			{
-				SHOP_BUYTYPE(number_of_shops, count) = (::byte)BUY_TYPE(list[count]);
+				SHOP_BUYTYPE(number_of_shops, count) =
+					(::byte)BUY_TYPE(list[count]);
 				SHOP_BUYWORD(number_of_shops, count) = BUY_WORD(list[count]);
 			}
 			shop_index[number_of_shops].number_types_traded = count;
 
 			shop_index[number_of_shops].no_such_item1 = fread_string(shop_f);
 			shop_index[number_of_shops].no_such_item2 = fread_string(shop_f);
-			shop_index[number_of_shops].do_not_buy    = fread_string(shop_f);
+			shop_index[number_of_shops].do_not_buy = fread_string(shop_f);
 			shop_index[number_of_shops].missing_cash1 = fread_string(shop_f);
 			shop_index[number_of_shops].missing_cash2 = fread_string(shop_f);
-			shop_index[number_of_shops].message_buy   = fread_string(shop_f);
-			shop_index[number_of_shops].message_sell  = fread_string(shop_f);
+			shop_index[number_of_shops].message_buy = fread_string(shop_f);
+			shop_index[number_of_shops].message_sell = fread_string(shop_f);
 			fscanf(shop_f, "%d \n", &tmp);
 			shop_index[number_of_shops].temper1 = tmp;
-			tmp                                 = 0;
+			tmp = 0;
 			fscanf(shop_f, "%d \n", &tmp);
 			shop_index[number_of_shops].temper2 = tmp;
 			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].keeper);
 
 			// logit(LOG_DEBUG, "Loaded shop '%d' list..", shop_index[number_of_shops].keeper); For debugging.
-			shop_index[number_of_shops].keeper = real_mobile(shop_index[number_of_shops].keeper);
+			shop_index[number_of_shops].keeper =
+				real_mobile(shop_index[number_of_shops].keeper);
 
 			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].with_who);
 			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].in_room);
@@ -1632,7 +1709,7 @@ void boot_the_shops(void)
 				shop_index[number_of_shops].shop_killable = 0;
 
 			/* * Messages we see when shop open and closes */
-			shop_index[number_of_shops].open_message  = fread_string(shop_f);
+			shop_index[number_of_shops].open_message = fread_string(shop_f);
 			shop_index[number_of_shops].close_message = fread_string(shop_f);
 
 			/* * What hometown (if any) is this shop in? (0 for none) */
@@ -1650,8 +1727,8 @@ void boot_the_shops(void)
 			tmp = 0;
 			fscanf(shop_f, "%d \n", &tmp);
 			shop_index[number_of_shops].shopkeeper_race = tmp;
-			buf                                         = fread_string(shop_f);
-			shop_index[number_of_shops].racist_message  = buf;
+			buf = fread_string(shop_f);
+			shop_index[number_of_shops].racist_message = buf;
 
 			fscanf(shop_f, "%c \n", &tbuf);
 			if (tbuf == 'X')
@@ -1693,16 +1770,17 @@ void assign_the_shopkeepers(void)
 
 P_obj accept_gem_for_debt(P_char ch, P_char keeper, int debt)
 {
-	int   value = 2;
-	P_obj cobj  = 0, obj;
-	char  buf[MAX_STRING_LENGTH];
+	int value = 2;
+	P_obj cobj = 0, obj;
+	char buf[MAX_STRING_LENGTH];
 	return NULL;
 	obj = ch->carrying;
 	while (obj)
 	{
-		if (obj->cost > value && obj->type == ITEM_TREASURE && !IS_SET(obj->extra2_flags, ITEM2_MAGIC))
+		if (obj->cost > value && obj->type == ITEM_TREASURE &&
+		    !IS_SET(obj->extra2_flags, ITEM2_MAGIC))
 		{
-			cobj  = obj;
+			cobj = obj;
 			value = cobj->cost;
 		}
 		if (OBJ_INSIDE(obj))
@@ -1719,7 +1797,8 @@ P_obj accept_gem_for_debt(P_char ch, P_char keeper, int debt)
 
 	if (value > debt)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "$N accepts $p in leiu of your %s debt.", coin_stringv(debt));
+		snprintf(buf, MAX_STRING_LENGTH, "$N accepts $p in leiu of your %s debt.",
+			 coin_stringv(debt));
 		act(buf, FALSE, ch, cobj, keeper, TO_CHAR);
 		return cobj;
 	}
@@ -1731,7 +1810,7 @@ P_obj accept_gem_for_debt(P_char ch, P_char keeper, int debt)
 
 bool transact(P_char from, P_obj merchandise, P_char to, int value)
 {
-	int  i, gem_value, change;
+	int i, gem_value, change;
 	char Gbuf4[MAX_STRING_LENGTH];
 
 	// DISABLED
@@ -1758,14 +1837,19 @@ bool transact(P_char from, P_obj merchandise, P_char to, int value)
 				obj_from_char(merchandise);
 			obj_to_char(merchandise, to);
 			gem_value = merchandise->cost * 3 / 4;
-			change    = gem_value - value;
+			change = gem_value - value;
 			if (change > 0)
 				ADD_MONEY(from, change);
-			snprintf(Gbuf4, MAX_STRING_LENGTH, "You barter your debt and receive %s change.\r\n\r\n", coin_stringv(change));
+			snprintf(Gbuf4, MAX_STRING_LENGTH,
+				 "You barter your debt and receive %s change.\r\n\r\n",
+				 coin_stringv(change));
 			send_to_char(Gbuf4, from);
-			snprintf(Gbuf4, MAX_STRING_LENGTH, "%s gives you %s as payment.\r\n\r\n", from->player.name, merchandise->short_description);
+			snprintf(Gbuf4, MAX_STRING_LENGTH, "%s gives you %s as payment.\r\n\r\n",
+				 from->player.name, merchandise->short_description);
 			send_to_char(Gbuf4, to);
-			snprintf(Gbuf4, MAX_STRING_LENGTH, "%s pays a debt to %s with %s.\r\n\r\n", from->player.name, to->player.name, merchandise->short_description);
+			snprintf(Gbuf4, MAX_STRING_LENGTH, "%s pays a debt to %s with %s.\r\n\r\n",
+				 from->player.name, to->player.name,
+				 merchandise->short_description);
 			send_to_room_except_two(Gbuf4, from->in_room, from, to);
 			return TRUE;
 		}
@@ -1775,7 +1859,9 @@ bool transact(P_char from, P_obj merchandise, P_char to, int value)
 				ADD_MONEY(to, value);
 			else
 				return FALSE;
-			snprintf(Gbuf4, MAX_STRING_LENGTH, "You give %s %s.\r\n\r\n", ((IS_PC(to)) ? GET_NAME(to) : to->player.short_descr), coin_stringv(value));
+			snprintf(Gbuf4, MAX_STRING_LENGTH, "You give %s %s.\r\n\r\n",
+				 ((IS_PC(to)) ? GET_NAME(to) : to->player.short_descr),
+				 coin_stringv(value));
 			send_to_char(Gbuf4, from);
 			act("$n gives $N some money.", TRUE, from, 0, to, TO_NOTVICT);
 			act("$N pays your price.", FALSE, to, 0, from, TO_CHAR);
@@ -1783,7 +1869,9 @@ bool transact(P_char from, P_obj merchandise, P_char to, int value)
 		}
 		else
 		{
-			snprintf(Gbuf4, MAX_STRING_LENGTH, "%s does not have the funds for the exchange.\r\n\r\n", ((IS_PC(from)) ? GET_NAME(from) : from->player.short_descr));
+			snprintf(Gbuf4, MAX_STRING_LENGTH,
+				 "%s does not have the funds for the exchange.\r\n\r\n",
+				 ((IS_PC(from)) ? GET_NAME(from) : from->player.short_descr));
 			send_to_char(Gbuf4, to);
 			send_to_char("You do not have the funds for the exchange.\r\n\r\n", from);
 			return FALSE;
@@ -1796,7 +1884,7 @@ bool transact(P_char from, P_obj merchandise, P_char to, int value)
 // Must be duplicated because do_lore is limited to inventory.
 void shopping_stat(P_char ch, P_char keeper, char *arg, int cmd)
 {
-	int   i = 0;
+	int i = 0;
 	P_obj obj;
 
 	if (!ch || !keeper)

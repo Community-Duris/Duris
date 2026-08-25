@@ -52,21 +52,22 @@ void listen_broadcast(P_char ch, const char *buf, int cmd)
 		{
 			switch (cmd)
 			{
-				case LISTEN_SAY:
-					listen_say(ch, tch, buf);
-					break;
+			case LISTEN_SAY:
+				listen_say(ch, tch, buf);
+				break;
 
-				case LISTEN_GSAY:
-					listen_gsay(ch, tch, buf);
-					break;
+			case LISTEN_GSAY:
+				listen_gsay(ch, tch, buf);
+				break;
 
-				case LISTEN_EMOTE:
-					listen_emote(ch, tch, buf);
-					break;
+			case LISTEN_EMOTE:
+				listen_emote(ch, tch, buf);
+				break;
 
-				default:
-					wizlog(57, "function listen_broadcast was called with an invalid subcommand.");
-					break;
+			default:
+				wizlog(57,
+				       "function listen_broadcast was called with an invalid subcommand.");
+				break;
 			}
 		}
 	}
@@ -74,13 +75,13 @@ void listen_broadcast(P_char ch, const char *buf, int cmd)
 
 void listen_say(P_char ch, P_char tch, const char *buf)
 {
-	int  iskl, range, nrange, howclose;
+	int iskl, range, nrange, howclose;
 	char strn[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];
 
 	if (IS_ROOM(tch->in_room, ROOM_SILENT))
 		return;
 
-	iskl   = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
+	iskl = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
 	nrange = (int)get_property("skill.listen.range.norm", 1);
 
 	if (iskl)
@@ -104,13 +105,19 @@ void listen_say(P_char ch, P_char tch, const char *buf)
 		return;
 	}
 
-	if ((GET_CHAR_SKILL(tch, SKILL_LISTEN) && (ch != tch) && (world[ch->in_room].number != world[tch->in_room].number)))
+	if ((GET_CHAR_SKILL(tch, SKILL_LISTEN) && (ch != tch) &&
+	     (world[ch->in_room].number != world[tch->in_room].number)))
 	{
 		if (MAX(40, GET_CHAR_SKILL(tch, SKILL_LISTEN)) > (number(25, 45)))
 		{
 			muddle_listened_string(ch, tch, buf, strn, howclose);
 
-			snprintf(buf1, MAX_STRING_LENGTH, "You faintly hear %s say the words '%s'.\r\n", (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(15, 35)) ? PERS(ch, tch, 1) : "someone:", strn);
+			snprintf(buf1, MAX_STRING_LENGTH,
+				 "You faintly hear %s say the words '%s'.\r\n",
+				 (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(15, 35)) ?
+					 PERS(ch, tch, 1) :
+					 "someone:",
+				 strn);
 
 			send_to_char(buf1, tch);
 
@@ -125,13 +132,13 @@ void listen_say(P_char ch, P_char tch, const char *buf)
 
 void listen_gsay(P_char ch, P_char tch, const char *buf)
 {
-	int  iskl, range, nrange, howclose;
+	int iskl, range, nrange, howclose;
 	char strn[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];
 
 	if (IS_ROOM(tch->in_room, ROOM_SILENT))
 		return;
 
-	iskl   = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
+	iskl = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
 	nrange = (int)get_property("skill.listen.range.norm", 1);
 
 	if (iskl)
@@ -161,7 +168,12 @@ void listen_gsay(P_char ch, P_char tch, const char *buf)
 		{
 			muddle_listened_string(ch, tch, buf, strn, howclose);
 
-			snprintf(buf1, MAX_STRING_LENGTH, "You faintly hear %s groupsay the words '%s'.\r\n", (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(20, 40)) ? PERS(ch, tch, 1) : "someone:", strn);
+			snprintf(buf1, MAX_STRING_LENGTH,
+				 "You faintly hear %s groupsay the words '%s'.\r\n",
+				 (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(20, 40)) ?
+					 PERS(ch, tch, 1) :
+					 "someone:",
+				 strn);
 
 			send_to_char(buf1, tch);
 
@@ -176,7 +188,7 @@ void listen_gsay(P_char ch, P_char tch, const char *buf)
 
 void listen_emote(P_char ch, P_char tch, const char *buf)
 {
-	int  iskl, irange, howclose;
+	int iskl, irange, howclose;
 	char buf1[MAX_STRING_LENGTH];
 
 	if (IS_TRUSTED(tch))
@@ -190,7 +202,7 @@ void listen_emote(P_char ch, P_char tch, const char *buf)
 		return;
 	}
 
-	iskl   = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
+	iskl = GET_CHAR_SKILL(tch, SKILL_IMPROVED_LISTEN);
 	irange = (int)get_property("skill.listen.range.improved", 2);
 
 	howclose = how_close(ch->in_room, tch->in_room, irange);
@@ -211,7 +223,9 @@ void listen_emote(P_char ch, P_char tch, const char *buf)
 		{
 			if ((GET_SIZE(ch) < GET_SIZE(tch)) && (number(70, 90) > MAX(75, iskl)))
 			{
-				send_to_char("You notice someone in the distance scurrying about.\r\n", tch);
+				send_to_char(
+					"You notice someone in the distance scurrying about.\r\n",
+					tch);
 			}
 			else
 			{
@@ -233,8 +247,8 @@ void listen_emote(P_char ch, P_char tch, const char *buf)
 void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddled, int extr_depth)
 {
 	const char missed_word[] = "(mumble)";
-	char       buf[MAX_STRING_LENGTH];
-	int        i, j, k, len;
+	char buf[MAX_STRING_LENGTH];
+	int i, j, k, len;
 
 	i = j = 0;
 
@@ -258,7 +272,8 @@ void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddl
 				break;
 			}
 		}
-		if (MAX(40, GET_CHAR_SKILL(vict, SKILL_LISTEN)) < (number(25, 75) + (extr_depth * 10)))
+		if (MAX(40, GET_CHAR_SKILL(vict, SKILL_LISTEN)) <
+		    (number(25, 75) + (extr_depth * 10)))
 		{
 			// insert an appropriate number of asterisks
 
@@ -297,7 +312,7 @@ void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddl
 	// change ******** stuff to missed_word
 
 	len = strlen(muddled);
-	k   = 0;
+	k = 0;
 
 	for (i = 0; i < len; i++)
 	{

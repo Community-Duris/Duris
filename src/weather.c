@@ -25,19 +25,19 @@ extern int abs(int);
    external vars
  */
 
-extern P_char                character_list;
-extern P_room                world;
-extern int                   top_of_zone_table;
-extern int                   map_normal_modifier;
-extern int                   map_ultra_modifier;
-extern int                   map_dayblind_modifier;
+extern P_char character_list;
+extern P_room world;
+extern int top_of_zone_table;
+extern int map_normal_modifier;
+extern int map_ultra_modifier;
+extern int map_dayblind_modifier;
 extern struct time_info_data time_info;
-extern struct zone_data     *zone;
-extern struct zone_data     *zone_table;
-extern struct sector_data   *sector_table;
-extern P_desc                descriptor_list;
-extern const int             top_of_world;
-extern P_index               obj_index;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern struct sector_data *sector_table;
+extern P_desc descriptor_list;
+extern const int top_of_world;
+extern P_index obj_index;
 
 int real_object(const int virt);
 /*
@@ -45,12 +45,12 @@ int real_object(const int virt);
  */
 
 #define MAGIC_PRECIP_START 1060
-#define MAGIC_PRECIP_STOP  970
-#define STWS(z, t)         send_to_weather_sector((z), (t))
+#define MAGIC_PRECIP_STOP 970
+#define STWS(z, t) send_to_weather_sector((z), (t))
 
 void event_another_hour(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	P_obj     flower;
+	P_obj flower;
 	const int flowerroom = real_room(41059);
 
 	time_info.hour++;
@@ -128,99 +128,102 @@ int astral_clock_setMapModifiers(void)
 
 	switch (time_info.hour)
 	{
-		// Dawn
-		case 4:
-			astralMsgIdx          = 1;
-			map_normal_modifier   = 5;
-			map_ultra_modifier    = 7;
-			map_dayblind_modifier = 5;
-			break;
-		case 5:
-			astralMsgIdx          = 2;
-			map_normal_modifier   = 5;
-			map_ultra_modifier    = 7;
-			map_dayblind_modifier = 4;
-			break;
-		case 6:
-		case 7:
-			map_normal_modifier   = 6;
-			map_ultra_modifier    = 6;
-			map_dayblind_modifier = 4;
-			break;
-		case 8:
-			astralMsgIdx          = 3;
-			map_normal_modifier   = 6;
-			map_ultra_modifier    = 6;
-			map_dayblind_modifier = 3;
-			break;
-		case 9:
-			astralMsgIdx          = 4;
-			map_normal_modifier   = 7;
-			map_ultra_modifier    = 6;
-			map_dayblind_modifier = 3;
-			break;
-		case 10:
-		case 11:
-		case 12:
-			map_normal_modifier   = 7;
-			map_ultra_modifier    = 5;
-			map_dayblind_modifier = 3;
-			break;
-		case 13:
-			map_normal_modifier   = 8;
-			map_ultra_modifier    = 5;
-			map_dayblind_modifier = 3;
-			break;
-		case 14:
-			astralMsgIdx = 5;
-		case 15:
-			map_normal_modifier   = 7;
-			map_ultra_modifier    = 5;
-			map_dayblind_modifier = 3;
-			break;
-		case 16:
-			astralMsgIdx          = 6;
-			map_normal_modifier   = 7;
-			map_ultra_modifier    = 6;
-			map_dayblind_modifier = 4;
-			break;
-		case 17:
-			astralMsgIdx          = 7;
-			map_normal_modifier   = 6;
-			map_ultra_modifier    = 7;
-			map_dayblind_modifier = 5;
-			break;
-		case 18:
-			astralMsgIdx          = 8;
-			map_normal_modifier   = 5;
-			map_ultra_modifier    = 7;
-			map_dayblind_modifier = 6;
-			break;
-		case 19:
-			astralMsgIdx          = 9;
-			map_normal_modifier   = 4;
-			map_ultra_modifier    = 6;
-			map_dayblind_modifier = 6;
-			break;
-		// Night time
-		case 20:
-		case 21:
-		case 22:
-		case 23:
-		case 24:
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			map_normal_modifier   = 3;
-			map_ultra_modifier    = 6;
-			map_dayblind_modifier = 8;
-			break;
+	// Dawn
+	case 4:
+		astralMsgIdx = 1;
+		map_normal_modifier = 5;
+		map_ultra_modifier = 7;
+		map_dayblind_modifier = 5;
+		break;
+	case 5:
+		astralMsgIdx = 2;
+		map_normal_modifier = 5;
+		map_ultra_modifier = 7;
+		map_dayblind_modifier = 4;
+		break;
+	case 6:
+	case 7:
+		map_normal_modifier = 6;
+		map_ultra_modifier = 6;
+		map_dayblind_modifier = 4;
+		break;
+	case 8:
+		astralMsgIdx = 3;
+		map_normal_modifier = 6;
+		map_ultra_modifier = 6;
+		map_dayblind_modifier = 3;
+		break;
+	case 9:
+		astralMsgIdx = 4;
+		map_normal_modifier = 7;
+		map_ultra_modifier = 6;
+		map_dayblind_modifier = 3;
+		break;
+	case 10:
+	case 11:
+	case 12:
+		map_normal_modifier = 7;
+		map_ultra_modifier = 5;
+		map_dayblind_modifier = 3;
+		break;
+	case 13:
+		map_normal_modifier = 8;
+		map_ultra_modifier = 5;
+		map_dayblind_modifier = 3;
+		break;
+	case 14:
+		astralMsgIdx = 5;
+	case 15:
+		map_normal_modifier = 7;
+		map_ultra_modifier = 5;
+		map_dayblind_modifier = 3;
+		break;
+	case 16:
+		astralMsgIdx = 6;
+		map_normal_modifier = 7;
+		map_ultra_modifier = 6;
+		map_dayblind_modifier = 4;
+		break;
+	case 17:
+		astralMsgIdx = 7;
+		map_normal_modifier = 6;
+		map_ultra_modifier = 7;
+		map_dayblind_modifier = 5;
+		break;
+	case 18:
+		astralMsgIdx = 8;
+		map_normal_modifier = 5;
+		map_ultra_modifier = 7;
+		map_dayblind_modifier = 6;
+		break;
+	case 19:
+		astralMsgIdx = 9;
+		map_normal_modifier = 4;
+		map_ultra_modifier = 6;
+		map_dayblind_modifier = 6;
+		break;
+	// Night time
+	case 20:
+	case 21:
+	case 22:
+	case 23:
+	case 24:
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		map_normal_modifier = 3;
+		map_ultra_modifier = 6;
+		map_dayblind_modifier = 8;
+		break;
 	}
 	return astralMsgIdx;
 }
 
-void init_astral_clock(void) { astral_clock_setMapModifiers(); }
+void init_astral_clock(void)
+{
+	astral_clock_setMapModifiers();
+}
 
 void event_astral_clock(P_char ch, P_char victim, P_obj obj, void *data)
 {
@@ -236,11 +239,13 @@ void event_astral_clock(P_char ch, P_char victim, P_obj obj, void *data)
 		 */
 		for (d = descriptor_list; d; d = d->next)
 		{
-			if ((d->connected == CON_PLAYING) && (d->character) && (IS_AWAKE(d->character)))
+			if ((d->connected == CON_PLAYING) && (d->character) &&
+			    (IS_AWAKE(d->character)))
 			{
 				int r = d->character->in_room;
 
-				if (!IS_ROOM(r, ROOM_INDOORS) && NORMAL_PLANE(r) && !IS_UNDERWORLD(r) && d->character->specials.z_cord >= 0)
+				if (!IS_ROOM(r, ROOM_INDOORS) && NORMAL_PLANE(r) &&
+				    !IS_UNDERWORLD(r) && d->character->specials.z_cord >= 0)
 					send_to_char(s, d->character);
 			}
 		}
@@ -250,18 +255,18 @@ void event_astral_clock(P_char ch, P_char victim, P_obj obj, void *data)
 
 void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int                  zon, magic, old_wind;
-	signed char          old_temp;
-	unsigned char        old_precip, season_num;
-	struct climate      *clime;
+	int zon, magic, old_wind;
+	signed char old_temp;
+	unsigned char old_precip, season_num;
+	struct climate *clime;
 	struct weather_data *cond;
 
-	zon        = *((int *)data);
-	clime      = &sector_table[zon].climate;
-	cond       = &sector_table[zon].conditions;
-	old_temp   = cond->temp;
+	zon = *((int *)data);
+	clime = &sector_table[zon].climate;
+	cond = &sector_table[zon].conditions;
+	old_temp = cond->temp;
 	old_precip = cond->precip_rate;
-	old_wind   = cond->windspeed;
+	old_wind = cond->windspeed;
 
 	/* Which season is it? */
 	season_num = get_season(zon);
@@ -273,53 +278,53 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 	cond->free_energy = BOUNDED(3000, clime->energy_add + cond->free_energy, 50000);
 	switch (clime->season_wind[season_num])
 	{
-		case SEASON_CALM:
-			if (cond->windspeed > 25)
-				cond->windspeed -= 5;
-			else
-				cond->windspeed += number(-2, 1);
-			break;
-		case SEASON_BREEZY:
-			if (cond->windspeed > 40)
-				cond->windspeed -= 5;
-			else
-				cond->windspeed += number(-2, 2);
-			break;
-		case SEASON_UNSETTLED:
-			if (cond->windspeed < 5)
-				cond->windspeed += 5;
-			else if (cond->windspeed > 60)
-				cond->windspeed -= 5;
-			else
-				cond->windspeed += number(-6, 6);
-			break;
-		case SEASON_WINDY:
-			if (cond->windspeed < 15)
-				cond->windspeed += 5;
-			else if (cond->windspeed > 80)
-				cond->windspeed -= 5;
-			else
-				cond->windspeed += number(-6, 6);
-			break;
-		case SEASON_CHINOOK:
-			if (cond->windspeed < 25)
-				cond->windspeed += 5;
-			else if (cond->windspeed > 110)
-				cond->windspeed -= 5;
-			else
-				cond->windspeed += number(-15, 15);
-			break;
-		case SEASON_VIOLENT:
-			if (cond->windspeed < 40)
-				cond->windspeed += 5;
-			else
-				cond->windspeed += number(-8, 8);
-			break;
-		case SEASON_HURRICANE:
-			cond->windspeed = 100;
-			break;
-		default:
-			break;
+	case SEASON_CALM:
+		if (cond->windspeed > 25)
+			cond->windspeed -= 5;
+		else
+			cond->windspeed += number(-2, 1);
+		break;
+	case SEASON_BREEZY:
+		if (cond->windspeed > 40)
+			cond->windspeed -= 5;
+		else
+			cond->windspeed += number(-2, 2);
+		break;
+	case SEASON_UNSETTLED:
+		if (cond->windspeed < 5)
+			cond->windspeed += 5;
+		else if (cond->windspeed > 60)
+			cond->windspeed -= 5;
+		else
+			cond->windspeed += number(-6, 6);
+		break;
+	case SEASON_WINDY:
+		if (cond->windspeed < 15)
+			cond->windspeed += 5;
+		else if (cond->windspeed > 80)
+			cond->windspeed -= 5;
+		else
+			cond->windspeed += number(-6, 6);
+		break;
+	case SEASON_CHINOOK:
+		if (cond->windspeed < 25)
+			cond->windspeed += 5;
+		else if (cond->windspeed > 110)
+			cond->windspeed -= 5;
+		else
+			cond->windspeed += number(-15, 15);
+		break;
+	case SEASON_VIOLENT:
+		if (cond->windspeed < 40)
+			cond->windspeed += 5;
+		else
+			cond->windspeed += number(-8, 8);
+		break;
+	case SEASON_HURRICANE:
+		cond->windspeed = 100;
+		break;
+	default:
+		break;
 	}
 	cond->free_energy += cond->windspeed; /* + or - ? */
 	if (cond->free_energy < 0)
@@ -329,104 +334,104 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 	cond->windspeed = MAX(0, cond->windspeed);
 	switch (clime->season_wind_variance[season_num])
 	{
-		case 0:
-			cond->wind_dir = clime->season_wind_dir[season_num];
-			break;
-		case 1:
-			if (dice(2, 15) * 1000 < cond->free_energy)
-				cond->wind_dir = number(0, 3);
-			break;
+	case 0:
+		cond->wind_dir = clime->season_wind_dir[season_num];
+		break;
+	case 1:
+		if (dice(2, 15) * 1000 < cond->free_energy)
+			cond->wind_dir = number(0, 3);
+		break;
 	}
 	switch (clime->season_temp[season_num])
 	{
-		case SEASON_FROSTBITE:
-			if (cond->temp > -20)
-				cond->temp -= 4;
-			else
-				cond->temp += number(-3, 3);
-			break;
-		case SEASON_NIPPY:
-			if (cond->temp < -40)
-				cond->temp += 2;
-			else if (cond->temp > 5)
-				cond->temp -= 3;
-			else
-				cond->temp += number(-3, 3);
-			break;
-		case SEASON_FREEZING:
-			if (cond->temp < -20)
-				cond->temp += 2;
-			else if (cond->temp > 0)
-				cond->temp -= 2;
-			else
-				cond->temp += number(-2, 2);
-			break;
-		case SEASON_COLD:
-			if (cond->temp < -10)
-				cond->temp += 1;
-			else if (cond->temp > 5)
-				cond->temp -= 2;
-			else
-				cond->temp += number(-2, 2);
-			break;
-		case SEASON_COOL:
-			if (cond->temp < -3)
-				cond->temp += 2;
-			else if (cond->temp > 14)
-				cond->temp -= 2;
-			else
-				cond->temp += number(-3, 3);
-			break;
-		case SEASON_MILD:
-			if (cond->temp < 7)
-				cond->temp += 2;
-			else if (cond->temp > 26)
-				cond->temp -= 2;
-			else
-				cond->temp += number(-2, 2);
-			break;
-		case SEASON_WARM:
-			if (cond->temp < 19)
-				cond->temp += 2;
-			else if (cond->temp > 33)
-				cond->temp -= 2;
-			else
-				cond->temp += number(-3, 3);
-			break;
-		case SEASON_HOT:
-			if (cond->temp < 24)
-				cond->temp += 3;
-			else if (cond->temp > 46)
-				cond->temp -= 2;
-			else
-				cond->temp += number(-3, 3);
-			break;
-		case SEASON_BLUSTERY:
-			if (cond->temp < 34)
-				cond->temp += 3;
-			else if (cond->temp > 53)
-				cond->temp -= 2;
-			else
-				cond->temp += number(-5, 5);
-			break;
-		case SEASON_HEATSTROKE:
-			if (cond->temp < 44)
-				cond->temp += 5;
-			else if (cond->temp > 60)
-				cond->temp -= 5;
-			else
-				cond->temp += number(-3, 3);
-			break;
-		case SEASON_BOILING:
-			if (cond->temp < 80)
-				cond->temp += 5;
-			else if (cond->temp > 120)
-				cond->temp -= 5;
-			else
-				cond->temp += number(-6, 6);
-			break;
-		default:
-			break;
+	case SEASON_FROSTBITE:
+		if (cond->temp > -20)
+			cond->temp -= 4;
+		else
+			cond->temp += number(-3, 3);
+		break;
+	case SEASON_NIPPY:
+		if (cond->temp < -40)
+			cond->temp += 2;
+		else if (cond->temp > 5)
+			cond->temp -= 3;
+		else
+			cond->temp += number(-3, 3);
+		break;
+	case SEASON_FREEZING:
+		if (cond->temp < -20)
+			cond->temp += 2;
+		else if (cond->temp > 0)
+			cond->temp -= 2;
+		else
+			cond->temp += number(-2, 2);
+		break;
+	case SEASON_COLD:
+		if (cond->temp < -10)
+			cond->temp += 1;
+		else if (cond->temp > 5)
+			cond->temp -= 2;
+		else
+			cond->temp += number(-2, 2);
+		break;
+	case SEASON_COOL:
+		if (cond->temp < -3)
+			cond->temp += 2;
+		else if (cond->temp > 14)
+			cond->temp -= 2;
+		else
+			cond->temp += number(-3, 3);
+		break;
+	case SEASON_MILD:
+		if (cond->temp < 7)
+			cond->temp += 2;
+		else if (cond->temp > 26)
+			cond->temp -= 2;
+		else
+			cond->temp += number(-2, 2);
+		break;
+	case SEASON_WARM:
+		if (cond->temp < 19)
+			cond->temp += 2;
+		else if (cond->temp > 33)
+			cond->temp -= 2;
+		else
+			cond->temp += number(-3, 3);
+		break;
+	case SEASON_HOT:
+		if (cond->temp < 24)
+			cond->temp += 3;
+		else if (cond->temp > 46)
+			cond->temp -= 2;
+		else
+			cond->temp += number(-3, 3);
+		break;
+	case SEASON_BLUSTERY:
+		if (cond->temp < 34)
+			cond->temp += 3;
+		else if (cond->temp > 53)
+			cond->temp -= 2;
+		else
+			cond->temp += number(-5, 5);
+		break;
+	case SEASON_HEATSTROKE:
+		if (cond->temp < 44)
+			cond->temp += 5;
+		else if (cond->temp > 60)
+			cond->temp -= 5;
+		else
+			cond->temp += number(-3, 3);
+		break;
+	case SEASON_BOILING:
+		if (cond->temp < 80)
+			cond->temp += 5;
+		else if (cond->temp > 120)
+			cond->temp -= 5;
+		else
+			cond->temp += number(-6, 6);
+		break;
+	default:
+		break;
 	}
 	if (cond->flags & SUN_VISIBLE)
 		cond->temp += 2;
@@ -434,88 +439,88 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 		cond->temp -= 2;
 	switch (clime->season_precip[season_num])
 	{
-		case SEASON_NO_PRECIP_EVER:
-			if (cond->precip_rate > 0)
-				cond->precip_rate /= 2;
-			cond->humidity = 0;
-			break;
-		case SEASON_ARID:
-			if (cond->humidity > 30)
-				cond->humidity -= 3;
-			else
-				cond->humidity += number(-3, 2);
-			if (old_precip > 20)
-				cond->precip_rate -= 8;
-			break;
-		case SEASON_DRY:
-			if (cond->humidity > 50)
-				cond->humidity -= 3;
-			else
-				cond->humidity += number(-4, 3);
-			if (old_precip > 35)
-				cond->precip_rate -= 6;
-			break;
-		case SEASON_LOW_PRECIP:
-			if (cond->humidity < 13)
-				cond->humidity += 3;
-			else if (cond->humidity > 91)
-				cond->humidity -= 2;
-			else
-				cond->humidity += number(-5, 4);
-			if (old_precip > 45)
-				cond->precip_rate -= 10;
-			break;
-		case SEASON_AVG_PRECIP:
-			if (cond->humidity < 30)
-				cond->humidity += 3;
-			else if (cond->humidity > 80)
-				cond->humidity -= 2;
-			else
-				cond->humidity += number(-9, 9);
-			if (old_precip > 55)
-				cond->precip_rate -= 5;
-			if (old_precip < 15)
-				cond->precip_rate += 5;
-			break;
-		case SEASON_HIGH_PRECIP:
-			if (cond->humidity < 40)
-				cond->humidity += 3;
-			else if (cond->humidity > 90)
-				cond->humidity -= 2;
-			else
-				cond->humidity += number(-8, 8);
-			if (old_precip > 65)
-				cond->precip_rate -= 10;
-			if (old_precip < 20)
-				cond->precip_rate += 10;
-			break;
-		case SEASON_STORMY:
-			if (cond->humidity < 50)
-				cond->humidity += 4;
-			else
-				cond->humidity += number(-6, 6);
-			if (old_precip > 80)
-				cond->precip_rate -= 10;
-			if (old_precip < 30)
-				cond->precip_rate += 10;
-			break;
-		case SEASON_TORRENT:
-			if (cond->humidity < 60)
-				cond->humidity += 4;
-			else
-				cond->humidity += number(-6, 9);
-			if (old_precip > 100)
-				cond->precip_rate -= 15;
-			if (old_precip < 40)
-				cond->precip_rate += 15;
-			break;
-		case SEASON_CONSTANT_PRECIP:
-			cond->humidity = 100;
-			if (cond->precip_rate < 10)
-				cond->precip_rate += number(5, 12);
-			break;
-		default:
-			break;
+	case SEASON_NO_PRECIP_EVER:
+		if (cond->precip_rate > 0)
+			cond->precip_rate /= 2;
+		cond->humidity = 0;
+		break;
+	case SEASON_ARID:
+		if (cond->humidity > 30)
+			cond->humidity -= 3;
+		else
+			cond->humidity += number(-3, 2);
+		if (old_precip > 20)
+			cond->precip_rate -= 8;
+		break;
+	case SEASON_DRY:
+		if (cond->humidity > 50)
+			cond->humidity -= 3;
+		else
+			cond->humidity += number(-4, 3);
+		if (old_precip > 35)
+			cond->precip_rate -= 6;
+		break;
+	case SEASON_LOW_PRECIP:
+		if (cond->humidity < 13)
+			cond->humidity += 3;
+		else if (cond->humidity > 91)
+			cond->humidity -= 2;
+		else
+			cond->humidity += number(-5, 4);
+		if (old_precip > 45)
+			cond->precip_rate -= 10;
+		break;
+	case SEASON_AVG_PRECIP:
+		if (cond->humidity < 30)
+			cond->humidity += 3;
+		else if (cond->humidity > 80)
+			cond->humidity -= 2;
+		else
+			cond->humidity += number(-9, 9);
+		if (old_precip > 55)
+			cond->precip_rate -= 5;
+		if (old_precip < 15)
+			cond->precip_rate += 5;
+		break;
+	case SEASON_HIGH_PRECIP:
+		if (cond->humidity < 40)
+			cond->humidity += 3;
+		else if (cond->humidity > 90)
+			cond->humidity -= 2;
+		else
+			cond->humidity += number(-8, 8);
+		if (old_precip > 65)
+			cond->precip_rate -= 10;
+		if (old_precip < 20)
+			cond->precip_rate += 10;
+		break;
+	case SEASON_STORMY:
+		if (cond->humidity < 50)
+			cond->humidity += 4;
+		else
+			cond->humidity += number(-6, 6);
+		if (old_precip > 80)
+			cond->precip_rate -= 10;
+		if (old_precip < 30)
+			cond->precip_rate += 10;
+		break;
+	case SEASON_TORRENT:
+		if (cond->humidity < 60)
+			cond->humidity += 4;
+		else
+			cond->humidity += number(-6, 9);
+		if (old_precip > 100)
+			cond->precip_rate -= 15;
+		if (old_precip < 40)
+			cond->precip_rate += 15;
+		break;
+	case SEASON_CONSTANT_PRECIP:
+		cond->humidity = 100;
+		if (cond->precip_rate < 10)
+			cond->precip_rate += number(5, 12);
+		break;
+	default:
+		break;
 	}
 	cond->humidity = MIN(100, cond->humidity);
 	cond->humidity = MAX(0, cond->humidity);
@@ -537,7 +542,8 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 	/* cause a performance hit. To get more specific  */
 	/* or exacting would certainly not be "Diku..."   */
 
-	magic = ((1240 - cond->pressure) * cond->humidity >> 4) + cond->temp + old_precip * 2 + (cond->free_energy - 10000) / 100;
+	magic = ((1240 - cond->pressure) * cond->humidity >> 4) + cond->temp + old_precip * 2 +
+		(cond->free_energy - 10000) / 100;
 
 	if (old_precip == 0)
 	{
@@ -567,11 +573,13 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 		else if (cond->windspeed > 60)
 		{
 			if (cond->temp > 50)
-				STWS(zon, "A violent scorching wind blows hard in the face of any poor travellers in the area.\r\n");
+				STWS(zon,
+				     "A violent scorching wind blows hard in the face of any poor travellers in the area.\r\n");
 			else if (cond->temp > 21)
 				STWS(zon, "A hot wind gusts wildly through the area.\r\n");
 			else if (cond->temp > 0)
-				STWS(zon, "A fierce wind cuts the air like a razor-sharp knife.\r\n");
+				STWS(zon,
+				     "A fierce wind cuts the air like a razor-sharp knife.\r\n");
 			else if (cond->temp > -10)
 				STWS(zon, "A freezing gale blasts through the area.\r\n");
 			else
@@ -590,14 +598,17 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 			else if (cond->temp > -5)
 				STWS(zon, "A slight wind blows a chill into living tissue.\r\n");
 			else if (cond->temp > -15)
-				STWS(zon, "A freezing wind blows gently, but firmly against all obstacles in the area.\r\n");
+				STWS(zon,
+				     "A freezing wind blows gently, but firmly against all obstacles in the area.\r\n");
 			else
-				STWS(zon, "The wind isn't very strong here, but the cold makes it quite noticeable.\r\n");
+				STWS(zon,
+				     "The wind isn't very strong here, but the cold makes it quite noticeable.\r\n");
 		}
 		else if (cond->temp > 52)
 			STWS(zon, "It's hotter than anyone could imagine.\r\n");
 		else if (cond->temp > 37)
-			STWS(zon, "It's really, really hot here.  A slight breeze would really improve things.\r\n");
+			STWS(zon,
+			     "It's really, really hot here.  A slight breeze would really improve things.\r\n");
 		else if (cond->temp > 25)
 			STWS(zon, "It's hot out here.\r\n");
 		else if (cond->temp > 19)
@@ -613,7 +624,8 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 		else if (cond->temp > -25)
 			STWS(zon, "It's really c-c-c-cold!!\r\n");
 		else
-			STWS(zon, "Better get inside - this is too cold for man or -most- beasts.\r\n");
+			STWS(zon,
+			     "Better get inside - this is too cold for man or -most- beasts.\r\n");
 	}
 	else if (magic < MAGIC_PRECIP_STOP)
 	{
@@ -666,7 +678,8 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 				if (cond->windspeed > 80)
 					STWS(zon, "There's a hurricane out here!\r\n");
 				else if (cond->windspeed > 40)
-					STWS(zon, "The wind and the rain are nearly too much to handle.\r\n");
+					STWS(zon,
+					     "The wind and the rain are nearly too much to handle.\r\n");
 				else
 					STWS(zon, "It's raining really hard right now.\r\n");
 			}
@@ -677,17 +690,20 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 					STWS(zon, "What a rainstorm!\r\n");
 				}
 				else if (cond->windspeed > 30)
-					STWS(zon, "The wind is lashing this wild rain seemingly straight into your face.\r\n");
+					STWS(zon,
+					     "The wind is lashing this wild rain seemingly straight into your face.\r\n");
 				else
 					STWS(zon, "It's raining pretty hard.\r\n");
 			}
 			else if (cond->precip_rate > 30)
 			{
 				if (cond->windspeed > 50)
-					STWS(zon, "A respectable rain is being thrashed about by a vicious wind.\r\n");
+					STWS(zon,
+					     "A respectable rain is being thrashed about by a vicious wind.\r\n");
 				else if (cond->windspeed > 25)
 				{
-					STWS(zon, "It's rainy and windy but altogether not too uncomfortable.\r\n");
+					STWS(zon,
+					     "It's rainy and windy but altogether not too uncomfortable.\r\n");
 				}
 				else
 					STWS(zon, "Hey, it's raining...\r\n");
@@ -695,16 +711,20 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 			else if (cond->precip_rate > 10)
 			{
 				if (cond->windspeed > 50)
-					STWS(zon, "The light rain here is nearly unnoticeable compared to the horrendous wind.\r\n");
+					STWS(zon,
+					     "The light rain here is nearly unnoticeable compared to the horrendous wind.\r\n");
 				else if (cond->windspeed > 24)
-					STWS(zon, "A light rain is being driven fiercely by the wind.\r\n");
+					STWS(zon,
+					     "A light rain is being driven fiercely by the wind.\r\n");
 				else
 					STWS(zon, "It's raining lightly.\r\n");
 			}
 			else if (cond->windspeed > 55)
-				STWS(zon, "A few drops of rain are falling admidst a fierce windstorm.\r\n");
+				STWS(zon,
+				     "A few drops of rain are falling admidst a fierce windstorm.\r\n");
 			else if (cond->windspeed > 30)
-				STWS(zon, "The wind and a bit of rain hint at the possibility of a storm.\r\n");
+				STWS(zon,
+				     "The wind and a bit of rain hint at the possibility of a storm.\r\n");
 			else
 				STWS(zon, "A light drizzle is falling here.\r\n");
 		}
@@ -713,16 +733,19 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 			if (cond->windspeed > 50)
 				STWS(zon, "This must be the worst blizzard ever.\r\n");
 			else if (cond->windspeed > 25)
-				STWS(zon, "There's a blizzard out here, making it quite difficult to see.\r\n");
+				STWS(zon,
+				     "There's a blizzard out here, making it quite difficult to see.\r\n");
 			else
 				STWS(zon, "It's snowing very hard.\r\n");
 		}
 		else if (cond->precip_rate > 40)
 		{
 			if (cond->windspeed > 60)
-				STWS(zon, "The heavily falling snow is being whipped up to a frenzy by a ferocious wind.\r\n");
+				STWS(zon,
+				     "The heavily falling snow is being whipped up to a frenzy by a ferocious wind.\r\n");
 			else if (cond->windspeed > 35)
-				STWS(zon, "A heavy snow is being blown randomly about by a brisk wind.\r\n");
+				STWS(zon,
+				     "A heavy snow is being blown randomly about by a brisk wind.\r\n");
 			else if (cond->windspeed > 18)
 				STWS(zon, "Drifts in the snow are being formed by the wind.\r\n");
 			else
@@ -731,9 +754,11 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 		else if (cond->precip_rate > 19)
 		{
 			if (cond->windspeed > 70)
-				STWS(zon, "The snow wouldn't be too bad, except for the awful wind blowing it in every direction.\r\n");
+				STWS(zon,
+				     "The snow wouldn't be too bad, except for the awful wind blowing it in every direction.\r\n");
 			else if (cond->windspeed > 45)
-				STWS(zon, "There's a minor blizzard here, more wind than snow.\r\n");
+				STWS(zon,
+				     "There's a minor blizzard here, more wind than snow.\r\n");
 			else if (cond->windspeed > 12)
 				STWS(zon, "Snow is being blown about by a stiff breeze.\r\n");
 			else
@@ -751,14 +776,17 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 		/* Handle celestial objects */
 		if (!(clime->flags & NO_SUN_EVER))
 		{
-			if ((time_info.hour < 6) || (time_info.hour > 18) || (cond->humidity > 90) || (cond->precip_rate > 80))
+			if ((time_info.hour < 6) || (time_info.hour > 18) ||
+			    (cond->humidity > 90) || (cond->precip_rate > 80))
 				cond->flags &= ~SUN_VISIBLE;
 			else
 				cond->flags |= SUN_VISIBLE;
 		}
 		if (!(clime->flags & NO_MOON_EVER))
 		{
-			if (((time_info.hour > 5) && (time_info.hour < 19)) || (cond->humidity > 80) || (cond->precip_rate > 70) || (time_info.day < 3) || (time_info.day > 31))
+			if (((time_info.hour > 5) && (time_info.hour < 19)) ||
+			    (cond->humidity > 80) || (cond->precip_rate > 70) ||
+			    (time_info.day < 3) || (time_info.day > 31))
 				cond->flags &= ~MOON_VISIBLE;
 			else if (!(cond->flags & MOON_VISIBLE))
 			{
@@ -766,14 +794,16 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 				if (time_info.day == 17)
 					STWS(zon, "The full moon floods the area with light.\r\n");
 				else
-					STWS(zon, "The moon casts a little bit of light on the ground.\r\n");
+					STWS(zon,
+					     "The moon casts a little bit of light on the ground.\r\n");
 			}
 		}
 	}
 	calc_light_zone(zon);
 
 	// About 5 ticks
-	add_event(event_weather_change, 5 * PULSES_IN_TICK + number(-90, 90), NULL, NULL, NULL, 0, &zon, sizeof(zon));
+	add_event(event_weather_change, 5 * PULSES_IN_TICK + number(-90, 90), NULL, NULL, NULL, 0,
+		  &zon, sizeof(zon));
 	// AddEvent(EVENT_SPECIAL, 1500 + number(-90, 90), TRUE, weather_change, current_event->target.t_arg);
 }
 
@@ -782,7 +812,7 @@ void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
 void blow_out_torches(void)
 {
 	P_char i;
-	P_obj  obj;
+	P_obj obj;
 
 	for (i = character_list; i; i = i->next)
 		if (!IS_ROOM(i->in_room, ROOM_INDOORS) && i->equipment[WEAR_LIGHT])
@@ -790,10 +820,13 @@ void blow_out_torches(void)
 			obj = i->equipment[WEAR_LIGHT];
 			if (obj->value[3])
 			{
-				if ((obj->value[3] < sector_table[in_weather_sector(i->in_room)].conditions.windspeed) && number(0, 1))
+				if ((obj->value[3] < sector_table[in_weather_sector(i->in_room)]
+							     .conditions.windspeed) &&
+				    number(0, 1))
 				{
 					act("$p goes out", TRUE, i, obj, NULL, TO_ROOM);
-					act("Your $p goes out and you put it away.", TRUE, i, obj, NULL, TO_CHAR);
+					act("Your $p goes out and you put it away.", TRUE, i, obj,
+					    NULL, TO_CHAR);
 					unequip_char(i, WEAR_LIGHT);
 					obj_to_char(obj, i);
 				}
@@ -803,8 +836,8 @@ void blow_out_torches(void)
 
 void calc_light_zone(int zon)
 {
-	char                light_sum = 0, temp, temp2;
-	struct sector_data *t_zone    = &sector_table[zon];
+	char light_sum = 0, temp, temp2;
+	struct sector_data *t_zone = &sector_table[zon];
 
 	if (!(t_zone->climate.flags & NO_SUN_EVER))
 	{
@@ -838,7 +871,7 @@ void calc_light_zone(int zon)
 		}
 	}
 	light_sum -= t_zone->conditions.precip_rate;
-	light_sum                        = BOUNDED(0, light_sum, 100);
+	light_sum = BOUNDED(0, light_sum, 100);
 	t_zone->conditions.ambient_light = light_sum;
 }
 
@@ -846,7 +879,10 @@ char get_season(int sector)
 {
 	char season_num;
 
-	season_num = (time_info.month < 5) ? 0 : (time_info.month < 9) ? 1 : (time_info.month < 13) ? 2 : 3;
+	season_num = (time_info.month < 5)  ? 0 :
+		     (time_info.month < 9)  ? 1 :
+		     (time_info.month < 13) ? 2 :
+					      3;
 
 	return (season_num);
 }
@@ -878,45 +914,45 @@ int in_weather_sector(int room)
 	/* screwy math below, be forewarned */
 	switch (element1)
 	{
-		case 11:
-			mod  = 0;
-			mod2 = 0;
-			break;
-		case 12:
-			mod  = 0;
-			mod2 = 3;
-			break;
-		case 13:
-			mod  = 0;
-			mod2 = 6;
-			break;
-		case 14:
-			mod  = 3;
-			mod2 = 0;
-			break;
-		case 15:
-			mod  = 3;
-			mod2 = 3;
-			break;
-		case 16:
-			mod  = 3;
-			mod2 = 6;
-			break;
-		case 17:
-			mod  = 6;
-			mod2 = 0;
-			break;
-		case 18:
-			mod  = 6;
-			mod2 = 3;
-			break;
-		case 19:
-			mod  = 6;
-			mod2 = 6;
-			break;
+	case 11:
+		mod = 0;
+		mod2 = 0;
+		break;
+	case 12:
+		mod = 0;
+		mod2 = 3;
+		break;
+	case 13:
+		mod = 0;
+		mod2 = 6;
+		break;
+	case 14:
+		mod = 3;
+		mod2 = 0;
+		break;
+	case 15:
+		mod = 3;
+		mod2 = 3;
+		break;
+	case 16:
+		mod = 3;
+		mod2 = 6;
+		break;
+	case 17:
+		mod = 6;
+		mod2 = 0;
+		break;
+	case 18:
+		mod = 6;
+		mod2 = 3;
+		break;
+	case 19:
+		mod = 6;
+		mod2 = 6;
+		break;
 	}
 
-	temp   = (int)((element2 / 30 + mod) * 10);  /* 1st# of sector */
+	temp = (int)((element2 / 30 + mod) * 10); /* 1st# of sector */
 	sector = (int)(element3 / 30 + mod2 + temp); /* 2nd# of sector */
 
 	return BOUNDED(0, sector, 99);
@@ -932,8 +968,12 @@ void send_to_weather_sector(int z, const char *msg)
 		return;
 	for (i = descriptor_list; i; i = i->next)
 	{
-		if (!i->connected && (in_weather_sector(i->character->in_room) == z) && NORMAL_PLANE(i->character->in_room) && OUTSIDE(i->character) && !IS_ROOM(i->character->in_room, ROOM_NO_PRECIP) &&
-		    !IS_ROOM(i->character->in_room, ROOM_DARK) && i->character->specials.z_cord >= 0 && !IS_BLIND(i->character) && IS_AWAKE(i->character))
+		if (!i->connected && (in_weather_sector(i->character->in_room) == z) &&
+		    NORMAL_PLANE(i->character->in_room) && OUTSIDE(i->character) &&
+		    !IS_ROOM(i->character->in_room, ROOM_NO_PRECIP) &&
+		    !IS_ROOM(i->character->in_room, ROOM_DARK) &&
+		    i->character->specials.z_cord >= 0 && !IS_BLIND(i->character) &&
+		    IS_AWAKE(i->character))
 		{
 			send_to_char(msg, i->character);
 		}

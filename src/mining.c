@@ -37,11 +37,11 @@ struct mine_range_data
 {
 	char *name;
 	char *abbrev;
-	int   start;
-	int   end;
-	int   type;
-	int   mine_duration;
-	bool  reload;
+	int start;
+	int end;
+	int type;
+	int mine_duration;
+	bool reload;
 };
 
 static struct mine_range_data mine_data[] = {
@@ -50,12 +50,12 @@ static struct mine_range_data mine_data[] = {
 	// New mine types also require MINES_* constants in mining.h and handling in mines_properties().
 	// Zone display name, command argument matching, start range, end range, mine type, duration, reloading mines?
 	// Note: mine_duration is in sets of 4 sec: 11 -> 9 * 4 = 36 sec, since event_mine_check occurs every 4 sec.
-	{"Surface Map", "map", 500000, 659999, VOBJ_MINE, 9, TRUE},
-	{"Underdark", "ud", 700000, 859999, VOBJ_MINE, 9, TRUE},
-	{"Tharnadia Rift", "tharnrift", 110000, 119999, VOBJ_MINE, 9, FALSE},
-	{"Surface Map - G", "mapg", 500000, 659999, VOBJ_GEMMINE, 15, TRUE},
-	{"Underdark - G", "udg", 700000, 859999, VOBJ_GEMMINE, 15, TRUE},
-	{0}
+	{ "Surface Map", "map", 500000, 659999, VOBJ_MINE, 9, TRUE },
+	{ "Underdark", "ud", 700000, 859999, VOBJ_MINE, 9, TRUE },
+	{ "Tharnadia Rift", "tharnrift", 110000, 119999, VOBJ_MINE, 9, FALSE },
+	{ "Surface Map - G", "mapg", 500000, 659999, VOBJ_GEMMINE, 15, TRUE },
+	{ "Underdark - G", "udg", 700000, 859999, VOBJ_GEMMINE, 15, TRUE },
+	{ 0 }
 };
 
 struct mines_event_data
@@ -67,25 +67,26 @@ int mines_properties(int map)
 {
 	switch (map)
 	{
-		case MINES_MAP_SURFACE:
-			return (int)get_property("mines.maxSurfaceMap", 50);
-			break;
-		case MINES_MAP_UD:
-			return (int)get_property("mines.maxUD", 50);
-			break;
-		case MINES_MAP_THARNRIFT:
-			return (int)get_property("mines.maxTharnRift", 50);
-			break;
-		case MINES_GEM_SURFACE:
-			return (int)get_property("mines.maxGemSurface", 6);
-			break;
-		case MINES_GEM_UD:
-			return (int)get_property("mines.maxGemUD", 2);
-			break;
-		default:
-			logit(LOG_DEBUG, "mines_properties(): passing invalid map to function, using default 50 mines");
-			return 50;
-			break;
+	case MINES_MAP_SURFACE:
+		return (int)get_property("mines.maxSurfaceMap", 50);
+		break;
+	case MINES_MAP_UD:
+		return (int)get_property("mines.maxUD", 50);
+		break;
+	case MINES_MAP_THARNRIFT:
+		return (int)get_property("mines.maxTharnRift", 50);
+		break;
+	case MINES_GEM_SURFACE:
+		return (int)get_property("mines.maxGemSurface", 6);
+		break;
+	case MINES_GEM_UD:
+		return (int)get_property("mines.maxGemUD", 2);
+		break;
+	default:
+		logit(LOG_DEBUG,
+		      "mines_properties(): passing invalid map to function, using default 50 mines");
+		return 50;
+		break;
 	}
 }
 
@@ -117,27 +118,37 @@ bool mine_friendly(int to_room)
 		return true;
 
 	if (world[to_room].dir_option[DIR_NORTH] &&
-	    (world[world[to_room].dir_option[DIR_NORTH]->to_room].sector_type == SECT_HILLS || world[world[to_room].dir_option[DIR_NORTH]->to_room].sector_type == SECT_MOUNTAIN))
+	    (world[world[to_room].dir_option[DIR_NORTH]->to_room].sector_type == SECT_HILLS ||
+	     world[world[to_room].dir_option[DIR_NORTH]->to_room].sector_type == SECT_MOUNTAIN))
 		return true;
 
 	if (world[to_room].dir_option[DIR_EAST] &&
-	    (world[world[to_room].dir_option[DIR_EAST]->to_room].sector_type == SECT_HILLS || world[world[to_room].dir_option[DIR_EAST]->to_room].sector_type == SECT_MOUNTAIN))
+	    (world[world[to_room].dir_option[DIR_EAST]->to_room].sector_type == SECT_HILLS ||
+	     world[world[to_room].dir_option[DIR_EAST]->to_room].sector_type == SECT_MOUNTAIN))
 		return true;
 
 	if (world[to_room].dir_option[DIR_SOUTH] &&
-	    (world[world[to_room].dir_option[DIR_SOUTH]->to_room].sector_type == SECT_HILLS || world[world[to_room].dir_option[DIR_SOUTH]->to_room].sector_type == SECT_MOUNTAIN))
+	    (world[world[to_room].dir_option[DIR_SOUTH]->to_room].sector_type == SECT_HILLS ||
+	     world[world[to_room].dir_option[DIR_SOUTH]->to_room].sector_type == SECT_MOUNTAIN))
 		return true;
 
 	if (world[to_room].dir_option[DIR_WEST] &&
-	    (world[world[to_room].dir_option[DIR_WEST]->to_room].sector_type == SECT_HILLS || world[world[to_room].dir_option[DIR_WEST]->to_room].sector_type == SECT_MOUNTAIN))
+	    (world[world[to_room].dir_option[DIR_WEST]->to_room].sector_type == SECT_HILLS ||
+	     world[world[to_room].dir_option[DIR_WEST]->to_room].sector_type == SECT_MOUNTAIN))
 		return true;
 
 	return false;
 }
 
-int get_mine_content(P_obj mine) { return mine->value[0]; }
+int get_mine_content(P_obj mine)
+{
+	return mine->value[0];
+}
 
-int remove_mine_content(P_obj mine) { return (mine->value[0]--); }
+int remove_mine_content(P_obj mine)
+{
+	return (mine->value[0]--);
+}
 
 // Takes a mine quality (regular mine, not gems) and returns a vnum for an ore.
 //   This is just for raw ore, the char's luck check (increases value) is in event_mine_check.
@@ -239,8 +250,8 @@ int random_ore(int mine_quality)
 P_obj get_ore_from_mine(P_char ch, int mine_quality)
 {
 	P_obj ore;
-	int   ore_type = random_ore(mine_quality);
-	ore            = read_object(ore_type, VIRTUAL);
+	int ore_type = random_ore(mine_quality);
+	ore = read_object(ore_type, VIRTUAL);
 	if (!ore)
 	{
 		return NULL;
@@ -252,7 +263,8 @@ P_obj get_ore_from_mine(P_char ch, int mine_quality)
 P_obj get_gem_from_mine(P_char ch, int mine_quality)
 {
 	P_obj gem = read_object(mining_config_gem_vnum(), VIRTUAL);
-	if (!gem) return NULL;
+	if (!gem)
+		return NULL;
 	gem->value[4] = time(NULL);
 	return gem;
 }
@@ -324,7 +336,8 @@ int mine(P_obj obj, P_char ch, int cmd, char *arg)
 		else
 		{
 			// At 1 skill, roughly twice as long as 100 skill.  At 100 skill, ticks represented by val2 = mine_duration.
-			data.counter = (obj->value[2] * 200) / (100 + GET_CHAR_SKILL(ch, SKILL_MINE));
+			data.counter =
+				(obj->value[2] * 200) / (100 + GET_CHAR_SKILL(ch, SKILL_MINE));
 			// Anti-cheater code: less than 16 sec?
 			if (data.counter < 4)
 			{
@@ -335,17 +348,20 @@ int mine(P_obj obj, P_char ch, int cmd, char *arg)
 			data.counter += number(-1, 1);
 		}
 		data.mine_quality = obj->value[1];
-		data.mine_type    = obj_index[obj->R_num].virtual_number;
+		data.mine_type = obj_index[obj->R_num].virtual_number;
 
 		remove_mine_content(obj);
 
 		if (get_mine_content(obj) <= 0)
 		{
-			send_to_char("There is very little left, but you keep digging one more time!\n", ch);
+			send_to_char(
+				"There is very little left, but you keep digging one more time!\n",
+				ch);
 			extract_obj(obj, TRUE); // Not an arti, but 'in game.'
 		}
 
-		add_event(event_mine_check, PULSE_VIOLENCE, ch, 0, 0, 0, &data, sizeof(struct mining_data));
+		add_event(event_mine_check, PULSE_VIOLENCE, ch, 0, 0, 0, &data,
+			  sizeof(struct mining_data));
 		return TRUE;
 	}
 
@@ -355,11 +371,11 @@ int mine(P_obj obj, P_char ch, int cmd, char *arg)
 void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct mining_data *mdata = (struct mining_data *)data;
-	P_obj               ore, pick;
-	char                buf[MAX_STRING_LENGTH], dbug[MAX_STRING_LENGTH];
-	float               newcost;
-	bool                randommob, gem;
-	P_char              mob;
+	P_obj ore, pick;
+	char buf[MAX_STRING_LENGTH], dbug[MAX_STRING_LENGTH];
+	float newcost;
+	bool randommob, gem;
+	P_char mob;
 
 	pick = get_pick(ch);
 
@@ -369,8 +385,10 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 		return;
 	}
 
-	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != mdata->room) || !MIN_POS(ch, POS_STANDING + STAT_NORMAL) || IS_SET(ch->specials.affected_by, AFF_HIDE) ||
-	    IS_IMMOBILE(ch) || !IS_AWAKE(ch) || IS_STUNNED(ch) || IS_CASTING(ch) || IS_AFFECTED2(ch, AFF2_CASTING))
+	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != mdata->room) ||
+	    !MIN_POS(ch, POS_STANDING + STAT_NORMAL) ||
+	    IS_SET(ch->specials.affected_by, AFF_HIDE) || IS_IMMOBILE(ch) || !IS_AWAKE(ch) ||
+	    IS_STUNNED(ch) || IS_CASTING(ch) || IS_AFFECTED2(ch, AFF2_CASTING))
 	{
 		send_to_char("You stop mining.\n", ch);
 		return;
@@ -387,7 +405,9 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 
 	if (!pick)
 	{
-		send_to_char("How are you supposed to mine when you don't have anything ready to mine with?\n", ch);
+		send_to_char(
+			"How are you supposed to mine when you don't have anything ready to mine with?\n",
+			ch);
 		return;
 	}
 
@@ -409,9 +429,13 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 			}
 			if (!ore)
 			{
-				wizlog(56, "event_mine_check: couldn't load ore, quality %d.", mdata->mine_quality);
-				logit(LOG_DEBUG, "event_mine_check: couldn't load ore, quality %d.", mdata->mine_quality);
-				send_to_char("Your efforts were thwarted by an unseen force.  Tell a God.\n\r", ch);
+				wizlog(56, "event_mine_check: couldn't load ore, quality %d.",
+				       mdata->mine_quality);
+				logit(LOG_DEBUG, "event_mine_check: couldn't load ore, quality %d.",
+				      mdata->mine_quality);
+				send_to_char(
+					"Your efforts were thwarted by an unseen force.  Tell a God.\n\r",
+					ch);
 				return;
 			}
 			// Moved to a function to make it more readable.
@@ -431,9 +455,13 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 			ore = get_gem_from_mine(ch, mdata->mine_quality);
 			if (!ore)
 			{
-				wizlog(56, "event_mine_check: couldn't load gem, quality %d.", mdata->mine_quality);
-				logit(LOG_DEBUG, "event_mine_check: couldn't load gem, quality %d.", mdata->mine_quality);
-				send_to_char("Your efforts were thwarted by a mysterious force.  Tell a God.\n\r", ch);
+				wizlog(56, "event_mine_check: couldn't load gem, quality %d.",
+				       mdata->mine_quality);
+				logit(LOG_DEBUG, "event_mine_check: couldn't load gem, quality %d.",
+				      mdata->mine_quality);
+				send_to_char(
+					"Your efforts were thwarted by a mysterious force.  Tell a God.\n\r",
+					ch);
 				return;
 			}
 			// Moved to a function to make it more readable.
@@ -442,15 +470,20 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 		else
 		{
 			wizlog(56, "event_mine_check: unknown mine type %d.", mdata->mine_type);
-			logit(LOG_DEBUG, "event_mine_check: unknown mine type %d.", mdata->mine_type);
-			send_to_char("Your mine doesn't seem to be a mine anymore.  Tell a God.\n\r", ch);
+			logit(LOG_DEBUG, "event_mine_check: unknown mine type %d.",
+			      mdata->mine_type);
+			send_to_char(
+				"Your mine doesn't seem to be a mine anymore.  Tell a God.\n\r",
+				ch);
 			return;
 		}
 
 		if (number(80, 140) < GET_C_LUK(ch))
 		{
 			newcost *= 1.3;
-			send_to_char("&+yYou &+Ygently&+y break the &+Lore &+yfree from the &+Lrock&+y, preserving its natural form.&n\r\n", ch);
+			send_to_char(
+				"&+yYou &+Ygently&+y break the &+Lore &+yfree from the &+Lrock&+y, preserving its natural form.&n\r\n",
+				ch);
 		}
 
 		act("Your mining efforts turn up $p&n!", FALSE, ch, ore, 0, TO_CHAR);
@@ -462,7 +495,8 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 		return;
 	}
 
-	if (get_property("halloween", 0.000) && (number(0, 100) < get_property("halloween.zombie.chance", 5.000)))
+	if (get_property("halloween", 0.000) &&
+	    (number(0, 100) < get_property("halloween.zombie.chance", 5.000)))
 	{
 		halloween_mine_proc(ch);
 	}
@@ -491,15 +525,19 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 			}
 			else
 			{
-				logit(LOG_DEBUG, "event_mine_check: %s has pick '%s' (%d) but not in slot WIELD/WIELD2.", J_NAME(ch), pick->short_description, OBJ_VNUM(pick));
+				logit(LOG_DEBUG,
+				      "event_mine_check: %s has pick '%s' (%d) but not in slot WIELD/WIELD2.",
+				      J_NAME(ch), pick->short_description, OBJ_VNUM(pick));
 			}
 			return;
 		}
 	}
 
-	if (!notch_skill(ch, SKILL_MINE, get_property("skill.notch.mining", 2.5)) && !number(0, (GET_CHAR_SKILL(ch, SKILL_MINE) * 2)))
+	if (!notch_skill(ch, SKILL_MINE, get_property("skill.notch.mining", 2.5)) &&
+	    !number(0, (GET_CHAR_SKILL(ch, SKILL_MINE) * 2)))
 	{
-		send_to_char("You thought you found something, but it was just worthless rock.\n", ch);
+		send_to_char("You thought you found something, but it was just worthless rock.\n",
+			     ch);
 		return;
 	}
 
@@ -523,8 +561,12 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 	// Noise distance calc
 	for (P_desc i = descriptor_list; i; i = i->next)
 	{
-		if (i->connected != CON_PLAYING || ch == i->character || i->character->following == ch || world[i->character->in_room].zone != world[ch->in_room].zone ||
-		    ch->in_room == i->character->in_room || ch->in_room == real_room(i->character->specials.was_in_room) || real_room(ch->specials.was_in_room) == i->character->in_room)
+		if (i->connected != CON_PLAYING || ch == i->character ||
+		    i->character->following == ch ||
+		    world[i->character->in_room].zone != world[ch->in_room].zone ||
+		    ch->in_room == i->character->in_room ||
+		    ch->in_room == real_room(i->character->specials.was_in_room) ||
+		    real_room(ch->specials.was_in_room) == i->character->in_room)
 		{
 			continue;
 		}
@@ -533,10 +575,10 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 
 		if (dist <= 400 && (number(1, 12) < 3))
 		{
-			zone_spellmessage(ch->in_room,
-			                  TRUE,
-			                  "&+yThe sound of &+wmetal &+yhewing &+Lrock&+y can be heard in the distance...&n\r\n",
-			                  "&+yThe sound of &+wmetal &+yhewing &+Lrock&+y can be heard in the distance to the %s...&n\r\n");
+			zone_spellmessage(
+				ch->in_room, TRUE,
+				"&+yThe sound of &+wmetal &+yhewing &+Lrock&+y can be heard in the distance...&n\r\n",
+				"&+yThe sound of &+wmetal &+yhewing &+Lrock&+y can be heard in the distance to the %s...&n\r\n");
 		}
 	}
 }
@@ -559,10 +601,19 @@ bool invalid_mine_room(int rroom_id)
 	if (IS_ROOM(rroom_id, ROOM_PRIVATE) ||
 	    PRIVATE_ZONE(rroom_id)
 	    //|| IS_ROOM(rroom_id, ROOM_NO_TELEPORT)
-	    || world[rroom_id].dir_option[DIR_DOWN] || IS_WATER_ROOM(rroom_id) || world[rroom_id].sector_type == SECT_MOUNTAIN || world[rroom_id].sector_type == SECT_ROAD ||
-	    world[rroom_id].sector_type == SECT_UNDRWLD_MOUNTAIN || world[rroom_id].sector_type == SECT_UNDRWLD_NOGROUND || world[rroom_id].sector_type == SECT_UNDRWLD_NOSWIM ||
-	    world[rroom_id].sector_type == SECT_UNDRWLD_WATER || world[rroom_id].sector_type == SECT_UNDRWLD_INSIDE || world[rroom_id].sector_type == SECT_UNDRWLD_CITY ||
-	    world[rroom_id].sector_type == SECT_OCEAN || world[rroom_id].sector_type == SECT_INSIDE || world[rroom_id].sector_type == SECT_CASTLE || world[rroom_id].sector_type == SECT_CASTLE_WALL ||
+	    || world[rroom_id].dir_option[DIR_DOWN] || IS_WATER_ROOM(rroom_id) ||
+	    world[rroom_id].sector_type == SECT_MOUNTAIN ||
+	    world[rroom_id].sector_type == SECT_ROAD ||
+	    world[rroom_id].sector_type == SECT_UNDRWLD_MOUNTAIN ||
+	    world[rroom_id].sector_type == SECT_UNDRWLD_NOGROUND ||
+	    world[rroom_id].sector_type == SECT_UNDRWLD_NOSWIM ||
+	    world[rroom_id].sector_type == SECT_UNDRWLD_WATER ||
+	    world[rroom_id].sector_type == SECT_UNDRWLD_INSIDE ||
+	    world[rroom_id].sector_type == SECT_UNDRWLD_CITY ||
+	    world[rroom_id].sector_type == SECT_OCEAN ||
+	    world[rroom_id].sector_type == SECT_INSIDE ||
+	    world[rroom_id].sector_type == SECT_CASTLE ||
+	    world[rroom_id].sector_type == SECT_CASTLE_WALL ||
 	    world[rroom_id].sector_type == SECT_CASTLE_GATE)
 		return TRUE;
 
@@ -586,9 +637,9 @@ bool load_one_mine(int map)
 	}
 
 	int start = real_room(mining_config_region_value(map, "start", mine_data[map].start));
-	int end   = real_room(mining_config_region_value(map, "end", mine_data[map].end));
+	int end = real_room(mining_config_region_value(map, "end", mine_data[map].end));
 
-	int tries   = 0;
+	int tries = 0;
 	int to_room = -1;
 
 	do
@@ -619,44 +670,54 @@ bool load_one_mine(int map)
 	}
 	else if (random < 3)
 	{
-		mine->value[0]    = number(24, 32);
-		mine->value[1]    = 3;
-		mine->description = str_dup("&+LThe &+yearth &+Lhere is &+cbr&+Lim&+Cm&+Ling with &+Yore&+L - it's the &+GMother &+LLode!&n");
+		mine->value[0] = number(24, 32);
+		mine->value[1] = 3;
+		mine->description = str_dup(
+			"&+LThe &+yearth &+Lhere is &+cbr&+Lim&+Cm&+Ling with &+Yore&+L - it's the &+GMother &+LLode!&n");
 	}
 	else if (random < 20)
 	{
-		mine->value[0]    = number(16, 24);
-		mine->value[1]    = 2;
-		mine->description = str_dup("&+LThe &+yearth&+L here is &+cst&+Lrea&+ck&+Led &+Lwith &+core&+L.&n");
+		mine->value[0] = number(16, 24);
+		mine->value[1] = 2;
+		mine->description = str_dup(
+			"&+LThe &+yearth&+L here is &+cst&+Lrea&+ck&+Led &+Lwith &+core&+L.&n");
 	}
 	else if (random < 75)
 	{
-		mine->value[0]    = number(12, 20);
-		mine->value[1]    = 1;
-		mine->description = str_dup("&+LA few chunks of &+Yore &+Lpoke out of the ground here.&n");
+		mine->value[0] = number(12, 20);
+		mine->value[1] = 1;
+		mine->description =
+			str_dup("&+LA few chunks of &+Yore &+Lpoke out of the ground here.&n");
 	}
 	else
 	{
-		mine->value[0]    = number(8, 16);
-		mine->value[1]    = 0;
-		mine->description = str_dup("&+LA few glimmers &+Ws&+wpa&+Wrk&+wle&+L in the &+yearth &+Lhere.&n");
+		mine->value[0] = number(8, 16);
+		mine->value[1] = 0;
+		mine->description = str_dup(
+			"&+LA few glimmers &+Ws&+wpa&+Wrk&+wle&+L in the &+yearth &+Lhere.&n");
 	}
 
 	obj_to_room(mine, to_room);
-	wizlog(56, "Mine (%d) loaded in %s [%d]", mine->value[1], world[to_room].name, ROOM_VNUM(to_room));
+	wizlog(56, "Mine (%d) loaded in %s [%d]", mine->value[1], world[to_room].name,
+	       ROOM_VNUM(to_room));
 
 	return TRUE;
 }
 
 void load_mines(bool set_event, bool load_all, int map)
 {
-	int                     max_mines, num_mines = 0, mine_type;
+	int max_mines, num_mines = 0, mine_type;
 	struct mines_event_data mdata;
 
 	mine_type = mine_data[map].type;
 	for (P_obj tobj = object_list; tobj; tobj = tobj->next)
 	{
-		if ((OBJ_VNUM(tobj) == mine_type) && IS_SET(tobj->loc_p, LOC_ROOM) && (tobj->loc.room > 0) && (world[tobj->loc.room].number >= mining_config_region_value(map, "start", mine_data[map].start)) && (world[tobj->loc.room].number <= mining_config_region_value(map, "end", mine_data[map].end)))
+		if ((OBJ_VNUM(tobj) == mine_type) && IS_SET(tobj->loc_p, LOC_ROOM) &&
+		    (tobj->loc.room > 0) &&
+		    (world[tobj->loc.room].number >=
+		     mining_config_region_value(map, "start", mine_data[map].start)) &&
+		    (world[tobj->loc.room].number <=
+		     mining_config_region_value(map, "end", mine_data[map].end)))
 		{
 			num_mines++;
 		}
@@ -684,7 +745,9 @@ void load_mines(bool set_event, bool load_all, int map)
 
 	if (set_event)
 	{
-		add_event(event_load_mines, (WAIT_SEC * 60) * ((int)get_property("mines.reloadMins", 10)), NULL, NULL, 0, 0, &mdata, sizeof(mdata));
+		add_event(event_load_mines,
+			  (WAIT_SEC * 60) * ((int)get_property("mines.reloadMins", 10)), NULL, NULL,
+			  0, 0, &mdata, sizeof(mdata));
 	}
 }
 
@@ -703,7 +766,6 @@ void event_load_mines(P_char ch, P_char victim, P_obj, void *data)
 
 void do_mine(P_char ch, char *arg, int cmd)
 {
-
 	if (!ch || IS_NPC(ch))
 		return;
 
@@ -717,7 +779,7 @@ void do_mine(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	int  i;
+	int i;
 	char buff[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	half_chop(arg, arg1, arg2);
@@ -733,8 +795,10 @@ void do_mine(P_char ch, char *arg, int cmd)
 			{
 				snprintf(buf2, MAX_STRING_LENGTH, "purge %s", mine_data[i].abbrev);
 				do_mine(ch, buf2, CMD_MINE);
-				wizlog(56, "%s loaded mines in %s", GET_NAME(ch), mine_data[i].name);
-				logit(LOG_WIZ, "%s loaded mines in %s", GET_NAME(ch), mine_data[i].name);
+				wizlog(56, "%s loaded mines in %s", GET_NAME(ch),
+				       mine_data[i].name);
+				logit(LOG_WIZ, "%s loaded mines in %s", GET_NAME(ch),
+				      mine_data[i].name);
 				load_mines(FALSE, TRUE, i);
 				return;
 			}
@@ -758,7 +822,8 @@ void do_mine(P_char ch, char *arg, int cmd)
 			if (!strcmp(arg, mine_data[i].abbrev))
 			{
 				wizlog(56, "%s loaded mine in %s", GET_NAME(ch), mine_data[i].name);
-				logit(LOG_WIZ, "%s loaded mine in %s", GET_NAME(ch), mine_data[i].name);
+				logit(LOG_WIZ, "%s loaded mine in %s", GET_NAME(ch),
+				      mine_data[i].name);
 				load_one_mine(i);
 				return;
 			}
@@ -790,7 +855,9 @@ void do_mine(P_char ch, char *arg, int cmd)
 		{
 			next = tobj->next;
 
-			if ((OBJ_VNUM(tobj) == VOBJ_MINE) && (!strcmp(arg, mine_data[i].abbrev)) && (world[tobj->loc.room].number >= mine_data[i].start) && (world[tobj->loc.room].number <= mine_data[i].end))
+			if ((OBJ_VNUM(tobj) == VOBJ_MINE) && (!strcmp(arg, mine_data[i].abbrev)) &&
+			    (world[tobj->loc.room].number >= mine_data[i].start) &&
+			    (world[tobj->loc.room].number <= mine_data[i].end))
 			{
 				extract_obj(tobj, TRUE); // Not an arti, but 'in game.'
 			}
@@ -814,7 +881,8 @@ void do_mine(P_char ch, char *arg, int cmd)
 		}
 		else
 		{
-			snprintf(buf2, MAX_STRING_LENGTH, "Available options for mine purge: all | map | tharnrift\n");
+			snprintf(buf2, MAX_STRING_LENGTH,
+				 "Available options for mine purge: all | map | tharnrift\n");
 			/*
 			for (i = 0; mine_data[i].start; i++);
 			{

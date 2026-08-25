@@ -19,7 +19,7 @@
 // locker room floor rather than being hidden inside a sorting chest.
 bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj);
 
-int  guild_locker_room_hook(int room, P_char ch, int cmd, char *arg);
+int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg);
 bool remove_all_locker_access(P_char ch);
 
 class LockerChest;
@@ -27,7 +27,7 @@ class ComboChest;
 
 class StorageLocker
 {
-public:
+    public:
 	StorageLocker(int rroom, P_char chLocker, P_char chUser);
 	~StorageLocker(void);
 
@@ -51,25 +51,25 @@ public:
 	LockerChest *FindChestForObject(P_obj obj);
 
 	static void event_resortLocker(P_char chLocker, P_char ch, P_obj obj, void *data);
-	int         m_itemCount;
+	int m_itemCount;
 
-	int  GetCurrentChestId(void) { return m_currentChestId; };
+	int GetCurrentChestId(void) { return m_currentChestId; };
 	void SetCurrentChestId(int id) { m_currentChestId = id; };
-	int  GetLockerId(void) { return m_lockerId; };
+	int GetLockerId(void) { return m_lockerId; };
 	void SetLockerId(int id) { m_lockerId = id; };
 	void AddPrivateChest(LockerChest *chest) { AddLockerChest(chest); };
-	int  GetRealRoom(void) { return m_realRoom; };
+	int GetRealRoom(void) { return m_realRoom; };
 
-protected:
+    protected:
 	LockerChest *AddLockerChest(LockerChest *p);
 	LockerChest *m_pChestList;
-	int          m_realRoom;
-	P_char       m_chLocker;
-	P_char       m_chUser;
+	int m_realRoom;
+	P_char m_chLocker;
+	P_char m_chUser;
 	//  int m_itemCount;
 	bool m_bIValue;
-	int  m_currentChestId;
-	int  m_lockerId;
+	int m_currentChestId;
+	int m_lockerId;
 };
 
 class LockerChest
@@ -77,7 +77,7 @@ class LockerChest
 	friend class StorageLocker;
 	friend class ComboChest;
 
-public:
+    public:
 	// destructor...  should drop all contents of check into room,
 	//   remove check_obj from room, and extract check_obj.
 	virtual ~LockerChest(void);
@@ -89,7 +89,7 @@ public:
 	virtual bool ItemFits(P_obj obj) { return true; };
 
 	virtual bool IsPrivateChest(void) { return false; };
-	virtual int  GetChestId(void) { return 0; };
+	virtual int GetChestId(void) { return 0; };
 
 	virtual void FillExtraDescBuf(char *GBuf1);
 
@@ -102,42 +102,52 @@ public:
 
 	static const unsigned m_chestVnum;
 
-protected:
-	LockerChest(const char *keyword, const char *prettyDesc) : m_chestKeyword(keyword), m_chestDescText(prettyDesc), m_pChestObject(NULL), m_pNextInChain(NULL) {};
+    protected:
+	LockerChest(const char *keyword, const char *prettyDesc)
+		: m_chestKeyword(keyword)
+		, m_chestDescText(prettyDesc)
+		, m_pChestObject(NULL)
+		, m_pNextInChain(NULL){};
 
 	P_obj CreateChestObject(void);
 
 	LockerChest *m_pNextInChain; // init to 0
-	P_obj        m_pChestObject; // init to 0
+	P_obj m_pChestObject; // init to 0
 
 	static const char *m_keywords;
 	static const char *m_PrettyDesc;
 
-private:
+    private:
 };
 
 class UnsortedChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
-	virtual bool ItemFits(P_obj obj) { return ((obj->type == ITEM_CONTAINER) || (obj->type == ITEM_CORPSE)) ? false : true; };
+    public:
+	virtual bool ItemFits(P_obj obj)
+	{
+		return ((obj->type == ITEM_CONTAINER) || (obj->type == ITEM_CORPSE)) ? false : true;
+	};
 
-protected:
-	UnsortedChest(void) : LockerChest("unsorted", "that are unsorted") {};
+    protected:
+	UnsortedChest(void)
+		: LockerChest("unsorted", "that are unsorted"){};
 };
 
 class EqSlotChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
+    public:
 	virtual bool ItemFits(P_obj obj) { return (obj->wear_flags & m_eqBit) ? true : false; };
 
-protected:
-	EqSlotChest(unsigned int eqSlotBit, const char *keyword, const char *prettyDesc) : LockerChest(keyword, prettyDesc), m_eqBit(eqSlotBit) {};
+    protected:
+	EqSlotChest(unsigned int eqSlotBit, const char *keyword, const char *prettyDesc)
+		: LockerChest(keyword, prettyDesc)
+		, m_eqBit(eqSlotBit){};
 
-private:
+    private:
 	unsigned int m_eqBit;
 };
 
@@ -145,13 +155,20 @@ class EqWearChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
-	virtual bool ItemFits(P_obj obj) { return IS_SET(obj->extra_flags, ITEM_ALLOWED_CLASSES) ? IS_SET(obj->anti_flags, m_wearClass) : !IS_SET(obj->anti_flags, m_wearClass); };
+    public:
+	virtual bool ItemFits(P_obj obj)
+	{
+		return IS_SET(obj->extra_flags, ITEM_ALLOWED_CLASSES) ?
+			       IS_SET(obj->anti_flags, m_wearClass) :
+			       !IS_SET(obj->anti_flags, m_wearClass);
+	};
 
-protected:
-	EqWearChest(unsigned wearClass, const char *keyword, const char *prettyDesc) : LockerChest(keyword, prettyDesc), m_wearClass(wearClass) {};
+    protected:
+	EqWearChest(unsigned wearClass, const char *keyword, const char *prettyDesc)
+		: LockerChest(keyword, prettyDesc)
+		, m_wearClass(wearClass){};
 
-private:
+    private:
 	unsigned m_wearClass;
 };
 
@@ -159,16 +176,15 @@ class EqTypeChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
-	virtual bool ItemFits(P_obj obj)
-	{
-		return locker_eq_type_fits_for_storage(m_eqType, obj);
-	};
+    public:
+	virtual bool ItemFits(P_obj obj) { return locker_eq_type_fits_for_storage(m_eqType, obj); };
 
-protected:
-	EqTypeChest(::byte eqType, const char *keyword, const char *prettyDesc) : LockerChest(keyword, prettyDesc), m_eqType(eqType) {};
+    protected:
+	EqTypeChest(::byte eqType, const char *keyword, const char *prettyDesc)
+		: LockerChest(keyword, prettyDesc)
+		, m_eqType(eqType){};
 
-private:
+    private:
 	::byte m_eqType;
 };
 
@@ -176,13 +192,15 @@ class EqApplyChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
+    public:
 	virtual bool ItemFits(P_obj obj);
 
-protected:
-	EqApplyChest(::byte applyType, const char *keyword, const char *prettyDesc) : LockerChest(keyword, prettyDesc), m_applyType(applyType) {};
+    protected:
+	EqApplyChest(::byte applyType, const char *keyword, const char *prettyDesc)
+		: LockerChest(keyword, prettyDesc)
+		, m_applyType(applyType){};
 
-private:
+    private:
 	::byte m_applyType;
 };
 
@@ -190,13 +208,16 @@ class EqAffectChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
+    public:
 	virtual bool ItemFits(P_obj obj);
 
-protected:
-	EqAffectChest(int b, int bv, const char *keyword, const char *prettyDesc) : LockerChest(keyword, prettyDesc), m_bitVector(bv), m_bit(b) {};
+    protected:
+	EqAffectChest(int b, int bv, const char *keyword, const char *prettyDesc)
+		: LockerChest(keyword, prettyDesc)
+		, m_bitVector(bv)
+		, m_bit(b){};
 
-private:
+    private:
 	int m_bitVector;
 	int m_bit;
 };
@@ -205,11 +226,18 @@ class OreChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
-	virtual bool ItemFits(P_obj obj) { return (strstr(obj->name, "_ore_") && (!m_oreType[0] || strstr(obj->name, m_oreType))) ? true : false; };
+    public:
+	virtual bool ItemFits(P_obj obj)
+	{
+		return (strstr(obj->name, "_ore_") &&
+			(!m_oreType[0] || strstr(obj->name, m_oreType))) ?
+			       true :
+			       false;
+	};
 
-protected:
-	OreChest(const char *oreType, const char *keyword, const char *prettyDesc) : LockerChest(keyword, prettyDesc)
+    protected:
+	OreChest(const char *oreType, const char *keyword, const char *prettyDesc)
+		: LockerChest(keyword, prettyDesc)
 	{
 		if (oreType && oreType[0])
 			strcpy(m_oreType, oreType);
@@ -217,7 +245,7 @@ protected:
 			m_oreType[0] = '\0';
 	};
 
-private:
+    private:
 	char m_oreType[1024];
 };
 
@@ -225,13 +253,15 @@ class ComboChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
+    public:
 	virtual bool ItemFits(P_obj obj);
 
 	virtual void FillExtraDescBuf(char *GBuf1);
 
-protected:
-	ComboChest(LockerChest *pChestList) : LockerChest("custom", "that you custom specified"), m_LockerChests(pChestList) {};
+    protected:
+	ComboChest(LockerChest *pChestList)
+		: LockerChest("custom", "that you custom specified")
+		, m_LockerChests(pChestList){};
 	~ComboChest(void);
 
 	LockerChest *m_LockerChests;
@@ -241,15 +271,15 @@ class PrivateChest : public LockerChest
 {
 	friend class StorageLocker;
 
-public:
+    public:
 	PrivateChest(int chest_id, const char *name, bool has_password);
 
 	virtual bool ItemFits(P_obj obj) override { return false; };
 	virtual bool IsPrivateChest(void) override { return true; };
-	virtual int  GetChestId(void) override { return m_chestId; };
+	virtual int GetChestId(void) override { return m_chestId; };
 
-protected:
-	int  m_chestId;
+    protected:
+	int m_chestId;
 	bool m_hasPassword;
 	char m_chestName[128];
 };

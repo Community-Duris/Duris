@@ -58,30 +58,30 @@ void construct_home(P_char ch)
 			return;
 
 		home_data *new_home = (home_data *)malloc(sizeof(home_data));
-		new_home->owner     = ch;
-		new_home->exit_to   = ch->in_room;
+		new_home->owner = ch;
+		new_home->exit_to = ch->in_room;
 		new_home->next_home = NULL;
 
 		snprintf(buf, MAX_STRING_LENGTH, "House of %s", GET_NAME(ch));
 
-		new_home->zone                         = (zone_data *)malloc(sizeof(zone_data));
-		new_home->zone->number                 = -1; // TODO: Get a valid zone number
-		new_home->zone->name                   = buf;
-		new_home->zone->filename               = GET_NAME(ch); // TODO: make sure this name is valid.
-		new_home->zone->mapx                   = PLOT_SIZE * MAX_PLOTS;
-		new_home->zone->mapy                   = PLOT_SIZE * MAX_PLOTS;
-		new_home->zone->lifespan_min           = 30;
-		new_home->zone->lifespan_max           = 60;
+		new_home->zone = (zone_data *)malloc(sizeof(zone_data));
+		new_home->zone->number = -1; // TODO: Get a valid zone number
+		new_home->zone->name = buf;
+		new_home->zone->filename = GET_NAME(ch); // TODO: make sure this name is valid.
+		new_home->zone->mapx = PLOT_SIZE * MAX_PLOTS;
+		new_home->zone->mapy = PLOT_SIZE * MAX_PLOTS;
+		new_home->zone->lifespan_min = 30;
+		new_home->zone->lifespan_max = 60;
 		new_home->zone->fullreset_lifespan_min = 30;
 		new_home->zone->fullreset_lifespan_max = 30;
-		new_home->zone->difficulty             = 0;
-		new_home->zone->flags                  = 0;
-		new_home->zone->reset_mode             = 2;
-		new_home->zone->top                    = -1;
-		new_home->zone->real_top               = -1;
-		new_home->zone->real_bottom            = -1;
-		new_home->zone->hometown               = 0;
-		new_home->zone->avg_mob_level          = 0;
+		new_home->zone->difficulty = 0;
+		new_home->zone->flags = 0;
+		new_home->zone->reset_mode = 2;
+		new_home->zone->top = -1;
+		new_home->zone->real_top = -1;
+		new_home->zone->real_bottom = -1;
+		new_home->zone->hometown = 0;
+		new_home->zone->avg_mob_level = 0;
 
 		memset(new_home->plots, 0, sizeof(new_home->plots));
 
@@ -99,7 +99,7 @@ void construct_home(P_char ch)
 		if (home_list)
 		{
 			last_home->next_home = new_home;
-			last_home            = new_home;
+			last_home = new_home;
 		}
 		else
 		{
@@ -121,7 +121,8 @@ void construct_plot(P_char ch, home_data *home, int plotX, int plotY)
 		// is plot free
 		if (plotX >= MAX_PLOTS || plotY >= MAX_PLOTS || plotX < 0 || plotY < 0)
 		{
-			wizlog(MINLVLIMMORTAL, "Home plot was out of bounds: %s, (%d/%d)", GET_NAME(ch), plotX, plotY);
+			wizlog(MINLVLIMMORTAL, "Home plot was out of bounds: %s, (%d/%d)",
+			       GET_NAME(ch), plotX, plotY);
 			return;
 		}
 

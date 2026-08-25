@@ -28,12 +28,12 @@ extern void exit(int);
 
 extern volatile sig_atomic_t tics;
 extern bool game_booted;
-extern int  shutdownflag;
+extern int shutdownflag;
 // signal-initiated shutdown: 0=none, 1=shutdown, 2=reboot, 3=copyover
 extern volatile sig_atomic_t signal_shutdown_pending;
 
 // extern pid_t lookup_host_process;
-void         reap(int sig);
+void reap(int sig);
 
 void shutdown_request(int);
 void shutdown_notice(int);
@@ -50,7 +50,7 @@ static void install_signal_handler(int signo, void (*handler)(int), int flags)
 
 	memset(&sa, 0, sizeof(sa));
 	sa.sa_handler = handler;
-	sa.sa_flags   = flags;
+	sa.sa_flags = flags;
 	sigemptyset(&sa.sa_mask);
 	if (sigaction(signo, &sa, NULL) < 0)
 	{
@@ -61,11 +61,11 @@ static void install_signal_handler(int signo, void (*handler)(int), int flags)
 void signal_setup(void)
 {
 	struct itimerval itime;
-	struct timeval   interval;
+	struct timeval interval;
 
 	install_signal_handler(SIGUSR2, shutdown_request, SA_RESTART); // shutdown (no restart)
-	install_signal_handler(SIGUSR1, shutdown_notice, SA_RESTART);  // copyover
-	install_signal_handler(SIGRTMIN, reboot_request, SA_RESTART);  // reboot
+	install_signal_handler(SIGUSR1, shutdown_notice, SA_RESTART); // copyover
+	install_signal_handler(SIGRTMIN, reboot_request, SA_RESTART); // reboot
 
 	/*
 	   just to be on the safe side:
@@ -84,16 +84,17 @@ void signal_setup(void)
 	 */
 
 	// Start timer 900 sec after boot starts (15 min).
-	interval.tv_sec  = 900;
+	interval.tv_sec = 900;
 	interval.tv_usec = 0;
-	itime.it_value   = interval;
+	itime.it_value = interval;
 	// And have timer check every 15 minutes.
 	itime.it_interval = interval;
 	// Changing this to 5 min since we don't need to hang for 15 min to know we're stuck.
 	itime.it_interval.tv_sec = 300;
 	if (setitimer(ITIMER_VIRTUAL, &itime, 0) < 0)
 	{
-		fatal_boot_error("signals", "setitimer(ITIMER_VIRTUAL) failed: %s", strerror(errno));
+		fatal_boot_error("signals", "setitimer(ITIMER_VIRTUAL) failed: %s",
+				 strerror(errno));
 	}
 	install_signal_handler(SIGVTALRM, checkpointing_signal, SA_RESTART);
 }
@@ -110,20 +111,23 @@ void checkpointing(void)
 
 	if (checkpoint_strikes < 2)
 	{
-		logit(LOG_EXIT, "CHECKPOINT warning: tics not updated (strike %d)", (int)checkpoint_strikes);
+		logit(LOG_EXIT, "CHECKPOINT warning: tics not updated (strike %d)",
+		      (int)checkpoint_strikes);
 		checkpoint_pending = 0;
 		return;
 	}
 
-	logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated (%d strikes)", (int)checkpoint_strikes);
+	logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated (%d strikes)",
+	      (int)checkpoint_strikes);
 
 	void *bt[64];
-	int   n  = backtrace(bt, 64);
-	int   fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
+	int n = backtrace(bt, 64);
+	int fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
 	if (fd >= 0)
 	{
 		char msg[64];
-		int  len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n", (int)checkpoint_strikes);
+		int len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n",
+				   (int)checkpoint_strikes);
 		write(fd, msg, len);
 		backtrace_symbols_fd(bt, n, fd);
 		close(fd);
@@ -152,9 +156,9 @@ static void checkpointing_signal(int signum)
 	}
 	else
 	{
-		tics              = 0;
+		tics = 0;
 		checkpoint_strikes = 0;
-		checkpoint_pending  = 0;
+		checkpoint_pending = 0;
 	}
 }
 

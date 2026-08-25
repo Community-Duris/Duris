@@ -23,19 +23,18 @@
 #include "sql.h"
 #include "strings.h"
 
-extern P_room      world;
-extern const int   top_of_world;
-extern P_index     mob_index;
-extern const int   rev_dir[];
+extern P_room world;
+extern const int top_of_world;
+extern P_index mob_index;
+extern const int rev_dir[];
 
 vector<Building *> buildings;
 
 // basic information for building types:
 // building type, building mob vnum, required wood, required stone, hitpoints, generator function
-BuildingType building_types[] = {
-	{BUILDING_OUTPOST, OUTPOST_BUILDING_MOB, 100000, 10000, 300000, outpost_generate},
-    {0}
-};
+BuildingType building_types[] = { { BUILDING_OUTPOST, OUTPOST_BUILDING_MOB, 100000, 10000, 300000,
+				    outpost_generate },
+				  { 0 } };
 
 P_room get_unused_building_room()
 {
@@ -200,7 +199,7 @@ void do_build(P_char ch, char *argument, int cmd)
 
 	// TODO: implement buildings
 	char arg[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
-	int  level;
+	int level;
 
 	one_argument(argument, arg);
 
@@ -224,7 +223,7 @@ int check_outpost_death(P_char ch, P_char killer)
 		return FALSE;
 
 	struct affected_type *af, *next_af;
-	Building             *building = get_building_from_char(ch);
+	Building *building = get_building_from_char(ch);
 
 	if (!building)
 		return FALSE;
@@ -273,7 +272,7 @@ int check_outpost_death(P_char ch, P_char killer)
 	ClearCharEvents(ch);
 
 	ch->specials.conditions[DISEASE_TYPE] = 0;
-	ch->specials.conditions[POISON_TYPE]  = 0;
+	ch->specials.conditions[POISON_TYPE] = 0;
 
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
@@ -281,7 +280,8 @@ int check_outpost_death(P_char ch, P_char killer)
 	{
 		if (!mob_index[GET_RNUM(ch)].func.mob)
 		{
-			debug("Error, outpost %d contains no mob spec function", building->get_id());
+			debug("Error, outpost %d contains no mob spec function",
+			      building->get_id());
 			return TRUE;
 		}
 		else if (ch->in_room == NOWHERE)
@@ -307,11 +307,11 @@ int check_outpost_death(P_char ch, P_char killer)
 
 int building_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int                allow;
-	P_Alliance         alliance;
-	P_Guild            guild;
-	P_char             tmob;
-	Building          *building;
+	int allow;
+	P_Alliance alliance;
+	P_Guild guild;
+	P_char tmob;
+	Building *building;
 	struct group_list *gl;
 
 	if (!ch)
@@ -360,7 +360,9 @@ int building_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 		{
 			allow = TRUE;
 		}
-		else if (((alliance = guild->get_alliance()) != NULL) && ((GET_ASSOC(pl) == alliance->get_forgers()) || (GET_ASSOC(pl) == alliance->get_joiners())))
+		else if (((alliance = guild->get_alliance()) != NULL) &&
+			 ((GET_ASSOC(pl) == alliance->get_forgers()) ||
+			  (GET_ASSOC(pl) == alliance->get_joiners())))
 		{
 			allow = TRUE;
 		}
@@ -420,7 +422,8 @@ int building_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 		//   how many attacks per round based on level of outpost, or how long they've held it for.
 		if (get_outpost_archers(building))
 		{
-			if (((cmd == CMD_GOTHIT) && !number(0, 4)) || ((cmd == CMD_GOTNUKED) && !number(0, 2)))
+			if (((cmd == CMD_GOTHIT) && !number(0, 4)) ||
+			    ((cmd == CMD_GOTNUKED) && !number(0, 2)))
 			{
 				if (outpost_archer_attack(ch, pl) && (cmd != CMD_GOTNUKED))
 				{
@@ -435,11 +438,31 @@ int building_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 // Building
 int Building::next_id = 1;
 
-Building::Building() : guild(NULL), type(0), room_vnum(0), level(0), loaded(false), mob_proc(NULL) {}
+Building::Building()
+	: guild(NULL)
+	, type(0)
+	, room_vnum(0)
+	, level(0)
+	, loaded(false)
+	, mob_proc(NULL)
+{
+}
 
-Building::Building(P_Guild _guild, int _type, int _room_vnum, int _level) : guild(_guild), type(_type), room_vnum(_room_vnum), level(_level), loaded(false), mob_proc(NULL) { load(); }
+Building::Building(P_Guild _guild, int _type, int _room_vnum, int _level)
+	: guild(_guild)
+	, type(_type)
+	, room_vnum(_room_vnum)
+	, level(_level)
+	, loaded(false)
+	, mob_proc(NULL)
+{
+	load();
+}
 
-Building::~Building() { unload(); }
+Building::~Building()
+{
+	unload();
+}
 
 // actually load
 int Building::load()
@@ -478,12 +501,12 @@ int Building::load()
 	for (int i = 0; i < MAX_OUTPOST_GATEGUARDS; i++)
 		golems[i] = NULL;
 	golem_room = 0;
-	golem_dir  = 0;
+	golem_dir = 0;
 
 	struct affected_type af;
 	bzero(&af, sizeof(af));
 
-	af.type     = TAG_BUILDING;
+	af.type = TAG_BUILDING;
 	af.modifier = id;
 	af.duration = -1;
 
@@ -565,12 +588,14 @@ int outpost_generate(Building *building)
 	// set mob stuff
 	if (get_current_outpost_hitpoints(building) > 0)
 	{
-		GET_MAX_HIT(mob) = mob->points.base_hit = building_types[BUILDING_OUTPOST - 1].hitpoints;
-		GET_HIT(mob)                            = get_current_outpost_hitpoints(building);
+		GET_MAX_HIT(mob) = mob->points.base_hit =
+			building_types[BUILDING_OUTPOST - 1].hitpoints;
+		GET_HIT(mob) = get_current_outpost_hitpoints(building);
 	}
 	else // It SHOULD be a new outpost...
 	{
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit = (int)(building_types[BUILDING_OUTPOST - 1].hitpoints);
+		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
+			(int)(building_types[BUILDING_OUTPOST - 1].hitpoints);
 	}
 	set_current_outpost_hitpoints(building);
 	GET_RACE(mob) = RACE_CONSTRUCT;
@@ -591,7 +616,7 @@ int outpost_generate(Building *building)
 
 	CREATE(room->dir_option[DIR_DOWN], room_direction_data, 1, MEM_TAG_DIRDATA);
 
-	room->dir_option[DIR_DOWN]->to_room   = building->location();
+	room->dir_option[DIR_DOWN]->to_room = building->location();
 	room->dir_option[DIR_DOWN]->exit_info = 0;
 
 	room->funct = outpost_inside;
@@ -617,7 +642,7 @@ int outpost_mob(P_char ch, P_char pl, int cmd, char *arg)
 int outpost_inside(int room, P_char ch, int cmd, char *arg)
 {
 	char buff[MAX_STRING_LENGTH];
-	int  old_room = 0;
+	int old_room = 0;
 
 	if (!room || !ch || !cmd)
 	{
@@ -633,7 +658,7 @@ int outpost_inside(int room, P_char ch, int cmd, char *arg)
 			if ((old_room = ch->in_room))
 			{
 				Building *building = get_building_from_room(ch->in_room);
-				int       z        = building->get_level();
+				int z = building->get_level();
 				char_from_room(ch);
 				ch->specials.z_cord = z;
 				char_to_room(ch, world[old_room].dir_option[DIR_DOWN]->to_room, -1);
@@ -647,11 +672,14 @@ int outpost_inside(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-bool Building::proc(P_char ch, P_char pl, int cmd, char *arg) { return ((mob_proc != NULL) && ((*mob_proc)(ch, pl, cmd, arg))); }
+bool Building::proc(P_char ch, P_char pl, int cmd, char *arg)
+{
+	return ((mob_proc != NULL) && ((*mob_proc)(ch, pl, cmd, arg)));
+}
 
 void Building::update_outpost_owner(P_Guild new_guild)
 {
-	P_char                op;
+	P_char op;
 	struct affected_type *afp;
 
 	if (!id)
@@ -661,7 +689,8 @@ void Building::update_outpost_owner(P_Guild new_guild)
 	}
 
 	// Update the DB
-	db_query("UPDATE outposts SET owner_id = '%d' WHERE id = '%d'", new_guild->get_id(), id - 1);
+	db_query("UPDATE outposts SET owner_id = '%d' WHERE id = '%d'", new_guild->get_id(),
+		 id - 1);
 	guild = new_guild;
 }
 
@@ -692,8 +721,9 @@ bool Building::load_gateguard(int location, int guard_vnum, int golemnum)
 
 	add_tag_to_char(golems[golemnum], TAG_DIRECTION, rev_dir[golem_dir], AFFTYPE_PERM);
 	add_tag_to_char(golems[golemnum], TAG_GUILDHALL, id, AFFTYPE_PERM);
-	GET_ASSOC(golems[golemnum])         = guild;
-	golems[golemnum]->player.birthplace = golems[golemnum]->player.orig_birthplace = golems[golemnum]->player.hometown = world[location].number;
+	GET_ASSOC(golems[golemnum]) = guild;
+	golems[golemnum]->player.birthplace = golems[golemnum]->player.orig_birthplace =
+		golems[golemnum]->player.hometown = world[location].number;
 	char_to_room(golems[golemnum], location, -1);
 
 	return TRUE;
@@ -701,10 +731,10 @@ bool Building::load_gateguard(int location, int guard_vnum, int golemnum)
 
 bool Building::generate_portals()
 {
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char  buff[MAX_STRING_LENGTH], ghname[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH], ghname[MAX_STRING_LENGTH];
 	FILE *f;
-	int   guildhall_room = 0;
+	int guildhall_room = 0;
 
 	if (portal_op || portal_gh)
 	{
@@ -745,7 +775,7 @@ bool Building::generate_portals()
 		{
 			fgets(Gbuf2, MAX_STR_NORMAL, f);
 			Gbuf2[strlen(Gbuf2) - 1] = 0;
-			Gbuf2[ASC_MAX_STR - 1]   = 0;
+			Gbuf2[ASC_MAX_STR - 1] = 0;
 			strcpy(ghname, Gbuf2);
 			fclose(f);
 		}
@@ -754,18 +784,19 @@ bool Building::generate_portals()
 	if ((portal_op = read_object(BUILDING_PORTAL, VIRTUAL)))
 	{
 		snprintf(buff, MAX_STRING_LENGTH, portal_op->description, ghname);
-		portal_op->value[0]    = guildhall_room;
+		portal_op->value[0] = guildhall_room;
 		portal_op->description = str_dup(buff);
-		portal_op->str_mask    = STRUNG_DESC1;
+		portal_op->str_mask = STRUNG_DESC1;
 		obj_to_room(portal_op, gate_room());
 	}
 
 	if ((portal_gh = read_object(BUILDING_PORTAL, VIRTUAL)))
 	{
-		snprintf(buff, MAX_STRING_LENGTH, portal_gh->description, continent_name(world[location()].continent));
-		portal_gh->value[0]    = rooms[0]->number;
+		snprintf(buff, MAX_STRING_LENGTH, portal_gh->description,
+			 continent_name(world[location()].continent));
+		portal_gh->value[0] = rooms[0]->number;
 		portal_gh->description = str_dup(buff);
-		portal_gh->str_mask    = STRUNG_DESC1;
+		portal_gh->str_mask = STRUNG_DESC1;
 		obj_to_room(portal_gh, real_room0(guildhall_room));
 	}
 

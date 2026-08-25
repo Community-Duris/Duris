@@ -16,21 +16,21 @@
 #include "sql.h"
 
 struct epic_bonus_data ebd[] = {
-	{EPIC_BONUS_NONE, "none", "No Epic Bonus"},
-	{EPIC_BONUS_CARGO, "cargo", "Cargo Discount"},
-	{EPIC_BONUS_SHOP, "shop", "Shop Discount"},
-	{EPIC_BONUS_EXP, "exp", "Experience Bonus"},
-	{EPIC_BONUS_EPIC_POINT, "epic", "Epic Points Bonus"},
-	{EPIC_BONUS_HEALTH_REG, "health", "Health Regen Bonus"},
-	{EPIC_BONUS_MOVE_REG, "moves", "Movement Regen Bonus"},
-	{0},
+	{ EPIC_BONUS_NONE, "none", "No Epic Bonus" },
+	{ EPIC_BONUS_CARGO, "cargo", "Cargo Discount" },
+	{ EPIC_BONUS_SHOP, "shop", "Shop Discount" },
+	{ EPIC_BONUS_EXP, "exp", "Experience Bonus" },
+	{ EPIC_BONUS_EPIC_POINT, "epic", "Epic Points Bonus" },
+	{ EPIC_BONUS_HEALTH_REG, "health", "Health Regen Bonus" },
+	{ EPIC_BONUS_MOVE_REG, "moves", "Movement Regen Bonus" },
+	{ 0 },
 };
 
 // command interpreter for epic_bonus
 void do_epic_bonus(P_char ch, char *arg, int cmd)
 {
 	char buff[MAX_STRING_LENGTH];
-	int  type = 0;
+	int type = 0;
 
 	// Clear "bonus" from args
 	arg = one_argument(arg, buff);
@@ -68,15 +68,23 @@ void epic_bonus_help(P_char ch)
 	}
 
 	send_to_char("&+WEpic Bonus:&n\r\n\r\n", ch);
-	send_to_char_f(ch, "&+cYou are currently benefiting from the &+C%s &+c(&+C%.2f%&+c).\r\n\r\n", ebd[ebdata.type].description, get_epic_bonus(ch, ebdata.type) * 100);
+	send_to_char_f(ch,
+		       "&+cYou are currently benefiting from the &+C%s &+c(&+C%.2f%&+c).\r\n\r\n",
+		       ebd[ebdata.type].description, get_epic_bonus(ch, ebdata.type) * 100);
 	send_to_char("&+CYou can choose from the following bonuses:&n\r\n", ch);
-	send_to_char_f(ch, "&+C%10s &+c(&+CMAX: %3d%%&+c) &+w- &+c%s\r\n", ebd[0].name, (int)(get_epic_bonus_max(0) * 100), ebd[0].description);
+	send_to_char_f(ch, "&+C%10s &+c(&+CMAX: %3d%%&+c) &+w- &+c%s\r\n", ebd[0].name,
+		       (int)(get_epic_bonus_max(0) * 100), ebd[0].description);
 	for (int i = 1; ebd[i].type; i++)
 	{
 		if (ebd[i].type == EPIC_BONUS_HEALTH_REG)
-			send_to_char_f(ch, "&+C%10s &+c(&+CMax: %3d &+c) &+w- &+c%s\r\n", ebd[i].name, (int)(get_epic_bonus_max(i) * EPIC_HEALTH_REGEN_MOD), ebd[i].description);
+			send_to_char_f(ch, "&+C%10s &+c(&+CMax: %3d &+c) &+w- &+c%s\r\n",
+				       ebd[i].name,
+				       (int)(get_epic_bonus_max(i) * EPIC_HEALTH_REGEN_MOD),
+				       ebd[i].description);
 		else
-			send_to_char_f(ch, "&+C%10s &+c(&+CMax: %3d%%&+c) &+w- &+c%s\r\n", ebd[i].name, (int)(get_epic_bonus_max(i) * 100), ebd[i].description);
+			send_to_char_f(ch, "&+C%10s &+c(&+CMax: %3d%%&+c) &+w- &+c%s\r\n",
+				       ebd[i].name, (int)(get_epic_bonus_max(i) * 100),
+				       ebd[i].description);
 	}
 	send_to_char("\r\n", ch);
 	return;
@@ -92,7 +100,8 @@ void epic_bonus_set(P_char ch, int type)
 	}
 	else
 	{
-		qry("UPDATE epic_bonus SET type = '%i', time = now() WHERE pid = '%i'", type, GET_PID(ch));
+		qry("UPDATE epic_bonus SET type = '%i', time = now() WHERE pid = '%i'", type,
+		    GET_PID(ch));
 	}
 
 	send_to_char_f(ch, "Your epic bonus has been changed to %s.\r\n", ebd[type].description);
@@ -132,7 +141,8 @@ bool get_epic_bonus_data(P_char ch, EpicBonusData *ebdata)
 		return false;
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return 0;
 	}
@@ -145,7 +155,7 @@ bool get_epic_bonus_data(P_char ch, EpicBonusData *ebdata)
 
 	MYSQL_ROW row = mysql_fetch_row(res);
 
-	ebdata->pid  = atoi(row[0]);
+	ebdata->pid = atoi(row[0]);
 	ebdata->type = atoi(row[1]);
 	strlcpy(ebdata->time, row[2] ? row[2] : "", sizeof(ebdata->time));
 
@@ -169,13 +179,12 @@ float get_epic_bonus(P_char ch, int type)
 	int accum_epics = 0;
 
 	if (!qry("SELECT SUM(epics) FROM epic_gain WHERE pid = '%i' AND type != 8 AND epics>0 AND time > DATE_SUB(curdate(), INTERVAL %d DAY) AND time >'%s'",
-	         GET_PID(ch),
-	         (int)get_property("epic.bonus.time", 7),
-	         ebdata.time))
+		 GET_PID(ch), (int)get_property("epic.bonus.time", 7), ebdata.time))
 		return 0;
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return 0;
 	}

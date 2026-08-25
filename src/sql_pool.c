@@ -35,14 +35,14 @@
 typedef struct
 {
 	MYSQL *conn;
-	int    in_use;     /* boolean: 1 = borrowed, 0 = free */
+	int in_use; /* boolean: 1 = borrowed, 0 = free */
 } sql_pool_slot_t;
 
-static sql_pool_slot_t *pool       = NULL;
-static int              pool_size  = 0;
-static pthread_mutex_t  pool_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t   pool_cond  = PTHREAD_COND_INITIALIZER;
-static int              pool_closing = 0;
+static sql_pool_slot_t *pool = NULL;
+static int pool_size = 0;
+static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t pool_cond = PTHREAD_COND_INITIALIZER;
+static int pool_closing = 0;
 
 static MYSQL *sql_pool_create_connection(const char *site, int slot)
 {
@@ -61,17 +61,12 @@ static MYSQL *sql_pool_create_connection(const char *site, int slot)
 	/* Connect with CLIENT_MULTI_STATEMENTS so multi-statement batches work
 	 * through the pool too. Use the shared db-name resolver so every slot
 	 * agrees with the main DB connection about which database to target. */
-	if (!mysql_real_connect(conn,
-	                        DB_HOST,
-	                        DB_USER,
-	                        DB_PASSWD,
-	                        sql_persistence_db_name(),
-	                        DB_PORT,
-	                        NULL,             /* unix_socket */
-	                        CLIENT_MULTI_STATEMENTS))
+	if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(),
+				DB_PORT, NULL, /* unix_socket */
+				CLIENT_MULTI_STATEMENTS))
 	{
-		logit(LOG_DEBUG, "%s: mysql_real_connect failed for slot %d: %s",
-		      site, slot, mysql_error(conn));
+		logit(LOG_DEBUG, "%s: mysql_real_connect failed for slot %d: %s", site, slot,
+		      mysql_error(conn));
 		mysql_close(conn);
 		return NULL;
 	}
@@ -119,13 +114,13 @@ int sql_pool_init(int size)
 					mysql_close(pool[j].conn);
 			}
 			free(pool);
-			pool      = NULL;
+			pool = NULL;
 			pool_size = 0;
 			return -1;
 		}
 
-		pool[i].conn    = conn;
-		pool[i].in_use  = 0;
+		pool[i].conn = conn;
+		pool[i].in_use = 0;
 	}
 
 	logit(LOG_STATUS, "SQL connection pool initialised with %d connections.", size);
@@ -170,7 +165,7 @@ void sql_pool_shutdown(void)
 	}
 
 	free(pool);
-	pool      = NULL;
+	pool = NULL;
 	pool_size = 0;
 	pool_closing = 0;
 
@@ -224,7 +219,7 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 			if (!pool[i].in_use && pool[i].conn)
 			{
 				pool[i].in_use = 1;
-				conn            = pool[i].conn;
+				conn = pool[i].conn;
 				pthread_mutex_unlock(&pool_mutex);
 				return conn;
 			}
@@ -241,15 +236,14 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 			pthread_mutex_unlock(&pool_mutex);
 			logit(LOG_STATUS,
 			      "SQL pool acquisition timed out after %d ms (%d/%d connections borrowed).",
-			      SQL_POOL_ACQUIRE_TIMEOUT_MS,
-			      borrowed,
-			      total);
+			      SQL_POOL_ACQUIRE_TIMEOUT_MS, borrowed, total);
 			return NULL;
 		}
 		if (wait_result != 0)
 		{
 			pthread_mutex_unlock(&pool_mutex);
-			logit(LOG_STATUS, "SQL pool acquisition wait failed: %s", strerror(wait_result));
+			logit(LOG_STATUS, "SQL pool acquisition wait failed: %s",
+			      strerror(wait_result));
 			return NULL;
 		}
 
@@ -298,8 +292,8 @@ void sql_pool_release(MYSQL *conn)
 MYSQL *sql_pool_replace_connection(MYSQL *conn)
 {
 	MYSQL *replacement = NULL;
-	MYSQL *old_conn    = NULL;
-	int    slot        = -1;
+	MYSQL *old_conn = NULL;
+	int slot = -1;
 
 	if (!conn)
 		return NULL;
@@ -315,7 +309,7 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	{
 		if (pool[i].conn == conn)
 		{
-			slot     = i;
+			slot = i;
 			old_conn = pool[i].conn;
 			break;
 		}
@@ -332,8 +326,8 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 		if (pool && slot < pool_size && pool[slot].conn == old_conn)
 		{
 			mysql_close(pool[slot].conn);
-			pool[slot].conn    = NULL;
-			pool[slot].in_use  = 0;
+			pool[slot].conn = NULL;
+			pool[slot].in_use = 0;
 			pthread_cond_signal(&pool_cond);
 		}
 		pthread_mutex_unlock(&pool_mutex);
@@ -402,7 +396,7 @@ int sql_pool_total(void)
 	return total;
 }
 
-#else  /* __NO_MYSQL__ */
+#else /* __NO_MYSQL__ */
 
 /* Stubs — no MySQL available.  The pool is a no-op. */
 
@@ -437,9 +431,21 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	return NULL;
 }
 
-int sql_pool_is_active(void)    { return 0; }
-int sql_pool_available(void)   { return 0; }
-int sql_pool_in_use(void)      { return 0; }
-int sql_pool_total(void)       { return 0; }
+int sql_pool_is_active(void)
+{
+	return 0;
+}
+int sql_pool_available(void)
+{
+	return 0;
+}
+int sql_pool_in_use(void)
+{
+	return 0;
+}
+int sql_pool_total(void)
+{
+	return 0;
+}
 
 #endif /* __NO_MYSQL__ */

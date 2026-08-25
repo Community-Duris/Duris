@@ -46,50 +46,50 @@
  * external variables
  */
 
-extern P_char                        character_list;
-extern P_char                        combat_list;
-extern P_char                        dead_guys;
-extern P_desc                        descriptor_list;
-extern P_index                       mob_index;
-extern P_index                       obj_index;
-extern P_obj                         object_list;
-extern P_room                        world;
-extern const int                     top_of_world;
-extern const struct race_names       race_names_table[];
-extern const struct class_names      class_names_table[];
-extern char                         *coin_names[];
-extern char                         *coin_abbrev[];
-extern const char                   *dirs[];
-extern const struct stat_data        stat_factor[];
-extern const int                     rev_dir[];
-extern int                           pulse;
-extern struct con_app_type           con_app[];
-extern struct dex_app_type           dex_app[];
-extern struct max_stat               max_stats[];
+extern P_char character_list;
+extern P_char combat_list;
+extern P_char dead_guys;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern const int top_of_world;
+extern const struct race_names race_names_table[];
+extern const struct class_names class_names_table[];
+extern char *coin_names[];
+extern char *coin_abbrev[];
+extern const char *dirs[];
+extern const struct stat_data stat_factor[];
+extern const int rev_dir[];
+extern int pulse;
+extern struct con_app_type con_app[];
+extern struct dex_app_type dex_app[];
+extern struct max_stat max_stats[];
 extern const struct racial_data_type racial_data[];
-extern struct zone_data             *zone_table;
-extern struct time_info_data         time_info;
-extern struct arena_data             arena;
-static char                          buf[MAX_INPUT_LENGTH];
-extern Skill                         skills[];
-extern bool                          innate_two_daggers(P_char);
-extern const char                   *event_names[];
-int                                  get_honing(P_obj);
-extern float                         spell_pulse_data[LAST_RACE + 1];
+extern struct zone_data *zone_table;
+extern struct time_info_data time_info;
+extern struct arena_data arena;
+static char buf[MAX_INPUT_LENGTH];
+extern Skill skills[];
+extern bool innate_two_daggers(P_char);
+extern const char *event_names[];
+int get_honing(P_obj);
+extern float spell_pulse_data[LAST_RACE + 1];
 
-struct mm_ds *dead_affect_pool      = NULL;
+struct mm_ds *dead_affect_pool = NULL;
 struct mm_ds *dead_room_affect_pool = NULL;
-float         combat_by_class[CLASS_COUNT + 1][2];
-float         combat_by_race[LAST_RACE + 1][3];
-float         class_hitpoints[CLASS_COUNT + 1];
-struct mm_ds *dead_link_pool       = NULL;
-struct mm_ds *dead_obj_link_pool   = NULL;
+float combat_by_class[CLASS_COUNT + 1][2];
+float combat_by_race[LAST_RACE + 1][3];
+float class_hitpoints[CLASS_COUNT + 1];
+struct mm_ds *dead_link_pool = NULL;
+struct mm_ds *dead_obj_link_pool = NULL;
 struct mm_ds *dead_obj_affect_pool = NULL;
 
 struct event_room_affect_data
 {
 	struct room_affect *af;
-	int                 room;
+	int room;
 };
 
 extern void flanking_broken(struct char_link_data *);
@@ -103,13 +103,13 @@ extern void casting_broken(struct char_link_data *);
 extern void cegilunes_broken(struct char_obj_link_data *);
 extern void ileshs_broken(struct char_obj_link_data *);
 
-extern char            *get_function_name(void *func);
-void                    unlink_char_affect(P_char, struct affected_type *);
-void                    unlink_char_obj_affect(P_char, struct affected_type *);
+extern char *get_function_name(void *func);
+void unlink_char_affect(P_char, struct affected_type *);
+void unlink_char_obj_affect(P_char, struct affected_type *);
 struct link_description link_types[LNK_MAX + 1];
 
-int   damroll_cap;
-int   hitroll_cap;
+int damroll_cap;
+int hitroll_cap;
 float pulse_all;
 float shield_combat_mult;
 float shield_combat_tank_mult;
@@ -137,143 +137,145 @@ int apply_ac(P_char ch, int eq_pos)
 	{
 		logit(LOG_EXIT,
 		      "assert: apply_ac called with bad args: ch: %s, eq_pos: %d, ch->eq[eq_pos]: %s.",
-		      ch ? J_NAME(ch) : "NULL",
-		      eq_pos,
-		      ch ? (ch->equipment[eq_pos] ? ch->equipment[eq_pos]->short_description : "No Eq in Slot") : "NULL");
+		      ch ? J_NAME(ch) : "NULL", eq_pos,
+		      ch ? (ch->equipment[eq_pos] ? ch->equipment[eq_pos]->short_description :
+						    "No Eq in Slot") :
+			   "NULL");
 		return 0;
 	}
 
-	if (GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_ARMOR && GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_SHIELD)
+	if (GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_ARMOR &&
+	    GET_ITEM_TYPE(ch->equipment[eq_pos]) != ITEM_SHIELD)
 	{
 		return 0;
 	}
 
 	switch (ch->equipment[eq_pos]->material)
 	{
-		case MAT_UNDEFINED:
-		case MAT_NONSUBSTANTIAL:
-			value = 0;
-			break;
-		case MAT_FLESH:
-		case MAT_REEDS:
-		case MAT_HEMP:
-		case MAT_LIQUID:
-		case MAT_CLOTH:
-		case MAT_PAPER:
-		case MAT_PARCHMENT:
-		case MAT_LEAVES:
-		case MAT_GENERICFOOD:
-		case MAT_RUBBER:
-		case MAT_FEATHER:
-		case MAT_WAX:
-			value = 1;
-			break;
-		case MAT_BARK:
-		case MAT_SOFTWOOD:
-		case MAT_SILICON:
-		case MAT_CERAMIC:
-		case MAT_PEARL:
-		case MAT_EGGSHELL:
-			value = 2;
-			break;
-		case MAT_HIDE:
-		case MAT_LEATHER:
-		case MAT_CURED_LEATHER:
-		case MAT_LIMESTONE:
-			value = 3;
-			break;
-		case MAT_IVORY:
-		case MAT_BAMBOO:
-		case MAT_HARDWOOD:
-		case MAT_COPPER:
-		case MAT_BONE:
-		case MAT_MARBLE:
-			value = 4;
-			break;
-		case MAT_STONE:
-		case MAT_SILVER:
-		case MAT_BRONZE:
-		case MAT_IRON:
-		case MAT_REPTILESCALE:
-			value = 5;
-			break;
-		case MAT_GOLD:
-		case MAT_CHITINOUS:
-		case MAT_CRYSTAL:
-		case MAT_STEEL:
-		case MAT_BRASS:
-		case MAT_OBSIDIAN:
-		case MAT_GRANITE:
-		case MAT_GEM:
-			value = 6;
-			break;
-		case MAT_ELECTRUM:
-		case MAT_PLATINUM:
-		case MAT_RUBY:
-		case MAT_EMERALD:
-		case MAT_SAPPHIRE:
-		case MAT_GLASSTEEL:
-			value = 7;
-			break;
-		case MAT_DRAGONSCALE:
-		case MAT_DIAMOND:
-			value = 8;
-			break;
-		case MAT_MITHRIL:
-		case MAT_ADAMANTIUM:
-			value = 9;
-			break;
-		default:
-			value = 0;
+	case MAT_UNDEFINED:
+	case MAT_NONSUBSTANTIAL:
+		value = 0;
+		break;
+	case MAT_FLESH:
+	case MAT_REEDS:
+	case MAT_HEMP:
+	case MAT_LIQUID:
+	case MAT_CLOTH:
+	case MAT_PAPER:
+	case MAT_PARCHMENT:
+	case MAT_LEAVES:
+	case MAT_GENERICFOOD:
+	case MAT_RUBBER:
+	case MAT_FEATHER:
+	case MAT_WAX:
+		value = 1;
+		break;
+	case MAT_BARK:
+	case MAT_SOFTWOOD:
+	case MAT_SILICON:
+	case MAT_CERAMIC:
+	case MAT_PEARL:
+	case MAT_EGGSHELL:
+		value = 2;
+		break;
+	case MAT_HIDE:
+	case MAT_LEATHER:
+	case MAT_CURED_LEATHER:
+	case MAT_LIMESTONE:
+		value = 3;
+		break;
+	case MAT_IVORY:
+	case MAT_BAMBOO:
+	case MAT_HARDWOOD:
+	case MAT_COPPER:
+	case MAT_BONE:
+	case MAT_MARBLE:
+		value = 4;
+		break;
+	case MAT_STONE:
+	case MAT_SILVER:
+	case MAT_BRONZE:
+	case MAT_IRON:
+	case MAT_REPTILESCALE:
+		value = 5;
+		break;
+	case MAT_GOLD:
+	case MAT_CHITINOUS:
+	case MAT_CRYSTAL:
+	case MAT_STEEL:
+	case MAT_BRASS:
+	case MAT_OBSIDIAN:
+	case MAT_GRANITE:
+	case MAT_GEM:
+		value = 6;
+		break;
+	case MAT_ELECTRUM:
+	case MAT_PLATINUM:
+	case MAT_RUBY:
+	case MAT_EMERALD:
+	case MAT_SAPPHIRE:
+	case MAT_GLASSTEEL:
+		value = 7;
+		break;
+	case MAT_DRAGONSCALE:
+	case MAT_DIAMOND:
+		value = 8;
+		break;
+	case MAT_MITHRIL:
+	case MAT_ADAMANTIUM:
+		value = 9;
+		break;
+	default:
+		value = 0;
 	}
 
 	switch (eq_pos)
 	{
-		case WEAR_SHIELD:
-			value *= 15;
-			break;
-		case WEAR_BODY:
-			if (IS_SET(ch->equipment[eq_pos]->extra_flags, ITEM_WHOLE_BODY))
-				value *= 8;
-			else
-				value *= 4;
-			break;
-		case WEAR_HORSE_BODY:
-			value *= 2;
-			break;
-		case WEAR_HEAD:
-			if (IS_SET(ch->equipment[eq_pos]->extra_flags, ITEM_WHOLE_HEAD))
-				value *= 3;
-			else
-				value = (int)(value * 1.5);
-			break;
-		case WEAR_LEGS:
-		case WEAR_ARMS:
-		case WEAR_ARMS_2:
-			value = (int)(value * 1.2);
-			break;
-		case WEAR_FEET:
-		case WEAR_HANDS:
-		case WEAR_HANDS_2:
-		case WEAR_ABOUT:
-			break;
-		case WEAR_WAIST:
-		case WEAR_WRIST_LL:
-		case WEAR_WRIST_LR:
-		case WEAR_WRIST_L:
-		case WEAR_WRIST_R:
-		case WEAR_NECK_1:
-		case WEAR_NECK_2:
-		case WEAR_FACE:
-			value = (int)(value * 0.7);
-			break;
-		case WEAR_EYES:
-		case WEAR_HORN:
-			value = (int)(value * 0.4);
-			break;
-		default:
-			break;
-			;
+	case WEAR_SHIELD:
+		value *= 15;
+		break;
+	case WEAR_BODY:
+		if (IS_SET(ch->equipment[eq_pos]->extra_flags, ITEM_WHOLE_BODY))
+			value *= 8;
+		else
+			value *= 4;
+		break;
+	case WEAR_HORSE_BODY:
+		value *= 2;
+		break;
+	case WEAR_HEAD:
+		if (IS_SET(ch->equipment[eq_pos]->extra_flags, ITEM_WHOLE_HEAD))
+			value *= 3;
+		else
+			value = (int)(value * 1.5);
+		break;
+	case WEAR_LEGS:
+	case WEAR_ARMS:
+	case WEAR_ARMS_2:
+		value = (int)(value * 1.2);
+		break;
+	case WEAR_FEET:
+	case WEAR_HANDS:
+	case WEAR_HANDS_2:
+	case WEAR_ABOUT:
+		break;
+	case WEAR_WAIST:
+	case WEAR_WRIST_LL:
+	case WEAR_WRIST_LR:
+	case WEAR_WRIST_L:
+	case WEAR_WRIST_R:
+	case WEAR_NECK_1:
+	case WEAR_NECK_2:
+	case WEAR_FACE:
+		value = (int)(value * 0.7);
+		break;
+	case WEAR_EYES:
+	case WEAR_HORN:
+		value = (int)(value * 0.4);
+		break;
+	default:
+		break;
+		;
 	}
 	// If values in zone files are better than values calculated..
 	if (GET_ITEM_TYPE(ch->equipment[eq_pos]) == ITEM_SHIELD && eq_pos == WEAR_SHIELD)
@@ -283,9 +285,14 @@ int apply_ac(P_char ch, int eq_pos)
 		{
 			// We add a percentage of the skill * value * the multiplier.
 			// So, at 100 skill, we add value * multiplier (currently .5) -> value * 1.5.
-			value += (int)((float)value * (float)GET_CHAR_SKILL(ch, SKILL_SHIELD_COMBAT) * shield_combat_mult) / 100;
+			value += (int)((float)value *
+				       (float)GET_CHAR_SKILL(ch, SKILL_SHIELD_COMBAT) *
+				       shield_combat_mult) /
+				 100;
 			// Only Swashbucklers and Guardians get tank bonus (and Pal/AP/Mercs).  Why Mercs?  Dunno...
-			if (GET_CLASS(ch, CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_MERCENARY) || GET_SPEC(ch, CLASS_WARRIOR, SPEC_GUARDIAN) || GET_SPEC(ch, CLASS_WARRIOR, SPEC_SWASHBUCKLER))
+			if (GET_CLASS(ch, CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_MERCENARY) ||
+			    GET_SPEC(ch, CLASS_WARRIOR, SPEC_GUARDIAN) ||
+			    GET_SPEC(ch, CLASS_WARRIOR, SPEC_SWASHBUCKLER))
 			{
 				value *= shield_combat_tank_mult;
 			}
@@ -308,7 +315,8 @@ int calculate_mana(P_char ch)
 {
 	int mana;
 
-	mana = (int)(((float)GET_LEVEL(ch)) / 50 * GET_C_POW(ch) * GET_C_INT(ch) * get_property("mana.powMultiplier", 0.025));
+	mana = (int)(((float)GET_LEVEL(ch)) / 50 * GET_C_POW(ch) * GET_C_INT(ch) *
+		     get_property("mana.powMultiplier", 0.025));
 
 	return mana + 6;
 }
@@ -319,9 +327,9 @@ int calculate_mana(P_char ch)
 //   normal race.  (As it should be imo).
 int calculate_hitpoints2(P_char ch)
 {
-	char  buf[128];
-	int   i, j;
-	int   level, race, age_mod = 0, curr_con, toughness, newbie, hardcore;
+	char buf[128];
+	int i, j;
+	int level, race, age_mod = 0, curr_con, toughness, newbie, hardcore;
 	float old_bonus, new_bonus, class_mod, racial_con, maxconbonus;
 	P_obj obj;
 
@@ -329,14 +337,19 @@ int calculate_hitpoints2(P_char ch)
 	{
 		// Could simplify as there are no Warrior/Pal/AP/Merc Illithids, but just in case.
 		return GET_MAX_HIT(ch) + GET_LEVEL(ch) + 10 + MAX(GET_C_CON(ch), 100) - 100 +
-		       GET_CHAR_SKILL(ch, SKILL_TOUGHNESS) * get_property("epic.skill.toughness", 0.500) * (GET_CLASS(ch, CLASS_WARRIOR | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_MERCENARY) ? 2 : 1);
+		       GET_CHAR_SKILL(ch, SKILL_TOUGHNESS) *
+			       get_property("epic.skill.toughness", 0.500) *
+			       (GET_CLASS(ch, CLASS_WARRIOR | CLASS_PALADIN | CLASS_ANTIPALADIN |
+						      CLASS_MERCENARY) ?
+					2 :
+					1);
 	}
 
 	// Calculate level
 	level = GET_LEVEL(ch);
 
 	// Calculate racial con.
-	race       = GET_RACE(ch);
+	race = GET_RACE(ch);
 	racial_con = (race >= 0 && race <= LAST_RACE) ? stat_factor[race].Con : 100;
 	for (i = 0; i < MAX_WEAR; i++)
 	{
@@ -349,7 +362,7 @@ int calculate_hitpoints2(P_char ch)
 				    obj->affected[j].modifier <= LAST_RACE &&
 				    stat_factor[obj->affected[j].modifier].Con > racial_con)
 				{
-					race       = obj->affected[j].modifier;
+					race = obj->affected[j].modifier;
 					racial_con = stat_factor[race].Con;
 				}
 			}
@@ -359,10 +372,11 @@ int calculate_hitpoints2(P_char ch)
 	// Calculate curr con (max is 390 * 2 = 780, because things go awry above this in the calculations).
 	curr_con = MIN(GET_C_CON(ch), 780);
 
-	i         = MIN(curr_con, racial_con);
+	i = MIN(curr_con, racial_con);
 	old_bonus = level * ((-14. / 152100.) * i * i + (28. / 390.) * i - 4.);
 	// 250 hps at lvl 50 and 100 con.  1000 hps at lvl 50 and 200 con.
-	new_bonus = (((float)level) / 50. * racial_con * racial_con * get_property("hitpoints.conMultiplier", 0.025));
+	new_bonus = (((float)level) / 50. * racial_con * racial_con *
+		     get_property("hitpoints.conMultiplier", 0.025));
 
 	// Calculate class mod
 	class_mod = class_hitpoints[flag2idx(ch->player.m_class)];
@@ -380,7 +394,8 @@ int calculate_hitpoints2(P_char ch)
 
 	// Calculate maxcon bonus (rewrote this a little to make it easier to read).
 	maxconbonus = 0;
-	if (GET_PRIME_CLASS(ch, MAX_CON_BONUS_CLASSES) && (!IS_MULTICLASS_PC(ch) || GET_SECONDARY_CLASS(ch, MAX_CON_BONUS_CLASSES)))
+	if (GET_PRIME_CLASS(ch, MAX_CON_BONUS_CLASSES) &&
+	    (!IS_MULTICLASS_PC(ch) || GET_SECONDARY_CLASS(ch, MAX_CON_BONUS_CLASSES)))
 	{
 		for (i = 0; i < MAX_WEAR; i++)
 		{
@@ -410,21 +425,28 @@ int calculate_hitpoints2(P_char ch)
 	// Calculate toughness bonus
 	if ((toughness = GET_CHAR_SKILL(ch, SKILL_TOUGHNESS)) > 0 && !GET_CLASS(ch, CLASS_MONK))
 	{
-		toughness = (float)toughness * get_property("epic.skill.toughness", 0.500) * (GET_CLASS(ch, CLASS_WARRIOR | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_MERCENARY) ? 2. : 1.);
+		toughness = (float)toughness * get_property("epic.skill.toughness", 0.500) *
+			    (GET_CLASS(ch, CLASS_WARRIOR | CLASS_PALADIN | CLASS_ANTIPALADIN |
+						   CLASS_MERCENARY) ?
+				     2. :
+				     1.);
 	}
 	else
 	{
 		if (toughness < 50)
 		{
-			toughness = ((float)toughness * get_property("epic.skill.toughness.monk.low", 0.800));
+			toughness = ((float)toughness *
+				     get_property("epic.skill.toughness.monk.low", 0.800));
 		}
 		else if (toughness >= 50 && toughness <= 90)
 		{
-			toughness = ((float)toughness * get_property("epic.skill.toughness.monk.medium", 1.000));
+			toughness = ((float)toughness *
+				     get_property("epic.skill.toughness.monk.medium", 1.000));
 		}
 		else
 		{
-			toughness = ((float)toughness * get_property("epic.skill.toughness.monk.high", 1.250));
+			toughness = ((float)toughness *
+				     get_property("epic.skill.toughness.monk.high", 1.250));
 		}
 	}
 
@@ -442,10 +464,14 @@ int calculate_hitpoints2(P_char ch)
 	 */
 
 	// we use base_hit for the racial mod, and the difference is the hps gear.
-	return (ch->points.base_hit * racial_con) / 100 + GET_MAX_HIT(ch) - ch->points.base_hit + old_bonus + new_bonus + age_mod + maxconbonus + toughness + newbie + hardcore;
+	return (ch->points.base_hit * racial_con) / 100 + GET_MAX_HIT(ch) - ch->points.base_hit +
+	       old_bonus + new_bonus + age_mod + maxconbonus + toughness + newbie + hardcore;
 }
 
-void event_balance_affects(P_char ch, P_char victim, P_obj obj, void *data) { affect_total(ch, TRUE); }
+void event_balance_affects(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	affect_total(ch, TRUE);
+}
 
 void balance_affects(P_char ch)
 {
@@ -458,7 +484,7 @@ void balance_affects(P_char ch)
 void add_racial_stat_bonus(P_char ch, struct hold_data *affs)
 {
 	char buf[256];
-	int  bonus;
+	int bonus;
 
 	if (!affs || !ch)
 	{
@@ -500,9 +526,9 @@ void add_racial_stat_bonus(P_char ch, struct hold_data *affs)
 
 void apply_affs(P_char ch, int mode)
 {
-	int   t1, t2, t3, temp;
+	int t1, t2, t3, temp;
 	float max_con_bonus;
-	char  buf1[256];
+	char buf1[256];
 
 	if (!ch)
 	{
@@ -684,22 +710,22 @@ void apply_affs(P_char ch, int mode)
 		}
 	}
 
-	t1            = (!mode || !TmpAffs.r_Str) ? (int)GET_RACE(ch) : TmpAffs.r_Str;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Str) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Str + ((mode) ? TmpAffs.c_Str : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Str) ? (int)GET_RACE(ch) : TmpAffs.r_Str;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Str) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Str + ((mode) ? TmpAffs.c_Str : 0)), t3);
 	GET_C_STR(ch) = BOUNDED(1, (int)(stat_factor[t1].Str * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Dex) ? (int)GET_RACE(ch) : TmpAffs.r_Dex;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Dex) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Dex + ((mode) ? TmpAffs.c_Dex : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Dex) ? (int)GET_RACE(ch) : TmpAffs.r_Dex;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Dex) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Dex + ((mode) ? TmpAffs.c_Dex : 0)), t3);
 	GET_C_DEX(ch) = BOUNDED(1, (int)(stat_factor[t1].Dex * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Agi) ? (int)GET_RACE(ch) : TmpAffs.r_Agi;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Agi) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Agi + ((mode) ? TmpAffs.c_Agi : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Agi) ? (int)GET_RACE(ch) : TmpAffs.r_Agi;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Agi) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Agi + ((mode) ? TmpAffs.c_Agi : 0)), t3);
 	GET_C_AGI(ch) = BOUNDED(1, (int)(stat_factor[t1].Agi * t2 / 100. + .55), 511);
 
 	// t1 = which race to apply racial con with.
@@ -714,40 +740,40 @@ void apply_affs(P_char ch, int mode)
 	//                 Makes more sense to do (actual con) * (racial modifier/100) + .55 (?)
 	GET_C_CON(ch) = BOUNDED(1, (int)(stat_factor[t1].Con * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Pow) ? (int)GET_RACE(ch) : TmpAffs.r_Pow;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Pow) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Pow + ((mode) ? TmpAffs.c_Pow : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Pow) ? (int)GET_RACE(ch) : TmpAffs.r_Pow;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Pow) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Pow + ((mode) ? TmpAffs.c_Pow : 0)), t3);
 	GET_C_POW(ch) = BOUNDED(1, (int)(stat_factor[t1].Pow * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Int) ? (int)GET_RACE(ch) : TmpAffs.r_Int;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Int) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Int + ((mode) ? TmpAffs.c_Int : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Int) ? (int)GET_RACE(ch) : TmpAffs.r_Int;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Int) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Int + ((mode) ? TmpAffs.c_Int : 0)), t3);
 	GET_C_INT(ch) = BOUNDED(1, (int)(stat_factor[t1].Int * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Wis) ? (int)GET_RACE(ch) : TmpAffs.r_Wis;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Wis) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Wis + ((mode) ? TmpAffs.c_Wis : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Wis) ? (int)GET_RACE(ch) : TmpAffs.r_Wis;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Wis) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Wis + ((mode) ? TmpAffs.c_Wis : 0)), t3);
 	GET_C_WIS(ch) = BOUNDED(1, (int)(stat_factor[t1].Wis * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Cha) ? (int)GET_RACE(ch) : TmpAffs.r_Cha;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Cha) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Cha + ((mode) ? TmpAffs.c_Cha : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Cha) ? (int)GET_RACE(ch) : TmpAffs.r_Cha;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Cha) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Cha + ((mode) ? TmpAffs.c_Cha : 0)), t3);
 	GET_C_CHA(ch) = BOUNDED(1, (int)(stat_factor[t1].Cha * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Kar) ? (int)GET_RACE(ch) : TmpAffs.r_Kar;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Kar) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Kar + ((mode) ? TmpAffs.c_Kar : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Kar) ? (int)GET_RACE(ch) : TmpAffs.r_Kar;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Kar) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Kar + ((mode) ? TmpAffs.c_Kar : 0)), t3);
 	GET_C_KAR(ch) = BOUNDED(1, (int)(stat_factor[t1].Kar * t2 / 100. + .55), 511);
 
-	t1            = (!mode || !TmpAffs.r_Luc) ? (int)GET_RACE(ch) : TmpAffs.r_Luc;
-	t1            = BOUNDED(0, t1, LAST_RACE);
-	t3            = (mode) ? (100 + TmpAffs.m_Luc) : 100;
-	t2            = BOUNDED(1, (ch->base_stats.Luk + ((mode) ? TmpAffs.c_Luc : 0)), t3);
+	t1 = (!mode || !TmpAffs.r_Luc) ? (int)GET_RACE(ch) : TmpAffs.r_Luc;
+	t1 = BOUNDED(0, t1, LAST_RACE);
+	t3 = (mode) ? (100 + TmpAffs.m_Luc) : 100;
+	t2 = BOUNDED(1, (ch->base_stats.Luk + ((mode) ? TmpAffs.c_Luc : 0)), t3);
 	GET_C_LUK(ch) = BOUNDED(1, (int)(stat_factor[t1].Luk * t2 / 100. + .55), 511);
 
 	/*
@@ -757,11 +783,16 @@ void apply_affs(P_char ch, int mode)
 	 * do_attributes() needs to change.  JAB
 	 */
 
-	ch->specials.apply_saving_throw[SAVING_PARA]   = (mode) ? BOUNDED(-128, TmpAffs.S_para, 127) : 0;
-	ch->specials.apply_saving_throw[SAVING_ROD]    = (mode) ? BOUNDED(-128, TmpAffs.S_rod, 127) : 0;
-	ch->specials.apply_saving_throw[SAVING_FEAR]   = (mode) ? BOUNDED(-128, TmpAffs.S_petri, 127) : 0;
-	ch->specials.apply_saving_throw[SAVING_SPELL]  = (mode) ? BOUNDED(-128, TmpAffs.S_spell, 127) : 0;
-	ch->specials.apply_saving_throw[SAVING_BREATH] = (mode) ? BOUNDED(-128, TmpAffs.S_breath, 127) : 0;
+	ch->specials.apply_saving_throw[SAVING_PARA] = (mode) ? BOUNDED(-128, TmpAffs.S_para, 127) :
+								0;
+	ch->specials.apply_saving_throw[SAVING_ROD] = (mode) ? BOUNDED(-128, TmpAffs.S_rod, 127) :
+							       0;
+	ch->specials.apply_saving_throw[SAVING_FEAR] =
+		(mode) ? BOUNDED(-128, TmpAffs.S_petri, 127) : 0;
+	ch->specials.apply_saving_throw[SAVING_SPELL] =
+		(mode) ? BOUNDED(-128, TmpAffs.S_spell, 127) : 0;
+	ch->specials.apply_saving_throw[SAVING_BREATH] =
+		(mode) ? BOUNDED(-128, TmpAffs.S_breath, 127) : 0;
 
 	GET_AC(ch) = ch->points.base_armor + ((mode) ? TmpAffs.AC : 0);
 
@@ -809,7 +840,7 @@ void apply_affs(P_char ch, int mode)
 
 	if (mode)
 	{
-		temp               = ch->points.base_hitroll + TmpAffs.Hit;
+		temp = ch->points.base_hitroll + TmpAffs.Hit;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
 	}
 
@@ -817,7 +848,8 @@ void apply_affs(P_char ch, int mode)
 	{
 		if (IS_AFFECTED4(ch, AFF4_HAWKVISION))
 		{
-			ch->points.hitroll = (ch->points.hitroll > 121) ? 127 : ch->points.hitroll + 5;
+			ch->points.hitroll = (ch->points.hitroll > 121) ? 127 :
+									  ch->points.hitroll + 5;
 		}
 	}
 
@@ -828,45 +860,52 @@ void apply_affs(P_char ch, int mode)
 
 	if (GET_C_DEX(ch) > stat_factor[ch_race].Dex)
 	{
-		temp               = ch->points.hitroll + (int)(GET_C_DEX(ch) - stat_factor[ch_race].Dex) / 2;
+		temp = ch->points.hitroll + (int)(GET_C_DEX(ch) - stat_factor[ch_race].Dex) / 2;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
 	}
 
-	if ((GET_CLASS(ch, CLASS_PALADIN) || GET_CLASS(ch, CLASS_ANTIPALADIN)) && is_wielding_paladin_sword(ch))
+	if ((GET_CLASS(ch, CLASS_PALADIN) || GET_CLASS(ch, CLASS_ANTIPALADIN)) &&
+	    is_wielding_paladin_sword(ch))
 	{
-		temp               = ch->points.hitroll + GET_LEVEL(ch) / 6;
+		temp = ch->points.hitroll + GET_LEVEL(ch) / 6;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
-		temp               = ch->points.damroll + GET_LEVEL(ch) / 6;
+		temp = ch->points.damroll + GET_LEVEL(ch) / 6;
 		ch->points.damroll = (temp > 255) ? 255 : temp;
 	}
 
-	if (has_innate(ch, INNATE_DUAL_WIELDING_MASTER) && ch->equipment[PRIMARY_WEAPON] && ch->equipment[SECONDARY_WEAPON])
+	if (has_innate(ch, INNATE_DUAL_WIELDING_MASTER) && ch->equipment[PRIMARY_WEAPON] &&
+	    ch->equipment[SECONDARY_WEAPON])
 	{
-		temp               = ch->points.hitroll + GET_LEVEL(ch) / 5;
+		temp = ch->points.hitroll + GET_LEVEL(ch) / 5;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
 	}
 
-	if (has_innate(ch, INNATE_HAMMER_MASTER) && ch->equipment[PRIMARY_WEAPON] && ch->equipment[PRIMARY_WEAPON]->value[0] == WEAPON_HAMMER)
+	if (has_innate(ch, INNATE_HAMMER_MASTER) && ch->equipment[PRIMARY_WEAPON] &&
+	    ch->equipment[PRIMARY_WEAPON]->value[0] == WEAPON_HAMMER)
 	{
-		temp               = ch->points.hitroll + GET_LEVEL(ch) / 8;
+		temp = ch->points.hitroll + GET_LEVEL(ch) / 8;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
-		temp               = ch->points.damroll + GET_LEVEL(ch) / 10;
+		temp = ch->points.damroll + GET_LEVEL(ch) / 10;
 		ch->points.damroll = (temp > 255) ? 255 : temp;
 	}
 
-	if (has_innate(ch, INNATE_AXE_MASTER) && (ch->equipment[PRIMARY_WEAPON] && ch->equipment[PRIMARY_WEAPON]->value[0] == WEAPON_AXE))
+	if (has_innate(ch, INNATE_AXE_MASTER) &&
+	    (ch->equipment[PRIMARY_WEAPON] &&
+	     ch->equipment[PRIMARY_WEAPON]->value[0] == WEAPON_AXE))
 	{
-		temp               = ch->points.hitroll + GET_LEVEL(ch) / 8;
+		temp = ch->points.hitroll + GET_LEVEL(ch) / 8;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
-		temp               = ch->points.damroll + GET_LEVEL(ch) / 12;
+		temp = ch->points.damroll + GET_LEVEL(ch) / 12;
 		ch->points.damroll = (temp > 255) ? 255 : temp;
 	}
 
-	if (has_innate(ch, INNATE_LONGSWORD_MASTER) && (ch->equipment[PRIMARY_WEAPON] && ch->equipment[PRIMARY_WEAPON]->value[0] == WEAPON_LONGSWORD))
+	if (has_innate(ch, INNATE_LONGSWORD_MASTER) &&
+	    (ch->equipment[PRIMARY_WEAPON] &&
+	     ch->equipment[PRIMARY_WEAPON]->value[0] == WEAPON_LONGSWORD))
 	{
-		temp               = ch->points.hitroll + GET_LEVEL(ch) / 8;
+		temp = ch->points.hitroll + GET_LEVEL(ch) / 8;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
-		temp               = ch->points.damroll + GET_LEVEL(ch) / 12;
+		temp = ch->points.damroll + GET_LEVEL(ch) / 12;
 		ch->points.damroll = (temp > 255) ? 255 : temp;
 	}
 
@@ -883,10 +922,12 @@ void apply_affs(P_char ch, int mode)
 		{
 			multi *= 2;
 		}
-		double rechargeTimeInSeconds = get_property("innate.wardingFaith.rechargeTime", 120.0);
+		double rechargeTimeInSeconds =
+			get_property("innate.wardingFaith.rechargeTime", 120.0);
 
 		ch->points.base_ward = GET_LEVEL(ch) * multi;
-		TmpAffs.ward_reg += (int)(((double)ch->points.base_ward / rechargeTimeInSeconds) * PULSES_IN_TICK);
+		TmpAffs.ward_reg += (int)(((double)ch->points.base_ward / rechargeTimeInSeconds) *
+					  PULSES_IN_TICK);
 	}
 	else
 	{
@@ -902,21 +943,21 @@ void apply_affs(P_char ch, int mode)
 		t1 = GET_MAX_HIT(ch) - GET_HIT(ch);
 
 	GET_MAX_HIT(ch) = ch->points.base_hit + ((mode) ? TmpAffs.Hits : 0);
-	GET_HIT(ch)     = GET_MAX_HIT(ch) - t1;
+	GET_HIT(ch) = GET_MAX_HIT(ch) - t1;
 
-	t1                   = GET_MAX_VITALITY(ch) - GET_VITALITY(ch);
+	t1 = GET_MAX_VITALITY(ch) - GET_VITALITY(ch);
 	GET_MAX_VITALITY(ch) = vitality_limit(ch) + ((mode) ? TmpAffs.Move : 0);
-	GET_VITALITY(ch)     = GET_MAX_VITALITY(ch) - t1;
+	GET_VITALITY(ch) = GET_MAX_VITALITY(ch) - t1;
 
-	t1               = GET_MAX_MANA(ch) - GET_MANA(ch);
+	t1 = GET_MAX_MANA(ch) - GET_MANA(ch);
 	GET_MAX_MANA(ch) = ch->points.base_mana + ((mode) ? TmpAffs.Mana : 0);
-	GET_MANA(ch)     = GET_MAX_MANA(ch) - t1;
+	GET_MANA(ch) = GET_MAX_MANA(ch) - t1;
 
-	t1               = GET_MAX_WARD(ch) - GET_WARD(ch);
+	t1 = GET_MAX_WARD(ch) - GET_WARD(ch);
 	GET_MAX_WARD(ch) = ch->points.base_ward + ((mode) ? TmpAffs.Ward : 0);
-	GET_WARD(ch)     = GET_MAX_WARD(ch) - t1;
+	GET_WARD(ch) = GET_MAX_WARD(ch) - t1;
 
-	ch->points.hit_reg  = TmpAffs.hit_reg;
+	ch->points.hit_reg = TmpAffs.hit_reg;
 	ch->points.move_reg = TmpAffs.move_reg;
 	ch->points.mana_reg = TmpAffs.mana_reg;
 	ch->points.ward_reg = TmpAffs.ward_reg;
@@ -1046,7 +1087,8 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		if (!from_eq)
 			SET_BIT(TmpAffs.BV_1, bitv[0]);
 		else
-			SET_BIT(TmpAffs.BV_1, bitv[0] & ~(AFF_STONE_SKIN | AFF_BIOFEEDBACK | AFF_HIDE));
+			SET_BIT(TmpAffs.BV_1,
+				bitv[0] & ~(AFF_STONE_SKIN | AFF_BIOFEEDBACK | AFF_HIDE));
 
 		SET_BIT(TmpAffs.BV_2, bitv[1]);
 		SET_BIT(TmpAffs.BV_3, bitv[2]);
@@ -1055,289 +1097,300 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 	}
 	switch (loc)
 	{
+	case APPLY_NONE:
+		break;
 
-		case APPLY_NONE:
-			break;
-
-		case APPLY_AGI_MAX:
-			TmpAffs.m_Agi += mod;
-			/*
+	case APPLY_AGI_MAX:
+		TmpAffs.m_Agi += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_AGI:
-			TmpAffs.c_Agi += mod;
-			break;
+	case APPLY_AGI:
+		TmpAffs.c_Agi += mod;
+		break;
 
-		case APPLY_CHA_MAX:
-			TmpAffs.m_Cha += mod;
-			/*
+	case APPLY_CHA_MAX:
+		TmpAffs.m_Cha += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_CHA:
-			TmpAffs.c_Cha += mod;
-			break;
+	case APPLY_CHA:
+		TmpAffs.c_Cha += mod;
+		break;
 
-		case APPLY_CON_MAX:
-			TmpAffs.m_Con += mod;
-			/*
+	case APPLY_CON_MAX:
+		TmpAffs.m_Con += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_CON:
-			TmpAffs.c_Con += mod;
-			break;
+	case APPLY_CON:
+		TmpAffs.c_Con += mod;
+		break;
 
-		case APPLY_DEX_MAX:
-			TmpAffs.m_Dex += mod;
-			/*
+	case APPLY_DEX_MAX:
+		TmpAffs.m_Dex += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_DEX:
-			TmpAffs.c_Dex += mod;
-			break;
+	case APPLY_DEX:
+		TmpAffs.c_Dex += mod;
+		break;
 
-		case APPLY_INT_MAX:
-			TmpAffs.m_Int += mod;
-			/*
+	case APPLY_INT_MAX:
+		TmpAffs.m_Int += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_INT:
-			TmpAffs.c_Int += mod;
-			break;
+	case APPLY_INT:
+		TmpAffs.c_Int += mod;
+		break;
 
-		case APPLY_KARMA_MAX:
-			TmpAffs.m_Kar += mod;
-			/*
+	case APPLY_KARMA_MAX:
+		TmpAffs.m_Kar += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_KARMA:
-			TmpAffs.c_Kar += mod;
-			break;
+	case APPLY_KARMA:
+		TmpAffs.c_Kar += mod;
+		break;
 
-		case APPLY_LUCK_MAX:
-			TmpAffs.m_Luc += mod;
-			/*
+	case APPLY_LUCK_MAX:
+		TmpAffs.m_Luc += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_LUCK:
-			TmpAffs.c_Luc += mod;
-			break;
+	case APPLY_LUCK:
+		TmpAffs.c_Luc += mod;
+		break;
 
-		case APPLY_POW_MAX:
-			TmpAffs.m_Pow += mod;
-			/*
+	case APPLY_POW_MAX:
+		TmpAffs.m_Pow += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_POW:
-			TmpAffs.c_Pow += mod;
-			break;
+	case APPLY_POW:
+		TmpAffs.c_Pow += mod;
+		break;
 
-		case APPLY_STR_MAX:
-			TmpAffs.m_Str += mod;
-			/*
+	case APPLY_STR_MAX:
+		TmpAffs.m_Str += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_STR:
-			TmpAffs.c_Str += mod;
-			break;
+	case APPLY_STR:
+		TmpAffs.c_Str += mod;
+		break;
 
-		case APPLY_WIS_MAX:
-			TmpAffs.m_Wis += mod;
-			/*
+	case APPLY_WIS_MAX:
+		TmpAffs.m_Wis += mod;
+		/*
 			 * fall through, _MAX also affects current
 			 */
-		case APPLY_WIS:
-			TmpAffs.c_Wis += mod;
-			break;
+	case APPLY_WIS:
+		TmpAffs.c_Wis += mod;
+		break;
 
-			/*
+		/*
 			 * tricky, only the WORST 'magic' modifier applies, so we have to
 			 * check.  JAB
 			 */
 
-		case APPLY_STR_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_STR_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Str || (stat_factor[mod].Str > stat_factor[TmpAffs.r_Str].Str))
-				TmpAffs.r_Str = mod;
+	case APPLY_STR_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_STR_RACE.",
+			      mod);
 			break;
-		case APPLY_DEX_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_DEX_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Dex || (stat_factor[mod].Dex > stat_factor[TmpAffs.r_Dex].Dex))
-				TmpAffs.r_Dex = mod;
+		}
+		if (!TmpAffs.r_Str || (stat_factor[mod].Str > stat_factor[TmpAffs.r_Str].Str))
+			TmpAffs.r_Str = mod;
+		break;
+	case APPLY_DEX_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_DEX_RACE.",
+			      mod);
 			break;
-		case APPLY_AGI_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_AGI_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Agi || (stat_factor[mod].Agi > stat_factor[TmpAffs.r_Agi].Agi))
-				TmpAffs.r_Agi = mod;
+		}
+		if (!TmpAffs.r_Dex || (stat_factor[mod].Dex > stat_factor[TmpAffs.r_Dex].Dex))
+			TmpAffs.r_Dex = mod;
+		break;
+	case APPLY_AGI_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_AGI_RACE.",
+			      mod);
 			break;
-		case APPLY_CON_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CON_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Con || (stat_factor[mod].Con > stat_factor[TmpAffs.r_Con].Con))
-				TmpAffs.r_Con = mod;
+		}
+		if (!TmpAffs.r_Agi || (stat_factor[mod].Agi > stat_factor[TmpAffs.r_Agi].Agi))
+			TmpAffs.r_Agi = mod;
+		break;
+	case APPLY_CON_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CON_RACE.",
+			      mod);
 			break;
-		case APPLY_POW_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_POW_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Pow || (stat_factor[mod].Pow > stat_factor[TmpAffs.r_Pow].Pow))
-				TmpAffs.r_Pow = mod;
+		}
+		if (!TmpAffs.r_Con || (stat_factor[mod].Con > stat_factor[TmpAffs.r_Con].Con))
+			TmpAffs.r_Con = mod;
+		break;
+	case APPLY_POW_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_POW_RACE.",
+			      mod);
 			break;
-		case APPLY_INT_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_INT_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Int || (stat_factor[mod].Int > stat_factor[TmpAffs.r_Int].Int))
-				TmpAffs.r_Int = mod;
+		}
+		if (!TmpAffs.r_Pow || (stat_factor[mod].Pow > stat_factor[TmpAffs.r_Pow].Pow))
+			TmpAffs.r_Pow = mod;
+		break;
+	case APPLY_INT_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_INT_RACE.",
+			      mod);
 			break;
-		case APPLY_WIS_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_WIS_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Wis || (stat_factor[mod].Wis > stat_factor[TmpAffs.r_Wis].Wis))
-				TmpAffs.r_Wis = mod;
+		}
+		if (!TmpAffs.r_Int || (stat_factor[mod].Int > stat_factor[TmpAffs.r_Int].Int))
+			TmpAffs.r_Int = mod;
+		break;
+	case APPLY_WIS_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_WIS_RACE.",
+			      mod);
 			break;
-		case APPLY_CHA_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CHA_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Cha || (stat_factor[mod].Cha > stat_factor[TmpAffs.r_Cha].Cha))
-				TmpAffs.r_Cha = mod;
+		}
+		if (!TmpAffs.r_Wis || (stat_factor[mod].Wis > stat_factor[TmpAffs.r_Wis].Wis))
+			TmpAffs.r_Wis = mod;
+		break;
+	case APPLY_CHA_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CHA_RACE.",
+			      mod);
 			break;
-		case APPLY_KARMA_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_KARMA_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Kar || (stat_factor[mod].Kar > stat_factor[TmpAffs.r_Kar].Kar))
-				TmpAffs.r_Kar = mod;
+		}
+		if (!TmpAffs.r_Cha || (stat_factor[mod].Cha > stat_factor[TmpAffs.r_Cha].Cha))
+			TmpAffs.r_Cha = mod;
+		break;
+	case APPLY_KARMA_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_KARMA_RACE.",
+			      mod);
 			break;
-		case APPLY_LUCK_RACE:
-			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_LUCK_RACE.", mod);
-				break;
-			}
-			if (!TmpAffs.r_Luc || (stat_factor[mod].Luk > stat_factor[TmpAffs.r_Luc].Luk))
-				TmpAffs.r_Luc = mod;
+		}
+		if (!TmpAffs.r_Kar || (stat_factor[mod].Kar > stat_factor[TmpAffs.r_Kar].Kar))
+			TmpAffs.r_Kar = mod;
+		break;
+	case APPLY_LUCK_RACE:
+		if ((mod <= RACE_NONE) || (mod > LAST_RACE))
+		{
+			logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_LUCK_RACE.",
+			      mod);
 			break;
+		}
+		if (!TmpAffs.r_Luc || (stat_factor[mod].Luk > stat_factor[TmpAffs.r_Luc].Luk))
+			TmpAffs.r_Luc = mod;
+		break;
 
-		case APPLY_FIRE_PROT:
-			SET_BIT(TmpAffs.BV_1, AFF_PROT_FIRE);
-			break;
+	case APPLY_FIRE_PROT:
+		SET_BIT(TmpAffs.BV_1, AFF_PROT_FIRE);
+		break;
 
-		case APPLY_ARMOR:
-			TmpAffs.AC += mod;
-			break;
-		case APPLY_AGE:
-			TmpAffs.Age += mod;
-			break;
+	case APPLY_ARMOR:
+		TmpAffs.AC += mod;
+		break;
+	case APPLY_AGE:
+		TmpAffs.Age += mod;
+		break;
 
-		case APPLY_DAMROLL:
-			TmpAffs.Dam += mod;
-			break;
-		case APPLY_HITROLL:
-			TmpAffs.Hit += mod;
-			break;
+	case APPLY_DAMROLL:
+		TmpAffs.Dam += mod;
+		break;
+	case APPLY_HITROLL:
+		TmpAffs.Hit += mod;
+		break;
 
-		case APPLY_HIT:
-			TmpAffs.Hits += mod;
-			break;
-		case APPLY_MOVE:
-			TmpAffs.Move += mod;
-			break;
-		case APPLY_MANA:
-			TmpAffs.Mana += mod;
-			break;
+	case APPLY_HIT:
+		TmpAffs.Hits += mod;
+		break;
+	case APPLY_MOVE:
+		TmpAffs.Move += mod;
+		break;
+	case APPLY_MANA:
+		TmpAffs.Mana += mod;
+		break;
 
-		case APPLY_HIT_REG:
-			TmpAffs.hit_reg += mod;
-			break;
-		case APPLY_MOVE_REG:
-			TmpAffs.move_reg += mod;
-			break;
-		case APPLY_MANA_REG:
-			TmpAffs.mana_reg += mod;
-			break;
+	case APPLY_HIT_REG:
+		TmpAffs.hit_reg += mod;
+		break;
+	case APPLY_MOVE_REG:
+		TmpAffs.move_reg += mod;
+		break;
+	case APPLY_MANA_REG:
+		TmpAffs.mana_reg += mod;
+		break;
 
-		case APPLY_SAVING_BREATH:
-			TmpAffs.S_breath += mod;
-			break;
-		case APPLY_SAVING_PARA:
-			TmpAffs.S_para += mod;
-			break;
-		case APPLY_SAVING_FEAR:
-			TmpAffs.S_petri += mod;
-			break;
-		case APPLY_SAVING_ROD:
-			TmpAffs.S_rod += mod;
-			break;
-		case APPLY_SAVING_SPELL:
-			TmpAffs.S_spell += mod;
-			break;
-		case APPLY_CURSE:
-			if (mod < 0)
-				mod = -mod;
+	case APPLY_SAVING_BREATH:
+		TmpAffs.S_breath += mod;
+		break;
+	case APPLY_SAVING_PARA:
+		TmpAffs.S_para += mod;
+		break;
+	case APPLY_SAVING_FEAR:
+		TmpAffs.S_petri += mod;
+		break;
+	case APPLY_SAVING_ROD:
+		TmpAffs.S_rod += mod;
+		break;
+	case APPLY_SAVING_SPELL:
+		TmpAffs.S_spell += mod;
+		break;
+	case APPLY_CURSE:
+		if (mod < 0)
+			mod = -mod;
 
-			TmpAffs.S_breath += mod;
-			TmpAffs.S_para += mod;
-			TmpAffs.S_petri += mod;
-			TmpAffs.S_rod += mod;
-			TmpAffs.S_spell += mod;
-			break;
-			/*
+		TmpAffs.S_breath += mod;
+		TmpAffs.S_para += mod;
+		TmpAffs.S_petri += mod;
+		TmpAffs.S_rod += mod;
+		TmpAffs.S_spell += mod;
+		break;
+		/*
 			 * these 5 are all horribly bad ideas, possible we can imp things
 			 * to do these, but they sure as hell won't be APPLYs!  JAB
 			 */
 
-		case APPLY_CLASS:
-		case APPLY_EXP:
-		case APPLY_GOLD:
-		case APPLY_LEVEL:
-		case APPLY_SEX:
-			break;
-			/*
+	case APPLY_CLASS:
+	case APPLY_EXP:
+	case APPLY_GOLD:
+	case APPLY_LEVEL:
+	case APPLY_SEX:
+		break;
+		/*
 			 * and these 2 are pretty silly, so I'm not imping them.
 			 */
 
-		case APPLY_CHAR_HEIGHT:
-		case APPLY_CHAR_WEIGHT:
-			break;
-		case APPLY_SPELL_PULSE:
-			TmpAffs.spell_pulse += mod;
-			break;
-		case APPLY_COMBAT_PULSE:
-			TmpAffs.combat_pulse += mod;
-			break;
-		default:
-			if (loc != 17)
-			{
-				logit(LOG_DEBUG, "affect_modify(): unknown apply (%d) from_eq (%d) mod (%d).", loc, from_eq, mod);
-			}
-			break;
+	case APPLY_CHAR_HEIGHT:
+	case APPLY_CHAR_WEIGHT:
+		break;
+	case APPLY_SPELL_PULSE:
+		TmpAffs.spell_pulse += mod;
+		break;
+	case APPLY_COMBAT_PULSE:
+		TmpAffs.combat_pulse += mod;
+		break;
+	default:
+		if (loc != 17)
+		{
+			logit(LOG_DEBUG,
+			      "affect_modify(): unknown apply (%d) from_eq (%d) mod (%d).", loc,
+			      from_eq, mod);
+		}
+		break;
 	}
 }
 
@@ -1381,7 +1434,6 @@ void get_aura_affects(P_char ch)
 
 		if (GET_SPEC(ch, CLASS_DREADLORD, SPEC_DEATHLORD))
 		{
-
 			af.location = APPLY_STR_MAX;
 			af.modifier = GET_LEVEL(ch) / 10;
 			affect_modify(af.location, af.modifier, &(af.bitvector), FALSE);
@@ -1483,7 +1535,7 @@ void get_epic_stat_affects(P_char ch)
 void all_affects(P_char ch, int mode)
 {
 	struct affected_type *af, *next;
-	int                   i, j;
+	int i, j;
 
 	if (ch == NULL) /* replaced call to SanityCheck with this */
 		return;
@@ -1497,23 +1549,29 @@ void all_affects(P_char ch, int mode)
 			continue;
 		}
 		/* held items only have effect, if they can only be held */
-		if ((i == HOLD || i == WIELD || i == WIELD2 || i == WIELD3 || i == WIELD4) && ch->equipment[i]->type != ITEM_WEAPON && ch->equipment[i]->type != ITEM_FIREWEAPON &&
+		if ((i == HOLD || i == WIELD || i == WIELD2 || i == WIELD3 || i == WIELD4) &&
+		    ch->equipment[i]->type != ITEM_WEAPON &&
+		    ch->equipment[i]->type != ITEM_FIREWEAPON &&
 		    (ch->equipment[i]->wear_flags & ~(ITEM_TAKE | ITEM_HOLD | ITEM_ATTACH_BELT)))
 		{
 			continue;
 		}
-		if (i == HOLD && (ch->equipment[i]->type == ITEM_WEAPON || ch->equipment[i]->type == ITEM_FIREWEAPON))
+		if (i == HOLD && (ch->equipment[i]->type == ITEM_WEAPON ||
+				  ch->equipment[i]->type == ITEM_FIREWEAPON))
 		{
 			continue;
 		}
-		if ((i == WEAR_ATTACH_BELT_2 || i == WEAR_ATTACH_BELT_3) && !IS_ARTIFACT(ch->equipment[i]))
+		if ((i == WEAR_ATTACH_BELT_2 || i == WEAR_ATTACH_BELT_3) &&
+		    !IS_ARTIFACT(ch->equipment[i]))
 		{
 			continue;
 		}
 		// Below commented code is to hunt bad object affects.
 		for (j = 0; j < MAX_OBJ_AFFECT; j++)
 		{
-			affect_modify(ch->equipment[i]->affected[j].location, ch->equipment[i]->affected[j].modifier, &(ch->equipment[i]->bitvector), TRUE);
+			affect_modify(ch->equipment[i]->affected[j].location,
+				      ch->equipment[i]->affected[j].modifier,
+				      &(ch->equipment[i]->bitvector), TRUE);
 		}
 		affect_modify(APPLY_AC, -(apply_ac(ch, i)), NULL, FALSE);
 	}
@@ -1556,11 +1614,11 @@ void all_affects(P_char ch, int mode)
 	 */
 	if (IS_PC(ch))
 	{
-		int missing_hps  = GET_MAX_HIT(ch) - GET_HIT(ch);
+		int missing_hps = GET_MAX_HIT(ch) - GET_HIT(ch);
 		int missing_mana = GET_MAX_MANA(ch) - GET_MANA(ch);
 
 		GET_MAX_HIT(ch) = calculate_hitpoints2(ch);
-		GET_HIT(ch)     = GET_MAX_HIT(ch) - missing_hps;
+		GET_HIT(ch) = GET_MAX_HIT(ch) - missing_hps;
 		GET_MAX_MANA(ch) += calculate_mana(ch);
 		GET_MANA(ch) = GET_MAX_MANA(ch) - missing_mana;
 	}
@@ -1568,9 +1626,9 @@ void all_affects(P_char ch, int mode)
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	if ((af = get_spell_from_char(ch, TAG_CTF_BONUS)) != NULL)
 	{
-		int missing_hps      = GET_MAX_HIT(ch) - GET_HIT(ch);
+		int missing_hps = GET_MAX_HIT(ch) - GET_HIT(ch);
 		int missing_vitality = GET_MAX_VITALITY(ch) - GET_VITALITY(ch);
-		int num              = af->modifier;
+		int num = af->modifier;
 		GET_MAX_HIT(ch) += (MIN(num, 20) * 5);
 		GET_HIT(ch) = GET_MAX_HIT(ch) - missing_hps;
 		GET_MAX_VITALITY(ch) += (MIN(num, 20) * 5);
@@ -1580,7 +1638,7 @@ void all_affects(P_char ch, int mode)
 		if (num >= 50)
 		{
 			ch->points.combat_pulse = (int)((float)ch->points.combat_pulse / 1.5);
-			ch->points.spell_pulse  = (int)((float)ch->points.spell_pulse / 1.5);
+			ch->points.spell_pulse = (int)((float)ch->points.spell_pulse / 1.5);
 		}
 	}
 #endif
@@ -1615,15 +1673,20 @@ char affect_total(P_char ch, int kill_ch)
 	                        * now add them all back
 	                        */
 
-	if (kill_ch && (GET_HIT(ch) < -10) && (GET_STAT(ch) != STAT_DEAD) && (IS_NPC(ch) || !ch->desc || (ch->desc && (ch->desc->connected == CON_PLAYING))))
+	if (kill_ch && (GET_HIT(ch) < -10) && (GET_STAT(ch) != STAT_DEAD) &&
+	    (IS_NPC(ch) || !ch->desc || (ch->desc && (ch->desc->connected == CON_PLAYING))))
 	{
-		statuslog(ch->player.level, "%s killed in %d (%d hits) (affect_total)", GET_NAME(ch), ROOM_VNUM(ch->in_room), GET_HIT(ch));
-		logit(LOG_DEATH, "%s killed in %d (%d hits) (affect_total)", GET_NAME(ch), ROOM_VNUM(ch->in_room), GET_HIT(ch));
+		statuslog(ch->player.level, "%s killed in %d (%d hits) (affect_total)",
+			  GET_NAME(ch), ROOM_VNUM(ch->in_room), GET_HIT(ch));
+		logit(LOG_DEATH, "%s killed in %d (%d hits) (affect_total)", GET_NAME(ch),
+		      ROOM_VNUM(ch->in_room), GET_HIT(ch));
 
 		// No more vit death or zerk death to avoid frags
 		for (killer = world[ch->in_room].people; killer; killer = killer->next_in_room)
 		{
-			if (GET_OPPONENT(killer) && GET_OPPONENT(killer) == ch && killer->in_room == ch->in_room && GET_RACEWAR(killer) != GET_RACEWAR(ch))
+			if (GET_OPPONENT(killer) && GET_OPPONENT(killer) == ch &&
+			    killer->in_room == ch->in_room &&
+			    GET_RACEWAR(killer) != GET_RACEWAR(ch))
 			{
 				die(ch, killer);
 				return TRUE;
@@ -1674,12 +1737,17 @@ char affect_total(P_char ch, int kill_ch)
 	{
 		if (IS_MULTICLASS_PC(ch))
 		{
-			ch->specials.base_combat_round += MIN(combat_by_class[flag2idx(ch->player.m_class)][0], combat_by_class[flag2idx(ch->player.secondary_class)][0]);
-			ch->specials.damage_mod *= MAX(combat_by_class[flag2idx(ch->player.m_class)][1], combat_by_class[flag2idx(ch->player.secondary_class)][1]);
+			ch->specials.base_combat_round +=
+				MIN(combat_by_class[flag2idx(ch->player.m_class)][0],
+				    combat_by_class[flag2idx(ch->player.secondary_class)][0]);
+			ch->specials.damage_mod *=
+				MAX(combat_by_class[flag2idx(ch->player.m_class)][1],
+				    combat_by_class[flag2idx(ch->player.secondary_class)][1]);
 		}
 		else
 		{
-			ch->specials.base_combat_round += (combat_by_class[flag2idx(ch->player.m_class)][0]);
+			ch->specials.base_combat_round +=
+				(combat_by_class[flag2idx(ch->player.m_class)][0]);
 			ch->specials.damage_mod *= combat_by_class[flag2idx(ch->player.m_class)][1];
 		}
 	}
@@ -1687,11 +1755,14 @@ char affect_total(P_char ch, int kill_ch)
 	{
 		// adjust damage_mod based on zone difficulty
 		// we have to do this here because damage_mod is reset here every time it's called
-		int zone_difficulty = BOUNDED(1, zone_table[world[real_room0(GET_BIRTHPLACE(ch))].zone].difficulty, 10);
+		int zone_difficulty = BOUNDED(
+			1, zone_table[world[real_room0(GET_BIRTHPLACE(ch))].zone].difficulty, 10);
 
 		if (zone_difficulty > 1)
 		{
-			float damage_mod_mod    = 1.0 + (get_property("damage.zoneDifficulty.mod.factor", 0.200) * zone_difficulty);
+			float damage_mod_mod =
+				1.0 + (get_property("damage.zoneDifficulty.mod.factor", 0.200) *
+				       zone_difficulty);
 			ch->specials.damage_mod = (float)(ch->specials.damage_mod * damage_mod_mod);
 		}
 	}
@@ -1713,7 +1784,8 @@ char affect_total(P_char ch, int kill_ch)
 		ch->specials.base_combat_round += get_property("innate.dualDaggers.pulse", -3.0);
 
 	if (IS_AFFECTED2(ch, AFF2_FLURRY))
-		ch->specials.base_combat_round = (get_property("innate.flurry.pulse", .70) * ch->specials.base_combat_round);
+		ch->specials.base_combat_round =
+			(get_property("innate.flurry.pulse", .70) * ch->specials.base_combat_round);
 
 	if (GET_CLASS(ch, CLASS_REAVER))
 		apply_reaver_mods(ch);
@@ -1721,7 +1793,8 @@ char affect_total(P_char ch, int kill_ch)
 	ch->specials.base_combat_round = MAX(3.0, ch->specials.base_combat_round);
 
 	if (IS_PC(ch) && GET_CHAR_SKILL(ch, SKILL_MINE) >= 1)
-		ch->specials.affected_by5 |= AFF5_MINE; /* high enough skill in forge grants miner's sight */
+		ch->specials.affected_by5 |=
+			AFF5_MINE; /* high enough skill in forge grants miner's sight */
 
 	/* only if actually in game. JAB */
 	if (ch->desc && !ch->desc->connected && (GET_STAT(ch) != STAT_DEAD))
@@ -1745,7 +1818,7 @@ char affect_total(P_char ch, int kill_ch)
 void event_short_affect(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct event_short_affect_data *event_data = (struct event_short_affect_data *)data;
-	struct affected_type           *af;
+	struct affected_type *af;
 
 	// The affect was already removed.
 	if (data == NULL)
@@ -1785,13 +1858,14 @@ struct affected_type *affect_to_char(P_char ch, struct affected_type *af)
 	struct affected_type *affected_alloc;
 
 	if (!dead_affect_pool)
-		dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type), offsetof(struct affected_type, next), 10);
+		dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type),
+					     offsetof(struct affected_type, next), 10);
 
-	affected_alloc  = (struct affected_type *)mm_get(dead_affect_pool);
+	affected_alloc = (struct affected_type *)mm_get(dead_affect_pool);
 	*affected_alloc = *af;
 
 	affected_alloc->next = ch->affected;
-	ch->affected         = affected_alloc;
+	ch->affected = affected_alloc;
 	if (!IS_SET(af->flags, AFFTYPE_NOAPPLY))
 	{
 		ch->specials.affected_by |= af->bitvector;
@@ -1817,11 +1891,12 @@ struct affected_type *affect_to_char(P_char ch, struct affected_type *af)
 	return affected_alloc;
 }
 
-void affect_to_char_with_messages(P_char ch, struct affected_type *af, char *wear_off_char, char *wear_off_room)
+void affect_to_char_with_messages(P_char ch, struct affected_type *af, char *wear_off_char,
+				  char *wear_off_room)
 {
 	struct affected_type *affected_alloc;
-	Skill                *skill;
-	int                   i;
+	Skill *skill;
+	int i;
 
 	if (!wear_off_char && !wear_off_room)
 	{
@@ -1837,11 +1912,16 @@ void affect_to_char_with_messages(P_char ch, struct affected_type *af, char *wea
 	 * gota find index under which we stored exactly
 	 * the same messages or first index with both
 	 * room and char messages empty ie, a free slot. */
-	for (i = 0; i < MAX_WEAR_OFF_MESSAGES && (skill->wear_off_char[i] || skill->wear_off_room[i]); i++)
+	for (i = 0;
+	     i < MAX_WEAR_OFF_MESSAGES && (skill->wear_off_char[i] || skill->wear_off_room[i]); i++)
 	{
-		if ((!wear_off_char && skill->wear_off_char[i]) || (!wear_off_room && skill->wear_off_room[i]) || (wear_off_char && !skill->wear_off_char[i]) || (wear_off_room && !skill->wear_off_room[i]))
+		if ((!wear_off_char && skill->wear_off_char[i]) ||
+		    (!wear_off_room && skill->wear_off_room[i]) ||
+		    (wear_off_char && !skill->wear_off_char[i]) ||
+		    (wear_off_room && !skill->wear_off_room[i]))
 			continue;
-		if ((!wear_off_char || !strcmp(skill->wear_off_char[i], wear_off_char)) && (!wear_off_room || !strcmp(skill->wear_off_room[i], wear_off_room)))
+		if ((!wear_off_char || !strcmp(skill->wear_off_char[i], wear_off_char)) &&
+		    (!wear_off_room || !strcmp(skill->wear_off_room[i], wear_off_room)))
 			break;
 	}
 
@@ -1871,20 +1951,21 @@ void affect_to_char_with_messages(P_char ch, struct affected_type *af, char *wea
 
 void set_short_affected_by(P_char ch, int spell, int duration)
 {
-	struct affected_type          *affected_alloc;
+	struct affected_type *affected_alloc;
 	struct event_short_affect_data data;
 
 	if (!dead_affect_pool)
-		dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type), offsetof(struct affected_type, next), 10);
+		dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type),
+					     offsetof(struct affected_type, next), 10);
 
 	affected_alloc = (struct affected_type *)mm_get(dead_affect_pool);
 
 	memset(affected_alloc, 0, sizeof(struct affected_type));
-	affected_alloc->type     = spell;
-	affected_alloc->flags    = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOSHOW;
+	affected_alloc->type = spell;
+	affected_alloc->flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOSHOW;
 	affected_alloc->duration = duration;
-	affected_alloc->next     = ch->affected;
-	ch->affected             = affected_alloc;
+	affected_alloc->next = ch->affected;
+	ch->affected = affected_alloc;
 
 	balance_affects(ch);
 
@@ -1899,7 +1980,7 @@ void set_short_affected_by(P_char ch, int spell, int duration)
 void affect_to_end(P_char ch, struct affected_type *af)
 {
 	struct affected_type *afp, *prev = NULL;
-	int                   create = TRUE;
+	int create = TRUE;
 
 	for (afp = ch->affected; afp; afp = afp->next)
 	{
@@ -1917,9 +1998,10 @@ void affect_to_end(P_char ch, struct affected_type *af)
 	if (create)
 	{
 		if (!dead_affect_pool)
-			dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type), offsetof(struct affected_type, next), 10);
+			dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type),
+						     offsetof(struct affected_type, next), 10);
 
-		afp  = (struct affected_type *)mm_get(dead_affect_pool);
+		afp = (struct affected_type *)mm_get(dead_affect_pool);
 		*afp = *af;
 	}
 	else
@@ -1934,11 +2016,12 @@ void affect_to_end(P_char ch, struct affected_type *af)
 void affect_remove(P_char ch, struct affected_type *af)
 {
 	struct affected_type *hjp;
-	P_nevent              pnev;
+	P_nevent pnev;
 
 	if (!(ch && ch->affected))
 	{
-		logit(LOG_EXIT, "affect_remove(): %s: %s", (ch ? J_NAME(ch) : "(NULL)"), (ch ? "no affects." : "no ch."));
+		logit(LOG_EXIT, "affect_remove(): %s: %s", (ch ? J_NAME(ch) : "(NULL)"),
+		      (ch ? "no affects." : "no ch."));
 		return;
 	}
 
@@ -1963,7 +2046,9 @@ void affect_remove(P_char ch, struct affected_type *af)
 
 		if (hjp->next != af)
 		{
-			logit(LOG_EXIT, "affect_remove(): could not locate affected_type in ch->affected for %s.", GET_NAME(ch));
+			logit(LOG_EXIT,
+			      "affect_remove(): could not locate affected_type in ch->affected for %s.",
+			      GET_NAME(ch));
 			all_affects(ch, TRUE);
 
 			char_light(ch);
@@ -1991,10 +2076,11 @@ void affect_remove(P_char ch, struct affected_type *af)
 		// Kill the timer on the corresponding event - let it die on its own.
 		LOOP_EVENTS_CH(pnev, ch->nevents)
 		{
-			if (pnev->func == event_short_affect && pnev->data != NULL && ((struct event_short_affect_data *)(pnev->data))->af == af)
+			if (pnev->func == event_short_affect && pnev->data != NULL &&
+			    ((struct event_short_affect_data *)(pnev->data))->af == af)
 			{
 				FREE(pnev->data);
-				pnev->data  = NULL;
+				pnev->data = NULL;
 				pnev->timer = 1;
 				break;
 			}
@@ -2057,7 +2143,8 @@ struct affected_type *get_spell_from_char(P_char ch, int spell, void *context, i
 
 	for (hjp = ch->affected; hjp; hjp = hjp->next)
 	{
-		if (hjp->type == spell && (context == NULL || hjp->context == context) && (flagMask == 0 || (hjp->flags & flagMask) != 0))
+		if (hjp->type == spell && (context == NULL || hjp->context == context) &&
+		    (flagMask == 0 || (hjp->flags & flagMask) != 0))
 		{
 			return hjp;
 		}
@@ -2078,7 +2165,7 @@ bool affected_by_spell(P_char ch, int skill)
 
 int affected_by_spell_count(P_char ch, int skill)
 {
-	int                   count = 0;
+	int count = 0;
 	struct affected_type *hjp;
 
 	for (hjp = ch->affected; hjp; hjp = hjp->next)
@@ -2115,7 +2202,8 @@ bool affected_by_spell_flagged(P_char ch, int skill, uint flags)
 	struct affected_type *hjp;
 
 	for (hjp = ch->affected; hjp; hjp = hjp->next)
-		if (hjp->type == skill && (hjp->flags & (AFFTYPE_CUSTOM1 | AFFTYPE_CUSTOM2)) == flags)
+		if (hjp->type == skill &&
+		    (hjp->flags & (AFFTYPE_CUSTOM1 | AFFTYPE_CUSTOM2)) == flags)
 			return (TRUE);
 
 	return (FALSE);
@@ -2124,13 +2212,12 @@ bool affected_by_spell_flagged(P_char ch, int skill, uint flags)
 void affect_join(P_char ch, struct affected_type *af, int avg_dur, int avg_mod)
 {
 	struct affected_type *hjp;
-	bool                  found = FALSE;
+	bool found = FALSE;
 
 	for (hjp = ch->affected; !found && hjp; hjp = hjp->next)
 	{
 		if (hjp->type == af->type)
 		{
-
 			af->duration += hjp->duration;
 			if (avg_dur)
 				af->duration /= 2;
@@ -2162,7 +2249,10 @@ void wear_off_message(P_char ch, struct affected_type *af)
 		af->type = TAG_LAYONHANDS;
 	}
 
-	int idx = (af->wear_off_message_index > 0 && af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES) ? af->wear_off_message_index : 0;
+	int idx = (af->wear_off_message_index > 0 &&
+		   af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES) ?
+			  af->wear_off_message_index :
+			  0;
 	if (skills[af->type].wear_off_char[idx])
 	{
 		send_to_char(skills[af->type].wear_off_char[idx], ch);
@@ -2182,8 +2272,8 @@ void wear_off_message(P_char ch, struct affected_type *af)
 void event_room_affect(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct event_room_affect_data *event_data = (struct event_room_affect_data *)data;
-	struct room_affect            *af;
-	int                            room = event_data->room;
+	struct room_affect *af;
+	int room = event_data->room;
 
 	for (af = world[room].affected; af; af = af->next)
 	{
@@ -2227,7 +2317,7 @@ void event_room_affect(P_char ch, P_char victim, P_obj obj, void *data)
 //---------------------------------------------------------------------------------
 struct room_affect *affect_to_room(int room, struct room_affect *af)
 {
-	struct room_affect           *affected_alloc;
+	struct room_affect *affected_alloc;
 	struct event_room_affect_data data;
 
 	if (af->duration <= 0)
@@ -2237,12 +2327,13 @@ struct room_affect *affect_to_room(int room, struct room_affect *af)
 
 	if (!dead_room_affect_pool)
 	{
-		dead_room_affect_pool = mm_create("ROOM_AFFECTS", sizeof(struct room_affect), offsetof(struct room_affect, next), 10);
+		dead_room_affect_pool = mm_create("ROOM_AFFECTS", sizeof(struct room_affect),
+						  offsetof(struct room_affect, next), 10);
 	}
 
 	affected_alloc = (struct room_affect *)mm_get(dead_room_affect_pool);
 
-	*affected_alloc      = *af;
+	*affected_alloc = *af;
 	affected_alloc->next = world[room].affected;
 	world[room].affected = affected_alloc;
 
@@ -2252,7 +2343,7 @@ struct room_affect *affect_to_room(int room, struct room_affect *af)
 	world[room].room_flags |= affected_alloc->room_flags;
 
 	data.room = room;
-	data.af   = affected_alloc;
+	data.af = affected_alloc;
 	add_event(event_room_affect, af->duration, 0, 0, 0, 0, &data, sizeof(data));
 	affected_alloc->duration = 1 + af->duration / PULSES_IN_TICK;
 
@@ -2335,7 +2426,7 @@ void recalculate_obj_extra(P_obj obj)
 void obj_affect_remove(P_obj obj, struct obj_affect *af)
 {
 	struct obj_affect *t_af;
-	P_nevent           e;
+	P_nevent e;
 
 	if (!obj)
 	{
@@ -2423,7 +2514,9 @@ void event_obj_affect(P_char, P_char, P_obj obj, void *data)
 	{
 		const char *trace = getenv("DURIS_CORPSE_TRACE");
 		if (trace && *trace && strcmp(trace, "0") != 0 && obj && obj->type == ITEM_CORPSE)
-			logit(LOG_DEBUG, "corpse_trace corpse_decay obj_vnum=%d corpse_level=%d room=%d", OBJ_VNUM(obj), obj->value[2], obj->loc.room);
+			logit(LOG_DEBUG,
+			      "corpse_trace corpse_decay obj_vnum=%d corpse_level=%d room=%d",
+			      OBJ_VNUM(obj), obj->value[2], obj->loc.room);
 		Decay(obj);
 	}
 }
@@ -2460,13 +2553,14 @@ void set_obj_affected_extra(P_obj obj, int time, sh_int spell, sh_int data, ulon
 	}
 
 	if (!dead_obj_affect_pool)
-		dead_obj_affect_pool = mm_create("OBJ_AFFECTS", sizeof(struct obj_affect), offsetof(struct obj_affect, next), 100);
+		dead_obj_affect_pool = mm_create("OBJ_AFFECTS", sizeof(struct obj_affect),
+						 offsetof(struct obj_affect, next), 100);
 	af = (struct obj_affect *)mm_get(dead_obj_affect_pool);
 
-	af->type     = spell;
-	af->data     = data;
-	af->extra2   = extra2;
-	af->next     = obj->affects;
+	af->type = spell;
+	af->data = data;
+	af->extra2 = extra2;
+	af->next = obj->affects;
 	obj->affects = af;
 
 	if (extra2 && !get_obj_affect(obj, TAG_ALTERED_EXTRA2) && spell != TAG_ALTERED_EXTRA2)
@@ -2480,7 +2574,10 @@ void set_obj_affected_extra(P_obj obj, int time, sh_int spell, sh_int data, ulon
 	}
 }
 
-void set_obj_affected(P_obj obj, int time, sh_int spell, sh_int data) { set_obj_affected_extra(obj, time, spell, data, 0); }
+void set_obj_affected(P_obj obj, int time, sh_int spell, sh_int data)
+{
+	set_obj_affected_extra(obj, time, spell, data, 0);
+}
 
 int obj_affect_time(P_obj obj, struct obj_affect *af)
 {
@@ -2522,8 +2619,8 @@ void add_tag_to_char(P_char ch, int tag, int modifier, int flags, int duration)
 {
 	struct affected_type af;
 	memset(&af, 0, sizeof(af));
-	af.type     = tag;
-	af.flags    = flags;
+	af.type = tag;
+	af.flags = flags;
 	af.modifier = modifier;
 	af.duration = duration;
 	affect_to_char(ch, &af);
@@ -2542,8 +2639,8 @@ bool affect_timer(P_char ch, int time, int spell)
 			return false;
 
 	memset(&af, 0, sizeof(af));
-	af.type     = TAG_SKILL_TIMER;
-	af.flags    = AFFTYPE_STORE | AFFTYPE_SHORT;
+	af.type = TAG_SKILL_TIMER;
+	af.flags = AFFTYPE_STORE | AFFTYPE_SHORT;
 	af.duration = time;
 	af.modifier = spell;
 	affect_to_char(ch, &af);
@@ -2566,7 +2663,10 @@ int counter(P_char ch, int tag)
 }
 
 //---------------------------------------------------------------------------------
-void add_counter(P_char ch, int tag) { add_counter(ch, tag, 1, -1); }
+void add_counter(P_char ch, int tag)
+{
+	add_counter(ch, tag, 1, -1);
+}
 
 //---------------------------------------------------------------------------------
 void add_counter(P_char ch, int tag, int value, int duration)
@@ -2583,15 +2683,18 @@ void add_counter(P_char ch, int tag, int value, int duration)
 
 	struct affected_type af;
 	memset(&af, 0, sizeof(af));
-	af.type     = tag;
-	af.flags    = AFFTYPE_PERM | AFFTYPE_NODISPEL;
+	af.type = tag;
+	af.flags = AFFTYPE_PERM | AFFTYPE_NODISPEL;
 	af.modifier = value;
 	af.duration = duration;
 	affect_to_char(ch, &af);
 }
 
 //---------------------------------------------------------------------------------
-void remove_counter(P_char ch, int tag) { affect_from_char(ch, tag); }
+void remove_counter(P_char ch, int tag)
+{
+	affect_from_char(ch, tag);
+}
 
 //---------------------------------------------------------------------------------
 void remove_counter(P_char ch, int tag, int modifier)
@@ -2619,7 +2722,7 @@ void remove_counter(P_char ch, int tag, int modifier)
 //---------------------------------------------------------------------------------
 void define_link(int type, char *name, link_breakage_func break_func, int flags)
 {
-	link_types[type].name          = name;
+	link_types[type].name = name;
 	link_types[type].break_func.ch = break_func;
 	// Do not flag as object.
 	link_types[type].flags = flags & ~LNKFLG_OBJECT;
@@ -2627,7 +2730,7 @@ void define_link(int type, char *name, link_breakage_func break_func, int flags)
 
 void define_olink(int type, char *name, link_obj_breakage_func break_func, int flags)
 {
-	link_types[type].name           = name;
+	link_types[type].name = name;
 	link_types[type].break_func.obj = break_func;
 	// Flag as object
 	link_types[type].flags = flags | LNKFLG_OBJECT;
@@ -2656,15 +2759,20 @@ void initialize_links()
 	define_link(LNK_GRAPPLED, "GRAPPLED", NULL, LNKFLG_ROOM);
 	define_link(LNK_CIRCLING, "CIRCLING", NULL, LNKFLG_ROOM | LNKFLG_EXCLUSIVE);
 	define_link(LNK_SNG_HEALING, "SONG_HEALING", song_broken, LNKFLG_AFFECT | LNKFLG_ROOM);
-	define_link(LNK_DRAGOON_MOUNT, "DRAGOON_MOUNT", charm_broken, LNKFLG_AFFECT | LNKFLG_EXCLUSIVE);
+	define_link(LNK_DRAGOON_MOUNT, "DRAGOON_MOUNT", charm_broken,
+		    LNKFLG_AFFECT | LNKFLG_EXCLUSIVE);
 
-	define_olink(LNK_CEGILUNE, "CEGILUNES_SEARING", cegilunes_broken, LNKFLG_EXCLUSIVE | LNKFLG_REMOVE_AFF | LNKFLG_BREAK_REMOVE);
-	define_olink(LNK_ILESH, "ILESHS_SMASHING", ileshs_broken, LNKFLG_EXCLUSIVE | LNKFLG_REMOVE_AFF | LNKFLG_BREAK_REMOVE);
-	define_olink(LNK_CHAR_OBJ_AFF, "CHAR_OBJ_AFFECT", NULL, LNKFLG_REMOVE_AFF | LNKFLG_BREAK_REMOVE | LNKFLG_SHOW_REMOVE_MSG);
+	define_olink(LNK_CEGILUNE, "CEGILUNES_SEARING", cegilunes_broken,
+		     LNKFLG_EXCLUSIVE | LNKFLG_REMOVE_AFF | LNKFLG_BREAK_REMOVE);
+	define_olink(LNK_ILESH, "ILESHS_SMASHING", ileshs_broken,
+		     LNKFLG_EXCLUSIVE | LNKFLG_REMOVE_AFF | LNKFLG_BREAK_REMOVE);
+	define_olink(LNK_CHAR_OBJ_AFF, "CHAR_OBJ_AFFECT", NULL,
+		     LNKFLG_REMOVE_AFF | LNKFLG_BREAK_REMOVE | LNKFLG_SHOW_REMOVE_MSG);
 }
 
 //---------------------------------------------------------------------------------
-struct char_link_data *link_char_with_affect(P_char ch, P_char target, ush_int type, struct affected_type *af)
+struct char_link_data *link_char_with_affect(P_char ch, P_char target, ush_int type,
+					     struct affected_type *af)
 {
 	struct char_link_data *cld;
 
@@ -2680,22 +2788,24 @@ struct char_link_data *link_char_with_affect(P_char ch, P_char target, ush_int t
 
 	if (!dead_link_pool)
 	{
-		dead_link_pool = mm_create("LINKS", sizeof(struct char_link_data), offsetof(struct char_link_data, next_linking), 100);
+		dead_link_pool = mm_create("LINKS", sizeof(struct char_link_data),
+					   offsetof(struct char_link_data, next_linking), 100);
 	}
 
-	cld               = (struct char_link_data *)mm_get(dead_link_pool);
-	cld->affect       = af;
-	cld->linking      = ch;
-	cld->linked       = target;
-	cld->type         = type;
+	cld = (struct char_link_data *)mm_get(dead_link_pool);
+	cld->affect = af;
+	cld->linking = ch;
+	cld->linked = target;
+	cld->type = type;
 	cld->next_linking = ch->linking;
-	cld->next_linked  = target->linked;
+	cld->next_linked = target->linked;
 	ch->linking = target->linked = cld;
 
 	return cld;
 }
 
-struct char_obj_link_data *link_char_obj_with_affect(P_char ch, P_obj obj, ush_int type, struct affected_type *af)
+struct char_obj_link_data *link_char_obj_with_affect(P_char ch, P_obj obj, ush_int type,
+						     struct affected_type *af)
 {
 	struct char_obj_link_data *cold;
 
@@ -2711,22 +2821,26 @@ struct char_obj_link_data *link_char_obj_with_affect(P_char ch, P_obj obj, ush_i
 
 	if (!dead_obj_link_pool)
 	{
-		dead_obj_link_pool = mm_create("CHOBJLINKS", sizeof(struct char_obj_link_data), offsetof(struct char_obj_link_data, next), 100);
+		dead_obj_link_pool = mm_create("CHOBJLINKS", sizeof(struct char_obj_link_data),
+					       offsetof(struct char_obj_link_data, next), 100);
 	}
 
-	cold           = (struct char_obj_link_data *)mm_get(dead_obj_link_pool);
-	cold->affect   = af;
-	cold->ch       = ch;
-	cold->obj      = obj;
-	cold->type     = type;
-	cold->next     = ch->obj_linked;
+	cold = (struct char_obj_link_data *)mm_get(dead_obj_link_pool);
+	cold->affect = af;
+	cold->ch = ch;
+	cold->obj = obj;
+	cold->type = type;
+	cold->next = ch->obj_linked;
 	ch->obj_linked = cold;
 
 	return cold;
 }
 
 //---------------------------------------------------------------------------------
-struct char_link_data *link_char(P_char ch, P_char target, ush_int type) { return link_char_with_affect(ch, target, type, 0); }
+struct char_link_data *link_char(P_char ch, P_char target, ush_int type)
+{
+	return link_char_with_affect(ch, target, type, 0);
+}
 
 //---------------------------------------------------------------------------------
 P_char get_linked_char(P_char ch, ush_int type)
@@ -2837,7 +2951,7 @@ void check_room_links(P_char ch, int old_room, int new_room)
 void clear_all_links(P_char ch)
 {
 	struct char_link_data *cld;
-	P_char                 rider;
+	P_char rider;
 
 	// If there's someone riding ch, they fall off/down.
 	if ((rider = GET_RIDER(ch)) != NULL)
@@ -2857,7 +2971,7 @@ void clear_all_links(P_char ch)
 void clear_links(P_char ch, ush_int type)
 {
 	struct char_link_data *cld;
-	P_char                 tch;
+	P_char tch;
 
 	while ((tch = get_linked_char(ch, type)))
 		unlink_char(ch, tch, type);
@@ -2867,14 +2981,17 @@ void clear_links(P_char ch, ush_int type)
 void clear_links(P_char ch, P_obj obj, int flag)
 {
 	struct char_obj_link_data *cold, *cold_prev, *cold_next;
-	P_obj                      tobj;
+	P_obj tobj;
 
 	// Remove all those at the head of the list.
-	while (((cold = ch->obj_linked) != NULL) && (cold->obj == obj) && IS_SET(link_types[cold->type].flags, flag))
+	while (((cold = ch->obj_linked) != NULL) && (cold->obj == obj) &&
+	       IS_SET(link_types[cold->type].flags, flag))
 	{
-		if (IS_SET(link_types[cold->type].flags, LNKFLG_OBJECT) && link_types[cold->type].break_func.obj)
+		if (IS_SET(link_types[cold->type].flags, LNKFLG_OBJECT) &&
+		    link_types[cold->type].break_func.obj)
 			link_types[cold->type].break_func.obj(cold);
-		if (IS_SET(link_types[cold->type].flags, LNKFLG_REMOVE_AFF) && (cold->affect != NULL))
+		if (IS_SET(link_types[cold->type].flags, LNKFLG_REMOVE_AFF) &&
+		    (cold->affect != NULL))
 		{
 			// We remove this bit so we don't go in circles removing the link which removes the affect
 			//   which removes the link...
@@ -2884,7 +3001,7 @@ void clear_links(P_char ch, P_obj obj, int flag)
 			affect_remove(ch, cold->affect);
 		}
 		ch->obj_linked = cold->next;
-		cold->next     = NULL;
+		cold->next = NULL;
 		mm_release(dead_obj_link_pool, cold);
 	}
 
@@ -2907,7 +3024,8 @@ void clear_links(P_char ch, P_obj obj, int flag)
 					REMOVE_BIT(cold->affect->flags, AFFTYPE_LINKED_OBJ);
 					affect_remove(ch, cold->affect);
 				}
-				if (IS_SET(link_types[cold->type].flags, LNKFLG_OBJECT) && link_types[cold->type].break_func.obj)
+				if (IS_SET(link_types[cold->type].flags, LNKFLG_OBJECT) &&
+				    link_types[cold->type].break_func.obj)
 					link_types[cold->type].break_func.obj(cold);
 				if (IS_SET(link_types[cold->type].flags, LNKFLG_SHOW_REMOVE_MSG))
 					wear_off_message(ch, cold->affect);
@@ -2960,14 +3078,16 @@ void internal_unlink_char(P_char ch, struct char_link_data *cld, struct char_lin
 			break;
 	}
 	if (!cld2) // link must be found in the linked list of the target as well
-		logit(LOG_EXIT, "internal_unlink_char: missing reverse link for type %u", cld->type);
+		logit(LOG_EXIT, "internal_unlink_char: missing reverse link for type %u",
+		      cld->type);
 	else if (prev)
 		prev->next_linked = cld->next_linked;
 	else
 		cld->linked->linked = cld->next_linked;
 	if (cld->affect)
 		wear_off_message(cld->linking, cld->affect);
-	if (!IS_SET(link_types[cld->type].flags, LNKFLG_OBJECT) && link_types[cld->type].break_func.ch)
+	if (!IS_SET(link_types[cld->type].flags, LNKFLG_OBJECT) &&
+	    link_types[cld->type].break_func.ch)
 		link_types[cld->type].break_func.ch(cld);
 	dispose_link(cld);
 }
@@ -3055,9 +3175,9 @@ void remove_link(P_char ch, struct char_link_data *clda)
 //---------------------------------------------------------------------------------
 void update_damage_data()
 {
-	char  buf[128];
+	char buf[128];
 	float melee_factor, multiplier, pulse;
-	int   i;
+	int i;
 
 	melee_factor = get_property("damage.meleeFactor", 1.04);
 
@@ -3077,8 +3197,9 @@ void update_damage_data()
 		    combat_by_race[i][1] = multiplier;
 		 */
 		combat_by_race[i][1] = 1;
-		snprintf(buf, 128, "damage.damrollModifier.racial.%s", race_names_table[i].no_spaces);
-		multiplier           = get_property(buf, 1.0);
+		snprintf(buf, 128, "damage.damrollModifier.racial.%s",
+			 race_names_table[i].no_spaces);
+		multiplier = get_property(buf, 1.0);
 		combat_by_race[i][2] = multiplier;
 	}
 
@@ -3094,12 +3215,12 @@ void update_damage_data()
 
 	combat_by_class[0][1] = 0;
 	combat_by_class[0][0] = 0;
-	combat_by_race[0][1]  = 0;
-	combat_by_race[0][0]  = 0;
+	combat_by_race[0][1] = 0;
+	combat_by_race[0][0] = 0;
 
 	// This pulse-mod is added to the total pulses / round of each character in game.
-	pulse_all               = get_property("damage.pulse.class.all", 1.000);
-	shield_combat_mult      = get_property("skill.shieldCombat.ACBonusMultiplier", 0.500);
+	pulse_all = get_property("damage.pulse.class.all", 1.000);
+	shield_combat_mult = get_property("skill.shieldCombat.ACBonusMultiplier", 0.500);
 	shield_combat_tank_mult = get_property("skill.shieldCombat.ACTankMultiplier", 1.500);
 }
 
@@ -3131,17 +3252,18 @@ bool blind(P_char ch, P_char victim, int duration)
 		return FALSE;
 	}
 
-	if (!has_innate(victim, INNATE_EYELESS) && !isname("_noblind_", GET_NAME(victim)) && !IS_TRUSTED(victim))
+	if (!has_innate(victim, INNATE_EYELESS) && !isname("_noblind_", GET_NAME(victim)) &&
+	    !IS_TRUSTED(victim))
 	{
 		act("&+L$n &+Lseems to be blinded!", TRUE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+LYou have been blinded!\r\n", victim);
 		memset(&af, 0, sizeof(struct affected_type));
 		// if (!IS_AFFECTED(victim, AFF_BLIND) && duration > 5 * PULSE_VIOLENCE)
 		// gain_exp(ch, victim, 0, EXP_DAMAGE);
-		af.type      = SPELL_BLINDNESS;
-		af.flags     = AFFTYPE_SHORT;
+		af.type = SPELL_BLINDNESS;
+		af.flags = AFFTYPE_SHORT;
 		af.bitvector = AFF_BLIND;
-		af.duration  = duration;
+		af.duration = duration;
 		affect_to_char(victim, &af);
 		return TRUE;
 	}
@@ -3153,7 +3275,7 @@ bool blind(P_char ch, P_char victim, int duration)
 void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 {
 	struct affected_type af;
-	int                  attlevel = GET_LEVEL(stunner), deflevel = GET_LEVEL(stunnee);
+	int attlevel = GET_LEVEL(stunner), deflevel = GET_LEVEL(stunnee);
 
 	if (!IS_ALIVE(stunnee))
 	{
@@ -3168,7 +3290,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 
 	// Greater races are harder to stun based on their level. Level 60+ greater races
 	// cannot be stunned when this function is called. Oct08 -Lucrot
-	if (IS_GREATER_RACE(stunnee) || GET_RACE(stunnee) == RACE_PLANT || GET_RACE(stunnee) == RACE_GOLEM || GET_RACE(stunnee) == RACE_CONSTRUCT)
+	if (IS_GREATER_RACE(stunnee) || GET_RACE(stunnee) == RACE_PLANT ||
+	    GET_RACE(stunnee) == RACE_GOLEM || GET_RACE(stunnee) == RACE_CONSTRUCT)
 	{
 		if (!number(0, (int)BOUNDED(0, (60 - deflevel), 59)))
 		{
@@ -3194,13 +3317,14 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 		if (!NewSaves(stunnee, SAVING_FEAR, chance))
 		{
 			memset(&af, 0, sizeof(af));
-			af.type       = SPELL_PWORD_STUN;
-			af.flags      = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+			af.type = SPELL_PWORD_STUN;
+			af.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
 			af.bitvector2 = AFF2_STUNNED;
-			af.duration   = duration;
+			af.duration = duration;
 			affect_to_char(stunnee, &af);
 
-			send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n", stunnee);
+			send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
+				     stunnee);
 			act("$n&n is &+Wstunned!&n", TRUE, stunnee, 0, 0, TO_ROOM);
 			if (IS_FIGHTING(stunnee))
 				stop_fighting(stunnee);
@@ -3210,13 +3334,15 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 		else if (!NewSaves(stunnee, SAVING_FEAR, chance + number(0, 3)))
 		{
 			memset(&af, 0, sizeof(af));
-			af.type       = SPELL_PWORD_STUN;
-			af.flags      = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+			af.type = SPELL_PWORD_STUN;
+			af.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
 			af.bitvector2 = AFF2_STUNNED;
-			af.duration   = duration / 2;
+			af.duration = duration / 2;
 			affect_to_char(stunnee, &af);
 
-			send_to_char("&+wWow that &+Rsmarts... &+Wbut you manage to recover quickly!\r\n", stunnee);
+			send_to_char(
+				"&+wWow that &+Rsmarts... &+Wbut you manage to recover quickly!\r\n",
+				stunnee);
 			act("$n&n is momentarily &+Wdazed...&n", TRUE, stunnee, 0, 0, TO_ROOM);
 			if (!number(0, 3) && IS_FIGHTING(stunnee))
 			{
@@ -3229,13 +3355,14 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 	else
 	{
 		memset(&af, 0, sizeof(af));
-		af.type       = SPELL_PWORD_STUN;
-		af.flags      = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+		af.type = SPELL_PWORD_STUN;
+		af.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
 		af.bitvector2 = AFF2_STUNNED;
-		af.duration   = duration;
+		af.duration = duration;
 		affect_to_char(stunnee, &af);
 
-		send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n", stunnee);
+		send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
+			     stunnee);
 		act("$n&n is &+Wstunned!&n", TRUE, stunnee, 0, 0, TO_ROOM);
 		if (IS_FIGHTING(stunnee))
 			stop_fighting(stunnee);
@@ -3251,7 +3378,9 @@ void KnockOut(P_char ch, int duration)
 
 	if (IS_TRUSTED(ch))
 	{
-		send_to_char("You briefly feel a slight pain in your head, but wait, it's gone!\r\n", ch);
+		send_to_char(
+			"You briefly feel a slight pain in your head, but wait, it's gone!\r\n",
+			ch);
 		return;
 	}
 
@@ -3263,12 +3392,13 @@ void KnockOut(P_char ch, int duration)
 	SET_POS(ch, POS_PRONE + GET_STAT(ch));
 
 	memset(&af, 0, sizeof(af));
-	af.type      = SKILL_HEADBUTT;
+	af.type = SKILL_HEADBUTT;
 	af.bitvector = AFF_KNOCKED_OUT;
-	af.flags     = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOSHOW;
-	af.duration  = duration;
+	af.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOSHOW;
+	af.duration = duration;
 
-	affect_to_char_with_messages(ch, &af, "Feeling begins to return... a major headache.", "$n seems to have come back to his senses.");
+	affect_to_char_with_messages(ch, &af, "Feeling begins to return... a major headache.",
+				     "$n seems to have come back to his senses.");
 }
 
 //---------------------------------------------------------------------------------
@@ -3294,17 +3424,18 @@ bool make_wet(P_char ch, int duration)
 	if (IS_AFFECTED2(ch, AFF2_FIRESHIELD))
 	{
 		send_to_char("Water hisses loudly as it evaporates on your fireshield.\n", ch);
-		act("Water hisses loudly as it comes in contact with $n's fireshield.\n", FALSE, ch, 0, 0, TO_ROOM);
+		act("Water hisses loudly as it comes in contact with $n's fireshield.\n", FALSE, ch,
+		    0, 0, TO_ROOM);
 		return false;
 	}
 
 	if (!IS_AFFECTED5(ch, AFF5_WET))
 	{
 		memset(&af, 0, sizeof(af));
-		af.type       = TAG_WET;
-		af.flags      = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+		af.type = TAG_WET;
+		af.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
 		af.bitvector5 = AFF5_WET;
-		af.duration   = duration;
+		af.duration = duration;
 		affect_to_char(ch, &af);
 		return true;
 	}
@@ -3317,14 +3448,17 @@ void poo(P_char ch)
 {
 	P_obj load;
 
-	if (IS_PC(ch) && (IS_CENTAUR(ch) || IS_MINOTAUR(ch) || IS_GOBLIN(ch)) && (number(0, 1000) == 42) && (load = read_object(51, VIRTUAL)))
+	if (IS_PC(ch) && (IS_CENTAUR(ch) || IS_MINOTAUR(ch) || IS_GOBLIN(ch)) &&
+	    (number(0, 1000) == 42) && (load = read_object(51, VIRTUAL)))
 	{
 		if (IS_CENTAUR(ch))
 		{
 			load->str_mask = (STRUNG_DESC1 | STRUNG_DESC2);
 
-			load->description       = str_dup("&+yA steaming pile of horse droppings is here.&n");
-			load->short_description = str_dup("&+ya steaming pile of horse droppings&n");
+			load->description =
+				str_dup("&+yA steaming pile of horse droppings is here.&n");
+			load->short_description =
+				str_dup("&+ya steaming pile of horse droppings&n");
 
 			if (ch->in_room == NOWHERE)
 			{
@@ -3339,16 +3473,19 @@ void poo(P_char ch)
 			else
 			{
 				obj_to_room(load, ch->in_room);
-				send_to_char("&+yYou can't resist the urge anymore - a load drops from between your rear legs.\n", ch);
-				act("&+yA load of dung suddenly drops from between $n&n&+y's rear legs, landing with a soft plop.", TRUE, ch, 0, 0, TO_ROOM);
+				send_to_char(
+					"&+yYou can't resist the urge anymore - a load drops from between your rear legs.\n",
+					ch);
+				act("&+yA load of dung suddenly drops from between $n&n&+y's rear legs, landing with a soft plop.",
+				    TRUE, ch, 0, 0, TO_ROOM);
 			}
 		}
 		else if (IS_MINOTAUR(ch))
 		{
 			load->str_mask = (STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_KEYS);
 
-			load->name              = str_dup("dung cattle pile");
-			load->description       = str_dup("&+yA steaming pile of bullshit is here.&n");
+			load->name = str_dup("dung cattle pile");
+			load->description = str_dup("&+yA steaming pile of bullshit is here.&n");
 			load->short_description = str_dup("&+ya steaming pile of bullshit&n");
 
 			if (ch->in_room == NOWHERE)
@@ -3364,15 +3501,18 @@ void poo(P_char ch)
 			else
 			{
 				obj_to_room(load, ch->in_room);
-				send_to_char("&+yYou can't resist the urge anymore - a load drops from between your legs.\n", ch);
-				act("&+yA load of dung suddenly drops from between $n&n&+y's legs, landing with a soft plop.", TRUE, ch, 0, 0, TO_ROOM);
+				send_to_char(
+					"&+yYou can't resist the urge anymore - a load drops from between your legs.\n",
+					ch);
+				act("&+yA load of dung suddenly drops from between $n&n&+y's legs, landing with a soft plop.",
+				    TRUE, ch, 0, 0, TO_ROOM);
 			}
 		}
 		else if (IS_GOBLIN(ch) && !number(0, 29))
 		{
 			load->str_mask = (STRUNG_DESC1 | STRUNG_DESC2);
 
-			load->description       = str_dup("&+ySome dry feces has been left here.&n");
+			load->description = str_dup("&+ySome dry feces has been left here.&n");
 			load->short_description = str_dup("&+ya dry goblin poo-poo&n");
 
 			if (ch->in_room == NOWHERE)
@@ -3388,8 +3528,11 @@ void poo(P_char ch)
 			else
 			{
 				obj_to_room(load, ch->in_room);
-				send_to_char("&+yMmmm, much better. Don't forget to clean it up now.\n", ch);
-				act("&+y$n screws $s face in concentration, and some small tiny feces drop from between his legs.", TRUE, ch, 0, 0, TO_ROOM);
+				send_to_char(
+					"&+yMmmm, much better. Don't forget to clean it up now.\n",
+					ch);
+				act("&+y$n screws $s face in concentration, and some small tiny feces drop from between his legs.",
+				    TRUE, ch, 0, 0, TO_ROOM);
 			}
 		}
 	}
@@ -3407,7 +3550,9 @@ int camp(P_char ch)
 
 		if (af)
 		{
-			if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != af->modifier) || (GET_STAT(ch) < STAT_SLEEPING) || IS_SET(ch->specials.affected_by, AFF_HIDE) || IS_IMMOBILE(ch))
+			if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) ||
+			    (ch->in_room != af->modifier) || (GET_STAT(ch) < STAT_SLEEPING) ||
+			    IS_SET(ch->specials.affected_by, AFF_HIDE) || IS_IMMOBILE(ch))
 			{
 				affect_from_char(ch, TAG_CAMP);
 				send_to_char("So much for that camping effort.\n", ch);
@@ -3430,13 +3575,19 @@ int camp(P_char ch)
 					affect_from_char(ch, TAG_CAMP);
 					if (!IS_RACEWAR_UNDEAD(ch))
 					{
-						act("$n rolls $mself up in $s bedroll and tunes out the world.", FALSE, ch, 0, 0, TO_ROOM);
-						send_to_char("You hunker down for some serious 'roughing it'.\n", ch);
+						act("$n rolls $mself up in $s bedroll and tunes out the world.",
+						    FALSE, ch, 0, 0, TO_ROOM);
+						send_to_char(
+							"You hunker down for some serious 'roughing it'.\n",
+							ch);
 					}
 					else
 					{
-						act("$n climbs into $s shallow grave and covers $mself up.", FALSE, ch, 0, 0, TO_ROOM);
-						send_to_char("You climb into your little grave and bury yourself.\n", ch);
+						act("$n climbs into $s shallow grave and covers $mself up.",
+						    FALSE, ch, 0, 0, TO_ROOM);
+						send_to_char(
+							"You climb into your little grave and bury yourself.\n",
+							ch);
 					}
 					if (IS_SHIP_ROOM(ch->in_room))
 					{
@@ -3449,7 +3600,8 @@ int camp(P_char ch)
 
 					writeCharacter(ch, RENT_CAMPED, ch->in_room);
 
-					loginlog(ch->player.level, "%s has camped in [%d].", GET_NAME(ch), world[ch->in_room].number);
+					loginlog(ch->player.level, "%s has camped in [%d].",
+						 GET_NAME(ch), world[ch->in_room].number);
 					sql_log(ch, CONNECTLOG, "Camped");
 					// If it's not an immortal.
 					if (GET_LEVEL(ch) < MINLVLIMMORTAL)
@@ -3472,7 +3624,9 @@ int camp(P_char ch)
 		else
 		{
 			logit(LOG_DEBUG, "%s has AFF_CAMP, but no affect structure", GET_NAME(ch));
-			send_to_char("hmm, something strange has happened to your camp attempt, better petition for a god.\n", ch);
+			send_to_char(
+				"hmm, something strange has happened to your camp attempt, better petition for a god.\n",
+				ch);
 			REMOVE_BIT(ch->specials.affected_by, AFF_CAMPING);
 		}
 	}
@@ -3480,7 +3634,10 @@ int camp(P_char ch)
 	return 0;
 }
 
-void event_falling_char(P_char ch, P_char victim, P_obj obj, void *data) { falling_char(ch, *((int *)data), TRUE); }
+void event_falling_char(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	falling_char(ch, *((int *)data), TRUE);
+}
 
 /*
  ch CHAR_FALLING, this routine updates status, moves them, sends appropriate
@@ -3518,8 +3675,8 @@ leave them living, but on the brink of death. */
 bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 {
 	P_nevent ev;
-	P_char   chr;
-	int      dam = 0, speed = 0, i, new_room, save_act, had_zcord = FALSE;
+	P_char chr;
+	int dam = 0, speed = 0, i, new_room, save_act, had_zcord = FALSE;
 
 	if (!ch)
 	{
@@ -3545,7 +3702,9 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		they can't go, its prolly due to the down exit being closed/blocked.
 		Even if it is really a bug, don't bother spamming messages.
 		Using virtual can go, as it checks more door states */
-		if ((world[ch->in_room].sector_type != SECT_NO_GROUND) && (world[ch->in_room].sector_type != SECT_UNDRWLD_NOGROUND) && !VIRTUAL_CAN_GO(ch->in_room, DIR_DOWN) && (ch->specials.z_cord == 0))
+		if ((world[ch->in_room].sector_type != SECT_NO_GROUND) &&
+		    (world[ch->in_room].sector_type != SECT_UNDRWLD_NOGROUND) &&
+		    !VIRTUAL_CAN_GO(ch->in_room, DIR_DOWN) && (ch->specials.z_cord == 0))
 			return FALSE;
 		/* This isn't for sinking */
 		if (ch->specials.z_cord < 0)
@@ -3553,32 +3712,41 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 
 		/* Don't continue if a breakable wall is acting as a floor - Jexni 12/07/10 */
 		if (world[ch->in_room].dir_option[DIR_DOWN])
-			if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info, EX_BREAKABLE))
+			if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info,
+				   EX_BREAKABLE))
 				return FALSE;
 
 		/* ch has just stepped into space, initiate the plunge  */
 		if (IS_TRUSTED(ch) || IS_AFFECTED(ch, AFF_LEVITATE) || IS_AFFECTED(ch, AFF_FLY))
 		{
-			send_to_char("You grin as you realize you're floating, with no floor in the room.\n", ch);
+			send_to_char(
+				"You grin as you realize you're floating, with no floor in the room.\n",
+				ch);
 			return FALSE;
 		}
 		else if (IS_RIDING(ch))
 		{
-			if (IS_AFFECTED(GET_MOUNT(ch), AFF_LEVITATE) || IS_AFFECTED(GET_MOUNT(ch), AFF_FLY))
+			if (IS_AFFECTED(GET_MOUNT(ch), AFF_LEVITATE) ||
+			    IS_AFFECTED(GET_MOUNT(ch), AFF_FLY))
 			{
-				send_to_char("You grin as you realize you're floating upon a flying mount.", ch);
+				send_to_char(
+					"You grin as you realize you're floating upon a flying mount.",
+					ch);
 				return FALSE;
 			}
 		}
 		// If they have climb, they get a max 50% chance not to start falling.
-		if (affected_by_spell(ch, SKILL_CLIMB) && number(1, 100) > GET_CHAR_SKILL(ch, SKILL_CLIMB) / 2)
+		if (affected_by_spell(ch, SKILL_CLIMB) &&
+		    number(1, 100) > GET_CHAR_SKILL(ch, SKILL_CLIMB) / 2)
 		{
 			send_to_char("You start to slip, but catch yourself.\n", ch);
 			return FALSE;
 		}
-		act("$n has just realized $e has no visible means of support!", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n has just realized $e has no visible means of support!", TRUE, ch, 0, 0,
+		    TO_ROOM);
 		if (GET_STAT(ch) > STAT_SLEEPING)
-			send_to_char("You rediscover the law of gravity...\n...the hard way!\n", ch);
+			send_to_char("You rediscover the law of gravity...\n...the hard way!\n",
+				     ch);
 		else if (GET_STAT(ch) > STAT_INCAP)
 			send_to_char("You get a sinking feeling.\n", ch);
 		else
@@ -3594,8 +3762,11 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		else
 		{
 			send_to_char("But wait!  Saved by a bug!\n", ch);
-			act("$n is granted a reprieve, and breathes a prayer of thanks", FALSE, ch, 0, 0, TO_ROOM);
-			logit(LOG_DEBUG, "Room (%d) Name: (%s) is NO_GROUND but has no valid 'down' exit", world[ch->in_room].number, GET_NAME(ch));
+			act("$n is granted a reprieve, and breathes a prayer of thanks", FALSE, ch,
+			    0, 0, TO_ROOM);
+			logit(LOG_DEBUG,
+			      "Room (%d) Name: (%s) is NO_GROUND but has no valid 'down' exit",
+			      world[ch->in_room].number, GET_NAME(ch));
 			world[ch->in_room].sector_type = SECT_INSIDE;
 			return FALSE;
 		}
@@ -3603,15 +3774,18 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 
 	/* get here, it's a normal event call  */
 	speed = (int)kill_char;
-	i     = ch->in_room;
+	i = ch->in_room;
 
-	if ((ch->specials.z_cord > 0) || (world[i].dir_option[DIR_DOWN] && !IS_SET(world[i].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) && !IS_SET(world[i].dir_option[DIR_DOWN]->exit_info, EX_BREAKABLE)))
+	if ((ch->specials.z_cord > 0) ||
+	    (world[i].dir_option[DIR_DOWN] &&
+	     !IS_SET(world[i].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) &&
+	     !IS_SET(world[i].dir_option[DIR_DOWN]->exit_info, EX_BREAKABLE)))
 	{
 		if (ch->specials.z_cord > 0)
 		{
 			ch->specials.z_cord--;
 			had_zcord = TRUE;
-			new_room  = ch->in_room;
+			new_room = ch->in_room;
 		}
 		else
 			new_room = world[i].dir_option[DIR_DOWN]->to_room;
@@ -3621,7 +3795,8 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		else if (speed < 90)
 			act("Someone drops from sight.", TRUE, ch, 0, 0, TO_ROOM);
 		else
-			act("A large (screaming) object drops from sight!", TRUE, ch, 0, 0, TO_ROOM);
+			act("A large (screaming) object drops from sight!", TRUE, ch, 0, 0,
+			    TO_ROOM);
 
 		char_from_room(ch);
 		char_to_room(ch, new_room, -2);
@@ -3663,13 +3838,16 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		                 summoned/transed/teleported out
 		              */
 
-	if (!world[new_room].dir_option[DIR_DOWN] || (world[new_room].dir_option[DIR_DOWN]->to_room == NOWHERE) || IS_SET(world[new_room].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) ||
-	    IS_SET(world[new_room].dir_option[DIR_DOWN]->exit_info, EX_BREAKABLE) || ((ch->specials.z_cord == 0) && had_zcord))
+	if (!world[new_room].dir_option[DIR_DOWN] ||
+	    (world[new_room].dir_option[DIR_DOWN]->to_room == NOWHERE) ||
+	    IS_SET(world[new_room].dir_option[DIR_DOWN]->exit_info, EX_CLOSED) ||
+	    IS_SET(world[new_room].dir_option[DIR_DOWN]->exit_info, EX_BREAKABLE) ||
+	    ((ch->specials.z_cord == 0) && had_zcord))
 	{
-
 		/* oh dear, we seem to have run out of falling room!  Muhahaha  */
 
-		dam = (int)(GET_MAX_HIT(ch) * ((speed / 2.5) / 100)) + (number(80, 120) - GET_C_AGI(ch));
+		dam = (int)(GET_MAX_HIT(ch) * ((speed / 2.5) / 100)) +
+		      (number(80, 120) - GET_C_AGI(ch));
 
 		if (dam < 2)
 			dam = 2;
@@ -3680,10 +3858,12 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 
 		if (world[ch->in_room].dir_option[DIR_DOWN])
 		{
-			if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info, EX_BREAKABLE))
+			if (IS_SET(world[ch->in_room].dir_option[DIR_DOWN]->exit_info,
+				   EX_BREAKABLE))
 			{
 				P_obj Wall;
-				for (Wall = world[ch->in_room].contents; Wall; Wall = Wall->next_content)
+				for (Wall = world[ch->in_room].contents; Wall;
+				     Wall = Wall->next_content)
 				{
 					if (Wall->R_num == real_object(VOBJ_WALLS))
 						if (Wall->value[1] == 5)
@@ -3691,12 +3871,15 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 				}
 				if (Wall && (speed > 43 || (Wall->value[2] / 2 < 10)))
 				{
-					act("You slam into $p, shattering it upon impact, and only marginally slowing your fall...", FALSE, ch, Wall, 0, TO_CHAR);
-					act("$n falls from above, slamming into and shattering $p, before continuing to fall...", FALSE, ch, Wall, 0, TO_ROOM);
+					act("You slam into $p, shattering it upon impact, and only marginally slowing your fall...",
+					    FALSE, ch, Wall, 0, TO_CHAR);
+					act("$n falls from above, slamming into and shattering $p, before continuing to fall...",
+					    FALSE, ch, Wall, 0, TO_ROOM);
 					damage(ch, ch, dam, TYPE_UNDEFINED);
 					spell_dispel_magic(70, ch, NULL, SPELL_TYPE_SPELL, 0, Wall);
 					speed /= 2;
-					add_event(event_falling_char, 0, ch, NULL, NULL, 0, &speed, sizeof(speed));
+					add_event(event_falling_char, 0, ch, NULL, NULL, 0, &speed,
+						  sizeof(speed));
 					return FALSE;
 				}
 				else if (Wall)
@@ -3725,7 +3908,8 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		else
 		{
 			send_to_char("You land with stunning force!\n", ch);
-			act("$n falls in from above, landing in a crumpled heap!", TRUE, ch, 0, 0, TO_ROOM);
+			act("$n falls in from above, landing in a crumpled heap!", TRUE, ch, 0, 0,
+			    TO_ROOM);
 
 			if (ch->specials.z_cord > 0)
 				ch->specials.z_cord = 0;
@@ -3748,7 +3932,8 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 			SET_POS(ch, number(0, 2) + GET_STAT(ch));
 			Stun(ch, ch, (100 * dam / GET_MAX_HIT(ch)), FALSE); /* 1-100  */
 			/* also can knock them out for a time.  */
-			if (number(1, (100 * dam / GET_MAX_HIT(ch))) > number(STAT_INDEX(GET_C_CON(ch)) / 2, STAT_INDEX(GET_C_CON(ch)) * 3))
+			if (number(1, (100 * dam / GET_MAX_HIT(ch))) >
+			    number(STAT_INDEX(GET_C_CON(ch)) / 2, STAT_INDEX(GET_C_CON(ch)) * 3))
 				KnockOut(ch, number(2, MAX(2, (100 - GET_C_CON(ch)))));
 
 			// if this is a mount, hurt rider (theoretically, only mounts will fall)
@@ -3759,7 +3944,8 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 				send_to_char("You land with stunning force!\n", chr);
 				send_to_char("Your rider suffers a similar fate!\n", ch);
 
-				act("$n, riding $N, is thrown off $s mount and slams into the ground!", TRUE, chr, 0, ch, TO_NOTVICT);
+				act("$n, riding $N, is thrown off $s mount and slams into the ground!",
+				    TRUE, chr, 0, ch, TO_NOTVICT);
 
 				if (chr->specials.z_cord > 0)
 					chr->specials.z_cord = 0;
@@ -3778,7 +3964,9 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 				SET_POS(chr, number(0, 2) + GET_STAT(chr));
 				Stun(chr, chr, (100 * dam / GET_MAX_HIT(chr)), FALSE);
 
-				if (number(1, (100 * dam / GET_MAX_HIT(chr))) > number(STAT_INDEX(GET_C_CON(chr)) / 2, STAT_INDEX(GET_C_CON(chr)) * 3))
+				if (number(1, (100 * dam / GET_MAX_HIT(chr))) >
+				    number(STAT_INDEX(GET_C_CON(chr)) / 2,
+					   STAT_INDEX(GET_C_CON(chr)) * 3))
 					KnockOut(chr, number(2, MAX(2, (100 - GET_C_CON(chr)))));
 
 				// as you might imagine, the rider is no longer riding
@@ -3814,12 +4002,19 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		send_to_char("You fall, shapes and sounds shredding past you.\n", ch);
 	}
 
-	add_event(event_falling_char, (speed == 31) ? 4 : (speed == 43) ? 2 : 1, ch, NULL, NULL, 0, &speed, sizeof(speed));
+	add_event(event_falling_char,
+		  (speed == 31) ? 4 :
+		  (speed == 43) ? 2 :
+				  1,
+		  ch, NULL, NULL, 0, &speed, sizeof(speed));
 	// AddEvent(EVENT_FALLING_CHAR, (speed == 31) ? 4 : (speed == 43) ? 2 : 1, TRUE, ch, speed);
 	return TRUE;
 }
 
-void event_falling_obj(P_char ch, P_char victim, P_obj obj, void *data) { falling_obj(obj, *((int *)data), TRUE); }
+void event_falling_obj(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	falling_obj(obj, *((int *)data), TRUE);
+}
 
 /*
  obj OBJ_FALLING, this routine updates speed, moves it, sends appropriate
@@ -3845,11 +4040,11 @@ void event_falling_obj(P_char ch, P_char victim, P_obj obj, void *data) { fallin
 //---------------------------------------------------------------------------------
 bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 {
-	static bool          already_falling = FALSE;
-	P_nevent             ev;
+	static bool already_falling = FALSE;
+	P_nevent ev;
 	room_direction_data *exit;
-	int                  dam, new_room;
-	bool                 sect_check;
+	int dam, new_room;
+	bool sect_check;
 
 	if (!obj)
 	{
@@ -3859,7 +4054,8 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 
 	if (!OBJ_ROOM(obj))
 	{
-		logit(LOG_DEBUG, "falling_obj: obj '%s' %d is NOT in a room.", OBJ_SHORT(obj), OBJ_VNUM(obj));
+		logit(LOG_DEBUG, "falling_obj: obj '%s' %d is NOT in a room.", OBJ_SHORT(obj),
+		      OBJ_VNUM(obj));
 		// Somebody snagged it while it was falling
 		// May have to do the damage here, but more likely in get()
 		return FALSE;
@@ -3885,7 +4081,9 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 		}
 		speed = 1;
 		// Passes falling criteria for the room it's in to start falling.
-		if ((world[obj->loc.room].sector_type == SECT_NO_GROUND) || (world[obj->loc.room].sector_type == SECT_UNDRWLD_NOGROUND) || (world[obj->loc.room].chance_fall >= number(1, 100)))
+		if ((world[obj->loc.room].sector_type == SECT_NO_GROUND) ||
+		    (world[obj->loc.room].sector_type == SECT_UNDRWLD_NOGROUND) ||
+		    (world[obj->loc.room].chance_fall >= number(1, 100)))
 		{
 			sect_check = TRUE;
 		}
@@ -3906,20 +4104,29 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 	// Nowhere to fall: not in air (z_cord) and not without somewhere to fall and it can go through the exit.
 	// And don't forget to check if it actually starts falling.
 	if (obj->z_cord == 0 &&
-	    (!(exit = world[obj->loc.room].dir_option[DIR_DOWN]) || exit->to_room == NOWHERE || IS_SET(exit->exit_info, EX_CLOSED | EX_LOCKED | EX_BLOCKED | EX_WALLED | EX_BREAKABLE) || !sect_check))
+	    (!(exit = world[obj->loc.room].dir_option[DIR_DOWN]) || exit->to_room == NOWHERE ||
+	     IS_SET(exit->exit_info,
+		    EX_CLOSED | EX_LOCKED | EX_BLOCKED | EX_WALLED | EX_BREAKABLE) ||
+	     !sect_check))
 	{
 		// Hit the ground!
 		// Debugging:
 		if (exit && exit->to_room == NOWHERE)
 		{
-			logit(LOG_DEBUG, "Room (%d) has falling object vnum (%d) but has no valid 'down' exit.", world[obj->loc.room].number, obj_index[obj->R_num].virtual_number);
+			logit(LOG_DEBUG,
+			      "Room (%d) has falling object vnum (%d) but has no valid 'down' exit.",
+			      world[obj->loc.room].number, obj_index[obj->R_num].virtual_number);
 			FREE(exit);
 			world[obj->loc.room].dir_option[DIR_DOWN] = exit = NULL;
 		}
 		// At this point, we know that, if exit exists, it doesn't lead to NOWHERE.
-		if (((world[obj->loc.room].sector_type == SECT_NO_GROUND) || (world[obj->loc.room].sector_type == SECT_UNDRWLD_NOGROUND)) && !exit)
+		if (((world[obj->loc.room].sector_type == SECT_NO_GROUND) ||
+		     (world[obj->loc.room].sector_type == SECT_UNDRWLD_NOGROUND)) &&
+		    !exit)
 		{
-			logit(LOG_DEBUG, "Room (%d) has sector type NOGROUND but has no valid 'down' exit.", world[obj->loc.room].number, obj_index[obj->R_num].virtual_number);
+			logit(LOG_DEBUG,
+			      "Room (%d) has sector type NOGROUND but has no valid 'down' exit.",
+			      world[obj->loc.room].number, obj_index[obj->R_num].virtual_number);
 			world[obj->loc.room].sector_type = SECT_INSIDE;
 		}
 		// If we didn't pass the room-sector criteria to start falling.
@@ -3930,7 +4137,8 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 		// If we've just started falling.
 		if (speed <= 31)
 		{
-			act("$p quivers in space for a second, then settles to the ground.", TRUE, 0, obj, 0, TO_ROOM);
+			act("$p quivers in space for a second, then settles to the ground.", TRUE,
+			    0, obj, 0, TO_ROOM);
 			return FALSE;
 		}
 		else
@@ -3946,7 +4154,8 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 			}
 			else
 			{
-				act("$p crashes into the ground from above!", TRUE, 0, obj, 0, TO_ROOM);
+				act("$p crashes into the ground from above!", TRUE, 0, obj, 0,
+				    TO_ROOM);
 				if (!IS_ARTIFACT(obj))
 					obj->condition -= dam / 10;
 				// Add object damage/destroy, also hit people, here
@@ -3978,13 +4187,13 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 	if (speed < 31)
 	{
 		speed = 31;
-		dam   = 4;
+		dam = 4;
 	}
 	// Second room
 	else if (speed == 31)
 	{
 		speed = 43;
-		dam   = 2;
+		dam = 2;
 	}
 	// Additional rooms
 	else
@@ -4010,8 +4219,8 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 void affect_update(void)
 {
 	struct affected_type *af, *next_af_dude;
-	P_char                i, i_next, orig;
-	int                   morphed = FALSE;
+	P_char i, i_next, orig;
+	int morphed = FALSE;
 
 	for (i = character_list; i != NULL; i = i_next)
 	{
@@ -4069,21 +4278,28 @@ void affect_update(void)
 						{
 							orig = i->only.npc->orig_char;
 
-							act("$n suddenly changes shape, reforming into $N.", FALSE, i, NULL, orig, TO_NOTVICT);
-							send_to_char("You suddenly feel yourself going back to normal.\n", i);
+							act("$n suddenly changes shape, reforming into $N.",
+							    FALSE, i, NULL, orig, TO_NOTVICT);
+							send_to_char(
+								"You suddenly feel yourself going back to normal.\n",
+								i);
 
 							un_morph(i);
 							morphed = TRUE;
 							break;
 						}
 						else
-							send_to_char("error: call of wild improperly set up\n", i);
+							send_to_char(
+								"error: call of wild improperly set up\n",
+								i);
 					}
 
 					if (af->type == SPELL_DRACONIC_APOTHEOSIS)
 					{
 						GET_RACE(i) = af->modifier;
-						send_to_char("The &+Gdr&+Lag&+Gon&n god's &+rpower&n fades leaving you broken and &+bcold&n!\n", i);
+						send_to_char(
+							"The &+Gdr&+Lag&+Gon&n god's &+rpower&n fades leaving you broken and &+bcold&n!\n",
+							i);
 						// morphed = TRUE;
 						// break;
 					}
@@ -4096,15 +4312,21 @@ void affect_update(void)
 							{
 								orig = i->only.npc->orig_char;
 
-								act("$n begins to fade away... losing it's power.", FALSE, i, NULL, orig, TO_NOTVICT);
-								send_to_char("You return to your own body.\n", i);
+								act("$n begins to fade away... losing it's power.",
+								    FALSE, i, NULL, orig,
+								    TO_NOTVICT);
+								send_to_char(
+									"You return to your own body.\n",
+									i);
 
 								un_morph(i);
 								morphed = TRUE;
 								break;
 							}
 							else
-								send_to_char("error: channel improperly set up\n", i);
+								send_to_char(
+									"error: channel improperly set up\n",
+									i);
 						}
 						else
 						{
@@ -4145,8 +4367,8 @@ void affect_update(void)
 //---------------------------------------------------------------------------------
 void short_affect_update(void)
 {
-	bool                  killed;
-	P_char                i, i_next, killer;
+	bool killed;
+	P_char i, i_next, killer;
 	struct affected_type *af, *next_af_dude;
 
 	for (i = character_list; i; i = i_next)
@@ -4161,15 +4383,22 @@ void short_affect_update(void)
 			// Log deaths of PCs.
 			if (IS_PC(i))
 			{
-				statuslog(i->player.level, "%s killed in %d (< -10 hits)", GET_NAME(i), ((i->in_room == NOWHERE) ? -1 : world[i->in_room].number));
-				logit(LOG_DEATH, "%s killed in %d (< -10 hits)", GET_NAME(i), (i->in_room == NOWHERE) ? -1 : world[i->in_room].number);
+				statuslog(i->player.level, "%s killed in %d (< -10 hits)",
+					  GET_NAME(i),
+					  ((i->in_room == NOWHERE) ? -1 :
+								     world[i->in_room].number));
+				logit(LOG_DEATH, "%s killed in %d (< -10 hits)", GET_NAME(i),
+				      (i->in_room == NOWHERE) ? -1 : world[i->in_room].number);
 			}
 
 			killed = FALSE;
 			// No more vit death or zerk death to avoid frags
-			for (killer = world[i->in_room].people; killer; killer = killer->next_in_room)
+			for (killer = world[i->in_room].people; killer;
+			     killer = killer->next_in_room)
 			{
-				if (GET_OPPONENT(killer) && GET_OPPONENT(killer) == i && killer->in_room == i->in_room && GET_RACEWAR(killer) != GET_RACEWAR(i))
+				if (GET_OPPONENT(killer) && GET_OPPONENT(killer) == i &&
+				    killer->in_room == i->in_room &&
+				    GET_RACEWAR(killer) != GET_RACEWAR(i))
 				{
 					die(i, killer);
 					killed = TRUE;
@@ -4205,6 +4434,7 @@ void strip_holy_sword(P_char ch)
 	if (affected_by_spell(ch, SPELL_HOLY_SWORD))
 	{
 		affect_from_char(ch, SPELL_HOLY_SWORD);
-		send_to_char("&+wYour weapon abruptly ceases to &+Cglow&+w with holy power.\n&n", ch);
+		send_to_char("&+wYour weapon abruptly ceases to &+Cglow&+w with holy power.\n&n",
+			     ch);
 	}
 }

@@ -12,12 +12,12 @@
 
 #define MAX_LINES 4095
 
-static int    edit_has_ansi(char *s);
+static int edit_has_ansi(char *s);
 static char **edit_text_to_data(const char *source);
-static char  *edit_data_to_text(struct edit_data *data);
-static int    edit_delete_line(struct edit_data *data, int loc);
-static int    edit_insert_data(struct edit_data *data, char **lines);
-static void   edit_list_data(struct edit_data *data);
+static char *edit_data_to_text(struct edit_data *data);
+static int edit_delete_line(struct edit_data *data, int loc);
+static int edit_insert_data(struct edit_data *data, char **lines);
+static void edit_list_data(struct edit_data *data);
 
 void edit_free(struct edit_data *data)
 {
@@ -46,14 +46,14 @@ static int edit_has_ansi(char *s)
 		if (*t == '&')
 			switch (*(t + 1))
 			{
-				case '+':
-				case '-':
-				case '=':
-				case 'n':
-				case 'N':
-					return 1;
-				default:
-					break;
+			case '+':
+			case '-':
+			case '=':
+			case 'n':
+			case 'N':
+				return 1;
+			default:
+				break;
 			}
 	return 0;
 }
@@ -65,9 +65,9 @@ static int edit_has_ansi(char *s)
 
 static char **edit_text_to_data(const char *source)
 {
-	char        *buf; /* a copy of the source I can chop up  */
-	char        *s;   /* current source 'line' pointer  */
-	int          cur_line = 0;
+	char *buf; /* a copy of the source I can chop up  */
+	char *s; /* current source 'line' pointer  */
+	int cur_line = 0;
 	static char *stor[MAX_LINES + 1];
 
 	if (!source)
@@ -76,7 +76,7 @@ static char **edit_text_to_data(const char *source)
 	memset(stor, 0, (MAX_LINES + 1) * sizeof(char *));
 
 	buf = str_dup(source);
-	s   = buf;
+	s = buf;
 
 	/* special case if my _original_ string contains nothing but a null */
 
@@ -87,11 +87,11 @@ static char **edit_text_to_data(const char *source)
 	}
 	while (*s)
 	{
-		int c    = 0;       /* how many printable chars have I passed?  */
-		int mark = 0;       /* marks spaces as I pass them  */
-		int loc  = 0;       /* how many chars (including invis
+		int c = 0; /* how many printable chars have I passed?  */
+		int mark = 0; /* marks spaces as I pass them  */
+		int loc = 0; /* how many chars (including invis
 		                       ones) I've passed  */
-		char *t = s;        /* t is a work pointer.  As well, at the
+		char *t = s; /* t is a work pointer.  As well, at the
 		                       end of the below 'while' loop, it
 		                       should point to the character AFTER the
 		                       last one in a line (a null will be
@@ -101,7 +101,7 @@ static char **edit_text_to_data(const char *source)
 		while (!n_new && (c < 75))
 		{
 			if (!*t)
-			{              /* eek.. end of buffer  */
+			{ /* eek.. end of buffer  */
 				n_new = t; /* so it finds the null */
 				break;
 			}
@@ -122,16 +122,16 @@ static char **edit_text_to_data(const char *source)
 			if (*t == '&') /* ansi check...  */
 				switch (*(t + 1))
 				{
-					case '+':
-					case '-':
-					case '=':
-						t++;
-						loc++;
-					case 'n':
-					case 'N':
-						t += 2;
-						loc += 2;
-						continue; /* find the next char... */
+				case '+':
+				case '-':
+				case '=':
+					t++;
+					loc++;
+				case 'n':
+				case 'N':
+					t += 2;
+					loc += 2;
+					continue; /* find the next char... */
 				}
 			if (c && (*t == ' '))
 			{ /* note this for word wrap... */
@@ -156,7 +156,7 @@ static char **edit_text_to_data(const char *source)
 				FREE(buf);
 				return NULL;
 			}
-			t     = s + mark; /* but we have no count of printable now */
+			t = s + mark; /* but we have no count of printable now */
 			n_new = t + 1;
 		}
 		/* note that 'n_new' should NEVER be equal to 't', unless we are at
@@ -170,7 +170,8 @@ static char **edit_text_to_data(const char *source)
 		if (cur_line > MAX_LINES)
 		{
 			/* GASP  */
-			logit(LOG_EXIT, "editor.c, edit_text_to_data: %d lines exceeded!", MAX_LINES);
+			logit(LOG_EXIT, "editor.c, edit_text_to_data: %d lines exceeded!",
+			      MAX_LINES);
 			abort();
 		}
 		s = n_new;
@@ -184,9 +185,9 @@ static char **edit_text_to_data(const char *source)
    Return the text stream in a newly allocated char pointer */
 static char *edit_data_to_text(struct edit_data *data)
 {
-	char  *text;
+	char *text;
 	size_t space = 0;
-	int    i;
+	int i;
 
 	/* instead of walking through the array, an resizing the allocated
 	   buffer as we go, first walk though the data, and find out just how
@@ -303,7 +304,7 @@ static int edit_insert_data(struct edit_data *data, char **lines)
 static void edit_list_data(struct edit_data *data)
 {
 	char buf[4096];
-	int  i = 0;
+	int i = 0;
 
 	snprintf(buf, 4096, "\r\n&+CEdit to a maximum of %d lines&N\r\n", data->max_lines);
 	SEND_TO_Q(buf, data->desc);
@@ -425,19 +426,22 @@ void edit_string_add(struct edit_data *data, char *str)
 		SEND_TO_Q("   &+W+l&N&+c     - list text&N\r\n", data->desc);
 		SEND_TO_Q("   &+W+d n&N&+c   - delete line n&N\r\n", data->desc);
 		SEND_TO_Q("   &+W+d all&N&+c - delete ALL lines&N\r\n", data->desc);
-		SEND_TO_Q("   &+W+g n&N&+c   - goto line n and begin inserting lines there&N\r\n", data->desc);
+		SEND_TO_Q("   &+W+g n&N&+c   - goto line n and begin inserting lines there&N\r\n",
+			  data->desc);
 		SEND_TO_Q("   &+W+q&N&+c     - quit WITHOUT saving&N\r\n", data->desc);
 		SEND_TO_Q("   &+W+w&N&+c     - save and quit&N\r\n\r\n", data->desc);
 	}
 	else
 	{
 		/* oh boy.. */
-		int    r;
+		int r;
 		char **heh;
 
 		if (!data->is_god && edit_has_ansi(str))
 		{
-			SEND_TO_Q("&+RNo ANSI characters allowed as input.  &+YDiscarding line.&N\r\n", data->desc);
+			SEND_TO_Q(
+				"&+RNo ANSI characters allowed as input.  &+YDiscarding line.&N\r\n",
+				data->desc);
 			snprintf(buf, sizeof buf, "%3d&+W:&N ", data->cur_line + 1);
 			SEND_TO_Q(buf, data->desc);
 			return;
@@ -452,11 +456,15 @@ void edit_string_add(struct edit_data *data, char *str)
 			r = edit_insert_data(data, heh);
 			if (r == -1)
 			{
-				SEND_TO_Q("&+RThat would exceed the maximum number of lines allowed!&N\r\n", data->desc);
+				SEND_TO_Q(
+					"&+RThat would exceed the maximum number of lines allowed!&N\r\n",
+					data->desc);
 			}
 			else if (r == 1)
 			{
-				SEND_TO_Q("&+R&-LStrange error #1 in the editor.  Tell an Imp!&N\r\n", data->desc);
+				SEND_TO_Q(
+					"&+R&-LStrange error #1 in the editor.  Tell an Imp!&N\r\n",
+					data->desc);
 			}
 		}
 	}
@@ -464,18 +472,19 @@ void edit_string_add(struct edit_data *data, char *str)
 	SEND_TO_Q(buf, data->desc);
 }
 
-void edit_start(P_desc desc, char *old_text, int max_lines, void (*callback)(P_desc, int, char *), int callback_data)
+void edit_start(P_desc desc, char *old_text, int max_lines, void (*callback)(P_desc, int, char *),
+		int callback_data)
 {
 	struct edit_data *data;
-	char              buf[20];
+	char buf[20];
 
 	CREATE(data, edit_data, 1, MEM_TAG_EDITDAT);
 
-	data->max_lines     = max_lines ? max_lines : MAX_LINES;
-	data->cur_line      = 0;
-	data->is_god        = (GET_LEVEL(desc->character) >= MINLVLIMMORTAL);
-	data->desc          = desc;
-	data->callback      = callback;
+	data->max_lines = max_lines ? max_lines : MAX_LINES;
+	data->cur_line = 0;
+	data->is_god = (GET_LEVEL(desc->character) >= MINLVLIMMORTAL);
+	data->desc = desc;
+	data->callback = callback;
 	data->callback_data = callback_data;
 	CREATE(data->lines, char *, (unsigned)data->max_lines + 1, MEM_TAG_BUFFER);
 

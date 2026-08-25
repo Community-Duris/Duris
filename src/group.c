@@ -41,15 +41,15 @@
 #include "ships/ships.h"
 #include "spells.h"
 
-extern P_desc                  descriptor_list;
+extern P_desc descriptor_list;
 extern const struct race_names race_names_table[];
-extern P_room                  world;
-extern void                    purge_linked_auras(P_char ch);
-extern string                  pad_ansi(const char *str, int length, bool trim_to_length);
+extern P_room world;
+extern void purge_linked_auras(P_char ch);
+extern string pad_ansi(const char *str, int length, bool trim_to_length);
 
 struct mm_ds *dead_group_pool = NULL;
-void          remove_aura_message(P_char ch, P_char commander);
-void          add_aura_message(P_char ch, P_char commander);
+void remove_aura_message(P_char ch, P_char commander);
+void add_aura_message(P_char ch, P_char commander);
 
 static bool do_group_add(P_char ch, P_char victim);
 
@@ -59,7 +59,7 @@ static bool do_group_add(P_char ch, P_char victim);
 int free_back_slots(P_char ch)
 {
 	struct group_list *gl;
-	int                front = 0, back = 0;
+	int front = 0, back = 0;
 
 	for (gl = ch->group; gl; gl = gl->next)
 	{
@@ -81,7 +81,7 @@ int free_back_slots(P_char ch)
 void fix_group_ranks(P_char ch)
 {
 	struct group_list *gl;
-	int                how_many;
+	int how_many;
 
 	if (!ch || !(ch->group))
 		return;
@@ -92,8 +92,10 @@ void fix_group_ranks(P_char ch)
 		if (IS_BACKRANKED(gl->ch) && gl->ch->in_room == ch->in_room)
 		{
 			REMOVE_BIT(gl->ch->specials.act2, PLR2_BACK_RANK);
-			act("You notice that you've moved up towards the battle lines!", TRUE, gl->ch, 0, NULL, TO_CHAR);
-			act("$n notices that $e has moved up towards the battle lines!", TRUE, gl->ch, 0, NULL, TO_NOTVICT);
+			act("You notice that you've moved up towards the battle lines!", TRUE,
+			    gl->ch, 0, NULL, TO_CHAR);
+			act("$n notices that $e has moved up towards the battle lines!", TRUE,
+			    gl->ch, 0, NULL, TO_NOTVICT);
 			how_many--;
 		}
 	}
@@ -139,7 +141,7 @@ int on_front_line(P_char ch)
 
 void displayM(P_char ch, char *tbuf)
 {
-	int  percent = 0;
+	int percent = 0;
 	char color[10];
 
 	//  GET_VITALITY(ch), GET_MAX_VITALITY(ch), WTF is this for?
@@ -167,12 +169,13 @@ void displayM(P_char ch, char *tbuf)
 		snprintf(color, 10, "&+L");
 
 	int len = strlen(tbuf);
-	snprintf(tbuf + len, MAX_STRING_LENGTH - len, " <%s%dm&n/%s%dM&n>", color, GET_VITALITY(ch), color, GET_MAX_VITALITY(ch));
+	snprintf(tbuf + len, MAX_STRING_LENGTH - len, " <%s%dm&n/%s%dM&n>", color, GET_VITALITY(ch),
+		 color, GET_MAX_VITALITY(ch));
 }
 
 void displayH(P_char ch, char *tbuf)
 {
-	int  percent = 0;
+	int percent = 0;
 	char color[10];
 
 	// this is so that no more crash when max hp = 0
@@ -192,12 +195,12 @@ void displayH(P_char ch, char *tbuf)
 		snprintf(color, 10, "&+L");
 
 	int len = strlen(tbuf);
-	snprintf(tbuf + len, MAX_STRING_LENGTH - len, " <%s%dh&n/%s%dH&n>", color, GET_HIT(ch), color, GET_MAX_HIT(ch));
+	snprintf(tbuf + len, MAX_STRING_LENGTH - len, " <%s%dh&n/%s%dH&n>", color, GET_HIT(ch),
+		 color, GET_MAX_HIT(ch));
 }
 
 float group_exp_modifier(P_char ch)
 {
-
 	float group_fact = 1.00;
 
 	if (ch->group)
@@ -231,7 +234,9 @@ P_char get_char_on_ship_bridge(P_char ch, const char *name)
 	}
 
 	if (vict && !IS_TRUSTED(ch) && !IS_TRUSTED(vict))
-		if (racewar(ch, vict) && !IS_DISGUISE(vict) || (IS_DISGUISE(vict) && (EVIL_RACE(ch) != EVIL_RACE(vict))) || (GET_RACE(ch) == RACE_ILLITHID && !IS_ILLITHID(vict)))
+		if (racewar(ch, vict) && !IS_DISGUISE(vict) ||
+		    (IS_DISGUISE(vict) && (EVIL_RACE(ch) != EVIL_RACE(vict))) ||
+		    (GET_RACE(ch) == RACE_ILLITHID && !IS_ILLITHID(vict)))
 		{
 			vict = NULL;
 		}
@@ -275,10 +280,10 @@ P_char get_char_on_ship_bridge(P_char ch, const char *name)
 
 void do_appoint(P_char ch, char *argument, int cmd)
 {
-	char               name[MAX_INPUT_LENGTH];
-	char               buf[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	struct group_list *gl, *target = NULL;
-	P_char             newleader = NULL, oldleader = NULL;
+	P_char newleader = NULL, oldleader = NULL;
 
 	if (!ch)
 		return;
@@ -325,20 +330,21 @@ void do_appoint(P_char ch, char *argument, int cmd)
 
 	/* Swap the character pointers between the head (current leader) and the target node. This effectively makes newleader the head->ch and oldleader becomes the target node's ch. */
 	ch->group->ch = newleader;
-	target->ch    = oldleader;
+	target->ch = oldleader;
 
 	/* Notify leader and the appointed member */
-	snprintf(buf, MAX_STRING_LENGTH, "You appoint %s as the leader of the group.\n", GET_NAME(newleader));
+	snprintf(buf, MAX_STRING_LENGTH, "You appoint %s as the leader of the group.\n",
+		 GET_NAME(newleader));
 	send_to_char(buf, oldleader);
 
 	act("$N is now the leader of your group.", TRUE, oldleader, 0, newleader, TO_CHAR);
 	act("$N is now the leader of $n's group.", TRUE, oldleader, 0, newleader, TO_NOTVICT);
-	act("You have been appointed leader of the group by $n!", FALSE, oldleader, 0, newleader, TO_VICT);
+	act("You have been appointed leader of the group by $n!", FALSE, oldleader, 0, newleader,
+	    TO_VICT);
 
 	/* Update aura messages: for members that have command aura, remove old, add new. */
 	for (gl = ch->group; gl; gl = gl->next)
 	{
-
 		if (!gl->ch)
 			continue;
 
@@ -357,13 +363,13 @@ void do_appoint(P_char ch, char *argument, int cmd)
 
 void do_group(P_char ch, char *argument, int cmd)
 {
-	char                name[MAX_INPUT_LENGTH], rank[MAX_INPUT_LENGTH];
+	char name[MAX_INPUT_LENGTH], rank[MAX_INPUT_LENGTH];
 	struct follow_type *f;
-	bool                found;
-	char                Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
-	struct group_list  *gl;
-	P_char              victim;
-	int                 maxsize, counter;
+	bool found;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	struct group_list *gl;
+	P_char victim;
+	int maxsize, counter;
 
 	/*  one_argument(argument, name); */
 	argument_interpreter(argument, name, rank);
@@ -417,15 +423,19 @@ void do_group(P_char ch, char *argument, int cmd)
 
 				gl = ch->group;
 				if (IS_NPC(gl->ch))
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", gl->ch->player.short_descr);
+					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s",
+						 gl->ch->player.short_descr);
 				else
 				{
 					if (racewar(ch, gl->ch))
-						strcpy(Gbuf3, race_names_table[GET_RACE(gl->ch)].ansi);
+						strcpy(Gbuf3,
+						       race_names_table[GET_RACE(gl->ch)].ansi);
 					else
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", GET_NAME(gl->ch));
+						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s",
+							 GET_NAME(gl->ch));
 				}
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "( Head) %-s\n", (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "( Head) %-s\n",
+					 (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3);
 
 				if (ch->in_room == gl->ch->in_room)
 				{
@@ -440,16 +450,22 @@ void do_group(P_char ch, char *argument, int cmd)
 				for (gl = gl->next; gl; gl = gl->next)
 				{
 					if (IS_NPC(gl->ch))
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", gl->ch->player.short_descr);
+						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s",
+							 gl->ch->player.short_descr);
 					else
 					{
 						if (racewar(ch, gl->ch))
-							strcpy(Gbuf3, race_names_table[GET_RACE(gl->ch)].ansi);
+							strcpy(Gbuf3,
+							       race_names_table[GET_RACE(gl->ch)]
+								       .ansi);
 						else
-							snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", GET_NAME(gl->ch));
+							snprintf(Gbuf3, MAX_STRING_LENGTH, "%s",
+								 GET_NAME(gl->ch));
 					}
 
-					snprintf(Gbuf2, MAX_STRING_LENGTH, "\n(%-5s)  %-s\n", (!IS_BACKRANKED(gl->ch) ? "Front" : "Back"), (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3);
+					snprintf(Gbuf2, MAX_STRING_LENGTH, "\n(%-5s)  %-s\n",
+						 (!IS_BACKRANKED(gl->ch) ? "Front" : "Back"),
+						 (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3);
 
 					if (ch->in_room == gl->ch->in_room)
 					{
@@ -478,7 +494,8 @@ void do_group(P_char ch, char *argument, int cmd)
 			maxsize = 5;
 #endif
 
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "Your group consists of (%2d/%d):\n", counter, maxsize);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "Your group consists of (%2d/%d):\n",
+				 counter, maxsize);
 			send_to_char(Gbuf1, ch);
 
 			gl = ch->group;
@@ -491,7 +508,9 @@ void do_group(P_char ch, char *argument, int cmd)
 			      else*/
 
 			char hp_ansi_char = 'g';
-			int  hp_percent   = (int)(((float)GET_HIT(gl->ch) / (float)GET_MAX_HIT(gl->ch)) * 100.0f);
+			int hp_percent =
+				(int)(((float)GET_HIT(gl->ch) / (float)GET_MAX_HIT(gl->ch)) *
+				      100.0f);
 			if (hp_percent >= 100)
 				hp_ansi_char = 'g';
 			else if (hp_percent >= 90)
@@ -510,7 +529,9 @@ void do_group(P_char ch, char *argument, int cmd)
 				hp_ansi_char = 'r';
 
 			char mv_ansi_char = 'g';
-			int  mv_percent   = (int)(((float)GET_VITALITY(gl->ch) / (float)GET_MAX_VITALITY(gl->ch)) * 100.0f);
+			int mv_percent = (int)(((float)GET_VITALITY(gl->ch) /
+						(float)GET_MAX_VITALITY(gl->ch)) *
+					       100.0f);
 			if (mv_percent >= 100)
 				mv_ansi_char = 'g';
 			else if (mv_percent >= 90)
@@ -528,17 +549,11 @@ void do_group(P_char ch, char *argument, int cmd)
 			else
 				mv_ansi_char = 'r';
 
-			snprintf(Gbuf2,
-			         MAX_STRING_LENGTH,
-			         "%5d/%-5dH (&+%c%3d&n%%), %5d/%-5dV (&+%c%3d&n%%)",
-			         GET_HIT(gl->ch),
-			         GET_MAX_HIT(gl->ch),
-			         hp_ansi_char,
-			         hp_percent,
-			         GET_VITALITY(gl->ch),
-			         GET_MAX_VITALITY(gl->ch),
-			         mv_ansi_char,
-			         mv_percent);
+			snprintf(Gbuf2, MAX_STRING_LENGTH,
+				 "%5d/%-5dH (&+%c%3d&n%%), %5d/%-5dV (&+%c%3d&n%%)",
+				 GET_HIT(gl->ch), GET_MAX_HIT(gl->ch), hp_ansi_char, hp_percent,
+				 GET_VITALITY(gl->ch), GET_MAX_VITALITY(gl->ch), mv_ansi_char,
+				 mv_percent);
 
 			if (IS_NPC(gl->ch))
 				strcpy(Gbuf3, gl->ch->player.short_descr);
@@ -548,22 +563,30 @@ void do_group(P_char ch, char *argument, int cmd)
 					strcpy(Gbuf3, race_names_table[GET_RACE(gl->ch)].ansi);
 				else
 				{
-					snprintf(Gbuf3,
-					         MAX_STRING_LENGTH,
-					         "&n[&+w%2d&n%s%s&n] %s",
-					         GET_LEVEL(gl->ch),
-					         (IS_TRUSTED(gl->ch) && (IS_SET(gl->ch->specials.act, PLR_ANONYMOUS)) ? "*" : " "),
-					         pad_ansi(get_class_name(gl->ch, ch), 16, TRUE).c_str(),
-					         pad_ansi(GET_NAME(gl->ch), MAX_NAME_LENGTH, TRUE).c_str());
+					snprintf(Gbuf3, MAX_STRING_LENGTH, "&n[&+w%2d&n%s%s&n] %s",
+						 GET_LEVEL(gl->ch),
+						 (IS_TRUSTED(gl->ch) &&
+								  (IS_SET(gl->ch->specials.act,
+									  PLR_ANONYMOUS)) ?
+							  "*" :
+							  " "),
+						 pad_ansi(get_class_name(gl->ch, ch), 16, TRUE)
+							 .c_str(),
+						 pad_ansi(GET_NAME(gl->ch), MAX_NAME_LENGTH, TRUE)
+							 .c_str());
 				}
 			}
 			if (IS_NPC(gl->ch))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "%-39s %-30s", (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3, (ch->in_room == gl->ch->in_room) ? Gbuf2 : "");
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "%-39s %-30s",
+					 (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3,
+					 (ch->in_room == gl->ch->in_room) ? Gbuf2 : "");
 			}
 			else
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "%s %-30s", (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3, (ch->in_room == gl->ch->in_room) ? Gbuf2 : "");
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "%s %-30s",
+					 (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3,
+					 (ch->in_room == gl->ch->in_room) ? Gbuf2 : "");
 			}
 
 			if (!racewar(ch, gl->ch) && !IS_NPC(gl->ch) && CAN_SEE_Z_CORD(ch, gl->ch))
@@ -575,10 +598,16 @@ void do_group(P_char ch, char *argument, int cmd)
 
 			if (ch->in_room == gl->ch->in_room)
 			{
-				if (((has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) || IS_AFFECTED2(ch, AFF2_DETECT_EVIL)) && IS_EVIL(gl->ch))
+				if (((has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+				      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) ||
+				     IS_AFFECTED2(ch, AFF2_DETECT_EVIL)) &&
+				    IS_EVIL(gl->ch))
 					strcat(Gbuf1, " (&+rRed Aura&n)");
 
-				if (((has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) || IS_AFFECTED2(ch, AFF2_DETECT_GOOD)) && IS_GOOD(gl->ch))
+				if (((has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+				      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) ||
+				     IS_AFFECTED2(ch, AFF2_DETECT_GOOD)) &&
+				    IS_GOOD(gl->ch))
 					strcat(Gbuf1, " (&+YGold Aura&n)");
 			}
 
@@ -597,7 +626,9 @@ void do_group(P_char ch, char *argument, int cmd)
 				else*/
 
 				char hp_ansi_char = 'g';
-				int  hp_percent   = (int)(((float)GET_HIT(gl->ch) / (float)GET_MAX_HIT(gl->ch)) * 100.0f);
+				int hp_percent = (int)(((float)GET_HIT(gl->ch) /
+							(float)GET_MAX_HIT(gl->ch)) *
+						       100.0f);
 				if (hp_percent >= 100)
 					hp_ansi_char = 'g';
 				else if (hp_percent >= 90)
@@ -616,7 +647,9 @@ void do_group(P_char ch, char *argument, int cmd)
 					hp_ansi_char = 'r';
 
 				char mv_ansi_char = 'g';
-				int  mv_percent   = (int)(((float)GET_VITALITY(gl->ch) / (float)GET_MAX_VITALITY(gl->ch)) * 100.0f);
+				int mv_percent = (int)(((float)GET_VITALITY(gl->ch) /
+							(float)GET_MAX_VITALITY(gl->ch)) *
+						       100.0f);
 				if (mv_percent >= 100)
 					mv_ansi_char = 'g';
 				else if (mv_percent >= 90)
@@ -634,50 +667,56 @@ void do_group(P_char ch, char *argument, int cmd)
 				else
 					mv_ansi_char = 'r';
 
-				snprintf(Gbuf2,
-				         MAX_STRING_LENGTH,
-				         "%5d/%-5dH (&+%c%3d&n%%), %5d/%-5dV (&+%c%3d&n%%)",
-				         GET_HIT(gl->ch),
-				         GET_MAX_HIT(gl->ch),
-				         hp_ansi_char,
-				         hp_percent,
-				         GET_VITALITY(gl->ch),
-				         GET_MAX_VITALITY(gl->ch),
-				         mv_ansi_char,
-				         mv_percent);
+				snprintf(Gbuf2, MAX_STRING_LENGTH,
+					 "%5d/%-5dH (&+%c%3d&n%%), %5d/%-5dV (&+%c%3d&n%%)",
+					 GET_HIT(gl->ch), GET_MAX_HIT(gl->ch), hp_ansi_char,
+					 hp_percent, GET_VITALITY(gl->ch), GET_MAX_VITALITY(gl->ch),
+					 mv_ansi_char, mv_percent);
 
 				if (IS_NPC(gl->ch))
 					strcpy(Gbuf3, gl->ch->player.short_descr);
 				else
 				{
 					if (racewar(ch, gl->ch))
-						strcpy(Gbuf3, race_names_table[GET_RACE(gl->ch)].ansi);
+						strcpy(Gbuf3,
+						       race_names_table[GET_RACE(gl->ch)].ansi);
 					else
 					{
-						snprintf(Gbuf3,
-						         MAX_STRING_LENGTH,
-						         "&n[&+w%2d&n%s%s&n] %s",
-						         GET_LEVEL(gl->ch),
-						         (IS_TRUSTED(gl->ch) && (IS_SET(gl->ch->specials.act, PLR_ANONYMOUS)) ? "*" : " "),
-						         pad_ansi(get_class_name(gl->ch, ch), 16, TRUE).c_str(),
-						         pad_ansi(GET_NAME(gl->ch), MAX_NAME_LENGTH, TRUE).c_str());
+						snprintf(Gbuf3, MAX_STRING_LENGTH,
+							 "&n[&+w%2d&n%s%s&n] %s", GET_LEVEL(gl->ch),
+							 (IS_TRUSTED(gl->ch) &&
+									  (IS_SET(gl->ch->specials
+											  .act,
+										  PLR_ANONYMOUS)) ?
+								  "*" :
+								  " "),
+							 pad_ansi(get_class_name(gl->ch, ch), 16,
+								  TRUE)
+								 .c_str(),
+							 pad_ansi(GET_NAME(gl->ch), MAX_NAME_LENGTH,
+								  TRUE)
+								 .c_str());
 					}
 				}
 
 				if (IS_NPC(gl->ch))
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "%-39s %-30s", (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3, (ch->in_room == gl->ch->in_room) ? Gbuf2 : "");
+					snprintf(Gbuf1, MAX_STRING_LENGTH, "%-39s %-30s",
+						 (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3,
+						 (ch->in_room == gl->ch->in_room) ? Gbuf2 : "");
 				}
 				else
 				{
-					snprintf(Gbuf1,
-					         MAX_STRING_LENGTH,
-					         "%s %-30s",
-					         (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3,
-					         ((ch->in_room == gl->ch->in_room) && (!racewar(ch, gl->ch) || IS_DISGUISE(gl->ch))) ? Gbuf2 : "");
+					snprintf(Gbuf1, MAX_STRING_LENGTH, "%s %-30s",
+						 (!CAN_SEE_Z_CORD(ch, gl->ch)) ? "Someone" : Gbuf3,
+						 ((ch->in_room == gl->ch->in_room) &&
+						  (!racewar(ch, gl->ch) || IS_DISGUISE(gl->ch))) ?
+							 Gbuf2 :
+							 "");
 				}
 
-				if (!racewar(ch, gl->ch) && !IS_NPC(gl->ch) && CAN_SEE_Z_CORD(ch, gl->ch))
+				if (!racewar(ch, gl->ch) && !IS_NPC(gl->ch) &&
+				    CAN_SEE_Z_CORD(ch, gl->ch))
 				{
 					strcat(Gbuf1, " &n(");
 					strcat(Gbuf1, race_names_table[get_real_race(gl->ch)].ansi);
@@ -685,10 +724,16 @@ void do_group(P_char ch, char *argument, int cmd)
 				}
 				if (ch->in_room == gl->ch->in_room)
 				{
-					if (((has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) || IS_AFFECTED2(ch, AFF2_DETECT_EVIL)) && IS_EVIL(gl->ch))
+					if (((has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+					      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) ||
+					     IS_AFFECTED2(ch, AFF2_DETECT_EVIL)) &&
+					    IS_EVIL(gl->ch))
 						strcat(Gbuf1, " (&+rRed Aura&n)");
 
-					if (((has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) || IS_AFFECTED2(ch, AFF2_DETECT_GOOD)) && IS_GOOD(gl->ch))
+					if (((has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+					      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) ||
+					     IS_AFFECTED2(ch, AFF2_DETECT_GOOD)) &&
+					    IS_GOOD(gl->ch))
 						strcat(Gbuf1, " (&+YGold Aura&n)");
 				}
 				strcat(Gbuf1, "\n");
@@ -699,7 +744,6 @@ void do_group(P_char ch, char *argument, int cmd)
 	}
 	if (ch->group)
 	{
-
 		if (!str_cmp(name, "back"))
 		{
 			return;
@@ -746,7 +790,8 @@ void do_group(P_char ch, char *argument, int cmd)
 				continue;
 			if (f->follower->group && ch->group == f->follower->group)
 			{
-				act("$N already grouped by you.", TRUE, ch, 0, f->follower, TO_CHAR);
+				act("$N already grouped by you.", TRUE, ch, 0, f->follower,
+				    TO_CHAR);
 				continue;
 			}
 			if (do_group_add(ch, f->follower))
@@ -770,7 +815,8 @@ void do_group(P_char ch, char *argument, int cmd)
 	{
 		if (!ch->group)
 		{
-			send_to_char("You can't leave a group when you're not already in one!\n", ch);
+			send_to_char("You can't leave a group when you're not already in one!\n",
+				     ch);
 		}
 		else
 		{
@@ -787,7 +833,8 @@ void do_group(P_char ch, char *argument, int cmd)
 	/* only the group leader can do anything below this point */
 	if (ch->group && (ch->group->ch != ch))
 	{
-		send_to_char("You can not enroll group members without being head of a group.\n", ch);
+		send_to_char("You can not enroll group members without being head of a group.\n",
+			     ch);
 		return;
 	}
 	/* okay.. if victim is already in the group, kick 'em out */
@@ -800,24 +847,29 @@ void do_group(P_char ch, char *argument, int cmd)
 			if (isname(rank, "front"))
 			{
 				REMOVE_BIT(victim->specials.act2, PLR2_BACK_RANK);
-				act("You are sent to the front ranks!", TRUE, ch, 0, victim, TO_VICT);
-				act("You send $N to the front ranks!", TRUE, ch, 0, victim, TO_CHAR);
+				act("You are sent to the front ranks!", TRUE, ch, 0, victim,
+				    TO_VICT);
+				act("You send $N to the front ranks!", TRUE, ch, 0, victim,
+				    TO_CHAR);
 			}
 			else if (isname(rank, "back") && free_back_slots(victim) > 0)
 			{
-
 				SET_BIT(victim->specials.act2, PLR2_BACK_RANK);
-				act("You are sent to the back ranks.", TRUE, ch, 0, victim, TO_VICT);
+				act("You are sent to the back ranks.", TRUE, ch, 0, victim,
+				    TO_VICT);
 				act("You send $N to the back ranks.", TRUE, ch, 0, victim, TO_CHAR);
 			}
 			else
-				send_to_char("You need more members in your front rank first!\n", ch);
+				send_to_char("You need more members in your front rank first!\n",
+					     ch);
 			return;
 		}
 		else
 		{
-			act("You have been kicked out of $n's group.", FALSE, ch, 0, victim, TO_VICT);
-			act("$N has been kicked out of $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
+			act("You have been kicked out of $n's group.", FALSE, ch, 0, victim,
+			    TO_VICT);
+			act("$N has been kicked out of $n's group.", TRUE, ch, 0, victim,
+			    TO_NOTVICT);
 			group_remove_member(victim);
 			update_groupies(ch);
 			update_groupies(victim);
@@ -866,7 +918,8 @@ static bool do_group_add(P_char ch, P_char victim)
 			{
 				act("$N also joins your group.", TRUE, ch, 0, victim, TO_CHAR);
 				act("$N also joins $n's group.", TRUE, ch, 0, victim, TO_NOTVICT);
-				act("Your group has merged into $n's group.", FALSE, ch, 0, victim, TO_VICT);
+				act("Your group has merged into $n's group.", FALSE, ch, 0, victim,
+				    TO_VICT);
 			}
 		}
 		mm_release(dead_group_pool, old_group);
@@ -904,7 +957,8 @@ void do_disband(P_char ch, char *arg, int cmd)
 
 P_char in_command_aura(P_char ch)
 {
-	if (ch->group && ch->in_room == ch->group->ch->in_room && has_innate(ch->group->ch, INNATE_COMMAND_AURA))
+	if (ch->group && ch->in_room == ch->group->ch->in_room &&
+	    has_innate(ch->group->ch, INNATE_COMMAND_AURA))
 		return ch->group->ch;
 	else
 		return NULL;
@@ -914,13 +968,17 @@ void add_aura_message(P_char ch, P_char commander)
 {
 	if (ch == commander)
 		if (GET_CLASS(ch, CLASS_AVENGER))
-			act("You feel stronger as more believers join your cause!", FALSE, ch, 0, commander, TO_CHAR);
+			act("You feel stronger as more believers join your cause!", FALSE, ch, 0,
+			    commander, TO_CHAR);
 		else
-			act("You feel like you would taste &+Rblood&n soon as more adventurers join you!", FALSE, ch, 0, commander, TO_CHAR);
+			act("You feel like you would taste &+Rblood&n soon as more adventurers join you!",
+			    FALSE, ch, 0, commander, TO_CHAR);
 	else if (GET_CLASS(ch, CLASS_AVENGER))
-		act("You feel &+Wfaith&n growing in your heart as $N takes over the command!", FALSE, ch, 0, commander, TO_CHAR);
+		act("You feel &+Wfaith&n growing in your heart as $N takes over the command!",
+		    FALSE, ch, 0, commander, TO_CHAR);
 	else
-		act("You feel like you would taste &+Rblood&n soon as $N takes over the command!", FALSE, ch, 0, commander, TO_CHAR);
+		act("You feel like you would taste &+Rblood&n soon as $N takes over the command!",
+		    FALSE, ch, 0, commander, TO_CHAR);
 	balance_affects(ch);
 }
 
@@ -967,9 +1025,9 @@ bool group_remove_member(P_char ch)
 				add_aura_message(elem->ch, gl->next->ch);
 		}
 
-		elem = gl->next;                 /* remember who the new leader is... */
+		elem = gl->next; /* remember who the new leader is... */
 		mm_release(dead_group_pool, gl); /* free the old struct */
-		gl = elem;                       /* and put 'gl' to point to the new
+		gl = elem; /* and put 'gl' to point to the new
 		                                    leader */
 	}
 	else
@@ -993,10 +1051,10 @@ bool group_remove_member(P_char ch)
 			   shift! */
 			if (in_command_aura(ch))
 				remove_aura_message(ch, ch->group->ch);
-			gl         = elem->next;         /* this is the one to be removed.. */
-			elem->next = elem->next->next;   /* shift! */
+			gl = elem->next; /* this is the one to be removed.. */
+			elem->next = elem->next->next; /* shift! */
 			mm_release(dead_group_pool, gl); /* remove the old */
-			gl = ch->group;                  /* and reset gl to the group leader */
+			gl = ch->group; /* and reset gl to the group leader */
 		}
 	}
 
@@ -1020,7 +1078,8 @@ bool group_remove_member(P_char ch)
 	{
 		char buf[MAX_STRING_LENGTH];
 
-		snprintf(buf, MAX_STRING_LENGTH, "%s is no longer in your group.\n", IS_NPC(ch) ? ch->player.short_descr : GET_NAME(ch));
+		snprintf(buf, MAX_STRING_LENGTH, "%s is no longer in your group.\n",
+			 IS_NPC(ch) ? ch->player.short_descr : GET_NAME(ch));
 		send_to_char(buf, gl->ch);
 	}
 	ch->group = NULL;
@@ -1131,14 +1190,15 @@ int undead_race_in_group(struct group_list *group)
 bool group_add_member(P_char leader, P_char member)
 {
 	struct group_list *gl;
-	char               buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 
 	if (!leader || !member || !IS_ALIVE(leader) || !IS_ALIVE(member))
 		return FALSE;
 
 	if (member->group)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "%s is already in another group!\n", GET_NAME(member));
+		snprintf(buf, MAX_STRING_LENGTH, "%s is already in another group!\n",
+			 GET_NAME(member));
 		send_to_char(buf, leader);
 		return FALSE;
 	}
@@ -1149,7 +1209,8 @@ bool group_add_member(P_char leader, P_char member)
 		return FALSE;
 	}
 
-	if (IS_PC(member) && IS_PC(leader) && member != leader && !is_linked_to(leader, member, LNK_CONSENT))
+	if (IS_PC(member) && IS_PC(leader) && member != leader &&
+	    !is_linked_to(leader, member, LNK_CONSENT))
 	{
 		send_to_char("But ye haven't their permission to do that!\n", leader);
 		return FALSE;
@@ -1199,10 +1260,11 @@ bool group_add_member(P_char leader, P_char member)
 	if (!leader->group)
 	{
 		if (!dead_group_pool)
-			dead_group_pool = mm_create("GROUPS", sizeof(struct group_list), offsetof(struct group_list, next), 1);
+			dead_group_pool = mm_create("GROUPS", sizeof(struct group_list),
+						    offsetof(struct group_list, next), 1);
 
-		leader->group       = (struct group_list *)mm_get(dead_group_pool);
-		leader->group->ch   = leader;
+		leader->group = (struct group_list *)mm_get(dead_group_pool);
+		leader->group->ch = leader;
 		leader->group->next = NULL;
 		REMOVE_BIT(leader->specials.act2, PLR2_BACK_RANK);
 		if (in_command_aura(leader))
@@ -1216,10 +1278,10 @@ bool group_add_member(P_char leader, P_char member)
 	for (gl = leader->group; gl->next; gl = gl->next)
 		;
 
-	gl->next       = (struct group_list *)mm_get(dead_group_pool);
-	gl->next->ch   = member;
+	gl->next = (struct group_list *)mm_get(dead_group_pool);
+	gl->next->ch = member;
 	gl->next->next = NULL;
-	member->group  = leader->group;
+	member->group = leader->group;
 	REMOVE_BIT(member->specials.act2, PLR2_BACK_RANK);
 	if (in_command_aura(member))
 		add_aura_message(member, leader);

@@ -23,25 +23,25 @@
 #include <sys/types.h>
 #include "mm.h"
 
-extern P_desc  descriptor_list;
+extern P_desc descriptor_list;
 extern P_index mob_index;
 
 void make_prompt(P_desc point)
 {
-	P_char                t_ch = NULL, t_ch_f = NULL, tank = NULL, orig = NULL;
-	P_obj                 t_obj_f = NULL;
-	char                  promptbuf[MAX_INPUT_LENGTH]; /*, pname[512]; */
-	char                  promptbuf2[MAX_INPUT_LENGTH], *pPrompt;
-	snoop_by_data        *snoop_by_ptr;
-	int                   percent, t_ch_p = 0;
-	char                  prompt_buf[MAX_STRING_LENGTH];
+	P_char t_ch = NULL, t_ch_f = NULL, tank = NULL, orig = NULL;
+	P_obj t_obj_f = NULL;
+	char promptbuf[MAX_INPUT_LENGTH]; /*, pname[512]; */
+	char promptbuf2[MAX_INPUT_LENGTH], *pPrompt;
+	snoop_by_data *snoop_by_ptr;
+	int percent, t_ch_p = 0;
+	char prompt_buf[MAX_STRING_LENGTH];
 	struct affected_type *paf = NULL;
 
 	t_ch = point->character;
 	orig = point->original;
 	if (t_ch)
 	{
-		t_ch_f  = GET_OPPONENT(t_ch);
+		t_ch_f = GET_OPPONENT(t_ch);
 		t_obj_f = t_ch->specials.destroying_obj;
 	}
 
@@ -50,7 +50,10 @@ void make_prompt(P_desc point)
 
 	if (point->showstr_count)
 	{
-		snprintf(promptbuf, MAX_INPUT_LENGTH, "\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (%d/%d)]\n", point->showstr_page, point->showstr_count);
+		snprintf(
+			promptbuf, MAX_INPUT_LENGTH,
+			"\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (%d/%d)]\n",
+			point->showstr_page, point->showstr_count);
 		write_to_q(promptbuf, &point->output, 1);
 		// Reset the promptmode (decides when to display another prompt).
 		point->prompt_mode = FALSE;
@@ -106,11 +109,14 @@ void make_prompt(P_desc point)
 					wardAmount += paf->modifier;
 				}
 			}
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+C %dW", wardAmount);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+C %dW", wardAmount);
 		}
 		else if (GET_MAX_WARD(t_ch) > 0)
 		{
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+C %d/%dW", GET_WARD(t_ch), GET_MAX_WARD(t_ch));
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+C %d/%dW",
+				 GET_WARD(t_ch), GET_MAX_WARD(t_ch));
 		}
 	}
 	if (IS_SET(t_ch_p, PROMPT_HIT))
@@ -121,45 +127,63 @@ void make_prompt(P_desc point)
 		}
 		else
 		{
-			debug("make_prompt: ch '%s' %d has less than 1 (%d) max hps?!?", J_NAME(t_ch), IS_NPC(t_ch) ? GET_VNUM(t_ch) : GET_PID(t_ch), GET_MAX_HIT(t_ch));
+			debug("make_prompt: ch '%s' %d has less than 1 (%d) max hps?!?",
+			      J_NAME(t_ch), IS_NPC(t_ch) ? GET_VNUM(t_ch) : GET_PID(t_ch),
+			      GET_MAX_HIT(t_ch));
 			percent = -1;
 		}
 
 		// Healthy -> Green.
 		if (percent >= 66)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dh", t_ch->points.hit);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dh",
+				 t_ch->points.hit);
 		// Wounded -> Brown.
 		else if (percent >= 33)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dh", t_ch->points.hit);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dh",
+				 t_ch->points.hit);
 		// Hurt bad -> Red.
 		else if (percent >= 15)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dh", t_ch->points.hit);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dh",
+				 t_ch->points.hit);
 		// Nearing death -> Bright red on grey.
 		else
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+R %dh", t_ch->points.hit);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+R %dh",
+				 t_ch->points.hit);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_HIT))
-		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+g/%dH", GET_MAX_HIT(t_ch));
+		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf),
+			 "&+g/%dH", GET_MAX_HIT(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MANA))
 	{
 		if (GET_MAX_MANA(t_ch) > 0)
 			percent = (100 * GET_MANA(t_ch)) / GET_MAX_MANA(t_ch);
 		else
 		{
-			debug("make_prompt: ch '%s' %d has less than 1 (%d) max mana?!?", J_NAME(t_ch), IS_NPC(t_ch) ? GET_VNUM(t_ch) : GET_PID(t_ch), GET_MAX_MANA(t_ch));
+			debug("make_prompt: ch '%s' %d has less than 1 (%d) max mana?!?",
+			      J_NAME(t_ch), IS_NPC(t_ch) ? GET_VNUM(t_ch) : GET_PID(t_ch),
+			      GET_MAX_MANA(t_ch));
 			percent = -1;
 		}
 		if (percent >= 66)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dm", GET_MANA(t_ch));
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dm", GET_MANA(t_ch));
 		else if (percent >= 33)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dm", GET_MANA(t_ch));
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dm", GET_MANA(t_ch));
 		else if (percent >= 0)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dm", GET_MANA(t_ch));
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dm", GET_MANA(t_ch));
 		else
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+R%dm", GET_MANA(t_ch));
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+R%dm", GET_MANA(t_ch));
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MANA))
-		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+g/%dM", GET_MAX_MANA(t_ch));
+		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf),
+			 "&+g/%dM", GET_MAX_MANA(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MOVE))
 	{
 		if (GET_MAX_VITALITY(t_ch) > 0)
@@ -168,19 +192,28 @@ void make_prompt(P_desc point)
 		}
 		else
 		{
-			debug("make_prompt: ch '%s' %d has less than 1 (%d) max moves?!?", J_NAME(t_ch), IS_NPC(t_ch) ? GET_VNUM(t_ch) : GET_PID(t_ch), GET_MAX_VITALITY(t_ch));
+			debug("make_prompt: ch '%s' %d has less than 1 (%d) max moves?!?",
+			      J_NAME(t_ch), IS_NPC(t_ch) ? GET_VNUM(t_ch) : GET_PID(t_ch),
+			      GET_MAX_VITALITY(t_ch));
 			percent = -1;
 		}
 
 		if (percent >= 66)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dv", t_ch->points.vitality);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dv",
+				 t_ch->points.vitality);
 		else if (percent >= 33)
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dv", t_ch->points.vitality);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dv",
+				 t_ch->points.vitality);
 		else
-			snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dv", t_ch->points.vitality);
+			snprintf(promptbuf + strlen(promptbuf),
+				 MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dv",
+				 t_ch->points.vitality);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MOVE))
-		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf), "&+g/%dV", GET_MAX_VITALITY(t_ch));
+		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf),
+			 "&+g/%dV", GET_MAX_VITALITY(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_STATUS))
 	{
 		strcat(promptbuf, " &+cPos:&n");
@@ -205,7 +238,9 @@ void make_prompt(P_desc point)
 #endif
 	}
 
-	if (IS_SET(t_ch_p, PROMPT_TWOLINE) && (t_ch_p & (PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MANA | PROMPT_MAX_MANA | PROMPT_MOVE | PROMPT_MAX_MOVE)))
+	if (IS_SET(t_ch_p, PROMPT_TWOLINE) &&
+	    (t_ch_p & (PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MANA | PROMPT_MAX_MANA | PROMPT_MOVE |
+		       PROMPT_MAX_MOVE)))
 	{
 		strcat(promptbuf, "&+g >\n");
 		snprintf(promptbuf2, sizeof promptbuf2, "&+g<");
@@ -225,9 +260,11 @@ void make_prompt(P_desc point)
 			if (IS_SET(t_ch_p, PROMPT_TANK_NAME))
 			{
 				snprintf(pPrompt + strlen(pPrompt),
-				         MAX_STRING_LENGTH - strlen(pPrompt),
-				         " &+BT: %s",
-				         (t_ch != tank && !CAN_SEE(t_ch, tank)) ? "someone" : (IS_PC(tank) ? PERS(tank, t_ch, 0, true) : (FirstWord((tank)->player.name))));
+					 MAX_STRING_LENGTH - strlen(pPrompt), " &+BT: %s",
+					 (t_ch != tank && !CAN_SEE(t_ch, tank)) ?
+						 "someone" :
+						 (IS_PC(tank) ? PERS(tank, t_ch, 0, true) :
+								(FirstWord((tank)->player.name))));
 			}
 			if (IS_SET(t_ch_p, PROMPT_STATUS) && IS_SET(t_ch_p, PROMPT_TANK_COND))
 			{
@@ -274,10 +311,12 @@ void make_prompt(P_desc point)
 
 		if (IS_SET(t_ch_p, PROMPT_ENEMY))
 		{
-			snprintf(pPrompt + strlen(pPrompt),
-			         MAX_STRING_LENGTH - strlen(pPrompt),
-			         " &+rE: %s",
-			         (!CAN_SEE(t_ch, t_ch_f)) ? "someone" : (IS_PC(t_ch_f) ? PERS(t_ch_f, t_ch, 0, true) : (FirstWord((t_ch_f)->player.name))));
+			snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt),
+				 " &+rE: %s",
+				 (!CAN_SEE(t_ch, t_ch_f)) ?
+					 "someone" :
+					 (IS_PC(t_ch_f) ? PERS(t_ch_f, t_ch, 0, true) :
+							  (FirstWord((t_ch_f)->player.name))));
 		}
 
 		if (IS_SET(t_ch_p, PROMPT_STATUS) && IS_SET(t_ch_p, PROMPT_ENEMY_COND))
@@ -337,13 +376,15 @@ void make_prompt(P_desc point)
 		else
 			strcat(pPrompt, "&+R");
 
-		snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt), "%d ", t_obj_f->condition);
+		snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt), "%d ",
+			 t_obj_f->condition);
 	}
 
 	if (IS_SET(t_ch_p, PROMPT_VIS) && IS_TRUSTED(t_ch))
 	{
 		strcat(pPrompt, "&+m");
-		snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt), " Vis: %d", t_ch->only.pc->wiz_invis);
+		snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt), " Vis: %d",
+			 t_ch->only.pc->wiz_invis);
 	}
 	if (IS_SET(t_ch->specials.act, PLR_AFK))
 		strcat(pPrompt, "&n (&+RAFK&n)");
@@ -378,7 +419,8 @@ void make_prompt(P_desc point)
 	write_to_q(promptbuf, &point->output, 1);
 	if (IS_SET(t_ch_p, PROMPT_TWOLINE))
 		write_to_q(promptbuf2, &point->output, 1);
-	if (point->character && point->character->desc && !(point->character->desc->term_type == TERM_MSP))
+	if (point->character && point->character->desc &&
+	    !(point->character->desc->term_type == TERM_MSP))
 		write_to_q("&n", &point->output, 1);
 }
 
@@ -386,8 +428,8 @@ void make_prompt(P_desc point)
 char *make_bar(long val, long max, long len)
 {
 	static char buf[512];
-	int         i, n;
-	int         percent;
+	int i, n;
+	int percent;
 
 	strcpy(buf, "&+R<&n");
 
@@ -430,8 +472,8 @@ char *make_bar(long val, long max, long len)
    been previously initialized! */
 void UpdateScreen(P_char ch, int update)
 {
-	char   buf[255];
-	int    size, percent;
+	char buf[255];
+	int size, percent;
 	P_char enemy = NULL, tank = NULL;
 
 	size = ch->only.pc->screen_length + 1;
@@ -512,7 +554,10 @@ void UpdateScreen(P_char ch, int update)
 	if (enemy && (enemy->in_room == ch->in_room) && IS_SET(ch->specials.act, PLR_DEBUG))
 	{
 		if ((tank = GET_OPPONENT(enemy)) && (ch->in_room == tank->in_room))
-			snprintf(buf, 255, "%s", ch == tank ? "yourself" : !CAN_SEE(ch, tank) ? "someone" : J_NAME(tank));
+			snprintf(buf, 255, "%s",
+				 ch == tank	    ? "yourself" :
+				 !CAN_SEE(ch, tank) ? "someone" :
+						      J_NAME(tank));
 		if (ch != tank)
 		{
 			if (GET_MAX_HIT(tank) > 0 && GET_HIT(tank) > 0)
@@ -588,7 +633,7 @@ void UpdateScreen(P_char ch, int update)
 void InitScreen(P_char ch)
 {
 	char buf[255];
-	int  size;
+	int size;
 
 	size = ch->only.pc->screen_length + 1;
 	snprintf(buf, 255, VT_HOMECLR);
@@ -597,7 +642,9 @@ void InitScreen(P_char ch)
 	send_to_char(buf, ch);
 	snprintf(buf, 255, VT_CURSPOS, size - 4, 1);
 	send_to_char(buf, ch);
-	snprintf(buf, 255, "&+r-===================================Duris=====================================-&n");
+	snprintf(
+		buf, 255,
+		"&+r-===================================Duris=====================================-&n");
 	send_to_char(buf, ch);
 	snprintf(buf, 255, VT_CURSPOS, size - 3, 1);
 	send_to_char(buf, ch);

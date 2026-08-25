@@ -34,7 +34,8 @@ extern char buf[MAX_STRING_LENGTH];
 extern bool insert_money_pickup(int pid, int money);
 extern const char *rude_ass[];
 
-static unsigned long long ship_save_signature_mix(unsigned long long hash, const void *data, size_t len)
+static unsigned long long ship_save_signature_mix(unsigned long long hash, const void *data,
+						  size_t len)
 {
 	const unsigned char *ptr = (const unsigned char *)data;
 	for (size_t i = 0; i < len; i++)
@@ -51,18 +52,19 @@ unsigned long long ship_save_signature(const P_ship ship)
 	if (!ship)
 		return 0;
 
-	#define SHIP_SIG_MIX(value) hash = ship_save_signature_mix(hash, &(value), sizeof(value))
-	#define SHIP_SIG_MIX_CSTR(value) \
-		do { \
-			const char *sig_val__ = (value); \
-			if (sig_val__) \
-				hash = ship_save_signature_mix(hash, sig_val__, strlen(sig_val__)); \
-			else \
-			{ \
-				const char sig_zero__ = '\0'; \
-				hash = ship_save_signature_mix(hash, &sig_zero__, 1); \
-			} \
-		} while (0)
+#define SHIP_SIG_MIX(value) hash = ship_save_signature_mix(hash, &(value), sizeof(value))
+#define SHIP_SIG_MIX_CSTR(value)                                                            \
+	do                                                                                  \
+	{                                                                                   \
+		const char *sig_val__ = (value);                                            \
+		if (sig_val__)                                                              \
+			hash = ship_save_signature_mix(hash, sig_val__, strlen(sig_val__)); \
+		else                                                                        \
+		{                                                                           \
+			const char sig_zero__ = '\0';                                       \
+			hash = ship_save_signature_mix(hash, &sig_zero__, 1);               \
+		}                                                                           \
+	} while (0)
 
 	SHIP_SIG_MIX(ship->m_class);
 	SHIP_SIG_MIX_CSTR(ship->name);
@@ -104,22 +106,22 @@ unsigned long long ship_save_signature(const P_ship ship)
 		SHIP_SIG_MIX(ship->slot[i].val4);
 	}
 
-	#undef SHIP_SIG_MIX
-	#undef SHIP_SIG_MIX_CSTR
+#undef SHIP_SIG_MIX
+#undef SHIP_SIG_MIX_CSTR
 	return hash;
 }
 
 struct ContactData contacts[MAXSHIPS];
-struct ShipMap     tactical_map[101][101];
+struct ShipMap tactical_map[101][101];
 // char     status[20];
 // char     position[20];
 // char     contact[256];
 
-char                arg1[MAX_STRING_LENGTH];
-char                arg2[MAX_STRING_LENGTH];
-char                arg3[MAX_STRING_LENGTH];
-char                tmp_str[MAX_STRING_LENGTH];
-int                 shiperror, davy_jones_locker_rnum, ship_transit_rnum;
+char arg1[MAX_STRING_LENGTH];
+char arg2[MAX_STRING_LENGTH];
+char arg3[MAX_STRING_LENGTH];
+char tmp_str[MAX_STRING_LENGTH];
+int shiperror, davy_jones_locker_rnum, ship_transit_rnum;
 struct ShipFragData shipfrags[20];
 
 //--------------------------------------------------------------------
@@ -127,11 +129,11 @@ struct ShipFragData shipfrags[20];
 //--------------------------------------------------------------------
 void initialize_ships()
 {
-	obj_index[real_object0(VOBJ_PANEL)].func.obj     = ship_panel_proc;
+	obj_index[real_object0(VOBJ_PANEL)].func.obj = ship_panel_proc;
 	obj_index[real_object0(VOBJ_ALL_SHIPS)].func.obj = ship_obj_proc;
-	obj_index[real_object0(1223)].func.obj           = ship_cargo_info_stick;
-	davy_jones_locker_rnum                           = real_room0(VROOM_DAVY_JONES);
-	ship_transit_rnum                                = real_room0(VROOM_SHIP_TRANSIT);
+	obj_index[real_object0(1223)].func.obj = ship_cargo_info_stick;
+	davy_jones_locker_rnum = real_room0(VROOM_DAVY_JONES);
+	ship_transit_rnum = real_room0(VROOM_SHIP_TRANSIT);
 
 	if (!read_ships())
 	{
@@ -165,12 +167,12 @@ void initialize_ships()
 //--------------------------------------------------------------------
 void shutdown_ships()
 {
-	int    i;
+	int i;
 	P_char ch, ch_next;
-	P_obj  obj, obj_next;
+	P_obj obj, obj_next;
 
-	int   batchSize = 1024 * 1024 * 10;
-	char *batch     = (char *)malloc(batchSize);
+	int batchSize = 1024 * 1024 * 10;
+	char *batch = (char *)malloc(batchSize);
 	if (!batch)
 	{
 		fatal_boot_error("ship_base", "shutdown_ships: could not allocate batch buffer");
@@ -199,7 +201,8 @@ void shutdown_ships()
 					char_to_room(ch, real_room0(ship->anchor), -2);
 				}
 			}
-			for (obj = world[real_room(ship->room[i].roomnum)].contents; obj; obj = obj_next)
+			for (obj = world[real_room(ship->room[i].roomnum)].contents; obj;
+			     obj = obj_next)
 			{
 				if (obj)
 				{
@@ -212,10 +215,11 @@ void shutdown_ships()
 				}
 			}
 		}
-		if(!write_ship(ship) && !IS_NPC_SHIP(ship) && SHIP_LOADED(ship))
+		if (!write_ship(ship) && !IS_NPC_SHIP(ship) && SHIP_LOADED(ship))
 		{
 			if (sql_rollback())
-				logit(LOG_DEBUG, "shutdown_ships: rolled back after write_ship failed");
+				logit(LOG_DEBUG,
+				      "shutdown_ships: rolled back after write_ship failed");
 			panic_corruption("shutdown_ships", "write_ship failed after rollback");
 		}
 	}
@@ -245,7 +249,7 @@ struct ShipData *new_ship(int m_class, bool npc)
 	P_ship ship = NULL;
 	CREATE(ship, ShipData, 1, MEM_TAG_SHIPDAT);
 
-	ship->db_id   = -1;
+	ship->db_id = -1;
 	ship->shipobj = read_object(VOBJ_ALL_SHIPS, VIRTUAL);
 	if (ship->shipobj == NULL)
 	{
@@ -256,8 +260,8 @@ struct ShipData *new_ship(int m_class, bool npc)
 
 	// Set up the new ship
 	ship->autopilot = 0;
-	ship->npc_ai    = 0;
-	ship->panel     = read_object(VOBJ_PANEL, VIRTUAL);
+	ship->npc_ai = 0;
+	ship->panel = read_object(VOBJ_PANEL, VIRTUAL);
 	if (ship->panel == NULL)
 	{
 		shiperror = 17;
@@ -265,27 +269,27 @@ struct ShipData *new_ship(int m_class, bool npc)
 	}
 	ship->m_class = m_class;
 	set_ship_armor(ship, true);
-	ship->frags      = 0;
-	ship->name       = NULL;
-	ship->x          = 50;
-	ship->y          = 50;
-	ship->z          = 0;
-	ship->flags      = 0;
-	ship->money      = 0;
-	ship->target     = 0;
-	ship->mainsail   = SHIPTYPE_MAX_SAIL(m_class);
-	ship->repair     = SHIP_HULL_WEIGHT(ship);
+	ship->frags = 0;
+	ship->name = NULL;
+	ship->x = 50;
+	ship->y = 50;
+	ship->z = 0;
+	ship->flags = 0;
+	ship->money = 0;
+	ship->target = 0;
+	ship->mainsail = SHIPTYPE_MAX_SAIL(m_class);
+	ship->repair = SHIP_HULL_WEIGHT(ship);
 	ship->setheading = ship->heading = 0;
 	ship->setspeed = ship->speed = 0;
 
 	ship->maxspeed_bonus = 0;
 	ship->capacity_bonus = 0;
 
-	ship->time               = time(NULL);
-	ship->contacts_hash      = 0;
+	ship->time = time(NULL);
+	ship->contacts_hash = 0;
 	ship->last_gmcp_location = -1;
-	ship->save_retry_after   = 0;
-	ship->save_pending       = false;
+	ship->save_retry_after = 0;
+	ship->save_pending = false;
 	ship->save_saved_signature = 0;
 
 	for (int j = 0; j < MAXSLOTS; j++)
@@ -333,7 +337,7 @@ void name_ship(const char *name, P_ship ship)
 	ship->shipobj->short_description = str_dup(buf);
 	sprintf(buf, "ship %s %s", SHIP_CLASS_NAME(ship), ship->ownername);
 	ship->shipobj->name = str_dup(buf);
-	ship->keywords      = str_dup(buf);
+	ship->keywords = str_dup(buf);
 }
 
 void name_ship_rooms(P_ship ship)
@@ -352,7 +356,8 @@ void name_ship_rooms(P_ship ship)
 
 		if (i == 0)
 		{
-			sprintf(buf, "&+ROn the &+WBridge&N&+R of the &+L%s&N %s&N", SHIP_CLASS_NAME(ship), ship->name);
+			sprintf(buf, "&+ROn the &+WBridge&N&+R of the &+L%s&N %s&N",
+				SHIP_CLASS_NAME(ship), ship->name);
 		}
 		else
 		{
@@ -362,48 +367,55 @@ void name_ship_rooms(P_ship ship)
 		{
 			if (i == 1 || i == 3 || i == 4)
 			{
-				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 		}
 		if (ship->m_class == SH_DESTROYER)
 		{
 			if (i == 1 || i == 2 || i == 3)
 			{
-				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 		}
 		if (ship->m_class == SH_FRIGATE)
 		{
 			if (i == 1 || i == 2 || i == 3)
 			{
-				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 		}
 		if (ship->m_class == SH_CRUISER)
 		{
 			if (i == 9)
 			{
-				sprintf(buf, "&+YDocking Bay&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+YDocking Bay&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 			if (i == 7 || i == 10 || i == 11)
 			{
-				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 		}
 		else if (ship->m_class == SH_DREADNOUGHT)
 		{
-
 			if (i == 14)
 			{
-				sprintf(buf, "&+YDocking Bay&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+YDocking Bay&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 			if (i == 7)
 			{
-				sprintf(buf, "&+YSpacious Hold&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+YSpacious Hold&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 			if (i == 3 || i == 8 || i == 9 || i == 10)
 			{
-				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s", SHIP_CLASS_NAME(ship), ship->name);
+				sprintf(buf, "&+BLaunch Deck&+y of the &+L%s&N %s",
+					SHIP_CLASS_NAME(ship), ship->name);
 			}
 		}
 
@@ -442,8 +454,8 @@ bool rename_ship(P_char ch, char *owner_name, char *new_name)
 	name_ship_rooms(temp);
 	if (!write_ship(temp))
 	{
-		logit(LOG_DEBUG, "Failed to save renamed ship %s for owner %s.",
-		      SHIP_NAME(temp), owner_name);
+		logit(LOG_DEBUG, "Failed to save renamed ship %s for owner %s.", SHIP_NAME(temp),
+		      owner_name);
 		return FALSE;
 	}
 
@@ -458,14 +470,13 @@ void queue_ship_save(P_ship ship, const char *reason)
 	if (!ship->save_pending)
 	{
 		ship->save_pending = true;
-		logit(LOG_DEBUG, "Queued ship save for %s%s%s.",
-		      SHIP_NAME(ship),
-		      reason ? " after " : "",
-		      reason ? reason : "");
+		logit(LOG_DEBUG, "Queued ship save for %s%s%s.", SHIP_NAME(ship),
+		      reason ? " after " : "", reason ? reason : "");
 	}
 	else if (reason)
 	{
-		logit(LOG_DEBUG, "Refreshed pending ship save for %s after %s.", SHIP_NAME(ship), reason);
+		logit(LOG_DEBUG, "Refreshed pending ship save for %s after %s.", SHIP_NAME(ship),
+		      reason);
 	}
 
 	ship->save_retry_after = 0;
@@ -474,8 +485,8 @@ void queue_ship_save(P_ship ship, const char *reason)
 bool rename_ship_owner(char *old_name, char *new_name)
 {
 	P_ship ship;
-	char   *old_ownername;
-	char   *old_ship_name;
+	char *old_ownername;
+	char *old_ship_name;
 
 	ship = get_ship_from_owner(old_name);
 	if (!ship || !*new_name)
@@ -499,8 +510,8 @@ bool rename_ship_owner(char *old_name, char *new_name)
 
 	if (!write_ship(ship))
 	{
-		logit(LOG_DEBUG, "Failed to save re-owned ship %s for %s.",
-		      SHIP_NAME(ship), old_name);
+		logit(LOG_DEBUG, "Failed to save re-owned ship %s for %s.", SHIP_NAME(ship),
+		      old_name);
 		str_free(ship->ownername);
 		ship->ownername = old_ownername;
 		name_ship(old_ship_name, ship);
@@ -597,7 +608,7 @@ int load_ship(P_ship ship, int to_room)
 	}
 	if (SHIP_OBJ(ship))
 	{
-		ship->z                  = 0;
+		ship->z = 0;
 		SHIP_OBJ(ship)->value[6] = 1;
 		obj_to_room(SHIP_OBJ(ship), to_room);
 	}
@@ -606,7 +617,7 @@ int load_ship(P_ship ship, int to_room)
 		shiperror = 5;
 		return FALSE;
 	}
-	ship->anchor   = world[to_room].number;
+	ship->anchor = world[to_room].number;
 	ship->location = to_room;
 
 	update_crew(ship);
@@ -639,14 +650,15 @@ void delete_ship(P_ship ship, bool npc)
 	obj_from_room(ship->shipobj);
 	extract_obj(ship->panel, TRUE);
 	extract_obj(ship->shipobj, TRUE);
-	ship->panel   = NULL;
+	ship->panel = NULL;
 	ship->shipobj = NULL;
 	if (ship->npc_ai)
 		delete ship->npc_ai;
 	if (ship == cyrics_revenge)
 		cyrics_revenge = 0;
 
-	logit(LOG_STATUS, "Ship \"%s\" (%s) deleted", strip_ansi(ship->name).c_str(), ship->ownername);
+	logit(LOG_STATUS, "Ship \"%s\" (%s) deleted", strip_ansi(ship->name).c_str(),
+	      ship->ownername);
 
 	FREE(ship);
 }
@@ -674,253 +686,253 @@ void set_ship_layout(P_ship ship, int m_class)
 	ship->bridge = 0;
 	switch (m_class)
 	{
-		case SH_SLOOP:
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 1;
-			SHIP_ROOM_EXIT(ship, 1, DIR_NORTH) = 0;
-			ship->entrance                     = 1;
-			ship->room_count                   = 2;
-			break;
+	case SH_SLOOP:
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 1;
+		SHIP_ROOM_EXIT(ship, 1, DIR_NORTH) = 0;
+		ship->entrance = 1;
+		ship->room_count = 2;
+		break;
 
-		case SH_YACHT:
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
-			ship->entrance                     = 2;
-			ship->room_count                   = 3;
-			break;
+	case SH_YACHT:
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
+		ship->entrance = 2;
+		ship->room_count = 3;
+		break;
 
-		case SH_CLIPPER:
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 3;
-			SHIP_ROOM_EXIT(ship, 3, DIR_NORTH) = 2;
-			ship->entrance                     = 3;
-			ship->room_count                   = 4;
-			break;
+	case SH_CLIPPER:
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 3;
+		SHIP_ROOM_EXIT(ship, 3, DIR_NORTH) = 2;
+		ship->entrance = 3;
+		ship->room_count = 4;
+		break;
 
-		case SH_KETCH:
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_EAST)  = 2;
-			SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 2, DIR_WEST)  = 1;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 2;
-			ship->entrance                     = 2;
-			ship->room_count                   = 4;
-			break;
+	case SH_KETCH:
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_EAST) = 2;
+		SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 2, DIR_WEST) = 1;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 2;
+		ship->entrance = 2;
+		ship->room_count = 4;
+		break;
 
-		case SH_CARAVEL:
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 5;
-			SHIP_ROOM_EXIT(ship, 0, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 0, DIR_WEST)  = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)  = 0;
-			SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 0;
-			SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
-			SHIP_ROOM_EXIT(ship, 4, DIR_EAST)  = 5;
-			SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 5, DIR_EAST)  = 6;
-			SHIP_ROOM_EXIT(ship, 5, DIR_WEST)  = 4;
-			SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
-			SHIP_ROOM_EXIT(ship, 6, DIR_WEST)  = 5;
-			ship->entrance                     = 5;
-			ship->room_count                   = 7;
-			break;
+	case SH_CARAVEL:
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 5;
+		SHIP_ROOM_EXIT(ship, 0, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 0, DIR_WEST) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 0;
+		SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 0;
+		SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
+		SHIP_ROOM_EXIT(ship, 4, DIR_EAST) = 5;
+		SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 5, DIR_EAST) = 6;
+		SHIP_ROOM_EXIT(ship, 5, DIR_WEST) = 4;
+		SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
+		SHIP_ROOM_EXIT(ship, 6, DIR_WEST) = 5;
+		ship->entrance = 5;
+		ship->room_count = 7;
+		break;
 
-		case SH_CARRACK:
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 5;
-			SHIP_ROOM_EXIT(ship, 0, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 0, DIR_WEST)  = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)  = 0;
-			SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 0;
-			SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
-			SHIP_ROOM_EXIT(ship, 4, DIR_EAST)  = 5;
-			SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 7;
-			SHIP_ROOM_EXIT(ship, 5, DIR_EAST)  = 6;
-			SHIP_ROOM_EXIT(ship, 5, DIR_WEST)  = 4;
-			SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
-			SHIP_ROOM_EXIT(ship, 6, DIR_WEST)  = 5;
-			SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 5;
-			ship->entrance                     = 7;
-			ship->room_count                   = 8;
-			break;
+	case SH_CARRACK:
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 5;
+		SHIP_ROOM_EXIT(ship, 0, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 0, DIR_WEST) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 0;
+		SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 0;
+		SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
+		SHIP_ROOM_EXIT(ship, 4, DIR_EAST) = 5;
+		SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 7;
+		SHIP_ROOM_EXIT(ship, 5, DIR_EAST) = 6;
+		SHIP_ROOM_EXIT(ship, 5, DIR_WEST) = 4;
+		SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
+		SHIP_ROOM_EXIT(ship, 6, DIR_WEST) = 5;
+		SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 5;
+		ship->entrance = 7;
+		ship->room_count = 8;
+		break;
 
-		case SH_GALLEON:
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 5;
-			SHIP_ROOM_EXIT(ship, 0, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 0, DIR_WEST)  = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)  = 0;
-			SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 0;
-			SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
-			SHIP_ROOM_EXIT(ship, 4, DIR_SOUTH) = 7;
-			SHIP_ROOM_EXIT(ship, 4, DIR_EAST)  = 5;
-			SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 8;
-			SHIP_ROOM_EXIT(ship, 5, DIR_EAST)  = 6;
-			SHIP_ROOM_EXIT(ship, 5, DIR_WEST)  = 4;
-			SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
-			SHIP_ROOM_EXIT(ship, 6, DIR_SOUTH) = 9;
-			SHIP_ROOM_EXIT(ship, 6, DIR_WEST)  = 5;
-			SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 4;
-			SHIP_ROOM_EXIT(ship, 7, DIR_EAST)  = 8;
-			SHIP_ROOM_EXIT(ship, 8, DIR_NORTH) = 5;
-			SHIP_ROOM_EXIT(ship, 8, DIR_EAST)  = 9;
-			SHIP_ROOM_EXIT(ship, 8, DIR_WEST)  = 7;
-			SHIP_ROOM_EXIT(ship, 9, DIR_NORTH) = 6;
-			SHIP_ROOM_EXIT(ship, 9, DIR_WEST)  = 8;
-			ship->entrance                     = 8;
-			ship->room_count                   = 10;
-			break;
+	case SH_GALLEON:
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 5;
+		SHIP_ROOM_EXIT(ship, 0, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 0, DIR_WEST) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 0;
+		SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 0;
+		SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
+		SHIP_ROOM_EXIT(ship, 4, DIR_SOUTH) = 7;
+		SHIP_ROOM_EXIT(ship, 4, DIR_EAST) = 5;
+		SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 8;
+		SHIP_ROOM_EXIT(ship, 5, DIR_EAST) = 6;
+		SHIP_ROOM_EXIT(ship, 5, DIR_WEST) = 4;
+		SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
+		SHIP_ROOM_EXIT(ship, 6, DIR_SOUTH) = 9;
+		SHIP_ROOM_EXIT(ship, 6, DIR_WEST) = 5;
+		SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 4;
+		SHIP_ROOM_EXIT(ship, 7, DIR_EAST) = 8;
+		SHIP_ROOM_EXIT(ship, 8, DIR_NORTH) = 5;
+		SHIP_ROOM_EXIT(ship, 8, DIR_EAST) = 9;
+		SHIP_ROOM_EXIT(ship, 8, DIR_WEST) = 7;
+		SHIP_ROOM_EXIT(ship, 9, DIR_NORTH) = 6;
+		SHIP_ROOM_EXIT(ship, 9, DIR_WEST) = 8;
+		ship->entrance = 8;
+		ship->room_count = 10;
+		break;
 
-		case SH_CORVETTE:
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
-			SHIP_ROOM_EXIT(ship, 0, DIR_WEST)  = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 4;
-			SHIP_ROOM_EXIT(ship, 0, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 1, DIR_EAST)  = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 0;
-			SHIP_ROOM_EXIT(ship, 4, DIR_SOUTH) = 0;
-			ship->entrance                     = 2;
-			ship->room_count                   = 5;
-			break;
+	case SH_CORVETTE:
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 2;
+		SHIP_ROOM_EXIT(ship, 0, DIR_WEST) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 4;
+		SHIP_ROOM_EXIT(ship, 0, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 1, DIR_EAST) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 0;
+		SHIP_ROOM_EXIT(ship, 4, DIR_SOUTH) = 0;
+		ship->entrance = 2;
+		ship->room_count = 5;
+		break;
 
-		case SH_DESTROYER:
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 7;
-			SHIP_ROOM_EXIT(ship, 0, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 0, DIR_WEST)  = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)  = 0;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 0;
-			SHIP_ROOM_EXIT(ship, 4, DIR_EAST)  = 5;
-			SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 7;
-			SHIP_ROOM_EXIT(ship, 5, DIR_EAST)  = 6;
-			SHIP_ROOM_EXIT(ship, 5, DIR_WEST)  = 4;
-			SHIP_ROOM_EXIT(ship, 6, DIR_WEST)  = 5;
-			SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 7, DIR_SOUTH) = 5;
-			ship->entrance                     = 5;
-			ship->room_count                   = 8;
-			break;
+	case SH_DESTROYER:
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 7;
+		SHIP_ROOM_EXIT(ship, 0, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 0, DIR_WEST) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 0;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 0;
+		SHIP_ROOM_EXIT(ship, 4, DIR_EAST) = 5;
+		SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 7;
+		SHIP_ROOM_EXIT(ship, 5, DIR_EAST) = 6;
+		SHIP_ROOM_EXIT(ship, 5, DIR_WEST) = 4;
+		SHIP_ROOM_EXIT(ship, 6, DIR_WEST) = 5;
+		SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 7, DIR_SOUTH) = 5;
+		ship->entrance = 5;
+		ship->room_count = 8;
+		break;
 
-		case SH_FRIGATE:
-			SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 8;
-			SHIP_ROOM_EXIT(ship, 0, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 0, DIR_WEST)  = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
-			SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)  = 0;
-			SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 0;
-			SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
-			SHIP_ROOM_EXIT(ship, 4, DIR_EAST)  = 5;
-			SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 8;
-			SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 7;
-			SHIP_ROOM_EXIT(ship, 5, DIR_EAST)  = 6;
-			SHIP_ROOM_EXIT(ship, 5, DIR_WEST)  = 4;
-			SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
-			SHIP_ROOM_EXIT(ship, 6, DIR_WEST)  = 5;
-			SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 5;
-			SHIP_ROOM_EXIT(ship, 8, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 8, DIR_SOUTH) = 5;
-			ship->entrance                     = 7;
-			ship->room_count                   = 9;
-			break;
+	case SH_FRIGATE:
+		SHIP_ROOM_EXIT(ship, 0, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 8;
+		SHIP_ROOM_EXIT(ship, 0, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 0, DIR_WEST) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 0;
+		SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 4;
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 0;
+		SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 6;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 0;
+		SHIP_ROOM_EXIT(ship, 4, DIR_NORTH) = 2;
+		SHIP_ROOM_EXIT(ship, 4, DIR_EAST) = 5;
+		SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 8;
+		SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 7;
+		SHIP_ROOM_EXIT(ship, 5, DIR_EAST) = 6;
+		SHIP_ROOM_EXIT(ship, 5, DIR_WEST) = 4;
+		SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 3;
+		SHIP_ROOM_EXIT(ship, 6, DIR_WEST) = 5;
+		SHIP_ROOM_EXIT(ship, 7, DIR_NORTH) = 5;
+		SHIP_ROOM_EXIT(ship, 8, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 8, DIR_SOUTH) = 5;
+		ship->entrance = 7;
+		ship->room_count = 9;
+		break;
 
-		case SH_CRUISER:
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 1;
-			SHIP_ROOM_EXIT(ship, 1, DIR_NORTH) = 0;
-			SHIP_ROOM_EXIT(ship, 1, DIR_DOWN)  = 3;
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)  = 3;
-			SHIP_ROOM_EXIT(ship, 3, DIR_WEST)  = 2;
-			SHIP_ROOM_EXIT(ship, 3, DIR_EAST)  = 4;
-			SHIP_ROOM_EXIT(ship, 3, DIR_NORTH) = 5;
-			SHIP_ROOM_EXIT(ship, 3, DIR_UP)    = 1;
-			SHIP_ROOM_EXIT(ship, 4, DIR_WEST)  = 3;
-			SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 6;
-			SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 3;
-			SHIP_ROOM_EXIT(ship, 5, DIR_DOWN)  = 8;
-			SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 7;
-			SHIP_ROOM_EXIT(ship, 6, DIR_SOUTH) = 5;
-			SHIP_ROOM_EXIT(ship, 7, DIR_SOUTH) = 6;
-			SHIP_ROOM_EXIT(ship, 8, DIR_NORTH) = 9;
-			SHIP_ROOM_EXIT(ship, 8, DIR_UP)    = 5;
-			SHIP_ROOM_EXIT(ship, 9, DIR_SOUTH) = 8;
-			SHIP_ROOM_EXIT(ship, 6, DIR_EAST)  = 10; // laungh
-			SHIP_ROOM_EXIT(ship, 10, DIR_WEST) = 6;
-			SHIP_ROOM_EXIT(ship, 6, DIR_WEST)  = 11; // laungh
-			SHIP_ROOM_EXIT(ship, 11, DIR_EAST) = 6;
-			ship->entrance                     = 9;
-			ship->room_count                   = 12;
-			break;
+	case SH_CRUISER:
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 1;
+		SHIP_ROOM_EXIT(ship, 1, DIR_NORTH) = 0;
+		SHIP_ROOM_EXIT(ship, 1, DIR_DOWN) = 3;
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 3;
+		SHIP_ROOM_EXIT(ship, 3, DIR_WEST) = 2;
+		SHIP_ROOM_EXIT(ship, 3, DIR_EAST) = 4;
+		SHIP_ROOM_EXIT(ship, 3, DIR_NORTH) = 5;
+		SHIP_ROOM_EXIT(ship, 3, DIR_UP) = 1;
+		SHIP_ROOM_EXIT(ship, 4, DIR_WEST) = 3;
+		SHIP_ROOM_EXIT(ship, 5, DIR_NORTH) = 6;
+		SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 3;
+		SHIP_ROOM_EXIT(ship, 5, DIR_DOWN) = 8;
+		SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 7;
+		SHIP_ROOM_EXIT(ship, 6, DIR_SOUTH) = 5;
+		SHIP_ROOM_EXIT(ship, 7, DIR_SOUTH) = 6;
+		SHIP_ROOM_EXIT(ship, 8, DIR_NORTH) = 9;
+		SHIP_ROOM_EXIT(ship, 8, DIR_UP) = 5;
+		SHIP_ROOM_EXIT(ship, 9, DIR_SOUTH) = 8;
+		SHIP_ROOM_EXIT(ship, 6, DIR_EAST) = 10; // laungh
+		SHIP_ROOM_EXIT(ship, 10, DIR_WEST) = 6;
+		SHIP_ROOM_EXIT(ship, 6, DIR_WEST) = 11; // laungh
+		SHIP_ROOM_EXIT(ship, 11, DIR_EAST) = 6;
+		ship->entrance = 9;
+		ship->room_count = 12;
+		break;
 
-		case SH_DREADNOUGHT:
-			SHIP_ROOM_EXIT(ship, 0, DIR_DOWN)   = 6;
-			SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH)  = 2;
-			SHIP_ROOM_EXIT(ship, 1, DIR_NORTH)  = 3; // launch
-			SHIP_ROOM_EXIT(ship, 1, DIR_WEST)   = 4;
-			SHIP_ROOM_EXIT(ship, 1, DIR_EAST)   = 5;
-			SHIP_ROOM_EXIT(ship, 1, DIR_DOWN)   = 11;
-			SHIP_ROOM_EXIT(ship, 2, DIR_NORTH)  = 1;
-			SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH)  = 6;
-			SHIP_ROOM_EXIT(ship, 2, DIR_DOWN)   = 7; // hold
-			SHIP_ROOM_EXIT(ship, 2, DIR_WEST)   = 8; // launch
-			SHIP_ROOM_EXIT(ship, 2, DIR_EAST)   = 9; // launch
-			SHIP_ROOM_EXIT(ship, 6, DIR_UP)     = 0;
-			SHIP_ROOM_EXIT(ship, 6, DIR_NORTH)  = 2;
-			SHIP_ROOM_EXIT(ship, 6, DIR_SOUTH)  = 10;
-			SHIP_ROOM_EXIT(ship, 6, DIR_WEST)   = 12;
-			SHIP_ROOM_EXIT(ship, 6, DIR_EAST)   = 13;
-			SHIP_ROOM_EXIT(ship, 11, DIR_UP)    = 1;
-			SHIP_ROOM_EXIT(ship, 11, DIR_NORTH) = 14;
-			SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH)  = 1;
-			SHIP_ROOM_EXIT(ship, 4, DIR_EAST)   = 1;
-			SHIP_ROOM_EXIT(ship, 4, DIR_SOUTH)  = 8;
-			SHIP_ROOM_EXIT(ship, 5, DIR_WEST)   = 1;
-			SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH)  = 9;
-			SHIP_ROOM_EXIT(ship, 7, DIR_UP)     = 2;
-			SHIP_ROOM_EXIT(ship, 8, DIR_EAST)   = 2;
-			SHIP_ROOM_EXIT(ship, 8, DIR_SOUTH)  = 12;
-			SHIP_ROOM_EXIT(ship, 8, DIR_NORTH)  = 4;
-			SHIP_ROOM_EXIT(ship, 9, DIR_WEST)   = 2;
-			SHIP_ROOM_EXIT(ship, 9, DIR_SOUTH)  = 13;
-			SHIP_ROOM_EXIT(ship, 9, DIR_NORTH)  = 5;
-			SHIP_ROOM_EXIT(ship, 10, DIR_NORTH) = 6;
-			SHIP_ROOM_EXIT(ship, 12, DIR_EAST)  = 6;
-			SHIP_ROOM_EXIT(ship, 12, DIR_NORTH) = 8;
-			SHIP_ROOM_EXIT(ship, 13, DIR_WEST)  = 6;
-			SHIP_ROOM_EXIT(ship, 13, DIR_NORTH) = 9;
-			SHIP_ROOM_EXIT(ship, 14, DIR_SOUTH) = 11;
+	case SH_DREADNOUGHT:
+		SHIP_ROOM_EXIT(ship, 0, DIR_DOWN) = 6;
+		SHIP_ROOM_EXIT(ship, 1, DIR_SOUTH) = 2;
+		SHIP_ROOM_EXIT(ship, 1, DIR_NORTH) = 3; // launch
+		SHIP_ROOM_EXIT(ship, 1, DIR_WEST) = 4;
+		SHIP_ROOM_EXIT(ship, 1, DIR_EAST) = 5;
+		SHIP_ROOM_EXIT(ship, 1, DIR_DOWN) = 11;
+		SHIP_ROOM_EXIT(ship, 2, DIR_NORTH) = 1;
+		SHIP_ROOM_EXIT(ship, 2, DIR_SOUTH) = 6;
+		SHIP_ROOM_EXIT(ship, 2, DIR_DOWN) = 7; // hold
+		SHIP_ROOM_EXIT(ship, 2, DIR_WEST) = 8; // launch
+		SHIP_ROOM_EXIT(ship, 2, DIR_EAST) = 9; // launch
+		SHIP_ROOM_EXIT(ship, 6, DIR_UP) = 0;
+		SHIP_ROOM_EXIT(ship, 6, DIR_NORTH) = 2;
+		SHIP_ROOM_EXIT(ship, 6, DIR_SOUTH) = 10;
+		SHIP_ROOM_EXIT(ship, 6, DIR_WEST) = 12;
+		SHIP_ROOM_EXIT(ship, 6, DIR_EAST) = 13;
+		SHIP_ROOM_EXIT(ship, 11, DIR_UP) = 1;
+		SHIP_ROOM_EXIT(ship, 11, DIR_NORTH) = 14;
+		SHIP_ROOM_EXIT(ship, 3, DIR_SOUTH) = 1;
+		SHIP_ROOM_EXIT(ship, 4, DIR_EAST) = 1;
+		SHIP_ROOM_EXIT(ship, 4, DIR_SOUTH) = 8;
+		SHIP_ROOM_EXIT(ship, 5, DIR_WEST) = 1;
+		SHIP_ROOM_EXIT(ship, 5, DIR_SOUTH) = 9;
+		SHIP_ROOM_EXIT(ship, 7, DIR_UP) = 2;
+		SHIP_ROOM_EXIT(ship, 8, DIR_EAST) = 2;
+		SHIP_ROOM_EXIT(ship, 8, DIR_SOUTH) = 12;
+		SHIP_ROOM_EXIT(ship, 8, DIR_NORTH) = 4;
+		SHIP_ROOM_EXIT(ship, 9, DIR_WEST) = 2;
+		SHIP_ROOM_EXIT(ship, 9, DIR_SOUTH) = 13;
+		SHIP_ROOM_EXIT(ship, 9, DIR_NORTH) = 5;
+		SHIP_ROOM_EXIT(ship, 10, DIR_NORTH) = 6;
+		SHIP_ROOM_EXIT(ship, 12, DIR_EAST) = 6;
+		SHIP_ROOM_EXIT(ship, 12, DIR_NORTH) = 8;
+		SHIP_ROOM_EXIT(ship, 13, DIR_WEST) = 6;
+		SHIP_ROOM_EXIT(ship, 13, DIR_NORTH) = 9;
+		SHIP_ROOM_EXIT(ship, 14, DIR_SOUTH) = 11;
 
-			ship->entrance   = 14;
-			ship->room_count = 15;
-			break;
-		case SH_ZONE_SHIP:
-			SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 1;
-			SHIP_ROOM_EXIT(ship, 1, DIR_NORTH) = 1;
+		ship->entrance = 14;
+		ship->room_count = 15;
+		break;
+	case SH_ZONE_SHIP:
+		SHIP_ROOM_EXIT(ship, 0, DIR_SOUTH) = 1;
+		SHIP_ROOM_EXIT(ship, 1, DIR_NORTH) = 1;
 
-			ship->entrance   = 1;
-			ship->room_count = 2;
-			break;
-		default:
-			break;
+		ship->entrance = 1;
+		ship->room_count = 2;
+		break;
+	default:
+		break;
 	}
 }
 
@@ -954,8 +966,8 @@ void clear_ship_layout(P_ship ship)
 		}
 		SHIP_ROOM_NUM(ship, j) = -1;
 	}
-	ship->bridge     = -1;
-	ship->entrance   = -1;
+	ship->bridge = -1;
+	ship->entrance = -1;
 	ship->room_count = 0;
 }
 
@@ -992,7 +1004,7 @@ bool set_ship_physical_layout(P_ship ship)
 			return FALSE;
 
 		SHIP_ROOM_NUM(ship, j) = vroom;
-		world[rroom].funct     = ship_room_proc;
+		world[rroom].funct = ship_room_proc;
 	}
 	for (int j = 0; j < ship->room_count; j++)
 	{
@@ -1005,13 +1017,15 @@ bool set_ship_physical_layout(P_ship ship)
 		{
 			if (SHIP_ROOM_EXIT(ship, j, dir) != -1)
 			{
-				if ((to_room = real_room0(SHIP_ROOM_NUM(ship, SHIP_ROOM_EXIT(ship, j, dir)))) == 0)
+				if ((to_room = real_room0(SHIP_ROOM_NUM(
+					     ship, SHIP_ROOM_EXIT(ship, j, dir)))) == 0)
 					return FALSE;
 
 				if (!world[rroom].dir_option[dir])
-					CREATE(world[rroom].dir_option[dir], room_direction_data, 1, MEM_TAG_DIRDATA);
+					CREATE(world[rroom].dir_option[dir], room_direction_data, 1,
+					       MEM_TAG_DIRDATA);
 
-				world[rroom].dir_option[dir]->to_room   = to_room;
+				world[rroom].dir_option[dir]->to_room = to_room;
 				world[rroom].dir_option[dir]->exit_info = 0;
 			}
 			else
@@ -1024,7 +1038,7 @@ bool set_ship_physical_layout(P_ship ship)
 			}
 		}
 	}
-	ship->bridge   = SHIP_ROOM_NUM(ship, 0);
+	ship->bridge = SHIP_ROOM_NUM(ship, 0);
 	ship->entrance = SHIP_ROOM_NUM(ship, ship->entrance);
 	name_ship_rooms(ship);
 
@@ -1082,10 +1096,14 @@ void set_ship_armor(P_ship ship, bool equal)
 		ship->armor[SIDE_STAR] = MIN(ship->maxarmor[SIDE_STAR], ship->armor[SIDE_STAR]);
 		ship->armor[SIDE_REAR] = MIN(ship->maxarmor[SIDE_REAR], ship->armor[SIDE_REAR]);
 
-		ship->internal[SIDE_FORE] = MIN(ship->maxinternal[SIDE_FORE], ship->internal[SIDE_FORE]);
-		ship->internal[SIDE_PORT] = MIN(ship->maxinternal[SIDE_PORT], ship->internal[SIDE_PORT]);
-		ship->internal[SIDE_STAR] = MIN(ship->maxinternal[SIDE_STAR], ship->internal[SIDE_STAR]);
-		ship->internal[SIDE_REAR] = MIN(ship->maxinternal[SIDE_REAR], ship->internal[SIDE_REAR]);
+		ship->internal[SIDE_FORE] =
+			MIN(ship->maxinternal[SIDE_FORE], ship->internal[SIDE_FORE]);
+		ship->internal[SIDE_PORT] =
+			MIN(ship->maxinternal[SIDE_PORT], ship->internal[SIDE_PORT]);
+		ship->internal[SIDE_STAR] =
+			MIN(ship->maxinternal[SIDE_STAR], ship->internal[SIDE_STAR]);
+		ship->internal[SIDE_REAR] =
+			MIN(ship->maxinternal[SIDE_REAR], ship->internal[SIDE_REAR]);
 	}
 }
 
@@ -1096,7 +1114,7 @@ void reset_ship(P_ship ship, bool clear_slots)
 {
 	set_ship_armor(ship, true);
 	ship->mainsail = SHIPTYPE_MAX_SAIL(ship->m_class);
-	ship->repair   = SHIPTYPE_HULL_WEIGHT(ship->m_class);
+	ship->repair = SHIPTYPE_HULL_WEIGHT(ship->m_class);
 
 	obj_from_room(ship->panel);
 	name_ship(ship->name, ship);
@@ -1105,14 +1123,14 @@ void reset_ship(P_ship ship, bool clear_slots)
 	set_ship_physical_layout(ship);
 	obj_to_room(ship->panel, real_room0(ship->bridge));
 
-	ship->timer[T_UNDOCK]      = 0;
-	ship->timer[T_MANEUVER]    = 0;
-	ship->timer[T_SINKING]     = 0;
-	ship->timer[T_BSTATION]    = 0;
-	ship->timer[T_RAM]         = 0;
+	ship->timer[T_UNDOCK] = 0;
+	ship->timer[T_MANEUVER] = 0;
+	ship->timer[T_SINKING] = 0;
+	ship->timer[T_BSTATION] = 0;
+	ship->timer[T_RAM] = 0;
 	ship->timer[T_RAM_WEAPONS] = 0;
 	ship->timer[T_MAINTENANCE] = 0;
-	ship->timer[T_MINDBLAST]   = 0;
+	ship->timer[T_MINDBLAST] = 0;
 
 	if (IS_SET(ship->flags, SINKING))
 		REMOVE_BIT(ship->flags, SINKING);
@@ -1142,9 +1160,9 @@ void reset_ship(P_ship ship, bool clear_slots)
 
 int ship_room_proc(int room, P_char ch, int cmd, char *arg)
 {
-	int    i, j, k;
+	int i, j, k;
 	P_ship ship;
-	int    virt;
+	int virt;
 
 	if (!ch)
 		return false;
@@ -1177,7 +1195,9 @@ int ship_room_proc(int room, P_char ch, int cmd, char *arg)
 
 		if (IS_BLIND(ch) && number(0, 5))
 		{
-			send_to_char("&+WIt is hard to disembark when you cannot see anything... but you keep trying!\r\n", ch);
+			send_to_char(
+				"&+WIt is hard to disembark when you cannot see anything... but you keep trying!\r\n",
+				ch);
 			return false;
 		}
 
@@ -1187,21 +1207,28 @@ int ship_room_proc(int room, P_char ch, int cmd, char *arg)
 			{
 				if (world[ch->in_room].number == ship->entrance || IS_TRUSTED(ch))
 				{
-					if (!MIN_POS(ch, POS_STANDING + STAT_NORMAL) || IS_FIGHTING(ch))
+					if (!MIN_POS(ch, POS_STANDING + STAT_NORMAL) ||
+					    IS_FIGHTING(ch))
 					{
-						send_to_char("You're in no position to disembark!\r\n", ch);
+						send_to_char(
+							"You're in no position to disembark!\r\n",
+							ch);
 						return (TRUE);
 					}
-					act("You step off the docking bay of this ship.", FALSE, ch, 0, 0, TO_CHAR);
+					act("You step off the docking bay of this ship.", FALSE, ch,
+					    0, 0, TO_CHAR);
 					act("$n steps off the ship.", TRUE, ch, 0, 0, TO_ROOM);
 					char_from_room(ch);
 					char_to_room(ch, ship->shipobj->loc.room, 0);
-					act("$n disembarks from the docking bay of $p.", TRUE, ch, ship->shipobj, 0, TO_ROOM);
+					act("$n disembarks from the docking bay of $p.", TRUE, ch,
+					    ship->shipobj, 0, TO_ROOM);
 					return TRUE;
 				}
 				else
 				{
-					send_to_char("You must disembark from the lower docking bay!\r\n", ch);
+					send_to_char(
+						"You must disembark from the lower docking bay!\r\n",
+						ch);
 					return TRUE;
 				}
 			}
@@ -1215,7 +1242,10 @@ int ship_room_proc(int room, P_char ch, int cmd, char *arg)
 		i = world[ch->in_room].number;
 		j = i - ((int)(i / 10) * 10);
 		k = 0;
-		if (SHIP_ROOM_EXIT(ship, j, DIR_NORTH) == -1 || SHIP_ROOM_EXIT(ship, j, DIR_SOUTH) == -1 || SHIP_ROOM_EXIT(ship, j, DIR_EAST) == -1 || SHIP_ROOM_EXIT(ship, j, DIR_WEST) == -1)
+		if (SHIP_ROOM_EXIT(ship, j, DIR_NORTH) == -1 ||
+		    SHIP_ROOM_EXIT(ship, j, DIR_SOUTH) == -1 ||
+		    SHIP_ROOM_EXIT(ship, j, DIR_EAST) == -1 ||
+		    SHIP_ROOM_EXIT(ship, j, DIR_WEST) == -1)
 		{
 			k = 1;
 		}
@@ -1224,7 +1254,9 @@ int ship_room_proc(int room, P_char ch, int cmd, char *arg)
 		{
 			if (!k && !IS_TRUSTED(ch))
 			{
-				send_to_char("You are not close enough to the edge of the ship to jump out!\r\n", ch);
+				send_to_char(
+					"You are not close enough to the edge of the ship to jump out!\r\n",
+					ch);
 				return TRUE;
 			}
 		}
@@ -1280,8 +1312,8 @@ int ship_room_proc(int room, P_char ch, int cmd, char *arg)
 //--------------------------------------------------------------------
 int ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	char   name[MAX_INPUT_LENGTH];
-	P_obj  obj_entered;
+	char name[MAX_INPUT_LENGTH];
+	P_obj obj_entered;
 	P_ship ship;
 
 	/* check for periodic event calls */
@@ -1325,9 +1357,11 @@ int ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			//            if (SHIP_DOCKED(ship) || SHIP_ANCHORED(ship))
 			{
-				act("$n enters through the docking bay of $p.", TRUE, ch, ship->shipobj, 0, TO_ROOM);
+				act("$n enters through the docking bay of $p.", TRUE, ch,
+				    ship->shipobj, 0, TO_ROOM);
 				char_from_room(ch);
-				act("You step through the docking bay of $p.", FALSE, ch, ship->shipobj, 0, TO_CHAR);
+				act("You step through the docking bay of $p.", FALSE, ch,
+				    ship->shipobj, 0, TO_CHAR);
 				char_to_room(ch, real_room0(ship->entrance), 0);
 				act("$n steps through the docking bay.", TRUE, ch, 0, 0, TO_ROOM);
 				return TRUE;
@@ -1397,7 +1431,9 @@ bool check_ship_name(P_ship ship, P_char ch, char *name)
 		{
 			if (!ship || ship->frags <= svs->frags)
 			{
-				send_to_char("Another player already has a ship with such name, choose another name for your ship!\r\n", ch);
+				send_to_char(
+					"Another player already has a ship with such name, choose another name for your ship!\r\n",
+					ch);
 				return false;
 			}
 		}
@@ -1414,7 +1450,7 @@ bool check_undocking_conditions(P_ship ship, int m_class, P_char ch)
 
 	for (int a = 0; a < 4; a++)
 	{
-		arc_weapons[a]       = 0;
+		arc_weapons[a] = 0;
 		arc_weapon_weight[a] = 0;
 	}
 
@@ -1423,10 +1459,14 @@ bool check_undocking_conditions(P_ship ship, int m_class, P_char ch)
 		if (ship->slot[sl].type == SLOT_WEAPON)
 		{
 			arc_weapons[ship->slot[sl].position]++;
-			arc_weapon_weight[ship->slot[sl].position] += weapon_data[ship->slot[sl].index].weight;
+			arc_weapon_weight[ship->slot[sl].position] +=
+				weapon_data[ship->slot[sl].index].weight;
 			if (!ship_allowed_weapons[m_class][ship->slot[sl].index])
 			{
-				send_to_char_f(ch, "Remove weapon [%d], it is not allowed with this hull!\r\n", sl);
+				send_to_char_f(
+					ch,
+					"Remove weapon [%d], it is not allowed with this hull!\r\n",
+					sl);
 				return FALSE;
 			}
 		}
@@ -1435,29 +1475,33 @@ bool check_undocking_conditions(P_ship ship, int m_class, P_char ch)
 	{
 		if (arc_weapons[a] > ship_arc_properties[m_class].max_weapon_slots[a])
 		{
-			send_to_char_f(ch,
-			               "Your have too many weapons at one side!\r\nMaximum allowed weapons for this ship is:\r\nFore: %d  Starboard: %d  Port: %d  Rear: %d\r\n",
-			               ship_arc_properties[m_class].max_weapon_slots[SIDE_FORE],
-			               ship_arc_properties[m_class].max_weapon_slots[SIDE_STAR],
-			               ship_arc_properties[m_class].max_weapon_slots[SIDE_PORT],
-			               ship_arc_properties[m_class].max_weapon_slots[SIDE_REAR]);
+			send_to_char_f(
+				ch,
+				"Your have too many weapons at one side!\r\nMaximum allowed weapons for this ship is:\r\nFore: %d  Starboard: %d  Port: %d  Rear: %d\r\n",
+				ship_arc_properties[m_class].max_weapon_slots[SIDE_FORE],
+				ship_arc_properties[m_class].max_weapon_slots[SIDE_STAR],
+				ship_arc_properties[m_class].max_weapon_slots[SIDE_PORT],
+				ship_arc_properties[m_class].max_weapon_slots[SIDE_REAR]);
 			return FALSE;
 		}
 		if (arc_weapon_weight[a] > ship_arc_properties[m_class].max_weapon_weight[a])
 		{
-			send_to_char_f(ch,
-			               "Your have overloaded one side with weapons!\r\nMaximum allowed weapon weight for this ship is:\r\nFore: %d  Starboard: %d  Port: %d  Rear: %d\r\n",
-			               ship_arc_properties[m_class].max_weapon_weight[SIDE_FORE],
-			               ship_arc_properties[m_class].max_weapon_weight[SIDE_STAR],
-			               ship_arc_properties[m_class].max_weapon_weight[SIDE_PORT],
-			               ship_arc_properties[m_class].max_weapon_weight[SIDE_REAR]);
+			send_to_char_f(
+				ch,
+				"Your have overloaded one side with weapons!\r\nMaximum allowed weapon weight for this ship is:\r\nFore: %d  Starboard: %d  Port: %d  Rear: %d\r\n",
+				ship_arc_properties[m_class].max_weapon_weight[SIDE_FORE],
+				ship_arc_properties[m_class].max_weapon_weight[SIDE_STAR],
+				ship_arc_properties[m_class].max_weapon_weight[SIDE_PORT],
+				ship_arc_properties[m_class].max_weapon_weight[SIDE_REAR]);
 			return FALSE;
 		}
 	}
 
 	if (SHIPTYPE_MIN_LEVEL(m_class) > GET_LEVEL(ch))
 	{
-		send_to_char("You are too low for such a big ship! Get more experience or downgrade the hull!'\r\n", ch);
+		send_to_char(
+			"You are too low for such a big ship! Get more experience or downgrade the hull!'\r\n",
+			ch);
 		return FALSE;
 	}
 	return TRUE;
@@ -1468,7 +1512,7 @@ bool check_undocking_conditions(P_ship ship, int m_class, P_char ch)
 //--------------------------------------------------------------------
 void ship_activity()
 {
-	int   j, k, loc;
+	int j, k, loc;
 	float rad;
 
 	ShipVisitor svs;
@@ -1486,11 +1530,13 @@ void ship_activity()
 		}
 		if (ship->timer[T_RAM] == 1)
 		{
-			act_to_all_in_ship(ship, "Your crew has returned to their battle stations.");
+			act_to_all_in_ship(ship,
+					   "Your crew has returned to their battle stations.");
 		}
 		if (ship->timer[T_MINDBLAST] == 1)
 		{
-			act_to_all_in_ship(ship, "Your crew has recovered from mental shock.&N\r\n");
+			act_to_all_in_ship(ship,
+					   "Your crew has recovered from mental shock.&N\r\n");
 		}
 
 		for (j = 0; j < MAXTIMERS; j++)
@@ -1523,9 +1569,13 @@ void ship_activity()
 				if (number(1, 30) == 1)
 				{
 					if (ship->crew.stamina > -ship->crew.max_stamina)
-						act_to_all_in_ship(ship, "&+rYour crew looks exhausted.&N\r\n");
+						act_to_all_in_ship(
+							ship,
+							"&+rYour crew looks exhausted.&N\r\n");
 					else
-						act_to_all_in_ship(ship, "&+rYour crew looks &+Rcompletely &+rexhausted.&N\r\n");
+						act_to_all_in_ship(
+							ship,
+							"&+rYour crew looks &+Rcompletely &+rexhausted.&N\r\n");
 				}
 			}
 
@@ -1533,13 +1583,16 @@ void ship_activity()
 			if (ship->target != NULL)
 				ship->timer[T_BSTATION] = BSTATION;
 			if (ship->timer[T_BSTATION] == 1)
-				act_to_all_in_ship(ship, "Your crew stands down from battlestations.\r\n");
+				act_to_all_in_ship(
+					ship, "Your crew stands down from battlestations.\r\n");
 
 			// Repairing
 			if ((ship->repair > 0) && ship->timer[T_MINDBLAST] == 0)
 			{
 				float chance = 0.0;
-				if (ship->mainsail < (int)((float)SHIP_MAX_SAIL(ship) * (ship->crew.rpar_mod_applied + 0.4)) && ship->mainsail < SHIP_MAX_SAIL(ship) * 0.9)
+				if (ship->mainsail < (int)((float)SHIP_MAX_SAIL(ship) *
+							   (ship->crew.rpar_mod_applied + 0.4)) &&
+				    ship->mainsail < SHIP_MAX_SAIL(ship) * 0.9)
 				{
 					if (SHIP_ANCHORED(ship))
 					{
@@ -1557,15 +1610,24 @@ void ship_activity()
 						else
 							chance = 0.0;
 					}
-					chance *= (1.0 + ship->crew.rpar_mod_applied) * ship->crew.get_stamina_mod();
+					chance *= (1.0 + ship->crew.rpar_mod_applied) *
+						  ship->crew.get_stamina_mod();
 					if (number(0, 1000) < (int)chance)
 					{
-						ship->mainsail += MIN(ship->crew.get_sail_repair_mod(), (SHIP_MAX_SAIL(ship) - ship->mainsail));
+						ship->mainsail +=
+							MIN(ship->crew.get_sail_repair_mod(),
+							    (SHIP_MAX_SAIL(ship) - ship->mainsail));
 						ship->repair--;
 						if (ship->repair == 0)
-							act_to_all_in_ship(ship, "&+RThe ship is out of repair materials!.&N");
+							act_to_all_in_ship(
+								ship,
+								"&+RThe ship is out of repair materials!.&N");
 						ship->crew.reduce_stamina(3, ship);
-						ship->crew.rpar_skill_raise((ship->timer[T_BSTATION] > 0 && HAS_VALID_TARGET(ship)) ? 0.1 : 0.01);
+						ship->crew.rpar_skill_raise(
+							(ship->timer[T_BSTATION] > 0 &&
+							 HAS_VALID_TARGET(ship)) ?
+								0.1 :
+								0.01);
 						update_ship_status(ship);
 					}
 				}
@@ -1575,27 +1637,52 @@ void ship_activity()
 						break;
 					if (ship->slot[j].type == SLOT_WEAPON)
 					{
-						if (SHIP_WEAPON_DAMAGED(ship, j) && !SHIP_WEAPON_DESTROYED(ship, j))
+						if (SHIP_WEAPON_DAMAGED(ship, j) &&
+						    !SHIP_WEAPON_DESTROYED(ship, j))
 						{
 							chance = 200.0;
-							chance *= (1.0 + ship->crew.rpar_mod_applied) * ship->crew.get_stamina_mod();
+							chance *= (1.0 +
+								   ship->crew.rpar_mod_applied) *
+								  ship->crew.get_stamina_mod();
 							if (number(0, 999) < (int)chance)
 							{
-								ship->slot[j].val2 -= MIN(ship->crew.get_weapon_repair_mod(), ship->slot[j].val2);
+								ship->slot[j].val2 -= MIN(
+									ship->crew
+										.get_weapon_repair_mod(),
+									ship->slot[j].val2);
 								if (ship->slot[j].val2 < 0)
 									ship->slot[j].val2 = 0;
 								if (!SHIP_WEAPON_DAMAGED(ship, j))
 								{
-									act_to_all_in_ship_f(ship, "&+W%s &+Ghas been repaired!&N", weapon_data[ship->slot[j].index].name);
+									act_to_all_in_ship_f(
+										ship,
+										"&+W%s &+Ghas been repaired!&N",
+										weapon_data
+											[ship->slot[j]
+												 .index]
+												.name);
 									if (ship->slot[j].val1 > 0)
-										ship->slot[j].timer = (int)((float)weapon_data[j].reload_time * (1.0 - ship->crew.guns_mod_applied * 0.15));
+										ship->slot[j].timer =
+											(int)((float)weapon_data
+												      [j]
+													      .reload_time *
+											      (1.0 -
+											       ship->crew.guns_mod_applied *
+												       0.15));
 								}
 								if (!number(0, 4))
 									ship->repair--;
 								if (ship->repair == 0)
-									act_to_all_in_ship(ship, "&+RThe ship is out of repair materials!.&N");
+									act_to_all_in_ship(
+										ship,
+										"&+RThe ship is out of repair materials!.&N");
 								ship->crew.reduce_stamina(1, ship);
-								ship->crew.rpar_skill_raise((ship->timer[T_BSTATION] > 0 && HAS_VALID_TARGET(ship)) ? 0.1 : 0.01);
+								ship->crew.rpar_skill_raise(
+									(ship->timer[T_BSTATION] >
+										 0 &&
+									 HAS_VALID_TARGET(ship)) ?
+										0.1 :
+										0.01);
 							}
 						}
 					}
@@ -1605,7 +1692,10 @@ void ship_activity()
 				{
 					if (ship->repair < 1)
 						break;
-					if (ship->internal[j] < (int)((float)ship->maxinternal[j] * (ship->crew.rpar_mod_applied + 0.1)) && ship->internal[j] < ship->maxinternal[j] * 0.9)
+					if (ship->internal[j] <
+						    (int)((float)ship->maxinternal[j] *
+							  (ship->crew.rpar_mod_applied + 0.1)) &&
+					    ship->internal[j] < ship->maxinternal[j] * 0.9)
 					{
 						can_repair_internal = true;
 						if (SHIP_ANCHORED(ship))
@@ -1632,26 +1722,41 @@ void ship_activity()
 							else
 								chance = 0.0;
 						}
-						chance *= (1.0 + ship->crew.rpar_mod_applied) * ship->crew.get_stamina_mod();
+						chance *= (1.0 + ship->crew.rpar_mod_applied) *
+							  ship->crew.get_stamina_mod();
 						if (number(0, 1000) < (int)chance)
 						{
-							ship->internal[j] += MIN(ship->crew.get_hull_repair_mod(), (ship->maxinternal[j] - ship->internal[j]));
+							ship->internal[j] += MIN(
+								ship->crew.get_hull_repair_mod(),
+								(ship->maxinternal[j] -
+								 ship->internal[j]));
 							ship->repair--;
 							if (ship->repair == 0)
-								act_to_all_in_ship(ship, "&+RThe ship is out of repair materials!.&N");
+								act_to_all_in_ship(
+									ship,
+									"&+RThe ship is out of repair materials!.&N");
 							ship->crew.reduce_stamina(2, ship);
-							ship->crew.rpar_skill_raise((ship->timer[T_BSTATION] > 0 && HAS_VALID_TARGET(ship)) ? 0.1 : 0.01);
+							ship->crew.rpar_skill_raise(
+								(ship->timer[T_BSTATION] > 0 &&
+								 HAS_VALID_TARGET(ship)) ?
+									0.1 :
+									0.01);
 							update_ship_status(ship);
 						}
 					}
 				}
-				if (!can_repair_internal && ship->timer[T_BSTATION] == 0 && ship->crew.rpar_mod_applied > 0.5)
+				if (!can_repair_internal && ship->timer[T_BSTATION] == 0 &&
+				    ship->crew.rpar_mod_applied > 0.5)
 				{ // highly skilled crew can repair some armor when not in combat
 					for (j = 0; j < 4; j++)
 					{
 						if (ship->repair < 1)
 							break;
-						if (ship->armor[j] < (int)((float)ship->maxarmor[j] * (ship->crew.rpar_mod_applied - 0.5)) && ship->armor[j] < ship->maxarmor[j] * 0.9)
+						if (ship->armor[j] <
+							    (int)((float)ship->maxarmor[j] *
+								  (ship->crew.rpar_mod_applied -
+								   0.5)) &&
+						    ship->armor[j] < ship->maxarmor[j] * 0.9)
 						{
 							if (SHIP_ANCHORED(ship))
 							{
@@ -1661,15 +1766,28 @@ void ship_activity()
 							{
 								chance = 20.0;
 							}
-							chance *= (1.0 + ship->crew.rpar_mod_applied) * ship->crew.get_stamina_mod();
+							chance *= (1.0 +
+								   ship->crew.rpar_mod_applied) *
+								  ship->crew.get_stamina_mod();
 							if (number(0, 1000) < (int)chance)
 							{
-								ship->armor[j] += MIN(ship->crew.get_hull_repair_mod(), (ship->maxarmor[j] - ship->armor[j]));
+								ship->armor[j] += MIN(
+									ship->crew
+										.get_hull_repair_mod(),
+									(ship->maxarmor[j] -
+									 ship->armor[j]));
 								ship->repair--;
 								if (ship->repair == 0)
-									act_to_all_in_ship(ship, "&+RThe ship is out of repair materials!.&N");
+									act_to_all_in_ship(
+										ship,
+										"&+RThe ship is out of repair materials!.&N");
 								ship->crew.reduce_stamina(4, ship);
-								ship->crew.rpar_skill_raise((ship->timer[T_BSTATION] > 0 && HAS_VALID_TARGET(ship)) ? 0.1 : 0.01);
+								ship->crew.rpar_skill_raise(
+									(ship->timer[T_BSTATION] >
+										 0 &&
+									 HAS_VALID_TARGET(ship)) ?
+										0.1 :
+										0.01);
 								update_ship_status(ship);
 							}
 						}
@@ -1692,29 +1810,38 @@ void ship_activity()
 		if (ship->timer[T_UNDOCK] > 0)
 		{
 			if (ship->timer[T_UNDOCK] == 27)
-				act_to_all_in_ship(ship, "&+LThe crew begins raising the anchor.&N");
+				act_to_all_in_ship(ship,
+						   "&+LThe crew begins raising the anchor.&N");
 			else if (ship->timer[T_UNDOCK] == 21)
-				act_to_all_in_ship(ship, "&+WThe crew finishes raising the anchor.&N");
+				act_to_all_in_ship(ship,
+						   "&+WThe crew finishes raising the anchor.&N");
 			else if (ship->timer[T_UNDOCK] == 17)
 			{
 				if (SHIP_ANCHORED(ship) && !SHIP_DOCKED(ship))
 				{
-					act_to_all_in_ship(ship, "&+GThe crew scrambles to their stations, the ship is ready to go.&N");
+					act_to_all_in_ship(
+						ship,
+						"&+GThe crew scrambles to their stations, the ship is ready to go.&N");
 					REMOVE_BIT(ship->flags, ANCHOR);
 					ship->timer[T_UNDOCK] = 0;
 					update_ship_status(ship);
 				}
 				else
-					act_to_all_in_ship(ship, "&+yThe crew scrambles to their stations.&N");
+					act_to_all_in_ship(
+						ship, "&+yThe crew scrambles to their stations.&N");
 			}
 			else if (ship->timer[T_UNDOCK] == 12)
 				act_to_all_in_ship(ship, "&+WThe crew readies the sails.&N");
 			else if (ship->timer[T_UNDOCK] == 9)
-				act_to_all_in_ship(ship, "&+yThe first officer begins a checkup of all ship systems.&N");
+				act_to_all_in_ship(
+					ship,
+					"&+yThe first officer begins a checkup of all ship systems.&N");
 			else if (ship->timer[T_UNDOCK] == 1)
 			{
 				assignid(ship, NULL);
-				act_to_all_in_ship(ship, "&+GThe first officer reports everything is in order and the ship is ready to go.&N");
+				act_to_all_in_ship(
+					ship,
+					"&+GThe first officer reports everything is in order and the ship is ready to go.&N");
 				REMOVE_BIT(ship->flags, DOCKED);
 				REMOVE_BIT(ship->flags, ANCHOR);
 				update_crew(ship);
@@ -1730,11 +1857,12 @@ void ship_activity()
 		// Undocked and non sinking actions go below here
 		if (!SHIP_SINKING(ship) && !SHIP_DOCKED(ship) && !SHIP_ANCHORED(ship))
 		{
-			if (IS_WATER_ROOM(ship->location) || IS_ROOM(ship->location, ROOM_DOCKABLE) || SHIP_FLYING(ship))
+			if (IS_WATER_ROOM(ship->location) ||
+			    IS_ROOM(ship->location, ROOM_DOCKABLE) || SHIP_FLYING(ship))
 			{
 				// Setspeed to Speed DRANNAK
-				P_char ch        = captain_is_aboard(ship);
-				int    realspeed = ship->get_maxspeed(ch);
+				P_char ch = captain_is_aboard(ship);
+				int realspeed = ship->get_maxspeed(ch);
 
 				if (ship->setspeed > realspeed)
 				{
@@ -1746,22 +1874,31 @@ void ship_activity()
 					ship->speed += sp_change;
 
 					// affect crew stamina
-					float sp_rel_change = ((float)ABS(sp_change) / (float)SHIP_ACCEL(ship)) / (1.0 + ship->crew.sail_mod_applied);
-					ship->crew.reduce_stamina(sp_rel_change * (2.0 + SHIP_HULL_MOD(ship) / 10.0), ship);
+					float sp_rel_change =
+						((float)ABS(sp_change) / (float)SHIP_ACCEL(ship)) /
+						(1.0 + ship->crew.sail_mod_applied);
+					ship->crew.reduce_stamina(
+						sp_rel_change * (2.0 + SHIP_HULL_MOD(ship) / 10.0),
+						ship);
 				}
 
 				// SetHeading to Heading
-				if (ship->setheading != ship->heading && ship->timer[T_MINDBLAST] == 0)
+				if (ship->setheading != ship->heading &&
+				    ship->timer[T_MINDBLAST] == 0)
 				{
 					float hd_change = get_next_heading_change(ship);
 					ship->heading += hd_change;
 					normalize_direction(ship->heading);
 
 					// affect crew stamina
-					float hd_rel_change = (ABS(hd_change) / (float)SHIP_HDDC(ship)) / (1.0 + ship->crew.sail_mod_applied);
+					float hd_rel_change =
+						(ABS(hd_change) / (float)SHIP_HDDC(ship)) /
+						(1.0 + ship->crew.sail_mod_applied);
 					if (SHIP_IMMOBILE(ship))
 						hd_rel_change *= 5;
-					ship->crew.reduce_stamina(hd_rel_change * (3.0 + SHIP_HULL_MOD(ship) / 10.0), ship);
+					ship->crew.reduce_stamina(
+						hd_rel_change * (3.0 + SHIP_HULL_MOD(ship) / 10.0),
+						ship);
 				}
 			}
 
@@ -1772,13 +1909,16 @@ void ship_activity()
 				ship->x += (float)((float)ship->speed * sin(rad)) / 150.000;
 				ship->y += (float)((float)ship->speed * cos(rad)) / 150.000;
 
-				if ((ship->y >= 51.000) || (ship->x >= 51.000) || (ship->y < 50.000) || (ship->x < 50.000))
+				if ((ship->y >= 51.000) || (ship->x >= 51.000) ||
+				    (ship->y < 50.000) || (ship->x < 50.000))
 				{
 					if (getmap(ship))
 					{
-						if (SHIP_CLASS(ship) != SH_SLOOP && SHIP_CLASS(ship) != SH_YACHT)
+						if (SHIP_CLASS(ship) != SH_SLOOP &&
+						    SHIP_CLASS(ship) != SH_YACHT)
 							ship->crew.sail_skill_raise(0.003);
-						loc = tactical_map[(int)ship->x][100 - (int)ship->y].rroom;
+						loc = tactical_map[(int)ship->x][100 - (int)ship->y]
+							      .rroom;
 						if (is_valid_sailing_location(ship, loc))
 						{
 							if (ship->x > 50.999)
@@ -1786,13 +1926,25 @@ void ship_activity()
 								ship->x -= 1.000;
 								if (SHIP_FLYING(ship))
 								{
-									send_to_room_f(ship->location, "%s&N floats east above you.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N floats in from the west above you.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N floats east above you.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N floats in from the west above you.\r\n",
+										ship->name);
 								}
 								else
 								{
-									send_to_room_f(ship->location, "%s&N sails east.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N sails in from the west.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N sails east.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N sails in from the west.\r\n",
+										ship->name);
 								}
 							}
 							else if (ship->x < 50.000)
@@ -1800,13 +1952,25 @@ void ship_activity()
 								ship->x += 1.000;
 								if (SHIP_FLYING(ship))
 								{
-									send_to_room_f(ship->location, "%s&N floats west above you.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N floats in from the east above you.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N floats west above you.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N floats in from the east above you.\r\n",
+										ship->name);
 								}
 								else
 								{
-									send_to_room_f(ship->location, "%s&N sails west.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N sails in from the east.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N sails west.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N sails in from the east.\r\n",
+										ship->name);
 								}
 							}
 
@@ -1815,13 +1979,25 @@ void ship_activity()
 								ship->y -= 1.000;
 								if (SHIP_FLYING(ship))
 								{
-									send_to_room_f(ship->location, "%s&N floats north above you.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N floats in from the south above you.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N floats north above you.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N floats in from the south above you.\r\n",
+										ship->name);
 								}
 								else
 								{
-									send_to_room_f(ship->location, "%s&N sails north.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N sails in from the south.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N sails north.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N sails in from the south.\r\n",
+										ship->name);
 								}
 							}
 							else if (ship->y < 50.000)
@@ -1829,16 +2005,29 @@ void ship_activity()
 								ship->y += 1.000;
 								if (SHIP_FLYING(ship))
 								{
-									send_to_room_f(ship->location, "%s&N floats south above you.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N floats in from the north above you.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N floats south above you.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N floats in from the north above you.\r\n",
+										ship->name);
 								}
 								else
 								{
-									send_to_room_f(ship->location, "%s&N sails south.\r\n", ship->name);
-									send_to_room_f(loc, "%s&N sails in from the north.\r\n", ship->name);
+									send_to_room_f(
+										ship->location,
+										"%s&N sails south.\r\n",
+										ship->name);
+									send_to_room_f(
+										loc,
+										"%s&N sails in from the north.\r\n",
+										ship->name);
 								}
 							}
-							if (SHIP_OBJ(ship) && (loc != ship->location))
+							if (SHIP_OBJ(ship) &&
+							    (loc != ship->location))
 							{
 								ship->location = loc;
 								obj_from_room(SHIP_OBJ(ship));
@@ -1849,24 +2038,37 @@ void ship_activity()
 						else
 						{
 							ship->setspeed = 0;
-							ship->speed    = 0;
-							ship->x        = 50.500;
-							ship->y        = 50.500;
+							ship->speed = 0;
+							ship->x = 50.500;
+							ship->y = 50.500;
 
 							if (ship->autopilot)
 								stop_autopilot(ship);
 
-							int crash_chance = (ship->timer[T_BSTATION] == 0) ? 0 : (int)((float)(ship->speed + 50) / ((1.0 + ship->crew.sail_mod_applied * 2.0) * ship->crew.get_stamina_mod()));
+							int crash_chance =
+								(ship->timer[T_BSTATION] == 0) ?
+									0 :
+									(int)((float)(ship->speed +
+										      50) /
+									      ((1.0 +
+										ship->crew.sail_mod_applied *
+											2.0) *
+									       ship->crew
+										       .get_stamina_mod()));
 
 							if (ship->timer[T_MINDBLAST] == 0)
-								act_to_all_in_ship(ship, "Your crew attempts to stop the ship from crashing into land!");
+								act_to_all_in_ship(
+									ship,
+									"Your crew attempts to stop the ship from crashing into land!");
 							else
 								crash_chance = 100;
 
 							if (dice(2, 50) <= crash_chance)
 								crash_land(ship);
 							else
-								act_to_all_in_ship(ship, "Your crew manages to stop the ship from running ashore.");
+								act_to_all_in_ship(
+									ship,
+									"Your crew manages to stop the ship from running ashore.");
 						}
 					}
 				}
@@ -1877,12 +2079,16 @@ void ship_activity()
 			{
 				if (ship->target == NULL)
 				{
-					act_to_all_in_ship(ship, "&+WStanding down from ramming mode due to no target.&N");
+					act_to_all_in_ship(
+						ship,
+						"&+WStanding down from ramming mode due to no target.&N");
 					REMOVE_BIT(ship->flags, RAMMING);
 				}
 				else if (ship->speed <= BOARDING_SPEED)
 				{
-					act_to_all_in_ship(ship, "&+WStanding down from ramming mode due to low speed.&N");
+					act_to_all_in_ship(
+						ship,
+						"&+WStanding down from ramming mode due to low speed.&N");
 					REMOVE_BIT(ship->flags, RAMMING);
 				}
 				else if (ship->timer[T_MINDBLAST] == 0)
@@ -1894,7 +2100,8 @@ void ship_activity()
 						{
 							if (contacts[j].range < 1.0)
 							{
-								try_ram_ship(ship, ship->target, contacts[j].bearing);
+								try_ram_ship(ship, ship->target,
+									     contacts[j].bearing);
 							}
 						}
 					}
@@ -1902,7 +2109,8 @@ void ship_activity()
 			}
 
 			// Slot timers
-			if (!IS_SET(ship->flags, RAMMING) && ship->timer[T_RAM_WEAPONS] == 0 && ship->timer[T_MINDBLAST] == 0)
+			if (!IS_SET(ship->flags, RAMMING) && ship->timer[T_RAM_WEAPONS] == 0 &&
+			    ship->timer[T_MINDBLAST] == 0)
 			{
 				for (j = 0; j < MAXSLOTS; j++)
 				{
@@ -1910,15 +2118,26 @@ void ship_activity()
 					{
 						if (ship->slot[j].timer > 0)
 						{
-							if (number(0, 99) >= int(ship->crew.get_stamina_mod() * 100))
+							if (number(0, 99) >=
+							    int(ship->crew.get_stamina_mod() * 100))
 								continue;
 							ship->slot[j].timer--;
 							if (ship->slot[j].timer == 0)
 							{
-								act_to_all_in_ship_f(ship, "Weapon &+W[%d]&N: [%s] has finished reloading.", j, ship->slot[j].get_description());
+								act_to_all_in_ship_f(
+									ship,
+									"Weapon &+W[%d]&N: [%s] has finished reloading.",
+									j,
+									ship->slot[j]
+										.get_description());
 							}
 							// affect crew stamina
-							ship->crew.reduce_stamina((float)weapon_data[ship->slot[j].index].weight / SHIP_HULL_MOD(ship), ship);
+							ship->crew.reduce_stamina(
+								(float)weapon_data[ship->slot[j]
+											   .index]
+										.weight /
+									SHIP_HULL_MOD(ship),
+								ship);
 							if (HAS_VALID_TARGET(ship))
 								ship->crew.guns_skill_raise(0.003);
 						}
@@ -1930,12 +2149,18 @@ void ship_activity()
 							ship->slot[j].timer--;
 							if (ship->slot[j].timer == 0)
 							{
-								if (ship->slot[j].index == E_LEVISTONE && !IS_SET(ship->flags, AIR))
+								if (ship->slot[j].index ==
+									    E_LEVISTONE &&
+								    !IS_SET(ship->flags, AIR))
 								{
 									if (SHIP_FLYING(ship))
 										land_ship(ship);
 									else
-										act_to_all_in_ship_f(ship, "%s is fully recharged.", ship->slot[j].get_description());
+										act_to_all_in_ship_f(
+											ship,
+											"%s is fully recharged.",
+											ship->slot[j]
+												.get_description());
 								}
 							}
 						}
@@ -1948,9 +2173,10 @@ void ship_activity()
 			if (ship->npc_ai)
 				ship->npc_ai->activity();
 
-			int pirate_chance = has_eq_diplomat(ship) ?
-				get_property("ships.pirate.diplomat.load.chance", 30000) :
-				get_property("ships.pirate.load.chance", 7200);
+			int pirate_chance =
+				has_eq_diplomat(ship) ?
+					get_property("ships.pirate.diplomat.load.chance", 30000) :
+					get_property("ships.pirate.load.chance", 7200);
 			if (ship->target == 0 && ship->speed > 0 && number(0, pirate_chance) == 0)
 				try_load_pirate_ship(ship);
 		}
@@ -1979,7 +2205,7 @@ void dock_ship(P_ship ship, int to_room)
 	clear_references_to_ship(ship);
 
 	ship->location = to_room;
-	ship->repair   = SHIPTYPE_HULL_WEIGHT(ship->m_class);
+	ship->repair = SHIPTYPE_HULL_WEIGHT(ship->m_class);
 	assignid(ship, "**");
 	act_to_all_in_ship(ship, "Your ship has completed docking procedures.");
 	SET_BIT(ship->flags, DOCKED);
@@ -1992,7 +2218,8 @@ void dock_ship(P_ship ship, int to_room)
 void crash_land(P_ship ship)
 {
 	act_to_all_in_ship(ship, "&+yCRUNCH!! Your ship crashes into land!&N");
-	act_to_outside_ships(ship, NULL, DEFAULT_RANGE, "&+W[%s]&N:%s&N crashes into land!", SHIP_ID(ship), ship->name);
+	act_to_outside_ships(ship, NULL, DEFAULT_RANGE, "&+W[%s]&N:%s&N crashes into land!",
+			     SHIP_ID(ship), ship->name);
 	int hits = (SHIP_HULL_WEIGHT(ship) / 25) + 1;
 	for (int k = 0; k < hits; k++)
 	{
@@ -2015,7 +2242,6 @@ void crash_land(P_ship ship)
 
 void finish_sinking(P_ship ship)
 {
-
 	// The zone ship does not sink completely.
 	// if( ship == zone_ship )
 	//  return;
@@ -2028,21 +2254,26 @@ void finish_sinking(P_ship ship)
 	if (IS_WATER_ROOM(ship->location))
 	{
 		act_to_all_in_ship(ship, "&+yYour ship sinks and you swim out in time!\r\n");
-		act_to_outside(ship, 10, "%s &+yhas sunk to the depths of the ocean!\r\n", SHIP_NAME(ship));
-		act_to_outside_ships(ship, ship, DEFAULT_RANGE, "&+W[%s]:&N %s&N&+y sinks under the ocean.\r\n", SHIP_ID(ship), SHIP_NAME(ship));
+		act_to_outside(ship, 10, "%s &+yhas sunk to the depths of the ocean!\r\n",
+			       SHIP_NAME(ship));
+		act_to_outside_ships(ship, ship, DEFAULT_RANGE,
+				     "&+W[%s]:&N %s&N&+y sinks under the ocean.\r\n", SHIP_ID(ship),
+				     SHIP_NAME(ship));
 	}
 	else
 	{
 		act_to_all_in_ship(ship, "&+yYour ship falls apart and you jump out in time!\r\n");
 		act_to_outside(ship, 10, "%s &+yhas fallen to pieces!\r\n", SHIP_NAME(ship));
-		act_to_outside_ships(ship, ship, DEFAULT_RANGE, "&+W[%s]:&N %s&N&+y falls to pieces.\r\n", SHIP_ID(ship), SHIP_NAME(ship));
+		act_to_outside_ships(ship, ship, DEFAULT_RANGE,
+				     "&+W[%s]:&N %s&N&+y falls to pieces.\r\n", SHIP_ID(ship),
+				     SHIP_NAME(ship));
 	}
 	clear_ship_content(ship);
 	jettison_all(ship);
 
 	if (!IS_NPC_SHIP(ship))
 	{
-		int  insurance = 0;
+		int insurance = 0;
 		bool SunkByNPC = SHIP_SUNK_BY_NPC(ship);
 
 		if (ship->m_class != SH_SLOOP) // no insurance for sloops
@@ -2057,14 +2288,17 @@ void finish_sinking(P_ship ship)
 				insurance = (int)(SHIPTYPE_COST(ship->m_class) * 0.75);
 			}
 			else if (IS_WARSHIP(ship))
-				insurance = (int)(SHIPTYPE_COST(ship->m_class) * 0.50); // only partial insurance for warships
+				insurance = (int)(SHIPTYPE_COST(ship->m_class) *
+						  0.50); // only partial insurance for warships
 		}
 
 		if (P_char owner = get_char2(str_dup(SHIP_OWNER(ship))))
 		{
 			GET_BALANCE_PLATINUM(owner) += insurance / 1000;
-			wizlog(56, "Ship insurance to account of %s: %d", ship->ownername, insurance / 1000);
-			logit(LOG_SHIP, "Ship insurance deposit to account of %s: %d", ship->ownername, insurance / 1000);
+			wizlog(56, "Ship insurance to account of %s: %d", ship->ownername,
+			       insurance / 1000);
+			logit(LOG_SHIP, "Ship insurance deposit to account of %s: %d",
+			      ship->ownername, insurance / 1000);
 		}
 		else
 		{
@@ -2073,17 +2307,23 @@ void finish_sinking(P_ship ship)
 			 wizlog(56, "Ship insurance to ship's coffer: %d", insurance / 1000);
 			 logit(LOG_SHIP, "%s's insurance to ship's coffer: %d", ship->ownername, insurance / 1000);
 			 */
-			if (!insert_money_pickup(get_player_pid_from_name(SHIP_OWNER(ship)), insurance))
+			if (!insert_money_pickup(get_player_pid_from_name(SHIP_OWNER(ship)),
+						 insurance))
 			{
-				logit(LOG_SHIP, "%s's insurance refund failed to stage for pid %d", ship->ownername, get_player_pid_from_name(SHIP_OWNER(ship)));
+				logit(LOG_SHIP, "%s's insurance refund failed to stage for pid %d",
+				      ship->ownername, get_player_pid_from_name(SHIP_OWNER(ship)));
 				ship->money += insurance;
-				wizlog(56, "Ship insurance staged in ship coffers instead: %s", coin_stringv(insurance));
-				logit(LOG_SHIP, "%s's insurance fell back to ship coffers: %s", ship->ownername, coin_stringv(insurance));
+				wizlog(56, "Ship insurance staged in ship coffers instead: %s",
+				       coin_stringv(insurance));
+				logit(LOG_SHIP, "%s's insurance fell back to ship coffers: %s",
+				      ship->ownername, coin_stringv(insurance));
 			}
 			else
 			{
-				wizlog(56, "Ship insurance to auction house: %s", coin_stringv(insurance));
-				logit(LOG_SHIP, "%s's insurance to auction hourse: %s", ship->ownername, coin_stringv(insurance));
+				wizlog(56, "Ship insurance to auction house: %s",
+				       coin_stringv(insurance));
+				logit(LOG_SHIP, "%s's insurance to auction hourse: %s",
+				      ship->ownername, coin_stringv(insurance));
 			}
 		}
 
@@ -2094,7 +2334,7 @@ void finish_sinking(P_ship ship)
 		if (old_class == SH_SLOOP || !SunkByNPC)
 			ship->mainsail = 0; // have to pay at least something...
 
-		ship->speed    = 0;
+		ship->speed = 0;
 		ship->setspeed = 0;
 
 		// Holding room in Old Ship zone.
@@ -2123,7 +2363,8 @@ void summon_ship_event(P_char ch, P_char victim, P_obj obj, void *data)
 		for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
 		{
 			P_ship ship = svs;
-			if (isname(buf, ship->ownername) && ship->timer[T_BSTATION] == 0 && !SHIP_SINKING(ship))
+			if (isname(buf, ship->ownername) && ship->timer[T_BSTATION] == 0 &&
+			    !SHIP_SINKING(ship))
 			{
 				ship->location = to_room;
 				obj_from_room(ship->shipobj);
@@ -2135,7 +2376,7 @@ void summon_ship_event(P_char ch, P_char victim, P_obj obj, void *data)
 				REMOVE_BIT(ship->flags, SUMMONED);
 				if (IS_SET(ship->flags, ATTACKBYNPC))
 					REMOVE_BIT(ship->flags, ATTACKBYNPC);
-				ship->speed    = 0;
+				ship->speed = 0;
 				ship->setspeed = 0;
 				queue_ship_save(ship, "summon arrival");
 				return;
@@ -2150,13 +2391,16 @@ void fly_ship(P_ship ship)
 		SET_BIT(ship->flags, FLYING);
 	if (!IS_SET(ship->flags, AIR))
 	{
-		int levi_slot               = eq_levistone_slot(ship);
+		int levi_slot = eq_levistone_slot(ship);
 		ship->slot[levi_slot].timer = LEVISTONE_TIME;
-		act_to_all_in_ship_f(ship, "&+W%s &+Ghums and glows with soft &+Cblue light.\r\n", ship->slot[levi_slot].get_description());
+		act_to_all_in_ship_f(ship, "&+W%s &+Ghums and glows with soft &+Cblue light.\r\n",
+				     ship->slot[levi_slot].get_description());
 	}
 	act_to_all_in_ship(ship, "&+WYour ship slowly ascends and floats in air!&N\r\n");
 	act_to_outside(ship, 10, "%s &+Wslowly ascends and floats in air!&N", SHIP_NAME(ship));
-	act_to_outside_ships(ship, ship, DEFAULT_RANGE, "&+W[%s]:&N %s&N &+Wslowly ascends and floats in air!&N\r\n", SHIP_ID(ship), SHIP_NAME(ship));
+	act_to_outside_ships(ship, ship, DEFAULT_RANGE,
+			     "&+W[%s]:&N %s&N &+Wslowly ascends and floats in air!&N\r\n",
+			     SHIP_ID(ship), SHIP_NAME(ship));
 
 	ship->shipobj->z_cord = 4;
 	update_ship_status(ship);
@@ -2168,24 +2412,39 @@ void land_ship(P_ship ship)
 		REMOVE_BIT(ship->flags, FLYING);
 	if (!IS_SET(ship->flags, AIR))
 	{
-		int levi_slot               = eq_levistone_slot(ship);
+		int levi_slot = eq_levistone_slot(ship);
 		ship->slot[levi_slot].timer = LEVISTONE_RECHARGE;
-		act_to_all_in_ship_f(ship, "&+W%s &+Ldims and becomes silent.\r\n", ship->slot[levi_slot].get_description());
+		act_to_all_in_ship_f(ship, "&+W%s &+Ldims and becomes silent.\r\n",
+				     ship->slot[levi_slot].get_description());
 	}
 	if (IS_WATER_ROOM(ship->location))
 	{
-		act_to_all_in_ship(ship, "&+WYour ship slowly descends and lands with a loud &+Bsplash&+W!&N\r\n");
-		act_to_outside(ship, 10, "%s &+Wslowly descends and lands with a loud &+Bsplash&+W!&N", SHIP_NAME(ship));
-		act_to_outside_ships(ship, ship, DEFAULT_RANGE, "&+W[%s]:&N %s&N &+Wslowly descends and lands with a loud &+Bsplash&+W!&N\r\n", SHIP_ID(ship), SHIP_NAME(ship));
+		act_to_all_in_ship(
+			ship,
+			"&+WYour ship slowly descends and lands with a loud &+Bsplash&+W!&N\r\n");
+		act_to_outside(ship, 10,
+			       "%s &+Wslowly descends and lands with a loud &+Bsplash&+W!&N",
+			       SHIP_NAME(ship));
+		act_to_outside_ships(
+			ship, ship, DEFAULT_RANGE,
+			"&+W[%s]:&N %s&N &+Wslowly descends and lands with a loud &+Bsplash&+W!&N\r\n",
+			SHIP_ID(ship), SHIP_NAME(ship));
 	}
 	else
 	{
 		ship->setspeed = 0;
-		ship->speed    = 0;
+		ship->speed = 0;
 
-		act_to_all_in_ship(ship, "&+WYour ship slowly descends and lands with &+Ycreaking &+Wsounds!&N\r\n");
-		act_to_outside(ship, 10, "%s &+Wslowly descends and lands with a &+Ycreaking &+Wsounds!&N", SHIP_NAME(ship));
-		act_to_outside_ships(ship, ship, DEFAULT_RANGE, "&+W[%s]:&N %s&N &+Wslowly descends and lands with a &+Ycreaking &+Wsounds!&N\r\n", SHIP_ID(ship), SHIP_NAME(ship));
+		act_to_all_in_ship(
+			ship,
+			"&+WYour ship slowly descends and lands with &+Ycreaking &+Wsounds!&N\r\n");
+		act_to_outside(ship, 10,
+			       "%s &+Wslowly descends and lands with a &+Ycreaking &+Wsounds!&N",
+			       SHIP_NAME(ship));
+		act_to_outside_ships(
+			ship, ship, DEFAULT_RANGE,
+			"&+W[%s]:&N %s&N &+Wslowly descends and lands with a &+Ycreaking &+Wsounds!&N\r\n",
+			SHIP_ID(ship), SHIP_NAME(ship));
 	}
 
 	ship->shipobj->z_cord = 0;
@@ -2205,17 +2464,17 @@ int write_ship(P_ship ship)
 #ifndef __NO_MYSQL__
 	if (!sql_save_ship(ship))
 	{
-		ship->save_pending     = true;
+		ship->save_pending = true;
 		ship->save_retry_after = time(NULL) + 1;
 		logit(LOG_FILE, "sql_save_ship failed for %s; will retry soon", ship->ownername);
 		return FALSE;
 	}
-	ship->save_pending         = false;
-	ship->save_retry_after     = 0;
+	ship->save_pending = false;
+	ship->save_retry_after = 0;
 	ship->save_saved_signature = ship_save_signature(ship);
 	return TRUE;
 #else
-	ship->save_pending     = true;
+	ship->save_pending = true;
 	ship->save_retry_after = time(NULL) + 1;
 	return FALSE;
 #endif
@@ -2224,7 +2483,7 @@ int write_ship(P_ship ship)
 void flush_pending_ship_saves(void)
 {
 	time_t now = time(NULL);
-	int    flushed = 0;
+	int flushed = 0;
 	ShipVisitor svs;
 	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
 	{
@@ -2237,22 +2496,22 @@ void flush_pending_ship_saves(void)
 		unsigned long long current_signature = ship_save_signature(ship);
 		if (current_signature == ship->save_saved_signature)
 		{
-			ship->save_pending     = false;
+			ship->save_pending = false;
 			ship->save_retry_after = 0;
 			continue;
 		}
 
 		if (write_ship(ship))
 		{
-			ship->save_pending         = false;
-			ship->save_retry_after     = 0;
+			ship->save_pending = false;
+			ship->save_retry_after = 0;
 			ship->save_saved_signature = current_signature;
 			flushed++;
 			logit(LOG_DEBUG, "Recovered pending ship save for %s.", SHIP_NAME(ship));
 		}
 		else
 		{
-			ship->save_pending     = true;
+			ship->save_pending = true;
 			ship->save_retry_after = now + 1;
 		}
 	}
@@ -2265,7 +2524,7 @@ void flush_pending_ship_saves(void)
  * durable so the caller can abort copyover rather than lose ship state. */
 bool drain_pending_ship_saves(void)
 {
-	bool        drained = true;
+	bool drained = true;
 	ShipVisitor svs;
 	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
 	{
@@ -2276,12 +2535,12 @@ bool drain_pending_ship_saves(void)
 		if (!write_ship(ship))
 		{
 			drained = false;
-			logit(LOG_FILE, "Unable to drain pending ship save for %s before copyover.", SHIP_NAME(ship));
+			logit(LOG_FILE, "Unable to drain pending ship save for %s before copyover.",
+			      SHIP_NAME(ship));
 		}
 	}
 	return drained;
 }
-
 
 int read_ships()
 {
@@ -2299,7 +2558,7 @@ void update_shipfrags()
 {
 	for (int i = 0; i < 20; i++)
 	{
-		int max           = 0;
+		int max = 0;
 		shipfrags[i].ship = 0;
 		ShipVisitor svs;
 		for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
@@ -2316,7 +2575,7 @@ void update_shipfrags()
 				}
 				if (exists != 1)
 				{
-					max               = svs->frags;
+					max = svs->frags;
 					shipfrags[i].ship = svs;
 				}
 			}
@@ -2334,7 +2593,7 @@ void display_shipfrags(P_char ch)
 		{
 			break;
 		}
-		int         found = 0;
+		int found = 0;
 		ShipVisitor svs;
 		for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
 		{
@@ -2358,19 +2617,17 @@ void display_shipfrags(P_char ch)
 				break;
 			}
 		}
-		send_to_char_f(ch,
-		               "&+W%d:&N %s\r\n&+LCaptain: &+W%-20s &+LClass: &+y%-15s&+R Tonnage Sunk: &+W%d&N\r\n\r\n",
-		               i + 1,
-		               shipfrags[i].ship->name,
-		               shipfrags[i].ship->ownername,
-		               SHIPTYPE_NAME(SHIP_CLASS(shipfrags[i].ship)),
-		               shipfrags[i].ship->frags);
+		send_to_char_f(
+			ch,
+			"&+W%d:&N %s\r\n&+LCaptain: &+W%-20s &+LClass: &+y%-15s&+R Tonnage Sunk: &+W%d&N\r\n\r\n",
+			i + 1, shipfrags[i].ship->name, shipfrags[i].ship->ownername,
+			SHIPTYPE_NAME(SHIP_CLASS(shipfrags[i].ship)), shipfrags[i].ship->frags);
 	}
 }
 
 void delete_ship(char *owner_name)
 {
-	P_ship      ship;
+	P_ship ship;
 	ShipVisitor svs;
 
 	CAP(owner_name);

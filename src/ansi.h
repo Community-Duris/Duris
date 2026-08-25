@@ -26,7 +26,7 @@
 #define ATTR_FG(x) ((x) << 21)
 #define ATTR_BG(x) ((x) << 26)
 #define GET_CHAR(x) ((x) & 0x1fffff)
-#define GET_ATTR(x) ((x) &~ 0x1fffff)
+#define GET_ATTR(x) ((x) & ~0x1fffff)
 #define GET_FG(x) (((x) >> 21) & 31)
 #define GET_BG(x) (((x) >> 26) & 31)
 #define SET_FG(c, x) (c) = (((c) & 0x7c1fffff) | ATTR_FG(x))
@@ -44,13 +44,13 @@ enum term_lastbit_t
 
 class Gradient : public std::vector<int>
 {
-public:
+    public:
 	Gradient(const char *ansi); // takes a list of foregrounds without the &+
 };
 
 class AnsiString : public std::wstring
 {
-public:
+    public:
 	void set(const char *txt);
 	AnsiString() {}
 	AnsiString(const char *txt) { set(txt); }
@@ -60,6 +60,9 @@ public:
 	void colorize(int attr);
 	void colorize(const std::vector<int> &grad);
 
-	wchar_t ch(int i) const { return (i<0 || (size_t)i>=size()) ? 0 : GET_CHAR((*this)[i]); }
-	int attr(int i) const { return (i<0 || (size_t)i>=size()) ? 0 : GET_ATTR((*this)[i]); }
+	wchar_t ch(int i) const
+	{
+		return (i < 0 || (size_t)i >= size()) ? 0 : GET_CHAR((*this)[i]);
+	}
+	int attr(int i) const { return (i < 0 || (size_t)i >= size()) ? 0 : GET_ATTR((*this)[i]); }
 };

@@ -21,17 +21,18 @@ using namespace std;
 #include "trophy.h"
 
 extern struct zone_data *zone_table;
-extern int               top_of_zone_table;
-extern P_room            world;
-extern long              new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
-extern P_index           mob_index;
+extern int top_of_zone_table;
+extern P_room world;
+extern long new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
+extern P_index mob_index;
 
 float modify_exp_by_zone_trophy(P_char ch, int type, float XP)
 {
 	if (!ch || !IS_PC(ch))
 		return XP;
 
-	if (type != EXP_DAMAGE && type != EXP_KILL && type != EXP_QUEST && type != EXP_MELEE && type != EXP_HEALING && type != EXP_TANKING)
+	if (type != EXP_DAMAGE && type != EXP_KILL && type != EXP_QUEST && type != EXP_MELEE &&
+	    type != EXP_HEALING && type != EXP_TANKING)
 		return XP;
 
 	if (IS_ILLITHID(ch))
@@ -56,14 +57,15 @@ float modify_exp_by_zone_trophy(P_char ch, int type, float XP)
 		{
 			for (struct group_list *gl = ch->group; gl; gl = gl->next)
 			{
-				if (!IS_PC(gl->ch) || GET_LEVEL(gl->ch) < 20 || ch->in_room != gl->ch->in_room)
+				if (!IS_PC(gl->ch) || GET_LEVEL(gl->ch) < 20 ||
+				    ch->in_room != gl->ch->in_room)
 					continue;
 
 				avg_zone_exp += get_zone_exp(gl->ch, zone_number);
 				group_size++;
 			}
 
-			group_size   = MAX(group_size, 1); // prevent divide by 0 error
+			group_size = MAX(group_size, 1); // prevent divide by 0 error
 			avg_zone_exp = (int)avg_zone_exp / group_size;
 		}
 		else
@@ -98,15 +100,21 @@ float modify_exp_by_zone_trophy(P_char ch, int type, float XP)
 				}
 				else if (exp_mod >= 0.30)
 				{
-					send_to_char("&+yThis area really isn't much of a challenge.\n", ch);
+					send_to_char(
+						"&+yThis area really isn't much of a challenge.\n",
+						ch);
 				}
 				else if (exp_mod >= 0.15)
 				{
-					send_to_char("&+rWhat's the point? Isn't this area getting boring?\n", ch);
+					send_to_char(
+						"&+rWhat's the point? Isn't this area getting boring?\n",
+						ch);
 				}
 				else
 				{
-					send_to_char("&+YYAWN! You really should find somewhere else to gain experience.\n", ch);
+					send_to_char(
+						"&+YYAWN! You really should find somewhere else to gain experience.\n",
+						ch);
 				}
 			}
 
@@ -123,10 +131,10 @@ float modify_exp_by_zone_trophy(P_char ch, int type, float XP)
 
 void do_trophy(P_char ch, char *arg, int cmd)
 {
-	int                 real, clear_it = FALSE;
-	char                Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char                Gbuf3[MAX_STRING_LENGTH];
-	P_char              who, rch;
+	int real, clear_it = FALSE;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH];
+	P_char who, rch;
 	struct trophy_data *tr;
 
 	rch = GET_PLYR(ch);
@@ -183,7 +191,8 @@ void do_trophy(P_char ch, char *arg, int cmd)
 		//    debug("exp notch: %d", EXP_NOTCH(who));
 
 		int reduction_scale = (int)get_property("exp.zoneTrophy.scale.notches", 10);
-		for (zone_trophy_iterator it = ZONE_TROPHY(who)->begin(); it != ZONE_TROPHY(who)->end(); it++)
+		for (zone_trophy_iterator it = ZONE_TROPHY(who)->begin();
+		     it != ZONE_TROPHY(who)->end(); it++)
 		{
 			struct zone_info zone;
 			if (!get_zone_info(it->zone_number, &zone))
@@ -216,11 +225,14 @@ void do_trophy(P_char ch, char *arg, int cmd)
 
 			if (IS_TRUSTED(ch))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, " %s  &n%s&n(%d:%d)\n", pad_ansi(zone.name.c_str(), 40).c_str(), Gbuf2, it->exp, notches);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, " %s  &n%s&n(%d:%d)\n",
+					 pad_ansi(zone.name.c_str(), 40).c_str(), Gbuf2, it->exp,
+					 notches);
 			}
 			else
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, " %s  &n%s\n", pad_ansi(zone.name.c_str(), 40).c_str(), Gbuf2);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, " %s  &n%s\n",
+					 pad_ansi(zone.name.c_str(), 40).c_str(), Gbuf2);
 			}
 
 			send_to_char(Gbuf1, ch);
@@ -248,7 +260,7 @@ void update_zone_trophy(P_char ch, int zone_number, int XP)
 		ZONE_TROPHY(ch) = new vector<struct zone_trophy_data>();
 	}
 
-	bool                 has_it = false;
+	bool has_it = false;
 	zone_trophy_iterator it;
 	for (it = ZONE_TROPHY(ch)->begin(); it != ZONE_TROPHY(ch)->end(); it++)
 	{
@@ -268,8 +280,8 @@ void update_zone_trophy(P_char ch, int zone_number, int XP)
 	{
 		struct zone_trophy_data z;
 		z.zone_number = zone_number;
-		z.exp         = XP;
-		z.exp         = MAX(0, z.exp);
+		z.exp = XP;
+		z.exp = MAX(0, z.exp);
 		ZONE_TROPHY(ch)->push_back(z);
 	}
 
@@ -278,7 +290,8 @@ void update_zone_trophy(P_char ch, int zone_number, int XP)
 	{
 		if (it->zone_number != zone_number)
 		{
-			it->exp -= (int)(XP * (float)get_property("exp.zoneTrophy.others.reductionPct", 0.01));
+			it->exp -= (int)(XP * (float)get_property(
+						      "exp.zoneTrophy.others.reductionPct", 0.01));
 			it->exp = MAX(0, it->exp);
 		}
 	}
@@ -316,12 +329,13 @@ void load_zone_trophy(P_char ch)
 	ZONE_TROPHY(ch) = new vector<struct zone_trophy_data>();
 
 	if (!qry("SELECT zone_number, exp FROM zone_trophy, zones WHERE zone_trophy.zone_number = zones.number AND zones.trophy_zone = 1 "
-	         "AND pid = %d",
-	         GET_PID(ch)))
+		 "AND pid = %d",
+		 GET_PID(ch)))
 		return;
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -337,7 +351,7 @@ void load_zone_trophy(P_char ch)
 	{
 		struct zone_trophy_data data;
 		data.zone_number = atoi(row[0]);
-		data.exp         = atoi(row[1]);
+		data.exp = atoi(row[1]);
 		ZONE_TROPHY(ch)->push_back(data);
 	}
 
@@ -349,12 +363,14 @@ void zone_trophy_update()
 	if (!get_property("exp.zoneTrophy.enabled", 0))
 		return;
 
-	if (!has_elapsed("zone_trophy_reduction", (int)get_property("exp.zoneTrophy.update.secs", 3600)))
+	if (!has_elapsed("zone_trophy_reduction",
+			 (int)get_property("exp.zoneTrophy.update.secs", 3600)))
 		return;
 
 	//  debug("zone_trophy_update()");
 
-	qry("UPDATE zone_trophy SET exp = exp * %f", (float)get_property("exp.zoneTrophy.update.multiplier", 1.0));
+	qry("UPDATE zone_trophy SET exp = exp * %f",
+	    (float)get_property("exp.zoneTrophy.update.multiplier", 1.0));
 	qry("DELETE FROM zone_trophy WHERE exp <= 0");
 
 	set_timer("zone_trophy_reduction");
@@ -367,20 +383,22 @@ void save_zone_trophy(P_char ch)
 
 	for (zone_trophy_iterator it = ZONE_TROPHY(ch)->begin(); it != ZONE_TROPHY(ch)->end(); it++)
 	{
-		qry("SELECT exp FROM zone_trophy WHERE pid = %d AND zone_number = %d", GET_PID(ch), it->zone_number);
+		qry("SELECT exp FROM zone_trophy WHERE pid = %d AND zone_number = %d", GET_PID(ch),
+		    it->zone_number);
 
 		MYSQL_RES *res = mysql_store_result(DB);
-		if (!res) {
+		if (!res)
+		{
 			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 			return;
 		}
-		bool       has_row = mysql_num_rows(res) > 0;
-		int        old_exp = 0;
+		bool has_row = mysql_num_rows(res) > 0;
+		int old_exp = 0;
 
 		if (has_row)
 		{
 			MYSQL_ROW row = mysql_fetch_row(res);
-			old_exp       = atoi(row[0]);
+			old_exp = atoi(row[0]);
 		}
 
 		mysql_free_result(res);
@@ -389,12 +407,14 @@ void save_zone_trophy(P_char ch)
 		{
 			if (it->exp != old_exp)
 			{
-				qry("UPDATE zone_trophy SET exp = %d WHERE pid = %d AND zone_number = %d", it->exp, GET_PID(ch), it->zone_number);
+				qry("UPDATE zone_trophy SET exp = %d WHERE pid = %d AND zone_number = %d",
+				    it->exp, GET_PID(ch), it->zone_number);
 			}
 		}
 		else
 		{
-			qry("INSERT INTO zone_trophy (pid, zone_number, exp) VALUES ('%d', '%d', '%d')", GET_PID(ch), it->zone_number, it->exp);
+			qry("INSERT INTO zone_trophy (pid, zone_number, exp) VALUES ('%d', '%d', '%d')",
+			    GET_PID(ch), it->zone_number, it->exp);
 		}
 	}
 }

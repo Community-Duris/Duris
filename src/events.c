@@ -29,12 +29,12 @@
 #include "specs.prototypes.h"
 #include "spells.h"
 
-void     event_memorize(P_char, P_char, P_obj, void *);
-void     disarm_char_nevents(P_char ch, event_func_type func);
-void     disarm_obj_nevents(P_obj obj, event_func_type func);
+void event_memorize(P_char, P_char, P_obj, void *);
+void disarm_char_nevents(P_char ch, event_func_type func);
+void disarm_obj_nevents(P_obj obj, event_func_type func);
 P_nevent get_scheduled(P_char, event_func_type);
-void     ne_init_events();
-int      ne_event_time(P_nevent);
+void ne_init_events();
+int ne_event_time(P_nevent);
 
 bool do_reporting = FALSE;
 
@@ -52,7 +52,8 @@ static bool zone_reset_trace_enabled(void)
 {
 	static int enabled = -1;
 	if (enabled < 0)
-		enabled = getenv("DURIS_ZONE_RESET_TRACE") && atoi(getenv("DURIS_ZONE_RESET_TRACE")) > 0;
+		enabled = getenv("DURIS_ZONE_RESET_TRACE") &&
+			  atoi(getenv("DURIS_ZONE_RESET_TRACE")) > 0;
 	return enabled > 0;
 }
 
@@ -79,75 +80,75 @@ uint event_counter[LAST_EVENT + 2];
  * names of event types, used in log messages and by 'world events'
  */
 
-const char *event_names[] = {"NULL",
-                             "Deferred",
-                             "Wait",
-                             "Regen Hits",
-                             "Regen Moves",
-                             "Regen Mana",
-                             "Mob Mundane",
-                             "Mob Special",
-                             "Object",
-                             "Room",
-                             "Falling Char", // 10
-                             "Falling Obj",
-                             "Zone Reset",
-                             "Obj affect",
-                             "Skill Reset",
-                             "Special",
-                             "Ship Move",
-                             "Fire Plane",
-                             "Auto Save",
-                             "Track Decay",
-                             "Spell Scribe", // 20
-                             "Spell Mem",
-                             "Spellcast",
-                             "Melee combat",
-                             "Bard singing",
-                             "Bard fx-decay",
-                             "Delayed func",
-                             "Stunned",
-                             "Knocked Out",
-                             "Brain Drain",
-                             "AggAttack", // 30
-                             "Berserk",
-                             "Affect Bal",
-                             "Hunter",
-                             "Underwater",
-                             "Swimming",
-                             "Brain Absorb",
-                             "Gith neckbite",
-                             "Reset zone complete",
-                             "Disguise",
-                             "Damage Char", // 40
-                             "Immolate Char",
-                             "Balance Effects NoDie",
-                             "Dazzle",
-                             "Throat Crush",
-                             "Acid immolate",
-                             "Short affect",
-                             "Room affect",
-                             "Order Troop",
-                             "Combination",
-                             "Undead Mem", // 50
-                             "Flurry",
-                             "Artifact",
-                             "Sacking",
-                             "Displacement",
-                             "Lotus",
-                             "Spec Timer",
-                             "CDOOM",
-                             "Reconstruction"
-                             "Phantasmal form",
-                             "Magma burst", // 60
-                             "Dread wave",
-                             "Piper singing",
-                             "Piper fx-decay",
-                             "Short affect",
-                             "Room affect",
-                             "Interaction",
-                             "Interaction-peer",
-                             "Barrage"};
+const char *event_names[] = { "NULL",
+			      "Deferred",
+			      "Wait",
+			      "Regen Hits",
+			      "Regen Moves",
+			      "Regen Mana",
+			      "Mob Mundane",
+			      "Mob Special",
+			      "Object",
+			      "Room",
+			      "Falling Char", // 10
+			      "Falling Obj",
+			      "Zone Reset",
+			      "Obj affect",
+			      "Skill Reset",
+			      "Special",
+			      "Ship Move",
+			      "Fire Plane",
+			      "Auto Save",
+			      "Track Decay",
+			      "Spell Scribe", // 20
+			      "Spell Mem",
+			      "Spellcast",
+			      "Melee combat",
+			      "Bard singing",
+			      "Bard fx-decay",
+			      "Delayed func",
+			      "Stunned",
+			      "Knocked Out",
+			      "Brain Drain",
+			      "AggAttack", // 30
+			      "Berserk",
+			      "Affect Bal",
+			      "Hunter",
+			      "Underwater",
+			      "Swimming",
+			      "Brain Absorb",
+			      "Gith neckbite",
+			      "Reset zone complete",
+			      "Disguise",
+			      "Damage Char", // 40
+			      "Immolate Char",
+			      "Balance Effects NoDie",
+			      "Dazzle",
+			      "Throat Crush",
+			      "Acid immolate",
+			      "Short affect",
+			      "Room affect",
+			      "Order Troop",
+			      "Combination",
+			      "Undead Mem", // 50
+			      "Flurry",
+			      "Artifact",
+			      "Sacking",
+			      "Displacement",
+			      "Lotus",
+			      "Spec Timer",
+			      "CDOOM",
+			      "Reconstruction"
+			      "Phantasmal form",
+			      "Magma burst", // 60
+			      "Dread wave",
+			      "Piper singing",
+			      "Piper fx-decay",
+			      "Short affect",
+			      "Room affect",
+			      "Interaction",
+			      "Interaction-peer",
+			      "Barrage" };
 
 /*
  * The way this works:
@@ -213,27 +214,27 @@ struct mm_ds *dead_event_pool = NULL;
  * external variables
  */
 
-extern P_char                        character_list;
-extern P_index                       mob_index;
-extern P_index                       obj_index;
-extern P_obj                         object_list;
-extern P_room                        world;
-extern int                           errno;
-extern int                           pulse;
-extern int                           top_of_mobt;
-extern int                           top_of_objt;
-extern int                           top_of_zone_table;
-extern struct time_info_data         time_info;
-extern struct zone_data             *zone;
-extern struct zone_data             *zone_table;
-extern struct sector_data           *sector_table;
+extern P_char character_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern int errno;
+extern int pulse;
+extern int top_of_mobt;
+extern int top_of_objt;
+extern int top_of_zone_table;
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern struct sector_data *sector_table;
 extern const struct racial_data_type racial_data[LAST_RACE + 1];
-void                                 interaction_to_new_wrapper(P_char, P_char, char *);
+void interaction_to_new_wrapper(P_char, P_char, char *);
 
 // The type is an artifact of old event code.  It's ignored now.
 void clear_char_nevents(P_char ch, int type, void *func)
 {
-	P_char                 tch;
+	P_char tch;
 	struct char_link_data *cld;
 
 	if (!ch)
@@ -246,14 +247,20 @@ void clear_char_nevents(P_char ch, int type, void *func)
 	ch->nevents = NULL;
 }
 
-void clear_events_type(P_char ch, int type) { clear_char_nevents(ch, type, NULL); }
+void clear_events_type(P_char ch, int type)
+{
+	clear_char_nevents(ch, type, NULL);
+}
 
 /*
  * remove all events associated with the target char.  Called from
  * extract_char so that we don't wind up with bogus pointers for events.
  */
 
-void ClearCharEvents(P_char target) { clear_char_nevents(target, -1, NULL); }
+void ClearCharEvents(P_char target)
+{
+	clear_char_nevents(target, -1, NULL);
+}
 
 /*
  * remove all events associated with the target object.  Called from
@@ -283,7 +290,7 @@ void calculate_regen_values(int reg, int *per_pulse, int *delay)
 	if (reg < 0)
 	{
 		sign = -1;
-		reg  = -reg;
+		reg = -reg;
 	}
 	else
 		sign = 1;
@@ -299,11 +306,11 @@ void calculate_regen_values(int reg, int *per_pulse, int *delay)
 	if (*per_pulse > 1)
 	{
 		*per_pulse = sign * (*per_pulse - 1 + (pulse % reg ? 0 : 1));
-		*delay     = 1;
+		*delay = 1;
 	}
 	else
 	{
-		*delay     = reg;
+		*delay = reg;
 		*per_pulse = sign;
 	}
 }
@@ -312,8 +319,8 @@ void calculate_regen_values(int reg, int *per_pulse, int *delay)
 // codemod
 void event_mana_regen(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	float regen_value     = *((float *)data);
-	int   regen_value_int = (int)regen_value;
+	float regen_value = *((float *)data);
+	int regen_value_int = (int)regen_value;
 	if (regen_value_int >= 1 || regen_value_int <= -1)
 	{
 		GET_MANA(ch) += regen_value_int;
@@ -321,7 +328,8 @@ void event_mana_regen(P_char ch, P_char victim, P_obj obj, void *data)
 		if (GET_MANA(ch) > GET_MAX_MANA(ch))
 			GET_MANA(ch) = GET_MAX_MANA(ch);
 
-		if (IS_PC(ch) && IS_AFFECTED(ch, AFF_MEDITATE) && (GET_MANA(ch) == GET_MAX_MANA(ch)) && GET_CLASS(ch, CLASS_PSIONICIST))
+		if (IS_PC(ch) && IS_AFFECTED(ch, AFF_MEDITATE) &&
+		    (GET_MANA(ch) == GET_MAX_MANA(ch)) && GET_CLASS(ch, CLASS_PSIONICIST))
 		{
 			send_to_char("&+LYour mana reserves are now full.&n\r\n", ch);
 			stop_meditation(ch);
@@ -341,7 +349,8 @@ void event_mana_regen(P_char ch, P_char victim, P_obj obj, void *data)
 		per_tick = ((GET_C_POW(ch) + GET_C_INT(ch)) / 2.5);
 	}
 
-	if ((per_tick == 0) || (GET_MANA(ch) == GET_MAX_MANA(ch) && per_tick > 0) || (GET_MANA(ch) < 0 && per_tick < 0))
+	if ((per_tick == 0) || (GET_MANA(ch) == GET_MAX_MANA(ch) && per_tick > 0) ||
+	    (GET_MANA(ch) < 0 && per_tick < 0))
 	{
 		return;
 	}
@@ -364,8 +373,8 @@ void event_mana_regen(P_char ch, P_char victim, P_obj obj, void *data)
 // codemod
 void event_ward_regen(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	float regen_value     = *((float *)data);
-	int   regen_value_int = (int)regen_value;
+	float regen_value = *((float *)data);
+	int regen_value_int = (int)regen_value;
 	if (regen_value_int >= 1 || regen_value_int <= -1)
 	{
 		GET_WARD(ch) += regen_value_int;
@@ -402,8 +411,8 @@ void event_ward_regen(P_char ch, P_char victim, P_obj obj, void *data)
 
 void event_move_regen(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	float regen_value     = *((float *)data);
-	int   regen_value_int = (int)regen_value;
+	float regen_value = *((float *)data);
+	int regen_value_int = (int)regen_value;
 	if (regen_value_int >= 1 || regen_value_int <= -1)
 	{
 		GET_VITALITY(ch) += regen_value_int;
@@ -429,7 +438,8 @@ void event_move_regen(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 #endif
 
-	if ((per_tick == 0) || (GET_VITALITY(ch) == GET_MAX_VITALITY(ch) && per_tick > 0) || (GET_VITALITY(ch) < 0 && per_tick < 0))
+	if ((per_tick == 0) || (GET_VITALITY(ch) == GET_MAX_VITALITY(ch) && per_tick > 0) ||
+	    (GET_VITALITY(ch) < 0 && per_tick < 0))
 	{
 		return;
 	}
@@ -450,8 +460,8 @@ void event_move_regen(P_char ch, P_char victim, P_obj obj, void *data)
 
 void event_hit_regen(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	float regen_value     = *((float *)data);
-	int   regen_value_int = (int)regen_value;
+	float regen_value = *((float *)data);
+	int regen_value_int = (int)regen_value;
 
 	if (regen_value_int >= 1 || regen_value_int <= -1)
 	{
@@ -463,8 +473,12 @@ void event_hit_regen(P_char ch, P_char victim, P_obj obj, void *data)
 				return;
 			if (IS_PC(ch))
 			{
-				logit(LOG_DEATH, "%s killed in %d (< -10 hits)", GET_NAME(ch), (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
-				statuslog(ch->player.level, "%s died in %d ( < -10 hps).", GET_NAME(ch), ((ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number));
+				logit(LOG_DEATH, "%s killed in %d (< -10 hits)", GET_NAME(ch),
+				      (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
+				statuslog(ch->player.level, "%s died in %d ( < -10 hps).",
+					  GET_NAME(ch),
+					  ((ch->in_room == NOWHERE) ? -1 :
+								      world[ch->in_room].number));
 			}
 			die(ch, ch);
 			return;
@@ -504,7 +518,7 @@ void event_hit_regen(P_char ch, P_char victim, P_obj obj, void *data)
 void StartRegen(P_char ch, int type)
 {
 	event_func_type func;
-	int             delay, per_tick;
+	int delay, per_tick;
 
 	if (type == EVENT_MOVE_REGEN)
 	{
@@ -512,7 +526,7 @@ void StartRegen(P_char ch, int type)
 		if (get_scheduled(ch, func))
 			return;
 		per_tick = move_regen(ch, FALSE);
-		delay    = IS_PC(ch) ? 1 : MOB_MOVE_REGEN_DELAY;
+		delay = IS_PC(ch) ? 1 : MOB_MOVE_REGEN_DELAY;
 	}
 	else if (type == EVENT_HIT_REGEN)
 	{
@@ -520,7 +534,7 @@ void StartRegen(P_char ch, int type)
 		if (get_scheduled(ch, func))
 			return;
 		per_tick = hit_regen(ch, FALSE);
-		delay    = 1;
+		delay = 1;
 	}
 	else if (type == EVENT_MANA_REGEN)
 	{
@@ -538,7 +552,7 @@ void StartRegen(P_char ch, int type)
 		if (get_scheduled(ch, func))
 			return;
 		per_tick = ward_regen(ch, FALSE);
-		delay    = IS_PC(ch) ? 1 : MOB_WARD_REGEN_DELAY;
+		delay = IS_PC(ch) ? 1 : MOB_WARD_REGEN_DELAY;
 	}
 	else
 		return;
@@ -587,7 +601,7 @@ void DelayCommune(P_char ch, int delay)
 void CharWait(P_char ch, int delay)
 {
 	P_nevent e = NULL;
-	int      i, old_time;
+	int i, old_time;
 
 	if (!ch)
 	{
@@ -634,7 +648,8 @@ void CharWait(P_char ch, int delay)
 	//   the whole time.  Log it so the caller can be found, but honour it.
 	if (delay > PULSES_IN_TICK)
 	{
-		logit(LOG_DEBUG, "CharWait: %s given a %d pulse (%d sec) wait.", J_NAME(ch), delay, delay / WAIT_SEC);
+		logit(LOG_DEBUG, "CharWait: %s given a %d pulse (%d sec) wait.", J_NAME(ch), delay,
+		      delay / WAIT_SEC);
 	}
 
 	if (!IS_TRUSTED(ch))
@@ -643,7 +658,8 @@ void CharWait(P_char ch, int delay)
 		// Hard deadline for the command gate.  event_wait normally clears it well
 		//   before this, but if the event is lost, delayed or starved the gate must
 		//   still come down on its own -- a player who cannot type is unrecoverable.
-		ch->specials.wait_until_pulse = ne_event_tick + (unsigned long long)delay + (unsigned long long)(2 * WAIT_SEC);
+		ch->specials.wait_until_pulse = ne_event_tick + (unsigned long long)delay +
+						(unsigned long long)(2 * WAIT_SEC);
 	}
 	add_event(event_wait, delay, ch, 0, 0, 0, 0, 0);
 
@@ -660,26 +676,22 @@ void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	int zone = *((int *)data);
 	int age_before = zone_table[zone].age;
-	bool will_reset = age_before + 1 >= zone_table[zone].lifespan && (zone_table[zone].reset_mode == 2 || ::is_empty(zone));
+	bool will_reset = age_before + 1 >= zone_table[zone].lifespan &&
+			  (zone_table[zone].reset_mode == 2 || ::is_empty(zone));
 
 	if (zone_reset_trace_enabled())
 		logit(LOG_STATUS,
 		      "ZONE RESET TRACE: zone_rnum=%d zone_vnum=%d name=%s fired_tick=%llu scheduled_tick=%llu lateness_ticks=%lld event_element=%d event_timer=%d sequence=%llu age_before=%d lifespan=%d age_after=%d will_reset=%d reset_mode=%d pulse=%d",
-		      zone,
-		      zone_table[zone].number,
-		      zone_table[zone].name,
-		      ne_event_tick,
+		      zone, zone_table[zone].number, zone_table[zone].name, ne_event_tick,
 		      current_nevent ? current_nevent->scheduled_tick : 0,
-		      current_nevent ? (long long)ne_event_tick - (long long)current_nevent->scheduled_tick : 0,
+		      current_nevent ?
+			      (long long)ne_event_tick - (long long)current_nevent->scheduled_tick :
+			      0,
 		      current_nevent ? current_nevent->element : -1,
 		      current_nevent ? current_nevent->timer : -1,
-		      current_nevent ? current_nevent->sequence : 0,
-		      age_before,
-		      zone_table[zone].lifespan,
-		      age_before + 1,
-		      will_reset ? 1 : 0,
-		      zone_table[zone].reset_mode,
-		      pulse);
+		      current_nevent ? current_nevent->sequence : 0, age_before,
+		      zone_table[zone].lifespan, age_before + 1, will_reset ? 1 : 0,
+		      zone_table[zone].reset_mode, pulse);
 
 	zone_table[zone].age++;
 

@@ -20,15 +20,15 @@
 
 LINKED_OBJECTS::LINKED_OBJECTS(P_obj o, int t, LINKED_OBJECTS *append)
 {
-	next   = append;
-	type   = t;
+	next = append;
+	type = t;
 	object = o;
 }
 
 LINKED_OBJECTS::~LINKED_OBJECTS()
 {
-	next   = NULL;
-	type   = 0;
+	next = NULL;
+	type = 0;
 	object = NULL;
 }
 
@@ -44,7 +44,10 @@ int LINKED_OBJECTS::Visible_Type()
 	return 0;
 }
 
-char *LINKED_OBJECTS::Visible_Message() { return NULL; }
+char *LINKED_OBJECTS::Visible_Message()
+{
+	return NULL;
+}
 
 P_obj LINKED_OBJECTS::Visible_Object()
 {
@@ -85,7 +88,10 @@ void remove_linked_object(P_obj o)
 	}
 }
 
-int get_object_link_type(P_obj o) { return LINKED_FOLLOWING; }
+int get_object_link_type(P_obj o)
+{
+	return LINKED_FOLLOWING;
+}
 
 bool has_linked_object(P_char ch, P_obj o)
 {
@@ -105,7 +111,7 @@ void add_linked_object(P_char c, P_obj o, int t)
 {
 	if (!c || !o || !t)
 		return;
-	c->lobj       = new LINKED_OBJECTS(o, t, c->lobj);
+	c->lobj = new LINKED_OBJECTS(o, t, c->lobj);
 	o->hitched_to = c;
 }
 

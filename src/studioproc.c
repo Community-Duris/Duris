@@ -131,31 +131,31 @@
 /* engine globals we lean on                                          */
 /* ------------------------------------------------------------------ */
 
-extern P_room               world;
-extern int                  top_of_world;
-extern P_index              mob_index;
-extern P_index              obj_index;
-extern const char          *spells[];
-extern Skill                skills[];
-extern struct command_info  cmd_info[MAX_CMD_LIST];
-extern const char          *command[];
-extern const char          *dirs[];
+extern P_room world;
+extern int top_of_world;
+extern P_index mob_index;
+extern P_index obj_index;
+extern const char *spells[];
+extern Skill skills[];
+extern struct command_info cmd_info[MAX_CMD_LIST];
+extern const char *command[];
+extern const char *dirs[];
 extern struct time_info_data time_info;
-extern const struct race_names  race_names_table[];
+extern const struct race_names race_names_table[];
 extern const struct class_names class_names_table[];
-extern const char           *apply_types[];       /* common.c:811  */
-extern flagDef               affected1_bits[];    /* common.c:630  */
-extern flagDef               affected2_bits[];    /* common.c:668  */
-extern flagDef               affected3_bits[];    /* common.c:704  */
-extern flagDef               affected4_bits[];    /* common.c:740  */
-extern flagDef               affected5_bits[];    /* common.c:776  */
+extern const char *apply_types[]; /* common.c:811  */
+extern flagDef affected1_bits[]; /* common.c:630  */
+extern flagDef affected2_bits[]; /* common.c:668  */
+extern flagDef affected3_bits[]; /* common.c:704  */
+extern flagDef affected4_bits[]; /* common.c:740  */
+extern flagDef affected5_bits[]; /* common.c:776  */
 
 /* declared in specs.library.c; no header carries it */
 extern int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
 
 /* forward declarations */
 static void sp_hour_event(P_char ch, P_char victim, P_obj obj, void *data);
-static int  sp_last_hour = -1;
+static int sp_last_hour = -1;
 
 /* ------------------------------------------------------------------ */
 /* data model                                                         */
@@ -163,80 +163,80 @@ static int  sp_last_hour = -1;
 
 struct sp_cond
 {
-	int   kind;                 /* SP_C_xxx                            */
-	int   neg;
-	int   op;                   /* SP_OP_xxx                           */
-	int   num;
-	int   num2;
-	int   who;                  /* SP_WHO_ACTOR / SP_WHO_SELF          */
-	int   slot;                 /* interned counter slot               */
+	int kind; /* SP_C_xxx                            */
+	int neg;
+	int op; /* SP_OP_xxx                           */
+	int num;
+	int num2;
+	int who; /* SP_WHO_ACTOR / SP_WHO_SELF          */
+	int slot; /* interned counter slot               */
 	char *text;
 };
 
 struct sp_action
 {
-	int   op;                   /* SP_A_xxx                            */
-	char *text;                 /* message / command line / hit msg    */
-	char *text2;                /* attack: miss message                */
-	char *text3;                /* attack: room message                */
-	int   num;                  /* vnum / spell / heal / counter value */
-	int   num2;                 /* exit: destination vnum, -1 = leave  */
-	int   dnum, dsize, dbonus;  /* NdS+B                               */
-	int   who;                  /* SP_WHO_xxx                          */
-	int   scope;                /* SP_SCOPE_xxx                        */
-	int   dtype;                /* SPLDAM_xxx, 0 = untyped             */
-	int   save;                 /* SAVING_xxx, -1 = none               */
-	int   savehalf;
-	int   cooldown;             /* seconds                             */
-	int   slot;                 /* counter slot / exit direction       */
-	int   count;                /* oneof: pool size                    */
-	int   dur;                  /* affect duration, ticks              */
-	int   state;                /* exit state                          */
-	int   apply;                /* affect: APPLY_xxx, 0 = APPLY_NONE   */
-	int   amod;                 /* affect: the modifier for that apply */
-	int   affword;              /* affect: AFF word 1..5, 0 = no bit   */
-	unsigned long affbit;       /* affect: the bit in that word        */
+	int op; /* SP_A_xxx                            */
+	char *text; /* message / command line / hit msg    */
+	char *text2; /* attack: miss message                */
+	char *text3; /* attack: room message                */
+	int num; /* vnum / spell / heal / counter value */
+	int num2; /* exit: destination vnum, -1 = leave  */
+	int dnum, dsize, dbonus; /* NdS+B                               */
+	int who; /* SP_WHO_xxx                          */
+	int scope; /* SP_SCOPE_xxx                        */
+	int dtype; /* SPLDAM_xxx, 0 = untyped             */
+	int save; /* SAVING_xxx, -1 = none               */
+	int savehalf;
+	int cooldown; /* seconds                             */
+	int slot; /* counter slot / exit direction       */
+	int count; /* oneof: pool size                    */
+	int dur; /* affect duration, ticks              */
+	int state; /* exit state                          */
+	int apply; /* affect: APPLY_xxx, 0 = APPLY_NONE   */
+	int amod; /* affect: the modifier for that apply */
+	int affword; /* affect: AFF word 1..5, 0 = no bit   */
+	unsigned long affbit; /* affect: the bit in that word        */
 };
 
 struct sp_trig
 {
-	int   event;
-	int   chance;
-	int   arg;                  /* GIVE vnum / PULSE n / HPBELOW pct / HOUR */
-	int   arg2;                 /* DAMAGED mode: 0 any, 1 melee, 2 spell    */
-	char *keywords;             /* SPEECH keywords / CMD keyword filter     */
-	int   cmdnum;               /* CMD: resolved command index, -1 = any    */
-	int   trig_index;
-	int   running;
-	int   num_conds;
-	int   num_actions;
-	struct sp_cond   conds[SP_MAX_CONDS];
+	int event;
+	int chance;
+	int arg; /* GIVE vnum / PULSE n / HPBELOW pct / HOUR */
+	int arg2; /* DAMAGED mode: 0 any, 1 melee, 2 spell    */
+	char *keywords; /* SPEECH keywords / CMD keyword filter     */
+	int cmdnum; /* CMD: resolved command index, -1 = any    */
+	int trig_index;
+	int running;
+	int num_conds;
+	int num_actions;
+	struct sp_cond conds[SP_MAX_CONDS];
 	struct sp_action actions[SP_MAX_ACTIONS];
-	struct sp_trig  *next;
+	struct sp_trig *next;
 };
 
 struct sp_rec
 {
-	int   target;
-	int   vnum;
-	int   num_trigs;
-	unsigned int events;        /* bitmask of SP_EV_xxx present        */
+	int target;
+	int vnum;
+	int num_trigs;
+	unsigned int events; /* bitmask of SP_EV_xxx present        */
 	struct sp_trig *trigs;
 	/* the C proc this vnum already had, if any: never clobbered */
-	mob_proc_type   prev_mob;
-	obj_proc_type   prev_obj;
-	room_proc_type  prev_room;
-	struct sp_rec  *next;       /* hash chain                          */
+	mob_proc_type prev_mob;
+	obj_proc_type prev_obj;
+	room_proc_type prev_room;
+	struct sp_rec *next; /* hash chain                          */
 };
 
 #define SP_HASH 128
 static struct sp_rec *sp_tab[SP_NUM_T][SP_HASH];
-static int            sp_tcount[SP_NUM_T];
-int                   studioproc_count = 0;
+static int sp_tcount[SP_NUM_T];
+int studioproc_count = 0;
 
 /* interned counter names -> ubyte slot (affect->location) */
 static char *sp_cname[SP_MAX_COUNTERS];
-static int   sp_ncounters = 0;
+static int sp_ncounters = 0;
 
 /* per-room counters: rooms are permanent, so a flat array is correct
    and needs no lifetime management at all.  Indexed
@@ -244,8 +244,8 @@ static int   sp_ncounters = 0;
 static int *sp_roomctr = NULL;
 
 static pthread_t sp_main_thread;
-static int       sp_have_thread = 0;
-static int       sp_depth       = 0;
+static int sp_have_thread = 0;
+static int sp_depth = 0;
 
 static struct sp_rec *sp_find(int targ, int vnum)
 {
@@ -313,7 +313,7 @@ static int sp_char_get(P_char ch, int type, int slot)
 static void sp_char_set(P_char ch, int type, int slot, int value)
 {
 	struct affected_type *af = sp_find_store(ch, type, slot);
-	struct affected_type  na;
+	struct affected_type na;
 
 	if (af)
 	{
@@ -321,24 +321,28 @@ static void sp_char_set(P_char ch, int type, int slot, int value)
 		return;
 	}
 	memset(&na, 0, sizeof(na));
-	na.type      = type;
-	na.duration  = -1;                       /* permanent: dies with the mob */
-	na.modifier  = value;
-	na.location  = (ubyte)slot;
-	na.flags     = AFFTYPE_STORE | AFFTYPE_NOMSG | AFFTYPE_NOSAVE;
+	na.type = type;
+	na.duration = -1; /* permanent: dies with the mob */
+	na.modifier = value;
+	na.location = (ubyte)slot;
+	na.flags = AFFTYPE_STORE | AFFTYPE_NOMSG | AFFTYPE_NOSAVE;
 	affect_to_char(ch, &na);
 }
 
 /* object instance state: keyword "_sp_<slot>", body is the decimal value */
 static void sp_obj_key(char *buf, size_t sz, int type, int slot)
 {
-	snprintf(buf, sz, "_sp_%c%d", (type == SP_TAG_COUNTER) ? 'c' : (type == SP_TAG_COOLDOWN) ? 'd' : 't', slot);
+	snprintf(buf, sz, "_sp_%c%d",
+		 (type == SP_TAG_COUNTER)  ? 'c' :
+		 (type == SP_TAG_COOLDOWN) ? 'd' :
+					     't',
+		 slot);
 }
 
 static int sp_obj_get(P_obj obj, int type, int slot)
 {
 	struct extra_descr_data *ed;
-	char                     key[32];
+	char key[32];
 
 	if (!obj)
 		return 0;
@@ -352,7 +356,7 @@ static int sp_obj_get(P_obj obj, int type, int slot)
 static void sp_obj_set(P_obj obj, int type, int slot, int value)
 {
 	struct extra_descr_data *ed;
-	char                     key[32], val[32];
+	char key[32], val[32];
 
 	if (!obj)
 		return;
@@ -377,7 +381,7 @@ static void sp_obj_set(P_obj obj, int type, int slot, int value)
 	strcpy(ed->keyword, key);
 	CREATE(ed->description, char, strlen(val) + 1, MEM_TAG_EXDESCD);
 	strcpy(ed->description, val);
-	ed->next            = obj->ex_description;
+	ed->next = obj->ex_description;
 	obj->ex_description = ed;
 	obj->str_mask |= STRUNG_EDESC;
 }
@@ -388,18 +392,18 @@ static void sp_obj_set(P_obj obj, int type, int slot, int value)
 
 struct sp_ctx
 {
-	int     targ;
-	P_char  self_ch;
-	P_obj   self_obj;
-	int     self_room;
-	P_char  actor;
-	P_obj   given;              /* GIVE: the object handed over        */
-	int     self_dead_ok;
-	int     blocked;            /* a 'block' action ran                */
+	int targ;
+	P_char self_ch;
+	P_obj self_obj;
+	int self_room;
+	P_char actor;
+	P_obj given; /* GIVE: the object handed over        */
+	int self_dead_ok;
+	int blocked; /* a 'block' action ran                */
 	struct sp_rec *rec;
 };
 
-#define SP_X_FIRED    1
+#define SP_X_FIRED 1
 #define SP_X_SELFGONE 2
 
 /* generic per-instance accessors that work for whichever self we have */
@@ -407,14 +411,15 @@ static int sp_state_get(struct sp_ctx *cx, int type, int slot)
 {
 	switch (cx->targ)
 	{
-		case SP_T_MOB:
-			return sp_char_get(cx->self_ch, type, slot);
-		case SP_T_OBJ:
-			return sp_obj_get(cx->self_obj, type, slot);
-		default:
-			if (type == SP_TAG_COUNTER && sp_roomctr && cx->self_room >= 0 && cx->self_room <= top_of_world && slot >= 0 && slot < SP_ROOM_SLOTS)
-				return sp_roomctr[cx->self_room * SP_ROOM_SLOTS + slot];
-			return 0;
+	case SP_T_MOB:
+		return sp_char_get(cx->self_ch, type, slot);
+	case SP_T_OBJ:
+		return sp_obj_get(cx->self_obj, type, slot);
+	default:
+		if (type == SP_TAG_COUNTER && sp_roomctr && cx->self_room >= 0 &&
+		    cx->self_room <= top_of_world && slot >= 0 && slot < SP_ROOM_SLOTS)
+			return sp_roomctr[cx->self_room * SP_ROOM_SLOTS + slot];
+		return 0;
 	}
 }
 
@@ -422,16 +427,17 @@ static void sp_state_set(struct sp_ctx *cx, int type, int slot, int value)
 {
 	switch (cx->targ)
 	{
-		case SP_T_MOB:
-			sp_char_set(cx->self_ch, type, slot, value);
-			break;
-		case SP_T_OBJ:
-			sp_obj_set(cx->self_obj, type, slot, value);
-			break;
-		default:
-			if (type == SP_TAG_COUNTER && sp_roomctr && cx->self_room >= 0 && cx->self_room <= top_of_world && slot >= 0 && slot < SP_ROOM_SLOTS)
-				sp_roomctr[cx->self_room * SP_ROOM_SLOTS + slot] = value;
-			break;
+	case SP_T_MOB:
+		sp_char_set(cx->self_ch, type, slot, value);
+		break;
+	case SP_T_OBJ:
+		sp_obj_set(cx->self_obj, type, slot, value);
+		break;
+	default:
+		if (type == SP_TAG_COUNTER && sp_roomctr && cx->self_room >= 0 &&
+		    cx->self_room <= top_of_world && slot >= 0 && slot < SP_ROOM_SLOTS)
+			sp_roomctr[cx->self_room * SP_ROOM_SLOTS + slot] = value;
+		break;
 	}
 }
 
@@ -439,20 +445,20 @@ static int sp_room_of(struct sp_ctx *cx)
 {
 	switch (cx->targ)
 	{
-		case SP_T_MOB:
-			return cx->self_ch ? cx->self_ch->in_room : -1;
-		case SP_T_OBJ:
-			if (!cx->self_obj)
-				return -1;
-			if (OBJ_ROOM(cx->self_obj))
-				return cx->self_obj->loc.room;
-			if (OBJ_CARRIED(cx->self_obj) && cx->self_obj->loc.carrying)
-				return cx->self_obj->loc.carrying->in_room;
-			if (OBJ_WORN(cx->self_obj) && cx->self_obj->loc.wearing)
-				return cx->self_obj->loc.wearing->in_room;
+	case SP_T_MOB:
+		return cx->self_ch ? cx->self_ch->in_room : -1;
+	case SP_T_OBJ:
+		if (!cx->self_obj)
 			return -1;
-		default:
-			return cx->self_room;
+		if (OBJ_ROOM(cx->self_obj))
+			return cx->self_obj->loc.room;
+		if (OBJ_CARRIED(cx->self_obj) && cx->self_obj->loc.carrying)
+			return cx->self_obj->loc.carrying->in_room;
+		if (OBJ_WORN(cx->self_obj) && cx->self_obj->loc.wearing)
+			return cx->self_obj->loc.wearing->in_room;
+		return -1;
+	default:
+		return cx->self_room;
 	}
 }
 
@@ -460,20 +466,21 @@ static const char *sp_self_name(struct sp_ctx *cx)
 {
 	switch (cx->targ)
 	{
-		case SP_T_MOB:
-			if (cx->self_ch && cx->self_ch->player.short_descr)
-				return cx->self_ch->player.short_descr;
-			if (cx->self_ch && cx->self_ch->player.name)
-				return cx->self_ch->player.name;
-			return "someone";
-		case SP_T_OBJ:
-			if (cx->self_obj && cx->self_obj->short_description)
-				return cx->self_obj->short_description;
-			return "something";
-		default:
-			if (cx->self_room >= 0 && cx->self_room <= top_of_world && world[cx->self_room].name)
-				return world[cx->self_room].name;
-			return "the room";
+	case SP_T_MOB:
+		if (cx->self_ch && cx->self_ch->player.short_descr)
+			return cx->self_ch->player.short_descr;
+		if (cx->self_ch && cx->self_ch->player.name)
+			return cx->self_ch->player.name;
+		return "someone";
+	case SP_T_OBJ:
+		if (cx->self_obj && cx->self_obj->short_description)
+			return cx->self_obj->short_description;
+		return "something";
+	default:
+		if (cx->self_room >= 0 && cx->self_room <= top_of_world &&
+		    world[cx->self_room].name)
+			return world[cx->self_room].name;
+		return "the room";
 	}
 }
 
@@ -497,7 +504,7 @@ static void sp_cat(char *dst, int dstsz, const char *src)
 static void sp_expand(const char *src, struct sp_ctx *cx, char *out, int outsz)
 {
 	const char *ins;
-	int         o = 0;
+	int o = 0;
 
 	outsz -= 1;
 	while (*src && o < outsz)
@@ -532,12 +539,18 @@ static int sp_cmp(int lhs, int op, int rhs)
 {
 	switch (op)
 	{
-		case SP_OP_EQ: return lhs == rhs;
-		case SP_OP_NE: return lhs != rhs;
-		case SP_OP_LT: return lhs < rhs;
-		case SP_OP_LE: return lhs <= rhs;
-		case SP_OP_GT: return lhs > rhs;
-		default:       return lhs >= rhs;
+	case SP_OP_EQ:
+		return lhs == rhs;
+	case SP_OP_NE:
+		return lhs != rhs;
+	case SP_OP_LT:
+		return lhs < rhs;
+	case SP_OP_LE:
+		return lhs <= rhs;
+	case SP_OP_GT:
+		return lhs > rhs;
+	default:
+		return lhs >= rhs;
 	}
 }
 
@@ -545,9 +558,9 @@ static int sp_cmp(int lhs, int op, int rhs)
    target a healer/buffer mob wants.  Named 'ally' in the grammar. */
 static P_char sp_find_ally(struct sp_ctx *cx)
 {
-	int    room = sp_room_of(cx);
+	int room = sp_room_of(cx);
 	P_char k, best = NULL;
-	long   bestpct = 1000, pct;
+	long bestpct = 1000, pct;
 
 	if (room < 0 || room > top_of_world)
 		return NULL;
@@ -561,7 +574,7 @@ static P_char sp_find_ally(struct sp_ctx *cx)
 		if (pct < bestpct)
 		{
 			bestpct = pct;
-			best    = k;
+			best = k;
 		}
 	}
 	return best;
@@ -594,14 +607,15 @@ static P_char sp_who_char(struct sp_ctx *cx, int who)
 static int sp_has_obj(P_char ch, int vnum, int worn)
 {
 	P_obj o;
-	int   i;
+	int i;
 
 	if (!ch)
 		return FALSE;
 	if (worn)
 	{
 		for (i = 0; i < MAX_WEAR; i++)
-			if (ch->equipment[i] && ch->equipment[i]->R_num >= 0 && obj_index[ch->equipment[i]->R_num].virtual_number == vnum)
+			if (ch->equipment[i] && ch->equipment[i]->R_num >= 0 &&
+			    obj_index[ch->equipment[i]->R_num].virtual_number == vnum)
 				return TRUE;
 		return FALSE;
 	}
@@ -613,9 +627,9 @@ static int sp_has_obj(P_char ch, int vnum, int worn)
 
 static int sp_group_size(P_char ch)
 {
-	P_char              k;
+	P_char k;
 	struct follow_type *f;
-	int                 n = 0;
+	int n = 0;
 
 	if (!ch)
 		return 0;
@@ -632,98 +646,98 @@ static int sp_group_size(P_char ch)
 
 static int sp_cond_true(struct sp_cond *c, struct sp_ctx *cx)
 {
-	P_char who  = sp_who_char(cx, c->who);
-	int    room = sp_room_of(cx);
-	int    val  = 0;
+	P_char who = sp_who_char(cx, c->who);
+	int room = sp_room_of(cx);
+	int val = 0;
 	P_char k;
-	int    i;
+	int i;
 
 	switch (c->kind)
 	{
-		case SP_C_CARRYING:
-			val = sp_has_obj(who, c->num, FALSE);
-			break;
-		case SP_C_WEARING:
-			val = sp_has_obj(who, c->num, TRUE);
-			break;
-		case SP_C_CLASS:
-			val = (who && c->num) ? (GET_CLASS(who, (uint)c->num) ? 1 : 0) : 0;
-			break;
-		case SP_C_RACE:
-			val = (who && GET_RACE(who) == c->num);
-			break;
-		case SP_C_LEVEL:
-			return c->neg ^ (who && sp_cmp(GET_LEVEL(who), c->op, c->num));
-		case SP_C_ALIGN:
-			return c->neg ^ (who && sp_cmp(GET_ALIGNMENT(who), c->op, c->num));
-		case SP_C_SEX:
-			val = (who && GET_SEX(who) == c->num);
-			break;
-		case SP_C_HOUR:
-			return c->neg ^ sp_cmp((int)time_info.hour, c->op, c->num);
-		case SP_C_HP:
-			if (!who || GET_MAX_HIT(who) <= 0)
-				return c->neg ? 1 : 0;
-			val = (int)((100L * GET_HIT(who)) / GET_MAX_HIT(who));
-			return c->neg ^ sp_cmp(val, c->op, c->num);
-		case SP_C_GROUP:
-			return c->neg ^ sp_cmp(sp_group_size(who), c->op, c->num);
-		case SP_C_ROOM:
-			val = (room >= 0 && room <= top_of_world && world[room].number == c->num);
-			break;
-		case SP_C_ZONE:
-			val = (room >= 0 && room <= top_of_world && world[room].zone == c->num);
-			break;
-		case SP_C_AFFECT:
-			val = (who && affected_by_spell(who, c->num));
-			break;
-		case SP_C_COUNTER:
-			return c->neg ^ sp_cmp(sp_state_get(cx, SP_TAG_COUNTER, c->slot), c->op, c->num);
-		case SP_C_PCS:
-			if (room >= 0 && room <= top_of_world)
-				for (k = world[room].people; k; k = k->next_in_room)
-					if (IS_PC(k) && !IS_TRUSTED(k))
-						val++;
-			return c->neg ^ sp_cmp(val, c->op, c->num);
-		case SP_C_MOBS:
-			/* c->who doubles as the search scope for this condition */
-			if (c->who == SP_SC_WORLD)
-			{
-				i   = real_mobile(c->num);
-				val = (i >= 0) ? mob_index[i].number : 0;
-			}
-			else if (c->who == SP_SC_ZONE && room >= 0 && room <= top_of_world)
-			{
-				int z = world[room].zone, r;
+	case SP_C_CARRYING:
+		val = sp_has_obj(who, c->num, FALSE);
+		break;
+	case SP_C_WEARING:
+		val = sp_has_obj(who, c->num, TRUE);
+		break;
+	case SP_C_CLASS:
+		val = (who && c->num) ? (GET_CLASS(who, (uint)c->num) ? 1 : 0) : 0;
+		break;
+	case SP_C_RACE:
+		val = (who && GET_RACE(who) == c->num);
+		break;
+	case SP_C_LEVEL:
+		return c->neg ^ (who && sp_cmp(GET_LEVEL(who), c->op, c->num));
+	case SP_C_ALIGN:
+		return c->neg ^ (who && sp_cmp(GET_ALIGNMENT(who), c->op, c->num));
+	case SP_C_SEX:
+		val = (who && GET_SEX(who) == c->num);
+		break;
+	case SP_C_HOUR:
+		return c->neg ^ sp_cmp((int)time_info.hour, c->op, c->num);
+	case SP_C_HP:
+		if (!who || GET_MAX_HIT(who) <= 0)
+			return c->neg ? 1 : 0;
+		val = (int)((100L * GET_HIT(who)) / GET_MAX_HIT(who));
+		return c->neg ^ sp_cmp(val, c->op, c->num);
+	case SP_C_GROUP:
+		return c->neg ^ sp_cmp(sp_group_size(who), c->op, c->num);
+	case SP_C_ROOM:
+		val = (room >= 0 && room <= top_of_world && world[room].number == c->num);
+		break;
+	case SP_C_ZONE:
+		val = (room >= 0 && room <= top_of_world && world[room].zone == c->num);
+		break;
+	case SP_C_AFFECT:
+		val = (who && affected_by_spell(who, c->num));
+		break;
+	case SP_C_COUNTER:
+		return c->neg ^ sp_cmp(sp_state_get(cx, SP_TAG_COUNTER, c->slot), c->op, c->num);
+	case SP_C_PCS:
+		if (room >= 0 && room <= top_of_world)
+			for (k = world[room].people; k; k = k->next_in_room)
+				if (IS_PC(k) && !IS_TRUSTED(k))
+					val++;
+		return c->neg ^ sp_cmp(val, c->op, c->num);
+	case SP_C_MOBS:
+		/* c->who doubles as the search scope for this condition */
+		if (c->who == SP_SC_WORLD)
+		{
+			i = real_mobile(c->num);
+			val = (i >= 0) ? mob_index[i].number : 0;
+		}
+		else if (c->who == SP_SC_ZONE && room >= 0 && room <= top_of_world)
+		{
+			int z = world[room].zone, r;
 
-				for (r = 0; r <= top_of_world; r++)
-				{
-					if (world[r].zone != z)
-						continue;
-					for (k = world[r].people; k; k = k->next_in_room)
-						if (IS_NPC(k) && IS_ALIVE(k) && GET_VNUM(k) == c->num)
-							val++;
-				}
-			}
-			else if (room >= 0 && room <= top_of_world)
+			for (r = 0; r <= top_of_world; r++)
 			{
-				for (k = world[room].people; k; k = k->next_in_room)
+				if (world[r].zone != z)
+					continue;
+				for (k = world[r].people; k; k = k->next_in_room)
 					if (IS_NPC(k) && IS_ALIVE(k) && GET_VNUM(k) == c->num)
 						val++;
 			}
-			return c->neg ^ sp_cmp(val, c->op, c->num2);
-		case SP_C_CHANCE:
-			val = (number(1, 100) <= c->num);
-			break;
-		case SP_C_ISPC:
-			val = (who && IS_PC(who));
-			break;
-		case SP_C_FIGHTING:
-			val = (who && GET_OPPONENT(who) != NULL);
-			break;
-		default:
-			val = 1;
-			break;
+		}
+		else if (room >= 0 && room <= top_of_world)
+		{
+			for (k = world[room].people; k; k = k->next_in_room)
+				if (IS_NPC(k) && IS_ALIVE(k) && GET_VNUM(k) == c->num)
+					val++;
+		}
+		return c->neg ^ sp_cmp(val, c->op, c->num2);
+	case SP_C_CHANCE:
+		val = (number(1, 100) <= c->num);
+		break;
+	case SP_C_ISPC:
+		val = (who && IS_PC(who));
+		break;
+	case SP_C_FIGHTING:
+		val = (who && GET_OPPONENT(who) != NULL);
+		break;
+	default:
+		val = 1;
+		break;
 	}
 	return c->neg ? !val : val;
 }
@@ -756,9 +770,9 @@ static void sp_attack_one(struct sp_ctx *cx, struct sp_action *a, P_char vict)
 {
 	P_char self = cx->self_ch;
 	struct damage_messages msg;
-	char   buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	double dam;
-	int    cap;
+	int cap;
 
 	if (!vict || !IS_ALIVE(vict) || vict->in_room < 0)
 		return;
@@ -802,17 +816,18 @@ static void sp_attack_one(struct sp_ctx *cx, struct sp_action *a, P_char vict)
 
 	memset(&msg, 0, sizeof(msg));
 	if (a->dtype)
-		spell_damage(self ? self : vict, vict, dam, a->dtype, RAWDAM_NOKILL | RAWDAM_NOEXP | SPLDAM_SPELL, &msg);
+		spell_damage(self ? self : vict, vict, dam, a->dtype,
+			     RAWDAM_NOKILL | RAWDAM_NOEXP | SPLDAM_SPELL, &msg);
 	else
 		raw_damage(self ? self : vict, vict, dam, RAWDAM_NOKILL | RAWDAM_NOEXP, &msg);
 }
 
 static void sp_do_attack(struct sp_ctx *cx, struct sp_action *a, int aidx)
 {
-	int    room = sp_room_of(cx);
+	int room = sp_room_of(cx);
 	P_char k, next_k, tank = NULL;
 	P_char prime = cx->actor;
-	long   now;
+	long now;
 
 	if (room < 0 || room > top_of_world)
 		return;
@@ -843,10 +858,11 @@ static void sp_do_attack(struct sp_ctx *cx, struct sp_action *a, int aidx)
 		if (k == cx->self_ch)
 			continue;
 		if (cx->self_ch && IS_NPC(k) && IS_NPC(cx->self_ch))
-			continue;                     /* mobs do not aoe each other */
+			continue; /* mobs do not aoe each other */
 		if (a->scope == SP_SCOPE_NOTTANK && k == tank)
 			continue;
-		if (a->scope == SP_SCOPE_GROUP && prime && !(k == prime || (k->group && prime->group && k->group == prime->group)))
+		if (a->scope == SP_SCOPE_GROUP && prime &&
+		    !(k == prime || (k->group && prime->group && k->group == prime->group)))
 			continue;
 		sp_attack_one(cx, a, k);
 	}
@@ -862,10 +878,10 @@ static void sp_do_attack(struct sp_ctx *cx, struct sp_action *a, int aidx)
 
 static int sp_do_command(P_char ch, const char *line)
 {
-	char        verb[MAX_INPUT_LENGTH];
-	char        rest[MAX_INPUT_LENGTH];
+	char verb[MAX_INPUT_LENGTH];
+	char rest[MAX_INPUT_LENGTH];
 	const char *p;
-	int         cmd;
+	int cmd;
 
 	if (!ch || !IS_ALIVE(ch) || !line || !*line)
 		return FALSE;
@@ -897,24 +913,25 @@ static int sp_do_command(P_char ch, const char *line)
 
 static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 {
-	int    i, room, rr, dam, cap, pick, n;
-	int    ret = SP_X_FIRED;
+	int i, room, rr, dam, cap, pick, n;
+	int ret = SP_X_FIRED;
 	P_char self, actor, targ, m, victim;
-	P_obj  o;
-	char   buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	P_obj o;
+	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	struct damage_messages tmsg;
-	struct affected_type   na;
+	struct affected_type na;
 
 	for (i = 0; i < t->num_actions; i++)
 	{
 		struct sp_action *a = &t->actions[i];
 
-		self  = (cx->targ == SP_T_MOB) ? cx->self_ch : NULL;
+		self = (cx->targ == SP_T_MOB) ? cx->self_ch : NULL;
 		actor = cx->actor;
-		room  = sp_room_of(cx);
+		room = sp_room_of(cx);
 
 		/* self validity: never touch a dead / extracted target */
-		if (cx->targ == SP_T_MOB && (!self || (!cx->self_dead_ok && !IS_ALIVE(self)) || self->in_room < 0))
+		if (cx->targ == SP_T_MOB &&
+		    (!self || (!cx->self_dead_ok && !IS_ALIVE(self)) || self->in_room < 0))
 			break;
 		if (cx->targ == SP_T_OBJ && !cx->self_obj)
 			break;
@@ -935,12 +952,12 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 			/* run only the chosen one, then jump past the pool */
 			{
 				struct sp_action *b = &t->actions[i + pick];
-				struct sp_trig    one;
+				struct sp_trig one;
 
 				memset(&one, 0, sizeof(one));
 				one.num_actions = 1;
-				one.actions[0]  = *b;
-				one.chance      = 100;
+				one.actions[0] = *b;
+				one.chance = 100;
 				if (sp_execute(&one, cx) & SP_X_SELFGONE)
 					return ret | SP_X_SELFGONE;
 			}
@@ -949,266 +966,284 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 		}
 
 		/* actions that need a live actor */
-		if ((a->op == SP_A_GIVE || a->op == SP_A_TRANSFER || a->op == SP_A_DAMAGE) && (!actor || !IS_ALIVE(actor) || actor->in_room < 0))
+		if ((a->op == SP_A_GIVE || a->op == SP_A_TRANSFER || a->op == SP_A_DAMAGE) &&
+		    (!actor || !IS_ALIVE(actor) || actor->in_room < 0))
 			continue;
 
 		switch (a->op)
 		{
-			case SP_A_SAY:
-				sp_expand(a->text, cx, buf, sizeof(buf));
-				if (self)
-					do_say(self, buf, 0);
-				else if (cx->targ == SP_T_OBJ)
-				{
-					buf2[0] = '\0';
-					sp_cat(buf2, sizeof(buf2), sp_self_name(cx));
-					sp_cat(buf2, sizeof(buf2), " says '");
-					sp_cat(buf2, sizeof(buf2), buf);
-					sp_cat(buf2, sizeof(buf2), "'\r\n");
-					CAP(buf2);
-					send_to_room(buf2, room);
-				}
-				else
-				{
-					strncat(buf, "\r\n", sizeof(buf) - strlen(buf) - 1);
-					send_to_room(buf, room);
-				}
-				break;
-
-			case SP_A_EMOTE:
-				sp_expand(a->text, cx, buf, sizeof(buf));
-				if (self)
-					do_emote(self, buf, 0);
-				else if (cx->targ == SP_T_OBJ)
-				{
-					buf2[0] = '\0';
-					sp_cat(buf2, sizeof(buf2), sp_self_name(cx));
-					sp_cat(buf2, sizeof(buf2), " ");
-					sp_cat(buf2, sizeof(buf2), buf);
-					sp_cat(buf2, sizeof(buf2), "\r\n");
-					CAP(buf2);
-					send_to_room(buf2, room);
-				}
-				else
-				{
-					strncat(buf, "\r\n", sizeof(buf) - strlen(buf) - 1);
-					send_to_room(buf, room);
-				}
-				break;
-
-			case SP_A_ECHO:
-				sp_expand(a->text, cx, buf, sizeof(buf));
+		case SP_A_SAY:
+			sp_expand(a->text, cx, buf, sizeof(buf));
+			if (self)
+				do_say(self, buf, 0);
+			else if (cx->targ == SP_T_OBJ)
+			{
+				buf2[0] = '\0';
+				sp_cat(buf2, sizeof(buf2), sp_self_name(cx));
+				sp_cat(buf2, sizeof(buf2), " says '");
+				sp_cat(buf2, sizeof(buf2), buf);
+				sp_cat(buf2, sizeof(buf2), "'\r\n");
+				CAP(buf2);
+				send_to_room(buf2, room);
+			}
+			else
+			{
 				strncat(buf, "\r\n", sizeof(buf) - strlen(buf) - 1);
 				send_to_room(buf, room);
-				break;
+			}
+			break;
 
-			case SP_A_ZECHO:
-				sp_expand(a->text, cx, buf, sizeof(buf));
+		case SP_A_EMOTE:
+			sp_expand(a->text, cx, buf, sizeof(buf));
+			if (self)
+				do_emote(self, buf, 0);
+			else if (cx->targ == SP_T_OBJ)
+			{
+				buf2[0] = '\0';
+				sp_cat(buf2, sizeof(buf2), sp_self_name(cx));
+				sp_cat(buf2, sizeof(buf2), " ");
+				sp_cat(buf2, sizeof(buf2), buf);
+				sp_cat(buf2, sizeof(buf2), "\r\n");
+				CAP(buf2);
+				send_to_room(buf2, room);
+			}
+			else
+			{
 				strncat(buf, "\r\n", sizeof(buf) - strlen(buf) - 1);
-				send_to_zone(world[room].zone, buf);
-				break;
+				send_to_room(buf, room);
+			}
+			break;
 
-			case SP_A_CAST:                 /* mob targets only (parse-enforced) */
-				if (!self)
-					break;
-				targ = self;
-				if (a->who == SP_WHO_ALLY)
+		case SP_A_ECHO:
+			sp_expand(a->text, cx, buf, sizeof(buf));
+			strncat(buf, "\r\n", sizeof(buf) - strlen(buf) - 1);
+			send_to_room(buf, room);
+			break;
+
+		case SP_A_ZECHO:
+			sp_expand(a->text, cx, buf, sizeof(buf));
+			strncat(buf, "\r\n", sizeof(buf) - strlen(buf) - 1);
+			send_to_zone(world[room].zone, buf);
+			break;
+
+		case SP_A_CAST: /* mob targets only (parse-enforced) */
+			if (!self)
+				break;
+			targ = self;
+			if (a->who == SP_WHO_ALLY)
+			{
+				targ = sp_find_ally(cx);
+				if (!targ)
+					targ = self;
+			}
+			else if (a->who != SP_WHO_SELF && actor && IS_ALIVE(actor) &&
+				 actor->in_room == self->in_room)
+				targ = actor;
+			MobCastSpell(self, targ, NULL, a->num, 60);
+			break;
+
+		case SP_A_MLOAD:
+			if (real_mobile(a->num) >= 0 && (m = read_mobile(a->num, VIRTUAL)) != NULL)
+				char_to_room(m, room, -2);
+			break;
+
+		case SP_A_OLOAD:
+			if (real_object(a->num) >= 0 && (o = read_object(a->num, VIRTUAL)) != NULL)
+				obj_to_room(o, room);
+			break;
+
+		case SP_A_GIVE:
+			if (real_object(a->num) >= 0 && (o = read_object(a->num, VIRTUAL)) != NULL)
+			{
+				obj_to_char(o, actor);
+				act("$p materializes in your hands.", FALSE, actor, o, 0, TO_CHAR);
+				act("$p materializes in $n's hands.", TRUE, actor, o, 0, TO_ROOM);
+			}
+			break;
+
+		case SP_A_TRANSFER:
+			rr = real_room(a->num);
+			if (rr >= 0 && actor->in_room != rr)
+			{
+				act("$n vanishes in a swirl of mist.", TRUE, actor, 0, 0, TO_ROOM);
+				char_from_room(actor);
+				if (!char_to_room(actor, rr, -1))
 				{
-					targ = sp_find_ally(cx);
-					if (!targ)
-						targ = self;
-				}
-				else if (a->who != SP_WHO_SELF && actor && IS_ALIVE(actor) && actor->in_room == self->in_room)
-					targ = actor;
-				MobCastSpell(self, targ, NULL, a->num, 60);
-				break;
-
-			case SP_A_MLOAD:
-				if (real_mobile(a->num) >= 0 && (m = read_mobile(a->num, VIRTUAL)) != NULL)
-					char_to_room(m, room, -2);
-				break;
-
-			case SP_A_OLOAD:
-				if (real_object(a->num) >= 0 && (o = read_object(a->num, VIRTUAL)) != NULL)
-					obj_to_room(o, room);
-				break;
-
-			case SP_A_GIVE:
-				if (real_object(a->num) >= 0 && (o = read_object(a->num, VIRTUAL)) != NULL)
-				{
-					obj_to_char(o, actor);
-					act("$p materializes in your hands.", FALSE, actor, o, 0, TO_CHAR);
-					act("$p materializes in $n's hands.", TRUE, actor, o, 0, TO_ROOM);
-				}
-				break;
-
-			case SP_A_TRANSFER:
-				rr = real_room(a->num);
-				if (rr >= 0 && actor->in_room != rr)
-				{
-					act("$n vanishes in a swirl of mist.", TRUE, actor, 0, 0, TO_ROOM);
-					char_from_room(actor);
-					if (!char_to_room(actor, rr, -1))
+					act("$n arrives in a swirl of mist.", TRUE, actor, 0, 0,
+					    TO_ROOM);
+					if (IS_PC(actor))
 					{
-						act("$n arrives in a swirl of mist.", TRUE, actor, 0, 0, TO_ROOM);
-						if (IS_PC(actor))
-						{
-							buf[0] = '\0';
-							do_look(actor, buf, CMD_LOOK);
-						}
-					}
-					else
-						cx->actor = NULL;      /* extraction path: never touch again */
-				}
-				break;
-
-			case SP_A_GOTO:                 /* mob targets only (parse-enforced) */
-				rr = real_room(a->num);
-				if (self && rr >= 0 && self->in_room != rr)
-				{
-					act("$n departs in a swirl of mist.", TRUE, self, 0, 0, TO_ROOM);
-					char_from_room(self);
-					if (!char_to_room(self, rr, -1))
-						act("$n arrives in a swirl of mist.", TRUE, self, 0, 0, TO_ROOM);
-					else
-					{
-						cx->self_ch = NULL;
-						return ret | SP_X_SELFGONE;
+						buf[0] = '\0';
+						do_look(actor, buf, CMD_LOOK);
 					}
 				}
-				break;
+				else
+					cx->actor = NULL; /* extraction path: never touch again */
+			}
+			break;
 
-			case SP_A_DAMAGE:
-				/* Formula: NdS+B, capped at 80% of the actor's CURRENT hp
+		case SP_A_GOTO: /* mob targets only (parse-enforced) */
+			rr = real_room(a->num);
+			if (self && rr >= 0 && self->in_room != rr)
+			{
+				act("$n departs in a swirl of mist.", TRUE, self, 0, 0, TO_ROOM);
+				char_from_room(self);
+				if (!char_to_room(self, rr, -1))
+					act("$n arrives in a swirl of mist.", TRUE, self, 0, 0,
+					    TO_ROOM);
+				else
+				{
+					cx->self_ch = NULL;
+					return ret | SP_X_SELFGONE;
+				}
+			}
+			break;
+
+		case SP_A_DAMAGE:
+			/* Formula: NdS+B, capped at 80% of the actor's CURRENT hp
 				   per firing, floored by RAWDAM_NOKILL as a second belt. */
-				if (IS_TRUSTED(actor))
-					break;
-				dam = dice(a->dnum, a->dsize) + a->dbonus;
-				cap = (GET_HIT(actor) * 4) / 5;
-				if (cap <= 0 || dam <= 0)
-					break;
-				if (dam > cap)
-					dam = cap;
-				act("&+rYou are wracked by unseen forces!&n", FALSE, actor, 0, 0, TO_CHAR);
-				memset(&tmsg, 0, sizeof(tmsg));
-				raw_damage(actor, actor, (double)dam, RAWDAM_NOKILL | RAWDAM_NOEXP, &tmsg);
+			if (IS_TRUSTED(actor))
 				break;
-
-			case SP_A_ATTACK:
-				sp_do_attack(cx, a, i);
+			dam = dice(a->dnum, a->dsize) + a->dbonus;
+			cap = (GET_HIT(actor) * 4) / 5;
+			if (cap <= 0 || dam <= 0)
 				break;
+			if (dam > cap)
+				dam = cap;
+			act("&+rYou are wracked by unseen forces!&n", FALSE, actor, 0, 0, TO_CHAR);
+			memset(&tmsg, 0, sizeof(tmsg));
+			raw_damage(actor, actor, (double)dam, RAWDAM_NOKILL | RAWDAM_NOEXP, &tmsg);
+			break;
 
-			case SP_A_AFFECT:
-				victim = (a->who == SP_WHO_SELF) ? self : actor;
-				if (!victim || !IS_ALIVE(victim))
-					break;
-				if (a->save >= 0 && saves_spell(victim, a->save))
-					break;
-				if (affected_by_spell(victim, a->num))
-					break;
-				memset(&na, 0, sizeof(na));
-				na.type     = a->num;
-				na.duration = a->dur;
-				na.location = (ubyte)a->apply;      /* APPLY_NONE when absent  */
-				na.modifier = a->amod;
-				na.level    = (unsigned short)(self ? GET_LEVEL(self) : 30);
-				/* 'aff <NAME>' sets one bit in one of the five AFF words.
+		case SP_A_ATTACK:
+			sp_do_attack(cx, a, i);
+			break;
+
+		case SP_A_AFFECT:
+			victim = (a->who == SP_WHO_SELF) ? self : actor;
+			if (!victim || !IS_ALIVE(victim))
+				break;
+			if (a->save >= 0 && saves_spell(victim, a->save))
+				break;
+			if (affected_by_spell(victim, a->num))
+				break;
+			memset(&na, 0, sizeof(na));
+			na.type = a->num;
+			na.duration = a->dur;
+			na.location = (ubyte)a->apply; /* APPLY_NONE when absent  */
+			na.modifier = a->amod;
+			na.level = (unsigned short)(self ? GET_LEVEL(self) : 30);
+			/* 'aff <NAME>' sets one bit in one of the five AFF words.
 				   affect_to_char (affects.c:1955) ORs these onto the char
 				   unless AFFTYPE_NOAPPLY, which we never set here -- a
 				   builder affect is meant to DO something, not just mark. */
-				switch (a->affword)
-				{
-					case 1: na.bitvector  = a->affbit; break;
-					case 2: na.bitvector2 = a->affbit; break;
-					case 3: na.bitvector3 = a->affbit; break;
-					case 4: na.bitvector4 = a->affbit; break;
-					case 5: na.bitvector5 = a->affbit; break;
-					default: break;
-				}
-				affect_to_char(victim, &na);
+			switch (a->affword)
+			{
+			case 1:
+				na.bitvector = a->affbit;
 				break;
-
-			case SP_A_UNAFFECT:
-				victim = (a->who == SP_WHO_SELF) ? self : actor;
-				if (victim && IS_ALIVE(victim))
-					affect_from_char(victim, a->num);
+			case 2:
+				na.bitvector2 = a->affbit;
 				break;
-
-			case SP_A_DO:
-				victim = (a->who == SP_WHO_SELF) ? self : actor;
-				if (!victim || !IS_ALIVE(victim))
-					break;
-				sp_expand(a->text, cx, buf, sizeof(buf));
-				sp_do_command(victim, buf);
+			case 3:
+				na.bitvector3 = a->affbit;
 				break;
-
-			case SP_A_SET:
-				sp_state_set(cx, SP_TAG_COUNTER, a->slot, a->num);
+			case 4:
+				na.bitvector4 = a->affbit;
 				break;
-
-			case SP_A_ADD:
-				sp_state_set(cx, SP_TAG_COUNTER, a->slot, sp_state_get(cx, SP_TAG_COUNTER, a->slot) + a->num);
+			case 5:
+				na.bitvector5 = a->affbit;
 				break;
-
-			case SP_A_EXIT:
-				rr = real_room(a->num);
-				if (rr < 0 || a->slot < 0 || a->slot >= NUM_EXITS || !world[rr].dir_option[a->slot])
-					break;
-				if (a->num2 >= 0)
-				{
-					int to = real_room(a->num2);
-
-					if (to >= 0)
-						world[rr].dir_option[a->slot]->to_room = to;
-				}
-				if (a->state >= 0)
-				{
-					unsigned int f = world[rr].dir_option[a->slot]->exit_info;
-
-					REMOVE_BIT(f, EX_CLOSED | EX_LOCKED | EX_SECRET);
-					SET_BIT(f, (unsigned int)a->state);
-					world[rr].dir_option[a->slot]->exit_info = f;
-				}
-				break;
-
-			case SP_A_HEAL:                 /* mob targets only (parse-enforced) */
-				if (!self)
-					break;
-				if (a->num < 0 || GET_HIT(self) + a->num >= GET_MAX_HIT(self))
-					GET_HIT(self) = GET_MAX_HIT(self);
-				else
-					GET_HIT(self) = GET_HIT(self) + a->num;
-				update_pos(self);
-				act("$n glows briefly with renewed vigor.", TRUE, self, 0, 0, TO_ROOM);
-				break;
-
-			case SP_A_BLOCK:
-				cx->blocked = TRUE;
-				break;
-
-			case SP_A_PURGE:                /* parse guarantees: LAST action */
-				if (cx->targ == SP_T_MOB && self)
-				{
-					act("$n dissolves into wisps of nothing.", TRUE, self, 0, 0, TO_ROOM);
-					extract_char(self);
-					cx->self_ch = NULL;
-					ret |= SP_X_SELFGONE;
-				}
-				else if (cx->targ == SP_T_OBJ && cx->self_obj)
-				{
-					buf2[0] = '\0';
-					sp_cat(buf2, sizeof(buf2), sp_self_name(cx));
-					sp_cat(buf2, sizeof(buf2), " crumbles to dust.\r\n");
-					CAP(buf2);
-					send_to_room(buf2, room);
-					extract_obj(cx->self_obj, TRUE);
-					cx->self_obj = NULL;
-					ret |= SP_X_SELFGONE;
-				}
-				return ret;
-
 			default:
 				break;
+			}
+			affect_to_char(victim, &na);
+			break;
+
+		case SP_A_UNAFFECT:
+			victim = (a->who == SP_WHO_SELF) ? self : actor;
+			if (victim && IS_ALIVE(victim))
+				affect_from_char(victim, a->num);
+			break;
+
+		case SP_A_DO:
+			victim = (a->who == SP_WHO_SELF) ? self : actor;
+			if (!victim || !IS_ALIVE(victim))
+				break;
+			sp_expand(a->text, cx, buf, sizeof(buf));
+			sp_do_command(victim, buf);
+			break;
+
+		case SP_A_SET:
+			sp_state_set(cx, SP_TAG_COUNTER, a->slot, a->num);
+			break;
+
+		case SP_A_ADD:
+			sp_state_set(cx, SP_TAG_COUNTER, a->slot,
+				     sp_state_get(cx, SP_TAG_COUNTER, a->slot) + a->num);
+			break;
+
+		case SP_A_EXIT:
+			rr = real_room(a->num);
+			if (rr < 0 || a->slot < 0 || a->slot >= NUM_EXITS ||
+			    !world[rr].dir_option[a->slot])
+				break;
+			if (a->num2 >= 0)
+			{
+				int to = real_room(a->num2);
+
+				if (to >= 0)
+					world[rr].dir_option[a->slot]->to_room = to;
+			}
+			if (a->state >= 0)
+			{
+				unsigned int f = world[rr].dir_option[a->slot]->exit_info;
+
+				REMOVE_BIT(f, EX_CLOSED | EX_LOCKED | EX_SECRET);
+				SET_BIT(f, (unsigned int)a->state);
+				world[rr].dir_option[a->slot]->exit_info = f;
+			}
+			break;
+
+		case SP_A_HEAL: /* mob targets only (parse-enforced) */
+			if (!self)
+				break;
+			if (a->num < 0 || GET_HIT(self) + a->num >= GET_MAX_HIT(self))
+				GET_HIT(self) = GET_MAX_HIT(self);
+			else
+				GET_HIT(self) = GET_HIT(self) + a->num;
+			update_pos(self);
+			act("$n glows briefly with renewed vigor.", TRUE, self, 0, 0, TO_ROOM);
+			break;
+
+		case SP_A_BLOCK:
+			cx->blocked = TRUE;
+			break;
+
+		case SP_A_PURGE: /* parse guarantees: LAST action */
+			if (cx->targ == SP_T_MOB && self)
+			{
+				act("$n dissolves into wisps of nothing.", TRUE, self, 0, 0,
+				    TO_ROOM);
+				extract_char(self);
+				cx->self_ch = NULL;
+				ret |= SP_X_SELFGONE;
+			}
+			else if (cx->targ == SP_T_OBJ && cx->self_obj)
+			{
+				buf2[0] = '\0';
+				sp_cat(buf2, sizeof(buf2), sp_self_name(cx));
+				sp_cat(buf2, sizeof(buf2), " crumbles to dust.\r\n");
+				CAP(buf2);
+				send_to_room(buf2, room);
+				extract_obj(cx->self_obj, TRUE);
+				cx->self_obj = NULL;
+				ret |= SP_X_SELFGONE;
+			}
+			return ret;
+
+		default:
+			break;
 		}
 	}
 	return ret;
@@ -1248,12 +1283,12 @@ static void sp_strlower(char *s)
 
 static int sp_keyword_match(const char *keywords, const char *lowtext)
 {
-	char        kw[MAX_INPUT_LENGTH];
+	char kw[MAX_INPUT_LENGTH];
 	const char *p = keywords;
-	int         k;
+	int k;
 
 	if (!keywords || !*keywords)
-		return TRUE;                       /* no filter == match all */
+		return TRUE; /* no filter == match all */
 	if (!lowtext)
 		return FALSE;
 	while (p && *p)
@@ -1278,7 +1313,7 @@ static int sp_keyword_match(const char *keywords, const char *lowtext)
 static int sp_run(struct sp_rec *rec, int ev, struct sp_ctx *cx, const char *lowtext, int filt)
 {
 	struct sp_trig *t;
-	int             r = 0, one;
+	int r = 0, one;
 
 	cx->rec = rec;
 	for (t = rec->trigs; t; t = t->next)
@@ -1288,70 +1323,71 @@ static int sp_run(struct sp_rec *rec, int ev, struct sp_ctx *cx, const char *low
 
 		switch (ev)
 		{
-			case SP_EV_SPEECH:
-				if (!sp_keyword_match(t->keywords, lowtext))
-					continue;
-				break;
-			case SP_EV_GIVE:
-				if (t->arg != -1 && t->arg != filt)
-					continue;
-				break;
-			case SP_EV_CMD:
-				if (t->cmdnum >= 0 && t->cmdnum != filt)
-					continue;
-				if (t->keywords && !sp_keyword_match(t->keywords, lowtext))
-					continue;
-				break;
-			case SP_EV_DAMAGED:
-				if (t->arg2 && t->arg2 != filt)
-					continue;
-				break;
-			case SP_EV_HOUR:
-				if (t->arg >= 0 && t->arg != filt)
-					continue;
-				break;
-			case SP_EV_HPBELOW:
-			{
-				int pct, fired;
+		case SP_EV_SPEECH:
+			if (!sp_keyword_match(t->keywords, lowtext))
+				continue;
+			break;
+		case SP_EV_GIVE:
+			if (t->arg != -1 && t->arg != filt)
+				continue;
+			break;
+		case SP_EV_CMD:
+			if (t->cmdnum >= 0 && t->cmdnum != filt)
+				continue;
+			if (t->keywords && !sp_keyword_match(t->keywords, lowtext))
+				continue;
+			break;
+		case SP_EV_DAMAGED:
+			if (t->arg2 && t->arg2 != filt)
+				continue;
+			break;
+		case SP_EV_HOUR:
+			if (t->arg >= 0 && t->arg != filt)
+				continue;
+			break;
+		case SP_EV_HPBELOW:
+		{
+			int pct, fired;
 
-				if (!cx->self_ch || GET_MAX_HIT(cx->self_ch) <= 0)
-					continue;
-				pct = (int)((100L * GET_HIT(cx->self_ch)) / GET_MAX_HIT(cx->self_ch));
-				fired = sp_char_get(cx->self_ch, SP_TAG_TRIG, t->trig_index);
-				if (pct >= t->arg)
-				{
-					if (fired && GET_HIT(cx->self_ch) >= GET_MAX_HIT(cx->self_ch))
-						sp_char_set(cx->self_ch, SP_TAG_TRIG, t->trig_index, 0);
-					continue;
-				}
-				if (fired)
-					continue;
-				sp_char_set(cx->self_ch, SP_TAG_TRIG, t->trig_index, 1);
-				break;
-			}
-			case SP_EV_PULSE:
+			if (!cx->self_ch || GET_MAX_HIT(cx->self_ch) <= 0)
+				continue;
+			pct = (int)((100L * GET_HIT(cx->self_ch)) / GET_MAX_HIT(cx->self_ch));
+			fired = sp_char_get(cx->self_ch, SP_TAG_TRIG, t->trig_index);
+			if (pct >= t->arg)
 			{
-				int ctr = sp_state_get(cx, SP_TAG_TRIG, t->trig_index);
-
-				if (ctr <= 0)
-					ctr = number(1, t->arg);   /* first sight: jitter */
-				if (--ctr > 0)
-				{
-					sp_state_set(cx, SP_TAG_TRIG, t->trig_index, ctr);
-					continue;
-				}
-				sp_state_set(cx, SP_TAG_TRIG, t->trig_index, t->arg);
-				break;
+				if (fired && GET_HIT(cx->self_ch) >= GET_MAX_HIT(cx->self_ch))
+					sp_char_set(cx->self_ch, SP_TAG_TRIG, t->trig_index, 0);
+				continue;
 			}
-			default:
-				break;
+			if (fired)
+				continue;
+			sp_char_set(cx->self_ch, SP_TAG_TRIG, t->trig_index, 1);
+			break;
+		}
+		case SP_EV_PULSE:
+		{
+			int ctr = sp_state_get(cx, SP_TAG_TRIG, t->trig_index);
+
+			if (ctr <= 0)
+				ctr = number(1, t->arg); /* first sight: jitter */
+			if (--ctr > 0)
+			{
+				sp_state_set(cx, SP_TAG_TRIG, t->trig_index, ctr);
+				continue;
+			}
+			sp_state_set(cx, SP_TAG_TRIG, t->trig_index, t->arg);
+			break;
+		}
+		default:
+			break;
 		}
 
 		one = sp_fire(t, cx);
 		r |= one;
 		if (one & SP_X_SELFGONE)
 			break;
-		if (cx->targ == SP_T_MOB && (!cx->self_ch || (!cx->self_dead_ok && !IS_ALIVE(cx->self_ch))))
+		if (cx->targ == SP_T_MOB &&
+		    (!cx->self_ch || (!cx->self_dead_ok && !IS_ALIVE(cx->self_ch))))
 			break;
 		if (cx->actor && !IS_ALIVE(cx->actor))
 			cx->actor = NULL;
@@ -1365,33 +1401,45 @@ static int sp_event_for_cmd(int cmd, int *filt)
 	*filt = 0;
 	switch (cmd)
 	{
-		case CMD_DEATH:      return SP_EV_DEATH;
-		case CMD_TOROOM:     return SP_EV_ENTER;
-		case CMD_FROMROOM:   return SP_EV_LEAVE;
-		case CMD_MOB_COMBAT: return SP_EV_FIGHT;
-		case CMD_PERIODIC:   return SP_EV_PULSE;
-		case CMD_FOUND:      return SP_EV_SEARCH;
-		case CMD_DECAY:      return SP_EV_DECAY;
-		case CMD_GOTHIT:     *filt = 1; return SP_EV_DAMAGED;
-		case CMD_GOTNUKED:   *filt = 2; return SP_EV_DAMAGED;
-		/* CMD_MELEE_HIT is delivered to the WIELDED weapon's prototype
+	case CMD_DEATH:
+		return SP_EV_DEATH;
+	case CMD_TOROOM:
+		return SP_EV_ENTER;
+	case CMD_FROMROOM:
+		return SP_EV_LEAVE;
+	case CMD_MOB_COMBAT:
+		return SP_EV_FIGHT;
+	case CMD_PERIODIC:
+		return SP_EV_PULSE;
+	case CMD_FOUND:
+		return SP_EV_SEARCH;
+	case CMD_DECAY:
+		return SP_EV_DECAY;
+	case CMD_GOTHIT:
+		*filt = 1;
+		return SP_EV_DAMAGED;
+	case CMD_GOTNUKED:
+		*filt = 2;
+		return SP_EV_DAMAGED;
+	/* CMD_MELEE_HIT is delivered to the WIELDED weapon's prototype
 		   proc with arg == (char *) the victim (fight.c:7782 via
 		   weapon_proc, actoff.c:5609 on backstab).  That is the engine's
 		   own offensive on-hit hook and it needs no new dispatch. */
-		case CMD_MELEE_HIT:  return SP_EV_HIT;
-		default:
-			if (cmd > 0)
-			{
-				*filt = cmd;
-				return SP_EV_CMD;
-			}
-			return -1;
+	case CMD_MELEE_HIT:
+		return SP_EV_HIT;
+	default:
+		if (cmd > 0)
+		{
+			*filt = cmd;
+			return SP_EV_CMD;
+		}
+		return -1;
 	}
 }
 
 static int sp_dispatch(struct sp_rec *rec, struct sp_ctx *cx, int cmd, char *arg)
 {
-	int  ev, filt, r;
+	int ev, filt, r;
 	char low[MAX_STRING_LENGTH];
 
 	/* CMD_SET_PERIODIC does double duty: it is the engine asking whether
@@ -1407,7 +1455,8 @@ static int sp_dispatch(struct sp_rec *rec, struct sp_ctx *cx, int cmd, char *arg
 	ev = sp_event_for_cmd(cmd, &filt);
 	if (ev < 0)
 		return FALSE;
-	if (!(rec->events & (1u << ev)) && !(ev == SP_EV_FIGHT && (rec->events & (1u << SP_EV_HPBELOW))))
+	if (!(rec->events & (1u << ev)) &&
+	    !(ev == SP_EV_FIGHT && (rec->events & (1u << SP_EV_HPBELOW))))
 		return FALSE;
 
 	low[0] = '\0';
@@ -1454,15 +1503,15 @@ static void sp_arm_hour(void)
 	if (sp_hour_armed || !studioproc_count)
 		return;
 	sp_hour_armed = 1;
-	sp_last_hour  = (int)time_info.hour;
+	sp_last_hour = (int)time_info.hour;
 	add_event(sp_hour_event, WAIT_SEC * 4, NULL, NULL, NULL, 0, NULL, 0);
 }
 
 int studioproc_mob(P_char mob, P_char actor, int cmd, char *arg)
 {
 	struct sp_rec *rec;
-	struct sp_ctx  cx;
-	char          *targ = arg;
+	struct sp_ctx cx;
+	char *targ = arg;
 
 	if (!mob || !sp_on_game_thread())
 		return FALSE;
@@ -1479,9 +1528,9 @@ int studioproc_mob(P_char mob, P_char actor, int cmd, char *arg)
 		targ = NULL;
 
 	memset(&cx, 0, sizeof(cx));
-	cx.targ         = SP_T_MOB;
-	cx.self_ch      = mob;
-	cx.actor        = (actor != mob) ? actor : NULL;
+	cx.targ = SP_T_MOB;
+	cx.self_ch = mob;
+	cx.actor = (actor != mob) ? actor : NULL;
 	cx.self_dead_ok = (cmd == CMD_DEATH);
 	return sp_dispatch(rec, &cx, cmd, targ);
 }
@@ -1489,8 +1538,8 @@ int studioproc_mob(P_char mob, P_char actor, int cmd, char *arg)
 int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 {
 	struct sp_rec *rec;
-	struct sp_ctx  cx;
-	char          *targ = arg;
+	struct sp_ctx cx;
+	char *targ = arg;
 
 	if (!obj || obj->R_num < 0 || !sp_on_game_thread())
 		return FALSE;
@@ -1502,13 +1551,13 @@ int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 		return TRUE;
 
 	memset(&cx, 0, sizeof(cx));
-	cx.targ     = SP_T_OBJ;
+	cx.targ = SP_T_OBJ;
 	cx.self_obj = obj;
-	cx.actor    = actor;
+	cx.actor = actor;
 
 	/* these three do not pass a string in arg */
 	if (cmd == CMD_GOTHIT || cmd == CMD_GOTNUKED)
-		targ = NULL;                        /* struct proc_data *      */
+		targ = NULL; /* struct proc_data *      */
 	else if (cmd == CMD_MELEE_HIT)
 	{
 		/* arg is the VICTIM; the wielder arrives as actor.  Present the
@@ -1526,7 +1575,7 @@ int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 int studioproc_room(int room, P_char actor, int cmd, char *arg)
 {
 	struct sp_rec *rec;
-	struct sp_ctx  cx;
+	struct sp_ctx cx;
 
 	if (!sp_on_game_thread())
 		return FALSE;
@@ -1561,9 +1610,9 @@ int studioproc_room(int room, P_char actor, int cmd, char *arg)
 		return TRUE;
 
 	memset(&cx, 0, sizeof(cx));
-	cx.targ      = SP_T_ROOM;
+	cx.targ = SP_T_ROOM;
 	cx.self_room = room;
-	cx.actor     = actor;
+	cx.actor = actor;
 	return sp_dispatch(rec, &cx, cmd, arg);
 }
 
@@ -1577,11 +1626,11 @@ int studioproc_room(int room, P_char actor, int cmd, char *arg)
 void studioproc_speech(P_char ch, const char *text)
 {
 	struct sp_rec *rec;
-	struct sp_ctx  cx;
-	P_char         k, next_k;
-	P_obj          o, next_o;
-	int            room, j;
-	char           low[MAX_STRING_LENGTH], mut[MAX_STRING_LENGTH];
+	struct sp_ctx cx;
+	P_char k, next_k;
+	P_obj o, next_o;
+	int room, j;
+	char low[MAX_STRING_LENGTH], mut[MAX_STRING_LENGTH];
 
 	if (!ch || !text || !*text || !IS_PC(ch) || !sp_on_game_thread())
 		return;
@@ -1598,9 +1647,9 @@ void studioproc_speech(P_char ch, const char *text)
 		if ((rec = sp_find(SP_T_ROOM, world[room].number)) != NULL)
 		{
 			memset(&cx, 0, sizeof(cx));
-			cx.targ      = SP_T_ROOM;
+			cx.targ = SP_T_ROOM;
 			cx.self_room = room;
-			cx.actor     = ch;
+			cx.actor = ch;
 			sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
 			if (!IS_ALIVE(ch) || ch->in_room != room)
 				return;
@@ -1616,9 +1665,9 @@ void studioproc_speech(P_char ch, const char *text)
 				if (!(rec = sp_find(SP_T_MOB, GET_VNUM(k))))
 					continue;
 				memset(&cx, 0, sizeof(cx));
-				cx.targ    = SP_T_MOB;
+				cx.targ = SP_T_MOB;
 				cx.self_ch = k;
-				cx.actor   = ch;
+				cx.actor = ch;
 				sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
 				if (!IS_ALIVE(ch) || ch->in_room != room)
 					return;
@@ -1630,12 +1679,14 @@ void studioproc_speech(P_char ch, const char *text)
 			for (o = world[room].contents; o; o = next_o)
 			{
 				next_o = o->next_content;
-				if (o->R_num >= 0 && (rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)) != NULL)
+				if (o->R_num >= 0 &&
+				    (rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)) !=
+					    NULL)
 				{
 					memset(&cx, 0, sizeof(cx));
-					cx.targ     = SP_T_OBJ;
+					cx.targ = SP_T_OBJ;
 					cx.self_obj = o;
-					cx.actor    = ch;
+					cx.actor = ch;
 					sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
 					if (!IS_ALIVE(ch) || ch->in_room != room)
 						return;
@@ -1644,12 +1695,14 @@ void studioproc_speech(P_char ch, const char *text)
 			for (o = ch->carrying; o; o = next_o)
 			{
 				next_o = o->next_content;
-				if (o->R_num >= 0 && (rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)) != NULL)
+				if (o->R_num >= 0 &&
+				    (rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)) !=
+					    NULL)
 				{
 					memset(&cx, 0, sizeof(cx));
-					cx.targ     = SP_T_OBJ;
+					cx.targ = SP_T_OBJ;
 					cx.self_obj = o;
-					cx.actor    = ch;
+					cx.actor = ch;
 					sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
 					if (!IS_ALIVE(ch) || ch->in_room != room)
 						return;
@@ -1664,12 +1717,13 @@ void studioproc_speech(P_char ch, const char *text)
 				o = ch->equipment[j];
 				if (!o || o->R_num < 0)
 					continue;
-				if ((rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)) == NULL)
+				if ((rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)) ==
+				    NULL)
 					continue;
 				memset(&cx, 0, sizeof(cx));
-				cx.targ     = SP_T_OBJ;
+				cx.targ = SP_T_OBJ;
 				cx.self_obj = o;
-				cx.actor    = ch;
+				cx.actor = ch;
 				sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
 				if (!IS_ALIVE(ch) || ch->in_room != room)
 					return;
@@ -1710,20 +1764,21 @@ void studioproc_speech(P_char ch, const char *text)
 void studioproc_give(P_char vict, P_obj obj, P_char giver)
 {
 	struct sp_rec *rec;
-	struct sp_ctx  cx;
-	int            ovnum;
+	struct sp_ctx cx;
+	int ovnum;
 
-	if (!studioproc_count || !vict || !IS_NPC(vict) || vict->in_room < 0 || !sp_on_game_thread())
+	if (!studioproc_count || !vict || !IS_NPC(vict) || vict->in_room < 0 ||
+	    !sp_on_game_thread())
 		return;
 	if (!(rec = sp_find(SP_T_MOB, GET_VNUM(vict))))
 		return;
 	ovnum = (obj && obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -2;
 
 	memset(&cx, 0, sizeof(cx));
-	cx.targ    = SP_T_MOB;
+	cx.targ = SP_T_MOB;
 	cx.self_ch = vict;
-	cx.actor   = giver;
-	cx.given   = obj;
+	cx.actor = giver;
+	cx.given = obj;
 	sp_run(rec, SP_EV_GIVE, &cx, NULL, ovnum);
 }
 
@@ -1732,8 +1787,8 @@ void studioproc_give(P_char vict, P_obj obj, P_char giver)
 void studioproc_kill(P_char killer, P_char victim)
 {
 	struct sp_rec *rec;
-	struct sp_ctx  cx;
-	int            i, room;
+	struct sp_ctx cx;
+	int i, room;
 
 	if (!studioproc_count || !killer || !victim || !IS_ALIVE(killer) || !sp_on_game_thread())
 		return;
@@ -1744,10 +1799,10 @@ void studioproc_kill(P_char killer, P_char victim)
 	if (IS_NPC(killer) && (rec = sp_find(SP_T_MOB, GET_VNUM(killer))) != NULL)
 	{
 		memset(&cx, 0, sizeof(cx));
-		cx.targ    = SP_T_MOB;
+		cx.targ = SP_T_MOB;
 		cx.self_ch = killer;
-		cx.actor   = victim;
-		cx.self_dead_ok = TRUE;             /* the victim is already dead */
+		cx.actor = victim;
+		cx.self_dead_ok = TRUE; /* the victim is already dead */
 		sp_run(rec, SP_EV_KILL, &cx, NULL, 0);
 		if (!IS_ALIVE(killer))
 			return;
@@ -1764,9 +1819,9 @@ void studioproc_kill(P_char killer, P_char victim)
 			if (!(rec = sp_find(SP_T_OBJ, obj_index[o->R_num].virtual_number)))
 				continue;
 			memset(&cx, 0, sizeof(cx));
-			cx.targ     = SP_T_OBJ;
+			cx.targ = SP_T_OBJ;
 			cx.self_obj = o;
-			cx.actor    = killer;
+			cx.actor = killer;
 			cx.self_dead_ok = TRUE;
 			sp_run(rec, SP_EV_KILL, &cx, NULL, 0);
 			if (!IS_ALIVE(killer))
@@ -1777,9 +1832,9 @@ void studioproc_kill(P_char killer, P_char victim)
 	if (sp_tcount[SP_T_ROOM] && (rec = sp_find(SP_T_ROOM, world[room].number)) != NULL)
 	{
 		memset(&cx, 0, sizeof(cx));
-		cx.targ      = SP_T_ROOM;
+		cx.targ = SP_T_ROOM;
 		cx.self_room = room;
-		cx.actor     = killer;
+		cx.actor = killer;
 		sp_run(rec, SP_EV_KILL, &cx, NULL, 0);
 	}
 }
@@ -1790,10 +1845,10 @@ void studioproc_kill(P_char killer, P_char victim)
 
 static void sp_hour_event(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int            h = (int)time_info.hour;
-	int            t, r;
+	int h = (int)time_info.hour;
+	int t, r;
 	struct sp_rec *rec;
-	struct sp_ctx  cx;
+	struct sp_ctx cx;
 
 	if (studioproc_count && h != sp_last_hour)
 	{
@@ -1809,9 +1864,9 @@ static void sp_hour_event(P_char ch, P_char victim, P_obj obj, void *data)
 					if (!(rec->events & (1u << SP_EV_HOUR)))
 						continue;
 					if (rec->target != SP_T_ROOM)
-						continue;             /* mobs/objects are instances; rooms are not */
+						continue; /* mobs/objects are instances; rooms are not */
 					memset(&cx, 0, sizeof(cx));
-					cx.targ      = SP_T_ROOM;
+					cx.targ = SP_T_ROOM;
 					cx.self_room = real_room(rec->vnum);
 					if (cx.self_room < 0)
 						continue;
@@ -1844,7 +1899,9 @@ static char *sp_gets(FILE *fl, char *buf, int sz)
 
 static void sp_err(int vnum, const char *msg, const char *line)
 {
-	logit(LOG_STATUS, "STUDIOPROC: parse error zone %d vnum %d line %d: %s [%s] -- record skipped", vnum / 100, vnum, sp_lineno, msg, line ? line : "");
+	logit(LOG_STATUS,
+	      "STUDIOPROC: parse error zone %d vnum %d line %d: %s [%s] -- record skipped",
+	      vnum / 100, vnum, sp_lineno, msg, line ? line : "");
 }
 
 static int sp_skip_record(FILE *fl)
@@ -1864,7 +1921,7 @@ static int sp_skip_record(FILE *fl)
 static void sp_free_rec(struct sp_rec *rec)
 {
 	struct sp_trig *t, *next_t;
-	int             i;
+	int i;
 
 	if (!rec)
 		return;
@@ -1983,7 +2040,7 @@ static int sp_parse_op(const char *s, int *op)
 static int sp_spell_by_name(const char *name)
 {
 	char low[MAX_INPUT_LENGTH];
-	int  n;
+	int n;
 
 	strncpy(low, name, sizeof(low) - 1);
 	low[sizeof(low) - 1] = '\0';
@@ -1996,29 +2053,46 @@ static int sp_spell_by_name(const char *name)
 
 static int sp_save_by_name(const char *s)
 {
-	if (!str_cmp(s, "para"))   return SAVING_PARA;
-	if (!str_cmp(s, "rod"))    return SAVING_ROD;
-	if (!str_cmp(s, "fear"))   return SAVING_FEAR;
-	if (!str_cmp(s, "breath")) return SAVING_BREATH;
-	if (!str_cmp(s, "spell"))  return SAVING_SPELL;
+	if (!str_cmp(s, "para"))
+		return SAVING_PARA;
+	if (!str_cmp(s, "rod"))
+		return SAVING_ROD;
+	if (!str_cmp(s, "fear"))
+		return SAVING_FEAR;
+	if (!str_cmp(s, "breath"))
+		return SAVING_BREATH;
+	if (!str_cmp(s, "spell"))
+		return SAVING_SPELL;
 	return -1;
 }
 
 static int sp_dtype_by_name(const char *s)
 {
-	if (!str_cmp(s, "fire"))      return SPLDAM_FIRE;
-	if (!str_cmp(s, "cold"))      return SPLDAM_COLD;
-	if (!str_cmp(s, "lightning")) return SPLDAM_LIGHTNING;
-	if (!str_cmp(s, "gas"))       return SPLDAM_GAS;
-	if (!str_cmp(s, "acid"))      return SPLDAM_ACID;
-	if (!str_cmp(s, "negative"))  return SPLDAM_NEGATIVE;
-	if (!str_cmp(s, "holy"))      return SPLDAM_HOLY;
-	if (!str_cmp(s, "psi"))       return SPLDAM_PSI;
-	if (!str_cmp(s, "spirit"))    return SPLDAM_SPIRIT;
-	if (!str_cmp(s, "sound"))     return SPLDAM_SOUND;
-	if (!str_cmp(s, "earth"))     return SPLDAM_EARTH;
-	if (!str_cmp(s, "generic"))   return SPLDAM_GENERIC;
-	return 0;                                    /* untyped = physical */
+	if (!str_cmp(s, "fire"))
+		return SPLDAM_FIRE;
+	if (!str_cmp(s, "cold"))
+		return SPLDAM_COLD;
+	if (!str_cmp(s, "lightning"))
+		return SPLDAM_LIGHTNING;
+	if (!str_cmp(s, "gas"))
+		return SPLDAM_GAS;
+	if (!str_cmp(s, "acid"))
+		return SPLDAM_ACID;
+	if (!str_cmp(s, "negative"))
+		return SPLDAM_NEGATIVE;
+	if (!str_cmp(s, "holy"))
+		return SPLDAM_HOLY;
+	if (!str_cmp(s, "psi"))
+		return SPLDAM_PSI;
+	if (!str_cmp(s, "spirit"))
+		return SPLDAM_SPIRIT;
+	if (!str_cmp(s, "sound"))
+		return SPLDAM_SOUND;
+	if (!str_cmp(s, "earth"))
+		return SPLDAM_EARTH;
+	if (!str_cmp(s, "generic"))
+		return SPLDAM_GENERIC;
+	return 0; /* untyped = physical */
 }
 
 static int sp_race_by_code(const char *s)
@@ -2076,7 +2150,7 @@ static int sp_apply_by_name(const char *s)
 static unsigned long sp_aff_by_name(const char *s, int *word)
 {
 	flagDef *tables[5];
-	int      w, b;
+	int w, b;
 
 	tables[0] = affected1_bits;
 	tables[1] = affected2_bits;
@@ -2109,9 +2183,9 @@ static int sp_dir_by_name(const char *s)
 static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 {
 	struct sp_trig *t;
-	char            word[MAX_INPUT_LENGTH];
-	const char     *p;
-	int             n;
+	char word[MAX_INPUT_LENGTH];
+	const char *p;
+	int n;
 
 	p = sp_word(line + 1, word, sizeof(word));
 	sp_strlower(word);
@@ -2119,7 +2193,7 @@ static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 	CREATE(t, struct sp_trig, 1, MEM_TAG_BUFFER);
 	memset(t, 0, sizeof(*t));
 	t->chance = 100;
-	t->arg    = -1;
+	t->arg = -1;
 	t->cmdnum = -1;
 
 	if (!strcmp(word, "death"))
@@ -2214,7 +2288,7 @@ static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 	else if (!strcmp(word, "cmd"))
 	{
 		t->event = SP_EV_CMD;
-		p        = sp_word(p, word, sizeof(word));
+		p = sp_word(p, word, sizeof(word));
 		sp_strlower(word);
 		if (!*word)
 		{
@@ -2249,7 +2323,8 @@ static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 	}
 
 	/* event / target-type validity */
-	if (targ != SP_T_MOB && (t->event == SP_EV_DEATH || t->event == SP_EV_FIGHT || t->event == SP_EV_GIVE || t->event == SP_EV_HPBELOW))
+	if (targ != SP_T_MOB && (t->event == SP_EV_DEATH || t->event == SP_EV_FIGHT ||
+				 t->event == SP_EV_GIVE || t->event == SP_EV_HPBELOW))
 	{
 		sp_err(vnum, "event is only valid on a mob target", line);
 		if (t->keywords)
@@ -2257,7 +2332,8 @@ static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 		FREE(t);
 		return NULL;
 	}
-	if (targ != SP_T_OBJ && (t->event == SP_EV_SEARCH || t->event == SP_EV_DECAY || t->event == SP_EV_HIT))
+	if (targ != SP_T_OBJ &&
+	    (t->event == SP_EV_SEARCH || t->event == SP_EV_DECAY || t->event == SP_EV_HIT))
 	{
 		sp_err(vnum, "event is only valid on an object target", line);
 		if (t->keywords)
@@ -2288,9 +2364,9 @@ static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 {
 	struct sp_cond *c;
-	char            word[MAX_INPUT_LENGTH], w2[MAX_INPUT_LENGTH], w3[MAX_INPUT_LENGTH];
-	const char     *p;
-	int             n;
+	char word[MAX_INPUT_LENGTH], w2[MAX_INPUT_LENGTH], w3[MAX_INPUT_LENGTH];
+	const char *p;
+	int n;
 
 	if (t->num_conds >= SP_MAX_CONDS)
 	{
@@ -2299,10 +2375,10 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 	}
 	c = &t->conds[t->num_conds];
 	memset(c, 0, sizeof(*c));
-	c->op  = SP_OP_GE;
+	c->op = SP_OP_GE;
 	c->who = SP_WHO_ACTOR;
 
-	p = sp_word(line, word, sizeof(word));            /* eat the leading "if" */
+	p = sp_word(line, word, sizeof(word)); /* eat the leading "if" */
 	p = sp_word(p, word, sizeof(word));
 	sp_strlower(word);
 	if (word[0] == '!')
@@ -2314,8 +2390,8 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 	if (!strcmp(word, "carrying") || !strcmp(word, "wearing"))
 	{
 		c->kind = !strcmp(word, "carrying") ? SP_C_CARRYING : SP_C_WEARING;
-		p       = sp_word(p, w2, sizeof(w2));
-		c->num  = atoi(w2);
+		p = sp_word(p, w2, sizeof(w2));
+		c->num = atoi(w2);
 		if (c->num <= 0)
 		{
 			sp_err(vnum, "carrying/wearing needs an obj vnum", line);
@@ -2325,8 +2401,8 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 	else if (!strcmp(word, "class"))
 	{
 		c->kind = SP_C_CLASS;
-		p       = sp_word(p, w2, sizeof(w2));
-		c->num  = sp_class_by_name(w2);
+		p = sp_word(p, w2, sizeof(w2));
+		c->num = sp_class_by_name(w2);
 		if (!c->num)
 		{
 			sp_err(vnum, "unknown class name", line);
@@ -2336,8 +2412,8 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 	else if (!strcmp(word, "race"))
 	{
 		c->kind = SP_C_RACE;
-		p       = sp_word(p, w2, sizeof(w2));
-		c->num  = sp_race_by_code(w2);
+		p = sp_word(p, w2, sizeof(w2));
+		c->num = sp_race_by_code(w2);
 		if (c->num < 0)
 		{
 			sp_err(vnum, "unknown race code", line);
@@ -2347,15 +2423,15 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 	else if (!strcmp(word, "sex"))
 	{
 		c->kind = SP_C_SEX;
-		p       = sp_word(p, w2, sizeof(w2));
+		p = sp_word(p, w2, sizeof(w2));
 		sp_strlower(w2);
 		c->num = (w2[0] == 'm') ? 1 : (w2[0] == 'f') ? 2 : 0;
 	}
 	else if (!strcmp(word, "room") || !strcmp(word, "zone"))
 	{
 		c->kind = !strcmp(word, "room") ? SP_C_ROOM : SP_C_ZONE;
-		p       = sp_word(p, w2, sizeof(w2));
-		c->num  = atoi(w2);
+		p = sp_word(p, w2, sizeof(w2));
+		c->num = atoi(w2);
 	}
 	else if (!strcmp(word, "affect"))
 	{
@@ -2365,8 +2441,8 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 		 * sp_qval, never sp_kv -- sp_kv would swallow the name as a key and then
 		 * look the spell up by whatever followed it ("on", "self", a number).
 		 */
-		p       = sp_qval(p, w2, sizeof(w2));
-		c->num  = sp_spell_by_name(w2);
+		p = sp_qval(p, w2, sizeof(w2));
+		c->num = sp_spell_by_name(w2);
 		if (c->num < 0)
 		{
 			sp_err(vnum, "unknown affect / spell name", line);
@@ -2376,8 +2452,8 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 	else if (!strcmp(word, "chance"))
 	{
 		c->kind = SP_C_CHANCE;
-		p       = sp_word(p, w2, sizeof(w2));
-		c->num  = atoi(w2);
+		p = sp_word(p, w2, sizeof(w2));
+		c->num = atoi(w2);
 		if (c->num < 1 || c->num > 100)
 		{
 			sp_err(vnum, "chance must be 1-100", line);
@@ -2391,7 +2467,7 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 	else if (!strcmp(word, "counter"))
 	{
 		c->kind = SP_C_COUNTER;
-		p       = sp_word(p, w2, sizeof(w2));
+		p = sp_word(p, w2, sizeof(w2));
 		c->slot = sp_intern_counter(w2);
 		if (c->slot < 0)
 		{
@@ -2404,48 +2480,51 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 			sp_err(vnum, "counter needs an operator (= != < <= > >=)", line);
 			return FALSE;
 		}
-		p      = sp_word(p, w3, sizeof(w3));
+		p = sp_word(p, w3, sizeof(w3));
 		c->num = atoi(w3);
 	}
 	else if (!strcmp(word, "mobs"))
 	{
 		/* mobs <mvnum> [room|zone|world] <op> <n>   (default: room) */
 		c->kind = SP_C_MOBS;
-		c->who  = SP_SC_ROOM;
-		p       = sp_word(p, w2, sizeof(w2));
-		c->num  = atoi(w2);
-		p       = sp_word(p, w3, sizeof(w3));
+		c->who = SP_SC_ROOM;
+		p = sp_word(p, w2, sizeof(w2));
+		c->num = atoi(w2);
+		p = sp_word(p, w3, sizeof(w3));
 		sp_strlower(w3);
 		if (!strcmp(w3, "room") || !strcmp(w3, "zone") || !strcmp(w3, "world"))
 		{
-			c->who = !strcmp(w3, "world") ? SP_SC_WORLD : !strcmp(w3, "zone") ? SP_SC_ZONE : SP_SC_ROOM;
-			p      = sp_word(p, w3, sizeof(w3));
+			c->who = !strcmp(w3, "world") ? SP_SC_WORLD :
+				 !strcmp(w3, "zone")  ? SP_SC_ZONE :
+							SP_SC_ROOM;
+			p = sp_word(p, w3, sizeof(w3));
 		}
 		if (!sp_parse_op(w3, &c->op))
 		{
 			sp_err(vnum, "mobs needs an operator", line);
 			return FALSE;
 		}
-		p       = sp_word(p, w3, sizeof(w3));
+		p = sp_word(p, w3, sizeof(w3));
 		c->num2 = atoi(w3);
 		t->num_conds++;
-		return TRUE;                          /* no trailing "on ..." */
+		return TRUE; /* no trailing "on ..." */
 	}
-	else if (!strcmp(word, "level") || !strcmp(word, "align") || !strcmp(word, "hour") || !strcmp(word, "hp") || !strcmp(word, "groupsize") || !strcmp(word, "pcs"))
+	else if (!strcmp(word, "level") || !strcmp(word, "align") || !strcmp(word, "hour") ||
+		 !strcmp(word, "hp") || !strcmp(word, "groupsize") || !strcmp(word, "pcs"))
 	{
-		c->kind = !strcmp(word, "level") ? SP_C_LEVEL
-		        : !strcmp(word, "align") ? SP_C_ALIGN
-		        : !strcmp(word, "hour")  ? SP_C_HOUR
-		        : !strcmp(word, "hp")    ? SP_C_HP
-		        : !strcmp(word, "pcs")   ? SP_C_PCS
-		                                 : SP_C_GROUP;
+		c->kind = !strcmp(word, "level") ? SP_C_LEVEL :
+			  !strcmp(word, "align") ? SP_C_ALIGN :
+			  !strcmp(word, "hour")	 ? SP_C_HOUR :
+			  !strcmp(word, "hp")	 ? SP_C_HP :
+			  !strcmp(word, "pcs")	 ? SP_C_PCS :
+						   SP_C_GROUP;
 		p = sp_word(p, w2, sizeof(w2));
 		if (!sp_parse_op(w2, &c->op))
 		{
 			sp_err(vnum, "numeric condition needs an operator (= != < <= > >=)", line);
 			return FALSE;
 		}
-		p      = sp_word(p, w3, sizeof(w3));
+		p = sp_word(p, w3, sizeof(w3));
 		c->num = atoi(w3);
 	}
 	else
@@ -2468,7 +2547,9 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 		}
 		else
 		{
-			sp_err(vnum, "trailing junk after the condition -- want nothing, or 'on self|actor'", line);
+			sp_err(vnum,
+			       "trailing junk after the condition -- want nothing, or 'on self|actor'",
+			       line);
 			return FALSE;
 		}
 	}
@@ -2481,10 +2562,10 @@ static int sp_parse_cond(int vnum, struct sp_trig *t, char *line)
 static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 {
 	struct sp_action *a;
-	char              word[MAX_INPUT_LENGTH], name[MAX_INPUT_LENGTH], val[MAX_STRING_LENGTH];
-	const char       *p;
-	char             *q1, *q2;
-	int               n;
+	char word[MAX_INPUT_LENGTH], name[MAX_INPUT_LENGTH], val[MAX_STRING_LENGTH];
+	const char *p;
+	char *q1, *q2;
+	int n;
 
 	if (t->num_actions >= SP_MAX_ACTIONS)
 	{
@@ -2499,29 +2580,30 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 
 	a = &t->actions[t->num_actions];
 	memset(a, 0, sizeof(*a));
-	a->save  = -1;
-	a->num2  = -1;
+	a->save = -1;
+	a->num2 = -1;
 	a->state = -1;
-	a->slot  = -1;
+	a->slot = -1;
 	a->scope = SP_SCOPE_ONE;
-	a->who   = SP_WHO_ACTOR;
+	a->who = SP_WHO_ACTOR;
 
 	p = sp_word(line, word, sizeof(word));
 	sp_strlower(word);
 	while (*p == ' ')
 		p++;
 
-	if (!strcmp(word, "say") || !strcmp(word, "emote") || !strcmp(word, "echo") || !strcmp(word, "zecho"))
+	if (!strcmp(word, "say") || !strcmp(word, "emote") || !strcmp(word, "echo") ||
+	    !strcmp(word, "zecho"))
 	{
 		if (!*p)
 		{
 			sp_err(vnum, "text action needs text", line);
 			return FALSE;
 		}
-		a->op   = !strcmp(word, "say")   ? SP_A_SAY
-		        : !strcmp(word, "emote") ? SP_A_EMOTE
-		        : !strcmp(word, "echo")  ? SP_A_ECHO
-		                                 : SP_A_ZECHO;
+		a->op = !strcmp(word, "say")   ? SP_A_SAY :
+			!strcmp(word, "emote") ? SP_A_EMOTE :
+			!strcmp(word, "echo")  ? SP_A_ECHO :
+						 SP_A_ZECHO;
 		a->text = str_dup(p);
 	}
 	else if (!strcmp(word, "cast"))
@@ -2546,13 +2628,16 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 			sp_err(vnum, "unknown spell name", line);
 			return FALSE;
 		}
-		a->op  = SP_A_CAST;
+		a->op = SP_A_CAST;
 		a->num = n;
 		sp_word(q2 + 1, word, sizeof(word));
 		sp_strlower(word);
-		a->who = !strcmp(word, "self") ? SP_WHO_SELF : !strcmp(word, "ally") ? SP_WHO_ALLY : SP_WHO_ACTOR;
+		a->who = !strcmp(word, "self") ? SP_WHO_SELF :
+			 !strcmp(word, "ally") ? SP_WHO_ALLY :
+						 SP_WHO_ACTOR;
 	}
-	else if (!strcmp(word, "mload") || !strcmp(word, "oload") || !strcmp(word, "give") || !strcmp(word, "transfer") || !strcmp(word, "goto"))
+	else if (!strcmp(word, "mload") || !strcmp(word, "oload") || !strcmp(word, "give") ||
+		 !strcmp(word, "transfer") || !strcmp(word, "goto"))
 	{
 		n = atoi(p);
 		if (!strcmp(word, "goto") && (targ != SP_T_MOB || t->event == SP_EV_DEATH))
@@ -2591,9 +2676,10 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 	}
 	else if (!strcmp(word, "damage"))
 	{
-		a->op     = SP_A_DAMAGE;
+		a->op = SP_A_DAMAGE;
 		a->dbonus = 0;
-		if (sscanf(p, "%dd%d+%d", &a->dnum, &a->dsize, &a->dbonus) < 2 || a->dnum < 1 || a->dnum > 100 || a->dsize < 1 || a->dsize > 1000 || a->dbonus < 0)
+		if (sscanf(p, "%dd%d+%d", &a->dnum, &a->dsize, &a->dbonus) < 2 || a->dnum < 1 ||
+		    a->dnum > 100 || a->dsize < 1 || a->dsize > 1000 || a->dbonus < 0)
 		{
 			sp_err(vnum, "damage needs NdS or NdS+B", line);
 			return FALSE;
@@ -2601,21 +2687,22 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 	}
 	else if (!strcmp(word, "attack"))
 	{
-		a->op     = SP_A_ATTACK;
+		a->op = SP_A_ATTACK;
 		a->dbonus = 0;
-		if (sscanf(p, "%dd%d+%d", &a->dnum, &a->dsize, &a->dbonus) < 2 || a->dnum < 1 || a->dnum > 100 || a->dsize < 1 || a->dsize > 1000 || a->dbonus < 0)
+		if (sscanf(p, "%dd%d+%d", &a->dnum, &a->dsize, &a->dbonus) < 2 || a->dnum < 1 ||
+		    a->dnum > 100 || a->dsize < 1 || a->dsize > 1000 || a->dbonus < 0)
 		{
 			sp_err(vnum, "attack needs NdS or NdS+B first", line);
 			return FALSE;
 		}
-		p = sp_word(p, word, sizeof(word));             /* eat the dice */
+		p = sp_word(p, word, sizeof(word)); /* eat the dice */
 		while (*p)
 		{
 			p = sp_word(p, word, sizeof(word));
 			sp_strlower(word);
 			if (!*word)
 				break;
-			if (!strcmp(word, "half"))         /* the one bare flag */
+			if (!strcmp(word, "half")) /* the one bare flag */
 			{
 				a->savehalf = 1;
 				while (*p == ' ')
@@ -2628,10 +2715,10 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 			else if (!strcmp(word, "scope"))
 			{
 				sp_strlower(val);
-				a->scope = !strcmp(val, "room")    ? SP_SCOPE_ROOM
-				         : !strcmp(val, "group")   ? SP_SCOPE_GROUP
-				         : !strcmp(val, "nottank") ? SP_SCOPE_NOTTANK
-				                                   : SP_SCOPE_ONE;
+				a->scope = !strcmp(val, "room")	   ? SP_SCOPE_ROOM :
+					   !strcmp(val, "group")   ? SP_SCOPE_GROUP :
+					   !strcmp(val, "nottank") ? SP_SCOPE_NOTTANK :
+								     SP_SCOPE_ONE;
 			}
 			else if (!strcmp(word, "save"))
 			{
@@ -2639,7 +2726,9 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 				a->save = sp_save_by_name(val);
 				if (a->save < 0)
 				{
-					sp_err(vnum, "attack save must be para|rod|fear|breath|spell", line);
+					sp_err(vnum,
+					       "attack save must be para|rod|fear|breath|spell",
+					       line);
 					return FALSE;
 				}
 			}
@@ -2675,7 +2764,7 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 		 * record down with it.  sp_qval also makes "affect 'cure serious' 30"
 		 * work, which is the grammar PACK_DESIGN.md §1.1 documents.
 		 */
-		p      = sp_qval(p, name, sizeof(name));
+		p = sp_qval(p, name, sizeof(name));
 		a->num = sp_spell_by_name(name);
 		if (a->num < 0)
 		{
@@ -2684,7 +2773,7 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 		}
 		if (isaff)
 		{
-			p      = sp_word(p, word, sizeof(word));
+			p = sp_word(p, word, sizeof(word));
 			a->dur = atoi(word);
 			if (a->dur < 1)
 				a->dur = 1;
@@ -2711,13 +2800,16 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 				a->apply = sp_apply_by_name(val);
 				if (a->apply < 0)
 				{
-					sp_err(vnum, "unknown apply type -- see apply_types[] (STR, AC, HITROLL, ...)", line);
+					sp_err(vnum,
+					       "unknown apply type -- see apply_types[] (STR, AC, HITROLL, ...)",
+					       line);
 					return FALSE;
 				}
 				p = sp_qval(p, val, sizeof(val));
 				if (!*val)
 				{
-					sp_err(vnum, "apply needs a modifier after the apply type", line);
+					sp_err(vnum, "apply needs a modifier after the apply type",
+					       line);
 					return FALSE;
 				}
 				a->amod = atoi(val);
@@ -2727,13 +2819,17 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 				a->affbit = sp_aff_by_name(val, &a->affword);
 				if (!a->affword)
 				{
-					sp_err(vnum, "unknown AFF bit -- see affected1_bits..affected5_bits (BLIND, HASTE, ...)", line);
+					sp_err(vnum,
+					       "unknown AFF bit -- see affected1_bits..affected5_bits (BLIND, HASTE, ...)",
+					       line);
 					return FALSE;
 				}
 			}
 			else
 			{
-				sp_err(vnum, "unknown affect keyword -- want on / save / apply / aff", line);
+				sp_err(vnum,
+				       "unknown affect keyword -- want on / save / apply / aff",
+				       line);
 				return FALSE;
 			}
 			while (*p == ' ')
@@ -2741,7 +2837,8 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 		}
 		if (!isaff && (a->apply || a->affword))
 		{
-			sp_err(vnum, "apply / aff are only meaningful on 'affect', not 'unaffect'", line);
+			sp_err(vnum, "apply / aff are only meaningful on 'affect', not 'unaffect'",
+			       line);
 			return FALSE;
 		}
 	}
@@ -2753,7 +2850,7 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 		if (!strcmp(word, "self") || !strcmp(word, "actor"))
 		{
 			a->who = !strcmp(word, "self") ? SP_WHO_SELF : SP_WHO_ACTOR;
-			p      = sp_word(p, word, sizeof(word));
+			p = sp_word(p, word, sizeof(word));
 			while (*p == ' ')
 				p++;
 		}
@@ -2771,8 +2868,8 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 		/* sp_word, not one_argument: a counter legitimately named "on",
 		   "to" or "the" would otherwise vanish and the NEXT token would be
 		   interned as the counter name.  See the comment on sp_word(). */
-		a->op   = !strcmp(word, "set") ? SP_A_SET : SP_A_ADD;
-		p       = sp_word(p, name, sizeof(name));
+		a->op = !strcmp(word, "set") ? SP_A_SET : SP_A_ADD;
+		p = sp_word(p, name, sizeof(name));
 		a->slot = sp_intern_counter(name);
 		if (a->slot < 0)
 		{
@@ -2784,7 +2881,7 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 	}
 	else if (!strcmp(word, "oneof"))
 	{
-		a->op    = SP_A_ONEOF;
+		a->op = SP_A_ONEOF;
 		a->count = atoi(p);
 		if (a->count < 2)
 		{
@@ -2794,15 +2891,15 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 	}
 	else if (!strcmp(word, "exit"))
 	{
-		a->op  = SP_A_EXIT;
-		p      = sp_word(p, word, sizeof(word));
+		a->op = SP_A_EXIT;
+		p = sp_word(p, word, sizeof(word));
 		a->num = atoi(word);
 		if (a->num <= 0 || real_room(a->num) < 0)
 		{
 			sp_err(vnum, "exit needs an existing room vnum", line);
 			return FALSE;
 		}
-		p       = sp_word(p, word, sizeof(word));
+		p = sp_word(p, word, sizeof(word));
 		a->slot = sp_dir_by_name(word);
 		if (a->slot < 0)
 		{
@@ -2822,11 +2919,11 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 			else if (!strcmp(word, "state"))
 			{
 				sp_strlower(val);
-				a->state = !strcmp(val, "open")   ? 0
-				         : !strcmp(val, "closed") ? (int)EX_CLOSED
-				         : !strcmp(val, "locked") ? (int)(EX_CLOSED | EX_LOCKED)
-				         : !strcmp(val, "secret") ? (int)(EX_CLOSED | EX_SECRET)
-				                                  : -1;
+				a->state = !strcmp(val, "open")	  ? 0 :
+					   !strcmp(val, "closed") ? (int)EX_CLOSED :
+					   !strcmp(val, "locked") ? (int)(EX_CLOSED | EX_LOCKED) :
+					   !strcmp(val, "secret") ? (int)(EX_CLOSED | EX_SECRET) :
+								    -1;
 			}
 			while (*p == ' ')
 				p++;
@@ -2861,9 +2958,11 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 			sp_err(vnum, "purge is not valid for room targets", line);
 			return FALSE;
 		}
-		if (t->event == SP_EV_DEATH || t->event == SP_EV_HPBELOW || t->event == SP_EV_DAMAGED)
+		if (t->event == SP_EV_DEATH || t->event == SP_EV_HPBELOW ||
+		    t->event == SP_EV_DAMAGED)
 		{
-			sp_err(vnum, "purge is not allowed for DEATH/HPBELOW/DAMAGED triggers", line);
+			sp_err(vnum, "purge is not allowed for DEATH/HPBELOW/DAMAGED triggers",
+			       line);
 			return FALSE;
 		}
 		a->op = SP_A_PURGE;
@@ -2881,8 +2980,8 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 static int sp_parse_record(FILE *fl, struct sp_rec *rec)
 {
 	struct sp_trig *t = NULL, *tail = NULL;
-	char            buf[MAX_STRING_LENGTH];
-	int             in_actions = 0, saw_chance = 0;
+	char buf[MAX_STRING_LENGTH];
+	int in_actions = 0, saw_chance = 0;
 
 	while (sp_gets(fl, buf, sizeof(buf)))
 	{
@@ -2944,7 +3043,7 @@ static int sp_parse_record(FILE *fl, struct sp_rec *rec)
 				sp_skip_record(fl);
 				return FALSE;
 			}
-			t->chance  = c;
+			t->chance = c;
 			saw_chance = 1;
 			continue;
 		}
@@ -2979,38 +3078,38 @@ static void sp_bind(struct sp_rec *rec)
 
 	switch (rec->target)
 	{
-		case SP_T_MOB:
-			if ((rn = real_mobile(rec->vnum)) < 0)
-				return;
-			if (mob_index[rn].func.mob && mob_index[rn].func.mob != studioproc_mob)
-				rec->prev_mob = mob_index[rn].func.mob;
-			mob_index[rn].func.mob = studioproc_mob;
-			break;
-		case SP_T_OBJ:
-			if ((rn = real_object(rec->vnum)) < 0)
-				return;
-			if (obj_index[rn].func.obj && obj_index[rn].func.obj != studioproc_obj)
-				rec->prev_obj = obj_index[rn].func.obj;
-			obj_index[rn].func.obj = studioproc_obj;
-			break;
-		default:
-			if ((rn = real_room(rec->vnum)) < 0)
-				return;
-			if (world[rn].funct && world[rn].funct != studioproc_room)
-				rec->prev_room = world[rn].funct;
-			world[rn].funct = studioproc_room;
-			break;
+	case SP_T_MOB:
+		if ((rn = real_mobile(rec->vnum)) < 0)
+			return;
+		if (mob_index[rn].func.mob && mob_index[rn].func.mob != studioproc_mob)
+			rec->prev_mob = mob_index[rn].func.mob;
+		mob_index[rn].func.mob = studioproc_mob;
+		break;
+	case SP_T_OBJ:
+		if ((rn = real_object(rec->vnum)) < 0)
+			return;
+		if (obj_index[rn].func.obj && obj_index[rn].func.obj != studioproc_obj)
+			rec->prev_obj = obj_index[rn].func.obj;
+		obj_index[rn].func.obj = studioproc_obj;
+		break;
+	default:
+		if ((rn = real_room(rec->vnum)) < 0)
+			return;
+		if (world[rn].funct && world[rn].funct != studioproc_room)
+			rec->prev_room = world[rn].funct;
+		world[rn].funct = studioproc_room;
+		break;
 	}
 }
 
 void studioproc_boot(void)
 {
-	FILE          *fl;
+	FILE *fl;
 	struct sp_rec *rec;
-	char           buf[MAX_STRING_LENGTH];
-	char           tc;
-	int            vnum, targ, nrec = 0, ok, nbound = 0;
-	unsigned int   h;
+	char buf[MAX_STRING_LENGTH];
+	char tc;
+	int vnum, targ, nrec = 0, ok, nbound = 0;
+	unsigned int h;
 
 	sp_main_thread = pthread_self();
 	sp_have_thread = 1;
@@ -3018,11 +3117,11 @@ void studioproc_boot(void)
 	memset(sp_tab, 0, sizeof(sp_tab));
 	memset(sp_tcount, 0, sizeof(sp_tcount));
 	studioproc_count = 0;
-	sp_lineno        = 0;
+	sp_lineno = 0;
 
 	if (!sp_roomctr && top_of_world >= 0)
 	{
-		CREATE(sp_roomctr, int, SP_ROOM_SLOTS * (top_of_world + 1), MEM_TAG_BUFFER);
+		CREATE(sp_roomctr, int, SP_ROOM_SLOTS *(top_of_world + 1), MEM_TAG_BUFFER);
 		memset(sp_roomctr, 0, sizeof(int) * SP_ROOM_SLOTS * (top_of_world + 1));
 	}
 
@@ -3046,9 +3145,12 @@ void studioproc_boot(void)
 			continue;
 		}
 
-		tc   = UPPER(tc);
-		targ = (tc == 'M') ? SP_T_MOB : (tc == 'O') ? SP_T_OBJ : (tc == 'R') ? SP_T_ROOM : -1;
-		ok   = (targ >= 0 && vnum > 0);
+		tc = UPPER(tc);
+		targ = (tc == 'M') ? SP_T_MOB :
+		       (tc == 'O') ? SP_T_OBJ :
+		       (tc == 'R') ? SP_T_ROOM :
+				     -1;
+		ok = (targ >= 0 && vnum > 0);
 		if (ok)
 		{
 			if (targ == SP_T_MOB)
@@ -3069,7 +3171,7 @@ void studioproc_boot(void)
 		CREATE(rec, struct sp_rec, 1, MEM_TAG_BUFFER);
 		memset(rec, 0, sizeof(*rec));
 		rec->target = targ;
-		rec->vnum   = vnum;
+		rec->vnum = vnum;
 
 		if (!sp_parse_record(fl, rec))
 		{
@@ -3077,9 +3179,9 @@ void studioproc_boot(void)
 			continue;
 		}
 
-		h                = ((unsigned int)vnum) & (SP_HASH - 1);
-		rec->next        = sp_tab[targ][h];
-		sp_tab[targ][h]  = rec;
+		h = ((unsigned int)vnum) & (SP_HASH - 1);
+		rec->next = sp_tab[targ][h];
+		sp_tab[targ][h] = rec;
 		sp_tcount[targ] += rec->num_trigs;
 		studioproc_count += rec->num_trigs;
 		nrec++;
@@ -3088,8 +3190,10 @@ void studioproc_boot(void)
 	}
 	fclose(fl);
 
-	logit(LOG_STATUS, "STUDIOPROC: %d records, %d triggers, %d bound (%d mob, %d obj, %d room), %d counters.", nrec, studioproc_count, nbound, sp_tcount[SP_T_MOB],
-	      sp_tcount[SP_T_OBJ], sp_tcount[SP_T_ROOM], sp_ncounters);
+	logit(LOG_STATUS,
+	      "STUDIOPROC: %d records, %d triggers, %d bound (%d mob, %d obj, %d room), %d counters.",
+	      nrec, studioproc_count, nbound, sp_tcount[SP_T_MOB], sp_tcount[SP_T_OBJ],
+	      sp_tcount[SP_T_ROOM], sp_ncounters);
 	fprintf(stderr, "--    STUDIOPROC: %d records, %d triggers.\r\n", nrec, studioproc_count);
 	/* the HOUR timer is armed lazily, from the first dispatch - see
 	   sp_arm_hour().  The event pool does not exist yet at this point. */

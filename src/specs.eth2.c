@@ -14,19 +14,19 @@
 #include "damage.h"
 #include "spells.h"
 
-extern P_room  world;
+extern P_room world;
 extern P_index mob_index;
 extern P_index obj_index;
-extern P_char  character_list;
+extern P_char character_list;
 
 void do_assist_core(P_char ch, P_char victim);
 void transfer_inventory(P_char ch, P_char recipient);
 bool in_array(int val, int arr[]);
-int  array_size(int arr[]);
+int array_size(int arr[]);
 
 int eth2_forest_animal(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int replace_mobs[]    = {32636, 32630};
+	int replace_mobs[] = { 32636, 32630 };
 	int replace_mobs_size = 2;
 
 	if (cmd == CMD_SET_PERIODIC || cmd == CMD_PERIODIC)
@@ -45,12 +45,16 @@ int eth2_forest_animal(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (!mob)
 		{
-			logit(LOG_DEBUG, "eth2_forest_animal(): could not find replacement mob for mob vnum [%d]!", GET_VNUM(ch));
-			debug("eth2_forest_animal(): could not find replacement mob for mob vnum [%d]!", GET_VNUM(ch));
+			logit(LOG_DEBUG,
+			      "eth2_forest_animal(): could not find replacement mob for mob vnum [%d]!",
+			      GET_VNUM(ch));
+			debug("eth2_forest_animal(): could not find replacement mob for mob vnum [%d]!",
+			      GET_VNUM(ch));
 			return FALSE;
 		}
 
-		act("\n&+LThe echoes from $n&+L's death cry reverberate, coalescing into something from your nightmares!", FALSE, ch, 0, 0, TO_ROOM);
+		act("\n&+LThe echoes from $n&+L's death cry reverberate, coalescing into something from your nightmares!",
+		    FALSE, ch, 0, 0, TO_ROOM);
 
 		money_to_inventory(ch);
 		unequip_all(ch);
@@ -83,12 +87,16 @@ int eth2_little_girl(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (!mob)
 		{
-			logit(LOG_DEBUG, "eth2_little_girl(): could not find replacement mob for mob vnum [%d]!", GET_VNUM(ch));
-			debug("eth2_little_girl(): could not find replacement mob for mob vnum [%d]!", GET_VNUM(ch));
+			logit(LOG_DEBUG,
+			      "eth2_little_girl(): could not find replacement mob for mob vnum [%d]!",
+			      GET_VNUM(ch));
+			debug("eth2_little_girl(): could not find replacement mob for mob vnum [%d]!",
+			      GET_VNUM(ch));
 			return FALSE;
 		}
 
-		act("\n&+LThe echoes from $n&+L's death cry reverberate, coalescing into something from your nightmares!", FALSE, ch, 0, 0, TO_ROOM);
+		act("\n&+LThe echoes from $n&+L's death cry reverberate, coalescing into something from your nightmares!",
+		    FALSE, ch, 0, 0, TO_ROOM);
 
 		money_to_inventory(ch);
 		unequip_all(ch);
@@ -105,9 +113,9 @@ int eth2_little_girl(P_char ch, P_char pl, int cmd, char *arg)
 
 int eth2_demon_princess(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int forest_creatures[] = {32624, 32625, 32626, -1};
+	int forest_creatures[] = { 32624, 32625, 32626, -1 };
 
-	int helpers[] = {32636};
+	int helpers[] = { 32636 };
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -127,12 +135,14 @@ int eth2_demon_princess(P_char ch, P_char pl, int cmd, char *arg)
 
 				if (IS_NPC(target) && in_array(GET_VNUM(target), forest_creatures))
 				{
-					act("&+L$n &+Lstiffens and quivers slightly before being torn to pieces from within.", FALSE, target, 0, 0, TO_ROOM);
+					act("&+L$n &+Lstiffens and quivers slightly before being torn to pieces from within.",
+					    FALSE, target, 0, 0, TO_ROOM);
 					die(target, ch);
 				}
 			}
 
-			return shout_and_hunt(ch, 100, "&+LFaded nightmares, form and punish %s!&n", NULL, helpers, 0, 0);
+			return shout_and_hunt(ch, 100, "&+LFaded nightmares, form and punish %s!&n",
+					      NULL, helpers, 0, 0);
 		}
 	}
 
@@ -141,7 +151,7 @@ int eth2_demon_princess(P_char ch, P_char pl, int cmd, char *arg)
 
 int eth2_aramus(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int helpers[]    = {32638, 32639, 32640, 32641, -1};
+	int helpers[] = { 32638, 32639, 32640, 32641, -1 };
 	int helpers_size = 4;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -162,9 +172,11 @@ int eth2_aramus(P_char ch, P_char pl, int cmd, char *arg)
 			/* check to see how many of his helpers are currently here. if less than threshold,
 			   load a new one */
 			int num_followers = 0;
-			for (struct follow_type *followers = ch->followers; followers; followers = followers->next)
+			for (struct follow_type *followers = ch->followers; followers;
+			     followers = followers->next)
 			{
-				if (IS_NPC(followers->follower) && in_array(GET_VNUM(followers->follower), helpers))
+				if (IS_NPC(followers->follower) &&
+				    in_array(GET_VNUM(followers->follower), helpers))
 				{
 					num_followers++;
 				}
@@ -179,7 +191,8 @@ int eth2_aramus(P_char ch, P_char pl, int cmd, char *arg)
 
 				if (!mob)
 				{
-					logit(LOG_DEBUG, "eth2_aramus(): could not load mob vnum [%d]!", vnum);
+					logit(LOG_DEBUG,
+					      "eth2_aramus(): could not load mob vnum [%d]!", vnum);
 					debug("eth2_aramus(): could not load mob vnum [%d]!", vnum);
 					return FALSE;
 				}
@@ -200,11 +213,7 @@ int eth2_aramus(P_char ch, P_char pl, int cmd, char *arg)
 int eth2_tree_obj(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	/* first value is the object, second is the mob to replace it with */
-	int replace_objs[][2] = {
-		{32615, 32628},
-        {32614, 32629},
-        {   -1,    -1}
-    };
+	int replace_objs[][2] = { { 32615, 32628 }, { 32614, 32629 }, { -1, -1 } };
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -227,29 +236,17 @@ int eth2_tree_obj(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			act("Above in you in the &+Ldarkness&n, leaves and branches start to creak and groan\n"
 			    "but then become quiet again.\n",
-			    FALSE,
-			    ch,
-			    0,
-			    0,
-			    TO_CHAR);
+			    FALSE, ch, 0, 0, TO_CHAR);
 			return FALSE;
 		}
 
 		act("Above in you in the &+Ldarkness&n, leaves and branches start to creak and groan\n"
 		    "as the &+gforest &+Gceiling&n comes alive!\n",
-		    FALSE,
-		    ch,
-		    0,
-		    0,
-		    TO_ROOM);
+		    FALSE, ch, 0, 0, TO_ROOM);
 
 		act("Above in you in the &+Ldarkness&n, leaves and branches start to creak and groan\n"
 		    "as the &+gforest &+Gceiling&n comes alive!\n",
-		    FALSE,
-		    ch,
-		    0,
-		    0,
-		    TO_CHAR);
+		    FALSE, ch, 0, 0, TO_CHAR);
 
 		/* replace tree objects with the tree mobs */
 		P_obj o, next_obj;
@@ -264,14 +261,19 @@ int eth2_tree_obj(P_obj obj, P_char ch, int cmd, char *arg)
 					P_char mob = read_mobile(replace_objs[i][1], VIRTUAL);
 					if (!mob)
 					{
-						logit(LOG_DEBUG, "eth2_tree_obj(): could not find mob vnum [%d]!", replace_objs[i][1]);
-						debug("eth2_tree_obj(): could not find mob vnum [%d]!", replace_objs[i][1]);
+						logit(LOG_DEBUG,
+						      "eth2_tree_obj(): could not find mob vnum [%d]!",
+						      replace_objs[i][1]);
+						debug("eth2_tree_obj(): could not find mob vnum [%d]!",
+						      replace_objs[i][1]);
 						return FALSE;
 					}
 
 					char_to_room(mob, ch->in_room, -1);
-					act("$n stirs $mself out of $s slumber and roars at you in fury!", FALSE, mob, 0, ch, TO_VICT);
-					act("$n stirs $mself out of $s slumber and roars at $N in fury!", FALSE, mob, 0, ch, TO_NOTVICT);
+					act("$n stirs $mself out of $s slumber and roars at you in fury!",
+					    FALSE, mob, 0, ch, TO_VICT);
+					act("$n stirs $mself out of $s slumber and roars at $N in fury!",
+					    FALSE, mob, 0, ch, TO_NOTVICT);
 
 					branch(mob, ch);
 					MobStartFight(mob, ch);
@@ -316,8 +318,10 @@ int eth2_godsfury(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (GET_HIT(ch) < GET_MAX_HIT(ch))
 				{
-					act("&+L$n&+L gasps slightly as $q &+Linfuses $m with energy.", FALSE, ch, obj, 0, TO_ROOM);
-					act("&+LYou gasp as $q &+Linfuses you with energy.", FALSE, ch, obj, 0, TO_CHAR);
+					act("&+L$n&+L gasps slightly as $q &+Linfuses $m with energy.",
+					    FALSE, ch, obj, 0, TO_ROOM);
+					act("&+LYou gasp as $q &+Linfuses you with energy.", FALSE,
+					    ch, obj, 0, TO_CHAR);
 					spell_heal(60, ch, 0, 0, ch, 0);
 					return TRUE;
 				}
@@ -335,33 +339,36 @@ int eth2_godsfury(P_obj obj, P_char ch, int cmd, char *arg)
 			return FALSE;
 		}
 
-		act("Your $q calls down the &+rfury&n of the Gods on $N!", FALSE, ch, obj, vict, TO_CHAR);
-		act("$n's $q calls down the &+rfury&n of the Gods on you!", FALSE, ch, obj, vict, TO_VICT);
-		act("$n's $q calls down the &+rfury&n of the Gods on $N!", FALSE, ch, obj, vict, TO_NOTVICT);
+		act("Your $q calls down the &+rfury&n of the Gods on $N!", FALSE, ch, obj, vict,
+		    TO_CHAR);
+		act("$n's $q calls down the &+rfury&n of the Gods on you!", FALSE, ch, obj, vict,
+		    TO_VICT);
+		act("$n's $q calls down the &+rfury&n of the Gods on $N!", FALSE, ch, obj, vict,
+		    TO_NOTVICT);
 
 		int save = vict->specials.apply_saving_throw[SAVING_SPELL];
 		vict->specials.apply_saving_throw[SAVING_SPELL] += 15;
 
 		switch (number(0, 3))
 		{
-			case 0:
-				spell_blindness(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
-				vict->specials.apply_saving_throw[SAVING_SPELL] = save;
-				break;
-			case 1:
-				spell_disease(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
-				vict->specials.apply_saving_throw[SAVING_SPELL] = save;
-				break;
-			case 2:
-				// Curse changes apply...[SAVING_SPELL] if succesful.
-				vict->specials.apply_saving_throw[SAVING_SPELL] = save;
-				spell_curse(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
-				break;
-			case 3:
-				// Dispel magic may change apply...[SAVING_SPELL] if succesful.
-				vict->specials.apply_saving_throw[SAVING_SPELL] = save;
-				spell_dispel_magic(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
-				break;
+		case 0:
+			spell_blindness(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
+			vict->specials.apply_saving_throw[SAVING_SPELL] = save;
+			break;
+		case 1:
+			spell_disease(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
+			vict->specials.apply_saving_throw[SAVING_SPELL] = save;
+			break;
+		case 2:
+			// Curse changes apply...[SAVING_SPELL] if succesful.
+			vict->specials.apply_saving_throw[SAVING_SPELL] = save;
+			spell_curse(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
+			break;
+		case 3:
+			// Dispel magic may change apply...[SAVING_SPELL] if succesful.
+			vict->specials.apply_saving_throw[SAVING_SPELL] = save;
+			spell_dispel_magic(60, ch, 0, SPELL_TYPE_SPELL, vict, 0);
+			break;
 		}
 		return TRUE;
 	}
@@ -370,7 +377,7 @@ int eth2_godsfury(P_obj obj, P_char ch, int cmd, char *arg)
 
 int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int                  curr_time;
+	int curr_time;
 	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -398,14 +405,17 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 				if (!affected_by_spell(ch, SPELL_REGENERATION))
 				{
 					bzero(&af, sizeof(af));
-					af.type     = SPELL_REGENERATION;
+					af.type = SPELL_REGENERATION;
 					af.duration = 10;
 					af.location = APPLY_HIT_REG;
 					af.modifier = 3 * GET_LEVEL(ch);
 					affect_to_char(ch, &af);
 
-					send_to_char("As you settle into your dreams, your body begins to heal itself quicker.\r\n", ch);
-					add_event(event_aramus_crown_sleep_check, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
+					send_to_char(
+						"As you settle into your dreams, your body begins to heal itself quicker.\r\n",
+						ch);
+					add_event(event_aramus_crown_sleep_check, PULSE_VIOLENCE,
+						  ch, 0, 0, 0, 0, 0);
 				}
 
 				bzero(&af, sizeof(af));
@@ -413,84 +423,106 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 
 				switch (number(1, 13))
 				{
-					case 1:
-						if (!affected_by_spell(ch, SPELL_INERTIAL_BARRIER))
-						{
-							send_to_char("Your dreams are filled with strange visions of interrupted motion.\r\n", ch);
-							af.type       = SPELL_INERTIAL_BARRIER;
-							af.bitvector3 = AFF3_INERTIAL_BARRIER;
-							linked_affect_to_char_obj(ch, &af, obj, LNK_CHAR_OBJ_AFF);
-							break;
-						}
-
-					case 2:
-					case 3:
-						if (!affected_by_spell(ch, SPELL_STONE_SKIN))
-						{
-							send_to_char("You dream of a lonely hillside, covered with rocky shale.\r\n", ch);
-							af.type      = SPELL_STONE_SKIN;
-							af.bitvector = AFF_STONE_SKIN;
-							linked_affect_to_char_obj(ch, &af, obj, LNK_CHAR_OBJ_AFF);
-							break;
-						}
-
-					case 4:
-					case 5:
-						if (!affected_by_spell(ch, SPELL_VITALITY))
-						{
-							send_to_char("In your dream, you feel life essence flowing freely through your veins.\r\n", ch);
-							af.type     = SPELL_VITALITY;
-							af.modifier = MAX(10, GET_LEVEL(ch) * 4);
-							af.location = APPLY_HIT;
-							linked_affect_to_char_obj(ch, &af, obj, LNK_CHAR_OBJ_AFF);
-							break;
-						}
-
-					case 6:
-					case 7:
-						if (!IS_AFFECTED(ch, AFF_HASTE))
-						{
-							send_to_char("Your dreams are filled with visions of ultimate speed.\r\n", ch);
-							af.type      = SPELL_HASTE;
-							af.bitvector = AFF_HASTE;
-							linked_affect_to_char_obj(ch, &af, obj, LNK_CHAR_OBJ_AFF);
-							break;
-						}
-
-					case 8:
-					case 9:
-						if (!IS_AFFECTED(ch, AFF_FLY))
-						{
-							send_to_char("You dream of soaring above the fjords.\r\n", ch);
-							af.type      = SPELL_FLY;
-							af.bitvector = AFF_FLY;
-							linked_affect_to_char_obj(ch, &af, obj, LNK_CHAR_OBJ_AFF);
-							break;
-						}
-
-					case 10:
-					case 11:
-					case 12:
-						if (!IS_AFFECTED(ch, AFF_BARKSKIN))
-						{
-							send_to_char("You dream of a dark and mysterious forest.\r\n", ch);
-							af.type      = SPELL_BARKSKIN;
-							af.bitvector = AFF_BARKSKIN;
-							linked_affect_to_char_obj(ch, &af, obj, LNK_CHAR_OBJ_AFF);
-							break;
-						}
-
-					case 13:
-						if (number(1, 100) == 1)
-						{
-							send_to_char("You have a horrible nightmare of appearing in public totally naked!\r\n", ch);
-							unequip_all(ch);
-						}
-						else
-						{
-							send_to_char("You have dreams of people pawing at your body... tugging at your clothes.\n", ch);
-						}
+				case 1:
+					if (!affected_by_spell(ch, SPELL_INERTIAL_BARRIER))
+					{
+						send_to_char(
+							"Your dreams are filled with strange visions of interrupted motion.\r\n",
+							ch);
+						af.type = SPELL_INERTIAL_BARRIER;
+						af.bitvector3 = AFF3_INERTIAL_BARRIER;
+						linked_affect_to_char_obj(ch, &af, obj,
+									  LNK_CHAR_OBJ_AFF);
 						break;
+					}
+
+				case 2:
+				case 3:
+					if (!affected_by_spell(ch, SPELL_STONE_SKIN))
+					{
+						send_to_char(
+							"You dream of a lonely hillside, covered with rocky shale.\r\n",
+							ch);
+						af.type = SPELL_STONE_SKIN;
+						af.bitvector = AFF_STONE_SKIN;
+						linked_affect_to_char_obj(ch, &af, obj,
+									  LNK_CHAR_OBJ_AFF);
+						break;
+					}
+
+				case 4:
+				case 5:
+					if (!affected_by_spell(ch, SPELL_VITALITY))
+					{
+						send_to_char(
+							"In your dream, you feel life essence flowing freely through your veins.\r\n",
+							ch);
+						af.type = SPELL_VITALITY;
+						af.modifier = MAX(10, GET_LEVEL(ch) * 4);
+						af.location = APPLY_HIT;
+						linked_affect_to_char_obj(ch, &af, obj,
+									  LNK_CHAR_OBJ_AFF);
+						break;
+					}
+
+				case 6:
+				case 7:
+					if (!IS_AFFECTED(ch, AFF_HASTE))
+					{
+						send_to_char(
+							"Your dreams are filled with visions of ultimate speed.\r\n",
+							ch);
+						af.type = SPELL_HASTE;
+						af.bitvector = AFF_HASTE;
+						linked_affect_to_char_obj(ch, &af, obj,
+									  LNK_CHAR_OBJ_AFF);
+						break;
+					}
+
+				case 8:
+				case 9:
+					if (!IS_AFFECTED(ch, AFF_FLY))
+					{
+						send_to_char(
+							"You dream of soaring above the fjords.\r\n",
+							ch);
+						af.type = SPELL_FLY;
+						af.bitvector = AFF_FLY;
+						linked_affect_to_char_obj(ch, &af, obj,
+									  LNK_CHAR_OBJ_AFF);
+						break;
+					}
+
+				case 10:
+				case 11:
+				case 12:
+					if (!IS_AFFECTED(ch, AFF_BARKSKIN))
+					{
+						send_to_char(
+							"You dream of a dark and mysterious forest.\r\n",
+							ch);
+						af.type = SPELL_BARKSKIN;
+						af.bitvector = AFF_BARKSKIN;
+						linked_affect_to_char_obj(ch, &af, obj,
+									  LNK_CHAR_OBJ_AFF);
+						break;
+					}
+
+				case 13:
+					if (number(1, 100) == 1)
+					{
+						send_to_char(
+							"You have a horrible nightmare of appearing in public totally naked!\r\n",
+							ch);
+						unequip_all(ch);
+					}
+					else
+					{
+						send_to_char(
+							"You have dreams of people pawing at your body... tugging at your clothes.\n",
+							ch);
+					}
+					break;
 				}
 				return TRUE;
 			}

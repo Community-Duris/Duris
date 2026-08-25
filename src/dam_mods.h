@@ -17,7 +17,7 @@ typedef enum
 typedef struct
 {
 	dam_mod_type type;
-	double	     mod;
+	double mod;
 } damage_mod;
 
 typedef void (*dam_mod_predicate)(P_char, P_char, double, int, uint, damage_mod *,

@@ -18,7 +18,8 @@ void spell_stormcallers_fury(int, P_char, char *, int, P_char, P_obj);
 bool stormcallers_fury(P_char ch, P_char victim, P_obj wpn);
 
 bool kostchtchies_implosion(P_char ch, P_char victim, P_obj wpn);
-void spell_kostchtchies_implosion(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj);
+void spell_kostchtchies_implosion(int level, P_char ch, char *arg, int type, P_char victim,
+				  P_obj obj);
 
 void spell_ilienzes_flame_sword(int, P_char, char *, int, P_char, P_obj);
 bool ilienze_sword(P_char ch, P_char victim, P_obj wpn);

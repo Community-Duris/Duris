@@ -13,18 +13,19 @@ using namespace std;
 #include "sql.h"
 #include "sql_player.h"
 
-extern P_desc               descriptor_list;
+extern P_desc descriptor_list;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
 vector<struct Alliance> alliances;
 
-const char *ALLIANCE_FORMAT = "\r\n"
-							  " &+BAlliance syntax\n"
-							  " &+B-----------------------------\n"
-							  " &+bForging guild leader:    &+Walliance propose <leader of second guild>\n"
-							  " &+bLeader of joining guild: &+Walliance accept  <proposing leader>\n\n"
-							  " &+bRevoking proposal:       &+Walliance revoke\n\n"
-							  " &+bSevering:                &+Walliance sever confirm\n";
+const char *ALLIANCE_FORMAT =
+	"\r\n"
+	" &+BAlliance syntax\n"
+	" &+B-----------------------------\n"
+	" &+bForging guild leader:    &+Walliance propose <leader of second guild>\n"
+	" &+bLeader of joining guild: &+Walliance accept  <proposing leader>\n\n"
+	" &+bRevoking proposal:       &+Walliance revoke\n\n"
+	" &+bSevering:                &+Walliance sever confirm\n";
 
 void load_alliances()
 {
@@ -43,7 +44,8 @@ void load_alliances()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -55,7 +57,7 @@ void load_alliances()
 	{
 		alliance.forging_assoc = get_guild_from_id(atoi(row[0]));
 		alliance.joining_assoc = get_guild_from_id(atoi(row[1]));
-		alliance.tribute_owed  = atoi(row[2]);
+		alliance.tribute_owed = atoi(row[2]);
 		alliances.push_back(alliance);
 	}
 
@@ -94,7 +96,9 @@ void save_alliances()
 
 	for (int i = 0; i < alliances.size(); i++)
 	{
-		if (!qry("INSERT INTO alliances (forging_assoc_id, joining_assoc_id) VALUES ('%d', '%d')", alliances[i].forging_assoc->get_id(), alliances[i].joining_assoc->get_id()))
+		if (!qry("INSERT INTO alliances (forging_assoc_id, joining_assoc_id) VALUES ('%d', '%d')",
+			 alliances[i].forging_assoc->get_id(),
+			 alliances[i].joining_assoc->get_id()))
 		{
 			logit(LOG_DEBUG, "save_alliances(): insert failed at index %d", i);
 			if (own_txn)
@@ -121,16 +125,17 @@ Alliance::Alliance(P_Guild forgers, P_Guild joiners, int tribute_owed)
 	alliances.push_back(*this);
 	save_alliances();
 
-	snprintf(buff, MAX_STRING_LENGTH, "%s &+band &n%s &+bhave formed an alliance!\n", forgers->get_name().c_str(), joiners->get_name().c_str());
+	snprintf(buff, MAX_STRING_LENGTH, "%s &+band &n%s &+bhave formed an alliance!\n",
+		 forgers->get_name().c_str(), joiners->get_name().c_str());
 	send_to_alliance(buff, this);
 }
 
 // Remove the alliance between guild and their signifigant other.
 void sever_alliance(P_Guild guild)
 {
-	bool                       found = FALSE;
-	string                     severee_name;
-	char                       buff[MAX_STRING_LENGTH];
+	bool found = FALSE;
+	string severee_name;
+	char buff[MAX_STRING_LENGTH];
 	vector<Alliance>::iterator it;
 
 	//  for( int number = 0; number < alliances.size(); number++ )
@@ -138,13 +143,13 @@ void sever_alliance(P_Guild guild)
 	{
 		if (guild == it->get_forgers())
 		{
-			found        = TRUE;
+			found = TRUE;
 			severee_name = it->get_joiners()->get_name();
 			break;
 		}
 		if (guild == it->get_joiners())
 		{
-			found        = TRUE;
+			found = TRUE;
 			severee_name = it->get_forgers()->get_name();
 			break;
 		}
@@ -153,7 +158,8 @@ void sever_alliance(P_Guild guild)
 	if (!found)
 		return;
 
-	snprintf(buff, MAX_STRING_LENGTH, "%s &+bhave severed their alliance with &n%s&+b!\n", guild->get_name().c_str(), severee_name.c_str());
+	snprintf(buff, MAX_STRING_LENGTH, "%s &+bhave severed their alliance with &n%s&+b!\n",
+		 guild->get_name().c_str(), severee_name.c_str());
 	send_to_alliance(buff, &(*it));
 
 	alliances.erase(it);
@@ -162,12 +168,13 @@ void sever_alliance(P_Guild guild)
 
 void do_alliance(P_char ch, char *arg, int cmd)
 {
-	char                 buff[MAX_STRING_LENGTH], sub_command_str[MAX_INPUT_LENGTH], victim_str[MAX_INPUT_LENGTH];
-	uint                 abits = GET_A_BITS(ch);
-	string               name;
-	P_Guild              guild    = GET_ASSOC(ch), guild2;
-	P_Alliance           alliance = (guild == NULL) ? NULL : guild->get_alliance();
-	P_char               victim;
+	char buff[MAX_STRING_LENGTH], sub_command_str[MAX_INPUT_LENGTH],
+		victim_str[MAX_INPUT_LENGTH];
+	uint abits = GET_A_BITS(ch);
+	string name;
+	P_Guild guild = GET_ASSOC(ch), guild2;
+	P_Alliance alliance = (guild == NULL) ? NULL : guild->get_alliance();
+	P_char victim;
 	struct affected_type af, *paf;
 
 	// Check that char is in guild and leader
@@ -203,7 +210,8 @@ void do_alliance(P_char ch, char *arg, int cmd)
 			name = alliance->get_forgers()->get_name();
 		}
 
-		snprintf(buff, MAX_STRING_LENGTH, "&+bYou are allied with &n%s&+b.\n", name.c_str());
+		snprintf(buff, MAX_STRING_LENGTH, "&+bYou are allied with &n%s&+b.\n",
+			 name.c_str());
 		send_to_char(buff, ch);
 		return;
 	}
@@ -219,7 +227,9 @@ void do_alliance(P_char ch, char *arg, int cmd)
 
 		if (!victim || victim == ch || !IS_PC(victim))
 		{
-			send_to_char("&+bYou can only forge an alliance with the leader of another association.\n", ch);
+			send_to_char(
+				"&+bYou can only forge an alliance with the leader of another association.\n",
+				ch);
 			return;
 		}
 
@@ -230,11 +240,13 @@ void do_alliance(P_char ch, char *arg, int cmd)
 		}
 
 		uint abits2 = GET_A_BITS(victim);
-		guild2      = GET_ASSOC(victim);
+		guild2 = GET_ASSOC(victim);
 
 		if (!IS_MEMBER(abits2) || (guild2 == NULL) || !IS_LEADER(abits2))
 		{
-			send_to_char("&+bYou can only forge an alliance with the leader of another association.\n", ch);
+			send_to_char(
+				"&+bYou can only forge an alliance with the leader of another association.\n",
+				ch);
 			return;
 		}
 
@@ -243,7 +255,9 @@ void do_alliance(P_char ch, char *arg, int cmd)
 		//----------------------------
 		if (guild->get_prestige() < get_property("prestige.alliance.required", 0))
 		{
-			send_to_char("&+bYour association is not famous enough to forge an alliance.\n", ch);
+			send_to_char(
+				"&+bYour association is not famous enough to forge an alliance.\n",
+				ch);
 			return;
 		}
 
@@ -258,14 +272,16 @@ void do_alliance(P_char ch, char *arg, int cmd)
 		// Forge it!
 		memset(&af, 0, sizeof(af));
 
-		af.type     = TAG_ALLIANCE;
-		af.flags    = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
+		af.type = TAG_ALLIANCE;
+		af.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
 		af.duration = 60 * WAIT_SEC;
 		af.modifier = GET_PID(victim);
 		affect_to_char(ch, &af);
 
-		act("&+b$n &+bhas proposed an alliance with your association!", FALSE, ch, 0, victim, TO_VICT);
-		act("&+bYou propose an alliance with $N&+b's association!", FALSE, ch, 0, victim, TO_CHAR);
+		act("&+b$n &+bhas proposed an alliance with your association!", FALSE, ch, 0,
+		    victim, TO_VICT);
+		act("&+bYou propose an alliance with $N&+b's association!", FALSE, ch, 0, victim,
+		    TO_CHAR);
 	}
 	else if (!strcmp(sub_command_str, "accept"))
 	{
@@ -279,22 +295,30 @@ void do_alliance(P_char ch, char *arg, int cmd)
 
 		if (!victim || victim == ch || !IS_PC(victim))
 		{
-			send_to_char("&+bYou can only forge an alliance with the leader of another association.\n", ch);
+			send_to_char(
+				"&+bYou can only forge an alliance with the leader of another association.\n",
+				ch);
 			return;
 		}
 
 		uint abits2 = GET_A_BITS(victim);
-		guild2      = GET_ASSOC(victim);
+		guild2 = GET_ASSOC(victim);
 
-		if (!IS_MEMBER(abits2) || (guild2 == NULL) || (!IS_LEADER(abits2) && !IS_TRUSTED(victim)))
+		if (!IS_MEMBER(abits2) || (guild2 == NULL) ||
+		    (!IS_LEADER(abits2) && !IS_TRUSTED(victim)))
 		{
-			send_to_char("&+bYou can only forge an alliance with the leader of another association.\n", ch);
+			send_to_char(
+				"&+bYou can only forge an alliance with the leader of another association.\n",
+				ch);
 			return;
 		}
 
-		if (!(paf = get_spell_from_char(victim, TAG_ALLIANCE)) || paf->modifier != GET_PID(ch))
+		if (!(paf = get_spell_from_char(victim, TAG_ALLIANCE)) ||
+		    paf->modifier != GET_PID(ch))
 		{
-			send_to_char("&+bYou can only accept a proposal after it has been proposed!\n", ch);
+			send_to_char(
+				"&+bYou can only accept a proposal after it has been proposed!\n",
+				ch);
 			return;
 		}
 
@@ -341,7 +365,8 @@ void send_to_alliance(char *str, P_Alliance alliance)
 
 	for (P_desc td = descriptor_list; td; td = td->next)
 	{
-		if ((td->connected == CON_PLAYING) && IS_MEMBER(GET_A_BITS(td->character)) && (GET_ASSOC(td->character) == forgers || GET_ASSOC(td->character) == joiners))
+		if ((td->connected == CON_PLAYING) && IS_MEMBER(GET_A_BITS(td->character)) &&
+		    (GET_ASSOC(td->character) == forgers || GET_ASSOC(td->character) == joiners))
 		{
 			send_to_char(str, td->character, LOG_PRIVATE);
 		}
@@ -350,11 +375,11 @@ void send_to_alliance(char *str, P_Alliance alliance)
 
 void do_acc(P_char ch, char *argument, int cmd)
 {
-	P_desc     i;
-	P_char     to_ch;
-	char       Gbuf1[MAX_STRING_LENGTH], color;
+	P_desc i;
+	P_char to_ch;
+	char Gbuf1[MAX_STRING_LENGTH], color;
 	P_Alliance alliance;
-	P_Guild    guild1, guild2;
+	P_Guild guild1, guild2;
 
 	guild1 = GET_ASSOC(ch);
 
@@ -365,7 +390,9 @@ void do_acc(P_char ch, char *argument, int cmd)
 		return;
 	}
 	// Can't speak.
-	if (IS_SET(ch->specials.act, PLR_SILENCE) || IS_AFFECTED2(ch, AFF2_SILENCED) || affected_by_spell(ch, SPELL_SUPPRESSION) || !IS_SET(ch->specials.act2, PLR2_ACC) || is_silent(ch, TRUE))
+	if (IS_SET(ch->specials.act, PLR_SILENCE) || IS_AFFECTED2(ch, AFF2_SILENCED) ||
+	    affected_by_spell(ch, SPELL_SUPPRESSION) || !IS_SET(ch->specials.act2, PLR2_ACC) ||
+	    is_silent(ch, TRUE))
 	{
 		send_to_char("You can't use the ACC channel!\r\n", ch);
 		return;
@@ -391,7 +418,8 @@ void do_acc(P_char ch, char *argument, int cmd)
 		{
 			if (IS_NPC(ch) || IS_SET(ch->specials.act, PLR_ECHO))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+yYou tell your alliance '&+Y%s&+y'\r\n", argument);
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "&+yYou tell your alliance '&+Y%s&+y'\r\n", argument);
 				send_to_char(Gbuf1, ch, LOG_PRIVATE);
 			}
 			else
@@ -412,7 +440,9 @@ void do_acc(P_char ch, char *argument, int cmd)
 			}
 			if (IS_NPC(to_ch))
 			{
-				logit(LOG_DEBUG, "do_acc: Character (%s) is on descriptor_list but is a NPC!", J_NAME(to_ch));
+				logit(LOG_DEBUG,
+				      "do_acc: Character (%s) is on descriptor_list but is a NPC!",
+				      J_NAME(to_ch));
 				continue;
 			}
 
@@ -431,32 +461,38 @@ void do_acc(P_char ch, char *argument, int cmd)
 			if (IS_TRUSTED(to_ch))
 			{
 				// If they'r governing a diff't association (or ally) or they have ACC toggled off
-				if ((guild2 && guild2 != alliance->get_forgers() && guild2 != alliance->get_joiners()) || !PLR2_FLAGGED(to_ch, PLR2_ACC) || to_ch->only.pc->ignored == ch)
+				if ((guild2 && guild2 != alliance->get_forgers() &&
+				     guild2 != alliance->get_joiners()) ||
+				    !PLR2_FLAGGED(to_ch, PLR2_ACC) || to_ch->only.pc->ignored == ch)
 				{
 					continue;
 				}
 			}
 			// Mortals need ACC on, and must be a guilded in the same guild/ally, must be a member, not on parole.
 			//   And can't be ignoring ch.
-			else if (!PLR2_FLAGGED(to_ch, PLR2_ACC) || !guild2 || !(guild2 == alliance->get_forgers() || guild2 == alliance->get_joiners()) || !IS_MEMBER(GET_A_BITS(to_ch)) ||
-			         !GT_PAROLE(GET_A_BITS(to_ch)) || to_ch->only.pc->ignored == ch)
+			else if (!PLR2_FLAGGED(to_ch, PLR2_ACC) || !guild2 ||
+				 !(guild2 == alliance->get_forgers() ||
+				   guild2 == alliance->get_joiners()) ||
+				 !IS_MEMBER(GET_A_BITS(to_ch)) || !GT_PAROLE(GET_A_BITS(to_ch)) ||
+				 to_ch->only.pc->ignored == ch)
 			{
 				continue;
 			}
 			if (IS_TRUSTED(to_ch))
 			{
-				snprintf(Gbuf1,
-				         MAX_STRING_LENGTH,
-				         "&+y%s&+y tells the alliance (&+%c%d %d&+y) '&+Y%s&+y'\r\n",
-				         PERS(ch, to_ch, FALSE),
-				         color,
-				         alliance->get_forgers()->get_id(),
-				         alliance->get_joiners()->get_id(),
-				         argument);
+				snprintf(
+					Gbuf1, MAX_STRING_LENGTH,
+					"&+y%s&+y tells the alliance (&+%c%d %d&+y) '&+Y%s&+y'\r\n",
+					PERS(ch, to_ch, FALSE), color,
+					alliance->get_forgers()->get_id(),
+					alliance->get_joiners()->get_id(), argument);
 			}
 			else
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+y%s&+y tells your alliance '&+Y%s&+y'\r\n", PERS(ch, to_ch, FALSE), language_CRYPT(ch, to_ch, argument));
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "&+y%s&+y tells your alliance '&+Y%s&+y'\r\n",
+					 PERS(ch, to_ch, FALSE),
+					 language_CRYPT(ch, to_ch, argument));
 			}
 			send_to_char(Gbuf1, to_ch, LOG_PRIVATE);
 		}

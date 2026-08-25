@@ -4,23 +4,23 @@
 
 #define GUILD_COST 5000000
 
-#define REG_FAERIE_BAG_VNUM    400217
-#define RARE_FAERIE_BAG_VNUM   400235
+#define REG_FAERIE_BAG_VNUM 400217
+#define RARE_FAERIE_BAG_VNUM 400235
 #define EXCEPT_FAERIE_BAG_VNUM 400233
 
-#define TURKEY_INNARDS_VNUM   400232
+#define TURKEY_INNARDS_VNUM 400232
 #define TURKEY_WING_CAPE_VNUM 400237
-#define TURKEY_FOOD_VNUM      400236
+#define TURKEY_FOOD_VNUM 400236
 
-#define HAMMER_VNUM    252
-#define POLE_VNUM      336
+#define HAMMER_VNUM 252
+#define POLE_VNUM 336
 #define PARCHMENT_VNUM 251
 #define MAX_NEEDED_ORE 5
 
-#define LOWEST_MAT_VNUM     400000
-#define HIGHEST_MAT_VNUM    400209
+#define LOWEST_MAT_VNUM 400000
+#define HIGHEST_MAT_VNUM 400209
 #define SALVAGE_RECIPE_VNUM 400210
-#define MAG_ESSENCE_VNUM    400211
+#define MAG_ESSENCE_VNUM 400211
 
 void salvage_examine_item(P_char ch, P_obj item);
 
@@ -28,16 +28,15 @@ void salvage_examine_item(P_char ch, P_obj item);
 #define CONJURE_MAXLVL_NO_ORB 56
 
 #define ALLOW 1
-#define ANTI  0
+#define ANTI 0
 
 struct forge_item
 {
-
-	int   id;
+	int id;
 	char *keywords;
 	char *long_desc;
 	char *short_desc;
-	int   ore_needed[5];
+	int ore_needed[5];
 
 	int loc0;
 	int min0;
@@ -50,7 +49,7 @@ struct forge_item
 	int skill_min;
 	int how_rare;
 
-	int          allow_anti;
+	int allow_anti;
 	unsigned int classes;
 	unsigned int wear_flags;
 	unsigned int aff1;
@@ -86,7 +85,7 @@ struct fishing_data
 
 void initialize_tradeskills();
 void event_fish_check(P_char ch, P_char victim, P_obj, void *data);
-int  assoc_founder(P_char mob, P_char pl, int cmd, char *arg);
+int assoc_founder(P_char mob, P_char pl, int cmd, char *arg);
 
 bool player_recipes_exists(char *charname);
 void create_recipes_file(const char *dir, char *name);

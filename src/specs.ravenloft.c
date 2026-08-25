@@ -26,48 +26,49 @@
 #include "vnum.room.h"
 #include "weather.h"
 
-extern P_char      character_list;
-extern P_desc      descriptor_list;
-extern P_index     mob_index;
-extern P_index     obj_index;
-extern P_room      world;
-extern P_obj       justice_items_list;
-extern char       *coin_names[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern P_obj justice_items_list;
+extern char *coin_names[];
 extern const char *command[];
 extern const char *dirs[];
 // extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
-extern int                    planes_room_num[];
-extern int                    racial_base[];
-extern int                    top_of_zone_table;
-extern struct command_info    cmd_info[MAX_CMD_LIST];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
-extern const char            *specdata[][MAX_SPEC];
-extern struct class_names     class_names_table[];
-int                           range_scan_track(P_char ch, int distance, int type_scan);
-extern P_obj                  object_list;
+extern int planes_room_num[];
+extern int racial_base[];
+extern int top_of_zone_table;
+extern struct command_info cmd_info[MAX_CMD_LIST];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern const char *specdata[][MAX_SPEC];
+extern struct class_names class_names_table[];
+int range_scan_track(P_char ch, int distance, int type_scan);
+extern P_obj object_list;
 
 int ravenloft_vistani_shout(P_char ch, P_char tch, int cmd, char *arg)
 {
-	int helpers[] = {58382, 0};
+	int helpers[] = { 58382, 0 };
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
 	if (!tch && !number(0, 4))
-		return shout_and_hunt(ch, 200, "&+cVISTANI, TO ARMS! %s has attacked me!\n", NULL, helpers, 0, 0);
+		return shout_and_hunt(ch, 200, "&+cVISTANI, TO ARMS! %s has attacked me!\n", NULL,
+				      helpers, 0, 0);
 
 	return FALSE;
 }
 
 int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 {
-	P_obj  weapon    = NULL;
-	P_obj  swordcase = NULL;
-	P_room room      = NULL;
-	char   buf[MAX_STRING_LENGTH];
-	int    roomIndex;
+	P_obj weapon = NULL;
+	P_obj swordcase = NULL;
+	P_room room = NULL;
+	char buf[MAX_STRING_LENGTH];
+	int roomIndex;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -79,7 +80,8 @@ int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	if (!(weapon = ch->equipment[WIELD]) || OBJ_VNUM(weapon) != VOBJ_RAVENLOFT_MALLET || !OBJ_WORN_POS(weapon, WIELD))
+	if (!(weapon = ch->equipment[WIELD]) || OBJ_VNUM(weapon) != VOBJ_RAVENLOFT_MALLET ||
+	    !OBJ_WORN_POS(weapon, WIELD))
 	{
 		return FALSE;
 	}
@@ -91,7 +93,8 @@ int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 		if (isname(arg, "bell"))
 		{
 			roomIndex = real_room0(VROOM_RAVENLOFT_SWORDCASE);
-			for (swordcase = world[roomIndex].contents; swordcase; swordcase = swordcase->next_content)
+			for (swordcase = world[roomIndex].contents; swordcase;
+			     swordcase = swordcase->next_content)
 			{
 				if (OBJ_VNUM(swordcase) == VOBJ_RAVENLOFT_LOCKED_CASE)
 				{
@@ -109,11 +112,7 @@ int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 			    "&+wthe note awakened a long lost secret hidden deep below.\n\n"
 			    "&+wIn the distance, a &+Ygreat beam of light &+wsurges downwards and &+Willuminates\n"
 			    "&+wthe &+WHall of &+YHeroes&+w.\n",
-			    FALSE,
-			    ch,
-			    obj,
-			    0,
-			    TO_CHAR);
+			    FALSE, ch, obj, 0, TO_CHAR);
 			act("$n &+wraises $p &+wand brings it down upon the surface of the &+Cbell&+w.\n"
 			    "&+wThe &+rmallet &+Rshatters &+wupon impact as it moves the heavy &+ycopper &+Cbell&+w.\n"
 			    "&+wThe &+Cbell &+wsways and the clapper strikes the lip with a beautiful &+Wlucid note&+w.\n"
@@ -121,16 +120,15 @@ int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 			    "&+wthe note awakened a long lost secret hidden deep below.\n\n"
 			    "&+wIn the distance, a &+Ygreat beam of light &+wsurges downwards and &+Willuminates\n"
 			    "&+wthe &+WHall of &+YHeroes&+w.\n",
-			    FALSE,
-			    ch,
-			    obj,
-			    0,
-			    TO_ROOM);
+			    FALSE, ch, obj, 0, TO_ROOM);
 			extract_obj(obj, TRUE); // Not an arti, but 'in game.'
 			REMOVE_BIT(swordcase->value[1], CONT_LOCKED);
-			snprintf(buf, MAX_STRING_LENGTH, "&+WA brilliant &+Ybeam &+Wof light shines upon an &+Lancient &+wsword case &+Where.&n");
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"&+WA brilliant &+Ybeam &+Wof light shines upon an &+Lancient &+wsword case &+Where.&n");
 			set_long_description(swordcase, buf);
-			snprintf(buf, MAX_STRING_LENGTH, "&+Wan &+Lancient &+wswordcase &+Wbathed in &+Ylight&n");
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "&+Wan &+Lancient &+wswordcase &+Wbathed in &+Ylight&n");
 			set_short_description(swordcase, buf);
 			return TRUE;
 		}
@@ -301,9 +299,9 @@ int strahd_charm(P_char strahd, P_char charmie, int cmd, char *arg)
 
 int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char               vict;
+	P_char vict;
 	struct affected_type af;
-	int                  curr_time;
+	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -347,12 +345,14 @@ int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 
 			if (!affected_by_spell(ch, SPELL_CURSE))
 			{
-				act("&n$n's $q &+Rflares &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_ROOM);
-				act("&nYour $q &+Rflares &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&n$n's $q &+Rflares &+Bwith energy for a moment.&n", TRUE, ch,
+				    obj, vict, TO_ROOM);
+				act("&nYour $q &+Rflares &+Bwith energy for a moment.&n", TRUE, ch,
+				    obj, vict, TO_CHAR);
 
 				bzero(&af, sizeof(af));
 
-				af.type     = SPELL_CURSE;
+				af.type = SPELL_CURSE;
 				af.duration = 100;
 				af.modifier = -1;
 				af.location = APPLY_HITROLL;
@@ -367,8 +367,10 @@ int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 			}
 			if (!IS_AFFECTED3(ch, AFF3_BLUR))
 			{
-				act("&n$n's $q &+Ysparkles &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_ROOM);
-				act("&nYour $q &+Ysparkles &+Bwith energy for a moment.&n", TRUE, ch, obj, vict, TO_CHAR);
+				act("&n$n's $q &+Ysparkles &+Bwith energy for a moment.&n", TRUE,
+				    ch, obj, vict, TO_ROOM);
+				act("&nYour $q &+Ysparkles &+Bwith energy for a moment.&n", TRUE,
+				    ch, obj, vict, TO_CHAR);
 				spell_blur(70, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 				return FALSE;
 			}

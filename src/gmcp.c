@@ -37,7 +37,8 @@ static const char *get_durisweb_secret(void)
 		static int warned = 0;
 		if (!warned)
 		{
-			logit(LOG_DEBUG, "WARNING: DURISWEB_SECRET not set; DurisWeb GMCP authentication disabled.");
+			logit(LOG_DEBUG,
+			      "WARNING: DURISWEB_SECRET not set; DurisWeb GMCP authentication disabled.");
 			warned = 1;
 		}
 		return NULL;
@@ -54,8 +55,8 @@ static int verify_durisweb_sig(const char *sig)
 	if (!secret)
 		return 0;
 
-	time_t now    = time(NULL);
-	long   minute = now / 60;
+	time_t now = time(NULL);
+	long minute = now / 60;
 
 	for (int offset = 0; offset <= 1; offset++)
 	{
@@ -63,8 +64,9 @@ static int verify_durisweb_sig(const char *sig)
 		snprintf(ts, sizeof(ts), "%ld", minute - offset);
 
 		unsigned char hash[32];
-		unsigned int  hash_len;
-		HMAC(EVP_sha256(), secret, strlen(secret), (unsigned char *)ts, strlen(ts), hash, &hash_len);
+		unsigned int hash_len;
+		HMAC(EVP_sha256(), secret, strlen(secret), (unsigned char *)ts, strlen(ts), hash,
+		     &hash_len);
 
 		char expected[65];
 		for (int i = 0; i < 32; i++)
@@ -79,12 +81,12 @@ static int verify_durisweb_sig(const char *sig)
 }
 
 /* externs */
-extern struct room_data        *world;
-extern struct zone_data        *zone_table;
-extern const char              *pc_class_types[];
-extern struct descriptor_data  *descriptor_list;
+extern struct room_data *world;
+extern struct zone_data *zone_table;
+extern const char *pc_class_types[];
+extern struct descriptor_data *descriptor_list;
 extern const struct class_names class_names_table[];
-extern const struct race_names  race_names_table[];
+extern const struct race_names race_names_table[];
 
 /* send gmcp negotiation request to client */
 void gmcp_negotiate(struct descriptor_data *d)
@@ -135,15 +137,18 @@ void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len)
 			cJSON *root = cJSON_Parse(json_start);
 			if (root)
 			{
-				cJSON *client  = cJSON_GetObjectItem(root, "client");
+				cJSON *client = cJSON_GetObjectItem(root, "client");
 				cJSON *version = cJSON_GetObjectItem(root, "version");
-				cJSON *sig     = cJSON_GetObjectItem(root, "sig");
+				cJSON *sig = cJSON_GetObjectItem(root, "sig");
 
 				if (client && cJSON_IsString(client) && client->valuestring)
-					strlcpy(d->client_name, client->valuestring, sizeof d->client_name);
+					strlcpy(d->client_name, client->valuestring,
+						sizeof d->client_name);
 				if (version && cJSON_IsString(version) && version->valuestring)
-					strlcpy(d->client_version, version->valuestring, sizeof d->client_version);
-				if (sig && cJSON_IsString(sig) && verify_durisweb_sig(sig->valuestring))
+					strlcpy(d->client_version, version->valuestring,
+						sizeof d->client_version);
+				if (sig && cJSON_IsString(sig) &&
+				    verify_durisweb_sig(sig->valuestring))
 					d->durisweb_verified = 1;
 				cJSON_Delete(root);
 			}
@@ -161,13 +166,15 @@ void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len)
 			cJSON *root = cJSON_Parse(json_start);
 			if (root)
 			{
-				cJSON *client  = cJSON_GetObjectItem(root, "client");
+				cJSON *client = cJSON_GetObjectItem(root, "client");
 				cJSON *version = cJSON_GetObjectItem(root, "version");
 
 				if (client && cJSON_IsString(client) && client->valuestring)
-					strlcpy(d->client_name, client->valuestring, sizeof d->client_name);
+					strlcpy(d->client_name, client->valuestring,
+						sizeof d->client_name);
 				if (version && cJSON_IsString(version) && version->valuestring)
-					strlcpy(d->client_version, version->valuestring, sizeof d->client_version);
+					strlcpy(d->client_version, version->valuestring,
+						sizeof d->client_version);
 				cJSON_Delete(root);
 			}
 		}
@@ -196,10 +203,11 @@ void gmcp_send(struct descriptor_data *d, const char *package, const char *json)
 	else
 	{
 		/* Telnet: Send IAC SB GMCP <package> <json> IAC SE */
-		size_t         pkg_len   = strlen(package);
-		size_t         json_len  = strlen(json);
-		size_t         total_len = 3 + pkg_len + 1 + json_len + 2; /* IAC SB GMCP + package + space + json + IAC SE */
-		unsigned char *buf       = (unsigned char *)malloc(total_len);
+		size_t pkg_len = strlen(package);
+		size_t json_len = strlen(json);
+		size_t total_len = 3 + pkg_len + 1 + json_len +
+				   2; /* IAC SB GMCP + package + space + json + IAC SE */
+		unsigned char *buf = (unsigned char *)malloc(total_len);
 
 		if (!buf)
 			return;
@@ -222,7 +230,7 @@ void gmcp_send(struct descriptor_data *d, const char *package, const char *json)
 /* send room.info when character enters a room */
 void gmcp_room_info(struct char_data *ch)
 {
-	char             *json;
+	char *json;
 	struct room_data *room;
 
 	if (!ch || !ch->desc)
@@ -245,12 +253,15 @@ void gmcp_room_info(struct char_data *ch)
  * this stub is kept for backwards compatibility - the actual gmcp room.map is
  * sent from display_map_room() in map.c using gmcp_send_room_map().
  */
-void gmcp_room_map(struct char_data *ch) { (void)ch; /* Suppress unused parameter warning */ }
+void gmcp_room_map(struct char_data *ch)
+{
+	(void)ch; /* Suppress unused parameter warning */
+}
 
 /* send pre-generated map buffer via gmcp, called from display_map_room() */
 void gmcp_send_room_map(struct char_data *ch, const char *map_buf)
 {
-	char  *json_str;
+	char *json_str;
 	cJSON *json;
 
 	if (!ch || !ch->desc)
@@ -279,7 +290,7 @@ void gmcp_send_room_map(struct char_data *ch, const char *map_buf)
 /* send pre-generated quest map buffer via gmcp */
 void gmcp_send_quest_map(struct char_data *ch, const char *map_buf)
 {
-	char  *json_str;
+	char *json_str;
 	cJSON *json;
 
 	if (!ch || !ch->desc)
@@ -339,7 +350,7 @@ void gmcp_mark_room_dirty(int room_number)
 
 void gmcp_flush_dirty_rooms(void)
 {
-	int               i;
+	int i;
 	struct char_data *tch;
 	struct room_data *room;
 
@@ -371,7 +382,7 @@ void gmcp_flush_dirty_rooms(void)
 static bool ship_has_gmcp_players(struct ShipData *ship)
 {
 	struct char_data *tch;
-	int               bridge_rnum;
+	int bridge_rnum;
 
 	if (!ship)
 		return false;
@@ -395,7 +406,7 @@ static bool ship_has_gmcp_players(struct ShipData *ship)
 static unsigned long hash_string(const char *str)
 {
 	unsigned long hash = 5381;
-	int           c;
+	int c;
 
 	if (!str)
 		return 0;
@@ -411,9 +422,9 @@ static unsigned long hash_string(const char *str)
 /* build json for ship contacts */
 static char *json_build_ship_contacts(struct ShipData *ship, struct descriptor_data *d)
 {
-	cJSON      *root, *contacts_arr, *contact_obj;
-	char       *json_str;
-	int         k, i;
+	cJSON *root, *contacts_arr, *contact_obj;
+	char *json_str;
+	int k, i;
 	const char *race_str;
 	const char *status_str;
 
@@ -434,10 +445,10 @@ static char *json_build_ship_contacts(struct ShipData *ship, struct descriptor_d
 		struct zone_data *zone = &zone_table[world[ship->location].zone];
 		if (IS_SET(zone->flags, ZONE_MAP) && zone->mapx > 0)
 		{
-			int vroom      = world[ship->location].number;
+			int vroom = world[ship->location].number;
 			int zone_start = world[zone->real_bottom].number;
-			int local_x    = (vroom - zone_start) % zone->mapx;
-			int local_y    = ((vroom - zone_start) / zone->mapx) % zone->mapy;
+			int local_x = (vroom - zone_start) % zone->mapx;
+			int local_y = ((vroom - zone_start) / zone->mapx) % zone->mapy;
 			if (d && d->durisweb_verified)
 			{
 				cJSON_AddNumberToObject(root, "worldX", local_x);
@@ -480,7 +491,8 @@ static char *json_build_ship_contacts(struct ShipData *ship, struct descriptor_d
 			cJSON_AddStringToObject(contact_obj, "id", contacts[i].ship->id);
 			if (contacts[i].ship->name)
 			{
-				cJSON_AddStringToObject(contact_obj, "name", strip_ansi(contacts[i].ship->name).c_str());
+				cJSON_AddStringToObject(contact_obj, "name",
+							strip_ansi(contacts[i].ship->name).c_str());
 			}
 			else
 			{
@@ -492,7 +504,8 @@ static char *json_build_ship_contacts(struct ShipData *ship, struct descriptor_d
 			cJSON_AddNumberToObject(contact_obj, "y", contacts[i].y);
 			cJSON_AddNumberToObject(contact_obj, "range", contacts[i].range);
 			cJSON_AddNumberToObject(contact_obj, "bearing", (int)contacts[i].bearing);
-			cJSON_AddNumberToObject(contact_obj, "heading", (int)contacts[i].ship->heading);
+			cJSON_AddNumberToObject(contact_obj, "heading",
+						(int)contacts[i].ship->heading);
 			cJSON_AddNumberToObject(contact_obj, "speed", contacts[i].ship->speed);
 			cJSON_AddStringToObject(contact_obj, "arc", contacts[i].arc);
 
@@ -502,21 +515,21 @@ static char *json_build_ship_contacts(struct ShipData *ship, struct descriptor_d
 			{
 				switch (contacts[i].ship->race)
 				{
-					case GOODIESHIP:
-						race_str = "good";
-						break;
-					case EVILSHIP:
-						race_str = "evil";
-						break;
-					case UNDEADSHIP:
-						race_str = "undead";
-						break;
-					case SQUIDSHIP:
-						race_str = "squid";
-						break;
-					default:
-						race_str = "unknown";
-						break;
+				case GOODIESHIP:
+					race_str = "good";
+					break;
+				case EVILSHIP:
+					race_str = "evil";
+					break;
+				case UNDEADSHIP:
+					race_str = "undead";
+					break;
+				case SQUIDSHIP:
+					race_str = "squid";
+					break;
+				default:
+					race_str = "unknown";
+					break;
 				}
 			}
 			cJSON_AddStringToObject(contact_obj, "race", race_str);
@@ -536,8 +549,10 @@ static char *json_build_ship_contacts(struct ShipData *ship, struct descriptor_d
 			cJSON_AddStringToObject(contact_obj, "status", status_str);
 
 			/* targeting indicators */
-			cJSON_AddBoolToObject(contact_obj, "targeting_you", contacts[i].ship->target == ship);
-			cJSON_AddBoolToObject(contact_obj, "you_targeting", contacts[i].ship == ship->target);
+			cJSON_AddBoolToObject(contact_obj, "targeting_you",
+					      contacts[i].ship->target == ship);
+			cJSON_AddBoolToObject(contact_obj, "you_targeting",
+					      contacts[i].ship == ship->target);
 
 			cJSON_AddItemToArray(contacts_arr, contact_obj);
 		}
@@ -553,12 +568,12 @@ static char *json_build_ship_contacts(struct ShipData *ship, struct descriptor_d
 
 void gmcp_flush_dirty_ship_contacts(void)
 {
-	ShipVisitor       svs;
-	struct ShipData  *ship;
+	ShipVisitor svs;
+	struct ShipData *ship;
 	struct char_data *tch;
-	char             *json, *player_json;
-	unsigned long     new_hash;
-	int               bridge_rnum;
+	char *json, *player_json;
+	unsigned long new_hash;
+	int bridge_rnum;
 
 	/* iterate through all ships */
 	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
@@ -595,16 +610,18 @@ void gmcp_flush_dirty_ship_contacts(void)
 					if (!IS_NPC(tch) && tch->desc && GMCP_ENABLED(tch))
 					{
 						/* build per-player json */
-						player_json = json_build_ship_contacts(ship, tch->desc);
+						player_json =
+							json_build_ship_contacts(ship, tch->desc);
 						if (player_json)
 						{
-							gmcp_send(tch->desc, GMCP_PKG_SHIP_CONTACTS, player_json);
+							gmcp_send(tch->desc, GMCP_PKG_SHIP_CONTACTS,
+								  player_json);
 							free(player_json);
 						}
 					}
 				}
 			}
-			ship->contacts_hash      = new_hash;
+			ship->contacts_hash = new_hash;
 			ship->last_gmcp_location = ship->location;
 		}
 
@@ -615,12 +632,12 @@ void gmcp_flush_dirty_ship_contacts(void)
 /* ship.info - sends static/slow-changing ship data */
 void gmcp_flush_dirty_ship_info(void)
 {
-	ShipVisitor       svs;
-	struct ShipData  *ship;
+	ShipVisitor svs;
+	struct ShipData *ship;
 	struct char_data *tch;
-	char             *json, *player_json;
-	unsigned long     new_hash;
-	int               bridge_rnum;
+	char *json, *player_json;
+	unsigned long new_hash;
+	int bridge_rnum;
 
 	/* iterate through all ships */
 	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
@@ -655,7 +672,8 @@ void gmcp_flush_dirty_ship_info(void)
 						player_json = json_build_ship_info(ship, tch);
 						if (player_json)
 						{
-							gmcp_send(tch->desc, GMCP_PKG_SHIP_INFO, player_json);
+							gmcp_send(tch->desc, GMCP_PKG_SHIP_INFO,
+								  player_json);
 							free(player_json);
 						}
 					}
@@ -708,12 +726,12 @@ void gmcp_group_vitals(struct char_data *ch)
 /* send group.status for group panel with member hp/move/position */
 void gmcp_send_group_status(struct char_data *ch)
 {
-	cJSON             *root, *members_arr, *member_obj;
+	cJSON *root, *members_arr, *member_obj;
 	struct group_list *gl;
-	char              *json_str;
-	int                count    = 0;
-	int                max_size = 20; /* Default max group size */
-	int                is_first = 1;
+	char *json_str;
+	int count = 0;
+	int max_size = 20; /* Default max group size */
+	int is_first = 1;
 
 	if (!ch || !ch->desc)
 		return;
@@ -723,11 +741,12 @@ void gmcp_send_group_status(struct char_data *ch)
 	/* if not in a group, send empty */
 	if (!ch->group)
 	{
-		gmcp_send(ch->desc, GMCP_PKG_GROUP_STATUS, "{\"members\":[],\"size\":0,\"maxSize\":20}");
+		gmcp_send(ch->desc, GMCP_PKG_GROUP_STATUS,
+			  "{\"members\":[],\"size\":0,\"maxSize\":20}");
 		return;
 	}
 
-	root        = cJSON_CreateObject();
+	root = cJSON_CreateObject();
 	members_arr = cJSON_CreateArray();
 
 	/* iterate through group members */
@@ -749,7 +768,9 @@ void gmcp_send_group_status(struct char_data *ch)
 		}
 		else
 		{
-			cJSON_AddStringToObject(member_obj, "class", class_names_table[flag2idx(member->player.m_class)].normal);
+			cJSON_AddStringToObject(
+				member_obj, "class",
+				class_names_table[flag2idx(member->player.m_class)].normal);
 		}
 
 		/* race - null for npcs */
@@ -759,7 +780,8 @@ void gmcp_send_group_status(struct char_data *ch)
 		}
 		else
 		{
-			cJSON_AddStringToObject(member_obj, "race", race_names_table[(int)GET_RACE(member)].normal);
+			cJSON_AddStringToObject(member_obj, "race",
+						race_names_table[(int)GET_RACE(member)].normal);
 		}
 
 		cJSON_AddNumberToObject(member_obj, "hp", GET_HIT(member));
@@ -771,21 +793,21 @@ void gmcp_send_group_status(struct char_data *ch)
 		const char *pos_str;
 		switch (GET_POS(member))
 		{
-			case POS_PRONE:
-				pos_str = "prone";
-				break;
-			case POS_SITTING:
-				pos_str = "sitting";
-				break;
-			case POS_KNEELING:
-				pos_str = "kneeling";
-				break;
-			case POS_STANDING:
-				pos_str = "standing";
-				break;
-			default:
-				pos_str = "standing";
-				break;
+		case POS_PRONE:
+			pos_str = "prone";
+			break;
+		case POS_SITTING:
+			pos_str = "sitting";
+			break;
+		case POS_KNEELING:
+			pos_str = "kneeling";
+			break;
+		case POS_STANDING:
+			pos_str = "standing";
+			break;
+		default:
+			pos_str = "standing";
+			break;
 		}
 		cJSON_AddStringToObject(member_obj, "position", pos_str);
 
@@ -807,17 +829,18 @@ void gmcp_send_group_status(struct char_data *ch)
 		cJSON_AddStringToObject(member_obj, "rank", rank_str);
 
 		cJSON_AddBoolToObject(member_obj, "isNpc", IS_NPC(member) ? 1 : 0);
-		cJSON_AddBoolToObject(member_obj, "inRoom", (member->in_room == ch->in_room) ? 1 : 0);
+		cJSON_AddBoolToObject(member_obj, "inRoom",
+				      (member->in_room == ch->in_room) ? 1 : 0);
 
 		/* for npcs, calculate target number and keyword */
 		if (IS_NPC(member) && member->in_room == ch->in_room)
 		{
 			/* count matching mobs using lifo order (last in = target #1) */
 			struct char_data *tch;
-			int               target_num      = 0;
-			int               total_matching  = 0;
-			int               member_position = 0;
-			const char       *first_keyword   = NULL;
+			int target_num = 0;
+			int total_matching = 0;
+			int member_position = 0;
+			const char *first_keyword = NULL;
 
 			/* get first keyword from npc's name list */
 			if (member->player.name)
@@ -931,11 +954,12 @@ void gmcp_char_affects(struct char_data *ch)
 }
 
 /* send combat.update for a combat round */
-void gmcp_combat_update(struct char_data *ch, struct char_data *victim, int damage, const char *damage_type, int critical)
+void gmcp_combat_update(struct char_data *ch, struct char_data *victim, int damage,
+			const char *damage_type, int critical)
 {
 	cJSON *root, *target, *round;
-	char  *json;
-	int    health_pct;
+	char *json;
+	int health_pct;
 
 	if (!ch || !ch->desc || !victim)
 		return;
@@ -983,9 +1007,9 @@ void gmcp_combat_update(struct char_data *ch, struct char_data *victim, int dama
 	cJSON_AddNumberToObject(target, "healthPercent", health_pct);
 
 	/* target position */
-	const char *positions[] = {"on their ass", "sitting", "kneeling", "standing"};
-	int         pos         = GET_POS(victim);
-	const char *pos_desc    = (pos >= 0 && pos <= 3) ? positions[pos] : "standing";
+	const char *positions[] = { "on their ass", "sitting", "kneeling", "standing" };
+	int pos = GET_POS(victim);
+	const char *pos_desc = (pos >= 0 && pos <= 3) ? positions[pos] : "standing";
 	cJSON_AddStringToObject(target, "position", pos_desc);
 	cJSON_AddItemToObject(root, "target", target);
 
@@ -995,7 +1019,8 @@ void gmcp_combat_update(struct char_data *ch, struct char_data *victim, int dama
 		round = cJSON_CreateObject();
 		cJSON_AddStringToObject(round, "attacker", GET_NAME(ch));
 		cJSON_AddNumberToObject(round, "damage", damage);
-		cJSON_AddStringToObject(round, "damageType", damage_type ? damage_type : "physical");
+		cJSON_AddStringToObject(round, "damageType",
+					damage_type ? damage_type : "physical");
 		cJSON_AddBoolToObject(round, "critical", critical);
 		cJSON_AddItemToObject(root, "round", round);
 	}
@@ -1011,7 +1036,10 @@ void gmcp_combat_update(struct char_data *ch, struct char_data *victim, int dama
 }
 
 /* send target health update for health bar */
-void gmcp_combat_target(struct char_data *ch, struct char_data *victim) { gmcp_combat_update(ch, victim, 0, NULL, 0); }
+void gmcp_combat_target(struct char_data *ch, struct char_data *victim)
+{
+	gmcp_combat_update(ch, victim, 0, NULL, 0);
+}
 
 /* send combat ended notification */
 void gmcp_combat_end(struct char_data *ch)
@@ -1025,7 +1053,8 @@ void gmcp_combat_end(struct char_data *ch)
 }
 
 /* send channel message via gmcp */
-void gmcp_comm_channel(struct char_data *ch, const char *channel, const char *sender, const char *text)
+void gmcp_comm_channel(struct char_data *ch, const char *channel, const char *sender,
+		       const char *text)
 {
 	char *json;
 
@@ -1044,7 +1073,8 @@ void gmcp_comm_channel(struct char_data *ch, const char *channel, const char *se
 }
 
 /* send channel message via gmcp with alignment (for nchat) */
-void gmcp_comm_channel_ex(struct char_data *ch, const char *channel, const char *sender, const char *text, const char *alignment)
+void gmcp_comm_channel_ex(struct char_data *ch, const char *channel, const char *sender,
+			  const char *text, const char *alignment)
 {
 	char *json;
 
@@ -1063,10 +1093,11 @@ void gmcp_comm_channel_ex(struct char_data *ch, const char *channel, const char 
 }
 
 /* broadcast channel message to all gmcp-enabled players */
-void gmcp_broadcast_channel(const char *channel, const char *sender, const char *text, struct char_data *exclude)
+void gmcp_broadcast_channel(const char *channel, const char *sender, const char *text,
+			    struct char_data *exclude)
 {
 	struct descriptor_data *d;
-	char                   *json;
+	char *json;
 
 	json = json_build_comm_channel(channel, sender, text);
 	if (!json)
@@ -1074,7 +1105,8 @@ void gmcp_broadcast_channel(const char *channel, const char *sender, const char 
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->character && d->character != exclude && STATE(d) == CON_PLAYING && d->gmcp_enabled)
+		if (d->character && d->character != exclude && STATE(d) == CON_PLAYING &&
+		    d->gmcp_enabled)
 		{
 			gmcp_send(d, GMCP_PKG_COMM_CHANNEL, json);
 		}

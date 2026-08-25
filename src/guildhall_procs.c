@@ -28,7 +28,7 @@ extern P_desc descriptor_list;
 int golem_noflee(P_char ch, P_char pl, int cmd, char *arg)
 {
 	if (cmd == CMD_SET_PERIODIC) // events have priority (dont they alwys
-		return FALSE;            // IF its an event, just go back
+		return FALSE; // IF its an event, just go back
 	if (cmd != CMD_FLEE)
 		return FALSE;
 	if (cmd == CMD_FLEE)
@@ -42,14 +42,18 @@ int golem_noflee(P_char ch, P_char pl, int cmd, char *arg)
 			Guildhall *gh = room->guildhall;
 			if (GET_ASSOC(pl) != gh->guild) // Is user in Guild?
 			{
-				act("$N&+y takes advantage of the &+Rpanicked&+y look on your face to &+Wquickly&+y move and block the exit. You are unable to &+Rflee!&n\n", FALSE, pl, 0, ch, TO_CHAR);
-				act("$N&+y senses the &+Rpanic&+y on $n's face and &+Wquickly&+y intercepts their attempt at escape. The &+Yfight&+y is still on!&n\n", FALSE, pl, 0, ch, TO_ROOM);
+				act("$N&+y takes advantage of the &+Rpanicked&+y look on your face to &+Wquickly&+y move and block the exit. You are unable to &+Rflee!&n\n",
+				    FALSE, pl, 0, ch, TO_CHAR);
+				act("$N&+y senses the &+Rpanic&+y on $n's face and &+Wquickly&+y intercepts their attempt at escape. The &+Yfight&+y is still on!&n\n",
+				    FALSE, pl, 0, ch, TO_ROOM);
 				return TRUE;
 			}
 			else // User in Guild - ALLOW Flee
 			{
-				act("$N&+y nods, winks and moves to the side, to allow you to escape the fray!.\n", FALSE, pl, 0, ch, TO_CHAR);
-				act("$N&+y merely smirks and doesnt try to stop them as $n attempts to &+rflee&+y from all the &+rh&+Ror&+rr&+Ro&+rrs&+y in this room!&n\n", FALSE, pl, 0, ch, TO_ROOM);
+				act("$N&+y nods, winks and moves to the side, to allow you to escape the fray!.\n",
+				    FALSE, pl, 0, ch, TO_CHAR);
+				act("$N&+y merely smirks and doesnt try to stop them as $n attempts to &+rflee&+y from all the &+rh&+Ror&+rr&+Ro&+rrs&+y in this room!&n\n",
+				    FALSE, pl, 0, ch, TO_ROOM);
 				return FALSE;
 			}
 		} // END ELSE in GH and user FLED
@@ -114,20 +118,25 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 			Guildhall *gh = room->guildhall;
 			if (!gh)
 			{
-				debug("We have a real problem: Guildhall room vnum %d doesn't have a guildhall!", room->vnum);
+				debug("We have a real problem: Guildhall room vnum %d doesn't have a guildhall!",
+				      room->vnum);
 			}
 			// Is person fleeing in Guild?
 			else if (GET_ASSOC(pl) != gh->guild)
 			{
-				act("$N&+y takes advantage of the &+Rpanicked&+y look on your face to &+Wquickly&+y move and block the exit. You are unable to &+Rflee!&n\n", FALSE, pl, 0, ch, TO_CHAR);
-				act("$N&+y senses the &+Rpanic&+y on $n's face and &+Wquickly&+y intercepts their attempt at escape. The &+Yfight&+y is still on!&n\n", FALSE, pl, 0, ch, TO_ROOM);
+				act("$N&+y takes advantage of the &+Rpanicked&+y look on your face to &+Wquickly&+y move and block the exit. You are unable to &+Rflee!&n\n",
+				    FALSE, pl, 0, ch, TO_CHAR);
+				act("$N&+y senses the &+Rpanic&+y on $n's face and &+Wquickly&+y intercepts their attempt at escape. The &+Yfight&+y is still on!&n\n",
+				    FALSE, pl, 0, ch, TO_ROOM);
 				return TRUE;
 			}
 			// User in Guild - ALLOW Flee
 			else
 			{
-				act("$N&+y nods, winks and moves to the side, to allow you to escape the fray!.\n", FALSE, pl, 0, ch, TO_CHAR);
-				act("$N&+y merely smirks and doesnt try to stop them as $n attempts to &+rflee&+y from all the &+rh&+Ror&+rr&+Ro&+rrs&+y in this room!&n\n", FALSE, pl, 0, ch, TO_ROOM);
+				act("$N&+y nods, winks and moves to the side, to allow you to escape the fray!.\n",
+				    FALSE, pl, 0, ch, TO_CHAR);
+				act("$N&+y merely smirks and doesnt try to stop them as $n attempts to &+rflee&+y from all the &+rh&+Ror&+rr&+Ro&+rrs&+y in this room!&n\n",
+				    FALSE, pl, 0, ch, TO_ROOM);
 				return FALSE;
 			}
 		}
@@ -142,7 +151,9 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 	//
 	if (!GET_ASSOC(ch))
 	{
-		logit(LOG_GUILDHALLS, "guildhall_golem() assigned to %s in %d has no association number!", ch->player.short_descr, world[ch->in_room].number);
+		logit(LOG_GUILDHALLS,
+		      "guildhall_golem() assigned to %s in %d has no association number!",
+		      ch->player.short_descr, world[ch->in_room].number);
 		REMOVE_BIT(ch->specials.act, ACT_SPEC);
 		return FALSE;
 	}
@@ -156,7 +167,9 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (blocked_dir < DIR_NORTH || blocked_dir >= NUM_EXITS)
 	{
-		logit(LOG_GUILDHALLS, "guildhall_golem() assigned to %s in %d has an invalid blocking direction (%d)!", GET_NAME(ch), world[ch->in_room].number, blocked_dir);
+		logit(LOG_GUILDHALLS,
+		      "guildhall_golem() assigned to %s in %d has an invalid blocking direction (%d)!",
+		      GET_NAME(ch), world[ch->in_room].number, blocked_dir);
 		REMOVE_BIT(ch->specials.act, ACT_SPEC);
 		return FALSE;
 	}
@@ -200,7 +213,8 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (alliance)
 		{
-			allowed = allowed || IS_ASSOC_MEMBER(t_ch, alliance->get_forgers()) || IS_ASSOC_MEMBER(t_ch, alliance->get_joiners());
+			allowed = allowed || IS_ASSOC_MEMBER(t_ch, alliance->get_forgers()) ||
+				  IS_ASSOC_MEMBER(t_ch, alliance->get_joiners());
 		}
 		if (!allowed && pl->group)
 		{
@@ -229,16 +243,20 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 		{
 			if (IS_WARRIOR(ch))
 			{
-				act("$N glares at you and knocks you to the ground.", FALSE, pl, 0, ch, TO_CHAR);
-				act("$N glares at $n and knocks $m to the ground.", FALSE, pl, 0, ch, TO_NOTVICT);
+				act("$N glares at you and knocks you to the ground.", FALSE, pl, 0,
+				    ch, TO_CHAR);
+				act("$N glares at $n and knocks $m to the ground.", FALSE, pl, 0,
+				    ch, TO_NOTVICT);
 				SET_POS(pl, GET_STAT(ch) + POS_SITTING);
 				CharWait(pl, WAIT_SEC * 2);
 				return TRUE;
 			}
 			else
 			{
-				act("$N glares at you and says, 'halt!'", FALSE, pl, 0, ch, TO_CHAR);
-				act("$N glares at $n and says, 'halt!'", FALSE, pl, 0, ch, TO_NOTVICT);
+				act("$N glares at you and says, 'halt!'", FALSE, pl, 0, ch,
+				    TO_CHAR);
+				act("$N glares at $n and says, 'halt!'", FALSE, pl, 0, ch,
+				    TO_NOTVICT);
 				return TRUE;
 			}
 		}
@@ -249,15 +267,20 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 	if (pl && (cmd == CMD_GOTHIT && !number(0, 15)) || (cmd == CMD_HIT || cmd == CMD_KILL))
 	{
 		if (IS_PC(pl) && GET_RACEWAR(pl) == GET_ASSOC(ch)->get_racewar())
-			snprintf(buff, MAX_STRING_LENGTH, "Alert! %s has trespassed into %s!", GET_NAME(pl), world[ch->in_room].name);
+			snprintf(buff, MAX_STRING_LENGTH, "Alert! %s has trespassed into %s!",
+				 GET_NAME(pl), world[ch->in_room].name);
 		else
-			snprintf(buff, MAX_STRING_LENGTH, "Alert! a %s has trespassed into %s!", race_names_table[GET_RACE(pl)].normal, world[ch->in_room].name);
+			snprintf(buff, MAX_STRING_LENGTH, "Alert! a %s has trespassed into %s!",
+				 race_names_table[GET_RACE(pl)].normal, world[ch->in_room].name);
 		send_to_guild(GET_ASSOC(ch), (char *)"A magic mouth", buff);
 	}
 	return FALSE;
 }
 
-int guildhall_window_room(int room, P_char ch, int cmd, char *arg) { return FALSE; }
+int guildhall_window_room(int room, P_char ch, int cmd, char *arg)
+{
+	return FALSE;
+}
 
 int guildhall_window(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -316,7 +339,9 @@ int guildhall_heartstone(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (ch && cmd == CMD_TOUCH && isname(arg, obj->name))
 	{
-		send_to_char("Nothing happens, but you get the distinct impression that the heartstone is just biding its time.\r\n", ch);
+		send_to_char(
+			"Nothing happens, but you get the distinct impression that the heartstone is just biding its time.\r\n",
+			ch);
 		return TRUE;
 	}
 
@@ -357,7 +382,8 @@ int guildhall_cargo_board(P_obj obj, P_char ch, int cmd, char *arg)
 
 		if (isname(buff, obj->name))
 		{
-			snprintf(buff, MAX_STRING_LENGTH, "You look at %s&n...\r\n", obj->short_description);
+			snprintf(buff, MAX_STRING_LENGTH, "You look at %s&n...\r\n",
+				 obj->short_description);
 			send_to_char(buff, ch);
 			show_cargo_prices(ch);
 			return TRUE;

@@ -11,13 +11,13 @@
 #include "string.h"
 using namespace std;
 
-extern struct race_names  race_names_table[];
+extern struct race_names race_names_table[];
 extern struct class_names class_names_table[];
-extern int                class_table[LAST_RACE + 1][CLASS_COUNT + 1];
-extern char              *specdata[][MAX_SPEC];
-extern const char        *stat_to_string3(int);
-extern int                allowed_secondary_classes[][5];
-extern const mcname       multiclass_names[];
+extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
+extern char *specdata[][MAX_SPEC];
+extern const char *stat_to_string3(int);
+extern int allowed_secondary_classes[][5];
+extern const mcname multiclass_names[];
 
 void debug(const char *format, ...);
 
@@ -25,15 +25,17 @@ void debug(const char *format, ...);
 string trim(string const &str, char const *sep_chars)
 {
 	string::size_type const first = str.find_first_not_of(sep_chars);
-	return (first == string::npos) ? string() : str.substr(first, str.find_last_not_of(sep_chars) - first + 1);
+	return (first == string::npos) ?
+		       string() :
+		       str.substr(first, str.find_last_not_of(sep_chars) - first + 1);
 }
 
 /* replace a string with another string in a string */
 string str_replace(string haystack_, const char *needle_, const char *replace_)
 {
-	string            haystack(haystack_);
-	string            needle(needle_);
-	string            replace(replace_);
+	string haystack(haystack_);
+	string needle(needle_);
+	string replace(replace_);
 	string::size_type pos = haystack.find(needle);
 
 	if (pos == string::npos)
@@ -64,7 +66,10 @@ string tolower(string str_)
 
 #ifdef __NO_MYSQL__
 
-string wiki_help(string str) { return string("The help system is temporarily disabled."); }
+string wiki_help(string str)
+{
+	return string("The help system is temporarily disabled.");
+}
 
 #else
 
@@ -81,17 +86,19 @@ string wiki_help(string str)
 	// first, find the list of help topics that match the search string
 	// Arih: Security fix - Escape user input to prevent SQL injection.
 	// Using escape_str() wraps mysql_real_escape_string() to sanitize special chars like quotes.
-	if (!qry("select title from pages where title like '%%%s%%' order by title asc limit %d", escape_str(str.c_str()).c_str(), WIKIHELP_RESULTS_LIMIT + 1))
+	if (!qry("select title from pages where title like '%%%s%%' order by title asc limit %d",
+		 escape_str(str.c_str()).c_str(), WIKIHELP_RESULTS_LIMIT + 1))
 	{
 		return string("&+GSorry, but there was an error with the help system.");
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return string();
 	}
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	if (mysql_num_rows(res) < 1)
 	{
@@ -104,7 +111,7 @@ string wiki_help(string str)
 	// if there is only one that matches, go ahead and display it
 	if (mysql_num_rows(res) == 1)
 	{
-		row        = mysql_fetch_row(res);
+		row = mysql_fetch_row(res);
 		return_str = row[0];
 		mysql_free_result(res);
 		return wiki_help_single(return_str);
@@ -155,8 +162,8 @@ string wiki_help(string str)
 string wiki_racial_stats(string title)
 {
 	string return_str, race_str;
-	char   race[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH] = "";
-	int    i;
+	char race[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH] = "";
+	int i;
 
 	for (i = 0; i <= RACE_PLAYER_MAX; i++)
 	{
@@ -259,7 +266,7 @@ string wiki_racial_stats(string title)
 string wiki_classes(string title)
 {
 	string return_str;
-	int    i, found = 0;
+	int i, found = 0;
 
 	for (i = 0; i <= RACE_PLAYER_MAX; i++)
 	{
@@ -300,7 +307,7 @@ string wiki_classes(string title)
 string wiki_specs(string title)
 {
 	string return_str;
-	int    i, j, found = 0;
+	int i, j, found = 0;
 
 	for (i = 0; i <= CLASS_COUNT; i++)
 	{
@@ -343,13 +350,14 @@ string wiki_specs(string title)
 string wiki_innates(string title, int type)
 {
 	string return_str;
-	int    i, j = 0, innate, found = 0;
+	int i, j = 0, innate, found = 0;
 
 	if (type == WIKI_RACE)
 	{
 		for (i = 0; i <= RACE_PLAYER_MAX; i++)
 		{
-			if (!strcmp(tolower(race_names_table[i].normal).c_str(), tolower(title).c_str()))
+			if (!strcmp(tolower(race_names_table[i].normal).c_str(),
+				    tolower(title).c_str()))
 			{
 				found = 1;
 				break;
@@ -361,7 +369,8 @@ string wiki_innates(string title, int type)
 	{
 		for (i = 0; i <= CLASS_COUNT; i++)
 		{
-			if (!strcmp(tolower(class_names_table[i].normal).c_str(), tolower(title).c_str()))
+			if (!strcmp(tolower(class_names_table[i].normal).c_str(),
+				    tolower(title).c_str()))
 			{
 				found = 2;
 				break;
@@ -376,7 +385,8 @@ string wiki_innates(string title, int type)
 		{
 			for (j = 0; j < MAX_SPEC; j++)
 			{
-				if (!strcmp(tolower(strip_ansi(specdata[i][j])).c_str(), tolower(title).c_str()))
+				if (!strcmp(tolower(strip_ansi(specdata[i][j])).c_str(),
+					    tolower(title).c_str()))
 				{
 					found = 2;
 					break;
@@ -407,8 +417,8 @@ string wiki_innates(string title, int type)
 string wiki_races(string title, int type)
 {
 	string return_str;
-	int    cls, spec, race;
-	bool   found;
+	int cls, spec, race;
+	bool found;
 
 	if (type == WIKI_CLASS)
 	{
@@ -416,7 +426,8 @@ string wiki_races(string title, int type)
 		// Find class to search for.
 		for (cls = 0; cls <= CLASS_COUNT; cls++)
 		{
-			if (!strcmp(tolower(class_names_table[cls].normal).c_str(), tolower(title).c_str()))
+			if (!strcmp(tolower(class_names_table[cls].normal).c_str(),
+				    tolower(title).c_str()))
 			{
 				break;
 			}
@@ -429,7 +440,8 @@ string wiki_races(string title, int type)
 		{
 			for (spec = 0; spec < MAX_SPEC; spec++)
 			{
-				if (!strcmp(tolower(strip_ansi(specdata[cls][spec])).c_str(), tolower(title).c_str()))
+				if (!strcmp(tolower(strip_ansi(specdata[cls][spec])).c_str(),
+					    tolower(title).c_str()))
 				{
 					found = TRUE;
 					break;
@@ -506,17 +518,19 @@ string wiki_races(string title, int type)
 string wiki_help_single(string str)
 {
 	string return_str, title;
-	int    category, dashes;
+	int category, dashes;
 
 	// Arih: Security fix - Escape user input to prevent SQL injection.
 	// Using escape_str() wraps mysql_real_escape_string() to sanitize special chars like quotes.
-	if (!qry("select title, text, category_id, last_update, last_update_by from pages where title = '%s' limit 1", escape_str(str.c_str()).c_str()))
+	if (!qry("select title, text, category_id, last_update, last_update_by from pages where title = '%s' limit 1",
+		 escape_str(str.c_str()).c_str()))
 	{
 		return string("&+GSorry, but there was an error with the help system.");
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return string();
 	}
@@ -630,11 +644,11 @@ struct cmd_attrib_data cmd_attribs[400];
 void load_cmd_attributes()
 {
 	FILE *cmd_file;
-	char  line[MAX_STRING_LENGTH];
-	char  attributes[MAX_STRING_LENGTH];
-	int   count = 0, i = 0;
-	bool  ch_attributes[ATT_MAX];
-	bool  vi_attributes[ATT_MAX];
+	char line[MAX_STRING_LENGTH];
+	char attributes[MAX_STRING_LENGTH];
+	int count = 0, i = 0;
+	bool ch_attributes[ATT_MAX];
+	bool vi_attributes[ATT_MAX];
 
 	for (count = 0; count < 400; count++)
 	{
@@ -654,11 +668,14 @@ void load_cmd_attributes()
 		// First line is the name.
 		cmd_attribs[count].name = strdup(line);
 		attributes[0] = '\0';
-		#define APPEND_ATTR(text) do { \
-			size_t __attr_len = strlen(attributes); \
-			size_t __attr_add = strlen(text); \
-			if (__attr_len + __attr_add < sizeof(attributes)) strcat(attributes, text); \
-		} while (0)
+#define APPEND_ATTR(text)                                         \
+	do                                                        \
+	{                                                         \
+		size_t __attr_len = strlen(attributes);           \
+		size_t __attr_add = strlen(text);                 \
+		if (__attr_len + __attr_add < sizeof(attributes)) \
+			strcat(attributes, text);                 \
+	} while (0)
 		// Set all attributes to false
 		for (i = 0; i < ATT_MAX; i++)
 		{
@@ -749,7 +766,8 @@ void load_cmd_attributes()
 		}
 		// create the list of attributes.
 		attributes[0] = '\0';
-		APPEND_ATTR("The following character attributes are used in execution of this ability (if any):\n");
+		APPEND_ATTR(
+			"The following character attributes are used in execution of this ability (if any):\n");
 		if (ch_attributes[ATT_STR])
 			APPEND_ATTR("Char's Strength.\n");
 		if (vi_attributes[ATT_STR])
@@ -815,17 +833,18 @@ char *attrib_help(char *arg)
 string wiki_spells(string title, int type)
 {
 	string return_str;
-	int    i, j, innate;
-	bool   found = FALSE;
+	int i, j, innate;
+	bool found = FALSE;
 
 	if (type == WIKI_CLASS)
 	{
 		for (i = 0; i <= CLASS_COUNT; i++)
 		{
-			if (!strcmp(tolower(class_names_table[i].normal).c_str(), tolower(title).c_str()))
+			if (!strcmp(tolower(class_names_table[i].normal).c_str(),
+				    tolower(title).c_str()))
 			{
 				found = TRUE;
-				j     = 0;
+				j = 0;
 				break;
 			}
 		}
@@ -837,7 +856,8 @@ string wiki_spells(string title, int type)
 		{
 			for (j = 0; j < MAX_SPEC; j++)
 			{
-				if (!strcmp(tolower(strip_ansi(specdata[i][j])).c_str(), tolower(title).c_str()))
+				if (!strcmp(tolower(strip_ansi(specdata[i][j])).c_str(),
+					    tolower(title).c_str()))
 				{
 					found = TRUE;
 					break;
@@ -882,17 +902,18 @@ string wiki_spells(string title, int type)
 string wiki_skills(string title, int type)
 {
 	string return_str;
-	int    i, j, innate;
-	bool   found = FALSE;
+	int i, j, innate;
+	bool found = FALSE;
 
 	if (type == WIKI_CLASS)
 	{
 		for (i = 0; i <= CLASS_COUNT; i++)
 		{
-			if (!strcmp(tolower(class_names_table[i].normal).c_str(), tolower(title).c_str()))
+			if (!strcmp(tolower(class_names_table[i].normal).c_str(),
+				    tolower(title).c_str()))
 			{
 				found = TRUE;
-				j     = 0;
+				j = 0;
 				break;
 			}
 		}
@@ -904,7 +925,8 @@ string wiki_skills(string title, int type)
 		{
 			for (j = 0; j < MAX_SPEC; j++)
 			{
-				if (!strcmp(tolower(strip_ansi(specdata[i][j])).c_str(), tolower(title).c_str()))
+				if (!strcmp(tolower(strip_ansi(specdata[i][j])).c_str(),
+					    tolower(title).c_str()))
 				{
 					found = TRUE;
 					break;
@@ -936,8 +958,8 @@ string wiki_skills(string title, int type)
 string wiki_multiclass(string title)
 {
 	string return_str;
-	int    i, j, k;
-	bool   found, allowed;
+	int i, j, k;
+	bool found, allowed;
 
 	return_str = "\n\r\n\rHere are the options available to each class:";
 	for (i = 1; i <= CLASS_COUNT; i++)
@@ -958,7 +980,8 @@ string wiki_multiclass(string title)
 			{
 				return_str += ", ";
 			}
-			return_str += class_names_table[flag2idx(allowed_secondary_classes[i][j])].ansi;
+			return_str +=
+				class_names_table[flag2idx(allowed_secondary_classes[i][j])].ansi;
 			return_str += "&n";
 			found = TRUE;
 		}
@@ -983,15 +1006,22 @@ string wiki_multiclass(string title)
 			for (k = 0; multiclass_names[k].cls1 != -1; k++)
 			{
 				// If cls1 and cls2 match..
-				if (((multiclass_names[k].cls1 == (1 << (i - 1))) && (multiclass_names[k].cls2 == allowed_secondary_classes[i][j])) ||
-				    ((multiclass_names[k].cls2 == (1 << (i - 1)) && (multiclass_names[k].cls1 == allowed_secondary_classes[i][j]))))
+				if (((multiclass_names[k].cls1 == (1 << (i - 1))) &&
+				     (multiclass_names[k].cls2 ==
+				      allowed_secondary_classes[i][j])) ||
+				    ((multiclass_names[k].cls2 == (1 << (i - 1)) &&
+				      (multiclass_names[k].cls1 ==
+				       allowed_secondary_classes[i][j]))))
 				{
 					return_str += "\n\r* ";
 					return_str += multiclass_names[k].mc_name;
 					return_str += "&n: ";
 					return_str += class_names_table[i].ansi;
 					return_str += "&n / ";
-					return_str += class_names_table[flag2idx(allowed_secondary_classes[i][j])].ansi;
+					return_str +=
+						class_names_table
+							[flag2idx(allowed_secondary_classes[i][j])]
+								.ansi;
 					return_str += "&n";
 					break;
 				}
@@ -1011,8 +1041,8 @@ string wiki_multiclass(string title)
 string wiki_pcraces(string title)
 {
 	string return_str;
-	bool   found = FALSE;
-	int    i, j;
+	bool found = FALSE;
+	int i, j;
 
 	return_str = "\n\n==Good Races==\n";
 	for (i = 1; i <= RACE_PLAYER_MAX; i++)

@@ -18,30 +18,30 @@
 struct ShipData;
 
 /* telnet codes (rfc 1572) */
-#define TELNET_IAC  255
-#define TELNET_SB   250 /* subnegotiation begin */
-#define TELNET_SE   240 /* subnegotiation end */
+#define TELNET_IAC 255
+#define TELNET_SB 250 /* subnegotiation begin */
+#define TELNET_SE 240 /* subnegotiation end */
 #define TELNET_WILL 251
 #define TELNET_WONT 252
-#define TELNET_DO   253
+#define TELNET_DO 253
 #define TELNET_DONT 254
 #define TELOPT_GMCP 201 /* gmcp option code */
 
 /* gmcp package names */
-#define GMCP_PKG_ROOM_INFO     "Room.Info"
-#define GMCP_PKG_ROOM_MAP      "Room.Map"
-#define GMCP_PKG_CHAR_VITALS   "Char.Vitals"
-#define GMCP_PKG_CHAR_STATUS   "Char.Status"
-#define GMCP_PKG_CHAR_AFFECTS  "Char.Affects"
+#define GMCP_PKG_ROOM_INFO "Room.Info"
+#define GMCP_PKG_ROOM_MAP "Room.Map"
+#define GMCP_PKG_CHAR_VITALS "Char.Vitals"
+#define GMCP_PKG_CHAR_STATUS "Char.Status"
+#define GMCP_PKG_CHAR_AFFECTS "Char.Affects"
 #define GMCP_PKG_COMBAT_UPDATE "Combat.Update"
-#define GMCP_PKG_COMM_CHANNEL  "Comm.Channel"
-#define GMCP_PKG_CHAR_SKILLS   "Char.Skills"
-#define GMCP_PKG_CHAR_ITEMS    "Char.Items"
-#define GMCP_PKG_QUEST_STATUS  "Quest.Status"
-#define GMCP_PKG_QUEST_MAP     "Quest.Map"
-#define GMCP_PKG_GROUP_STATUS  "Group.Status"
+#define GMCP_PKG_COMM_CHANNEL "Comm.Channel"
+#define GMCP_PKG_CHAR_SKILLS "Char.Skills"
+#define GMCP_PKG_CHAR_ITEMS "Char.Items"
+#define GMCP_PKG_QUEST_STATUS "Quest.Status"
+#define GMCP_PKG_QUEST_MAP "Quest.Map"
+#define GMCP_PKG_GROUP_STATUS "Group.Status"
 #define GMCP_PKG_SHIP_CONTACTS "Ship.Contacts"
-#define GMCP_PKG_SHIP_INFO     "Ship.Info"
+#define GMCP_PKG_SHIP_INFO "Ship.Info"
 
 /* negotiation */
 
@@ -92,7 +92,8 @@ void gmcp_char_status(struct char_data *ch);
 void gmcp_char_affects(struct char_data *ch);
 
 /* combat updates */
-void gmcp_combat_update(struct char_data *ch, struct char_data *victim, int damage, const char *damage_type, int critical);
+void gmcp_combat_update(struct char_data *ch, struct char_data *victim, int damage,
+			const char *damage_type, int critical);
 
 /* send target health update */
 void gmcp_combat_target(struct char_data *ch, struct char_data *victim);
@@ -101,10 +102,12 @@ void gmcp_combat_target(struct char_data *ch, struct char_data *victim);
 void gmcp_combat_end(struct char_data *ch);
 
 /* channel messages (gossip, guild, tell, etc) */
-void gmcp_comm_channel(struct char_data *ch, const char *channel, const char *sender, const char *text);
+void gmcp_comm_channel(struct char_data *ch, const char *channel, const char *sender,
+		       const char *text);
 
 /* channel with alignment (for nchat) */
-void gmcp_comm_channel_ex(struct char_data *ch, const char *channel, const char *sender, const char *text, const char *alignment);
+void gmcp_comm_channel_ex(struct char_data *ch, const char *channel, const char *sender,
+			  const char *text, const char *alignment);
 
 /* quest status - sends bartender quest info */
 void gmcp_quest_status(struct char_data *ch);
@@ -112,22 +115,24 @@ void gmcp_quest_map(struct char_data *ch);
 void gmcp_send_quest_map(struct char_data *ch, const char *map_buf);
 
 /* send to all who can hear the channel */
-void gmcp_broadcast_channel(const char *channel, const char *sender, const char *text, struct char_data *exclude);
+void gmcp_broadcast_channel(const char *channel, const char *sender, const char *text,
+			    struct char_data *exclude);
 
 /* utility macros */
 
 /* check if character has gmcp enabled (negotiated and not toggled off) */
-#define GMCP_ENABLED(ch) ((ch) && (ch)->desc && (ch)->desc->gmcp_enabled && !PLR3_FLAGGED(ch, PLR3_NOGMCP))
+#define GMCP_ENABLED(ch) \
+	((ch) && (ch)->desc && (ch)->desc->gmcp_enabled && !PLR3_FLAGGED(ch, PLR3_NOGMCP))
 
 /* check if descriptor has gmcp enabled */
 #define DESC_GMCP_ENABLED(d) ((d) && (d)->gmcp_enabled)
 
 /* send gmcp to character if enabled */
-#define GMCP_TO_CHAR(ch, pkg, json)                                                                                                                                                                    \
-	do                                                                                                                                                                                                 \
-	{                                                                                                                                                                                                  \
-		if (GMCP_ENABLED(ch))                                                                                                                                                                          \
-			gmcp_send((ch)->desc, (pkg), (json));                                                                                                                                                      \
+#define GMCP_TO_CHAR(ch, pkg, json)                           \
+	do                                                    \
+	{                                                     \
+		if (GMCP_ENABLED(ch))                         \
+			gmcp_send((ch)->desc, (pkg), (json)); \
 	} while (0)
 
 #endif /* GMCP_H */

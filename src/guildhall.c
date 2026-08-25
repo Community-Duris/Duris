@@ -18,7 +18,7 @@
 
 // global variables
 
-extern P_room  world;
+extern P_room world;
 extern P_index obj_index;
 extern P_index mob_index;
 
@@ -26,13 +26,13 @@ vector<Guildhall *> Guildhall::guildhalls;
 
 void Guildhall::initialize()
 {
-	obj_index[real_object0(GH_DOOR_VNUM)].func.obj        = guildhall_door;
-	obj_index[real_object0(GH_WINDOW_VNUM)].func.obj      = guildhall_window;
-	obj_index[real_object0(GH_HEARTSTONE_VNUM)].func.obj  = guildhall_heartstone;
+	obj_index[real_object0(GH_DOOR_VNUM)].func.obj = guildhall_door;
+	obj_index[real_object0(GH_WINDOW_VNUM)].func.obj = guildhall_window;
+	obj_index[real_object0(GH_HEARTSTONE_VNUM)].func.obj = guildhall_heartstone;
 	obj_index[real_object0(GH_CARGO_BOARD_VNUM)].func.obj = guildhall_cargo_board;
-	mob_index[real_mobile0(GH_GOLEM_WARRIOR)].func.mob    = guildhall_golem;
-	mob_index[real_mobile0(GH_GOLEM_CLERIC)].func.mob     = guildhall_golem;
-	mob_index[real_mobile0(GH_GOLEM_SORCERER)].func.mob   = guildhall_golem;
+	mob_index[real_mobile0(GH_GOLEM_WARRIOR)].func.mob = guildhall_golem;
+	mob_index[real_mobile0(GH_GOLEM_CLERIC)].func.mob = guildhall_golem;
+	mob_index[real_mobile0(GH_GOLEM_SORCERER)].func.mob = guildhall_golem;
 
 	/* Commented this out and moved golem_noflee code into guildhall_golem.
 	 * GH_GOLEM_* is the vnums 4800(0-2) defined just above this.
@@ -50,7 +50,9 @@ void Guildhall::initialize()
 		load_guildhall_rooms(guildhalls[i]);
 		if (!guildhalls[i]->guild)
 		{
-			logit(LOG_GUILDHALLS, "Guildhall::initialize(): guildhall %d has no guild (assoc_id %d)", guildhalls[i]->id, guildhalls[i]->assoc_id);
+			logit(LOG_GUILDHALLS,
+			      "Guildhall::initialize(): guildhall %d has no guild (assoc_id %d)",
+			      guildhalls[i]->id, guildhalls[i]->assoc_id);
 			continue;
 		}
 		guildhalls[i]->init();
@@ -66,7 +68,7 @@ void Guildhall::shutdown()
 
 	for (int i = 0; i < guildhalls.size(); i++)
 	{
-		delete(guildhalls[i]);
+		delete (guildhalls[i]);
 	}
 }
 
@@ -108,7 +110,7 @@ void Guildhall::remove(Guildhall *gh)
 		}
 	}
 
-	delete(gh);
+	delete (gh);
 }
 
 //
@@ -241,7 +243,9 @@ LibraryRoom *Guildhall::find_library_by_vnum(int vnum)
 
 		for (int j = 0; j < guildhalls[i]->rooms.size(); j++)
 		{
-			if (guildhalls[i]->rooms[j] && guildhalls[i]->rooms[j]->type == GH_ROOM_TYPE_LIBRARY && guildhalls[i]->rooms[j]->vnum == vnum)
+			if (guildhalls[i]->rooms[j] &&
+			    guildhalls[i]->rooms[j]->type == GH_ROOM_TYPE_LIBRARY &&
+			    guildhalls[i]->rooms[j]->vnum == vnum)
 				return (LibraryRoom *)guildhalls[i]->rooms[j];
 		}
 	}
@@ -310,7 +314,10 @@ bool Guildhall::destroy()
 	return TRUE;
 }
 
-bool Guildhall::can_add_room() { return (this->rooms.size() + 1 <= this->max_rooms); }
+bool Guildhall::can_add_room()
+{
+	return (this->rooms.size() + 1 <= this->max_rooms);
+}
 
 void Guildhall::add_room(GuildhallRoom *room)
 {
@@ -320,8 +327,8 @@ void Guildhall::add_room(GuildhallRoom *room)
 		return;
 	}
 
-	room->assoc_id  = this->assoc_id;
-	room->guild     = this->guild;
+	room->assoc_id = this->assoc_id;
+	room->guild = this->guild;
 	room->guildhall = this;
 	this->rooms.push_back(room);
 }
@@ -335,17 +342,19 @@ bool Guildhall::init()
 	for (int i = 0; i < this->rooms.size(); i++)
 	{
 		this->rooms[i]->assoc_id = this->assoc_id;
-		this->rooms[i]->guild    = this->guild;
+		this->rooms[i]->guild = this->guild;
 
 		if (!this->rooms[i]->guild)
 		{
-			logit(LOG_GUILDHALLS, "Guildhall::init(%d): room %d has no guild!", this->id, this->rooms[i]->id);
+			logit(LOG_GUILDHALLS, "Guildhall::init(%d): room %d has no guild!",
+			      this->id, this->rooms[i]->id);
 			return FALSE;
 		}
 
 		if (!this->rooms[i]->init())
 		{
-			logit(LOG_GUILDHALLS, "Guildhall::init(%d): room %d init failed!", this->id, this->rooms[i]->id);
+			logit(LOG_GUILDHALLS, "Guildhall::init(%d): room %d init failed!", this->id,
+			      this->rooms[i]->id);
 			return FALSE;
 		}
 	}
@@ -363,7 +372,8 @@ bool Guildhall::deinit()
 	{
 		if (!this->rooms[i]->deinit())
 		{
-			logit(LOG_GUILDHALLS, "Guildhall::deinit(%d): room %d deinit failed!", this->id, this->rooms[i]->id);
+			logit(LOG_GUILDHALLS, "Guildhall::deinit(%d): room %d deinit failed!",
+			      this->id, this->rooms[i]->id);
 			return FALSE;
 		}
 	}
@@ -393,7 +403,8 @@ bool Guildhall::valid()
 
 	if (this->rooms.size() > this->max_rooms)
 	{
-		logit(LOG_GUILDHALLS, "Guildhall::init(%d): too many rooms! (%d, max %d)", this->id, this->rooms.size(), this->max_rooms);
+		logit(LOG_GUILDHALLS, "Guildhall::init(%d): too many rooms! (%d, max %d)", this->id,
+		      this->rooms.size(), this->max_rooms);
 		return FALSE;
 	}
 
