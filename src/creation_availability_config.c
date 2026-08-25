@@ -172,7 +172,7 @@ bool creation_class_enabled(int class_id)
 {
     if (!initialized)
         boot_creation_availability_config();
-    return class_id > 0 && class_id <= CLASS_COUNT && class_enabled[class_id];
+    return class_id > 0 && class_id <= CLASS_COUNT && (creation_all_classes_enabled() || class_enabled[class_id]);
 }
 
 bool creation_race_enabled(int race_id)
@@ -195,12 +195,18 @@ bool creation_all_races_enabled(void)
 }
 
 /*
- * Alignment code for a race/class pair as character creation should see it:
- * class_table[] normally, but a restricted race whose class_table row is empty
- * uses its restricted_class_rows[] stand-in while CREATION_ALL_RACES is on.
- * Creation paths only -- random mob generation keeps reading class_table[].
+ * CREATION_ALL_CLASSES=TRUE (.env) opens every defined player class to
+ * character creation, including classes normally reached through progression
+ * and classes disabled in creation_availability.cfg.
  */
-int creation_class_align(int race_id, int class_id)
+bool creation_all_classes_enabled(void)
+{
+    const char *value = getenv("CREATION_ALL_CLASSES");
+
+    return value && strcasecmp(value, "TRUE") == 0;
+}
+
+static int normal_creation_class_align(int race_id, int class_id)
 {
     extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
     int        i;
@@ -218,4 +224,28 @@ int creation_class_align(int race_id, int class_id)
     }
 
     return class_table[race_id][class_id];
+}
+
+bool creation_class_normally_available(int race_id, int class_id)
+{
+    if (!initialized)
+        boot_creation_availability_config();
+
+    return class_id > 0 && class_id <= CLASS_COUNT && class_enabled[class_id] && normal_creation_class_align(race_id, class_id) != 5;
+}
+
+/*
+ * Alignment code for a race/class pair as character creation should see it:
+ * class_table[] normally, but a restricted race whose class_table row is empty
+ * uses its restricted_class_rows[] stand-in while CREATION_ALL_RACES is on.
+ * Creation paths only -- random mob generation keeps reading class_table[].
+ */
+int creation_class_align(int race_id, int class_id)
+{
+    int align = normal_creation_class_align(race_id, class_id);
+
+    if (align == 5 && creation_all_classes_enabled() && race_id >= 0 && race_id <= LAST_RACE && class_id > 0 && class_id <= CLASS_COUNT)
+        return 2;
+
+    return align;
 }

@@ -1216,6 +1216,9 @@ static void ws_add_chargen_race(cJSON *races_array, int race_id, const char *fac
 		cJSON_AddStringToObject(class_obj, "name", class_names_table[j].normal);
 		cJSON_AddStringToObject(class_obj, "ansi", class_names_table[j].ansi);
 		cJSON_AddStringToObject(class_obj, "alignment", align_str);
+		cJSON_AddBoolToObject(class_obj, "restricted", creation_class_normally_available(race_id, j) ? 0 : 1);
+		if (!creation_class_normally_available(race_id, j))
+			cJSON_AddStringToObject(class_obj, "restricted_note", "Normally unavailable; enabled by CREATION_ALL_CLASSES.");
 
 		cJSON_AddItemToArray(classes_array, class_obj);
 	}

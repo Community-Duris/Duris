@@ -9,6 +9,7 @@
  */
 
 #include "prototypes.h"
+#include "creation_availability_config.h"
 #include "comm.h"
 #include "db.h"
 #include "events.h"
@@ -5252,6 +5253,17 @@ void do_start(P_char ch, int nomsg)
 	{
 		ch->specials.guild        = 0;
 		ch->specials.guild_status = 0;
+	}
+
+	/* These legacy standalone classes were replaced by Rogue specializations,
+	   so their specialization menus are intentionally empty. Preserve their
+	   old class-specific abilities when direct creation is explicitly open. */
+	if (creation_all_classes_enabled() && !ch->player.spec)
+	{
+		if (ch->player.m_class == CLASS_ASSASSIN)
+			ch->player.spec = SPEC_ASSMASTER;
+		else if (ch->player.m_class == CLASS_THIEF)
+			ch->player.spec = SPEC_CUTPURSE;
 	}
 
 	NewbySkillSet(ch, (nomsg != CMD_MULTICLASS) ? TRUE : FALSE);

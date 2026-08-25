@@ -4,6 +4,7 @@
 using namespace std;
 
 #include "prototypes.h"
+#include "creation_availability_config.h"
 #include "structs.h"
 #include "comm.h"
 #include "interp.h"
@@ -430,6 +431,9 @@ struct allowed_race_spec_struct
 
 bool is_allowed_race_spec(int race, uint m_class, int spec)
 {
+	if (creation_all_classes_enabled())
+		return TRUE;
+
 	for (int i = 0; allowed_race_specs[i].race; i++)
 	{
 		if (allowed_race_specs[i].race == race && allowed_race_specs[i].m_class == m_class && (allowed_race_specs[i].spec == SPEC_ALL || allowed_race_specs[i].spec == spec))

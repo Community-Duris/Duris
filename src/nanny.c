@@ -340,7 +340,7 @@ static void LoadNewbyShit(P_char ch, int *items)
 
 void load_obj_to_newbies(P_char ch)
 {
-	int *random;
+	int *class_kit;
 	int *newbie_kits[LAST_RACE][CLASS_COUNT + 1];
 
 	static int torch[] = {1134, -1};
@@ -1429,9 +1429,54 @@ void load_obj_to_newbies(P_char ch)
 			LoadNewbyShit(ch, minotaur_evil_eq);
 	}
 
-	if (newbie_kits[GET_RACE(ch)][flag2idx(ch->player.m_class)])
+	class_kit = newbie_kits[GET_RACE(ch)][flag2idx(ch->player.m_class)];
+	if (!class_kit && creation_all_classes_enabled())
 	{
-		LoadNewbyShit(ch, newbie_kits[GET_RACE(ch)][flag2idx(ch->player.m_class)]);
+		int cls = flag2idx(ch->player.m_class);
+
+		/* Most race/class combinations can reuse the class's Human kit. The
+		   remaining classes use the closest existing class kit so book users
+		   still receive a populated spellbook and every class gets equipment. */
+		class_kit = newbie_kits[RACE_HUMAN][cls];
+		if (!class_kit)
+		{
+			switch (ch->player.m_class)
+			{
+				case CLASS_PSIONICIST:
+				case CLASS_MINDFLAYER:
+					class_kit = newbie_kits[RACE_PILLITHID][flag2idx(CLASS_PSIONICIST)];
+					break;
+				case CLASS_ASSASSIN:
+					class_kit = newbie_kits[RACE_HALFELF][flag2idx(CLASS_ASSASSIN)];
+					break;
+				case CLASS_THIEF:
+					class_kit = newbie_kits[RACE_HALFELF][flag2idx(CLASS_THIEF)];
+					break;
+				case CLASS_WARLOCK:
+					class_kit = newbie_kits[RACE_HUMAN][flag2idx(CLASS_ROGUE)];
+					break;
+				case CLASS_BERSERKER:
+					class_kit = newbie_kits[RACE_ORC][flag2idx(CLASS_BERSERKER)];
+					break;
+				case CLASS_DREADLORD:
+					class_kit = newbie_kits[RACE_LICH][flag2idx(CLASS_DREADLORD)];
+					break;
+				case CLASS_AVENGER:
+					class_kit = newbie_kits[RACE_HUMAN][flag2idx(CLASS_PALADIN)];
+					break;
+				case CLASS_THEURGIST:
+					class_kit = newbie_kits[RACE_HALFELF][flag2idx(CLASS_THEURGIST)];
+					break;
+				case CLASS_DRAGOON:
+					class_kit = newbie_kits[RACE_HUMAN][flag2idx(CLASS_WARRIOR)];
+					break;
+			}
+		}
+	}
+
+	if (class_kit)
+	{
+		LoadNewbyShit(ch, class_kit);
 	}
 	else if (GET_CLASS(ch, CLASS_BLIGHTER))
 	{
@@ -3917,7 +3962,26 @@ void select_class(P_desc d, char *arg)
 
 	d->character->player.m_class = CLASS_NONE;
 
-	for (cls = 1; cls <= CLASS_COUNT; cls++)
+	/* Full names make the override block unambiguous (Rogue and Thief share
+	   the same legacy menu key). */
+	if (creation_all_classes_enabled())
+	{
+		char typed[MAX_INPUT_LENGTH];
+		char class_name[MAX_INPUT_LENGTH];
+
+		normalize_race_token(arg, typed, sizeof typed);
+		for (cls = 1; *typed && cls <= CLASS_COUNT; cls++)
+		{
+			normalize_race_token(class_names_table[cls].normal, class_name, sizeof class_name);
+			if (!strcmp(typed, class_name))
+			{
+				d->character->player.m_class = 1 << (cls - 1);
+				break;
+			}
+		}
+	}
+
+	for (cls = 1; d->character->player.m_class == CLASS_NONE && cls <= CLASS_COUNT; cls++)
 	{
 		if (*arg == class_names_table[cls].letter)
 			d->character->player.m_class = 1 << (cls - 1);
@@ -4044,14 +4108,14 @@ void select_class(P_desc d, char *arg)
 void display_classtable(P_desc d)
 {
 	char template_buf[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
-	int  cls;
+	int  cls, shown;
 
 	SEND_TO_Q("\r\nClass Selection", d);
 	SEND_TO_Q("\r\n---------------", d);
 
 	buf[0] = 0;
 	for (cls = 1; cls <= CLASS_COUNT; cls++)
-		if (creation_class_enabled(cls) && creation_class_align(GET_RACE(d->character), cls) != 5)
+		if (creation_class_normally_available(GET_RACE(d->character), cls))
 		{
 			snprintf(template_buf, MAX_STRING_LENGTH, "\r\n%%c) %%-%lds(%%c for help)", strlen(class_names_table[cls].ansi) - ansi_strlen(class_names_table[cls].ansi) + 20);
 			snprintf(buf + strlen(buf),
@@ -4061,6 +4125,24 @@ void display_classtable(P_desc d)
 			         class_names_table[cls].ansi,
 			         (class_names_table[cls].letter == '3') ? '#' : toupper(class_names_table[cls].letter));
 		}
+
+	if (creation_all_classes_enabled())
+	{
+		strcat(buf, "\r\n\r\n  &+WNORMALLY UNAVAILABLE CLASSES&n (CREATION_ALL_CLASSES)\r\n");
+		strcat(buf, "  Type the full class name to select one:\r\n");
+		shown = 0;
+		for (cls = 1; cls <= CLASS_COUNT; cls++)
+		{
+			if (creation_class_enabled(cls) && creation_class_align(GET_RACE(d->character), cls) != 5 &&
+			    !creation_class_normally_available(GET_RACE(d->character), cls))
+			{
+				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "      %s\r\n", class_names_table[cls].ansi);
+				shown++;
+			}
+		}
+		if (!shown)
+			strcat(buf, "      (none)\r\n");
+	}
 
 	strcat(buf, "\r\n");
 	SEND_TO_Q(buf, d);

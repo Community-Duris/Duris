@@ -25,11 +25,18 @@ Examples:
   creation.race.kobold.enabled=true
 
 Class names are normalized lowercase names. Race names use hyphens for spaces,
-for example mountain-dwarf and grey-elf. The current default deliberately has
-Dragoon disabled; all other listed classes and races are enabled.
+for example mountain-dwarf and grey-elf.
 
-This config only affects new character creation. It does not change existing
-characters, class/race mechanics, race/class alignment rules, or item limits.
+CREATION_ALL_CLASSES=TRUE in .env overrides both the per-class switches and
+the race/class restrictions for character creation. Normally unavailable
+choices are clearly labelled and selected by typing the full class name in the
+telnet menu; WebSocket clients receive restricted/restricted_note fields. The
+committed .env.example currently enables this override.
+
+The per-option config only affects new character creation. It does not change
+existing characters, class/race mechanics, race/class alignment rules, or item
+limits. While CREATION_ALL_CLASSES remains on, specialization race filtering
+is also relaxed so direct-created combinations retain their class features.
 Use the source tables described below only when adding a new class/race or
 changing a race/class alignment combination.
 
