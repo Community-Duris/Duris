@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Regression test for the two worst single-callback stalls in the event loop.
+
+generic_char_event() swept every character in the game in one callback, costing
+~18ms (measured avg over 38 samples) -- most of a pulse's 25ms event budget, which
+pushed every other job in that pulse late.
+
+sql_trace_enabled() set its result to true in BOTH branches, so SQL tracing was
+always on: two log lines, each an open/append/close, for every query the game runs,
+even with SQL_TRACE explicitly set to off.  That was the bulk of the 24ms spent in
+event_write_statistic (the INSERT itself measures ~1.3ms).
+
+Verifies:
+1. generic_char_event splits its sweep into stable slices and reschedules itself at
+   the matching fraction of the period, so each character is still visited once per
+   full period.
+2. The mob sanity check still runs on every pass.
+3. sql_trace_enabled() only turns tracing on when the environment asks for it.
+"""
+
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+handler = (ROOT / "src" / "handler.c").read_text(encoding="utf-8", errors="replace")
+sql = (ROOT / "src" / "sql.c").read_text(encoding="utf-8", errors="replace")
+
+checks = []
+
+checks.append((
+    "generic_char_event declares slices and a period",
+    "#define GENERIC_CHAR_EVENT_SLICES" in handler and "#define GENERIC_CHAR_EVENT_PERIOD" in handler
+))
+checks.append((
+    "slice comes from a stable per-character hash",
+    "static unsigned int char_sweep_slice(P_char c)" in handler and "(uintptr_t)c" in handler
+))
+
+m = re.search(r"void generic_char_event\(P_char ch, P_char victim, P_obj obj, void \*data\)\s*\{.*?\n\}", handler, re.S)
+if m:
+    body = m.group(0)
+    checks.append((
+        "sweep advances a phase and skips characters outside it",
+        "generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES" in body and
+        "if (char_sweep_slice(i) != phase)" in body
+    ))
+    checks.append((
+        "mob sanity check still runs on every pass",
+        body.index("without only.npc struct") < body.index("char_sweep_slice(i) != phase")
+    ))
+    checks.append((
+        "reschedules at period / slices so cadence per character is unchanged",
+        "add_event(generic_char_event, GENERIC_CHAR_EVENT_PERIOD / GENERIC_CHAR_EVENT_SLICES" in body
+    ))
+else:
+    checks.append(("generic_char_event present", False))
+
+m = re.search(r"static bool sql_trace_enabled\(void\)\s*\{.*?\n\}", sql, re.S)
+if m:
+    body = m.group(0)
+    checks.append((
+        "sql_trace_enabled has no unconditional enable branch",
+        body.count("on = true;") == 1
+    ))
+    checks.append((
+        "sql_trace_enabled defaults to off",
+        "bool        on  = false;" in body
+    ))
+    checks.append((
+        "sql_trace_enabled still honours SQL_TRACE",
+        'getenv("SQL_TRACE")' in body
+    ))
+else:
+    checks.append(("sql_trace_enabled present", False))
+
+failed = [name for name, ok in checks if not ok]
+for name, ok in checks:
+    print(f"[{'PASS' if ok else 'FAIL'}] {name}")
+
+if failed:
+    print("\nFailed regression checks:")
+    for name in failed:
+        print(f"- {name}")
+    sys.exit(1)
+
+print("\nAll event loop hotspot checks passed successfully.")

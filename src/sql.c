@@ -1623,11 +1623,10 @@ static bool sql_trace_enabled(void)
 		const char *env = getenv("SQL_TRACE");
 		bool        on  = false;
 
+		// Both branches used to set this true, so tracing was always on -- two log
+		//   lines (each an open/append/close) for every query the game runs, even
+		//   with SQL_TRACE explicitly set to off.  Opt-in, as intended.
 		if (env && *env && strcmp(env, "0") != 0 && strcasecmp(env, "false") != 0 && strcasecmp(env, "off") != 0)
-		{
-			on = true;
-		}
-		else
 		{
 			on = true;
 		}

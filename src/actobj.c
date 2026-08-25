@@ -89,6 +89,32 @@ int wield_item_size(P_char ch, P_obj obj)
 /*
  * procedures related to get
  */
+/*
+ * The GETDBG traces were investigation instrumentation and ran unconditionally,
+ *   writing ~10 log lines for every pickup by every character in the game, mobs
+ *   included.  Keep them, but make them opt-in via GET_TRACE.
+ */
+static bool get_trace_enabled(void)
+{
+	static int cached = -1;
+
+	if (cached < 0)
+	{
+		const char *env = getenv("GET_TRACE");
+
+		cached = (env && *env && str_cmp(env, "0") && str_cmp(env, "false") && str_cmp(env, "off")) ? 1 : 0;
+	}
+
+	return cached != 0;
+}
+
+#define GETDBG_LOG(...)                                                                                                                                                                                \
+	do                                                                                                                                                                                                 \
+	{                                                                                                                                                                                                  \
+		if (get_trace_enabled())                                                                                                                                                                       \
+			logit(LOG_DEBUG, __VA_ARGS__);                                                                                                                                                             \
+	} while (0)
+
 void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {
 	int     got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
@@ -100,7 +126,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (!o_obj || !ch)
 	{
 		logit(LOG_EXIT, "call to get with NULL obj or ch");
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-null-args]: ch=%p obj=%p container=%p showit=%d",
 		      (void *)ch,
 		      (void *)o_obj,
@@ -117,7 +143,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 	if (o_obj->condition <= 0)
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-scrap]: ch=%s room=%d obj=%s [%d] uid=%lu cond=%d showit=%d container=%s [%d]",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -142,7 +168,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 	if (IS_NPC(ch) && IN_WELL_ROOM(ch))
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-deny:well-room]: ch=%s room=%d obj=%s [%d] container=%s [%d]",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -155,7 +181,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	}
 	if (IS_NPC(ch) && (GET_RNUM(ch) == real_mobile(250)))
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-deny:mirror-image]: ch=%s room=%d obj=%s [%d] container=%s [%d]",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -170,7 +196,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	/* Trap check */
 	if (checkgetput(ch, o_obj))
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-deny:trap]: ch=%s room=%d obj=%s [%d] uid=%lu container=%s [%d]",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -185,7 +211,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	/* Don't screw up my pointers! */
 	if (o_obj->hitched_to)
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-deny:hitched]: ch=%s room=%d obj=%s [%d] uid=%lu hitched_to=%s container=%s [%d]",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -199,7 +225,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		return;
 	}
 
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "GETDBG[get-enter]: ch=%s room=%d obj=%s [%d] type=%d wt=%d carry_n=%d carry_w=%d showit=%d from_container=%s [%d]",
 	      GET_NAME(ch),
 	      world[ch->in_room].number,
@@ -212,7 +238,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	      showit ? 1 : 0,
 	      s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 	      s_obj ? OBJ_VNUM(s_obj) : -1);
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "GETDBG[get-state]: ch=%s room=%d obj_uid=%lu cond=%d wear=0x%x extra=0x%x carried=%d worn=%d inside=%d room=%d container=%s [%d]",
 	      GET_NAME(ch),
 	      world[ch->in_room].number,
@@ -248,7 +274,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		o_obj->value[0] = 0;
 
 		int total_value = (got_p * 1000 + got_g * 100 + got_s * 10 + got_c);
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-coins-start]: ch=%s room=%d obj=%s [%d] uid=%lu got_p=%d got_g=%d got_s=%d got_c=%d total=%d showit=%d slip=%d from_container=%s [%d]",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -267,7 +293,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 		if (total_value <= 0)
 		{
-			logit(LOG_DEBUG,
+			GETDBG_LOG(
 			      "GETDBG[get-coins-empty]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
 			      GET_NAME(ch),
 			      world[ch->in_room].number,
@@ -284,7 +310,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		}
 		else if (total_value > 999999)
 		{
-			logit(LOG_DEBUG,
+			GETDBG_LOG(
 			      "GETDBG[get-coins-partial]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
 			      GET_NAME(ch),
 			      world[ch->in_room].number,
@@ -377,7 +403,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		}
 		else
 		{
-			logit(LOG_DEBUG,
+			GETDBG_LOG(
 			      "GETDBG[get-coins-exact]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
 			      GET_NAME(ch),
 			      world[ch->in_room].number,
@@ -528,7 +554,7 @@ static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, boo
 static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total, bool &found, const char *post_tag)
 {
 	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total);
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
 	      post_tag,
 	      GET_NAME(ch),
@@ -721,7 +747,7 @@ static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_ob
 	const bool actual_local = s_obj && (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj));
 	const bool takeable     = source_is_local ? TRUE : do_get_obj_is_takeable(ch, o_obj);
 
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "GETDBG[container-item-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d worn=%d source_local=%d actual_local=%d takeable=%d",
 	      GET_NAME(ch),
 	      world[ch->in_room].number,
@@ -737,7 +763,7 @@ static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_ob
 
 	if (source_is_local != actual_local)
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[container-item-local-mismatch]: ch=%s room=%d obj=%s [%d] container=%s [%d] source_local=%d actual_local=%d carried=%d worn=%d inside=%d",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -759,7 +785,7 @@ static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag
 {
 	if ((GET_ITEM_TYPE(s_obj) != ITEM_CORPSE) && IS_SET(s_obj->value[1], CONT_CLOSED))
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-container-closed]: ch=%s room=%d container=%s [%d] uid=%lu arg1='%s' arg2='%s'",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -779,7 +805,7 @@ static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag
 
 	if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d destroying=%d corpse_flag=%d",
 		      GET_NAME(ch),
 		      world[ch->in_room].number,
@@ -794,7 +820,7 @@ static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag
 
 	if (check_front_line && corpse_flag && fight_in_room(ch) && !on_front_line(ch))
 	{
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "GETDBG[get-all front-line-gate]: ch=%s room=%d corpse_flag=%d fighting=%d front_line=%d container=%s [%d]",
 		      GET_NAME(ch),
 	      world[ch->in_room].number,
@@ -857,7 +883,7 @@ static bool do_get_try_container_item(P_char ch,
 		snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n", o_obj->short_description);
 		send_to_char(Gbuf3, ch);
 		fail = TRUE;
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "%s: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d cansee=%d local=%d",
 		      invisible_tag,
 		      GET_NAME(ch),
@@ -881,7 +907,7 @@ static bool do_get_try_container_item(P_char ch,
 				total_carried_weight(ch), CAN_CARRY_W(ch), reject_tag, post_tag, fail);
 		}
 
-		logit(LOG_DEBUG,
+		GETDBG_LOG(
 		      "%s: ch=%s room=%d obj=%s [%d] wt=%d carry_w=%d cap=%d container=%s [%d] local=%d",
 		      too_heavy_tag,
 		      GET_NAME(ch),
@@ -901,7 +927,7 @@ static bool do_get_try_container_item(P_char ch,
 		return FALSE;
 	}
 
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "%s: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d container=%s [%d] local=%d",
 	      carry_tag,
 	      GET_NAME(ch),
@@ -998,7 +1024,7 @@ static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail)
 
 static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj, const char *tag, int carried, int carry_w, int cap_w, bool &fail)
 {
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "%s: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d carry_w=%d cap=%d",
 	      tag,
 	      GET_NAME(ch),
@@ -1081,7 +1107,7 @@ void do_get(P_char ch, char *argument, int cmd)
 	}
 
 	argument_interpreter(argument, arg1, arg2);
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "GETDBG[do_get parse]: ch=%s room=%d raw='%s' arg1='%s' arg2='%s' cmd=%d fighting=%d front_line=%d carry_n=%d carry_w=%d",
 	      GET_NAME(ch),
 	      world[ch->in_room].number,
@@ -1148,7 +1174,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		}
 	}
 
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "GETDBG[do_get type]: ch=%s room=%d arg1='%s' arg2='%s' type=%d alldot=%d corpse_flag=%d hood=%s",
 	      GET_NAME(ch),
 	      world[ch->in_room].number,
@@ -1176,7 +1202,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		for (o_obj = world[ch->in_room].contents; o_obj; o_obj = next_obj)
 		{
 			next_obj = o_obj->next_content;
-			logit(LOG_DEBUG,
+			GETDBG_LOG(
 			      "GETDBG[get-room-item]: ch=%s room=%d obj=%s [%d] type=%d wt=%d carry_n=%d carry_w=%d take=%d allowed=%d alldot=%d filter='%s'",
 			      GET_NAME(ch),
 			      world[ch->in_room].number,
@@ -1193,7 +1219,7 @@ void do_get(P_char ch, char *argument, int cmd)
 
 			if (alldot && !isname(Gbuf2, o_obj->name))
 			{
-				logit(LOG_DEBUG,
+				GETDBG_LOG(
 				      "GETDBG[get-room-skip:filter]: ch=%s room=%d obj=%s [%d] filter='%s' name='%s'",
 				      GET_NAME(ch),
 				      world[ch->in_room].number,
@@ -1220,7 +1246,7 @@ void do_get(P_char ch, char *argument, int cmd)
 						}
 						else
 						{
-							logit(LOG_DEBUG,
+							GETDBG_LOG(
 							      "GETDBG[get-room-reject:not-takeable]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d carry_w=%d cap_w=%d",
 							      GET_NAME(ch),
 							      world[ch->in_room].number,
@@ -1240,7 +1266,7 @@ void do_get(P_char ch, char *argument, int cmd)
 				}
 				else
 				{
-					logit(LOG_DEBUG,
+					GETDBG_LOG(
 					      "GETDBG[get-room-reject:carry-limit]: ch=%s room=%d obj=%s [%d] carry_n=%d cap_n=%d",
 					      GET_NAME(ch),
 					      world[ch->in_room].number,
@@ -1274,7 +1300,7 @@ fail = TRUE;
 
 		if ((o_obj = get_obj_in_list_vis(ch, arg1, world[ch->in_room].contents, !IS_TRUSTED(ch))))
 		{
-			logit(LOG_DEBUG,
+			GETDBG_LOG(
 			      "GETDBG[get-single-selected]: ch=%s room=%d arg1='%s' obj=%s [%d] uid=%lu visible=%d carry_n=%d carry_w=%d",
 			      GET_NAME(ch),
 			      world[ch->in_room].number,
@@ -1309,7 +1335,7 @@ fail = TRUE;
 							}
 							else
 							{
-								logit(LOG_DEBUG,
+								GETDBG_LOG(
 								      "GETDBG[get-deny:corpse-consent]: ch=%s room=%d obj=%s [%d] owner=%s container=%s [%d]",
 								      GET_NAME(ch),
 								      world[ch->in_room].number,
@@ -1372,7 +1398,7 @@ fail = TRUE;
 				return;
 			}
 			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not see a %s here.\r\n", arg1);
-			logit(LOG_DEBUG,
+			GETDBG_LOG(
 			      "GETDBG[get-single-not-found]: ch=%s room=%d arg1='%s' arg2='%s' carry_n=%d carry_w=%d trusted=%d",
 			      GET_NAME(ch),
 			      world[ch->in_room].number,
@@ -1404,7 +1430,7 @@ fail = TRUE;
 		{
 			if (do_get_container_target_is_valid(s_obj))
 			{
-				logit(LOG_DEBUG,
+				GETDBG_LOG(
 				      "GETDBG[get-container-start]: ch=%s room=%d container=%s [%d] uid=%lu type=%d wear=0x%x extra=0x%x corpse_flag=%d arg1='%s' arg2='%s'",
 				      GET_NAME(ch),
 				      world[ch->in_room].number,
@@ -1423,7 +1449,7 @@ fail = TRUE;
 
 				int container_safety = top_of_objt + 1;
 
-				logit(LOG_DEBUG,
+				GETDBG_LOG(
 				      "GETDBG[get-all start]: ch=%s room=%d container=%s [%d] ctype=%d cwear=0x%x cextra=0x%x corpse_flag=%d fighting=%d front_line=%d contains=%s",
 				      GET_NAME(ch),
 				      world[ch->in_room].number,
@@ -1470,7 +1496,7 @@ fail = TRUE;
 
 					if (alldot && Gbuf2[0] && !isname(Gbuf2, o_obj->name))
 					{
-						logit(LOG_DEBUG,
+						GETDBG_LOG(
 						      "GETDBG[get-container-skip:filter]: ch=%s room=%d container=%s [%d] item=%s [%d] filter='%s' name='%s'",
 						      GET_NAME(ch),
 						      world[ch->in_room].number,
@@ -1514,7 +1540,7 @@ fail = TRUE;
 				return;
 			}
 
-			logit(LOG_DEBUG,
+			GETDBG_LOG(
 			      "GETDBG[get-container-not-container]: ch=%s room=%d container=%s [%d] type=%d arg1='%s' arg2='%s'",
 			      GET_NAME(ch),
 			      world[ch->in_room].number,
@@ -1606,7 +1632,7 @@ fail = TRUE;
 	if (IS_PC(ch))
 		mark_player_dirty(GET_PID(ch));
 
-	logit(LOG_DEBUG,
+	GETDBG_LOG(
 	      "GETDBG[do_get end]: ch=%s room=%d type=%d found=%d fail=%d total=%d corpse_flag=%d looting=%d",
 	      GET_NAME(ch),
 	      world[ch->in_room].number,

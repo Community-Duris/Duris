@@ -176,11 +176,38 @@ int container_total_weight(P_obj cont)
 /*
  * called every 20 seconds, just loops through chars doing...stuff
  */
+/*
+ * This is a housekeeping sweep over every character in the game.  Walking the
+ * whole character list at once cost ~18ms, which is most of a single event
+ * pulse's budget and pushed everything else in that pulse late.  The work is
+ * split into GENERIC_CHAR_EVENT_SLICES groups that run one per invocation, at
+ * the matching fraction of the old delay: a character is still visited exactly
+ * once every GENERIC_CHAR_EVENT_PERIOD pulses, but each pass does a quarter of
+ * the work.  The slice comes from the character's address, so it is stable for
+ * the character's lifetime -- nobody is skipped or done twice.
+ */
+#define GENERIC_CHAR_EVENT_SLICES 4
+#define GENERIC_CHAR_EVENT_PERIOD (20 * WAIT_SEC)
+
+static unsigned int generic_char_event_phase = 0;
+
+static unsigned int char_sweep_slice(P_char c)
+{
+	unsigned long long h = (unsigned long long)(uintptr_t)c;
+
+	h ^= h >> 33;
+	h *= 0xff51afd7ed558ccdULL;
+	h ^= h >> 33;
+
+	return (unsigned int)(h % GENERIC_CHAR_EVENT_SLICES);
+}
+
 void generic_char_event(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	P_char i, i_next;
-	int    n, x;
-	int    dam;
+	P_char       i, i_next;
+	int          n, x;
+	int          dam;
+	unsigned int phase = generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES;
 
 	for (i = character_list; i; i = i_next)
 	{
@@ -192,6 +219,12 @@ void generic_char_event(P_char ch, P_char victim, P_obj obj, void *data)
 			wizlog(AVATAR, "&=LRDanger! Mob without only.npc struct! Attempting to neutralize!");
 			logit(LOG_DEBUG, "mob #%u (%s) without only.npc struct", GET_RNUM(i), i->player.long_descr);
 			extract_char(i);
+			continue;
+		}
+
+		/* Everything below is this character's turn only once per full period. */
+		if (char_sweep_slice(i) != phase)
+		{
 			continue;
 		}
 
@@ -251,7 +284,7 @@ void generic_char_event(P_char ch, P_char victim, P_obj obj, void *data)
 			StartRegen(i, EVENT_WARD_REGEN);
 		}
 	}
-	add_event(generic_char_event, 20 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	add_event(generic_char_event, GENERIC_CHAR_EVENT_PERIOD / GENERIC_CHAR_EVENT_SLICES, NULL, NULL, NULL, 0, NULL, 0);
 	// AddEvent(EVENT_SPECIAL, 20 * WAIT_SEC, TRUE, generic_char_event, 0);
 }
 

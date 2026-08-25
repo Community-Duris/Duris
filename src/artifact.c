@@ -2034,6 +2034,7 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	P_desc     desc;
 	int        vnum, locType, location;
 	bool       found;
+	bool       expired = FALSE;
 	char      *name;
 	MYSQL_RES *res;
 	MYSQL_ROW  row = NULL;
@@ -2043,18 +2044,28 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 		return;
 	}
 
-	// Pull all the artis we're gonna poof (one's that are owned, time's up and in game).
-	qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now() AND locType<>%d", ARTIFACT_NOTINGAME);
+	// Pull all the artis we're gonna poof (one's that are owned and time's up).  The
+	//   predicate deliberately matches the clearing UPDATE at the end of this function,
+	//   so an empty result means that UPDATE has nothing to do either: this runs every
+	//   12 seconds and the write was costing a commit each time for nothing.
+	qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now()");
 	res = mysql_store_result(DB);
 
 	// If there were any artis to pull
 	if (res && mysql_num_rows(res) > 0)
 	{
+		expired = TRUE;
 		while ((row = mysql_fetch_row(res)))
 		{
 			vnum     = atoi(row[0]);
 			locType  = atoi(row[1]);
 			location = atoi(row[2]);
+
+			// Not in game: nothing to find or poof, the UPDATE below clears the row.
+			if (locType == ARTIFACT_NOTINGAME)
+			{
+				continue;
+			}
 
 			arti = NULL;
 			if (locType == ARTIFACT_ONGROUND)
@@ -2356,8 +2367,11 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	mysql_free_result(res);
 
 	// Clear the artis from the list.  Note: doing it after the loop intentionally.
-	qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()", ARTIFACT_NOTINGAME);
-	arti_cache_invalidate();
+	if (expired)
+	{
+		qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()", ARTIFACT_NOTINGAME);
+		arti_cache_invalidate();
+	}
 
 	add_event(event_artifact_check_poof_sql, 12 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
