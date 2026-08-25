@@ -496,28 +496,16 @@ VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB',
 
     # Execute based on mode (SSH or local)
     if USE_SSH == 1:
-        # SSH mode: copy and execute remotely
-        scp_result = subprocess.run(
-            ['scp', '-q', '/tmp/import_help_entry.sql', f'{REMOTE_USER}@{REMOTE_HOST}:/tmp/import_help_entry.sql'],
-            capture_output=True
-        )
-
-        if scp_result.returncode != 0:
-            print(f"  ERROR uploading SQL for '{title}'", file=sys.stderr)
-            error_count += 1
-            continue
-
         mysql_result = subprocess.run(
             ['ssh', f'{REMOTE_USER}@{REMOTE_HOST}',
-             f'mysql -u{MYSQL_USER} -p{MYSQL_PASS} {MYSQL_DB} < /tmp/import_help_entry.sql'],
-            capture_output=True, text=True
+             f'mysql -u{MYSQL_USER} -p{MYSQL_PASS} {MYSQL_DB}'],
+            input=sql, capture_output=True, text=True
         )
     else:
         # Local mode inherits MYSQL_PWD from the parent environment.
         mysql_result = subprocess.run(
             ['mysql', f'-h{MYSQL_HOST}', f'-P{MYSQL_PORT}', f'-u{MYSQL_USER}', MYSQL_DB],
-            stdin=open('/tmp/import_help_entry.sql', 'r'),
-            capture_output=True, text=True
+            input=sql, capture_output=True, text=True
         )
 
     if mysql_result.returncode == 0:
@@ -691,28 +679,16 @@ VALUES ('{safe_title}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
 
     # Execute based on mode (SSH or local)
     if USE_SSH == 1:
-        # SSH mode: copy and execute remotely
-        scp_result = subprocess.run(
-            ['scp', '-q', '/tmp/import_help_entry.sql', f'{REMOTE_USER}@{REMOTE_HOST}:/tmp/import_help_entry.sql'],
-            capture_output=True
-        )
-
-        if scp_result.returncode != 0:
-            print(f"  ERROR uploading SQL for '{title}'", file=sys.stderr)
-            error_count += 1
-            continue
-
         mysql_result = subprocess.run(
             ['ssh', f'{REMOTE_USER}@{REMOTE_HOST}',
-             f'mysql -u{MYSQL_USER} -p{MYSQL_PASS} {MYSQL_DB} < /tmp/import_help_entry.sql'],
-            capture_output=True, text=True
+             f'mysql -u{MYSQL_USER} -p{MYSQL_PASS} {MYSQL_DB}'],
+            input=sql, capture_output=True, text=True
         )
     else:
         # Local mode inherits MYSQL_PWD from the parent environment.
         mysql_result = subprocess.run(
             ['mysql', f'-h{MYSQL_HOST}', f'-P{MYSQL_PORT}', f'-u{MYSQL_USER}', MYSQL_DB],
-            stdin=open('/tmp/import_help_entry.sql', 'r'),
-            capture_output=True, text=True
+            input=sql, capture_output=True, text=True
         )
 
     if mysql_result.returncode == 0:

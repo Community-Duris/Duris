@@ -18371,3 +18371,909 @@ See also: CREDITS, "ZONE GOD", "AREA MAKING", MOB, WORLD
 #~
 
 
+
+#
+"HALF-ELF" (General Information)
+========================================================================
+Born of the union between humans and elves, half-elves combine the versatility,
+ambition, and vigor of humanity with the grace, keen senses, and arcane affinity of
+elvenkind. Standing roughly six feet tall with slender yet athletic builds and slightly
+tapered ears, half-elves move easily through civilized surface cities and wilderness
+colonies alike. Half-elves are a good-aligned race whose primary homeland is the great
+metropolis of Tharnadia.
+
+Half-elves are celebrated for their natural charm and adaptability. Possessing the open-
+mindedness of humans and the long-lived perspective of elves, they frequently serve as
+skilled diplomats, bards, versatile warriors, and swift spellcasters. Their mixed heritage
+grants them natural resistance to magic and an agile intellect that shines in combat and
+scholarly pursuits.
+
+==Strengths==
+Half-elves possess innate magic resistance, reducing the effectiveness of hostile spells
+cast against them. They have natural mastery with longswords, keen infravision, and the
+Quick Thinking ability which enhances their reaction speed. Their balanced attribute spread
+and fast spellcasting pulse make them capable in nearly any discipline.
+
+==Weakness==
+Half-elves do not possess the extreme physical brawn of giants or ogres, nor the specialized
+intellectual focus of pureblood Grey Elves.
+
+==See also==
+* Innate
+* Races
+* Infravision
+* Tharnadia
+* Human
+* Grey elf
+==Class list==
+No classes available.
+==Racial Statistics==
+Strength    : 105
+Agility     : 110
+Dexterity   : 110
+Constitution: 102
+Power       : 125
+Intelligence: 115
+Wisdom      : 110
+Charisma    : 115
+Luck        : 100
+Karma       : 100
+==Racial Traits==
+Combat Pulse : average
+Spell Pulse  : above average
+==Innate abilities==
+*infravision
+*magic resistance
+*quick thinker (obtained at level 30)
+*longsword master (obtained at level 11)
+'*' Designates passive ability.
+
+#
+"ILLITHID" (General Information)
+========================================================================
+The Illithid, commonly known as Mind Flayers, are one of the most feared and sinister
+races in the subterranean depths of Duris. Originating from the dark, alien caverns of
+Ixarkon, illithids possess mauve-tinted rubbery skin, bulbous craniums, and four flexible
+tentacles surrounding a lamprey-like mouth designed to extract the brains of sentient prey.
+Illithids are an intensely evil race driven by cold intellect and supreme psionic arrogance.
+
+Illithids view all other species as lesser cattle to be enslaved, harvested, or mentally
+dominated. Their psionic mastery allows them to levitate effortlessly above obstacles and
+shift between planes of existence. In battle, an illithid unleashes devastating psionic
+blasts that shatter the minds of their foes before consuming their intellect.
+
+==Strengths==
+Illithids possess unmatched mental execution speed, boasting the fastest spell and psionic
+pulse in the realms. They have immense Power and Intelligence, innate psionic mind blast,
+permanent levitation, planar shifting to Astral and Prime planes, and natural magic resistance.
+
+==Weakness==
+Illithids are physically frail with low Strength and Constitution. They suffer from severe
+dayblindness and sunlight vulnerability on the surface world, and are universally hunted
+by all surface races.
+
+==See also==
+* Innate
+* Races
+* Psionicist
+* Mindflayer
+* Ultravision
+* Ixarkon
+==Class list==
+* Psionicist  :
+* MindFlayer  :
+==Racial Statistics==
+Strength    : 70
+Agility     : 90
+Dexterity   : 90
+Constitution: 85
+Power       : 200
+Intelligence: 150
+Wisdom      : 110
+Charisma    : 25
+Luck        : 100
+Karma       : 100
+==Racial Traits==
+Combat Pulse : poor
+Spell Pulse  : incredible
+==Innate abilities==
+ levitate
+*ultravision
+ blast
+ shift_astral
+ shift_prime
+*magic resistance
+*vulnerable to sun
+'*' Designates passive ability.
+
+#
+"OROG" (General Information)
+========================================================================
+Orogs, commonly known as Deep Orcs, are a towering, highly disciplined subterranean race
+of great-orcs that dwell in the deepest fortresses of the Underdark (hometown Orogs). Considerably
+larger, stronger, and smarter than their surface-dwelling kin, Orogs are natural military leaders
+who organize deep-orc legions with ruthless tactical efficiency.
+
+Orogs take great pride in their martial craft, forging heavy plate armor and masterwork weapons
+in deep magma foundries. In battle, their Warcaller's Fury inspires savage combat frenzy while
+their colossal musculature allows them to overpower frontline opponents with ease.
+
+==Strengths==
+Orogs possess massive physical Strength (160) and Constitution (170) alongside high agility.
+Their Warcaller's Fury innate provides significant combat enhancements, and they possess keen
+ultravision for subterranean warfare.
+
+==Weakness==
+Orogs suffer from severe dayblindness and sunlight vulnerability on the surface world. They have
+low charisma and limited magical power.
+
+==See also==
+* Innate
+* Races
+* Orc
+* Ultravision
+* Orogs
+==Class list==
+No classes available.
+==Racial Statistics==
+Strength    : 160
+Agility     : 120
+Dexterity   : 120
+Constitution: 170
+Power       : 50
+Intelligence: 40
+Wisdom      : 80
+Charisma    : 50
+Luck        : 75
+Karma       : 60
+==Racial Traits==
+Combat Pulse : below average
+Spell Pulse  : atrociously bad
+==Innate abilities==
+*ultravision
+*vulnerable to sun
+*warcallers fury (obtained at level 21)
+'*' Designates passive ability.
+
+#
+"GITHZERAI" (General Information)
+========================================================================
+Githzerai are an ascetic, highly disciplined planar race who forged monasteries within the
+swirling chaos of Limbo. Slender and gaunt with yellow-tinted skin, angular features, and keen,
+unblinking eyes, Githzerai dedicate their lives to rigorous mental discipline, martial arts,
+and philosophical introspection. They are allied with the forces of good in Tharnadia.
+
+Centuries of eternal warfare against their hated oppressors, the Illithids, and their bitter
+planar cousins, the Githyanki, have honed Githzerai into supreme combatants. They wield psionic
+levitation and planar shifting with effortless grace, focusing their minds through the ancient
+rite of Rrakkma to hunt and slay mind flayers.
+
+==Strengths==
+Githzerai possess innate magic resistance, dual dayvision and ultravision, levitation, and planar
+shifting to both Prime and Astral planes. Their Rrakkma innate grants focused combat mastery,
+and they excel across a vast array of psionic, arcane, and martial classes.
+
+==Weakness==
+Githzerai possess balanced physical attributes without the colossal brute strength of giant-kin.
+
+==See also==
+* Innate
+* Races
+* Githyanki
+* Psionicist
+* Monk
+* Tharnadia
+==Class list==
+* Warrior     : Swordsman, Guardian
+* Ranger      : Blademaster, Huntsman, Marshall
+* Psionicist  : Pyrokinetic, Enslaver, Psycheporter
+* Paladin     : Crusader, Cavalier
+* Cleric      : Zealot, Healer, Holyman
+* Druid       : Forest Druid, Storm Druid
+* Sorcerer    : Wildmage, Wizard, Shadowmage
+* Necromancer : Diabolis, Necrolyte, Reaper
+* Conjurer    : Air Magus, Water Magus, Fire Magus, Earth Magus
+* Bard        : Disharmonist, Scoundrel, Minstrel
+* Illusionist : Magician, Dark Dreamer
+* Ethermancer : Tempest Magus, Frost Magus, Star Magus
+* Summoner    : Controller, Mentalist, Naturalist
+* Dragoon     : Dragon Priest, Dragon Lancer
+==Racial Statistics==
+Strength    : 100
+Agility     : 100
+Dexterity   : 100
+Constitution: 100
+Power       : 120
+Intelligence: 115
+Wisdom      : 110
+Charisma    : 90
+Luck        : 100
+Karma       : 100
+==Racial Traits==
+Combat Pulse : below average
+Spell Pulse  : above average
+==Innate abilities==
+ levitate (obtained at level 11)
+*ultravision
+ shift_astral (obtained at level 45)
+ shift_prime
+*dayvision
+*magic resistance
+*spirit of the rrakkma (obtained at level 21)
+'*' Designates passive ability.
+
+#
+"DRIDER" (General Information)
+========================================================================
+Driders are terrifying centauric abominations bearing the upper torso and head of a Drow
+elf fused at the waist to the eight-legged body of a giant monstrous spider. Revering the dark
+spider-goddesses in their subterranean city of Arach-Drathos, driders are an evil race that
+combines Drow magical intellect with the lethal predatory traits of arachnids.
+
+Because of their eight-legged spider body, driders possess exceptional balance and stability,
+making them nearly impossible to trip or knock down in combat. They can spin thick, sticky webs
+to wrap and immobilize their victims before closing in with blade and venomous spellcraft.
+
+==Strengths==
+Driders possess innate magic resistance, the Webwrap ability to paralyze foes in combat,
+natural groundfighting stability from their spider body, high agility and constitution, and keen
+ultravision. They excel as Warriors, Sorcerers, Necromancers, Reavers, and Blighters.
+
+==Weakness==
+Driders suffer from dayblindness under bright sunlight. Due to their spider anatomy, they cannot
+wear standard human trousers, greaves, or footwear.
+
+==See also==
+* Innate
+* Races
+* Drow elf
+* Arach-Drathos
+* Reaver
+* Blighter
+==Class list==
+* Warrior     : Swordsman, Guardian
+* Sorcerer    : Wildmage, Wizard, Shadowmage
+* Necromancer : Diabolis, Necrolyte, Reaper
+* Reaver      : Ice Reaver, Flame Reaver, Shock Reaver, Earth Reaver
+* Blighter    : Storm Bringer, Scourge, Ruiner
+==Racial Statistics==
+Strength    : 95
+Agility     : 110
+Dexterity   : 110
+Constitution: 115
+Power       : 85
+Intelligence: 100
+Wisdom      : 90
+Charisma    : 70
+Luck        : 100
+Karma       : 100
+==Racial Traits==
+Combat Pulse : average
+Spell Pulse  : above average
+==Innate abilities==
+*ultravision
+*magic resistance
+*groundfighting (obtained at level 21)
+*spider body
+'*' Designates passive ability.
+
+#
+"KOBOLD" (General Information)
+========================================================================
+Kobolds are a small, reptilian humanoid race that inhabits the deep cavern networks and
+subterranean tunnels of the Underdark alongside goblins (hometown Goblin Caves). With scaly hides
+ranging from reddish-brown to rusty black, small horns, and snout-like jaws, kobolds take fierce
+pride in their claimed draconic heritage. Though small in stature, they are exceptionally cunning,
+agile, and industrious miners.
+
+Kobolds compensate for their small size with blisteringly fast reflexes and group coordination.
+They are natural miners and trap-builders, capable of moving silently through dark tunnels and
+using their soothing, calming demeanor to avoid unwanted aggression from dangerous underground
+beasts.
+
+==Strengths==
+Kobolds boast exceptional combat and spellcasting pulse speeds, ranking among the fastest in
+the game. They have high Intelligence, Agility, and Luck, dual dayvision and ultravision, natural
+Underdark stealth, innate Calming aura, and mining mastery.
+
+==Weakness==
+Kobolds have lower raw Strength and Constitution due to their small size, limiting their maximum
+carrying capacity and bash resistance.
+
+==See also==
+* Innate
+* Races
+* Goblin
+* Ultravision
+* Dayvision
+* Shaman
+==Class list==
+* Warrior     : Swordsman, Guardian
+* Cleric      : Zealot, Healer, Holyman
+* Shaman      : Elementalist, Spiritualist, Animalist
+* Sorcerer    : Wildmage, Wizard, Shadowmage
+* Necromancer : Diabolis, Necrolyte, Reaper
+* Conjurer    : Air Magus, Water Magus, Fire Magus, Earth Magus
+* Mercenary   : Brigand, Bounty Hunter
+* Bard        : Disharmonist, Scoundrel, Minstrel
+* Illusionist : Magician, Dark Dreamer
+* Ethermancer : Tempest Magus, Frost Magus, Star Magus
+* Summoner    : Controller, Mentalist, Naturalist
+==Racial Statistics==
+Strength    : 90
+Agility     : 120
+Dexterity   : 110
+Constitution: 95
+Power       : 95
+Intelligence: 125
+Wisdom      : 105
+Charisma    : 100
+Luck        : 110
+Karma       : 100
+==Racial Traits==
+Combat Pulse : formidable
+Spell Pulse  : formidable
+==Innate abilities==
+*ultravision
+*ud-sneak
+*dayvision
+'*' Designates passive ability.
+
+#
+"PLANETBOUND ILLITHID" (General Information)
+========================================================================
+Planetbound Illithids are a specialized branch of the mind flayer race that has established
+permanent subterranean colonies within the deep Underdark city of Ixarkon. While astral illithids
+focus on void travel and mental conquest, planetbound illithids have adapted their immense psionic
+faculties to terrestrial sorcery, summoning, and elemental manipulation.
+
+Planetbound Illithids retain the terrifying tentacled visage and mental acuity of their kind.
+They float effortlessly above the ground using innate levitation and can transition between the
+Prime Material and Astral planes at will, commanding powerful summoned allies and devastating
+sorceries.
+
+==Strengths==
+Planetbound Illithids possess immense Power and Intelligence, very fast spellcasting recovery,
+innate magic resistance, innate levitation, planar shifting, and keen ultravision.
+
+==Weakness==
+Planetbound Illithids are physically delicate with low Strength and Constitution. They suffer
+from dayblindness and sunlight vulnerability on the surface world.
+
+==See also==
+* Innate
+* Races
+* Illithid
+* Psionicist
+* Sorcerer
+* Ixarkon
+==Class list==
+* Psionicist  :
+* Sorcerer    : Wizard, Shadowmage
+* Conjurer    : Air Magus, Water Magus, Fire Magus, Earth Magus
+* Summoner    : Controller, Mentalist, Naturalist
+==Racial Statistics==
+Strength    : 83
+Agility     : 105
+Dexterity   : 105
+Constitution: 82
+Power       : 125
+Intelligence: 120
+Wisdom      : 100
+Charisma    : 100
+Luck        : 100
+Karma       : 100
+==Racial Traits==
+Combat Pulse : average
+Spell Pulse  : very good
+==Innate abilities==
+ levitate (obtained at level 10)
+*ultravision
+ shift_astral
+ shift_prime
+*magic resistance
+*dayblind
+*vulnerable to sun
+'*' Designates passive ability.
+
+#
+"WOOD ELF" (General Information)
+========================================================================
+Wood Elves, also known as Sylvan or Wild Elves, are reclusive, nature-loving elves who make
+their homes in the ancient forests and primeval groves of Duris (hometown Tharnadia). Taller,
+more weathered, and sturdier than their delicate Grey Elf kin, wood elves have tanned skin,
+earth-toned hair, and keen green or amber eyes that blend seamlessly into the forest canopy.
+
+Wood Elves are legendary for their woodcraft, archery, and wilderness guerrilla tactics. Living
+in close communion with nature, they move through dense woodlands with total silence and possess
+uncanny vision through thick foliage, making them the premier rangers and druids of the surface
+realms.
+
+==Strengths==
+Wood Elves possess exceptional wilderness stealth (Outdoor Sneak) and Forest Sight to see through
+dense woods. They have innate magic resistance, natural Longsword Mastery, higher Constitution
+and Strength than Grey Elves, and keen senses.
+
+==Weakness==
+Wood Elves are slightly less focused on pure scholarly arcane magic than Grey Elves, having
+slightly lower raw Intelligence.
+
+==See also==
+* Innate
+* Races
+* Grey elf
+* Ranger
+* Druid
+* Tharnadia
+==Class list==
+No classes available.
+==Racial Statistics==
+Strength    : 125
+Agility     : 115
+Dexterity   : 115
+Constitution: 135
+Power       : 95
+Intelligence: 85
+Wisdom      : 91
+Charisma    : 85
+Luck        : 100
+Karma       : 100
+==Racial Traits==
+Combat Pulse : average
+Spell Pulse  : above average
+==Innate abilities==
+*outdoor sneak (obtained at level 11)
+*forest sight (obtained at level 11)
+*magic resistance
+*longsword master (obtained at level 11)
+'*' Designates passive ability.
+
+#
+"FIRBOLG" (General Information)
+========================================================================
+Firbolgs are colossal, gentle-hearted giant-kin who dwell in the secluded highland forests,
+deep glens, and mountain slopes of Ugta. Standing upwards of nine to ten feet tall with thick,
+flowing beards, massive bone structure, and dense musculature, firbolgs are the strongest mortal
+creatures on Duris. They live in close harmony with nature and ancient woodland spirits.
+
+Though naturally peaceful and slow to anger, a provoked firbolg is a force of terrifying
+destruction. Their immense physical mass allows them to shatter castle gates with Doorbash and
+crush armored opponents beneath devastating Bodyslams, making them unmatched frontline titans.
+
+==Strengths==
+Firbolgs possess the highest raw Strength (230) in the game and a colossal Constitution (200),
+yielding unmatched health and carrying capacity. They possess innate Bodyslam, Doorbash, and
+Forest Sight.
+
+==Weakness==
+Firbolgs have very slow combat and spell recovery speeds, low agility and dexterity, and an innate
+vulnerability to magical damage.
+
+==See also==
+* Innate
+* Races
+* Giant
+* Bodyslam
+* Ugta
+* Shaman
+==Class list==
+* Warrior     : Swordsman, Guardian
+* Shaman      : Elementalist, Spiritualist, Animalist
+==Racial Statistics==
+Strength    : 230
+Agility     : 75
+Dexterity   : 75
+Constitution: 200
+Power       : 65
+Intelligence: 75
+Wisdom      : 80
+Charisma    : 80
+Luck        : 90
+Karma       : 100
+==Racial Traits==
+Combat Pulse : atrociously bad
+Spell Pulse  : atrociously bad
+==Innate abilities==
+ doorbash
+ bodyslam
+*forest sight
+'*' Designates passive ability.
+
+#
+"TIEFLING" (General Information)
+========================================================================
+Tieflings are humanoids carrying the planar heritage of fiends, devils, or demons in their
+bloodline. Based in the cosmopolitan melting-pot of NaxVaran, tieflings are marked by sharp horns,
+prehensile tails, pointed teeth, and eyes of solid color. Despite their infernal ancestry, tieflings
+possess free will and choose their own path in the race war, serving on both sides of the conflict.
+
+Tieflings are clever, charismatic, and remarkably adaptable. Their fiendish legacy grants them
+natural resistance to both magic and fire, while their acute senses allow them to perceive the
+world through both infravision and ultravision. They excel across nearly every class and discipline.
+
+==Strengths==
+Tieflings possess innate magic resistance, natural protection from fire, and dual infravision and
+ultravision. They have high Intelligence, Charisma, Agility, and Dexterity, alongside vast class
+versatility.
+
+==Weakness==
+Tieflings face widespread social prejudice from conservative cultures, and possess average
+physical constitution.
+
+==See also==
+* Innate
+* Races
+* Infravision
+* Ultravision
+* NaxVaran
+* Paladin
+* Anti-Paladin
+==Class list==
+* Warrior     : Swordsman, Guardian, Swashbuckler
+* Ranger      : Blademaster, Huntsman, Marshall
+* Paladin     : Crusader, Cavalier
+* Anti-Paladin: Dark Knight, Demonic Rider, Violator
+* Cleric      : Zealot, Healer, Holyman
+* Monk        : Red Dragon, Elaphidist
+* Shaman      : Elementalist, Spiritualist, Animalist
+* Sorcerer    : Wildmage, Wizard, Shadowmage
+* Conjurer    : Air Magus, Water Magus, Fire Magus, Earth Magus
+* Rogue       : Assassin, Thief
+* Mercenary   : Brigand, Bounty Hunter
+* Bard        : Disharmonist, Scoundrel, Minstrel
+* Reaver      : Ice Reaver, Flame Reaver, Shock Reaver, Earth Reaver
+* Illusionist : Magician, Dark Dreamer
+* Ethermancer : Tempest Magus, Frost Magus, Star Magus
+* Summoner    : Controller, Mentalist, Naturalist
+* Dragoon     : Dragon Hunter, Dragon Priest, Dragon Lancer
+==Racial Statistics==
+Strength    : 110
+Agility     : 110
+Dexterity   : 110
+Constitution: 100
+Power       : 100
+Intelligence: 120
+Wisdom      : 100
+Charisma    : 120
+Luck        : 110
+Karma       : 100
+==Racial Traits==
+Combat Pulse : average
+Spell Pulse  : above average
+==Innate abilities==
+*infravision
+*ultravision
+*protection from fire
+*magic resistance
+'*' Designates passive ability.
+
+#
+DRAGOON (Class)
+===========================================================================
+Dragoons are elite martial knights bound to the ancient power, spirit, and
+martial traditions of dragons. Masters of heavy polearms, lances, and reach
+weaponry, Dragoons combine ferocious physical strength with mystical
+draconic rites and invocations. Whether charging into battle atop mighty
+summoned draconic steeds or skewering opponents from distance with devastating
+reach, Dragoons dominate the front lines of combat with draconic fury.
+
+In battle, Dragoons unleash terrifying dragon roars to paralyze enemies,
+exhale lethal dragon breath to scour their foes, and channel draconic strikes
+through their weapons. Through specialized draconic rites and Latin invocations,
+Dragoons summon scaled wards (Aegis Squamarum), cauterize wounds with dragon
+fire (Igneus Vitae), strike with fiery blood (Sanguinis Ignis), and undergo
+ultimate draconic apotheosis. Their battle frenzy and ophidian gaze grant them
+extraordinary combat awareness and supernatural detection.
+
+Allowed Races: Human, Drow Elf, Grey Elf, Orc, Githyanki, Githzerai, Tiefling
+Specializations: Dragon Hunter, Dragon Priest, Dragon Lancer
+===========================================================================
+See also: SKILL_DRAGOON, LANCE CHARGE, SKEWER, DRAGON BREATH, MOUNTED COMBAT
+
+#
+SKILL_DRAGOON (Skillset)
+===========================================================================
+The following is a list of all skills and spells available to the
+Dragoon class:
+
+Skills
+---------------------------------------------------------------------------
+1st level:   1h bludgeon, 1h flaying, 1h piercing, 1h slashing, bandage,
+             carve, climb, double attack, dragon breath, dragon roar,
+             dragon strike, fishing, kick, mount, mounted combat, parry,
+             quick chant, retreat, riposte, salvage, swim, unarmed damage
+10th level:  appraise, shaman spell knowledge
+15th level:  lore
+21st level:  flank
+26th level:  track
+30th level:  dual wield, shield block
+31st level:  blade barrage
+35th level:  reach weapons
+41st level:  concentration, lance charge
+46th level:  crippling strike, skewer, triple attack
+51st level:  switch opponents
+
+Spells
+---------------------------------------------------------------------------
+3rd circle:  animae cicatrix
+4th circle:  ensis unguis, lancea cineralae, simulacrum anguis
+5th circle:  stigmata draconica
+6th circle:  aegis squamarum
+7th circle:  judicium fidei
+8th circle:  igneus vitae, sanctum draconis, sanguinis ignis
+9th circle:  pactum serpentis, ritus draconum, vivernae concordia
+10th circle: edictum cineris
+11th circle: sigillum negati
+12th circle: draconic apotheosis
+===========================================================================
+See also: DRAGOON
+
+#
+SUMMONER (Class)
+===========================================================================
+Summoners are arcane masters who manipulate the fabric of planar dimensions
+to conjure, bind, and command extraplanar forces, elementals, and mystical
+barriers. Rather than relying solely on raw evocation like traditional
+Sorcerers, Summoners focus on containment fields, planar gates, dimensional
+displacement, and multi-layered prismatic energy shielding to control the
+flow of battle.
+
+In combat, Summoners weave formidable defensive walls (wall of force, wall
+of ice, wall of flames), erect shimmering prismatic barriers (prismatic
+spray, prismatic ray, prismatic cube), and protect entire groups with stone
+skin and globes of invulnerability. Their deep connection to planar portals
+enables rapid group transit via gate, relocate, dimension door, and farsee.
+
+Allowed Races: Human, Drow Elf, Grey Elf, Halfling, Gnome, Orc, Githyanki,
+               Shade, Goblin, Phantom, Githzerai, Kobold, Pillithid, Tiefling
+Specializations: Controller, Mentalist, Naturalist
+===========================================================================
+See also: SKILL_SUMMONER, GATE, RELOCATE, PRISMATIC RAY, PRISMATIC CUBE
+
+#
+SKILL_SUMMONER (Skillset)
+===========================================================================
+The following is a list of all skills and spells available to the
+Summoner class:
+
+Skills
+---------------------------------------------------------------------------
+1st level:   1h bludgeon, 1h piercing, 2h bludgeon, bandage, carve, climb,
+             concentration, dodge, first aid, fishing, kick, meditate,
+             mount, quick chant, retreat, salvage, scribe,
+             sorcerous spell knowledge, swim
+
+Spells
+---------------------------------------------------------------------------
+1st circle:  detect magic, magic missile, minor creation
+2nd circle:  burning hands, chill touch, mirror image, sleep
+3rd circle:  agility, concealment, dispel magic, mage flame,
+             shocking grasp, strength
+4th circle:  enchant weapon, infravision, levitate, lightning bolt,
+             ray of enfeeblement, reveal true name, wall of force
+5th circle:  coldshield, contain being, fireshield, identify,
+             sense follower, slowness
+6th circle:  color spray, feeblemind, minor globe of invulnerability,
+             stone skin, teleport
+7th circle:  airy water, cone of cold, dimension door, fireball, haste,
+             ice storm, wall of flames, wall of ice, web
+8th circle:  detect invisibility, globe of invulnerability, invisibility,
+             prismatic spray
+9th circle:  acidimmolate, fly, gate, immolate, prismatic ray, relocate
+10th circle: elemental aura, farsee, group stone skin
+11th circle: group globe of invulnerability, prismatic cube
+===========================================================================
+See also: SUMMONER
+
+#
+THEURGIST (Class)
+===========================================================================
+Theurgists are holy practitioners of divine invocations and celestial
+communion. Channeling the sublime magic of the Upper Planes, Theurgists
+bridge the gap between divine clerical miracle-working and high arcane
+theurgy. They invoke celestial spirits, archons, devas, asuras, bralanis,
+and angels to enact heavenly justice, restore broken spirits, and vanquish
+undead and demonic abominations.
+
+At high circles of power, a Theurgist can call forth celestial champions
+(Call Knight, Call Deva, Call Liberator, Call Titan) and invoke the supreme
+manifestation of an Avatar. In addition to their celestial summons,
+Theurgists wield potent offensive holy light, life bolts, holy auras, and
+annihilating power words.
+
+Allowed Races: Agathinon, Eladrin, Human, Grey Elf, Githzerai, Tiefling
+Specializations: Medium, Templar, Thaumaturge
+===========================================================================
+See also: SKILL_THEURGIST, CALL ARCHON, CALL DEVA, CALL AVATAR, MEND SOUL
+
+#
+SKILL_THEURGIST (Skillset)
+===========================================================================
+The following is a list of all skills and spells available to the
+Theurgist class:
+
+Skills
+---------------------------------------------------------------------------
+1st level:   bandage, carve, climb, dodge, feign death, fishing, kick,
+             meditate, mount, quick chant, retreat, scribe,
+             sorcerous spell knowledge, swim
+20th level:  age corpse
+30th level:  1h bludgeon, 1h piercing, 1h slashing, 2h bludgeon
+
+Spells
+---------------------------------------------------------------------------
+1st circle:  detect magic, life bolt, minor creation, preserve,
+             protection from undead
+2nd circle:  chill touch, protection from cold, protection from living,
+             sleep, vampiric touch
+3rd circle:  call archon, dispel magic, embalm, sense follower
+4th circle:  continual light, rejuvenate minor, return soul, strength,
+             wither
+5th circle:  call asura, coldshield, concealment, feeblemind,
+             fireshield, levitate, mend soul, teleport
+6th circle:  cone of cold, minor globe of invulnerability,
+             rejuvenate major, restore spirit, vitalize soul
+7th circle:  call bralani, destroy undead, holy aura, knock, protect soul,
+             reveal true name
+8th circle:  detect invisibility, dispel invisible, haste, holy blade,
+             invisibility, negative concussion blast
+9th circle:  age, call deva, call knight, create golem, dimension door,
+             energy drain, holy light, taint, undeath to death,
+             voice of creation
+10th circle: angelic countenance, blackmantle, call liberator,
+             cloak of fear, fly, mass embalm
+11th circle: aid of the heavens, call titan, corpseform, power word kill
+12th circle: call avatar
+===========================================================================
+See also: THEURGIST
+
+#
+BLIGHTER (Class)
+===========================================================================
+Blighters are vengeful, fallen nature casters who have rejected the peaceful
+harmony of Druidic tradition in favor of ruthless exploitation and
+desecration. Driven by malice, corruption, or a desire to turn nature's wrath
+upon the civilized world, Blighters drain the vitality of living lands,
+wither forests, unleash cataclysmic squalls, and corrupt animals into vicious
+beasts.
+
+In combat, Blighters draw upon destructive elemental forces and necrotic
+decay. They cast virulent plagues and withering curses (blight, drain nature,
+sap nature, horrid wilting, waves of fatigue), summon catastrophic tempests
+(acid rain, call lightning, magma burst, sandstorm, implosion), and raise
+twisted shamblers from despoiled flora. Blighters retain the primal ability
+to shapechange into deadly predatory forms.
+
+Allowed Races: Drow Elf, Duergar Dwarf, Orc, Githyanki, Goblin, Drider
+Specializations: Storm Bringer, Scourge, Ruiner
+===========================================================================
+See also: SKILL_BLIGHTER, DESECRATE LAND, DRAIN NATURE, SHAPECHANGE, SHAMBLER
+
+#
+SKILL_BLIGHTER (Skillset)
+===========================================================================
+The following is a list of all skills and spells available to the
+Blighter class:
+
+Skills
+---------------------------------------------------------------------------
+1st level:   1h bludgeon, 1h piercing, 1h slashing, bandage, carve,
+             clerical spell knowledge, climb, concentration, double attack,
+             fishing, kick, mount, quick chant, retreat, salvage, swim
+
+Spells
+---------------------------------------------------------------------------
+1st circle:  cause light, detect magic, fortitude, thornskin
+2nd circle:  burning hands, cause serious, chill touch, unholy wind
+3rd circle:  acid blast, cause critical, darkness, faerie fog
+4th circle:  create pond, flame sphere, poison, ray of enfeeblement,
+             vampiric touch, wither
+5th circle:  animate dead, blight, drain nature, earthquake, harm,
+             life leech
+6th circle:  doom blade, firelance, flame strike, sap nature,
+             waves of fatigue
+7th circle:  call lightning, desecrate land, dispel magic,
+             faluzures vitality, toxic fog, wall of flames
+8th circle:  acid stream, entangle, shadow vision, spore cloud
+9th circle:  firestorm, horrid wilting
+10th circle: acid rain, freedom of movement, magma burst, obscuring mist,
+             shadow gate, squall, transmute rock to mud
+11th circle: blood to stone, elemental aura, shambler
+12th circle: bloodstone, implosion, sandstorm
+===========================================================================
+See also: BLIGHTER
+
+#
+MINDFLAYER (Class)
+===========================================================================
+MindFlayers, known also as Illithids, are subterranean horrors possessing
+supreme psionic mastery. Endowed with terrifying cerebral power, MindFlayers
+view other mortal races as cattle and thralls. They channel raw telepathic
+and telekinetic forces to obliterate minds, manipulate matter, erect
+impenetrable psychic barriers, and fold space itself.
+
+In combat, MindFlayers attack both the physical bodies and the minds of
+their adversaries. Through telekinetic assault, they launch ballistic
+attacks and detonate objects and flesh. Telepathically, they crush enemy
+wills with ego whip, inflict intense psionic pain, cause confusion and rage,
+or sever neural connections with memory block and spinal corruption. For
+defense, they erect formidable inertial barriers, intellect fortresses, and
+towers of iron will.
+
+Allowed Races: Illithid, Pillithid
+===========================================================================
+See also: SKILL_MINDFLAYER, PSIONICIST, ILLITHID, WORMHOLE, DEATH FIELD
+
+#
+SKILL_MINDFLAYER (Skillset)
+===========================================================================
+The following is a list of all skills and spells available to the
+MindFlayer class:
+
+Skills
+---------------------------------------------------------------------------
+1st level:   1h bludgeon, 1h piercing, 2h bludgeon, bandage, carve, climb,
+             first aid, fishing, kick, meditate, mount, quick chant,
+             retreat, salvage, swim
+
+Spells
+---------------------------------------------------------------------------
+1st circle:  adrenaline control, combat mind, ego whip, excogitate
+2nd circle:  ballistic attack, cell adjustment, create sound,
+             enhance agility, enhance constitution, enhance dexterity,
+             enhance strength
+3rd circle:  aura sight, lend health, molecular agitation
+4th circle:  awe, comprehend languages, energy containment,
+             molecular control, teleport
+5th circle:  flesh armor, flight, inflict pain, intellect fortress
+6th circle:  detonate, ectoplasmic form, enhance armor
+7th circle:  biofeedback, cannibalize, ether warp, inertial barrier,
+             tower of iron will
+8th circle:  displacement, radial navigation
+9th circle:  confuse, enrage, memory block, wormhole
+10th circle: death field, psionic cloud
+11th circle: mind travel, sight link
+12th circle: mind blank, spinal corruption
+===========================================================================
+See also: MINDFLAYER
+
+#
+SKILL_ASSASSIN (Skillset)
+===========================================================================
+The following is a list of all skills available to the Assassin class:
+
+Skills
+---------------------------------------------------------------------------
+1st level:   1h piercing, 1h slashing, apply poison, awareness, backstab,
+             bandage, blindfighting, carve, circle, climb, dodge,
+             double attack, dual wield, first aid, fishing, hide, mount,
+             pick lock, ranged weapons, retreat, safe fall, salvage, sneak,
+             swim, switch opponents, track
+20th level:  appraise, garrote
+35th level:  spinal tap
+36th level:  parry
+45th level:  control flee
+51st level:  critical stab
+===========================================================================
+See also: ASSASSIN, ROGUE, BACKSTAB, APPLY POISON, GARROTE
+
+#
+SKILL_THIEF (Skillset)
+===========================================================================
+The following is a list of all skills available to the Thief class:
+
+Skills
+---------------------------------------------------------------------------
+1st level:   1h bludgeon, 1h piercing, awareness, backstab, bandage,
+             blindfighting, carve, circle, climb, dirt toss, dodge,
+             double attack, first aid, fishing, hide, mount, pick lock,
+             ranged weapons, retreat, safe fall, salvage, steal, swim,
+             switch opponents, track
+10th level:  appraise
+15th level:  listen
+16th level:  trip
+20th level:  parry, subterfuge
+46th level:  evade
+51st level:  hamstring, trap
+===========================================================================
+See also: THIEF, ROGUE, BACKSTAB, STEAL, SUBTERFUGE
