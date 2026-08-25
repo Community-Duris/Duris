@@ -15,6 +15,7 @@ DurisMUD forked from Xanadinn's repo.
 - [Database Migrations](#database-migrations)
 - [Project Structure](#project-structure)
 - [Logs](#logs)
+- [Documentation](#documentation)
 
 ---
 
@@ -112,10 +113,10 @@ FLUSH PRIVILEGES;
 
 ```bash
 # For development:
-mysql -u duris -p duris_dev < src/duris.sql
+mysql -u duris -p duris_dev < migrations/bootstrap_legacy_baseline.sql
 
 # For production:
-mysql -u duris -p duris < src/duris.sql
+mysql -u duris -p duris < migrations/bootstrap_legacy_baseline.sql
 ```
 
 ### 4. Apply Migrations
@@ -404,7 +405,7 @@ MySQL initialization failed! Dying!
 
 5. **Database schema not loaded:**
    ```bash
-   mysql -u duris -p duris_dev < src/duris.sql
+   mysql -u duris -p duris_dev < migrations/bootstrap_legacy_baseline.sql
    ```
 
 ### Check Logs
@@ -486,15 +487,15 @@ Reports land in `logs/valgrind/`. The script refuses port 7777. See
 
 ### Applying Migrations
 
-Migrations are SQL scripts in `sql/migrations/` directory.
+Migrations are SQL scripts in the `migrations/` directory.
 
 **To apply a migration:**
 ```bash
 # Development:
-mysql -u duris -p duris_dev < sql/migrations/migration_name.sql
+mysql -u duris -p duris_dev < migrations/migration_name.sql
 
 # Production:
-mysql -u duris -p duris < sql/migrations/migration_name.sql
+mysql -u duris -p duris < migrations/migration_name.sql
 ```
 
 ### Available Migrations
@@ -507,7 +508,7 @@ mysql -u duris -p duris < sql/migrations/migration_name.sql
 
 ### Creating New Migrations
 
-1. Create SQL file in `sql/migrations/`
+1. Create the SQL file in `migrations/`
 2. Use descriptive filename (e.g., `add_feature_name.sql`)
 3. Include header comment with purpose and date
 4. Use `IF NOT EXISTS` or `IF EXISTS` for idempotency
@@ -564,7 +565,7 @@ run from anywhere (`./scripts/start_mud.sh`).
 - **dms** - Compiled MUD executable
 - **src/sql.h** - Database credentials and configuration
 - **src/config.h** - MUD configuration (port, directories, etc.)
-- **src/duris.sql** - Main database schema
+- **migrations/bootstrap_legacy_baseline.sql** - Main database schema
 - **logs/log/status** - MySQL connection logs
 - **logs/log/syslog** - Main game log
 
@@ -653,5 +654,18 @@ gh pr create --title "Your feature title" --body "Detailed description of change
 
 ---
 
+## Documentation
 
+Deeper documentation lives in [`docs/`](docs/README.md):
+
+- [Architecture](docs/ARCHITECTURE.md) — process model, game loop, persistence, networking
+- [Codebase Guide](docs/CODEBASE.md) — module map of `src/`
+- [Building](docs/BUILDING.md) — build flags, area-file generation, sanitizer builds
+- [Database](docs/DATABASE.md) — connection handling, async persistence, migrations
+- [Runbook](docs/RUNBOOK.md) — operations: restart codes, logs, backups, crash recovery
+- [Testing](docs/TESTING.md) — regression/source-contract test harness
+- [Formatting](docs/formatting.md) — `.clang-format` style and `scripts/format.sh`
+- [Help System](docs/HELP_SYSTEM.md) — in-game help pipeline
+
+---
 

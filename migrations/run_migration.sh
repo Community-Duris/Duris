@@ -2196,7 +2196,7 @@ CREATE TABLE IF NOT EXISTS poll_votes (
 );"
 
 # ============================================================================
-# legacy tables from duris.sql - create if not exists, non-destructive
+# legacy tables from bootstrap_legacy_baseline.sql - create if not exists, non-destructive
 # ============================================================================
 
 run_sql "create alliances table" "

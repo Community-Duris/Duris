@@ -59,6 +59,11 @@ duris-build-deps_1.0_*
 tests/async/test_persistence
 tests/async/*.o
 
+# src-migrate build artifacts — binaries must not be committed (AGENTS.md)
+/src-migrate/migrate_locker_affects
+/src-migrate/migrate_pfiles
+/src-migrate/pfile_converter
+
 # Throwaway refactor scripts in project root (one-off Python scripts and
 # dumps used during large refactors; keep them out of git status).
 # Leading slash anchors to project root so legitimate files like
