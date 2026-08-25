@@ -348,6 +348,10 @@ clean:
 debug: $(PROGS)
 	cd ..; ./scripts/gdbdms
 
+# Memory/thread checking; see docs/valgrind.md.
+valgrind: $(PROGS)
+	cd ..; ./scripts/valgrind_mud.sh
+
 # Auto-generated dependency files alongside objects
 DEPFILES := $(DMS_OBJS:.o=.d) $(PFILE_OBJS:.o=.d) $(SHARED_PFILE_OBJS:.o=.d)
 -include $(DEPFILES)

@@ -11,7 +11,7 @@
 
 ## Working conventions
 
-- Keep changes narrow and follow the style of nearby legacy code. Do not mass-format files; `.clang-format` is authoritative for touched C/C++ code.
+- Keep changes narrow and follow the style of nearby legacy code. Do not mass-format files; `.clang-format` is authoritative for touched C/C++ code. Run `./scripts/format.sh` (changed lines only) or `--check` to verify. `./scripts/install-hooks.sh` enforces it at commit time.
 - Build with `make -C src`; the executable is `src/dms_new`. Do not commit binaries or `obj/` artifacts.
 - Run the smallest relevant test directly, for example `python3 tests/async/test_<feature>.py` or its `run_<feature>.sh` wrapper. Run `make -C src` after C/C++ changes.
 - Add or update a focused regression test when behavior changes. Report any validation that could not be run.

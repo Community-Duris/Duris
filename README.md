@@ -26,6 +26,8 @@ DurisMUD forked from Xanadinn's repo.
 - **Build Tools:** GNU Make
 - **MySQL/MariaDB:** 8.0 or later (tested with MySQL 8.0.44)
 - **MySQL Client Library:** libmysqlclient-dev
+- **Valgrind:** required for development; memory/thread checking (see [docs/valgrind.md](docs/valgrind.md))
+- **clang-format:** 14 or later; enforces the code style in `.clang-format` (see [docs/formatting.md](docs/formatting.md))
 
 ### Installing Dependencies
 
@@ -39,12 +41,13 @@ sudo apt-get install gnutls-dev
 sudo apt-get install libcjson-dev libssl-dev
 sudo apt-get install libhiredis-dev libbsd-dev
 sudo apt-get install default-libmysqlclient-dev default-mysql-server
+sudo apt-get install valgrind clang-format
 ```
 (MySQL has been replaced by MariaDB)
 
 **CentOS/RHEL:**
 ```bash
-sudo yum install gcc make mysql-server mysql-devel
+sudo yum install gcc make mysql-server mysql-devel valgrind clang-tools-extra
 ```
 
 ---
@@ -449,6 +452,14 @@ make
 ./dms 4000
 ```
 
+**Memory and thread checking:**
+```bash
+./scripts/valgrind_mud.sh              # memcheck on port 4000
+./scripts/valgrind_mud.sh --tool=helgrind
+```
+Reports land in `logs/valgrind/`. The script refuses port 7777. See
+[docs/valgrind.md](docs/valgrind.md).
+
 ### Production Mode
 
 **Characteristics:**
@@ -526,12 +537,14 @@ DurisMUD/
 ├── Accounts/          # Account files
 │   └── {a-z}/         # Organized by first letter
 ├── logs/              # Log files
-│   └── log/           # System logs
-│       ├── status     # MySQL and system status
-│       ├── syslog     # Game events
-│       └── cmdlog     # Player commands
+│   ├── log/           # System logs
+│   │   ├── status     # MySQL and system status
+│   │   ├── syslog     # Game events
+│   │   └── cmdlog     # Player commands
+│   └── valgrind/      # Valgrind reports (gitignored)
 ├── migrations/        # Database migrations (authoritative runner lives here)
-├── scripts/           # Operational scripts (start_mud.sh, cycle_mud.sh, gdbdms, ...)
+├── scripts/           # Operational scripts (start_mud.sh, cycle_mud.sh, gdbdms, valgrind_mud.sh, format.sh, ...)
+│   └── git-hooks/     # Versioned git hooks (install with scripts/install-hooks.sh)
 ├── help/              # Help source files (*.hlp) and the help style guide
 ├── certs/             # Self-signed/testing certificates
 ├── packaging/         # Build-dependency packaging (equivs)
@@ -591,10 +604,29 @@ tail -100 logs/log/status
 
 ### Code Style
 
-- Use consistent indentation (2 spaces)
+`.clang-format` at the repository root is authoritative for C/C++. It is a
+Linux-kernel-derived style: **hard tabs at width 8**, Allman braces, 100-column
+lines, pointers bound to the name (`char *p`).
+
+Format only the lines you changed — the legacy tree does not conform, and a
+whole-file pass rewrites thousands of unrelated lines and destroys `git blame`:
+
+```bash
+./scripts/format.sh          # format your changed lines in place
+./scripts/format.sh --check  # verify without changing anything
+```
+
+Install the pre-commit hook once per clone so this is enforced automatically:
+
+```bash
+./scripts/install-hooks.sh
+```
+
 - Comment complex logic
-- Follow existing code patterns
+- Follow the style of the nearby legacy code
 - Test thoroughly before committing
+
+Details and editor setup: [docs/formatting.md](docs/formatting.md).
 
 ### Committing Changes
 

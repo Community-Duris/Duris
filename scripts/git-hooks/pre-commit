@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#
+# Reject a commit whose staged C/C++ lines do not match .clang-format.
+#
+# Installed by scripts/install-hooks.sh (sets core.hooksPath).
+# Bypass a single commit with `git commit --no-verify`.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+# A missing clang-format must not block committing; warn once and let it pass.
+if ! command -v clang-format >/dev/null 2>&1 || ! command -v git-clang-format >/dev/null 2>&1; then
+  echo "pre-commit: clang-format not installed; skipping the format check." >&2
+  echo "            sudo apt-get install clang-format" >&2
+  exit 0
+fi
+
+if "$ROOT/scripts/format.sh" --staged --check; then
+  exit 0
+fi
+
+cat >&2 <<'MSG'
+
+pre-commit: staged C/C++ lines do not match .clang-format.
+
+  ./scripts/format.sh --staged   # fix them, then `git add` the result
+  git commit --no-verify         # commit anyway
+
+MSG
+exit 1
