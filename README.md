@@ -608,12 +608,14 @@ tail -100 logs/log/status
 Linux-kernel-derived style: **hard tabs at width 8**, Allman braces, 100-column
 lines, pointers bound to the name (`char *p`).
 
-Format only the lines you changed — the legacy tree does not conform, and a
-whole-file pass rewrites thousands of unrelated lines and destroys `git blame`:
+The whole C/C++ tree is formatted to this style. Day to day, format just the
+lines you changed so diffs stay reviewable:
 
 ```bash
-./scripts/format.sh          # format your changed lines in place
-./scripts/format.sh --check  # verify without changing anything
+./scripts/format.sh              # format your changed lines in place
+./scripts/format.sh --check      # verify without changing anything
+./scripts/format.sh --all        # re-format every tracked C/C++ file
+./scripts/format.sh --all --check   # verify the whole tree (~12s)
 ```
 
 Install the pre-commit hook once per clone so this is enforced automatically:
