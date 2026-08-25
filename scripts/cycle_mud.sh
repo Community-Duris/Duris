@@ -86,11 +86,16 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   if [ -d logs/log ]; then
     #LOGNAME=`date +%b%d-%H%M`
     mkdir logs/old-logs/$DATESTR
-    mv logs/log/* logs/old-logs/$DATESTR
+    find logs/log -mindepth 1 -maxdepth 1 ! -name .gitignore \
+      -exec mv -t logs/old-logs/$DATESTR {} +
     if [ -f core ]; then
       mv core core.$DATESTR
     fi
   fi
+
+  # The game opens logs/log/* with fopen(), which fails silently when the
+  # directory is missing; every logit() write would be dropped.
+  mkdir -p logs/log
 
   echo "Backing up pfiles..."
   ./scripts/backup_pfiles.sh

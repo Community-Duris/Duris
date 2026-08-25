@@ -1592,11 +1592,17 @@ bool char_to_room(P_char ch, int room, int dir)
 					if (!number(0, 250))
 					{
 						do_action(t_ch, GET_NAME(ch), CMD_BLUSH);
+						// Skip the flower if its vnum is not in the world; without
+						// this the mob hands over nothing and obj_to_char logs a
+						// NULL object on every occurrence.
 						P_obj flow = read_object(6107, VIRTUAL);
-						obj_to_char(flow, t_ch);
-						char text[MAX_STRING_LENGTH];
-						snprintf(text, MAX_STRING_LENGTH, "rose %s", GET_NAME(ch));
-						do_give(t_ch, text, CMD_GIVE);
+						if (flow)
+						{
+							obj_to_char(flow, t_ch);
+							char text[MAX_STRING_LENGTH];
+							snprintf(text, MAX_STRING_LENGTH, "rose %s", GET_NAME(ch));
+							do_give(t_ch, text, CMD_GIVE);
+						}
 					}
 			}
 		}

@@ -12,6 +12,7 @@
 #include "comm.h"
 #include "db.h"
 #include "events.h"
+#include <errno.h>
 #include <ctype.h>
 #include <signal.h>
 #include <stdio.h>
@@ -6848,7 +6849,10 @@ void read_ban_file(void)
 	f = fopen(BAN_FILE, "r");
 	if (!f)
 	{
-		logit(LOG_FILE, "Could not open %s to read ban info.\n", BAN_FILE);
+		/* The ban file is only written once a ban exists; absence just means
+		   "no bans" and is not a failure worth logging. */
+		if (errno != ENOENT)
+			logit(LOG_FILE, "Could not open %s to read ban info.\n", BAN_FILE);
 		return;
 	}
 	while (fscanf(f, "%s\n", buf) != EOF)

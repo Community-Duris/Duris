@@ -4581,14 +4581,23 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 		if (!esc_char)
 			continue;
 
-		int  pid = sql_get_player_pid(ch->charname);
-		char pid_buf[32];
-		const char *pid_sql = "NULL";
-		if (pid > 0)
+		int pid = sql_get_player_pid(ch->charname);
+		if (pid <= 0)
 		{
-			snprintf(pid_buf, sizeof(pid_buf), "%d", pid);
-			pid_sql = pid_buf;
+			/* A brand new character has no player_data row yet, so its pid is
+			   not resolvable here.  account_characters.pid is NOT NULL, so
+			   writing NULL aborts the whole account save (losing the accounts
+			   and account_ips writes with it).  Skip the row instead: the
+			   mapping is written by sql_update_account_character() on the
+			   first player save, once the pid exists. */
+			logit(LOG_DEBUG, "sql_save_account_characters: no pid yet for %s, deferring mapping row", ch->charname);
+			free(esc_char);
+			continue;
 		}
+
+		char pid_buf[32];
+		snprintf(pid_buf, sizeof(pid_buf), "%d", pid);
+		const char *pid_sql = pid_buf;
 
 		char query[512];
 		snprintf(query,

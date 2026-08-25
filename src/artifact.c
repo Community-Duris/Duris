@@ -1051,7 +1051,10 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 		if (timer <= 0)
 		{
 			timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
-			logit(LOG_ARTIFACT, "arti_update_sql (UPDATE): WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
+			// An unowned artifact has no ticking timer, so 0 is its normal
+			// state; only an owned one with no timer is worth flagging.
+			if (new_owned)
+				logit(LOG_ARTIFACT, "arti_update_sql (UPDATE): WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
 		}
 
 		qry("UPDATE artifacts SET owned='%c', locType=%d, location=%d, timer=FROM_UNIXTIME(%lu), type=%d, lastUpdate=SYSDATE() WHERE vnum=%d",
@@ -1073,7 +1076,8 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 		if (timer <= 0)
 		{
 			timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
-			logit(LOG_ARTIFACT, "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
+			if (new_owned)
+				logit(LOG_ARTIFACT, "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
 		}
 
 		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES( %d, '%c', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())", vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
@@ -1121,7 +1125,9 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 	if (timer <= 0)
 	{
 		timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY; // 10 days, not 60 secs
-		logit(LOG_ARTIFACT, "artifact_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
+		// Only an owned artifact has a ticking timer, so 0 is normal otherwise.
+		if (owned)
+			logit(LOG_ARTIFACT, "artifact_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d", (long)0, vnum);
 	}
 
 	if (update_existing)

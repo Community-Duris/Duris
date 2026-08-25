@@ -9,6 +9,7 @@
 #include "redis.h"
 #include <ctype.h>
 #include <errno.h>
+#include <sys/poll.h> /* local src/poll.h shadows <poll.h> via -I. */
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -2632,44 +2633,9 @@ static void broadcast_donation_nchat(const char *char_name, double amount, const
 	logit(LOG_SYS, "donation: %s donated $%.2f %s", (is_public && char_name) ? char_name : "anonymous", amount, currency);
 }
 
-void redis_check_donation_messages(void)
+static void handle_donation_reply(redisReply *reply)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled)
-		return;
-
-	// attempt reconnect if disconnected
-	if (!donation_sub_connected || !donation_sub_ctx)
-	{
-		redis_donation_subscribe_init();
-		if (!donation_sub_connected)
-			return;
-	}
-
-	redisReply *reply = NULL;
-
-	if (redisGetReply(donation_sub_ctx, (void **)&reply) != REDIS_OK)
-	{
-		if (donation_sub_ctx->err)
-		{
-			// timeout errors are normal when no message available - just ignore
-			if (strstr(donation_sub_ctx->errstr, "Resource temporarily unavailable") || strstr(donation_sub_ctx->errstr, "timed out"))
-			{
-				donation_sub_ctx->err       = 0;
-				donation_sub_ctx->errstr[0] = '\0';
-				return;
-			}
-			logit(LOG_SYS, "redis: donation subscriber error: %s, will reconnect", donation_sub_ctx->errstr);
-			donation_sub_connected = false;
-			redisFree(donation_sub_ctx);
-			donation_sub_ctx = NULL;
-		}
-		return;
-	}
-
-	if (!reply)
-		return;
-
 	if (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3)
 	{
 		if (reply->element[0]->type == REDIS_REPLY_STRING && strcmp(reply->element[0]->str, "message") == 0 && reply->element[2]->type == REDIS_REPLY_STRING)
@@ -2700,8 +2666,85 @@ void redis_check_donation_messages(void)
 			}
 		}
 	}
+#endif
+}
 
-	freeReplyObject(reply);
+static void donation_sub_drop(const char *reason)
+{
+#ifndef __NO_MYSQL__
+	logit(LOG_SYS, "redis: donation subscriber error: %s, will reconnect", reason);
+	donation_sub_connected = false;
+	if (donation_sub_ctx)
+	{
+		redisFree(donation_sub_ctx);
+		donation_sub_ctx = NULL;
+	}
+#endif
+}
+
+void redis_check_donation_messages(void)
+{
+#ifndef __NO_MYSQL__
+	if (!redis_enabled)
+		return;
+
+	// attempt reconnect if disconnected
+	if (!donation_sub_connected || !donation_sub_ctx)
+	{
+		redis_donation_subscribe_init();
+		if (!donation_sub_connected)
+			return;
+	}
+
+	/* The subscriber socket is blocking with a 100ms timeout, so calling
+	   redisGetReply() unconditionally stalls the whole game loop for that
+	   timeout on every idle pulse.  Only touch the socket when it already
+	   has data, then drain the complete replies the reader holds. */
+	struct pollfd pfd;
+
+	pfd.fd      = donation_sub_ctx->fd;
+	pfd.events  = POLLIN;
+	pfd.revents = 0;
+
+	if (poll(&pfd, 1, 0) < 0)
+	{
+		if (errno == EINTR || errno == EAGAIN)
+			return;
+		donation_sub_drop(strerror(errno));
+		return;
+	}
+
+	if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+	{
+		donation_sub_drop("subscriber socket closed");
+		return;
+	}
+
+	if (pfd.revents & POLLIN)
+	{
+		if (redisBufferRead(donation_sub_ctx) != REDIS_OK)
+		{
+			donation_sub_drop(donation_sub_ctx->errstr);
+			return;
+		}
+	}
+
+	for (;;)
+	{
+		redisReply *reply = NULL;
+
+		if (redisGetReplyFromReader(donation_sub_ctx, (void **)&reply) != REDIS_OK)
+		{
+			donation_sub_drop(donation_sub_ctx->errstr);
+			return;
+		}
+
+		if (!reply)
+			break;
+
+		handle_donation_reply(reply);
+		freeReplyObject(reply);
+	}
 #endif
 }
 

@@ -139,7 +139,8 @@
 #define MAX_STRING_LENGTH       65536  /* 819+ 80 character lines */
 #define MAX_LOG_LEN             100000 /* MAX LOGGING */
 #define MAX_TONGUE              29     /* number of defined tongues */
-#define MAX_TRADE               12     /* shops, max number of item types they trade in  */
+#define MAX_TRADE               16     /* shops, max number of item types they trade in; must cover the
+                                             largest trade list in world.shp (boot logs the needed value) */
 #define MAX_WHO_PLAYERS         512    /* for do_who, max number of players it can handle */
 #define MAX_ZONES               512    /* mob memory shortcut, 'remembers' what zone player is in */
 
