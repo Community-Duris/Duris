@@ -28,16 +28,19 @@
 
 extern const int top_of_world;
 
-/* Default secret (fallback if env var not set) */
-#define DURISWEB_SECRET_DEFAULT "Dur1sM4pK3y2025xYz!"
-
-/* Get DURISWEB_SECRET from environment variable with fallback */
+/* Read the shared secret from .env/the process environment; fail closed. */
 static const char *get_durisweb_secret(void)
 {
 	const char *secret = getenv("DURISWEB_SECRET");
 	if (!secret || !*secret)
 	{
-		return DURISWEB_SECRET_DEFAULT;
+		static int warned = 0;
+		if (!warned)
+		{
+			logit(LOG_DEBUG, "WARNING: DURISWEB_SECRET not set; DurisWeb GMCP authentication disabled.");
+			warned = 1;
+		}
+		return NULL;
 	}
 	return secret;
 }

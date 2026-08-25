@@ -57,9 +57,7 @@ extern const int                avail_hometowns[][LAST_RACE + 1];
 static const char *ws_get_race_name(int race);
 static const char *ws_get_class_name(unsigned int m_class);
 
-/* durisweb secret for service authentication */
-#define DURISWEB_SECRET_DEFAULT "Dur1sM4pK3y2025xYz!"
-
+/* Read the shared secret from .env/the process environment; fail closed. */
 static const char *get_durisweb_secret(void)
 {
 	const char *secret = getenv("DURISWEB_SECRET");
@@ -68,10 +66,10 @@ static const char *get_durisweb_secret(void)
 		static int warned = 0;
 		if (!warned)
 		{
-			logit(LOG_DEBUG, "WARNING: DURISWEB_SECRET not set, using default (honeypot)");
+			logit(LOG_DEBUG, "WARNING: DURISWEB_SECRET not set; DurisWeb WebSocket authentication disabled.");
 			warned = 1;
 		}
-		return DURISWEB_SECRET_DEFAULT;
+		return NULL;
 	}
 	return secret;
 }
