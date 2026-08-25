@@ -882,6 +882,7 @@ extern unsigned int game_locked_level;
 #define CMD_REDIS           852
 #define CMD_MIXPOISON       853
 #define CMD_DIVINECLAIM     854 // Account-bound divine reward
+#define CMD_EQRATE          855 // Rate equipment prototypes by wear slot
 
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
