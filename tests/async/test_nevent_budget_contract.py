@@ -37,12 +37,12 @@ assert contains(src, 'ne_schedule[next_pulse] = moved_head;')
 assert contains(src, 'ne_schedule_tail[pulse] = event->prev_sched;')
 assert contains(src, 'ne_schedule_tail[next_pulse] = moved_tail;')
 
-# Player-event promotion must not be gated on the callback cap: the cap is
-# exhausted exactly when player events need the shortcut.
+# Overdue-event promotion must not be gated on the callback cap: the cap is
+# exhausted exactly when deferred work needs the shortcut.
 assert contains(src, 'priority_promotion_used')
 assert contains(src, 'priority_promotion_used = TRUE')
 assert not contains(src, '(max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used')
-assert count(src, '!priority_promotion_used && nevent_promote_overdue_player') == 2
+assert count(src, '!priority_promotion_used && nevent_promote_overdue_event') == 2
 
 # Instrumentation and clock source.
 assert contains(src, 'NEVENT BUDGET:')

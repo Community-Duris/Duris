@@ -17,6 +17,7 @@ directory covers architecture, operations, and reference material.
 | [valgrind.md](valgrind.md) | Running the server under Valgrind: `scripts/valgrind_mud.sh`, suppressions, what to expect. |
 | [formatting.md](formatting.md) | The `.clang-format` style and the changed-lines and full-tree workflows in `scripts/format.sh`. |
 | [HELP_SYSTEM.md](HELP_SYSTEM.md) | How the in-game help pipeline works, from source files to the `pages` table. |
+| [AREA_OBJECT_FORMAT.md](AREA_OBJECT_FORMAT.md) | Duris-specific object-file extensions, including optional `AFF5_*` masks. |
 
 ## Existing topic docs
 

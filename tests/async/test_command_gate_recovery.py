@@ -12,7 +12,7 @@ Verifies:
 2. CharWait() clears PLR2_WAIT when the event did not get scheduled.
 3. CharWait() records an absolute deadline for the gate.
 4. comm.c self-heals a gate with no event_wait scheduled OR past its deadline.
-5. The event wheel does not strand due events, and player events can be promoted
+5. The event wheel does not strand due events, and overdue events can be promoted
    even on a pulse that has already spent its callback budget.
 """
 
@@ -82,7 +82,11 @@ checks.append((
     contains(structs, "unsigned long long wait_until_pulse;")
 ))
 
-defer = re.search(r"static long nevent_defer_suffix\(P_nevent deferred_head\)\s*\{.*?\n\}", new_events, re.S)
+defer = re.search(
+    r"static long nevent_defer_suffix\(P_nevent deferred_head, long \*new_debt\)\s*\{.*?\n\}",
+    new_events,
+    re.S,
+)
 if defer:
     defer_body = defer.group(0)
     checks.append((
@@ -102,9 +106,9 @@ else:
     checks.append(("nevent_defer_suffix present", False))
 
 checks.append((
-    "player event promotion is not blocked by an exhausted callback cap",
+    "overdue event promotion is not blocked by an exhausted callback cap",
     not contains(new_events, "(max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used") and
-    count(new_events, "!priority_promotion_used && nevent_promote_overdue_player") == 2
+    count(new_events, "!priority_promotion_used && nevent_promote_overdue_event") == 2
 ))
 
 failed = [name for name, ok in checks if not ok]

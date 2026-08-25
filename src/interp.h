@@ -886,6 +886,7 @@ extern unsigned int game_locked_level;
 #define CMD_MIXPOISON 853
 #define CMD_DIVINECLAIM 854 // Account-bound divine reward
 #define CMD_EQRATE 855 // Rate equipment prototypes by wear slot
+#define CMD_ZCHECK 856 // Read-only zone audit for builders
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.

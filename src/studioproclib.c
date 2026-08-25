@@ -237,13 +237,13 @@ int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
 				do_look(ch, empty, CMD_LOOK);
 			}
 		}
-		else if (IS_ALIVE(ch) && ch->in_room == NOWHERE)
+		else if (char_in_list(ch) && IS_ALIVE(ch) && ch->in_room == NOWHERE)
 		{
-			/* Refused BEFORE placement: handler.c returns FALSE at three
-			   points above its `ch->in_room = room`, and TRUE/FALSE at many
-			   points below it. A FALSE from below means the character IS in
-			   the destination, so re-inserting would be a duplicate. Testing
-			   the STATE rather than the return covers both. */
+			/* char_to_room() may free ch before returning FALSE. char_in_list()
+			   compares pointer values without dereferencing ch, so the state
+			   checks are safe only after that liveness gate. A live character
+			   still at NOWHERE was refused before placement and must be put
+			   back; one already in the destination must not be inserted twice. */
 			char_to_room(ch, was_in, -1);
 			send_to_char("Something bars the way, and you step back out.\r\n", ch);
 		}

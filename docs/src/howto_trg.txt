@@ -90,6 +90,11 @@ Actions:
   cast '<spell name>' [self|actor|ally]   ally = lowest-hp NPC in the room
   do [self|actor] <command line>   run any engine command as a character
   set <name> <n> / add <name> <n>  per-INSTANCE counters
+  rset <vnum> <name> <n> / radd <vnum> <name> <n>
+                                   write a counter on the first live instance
+                                   of that mob prototype, or object prototype
+                                   when no mob vnum matches. No live instance
+                                   is a silent no-op; reads remain local.
   mload <mvnum> / oload <ovnum> / give <ovnum>
   goto <roomvnum> / transfer <roomvnum>
   exit <roomvnum> <dir> [to <roomvnum>|none] [state open|closed|locked|secret]
@@ -111,6 +116,8 @@ Safety Rails (enforced in C, not optional):
   blocked by data - goto always works.
   Counters live as AFFTYPE_STORE affects on the instance, so they die
     with the mob and show up in 'stat' for debugging.
+  Remote counter target kind is fixed at parse time. If a vnum names both
+    a mob and an object, rset/radd consistently selects the mob.
 
 Howto Install a Zone's Triggers:
   First, install the zone's area files as usual (areas/wld, areas/mob,
