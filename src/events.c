@@ -602,6 +602,14 @@ void CharWait(P_char ch, int delay)
 		return;
 	}
 
+	// A negative delay is refused by add_event(), which would leave PLR2_WAIT set
+	//   with nothing scheduled to clear it -- the character could never act again.
+	if (delay < 0)
+	{
+		debug("CharWait: negative delay (%d) for %s, clamping to 0.", delay, J_NAME(ch));
+		delay = 0;
+	}
+
 	if (!CAN_ACT(ch))
 	{
 		// The event event_wait just turns off the PLR2_WAIT bit (and updates position).
@@ -627,6 +635,14 @@ void CharWait(P_char ch, int delay)
 		SET_BIT(ch->specials.act2, PLR2_WAIT);
 	}
 	add_event(event_wait, delay, ch, 0, 0, 0, 0, 0);
+
+	// add_event() can refuse the event (bad arguments, dead ch).  If nothing is
+	//   scheduled to clear the gate, don't leave it up.
+	if (!CAN_ACT(ch) && !get_scheduled(ch, event_wait))
+	{
+		debug("CharWait: event_wait not scheduled for %s, clearing wait.", J_NAME(ch));
+		REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+	}
 }
 
 void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data)

@@ -1281,8 +1281,9 @@ P_obj create_sigil(int zone_number)
 
 int reset_lab(int type)
 {
-	int    start_room, entrance_room;
+	int    start_room = 0, entrance_room = 0, entrance_rnum;
 	int    i           = 0;
+	int    room_rnum   = 0;
 	int    sector_type = 0;
 	P_char vict, next_v;
 	P_obj  obj, next_o;
@@ -1293,26 +1294,39 @@ int reset_lab(int type)
 		entrance_room = 154938;
 		sector_type   = 3;
 	}
-	if (type == 1)
+	else if (type == 1)
 	{
 		start_room    = 900000;
 		sector_type   = 3;
 		entrance_room = 145443;
 	}
-	if (type == 2)
+	else if (type == 2)
 	{
 		start_room    = 800000;
 		entrance_room = 211827;
 		sector_type   = 3;
 	}
-
-	while (i < 10000)
+	else
 	{
+		logit(LOG_DEBUG, "reset_lab: unknown lab type %d.", type);
+		return 0;
+	}
 
-		world[real_room(start_room + i)].sector_type = sector_type;
-		i++;
+	// The labyrinth rooms are not guaranteed to exist in the world table.  real_room()
+	//   returns NOWHERE for anything missing, so every lookup has to be checked before
+	//   it is used as an index into world[].
+	entrance_rnum = real_room(entrance_room);
 
-		for (vict = world[real_room(start_room + i)].people; vict; vict = next_v)
+	for (i = 0; i < 10000; i++)
+	{
+		if ((room_rnum = real_room(start_room + i)) == NOWHERE)
+		{
+			continue;
+		}
+
+		world[room_rnum].sector_type = sector_type;
+
+		for (vict = world[room_rnum].people; vict; vict = next_v)
 		{
 			next_v = vict->next_in_room;
 
@@ -1321,14 +1335,14 @@ int reset_lab(int type)
 				extract_char(vict);
 				vict = NULL;
 			}
-			if (vict && IS_PC(vict))
+			if (vict && IS_PC(vict) && entrance_rnum != NOWHERE)
 			{
 				char_from_room(vict);
-				char_to_room(vict, real_room(entrance_room), -1);
+				char_to_room(vict, entrance_rnum, -1);
 			}
 		}
 
-		for (obj = world[real_room(start_room + i)].contents; obj; obj = next_o)
+		for (obj = world[room_rnum].contents; obj; obj = next_o)
 		{
 			next_o = obj->next_content;
 
@@ -1340,16 +1354,19 @@ int reset_lab(int type)
 				extract_obj(obj);
 				obj = NULL;
 			}
-			if (obj && (obj->type == ITEM_CORPSE || IS_ARTIFACT(obj)))
+			if (obj && (obj->type == ITEM_CORPSE || IS_ARTIFACT(obj)) && entrance_rnum != NOWHERE)
 			{
 				obj_from_room(obj);
-				obj_to_room(obj, real_room(entrance_room));
+				obj_to_room(obj, entrance_rnum);
 			}
 		}
 	}
 
 	// Remove entrance!
-	world[real_room(entrance_room)].dir_option[DIR_DOWN] = 0;
+	if (entrance_rnum != NOWHERE)
+	{
+		world[entrance_rnum].dir_option[DIR_DOWN] = 0;
+	}
 
 	return 0;
 }
@@ -1420,6 +1437,14 @@ int create_lab(int type)
 
 	current_room = start_room;
 
+	// The labyrinth rooms only exist if the world files provide them; bail out rather
+	//   than indexing world[] with NOWHERE.
+	if (real_room(start_room) == NOWHERE || real_room(map_room) == NOWHERE)
+	{
+		wizlog(56, "create_lab: map #%d has no rooms at %d, aborting.", type, start_room);
+		return 0;
+	}
+
 	// Remove all exit if the room havent been used yet...
 	if (world[real_room(start_room)].sector_type != 1)
 	{
@@ -1444,7 +1469,10 @@ int create_lab(int type)
 
 		parent_room = current_room;
 
-		SET_BIT(world[real_room(current_room)].room_flags, ROOM_NO_TELEPORT);
+		if (real_room(current_room) != NOWHERE)
+		{
+			SET_BIT(world[real_room(current_room)].room_flags, ROOM_NO_TELEPORT);
+		}
 
 		current_room = connect_lab(current_room, direction);
 		connect_other(current_room);
@@ -1512,21 +1540,33 @@ int create_lab(int type)
 
 int connect_lab(int room, int dir)
 {
+	int here  = real_room(room);
+	int there = real_room(room + dir_to_num(dir));
+
 	// Remove all exit if the room havent been used yet...
-	if (world[real_room(room + dir_to_num(dir))].sector_type != 1)
+	if (there != NOWHERE && world[there].sector_type != 1)
 	{
-		world[real_room(room + dir_to_num(dir))].dir_option[DIR_NORTH] = 0;
-		world[real_room(room + dir_to_num(dir))].dir_option[DIR_EAST]  = 0;
-		world[real_room(room + dir_to_num(dir))].dir_option[DIR_SOUTH] = 0;
-		world[real_room(room + dir_to_num(dir))].dir_option[DIR_WEST]  = 0;
+		world[there].dir_option[DIR_NORTH] = 0;
+		world[there].dir_option[DIR_EAST]  = 0;
+		world[there].dir_option[DIR_SOUTH] = 0;
+		world[there].dir_option[DIR_WEST]  = 0;
 	}
 
-	if (real_room(room + dir_to_num(dir)) == NOWHERE)
-		dir = rev_dir[dir];
+	if (there == NOWHERE)
+	{
+		dir   = rev_dir[dir];
+		there = real_room(room + dir_to_num(dir));
+	}
 
-	world[real_room(room + dir_to_num(dir))].sector_type = 1;
+	// Both ends have to exist before we can touch world[] or link them.
+	if (there == NOWHERE || here == NOWHERE)
+	{
+		return room + dir_to_num(dir);
+	}
 
-	connect_rooms(world[real_room(room)].number, world[real_room(room + dir_to_num(dir))].number, dir);
+	world[there].sector_type = 1;
+
+	connect_rooms(world[here].number, world[there].number, dir);
 	return room + dir_to_num(dir);
 }
 
@@ -1538,7 +1578,8 @@ int connect_other(int room)
 	while (dir < 4)
 	{
 
-		if (world[real_room(room + dir_to_num(dir))].sector_type == 1 && !(world[real_room(room + dir_to_num(dir))].number == -1))
+		if (real_room(room) != NOWHERE && real_room(room + dir_to_num(dir)) != NOWHERE && world[real_room(room + dir_to_num(dir))].sector_type == 1 &&
+		    !(world[real_room(room + dir_to_num(dir))].number == -1))
 		{
 			connect_rooms(world[real_room(room)].number, world[real_room(room + dir_to_num(dir))].number, dir);
 			// wizlog(56, "Connecting others %d to %d -- dir=%d", room , room + dir_to_num(dir)), dir;

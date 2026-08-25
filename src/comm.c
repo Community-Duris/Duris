@@ -132,6 +132,7 @@ void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 }
 
 extern void ne_events();
+extern void event_wait(P_char, P_char, P_obj, void *);
 
 long unsigned int ip2ul(const char *ip);
 void              load_alliances();
@@ -1127,6 +1128,19 @@ void game_loop(int port, int sslport)
 				continue;
 
 			/* check for hella long wait time here..  bandaid solution but it should (sort of) work */
+
+			/* Self-heal a stuck command gate: PLR2_WAIT is only ever cleared by
+			 * event_wait, so a wait whose event never got scheduled would silently
+			 * swallow every command the player types for the rest of the session. */
+			if (t_ch && !CAN_ACT(t_ch) && !get_scheduled(t_ch, event_wait))
+			{
+				logit(LOG_DEBUG, "command gate: %s had PLR2_WAIT set with no event_wait scheduled, clearing.", J_NAME(t_ch));
+				REMOVE_BIT(t_ch->specials.act2, PLR2_WAIT);
+				if (t_ch->in_room != NOWHERE)
+				{
+					update_pos(t_ch);
+				}
+			}
 
 			if ((!t_ch || (t_ch && (CAN_ACT(t_ch) && (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) || (point->original))))) && get_from_q(&point->input, comm))
 			{
