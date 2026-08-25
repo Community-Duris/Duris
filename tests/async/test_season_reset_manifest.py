@@ -18,7 +18,7 @@ import sys
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SQL_C = os.path.join(REPO_ROOT, "src", "sql.c")
 BOOTSTRAP_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_multithread_safe.sql")
-DURIS_SQL = os.path.join(REPO_ROOT, "src", "duris.sql")
+DURIS_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_legacy_baseline.sql")
 
 # Tables that must NOT be reset (RETAIN or REBUILD)
 RETAIN_TABLES = {

@@ -9,6 +9,7 @@ it.  This checks every player race against the mobs its hometown zone loads.
 import collections
 import re
 from pathlib import Path
+from contract_text import split_at
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -31,16 +32,16 @@ player_max = race_ids[
 ]
 
 # --- hometown start rooms and the race/town matrix --------------------------
-hb = constant.split("const int hometown[] = {", 1)[1].split("\n};", 1)[0]
+hb = split_at(constant, "const int hometown[] = {", 1)[1].split("\n};", 1)[0]
 home_rooms = [int(m.group(1)) for m in re.finditer(r"^\s*(\d+),", hb, re.M)]
 
-ab = constant.split("const int        avail_hometowns[][LAST_RACE + 1] = {", 1)[1]
+ab = split_at(constant, "const int        avail_hometowns[][LAST_RACE + 1] = {", 1)[1]
 ab = ab.split("\n};", 1)[0]
 avail = []
-for line in ab.split("\n"):
-    m = re.match(r"\s*\{([0-9,\s]*)\}", line)
-    if m:
-        avail.append([int(x) for x in m.group(1).split(",") if x.strip()])
+# Brace groups, not lines: clang-format wraps a row once it passes the column
+# limit, so a per-line match would drop the continuation.
+for m in re.finditer(r"\{([0-9,\s]*)\}", ab):
+    avail.append([int(x) for x in m.group(1).split(",") if x.strip()])
 
 assert len(avail) == len(home_rooms), "hometown[] and avail_hometowns[] disagree"
 

@@ -11,12 +11,10 @@
 #define GUILD_WRONG_CLASS 2 /* - */
 #define GUILD_EXPLIST_PRE 3 /* - */ /* before showing do_exp info.. */
 #define GUILD_EXPLIST_AFT 4 /* - */ /* after showing do_exp info.. */
-#define GUILD_PRAC_LPRE \
-	5 /* message that lists                                                                                                                                                                            \
-avail pracs if pracs free */
-#define GUILD_NOPRACS \
-	6 /* I */ /* message shown when no pracs left                                                                                                                                 \
-                 yet tried to prac ? */
+/* Message that lists available practices when practices are free. */
+#define GUILD_PRAC_LPRE 5
+/* I: message shown when the player tries to practice with no practices left. */
+#define GUILD_NOPRACS 6
 #define GUILD_PRE_SKILLS 7 /* I */ /* before showing skill list */
 #define GUILD_AFT_SKILLS 8 /* I */ /* after the same */
 

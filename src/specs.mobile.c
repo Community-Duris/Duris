@@ -9402,26 +9402,15 @@ int jotun_mimer(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-#define NUM_ARCHERS \
-	21 /*                                                                                                                                                                                              \
-	    * # of rooms archers can shoot from                                                                                                                                                            \
-	    */
-#define NUM_TARGETS \
-	3 /*                                                                                                                                                                                               \
-	   * # of rooms an archer can shoot at                                                                                                                                                             \
-	   */
-#define HIT_CHANCE \
-	30 /*                                                                                                                                                                                              \
-	    * accuracy 30% chance to hit                                                                                                                                                                   \
-	    */
-#define ARCHER_NUM_DICE \
-	2 /*                                                                                                                                                                                               \
-	   * archer damage dice                                                                                                                                                                            \
-	   */
-#define ARCHER_SIZE_DICE \
-	5 /*                                                                                                                                                                                               \
-	   * archer does 2d5 each hit                                                                                                                                                                      \
-	   */
+/* Number of rooms archers can shoot from. */
+#define NUM_ARCHERS 21
+/* Number of rooms an archer can target. */
+#define NUM_TARGETS 3
+/* Archer accuracy percentage. */
+#define HIT_CHANCE 30
+/* Archer damage dice: 2d5 per hit. */
+#define ARCHER_NUM_DICE 2
+#define ARCHER_SIZE_DICE 5
 
 int archer(P_char ch, P_char pl, int cmd, char *arg)
 {

@@ -9,44 +9,45 @@ are replaced with the invariants the rewrite has to keep.
 """
 
 from pathlib import Path
+from contract_text import contains, count
 
 ROOT = Path(__file__).resolve().parents[2]
 src = (ROOT / "src" / "new_events.c").read_text()
 
 # Tunables stay environment-overridable.
-assert 'DURIS_NEVENT_BUDGET_USEC' in src
-assert 'DURIS_NEVENT_MAX_CALLBACKS' in src
+assert contains(src, 'DURIS_NEVENT_BUDGET_USEC')
+assert contains(src, 'DURIS_NEVENT_MAX_CALLBACKS')
 
 # Deferral still exists and still targets the next pulse.
-assert 'nevent_defer_suffix' in src
-assert 'next_pulse = (pulse + 1) % PULSES_IN_TICK;' in src
-assert 'event->element    = next_pulse;' in src
-assert 'event->timer      = 1;' in src
-assert 'event->deferral_count++;' in src
+assert contains(src, 'nevent_defer_suffix')
+assert contains(src, 'next_pulse = (pulse + 1) % PULSES_IN_TICK;')
+assert contains(src, 'event->element    = next_pulse;')
+assert contains(src, 'event->timer      = 1;')
+assert contains(src, 'event->deferral_count++;')
 
 # The whole suffix is walked: due events move, the rest are credited the
 # revolution the scan never gave them.
-assert 'for (event = deferred_head; event; event = next)' in src
-assert 'if (event->timer > 1)' in src
-assert 'event->timer--;' in src
-assert 'future_head' not in src
+assert contains(src, 'for (event = deferred_head; event; event = next)')
+assert contains(src, 'if (event->timer > 1)')
+assert contains(src, 'event->timer--;')
+assert not contains(src, 'future_head')
 
 # Moved events are prepended in order, and both bucket ends stay consistent.
-assert 'ne_schedule[next_pulse] = moved_head;' in src
-assert 'ne_schedule_tail[pulse] = event->prev_sched;' in src
-assert 'ne_schedule_tail[next_pulse] = moved_tail;' in src
+assert contains(src, 'ne_schedule[next_pulse] = moved_head;')
+assert contains(src, 'ne_schedule_tail[pulse] = event->prev_sched;')
+assert contains(src, 'ne_schedule_tail[next_pulse] = moved_tail;')
 
 # Player-event promotion must not be gated on the callback cap: the cap is
 # exhausted exactly when player events need the shortcut.
-assert 'priority_promotion_used' in src
-assert 'priority_promotion_used = TRUE' in src
-assert '(max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used' not in src
-assert src.count('!priority_promotion_used && nevent_promote_overdue_player') == 2
+assert contains(src, 'priority_promotion_used')
+assert contains(src, 'priority_promotion_used = TRUE')
+assert not contains(src, '(max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used')
+assert count(src, '!priority_promotion_used && nevent_promote_overdue_player') == 2
 
 # Instrumentation and clock source.
-assert 'NEVENT BUDGET:' in src
-assert 'budget_exhausted' in src
-assert 'CLOCK_MONOTONIC' in src
-assert 'gettimeofday(&loop_' not in src
+assert contains(src, 'NEVENT BUDGET:')
+assert contains(src, 'budget_exhausted')
+assert contains(src, 'CLOCK_MONOTONIC')
+assert not contains(src, 'gettimeofday(&loop_')
 
 print("nevent budget contract OK")

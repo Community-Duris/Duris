@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
+from contract_text import find, index
 
 text = Path(__file__).resolve().parents[2].joinpath('src/ships/ship_base.c').read_text()
 
-flush_fn = text.find('void flush_pending_ship_saves(void)')
-loop = text.find('for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))', flush_fn)
-load_ship = text.find('P_ship ship = svs;', loop)
-skip_non_pending = text.find('if (!ship || !ship->save_pending)', loop)
-skip_delay = text.find('if (ship->save_retry_after && ship->save_retry_after > now)', loop)
-signature = text.find('unsigned long long current_signature = ship_save_signature(ship);', loop)
-dedupe = text.find('if (current_signature == ship->save_saved_signature)', loop)
-write = text.find('if (write_ship(ship))', loop)
-clear_after_write = text.find('ship->save_pending         = false;', write)
-set_retry = text.find('ship->save_retry_after = now + 1;', write)
-queue_fn = text.find('void queue_ship_save(P_ship ship, const char *reason)')
-queue_pending = text.find('if (!ship->save_pending)', queue_fn)
-queue_retry_reset = text.find('ship->save_retry_after = 0;', queue_fn)
-queue_refresh = text.find('Refreshed pending ship save', queue_fn)
-owner_sig = text.find('SHIP_SIG_MIX_CSTR(ship->ownername);')
+flush_fn = find(text, 'void flush_pending_ship_saves(void)')
+loop = find(text, 'for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))', flush_fn)
+load_ship = find(text, 'P_ship ship = svs;', loop)
+skip_non_pending = find(text, 'if (!ship || !ship->save_pending)', loop)
+skip_delay = find(text, 'if (ship->save_retry_after && ship->save_retry_after > now)', loop)
+signature = find(text, 'unsigned long long current_signature = ship_save_signature(ship);', loop)
+dedupe = find(text, 'if (current_signature == ship->save_saved_signature)', loop)
+write = find(text, 'if (write_ship(ship))', loop)
+clear_after_write = find(text, 'ship->save_pending         = false;', write)
+set_retry = find(text, 'ship->save_retry_after = now + 1;', write)
+queue_fn = find(text, 'void queue_ship_save(P_ship ship, const char *reason)')
+queue_pending = find(text, 'if (!ship->save_pending)', queue_fn)
+queue_retry_reset = find(text, 'ship->save_retry_after = 0;', queue_fn)
+queue_refresh = find(text, 'Refreshed pending ship save', queue_fn)
+owner_sig = find(text, 'SHIP_SIG_MIX_CSTR(ship->ownername);')
 
 print(
     f'flush_fn={flush_fn} loop={loop} load_ship={load_ship} skip_non_pending={skip_non_pending} '

@@ -7,15 +7,16 @@ from playable_races[] -- mostly the undead forms reached in-game with
 
 import re
 from pathlib import Path
+from contract_text import contains, find, index, split_at
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 # --- the toggle itself -------------------------------------------------------
 cfg = (ROOT / "src/creation_availability_config.c").read_text()
-assert "bool creation_all_races_enabled(void)" in cfg
-assert 'getenv("CREATION_ALL_RACES")' in cfg
-assert 'strcasecmp(value, "TRUE")' in cfg
+assert contains(cfg, "bool creation_all_races_enabled(void)")
+assert contains(cfg, 'getenv("CREATION_ALL_RACES")')
+assert contains(cfg, 'strcasecmp(value, "TRUE")')
 assert "bool creation_all_races_enabled(void);" in (
     ROOT / "src/creation_availability_config.h"
 ).read_text()
@@ -39,7 +40,7 @@ constant = (ROOT / "src/constant.c").read_text()
 
 
 def table_entries(source, marker):
-    body = source.split(marker, 1)[1].split("};", 1)[0]
+    body = split_at(source, marker, 1)[1].split("};", 1)[0]
     return re.findall(r"RACE_[A-Z_]+", body)
 
 
@@ -68,42 +69,44 @@ assert not missing, f"player races in neither table: {sorted(missing)}"
 
 # --- telnet menu: separate, labelled block ----------------------------------
 nanny = (ROOT / "src/nanny.c").read_text()
-menu = nanny.split("static void display_available_races(P_desc d)", 1)[1]
+# Anchor on the definition, not the forward declaration: the signature alone
+# matches both.
+menu = split_at(nanny, "static void display_available_races(P_desc d)\n{", 1)[1]
 menu = menu.split("\n}", 1)[0]
-assert "creation_all_races_enabled()" in menu
-assert "NORMALLY UNAVAILABLE RACES" in menu
-assert "restricted_races[i].note" in menu
+assert contains(menu, "creation_all_races_enabled()")
+assert contains(menu, "NORMALLY UNAVAILABLE RACES")
+assert contains(menu, "restricted_races[i].note")
 # Gated: the block only renders behind the toggle.
-assert menu.index("creation_all_races_enabled()") < menu.index("NORMALLY UNAVAILABLE RACES")
+assert index(menu, "creation_all_races_enabled()") < index(menu, "NORMALLY UNAVAILABLE RACES")
 
 
 # --- telnet selection: by name, and before the single-key search -------------
-select = nanny.split("void select_race(P_desc d, char *arg)", 1)[1]
-select = select.split("/* Krov: select class is next */", 1)[0]
-assert "normalize_race_token" in select
-assert "restricted_races[i].race_id" in select
+select = split_at(nanny, "void select_race(P_desc d, char *arg)", 1)[1]
+select = split_at(select, "/* Krov: select class is next */", 1)[0]
+assert contains(select, "normalize_race_token")
+assert contains(select, "restricted_races[i].race_id")
 # "Shade" must not be eaten by the 'S' (Minotaur help) key.
-assert select.index("creation_all_races_enabled()") < select.index(
+assert index(select, "creation_all_races_enabled()") < select.index(
     "/* Search playable_races[] array for matching key */"
 )
 # The key search only runs when no restricted race matched.
-assert "if (GET_RACE(d->character) == RACE_NONE)" in select
+assert contains(select, "if (GET_RACE(d->character) == RACE_NONE)")
 
 
 # --- websocket path stays in step -------------------------------------------
 ws = (ROOT / "src/ws_handlers.c").read_text()
-playable = ws.split("static int ws_is_playable_race(int race)", 1)[1].split("\n}", 1)[0]
-assert "creation_all_races_enabled()" in playable
-assert "ws_find_restricted_race(race)" in playable
+playable = split_at(ws, "static int ws_is_playable_race(int race)", 1)[1].split("\n}", 1)[0]
+assert contains(playable, "creation_all_races_enabled()")
+assert contains(playable, "ws_find_restricted_race(race)")
 # Clients get a flag they can use to present these apart from the roster.
-assert 'cJSON_AddBoolToObject(race_obj, "restricted"' in ws
-assert 'cJSON_AddStringToObject(race_obj, "restricted_note"' in ws
+assert contains(ws, 'cJSON_AddBoolToObject(race_obj, "restricted"')
+assert contains(ws, 'cJSON_AddStringToObject(race_obj, "restricted_note"')
 
 # --- every unlocked race must offer at least one class ----------------------
 # A race whose class_table[] row is entirely 5 dead-ends creation with an empty
 # class menu, so such races need a restricted_class_rows[] stand-in.
 def parse_rows(source, marker, name_group=2):
-    body = source.split(marker, 1)[1].split("\n};", 1)[0]
+    body = split_at(source, marker, 1)[1].split("\n};", 1)[0]
     return body
 
 
@@ -111,10 +114,10 @@ ct_body = parse_rows(
     constant, "const int        class_table[LAST_RACE + 1][CLASS_COUNT + 1] = {"
 )
 ct_rows = []
-for line in ct_body.split("\n"):
-    m = re.match(r"\s*\{([-0-9,\s]*)\},\s*/\*\s*(.*?)\s*\*/", line)
-    if m:
-        ct_rows.append([int(x) for x in m.group(1).split(",")])
+# Rows are matched as brace groups, not per line: clang-format wraps a row
+# across several lines once it passes the column limit.
+for m in re.finditer(r"\{([-0-9,\s]*)\}\s*,\s*/\*\s*(.*?)\s*\*/", ct_body, re.S):
+    ct_rows.append([int(x) for x in m.group(1).split(",")])
 
 # class_table rows are emitted in race-id order starting at RACE_NONE (0).
 assert len(ct_rows) > player_max, "class_table has fewer rows than player races"
@@ -123,13 +126,13 @@ ov_body = parse_rows(
     constant, "const struct restricted_class_row        restricted_class_rows[] = {"
 )
 overrides = {}
-for m in re.finditer(r"\{\s*(RACE_[A-Z_]+),\s*\{([-0-9,\s]*)\}\}", ov_body):
+for m in re.finditer(r"\{\s*(RACE_[A-Z_]+),\s*\{([-0-9,\s]*)\}\s*\}", ov_body):
     overrides[race_ids[m.group(1)]] = [int(x) for x in m.group(2).split(",")]
 
 # Classes switched off in the shipped config are not selectable either.
 avail_cfg = (ROOT / "lib/creation_availability.cfg").read_text()
 cfg_class_ids = dict(
-    re.findall(r'\{"([a-z-]+)",\s*(\d+)\}', cfg.split("class_names[]", 1)[1])
+    re.findall(r'\{"([a-z-]+)",\s*(\d+)\}', split_at(cfg, "class_names[]", 1)[1])
 )
 disabled_names = {
     name
@@ -157,8 +160,8 @@ for rid in overrides:
 # random.mob.c walks class_table to pick a class for random mobs; the creation
 # override must not leak into it.
 randmob = (ROOT / "src/random.mob.c").read_text()
-assert "class_table[race][class_idx]" in randmob
-assert "creation_class_align" not in randmob
+assert contains(randmob, "class_table[race][class_idx]")
+assert not contains(randmob, "creation_class_align")
 
 print("restricted race class-list contracts passed")
 print("creation all-races toggle contracts passed")

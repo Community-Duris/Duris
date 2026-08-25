@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
 runner = (ROOT / "migrations/run_migration.sh").read_text()
-dump = (ROOT / "src/duris.sql").read_text()
+dump = (ROOT / "migrations/bootstrap_legacy_baseline.sql").read_text()
 sql = (ROOT / "src/sql.c").read_text()
 
 assert "create table `prepstatement_duris_sql`" in bootstrap.lower()

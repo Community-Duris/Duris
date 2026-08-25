@@ -15,6 +15,7 @@ Verifies:
 from pathlib import Path
 import re
 import sys
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -30,11 +31,11 @@ checks = []
 # 1. affect_modify out-of-bounds bitv check
 checks.append((
     "affect_modify does not read bitv[5]",
-    "bitv[5]" not in affects and "SET_BIT(TmpAffs.BV_6" not in affects
+    not contains(affects, "bitv[5]") and not contains(affects, "SET_BIT(TmpAffs.BV_6")
 ))
 checks.append((
     "hold_data struct does not define BV_6",
-    "BV_6" not in structs
+    not contains(structs, "BV_6")
 ))
 
 # 2. calculate_hitpoints2 bounds checks
@@ -43,11 +44,11 @@ if hp2_match:
     hp2_body = hp2_match.group(0)
     checks.append((
         "calculate_hitpoints2 guards GET_RACE bounds",
-        "race >= 0 && race <= LAST_RACE" in hp2_body
+        contains(hp2_body, "race >= 0 && race <= LAST_RACE")
     ))
     checks.append((
         "calculate_hitpoints2 guards APPLY_CON_RACE modifier bounds",
-        "obj->affected[j].modifier >= 0 &&" in hp2_body and "obj->affected[j].modifier <= LAST_RACE" in hp2_body
+        contains(hp2_body, "obj->affected[j].modifier >= 0 &&") and contains(hp2_body, "obj->affected[j].modifier <= LAST_RACE")
     ))
 else:
     checks.append(("calculate_hitpoints2 function present", False))
@@ -58,13 +59,13 @@ if apply_affs_match:
     apply_body = apply_affs_match.group(0)
     checks.append((
         "apply_affs bounds racial stat indices",
-        "t1            = BOUNDED(0, t1, LAST_RACE);" in apply_body
+        contains(apply_body, "t1            = BOUNDED(0, t1, LAST_RACE);")
     ))
     checks.append((
         "apply_affs bounds character race for stat_factor and combat_by_race",
-        "int ch_race = BOUNDED(0, (int)GET_RACE(ch), LAST_RACE);" in apply_body and
-        "combat_by_race[ch_race]" in apply_body and
-        "stat_factor[ch_race]" in apply_body
+        contains(apply_body, "int ch_race = BOUNDED(0, (int)GET_RACE(ch), LAST_RACE);") and
+        contains(apply_body, "combat_by_race[ch_race]") and
+        contains(apply_body, "stat_factor[ch_race]")
     ))
 else:
     checks.append(("apply_affs function present", False))
@@ -75,37 +76,37 @@ if free_obj_match:
     free_body = free_obj_match.group(0)
     checks.append((
         "free_obj guards obj->R_num >= 0 before obj_index lookup",
-        "obj->R_num >= 0 && obj_index[obj->R_num].func.obj == barb" in free_body
+        contains(free_body, "obj->R_num >= 0 && obj_index[obj->R_num].func.obj == barb")
     ))
 else:
     checks.append(("free_obj function present", False))
 
 # 5. wear() case 13 (HOLD) slot enforcement
-hold_case_match = re.search(r"case 13:\s*/\* Hold \*/.*?\n\t\tcase 14:", actobj, re.S)
+hold_case_match = re.search(r"case 13:\s*/\* Hold \*/.*?\n\s*case 14:", actobj, re.S)
 if hold_case_match:
     hold_body = hold_case_match.group(0)
     checks.append((
         "wear() case 13 does not fall back to WIELD or WIELD3/4",
-        "WIELD" not in hold_body and "WIELD3" not in hold_body and "WIELD4" not in hold_body
+        not contains(hold_body, "WIELD") and not contains(hold_body, "WIELD3") and not contains(hold_body, "WIELD4")
     ))
     checks.append((
         "wear() case 13 guards already holding item",
-        "if (ch->equipment[HOLD])" in hold_body and "execute_wear(ch, obj_object, HOLD" in hold_body
+        contains(hold_body, "if (ch->equipment[HOLD])") and contains(hold_body, "execute_wear(ch, obj_object, HOLD")
     ))
 else:
     checks.append(("wear() case 13 present", False))
 
 # 6. wear() case 12 (WIELD) slot capacity guard
-wield_case_match = re.search(r"case 12:\s*/\* Wield \*/.*?\n\t\tcase 13:", actobj, re.S)
+wield_case_match = re.search(r"case 12:\s*/\* Wield \*/.*?\n\s*case 13:", actobj, re.S)
 if wield_case_match:
     wield_body = wield_case_match.group(0)
     checks.append((
         "wear() case 12 guards secondary weapon occupied",
-        "if (ch->equipment[SECONDARY_WEAPON])" in wield_body
+        contains(wield_body, "if (ch->equipment[SECONDARY_WEAPON])")
     ))
     checks.append((
         "wear() case 12 guards fourth weapon occupied for 4-handed",
-        "!ch->equipment[FOURTH_WEAPON]" in wield_body
+        contains(wield_body, "!ch->equipment[FOURTH_WEAPON]")
     ))
 else:
     checks.append(("wear() case 12 present", False))
@@ -118,17 +119,17 @@ checks.append((
 ))
 checks.append((
     "do_score bounds modifier before indexing stat_factor",
-    "mod <= RACE_NONE || mod > LAST_RACE" in actinf
+    contains(actinf, "mod <= RACE_NONE || mod > LAST_RACE")
 ))
 
 # 8. utils.h macro safety
 checks.append((
     "OBJ_VNUM macro guards R_num >= 0",
-    "(obj)->R_num >= 0" in utils and "obj_index[(obj)->R_num].virtual_number" in utils
+    contains(utils, "(obj)->R_num >= 0") and contains(utils, "obj_index[(obj)->R_num].virtual_number")
 ))
 checks.append((
     "GET_OBJ_PROC macro guards R_num >= 0",
-    "(obj)->R_num >= 0" in utils and "obj_index[(obj)->R_num].func.obj" in utils
+    contains(utils, "(obj)->R_num >= 0") and contains(utils, "obj_index[(obj)->R_num].func.obj")
 ))
 
 failed = [name for name, ok in checks if not ok]

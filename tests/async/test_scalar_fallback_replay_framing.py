@@ -2,17 +2,18 @@
 """Scalar fallback records must carry the replay discriminator."""
 from pathlib import Path
 import re
+from contract_text import contains
 
 root = Path(__file__).resolve().parents[2]
 utility = (root / "src/utility.c").read_text()
 compact = re.sub(r"\s+", " ", utility)
 
-assert "static const char *persistence_fallback_record_line" in utility
-assert "PERSISTENCE_SCALAR_EVENT_PREFIX" in utility
-assert "strcmp(domain, \"scalar_event\")" in utility
-assert "persistence_fallback_record_line(line, \"scalar_event\"" in compact
-assert "fputs(record_line, log_f)" in utility
-assert "const char *scalar_sql = event_line + strlen(PERSISTENCE_SCALAR_EVENT_PREFIX);" in utility
-assert "sql_persistence_write_scalar_event_line(scalar_sql)" in utility
+assert contains(utility, "static const char *persistence_fallback_record_line")
+assert contains(utility, "PERSISTENCE_SCALAR_EVENT_PREFIX")
+assert contains(utility, "strcmp(domain, \"scalar_event\")")
+assert contains(compact, "persistence_fallback_record_line(line, \"scalar_event\"")
+assert contains(utility, "fputs(record_line, log_f)")
+assert contains(utility, "const char *scalar_sql = event_line + strlen(PERSISTENCE_SCALAR_EVENT_PREFIX);")
+assert contains(utility, "sql_persistence_write_scalar_event_line(scalar_sql)")
 
 print("scalar fallback replay framing checks passed")

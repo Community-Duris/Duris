@@ -19,6 +19,7 @@ Verifies:
 from pathlib import Path
 import re
 import sys
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 src = (ROOT / "src" / "random.zone.c").read_text(encoding="utf-8", errors="replace")
@@ -76,8 +77,8 @@ connect_lab = body(r"int connect_lab\(int room, int dir\)\s*\{.*?\n\}")
 if connect_lab:
     checks.append((
         "connect_lab resolves both ends before indexing world[]",
-        "int here  = real_room(room);" in connect_lab and
-        "there == NOWHERE || here == NOWHERE" in connect_lab
+        contains(connect_lab, "int here = real_room(room);") and
+        contains(connect_lab, "there == NOWHERE || here == NOWHERE")
     ))
 else:
     checks.append(("connect_lab function present", False))
@@ -86,8 +87,8 @@ connect_other = body(r"int connect_other\(int room\)\s*\{.*?\n\}")
 if connect_other:
     checks.append((
         "connect_other guards both room lookups",
-        "real_room(room) != NOWHERE" in connect_other and
-        "real_room(room + dir_to_num(dir)) != NOWHERE" in connect_other
+        contains(connect_other, "real_room(room) != NOWHERE") and
+        contains(connect_other, "real_room(room + dir_to_num(dir)) != NOWHERE")
     ))
 else:
     checks.append(("connect_other function present", False))

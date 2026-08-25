@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Contract for configurable NPC death essence drops."""
 from pathlib import Path
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 enhance = (ROOT / "src/enhance.c").read_text()
@@ -14,25 +15,25 @@ for key in (
 ):
     assert key in config, f"missing documented essence-drop setting: {key}"
 
-assert "[essence_drop]" in config
-assert "enhance_essence_drop_enabled" in enhance
-assert "enhance_essence_primary_roll_max" in enhance
-assert "enhance_essence_max_roll_max" in enhance
-assert "enhance_essence_elite_level_multiplier" in enhance
-assert '"essence_drop"' in enhance
-assert '"enhance.essence_drop.enabled"' in enhance
-assert '"enhance.essence_drop.primary_roll_max"' in enhance
-assert '"enhance.essence_drop.max_roll_max"' in enhance
-assert '"enhance.essence_drop.elite_level_multiplier"' in enhance
+assert contains(config, "[essence_drop]")
+assert contains(enhance, "enhance_essence_drop_enabled")
+assert contains(enhance, "enhance_essence_primary_roll_max")
+assert contains(enhance, "enhance_essence_max_roll_max")
+assert contains(enhance, "enhance_essence_elite_level_multiplier")
+assert contains(enhance, '"essence_drop"')
+assert contains(enhance, '"enhance.essence_drop.enabled"')
+assert contains(enhance, '"enhance.essence_drop.primary_roll_max"')
+assert contains(enhance, '"enhance.essence_drop.max_roll_max"')
+assert contains(enhance, '"enhance.essence_drop.elite_level_multiplier"')
 
 # The drop remains opt-in only through its own master switch and preserves the
 # two-roll design. Defaults must retain current normal-NPC behavior.
-assert "if (!enhance_essence_drop_enabled)" in enhance
-assert "int primary_roll_max = enhance_essence_primary_roll_max;" in enhance
-assert "int max_roll_max     = enhance_essence_max_roll_max;" in enhance
-assert "number(1, primary_roll_max) < moblvl" in enhance
-assert "number(1, max_roll_max) < moblvl" in enhance
-assert "int elite_mult       = enhance_essence_elite_level_multiplier;" in enhance
-assert "moblvl *= elite_mult;" in enhance
+assert contains(enhance, "if (!enhance_essence_drop_enabled)")
+assert contains(enhance, "int primary_roll_max = enhance_essence_primary_roll_max;")
+assert contains(enhance, "int max_roll_max     = enhance_essence_max_roll_max;")
+assert contains(enhance, "number(1, primary_roll_max) < moblvl")
+assert contains(enhance, "number(1, max_roll_max) < moblvl")
+assert contains(enhance, "int elite_mult       = enhance_essence_elite_level_multiplier;")
+assert contains(enhance, "moblvl *= elite_mult;")
 
 print("enhancement essence-drop config contract passed")

@@ -969,8 +969,8 @@
 #define SKILL_POINT_BLANK_SHOT 1235
 #define SKILL_CRITICAL_SHOT 1236
 #define SKILL_SHADOW_ARCHERY 1237
-#define SKILL_EXPEDITIOUS_RETREAT \
-	1238 // NOT to be confused with SKILL_EXPEDITED_RETREAT. who the hell named these skills?? --Maybe your momma
+// Not to be confused with SKILL_EXPEDITED_RETREAT. Who named these skills?
+#define SKILL_EXPEDITIOUS_RETREAT 1238
 #define SKILL_CURSED_ARROWS 1239
 #define SKILL_ENCHANT_ARROWS 1240
 #define SKILL_INFUSE_MAGICAL_DEVICE 1241
@@ -992,8 +992,8 @@
 #define SKILL_EPIC_CONSTITUTION 1257
 #define SKILL_EPIC_CHARISMA 1258
 #define SKILL_EPIC_LUCK 1259
-#define SKILL_THROAT_CRUSHER \
-	1260 // Just a bogus skill to prevent wrong wear off message to the attacker.
+// Bogus skill used to prevent the wrong wear-off message to the attacker.
+#define SKILL_THROAT_CRUSHER 1260
 #define SKILL_SHIP_DAMAGE_CONTROL 1261
 #define SKILL_RAGE_REORIENT 1262 // Added to handle reorient on rage skill
 #define SKILL_TIGER_PALM 1263

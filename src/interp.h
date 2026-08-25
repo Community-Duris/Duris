@@ -598,8 +598,8 @@ extern unsigned int game_locked_level;
 #define CMD_ROUNDKICK 568
 #define CMD_PLEASANT 569 // Inflict pleasantry
 #define CMD_HAMSTRING 570
-#define CMD_EMPTY \
-	571 // Not an empty slot: "empty <container1> <container2>" moves contents from 1 into 2.
+// Not an empty slot: "empty <container1> <container2>" moves contents from 1 into 2.
+#define CMD_EMPTY 571
 #define CMD_ARENA 572
 #define CMD_ARTIFACTS 573
 #define CMD_INVITE 574
@@ -682,8 +682,8 @@ extern unsigned int game_locked_level;
 #define CMD_STRIP 651
 #define CMD_SUFFER 652
 #define CMD_STOKE 653
-#define CMD_ESWEEP \
-	654 // social, now 'esweep' in list of commands. (sweep is for dragon pets/dracos).
+// Social, now 'esweep' in the command list; sweep is for dragon pets/dracos.
+#define CMD_ESWEEP 654
 #define CMD_SWOON 655
 #define CMD_TENDER 656
 #define CMD_THROTTLE 657
@@ -862,8 +862,8 @@ extern unsigned int game_locked_level;
 #define CMD_DEFOREST 830 // Blighter command
 #define CMD_BEEP 831 // Make <arg>'s computer beep
 #define CMD_DEATHS_DOOR 832 // gellz all base stats 100 achievement
-#define CMD_OFFLINEMSG \
-	833 // Send an offline message to <char>, displayed the next time they log in.
+// Send an offline message to <char>, displayed the next time they log in.
+#define CMD_OFFLINEMSG 833
 #define CMD_INSTACAST 834 // Instantly cast a spell (gods only).
 #define CMD_SURNAME 835 // Set yer surname to an available option.
 #define CMD_NAMEDREPORT 836 // show named equipment spells by zone

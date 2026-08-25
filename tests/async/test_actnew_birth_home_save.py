@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
+from contract_text import find, index
 
 text = Path(__file__).resolve().parents[2].joinpath('src/actnew.c').read_text()
 
-old_assign = text.find('int old_hometown')
-check = text.find('if (!do_save_silent(ch, 1))', old_assign)
-restore = text.find('ch->player.hometown        = old_hometown;', check)
-money = text.find('SUB_MONEY(ch, cost, 0);', check)
-msg = text.find('Thank you for the payment and welcome to your new birth home', check)
+old_assign = find(text, 'int old_hometown')
+check = find(text, 'if (!do_save_silent(ch, 1))', old_assign)
+restore = find(text, 'ch->player.hometown        = old_hometown;', check)
+money = find(text, 'SUB_MONEY(ch, cost, 0);', check)
+msg = find(text, 'Thank you for the payment and welcome to your new birth home', check)
 
 print(f'old_assign={old_assign} check={check} restore={restore} money={money} msg={msg}')
 

@@ -2,6 +2,7 @@
 """Source-contract checks for INNATE_ARCANE_RUDIMENTS mechanic."""
 from pathlib import Path
 import sys, re
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -16,14 +17,14 @@ all_ok = True
 # 1. structs.h: define exists
 structs = (SRC / "structs.h").read_text()
 all_ok &= check("INNATE_ARCANE_RUDIMENTS #define",
-	"#define INNATE_ARCANE_RUDIMENTS       177" in structs)
+	contains(structs, "#define INNATE_ARCANE_RUDIMENTS       177"))
 all_ok &= check("LAST_INNATE updated",
-	"#define LAST_INNATE INNATE_ARCANE_RUDIMENTS" in structs)
+	contains(structs, "#define LAST_INNATE INNATE_ARCANE_RUDIMENTS"))
 
 # 2. innates_data array
 innates = (SRC / "innates.c").read_text()
 all_ok &= check("\"arcane rudiments\" in innates_data",
-	"{\"arcane rudiments\", NULL}," in innates)
+	contains(innates, "{\"arcane rudiments\", NULL},"))
 
 # 3. No class assignments yet (0 ADD_CLASS_INNATE for it)
 add_class_count = len(re.findall(r'ADD_CLASS_INNATE\(INNATE_ARCANE_RUDIMENTS,', innates))

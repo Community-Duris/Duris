@@ -8,8 +8,10 @@ README.md still matches what the tooling actually does.
 """
 
 import os
+import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -86,6 +88,67 @@ assert "git clang-format" in body, "format.sh must format changed lines, not who
 assert "--force" in body, (
     "without --force git-clang-format skips files that have unstaged edits"
 )
+assert "--all" in body, "format.sh lost whole-tree formatting"
+
+# --all must verify a real fixpoint.  A dirty filename remains in
+# `git diff --name-only` before and after formatting, so comparing those lists
+# reports success after one pass even when clang-format would change it again.
+with tempfile.TemporaryDirectory() as temp_dir:
+    fixture = Path(temp_dir)
+    (fixture / "scripts").mkdir()
+    (fixture / "src").mkdir()
+    fake_bin = fixture / "bin"
+    fake_bin.mkdir()
+    shutil.copy2(SCRIPT, fixture / "scripts/format.sh")
+    (fixture / ".clang-format").write_text("---\n")
+    probe = fixture / "src/probe.c"
+    probe.write_text("stage0\n")
+
+    fake_git = fake_bin / "git"
+    fake_git.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [[ $1 == ls-files ]]; then\n"
+        "  printf 'src/probe.c\\n'\n"
+        "elif [[ $1 == diff ]]; then\n"
+        "  printf 'src/probe.c\\n'\n"
+        "else\n"
+        "  exit 1\n"
+        "fi\n"
+    )
+    fake_git.chmod(0o755)
+
+    fake_formatter = fake_bin / "clang-format"
+    fake_formatter.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [[ \" $* \" == *\" --dump-config \"* ]]; then exit 0; fi\n"
+        "target=${!#}\n"
+        "if [[ \" $* \" == *\" --dry-run \"* ]]; then\n"
+        "  grep -qx stage2 \"$target\"\n"
+        "  exit\n"
+        "fi\n"
+        "if [[ \" $* \" == *\" -i \"* ]]; then\n"
+        "  if grep -qx stage0 \"$target\"; then\n"
+        "    printf 'stage1\\n' >\"$target\"\n"
+        "  elif grep -qx stage1 \"$target\"; then\n"
+        "    printf 'stage2\\n' >\"$target\"\n"
+        "  fi\n"
+        "  exit 0\n"
+        "fi\n"
+        "exit 2\n"
+    )
+    fake_formatter.chmod(0o755)
+
+    fixture_env = os.environ.copy()
+    fixture_env["PATH"] = f"{fake_bin}:{fixture_env['PATH']}"
+    fixed = subprocess.run(
+        ["bash", str(fixture / "scripts/format.sh"), "--all"],
+        cwd=fixture, env=fixture_env, capture_output=True, text=True,
+    )
+    assert fixed.returncode == 0, fixed.stdout + fixed.stderr
+    assert probe.read_text() == "stage2\n", (
+        "--all stopped before clang-format reached a real fixpoint"
+    )
+    assert "stable after 2 pass(es)" in fixed.stdout, fixed.stdout
 
 helped = subprocess.run(
     ["bash", str(SCRIPT), "--help"], cwd=ROOT, capture_output=True, text=True
@@ -142,18 +205,57 @@ assert bad_install.returncode == 2, (
 )
 
 # --------------------------------------------------------------------------
+# 3c. The whole tree is formatted, and stays that way.  This is the check that
+#     fails the moment someone commits unformatted C/C++, and the reason the
+#     config had to be fixed: an unloadable .clang-format cannot enforce this.
+# --------------------------------------------------------------------------
+if clang_format:
+    tree = subprocess.run(
+        ["bash", str(SCRIPT), "--all", "--check"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    assert tree.returncode == 0, (
+        "tracked C/C++ files no longer match .clang-format:\n" + tree.stdout[-4000:]
+    )
+
+    # This fence is deliberate and must stay: the format string makes
+    # clang-format oscillate instead of reaching a fixpoint.
+    actnew = (ROOT / "src/actnew.c").read_text()
+    assert "// clang-format off" in actnew, (
+        "src/actnew.c lost the fence around do_vote()'s fprintf; without it "
+        "clang-format never reaches a fixpoint"
+    )
+    # A constant's value must never end up on a backslash continuation line.
+    import glob as _glob
+
+    stranded = []
+    for path in _glob.glob(str(ROOT / "src/**/*.h"), recursive=True) + _glob.glob(
+        str(ROOT / "src/**/*.c"), recursive=True
+    ):
+        lines = open(path, errors="replace").read().split("\n")
+        for i, line in enumerate(lines[:-1]):
+            if re.match(r"^#define ([A-Z_0-9]+) \\$", line) and re.match(
+                r"^\s*-?\d+\s*(/\*|//|$)", lines[i + 1]
+            ):
+                stranded.append(f"{path}:{i + 1}")
+    assert not stranded, (
+        "these #defines have their value on a continuation line; fence them: "
+        + ", ".join(stranded[:5])
+    )
+
+# --------------------------------------------------------------------------
 # 4. Documentation and dependency declarations.
 # --------------------------------------------------------------------------
 assert DOC.is_file(), "docs/formatting.md is missing"
 doc = DOC.read_text()
 assert "scripts/format.sh" in doc, "docs/formatting.md does not document the runner"
-assert "Do not mass-format" in doc, "docs/formatting.md lost the mass-format warning"
 assert "install-hooks.sh" in doc, "docs/formatting.md does not document the hook"
+assert "clang-format off" in doc, "docs/formatting.md does not explain the fences"
 assert "tabs" in doc and "Allman" in doc
 
 agents = (ROOT / "AGENTS.md").read_text()
-assert "Do not mass-format files" in agents, "AGENTS.md lost the no-mass-format rule"
 assert "scripts/format.sh" in agents, "AGENTS.md does not point at the formatter"
+assert "install-hooks.sh" in agents, "AGENTS.md does not mention the pre-commit hook"
 
 readme = (ROOT / "README.md").read_text()
 assert "2 spaces" not in readme, (
