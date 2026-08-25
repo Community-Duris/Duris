@@ -2180,7 +2180,7 @@ void perform_eq_wipe(P_char ch)
 
 	// Delete the locker as well
 	snprintf(Gbuf2, MAX_STRING_LENGTH, "%c%s", LOWER(*ch->player.name), ch->player.name + 1);
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s.locker", SAVE_DIR, *Gbuf2, Gbuf2);
+	checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s.locker", SAVE_DIR, *Gbuf2, Gbuf2);
 	unlink(Gbuf1);
 	strcat(Gbuf1, ".bak");
 	unlink(Gbuf1);

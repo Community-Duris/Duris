@@ -22,6 +22,7 @@
 #include <string>
 #include "account.h"
 #include "mail.h"
+#include "safe_format.h"
 using namespace std;
 
 // The below line will abuse player times in game, and use it to eq-wipe every player in the game.

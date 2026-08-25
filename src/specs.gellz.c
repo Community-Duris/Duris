@@ -153,10 +153,10 @@ int gellz_test_obj_procs(P_obj obj, P_char ch, int cmd, char *argument)
 			}
 			else
 			{
-				snprintf(buf, MAX_STRING_LENGTH,
-					 "Ship '%s' owner changed from %s to %s.",
-					 strip_ansi(ship->name).c_str(), argstring3,
-					 skip_spaces(argument));
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "Ship '%s' owner changed from %s to %s.",
+						 strip_ansi(ship->name).c_str(), argstring3,
+						 skip_spaces(argument));
 				logit(LOG_SHIP, buf);
 				send_to_char_f(ch, "Ship '%s' now owned by %s.\n", ship->name,
 					       GET_NAME(owner));
@@ -194,7 +194,8 @@ int gellz_test_obj_procs(P_obj obj, P_char ch, int cmd, char *argument)
 					return TRUE;
 				}
 			}
-			snprintf(buf, MAX_STRING_LENGTH, "&+WShip of '%s' not found!", argstring3);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "&+WShip of '%s' not found!",
+					 argstring3);
 			act(buf, FALSE, ch, NULL, NULL, TO_CHAR);
 			return TRUE;
 		}

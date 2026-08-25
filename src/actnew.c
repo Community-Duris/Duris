@@ -263,8 +263,8 @@ void do_gsay(P_char ch, char *arg, int cmd)
 	{
 		escape_act_dollars(escaped_text, sizeof(escaped_text),
 				   language_CRYPT(ch, gl->ch, arg + i));
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+G$n&+G group-says %s'%s'",
-			 language_known(ch, gl->ch), escaped_text);
+		checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "&+G$n&+G group-says %s'%s'",
+				 language_known(ch, gl->ch), escaped_text);
 		if (!is_silent(gl->ch, FALSE))
 		{
 			act(Gbuf1, FALSE, ch, 0, gl->ch, TO_VICT | ACT_SILENCEABLE | ACT_PRIVATE);
@@ -2860,7 +2860,7 @@ void lore_item(P_char ch, P_obj obj)
 			else
 				Gbuf3[0] = 0;
 
-			snprintf(Gbuf1, MAX_STRING_LENGTH, " %s %s", Gbuf2, Gbuf3);
+			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, " %s %s", Gbuf2, Gbuf3);
 			send_to_char(Gbuf1, ch);
 		}
 	}
@@ -3628,7 +3628,7 @@ void do_vote(P_char ch, char *arg, int cmd)
 
 	for (i = 1; '\0' != vote_options[i][0]; i++)
 	{
-		snprintf(vote_opts, 4096, "%s%d)  %s\r\n", vote_opts, (i), vote_options[i]);
+		checked_snprintf(vote_opts, 4096, "%s%d)  %s\r\n", vote_opts, (i), vote_options[i]);
 		max_vote = i;
 	}
 

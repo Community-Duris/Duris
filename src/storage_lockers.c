@@ -1864,14 +1864,15 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		for (i = 0; acct[i] && i < MAX_INPUT_LENGTH - 1; i++)
 			acct_lower[i] = tolower(acct[i]);
 		acct_lower[i] = '\0';
-		snprintf(enterWho, MAX_INPUT_LENGTH, "account.%s.%d", acct_lower, GET_RACEWAR(ch));
+		checked_snprintf(enterWho, MAX_INPUT_LENGTH, "account.%s.%d", acct_lower,
+				 GET_RACEWAR(ch));
 	}
 	else
 	{
 		bValidate = 1;
 	}
 
-	snprintf(lockerName, 500, "%s.locker", enterWho);
+	checked_snprintf(lockerName, 500, "%s.locker", enterWho);
 
 	chLocker = load_locker_char(ch, lockerName, bValidate);
 
@@ -2059,7 +2060,7 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	snprintf(enterWho, MAX_INPUT_LENGTH, "guild.%d", GET_ASSOC(ch)->get_id());
 	is_guild_locker = 1;
 
-	snprintf(lockerName, 500, "%s.locker", enterWho);
+	checked_snprintf(lockerName, 500, "%s.locker", enterWho);
 
 	chLocker = load_locker_char(ch, lockerName, bValidate);
 
@@ -2983,7 +2984,7 @@ static int create_new_locker(P_char ch, P_char locker)
 			}
 			else
 				strcpy(acct_name, src);
-			snprintf(roomNameBuf, 500, "The Storage Locker for %s", acct_name);
+			checked_snprintf(roomNameBuf, 500, "The Storage Locker for %s", acct_name);
 		}
 		else
 		{ /* normal player locker */

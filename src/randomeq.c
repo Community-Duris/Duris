@@ -979,10 +979,10 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	}
 	else if (!number(0, 9) && (material_type == -1) && (GET_LEVEL(mob) > 45))
 	{
-		snprintf(o_name, MAX_STRING_LENGTH, "random _noquest_ %s %s %s %s",
-			 strip_ansi(prefix_data[prefix].m_name).c_str(),
-			 strip_ansi(material_data[material].m_name).c_str(),
-			 strip_ansi(slot_data[slot].m_name).c_str(), owner);
+		checked_snprintf(o_name, MAX_STRING_LENGTH, "random _noquest_ %s %s %s %s",
+				 strip_ansi(prefix_data[prefix].m_name).c_str(),
+				 strip_ansi(material_data[material].m_name).c_str(),
+				 strip_ansi(slot_data[slot].m_name).c_str(), owner);
 		if (slot_data[slot].m_name[strlen(slot_data[slot].m_name) - 3] == 's')
 		{
 			snprintf(o_short, MAX_STRING_LENGTH, "some %s %s %s&n",
@@ -1793,7 +1793,7 @@ bool identify_random(P_obj obj)
 	if ((c = strstr(old_name, " crafted by")))
 		*c = '\0';
 
-	snprintf(buffer, 256, "%s of %s&n", old_name, spells_data[i].name);
+	checked_snprintf(buffer, 256, "%s of %s&n", old_name, spells_data[i].name);
 
 	if (!strcmp(buffer, obj->short_description))
 		return false;

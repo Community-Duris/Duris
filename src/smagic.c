@@ -4277,7 +4277,7 @@ void spell_reveal_spirit_essence(int level, P_char ch, char *arg, int type, P_ch
 	}
 	if (align >= 350 || align <= -350)
 	{
-		snprintf(buff2, 256, "%sA %s glow surrounds you briefly.\n", buff3, buff);
+		checked_snprintf(buff2, 256, "%sA %s glow surrounds you briefly.\n", buff3, buff);
 	}
 	else
 	{

@@ -3961,8 +3961,8 @@ void gfstone_event(P_char ch, P_char vict, P_obj obj, void *data)
 		}
 		send_to_char("\n", ch);
 		count -= 1;
-		snprintf(buf, MAX_STRING_LENGTH, "%d %d %s %d %d", gf, count, owner, room,
-			 obj->R_num);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%d %d %s %d %d", gf, count, owner, room,
+				 obj->R_num);
 		add_event(gfstone_event, 4, NULL, NULL, NULL, 0, buf, strlen(buf) + 1);
 		// AddEvent(EVENT_SPECIAL, 4, TRUE, gfstone_event, buf);
 		return;
@@ -3995,7 +3995,7 @@ int gfstone(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (strcmp(GET_NAME(ch), owner) != 0)
 	{
-		snprintf(buf3, MAX_STRING_LENGTH, "%s %s %s", buf, buf2, GET_NAME(ch));
+		checked_snprintf(buf3, MAX_STRING_LENGTH, "%s %s %s", buf, buf2, GET_NAME(ch));
 		obj->name = str_dup(buf3);
 		for (i = 1; i <= TOTAL_GF; i++)
 		{
@@ -4099,7 +4099,8 @@ int gfstone(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (isname(arg, "stone god"))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+WCompatability with: %s\n", owner);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "&+WCompatability with: %s\n",
+					 owner);
 			send_to_char(buf, ch);
 
 			for (i = 1; i <= TOTAL_GF; i++)
@@ -4127,8 +4128,8 @@ int gfstone(P_obj obj, P_char ch, int cmd, char *arg)
 						snprintf(buf, MAX_STRING_LENGTH, "&+WERROR");
 						break;
 					}
-					snprintf(buf2, MAX_STRING_LENGTH, "%-17s: &+W%-5d\n", buf,
-						 obj->value[i]);
+					checked_snprintf(buf2, MAX_STRING_LENGTH,
+							 "%-17s: &+W%-5d\n", buf, obj->value[i]);
 					send_to_char(buf2, ch);
 				}
 			}
@@ -4145,8 +4146,8 @@ int gfstone(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		count = (int)(obj->value[gf] / 100);
 		count = 11 - count;
-		snprintf(buf, MAX_STRING_LENGTH, "%d %d %s %d %d", gf, count, owner, ch->in_room,
-			 obj->R_num);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%d %d %s %d %d", gf, count, owner,
+				 ch->in_room, obj->R_num);
 
 		add_event(gfstone_event, 4, NULL, NULL, NULL, 0, buf, strlen(buf) + 1);
 		// AddEvent(EVENT_SPECIAL, 4, TRUE, gfstone_event, buf);

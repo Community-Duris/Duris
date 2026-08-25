@@ -508,7 +508,7 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 
 		if (!Godlist)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", locName, shortDesc);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", locName, shortDesc);
 			send_to_char(buf, ch);
 			shownData = TRUE;
 			continue;
@@ -542,8 +542,8 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 		char locPadded[MAX_STRING_LENGTH];
 		snprintf(locPadded, MAX_STRING_LENGTH, "%s",
 			 pad_ansi(locName, MAX_NAME_LENGTH + 9, TRUE).c_str());
-		snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n", locPadded,
-			 timerBuf, lastUpdate, shortDesc, vnum);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n",
+				 locPadded, timerBuf, lastUpdate, shortDesc, vnum);
 		send_to_char(buf, ch);
 		shownData = TRUE;
 	}
@@ -3190,9 +3190,10 @@ void arti_poof_sql(P_char ch, char *arg)
 
 	if (!get_artifact_data_sql(vnum, &artidata))
 	{
-		snprintf(buf, MAX_STRING_LENGTH,
-			 "&+WThere is no data for %s atm; It shouldn't be in the game.&n\n\r",
-			 artishort);
+		checked_snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+WThere is no data for %s atm; It shouldn't be in the game.&n\n\r",
+			artishort);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -3203,8 +3204,8 @@ void arti_poof_sql(P_char ch, char *arg)
 		// If it isn't on a char, or the char is online.
 		if (artidata.locType != ARTIFACT_ON_PC || is_pid_online(artidata.location, TRUE))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Could not find %s in game.\n\r",
-				 artishort);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "Could not find %s in game.\n\r",
+					 artishort);
 			send_to_char(buf, ch);
 			return;
 		}
@@ -3217,9 +3218,10 @@ void arti_poof_sql(P_char ch, char *arg)
 		}
 		if ((arti = get_object_from_char(owner, vnum)) == NULL)
 		{
-			snprintf(buf, MAX_STRING_LENGTH,
-				 "Strange, arti '%s' %d was not on %s's pfile!\n\r", artishort,
-				 vnum, get_player_name_from_pid(artidata.location));
+			checked_snprintf(buf, MAX_STRING_LENGTH,
+					 "Strange, arti '%s' %d was not on %s's pfile!\n\r",
+					 artishort, vnum,
+					 get_player_name_from_pid(artidata.location));
 			nuke_eq(owner);
 			extract_char(owner);
 			return;
@@ -4328,8 +4330,8 @@ void arti_player_sql(P_char ch, char *arg)
 		snprintf(timeBuf, sizeof timeBuf, "%c%2ld:%02d:%02d", negTime ? '-' : ' ',
 			 totalTime / 24, hours, minutes);
 
-		snprintf(buf, MAX_STRING_LENGTH, "%s&n%-11s %-22s%s (#%d)\r\n", locationBuf,
-			 timeBuf, row[5], OBJ_SHORT(arti), vnum);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%s&n%-11s %-22s%s (#%d)\r\n", locationBuf,
+				 timeBuf, row[5], OBJ_SHORT(arti), vnum);
 		send_to_char(buf, ch);
 		shownData = TRUE;
 		extract_obj(arti, FALSE);

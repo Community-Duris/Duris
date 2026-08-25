@@ -230,7 +230,7 @@ void show_outposts(P_char ch)
 			fclose(f);
 		}
 
-		snprintf(
+		checked_snprintf(
 			buff, MAX_STRING_LENGTH,
 			"&+W*ID: &+c%2d &+WContinent: &+c%-18s&n &+WOwner: &+c%-15s&n\r\n", i + 1,
 			pad_ansi(continent_name(world[building->location()].continent), 18).c_str(),

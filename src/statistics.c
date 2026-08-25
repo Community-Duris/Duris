@@ -236,7 +236,7 @@ void do_statistic(P_char ch, char *argument, int val)
 		return;
 	}
 
-	snprintf(fname, 256, "lib/statistics/statistics_general%s", Gbuf1);
+	checked_snprintf(fname, 256, "lib/statistics/statistics_general%s", Gbuf1);
 	f = fopen(fname, "r");
 	if (!f)
 	{
@@ -303,9 +303,9 @@ void do_statistic(P_char ch, char *argument, int val)
 						strcat(Gbuf3, "-");
 						i = i + 2;
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+W%d:00\t%s> %.1f Goodies", j, Gbuf3,
-						 day[j].goodies);
+					checked_snprintf(buf, MAX_STRING_LENGTH,
+							 "\r\n&+W%d:00\t%s> %.1f Goodies", j, Gbuf3,
+							 day[j].goodies);
 					// snprintf(buf, MAX_STRING_LENGTH, "\r\n&+W%d:00\t%s> %.1f",j, Gbuf3,  day[j].goodies);
 					strcat(Gbuf5, buf);
 				}
@@ -319,9 +319,9 @@ void do_statistic(P_char ch, char *argument, int val)
 						strcat(Gbuf3, "-");
 						i = i + 2;
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+r%d:00\t%s> %.1f Evils", j, Gbuf3,
-						 day[j].evils);
+					checked_snprintf(buf, MAX_STRING_LENGTH,
+							 "\r\n&+r%d:00\t%s> %.1f Evils", j, Gbuf3,
+							 day[j].evils);
 					// snprintf(buf, MAX_STRING_LENGTH, "\r\n&+W%d:00\t%s> %.1f",j, Gbuf3,  day[j].evils);
 					strcat(Gbuf5, buf);
 				}
@@ -335,9 +335,9 @@ void do_statistic(P_char ch, char *argument, int val)
 						strcat(Gbuf3, "-");
 						i = i + 2;
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+L%d:00\t%s> %.1f Undeads", j, Gbuf3,
-						 day[j].undeads);
+					checked_snprintf(buf, MAX_STRING_LENGTH,
+							 "\r\n&+L%d:00\t%s> %.1f Undeads", j, Gbuf3,
+							 day[j].undeads);
 					// snprintf(buf, MAX_STRING_LENGTH, "\r\n&+W%d:00\t%s> %.1f",j, Gbuf3,  day[j].undeads);
 					strcat(Gbuf5, buf);
 				}
@@ -351,9 +351,9 @@ void do_statistic(P_char ch, char *argument, int val)
 						strcat(Gbuf3, "-");
 						i = i + 2;
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+M%d:00\t%s> %.1f Illithids", j, Gbuf3,
-						 day[j].illithids);
+					checked_snprintf(buf, MAX_STRING_LENGTH,
+							 "\r\n&+M%d:00\t%s> %.1f Illithids", j,
+							 Gbuf3, day[j].illithids);
 					// snprintf(buf, MAX_STRING_LENGTH, "\r\n&+W%d:00\t%s> %.1f",j, Gbuf3,  day[j].illithids);
 					strcat(Gbuf5, buf);
 				}
@@ -368,9 +368,9 @@ void do_statistic(P_char ch, char *argument, int val)
 						strcat(Gbuf3, "-");
 						i = i + 2;
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+G%d:00\t%s> %.1f Total", j, Gbuf3,
-						 day[j].total);
+					checked_snprintf(buf, MAX_STRING_LENGTH,
+							 "\r\n&+G%d:00\t%s> %.1f Total", j, Gbuf3,
+							 day[j].total);
 					// snprintf(buf, MAX_STRING_LENGTH, "\r\n&+W%d:00\t%s> %.1f",j, Gbuf3,  day[j].total);
 					strcat(Gbuf5, buf);
 				}
@@ -384,9 +384,9 @@ void do_statistic(P_char ch, char *argument, int val)
 						strcat(Gbuf3, "-");
 						i = i + 2;
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+B%d:00\t%s> %.1f Inhalls", j, Gbuf3,
-						 day[j].inhalls);
+					checked_snprintf(buf, MAX_STRING_LENGTH,
+							 "\r\n&+B%d:00\t%s> %.1f Inhalls", j, Gbuf3,
+							 day[j].inhalls);
 					// snprintf(buf, MAX_STRING_LENGTH, "\r\n&+W%d:00\t%s> %.1f",j, Gbuf3,  day[j].inhalls);
 					strcat(Gbuf5, buf);
 				}
@@ -401,9 +401,9 @@ void do_statistic(P_char ch, char *argument, int val)
 						strcat(Gbuf3, "-");
 						i = i + 2;
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+Y%d:00\t%s> %.1f Gods", j, Gbuf3,
-						 day[j].gods);
+					checked_snprintf(buf, MAX_STRING_LENGTH,
+							 "\r\n&+Y%d:00\t%s> %.1f Gods", j, Gbuf3,
+							 day[j].gods);
 					strcat(Gbuf5, buf);
 				}
 
@@ -439,7 +439,7 @@ void do_statistic(P_char ch, char *argument, int val)
 							strcat(Gbuf3, "-");
 							i = i + 2;
 						}
-						snprintf(
+						checked_snprintf(
 							buf, MAX_STRING_LENGTH,
 							"\r\n&+W%d:00\t%s> %.1f Goodies averge lvl",
 							j, Gbuf3, day[j].goodies_lvl);
@@ -452,9 +452,10 @@ void do_statistic(P_char ch, char *argument, int val)
 							strcat(Gbuf3, "-");
 							i = i + 2;
 						}
-						snprintf(buf, MAX_STRING_LENGTH,
-							 "\r\n&+r%d:00\t%s> %.1f Evil averge lvl",
-							 j, Gbuf3, day[j].evils_lvl);
+						checked_snprintf(
+							buf, MAX_STRING_LENGTH,
+							"\r\n&+r%d:00\t%s> %.1f Evil averge lvl", j,
+							Gbuf3, day[j].evils_lvl);
 						strcat(Gbuf5, buf);
 
 						Gbuf3[0] = '\0';
@@ -464,7 +465,7 @@ void do_statistic(P_char ch, char *argument, int val)
 							strcat(Gbuf3, "-");
 							i = i + 2;
 						}
-						snprintf(
+						checked_snprintf(
 							buf, MAX_STRING_LENGTH,
 							"\r\n&+L%d:00\t%s> %.1f Undeads averge lvl",
 							j, Gbuf3, day[j].undeads_lvl);
@@ -478,9 +479,10 @@ void do_statistic(P_char ch, char *argument, int val)
 							i = i + 2;
 						}
 					}
-					snprintf(buf, MAX_STRING_LENGTH,
-						 "\r\n&+M%d:00\t%s> %.1f Illithids averge lvl", j,
-						 Gbuf3, day[j].illithids_lvl);
+					checked_snprintf(
+						buf, MAX_STRING_LENGTH,
+						"\r\n&+M%d:00\t%s> %.1f Illithids averge lvl", j,
+						Gbuf3, day[j].illithids_lvl);
 					strcat(Gbuf5, buf);
 				}
 
@@ -636,8 +638,9 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 					g = g + 2;
 				}
 
-				snprintf(buf, MAX_STRING_LENGTH, "\r\n&+W%s\t%s> %.1f Goodies&n",
-					 stati_date, Gbuf3, month[i].total_goodies / k);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "\r\n&+W%s\t%s> %.1f Goodies&n", stati_date, Gbuf3,
+						 month[i].total_goodies / k);
 				strcat(Gbuf4, buf);
 			}
 
@@ -652,8 +655,9 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 					strcat(Gbuf3, "-");
 					g = g + 2;
 				}
-				snprintf(buf, MAX_STRING_LENGTH, "\r\n&+r%s\t%s> %.1f Evils&n",
-					 stati_date, Gbuf3, month[i].total_evils / k);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "\r\n&+r%s\t%s> %.1f Evils&n", stati_date, Gbuf3,
+						 month[i].total_evils / k);
 				strcat(Gbuf4, buf);
 			}
 
@@ -668,8 +672,9 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 					strcat(Gbuf3, "-");
 					g = g + 2;
 				}
-				snprintf(buf, MAX_STRING_LENGTH, "\r\n&+L%s\t%s> %.1f Undeads&n",
-					 stati_date, Gbuf3, month[i].total_undeads / k);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "\r\n&+L%s\t%s> %.1f Undeads&n", stati_date, Gbuf3,
+						 month[i].total_undeads / k);
 				strcat(Gbuf4, buf);
 			}
 
@@ -684,8 +689,9 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 					strcat(Gbuf3, "-");
 					g = g + 2;
 				}
-				snprintf(buf, MAX_STRING_LENGTH, "\r\n&+M%s\t%s> %.1f Illithids&n",
-					 stati_date, Gbuf3, month[i].total_illithids / k);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "\r\n&+M%s\t%s> %.1f Illithids&n", stati_date,
+						 Gbuf3, month[i].total_illithids / k);
 				strcat(Gbuf4, buf);
 			}
 
@@ -700,8 +706,9 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 					strcat(Gbuf3, "-");
 					g = g + 2;
 				}
-				snprintf(buf, MAX_STRING_LENGTH, "\r\n&+G%s\t%s> %.1f Total&n",
-					 stati_date, Gbuf3, month[i].total_total / k);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "\r\n&+G%s\t%s> %.1f Total&n", stati_date, Gbuf3,
+						 month[i].total_total / k);
 				strcat(Gbuf4, buf);
 			}
 			// Inhalls
@@ -714,8 +721,9 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 					strcat(Gbuf3, "-");
 					g = g + 2;
 				}
-				snprintf(buf, MAX_STRING_LENGTH, "\r\n&+B%s\t%s> %.1f Inhalls&n",
-					 stati_date, Gbuf3, month[i].total_inhalls / k);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "\r\n&+B%s\t%s> %.1f Inhalls&n", stati_date, Gbuf3,
+						 month[i].total_inhalls / k);
 				strcat(Gbuf4, buf);
 			}
 			// Gods
@@ -728,8 +736,9 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 					strcat(Gbuf3, "-");
 					g = g + 2;
 				}
-				snprintf(buf, MAX_STRING_LENGTH, "\r\n&+Y%s\t%s> %.1f Gods&n",
-					 stati_date, Gbuf3, month[i].total_gods / k);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "\r\n&+Y%s\t%s> %.1f Gods&n", stati_date, Gbuf3,
+						 month[i].total_gods / k);
 				strcat(Gbuf4, buf);
 			}
 		}

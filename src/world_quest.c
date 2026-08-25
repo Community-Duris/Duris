@@ -624,7 +624,8 @@ void do_quest(P_char ch, char *args, int cmd)
 	if ((q_giver = read_mobile(real_mobile(ch->only.pc->quest_giver), REAL)))
 	{
 		snprintf(q_name, MAX_STRING_LENGTH, "%s", q_giver->player.short_descr);
-		snprintf(buf, MAX_STRING_LENGTH, "%s gave you the following quest:\r\n", q_name);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%s gave you the following quest:\r\n",
+				 q_name);
 		send_to_char(buf, ch);
 
 		if (q_giver)
@@ -651,19 +652,20 @@ void do_quest(P_char ch, char *args, int cmd)
 
 		if (ch->only.pc->quest_type == FIND_AND_ASK)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Go ask %s in %s about the %s.\r\n",
-				 q_name,
-				 zone_table[real_zone0(ch->only.pc->quest_zone_number)].name,
-				 month_name[time_info.month]);
+			checked_snprintf(
+				buf, MAX_STRING_LENGTH, "Go ask %s in %s about the %s.\r\n", q_name,
+				zone_table[real_zone0(ch->only.pc->quest_zone_number)].name,
+				month_name[time_info.month]);
 			send_to_char(buf, ch);
 		}
 		else if (ch->only.pc->quest_type == FIND_AND_KILL)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Go kill %d %s (%d left) in %s!\r\n",
-				 ch->only.pc->quest_kill_original, q_name,
-				 (ch->only.pc->quest_kill_original -
-				  ch->only.pc->quest_kill_how_many),
-				 zone_table[real_zone0(ch->only.pc->quest_zone_number)].name);
+			checked_snprintf(
+				buf, MAX_STRING_LENGTH, "Go kill %d %s (%d left) in %s!\r\n",
+				ch->only.pc->quest_kill_original, q_name,
+				(ch->only.pc->quest_kill_original -
+				 ch->only.pc->quest_kill_how_many),
+				zone_table[real_zone0(ch->only.pc->quest_zone_number)].name);
 			send_to_char(buf, ch);
 			wizlog(56,
 			       "%s got a quest to go kill %d of mob vnum %d; they have %d left.",

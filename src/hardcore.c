@@ -264,8 +264,9 @@ void displayHardCore(P_char ch, char *arg, int cmd)
 			name[0] = toupper(name[0]);
 			pts = atof(row[1]) / (float)config->score_display_divisor;
 
-			snprintf(buf2, 2048, "   &+L%-15s          &+r% 6.2f\t      &+W%-15s\r\n",
-				 name, pts, row[2] ? row[2] : "unknown");
+			checked_snprintf(buf2, 2048,
+					 "   &+L%-15s          &+r% 6.2f\t      &+W%-15s\r\n", name,
+					 pts, row[2] ? row[2] : "unknown");
 			strcat(buf, buf2);
 		}
 	}
@@ -359,7 +360,8 @@ void displayLeader(P_char ch, char *arg, int cmd)
 			name[0] = toupper(name[0]);
 			pts = atof(row[1]) / (float)config->score_display_divisor;
 
-			snprintf(buf2, 2048, "   &+w%-15s          &+Y%6.2f\t\r\n", name, pts);
+			checked_snprintf(buf2, 2048, "   &+w%-15s          &+Y%6.2f\t\r\n", name,
+					 pts);
 			strcat(buf, buf2);
 		}
 	}
@@ -423,7 +425,7 @@ bool newHardcoreBoard(P_char ch, char *arg, int cmd)
 		pts = halloffames;
 		if (!strcmp(name, "none"))
 			break;
-		snprintf(buf, MAX_STRING_LENGTH, "%s %d %s\r\n", name, (int)pts, killedby);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%s %d %s\r\n", name, (int)pts, killedby);
 		fprintf(newhardcorelist, "%s", buf);
 	}
 

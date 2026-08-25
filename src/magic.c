@@ -10134,8 +10134,8 @@ void spell_identify(int level, P_char ch, char *arg, int type, P_char victim, P_
 
 				sprinttype(i, (const char **)spells, Gbuf2);
 
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "level %d spell \"%s\"\n",
-					 obj->value[0], Gbuf2);
+				checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "level %d spell \"%s\"\n", obj->value[0], Gbuf2);
 				send_to_char(Gbuf1, ch);
 			}
 			break;
@@ -10323,8 +10323,8 @@ void spell_identify(int level, P_char ch, char *arg, int type, P_char victim, P_
 					break;
 				}
 
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "  %s %s%d\n", Gbuf2,
-					 temp > 0 ? "by +" : "by ", temp);
+				checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "  %s %s%d\n", Gbuf2,
+						 temp > 0 ? "by +" : "by ", temp);
 				send_to_char(Gbuf1, ch);
 			}
 		}
@@ -10488,7 +10488,7 @@ void spell_lore(int level, P_char ch, char *arg, int type, P_char victim, P_obj 
 				}
 				else
 					Gbuf3[0] = 0;
-				snprintf(Gbuf1, MAX_STRING_LENGTH, " %s %s", Gbuf2, Gbuf3);
+				checked_snprintf(Gbuf1, MAX_STRING_LENGTH, " %s %s", Gbuf2, Gbuf3);
 				send_to_char(Gbuf1, ch);
 			}
 		}
@@ -21906,8 +21906,8 @@ void do_soulbind(P_char ch, char *argument, int cmd)
 				remove_soulbind(victim);
 				affect_remove(victim, findaf);
 				snprintf(buffer, MAX_STRING_LENGTH, "%s", GET_NAME(victim));
-				snprintf(gbuf3, MAX_STRING_LENGTH,
-					 "Cleared soulbind status on %s.\r\n", buffer);
+				checked_snprintf(gbuf3, MAX_STRING_LENGTH,
+						 "Cleared soulbind status on %s.\r\n", buffer);
 				send_to_char(gbuf3, ch);
 				logit(LOG_WIZ, "%s cleared soulbind on %s", J_NAME(ch),
 				      J_NAME(victim));

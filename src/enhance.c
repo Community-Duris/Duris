@@ -125,7 +125,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	{
 		char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 		snprintf(buf2, MAX_STRING_LENGTH, "%s", source->short_description);
-		snprintf(
+		checked_snprintf(
 			buf, MAX_STRING_LENGTH,
 			"&+REnhancing %s requires an item with at least an &+Witem value of: %d&n\r\n",
 			buf2, minval);
@@ -552,8 +552,9 @@ static void show_superior_requirements(P_char ch, P_obj item,
 	for (i = 0; i < plan->material_count; i++)
 	{
 		enhance_material_name(plan->materials[i].vnum, name, sizeof(name));
-		snprintf(line, sizeof(line), "  &+W%d&n %s &+w(you have %d)&n\r\n",
-			 plan->materials[i].count, name, vnum_in_inv(ch, plan->materials[i].vnum));
+		checked_snprintf(line, sizeof(line), "  &+W%d&n %s &+w(you have %d)&n\r\n",
+				 plan->materials[i].count, name,
+				 vnum_in_inv(ch, plan->materials[i].vnum));
 		strcat(buf, line);
 	}
 	strcat(buf, "&+ySyntax:&n enhance <item>\r\n");
@@ -977,7 +978,7 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	snprintf(keywords, MAX_STRING_LENGTH, "%s enhanced", tempobj->name);
 
 	snprintf(tempdesc, MAX_STRING_LENGTH, "%s", tempobj->short_description);
-	snprintf(short_desc, MAX_STRING_LENGTH, "%s %s&n", tempdesc, modstring);
+	checked_snprintf(short_desc, MAX_STRING_LENGTH, "%s %s&n", tempdesc, modstring);
 	set_keywords(source, keywords);
 	set_short_description(source, short_desc);
 	extract_obj(tempobj);

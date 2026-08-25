@@ -78,43 +78,43 @@ bool rename_character(P_char ch, char *old_name, char *new_name);
 /* and return the # of replacements */
 char *replace(char *g_string, char *replace_from, char *replace_to)
 {
-	char *p, *p1, *return_str;
-	int i_diff;
+	char *output, *return_str;
+	const char *input, *match;
+	size_t from_length, input_length, replacement_count, result_length, to_length;
 
-	i_diff = strlen(replace_from) -
-		 strlen(replace_to); // the margin between the replace_from and replace_to;
-	CREATE(return_str, char, strlen(g_string) + 1, MEM_TAG_STRING);
-	// return_str = (char *) malloc(strlen(g_string) + 1);   //Changed line
+	input_length = strlen(g_string);
+	from_length = strlen(replace_from);
+	to_length = strlen(replace_to);
+	replacement_count = 0;
+	if (from_length)
+	{
+		for (input = g_string; (match = strstr(input, replace_from)) != NULL;
+		     input = match + from_length)
+			replacement_count++;
+	}
+	result_length = input_length;
+	if (to_length >= from_length)
+		result_length += replacement_count * (to_length - from_length);
+	else
+		result_length -= replacement_count * (from_length - to_length);
+
+	CREATE(return_str, char, result_length + 1, MEM_TAG_STRING);
 
 	if (return_str == NULL)
 		return g_string;
-	return_str[0] = 0;
-
-	p = g_string;
-
-	for (;;)
+	input = g_string;
+	output = return_str;
+	while (from_length && (match = strstr(input, replace_from)) != NULL)
 	{
-		p1 = p; // old position
-		p = strstr(p, replace_from); // next position
-		if (p == NULL)
-		{
-			strcat(return_str, p1);
-			break;
-		}
-		while (p > p1)
-		{
-			snprintf(return_str, MAX_STRING_LENGTH, "%s%c", return_str, *p1);
-			p1++;
-		}
-		if (i_diff > 0)
-		{
-			RECREATE(return_str, char, strlen(g_string) + i_diff + 1);
-			if (return_str == NULL)
-				return g_string;
-		}
-		strcat(return_str, replace_to);
-		p += strlen(replace_from); // new point position
+		size_t prefix_length = (size_t)(match - input);
+
+		memcpy(output, input, prefix_length);
+		output += prefix_length;
+		memcpy(output, replace_to, to_length);
+		output += to_length;
+		input = match + from_length;
 	}
+	strcpy(output, input);
 	return return_str;
 }
 
@@ -595,7 +595,8 @@ void parse_action(int command, char *string, struct descriptor_data *d)
 				s++;
 				temp = *s;
 				*s = '\0';
-				snprintf(buf, MAX_STRING_LENGTH, "&+c%s&n&+B%d:&n ", buf, (i - 1));
+				checked_snprintf(buf, MAX_STRING_LENGTH, "&+c%s&n&+B%d:&n ", buf,
+						 (i - 1));
 				strcat(buf, t);
 				*s = temp;
 				t = s;

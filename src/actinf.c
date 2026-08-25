@@ -1211,17 +1211,20 @@ void show_visual_status(P_char ch, P_char tar_char)
 	if (IS_NPC(tar_char) && (GET_CLASS(ch, CLASS_RANGER) || GET_CLASS(ch, CLASS_SUMMONER)))
 	{
 		get_class_string(tar_char, buf2);
-		snprintf(buf, sizeof buf,
-			 "Through your advanced training, you glean they are a level &+Y%d &N%s&n.",
-			 GET_LEVEL(tar_char), buf2);
+		checked_snprintf(
+			buf, sizeof buf,
+			"Through your advanced training, you glean they are a level &+Y%d &N%s&n.",
+			GET_LEVEL(tar_char), buf2);
 		SVS(buf);
 	}
 
 	if (IS_TRUSTED(ch))
 	{
 		get_class_string(tar_char, buf2);
-		snprintf(buf, sizeof buf, "&+YLevel: &N%d &+YClass(es): &N%s &+YHitpoints: %d/%d",
-			 GET_LEVEL(tar_char), buf2, GET_HIT(tar_char), GET_MAX_HIT(tar_char));
+		checked_snprintf(buf, sizeof buf,
+				 "&+YLevel: &N%d &+YClass(es): &N%s &+YHitpoints: %d/%d",
+				 GET_LEVEL(tar_char), buf2, GET_HIT(tar_char),
+				 GET_MAX_HIT(tar_char));
 		SVS(buf);
 	}
 	send_to_char("\n", ch);
@@ -3890,13 +3893,14 @@ void do_examine(P_char ch, char *argument, int cmd)
 						snprintf(buf2, sizeof buf2,
 							 "&nis as good as empty.");
 
-					snprintf(buf, sizeof buf,
-						 "%s&n can hold around %d pounds, and %s\n",
-						 tmp_object->short_description,
-						 tmp_object->value[0] +
-							 number(-(tmp_object->value[0] >> 1),
-								tmp_object->value[0] >> 1),
-						 buf2);
+					checked_snprintf(
+						buf, sizeof buf,
+						"%s&n can hold around %d pounds, and %s\n",
+						tmp_object->short_description,
+						tmp_object->value[0] +
+							number(-(tmp_object->value[0] >> 1),
+							       tmp_object->value[0] >> 1),
+						buf2);
 					send_to_char(buf, ch);
 
 					snprintf(buf, sizeof buf, "%s &ncurrently contains:\n",
@@ -4969,8 +4973,8 @@ void do_score(P_char ch, char *argument, int cmd)
 	}
 
 	/* level, race, class */
-	snprintf(buf, MAX_STRING_LENGTH, "Level: %d   Race: %s   Class: %s &nSex: %s\n&n",
-		 GET_LEVEL(ch), race_to_string(ch), get_class_string(ch, buffer), buf2);
+	checked_snprintf(buf, MAX_STRING_LENGTH, "Level: %d   Race: %s   Class: %s &nSex: %s\n&n",
+			 GET_LEVEL(ch), race_to_string(ch), get_class_string(ch, buffer), buf2);
 	send_to_char(buf, ch);
 
 	/* hit pts, mana, moves */
@@ -6254,9 +6258,9 @@ void do_time(P_char ch, char *argument, int cmd)
 
 	Gbuf1[0] = 0;
 
-	snprintf(Gbuf2, MAX_STRING_LENGTH, "It is %d%s%s, on ",
-		 (time_info.hour % 12) ? (time_info.hour % 12) : 12, Gbuf1,
-		 (time_info.hour > 11) ? "pm" : "am");
+	checked_snprintf(Gbuf2, MAX_STRING_LENGTH, "It is %d%s%s, on ",
+			 (time_info.hour % 12) ? (time_info.hour % 12) : 12, Gbuf1,
+			 (time_info.hour > 11) ? "pm" : "am");
 
 	/*
 	 * 35 days in a month
@@ -7188,7 +7192,7 @@ void do_who(P_char ch, char *argument, int cmd)
 							  tch->desc->character;
 		sprinttype(tch->desc->connected, connected_types, buf5);
 
-		snprintf(
+		checked_snprintf(
 			buf4, MAX_STRING_LENGTH,
 			"&+YDesc: &n%3d&+Y, Idle: &n%3ld&+Y, Lvl:&n%3d&+Y, Switched: &n%c&+Y, Name: &n%s\n\r"
 			"&+YRoom: &n%6d&+Y, Vis level: &n%d&+Y, Connection: &n%-11s %15s\n\r\n\r",
@@ -7371,8 +7375,8 @@ void do_users(P_char ch, char *argument, int cmd)
 		{
 			if (d->client_version[0])
 			{
-				snprintf(clientbuf, sizeof(clientbuf), "%s %s", d->client_name,
-					 d->client_version);
+				checked_snprintf(clientbuf, sizeof(clientbuf), "%s %s",
+						 d->client_name, d->client_version);
 			}
 			else
 			{
@@ -7392,12 +7396,13 @@ void do_users(P_char ch, char *argument, int cmd)
 			snprintf(clientbuf, sizeof(clientbuf), "-");
 		}
 
-		snprintf(linebuf, MAX_STRING_LENGTH, " %s | %3d | %s | %4d | %-15s | %s\r\n",
-			 ((d->character && GET_NAME(d->character)) ?
-				  pad_ansi(GET_NAME(d->character), 11).c_str() :
-				  "-          "),
-			 d->descriptor, pad_ansi(connbuf, 11).c_str(), (d->wait / 240), clientbuf,
-			 hostbuf);
+		checked_snprintf(linebuf, MAX_STRING_LENGTH,
+				 " %s | %3d | %s | %4d | %-15s | %s\r\n",
+				 ((d->character && GET_NAME(d->character)) ?
+					  pad_ansi(GET_NAME(d->character), 11).c_str() :
+					  "-          "),
+				 d->descriptor, pad_ansi(connbuf, 11).c_str(), (d->wait / 240),
+				 clientbuf, hostbuf);
 
 		send_to_char(linebuf, ch);
 	}
@@ -9343,9 +9348,9 @@ void web_info(void)
 	Gbuf2[0] = 0;
 	Gbuf3[0] = 0;
 
-	snprintf(Gbuf2, MAX_STRING_LENGTH, "It is %d%s%s, on ",
-		 (time_info.hour % 12) ? (time_info.hour % 12) : 12, Gbuf1,
-		 (time_info.hour > 11) ? "pm" : "am");
+	checked_snprintf(Gbuf2, MAX_STRING_LENGTH, "It is %d%s%s, on ",
+			 (time_info.hour % 12) ? (time_info.hour % 12) : 12, Gbuf1,
+			 (time_info.hour > 11) ? "pm" : "am");
 
 	/*
 	 * 35 days in a month

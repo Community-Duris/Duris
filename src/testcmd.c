@@ -121,11 +121,12 @@ void do_test_lava(P_char ch, char *arg, int cmd)
 
 			sprintbitde(rm->room_flags, room_bits, buf2);
 
-			snprintf(buf, MAX_STRING_LENGTH,
-				 "&+YRoom: [&N%d&+Y](&N%d&+Y)  Zone: &N%d&+Y  Sector type: &N%s\n"
-				 "&+YName: &N%s\n&+YRoom flags:&N %s\n\n",
-				 rm->number, realRoomNum, zone_table[rm->zone].number,
-				 sector_types[rm->sector_type], rm->name, buf2);
+			checked_snprintf(
+				buf, MAX_STRING_LENGTH,
+				"&+YRoom: [&N%d&+Y](&N%d&+Y)  Zone: &N%d&+Y  Sector type: &N%s\n"
+				"&+YName: &N%s\n&+YRoom flags:&N %s\n\n",
+				rm->number, realRoomNum, zone_table[rm->zone].number,
+				sector_types[rm->sector_type], rm->name, buf2);
 
 			send_to_char(buf, ch);
 		}
@@ -827,7 +828,7 @@ void do_test(P_char ch, char *arg, int cmd)
 		arg = skip_spaces(arg);
 		snprintf(buf1, MAX_STRING_LENGTH, "%s", CRYPT(arg, GET_NAME(ch)));
 		snprintf(buf2, MAX_STRING_LENGTH, "%s", CRYPT2(arg, GET_NAME(ch)));
-		snprintf(
+		checked_snprintf(
 			buff, MAX_STRING_LENGTH,
 			"%s\n\rcrypt1: %s, crypt1(crypt1): %s.\n\rcrypt2: %s, crypt2(crypt2): %s.\n\r",
 			arg, buf1, CRYPT(arg, buf1), buf2, CRYPT2(arg, buf2));

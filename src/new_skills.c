@@ -1513,29 +1513,29 @@ void do_chant(P_char ch, char *argument, int cmd)
 	if (!argument || !*argument)
 	{
 		snprintf(buf, 512, "You know the following chants:\r\n");
-		snprintf(buf, 512, "%s============================\r\n", buf);
+		checked_snprintf(buf, 512, "%s============================\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_QUIVERING_PALM) > 0)
-			snprintf(buf, 512, "%sQuivering Palm\r\n", buf);
+			checked_snprintf(buf, 512, "%sQuivering Palm\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_BUDDHA_PALM) > 0)
-			snprintf(buf, 512, "%sBuddha palm\r\n", buf);
+			checked_snprintf(buf, 512, "%sBuddha palm\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_HEROISM) > 0)
-			snprintf(buf, 512, "%sHeroism\r\n", buf);
+			checked_snprintf(buf, 512, "%sHeroism\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_CHI_PURGE) > 0)
-			snprintf(buf, 512, "%sChi Purge\r\n", buf);
+			checked_snprintf(buf, 512, "%sChi Purge\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_CALM) > 0)
-			snprintf(buf, 512, "%sCalm\r\n", buf);
+			checked_snprintf(buf, 512, "%sCalm\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_REGENERATE) > 0)
-			snprintf(buf, 512, "%sRegenerate\r\n", buf);
+			checked_snprintf(buf, 512, "%sRegenerate\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_JIN_TOUCH) > 0)
-			snprintf(buf, 512, "%sJin Touch\r\n", buf);
+			checked_snprintf(buf, 512, "%sJin Touch\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_FIST_OF_DRAGON) > 0)
-			snprintf(buf, 512, "%sFist of dragon\r\n", buf);
+			checked_snprintf(buf, 512, "%sFist of dragon\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_KI_STRIKE) > 0)
-			snprintf(buf, 512, "%sKi Strike\r\n", buf);
+			checked_snprintf(buf, 512, "%sKi Strike\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_TIGER_PALM) > 0)
-			snprintf(buf, 512, "%sTiger Palm\r\n", buf);
+			checked_snprintf(buf, 512, "%sTiger Palm\r\n", buf);
 		if (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_DIAMOND_SOUL) > 0)
-			snprintf(buf, 512, "%sDiamond Soul\r\n", buf);
+			checked_snprintf(buf, 512, "%sDiamond Soul\r\n", buf);
 
 		send_to_char(buf, ch);
 		return;
@@ -1881,7 +1881,7 @@ void event_summon_book(P_char ch, P_char victim, P_obj obj, void *data)
 		return;
 
 	SET_BIT(book->str_mask, STRUNG_DESC2 || STRUNG_KEYS);
-	snprintf(namebuf, 512, "book spellbook %s", bookname);
+	checked_snprintf(namebuf, 512, "book spellbook %s", bookname);
 	book->name = str_dup(namebuf);
 	snprintf(namebuf, 512, "a &+Wsp&+wel&+Wlb&+woo&+Wk&n &+Lbearing the insignia of&n %s",
 		 ch->player.name);
@@ -1925,7 +1925,7 @@ void event_summon_totem(P_char ch, P_char victim, P_obj obj, void *data)
 		return;
 
 	SET_BIT(totem->str_mask, STRUNG_DESC2 || STRUNG_KEYS);
-	snprintf(namebuf, 512, "totem spirit %s", totemname);
+	checked_snprintf(namebuf, 512, "totem spirit %s", totemname);
 	totem->name = str_dup(namebuf);
 	snprintf(namebuf, 512, "a &+wspirit &+ytotem&n of&n &+G%s&n", ch->player.name);
 	totem->short_description = str_dup(namebuf);
@@ -2758,7 +2758,7 @@ void do_carve(struct char_data *ch, char *argument, int cmd)
 	half_chop(corpse->name, cname, buf);
 
 	/* as keywords the part name and the player */
-	snprintf(buf, MAX_STRING_LENGTH, "%s %s", carve_part_name[which], cname);
+	checked_snprintf(buf, MAX_STRING_LENGTH, "%s %s", carve_part_name[which], cname);
 	carve->name = str_dup(buf);
 
 	/* Converts "The corpse of an orc is lying here." to e.g. "The skull..." */

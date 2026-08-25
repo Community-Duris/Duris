@@ -3282,7 +3282,7 @@ void do_enter(P_char ch, char *argument, int cmd)
 						command_interpreter(ch, Gbuf1);
 						return;
 					}
-		snprintf(Gbuf4, MAX_STRING_LENGTH, "There is no %s here.\n", Gbuf1);
+		checked_snprintf(Gbuf4, MAX_STRING_LENGTH, "There is no %s here.\n", Gbuf1);
 		send_to_char(Gbuf4, ch);
 	}
 	else if (IS_ROOM(ch->in_room, ROOM_INDOORS))

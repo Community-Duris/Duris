@@ -1377,12 +1377,12 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 
 	snprintf(dir, sizeof(dir), "%s/%c", SAVE_DIR, LOWER(*ch->player.name));
 	mkdir(dir, 0775);
-	snprintf(Gbuf1, sizeof(Gbuf1), "%s/", dir);
+	checked_snprintf(Gbuf1, sizeof(Gbuf1), "%s/", dir);
 	tmp = Gbuf1 + strlen(Gbuf1);
 	strncat(Gbuf1, GET_NAME(ch), sizeof(Gbuf1) - strlen(Gbuf1) - 1);
 	for (; *tmp; tmp++)
 		*tmp = LOWER(*tmp);
-	snprintf(Gbuf2, sizeof(Gbuf2), "%s.bak", Gbuf1);
+	checked_snprintf(Gbuf2, sizeof(Gbuf2), "%s.bak", Gbuf1);
 
 	if (stat(Gbuf1, &statbuf) == 0)
 	{
@@ -1800,7 +1800,7 @@ void PurgeCorpseFile(P_obj corpse)
 	for (tmp = Gbuf2; *tmp; tmp++)
 		*tmp = LOWER(*tmp);
 
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Corpses/%s", SAVE_DIR, Gbuf2);
+	checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/Corpses/%s", SAVE_DIR, Gbuf2);
 	strcpy(Gbuf2, Gbuf1);
 	strcat(Gbuf2, ".bak");
 
@@ -2555,7 +2555,7 @@ int restorePasswdOnly(P_char ch, char *name)
 	for (; *buf; buf++)
 		*buf = LOWER(*buf);
 	buf = buff;
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
+	checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
 	if (stat(Gbuf1, &statbuf) != 0)
 	{
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, name);
@@ -2732,7 +2732,7 @@ int restoreCharOnly(P_char ch, char *name)
 		*buf = LOWER(*buf);
 	}
 	buf = buff;
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
+	checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
 //  logit(LOG_FILE, "%s is the pfile string!", Gbuf1);
 #ifndef _PFILE_
 	if (stat(Gbuf1, &statbuf) != 0)
@@ -3839,7 +3839,7 @@ int restoreItemsOnly(P_char ch, int flatrate)
 	for (; *buf; buf++)
 		*buf = LOWER(*buf);
 	buf = buff;
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
+	checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/%c/%s", SAVE_DIR, *buff, buff);
 
 	f = fopen(Gbuf1, "r");
 	if (!f)
@@ -4423,7 +4423,7 @@ void PurgeSavedItemFile(P_obj item)
 	for (tmp = Gbuf2; *tmp; tmp++)
 		*tmp = LOWER(*tmp);
 
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/SavedItems/%s", SAVE_DIR, Gbuf2);
+	checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/SavedItems/%s", SAVE_DIR, Gbuf2);
 	strcpy(Gbuf2, Gbuf1);
 	strcat(Gbuf2, ".bak");
 

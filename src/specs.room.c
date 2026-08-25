@@ -638,13 +638,14 @@ int akh_elamshin(int room, P_char ch, int cmd, char *arg)
 		snprintf(god, MAX_INPUT_LENGTH, "she");
 	if (GET_RACE(ch) != RACE_DROW)
 	{
-		snprintf(buf, MAX_INPUT_LENGTH,
-			 "&+rThe aura around %s suddenly turns red and %s passes out!\r\n",
-			 GET_NAME(ch), god);
+		checked_snprintf(buf, MAX_INPUT_LENGTH,
+				 "&+rThe aura around %s suddenly turns red and %s passes out!\r\n",
+				 GET_NAME(ch), god);
 		send_to_room(buf, real_room(8531));
 	}
-	snprintf(buf, MAX_INPUT_LENGTH,
-		 "&+MThe aura &=LCflashes&N&+M, and %s slowly fades out of exsistance..\r\n", god);
+	checked_snprintf(
+		buf, MAX_INPUT_LENGTH,
+		"&+MThe aura &=LCflashes&N&+M, and %s slowly fades out of exsistance..\r\n", god);
 	send_to_room(buf, real_room(8531));
 	act("&+m$n materializes from a shower of &+Mviolet&N&+m sparks.", FALSE, ch, 0, 0,
 	    TO_NOTVICT);

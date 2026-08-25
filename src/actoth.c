@@ -4805,8 +4805,9 @@ void do_toggle(P_char ch, char *arg, int cmd)
 			}
 			else
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "%s[%2d] %-15s%s", Gbuf1, i + 1,
-					 toggles_list[i], (!(++j % 3) ? "\r\n" : ""));
+				checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s[%2d] %-15s%s", Gbuf1,
+						 i + 1, toggles_list[i],
+						 (!(++j % 3) ? "\r\n" : ""));
 			}
 		}
 		strcat(Gbuf1, "\r\n");

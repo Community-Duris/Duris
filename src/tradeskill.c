@@ -2676,7 +2676,7 @@ int assoc_founder(P_char mob, P_char pl, int cmd, char *arg)
 		if (!arg || !*arg)
 		{
 			snprintf(buffer2, MAX_STRING_LENGTH, "%s", PERS(mob, pl, FALSE));
-			snprintf(
+			checked_snprintf(
 				buffer, MAX_STRING_LENGTH,
 				"%s&+L looks you over briefly and then chuckles.'\n"
 				"%s &+wsays 'Welcome adventurer.  If it is a guild ye are wishing to found, then ye have come to the right place&n.'\n"

@@ -381,8 +381,8 @@ void tell_quest(int id, P_char pl)
 				break;
 			case QUEST_GOAL_ITEM_TYPE:
 				sprinttype(gp->number, item_types, buf);
-				snprintf(Gbuf2, MAX_STRING_LENGTH, "  - item type %d - %s\n",
-					 gp->number, buf);
+				checked_snprintf(Gbuf2, MAX_STRING_LENGTH,
+						 "  - item type %d - %s\n", gp->number, buf);
 				send_to_char(Gbuf2, pl);
 				break;
 			case QUEST_GOAL_COINS:
@@ -483,7 +483,7 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 			if (qmp->key_words && isname(Gbuf1, qmp->key_words))
 			{
 				// no dollars/ansi here
-				snprintf(name, sizeof name, "$n asks $N about %s.", Gbuf1);
+				checked_snprintf(name, sizeof name, "$n asks $N about %s.", Gbuf1);
 				act(name, FALSE, pl, 0, ch, TO_NOTVICT);
 				act(qmp->message, FALSE, ch, 0, pl,
 				    qmp->echoAll ? TO_ROOM : TO_VICT);

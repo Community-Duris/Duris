@@ -13192,8 +13192,8 @@ void event_random_set_proc(P_char ch, P_char victim, P_obj obj, void *data)
 	{
 		if (afp == afpp)
 		{
-			snprintf(buffer, 256, "Spirits of %s no longer support you.\n",
-				 rdata->zone_name);
+			checked_snprintf(buffer, 256, "Spirits of %s no longer support you.\n",
+					 rdata->zone_name);
 			send_to_char(buffer, ch);
 			affect_remove(ch, afp);
 			check_zone_spells(ch, obj, 0, rdata->zone_name);

@@ -1166,10 +1166,10 @@ void sql_insert_item(P_char ch, P_obj obj, char *desc)
 	mysql_str(obj->short_description, sql_short);
 
 	db_query_nolog("INSERT INTO items_stats VALUES( null, '%s', '', %d)", sql_short, m_virtual);
-	snprintf(query, MAX_STRING_LENGTH,
-		 "UPDATE items_stats SET  obj_stat = '%s', vnum = %d "
-		 " WHERE short_desc = '%s'",
-		 sql_desc, m_virtual, sql_short);
+	checked_snprintf(query, MAX_STRING_LENGTH,
+			 "UPDATE items_stats SET  obj_stat = '%s', vnum = %d "
+			 " WHERE short_desc = '%s'",
+			 sql_desc, m_virtual, sql_short);
 
 	db_query(query);
 
@@ -1226,9 +1226,9 @@ void get_pkill_player_description(P_char ch, char *buffer)
 		snprintf(assoc_name, MAX_STRING_LENGTH, "%s", GET_ASSOC(ch)->get_name().c_str());
 	}
 
-	snprintf(buffer, MAX_STRING_LENGTH, "[%2d %s&n] %s &n%s &n(%s&n)", GET_LEVEL(ch),
-		 get_class_name(ch, ch), GET_NAME(ch), assoc_name,
-		 race_names_table[GET_RACE(ch)].ansi);
+	checked_snprintf(buffer, MAX_STRING_LENGTH, "[%2d %s&n] %s &n%s &n(%s&n)", GET_LEVEL(ch),
+			 get_class_name(ch, ch), GET_NAME(ch), assoc_name,
+			 race_names_table[GET_RACE(ch)].ansi);
 
 	logit(LOG_DEBUG, "%s", buffer);
 }
@@ -1663,9 +1663,9 @@ void perform_wiki_search(P_char ch, const char *query)
 		row = mysql_fetch_row(db);
 		if (NULL != row)
 		{
-			snprintf(buf, MAX_STRING_LENGTH,
-				 "\t&+W========| &+m %s &+W |========&n\n%s", escaped_query,
-				 row[0]);
+			checked_snprintf(buf, MAX_STRING_LENGTH,
+					 "\t&+W========| &+m %s &+W |========&n\n%s", escaped_query,
+					 row[0]);
 		}
 		else
 			snprintf(buf, MAX_STRING_LENGTH,
@@ -2260,7 +2260,7 @@ void do_sql(P_char ch, char *argument, int cmd)
 				// SECURITY FIX: Escape user input to prevent SQL injection
 				char escaped_desc[MAX_STRING_LENGTH * 2 + 1];
 				mysql_real_escape_string(DB, escaped_desc, rest, strlen(rest));
-				snprintf(
+				checked_snprintf(
 					buf, MAX_STRING_LENGTH,
 					"UPDATE prepstatement_duris_sql SET description = '%s' WHERE id='%d'",
 					escaped_desc, prep_statement);
@@ -2497,10 +2497,10 @@ void sql_log(P_char ch, char *kind, char *format, ...)
 
 	if (ch->desc && *ch->desc->host)
 	{
-		snprintf(ip_buff, sizeof ip_buff, "%s", ch->desc->host);
+		checked_snprintf(ip_buff, sizeof ip_buff, "%s", ch->desc->host);
 	}
 
-	snprintf(
+	checked_snprintf(
 		buff, MAX_STRING_LENGTH,
 		"INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) VALUES "
 		"(now(), '%s', '%s', %d, '%s', %d, %d, '%s')",

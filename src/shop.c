@@ -1034,8 +1034,9 @@ void shopping_list(char *arg, P_char ch, P_char keeper, int shop_nr)
 				else
 				{
 					if (obj1->value[1])
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s of %s",
-							 descbuf, drinks[obj1->value[2]]);
+						checked_snprintf(Gbuf3, MAX_STRING_LENGTH,
+								 "%s of %s", descbuf,
+								 drinks[obj1->value[2]]);
 					else
 						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", descbuf);
 

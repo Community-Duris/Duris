@@ -341,6 +341,6 @@ void describe_encrusted_enhanced(P_obj obj)
 
 	snprintf(buf, sizeof buf, "%s %s encrusted encrust enhanced", type, name);
 	set_keywords(obj, buf);
-	snprintf(buf, sizeof buf, "%s '%s' %s&n", typebuf, name, modstring);
+	checked_snprintf(buf, sizeof buf, "%s '%s' %s&n", typebuf, name, modstring);
 	set_short_description(obj, buf);
 }

@@ -883,7 +883,7 @@ static void do_get_reject_object(P_char ch, P_obj o_obj, const char *reason, boo
 
 	snprintf(Gbuf4, sizeof(Gbuf4), "%s", desc);
 	CAP(Gbuf4);
-	snprintf(Gbuf3, sizeof(Gbuf3), "%s %s\r\n", Gbuf4, reason);
+	checked_snprintf(Gbuf3, sizeof(Gbuf3), "%s %s\r\n", Gbuf4, reason);
 	send_to_char(Gbuf3, ch);
 	fail = TRUE;
 }
@@ -1619,10 +1619,11 @@ void do_junk(P_char ch, char *argument, int cmd)
 		 */
 		else if (ch->desc && !IS_TRUSTED(ch))
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH,
-				 "WARNING: JUNK permanently destroys the specified object(s).\r\n"
-				 "Please confirm that you wish to JUNK %s (Yes/No) [No]:\r\n",
-				 Gbuf1);
+			checked_snprintf(
+				Gbuf3, MAX_STRING_LENGTH,
+				"WARNING: JUNK permanently destroys the specified object(s).\r\n"
+				"Please confirm that you wish to JUNK %s (Yes/No) [No]:\r\n",
+				Gbuf1);
 			send_to_char(Gbuf3, ch);
 			return;
 		}
@@ -2344,7 +2345,7 @@ void do_put(P_char ch, char *argument, int cmd)
 
 	if (!*cont_name)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "Put %s in what?\r\n", obj_name);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "Put %s in what?\r\n", obj_name);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -2438,7 +2439,8 @@ void do_put(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You don't have the %s.\r\n", obj_name);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "You don't have the %s.\r\n",
+					 obj_name);
 			send_to_char(buf, ch);
 		}
 	}
@@ -2456,15 +2458,15 @@ void do_put(P_char ch, char *argument, int cmd)
 		}
 		else if (type == PUT_ALLDOT)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You put %d %s(s) into $p.", count,
-				 obj_name);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "You put %d %s(s) into $p.", count,
+					 obj_name);
 			act(buf, FALSE, ch, s_obj, 0, TO_CHAR);
 			if (count < 6)
-				snprintf(buf, MAX_STRING_LENGTH, "$n puts some %s(s) into $p.",
-					 obj_name);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "$n puts some %s(s) into $p.", obj_name);
 			else
-				snprintf(buf, MAX_STRING_LENGTH,
-					 "$n puts a bunch of %s(s) into $p.", obj_name);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "$n puts a bunch of %s(s) into $p.", obj_name);
 			act(buf, TRUE, ch, s_obj, 0, TO_ROOM);
 		}
 		char_light(ch);
@@ -3653,8 +3655,8 @@ void do_pour(P_char ch, char *argument, int cmd)
 		act("There is no room for more.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	snprintf(Gbuf4, MAX_STRING_LENGTH, "You pour the %s into the %s.",
-		 drinks[from_obj->value[2]], Gbuf2);
+	checked_snprintf(Gbuf4, MAX_STRING_LENGTH, "You pour the %s into the %s.",
+			 drinks[from_obj->value[2]], Gbuf2);
 	send_to_char(Gbuf4, ch);
 
 	/*
@@ -3773,8 +3775,8 @@ void do_fill(P_char ch, char *argument, int cmd)
 		act("There is no room for more.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	snprintf(Gbuf4, MAX_STRING_LENGTH, "You fill the %s with the %s.", Gbuf1,
-		 drinks[from_obj->value[2]]);
+	checked_snprintf(Gbuf4, MAX_STRING_LENGTH, "You fill the %s with the %s.", Gbuf1,
+			 drinks[from_obj->value[2]]);
 	act(Gbuf4, FALSE, ch, 0, 0, TO_CHAR);
 
 	/*
@@ -5656,8 +5658,9 @@ void do_wear(P_char ch, char *argument, int cmd)
 				keyword = search_block(Gbuf2, keywords, FALSE); // Partial Match
 				if (keyword == -1)
 				{
-					snprintf(Gbuf4, MAX_STRING_LENGTH,
-						 "%s is an unknown body location.\r\n", Gbuf2);
+					checked_snprintf(Gbuf4, MAX_STRING_LENGTH,
+							 "%s is an unknown body location.\r\n",
+							 Gbuf2);
 					send_to_char(Gbuf4, ch);
 				}
 				else
@@ -5715,8 +5718,8 @@ void do_wear(P_char ch, char *argument, int cmd)
 		}
 		else // Object Doesn't Exist
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n",
-				 Gbuf1);
+			checked_snprintf(Gbuf3, MAX_STRING_LENGTH,
+					 "You do not seem to have the '%s'.\r\n", Gbuf1);
 			send_to_char(Gbuf3, ch);
 		}
 	}
@@ -5820,8 +5823,8 @@ void do_wield(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n",
-				 Gbuf1);
+			checked_snprintf(Gbuf3, MAX_STRING_LENGTH,
+					 "You do not seem to have the '%s'.\r\n", Gbuf1);
 			send_to_char(Gbuf3, ch);
 		}
 	}
@@ -5870,8 +5873,8 @@ void do_grab(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			snprintf(Gbuf3, MAX_STRING_LENGTH, "You do not seem to have the '%s'.\r\n",
-				 Gbuf1);
+			checked_snprintf(Gbuf3, MAX_STRING_LENGTH,
+					 "You do not seem to have the '%s'.\r\n", Gbuf1);
 			send_to_char(Gbuf3, ch);
 			return;
 		}

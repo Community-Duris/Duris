@@ -486,15 +486,16 @@ void do_fire(P_char ch, char *argument, int cmd)
 		dir = dir_from_keyword(dirarg);
 		if (dir == -1)
 		{
-			snprintf(buf, sizeof buf, "'%s' is not a valid direction.\n", dirarg);
+			checked_snprintf(buf, sizeof buf, "'%s' is not a valid direction.\n",
+					 dirarg);
 			send_to_char(buf, ch);
 			return;
 		}
 
 		if (!(victim = get_char_ranged(tararg, ch, 10, dir)))
 		{
-			snprintf(buf, sizeof buf, "Could not find target '%s' to the %s.\n", tararg,
-				 dirs[dir]);
+			checked_snprintf(buf, sizeof buf, "Could not find target '%s' to the %s.\n",
+					 tararg, dirs[dir]);
 			send_to_char(buf, ch);
 			return;
 		}
@@ -1324,18 +1325,18 @@ void do_throw(P_char ch, char *argument, int cmd)
 				"Your skilfully thrown $p cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
 			if (ch->in_room != vict->in_room)
 			{
-				snprintf(messages.victim, MAX_STRING_LENGTH,
-					 "$p thrown from %s hits you!", buf3);
-				snprintf(
+				checked_snprintf(messages.victim, MAX_STRING_LENGTH,
+						 "$p thrown from %s hits you!", buf3);
+				checked_snprintf(
 					messages.death_victim, MAX_STRING_LENGTH,
 					"$p thrown from %s cuts right through your artery. You try to stop the &+rblood&n fountain but alas!",
 					buf3);
 				snprintf(buf, MAX_STRING_LENGTH, "$N throws $p %s!",
 					 dirs[far_room]);
 				act(buf, FALSE, ch, weapon, ch, TO_NOTVICT);
-				snprintf(messages.room, MAX_STRING_LENGTH,
-					 "$p thrown from %s hits $N!", buf3);
-				snprintf(
+				checked_snprintf(messages.room, MAX_STRING_LENGTH,
+						 "$p thrown from %s hits $N!", buf3);
+				checked_snprintf(
 					messages.death_room, MAX_STRING_LENGTH,
 					"$p thrown from %s cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!",
 					buf3);
@@ -1385,14 +1386,14 @@ void do_throw(P_char ch, char *argument, int cmd)
 			act(buf, FALSE, ch, weapon, vict, TO_CHAR);
 			if (ch->in_room != vict->in_room)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "$p thrown from %s misses you!",
-					 buf3);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "$p thrown from %s misses you!", buf3);
 				act(buf, FALSE, vict, weapon, ch, TO_CHAR);
 				snprintf(buf, MAX_STRING_LENGTH, "$N throws $p %s!",
 					 dirs[far_room]);
 				act(buf, FALSE, ch, weapon, ch, TO_NOTVICT);
-				snprintf(buf, MAX_STRING_LENGTH, "$p thrown from %s misses $N!",
-					 buf3);
+				checked_snprintf(buf, MAX_STRING_LENGTH,
+						 "$p thrown from %s misses $N!", buf3);
 				act(buf, FALSE, vict, weapon, vict, TO_NOTVICT);
 			}
 			else
@@ -1420,7 +1421,7 @@ void do_throw(P_char ch, char *argument, int cmd)
 					 "$p flies from %s and returns to $n's hand!",
 					 dirs[far_room]);
 				act(buf, FALSE, ch, weapon, ch, TO_NOTVICT);
-				snprintf(buf, MAX_STRING_LENGTH, "$p flies %s!", buf3);
+				checked_snprintf(buf, MAX_STRING_LENGTH, "$p flies %s!", buf3);
 				act(buf, FALSE, vict, weapon, vict, TO_NOTVICT);
 			}
 			else

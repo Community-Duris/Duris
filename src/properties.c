@@ -223,7 +223,7 @@ void save_properties(P_char ch)
 	fclose(f_old);
 	rename(PROPERTIES_FILE ".new", PROPERTIES_FILE);
 
-	snprintf(buf, 4096, "%s saved the properties: %s", GET_NAME(ch), changes);
+	checked_snprintf(buf, 4096, "%s saved the properties: %s", GET_NAME(ch), changes);
 	wizlog(57, buf);
 	logit(LOG_WIZ, buf);
 	sql_log(ch, WIZLOG, "Saved properties");

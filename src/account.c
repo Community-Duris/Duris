@@ -521,7 +521,7 @@ void confirm_account(P_desc d, char *arg)
 	*dst = '\0';
 
 	// Debug output
-	snprintf(
+	checked_snprintf(
 		debug_buf, 512,
 		"\r\n&+YDEBUG: Entered='%s' (len=%d)&n\r\n&+YDEBUG: Fixed='%s' (len=%d)&n\r\n&+YDEBUG: Stored='%s' (len=%d)&n\r\n",
 		arg, (int)strlen(arg), fixed_input, (int)strlen(fixed_input),
@@ -1502,7 +1502,8 @@ void display_delete_character_list(P_desc d)
 	int left_pad = (57 - title_len) / 2;
 	int right_pad = 57 - title_len - left_pad - 2;
 
-	snprintf(buf, 256, "&+R|%*s&+W%s%*s&+R|&n\r\n", left_pad, "", title_buf, right_pad, "");
+	checked_snprintf(buf, 256, "&+R|%*s&+W%s%*s&+R|&n\r\n", left_pad, "", title_buf, right_pad,
+			 "");
 	SEND_TO_Q(buf, d);
 
 	SEND_TO_Q("&+R|=======================================================|&n\r\n", d);
@@ -1650,7 +1651,8 @@ void display_character_list(P_desc d, P_acct account)
 	int left_pad = (77 - title_len) / 2;
 	int right_pad = 77 - title_len - left_pad - 2;
 
-	snprintf(buf, 256, "&+y|%*s&+W%s%*s&+y|&n\r\n", left_pad, "", title_buf, right_pad, "");
+	checked_snprintf(buf, 256, "&+y|%*s&+W%s%*s&+y|&n\r\n", left_pad, "", title_buf, right_pad,
+			 "");
 	SEND_TO_Q(buf, d);
 
 	SEND_TO_Q(
@@ -2190,12 +2192,13 @@ void account_delete_char(P_desc d, char *arg)
 		name_cap[0] = toupper(name_cap[0]);
 
 	// Confirm deletion
-	snprintf(buf, 256,
-		 "\r\n&+R!!! FINAL WARNING !!!&n\r\n"
-		 "Are you &+RABSOLUTELY SURE&n you want to &+RPERMANENTLY DELETE&n &+W%s&n?\r\n"
-		 "This action &+RCANNOT BE UNDONE!&n\r\n\r\n"
-		 "Type &+WYES&n to confirm deletion, or &+WNO&n to cancel: ",
-		 name_cap);
+	checked_snprintf(
+		buf, 256,
+		"\r\n&+R!!! FINAL WARNING !!!&n\r\n"
+		"Are you &+RABSOLUTELY SURE&n you want to &+RPERMANENTLY DELETE&n &+W%s&n?\r\n"
+		"This action &+RCANNOT BE UNDONE!&n\r\n\r\n"
+		"Type &+WYES&n to confirm deletion, or &+WNO&n to cancel: ",
+		name_cap);
 	SEND_TO_Q(buf, d);
 	d->character = ch;
 	return;

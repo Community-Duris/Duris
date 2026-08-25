@@ -112,12 +112,12 @@ void listen_say(P_char ch, P_char tch, const char *buf)
 		{
 			muddle_listened_string(ch, tch, buf, strn, howclose);
 
-			snprintf(buf1, MAX_STRING_LENGTH,
-				 "You faintly hear %s say the words '%s'.\r\n",
-				 (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(15, 35)) ?
-					 PERS(ch, tch, 1) :
-					 "someone:",
-				 strn);
+			checked_snprintf(buf1, MAX_STRING_LENGTH,
+					 "You faintly hear %s say the words '%s'.\r\n",
+					 (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(15, 35)) ?
+						 PERS(ch, tch, 1) :
+						 "someone:",
+					 strn);
 
 			send_to_char(buf1, tch);
 
@@ -168,12 +168,12 @@ void listen_gsay(P_char ch, P_char tch, const char *buf)
 		{
 			muddle_listened_string(ch, tch, buf, strn, howclose);
 
-			snprintf(buf1, MAX_STRING_LENGTH,
-				 "You faintly hear %s groupsay the words '%s'.\r\n",
-				 (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(20, 40)) ?
-					 PERS(ch, tch, 1) :
-					 "someone:",
-				 strn);
+			checked_snprintf(buf1, MAX_STRING_LENGTH,
+					 "You faintly hear %s groupsay the words '%s'.\r\n",
+					 (GET_CHAR_SKILL(tch, SKILL_LISTEN) > number(20, 40)) ?
+						 PERS(ch, tch, 1) :
+						 "someone:",
+					 strn);
 
 			send_to_char(buf1, tch);
 

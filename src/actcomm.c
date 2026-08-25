@@ -295,9 +295,9 @@ void do_petition(P_char ch, char *argument, int cmd)
 		gmcp_comm_channel(ch, "petition", GET_NAME(ch), argument);
 
 		escape_act_dollars(escaped_text, sizeof(escaped_text), argument);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+r$n petitions '%s'&N", escaped_text);
-		snprintf(Gbuf2, MAX_STRING_LENGTH, "&+r%s petitions '%s'&N", GET_NAME(ch),
-			 escaped_text);
+		checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "&+r$n petitions '%s'&N", escaped_text);
+		checked_snprintf(Gbuf2, MAX_STRING_LENGTH, "&+r%s petitions '%s'&N", GET_NAME(ch),
+				 escaped_text);
 
 		for (i = descriptor_list; i; i = i->next)
 			if (!i->connected && (i->character != ch) &&
@@ -419,12 +419,12 @@ int say(P_char ch, const char *argument)
 							   argument + i);
 					if (IS_ILLITHID(kala) || IS_PILLITHID(kala) ||
 					    IS_TRUSTED(kala))
-						snprintf(Gbuf2, MAX_STRING_LENGTH,
-							 "$n projects '%s'", escaped_text);
+						checked_snprintf(Gbuf2, MAX_STRING_LENGTH,
+								 "$n projects '%s'", escaped_text);
 					else
-						snprintf(Gbuf2, MAX_STRING_LENGTH,
-							 "$n invades your mind with '%s'",
-							 escaped_text);
+						checked_snprintf(Gbuf2, MAX_STRING_LENGTH,
+								 "$n invades your mind with '%s'",
+								 escaped_text);
 				}
 				else
 				{
@@ -434,13 +434,16 @@ int say(P_char ch, const char *argument)
 
 					if (IS_THRIKREEN(ch))
 					{
-						snprintf(Gbuf2, MAX_STRING_LENGTH,
-							 "$n chitters %s'%s'",
-							 language_known(ch, kala), escaped_text);
+						checked_snprintf(Gbuf2, MAX_STRING_LENGTH,
+								 "$n chitters %s'%s'",
+								 language_known(ch, kala),
+								 escaped_text);
 					}
 					else
-						snprintf(Gbuf2, MAX_STRING_LENGTH, "$n says %s'%s'",
-							 language_known(ch, kala), escaped_text);
+						checked_snprintf(Gbuf2, MAX_STRING_LENGTH,
+								 "$n says %s'%s'",
+								 language_known(ch, kala),
+								 escaped_text);
 				}
 				if (mind || IS_TRUSTED(ch))
 					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT);
@@ -847,8 +850,9 @@ void do_project(P_char ch, char *argument, int cmd)
 	}
 
 	escape_act_dollars(escaped_text, sizeof(escaped_text), argument);
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "&+m%s&+m projects '&+M%s&n&+m' across the ether.&n\n",
-		 GET_NAME(ch), escaped_text);
+	checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "&+m%s&+m projects '&+M%s&n&+m' across the ether.&n\n", GET_NAME(ch),
+			 escaped_text);
 	for (desc = descriptor_list; desc; desc = desc->next)
 	{
 		if ((desc->character != ch) && !desc->connected &&
@@ -943,13 +947,15 @@ void do_shout(P_char ch, char *argument, int cmd)
 				escape_act_dollars(escaped_text, sizeof(escaped_text),
 						   language_CRYPT(ch, i->character, argument));
 				if (IS_TRUSTED(ch))
-					snprintf(Gbuf1, MAX_STRING_LENGTH,
-						 "&+c$n shouts from the heavens %s'%s'&N",
-						 language_known(ch, i->character), escaped_text);
+					checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
+							 "&+c$n shouts from the heavens %s'%s'&N",
+							 language_known(ch, i->character),
+							 escaped_text);
 				else
-					snprintf(Gbuf1, MAX_STRING_LENGTH,
-						 "&+c$n shouts across the world %s'%s'&N",
-						 language_known(ch, i->character), escaped_text);
+					checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
+							 "&+c$n shouts across the world %s'%s'&N",
+							 language_known(ch, i->character),
+							 escaped_text);
 				act(Gbuf1, 0, ch, 0, i->character, TO_VICT);
 			}
 	}
@@ -1086,8 +1092,9 @@ void do_tell(P_char ch, char *argument, int cmd)
 		{
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou tell %s %s'%s'\r\n",
-					 GET_NAME(vict), language_known(ch, ch), message);
+				checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "&+WYou tell %s %s'%s'\r\n", GET_NAME(vict),
+						 language_known(ch, ch), message);
 				send_to_char(Gbuf1, ch, LOG_PRIVATE);
 			}
 			else
@@ -1196,15 +1203,16 @@ void do_whisper(P_char ch, char *argument, int cmd)
 		if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 		{
 			if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
-				snprintf(Gbuf1, MAX_STRING_LENGTH,
-					 "You softly project '%s' to %s\r\n", message, dispname);
+				checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "You softly project '%s' to %s\r\n", message,
+						 dispname);
 			else if (IS_NPC(ch) && !(GET_CLASS(vict, CLASS_DRUID)))
 			{
 				send_to_char("They wouldn't understand you anyway!\r\n", ch);
 				return;
 			}
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You whisper '%s' to %s\r\n", message,
-				 dispname);
+			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "You whisper '%s' to %s\r\n",
+					 message, dispname);
 			send_to_char(Gbuf1, ch);
 		}
 		else
@@ -1216,8 +1224,8 @@ void do_whisper(P_char ch, char *argument, int cmd)
 		if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
 		{
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
-			snprintf(Gbuf1, MAX_STRING_LENGTH,
-				 "A soft voice in your head whispers '%s'", escaped_text);
+			checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "A soft voice in your head whispers '%s'", escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
 		}
 		else
@@ -1229,8 +1237,8 @@ void do_whisper(P_char ch, char *argument, int cmd)
 			}
 			escape_act_dollars(escaped_text, sizeof(escaped_text),
 					   language_CRYPT(ch, vict, message));
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "$n whispers to you, %s'%s'",
-				 language_known(ch, vict), escaped_text);
+			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "$n whispers to you, %s'%s'",
+					 language_known(ch, vict), escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
 			act("$n whispers something to $N.", FALSE, ch, 0, vict, TO_NOTVICT);
 			nq_action_check(ch, vict, message);
@@ -1292,7 +1300,7 @@ void do_ask(P_char ch, char *argument, int cmd)
 			      send_to_char(Gbuf1, ch);
 			*/
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You ask $N '%s'", escaped_text);
+			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "You ask $N '%s'", escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_CHAR);
 		}
 		else
@@ -1304,16 +1312,16 @@ void do_ask(P_char ch, char *argument, int cmd)
 		if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
 		{
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "A voice in your head asks '%s'",
-				 escaped_text);
+			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "A voice in your head asks '%s'",
+					 escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
 		}
 		else
 		{
 			escape_act_dollars(escaped_text, sizeof(escaped_text),
 					   language_CRYPT(ch, vict, message));
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "$n asks you %s'%s'",
-				 language_known(ch, vict), escaped_text);
+			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "$n asks you %s'%s'",
+					 language_known(ch, vict), escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT | ACT_SILENCEABLE);
 			act("$n asks $N a question.", FALSE, ch, 0, vict, TO_NOTVICT);
 		}
@@ -1976,8 +1984,8 @@ void do_yell(P_char ch, char *argument, int cmd)
 				//{
 				escape_act_dollars(escaped_text, sizeof(escaped_text),
 						   language_CRYPT(ch, i->character, argument));
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "$n shouts %s'%s'",
-					 language_known(ch, i->character), escaped_text);
+				checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "$n shouts %s'%s'",
+						 language_known(ch, i->character), escaped_text);
 				act(Gbuf1, 0, ch, 0, i->character, TO_VICT | ACT_SILENCEABLE);
 				//}
 				/* zone to zone method */

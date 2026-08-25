@@ -130,7 +130,8 @@ char *proclibobj_parse_actroom(char *argument)
 				while (strchr(arg, '%'))
 					*(strchr(arg, '%')) = '$';
 
-				snprintf(params, MAX_STRING_LENGTH, "%d\xFF%s", chance, arg);
+				checked_snprintf(params, MAX_STRING_LENGTH, "%d\xFF%s", chance,
+						 arg);
 				CREATE(pRet, char, strlen(params) + 1, MEM_TAG_EXDESCD);
 				strcpy(pRet, params);
 				return pRet;
@@ -205,8 +206,8 @@ char *proclibobj_parse_actworn(char *argument)
 					while (strchr(arg2, '%'))
 						*(strchr(arg2, '%')) = '$';
 
-					snprintf(params, MAX_STRING_LENGTH, "%d\xFF%s\xFF%s",
-						 chance, arg1, arg2);
+					checked_snprintf(params, MAX_STRING_LENGTH,
+							 "%d\xFF%s\xFF%s", chance, arg1, arg2);
 					CREATE(pRet, char, strlen(params) + 1, MEM_TAG_EXDESCD);
 					strcpy(pRet, params);
 					return pRet;

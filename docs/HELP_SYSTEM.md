@@ -5,7 +5,7 @@ runtime serving.
 
 ## Runtime path (what players see)
 
-The `help` command (`do_help`, `src/actinf.c:5798`) does two things:
+The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
 
 1. **`wiki_help()`** (`src/wikihelp.c`) — queries the `pages` table on the
    main MySQL connection:
@@ -58,9 +58,10 @@ lib/information/*        help/, docs/help/          database
 
 - Authoring rules and formatting conventions:
   [`docs/help/HELP_STYLE_GUIDE.md`](help/HELP_STYLE_GUIDE.md).
-- In-game topic text lives in `pages`; change it either through the game's
-  immortal editing commands or by re-running the import script with updated
-  source files.
+- In-game topic text lives in `pages`; the import script is the only write
+  path (no in-game editor exists — nothing in `src/` inserts into or updates
+  `pages`). Update the source files and re-run the import script; editing the
+  database directly would silently diverge from the flat-file sources.
 - Command attribute changes go in
   `docs/lib/information/command_attributes.txt` and require a server restart
   (loaded once at boot).

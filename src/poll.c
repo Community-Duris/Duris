@@ -74,8 +74,8 @@ static void poll_send_wrapped(P_char ch, const char *text, int width, const char
 		{
 			/* flush current line */
 			char buf[MAX_STRING_LENGTH];
-			snprintf(buf, MAX_STRING_LENGTH, "%s%-*s%s\r\n", prefix, width, line,
-				 suffix);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "%s%-*s%s\r\n", prefix, width,
+					 line, suffix);
 			send_to_char(buf, ch);
 			line[0] = '\0';
 			line_len = 0;
@@ -95,7 +95,8 @@ static void poll_send_wrapped(P_char ch, const char *text, int width, const char
 	if (line_len > 0)
 	{
 		char buf[MAX_STRING_LENGTH];
-		snprintf(buf, MAX_STRING_LENGTH, "%s%-*s%s\r\n", prefix, width, line, suffix);
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%s%-*s%s\r\n", prefix, width, line,
+				 suffix);
 		send_to_char(buf, ch);
 	}
 }

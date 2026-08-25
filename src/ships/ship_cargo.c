@@ -218,8 +218,8 @@ int write_cargo()
 	}
 
 	// put all the statements into a single buffer
-	snprintf(buffer, ARRAY_SIZE(buffer), "%s;%s;%s;%s;", cargoPrices, contrabandPrices,
-		 cargoMarketMods, contrabandMarketMods);
+	checked_snprintf(buffer, ARRAY_SIZE(buffer), "%s;%s;%s;%s;", cargoPrices, contrabandPrices,
+			 cargoMarketMods, contrabandMarketMods);
 
 	if (!qry(buffer))
 	{

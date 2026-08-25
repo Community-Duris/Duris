@@ -578,7 +578,7 @@ char get_alias(P_char ch, char *argument)
 	while ((fscanf(aliaslist, "%s", charalias) != EOF))
 	{
 		int i = 0;
-		snprintf(bufbug, 256, "%s", charalias);
+		checked_snprintf(bufbug, 256, "%s", charalias);
 		int times = 0;
 		char buffer[MAX_STRING_LENGTH] = "";
 
@@ -602,7 +602,7 @@ char get_alias(P_char ch, char *argument)
 			int i = 0;
 			int times = 0;
 
-			snprintf(bfbug, 256, "%s", charalias);
+			checked_snprintf(bfbug, 256, "%s", charalias);
 
 			while (times < 2)
 			{
@@ -753,7 +753,7 @@ void create_recipe(P_char ch, P_obj temp)
 	objrecipe = read_object(400210, VIRTUAL);
 	SET_BIT(objrecipe->value[6], recipenumber);
 	strcpy(old_name, objrecipe->short_description);
-	snprintf(buffer, 256, "%s %s&n", old_name, temp->short_description);
+	checked_snprintf(buffer, 256, "%s %s&n", old_name, temp->short_description);
 
 	if ((objrecipe->str_mask & STRUNG_DESC2) && objrecipe->short_description)
 		FREE(objrecipe->short_description);

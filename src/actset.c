@@ -1363,9 +1363,10 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 		{
 			char buf[128];
 
-			snprintf(buf, 128,
-				 "'%s' is not a valid value.  Please enter a number instead.\n\r",
-				 bad_on_off);
+			checked_snprintf(
+				buf, 128,
+				"'%s' is not a valid value.  Please enter a number instead.\n\r",
+				bad_on_off);
 			send_to_char(buf, ch);
 			return;
 		}

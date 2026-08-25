@@ -619,9 +619,9 @@ void do_spells(P_char ch, char *argument, int cmd)
 					 "&+RSU(&n&+C%d&+R)&n,", lvl);
 
 			char buf3[MAX_STRING_LENGTH];
-			snprintf(buf3, MAX_STRING_LENGTH, "[%3d] %-28s  %s   %s\n", spell,
-				 skills[spell].name,
-				 ((int)IS_AGG_SPELL(spell) ? "&+RAGGR&n" : "    "), buf2);
+			checked_snprintf(buf3, MAX_STRING_LENGTH, "[%3d] %-28s  %s   %s\n", spell,
+					 skills[spell].name,
+					 ((int)IS_AGG_SPELL(spell) ? "&+RAGGR&n" : "    "), buf2);
 			count++;
 
 			if (strlen(buf1) + strlen(buf3) > MAX_STRING_LENGTH)
@@ -748,9 +748,9 @@ void do_spells(P_char ch, char *argument, int cmd)
 			if (!SKILL_DATA_ALL(target, spell).maxlearn[0] &&
 			    !SKILL_DATA_ALL(target, spell).maxlearn[target->player.spec])
 				continue;
-			snprintf(buf, MAX_STRING_LENGTH, "%s%-25s %s",
-				 (target && (circle > get_max_circle(target))) ? "&+L" : "",
-				 skills[spell].name, buf2);
+			checked_snprintf(buf, MAX_STRING_LENGTH, "%s%-25s %s",
+					 (target && (circle > get_max_circle(target))) ? "&+L" : "",
+					 skills[spell].name, buf2);
 			if (target)
 			{
 				if (meming_class(target))

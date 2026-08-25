@@ -2076,7 +2076,7 @@ int boon_display(P_char ch, char *argument)
 				snprintf(name + strlen(name), MAX_STRING_LENGTH - strlen(name),
 					 "OR author LIKE '%s' ", arg);
 			else
-				snprintf(name, MAX_STRING_LENGTH, "author LIKE '%s' ", arg);
+				checked_snprintf(name, MAX_STRING_LENGTH, "author LIKE '%s' ", arg);
 			break;
 		}
 		case 't':
@@ -2181,41 +2181,42 @@ int boon_display(P_char ch, char *argument)
 	// zone_table[zone_count].avg_mob_level = way to find out range of zone
 
 	// Please do not touch, thanks.
-	snprintf(dbqry, MAX_STRING_LENGTH,
-		 "SELECT id, time, duration, racewar, type, opt, criteria, "
-		 "criteria2, bonus, bonus2, random, author, active, pid, rpt FROM boons "
-		 "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
-		 "ORDER BY id ASC",
-		 (active || inactive || manual || random || *name || *type || *option ? "WHERE " :
-											""),
-		 (active || inactive ? "( " : ""), (active ? "active = '1' " : ""),
-		 (active && inactive ? "OR " : ""), (inactive ? "active = '0' " : ""),
-		 (active || inactive ? ") " : ""),
-		 (active && manual || inactive && manual ? "AND " : ""), (manual ? "( " : ""),
-		 (manual ? "random = '0' " : ""),
-		 (active && random && !manual || inactive && random && !manual ? "AND " : ""),
-		 (random && !manual ? "( " : ""), (random && manual ? "OR " : ""),
-		 (random ? "random = '1' " : ""), (manual || random ? ") " : ""),
-		 (active && *name || inactive && *name || manual && *name || random && *name ?
-			  "AND " :
-			  ""),
-		 (*name ? "( " : ""), (*name ? name : ""), (*name ? ") " : ""),
-		 (active && *type || inactive && *type || manual && *type || random && *type ||
-				  *name && *type ?
-			  "AND " :
-			  ""),
-		 (*type ? "( " : ""), (*type ? type : ""), (*type ? ") " : ""),
-		 (active && *option || inactive && *option || manual && *option ||
-				  random && *option || *name && *option || *type && *option ?
-			  "AND " :
-			  ""),
-		 (*option ? "( " : ""), (*option ? option : ""), (*option ? ") " : ""),
-		 (active && *player || inactive && *player || manual && *player ||
-				  random && *player || *name && *player || *type && *player ||
-				  *option && *player ?
-			  "AND " :
-			  ""),
-		 (*player ? "( " : ""), (*player ? player : ""), (*player ? ") " : ""));
+	checked_snprintf(
+		dbqry, MAX_STRING_LENGTH,
+		"SELECT id, time, duration, racewar, type, opt, criteria, "
+		"criteria2, bonus, bonus2, random, author, active, pid, rpt FROM boons "
+		"%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
+		"ORDER BY id ASC",
+		(active || inactive || manual || random || *name || *type || *option ? "WHERE " :
+										       ""),
+		(active || inactive ? "( " : ""), (active ? "active = '1' " : ""),
+		(active && inactive ? "OR " : ""), (inactive ? "active = '0' " : ""),
+		(active || inactive ? ") " : ""),
+		(active && manual || inactive && manual ? "AND " : ""), (manual ? "( " : ""),
+		(manual ? "random = '0' " : ""),
+		(active && random && !manual || inactive && random && !manual ? "AND " : ""),
+		(random && !manual ? "( " : ""), (random && manual ? "OR " : ""),
+		(random ? "random = '1' " : ""), (manual || random ? ") " : ""),
+		(active && *name || inactive && *name || manual && *name || random && *name ?
+			 "AND " :
+			 ""),
+		(*name ? "( " : ""), (*name ? name : ""), (*name ? ") " : ""),
+		(active && *type || inactive && *type || manual && *type || random && *type ||
+				 *name && *type ?
+			 "AND " :
+			 ""),
+		(*type ? "( " : ""), (*type ? type : ""), (*type ? ") " : ""),
+		(active && *option || inactive && *option || manual && *option ||
+				 random && *option || *name && *option || *type && *option ?
+			 "AND " :
+			 ""),
+		(*option ? "( " : ""), (*option ? option : ""), (*option ? ") " : ""),
+		(active && *player || inactive && *player || manual && *player ||
+				 random && *player || *name && *player || *type && *player ||
+				 *option && *player ?
+			 "AND " :
+			 ""),
+		(*player ? "( " : ""), (*player ? player : ""), (*player ? ") " : ""));
 	// debug(dbqry);
 	if (!qry(dbqry))
 	{
@@ -2820,7 +2821,7 @@ void boon_notify(int id, P_char ch, int action)
 					char tmp[MAX_STRING_LENGTH];
 
 					boon_race_label((int)bdata.criteria2, tmp, sizeof(tmp));
-					snprintf(
+					checked_snprintf(
 						buff, MAX_STRING_LENGTH,
 						"&+CYou have killed %d of %d %s&+C(s) for boon # %d.&n\r\n",
 						(int)bpg.counter, (int)bdata.criteria, tmp,
@@ -2832,7 +2833,7 @@ void boon_notify(int id, P_char ch, int action)
 
 					boon_mob_label((int)bdata.criteria2, tmp, sizeof(tmp),
 						       FALSE);
-					snprintf(
+					checked_snprintf(
 						buff, MAX_STRING_LENGTH,
 						"&+CYou have killed %d of %d %s&+C(s) for boon # %d.&n\r\n",
 						(int)bpg.counter, (int)bdata.criteria, tmp,
@@ -3186,7 +3187,7 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 	}
 
 	// Perform the search
-	snprintf(
+	checked_snprintf(
 		dbqry, MAX_STRING_LENGTH,
 		"SELECT id FROM boons WHERE opt = '%d' AND active = '1' AND (racewar = '0' OR racewar = '%d') AND (pid = '0' OR pid = '%d')%s",
 		option, GET_RACEWAR(ch), GET_PID(ch), buff);
