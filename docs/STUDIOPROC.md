@@ -3,7 +3,7 @@
 This document is for reviewers and for whoever maintains this next. It
 explains what was added, why each piece is shaped the way it is, and what
 was deliberately left out. The builder-facing grammar reference is
-`src/howto_trg.txt`; this is the design and the reasoning behind it.
+`docs/src/howto_trg.txt`; this is the design and the reasoning behind it.
 
 ## The problem
 
@@ -90,8 +90,8 @@ Every anchor predates 2020, so future merges carry five one-liners.
 
 New files: `src/studioproc.c` (the parser, binder, dispatch and
 primitives), `src/studioproc.h` (the public surface — boot, the three
-generic procs, the three hook entry points), and `src/howto_trg.txt`
-(the builder reference, written in the shape of `howto_add.txt`).
+generic procs, the three hook entry points), and `docs/src/howto_trg.txt`
+(the builder reference, written in the shape of `docs/src/howto_add.txt`).
 
 ## Reading order
 
@@ -246,4 +246,4 @@ mob with and without the object. Then break the file on purpose and boot
 again: the parse error names the zone, vnum and line, the record is
 skipped, and the boot completes.
 
-`src/howto_trg.txt` has the full grammar and the authoring rules.
+`docs/src/howto_trg.txt` has the full grammar and the authoring rules.

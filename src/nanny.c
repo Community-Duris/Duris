@@ -5529,7 +5529,7 @@ void loadHints()
 	char  buf2[MAX_STR_NORMAL * 10];
 	int   i = 0;
 
-	f = fopen("lib/information/hints.txt", "r");
+	f = fopen("docs/lib/information/hints.txt", "r");
 
 	if (!f)
 		return;

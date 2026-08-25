@@ -319,7 +319,11 @@ echo ""
 echo ">> Importing to pages table..."
 for filename in "${!HELP_FILES[@]}"; do
     title="${HELP_FILES[$filename]}"
-    filepath="$HELP_DIR/$filename"
+    if [ "$filename" = "hints.txt" ]; then
+        filepath="docs/lib/information/$filename"
+    else
+        filepath="$HELP_DIR/$filename"
+    fi
 
     if [ ! -f "$filepath" ]; then
         echo "  SKIP: $filename (file not found)"
